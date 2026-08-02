@@ -1,0 +1,79 @@
+# ============================================================================
+# MANIFEST — EML Praat Tools plugin
+# Generated: 2026-08-02  |  73 files
+# Columns: path | lines (code/prose) | version | description
+# ============================================================================
+
+FIX_NOTES.md | 37 | - | EML Praat Tools — Correctness Fix Bundle
+README.md | 144 | - | EML Praat Tools
+setup.praat | 107 | 1.3 | Register menu entries and dynamic action buttons for the
+dev/DESIGN_DIALOG_SYSTEM.md | 263 | - | EML Praat Tools — Dialog Design System
+dev/SCAFFOLD_STATS_TUTORIAL.md | 1076 | - | EML Stats Interactive Tutorial — Pedagogical Architecture
+dev/VOICE_GUIDE.md | 155 | - | EML Tutorial — Content Voice Guide
+dev/WIREFRAMES_STATS_TUTORIAL.md | 685 | - | EML Stats Tutorial — Page Layout Wireframes
+dev/tests/eml-integration-test.praat | 478 | 1.0 | Praat + 1 : Integration Test Suite
+dev/tests/eml-test-helpers.praat | 400 | 1.0 | EML Stats : Test Helpers
+dev/tests/phase1/test-core-descriptive.praat | 567 | 1.0 | EML Stats : Core Descriptive Statistics — Validation Suite
+dev/tests/phase1/test-core-utilities.praat | 688 | 1.0 | EML Stats : Core Utility Procedures — Validation Suite
+dev/tests/phase1/test-extract.praat | 455 | 1.0 | EML Stats : Data Extraction Layer - Test Suite
+dev/tests/phase1/test-output.praat | 477 | 1.1 | EML Stats : Output Formatting — Test Suite
+dev/tests/phase2/batch6b_scipy_refs.py | 213 | - | import numpy as np
+dev/tests/phase2/batch7_scipy_refs.py | 231 | - | import numpy as np
+dev/tests/phase2/test-12-groups.praat | 61 | - | Test: 12-group ANOVA (verifies no 10-group ceiling)
+dev/tests/phase2/test-inferential-batch1.praat | 258 | - | EML Stats : Test Suite — Inferential Statistics (Batch 1)
+dev/tests/phase2/test-inferential-batch2.praat | 203 | - | EML Stats : Test Suite — Inferential Statistics (Batch 2)
+dev/tests/phase2/test-inferential-batch3.praat | 230 | - | EML Stats : Test Suite — Inferential Statistics (Batch 3)
+dev/tests/phase2/test-inferential-batch4.praat | 292 | - | EML Stats : Test Suite — Inferential Statistics (Batch 4)
+dev/tests/phase2/test-inferential-batch5.praat | 319 | - | EML Stats : Test Suite — Inferential Statistics (Batch 5)
+dev/tests/phase2/test-inferential-batch6.praat | 846 | 2.0 | EML Stats : Test Suite — Inferential Statistics (Batch 6 + Batch 9)
+dev/tests/phase2/test-inferential-batch6b.praat | 500 | - | EML Stats : Test Suite — Inferential Statistics (Batch 6B)
+dev/tests/phase2/test-inferential-batch7.praat | 632 | - | EML Stats : Test Suite — Inferential Statistics (Batch 7)
+dev/tests/phase2/test-regression.praat | 130 | 1.0 | EML Stats : Regression Test Suite
+dev/tests/phase2/test-shapiro-wilk.praat | 145 | - | Test: @emlShapiroWilk
+dev/tests/phase2/test-wizard-explanations.praat | 164 | - | Test: Wizard Mode Third-Column Explanations
+dev/tests/phase2/test-workflow-verification.praat | 354 | 1.0 | EML Stats : Workflow Verification Test Suite
+dev/tests/phase2/test_coltype.praat | 18 | - | tableId = Create Table with column names: "test", 3, "name value group"
+dev/tests/phase2/verify-inferential-batch1.R | 89 | - | Independent verification of test assertions in
+dev/tests/phase2/verify-inferential-batch3.R | 127 | - | EML Stats : R Verification Script — Inferential Statistics (Batch 3)
+dev/tests/phase2/verify-inferential-batch4.R | 244 | - | EML Stats : R Verification Script — Inferential Statistics (Batch 4)
+dev/tests/phase2/verify-inferential-batch5.R | 175 | - | EML Stats : R Verification Script — Inferential Statistics (Batch 5)
+dev/tests/phase2/verify-inferential-batch6.R | 169 | - | EML Stats : R Verification — Inferential Statistics (Batch 6)
+dev/tests/phase2/verify-inferential-batch6b.R | 181 | - | EML Stats Batch 6B — R Verification Script
+dev/tests/phase2/verify-inferential-batch7.R | 240 | - | EML Stats Batch 7 — R Verification Script
+dev/tests/phase2/verify-shapiro-wilk.R | 55 | - | R Verification Script for @emlShapiroWilk
+dev/tests/tables/spaghettit table.csv | 21 | - | ﻿time,subject,value,group
+dev/tutorial-wireframes-v09.praat | 857 | 0.9 | EML Stats Tutorial — Layout Wireframes v0.9
+graphs/eml-annotation-procedures.praat | 3582 | 3.17 | EML GRAPHS — ANNOTATION + STATS BRIDGE PROCEDURES
+graphs/eml-draw-procedures.praat | 3554 | 1.18 | EML GRAPHS — DRAWING PROCEDURES
+graphs/eml-graph-procedures.praat | 2737 | 3.21 | EML GRAPHS — STANDARD DRAWING PROCEDURES
+graphs/eml-graphs-form.praat | 5661 | 1.9 | EML Graphs — Form System and Workflow
+scripts/eml-batch-process.praat | 660 | 1.1 | Batch process a folder of Sound files to extract user-selected
+scripts/eml-check-normality.praat | 226 | 2.0 | Test normality for one or more numeric columns, optionally
+scripts/eml-compare-groups.praat | 142 | 3.0 | Compare two independent groups from a Table using parametric
+scripts/eml-compare-k-groups.praat | 96 | 3.0 | One-way ANOVA with optional Tukey HSD post-hoc comparisons.
+scripts/eml-compare-kw.praat | 91 | 3.0 | Compare 3+ groups using Kruskal-Wallis H test with Dunn's
+scripts/eml-compare-paired.praat | 176 | 3.0 | Compare two paired columns using parametric (paired t-test)
+scripts/eml-compare-twoway.praat | 103 | 2.0 | Two-way ANOVA for a Table with two categorical factors and one
+scripts/eml-correlate.praat | 173 | 3.3 | Correlate two numeric columns using Pearson r, Spearman rho,
+scripts/eml-create-demo.praat | 242 | 2.0 | Generate synthetic voice-science Tables for testing EML Tools
+scripts/eml-describe-table.praat | 158 | 1.0 | Descriptive statistics for one numeric column of a Table.
+scripts/eml-edit-table-editor.praat | 24 | 2.1 | Thin wrapper for the TableEditor Edit menu entry. Passes the
+scripts/eml-edit-table-launch.praat | 37 | 2.0 | Opens the Table editor window, then launches the main editor
+scripts/eml-edit-table.praat | 562 | 2.1 | Interactive cell editor for Praat Table objects. Provides
+scripts/eml-graphs.praat | 36 | 3.0 | Entry point for the standalone EML Graphs tool. All logic lives
+scripts/eml-lmm.praat | 102 | 1.0 | Fit a linear mixed-effects model (lme4-style formula) to a Table
+scripts/eml-pairwise.praat | 131 | 3.0 | All-pairs comparisons from a Table using pairwise t-test,
+scripts/eml-quick-start.praat | 68 | - | EML Praat Tools — Quick Start Guide
+scripts/eml-regress.praat | 114 | 2.1 | OLS simple linear regression (slope, intercept, R², SE, F, p)
+scripts/eml-stats-demo.praat | 489 | 1.3 | Demonstrates three core inferential statistics workflows
+scripts/eml-tutorial.praat | 724 | 0.18 | EML Stats Tutorial — Interactive Statistics Guide
+scripts/eml-wizard.praat | 2325 | 2.1 | Question-driven statistical analysis wizard. Routes research
+stats/eml-analysis.praat | 1416 | 1.1 | Centralizes computation + reporting for all analysis types.
+stats/eml-core-descriptive.praat | 786 | 1.1 | EML Stats : Core Descriptive Statistics
+stats/eml-core-utilities.praat | 829 | 1.0 | EML Stats : Core Utility Procedures
+stats/eml-extract.praat | 1330 | 1.4 | EML Stats : Data Extraction Layer
+stats/eml-inferential.praat | 3334 | 1.2 | EML Stats : Inferential Statistics
+stats/eml-linalg.praat | 330 | 1.0 | EML Praat Tools — Numerical Linear Algebra Layer
+stats/eml-lmm.praat | 4308 | 0.8 | EML Praat Tools — Linear Mixed Models
+stats/eml-optimizer.praat | 2387 | 2.0 | EML Praat Tools — Derivative-Free Optimizers
+stats/eml-output.praat | 952 | 1.7 | EML Stats : Output Formatting

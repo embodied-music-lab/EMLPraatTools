@@ -7,7 +7,7 @@
 #          rename columns). Compensates for the read-only TableEditor.
 #
 # Date: 11 April 2026
-# Version: 2.0
+# Version: 2.1
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -40,6 +40,11 @@ endform
 
 # Exit editor environment if launched from TableEditor menu.
 # No-op (harmless) when launched from Objects window dynamic button.
+# INTENTIONAL DEFENSIVE nocheck (policy): correct use for editor teardown —
+# do not replace with an existence check (the M4 audit recommendation to do so
+# is rejected; nocheck is the intended mechanism).
+# nocheck guards exactly ONE command — the one it prefixes. It does not open a
+# conditional block. This line is safe because it IS a single command.
 nocheck endeditor
 
 nTables = numberOfSelected ("Table")
@@ -189,7 +194,19 @@ while running
 endwhile
 
 # ── Close TableEditor if launched from Objects window button ──────────────
-
+# INTENTIONAL DEFENSIVE nocheck (policy): the user may have already closed the
+# editor window by hand, in which case addressing it (editor:) and Close would
+# error. nocheck suppresses that so the script exits cleanly either way. This is
+# the correct use of nocheck for editor teardown — do not "fix" it to a bare
+# Close or an existence check.
+#
+# CRITICAL (verified Praat 6.6.30, 2 Aug 2026): "nocheck editor:" suppresses the
+# error of the OPENER ONLY — it does NOT skip the block. With no editor open,
+# execution still falls into the body and runs it in the object-window context,
+# where editor commands are unavailable. This teardown survives only because its
+# single inner command is ALSO guarded. Any command added inside this block must
+# carry its own nocheck, or the script aborts on exactly the closed-window case
+# this guard exists to tolerate.
 if entry$ = "button"
     nocheck editor: "Table " + tableName$
     nocheck Close

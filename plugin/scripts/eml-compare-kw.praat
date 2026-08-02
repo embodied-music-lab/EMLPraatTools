@@ -61,7 +61,7 @@ repeat
     @emlHandleCommonFields
 
     selectObject: tableId
-    @emlRunKWAnalysis: tableId, dataCol$, groupCol$, 1, 0.05
+    @emlRunKWAnalysis: tableId, dataCol$, groupCol$, 1, "holm"
     if emlRunKWAnalysis.error$ <> ""
         pauseScript: emlRunKWAnalysis.error$
     else

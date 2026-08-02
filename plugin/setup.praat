@@ -7,7 +7,7 @@
 #          in the Praat preferences directory.
 #
 # ATTRIBUTION
-# Framework: EML Praat Assistant by Ian Howell
+# Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
 # Code generation: Claude (Anthropic)
 #
@@ -42,8 +42,12 @@ Add menu command: "Objects", "New", "-- eml correlate --", "Compare two-way (ANO
 Add menu command: "Objects", "New", "Correlate two columns...", "-- eml correlate --", 1, "scripts/eml-correlate.praat"
 Add menu command: "Objects", "New", "Linear regression...", "Correlate two columns...", 1, "scripts/eml-regress.praat"
 
+# Mixed models
+Add menu command: "Objects", "New", "-- eml mixed --", "Linear regression...", 1, ""
+Add menu command: "Objects", "New", "Linear mixed model...", "-- eml mixed --", 1, "scripts/eml-lmm.praat"
+
 # Post-Hoc
-Add menu command: "Objects", "New", "-- eml posthoc --", "Linear regression...", 1, ""
+Add menu command: "Objects", "New", "-- eml posthoc --", "Linear mixed model...", 1, ""
 Add menu command: "Objects", "New", "Pairwise comparisons...", "-- eml posthoc --", 1, "scripts/eml-pairwise.praat"
 
 # Graphs
@@ -62,6 +66,7 @@ Add menu command: "Objects", "New", "Run Stats Demo", "Create Demo Table...", 1,
 # Help
 Add menu command: "Objects", "New", "-- eml help --", "Run Stats Demo", 1, ""
 Add menu command: "Objects", "New", "EML Stats Quick Start", "-- eml help --", 1, "scripts/eml-quick-start.praat"
+Add menu command: "Objects", "New", "EML Interactive Tutorial", "EML Stats Quick Start", 1, "scripts/eml-tutorial.praat"
 
 # ── Dynamic action buttons: appear when 1 Table is selected ────────────────
 
@@ -70,6 +75,7 @@ Add action command: "Table", 1, "", 0, "", 0, "EML: Check normality...", "", 0, 
 Add action command: "Table", 1, "", 0, "", 0, "EML: Compare groups...", "", 0, "scripts/eml-compare-groups.praat"
 Add action command: "Table", 1, "", 0, "", 0, "EML: Correlate columns...", "", 0, "scripts/eml-correlate.praat"
 Add action command: "Table", 1, "", 0, "", 0, "EML: Linear regression...", "", 0, "scripts/eml-regress.praat"
+Add action command: "Table", 1, "", 0, "", 0, "EML: Linear mixed model...", "", 0, "scripts/eml-lmm.praat"
 Add action command: "Table", 1, "", 0, "", 0, "EML Graphs...", "", 0, "scripts/eml-graphs.praat"
 Add action command: "Table", 1, "", 0, "", 0, "EML: Edit Table...", "", 0, "scripts/eml-edit-table-launch.praat"
 Add action command: "Table", 1, "", 0, "", 0, "EML: Stats Wizard...", "", 0, "scripts/eml-wizard.praat"

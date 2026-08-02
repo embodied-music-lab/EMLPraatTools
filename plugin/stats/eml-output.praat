@@ -932,7 +932,10 @@ procedure emlWizardExplainSkewness: .skew
 endproc
 
 procedure emlWizardExplainKurtosis: .kurt
-    .excess = .kurt - 3
+    # @emlKurtosis already returns EXCESS kurtosis (normal = 0, verified vs
+    # scipy bias=False). Do NOT subtract 3 again — that double-correction
+    # labelled normal data (excess ~ 0) as excess ~ -3 => "platykurtic". (M1)
+    .excess = .kurt
     if abs (.excess) < 1
         .desc$ = "Near-normal peakedness"
     elsif .excess > 0
@@ -940,7 +943,7 @@ procedure emlWizardExplainKurtosis: .kurt
     else
         .desc$ = "Light-tailed (platykurtic)"
     endif
-    emlWizardExplain$ = .desc$ + " (3 = normal; |kurt - 3| < 3 is typical threshold)"
+    emlWizardExplain$ = .desc$ + " (0 = normal; |excess| < 3 is typical threshold)"
 endproc
 
 

@@ -2,9 +2,13 @@
 # EML Stats : Data Extraction Layer
 # ============================================================================
 # Module: eml-extract.praat
-# Version: 1.3
+# Version: 1.4
 # Date: 11 April 2026
 #
+# v1.4: @eml_getGroupPairedData — row-wise complete-case extraction of
+#        two numeric columns within one group, for grouped correlation
+#        (keeps X and Y aligned; per-column extraction misaligned pairs
+#        on missing data).
 # v1.3: @emlGuessColumnRoles — infers column roles (group, data,
 #        subject, time, factor) from column names via weighted keyword
 #        matching + type detection. Replaces positional guessing in
@@ -132,16 +136,18 @@ procedure emlExtractColumnAsStrings: .tableId, .columnName$
     .n = 0
     .error$ = ""
     
-    # Pre-allocate string array (max 1000)
-    for .init from 1 to 1000
-        .str$[.init] = ""
-    endfor
-    
     # Select table and get dimensions
     selectObject: .tableId
     .nRows = Get number of rows
     .nCols = Get number of columns
-    
+
+    # Pre-initialize the string array to the ACTUAL row count, not a fixed cap
+    # of 1000. A fixed cap left stale indexed values beyond the cap on tables
+    # with >1000 rows; sizing to .nRows removes the cap entirely. (M7)
+    for .init from 1 to .nRows
+        .str$[.init] = ""
+    endfor
+
     # Check if column exists
     .colExists = 0
     for .c from 1 to .nCols
@@ -796,14 +802,15 @@ procedure emlTableColumnNames: .tableId
     # Initialize
     .nCols = 0
     
-    # Pre-initialize name array
-    for .init from 1 to 100
-        .name$[.init] = ""
-    endfor
-    
     # Select table and get column count
     selectObject: .tableId
     .nCols = Get number of columns
+
+    # Pre-initialize the name array to the ACTUAL column count, not a fixed cap
+    # of 100, so no stale indexed names persist beyond the real data. (M7)
+    for .init from 1 to .nCols
+        .name$[.init] = ""
+    endfor
     
     # Get each column name
     for .c from 1 to .nCols
@@ -915,6 +922,49 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
     else
         .data# = zero# (0)
     endif
+    removeObject: .tempClean
+endproc
+
+
+# ============================================================================
+# @eml_getGroupPairedData
+# ============================================================================
+# Extract two numeric columns for one group, keeping only rows where BOTH
+# columns are defined (row-wise complete-case deletion within the group).
+# Use this for grouped correlation so X and Y stay row-aligned; extracting
+# each column separately with eml_getGroupData would misalign the pairs
+# when cells are missing.
+#
+# Arguments:
+#   .tableId    - ID of the Table object
+#   .colX$      - first numeric column
+#   .colY$      - second numeric column
+#   .groupCol$  - grouping column
+#   .groupLabel$ - label value to match
+#
+# Output:
+#   .n         - number of complete pairs in the group
+#   .nExcluded - group rows dropped for a missing X or Y
+#   .dataX#    - aligned X values
+#   .dataY#    - aligned Y values
+# ============================================================================
+procedure eml_getGroupPairedData: .tableId, .colX$, .colY$, .groupCol$, .groupLabel$
+    selectObject: .tableId
+    .tempGroup = Extract rows where column (text): .groupCol$, "is equal to", .groupLabel$
+    selectObject: .tempGroup
+    .beforeN = Get number of rows
+    .tempClean = Extract rows where: ~self [.colX$] <> undefined and self [.colY$] <> undefined
+    removeObject: .tempGroup
+    selectObject: .tempClean
+    .n = Get number of rows
+    if .n > 0
+        .dataX# = Get all numbers in column: .colX$
+        .dataY# = Get all numbers in column: .colY$
+    else
+        .dataX# = zero# (0)
+        .dataY# = zero# (0)
+    endif
+    .nExcluded = .beforeN - .n
     removeObject: .tempClean
 endproc
 

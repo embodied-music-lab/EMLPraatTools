@@ -10,7 +10,7 @@
 # Version: 1.1
 #
 # ATTRIBUTION
-# Framework: EML Praat Assistant by Ian Howell
+# Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
 # Code generation: Claude (Anthropic)
 # Script author: [Your name here] — created and verified by this individual
@@ -421,7 +421,7 @@ for iFile from start_from_file to end_at_file
         if needsPointProcess
             selectObject: segId
             plusObject: rccPitchId
-            ppId = To PointProcess (cc)
+            ppId = noprogress To PointProcess (cc)
         endif
 
         # --- Jitter (APPENDIX_D S3B) ---
@@ -441,7 +441,7 @@ for iFile from start_from_file to end_at_file
         # --- Mean intensity (APPENDIX_D S6) ---
         if mean_intensity
             selectObject: segId
-            intId = To Intensity: 100, 0.0, "yes"
+            intId = noprogress To Intensity: 100, 0.0, "yes"
             selectObject: intId
             intVal = Get mean: 0, 0, "dB"
         endif
@@ -524,6 +524,19 @@ for iFile from start_from_file to end_at_file
                     line$ = "  WARNING: CPPS = "
                         ... + fixed$ (cppsVal, 2)
                         ... + " dB — outside range (0 to 25)."
+                    appendInfoLine: line$
+                    nWarnings = nWarnings + 1
+                endif
+            endif
+        endif
+
+        # --- Mean intensity plausibility (APPENDIX_D S7: 20-120 dB) (M6) ---
+        if mean_intensity
+            if intVal <> undefined
+                if intVal < 20 or intVal > 120
+                    line$ = "  WARNING: Mean intensity = "
+                        ... + fixed$ (intVal, 2)
+                        ... + " dB — outside range (20 to 120)."
                     appendInfoLine: line$
                     nWarnings = nWarnings + 1
                 endif

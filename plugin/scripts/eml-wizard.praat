@@ -64,7 +64,7 @@
 #        Shorter completion button labels.
 #
 # ATTRIBUTION
-# Framework: EML Praat Assistant by Ian Howell
+# Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
 # Code generation: Claude (Anthropic)
 # Script author: [Your name here] — created and verified by this individual
@@ -87,6 +87,9 @@ include ../stats/eml-core-descriptive.praat
 include ../stats/eml-extract.praat
 include ../stats/eml-output.praat
 include ../stats/eml-inferential.praat
+include ../stats/eml-linalg.praat
+include ../stats/eml-optimizer.praat
+include ../stats/eml-lmm.praat
 include ../stats/eml-analysis.praat
 
 # Graph includes (for Draw Figure offer)
@@ -714,6 +717,29 @@ if goal = 1
 
     else
 
+        # A3 entry gate: two conditions (paired) or three-or-more (RM). (H4)
+        label A3_NCOND_PAGE
+        beginPause: "Paired / repeated — how many conditions?"
+            comment: "📋 Table: " + displayTable$
+            comment: "─────────────────────────────────────"
+            comment: ""
+            comment: "How many repeated measurements per subject?"
+            optionmenu: "Conditions", 1
+                option: "Two (paired t-test / Wilcoxon)"
+                option: "Three or more (RM-ANOVA / Friedman)"
+            comment: ""
+            comment: "Each condition is its own column; each row is one"
+            comment: "subject measured under every condition (wide format)."
+        clicked = endPause: "Quit", "Back", "Continue", 3, 0
+        if clicked = 1
+            exitScript: ""
+        elsif clicked = 2
+            goto A1_OBS_TYPE
+        endif
+        if conditions = 2
+            goto A3K_SELECT_PAGE
+        endif
+
         @wizardPrepareTable: "paired"
         col1Default = wizardPrepareTable.col1Default
         col2Default = wizardPrepareTable.col2Default
@@ -850,6 +876,123 @@ if goal = 1
         wizCanDraw = 1
         wizDrawSource$ = "paired"
 
+        goto WIZ_WHAT_NEXT
+
+        # ── A3K: THREE OR MORE REPEATED CONDITIONS (RM-ANOVA / Friedman) ──
+        label A3K_SELECT_PAGE
+
+        beginPause: "Repeated measures — select condition columns"
+            comment: "📋 Table: " + displayTable$
+            comment: "─────────────────────────────────────"
+            comment: ""
+            comment: "Pick the columns holding the repeated conditions"
+            comment: "(select (none) to leave a slot empty; need >= 3)."
+            optionmenu: "Condition 1", 2
+                option: "(none)"
+                for iCol from 1 to nCols
+                    option: emlTableColumnNames.name$[iCol]
+                endfor
+            optionmenu: "Condition 2", 3
+                option: "(none)"
+                for iCol from 1 to nCols
+                    option: emlTableColumnNames.name$[iCol]
+                endfor
+            optionmenu: "Condition 3", 4
+                option: "(none)"
+                for iCol from 1 to nCols
+                    option: emlTableColumnNames.name$[iCol]
+                endfor
+            optionmenu: "Condition 4", 1
+                option: "(none)"
+                for iCol from 1 to nCols
+                    option: emlTableColumnNames.name$[iCol]
+                endfor
+            optionmenu: "Condition 5", 1
+                option: "(none)"
+                for iCol from 1 to nCols
+                    option: emlTableColumnNames.name$[iCol]
+                endfor
+            optionmenu: "Condition 6", 1
+                option: "(none)"
+                for iCol from 1 to nCols
+                    option: emlTableColumnNames.name$[iCol]
+                endfor
+            comment: ""
+            optionmenu: "Test approach", 1
+                option: "Parametric (RM-ANOVA)"
+                option: "Nonparametric (Friedman)"
+            boolean: "Pairwise post hoc", 1
+            optionmenu: "Adjustment", 2
+                option: "bonferroni"
+                option: "holm"
+                option: "bh"
+            boolean: "Clear Info window", 0
+        clicked = endPause: "Quit", "Back", "Run", 3, 0
+        if clicked = 1
+            exitScript: ""
+        elsif clicked = 2
+            goto A3_NCOND_PAGE
+        endif
+
+        if clear_Info_window
+            @emlClearInfo
+        endif
+
+        # Build the "|"-delimited condition list and count non-empty slots.
+        condList$ = ""
+        nCond = 0
+        if condition_1$ <> "(none)"
+            condList$ = condList$ + condition_1$ + "|"
+            nCond = nCond + 1
+        endif
+        if condition_2$ <> "(none)"
+            condList$ = condList$ + condition_2$ + "|"
+            nCond = nCond + 1
+        endif
+        if condition_3$ <> "(none)"
+            condList$ = condList$ + condition_3$ + "|"
+            nCond = nCond + 1
+        endif
+        if condition_4$ <> "(none)"
+            condList$ = condList$ + condition_4$ + "|"
+            nCond = nCond + 1
+        endif
+        if condition_5$ <> "(none)"
+            condList$ = condList$ + condition_5$ + "|"
+            nCond = nCond + 1
+        endif
+        if condition_6$ <> "(none)"
+            condList$ = condList$ + condition_6$ + "|"
+            nCond = nCond + 1
+        endif
+
+        if nCond < 3
+            exitScript: "Repeated measures needs at least 3 condition columns."
+        endif
+
+        if test_approach = 1
+            @wizardReportPlan: "Repeated measures (k conditions)",
+            ... "n/a", "RM-ANOVA (Greenhouse-Geisser)",
+            ... "n/a", condList$, "", "", displayTable$
+            @emlRunRepeatedMeasuresAnalysis: tableId, "", condList$,
+            ... pairwise_post_hoc, adjustment$
+            if emlRunRepeatedMeasuresAnalysis.error$ <> ""
+                exitScript: emlRunRepeatedMeasuresAnalysis.error$
+            endif
+            wizTestType$ = "parametric"
+        else
+            @wizardReportPlan: "Repeated measures (k conditions)",
+            ... "n/a", "Friedman test",
+            ... "n/a", condList$, "", "", displayTable$
+            @emlRunFriedmanAnalysis: tableId, "", condList$,
+            ... pairwise_post_hoc, adjustment$
+            if emlRunFriedmanAnalysis.error$ <> ""
+                exitScript: emlRunFriedmanAnalysis.error$
+            endif
+            wizTestType$ = "nonparametric"
+        endif
+
+        wizCanDraw = 0
         goto WIZ_WHAT_NEXT
 
     endif
@@ -1257,6 +1400,27 @@ elsif goal = 3
 
 elsif goal = 4
 
+    # ── Predict: simple regression or mixed model? ─────────────────────────
+    label D_MODEL_TYPE
+    beginPause: "Predict — model type"
+        comment: "📋 Table: " + displayTable$
+        comment: "─────────────────────────────────────"
+        comment: ""
+        comment: "Is your data clustered, repeated, or nested?"
+        comment: "(e.g., several measures per singer, per school, per trial)"
+        optionmenu: "Model type", 1
+            option: "Simple linear regression (independent rows)"
+            option: "Mixed model (clustered / repeated / nested)"
+    clicked = endPause: "Quit", "Back", "Continue", 3, 0
+    if clicked = 1
+        exitScript: ""
+    elsif clicked = 2
+        goto Q1_GOAL
+    endif
+    if model_type = 2
+        goto D_LMM_FORMULA
+    endif
+
     # ── Predict an outcome (simple linear regression) ─────────────────────
 
     @wizardPrepareTable: "regression"
@@ -1315,6 +1479,51 @@ elsif goal = 4
     wizCanDraw = 1
     wizDrawSource$ = "regression"
 
+    goto WIZ_WHAT_NEXT
+
+    # ── Mixed model formula page ──────────────────────────────────────────
+    label D_LMM_FORMULA
+    dColHint$ = ""
+    for iCol from 1 to nCols
+        if iCol > 1
+            dColHint$ = dColHint$ + ", "
+        endif
+        dColHint$ = dColHint$ + emlTableColumnNames.name$[iCol]
+    endfor
+    beginPause: "Mixed model — formula"
+        comment: "📋 Table: " + displayTable$
+        comment: "Columns: " + dColHint$
+        comment: "─────────────────────────────────────"
+        comment: "lme4-style formula, e.g.  y ~ x + (1 + x | group)"
+        comment: "(1 | group) = random intercept per group."
+        sentence: "Formula", "y ~ x + (1 | group)"
+        optionmenu: "Contrast coding", 1
+            option: "treatment"
+            option: "sum"
+            option: "helmert"
+            option: "poly"
+        boolean: "Use REML", 1
+        boolean: "Report R squared", 1
+        boolean: "Report confidence intervals", 1
+        boolean: "Clear Info window", 1
+    clicked = endPause: "Quit", "Back", "Run", 3, 0
+    if clicked = 1
+        exitScript: ""
+    elsif clicked = 2
+        goto D_MODEL_TYPE
+    endif
+    if clear_Info_window
+        @emlClearInfo
+    endif
+    @wizardReportPlan: "Linear mixed model",
+    ... "n/a", "Mixed model (REML, Satterthwaite df)",
+    ... "n/a", formula$, "", "", displayTable$
+    @emlRunLMMAnalysis: tableId, formula$, contrast_coding$, use_REML,
+    ... report_R_squared, report_confidence_intervals
+    if emlRunLMMAnalysis.error$ <> ""
+        exitScript: emlRunLMMAnalysis.error$
+    endif
+    wizCanDraw = 0
     goto WIZ_WHAT_NEXT
 elsif goal = 5
     @wizardStub: "Classification (discriminant analysis)",
@@ -1412,28 +1621,30 @@ elsif wizDrawSource$ = "regression"
     emlGraphsPresetRegressionLine = 1
     @emlGraphsWorkflow: tableId
 elsif wizDrawSource$ = "paired"
-    # Reshape to long format for spaghetti plot
+    # Reshape to long format for spaghetti plot.
+    # Main-body code: undotted variable names (dot-prefix is procedure-local
+    # convention only — Rule 5C). (L4)
     selectObject: tableId
-    .nRows = Get number of rows
-    .longId = Create Table with column names: "pairedLong",
-    ... .nRows * 2, { "Subject", "Condition", "Value" }
-    for .iRow from 1 to .nRows
+    plNRows = Get number of rows
+    plLongId = Create Table with column names: "pairedLong",
+    ... plNRows * 2, { "Subject", "Condition", "Value" }
+    for plIRow from 1 to plNRows
         selectObject: tableId
-        .v1 = Get value: .iRow, wizPairedCol1$
-        .v2 = Get value: .iRow, wizPairedCol2$
-        .r1 = (.iRow - 1) * 2 + 1
-        .r2 = (.iRow - 1) * 2 + 2
-        selectObject: .longId
-        Set string value: .r1, "Subject", string$ (.iRow)
-        Set string value: .r1, "Condition", wizPairedCol1$
-        Set numeric value: .r1, "Value", .v1
-        Set string value: .r2, "Subject", string$ (.iRow)
-        Set string value: .r2, "Condition", wizPairedCol2$
-        Set numeric value: .r2, "Value", .v2
+        plV1 = Get value: plIRow, wizPairedCol1$
+        plV2 = Get value: plIRow, wizPairedCol2$
+        plR1 = (plIRow - 1) * 2 + 1
+        plR2 = (plIRow - 1) * 2 + 2
+        selectObject: plLongId
+        Set string value: plR1, "Subject", string$ (plIRow)
+        Set string value: plR1, "Condition", wizPairedCol1$
+        Set numeric value: plR1, "Value", plV1
+        Set string value: plR2, "Subject", string$ (plIRow)
+        Set string value: plR2, "Condition", wizPairedCol2$
+        Set numeric value: plR2, "Value", plV2
     endfor
     emlGraphsPresetType = 14
-    @emlGraphsWorkflow: .longId
-    removeObject: .longId
+    @emlGraphsWorkflow: plLongId
+    removeObject: plLongId
     selectObject: tableId
 elsif wizDrawSource$ = "twoway"
     emlGraphsPresetType = 11

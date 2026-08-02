@@ -569,7 +569,7 @@ procedure emlDescribe: .data#
         .summary$ = .summary$ + "  Q3:         " + fixed$ (.q3, 4) + newline$
         .summary$ = .summary$ + "  IQR:        " + fixed$ (.iqr, 4) + newline$
         .summary$ = .summary$ + "  Skewness:   " + fixed$ (.skewness, 4) + newline$
-        .summary$ = .summary$ + "  Kurtosis:   " + fixed$ (.kurtosis, 4) + newline$
+        .summary$ = .summary$ + "  Kurtosis (excess): " + fixed$ (.kurtosis, 4) + newline$
         .summary$ = .summary$ + "  95% CI:     [" + fixed$ (.ci95Lower, 4) + ", " + fixed$ (.ci95Upper, 4) + "]"
     endif
 endproc

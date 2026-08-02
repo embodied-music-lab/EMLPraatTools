@@ -11,7 +11,7 @@
 # v1.0: Initial release with 4 demo types.
 #
 # ATTRIBUTION
-# Framework: EML Praat Assistant by Ian Howell
+# Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
 # Code generation: Claude (Anthropic)
 # ============================================================================

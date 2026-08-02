@@ -4,9 +4,16 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # License: Creative Commons Share-Alike
-# Version: 3.20
+# Version: 3.21
 # Date: 6 April 2026
 #
+# v3.21: Graph correctness fixes. (1) Box/violin quartiles now use the
+#        shared R-7 interpolated @emlQuartiles instead of nearest-rank
+#        floor(n*p), which biased the median low and collapsed it onto the
+#        minimum at small n (figure now agrees with the describe table).
+#        (2) Bar auto-range tracks a data minimum (emlBarData_visibleMin) so
+#        all-negative means are no longer clipped at 0. (3) B/W palette now
+#        recomputes sprite$ greys so alpha dots/overlap match the fill/line.
 # v3.20: Group sort unification — @emlExtractUniqueValues and
 #         @emlMeasureBarData now call @emlCountGroups instead of inline
 #         discovery. All group ordering flows through single source.
@@ -1563,9 +1570,13 @@ procedure emlDrawViolin: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, 
         endfor
     endfor
 
-    .q1 = .sorted#[max (1, floor (.n * 0.25))]
-    .median = .sorted#[max (1, floor (.n * 0.5))]
-    .q3 = .sorted#[max (1, floor (.n * 0.75))]
+    # Quartiles via the shared R-7 interpolated procedure (matches the
+    # numeric describe layer). The old nearest-rank floor(n*p) biased the
+    # median low and collapsed it onto the minimum at small n.
+    @emlQuartiles: .data#
+    .q1 = emlQuartiles.q1
+    .median = emlQuartiles.q2
+    .q3 = emlQuartiles.q3
 
     # Clamp quartile box to axis bounds
     .drawQ1 = max (.q1, .axisYMin)
@@ -1639,10 +1650,13 @@ procedure emlDrawBox: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, .ax
         endfor
     endfor
 
-    # Five-number summary
-    .q1 = .sorted#[max (1, floor (.n * 0.25))]
-    .median = .sorted#[max (1, floor (.n * 0.5))]
-    .q3 = .sorted#[max (1, floor (.n * 0.75))]
+    # Five-number summary — quartiles via the shared R-7 interpolated
+    # procedure (matches the numeric describe layer). The old nearest-rank
+    # floor(n*p) biased Q1/median/Q3 low, which also shifted the Tukey fences.
+    @emlQuartiles: .data#
+    .q1 = emlQuartiles.q1
+    .median = emlQuartiles.q2
+    .q3 = emlQuartiles.q3
     .iqr = .q3 - .q1
 
     # Tukey fences
@@ -2698,12 +2712,20 @@ procedure emlMeasureBarData: .tableId, .groupCol$, .valueCol$, .errorMode, .erro
         endif
     endfor
 
-    # Compute visible maximum (max of mean + error)
+    # Compute visible maximum (max of mean + error) and minimum (min of
+    # mean - error). Both seed at 0 so 0 stays the baseline for all-positive
+    # OR all-negative data; visibleMin only goes negative when a group's
+    # (mean - error) drops below 0, so negative-mean bars are no longer clipped.
     emlBarData_visibleMax = 0
+    emlBarData_visibleMin = 0
     for .g from 1 to emlBarData_nGroups
         .topVal = emlBarData_mean[.g] + emlBarData_error[.g]
         if .topVal > emlBarData_visibleMax
             emlBarData_visibleMax = .topVal
+        endif
+        .botVal = emlBarData_mean[.g] - emlBarData_error[.g]
+        if .botVal < emlBarData_visibleMin
+            emlBarData_visibleMin = .botVal
         endif
     endfor
 

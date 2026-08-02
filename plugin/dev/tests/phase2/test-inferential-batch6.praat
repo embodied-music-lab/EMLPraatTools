@@ -15,7 +15,7 @@
 # ranking helpers.
 #
 # ATTRIBUTION
-# Framework: EML Praat Assistant by Ian Howell
+# Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
 # Code generation: Claude (Anthropic)
 # Script author: [Your name here] — created and verified by this individual

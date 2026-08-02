@@ -2382,6 +2382,11 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
 
         .df = .nGroups - 1
 
+        # L7: a tiny-negative H from rounding on near-identical groups must
+        # not reach chiSquareQ (undefined for negative argument). Clamp to 0.
+        if .h < 0
+            .h = 0
+        endif
         if .h = 0
             .p = 1
         else
@@ -3179,10 +3184,10 @@ procedure emlLinearRegression: .x#, .y#
         for .i from 1 to .n
             .dx = .x# [.i] - .xMean
             .dy = .y# [.i] - .yMean
-            .ssXX += .dx * .dx
-            .ssYY += .dy * .dy
-            .ssXY += .dx * .dy
-            .sumX2 += .x# [.i] * .x# [.i]
+            .ssXX = .ssXX + .dx * .dx
+            .ssYY = .ssYY + .dy * .dy
+            .ssXY = .ssXY + .dx * .dy
+            .sumX2 = .sumX2 + .x# [.i] * .x# [.i]
         endfor
 
         if .ssXX = 0

@@ -4,7 +4,11 @@
 # Purpose: Correlate two numeric columns using Pearson r, Spearman rho,
 #          or both. Reports correlation coefficient, t, df, p, and n.
 # Date: 11 May 2026
-# Version: 3.2
+# Version: 3.3
+# v3.3: Missing-data fix (correctness). Per-group correlation now uses
+#       @eml_getGroupPairedData (row-wise complete-case within the group)
+#       instead of two independent @eml_getGroupData calls, which
+#       misaligned X and Y when cells were missing; excluded-row note added.
 # v3.2: Per-group correlation output replaced with shared reporter
 #       (@emlReportCorrelationAnalysis) for rich Info window output.
 # v3.1: Use emlGraphsPresetCorrType$ global instead of direct annotCorrType$
@@ -103,11 +107,13 @@ repeat
                     .gLabel$ = emlCountGroups.groupLabel$ [iGroup]
                     .gDisplay$ = replace$ (.gLabel$, "_", " ", 0)
                     selectObject: tableId
-                    @eml_getGroupData: tableId, colX$, groupCol$, .gLabel$
-                    .gXData# = eml_getGroupData.data#
-                    .gN = eml_getGroupData.n
-                    @eml_getGroupData: tableId, colY$, groupCol$, .gLabel$
-                    .gYData# = eml_getGroupData.data#
+                    # Row-wise complete-case within the group so X and Y stay
+                    # aligned; per-column extraction would misalign the pairs.
+                    @eml_getGroupPairedData: tableId, colX$, colY$, groupCol$, .gLabel$
+                    .gXData# = eml_getGroupPairedData.dataX#
+                    .gYData# = eml_getGroupPairedData.dataY#
+                    .gN = eml_getGroupPairedData.n
+                    .gExcluded = eml_getGroupPairedData.nExcluded
                     if .gN >= 3
                         if testType$ = "pearson" or testType$ = "both"
                             @emlPearsonCorrelation: .gXData#, .gYData#, 2
@@ -118,6 +124,10 @@ repeat
                         @emlReportCorrelationAnalysis: tableName$
                         ... + " -- " + .gDisplay$,
                         ... colX$, colY$, .gN, testType$
+                        if .gExcluded > 0
+                            .gExclNote$ = "  Note: " + string$ (.gExcluded) + " row(s) excluded for missing data (analyzed n = " + string$ (.gN) + " complete pairs)."
+                            appendInfoLine: .gExclNote$
+                        endif
                     else
                         appendInfoLine: ""
                         appendInfoLine: "  " + .gDisplay$ + ": Skipped (n < 3)"

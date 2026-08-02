@@ -18,7 +18,7 @@
 # Version: 1.3
 #
 # ATTRIBUTION
-# Framework: EML Praat Assistant by Ian Howell
+# Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
 # Code generation: Claude (Anthropic)
 # Script author: [Your name here] — created and verified by this individual
@@ -43,6 +43,12 @@ include ../stats/eml-extract.praat
 include ../stats/eml-output.praat
 include ../stats/eml-inferential.praat
 include ../graphs/eml-graph-procedures.praat
+
+# Initialize drawing-default globals (emlFont$, emlSubtitle$, emlShow* flags).
+# The graphs workflow normally does this; the demo draws via
+# eml-graph-procedures directly, so call the shared initializer here to avoid
+# "Unknown variable" errors (emlSubtitle$, emlFont$, ...) on the draw path.
+@emlInitDrawingDefaults
 
 # ============================================================================
 # SECTION 1: GENERATE SYNTHETIC DATA

@@ -4,7 +4,15 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
-# Version: 1.17
+# Version: 1.18
+# v1.18: Graph correctness fixes. (1) Grouped scatter no longer prints a
+#        false "R² = 0.000" for Spearman/Theil-Sen fits — R² is emitted only
+#        for the OLS/Pearson line (guarded on annotCorrType$, mirroring the
+#        ungrouped path). (2) Bar chart y-range routed through
+#        @emlComputeAxisRange with the tracked data min, and bar baseline
+#        decoupled from yMin (bars emanate from 0) so all-negative means
+#        render. (3) Scatter axes use an adaptive @emlComputeNiceStep roundTo
+#        instead of a hardcoded 1, so fractional data is not over-ranged.
 # v1.17: Per-group scatter correlation output replaced with shared
 #        reporter (@emlReportCorrelationAnalysis) for rich Info window output
 #        including R-squared, effect size labels, and Why commentary.
@@ -1508,9 +1516,13 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     @emlOptimizePaletteContrast: .nGroups
 
     # Step 3: Compute y-axis range (both 0 = auto)
+    # Route through emlComputeAxisRange with the tracked data min so all-negative
+    # means get a negative yMin instead of being clipped at 0. For non-negative
+    # data visibleMin = 0 and emlComputeAxisRange's own non-negative guard keeps
+    # yMin at 0 (bars from 0 up), preserving prior behavior.
     if .vMin = 0 and .vMax = 0
-        @emlComputeAxisRange: 0, emlBarData_visibleMax, 10, 0
-        .yMin = 0
+        @emlComputeAxisRange: emlBarData_visibleMin, emlBarData_visibleMax, 10, 0
+        .yMin = emlComputeAxisRange.axisMin
         .yMax = emlComputeAxisRange.axisMax
     else
         .yMin = .vMin
@@ -1536,6 +1548,17 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     .halfBar = .barWidth / 2
     .capWidth = .barWidth * 0.17
 
+    # Bar baseline: 0 clamped into the axis. Decoupled from .yMin so that when
+    # yMin is negative (all-negative data) bars still emanate from 0 rather than
+    # from the axis floor. For non-negative data .yMin = 0, so .baseline = 0.
+    .baseline = 0
+    if .baseline < .yMin
+        .baseline = .yMin
+    endif
+    if .baseline > .yMax
+        .baseline = .yMax
+    endif
+
     for .g from 1 to .nGroups
         .xCenter = .g
         .colorIdx = .g
@@ -1544,12 +1567,12 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
         .barTop = min (emlBarData_mean[.g], .yMax)
 
         # Filled bar
-        Paint rectangle: emlSetColorPalette.fill$[.colorIdx], .xCenter - .halfBar, .xCenter + .halfBar, .yMin, .barTop
+        Paint rectangle: emlSetColorPalette.fill$[.colorIdx], .xCenter - .halfBar, .xCenter + .halfBar, .baseline, .barTop
 
         # Bar outline
         Colour: emlSetColorPalette.line$[.colorIdx]
         Line width: emlSetAdaptiveTheme.axisLineWidth
-        Draw rectangle: .xCenter - .halfBar, .xCenter + .halfBar, .yMin, .barTop
+        Draw rectangle: .xCenter - .halfBar, .xCenter + .halfBar, .baseline, .barTop
 
         # Error bar (if enabled and nonzero)
         if .errorMode > 0 and emlBarData_error[.g] > 0
@@ -1875,7 +1898,12 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
     endif
 
     if .xMin = 0 and .xMax = 0
-        @emlComputeAxisRange: .dataXMin, .dataXMax, 1, 0
+        # Adaptive rounding grid: derive roundTo from a nice step over the data
+        # range (the same nice-number logic the gridlines use) so fractional data
+        # (proportions, reaction times, jitter %) is not snapped to the integer grid.
+        @emlComputeNiceStep: .dataXMax - .dataXMin, emlSetAdaptiveTheme.targetTicksX
+        .xRoundTo = emlComputeNiceStep.step
+        @emlComputeAxisRange: .dataXMin, .dataXMax, .xRoundTo, 0
         .axisXMin = emlComputeAxisRange.axisMin
         .axisXMax = emlComputeAxisRange.axisMax
     else
@@ -1884,7 +1912,12 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
     endif
 
     if .yMin = 0 and .yMax = 0
-        @emlComputeAxisRange: .dataYMin, .dataYMax, 1, 0
+        # Adaptive rounding grid: derive roundTo from a nice step over the data
+        # range (the same nice-number logic the gridlines use) so fractional data
+        # (proportions, reaction times, jitter %) is not snapped to the integer grid.
+        @emlComputeNiceStep: .dataYMax - .dataYMin, emlSetAdaptiveTheme.targetTicksY
+        .yRoundTo = emlComputeNiceStep.step
+        @emlComputeAxisRange: .dataYMin, .dataYMax, .yRoundTo, 0
         .axisYMin = emlComputeAxisRange.axisMin
         .axisYMax = emlComputeAxisRange.axisMax
     else
@@ -2319,15 +2352,27 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                             @emlDrawRegressionLine: .gXMin, .gXMax, .gSlope, .gIntercept, .axisYMin, .axisYMax, emlSetColorPalette.line$[.colorIdx]
 
                             # Formula and R² to Info window (only when reporter hasn't fired)
+                            # R² is meaningful only for the OLS/Pearson line; the
+                            # Theil-Sen (Spearman) line has no OLS R². Guard on the
+                            # group-level branch selector annotCorrType$ (set at the
+                            # regression branch above), mirroring the ungrouped
+                            # OLS guard.
                             if scatterAnalysisType < 2
-                                .gR2 = .gPearsonR * .gPearsonR
-                                appendInfoLine: "  " + .groupDispLabel$ + ": y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4) + "  (R" + "² = " + fixed$ (.gR2, 3) + ")"
+                                if annotCorrType$ <> "spearman"
+                                    .gR2 = .gPearsonR * .gPearsonR
+                                    appendInfoLine: "  " + .groupDispLabel$ + ": y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4) + "  (R" + "² = " + fixed$ (.gR2, 3) + ")"
+                                else
+                                    appendInfoLine: "  " + .groupDispLabel$ + ": y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4)
+                                endif
                             endif
 
                             # Formula on graph if requested (independent of annotate)
+                            # Emit R² only for the OLS/Pearson line; the Theil-Sen
+                            # (Spearman) line has no OLS R². Guard on annotCorrType$,
+                            # mirroring the ungrouped OLS guard.
                             if scatterShowFormula = 1
                                 annotBlockN = annotBlockN + 1
-                                if .gPearsonR <> undefined
+                                if annotCorrType$ <> "spearman"
                                     .gR2Annot = .gPearsonR * .gPearsonR
                                     annotBlockLabel$[annotBlockN] = .groupDispLabel$ + ": y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4) + "  (R² = " + fixed$ (.gR2Annot, 3) + ")"
                                     annotBlockDraw$[annotBlockN] = .groupDispLabel$ + ": %y = " + fixed$ (.gSlope, 4) + "%x + " + fixed$ (.gIntercept, 4) + "  (%R² = " + fixed$ (.gR2Annot, 3) + ")"
@@ -3427,4 +3472,83 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
     Colour: "Black"
     Line width: 1.0
     Font size: emlSetAdaptiveTheme.bodySize
+endproc
+
+
+# ============================================================================
+# @emlDrawLMMForest — fixed-effect coefficient forest plot for a fitted LMM.
+# ============================================================================
+# Reads emlLMM.* (beta#, nFixedCols, formula$), emlWaldCI.* (lower#, upper#)
+# and the coefficient labels emlModelMatrix.colName'.j'$. Call after @emlLMM
+# and @emlWaldCI. Draws each fixed effect as a point estimate with its 95%
+# confidence interval and a zero reference line (a "forest"/coefficient plot —
+# the standard LMM graphic). Rule 28: title, garnish suppressed + manual marks,
+# viewport asserted, sanitized labels, buffered axis always including zero.
+# ============================================================================
+procedure emlDrawLMMForest
+    .p = emlLMM.nFixedCols
+
+    # X range from CI bounds, always spanning 0, buffered 12%.
+    .xmin = 0
+    .xmax = 0
+    for .j from 1 to .p
+        if emlWaldCI.lower# [.j] < .xmin
+            .xmin = emlWaldCI.lower# [.j]
+        endif
+        if emlWaldCI.upper# [.j] > .xmax
+            .xmax = emlWaldCI.upper# [.j]
+        endif
+    endfor
+    .rng = .xmax - .xmin
+    if .rng <= 0
+        .rng = 1
+    endif
+    .buf = .rng * 0.12
+    .xlo = .xmin - .buf
+    .xhi = .xmax + .buf
+
+    .figW = 6.5
+    .figH = 1.6 + 0.5 * .p
+
+    Erase all
+    Select outer viewport: 0, .figW, 0, .figH
+    Axes: .xlo, .xhi, 0.5, .p + 0.7
+    Black
+    Line width: 1
+
+    # Zero reference line
+    Grey
+    Draw line: 0, 0.5, 0, .p + 0.5
+    Black
+
+    # One row per coefficient (first coefficient at the top)
+    for .j from 1 to .p
+        .y = .p - .j + 1
+        .lo = emlWaldCI.lower# [.j]
+        .hi = emlWaldCI.upper# [.j]
+        .est = emlLMM.beta# [.j]
+        Line width: 2
+        Draw line: .lo, .y, .hi, .y
+        Draw line: .lo, .y - 0.13, .lo, .y + 0.13
+        Draw line: .hi, .y - 0.13, .hi, .y + 0.13
+        Line width: 1
+        Paint circle (mm): "Black", .est, .y, 2.6
+        .raw$ = emlModelMatrix.colName'.j'$
+        .lab$ = replace$ (.raw$, "_", " ", 0)
+        .lab$ = replace$ (.lab$, "%", "\% ", 0)
+        .lab$ = replace$ (.lab$, "#", "\# ", 0)
+        .lab$ = replace$ (.lab$, "^", "\^ ", 0)
+        Text: .xlo, "left", .y + 0.30, "half", .lab$
+    endfor
+    Line width: 1
+
+    Draw inner box
+    Marks bottom: 5, "yes", "yes", "no"
+    .xlab$ = "Coefficient estimate (95\%  CI)"
+    Text bottom: "yes", .xlab$
+    .titl$ = "LMM fixed effects: " + replace$ (emlLMM.formula$, "_", " ", 0)
+    Text top: "yes", .titl$
+
+    # Rule 28I: assert the full outer viewport before any downstream save.
+    Select outer viewport: 0, .figW, 0, .figH
 endproc

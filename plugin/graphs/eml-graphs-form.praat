@@ -5,7 +5,12 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # License: Creative Commons Share-Alike
-# Version: 1.8
+# Version: 1.9
+# v1.9: Bar-chart negative-mean support in the annotated (bracket) path —
+#       auto-range now floors on emlBarData_visibleMin so all-/mixed-negative
+#       means are not clipped at 0 (positive data unchanged via the axis
+#       procedure's non-negative guard). Companion to eml-graph-procedures
+#       v3.21 / eml-draw-procedures v1.18.
 # v1.8: Post-draw dialog "Back" renamed to "Done".
 # Date: 11 May 2026
 #
@@ -5264,9 +5269,18 @@ repeat
             dataYMax_forAnnotation = visibleDataMax
         endif
 
-        # When auto-range (both 0), compute axis range from visible max
+        # When auto-range (both 0), compute axis range from the visible extent.
+        # For bar charts use the tracked data minimum so all-/mixed-negative
+        # means get a negative floor instead of being clipped at 0 in the
+        # annotated (bracket) path; emlComputeAxisRange's own non-negative guard
+        # keeps the floor at 0 for non-negative data, so positive bars are
+        # unchanged.
         if valueMin = 0 and valueMax = 0
-            if visibleDataMax <> undefined and visibleDataMax > 0
+            if graph_type = 6
+                @emlComputeAxisRange: emlBarData_visibleMin, emlBarData_visibleMax, 10, 0
+                valueMin = emlComputeAxisRange.axisMin
+                valueMax = emlComputeAxisRange.axisMax
+            elsif visibleDataMax <> undefined and visibleDataMax > 0
                 @emlComputeAxisRange: 0, visibleDataMax, 10, 0
                 valueMax = emlComputeAxisRange.axisMax
             endif
