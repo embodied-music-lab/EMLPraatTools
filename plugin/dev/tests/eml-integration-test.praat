@@ -1,8 +1,19 @@
 # ============================================================================
 # Praat + 1 : Integration Test Suite
 # ============================================================================
-# Version: 1.0
-# Date: 20 February 2026
+# Version: 1.2
+# Date: 3 August 2026
+# v1.2: Item 3 — the four library includes were bare filenames, which Praat
+#        resolves relative to THIS script's folder (dev/tests/), where none of
+#        them exist; the suite aborted at include time with exit 255 and had
+#        been doing so undetected. Repointed at ../../stats/. Also brought
+#        under the TEST RESULT REPORTING CONTRACT: the hand-rolled summary
+#        returned normally, so the process exited 0 with no sentinel — green
+#        by construction. Local counters are now bridged into
+#        emlTestInit.* and @emlTestSummary emits the sentinel. No assertion
+#        call site changed.
+# v1.1: Item 2 — test 2.4 called the removed @emlExtractMultipleGroups;
+#        rewritten against the current extraction API.
 #
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
 # Development: Claude (Anthropic)
@@ -12,17 +23,21 @@
 # Creates test data, extracts, computes stats, formats output.
 # Reports PASS/FAIL for each test.
 #
-# SETUP: All four library files must be in the same directory as this script.
+# SETUP: run from anywhere. Praat resolves an include relative to the folder
+# holding THIS script, so the library paths below are relative to dev/tests/.
 # ============================================================================
 
-include eml-core-utilities.praat
-include eml-core-descriptive.praat
-include eml-extract.praat
-include eml-output.praat
+include ../../stats/eml-core-utilities.praat
+include ../../stats/eml-core-descriptive.praat
+include ../../stats/eml-extract.praat
+include ../../stats/eml-output.praat
+include eml-test-helpers.praat
 
 # ============================================================================
 # Test counters
 # ============================================================================
+@emlTestInit
+
 testsPassed = 0
 testsFailed = 0
 testsRun = 0
@@ -172,13 +187,21 @@ emptyVector# = zero#(0)
 .t2_3 = (.t2_3_n and .t2_3_mean and .t2_3_sd)
 @reportTest: "C2 fix: empty vector -> undefined stats", .t2_3
 
-# --- Test 2.4: Extract multiple groups ---
-@emlExtractMultipleGroups: testTable, "Measure", "Group"
-.t2_4_nGroups = (emlExtractMultipleGroups.nGroups = 2)
-.t2_4_size1 = (emlExtractMultipleGroups.groupSize1 = 5)
-.t2_4_size2 = (emlExtractMultipleGroups.groupSize2 = 3)
-.t2_4 = (.t2_4_nGroups and .t2_4_size1 and .t2_4_size2)
-@reportTest: "Multiple groups auto-discovery (2 groups)", .t2_4
+# --- Test 2.4: Group auto-discovery + per-group extraction ---
+# Current API: @emlCountGroups discovers labels, @eml_getGroupData
+# pulls one group's data on demand (@emlExtractMultipleGroups was
+# deleted in eml-extract v1.1).
+@emlCountGroups: testTable, "Group"
+.t2_4_nGroups = (emlCountGroups.nGroups = 2)
+.t2_4_err = (emlCountGroups.error$ = "")
+.t2_4_label1$ = emlCountGroups.groupLabel$[1]
+.t2_4_label2$ = emlCountGroups.groupLabel$[2]
+@eml_getGroupData: testTable, "Measure", "Group", .t2_4_label1$
+.t2_4_size1 = (eml_getGroupData.n = 5)
+@eml_getGroupData: testTable, "Measure", "Group", .t2_4_label2$
+.t2_4_size2 = (eml_getGroupData.n = 3)
+.t2_4 = (.t2_4_nGroups and .t2_4_err and .t2_4_size1 and .t2_4_size2)
+@reportTest: "Group auto-discovery + per-group extract (2 groups)", .t2_4
 
 # --- Test 2.5: Extract string column ---
 @emlExtractColumnAsStrings: testTable, "Group"
@@ -224,10 +247,13 @@ Set numeric value: 8, "Measure2", 17
 @reportTest: "Table validation (missing col detected)", .t2_7b
 
 # --- Test 2.8: Count groups ---
+# @emlCountGroups reports .nGroups and .groupLabel$[] only; per-group
+# sizes come from @eml_getGroupData.
 @emlCountGroups: testTable, "Group"
 .t2_8_n = (emlCountGroups.nGroups = 2)
-.t2_8_s1 = (emlCountGroups.groupSize1 = 5)
-.t2_8 = (.t2_8_n and .t2_8_s1)
+.t2_8_lab1 = (emlCountGroups.groupLabel$[1] = "A")
+.t2_8_lab2 = (emlCountGroups.groupLabel$[2] = "B")
+.t2_8 = (.t2_8_n and .t2_8_lab1 and .t2_8_lab2)
 @reportTest: "Count groups", .t2_8
 
 
@@ -476,3 +502,15 @@ endif
 # Clean up test objects
 removeObject: testTable, testSound, testPitch, testIntensity,
     ... testFormant, testHarmonicity
+
+# Bridge the local counters into the shared harness so @emlTestSummary can
+# emit the machine-readable sentinel (TEST RESULT REPORTING CONTRACT v1.1).
+# This suite predates the shared helpers and keeps its own reportTest; only
+# the summary is delegated. @emlTestSummary exitScript:s when failed > 0, so
+# a failing run now exits nonzero instead of 0 — hence this runs AFTER the
+# object cleanup above, not before it.
+emlTestInit.passed = testsPassed
+emlTestInit.failed = testsFailed
+emlTestInit.skipped = 0
+emlTestInit.count = testsRun
+@emlTestSummary

@@ -2,10 +2,28 @@
 # EML Stats : Regression Test Suite
 # ============================================================================
 # Module: test-regression.praat
-# Version: 1.0
-# Date: 10 May 2026
+# Version: 1.1
+# Date: 2 August 2026
 #
 # Tests @emlLinearRegression against scipy.stats.linregress reference values.
+#
+# Reference values are emitted by the committed companion artifact
+# regression_scipy_refs.py (same directory). Regenerate with:
+#     python3 regression_scipy_refs.py
+# and paste the emitted literals below. Do not hand-edit them.
+#
+# CHANGELOG
+# 1.1 (2 Aug 2026) — Corrected argument order in all 33 EqualNum/EqualStr
+#     assertions. The helper signature is
+#         emlTestAssertEqualNum: .name$, .expected, .actual, .tolerance
+#     but every call passed the plugin's computed value in the .expected
+#     slot and the scipy literal in the .actual slot. The comparison is
+#     symmetric (absolute difference), so pass/fail outcomes were
+#     unaffected, but every FAIL message printed the two values reversed —
+#     a debugging trap for whoever reads a failure report. Added the
+#     committed scipy companion so the reference literals have an external
+#     source rather than living only in comments.
+# 1.0 (10 May 2026) — Initial.
 # ============================================================================
 
 include ../../../stats/eml-core-utilities.praat
@@ -29,18 +47,18 @@ include ../eml-test-helpers.praat
 
 @emlLinearRegression: .x1#, .y1#
 
-@emlTestAssertEqualNum: "slope", emlLinearRegression.slope, -0.07333333, 0.00001
-@emlTestAssertEqualNum: "intercept", emlLinearRegression.intercept, 1.76666667, 0.00001
-@emlTestAssertEqualNum: "r", emlLinearRegression.r, -0.97055007, 0.00001
-@emlTestAssertEqualNum: "R-squared", emlLinearRegression.rSquared, 0.94196745, 0.00001
-@emlTestAssertEqualNum: "F-stat", emlLinearRegression.fStat, 129.853659, 0.01
-@emlTestAssertEqualNum: "p(F)", emlLinearRegression.pF, 0.0000031760, 0.0000001
-@emlTestAssertEqualNum: "SE residual", emlLinearRegression.seResidual, 0.11690452, 0.00001
-@emlTestAssertEqualNum: "SE slope", emlLinearRegression.seSlope, 0.00643538, 0.00001
-@emlTestAssertEqualNum: "SE intercept", emlLinearRegression.seIntercept, 0.07986099, 0.00001
-@emlTestAssertEqualNum: "t slope", emlLinearRegression.tSlope, -11.3952, 0.001
-@emlTestAssertEqualNum: "p slope", emlLinearRegression.pSlope, 0.0000031760, 0.0000001
-@emlTestAssertEqualNum: "n", emlLinearRegression.n, 10, 0
+@emlTestAssertEqualNum: "slope", -0.07333333, emlLinearRegression.slope, 0.00001
+@emlTestAssertEqualNum: "intercept", 1.76666667, emlLinearRegression.intercept, 0.00001
+@emlTestAssertEqualNum: "r", -0.97055007, emlLinearRegression.r, 0.00001
+@emlTestAssertEqualNum: "R-squared", 0.94196745, emlLinearRegression.rSquared, 0.00001
+@emlTestAssertEqualNum: "F-stat", 129.853659, emlLinearRegression.fStat, 0.01
+@emlTestAssertEqualNum: "p(F)", 0.0000031760, emlLinearRegression.pF, 0.0000001
+@emlTestAssertEqualNum: "SE residual", 0.11690452, emlLinearRegression.seResidual, 0.00001
+@emlTestAssertEqualNum: "SE slope", 0.00643538, emlLinearRegression.seSlope, 0.00001
+@emlTestAssertEqualNum: "SE intercept", 0.07986099, emlLinearRegression.seIntercept, 0.00001
+@emlTestAssertEqualNum: "t slope", -11.39533495, emlLinearRegression.tSlope, 0.00001
+@emlTestAssertEqualNum: "p slope", 0.0000031760, emlLinearRegression.pSlope, 0.0000001
+@emlTestAssertEqualNum: "n", 10, emlLinearRegression.n, 0
 
 # ============================================================================
 # TEST 2: Weak positive relationship (n=10)
@@ -56,15 +74,15 @@ include ../eml-test-helpers.praat
 
 @emlLinearRegression: .x2#, .y2#
 
-@emlTestAssertEqualNum: "slope", emlLinearRegression.slope, 0.10848485, 0.00001
-@emlTestAssertEqualNum: "intercept", emlLinearRegression.intercept, 1.95333333, 0.00001
-@emlTestAssertEqualNum: "r", emlLinearRegression.r, 0.77298200, 0.00001
-@emlTestAssertEqualNum: "R-squared", emlLinearRegression.rSquared, 0.59750117, 0.00001
-@emlTestAssertEqualNum: "F-stat", emlLinearRegression.fStat, 11.875834, 0.001
-@emlTestAssertEqualNum: "p(F)", emlLinearRegression.pF, 0.0087444455, 0.0001
-@emlTestAssertEqualNum: "SE residual", emlLinearRegression.seResidual, 0.28593282, 0.00001
-@emlTestAssertEqualNum: "SE slope", emlLinearRegression.seSlope, 0.03148017, 0.00001
-@emlTestAssertEqualNum: "p slope", emlLinearRegression.pSlope, 0.0087444455, 0.0001
+@emlTestAssertEqualNum: "slope", 0.10848485, emlLinearRegression.slope, 0.00001
+@emlTestAssertEqualNum: "intercept", 1.95333333, emlLinearRegression.intercept, 0.00001
+@emlTestAssertEqualNum: "r", 0.77298200, emlLinearRegression.r, 0.00001
+@emlTestAssertEqualNum: "R-squared", 0.59750117, emlLinearRegression.rSquared, 0.00001
+@emlTestAssertEqualNum: "F-stat", 11.875834, emlLinearRegression.fStat, 0.001
+@emlTestAssertEqualNum: "p(F)", 0.0087444455, emlLinearRegression.pF, 0.0001
+@emlTestAssertEqualNum: "SE residual", 0.28593282, emlLinearRegression.seResidual, 0.00001
+@emlTestAssertEqualNum: "SE slope", 0.03148017, emlLinearRegression.seSlope, 0.00001
+@emlTestAssertEqualNum: "p slope", 0.0087444455, emlLinearRegression.pSlope, 0.0001
 
 # ============================================================================
 # TEST 3: Non-significant (n=8)
@@ -80,14 +98,14 @@ include ../eml-test-helpers.praat
 
 @emlLinearRegression: .x3#, .y3#
 
-@emlTestAssertEqualNum: "slope", emlLinearRegression.slope, -0.00476190, 0.00001
-@emlTestAssertEqualNum: "intercept", emlLinearRegression.intercept, 5.02142857, 0.00001
-@emlTestAssertEqualNum: "r", emlLinearRegression.r, -0.05832118, 0.00001
-@emlTestAssertEqualNum: "R-squared", emlLinearRegression.rSquared, 0.00340136, 0.00001
-@emlTestAssertEqualNum: "F-stat", emlLinearRegression.fStat, 0.020478, 0.001
-@emlTestAssertEqualNum: "p(F)", emlLinearRegression.pF, 0.8908954905, 0.001
-@emlTestAssertEqualNum: "SE residual", emlLinearRegression.seResidual, 0.21565699, 0.00001
-@emlTestAssertEqualNum: "p slope", emlLinearRegression.pSlope, 0.8908954905, 0.001
+@emlTestAssertEqualNum: "slope", -0.00476190, emlLinearRegression.slope, 0.00001
+@emlTestAssertEqualNum: "intercept", 5.02142857, emlLinearRegression.intercept, 0.00001
+@emlTestAssertEqualNum: "r", -0.05832118, emlLinearRegression.r, 0.00001
+@emlTestAssertEqualNum: "R-squared", 0.00340136, emlLinearRegression.rSquared, 0.00001
+@emlTestAssertEqualNum: "F-stat", 0.020478, emlLinearRegression.fStat, 0.001
+@emlTestAssertEqualNum: "p(F)", 0.8908954905, emlLinearRegression.pF, 0.001
+@emlTestAssertEqualNum: "SE residual", 0.21565699, emlLinearRegression.seResidual, 0.00001
+@emlTestAssertEqualNum: "p slope", 0.8908954905, emlLinearRegression.pSlope, 0.001
 
 # ============================================================================
 # TEST 4: Edge cases
@@ -99,10 +117,10 @@ include ../eml-test-helpers.praat
 .x4# = { 1, 2, 3 }
 .y4# = { 10, 20, 30 }
 @emlLinearRegression: .x4#, .y4#
-@emlTestAssertEqualNum: "n=3 slope", emlLinearRegression.slope, 10, 0.001
-@emlTestAssertEqualNum: "n=3 intercept", emlLinearRegression.intercept, 0, 0.001
-@emlTestAssertEqualNum: "n=3 R-squared", emlLinearRegression.rSquared, 1.0, 0.001
-@emlTestAssertEqualStr: "n=3 no error", emlLinearRegression.error$, ""
+@emlTestAssertEqualNum: "n=3 slope", 10, emlLinearRegression.slope, 0.001
+@emlTestAssertEqualNum: "n=3 intercept", 0, emlLinearRegression.intercept, 0.001
+@emlTestAssertEqualNum: "n=3 R-squared", 1.0, emlLinearRegression.rSquared, 0.001
+@emlTestAssertEqualStr: "n=3 no error", "", emlLinearRegression.error$
 
 # n=2 (too few)
 .x5# = { 1, 2 }

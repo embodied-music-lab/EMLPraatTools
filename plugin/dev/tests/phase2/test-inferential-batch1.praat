@@ -2,24 +2,62 @@
 # EML Stats : Test Suite — Inferential Statistics (Batch 1)
 # ============================================================================
 # Tests: @emlTTest, @emlTTestPaired, @emlCohenD
-# Date: 26 February 2026
+# Version: 1.1
+# Date: 2 August 2026 (original 26 February 2026)
 #
 # Uses shared test helpers (eml-test-helpers.praat).
-# Validates against hand-computed and R-verified reference values.
+#
+# Every numeric literal below is externally verified by the committed
+# companion artifact verify-inferential-batch1.R (same directory), which
+# asserts each literal against R's own t.test / var / sd and exits non-zero
+# on disagreement. Regenerate/re-check with:
+#     Rscript verify-inferential-batch1.R
+# Do not hand-edit the literals.
 #
 # R verification commands (for independent replication):
 #
 #   # Welch t-test
 #   t.test(c(10,12,14,16,18), c(8,9,10,11,12))
+#   # → t = 2.5298221281, df = 5.8823529412, p = 0.0454646190
 #   # Student t-test
 #   t.test(c(10,12,14,16,18), c(8,9,10,11,12), var.equal=TRUE)
+#   # → t = 2.5298221281, df = 8, p = 0.0352652035
 #   # Paired t-test
 #   t.test(c(10,12,14,16,18), c(8,9,10,11,12), paired=TRUE)
-#   # → t = 5.6569, df = 4, p = 0.004862
+#   # → t = 5.6568542495, df = 4, p = 0.0048126783
 #   # Cohen's d (effsize package)
 #   library(effsize)
 #   cohen.d(c(10,12,14,16,18), c(8,9,10,11,12), pooled=TRUE, hedges.correction=TRUE)
 #
+# CHANGELOG
+# 1.1 (2 Aug 2026) — Corrected six mis-transcribed p-value literals and
+#     replaced looseTolerance with tightTolerance throughout.
+#
+#     The six literals were wrong by 6.7e-5 to 1.5e-3:
+#         Welch p two-tailed    0.047    → 0.0454646190
+#         Welch p one-tailed    0.0236   → 0.0227323095
+#         Student p two-tailed  0.0355   → 0.0352652035
+#         Student p one-tailed  0.0177   → 0.0176326017
+#         Paired p two-tailed   0.00486  → 0.0048126783
+#         Paired p one-tailed   0.00243  → 0.0024063392
+#     Every one of them PASSED under the old looseTolerance = 0.01, which
+#     was 6x to 150x the transcription error. The suite was green and the
+#     literals were wrong: the assertion could not have caught a real
+#     regression of that size either. The library itself was correct —
+#     @emlTTest and @emlTTestPaired agree with R to 12 decimal places on
+#     all four data sets. The defect was in the test, not the code.
+#
+#     The likely origin is the inline R crib at Test 1.1, which read
+#     "df = 5.6, p = 0.04712". Both figures were wrong (true 5.8823529412
+#     and 0.0454646190) and 0.047 was evidently rounded from the wrong p.
+#     All three cribs (header, Test 1.1, Test 2.1, Test 3.1) are corrected.
+#
+#     All literals are now written to 10 decimal places and checked at
+#     tightTolerance = 1e-9 — three orders of magnitude tighter than the
+#     rounding of the literal itself, so a wrong literal can no longer
+#     hide inside the tolerance. looseTolerance is removed (dead after
+#     this change; Rule 35).
+# 1.0 (26 Feb 2026) — Initial.
 # ============================================================================
 
 include ../../../stats/eml-inferential.praat
@@ -36,7 +74,7 @@ include ../eml-test-helpers.praat
 # Mean diff = 4
 
 tolerance = 0.001
-looseTolerance = 0.01
+tightTolerance = 0.000000001
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -47,14 +85,14 @@ looseTolerance = 0.01
 
 # --- Test 1.1: Basic Welch two-tailed ---
 # R: t.test(c(10,12,14,16,18), c(8,9,10,11,12))
-#    t = 2.5298, df = 5.6, p = 0.04712
+#    t = 2.5298221281, df = 5.8823529412, p = 0.0454646190
 .g1# = {10, 12, 14, 16, 18}
 .g2# = {8, 9, 10, 11, 12}
 @emlTTest: .g1#, .g2#, 2, 0
 @emlTestAssertEqualStr: "Welch method label", "Welch", emlTTest.method$
-@emlTestAssertEqualNum: "Welch t statistic", 2.530, emlTTest.t, looseTolerance
-@emlTestAssertEqualNum: "Welch df (fractional)", 5.882, emlTTest.df, looseTolerance
-@emlTestAssertEqualNum: "Welch p two-tailed", 0.047, emlTTest.p, looseTolerance
+@emlTestAssertEqualNum: "Welch t statistic", 2.5298221281, emlTTest.t, tightTolerance
+@emlTestAssertEqualNum: "Welch df (fractional)", 5.8823529412, emlTTest.df, tightTolerance
+@emlTestAssertEqualNum: "Welch p two-tailed", 0.0454646190, emlTTest.p, tightTolerance
 @emlTestAssertEqualNum: "Welch mean1", 14, emlTTest.mean1, tolerance
 @emlTestAssertEqualNum: "Welch mean2", 10, emlTTest.mean2, tolerance
 @emlTestAssertEqualNum: "Welch meanDiff", 4, emlTTest.meanDiff, tolerance
@@ -64,7 +102,7 @@ looseTolerance = 0.01
 # --- Test 1.2: Welch one-tailed ---
 # One-tailed p should be half of two-tailed
 @emlTTest: .g1#, .g2#, 1, 0
-@emlTestAssertEqualNum: "Welch p one-tailed", 0.0236, emlTTest.p, looseTolerance
+@emlTestAssertEqualNum: "Welch p one-tailed", 0.0227323095, emlTTest.p, tightTolerance
 
 # --- Test 1.3: Equal means (both constant — zero variance) ---
 .eq1# = {10, 10, 10, 10, 10}
@@ -93,7 +131,7 @@ looseTolerance = 0.01
 # --- Test 1.7: Negative t when mean1 < mean2 ---
 @emlTTest: .g2#, .g1#, 2, 0
 @emlTestAssertTrue: "Reversed groups negative t", emlTTest.t < 0
-@emlTestAssertEqualNum: "Reversed groups same |t|", 2.530, abs (emlTTest.t), looseTolerance
+@emlTestAssertEqualNum: "Reversed groups same |t|", 2.5298221281, abs (emlTTest.t), tightTolerance
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -104,18 +142,18 @@ looseTolerance = 0.01
 
 # --- Test 2.1: Basic Student two-tailed ---
 # R: t.test(c(10,12,14,16,18), c(8,9,10,11,12), var.equal=TRUE)
-#    t = 2.5298, df = 8, p = 0.03545
+#    t = 2.5298221281, df = 8, p = 0.0352652035
 .g1# = {10, 12, 14, 16, 18}
 .g2# = {8, 9, 10, 11, 12}
 @emlTTest: .g1#, .g2#, 2, 1
 @emlTestAssertEqualStr: "Student method label", "Student", emlTTest.method$
-@emlTestAssertEqualNum: "Student t statistic", 2.530, emlTTest.t, looseTolerance
+@emlTestAssertEqualNum: "Student t statistic", 2.5298221281, emlTTest.t, tightTolerance
 @emlTestAssertEqualNum: "Student df (integer)", 8, emlTTest.df, tolerance
-@emlTestAssertEqualNum: "Student p two-tailed", 0.0355, emlTTest.p, looseTolerance
+@emlTestAssertEqualNum: "Student p two-tailed", 0.0352652035, emlTTest.p, tightTolerance
 
 # --- Test 2.2: Student one-tailed ---
 @emlTTest: .g1#, .g2#, 1, 1
-@emlTestAssertEqualNum: "Student p one-tailed", 0.0177, emlTTest.p, looseTolerance
+@emlTestAssertEqualNum: "Student p one-tailed", 0.0176326017, emlTTest.p, tightTolerance
 
 # --- Test 2.3: Equal variances scenario ---
 # Groups with similar variance — Welch and Student should agree closely
@@ -137,21 +175,21 @@ looseTolerance = 0.01
 
 # --- Test 3.1: Basic paired two-tailed ---
 # R: t.test(c(10,12,14,16,18), c(8,9,10,11,12), paired=TRUE)
-#    t = 5.6569, df = 4, p = 0.004862
+#    t = 5.6568542495, df = 4, p = 0.0048126783
 # Diffs: {2, 3, 4, 5, 6}, mean=4, sd=1.5811, se=0.7071
 .g1# = {10, 12, 14, 16, 18}
 .g2# = {8, 9, 10, 11, 12}
 @emlTTestPaired: .g1#, .g2#, 2
-@emlTestAssertEqualNum: "Paired t statistic", 5.657, emlTTestPaired.t, looseTolerance
+@emlTestAssertEqualNum: "Paired t statistic", 5.6568542495, emlTTestPaired.t, tightTolerance
 @emlTestAssertEqualNum: "Paired df", 4, emlTTestPaired.df, tolerance
-@emlTestAssertEqualNum: "Paired p two-tailed", 0.00486, emlTTestPaired.p, looseTolerance
+@emlTestAssertEqualNum: "Paired p two-tailed", 0.0048126783, emlTTestPaired.p, tightTolerance
 @emlTestAssertEqualNum: "Paired meanDiff", 4, emlTTestPaired.meanDiff, tolerance
-@emlTestAssertEqualNum: "Paired sdDiff", 1.581, emlTTestPaired.sdDiff, looseTolerance
+@emlTestAssertEqualNum: "Paired sdDiff", 1.5811388301, emlTTestPaired.sdDiff, tightTolerance
 @emlTestAssertEqualNum: "Paired n", 5, emlTTestPaired.n, 0
 
 # --- Test 3.2: Paired one-tailed ---
 @emlTTestPaired: .g1#, .g2#, 1
-@emlTestAssertEqualNum: "Paired p one-tailed", 0.00243, emlTTestPaired.p, looseTolerance
+@emlTestAssertEqualNum: "Paired p one-tailed", 0.0024063392, emlTTestPaired.p, tightTolerance
 
 # --- Test 3.3: No difference ---
 .same1# = {10, 20, 30, 40, 50}
@@ -176,7 +214,7 @@ looseTolerance = 0.01
 # --- Test 3.6: Negative t when v1 < v2 ---
 @emlTTestPaired: .g2#, .g1#, 2
 @emlTestAssertTrue: "Reversed paired: negative t", emlTTestPaired.t < 0
-@emlTestAssertEqualNum: "Reversed paired: same |t|", 5.657, abs (emlTTestPaired.t), looseTolerance
+@emlTestAssertEqualNum: "Reversed paired: same |t|", 5.6568542495, abs (emlTTestPaired.t), tightTolerance
 
 # --- Test 3.7: Larger sample ---
 # 10 pairs with known values
@@ -210,8 +248,8 @@ looseTolerance = 0.01
 # --- Test 4.2: Hedges' g correction ---
 # df = 8, J = 1 - 3/(4*8 - 1) = 1 - 3/31 = 0.90323
 # g = 1.6 * 0.90323 = 1.4452
-@emlTestAssertEqualNum: "Hedges g correction factor", 0.9032, emlCohenD.correctionFactor, looseTolerance
-@emlTestAssertEqualNum: "Hedges g", 1.445, emlCohenD.g, looseTolerance
+@emlTestAssertEqualNum: "Hedges g correction factor", 0.9032258065, emlCohenD.correctionFactor, tightTolerance
+@emlTestAssertEqualNum: "Hedges g", 1.4451612903, emlCohenD.g, tightTolerance
 
 # --- Test 4.3: g < d always (for finite samples) ---
 @emlTestAssertTrue: "g < d", emlCohenD.g < emlCohenD.d

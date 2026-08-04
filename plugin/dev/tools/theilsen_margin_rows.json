@@ -1,0 +1,225 @@
+{
+ "rows": [
+  {
+   "name": "TS-1 slope",
+   "expected": "2.5",
+   "field": "slope",
+   "tol": "tsTol",
+   "xv": "ts1X",
+   "yv": "ts1Y"
+  },
+  {
+   "name": "TS-1 intercept (separate)",
+   "expected": "0",
+   "field": "intercept",
+   "tol": "tsTolZero",
+   "xv": "ts1X",
+   "yv": "ts1Y"
+  },
+  {
+   "name": "TS-1 nSlopes",
+   "expected": "3",
+   "field": "nSlopes",
+   "tol": "tsExact",
+   "xv": "ts1X",
+   "yv": "ts1Y"
+  },
+  {
+   "name": "TS-2 slope",
+   "expected": "2.291666666666667",
+   "field": "slope",
+   "tol": "tsTol",
+   "xv": "ts2X",
+   "yv": "ts2Y"
+  },
+  {
+   "name": "TS-2 intercept (separate)",
+   "expected": "-0.72916666666666785",
+   "field": "intercept",
+   "tol": "tsTol",
+   "xv": "ts2X",
+   "yv": "ts2Y"
+  },
+  {
+   "name": "TS-2 nSlopes",
+   "expected": "6",
+   "field": "nSlopes",
+   "tol": "tsExact",
+   "xv": "ts2X",
+   "yv": "ts2Y"
+  },
+  {
+   "name": "TS-3 slope",
+   "expected": "2.0499999999999998",
+   "field": "slope",
+   "tol": "tsTol",
+   "xv": "ts3X",
+   "yv": "ts3Y"
+  },
+  {
+   "name": "TS-3 intercept (separate)",
+   "expected": "-0.099999999999999645",
+   "field": "intercept",
+   "tol": "tsTol",
+   "xv": "ts3X",
+   "yv": "ts3Y"
+  },
+  {
+   "name": "TS-3 nSlopes",
+   "expected": "21",
+   "field": "nSlopes",
+   "tol": "tsExact",
+   "xv": "ts3X",
+   "yv": "ts3Y"
+  },
+  {
+   "name": "TS-4 slope",
+   "expected": "2",
+   "field": "slope",
+   "tol": "tsTol",
+   "xv": "ts4X",
+   "yv": "ts4Y"
+  },
+  {
+   "name": "TS-4 intercept (separate)",
+   "expected": "-0.25",
+   "field": "intercept",
+   "tol": "tsTol",
+   "xv": "ts4X",
+   "yv": "ts4Y"
+  },
+  {
+   "name": "TS-4 nSlopes (3 tied pairs excluded)",
+   "expected": "12",
+   "field": "nSlopes",
+   "tol": "tsExact",
+   "xv": "ts4X",
+   "yv": "ts4Y"
+  },
+  {
+   "name": "TS-5 slope",
+   "expected": "2.0625",
+   "field": "slope",
+   "tol": "tsTol",
+   "xv": "ts5X",
+   "yv": "ts5Y"
+  },
+  {
+   "name": "TS-5 intercept (separate)",
+   "expected": "1.3125",
+   "field": "intercept",
+   "tol": "tsTol",
+   "xv": "ts5X",
+   "yv": "ts5Y"
+  },
+  {
+   "name": "TS-5 nSlopes",
+   "expected": "21",
+   "field": "nSlopes",
+   "tol": "tsExact",
+   "xv": "ts5X",
+   "yv": "ts5Y"
+  },
+  {
+   "name": "TS-6 slope",
+   "expected": "-2",
+   "field": "slope",
+   "tol": "tsTol",
+   "xv": "ts6X",
+   "yv": "ts6Y"
+  },
+  {
+   "name": "TS-6 intercept (separate)",
+   "expected": "11",
+   "field": "intercept",
+   "tol": "tsTol",
+   "xv": "ts6X",
+   "yv": "ts6Y"
+  },
+  {
+   "name": "TS-6 nSlopes",
+   "expected": "10",
+   "field": "nSlopes",
+   "tol": "tsExact",
+   "xv": "ts6X",
+   "yv": "ts6Y"
+  },
+  {
+   "name": "TS-7 slope",
+   "expected": "3",
+   "field": "slope",
+   "tol": "tsTol",
+   "xv": "ts7X",
+   "yv": "ts7Y"
+  },
+  {
+   "name": "TS-7 intercept (separate)",
+   "expected": "1",
+   "field": "intercept",
+   "tol": "tsTol",
+   "xv": "ts7X",
+   "yv": "ts7Y"
+  },
+  {
+   "name": "TS-7 nSlopes",
+   "expected": "1",
+   "field": "nSlopes",
+   "tol": "tsExact",
+   "xv": "ts7X",
+   "yv": "ts7Y"
+  },
+  {
+   "name": "TS-8 slope",
+   "expected": "1.7243589743589745",
+   "field": "slope",
+   "tol": "tsTol",
+   "xv": "ts8X",
+   "yv": "ts8Y"
+  },
+  {
+   "name": "TS-8 intercept (separate)",
+   "expected": "2.760128205128205",
+   "field": "intercept",
+   "tol": "tsTol",
+   "xv": "ts8X",
+   "yv": "ts8Y"
+  },
+  {
+   "name": "TS-8 nSlopes",
+   "expected": "36",
+   "field": "nSlopes",
+   "tol": "tsExact",
+   "xv": "ts8X",
+   "yv": "ts8Y"
+  },
+  {
+   "name": "E-1 nSlopes = 0",
+   "expected": "0",
+   "field": "nSlopes",
+   "tol": "tsExact",
+   "xv": "e1X",
+   "yv": "e1Y"
+  },
+  {
+   "name": "E-2 nSlopes = 0",
+   "expected": "0",
+   "field": "nSlopes",
+   "tol": "tsExact",
+   "xv": "e2X",
+   "yv": "e2Y"
+  },
+  {
+   "name": "E-3 nSlopes = 0",
+   "expected": "0",
+   "field": "nSlopes",
+   "tol": "tsExact",
+   "xv": "e3X",
+   "yv": "e3Y"
+  }
+ ],
+ "tolerances": {
+  "tsTol": "5e-11",
+  "tsTolZero": "1e-12",
+  "tsExact": "0"
+ }
+}

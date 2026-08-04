@@ -4,6 +4,21 @@
 # Verifies that @emlReportLine and @emlReportLineString append a third
 # column when emlShowExplanations = 1 and emlWizardExplain$ is set.
 # Also tests that wizard explanation helpers produce non-empty strings.
+#
+# Revised: 3 August 2026 (v1.2)
+# v1.2 — Brought under the TEST RESULT REPORTING CONTRACT (v1.1, declared in
+# dev/tests/eml-test-helpers.praat). The hand-rolled summary printed
+# "SOME TESTS FAILED" and then returned normally, so the process exited 0
+# whatever the outcome — green by construction for any runner reading exit
+# status. Local counters are now bridged into emlTestInit.* and
+# @emlTestSummary emits the machine-readable sentinel. No assertion call
+# site changed and the human-readable summary is untouched.
+# v1.1 — @emlKurtosis returns EXCESS kurtosis (normal = 0, verified against
+# scipy bias=False), so @emlWizardExplainKurtosis takes an excess value and
+# must not subtract 3 again. The near-normal case below previously passed the
+# RAW value 3.1, which is an excess of 3.1 and correctly reads as
+# heavy-tailed. It now passes 0.1, which exercises the same branch under the
+# excess convention.
 # ============================================================================
 
 include ../../../stats/eml-core-utilities.praat
@@ -12,6 +27,12 @@ include ../../../stats/eml-extract.praat
 include ../../../stats/eml-output.praat
 include ../../../stats/eml-inferential.praat
 include ../../../graphs/eml-annotation-procedures.praat
+
+# Shared harness — used only for @emlTestInit / @emlTestSummary (the
+# reporting contract). This suite keeps its own assertion helper.
+include ../eml-test-helpers.praat
+
+@emlTestInit
 
 totalTests = 0
 passedTests = 0
@@ -139,11 +160,12 @@ emlShowExplanations = 1
 @emlWizardExplainSkewness: -1.5
 @assert: index (emlWizardExplain$, "Substantial left") > 0, "skew=-1.5 substantial left"
 
-@emlWizardExplainKurtosis: 3.1
-@assert: index (emlWizardExplain$, "Near-normal") > 0, "kurt=3.1 near-normal"
+# Input is EXCESS kurtosis (normal = 0), not raw.
+@emlWizardExplainKurtosis: 0.1
+@assert: index (emlWizardExplain$, "Near-normal") > 0, "excess kurt=0.1 near-normal"
 
 @emlWizardExplainKurtosis: 7.0
-@assert: index (emlWizardExplain$, "Heavy-tailed") > 0, "kurt=7.0 heavy-tailed"
+@assert: index (emlWizardExplain$, "Heavy-tailed") > 0, "excess kurt=7.0 heavy-tailed"
 
 # ============================================================================
 # SUMMARY
@@ -162,3 +184,13 @@ if passedTests = totalTests
 else
     appendInfoLine: "*** SOME TESTS FAILED ***"
 endif
+
+# Bridge the local counters into the shared harness so @emlTestSummary can
+# emit the machine-readable sentinel (TEST RESULT REPORTING CONTRACT v1.1).
+# @emlTestSummary exitScript:s when failed > 0, so this must stay last —
+# nothing that needs to run may follow it.
+emlTestInit.passed = passedTests
+emlTestInit.failed = totalTests - passedTests
+emlTestInit.skipped = 0
+emlTestInit.count = totalTests
+@emlTestSummary

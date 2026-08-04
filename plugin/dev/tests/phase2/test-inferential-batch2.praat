@@ -42,7 +42,7 @@ looseTolerance = 0.01
 # --- Test 1.2: One-tailed ---
 # scipy: p(1)=0.062014
 @emlPearsonCorrelation: .xa#, .ya#, 1
-@emlTestAssertEqualNum: "Set A p (1-tail)", 0.0620, emlPearsonCorrelation.p, looseTolerance
+@emlTestAssertEqualRel: "Set A p (1-tail)", 0.0620135313287773, emlPearsonCorrelation.p, 1e-9
 
 # --- Test 1.3: Perfect positive ---
 # scipy: r=1.0, p=0.0
@@ -135,7 +135,7 @@ looseTolerance = 0.01
 # --- Test 2.2: One-tailed ---
 # scipy: p(1)=0.077309
 @emlSpearmanCorrelation: .xa#, .ya#, 1
-@emlTestAssertEqualNum: "Set A p (1-tail)", 0.0773, emlSpearmanCorrelation.p, looseTolerance
+@emlTestAssertEqualRel: "Set A p (1-tail)", 0.07730926156422463, emlSpearmanCorrelation.p, 1e-9
 
 # --- Test 2.3: Perfect monotonic positive ---
 # scipy: rho=1.0, p=0.0

@@ -8,6 +8,15 @@
 # R verification: verify-inferential-batch7.R (dunn.test package)
 #
 # Uses shared test helpers (eml-test-helpers.praat).
+#
+# Revised: 2 August 2026 (v1.1)
+# v1.1 — Audit item 9 (fabricated results on a degenerate input).
+# When every observation is identical the rank-sum variance is zero, so
+# Dunn's z is 0/0. The library used to emit z = 0 and p = 1, which reads as
+# "tested, no difference" when in fact no test was possible. It now
+# propagates undefined for both, and callers must guard. The two assertions
+# below were revised to check for undefined rather than the fabricated
+# values.
 # ============================================================================
 
 include ../../../stats/eml-core-utilities.praat
@@ -361,8 +370,8 @@ removeObject: .tErrId
 ... emlDunnTest.rawP#[1], tolerance
 @emlTestAssertEqualNum: "Dunn-1 raw p(1,3)", 0.08939957,
 ... emlDunnTest.rawP#[2], tolerance
-@emlTestAssertEqualNum: "Dunn-1 raw p(2,3)", 0.00045952,
-... emlDunnTest.rawP#[3], tolerance
+@emlTestAssertEqualRel: "Dunn-1 raw p(2,3)", 0.0004595179363709061,
+... emlDunnTest.rawP#[3], 1e-9
 
 # Adjusted p-values (Bonferroni)
 @emlTestAssertEqualNum: "Dunn-1 adj p(1,2) Bonf", 0.21334877,
@@ -524,10 +533,11 @@ removeObject: .d5Id
 
 @emlTestAssertTrue: "Dunn all-identical no error",
 ... (emlDunnTest.error$ = "")
-@emlTestAssertEqualNum: "Dunn all-identical z = 0", 0,
-... emlDunnTest.zFlat#[1], tolerance
-@emlTestAssertEqualNum: "Dunn all-identical raw p = 1", 1,
-... emlDunnTest.rawP#[1], tolerance
+# Zero rank variance -> 0/0. Undefined is propagated, not fabricated (item 9).
+@emlTestAssertUndefined: "Dunn all-identical z undefined",
+... emlDunnTest.zFlat#[1]
+@emlTestAssertUndefined: "Dunn all-identical raw p undefined",
+... emlDunnTest.rawP#[1]
 
 removeObject: .dIdId
 

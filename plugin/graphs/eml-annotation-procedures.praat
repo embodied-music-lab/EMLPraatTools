@@ -4,8 +4,43 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
-# Version: 3.17
-# Date: 11 May 2026
+# Version: 3.18
+# Date: 2 August 2026
+#
+# v3.18: Audit fixes (annotation/stats-bridge layer).
+#        [1] @emlClearAnnotations now clears annotMatrixLabel$[] over the
+#            previous figure's annotMatrixN range — stale group labels no
+#            longer survive into the next figure.
+#        [2] @emlBridgeGroupComparison no longer aborts when the global
+#            annotCorrectionMethod$ is unset: it defaults to "holm" and
+#            validates the value against what @emlDunnTest accepts.
+#        [3] Stale procedure-output reads eliminated. @emlCountGroups
+#            labels are captured into .gLabel$[] at bridge entry, and the
+#            Dunn / one-way-ANOVA p-matrices and group names are captured
+#            immediately after their calls, before any intervening
+#            procedure can overwrite them. The bracket output paths read
+#            the captured labels instead of annotMatrixLabel$[], which is
+#            only ever written on the matrix path. @emlReportBridgeStats
+#            reads emlBridgeGroupComparison.gLabel$[] for the same reason.
+#        [4] @emlFormatStars now derives its thresholds from annotAlpha
+#            (alpha, alpha/5, alpha/50) instead of hardcoding
+#            0.05/0.01/0.001, exposes .legend$ describing the ladder in
+#            force, and returns "n/a" for an undefined p instead of
+#            silently reporting it as non-significant.
+#        [5] The ANOVA omnibus-not-significant matrix path now sets
+#            annotMatrixSig from the Tukey p-value actually printed in the
+#            cell rather than hardcoding 0.
+#        [6] The Kruskal-Wallis omnibus-not-significant matrix path takes
+#            its marker from @emlFormatStars instead of a literal "n.s.".
+#        [7] @emlReportTwoGroupComparison reports the Mann-Whitney method
+#            @emlMannWhitneyU actually used (read defensively via
+#            variableExists) and states the real routing rule — exact iff
+#            both groups have n < 50 and there are no ties — replacing the
+#            incorrect "(n < 50)" / "(n >= 50)" total-n gloss.
+#        [9] Housekeeping: the matrix legend's annotAlpha read is guarded
+#            the same way as @emlFormatStars; @emlMeasureMatrixLayout's
+#            in-place mutation of annotMatrixLabel$[] is documented in
+#            full; @emlBridgeCorrelation is marked UNUSED (no caller).
 #
 # v3.17: Renamed emlWizardMode → emlShowExplanations throughout.
 # v3.16: Wizard mode third-column explanations. All 8 @emlReport*
@@ -292,6 +327,19 @@ procedure emlClearAnnotations
     annotRegressionP = 0
     annotRegressionLabel$ = ""
     # Comparison matrix
+    # annotMatrixLabel$[] is written 1..annotMatrixN by every matrix writer
+    # (and truncated/sanitized in place by @emlMeasureMatrixLayout), so the
+    # PREVIOUS figure's annotMatrixN bounds the range that can hold stale
+    # labels. Clear that range before resetting the count.
+    .priorMatrixN = 0
+    if variableExists ("annotMatrixN")
+        .priorMatrixN = annotMatrixN
+    endif
+    if .priorMatrixN <> undefined
+        for .i from 1 to .priorMatrixN
+            annotMatrixLabel$[.i] = ""
+        endfor
+    endif
     annotMatrixN = 0
     annotMatrixOmnibus$ = ""
     annotMatrixEffectLabel$ = ""
@@ -303,18 +351,73 @@ endproc
 # ----------------------------------------------------------------------------
 # @emlFormatStars
 # Convert p-value to star notation.
-# Arguments: .p (p-value)
-# Output: .result$ (star string)
+#
+# Thresholds are driven by the global annotAlpha rather than hardcoded, so
+# the star display always matches the alpha the user selected. The
+# conventional three-tier ladder is scaled from alpha as
+#   *   p < alpha
+#   **  p < alpha / 5
+#   *** p < alpha / 50
+# which reproduces the familiar .05 / .01 / .001 ladder exactly at the
+# default alpha = 0.05. If annotAlpha is unset, undefined, or non-positive,
+# 0.05 is used.
+#
+# Arguments: .p (p-value; may be undefined)
+# Output:
+#   .result$  — "***", "**", "*", "n.s.", or "n/a" when .p is undefined
+#   .legend$  — human-readable statement of the thresholds actually used,
+#               e.g. "* p < .05  ** p < .01  *** p < .001"
+#   .alpha    — the alpha that was applied
+#   .t1/.t2/.t3 — the three thresholds (largest to smallest)
 # ----------------------------------------------------------------------------
 procedure emlFormatStars: .p
-    if .p < 0.001
-        .result$ = "***"
-    elsif .p < 0.01
-        .result$ = "**"
-    elsif .p < 0.05
-        .result$ = "*"
+    .alpha = 0.05
+    if variableExists ("annotAlpha")
+        if annotAlpha <> undefined
+            if annotAlpha > 0
+                .alpha = annotAlpha
+            endif
+        endif
+    endif
+    .t1 = .alpha
+    .t2 = .alpha / 5
+    .t3 = .alpha / 50
+
+    # Build the legend describing the ladder actually in force
+    .thr# = { .t1, .t2, .t3 }
+    .legend$ = ""
+    .starRun$ = ""
+    for .k from 1 to 3
+        .tv = .thr#[.k]
+        if .tv < 0.001
+            .tt$ = fixed$ (.tv, 4)
+        elsif .tv < 0.01
+            .tt$ = fixed$ (.tv, 3)
+        else
+            .tt$ = fixed$ (.tv, 2)
+        endif
+        .tt$ = replace$ (.tt$, "0.", ".", 1)
+        .starRun$ = .starRun$ + "*"
+        if .k > 1
+            .legend$ = .legend$ + "  "
+        endif
+        .legend$ = .legend$ + .starRun$ + " p < " + .tt$
+    endfor
+
+    if .p <> undefined
+        if .p < .t3
+            .result$ = "***"
+        elsif .p < .t2
+            .result$ = "**"
+        elsif .p < .t1
+            .result$ = "*"
+        else
+            .result$ = "n.s."
+        endif
     else
-        .result$ = "n.s."
+        # Undefined p is NOT the same as non-significant — say so explicitly
+        # rather than falling through to "n.s.".
+        .result$ = "n/a"
     endif
 endproc
 
@@ -944,7 +1047,24 @@ endproc
 #   emlMatrixLayout_yMax           — total content height
 #   emlMatrixLayout_hasEffect      — 1 = effect sizes present
 #   emlMatrixLayout_legendMinWidthInches — minimum legend width from content
-#   annotMatrixLabel$[]            — truncated in place
+#   annotMatrixLabel$[]            — MUTATED IN PLACE (see below)
+#
+# CALLER-DATA MUTATION (documented, deliberate): this procedure overwrites
+# annotMatrixLabel$[1..annotMatrixN] with a display-ready form — first
+# sanitized via @emlSanitizeLabel, then truncated with an ellipsis if the row
+# label column is too narrow. The bridge's raw group labels are NOT preserved
+# anywhere, so:
+#   * any consumer that needs the raw label (e.g. a data lookup keyed on the
+#     group name) must read it BEFORE this procedure runs, or re-read it from
+#     the bridge (@emlBridgeGroupComparison.gLabel$[]);
+#   * the procedure is not idempotent — calling it twice at a narrower width
+#     truncates an already-truncated (and already-sanitized) string;
+#   * @emlClearAnnotations therefore clears annotMatrixLabel$[] over the
+#     previous figure's annotMatrixN range, so mutated labels cannot leak
+#     into the next figure.
+# Left destructive rather than copied to a display-only array because the
+# renderer (@emlDrawMatrixPanel) reads annotMatrixLabel$[] directly and lives
+# in the declared no-touch set for this pass.
 # ============================================================================
 procedure emlMeasureMatrixLayout: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSize
     .nG = annotMatrixN
@@ -1218,11 +1338,23 @@ procedure emlMeasureMatrixLayout: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSiz
         .textGap = .fontInch * 1.0
         .itemGap = .fontInch * 2.5
         .swatchW = .fontInch * 2.0
-        # Build dynamic p-legend label from annotAlpha
-        if annotAlpha < 0.01
-            .pLegend$ = "p < " + replace$ (fixed$ (annotAlpha, 3), "0.", ".", 1)
+        # Build dynamic p-legend label from annotAlpha.
+        # Guarded the same way as @emlFormatStars: an unset annotAlpha would
+        # raise "Unknown variable" here, and an undefined one would render the
+        # swatch as "p < --undefined--" (undefined < 0.01 is FALSE, so the
+        # else branch runs). Fall back to the documented default of 0.05.
+        .legendAlpha = 0.05
+        if variableExists ("annotAlpha")
+            if annotAlpha <> undefined
+                if annotAlpha > 0
+                    .legendAlpha = annotAlpha
+                endif
+            endif
+        endif
+        if .legendAlpha < 0.01
+            .pLegend$ = "p < " + replace$ (fixed$ (.legendAlpha, 3), "0.", ".", 1)
         else
-            .pLegend$ = "p < " + replace$ (fixed$ (annotAlpha, 2), "0.", ".", 1)
+            .pLegend$ = "p < " + replace$ (fixed$ (.legendAlpha, 2), "0.", ".", 1)
         endif
         emlMatrixLayout_pLegend$ = .pLegend$
         .tw1 = Text width (world coordinates): .pLegend$
@@ -1651,6 +1783,33 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
 
     .nGroups = emlCountGroups.nGroups
 
+    # Capture the group labels into procedure-locals IMMEDIATELY. Praat
+    # procedure outputs survive only until the same procedure runs again, and
+    # @emlCountGroups is re-invoked internally by @emlDunnTest,
+    # @emlOneWayAnova, @emlKruskalWallis and @emlTukeyHSD — so
+    # emlCountGroups.groupLabel$[] must not be read after any of those calls.
+    for .gi from 1 to .nGroups
+        .gLabel$[.gi] = emlCountGroups.groupLabel$[.gi]
+    endfor
+
+    # Resolve the p-value correction method for Dunn's post-hoc test.
+    # annotCorrectionMethod$ is normally set by the graphs form, but this
+    # bridge is also called directly by scripts that never touch that form.
+    # Default to "holm" (the R default for p.adjust) and reject anything
+    # @emlDunnTest would not accept, rather than aborting on an unset global.
+    .correction$ = "holm"
+    if variableExists ("annotCorrectionMethod$")
+        if annotCorrectionMethod$ = "bonferroni" or annotCorrectionMethod$ = "holm" or annotCorrectionMethod$ = "bh"
+            .correction$ = annotCorrectionMethod$
+        else
+            if annotCorrectionMethod$ <> ""
+                .warnHead$ = "NOTE: unrecognised annotCorrectionMethod$ '"
+                .warnTail$ = "' — using holm."
+                appendInfoLine: .warnHead$ + annotCorrectionMethod$ + .warnTail$
+            endif
+        endif
+    endif
+
     if .error$ = "" and .nGroups < 2
         .error$ = "Need at least 2 groups for comparison"
     endif
@@ -1839,10 +1998,16 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
 
                 # Pairwise post-hoc
                 if .pOmnibus < .alpha
-                    @emlDunnTest: .tableId, .dataCol$, .factorCol$, annotCorrectionMethod$
-                    if emlDunnTest.error$ = ""
+                    @emlDunnTest: .tableId, .dataCol$, .factorCol$, .correction$
+                    # Capture Dunn's outputs into locals immediately — the
+                    # loops below call other procedures between reads.
+                    .dunnError$ = emlDunnTest.error$
+                    if .dunnError$ = ""
+                        .pMat## = emlDunnTest.pMatrix##
+                    endif
+                    if .dunnError$ = ""
                         annotMatrixPosthoc$ = "Dunn's test ("
-                        ... + annotCorrectionMethod$ + ")"
+                        ... + .correction$ + ")"
                         # Group order from @emlCountGroups (no remapping needed)
                         if .useMatrix
                             # --- MATRIX OUTPUT (split triangle) ---
@@ -1856,11 +2021,11 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                                 annotMatrixEffectLabel$ = ""
                             endif
                             for .i from 1 to .nGroups
-                                annotMatrixLabel$[.i] = emlCountGroups.groupLabel$[.i]
+                                annotMatrixLabel$[.i] = .gLabel$[.i]
                             endfor
                             for .i from 1 to .nGroups - 1
                                 for .j from .i + 1 to .nGroups
-                                    .pairP = emlDunnTest.pMatrix##[.i, .j]
+                                    .pairP = .pMat##[.i, .j]
 
                                     # p-value text only (no effect in cell)
                                     @emlFormatAnnotLabel: .pairP, undefined, .style$, 0, ""
@@ -1877,9 +2042,9 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                                     # Rank-biserial r stored numerically for lower triangle
                                     annotMatrixD'.i'_'.j' = undefined
                                     if .showEffect = 1
-                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, annotMatrixLabel$[.i]
+                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
                                         .v1# = eml_getGroupData.data#
-                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, annotMatrixLabel$[.j]
+                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
                                         @emlRankBiserialR: .v1#, eml_getGroupData.data#, 2
                                         if emlRankBiserialR.error$ = ""
                                             annotMatrixD'.i'_'.j' = abs (emlRankBiserialR.r)
@@ -1892,14 +2057,17 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                             annotBracketN = 0
                             for .i from 1 to .nGroups - 1
                                 for .j from .i + 1 to .nGroups
-                                    .pairP = emlDunnTest.pMatrix##[.i, .j]
+                                    .pairP = .pMat##[.i, .j]
 
                                     # Rank-biserial r per pair if effect display requested
+                                    # (labels come from the locals captured at
+                                    # entry — annotMatrixLabel$[] is never
+                                    # written on the bracket path)
                                     .pairD = undefined
                                     if .showEffect = 1
-                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, annotMatrixLabel$[.i]
+                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
                                         .v1# = eml_getGroupData.data#
-                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, annotMatrixLabel$[.j]
+                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
                                         @emlRankBiserialR: .v1#, eml_getGroupData.data#, 2
                                         if emlRankBiserialR.error$ = ""
                                             .pairD = abs (emlRankBiserialR.r)
@@ -1939,20 +2107,28 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                             annotMatrixEffectLabel$ = ""
                         endif
                         for .i from 1 to .nGroups
-                            annotMatrixLabel$[.i] = emlCountGroups.groupLabel$[.i]
+                            annotMatrixLabel$[.i] = .gLabel$[.i]
                         endfor
+                        # The omnibus was not significant, so Dunn's test was
+                        # never run and no pairwise p exists. Take the
+                        # non-significant marker from the shared formatter
+                        # (p = 1 is non-significant at any alpha) instead of
+                        # hardcoding a literal, so this path stays consistent
+                        # with every other cell in the figure.
+                        @emlFormatStars: 1
+                        .nsMark$ = emlFormatStars.result$
                         for .i from 1 to .nGroups - 1
                             for .j from .i + 1 to .nGroups
-                                annotMatrixCell'.i'_'.j'$ = "n.s."
+                                annotMatrixCell'.i'_'.j'$ = .nsMark$
                                 annotMatrixSig'.i'_'.j' = 0
                                 if .showNS = 0
                                     annotMatrixCell'.i'_'.j'$ = "—"
                                 endif
                                 annotMatrixD'.i'_'.j' = undefined
                                 if .showEffect = 1
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, annotMatrixLabel$[.i]
+                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
                                     .v1# = eml_getGroupData.data#
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, annotMatrixLabel$[.j]
+                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
                                     @emlRankBiserialR: .v1#, eml_getGroupData.data#, 2
                                     if emlRankBiserialR.error$ = ""
                                         annotMatrixD'.i'_'.j' = abs (emlRankBiserialR.r)
@@ -1981,6 +2157,13 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                 .pOmnibus = emlOneWayAnova.p
                 .dfB = emlOneWayAnova.dfBetween
                 .dfW = emlOneWayAnova.dfWithin
+                # Capture the pairwise outputs into locals immediately — the
+                # loops below call other procedures between reads.
+                .anovaPairs = emlOneWayAnova.nPairs
+                .pMat## = emlOneWayAnova.pMatrix##
+                for .g from 1 to .nGroups
+                    .statName$[.g] = emlOneWayAnova.groupName$[.g]
+                endfor
 
                 @emlFormatP: .pOmnibus
                 .omnibus$ = "One-way ANOVA: F(" + string$ (.dfB) + ", "
@@ -2000,15 +2183,14 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                 for .i from 1 to .nGroups
                     .sortMap[.i] = 0
                     for .g from 1 to .nGroups
-                        if emlCountGroups.groupLabel$[.i]
-                        ... = emlOneWayAnova.groupName$[.g]
+                        if .gLabel$[.i] = .statName$[.g]
                             .sortMap[.i] = .g
                         endif
                     endfor
                 endfor
 
                 # Pairwise from Tukey
-                if .error$ = "" and .pOmnibus < .alpha and emlOneWayAnova.nPairs > 0
+                if .error$ = "" and .pOmnibus < .alpha and .anovaPairs > 0
                     if .useMatrix
                         # --- MATRIX OUTPUT (split triangle) ---
                         # Upper triangle: p-values only (text)
@@ -2021,11 +2203,11 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                             annotMatrixEffectLabel$ = ""
                         endif
                         for .i from 1 to .nGroups
-                            annotMatrixLabel$[.i] = emlCountGroups.groupLabel$[.i]
+                            annotMatrixLabel$[.i] = .gLabel$[.i]
                         endfor
                         for .i from 1 to .nGroups - 1
                             for .j from .i + 1 to .nGroups
-                                .pairP = emlOneWayAnova.pMatrix##[.sortMap[.i], .sortMap[.j]]
+                                .pairP = .pMat##[.sortMap[.i], .sortMap[.j]]
 
                                 # p-value text only (no effect in cell)
                                 @emlFormatAnnotLabel: .pairP, undefined, .style$, 0, ""
@@ -2042,9 +2224,9 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                                 # Cohen's d stored numerically for lower triangle
                                 annotMatrixD'.i'_'.j' = undefined
                                 if .showEffect = 1
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, annotMatrixLabel$[.i]
+                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
                                     .v1# = eml_getGroupData.data#
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, annotMatrixLabel$[.j]
+                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
                                     @emlCohenD: .v1#, eml_getGroupData.data#
                                     if emlCohenD.error$ = ""
                                         annotMatrixD'.i'_'.j' = abs (emlCohenD.d)
@@ -2057,14 +2239,17 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                         annotBracketN = 0
                         for .i from 1 to .nGroups - 1
                             for .j from .i + 1 to .nGroups
-                                .pairP = emlOneWayAnova.pMatrix##[.sortMap[.i], .sortMap[.j]]
+                                .pairP = .pMat##[.sortMap[.i], .sortMap[.j]]
 
                                 # Cohen's d per pair if effect display requested
+                                # (labels come from the locals captured at
+                                # entry — annotMatrixLabel$[] is never
+                                # written on the bracket path)
                                 .pairD = undefined
                                 if .showEffect = 1
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, annotMatrixLabel$[.i]
+                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
                                     .v1# = eml_getGroupData.data#
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, annotMatrixLabel$[.j]
+                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
                                     @emlCohenD: .v1#, eml_getGroupData.data#
                                     if emlCohenD.error$ = ""
                                         .pairD = emlCohenD.d
@@ -2103,22 +2288,31 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                             annotMatrixEffectLabel$ = ""
                         endif
                         for .i from 1 to .nGroups
-                            annotMatrixLabel$[.i] = emlCountGroups.groupLabel$[.i]
+                            annotMatrixLabel$[.i] = .gLabel$[.i]
                         endfor
                         for .i from 1 to .nGroups - 1
                             for .j from .i + 1 to .nGroups
-                                .pairP = emlOneWayAnova.pMatrix##[.sortMap[.i], .sortMap[.j]]
+                                .pairP = .pMat##[.sortMap[.i], .sortMap[.j]]
                                 @emlFormatAnnotLabel: .pairP, undefined, .style$, 0, ""
                                 annotMatrixCell'.i'_'.j'$ = emlFormatAnnotLabel.result$
+                                # Significance flag must follow the Tukey
+                                # p-value actually printed in the cell, not a
+                                # blanket 0 — otherwise the cell text and the
+                                # cell styling disagree.
                                 annotMatrixSig'.i'_'.j' = 0
-                                if .showNS = 0
+                                if .pairP <> undefined
+                                    if .pairP < .alpha
+                                        annotMatrixSig'.i'_'.j' = 1
+                                    endif
+                                endif
+                                if annotMatrixSig'.i'_'.j' = 0 and .showNS = 0
                                     annotMatrixCell'.i'_'.j'$ = "—"
                                 endif
                                 annotMatrixD'.i'_'.j' = undefined
                                 if .showEffect = 1
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, annotMatrixLabel$[.i]
+                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
                                     .v1# = eml_getGroupData.data#
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, annotMatrixLabel$[.j]
+                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
                                     @emlCohenD: .v1#, eml_getGroupData.data#
                                     if emlCohenD.error$ = ""
                                         annotMatrixD'.i'_'.j' = abs (emlCohenD.d)
@@ -2144,6 +2338,15 @@ endproc
 # @emlBridgeCorrelation
 # For scatter plot: run correlation, populate regression line and text
 # annotation arrays.
+#
+# STATUS: UNUSED — no caller anywhere in the plugin (verified v3.18). Retained
+# rather than deleted because it is a documented part of the bridge API that
+# user scripts may call directly; the scatter path in eml-graphs-form.praat
+# builds its annotations inline instead. Not exercised by any test, so treat
+# it as unverified. Known latent defect: the `.error$ = "" and .nX <> .nY`
+# guard below relies on short-circuiting, which Praat does not do — if the
+# first column extraction fails, .nX is never assigned and the guard raises
+# "Unknown variable". Left as-is (out of the declared fix scope) and reported.
 #
 # Arguments:
 #   .tableId     — Table object ID
@@ -2279,8 +2482,11 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
 
     if .nGroups = 2
         # 2-group: extract descriptives, route to TwoGroupComparison
-        .g1$ = emlCountGroups.groupLabel$ [1]
-        .g2$ = emlCountGroups.groupLabel$ [2]
+        # Read the labels the bridge captured, not emlCountGroups' outputs:
+        # @emlCountGroups is re-invoked by the tests the bridge runs, so its
+        # outputs no longer belong to this comparison by the time we get here.
+        .g1$ = emlBridgeGroupComparison.gLabel$ [1]
+        .g2$ = emlBridgeGroupComparison.gLabel$ [2]
 
         selectObject: .tableId
         @emlExtractGroupVectors: .tableId, .dataCol$, .groupCol$, .g1$, .g2$
@@ -2439,14 +2645,31 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
             @emlWizardExplainP: emlMannWhitneyU.p
         endif
         @emlReportLineString: "p", emlFormatP.formatted$
+        # Report the method @emlMannWhitneyU actually used. Read it
+        # defensively — a build of eml-inferential.praat that does not expose
+        # .method$ must not abort the report. The routing rule is R's
+        # wilcox.test rule: exact enumeration iff BOTH groups have n < 50 AND
+        # there are no ties; otherwise the normal approximation with
+        # continuity and tie corrections. The old gloss claimed the rule was
+        # a total-n threshold, which is wrong in both directions.
+        .mwuMethod$ = "not reported"
+        if variableExists ("emlMannWhitneyU.method$")
+            .mwuMethod$ = emlMannWhitneyU.method$
+        endif
         if emlShowExplanations
-            if emlMannWhitneyU.method$ = "exact"
-                emlWizardExplain$ = "P-value computed by exact enumeration (n < 50)"
+            if .mwuMethod$ = "exact"
+                emlWizardExplain$ = "P-value computed by exact enumeration"
+                ... + " (used when both groups have n < 50 and there are no ties)"
+            elsif .mwuMethod$ = "not reported"
+                emlWizardExplain$ = "P-value method not reported by the test"
+                ... + " procedure"
             else
-                emlWizardExplain$ = "P-value computed by normal approximation (n >= 50)"
+                emlWizardExplain$ = "P-value computed by normal approximation"
+                ... + " with continuity and tie corrections (used when either"
+                ... + " group has n >= 50, or ties are present)"
             endif
         endif
-        @emlReportLineString: "Method", emlMannWhitneyU.method$
+        @emlReportLineString: "Method", .mwuMethod$
         @emlReportBlank
         @emlReportSection: "Nonparametric Effect Size"
         if emlShowExplanations

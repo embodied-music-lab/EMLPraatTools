@@ -10,9 +10,19 @@
 #            Layer 2 — Direct tools: Named tests from EML Tools menu
 #            Layer 3 — Scripting API: Include-file procedures for power users
 #
-# Version: 2.1
-# Date: 11 May 2026
+# Version: 2.3
+# Date: 2 August 2026
 #
+# v2.3: Item 5 — announced plan, dispatched test, and reported method now
+#        agree. Two-group parametric route derives wizEqualVar/wizTName$
+#        from the "Variance assumption" field and passes it to
+#        @emlRunTwoGroupAnalysis instead of hardcoding Welch. ANOVA and
+#        Kruskal-Wallis post-hoc plan strings now name the method actually
+#        dispatched, and no longer claim conditional ("if significant")
+#        execution for Tukey/Dunn, which run unconditionally.
+# v2.2: Item 1 — replaced the call to the removed @emlExtractMultipleGroups
+#        and the 1-argument @eml_getGroupData call with the current
+#        extraction API.
 # v2.1: Dialog design system v2. Question-first navigation with semantic
 #        emoji (⚖️📈📊🎯). Fields-first column selection with teaching
 #        below fold. Verdict emoji (✅❌⚠️) on test selection dialogs.
@@ -145,6 +155,8 @@ prevGoal = 1
 prevObsType = 1
 prevGroupDesign = 1
 prevRelType = 1
+# 1 = Welch (unequal variances), 2 = pooled/Student (equal variances)
+prevVarAssume = 1
 
 runAgain = 1
 while runAgain = 1
@@ -369,7 +381,7 @@ if goal = 1
                     comment: "· · · · · · · · · · · · · · · · · · · · ·"
                 endif
                 comment: ""
-                comment: "Parametric — Welch t-test, Cohen's d"
+                comment: "Parametric — independent-samples t-test, Cohen's d"
                 comment: "More statistical power. Assumes approximate normality."
                 comment: ""
                 comment: "Nonparametric — Mann-Whitney U, rank-biserial r"
@@ -379,6 +391,13 @@ if goal = 1
                 optionmenu: "Test approach", normDefault
                     option: "Parametric"
                     option: "Nonparametric"
+                comment: ""
+                comment: "Variance assumption (parametric only):"
+                comment: "     Welch does not assume equal group variances"
+                comment: "     and is the safer default."
+                optionmenu: "Variance assumption", prevVarAssume
+                    option: "Welch (unequal variances)"
+                    option: "Pooled (equal variances)"
                 boolean: "Clear Info window", 0
                 comment: ""
             clicked = endPause: "Quit", "Back", "Run", 3, 0
@@ -396,14 +415,23 @@ if goal = 1
 
             @wizardNormLabel: normChecked, normSummary$, test_approach
 
+            prevVarAssume = variance_assumption
+            if variance_assumption = 2
+                wizEqualVar = 1
+                wizTName$ = "Student t-test, pooled variance (Cohen's d)"
+            else
+                wizEqualVar = 0
+                wizTName$ = "Welch t-test, unequal variances (Cohen's d)"
+            endif
+
             if test_approach = 1
                 wizTestType$ = "parametric"
                 @wizardReportPlan: "Two independent groups",
                 ... wizardNormLabel.result$,
-                ... "Welch t-test (Cohen's d)",
+                ... wizTName$,
                 ... "n/a", dataCol$, groupCol$, "", displayTable$
                 @emlRunTwoGroupAnalysis: tableId, dataCol$,
-                ... groupCol$, "parametric", 0
+                ... groupCol$, "parametric", wizEqualVar
                 if emlRunTwoGroupAnalysis.error$ <> ""
                     exitScript: emlRunTwoGroupAnalysis.error$
                 endif
@@ -414,7 +442,7 @@ if goal = 1
                 ... "Mann-Whitney U (rank-biserial r)",
                 ... "n/a", dataCol$, groupCol$, "", displayTable$
                 @emlRunTwoGroupAnalysis: tableId, dataCol$,
-                ... groupCol$, "nonparametric", 0
+                ... groupCol$, "nonparametric", wizEqualVar
                 if emlRunTwoGroupAnalysis.error$ <> ""
                     exitScript: emlRunTwoGroupAnalysis.error$
                 endif
@@ -565,19 +593,24 @@ if goal = 1
             if test_approach = 1
                 wizTestType$ = "parametric"
 
-                # Map correction to post-hoc method name
+                # Map correction to post-hoc method name. The name must
+                # match the test actually dispatched below, including
+                # whether it is gated on ANOVA significance: Tukey is run
+                # by the ANOVA orchestrator unconditionally, Scheffe and
+                # pairwise Welch t only when the ANOVA is significant.
                 if corrApproach = 1
-                    phMethod$ = "Tukey HSD"
+                    phMethod$ = "Tukey HSD (all pairs)"
                 elsif corrApproach = 2
-                    phMethod$ = "Scheffe"
+                    phMethod$ = "Scheffe if ANOVA significant"
                 else
-                    phMethod$ = "Pairwise t (BH)"
+                    phMethod$ = "Pairwise Welch t, BH adjusted,"
+                    ... + " if ANOVA significant"
                 endif
 
                 @wizardReportPlan: "Three or more independent groups",
                 ... wizardNormLabel.result$,
                 ... "One-way ANOVA (η²)",
-                ... phMethod$ + " if significant",
+                ... phMethod$,
                 ... dataCol$, groupCol$, "", displayTable$
 
                 doTukey = 0
@@ -613,21 +646,23 @@ if goal = 1
             else
                 wizTestType$ = "nonparametric"
 
+                # @emlRunKWAnalysis is called with doDunn = 1 below, so
+                # Dunn runs on all pairs regardless of the KW p-value.
                 if corrApproach = 1
-                    phMethod$ = "Dunn (Holm)"
+                    phMethod$ = "Dunn (Holm), all pairs"
                     adjMethod$ = "holm"
                 elsif corrApproach = 2
-                    phMethod$ = "Dunn (Bonferroni)"
+                    phMethod$ = "Dunn (Bonferroni), all pairs"
                     adjMethod$ = "bonferroni"
                 else
-                    phMethod$ = "Dunn (BH)"
+                    phMethod$ = "Dunn (BH), all pairs"
                     adjMethod$ = "bh"
                 endif
 
                 @wizardReportPlan: "Three or more independent groups",
                 ... wizardNormLabel.result$,
                 ... "Kruskal-Wallis (ε²)",
-                ... phMethod$ + " if significant",
+                ... phMethod$,
                 ... dataCol$, groupCol$, "", displayTable$
 
                 @emlRunKWAnalysis: tableId, dataCol$, groupCol$, 1,
@@ -2030,7 +2065,16 @@ endproc
 procedure wizardRunDescribeByGroup: .tableId, .dataCol$, .groupCol$
     selectObject: .tableId
     @emlCountGroups: .tableId, .groupCol$
+    if emlCountGroups.error$ <> ""
+        exitScript: emlCountGroups.error$
+    endif
     .nG = emlCountGroups.nGroups
+
+    # Snapshot the group labels before any later call can overwrite the
+    # @emlCountGroups outputs.
+    for .g from 1 to .nG
+        .gLabel$[.g] = emlCountGroups.groupLabel$[.g]
+    endfor
 
     .dData$ = replace$ (.dataCol$, "_", " ", 0)
     .dGrp$ = replace$ (.groupCol$, "_", " ", 0)
@@ -2044,16 +2088,10 @@ procedure wizardRunDescribeByGroup: .tableId, .dataCol$, .groupCol$
 
     @emlReportDescriptiveHeader
 
-    @emlExtractMultipleGroups: .tableId, .dataCol$, .groupCol$
-    if emlExtractMultipleGroups.error$ <> ""
-        exitScript: emlExtractMultipleGroups.error$
-    endif
-
     for .g from 1 to .nG
-        @eml_getGroupData: .g
-        .gLabel$ = replace$ (
-        ... emlExtractMultipleGroups.groupLabel$[.g],
-        ... "_", " ", 0)
+        @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
+        ... .gLabel$[.g]
+        .gDisplay$ = replace$ (.gLabel$[.g], "_", " ", 0)
         .gN = eml_getGroupData.n
         @emlMean: eml_getGroupData.data#
         .gMean = emlMean.result
@@ -2061,7 +2099,7 @@ procedure wizardRunDescribeByGroup: .tableId, .dataCol$, .groupCol$
         .gSD = emlSD.result
         @emlMedian: eml_getGroupData.data#
         .gMed = emlMedian.result
-        @emlReportDescriptiveRow: .gLabel$, .gN,
+        @emlReportDescriptiveRow: .gDisplay$, .gN,
         ... .gMean, .gSD, .gMed
     endfor
 

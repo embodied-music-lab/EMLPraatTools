@@ -2,13 +2,21 @@
 # EML Stats : Output Formatting — Test Suite
 # ============================================================================
 # Module: test-output.praat
-# Version: 1.1
-# Date: 3 March 2026
+# Version: 1.2
+# Date: 3 August 2026
 #
 # Validates all procedures in eml-output.praat
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
 # Development: Claude (Anthropic)
 #
+# v1.2: Brought under the TEST RESULT REPORTING CONTRACT (v1.1, declared in
+#        dev/tests/eml-test-helpers.praat). The hand-rolled summary printed
+#        "SOME TESTS FAILED" and then returned normally, so the process
+#        exited 0 whatever the outcome — green by construction for any
+#        runner reading exit status. Local counters are now bridged into
+#        emlTestInit.* and @emlTestSummary emits the machine-readable
+#        sentinel. No assertion call site changed and the human-readable
+#        summary is untouched.
 # v1.1: Fixed effect size test expectations to match Cohen's thresholds
 #        (negligible < 0.2, small 0.2-0.5, medium 0.5-0.8, large >= 0.8).
 #        Moved visual output test before main header to prevent Info window
@@ -17,6 +25,12 @@
 
 # Include the module under test
 include ../../../stats/eml-output.praat
+
+# Shared harness — used only for @emlTestInit / @emlTestSummary (the
+# reporting contract). This suite keeps its own assertion helpers.
+include ../eml-test-helpers.praat
+
+@emlTestInit
 
 # Test counters
 testsRun = 0
@@ -475,3 +489,13 @@ else
 endif
 appendInfoLine: resultLine$
 appendInfoLine: header$
+
+# Bridge the local counters into the shared harness so @emlTestSummary can
+# emit the machine-readable sentinel (TEST RESULT REPORTING CONTRACT v1.1).
+# @emlTestSummary exitScript:s when failed > 0, so this must stay last —
+# nothing that needs to run may follow it.
+emlTestInit.passed = testsPassed
+emlTestInit.failed = testsFailed
+emlTestInit.skipped = 0
+emlTestInit.count = testsRun
+@emlTestSummary

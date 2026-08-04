@@ -12,10 +12,14 @@
 # Code generation: Claude (Anthropic)
 #
 # License: Creative Commons Share-Alike
-# Version: 1.3
+# Version: 1.4
+# v1.4: Item 4 — unregistered the "EML Interactive Tutorial" menu entry.
+#       scripts/eml-tutorial.praat includes tutorial/eml-demo-procedures.praat,
+#       a directory that does not exist in the plugin, so the menu item was
+#       live but dead. No tutorial content invented.
 # v1.3: Added TableOfReal and Matrix action buttons for stats tools
 #       (Describe, Compare, Correlate, Regression, Wizard).
-# Date: 11 April 2026
+# Date: 2 August 2026
 # ============================================================================
 
 # ── Fixed menu: Objects → New → EML Tools cascade ──────────────────────────
@@ -66,7 +70,9 @@ Add menu command: "Objects", "New", "Run Stats Demo", "Create Demo Table...", 1,
 # Help
 Add menu command: "Objects", "New", "-- eml help --", "Run Stats Demo", 1, ""
 Add menu command: "Objects", "New", "EML Stats Quick Start", "-- eml help --", 1, "scripts/eml-quick-start.praat"
-Add menu command: "Objects", "New", "EML Interactive Tutorial", "EML Stats Quick Start", 1, "scripts/eml-tutorial.praat"
+# "EML Interactive Tutorial" is unregistered at v1.4: scripts/eml-tutorial.praat
+# depends on tutorial/eml-demo-procedures.praat, which is not shipped with this
+# plugin. The menu entry was live but the script could never run.
 
 # ── Dynamic action buttons: appear when 1 Table is selected ────────────────
 

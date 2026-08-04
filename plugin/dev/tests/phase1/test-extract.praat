@@ -2,17 +2,32 @@
 # EML Stats : Data Extraction Layer - Test Suite
 # ============================================================================
 # Module: test-extract.praat
-# Version: 1.0
-# Date: 20 February 2026
+# Version: 1.1
+# Date: 3 August 2026
 #
 # Validation tests for eml-extract.praat
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
 # Development: Claude (Anthropic)
 # License: Creative Commons Share-Alike
+#
+# v1.1: Brought under the TEST RESULT REPORTING CONTRACT (v1.1, declared in
+#        dev/tests/eml-test-helpers.praat). The hand-rolled summary printed
+#        "SOME TESTS FAILED" and then returned normally, so the process
+#        exited 0 whatever the outcome — green by construction for any
+#        runner reading exit status. Local counters are now bridged into
+#        emlTestInit.* and @emlTestSummary emits the machine-readable
+#        sentinel. No assertion call site changed and the human-readable
+#        summary is untouched.
 # ============================================================================
 
 # Include the extraction procedures
 include ../../../stats/eml-extract.praat
+
+# Shared harness — used only for @emlTestInit / @emlTestSummary (the
+# reporting contract). This suite keeps its own assertion helpers.
+include ../eml-test-helpers.praat
+
+@emlTestInit
 
 # ============================================================================
 # Test infrastructure
@@ -453,3 +468,13 @@ else
 endif
 
 appendInfoLine: "============================================"
+
+# Bridge the local counters into the shared harness so @emlTestSummary can
+# emit the machine-readable sentinel (TEST RESULT REPORTING CONTRACT v1.1).
+# @emlTestSummary exitScript:s when failed > 0, so this must stay last, and
+# in particular after the removeObject: cleanup above.
+emlTestInit.passed = testsPassed
+emlTestInit.failed = testsFailed
+emlTestInit.skipped = 0
+emlTestInit.count = totalTests
+@emlTestSummary

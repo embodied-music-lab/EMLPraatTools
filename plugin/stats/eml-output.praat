@@ -2,7 +2,18 @@
 # EML Stats : Output Formatting
 # ============================================================================
 # Module: eml-output.praat
-# Version: 1.7
+# Version: 1.8
+# v1.8: Audit fixes (items 8, 9).
+#       Item 8 — @emlFormatEffectLabel labelled R-squared values with
+#         Cohen's d thresholds. It now recognises "r_squared" (and the
+#         aliases "R2" and "r2") and applies Cohen's R-squared benchmarks
+#         0.01 / 0.09 / 0.25. The token string "r_squared" is unchanged and
+#         still accepted. An unrecognised effect type no longer silently
+#         falls back to d thresholds: .label$ is now "" and the new
+#         .recognized flag is 0, so callers can detect the condition.
+#       Item 9 — @emlFormatP reported "p = 1.000" for any p in
+#         [0.9995, 1), overstating the result as an exact 1. Such values now
+#         format as "p > .999". p = 1 exactly still formats as "p = 1.000".
 # v1.7: @emlWrapperInit accepts Table, TableOfReal, and Matrix objects.
 #       Auto-converts TableOfReal/Matrix to Table with Info window notification.
 #       Outputs .converted flag for caller awareness.
@@ -200,13 +211,17 @@ procedure emlFormatP: .pValue
     # Format p-value according to APA guidelines
     # Output: .formatted$
     # p < 0.001 -> "p < .001"
+    # 0.9995 <= p < 1 -> "p > .999"  (would otherwise round to a false 1.000)
     # p >= 0.001 -> "p = .XXX" (3 decimals, no leading zero)
+    # p = 1 exactly -> "p = 1.000"
     # p undefined -> "p = undefined"
-    
+
     if .pValue = undefined
         .formatted$ = "p = undefined"
     elsif .pValue < 0.001
         .formatted$ = "p < .001"
+    elsif .pValue >= 0.9995 and .pValue < 1
+        .formatted$ = "p > .999"
     else
         # Format with 3 decimals, remove leading zero
         .rawFormatted$ = fixed$(.pValue, 3)
@@ -314,16 +329,22 @@ endproc
 
 procedure emlFormatEffectLabel: .effectValue, .effectType$
     # Return plain-language effect size interpretation
-    # Output: .label$
+    # Output: .label$      — "" if the effect type is not recognised
+    #         .recognized  — 1 if .effectType$ is a known token, else 0
     # Cohen's conventions by effect type
-    
+
     .absValue = abs(.effectValue)
-    
+    .recognized = 1
+
     # Set thresholds based on effect type (Cohen's conventions)
     # d: negligible < 0.2, small 0.2–0.5, medium 0.5–0.8, large >= 0.8
     # r, w, V: negligible < 0.1, small 0.1–0.3, medium 0.3–0.5, large >= 0.5
     # eta_squared, omega_squared: negligible < 0.01, small 0.01–0.06, medium 0.06–0.14, large >= 0.14
-    
+    # r_squared: negligible < 0.01, small 0.01–0.09, medium 0.09–0.25, large >= 0.25
+    #   (Cohen 1988: R-squared benchmarks are the squares of the r benchmarks
+    #    0.1 / 0.3 / 0.5, so d thresholds mislabel them badly — R-squared = 0.3
+    #    is a large effect, not a small one.)
+
     .d$ = "d"
     .r$ = "r"
     .w$ = "w"
@@ -332,7 +353,10 @@ procedure emlFormatEffectLabel: .effectValue, .effectType$
     .omega$ = "omega_squared"
     .eps$ = "epsilon2"
     .epsAlt$ = "epsilon_squared"
-    
+    .rSq$ = "r_squared"
+    .rSqAlt$ = "R2"
+    .rSqAlt2$ = "r2"
+
     if .effectType$ = .d$
         .negligibleThresh = 0.2
         .mediumThresh = 0.5
@@ -345,15 +369,19 @@ procedure emlFormatEffectLabel: .effectValue, .effectType$
         .negligibleThresh = 0.01
         .mediumThresh = 0.06
         .largeThresh = 0.14
+    elsif .effectType$ = .rSq$ or .effectType$ = .rSqAlt$ or .effectType$ = .rSqAlt2$
+        .negligibleThresh = 0.01
+        .mediumThresh = 0.09
+        .largeThresh = 0.25
     else
-        # Default to d thresholds
-        .negligibleThresh = 0.2
-        .mediumThresh = 0.5
-        .largeThresh = 0.8
+        # Unknown token: no benchmark exists, so do not invent one.
+        .recognized = 0
     endif
-    
+
     # Determine label (Cohen's conventions)
-    if .absValue >= .largeThresh
+    if .recognized = 0
+        .label$ = ""
+    elsif .absValue >= .largeThresh
         .label$ = "large effect"
     elsif .absValue >= .mediumThresh
         .label$ = "medium effect"

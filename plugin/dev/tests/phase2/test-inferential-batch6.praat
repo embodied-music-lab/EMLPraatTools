@@ -62,7 +62,7 @@ tableId1 = emlTableFromGroups.tableId
 
 @emlTestAssertEqualStr: "1 no error", "", emlOneWayAnova.error$
 @emlTestAssertEqualNum: "1 F", 45.5772, emlOneWayAnova.fValue, tolerance
-@emlTestAssertEqualNum: "1 p", 0.0000024783, emlOneWayAnova.p, tightTolerance
+@emlTestAssertEqualRel: "1 p", 2.4783299490103907e-06, emlOneWayAnova.p, 1e-9
 @emlTestAssertEqualNum: "1 SS between", 373.7333, emlOneWayAnova.ssBetween, tolerance
 @emlTestAssertEqualNum: "1 SS within", 49.2, emlOneWayAnova.ssWithin, tolerance
 @emlTestAssertEqualNum: "1 SS total", 422.9333, emlOneWayAnova.ssTotal, tolerance
@@ -138,7 +138,7 @@ tableId3 = emlTableFromGroups.tableId
 
 @emlTestAssertEqualStr: "3 no error", "", emlOneWayAnova.error$
 @emlTestAssertEqualNum: "3 F", 25.0, emlOneWayAnova.fValue, tolerance
-@emlTestAssertEqualNum: "3 p", 0.001053, emlOneWayAnova.p, tolerance
+@emlTestAssertEqualRel: "3 p", 0.0010528257933665353, emlOneWayAnova.p, 1e-9
 @emlTestAssertEqualNum: "3 SS between", 62.5, emlOneWayAnova.ssBetween, tolerance
 @emlTestAssertEqualNum: "3 SS within", 20.0, emlOneWayAnova.ssWithin, tolerance
 @emlTestAssertEqualNum: "3 SS total", 82.5, emlOneWayAnova.ssTotal, tolerance
@@ -245,7 +245,7 @@ Set string value: 20, "Sex", "Female"
 
 # Factor A (Treatment)
 @emlTestAssertEqualNum: "4 Treatment F", 200.0, emlTwoWayAnova.fA, tolerance
-@emlTestAssertEqualNum: "4 Treatment p", 0.0000000002, emlTwoWayAnova.pA, tightTolerance
+@emlTestAssertEqualRel: "4 Treatment p", 1.8417416012516266e-10, emlTwoWayAnova.pA, 1e-9
 @emlTestAssertEqualNum: "4 Treatment SS", 500.0, emlTwoWayAnova.ssA, tolerance
 @emlTestAssertEqualNum: "4 Treatment df", 1, emlTwoWayAnova.dfA, tightTolerance
 @emlTestAssertEqualNum: "4 Treatment MS", 500.0, emlTwoWayAnova.msA, tolerance
@@ -387,14 +387,14 @@ Set string value: 20, "FactorB", "Female"
 
 # Factor B
 @emlTestAssertEqualNum: "5 FactorB F", 60.5, emlTwoWayAnova.fB, tolerance
-@emlTestAssertEqualNum: "5 FactorB p", 0.000000797, emlTwoWayAnova.pB, tightTolerance
+@emlTestAssertEqualRel: "5 FactorB p", 7.97139537197156e-07, emlTwoWayAnova.pB, 1e-9
 @emlTestAssertEqualNum: "5 FactorB SS", 151.25, emlTwoWayAnova.ssB, tolerance
 @emlTestAssertEqualNum: "5 FactorB df", 1, emlTwoWayAnova.dfB, tightTolerance
 @emlTestAssertEqualNum: "5 FactorB MS", 151.25, emlTwoWayAnova.msB, tolerance
 
 # Interaction
 @emlTestAssertEqualNum: "5 Interact F", 40.5, emlTwoWayAnova.fAB, tolerance
-@emlTestAssertEqualNum: "5 Interact p", 0.00000939, emlTwoWayAnova.pAB, tightTolerance
+@emlTestAssertEqualRel: "5 Interact p", 9.394209086037617e-06, emlTwoWayAnova.pAB, 1e-9
 @emlTestAssertEqualNum: "5 Interact SS", 101.25, emlTwoWayAnova.ssAB, tolerance
 @emlTestAssertEqualNum: "5 Interact df", 1, emlTwoWayAnova.dfAB, tightTolerance
 @emlTestAssertEqualNum: "5 Interact MS", 101.25, emlTwoWayAnova.msAB, tolerance
@@ -481,18 +481,18 @@ tableId6 = emlTableFromGroups.tableId
 @emlTestAssertEqualNum: "6 diag [4,4]", 1.0, emlTukeyHSD.pMatrix##[4, 4], tightTolerance
 
 # Pairwise p-values (alphabetical order)
-@emlTestAssertEqualNum: "6 G1vG2 p [1,2]", 0.000168,
-    ... emlTukeyHSD.pMatrix##[1, 2], looseTolerance
+@emlTestAssertEqualRel: "6 G1vG2 p [1,2]", 0.0001678125368753669,
+    ... emlTukeyHSD.pMatrix##[1, 2], 1e-5
 @emlTestAssertEqualNum: "6 G1vG3 p [1,3]", 1.0,
     ... emlTukeyHSD.pMatrix##[1, 3], looseTolerance
-@emlTestAssertEqualNum: "6 G1vG4 p [1,4]", 0.0000000024,
-    ... emlTukeyHSD.pMatrix##[1, 4], tightTolerance
-@emlTestAssertEqualNum: "6 G2vG3 p [2,3]", 0.000168,
-    ... emlTukeyHSD.pMatrix##[2, 3], looseTolerance
-@emlTestAssertEqualNum: "6 G2vG4 p [2,4]", 0.0000056,
-    ... emlTukeyHSD.pMatrix##[2, 4], tightTolerance
-@emlTestAssertEqualNum: "6 G3vG4 p [3,4]", 0.0000000024,
-    ... emlTukeyHSD.pMatrix##[3, 4], tightTolerance
+@emlTestAssertEqualRel: "6 G1vG4 p [1,4]", 2.449358382783373e-09,
+    ... emlTukeyHSD.pMatrix##[1, 4], 1e-5
+@emlTestAssertEqualRel: "6 G2vG3 p [2,3]", 0.0001678125368753669,
+    ... emlTukeyHSD.pMatrix##[2, 3], 1e-5
+@emlTestAssertEqualRel: "6 G2vG4 p [2,4]", 5.6000977631809334e-06,
+    ... emlTukeyHSD.pMatrix##[2, 4], 1e-5
+@emlTestAssertEqualRel: "6 G3vG4 p [3,4]", 2.449358382783373e-09,
+    ... emlTukeyHSD.pMatrix##[3, 4], 1e-5
 
 # Pairwise q statistics
 @emlTestAssertEqualNum: "6 G1vG2 q [1,2]", 8.0904,
@@ -566,12 +566,12 @@ tableId7 = emlTableFromGroups.tableId
 
 # Tukey outputs chained through (alphabetical order)
 @emlTestAssertEqualNum: "7 nPairs", 3, emlOneWayAnova.nPairs, tightTolerance
-@emlTestAssertEqualNum: "7 Tukey G1vG2 p [1,2]", 0.000502,
-    ... emlOneWayAnova.pMatrix##[1, 2], looseTolerance
-@emlTestAssertEqualNum: "7 Tukey G1vG3 p [1,3]", 0.003167,
-    ... emlOneWayAnova.pMatrix##[1, 3], looseTolerance
-@emlTestAssertEqualNum: "7 Tukey G2vG3 p [2,3]", 0.0000017,
-    ... emlOneWayAnova.pMatrix##[2, 3], tightTolerance
+@emlTestAssertEqualRel: "7 Tukey G1vG2 p [1,2]", 0.0005024167933544987,
+    ... emlOneWayAnova.pMatrix##[1, 2], 1e-5
+@emlTestAssertEqualRel: "7 Tukey G1vG3 p [1,3]", 0.00316727350416679,
+    ... emlOneWayAnova.pMatrix##[1, 3], 1e-5
+@emlTestAssertEqualRel: "7 Tukey G2vG3 p [2,3]", 1.6833576830244112e-06,
+    ... emlOneWayAnova.pMatrix##[2, 3], 1e-5
 
 # q statistics
 @emlTestAssertEqualNum: "7 Tukey G1vG2 q [1,2]", 7.5093,
@@ -815,10 +815,10 @@ Set string value: 9, "group", "C"
 # Pairwise p-values
 @emlTestAssertEqualNum: "10 AvB p [1,2]", 0.0000737,
     ... emlTukeyHSD.pMatrix##[1, 2], tightTolerance
-@emlTestAssertEqualNum: "10 AvC p [1,3]", 0.01004,
-    ... emlTukeyHSD.pMatrix##[1, 3], looseTolerance
-@emlTestAssertEqualNum: "10 BvC p [2,3]", 0.004909,
-    ... emlTukeyHSD.pMatrix##[2, 3], looseTolerance
+@emlTestAssertEqualRel: "10 AvC p [1,3]", 0.010044272660155618,
+    ... emlTukeyHSD.pMatrix##[1, 3], 1e-5
+@emlTestAssertEqualRel: "10 BvC p [2,3]", 0.004909333978690866,
+    ... emlTukeyHSD.pMatrix##[2, 3], 1e-5
 
 # Pairwise q statistics
 @emlTestAssertEqualNum: "10 AvB q [1,2]", 15.8745,

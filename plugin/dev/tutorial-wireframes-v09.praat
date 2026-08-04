@@ -1,11 +1,18 @@
 # ============================================================================
-# EML Stats Tutorial — Layout Wireframes v0.9
+# EML Stats Tutorial — Layout Wireframes v0.10
 # ============================================================================
 # 11 page templates. Progress bar + arrow navigation. Consistent alignment.
 # Design rule: text anchored left, one visual element max per page.
 #
-# Date: 1 April 2026
-# Version: 0.9
+# Date: 4 August 2026
+# Version: 0.10
+#
+# Changes from v0.9:
+#   1. Rule 1 compliance — the bare "demo Marks left: 4" on the page-8
+#      scatter (computed 120-260 range, arbitrary ticks at 166.67/213.33)
+#      is replaced by explicit "demo One mark left:" calls at 150/200/250.
+#      "demo One mark left:" verified empirically in Praat 6.4.x under
+#      Xvfb, 4 August 2026 — it is not listed in COMMANDS_DemoWindow.txt.
 #
 # Changes from v0.8:
 #   1. Draw line parameter order corrected (fromX, fromY, toX, toY)
@@ -579,7 +586,12 @@ procedure pageAnimation
     demo Axes: 0.5, 1.5, 120, 260
     demo Colour: faint$
     demo Line width: 0.5
-    demo Marks left: 4, "yes", "no", "no"
+    # Rule 1: nice-number ticks. A bare "demo Marks left: 4" would divide the
+    # computed 120-260 range into three arbitrary intervals, labelling the
+    # axis 120 / 166.67 / 213.33 / 260.
+    demo One mark left: 150, "yes", "no", "no", ""
+    demo One mark left: 200, "yes", "no", "no", ""
+    demo One mark left: 250, "yes", "no", "no", ""
     demo Line width: 1
     demo Colour: light$
     demo Text left: "yes", "Pitch (Hz)"

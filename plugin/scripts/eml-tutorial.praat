@@ -9,14 +9,23 @@
 #
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
 # Development: Claude (Anthropic)
-# Version: 0.18
-# Date: 2 April 2026
+# Version: 0.19
+# Date: 2 August 2026
+#
+# v0.19: Item 4 — neutralised the include of tutorial/eml-demo-procedures.praat.
+#        That directory has never been shipped with this plugin, so every page
+#        renderer here calls undefined procedures (@emlClearPage, @emlDrawGuides,
+#        @emlPlaceBody, ...). The menu registration in setup.praat has been
+#        removed; running this file directly now exits with an explanation
+#        instead of "Procedure not found". Restore the include and the
+#        setup.praat entry once tutorial/eml-demo-procedures.praat ships.
 # ============================================================================
 
 # ============================================================================
 # INCLUDES
 # ============================================================================
-include ../tutorial/eml-demo-procedures.praat
+# include ../tutorial/eml-demo-procedures.praat
+exitScript: "EML Interactive Tutorial is not available in this build: its layout engine (tutorial/eml-demo-procedures.praat) is not shipped with the plugin."
 
 showGrid = 1
 

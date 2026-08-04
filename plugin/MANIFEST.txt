@@ -1,52 +1,84 @@
-# ============================================================================
+# ==========================================================================
 # MANIFEST — EML Praat Tools plugin
-# Generated: 2026-08-02  |  73 files
-# Columns: path | lines (code/prose) | version | description
-# ============================================================================
+# Generated: 2026-08-04  |  99 files (excluding MANIFEST.txt)
+# Columns: path | lines (code) or word count (prose) | version | description
+#
+# Regenerate with: python3 dev/tools/build-manifest.py
+# The first three columns are derived from file contents and are rewritten
+# on every run. The description column is curated — it is inherited by path
+# and never overwritten. New files arrive with a `TODO:` description; edit
+# it here and it will be preserved from then on.
+# ==========================================================================
 
-FIX_NOTES.md | 37 | - | EML Praat Tools — Correctness Fix Bundle
-README.md | 144 | - | EML Praat Tools
-setup.praat | 107 | 1.3 | Register menu entries and dynamic action buttons for the
-dev/DESIGN_DIALOG_SYSTEM.md | 263 | - | EML Praat Tools — Dialog Design System
-dev/SCAFFOLD_STATS_TUTORIAL.md | 1076 | - | EML Stats Interactive Tutorial — Pedagogical Architecture
-dev/VOICE_GUIDE.md | 155 | - | EML Tutorial — Content Voice Guide
-dev/WIREFRAMES_STATS_TUTORIAL.md | 685 | - | EML Stats Tutorial — Page Layout Wireframes
-dev/tests/eml-integration-test.praat | 478 | 1.0 | Praat + 1 : Integration Test Suite
-dev/tests/eml-test-helpers.praat | 400 | 1.0 | EML Stats : Test Helpers
-dev/tests/phase1/test-core-descriptive.praat | 567 | 1.0 | EML Stats : Core Descriptive Statistics — Validation Suite
-dev/tests/phase1/test-core-utilities.praat | 688 | 1.0 | EML Stats : Core Utility Procedures — Validation Suite
-dev/tests/phase1/test-extract.praat | 455 | 1.0 | EML Stats : Data Extraction Layer - Test Suite
-dev/tests/phase1/test-output.praat | 477 | 1.1 | EML Stats : Output Formatting — Test Suite
-dev/tests/phase2/batch6b_scipy_refs.py | 213 | - | import numpy as np
-dev/tests/phase2/batch7_scipy_refs.py | 231 | - | import numpy as np
-dev/tests/phase2/test-12-groups.praat | 61 | - | Test: 12-group ANOVA (verifies no 10-group ceiling)
-dev/tests/phase2/test-inferential-batch1.praat | 258 | - | EML Stats : Test Suite — Inferential Statistics (Batch 1)
+
+FIX_NOTES.md | ~367 words | - | EML Praat Tools — Correctness Fix Bundle
+README.md | ~878 words | - | EML Praat Tools
+dev/DESIGN_DIALOG_SYSTEM.md | ~1370 words | - | EML Praat Tools — Dialog Design System
+dev/SCAFFOLD_STATS_TUTORIAL.md | ~6371 words | - | EML Stats Interactive Tutorial — Pedagogical Architecture
+dev/VOICE_GUIDE.md | ~964 words | - | EML Tutorial — Content Voice Guide
+dev/WIREFRAMES_STATS_TUTORIAL.md | ~3923 words | - | EML Stats Tutorial — Page Layout Wireframes
+dev/tests/REFERENCE_PROVENANCE.md | ~794 words | - | Which external tool — R or scipy, at which version — produced each asserted literal, and how to re-verify.
+dev/tests/eml-integration-test.praat | 516 | 1.2 | Praat + 1 : Integration Test Suite
+dev/tests/eml-test-helpers.praat | 660 | 1.2 | EML Stats : Test Helpers
+dev/tests/phase1/test-core-descriptive.praat | 592 | 1.1 | EML Stats : Core Descriptive Statistics — Validation Suite
+dev/tests/phase1/test-core-utilities.praat | 720 | 1.1 | EML Stats : Core Utility Procedures — Validation Suite
+dev/tests/phase1/test-extract.praat | 480 | 1.1 | EML Stats : Data Extraction Layer - Test Suite
+dev/tests/phase1/test-output.praat | 501 | 1.2 | EML Stats : Output Formatting — Test Suite
+dev/tests/phase2/_margins_generated.praat | 95 | - | Generated harness (theilsen-build-margins.py): prints the numeric margin at every assertion site in test-theilsen.praat. Not a suite — excluded from the runner.
+dev/tests/phase2/batch2_scipy_refs.py | 69 | - | External reference generator (scipy): batch2 one-tailed p-values and the batch7 Dunn-1 |z| literals.
+dev/tests/phase2/batch3_scipy_refs.py | 243 | 1.0 | External reference generator (scipy): tied and zero-difference cases for the batch3 rank tests.
+dev/tests/phase2/batch6b_scipy_refs.py | 213 | - | EML Stats Batch 6B — scipy reference-value generator
+dev/tests/phase2/batch7_scipy_refs.py | 237 | - | EML Stats Batch 7 — scipy reference-value generator
+dev/tests/phase2/regression_scipy_refs.py | 128 | 1.0 | External reference generator (scipy): expected values for test-regression.praat.
+dev/tests/phase2/repeatedmeasures_refs.py | 291 | 1.0 | External reference generator (scipy, statsmodels, pingouin): expected values for test-repeated-measures.praat. Sole [EXT] oracle for Greenhouse-Geisser epsilon — base R has no GG routine.
+dev/tests/phase2/test-12-groups.praat | 88 | 1.1 | Test: 12-group ANOVA (verifies no 10-group ceiling)
+dev/tests/phase2/test-inferential-batch1.praat | 296 | 1.1 | EML Stats : Test Suite — Inferential Statistics (Batch 1)
 dev/tests/phase2/test-inferential-batch2.praat | 203 | - | EML Stats : Test Suite — Inferential Statistics (Batch 2)
-dev/tests/phase2/test-inferential-batch3.praat | 230 | - | EML Stats : Test Suite — Inferential Statistics (Batch 3)
-dev/tests/phase2/test-inferential-batch4.praat | 292 | - | EML Stats : Test Suite — Inferential Statistics (Batch 4)
+dev/tests/phase2/test-inferential-batch3.praat | 269 | - | EML Stats : Test Suite — Inferential Statistics (Batch 3)
+dev/tests/phase2/test-inferential-batch4.praat | 312 | - | EML Stats : Test Suite — Inferential Statistics (Batch 4)
 dev/tests/phase2/test-inferential-batch5.praat | 319 | - | EML Stats : Test Suite — Inferential Statistics (Batch 5)
-dev/tests/phase2/test-inferential-batch6.praat | 846 | 2.0 | EML Stats : Test Suite — Inferential Statistics (Batch 6 + Batch 9)
-dev/tests/phase2/test-inferential-batch6b.praat | 500 | - | EML Stats : Test Suite — Inferential Statistics (Batch 6B)
-dev/tests/phase2/test-inferential-batch7.praat | 632 | - | EML Stats : Test Suite — Inferential Statistics (Batch 7)
-dev/tests/phase2/test-regression.praat | 130 | 1.0 | EML Stats : Regression Test Suite
-dev/tests/phase2/test-shapiro-wilk.praat | 145 | - | Test: @emlShapiroWilk
-dev/tests/phase2/test-wizard-explanations.praat | 164 | - | Test: Wizard Mode Third-Column Explanations
+dev/tests/phase2/test-inferential-batch6.praat | 846 | - | EML Stats : Test Suite — Inferential Statistics (Batch 6 + Batch 9)
+dev/tests/phase2/test-inferential-batch6b.praat | 517 | - | EML Stats : Test Suite — Inferential Statistics (Batch 6B)
+dev/tests/phase2/test-inferential-batch7.praat | 642 | - | EML Stats : Test Suite — Inferential Statistics (Batch 7)
+dev/tests/phase2/test-regression.praat | 148 | 1.1 | EML Stats : Regression Test Suite
+dev/tests/phase2/test-repeated-measures.praat | 451 | 1.0 | EML Stats : Test Suite — Repeated Measures (@emlExtractConditionMatrix, @emlFriedmanTest, @emlGGEpsilon, @emlRMAnovaTest). Reports INCOMPLETE by design: 6 degenerate-input quantities are skipped pending author decision.
+dev/tests/phase2/test-shapiro-wilk.praat | 268 | 2.0 | Test: @emlShapiroWilk
+dev/tests/phase2/test-theilsen.praat | 249 | 1.0 | Test suite: @emlTheilSen (Theil-Sen robust regression), expected values from scipy.
+dev/tests/phase2/test-wizard-explanations.praat | 196 | - | Test: Wizard Mode Third-Column Explanations
 dev/tests/phase2/test-workflow-verification.praat | 354 | 1.0 | EML Stats : Workflow Verification Test Suite
-dev/tests/phase2/test_coltype.praat | 18 | - | tableId = Create Table with column names: "test", 3, "name value group"
-dev/tests/phase2/verify-inferential-batch1.R | 89 | - | Independent verification of test assertions in
-dev/tests/phase2/verify-inferential-batch3.R | 127 | - | EML Stats : R Verification Script — Inferential Statistics (Batch 3)
-dev/tests/phase2/verify-inferential-batch4.R | 244 | - | EML Stats : R Verification Script — Inferential Statistics (Batch 4)
-dev/tests/phase2/verify-inferential-batch5.R | 175 | - | EML Stats : R Verification Script — Inferential Statistics (Batch 5)
-dev/tests/phase2/verify-inferential-batch6.R | 169 | - | EML Stats : R Verification — Inferential Statistics (Batch 6)
-dev/tests/phase2/verify-inferential-batch6b.R | 181 | - | EML Stats Batch 6B — R Verification Script
-dev/tests/phase2/verify-inferential-batch7.R | 240 | - | EML Stats Batch 7 — R Verification Script
-dev/tests/phase2/verify-shapiro-wilk.R | 55 | - | R Verification Script for @emlShapiroWilk
-dev/tests/tables/spaghettit table.csv | 21 | - | ﻿time,subject,value,group
-dev/tutorial-wireframes-v09.praat | 857 | 0.9 | EML Stats Tutorial — Layout Wireframes v0.9
-graphs/eml-annotation-procedures.praat | 3582 | 3.17 | EML GRAPHS — ANNOTATION + STATS BRIDGE PROCEDURES
-graphs/eml-draw-procedures.praat | 3554 | 1.18 | EML GRAPHS — DRAWING PROCEDURES
-graphs/eml-graph-procedures.praat | 2737 | 3.21 | EML GRAPHS — STANDARD DRAWING PROCEDURES
-graphs/eml-graphs-form.praat | 5661 | 1.9 | EML Graphs — Form System and Workflow
+dev/tests/phase2/theilsen_scipy_refs.py | 273 | 1.2 | External reference generator (scipy): expected values for test-theilsen.praat.
+dev/tests/phase2/verify-inferential-batch1.R | 389 | 2.0 | Independent verification of test assertions in
+dev/tests/phase2/verify-inferential-batch3.R | 419 | 1.3 | EML Stats : R Verification Script — Inferential Statistics (Batch 3)
+dev/tests/phase2/verify-inferential-batch4.R | 283 | 1.1 | EML Stats : R Verification Script — Inferential Statistics (Batch 4)
+dev/tests/phase2/verify-inferential-batch5.R | 214 | 1.1 | EML Stats : R Verification Script — Inferential Statistics (Batch 5)
+dev/tests/phase2/verify-inferential-batch6.R | 641 | 2.0 | EML Stats : R Verification — Inferential Statistics (Batch 6)
+dev/tests/phase2/verify-inferential-batch6b.R | 384 | 1.3 | EML Stats Batch 6B — R Verification Script
+dev/tests/phase2/verify-inferential-batch7-dunn.py | 378 | 1.0 | External verification (scikit-posthocs): Dunn's post-hoc values for inferential batch 7.
+dev/tests/phase2/verify-inferential-batch7.R | 422 | 1.2.1 | EML Stats Batch 7 — R Verification Script
+dev/tests/phase2/verify-repeated-measures.R | 578 | 1.0 | EML Stats : R verification (base stats) of the literals in test-repeated-measures.praat. Friedman and RM-ANOVA are [EXT]; GG epsilon is [LH] longhand only — see REFERENCE_PROVENANCE.md.
+dev/tests/phase2/verify-shapiro-wilk.R | 307 | 2.0 | R Verification Script for @emlShapiroWilk
+dev/tests/test-helpers-selftest-negative.praat | 32 | - | Negative control for the assertion helpers — four deliberate failures. Expected status FAIL; the runner scores it XFAIL.
+dev/tests/test-helpers-selftest.praat | 27 | - | Positive control for the assertion helpers — each helper exercised on a passing case.
+dev/tools/build-manifest.py | 294 | - | Regenerate MANIFEST.txt: recompute the derived columns, inherit curated descriptions by path. --check exits 1 on drift.
+dev/tools/procs.json | 1672 | - | Machine-generated index of every `procedure` definition in the tree (written by reg-extract-procedures.py).
+dev/tools/reg-apply-edits.py | 424 | - | Apply the EML_PROCEDURE_REGISTRY.md corrections as guarded passes.
+dev/tools/reg-extract-procedures.py | 44 | - | Enumerate every `procedure` definition in the plugin tree and write dev/tools/procs.json.
+dev/tools/reg-list-names.py | 23 | - | Print the procedure names per registry-documented file, from procs.json (run reg-extract-procedures.py first).
+dev/tools/reg-reconcile.py | 175 | - | Reconcile EML_PROCEDURE_REGISTRY.md against procs.json BY NAME; report per-section defects.
+dev/tools/relerr-conversion-table.py | 163 | - | Provenance record for the 31 assertion sites converted from absolute to relative tolerance.
+dev/tools/relerr-convert-APPLIED.py | 77 | - | One-shot in-place absolute-to-relative tolerance converter. ALREADY APPLIED — kept as a record, do not re-run.
+dev/tools/run-tests.py | 480 | 1.0 | Test runner: discover dev/tests/**/*.praat, run each in its own Praat process, parse the EMLTEST-RESULT sentinel.
+dev/tools/scan-assertion-vacuity.py | 145 | - | Classify every numeric assertion in a Praat test directory by how much discriminating power it actually has.
+dev/tools/stress-degenerate-inputs.py | 465 | - | Probe the statistics library with degenerate inputs (empty, singleton, all-tied, all-undefined), one isolated Praat process per case; classifies each as CONTRACT / UNSET / VALUE / CRASH.
+dev/tools/theilsen-build-margins.py | 132 | - | Generate _margins_generated.praat, which prints the numeric margin at every test-theilsen.praat assertion site.
+dev/tools/theilsen-negative-controls.py | 247 | - | Prove that test-theilsen.praat can fail: perturb each expected value and confirm the suite goes red.
+dev/tools/theilsen_margin_rows.json | 225 | - | Machine-generated margin data for the test-theilsen.praat assertion sites (written by theilsen-build-margins.py).
+dev/tools/vacuity-negative-controls.py | 238 | - | Prove that scan-assertion-vacuity.py can fail: inject one defect per class into a copy of the phase2 tree and require the scanner to catch each.
+dev/tutorial-wireframes-v09.praat | 869 | 0.10 | EML Stats Tutorial — Layout Wireframes
+graphs/eml-annotation-procedures.praat | 3805 | 3.18 | EML GRAPHS — ANNOTATION + STATS BRIDGE PROCEDURES
+graphs/eml-draw-procedures.praat | 4016 | 1.20 | EML GRAPHS — DRAWING PROCEDURES
+graphs/eml-graph-procedures.praat | 3141 | 3.22 | EML GRAPHS — STANDARD DRAWING PROCEDURES
+graphs/eml-graphs-form.praat | 5814 | 2.2 | EML Graphs — Form System and Workflow
 scripts/eml-batch-process.praat | 660 | 1.1 | Batch process a folder of Sound files to extract user-selected
 scripts/eml-check-normality.praat | 226 | 2.0 | Test normality for one or more numeric columns, optionally
 scripts/eml-compare-groups.praat | 142 | 3.0 | Compare two independent groups from a Table using parametric
@@ -62,18 +94,28 @@ scripts/eml-edit-table-launch.praat | 37 | 2.0 | Opens the Table editor window, 
 scripts/eml-edit-table.praat | 562 | 2.1 | Interactive cell editor for Praat Table objects. Provides
 scripts/eml-graphs.praat | 36 | 3.0 | Entry point for the standalone EML Graphs tool. All logic lives
 scripts/eml-lmm.praat | 102 | 1.0 | Fit a linear mixed-effects model (lme4-style formula) to a Table
-scripts/eml-pairwise.praat | 131 | 3.0 | All-pairs comparisons from a Table using pairwise t-test,
-scripts/eml-quick-start.praat | 68 | - | EML Praat Tools — Quick Start Guide
+scripts/eml-pairwise.praat | 135 | 3.1 | All-pairs comparisons from a Table using pairwise t-test,
+scripts/eml-quick-start.praat | 72 | 1.1 | EML Praat Tools — Quick Start Guide
 scripts/eml-regress.praat | 114 | 2.1 | OLS simple linear regression (slope, intercept, R², SE, F, p)
-scripts/eml-stats-demo.praat | 489 | 1.3 | Demonstrates three core inferential statistics workflows
-scripts/eml-tutorial.praat | 724 | 0.18 | EML Stats Tutorial — Interactive Statistics Guide
-scripts/eml-wizard.praat | 2325 | 2.1 | Question-driven statistical analysis wizard. Routes research
-stats/eml-analysis.praat | 1416 | 1.1 | Centralizes computation + reporting for all analysis types.
-stats/eml-core-descriptive.praat | 786 | 1.1 | EML Stats : Core Descriptive Statistics
+scripts/eml-stats-demo.praat | 495 | 1.4 | Demonstrates three core inferential statistics workflows
+scripts/eml-tutorial.praat | 733 | 0.19 | EML Stats Tutorial — Interactive Statistics Guide
+scripts/eml-wizard.praat | 2363 | 2.3 | Question-driven statistical analysis wizard. Routes research
+setup.praat | 113 | 1.4 | Register menu entries and dynamic action buttons for the
+stats/eml-analysis.praat | 1696 | 1.2 | EML Stats : Analysis Orchestrators
+stats/eml-core-descriptive.praat | 870 | 1.2 | EML Stats : Core Descriptive Statistics
 stats/eml-core-utilities.praat | 829 | 1.0 | EML Stats : Core Utility Procedures
-stats/eml-extract.praat | 1330 | 1.4 | EML Stats : Data Extraction Layer
-stats/eml-inferential.praat | 3334 | 1.2 | EML Stats : Inferential Statistics
+stats/eml-extract.praat | 1815 | 1.5 | EML Stats : Data Extraction Layer
+stats/eml-inferential.praat | 4074 | 1.3 | EML Stats : Inferential Statistics
 stats/eml-linalg.praat | 330 | 1.0 | EML Praat Tools — Numerical Linear Algebra Layer
-stats/eml-lmm.praat | 4308 | 0.8 | EML Praat Tools — Linear Mixed Models
+stats/eml-lmm.praat | 4308 | - | EML Praat Tools — Linear Mixed Models
 stats/eml-optimizer.praat | 2387 | 2.0 | EML Praat Tools — Derivative-Free Optimizers
-stats/eml-output.praat | 952 | 1.7 | EML Stats : Output Formatting
+stats/eml-output.praat | 980 | 1.8 | EML Stats : Output Formatting
+
+# --------------------------------------------------------------------------
+# RETIRED — moved out of the plugin, kept on disk because this tree is not
+# under version control. Not shipped, not discovered by the test runner.
+# See dev/retired/README.md for why each was retired.
+# --------------------------------------------------------------------------
+dev/retired/README.md | ~238 words | - | Why each retired artifact was retired, and how to restore it.
+dev/retired/spaghettit table.csv | 21 | - | Sample long-format Table (time, subject, value, group) for spaghetti-plot tests.
+dev/retired/test_coltype.praat | 18 | - | Scratch probe: Table column type behaviour.

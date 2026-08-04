@@ -2,8 +2,8 @@
 # EML Stats : Core Descriptive Statistics — Validation Suite
 # ============================================================================
 # Tests: eml-core-descriptive.praat
-# Version: 1.0
-# Date: 20 February 2026
+# Version: 1.1
+# Date: 3 August 2026
 #
 # Validates all procedures against analytically computed expected values.
 # Run this script with eml-core-descriptive.praat in the same directory.
@@ -11,9 +11,24 @@
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
 # Development: Claude (Anthropic)
 # License: Creative Commons Share-Alike
+#
+# v1.1: Brought under the TEST RESULT REPORTING CONTRACT (v1.1, declared in
+#        dev/tests/eml-test-helpers.praat). The hand-rolled summary printed
+#        "SOME TESTS FAILED" and then returned normally, so the process
+#        exited 0 whatever the outcome — green by construction for any
+#        runner reading exit status. Local counters are now bridged into
+#        emlTestInit.* and @emlTestSummary emits the machine-readable
+#        sentinel. No assertion call site changed and the human-readable
+#        summary is untouched.
 # ============================================================================
 
 include ../../../stats/eml-core-descriptive.praat
+
+# Shared harness — used only for @emlTestInit / @emlTestSummary (the
+# reporting contract). This suite keeps its own assertion helpers.
+include ../eml-test-helpers.praat
+
+@emlTestInit
 
 # ============================================================================
 # Test infrastructure
@@ -565,3 +580,13 @@ else
     .someFail$ = "SOME TESTS FAILED — review output above"
     appendInfoLine: .someFail$
 endif
+
+# Bridge the local counters into the shared harness so @emlTestSummary can
+# emit the machine-readable sentinel (TEST RESULT REPORTING CONTRACT v1.1).
+# @emlTestSummary exitScript:s when failed > 0, so this must stay last —
+# nothing that needs to run may follow it.
+emlTestInit.passed = testsPassed
+emlTestInit.failed = testsFailed
+emlTestInit.skipped = 0
+emlTestInit.count = testsTotal
+@emlTestSummary

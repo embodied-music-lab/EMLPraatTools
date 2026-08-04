@@ -5,7 +5,29 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # License: Creative Commons Share-Alike
-# Version: 1.9
+# Version: 2.2
+# v2.2: Item 8 — two further preset-plumbing defects. (a) The spaghetti-plot
+#       column-mapping dialog never consumed emlGraphsPresetGroupCol$; it
+#       relied on a name heuristic that runs only on the first spaghetti draw
+#       of a session, so a later Draw from a stats wrapper silently dropped
+#       the requested grouping. Added the spPresetHasGroup / spPresetGroupIdx
+#       sentinel, mirroring scatter and histogram. (b) emlGraphsPresetXCol$
+#       and emlGraphsPresetYCol$ were cleared only inside the scatter page,
+#       so they leaked into the next workflow call whenever the user chose a
+#       non-scatter graph type; both are now cleared at workflow end.
+# v2.1: Item 8 — histogram column-mapping dialog now honours an incoming
+#       group-column preset. The preset seeded histGroupIdx but left
+#       "Use group column" unchecked, so histGroupCol$ committed as "" and
+#       the grouped-histogram annotation route at the dispatch was silently
+#       skipped even though the caller had asked to annotate. Added the
+#       histPresetHasGroup sentinel, mirroring scatterPresetHasGroup.
+# v2.0: Item 6 — multiple-comparison adjustment is now user-facing instead
+#       of a hardcoded "holm". Added an "Adjustment method" optionmenu
+#       (Bonferroni / Holm / Benjamini-Hochberg, default Holm) to all six
+#       annotate-capable column-mapping dialogs, backed by the shared
+#       prev_annotAdjustIdx persistence variable and the @emlAdjustMethodName
+#       index-to-string helper. Added the emlGraphsPresetCorrection$ preset
+#       global so stats wrappers can carry their own adjustment choice in.
 # v1.9: Bar-chart negative-mean support in the annotated (bracket) path —
 #       auto-range now floors on emlBarData_visibleMin so all-/mixed-negative
 #       means are not clipped at 0 (positive data unchanged via the axis
@@ -102,7 +124,11 @@ emlGraphsPresetXCol$ = ""
 emlGraphsPresetYCol$ = ""
 emlGraphsPresetRegressionLine = 0
 emlGraphsPresetCorrType$ = ""
+emlGraphsPresetCorrection$ = ""
 scatterPresetHasGroup = 0
+histPresetHasGroup = 0
+spPresetHasGroup = 0
+spPresetGroupIdx = 0
 
 # ============================================================================
 # GRAPH TYPE REGISTRY
@@ -728,6 +754,29 @@ endproc
 
 
 # ============================================================================
+# ADJUSTMENT-METHOD LOOKUP
+# ============================================================================
+# Maps the "Adjustment method" optionmenu index used by every annotate-capable
+# column-mapping dialog onto the string that @emlBridgeGroupComparison expects
+# in annotCorrectionMethod$. Index 2 (Holm) is the default everywhere.
+#
+# Arguments:
+#   .idx — 1 = Bonferroni, 2 = Holm, 3 = Benjamini-Hochberg
+# Outputs:
+#   .name$ — "bonferroni", "holm", or "bh"
+# ============================================================================
+procedure emlAdjustMethodName: .idx
+    if .idx = 1
+        .name$ = "bonferroni"
+    elsif .idx = 3
+        .name$ = "bh"
+    else
+        .name$ = "holm"
+    endif
+endproc
+
+
+# ============================================================================
 # WORKFLOW — Main interactive graph creation loop
 # ============================================================================
 # WARNING: This procedure reads and writes main-body scope variables
@@ -837,6 +886,10 @@ prev_spShowMean = -1
 # Histogram stats persistence
 prev_histAnnotTestType = 1
 prev_histAnnotStyle = 1
+
+# Multiple-comparison adjustment persistence (shared by every
+# annotate-capable dialog). 1 = Bonferroni, 2 = Holm, 3 = Benjamini-Hochberg.
+prev_annotAdjustIdx = 2
 
 # Violin jitter persistence
 prev_violinShowJitter = 0
@@ -974,6 +1027,21 @@ scatterShowDots = 1
     if emlGraphsPresetCorrType$ <> ""
         annotCorrType$ = emlGraphsPresetCorrType$
         emlGraphsPresetCorrType$ = ""
+    endif
+
+    # Multiple-comparison adjustment carried in from a stats wrapper.
+    # Also seeds the dialog default so the Advanced form shows the method
+    # the calling test actually used.
+    if emlGraphsPresetCorrection$ <> ""
+        annotCorrectionMethod$ = emlGraphsPresetCorrection$
+        if emlGraphsPresetCorrection$ = "bonferroni"
+            prev_annotAdjustIdx = 1
+        elsif emlGraphsPresetCorrection$ = "bh"
+            prev_annotAdjustIdx = 3
+        else
+            prev_annotAdjustIdx = 2
+        endif
+        emlGraphsPresetCorrection$ = ""
     endif
 
     # Column presets are consumed by the type-specific forms.
@@ -2561,6 +2629,10 @@ repeat
                     optionmenu: "Test type", tmpBarTestType
                         option: "Parametric"
                         option: "Nonparametric"
+                    optionmenu: "Adjustment method", prev_annotAdjustIdx
+                        option: "Bonferroni"
+                        option: "Holm"
+                        option: "Benjamini-Hochberg"
                     optionmenu: "Significance style", tmpBarAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -2629,6 +2701,7 @@ repeat
                     prev_adv_bar_annotLayoutMode = annotation_layout
                     prev_adv_bar_testType = test_type
                     prev_adv_bar_annotStyle = significance_style
+                    prev_annotAdjustIdx = adjustment_method
                     prev_adv_bar_VMin$ = string$ (value_minimum)
                     prev_adv_bar_VMax$ = string$ (value_maximum)
                     prev_adv_bar_gridMode = gridline_mode
@@ -2714,6 +2787,9 @@ repeat
                     annotShowEffect = show_effect_sizes
                     annotAlpha = alpha
                     annotLayoutMode = annotation_layout
+                    @emlAdjustMethodName: adjustment_method
+                    annotCorrectionMethod$ = emlAdjustMethodName.name$
+                    prev_annotAdjustIdx = adjustment_method
                     if test_type = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -2904,6 +2980,10 @@ repeat
                     optionmenu: "Test type", tmpViolinTestType
                         option: "Parametric"
                         option: "Nonparametric"
+                    optionmenu: "Adjustment method", prev_annotAdjustIdx
+                        option: "Bonferroni"
+                        option: "Holm"
+                        option: "Benjamini-Hochberg"
                     optionmenu: "Significance style", tmpViolinAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -2972,6 +3052,7 @@ repeat
                     prev_adv_vio_annotLayoutMode = annotation_layout
                     prev_adv_vio_testType = test_type
                     prev_adv_vio_annotStyle = significance_style
+                    prev_annotAdjustIdx = adjustment_method
                     prev_adv_vio_showJitter = show_jittered_points
                     prev_adv_vio_VMin$ = string$ (value_minimum)
                     prev_adv_vio_VMax$ = string$ (value_maximum)
@@ -3061,6 +3142,9 @@ repeat
                     annotAlpha = alpha
                     annotLayoutMode = annotation_layout
                     prev_violinShowJitter = show_jittered_points
+                    @emlAdjustMethodName: adjustment_method
+                    annotCorrectionMethod$ = emlAdjustMethodName.name$
+                    prev_annotAdjustIdx = adjustment_method
                     if test_type = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -3690,6 +3774,10 @@ repeat
                     optionmenu: "Test type", tmpBoxTestType
                         option: "Parametric"
                         option: "Nonparametric"
+                    optionmenu: "Adjustment method", prev_annotAdjustIdx
+                        option: "Bonferroni"
+                        option: "Holm"
+                        option: "Benjamini-Hochberg"
                     optionmenu: "Significance style", tmpBoxAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -3758,6 +3846,7 @@ repeat
                     prev_adv_box_annotLayoutMode = annotation_layout
                     prev_adv_box_testType = test_type
                     prev_adv_box_annotStyle = significance_style
+                    prev_annotAdjustIdx = adjustment_method
                     prev_adv_box_showJitter = show_jittered_points
                     prev_adv_box_VMin$ = string$ (value_minimum)
                     prev_adv_box_VMax$ = string$ (value_maximum)
@@ -3847,6 +3936,9 @@ repeat
                     annotAlpha = alpha
                     annotLayoutMode = annotation_layout
                     prev_boxShowJitter = show_jittered_points
+                    @emlAdjustMethodName: adjustment_method
+                    annotCorrectionMethod$ = emlAdjustMethodName.name$
+                    prev_annotAdjustIdx = adjustment_method
                     if test_type = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -3919,6 +4011,12 @@ repeat
             for .iPreset from 1 to nCols
                 if colName$[.iPreset] = emlGraphsPresetGroupCol$
                     histGroupIdx = .iPreset
+                    # The caller supplied a group column, so the dialog must
+                    # open with "Use group column" already checked. Without
+                    # this the index is seeded but the box stays clear,
+                    # histGroupCol$ commits as "", and the grouped-histogram
+                    # annotation route is silently skipped.
+                    histPresetHasGroup = 1
                 endif
                 if colName$[.iPreset] = emlGraphsPresetDataCol$
                     histValueIdx = .iPreset
@@ -3974,7 +4072,10 @@ repeat
             tmpDisplayMode = 1
         endif
         tmpUseGroup = 0
-        if prev_histUseGroup >= 0
+        if histPresetHasGroup
+            tmpUseGroup = 1
+            histPresetHasGroup = 0
+        elsif prev_histUseGroup >= 0
             tmpUseGroup = prev_histUseGroup
         endif
 
@@ -4011,6 +4112,10 @@ repeat
                     optionmenu: "Test type", prev_histAnnotTestType
                         option: "Parametric"
                         option: "Nonparametric"
+                    optionmenu: "Adjustment method", prev_annotAdjustIdx
+                        option: "Bonferroni"
+                        option: "Holm"
+                        option: "Benjamini-Hochberg"
                     optionmenu: "Significance style", prev_histAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -4077,6 +4182,7 @@ repeat
                     prev_adv_his_annotAlpha = alpha
                     prev_adv_his_testType = test_type
                     prev_adv_his_annotStyle = significance_style
+                    prev_annotAdjustIdx = adjustment_method
                     prev_adv_his_VMin$ = string$ (value_minimum)
                     prev_adv_his_VMax$ = string$ (value_maximum)
                     prev_adv_his_freqMax$ = string$ (frequency_maximum)
@@ -4180,6 +4286,9 @@ repeat
                     annotLayoutMode = 3
                     prev_histAnnotTestType = test_type
                     prev_histAnnotStyle = significance_style
+                    @emlAdjustMethodName: adjustment_method
+                    annotCorrectionMethod$ = emlAdjustMethodName.name$
+                    prev_annotAdjustIdx = adjustment_method
                     if test_type = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -4344,6 +4453,10 @@ repeat
                     optionmenu: "Test type", prev_gvAnnotTestType
                         option: "Parametric"
                         option: "Nonparametric"
+                    optionmenu: "Adjustment method", prev_annotAdjustIdx
+                        option: "Bonferroni"
+                        option: "Holm"
+                        option: "Benjamini-Hochberg"
                     optionmenu: "Significance style", prev_gvAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -4408,6 +4521,7 @@ repeat
                     prev_adv_gv_annotAlpha = alpha
                     prev_adv_gv_testType = test_type
                     prev_adv_gv_annotStyle = significance_style
+                    prev_annotAdjustIdx = adjustment_method
                     prev_adv_gv_showJitter = show_jittered_points
                     prev_adv_gv_VMin$ = string$ (value_minimum)
                     prev_adv_gv_VMax$ = string$ (value_maximum)
@@ -4502,6 +4616,9 @@ repeat
                     annotLayoutMode = 3
                     prev_gvAnnotTestType = test_type
                     prev_gvAnnotStyle = significance_style
+                    @emlAdjustMethodName: adjustment_method
+                    annotCorrectionMethod$ = emlAdjustMethodName.name$
+                    prev_annotAdjustIdx = adjustment_method
                     if test_type = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -4655,6 +4772,10 @@ repeat
                     optionmenu: "Test type", prev_gbAnnotTestType
                         option: "Parametric"
                         option: "Nonparametric"
+                    optionmenu: "Adjustment method", prev_annotAdjustIdx
+                        option: "Bonferroni"
+                        option: "Holm"
+                        option: "Benjamini-Hochberg"
                     optionmenu: "Significance style", prev_gbAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -4719,6 +4840,7 @@ repeat
                     prev_adv_gb_annotAlpha = alpha
                     prev_adv_gbTestType = test_type
                     prev_adv_gbAnnotStyle = significance_style
+                    prev_annotAdjustIdx = adjustment_method
                     prev_adv_gbShowJitter = show_jittered_points
                     prev_adv_gb_VMin$ = string$ (value_minimum)
                     prev_adv_gb_VMax$ = string$ (value_maximum)
@@ -4811,6 +4933,9 @@ repeat
                     annotLayoutMode = 3
                     prev_gbAnnotTestType = test_type
                     prev_gbAnnotStyle = significance_style
+                    @emlAdjustMethodName: adjustment_method
+                    annotCorrectionMethod$ = emlAdjustMethodName.name$
+                    prev_annotAdjustIdx = adjustment_method
                     if test_type = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -4881,6 +5006,23 @@ repeat
         spGroupIdx = 1
         tmpUseGroup = 0
 
+        # A caller-supplied group column must win over both the prev_*
+        # persistence branch and the name heuristic below. Without this the
+        # spaghetti page ignored emlGraphsPresetGroupCol$ entirely: the
+        # heuristic runs only on the first spaghetti draw of a session, so a
+        # later Draw from a stats wrapper silently dropped the requested
+        # grouping.
+        if emlGraphsPresetGroupCol$ <> ""
+            for .iPreset from 1 to nCols
+                if colName$[.iPreset] = emlGraphsPresetGroupCol$
+                    spPresetGroupIdx = .iPreset
+                    spPresetHasGroup = 1
+                endif
+            endfor
+            # Consumed — clear so Redraw uses prev_* persistence
+            emlGraphsPresetGroupCol$ = ""
+        endif
+
         if prev_spCondIdx > 0
             spCondIdx = prev_spCondIdx
             spValueIdx = prev_spValueIdx
@@ -4922,6 +5064,12 @@ repeat
                     spValueIdx = min (2, nCols)
                 endif
             endif
+        endif
+
+        if spPresetHasGroup
+            spGroupIdx = spPresetGroupIdx
+            tmpUseGroup = 1
+            spPresetHasGroup = 0
         endif
 
         if lastDrawnGraphType = 14
@@ -5653,9 +5801,14 @@ until keepGoing = 0
     endif
 
     # --- Clear presets ---
+    # X/Y are cleared here as well as in the scatter page: they are consumed
+    # only by scatter, so a caller that seeded them and then had the user pick
+    # a non-scatter graph type left them set for the next workflow call.
     emlGraphsPresetType = 0
     emlGraphsPresetDataCol$ = ""
     emlGraphsPresetGroupCol$ = ""
     emlGraphsPresetTestType$ = ""
     emlGraphsPresetAnnotate = 0
+    emlGraphsPresetXCol$ = ""
+    emlGraphsPresetYCol$ = ""
 endproc

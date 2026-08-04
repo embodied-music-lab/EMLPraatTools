@@ -6,7 +6,18 @@
 #
 # Uses R's built-in p.adjust() — the standard reference implementation.
 #
-# Date: 3 March 2026
+#
+# Version: 1.1
+# Date: 2 August 2026
+#
+# CHANGELOG
+# 1.1 (2 Aug 2026) - Removed a structural false green. check() returned
+#     silently on an NA result, so a check that never ran was
+#     indistinguishable from one that passed and the file could still
+#     print its all-clear banner. Skips are now registered, counted,
+#     echoed in the summary, and the banner degrades to INCOMPLETE.
+#     Added the shared exit-code contract (0 pass / 1 fail / 2 incomplete).
+# 1.0 (3 Mar 2026) - Initial.
 # ============================================================================
 
 cat("==================================================\n")
@@ -15,11 +26,22 @@ cat("==================================================\n\n")
 
 pass <- 0
 fail <- 0
+skipped <- 0
+skip_reasons <- character(0)
+
+# A skipped check must never be able to read as a pass. Every skip registers
+# itself here, and the final banner is gated on skipped == 0 as well as
+# fail == 0.
+register_skip <- function(reason) {
+  skipped <<- skipped + 1
+  skip_reasons <<- c(skip_reasons, reason)
+  cat(sprintf("  SKIP: %s\n", reason))
+}
 
 check <- function(label, expected, actual, tol=0.001) {
   if (is.na(actual) || is.na(expected)) {
-    cat(sprintf("  SKIP: %s (NA result)\n", label))
-    return()
+    register_skip(sprintf("%s (NA result - check not performed)", label))
+    return(invisible(NULL))
   }
   if (abs(expected - actual) <= tol) {
     assign("pass", get("pass", envir=.GlobalEnv) + 1, envir=.GlobalEnv)
@@ -166,10 +188,27 @@ for (i in seq_along(raw1)) {
 # ══════════════════════════════════════════════════════════════════════════════
 
 cat("\n==================================================\n")
-cat(sprintf("TOTAL: %d PASS, %d FAIL\n", pass, fail))
+cat(sprintf("TOTAL: %d PASS, %d FAIL, %d SKIP\n", pass, fail, skipped))
+cat(sprintf("R %s.%s\n", R.version$major, R.version$minor))
+
 if (fail > 0) {
   cat("*** FAILURES DETECTED ***\n")
+} else if (skipped > 0) {
+  cat(sprintf("INCOMPLETE - %d check(s) skipped, 0 failed.\n", skipped))
+  for (r in skip_reasons) cat(sprintf("  * %s\n", r))
+  cat("This run does NOT constitute verification of the skipped checks.\n")
 } else {
   cat("All checks passed.\n")
 }
 cat("==================================================\n")
+
+# Exit-code contract, shared by every verifier in this directory:
+#   0 = all checks performed and passed
+#   1 = at least one check FAILED
+#   2 = no failures, but at least one check was SKIPPED (incomplete)
+# A runner must not collapse 2 into 0. Skips here are structural (R cannot
+# compute the quantity), not transient, so 2 is the expected steady state
+# for some files - the point is that it can never be mistaken for green.
+if (fail > 0) quit(status = 1)
+if (skipped > 0) quit(status = 2)
+quit(status = 0)

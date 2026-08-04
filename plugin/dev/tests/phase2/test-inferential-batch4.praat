@@ -13,6 +13,17 @@
 # the effect size computation and passthrough correctness.
 #
 # Include order: utilities (for @emlRankVector) -> inferential -> test helpers
+#
+# Revised: 2 August 2026 (v1.1)
+# v1.1 — Audit item 7 (exact/approximate routing). The library now follows
+# R's wilcox.test rule exactly: the exact null is used only when there are no
+# ties (and, for the signed-rank test, no zero differences); otherwise the
+# normal approximation with tie correction is used, as R does. Every case
+# revised below contains ties, so R itself would not use the exact null. The
+# effect sizes (r, from U1/U2 or T+/T-) are exact arithmetic and are unchanged.
+# Only .method$ and .rZ change: .rZ is undefined on the exact path (no Z
+# exists) and defined on the approximation path, so the three former
+# "rZ undefined" assertions now assert the R-consistent Z-derived value.
 # ============================================================================
 
 include ../../../stats/eml-core-utilities.praat
@@ -66,7 +77,9 @@ looseTolerance = 0.01
     ... {5.0, 5.1, 4.8, 5.2, 4.9, 5.3, 5.1, 4.7}, 2
 @emlTestAssertEqualStr: "RBS-1.6 no error", "", emlRankBiserialR.error$
 @emlTestAssertEqualNum: "RBS-1.6 r", 0.09375, emlRankBiserialR.r, tolerance
-@emlTestAssertEqualStr: "RBS-1.6 method", "exact", emlRankBiserialR.method$
+# Ties across the two samples (4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3 all repeat),
+# so R's wilcox.test uses the normal approximation with tie correction.
+@emlTestAssertEqualStr: "RBS-1.6 method", "normal approximation", emlRankBiserialR.method$
 
 # --- 1.7: One-tailed (r is same, p differs from two-tailed) ---
 @emlRankBiserialR: {10, 20, 30}, {1, 2, 3}, 1
@@ -98,7 +111,8 @@ looseTolerance = 0.01
     ... {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, 2
 @emlTestAssertEqualStr: "RBS-2.1 no error", "", emlRankBiserialR.error$
 @emlTestAssertEqualNum: "RBS-2.1 r", 0.33636, emlRankBiserialR.r, tolerance
-@emlTestAssertEqualStr: "RBS-2.1 method", "exact", emlRankBiserialR.method$
+# Ties present across samples, so the normal approximation applies (as in R).
+@emlTestAssertEqualStr: "RBS-2.1 method", "normal approximation", emlRankBiserialR.method$
 @emlTestAssertEqualNum: "RBS-2.1 n1", 11, emlRankBiserialR.n1, tightTolerance
 @emlTestAssertEqualNum: "RBS-2.1 n2", 10, emlRankBiserialR.n2, tightTolerance
 
@@ -135,8 +149,11 @@ looseTolerance = 0.01
 @emlTestAssertEqualNum: "MPR-4.1 r", 1.0, emlMatchedPairsR.r, tightTolerance
 @emlTestAssertEqualNum: "MPR-4.1 tPlus", 15.0, emlMatchedPairsR.tPlus, tightTolerance
 @emlTestAssertEqualNum: "MPR-4.1 tMinus", 0.0, emlMatchedPairsR.tMinus, tightTolerance
-@emlTestAssertEqualStr: "MPR-4.1 method", "exact", emlMatchedPairsR.method$
-@emlTestAssertUndefined: "MPR-4.1 rZ undefined (exact)", emlMatchedPairsR.rZ
+# Tied absolute differences (1.3 appears three times) force the normal
+# approximation, matching R wilcox.test(x, y, paired = TRUE).
+@emlTestAssertEqualStr: "MPR-4.1 method", "normal approximation", emlMatchedPairsR.method$
+# rZ is defined on the approximation path: rZ = Z / sqrt(n).
+@emlTestAssertEqualNum: "MPR-4.1 rZ", 0.860013, emlMatchedPairsR.rZ, tolerance
 
 # --- 4.2: Mixed diffs, near zero (r = 0.06667) ---
 # Diffs: -2, 2, -7, 5, 2 → T+=8, T-=7, S=15
@@ -211,8 +228,10 @@ looseTolerance = 0.01
     ... 12.3, 9.8, 12.8, 11.7}, 2
 @emlTestAssertEqualStr: "MPR-5.1 no error", "", emlMatchedPairsR.error$
 @emlTestAssertEqualNum: "MPR-5.1 r", 1.0, emlMatchedPairsR.r, tightTolerance
-@emlTestAssertUndefined: "MPR-5.1 rZ", emlMatchedPairsR.rZ
-@emlTestAssertEqualStr: "MPR-5.1 method", "exact", emlMatchedPairsR.method$
+# Tied absolute differences force the normal approximation (as in R);
+# rZ = Z / sqrt(n) is therefore defined.
+@emlTestAssertEqualNum: "MPR-5.1 rZ", 0.882006, emlMatchedPairsR.rZ, tolerance
+@emlTestAssertEqualStr: "MPR-5.1 method", "normal approximation", emlMatchedPairsR.method$
 @emlTestAssertEqualNum: "MPR-5.1 nNonzero", 20, emlMatchedPairsR.nNonzero, tightTolerance
 @emlTestAssertEqualNum: "MPR-5.1 tPlus", 210.0, emlMatchedPairsR.tPlus, tightTolerance
 
@@ -226,7 +245,8 @@ looseTolerance = 0.01
     ... 5.2, 4.8, 5.0, 5.1, 4.9, 5.2, 5.0, 4.8}, 2
 @emlTestAssertEqualStr: "MPR-5.2 no error", "", emlMatchedPairsR.error$
 @emlTestAssertEqualNum: "MPR-5.2 r", 0.07353, emlMatchedPairsR.r, tolerance
-@emlTestAssertUndefined: "MPR-5.2 rZ", emlMatchedPairsR.rZ
+# Ties in |diff| force the normal approximation; rZ = Z / sqrt(n) is defined.
+@emlTestAssertEqualNum: "MPR-5.2 rZ", 0.0584071, emlMatchedPairsR.rZ, tolerance
 @emlTestAssertEqualNum: "MPR-5.2 tPlus", 73.0, emlMatchedPairsR.tPlus, tightTolerance
 @emlTestAssertEqualNum: "MPR-5.2 tMinus", 63.0, emlMatchedPairsR.tMinus, tightTolerance
 

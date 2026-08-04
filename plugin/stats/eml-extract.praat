@@ -2,8 +2,25 @@
 # EML Stats : Data Extraction Layer
 # ============================================================================
 # Module: eml-extract.praat
-# Version: 1.4
-# Date: 11 April 2026
+# Version: 1.5
+# Date: 2 August 2026
+#
+# v1.5: Numeric-column integrity and group-label normalisation.
+#        (1) @eml_getGroupData / @eml_getGroupPairedData now verify that
+#        "Get all numbers in column:" will return VALUES and not Praat's
+#        alphabetical RANK substitution, and abort with a clear message
+#        when it would not. (2) @emlValidateNumericColumn hardened:
+#        per-cell check across every row, strict-numeric verdict, first
+#        offending row and its literal contents, and a coercion-hazard
+#        warning. It is now actually called (previously zero call sites).
+#        (3) number() coercion hazards are detected and reported; the
+#        European decimal comma is listed first because it is the only
+#        one that yields a plausible wrong number rather than a dropped
+#        row. (4) @emlCountGroups normalises group labels (case and
+#        leading/trailing whitespace) and warns when normalisation
+#        merged distinct spellings; the same normalisation is applied
+#        by the group extractors so counting and extraction agree.
+#        New helpers: @eml_normalizeLabel, @eml_strictNumericColumn.
 #
 # v1.4: @eml_getGroupPairedData — row-wise complete-case extraction of
 #        two numeric columns within one group, for grouped correlation
@@ -36,7 +53,8 @@
 #   @emlExtractFormantValues, @emlExtractIntensityFrames,
 #   @emlExtractHarmonicityFrames, @emlValidateTable,
 #   @emlValidateNumericColumn, @emlTableColumnNames,
-#   @emlCountGroups, @emlGuessColumnRoles
+#   @emlCountGroups, @emlGuessColumnRoles,
+#   @eml_normalizeLabel, @eml_strictNumericColumn
 #
 # These procedures extract data from Praat objects into numeric
 # vectors suitable for passing to EML Stats statistical procedures.
@@ -713,19 +731,146 @@ endproc
 
 
 # ============================================================================
+# @eml_normalizeLabel (internal helper)
+# ============================================================================
+# Canonical form of a group label for comparison purposes: leading and
+# trailing spaces/tabs removed, then lower-cased. Without this, "Male",
+# "male" and " Male" are three distinct groups.
+#
+# Input:
+#   .raw$ - the literal label as stored in the Table
+#
+# Output:
+#   .result$ - normalised label
+# ============================================================================
+procedure eml_normalizeLabel: .raw$
+    .result$ = .raw$
+
+    # Strip leading spaces and tabs. Praat's "or" does not short-circuit,
+    # so the length test is a separate enclosing "if", not a conjunct.
+    .trimming = 1
+    while .trimming = 1
+        .trimming = 0
+        if length (.result$) > 0
+            .firstChar$ = left$ (.result$, 1)
+            if .firstChar$ = " " or .firstChar$ = tab$
+                .result$ = right$ (.result$, length (.result$) - 1)
+                .trimming = 1
+            endif
+        endif
+    endwhile
+
+    # Strip trailing spaces and tabs
+    .trimming = 1
+    while .trimming = 1
+        .trimming = 0
+        if length (.result$) > 0
+            .lastChar$ = right$ (.result$, 1)
+            if .lastChar$ = " " or .lastChar$ = tab$
+                .result$ = left$ (.result$, length (.result$) - 1)
+                .trimming = 1
+            endif
+        endif
+    endwhile
+
+    .result$ = lowerCase$ (.result$)
+endproc
+
+
+# ============================================================================
+# @eml_strictNumericColumn (internal helper)
+# ============================================================================
+# Decide whether "Get all numbers in column:" will return the cells' VALUES
+# or Praat's alphabetical RANK substitution.
+#
+# Praat numericises a Table column only when EVERY cell is strictly numeric.
+# If one cell is not, the command silently returns each row's alphabetical
+# rank instead of its value — a whole column of plausible-looking integers.
+# The row filter "self [col] <> undefined" does NOT protect against this,
+# because that filter uses lenient coercion (it keeps "1,5", "30%", "1/2",
+# "2 3") while the numericiser is strict.
+#
+# Method: append a NON-INTEGER sentinel to a copy of the table and ask for
+# the numbers. Rank substitution can only ever produce integers, so a
+# non-integer sentinel coming back intact proves real numericisation. This
+# cannot be spoofed, and does not depend on reimplementing Praat's own
+# numeric-string grammar in script.
+#
+# Arguments:
+#   .tableId     - ID of the Table object
+#   .columnName$ - name of the column to test
+#
+# Output:
+#   .strict      - 1 if the column numericises, 0 if it would return ranks
+#   .unreadable  - 1 if a cell is empty or undefined (which makes
+#                  "Get all numbers in column:" raise a hard error)
+#   .firstBadRow - row of the first empty/undefined cell, else 0
+# ============================================================================
+procedure eml_strictNumericColumn: .tableId, .columnName$
+    .strict = 0
+    .unreadable = 0
+    .firstBadRow = 0
+
+    selectObject: .tableId
+    .nRows = Get number of rows
+
+    if .nRows > 0
+        # Empty and undefined cells make the numericiser raise instead of
+        # returning ranks, so they have to be found by string scan first.
+        for .row from 1 to .nRows
+            selectObject: .tableId
+            .cell$ = Get value: .row, .columnName$
+            if .cell$ = "" or .cell$ = "--undefined--"
+                if .unreadable = 0
+                    .unreadable = 1
+                    .firstBadRow = .row
+                endif
+            endif
+        endfor
+
+        if .unreadable = 0
+            selectObject: .tableId
+            .probeId = Copy: "eml_numericProbe"
+            Append row
+            Set string value: .nRows + 1, .columnName$, "1234567.875"
+            .probe# = Get all numbers in column: .columnName$
+            if .probe# [.nRows + 1] = 1234567.875
+                .strict = 1
+            endif
+            removeObject: .probeId
+        endif
+    endif
+endproc
+
+
+# ============================================================================
 # @emlValidateNumericColumn
 # Validate column exists and contains numeric data.
+#
+# Checks EVERY row, not a sample. Reports both the lenient verdict (how
+# many cells coerce to a number at all) and the strict verdict (whether
+# "Get all numbers in column:" would return values or ranks), because the
+# two disagree exactly where the silent-corruption bugs live.
 #
 # Arguments:
 #   tableId     - ID of the Table object
 #   columnName$ - name of the column to validate
 #
 # Output:
-#   .valid    - 1 if column exists and has numeric data, 0 otherwise
-#   .nTotal   - total number of rows
-#   .nNumeric - number of numeric values
-#   .nMissing - number of missing/non-numeric values
-#   .message$ - descriptive message about validation result
+#   .valid            - 1 if column exists and has numeric data, 0 otherwise
+#   .nTotal           - total number of rows
+#   .nNumeric         - number of numeric values
+#   .nMissing         - number of missing/non-numeric values
+#   .message$         - descriptive message about validation result
+#   .strictNumeric    - 1 if "Get all numbers in column:" returns values,
+#                       0 if it would return alphabetical ranks
+#   .firstBadRow      - first row whose literal contents are not strictly
+#                       numeric (0 if none)
+#   .firstBadValue$   - literal contents of that cell
+#   .nCoerced         - cells that coerce to a number but are not strictly
+#                       numeric (i.e. silently misread)
+#   .coercionWarning$ - user-facing description of the coercion hazards
+#                       found, or "" if none
 # ============================================================================
 procedure emlValidateNumericColumn: .tableId, .columnName$
     # Initialize outputs
@@ -734,14 +879,19 @@ procedure emlValidateNumericColumn: .tableId, .columnName$
     .nNumeric = 0
     .nMissing = 0
     .message$ = ""
-    
+    .strictNumeric = 0
+    .firstBadRow = 0
+    .firstBadValue$ = ""
+    .nCoerced = 0
+    .coercionWarning$ = ""
+
     # Select table and get dimensions
     selectObject: .tableId
     .nRows = Get number of rows
     .nCols = Get number of columns
-    
+
     .nTotal = .nRows
-    
+
     # Check if column exists
     .colExists = 0
     for .c from 1 to .nCols
@@ -751,7 +901,7 @@ procedure emlValidateNumericColumn: .tableId, .columnName$
             .colExists = 1
         endif
     endfor
-    
+
     if .colExists = 0
         .valid = 0
         .message$ = "Column not found: "
@@ -760,18 +910,155 @@ procedure emlValidateNumericColumn: .tableId, .columnName$
         .valid = 0
         .message$ = "Table is empty"
     else
-        # Count numeric vs non-numeric values
+        # Per-cell pass over EVERY row (no sampling). Two things are
+        # counted at once: the lenient verdict (does the cell coerce to a
+        # number at all) and the coercion hazards (does the cell coerce to
+        # something other than what it looks like).
+        .nComma = 0
+        .nSlash = 0
+        .nInnerSpace = 0
+        .nPercent = 0
+        .nLeadingDot = 0
         for .row from 1 to .nRows
             selectObject: .tableId
             .val = Get value: .row, .columnName$
-            
+            selectObject: .tableId
+            .cell$ = Get value: .row, .columnName$
+
             if .val <> undefined
                 .nNumeric = .nNumeric + 1
             else
                 .nMissing = .nMissing + 1
             endif
+
+            @eml_normalizeLabel: .cell$
+            .trimmed$ = eml_normalizeLabel.result$
+            .isHazard = 0
+            if .trimmed$ <> ""
+                if index (.trimmed$, ",") > 0
+                    .nComma = .nComma + 1
+                    .isHazard = 1
+                endif
+                if index (.trimmed$, "/") > 0
+                    .nSlash = .nSlash + 1
+                    .isHazard = 1
+                endif
+                if index (.trimmed$, " ") > 0
+                    .nInnerSpace = .nInnerSpace + 1
+                    .isHazard = 1
+                endif
+                if index (.trimmed$, "%") > 0
+                    .nPercent = .nPercent + 1
+                    .isHazard = 1
+                endif
+                if left$ (.trimmed$, 1) = "."
+                    .nLeadingDot = .nLeadingDot + 1
+                    .isHazard = 1
+                endif
+                if left$ (.trimmed$, 2) = "-." or left$ (.trimmed$, 2) = "+."
+                    .nLeadingDot = .nLeadingDot + 1
+                    .isHazard = 1
+                endif
+            endif
+            if .isHazard = 1
+                .nCoerced = .nCoerced + 1
+            endif
         endfor
-        
+
+        # Strict verdict: after the rows that do not coerce to a number
+        # have been dropped (which is what every extraction path does
+        # first), would "Get all numbers in column:" return the remaining
+        # VALUES, or Praat's alphabetical RANK substitution? The probe
+        # column is given a fixed safe name so a column label containing
+        # a space cannot break the probe table's construction.
+        .presentTable = Create Table with column names: "eml_presentProbe",
+            ... 0, "v"
+        .nPresent = 0
+        for .row from 1 to .nRows
+            selectObject: .tableId
+            .val = Get value: .row, .columnName$
+            if .val <> undefined
+                selectObject: .tableId
+                .cell$ = Get value: .row, .columnName$
+                selectObject: .presentTable
+                Append row
+                .nPresent = .nPresent + 1
+                Set string value: .nPresent, "v", .cell$
+            endif
+        endfor
+        if .nPresent > 0
+            @eml_strictNumericColumn: .presentTable, "v"
+            .strictNumeric = eml_strictNumericColumn.strict
+        endif
+        removeObject: .presentTable
+
+        if .nPresent > 0 and .strictNumeric = 0
+            # Locate the first surviving cell that the numericiser
+            # rejects, by testing each cell on its own one-row table.
+            .searching = 1
+            for .row from 1 to .nRows
+                if .searching = 1
+                    selectObject: .tableId
+                    .val = Get value: .row, .columnName$
+                    if .val <> undefined
+                        selectObject: .tableId
+                        .cell$ = Get value: .row, .columnName$
+                        .cellTable = Create Table with column names:
+                            ... "eml_cellProbe", 1, "v"
+                        Set string value: 1, "v", .cell$
+                        @eml_strictNumericColumn: .cellTable, "v"
+                        .cellStrict = eml_strictNumericColumn.strict
+                        removeObject: .cellTable
+                        if .cellStrict = 0
+                            .firstBadRow = .row
+                            .firstBadValue$ = .cell$
+                            .searching = 0
+                        endif
+                    endif
+                endif
+            endfor
+        endif
+
+        # Build the coercion warning. The European decimal comma comes
+        # first deliberately: it is the only hazard here that yields a
+        # plausible WRONG NUMBER ("1,5" reads as 1) rather than a dropped
+        # row, so it is the one that corrupts results silently.
+        .warn$ = ""
+        .sep$ = ""
+        if .nComma > 0
+            .commaMsg$ = " cell(s) contain a comma: a European decimal"
+            .commaMsg$ = .commaMsg$ + " comma is read as a plain integer"
+            .commaMsg$ = .commaMsg$ + " (1,5 becomes 1) — wrong value, not"
+            .commaMsg$ = .commaMsg$ + " a dropped row."
+            .warn$ = .warn$ + .sep$ + string$ (.nComma) + .commaMsg$
+            .sep$ = " "
+        endif
+        if .nSlash > 0
+            .slashMsg$ = " cell(s) contain '/': a fraction is truncated"
+            .slashMsg$ = .slashMsg$ + " at the slash (1/2 becomes 1)."
+            .warn$ = .warn$ + .sep$ + string$ (.nSlash) + .slashMsg$
+            .sep$ = " "
+        endif
+        if .nInnerSpace > 0
+            .spaceMsg$ = " cell(s) contain an internal space: the value is"
+            .spaceMsg$ = .spaceMsg$ + " truncated there (2 3 becomes 2)."
+            .warn$ = .warn$ + .sep$ + string$ (.nInnerSpace) + .spaceMsg$
+            .sep$ = " "
+        endif
+        if .nPercent > 0
+            .pctMsg$ = " cell(s) contain '%': read as a proportion"
+            .pctMsg$ = .pctMsg$ + " (30% becomes 0.3)."
+            .warn$ = .warn$ + .sep$ + string$ (.nPercent) + .pctMsg$
+            .sep$ = " "
+        endif
+        if .nLeadingDot > 0
+            .dotMsg$ = " cell(s) start with a bare decimal point: not"
+            .dotMsg$ = .dotMsg$ + " numeric to Praat (.5 is dropped)."
+            .warn$ = .warn$ + .sep$ + string$ (.nLeadingDot) + .dotMsg$
+            .sep$ = " "
+        endif
+        .coercionWarning$ = .warn$
+
         if .nNumeric > 0
             .valid = 1
             if .nMissing > 0
@@ -782,6 +1069,24 @@ procedure emlValidateNumericColumn: .tableId, .columnName$
         else
             .valid = 0
             .message$ = "Column contains no numeric values"
+        endif
+
+        # A column that is not strictly numeric cannot be read with
+        # "Get all numbers in column:" at all — say so, loudly, and
+        # override the lenient verdict.
+        if .nNumeric > 0 and .strictNumeric = 0
+            .valid = 0
+            .rankMsg$ = "Column is NOT strictly numeric: "
+            .rankMsg$ = .rankMsg$ + "'Get all numbers in column:' would "
+            .rankMsg$ = .rankMsg$ + "return alphabetical RANKS, not values."
+            .rowMsg$ = " First offending row: "
+            .rowMsg$ = .rowMsg$ + string$ (.firstBadRow)
+            .rowMsg$ = .rowMsg$ + ", contents: ["
+            .rowMsg$ = .rowMsg$ + .firstBadValue$ + "]"
+            .message$ = .rankMsg$ + .rowMsg$
+            if .coercionWarning$ <> ""
+                .message$ = .message$ + " " + .coercionWarning$
+            endif
         endif
     endif
 endproc
@@ -837,11 +1142,25 @@ emlGroupSortAlphabetical = 0
 #   .nGroups           - number of distinct groups
 #   .groupLabel$[1..n] - labels (order controlled by
 #                        emlGroupSortAlphabetical: 0 = discovery, 1 = alpha)
+#                        The label kept is the FIRST literal spelling seen
+#                        for that group.
+#   .groupNorm$[1..n]  - normalised form of each label (see
+#                        @eml_normalizeLabel)
+#   .nMerged           - number of distinct literal spellings that were
+#                        folded into another group by normalisation
+#   .mergeWarning$     - description of what was merged, or ""
 #   .error$            - error message if column not found
+#
+# Groups are matched on the NORMALISED label (trimmed, case-folded), so
+# "Male", "male" and " Male" are one group, not three. The same
+# normalisation is applied by @eml_getGroupData and
+# @eml_getGroupPairedData, so counting and extraction cannot disagree.
 # ============================================================================
 procedure emlCountGroups: .tableId, .groupCol$
     .nGroups = 0
     .error$ = ""
+    .nMerged = 0
+    .mergeWarning$ = ""
 
     selectObject: .tableId
     .nRows = Get number of rows
@@ -869,13 +1188,20 @@ procedure emlCountGroups: .tableId, .groupCol$
             .workId = .tableId
         endif
 
+        # .nRaw / .rawLabel$[] track the OLD exact-string behaviour so the
+        # number of spellings that normalisation folded away can be
+        # reported rather than silently absorbed.
+        .nRaw = 0
+
         for .row from 1 to .nRows
             selectObject: .workId
             .grp$ = Get value: .row, .groupCol$
+            @eml_normalizeLabel: .grp$
+            .grpNorm$ = eml_normalizeLabel.result$
 
             .found = 0
             for .g from 1 to .nGroups
-                if .groupLabel$[.g] = .grp$
+                if .groupNorm$[.g] = .grpNorm$
                     .found = 1
                 endif
             endfor
@@ -883,12 +1209,116 @@ procedure emlCountGroups: .tableId, .groupCol$
             if .found = 0
                 .nGroups = .nGroups + 1
                 .groupLabel$[.nGroups] = .grp$
+                .groupNorm$[.nGroups] = .grpNorm$
+            endif
+
+            .rawFound = 0
+            for .r from 1 to .nRaw
+                if .rawLabel$[.r] = .grp$
+                    .rawFound = 1
+                endif
+            endfor
+            if .rawFound = 0
+                .nRaw = .nRaw + 1
+                .rawLabel$[.nRaw] = .grp$
             endif
         endfor
 
         if emlGroupSortAlphabetical = 1
             removeObject: .workId
         endif
+
+        .nMerged = .nRaw - .nGroups
+        if .nMerged > 0
+            .mw$ = "Group labels differing only in case or surrounding "
+            .mw$ = .mw$ + "whitespace were merged: "
+            .mergeWarning$ = .mw$
+            .listSep$ = ""
+            for .r from 1 to .nRaw
+                @eml_normalizeLabel: .rawLabel$[.r]
+                .rawNorm$ = eml_normalizeLabel.result$
+                for .g from 1 to .nGroups
+                    if .groupNorm$[.g] = .rawNorm$
+                        if .groupLabel$[.g] <> .rawLabel$[.r]
+                            .pair$ = "[" + .rawLabel$[.r] + "] -> ["
+                            .pair$ = .pair$ + .groupLabel$[.g] + "]"
+                            .mergeWarning$ = .mergeWarning$ + .listSep$
+                            .mergeWarning$ = .mergeWarning$ + .pair$
+                            .listSep$ = ", "
+                        endif
+                    endif
+                endfor
+            endfor
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @eml_groupSubset (internal helper)
+# ============================================================================
+# Extract the rows belonging to one group, matching the group label on its
+# normalised form (see @eml_normalizeLabel) so that "Male", "male" and
+# " Male" select the same rows that @emlCountGroups counted as one group.
+#
+# When the request and every cell are already in canonical form,
+# normalisation is a no-op and the original single-command C-level
+# extraction is used unchanged. Only messy label columns pay for the
+# normalising copy, and the copy is always of the table — the caller's
+# Table is never modified.
+#
+# Arguments:
+#   .tableId     - ID of the Table object
+#   .groupCol$   - grouping column
+#   .groupLabel$ - label value to match
+#
+# Output:
+#   .subsetId    - new Table containing only that group's rows. Caller
+#                  owns it and must remove it. NOTE: on the normalising
+#                  path the group column of the subset holds the
+#                  normalised label, not the original spelling.
+# ============================================================================
+procedure eml_groupSubset: .tableId, .groupCol$, .groupLabel$
+    @eml_normalizeLabel: .groupLabel$
+    .wantNorm$ = eml_normalizeLabel.result$
+
+    .needNormalize = 0
+    if .groupLabel$ <> .wantNorm$
+        .needNormalize = 1
+    endif
+
+    selectObject: .tableId
+    .nRows = Get number of rows
+
+    .row = 1
+    while .row <= .nRows and .needNormalize = 0
+        selectObject: .tableId
+        .cell$ = Get value: .row, .groupCol$
+        @eml_normalizeLabel: .cell$
+        if .cell$ <> eml_normalizeLabel.result$
+            .needNormalize = 1
+        endif
+        .row = .row + 1
+    endwhile
+
+    if .needNormalize = 0
+        selectObject: .tableId
+        .subsetId = Extract rows where column (text): .groupCol$,
+            ... "is equal to", .groupLabel$
+    else
+        selectObject: .tableId
+        .workId = Copy: "eml_groupNorm"
+        for .r from 1 to .nRows
+            selectObject: .workId
+            .cell$ = Get value: .r, .groupCol$
+            @eml_normalizeLabel: .cell$
+            selectObject: .workId
+            Set string value: .r, .groupCol$, eml_normalizeLabel.result$
+        endfor
+        selectObject: .workId
+        .subsetId = Extract rows where column (text): .groupCol$,
+            ... "is equal to", .wantNorm$
+        removeObject: .workId
     endif
 endproc
 
@@ -906,19 +1336,45 @@ endproc
 #   groupLabel$ - label value to match
 #
 # Output:
-#   .n     - number of valid (non-undefined) observations
-#   .data# - vector of values
+#   .n      - number of valid (non-undefined) observations
+#   .data#  - vector of values
+#   .error$ - "" on success
+#
+# Group rows are selected on the normalised label (see @eml_groupSubset)
+# so this agrees with @emlCountGroups.
+#
+# The surviving column is verified to be strictly numeric before
+# "Get all numbers in column:" is called. Without that check Praat
+# silently returns each row's alphabetical RANK instead of its value
+# whenever one surviving cell is not strictly numeric — and the
+# "<> undefined" filter above does not prevent it, because that filter
+# uses lenient coercion and keeps cells such as "1,5", "30%" and "1/2".
 # ============================================================================
 procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
-    selectObject: .tableId
-    .tempGroup = Extract rows where column (text): .groupCol$, "is equal to", .groupLabel$
+    .error$ = ""
+    @eml_groupSubset: .tableId, .groupCol$, .groupLabel$
+    .tempGroup = eml_groupSubset.subsetId
     selectObject: .tempGroup
     .tempClean = Extract rows where: ~self [.dataCol$] <> undefined
     removeObject: .tempGroup
     selectObject: .tempClean
     .n = Get number of rows
     if .n > 0
-        .data# = Get all numbers in column: .dataCol$
+        @eml_strictNumericColumn: .tempClean, .dataCol$
+        .isStrict = eml_strictNumericColumn.strict
+        if .isStrict = 1
+            selectObject: .tempClean
+            .data# = Get all numbers in column: .dataCol$
+        else
+            @emlValidateNumericColumn: .tempClean, .dataCol$
+            .error$ = "Column '" + .dataCol$ + "' in group '"
+            .error$ = .error$ + .groupLabel$ + "': "
+            .error$ = .error$ + emlValidateNumericColumn.message$
+            .n = 0
+            .data# = zero# (0)
+            removeObject: .tempClean
+            exitScript: .error$
+        endif
     else
         .data# = zero# (0)
     endif
@@ -947,10 +1403,17 @@ endproc
 #   .nExcluded - group rows dropped for a missing X or Y
 #   .dataX#    - aligned X values
 #   .dataY#    - aligned Y values
+#   .error$    - "" on success
+#
+# Group rows are selected on the normalised label (see @eml_groupSubset).
+# Both surviving columns are verified to be strictly numeric before
+# "Get all numbers in column:" is called — see @eml_getGroupData for why
+# the "<> undefined" filter is not sufficient protection.
 # ============================================================================
 procedure eml_getGroupPairedData: .tableId, .colX$, .colY$, .groupCol$, .groupLabel$
-    selectObject: .tableId
-    .tempGroup = Extract rows where column (text): .groupCol$, "is equal to", .groupLabel$
+    .error$ = ""
+    @eml_groupSubset: .tableId, .groupCol$, .groupLabel$
+    .tempGroup = eml_groupSubset.subsetId
     selectObject: .tempGroup
     .beforeN = Get number of rows
     .tempClean = Extract rows where: ~self [.colX$] <> undefined and self [.colY$] <> undefined
@@ -958,8 +1421,30 @@ procedure eml_getGroupPairedData: .tableId, .colX$, .colY$, .groupCol$, .groupLa
     selectObject: .tempClean
     .n = Get number of rows
     if .n > 0
-        .dataX# = Get all numbers in column: .colX$
-        .dataY# = Get all numbers in column: .colY$
+        @eml_strictNumericColumn: .tempClean, .colX$
+        .strictX = eml_strictNumericColumn.strict
+        @eml_strictNumericColumn: .tempClean, .colY$
+        .strictY = eml_strictNumericColumn.strict
+        if .strictX = 1 and .strictY = 1
+            selectObject: .tempClean
+            .dataX# = Get all numbers in column: .colX$
+            .dataY# = Get all numbers in column: .colY$
+        else
+            .badCol$ = .colY$
+            if .strictX = 0
+                .badCol$ = .colX$
+            endif
+            @emlValidateNumericColumn: .tempClean, .badCol$
+            .error$ = "Column '" + .badCol$ + "' in group '"
+            .error$ = .error$ + .groupLabel$ + "': "
+            .error$ = .error$ + emlValidateNumericColumn.message$
+            .n = 0
+            .dataX# = zero# (0)
+            .dataY# = zero# (0)
+            .nExcluded = 0
+            removeObject: .tempClean
+            exitScript: .error$
+        endif
     else
         .dataX# = zero# (0)
         .dataY# = zero# (0)

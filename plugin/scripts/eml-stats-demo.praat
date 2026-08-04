@@ -14,8 +14,11 @@
 #          Panel 3: Paired pre/post — Wilcoxon signed-rank
 #                   (connected dot plot of jitter before/after therapy)
 #
-# Date: 3 March 2026
-# Version: 1.3
+# Date: 2 August 2026
+# Version: 1.4
+# v1.4: Item 3 — @emlDrawViolin calls supplied 6 of 7 arguments; the
+#        missing .width argument is now passed, so every subsequent
+#        argument binds to its intended parameter.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -242,10 +245,13 @@ Axes: xMin1, xMax1, yMin1, yMax1
 ... emlSetAdaptiveTheme.targetTicksY, emlSetAdaptiveTheme.useMinorTicks
 
 # Violins
+# Half-width in x-units; 0.35 is the plugin default used by
+# @emlDrawViolinPlot for one violin per integer x-position.
+violinHalfWidth = 0.35
 @emlDrawViolin: 1, groupA#, emlSetColorPalette.fill$[1],
-... emlSetColorPalette.line$[1], yMin1, yMax1
+... emlSetColorPalette.line$[1], yMin1, yMax1, violinHalfWidth
 @emlDrawViolin: 2, groupB#, emlSetColorPalette.fill$[2],
-... emlSetColorPalette.line$[2], yMin1, yMax1
+... emlSetColorPalette.line$[2], yMin1, yMax1, violinHalfWidth
 
 # Jittered points overlaid on violins
 jitterData# = groupA#

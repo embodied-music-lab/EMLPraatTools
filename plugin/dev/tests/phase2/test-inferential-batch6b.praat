@@ -8,6 +8,18 @@
 # R verification: verify-inferential-batch6b.R
 #
 # Uses shared test helpers (eml-test-helpers.praat).
+#
+# Revised: 2 August 2026 (v1.1)
+# v1.1 — Audit items 7 and 10.
+#   Item 10: @emlPairwiseT.method$ now names the TEST that was run
+#   ("Welch t-test" / "Student t-test"); the p-value adjustment it used to
+#   echo back moved to .adjustMethod$. A report layer reading .method$ was
+#   printing "Pairwise holm". PT-1 now checks both fields.
+#   Item 7: @emlPairwiseWilcoxon inherits R's wilcox.test routing rule, so
+#   tied comparisons use the normal approximation with tie correction rather
+#   than a no-tie exact null. Two adjusted p-values were re-derived from
+#   R 4.3.3 (p.adjust(..., "bonferroni") over wilcox.test p-values) and now
+#   match the library to 6 significant figures.
 # ============================================================================
 
 include ../../../stats/eml-core-utilities.praat
@@ -94,20 +106,20 @@ endproc
 ... emlPairwiseT.tMatrix##[2, 3], toleranceLoose
 
 # Raw p-values
-@emlTestAssertEqualNum: "PT-1 raw p(1,2)", 0.00083766,
-... emlPairwiseT.rawP#[1], tolerance
+@emlTestAssertEqualRel: "PT-1 raw p(1,2)", 0.0008376649382554025,
+... emlPairwiseT.rawP#[1], 1e-9
 @emlTestAssertEqualNum: "PT-1 raw p(1,3)", 0.00276291,
 ... emlPairwiseT.rawP#[2], tolerance
-@emlTestAssertEqualNum: "PT-1 raw p(2,3)", 0.00001155,
-... emlPairwiseT.rawP#[3], tolerance
+@emlTestAssertEqualRel: "PT-1 raw p(2,3)", 1.1548137118699003e-05,
+... emlPairwiseT.rawP#[3], 1e-9
 
 # Adjusted p-values
 @emlTestAssertEqualNum: "PT-1 adj p(1,2) Bonf", 0.00251299,
 ... emlPairwiseT.adjustedP#[1], tolerance
 @emlTestAssertEqualNum: "PT-1 adj p(1,3) Bonf", 0.00828872,
 ... emlPairwiseT.adjustedP#[2], tolerance
-@emlTestAssertEqualNum: "PT-1 adj p(2,3) Bonf", 0.00003464,
-... emlPairwiseT.adjustedP#[3], tolerance
+@emlTestAssertEqualRel: "PT-1 adj p(2,3) Bonf", 3.464441135609701e-05,
+... emlPairwiseT.adjustedP#[3], 1e-9
 
 # Cohen's d
 @emlTestAssertEqualNum: "PT-1 d(1,2)", -3.279251,
@@ -150,12 +162,12 @@ removeObject: .t1Id
 ... emlPairwiseT.adjustedP#[1], toleranceLoose
 @emlTestAssertEqualNum: "PT-3 adj p(1,3)", 1.00000000,
 ... emlPairwiseT.adjustedP#[2], tolerance
-@emlTestAssertEqualNum: "PT-3 adj p(1,4)", 0.00000482,
-... emlPairwiseT.adjustedP#[3], tolerance
-@emlTestAssertEqualNum: "PT-3 adj p(2,4)", 0.00145398,
-... emlPairwiseT.adjustedP#[5], toleranceLoose
-@emlTestAssertEqualNum: "PT-3 adj p(3,4)", 0.00162428,
-... emlPairwiseT.adjustedP#[6], toleranceLoose
+@emlTestAssertEqualRel: "PT-3 adj p(1,4)", 4.8248724387226795e-06,
+... emlPairwiseT.adjustedP#[3], 1e-9
+@emlTestAssertEqualRel: "PT-3 adj p(2,4)", 0.001453982146481067,
+... emlPairwiseT.adjustedP#[5], 1e-9
+@emlTestAssertEqualRel: "PT-3 adj p(3,4)", 0.0016242762642005777,
+... emlPairwiseT.adjustedP#[6], 1e-9
 
 # Cohen's d — selected
 @emlTestAssertEqualNum: "PT-3 d(1,4)", -7.120393,
@@ -178,14 +190,17 @@ removeObject: .t3Id
 
 @emlPairwiseT: .t1hId, "Value", "Group", "holm", "welch"
 
-@emlTestAssertTrue: "PT-1 Holm method echoed",
-... (emlPairwiseT.method$ = "holm")
+# .method$ now names the test; the adjustment lives in .adjustMethod$ (item 10).
+@emlTestAssertTrue: "PT-1 test named in method$",
+... (emlPairwiseT.method$ = "Welch t-test")
+@emlTestAssertTrue: "PT-1 Holm adjustment echoed",
+... (emlPairwiseT.adjustMethod$ = "holm")
 @emlTestAssertEqualNum: "PT-1 adj p(1,2) Holm", 0.00167533,
 ... emlPairwiseT.adjustedP#[1], tolerance
 @emlTestAssertEqualNum: "PT-1 adj p(1,3) Holm", 0.00276291,
 ... emlPairwiseT.adjustedP#[2], tolerance
-@emlTestAssertEqualNum: "PT-1 adj p(2,3) Holm", 0.00003464,
-... emlPairwiseT.adjustedP#[3], tolerance
+@emlTestAssertEqualRel: "PT-1 adj p(2,3) Holm", 3.464441135609701e-05,
+... emlPairwiseT.adjustedP#[3], 1e-9
 
 removeObject: .t1hId
 
@@ -253,12 +268,11 @@ removeObject: .t4Id
 # Adjusted p
 @emlTestAssertEqualNum: "PW-1 adj p(1,2) Bonf", 0.02380952,
 ... emlPairwiseWilcoxon.adjustedP#[1], toleranceLoose
-# NOTE: Our MWU exact path uses no-tie null distribution.
-# With ties present (value 22 in both groups), our p differs
-# from scipy exact by up to 2x. Both are valid; ours is
-# documented as conservative. Reference value here matches
-# our DP computation: raw_p = 0.007937, adj = 3 * raw.
-@emlTestAssertEqualNum: "PW-1 adj p(1,3) Bonf", 0.02380952,
+# Groups 1 and 3 share the value 22, so R's wilcox.test uses the normal
+# approximation with tie correction. R 4.3.3:
+#   wilcox.test(g1, g3)$p.value = 0.0159707
+#   p.adjust(c(.0079365, .0159707, .0079365), "bonferroni")[2] = 0.0479121
+@emlTestAssertEqualNum: "PW-1 adj p(1,3) Bonf", 0.0479121,
 ... emlPairwiseWilcoxon.adjustedP#[2], toleranceLoose
 @emlTestAssertEqualNum: "PW-1 adj p(2,3) Bonf", 0.02380952,
 ... emlPairwiseWilcoxon.adjustedP#[3], toleranceLoose
@@ -290,7 +304,10 @@ removeObject: .w1Id
 
 @emlTestAssertEqualNum: "PW-3 adj p(1,3)", 1.0,
 ... emlPairwiseWilcoxon.adjustedP#[2], tolerance
-@emlTestAssertEqualNum: "PW-3 adj p(1,4)", 0.02597403,
+# Ties within and across groups 1 and 4 -> normal approximation, as in R.
+# R 4.3.3: wilcox.test(g7, g10)$p.value = 0.00754623;
+#          p.adjust(..., "bonferroni")[3] = 0.0452774
+@emlTestAssertEqualNum: "PW-3 adj p(1,4)", 0.0452774,
 ... emlPairwiseWilcoxon.adjustedP#[3], toleranceLoose
 @emlTestAssertEqualNum: "PW-3 r(1,2)", -1.0,
 ... emlPairwiseWilcoxon.rMatrix##[1, 2], tolerance
@@ -338,12 +355,12 @@ removeObject: .w3Id
 ... emlScheffe.fMatrix##[2, 3], toleranceLoose
 
 # p-values
-@emlTestAssertEqualNum: "Sch-1 p(1,2)", 0.00070802,
-... emlScheffe.pMatrix##[1, 2], tolerance
+@emlTestAssertEqualRel: "Sch-1 p(1,2)", 0.0007080230106627254,
+... emlScheffe.pMatrix##[1, 2], 1e-9
 @emlTestAssertEqualNum: "Sch-1 p(1,3)", 0.00428052,
 ... emlScheffe.pMatrix##[1, 3], tolerance
-@emlTestAssertEqualNum: "Sch-1 p(2,3)", 0.00000254,
-... emlScheffe.pMatrix##[2, 3], tolerance
+@emlTestAssertEqualRel: "Sch-1 p(2,3)", 2.5365408557837916e-06,
+... emlScheffe.pMatrix##[2, 3], 1e-9
 
 # Matrix structure
 @emlTestAssertEqualNum: "Sch-1 pMatrix diag = 1", 1,
@@ -379,10 +396,10 @@ removeObject: .s1Id
 ... emlScheffe.pMatrix##[1, 3], tolerance
 @emlTestAssertEqualNum: "Sch-3 F(1,4)", 48.019523,
 ... emlScheffe.fMatrix##[1, 4], toleranceLoose
-@emlTestAssertEqualNum: "Sch-3 p(1,4)", 0.00000013,
-... emlScheffe.pMatrix##[1, 4], tolerance
-@emlTestAssertEqualNum: "Sch-3 p(3,4)", 0.00000125,
-... emlScheffe.pMatrix##[3, 4], tolerance
+@emlTestAssertEqualRel: "Sch-3 p(1,4)", 1.2908179064156406e-07,
+... emlScheffe.pMatrix##[1, 4], 1e-9
+@emlTestAssertEqualRel: "Sch-3 p(3,4)", 1.25167562686556e-06,
+... emlScheffe.pMatrix##[3, 4], 1e-9
 
 removeObject: .s3Id
 

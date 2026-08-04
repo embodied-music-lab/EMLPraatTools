@@ -4,7 +4,50 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
-# Version: 1.18
+# Version: 1.20
+# v1.20: @emlDrawLMMForest brought into line with the drawing standards.
+#        (1) Rule 1: the bare `Marks bottom: 5` is replaced by
+#        @emlDrawAlignedMarksBottom with theme-derived tick targets, so the
+#        12%-buffered coefficient axis gets nice-number labels instead of
+#        arbitrary quarter-range values. (2) Rule 2: the procedure now opens
+#        with the theme prologue (@emlSetAdaptiveTheme / @emlSetColorPalette)
+#        that the other 14 draw procedures already used — it was the only one
+#        without it, so its margins, and therefore its box, ticks and labels,
+#        previously depended on whatever ambient font size the Picture window
+#        happened to hold. (3) Because the LMM tool reaches this procedure
+#        outside the graphs form, the display-toggle globals and colorMode$
+#        are seeded through a variableExists guard — without it the new marks
+#        call aborts with "Unknown variable" on the shipped path. (4) Rule 34:
+#        line widths, marker size, tick colour, text colour and the series
+#        colour now come from the theme and palette rather than hardcoded
+#        constants and bare Grey/Black; the four inlined replace$ calls are
+#        replaced by @emlSanitizeLabel. Deliberately deferred: adopting
+#        @emlDrawTitle, which would require converting the figure from the
+#        outer-viewport layout model to the theme's inner-viewport model.
+#        No arguments or return variables change.
+# v1.19: Robustness and disclosure fixes. (1) @emlDrawHistogram ungrouped
+#        path no longer aborts on clean single-column data — the group loop
+#        is driven by .hasGroups instead of the always-1 .nGroups, and the
+#        dead else branch is removed. (2) @emlDrawScatterPlot (ungrouped and
+#        grouped) now draws the same estimator it reports, labels the drawn
+#        line, and discloses the estimator unconditionally instead of gating
+#        the disclosure on scatterAnalysisType. (3) @emlDrawBarChart guards
+#        every undefined mean/error before it reaches a drawing command — an
+#        unusable bar is skipped and recorded rather than aborting the
+#        figure — discloses the error-bar meaning (SE / SD / custom column)
+#        in the caption and Info window, and marks error bars truncated at
+#        the axis limits with outward arrowheads instead of clipping them
+#        silently. (4) Axis seeding in @emlDrawTimeSeries and
+#        @emlDrawSpaghettiPlot no longer takes row 1 on faith — ranges are
+#        folded from the first valid observation, with a 0..1 fallback and
+#        an Info-window note when nothing is usable. (5) Guard sweep over
+#        the aborting draw procedures, using @emlDrawGroupedViolin as the
+#        reference: @emlDrawTimeSeries, @emlDrawSpaghettiPlot,
+#        @emlDrawTimeSeriesCI (missing TIME cells no longer create phantom
+#        time points), @emlDrawViolinPlot and @emlDrawBoxPlot (undefined
+#        values filtered at accumulation so they never reach @emlPercentile's
+#        sort#, empty groups skipped, unit-axis fallback). Dropped rows and
+#        skipped groups are reported in the Info window.
 # v1.18: Graph correctness fixes. (1) Grouped scatter no longer prints a
 #        false "R² = 0.000" for Spearman/Theil-Sen fits — R² is emitted only
 #        for the OLS/Pearson line (guarded on annotCorrType$, mirroring the
@@ -603,24 +646,62 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     removeObject: .tempTable
 
     # Step 4: Axis ranges
-    .xDataMin = .rowT1
-    .xDataMax = .rowT1
-    .yDataMin = .rowY1
-    .yDataMax = .rowY1
-    for .i from 2 to .nRows
-        if .rowT'.i' < .xDataMin
-            .xDataMin = .rowT'.i'
+    # v1.19 (C 95): the range used to be seeded from row 1 unconditionally.
+    # If row 1 was blank or non-numeric the seed was undefined, every later
+    # comparison against it was false (all relational tests against undefined
+    # are false in Praat), and the axis stayed undefined — the figure then
+    # aborted at the first drawing command. Seed from the first VALID
+    # observation instead and fold in only valid values.
+    .xDataMin = 0
+    .xDataMax = 0
+    .yDataMin = 0
+    .yDataMax = 0
+    .rangeSeeded = 0
+    .nValidPoints = 0
+    for .i from 1 to .nRows
+        .tThis = .rowT'.i'
+        .yThis = .rowY'.i'
+        .pairOk = 0
+        if .tThis <> undefined
+            if .yThis <> undefined
+                .pairOk = 1
+            endif
         endif
-        if .rowT'.i' > .xDataMax
-            .xDataMax = .rowT'.i'
-        endif
-        if .rowY'.i' < .yDataMin
-            .yDataMin = .rowY'.i'
-        endif
-        if .rowY'.i' > .yDataMax
-            .yDataMax = .rowY'.i'
+        if .pairOk = 1
+            .nValidPoints = .nValidPoints + 1
+            if .rangeSeeded = 0
+                .xDataMin = .tThis
+                .xDataMax = .tThis
+                .yDataMin = .yThis
+                .yDataMax = .yThis
+                .rangeSeeded = 1
+            else
+                if .tThis < .xDataMin
+                    .xDataMin = .tThis
+                endif
+                if .tThis > .xDataMax
+                    .xDataMax = .tThis
+                endif
+                if .yThis < .yDataMin
+                    .yDataMin = .yThis
+                endif
+                if .yThis > .yDataMax
+                    .yDataMax = .yThis
+                endif
+            endif
         endif
     endfor
+
+    # No usable observation at all: fall back to a unit axis and say so,
+    # rather than handing undefined limits to Axes:.
+    if .rangeSeeded = 0
+        .xDataMin = 0
+        .xDataMax = 1
+        .yDataMin = 0
+        .yDataMax = 1
+        .noDataMsg$ = "NOTE: Time series — no usable (time, value) pair; empty axes drawn."
+        appendInfoLine: .noDataMsg$
+    endif
 
     # X-axis: exact data range (no nice-number rounding for time axes)
     if .tMin = 0 and .tMax = 0
@@ -668,12 +749,27 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         Line width: emlSetAdaptiveTheme.dataLineWidth
         for .i from 1 to .nRows - 1
             .iN = .i + 1
-            if .rowT'.iN' >= .xMin and .rowT'.i' <= .xMax
-                .cx1 = max (.xMin, min (.xMax, .rowT'.i'))
-                .cy1 = max (.yMin, min (.yMax, .rowY'.i'))
-                .cx2 = max (.xMin, min (.xMax, .rowT'.iN'))
-                .cy2 = max (.yMin, min (.yMax, .rowY'.iN'))
-                Draw line: .cx1, .cy1, .cx2, .cy2
+            # v1.19 (C 96): an undefined endpoint propagated through min/max
+            # into Draw line: and aborted the figure. Skip the segment; the
+            # gap is the correct rendering of a missing observation.
+            .segOk = 0
+            if .rowT'.i' <> undefined
+                if .rowY'.i' <> undefined
+                    if .rowT'.iN' <> undefined
+                        if .rowY'.iN' <> undefined
+                            .segOk = 1
+                        endif
+                    endif
+                endif
+            endif
+            if .segOk = 1
+                if .rowT'.iN' >= .xMin and .rowT'.i' <= .xMax
+                    .cx1 = max (.xMin, min (.xMax, .rowT'.i'))
+                    .cy1 = max (.yMin, min (.yMax, .rowY'.i'))
+                    .cx2 = max (.xMin, min (.xMax, .rowT'.iN'))
+                    .cy2 = max (.yMin, min (.yMax, .rowY'.iN'))
+                    Draw line: .cx1, .cy1, .cx2, .cy2
+                endif
             endif
         endfor
     else
@@ -689,16 +785,26 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
                 if .thisGrp$ = .grpLabel$[.g]
                     .thisT = .rowT'.i'
                     .thisY = .rowY'.i'
-                    if .started = 1
-                        .cx1 = max (.xMin, min (.xMax, .prevT))
-                        .cy1 = max (.yMin, min (.yMax, .prevY))
-                        .cx2 = max (.xMin, min (.xMax, .thisT))
-                        .cy2 = max (.yMin, min (.yMax, .thisY))
-                        Draw line: .cx1, .cy1, .cx2, .cy2
+                    # v1.19 (C 96): only valid points may become a segment
+                    # endpoint or the carried-forward previous point.
+                    .ptOk = 0
+                    if .thisT <> undefined
+                        if .thisY <> undefined
+                            .ptOk = 1
+                        endif
                     endif
-                    .prevT = .thisT
-                    .prevY = .thisY
-                    .started = 1
+                    if .ptOk = 1
+                        if .started = 1
+                            .cx1 = max (.xMin, min (.xMax, .prevT))
+                            .cy1 = max (.yMin, min (.yMax, .prevY))
+                            .cx2 = max (.xMin, min (.xMax, .thisT))
+                            .cy2 = max (.yMin, min (.yMax, .thisY))
+                            Draw line: .cx1, .cy1, .cx2, .cy2
+                        endif
+                        .prevT = .thisT
+                        .prevY = .thisY
+                        .started = 1
+                    endif
                 endif
             endfor
         endfor
@@ -806,6 +912,7 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
     .yDataMax = undefined
     .xDataMin = undefined
     .xDataMax = undefined
+    .nDroppedRows = 0
 
     for .g from 1 to .nGroups
         if .hasGroup = 1
@@ -818,8 +925,22 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
             if .rowGrp'.i'$ = .gLabel$
                 .t = .rowT'.i'
                 .y = .rowY'.i'
-                if .y = undefined
-                    # skip
+                # v1.19 (C 96): only the value was tested here. A blank or
+                # non-numeric TIME cell gave an undefined .t, which never
+                # matched an existing unique time (every comparison against
+                # undefined is false in Praat), so each such row became its
+                # own phantom time point — inflating the reported time-point
+                # count and carrying an undefined x into the band and
+                # mean-line loops. Nested ifs because and/or do not
+                # short-circuit in Praat.
+                .rowOk = 0
+                if .y <> undefined
+                    if .t <> undefined
+                        .rowOk = 1
+                    endif
+                endif
+                if .rowOk = 0
+                    .nDroppedRows = .nDroppedRows + 1
                 else
                     .isNew = 1
                     for .k from 1 to .nUT
@@ -1063,6 +1184,14 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
             appendInfoLine: "  Observations per time point: up to ", .maxN
         endif
     endfor
+    # v1.19 (C 96): rows with a missing time or value are dropped above;
+    # say so rather than letting the point count quietly disagree with
+    # the table.
+    if .nDroppedRows > 0
+        .dropMsg$ = "  NOTE: " + string$ (.nDroppedRows)
+        ... + " row(s) skipped (missing time or value)."
+        appendInfoLine: .dropMsg$
+    endif
 
     # Axes
     @emlDrawAxes: .xMin, .xMax, .yMin, .yMax, .xLabel$, .yLabel$,
@@ -1154,16 +1283,37 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     # ----------------------------------------------------------------
     # Y-axis range
     # ----------------------------------------------------------------
-    .yDataMin = .rowY[1]
-    .yDataMax = .rowY[1]
-    for .i from 2 to .nRows
-        if .rowY[.i] < .yDataMin
-            .yDataMin = .rowY[.i]
-        endif
-        if .rowY[.i] > .yDataMax
-            .yDataMax = .rowY[.i]
+    # v1.19 (C 95): seeded from row 1 unconditionally, so a blank or
+    # non-numeric first row left the range undefined for the whole figure
+    # (every later comparison against undefined is false). Seed from the
+    # first VALID observation and fold in only valid values.
+    .yDataMin = 0
+    .yDataMax = 0
+    .rangeSeeded = 0
+    .nValidPoints = 0
+    for .i from 1 to .nRows
+        if .rowY[.i] <> undefined
+            .nValidPoints = .nValidPoints + 1
+            if .rangeSeeded = 0
+                .yDataMin = .rowY[.i]
+                .yDataMax = .rowY[.i]
+                .rangeSeeded = 1
+            else
+                if .rowY[.i] < .yDataMin
+                    .yDataMin = .rowY[.i]
+                endif
+                if .rowY[.i] > .yDataMax
+                    .yDataMax = .rowY[.i]
+                endif
+            endif
         endif
     endfor
+    if .rangeSeeded = 0
+        .yDataMin = 0
+        .yDataMax = 1
+        .noDataMsg$ = "NOTE: Spaghetti plot — no usable value; empty axes drawn."
+        appendInfoLine: .noDataMsg$
+    endif
     @emlComputeAxisRange: .yDataMin, .yDataMax, 10, 0
     if .vMin = 0 and .vMax = 0
         .yMin = emlComputeAxisRange.axisMin
@@ -1236,6 +1386,17 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
                         endif
                     endif
                 endfor
+                # v1.19 (C 96): a found-but-undefined value used to reach
+                # Draw line: / Paint circle (mm): and abort the figure. Treat
+                # it as a missing observation — the strand skips that
+                # condition instead.
+                if .foundVal = 1
+                    .valOk = 0
+                    if .thisY <> undefined
+                        .valOk = 1
+                    endif
+                    .foundVal = .valOk
+                endif
                 if .foundVal = 1
                     .thisX = .c
                     # Draw connecting line from previous condition
@@ -1262,9 +1423,13 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
                 .sum = 0
                 .cnt = 0
                 for .i from 1 to .nRows
+                    # v1.19 (C 96): an undefined value poisoned the sum, so
+                    # the mean came out undefined and aborted the overlay.
                     if .rowX[.i] = .c
-                        .sum = .sum + .rowY[.i]
-                        .cnt = .cnt + 1
+                        if .rowY[.i] <> undefined
+                            .sum = .sum + .rowY[.i]
+                            .cnt = .cnt + 1
+                        endif
                     endif
                 endfor
                 if .cnt > 0
@@ -1315,6 +1480,15 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
                         endif
                     endif
                 endfor
+                # v1.19 (C 96): same undefined-value guard as the ungrouped
+                # strand path above.
+                if .foundVal = 1
+                    .valOk = 0
+                    if .thisY <> undefined
+                        .valOk = 1
+                    endif
+                    .foundVal = .valOk
+                endif
                 if .foundVal = 1
                     .thisX = .c
                     if .hasPrev = 1
@@ -1340,9 +1514,13 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
                     .sum = 0
                     .cnt = 0
                     for .i from 1 to .nRows
+                        # v1.19 (C 96): undefined values excluded from the
+                        # per-group mean (see ungrouped overlay above).
                         if .rowX[.i] = .c and .rowGrp$[.i] = .grpLabel$[.g]
-                            .sum = .sum + .rowY[.i]
-                            .cnt = .cnt + 1
+                            if .rowY[.i] <> undefined
+                                .sum = .sum + .rowY[.i]
+                                .cnt = .cnt + 1
+                            endif
                         endif
                     endfor
                     if .cnt > 0
@@ -1559,40 +1737,114 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
         .baseline = .yMax
     endif
 
+    # v1.19: bookkeeping for the two disclosures added below.
+    #   .nSkippedBars   — bars whose mean was undefined and could not be drawn
+    #   .nSkippedErrors — error bars suppressed because the error was undefined
+    #   .nTruncated     — error bars clipped by the axis limits (C 88)
+    # Depth of the out-of-range arrowhead that marks a truncated whisker:
+    # 2% of the visible y span. No library procedure provides an
+    # out-of-range marker, so this proportion is set here deliberately.
+    .nSkippedBars = 0
+    .skippedBars$ = ""
+    .nSkippedErrors = 0
+    .nTruncated = 0
+    .arrowDrop = (.yMax - .yMin) * 0.02
+
     for .g from 1 to .nGroups
         .xCenter = .g
         .colorIdx = .g
 
-        # Clamp bar top to axis maximum (TODO-055 fix)
-        .barTop = min (emlBarData_mean[.g], .yMax)
+        # v1.19 (C 96): an undefined mean reaching Paint rectangle: aborted the
+        # whole figure. Guard before any drawing command, skip the bar, and
+        # record it so the omission is reported rather than silent.
+        .meanOk = 0
+        if emlBarData_mean[.g] <> undefined
+            .meanOk = 1
+        endif
 
-        # Filled bar
-        Paint rectangle: emlSetColorPalette.fill$[.colorIdx], .xCenter - .halfBar, .xCenter + .halfBar, .baseline, .barTop
+        if .meanOk = 0
+            .nSkippedBars = .nSkippedBars + 1
+            if .skippedBars$ <> ""
+                .skippedBars$ = .skippedBars$ + ", "
+            endif
+            .skippedBars$ = .skippedBars$ + emlBarData_label$[.g]
+        else
+            # Clamp bar top to axis maximum (TODO-055 fix)
+            .barTop = min (emlBarData_mean[.g], .yMax)
 
-        # Bar outline
-        Colour: emlSetColorPalette.line$[.colorIdx]
-        Line width: emlSetAdaptiveTheme.axisLineWidth
-        Draw rectangle: .xCenter - .halfBar, .xCenter + .halfBar, .baseline, .barTop
+            # Filled bar
+            Paint rectangle: emlSetColorPalette.fill$[.colorIdx], .xCenter - .halfBar, .xCenter + .halfBar, .baseline, .barTop
 
-        # Error bar (if enabled and nonzero)
-        if .errorMode > 0 and emlBarData_error[.g] > 0
-            Line width: emlSetAdaptiveTheme.dataLineWidth * 0.7
-            .errLow = emlBarData_mean[.g] - emlBarData_error[.g]
-            .errHigh = emlBarData_mean[.g] + emlBarData_error[.g]
+            # Bar outline
+            Colour: emlSetColorPalette.line$[.colorIdx]
+            Line width: emlSetAdaptiveTheme.axisLineWidth
+            Draw rectangle: .xCenter - .halfBar, .xCenter + .halfBar, .baseline, .barTop
 
-            # Clamp error bar bottom to yMin
-            if .errLow < .yMin
-                .errLow = .yMin
+            # Error bar (if enabled and nonzero)
+            # v1.19: undefined error is tested explicitly. Previously the
+            # compound test relied on "undefined > 0" being false, which
+            # dropped the error bar with no record. Nested ifs because
+            # and/or do not short-circuit in Praat.
+            .errOk = 0
+            if .errorMode > 0
+                if emlBarData_error[.g] <> undefined
+                    if emlBarData_error[.g] > 0
+                        .errOk = 1
+                    endif
+                else
+                    .nSkippedErrors = .nSkippedErrors + 1
+                endif
             endif
 
-            # Clamp error bar top to yMax (TODO-055 fix)
-            if .errHigh > .yMax
-                .errHigh = .yMax
-            endif
+            if .errOk = 1
+                Line width: emlSetAdaptiveTheme.dataLineWidth * 0.7
+                .errLow = emlBarData_mean[.g] - emlBarData_error[.g]
+                .errHigh = emlBarData_mean[.g] + emlBarData_error[.g]
 
-            Draw line: .xCenter, .errLow, .xCenter, .errHigh
-            Draw line: .xCenter - .capWidth, .errLow, .xCenter + .capWidth, .errLow
-            Draw line: .xCenter - .capWidth, .errHigh, .xCenter + .capWidth, .errHigh
+                # v1.19 (C 88): the clamps below used to truncate a whisker at
+                # the axis limit with no visual cue, so a bar could look more
+                # precise than it is. Record the clip and mark the clipped end
+                # with an outward arrowhead instead of a flat cap.
+                .lowClipped = 0
+                .highClipped = 0
+
+                # Clamp error bar bottom to yMin
+                if .errLow < .yMin
+                    .errLow = .yMin
+                    .lowClipped = 1
+                endif
+
+                # Clamp error bar top to yMax (TODO-055 fix)
+                if .errHigh > .yMax
+                    .errHigh = .yMax
+                    .highClipped = 1
+                endif
+
+                if .lowClipped = 1
+                    .nTruncated = .nTruncated + 1
+                endif
+                if .highClipped = 1
+                    .nTruncated = .nTruncated + 1
+                endif
+
+                Draw line: .xCenter, .errLow, .xCenter, .errHigh
+
+                # Lower terminator: flat cap, or arrowhead if clipped
+                if .lowClipped = 1
+                    Draw line: .xCenter, .errLow, .xCenter - .capWidth, .errLow + .arrowDrop
+                    Draw line: .xCenter, .errLow, .xCenter + .capWidth, .errLow + .arrowDrop
+                else
+                    Draw line: .xCenter - .capWidth, .errLow, .xCenter + .capWidth, .errLow
+                endif
+
+                # Upper terminator: flat cap, or arrowhead if clipped
+                if .highClipped = 1
+                    Draw line: .xCenter, .errHigh, .xCenter - .capWidth, .errHigh - .arrowDrop
+                    Draw line: .xCenter, .errHigh, .xCenter + .capWidth, .errHigh - .arrowDrop
+                else
+                    Draw line: .xCenter - .capWidth, .errHigh, .xCenter + .capWidth, .errHigh
+                endif
+            endif
         endif
     endfor
 
@@ -1612,8 +1864,53 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
         Text left: "yes", .yLabel$
     endif
 
+    # v1.19 (C 99): the figure never said whether the error bars were SE, SD
+    # or a custom column, so the reader could not interpret them. Build the
+    # disclosure and carry it on the caption line under the title, together
+    # with notes for any truncated whisker or skipped bar.
+    .errDesc$ = ""
+    if .errorMode = 1
+        .errDesc$ = "Error bars: +/-1 SE"
+    elsif .errorMode = 2
+        .errDesc$ = "Error bars: +/-1 SD"
+    elsif .errorMode = 3
+        .errDesc$ = "Error bars: " + .errorCol$ + " (custom)"
+    else
+        .errDesc$ = "No error bars"
+    endif
+
+    .caption$ = .errDesc$
+    if .nTruncated > 0
+        .caption$ = .caption$ + "; " + string$ (.nTruncated)
+        ... + " truncated at axis limit (arrowheads)"
+    endif
+    if .nSkippedErrors > 0
+        .caption$ = .caption$ + "; " + string$ (.nSkippedErrors)
+        ... + " undefined"
+    endif
+    if .nSkippedBars > 0
+        .caption$ = .caption$ + "; bars omitted (no value): " + .skippedBars$
+    endif
+
+    # Carry the caption on emlSubtitle$ (drawn in grey under the title by
+    # @emlDrawTitle), appending to any user subtitle and restoring the global
+    # afterwards so this procedure has no lasting side effect on it.
+    .savedSubtitle$ = emlSubtitle$
+    if emlSubtitle$ = ""
+        emlSubtitle$ = .caption$
+    else
+        emlSubtitle$ = emlSubtitle$ + " | " + .caption$
+    endif
+
     # Title
     @emlDrawTitle: .title$, .vpW, .vpH, .xMin, .xMax, .yMin, .yMax
+
+    emlSubtitle$ = .savedSubtitle$
+
+    # Same disclosure to the Info window, so the caption survives copy-paste
+    # of the numbers as well as the figure.
+    .infoLine$ = "Bar chart — " + .caption$
+    appendInfoLine: .infoLine$
 
     # Step 9: Reset state
     Colour: "Black"
@@ -1657,20 +1954,29 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         .groupCount'.g' = 0
     endfor
 
+    # v1.19 (C 96): blank or non-numeric cells used to be stored as undefined
+    # and then handed to @emlDrawViolin -> @emlPercentile -> sort#, which
+    # aborts the whole figure. Store only defined values (the pattern already
+    # used by @emlDrawGroupedViolin) and record how many rows were dropped.
+    .nSkippedRows = 0
     for .i from 1 to .nRows
         selectObject: .objectId
         .thisGroup$ = Get value: .i, .groupCol$
         .val$ = Get value: .i, .valueCol$
         .thisVal = number (.val$)
 
-        # Find which group this belongs to
-        for .g from 1 to .nGroups
-            if .thisGroup$ = .grpLabel$[.g]
-                .groupCount'.g' = .groupCount'.g' + 1
-                .c = .groupCount'.g'
-                .groupData'.g'_'.c' = .thisVal
-            endif
-        endfor
+        if .thisVal = undefined
+            .nSkippedRows = .nSkippedRows + 1
+        else
+            # Find which group this belongs to
+            for .g from 1 to .nGroups
+                if .thisGroup$ = .grpLabel$[.g]
+                    .groupCount'.g' = .groupCount'.g' + 1
+                    .c = .groupCount'.g'
+                    .groupData'.g'_'.c' = .thisVal
+                endif
+            endfor
+        endif
     endfor
 
     # Step 4: Compute y-axis range (both 0 = auto)
@@ -1693,6 +1999,14 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
             endif
         endfor
     endfor
+
+    # v1.19 (C 96): with no usable value anywhere, .globalMin stayed undefined
+    # and the undefined axis limits aborted the figure at Axes:. Fall back to
+    # a unit axis, as @emlDrawGroupedViolin already does.
+    if .globalMin = undefined
+        .globalMin = 0
+        .globalMax = 1
+    endif
 
     # Extend range by largest per-group KDE bandwidth so violin
     # tails do not hit the axis edge. Silverman: h = 0.9 * SD * n^(-0.2)
@@ -1745,18 +2059,26 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     endif
 
     # Step 8: Draw each violin
+    # v1.19 (C 96): a group with no usable observation produced a zero-length
+    # vector, whose percentiles are undefined and abort the drawing command.
+    # Skip that group instead, matching @emlDrawGroupedViolin.
+    .nEmptyGroups = 0
     for .g from 1 to .nGroups
         # Build data vector for this group
         .n = .groupCount'.g'
-        .data# = zero# (.n)
-        for .k from 1 to .n
-            .data# [.k] = .groupData'.g'_'.k'
-        endfor
+        if .n < 1
+            .nEmptyGroups = .nEmptyGroups + 1
+        else
+            .data# = zero# (.n)
+            for .k from 1 to .n
+                .data# [.k] = .groupData'.g'_'.k'
+            endfor
 
-        # Determine color index (cycle through palette)
-        .colorIdx = .g
+            # Determine color index (cycle through palette)
+            .colorIdx = .g
 
-        @emlDrawViolin: .g, .data#, emlSetColorPalette.fill$[.colorIdx], emlSetColorPalette.line$[.colorIdx], .yMin, .yMax, 0.35
+            @emlDrawViolin: .g, .data#, emlSetColorPalette.fill$[.colorIdx], emlSetColorPalette.line$[.colorIdx], .yMin, .yMax, 0.35
+        endif
     endfor
 
     # Jittered points overlay (controlled by global)
@@ -1764,14 +2086,30 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         if prev_violinShowJitter = 1
             for .g from 1 to .nGroups
                 .n = .groupCount'.g'
-                jitterData# = zero# (.n)
-                for .k from 1 to .n
-                    jitterData#[.k] = .groupData'.g'_'.k'
-                endfor
-                .colorIdx = .g
-                @emlDrawJitteredPoints: .g, emlSetColorPalette.line$[.colorIdx], emlSetAdaptiveTheme.markerSize * 0.5, 0.12
+                # v1.19 (C 96): skip empty groups here too.
+                if .n >= 1
+                    jitterData# = zero# (.n)
+                    for .k from 1 to .n
+                        jitterData#[.k] = .groupData'.g'_'.k'
+                    endfor
+                    .colorIdx = .g
+                    @emlDrawJitteredPoints: .g, emlSetColorPalette.line$[.colorIdx], emlSetAdaptiveTheme.markerSize * 0.5, 0.12
+                endif
             endfor
         endif
+    endif
+
+    # v1.19 (C 96): report anything the guards above dropped, so a thinner
+    # figure is never mistaken for the whole data set.
+    if .nSkippedRows > 0
+        .skipMsg$ = "Violin plot: " + string$ (.nSkippedRows)
+        ... + " row(s) skipped (missing or non-numeric value)."
+        appendInfoLine: .skipMsg$
+    endif
+    if .nEmptyGroups > 0
+        .emptyMsg$ = "Violin plot: " + string$ (.nEmptyGroups)
+        ... + " group(s) not drawn (no usable observation)."
+        appendInfoLine: .emptyMsg$
     endif
 
     # Expose axis ranges for annotation bridge
@@ -2050,6 +2388,10 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
         endif
 
         # --- Rich Info window output via shared reporters (ungrouped) ---
+        # v1.19: .reportedOLS records whether the OLS regression report was
+        # actually emitted, so the drawn line can be forced to the same
+        # estimator (see the regression-line block below).
+        .reportedOLS = 0
         if .annotate = 1 and .nValid >= 3
             selectObject: .objectId
             .tableName$ = selected$ ("Table")
@@ -2064,14 +2406,26 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                 if emlLinearRegression.error$ = ""
                     @emlReportRegressionAnalysis: .tableName$,
                     ... .colY$, .colX$, .nValid, 0
+                    .reportedOLS = 1
                 endif
             endif
         endif
 
         # --- Regression line (independent of annotate) ---
         if scatterRegressionLine = 1 and .nValid >= 3
-            # Choose estimator based on correlation type
+            # Choose estimator based on correlation type.
+            # v1.19: when the OLS regression report has already been emitted,
+            # the drawn line must be the OLS line too — otherwise the figure
+            # shows a Theil-Sen fit while the Info window reports OLS
+            # coefficients. Reported estimator and drawn estimator are now
+            # always identical.
+            .useTheilSen = 0
             if annotCorrType$ = "spearman"
+                if .reportedOLS = 0
+                    .useTheilSen = 1
+                endif
+            endif
+            if .useTheilSen = 1
                 # Theil-Sen: robust estimator, coherent with rank-based Spearman
                 @emlTheilSen: .xData#, .yData#
                 if emlTheilSen.error$ = ""
@@ -2109,27 +2463,30 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
             if .slope <> undefined
                 @emlDrawRegressionLine: .dataXMin, .dataXMax, .slope, .intercept, .axisYMin, .axisYMax, .regColor$
 
-                # Formula to Info window (only when regression reporter hasn't fired)
-                if scatterAnalysisType < 2
-                    if .lineMethod$ = "Theil-Sen"
-                        appendInfoLine: "Theil-Sen: y = " + fixed$ (.slope, 4) + "x + " + fixed$ (.intercept, 4)
-                    else
-                        appendInfoLine: "y = " + fixed$ (.slope, 4) + "x + " + fixed$ (.intercept, 4)
-                    endif
-                endif
+                # Formula to Info window.
+                # v1.19: disclosure is unconditional — the estimator behind
+                # the drawn line is always named, including when the
+                # regression reporter has fired. Previously this was gated on
+                # scatterAnalysisType < 2, suppressing the estimator name in
+                # exactly the case where a reported fit was on screen.
+                .lineEqn$ = .lineMethod$ + " fitted line: y = "
+                ... + fixed$ (.slope, 4) + "x + " + fixed$ (.intercept, 4)
+                appendInfoLine: .lineEqn$
 
                 # Formula on graph if requested (independent of annotate)
+                # v1.19: on-graph formula is labelled with the estimator.
                 if scatterShowFormula = 1
                     annotBlockN = annotBlockN + 1
+                    .methodTag$ = .lineMethod$ + ": "
                     if .lineMethod$ = "OLS" and .pearsonR <> undefined
                         .rSqAnnot = .pearsonR * .pearsonR
-                        .formulaStr$ = "y = " + fixed$ (.slope, 4) + "x + " + fixed$ (.intercept, 4) + "  (R² = " + fixed$ (.rSqAnnot, 3) + ")"
+                        .formulaStr$ = .methodTag$ + "y = " + fixed$ (.slope, 4) + "x + " + fixed$ (.intercept, 4) + "  (R² = " + fixed$ (.rSqAnnot, 3) + ")"
                         annotBlockLabel$[annotBlockN] = .formulaStr$
-                        annotBlockDraw$[annotBlockN] = "%y = " + fixed$ (.slope, 4) + "%x + " + fixed$ (.intercept, 4) + "  (%R² = " + fixed$ (.rSqAnnot, 3) + ")"
+                        annotBlockDraw$[annotBlockN] = .methodTag$ + "%y = " + fixed$ (.slope, 4) + "%x + " + fixed$ (.intercept, 4) + "  (%R² = " + fixed$ (.rSqAnnot, 3) + ")"
                     else
-                        .formulaStr$ = "y = " + fixed$ (.slope, 4) + "x + " + fixed$ (.intercept, 4)
+                        .formulaStr$ = .methodTag$ + "y = " + fixed$ (.slope, 4) + "x + " + fixed$ (.intercept, 4)
                         annotBlockLabel$[annotBlockN] = .formulaStr$
-                        annotBlockDraw$[annotBlockN] = "%y = " + fixed$ (.slope, 4) + "%x + " + fixed$ (.intercept, 4)
+                        annotBlockDraw$[annotBlockN] = .methodTag$ + "%y = " + fixed$ (.slope, 4) + "%x + " + fixed$ (.intercept, 4)
                     endif
                 endif
             endif
@@ -2280,6 +2637,10 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                     endif
 
                     # --- Rich Info window output via shared reporters ---
+                    # v1.19: .gReportedOLS records whether the OLS regression
+                    # report was emitted for this group, so the group's drawn
+                    # line can be forced to the same estimator.
+                    .gReportedOLS = 0
                     if .annotate = 1
                         selectObject: .objectId
                         .gTableName$ = selected$ ("Table")
@@ -2296,14 +2657,26 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                                 @emlReportRegressionAnalysis: .gTableName$
                                 ... + " -- " + .groupDispLabel$,
                                 ... .colY$, .colX$, .gN, 0
+                                .gReportedOLS = 1
                             endif
                         endif
                     endif
 
                     # --- Per-group regression line (independent of annotate) ---
                     if scatterRegressionLine = 1
+                        # v1.19: same estimator for reported and drawn — when
+                        # the OLS report fired for this group, the drawn line
+                        # is OLS too.
+                        .gUseTheilSen = 0
                         if annotCorrType$ = "spearman"
+                            if .gReportedOLS = 0
+                                .gUseTheilSen = 1
+                            endif
+                        endif
+                        .gLineMethod$ = "OLS"
+                        if .gUseTheilSen = 1
                             # Theil-Sen for Spearman context
+                            .gLineMethod$ = "Theil-Sen"
                             @emlTheilSen: .gXTrim#, .gYTrim#
                             if emlTheilSen.error$ = ""
                                 .gSlope = emlTheilSen.slope
@@ -2351,34 +2724,34 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                             .colorIdx = .g
                             @emlDrawRegressionLine: .gXMin, .gXMax, .gSlope, .gIntercept, .axisYMin, .axisYMax, emlSetColorPalette.line$[.colorIdx]
 
-                            # Formula and R² to Info window (only when reporter hasn't fired)
-                            # R² is meaningful only for the OLS/Pearson line; the
-                            # Theil-Sen (Spearman) line has no OLS R². Guard on the
-                            # group-level branch selector annotCorrType$ (set at the
-                            # regression branch above), mirroring the ungrouped
-                            # OLS guard.
-                            if scatterAnalysisType < 2
-                                if annotCorrType$ <> "spearman"
-                                    .gR2 = .gPearsonR * .gPearsonR
-                                    appendInfoLine: "  " + .groupDispLabel$ + ": y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4) + "  (R" + "² = " + fixed$ (.gR2, 3) + ")"
-                                else
-                                    appendInfoLine: "  " + .groupDispLabel$ + ": y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4)
-                                endif
+                            # Formula and R² to Info window.
+                            # v1.19: disclosure is unconditional — the drawn
+                            # line's estimator is always named, including when
+                            # the regression reporter has fired. R² is emitted
+                            # only for the OLS line; the Theil-Sen line has no
+                            # OLS R². Guard on the actual estimator used
+                            # (.gLineMethod$), not on annotCorrType$.
+                            if .gLineMethod$ = "OLS"
+                                .gR2 = .gPearsonR * .gPearsonR
+                                .gEqn$ = "  " + .groupDispLabel$ + ": OLS fitted line: y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4) + "  (R" + "² = " + fixed$ (.gR2, 3) + ")"
+                            else
+                                .gEqn$ = "  " + .groupDispLabel$ + ": " + .gLineMethod$ + " fitted line: y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4)
                             endif
+                            appendInfoLine: .gEqn$
 
                             # Formula on graph if requested (independent of annotate)
-                            # Emit R² only for the OLS/Pearson line; the Theil-Sen
-                            # (Spearman) line has no OLS R². Guard on annotCorrType$,
-                            # mirroring the ungrouped OLS guard.
+                            # v1.19: on-graph formula is labelled with the
+                            # estimator actually drawn. R² only for OLS.
                             if scatterShowFormula = 1
                                 annotBlockN = annotBlockN + 1
-                                if annotCorrType$ <> "spearman"
+                                .gMethodTag$ = .gLineMethod$ + ": "
+                                if .gLineMethod$ = "OLS"
                                     .gR2Annot = .gPearsonR * .gPearsonR
-                                    annotBlockLabel$[annotBlockN] = .groupDispLabel$ + ": y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4) + "  (R² = " + fixed$ (.gR2Annot, 3) + ")"
-                                    annotBlockDraw$[annotBlockN] = .groupDispLabel$ + ": %y = " + fixed$ (.gSlope, 4) + "%x + " + fixed$ (.gIntercept, 4) + "  (%R² = " + fixed$ (.gR2Annot, 3) + ")"
+                                    annotBlockLabel$[annotBlockN] = .groupDispLabel$ + ": " + .gMethodTag$ + "y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4) + "  (R² = " + fixed$ (.gR2Annot, 3) + ")"
+                                    annotBlockDraw$[annotBlockN] = .groupDispLabel$ + ": " + .gMethodTag$ + "%y = " + fixed$ (.gSlope, 4) + "%x + " + fixed$ (.gIntercept, 4) + "  (%R² = " + fixed$ (.gR2Annot, 3) + ")"
                                 else
-                                    annotBlockLabel$[annotBlockN] = .groupDispLabel$ + ": y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4)
-                                    annotBlockDraw$[annotBlockN] = .groupDispLabel$ + ": %y = " + fixed$ (.gSlope, 4) + "%x + " + fixed$ (.gIntercept, 4)
+                                    annotBlockLabel$[annotBlockN] = .groupDispLabel$ + ": " + .gMethodTag$ + "y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4)
+                                    annotBlockDraw$[annotBlockN] = .groupDispLabel$ + ": " + .gMethodTag$ + "%y = " + fixed$ (.gSlope, 4) + "%x + " + fixed$ (.gIntercept, 4)
                                 endif
                             endif
                         endif
@@ -2469,19 +2842,28 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
         .groupCount'.g' = 0
     endfor
 
+    # v1.19 (C 96): blank or non-numeric cells used to be stored as undefined
+    # and then handed to @emlDrawBox -> @emlPercentile -> sort#, which aborts
+    # the whole figure. Store only defined values (the pattern already used by
+    # @emlDrawGroupedBoxPlot) and record how many rows were dropped.
+    .nSkippedRows = 0
     for .i from 1 to .nRows
         selectObject: .objectId
         .thisGroup$ = Get value: .i, .groupCol$
         .val$ = Get value: .i, .valueCol$
         .thisVal = number (.val$)
 
-        for .g from 1 to .nGroups
-            if .thisGroup$ = .grpLabel$[.g]
-                .groupCount'.g' = .groupCount'.g' + 1
-                .c = .groupCount'.g'
-                .groupData'.g'_'.c' = .thisVal
-            endif
-        endfor
+        if .thisVal = undefined
+            .nSkippedRows = .nSkippedRows + 1
+        else
+            for .g from 1 to .nGroups
+                if .thisGroup$ = .grpLabel$[.g]
+                    .groupCount'.g' = .groupCount'.g' + 1
+                    .c = .groupCount'.g'
+                    .groupData'.g'_'.c' = .thisVal
+                endif
+            endfor
+        endif
     endfor
 
     # Step 4: Compute y-axis range (both 0 = auto)
@@ -2504,6 +2886,13 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
             endif
         endfor
     endfor
+    # v1.19 (C 96): with no usable value anywhere, .globalMin stayed undefined
+    # and the undefined axis limits aborted the figure at Axes:. Fall back to
+    # a unit axis, as @emlDrawGroupedBoxPlot already does.
+    if .globalMin = undefined
+        .globalMin = 0
+        .globalMax = 1
+    endif
     @emlComputeAxisRange: .globalMin, .globalMax, 10, 0
     .autoYMin = emlComputeAxisRange.axisMin
     .autoYMax = emlComputeAxisRange.axisMax
@@ -2531,16 +2920,24 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
     endif
 
     # Step 8: Draw each box
+    # v1.19 (C 96): a group with no usable observation produced a zero-length
+    # vector, whose percentiles are undefined and abort the drawing command.
+    # Skip that group instead, matching @emlDrawGroupedBoxPlot.
+    .nEmptyGroups = 0
     for .g from 1 to .nGroups
         .n = .groupCount'.g'
-        .data# = zero# (.n)
-        for .k from 1 to .n
-            .data#[.k] = .groupData'.g'_'.k'
-        endfor
+        if .n < 1
+            .nEmptyGroups = .nEmptyGroups + 1
+        else
+            .data# = zero# (.n)
+            for .k from 1 to .n
+                .data#[.k] = .groupData'.g'_'.k'
+            endfor
 
-        .colorIdx = .g
+            .colorIdx = .g
 
-        @emlDrawBox: .g, .data#, emlSetColorPalette.fill$[.colorIdx], emlSetColorPalette.line$[.colorIdx], .yMin, .yMax, 0.25
+            @emlDrawBox: .g, .data#, emlSetColorPalette.fill$[.colorIdx], emlSetColorPalette.line$[.colorIdx], .yMin, .yMax, 0.25
+        endif
     endfor
 
     # Step 8B: Jittered points overlay
@@ -2548,14 +2945,30 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
         if prev_boxShowJitter = 1
             for .g from 1 to .nGroups
                 .n = .groupCount'.g'
-                jitterData# = zero# (.n)
-                for .k from 1 to .n
-                    jitterData#[.k] = .groupData'.g'_'.k'
-                endfor
-                .colorIdx = .g
-                @emlDrawJitteredPoints: .g, emlSetColorPalette.line$[.colorIdx], emlSetAdaptiveTheme.markerSize * 0.5, 0.12
+                # v1.19 (C 96): skip empty groups here too.
+                if .n >= 1
+                    jitterData# = zero# (.n)
+                    for .k from 1 to .n
+                        jitterData#[.k] = .groupData'.g'_'.k'
+                    endfor
+                    .colorIdx = .g
+                    @emlDrawJitteredPoints: .g, emlSetColorPalette.line$[.colorIdx], emlSetAdaptiveTheme.markerSize * 0.5, 0.12
+                endif
             endfor
         endif
+    endif
+
+    # v1.19 (C 96): report anything the guards above dropped, so a thinner
+    # figure is never mistaken for the whole data set.
+    if .nSkippedRows > 0
+        .skipMsg$ = "Box plot: " + string$ (.nSkippedRows)
+        ... + " row(s) skipped (missing or non-numeric value)."
+        appendInfoLine: .skipMsg$
+    endif
+    if .nEmptyGroups > 0
+        .emptyMsg$ = "Box plot: " + string$ (.nEmptyGroups)
+        ... + " group(s) not drawn (no usable observation)."
+        appendInfoLine: .emptyMsg$
     endif
 
     # Expose axis ranges for annotation bridge
@@ -2710,16 +3123,18 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
                 .b = 1
             endif
 
-            if .nGroups > 0
+            # v1.19: guard on .hasGroups, not .nGroups. .nGroups is
+            # seeded to 1 for the ungrouped case, so ".nGroups > 0" was
+            # always true and the ungrouped path fell into the group
+            # lookup with an empty column name, aborting the figure.
+            .gIdx = 1
+            if .hasGroups = 1
                 .grp$ = Get value: .i, .groupCol$
-                .gIdx = 1
                 for .g from 1 to .nGroups
                     if emlCountGroups.groupLabel$[.g] = .grp$
                         .gIdx = .g
                     endif
                 endfor
-            else
-                .gIdx = 1
             endif
 
             .count'.gIdx'_'.b' = .count'.gIdx'_'.b' + 1
@@ -3484,6 +3899,12 @@ endproc
 # confidence interval and a zero reference line (a "forest"/coefficient plot —
 # the standard LMM graphic). Rule 28: title, garnish suppressed + manual marks,
 # viewport asserted, sanitized labels, buffered axis always including zero.
+#
+# Takes no arguments — the LMM tool calls it as @emlDrawLMMForest. Unlike the
+# other draw procedures it is not reached through the graphs form, so the
+# display-toggle globals that form normally sets may be undefined; they are
+# seeded here rather than assumed (see the guard below).
+# Requires: nothing. Reads globals: emlShow* and colorMode$ if already set.
 # ============================================================================
 procedure emlDrawLMMForest
     .p = emlLMM.nFixedCols
@@ -3507,46 +3928,87 @@ procedure emlDrawLMMForest
     .xlo = .xmin - .buf
     .xhi = .xmax + .buf
 
+    # Standard single-figure width; height grows with the coefficient count
+    # (fixed chrome allowance + one row pitch per coefficient).
     .figW = 6.5
-    .figH = 1.6 + 0.5 * .p
+    .rowPitch = 0.5
+    .chromeH = 1.6
+    .figH = .chromeH + .rowPitch * .p
+
+    # Display-toggle globals are normally set by the graphs form's UI path
+    # (eml-graphs-form.praat) or by @emlInitDrawingDefaults. The LMM tool
+    # reaches this procedure through neither, so seed them if absent —
+    # @emlDrawAlignedMarksBottom reads emlShowTicksX / emlShowAxisValuesX and
+    # Praat raises "Unknown variable" on an undefined global inside an if.
+    # Same self-heal idiom as the panel-origin guard in @emlSetAdaptiveTheme.
+    if variableExists ("emlShowTicksX") = 0
+        @emlInitDrawingDefaults
+    endif
+    if variableExists ("colorMode$") = 0
+        colorMode$ = "color"
+    endif
 
     Erase all
+
+    # Theme prologue (Rule 2): font size is set here, once, before any
+    # margin-dependent command. Every other draw procedure in this file opens
+    # the same way; without it the figure inherits whatever ambient size the
+    # Picture window happens to hold and its margins — and therefore its box,
+    # ticks and labels — shift between runs.
+    @emlSetAdaptiveTheme: .figW, .figH
+    @emlSetColorPalette: colorMode$
+
     Select outer viewport: 0, .figW, 0, .figH
     Axes: .xlo, .xhi, 0.5, .p + 0.7
-    Black
-    Line width: 1
+    Line width: emlSetAdaptiveTheme.axisLineWidth
 
-    # Zero reference line
-    Grey
+    # Zero reference line — subordinate to the data, drawn in the axis colour.
+    Colour: emlSetAdaptiveTheme.axisColor$
     Draw line: 0, 0.5, 0, .p + 0.5
-    Black
+
+    # Interval caps and label offset are fractions of the 1.0 world-unit row
+    # pitch, not page constants — they scale with the figure automatically.
+    .capHalfHeight = 0.13
+    .labelOffsetY = 0.30
+    .estMarkerSize = emlSetAdaptiveTheme.markerSize * 2.5
+    .seriesColor$ = emlSetColorPalette.line$[1]
 
     # One row per coefficient (first coefficient at the top)
+    Colour: .seriesColor$
     for .j from 1 to .p
         .y = .p - .j + 1
         .lo = emlWaldCI.lower# [.j]
         .hi = emlWaldCI.upper# [.j]
         .est = emlLMM.beta# [.j]
-        Line width: 2
+        Line width: emlSetAdaptiveTheme.dataLineWidth
         Draw line: .lo, .y, .hi, .y
-        Draw line: .lo, .y - 0.13, .lo, .y + 0.13
-        Draw line: .hi, .y - 0.13, .hi, .y + 0.13
-        Line width: 1
-        Paint circle (mm): "Black", .est, .y, 2.6
+        Draw line: .lo, .y - .capHalfHeight, .lo, .y + .capHalfHeight
+        Draw line: .hi, .y - .capHalfHeight, .hi, .y + .capHalfHeight
+        Paint circle (mm): .seriesColor$, .est, .y, .estMarkerSize
         .raw$ = emlModelMatrix.colName'.j'$
-        .lab$ = replace$ (.raw$, "_", " ", 0)
-        .lab$ = replace$ (.lab$, "%", "\% ", 0)
-        .lab$ = replace$ (.lab$, "#", "\# ", 0)
-        .lab$ = replace$ (.lab$, "^", "\^ ", 0)
-        Text: .xlo, "left", .y + 0.30, "half", .lab$
+        @emlSanitizeLabel: .raw$
+        .lab$ = emlSanitizeLabel.result$
+        Colour: emlSetAdaptiveTheme.textColor$
+        Text: .xlo, "left", .y + .labelOffsetY, "half", .lab$
+        Colour: .seriesColor$
     endfor
-    Line width: 1
 
+    Colour: emlSetAdaptiveTheme.axisColor$
+    Line width: emlSetAdaptiveTheme.axisLineWidth
     Draw inner box
-    Marks bottom: 5, "yes", "yes", "no"
-    .xlab$ = "Coefficient estimate (95\%  CI)"
-    Text bottom: "yes", .xlab$
-    .titl$ = "LMM fixed effects: " + replace$ (emlLMM.formula$, "_", " ", 0)
+
+    # Rule 1: nice-number ticks. A bare "Marks bottom: 5" would divide the
+    # 12%-buffered range into four arbitrary intervals.
+    @emlDrawAlignedMarksBottom: .xlo, .xhi,
+    ... emlSetAdaptiveTheme.targetTicksX, emlSetAdaptiveTheme.useMinorTicks
+
+    Colour: emlSetAdaptiveTheme.textColor$
+    if emlShowAxisNameX
+        .xlab$ = "Coefficient estimate (95\%  CI)"
+        Text bottom: "yes", .xlab$
+    endif
+    @emlSanitizeLabel: emlLMM.formula$
+    .titl$ = "LMM fixed effects: " + emlSanitizeLabel.result$
     Text top: "yes", .titl$
 
     # Rule 28I: assert the full outer viewport before any downstream save.

@@ -2,6 +2,11 @@
 # EML Praat Tools — Quick Start Guide
 # ============================================================================
 # Prints a quick-start guide to the Info window.
+# Version: 1.1
+# v1.1: Item 8 — removed the "Interactive tutorial: New > EML Tools > EML
+#       Interactive Tutorial" documentation line. That menu entry was
+#       unregistered in setup.praat v1.4 (item 4), so the guide was
+#       advertising a menu item that no longer exists.
 # ============================================================================
 
 writeInfoLine: "============================================================"
@@ -55,7 +60,6 @@ appendInfoLine: "------------------------------------------------------------"
 appendInfoLine: "  DOCUMENTATION"
 appendInfoLine: "------------------------------------------------------------"
 appendInfoLine: ""
-appendInfoLine: "  Interactive tutorial: New > EML Tools > EML Interactive Tutorial"
 appendInfoLine: "  Overview:             README.md (in the plugin folder)"
 appendInfoLine: "  Demo figure:          Run Stats Demo (in EML Tools menu)"
 appendInfoLine: ""

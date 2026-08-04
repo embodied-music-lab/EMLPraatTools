@@ -2,8 +2,26 @@
 # EML Stats : Core Descriptive Statistics
 # ============================================================================
 # Module: eml-core-descriptive.praat
-# Version: 1.1
-# Date: 12 April 2026
+# Version: 1.2
+# Date: 2 August 2026
+#
+# v1.2: Audit fixes (items 5, 6, 7).
+#        Item 5 — @emlShapiroWilk: the second pair-weight coefficient is
+#          now applied from n >= 6, not n >= 7, matching Royston AS R94 and
+#          R's swilk.c (which branches on n > 5). n = 6 was the only sample
+#          size in 3..12 that disagreed with R; it now agrees to 1e-6.
+#        Item 6 — @emlKurtosis returned a spurious finite value (e.g. -13.5
+#          at n = 4) when the standard deviation is zero; the standardised
+#          moment is 0/0 there. It now returns undefined with .error$ set.
+#          @emlSkewness had the analogous defect (returned 0) and is fixed
+#          the same way. Both procedures now expose .error$.
+#        Item 7 — Guards for undefined elements and out-of-range arguments.
+#          sort# raises a hard error on a vector containing undefined, which
+#          aborted the whole calling script from @emlPercentile,
+#          @emlTrimmedMean, @emlWinsorizedMean and @emlMAD. New helper
+#          @eml_hasUndefined lets those procedures return undefined instead.
+#          @emlCI now rejects confidenceLevel outside (0, 1): a level of 1
+#          made invStudentQ(0, df) loop forever.
 #
 # v1.1: Added @emlShapiroWilk (Royston 1995, AS R94) and helper
 #        @eml_swPoly. Shapiro-Wilk W test for normality, n = 3–5000.
@@ -18,7 +36,7 @@
 #   @emlVariance, @emlSD, @emlSEM, @emlSkewness, @emlKurtosis,
 #   @emlGeometricMean, @emlHarmonicMean, @emlTrimmedMean,
 #   @emlWinsorizedMean, @emlMAD, @emlRange, @emlCI, @emlDescribe,
-#   @emlShapiroWilk, @eml_swPoly
+#   @emlShapiroWilk, @eml_swPoly, @eml_hasUndefined
 #
 # All procedures use the "eml" prefix (EML Stats) to avoid
 # namespace collisions with user scripts.
@@ -29,6 +47,27 @@
 #   @emlDescribe: myData#
 #   appendInfoLine: emlDescribe.summary$
 # ============================================================================
+
+
+# ----------------------------------------------------------------------------
+# @eml_hasUndefined
+# Internal helper: does a numeric vector contain any undefined element?
+# Input:  v# — numeric vector
+# Output: .result — 1 if at least one element is undefined, else 0
+# Needed because sort# raises a hard error ("Vector contains one or more
+# undefined elements. Cannot sort.") that aborts the whole calling script.
+# The loop runs to completion rather than breaking early: Praat has no
+# loop-break statement, and the cost is negligible next to sort#.
+# ----------------------------------------------------------------------------
+procedure eml_hasUndefined: .v#
+    .result = 0
+    .nv = size (.v#)
+    for .i from 1 to .nv
+        if .v#[.i] = undefined
+            .result = 1
+        endif
+    endfor
+endproc
 
 
 # ----------------------------------------------------------------------------
@@ -134,12 +173,19 @@ endproc
 # Compute the p-th percentile using linear interpolation (R type=7).
 # Input:  data# — numeric vector
 #         p     — percentile (0–100)
-# Output: .result — interpolated percentile value
+# Output: .result — interpolated percentile value; undefined if the vector
+#                   is empty, contains an undefined element, or p is
+#                   undefined or outside 0–100
 # Algorithm: h = (n-1)*p/100 + 1; linear interpolation between order stats.
 # ----------------------------------------------------------------------------
 procedure emlPercentile: .data#, .p
     .n = size (.data#)
+    @eml_hasUndefined: .data#
     if .n = 0
+        .result = undefined
+    elsif eml_hasUndefined.result = 1
+        .result = undefined
+    elsif .p = undefined
         .result = undefined
     elsif .p < 0 or .p > 100
         .result = undefined
@@ -245,18 +291,23 @@ endproc
 # @emlSkewness
 # Sample skewness (Fisher's definition).
 # Input:  data# — numeric vector
-# Output: .result — skewness (undefined if n < 3)
+# Output: .result — skewness (undefined if n < 3 or if sd = 0)
+#         .error$ — reason .result is undefined, else empty
 # Formula: (n / ((n-1)(n-2))) * sum((xi - mean) / sd)^3
 # ----------------------------------------------------------------------------
 procedure emlSkewness: .data#
     .n = size (.data#)
+    .error$ = ""
     if .n < 3
         .result = undefined
+        .error$ = "Skewness is undefined for n < 3."
     else
         .m = mean (.data#)
         .s = stdev (.data#)
         if .s = 0
-            .result = 0
+            .result = undefined
+            .error$ = "Skewness is undefined when all values are identical"
+            .error$ = .error$ + " (standard deviation is zero)."
         else
             .sumCubed = 0
             for .i from 1 to .n
@@ -273,20 +324,25 @@ endproc
 # @emlKurtosis
 # Excess kurtosis (Fisher's definition, normal = 0).
 # Input:  data# — numeric vector
-# Output: .result — excess kurtosis (undefined if n < 4)
+# Output: .result — excess kurtosis (undefined if n < 4 or if sd = 0)
+#         .error$ — reason .result is undefined, else empty
 # Formula: ((n(n+1)) / ((n-1)(n-2)(n-3))) * sum((xi-mean)/sd)^4
 #          - (3(n-1)^2) / ((n-2)(n-3))
 # ----------------------------------------------------------------------------
 procedure emlKurtosis: .data#
     .n = size (.data#)
+    .error$ = ""
     if .n < 4
         .result = undefined
+        .error$ = "Excess kurtosis is undefined for n < 4."
     else
         .m = mean (.data#)
         .s = stdev (.data#)
         if .s = 0
-            # All values identical: platykurtic extreme
-            .result = -3 * (.n - 1) * (.n - 1) / ((.n - 2) * (.n - 3))
+            # All values identical: the standardised moment is 0/0.
+            .result = undefined
+            .error$ = "Excess kurtosis is undefined when all values are"
+            .error$ = .error$ + " identical (standard deviation is zero)."
         else
             .sumFourth = 0
             for .i from 1 to .n
@@ -357,7 +413,12 @@ endproc
 # ----------------------------------------------------------------------------
 procedure emlTrimmedMean: .data#, .proportion
     .n = size (.data#)
+    @eml_hasUndefined: .data#
     if .n = 0
+        .result = undefined
+    elsif eml_hasUndefined.result = 1
+        .result = undefined
+    elsif .proportion = undefined
         .result = undefined
     elsif .proportion < 0 or .proportion >= 0.5
         .result = undefined
@@ -390,7 +451,12 @@ endproc
 # ----------------------------------------------------------------------------
 procedure emlWinsorizedMean: .data#, .proportion
     .n = size (.data#)
+    @eml_hasUndefined: .data#
     if .n = 0
+        .result = undefined
+    elsif eml_hasUndefined.result = 1
+        .result = undefined
+    elsif .proportion = undefined
         .result = undefined
     elsif .proportion < 0 or .proportion >= 0.5
         .result = undefined
@@ -426,7 +492,11 @@ endproc
 # ----------------------------------------------------------------------------
 procedure emlMAD: .data#
     .n = size (.data#)
+    @eml_hasUndefined: .data#
     if .n = 0
+        .result = undefined
+        .rawMAD = undefined
+    elsif eml_hasUndefined.result = 1
         .result = undefined
         .rawMAD = undefined
     else
@@ -477,11 +547,25 @@ endproc
 #         .upper         — upper bound
 #         .mean          — sample mean
 #         .marginOfError — half-width of CI
+# All outputs are undefined if n < 2, or if confidenceLevel is undefined or
+# outside the open interval (0, 1).
 # Formula: mean +/- invStudentQ((1 - conf) / 2, n-1) * SEM
 # ----------------------------------------------------------------------------
 procedure emlCI: .data#, .confidenceLevel
     .n = size (.data#)
+    .badLevel = 0
+    if .confidenceLevel = undefined
+        .badLevel = 1
+    elsif .confidenceLevel <= 0 or .confidenceLevel >= 1
+        # invStudentQ (0, df) never converges — it hangs the script.
+        .badLevel = 1
+    endif
     if .n < 2
+        .lower = undefined
+        .upper = undefined
+        .mean = undefined
+        .marginOfError = undefined
+    elsif .badLevel = 1
         .lower = undefined
         .upper = undefined
         .mean = undefined
@@ -608,7 +692,7 @@ endproc
 #   1. Sort data, compute Blom normal order statistics via invGaussQ
 #   2. Compute pair-weight coefficients with polynomial corrections:
 #      - Outermost pair: m[n]/ssumm2 + poly(c1, 1/sqrt(n))
-#      - Second pair (n>=7): m[n-1]/ssumm2 + poly(c2, 1/sqrt(n))
+#      - Second pair (n>=6): m[n-1]/ssumm2 + poly(c2, 1/sqrt(n))
 #      - Middle pairs: proportional to m, scaled so sum(a^2) = 0.5
 #   3. W = (sum a[i] * (x[n+1-i] - x[i]))^2 / SS
 #   4. P-value transformation:
@@ -701,14 +785,14 @@ procedure emlShapiroWilk: .data#
             @eml_swPoly: .c1#, .swU
             .a#[1] = .m#[.n] / .ssumm2 + eml_swPoly.result
 
-            if .n >= 7
+            if .n >= 6
                 # Second outermost coefficient
                 @eml_swPoly: .c2#, .swU
                 .a#[2] = .m#[.n - 1] / .ssumm2 + eml_swPoly.result
                 .startFill = 3
                 .swTarget = 0.5 - .a#[1] * .a#[1] - .a#[2] * .a#[2]
             else
-                # n = 4, 5, or 6: only outermost from polynomial
+                # n = 4 or 5: only outermost from polynomial
                 .startFill = 2
                 .swTarget = 0.5 - .a#[1] * .a#[1]
             endif

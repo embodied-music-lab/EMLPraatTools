@@ -4,9 +4,41 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # License: Creative Commons Share-Alike
-# Version: 3.21
-# Date: 6 April 2026
+# Version: 3.22
+# Date: 2 August 2026
 #
+# v3.22: Undefined/validation hardening (audit items 1-3).
+#        (1) @emlCheckNumericColumn no longer samples the first 5 rows and
+#            no longer passes a column on a single parseable cell. It scans
+#            the whole column (capped at .maxScanRows), requires EVERY
+#            non-empty cell to be a strict numeric literal, treats
+#            empty/whitespace cells as missing rather than failures, and
+#            reports .nNumeric/.nMissing/.nCoerced/.nNonNumeric plus the
+#            first offending row and its literal text. Cells that only pass
+#            via number() coercion ("5,5", "30%", "1/2", "0x10", "2 3") are
+#            classified as coerced and REJECTED — a silent wrong number is
+#            worse than a rejected column. Parameter list and .isNumeric
+#            output name/meaning are unchanged.
+#        (2) @emlMeasureBarData no longer crashes on undefined values.
+#            Undefined observations and undefined custom-error values are
+#            skipped and counted; means, SE/SD and the visible min/max fold
+#            are guarded with explicit "<> undefined" tests; single-
+#            observation groups are handled explicitly (no undefined error
+#            bar). emlBarData_mean[] and emlBarData_error[] are now
+#            guaranteed defined on return, so nothing undefined can reach a
+#            drawing command. New disclosure globals: emlBarData_valid[],
+#            emlBarData_errorDefined[], emlBarData_skipped[],
+#            emlBarData_errSkipped[], emlBarData_nSkipped,
+#            emlBarData_nErrSkipped, emlBarData_nInvalidGroups,
+#            emlBarData_nSingleObs, emlBarData_nUnmatchedRows.
+#        (3) Swept the file for the same two patterns. Fixed:
+#            @emlComputeAxisRange, @emlComputeNiceStep,
+#            @emlSetAlphaDotGeometry (relational "guards" that are FALSE for
+#            undefined and therefore let undefined through to Axes:/
+#            Paint circle:), and @emlDrawViolin, @emlDrawBox,
+#            @emlDrawJitteredPoints (undefined observations reaching
+#            Draw line:/Paint rectangle:, or silently suppressing the whole
+#            glyph). @emlCheckPlausibility was already correct.
 # v3.21: Graph correctness fixes. (1) Box/violin quartiles now use the
 #        shared R-7 interpolated @emlQuartiles instead of nearest-rank
 #        floor(n*p), which biased the median low and collapsed it onto the
@@ -720,9 +752,38 @@ endproc
 # @emlComputeAxisRange
 # Computes axis bounds from data range with buffer and rounding
 # Arguments: dataMin, dataMax, roundTo, isPercentage (0 or 1)
-# Outputs: .axisMin, .axisMax
+# Outputs: .axisMin, .axisMax, .degenerate (v3.22)
+#
+# v3.22: undefined inputs are detected explicitly rather than being allowed
+# to flow through the comparison chain. In Praat every comparison against
+# undefined is FALSE (u > 0, u <= 1, u >= 0 are all false), so an undefined
+# .dataMin/.dataMax previously slipped past every "guard" here and produced
+# an undefined .axisMin/.axisMax, which aborts the whole figure at the
+# subsequent Axes: command. Undefined or non-finite input now falls back to
+# a unit axis and sets .degenerate = 1 so callers can report it.
 # ----------------------------------------------------------------------------
 procedure emlComputeAxisRange: .dataMin, .dataMax, .roundTo, .isPercentage
+    .degenerate = 0
+    .badInput = 0
+    if .dataMin = undefined
+        .badInput = 1
+    endif
+    if .dataMax = undefined
+        .badInput = 1
+    endif
+    if .roundTo = undefined
+        .badInput = 1
+    else
+        if .roundTo <= 0
+            .badInput = 1
+        endif
+    endif
+    if .badInput = 1
+        .degenerate = 1
+        .axisMin = 0
+        .axisMax = 1
+        goto AXIS_RANGE_END
+    endif
     if .isPercentage
         if .dataMax <= 1
             .axisMin = 0
@@ -753,7 +814,16 @@ procedure emlComputeAxisRange: .dataMin, .dataMax, .roundTo, .isPercentage
         if .dataMin >= 0 and .axisMin < 0
             .axisMin = 0
         endif
+
+        # v3.22: final safety net. If .roundTo is enormous relative to the
+        # data the rounding can collapse the axis to zero width, which makes
+        # every downstream tick/step computation degenerate.
+        if .axisMax <= .axisMin
+            .degenerate = 1
+            .axisMax = .axisMin + 1
+        endif
     endif
+    label AXIS_RANGE_END
 endproc
 
 # ----------------------------------------------------------------------------
@@ -761,9 +831,28 @@ endproc
 # Classic nice-number algorithm for human-friendly tick spacing
 # Arguments: range (axis max minus axis min), targetTicks (desired tick count)
 # Outputs: .step (the nice step size)
+#
+# v3.22: the guard below was "if .range <= 0 or .targetTicks < 1", which is
+# FALSE when .range is undefined (every relational comparison against
+# undefined is false in Praat). An undefined .range therefore took the else
+# branch and produced an undefined .step, which propagates into the
+# gridline/tick while-loops that follow every caller. Undefined inputs are
+# now tested explicitly and routed to the same fallback as an empty range.
 # ----------------------------------------------------------------------------
 procedure emlComputeNiceStep: .range, .targetTicks
-    if .range <= 0 or .targetTicks < 1
+    .bad = 0
+    if .range = undefined
+        .bad = 1
+    endif
+    if .targetTicks = undefined
+        .bad = 1
+    endif
+    if .bad = 0
+        if .range <= 0 or .targetTicks < 1
+            .bad = 1
+        endif
+    endif
+    if .bad = 1
         .step = 1
     else
         .roughStep = .range / .targetTicks
@@ -1410,9 +1499,17 @@ endproc
 # Arguments: xCenter, data#, fillColor$, lineColor$, axisYMin, axisYMax, width
 # axisYMin/axisYMax: axis bounds for clipping (prevents drawing outside frame)
 # width: half-width of the violin in x-units (typically 0.35)
+# Output (v3.22): .nSkipped = observations dropped because they were undefined
+#
+# v3.22: undefined observations are now skipped during the fallback draw and
+# detected before the KDE runs. Previously "if .sd = 0" was the only validity
+# gate; an undefined element in .data# makes .mean and .sd undefined, that
+# comparison is FALSE, and the undefined bandwidth propagates into
+# Paint rectangle:, which aborts the entire figure with a hard error.
 # ----------------------------------------------------------------------------
 procedure emlDrawViolin: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, .axisYMax, .width
     .n = size (.data#)
+    .nSkipped = 0
 
     # Guard: need at least 4 observations for meaningful violin + quartile box
     if .n < 4
@@ -1420,11 +1517,29 @@ procedure emlDrawViolin: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, 
         Colour: .lineColor$
         Line width: 1.5
         for .i from 1 to .n
-            Draw line: .xCenter - .width * 0.3, .data#[.i], .xCenter + .width * 0.3, .data#[.i]
+            .pt = .data#[.i]
+            if .pt <> undefined
+                Draw line: .xCenter - .width * 0.3, .pt, .xCenter + .width * 0.3, .pt
+            else
+                .nSkipped = .nSkipped + 1
+            endif
         endfor
         Colour: "Black"
         Line width: 1.0
         # Skip rest of procedure via early structure
+        goto VIOLIN_END
+    endif
+
+    # v3.22: reject undefined observations before any statistic is computed.
+    # A single undefined element poisons .mean, .sd and .bandwidth, and every
+    # subsequent comparison against those values evaluates FALSE, so no
+    # existing guard catches it.
+    for .i from 1 to .n
+        if .data#[.i] = undefined
+            .nSkipped = .nSkipped + 1
+        endif
+    endfor
+    if .nSkipped > 0
         goto VIOLIN_END
     endif
 
@@ -1443,6 +1558,12 @@ procedure emlDrawViolin: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, 
         .variance = .variance + (.data#[.i] - .mean) ^ 2
     endfor
     .sd = sqrt (.variance / (.n - 1))
+
+    # v3.22: belt-and-braces. Overflow in the sum-of-squares can still yield a
+    # non-finite .sd; bail out rather than feed it to the KDE.
+    if .sd = undefined
+        goto VIOLIN_END
+    endif
 
     # Guard: if SD is zero (all identical values), draw a horizontal line
     if .sd = 0
@@ -1619,12 +1740,32 @@ endproc
 # Outputs:
 #   .q1Out, .medianOut, .q3Out — quartile values
 #   .whiskerLowOut, .whiskerHighOut — Tukey whisker endpoints
+#   .nSkipped — observations dropped because they were undefined (v3.22)
+#
+# v3.22: every existing "guard" in this procedure is a relational comparison
+# (.drawQ1 < .drawQ3, .median >= .axisYMin, ...). All of those are FALSE when
+# the operand is undefined, so an undefined element in .data# silently
+# suppressed the entire box with no disclosure — and on the .n = 1 path it
+# reached Draw line: with an undefined y and aborted the figure. Undefined
+# observations are now detected up front and reported through .nSkipped.
 # ----------------------------------------------------------------------------
 procedure emlDrawBox: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, .axisYMax, .width
     .n = size (.data#)
+    .nSkipped = 0
 
     # Guard: need at least 1 observation
     if .n < 1
+        goto BOX_END
+    endif
+
+    # v3.22: undefined observations poison the sort, the quartiles and the
+    # Tukey fences. Detect them before anything is drawn.
+    for .i from 1 to .n
+        if .data#[.i] = undefined
+            .nSkipped = .nSkipped + 1
+        endif
+    endfor
+    if .nSkipped > 0
         goto BOX_END
     endif
 
@@ -1781,20 +1922,32 @@ endproc
 #   lineColor$: RGB colour string for the points
 #   markerSize: point diameter in mm
 #   jitterWidth: half-width of jitter range (e.g., 0.12 for ±0.12)
+# Outputs: .nSkipped — points dropped because the y-value was undefined (v3.22)
+#
+# v3.22: this loop had no validity check at all — an undefined element in
+# jitterData# went straight into Draw line: and aborted the figure with a
+# hard error. Undefined points are now skipped and counted.
 # ----------------------------------------------------------------------------
 procedure emlDrawJitteredPoints: .xCenter, .lineColor$, .markerSize, .jitterWidth
     .n = size (jitterData#)
+    .nSkipped = 0
     Colour: .lineColor$
 
-    for .i from 1 to .n
-        .jitter = randomUniform (-.jitterWidth, .jitterWidth)
-        .xPlot = .xCenter + .jitter
-        .yPlot = jitterData#[.i]
+    # Loop-invariant: half-length of the cross mark in world units
+    .halfMark = .markerSize * 0.003
 
-        # Draw as small cross mark
-        .halfMark = .markerSize * 0.003
-        Draw line: .xPlot, .yPlot - .halfMark, .xPlot, .yPlot + .halfMark
-        Draw line: .xPlot - .halfMark, .yPlot, .xPlot + .halfMark, .yPlot
+    for .i from 1 to .n
+        .yPlot = jitterData#[.i]
+        if .yPlot <> undefined
+            .jitter = randomUniform (-.jitterWidth, .jitterWidth)
+            .xPlot = .xCenter + .jitter
+
+            # Draw as small cross mark
+            Draw line: .xPlot, .yPlot - .halfMark, .xPlot, .yPlot + .halfMark
+            Draw line: .xPlot - .halfMark, .yPlot, .xPlot + .halfMark, .yPlot
+        else
+            .nSkipped = .nSkipped + 1
+        endif
     endfor
 
     Colour: "Black"
@@ -2053,30 +2206,149 @@ endproc
 
 # ----------------------------------------------------------------------------
 # @emlCheckNumericColumn
-# Tests whether a Table column contains numeric data by sampling the first
-# 5 rows. Returns .isNumeric = 1 if at least one row converts to a number
-# via number(), 0 otherwise.
+# Tests whether a Table column is safe to feed to number() for plotting.
+#
+# v3.22: was "sample the first 5 rows, pass if ANY one of them parses" —
+# a column whose first five cells happened to be numeric, or that held a
+# single numeric cell among text, was declared numeric and every downstream
+# draw procedure then aborted or drew garbage. Now: EVERY row is scanned and
+# EVERY non-empty cell must parse cleanly.
+#
+# Cell classification (one of four):
+#   missing      — empty or whitespace-only; not a failure, not evidence
+#   numeric      — matches a strict decimal/exponent literal AND number()
+#                  returns a defined value
+#   coerced      — number() returns a value only via a lossy coercion, e.g.
+#                  number("5,5")=5, number("30%")=0.3, number("1/2")=1,
+#                  number("2 3")=2, number("0x10")=16, number("5x")=5.
+#                  These are wrong-number hazards, NOT passes: they are
+#                  counted as offending cells and force .isNumeric = 0.
+#   non-numeric  — number() is undefined. Note that Praat's number() cannot
+#                  parse a leading-dot literal (number(".5") is undefined),
+#                  so ".5" lands here even though it looks numeric.
+#
+# .isNumeric = 1 only when at least one cell is numeric and no cell is
+# coerced or non-numeric.
+#
+# Rows scanned are capped at .maxScanRows (100000) as a safety valve on
+# pathological tables; ~37 us/row measured on Praat 6.6.30, so the cap costs
+# a few seconds worst case and is far above any plottable table. When the cap
+# bites, .truncated = 1 and the verdict rests on the scanned prefix only.
+#
 # Arguments: .tableId, .colName$
-# Output: .isNumeric (0 or 1)
+#
+# Outputs:
+#   .isNumeric        — 0/1 verdict (UNCHANGED NAME AND MEANING-AS-FLAG)
+#   .nRows            — rows in the table
+#   .nChecked         — rows actually scanned
+#   .truncated        — 1 if .maxScanRows cap stopped the scan, else 0
+#   .nNumeric         — cells that parsed cleanly
+#   .nMissing         — empty/whitespace cells (treated as missing)
+#   .nCoerced         — cells accepted by number() only via a lossy coercion
+#   .nNonNumeric      — cells number() could not parse at all
+#   .nBad             — .nCoerced + .nNonNumeric (total offending cells)
+#   .firstBadRow      — 1-based row of the first offending cell (0 if none)
+#   .firstBadValue$   — literal contents of that cell ("" if none)
+#   .firstBadKind$    — "coerced" or "non-numeric" ("" if none)
+#   .firstCoercedRow  — 1-based row of the first coercion hazard (0 if none)
+#   .firstCoercedValue$ — literal contents of that cell ("" if none)
+#   .reason$          — one-line human-readable summary for the caller
 # ----------------------------------------------------------------------------
 procedure emlCheckNumericColumn: .tableId, .colName$
+    .maxScanRows = 100000
     .isNumeric = 0
+    .nRows = 0
+    .nChecked = 0
+    .truncated = 0
+    .nNumeric = 0
+    .nMissing = 0
+    .nCoerced = 0
+    .nNonNumeric = 0
+    .nBad = 0
+    .firstBadRow = 0
+    .firstBadValue$ = ""
+    .firstBadKind$ = ""
+    .firstCoercedRow = 0
+    .firstCoercedValue$ = ""
+    .reason$ = "no column specified"
     if .colName$ = ""
         goto CHECK_NUM_END
     endif
+
+    # Whitespace-only and strict-numeric-literal patterns. Built by
+    # concatenation with tab$ so no literal tab or backslash escape appears
+    # in the source.
+    .wsPat$ = "^[ " + tab$ + "]*$"
+    .numPat$ = "^[ " + tab$ + "]*[+-]?([0-9]+[.]?[0-9]*|[.][0-9]+)([eE][+-]?[0-9]+)?[ " + tab$ + "]*$"
+
     selectObject: .tableId
     .nRows = Get number of rows
-    .checkRows = min (.nRows, 5)
-    .i = 1
-    while .i <= .checkRows and .isNumeric = 0
-        selectObject: .tableId
+    .nChecked = min (.nRows, .maxScanRows)
+    if .nChecked < .nRows
+        .truncated = 1
+    endif
+
+    for .i from 1 to .nChecked
         .val$ = Get value: .i, .colName$
-        .val = number (.val$)
-        if .val <> undefined
-            .isNumeric = 1
+        .isBlank = index_regex (.val$, .wsPat$)
+        if .isBlank > 0
+            .nMissing = .nMissing + 1
+        else
+            .looksNumeric = index_regex (.val$, .numPat$)
+            .val = number (.val$)
+            .parsed = 0
+            if .val <> undefined
+                .parsed = 1
+            endif
+            if .looksNumeric > 0 and .parsed = 1
+                .nNumeric = .nNumeric + 1
+            else
+                .kind$ = "non-numeric"
+                if .parsed = 1
+                    .kind$ = "coerced"
+                    .nCoerced = .nCoerced + 1
+                    if .firstCoercedRow = 0
+                        .firstCoercedRow = .i
+                        .firstCoercedValue$ = .val$
+                    endif
+                else
+                    .nNonNumeric = .nNonNumeric + 1
+                endif
+                if .firstBadRow = 0
+                    .firstBadRow = .i
+                    .firstBadValue$ = .val$
+                    .firstBadKind$ = .kind$
+                endif
+            endif
         endif
-        .i = .i + 1
-    endwhile
+    endfor
+
+    .nBad = .nCoerced + .nNonNumeric
+    if .nBad = 0 and .nNumeric > 0
+        .isNumeric = 1
+    endif
+
+    # Build the caller-facing summary
+    if .isNumeric = 1
+        .reason$ = "column " + .colName$ + " is numeric ("
+        ... + string$ (.nNumeric) + " values, "
+        ... + string$ (.nMissing) + " blank)"
+    elsif .nNumeric = 0 and .nBad = 0
+        .reason$ = "column " + .colName$ + " has no usable values ("
+        ... + string$ (.nChecked) + " rows scanned, all blank)"
+    else
+        .reason$ = "column " + .colName$ + " is not numeric: "
+        ... + string$ (.nBad) + " of " + string$ (.nChecked)
+        ... + " cells unusable (" + string$ (.nNonNumeric)
+        ... + " unparseable, " + string$ (.nCoerced)
+        ... + " silently coerced); first offender row "
+        ... + string$ (.firstBadRow) + " = " + .firstBadValue$
+        ... + " (" + .firstBadKind$ + ")"
+    endif
+    if .truncated = 1
+        .reason$ = .reason$ + " [scan capped at " + string$ (.maxScanRows) + " rows]"
+    endif
+
     label CHECK_NUM_END
 endproc
 
@@ -2149,10 +2421,40 @@ procedure emlSetAlphaDotGeometry: .axisXMin, .axisXMax, .axisYMin, .axisYMax, .i
     .vpWidth = .innerRight - .innerLeft
     .vpHeight = .innerBottom - .innerTop
 
-    # Guard against zero ranges
-    if .xRange = 0 or .yRange = 0 or .vpWidth = 0 or .vpHeight = 0
+    # Guard against zero ranges.
+    # v3.22: "= 0" is FALSE for undefined, so an undefined axis bound (the
+    # usual consequence of an all-undefined data column) previously took the
+    # else branch and produced an undefined .stampHalfY, which then reaches
+    # Paint circle: / Insert picture from file: in @emlDrawAlphaDot. Undefined
+    # ranges are now folded into the same degenerate fallback as zero ranges.
+    .degenerate = 0
+    if .xRange = undefined
+        .degenerate = 1
+    endif
+    if .yRange = undefined
+        .degenerate = 1
+    endif
+    if .vpWidth = undefined
+        .degenerate = 1
+    endif
+    if .vpHeight = undefined
+        .degenerate = 1
+    endif
+    if .dotHalf = undefined
+        .degenerate = 1
+    endif
+    if .degenerate = 0
+        if .xRange = 0 or .yRange = 0 or .vpWidth = 0 or .vpHeight = 0
+            .degenerate = 1
+        endif
+    endif
+    if .degenerate = 1
         .stampHalfX = .dotHalf
         .stampHalfY = .dotHalf
+        if .dotHalf = undefined
+            .stampHalfX = 0
+            .stampHalfY = 0
+        endif
     else
         # World units per viewport inch
         .wuPerInchX = .xRange / .vpWidth
@@ -2629,13 +2931,46 @@ endproc
 #   .errorMode   — 0=none, 1=SE, 2=SD, 3=custom column
 #   .errorCol$   — custom error column name (used only when .errorMode = 3)
 #
+# v3.22: undefined-value discipline. Previously any unparseable cell in the
+# value column entered the accumulation, so .sum / .sumSq / the group mean all
+# became undefined. Because "undefined > 0" is FALSE the SE/SD guard silently
+# took the else branch and reported error = 0, but the undefined mean reached
+# @emlDrawBarChart's "Paint rectangle:" and aborted the ENTIRE figure with
+# «Argument "To y" has the value "undefined"». Undefined observations are now
+# skipped during accumulation (the guard pattern used by @emlDrawGroupedViolin),
+# counted, and disclosed; every use of a mean or variance is guarded with an
+# explicit "<> undefined" test.
+#
+# Invariant (hard): emlBarData_mean[g] and emlBarData_error[g] are ALWAYS
+# defined numbers on return, so no undefined can reach a drawing command.
+# A group with no usable observation gets mean = 0 / error = 0 and
+# emlBarData_valid[g] = 0 — it paints as a zero-height (invisible) bar rather
+# than aborting the figure. Callers should consult emlBarData_valid[g] before
+# treating a bar as data.
+#
 # Outputs (module-level globals):
 #   emlBarData_nGroups          — number of unique groups
 #   emlBarData_label$[g]        — group name for group g
 #   emlBarData_mean[g]          — mean of value column for group g
+#                                 (always defined; 0 when valid[g] = 0)
 #   emlBarData_error[g]         — error value for group g (SE/SD/custom/0)
-#   emlBarData_count[g]         — observation count for group g
-#   emlBarData_visibleMax       — max(mean + error) across all groups
+#                                 (always defined; 0 when errorDefined[g] = 0)
+#   emlBarData_count[g]         — count of USABLE observations for group g
+#   emlBarData_visibleMax       — max(mean + error) across valid groups
+#   emlBarData_visibleMin       — min(mean - error) across valid groups
+#   emlBarData_valid[g]         — 1 if group g has >= 1 usable observation
+#   emlBarData_errorDefined[g]  — 1 if the error bar for group g is a real
+#                                 quantity; 0 when it is undefined and was
+#                                 substituted with 0 (n = 1, no usable custom
+#                                 error value, or a non-positive variance)
+#   emlBarData_skipped[g]       — undefined value cells skipped in group g
+#   emlBarData_errSkipped[g]    — undefined custom-error cells skipped (mode 3)
+#   emlBarData_nSkipped         — total undefined value cells skipped
+#   emlBarData_nErrSkipped      — total undefined custom-error cells skipped
+#   emlBarData_nInvalidGroups   — groups with no usable observation
+#   emlBarData_nSingleObs       — groups with exactly one usable observation
+#                                 (SE/SD undefined by definition)
+#   emlBarData_nUnmatchedRows   — rows whose group label matched no group
 # ============================================================================
 
 procedure emlMeasureBarData: .tableId, .groupCol$, .valueCol$, .errorMode, .errorCol$
@@ -2652,63 +2987,124 @@ procedure emlMeasureBarData: .tableId, .groupCol$, .valueCol$, .errorMode, .erro
     endfor
 
     # Initialize accumulators
+    emlBarData_nSkipped = 0
+    emlBarData_nErrSkipped = 0
+    emlBarData_nInvalidGroups = 0
+    emlBarData_nSingleObs = 0
+    emlBarData_nUnmatchedRows = 0
     for .g from 1 to emlBarData_nGroups
         emlBarData_count[.g] = 0
+        emlBarData_skipped[.g] = 0
+        emlBarData_errSkipped[.g] = 0
+        emlBarData_valid[.g] = 0
+        emlBarData_errorDefined[.g] = 0
         .sum[.g] = 0
         .sumSq[.g] = 0
         .errSum[.g] = 0
+        .errCount[.g] = 0
     endfor
 
-    # Accumulate per-group sums
+    # Accumulate per-group sums, skipping undefined observations
     for .i from 1 to .nRows
         selectObject: .tableId
         .thisGroup$ = Get value: .i, .groupCol$
         .val$ = Get value: .i, .valueCol$
         .thisVal = number (.val$)
-        .thisErr = 0
+        .thisErr = undefined
         if .errorMode = 3
             .errVal$ = Get value: .i, .errorCol$
             .thisErr = number (.errVal$)
         endif
 
+        .gIdx = 0
         for .g from 1 to emlBarData_nGroups
             if .thisGroup$ = emlBarData_label$[.g]
-                emlBarData_count[.g] = emlBarData_count[.g] + 1
-                .sum[.g] = .sum[.g] + .thisVal
-                .sumSq[.g] = .sumSq[.g] + .thisVal * .thisVal
-                if .errorMode = 3
-                    .errSum[.g] = .errSum[.g] + .thisErr
-                endif
+                .gIdx = .g
             endif
         endfor
+
+        if .gIdx > 0
+            if .thisVal <> undefined
+                emlBarData_count[.gIdx] = emlBarData_count[.gIdx] + 1
+                .sum[.gIdx] = .sum[.gIdx] + .thisVal
+                .sumSq[.gIdx] = .sumSq[.gIdx] + .thisVal * .thisVal
+            else
+                emlBarData_skipped[.gIdx] = emlBarData_skipped[.gIdx] + 1
+                emlBarData_nSkipped = emlBarData_nSkipped + 1
+            endif
+            if .errorMode = 3
+                if .thisErr <> undefined
+                    .errSum[.gIdx] = .errSum[.gIdx] + .thisErr
+                    .errCount[.gIdx] = .errCount[.gIdx] + 1
+                else
+                    emlBarData_errSkipped[.gIdx] = emlBarData_errSkipped[.gIdx] + 1
+                    emlBarData_nErrSkipped = emlBarData_nErrSkipped + 1
+                endif
+            endif
+        else
+            emlBarData_nUnmatchedRows = emlBarData_nUnmatchedRows + 1
+        endif
     endfor
 
-    # Compute means and errors
+    # Compute means and errors. Every quotient and every sqrt argument is
+    # guarded; the outputs are guaranteed defined so no undefined can reach a
+    # drawing command downstream.
     for .g from 1 to emlBarData_nGroups
-        emlBarData_mean[.g] = .sum[.g] / emlBarData_count[.g]
-        if .errorMode = 1
-            # SE: sd / sqrt(n)
-            emlBarData_error[.g] = 0
-            if emlBarData_count[.g] > 1
-                .var = (.sumSq[.g] - .sum[.g] * .sum[.g] / emlBarData_count[.g]) / (emlBarData_count[.g] - 1)
-                if .var > 0
-                    emlBarData_error[.g] = sqrt (.var) / sqrt (emlBarData_count[.g])
+        emlBarData_mean[.g] = 0
+        emlBarData_error[.g] = 0
+        emlBarData_errorDefined[.g] = 0
+
+        if emlBarData_count[.g] > 0
+            .m = .sum[.g] / emlBarData_count[.g]
+            if .m <> undefined
+                emlBarData_mean[.g] = .m
+                emlBarData_valid[.g] = 1
+            endif
+        endif
+
+        if emlBarData_valid[.g] = 0
+            emlBarData_nInvalidGroups = emlBarData_nInvalidGroups + 1
+        endif
+
+        # n = 1 leaves SE and SD undefined by definition. Say so explicitly
+        # (errorDefined = 0) instead of emitting a bar with an undefined,
+        # or a misleadingly zero, error bar.
+        if emlBarData_count[.g] = 1
+            emlBarData_nSingleObs = emlBarData_nSingleObs + 1
+        endif
+
+        if emlBarData_valid[.g] = 1
+            if .errorMode = 1 or .errorMode = 2
+                if emlBarData_count[.g] > 1
+                    .var = (.sumSq[.g] - .sum[.g] * .sum[.g] / emlBarData_count[.g]) / (emlBarData_count[.g] - 1)
+                    if .var <> undefined
+                        if .var > 0
+                            if .errorMode = 1
+                                # SE: sd / sqrt(n)
+                                emlBarData_error[.g] = sqrt (.var) / sqrt (emlBarData_count[.g])
+                            else
+                                # SD
+                                emlBarData_error[.g] = sqrt (.var)
+                            endif
+                            emlBarData_errorDefined[.g] = 1
+                        else
+                            # Zero (or, from rounding, slightly negative)
+                            # variance: the spread really is nil.
+                            emlBarData_error[.g] = 0
+                            emlBarData_errorDefined[.g] = 1
+                        endif
+                    endif
+                endif
+            elsif .errorMode = 3
+                # Custom column: average of the usable error values per group
+                if .errCount[.g] > 0
+                    .err = .errSum[.g] / .errCount[.g]
+                    if .err <> undefined
+                        emlBarData_error[.g] = .err
+                        emlBarData_errorDefined[.g] = 1
+                    endif
                 endif
             endif
-        elsif .errorMode = 2
-            # SD
-            emlBarData_error[.g] = 0
-            if emlBarData_count[.g] > 1
-                .var = (.sumSq[.g] - .sum[.g] * .sum[.g] / emlBarData_count[.g]) / (emlBarData_count[.g] - 1)
-                if .var > 0
-                    emlBarData_error[.g] = sqrt (.var)
-                endif
-            endif
-        elsif .errorMode = 3
-            # Custom column: average of error column values per group
-            emlBarData_error[.g] = .errSum[.g] / emlBarData_count[.g]
-        else
-            emlBarData_error[.g] = 0
         endif
     endfor
 
@@ -2716,16 +3112,24 @@ procedure emlMeasureBarData: .tableId, .groupCol$, .valueCol$, .errorMode, .erro
     # mean - error). Both seed at 0 so 0 stays the baseline for all-positive
     # OR all-negative data; visibleMin only goes negative when a group's
     # (mean - error) drops below 0, so negative-mean bars are no longer clipped.
+    # Groups with no usable observation are excluded — their sentinel mean of 0
+    # must not be mistaken for a data point.
     emlBarData_visibleMax = 0
     emlBarData_visibleMin = 0
     for .g from 1 to emlBarData_nGroups
-        .topVal = emlBarData_mean[.g] + emlBarData_error[.g]
-        if .topVal > emlBarData_visibleMax
-            emlBarData_visibleMax = .topVal
-        endif
-        .botVal = emlBarData_mean[.g] - emlBarData_error[.g]
-        if .botVal < emlBarData_visibleMin
-            emlBarData_visibleMin = .botVal
+        if emlBarData_valid[.g] = 1
+            .topVal = emlBarData_mean[.g] + emlBarData_error[.g]
+            if .topVal <> undefined
+                if .topVal > emlBarData_visibleMax
+                    emlBarData_visibleMax = .topVal
+                endif
+            endif
+            .botVal = emlBarData_mean[.g] - emlBarData_error[.g]
+            if .botVal <> undefined
+                if .botVal < emlBarData_visibleMin
+                    emlBarData_visibleMin = .botVal
+                endif
+            endif
         endif
     endfor
 

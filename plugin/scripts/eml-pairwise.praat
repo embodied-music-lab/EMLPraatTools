@@ -3,8 +3,11 @@
 # ============================================================================
 # Purpose: All-pairs comparisons from a Table using pairwise t-test,
 #          pairwise Wilcoxon, or Scheffe, with p-value adjustment.
-# Date: 11 May 2026
-# Version: 3.0
+# Date: 2 August 2026
+# Version: 3.1
+# v3.1: Item 6 — carry the dialog's p-value adjustment choice into the
+#       graph annotation via emlGraphsPresetCorrection$ instead of letting
+#       the graphs form silently fall back to Holm.
 # v3.0: Wrapper infrastructure refactor. repeat/until replaces goto/label.
 # v2.0: Full convergence — orchestrator + @emlGuessColumnRoles.
 # ============================================================================
@@ -121,6 +124,7 @@ repeat
                 emlGraphsPresetGroupCol$ = groupCol$
                 emlGraphsPresetTestType$ = presetTestType$
                 emlGraphsPresetAnnotate = 1
+                emlGraphsPresetCorrection$ = adjMethod$
                 @emlGraphsWorkflow: tableId
             elsif clicked = 4
                 runAgain = 1

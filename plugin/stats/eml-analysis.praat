@@ -2,8 +2,48 @@
 # EML Stats : Analysis Orchestrators
 # ============================================================================
 # Module: eml-analysis.praat
-# Version: 1.1
-# Date: 7 April 2026
+# Version: 1.2
+# Date: 2 August 2026
+#
+# v1.2: Correctness + robustness fixes in the orchestrator layer.
+#   item 1 — emlRMPostHoc no longer renders a failed pairwise test as an
+#            adjusted p of 0. A test that fails (or returns an undefined p)
+#            now propagates "undefined" into the raw p-vector, so the
+#            adjustment procedures exclude it from k the way R's p.adjust
+#            excludes NA. Undefined p-values print as "n/a" in both the raw
+#            and adjusted columns, and a note names each skipped pair with
+#            the reason.
+#   item 2 — emlRMPostHoc validates .adjMethod$. An unrecognised string used
+#            to fall through to Holm silently while the header printed the
+#            requested name; the header now prints the method that actually
+#            ran and the substitution is disclosed.
+#   item 3 — emlRunCorrelationAnalysis captures each test's outputs into
+#            locals immediately after its own call and restores them before
+#            reporting, so a nested/re-entrant call cannot overwrite them.
+#            Previously "both" reported Spearman's rank-based r, t, df and p
+#            under the Pearson heading, in the Info report AND the CSV.
+#            The same capture/restore is applied to the Mann-Whitney outputs
+#            in emlRunTwoGroupAnalysis, which @emlRankBiserialR re-enters.
+#   item 4 — emlRunTwoGroupAnalysis checks the error$ of every test it runs.
+#            The reporter performs no error checks, so a failed test used to
+#            be printed as undefined results and written to the CSV. Failed
+#            branches are now dropped from the reported test type and the
+#            reason is surfaced. emlRunCorrelationAnalysis likewise surfaces
+#            a failed Spearman test, which the reporter swallowed silently.
+#   item 5 — emlReportPairwiseComparison header said "Pairwise holm (holm
+#            adjustment)": it used emlPairwiseT.method$, which is the
+#            ADJUSTMENT method, as the test name. Now derived from .test$.
+#   item 6 — emlRunRegressionAnalysis and emlRunNormalityAnalysis guard
+#            their column names with "Get column index:" instead of aborting
+#            the whole script with a raw Praat error.
+#   item 7 — Documented the reserved-but-unread parameters
+#            (emlRunNormalityAnalysis.testType$,
+#            emlRunRepeatedMeasuresAnalysis.subjectCol$,
+#            emlRunFriedmanAnalysis.subjectCol$) and the unimplemented
+#            emlRunReliabilityAnalysis stub. Parameter lists are unchanged
+#            because callers pass arguments positionally.
+#   item 8 — Friedman tie correction verified against R's friedman.test on
+#            tied data; formula and clamp are correct. No change.
 #
 # v1.1: Missing-data fix (correctness). emlRunPairedAnalysis and
 #        emlRunCorrelationAnalysis now extract their two columns with
@@ -91,18 +131,98 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     @emlMedian: .g2#
     .median2 = emlMedian.result
 
+    # v1.2 item 4: @emlReportTwoGroupComparison performs NO error$ checks — it
+    # prints emlTTest.*, emlCohenD.*, emlMannWhitneyU.*, emlRankBiserialR.*
+    # unconditionally and emits a CSV row for each branch. A failed test left
+    # its outputs undefined and the report presented them as results. Capture
+    # each error$ here, drop the failed branch from the reported test type so
+    # neither the report lines nor the CSV row are produced, and disclose why.
+    .ttErr$ = ""
+    .dErr$ = ""
+    .mwErr$ = ""
+    .rbErr$ = ""
+    .doPar = 0
+    .doNon = 0
     if .testType$ = "parametric" or .testType$ = "both"
-        @emlTTest: .g1#, .g2#, 2, .equalVar
-        @emlCohenD: .g1#, .g2#
+        .doPar = 1
+    endif
+    if .testType$ = "nonparametric" or .testType$ = "both"
+        .doNon = 1
     endif
 
-    if .testType$ = "nonparametric" or .testType$ = "both"
+    if .doPar
+        @emlTTest: .g1#, .g2#, 2, .equalVar
+        .ttErr$ = emlTTest.error$
+        @emlCohenD: .g1#, .g2#
+        .dErr$ = emlCohenD.error$
+        if .ttErr$ <> ""
+            .doPar = 0
+        endif
+        if .dErr$ <> ""
+            .doPar = 0
+        endif
+    endif
+
+    if .doNon
         @emlMannWhitneyU: .g1#, .g2#, 2
+        .mwErr$ = emlMannWhitneyU.error$
+        # item 3 pattern: @emlRankBiserialR re-runs @emlMannWhitneyU internally
+        # and so overwrites emlMannWhitneyU.* — the values the reporter and the
+        # CSV row read. Capture before, restore after.
+        .mwU1 = emlMannWhitneyU.u1
+        .mwU2 = emlMannWhitneyU.u2
+        .mwZ = emlMannWhitneyU.z
+        .mwP = emlMannWhitneyU.p
+        .mwMethod$ = emlMannWhitneyU.method$
         @emlRankBiserialR: .g1#, .g2#, 2
+        .rbErr$ = emlRankBiserialR.error$
+        emlMannWhitneyU.u1 = .mwU1
+        emlMannWhitneyU.u2 = .mwU2
+        emlMannWhitneyU.z = .mwZ
+        emlMannWhitneyU.p = .mwP
+        emlMannWhitneyU.method$ = .mwMethod$
+        emlMannWhitneyU.error$ = .mwErr$
+        if .mwErr$ <> ""
+            .doNon = 0
+        endif
+        if .rbErr$ <> ""
+            .doNon = 0
+        endif
+    endif
+
+    # Reported test type reflects what actually succeeded.
+    .effType$ = ""
+    if .doPar
+        .effType$ = "parametric"
+    endif
+    if .doNon
+        .effType$ = "nonparametric"
+    endif
+    if .doPar
+        if .doNon
+            .effType$ = "both"
+        endif
     endif
 
     @emlCSVInit
-    @emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .group1$, .group2$, .n1, .mean1, .sd1, .median1, .n2, .mean2, .sd2, .median2, .testType$
+    @emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .group1$, .group2$, .n1, .mean1, .sd1, .median1, .n2, .mean2, .sd2, .median2, .effType$
+
+    if .ttErr$ <> ""
+        .ttNote$ = "  Parametric results omitted — t-test failed: " + .ttErr$
+        appendInfoLine: .ttNote$
+    endif
+    if .dErr$ <> ""
+        .dNote$ = "  Parametric results omitted — Cohen's d failed: " + .dErr$
+        appendInfoLine: .dNote$
+    endif
+    if .mwErr$ <> ""
+        .mwNote$ = "  Nonparametric results omitted — Mann-Whitney U failed: " + .mwErr$
+        appendInfoLine: .mwNote$
+    endif
+    if .rbErr$ <> ""
+        .rbNote$ = "  Nonparametric results omitted — rank-biserial r failed: " + .rbErr$
+        appendInfoLine: .rbNote$
+    endif
 
     label END_TWO_GROUP
     selectObject: .tableId
@@ -306,7 +426,16 @@ procedure emlReportPairwiseComparison: .tableName$, .dataCol$, .groupCol$, .test
     .displayGroup$ = emlUnderscoreToSpace.result$
 
     if .test$ = "welch" or .test$ = "student"
-        .methodLabel$ = "Pairwise " + emlPairwiseT.method$ + " (" + .adjMethod$ + " adjustment)"
+        # v1.2 item 5: emlPairwiseT.method$ is the ADJUSTMENT method
+        # (bonferroni/holm/bh), not the name of the test — the header read
+        # "Pairwise holm (holm adjustment)". The test is .test$
+        # (welch/student), which this reporter already receives.
+        if .test$ = "welch"
+            .testLabel$ = "Welch t-test"
+        else
+            .testLabel$ = "Student t-test"
+        endif
+        .methodLabel$ = "Pairwise " + .testLabel$ + " (" + .adjMethod$ + " adjustment)"
         .nGroups = emlPairwiseT.nGroups
 
         @emlReportHeader: .methodLabel$
@@ -654,15 +783,59 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
         goto END_CORR
     endif
 
+    # v1.2 item 3: capture each test's outputs into locals IMMEDIATELY after
+    # its own call. @emlReportCorrelationAnalysis (and the CSV rows it emits)
+    # read the qualified globals emlPearsonCorrelation.* / emlSpearmanCorrelation.*,
+    # and any procedure that runs between the call and the report can overwrite
+    # them — @emlSpearmanCorrelation did exactly that by calling
+    # @emlPearsonCorrelation on the ranks, so "both" reported rank-based
+    # numbers under the Pearson heading in the report AND in the exported CSV.
+    # The captured values are restored below, immediately before the report.
+    .pearErr$ = ""
+    .spearErr$ = ""
     if .testType$ = "pearson" or .testType$ = "both"
         @emlPearsonCorrelation: .dataX#, .dataY#, 2
+        .pearR = emlPearsonCorrelation.r
+        .pearT = emlPearsonCorrelation.t
+        .pearDf = emlPearsonCorrelation.df
+        .pearP = emlPearsonCorrelation.p
+        .pearErr$ = emlPearsonCorrelation.error$
     endif
     if .testType$ = "spearman" or .testType$ = "both"
         @emlSpearmanCorrelation: .dataX#, .dataY#, 2
+        .spearRho = emlSpearmanCorrelation.rho
+        .spearT = emlSpearmanCorrelation.t
+        .spearDf = emlSpearmanCorrelation.df
+        .spearP = emlSpearmanCorrelation.p
+        .spearErr$ = emlSpearmanCorrelation.error$
+    endif
+
+    # Restore the captured outputs into the qualified names the reporter reads.
+    if .testType$ = "pearson" or .testType$ = "both"
+        emlPearsonCorrelation.r = .pearR
+        emlPearsonCorrelation.t = .pearT
+        emlPearsonCorrelation.df = .pearDf
+        emlPearsonCorrelation.p = .pearP
+        emlPearsonCorrelation.error$ = .pearErr$
+    endif
+    if .testType$ = "spearman" or .testType$ = "both"
+        emlSpearmanCorrelation.rho = .spearRho
+        emlSpearmanCorrelation.t = .spearT
+        emlSpearmanCorrelation.df = .spearDf
+        emlSpearmanCorrelation.p = .spearP
+        emlSpearmanCorrelation.error$ = .spearErr$
     endif
 
     @emlCSVInit
     @emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testType$
+
+    # v1.2 item 4: the reporter's Spearman branch has no else-branch, so a
+    # failed Spearman test was reported as nothing at all. Surface it here.
+    # (The Pearson branch already prints its own error, so it is not repeated.)
+    if .spearErr$ <> ""
+        .spearNote$ = "  Spearman correlation not computed: " + .spearErr$
+        appendInfoLine: .spearNote$
+    endif
 
     if .nExcluded > 0
         .exclNote$ = "  Note: " + string$ (.nExcluded) + " row(s) excluded for missing data (analyzed n = " + string$ (.n) + " complete pairs)."
@@ -779,6 +952,21 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         .error$ = "Need at least 3 rows for regression."
     endif
 
+    # v1.2 item 6: guard the column names. Without this, "Get value:" below
+    # aborts the whole script with a raw Praat error naming no column.
+    if .error$ = ""
+        selectObject: .tableId
+        .predIdx = Get column index: .predCol$
+        .depIdx = Get column index: .depCol$
+        if .predIdx = 0
+            .error$ = "Column """ + .predCol$ + """ not found in table """
+            ... + .tableName$ + """."
+        elsif .depIdx = 0
+            .error$ = "Column """ + .depCol$ + """ not found in table """
+            ... + .tableName$ + """."
+        endif
+    endif
+
     if .error$ = ""
         # Extract paired values, pairwise-delete undefined
         .nValid = 0
@@ -829,12 +1017,28 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
     selectObject: .tableId
 endproc
 
+# v1.2 item 7: .testType$ is RESERVED and deliberately unread. This
+# orchestrator always computes both families of evidence — descriptive shape
+# (skewness/kurtosis) and the formal Shapiro-Wilk test — and combines them
+# into one recommendation; there is no branch to select. Existing call sites
+# already pass different values ("both", "auto") with identical results.
+# The parameter is retained because callers pass arguments positionally.
+# Do not remove it without updating every call site.
 procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
     .error$ = ""
 
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
     .nRows = Get number of rows
+
+    # v1.2 item 6: guard the column name. Without this, "Get value:" below
+    # aborts the whole script with a raw Praat error naming no column.
+    .dataIdx = Get column index: .dataCol$
+    if .dataIdx = 0
+        .error$ = "Column """ + .dataCol$ + """ not found in table """
+        ... + .tableName$ + """."
+        goto END_NORMALITY
+    endif
 
     # Extract column data (exclude undefined)
     .nValid = 0
@@ -914,9 +1118,14 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         ... .nValid, .nUndefined
     endif
 
+    label END_NORMALITY
     selectObject: .tableId
 endproc
 
+# v1.2 item 7: unimplemented stub. It has no call sites anywhere in the
+# plugin; it exists so the Phase 4 API surface is declared. It returns a
+# non-empty .error$ and computes nothing — callers must check .error$ before
+# reading any other output, because no other output is set.
 procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measure$, .scale$
     .error$ = "Not yet implemented — scheduled for Phase 4."
 endproc
@@ -1183,6 +1392,13 @@ endproc
 
 # ============================================================================
 # @emlRunRepeatedMeasuresAnalysis — parametric RM-ANOVA orchestrator.
+#
+# v1.2 item 7: .subjectCol$ is RESERVED and deliberately unread. The data are
+# in wide format — one row per subject, one column per condition — so the row
+# index already identifies the subject and no subject column is required.
+# The parameter is retained because callers pass arguments positionally;
+# removing it would silently shift .conditionCols$, .doPostHoc and
+# .adjMethod$ at every call site. It is kept for a future long-format path.
 # ============================================================================
 procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$
     .error$ = ""
@@ -1238,6 +1454,10 @@ endproc
 
 # ============================================================================
 # @emlRunFriedmanAnalysis — nonparametric repeated-measures orchestrator.
+#
+# v1.2 item 7: .subjectCol$ is RESERVED and deliberately unread, for the same
+# reason as @emlRunRepeatedMeasuresAnalysis — wide-format input, so the row
+# index identifies the subject. Retained because callers pass positionally.
 # ============================================================================
 procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$
     .error$ = ""
@@ -1292,8 +1512,20 @@ endproc
 # p-values adjusted by .adjMethod$ (bonferroni / holm / bh).
 # ============================================================================
 procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
+    # v1.2 item 2: validate the requested adjustment method. An unrecognised
+    # string previously fell through to Holm silently while the header still
+    # printed the requested name. Now the fallback is disclosed and the
+    # header prints the method that actually ran (.adjUsed$).
+    .adjUsed$ = .adjMethod$
+    .adjWarn$ = ""
+    if .adjMethod$ <> "bonferroni" and .adjMethod$ <> "bh" and .adjMethod$ <> "holm"
+        .adjUsed$ = "holm"
+        .adjWarn$ = "    WARNING: unrecognised adjustment method """
+            ... + .adjMethod$ + """ — used ""holm"" instead."
+    endif
     .nPairs = .k * (.k - 1) / 2
     .rawP# = zero# (.nPairs)
+    .nSkipped = 0
     .pairIdx = 0
     for .a from 1 to .k - 1
         for .b from .a + 1 to .k
@@ -1304,21 +1536,40 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
                 .va# [.i] = .data## [.i, .a]
                 .vb# [.i] = .data## [.i, .b]
             endfor
+            # v1.2 item 1: the pairwise test can fail (zero-variance
+            # differences, all-zero differences, too few pairs). Previously
+            # its undefined .p was written straight into .rawP#, and the
+            # adjustment procedure rendered it as an adjusted p of 0 — a
+            # false "significant" result. Propagate undefined instead.
             if .testType$ = "parametric"
                 @emlTTestPaired: .va#, .vb#, 2
-                .rawP# [.pairIdx] = emlTTestPaired.p
+                .pairErr$ = emlTTestPaired.error$
+                .pairP = emlTTestPaired.p
             else
                 @emlWilcoxonSignedRank: .va#, .vb#, 2
-                .rawP# [.pairIdx] = emlWilcoxonSignedRank.p
+                .pairErr$ = emlWilcoxonSignedRank.error$
+                .pairP = emlWilcoxonSignedRank.p
+            endif
+            .pairNote$ [.pairIdx] = ""
+            if .pairErr$ <> ""
+                .rawP# [.pairIdx] = undefined
+                .pairNote$ [.pairIdx] = .pairErr$
+                .nSkipped = .nSkipped + 1
+            elsif .pairP = undefined
+                .rawP# [.pairIdx] = undefined
+                .pairNote$ [.pairIdx] = "test returned an undefined p-value"
+                .nSkipped = .nSkipped + 1
+            else
+                .rawP# [.pairIdx] = .pairP
             endif
             .pairLabelA [.pairIdx] = .a
             .pairLabelB [.pairIdx] = .b
         endfor
     endfor
-    if .adjMethod$ = "bonferroni"
+    if .adjUsed$ = "bonferroni"
         @emlBonferroni: .rawP#
         .adj# = emlBonferroni.adjusted#
-    elsif .adjMethod$ = "bh"
+    elsif .adjUsed$ = "bh"
         @emlBenjaminiHochberg: .rawP#
         .adj# = emlBenjaminiHochberg.adjusted#
     else
@@ -1326,17 +1577,46 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
         .adj# = emlHolm.adjusted#
     endif
     .phHdr$ = "  Post-hoc pairwise (" + .testType$ + ", "
-        ... + .adjMethod$ + "-adjusted):"
+        ... + .adjUsed$ + "-adjusted):"
     appendInfoLine: .phHdr$
+    if .adjWarn$ <> ""
+        appendInfoLine: .adjWarn$
+    endif
     for .pp from 1 to .nPairs
         .ai = .pairLabelA [.pp]
         .bi = .pairLabelB [.pp]
+        if .rawP# [.pp] = undefined
+            .rawTxt$ = "n/a"
+            .adjTxt$ = "n/a"
+        else
+            .rawTxt$ = fixed$ (.rawP# [.pp], 4)
+            if .adj# [.pp] = undefined
+                .adjTxt$ = "n/a"
+            else
+                .adjTxt$ = fixed$ (.adj# [.pp], 4)
+            endif
+        endif
         .row$ = "    " + emlExtractConditionMatrix.colLabel$ [.ai] + " vs "
             ... + emlExtractConditionMatrix.colLabel$ [.bi] + ": p(raw) = "
-            ... + fixed$ (.rawP# [.pp], 4) + ", p(adj) = "
-            ... + fixed$ (.adj# [.pp], 4)
+            ... + .rawTxt$ + ", p(adj) = " + .adjTxt$
         appendInfoLine: .row$
     endfor
+    if .nSkipped > 0
+        .skipHdr$ = "    NOTE: " + string$ (.nSkipped) + " of "
+            ... + string$ (.nPairs) + " comparisons could not be computed"
+            ... + " and are excluded from the multiplicity adjustment:"
+        appendInfoLine: .skipHdr$
+        for .pp from 1 to .nPairs
+            if .pairNote$ [.pp] <> ""
+                .ai = .pairLabelA [.pp]
+                .bi = .pairLabelB [.pp]
+                .warnRow$ = "      " + emlExtractConditionMatrix.colLabel$ [.ai]
+                    ... + " vs " + emlExtractConditionMatrix.colLabel$ [.bi]
+                    ... + ": " + .pairNote$ [.pp]
+                appendInfoLine: .warnRow$
+            endif
+        endfor
+    endif
 endproc
 
 

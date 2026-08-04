@@ -218,13 +218,19 @@ except Exception as e:
 print(f"\n{'=' * 60}")
 print(f"  Epsilon-squared formula verification")
 print(f"{'=' * 60}")
-# From Test Set 1
-H1 = 11.58  # approximate
-N1 = 15
+# From Test Set 1. H, N and k are RECOMPUTED from the g1/g2/g3 arrays above
+# rather than transcribed. A previous revision carried `H1 = 11.58  # approximate`
+# against a true H of 12.2769230769 — a 5.7% error — so the printed comparison
+# of Formula A against Formula B was being made at the wrong point on both
+# curves. A reference generator that hardcodes an approximation of a value it
+# is already in a position to compute exactly is not a reference.
+_res1 = stats.kruskal(g1, g2, g3)
+H1 = _res1.statistic
+N1 = len(g1) + len(g2) + len(g3)
 k1 = 3
 eps_A = H1 / (N1 - 1)
 eps_B = (H1 - k1 + 1) / (N1 - k1)
-print(f"  H={H1}, N={N1}, k={k1}")
+print(f"  H={H1:.10f}, N={N1}, k={k1}   (H recomputed from the Test Set 1 data)")
 print(f"  Formula A (Tomczak): {eps_A:.6f}")
 print(f"  Formula B (Kelley):  {eps_B:.6f}")
 print(f"  Difference: {abs(eps_A - eps_B):.6f} ({abs(eps_A-eps_B)/eps_A*100:.1f}%)")
