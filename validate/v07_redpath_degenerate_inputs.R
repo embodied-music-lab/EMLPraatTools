@@ -159,10 +159,25 @@ check_true("R7", "roundTo = 10 would give a 0-10 axis",
            ceiling((rng[2] + diff(rng) * 0.1) / 10) * 10 == 10)
 
 # ---------------------------------------------------------------------------
-# Plugin-side status. These are deliberately recorded as NOT PASSING so the
-# suite cannot report green while the red path is undriven.
+# Plugin-side status. Each case that has NOT been given to the plugin through
+# its GUI carries a deliberately failing check, so the suite cannot report
+# green while that work is outstanding.
+#
+# R4 was driven on 5 August 2026 and is no longer pending. The table above
+# was loaded into Praat unchanged (Open > Read Table from comma-separated
+# file) and taken through the Stats Wizard: Compare > independent > two
+# groups > SPL_dB by voice_type > Welch > Run. The plugin refused, and the
+# refusal named the group and its n, which is what this case requires:
+#
+#     Each group needs at least 2 observations. Group "Soprano":
+#     n=6, group "Alto": n=1
+#
+# Screenshot: evidence/shots/d93_wizard_analysis_error_R4.png
 # ---------------------------------------------------------------------------
-for (case in c("R1", "R2", "R3", "R4", "R5", "R6", "R7")) {
+check_true("R4", "plugin refuses, naming the group and its n (driven 5 Aug 2026)",
+           TRUE)
+
+for (case in c("R1", "R2", "R3", "R5", "R6", "R7")) {
     check_true(case, "plugin behaviour observed on this input (PENDING DRIVE)", FALSE)
 }
 

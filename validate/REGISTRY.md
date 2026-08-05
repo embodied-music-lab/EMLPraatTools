@@ -32,7 +32,9 @@ to CI unchanged. Individual scripts are also runnable on their own:
 Rscript validate/v03_rm_anova_greenhouse_geisser.R
 ```
 
-**The suite currently exits 1 by design.** See "Expected failures" below.
+**The suite currently exits 1 by design** — 89 checks, 83 passing, 6 failing.
+All six failures are the `PENDING DRIVE` markers in `v07`. See "Expected
+failures" below.
 
 ---
 
@@ -70,7 +72,7 @@ comparison.
 | `v03_rm_anova_greenhouse_geisser.R` | Stats Wizard RM-ANOVA: *F*, GG ε, condition means, Holm post-hoc | `demo_rm3_input.csv` | 14 |
 | `v04_friedman.R` | Stats Wizard Friedman: χ², rank sums, Wilcoxon post-hoc, Holm on ties | `demo_rm3_input.csv` | 12 |
 | `v05_paired_t.R` | *Compare paired/repeated*: paired *t*, descriptives, and the graphs-side CSV export row | `demo_paired_input.csv`, `pairedLong_results_5aug.csv` | 18 |
-| `v06_D15_effect_size_defect.R` | **Pins a known defect** — see below | `demo_paired_input.csv` | 5 |
+| `v06_D15_effect_size_defect.R` | D15, now resolved: each paired test reports its own effect size | `demo_paired_input.csv` | 6 |
 | `v07_redpath_degenerate_inputs.R` | Red path: inputs that should fail or sit on a boundary | generated into `validate/redpath/` | 21 |
 
 ### Notes on individual scripts
@@ -102,25 +104,31 @@ prints `< .001` — and checking only one surface would miss that.
 Two categories of check fail on purpose. A green run would mean the suite
 had stopped telling the truth.
 
-### 1. `v06` pins a defect that is still present
+### 1. ~~`v06` pins a defect~~ — RESOLVED 5 August 2026
 
-Finding **D15**: under the heading *Paired t-test*, the plugin prints
+Finding **D15** was: under the heading *Paired t-test*, the plugin printed
 `Matched-pairs r  0.971`. That value is the matched-pairs rank-biserial
 correlation of the **Wilcoxon signed-rank** test. The correlation derived
 from the paired *t* is **0.871**. Both are plausible and nothing on screen
-distinguishes them.
+distinguished them.
 
-`v06` asserts the discrepancy, so its checks **pass while the bug exists**.
-When D15 is fixed, `v06` will start failing — that failure is the signal the
-fix landed. The script must then be rewritten, not repaired; the replacement
-assertions are in a comment block at the foot of the file.
+The plugin now reports Cohen's *d*z and *r*-from-*t* under the paired *t*,
+and the rank-biserial *r* under Wilcoxon. `v06` was rewritten to assert the
+corrected behaviour and **passes**; it retains a guard check that the two
+effect sizes stay numerically distinct, so a future regression that routes
+the rank statistic back under the parametric heading would fail the suite.
 
-### 2. `v07` has seven `PENDING DRIVE` checks
+### 2. `v07` has six `PENDING DRIVE` checks
 
 The R side of the red path is complete and runnable. **The plugin side is
-not.** No EML wrapper has yet been given any of the degenerate inputs. Each
-case carries a deliberately failing check so the suite cannot report green
-while that work is outstanding.
+mostly not.** Each case that has not been given to the plugin carries a
+deliberately failing check, so the suite cannot report green while that work
+is outstanding.
+
+**R4 is driven and passing** as of 5 August 2026. `r4_singleton_group.csv`
+was loaded into Praat unchanged and taken through the Stats Wizard; the
+plugin refused and named the group and its n, which is what the case
+requires. Screenshot in `evidence/shots/`. The other six remain undriven.
 
 `v07` generates its tables into `validate/redpath/` as CSV, deterministically
 and with no randomness, so the same files can be loaded into Praat and driven
@@ -131,7 +139,7 @@ through the GUI unchanged.
 | R1 | 8 subjects, 4 complete cases | Report the complete-case count it analysed, or refuse. Silently analysing 4 while the table shows 8 is a defect |
 | R2 | n = 2 subjects, k = 3 | df error = 2. Compute or refuse, but say which; do not present a p-value from df 2 without comment |
 | R3 | Zero variance throughout | Refuse, naming the zero variance |
-| R4 | One group with n = 1 | Refuse, naming the group and its n |
+| R4 | One group with n = 1 | Refuse, naming the group and its n — **driven 5 Aug 2026, plugin does this** |
 | R5 | Grouping column unique per row | Refuse before running, naming group count against row count. 15 pairs would otherwise be attempted, none estimable |
 | R6 | Non-numeric entry in a measure column | Reject the column **by type**, naming it. Not "incomplete data" — see D83 |
 | R7 | Contact quotient, range 0.40–0.55 | After the D88 fix, an axis that fits the data. With `roundTo = 10` the axis is 0–10 and the data occupies 2% of the panel |
