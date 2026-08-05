@@ -148,7 +148,7 @@ repeat
                     appendInfoLine: "    W = ", fixed$ (.swW, 4),
                     ... "  p = ", fixed$ (.swP, 4)
                     appendInfoLine: "    Skewness = ", fixed$ (.skew, 3),
-                    ... "  Kurtosis = ", fixed$ (.kurt, 3)
+                    ... "  Kurtosis (excess) = ", fixed$ (.kurt, 3)
 
                     if .swFail and (not .skKurtFail) and .n > 50
                         appendInfoLine: "    → Parametric (large-n override:"

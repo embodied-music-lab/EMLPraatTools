@@ -148,7 +148,7 @@ endif
 @emlReportBlank
 @emlReportSection: "Distribution Shape"
 @emlReportLine: "Skewness", emlDescribe.skewness, 4
-@emlReportLine: "Kurtosis", emlDescribe.kurtosis, 4
+@emlReportLine: "Kurtosis (excess)", emlDescribe.kurtosis, 4
 
 @emlReportBlank
 @emlReportSection: "95% Confidence Interval"

@@ -1765,7 +1765,7 @@ procedure wizardNormDiag: .data#, .label$
     .displayLabel$ = replace$ (.label$, "_", " ", 0)
     appendInfoLine: "  ", .displayLabel$, " (n = ", .n, ")"
     appendInfoLine: "    Skewness:     ", fixed$ (.sk, 3)
-    appendInfoLine: "    Kurtosis:     ", fixed$ (.ku, 3)
+    appendInfoLine: "    Kurtosis (excess): ", fixed$ (.ku, 3)
 
     # Shapiro-Wilk formal test
     @emlShapiroWilk: .data#
