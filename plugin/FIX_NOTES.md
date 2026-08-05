@@ -63,13 +63,21 @@ section B above, which was applied there and not propagated. The comment at
 the scatter site already named the failing case — "fractional data
 (proportions, reaction times, jitter %)".
 
-**Two sites are deliberately unchanged.** `@emlDrawF0Contour` (lines 225 and
-240) is a pitch axis with its own domain logic: a 50 Hz minimum span in
-hertz, a 12-semitone minimum rounded to 6 in semitones. Ten-hertz
-granularity under a 50 Hz span floor is a considered choice, not the defect,
-and changing it would interact with that logic. The semitone branch may
-deserve the same treatment and is left for a ruling rather than changed
-silently.
+**Follow-up, same day: the propagation was completed to 15 of 17 sites.**
+The two `@emlDrawF0Contour` sites and the waveform amplitude site
+(`roundTo = 0.05`) are now adaptive too. The concern that adaptive rounding
+would defeat the F0 minimum-span logic was unfounded: the 50 Hz and
+12-semitone corrections run *after* the axis call and widen the result when
+it is too tight, so a narrower derived range is corrected upward exactly as
+before. On the 50 Hz span the derived granularity reproduces the previous
+10 Hz.
+
+**The two histogram sites keep their literal `5`.** Making them adaptive was
+attempted twice and backed out both times, with the failures evidenced —
+see finding D91. Frequency is a count, and while the derived bounds are
+correct, the tick *labels* come from `@emlDrawAxes`, which takes no tick
+constraint, so the axis ends up labelled in halves. Fixing it properly means
+changing a procedure every draw path calls.
 
 **Verification — two cases driven end to end through the GUI:**
 
