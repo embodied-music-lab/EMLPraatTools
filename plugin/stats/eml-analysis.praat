@@ -731,13 +731,21 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
     @emlMedian: .v2#
     .median2 = emlMedian.result
 
+    # Each test carries its own effect size. Cohen's d_z is built from the
+    # same standard deviation of differences the paired t is built from;
+    # matched-pairs r is built from the Wilcoxon ranks. Reporting the rank
+    # statistic under the t-test was finding D15 — the two can differ by a
+    # wide margin whenever changes are consistent in direction but variable
+    # in size, and nothing on screen distinguished them. In "both" mode each
+    # test reports its own, under its own heading.
     if .testType$ = "parametric" or .testType$ = "both"
         @emlTTestPaired: .v1#, .v2#, 2
+        @emlCohenDz: .v1#, .v2#
     endif
     if .testType$ = "nonparametric" or .testType$ = "both"
         @emlWilcoxonSignedRank: .v1#, .v2#, 2
+        @emlMatchedPairsR: .v1#, .v2#, 2
     endif
-    @emlMatchedPairsR: .v1#, .v2#, 2
 
     @emlCSVInit
     @emlReportPairedComparison: .tableName$, .col1$, .col2$, .n, .mean1, .sd1, .median1, .mean2, .sd2, .median2, .testType$

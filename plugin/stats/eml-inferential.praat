@@ -971,6 +971,62 @@ endproc
 # ============================================================================
 # @emlWilcoxonSignedRank
 # ============================================================================
+# @emlCohenDz
+# ============================================================================
+# Cohen's d_z for a paired design: the standardised mean difference using the
+# standard deviation OF THE DIFFERENCES, not of the raw scores.
+#
+#   d_z = mean(v1 - v2) / sd(v1 - v2)
+#
+# This is the effect size that belongs with a paired t-test, because it is
+# built from the same quantity the test statistic is built from
+# (t = d_z * sqrt(n)). It is NOT interchangeable with the matched-pairs
+# rank-biserial r from @emlMatchedPairsR, which uses only the ranks of the
+# differences and can sit near ceiling while d_z is moderate — that happens
+# whenever changes are consistent in direction but variable in size.
+#
+# Also returns the correlation form r = t / sqrt(t^2 + df), for callers that
+# prefer an r-scaled effect size under the parametric test.
+#
+# Arguments:
+#   .v1#, .v2# — numeric vectors of equal length (pairs)
+#
+# Output:
+#   .dz      — Cohen's d_z (undefined if n < 2 or sd of differences is 0)
+#   .rFromT  — r derived from the paired t (undefined on the same conditions)
+#   .n       — number of pairs
+#   .error$  — error message, or "" if valid
+# ============================================================================
+procedure emlCohenDz: .v1#, .v2#
+    .dz = undefined
+    .rFromT = undefined
+    .error$ = ""
+    .n = size (.v1#)
+
+    if .n <> size (.v2#)
+        .error$ = "Paired vectors must be the same length."
+    elsif .n < 2
+        .error$ = "Cohen's d_z is undefined for fewer than 2 pairs."
+    else
+        .diff# = zero# (.n)
+        for .i from 1 to .n
+            .diff# [.i] = .v1# [.i] - .v2# [.i]
+        endfor
+        .sdDiff = stdev (.diff#)
+        if .sdDiff = 0
+            .error$ = "Cohen's d_z is undefined when all differences are"
+            .error$ = .error$ + " identical (standard deviation is zero)."
+        else
+            .dz = mean (.diff#) / .sdDiff
+            .df = .n - 1
+            .t = .dz * sqrt (.n)
+            .rFromT = .t / sqrt (.t * .t + .df)
+        endif
+    endif
+endproc
+
+
+# ============================================================================
 # Wilcoxon signed-rank test for paired samples.
 #
 # Tests whether the distribution of paired differences is symmetric
