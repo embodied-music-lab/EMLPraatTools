@@ -1,0 +1,2 @@
+table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,effect_type,effect_label,n1,n2,mean1,sd1,median1,mean2,sd2,median2
+demo_paired,jitter_pre,jitter_post,jitter_pre,jitter_post,Paired t-test,7.725968,19.00,0.0000003,0.9714,matched-pairs r,,20,20,2.6956,0.8226,2.6830,1.9671,0.9175,2.2803
