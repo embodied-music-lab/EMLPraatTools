@@ -4169,3 +4169,79 @@ defect existed and fail once fixed, which is what happened. It now asserts
 the corrected behaviour and carries a regression guard: the two effect sizes
 must remain numerically distinct, so a future change that routes the rank
 statistic back under the parametric heading fails the suite.
+
+### D93 — CLARITY (high) — error recovery in the analysis wrappers discards the user's input, and the dialog does not say where its buttons go
+
+Raised by the author from ordinary use: paths that error for good reasons —
+choosing *Compare two groups* on a table whose group column has three —
+appear to offer no way back, only a quit.
+
+**Driven to see what actually happens.** *Compare two groups* on
+`demo_3groups`, `Group column = voice_type` (three levels), with `Test` set
+deliberately to **Mann-Whitney U** rather than the default:
+
+1. `Run` produces a correct and genuinely helpful message —
+   *"Group column "voice_type" has 3 groups. Use Compare k Groups for more
+   than 2."*
+2. It is delivered by Praat's generic `pauseScript:`, so the window is
+   titled **"Pause: stop or continue"** and the buttons are **Stop** and
+   **Continue**. Neither label says what it will do. *Continue* sounds like
+   "run anyway"; it actually means "return to the form".
+3. Choosing *Continue* **does** return to the form — the wrapper is not a
+   dead end, and the author's reading of it as quit-only is a fair reading of
+   those two buttons.
+4. **The form returns with every field reset.** `Test` is back to
+   `Welch t-test`. The deliberate choice is gone.
+
+Losing the input is the worse half. A user who set four fields, mis-set one,
+and pressed Run has to set all four again — and nothing warned them that
+would happen.
+
+**The reset is systematic, not incidental.** In nine of the ten wrappers with
+a retry loop, the optionmenu defaults are computed **before** `repeat`, so
+each pass rebuilds the form from the original column guesses rather than from
+what the user chose:
+
+| Wrapper | `repeat` at | defaults computed at |
+|---|---|---|
+| `eml-compare-groups.praat` | 45 | 36 |
+| `eml-compare-k-groups.praat` | 33 | 26 |
+| `eml-compare-paired.praat` | 34 | 24 |
+| `eml-correlate.praat` | 43 | 33 |
+| `eml-regress.praat` | 36 | 26 |
+| `eml-pairwise.praat` | 34 | 27 |
+| `eml-compare-kw.praat` | 32 | 25 |
+| `eml-compare-twoway.praat` | 41 | 28 |
+| `eml-check-normality.praat` | 62 | 35 |
+
+`eml-describe-table.praat` has no retry loop at all.
+
+**No entry form in any of the twelve analysis wrappers offers a Back
+button.** Every one ends `endPause: "Quit", "Run", 2, 0`.
+
+**The plugin already knows how to do this.** Two of its components get it
+right:
+
+- `eml-wizard.praat` — every page: `"Quit", "Back", "Continue"` or
+  `"Quit", "Back", "Run"`. Thirteen pages, Back on all of them.
+- `eml-edit-table.praat` — every sub-dialog: `"Go Back", <action>`. Add
+  Column, Insert Row, Delete Row, Rename Column, Find/Replace, Table
+  Structure, all of them.
+
+So the convention exists and is applied consistently in the two places a
+user is most likely to be navigating, and not at all in the twelve places a
+user is most likely to hit a validation error.
+
+**What a fix requires, and it is two separate things:**
+
+1. **Persist the user's choices across a retry.** Hold each field in a
+   variable seeded from the guess on first entry and from the previous
+   answer thereafter, and use those as the optionmenu defaults. Without this,
+   a Back button returns you to a blank slate and is barely worth having.
+2. **Replace the generic `pauseScript:` with a real dialog** whose buttons
+   name their destination — *Change settings* / *Quit* rather than
+   *Continue* / *Stop*. `pauseScript:` cannot be relabelled; it needs a
+   `beginPause`/`endPause` pair.
+
+Evidence: `evidence/shots/d93_generic_stop_or_continue.png`,
+`d93_form_returns_with_choices_lost.png`.
