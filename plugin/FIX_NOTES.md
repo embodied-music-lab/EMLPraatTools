@@ -92,3 +92,42 @@ Figures: `evidence/figures/d88_FIXED_spaghetti_jitter.png` and
 
 The contact-quotient case is the one that matters: on a 0–10 axis that data
 occupied under 2% of the panel height.
+
+
+## 5 August 2026 — F0 axis: minimum-span floors removed
+
+The F0 contour axis enforced a minimum visible span: 50 Hz in hertz, 12
+semitones rounded to 6 in semitones. Both are gone. The axis now follows the
+data, and any extra room a figure needs comes from
+`@emlComputeAnnotationHeadroom` at the annotation stage, which is where it
+belongs — headroom is a property of what is drawn on the figure, not of the
+unit on the axis.
+
+**These floors were a workaround for the D88 granularity bug, not a
+considered design.** The v1.15 note above records Bug #11 as "semitone
+auto-range minimum span enforcement now uses direct 6-st rounding instead of
+re-calling @emlComputeAxisRange. Prevents overshoot to ~30 st for
+constant-pitch input." That overshoot was `roundTo = 10` applied to a
+semitone axis: a near-constant pitch produced a tiny range that snapped out
+to a 10-unit grid. With the granularity now derived from the data, the
+overshoot cannot occur and the workaround has nothing left to prevent.
+
+**Verified by driving `@emlDrawF0Contour` on a 220 Hz tone with 2.9 Hz of
+drift:**
+
+| Unit | Measured span | Axis | Ticks |
+|---|---|---|---|
+| Hertz | 220.040 – 222.960 (2.9 Hz) | 219.5 – 223.5 | 0.5 Hz |
+| Semitones | same signal, ≈0.23 st | −12.05 – −11.70 | 0.05 st |
+
+Under the old floors the hertz figure would have spanned roughly 195–245 and
+the drift would have read as a flat line. The semitone figure shows no trace
+of the Bug #11 overshoot.
+
+Figures: `evidence/figures/d88_f0_steady_hz_2.9Hz_span.png`,
+`d88_f0_steady_semitones.png`.
+
+**One hard-coded pair remains in this procedure and is not a defect.** When
+`Get minimum`/`Get maximum` return undefined — no voiced frames anywhere —
+the axis falls back to 75–500 Hz or −36 to +6 st. There is no data to derive
+a range from in that case, and an empty figure still needs an axis.
