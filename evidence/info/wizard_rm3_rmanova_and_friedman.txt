@@ -1,0 +1,50 @@
+══════════════════════════════════════════════
+  EML Stats Wizard — Analysis Plan
+══════════════════════════════════════════════
+
+  Design:         Repeated measures (k conditions)
+  Normality:      n/a
+  Test:           RM-ANOVA (Greenhouse-Geisser)
+  Column 1:       SPL soft|SPL medium|SPL loud|
+  Table:          demo rm3
+
+══════════════════════════════════════════════
+  Running analysis...
+══════════════════════════════════════════════
+
+Repeated-measures ANOVA — demo_rm3
+  Subjects (complete cases) n = 20, conditions k = 3
+    SPL_soft mean = 72.4646
+    SPL_medium mean = 83.3546
+    SPL_loud mean = 94.1294
+  F(2, 38) = 583.1232, p = 0.00000000000000000000000000003
+  Greenhouse-Geisser epsilon = 0.8486, GG-corrected p = 0.0000000000000000000000004
+  Post-hoc pairwise (parametric, holm-adjusted):
+    SPL_soft vs SPL_medium: p(raw) = 0.000000000002, p(adj) = 0.000000000003
+    SPL_soft vs SPL_loud: p(raw) = 0.00000000000000000001, p(adj) = 0.00000000000000000003
+    SPL_medium vs SPL_loud: p(raw) = 0.000000000005, p(adj) = 0.000000000005
+
+══════════════════════════════════════════════
+  EML Stats Wizard — Analysis Plan
+══════════════════════════════════════════════
+
+  Design:         Repeated measures (k conditions)
+  Normality:      n/a
+  Test:           Friedman test
+  Column 1:       SPL soft|SPL medium|SPL loud|
+  Table:          demo rm3
+
+══════════════════════════════════════════════
+  Running analysis...
+══════════════════════════════════════════════
+
+Friedman test — demo_rm3
+  Subjects (complete cases) n = 20, conditions k = 3
+    SPL_soft rank sum = 20.0
+    SPL_medium rank sum = 40.0
+    SPL_loud rank sum = 60.0
+  chi-square(2) = 40.0000, p = 0.000000002
+  Post-hoc pairwise (nonparametric, holm-adjusted):
+    SPL_soft vs SPL_medium: p(raw) = 0.000002, p(adj) = 0.000006
+    SPL_soft vs SPL_loud: p(raw) = 0.000002, p(adj) = 0.000006
+    SPL_medium vs SPL_loud: p(raw) = 0.000002, p(adj) = 0.000006
