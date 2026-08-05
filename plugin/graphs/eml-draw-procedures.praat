@@ -222,35 +222,17 @@ procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
             .autoFreqMax = 500
         endif
     else
-        # Adaptive rounding grid. The minimum-span corrections below run AFTER this
-        # and widen the axis when the result is too tight, so deriving a narrower
-        # range here does not defeat them.
+        # The axis follows the data. There is no minimum span: a sustained
+        # note held within two hertz should read as a flat line on a two-hertz
+        # axis, not be hidden inside a fifty-hertz window that makes it look
+        # steady when the point is how steady it is. Any extra room a figure
+        # needs is a property of what is drawn on it, not of the unit, and is
+        # supplied by @emlComputeAnnotationHeadroom at the annotation stage.
         @emlComputeNiceStep: .pitchMax - (.pitchMin), emlSetAdaptiveTheme.targetTicksY
         .axisRoundTo = emlComputeNiceStep.step
         @emlComputeAxisRange: .pitchMin, .pitchMax, .axisRoundTo, 0
         .autoFreqMin = emlComputeAxisRange.axisMin
         .autoFreqMax = emlComputeAxisRange.axisMax
-        # Enforce minimum visible span
-        if .yUnit = 2
-            # Semitones: minimum 12 st span, rounded to 6 st
-            if .autoFreqMax - .autoFreqMin < 12
-                .midVal = (.pitchMin + .pitchMax) / 2
-                .autoFreqMin = floor ((.midVal - 6) / 6) * 6
-                .autoFreqMax = ceiling ((.midVal + 6) / 6) * 6
-            endif
-        else
-            # Hertz: minimum 50 Hz span
-            if .autoFreqMax - .autoFreqMin < 50
-                .midF0 = (.pitchMin + .pitchMax) / 2
-                # Adaptive rounding grid. Over this 50 Hz span it reproduces the previous
-                # 10 Hz granularity; on a semitone axis it no longer snaps to a 10-unit grid.
-                @emlComputeNiceStep: .midF0 + 25 - (.midF0 - 25), emlSetAdaptiveTheme.targetTicksY
-                .axisRoundTo = emlComputeNiceStep.step
-                @emlComputeAxisRange: .midF0 - 25, .midF0 + 25, .axisRoundTo, 0
-                .autoFreqMin = emlComputeAxisRange.axisMin
-                .autoFreqMax = emlComputeAxisRange.axisMax
-            endif
-        endif
     endif
 
     if .fMin = 0 and .fMax = 0
