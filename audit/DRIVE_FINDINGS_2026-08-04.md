@@ -3992,3 +3992,57 @@ Figures: `evidence/figures/d91_FIXED_histogram_integer_ticks.png`,
 `d91_histogram_fractional_counts.png`.
 
 **All 16 axis-range call sites now derive their granularity from the data.**
+
+### D92 — GRAPHING (high) — RESOLVED — the annotated path pinned violin and box axes to zero
+
+Found while verifying that annotation headroom, rather than a minimum span,
+supplies the extra y-axis room a figure needs.
+
+**The same violin plot got two different axes depending on whether it was
+annotated.** Unannotated, `@emlDrawViolinPlot` derives both bounds from the
+data: SPL spanning 75.6–99.3 dB drew on 70–105. Annotated with significance
+brackets, the axis became **0–170**, and the data occupied about 14% of the
+panel.
+
+The cause was in `graphs/eml-graphs-form.praat`, in the auto-range branch of
+`@emlGraphsWorkflow` that runs only when brackets are drawn:
+
+```praat
+@emlComputeAxisRange: 0, visibleDataMax, .axisRoundTo, 0
+valueMax = emlComputeAxisRange.axisMax
+```
+
+A literal `0` as the data minimum, and `valueMin` never assigned — so it kept
+the sentinel 0 from the auto-range test above. Bar charts were already
+correct here: the `graph_type = 6` branch passes `emlBarData_visibleMin`.
+Violin and box fell to the `elsif`, which had no minimum to pass.
+
+The interaction with headroom made it worse rather than merely wasteful.
+`@emlComputeAnnotationHeadroom` scales its expansion by `yDataRange`, so a
+range inflated from 30 dB to 100 dB by the zero floor produced roughly three
+times the headroom actually needed, and the axis ran to 170 for data topping
+out at 99.
+
+**Fixed** by tracking `visibleDataMin` alongside `visibleDataMax` and passing
+it. `@emlComputeAxisRange`'s own non-negative guard still holds the floor at
+0 for data that does not go below it, so nothing that legitimately starts at
+zero moves.
+
+| Figure | Before | After |
+|---|---|---|
+| Annotated violin, SPL 75.6–99.3 dB, three brackets | 0 – 170 | **75 – 110** |
+| Same data, unannotated | 70 – 105 | 70 – 105 (unchanged) |
+| Annotated bar chart, same data | 0 – 170 | 0 – 170 (unchanged — correct) |
+
+The bar chart is the control: bars emanate from the origin, so its floor
+must stay at zero, and it does.
+
+This closes the loop on the F0 minimum-span removal. The author's rule —
+the data sets the range, and whatever is drawn on the figure supplies any
+extension — now holds on the annotated path too. Brackets sit at 100–106 on
+a 75–110 axis, which is headroom doing the work a minimum span used to do
+badly.
+
+Figures: `evidence/figures/d92_annotated_violin_zero_floored.png` (before),
+`d92_FIXED_annotated_violin_headroom.png` (after),
+`d92_regression_bar_keeps_zero_floor.png` (control).
