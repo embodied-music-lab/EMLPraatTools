@@ -222,7 +222,12 @@ procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
             .autoFreqMax = 500
         endif
     else
-        @emlComputeAxisRange: .pitchMin, .pitchMax, 10, 0
+        # Adaptive rounding grid. The minimum-span corrections below run AFTER this
+        # and widen the axis when the result is too tight, so deriving a narrower
+        # range here does not defeat them.
+        @emlComputeNiceStep: .pitchMax - (.pitchMin), emlSetAdaptiveTheme.targetTicksY
+        .axisRoundTo = emlComputeNiceStep.step
+        @emlComputeAxisRange: .pitchMin, .pitchMax, .axisRoundTo, 0
         .autoFreqMin = emlComputeAxisRange.axisMin
         .autoFreqMax = emlComputeAxisRange.axisMax
         # Enforce minimum visible span
@@ -237,7 +242,11 @@ procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
             # Hertz: minimum 50 Hz span
             if .autoFreqMax - .autoFreqMin < 50
                 .midF0 = (.pitchMin + .pitchMax) / 2
-                @emlComputeAxisRange: .midF0 - 25, .midF0 + 25, 10, 0
+                # Adaptive rounding grid. Over this 50 Hz span it reproduces the previous
+                # 10 Hz granularity; on a semitone axis it no longer snaps to a 10-unit grid.
+                @emlComputeNiceStep: .midF0 + 25 - (.midF0 - 25), emlSetAdaptiveTheme.targetTicksY
+                .axisRoundTo = emlComputeNiceStep.step
+                @emlComputeAxisRange: .midF0 - 25, .midF0 + 25, .axisRoundTo, 0
                 .autoFreqMin = emlComputeAxisRange.axisMin
                 .autoFreqMax = emlComputeAxisRange.axisMax
             endif
@@ -334,7 +343,11 @@ procedure emlDrawWaveform: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     if .aMin = 0 and .aMax = 0
         # Auto: symmetric range with buffer via emlComputeAxisRange
         .absMax = max (abs (.maxAmp), abs (.minAmp))
-        @emlComputeAxisRange: 0, .absMax, 0.05, 0
+        # Adaptive rounding grid: amplitude is scale-free (normalised, Pa, or
+        # arbitrary units), so the granularity must come from the data.
+        @emlComputeNiceStep: .absMax - (0), emlSetAdaptiveTheme.targetTicksY
+        .axisRoundTo = emlComputeNiceStep.step
+        @emlComputeAxisRange: 0, .absMax, .axisRoundTo, 0
         .ampBound = emlComputeAxisRange.axisMax
         .ampTop = .ampBound
         .ampBottom = -.ampBound
