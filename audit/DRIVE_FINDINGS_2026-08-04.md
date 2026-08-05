@@ -3443,3 +3443,446 @@ went, which is what makes D39 recoverable — the user can at least see where
 the file landed.
 
 ---
+
+---
+
+## Drive continued — 5 August 2026, second session
+
+Rig rebuilt on Praat 6.6.30 (June 30 2026), Xvfb :99 1400x1000x24,
+matchbox-window-manager, xcompmgr, xdotool. Menu geometry re-derived from a
+live screenshot and found unchanged from `harness/MENU_MAP.md`.
+
+### D66 — PROMOTED from predicted to DEMONSTRATED on `emlRunPairwiseAnalysis`
+
+**Route.** Objects → New → EML Tools → *Create Demo Table…* →
+`Three groups (N=45) — ANOVA / Kruskal-Wallis` → `demo_3groups`
+(`singer`, `voice_type`, `SPL_dB`, `vibrato_rate_Hz`, 15 per group).
+Then *Pairwise comparisons…* (menu y=727) with the dialog's own defaults:
+Data column `SPL_dB`, Group column `voice_type`, Test `Pairwise t-test`,
+Adjustment `Bonferroni`, T test type `Welch`, Group order `Table order`.
+
+**Accuracy of the analysis itself: correct.** Verified against
+scipy `ttest_ind(equal_var=False)` with Bonferroni across the three pairs,
+and Cohen's *d* on the pooled SD:
+
+| pair | scipy t | scipy p (Bonferroni) | plugin p | scipy d | plugin d |
+|---|---|---|---|---|---|
+| Soprano–Mezzo | 4.8854 | 0.0001 | `< .001` | 1.784 | 1.784 |
+| Soprano–Alto | 5.7072 | 0.0000 | `< .001` | 2.084 | 2.084 |
+| Mezzo–Alto | 1.6047 | 0.3622 | `0.3622` | 0.586 | 0.586 |
+
+Transcript: `evidence/info/pairwise_3groups_welch_bonferroni.txt`.
+
+**The CSV export fails.** Pressing `CSV` on the `Analysis complete` dialog
+opens `Export Results` (folder defaulted to
+`…/plugin_EML_Praat_Tools/scripts`, filename `demo_3groups_results` — the
+D39 default-into-the-install-tree behaviour). Pressing `Save` produces
+`Export Failed` — *"Could not write CSV file."* No file is created.
+
+**The filesystem is not the cause, and this was tested rather than
+assumed.** The target folder is writable by the shell (`touch` succeeds) and
+by Praat itself — `writeFileLine:` into that exact directory succeeded and
+`fileReadable ()` returned 1 immediately afterwards. The directory is fine.
+
+The cause is `emlCSV_n = 0`. `@emlRunPairwiseAnalysis` calls `@emlCSVInit`
+(`stats/eml-analysis.praat:407`) and never reaches an `@emlCSVAddRow`.
+`@emlExportStatsCSV` (`stats/eml-output.praat:601`) short-circuits on
+`emlCSV_n = 0`, sets `.success = 0` and returns **without touching the
+filesystem at all**; `@emlWrapperExportCSV` (`stats/eml-output.praat:769`)
+then reports the failure as a write error.
+
+This is the first *demonstrated* D66 instance. *Compare paired/repeated* was
+cleared earlier the same day by live drive, so the finding now rests on
+evidence at both ends rather than on call-graph inference.
+
+**Structural note, wider than the three named orchestrators.** Every
+`@emlCSVAddRow` call site in the plugin — all 21 of them — lives in
+`graphs/eml-annotation-procedures.praat`. `stats/eml-analysis.praat`
+contains eleven `@emlCSVInit` calls and zero `@emlCSVAddRow`. CSV row
+construction therefore exists only on the graphs/annotation side, and any
+analysis path that completes without routing through an annotation reporter
+exports an empty body by construction. The three orchestrators named in the
+5 August handoff are instances of that shape, not the boundary of it.
+
+**Two defects, not one.** They should be fixed separately:
+
+1. The rows are never built for these paths. That is the substantive bug.
+2. A no-data condition is reported to the user as a filesystem write
+   failure. Even after (1) is fixed, `@emlWrapperExportCSV` cannot
+   distinguish "nothing to export" from "the disk refused the write", and
+   the message it chooses sends the user to check permissions on a folder
+   that is working correctly. `@emlExportStatsCSV` should return a distinct
+   status for `emlCSV_n = 0` and the caller should say so.
+
+Evidence: `evidence/shots/d66_pairwise_dialog.png`,
+`d66_pairwise_complete.png`, `d66_pairwise_export_dialog.png`,
+`d66_pairwise_export_failed.png`; input table
+`evidence/csv/demo_3groups_input.csv`.
+
+### Priority 1 concluded — the wizard's two repeated-measures orchestrators
+
+**Route.** A wide table `demo_rm3` (`singer`, `SPL_soft`, `SPL_medium`,
+`SPL_loud`; 20 subjects) was generated with a fixed seed and loaded from CSV,
+because no built-in demo table offers three repeated conditions — the
+`Paired measures` demo has two, and the RM branch requires three. Generator
+and data: `evidence/csv/demo_rm3_input.csv`. Then *Stats Wizard* (menu
+y=447) → *Compare groups or conditions* → *Yes — same people, repeated
+(paired)* → *Three or more (RM-ANOVA / Friedman)*.
+
+**The predicted test could not be run, because the button does not exist.**
+The handoff called for driving each branch and pressing its CSV button. For
+repeated measures there is no CSV button. The `Analysis complete` dialog
+offers **Done** and **New** only — no CSV, no Draw — on both the RM-ANOVA
+and the Friedman branch.
+
+`eml-wizard.praat:1580` gates the four-button dialog (`Done`, `CSV`, `Draw`,
+`New`) on the single flag `wizCanDraw`. `eml-wizard.praat:1030` sets
+`wizCanDraw = 0` for the whole repeated-measures block. So the `@emlCSVInit`
+calls at `stats/eml-analysis.praat:1420` and `:1479`, and the one at
+`eml-wizard.praat:1574`, initialise an accumulator that no user action can
+reach.
+
+D66 therefore resolves differently across the three orchestrators:
+
+| Orchestrator | Result |
+|---|---|
+| `emlRunPairwiseAnalysis` | **D66 confirmed** — CSV button present, export fails on `emlCSV_n = 0` |
+| `emlRunRepeatedMeasuresAnalysis` | **No CSV route exists** — see D87 |
+| `emlRunFriedmanAnalysis` | **No CSV route exists** — see D87 |
+
+**Accuracy of both branches: correct.** Verified against scipy.
+
+| quantity | scipy | plugin |
+|---|---|---|
+| RM-ANOVA *F*(2,38) | 583.1232 | 583.1232 |
+| Greenhouse-Geisser ε | 0.8486 | 0.8486 |
+| condition means | 72.465 / 83.355 / 94.129 | 72.4646 / 83.3546 / 94.1294 |
+| post-hoc raw *p* (soft–medium) | 1.5384e-12 | 0.000000000002 |
+| post-hoc raw *p* (soft–loud) | 1.0687e-20 | 0.00000000000000000001 |
+| post-hoc raw *p* (medium–loud) | 5.4312e-12 | 0.000000000005 |
+| Friedman χ²(2) | 40.0000 | 40.0000 |
+| Friedman *p* | 2.0611e-09 | 0.000000002 |
+| Wilcoxon post-hoc raw *p* (all pairs) | 1.9073e-06 | 0.000002 |
+
+Holm adjustment is applied correctly in both branches, including the tied
+case: all three Friedman post-hoc raw *p* are identical, and Holm's
+monotonicity constraint correctly gives all three the same adjusted value
+(3 × 1.9073e-06 = 5.72e-06, shown as `0.000006`).
+
+Transcript: `evidence/info/wizard_rm3_rmanova_and_friedman.txt`.
+
+### D82 — ACCURACY (high) — RM condition slots default to fixed column positions, ignoring type
+
+`Condition 1`, `Condition 2` and `Condition 3` are hard-coded to option
+indices 2, 3 and 4 (`eml-wizard.praat`, the `Repeated measures — select
+condition columns` form), which is table columns 1, 2 and 3 in order.
+Nothing consults `@emlGuessColumnRoles`, and nothing filters for numeric
+columns.
+
+The previous page's own help text says *"Each condition is its own column;
+each row is one subject measured under every condition (wide format)."* A
+wide table of that shape normally carries a subject identifier in column 1.
+On `demo_rm3` the defaults therefore select `singer` — the ID column — as
+`Condition 1`, and drop `SPL_loud`, the third real condition, entirely.
+
+The user who accepts the defaults on a correctly-shaped table gets a wrong
+analysis specification. This is the same failure family as D77/D78 but a
+separate site: those concern `@emlGuessColumnRoles` guessing badly, this
+concerns a form that never asks it.
+
+Evidence: `evidence/shots/d82_rm_condition_defaults.png`.
+
+### D83 — CLARITY (high) — the resulting failure blames the user's data, and discards the session
+
+Running with those defaults produces:
+
+> Need at least 2 complete-case subjects (rows with all conditions present).
+
+The data has 20 complete cases. The message is a consequence of
+`Condition 1` being a string column, so every row reads as missing on that
+condition. The user is told their data is incomplete when it is not, and is
+given no indication that the dialog's own default is at fault.
+
+The wizard then **exits** (`Script exited`), discarding the research-goal,
+observation-type and condition-count choices made on the three preceding
+pages. Recovering means re-entering the entire wizard from the menu.
+
+Two fixes, independent of D82: validate that every chosen condition column
+is numeric *before* running and say which one is not; and return to the
+form rather than exiting.
+
+Evidence: `evidence/shots/d83_rm_complete_case_error.png`.
+
+### D84 — CLARITY (low) — label collision on the condition-count page
+
+On *Paired / repeated — how many conditions?* the comment line
+`"How many repeated measurements per subject?"` is overlapped by the
+`Conditions:` optionmenu row; the trailing words are occluded and unreadable.
+The two are adjacent in the `beginPause:` block with a single empty
+`comment:` between them, which is evidently not enough vertical space under
+GTK.
+
+Evidence: `evidence/shots/d84_ncond_label_collision.png`.
+
+### D85 — CLARITY (high) — p-values render as long decimal strings
+
+The RM-ANOVA branch prints:
+
+```
+F(2, 38) = 583.1232, p = 0.00000000000000000000000000003
+Greenhouse-Geisser epsilon = 0.8486, GG-corrected p = 0.0000000000000000000000004
+```
+
+Twenty-nine and twenty-five decimal places respectively. These are not
+readable, cannot be checked at a glance, and cannot be transcribed into a
+manuscript.
+
+The same plugin already does this correctly elsewhere: the *Pairwise
+comparisons* wrapper prints `< .001` in the same situation. The convention
+exists; the wizard's repeated-measures reporter does not use it. All the
+post-hoc lines have the same problem.
+
+Evidence: `evidence/shots/d85_rm_pvalue_rendering.png`.
+
+### D86 — ACCURACY (medium) — no effect size for either repeated-measures test
+
+RM-ANOVA reports *F*, *p*, and Greenhouse-Geisser ε, and no effect size —
+no partial η², no generalised η². Friedman reports χ² and *p*, and no
+Kendall's *W*. The post-hoc lines report *p* only, with no paired Cohen's
+*d* or matched-pairs rank-biserial correlation.
+
+The *Pairwise comparisons* wrapper reports Cohen's *d* for every pair, so
+the plugin is internally inconsistent about whether an effect size
+accompanies a test. For `demo_rm3` the values are partial η² = 0.968 and
+Kendall's *W* = 1.000.
+
+### D87 — CLARITY (high) — CSV export and Draw are gated by one flag
+
+`eml-wizard.praat:1580` chooses between a four-button completion dialog
+(`Done`, `CSV`, `Draw`, `New`) and a two-button one (`Done`, `New`) on the
+single flag `wizCanDraw`. There is no separate flag for export.
+
+Any design the wizard cannot graph therefore also cannot be exported, for no
+reason connected to export. Repeated measures is such a design
+(`wizCanDraw = 0` at `:1030`), so both RM-ANOVA and Friedman results are
+trapped in the Info window: no CSV, no figure, and no indication that export
+was ever an option.
+
+This is the root cause of the missing CSV route above. Splitting the flag —
+`wizCanDraw` and `wizCanExport`, set independently — restores export to
+every branch that produces numbers, which is all of them.
+
+Evidence: `evidence/shots/d87_friedman_no_csv_button.png`.
+
+### Rig note — `curpause` and its dependants are unreliable
+
+`gui.sh` → `curpause` finds the live dialog by `xdotool search --name
+"^Pause"` filtered to `IsViewable`. Under this rig that fails in two ways at
+once. Praat leaves every dismissed pause window in the X tree as an
+unmapped window with its old name, so the search returns a growing list of
+dead entries; and the live dialog is frequently absent from the search
+results altogether while plainly visible on screen and accepting clicks at
+its screen coordinates.
+
+`pgeom` and `needclear` inherit the fault. Screenshot-derived absolute
+coordinates worked throughout and are the reliable route; the window-search
+primitives should be treated as advisory only.
+
+A modal Praat *error* window, by contrast, does grab input and will silently
+swallow every subsequent click. When a click appears to do nothing, take a
+screenshot before retrying.
+
+### Priority 2 — the interrupted Draw leg, completed
+
+**Route.** *Create Demo Table…* → `Paired measures (N=20)` → `demo_paired`.
+*Compare paired/repeated…* (menu y=549) → Column 1 `jitter_pre`,
+Column 2 `jitter_post`, Paired t-test → Run → **Draw** → graph type left at
+its pre-selected `Spaghetti Plot`, **Title left deliberately empty** →
+Continue → column mapping accepted as pre-assigned → Draw.
+
+Figure: `evidence/figures/d88_spaghetti_axis_0to10.png`.
+
+**D77 reconfirmed on entry, with this table.** The wrapper opens with
+Column 1 = `jitter_pre` and Column 2 = `HNR_pre` — two *different measures*
+at the same timepoint, rather than two timepoints of one measure. Accepting
+the defaults compares jitter against HNR. This is the D77 failure exactly as
+described, now witnessed on `demo_paired` at the first dialog.
+
+Separately, the `Column 1` and `Column 2` optionmenus are unfiltered: the
+dialog's own instruction reads *"Select two numeric columns with paired data
+(same N)"* and the menus offer `subject`, a string column, as option 1.
+Same family as D47.
+
+**Accuracy of the paired t-test: correct except the effect size.** Against
+scipy `ttest_rel`:
+
+| quantity | scipy | plugin |
+|---|---|---|
+| *t* | 7.726 | 7.726 |
+| df | 19 | 19 |
+| pre mean / SD / median | 2.696 / 0.823 / 2.683 | 2.696 / 0.823 / 2.683 |
+| post mean / SD / median | 1.967 / 0.917 / 2.280 | 1.967 / 0.917 / 2.280 |
+| mean difference | 0.7285 | 0.7285 |
+| SD of differences | 0.4217 | 0.4217 |
+
+### D15 — reconfirmed with a numeric demonstration
+
+The report prints `Matched-pairs r 0.971` under the heading **Paired
+t-test**. That number is not the *t*-derived correlation. It is the
+matched-pairs rank-biserial correlation of the **Wilcoxon signed-rank**
+test:
+
+- Wilcoxon rank-biserial on this data: **0.971** — the printed value.
+- *r* from the paired *t*: r = t/√(t² + df) = 7.726/√(7.726² + 19) =
+  **0.871**.
+
+The two differ by 0.1 and both look plausible, so nothing on screen reveals
+the substitution. No Cohen's *d*z is reported either; for this data it is
+1.728. D15 previously rested on reading the source; it now rests on two
+numbers that disagree.
+
+### D88 — GRAPHING (high) — `roundTo = 10` is hard-coded at 13 of 17 axis-range call sites
+
+The spaghetti plot of `jitter_pre` → `jitter_post` is drawn on a **0–10**
+y-axis for data spanning **0.528 to 4.191**. The traces occupy the bottom
+**37%** of the panel; the top 5.8 units are empty.
+
+The arithmetic, from `@emlComputeAxisRange`
+(`graphs/eml-graph-procedures.praat:765`) with the `.roundTo = 10` passed by
+`@emlDrawSpaghettiPlot` (`graphs/eml-draw-procedures.praat:1317`):
+
+```
+range  = 4.191 - 0.528 = 3.663
+buffer = 0.366
+rawMin = 0.161      rawMax = 4.557
+axisMin = floor (0.161 / 10) * 10 = 0
+axisMax = ceiling (4.557 / 10) * 10 = 10
+```
+
+`.roundTo` is the rounding granularity of the axis, and passing a literal
+`10` fixes that granularity at ten units regardless of the data's magnitude.
+Any measure whose full range is small relative to 10 is compressed into the
+bottom of the panel. That is not an edge case in this field: jitter %,
+shimmer %, contact quotient, most ratios and proportions, and any normalised
+measure all fall inside it. With `.roundTo = 1` the same data yields a 0–5
+axis and fills the panel.
+
+**The literal `10` appears at 13 of the 17 `@emlComputeAxisRange` call
+sites**, covering spaghetti, box, violin, bar, and time-series paths
+(`eml-draw-procedures.praat:225, 240, 715, 1052, 1317, 1702, 2035, 2896,
+3551, 3776` and `eml-graphs-form.praat:5428, 5432`). Two sites pass `5`, one
+passes `0.05`.
+
+**The fix already exists in this repository and was not propagated.** The
+scatter path (`eml-draw-procedures.praat:2244` and `:2258`) derives its
+granularity from the data:
+
+```praat
+@emlComputeNiceStep: .dataYMax - .dataYMin, emlSetAdaptiveTheme.targetTicksY
+.yRoundTo = emlComputeNiceStep.step
+@emlComputeAxisRange: .dataYMin, .dataYMax, .yRoundTo, 0
+```
+
+carrying the comment *"so fractional data (proportions, reaction times,
+jitter %) is not snapped to the integer grid."* The problem was identified
+and solved at one site. The remaining sites need the same two lines.
+
+### D89 — GRAPHING (medium) — no default title is supplied, against Rule 28A
+
+The `Title` field was left empty deliberately. The figure is drawn with no
+title at all — not a derived one, not a placeholder. The plugin knows the
+table name, both column names, the test that was run and its *p*; none of it
+reaches the figure. A reader given the PNG alone cannot tell what was
+measured or on what.
+
+This is the same defect as D43, now confirmed on the paired/spaghetti path,
+which means it is a property of the shared graphing form rather than of one
+graph type.
+
+### D90 — GRAPHING (medium) — axis labels carry the reshape's role names, not the measure
+
+The y-axis reads **`Value`** and the x-axis **`Condition`**. Those are the
+internal role names produced by the wide→long reshape recorded in D80, not
+anything about the data. The tick labels underneath do carry the real
+column names (`jitter pre`, `jitter post`), so the information is present in
+the figure and simply not used for the axis label.
+
+The y-axis is the one that matters: it is the only place the measured
+quantity and its unit could appear, and it says `Value`. The column names
+are available at the call site — `.valueCol$` is a parameter of
+`@emlDrawSpaghettiPlot`.
+
+(Underscores are stripped in the tick labels — `jitter pre` — which is the
+D6 family again.)
+
+### The graphs-side CSV export works, and its defaults differ from the analysis side
+
+Pressing `Exp CSV` on the *Graph Complete* dialog after the spaghetti plot
+produced a fully populated single-row file. This is the contrast case for
+D66: the same plugin, a different entry point, and the row-building
+reporters in `graphs/eml-annotation-procedures.praat` do get called.
+
+```
+table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,effect_type,...
+demo_paired,jitter_pre,jitter_post,jitter_pre,jitter_post,Paired t-test,7.725968,19.00,0.0000003,0.9714,matched-pairs r,,20,20,...
+```
+
+Full file: `evidence/csv/pairedLong_results_5aug.csv`.
+
+Four things this export shows:
+
+- **The CSV carries full *p* precision where the Info window does not.**
+  `0.0000003` against the Info window's `p < .001` for the same test. The
+  D14 floor is a display-layer choice, not a computation limit.
+- **D15 propagates into the export, and the export is honest about it.**
+  `effect_size = 0.9714` with `effect_type = matched-pairs r`, under
+  `test = Paired t-test`. The CSV names the quantity correctly; the Info
+  window's `Matched-pairs r` heading under a parametric test is where the
+  mislabelling bites.
+- **D17 confirmed:** `effect_label` is empty on this path.
+- **D18 confirmed, and D39 does not apply here.** The default filename is
+  `pairedLong_results` — naming `pairedLong`, the internal reshape artefact,
+  rather than `demo_paired`. But the default *folder* is `/root`, not the
+  plugin install directory. The two CSV entry points disagree about where
+  exports belong; neither default is right, and they are wrong differently.
+
+### Priority 3 — the adjustment is applied, not merely labelled
+
+Same table, same data, same test, one control changed. *Pairwise
+comparisons* on a fresh `demo_3groups`, Welch, table order; run once with
+`Adjustment = Bonferroni`, then reopened via `New` and run again with
+`Adjustment = Holm`.
+
+| pair | raw *p* | Bonferroni (scipy) | plugin | Holm (scipy) | plugin |
+|---|---|---|---|---|---|
+| Soprano–Mezzo | 0.01758 | 0.0527 | `0.0527` | 0.0228 | `0.0228` |
+| Soprano–Alto | 3.678e-06 | 0.0000 | `< .001` | 0.0000 | `< .001` |
+| Mezzo–Alto | 0.01140 | 0.0342 | `0.0342` | 0.0228 | `0.0228` |
+
+Cohen's *d* matched at 0.924, 2.100 and 0.990.
+
+This run is a stronger differential than the one the handoff anticipated,
+because it crosses the conventional threshold: under Bonferroni the
+Soprano–Mezzo contrast is **not** significant at .05 (0.0527), and under Holm
+it **is** (0.0228). A cosmetic relabelling could not produce that. Holm's
+monotonicity constraint also correctly pulls Mezzo–Alto up to the same
+0.0228 rather than leaving it at its own step value, which is the detail a
+naive step-down implementation gets wrong.
+
+`Adjustment` on this wrapper is genuine. Note the label —
+`Adjustment (t and Wilcoxon only)` — is accurate: D25 records that the
+control is inert on the parametric k-group path, and the wrapper says so.
+
+Input data: `evidence/csv/demo_3groups_b_input.csv`.
+
+### Rig fix — use `xdotool getactivewindow`, not `search --name`
+
+The window-search problem recorded above has a clean solution.
+`xdotool getactivewindow` returns the live pause dialog reliably, including
+every case where `xdotool search --name "^Pause"` returned only dead
+unmapped windows. It also gives the id needed for `windowactivate --sync` +
+`windowfocus` before typing into a GTK entry, which is how the *Output
+folder* field was successfully retyped on the graphs-side export.
+
+`gui.sh` → `curpause` should be redefined in terms of `getactivewindow`, and
+`pgeom` and `needclear` will then work again.

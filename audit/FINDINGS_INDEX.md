@@ -27,7 +27,7 @@ dismissed).
 | D12 | CLARITY  | medium  | [L800](DRIVE_FINDINGS_2026-08-04.md#L800) | ### D12 — CLARITY (medium). No CI on the mean difference | — |
 | D13 | CLARITY  | medium  | [L810](DRIVE_FINDINGS_2026-08-04.md#L810) | ### D13 — CLARITY (medium). Subtraction direction is never stated | — |
 | D14 | CLARITY  | low  | [L820](DRIVE_FINDINGS_2026-08-04.md#L820) | p is floored at .001 with no exact value anywhere | 980, 1103, 1557, 2168 |
-| D15 | ACCURACY  | —  | [L896](DRIVE_FINDINGS_2026-08-04.md#L896) | nonparametric effect size reported under the parametric test | 1116 |
+| D15 | ACCURACY  | high  | [L896](DRIVE_FINDINGS_2026-08-04.md#L896) | nonparametric effect size reported under the parametric test — demonstrated numerically 5 Aug: printed `Matched-pairs r 0.971` is the Wilcoxon rank-biserial; the t-derived r is 0.871 | 1116, 3728 |
 | D16 | CLARITY  | —  | [L1125](DRIVE_FINDINGS_2026-08-04.md#L1125) | the dialog's own escaping instructions are wrong, and fail silently | — |
 | D17 | PACKAGING  | —  | [L1172](DRIVE_FINDINGS_2026-08-04.md#L1172) | `effect_label` column populated inconsistently across analyses | 1522 |
 | D18 | CLARITY  | —  | [L1193](DRIVE_FINDINGS_2026-08-04.md#L1193) | default export filename names an internal artefact | 1549 |
@@ -78,7 +78,7 @@ dismissed).
 | D63 | ACCURACY  | —  | [L2926](DRIVE_FINDINGS_2026-08-04.md#L2926) | The figure and the exported CSV report a different test family than the analysis that launched them, with no disclosure on any screen | — |
 | D64 | ACCURACY  | —  | [L2986](DRIVE_FINDINGS_2026-08-04.md#L2986) | The `Adjustment method` optionmenu on the graphing dialog is inert whenever `Test type = Parametric` and k ≥ 3 | — |
 | D65 | ACCURACY  | —  | [L3010](DRIVE_FINDINGS_2026-08-04.md#L3010) | The Draw path's CSV export is byte-identical to a different wrapper's export, and claims the same default filename | — |
-| D66 | ACCURACY  | —  | [L3037](DRIVE_FINDINGS_2026-08-04.md#L3037) | `CSV` on the analysis-side `Analysis complete` dialog cannot ever succeed, and its failure message blames the filesystem | — |
+| D66 | ACCURACY  | high  | [L3037](DRIVE_FINDINGS_2026-08-04.md#L3037), [L3462](DRIVE_FINDINGS_2026-08-04.md#L3462) | `CSV` on the analysis-side `Analysis complete` dialog cannot ever succeed, and its failure message blames the filesystem — DEMONSTRATED on `emlRunPairwiseAnalysis` 5 Aug; row-building exists only in `graphs/eml-annotation-procedures.praat` | — |
 | D67 | CLARITY  | —  | [L3062](DRIVE_FINDINGS_2026-08-04.md#L3062) | Cohen's d is printed for every pair; n, means and SDs for the groups are printed nowhere | — |
 | D68 | CLARITY  | —  | [L3070](DRIVE_FINDINGS_2026-08-04.md#L3070) | No test statistic and no degrees of freedom | — |
 | D69 | CLARITY  | —  | [L3077](DRIVE_FINDINGS_2026-08-04.md#L3077) | ### D69 — CLARITY — The raw p is never shown | — |
@@ -94,3 +94,12 @@ dismissed).
 | D79 | CLARITY  | low  | [L3379](DRIVE_FINDINGS_2026-08-04.md#L3379) | The `comment:` line documenting the subscript marker is the one line where GTK eats the marker — 13 sites in `graphs/eml-graphs-form.praat` | — |
 | D80 | NOT A DEFECT  | —  | [L3414](DRIVE_FINDINGS_2026-08-04.md#L3414) | The Draw leg's wide→long reshape is correct — recorded so it is not re-opened | — |
 | D81 | NOT A DEFECT  | —  | [L3436](DRIVE_FINDINGS_2026-08-04.md#L3436) | `Export Complete` reports the full destination path with underscores intact — this is what makes D39 recoverable | — |
+| D82 | ACCURACY  | high  | [L3574](DRIVE_FINDINGS_2026-08-04.md#L3574) | RM condition slots default to fixed column positions 1–3 with no type filter, so `Condition 1` takes the subject ID column and the last real condition is dropped | — |
+| D83 | CLARITY  | high  | [L3595](DRIVE_FINDINGS_2026-08-04.md#L3595) | The resulting failure reads "Need at least 2 complete-case subjects" on complete data, and the wizard exits, discarding three pages of choices | — |
+| D84 | CLARITY  | low  | [L3616](DRIVE_FINDINGS_2026-08-04.md#L3616) | "How many repeated measurements per subject?" is overlapped by the `Conditions:` optionmenu row | — |
+| D85 | CLARITY  | high  | [L3627](DRIVE_FINDINGS_2026-08-04.md#L3627) | Repeated-measures p-values print as 25–29 place decimal strings; the plugin's own `< .001` convention is not used | — |
+| D86 | ACCURACY  | medium  | [L3647](DRIVE_FINDINGS_2026-08-04.md#L3647) | No effect size for RM-ANOVA (partial η²) or Friedman (Kendall's *W*), while the pairwise wrapper reports Cohen's *d* | — |
+| D87 | CLARITY  | high  | [L3659](DRIVE_FINDINGS_2026-08-04.md#L3659) | CSV export and Draw share the single `wizCanDraw` flag, so repeated-measures results can be neither graphed nor exported | — |
+| D88 | GRAPHING  | high  | [L3744](DRIVE_FINDINGS_2026-08-04.md#L3744) | `roundTo = 10` hard-coded at 13 of 17 `@emlComputeAxisRange` call sites, so any measure ranging under ~10 units is squashed into the bottom of the panel; the adaptive fix already exists at the scatter site | — |
+| D89 | GRAPHING  | medium  | [L3790](DRIVE_FINDINGS_2026-08-04.md#L3790) | An empty Title field yields a figure with no title at all — D43 confirmed on the shared graphing form, not one graph type | — |
+| D90 | GRAPHING  | medium  | [L3802](DRIVE_FINDINGS_2026-08-04.md#L3802) | Axis labels read `Value` and `Condition` — the reshape's internal role names — while the real column names sit in the tick labels | — |
