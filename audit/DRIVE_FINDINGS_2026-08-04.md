@@ -3741,7 +3741,7 @@ the substitution. No Cohen's *d*z is reported either; for this data it is
 1.728. D15 previously rested on reading the source; it now rests on two
 numbers that disagree.
 
-### D88 — GRAPHING (high) — `roundTo = 10` is hard-coded at 13 of 17 axis-range call sites
+### D88 — GRAPHING (high) — `roundTo = 10` is hard-coded at 12 of 17 axis-range call sites
 
 The spaghetti plot of `jitter_pre` → `jitter_post` is drawn on a **0–10**
 y-axis for data spanning **0.528 to 4.191**. The traces occupy the bottom
@@ -3767,7 +3767,7 @@ shimmer %, contact quotient, most ratios and proportions, and any normalised
 measure all fall inside it. With `.roundTo = 1` the same data yields a 0–5
 axis and fills the panel.
 
-**The literal `10` appears at 13 of the 17 `@emlComputeAxisRange` call
+**The literal `10` appears at 12 of the 17 `@emlComputeAxisRange` call
 sites**, covering spaghetti, box, violin, bar, and time-series paths
 (`eml-draw-procedures.praat:225, 240, 715, 1052, 1317, 1702, 2035, 2896,
 3551, 3776` and `eml-graphs-form.praat:5428, 5432`). Two sites pass `5`, one
