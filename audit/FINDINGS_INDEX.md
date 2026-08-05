@@ -1,6 +1,6 @@
 # Findings index — EML Praat Tools GUI drive audit
 
-78 findings (D1–D78) extracted from `DRIVE_FINDINGS_2026-08-04.md`. Each row
+81 findings (D1–D81) extracted from `DRIVE_FINDINGS_2026-08-04.md`. Each row
 links to the line where the finding is first stated. The **Revisits** column
 lists line numbers where the finding was later reconfirmed, revised, scoped
 down, resolved, or reopened — several findings changed severity after further
@@ -91,3 +91,6 @@ dismissed).
 | D76 | CLARITY  | —  | [L3144](DRIVE_FINDINGS_2026-08-04.md#L3144) | The CSV omnibus row carries only `dfBetween`; `dfWithin` is dropped | — |
 | D77 | ACCURACY  | high  | [L3242](DRIVE_FINDINGS_2026-08-04.md#L3242) | the `pre\|post` keyword makes the *time* role steal the second member of a paired pair | — |
 | D78 | ACCURACY  | medium  | [L3298](DRIVE_FINDINGS_2026-08-04.md#L3298) | `groupIdx` and `subjectIdx` resolve to the same column | — |
+| D79 | CLARITY  | low  | [L3379](DRIVE_FINDINGS_2026-08-04.md#L3379) | The `comment:` line documenting the subscript marker is the one line where GTK eats the marker — 13 sites in `graphs/eml-graphs-form.praat` | — |
+| D80 | NOT A DEFECT  | —  | [L3414](DRIVE_FINDINGS_2026-08-04.md#L3414) | The Draw leg's wide→long reshape is correct — recorded so it is not re-opened | — |
+| D81 | NOT A DEFECT  | —  | [L3436](DRIVE_FINDINGS_2026-08-04.md#L3436) | `Export Complete` reports the full destination path with underscores intact — this is what makes D39 recoverable | — |

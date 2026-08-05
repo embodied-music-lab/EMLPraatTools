@@ -30,7 +30,7 @@ plugin/        the plugin itself — this is the working tree, and the thing
 audit/         the audit record
   DRIVE_FINDINGS_2026-08-04.md   primary log: every wrapper driven through its
                                  real GUI, screenshot by screenshot
-  FINDINGS_INDEX.md              machine-readable table of D1–D78
+  FINDINGS_INDEX.md              machine-readable table of D1–D81
   static/      earlier static (read-the-source) audits, pre-GUI
   reports/     derived reports: actionable list, adversarial re-check,
                R/scipy cross-validation, degenerate-input stress, handoffs
@@ -67,6 +67,9 @@ the real GUI under Xvfb. `Linear mixed model` is out of scope by author ruling.
 Still to drive: EML Graphs, Batch voice analysis, Run Stats Demo, EML Stats
 Quick Start, Stats Wizard.
 
+`START_HERE.md` is the entry point for whoever picks the drive up next: it
+names the remaining targets in priority order and points at the rig rebuild.
+
 Findings are judged in the order the author asked for: **accuracy** first
 (is the reported number the right number, from the right test), then **clarity
 of Info-window output**, then **the graphing paths that result**. Every
@@ -77,6 +80,13 @@ The highest-severity open items are D77 and D78 (`@emlGuessColumnRoles`
 mis-assigns column roles, so the Compare Paired dialog can silently default to
 comparing two *different measures* rather than two timepoints of one measure),
 D15, D20, D32, D33, D63, and D66. See `audit/FINDINGS_INDEX.md`.
+
+D66's blast radius was **corrected on 5 August** after live drive: *Compare
+paired/repeated* exports its CSV correctly and is cleared. The three genuinely
+affected orchestrators are `emlRunPairwiseAnalysis`,
+`emlRunRepeatedMeasuresAnalysis`, and `emlRunFriedmanAnalysis` — reachable only
+from the *Pairwise comparisons* wrapper and two Stats Wizard branches. Those
+three are the next drive targets.
 
 ## Known gap: file modes are not carried by git
 

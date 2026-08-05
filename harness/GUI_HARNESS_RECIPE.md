@@ -249,3 +249,115 @@ optionmenu (450,137), Undo (56,183), Quit (223,183), Create (413,183).
 Xvfb, matchbox and Praat launched with a bare `&` are killed when the driving
 shell call returns. Xvfb dying is the silent one — Praat then fails to start
 with no message in its own log, and `pgrep -x praat` is simply empty.
+
+---
+
+## 10. Traps carried forward (added 2026-08-05)
+
+These were each hit at least once and cost real time. They are not in the
+gotchas table above because they are behaviours to design around rather than
+symptoms with a one-line fix.
+
+### matchbox must run with `-use_titlebar no`
+
+With titlebars on, matchbox adds ~20px of chrome above every window and
+**every mapped coordinate in `MENU_MAP.md` shifts down by that amount.** The
+map, and every dialog absolute recorded in the findings log, assume no
+titlebar. Launch:
+
+```bash
+setsid matchbox-window-manager -use_titlebar no < /dev/null &
+```
+
+### matchbox must be restarted with `setsid ... < /dev/null &`
+
+A plain backgrounded restart issued in the *same* bash call as a `pkill` dies
+with exit 144 (128+16, SIGTERM) — it inherits the process group being killed.
+`setsid` detaches it. Redirecting stdin from `/dev/null` stops it stalling on
+a terminal read.
+
+### Never trust a cached dialog absolute across a restart
+
+Praat re-places its pause windows on each launch, and the offsets drift by a
+few pixels — the Compare Paired dialog was at 438,290 in one session and
+442,310 in the next, and 438,451 later the same day. Arithmetic from a cached
+origin silently clicks the wrong control.
+
+**Always:** `pgeom` for the current origin, screenshot, crop at that origin,
+*read the crop*, and derive button absolutes from what you see. The crop is
+cheap; a mis-click that dismisses a dialog is not.
+
+### `xdotool windowraise` is not enough under matchbox
+
+Raising a window does not give it input focus, so clicks and keystrokes go to
+whatever had focus before. The reliable sequence before *any* click or type:
+
+```bash
+xdotool windowactivate --sync $id
+xdotool windowfocus $id
+```
+
+`emlmenu` in `gui.sh` still uses `windowraise` — known latent bug, unfixed.
+
+### Shell cwd does not persist between Bash tool calls
+
+`import`/`convert` failed with "unable to open image `out/shots/x4_raw.png'"
+purely because a previous `cd` had not carried over. Either use absolute
+paths or prefix every call with `cd /home/claude/drive &&`. Do not assume the
+directory you were in one call ago.
+
+### Praat allows exactly one pause form at a time
+
+`needclear` exists for this. If a pause form is open, opening a wrapper does
+nothing and the failure is silent. Dialogs also *cascade* — dismissing
+`Export Complete` drops you back to `Analysis complete`, which is still a
+pause form. Drain the whole stack before starting the next wrapper.
+
+### Each dialog is a NEW pause window — never cache the window id
+
+`curpause` re-searches and filters on `IsViewable` for exactly this reason. A
+cached id from the previous dialog will still resolve and `windowactivate`
+will succeed against a destroyed window, so the failure is silent.
+
+### `infotext` takes no argument
+
+`infotext <path>` prints to stdout, exits 1, and **does not create the file.**
+Use argument-less `infotext` with a shell redirect:
+
+```bash
+infotext > out/w5_run_info.txt
+```
+
+Known latent bug, unfixed.
+
+### Blind `iconv -f UTF-16` is unsafe
+
+Praat writes UTF-16 on Linux even under `--utf8`, but not always — the CSV
+exports come out ASCII. `iconv -f UTF-16` on ASCII input emits nothing **and
+exits 0**, so the file silently reads as empty. Sniff first:
+
+```bash
+file -b "$f" | grep -q "UTF-16" && iconv -f UTF-16 -t UTF-8 "$f" || cat "$f"
+```
+
+### Crop before reading, and magnify before ruling on a glyph
+
+A full 1400x1000 screenshot costs ~1,900 tokens to read and invites
+transcription error. A 524x218 dialog crop costs a fraction of that and is
+exact. For anything turning on a single character — an eaten underscore, a
+decimal place — crop tight and `-resize 800%` before reading. D79 is only
+visible at 800%.
+
+For dialogs taller than ~500px, capture in two halves rather than one
+downscaled image; detail is lost in the resize.
+
+### `-trim` before a percentage `-crop` changes the geometry
+
+Trim first and the percentages refer to the trimmed extent, not the original.
+Crop by absolute pixels.
+
+### Rule 5E violations in `--send` probes fail silently
+
+A query command nested inside a function call in a probe script produces no
+output and no error over `--send`. If a probe returns nothing, suspect the
+probe before suspecting the plugin.

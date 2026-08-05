@@ -71,9 +71,22 @@ shipped).
 
 ---
 
+## Table object action buttons (mapped 5 Aug 2026)
+
+With exactly one Table selected, the right-hand action column renders at
+**x ≈ 1277**, nine buttons spanning **y 404–684** (≈35 px pitch). The tabled
+`EML: Linear mixed model...` sits in this column at y=579 — **SKIP it**, same
+author ruling as menu y=701.
+
+Click x=1277 and derive the y from a live screenshot; do not trust these
+absolutes across sessions (see GUI_HARNESS_RECIPE.md §10 — dialog and button
+absolutes drift both between and within sessions).
+
 ## Remaining surface (not yet mapped)
 
-- Table, 1 selected → 9 action buttons (incl. tabled `EML: Linear mixed model...`)
+- Table, 1 selected → 9 action buttons: geometry above, but only
+  `EML: Linear mixed model...` identified by label. The other eight still need
+  a labelled screenshot; two should be spot-driven.
 - TableEditor → Edit menu → `EML: Edit Table...`
 - Sound / Pitch / Spectrum / Ltas → `EML Graphs...` (4)
 - TableOfReal → 6 buttons (auto-convert path via `@emlWrapperInit`)

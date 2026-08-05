@@ -964,6 +964,36 @@ nonparametric branch alone. `@emlFormatEffectLabel` is called with
 `"r"` as the scale hint at line 3618; the parametric branch would
 need `"d"`.
 
+**Live-GUI reconfirmation, 5 Aug (`demo_paired`, jitter_pre vs
+jitter_post, n=20).** Driven through the real dialog with `Clear Info`
+ticked. Info reports `t 11.065 / df 19 / p < .001 / Mean difference
+0.9437 / SD of differences 0.3814`, then under a bare `── Effect Size ──`
+heading: `Matched-pairs r 1.000 / Magnitude large effect`. Every
+parametric number is correct against scipy (t = 11.0648, p = 1.01e-09,
+and all six descriptives match to the printed precision) — **the
+arithmetic is sound; only the effect size is the wrong statistic.**
+scipy on the exported data: R+ = 210.0, R− = 0.0, 20 of 20 pairs
+decreased, so the rank-biserial is exactly 1.0000. The parametric
+companions would have been d_z = 2.4742 or r-from-t = 0.9304.
+
+This is the degenerate case the finding predicts: because rank-biserial
+depends only on the *signs* and rank order of the differences, **any
+dataset in which all pairs move the same direction returns exactly
+1.000 / "large effect"** — a shift of 0.0001 units scores identically to
+one of 10 SDs. The heading compounds it: the nonparametric branch
+(~3662) labels the identical value `Nonparametric Effect Size`, so the
+one place the label would disambiguate is the one place it is dropped.
+
+The exported CSV row confirms the contamination clause verbatim:
+`effect_size = 1.0000`, `effect_type = matched-pairs r`, alongside
+`test = Paired t-test`. Notably the CSV is the *more* honest artefact —
+it names the effect type where the Info window does not, and it
+preserves `demo_paired` / `jitter_pre` where the Info window strips the
+underscores (D6).
+
+Evidence: `out/w5_run_info.txt`, `out/csv/demo_paired_results.csv`,
+shots `w5d`–`w5h`.
+
 ### D9 reconfirmed
 
 `p   p < .001` — the doubled label again, this time at
@@ -3050,10 +3080,29 @@ Draw-path export in D65 succeeded while this one failed. **Same button
 label, same dialog idiom, one works and one is structurally incapable of
 working.**
 
-Blast radius from the init-without-add orchestrators: `emlRunPairwiseAnalysis`
-(407), `emlRunRepeatedMeasuresAnalysis` (1420), `emlRunFriedmanAnalysis`
-(1479) — i.e. *Compare paired/repeated* is predicted to fail identically.
-Queued for drive-verification.
+**Blast radius — corrected 5 Aug after drive-verification.** The earlier
+prediction named the wrong wrapper. *Compare paired/repeated* **exports
+correctly**: it dispatches `@emlRunPairedAnalysis`
+(`scripts/eml-compare-paired.praat:107`), which is not one of the
+init-without-add orchestrators, and whose reporter
+`emlReportPairedComparison` (`graphs/eml-annotation-procedures.praat:3626`)
+does call `@emlCSVAddRow`. Driven end to end on `demo_paired`, its `CSV`
+button opened `Export Results` and wrote a fully populated 310-byte row. It
+is also 2-condition-only (Test offers just Paired t-test / Wilcoxon / Both),
+so it cannot reach RM-ANOVA or Friedman at all.
+
+Call-site grep establishes the real radius:
+
+| Orchestrator | init site | reached from |
+|---|---|---|
+| `emlRunPairwiseAnalysis` | 407 | `scripts/eml-pairwise.praat:102`, `scripts/eml-wizard.praat:630/637` |
+| `emlRunRepeatedMeasuresAnalysis` | 1420 | `scripts/eml-wizard.praat:1012` **only** |
+| `emlRunFriedmanAnalysis` | 1479 | `scripts/eml-wizard.praat:1022` **only** |
+
+So the affected surface is the **Pairwise comparisons** wrapper (menu y=727)
+and the **Stats Wizard's** repeated-measures and Friedman branches — the
+latter two reachable from nowhere but the wizard. Those three are queued for
+drive-verification; *Compare paired/repeated* is cleared.
 
 Minimum fix: make the message truthful ("No exportable rows were produced by
 this analysis"). Real fix: add the `AddRow` calls, or route the wrapper's
@@ -3322,5 +3371,75 @@ number, which is why this is medium and D77 is high.
 
 **Suggested fix.** Add `and .taken[.col] = 0` to the fallback's condition, and
 mark `groupIdx` as `taken` when it is assigned.
+
+---
+
+## Session 5 Aug — Compare paired/repeated, Draw leg
+
+### D79 — CLARITY — the dialog line documenting the subscript marker is the one line where the marker is eaten by the toolkit
+
+`graphs/eml-graphs-form.praat` emits this `comment:` at **13 sites**
+(1442, 1641, 1792, 1956, 2286, …):
+
+```praat
+comment: "Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)"
+```
+
+Rendered on Linux/GTK it reads:
+
+> Formatting: %italic · #bold · ^super · ̲sub · \ % prints % (e.g. %F 0)
+
+Every literal `_` is consumed. GTK treats `_` in a label as a mnemonic
+accelerator: `_s` underlines the `s` and removes the underscore. So
+`_sub` loses its `_`, and the worked example `%F_0` — the whole point of
+which is to show a subscript — renders as `%F 0`. The user is told to type
+a character that the instruction itself cannot display.
+
+Screenshot `x4c.png` (800% magnification) shows the mnemonic underline
+strokes where the underscores were.
+
+**Platform scope, stated honestly.** This is observed on Linux/GTK. Praat
+on macOS uses Cocoa, where label mnemonics do not apply, so the author has
+almost certainly never seen it — the line probably renders correctly on his
+machine. It should be verified on Windows before the fix is scoped.
+
+**Fix.** In GTK a literal underscore in a label is written `__`. Rather
+than depend on that surviving Praat's own string handling across three
+toolkits, the safer fix is to not put a bare `_` in a `comment:` at all —
+reword to name the character, e.g. `underscore-sub`, and move the worked
+example into the manual or a Picture-window caption where Praat's own
+renderer is in charge. Whatever is chosen has to be applied at all 13
+sites, not one.
+
+### D80 — NOT A DEFECT — the Draw leg's wide-to-long conversion is correct
+
+Recorded because it looked wrong and is not, so a later reader does not
+re-open it.
+
+*Compare paired/repeated* runs on a **wide** table (`demo_paired`:
+`subject`, `jitter_pre`, `jitter_post`). Its `Draw` button pre-selects
+`Spaghetti Plot` — correct routing for a paired design — and then opens
+`Spaghetti Plot -- Column Mapping`, which asks for **long**-format columns:
+Value (Y), Condition (X), Subject (participant ID). At first read that is
+a format mismatch: those columns do not exist in `demo_paired`.
+
+They do exist. Opening the `Value column` dropdown shows exactly three
+options — `Subject`, `Condition`, `Value` — so the plugin has already
+reshaped the wide table into a long one behind the dialog, and the three
+roles are pre-assigned correctly (Value→Y, Condition→X, Subject→ID). The
+reshape is silent and correct. `Use group column` is unchecked by default,
+so the `Group column: Subject` default underneath it is inert.
+
+Evidence: `x3.png` (graph-type dialog, Spaghetti Plot pre-selected),
+`x4a.png`/`x4b.png` (column mapping), `x5.png` (dropdown contents).
+
+### D81 — NOT A DEFECT — `Export Complete` reports the destination path in full
+
+`Saved to: /home/claude/drive/out/csv/demo_paired_results.csv`, with the
+underscores intact. Contrast D6 (Info-window display text strips them) and
+D39 (the export folder *defaults* into the plugin install directory). The
+confirmation dialog itself is exemplary: it names the artefact and where it
+went, which is what makes D39 recoverable — the user can at least see where
+the file landed.
 
 ---

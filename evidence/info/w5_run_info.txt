@@ -1,0 +1,30 @@
+
+
+══════════════════════════════════════════════
+  EML Stats : Paired Comparison
+  Wed Aug  5 15:48:55 2026
+══════════════════════════════════════════════
+
+  Table               demo paired
+  Column 1            jitter pre
+  Column 2            jitter post
+  N (pairs)           20
+
+  jitter pre: Mean = 2.625, SD = 0.891, Median = 2.595
+  jitter post: Mean = 1.681, SD = 0.800, Median = 1.656
+
+
+  ── Paired t-test ───────────────────────────
+  t                   11.065
+  df                  19
+  p                   p < .001
+  Mean difference     0.9437
+  SD of differences   0.3814
+
+
+  ── Effect Size ─────────────────────────────
+  Matched-pairs r     1.000
+  Magnitude           large effect
+
+══════════════════════════════════════════════
+
