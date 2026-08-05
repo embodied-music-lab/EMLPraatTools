@@ -1,26 +1,31 @@
 # ============================================================================
-# v06 — D15: the effect size printed under the paired t-test is the
-#       nonparametric one
+# v06 — D15: each paired test reports its own effect size
 #
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #
-# THIS SCRIPT PINS A KNOWN DEFECT. Its checks are written so that they PASS
-# while the defect is present. When D15 is fixed, v06 will FAIL, and that
-# failure is the signal that the fix landed. Do not "repair" v06 to make it
-# pass again — replace it with the assertions in the commented block at the
-# foot of the file.
+# HISTORY. This script was written to PIN A DEFECT. Until 5 August 2026 the
+# plugin printed the matched-pairs rank-biserial correlation under the
+# heading "Paired t-test" — a Wilcoxon statistic reported as though it
+# belonged to the parametric test. The original v06 asserted that
+# discrepancy, so it passed while the bug was present and would fail once the
+# bug was fixed. The bug is now fixed, so the script has been rewritten to
+# assert the corrected behaviour, as its own footer instructed.
 #
 # Input:  evidence/csv/demo_paired_input.csv
 #
-# What the plugin printed under the heading "Paired t-test":
+# What the plugin prints now, driven 5 August 2026:
 #
+#     -- Paired t-test --
+#     t                   7.726
+#     ...
 #     -- Effect Size --
-#     Matched-pairs r     0.971
-#     Magnitude           large effect
+#     Cohen's dz          1.728
+#     r (from t)          0.871
 #
-# 0.971 is the matched-pairs rank-biserial correlation of the WILCOXON
-# signed-rank test. The correlation derived from the paired t is 0.871.
-# Both are plausible-looking and nothing on screen distinguishes them.
+#     -- Wilcoxon Signed-Rank Test --
+#     ...
+#     -- Nonparametric Effect Size --
+#     Matched-pairs r     0.971
 # ============================================================================
 
 if (!exists("eml_report")) {
@@ -32,38 +37,30 @@ d <- read_input("demo_paired_input.csv")
 a <- d$jitter_pre; b <- d$jitter_post
 tt <- t.test(a, b, paired = TRUE)
 
+dz   <- cohens_dz(a, b)
 r_t  <- r_from_t(unname(tt$statistic), unname(tt$parameter))
 r_rb <- rank_biserial_paired(a, b)
-dz   <- cohens_dz(a, b)
 
-PRINTED <- 0.971
+# --- under the paired t-test -----------------------------------------------
+check("v06", "Cohen's dz reported under the t-test", 1.728, dz,  tol = 5e-4)
+check("v06", "r (from t) reported under the t-test", 0.871, r_t, tol = 5e-4)
 
-# 1. The printed value IS the Wilcoxon rank-biserial.
-check("v06", "printed 0.971 equals the rank-biserial r", PRINTED, r_rb, tol = 5e-4)
+# dz and the t statistic are two views of the same quantity: t = dz * sqrt(n).
+check_true("v06", "dz is consistent with the reported t",
+           abs(dz * sqrt(length(a)) - unname(tt$statistic)) < 1e-9)
 
-# 2. The printed value is NOT the t-derived r. This check is declared
-#    expect="differ": it passes while the two disagree.
-check("v06", "printed 0.971 is not the t-derived r", PRINTED, r_t,
-      tol = 5e-4, expect = "differ")
+# --- under the Wilcoxon signed-rank test -----------------------------------
+check("v06", "matched-pairs r reported under Wilcoxon", 0.971, r_rb, tol = 5e-4)
 
-# 3. The t-derived r for this data, for the record.
-check("v06", "t-derived r = t / sqrt(t^2 + df)", 0.871, r_t, tol = 5e-4)
-
-# 4. The gap is large enough to change an interpretation, not rounding.
-check_true("v06", "the two effect sizes differ by about 0.1",
+# --- the two must stay distinguishable -------------------------------------
+# This is the regression guard. If a future change routes the rank statistic
+# back under the parametric heading, these two values would be reported
+# interchangeably again. They differ by about 0.1 on this data, which is why
+# the substitution was invisible.
+check_true("v06", "the parametric and rank effect sizes remain distinct",
            abs(r_rb - r_t) > 0.05)
 
-# 5. Cohen's d_z, the conventional effect size for a paired t, is not
-#    reported anywhere by the plugin (D86 family).
-check("v06", "Cohen's d_z, unreported by the plugin", 1.728, dz, tol = 5e-4)
+check("v06", "the rank statistic is NOT the t-derived r", r_rb, r_t,
+      tol = 5e-4, expect = "differ")
 
-# ---------------------------------------------------------------------------
-# WHEN D15 IS FIXED, replace the checks above with:
-#
-#   check("v06", "printed effect size is the t-derived r", <printed>, r_t)
-#   check("v06", "Cohen's d_z is reported",                <printed>, dz)
-#
-# and delete the expect="differ" check.
-# ---------------------------------------------------------------------------
-
-if (!exists("EML_SUITE")) { eml_report("v06 D15 effect-size defect (pins a known bug)"); eml_exit() }
+if (!exists("EML_SUITE")) { eml_report("v06 paired effect sizes (D15 resolved)"); eml_exit() }
