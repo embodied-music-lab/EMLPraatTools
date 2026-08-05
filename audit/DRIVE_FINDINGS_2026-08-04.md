@@ -4245,3 +4245,63 @@ user is most likely to hit a validation error.
 
 Evidence: `evidence/shots/d93_generic_stop_or_continue.png`,
 `d93_form_returns_with_choices_lost.png`.
+
+
+### D93 — CORRECTED and widened — the wrapper entry forms are leaves with no way up
+
+The first statement of D93 (above) described the error dialog's button labels
+and the loss of field values on retry. Both are real, and neither is the
+defect the author raised. Corrected here on his reading, which is the right
+one.
+
+**The menu selection is the navigation.** By the time the *Compare Two
+Groups* form is on screen the user has already committed to that test — they
+are one level down. So when the analysis fails with *"Group column
+'voice_type' has 3 groups. Use Compare k Groups for more than 2"*, returning
+to that form does not help: **Compare k Groups is not reachable from it.**
+The only exit is `Quit`, which drops the user out to the Objects window to
+re-navigate `New > EML Tools >` from the start.
+
+The form is a leaf. Its two buttons are "run this particular test" and "leave
+entirely". There is no third option, and the error has just told the user
+that the first one is impossible.
+
+That is why the previous framing was wrong. A back button on the *error*
+popup returns you to a form you already cannot use. **The button belongs on
+the wrapper's own entry form**, and it has to go up a level, not back a step.
+
+**Why "up" needs building rather than wiring.** Each of the twelve wrappers
+is registered as its own `Add menu command` in `setup.praat` and entered
+directly from the submenu. The level above any wrapper form is therefore the
+Praat menu itself, and a running script cannot re-open a Praat menu. So the
+destination has to be something the plugin provides.
+
+**The enabling fact:** `runScript:` from one plugin script to another already
+works and is already used — `scripts/eml-edit-table-launch.praat:37` and
+`eml-edit-table-editor.praat:24` both hand off that way. A wrapper can
+therefore transfer control to another wrapper.
+
+**Proposed shape, for author ruling before any code is written:**
+
+1. **A tool chooser** — a small new script presenting the same list the
+   `EML Tools` submenu presents, which `runScript:`s the selection. This is
+   the missing level: it is what the submenu *is*, expressed as a dialog a
+   script can return to.
+2. **Every wrapper entry form gains `Back`**, which calls the chooser. Twelve
+   one-line changes once the chooser exists. This satisfies the general rule
+   — there is always a way back — regardless of whether an error occurred.
+3. **Errors that name a remedy pre-select it.** The three-groups message
+   already says "use Compare k Groups"; arriving at the chooser with that
+   entry pre-selected turns a dead end into one keystroke.
+
+The alternative destination considered and not recommended: sending `Back` to
+the Stats Wizard. The wizard's first page is a research-goal chooser and is
+superficially "up", but a user who picked a specific test from the menu did
+not come from the wizard, so it is a lateral move into a different interaction
+model rather than a step back.
+
+**Still true from the first statement, and still worth fixing alongside:** the
+retry loop rebuilds the form from the original column guesses rather than the
+user's answers, so any return to the form — however it is reached — discards
+what they set. A `Back` button that leads to a blank form is worth much less
+than one that does not.
