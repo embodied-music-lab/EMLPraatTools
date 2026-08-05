@@ -324,6 +324,12 @@ procedure emlInitDrawingDefaults
     emlDrawnMaxX = 0
     emlDrawnMinY = 0
     emlDrawnMaxY = 0
+    # Y-axis minimum tick step. 0 = unconstrained. A drawing procedure whose
+    # y-axis is integral (a count, an ordinal rank) sets this to 1 so the
+    # nice-number step cannot fall below a whole unit and label the axis in
+    # fractions of something that has none. A procedure that sets it is
+    # responsible for clearing it before returning.
+    emlYAxisMinStep = 0
     # Axis display
     emlShowInnerBox = 1
     emlShowAxisNameX = 1
@@ -362,6 +368,18 @@ endproc
 #          .axisColor$, .textColor$, .gridColor$, .minorGridColor$
 # ----------------------------------------------------------------------------
 procedure emlSetAdaptiveTheme: .vpWidth, .vpHeight
+    # Y-axis step constraint guard. Defined here only when it does not already
+    # exist, for the same reason as the panel-origin guard below: a draw
+    # procedure can be entered without @emlInitDrawingDefaults having run, and
+    # an undefined global aborts the figure at the first comparison.
+    #
+    # It must NOT be unconditionally reset here. @emlDrawAxes calls this
+    # procedure again partway through a figure, so an unconditional reset would
+    # clear the constraint immediately before the tick marks are drawn. Both
+    # failures were observed; neither is hypothetical.
+    if variableExists ("emlYAxisMinStep") = 0
+        emlYAxisMinStep = 0
+    endif
     # Panel origin guard — default to single-panel if not set
     if variableExists ("emlPanelOriginX") = 0
         emlPanelOriginX = 0
@@ -882,6 +900,10 @@ procedure emlDrawGridlines: .xMin, .xMax, .yMin, .yMax, .targetTicksX, .targetTi
     # Compute nice step for each axis
     @emlComputeNiceStep: .yMax - .yMin, .targetTicksY
     .yStep = emlComputeNiceStep.step
+    # Honour an integral y-axis: never step below a whole unit.
+    if emlYAxisMinStep > 0 and .yStep < emlYAxisMinStep
+        .yStep = emlYAxisMinStep
+    endif
     @emlComputeNiceStep: .xMax - .xMin, .targetTicksX
     .xStep = emlComputeNiceStep.step
 
@@ -954,6 +976,10 @@ endproc
 procedure emlDrawHorizontalGridlines: .xMin, .xMax, .yMin, .yMax, .targetTicksY, .useMinor
     @emlComputeNiceStep: .yMax - .yMin, .targetTicksY
     .yStep = emlComputeNiceStep.step
+    # Honour an integral y-axis: never step below a whole unit.
+    if emlYAxisMinStep > 0 and .yStep < emlYAxisMinStep
+        .yStep = emlYAxisMinStep
+    endif
     .yTol = .yStep * 0.01
 
     # Major horizontal gridlines
@@ -1099,6 +1125,10 @@ procedure emlDrawAlignedMarksLeft: .yMin, .yMax, .targetTicks, .useMinor
 
     @emlComputeNiceStep: .yMax - .yMin, .targetTicks
     .yStep = emlComputeNiceStep.step
+    # Honour an integral y-axis: never step below a whole unit.
+    if emlYAxisMinStep > 0 and .yStep < emlYAxisMinStep
+        .yStep = emlYAxisMinStep
+    endif
     .yTol = .yStep * 0.01
 
     # Major ticks with numbers
@@ -1162,6 +1192,10 @@ procedure emlDrawAlignedMarksRight: .yMin, .yMax, .targetTicks, .useMinor
 
     @emlComputeNiceStep: .yMax - .yMin, .targetTicks
     .yStep = emlComputeNiceStep.step
+    # Honour an integral y-axis: never step below a whole unit.
+    if emlYAxisMinStep > 0 and .yStep < emlYAxisMinStep
+        .yStep = emlYAxisMinStep
+    endif
     .yTol = .yStep * 0.01
 
     # Major ticks with numbers

@@ -3034,6 +3034,11 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
 
     # Step 1: Theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
+    # Frequency is a count. Declaring the y-axis integral keeps every
+    # downstream step — axis bounds, gridlines and tick labels — on whole
+    # units, which is what lets the range itself be derived from the data
+    # instead of pinned to a literal.
+    emlYAxisMinStep = 1
     @emlSetColorPalette: .colorMode$
 
     @emlSanitizeLabel: .title$
@@ -3177,7 +3182,13 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
 
     # Step 7: Y-axis range
     if .freqMax = 0
-        @emlComputeAxisRange: 0, .maxFreq, 5, 0
+        # Adaptive rounding grid, floored at one count.
+        @emlComputeNiceStep: .maxFreq - (0), emlSetAdaptiveTheme.targetTicksY
+        .axisRoundTo = emlComputeNiceStep.step
+        if .axisRoundTo < 1
+            .axisRoundTo = 1
+        endif
+        @emlComputeAxisRange: 0, .maxFreq, .axisRoundTo, 0
         .yMin = 0
         .yMax = emlComputeAxisRange.axisMax
     else
@@ -3214,7 +3225,13 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
         elsif .sharedYMax = 0
             .sharedYMax = 1
         else
-            @emlComputeAxisRange: 0, .sharedYMax, 5, 0
+            # Adaptive rounding grid, floored at one count.
+            @emlComputeNiceStep: .sharedYMax - (0), emlSetAdaptiveTheme.targetTicksY
+            .axisRoundTo = emlComputeNiceStep.step
+            if .axisRoundTo < 1
+                .axisRoundTo = 1
+            endif
+            @emlComputeAxisRange: 0, .sharedYMax, .axisRoundTo, 0
             .sharedYMax = emlComputeAxisRange.axisMax
         endif
 
@@ -3444,6 +3461,9 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
     Font size: emlSetAdaptiveTheme.bodySize
 
     label HIST_END
+
+    # Release the integral-axis constraint: it is scoped to this figure.
+    emlYAxisMinStep = 0
 endproc
 
 
