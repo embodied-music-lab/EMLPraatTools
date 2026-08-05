@@ -131,3 +131,41 @@ Figures: `evidence/figures/d88_f0_steady_hz_2.9Hz_span.png`,
 `Get minimum`/`Get maximum` return undefined — no voiced frames anywhere —
 the axis falls back to 75–500 Hz or −36 to +6 st. There is no data to derive
 a range from in that case, and an empty figure still needs an axis.
+
+## 5 August 2026 — D91: the count-axis constraint
+
+Closes D91 and completes the D88 propagation. **All 16 `@emlComputeAxisRange`
+call sites now derive their granularity from the data.** No literal remains.
+
+New global `emlYAxisMinStep`: 0 means unconstrained, a positive value is the
+smallest step the y-axis may take. Declared in `@emlInitDrawingDefaults`,
+guarded in `@emlSetAdaptiveTheme`, honoured by the four procedures that turn
+a range into a step — `@emlDrawGridlines` (y only),
+`@emlDrawHorizontalGridlines`, `@emlDrawAlignedMarksLeft` and
+`@emlDrawAlignedMarksRight`. `@emlDrawHistogram` sets it to 1 and releases it
+before returning, so a frequency axis stays on whole counts while its range
+comes from the data.
+
+A global rather than a parameter: the constraint has to reach axis bounds,
+gridlines and tick labels alike, and threading it would have changed five
+signatures across roughly thirty call sites. The plugin already carries
+cross-cutting display state this way.
+
+**Two hazards, both commented at the site because neither is visible from the
+code:**
+
+- The reset must not go in `@emlSetAdaptiveTheme` unconditionally.
+  `@emlDrawAxes` calls that procedure again partway through a figure, so an
+  unconditional reset clears the constraint immediately before the ticks are
+  drawn. The figure then comes out unchanged with no clue why.
+- The global must be guarded with `variableExists`. A draw procedure can be
+  entered without `@emlInitDrawingDefaults` having run, and Praat aborts the
+  whole figure at the first comparison against an undefined global.
+
+Both were caught by driving, not by reading the diff.
+
+**Verified:** histogram at max count 3 → 0–4 with ticks 0 1 2 3 4 (the old
+literal `5` gave 0–5); at max count 5 → 0–6 integral, x-axis still fractional
+at 1.5, 2, 2.5; a continuous figure first in a fresh session draws clean with
+0.05 ticks; the same figure drawn immediately after a histogram is identical,
+so the constraint does not leak.
