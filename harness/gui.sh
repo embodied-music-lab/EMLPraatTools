@@ -174,3 +174,22 @@ typein () {
   xdotool mousemove "$x" "$y"; sleep 0.4; xdotool click 1; sleep 0.6
   xdotool type --delay 100 "$*"; sleep 1.0
 }
+
+# raise <name-regex> -> raise a window and CONFIRM it is active before returning.
+# Returns 1 if it could not be confirmed, so callers never click blind.
+raise () {
+  local w tries=0 act
+  w=$(for x in $(xdotool search --name "$1" 2>/dev/null); do
+        xwininfo -id "$x" 2>/dev/null | grep -q IsViewable && echo "$x"; done | tail -1)
+  [ -z "$w" ] && { echo "NOWIN"; return 1; }
+  while [ $tries -lt 6 ]; do
+    xdotool windowraise "$w" 2>/dev/null
+    xdotool windowactivate "$w" 2>/dev/null
+    xdotool windowfocus "$w" 2>/dev/null
+    sleep 0.8
+    act=$(xdotool getactivewindow 2>/dev/null)
+    if [ "$act" = "$w" ]; then echo "$w $(xdotool getwindowgeometry $w | tr '\n' ' ')"; return 0; fi
+    tries=$((tries+1))
+  done
+  echo "NOTRAISED $w (active=$act)"; return 1
+}

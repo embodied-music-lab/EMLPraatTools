@@ -1,7 +1,8 @@
 # Verified render map — `Objects → New → ⁺EML Tools`
 
-Date: 4 August 2026. Praat 6.6.30, Xvfb :99 1400x1000, matchbox WM.
-Source: screenshot `/home/claude/drive/out/menu_emltools3.png`.
+Date: 5 August 2026 (coordinates re-measured; 4 August values were ~20px high).
+Praat 6.6.30, Xvfb :99 1400x1000x24, matchbox WM with titlebar.
+Source: `evidence/shots/` — re-driven during the D93 fix.
 
 ---
 
@@ -19,75 +20,78 @@ report nesting as a finding.
 
 ## Objects window chrome (no objects loaded)
 
-- Maximized 1400x1000 at 0,0.
-- Menu bar: `Praat  New  Open  Save(greyed)  Help`. `New` is at (72,14).
+- The window is 1392x976 at 8,40 — the matchbox titlebar takes the top rows,
+  so **everything sits ~20px lower than the 4 August map recorded**. That map
+  was taken without a titlebar and its y coordinates no longer work. Corrected
+  by re-driving on 5 August 2026.
+- Menu bar: `Praat  New  Open  Save(greyed)  Help`. `New` is at **(76,34)**.
 - Bottom-left buttons `Rename… / Copy… / Inspect / Info / Remove` all greyed.
 - Plugin-added items render with a superscript "+" prefix: `⁺EML Tools`,
   `⁺Stats Wizard...` etc.
+- With one Table loaded, the first object row is at y=87 and the second at
+  y=110.
 
 ## Opening the submenu
 
-`⁺EML Tools` is the LAST item in the `New` menu, at y=447.
+`⁺EML Tools` is the LAST item in the `New` menu, at **y=467**.
 Hover does not open it; click only highlights. Press `Right`.
-The submenu spans x≈373–677; click at x≈500.
+The submenu spans x≈380–680; click at x≈500.
 
 ## Entry coordinates (click x≈500)
 
 | y | Entry | Script |
 |---|---|---|
-| 447 | ⁺Stats Wizard... | eml-wizard.praat |
+| 467 | ⁺Stats Wizard... | eml-wizard.praat |
 | | ─── separator ─── | |
-| 473 | ⁺Describe Table column... | eml-describe-table.praat |
-| 498 | ⁺Check normality (all columns)... | eml-check-normality.praat |
+| 493 | ⁺Describe Table column... | eml-describe-table.praat |
+| 518 | ⁺Check normality (all columns)... | eml-check-normality.praat |
 | | ─── separator ─── | |
-| 524 | ⁺Compare two groups... | eml-compare-groups.praat |
-| 549 | ⁺Compare paired/repeated... | eml-compare-paired.praat |
-| 574 | ⁺Compare k groups (ANOVA)... | eml-compare-k-groups.praat |
-| 599 | ⁺Compare k groups (Kruskal-Wallis)... | eml-compare-kw.praat |
-| 624 | ⁺Compare two-way (ANOVA)... | eml-compare-twoway.praat |
+| 544 | ⁺Compare two groups... | eml-compare-groups.praat |
+| 569 | ⁺Compare paired/repeated... | eml-compare-paired.praat |
+| 594 | ⁺Compare k groups (ANOVA)... | eml-compare-k-groups.praat |
+| 619 | ⁺Compare k groups (Kruskal-Wallis)... | eml-compare-kw.praat |
+| 644 | ⁺Compare two-way (ANOVA)... | eml-compare-twoway.praat |
 | | ─── separator ─── | |
-| 650 | ⁺Correlate two columns... | eml-correlate.praat |
-| 675 | ⁺Linear regression... | eml-regress.praat |
+| 670 | ⁺Correlate two columns... | eml-correlate.praat |
+| 695 | ⁺Linear regression... | eml-regress.praat |
 | | ─── separator ─── | |
-| 701 | ⁺Linear mixed model... | eml-lmm.praat — **TABLED, SKIP** |
+| 721 | ⁺Linear mixed model... | eml-lmm.praat — **TABLED, SKIP** |
 | | ─── separator ─── | |
-| 727 | ⁺Pairwise comparisons... | eml-pairwise.praat |
+| 747 | ⁺Pairwise comparisons... | eml-pairwise.praat |
 | | ─── separator ─── | |
-| 753 | ⁺EML Graphs... | eml-graphs.praat |
+| 773 | ⁺EML Graphs... | eml-graphs.praat |
 | | ─── separator ─── | |
-| 779 | ⁺Batch voice analysis... | eml-batch-process.praat |
+| 799 | ⁺Batch voice analysis... | eml-batch-process.praat |
 | | ─── separator ─── | |
-| 805 | ⁺Create Demo Table... | eml-create-demo.praat |
-| 830 | ⁺Run Stats Demo | eml-stats-demo.praat |
+| 825 | ⁺Create Demo Table... | eml-create-demo.praat |
+| 850 | ⁺Run Stats Demo | eml-stats-demo.praat — **REDO PENDING, SKIP** |
 | | ─── separator ─── | |
-| 856 | ⁺EML Stats Quick Start | eml-quick-start.praat |
-
-17 runnable entries. `Run Stats Demo` and `EML Stats Quick Start` carry no
-trailing `...` — no dialog, they run immediately.
-
-"EML Interactive Tutorial" is correctly ABSENT (unregistered at setup.praat
-v1.4 because its include target `tutorial/eml-demo-procedures.praat` is not
-shipped).
+| 876 | ⁺EML Stats Quick Start | eml-quick-start.praat |
 
 ---
 
-## Table object action buttons (mapped 5 Aug 2026)
+## Window identification — the trap that costs the most time
 
-With exactly one Table selected, the right-hand action column renders at
-**x ≈ 1277**, nine buttons spanning **y 404–684** (≈35 px pitch). The tabled
-`EML: Linear mixed model...` sits in this column at y=579 — **SKIP it**, same
-author ruling as menu y=701.
+`xdotool search --name "^Pause"` returns **dead, unmapped windows** from
+earlier in the session alongside the live one. Clicking coordinates derived
+from a dead window sends the click to whatever is actually on top, which is
+usually the Info window, and nothing appears to happen.
 
-Click x=1277 and derive the y from a live screenshot; do not trust these
-absolutes across sessions (see GUI_HARNESS_RECIPE.md §10 — dialog and button
-absolutes drift both between and within sessions).
+Always filter on viewability:
 
-## Remaining surface (not yet mapped)
+```bash
+for x in $(xdotool search --name "^Pause" 2>/dev/null); do
+    xwininfo -id "$x" | grep -q IsViewable && echo "LIVE $x $(xdotool getwindowname $x)"
+done
+```
 
-- Table, 1 selected → 9 action buttons: geometry above, but only
-  `EML: Linear mixed model...` identified by label. The other eight still need
-  a labelled screenshot; two should be spot-driven.
-- TableEditor → Edit menu → `EML: Edit Table...`
-- Sound / Pitch / Spectrum / Ltas → `EML Graphs...` (4)
-- TableOfReal → 6 buttons (auto-convert path via `@emlWrapperInit`)
-- Matrix → 5 buttons (auto-convert path, incl. "row" column-name collision check)
+`gui.sh` provides `raise <name-regex>`, which raises a window and then
+**confirms it is the active window** before returning, retrying up to six
+times and failing loudly rather than letting the caller click blind.
+
+## Loading an arbitrary table
+
+`Open > Read Table from comma-separated file...` at (262,189) opens a GTK
+file chooser. `ctrl+l` then typing the absolute path is far more reliable
+than navigating the tree. This is the route for the `validate/redpath/`
+tables.
