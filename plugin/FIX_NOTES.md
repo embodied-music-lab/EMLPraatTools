@@ -194,3 +194,23 @@ from 0–170 to **75–110** — data filling the panel, brackets at 100–106,
 headroom carrying the rest. The unannotated figure is unchanged at 70–105.
 The annotated **bar chart is unchanged at 0–170** and must be: bars emanate
 from the origin, and that branch already passed `emlBarData_visibleMin`.
+
+## 5 August 2026 — D4: kurtosis labels
+
+Three wrappers printed `Kurtosis` for a value that is **excess** kurtosis
+(Fisher's *g*₂, normal = 0). `@emlKurtosis` computes it correctly and
+documents it correctly; only the display labels were short.
+
+- `scripts/eml-describe-table.praat` → `Kurtosis (excess)`
+- `scripts/eml-check-normality.praat` → `Kurtosis (excess) = `
+- `scripts/eml-wizard.praat` → `Kurtosis (excess):`
+
+`stats/eml-analysis.praat` already qualified it and is unchanged. Verified by
+driving *Describe Table column*: `Kurtosis (excess)   -0.5555`.
+
+**The threshold is a separate question and is deliberately untouched.** Three
+sites disagree — the shape flag uses `|excess| >= 3`, the wizard's classifier
+uses `|excess| < 1`, and the sentence that classifier prints tells the reader
+`|excess| < 3` is typical. The second and third contradict each other inside
+one procedure. Which convention the plugin should teach is an author ruling,
+recorded as D10.
