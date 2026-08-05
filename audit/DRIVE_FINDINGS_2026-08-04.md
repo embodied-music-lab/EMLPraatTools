@@ -3927,3 +3927,68 @@ Until then the two histogram sites keep their literal `5`. It is a
 hard-coded value, but on a count axis an integral granularity is correct by
 construction, which is not true of the twelve continuous-measure sites D88
 covers. The cost is a frequency axis that can overshoot by up to four counts.
+
+
+### D91 — RESOLVED — the count-axis constraint, and two failures on the way
+
+Closed 5 August. The histogram frequency axis now derives its range from the
+data like every other axis, and its ticks stay on whole counts.
+
+**The mechanism.** `emlYAxisMinStep`, a global declared in
+`@emlInitDrawingDefaults` and guarded in `@emlSetAdaptiveTheme`. Zero means
+unconstrained. `@emlDrawHistogram` sets it to 1 immediately after its theme
+call and releases it before returning. Four procedures honour it — the ones
+that turn a range into a step:
+
+- `@emlDrawGridlines` (y only; x is untouched)
+- `@emlDrawHorizontalGridlines`
+- `@emlDrawAlignedMarksLeft` — the one that writes the numbers
+- `@emlDrawAlignedMarksRight` — its mirror on faceted panels
+
+A global rather than a parameter because the constraint has to reach axis
+bounds, gridlines and tick labels alike; threading it through would have
+changed the signature of five procedures across roughly thirty call sites.
+The plugin already carries cross-cutting display state this way
+(`emlShowAxisNameX`, `emlShowTicksY`, `annotAlpha`).
+
+**Two failures on the way, both found by driving rather than reading.**
+
+1. **The reset was in the wrong place.** `emlYAxisMinStep = 0` was placed at
+   the top of `@emlSetAdaptiveTheme`, on the assumption that every draw
+   procedure calls it first. They do — but `@emlDrawAxes` calls it *again*,
+   partway through the figure, and so cleared the constraint immediately
+   before the tick marks were drawn. The figure came out unchanged and the
+   cause was invisible in the diff.
+
+2. **The global could be undefined.** Once the reset was scoped to the
+   histogram, every *other* figure aborted with
+   `Unknown variable: emlYAxisMinStep` — a draw procedure can be entered
+   without `@emlInitDrawingDefaults` having run, and Praat aborts at the
+   first comparison against an undefined global. This would have broken every
+   continuous figure in a fresh session, and it was caught by the leakage
+   test rather than by the change itself. Fixed with the same
+   `variableExists` guard `@emlSetAdaptiveTheme` already uses for
+   `emlPanelOriginX`.
+
+Both hazards are now commented at the site, because neither is visible from
+the code alone.
+
+**Verified — three drives, on the same rig, in one session:**
+
+| Test | Expected | Result |
+|---|---|---|
+| Histogram, max bin count 3 | integral ticks, range from data | 0–4, ticks 0 1 2 3 4 |
+| Histogram, max bin count 5 | same, x-axis unaffected | 0–6 integral; x reads 1.5, 2, 2.5 … |
+| Continuous figure first in a fresh session | no crash, fractional ticks | 0.05 st ticks, drew clean |
+| Continuous figure immediately after a histogram | no leakage | identical to the fresh-session figure |
+
+The count axis is now **better than before the D88 work**, not merely
+restored: the old literal `5` gave 0–5 for a maximum count of 3, and the
+derived range gives 0–4.
+
+Figures: `evidence/figures/d91_FIXED_histogram_integer_ticks.png`,
+`d91_FIXED_histogram_larger_counts.png`,
+`d91_leakcheck_continuous_after_histogram.png`. The failure case remains at
+`d91_histogram_fractional_counts.png`.
+
+**All 16 axis-range call sites now derive their granularity from the data.**
