@@ -3886,3 +3886,44 @@ folder* field was successfully retyped on the graphs-side export.
 
 `gui.sh` → `curpause` should be redefined in terms of `getactivewindow`, and
 `pgeom` and `needclear` will then work again.
+
+### D91 — GRAPHING (medium) — the histogram frequency axis cannot be made data-derived without changing `@emlDrawAxes`
+
+Opened while propagating the D88 fix to the remaining hard-coded call sites.
+**This is a finding about an attempted fix that was backed out, and the
+evidence is a figure the plugin does not currently produce.**
+
+Fifteen of the seventeen `@emlComputeAxisRange` call sites now derive their
+granularity from the data. Two do not: the histogram's frequency axis
+(`@emlDrawHistogram`, ungrouped and faceted branches) still passes a literal
+`5`.
+
+**Why the obvious fix does not work.** Frequency is a count, so an integral
+grid is required. Deriving `roundTo` from the data and flooring it at 1
+gives correct axis *bounds* — on a 10-value contact-quotient histogram with a
+maximum bin count of 3, the axis tightens from 0–5 to 0–4, which is the
+improvement D88 predicts. But the *tick step* is not computed from `roundTo`.
+It is derived downstream from `(range / targetTicks)`, and with the tighter
+range that quotient falls below 1, so the axis is labelled in halves:
+`0, 0.5, 1, 1.5 …` on a scale of counts.
+
+Evidence: `evidence/figures/d91_histogram_fractional_counts.png`, produced by
+driving the histogram with the adaptive change in place. Compare the current
+behaviour, which is correct: 0–5 with integer ticks.
+
+**A second attempt also failed.** Capping the tick target at the axis maximum
+(so `range / targetTicks` cannot fall below 1) was applied to the gridline
+calls in both histogram branches and re-driven. The gridlines changed; the
+numeric labels did not. The labels come from `@emlDrawAxes`, which takes no
+tick argument and is shared by every graph type in the plugin.
+
+**What the real fix requires.** `@emlDrawAxes` needs to accept a tick
+constraint — either an explicit step or a minimum step — so a caller can
+declare "this axis is integral". That is a signature change on a procedure
+every draw path calls, and it is not safe to make as part of a graphing fix
+verified on one graph type.
+
+Until then the two histogram sites keep their literal `5`. It is a
+hard-coded value, but on a count axis an integral granularity is correct by
+construction, which is not true of the twelve continuous-measure sites D88
+covers. The cost is a frequency axis that can overshoot by up to four counts.
