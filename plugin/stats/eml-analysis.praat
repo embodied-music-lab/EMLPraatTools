@@ -85,6 +85,8 @@
 
 procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .equalVar
     .error$ = ""
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
 
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
@@ -93,9 +95,16 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     if emlCountGroups.error$ <> ""
         .error$ = emlCountGroups.error$
     elsif emlCountGroups.nGroups < 2
-        .error$ = "Group column """ + .groupCol$ + """ has only " + string$ (emlCountGroups.nGroups) + " group. Need exactly 2."
+        .error$ = "Group column """ + .groupCol$ + """ has only "
+        ... + string$ (emlCountGroups.nGroups)
+        ... + " group. This test compares exactly 2."
+        # No other tool helps here: one group is one group. The way out is a
+        # different group column, which the entry form can still supply.
     elsif emlCountGroups.nGroups > 2
-        .error$ = "Group column """ + .groupCol$ + """ has " + string$ (emlCountGroups.nGroups) + " groups. Use Compare k Groups for more than 2."
+        .error$ = "Group column """ + .groupCol$ + """ has "
+        ... + string$ (emlCountGroups.nGroups)
+        ... + " groups. This test compares exactly 2."
+        .remedy$ = "Compare k groups (ANOVA)...|Compare k groups (Kruskal-Wallis)..."
     endif
 
     if .error$ <> ""
@@ -237,6 +246,8 @@ endproc
 
 procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     .error$ = ""
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
 
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
@@ -291,6 +302,8 @@ endproc
 
 procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod$
     .error$ = ""
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
 
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
@@ -359,6 +372,8 @@ endproc
 
 procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjMethod$
     .error$ = ""
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
 
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
@@ -655,6 +670,8 @@ endproc
 
 procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
     .error$ = ""
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
 
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
@@ -693,6 +710,8 @@ endproc
 
 procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
     .error$ = ""
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
     .nExcluded = 0
 
     selectObject: .tableId
@@ -768,6 +787,8 @@ endproc
 
 procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
     .error$ = ""
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
     .nExcluded = 0
 
     selectObject: .tableId
@@ -863,6 +884,8 @@ endproc
 
 procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
     .error$ = ""
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
 
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
@@ -951,6 +974,8 @@ endproc
 
 procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
     .error$ = ""
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
 
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
@@ -1034,6 +1059,8 @@ endproc
 # Do not remove it without updating every call site.
 procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
     .error$ = ""
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
 
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
@@ -1140,6 +1167,8 @@ endproc
 # reading any other output, because no other output is set.
 procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measure$, .scale$
     .error$ = "Not yet implemented — scheduled for Phase 4."
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
 endproc
 
 # ============================================================================
@@ -1414,6 +1443,8 @@ endproc
 # ============================================================================
 procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$
     .error$ = ""
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
@@ -1473,6 +1504,8 @@ endproc
 # ============================================================================
 procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$
     .error$ = ""
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
@@ -1650,6 +1683,8 @@ endproc
 # ============================================================================
 procedure emlRunLMMAnalysis: .tableId, .formula$, .contrastCoding$, .useREML, .doR2, .doCI
     .error$ = ""
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
 
     selectObject: .tableId
     .tableName$ = selected$ ("Table")

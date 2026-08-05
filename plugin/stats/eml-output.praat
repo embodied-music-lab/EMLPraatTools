@@ -994,5 +994,184 @@ endproc
 
 
 # ============================================================================
+# ERROR PRESENTATION  (finding D93)
+# ============================================================================
+# An analysis that cannot run is not a crash and must not be presented as
+# one. Two things were wrong before 5 August 2026.
+#
+#   1. The twelve menu wrappers showed the raw error string in a bare
+#      @pauseScript, whose only button is Continue. The user was returned to
+#      the entry form for a test the error had just told them was the wrong
+#      test — and that form's only other button is Quit.
+#
+#   2. The Stats Wizard was worse: every analysis error called @exitScript,
+#      which tore down the whole wizard including every answer the user had
+#      given on the way in.
+#
+# The author's ruling of 5 August 2026 fixes each path in the way that suits
+# it, and explicitly does NOT restructure how a test is chosen from the menu:
+#
+#   * Wizard path — the wizard owns a full goto/label back-chain, so an
+#     error returns the user into that chain rather than ending the script.
+#   * Menu path — the menu selection IS the navigation, and a running script
+#     cannot reopen a Praat menu. So the dialog cannot offer to take the
+#     user to another tool; what it can do is say plainly that a different
+#     tool is needed, name it, and give the menu path to reach it.
+# ============================================================================
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @emlWrapText: .s$, .width
+#
+# Greedy word wrap. @comment: does not wrap, and orchestrator error strings
+# run well past any sensible dialog width, so they are broken up here.
+#
+# Sets: .nLines, .line$ [1 .. .nLines]
+# ────────────────────────────────────────────────────────────────────────────
+procedure emlWrapText: .s$, .width
+    .nLines = 0
+    .rest$ = .s$
+    while length (.rest$) > 0
+        if length (.rest$) <= .width
+            .nLines += 1
+            .line$ [.nLines] = .rest$
+            .rest$ = ""
+        else
+            # Last space at or immediately after the width limit. Breaking at
+            # .width + 1 is correct: a space in that position means the word
+            # ends exactly on the limit.
+            .cut = 0
+            for .i from 1 to .width + 1
+                if mid$ (.rest$, .i, 1) = " "
+                    .cut = .i
+                endif
+            endfor
+            if .cut = 0
+                # A single token longer than the line. Hard-break it rather
+                # than emit an over-long line: column names can be arbitrary.
+                .nLines += 1
+                .line$ [.nLines] = left$ (.rest$, .width)
+                .rest$ = mid$ (.rest$, .width + 1, length (.rest$))
+            else
+                .nLines += 1
+                .line$ [.nLines] = left$ (.rest$, .cut - 1)
+                .rest$ = mid$ (.rest$, .cut + 1, length (.rest$))
+            endif
+        endif
+    endwhile
+    if .nLines = 0
+        .nLines = 1
+        .line$ [1] = ""
+    endif
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @emlErrorDialog: .msg$, .remedy$, .mode$
+#
+# The single error surface for both entry paths.
+#
+# Parameters:
+#   .msg$    — the orchestrator's error string, shown verbatim and wrapped.
+#   .remedy$ — the exact "New > EML Tools >" item that WOULD work on this
+#              table, or "" when no other tool would help (a data problem
+#              rather than a wrong-test problem). The distinction matters:
+#              telling someone to re-navigate the menu when all they need is
+#              a different column selection is worse than saying nothing.
+#              Several items may be offered, separated by "|", for the case
+#              where the parametric and nonparametric routes are both open;
+#              naming only one of them would quietly steer the choice.
+#   .mode$   — "wizard" or "menu". Chooses the guidance and the button that
+#              is not Quit, because the two paths can offer genuinely
+#              different things.
+#
+# Returns:
+#   .back — 1 if the user chose to continue, 0 if they chose Quit.
+#
+# Callers must honour .back = 0 by ending cleanly. The dialog itself never
+# calls @exitScript; deciding to stop is the caller's job, because only the
+# caller knows what needs tearing down.
+# ────────────────────────────────────────────────────────────────────────────
+procedure emlErrorDialog: .msg$, .remedy$, .mode$
+    # Split the remedy on "|" up front: it is needed in two places below and
+    # form-building code should not be doing string surgery inline.
+    .nRemedy = 0
+    .rest$ = .remedy$
+    while .rest$ <> ""
+        .bar = index (.rest$, "|")
+        .nRemedy += 1
+        if .bar = 0
+            .remLine$ [.nRemedy] = .rest$
+            .rest$ = ""
+        else
+            .remLine$ [.nRemedy] = left$ (.rest$, .bar - 1)
+            .rest$ = mid$ (.rest$, .bar + 1, length (.rest$))
+        endif
+    endwhile
+
+    beginPause: "Cannot run this analysis"
+        comment: "⚠  This analysis did not run."
+        comment: "─────────────────────────────────────────────────"
+        @emlWrapText: .msg$, 62
+        for .i from 1 to emlWrapText.nLines
+            comment: emlWrapText.line$ [.i]
+        endfor
+        comment: "─────────────────────────────────────────────────"
+        comment: ""
+
+        if .mode$ = "wizard"
+            comment: "Nothing has been lost. Click Back to return to the"
+            comment: "wizard and choose again."
+            if .nRemedy > 0
+                comment: ""
+                if .nRemedy = 1
+                    comment: "What fits this table:"
+                else
+                    comment: "What fits this table — either of:"
+                endif
+                for .i from 1 to .nRemedy
+                    comment: "        " + .remLine$ [.i]
+                endfor
+            endif
+
+        else
+            if .nRemedy > 0
+                if .nRemedy = 1
+                    comment: "This table needs a different test. The one that"
+                    comment: "fits it is:"
+                else
+                    comment: "This table needs a different test. Either of"
+                    comment: "these fits it:"
+                endif
+                comment: ""
+                for .i from 1 to .nRemedy
+                    comment: "        " + .remLine$ [.i]
+                endfor
+                comment: ""
+                comment: "A running script cannot open a Praat menu, so this"
+                comment: "dialog cannot take you there. To switch tests:"
+                comment: ""
+                comment: "        1.  Click Quit below."
+                comment: "        2.  In the Objects window choose"
+                comment: "             New  >  EML Tools  >  and then the"
+                comment: "             entry named above."
+                comment: ""
+                comment: "Or click Back to change your column choices and try"
+                comment: "this test again."
+            else
+                comment: "Your selections are kept. Click Back to adjust them"
+                comment: "and run again."
+                comment: ""
+                comment: "If a different test is needed, click Quit, then pick"
+                comment: "it from the Objects window under"
+                comment: "             New  >  EML Tools  >"
+            endif
+        endif
+    .clicked = endPause: "Quit", "Back", 2, 0
+    .back = (.clicked = 2)
+endproc
+
+
+# ============================================================================
 # END OF MODULE
 # ============================================================================

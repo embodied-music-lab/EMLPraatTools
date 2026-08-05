@@ -1125,6 +1125,46 @@ procedure emlTableColumnNames: .tableId
 endproc
 
 
+# ────────────────────────────────────────────────────────────────────────────
+# @emlColumnIndex: .name$
+#
+# Position of a column name in the most recent @emlTableColumnNames result,
+# or 0 if it is not there.
+#
+# Exists for D93. A wrapper's optionmenu is seeded with an INDEX, but the
+# form hands back a NAME. Without this, returning to a form after an error
+# reseeds it from the original guess and silently discards what the user
+# chose — which makes a Back button worth much less than it looks.
+# ────────────────────────────────────────────────────────────────────────────
+procedure emlColumnIndex: .name$
+    .idx = 0
+    for .i from 1 to emlTableColumnNames.nCols
+        if .idx = 0 and emlTableColumnNames.name$ [.i] = .name$
+            .idx = .i
+        endif
+    endfor
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @emlKeepChoice: .name$, .fallback
+#
+# The index to seed an optionmenu with next time round: the user's own
+# choice when it still resolves, otherwise the original guess. Wrapping the
+# 0-check here keeps the call sites to one line and means a column that has
+# since been renamed degrades to the guess rather than to index 0, which
+# Praat rejects.
+# ────────────────────────────────────────────────────────────────────────────
+procedure emlKeepChoice: .name$, .fallback
+    @emlColumnIndex: .name$
+    if emlColumnIndex.idx > 0
+        .idx = emlColumnIndex.idx
+    else
+        .idx = .fallback
+    endif
+endproc
+
+
 # Global: group sort order (0 = table/discovery order, 1 = alphabetical).
 # Set by graphs UI (eml-graphs-form.praat) or manually before calling.
 # Stats wrappers without UI default to 0 (table order).
