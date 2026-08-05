@@ -214,3 +214,28 @@ uses `|excess| < 1`, and the sentence that classifier prints tells the reader
 `|excess| < 3` is typical. The second and third contradict each other inside
 one procedure. Which convention the plugin should teach is an author ruling,
 recorded as D10.
+
+## 5 August 2026 — D15: paired effect sizes matched to their tests
+
+Author ruling: match the effect size to the test, show both when the user
+asks for both.
+
+`@emlMatchedPairsR` was called unconditionally, so a paired *t*-test printed
+the Wilcoxon rank-biserial correlation under the heading **Effect Size**,
+directly beneath the *t*, df and *p* of a test it does not belong to.
+
+- New `@emlCohenDz` in `stats/eml-inferential.praat`: *d*z = mean(v1−v2) /
+  sd(v1−v2), plus *r* = *t* / √(*t*² + df).
+- `@emlRunPairedAnalysis` calls `@emlCohenDz` on the parametric branch and
+  `@emlMatchedPairsR` on the nonparametric branch.
+- The paired-*t* block reports Cohen's *d*z and *r* (from *t*); the Wilcoxon
+  block still reports matched-pairs *r* under **Nonparametric Effect Size**,
+  where it was always correct. CSV `effect_type` for a parametric run is now
+  `Cohen's dz`.
+
+Verified by drive on `demo_paired`: *d*z 1.728, *r* from *t* 0.871, and in
+"Both" mode the Wilcoxon section adds matched-pairs *r* 0.971. All three
+match R.
+
+`validate/v06` rewritten from pinning the defect to asserting the fix, with
+a guard that the two effect sizes stay numerically distinct.
