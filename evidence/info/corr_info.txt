@@ -1,0 +1,21 @@
+selected 21 Table demo_correlation
+
+══════════════════════════════════════════════
+  EML Stats : Correlation Analysis
+  Wed Aug  5 13:56:53 2026
+══════════════════════════════════════════════
+
+  Table               demo correlation
+  Column X            speaking F0 Hz
+  Column Y            singing F0 Hz
+  N                   30
+
+
+  ── Pearson Correlation ─────────────────────
+  r                   0.9035
+  t                   11.153
+  df                  28
+  p                   p < .001
+
+══════════════════════════════════════════════
+

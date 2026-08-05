@@ -1,0 +1,5 @@
+table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,effect_type,effect_label,n1,n2,mean1,sd1,median1,mean2,sd2,median2
+demo_3groups,SPL_dB,voice_type,omnibus,omnibus,Kruskal-Wallis,11.974493,2.00,0.002511,0.2721,epsilon-squared,large effect,0,0,0,0,0,0,0,0
+demo_3groups,SPL_dB,voice_type,Soprano,Mezzo,Dunn (bonferroni),1.251086,0,0.632709,0.2444,rank-biserial r,small effect,15,15,91.4438,5.1800,91.5985,89.1053,5.9437,87.7142
+demo_3groups,SPL_dB,voice_type,Soprano,Alto,Dunn (bonferroni),3.419636,0,0.001881,0.7511,rank-biserial r,large effect,15,15,91.4438,5.1800,91.5985,84.8522,2.9756,84.3157
+demo_3groups,SPL_dB,voice_type,Mezzo,Alto,Dunn (bonferroni),2.168550,0,0.090351,0.4400,rank-biserial r,medium effect,15,15,89.1053,5.9437,87.7142,84.8522,2.9756,84.3157

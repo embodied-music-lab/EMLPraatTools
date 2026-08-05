@@ -1,0 +1,5 @@
+table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,effect_type,effect_label,n1,n2,mean1,sd1,median1,mean2,sd2,median2
+demo_3groups,SPL_dB,voice_type,omnibus,omnibus,One-way ANOVA,7.076697,2.00,0.002246,0.2520,eta-squared,large effect,0,0,0,0,0,0,0,0
+demo_3groups,SPL_dB,voice_type,Soprano,Mezzo,Tukey HSD,1.861486,42.00,0.394219,0.4195,Cohen's d,small effect,15,15,91.4438,5.1800,91.5985,89.1053,5.9437,87.7142
+demo_3groups,SPL_dB,voice_type,Soprano,Alto,Tukey HSD,5.247135,42.00,0.001710,1.5605,Cohen's d,large effect,15,15,91.4438,5.1800,91.5985,84.8522,2.9756,84.3157
+demo_3groups,SPL_dB,voice_type,Mezzo,Alto,Tukey HSD,3.385649,42.00,0.054187,0.9049,Cohen's d,large effect,15,15,89.1053,5.9437,87.7142,84.8522,2.9756,84.3157

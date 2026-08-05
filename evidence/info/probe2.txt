@@ -1,0 +1,5 @@
+start 6.6.30
+clicked=2
+pick_one=3 pick_one$=gamma
+some_number=7.25
+DONE

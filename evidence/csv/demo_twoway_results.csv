@@ -1,0 +1,4 @@
+table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,effect_type,effect_label,n1,n2,mean1,sd1,median1,mean2,sd2,median2
+demo_twoway,SPL_dB,voice_type,main effect,voice_type,Two-way ANOVA,34.110425,1.00,0.0000006,0.4367,partial eta-squared,,0,0,0,0,0,0,0,0
+demo_twoway,SPL_dB,task,main effect,task,Two-way ANOVA,107.667178,1.00,0.0000000000002,0.7099,partial eta-squared,,0,0,0,0,0,0,0,0
+demo_twoway,SPL_dB,voice_type_x_task,interaction,voice_type_x_task,Two-way ANOVA,15.394308,1.00,0.000302,0.2592,partial eta-squared,,0,0,0,0,0,0,0,0

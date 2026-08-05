@@ -1,0 +1,2 @@
+table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,effect_type,effect_label,n1,n2,mean1,sd1,median1,mean2,sd2,median2
+demo_twoway,SPL_dB,task,Speech,Singing,Welch,-7.277861,37.92,0.00000001,-2.1009,Cohen's d,large effect,24,24,87.9761,2.9811,87.9854,96.5116,4.9117,95.8455

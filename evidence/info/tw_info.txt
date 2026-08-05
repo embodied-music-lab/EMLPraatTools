@@ -1,0 +1,30 @@
+selected 23 Table demo_twoway
+
+══════════════════════════════════════════════
+  EML Stats : Two-Way ANOVA
+  Wed Aug  5 13:39:57 2026
+══════════════════════════════════════════════
+
+  Table               demo twoway
+  Data column         SPL dB
+  Factor 1            voice type
+  Factor 2            task
+
+
+  ── ANOVA Table ─────────────────────────────
+
+Source              SS              df    MS              F           p
+voice type          276.98          1     276.98          34.1104     p < .001
+task                874.27          1     874.27          107.6672    p < .001
+voice type x task   125.00          1     125.00          15.3943     p < .001
+Error               357.28          44    8.12            
+Total               1633.53         47    
+
+
+  ── Effect Sizes (partial eta-squared) ──────
+  voice type          0.4367
+  task                0.7099
+  voice type x task   0.2592
+
+══════════════════════════════════════════════
+

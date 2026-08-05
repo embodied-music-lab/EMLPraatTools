@@ -1,0 +1,163 @@
+
+
+══════════════════════════════════════════════
+  EML Stats : Kruskal-Wallis H Test
+  Wed Aug  5 13:28:09 2026
+══════════════════════════════════════════════
+
+  Table               demo 3groups
+  Data column         SPL dB
+  Group column        voice type
+  Groups              3
+  Total N             45
+
+
+  ── Omnibus Test ────────────────────────────
+  H                   11.9745
+  df                  2
+  p                   p = .003
+  Epsilon-squared     0.2721
+  Effect magnitude    large effect
+
+
+  ── Group Mean Ranks ────────────────────────
+
+Group         N     Mean Rank
+Soprano       15    30.47
+Mezzo         15    24.47
+Alto          15    14.07
+
+
+  ── Dunn's Post-Hoc (adjusted p, holm) ──────
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         0.2109      0.0019      
+Mezzo         0.2109      ---         0.0602      
+Alto          0.0019      0.0602      ---         
+
+
+  ── Dunn's z-statistics ─────────────────────
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         1.251       3.420       
+Mezzo         -1.251      ---         2.169       
+Alto          -3.420      -2.169      ---         
+
+
+  ── Pairwise Effect Sizes (rank-biserial r) ───
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         0.244       0.751       
+Mezzo         -0.244      ---         0.440       
+Alto          -0.751      -0.440      ---         
+
+══════════════════════════════════════════════
+
+══════════════════════════════════════════════
+  EML Stats : Kruskal-Wallis H Test
+  Wed Aug  5 13:30:29 2026
+══════════════════════════════════════════════
+
+  Table               demo 3groups
+  Data column         SPL dB
+  Group column        voice type
+  Groups              3
+  Total N             45
+
+
+  ── Omnibus Test ────────────────────────────
+  Why: Nonparametric comparison of three or more groups — no normality assumption needed.
+  H                   11.9745		Test statistic: measures rank dispersion across groups (chi-squared distributed)
+  df                  2		Number of groups (3) minus 1. Controls the chi-squared reference distribution.
+  p                   p = .003		Statistically significant: <1% probability due to chance
+  Epsilon-squared     0.2721		Effect size: large (>0.14 = large). 27% of variance explained by group membership
+  Effect magnitude    large effect
+
+
+  ── Group Mean Ranks ────────────────────────
+
+Group         N     Mean Rank
+Soprano       15    30.47
+Mezzo         15    24.47
+Alto          15    14.07
+
+
+  ── Dunn's Post-Hoc (adjusted p, holm) ──────
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         0.2109      0.0019      
+Mezzo         0.2109      ---         0.0602      
+Alto          0.0019      0.0602      ---         
+
+
+  ── Dunn's z-statistics ─────────────────────
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         1.251       3.420       
+Mezzo         -1.251      ---         2.169       
+Alto          -3.420      -2.169      ---         
+
+
+  ── Pairwise Effect Sizes (rank-biserial r) ───
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         0.244       0.751       
+Mezzo         -0.244      ---         0.440       
+Alto          -0.751      -0.440      ---         
+
+══════════════════════════════════════════════
+
+══════════════════════════════════════════════
+  EML Stats : Kruskal-Wallis H Test
+  Wed Aug  5 13:31:42 2026
+══════════════════════════════════════════════
+
+  Table               demo 3groups
+  Data column         SPL dB
+  Group column        voice type
+  Groups              3
+  Total N             45
+
+
+  ── Omnibus Test ────────────────────────────
+  Why: Nonparametric comparison of three or more groups — no normality assumption needed.
+  H                   11.9745		Test statistic: measures rank dispersion across groups (chi-squared distributed)
+  df                  2		Number of groups (3) minus 1. Controls the chi-squared reference distribution.
+  p                   p = .003		Statistically significant: <1% probability due to chance
+  Epsilon-squared     0.2721		Effect size: large (>0.14 = large). 27% of variance explained by group membership
+  Effect magnitude    large effect
+
+
+  ── Group Mean Ranks ────────────────────────
+
+Group         N     Mean Rank
+Soprano       15    30.47
+Mezzo         15    24.47
+Alto          15    14.07
+
+
+  ── Dunn's Post-Hoc (adjusted p, bonferroni) ───
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         0.6327      0.0019      
+Mezzo         0.6327      ---         0.0904      
+Alto          0.0019      0.0904      ---         
+
+
+  ── Dunn's z-statistics ─────────────────────
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         1.251       3.420       
+Mezzo         -1.251      ---         2.169       
+Alto          -3.420      -2.169      ---         
+
+
+  ── Pairwise Effect Sizes (rank-biserial r) ───
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         0.244       0.751       
+Mezzo         -0.244      ---         0.440       
+Alto          -0.751      -0.440      ---         
+
+══════════════════════════════════════════════
+

@@ -1,0 +1,3 @@
+praat=6.6.30
+prefdir=/home/claude/drive/prefs
+PLUGIN_LOADED

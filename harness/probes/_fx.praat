@@ -1,0 +1,6 @@
+writeInfoLine: "fixed6 9e-10  = ", fixed$ (9e-10, 6)
+appendInfoLine: "fixed6 1e-15  = ", fixed$ (1e-15, 6)
+appendInfoLine: "fixed6 0      = ", fixed$ (0, 6)
+appendInfoLine: "fixed10 4e-11 = ", fixed$ (4e-11, 10)
+appendInfoLine: "fixed2 undef  = ", fixed$ (undefined, 2)
+appendInfoLine: "fixed4 -0.0000001 = ", fixed$ (-0.0000001, 4)

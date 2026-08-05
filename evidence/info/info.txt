@@ -1,0 +1,6 @@
+dataIdx    2
+dataIdx2   4
+groupIdx   1
+subjectIdx 1
+timeIdx    3
+

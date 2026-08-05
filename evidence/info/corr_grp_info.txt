@@ -1,0 +1,81 @@
+
+
+══════════════════════════════════════════════
+  EML Stats : Correlation Analysis
+  Wed Aug  5 14:04:59 2026
+══════════════════════════════════════════════
+
+  Table               demo correlation
+  Column X            speaking F0 Hz
+  Column Y            singing F0 Hz
+  N                   30
+
+
+  ── Pearson Correlation ─────────────────────
+  r                   0.9035
+  t                   11.153
+  df                  28
+  p                   p < .001
+
+══════════════════════════════════════════════
+
+  Spk1: Skipped (n < 3)
+
+  Spk2: Skipped (n < 3)
+
+  Spk3: Skipped (n < 3)
+
+  Spk4: Skipped (n < 3)
+
+  Spk5: Skipped (n < 3)
+
+  Spk6: Skipped (n < 3)
+
+  Spk7: Skipped (n < 3)
+
+  Spk8: Skipped (n < 3)
+
+  Spk9: Skipped (n < 3)
+
+  Spk10: Skipped (n < 3)
+
+  Spk11: Skipped (n < 3)
+
+  Spk12: Skipped (n < 3)
+
+  Spk13: Skipped (n < 3)
+
+  Spk14: Skipped (n < 3)
+
+  Spk15: Skipped (n < 3)
+
+  Spk16: Skipped (n < 3)
+
+  Spk17: Skipped (n < 3)
+
+  Spk18: Skipped (n < 3)
+
+  Spk19: Skipped (n < 3)
+
+  Spk20: Skipped (n < 3)
+
+  Spk21: Skipped (n < 3)
+
+  Spk22: Skipped (n < 3)
+
+  Spk23: Skipped (n < 3)
+
+  Spk24: Skipped (n < 3)
+
+  Spk25: Skipped (n < 3)
+
+  Spk26: Skipped (n < 3)
+
+  Spk27: Skipped (n < 3)
+
+  Spk28: Skipped (n < 3)
+
+  Spk29: Skipped (n < 3)
+
+  Spk30: Skipped (n < 3)
+

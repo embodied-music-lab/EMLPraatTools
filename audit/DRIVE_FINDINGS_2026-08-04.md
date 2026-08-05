@@ -1,0 +1,3326 @@
+# End-to-end path drive — EML Praat Tools plugin
+
+Date: 4 August 2026. Praat 6.6.30, Xvfb :99 1400x1000x24, matchbox WM.
+Plugin installed at `/home/claude/drive/prefs/plugin_EML_Praat_Tools`
+(copy of `/root/eml_audit/plugin_EML_Praat_Tools`). Loads cleanly at startup.
+
+Task: drive every plugin path through its real entry point, menu-driven first.
+Evaluation criteria, in the author's order: **accuracy**, **clarity of Info
+window output**, **graphing paths that result**.
+
+Method: GUI driving under Xvfb + matchbox. Harness recipe in
+`GUI_HARNESS_RECIPE.md`; helpers in `drive/gui.sh`; menu map in `MENU_MAP.md`.
+No headless route exists — `beginPause:` hard-crashes under `praat --run`
+(SIGTRAP, exit 133), and every EML wrapper uses `beginPause:`, not `form:`.
+
+Finding classes used below: **ACCURACY** (output is wrong or misleading about
+the data/statistics), **CLARITY** (output is correct but harder to act on than
+it should be), **PACKAGING** (install/distribution defect), **NOT A DEFECT**
+(observation investigated and cleared — recorded so it is not re-raised).
+
+---
+
+## Progress ledger
+
+| Surface | Entries | Driven |
+|---|---|---|
+| `New → EML Tools` menu | 17 (16 in scope; LMM tabled) | **11** — Create Demo Table (6/7 types), Describe Table column, Check normality, Compare two groups, Compare paired/repeated, Compare k groups (ANOVA), Compare k groups (KW), Compare two-way ANOVA, Correlate two columns, Linear regression, Pairwise comparisons |
+| Table action buttons | 9 (8 in scope) | 0 — coordinates mapped |
+| TableEditor `Edit` menu | 1 | 0 |
+| Sound / Pitch / Spectrum / Ltas → `EML Graphs...` | 4 | 0 |
+| TableOfReal action buttons | 6 | 0 |
+| Matrix action buttons | 5 | 0 |
+
+`Linear mixed model...` (menu y=701; Table button y=579) is **out of scope** —
+the LMM module is tabled by author ruling. Noted, not audited.
+
+---
+
+## Path 1 — `New → EML Tools → Create Demo Table...`
+
+Script: `scripts/eml-create-demo.praat` v2.0 (11 May 2026).
+Menu coordinate: `emlmenu 805`.
+
+### Dialog render map (confirmed on two separate invocations)
+
+Under matchbox the Pause dialog carries a titlebar that `xdotool
+getwindowgeometry` does **not** account for. All coordinates below are read
+directly off a root screenshot, which is the only reliable source.
+
+| Element | Root coords |
+|---|---|
+| Titlebar `Pause: Create Demo Table` | y ≈ 387 |
+| Close box ✖ | (1010, 388) |
+| Dialog body | x ≈ 377–1022, y ≈ 377–620 |
+| `Select the type of demo data to generate.` | (402, 431) |
+| `Each table is designed for a specific analysis path.` | (402, 468) |
+| Label `Demo type:` (right-aligned, ends) | x ≈ 638, y = 535 |
+| Combo box | x ≈ 645–1017, y = 535; click target **(830, 535)** |
+| Button `Undo` | (436, 581) |
+| Button `Quit` | (604, 581) |
+| Button **`Create`** | **(793, 581)** — verified working twice |
+
+Source contract: `clicked = endPause: "Quit", "Create", 2, 0`. `Undo` is
+Praat's native pause-window revert, not plugin-authored.
+
+Drive sequence: `emlmenu 805` → `optsel 830 535 <n>` → `click 793 581` →
+`infoshot demo<n>_info`.
+
+### Demo type 1 — `demo_2groups`
+
+Info window, verbatim:
+
+```
+Created demo Table: demo_2groups
+
+Two-group comparison (Control vs Patient).
+  Try: Compare groups → Independent → Two groups
+  Data column: jitter_pct or F0_Hz
+  Group column: group
+
+Select the Table and use the EML Tools menu or Wizard.
+```
+
+**Accuracy: correct.** Table name, group labels (Control / Patient), N=40, and
+column names `subject group F0_Hz jitter_pct` all match the `demo_type = 1`
+branch of `eml-create-demo.praat`.
+
+### Demo type 2 — `demo_3groups`
+
+Info window, verbatim:
+
+```
+Created demo Table: demo_3groups
+
+Three-group comparison (Soprano / Mezzo / Alto).
+  Try: Compare groups → Independent → Three or more
+  Data column: SPL_dB or vibrato_rate_Hz
+  Group column: voice_type
+
+Select the Table and use the EML Tools menu or Wizard.
+```
+
+**Accuracy: correct.** Table name, the three voice types, and the column names
+`singer voice_type SPL_dB vibrato_rate_Hz` (N=45, 3×15) all match the
+`demo_type = 2` branch.
+
+### Finding D1 — CLARITY (low) — `Try:` line paraphrases the Wizard's labels
+
+Applies to both demo types observed so far; likely to all seven.
+
+The guidance line is written as a navigation path but does not quote the
+labels the user will actually see:
+
+| Info text | Actual Wizard label |
+|---|---|
+| `Compare groups` | `⚖️ Compare groups or conditions` (Q1 `Research goal`) |
+| `Independent` | `No — different groups (independent)` (A1 `Observation type`) |
+| `Two groups` | `Two groups` (A2 `Group design`) — matches literally |
+| `Three or more` | `Three or more groups` (A2 `Group design`) |
+
+For type 1 the third element matches; for type 2 it is abbreviated. The first
+two elements are paraphrases in both cases.
+
+Secondary: the line names only the Wizard route. For a user already sitting in
+`New → EML Tools`, the shorter routes are the direct entries — `Compare two
+groups...` (type 1) or `Compare k groups (ANOVA)...` / `Compare k groups
+(Kruskal-Wallis)...` (type 2). Those are not mentioned.
+
+Not an accuracy defect: the path described does reach the right analysis. It
+is a discoverability cost, and the fix is a text edit in
+`eml-create-demo.praat`'s `description$` assignments.
+
+### Finding D2 — NOT A DEFECT — dismissed Pause windows persist in the X window list
+
+`xdotool search --name "^Pause:"` returns ids for dialogs that were dismissed
+several steps earlier. Investigated with `xwininfo -id <id>`:
+`Map State: IsUnMapped`. Praat retains dismissed Pause windows as unmapped X
+windows; this is normal GTK/Praat retention, invisible to the user.
+
+Consequence for the harness, not for the plugin: any window lookup must filter
+on `IsViewable`. `drive/gui.sh`'s `pausewin` helper does this.
+
+### Note — demo data are unseeded
+
+`eml-create-demo.praat` generates values with `randomGauss` and sets no seed.
+Every invocation produces different numbers. Any accuracy finding derived from
+a demo table's *values* is therefore not reproducible by re-running the demo —
+such a finding must record the observed values inline.
+
+---
+
+## Finding P1 — PACKAGING (medium) — 13 of 21 files in `scripts/` are mode 0600
+
+`ls -l /root/eml_audit/plugin_EML_Praat_Tools/scripts/`:
+
+| Mode | Files |
+|---|---|
+| 0644 | eml-batch-process, eml-check-normality, eml-create-demo, eml-describe-table, eml-graphs, eml-lmm, eml-quick-start, eml-regress (8) |
+| **0600** | eml-compare-groups, eml-compare-k-groups, eml-compare-kw, eml-compare-paired, eml-compare-twoway, eml-correlate, eml-edit-table-editor, eml-edit-table-launch, eml-edit-table, eml-pairwise, eml-stats-demo, eml-tutorial, eml-wizard (13) |
+
+(13 at 0600 by the current listing; the earlier tally of 12 excluded the
+unregistered `eml-tutorial.praat`, which is dead but still shipped.)
+
+Owner-only permissions survive `tar`/`zip` archives. A user who unpacks the
+plugin under one account and runs Praat under another — or any multi-user or
+lab-shared install — gets a plugin whose menu entries are registered but whose
+scripts cannot be read. The failure would surface as a Praat error at click
+time, not at install time, which makes it hard to diagnose.
+
+Fix is one line at package time: `chmod 644` across the tree, or a `chmod` step
+in `dev/tools/` packaging. Worth adding to the build so it cannot regress.
+
+---
+
+## Harness facts established (see GUI_HARNESS_RECIPE.md for the full recipe)
+
+- `optsel` (click combo → `Home` → `Down`×(n−1) → `Return`) is **verified**
+  against a real Praat GTK option menu: `optsel 830 535 2` moved the Demo type
+  combo from option 1 to option 2 and the resulting table confirmed it.
+- `objshot` and `infoshot` correctly raise and capture their windows after a
+  dialog closes.
+- Never compute click coordinates from `xdotool getwindowgeometry` — matchbox
+  draws a dialog titlebar the reported geometry excludes. Read a screenshot.
+- Praat submenus do not open on hover or click under matchbox. Press `Right`.
+
+---
+
+## Screenshots
+
+`/home/claude/drive/out/shots/`: `state0.png`, `demo_dlg.png`,
+`demo_dlg_win.png`, `demo1_after.png`, `demo1_info.png`, `demo_dlg2.png`,
+`demo_opt2.png`, `demo2_after.png`, `demo2_info.png`.
+
+### Demo type 3 — `demo_paired`
+
+Info window, verbatim:
+
+```
+Created demo Table: demo_paired
+
+Paired pre/post therapy comparison.
+  Try: Compare groups → Paired / repeated
+  Column 1: jitter_pre (or HNR_pre)
+  Column 2: jitter_post (or HNR_post)
+
+Select the Table and use the EML Tools menu or Wizard.
+```
+
+**Accuracy: correct.** Matches the `demo_type = 3` branch: table `demo_paired`,
+20 rows, columns `subject jitter_pre jitter_post HNR_pre HNR_post`.
+
+### Demo type 4 — `demo_correlation`
+
+```
+Created demo Table: demo_correlation
+
+Bivariate relationship (speaking F0 vs singing F0).
+  Try: Examine a relationship → Correlation
+  Column X: speaking_F0_Hz
+  Column Y: singing_F0_Hz
+
+Select the Table and use the EML Tools menu or Wizard.
+```
+
+**Accuracy: correct.** Matches `demo_type = 4`: 30 rows, columns
+`speaker speaking_F0_Hz singing_F0_Hz age_years`. The Info text names only the
+two correlated columns; `age_years` exists in the table but is not mentioned.
+Not a defect — it is not part of the suggested analysis.
+
+### Demo type 5 — `demo_regression`
+
+```
+Created demo Table: demo_regression
+
+Predictor → outcome relationship.
+  Try: Predict an outcome (or Examine → Regression)
+  Predictor (X): practice_hrs_wk
+  Response (Y): vibrato_regularity_pct
+
+Select the Table and use the EML Tools menu or Wizard.
+```
+
+**Accuracy: correct.** Matches `demo_type = 5`: 25 rows, columns
+`singer practice_hrs_wk vibrato_regularity_pct experience_yrs`.
+
+### Demo type 6 — `demo_twoway`
+
+```
+Created demo Table: demo_twoway
+
+Two-factor design (voice_type × task).
+  Try: Compare groups → Independent → Two-factor design
+  Data column: SPL_dB
+  Factor 1: voice_type
+  Factor 2: task
+  Note: contains an interaction effect
+
+Select the Table and use the EML Tools menu or Wizard.
+```
+
+**Accuracy: correct.** Matches `demo_type = 6`: 48 rows built as
+2 voice types × 2 tasks × 12 subjects, columns
+`subject voice_type task SPL_dB`. The interaction note is a useful addition —
+it tells the user what the data were built to demonstrate. **No other demo
+type carries an equivalent "what this data shows" line**; see D3.
+
+### Demo type 7 — NOT DRIVEN
+
+Type 7 (`demo_normality`, 40 rows, columns `subject F0_Hz shimmer_pct
+jitter_pct` per source) was not driven before the session was checkpointed.
+Drive sequence to complete it: `emlmenu 805` → `optsel 830 535 7` →
+`click 793 581` → `infoshot demo7_info`.
+
+### Finding D1 — status update
+
+D1 (the `Try:` line paraphrases rather than quotes the Wizard's labels) is
+**confirmed to generalize** across all six demo types driven. Every one names a
+navigation path in abbreviated form:
+
+| Info text | Actual Wizard label |
+|---|---|
+| `Compare groups` | `⚖️ Compare groups or conditions` |
+| `Independent` | `No — different groups (independent)` |
+| `Paired / repeated` | paired/repeated option on A1 |
+| `Examine a relationship` | Q1 goal, abbreviated |
+| `Predict an outcome` | Q1 goal, abbreviated |
+| `Two-factor design` | A2 `Group design` |
+
+Type 5 is the one case where the line offers two routes
+(`Predict an outcome (or Examine → Regression)`). The fix remains a text edit
+to the `description$` assignments in `eml-create-demo.praat`.
+
+### Finding D3 — CLARITY (low) — only type 6 states what the data demonstrate
+
+`demo_twoway` ends its guidance with `Note: contains an interaction effect`.
+That single line is the most useful sentence in any of the six Info outputs —
+it tells the user what result to expect, which is what makes a demo table
+pedagogically useful rather than merely well-formed. No other type has one,
+though several are built with a known effect (type 3 has a pre/post shift,
+type 4 and 5 have built-in correlations of known sign).
+
+Suggested fix: give every branch a `Note:` line stating the effect the
+generator built in. Cheap, and it turns the demo tables into a teaching
+sequence rather than seven anonymous data sets.
+
+---
+
+## Checksum verification — 2026-08-05
+
+Four-way md5 comparison run to establish the restore point.
+
+| Comparison | Result |
+|---|---|
+| `/root/eml_audit/plugin_EML_Praat_Tools` vs installed copy at `/home/claude/drive/prefs/plugin_EML_Praat_Tools` | **byte-identical** (104 files) — the drive is exercising the audit tree, not a stale copy |
+| audit tree vs `plugin_EML_Praat_Tools/` inside `EML_backup_2026-08-05.zip` | **byte-identical** (104 files) — backup is a valid restore point |
+| audit tree, files with mtime >= 2026-08-05 | **none** — no plugin file was touched this session; the drive was read-only against plugin code, now proven rather than inferred |
+| audit tree vs `EML_Praat_Tools_S9_FIXED_2026-08-02.zip` | **NOT identical** — S9 is stale by design (see below) |
+
+**S9 zip is superseded.** It has 74 files; the audit tree has 104. The delta is
+Aug 3–4 work committed after S9 was packaged:
+
+- Runtime files changed: `stats/eml-inferential.praat` (2026-08-03 01:20),
+  `graphs/eml-draw-procedures.praat` (2026-08-03 23:13), `MANIFEST.txt`.
+- New dev material: `dev/tools/` (16 files — build-manifest, registry
+  reconcilers, relerr conversion, vacuity + degenerate-input scanners,
+  Theil–Sen margin builders), Theil–Sen tests and refs
+  (`test-theilsen.praat`, `theilsen_scipy_refs.py`, `theilsen_margin_rows.json`),
+  repeated-measures tests and refs (`test-repeated-measures.praat`,
+  `repeatedmeasures_refs.py`, `verify-repeated-measures.R`),
+  `test-helpers-selftest{,-negative}.praat`, `REFERENCE_PROVENANCE.md`,
+  `verify-inferential-batch7-dunn.py`, `regression_scipy_refs.py`.
+- Two files relocated, not lost: `dev/tests/phase2/test_coltype.praat` and
+  `dev/tests/tables/spaghettit table.csv` now live under `dev/retired/`
+  (md5 unchanged for the CSV: `3b003ade…`).
+
+**Consequence:** `EML_Praat_Tools_S9_FIXED_2026-08-02.zip` must NOT be used as
+the restore point — restoring from it would silently roll back the Theil–Sen
+and repeated-measures work and the 3 Aug inferential/draw fixes. The restore
+point is `EML_backup_2026-08-05.zip`. No redistributable build has been cut
+since S9; one is owed before release.
+
+---
+
+## Demo type 7 — `demo_normality` — DRIVEN 2026-08-05 — ACCURATE
+
+Info window (verbatim, via `info$()` dump — exact characters, not transcribed):
+
+```
+Created demo Table: demo_normality
+
+Data with different distributional shapes.
+  Try: Describe or summarize → Check normality
+  F0_Hz: approximately normal
+  shimmer_pct: right-skewed (try nonparametric)
+  jitter_pct: mildly skewed
+
+Select the Table and use the EML Tools menu or Wizard.
+```
+
+Objects window after: `1  Table demo_normality` (single object, no leftovers).
+
+Verified against `scripts/eml-create-demo.praat`, `elsif demo_type = 7`:
+40 rows, columns `subject F0_Hz shimmer_pct jitter_pct`; `F0_Hz` =
+`randomGauss (180, 30)` (normal), `shimmer_pct` = `exp (randomGauss (0.7, 0.5))`
+(lognormal → right-skewed), `jitter_pct` = `max (0.05, randomGauss (1.2, 0.6))`
+(Gaussian with a floor → mild left-truncation). The description string matches
+the rendered output character for character, and each distributional claim
+matches its generator. **No defect.**
+
+All 7 demo types are now driven. Ledger row 1 (`Create Demo Table`) is complete.
+
+### Finding D3 — REVISED (was: "only demo_twoway states the built-in effect")
+
+Original wording was too strong. Corrected scope: types **6** (`Note: contains
+an interaction effect`) and **7** (three per-column distribution notes) both
+disclose what the synthetic data were constructed to contain. Types **1–5** do
+not. The finding stands but applies to five branches, not six: a learner running
+`demo_paired` cannot tell whether a significant result is the fixture working as
+designed or an artefact. Suggested fix unchanged — one `Note:` line per branch
+in `description$`.
+
+### Finding D1 — holds for type 7
+
+`Try: Describe or summarize → Check normality`. "Describe or summarize" is not
+a menu label; the actual entries are `Describe Table column` and
+`Check normality`. Second half quotes correctly, first half paraphrases —
+the same split seen in types 1–6.
+
+---
+
+## Wrapper 2/17 — `Describe Table column` — DRIVEN 2026-08-05 — **ACCURATE**
+
+Menu y=473. Dialog `Pause: Describe Table Column` 524x152 at 0,0.
+Fields: one `optionmenu` Column (populated by `@emlTableColumnNames`, showed
+`F0_Hz` correctly). Buttons: Undo (56,116) / Quit (223,116) / Run (413,116).
+`endPause: "Quit", "Run", 2, 0` — trailing 0 per Appendix F §S0. ✓
+
+Input: `demo_normality`, column `F0_Hz`, n=40 (unseeded `randomGauss (180, 30)`).
+
+### Verbatim Info window output (via `info$ ()` dump)
+
+```
+══════════════════════════════════════════════
+  EML Stats : Descriptive Statistics
+  Wed Aug  5 12:17:11 2026
+══════════════════════════════════════════════
+
+  Table               demo normality
+  Column              F0 Hz
+  N (valid)           40
+
+  ── Central Tendency ────────────────────────
+  Mean                182.7905
+  Median              179.0535
+  SEM                 4.9057
+
+  ── Dispersion ──────────────────────────────
+  SD                  31.0266
+  Variance            962.6472
+  Range               114.5782
+  Min                 121.7456
+  Max                 236.3238
+
+  ── Quartiles ───────────────────────────────
+  Q1                  162.0658
+  Q2 (Median)         179.0535
+  Q3                  207.6302
+  IQR                 45.5644
+
+  ── Distribution Shape ──────────────────────
+  Skewness            0.0275
+  Kurtosis            -0.8188
+
+  ── 95% Confidence Interval ─────────────────
+  Lower               172.8677
+  Upper               192.7133
+
+══════════════════════════════════════════════
+```
+
+### ACCURACY — verified, 18/18 values
+
+The 40 `F0_Hz` values were dumped from the live Table and recomputed
+independently in Python. Every reported figure matches to the printed
+4-decimal precision:
+
+| Measure | Plugin | Independent | Match |
+|---|---|---|---|
+| Mean | 182.7905 | 182.7905 | ✓ |
+| Median | 179.0535 | 179.0535 | ✓ |
+| SEM | 4.9057 | 4.9057 | ✓ |
+| SD | 31.0266 | 31.0266 (n−1) | ✓ |
+| Variance | 962.6472 | 962.6472 (n−1) | ✓ |
+| Range / Min / Max | 114.5782 / 121.7456 / 236.3238 | identical | ✓ |
+| Q1 / Q3 / IQR | 162.0658 / 207.6302 / 45.5644 | type-7 linear interp. | ✓ |
+| Skewness | 0.0275 | G1 = 0.0275 (adjusted) | ✓ |
+| Kurtosis | −0.8188 | G2 = −0.8188 (adjusted excess) | ✓ |
+| 95% CI | 172.8677 – 192.7133 | m ± t(39,.975)·SEM | ✓ |
+
+Estimator conventions identified empirically: **SD/variance use n−1**;
+**quartiles use type-7 linear interpolation** (R/numpy default — NOT
+Tukey hinges, which would give 160.9348 / 207.9760); **skewness and
+kurtosis use the sample-adjusted G1/G2 forms** (SPSS/Excel convention —
+NOT the population g1/g2 forms, which would give 0.0265 / −0.8663);
+**CI uses the t distribution with n−1 df**, not z. All four are the
+defensible choices for a research tool. No accuracy defect.
+
+### GRAPHING — none offered
+
+`endPause` presents only Quit/Run; there is no completion dialog and
+therefore no `Draw` path. A single-column descriptive summary is the
+one place a histogram or box plot would be most expected. Deferred
+judgment: `Check normality` (next wrapper) may cover this need — if it
+draws a histogram/QQ for the same column, the absence here is a
+reasonable division of labour, not a gap. **Revisit after wrapper 3.**
+
+### Findings
+
+**D4 — CLARITY (medium).** The report line reads `Kurtosis`, but the
+value is **excess** kurtosis (normal = 0, not 3). The plugin's own
+`emlDescribe.summary$` in `stats/eml-core-descriptive.praat:655` labels
+the identical quantity `"Kurtosis (excess):"` — so the distinction was
+recognised and then dropped on the path that users actually see. A
+reader who takes −0.8188 as Pearson kurtosis will misreport it by 3.
+Fix: `@emlReportLine: "Kurtosis (excess)", ...` in
+`scripts/eml-describe-table.praat:151`.
+
+**D5 — CLARITY (low).** No estimator conventions are disclosed anywhere
+in the report. Skewness/kurtosis adjusted-vs-population and the
+quartile method are exactly the values a user will paste into a paper,
+and they differ visibly between packages (see table above: 0.0275 vs
+0.0265; 162.07 vs 160.93). One footer line — e.g. `SD/variance n−1 ·
+quartiles type 7 · skew/kurtosis G1/G2 · CI t(n−1)` — makes the output
+citable. Applies to `@emlReportFooter` and therefore to every stats
+wrapper, not just this one.
+
+**D6 — CLARITY (medium).** Identifiers are underscore-stripped for
+display: `demo_normality` → `demo normality`, `F0_Hz` → `F0 Hz`
+(`eml-describe-table.praat:114–115`). Underscore→space conversion is a
+**Picture window** rule — `_` is a subscript toggle in Praat's text
+renderer (Rule 28B, Appendix E). The Info window renders plain text and
+has no such toggle, so the conversion buys nothing and costs the
+round-trippable name: a user cannot copy `F0 Hz` back into a script or
+match it against the Table. Fix: report `tableName$` / `dataColumn$`
+verbatim in Info window output; keep `replace$` only for text bound for
+`Text top:` / `Text left:` / `Draw` paths.
+
+**D7 — PACKAGING / Rule 35 (low).** `emlDescribe.summary$` is assembled
+on every call (16 string concatenations) and consumed nowhere in
+production — the only reference outside its own file is a
+non-emptiness assertion in `dev/tests/phase1/test-core-descriptive.praat:530`.
+It is also the source of the D4 label divergence. Either delete it, or
+make the wrappers render it so the two labellings cannot drift again.
+
+### NOT A DEFECT
+
+Info window **appends** rather than clears. This is deliberate and
+documented: `emlReportHeader` carries the comment *"Always appends —
+never clears. Use @emlClearInfo for explicit clearing"*
+(`stats/eml-output.praat:110–113`), and `@emlClearInfo` exists for the
+user-facing toggle. The accumulating session log is the intended
+behaviour; the earlier `OBJECTS` block visible above the report was my
+own harness output, not wrapper leakage.
+
+---
+
+## Wrapper 3/17 — `Check normality` — DRIVEN 2026-08-05 — **ACCURATE**
+
+Menu y=498. Dialog `Pause: Check Normality` 524x395 at 0,0.
+Fields: informational header, a bulleted preview of the 3 numeric columns
+it will test, optional `Group column:` optionmenu (default
+`(none — overall only)`), and a `Clear Info window` checkbox (278,313) —
+the user-facing control that `@emlClearInfo` was built for. Buttons Undo
+(56,359) / Quit (223,359) / Run (413,359). `endPause: "Quit", "Run", 2, 0`. ✓
+
+Input: `demo_normality`, all 3 numeric columns, overall (no grouping),
+Clear Info window ticked.
+
+### ACCURACY — verified against scipy, 3/3 columns
+
+Shapiro–Wilk is implemented in pure Praat. All three columns were dumped
+from the live Table and re-tested with `scipy.stats.shapiro` (Royston's
+AS R94):
+
+| Column | Plugin W | scipy W | Plugin p | scipy p |
+|---|---|---|---|---|
+| `F0_Hz` | 0.9724 | 0.9724 | p = .428 | 0.4282 |
+| `shimmer_pct` | 0.8760 | 0.8760 | p < .001 | 0.0004 |
+| `jitter_pct` | 0.9638 | 0.9638 | p = .225 | 0.2251 |
+
+Exact to 4 decimals on every W and p. Descriptives (mean/SD/median) also
+match independently recomputed values on all three columns. The
+directional verdicts are right, the per-column recommendations are right,
+and the roll-up (`Parametric OK: 2 / Nonparametric rec: 1 / Mixed results`)
+is right. This is the strongest single piece of evidence so far that the
+statistical core is trustworthy — a hand-rolled Shapiro–Wilk agreeing
+with scipy to 4 dp is not something that happens by accident.
+
+Behavioural note: the demo data cooperated exactly as
+`eml-create-demo.praat` type 7 advertises — `F0_Hz` normal,
+`shimmer_pct` right-skewed and rejected, `jitter_pct` mildly skewed and
+not rejected.
+
+### GRAPHING — none offered; **this is now a gap**
+
+Completion dialog is `endPause: "Done", "New", 2, 0` — *"Results are in
+the Info window."* with Done / New only. **No `Draw`.**
+
+Wrapper 2 (`Describe Table column`) also offered no graph, and I deferred
+judgment there pending this wrapper. That deferral now resolves against
+the plugin: **neither of the two distribution-inspection wrappers can
+draw a histogram, density, box plot, or Q–Q plot.** Normality assessment
+is the single place in the whole tool where a picture carries information
+the numbers cannot — Shapiro–Wilk at n=40 is underpowered against exactly
+the mild departures a Q–Q plot makes obvious, and the plugin's own
+verdict line ("Does not reject normality") is the one most likely to be
+over-read. `EML Graphs` exists as a separate menu entry, so the capability
+is in the codebase; the connection from the verdict to the picture is
+what's missing. Logged as **D8** below.
+
+### Findings
+
+**D8 — GRAPHING (high).** Add a `Draw` button to the `Check normality`
+completion dialog (`eml-check-normality.praat:219`, currently
+`endPause: "Done", "New", 2, 0` → `"Done", "Draw", "New", 3, 0`)
+producing a Q–Q plot plus histogram-with-normal-overlay for the tested
+column(s). Same for `Describe Table column`. This is the highest-value
+graphing gap found so far because it is where the numeric verdict is
+least self-sufficient.
+
+**D9 — CLARITY (high, systemic, one-line fix).** The p-value row prints
+its label twice:
+
+```
+  p                   p = .428
+```
+
+`@emlFormatP` returns an APA *inline* string that already carries its own
+`"p "` prefix (`stats/eml-output.praat:210–239` — by design, documented in
+its header comment). Passing that string to
+`@emlReportLineString: "p", ...` puts the prefix in the value column next
+to a `p` label. This is **not** a one-off: there are **10 occurrences** of
+`emlReportLineString: "p"` in `graphs/eml-annotation-procedures.praat`
+(lines 2598, 2647, 2752, 2992, 3267, 3303, 3390, 3518, 3613, 3660), i.e.
+essentially every inferential wrapper in the plugin prints `p   p = .xxx`.
+Cleanest fix: add a bare output to `@emlFormatP` (`.bare$` = `".428"` /
+`"< .001"`) and use it in the two-column report path, keeping
+`.formatted$` for inline prose. One procedure change, 10 sites corrected.
+
+**D10 — ACCURACY-adjacent (medium-high). Kurtosis threshold is very
+likely off by 3.** `emlReportNormalityAnalysis`
+(`graphs/eml-annotation-procedures.praat:3491–3501`) flags shape with:
+
+```praat
+if abs (...skewness) >= 1      → "outside typical limits (|skew| < 1)"
+if abs (...kurtosis) >= 3      → "outside typical limits (|kurt| < 3)"
+```
+
+The value being tested is `@emlKurtosis`, which returns **excess** (G2)
+kurtosis — verified empirically in wrapper 2 (−0.8188 = G2, not the
+Pearson 2.1812). For excess kurtosis, normal = 0 and the conventional
+screening rule is |G2| > 2 (or Kline's > 10 for severe). A threshold of
+**3** is precisely the number one uses against *Pearson* kurtosis, where
+normal = 3 — and applied to excess kurtosis it silently widens the
+"typical" band to include genuinely heavy-tailed data: a column with
+G2 = 2.9 (visibly leptokurtic) is reported *within typical limits*. The
+skewness threshold (|g| ≥ 1) is a recognised rule; |excess kurt| ≥ 3 is
+not a recognised pairing with it. Recommend `>= 2`, and state the
+criterion in both branches (currently the criterion is printed only when
+the test *fails*, so a passing reader never learns what was checked).
+This finding is bound to **D4** — both trace to `Kurtosis` being reported
+and reasoned about without the word "excess".
+
+**D6 — CONFIRMED PLUGIN-WIDE, and now self-inconsistent.** The dialog
+header reads `Table: demo normality` (underscore stripped) while the
+column list immediately below it reads `F0_Hz`, `shimmer_pct`,
+`jitter_pct` (underscores intact) — the same dialog displays both
+conventions four lines apart. The report body then strips again
+(`Column   shimmer pct`). The stripping is centralised in
+`@emlUnderscoreToSpace` (called at
+`eml-annotation-procedures.praat:3458–3461`), so scoping it to
+Picture-window-bound text is a single-procedure change.
+
+**D11 — CLARITY (low).** `"→ Skewness outside typical limits (|skew| < 1)"`
+reads as an assertion of `|skew| < 1` at the moment it is announcing the
+opposite. Phrase the parenthetical as a stated criterion —
+`(criterion: |skew| < 1)` — and print it on the passing branch too.
+
+### Not investigated this pass
+
+`emlShowExplanations` was off, so the `Why:` / `@emlWizardExplain*`
+narration branches (7 call sites in this procedure alone) did not render.
+Those are the novice-facing path and need their own drive — noted for the
+`EML Stats Quick Start` wrapper, which is the likely place the toggle is set.
+
+---
+
+## Wrapper 4/17 — `Compare two groups…` (menu y=524)
+
+Driven twice against `demo_2groups` (40 rows, 20 Control / 20 Patient),
+once on `jitter_pct` and once on `F0_Hz`, each time all the way through
+the graphing chain the completion dialog offers:
+
+    Compare Two Groups → Analysis complete (Done | CSV | Draw | New)
+      → Draw → EML Graphs (type/title/subtitle/colour/size)
+        → Violin Plot — Column Mapping (Undo | Go Back | Quit | Advanced | Draw)
+          → Draw → Graph Complete (Done | Save | Exp CSV | Redraw)
+
+`Done` on Graph Complete returns to the *Analysis complete* dialog rather
+than exiting — the caller is correctly re-entered, so the user can take
+`CSV` after drawing. Good behaviour, worth keeping.
+
+### Verdict: ACCURACY — exact
+
+Both runs reproduce independently. `F0_Hz` run, plugin output against
+`scipy.stats` on the 40 dumped rows:
+
+| Quantity | Plugin | scipy / numpy |
+|---|---|---|
+| Control n / mean / SD / median | 20 / 122.95 / 13.02 / 126.28 | 20 / 122.9535 / 13.0192 / 126.2812 |
+| Patient n / mean / SD / median | 20 / 148.72 / 20.29 / 145.43 | 20 / 148.7164 / 20.2904 / 145.4281 |
+| Welch t | −4.779 | −4.7791 |
+| Welch df | 32.4 | 32.3774 |
+| p | p < .001 | 3.678e−05 |
+| Mean difference | −25.7629 | −25.7629 |
+| Cohen's d | −1.511 | −1.5113 |
+| Hedges' g | −1.481 | −1.4813 |
+
+The `jitter_pct` run matched equally (t −9.495 vs −9.4948, df 29.1 vs
+29.0615, d −3.003, g −2.943, p 2.07e−10). Hedges' correction uses
+J = 1 − 3/(4N − 9) = 0.98013 at N = 40, which is the standard form.
+Welch as the *default* two-sample test is good practice and is the right
+call for a plugin aimed at unequal-variance clinical group data.
+
+### G1 — GRAPHING (high). `roundTo = 10` is a hardcoded magic number in every `@emlComputeAxisRange` call.
+
+`@emlComputeAxisRange` (`graphs/eml-graph-procedures.praat:765–817`) takes
+`.roundTo` as a caller-supplied grid quantum and snaps the axis with
+`floor(rawMin/.roundTo)*.roundTo` / `ceiling(rawMax/.roundTo)*.roundTo`.
+Roughly 20 call sites pass the literal `10`.
+
+That literal is correct only for data on the order of tens to hundreds —
+F0 in Hz, intensity in dB, duration in ms. For any measure living on a
+0–10 scale (jitter %, shimmer %, proportions, semitone deviations, HNR in
+some ranges) it quantises the axis to a decade grid the data never
+approaches. The `jitter_pct` violin — data spanning **0.10 to 3.60** —
+was drawn on a y-axis of **−10 to +10**, a 2.5× overshoot that squashed
+both violins into a thin central band and made the between-group
+separation, which is enormous (d = −3.0), read as visually negligible.
+
+Confirmed scale-bound, not total: the same wrapper on `F0_Hz`
+(103.66–189.41) drew **80–220**, which is well proportioned. The failure
+is a function of data magnitude only.
+
+`@emlComputeNiceStep` already exists in the codebase and is the obvious
+supplier. Recommend deriving `roundTo` from the magnitude of the buffered
+range rather than pinning it. Note that `roundTo <= 0` is currently the
+`badInput` sentinel, so an "auto" mode needs a new sentinel path (or a
+distinct `@emlComputeAxisRangeAuto`) rather than overloading 0.
+
+### G2 — GRAPHING (high). The KDE pre-expansion overwrites `.globalMin` in place, defeating the non-negative guard.
+
+`@emlDrawViolinPlot` (`graphs/eml-draw-procedures.praat:1930`, defect at
+**2033–2034**) widens the range by the largest per-group Silverman
+bandwidth so violin tails do not collide with the axis edge — a sound
+intention:
+
+    .globalMin = .globalMin - .maxBW
+    .globalMax = .globalMax + .maxBW
+    @emlComputeAxisRange: .globalMin, .globalMax, 10, 0
+
+The assignment is in place, so the true data minimum is destroyed before
+`@emlComputeAxisRange` ever sees it. That matters because the procedure's
+own protection is written as:
+
+    if .dataMin >= 0 and .axisMin < 0
+        .axisMin = 0
+    endif
+
+`.dataMin` is now the *bandwidth-inflated* minimum. For `jitter_pct`:
+maxBW = max(0.1480, 0.2764) = 0.2764, so `.dataMin` arrives as
+0.10 − 0.2764 = **−0.1764**; the guard tests `−0.1764 >= 0`, fails, and
+never fires. Full arithmetic, which reproduces the rendered axis exactly:
+
+    range  = 3.6047 − (−0.1764)      = 3.7811 … + tail  → 4.0575
+    buffer = 0.40575
+    rawMin = −0.5822 → floor(−0.05822) × 10 = −10
+    rawMax =  4.2869 → ceiling(0.42869) × 10 =  10
+
+This violates Rule 28F outright — *"For non-negative data, do not let
+axisMin go below 0"* — and it does so on a quantity that is not merely
+non-negative by luck: `scripts/eml-create-demo.praat:47` generates
+`jitter_pct` as `max (0.1, randomGauss (0.8, 0.3))`, an explicit floor.
+Percent jitter cannot be negative, and a figure whose axis says it can be
+is wrong in a way a reviewer will notice.
+
+Fix: preserve the true extreme before the expansion and clamp after —
+
+    .dataTrueMin = .globalMin
+    ... expansion ...
+    @emlComputeAxisRange: .globalMin, .globalMax, <auto>, 0
+    .autoYMin = emlComputeAxisRange.axisMin
+    if .dataTrueMin >= 0 and .autoYMin < 0
+        .autoYMin = 0
+    endif
+
+G1 and G2 compound: G2 alone would have produced a small negative
+excursion; `roundTo = 10` magnifies it to a full decade. Either fix alone
+improves the figure; both are needed for it to be right.
+
+### G3 — GRAPHING (low). Axis labels lose their unit convention to the underscore rule.
+
+The y-label rendered as `F0 Hz` and, in the jitter run, `Jitter pct` —
+`@emlUnderscoreToSpace` applied to a column identifier. Rule 28C asks for
+`Frequency (Hz)`, `Jitter (%)`. Auto-deriving a label from a column name
+cannot always recover the unit, but the common trailing-token cases
+(`_Hz`, `_pct`, `_dB`, `_ms`, `_s`, `_semitones`) are worth a lookup that
+emits `F0 (Hz)` / `Jitter (%)`, falling back to the current behaviour
+otherwise. Note `%` must then go through `@emlSanitizeLabel` (Rule 28J).
+
+### D6 — reconfirmed, and sharper here than in wrapper 3
+
+The `Compare Two Groups` dialog header shows `Table: demo_2groups` with
+the underscore **intact**; the Info window four lines later prints
+`Table   demo 2groups` and `Data column   F0 Hz`, stripped. Same session,
+same identifiers, two conventions. Underscore→space is a *Picture window*
+convention (Rule 28B) and it has leaked into plain-text reporting, where
+it silently renames the user's data. Scoping `@emlUnderscoreToSpace` to
+drawing-bound text remains a single-procedure change.
+
+### D9 — reconfirmed
+
+The report again prints `p                   p < .001` — label emitted by
+the caller, second `"p "` already carried inside
+`@emlFormatP.formatted$`. Ten sites listed under D9 in the wrapper 3
+section; this wrapper is an eleventh consumer of the same procedure, so
+the fix belongs in `@emlFormatP` (drop the prefix, let callers label),
+not in the call sites.
+
+### D12 — CLARITY (medium). No CI on the mean difference.
+
+The report gives `Mean difference   −25.7629` bare. The `Describe Table
+column` wrapper *does* print a 95% CI, so the convention exists in the
+plugin and is simply absent from the comparison that most needs it. For a
+Welch test the interval is `diff ± t(α/2, df_welch) · SE_diff`, and all
+three inputs are already computed at that point in the procedure. Effect
+sizes get no interval either; a CI on Hedges' g is a larger job and can
+wait, but the mean-difference CI is essentially free.
+
+### D13 — CLARITY (medium). Subtraction direction is never stated.
+
+`Mean difference   −25.7629` does not say which group was subtracted from
+which. The dialog *has* a `Group order` field (`Table order` /
+alphabetical), so the direction is a user-controlled quantity that the
+report then declines to echo. A reader cannot tell whether Patients are
+25.76 Hz higher or lower without inferring it from the group means table.
+Recommend `Mean difference (Control − Patient)   −25.7629`, built from the
+same ordered group labels the table above already prints.
+
+### D14 — CLARITY (low). p is floored at .001 with no exact value anywhere.
+
+Both runs printed `p < .001` for p values of 3.7e−05 and 2.1e−10 — four
+and nine orders of magnitude apart, reported identically. `p < .001` is
+APA-acceptable prose, but the exact value should be recoverable; the
+natural home is the `CSV` export from the same dialog. Worth checking
+whether the CSV carries full precision (not yet driven) and, if not,
+adding it there rather than cluttering the Info window.
+
+### Not a defect — checked and cleared
+
+- **Figure title.** An initial run drew no title and I nearly logged it.
+  The cause was the harness: under matchbox, `xdotool windowraise` is not
+  enough to make a GTK entry accept keystrokes — the click sets the caret
+  but the field receives no key events and the dialog proceeds with the
+  empty default. With `xdotool windowfocus` added (`typein` in `gui.sh`),
+  `Title` and `Subtitle` both render correctly, centred above the plot in
+  the expected hierarchy. **No plugin defect.** The general lesson: an
+  empty-looking field after typing is a harness failure until a
+  post-typing screenshot proves otherwise.
+- **Legend.** Absent, correctly — one series, categorical x-axis already
+  labelled `Control` / `Patient`. Rule 28D not triggered.
+- **Welch default.** Correct choice, not a finding.
+
+---
+
+## Wrapper 5/17 — `Compare paired/repeated` (menu y = 549)
+
+**Dialog:** "Compare Paired Observations" (524x435).
+Fields: Column 1 (385,107), Column 2 (385,139), Test (385,171),
+Subject column (385,267), Group column (385,299),
+Clear Info window (278,353). Buttons: Undo 56,399 / Quit 223,399 /
+Run 413,399.
+
+**Driven with:** Table `demo_paired`, Column 1 = `jitter_pre`,
+Column 2 = `jitter_post`, Test = `Paired t-test`, Clear Info checked.
+
+### Info report as emitted (verbatim)
+
+```
+  EML Stats : Paired Comparison
+  Table               demo paired
+  Column 1            jitter pre
+  Column 2            jitter post
+  N (pairs)           20
+
+  jitter pre: Mean = 2.256, SD = 0.826, Median = 2.468
+  jitter post: Mean = 1.435, SD = 0.851, Median = 1.627
+
+  ── Paired t-test ───────────────────────────
+  t                   11.117
+  df                  19
+  p                   p < .001
+  Mean difference     0.8208
+  SD of differences   0.3302
+
+  ── Effect Size ─────────────────────────────
+  Matched-pairs r     1.000
+  Magnitude           large effect
+```
+
+### ACCURACY — test statistics exact
+
+Verified against scipy on `dump_demo_paired.csv` (full precision):
+
+| Quantity | Plugin | Reference | Verdict |
+|---|---|---|---|
+| t | 11.117 | 11.1172 | exact |
+| df | 19 | 19 | exact |
+| Mean difference | 0.8208 | 0.8208 | exact |
+| SD of differences | 0.3302 | 0.3302 | exact |
+| jitter_pre mean / SD / median | 2.256 / 0.826 / 2.468 | 2.2558 / 0.8262 / 2.4679 | exact |
+| jitter_post mean / SD / median | 1.435 / 0.851 / 1.627 | 1.4351 / 0.8509 / 1.6275 | exact |
+
+The paired t-test itself is correct in every printed digit.
+
+### D15 — ACCURACY, HIGH — nonparametric effect size reported under the parametric test
+
+`Matched-pairs r 1.000` is **not** an effect size for the paired
+t-test. It is the matched-pairs rank-biserial correlation (Kerby
+2014), which the library's own docstring identifies as belonging to a
+different test — `stats/eml-inferential.praat:1311`:
+
+```
+# Matched-pairs rank-biserial correlation: effect size for the Wilcoxon
+# signed-rank test.
+```
+
+The arithmetic is correct. `@emlMatchedPairsR` computes
+`r = (T+ - T-) / sMax` after running `@emlWilcoxonSignedRank`
+internally. All 20 `jitter_pre - jitter_post` differences are
+positive (min 0.2991, max 1.3303, zero negatives, zero ties), so
+`T- = 0`, `T+ = sMax`, and `r = 1.000` exactly. The defect is not in
+the computation — it is that this statistic is printed as *the*
+effect size in the **Paired t-test** block.
+
+Source: `graphs/eml-annotation-procedures.praat`. The identical
+`emlMatchedPairsR.r` is emitted in both branches — line 3621 inside
+`if .testType$ = "parametric" or .testType$ = "both"` under the
+heading `Effect Size`, and line 3669 inside the nonparametric branch
+under the heading `Nonparametric Effect Size`. Only the second is
+correct.
+
+**Why this is worse than a label mismatch.** Rank-biserial r
+saturates at ±1.000 whenever every difference shares a sign — the
+normal situation in a pre/post design with a real effect. It
+therefore carries no magnitude information in exactly the case a
+researcher cares about. Demonstration, two synthetic all-positive
+difference sets:
+
+| Data | mean diff | SD diff | Cohen's dz | Kerby r |
+|---|---|---|---|---|
+| A (tiny, consistent) | 0.0195 | 0.0059 | 3.296 | **1.000** |
+| B (huge) | 5.9500 | 0.5916 | 10.057 | **1.000** |
+| demo_paired | 0.8208 | 0.3302 | 2.486 | **1.000** |
+
+Three effects spanning dz 2.5 to 10.1 all report "1.000 — large
+effect". The number is at ceiling and cannot discriminate.
+
+**Expected value.** For a paired t-test the conventional effect size
+is Cohen's dz = meanDiff / sdDiff = 0.8208 / 0.3302 = **2.486**.
+Both operands are already in hand at the report site — they are
+printed on the two lines immediately above. Alternatives if
+preferred: d_av = 0.9788 (averaged SDs, Lakens 2013), or
+r_effect = sqrt(t²/(t²+df)) = 0.9310. The Pearson correlation
+between conditions is 0.9229, which is also not what is printed.
+
+**Not a missing capability, and not simply mis-wired.** `@emlCohenD`
+exists but takes independent samples (`.v1#, .v2#`, line 325). Grep
+across the whole plugin returns no `dz` and no paired-d procedure —
+so the parametric paired effect size is genuinely absent from the
+library, and the rank-based one appears to have been substituted to
+fill the gap.
+
+**Contaminates the CSV export too.** The Paired t-test CSV row at
+`eml-annotation-procedures.praat:3626-3631` writes
+`emlMatchedPairsR.r` with the literal effect-size-name field
+`"matched-pairs r"`. Downstream analysis inherits the wrong
+statistic, correctly named but wrong for the test it sits beside.
+
+**Suggested fix:** add `@emlCohenDz` (or extend `@emlTTestPaired`
+with `.dz = .meanDiff / .sdDiff`), report it in the parametric
+branch as `Cohen's dz`, and leave `Matched-pairs r` to the
+nonparametric branch alone. `@emlFormatEffectLabel` is called with
+`"r"` as the scale hint at line 3618; the parametric branch would
+need `"d"`.
+
+### D9 reconfirmed
+
+`p   p < .001` — the doubled label again, this time at
+`eml-annotation-procedures.praat:3613`. Consistent with the 10-site
+systemic finding logged under D9.
+
+### D6 reconfirmed
+
+`demo paired`, `jitter pre`, `jitter post` — identifiers
+underscore-stripped for display, so the Info window names do not
+match the actual Table and column names the user must type
+elsewhere.
+
+### D14 reconfirmed
+
+`p < .001` for an actual p of 9.31e-10. The floor hides nine orders
+of magnitude here — a more extreme instance than the 3.7e-05 case
+logged under D14 in wrapper 4.
+
+### Graphing path — `Draw` from the completion dialog
+
+The completion dialog offers **Done / CSV / Draw / New**. `Draw` opens
+EML Graphs with **Graph type pre-selected to `Spaghetti Plot`** — the
+correct type for paired data, chosen without asking. Good behaviour;
+worth preserving.
+
+**Wide→long reshape is automatic and correct.** The column-mapping
+dialog offers only `Subject`, `Condition`, `Value`, which do not exist
+in `demo_paired` (columns: `subject`, `jitter_pre`, `jitter_post`,
+`HNR_pre`, `HNR_post`). This looked like a hardcoded-placeholder
+defect. It is not: the Objects list shows the wrapper silently created
+`24. Table pairedLong` and selected it, and the dropdown correctly
+lists *that* table's columns. Defaults are pre-filled correctly
+(Value / Condition / Subject) and `Show mean overlay` is on by
+default. **Not a defect** — logged because the false-positive reading
+is the obvious one.
+
+The plot rendered with title, per-subject light lines, a heavy mean
+overlay, gridlines, and no legend (correctly — one series).
+
+### G1 UPGRADED — GRAPHING, HIGH — hardcoded `roundTo = 10` is systemic, and the fix already exists in-tree
+
+Previously logged against the violin plot. It reproduces identically
+on the spaghetti plot, and a full sweep of call sites shows it is not
+type-specific:
+
+```
+eml-draw-procedures.praat:225   ... , 10, 0     pitch
+eml-draw-procedures.praat:715   ... , 10, 0
+eml-draw-procedures.praat:1052  ... , 10, 0
+eml-draw-procedures.praat:1317  ... , 10, 0     <- spaghetti
+eml-draw-procedures.praat:1702  ... , 10, 0     bar
+eml-draw-procedures.praat:2035  ... , 10, 0     <- violin (G1 original)
+eml-draw-procedures.praat:2896  ... , 10, 0
+eml-draw-procedures.praat:3551  ... , 10, 0
+eml-draw-procedures.praat:3776  ... , 10, 0
+eml-graphs-form.praat:5428      ... , 10, 0
+eml-graphs-form.praat:5432      ... , 10, 0
+```
+
+Eleven sites pass the literal `10`. Verified on screen: jitter data
+spanning 0.1000–3.4128 drew a y-axis of **0 to 10**, so the data
+occupies **33.1%** of the plot height and is crushed into the bottom
+third.
+
+**The correct implementation is already written, in the scatter path
+only** — `eml-draw-procedures.praat:2240-2258`:
+
+```praat
+# Adaptive rounding grid: derive roundTo from a nice step over the data
+# range (the same nice-number logic the gridlines use) so fractional data
+# (proportions, reaction times, jitter %) is not snapped to the integer grid.
+@emlComputeNiceStep: .dataYMax - .dataYMin, emlSetAdaptiveTheme.targetTicksY
+.yRoundTo = emlComputeNiceStep.step
+@emlComputeAxisRange: .dataYMin, .dataYMax, .yRoundTo, 0
+```
+
+The comment names this exact bug and even names *jitter %* as the
+motivating case. So this is not an unrecognised defect — it is a fix
+that was authored and then not propagated to the other eleven call
+sites. Applying the same three lines to the spaghetti data gives
+roundTo = 0.5, axis 0–4, and **82.8%** occupancy.
+
+This raises G1's priority: it is a one-pattern change with a
+worked reference implementation in the same file, affecting nearly
+every graph type the plugin produces.
+
+### G4 — GRAPHING, MEDIUM — reshaped y-axis label degrades to the literal "Value"
+
+The y-axis reads **`Value`** and the x-axis reads **`Condition`**.
+These are the reshaped `pairedLong` column names, passed straight
+through to the axis labels. The plot therefore does not say what is
+plotted — a reader sees "Value" where "Jitter (%)" belongs.
+
+The information is available: the wrapper knew the source columns
+(`jitter_pre`, `jitter_post`) because it analysed them, and it built
+`pairedLong` itself. The x-axis tick labels do carry `jitter pre` /
+`jitter post`, so the measure name survives into the tick text but
+not into the axis title.
+
+Compounds with **G3** (Rule 28C unit convention): even corrected to
+the source name it would read `jitter pct`, not `Jitter (%)`.
+
+### D6 reconfirmed in graphics
+
+Tick labels read `jitter pre` / `jitter post` — the underscore
+stripping follows the data into the Picture window, so the plotted
+labels do not match the column names in the Table.
+
+---
+
+## Wrapper 5/17 — Compare paired/repeated — Part 3: export, Advanced panel, cleanup
+
+Paths driven in this pass: `Graph Complete → Exp CSV → Save` (twice, same
+filename, to probe Rule 27); `Graph Complete → Redraw → Continue → Advanced`;
+`Advanced → Draw` (twice, to A/B the y-range and the escaping advice);
+`Graph Complete → Done → Analysis complete → Done`. All previously
+unexercised.
+
+### Exported CSV — verbatim
+
+`Exp CSV` on the Graph Complete dialog exports the **statistics**, not the
+plotted data — i.e. it is the same export the Analysis-complete dialog's
+`CSV` button produces. File written to `/root/pairedLong_results.csv`,
+`file -b` reports `CSV ASCII text` (no UTF-16 trap here):
+
+```
+table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,effect_type,effect_label,n1,n2,mean1,sd1,median1,mean2,sd2,median2
+demo_paired,jitter_pre,jitter_post,jitter_pre,jitter_post,Paired t-test,11.117232,19.00,0.0000000009,1.0000,matched-pairs r,,20,20,2.2558,0.8262,2.4679,1.4351,0.8509,1.6275
+```
+
+Header emitted at `stats/eml-output.praat:570`; row writer
+`procedure emlCSVAddRow: .table$, .dataCol$, .groupCol$, .g1$, .g2$, .test$,
+.stat, .df, .p, .es, .esType$, .esLabel$, .n1, .n2, ...` at
+`stats/eml-output.praat:576`. 18 call sites across the library.
+
+### D14 — RESOLVED, downgrade to LOW (display-only)
+
+The Info window prints `p    p < .001`, which raised the concern that
+precision was being lost at the floor. **It is not.** The CSV carries
+`0.0000000009`, and scipy gives the true two-tailed p as `9.3112e-10`, so
+the exported value is exact to the `fixed$(p, 10)` format. D14 therefore
+describes an Info-window presentation choice, not data loss, and the
+downstream artefact is sound.
+
+Residual, LOW: the fixed-10 format floors any p below `5e-11` to
+`0.0000000000` in the CSV. Scientific notation would be the robust choice
+for the export column.
+
+### D15 — CONFIRMED contaminating the export
+
+Predicted from source reading in Part 1; now observed in the artefact.
+The row for a **Paired t-test** carries `effect_size = 1.0000` with
+`effect_type = matched-pairs r`. The rank-biserial correlation is not only
+mislabelled in the Info window, it is the value a downstream consumer of the
+CSV will read as *the* effect size for a parametric paired test. Call site
+`graphs/eml-annotation-procedures.praat:3628`. Severity stands at HIGH.
+
+### D16 — CLARITY, HIGH — the dialog's own escaping instructions are wrong, and fail silently
+
+The Advanced column-mapping panel carries this help line directly above the
+axis-label fields:
+
+```
+Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)
+```
+
+Source, verbatim and identical at **13 sites** in `graphs/eml-graphs-form.praat`
+(lines 1442, 1641, 1792, 1956, 2286, 2678, 3030, 3441, 3824, 4158, 4499,
+4818, 5153).
+
+`\_%` does not print a percent sign. Typed into the Y-axis label field
+exactly as instructed — `Jitter (\_%)` — the rendered axis reads:
+
+```
+Jitter ( )
+```
+
+Both characters vanish. No error, no warning; the label simply loses
+content. Re-drawn with the canonical Praat trigraph `\% ` (backslash,
+percent, **space**) — `Jitter (\% )` — the axis renders correctly as
+`Jitter (%)`.
+
+The library's own sanitizer already uses the correct form. From
+`graphs/eml-graph-procedures.praat`:
+
+```praat
+procedure emlSanitizeLabel: .raw$
+    .result$ = replace$ (.raw$, "_", " ", 0)
+    # Order matters: % first because \% contains no other specials
+    .result$ = replace$ (.result$, "%", "\% ", 0)
+    .result$ = replace$ (.result$, "#", "\# ", 0)
+    .result$ = replace$ (.result$, "^", "\^ ", 0)
+endproc
+```
+
+So the user-facing instruction contradicts the implementation sitting one
+file away. This is a one-string fix replicated 13 times; suggested
+replacement text: `\% prints % (note the trailing space)`. Because the
+failure is silent and the affected field is a published-figure axis label,
+severity is HIGH despite the triviality of the fix.
+
+Escaping this trap is also what makes the *rest* of the Advanced panel
+usable — see G4 below.
+
+### D17 — PACKAGING, MEDIUM — `effect_label` column populated inconsistently across analyses
+
+The CSV schema reserves an `effect_label` column for the human-readable
+magnitude ("large effect"). The Info window computes and prints it via
+`@emlFormatEffectLabel`, but the paired branch passes a hardcoded `""` into
+the CSV row:
+
+```praat
+... emlMatchedPairsR.r, "matched-pairs r", "",     ; line 3628 — esLabel dropped
+```
+
+so the exported column is empty (visible as the `,,` in the row above).
+
+This is not uniform. Independent-groups (2622), nonparametric two-group
+(2689), and Kruskal–Wallis (3004) all pass `emlFormatEffectLabel.label$`
+correctly. The sites that drop it are 3272 and 3308 (Pearson, Spearman),
+3556 (normality), **3628 and 3682 (paired, both branches)**, and 3784/3790/3796
+(two-way ANOVA). Eight of eighteen. A consumer joining these exports gets a
+column that is populated for some tests and blank for others with no
+indication why.
+
+### D18 — CLARITY, LOW-MEDIUM — default export filename names an internal artefact
+
+The Export Results dialog pre-fills `File name: pairedLong_results`. The
+row *inside* the file correctly records `table = demo_paired`. `pairedLong`
+is the wide→long reshape the wrapper builds for the spaghetti plot; the user
+never created it, never named it, and (per P3 below) never sees it again
+after the workflow ends. Naming the deliverable after a transient
+intermediate makes a directory of exports hard to reconcile with the tables
+that produced them. The filename should derive from the same source-table
+name the CSV body already carries.
+
+### D19 — CLARITY, LOW — paired results shoehorned into the two-group CSV schema
+
+For a paired test the schema's `data_col` / `group_col` / `group1` /
+`group2` are not data and group — they are column 1 and column 2, written
+twice (`jitter_pre,jitter_post,jitter_pre,jitter_post`). Similarly `n1` and
+`n2` are both 20, which is the same 20 subjects rather than two samples.
+Nothing is wrong numerically, but a reader of the file cannot distinguish a
+paired design from an independent-groups design with equal n without parsing
+the `test` string. Cosmetic companion: `df` exports as `19.00`.
+
+### G1 — UPGRADE: empirical A/B confirms the auto y-range materially degrades the figure
+
+Part 2 established the defect by source reading (11 call sites passing a
+literal `roundTo = 10`, with the correct adaptive `@emlComputeNiceStep`
+pattern already implemented at the scatter sites and commented with this
+exact bug, naming "jitter %"). The Advanced panel allows a direct
+side-by-side on identical data:
+
+| | y-axis | gridlines | data occupancy |
+|---|---|---|---|
+| Auto (`roundTo = 10`) | 0 – 10 | 2, 4, 6, 8, 10 | 33.1% |
+| Manual (max 3.5) | 0 – 3.5 | 0.5 steps | 82.8% |
+
+In the auto rendering the twenty subject traces are compressed into the
+bottom third and individual crossings are not resolvable; at 0–3.5 the same
+traces are legible and the mean overlay separates cleanly from them. This is
+the plot a user gets by default from the Draw button after running the
+analysis, so the degraded version is the one that will reach figures.
+Priority stands at HIGH; the fix is to reuse the scatter path's adaptive
+pattern at the other 11 sites.
+
+### G4 — SOFTENED to MEDIUM-LOW: an override exists, but only in Advanced
+
+The generic `Value` / `Condition` axis labels can be overridden — the
+Advanced panel exposes `X axis label` and `Y axis label` with the annotation
+"blank = auto from column". The defect is therefore the *default*, not a
+missing capability: the wrapper passes the reshaped long-format column names
+straight to the axis titles, so the out-of-the-box figure does not state
+what is plotted. Compounds with D16, since the obvious fix a user reaches
+for — adding a unit like `(%)` — is exactly the case the dialog's own help
+text gets wrong.
+
+### Not a defect — three behaviours worth preserving
+
+**P1 — Rule 27 (`@emlGenerateUniquePath`) verified empirically.** Exported
+twice to the identical path. The first file was left byte-identical
+(`md5 1e8643df59a43686dad31feb216d20d5`, mtime unchanged); the second was
+written as `pairedLong_results_1.csv`; and the confirmation dialog reported
+the **actual** path used, not the requested one — `Saved to:
+/root/pairedLong_results_1.csv`. Silent overwrite is impossible and the
+user is told what actually happened. This is the behaviour Rule 27 asks for,
+implemented correctly.
+
+**P2 — Loop repopulation (Appendix F) works, including the Advanced flag.**
+`Redraw` reopens the EML Graphs dialog with graph type, title
+("Jitter pre vs post"), colour mode, and figure dimensions all retained;
+`Continue` then reopens the column mapping **already in Advanced mode**
+(height 775 rather than 337) with the previously entered y-maximum and axis
+label preserved. Iterating on a figure does not mean retyping it.
+
+**P3 — the reshape intermediate is cleaned up.** `Table pairedLong`
+(object 24), created silently by the wrapper for the spaghetti plot, is
+removed when the workflow completes. Objects list after `Done`:
+
+```
+1  Table demo_normality
+2  Table demo_2groups
+19 Table demo_paired
+20 Table demo_3groups
+21 Table demo_correlation
+22 Table demo_regression
+23 Table demo_twoway
+```
+
+No litter, and no pre-existing object removed (Rule 4B satisfied). The ID
+gap at 3–18 accounts for earlier intermediates likewise cleaned.
+
+### Wrapper 5 — remaining unexercised path
+
+The `Compare Paired Observations` Column 1 / Column 2 optionmenus offer the
+string column `subject` despite the dialog instructing "Select two numeric
+columns with paired data (same N)". Selecting it was not attempted in this
+pass and remains open.
+
+---
+
+## Wrapper 6 of 17 — `Compare k groups (ANOVA)` on `demo_3groups`
+
+Driven end to end through all three legs the wrapper offers: **statistics →
+Draw → Exp CSV**. Data column `SPL_dB`, group column `voice_type`,
+Tukey HSD checkbox on, group order default. Info captured with `info$()`
+to disk, not screenshotted.
+
+### Info window, verbatim
+
+```
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Wed Aug  5 13:08:19 2026
+══════════════════════════════════════════════
+
+  Table               demo 3groups
+  Data column         SPL dB
+  Group column        voice type
+  Groups              3
+
+
+  ── ANOVA Table ─────────────────────────────
+
+Source              SS              df    MS              F           p
+Between             335.03          2     167.52          7.0767      0.002246
+Within              994.21          42    23.67           
+Total               1329.24         44    
+
+  F                   7.0767
+  p                   p = .002
+  Effect size         eta-squared = 0.2520
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  Soprano       15    91.44     5.18      91.60     
+  Mezzo         15    89.11     5.94      87.71     
+  Alto          15    84.85     2.98      84.32     
+
+
+  ── Tukey HSD Pairwise Comparisons (p-values) ───
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         0.3942      0.0017      
+Mezzo         0.3942      ---         0.0542      
+Alto          0.0017      0.0542      ---         
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         0.419       1.560       
+Mezzo         -0.419      ---         0.905       
+Alto          -1.560      -0.905      ---         
+
+══════════════════════════════════════════════
+```
+
+### Accuracy — clean pass, Info *and* CSV
+
+Every reported number was verified against scipy/statsmodels computed from
+the ASCII column dump (`dump_demo_3groups.csv`, 45 rows, 15 per group).
+
+| Quantity | Plugin | Ground truth |
+|---|---|---|
+| SS between / within / total | 335.03 / 994.21 / 1329.24 | identical |
+| df | 2 / 42 / 44 | identical |
+| MS between / within | 167.52 / 23.67 | 167.5157 / 23.6716 |
+| F | 7.0767 | 7.076697 |
+| p | 0.002246 | 0.00224563 |
+| eta² | 0.2520 | 0.252004 |
+| Group means | 91.44 / 89.11 / 84.85 | 91.4438 / 89.1053 / 84.8522 |
+| Group SDs | 5.18 / 5.94 / 2.98 | 5.1800 / 5.9437 / 2.9756 |
+| Group medians | 91.60 / 87.71 / 84.32 | 91.5985 / 87.7142 / 84.3157 |
+| Tukey p (Sop×Mez, Sop×Alt, Mez×Alt) | 0.3942 / 0.0017 / 0.0542 | 0.395666 / 0.001708 / 0.054186 |
+| Cohen's d | 0.419 / 1.560 / 0.905 | 0.41946 / 1.56050 / 0.90494 |
+
+The CSV export was verified independently and to more digits: the Tukey **q
+statistics** match to six decimals (1.861486 / 5.247135 / 3.385649, agreeing
+with both `Δ/sqrt(MSW/2·(1/n₁+1/n₂))` and `Δ/sqrt(MSW/n)` — identical for
+equal n), and the Tukey p-values agree with `statsmodels.psturng` to within
+that function's known interpolation error. Effect-magnitude labels are also
+correct against the plugin's own thresholds (eta² 0.2520 ≥ 0.14 → "large
+effect"; d 0.4195 ∈ [0.2, 0.5) → "small effect"; d ≥ 0.8 → "large effect").
+
+The d matrix's sign convention is coherent: the upper triangle reads
+row-minus-column, the lower triangle is its negation, so the sign tells the
+reader the direction. This is the disclosure D13 found *missing* on the
+two-group path — the k-group path does it right.
+
+### D20 — ACCURACY (high): no variance-homogeneity check anywhere, and the plugin's own demo data violates the assumption
+
+`grep -iE 'levene|bartlett|brown.forsythe|games.howell|homogene'` across the
+whole plugin returns nothing. Welch appears only on the **two-group** path
+(`stats/eml-inferential.praat:106–190`, and `@emlPairwiseT` at 3325+, where
+it is correctly the default). For k ≥ 3 the wrapper runs Fisher's one-way
+ANOVA unconditionally, with pooled-MSW Tukey HSD behind it, and never tests
+or mentions the equal-variance assumption that both procedures rest on.
+
+This is not hypothetical. The shipped demo table trips it:
+
+```
+Bartlett      W = 6.2099   p = 0.0448
+Levene (mean) W = 3.6264   p = 0.0353
+Levene (med)  W = 2.9594   p = 0.0628
+SD ratio      5.9437 / 2.9756 = 2.00
+```
+
+Welch's ANOVA on the same data gives **F(2, 25.41) = 10.09, p = .000595**
+against the reported **F(2, 42) = 7.08, p = .00225** — same conclusion at
+α = .05 here, so no reversal in this dataset, but a materially different
+F, df, and p. With unequal n the divergence would be larger and the sign of
+the difference unpredictable.
+
+Two things are wrong at once. The Info window presents the descriptives
+table with the group SDs **right there** (5.18 / 5.94 / 2.98) and says
+nothing about them; and the library already knows how to do the robust
+thing on the two-group path but does not carry it forward. Minimum fix:
+compute Levene (median-centred, the robust default) alongside the ANOVA and
+print it in the header block. Better fix: route to Welch's ANOVA +
+Games–Howell when it fails, mirroring the two-group path's existing
+Welch-by-default posture. Either way the current behaviour — silent Fisher
+ANOVA on heteroscedastic data — is the one outcome that should not ship.
+
+Note this is a *methodological* decision in the Step 1B sense, so the fix
+should surface it to the user rather than switching silently.
+
+### D21 — CLARITY (medium): omega² is never computed, though the library already knows how to classify it
+
+`stats/eml-output.praat:342–368` classifies magnitudes for `eta_squared`,
+`omega_squared`, and epsilon — all three branches exist. Only eta² is ever
+produced. For this dataset eta² = 0.2520 against omega² = 0.2126: eta² is
+the biased estimator and overstates by ~16% relative at n = 45, k = 3, and
+the gap widens as n shrinks. Since the classification code is already
+written, reporting both is a few lines, and reporting omega² alongside eta²
+is the standard recommendation for one-way designs.
+
+### D22 — CLARITY (medium): the Tukey table reports p-values only
+
+The pairwise block gives p and (separately) d, but never the **mean
+difference** or its **confidence interval** — the quantities a reader
+actually needs to state a result. The CSV carries `mean1`/`mean2` so the
+difference is recoverable by hand, but the Info window is where the user
+reads the result, and there it is absent. This is D12 (no CI on the mean
+difference, two-group path) recurring on the k-group path, and it is worse
+here because there are three differences to reconstruct rather than one.
+
+The q statistic is likewise present in the CSV (`statistic` column) but
+never shown in the Info window, so the Tukey table cannot be checked or
+reported in APA form from what is displayed.
+
+### D23 — PACKAGING (medium): the omnibus CSV row carries only the numerator df
+
+`graphs/eml-annotation-procedures.praat:2763` passes
+`emlOneWayAnova.dfBetween` into the single `df` column. The exported row
+reads `df = 2.00` while the Info window reports F(2, 42). The denominator df
+is recoverable only by inference from the Tukey rows' `42.00` — which works
+here only because Tukey was requested. With the Tukey checkbox off, the
+export loses the error df entirely and the F statistic in the CSV becomes
+uninterpretable.
+
+The single-`df` column is a schema limitation, but the omnibus row could
+carry `df2` in a spare field, or the schema could gain `df1`/`df2`.
+
+### D24 — PACKAGING (high): zero is used as the not-applicable sentinel in CSV exports
+
+`@emlCSVAddRow` (`stats/eml-output.praat`) has **no NA sentinel**. Every
+numeric argument goes through `fixed$` or `string$` unconditionally, so a
+caller that has nothing to report must pass a number, and every caller
+passes `0`.
+
+Line 2765 (omnibus row) passes literal `0` for `n1, n2, mean1, sd1,
+median1, mean2, sd2, median2`. Line 2943 (the `doTukey = 0` fallback)
+passes `0, 0, 0` for `stat, df, p`. The result in the delivered file:
+
+```
+demo_3groups,SPL_dB,voice_type,omnibus,omnibus,One-way ANOVA,7.076697,2.00,0.002246,0.2520,eta-squared,large effect,0,0,0,0,0,0,0,0
+```
+
+Eight trailing zeros that mean "not applicable" are indistinguishable from
+eight genuine zero measurements. Any downstream consumer that reads this
+into R or pandas and takes a column mean, filters `n1 > 0`, or plots
+`mean1` will silently include the omnibus row. Worse, the `doTukey = 0`
+branch writes `p = 0.000000`, which reads as the most significant result in
+the file.
+
+This is the D19 shoehorning pattern in its damaging form: D19 was about
+paired results being squeezed into a two-group schema, which is untidy;
+this is about a sentinel collision that produces wrong numbers downstream.
+Fix: emit `NA` (or empty) for inapplicable fields. `@emlCSVAddRow` would
+need string-typed passthrough or a parallel "field present" mask; the
+cheapest version is a sentinel constant checked in the formatter.
+
+### D25 — CLARITY (medium): the "Adjustment method" control is inert on the parametric k-group path
+
+This one was chased as a suspected accuracy defect and resolved as **correct
+behaviour behind a misleading control** — logging the control, not the
+statistics.
+
+The question was whether the annotated figure's p-values came from Tukey or
+from the Holm correction the graphs form advertises. Soprano×Alto cannot
+discriminate (Tukey 0.001710 and Holm 0.001806 both round to `.002`).
+Mezzo×Alto does:
+
+```
+raw t p : Sop-Mez 0.195222   Sop-Alt 0.000602   Mez-Alt 0.021207
+holm    : Sop-Mez 0.195222   Sop-Alt 0.001806   Mez-Alt 0.042415
+tukey   : Sop-Mez 0.394219   Sop-Alt 0.001710   Mez-Alt 0.054187
+```
+
+Holm calls Mezzo×Alto significant (.042); Tukey does not (.054). The
+rendered figure annotated **only** Soprano×Alto with "Show nonsignificant"
+off, so Mezzo×Alto was treated as nonsignificant ⇒ the annotation used
+Tukey. The caption is honest and the numbers are right.
+
+The source explains why, and that is the finding.
+`annotCorrectionMethod$` is documented at
+`graphs/eml-annotation-procedures.praat:304` as "p-value correction for
+**Dunn's test**", and its sole consumption site is the *nonparametric*
+branch of `@emlBridgeGroupComparison` (1796–1810). But the "Adjustment
+method" optionmenu (`@emlAdjustMethodName`,
+`graphs/eml-graphs-form.praat:755–777`) is declared at **7** annotate-capable
+column-mapping dialogs and presented **unconditionally**. A user who sets it
+to Bonferroni, runs a parametric k-group comparison, and receives
+Tukey-corrected annotations has been misled by a live-looking control that
+did nothing.
+
+Fix: gray the control out when Test type = parametric and k ≥ 3, or rename
+it "Adjustment method (nonparametric post-hoc only)". The former is better
+— the label change still leaves the user to work out when their own analysis
+is nonparametric.
+
+### D17 — REFINED, and refined *against* the prediction that motivated this leg
+
+The prediction going in was that the ANOVA export would drop `effect_label`,
+as the paired export does. It does not. Both `@emlCSVAddRow` call sites on
+this path (2761 omnibus, 2853 Tukey) call `@emlFormatEffectLabel` first, so
+every row in `demo_3groups_results.csv` carries a populated label:
+
+```
+...,0.2520,eta-squared,large effect,...
+...,0.4195,Cohen's d,small effect,...
+...,1.5605,Cohen's d,large effect,...
+...,0.9049,Cohen's d,large effect,...
+```
+
+Contrast the wrapper-5 paired export, whose `effect_label` field is empty:
+
+```
+demo_paired,jitter_pre,jitter_post,...,1.0000,matched-pairs r,,20,20,...
+```
+
+D17 is therefore **a per-call-site omission at 8 of 18 sites, not a systemic
+export defect**, and the ANOVA family is on the correct side of the split.
+Downgrading the severity accordingly, but the fix is unchanged: the label
+computation should live inside `@emlCSVAddRow` rather than being each
+caller's responsibility, which is exactly the DRY defect (Rule 35) that
+produced the split in the first place.
+
+### D18 — SCOPED DOWN to the paired path only
+
+The Export Results dialog pre-filled `demo_3groups_results` — correctly
+derived from the source table name. D18 (filename pre-filled from a
+transient intermediate) is specific to the paired reshape path, which routes
+through the `pairedLong` intermediate. Not a general defect of the export
+dialog.
+
+### D14 — residual `fixed$` risk FALSIFIED, plus one new latent hazard
+
+D14 noted the Info window floors small p to `p < .001` while the CSV carries
+the exact value, and flagged a residual worry that `fixed$(.p, 6)` in
+`@emlCSVAddRow` might itself floor a very small p to `0.000000`. Tested
+empirically (`praat --pref-dir=…/prefs_batch --run`):
+
+```
+fixed$ (9e-10, 6)      = 0.0000000009
+fixed$ (1e-15, 6)      = 0.000000000000001
+fixed$ (0, 6)          = 0
+fixed$ (4e-11, 10)     = 0.00000000004
+fixed$ (undefined, 2)  = --undefined--
+fixed$ (-0.0000001, 4) = -0.0000001
+```
+
+Praat's `fixed$` **guarantees at least one significant digit** and never
+floors a nonzero value to zero — the digit count is a minimum, not a
+maximum. The CSV always carries full-resolution p. D14 reduces to a note:
+only the Info window floors, via `@emlFormatP`, which is a deliberate
+reporting convention.
+
+Two incidental results worth recording as Praat idioms:
+
+- `fixed$ (0, 6)` yields `0`, not `0.000000` — so a genuine zero and a
+  padded not-applicable zero (D24) are *also* visually distinguishable in
+  the raw file, which is faint consolation but does confirm D24's zeros are
+  real zeros passed as literals rather than formatting artefacts.
+- `fixed$ (undefined, 2)` yields the literal string `--undefined--`. Since
+  `@emlCSVAddRow` formats unconditionally, any statistic that comes back
+  undefined would be injected verbatim into a CSV cell, breaking the file's
+  numeric typing for that column with no warning. Latent, not yet observed
+  — but it is the same root cause as D24 and the same fix closes both.
+
+### Recurrences confirmed on this wrapper
+
+- **D6** — identifiers underscore-stripped for display: the header block
+  reads `demo 3groups`, `SPL dB`, `voice type` for objects actually named
+  `demo_3groups`, `SPL_dB`, `voice_type`. A user copying these into a script
+  gets three broken names.
+- **D9** — the p row prints its label twice: `p    p = .002`. The systemic
+  `@emlFormatP.formatted$` prefix defect, here at call site 2752.
+- **D16b** — the Advanced panel's own formatting help line still renders its
+  underscores as spaces in `comment:`.
+
+### Graphing
+
+Box plot rendered from the Draw button, annotated with the Tukey
+significance bracket for Soprano×Alto only. **G1** recurs — the wrapper
+passes literal `roundTo = 10` to `@emlComputeAxisRange`, giving an axis that
+the data occupies only ~53% of. **P2** recurs and works: `Redraw` reopened
+the EML Graphs dialog with type, title, colour mode and dimensions retained,
+and the column mapping reopened in sticky Advanced mode.
+
+### Not a defect
+
+**P4 — the graph-type menu's divider entries are guarded.** Selecting
+`--- Categorical ---` produces "The item you selected is a category header."
+rather than an obscure failure. Correct, and worth preserving.
+
+### Deferred candidate — graph-type taxonomy
+
+The dropdown splits into `--- Categorical ---` (Violin, Grouped Violin, Box,
+Grouped Box, **Histogram**) and `--- Continuous ---` (**Bar Chart**,
+Scatter, Line ±CI, **Spaghetti**). Histogram under Categorical and Bar Chart
+under Continuous both look inverted on the usual reading, but the split may
+be describing the *x-axis variable type* rather than the plot family, in
+which case it is right. Holding until the Bar Chart column-mapping dialog is
+driven, which will settle what the two headings mean.
+
+---
+
+## Wrapper 7 of 17 — `Compare k groups (Kruskal-Wallis)` on `demo_3groups`
+
+Driven end to end: Run → Draw (Holm) → Redraw (Bonferroni) → Exp CSV → Done.
+The two Draw legs were deliberately structured as an A/B differential — the
+only control changed between them was `Adjustment method` — in order to
+settle D25 from the opposite direction.
+
+### Info window, verbatim
+
+```
+══════════════════════════════════════════════
+  EML Stats : Kruskal-Wallis H Test
+  Wed Aug  5 13:28:09 2026
+══════════════════════════════════════════════
+
+  Table               demo 3groups
+  Data column         SPL dB
+  Group column        voice type
+  Groups              3
+  Total N             45
+
+  ── Omnibus Test ────────────────────────────
+  H                   11.9745
+  df                  2
+  p                   p = .003
+  Epsilon-squared     0.2721
+  Effect magnitude    large effect
+
+  ── Group Mean Ranks ────────────────────────
+
+Group         N     Mean Rank
+Soprano       15    30.47
+Mezzo         15    24.47
+Alto          15    14.07
+
+  ── Dunn's Post-Hoc (adjusted p, holm) ──────
+
+            Soprano     Mezzo       Alto
+Soprano     ---         0.2109      0.0019
+Mezzo       0.2109      ---         0.0602
+Alto        0.0019      0.0602      ---
+
+  ── Dunn's z-statistics ─────────────────────
+
+            Soprano     Mezzo       Alto
+Soprano     ---         1.251       3.420
+Mezzo       -1.251      ---         2.169
+Alto        -3.420      -2.169      ---
+
+  ── Pairwise Effect Sizes (rank-biserial r) ───
+
+            Soprano     Mezzo       Alto
+Soprano     ---         0.244       0.751
+Mezzo       -0.244      ---         0.440
+Alto        -0.751      -0.440      ---
+
+══════════════════════════════════════════════
+```
+
+### Exported CSV, verbatim (`demo_3groups_results_1.csv`, graph-path export)
+
+```
+table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,effect_type,effect_label,n1,n2,mean1,sd1,median1,mean2,sd2,median2
+demo_3groups,SPL_dB,voice_type,omnibus,omnibus,Kruskal-Wallis,11.974493,2.00,0.002511,0.2721,epsilon-squared,large effect,0,0,0,0,0,0,0,0
+demo_3groups,SPL_dB,voice_type,Soprano,Mezzo,Dunn (bonferroni),1.251086,0,0.632709,0.2444,rank-biserial r,small effect,15,15,91.4438,5.1800,91.5985,89.1053,5.9437,87.7142
+demo_3groups,SPL_dB,voice_type,Soprano,Alto,Dunn (bonferroni),3.419636,0,0.001881,0.7511,rank-biserial r,large effect,15,15,91.4438,5.1800,91.5985,84.8522,2.9756,84.3157
+demo_3groups,SPL_dB,voice_type,Mezzo,Alto,Dunn (bonferroni),2.168550,0,0.090351,0.4400,rank-biserial r,medium effect,15,15,89.1053,5.9437,87.7142,84.8522,2.9756,84.3157
+```
+
+### Accuracy — clean pass, every reported number
+
+Ground truth computed in scipy from an ASCII dump of the table
+(`dump_demo_3groups.csv`), independently of the plugin, before any
+comparison was made.
+
+| Quantity | Plugin | scipy ground truth | Verdict |
+|---|---|---|---|
+| H | 11.9745 / 11.974493 | 11.974492753623196 | exact |
+| omnibus p | 0.002511 (CSV) | 0.002510567698247169 | exact |
+| ε² | 0.2721 | 0.27214756 = H/(N−1) | exact |
+| mean rank Soprano | 30.47 | 30.4667 | exact |
+| mean rank Mezzo | 24.47 | 24.4667 | exact |
+| mean rank Alto | 14.07 | 14.0667 | exact |
+| Dunn z S–M | 1.251086 | 1.2511 | exact |
+| Dunn z S–A | 3.419636 | 3.4196 | exact |
+| Dunn z M–A | 2.168550 | 2.1685 | exact |
+| Holm p (Info, blocks 1–2) | .2109 / .0019 / .0602 | .210903 / .001881 / .060234 | exact |
+| Bonferroni p (Info block 3, figure, CSV) | .6327 / .0019 / .0904 | .632709 / .001881 / .090351 | exact |
+| rank-biserial r | 0.244 / 0.751 / 0.440 | 0.2444 / 0.7511 / 0.4400 | exact |
+| medians | 91.5985 / 87.7142 / 84.3157 | same | exact |
+
+Three points worth recording as *correct choices*, not merely correct
+arithmetic:
+
+- **ε² uses the Tomczak & Tomczak formula H/(N−1) = 0.27215**, not the
+  competing (H−k+1)/(N−k) = 0.23749. Both appear in the literature; the
+  plugin picked one and applied it consistently. The magnitude label
+  ("large effect", ε² > .14) is correct under the formula actually used.
+- **Rank-biserial r is the U-based form**, matching 0.2444/0.7511/0.4400
+  exactly — not the z/√N or z/√(n₁+n₂) approximations, which would have
+  given visibly different values. Effect labels (small/medium/large at
+  .1/.3/.5) are correct.
+- **The z and r matrices use a coherent sign convention** — upper triangle
+  row-minus-column, lower triangle its negation — the same good practice
+  observed on the ANOVA path.
+
+### Graphing accuracy — verified twice, against two different ground truths
+
+Both violin figures were checked against pre-computed values. Inner boxes
+matched the IQR of all three groups exactly and medians matched. The Holm
+draw annotated `.211 / .002 / .060`; the Bonferroni draw annotated
+`.633 / .002 / .090`. Both exact.
+
+### D25 — CONFIRMED from the opposite direction, and the prediction held
+
+D25 logged the `Adjustment method` optionmenu as inert on the parametric /
+Tukey path, and predicted it would be live on the nonparametric / Dunn path
+because `annotCorrectionMethod$` is documented as the correction "for Dunn's
+test" and its sole consumption site is the nonparametric branch of
+`@emlBridgeGroupComparison` (`eml-annotation-procedures.praat:1796–1810`).
+
+The A/B drive confirms it. Changing Holm → Bonferroni and nothing else
+changed the annotated p-values (`.211/.060` → `.633/.090`) *and* the caption
+sub-line (`Dunn's test (holm)` → `Dunn's test (bonferroni)`).
+
+The A/B had to be set up deliberately: with **Show nonsignificant** off, the
+two methods annotate identically here, because only Soprano×Alto crosses α
+and its adjusted p is 0.001881 under both. The checkbox had to be ticked
+first for the control's effect to be observable at all. Worth remembering as
+a harness lesson — an inert-looking control may simply have no visible
+consequence under the current display settings.
+
+D25 therefore stands as written, and is now scoped precisely: the control is
+correct and live on the nonparametric path, and is displayed but has no
+effect on the parametric path. The defect is that it is shown unconditionally.
+
+### D26 — CLARITY, HIGH — the KW wrapper exposes no post-hoc control whatsoever
+
+`scripts/eml-compare-kw.praat:64` calls
+
+```praat
+@emlRunKWAnalysis: tableId, dataCol$, groupCol$, 1, "holm"
+```
+
+with both post-hoc arguments hardcoded. The procedure signature is
+`emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod$`
+(`stats/eml-analysis.praat:292`) and `@emlDunnTest` accepts
+bonferroni / holm / bh — the capability is fully built and validated
+(`eml-analysis.praat:1512–1524` even falls back to holm with a warning on an
+unrecognised method). Nothing is wired to a control.
+
+This is asymmetric with the sibling wrapper. `eml-compare-k-groups.praat`
+(ANOVA) has:
+
+```
+45:        boolean: "Tukey HSD post hoc", 1
+69:    @emlRunAnovaAnalysis: tableId, dataCol$, groupCol$, doTukey
+```
+
+So on the parametric path the user can suppress the post-hoc; on the
+nonparametric path they cannot suppress Dunn, and cannot change its
+correction, from the analysis dialog. They *can* change it from the graph
+dialog — which produces D27.
+
+Fix is two form fields and two variables; the plumbing behind them already
+exists and is already tested.
+
+### D27 — CLARITY, HIGH — the Info window silently accumulates duplicate reports that can disagree with each other
+
+Each `Draw` re-runs the entire analysis and appends a complete report block
+to the Info window. One session produced three blocks:
+
+| Block | Lines | Timestamp | Correction | Origin |
+|---|---|---|---|---|
+| 1 | 3–54 | 13:28:09 | holm | Run (analysis path) |
+| 2 | 56–108 | 13:30:29 | holm | first Draw — byte-identical to block 1 |
+| 3 | 110–162 | 13:31:42 | bonferroni | Redraw with Adjustment method changed |
+
+Three compounding problems:
+
+1. **The blocks are indistinguishable by header.** All three read
+   `EML Stats : Kruskal-Wallis H Test`. Nothing says which came from the
+   analysis and which from a graph, and nothing flags that block 2 is a
+   redundant duplicate.
+2. **Blocks 1 and 3 report different post-hoc p-values for the same data**
+   (.2109/.0019/.0602 vs .6327/.0019/.0904) with no marker of which is
+   authoritative. A user who scrolls up gets holm; the delivered figure and
+   the delivered CSV both carry bonferroni. Because of D26 the user cannot
+   even reconcile them from the analysis dialog — the holm in block 1 is not
+   a choice they made.
+3. **The wrapper's `Clear Info window` checkbox applies only at Run**, so
+   the accumulation is unbounded across a Draw/Redraw session.
+
+Credit where due: **the CSV is self-documenting where the Info window is
+not.** The `test` column reads `Dunn (bonferroni)` on every pairwise row, so
+the exported file cannot be misread. The fix for the Info window is the same
+one line of discipline — put the correction in the block header, and mark
+graph-path reruns as such.
+
+### D28 — CLARITY, MEDIUM — the KW omnibus p never reaches full precision in the Info window
+
+The Info window shows only `p    p = .003`. The full value 0.002511 exists —
+it is in the CSV — but no Info window path prints it. This is *worse* than
+the ANOVA path, which at least carried 0.002246 in its ANOVA table row.
+A reader working from the Info window alone cannot report the exact p, and
+the APA-style threshold rendering hides the difference between p = .0025 and
+p = .0034.
+
+(The doubled `p    p = .003` label is D9, recurring here.)
+
+### D29 — GRAPHING, MEDIUM-LOW — the caption renders epsilon-squared as "e2"
+
+The figure caption reads:
+
+```
+Kruskal-Wallis: H(2) = 11.97, p = .003, e2 = 0.272
+```
+
+`e2` is not standard notation for ε². Appendix E gives the escape mechanism
+for Greek and superscripts in Picture window text, so this is renderable —
+`\ep` + `\^ 2` or a plain `eps^2`. As written it reads as an unexplained
+abbreviation, and in a figure destined for publication it is wrong.
+
+The same caption also does not carry the full-precision p, so D28 propagates
+into the figure.
+
+### D30 — GRAPHING, LOW — caption sub-line is low-contrast grey on white
+
+The `Dunn's test (holm)` / `Dunn's test (bonferroni)` sub-line under the main
+caption is drawn in a light grey that is legible on screen at 300 dpi but
+degrades badly in greyscale print and on projection. Given that this
+sub-line is the *only* place in the figure that discloses which correction
+produced the annotated p-values (see D27), it is the wrong element to make
+faint.
+
+### D31 — RESOLVED as designed, downgrade to LOW — violin KDE tails extend exactly one bandwidth past the data
+
+| Group | Drawn extent | Observed min–max |
+|---|---|---|
+| Soprano | 80.2 – 104.0 | 82.74 – 101.35 |
+| Mezzo | 78.4 – 105.3 | 81.53 – 102.28 |
+| Alto | 79.5 – 92.6 | 81.01 – 91.06 |
+
+The candidate is resolved by reading the source. `eml-draw-procedures.praat`
+2011–2030 extends the range by the largest per-group Silverman bandwidth,
+h = 0.9·SD·n^(−0.2), with the stated intent that "violin tails do not hit the
+axis edge." The arithmetic confirms the overshoot is exactly that quantity:
+
+| Group | Silverman h | observed low overshoot | high overshoot |
+|---|---|---|---|
+| Soprano | 2.712 | 2.54 | 2.65 |
+| Mezzo | 3.112 | 3.13 | 3.02 |
+| Alto | 1.558 | 1.51 | 1.54 |
+
+So this is deliberate, correctly implemented, and matches seaborn's default
+(`cut=2`). It does *not* match ggplot2's `geom_violin` default (`trim=TRUE`),
+which clips at the data range — so a reader coming from R will find the EML
+violins unfamiliar. No trim control is exposed anywhere in the dialog.
+
+Downgraded to LOW and reframed: not a defect, but the untrimmed default draws
+density where no observation exists (up to 3.1 dB here), and for a
+clinical/pedagogical audience reading dB SPL that is a real misreading risk.
+Recommend a `boolean: "Trim violins to data range"` in the Advanced panel.
+Not urgent.
+
+### D24 — CONFIRMED recurring: zero as the not-applicable sentinel
+
+The three Dunn rows carry `df,0`. Dunn's test is a z-test — it has no
+degrees of freedom. Zero is not a missing-value marker, and a reader or a
+downstream parser will take it as df = 0. Same root cause as D24 on the
+ANOVA path, same fix.
+
+### D23 — SCOPED DOWN to the ANOVA path
+
+D23 logged the omnibus CSV row as carrying only the numerator df. On the KW
+row, `df,2.00` is simply **correct** — Kruskal-Wallis has a single df (k−1 = 2)
+and there is no denominator to omit. D23 is specific to the F-test schema
+and should be narrowed to the ANOVA/Tukey wrapper.
+
+### Rule 27 — VERIFIED COMPLIANT (not a defect, worth preserving)
+
+The export dialog pre-filled `demo_3groups_results`, which was already in use
+from the wrapper-6 ANOVA export. Saving wrote **`demo_3groups_results_1.csv`**
+and left the existing file untouched (mtime and md5 both unchanged). The
+`@emlGenerateUniquePath` last-line-of-defence is working as specified. This
+was tested deliberately by re-using the colliding default rather than
+renaming around it.
+
+The default filename also derived correctly from the source table name — D18
+remains scoped to the paired-reshape path only.
+
+### D19 — extended to the nonparametric schema
+
+The CSV reports `mean1,sd1,median1,mean2,sd2,median2` for a rank-based test.
+Median is the appropriate descriptive here and it is present and correct, but
+it is accompanied by mean and SD (parametric descriptives) and *not* by IQR,
+which is what a KW result would normally be reported with. The fixed shared
+column schema is a defensible tradeoff, but the omission of IQR alongside the
+inclusion of SD is the wrong side of that tradeoff for this test.
+
+### Recurrences confirmed on this wrapper
+
+- **D6** — `demo 3groups`, `SPL dB`, `voice type` in the Info header for
+  objects actually named `demo_3groups`, `SPL_dB`, `voice_type`.
+- **D9** — `p    p = .003`, the doubled `@emlFormatP.formatted$` label.
+- **D16b, sharpened** — the Column Mapping `Formatting:` help line renders as
+
+  ```
+  %italic · #bold · ^super ·  sub · \ % prints % (e.g. %F 0)
+  ```
+
+  The `\_ ` subscript escape is swallowed entirely (leaving a blank before
+  "sub") and the worked example `%F_0` renders as `%F 0`. The line whose sole
+  purpose is to teach escape syntax is itself broken by the exact bug it is
+  teaching around — which makes this the highest-value single instance of
+  D16b found so far.
+
+---
+
+## Wrapper 8 of 17 — `Compare two-way ANOVA` (menu y = 624) on `demo_twoway`
+
+**All three legs driven:** Run → CSV export → Draw → Exp CSV. Every dialog
+closed cleanly; `needclear` clean at end.
+
+Dialog sequence and coordinates (all pause windows origin 0,0):
+
+| Window | Size | Controls used |
+|---|---|---|
+| `Two-Way ANOVA` | 524x270 | Data column (384,68); Factor 1 (384,100); Factor 2 (384,132); Clear Info window (277,187); **Run (413,234)** |
+| `Analysis complete` | 524x113 | Done 179, CSV 275, Draw 365, New 460 — all y=78 |
+| `Export Results` | 524x218 | Output folder text (250,57); File name (385,131); **Save (413,182)** |
+| `Export Complete` | 524x113 | Done (179,78) |
+| `EML Graphs` | 524x288 | Graph type (384,27) … **Continue (414,251)** |
+| `Grouped Violin -- Column Mapping` | 524x940 | Value (384,63); **Category (384,95)**; **Subgroup (384,127)**; Group order (384,159); **Annotate (279,191)**; … **Draw (461,904)** |
+| `Graph Complete` | 524x150 | Done 179, Save 273, **Exp CSV 370**, **Redraw 462** — all y=115 |
+
+All three optionmenus (Data column, Factor 1, Factor 2) auto-guessed correctly
+on first open: `SPL_dB`, `voice_type`, `task`. No mis-selection, no string
+column offered where a numeric was required.
+
+### Ground truth (statsmodels 0.14 / scipy, sum-coded so Type I = II = III)
+
+```
+voice          SS=276.979589  df=1  F=34.110425   p=5.788464e-07  partial_eta2=0.4367
+task           SS=874.266761  df=1  F=107.667178  p=2.112098e-13  partial_eta2=0.7099
+voice:task     SS=125.003106  df=1  F=15.394308   p=3.024778e-04  partial_eta2=0.2592
+Residual       SS=357.283791  df=44 MS=8.120086
+Total          SS=1633.533247 df=47
+
+cell means (n=12 each):
+  Alto/Speech      87.187696 (sd 3.593138)   Alto/Singing     92.495717 (sd 2.796032)
+  Soprano/Speech   88.764505 (sd 2.077179)   Soprano/Singing 100.527578 (sd 2.727129)
+Levene (median) W=0.5539 p=0.6483 ; Shapiro on residuals W=0.9731 p=0.3336
+```
+
+### Info window, verbatim
+
+(The leading `selected 23 Table demo_twoway` line in `tw_info.txt` is harness
+noise from `pick`, not plugin output.)
+
+```
+══════════════════════════════════════════════
+  EML Stats : Two-Way ANOVA
+  Wed Aug  5 13:39:57 2026
+══════════════════════════════════════════════
+
+  Table               demo twoway
+  Data column         SPL dB
+  Factor 1            voice type
+  Factor 2            task
+
+
+  ── ANOVA Table ─────────────────────────────
+
+Source              SS              df    MS              F           p
+voice type          276.98          1     276.98          34.1104     p < .001
+task                874.27          1     874.27          107.6672    p < .001
+voice type x task   125.00          1     125.00          15.3943     p < .001
+Error               357.28          44    8.12            
+Total               1633.53         47    
+
+
+  ── Effect Sizes (partial eta-squared) ──────
+  voice type          0.4367
+  task                0.7099
+  voice type x task   0.2592
+
+══════════════════════════════════════════════
+```
+
+### Accuracy — the analysis leg is a clean pass
+
+| Quantity | Plugin | Ground truth | |
+|---|---|---|---|
+| SS voice | 276.98 | 276.979589 | ✓ |
+| SS task | 874.27 | 874.266761 | ✓ |
+| SS interaction | 125.00 | 125.003106 | ✓ |
+| SS error | 357.28 | 357.283791 | ✓ |
+| SS total | 1633.53 | 1633.533247 | ✓ |
+| df | 1 / 1 / 1 / 44 / 47 | same | ✓ |
+| MS | 276.98 / 874.27 / 125.00 / 8.12 | 8.120086 for error | ✓ |
+| F | 34.1104 / 107.6672 / 15.3943 | 34.110425 / 107.667178 / 15.394308 | ✓ |
+| partial η² | 0.4367 / 0.7099 / 0.2592 | same | ✓ |
+
+The effect sizes are correctly **partial** η², not plain η² (which would be
+0.1696 / 0.5352 / 0.0765), and the section header says "partial eta-squared"
+explicitly. This is the correct default for a factorial design and it is
+labelled honestly. Nothing in the ANOVA table is wrong.
+
+### Exports, verbatim
+
+Analysis leg → `demo_twoway_results.csv` (554 B, ASCII):
+
+```
+table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,effect_type,effect_label,n1,n2,mean1,sd1,median1,mean2,sd2,median2
+demo_twoway,SPL_dB,voice_type,main effect,voice_type,Two-way ANOVA,34.110425,1.00,0.0000006,0.4367,partial eta-squared,,0,0,0,0,0,0,0,0
+demo_twoway,SPL_dB,task,main effect,task,Two-way ANOVA,107.667178,1.00,0.0000000000002,0.7099,partial eta-squared,,0,0,0,0,0,0,0,0
+demo_twoway,SPL_dB,voice_type_x_task,interaction,voice_type_x_task,Two-way ANOVA,15.394308,1.00,0.000302,0.2592,partial eta-squared,,0,0,0,0,0,0,0,0
+```
+
+Graph leg → `demo_twoway_results_1.csv` (293 B, ASCII). **Rule 27 uniqueness
+re-verified by deliberate collision**: the default filename `demo_twoway_results`
+was re-used unchanged, the plugin appended `_1`, and the original file was left
+byte-identical.
+
+```
+table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,effect_type,effect_label,n1,n2,mean1,sd1,median1,mean2,sd2,median2
+demo_twoway,SPL_dB,task,Speech,Singing,Welch,-7.277861,37.92,0.00000001,-2.1009,Cohen's d,large effect,24,24,87.9761,2.9811,87.9854,96.5116,4.9117,95.8455
+```
+
+---
+
+### D32 — GRAPHING / ACCURACY (**high**) — the graph preset bridge cannot carry a second factor, so the default figure silently drops it
+
+`scripts/eml-compare-twoway.praat:92–94` hands the graph engine a preset:
+
+```praat
+emlGraphsPresetType = 11
+emlGraphsPresetGroupCol$ = factor1$
+emlGraphsPresetDataCol$ = dataCol$
+```
+
+`factor2$` is never assigned to anything. There is no subgroup preset variable
+in the bridge at all — the declared set at `graphs/eml-graphs-form.praat:117–119`
+is only type / dataCol / groupCol.
+
+Downstream, the Grouped Violin preset branch (`eml-graphs-form.praat:4363–4381`)
+resolves `gvCatIdx` and `gvValueIdx` from the preset and **never touches
+`gvSubIdx`**, which therefore keeps its initializer:
+
+```praat
+gvCatIdx = 1
+gvSubIdx = min (2, nCols)
+gvValueIdx = min (3, nCols)
+```
+
+On `demo_twoway` (`subject, voice_type, task, SPL_dB`) that is column 2 =
+`voice_type` — the same column the preset just assigned to Category. The
+Column Mapping dialog opens with **Category and Subgroup set to the same
+column**, and the heuristic fallback in the `else` branch (4390–4400) cannot
+rescue it because it keys on the literal strings "song"/"category" and
+"platform"/"group"/"condition", none of which match `voice_type` or `task`.
+
+Consequence, captured in `pic_tw_default.png`: the out-of-box figure is a
+**two-violin single-factor plot** (Soprano, Alto) with `task` absent entirely.
+No error, no warning. The dropped factor is the one with the *largest* effect
+(F = 107.67, partial η² = .71) and half of a significant interaction. The
+legend redundantly repeats the two x-axis tick labels, and the Soprano violin
+is visibly bimodal — that bimodality *is* the suppressed task effect showing
+through, unexplained and unlabelled.
+
+The failure is also fragile rather than merely wrong: `min (2, nCols)` is a
+column-order accident. Had `subject` sorted second, Subgroup would have
+resolved to a 48-level identifier column.
+
+**A/B differential drive proves the renderer is innocent.** Re-running the
+identical path with only Subgroup changed by hand to `task` produced
+`pic_tw_grouped.png` — four violins correctly paired under Soprano and Alto,
+legend Speech/Singing, and geometry matching all four cell medians (87.21 /
+92.74 / 89.48 / 101.22). The defect is entirely in the bridge.
+
+**Proposed fix:** declare `emlGraphsPresetSubgroupCol$ = ""` alongside its
+siblings at `eml-graphs-form.praat:119`; clear it wherever the other two are
+cleared (2534/2535, 2896/2897, 3238, 3693/3694, 4026/4027, 4380/4381,
+4699/4700, 5023, 5807–5809); consume it in the type-11 branch to set
+`gvSubIdx`; and set it from `factor2$` at `eml-compare-twoway.praat:94`.
+
+### D33 — ACCURACY / CLARITY (**high**) — Draw annotates a two-way design with a two-group Welch t on one marginal
+
+With Annotate ticked, the corrected four-cell figure carries the caption:
+
+```
+Welch t: t(37.9) = -7.28, p < .001, d = -2.10 (pooled)
+```
+
+with a grey sub-line reading `Welch t-test` and a 2×2 significance matrix.
+
+The numbers are exact — verified t = -7.277861, df = 37.920318,
+d = -2.100938 for `task` pooled across `voice_type`. The *test* is the
+problem. It collapses one factor of a factorial design, ignores the other main
+effect, and ignores a significant interaction (p = .0003) that specifically
+means the task effect is not constant across voice type. The source comment at
+`eml-graphs-form.praat:5359` confirms this is deliberate:
+
+```praat
+# Grouped Violin: compare sub-groups (pooled across categories)
+```
+
+That is a defensible default for a Grouped Violin reached from the graphs menu.
+It is not defensible for a Grouped Violin reached from the *two-way ANOVA*
+wrapper, where the user has just been shown an interaction term.
+
+Three compounding effects:
+
+1. The annotation appends a full `EML Stats : Two-Group Comparison` block to
+   the Info window, **below** the ANOVA table, with the complete `Why:` /
+   signal-to-noise narration — so the pooled t is the *last* and most
+   verbosely explained thing in the transcript.
+2. `Exp CSV` writes a row with `test = Welch, group_col = task` into
+   `demo_twoway_results_1.csv` — a filename one character from the ANOVA
+   export sitting beside it.
+3. A user who ran a two-way ANOVA, clicked Draw, clicked Exp CSV and shipped
+   the folder has a Welch t masquerading as their factorial result.
+
+Minimum fix: when the preset type is 11 *and* a second factor was supplied,
+either suppress the annotation or label it explicitly as a marginal
+comparison. Better: annotate with the ANOVA result already in hand.
+
+### D34 — CLARITY (**high-medium**) — the ANOVA CSV omits SS, MS, and residual df
+
+The export carries `statistic` (F) and `df`, but `df` holds the **numerator**
+df only, as `1.00`. There is no denominator df, no SS column, no MS column,
+and no Error or Total row. `F(1,44) = 34.11` — the minimum reportable form —
+**cannot be constructed from the export**. Neither can the ANOVA table be
+reconstructed, nor any alternative effect size recomputed.
+
+The Info window has all of it. The CSV, which is what actually travels into a
+manuscript, has none of it.
+
+### D14 — REOPENED, and corrected — `fixed$` guarantees a *minimum* of one significant digit, not the requested precision
+
+D14 was recorded FALSIFIED on the grounds that `fixed$` never floors a nonzero
+value to zero. That is true but incomplete. Praat's `fixed$` guarantees **at
+least one significant digit**, so the digit count is a floor on significance,
+not a cap on width. The exported p-values are the proof:
+
+| True p | `fixed$(p,6)` | significant digits |
+|---|---|---|
+| 5.788464e-07 | `0.0000006` | 1 |
+| 2.112098e-13 | `0.0000000000002` | 1 |
+| 3.024778e-04 | `0.000302` | 3 |
+
+The first two are single-significant-digit renderings, and the second is
+fourteen characters wide from a six-decimal request. Nothing is lost to zero,
+but below 1e-6 the exported p is not the p that was computed. Scientific
+notation is the correct format for this column.
+
+### D35 — CLARITY (**high-medium**) — worst instance of the D28 family: nine orders of magnitude flattened to one string
+
+All three Info-window p-values render as the identical string `p < .001`:
+
+```
+voice type          ...  34.1104     p < .001      (true p = 5.79e-07)
+task                ...  107.6672    p < .001      (true p = 2.11e-13)
+voice type x task   ...  15.3943     p < .001      (true p = 3.02e-04)
+```
+
+The three effects span **nine orders of magnitude** of evidence and are
+presented as indistinguishable — in the one table in the whole plugin where
+relative effect strength across rows is the point of reading it. Elsewhere D28
+costs the user resolution on a single number; here it costs the entire
+comparative structure of the result.
+
+### D36 — CLARITY (**medium-high**) — no cell means and no marginal means, despite a significant interaction
+
+The block reports SS/df/MS/F/p and partial η² and stops. There is no cell-means
+table, no marginal means, no SDs, no plot of the interaction. A significant
+interaction (p = .0003) is **uninterpretable without cell means** — it says the
+factors are not additive but not in which direction. The user cannot tell from
+this output that the task effect is +11.8 dB in sopranos and +5.3 dB in altos.
+
+The one-way path (wrapper 6) reports per-group descriptives. The two-way path,
+which needs them more, reports none.
+
+### D37 — CLARITY (**medium**) — no N reported anywhere in the two-way block
+
+No per-cell n, no per-level n, no total N. Wrapper 6 reported `Total N 45`; the
+two-group block that the *graph* path appends reports N 24 / 24. So the same
+Info transcript contains a section that reports N and a section that does not,
+for the same table. Internally inconsistent as well as incomplete.
+
+### D38 — CLARITY (**medium**) — no simple effects, no post-hoc, and no caution that the interaction qualifies the main effects
+
+With a significant interaction the conventional next step is simple effects
+(task within each voice type, or voice type within each task). The plugin
+offers none, and — more importantly — does not warn that the two main-effect
+rows above it should now be read with caution. Wrappers 6 and 7 both offer
+pairwise follow-ups. Wrapper 8, where follow-up is most needed, offers nothing.
+
+### D39 — PACKAGING (**medium**) — stats exports default into the plugin's own install directory
+
+The `Export Results` dialog pre-filled Output folder as:
+
+```
+/home/claude/drive/prefs/plugin_EML_Praat_Tools/scripts
+```
+
+Source: `stats/eml-output.praat:757` and `scripts/eml-wizard.praat:1612` both
+use `folder: "Output folder", defaultDirectory$`. `defaultDirectory$` is
+Praat's built-in for the *running script's* directory — i.e. inside the
+plugin. User data lands in the plugin tree and is at risk on reinstall or
+upgrade, and is invisible where the user would look for it.
+
+The graphs module already does this correctly and should be copied:
+
+```
+:434  config_lastCSVFolder$ = homeDirectory$ + "/Desktop"
+:437  config_lastCSVFolder$ = homeDirectory$          (fallback)
+:5743 folder: "Output folder", config_lastCSVFolder$
+:5757 config_lastCSVFolder$ = output_folder$          (persists last used)
+```
+
+So the same plugin has a good pattern and a bad pattern for the same problem,
+split by module. Two call sites to change.
+
+### D40 — GRAPHING (**medium**) — no interaction plot among the 14 graph types
+
+The registry at `eml-graphs-form.praat:139–152` (`nGraphTypes = 14`) offers
+Pitch Contour, Waveform, Spectrum, LTAS, Line Chart (±CI), Bar Chart, Violin
+Plot, Scatter Plot, Box Plot, Histogram, Grouped Violin, Grouped Box Plot,
+Time Series (with CI), Spaghetti Plot.
+
+The canonical companion figure for a two-way ANOVA — means ± CI with factor 1
+on x and factor 2 as connected lines, where non-parallel lines *are* the
+interaction — does not exist. `Line Chart (±CI)` is the nearest existing type
+and could plausibly gain a subgroup mapping rather than requiring a 15th type.
+
+### D41 — CLARITY (**low-medium**) — no effect-magnitude labels, inconsistent with wrappers 6 and 7
+
+The two-way block gives bare partial η² values with no small/medium/large
+gloss. Wrapper 6 (ANOVA) and wrapper 7 (Kruskal-Wallis) both provide magnitude
+labels. The CSV's `effect_label` column is likewise **blank on all three rows**
+— D17 recurring, and confirming the previously predicted line numbers
+3784 / 3790 / 3796 in `eml-inferential.praat`.
+
+### D42 — CLARITY (**low-medium**) — explanation narration is asymmetric within a single transcript
+
+`emlShowExplanations` is on: the graph-path two-group block carries the full
+`Why:` line, signal-to-noise gloss, df interpretation, p interpretation, and
+effect-size interpretation. The two-way ANOVA block immediately above it
+carries **none** — no `Why:`, no F gloss, no partial-η² gloss. The user is
+given a tutorial on the test they did not ask for and silence on the one they
+did.
+
+### D43 — GRAPHING (**low**) — no auto-title, against Rule 28A
+
+The `EML Graphs` dialog opens with Title and Subtitle blank and no title is
+rendered on either figure. Every input needed to compose one is in hand
+(`demo_twoway`, `SPL_dB`, `voice_type`, `task`). Wrapper 6 has the same gap;
+this is the second instance.
+
+---
+
+### Recurrences confirmed on this wrapper
+
+- **D6** — `demo twoway`, `SPL dB`, `voice type`, `task` in the Info header
+  for objects actually named `demo_twoway`, `SPL_dB`, `voice_type`. Also
+  `voice type x task` for the interaction term.
+- **D6 — positively falsified for dialogs.** The `Two-Way ANOVA` dialog header
+  renders `Table: demo_twoway` with the underscore **intact**. D6 is therefore
+  confined to Info-window and Picture-window text formatting, not to pause
+  dialogs. This narrows the fix surface.
+- **D9** — `p` repeated in the p column (`p    p < .001`).
+- **D16b** — the corrupted `Formatting:` help line, unchanged, in the Grouped
+  Violin Column Mapping dialog.
+- **D17** — `effect_label` blank on all three CSV rows.
+- **D20** — no homogeneity-of-variance check offered or reported. This dataset
+  happens to pass (Levene p = .648, Shapiro on residuals p = .334), so the
+  omission costs nothing here, but nothing in the output tells the user that.
+- **D23** — df rendered `1.00` in the CSV for an integer df.
+- **D24** — zero-as-NA sentinel across `n1,n2,mean1,sd1,median1,mean2,sd2,median2`
+  on all three ANOVA rows.
+- **D18 — does not recur.** The default filename derived correctly as
+  `demo_twoway_results`. D18 stays scoped to the paired-reshape path.
+
+### Schema note
+
+On the three ANOVA rows, `group2` duplicates `group_col` exactly, and `group1`
+carries a *row type* (`main effect` / `main effect` / `interaction`) rather
+than a group label. The shared column schema is being bent to carry
+row-taxonomy metadata it was not designed for; a `row_type` column would be
+the honest fix, and would also let a consumer distinguish these rows from the
+Welch row that the graph leg writes into an adjacent file.
+
+---
+
+## Path 9 — `New → EML Tools → Correlate two columns...` (menu y=650)
+
+Wrapper: `scripts/eml-correlate.praat` v3.3 (11 May 2026), 174 lines.
+Table: `demo_correlation` (object 21). Columns: `speaker`(1),
+`speaking_F0_Hz`(2), `singing_F0_Hz`(3), `age_years`(4); N = 30.
+
+### Dialog / coordinate map
+
+| Window | Size | Controls |
+|---|---|---|
+| `Correlate Two Columns` | 524x339 | Column X (384,70) · Column Y (384,102) · Group column (384,171) · Test (384,204) · Clear Info window (277,257) · buttons y=303: Undo 56, Quit 224, **Run 413** |
+| `Analysis complete` | 524x113 | y≈78: **Done 179, CSV 275, Draw 365, New 460** |
+| `Export Results` | 524x218 | folder area (250,57) · Browse (452,27) · File name (388,132) · buttons y=182: Undo 56, Go Back 224, **Save 414** |
+| `Export Complete` | 524x113 | Done (179,78) |
+| `EML Graphs` | 524x288 | Graph type (384,27) · Title (384,66) · Subtitle (384,98) · Color mode (384,131) · width (384,169) · height (384,207) · buttons y=252: Undo 56, Quit 224, **Continue 414** |
+| `Scatter Plot -- Column Mapping` | 524x1033 | buttons y=995: Undo 56, Go Back 182, Quit 273, Beginner 371, **Draw 461** |
+| `Graph Complete` | 524x150 | Done (179,115) |
+
+The `Test` optionmenu is exactly three items (`eml-correlate.praat:61–64`):
+Pearson r / Spearman rho / Both. **There is no Kendall branch** — a prior
+session's assumption that option 3 was Kendall tau was wrong and is corrected
+here.
+
+### Ground truth (scipy, n = 30)
+
+```
+pearson  r   = 0.9034648447892789   t = 11.152573500753283  df = 28
+             p = 8.214741835137006e-12   r2 = 0.8162487257701159
+             Fisher 95% CI = [0.805319546134667, 0.9534085636382932]
+spearman rho = 0.9150166852057842   p = 1.4837801214418103e-12
+slope = 2.118033404437952   intercept = -2.753163480357671
+shapiro speaking_F0_Hz: W = 0.93084 p = 0.05170   <-- borderline
+shapiro singing_F0_Hz:  W = 0.97549 p = 0.69726
+```
+
+### Accuracy — exact on every path
+
+| Reported | Value | Truth | Verdict |
+|---|---|---|---|
+| Pearson r | 0.9035 | 0.9034648 | exact to 4 dp |
+| Pearson t | 11.153 | 11.152574 | exact to 3 dp |
+| df | 28 | 28 | exact |
+| N | 30 | 30 | exact |
+| Spearman rho | 0.9150 | 0.9150167 | exact to 4 dp |
+| Spearman t | 12.002 | 12.0022 (rho·√(df/(1−rho²))) | exact to 3 dp |
+| Graph annotation R² | 0.816 | 0.8162487 | exact to 3 dp |
+| CSV p | 0.000000000008 | 8.2147e-12 | correct, and **not** floored |
+
+Column auto-guess correctly skipped the string column `speaker` and proposed
+indices 2 and 3. The `colX$ = colY$` collision is guarded
+(`eml-correlate.praat:86–87`, `pauseScript`). The n<3 group guard fires
+correctly. All four accuracy criteria pass.
+
+### Verbatim Info output — Pearson (default)
+
+```
+══════════════════════════════════════════════
+  EML Stats : Correlation Analysis
+  Wed Aug  5 14:04:59 2026
+══════════════════════════════════════════════
+
+  Table               demo correlation
+  Column X            speaking F0 Hz
+  Column Y            singing F0 Hz
+  N                   30
+
+
+  ── Pearson Correlation ─────────────────────
+  r                   0.9035
+  t                   11.153
+  df                  28
+  p                   p < .001
+
+══════════════════════════════════════════════
+```
+
+### Verbatim Info output — Spearman
+
+```
+  ── Spearman Correlation ────────────────────
+  rho                 0.9150
+  t                   12.002
+  df                  28
+  p                   p < .001
+```
+
+`Both` emits the Pearson block followed by the Spearman block inside one
+`═══`-framed report. Correct.
+
+### Verbatim CSV export
+
+```
+table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,effect_type,effect_label,n1,n2,mean1,sd1,median1,mean2,sd2,median2
+demo_correlation,speaking_F0_Hz,singing_F0_Hz,,,Pearson,0.903465,28.00,0.000000000008,0.9035,r,,30,30,0,0,0,0,0,0
+```
+
+Filename derived correctly as `demo_correlation_results.csv` — **D18 does not
+recur here**; that finding stays scoped to the paired-reshape path.
+
+---
+
+### D44 — CLARITY — R² is gated behind `emlShowExplanations`, so the Info window omits it while the figure annotation displays it
+
+`emlReportCorrelationAnalysis` (`graphs/eml-annotation-procedures.praat:3251–3255`)
+computes and prints R² **only inside the explanations gate**:
+
+```praat
+@emlReportLine: "r", emlPearsonCorrelation.r, 4
+if emlShowExplanations
+    .r2 = emlPearsonCorrelation.r * emlPearsonCorrelation.r
+    @emlWizardExplainR2: .r2
+    @emlReportLine: "R-squared", .r2, 4
+endif
+```
+
+`emlShowExplanations` defaults to `0` (`stats/eml-output.praat:63`) and is set
+to `1` in exactly one place in the plugin — inside `@emlGraphsWorkflow`
+(`graphs/eml-graphs-form.praat:794`). The analysis path never turns it on.
+
+Consequence: the Info window reports r, t, df, p and stops. The scatter figure
+produced from the *same run* is annotated `r = 0.903, R² = 0.816, p < .001`.
+One analysis, two different answers about what a correlation report contains.
+
+R² is a statistic, not an explanation. Explanations are prose that helps a
+novice interpret a number; R² *is* a number, and it is the number most
+correlation write-ups actually quote. It is misclassified. Fix: move the
+computation and the `@emlReportLine` out of the gate, leave only
+`@emlWizardExplainR2` inside it.
+
+### D45 — ACCURACY (schema) — the CSV writes the Y variable into the `group_col` slot
+
+`eml-annotation-procedures.praat:3268–3269`:
+
+```praat
+@emlCSVAddRow: .tableName$, .colX$, .colY$,
+... "", "", "Pearson",
+```
+
+The row schema is `table,data_col,group_col,group1,group2,test,…`. The third
+positional argument is `group_col`, and the wrapper passes `colY$` into it. The
+exported row therefore reads `data_col=speaking_F0_Hz,
+group_col=singing_F0_Hz`.
+
+A downstream consumer — including EML Graphs' own CSV-reading paths — that
+reads `group_col` expecting a grouping factor gets a continuous variable. It is
+not a display bug: the file on disk is wrong about what its own columns mean.
+A correlation needs an `x_col`/`y_col` pair; the shared schema has no such slot
+and is being bent to fit. Same structural problem as D32/two-way (the schema
+carrying row-taxonomy metadata) — this is the second wrapper to bend it.
+
+### D46 — ACCURACY (schema) — CSV descriptives hardcoded to six literal zeros
+
+Line 3273 of the same call:
+
+```praat
+... .n, .n, 0, 0, 0, 0, 0, 0
+```
+
+`mean1,sd1,median1,mean2,sd2,median2` are all written as literal `0` even
+though both variables' means, SDs, and medians are well-defined, meaningful,
+and already available in the Table. Exported row:
+
+```
+…,30,30,0,0,0,0,0,0
+```
+
+This is the worst instance so far of the zero-as-NA family (D24). In every
+prior case the zero stood in for a quantity that was genuinely undefined for
+that test; here the quantities exist and are simply not fetched. A consumer
+computing across exported rows will average real means with zeros.
+
+### D47 — CLARITY — the `Group column` optionmenu is unfiltered and offers the correlated columns as grouping factors
+
+`eml-correlate.praat:56–60`:
+
+```praat
+optionmenu: "Group column", 1
+    option: "(none — overall only)"
+for iCol from 1 to nCols
+    option: emlTableColumnNames.name$ [iCol]
+endfor
+```
+
+Every column is offered, including `speaking_F0_Hz` and `singing_F0_Hz` — the
+two continuous variables currently selected as X and Y. Grouping a correlation
+by one of its own variables is never a meaningful operation; grouping by any
+30-distinct-value continuous column produces 30 singleton groups. Same class as
+the string-column offer in `Compare Paired Observations`. A grouping menu
+should offer only columns with a plausible number of distinct levels, and
+should exclude the two columns already bound to X and Y.
+
+### D48 — CLARITY — per-group results print *after* the report's closing rule, with no summary and no terminator
+
+The wrapper runs `@emlRunCorrelationAnalysis` first — which emits its own
+closing `═══` rule — and only then enters the per-group loop
+(`eml-correlate.praat:102–136`). The Info window therefore shows a complete,
+visually closed report, followed by 60 more lines outside the frame that simply
+stop mid-air:
+
+```
+  p                   p < .001
+
+══════════════════════════════════════════════
+
+  Spk1: Skipped (n < 3)
+
+  Spk2: Skipped (n < 3)
+…
+  Spk30: Skipped (n < 3)
+```
+
+There is no per-group section header, no closing rule after the group block,
+and no summary line. The report's own typography tells the reader the output
+ended two-thirds of the way through it.
+
+### D49 — CLARITY — 30 identical skip lines, each preceded by a blank line
+
+`eml-correlate.praat:131–133`:
+
+```praat
+else
+    appendInfoLine: ""
+    appendInfoLine: "  " + .gDisplay$ + ": Skipped (n < 3)"
+endif
+```
+
+Every skipped group costs two lines. With `speaker` selected that is 60 lines
+of the Info window saying nothing that one line could not: `30 groups skipped
+(n < 3): Spk1–Spk30`. On a real dataset with many small groups this buries the
+overall result that *is* present above it. Accumulate skipped names and emit
+one summary line after the loop.
+
+### D50 — CLARITY — no confidence interval on r
+
+The report gives r, t, df, p. It does not give a CI, though the Fisher z
+interval is three lines of arithmetic from values already in hand
+(here: 95% CI [0.8053, 0.9534]). Every reporting standard that asks for an
+effect size asks for its interval alongside; the plugin reports the point
+estimate only. Same omission as the effect-size CIs noted in the two-group and
+ANOVA paths — this is now consistent enough across wrappers to be an
+architectural gap rather than a per-wrapper oversight.
+
+### D51 — GRAPHING — `Regression: None` is the default on a scatter launched from a correlation, while the same figure annotates R²
+
+The preset bridge (`eml-correlate.praat:149–165`) sets six globals:
+
+```praat
+elsif clicked = 3
+    if testChoice = 2
+        emlGraphsPresetCorrType$ = "spearman"
+    elsif testChoice = 3
+        emlGraphsPresetCorrType$ = "both"
+    else
+        emlGraphsPresetCorrType$ = "pearson"
+    endif
+    emlGraphsPresetType = 8
+    emlGraphsPresetXCol$ = colX$
+    emlGraphsPresetYCol$ = colY$
+    emlGraphsPresetAnnotate = 1
+    emlGraphsPresetAnalysisType = 1
+    if hasGroupCol
+        emlGraphsPresetGroupCol$ = groupCol$
+    endif
+    @emlGraphsWorkflow: tableId
+```
+
+No regression preset is ever set, so the Column Mapping dialog opens with
+`Regression: None`. The resulting figure carries the annotation
+`r = 0.903, R² = 0.816, p < .001` over a bare point cloud: the goodness-of-fit
+statistic for a line that is not drawn. R² has no visual referent in the
+figure. A scatter reached from the correlation wrapper should default to
+`Regression: Linear`.
+
+### D52 — CLARITY — no loop repopulation; `New` resets every control to literal defaults
+
+`beginPause:` at `eml-correlate.praat:44` uses literal defaults
+(`optionmenu: "Test", 1`, `boolean: "Clear Info window", 0`) rather than
+variables carrying the previous iteration's choices. Confirmed twice by
+observation: after a Spearman run, `New` reopens with Test back on Pearson;
+after checking `Clear Info window`, `New` reopens with it unchecked. Only
+Column X/Y survive, and only because they are seeded from
+`emlWrapperInit.guessDataIdx`, not from the user's last choice. This is the
+Appendix F §S2C loop-repopulation requirement, unimplemented — and it is the
+`New` button that makes it matter, since that button exists precisely to
+support iteration.
+
+### D53 — CLARITY — no assumption guidance, in the one wrapper that offers the nonparametric alternative in the same dialog
+
+The dialog offers Pearson / Spearman / Both and gives the user nothing to
+choose between them with — no normality check, no note that Spearman is the
+rank-based alternative, no flag when the data are skewed. `demo_correlation` is
+a pointed case: `speaking_F0_Hz` has Shapiro p = 0.0517, sitting exactly on the
+conventional threshold. A user has to already know the answer to use the menu
+correctly. D20 family, but sharper here than elsewhere, because the remedy is
+one dropdown away in the same dialog.
+
+---
+
+### Recurrences confirmed on this path
+
+| ID | Evidence |
+|---|---|
+| D6 | Info header shows `demo correlation` / `speaking F0 Hz`, while the *dialog* header shows `Table: demo_correlation` with the underscore intact. Third confirmation that D6 is confined to Info/Picture display text, not a global mangling. |
+| D9 / D28 | `p < .001` printed for p = 8.21e-12. |
+| D16b | Scatter mapping dialog help line renders `Formatting: %italic · #bold · ^super · sub · \ % prints % (e.g. %F 0)` — `_sub` and `%F_0` both mangled. |
+| D39 | Export folder pre-filled `/home/claude/drive/prefs/plugin_EML_Praat_Tools/scripts` — the plugin install directory. |
+| D17 / D41 | `effect_label` written blank. |
+| D42 | No `Why:` narration on any analysis-path block. **Now root-caused**: `emlShowExplanations` is only ever set inside `@emlGraphsWorkflow` (`eml-graphs-form.praat:794`), so the asymmetry is structural, not per-wrapper. |
+| D43 | Figure has no auto-generated title (Rule 28A). |
+
+### Passes — recorded explicitly
+
+- **The n<3 group guard is correct.** It fires, it names the group, it does not
+  attempt the test.
+- **`colX$ = colY$` is guarded** (`eml-correlate.praat:86–87`) with a clear
+  `pauseScript` message.
+- **Filename derivation is correct** — `demo_correlation_results.csv`.
+- **The CSV writes p at full precision** (`0.000000000008`), not the `< .001`
+  display floor. The floor is a display-layer problem only.
+- **The scatter preset bridge is complete and correct** — type 8, XCol, YCol,
+  CorrType, Annotate, AnalysisType, and GroupCol when present. This matters
+  beyond this path: it is a working example of a wrapper handing a full column
+  binding to EML Graphs, which **strengthens D32**. The two-way wrapper's
+  dropped `factor2` is an oversight in that wrapper, not a limitation of the
+  preset mechanism.
+
+---
+
+## Wrapper 10 / 17 — `Linear regression` (menu y = 675)
+
+**Table:** `demo_regression` (object 22) — 25 rows, 4 columns:
+`singer` (string, 1), `practice_hrs_wk` (2), `vibrato_regularity_pct` (3),
+`experience_yrs` (4). Dumped to `out/dump_demo_regression.csv`.
+
+**Source:** `scripts/eml-regress.praat`, 115 lines, v2.1 (11 May 2026).
+Header purpose line: *"OLS simple linear regression (slope, intercept, R², SE,
+F, p) with Theil-Sen robust alternative."*
+
+### Dialog / coordinate map (origin 0,0)
+
+| Dialog | Size | Controls | Buttons |
+|---|---|---|---|
+| `Simple Linear Regression` | 524x440 | Predictor column (384,203); Response column (384,236); Group column (384,304); Clear Info window (277,358) | y=404: Undo 56, Quit 224, **Run 413** |
+| `Analysis complete` | 524x113 | — | y≈78: **Done 179, CSV 275, Draw 365, New 460** |
+| `Export Results` | 524x218 | folder text area (250,57); Browse (452,27); File name (388,132) | y=182: Undo 56, Go Back 224, **Save 414** |
+| `Export Complete` | 524x113 | — | Done 179,78 |
+| `EML Graphs` | 524x288 | Graph type (384,27); Title (384,66); Subtitle (384,98); Color mode (384,131); width (384,169); height (384,207) | y=252: Undo 56, Quit 224, **Continue 414** |
+| `Scatter Plot -- Column Mapping` | 524x1033 | X (384,63); Y (384,96); Use group column (277,127); Group column (384,160); Group order (384,192); Correlation method (384,268); **Regression (384,300)**; Significance style (384,332); Show data points (277,363); Dot size (384,396) | y=995: Undo 56, Go Back 182, Quit 273, Beginner 371, **Draw 461** |
+| `Graph Complete` | 524x150 | — | Done 179,115 |
+
+### Ground truth (Python/scipy, n = 25) — Rule 32
+
+```
+slope            = 3.3135438235      intercept        = 38.2524521357
+r                = 0.9365062796      r2               = 0.8770440117
+p                = 5.950627e-12      slope stderr     = 0.2586979275
+intercept stderr = 3.1931788351      t (slope)        = 12.8085441400   df = 23
+SSR = 5911.049980  SSE = 828.691585  SST = 6739.741565  F = 164.058803
+residual SE      = 6.0025052210
+shapiro residuals            W=0.967864  p=0.591511
+shapiro practice_hrs_wk      W=0.969442  p=0.630950
+shapiro vibrato_regularity_pct W=0.928016 p=0.078216   max = 100.000000 (ceiling in demo data)
+pearson practice~experience  r=0.7859338034  p=3.22e-06
+pearson vibrato~experience   r=0.7039713062  p=8.60e-05
+```
+
+### Info window — verbatim (`out/reg_default_info.txt`)
+
+```
+══════════════════════════════════════════════
+  EML Stats : Simple Linear Regression
+  Wed Aug  5 14:11:27 2026
+══════════════════════════════════════════════
+
+  Table               demo regression
+  Response (Y)        vibrato regularity pct
+  Predictor (X)       practice hrs wk
+  N                   25
+
+  ── Model ───────────────────────────────────
+  Equation            y = 3.3135x + 38.2525
+  R                   0.9365
+  R-squared           0.8770
+  Adj. R-squared      0.8717
+  Residual SE         6.0025
+
+  ── Overall Model Test (F) ──────────────────
+  F(1,23)             164.0588
+  p                   p < .001
+
+  ── Coefficients ────────────────────────────
+
+                    Estimate      SE            t             p
+Intercept           38.2525       3.1932        11.979        p < .001
+practice hrs wk     3.3135        0.2587        12.809        p < .001
+
+  Direction: positive (vibrato regularity pct increases as practice hrs wk increases)
+  Variance explained  large effect
+
+══════════════════════════════════════════════
+```
+
+`cat -A` confirms the coefficients block sits flush-left at column 0 while
+every other block in the report is indented 2 spaces, and that the header row
+has no label above the term column.
+
+### Accuracy — exact on every reported value
+
+| Reported | Value | Truth | ✓ |
+|---|---|---|---|
+| slope | 3.3135 | 3.3135438 | ✓ |
+| intercept | 38.2525 | 38.2524521 | ✓ |
+| R | 0.9365 | 0.9365063 | ✓ |
+| R-squared | 0.8770 | 0.8770440 | ✓ |
+| Adj. R-squared | 0.8717 | 0.871698 | ✓ |
+| Residual SE | 6.0025 | 6.0025052 | ✓ |
+| F(1,23) | 164.0588 | 164.058803 | ✓ |
+| intercept SE / t | 3.1932 / 11.979 | 3.1931788 / 11.9794 | ✓ |
+| slope SE / t | 0.2587 / 12.809 | 0.2586979 / 12.8085 | ✓ |
+| CSV statistic | 164.058803 | 164.058803 | ✓ |
+| CSV p | 0.000000000006 | 5.95e-12 | ✓ (not floored) |
+
+**This is the most complete and the most accurate report of any wrapper
+audited so far.** Every number in the Info window and in the CSV matches
+scipy. The findings below are therefore entirely clarity, schema, and
+graphing — not computation.
+
+### CSV — verbatim (`out/demo_regression_results.csv`, 331 bytes, ASCII)
+
+```
+table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,effect_type,effect_label,n1,n2,mean1,sd1,median1,mean2,sd2,median2
+demo_regression,vibrato_regularity_pct,practice_hrs_wk,regression,regression,OLS linear,164.058803,23.00,0.000000000006,0.8770,R-squared,large effect,25,0,3.3135,0.2587,38.2525,3.1932,0.9365,0
+```
+
+### Findings
+
+**D54 — ACCURACY (schema) — CSV descriptive columns are repurposed as an
+ad-hoc coefficient carrier, with nothing in the file signalling it.**
+The six descriptive slots carry, in order: `mean1=3.3135` (slope),
+`sd1=0.2587` (slope SE), `median1=38.2525` (intercept), `mean2=3.1932`
+(intercept SE), `sd2=0.9365` (R), `median2=0` (unused). This is strictly
+worse than D46's six literal zeros: there the columns were empty and
+obviously so; here they are populated with quantities that have nothing to do
+with their names, and a downstream consumer stacking exported rows and
+averaging `mean1` would silently average slopes together with group means.
+The row is self-describing only in `test` (`OLS linear`) — a consumer would
+have to hardcode a per-test reinterpretation of the descriptive block to read
+this file correctly. Either add named coefficient columns or leave the
+descriptive block empty.
+
+**D55 — ACCURACY (schema) — `group1` and `group2` both carry the sentinel
+string `regression`.** These slots name the two levels being contrasted.
+There are no levels in a regression, so the wrapper writes a literal test-name
+sentinel into both. Combined with D45's recurrence below, three of the four
+identity columns in this row (`group_col`, `group1`, `group2`) contain
+something other than what their names denote.
+
+**D56 — CLARITY — the coefficients table breaks the report's own layout
+contract.** Every other block is indented 2 spaces; the coefficients block is
+flush-left at column 0, so it reads as though it has escaped the report frame.
+The header row (`Estimate  SE  t  p`) has no label above the term column, so
+the leftmost column is unnamed. And the `p` column mixes a numeric-aligned
+header with the string `p < .001` in both cells — a column whose values are
+never numbers under this data. Fix: indent to match, label the term column
+(`Term`), and either print numeric p or head the column `p (2-tailed)` and
+right-align the strings.
+
+**D57 — CLARITY — no confidence interval on slope or intercept, despite both
+standard errors being computed and printed.** The 95% CI is one `t` quantile
+away from data already on screen (slope: 3.3135 ± 2.0687 × 0.2587 =
+[2.7784, 3.8487]). A regression report that gives SE but not CI hands the
+reader an interval they must finish by hand. Same family as D50 (no CI on r).
+
+**D58 — CLARITY — no residual diagnostics in the one wrapper whose entire
+purpose is OLS.** No normality-of-residuals test, no homoscedasticity check,
+no influential-point or leverage flag, no Durbin-Watson. The residuals here
+are in fact clean (Shapiro W = 0.9679, p = 0.5915), which is precisely why
+their absence is invisible to a user on demo data and dangerous on real data.
+The plugin already runs Shapiro-Wilk elsewhere (`Check normality`), so the
+machinery exists. Same family as D20.
+
+**D59 — CLARITY — `Y = slope x X + intercept` uses the letter `x` as the
+multiplication sign immediately adjacent to the variable `X`**
+(`eml-regress.praat:42`). In a dialog whose next control is literally labelled
+`Predictor column (X)`, the string `slope x X` invites the reading "slope times
+x times X". Use `·` or `*`, or write `Y = b₁X + b₀`. The same collision recurs
+in the Info window's `Equation  y = 3.3135x + 38.2525`, where `x` is doing
+duty as the predictor name and the report elsewhere calls that variable
+`practice hrs wk`.
+
+**D60 — GRAPHING — the scatter's Y axis runs 40–110 on a variable named
+`_pct` whose data ceiling is exactly 100.** Rule 28E requires percentage
+scales to use the full 0–100 (or 0–1) range; the wrapper instead applied Rule
+28F's generic ±10% buffer to the data extremes, producing an axis that
+extends 10 points past a physically impossible value while cropping the
+bottom 40 points of the actual scale. The `_pct` suffix and the exact-100.0
+maximum are both available at draw time. A percentage-aware branch in the axis
+computation would resolve this and D-class recurrences in every future
+percentage plot.
+
+**D61 — CLARITY — the wrapper's documented "Theil-Sen robust alternative" is
+unreachable from the wrapper, and the `Regression: Both` control does not mean
+what it appears to mean here.** Two separate problems, resolved by source
+reading rather than by the queued A/B drive:
+
+1. `eml-regress.praat:5` states the purpose as *"OLS simple linear regression
+   … with Theil-Sen robust alternative."* The script never calls
+   `@emlTheilSen`. The estimator does exist and is well tested
+   (`stats/eml-inferential.praat:3999`, 47-check suite at
+   `dev/tests/phase2/test-theilsen.praat`, scipy-referenced), but the only
+   path that reaches it is in the draw layer
+   (`graphs/eml-draw-procedures.praat:2419–2431`), which selects Theil-Sen
+   **only** when `annotCorrType$ = "spearman"` **and** `.reportedOLS = 0`.
+   Entering through this wrapper sets `emlGraphsPresetCorrType$ = "pearson"`
+   and reports OLS, so both conditions fail by construction. The wrapper
+   offers no estimator control of any kind. A user reading the header is
+   promised a robust alternative that the dialog cannot deliver.
+2. The `Regression` optionmenu reads **None / Regression line / Formula /
+   Both** (`graphs/eml-graphs-form.praat:3390–3394`), where `Both` means
+   *line and formula* (`regression = 2 or 4` → line;
+   `regression = 3 or 4` → formula, lines 3578–3586) — **not** two
+   estimators. In a scatter launched from a regression wrapper whose header
+   advertises a second estimator, `Both` is the worst available label: the
+   figure it produces (one maroon line + one `OLS: y = …` annotation) is in
+   fact correct, but is indistinguishable from a figure that silently dropped
+   a second fit. Rename to `Line + formula`, or scope the label.
+
+**The queued A/B drive is cancelled** — the source resolves it, and the
+observed figure is confirmed correct for the selected option.
+
+**D62 — CLARITY — `Variance explained  large effect` formats a benchmark
+verdict as a label/value measurement pair.** It sits in the same
+two-column layout as `R-squared  0.8770` and `Residual SE  6.0025`, so a
+qualitative Cohen-style label is presented with the visual authority of a
+computed statistic. Elsewhere the report correctly narrates in prose
+(`Direction: positive (…)`). Either narrate this too, or label it
+`Effect size benchmark`.
+
+### Recurrences
+
+| Prior ID | Recurs here as |
+|---|---|
+| D9 / D28 | `p < .001` floor appears **three times in one report**, including twice inside a table column headed `p`. Sharpest instance yet: the CSV proves full precision is available (`0.000000000006`). |
+| D23 | `df=23.00` — two decimals on an integer degrees-of-freedom. |
+| D24 | `n2=0` — zero standing in for not-applicable. |
+| D43 | Figure has no auto-generated title. |
+| D45 | `group_col=practice_hrs_wk` — the predictor written into the grouping slot. Second wrapper with this schema error. |
+| D47 | `Group column` optionmenu unfiltered (`eml-regress.praat:53–57`) — offers the predictor and response themselves as grouping factors. |
+| D52 | No loop repopulation (`eml-regress.praat:37`) — `New` resets every control to guess/literal defaults. |
+
+### Passes — recorded explicitly
+
+- **Column auto-guess is correct.** `@emlWrapperInit: 2` picked predictor 2
+  and response 3, skipping the string column `singer` — the exact failure mode
+  that made `optsel` misfire earlier in this audit.
+- **`predCol$ = respCol$` is guarded** (`eml-regress.praat:77–78`) with a
+  clear `pauseScript`.
+- **Filename derivation is correct** — `demo_regression_results.csv`.
+- **`effect_label=large effect` is populated**, in direct contrast with the
+  blank of D17/D41. The blank is per-wrapper, not architectural.
+- **`endPause` carries the trailing 0** (`eml-regress.praat:89`), S0-compliant.
+- **The Draw preset bridge is complete — including the regression preset.**
+  `eml-regress.praat:96–106` sets type 8, XCol, YCol, CorrType, Annotate,
+  AnalysisType, GroupCol, **and `emlGraphsPresetRegressionLine = 1`**. That
+  last line is exactly what `eml-correlate.praat:149–165` omits, which
+  **confirms D51 as a wrapper-9 omission rather than a limitation of the
+  preset mechanism.** Two wrappers now demonstrate that the bridge carries
+  whatever a wrapper chooses to hand it (cf. D32).
+- **Every computed value matches scipy**, including the F statistic to six
+  decimals and p to full float precision in the CSV.
+- **Reported estimator and drawn estimator are forced identical.**
+  `graphs/eml-draw-procedures.praat:2414–2427` carries an explicit v1.19 fix:
+  when the OLS report has already been emitted (`.reportedOLS = 1`), the drawn
+  line is OLS even if the correlation type would otherwise route to Theil-Sen.
+  This is exactly the Info-window/figure coherence failure this audit has been
+  looking for elsewhere, already found and fixed by the author. Recorded as a
+  pass, and as the counter-example to D42/D44's gating pattern: the codebase
+  does sometimes keep the two output surfaces in sync deliberately.
+
+---
+
+## Wrapper 11/17 — `Pairwise comparisons` (menu y=727)
+
+Table: `demo_3groups` (object 20), `SPL_dB` by `voice_type`, n=15/group.
+Three legs driven: **default analysis**, **CSV**, **Draw** (violin +
+annotation matrix) **and the Draw path's own CSV export**.
+
+Ground truth (scipy, Rule 32), retained for every claim below:
+
+```
+Soprano n=15 mean=91.443778 sd=5.180019 median=91.598494
+Mezzo   n=15 mean=89.105330 sd=5.943727 median=87.714222
+Alto    n=15 mean=84.852190 sd=2.975599 median=84.315664
+ANOVA  F=7.076697  p=2.2456335001e-03  df (2, 42)
+Welch t  S-M p=2.6056811390e-01   S-A p=3.0080262689e-04   M-A p=2.1958703915e-02
+  x3 (Bonferroni)  0.7817043417      0.00090240788067        0.065876111745
+Tukey    S-M p=3.9421875874e-01   S-A p=1.7103444152e-03   M-A p=5.4187394797e-02
+  q = meandiff/sqrt(MSE/n), MSE=23.672, SE=1.2562 -> 1.861486 / 5.247135 / 3.385649
+Cohen's d  S-M 0.419455   S-A 1.560455   M-A 0.904902
+```
+
+### D63 — ACCURACY — The figure and the exported CSV report a **different test family** than the analysis that launched them, with no disclosure on any screen
+
+The Info window, at 14:19:55, headed itself:
+
+```
+  EML Stats : Pairwise Welch t-test (bonferroni adjustment)
+              Soprano     Mezzo       Alto
+Soprano       ---         0.7817      < .001
+```
+
+`Draw` was then taken from that same `Analysis complete` dialog. The figure
+it produced annotates:
+
+```
+One-way ANOVA: F(2, 42) = 7.08, p = .002
+               Tukey HSD
+            Soprano   Mezzo    Alto
+Soprano       -         -      .002
+```
+
+Same table, same columns, same session, consecutive screens — **two different
+tests and two different numbers for the same Soprano–Alto comparison.**
+Arithmetic identifies which is which and rules out rounding as the
+explanation: Tukey S–A = 1.7103444152e-03 renders `.002`; Welch×Bonferroni
+S–A = 9.0240788067e-04 and pooled×Bonferroni = 6.0312018609e-04 would both
+render `< .001`. The figure is Tukey. The Info window is Welch/Bonferroni.
+Both are internally correct; neither says so.
+
+The exported CSV (below, D65) makes it worse — it writes the string
+`Tukey HSD` into a `test` column of a file the user believes holds their
+pairwise Welch results.
+
+**Root cause, established from source without a second drive.** The bridge
+procedure has no adjustment parameter at all
+(`graphs/eml-annotation-procedures.praat:1773`):
+
+```praat
+procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$,
+... .alpha, .style$, .showNS, .showEffect, .testType$, .layoutMode
+```
+
+and its parametric k≥3 branch hardcodes the test (lines 2149–2173):
+
+```praat
+else
+    # --- One-way ANOVA + Tukey HSD ---
+    @emlOneWayAnova: .tableId, .dataCol$, .factorCol$, 1
+    ...
+    annotMatrixPosthoc$ = "Tukey HSD"
+```
+
+The bridge is therefore incapable of drawing what the pairwise wrapper
+computed. It does not read the wrapper's result at all; it recomputes from
+the table under its own fixed method. Fix is one of: pass the analysis
+result through the preset bridge (the mechanism already exists — see the
+regression preset at `eml-regress.praat:96–106`, which hands over eight
+settings including `emlGraphsPresetRegressionLine`), or, at minimum, label
+the figure with the test it actually ran *and* warn when it differs from the
+report on screen.
+
+### D64 — ACCURACY — The `Adjustment method` optionmenu on the graphing dialog is **inert** whenever `Test type = Parametric` and k ≥ 3
+
+The `Violin Plot -- Column Mapping` dialog presents `Adjustment method:
+Bonferroni` at full prominence, immediately under `Test type`, with no
+caveat. It has no effect on the parametric path.
+
+`.correction$` is resolved at `eml-annotation-procedures.praat:1800/1803`
+and consumed at exactly two sites, **both inside the nonparametric branch**:
+
+```praat
+2001:  @emlDunnTest: .tableId, .dataCol$, .factorCol$, .correction$
+2010:  annotMatrixPosthoc$ = "Dunn's test (" + .correction$ + ")"
+```
+
+`grep -n "adjMethod"` on the file returns zero hits. All four call sites
+(`eml-graphs-form.praat:5352, 5360, 5370, 5378`) pass nine arguments, none
+of them an adjustment method.
+
+Note the internal inconsistency: the *analysis* wrapper's dialog does scope
+this control honestly — `Adjustment (t and Wilcoxon only):`. The *graphing*
+dialog offers the same restricted control with the caveat removed. The
+correct behaviour is to grey the control out when the selected test type
+cannot use it; the minimum acceptable behaviour is to restore the caveat.
+
+### D65 — ACCURACY — The Draw path's CSV export is **byte-identical to a different wrapper's export**, and claims the same default filename
+
+`Exp CSV` on `Graph Complete` → `Export Results` → `Save` wrote
+`demo_3groups_results_2.csv`. `diff` against
+`demo_3groups_results.csv` — written 80 minutes earlier by **wrapper 6,
+`Compare k groups (ANOVA)`** — reports the files identical:
+
+```
+table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,...
+demo_3groups,SPL_dB,voice_type,omnibus,omnibus,One-way ANOVA,7.076697,2.00,0.002246,0.2520,eta-squared,large effect,0,0,...
+demo_3groups,SPL_dB,voice_type,Soprano,Mezzo,Tukey HSD,1.861486,42.00,0.394219,0.4195,Cohen's d,small effect,15,15,91.4438,...
+demo_3groups,SPL_dB,voice_type,Soprano,Alto,Tukey HSD,5.247135,42.00,0.001710,1.5605,Cohen's d,large effect,15,15,91.4438,...
+demo_3groups,SPL_dB,voice_type,Mezzo,Alto,Tukey HSD,3.385649,42.00,0.054187,0.9049,Cohen's d,large effect,15,15,89.1053,...
+```
+
+Two consequences compound. First, this is D63 reaching the filesystem: a
+user who runs *Pairwise comparisons*, draws, and exports receives a file of
+ANOVA/Tukey results. Second, because the default filename is derived from
+the **table** and not the analysis (D39 family), the folder now holds
+`demo_3groups_results.csv`, `_1.csv`, `_2.csv` — three files from three
+different wrappers, distinguishable only by opening them, and two of which
+are the same bytes. The `@emlReportToFile` uniquifier is doing its job
+correctly; the filename it is uniquifying carries no analysis identity.
+
+Suggested key: `<table>_<analysis>_results` (e.g.
+`demo_3groups_pairwiseWelch_results`).
+
+### D66 — ACCURACY — `CSV` on the analysis-side `Analysis complete` dialog **cannot ever succeed**, and its failure message blames the filesystem
+
+Recorded from the CSV leg. `CSV` yields `Export Failed` /
+"Could not write CSV file." No write is attempted:
+`emlExportStatsCSV` short-circuits `.success = 0` when `emlCSV_n = 0`
+(`stats/eml-output.praat:604`) before touching disk, and
+`emlWrapperExportCSV` (754–773) renders that as a filesystem error.
+
+The rows are never added. `stats/eml-analysis.praat` contains **11
+`@emlCSVInit` calls and zero `@emlCSVAddRow` calls** (init sites 207, 278,
+346, 407, 680, 742, 829, 1012, 1116, 1420, 1479). All 20 `AddRow` sites live
+in `graphs/eml-annotation-procedures.praat` — which is precisely why the
+Draw-path export in D65 succeeded while this one failed. **Same button
+label, same dialog idiom, one works and one is structurally incapable of
+working.**
+
+Blast radius from the init-without-add orchestrators: `emlRunPairwiseAnalysis`
+(407), `emlRunRepeatedMeasuresAnalysis` (1420), `emlRunFriedmanAnalysis`
+(1479) — i.e. *Compare paired/repeated* is predicted to fail identically.
+Queued for drive-verification.
+
+Minimum fix: make the message truthful ("No exportable rows were produced by
+this analysis"). Real fix: add the `AddRow` calls, or route the wrapper's
+CSV button through the same reporters the graphing path uses.
+
+### D67 — CLARITY — Cohen's d is printed for every pair; n, means and SDs for the groups are printed nowhere
+
+The report gives a 3×3 d matrix but never states that each group has n=15,
+never gives a group mean, and never gives a group SD. The reader is handed
+the effect size and denied every input to it. The CSV proves the plugin has
+all of it in hand (`n1,n2,mean1,sd1,median1,mean2,sd2,median2` are populated
+columns) — the Info window simply declines to show it.
+
+### D68 — CLARITY — No test statistic and no degrees of freedom
+
+`Pairwise Welch t-test` reports p and d only. There is no t and no df — for
+Welch, df is the informative part (it is fractional and differs per pair),
+and its absence makes the result unreproducible from the report. Contrast
+wrapper 9, which reports `r`, `t`, `df`, `p` for a single correlation.
+
+### D69 — CLARITY — The raw p is never shown
+
+Only the adjusted value appears, under the heading `Adjusted p-values`. Since
+the adjustment method is itself named only in the report title (lowercase —
+D75), and since three pairwise comparisons at Bonferroni is a ×3 the reader
+must reverse mentally, showing both columns costs one column and removes all
+ambiguity.
+
+### D70 — CLARITY — No significance marking and no alpha anywhere in the report
+
+Neither matrix marks significance, and the report never states the alpha in
+force. The dialog collected `Alpha 0.05`; the output does not echo it. The
+reader is left to threshold `0.0659` by eye against a criterion they have to
+remember. (The figure has the mirror-image problem — it shades by
+significance but never states the alpha either: D72.)
+
+### D71 — CLARITY — Two adjacent matrices use opposite symmetry conventions, unexplained
+
+```
+  ── Adjusted p-values ──          ── Cohen's d (effect sizes) ──
+Soprano  ---   0.7817  < .001    Soprano  ---    0.419   1.560
+Mezzo  0.7817  ---     0.0659    Mezzo   -0.419  ---     0.905
+Alto   < .001  0.0659  ---       Alto    -1.560  -0.905  ---
+```
+
+The p matrix is symmetric; the d matrix is antisymmetric, because d carries
+the direction of the difference. This is correct and is the right choice —
+but nothing on screen says the sign encodes direction, or which direction
+(row-minus-column). A reader scanning both matrices in the same visual idiom
+will read `-1.560` as a negative effect size.
+
+### D72 — GRAPHING — The annotation matrix encodes four states in colour and glyph, and legends none of them
+
+The figure's matrix uses: **blue shading** = significant, **grey shading** =
+tested and not significant, **white / blank lower triangle** = not shown, and
+two visually distinct dashes on and off the diagonal. At 250% magnification
+the diagonal dash (light grey, short) is distinguishable from the
+nonsignificant dash (dark, longer em-dash); **at the figure's delivered
+scale they read as the same glyph.** So "self-comparison, not applicable"
+and "tested, not significant" are rendered indistinguishably, and the alpha
+that drives the shading is never stated.
+
+Rule 28D/G. Either add a two-line key under the matrix, or use `n.s.` for
+tested-nonsignificant and leave the diagonal empty.
+
+### D73 — GRAPHING — Auto-derived axis label drops the unit parenthesis
+
+Column `SPL_dB` → axis label `SPL dB`. Rule 28B (underscore→space) is
+satisfied; Rule 28C (units in parentheses) is not. The plugin already knows
+the convention — hand-written labels elsewhere in the codebase use
+`Frequency (Hz)`. A trailing-token heuristic (`_dB`, `_Hz`, `_s`, `_ms`,
+`_pct`) would cover the common cases; anything unrecognised falls through to
+current behaviour.
+
+### D74 — CLARITY — Dialog section rule is `--- Options ---` where every other wrapper uses the box-drawing rule
+
+`emlWrapperCommonFields` (`stats/eml-output.praat:643–646`) emits
+`comment: "--- Options ---"`. Every report body in the plugin uses
+`── Section ──`. One shared procedure is the outlier; the fix is one line
+and lands everywhere at once.
+
+### D75 — CLARITY — Report header casing does not match the control that set it
+
+Header: `Pairwise Welch t-test (bonferroni adjustment)`. The optionmenu the
+user selected reads `Bonferroni`. `@emlAdjustMethodName` should return the
+display casing, or the header should title-case what it interpolates.
+
+### D76 — CLARITY — The CSV omnibus row carries only `dfBetween`; `dfWithin` is dropped
+
+`One-way ANOVA,7.076697,2.00,0.002246` — a single `df` column holding `2.00`.
+`dfWithin = 42` appears only in the per-pair Tukey rows (`42.00`). F cannot
+be re-tested from the omnibus row alone. A `df2` column, or `df` as `2, 42`,
+resolves it.
+
+### Recurrences
+
+| Prior ID | Recurs here as |
+|---|---|
+| D9 / D28 | **Sharpest instance in the audit.** Info prints `< .001` for a Welch×Bonferroni p of **0.00090241** — a value that clears the floor by 10%. The figure prints the corresponding Tukey p as `.002`, so the two surfaces disagree partly *because* one of them was floored. |
+| D23 | `df=2.00`, `df=42.00` — two decimals on integer degrees of freedom, in the CSV. |
+| D24 | Omnibus CSV row writes `n1=0,n2=0,mean1=0,sd1=0,median1=0,…` — zero standing in for not-applicable, in eight columns. |
+| D39 | `Export Results` folder defaulted to the last-used path this time (`/home/claude/drive/out`) rather than the plugin directory — the persistence works. The **filename** default (`<table>_results`) is the surviving half of D39; see D65. |
+| D43 | Figure has no title. The `EML Graphs` dialog's `Title` field arrived **blank** despite the launch context knowing the table, both columns, and the test. |
+
+### Passes — recorded explicitly
+
+- **Column auto-guess is correct in both dialogs.** The analysis wrapper and
+  the graphing column-mapping dialog independently bound `SPL_dB` → Value and
+  `voice_type` → Group, skipping the string column. No misfire.
+- **Every reported number is exact.** Info matrix (all six off-diagonal
+  cells), figure annotation (`F(2, 42) = 7.08`, `p = .002`, `.002`), violin
+  medians (91.6 / 87.7 / 84.3 vs scipy 91.598494 / 87.714222 / 84.315664),
+  and all 76 CSV fields verified against scipy. Nothing is wrong; things are
+  *inconsistent* (D63), which is a different and more dangerous failure.
+- **The `T test type` control is demonstrably live.** M–A = `0.0659`
+  = Welch×3 (0.0658761), not pooled×3 (0.0585062). Verified from a single
+  run's values without an A/B drive.
+- **Tukey `statistic` is the canonical studentized range `q`.** The plugin
+  reports 1.861486 / 5.247135 / 3.385649 = meandiff/sqrt(MSE/n); scipy's
+  `TukeyHSDResult.statistic` is parameterised as the *mean difference*. The
+  plugin is right and scipy's field name is the trap — **do not flag this.**
+- **Effect-size labels are effect-type-aware.** `eta-squared 0.2520 → large`
+  (Cohen .01/.06/.14) and `Cohen's d 0.4195 → small` (Cohen .2/.5/.8) are
+  both correct under their own conventions. The label logic is not a single
+  hardcoded threshold ladder.
+- **Violin y-axis is Rule 28E/F compliant** — 70–110 against data spanning
+  78.4–105.3, round marks, generous buffer, no collisions.
+- **`@emlReportToFile` uniquification is sound** — `_1`, `_2` ascending,
+  `fileReadable`-guarded, nothing overwritten. Rule 27 satisfied at the
+  mechanism level; the defect in D65 is upstream, in the name it is handed.
+- **The graph-path CSV export works end-to-end** — Browse/Save dialog,
+  folder persistence, uniquified write, well-formed 20-column output. This is
+  the working half of the contrast that makes D66 a defect rather than a
+  missing feature.
+
+---
+
+## Wrapper 5 re-drive — root-cause of the bad paired defaults (`@emlGuessColumnRoles`)
+
+**Context.** `Compare Paired Observations` opened on the plugin's own `demo_paired`
+table with **Column 1 = `jitter_pre`, Column 2 = `HNR_pre`** — i.e. the default
+offered by the plugin is a paired t-test of jitter against harmonics-to-noise
+ratio. `demo_paired` columns are `1 subject · 2 jitter_pre · 3 jitter_post ·
+4 HNR_pre · 5 HNR_post`, so the obviously-correct default is 2 vs 3.
+
+**Empirical confirmation (direct procedure probe).** A probe script was written
+into the *installed* plugin's `scripts/` directory (so the relative
+`include ../stats/...` paths resolve), then delivered with `--send`:
+
+```praat
+include ../stats/eml-core-utilities.praat
+include ../stats/eml-core-descriptive.praat
+include ../stats/eml-extract.praat
+selectObject: 19
+@emlGuessColumnRoles: 19
+writeInfoLine: "dataIdx    ", emlGuessColumnRoles.dataIdx
+appendInfoLine: "dataIdx2   ", emlGuessColumnRoles.dataIdx2
+appendInfoLine: "groupIdx   ", emlGuessColumnRoles.groupIdx
+appendInfoLine: "subjectIdx ", emlGuessColumnRoles.subjectIdx
+appendInfoLine: "timeIdx    ", emlGuessColumnRoles.timeIdx
+```
+
+Output:
+
+```
+dataIdx    2
+dataIdx2   4
+groupIdx   1
+subjectIdx 1
+timeIdx    3
+```
+
+This matches the hand-trace exactly. (Probe file deleted from the installed
+plugin afterwards — it must never reach a build.)
+
+**Hand-trace.** Keyword scores: `subject` sS=10; `jitter_pre` dS=10 / tS=6;
+`jitter_post` dS=10 / tS=6; `HNR_pre` dS=8 / tS=6; `HNR_post` dS=8 / tS=6.
+Greedy assignment: R1 `subject`→subject (10, first max wins on strict `>`);
+R2 `jitter_pre`→data (10); R3 — data and subject are done and every group
+score is 0, so the best remaining cell is `jitter_post`→**time** (6), which
+sets `taken[3]=1`; R4 finds nothing. The secondary-data scan then *skips*
+`jitter_post` because it is `taken`, and falls through to `HNR_pre` (dS=8).
+
+---
+
+### Finding D77 — ACCURACY (high) — the `pre|post` keyword makes the *time* role steal the second member of a paired pair
+
+`stats/eml-extract.praat`, `procedure emlGuessColumnRoles` (line 1545), PASS 1:
+
+```praat
+# Weight 6: short temporal keywords (boundary-checked)
+@eml_kwScan: .cn$, "pre|post|rep|day|week|time|date|take"
+if eml_kwScan.hit = 1 and .tS[.col] < 6
+    .tS[.col] = 6
+endif
+```
+
+and the secondary-data scan later in the same procedure:
+
+```praat
+# ── Secondary data column (paired/correlation) ───────────────────
+.bestD2 = 0
+for .col from 1 to .nCols
+    if .taken[.col] = 0 and .dS[.col] > .bestD2
+        .bestD2 = .dS[.col]
+        .dataIdx2 = .col
+    endif
+endfor
+```
+
+The very token that identifies a column as the second half of a pre/post pair
+(`post`) is what assigns it to the *time* role, marks it `taken`, and thereby
+excludes it from `dataIdx2`. The time role is **never consumed** by
+`eml-compare-paired.praat`, so the assignment buys nothing and costs the
+correct default.
+
+Severity is driven by plausibility of the wrong answer: a jitter-vs-HNR paired
+t-test computes cleanly, returns a large t and a tiny p, and looks like a
+result. Nothing in the Info window or the figure signals that the two columns
+are different measures.
+
+**Blast radius — all three consumers of `guessDataIdx2`:**
+
+| Consumer | Line | Field defaulted |
+|---|---|---|
+| `scripts/eml-compare-paired.praat` | 28 | `Column 2` |
+| `scripts/eml-correlate.praat` | 37 | `guessYIdx` |
+| `scripts/eml-regress.praat` | 30 | `guessRespIdx` |
+
+Exposed to wrappers at `stats/eml-output.praat:743`
+(`.guessDataIdx2 = emlGuessColumnRoles.dataIdx2`), documented at
+`stats/eml-output.praat:675`.
+
+**Suggested fix.** Do not let the time role consume a column that also carries a
+high data score, or run the secondary-data scan *before* the time role is
+assigned, or exclude time-role columns from `taken[]` for the purposes of the
+`dataIdx2` scan only. The narrowest change with the least blast radius is the
+last: scan for `dataIdx2` over `.taken[.col] = 0 or .col = .timeIdx`.
+
+---
+
+### Finding D78 — ACCURACY (medium) — `groupIdx` and `subjectIdx` resolve to the same column
+
+The probe returns `groupIdx 1` and `subjectIdx 1` — column 1 (`subject`) holds
+two roles simultaneously. The cause is the end-of-procedure fallback, which
+assigns `groupIdx` **without consulting `taken[]`**:
+
+```praat
+elsif .groupIdx = 0
+    # Data found but no group — first column != dataIdx
+    for .col from 1 to .nCols
+        if .col <> .dataIdx and .groupIdx = 0
+            .groupIdx = .col
+        endif
+    endfor
+```
+
+The guard is `.col <> .dataIdx` only. Every other role — subject, time,
+secondary data — is invisible to it.
+
+The consequence surfaces wherever `guessGroupIdx` feeds a group-column default
+on a repeated-measures table: `Compare two groups` on `demo_paired` would
+default its grouping variable to the subject id, i.e. 20 groups of n = 1. That
+path errors or produces degenerate output rather than a plausible-but-wrong
+number, which is why this is medium and D77 is high.
+
+**Suggested fix.** Add `and .taken[.col] = 0` to the fallback's condition, and
+mark `groupIdx` as `taken` when it is assigned.
+
+---
