@@ -27,7 +27,7 @@ dismissed).
 | D12 | CLARITY  | medium  | [L800](DRIVE_FINDINGS_2026-08-04.md#L800) | ### D12 — CLARITY (medium). No CI on the mean difference | — |
 | D13 | CLARITY  | medium  | [L810](DRIVE_FINDINGS_2026-08-04.md#L810) | ### D13 — CLARITY (medium). Subtraction direction is never stated | — |
 | D14 | CLARITY  | low  | [L820](DRIVE_FINDINGS_2026-08-04.md#L820) | p is floored at .001 with no exact value anywhere | 980, 1103, 1557, 2168 |
-| D15 | ACCURACY  | high  | [L896](DRIVE_FINDINGS_2026-08-04.md#L896) | nonparametric effect size reported under the parametric test — demonstrated numerically 5 Aug: printed `Matched-pairs r 0.971` is the Wilcoxon rank-biserial; the t-derived r is 0.871 | 1116, 3728 |
+| D15 | ACCURACY  | RESOLVED  | [L896](DRIVE_FINDINGS_2026-08-04.md#L896) | nonparametric effect size reported under the parametric test — demonstrated numerically 5 Aug: printed `Matched-pairs r 0.971` is the Wilcoxon rank-biserial; the t-derived r is 0.871 | 1116, 3728, 4110 |
 | D16 | CLARITY  | —  | [L1125](DRIVE_FINDINGS_2026-08-04.md#L1125) | the dialog's own escaping instructions are wrong, and fail silently | — |
 | D17 | PACKAGING  | —  | [L1172](DRIVE_FINDINGS_2026-08-04.md#L1172) | `effect_label` column populated inconsistently across analyses | 1522 |
 | D18 | CLARITY  | —  | [L1193](DRIVE_FINDINGS_2026-08-04.md#L1193) | default export filename names an internal artefact | 1549 |

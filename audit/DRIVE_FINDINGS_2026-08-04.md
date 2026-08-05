@@ -4106,3 +4106,66 @@ than changed. The three sites must end up agreeing whichever way it goes.
 Note the procedure carries a comment recording an earlier bug (M1) in which
 excess kurtosis was corrected a second time, labelling normal data as
 `excess ≈ -3`. The area has a history of scale confusion.
+
+### D15 — RESOLVED — each paired test now reports its own effect size
+
+Author ruling, 5 August: match the effect size to the test, and show both
+when the user asks for both.
+
+The plugin computed the matched-pairs rank-biserial correlation
+unconditionally — `@emlMatchedPairsR` sat outside the `if .testType$`
+branches at `stats/eml-analysis.praat:740` — and the paired-t report block
+printed it under the heading **Effect Size**, directly beneath *t*, df and
+*p* from a test it had nothing to do with. No note in the repository, the
+PKB, or the fix notes records that placement as a decision; the file is
+present in the earliest committed snapshot, so it predates the repository.
+
+**What changed.**
+
+- New `@emlCohenDz` (`stats/eml-inferential.praat`): *d*z = mean(v1−v2) /
+  sd(v1−v2), the standardised mean difference built from the same standard
+  deviation the paired *t* is built from, plus the correlation form
+  *r* = *t* / √(*t*² + df) for callers who prefer an *r* scale.
+- `@emlRunPairedAnalysis` now calls `@emlCohenDz` on the parametric branch
+  and `@emlMatchedPairsR` on the nonparametric branch, each inside its own
+  `if`.
+- The paired-t report block prints Cohen's *d*z and *r* (from *t*). The
+  Wilcoxon block already printed matched-pairs *r* under its own
+  **Nonparametric Effect Size** heading and is unchanged — it was correct
+  all along.
+- The CSV row for a parametric run carries `Cohen's dz` in `effect_type`
+  instead of `matched-pairs r`.
+
+**Why the substitution was invisible.** Both statistics land on a 0–1
+correlation-like scale and both read "large effect". They differ in what
+they use: *r* from *t* uses the magnitudes of the change, matched-pairs *r*
+uses only the ranks. On `demo_paired`, nineteen of twenty subjects moved the
+same direction, so the rank statistic sits near ceiling at 0.971 while the
+magnitude statistic is 0.871. Consistent direction with variable size is
+exactly the case that separates them, and it is common in pre/post voice
+data.
+
+**Verified by drive.** Parametric run:
+
+```
+  ── Effect Size ─────────────────────────────
+  Cohen's dz          1.728
+  r (from t)          0.871
+  Magnitude           large effect
+```
+
+Both-tests run adds, under its own heading:
+
+```
+  ── Nonparametric Effect Size ───────────────
+  Matched-pairs r     0.971
+```
+
+Every value matches R: *d*z 1.728, *r* from *t* 0.871, matched-pairs *r*
+0.971.
+
+**`validate/v06` has been rewritten.** It was written to pass while the
+defect existed and fail once fixed, which is what happened. It now asserts
+the corrected behaviour and carries a regression guard: the two effect sizes
+must remain numerically distinct, so a future change that routes the rank
+statistic back under the parametric heading fails the suite.
