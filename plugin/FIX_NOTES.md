@@ -169,3 +169,28 @@ literal `5` gave 0–5); at max count 5 → 0–6 integral, x-axis still fractio
 at 1.5, 2, 2.5; a continuous figure first in a fresh session draws clean with
 0.05 ticks; the same figure drawn immediately after a histogram is identical,
 so the constraint does not leak.
+
+## 5 August 2026 — D92: the annotated path pinned violin and box axes to zero
+
+Found by verifying that annotation headroom, not a minimum span, supplies the
+extra y-axis room a figure needs — the check the F0 span removal implied.
+
+`@emlGraphsWorkflow`'s auto-range branch, which runs only when brackets are
+drawn, passed a literal `0` as the data minimum for every non-bar graph type
+and never assigned `valueMin`. The same violin plot therefore drew on 70–105
+unannotated and **0–170** annotated, with the data in the bottom 14% of the
+panel.
+
+Worse than wasteful: `@emlComputeAnnotationHeadroom` scales its expansion by
+`yDataRange`, so a range inflated from 30 dB to 100 dB by the zero floor
+produced about three times the headroom actually needed.
+
+Fixed by tracking `visibleDataMin` alongside `visibleDataMax` and passing it.
+`@emlComputeAxisRange`'s non-negative guard still holds the floor at 0 for
+data that never goes below it.
+
+**Verified:** annotated violin, SPL 75.6–99.3 dB with three brackets, went
+from 0–170 to **75–110** — data filling the panel, brackets at 100–106,
+headroom carrying the rest. The unannotated figure is unchanged at 70–105.
+The annotated **bar chart is unchanged at 0–170** and must be: bars emanate
+from the origin, and that branch already passed `emlBarData_visibleMin`.
