@@ -4305,3 +4305,105 @@ retry loop rebuilds the form from the original column guesses rather than the
 user's answers, so any return to the form — however it is reached — discards
 what they set. A `Back` button that leads to a blank form is worth much less
 than one that does not.
+
+
+---
+
+### D93 — RESOLVED — author ruling of 5 August 2026, implemented and driven
+
+The corrected statement above ended with a proposed tool chooser awaiting
+author ruling. **The ruling rejects that shape**, and is right to: it would
+have restructured how a test is chosen from the menu in order to fix an error
+message.
+
+> "So if somebody comes from the wizard path, what makes the most sense is to
+> go back to the wizard chooser. I do not wanna change the structure of how
+> measurements are chosen from the new menu. in that case, when somebody gets
+> there from the menu path, the only option may be for the window that pops up
+> to give a little bit more information. basically, that the user needs to
+> manually go back to the new menu and choose the correct test."
+
+Two entry paths, two different fixes, no new navigation layer.
+
+#### What the drive found that the source reading had not
+
+Driving the wizard turned up a defect worse than the one D93 was filed for.
+**Every analysis error in the Stats Wizard called `exitScript:`** — 13 sites.
+An error four pages in did not return the user anywhere; it destroyed the
+whole wizard, including every answer given on the way. Six further sites
+ended the wizard on a *correctable* mistake ("Please select two different
+columns"). None of this is visible from the wrapper scripts, which is where
+D93 was filed from.
+
+So the wizard, which owns a complete `goto`/`label` back-chain and was the
+one path with somewhere to go, was the path that used it least.
+
+#### What was changed
+
+**One error surface, `@emlErrorDialog`** (`stats/eml-output.praat`), with a
+`.mode$` of `"wizard"` or `"menu"`, because the two paths can honestly offer
+different things. It takes the orchestrator's message, word-wraps it
+(`@emlWrapText` — `comment:` does not wrap and these strings run long), and
+adds guidance. It never calls `exitScript:` itself; it returns `.back` and
+the caller decides, because only the caller knows what needs tearing down.
+
+**Menu path — 14 sites across 9 wrappers.** The dialog now states that the
+test cannot run, and when another EML tool would work it names that tool and
+gives the literal menu route to it, saying plainly that a running script
+cannot open a Praat menu. Buttons are `Quit` and `Back`, and `Quit` now
+actually quits — the old `pauseScript:` had a single `Continue` that dropped
+the user back onto the form regardless.
+
+**Wizard path — 19 sites.** All 13 `exitScript:` calls on analysis error, and
+6 on correctable selection mistakes, now present the same dialog and `goto`
+the branch's column-selection page. The wizard survives; every earlier answer
+is intact; the existing `Back` chain reaches the goal chooser from there.
+The three bare `pauseScript:` guards that were *already* returning correctly
+were converted too, for one surface rather than three.
+
+**Remedies are structural, not parsed out of message text.** Every
+orchestrator now carries a `.remedy$` alongside `.error$`, empty by default.
+Only one case currently sets it — three-or-more groups given to the two-group
+test — and it names *both* the ANOVA and the Kruskal-Wallis entries, since
+naming one would quietly steer the parametric/nonparametric choice. Errors
+that no other tool would fix (a data problem, a wrong column) deliberately
+leave it empty and say "adjust your selections and run again" instead.
+Telling someone to re-navigate the menu when a column change would do is
+worse than saying nothing.
+
+**Form state now survives the return trip.** This was the other half of the
+first D93 statement and it is what makes `Back` worth having. Nine of ten
+wrappers seeded their menus from `@emlGuessColumnRoles` on every iteration of
+the `repeat` loop, so any return rebuilt the form from the original guess.
+New `@emlColumnIndex` / `@emlKeepChoice` (`stats/eml-extract.praat`) map the
+chosen column *name* back to its index; non-column menus (test, adjustment,
+group order, Tukey) carry seed variables of their own. A column renamed
+between runs degrades to the guess rather than to index 0, which Praat
+rejects.
+
+#### Driven, not reasoned
+
+Praat 6.6.30, Xvfb :99, real clicks.
+
+| Path | Observed |
+|---|---|
+| Menu, `Compare two groups` on `demo_3groups` | Dialog names both k-group entries and the menu route. `evidence/shots/d93_menu_error_dialog.png` |
+| Menu, `Back` from that dialog | Form returns with `vibrato_rate_Hz` / `Both parametric and nonparametric` / `Alphabetical` — all three deliberately changed before Run. `d93_menu_form_state_kept.png` |
+| Menu, `Quit` from that dialog | Script ends; no live pause window remains |
+| Wizard, two-group branch on a 3-group column | Guard dialog names the Design-page choice that fits. `d93_wizard_guard_dialog.png` |
+| Wizard, analysis error (red-path R4) | *Each group needs at least 2 observations. Group "Soprano": n=6, group "Alto": n=1* — wizard alive. `d93_wizard_analysis_error_R4.png` |
+| Wizard, `Back` from that error | Returns to *Two groups — Select columns*, wizard intact. `d93_wizard_back_returns.png` |
+
+The R4 row is also the **first red-path case driven through the plugin**.
+`validate/redpath/r4_singleton_group.csv` was loaded unchanged; the required
+behaviour was "refuse, naming the group and its n", and that is what the
+plugin does. `v07`'s R4 `PENDING DRIVE` marker is replaced with the observed
+assertion; six remain.
+
+#### Not claimed
+
+`Linear mixed model` received the same mechanical change for a single error
+surface across the plugin, and was **not driven** — it remains out of scope
+by author ruling. The two-way, correlation, regression, Kruskal-Wallis and
+pairwise wrappers were parse-checked and their code paths are identical to
+the two that were driven, but they were not individually exercised.
