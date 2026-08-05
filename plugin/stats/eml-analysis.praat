@@ -1096,7 +1096,11 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         .swError$ = emlShapiroWilk.error$
 
         # Interpretation
-        .skKurtFail = abs (.skewness) >= 1 or abs (.kurtosis) >= 3
+        # Thresholds come from emlSkewThreshold / emlKurtosisThreshold
+        # (stats/eml-output.praat) so this gate cannot drift from the
+        # wizard's classifier, which it had — 3 here against 1 there.
+        .skKurtFail = abs (.skewness) >= emlSkewThreshold
+        ... or abs (.kurtosis) >= emlKurtosisThreshold
         .swFail = 0
         if .swError$ = ""
             if .swP < 0.05

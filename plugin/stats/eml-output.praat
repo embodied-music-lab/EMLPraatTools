@@ -61,6 +61,23 @@
 # call and consumed (cleared) by the procedure.
 # ============================================================================
 emlShowExplanations = 0
+
+# ----------------------------------------------------------------------------
+# Distribution-shape thresholds
+#
+# @emlKurtosis and @emlSkewness both return the EXCESS form: a normal
+# distribution gives 0, not 3. These two constants are the flags applied to
+# them, declared here so the shape gate, the wizard's classifier and the
+# sentence the classifier prints cannot drift apart — which they had. Before
+# 5 August the gate used 3, the classifier used 1, and the printed sentence
+# claimed 3 while the code beside it enforced 1.
+#
+# The defaults are the conventional strict pair, |skew| > 1 with
+# |excess kurtosis| > 1. Kline's looser pair is 2 and 7. To change the house
+# convention, change it here — every consumer reads these.
+# ----------------------------------------------------------------------------
+emlSkewThreshold = 1
+emlKurtosisThreshold = 1
 emlWizardExplain$ = ""
 
 
@@ -964,14 +981,15 @@ procedure emlWizardExplainKurtosis: .kurt
     # scipy bias=False). Do NOT subtract 3 again — that double-correction
     # labelled normal data (excess ~ 0) as excess ~ -3 => "platykurtic". (M1)
     .excess = .kurt
-    if abs (.excess) < 1
+    if abs (.excess) < emlKurtosisThreshold
         .desc$ = "Near-normal peakedness"
     elsif .excess > 0
         .desc$ = "Heavy-tailed (leptokurtic)"
     else
         .desc$ = "Light-tailed (platykurtic)"
     endif
-    emlWizardExplain$ = .desc$ + " (0 = normal; |excess| < 3 is typical threshold)"
+    emlWizardExplain$ = .desc$ + " (0 = normal; |excess| < "
+    ... + fixed$ (emlKurtosisThreshold, 0) + " treated as typical)"
 endproc
 
 
