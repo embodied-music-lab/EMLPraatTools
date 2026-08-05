@@ -39,6 +39,14 @@ if guessYIdx = 0
     guessYIdx = min (2, nCols)
 endif
 
+# Seeds for the entry form. Initialised from the column-role guess, then
+# overwritten with the user's own answers each time round the loop. Before
+# the D93 fix these were re-read from the guess on every iteration, so any
+# return to the form — after an error or after "New" — silently discarded
+# what the user had set. (D93)
+selTest = 1
+selGroupIdx = 1
+
 allDone = 0
 repeat
     beginPause: "Correlate Two Columns"
@@ -53,12 +61,12 @@ repeat
             option: emlTableColumnNames.name$ [iCol]
         endfor
         comment: ""
-        optionmenu: "Group column", 1
+        optionmenu: "Group column", selGroupIdx
             option: "(none — overall only)"
         for iCol from 1 to nCols
             option: emlTableColumnNames.name$ [iCol]
         endfor
-        optionmenu: "Test", 1
+        optionmenu: "Test", selTest
             option: "Pearson r"
             option: "Spearman rho"
             option: "Both"
@@ -73,6 +81,14 @@ repeat
     colX$ = column_X$
     colY$ = column_Y$
     testChoice = test
+    # Carry the answers forward so a return to this form shows them. (D93)
+    @emlKeepChoice: colX$, guessXIdx
+    guessXIdx = emlKeepChoice.idx
+    @emlKeepChoice: colY$, guessYIdx
+    guessYIdx = emlKeepChoice.idx
+    selTest = testChoice
+    # Leading "(none)" entry: this is a menu position, not a column index.
+    selGroupIdx = group_column
 
     hasGroupCol = 0
     groupCol$ = ""
@@ -84,7 +100,11 @@ repeat
     @emlHandleCommonFields
 
     if colX$ = colY$
-        pauseScript: "Please select two different columns."
+        # D93: uniform error surface; Quit must actually quit.
+        @emlErrorDialog: "Please select two different columns.", "", "menu"
+        if not emlErrorDialog.back
+            allDone = 1
+        endif
     else
         if testChoice = 1
             testType$ = "pearson"
@@ -97,7 +117,12 @@ repeat
         selectObject: tableId
         @emlRunCorrelationAnalysis: tableId, colX$, colY$, testType$
         if emlRunCorrelationAnalysis.error$ <> ""
-            pauseScript: emlRunCorrelationAnalysis.error$
+            # D93: an error must not strand the user on a form the error has
+            # just ruled out. Present it with guidance, and honour Quit.
+            @emlErrorDialog: emlRunCorrelationAnalysis.error$, emlRunCorrelationAnalysis.remedy$, "menu"
+            if not emlErrorDialog.back
+                allDone = 1
+            endif
         else
             # Per-group correlations (if group column selected)
             if hasGroupCol

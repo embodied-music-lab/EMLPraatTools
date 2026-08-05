@@ -29,6 +29,14 @@ nCols = emlWrapperInit.nCols
 guessDataIdx = emlWrapperInit.guessDataIdx
 guessGroupIdx = emlWrapperInit.guessGroupIdx
 
+# Seeds for the entry form. Initialised from the column-role guess, then
+# overwritten with the user's own answers each time round the loop. Before
+# the D93 fix these were re-read from the guess on every iteration, so any
+# return to the form — after an error or after "New" — silently discarded
+# what the user had set. (D93)
+selTukey = 1
+selGroupOrder = 1
+
 allDone = 0
 repeat
     beginPause: "Compare k Groups (ANOVA)"
@@ -42,8 +50,8 @@ repeat
         for iCol from 1 to nCols
             option: emlTableColumnNames.name$ [iCol]
         endfor
-        boolean: "Tukey HSD post hoc", 1
-        optionmenu: "Group order", 1
+        boolean: "Tukey HSD post hoc", selTukey
+        optionmenu: "Group order", selGroupOrder
             option: "Table order"
             option: "Alphabetical"
         @emlWrapperCommonFields
@@ -57,6 +65,13 @@ repeat
     dataCol$ = data_column$
     groupCol$ = group_column$
     doTukey = tukey_HSD_post_hoc
+    # Carry the answers forward so a return to this form shows them. (D93)
+    @emlKeepChoice: dataCol$, guessDataIdx
+    guessDataIdx = emlKeepChoice.idx
+    @emlKeepChoice: groupCol$, guessGroupIdx
+    guessGroupIdx = emlKeepChoice.idx
+    selTukey = doTukey
+    selGroupOrder = group_order
 
     if group_order = 2
         emlGroupSortAlphabetical = 1
@@ -68,7 +83,12 @@ repeat
     selectObject: tableId
     @emlRunAnovaAnalysis: tableId, dataCol$, groupCol$, doTukey
     if emlRunAnovaAnalysis.error$ <> ""
-        pauseScript: emlRunAnovaAnalysis.error$
+        # D93: an error must not strand the user on a form the error has
+        # just ruled out. Present it with guidance, and honour Quit.
+        @emlErrorDialog: emlRunAnovaAnalysis.error$, emlRunAnovaAnalysis.remedy$, "menu"
+        if not emlErrorDialog.back
+            allDone = 1
+        endif
     else
         runAgain = 0
         repeat

@@ -341,10 +341,19 @@ if goal = 1
             selectObject: tableId
             @emlCountGroups: tableId, groupCol$
             if emlCountGroups.nGroups <> 2
-                pauseScript: "Expected 2 groups in """,
-                ... groupCol$, """, found ",
-                ... emlCountGroups.nGroups,
-                ... ". Select a different group column."
+                # D93: this guard always returned to the column page, which was
+                # right, but it said so through a bare @pauseScript whose only
+                # buttons are Stop and Continue — neither of which states what
+                # it does, and neither of which names the design that would
+                # work. Same surface as every other error now.
+                @emlErrorDialog: "Expected 2 groups in """
+                ... + groupCol$ + """, found "
+                ... + string$ (emlCountGroups.nGroups)
+                ... + ". Select a different group column.",
+                ... "Three or more groups — on the Design page", "wizard"
+                if not emlErrorDialog.back
+                    exitScript: ""
+                endif
                 goto A2A_NORM_PAGE
             endif
 
@@ -433,7 +442,13 @@ if goal = 1
                 @emlRunTwoGroupAnalysis: tableId, dataCol$,
                 ... groupCol$, "parametric", wizEqualVar
                 if emlRunTwoGroupAnalysis.error$ <> ""
-                    exitScript: emlRunTwoGroupAnalysis.error$
+                    # D93: an analysis error must not tear down the wizard. Return
+                    # the user into the back-chain with every answer intact.
+                    @emlErrorDialog: emlRunTwoGroupAnalysis.error$, emlRunTwoGroupAnalysis.remedy$, "wizard"
+                    if emlErrorDialog.back
+                        goto A2A_NORM_PAGE
+                    endif
+                    exitScript: ""
                 endif
             else
                 wizTestType$ = "nonparametric"
@@ -444,7 +459,13 @@ if goal = 1
                 @emlRunTwoGroupAnalysis: tableId, dataCol$,
                 ... groupCol$, "nonparametric", wizEqualVar
                 if emlRunTwoGroupAnalysis.error$ <> ""
-                    exitScript: emlRunTwoGroupAnalysis.error$
+                    # D93: an analysis error must not tear down the wizard. Return
+                    # the user into the back-chain with every answer intact.
+                    @emlErrorDialog: emlRunTwoGroupAnalysis.error$, emlRunTwoGroupAnalysis.remedy$, "wizard"
+                    if emlErrorDialog.back
+                        goto A2A_NORM_PAGE
+                    endif
+                    exitScript: ""
                 endif
             endif
             wizCanDraw = 1
@@ -510,15 +531,20 @@ if goal = 1
             selectObject: tableId
             @emlCountGroups: tableId, groupCol$
             if emlCountGroups.nGroups < 3
+                # D93: as above — same guard, same surface.
                 if emlCountGroups.nGroups = 2
-                    pauseScript: "Only 2 groups in """,
-                    ... groupCol$,
-                    ... """. Use ""Two groups"" instead,"
-                    ... + " or select a different column."
+                    @emlErrorDialog: "Only 2 groups in """
+                    ... + groupCol$
+                    ... + """. This branch compares three or more.",
+                    ... "Two groups — on the Design page", "wizard"
                 else
-                    pauseScript: "Fewer than 2 groups in """,
-                    ... groupCol$,
-                    ... """. Select a different group column."
+                    @emlErrorDialog: "Fewer than 2 groups in """
+                    ... + groupCol$
+                    ... + """. Select a different group column.",
+                    ... "", "wizard"
+                endif
+                if not emlErrorDialog.back
+                    exitScript: ""
                 endif
                 goto A2B_NORM_PAGE
             endif
@@ -620,7 +646,13 @@ if goal = 1
 
                 @emlRunAnovaAnalysis: tableId, dataCol$, groupCol$, doTukey
                 if emlRunAnovaAnalysis.error$ <> ""
-                    exitScript: emlRunAnovaAnalysis.error$
+                    # D93: an analysis error must not tear down the wizard. Return
+                    # the user into the back-chain with every answer intact.
+                    @emlErrorDialog: emlRunAnovaAnalysis.error$, emlRunAnovaAnalysis.remedy$, "wizard"
+                    if emlErrorDialog.back
+                        goto A2B_NORM_PAGE
+                    endif
+                    exitScript: ""
                 endif
 
                 # Post-hoc if significant
@@ -668,7 +700,13 @@ if goal = 1
                 @emlRunKWAnalysis: tableId, dataCol$, groupCol$, 1,
                 ... adjMethod$
                 if emlRunKWAnalysis.error$ <> ""
-                    exitScript: emlRunKWAnalysis.error$
+                    # D93: an analysis error must not tear down the wizard. Return
+                    # the user into the back-chain with every answer intact.
+                    @emlErrorDialog: emlRunKWAnalysis.error$, emlRunKWAnalysis.remedy$, "wizard"
+                    if emlErrorDialog.back
+                        goto A2B_NORM_PAGE
+                    endif
+                    exitScript: ""
                 endif
             endif
 
@@ -716,7 +754,12 @@ if goal = 1
             endif
 
             if factor_1$ = factor_2$
-                exitScript: "Factor 1 and Factor 2 must be different columns."
+                # D93: a correctable selection mistake must not end the wizard.
+                @emlErrorDialog: "Factor 1 and Factor 2 must be different columns.", "", "wizard"
+                if emlErrorDialog.back
+                    goto A2C_TWOFACTOR
+                endif
+                exitScript: ""
             endif
 
             if clear_Info_window
@@ -734,7 +777,13 @@ if goal = 1
             @emlRunTwoWayAnalysis: tableId, data_column$,
             ... factor_1$, factor_2$
             if emlRunTwoWayAnalysis.error$ <> ""
-                exitScript: emlRunTwoWayAnalysis.error$
+                # D93: an analysis error must not tear down the wizard. Return
+                # the user into the back-chain with every answer intact.
+                @emlErrorDialog: emlRunTwoWayAnalysis.error$, emlRunTwoWayAnalysis.remedy$, "wizard"
+                if emlErrorDialog.back
+                    goto A2C_TWOFACTOR
+                endif
+                exitScript: ""
             endif
 
             wizCanDraw = 1
@@ -813,7 +862,12 @@ if goal = 1
         endif
 
         if column_1$ = column_2$
-            exitScript: "Please select two different columns."
+            # D93: a correctable selection mistake must not end the wizard.
+            @emlErrorDialog: "Please select two different columns.", "", "wizard"
+            if emlErrorDialog.back
+                goto A3_NORM_PAGE
+            endif
+            exitScript: ""
         endif
 
         # Preserve column indices for Back navigation
@@ -902,7 +956,13 @@ if goal = 1
             wizTestType$ = "nonparametric"
         endif
         if emlRunPairedAnalysis.error$ <> ""
-            exitScript: emlRunPairedAnalysis.error$
+            # D93: an analysis error must not tear down the wizard. Return
+            # the user into the back-chain with every answer intact.
+            @emlErrorDialog: emlRunPairedAnalysis.error$, emlRunPairedAnalysis.remedy$, "wizard"
+            if emlErrorDialog.back
+                goto A3_NORM_PAGE
+            endif
+            exitScript: ""
         endif
 
         # Paired path — enable spaghetti plot draw
@@ -1002,7 +1062,12 @@ if goal = 1
         endif
 
         if nCond < 3
-            exitScript: "Repeated measures needs at least 3 condition columns."
+            # D93: a correctable selection mistake must not end the wizard.
+            @emlErrorDialog: "Repeated measures needs at least 3 condition columns.", "", "wizard"
+            if emlErrorDialog.back
+                goto A3K_SELECT_PAGE
+            endif
+            exitScript: ""
         endif
 
         if test_approach = 1
@@ -1012,7 +1077,13 @@ if goal = 1
             @emlRunRepeatedMeasuresAnalysis: tableId, "", condList$,
             ... pairwise_post_hoc, adjustment$
             if emlRunRepeatedMeasuresAnalysis.error$ <> ""
-                exitScript: emlRunRepeatedMeasuresAnalysis.error$
+                # D93: an analysis error must not tear down the wizard. Return
+                # the user into the back-chain with every answer intact.
+                @emlErrorDialog: emlRunRepeatedMeasuresAnalysis.error$, emlRunRepeatedMeasuresAnalysis.remedy$, "wizard"
+                if emlErrorDialog.back
+                    goto A3K_SELECT_PAGE
+                endif
+                exitScript: ""
             endif
             wizTestType$ = "parametric"
         else
@@ -1022,7 +1093,13 @@ if goal = 1
             @emlRunFriedmanAnalysis: tableId, "", condList$,
             ... pairwise_post_hoc, adjustment$
             if emlRunFriedmanAnalysis.error$ <> ""
-                exitScript: emlRunFriedmanAnalysis.error$
+                # D93: an analysis error must not tear down the wizard. Return
+                # the user into the back-chain with every answer intact.
+                @emlErrorDialog: emlRunFriedmanAnalysis.error$, emlRunFriedmanAnalysis.remedy$, "wizard"
+                if emlErrorDialog.back
+                    goto A3K_SELECT_PAGE
+                endif
+                exitScript: ""
             endif
             wizTestType$ = "nonparametric"
         endif
@@ -1110,7 +1187,12 @@ elsif goal = 2
         endif
 
         if predictor_column$ = response_column$
-            exitScript: "Please select two different columns."
+            # D93: a correctable selection mistake must not end the wizard.
+            @emlErrorDialog: "Please select two different columns.", "", "wizard"
+            if emlErrorDialog.back
+                goto B_REG_COLUMNS
+            endif
+            exitScript: ""
         endif
 
         if clear_Info_window
@@ -1124,7 +1206,13 @@ elsif goal = 2
 
         @emlRunRegressionAnalysis: tableId, response_column$, predictor_column$
         if emlRunRegressionAnalysis.error$ <> ""
-            exitScript: emlRunRegressionAnalysis.error$
+            # D93: an analysis error must not tear down the wizard. Return
+            # the user into the back-chain with every answer intact.
+            @emlErrorDialog: emlRunRegressionAnalysis.error$, emlRunRegressionAnalysis.remedy$, "wizard"
+            if emlErrorDialog.back
+                goto B_REG_COLUMNS
+            endif
+            exitScript: ""
         endif
 
         # Set draw presets for scatter plot with regression line
@@ -1186,7 +1274,12 @@ elsif goal = 2
     endif
 
     if column_1$ = column_2$
-        exitScript: "Please select two different columns."
+        # D93: a correctable selection mistake must not end the wizard.
+        @emlErrorDialog: "Please select two different columns.", "", "wizard"
+        if emlErrorDialog.back
+            goto B_NORM_PAGE
+        endif
+        exitScript: ""
     endif
 
     corrCol1$ = column_1$
@@ -1274,7 +1367,13 @@ elsif goal = 2
         ... corrCol2$, "spearman"
     endif
     if emlRunCorrelationAnalysis.error$ <> ""
-        exitScript: emlRunCorrelationAnalysis.error$
+        # D93: an analysis error must not tear down the wizard. Return
+        # the user into the back-chain with every answer intact.
+        @emlErrorDialog: emlRunCorrelationAnalysis.error$, emlRunCorrelationAnalysis.remedy$, "wizard"
+        if emlErrorDialog.back
+            goto B_TEST_PAGE
+        endif
+        exitScript: ""
     endif
 
     wizCanDraw = 1
@@ -1347,7 +1446,13 @@ elsif goal = 3
 
         @emlRunDescriptiveAnalysis: tableId, data_column$
         if emlRunDescriptiveAnalysis.error$ <> ""
-            exitScript: emlRunDescriptiveAnalysis.error$
+            # D93: an analysis error must not tear down the wizard. Return
+            # the user into the back-chain with every answer intact.
+            @emlErrorDialog: emlRunDescriptiveAnalysis.error$, emlRunDescriptiveAnalysis.remedy$, "wizard"
+            if emlErrorDialog.back
+                goto C_SINGLE
+            endif
+            exitScript: ""
         endif
 
         goto WIZ_WHAT_NEXT
@@ -1492,7 +1597,12 @@ elsif goal = 4
     endif
 
     if predictor_column$ = outcome_column$
-        exitScript: "Please select two different columns."
+        # D93: a correctable selection mistake must not end the wizard.
+        @emlErrorDialog: "Please select two different columns.", "", "wizard"
+        if emlErrorDialog.back
+            goto D_PREDICT_COLUMNS
+        endif
+        exitScript: ""
     endif
 
     if clear_Info_window
@@ -1506,7 +1616,13 @@ elsif goal = 4
 
     @emlRunRegressionAnalysis: tableId, outcome_column$, predictor_column$
     if emlRunRegressionAnalysis.error$ <> ""
-        exitScript: emlRunRegressionAnalysis.error$
+        # D93: an analysis error must not tear down the wizard. Return
+        # the user into the back-chain with every answer intact.
+        @emlErrorDialog: emlRunRegressionAnalysis.error$, emlRunRegressionAnalysis.remedy$, "wizard"
+        if emlErrorDialog.back
+            goto D_PREDICT_COLUMNS
+        endif
+        exitScript: ""
     endif
 
     corrCol1$ = predictor_column$
@@ -1556,7 +1672,13 @@ elsif goal = 4
     @emlRunLMMAnalysis: tableId, formula$, contrast_coding$, use_REML,
     ... report_R_squared, report_confidence_intervals
     if emlRunLMMAnalysis.error$ <> ""
-        exitScript: emlRunLMMAnalysis.error$
+        # D93: an analysis error must not tear down the wizard. Return
+        # the user into the back-chain with every answer intact.
+        @emlErrorDialog: emlRunLMMAnalysis.error$, emlRunLMMAnalysis.remedy$, "wizard"
+        if emlErrorDialog.back
+            goto D_LMM_FORMULA
+        endif
+        exitScript: ""
     endif
     wizCanDraw = 0
     goto WIZ_WHAT_NEXT

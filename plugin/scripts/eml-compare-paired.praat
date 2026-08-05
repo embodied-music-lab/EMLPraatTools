@@ -30,6 +30,15 @@ if guessCol2Idx = 0
     guessCol2Idx = min (2, nCols)
 endif
 
+# Seeds for the entry form. Initialised from the column-role guess, then
+# overwritten with the user's own answers each time round the loop. Before
+# the D93 fix these were re-read from the guess on every iteration, so any
+# return to the form — after an error or after "New" — silently discarded
+# what the user had set. (D93)
+selTest = 1
+selSubjectIdx = guessSubjectIdx + 1
+selGroupIdx = 1
+
 allDone = 0
 repeat
     # Guess subject column
@@ -47,18 +56,18 @@ repeat
         for iCol from 1 to nCols
             option: emlTableColumnNames.name$ [iCol]
         endfor
-        optionmenu: "Test", 1
+        optionmenu: "Test", selTest
             option: "Paired t-test"
             option: "Wilcoxon signed-rank"
             option: "Both"
         comment: ""
         comment: "For spaghetti plot (optional):"
-        optionmenu: "Subject column", guessSubjectIdx + 1
+        optionmenu: "Subject column", selSubjectIdx
             option: "(row number)"
         for iCol from 1 to nCols
             option: emlTableColumnNames.name$ [iCol]
         endfor
-        optionmenu: "Group column", 1
+        optionmenu: "Group column", selGroupIdx
             option: "(none)"
         for iCol from 1 to nCols
             option: emlTableColumnNames.name$ [iCol]
@@ -74,6 +83,16 @@ repeat
     col1$ = column_1$
     col2$ = column_2$
     testChoice = test
+    # Carry the answers forward so a return to this form shows them. (D93)
+    @emlKeepChoice: col1$, guessCol1Idx
+    guessCol1Idx = emlKeepChoice.idx
+    @emlKeepChoice: col2$, guessCol2Idx
+    guessCol2Idx = emlKeepChoice.idx
+    selTest = testChoice
+    # These two menus carry a leading "(none)" entry, so the stored
+    # value is the menu position, not a column index.
+    selSubjectIdx = subject_column
+    selGroupIdx = group_column
     @emlHandleCommonFields
 
     # Subject column: index 1 = "(row number)", 2+ = actual column
@@ -93,7 +112,11 @@ repeat
     endif
 
     if col1$ = col2$
-        pauseScript: "Please select two different columns."
+        # D93: uniform error surface; Quit must actually quit.
+        @emlErrorDialog: "Please select two different columns.", "", "menu"
+        if not emlErrorDialog.back
+            allDone = 1
+        endif
     else
         if testChoice = 1
             testType$ = "parametric"
@@ -106,7 +129,12 @@ repeat
         selectObject: tableId
         @emlRunPairedAnalysis: tableId, col1$, col2$, testType$
         if emlRunPairedAnalysis.error$ <> ""
-            pauseScript: emlRunPairedAnalysis.error$
+            # D93: an error must not strand the user on a form the error has
+            # just ruled out. Present it with guidance, and honour Quit.
+            @emlErrorDialog: emlRunPairedAnalysis.error$, emlRunPairedAnalysis.remedy$, "menu"
+            if not emlErrorDialog.back
+                allDone = 1
+            endif
         else
             runAgain = 0
             repeat

@@ -39,6 +39,14 @@ nCols = emlWrapperInit.nCols
 guessDataIdx = emlWrapperInit.guessDataIdx
 guessGroupIdx = emlWrapperInit.guessGroupIdx
 
+# Seeds for the entry form. Initialised from the column-role guess, then
+# overwritten with the user's own answers each time round the loop. Before
+# the D93 fix these were re-read from the guess on every iteration, so any
+# return to the form — after an error or after "New" — silently discarded
+# what the user had set. (D93)
+selTest = 1
+selGroupOrder = 1
+
 # ── Main loop ───────────────────────────────────────────────────────────────
 
 allDone = 0
@@ -57,12 +65,12 @@ repeat
         for iCol from 1 to nCols
             option: emlTableColumnNames.name$ [iCol]
         endfor
-        optionmenu: "Test", 1
+        optionmenu: "Test", selTest
             option: "Welch t-test"
             option: "Student t-test"
             option: "Mann-Whitney U"
             option: "Both parametric and nonparametric"
-        optionmenu: "Group order", 1
+        optionmenu: "Group order", selGroupOrder
             option: "Table order"
             option: "Alphabetical"
         @emlWrapperCommonFields
@@ -76,6 +84,14 @@ repeat
     dataCol$ = data_column$
     groupCol$ = group_column$
     testChoice = test
+
+    # Carry the answers forward so a return to this form shows them. (D93)
+    @emlKeepChoice: dataCol$, guessDataIdx
+    guessDataIdx = emlKeepChoice.idx
+    @emlKeepChoice: groupCol$, guessGroupIdx
+    guessGroupIdx = emlKeepChoice.idx
+    selTest = testChoice
+    selGroupOrder = group_order
 
     if group_order = 2
         emlGroupSortAlphabetical = 1
@@ -106,7 +122,12 @@ repeat
     selectObject: tableId
     @emlRunTwoGroupAnalysis: tableId, dataCol$, groupCol$, testType$, equalVar
     if emlRunTwoGroupAnalysis.error$ <> ""
-        pauseScript: emlRunTwoGroupAnalysis.error$
+        # D93: an error must not strand the user on a form the error has
+        # just ruled out. Present it with guidance, and honour Quit.
+        @emlErrorDialog: emlRunTwoGroupAnalysis.error$, emlRunTwoGroupAnalysis.remedy$, "menu"
+        if not emlErrorDialog.back
+            allDone = 1
+        endif
     else
 
         # ── Post-analysis loop ──────────────────────────────────────────────

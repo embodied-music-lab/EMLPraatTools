@@ -37,6 +37,11 @@ if guessFactor2Idx = guessDataIdx
     guessFactor2Idx = min (guessFactor2Idx + 1, nCols)
 endif
 
+# Every field on this form is a column menu, so the three guess indices below
+# are the whole of its state. They are overwritten with the user's own
+# answers after each run: before the D93 fix a return to this form reseeded
+# from the original guesses and silently discarded what the user had set.
+
 allDone = 0
 repeat
     beginPause: "Two-Way ANOVA"
@@ -65,17 +70,37 @@ repeat
     dataCol$ = data_column$
     factor1$ = factor_1$
     factor2$ = factor_2$
+    # Carry the answers forward so a return to this form shows them. (D93)
+    @emlKeepChoice: dataCol$, guessDataIdx
+    guessDataIdx = emlKeepChoice.idx
+    @emlKeepChoice: factor1$, guessGroupIdx
+    guessGroupIdx = emlKeepChoice.idx
+    @emlKeepChoice: factor2$, guessFactor2Idx
+    guessFactor2Idx = emlKeepChoice.idx
     @emlHandleCommonFields
 
     if factor1$ = factor2$
-        pauseScript: "Please select two different factor columns."
+        # D93: uniform error surface; Quit must actually quit.
+        @emlErrorDialog: "Please select two different factor columns.", "", "menu"
+        if not emlErrorDialog.back
+            allDone = 1
+        endif
     elsif dataCol$ = factor1$ or dataCol$ = factor2$
-        pauseScript: "Data column cannot be the same as a factor column."
+        # D93: uniform error surface; Quit must actually quit.
+        @emlErrorDialog: "Data column cannot be the same as a factor column.", "", "menu"
+        if not emlErrorDialog.back
+            allDone = 1
+        endif
     else
         selectObject: tableId
         @emlRunTwoWayAnalysis: tableId, dataCol$, factor1$, factor2$
         if emlRunTwoWayAnalysis.error$ <> ""
-            pauseScript: emlRunTwoWayAnalysis.error$
+            # D93: an error must not strand the user on a form the error has
+            # just ruled out. Present it with guidance, and honour Quit.
+            @emlErrorDialog: emlRunTwoWayAnalysis.error$, emlRunTwoWayAnalysis.remedy$, "menu"
+            if not emlErrorDialog.back
+                allDone = 1
+            endif
         else
             runAgain = 0
             repeat

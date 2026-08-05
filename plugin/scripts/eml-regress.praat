@@ -32,6 +32,13 @@ if guessRespIdx = 0
     guessRespIdx = min (2, nCols)
 endif
 
+# Seeds for the entry form. Initialised from the column-role guess, then
+# overwritten with the user's own answers each time round the loop. Before
+# the D93 fix these were re-read from the guess on every iteration, so any
+# return to the form — after an error or after "New" — silently discarded
+# what the user had set. (D93)
+selGroupIdx = 1
+
 allDone = 0
 repeat
     beginPause: "Simple Linear Regression"
@@ -50,7 +57,7 @@ repeat
             option: emlTableColumnNames.name$ [iCol]
         endfor
         comment: ""
-        optionmenu: "Group column", 1
+        optionmenu: "Group column", selGroupIdx
             option: "(none — overall only)"
         for iCol from 1 to nCols
             option: emlTableColumnNames.name$ [iCol]
@@ -65,6 +72,13 @@ repeat
 
     predCol$ = predictor_column$
     respCol$ = response_column$
+    # Carry the answers forward so a return to this form shows them. (D93)
+    @emlKeepChoice: predCol$, guessPredIdx
+    guessPredIdx = emlKeepChoice.idx
+    @emlKeepChoice: respCol$, guessRespIdx
+    guessRespIdx = emlKeepChoice.idx
+    # Leading "(none)" entry: this is a menu position, not a column index.
+    selGroupIdx = group_column
     @emlHandleCommonFields
 
     hasGroupCol = 0
@@ -75,12 +89,21 @@ repeat
     endif
 
     if predCol$ = respCol$
-        pauseScript: "Please select two different columns."
+        # D93: uniform error surface; Quit must actually quit.
+        @emlErrorDialog: "Please select two different columns.", "", "menu"
+        if not emlErrorDialog.back
+            allDone = 1
+        endif
     else
         selectObject: tableId
         @emlRunRegressionAnalysis: tableId, respCol$, predCol$
         if emlRunRegressionAnalysis.error$ <> ""
-            pauseScript: emlRunRegressionAnalysis.error$
+            # D93: an error must not strand the user on a form the error has
+            # just ruled out. Present it with guidance, and honour Quit.
+            @emlErrorDialog: emlRunRegressionAnalysis.error$, emlRunRegressionAnalysis.remedy$, "menu"
+            if not emlErrorDialog.back
+                allDone = 1
+            endif
         else
             runAgain = 0
             repeat

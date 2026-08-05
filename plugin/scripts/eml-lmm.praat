@@ -80,7 +80,12 @@ repeat
         @emlRunLMMAnalysis: tableId, formula$, contrast_coding$, use_REML,
         ... report_R_squared, report_confidence_intervals
         if emlRunLMMAnalysis.error$ <> ""
-            pauseScript: emlRunLMMAnalysis.error$
+            # D93: an error must not strand the user on a form the error has
+            # just ruled out. Present it with guidance, and honour Quit.
+            @emlErrorDialog: emlRunLMMAnalysis.error$, emlRunLMMAnalysis.remedy$, "menu"
+            if not emlErrorDialog.back
+                allDone = 1
+            endif
         else
             runAgain = 0
             repeat

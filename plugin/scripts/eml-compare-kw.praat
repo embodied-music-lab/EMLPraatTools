@@ -28,6 +28,13 @@ nCols = emlWrapperInit.nCols
 guessDataIdx = emlWrapperInit.guessDataIdx
 guessGroupIdx = emlWrapperInit.guessGroupIdx
 
+# Seeds for the entry form. Initialised from the column-role guess, then
+# overwritten with the user's own answers each time round the loop. Before
+# the D93 fix these were re-read from the guess on every iteration, so any
+# return to the form — after an error or after "New" — silently discarded
+# what the user had set. (D93)
+selGroupOrder = 1
+
 allDone = 0
 repeat
     beginPause: "Compare K Groups (Kruskal-Wallis)"
@@ -40,7 +47,7 @@ repeat
         for iCol from 1 to nCols
             option: emlTableColumnNames.name$ [iCol]
         endfor
-        optionmenu: "Group order", 1
+        optionmenu: "Group order", selGroupOrder
             option: "Table order"
             option: "Alphabetical"
         @emlWrapperCommonFields
@@ -53,6 +60,12 @@ repeat
 
     dataCol$ = data_column$
     groupCol$ = group_column$
+    # Carry the answers forward so a return to this form shows them. (D93)
+    @emlKeepChoice: dataCol$, guessDataIdx
+    guessDataIdx = emlKeepChoice.idx
+    @emlKeepChoice: groupCol$, guessGroupIdx
+    guessGroupIdx = emlKeepChoice.idx
+    selGroupOrder = group_order
     if group_order = 2
         emlGroupSortAlphabetical = 1
     else
@@ -63,7 +76,12 @@ repeat
     selectObject: tableId
     @emlRunKWAnalysis: tableId, dataCol$, groupCol$, 1, "holm"
     if emlRunKWAnalysis.error$ <> ""
-        pauseScript: emlRunKWAnalysis.error$
+        # D93: an error must not strand the user on a form the error has
+        # just ruled out. Present it with guidance, and honour Quit.
+        @emlErrorDialog: emlRunKWAnalysis.error$, emlRunKWAnalysis.remedy$, "menu"
+        if not emlErrorDialog.back
+            allDone = 1
+        endif
     else
         runAgain = 0
         repeat
