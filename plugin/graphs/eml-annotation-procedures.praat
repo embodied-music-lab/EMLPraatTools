@@ -3614,18 +3614,23 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
             @emlReportLine: "Mean difference", emlTTestPaired.meanDiff, 4
             @emlReportLine: "SD of differences", emlTTestPaired.sdDiff, 4
 
-            if emlMatchedPairsR.error$ = ""
-                @emlFormatEffectLabel: abs (emlMatchedPairsR.r), "r"
+            # The effect size under the t-test is the one derived from the
+            # same quantity the t is derived from. The matched-pairs rank
+            # statistic belongs to the Wilcoxon and is reported in that
+            # section, not here (D15).
+            if emlCohenDz.error$ = ""
+                @emlFormatEffectLabel: abs (emlCohenDz.dz), "d"
                 @emlReportBlank
                 @emlReportSection: "Effect Size"
-                @emlReportLine: "Matched-pairs r", emlMatchedPairsR.r, 3
+                @emlReportLine: "Cohen's dz", emlCohenDz.dz, 3
+                @emlReportLine: "r (from t)", emlCohenDz.rFromT, 3
                 @emlReportLineString: "Magnitude", emlFormatEffectLabel.label$
             endif
 
             @emlCSVAddRow: .tableName$, .col1$, .col2$,
             ... .col1$, .col2$, "Paired t-test",
             ... emlTTestPaired.t, emlTTestPaired.df, emlTTestPaired.p,
-            ... emlMatchedPairsR.r, "matched-pairs r", "",
+            ... emlCohenDz.dz, "Cohen's dz", "",
             ... .n, .n, .mean1, .sd1, .median1,
             ... .mean2, .sd2, .median2
         else
