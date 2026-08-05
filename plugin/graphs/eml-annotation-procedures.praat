@@ -3487,15 +3487,27 @@ procedure emlReportNormalityAnalysis: .tableName$, .dataCol$,
     if emlShowExplanations
         @emlWizardExplainKurtosis: emlRunNormalityAnalysis.kurtosis
     endif
-    @emlReportLine: "Kurtosis", emlRunNormalityAnalysis.kurtosis, 4
+    # (excess): @emlKurtosis returns Fisher's g2, so a normal distribution
+    # reads 0, not 3. Bare "Kurtosis" invites the Pearson reading, under
+    # which -0.69 would be violently platykurtic rather than unremarkable.
+    # D4 relabelled the other three print sites and missed this one.
+    @emlReportLine: "Kurtosis (excess)", emlRunNormalityAnalysis.kurtosis, 4
 
-    if abs (emlRunNormalityAnalysis.skewness) >= 1
-        appendInfoLine: "  → Skewness outside typical limits (|skew| < 1)"
+    # These two verdicts must use the SAME thresholds as the recommendation
+    # gate in @emlRunNormalityAnalysis, which reads emlSkewThreshold and
+    # emlKurtosisThreshold. They previously hard-coded 1 and 3. With the
+    # kurtosis threshold at 1, a g2 of 1.5 made the gate recommend a
+    # nonparametric test while the line directly above it said "within
+    # typical limits" — two contradictory verdicts in one report. (D95)
+    if abs (emlRunNormalityAnalysis.skewness) >= emlSkewThreshold
+        appendInfoLine: "  → Skewness outside typical limits (|skew| < ",
+        ... fixed$ (emlSkewThreshold, 0), ")"
     else
         appendInfoLine: "  → Skewness within typical limits"
     endif
-    if abs (emlRunNormalityAnalysis.kurtosis) >= 3
-        appendInfoLine: "  → Kurtosis outside typical limits (|kurt| < 3)"
+    if abs (emlRunNormalityAnalysis.kurtosis) >= emlKurtosisThreshold
+        appendInfoLine: "  → Kurtosis outside typical limits (|excess kurt| < ",
+        ... fixed$ (emlKurtosisThreshold, 0), ")"
     else
         appendInfoLine: "  → Kurtosis within typical limits"
     endif
