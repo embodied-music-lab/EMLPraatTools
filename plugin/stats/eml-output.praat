@@ -973,7 +973,8 @@ procedure emlWizardExplainSkewness: .skew
             .desc$ = "Substantial left skew"
         endif
     endif
-    emlWizardExplain$ = .desc$ + " (|skew| < 1 is typically acceptable)"
+    emlWizardExplain$ = .desc$ + " (|skew| < "
+    ... + fixed$ (emlSkewThreshold, 0) + " is typically acceptable)"
 endproc
 
 procedure emlWizardExplainKurtosis: .kurt
