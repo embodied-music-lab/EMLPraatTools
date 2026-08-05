@@ -23,7 +23,10 @@ pausewin () {
 # emlmenu <y> -> open Objects>New>EML Tools and click submenu entry at y
 emlmenu () {
   local y="$1"
-  xdotool windowraise $(xdotool search --name "^Praat Objects$" | head -1) 2>/dev/null
+  local o
+  o=$(xdotool search --name "^Praat Objects$" | head -1)
+  xdotool windowactivate --sync "$o" 2>/dev/null; sleep 0.6
+  xdotool windowfocus "$o" 2>/dev/null
   sleep 1.0
   xdotool mousemove 72 14 click 1; sleep 1.2      # New
   xdotool mousemove 200 447 click 1; sleep 0.8    # highlight EML Tools
@@ -129,12 +132,25 @@ pick () {
 clearinfo () { printf 'writeInfoLine: ""\n' > "$OUT/_clr.praat"; sendp "$OUT/_clr.praat"; }
 
 # Praat creates a NEW pause window per dialog — never reuse a cached id.
+#
+# 5 Aug 2026: the old implementation searched by name and filtered on
+# IsViewable. That fails twice over. Praat leaves every dismissed pause
+# window in the X tree, unmapped and still carrying its old name, so the
+# search returns a growing list of dead ids; and the LIVE dialog is
+# frequently absent from `xdotool search` results altogether while plainly
+# visible and accepting clicks. `getactivewindow` returns it every time.
 curpause () {
-  for id in $(xdotool search --name "^Pause" 2>/dev/null); do
-    if xwininfo -id $id 2>/dev/null | grep -q IsViewable; then echo $id; return; fi
-  done
+  local id
+  id=$(xdotool getactivewindow 2>/dev/null) || return
+  case "$(xdotool getwindowname "$id" 2>/dev/null)" in
+    Pause:*) echo "$id" ;;
+  esac
 }
-pgeom () { local id=$(curpause); echo "$id $(xdotool getwindowname $id) $(xwininfo -id $id | grep -E 'Absolute upper-left|Width|Height' | tr -d ' \n')"; }
+
+# curwin -> the active window whatever it is, for typing into a GTK entry.
+curwin () { xdotool getactivewindow 2>/dev/null; }
+
+pgeom () { local id=$(curpause); [ -n "$id" ] || { echo "no pause form"; return 1; }; echo "$id $(xdotool getwindowname $id) $(xwininfo -id $id | grep -E 'Absolute upper-left|Width|Height' | tr -d ' \n')"; }
 
 # Praat allows only ONE pause form at a time. Opening a wrapper while a
 # completion dialog is still up raises "Praat cannot have more than one
