@@ -4046,3 +4046,63 @@ badly.
 Figures: `evidence/figures/d92_annotated_violin_zero_floored.png` (before),
 `d92_FIXED_annotated_violin_headroom.png` (after),
 `d92_regression_bar_keeps_zero_floor.png` (control).
+
+### D4 — RESOLVED — kurtosis labels now say what they report
+
+The computation was never wrong. `@emlKurtosis`
+(`stats/eml-core-descriptive.praat:332`) computes the sample **excess**
+kurtosis with the standard bias correction — Fisher's *g*₂, the estimator R's
+`e1071::kurtosis(type=2)`, SPSS and Excel's `KURT` return, normal = 0 — and
+its own header says so.
+
+Five sites displayed it; three dropped the qualifier, and those three were
+the wrappers a user actually reaches:
+
+| Site | Was | Now |
+|---|---|---|
+| `stats/eml-analysis.praat:927` | `Kurtosis (excess)` | unchanged |
+| `stats/eml-core-descriptive.praat:656` | `Kurtosis (excess)` | unchanged (dead code — D7) |
+| `scripts/eml-describe-table.praat:151` | `Kurtosis` | `Kurtosis (excess)` |
+| `scripts/eml-check-normality.praat:151` | `Kurtosis = ` | `Kurtosis (excess) = ` |
+| `scripts/eml-wizard.praat:1768` | `Kurtosis:` | `Kurtosis (excess):` |
+
+A reader who expects raw kurtosis sees `-0.56` where they would expect
+`2.44` and concludes the distribution is markedly platykurtic when it is
+close to normal.
+
+Verified by drive — *Describe Table column* on `demo_3groups`, `SPL_dB`:
+
+```
+  ── Distribution Shape ──────────────────────
+  Skewness            -0.2691
+  Kurtosis (excess)   -0.5555
+```
+
+### D10 — still open, and worse than filed: three thresholds, two of them contradicting each other in one string
+
+The threshold question is not one disagreement but three, and the plugin
+argues with itself inside a single output line.
+
+| Site | Threshold | Used for |
+|---|---|---|
+| `stats/eml-analysis.praat:1091` | `abs (.kurtosis) >= 3` | the shape flag that routes parametric vs nonparametric |
+| `stats/eml-output.praat:966` | `abs (.excess) < 1` | classifying "Near-normal peakedness" in the wizard |
+| `stats/eml-output.praat:974` | the string *"\|excess\| < 3 is typical threshold"* | told to the user, in the same procedure |
+
+`@emlWizardExplainKurtosis` therefore classifies an excess kurtosis of 2 as
+**"Heavy-tailed (leptokurtic)"** while the sentence printed beside that
+verdict tells the reader values below 3 are typical. Both halves come from
+the same six lines of code.
+
+The classifier's `1` is the conventional companion to the `|skew| >= 1` gate
+the shape flag already uses. The `3` appearing twice looks like a rule of
+thumb written for the **raw** scale, where normal = 3, applied to the excess
+scale — which is the "off by 3" the finding originally alleged, now located.
+
+This is a judgement call about which convention the plugin should teach, not
+a defect with one correct answer, so it is left for an author ruling rather
+than changed. The three sites must end up agreeing whichever way it goes.
+
+Note the procedure carries a comment recording an earlier bug (M1) in which
+excess kurtosis was corrected a second time, labelling normal data as
+`excess ≈ -3`. The area has a history of scale confusion.

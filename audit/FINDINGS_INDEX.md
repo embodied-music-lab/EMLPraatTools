@@ -16,13 +16,13 @@ dismissed).
 | D1 | CLARITY  | low  | [L107](DRIVE_FINDINGS_2026-08-04.md#L107) | `Try:` line paraphrases the Wizard's labels | 274, 382 |
 | D2 | NOT A DEFECT  | —  | [L133](DRIVE_FINDINGS_2026-08-04.md#L133) | dismissed Pause windows persist in the X window list | — |
 | D3 | CLARITY  | low  | [L293](DRIVE_FINDINGS_2026-08-04.md#L293) | only type 6 states what the data demonstrate | 372 |
-| D4 | CLARITY  | medium  | [L479](DRIVE_FINDINGS_2026-08-04.md#L479) | The report line reads `Kurtosis`, but the value is excess kurtosis (normal = 0, not 3). The plugin's own `emlDescribe.summary$` in `stats/eml-core-des | — |
+| D4 | CLARITY  | RESOLVED  | [L479](DRIVE_FINDINGS_2026-08-04.md#L479) | The report line reads `Kurtosis`, but the value is excess kurtosis (normal = 0, not 3). The plugin's own `emlDescribe.summary$` in `stats/eml-core-des | 4050 |
 | D5 | CLARITY  | low  | [L488](DRIVE_FINDINGS_2026-08-04.md#L488) | No estimator conventions are disclosed anywhere | — |
 | D6 | CLARITY  | medium  | [L497](DRIVE_FINDINGS_2026-08-04.md#L497) | Identifiers are underscore-stripped for display: `demo_normality` → `demo normality`, `F0_Hz` → `F0 Hz` (`eml-describe-table.praat:114–115`). Undersco | 634, 781, 973, 1070 |
 | D7 | PACKAGING  | low  | [L508](DRIVE_FINDINGS_2026-08-04.md#L508) | `emlDescribe.summary$` is assembled but never used by the report path — dead abstraction | — |
 | D8 | GRAPHING  | high  | [L583](DRIVE_FINDINGS_2026-08-04.md#L583) | `Check normality` offers no `Draw` button — no visual check accompanies the numeric one | — |
 | D9 | CLARITY  | high  | [L591](DRIVE_FINDINGS_2026-08-04.md#L591) | The p-value row prints its label twice: | 791, 967 |
-| D10 | ACCURACY  | medium-high  | [L610](DRIVE_FINDINGS_2026-08-04.md#L610) | Kurtosis threshold is very likely off by 3. `emlReportNormalityAnalysis` (`graphs/eml-annotation-procedures.praat:3491–3501`) flags shape with: | — |
+| D10 | ACCURACY  | medium-high (OPEN — needs author ruling)  | [L610](DRIVE_FINDINGS_2026-08-04.md#L610) | Kurtosis threshold is very likely off by 3. `emlReportNormalityAnalysis` (`graphs/eml-annotation-procedures.praat:3491–3501`) flags shape with: | 4081 |
 | D11 | CLARITY  | low  | [L644](DRIVE_FINDINGS_2026-08-04.md#L644) | `"→ Skewness outside typical limits (\|skew\| < 1)"` | — |
 | D12 | CLARITY  | medium  | [L800](DRIVE_FINDINGS_2026-08-04.md#L800) | ### D12 — CLARITY (medium). No CI on the mean difference | — |
 | D13 | CLARITY  | medium  | [L810](DRIVE_FINDINGS_2026-08-04.md#L810) | ### D13 — CLARITY (medium). Subtraction direction is never stated | — |
