@@ -5408,9 +5408,11 @@ repeat
         selectObject: objectId
         if graph_type = 6
             visibleDataMax = emlBarData_visibleMax
+            visibleDataMin = emlBarData_visibleMin
         else
-            # Violin/Box: visible max = raw data max
+            # Violin/Box: visible extent = raw data extent
             visibleDataMax = Get maximum: valueColName$
+            visibleDataMin = Get minimum: valueColName$
         endif
 
         if visibleDataMax <> undefined and visibleDataMax > 0
@@ -5433,13 +5435,18 @@ repeat
                 @emlComputeAxisRange: emlBarData_visibleMin, emlBarData_visibleMax, .axisRoundTo, 0
                 valueMin = emlComputeAxisRange.axisMin
                 valueMax = emlComputeAxisRange.axisMax
-            elsif visibleDataMax <> undefined and visibleDataMax > 0
-                # Adaptive rounding grid: derive roundTo from a nice step over the data
-                # range (the same nice-number logic the gridlines use) so fractional data
-                # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
-                @emlComputeNiceStep: visibleDataMax - (0), emlSetAdaptiveTheme.targetTicksY
+            elsif visibleDataMax <> undefined
+                # Violin and box marks do not emanate from zero, so the floor
+                # comes from the data like every other continuous axis. Passing
+                # a literal 0 here pinned the axis to the origin whenever
+                # brackets were drawn, so the same figure had a data-derived
+                # range without annotation and a zero-floored one with it.
+                # emlComputeAxisRange's own non-negative guard still keeps the
+                # floor at 0 for data that does not go below it.
+                @emlComputeNiceStep: visibleDataMax - (visibleDataMin), emlSetAdaptiveTheme.targetTicksY
                 .axisRoundTo = emlComputeNiceStep.step
-                @emlComputeAxisRange: 0, visibleDataMax, .axisRoundTo, 0
+                @emlComputeAxisRange: visibleDataMin, visibleDataMax, .axisRoundTo, 0
+                valueMin = emlComputeAxisRange.axisMin
                 valueMax = emlComputeAxisRange.axisMax
             endif
         endif
