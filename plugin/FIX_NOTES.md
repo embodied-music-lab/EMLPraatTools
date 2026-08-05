@@ -35,3 +35,52 @@ PNG-filename STEMS (bw01..bw10), not colors, so the RGB string produced a non-ex
 silently disabled alpha transparency. The change was reverted. Properly fixing the cosmetic
 grey-ordering mismatch requires mapping each computed grey to the nearest bwNN sprite (needs the
 sprite grey-level table) — deferred, low priority.
+
+---
+
+## 5 August 2026 — D88, adaptive axis rounding
+
+**Closes finding D88.** Verified by GUI drive on Praat 6.6.30, not by inspection.
+
+`@emlComputeAxisRange` takes a `roundTo` argument that sets the granularity
+the axis bounds snap to. Twelve of its seventeen call sites passed a literal
+`10`, which fixes that granularity at ten units regardless of the data's
+magnitude. Any measure whose full range is small relative to 10 was
+compressed into the bottom of the panel.
+
+Ten sites now derive `roundTo` from the data via `@emlComputeNiceStep`,
+which is the same nice-number logic the gridlines already use:
+
+- `graphs/eml-draw-procedures.praat` — `@emlDrawTimeSeries`,
+  `@emlDrawTimeSeriesCI`, `@emlDrawSpaghettiPlot`, `@emlDrawBarChart`,
+  `@emlDrawViolinPlot`, `@emlDrawBoxPlot`, `@emlDrawGroupedViolin`,
+  `@emlDrawGroupedBoxPlot`
+- `graphs/eml-graphs-form.praat` — both auto-range branches in
+  `@emlGraphsWorkflow` (bar, and violin/box)
+
+This is the same change made to the scatter path on 21 July under M4 in
+section B above, which was applied there and not propagated. The comment at
+the scatter site already named the failing case — "fractional data
+(proportions, reaction times, jitter %)".
+
+**Two sites are deliberately unchanged.** `@emlDrawF0Contour` (lines 225 and
+240) is a pitch axis with its own domain logic: a 50 Hz minimum span in
+hertz, a 12-semitone minimum rounded to 6 in semitones. Ten-hertz
+granularity under a 50 Hz span floor is a considered choice, not the defect,
+and changing it would interact with that logic. The semitone branch may
+deserve the same treatment and is left for a ruling rather than changed
+silently.
+
+**Verification — two cases driven end to end through the GUI:**
+
+| Input | Data range | Axis before | Axis after |
+|---|---|---|---|
+| `evidence/csv/demo_paired_input.csv`, jitter | 0.528 – 4.191 | 0 – 10 | 0 – 5 |
+| `validate/redpath/r7_small_range_measure.csv`, contact quotient | 0.401 – 0.548 | 0 – 10 | ≈0.38 – 0.56, ticks every 0.05 |
+
+Figures: `evidence/figures/d88_FIXED_spaghetti_jitter.png` and
+`d88_FIXED_spaghetti_CQ.png`, against the pre-fix
+`d88_spaghetti_axis_0to10.png`.
+
+The contact-quotient case is the one that matters: on a 0–10 axis that data
+occupied under 2% of the panel height.
