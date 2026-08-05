@@ -712,7 +712,12 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         .xMax = .tMax
     endif
 
-    @emlComputeAxisRange: .yDataMin, .yDataMax, 10, 0
+    # Adaptive rounding grid: derive roundTo from a nice step over the data
+    # range (the same nice-number logic the gridlines use) so fractional data
+    # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
+    @emlComputeNiceStep: .yDataMax - (.yDataMin), emlSetAdaptiveTheme.targetTicksY
+    .axisRoundTo = emlComputeNiceStep.step
+    @emlComputeAxisRange: .yDataMin, .yDataMax, .axisRoundTo, 0
     if .vMin = 0 and .vMax = 0
         .yMin = emlComputeAxisRange.axisMin
         .yMax = emlComputeAxisRange.axisMax
@@ -1049,7 +1054,12 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
         .xMin = .tMin
         .xMax = .tMax
     endif
-    @emlComputeAxisRange: .yDataMin, .yDataMax, 10, 0
+    # Adaptive rounding grid: derive roundTo from a nice step over the data
+    # range (the same nice-number logic the gridlines use) so fractional data
+    # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
+    @emlComputeNiceStep: .yDataMax - (.yDataMin), emlSetAdaptiveTheme.targetTicksY
+    .axisRoundTo = emlComputeNiceStep.step
+    @emlComputeAxisRange: .yDataMin, .yDataMax, .axisRoundTo, 0
     if .vMin = 0 and .vMax = 0
         .yMin = emlComputeAxisRange.axisMin
         .yMax = emlComputeAxisRange.axisMax
@@ -1314,7 +1324,12 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
         .noDataMsg$ = "NOTE: Spaghetti plot — no usable value; empty axes drawn."
         appendInfoLine: .noDataMsg$
     endif
-    @emlComputeAxisRange: .yDataMin, .yDataMax, 10, 0
+    # Adaptive rounding grid: derive roundTo from a nice step over the data
+    # range (the same nice-number logic the gridlines use) so fractional data
+    # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
+    @emlComputeNiceStep: .yDataMax - (.yDataMin), emlSetAdaptiveTheme.targetTicksY
+    .axisRoundTo = emlComputeNiceStep.step
+    @emlComputeAxisRange: .yDataMin, .yDataMax, .axisRoundTo, 0
     if .vMin = 0 and .vMax = 0
         .yMin = emlComputeAxisRange.axisMin
         .yMax = emlComputeAxisRange.axisMax
@@ -1699,7 +1714,12 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     # data visibleMin = 0 and emlComputeAxisRange's own non-negative guard keeps
     # yMin at 0 (bars from 0 up), preserving prior behavior.
     if .vMin = 0 and .vMax = 0
-        @emlComputeAxisRange: emlBarData_visibleMin, emlBarData_visibleMax, 10, 0
+        # Adaptive rounding grid: derive roundTo from a nice step over the data
+        # range (the same nice-number logic the gridlines use) so fractional data
+        # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
+        @emlComputeNiceStep: emlBarData_visibleMax - (emlBarData_visibleMin), emlSetAdaptiveTheme.targetTicksY
+        .axisRoundTo = emlComputeNiceStep.step
+        @emlComputeAxisRange: emlBarData_visibleMin, emlBarData_visibleMax, .axisRoundTo, 0
         .yMin = emlComputeAxisRange.axisMin
         .yMax = emlComputeAxisRange.axisMax
     else
@@ -2032,7 +2052,12 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     endfor
     .globalMin = .globalMin - .maxBW
     .globalMax = .globalMax + .maxBW
-    @emlComputeAxisRange: .globalMin, .globalMax, 10, 0
+    # Adaptive rounding grid: derive roundTo from a nice step over the data
+    # range (the same nice-number logic the gridlines use) so fractional data
+    # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
+    @emlComputeNiceStep: .globalMax - (.globalMin), emlSetAdaptiveTheme.targetTicksY
+    .axisRoundTo = emlComputeNiceStep.step
+    @emlComputeAxisRange: .globalMin, .globalMax, .axisRoundTo, 0
     .autoYMin = emlComputeAxisRange.axisMin
     .autoYMax = emlComputeAxisRange.axisMax
 
@@ -2893,7 +2918,12 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
         .globalMin = 0
         .globalMax = 1
     endif
-    @emlComputeAxisRange: .globalMin, .globalMax, 10, 0
+    # Adaptive rounding grid: derive roundTo from a nice step over the data
+    # range (the same nice-number logic the gridlines use) so fractional data
+    # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
+    @emlComputeNiceStep: .globalMax - (.globalMin), emlSetAdaptiveTheme.targetTicksY
+    .axisRoundTo = emlComputeNiceStep.step
+    @emlComputeAxisRange: .globalMin, .globalMax, .axisRoundTo, 0
     .autoYMin = emlComputeAxisRange.axisMin
     .autoYMax = emlComputeAxisRange.axisMax
 
@@ -3548,7 +3578,12 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     endfor
     .globalMin = .globalMin - .maxBW
     .globalMax = .globalMax + .maxBW
-    @emlComputeAxisRange: .globalMin, .globalMax, 10, 0
+    # Adaptive rounding grid: derive roundTo from a nice step over the data
+    # range (the same nice-number logic the gridlines use) so fractional data
+    # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
+    @emlComputeNiceStep: .globalMax - (.globalMin), emlSetAdaptiveTheme.targetTicksY
+    .axisRoundTo = emlComputeNiceStep.step
+    @emlComputeAxisRange: .globalMin, .globalMax, .axisRoundTo, 0
     .autoYMin = emlComputeAxisRange.axisMin
     .autoYMax = emlComputeAxisRange.axisMax
 
@@ -3773,7 +3808,12 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
         .globalMin = 0
         .globalMax = 1
     endif
-    @emlComputeAxisRange: .globalMin, .globalMax, 10, 0
+    # Adaptive rounding grid: derive roundTo from a nice step over the data
+    # range (the same nice-number logic the gridlines use) so fractional data
+    # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
+    @emlComputeNiceStep: .globalMax - (.globalMin), emlSetAdaptiveTheme.targetTicksY
+    .axisRoundTo = emlComputeNiceStep.step
+    @emlComputeAxisRange: .globalMin, .globalMax, .axisRoundTo, 0
     if .vMin = 0 and .vMax = 0
         .yMin = emlComputeAxisRange.axisMin
         .yMax = emlComputeAxisRange.axisMax

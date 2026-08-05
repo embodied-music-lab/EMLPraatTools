@@ -5425,11 +5425,21 @@ repeat
         # unchanged.
         if valueMin = 0 and valueMax = 0
             if graph_type = 6
-                @emlComputeAxisRange: emlBarData_visibleMin, emlBarData_visibleMax, 10, 0
+                # Adaptive rounding grid: derive roundTo from a nice step over the data
+                # range (the same nice-number logic the gridlines use) so fractional data
+                # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
+                @emlComputeNiceStep: emlBarData_visibleMax - (emlBarData_visibleMin), emlSetAdaptiveTheme.targetTicksY
+                .axisRoundTo = emlComputeNiceStep.step
+                @emlComputeAxisRange: emlBarData_visibleMin, emlBarData_visibleMax, .axisRoundTo, 0
                 valueMin = emlComputeAxisRange.axisMin
                 valueMax = emlComputeAxisRange.axisMax
             elsif visibleDataMax <> undefined and visibleDataMax > 0
-                @emlComputeAxisRange: 0, visibleDataMax, 10, 0
+                # Adaptive rounding grid: derive roundTo from a nice step over the data
+                # range (the same nice-number logic the gridlines use) so fractional data
+                # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
+                @emlComputeNiceStep: visibleDataMax - (0), emlSetAdaptiveTheme.targetTicksY
+                .axisRoundTo = emlComputeNiceStep.step
+                @emlComputeAxisRange: 0, visibleDataMax, .axisRoundTo, 0
                 valueMax = emlComputeAxisRange.axisMax
             endif
         endif
