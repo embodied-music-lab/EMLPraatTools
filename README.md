@@ -16,6 +16,27 @@ Plugin code generated with the EML PraatGen framework; audit driven by Claude
 
 ---
 
+## Checking the statistics yourself
+
+The statistics layer can be verified with **R and nothing else** — no Praat,
+no packages, no network:
+
+```bash
+Rscript validate/run_all.R
+```
+
+Expect `501 checks, 501 passed, 0 FAILED`. Each check pairs a number the
+plugin *printed* (read out of a committed Info-window capture in
+`evidence/info/`) with a number R computes from the same committed input in
+`evidence/csv/`.
+
+**[`validate/README.md`](validate/README.md)** is the one-page starting point,
+and it walks a single number from input file to printed output to R's answer
+so you can confirm the method by hand in two minutes.
+[`validate/REGISTRY.md`](validate/REGISTRY.md) is the full reference.
+
+---
+
 # Development
 
 From here down this file is the working record, not the front door. This
