@@ -5,7 +5,11 @@
 #          numeric dependent variable. Reports main effects, interaction,
 #          and partial eta-squared.
 # Date: 11 May 2026
-# Version: 2.0
+# Version: 2.1
+# v2.1: D32 — the Draw preset now carries the SECOND factor
+#        (emlGraphsPresetSubgroupCol$ = factor2$). Without it the default
+#        grouped violin dropped factor 2 entirely and the Column Mapping
+#        dialog opened with Category and Subgroup pointing at the same column.
 # v2.0: Full convergence — @emlRunTwoWayAnalysis orchestrator,
 #        @emlWrapperInit, @emlWrapperExportCSV, @emlWrapperCommonFields,
 #        @emlGuessColumnRoles. Inline draw replaced with @emlGraphsWorkflow
@@ -104,10 +108,24 @@ repeat
                 elsif clicked = 2
                     @emlWrapperExportCSV: tableName$, "two-way ANOVA"
                 elsif clicked = 3
-                    # Grouped violin with factor1 as category
+                    # Grouped violin: factor 1 is the category, factor 2 the
+                    # subgroup.
+                    #
+                    # D32. The wrapper used to hand over factor1 and the data
+                    # column only. factor2 — half of the design, and on the
+                    # demo table the factor with the LARGER effect — reached
+                    # the graph layer nowhere, so the Column Mapping dialog
+                    # kept its initialiser (min (2, nCols)) for Subgroup and
+                    # the default figure came out as a single-factor plot with
+                    # the second factor silently dropped.
                     emlGraphsPresetType = 11
                     emlGraphsPresetGroupCol$ = factor1$
                     emlGraphsPresetDataCol$ = dataCol$
+                    # Consumed by the Grouped Violin preset branch in
+                    # graphs/eml-graphs-form.praat once its subgroup preset
+                    # lands; setting it here is inert until then, and binds
+                    # with no further change to this file when it does.
+                    emlGraphsPresetSubgroupCol$ = factor2$
                     @emlGraphsWorkflow: tableId
                 elsif clicked = 4
                     runAgain = 1

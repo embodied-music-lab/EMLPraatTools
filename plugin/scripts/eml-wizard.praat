@@ -10,9 +10,15 @@
 #            Layer 2 — Direct tools: Named tests from EML Tools menu
 #            Layer 3 — Scripting API: Include-file procedures for power users
 #
-# Version: 2.3
+# Version: 2.4
 # Date: 2 August 2026
 #
+# v2.4: D90 — the spaghetti plot's axes no longer carry the wide->long
+#        reshape's role names; the measure and the contrast are derived from
+#        the two paired column names and registered against the role names
+#        with the graph layer's D90 label-override registry
+#        (@emlSetLabelOverride). D32 (wizard half) — the two-way draw passes
+#        its second factor as emlGraphsPresetSubgroupCol$.
 # v2.3: Item 5 — announced plan, dispatched test, and reported method now
 #        agree. Two-group parametric route derives wizEqualVar/wizTName$
 #        from the "Variance assumption" field and passes it to
@@ -1952,14 +1958,73 @@ elsif wizDrawSource$ = "paired"
         Set string value: plR2, "Condition", wizPairedCol2$
         Set numeric value: plR2, "Value", plV2
     endfor
+    # ── D90: axis labels that name the measure ──────────────────────────
+    # "Subject", "Condition" and "Value" are the reshape's ROLE names, and
+    # the graph layer derives its axis labels from column names — so the
+    # y-axis, the only place the measured quantity could appear, read
+    # "Value". The real names are here at the call site. The measure is the
+    # two columns' common stem where they have one (jitter_pre /
+    # jitter_post -> "jitter", trimmed back to a word boundary), and both
+    # names otherwise; what is left over names the contrast the x-axis
+    # actually shows ("pre vs post"), which is what "Condition" stood in for.
+    plCommon = 0
+    plStop = 0
+    for plK from 1 to min (length (wizPairedCol1$), length (wizPairedCol2$))
+        if plStop = 0
+            if left$ (wizPairedCol1$, plK) = left$ (wizPairedCol2$, plK)
+                plCommon = plK
+            else
+                plStop = 1
+            endif
+        endif
+    endfor
+    plStem$ = left$ (wizPairedCol1$, plCommon)
+    plAtBoundary = 0
+    while plStem$ <> "" and plAtBoundary = 0
+        if right$ (plStem$, 1) = "_" or right$ (plStem$, 1) = " "
+        ... or right$ (plStem$, 1) = "."
+            plAtBoundary = 1
+        else
+            plStem$ = left$ (plStem$, length (plStem$) - 1)
+        endif
+    endwhile
+    if plStem$ <> ""
+        plStem$ = left$ (plStem$, length (plStem$) - 1)
+    endif
+    # Registered RAW, underscores and all: the graph layer's own token
+    # formatter is what turns SPL_dB into "SPL (dB)" and F0_Hz into
+    # "F0 (Hz)". De-underscoring here would hand it "SPL dB" and lose
+    # the unit.
+    if plStem$ <> ""
+        plMeasure$ = plStem$
+        plFactor$ = mid$ (wizPairedCol1$, length (plStem$) + 2, 1000)
+        ... + " vs " + mid$ (wizPairedCol2$, length (plStem$) + 2, 1000)
+    else
+        plMeasure$ = wizPairedCol1$ + " / " + wizPairedCol2$
+        plFactor$ = wizPairedCol1$ + " vs " + wizPairedCol2$
+    endif
+
     emlGraphsPresetType = 14
+    # The graph layer's D90 half is a registry keyed by column name
+    # (graphs/eml-graph-procedures.praat), consulted by the spaghetti page's
+    # @emlCapitalizeLabel calls on spCondCol$ / spValueCol$. It is cleared
+    # straight after the figure: the keys are role names as generic as
+    # "Value" and would otherwise leak into the next graph of the session.
+    @emlSetLabelOverride: "Value", plMeasure$
+    @emlSetLabelOverride: "Condition", plFactor$
     @emlGraphsWorkflow: plLongId
+    @emlClearLabelOverrides
     removeObject: plLongId
     selectObject: tableId
 elsif wizDrawSource$ = "twoway"
+    # D32, wizard half: the two-way draw handed over factor 1 only, so the
+    # default grouped violin dropped the second factor exactly as the menu
+    # wrapper's did. Consumed by the Grouped Violin preset branch in
+    # graphs/eml-graphs-form.praat once its subgroup preset lands.
     emlGraphsPresetType = 11
     emlGraphsPresetGroupCol$ = wizTwoWayFactor1$
     emlGraphsPresetDataCol$ = dataCol$
+    emlGraphsPresetSubgroupCol$ = wizTwoWayFactor2$
     @emlGraphsWorkflow: tableId
 endif
 

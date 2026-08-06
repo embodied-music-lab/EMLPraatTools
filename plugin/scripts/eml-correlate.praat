@@ -4,7 +4,15 @@
 # Purpose: Correlate two numeric columns using Pearson r, Spearman rho,
 #          or both. Reports correlation coefficient, t, df, p, and n.
 # Date: 11 May 2026
-# Version: 3.4
+# Version: 3.5
+# v3.5: D48/D49 — the per-group block is announced with its own header and
+#       counts, so it no longer reads as loose output past the end of the
+#       overall report, and the groups too small to analyse are named on one
+#       summary line inside the block rather than two orphan lines each.
+#       D104 — a grouped run exports ONE tidy frame in which every row is
+#       labelled in `term` ("(overall)" / "<group column> = <level>"),
+#       instead of dropping the per-group results from the export and
+#       accumulating them in the legacy buffer under a fabricated table name.
 # v3.4: D47 — the "Group column" menu is filtered: it now offers only
 #       columns with 2..(n/3) distinct levels, and never the columns
 #       currently bound to X and Y. D51 — Draw sets
@@ -190,40 +198,220 @@ repeat
                 allDone = 1
             endif
         else
-            # Per-group correlations (if group column selected)
+            # ── Per-group correlations (if a group column was selected) ──
+            #
+            # TWO PASSES, and the first one exists for the reader. Pass 1 asks
+            # only how many complete pairs each group has. That is what lets
+            # the whole block be ANNOUNCED — its own header, its own counts —
+            # before any group prints, instead of appearing as loose output
+            # past the closing rule of the overall report (D48); and it is
+            # what lets the groups that cannot be analysed be named on ONE
+            # summary line at the end instead of costing two orphan lines
+            # each (D49: 30 singleton groups used to cost 60 lines).
+            #
+            # Pass 1 screens on the same @eml_getGroupPairedData that pass 2
+            # analyses with, so the n the header counts and the n the report
+            # shows cannot disagree.
+            #
+            # Main-body code: undotted variable names (Rule 5C); the pg
+            # prefix keeps them clear of the D47 grouping scan's grp names.
             if hasGroupCol
                 selectObject: tableId
                 @emlCountGroups: tableId, groupCol$
-                for iGroup from 1 to emlCountGroups.nGroups
-                    .gLabel$ = emlCountGroups.groupLabel$ [iGroup]
-                    .gDisplay$ = replace$ (.gLabel$, "_", " ", 0)
+                pgTotal = emlCountGroups.nGroups
+                pgRun = 0
+                pgSkipped = 0
+                pgSkipList$ = ""
+                pgSkipMore = 0
+                for pgI from 1 to pgTotal
+                    pgLabel$ [pgI] = emlCountGroups.groupLabel$ [pgI]
                     selectObject: tableId
-                    # Row-wise complete-case within the group so X and Y stay
-                    # aligned; per-column extraction would misalign the pairs.
-                    @eml_getGroupPairedData: tableId, colX$, colY$, groupCol$, .gLabel$
-                    .gXData# = eml_getGroupPairedData.dataX#
-                    .gYData# = eml_getGroupPairedData.dataY#
-                    .gN = eml_getGroupPairedData.n
-                    .gExcluded = eml_getGroupPairedData.nExcluded
-                    if .gN >= 3
-                        if testType$ = "pearson" or testType$ = "both"
-                            @emlPearsonCorrelation: .gXData#, .gYData#, 2
-                        endif
-                        if testType$ = "spearman" or testType$ = "both"
-                            @emlSpearmanCorrelation: .gXData#, .gYData#, 2
-                        endif
-                        @emlReportCorrelationAnalysis: tableName$
-                        ... + " -- " + .gDisplay$,
-                        ... colX$, colY$, .gN, testType$
-                        if .gExcluded > 0
-                            .gExclNote$ = "  Note: " + string$ (.gExcluded) + " row(s) excluded for missing data (analyzed n = " + string$ (.gN) + " complete pairs)."
-                            appendInfoLine: .gExclNote$
-                        endif
+                    @eml_getGroupPairedData: tableId, colX$, colY$,
+                    ... groupCol$, pgLabel$ [pgI]
+                    pgN [pgI] = eml_getGroupPairedData.n
+                    if pgN [pgI] >= 3
+                        pgRun = pgRun + 1
                     else
-                        appendInfoLine: ""
-                        appendInfoLine: "  " + .gDisplay$ + ": Skipped (n < 3)"
+                        pgSkipped = pgSkipped + 1
+                        ; The Info window does not wrap, so the summary names
+                        ; as many skipped groups as fit on one line and counts
+                        ; the rest rather than running off the right edge.
+                        if length (pgSkipList$) < 45
+                            if pgSkipList$ <> ""
+                                pgSkipList$ = pgSkipList$ + ", "
+                            endif
+                            pgSkipList$ = pgSkipList$
+                            ... + replace$ (pgLabel$ [pgI], "_", " ", 0)
+                        else
+                            pgSkipMore = pgSkipMore + 1
+                        endif
                     endif
                 endfor
+                if pgSkipMore > 0
+                    pgSkipList$ = pgSkipList$ + ", and "
+                    ... + string$ (pgSkipMore) + " more"
+                endif
+
+                @emlUnderscoreToSpace: groupCol$
+                pgColDisplay$ = emlUnderscoreToSpace.result$
+                @emlReportHeader: "Correlation by " + pgColDisplay$
+                @emlReportLineString: "Grouping column", pgColDisplay$
+                @emlReportLine: "Groups", pgTotal, 0
+                @emlReportLine: "Analysed", pgRun, 0
+
+                ; ── D104: ONE export, with the grouping in a real column ──
+                ;
+                ; @emlRunCorrelationAnalysis has already declared the OVERALL
+                ; fit into the tidy/glance collectors (and cleared the legacy
+                ; buffer). Re-invoking @emlReportCorrelationAnalysis per group
+                ; below does NOT re-declare, so before this block a grouped
+                ; run exported the overall rows only — every group's numbers
+                ; were printed and then silently dropped from the CSV — while
+                ; the legacy single-file buffer quietly accumulated them under
+                ; a FABRICATED table name ("v12corr -- 30s"), which a second
+                ; press of CSV would have written out.
+                ;
+                ; Chosen behaviour: one export, not one per group. A grouped
+                ; correlation is one question asked of one table; splitting it
+                ; into k files would put k save dialogs in front of the user
+                ; and force a join to get back what they asked for. So the
+                ; tidy frame is rebuilt here with EVERY row labelled in
+                ; `term` — "(overall)" for the whole-table fit and
+                ; "<group column> = <level>" for each group — which is the
+                ; column the result writer already has for "what this row is
+                ; about". glance stays the overall model, because glance is
+                ; one row per model by definition; n.groups records how many
+                ; per-group fits are in tidy.
+                ;
+                ; @emlTidyClear empties tidy only (glance survives), and the
+                ; overall rows are re-emitted from the orchestrator's own
+                ; captured values, so emlResult_declared stays 1 throughout
+                ; and the frame is never left half-built: by the time the
+                ; group loop starts, tidy already holds the overall rows.
+                ;
+                ; pgCsvN is the legacy buffer's length before the group
+                ; reports append to it; restoring it afterwards is what keeps
+                ; the fabricated "table -- group" rows out of the legacy file.
+                pgCsvN = emlCSV_n
+                @emlTidyClear
+                if testType$ = "pearson" or testType$ = "both"
+                    @emlTidyRow: "(overall)"
+                    @emlTidyNum: "estimate", emlRunCorrelationAnalysis.pearR
+                    @emlTidyNum: "statistic", emlRunCorrelationAnalysis.pearT
+                    @emlTidyNum: "p.value", emlRunCorrelationAnalysis.pearP
+                    @emlTidyNum: "parameter", emlRunCorrelationAnalysis.pearDf
+                    @emlTidyStr: "method",
+                    ... "Pearson's product-moment correlation"
+                    @emlTidyStr: "alternative", "two.sided"
+                endif
+                if testType$ = "spearman" or testType$ = "both"
+                    @emlTidyRow: "(overall)"
+                    @emlTidyNum: "estimate", emlRunCorrelationAnalysis.spearRho
+                    @emlTidyNum: "statistic", emlRunCorrelationAnalysis.spearT
+                    @emlTidyNum: "p.value", emlRunCorrelationAnalysis.spearP
+                    @emlTidyNum: "parameter", emlRunCorrelationAnalysis.spearDf
+                    @emlTidyStr: "method", "Spearman's rank correlation rho"
+                    @emlTidyStr: "alternative", "two.sided"
+                endif
+
+                for pgI from 1 to pgTotal
+                    if pgN [pgI] >= 3
+                        pgDisplay$ = replace$ (pgLabel$ [pgI], "_", " ", 0)
+                        selectObject: tableId
+                        # Row-wise complete-case within the group so X and Y
+                        # stay aligned; per-column extraction would misalign
+                        # the pairs.
+                        @eml_getGroupPairedData: tableId, colX$, colY$,
+                        ... groupCol$, pgLabel$ [pgI]
+                        pgX# = eml_getGroupPairedData.dataX#
+                        pgY# = eml_getGroupPairedData.dataY#
+                        pgThisN = eml_getGroupPairedData.n
+                        pgExcluded = eml_getGroupPairedData.nExcluded
+                        pgTerm$ = groupCol$ + " = " + pgLabel$ [pgI]
+                        # Each test's outputs are captured immediately after
+                        # its own call, the way the orchestrator does it, so
+                        # nothing run in between can be reported under the
+                        # wrong heading.
+                        if testType$ = "pearson" or testType$ = "both"
+                            @emlPearsonCorrelation: pgX#, pgY#, 2
+                            pgPearR = emlPearsonCorrelation.r
+                            pgPearT = emlPearsonCorrelation.t
+                            pgPearDf = emlPearsonCorrelation.df
+                            pgPearP = emlPearsonCorrelation.p
+                            pgPearErr$ = emlPearsonCorrelation.error$
+                        endif
+                        if testType$ = "spearman" or testType$ = "both"
+                            @emlSpearmanCorrelation: pgX#, pgY#, 2
+                            pgSpearRho = emlSpearmanCorrelation.rho
+                            pgSpearT = emlSpearmanCorrelation.t
+                            pgSpearDf = emlSpearmanCorrelation.df
+                            pgSpearP = emlSpearmanCorrelation.p
+                            pgSpearErr$ = emlSpearmanCorrelation.error$
+                        endif
+                        # The report title names the grouping column as well
+                        # as the level, so a reader scrolling the Info window
+                        # can see WHAT the block is grouped by. (D48)
+                        @emlReportCorrelationAnalysis: tableName$
+                        ... + " -- " + pgColDisplay$ + " = " + pgDisplay$,
+                        ... colX$, colY$, pgThisN, testType$
+                        if pgExcluded > 0
+                            pgExclNote$ = "  Note: " + string$ (pgExcluded)
+                            ... + " row(s) excluded for missing data"
+                            ... + " (analyzed n = " + string$ (pgThisN)
+                            ... + " complete pairs)."
+                            appendInfoLine: pgExclNote$
+                        endif
+                        if testType$ = "pearson" or testType$ = "both"
+                            if pgPearErr$ = ""
+                                @emlTidyRow: pgTerm$
+                                @emlTidyNum: "estimate", pgPearR
+                                @emlTidyNum: "statistic", pgPearT
+                                @emlTidyNum: "p.value", pgPearP
+                                @emlTidyNum: "parameter", pgPearDf
+                                @emlTidyStr: "method",
+                                ... "Pearson's product-moment correlation"
+                                @emlTidyStr: "alternative", "two.sided"
+                            endif
+                        endif
+                        if testType$ = "spearman" or testType$ = "both"
+                            if pgSpearErr$ = ""
+                                @emlTidyRow: pgTerm$
+                                @emlTidyNum: "estimate", pgSpearRho
+                                @emlTidyNum: "statistic", pgSpearT
+                                @emlTidyNum: "p.value", pgSpearP
+                                @emlTidyNum: "parameter", pgSpearDf
+                                @emlTidyStr: "method",
+                                ... "Spearman's rank correlation rho"
+                                @emlTidyStr: "alternative", "two.sided"
+                            endif
+                        endif
+                    endif
+                endfor
+
+                ; The legacy rows the per-group reporter calls appended carry
+                ; a fabricated table name and duplicate what tidy now holds
+                ; properly labelled, so the buffer is truncated back to the
+                ; overall analysis. (D104)
+                emlCSV_n = pgCsvN
+                @emlGlanceNum: "n.groups", pgRun
+
+                ; ONE line for every skipped group, naming them and the
+                ; reason, inside the block — followed by the closing rule that
+                ; terminates it. (D48/D49)
+                if pgSkipped > 0
+                    @emlReportBlank
+                    @emlReportLineString: "Skipped (n < 3)",
+                    ... string$ (pgSkipped) + " of " + string$ (pgTotal)
+                    ... + ": " + pgSkipList$
+                endif
+                if pgRun = 0
+                    appendInfoLine: "  No group has 3 or more complete "
+                    ... + "pairs — a coarser grouping column would give"
+                    appendInfoLine: "  correlations that can be computed."
+                endif
+                ; The same rule @emlReportHeader draws, taken from it rather
+                ; than copied, so the two cannot drift apart.
+                appendInfoLine: emlReportHeader.border$
             endif
 
             # Post-analysis loop
