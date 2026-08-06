@@ -34,13 +34,13 @@ dismissed).
 | D15 | ACCURACY  | RESOLVED  | [L896](DRIVE_FINDINGS_2026-08-04.md#L896) | nonparametric effect size reported under the parametric test — demonstrated numerically 5 Aug: printed `Matched-pairs r 0.971` is the Wilcoxon rank-biserial; the t-derived r is 0.871 | 1116, 3728, 4110 |
 | D16 | CLARITY  | — — LIVE 6 Aug  | [L1125](DRIVE_FINDINGS_2026-08-04.md#L1125) | the dialog's own escaping instructions are wrong, and fail silently | — |
 | D17 | PACKAGING  | — — LIVE 6 Aug  | [L1172](DRIVE_FINDINGS_2026-08-04.md#L1172) | `effect_label` column populated inconsistently across analyses | 1522 |
-| D18 | CLARITY  | — — LIVE 6 Aug  | [L1193](DRIVE_FINDINGS_2026-08-04.md#L1193) | default export filename names an internal artefact | 1549 |
-| D19 | CLARITY  | — — LIVE 6 Aug  | [L1204](DRIVE_FINDINGS_2026-08-04.md#L1204) | ### D19 — CLARITY, LOW — paired results shoehorned into the two-group CSV schema | 1920 |
+| D18 | CLARITY  | RESOLVED (CSV rewrite, 6 Aug)  | [L1193](DRIVE_FINDINGS_2026-08-04.md#L1193) | default export filename names an internal artefact | 1549 |
+| D19 | CLARITY  | RESOLVED (CSV rewrite, 6 Aug)  | [L1204](DRIVE_FINDINGS_2026-08-04.md#L1204) | ### D19 — CLARITY, LOW — paired results shoehorned into the two-group CSV schema | 1920 |
 | D20 | ACCURACY  | high — LIVE 6 Aug  | [L1380](DRIVE_FINDINGS_2026-08-04.md#L1380) | No variance-homogeneity check anywhere, and the plugin's own demo data violates the assumption | — |
 | D21 | CLARITY  | medium — LIVE 6 Aug  | [L1417](DRIVE_FINDINGS_2026-08-04.md#L1417) | : omega² is never computed, though the library already knows how to classify it | — |
 | D22 | CLARITY  | medium — LIVE 6 Aug  | [L1427](DRIVE_FINDINGS_2026-08-04.md#L1427) | ### D22 — CLARITY (medium): the Tukey table reports p-values only | — |
-| D23 | PACKAGING  | medium — LIVE 6 Aug  | [L1441](DRIVE_FINDINGS_2026-08-04.md#L1441) | : the omnibus CSV row carries only the numerator df | 1901 |
-| D24 | PACKAGING  | high — LIVE 6 Aug  | [L1454](DRIVE_FINDINGS_2026-08-04.md#L1454) | : zero is used as the not-applicable sentinel in CSV exports | 1894 |
+| D23 | PACKAGING  | RESOLVED (CSV rewrite, 6 Aug)  | [L1441](DRIVE_FINDINGS_2026-08-04.md#L1441) | : the omnibus CSV row carries only the numerator df | 1901 |
+| D24 | PACKAGING  | RESOLVED (CSV rewrite, 6 Aug)  | [L1454](DRIVE_FINDINGS_2026-08-04.md#L1454) | : zero is used as the not-applicable sentinel in CSV exports | 1894 |
 | D25 | CLARITY  | medium — LIVE 6 Aug  | [L1483](DRIVE_FINDINGS_2026-08-04.md#L1483) | : the "Adjustment method" control is inert on the parametric k-group path | 1742 |
 | D26 | CLARITY  | — — LIVE 6 Aug  | [L1765](DRIVE_FINDINGS_2026-08-04.md#L1765) | the KW wrapper exposes no post-hoc control whatsoever | — |
 | D27 | CLARITY  | — — LIVE 6 Aug  | [L1796](DRIVE_FINDINGS_2026-08-04.md#L1796) | the Info window silently accumulates duplicate reports that can disagree with each other | — |
@@ -50,19 +50,19 @@ dismissed).
 | D31 | —  | MISFILED (verified 6 Aug)  | [L1864](DRIVE_FINDINGS_2026-08-04.md#L1864) | ### D31 — RESOLVED as designed, downgrade to LOW — violin KDE tails extend exactly one bandwidth past the data | — |
 | D32 | ACCURACY  | high — LIVE 6 Aug  | [L2061](DRIVE_FINDINGS_2026-08-04.md#L2061) | the graph preset bridge cannot carry a second factor, so the default figure silently drops it | — |
 | D33 | ACCURACY  | high — LIVE 6 Aug  | [L2116](DRIVE_FINDINGS_2026-08-04.md#L2116) | Draw annotates a two-way design with a two-group Welch t on one marginal | — |
-| D34 | CLARITY  | high-medium — LIVE 6 Aug  | [L2157](DRIVE_FINDINGS_2026-08-04.md#L2157) | the ANOVA CSV omits SS, MS, and residual df | — |
+| D34 | CLARITY  | RESOLVED (CSV rewrite, 6 Aug)  | [L2157](DRIVE_FINDINGS_2026-08-04.md#L2157) | the ANOVA CSV omits SS, MS, and residual df | — |
 | D35 | CLARITY  | high-medium — LIVE 6 Aug  | [L2186](DRIVE_FINDINGS_2026-08-04.md#L2186) | worst instance of the D28 family: nine orders of magnitude flattened to one string | — |
 | D36 | CLARITY  | medium-high — LIVE 6 Aug  | [L2202](DRIVE_FINDINGS_2026-08-04.md#L2202) | no cell means and no marginal means, despite a significant interaction | — |
-| D37 | CLARITY  | medium — LIVE 6 Aug  | [L2213](DRIVE_FINDINGS_2026-08-04.md#L2213) | no N reported anywhere in the two-way block | — |
+| D37 | CLARITY  | RESOLVED (CSV rewrite, 6 Aug)  | [L2213](DRIVE_FINDINGS_2026-08-04.md#L2213) | no N reported anywhere in the two-way block | — |
 | D38 | CLARITY  | medium — LIVE 6 Aug  | [L2220](DRIVE_FINDINGS_2026-08-04.md#L2220) | no simple effects, no post-hoc, and no caution that the interaction qualifies the main effects | — |
-| D39 | PACKAGING  | medium — LIVE 6 Aug  | [L2228](DRIVE_FINDINGS_2026-08-04.md#L2228) | stats exports default into the plugin's own install directory | — |
+| D39 | PACKAGING  | RESOLVED (CSV rewrite, 6 Aug)  | [L2228](DRIVE_FINDINGS_2026-08-04.md#L2228) | stats exports default into the plugin's own install directory | — |
 | D40 | GRAPHING  | medium — LIVE 6 Aug  | [L2254](DRIVE_FINDINGS_2026-08-04.md#L2254) | no interaction plot among the 14 graph types | — |
-| D41 | CLARITY  | low-medium — LIVE 6 Aug  | [L2266](DRIVE_FINDINGS_2026-08-04.md#L2266) | no effect-magnitude labels, inconsistent with wrappers 6 and 7 | — |
+| D41 | CLARITY  | RESOLVED (CSV rewrite, 6 Aug)  | [L2266](DRIVE_FINDINGS_2026-08-04.md#L2266) | no effect-magnitude labels, inconsistent with wrappers 6 and 7 | — |
 | D42 | CLARITY  | low-medium — LIVE 6 Aug  | [L2274](DRIVE_FINDINGS_2026-08-04.md#L2274) | explanation narration is asymmetric within a single transcript | — |
 | D43 | GRAPHING  | low — LIVE 6 Aug  | [L2283](DRIVE_FINDINGS_2026-08-04.md#L2283) | ### D43 — GRAPHING (low) — no auto-title, against Rule 28A | — |
 | D44 | CLARITY  | — — LIVE 6 Aug  | [L2426](DRIVE_FINDINGS_2026-08-04.md#L2426) | R² is gated behind `emlShowExplanations`, so the Info window omits it while the figure annotation displays it | — |
-| D45 | ACCURACY  | — — LIVE 6 Aug  | [L2454](DRIVE_FINDINGS_2026-08-04.md#L2454) | the CSV writes the Y variable into the `group_col` slot | — |
-| D46 | ACCURACY  | — — LIVE 6 Aug  | [L2475](DRIVE_FINDINGS_2026-08-04.md#L2475) | CSV descriptives hardcoded to six literal zeros | — |
+| D45 | ACCURACY  | RESOLVED (CSV rewrite, 6 Aug)  | [L2454](DRIVE_FINDINGS_2026-08-04.md#L2454) | the CSV writes the Y variable into the `group_col` slot | — |
+| D46 | ACCURACY  | RESOLVED (CSV rewrite, 6 Aug)  | [L2475](DRIVE_FINDINGS_2026-08-04.md#L2475) | CSV descriptives hardcoded to six literal zeros | — |
 | D47 | CLARITY  | — — LIVE 6 Aug  | [L2496](DRIVE_FINDINGS_2026-08-04.md#L2496) | the `Group column` optionmenu is unfiltered and offers the correlated columns as grouping factors | — |
 | D48 | CLARITY  | — — LIVE 6 Aug  | [L2516](DRIVE_FINDINGS_2026-08-04.md#L2516) | per-group results print *after* the report's closing rule, with no summary and no terminator | — |
 | D49 | CLARITY  | — — LIVE 6 Aug  | [L2540](DRIVE_FINDINGS_2026-08-04.md#L2540) | 30 identical skip lines, each preceded by a blank line | — |
@@ -70,8 +70,8 @@ dismissed).
 | D51 | GRAPHING  | — — LIVE 6 Aug  | [L2567](DRIVE_FINDINGS_2026-08-04.md#L2567) | `Regression: None` is the default on a scatter launched from a correlation, while the same figure annotates R² | — |
 | D52 | CLARITY  | — — LIVE 6 Aug  | [L2598](DRIVE_FINDINGS_2026-08-04.md#L2598) | no loop repopulation; `New` resets every control to literal defaults | — |
 | D53 | CLARITY  | — — LIVE 6 Aug  | [L2611](DRIVE_FINDINGS_2026-08-04.md#L2611) | no assumption guidance, in the one wrapper that offers the nonparametric alternative in the same dialog | — |
-| D54 | ACCURACY  | — — LIVE 6 Aug  | [L2761](DRIVE_FINDINGS_2026-08-04.md#L2761) | CSV descriptive columns are repurposed as regression coefficient slots, so the header lies about the payload | — |
-| D55 | ACCURACY  | — — LIVE 6 Aug  | [L2775](DRIVE_FINDINGS_2026-08-04.md#L2775) | `group1` and `group2` both carry the sentinel | — |
+| D54 | ACCURACY  | RESOLVED (CSV rewrite, 6 Aug)  | [L2761](DRIVE_FINDINGS_2026-08-04.md#L2761) | CSV descriptive columns are repurposed as regression coefficient slots, so the header lies about the payload | — |
+| D55 | ACCURACY  | RESOLVED (CSV rewrite, 6 Aug)  | [L2775](DRIVE_FINDINGS_2026-08-04.md#L2775) | `group1` and `group2` both carry the sentinel | — |
 | D56 | CLARITY  | — — LIVE 6 Aug  | [L2782](DRIVE_FINDINGS_2026-08-04.md#L2782) | the coefficients table breaks the report's own layout | — |
 | D57 | CLARITY  | — — LIVE 6 Aug  | [L2792](DRIVE_FINDINGS_2026-08-04.md#L2792) | no confidence interval on slope or intercept, despite both | — |
 | D58 | CLARITY  | — — LIVE 6 Aug  | [L2798](DRIVE_FINDINGS_2026-08-04.md#L2798) | no residual diagnostics in the one wrapper whose entire | — |
@@ -81,8 +81,8 @@ dismissed).
 | D62 | CLARITY  | — — LIVE 6 Aug  | [L2855](DRIVE_FINDINGS_2026-08-04.md#L2855) | `Variance explained  large effect` formats a benchmark | — |
 | D63 | ACCURACY  | — — LIVE 6 Aug  | [L2926](DRIVE_FINDINGS_2026-08-04.md#L2926) | The figure and the exported CSV report a different test family than the analysis that launched them, with no disclosure on any screen | — |
 | D64 | ACCURACY  | — — LIVE 6 Aug  | [L2986](DRIVE_FINDINGS_2026-08-04.md#L2986) | The `Adjustment method` optionmenu on the graphing dialog is inert whenever `Test type = Parametric` and k ≥ 3 | — |
-| D65 | ACCURACY  | — — LIVE 6 Aug  | [L3010](DRIVE_FINDINGS_2026-08-04.md#L3010) | The Draw path's CSV export is byte-identical to a different wrapper's export, and claims the same default filename | — |
-| D66 | ACCURACY  | high — LIVE 6 Aug  | [L3037](DRIVE_FINDINGS_2026-08-04.md#L3037), [L3462](DRIVE_FINDINGS_2026-08-04.md#L3462) | `CSV` on the analysis-side `Analysis complete` dialog cannot ever succeed, and its failure message blames the filesystem — DEMONSTRATED on `emlRunPairwiseAnalysis` 5 Aug; row-building exists only in `graphs/eml-annotation-procedures.praat` | — |
+| D65 | ACCURACY  | RESOLVED (CSV rewrite, 6 Aug)  | [L3010](DRIVE_FINDINGS_2026-08-04.md#L3010) | The Draw path's CSV export is byte-identical to a different wrapper's export, and claims the same default filename | — |
+| D66 | ACCURACY  | RESOLVED (CSV rewrite, 6 Aug)  | [L3037](DRIVE_FINDINGS_2026-08-04.md#L3037), [L3462](DRIVE_FINDINGS_2026-08-04.md#L3462) | `CSV` on the analysis-side `Analysis complete` dialog cannot ever succeed, and its failure message blames the filesystem — DEMONSTRATED on `emlRunPairwiseAnalysis` 5 Aug; row-building exists only in `graphs/eml-annotation-procedures.praat` | — |
 | D67 | CLARITY  | — — LIVE 6 Aug  | [L3062](DRIVE_FINDINGS_2026-08-04.md#L3062) | Cohen's d is printed for every pair; n, means and SDs for the groups are printed nowhere | — |
 | D68 | CLARITY  | — — LIVE 6 Aug  | [L3070](DRIVE_FINDINGS_2026-08-04.md#L3070) | No test statistic and no degrees of freedom | — |
 | D69 | CLARITY  | — — LIVE 6 Aug  | [L3077](DRIVE_FINDINGS_2026-08-04.md#L3077) | ### D69 — CLARITY — The raw p is never shown | — |
@@ -92,7 +92,7 @@ dismissed).
 | D73 | GRAPHING  | — — LIVE 6 Aug  | [L3122](DRIVE_FINDINGS_2026-08-04.md#L3122) | ### D73 — GRAPHING — Auto-derived axis label drops the unit parenthesis | — |
 | D74 | CLARITY  | — — LIVE 6 Aug  | [L3131](DRIVE_FINDINGS_2026-08-04.md#L3131) | Dialog section rule is `--- Options ---` where every other wrapper uses the box-drawing rule | — |
 | D75 | CLARITY  | — — LIVE 6 Aug  | [L3138](DRIVE_FINDINGS_2026-08-04.md#L3138) | Report header casing does not match the control that set it | — |
-| D76 | CLARITY  | — — LIVE 6 Aug  | [L3144](DRIVE_FINDINGS_2026-08-04.md#L3144) | The CSV omnibus row carries only `dfBetween`; `dfWithin` is dropped | — |
+| D76 | CLARITY  | RESOLVED (CSV rewrite, 6 Aug)  | [L3144](DRIVE_FINDINGS_2026-08-04.md#L3144) | The CSV omnibus row carries only `dfBetween`; `dfWithin` is dropped | — |
 | D77 | ACCURACY  | high — LIVE 6 Aug  | [L3242](DRIVE_FINDINGS_2026-08-04.md#L3242) | the `pre\|post` keyword makes the *time* role steal the second member of a paired pair | — |
 | D78 | ACCURACY  | medium — LIVE 6 Aug  | [L3298](DRIVE_FINDINGS_2026-08-04.md#L3298) | `groupIdx` and `subjectIdx` resolve to the same column | — |
 | D79 | CLARITY  | low — LIVE 6 Aug  | [L3379](DRIVE_FINDINGS_2026-08-04.md#L3379) | The `comment:` line documenting the subscript marker is the one line where GTK eats the marker — 13 sites in `graphs/eml-graphs-form.praat` | — |

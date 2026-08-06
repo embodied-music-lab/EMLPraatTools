@@ -213,3 +213,53 @@ Not settleable from source.
 | D94 | CLARITY | **FIXED** | `scripts/eml-describe-table.praat:89` | All three sites read exitScript: ""; no bare exitScript remains in plugin/ |
 | D95 | ACCURACY | **FIXED** | `graphs/eml-annotation-procedures.praat:3502` | Every judging site reads the shared constants; the missed D4 label is relabelled |
 
+
+---
+
+## Cluster 1 closed — the CSV export schema, 6 August
+
+Fifteen findings, one rewrite. The wide schema is gone; exports are now
+tidy long format, `table,analysis,term,field,value`.
+
+The choice was between widening the wide schema and replacing it. Widening
+would have needed a not-applicable sentinel, more columns for every new
+quantity, and a rule about which slot holds what — three things that were
+already the problem. The long format cannot have any of them: every value is
+named where it is written, so no slot can be reused; a value you do not have
+is a row you do not write, so no sentinel is needed and none exists; and a
+new quantity is a new field name rather than a schema change.
+
+Closed: **D18 D19 D23 D24 D34 D37 D39 D41 D45 D46 D54 D55 D65 D66 D76.**
+
+What changed beyond the format:
+
+- **Numbers are written with `string$`**, Praat's shortest round-trip form.
+  `1.77e-16` stays `1.77e-16` instead of becoming `0.000000` under
+  `fixed$(p, 6)`. That ends p-flooring in exports without a separate
+  decision about decimal places, and closes D14's residual.
+- **RFC 4180 quoting.** The old writer concatenated raw strings, so a column
+  label containing a comma silently split a row into two fields.
+- **Both degrees of freedom are exported.** `F(2,12)` is recoverable from
+  the file; it was not.
+- **SS, MS, and the error and total rows** are exported for one-way and
+  two-way, so the ANOVA table can be rebuilt.
+- **Coefficients get one row per term**, so the slope is a slope rather than
+  whatever `mean1` means today.
+- **An empty buffer is no longer reported as a disk failure** — the dialog
+  now says the analysis produced no rows and asks for it to be reported,
+  because that is a defect and not a setting.
+- **The export folder is remembered** and seeded from the home directory
+  rather than defaulting inside the plugin tree, where an update would
+  overwrite a user's results.
+- **File names carry the analysis**, so two tests on one table no longer
+  propose the same name and silently overwrite each other.
+
+Validated in `validate/v16_csv_export.R`: 39 checks, every exported number
+against R, plus structural assertions that are the actual point — that no
+descriptive or df field is exported as a bare zero anywhere, that no
+descriptive field is attached to a contrast term, and that every file has
+the same header. The generated exports are committed under
+`evidence/csv_export/` and the drive script that produced them is
+`harness/probes/csv_export_drive.praat`.
+
+Suite total: 441 checks, 440 passing. Praat suites: 1258, 0 failures.
