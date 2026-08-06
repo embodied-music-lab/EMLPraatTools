@@ -76,7 +76,34 @@ dismissed).
 > `emlRunRepeatedMeasuresAnalysis`, `emlRunFriedmanAnalysis` — init a CSV and
 > never add a row, so those are build cases rather than convert cases (D66).
 >
-> ### Migration progress
+> ### Migration progress — COMPLETE, 6 Aug 2026
+>
+> **All 11 orchestrators converted**, each confirmed against base R and broom's
+> documented column contract on files produced by the orchestrator the menu
+> calls — never by a harness calling the writer directly.
+>
+> | | |
+> |---|---|
+> | converted | Anova (v20, 55 checks) · TwoGroup, KW, TwoWay, Paired, Correlation, Regression, Normality (v21) |
+> | **built** — these emitted no rows at all before (D66) | Pairwise, RepeatedMeasures, Friedman |
+> | drivers | `harness/broom_cases/anova_shipping_drive.praat`, `all_paths_drive.praat`, `contamination_probe.praat` |
+> | evidence | 32 files under `evidence/csv_export/broom/` |
+>
+> **Cross-contamination: probed, not assumed.** `contamination_probe.praat`
+> runs 8 assertions and found a real defect before the fix landed — an
+> orchestrator that fails its guards reaches `goto END_*` **without ever
+> calling `@emlCSVInit`**, so the previous analysis's flag and collectors
+> survived. A repeated-measures run that bailed on "Need at least 2 condition
+> columns" exported the *normality* analysis's tidy and glance under the RM
+> name. The flag is now cleared at the first statement of all 13 orchestrators,
+> before any guard can fire.
+>
+> Two shape defects were also caught by the checks rather than shipped: the
+> writer emitted a `term` column of blanks on htest frames, which broom's
+> `tidy(t.test)` does not have (an all-empty tidy column is now dropped, while
+> a partly-empty one — broom's NA on the Residuals row — is kept); and the
+> two-way tolerances were tighter than the arithmetic warrants, since R fits by
+> QR and the plugin accumulates cell sums.
 >
 > | | |
 > |---|---|
