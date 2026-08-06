@@ -107,6 +107,19 @@ if (!length(hl)) {
     say(live_fails == 0, "headline 'all passing'", paste0("live failures: ", live_fails))
 }
 
+# --- 4. README.md's expect-line (headline claims live in more than one doc) --
+rmd <- file.path(dirname(VAL), "README.md")
+if (file.exists(rmd)) {
+    rl <- grep("Expect\\s*`?\\d+\\s+checks", readLines(rmd, warn = FALSE), value = TRUE)
+    if (!length(rl)) {
+        say(FALSE, "README expect-line", "no 'Expect <N> checks' line found")
+    } else {
+        n <- as.integer(regmatches(rl[1], regexec("(\\d+)\\s+checks", rl[1]))[[1]][2])
+        say(n == live_checks, paste0("README expect-line: claimed ", n),
+            paste0("live ", live_checks))
+    }
+}
+
 cat(sprintf("\n%s: %d mismatch(es)\n",
             if (fail_n) "MISMATCH" else "clean", fail_n))
 quit(status = if (fail_n) 1L else 0L)
