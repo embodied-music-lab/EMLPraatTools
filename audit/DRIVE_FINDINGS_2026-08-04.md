@@ -4701,16 +4701,51 @@ neither, and there is no third state. The checker is clean.
    cited as author. These lines predate this session and were not touched.
    Removing them is a 35-file edit and is the author's call, not mine.
 
-2. **LMM is off the menu but still reachable through the Stats Wizard.**
-   `scripts/eml-wizard.praat` includes `eml-lmm.praat` and offers the mixed
-   model as goal 4. The ruling was "entirely table and remove from menu for
-   now". If the reason for tabling is that it is unvalidated, the wizard
-   branch is a live route to it.
+2. ~~**LMM is off the menu but still reachable through the Stats Wizard.**~~
+   **RULED 6 August: disconnect it from end users, including the wizard, and
+   delete nothing.** Done. The wizard's "Predict — model type" page was the
+   last user-reachable route into the mixed-model formula page; with mixed
+   models gone it had one live choice left, so goal 4 now goes straight to
+   the regression columns. The page is kept verbatim in a comment block with
+   restore instructions.
+
+   The formula page itself is left live but unreachable rather than
+   commented out. Two reasons, and the second is the one that matters: a
+   fifty-line block reinstated by uncommenting is a fresh chance to
+   introduce a bug, and while the code still parses,
+   `harness/check_includes.py` keeps verifying that its four calls into
+   `stats/eml-lmm.praat` resolve. That is the check which caught D101, and
+   it only works on code that is still there to check. The cost is that
+   `eml-lmm.praat` is still parsed on every wizard launch — dead weight, not
+   a user surface. If that load time is worth reclaiming, the include and
+   the block come out **together**; one without the other is precisely the
+   mistake D101 was.
+
+   The regression path was re-driven afterwards and every printed value
+   still matches R: slope 2.1020, intercept 56.2347, R 0.9966, F(1,6)
+   871.9726, both coefficient SEs and t statistics to the printed digit.
 
 3. **Friedman on all-tied data.** `dev/tests/phase2/test-repeated-measures.praat`
    still skips RM_D's chi-square and p: the library returns p = 1 where scipy
-   returns nan. D97 ruled for the RM-ANOVA omnibus — refuse — and the same
-   argument seems to apply here, but Friedman was not named in the ruling.
+   returns nan.
+
+   Reading the code settles where the difference comes from. The tie
+   correction is `c = 1 - sum(t^3 - t) / (n(k^3 - k))`. When every value
+   ties within every subject, `t = k` in every row, the numerator equals the
+   denominator, and `c` is exactly 0. scipy divides by it and returns nan;
+   `@emlFriedmanTest` has a guard — `if .c <= 0 then .c = 1` — which
+   substitutes 1 and yields chi-square 0, p = 1.
+
+   **This is not the D97 situation.** There the printed F was arithmetic
+   noise from a division by zero: a garbage number wearing four decimal
+   places. Here chi-square = 0 is arguably the correct statistic — with all
+   ranks tied there genuinely is no rank difference to detect. Refusing
+   outright looks too strong. The D98 treatment fits better: compute it,
+   print it, and say plainly that an input with no variance has nothing in
+   it to test, so that p = 1 is not read as evidence of no effect.
+
+   Still the author's call, and the guard at `.c <= 0` should be part of the
+   decision — it is currently silent about having fired.
 
 4. **`Kurtosis (excess) --undefined--`.** Excess kurtosis needs n >= 4, so on
    the three-valid-row R6 table the descriptive report prints the literal
