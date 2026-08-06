@@ -69,21 +69,51 @@ Add menu command: "Objects", "New", "Pairwise comparisons...", "-- eml posthoc -
 Add menu command: "Objects", "New", "-- eml graphs --", "Pairwise comparisons...", 1, ""
 Add menu command: "Objects", "New", "EML Graphs...", "-- eml graphs --", 1, "scripts/eml-graphs.praat"
 
-# Batch
-Add menu command: "Objects", "New", "-- eml batch --", "EML Graphs...", 1, ""
-Add menu command: "Objects", "New", "Batch voice analysis...", "-- eml batch --", 1, "scripts/eml-batch-process.praat"
+# ── TABLED, 6 August 2026, by author ruling ───────────────────────────────
+#
+# Batch voice analysis, EML Stats Quick Start and the interactive tutorial
+# are disconnected from end users for now. Same treatment as linear mixed
+# models on 5 August: NOTHING IS DELETED. scripts/eml-batch-process.praat,
+# scripts/eml-quick-start.praat and scripts/eml-tutorial.praat are all
+# intact and untouched; only their menu registrations are removed.
+#
+# Why each:
+#
+#   Batch voice analysis   Never driven, and it is the one part of the
+#                          plugin that calls Praat's OWN acoustic extraction
+#                          — pitch, formants, intensity, harmonicity —
+#                          rather than doing its own arithmetic. That is a
+#                          separate correctness surface from the statistics
+#                          and has no validation of any kind. To be covered.
+#
+#   EML Stats Quick Start  Never driven; content not reviewed.
+#
+#   Interactive tutorial   Was already unregistered at v1.4 because
+#                          tutorial/eml-demo-procedures.praat is not shipped,
+#                          so the entry was live and the script could never
+#                          run. That include is still neutralised and
+#                          harness/check_includes.py still reports its 23
+#                          unresolved calls as a KNOWN state.
+#
+# Run Stats Demo is ALSO removed: the author has said it needs a complete
+# redo, and a demo that misrepresents the tools is worse than no demo.
+# Create Demo Table stays — it builds the tables the rest of the plugin is
+# exercised with, and it is the most-driven wrapper in the audit.
+#
+# TO RESTORE any of these: uncomment its line below and re-chain the
+# separator above it. The chain is positional — each entry names the one
+# before it — so restoring out of order silently reorders the menu.
+#
+# Add menu command: "Objects", "New", "-- eml batch --", "EML Graphs...", 1, ""
+# Add menu command: "Objects", "New", "Batch voice analysis...", "-- eml batch --", 1, "scripts/eml-batch-process.praat"
+# Add menu command: "Objects", "New", "Run Stats Demo", "Create Demo Table...", 1, "scripts/eml-stats-demo.praat"
+# Add menu command: "Objects", "New", "-- eml help --", "Run Stats Demo", 1, ""
+# Add menu command: "Objects", "New", "EML Stats Quick Start", "-- eml help --", 1, "scripts/eml-quick-start.praat"
 
-# Demos
-Add menu command: "Objects", "New", "-- eml demos --", "Batch voice analysis...", 1, ""
+# Demos — Create Demo Table only. It now chains directly to EML Graphs,
+# where the batch separator and entry used to sit.
+Add menu command: "Objects", "New", "-- eml demos --", "EML Graphs...", 1, ""
 Add menu command: "Objects", "New", "Create Demo Table...", "-- eml demos --", 1, "scripts/eml-create-demo.praat"
-Add menu command: "Objects", "New", "Run Stats Demo", "Create Demo Table...", 1, "scripts/eml-stats-demo.praat"
-
-# Help
-Add menu command: "Objects", "New", "-- eml help --", "Run Stats Demo", 1, ""
-Add menu command: "Objects", "New", "EML Stats Quick Start", "-- eml help --", 1, "scripts/eml-quick-start.praat"
-# "EML Interactive Tutorial" is unregistered at v1.4: scripts/eml-tutorial.praat
-# depends on tutorial/eml-demo-procedures.praat, which is not shipped with this
-# plugin. The menu entry was live but the script could never run.
 
 # ── Dynamic action buttons: appear when 1 Table is selected ────────────────
 
