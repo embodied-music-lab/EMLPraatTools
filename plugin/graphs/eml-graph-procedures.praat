@@ -1374,7 +1374,13 @@ procedure emlDrawTitle: .title$, .vpWidth, .vpHeight, .xMin, .xMax, .yMin, .yMax
 
     if emlSubtitle$ <> ""
         @emlSanitizeLabel: emlSubtitle$
-        Colour: "{0.55, 0.55, 0.55}"
+        # D30: the subtitle was {0.55, 0.55, 0.55} — 3.35:1 against white by
+        # the WCAG 2.x sRGB relative-luminance formula, below the AA 4.5:1
+        # minimum for normal text and washed out in greyscale print.
+        # {0.40, 0.40, 0.40} is 5.74:1 against white and still reads as
+        # secondary next to the title's textColor$ ({0.1} = 17.4:1).
+        # 0.46 is the lightest grey that still clears 4.5:1 on white.
+        Colour: "{0.40, 0.40, 0.40}"
         Text special: .titleX, "centre", .subtitleY, "half",
         ... emlFont$, emlSetAdaptiveTheme.bodySize, "0", emlSanitizeLabel.result$
     endif
@@ -1487,31 +1493,332 @@ procedure emlDrawAxesSelective: .xMin, .xMax, .yMin, .yMax, .xLabel$, .yLabel$, 
 endproc
 
 
+# ============================================================================
+# LABEL DERIVATION — UNIT/ACRONYM TOKENS (D73) AND OVERRIDES (D90)
+# ============================================================================
+# @emlCapitalizeLabel used to do exactly two things: underscore→space, and
+# uppercase the first character. That is Rule 28B and nothing else, so
+# `SPL_dB` came out as `SPL dB` (unit not parenthesised, Rule 28C unmet) and
+# any column whose unit was written in lower case lost its casing the moment
+# a caller title-cased the result. The tables below are the whole heuristic:
+# adding a unit is a one-line edit to emlLabelUnitMap$, adding an acronym a
+# one-line edit to emlLabelAcronymMap$. No chain of ifs.
+#
+# Format: "|<lowercased token>:<canonical form>|" — the leading and trailing
+# bars are load-bearing, @emlLookupLabelToken searches for "|token:".
+#
+# UNIT tokens are, in addition, lifted into a trailing parenthesis when they
+# are the LAST underscore-separated token of a multi-token name:
+#   F0_Hz        → F0 (Hz)
+#   SPL_dB       → SPL (dB)
+#   jitter_pct   → Jitter (%)
+# ACRONYM tokens are only case-corrected; they name a quantity, not a unit,
+# so they are never parenthesised:
+#   mean_spl     → Mean SPL
+#   f0_sd        → F0 SD
+# Anything unrecognised falls through to the previous behaviour.
+# ============================================================================
+emlLabelUnitMap$ = "|hz:Hz|khz:kHz|db:dB|dba:dBA|ms:ms|s:s|pct:%|percent:%|"
+emlLabelAcronymMap$ = "|spl:SPL|hnr:HNR|f0:F0|f1:F1|f2:F2|f3:F3|cpp:CPP|cpps:CPPS|sd:SD|se:SE|ci:CI|n:N|"
+
+# D90: axis labels are derived from column names, and a wide→long reshape
+# hands the graph layer the reshape's own role names — `Subject`, `Condition`,
+# `Value` — so a repeated-measures figure's y-axis reads "Value" instead of
+# naming the measured quantity. The override table lets a caller that KNOWS
+# the real measure register it against the role name; every existing
+# @emlCapitalizeLabel call site then picks it up with no change.
+emlLabelOverrideN = 0
+
+# ----------------------------------------------------------------------------
+# @emlEnsureLabelTables
+# Defines the label tables if this file's top-level block has not run in the
+# current interpreter (same defensive pattern as the panel-origin guard).
+# ----------------------------------------------------------------------------
+procedure emlEnsureLabelTables
+    if not variableExists ("emlLabelUnitMap$")
+        emlLabelUnitMap$ = "|hz:Hz|khz:kHz|db:dB|dba:dBA|ms:ms|s:s|pct:%|percent:%|"
+    endif
+    if not variableExists ("emlLabelAcronymMap$")
+        emlLabelAcronymMap$ = "|spl:SPL|hnr:HNR|f0:F0|f1:F1|f2:F2|f3:F3|cpp:CPP|cpps:CPPS|sd:SD|se:SE|ci:CI|n:N|"
+    endif
+    if not variableExists ("emlLabelOverrideN")
+        emlLabelOverrideN = 0
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlClearLabelOverrides
+# Drops every registered axis-label override. A wrapper that registers
+# overrides is responsible for clearing them once its figure is drawn —
+# overrides are keyed by column name and would otherwise leak into the next
+# graph drawn in the same session.
+# ----------------------------------------------------------------------------
+procedure emlClearLabelOverrides
+    emlLabelOverrideN = 0
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlSetLabelOverride
+# Registers a display label for a column name. Re-registering a column
+# replaces its entry rather than shadowing it.
+# Arguments: colName$ (the column name as it appears in the Table),
+#            display$ (what the axis should say; "" removes nothing, it is
+#                      simply ignored at lookup time)
+# ----------------------------------------------------------------------------
+procedure emlSetLabelOverride: .colName$, .display$
+    @emlEnsureLabelTables
+    .slot = 0
+    for .i from 1 to emlLabelOverrideN
+        if emlLabelOverrideCol$[.i] = .colName$
+            .slot = .i
+        endif
+    endfor
+    if .slot = 0
+        emlLabelOverrideN = emlLabelOverrideN + 1
+        .slot = emlLabelOverrideN
+    endif
+    emlLabelOverrideCol$[.slot] = .colName$
+    emlLabelOverrideText$[.slot] = .display$
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlLookupLabelOverride
+# Arguments: colName$
+# Outputs: .found (0/1), .result$ (the registered display label)
+# ----------------------------------------------------------------------------
+procedure emlLookupLabelOverride: .colName$
+    @emlEnsureLabelTables
+    .found = 0
+    .result$ = ""
+    for .i from 1 to emlLabelOverrideN
+        if .found = 0
+            if emlLabelOverrideCol$[.i] = .colName$
+                if emlLabelOverrideText$[.i] <> ""
+                    .found = 1
+                    .result$ = emlLabelOverrideText$[.i]
+                endif
+            endif
+        endif
+    endfor
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlLookupLabelToken
+# Case-insensitive exact-token lookup in one of the maps above.
+# Arguments: map$ (emlLabelUnitMap$ or emlLabelAcronymMap$), token$
+# Outputs: .found (0/1), .result$ (canonical form)
+# ----------------------------------------------------------------------------
+procedure emlLookupLabelToken: .map$, .token$
+    .found = 0
+    .result$ = ""
+    if .token$ <> ""
+        .key$ = "|" + replace_regex$ (.token$, "(.*)", "\L\1", 0) + ":"
+        .at = index (.map$, .key$)
+        if .at > 0
+            .from = .at + length (.key$)
+            .tail$ = right$ (.map$, length (.map$) - .from + 1)
+            .end = index (.tail$, "|")
+            if .end > 1
+                .found = 1
+                .result$ = left$ (.tail$, .end - 1)
+            endif
+        endif
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlFormatLabelTokens
+# The heuristic itself, with no override lookup — split on underscores,
+# canonicalise every recognised token, lift a trailing unit into a
+# parenthesis, capitalise the leading word if it was not a recognised token,
+# then sanitize.
+# Arguments: raw$
+# Outputs: .result$
+# ----------------------------------------------------------------------------
+procedure emlFormatLabelTokens: .raw$
+    @emlEnsureLabelTables
+    .work$ = .raw$
+    .nTok = 0
+    while .work$ <> ""
+        .at = index (.work$, "_")
+        if .at > 0
+            .tok$ = left$ (.work$, .at - 1)
+            .work$ = right$ (.work$, length (.work$) - .at)
+        else
+            .tok$ = .work$
+            .work$ = ""
+        endif
+        if .tok$ <> ""
+            .nTok = .nTok + 1
+            emlLabelTok$[.nTok] = .tok$
+        endif
+    endwhile
+
+    # Trailing unit token → parenthesised unit (Rule 28C). Requires at least
+    # two tokens: a column named just "hz" has no measure to attach a unit to,
+    # so it is only case-corrected.
+    .unit$ = ""
+    if .nTok >= 2
+        @emlLookupLabelToken: emlLabelUnitMap$, emlLabelTok$[.nTok]
+        if emlLookupLabelToken.found
+            .unit$ = emlLookupLabelToken.result$
+            .nTok = .nTok - 1
+        endif
+    endif
+
+    .out$ = ""
+    for .i from 1 to .nTok
+        .tok$ = emlLabelTok$[.i]
+        @emlLookupLabelToken: emlLabelUnitMap$, .tok$
+        if emlLookupLabelToken.found
+            .tok$ = emlLookupLabelToken.result$
+        else
+            @emlLookupLabelToken: emlLabelAcronymMap$, .tok$
+            if emlLookupLabelToken.found
+                .tok$ = emlLookupLabelToken.result$
+            elsif .i = 1
+                # ASCII lowercase a-z (97-122) → uppercase A-Z (65-90)
+                .code = unicode (left$ (.tok$, 1))
+                if .code >= 97 and .code <= 122
+                    .code = .code - 32
+                endif
+                .tok$ = unicode$ (.code) + right$ (.tok$, length (.tok$) - 1)
+            endif
+        endif
+        if .i = 1
+            .out$ = .tok$
+        else
+            .out$ = .out$ + " " + .tok$
+        endif
+    endfor
+
+    if .unit$ <> ""
+        if .out$ = ""
+            .out$ = .unit$
+        else
+            .out$ = .out$ + " (" + .unit$ + ")"
+        endif
+    endif
+
+    # Sanitize special characters (%, #, ^, _) — auto-generated labels from
+    # column names should never contain Praat markup. User-typed labels
+    # bypass this procedure entirely. Note that "%" survives as "\% ", which
+    # Praat renders as a literal percent sign with the escape consuming the
+    # trailing space, so "(%)" comes out as "(%)".
+    @emlSanitizeLabel: .out$
+    .result$ = emlSanitizeLabel.result$
+endproc
+
 # ----------------------------------------------------------------------------
 # @emlCapitalizeLabel
-# Converts a column name to a display label: underscores to spaces, capitalize first letter
+# Converts a column name to a display label. Consults the D90 override table
+# first, then applies the D73 unit/acronym heuristic.
 # Arguments: raw$ (the raw column name)
 # Outputs: .result$ (the formatted label)
 # ----------------------------------------------------------------------------
 procedure emlCapitalizeLabel: .raw$
-    .clean$ = replace$ (.raw$, "_", " ", 0)
-    if length (.clean$) > 0
-        .firstChar$ = left$ (.clean$, 1)
-        .code = unicode (.firstChar$)
-        # ASCII lowercase a-z (97-122) → uppercase A-Z (65-90)
-        if .code >= 97 and .code <= 122
-            .code = .code - 32
-        endif
-        .first$ = unicode$ (.code)
-        .rest$ = right$ (.clean$, length (.clean$) - 1)
-        .result$ = .first$ + .rest$
-        # Sanitize special characters (%, #, ^, _) — auto-generated
-        # labels from column names should never contain Praat markup.
-        # User-typed labels bypass this procedure entirely.
-        @emlSanitizeLabel: .result$
-        .result$ = emlSanitizeLabel.result$
+    @emlLookupLabelOverride: .raw$
+    if emlLookupLabelOverride.found
+        @emlFormatLabelTokens: emlLookupLabelOverride.result$
     else
+        @emlFormatLabelTokens: .raw$
+    endif
+    .result$ = emlFormatLabelTokens.result$
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlDeriveAxisLabel
+# D90: the explicit form of the override. Where @emlCapitalizeLabel takes the
+# override from the registry, this takes it as an argument, for a caller that
+# has the real measure name in hand at the call site.
+# Arguments: rawCol$ (column name), override$ ("" = derive from rawCol$)
+# Outputs: .result$
+# ----------------------------------------------------------------------------
+procedure emlDeriveAxisLabel: .rawCol$, .override$
+    if .override$ <> ""
+        @emlFormatLabelTokens: .override$
+        .result$ = emlFormatLabelTokens.result$
+    else
+        @emlCapitalizeLabel: .rawCol$
+        .result$ = emlCapitalizeLabel.result$
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlCommonMeasureLabel
+# D90 helper for the wide→long reshapes. Given the two (or more) wide column
+# names that became one long `Value` column, returns the measure they share,
+# so the wrapper can register it as the y-axis override in one line:
+#   jitter_pre, jitter_post           → jitter
+#   f0_hz_pre,  f0_hz_post            → f0_hz
+#   pre_jitter_pct, post_jitter_pct   → jitter_pct   (shared suffix)
+#   spl_dB, hnr                       → ""           (nothing shared)
+# Arguments: colA$, colB$
+# Outputs: .stem$ (raw, underscore-separated; "" when nothing is shared),
+#          .result$ (.stem$ run through the D73 heuristic; "" when no stem)
+# ----------------------------------------------------------------------------
+procedure emlCommonMeasureLabel: .colA$, .colB$
+    .stem$ = ""
+
+    # Shared leading tokens
+    .a$ = .colA$
+    .b$ = .colB$
+    .more = 1
+    while .more = 1
+        .ia = index (.a$, "_")
+        .ib = index (.b$, "_")
+        if .ia > 0 and .ib > 0
+            .ta$ = left$ (.a$, .ia - 1)
+            .tb$ = left$ (.b$, .ib - 1)
+            if .ta$ = .tb$ and .ta$ <> ""
+                if .stem$ = ""
+                    .stem$ = .ta$
+                else
+                    .stem$ = .stem$ + "_" + .ta$
+                endif
+                .a$ = right$ (.a$, length (.a$) - .ia)
+                .b$ = right$ (.b$, length (.b$) - .ib)
+            else
+                .more = 0
+            endif
+        else
+            .more = 0
+        endif
+    endwhile
+
+    # Shared trailing tokens, only if nothing was shared at the front
+    if .stem$ = ""
+        .a$ = .colA$
+        .b$ = .colB$
+        .more = 1
+        while .more = 1
+            .ia = rindex (.a$, "_")
+            .ib = rindex (.b$, "_")
+            if .ia > 0 and .ib > 0
+                .ta$ = right$ (.a$, length (.a$) - .ia)
+                .tb$ = right$ (.b$, length (.b$) - .ib)
+                if .ta$ = .tb$ and .ta$ <> ""
+                    if .stem$ = ""
+                        .stem$ = .ta$
+                    else
+                        .stem$ = .ta$ + "_" + .stem$
+                    endif
+                    .a$ = left$ (.a$, .ia - 1)
+                    .b$ = left$ (.b$, .ib - 1)
+                else
+                    .more = 0
+                endif
+            else
+                .more = 0
+            endif
+        endwhile
+    endif
+
+    if .stem$ = ""
         .result$ = ""
+    else
+        @emlFormatLabelTokens: .stem$
+        .result$ = emlFormatLabelTokens.result$
     endif
 endproc
 

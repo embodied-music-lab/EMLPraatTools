@@ -1483,13 +1483,15 @@ procedure emlDrawMatrixPanel: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSize, .
         .pSigBg$      = "{0.72, 0.72, 0.72}"
         .pSigText$    = "{0.08, 0.08, 0.08}"
         .pNsBg$       = "{0.92, 0.92, 0.92}"
-        .pNsText$     = "{0.45, 0.45, 0.45}"
+        ; D30: was {0.45} = 3.98:1 on this 0.92 ground. {0.40} = 4.80:1.
+        .pNsText$     = "{0.40, 0.40, 0.40}"
         .dLargeBg$    = "{0.12, 0.12, 0.12}"
         .dLargeText$  = "{1.0, 1.0, 1.0}"
         .dMediumBg$   = "{0.45, 0.45, 0.45}"
         .dMediumText$ = "{1.0, 1.0, 1.0}"
         .dSmallBg$    = "{0.92, 0.92, 0.92}"
-        .dSmallText$  = "{0.50, 0.50, 0.50}"
+        ; D30: was {0.50} = 3.32:1 on this 0.92 ground. {0.40} = 4.80:1.
+        .dSmallText$  = "{0.40, 0.40, 0.40}"
     else
         .pSigBg$      = "{0.82, 0.90, 0.97}"
         .pSigText$    = "{0.08, 0.08, 0.08}"
@@ -1500,7 +1502,9 @@ procedure emlDrawMatrixPanel: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSize, .
         .dMediumBg$   = "{1.0, 0.93, 0.76}"
         .dMediumText$ = "{0.40, 0.31, 0.01}"
         .dSmallBg$    = "{0.96, 0.96, 0.96}"
-        .dSmallText$  = "{0.50, 0.50, 0.50}"
+        ; D30: was {0.50} = 3.64:1 on this 0.96 ground. {0.40} = 5.26:1.
+        ; (.pNsText$ {0.38} on 0.96 is 5.68:1 and needs no change.)
+        .dSmallText$  = "{0.40, 0.40, 0.40}"
     endif
 
     # ----------------------------------------------------------------
@@ -1516,8 +1520,15 @@ procedure emlDrawMatrixPanel: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSize, .
     # ----------------------------------------------------------------
     # Subtitle — centered on grid
     # ----------------------------------------------------------------
+    # D30: this sub-line is the ONLY place in the figure that discloses which
+    # correction produced the annotated p-values, and it was drawn in
+    # {0.55, 0.55, 0.55} — 3.35:1 against white, below the WCAG AA 4.5:1
+    # minimum for normal text, and it degrades badly in greyscale print and
+    # on projection. {0.40, 0.40, 0.40} is 5.74:1 against white (WCAG 2.x
+    # relative luminance, sRGB), still clearly subordinate to the {0.15}
+    # title above it. Do not lighten past 0.46 (= 4.5:1) on a white ground.
     if .hasEffect = 1
-        Colour: "{0.55, 0.55, 0.55}"
+        Colour: "{0.40, 0.40, 0.40}"
         if annotMatrixPosthoc$ <> ""
             .sub$ = annotMatrixPosthoc$ + " · Upper: adjusted p · Lower: "
             ... + annotMatrixEffectLabel$ + " (magnitude)"
@@ -1528,7 +1539,8 @@ procedure emlDrawMatrixPanel: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSize, .
         Text special: .gridCenter, "centre", .subtitleY, "half",
         ... emlFont$, .fontSize, "0", .sub$
     elsif annotMatrixPosthoc$ <> ""
-        Colour: "{0.55, 0.55, 0.55}"
+        ; D30: 5.74:1 against white — see the note on the branch above.
+        Colour: "{0.40, 0.40, 0.40}"
         .sub$ = annotMatrixPosthoc$
         Text special: .gridCenter, "centre", .subtitleY, "half",
         ... emlFont$, .fontSize, "0", .sub$
@@ -1584,8 +1596,15 @@ procedure emlDrawMatrixPanel: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSize, .
                 # delivered scale. The diagonal now carries a centre dot,
                 # which cannot be mistaken for a dash at any size, and the
                 # suppressed-p cells keep the dash.
+                # D30: the diagonal glyph is drawn as text on the white cell
+                # ground and was {0.7} = 2.11:1 — below the 4.5:1 text
+                # minimum and below even the 3:1 floor for graphical marks,
+                # which is self-defeating for a glyph D72 introduced
+                # precisely so it could not be confused with the dash.
+                # {0.40} = 5.74:1 on white, still lighter than the {0.08}
+                # used for the data cells.
                 if .showText = 1
-                    Colour: "{0.7, 0.7, 0.7}"
+                    Colour: "{0.40, 0.40, 0.40}"
                     Text special: .cx, "centre", .ry, "half",
                     ... emlFont$, .scaledFont, "0", "·"
                 endif
@@ -3795,17 +3814,26 @@ procedure emlReportNormalityAnalysis: .tableName$, .dataCol$,
     # kurtosis threshold at 1, a g2 of 1.5 made the gate recommend a
     # nonparametric test while the line directly above it said "within
     # typical limits" — two contradictory verdicts in one report. (D95)
+    # D11: the parenthetical used to read "(|skew| < 1)" on the FAILING branch
+    # only — an assertion of the criterion at the moment it is announcing the
+    # opposite, and invisible to the reader who passes. The parenthetical is
+    # now worded as a stated criterion ("criterion: ...") and printed on BOTH
+    # branches, so a passing reader learns what threshold was cleared.
+    # The same two lines exist in scripts/eml-wizard.praat:2085 — not fixed
+    # here because that file is owned elsewhere.
     if abs (emlRunNormalityAnalysis.skewness) >= emlSkewThreshold
-        appendInfoLine: "  → Skewness outside typical limits (|skew| < ",
+        appendInfoLine: "  → Skewness outside typical limits (criterion: |skew| < ",
         ... fixed$ (emlSkewThreshold, 0), ")"
     else
-        appendInfoLine: "  → Skewness within typical limits"
+        appendInfoLine: "  → Skewness within typical limits (criterion: |skew| < ",
+        ... fixed$ (emlSkewThreshold, 0), ")"
     endif
     if abs (emlRunNormalityAnalysis.kurtosis) >= emlKurtosisThreshold
-        appendInfoLine: "  → Kurtosis outside typical limits (|excess kurt| < ",
+        appendInfoLine: "  → Kurtosis outside typical limits (criterion: |excess kurt| < ",
         ... fixed$ (emlKurtosisThreshold, 0), ")"
     else
-        appendInfoLine: "  → Kurtosis within typical limits"
+        appendInfoLine: "  → Kurtosis within typical limits (criterion: |excess kurt| < ",
+        ... fixed$ (emlKurtosisThreshold, 0), ")"
     endif
 
     @emlReportBlank

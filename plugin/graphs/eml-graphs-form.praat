@@ -5,7 +5,32 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # License: Creative Commons Share-Alike
-# Version: 2.2
+# Version: 2.3
+# v2.3: D18/D65/D32/D60/D108.
+#       * D18 + D65 (filename half) — the Draw path's Export Results dialog
+#         proposed selected$ ("Table") + "_results" on originalSourceId, which
+#         named the transient `pairedLong` reshape on the paired workflow and
+#         carried no analysis identity anywhere. New @emlGraphsCSVDefaultName /
+#         @emlGraphsCSVRowAnalysis read the source table and the analysis off
+#         the CSV buffer that is about to be written, giving the same
+#         <table>_<analysis-slug> shape as @emlWrapperExportCSV. D65's other
+#         half (Draw exporting a different test family than the analysis that
+#         launched it) is a bridge design decision and is untouched.
+#       * D32 (remaining half) — declared emlGraphsPresetSubgroupCol$ so a
+#         wrapper can name its actual second factor, and consumed it in the
+#         Grouped Violin and Grouped Box preset branches ahead of the role
+#         guesser. A preset that collides with Category or Value is demoted and
+#         the guesser runs as before.
+#       * D60 — new @emlGraphsIsPercentageColumn, and the two
+#         @emlComputeAxisRange calls here now pass it instead of a literal 0,
+#         which is the first time that procedure's .isPercentage branch has
+#         ever executed. Detection needs BOTH a percentage-looking name and
+#         data inside 0-100.
+#       * D108 — the correction preset's string and its dialog index are now
+#         derived from one validated index via @emlAdjustMethodName, so they
+#         cannot disagree, and an unrecognised preset is reported where it was
+#         set. Consuming it on the parametric path is in
+#         eml-annotation-procedures.praat, not here.
 # v2.2: Item 8 — two further preset-plumbing defects. (a) The spaghetti-plot
 #       column-mapping dialog never consumed emlGraphsPresetGroupCol$; it
 #       relied on a name heuristic that runs only on the first spaghetti draw
@@ -117,6 +142,12 @@ emlGraphsInitDone = 0
 emlGraphsPresetType = 0
 emlGraphsPresetDataCol$ = ""
 emlGraphsPresetGroupCol$ = ""
+# D32. The bridge carried a category and a value column and had no slot at all
+# for a SECOND factor, so a two-way wrapper could not say which column its
+# `factor2$` was and the Grouped Violin / Grouped Box pages had to guess. The
+# guess is still there as a fallback, but a caller that KNOWS its second factor
+# now has somewhere to put it, and what it puts there wins.
+emlGraphsPresetSubgroupCol$ = ""
 emlGraphsPresetTestType$ = ""
 emlGraphsPresetAnnotate = 0
 emlGraphsPresetAnalysisType = 0
@@ -806,6 +837,214 @@ endproc
 
 
 # ============================================================================
+# CSV EXPORT FILENAME
+# ============================================================================
+# D18 + D65 (filename half). The Draw path proposed
+# selected$ ("Table") + "_results" on originalSourceId. Two things were wrong
+# with that.
+#
+# D18: originalSourceId is the object the graph was drawn from, which for the
+# paired workflow is the `pairedLong` wide-to-long reshape the wrapper builds
+# for the spaghetti plot. The user never created it, never named it and never
+# sees it again — so the deliverable was named after a transient the user
+# cannot connect to anything, while the rows INSIDE the file correctly said
+# `demo_paired`. The name now comes from the same place the body does.
+#
+# D65 (filename half): "_results" carries no analysis identity, so three
+# different analyses on one table proposed one name and arrived as
+# `t_results.csv`, `_1.csv`, `_2.csv` — distinguishable only by opening them.
+# The wrapper side (@emlWrapperExportCSV, stats/eml-output.praat) was fixed to
+# <table>_<analysis-slug>; this is the same convention with the same slug
+# rules, so the two export routes cannot drift.
+#
+# Both halves are read off the CSV buffer rather than off the drawing state on
+# purpose: the filename then describes the bytes that are about to be written,
+# whatever produced them. When the buffer is empty or unparseable the old
+# <table>_results shape is still produced, from the caller's fallback name.
+#
+# NOT FIXED HERE — D65's other half. D65 also reports that the Draw path can
+# export a DIFFERENT test family than the analysis the user launched (drawing
+# after "Pairwise comparisons" exported ANOVA/Tukey rows, because the draw
+# bridge re-runs its own test and overwrites the buffer). Naming the file after
+# the buffer makes that visible instead of hiding it behind the table name, but
+# it does not fix it. Which result should win — the wrapper's analysis or the
+# figure's annotation — is a design decision about the bridge, not a naming
+# question, and is deliberately left alone here.
+#
+# Arguments:
+#   .fallbackTable$ — table name to use when the buffer carries none
+# Outputs:
+#   .result$ — proposed file name, without extension
+# ============================================================================
+procedure emlGraphsCSVDefaultName: .fallbackTable$
+    .table$ = .fallbackTable$
+    if variableExists ("emlCSV_table$")
+        if emlCSV_table$ <> ""
+            .table$ = emlCSV_table$
+        endif
+    endif
+
+    .analysis$ = ""
+    if variableExists ("emlCSV_n")
+        if emlCSV_n > 0
+            @emlGraphsCSVRowAnalysis: emlCSV_row$ [1]
+            .analysis$ = emlGraphsCSVRowAnalysis.result$
+        endif
+    endif
+
+    # Same slug rules as @emlWrapperExportCSV, deliberately duplicated rather
+    # than shared: that procedure also opens a dialog, and this one must not.
+    .slug$ = replace$ (.analysis$, " ", "_", 0)
+    .slug$ = replace$ (.slug$, "/", "-", 0)
+    .slug$ = replace$ (.slug$, "'", "", 0)
+
+    if .slug$ = ""
+        .result$ = .table$ + "_results"
+    else
+        .result$ = .table$ + "_" + .slug$
+    endif
+endproc
+
+
+# ============================================================================
+# @emlGraphsCSVRowAnalysis
+# ============================================================================
+# Second field of one buffered CSV row — the `analysis` column of
+# table,analysis,term,term_type,field,value.
+#
+# The row is written by @eml_csvAppend, which quotes a field only when it
+# contains a comma, a double quote or a newline, so most rows split on plain
+# commas. Most is not all: a user's table can legitimately be named with a
+# comma in it, which would quote field 1 and shift every later field if this
+# counted commas naively. So it walks the row honouring RFC 4180 quoting,
+# including the "" escape for a literal quote.
+#
+# Arguments:
+#   .row$ — one row from emlCSV_row$[]
+# Outputs:
+#   .result$ — the unquoted analysis field, or "" if the row has fewer than
+#              two fields
+# ============================================================================
+procedure emlGraphsCSVRowAnalysis: .row$
+    .result$ = ""
+    .len = length (.row$)
+    .i = 1
+    .field = 1
+    .inQuote = 0
+    .cur$ = ""
+    .done = 0
+    while .i <= .len and .done = 0
+        .ch$ = mid$ (.row$, .i, 1)
+        if .inQuote = 1
+            if .ch$ = """"
+                if mid$ (.row$, .i + 1, 1) = """"
+                    ; doubled quote inside a quoted field = one literal quote
+                    .cur$ = .cur$ + """"
+                    .i = .i + 1
+                else
+                    .inQuote = 0
+                endif
+            else
+                .cur$ = .cur$ + .ch$
+            endif
+        elsif .ch$ = """" and .cur$ = ""
+            .inQuote = 1
+        elsif .ch$ = ","
+            if .field = 2
+                .result$ = .cur$
+                .done = 1
+            endif
+            .field = .field + 1
+            .cur$ = ""
+        else
+            .cur$ = .cur$ + .ch$
+        endif
+        .i = .i + 1
+    endwhile
+    ; Row ended while still inside field 2 — take what was collected.
+    if .done = 0 and .field = 2
+        .result$ = .cur$
+    endif
+endproc
+
+
+# ============================================================================
+# PERCENTAGE-COLUMN DETECTION
+# ============================================================================
+# D60. @emlComputeAxisRange has taken an .isPercentage argument since it was
+# written, and clamps the axis to 0-100 (or 0-1 for proportions) when it is
+# raised — Rule 28E. Every call site in the repository passed a literal 0, so
+# the branch had never once executed and a `_pct` column with a ceiling of
+# exactly 100.0 was still given Rule 28F's generic +-10% buffer: an axis
+# running 40-110, ten points past a physically impossible value and cropping
+# the bottom 40 points of the actual scale.
+#
+# Detection deliberately requires BOTH tests to pass:
+#
+#   * the NAME suggests a percentage (`_pct`, `percent`, `%`) — necessary,
+#     because 0-100 data is extremely common in acoustics (SPL in dB, F0 in a
+#     narrow band, age, contact quotient x 100) and clamping all of it to a
+#     0-100 axis would wreck far more figures than D60 fixes; and
+#   * the DATA actually lies in 0-100 — necessary, because a name is only a
+#     hint. `pct_change` legitimately goes negative, and a column called
+#     `percent_of_baseline` can run past 200. Either would be silently
+#     truncated by a name-only rule, which is a worse failure than the one
+#     being fixed: a clipped axis hides data, a buffered axis only wastes ink.
+#
+# Data in 0-1 is left to @emlComputeAxisRange, which reads dataMax <= 1 as a
+# proportion and clamps to 0-1 instead.
+#
+# REACH. This is applied at the two @emlComputeAxisRange call sites in THIS
+# file — the annotated bar / violin / box auto-range. The other 15 sites are in
+# files this pass does not own and still pass a literal 0:
+# graphs/eml-draw-procedures.praat 233, 332, 822, 1175, 1451, 1853, 2197, 2412,
+# 2426, 3100, 3370, 3413, 3786, 4022 and scripts/eml-stats-demo.praat 309, 312,
+# 398. Note in particular 2426, the scatter Y axis — that is the site the D60
+# report was actually written from (a `_pct` column drawn 40-110), so D60's
+# observed figure is NOT fixed by this change; the mechanism it said was dead
+# is simply no longer dead. Those sites cannot call this procedure as it
+# stands: eml-draw-procedures.praat is included without this file by the stress
+# harness, so a shared detector has to live in eml-graph-procedures.praat
+# beside @emlComputeAxisRange itself.
+#
+# Arguments:
+#   .tableId  — Table to inspect
+#   .colName$ — column name
+# Outputs:
+#   .result — 1 when the column should get a percentage axis, else 0
+# ============================================================================
+procedure emlGraphsIsPercentageColumn: .tableId, .colName$
+    .result = 0
+    .nameHit = 0
+    if .colName$ <> ""
+        if index_caseInsensitive (.colName$, "pct") > 0
+            .nameHit = 1
+        endif
+        if index_caseInsensitive (.colName$, "percent") > 0
+            .nameHit = 1
+        endif
+        if index (.colName$, "%") > 0
+            .nameHit = 1
+        endif
+    endif
+
+    if .nameHit = 1
+        @emlCheckNumericColumn: .tableId, .colName$
+        if emlCheckNumericColumn.isNumeric = 1
+            selectObject: .tableId
+            .lo = Get minimum: .colName$
+            .hi = Get maximum: .colName$
+            if .lo <> undefined and .hi <> undefined
+                if .lo >= 0 and .hi <= 100
+                    .result = 1
+                endif
+            endif
+        endif
+    endif
+endproc
+
+
+# ============================================================================
 # DEFAULT FIGURE TITLE
 # ============================================================================
 # D43 / D89 (Rule 28A). The figure used to be drawn with no title at all
@@ -1244,22 +1483,62 @@ scatterShowDots = 1
     # Multiple-comparison adjustment carried in from a stats wrapper.
     # Also seeds the dialog default so the Advanced form shows the method
     # the calling test actually used.
+    #
+    # D108. annotCorrectionMethod$ is the ONLY channel this value has:
+    # @emlBridgeGroupComparison does not take it as an argument, it reads the
+    # global (eml-annotation-procedures.praat:1808). So the job here is to make
+    # sure the global is well defined by the time the bridge runs, on BOTH test
+    # paths — the bridge resolves .correction$ before it branches on test type,
+    # so a parametric run has the wrapper's method in hand exactly as a
+    # nonparametric one does.
+    #
+    # Two things used to make that only accidentally true:
+    #
+    #   * the string and the dialog index were derived separately, so an
+    #     unrecognised preset set annotCorrectionMethod$ to the unrecognised
+    #     string but prev_annotAdjustIdx to Holm. In Advanced mode the form
+    #     then committed Holm over it silently; in Beginner mode the bad string
+    #     survived to the bridge, which warned and fell back. Same preset, two
+    #     behaviours, neither announced at the point the caller made the
+    #     mistake. Both now come from one validated index via
+    #     @emlAdjustMethodName, which is the same lookup the six column-mapping
+    #     pages commit through — they cannot disagree any more.
+    #   * an unrecognised value was never reported to the caller. It is now,
+    #     here, where the preset was set, rather than later from inside the
+    #     annotation layer.
+    #
+    # What is NOT fixed here, because it is not in this file: on the parametric
+    # k >= 3 path the consuming side still ignores the value. The Tukey branch
+    # of @emlBridgeGroupComparison (eml-annotation-procedures.praat:2151+)
+    # never reads .correction$ — only the Dunn branch does. Delivering the
+    # method is this file's half of D108; using it, or saying in the figure
+    # that Tukey carries its own correction instead, is a change to
+    # eml-annotation-procedures.praat, which this pass does not own.
     if emlGraphsPresetCorrection$ <> ""
-        annotCorrectionMethod$ = emlGraphsPresetCorrection$
+        .presetAdjustIdx = 0
         if emlGraphsPresetCorrection$ = "bonferroni"
-            prev_annotAdjustIdx = 1
+            .presetAdjustIdx = 1
+        elsif emlGraphsPresetCorrection$ = "holm"
+            .presetAdjustIdx = 2
         elsif emlGraphsPresetCorrection$ = "bh"
-            prev_annotAdjustIdx = 3
-        else
-            prev_annotAdjustIdx = 2
+            .presetAdjustIdx = 3
         endif
+        if .presetAdjustIdx = 0
+            appendInfoLine: "NOTE: unrecognised emlGraphsPresetCorrection$ '"
+            ... + emlGraphsPresetCorrection$ + "' — using holm."
+            .presetAdjustIdx = 2
+        endif
+        @emlAdjustMethodName: .presetAdjustIdx
+        annotCorrectionMethod$ = emlAdjustMethodName.name$
+        prev_annotAdjustIdx = .presetAdjustIdx
         emlGraphsPresetCorrection$ = ""
     endif
 
     # Column presets are consumed by the type-specific forms.
-    # They check emlGraphsPresetGroupCol$ and emlGraphsPresetDataCol$
-    # to override auto-detection defaults, then clear them so
-    # subsequent Redraw iterations use prev_* persistence instead.
+    # They check emlGraphsPresetGroupCol$, emlGraphsPresetDataCol$ and
+    # (two-factor pages only) emlGraphsPresetSubgroupCol$ to override
+    # auto-detection defaults, then clear them so subsequent Redraw
+    # iterations use prev_* persistence instead.
 
 repeat
 
@@ -4628,6 +4907,7 @@ repeat
         gvValueIdx = min (3, nCols)
 
         if emlGraphsPresetGroupCol$ <> ""
+            .gvSubFromPreset = 0
             for .iPreset from 1 to nCols
                 if colName$[.iPreset] = emlGraphsPresetGroupCol$
                     gvCatIdx = .iPreset
@@ -4635,10 +4915,31 @@ repeat
                 if colName$[.iPreset] = emlGraphsPresetDataCol$
                     gvValueIdx = .iPreset
                 endif
+                # D32 (remaining half). A caller that knows its second factor
+                # says so here. The guesser below is a fallback for callers
+                # that do not, and must not be allowed to overrule a caller
+                # that does — a wrapper reading its own form knows the answer
+                # the keyword scorer is only estimating.
+                if emlGraphsPresetSubgroupCol$ <> ""
+                    if colName$[.iPreset] = emlGraphsPresetSubgroupCol$
+                        gvSubIdx = .iPreset
+                        .gvSubFromPreset = 1
+                    endif
+                endif
             endfor
 
+            # A preset subgroup that lands on the Category or the Value column
+            # is not usable — it would reproduce the very collision D32
+            # describes — so it is demoted back to "no preset" and the guesser
+            # below gets its turn after all.
+            if .gvSubFromPreset = 1
+                if gvSubIdx = gvCatIdx or gvSubIdx = gvValueIdx
+                    .gvSubFromPreset = 0
+                endif
+            endif
+
             # D107 (D32 in this branch). The preset bridge carries a category
-            # and a value column and has no slot for the SECOND factor, so
+            # and a value column and had no slot for the SECOND factor, so
             # gvSubIdx used to keep the positional initializer min (2, nCols)
             # here. On demo_twoway (subject, voice_type, task, SPL_dB) that is
             # voice_type — the column the preset had just assigned to Category
@@ -4649,35 +4950,41 @@ repeat
             # branch the two-way wrapper actually takes. Same guesser, run here
             # too, with a collision guard so it cannot re-suggest a column the
             # preset already claimed.
-            @emlGuessColumnRoles: objectId
-            .gvSubGuess = emlGuessColumnRoles.factor2Idx
-            if .gvSubGuess = gvCatIdx or .gvSubGuess = gvValueIdx
-                .gvSubGuess = emlGuessColumnRoles.factor1Idx
-            endif
-            if .gvSubGuess > 0 and .gvSubGuess <> gvCatIdx and .gvSubGuess <> gvValueIdx
-                gvSubIdx = .gvSubGuess
-            endif
-            if gvSubIdx = gvCatIdx or gvSubIdx = gvValueIdx
-                # Still colliding: take the first CATEGORICAL column that is
-                # neither Category nor Value and is not the subject/ID column.
-                # min (2, nCols) is a column-order accident — it is what put a
-                # 48-level identifier one sort order away from becoming the
-                # subgroup — so the fallback tests the data, not the position.
-                .gvSubFound = 0
-                for .iSub from 1 to nCols
-                    if .iSub <> gvCatIdx and .iSub <> gvValueIdx and .iSub <> emlGuessColumnRoles.subjectIdx and .gvSubFound = 0
-                        @emlCheckNumericColumn: objectId, colName$[.iSub]
-                        if emlCheckNumericColumn.isNumeric = 0
-                            gvSubIdx = .iSub
-                            .gvSubFound = 1
+            #
+            # Skipped entirely when emlGraphsPresetSubgroupCol$ named a usable
+            # column: guessing is what you do when nobody told you.
+            if .gvSubFromPreset = 0
+                @emlGuessColumnRoles: objectId
+                .gvSubGuess = emlGuessColumnRoles.factor2Idx
+                if .gvSubGuess = gvCatIdx or .gvSubGuess = gvValueIdx
+                    .gvSubGuess = emlGuessColumnRoles.factor1Idx
+                endif
+                if .gvSubGuess > 0 and .gvSubGuess <> gvCatIdx and .gvSubGuess <> gvValueIdx
+                    gvSubIdx = .gvSubGuess
+                endif
+                if gvSubIdx = gvCatIdx or gvSubIdx = gvValueIdx
+                    # Still colliding: take the first CATEGORICAL column that is
+                    # neither Category nor Value and is not the subject/ID column.
+                    # min (2, nCols) is a column-order accident — it is what put a
+                    # 48-level identifier one sort order away from becoming the
+                    # subgroup — so the fallback tests the data, not the position.
+                    .gvSubFound = 0
+                    for .iSub from 1 to nCols
+                        if .iSub <> gvCatIdx and .iSub <> gvValueIdx and .iSub <> emlGuessColumnRoles.subjectIdx and .gvSubFound = 0
+                            @emlCheckNumericColumn: objectId, colName$[.iSub]
+                            if emlCheckNumericColumn.isNumeric = 0
+                                gvSubIdx = .iSub
+                                .gvSubFound = 1
+                            endif
                         endif
-                    endif
-                endfor
+                    endfor
+                endif
             endif
 
             # Consumed — clear so Redraw uses prev_* persistence
             emlGraphsPresetGroupCol$ = ""
             emlGraphsPresetDataCol$ = ""
+            emlGraphsPresetSubgroupCol$ = ""
         elsif prev_gvCatIdx > 0
             gvCatIdx = prev_gvCatIdx
             gvSubIdx = prev_gvSubIdx
@@ -4990,6 +5297,7 @@ repeat
         gbValueIdx = min (3, nCols)
 
         if emlGraphsPresetGroupCol$ <> ""
+            .gbSubPreset = 0
             for .iPreset from 1 to nCols
                 if colName$[.iPreset] = emlGraphsPresetGroupCol$
                     gbCatIdx = .iPreset
@@ -4997,10 +5305,24 @@ repeat
                 if colName$[.iPreset] = emlGraphsPresetDataCol$
                     gbValueIdx = .iPreset
                 endif
+                # D32. Grouped Box takes a second factor for exactly the same
+                # reason Grouped Violin does, and had the same silent
+                # min (2, nCols) positional default. A caller that names its
+                # second factor is honoured here too; anything that collides
+                # with Category or Value is ignored rather than drawn.
+                if emlGraphsPresetSubgroupCol$ <> ""
+                    if colName$[.iPreset] = emlGraphsPresetSubgroupCol$
+                        .gbSubPreset = .iPreset
+                    endif
+                endif
             endfor
+            if .gbSubPreset > 0 and .gbSubPreset <> gbCatIdx and .gbSubPreset <> gbValueIdx
+                gbSubIdx = .gbSubPreset
+            endif
             # Consumed — clear so Redraw uses prev_* persistence
             emlGraphsPresetGroupCol$ = ""
             emlGraphsPresetDataCol$ = ""
+            emlGraphsPresetSubgroupCol$ = ""
         elsif prev_gbCatIdx > 0
             gbCatIdx = prev_gbCatIdx
             gbSubIdx = prev_gbSubIdx
@@ -5660,6 +5982,15 @@ repeat
         annotLayoutMode = 3
     endif
 
+    # D108. Every @emlBridgeGroupComparison call below delivers the
+    # multiple-comparison method through the annotCorrectionMethod$ global, not
+    # through the argument list — the bridge has no parameter for it. That
+    # global is live here for both values of annotTestType$: it is seeded from
+    # emlGraphsPresetCorrection$ during preset reading and re-committed
+    # unconditionally (not only when test_type = 2) by each column-mapping
+    # page, so a wrapper's parametric run reaches the bridge carrying its
+    # method just as a nonparametric one does. Whether the parametric branch
+    # then uses it is decided in eml-annotation-procedures.praat.
     if (graph_type = 6 or graph_type = 7 or graph_type = 9) and annotate = 1
         # Bar chart / Violin / Box plot: run group comparison bridge
         @emlBridgeGroupComparison: objectId, valueColName$, groupColName$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
@@ -5739,13 +6070,21 @@ repeat
         # keeps the floor at 0 for non-negative data, so positive bars are
         # unchanged.
         if valueMin = 0 and valueMax = 0
+            # D60. Ask once, here, whether this is a percentage scale, and hand
+            # the answer to @emlComputeAxisRange instead of the literal 0 both
+            # call sites used to pass. @emlGraphsIsPercentageColumn reselects
+            # objectId, so it must run before the range calls rather than
+            # inside them.
+            @emlGraphsIsPercentageColumn: objectId, valueColName$
+            .axisIsPct = emlGraphsIsPercentageColumn.result
+            selectObject: objectId
             if graph_type = 6
                 # Adaptive rounding grid: derive roundTo from a nice step over the data
                 # range (the same nice-number logic the gridlines use) so fractional data
                 # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
                 @emlComputeNiceStep: emlBarData_visibleMax - (emlBarData_visibleMin), emlSetAdaptiveTheme.targetTicksY
                 .axisRoundTo = emlComputeNiceStep.step
-                @emlComputeAxisRange: emlBarData_visibleMin, emlBarData_visibleMax, .axisRoundTo, 0
+                @emlComputeAxisRange: emlBarData_visibleMin, emlBarData_visibleMax, .axisRoundTo, .axisIsPct
                 valueMin = emlComputeAxisRange.axisMin
                 valueMax = emlComputeAxisRange.axisMax
             elsif visibleDataMax <> undefined
@@ -5758,7 +6097,7 @@ repeat
                 # floor at 0 for data that does not go below it.
                 @emlComputeNiceStep: visibleDataMax - (visibleDataMin), emlSetAdaptiveTheme.targetTicksY
                 .axisRoundTo = emlComputeNiceStep.step
-                @emlComputeAxisRange: visibleDataMin, visibleDataMax, .axisRoundTo, 0
+                @emlComputeAxisRange: visibleDataMin, visibleDataMax, .axisRoundTo, .axisIsPct
                 valueMin = emlComputeAxisRange.axisMin
                 valueMax = emlComputeAxisRange.axisMax
             endif
@@ -6084,7 +6423,15 @@ repeat
             # Use originalSourceId — always the Table, even if user
             # switched to an acoustic graph type during this workflow.
             selectObject: originalSourceId
-            csvDefaultName$ = selected$ ("Table") + "_results"
+            # D18 + D65 (filename half). originalSourceId is only the fallback
+            # now: for the paired workflow it is the `pairedLong` intermediate,
+            # not the table the user named. @emlGraphsCSVDefaultName prefers the
+            # source table the CSV rows themselves carry, and appends the
+            # analysis slug so two analyses on one table cannot propose one
+            # name. See the procedure header for what it deliberately does NOT
+            # fix (D65's test-family half).
+            @emlGraphsCSVDefaultName: selected$ ("Table")
+            csvDefaultName$ = emlGraphsCSVDefaultName.result$
             beginPause: "Export Results"
                 folder: "Output folder", config_lastCSVFolder$
                 word: "File name", csvDefaultName$
@@ -6153,6 +6500,7 @@ until keepGoing = 0
     emlGraphsPresetType = 0
     emlGraphsPresetDataCol$ = ""
     emlGraphsPresetGroupCol$ = ""
+    emlGraphsPresetSubgroupCol$ = ""
     emlGraphsPresetTestType$ = ""
     emlGraphsPresetAnnotate = 0
     emlGraphsPresetXCol$ = ""
