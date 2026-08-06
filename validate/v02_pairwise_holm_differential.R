@@ -26,6 +26,24 @@ d <- read_input("demo_3groups_b_input.csv")
 # adjustment without applying it could not produce two different matrices.
 capB <- capture("v02_pairwise_bonferroni_info.txt")
 capH <- capture("v02_pairwise_holm_info.txt")
+
+# The differential design rests on a premise this script had been ASSUMING:
+# that the two captures differ in the adjustment and in nothing else. If they
+# were run on different tables or different columns, two different matrices
+# would prove nothing at all. Asserted rather than assumed, 6 Aug 2026, at the
+# suggestion of an external audit of this suite.
+#
+# Asserted from the captures rather than by diffing input files, because the
+# captures are what the comparison actually reads: they name the table, the
+# data column, the group column and the group count in their own headers.
+for (.k in c("Table", "Data column", "Group column", "Groups", "Pairs tested")) {
+    check_true("v02", paste0("both runs report the same '", .k, "'"),
+               identical(printed_str(capB, .k, 1, 1),
+                         printed_str(capH, .k, 1, 1)))
+}
+check_true("v02", "the two runs really do differ in the adjustment named",
+           !identical(grep("adjustment", capB$lines, value = TRUE),
+                      grep("adjustment", capH$lines, value = TRUE)))
 g <- split(d$SPL_dB, d$voice_type)
 pairs <- list(c("Soprano", "Mezzo"), c("Soprano", "Alto"), c("Mezzo", "Alto"))
 

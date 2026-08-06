@@ -47,25 +47,27 @@ names(ss) <- names(df) <- trimws(rownames(s))
 ss_err <- ss[["Residuals"]]; df_err <- df[["Residuals"]]
 
 # --- ANOVA table -----------------------------------------------------------
-check("v11", "SS voice_type", printed(cap, "voice type", 1), ss[["voice_type"]], tol = 5e-3)
-check("v11", "SS task", printed(cap, "task", 1), ss[["task"]], tol = 5e-3)
+# V4, 6 Aug 2026. "voice type" and "task" each match 2 lines: the ANOVA table
+# row and the marginal-means row below it. Occurrence 1 is the ANOVA row.
+check("v11", "SS voice_type", printed(cap, "voice type", 1, 1, expect_hits = 2), ss[["voice_type"]], tol = 5e-3)
+check("v11", "SS task", printed(cap, "task", 1, 1, expect_hits = 2), ss[["task"]], tol = 5e-3)
 check("v11", "SS interaction", printed(cap, "voice type x task", 1), ss[["voice_type:task"]], tol = 5e-3)
 check("v11", "SS error", printed(cap, "Error", 1), ss_err, tol = 5e-3)
 check("v11", "SS total", printed(cap, "Total", 1), sum(ss), tol = 2e-2)
 
-check("v11", "df voice_type", printed(cap, "voice type", 2), df[["voice_type"]], tol = 0)
-check("v11", "df task", printed(cap, "task", 2), df[["task"]], tol = 0)
+check("v11", "df voice_type", printed(cap, "voice type", 2, 1, expect_hits = 2), df[["voice_type"]], tol = 0)
+check("v11", "df task", printed(cap, "task", 2, 1, expect_hits = 2), df[["task"]], tol = 0)
 check("v11", "df interaction", printed(cap, "voice type x task", 2), df[["voice_type:task"]], tol = 0)
 check("v11", "df error", printed(cap, "Error", 2), df_err, tol = 0)
 
-check("v11", "MS voice_type", printed(cap, "voice type", 3), ss[["voice_type"]] / df[["voice_type"]], tol = 5e-3)
-check("v11", "MS task", printed(cap, "task", 3), ss[["task"]] / df[["task"]], tol = 5e-3)
+check("v11", "MS voice_type", printed(cap, "voice type", 3, 1, expect_hits = 2), ss[["voice_type"]] / df[["voice_type"]], tol = 5e-3)
+check("v11", "MS task", printed(cap, "task", 3, 1, expect_hits = 2), ss[["task"]] / df[["task"]], tol = 5e-3)
 check("v11", "MS interaction", printed(cap, "voice type x task", 3), ss[["voice_type:task"]] / df[["voice_type:task"]], tol = 5e-3)
 check("v11", "MS error", printed(cap, "Error", 3), ss_err / df_err, tol = 5e-3)
 
 fv <- s[["F value"]]; pv <- s[["Pr(>F)"]]
-check("v11", "F voice_type", printed(cap, "voice type", 4), fv[1], tol = 5e-5)
-check("v11", "F task", printed(cap, "task", 4), fv[2], tol = 5e-5)
+check("v11", "F voice_type", printed(cap, "voice type", 4, 1, expect_hits = 2), fv[1], tol = 5e-5)
+check("v11", "F task", printed(cap, "task", 4, 1, expect_hits = 2), fv[2], tol = 5e-5)
 check("v11", "F interaction", printed(cap, "voice type x task", 4), fv[3], tol = 5e-5)
 check_floored("v11", "p voice_type", cap, "voice type", pv[1], field = 5)
 check_floored("v11", "p task", cap, "task", pv[2], field = 5)
@@ -76,13 +78,13 @@ check("v11", "p interaction", as.numeric(sub("^p\\s*=\\s*", "0", p_int)), pv[3],
 # The df must partition: 1 + 1 + 1 + 44 = 47 = N - 1. A wrapper that read
 # the error df off the wrong row would still print plausible F values.
 check("v11", "printed df partition sums to N - 1", nrow(d) - 1,
-      printed(cap, "voice type", 2) + printed(cap, "task", 2) +
+      printed(cap, "voice type", 2, 1, expect_hits = 2) + printed(cap, "task", 2, 1, expect_hits = 2) +
       printed(cap, "voice type x task", 2) + printed(cap, "Error", 2), tol = 0)
 
 # The printed total SS must equal the printed parts.
 check("v11", "printed SS total equals the printed parts",
       printed(cap, "Total", 1),
-      printed(cap, "voice type", 1) + printed(cap, "task", 1) +
+      printed(cap, "voice type", 1, 1, expect_hits = 2) + printed(cap, "task", 1, 1, expect_hits = 2) +
       printed(cap, "voice type x task", 1) + printed(cap, "Error", 1), tol = 5e-3)
 
 # --- partial eta-squared ---------------------------------------------------
@@ -90,9 +92,9 @@ check("v11", "printed SS total equals the printed parts",
 # the two coincide only when there is a single effect. Getting this wrong is
 # the classic two-way reporting error, and the values differ here by enough
 # to catch it: SS_voice/SS_total would be 0.2487, not 0.6399.
-check("v11", "partial eta2 voice_type", printed(cap, "voice type", 1, 2),
+check("v11", "partial eta2 voice_type", printed(cap, "voice type", 1, 2, expect_hits = 2),
       partial_eta2(ss[["voice_type"]], ss_err), tol = 5e-5)
-check("v11", "partial eta2 task", printed(cap, "task", 1, 2),
+check("v11", "partial eta2 task", printed(cap, "task", 1, 2, expect_hits = 2),
       partial_eta2(ss[["task"]], ss_err), tol = 5e-5)
 check("v11", "partial eta2 interaction", printed(cap, "voice type x task", 1, 2),
       partial_eta2(ss[["voice_type:task"]], ss_err), tol = 5e-5)

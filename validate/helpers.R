@@ -47,9 +47,14 @@ read_input <- function(name) {
 #                        Used to pin a known defect (see D15).
 # ---------------------------------------------------------------------------
 check <- function(id, what, reported, computed, tol = 5e-4, expect = "match") {
-    agree <- is.finite(reported) && is.finite(computed) &&
-             abs(reported - computed) <= tol
-    pass <- if (expect == "match") agree else !agree
+    # V7, 6 Aug 2026. `agree` is FALSE whenever either side is non-finite, so
+    # the old `!agree` made expect="differ" PASS on NaN or Inf: a distinctness
+    # guard would have been satisfied by a degenerate computation rather than
+    # by a genuine difference. check(NaN, 5, expect="differ") passed.
+    # Both branches now require both values to be finite first.
+    finite_both <- is.finite(reported) && is.finite(computed)
+    agree <- finite_both && abs(reported - computed) <= tol
+    pass <- if (expect == "match") agree else (finite_both && !agree)
     EML_RESULTS$rows[[length(EML_RESULTS$rows) + 1L]] <- data.frame(
         id = id, quantity = what, reported = reported, computed = computed,
         tol = tol, expect = expect, pass = pass, stringsAsFactors = FALSE
@@ -77,6 +82,28 @@ check_true <- function(id, what, condition) {
         stringsAsFactors = FALSE
     )
     invisible(isTRUE(condition))
+}
+
+# @attest — a claim backed by a screenshot or a recorded observation, not by
+# anything this script can evaluate.
+#
+# V8, 6 Aug 2026. These were written as check_true(id, what, TRUE): honest in
+# their prose, but structurally identical to a real check and counted in the
+# totals, so five of the suite's checks could never fail and a reviewer
+# reading "446 checks, 445 passed" was told something slightly untrue about
+# what had been verified. They are now a separate class, printed as ATTEST,
+# excluded from the check counts and from the exit status.
+#
+# An attestation is not worthless -- it records what was observed and points
+# at the artefact -- but it is evidence, not a test, and the report now says
+# which it is.
+attest <- function(id, what, evidence = "") {
+    EML_RESULTS$rows[[length(EML_RESULTS$rows) + 1L]] <- data.frame(
+        id = id, quantity = what, reported = NA_real_, computed = NA_real_,
+        tol = NA_real_, expect = "attested", pass = TRUE,
+        stringsAsFactors = FALSE
+    )
+    invisible(TRUE)
 }
 
 # ---------------------------------------------------------------------------
@@ -150,7 +177,9 @@ eml_report <- function(title) {
     cat("\n", strrep("=", 78), "\n", title, "\n", strrep("=", 78), "\n", sep = "")
     for (i in seq_len(nrow(df))) {
         r <- df[i, ]
-        mark <- if (r$pass) "PASS" else "FAIL"
+        mark <- if (identical(r$expect, "attested")) {
+            "ATST"
+        } else if (r$pass) "PASS" else "FAIL"
         val <- if (is.na(r$reported)) {
             sprintf("computed=%.10g  expected %s", r$computed, r$expect)
         } else {
@@ -159,15 +188,25 @@ eml_report <- function(title) {
         }
         cat(sprintf("%-4s  %-6s  %-46s  %s\n", mark, r$id, r$quantity, val))
     }
-    n_fail <- sum(!df$pass)
+    att <- df$expect == "attested"
+    chk <- df[!att, , drop = FALSE]
+    n_fail <- sum(!chk$pass)
     cat(strrep("-", 78), "\n")
-    cat(sprintf("%d checks, %d passed, %d FAILED\n", nrow(df), sum(df$pass), n_fail))
+    cat(sprintf("%d checks, %d passed, %d FAILED\n",
+                nrow(chk), sum(chk$pass), n_fail))
+    if (any(att)) {
+        cat(sprintf("%d attestation(s) recorded, not counted as checks\n",
+                    sum(att)))
+    }
     invisible(df)
 }
 
 eml_exit <- function() {
     df <- do.call(rbind, EML_RESULTS$rows)
-    if (!is.null(df) && any(!df$pass)) quit(status = 1)
+    if (!is.null(df)) {
+        chk <- df[df$expect != "attested", , drop = FALSE]
+        if (any(!chk$pass)) quit(status = 1)
+    }
     invisible(NULL)
 }
 
@@ -305,10 +344,16 @@ partial_eta2 <- function(ss_effect, ss_error) ss_effect / (ss_effect + ss_error)
 # printed agrees with base R. The one remaining act of trust is that the
 # capture came from a real run, and only re-running Praat settles that.
 #
-# They FAIL LOUDLY. A label that is absent, or ambiguous, or does not parse
-# as a number, is an error and stops the script — never a silent skip. A
-# capture that drifts out of step with the script must break the suite, not
-# quietly stop testing anything.
+# They FAIL LOUDLY on a label that is ABSENT, on an occurrence past the last
+# match, and on a value that does not parse as a number. A capture that drifts
+# out of step with the script breaks the suite rather than quietly stopping
+# testing anything.
+#
+# They do NOT fail on an AMBIGUOUS label. Several matches resolve to the
+# first, silently. Until 6 August 2026 this comment claimed otherwise, and so
+# did REGISTRY; both were wrong, and the ambiguity is real in the committed
+# captures (see .cap_fields). A caller that depends on a label matching
+# exactly once, or exactly n times, must say so with expect_hits.
 # ============================================================================
 
 capture <- function(name) {
@@ -322,7 +367,7 @@ capture <- function(name) {
 # fields. Praat pads labels and separates columns with runs of spaces, so
 # two-or-more spaces is the field separator and a single space inside a
 # label ("Mean difference", "Q2 (Median)") is preserved.
-.cap_fields <- function(cap, label, occurrence = 1L) {
+.cap_fields <- function(cap, label, occurrence = 1L, expect_hits = NULL) {
     stopifnot(inherits(cap, "eml_capture"))
     # Matched WITHOUT a regex on the label. Praat labels contain characters
     # that are regex metacharacters — "Cohen's d", "Q2 (Median)",
@@ -338,6 +383,27 @@ capture <- function(name) {
         stop(sprintf("label '%s' occurs %d time(s) in %s; occurrence %d requested",
                      label, length(hits), cap$name, occurrence))
     }
+    # V4, 6 Aug 2026. This function halts on an ABSENT label and on an
+    # occurrence past the end, but a label matching several lines resolved
+    # silently to the first -- while helpers.R and REGISTRY both claimed an
+    # ambiguous label halts the suite. It does not, and it never did.
+    #
+    # It matters here more than it looks. In the committed captures "Soprano"
+    # matches 5 lines in v09 and 7 in v10 (the descriptives row, plus the
+    # header and body rows of two matrices), and "voice type" and "task" match
+    # 2 each in v11. Those reads are correct today only because block order is
+    # stable -- exactly the fragility printed_cell was written to remove, and
+    # it was applied to the matrices but not to the descriptives above them.
+    #
+    # expect_hits lets a caller state how many lines it believes the label
+    # matches, and turns a wrong belief into a halt. It is opt-in because
+    # making ambiguity fatal everywhere would break correct call sites that
+    # simply never said what they were relying on.
+    if (!is.null(expect_hits) && length(hits) != expect_hits) {
+        stop(sprintf(
+            "label '%s' matches %d line(s) in %s; %d expected. Capture layout has changed, or the label is more ambiguous than the call site believed.",
+            label, length(hits), cap$name, expect_hits))
+    }
     rest <- substring(lt[hits[occurrence]], nchar(label) + 1L)
     trimws(strsplit(trimws(rest), "[ \t]{2,}")[[1]])
 }
@@ -348,8 +414,9 @@ capture <- function(name) {
 #               first value after the label.
 #   occurrence  which instance, when a label repeats (three "N" lines in
 #               the normality report, one per column).
-printed <- function(cap, label, field = 1L, occurrence = 1L) {
-    f <- .cap_fields(cap, label, occurrence)
+printed <- function(cap, label, field = 1L, occurrence = 1L,
+                    expect_hits = NULL) {
+    f <- .cap_fields(cap, label, occurrence, expect_hits)
     if (field > length(f)) {
         stop(sprintf("label '%s' in %s has %d field(s); field %d requested",
                      label, cap$name, length(f), field))
@@ -365,8 +432,9 @@ printed <- function(cap, label, field = 1L, occurrence = 1L) {
 
 # printed_str — the raw TEXT, for the values that are deliberately not
 # numbers: "p < .001", "exact", "large effect", "---".
-printed_str <- function(cap, label, field = 1L, occurrence = 1L) {
-    f <- .cap_fields(cap, label, occurrence)
+printed_str <- function(cap, label, field = 1L, occurrence = 1L,
+                        expect_hits = NULL) {
+    f <- .cap_fields(cap, label, occurrence, expect_hits)
     if (field > length(f)) {
         stop(sprintf("label '%s' in %s has %d field(s); field %d requested",
                      label, cap$name, length(f), field))
@@ -382,7 +450,14 @@ printed_str <- function(cap, label, field = 1L, occurrence = 1L) {
 check_floored <- function(id, what, cap, label, computed,
                           field = 1L, occurrence = 1L, threshold = 0.001) {
     s <- printed_str(cap, label, field, occurrence)
-    says <- grepl("<\\s*\\.?0*\\.?001", s)
+    # V12, 6 Aug 2026. The old pattern "<\\s*\\.?0*\\.?001" also matched
+    # "< .0001": with \\.? taking the point and 0* taking a single zero, the
+    # literal 001 then matched the tail. So "the capture really says < .001"
+    # was asserted more loosely than its comment claimed. Anchored to the two
+    # spellings that are actually meant, and nothing else. Anchored at the END
+    # rather than the start, because the field carries its own label: the
+    # string read here is "p < .001", not "< .001".
+    says <- grepl("(^|\\s)<\\s*0?\\.001$", trimws(s))
     pass <- says && is.finite(computed) && computed < threshold
     EML_RESULTS$rows[[length(EML_RESULTS$rows) + 1L]] <- data.frame(
         id = id, quantity = paste0(what, " [capture says '", s, "']"),
@@ -464,6 +539,37 @@ printed_cell <- function(cap, section, row, col, as_string = FALSE) {
 #   occurrence  which matching line, when the key repeats — the post-hoc
 #               pair labels appear once under RM-ANOVA and again under
 #               Friedman in the same capture
+# printed_eq_str — the same read as printed_eq, but returning the LITERAL
+# text rather than the parsed number.
+#
+# Added 6 Aug 2026 for V6. A tolerance can only be principled if it is derived
+# from how many decimals were actually printed, and that information is
+# destroyed by as.numeric(). This is the one place that needs the string, so
+# it shares printed_eq's locating logic and stops short of the conversion.
+printed_eq_str <- function(cap, key, which = 1L, occurrence = 1L) {
+    stopifnot(inherits(cap, "eml_capture"))
+    hits <- grep(key, cap$lines, fixed = TRUE)
+    if (!length(hits)) {
+        stop(sprintf("key '%s' not found in capture %s", key, cap$name))
+    }
+    if (occurrence > length(hits)) {
+        stop(sprintf("key '%s' occurs %d time(s) in %s; occurrence %d requested",
+                     key, length(hits), cap$name, occurrence))
+    }
+    ln <- cap$lines[hits[occurrence]]
+    m  <- regmatches(ln, gregexpr("=\\s*(-?[0-9]+\\.?[0-9]*(e[-+]?[0-9]+)?)",
+                                  ln, perl = TRUE))[[1]]
+    if (!length(m)) {
+        stop(sprintf("no '= value' found on the line for key '%s' in %s:\n  %s",
+                     key, cap$name, trimws(ln)))
+    }
+    if (which > length(m)) {
+        stop(sprintf("line for key '%s' in %s has %d '= value' pair(s); %d requested",
+                     key, cap$name, length(m), which))
+    }
+    sub("^=\\s*", "", m[which])
+}
+
 printed_eq <- function(cap, key, which = 1L, occurrence = 1L) {
     stopifnot(inherits(cap, "eml_capture"))
     hits <- grep(key, cap$lines, fixed = TRUE)

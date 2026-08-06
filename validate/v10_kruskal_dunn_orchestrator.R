@@ -43,6 +43,8 @@ N <- nrow(d)
 
 # --- omnibus ---------------------------------------------------------------
 kw <- kruskal.test(SPL_dB ~ voice_type, data = d)
+# V4, 6 Aug 2026. "Soprano" matches 7 lines here, "Mezzo" and "Alto" 4 each --
+# Kruskal-Wallis prints three matrices, not two. See the note in v09.
 check("v10", "H",  printed(cap, "H"), unname(kw$statistic), tol = 5e-5)
 check("v10", "df", printed(cap, "df"), unname(kw$parameter), tol = 0)
 check("v10", "total N", printed(cap, "Total N"), N, tol = 0)
@@ -63,10 +65,10 @@ check_true("v10", "and the plugin labels it a large effect",
 
 # --- mean ranks ------------------------------------------------------------
 dn <- dunn_test(d$SPL_dB, d$voice_type)
-check("v10", "mean rank Soprano", printed(cap, "Soprano", 2, 1), unname(dn$meanrank["Soprano"]), tol = 5e-3)
-check("v10", "mean rank Mezzo",   printed(cap, "Mezzo", 2, 1), unname(dn$meanrank["Mezzo"]),   tol = 5e-3)
-check("v10", "mean rank Alto",    printed(cap, "Alto", 2, 1), unname(dn$meanrank["Alto"]),    tol = 5e-3)
-check("v10", "N per group is 15", printed(cap, "Soprano", 1, 1), unname(dn$n["Soprano"]), tol = 0)
+check("v10", "mean rank Soprano", printed(cap, "Soprano", 2, 1, expect_hits = 7), unname(dn$meanrank["Soprano"]), tol = 5e-3)
+check("v10", "mean rank Mezzo",   printed(cap, "Mezzo", 2, 1, expect_hits = 4), unname(dn$meanrank["Mezzo"]),   tol = 5e-3)
+check("v10", "mean rank Alto",    printed(cap, "Alto", 2, 1, expect_hits = 4), unname(dn$meanrank["Alto"]),    tol = 5e-3)
+check("v10", "N per group is 15", printed(cap, "Soprano", 1, 1, expect_hits = 7), unname(dn$n["Soprano"]), tol = 0)
 
 # Mean ranks must sum to N(N+1)/2 when weighted by group size. This catches
 # a wrapper that ranked within groups instead of across the whole column —

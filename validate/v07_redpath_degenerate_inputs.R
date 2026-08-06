@@ -8,9 +8,12 @@
 # SHOULD fail, or that sit on a boundary where an implementation can quietly
 # produce a number instead of an error.
 #
-# STATUS as of 5 August 2026: SIX OF SEVEN CASES HAVE BEEN DRIVEN through
-# the plugin's real GUI. R7 has not; it is an axis case, judged from a
-# figure, and belongs with the graphing work rather than in an R suite.
+# STATUS as of 6 August 2026: ALL SEVEN CASES HAVE BEEN DRIVEN. Six went
+# through the plugin's real GUI on 5 August. R7 -- an axis case, long
+# described as one that had to be judged from a figure -- was driven
+# headlessly on 6 August once it became clear the draw procedures call no
+# beginPause: and so run under `praat --run` with no X server at all. Its
+# axis is now a number in a capture, checked like any other.
 #
 # Of the six driven, two behave as required (R3, R4), one behaves as required
 # on the point it was written for and then fails on a second degeneracy the
@@ -169,6 +172,36 @@ check_true("R7", "roundTo = 10 would give a 0-10 axis",
            floor((rng[1] - diff(rng) * 0.1) / 10) * 10 == 0 &&
            ceiling((rng[2] + diff(rng) * 0.1) / 10) * 10 == 10)
 
+# --- DRIVEN 6 August 2026 --------------------------------------------------
+# R7 was the one case never taken through the plugin: "an axis case, judged
+# from a figure". It is now driven headlessly, because the draw procedures
+# do not call beginPause: and so run under `praat --run` with no X server.
+# harness/broom_cases/r7_axis_drive.praat reshapes this exact table to long
+# form, renders it with @emlDrawSpaghettiPlot, and writes the axis the plot
+# actually used to evidence/info/v07_r7_axis_info.txt. The figure is at
+# evidence/figures/r7_small_range_axis.png.
+#
+# The pending placeholder that used to sit here failed on purpose and was the
+# suite's one designed failure. It is replaced by checks that read the drive.
+r7cap  <- capture("v07_r7_axis_info.txt")
+axMin  <- printed(r7cap, "axis min",      1, 1, expect_hits = 1)
+axMax  <- printed(r7cap, "axis max",      1, 1, expect_hits = 1)
+axSpan <- printed(r7cap, "axis span",     1, 1, expect_hits = 1)
+frac   <- printed(r7cap, "data fraction", 1, 1, expect_hits = 1)
+
+check_true("R7", "driven: the axis contains the data",
+           axMin <= rng[1] && axMax >= rng[2])
+check("R7", "driven: axis span is the printed max minus min",
+      axSpan, axMax - axMin, tol = 1e-9)
+check_true("R7", "driven: the axis is NOT the 0-10 grid D88 produced",
+           !(axMin == 0 && axMax == 10))
+check("R7", "driven: data fraction of the panel",
+      frac, diff(rng) / axSpan, tol = 1e-3)
+# The requirement, stated as a number rather than as a figure: the data must
+# occupy a usable share of the panel. Under roundTo = 10 it was 0.0147.
+check_true("R7", "driven: the data occupies more than half the panel",
+           frac > 0.5)
+
 # ---------------------------------------------------------------------------
 # PLUGIN-SIDE STATUS — six of seven cases driven 5 August 2026
 #
@@ -185,8 +218,8 @@ check_true("R7", "roundTo = 10 would give a 0-10 axis",
 #   "Subjects (complete cases) n = 4, conditions k = 3"
 #   "Note: 4 row(s) excluded for missing data (analyzed n = 4 complete cases)."
 # It analysed 4 and said so, twice. It did NOT silently analyse 4 of 8.
-check_true("R1", "plugin states the complete-case count it analysed", TRUE)
-check_true("R1", "plugin states how many rows it excluded and why", TRUE)
+attest("R1", "plugin states the complete-case count it analysed")
+attest("R1", "plugin states how many rows it excluded and why")
 
 # But this table is also degenerate in a way the case did not anticipate, and
 # on 5 August the plugin did not survive it. Every complete case has
@@ -289,7 +322,7 @@ check_true("R2", "the caution sits between the GG line and the post-hoc",
 #   "SPL soft: Mean = 80.000, SD = 0, Median = 80.000"
 #   "Paired t-test error: All differences are identical (zero variance)"
 # It refused, named the condition, and fabricated no statistic. Case closed.
-check_true("R3", "plugin refuses and names the zero variance (driven)", TRUE)
+attest("R3", "plugin refuses and names the zero variance (driven)")
 
 # --- R5: grouping column unique per row ------------------------------------
 # Compare k groups (ANOVA). Requirement: refuse BEFORE running, naming the
@@ -313,7 +346,7 @@ check_true("R3", "plugin refuses and names the zero variance (driven)", TRUE)
 #
 # What R can assert here is the shape of the input that must produce it, and
 # that the old message's premise (one nameable offender) was never true.
-check_true("R5", "plugin refuses before computing anything (driven)", TRUE)
+attest("R5", "plugin refuses before computing anything (driven)")
 check_true("R5", "every group in this input is a singleton",
            all(table(r5$voice_type) == 1L))
 check_true("R5", "so naming one offender at a time would take 6 attempts",
@@ -335,7 +368,7 @@ check_true("R5", "D99 FIXED: the refusal states groups-vs-rows, not one group",
 # The plugin reports the count. It follows the complete-case convention set
 # on 21 July (plugin/FIX_NOTES.md, audit item C1/C2): analyse the rows that
 # parse, state how many were excluded. Nothing is silent.
-check_true("R6", "plugin reports N (valid) 4 and N (undefined) 1 (driven)", TRUE)
+attest("R6", "plugin reports N (valid) 4 and N (undefined) 1 (driven)")
 
 # What is genuinely missing is narrower, and is the open question the author
 # raised: "undefined" is one bucket holding three different conditions that
@@ -414,7 +447,7 @@ check("R6", "and is NOT the mean that coercing the comma cell would give",
 # a rendered figure, which belongs with the graphing work and not in an R
 # suite. Left failing deliberately so the gap stays visible in the count
 # rather than disappearing into a comment.
-check_true("R7", "plugin behaviour observed on this input (PENDING DRIVE)", FALSE)
+attest("R7", "driven headlessly 6 Aug 2026; axis 0.380-0.580 on data 0.401-0.548, figure at evidence/figures/r7_small_range_axis.png")
 
 cat("\nRed-path tables written to: ", outdir, "\n", sep = "")
 

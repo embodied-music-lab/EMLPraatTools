@@ -43,6 +43,12 @@ ss_b <- s[["Sum Sq"]][1]; ss_w <- s[["Sum Sq"]][2]
 df_b <- s[["Df"]][1];     df_w <- s[["Df"]][2]
 
 # --- ANOVA table -----------------------------------------------------------
+# V4, 6 Aug 2026. "Soprano" matches 5 lines in this capture (the descriptives
+# row, plus the header and body rows of the two post-hoc matrices), "Mezzo"
+# and "Alto" 3 each. Occurrence 1 is the descriptives row and is what these
+# reads want, but nothing said so, and nothing checked it -- a capture whose
+# block order changed would have read a matrix row into a mean without a
+# murmur. expect_hits states the belief and makes a wrong one fatal.
 check("v09", "SS between", printed(cap, "Between", 1), ss_b, tol = 5e-3)
 check("v09", "SS within",  printed(cap, "Within", 1), ss_w, tol = 5e-3)
 check("v09", "SS total",  printed(cap, "Total", 1), ss_b + ss_w, tol = 1e-2)
@@ -77,16 +83,16 @@ check("v09", "eta-squared", as.numeric(sub(".*=\\s*", "", eta_field)),
 
 # --- group descriptives ----------------------------------------------------
 g <- split(d$SPL_dB, d$voice_type)
-check("v09", "N Soprano", printed(cap, "Soprano", 1, 1), length(g$Soprano), tol = 0)
-check("v09", "mean Soprano", printed(cap, "Soprano", 2, 1), mean(g$Soprano), tol = 5e-3)
-check("v09", "mean Mezzo", printed(cap, "Mezzo", 2, 1), mean(g$Mezzo), tol = 5e-3)
-check("v09", "mean Alto", printed(cap, "Alto", 2, 1), mean(g$Alto), tol = 5e-3)
-check("v09", "SD Soprano", printed(cap, "Soprano", 3, 1), sd(g$Soprano), tol = 5e-3)
-check("v09", "SD Mezzo", printed(cap, "Mezzo", 3, 1), sd(g$Mezzo), tol = 5e-3)
-check("v09", "SD Alto", printed(cap, "Alto", 3, 1), sd(g$Alto), tol = 5e-3)
-check("v09", "median Soprano", printed(cap, "Soprano", 4, 1), median(g$Soprano), tol = 5e-3)
-check("v09", "median Mezzo", printed(cap, "Mezzo", 4, 1), median(g$Mezzo), tol = 5e-3)
-check("v09", "median Alto", printed(cap, "Alto", 4, 1), median(g$Alto), tol = 5e-3)
+check("v09", "N Soprano", printed(cap, "Soprano", 1, 1, expect_hits = 5), length(g$Soprano), tol = 0)
+check("v09", "mean Soprano", printed(cap, "Soprano", 2, 1, expect_hits = 5), mean(g$Soprano), tol = 5e-3)
+check("v09", "mean Mezzo", printed(cap, "Mezzo", 2, 1, expect_hits = 3), mean(g$Mezzo), tol = 5e-3)
+check("v09", "mean Alto", printed(cap, "Alto", 2, 1, expect_hits = 3), mean(g$Alto), tol = 5e-3)
+check("v09", "SD Soprano", printed(cap, "Soprano", 3, 1, expect_hits = 5), sd(g$Soprano), tol = 5e-3)
+check("v09", "SD Mezzo", printed(cap, "Mezzo", 3, 1, expect_hits = 3), sd(g$Mezzo), tol = 5e-3)
+check("v09", "SD Alto", printed(cap, "Alto", 3, 1, expect_hits = 3), sd(g$Alto), tol = 5e-3)
+check("v09", "median Soprano", printed(cap, "Soprano", 4, 1, expect_hits = 5), median(g$Soprano), tol = 5e-3)
+check("v09", "median Mezzo", printed(cap, "Mezzo", 4, 1, expect_hits = 3), median(g$Mezzo), tol = 5e-3)
+check("v09", "median Alto", printed(cap, "Alto", 4, 1, expect_hits = 3), median(g$Alto), tol = 5e-3)
 
 # --- Tukey HSD -------------------------------------------------------------
 tk <- TukeyHSD(fit)$voice_type

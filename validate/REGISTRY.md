@@ -55,9 +55,18 @@ script.** `evidence/info/*.txt` holds the Info-window text, taken with
 | `printed_eq(cap, key, which, occurrence)` | the Stats Wizard's `label = value` format |
 | `check_floored(...)` | asserts the capture really says `< .001` **and** that R agrees |
 
-They fail loudly. A label that is absent, ambiguous, or no longer numeric
-stops the script. A capture that drifts out of step with a script must break
-the suite, not quietly stop testing anything.
+They fail loudly on a label that is absent, on an occurrence past the last
+match, and on a value that is no longer numeric. They do **not** fail on an
+ambiguous label — several matches resolve to the first, silently. This
+paragraph claimed otherwise until 6 August 2026, and the ambiguity is real:
+"Soprano" matches 5 lines in the v09 capture and 7 in v10, "voice type" and
+"task" 2 each in v11. Those reads are correct only because block order is
+stable. Call sites that depend on a label matching a known number of lines now
+say so with `expect_hits`, which turns a wrong belief into a halt; the reads in
+v09, v10 and v11 are pinned that way.
+
+A capture that drifts out of step with a script must break the suite, not
+quietly stop testing anything.
 
 This matters more than it may look. Until 5 August every printed value
 reached the comparison as a literal typed in by hand, which put an
@@ -71,10 +80,22 @@ Running the suite verified the right-hand half only. Had a literal been
 copied from R's own output instead of from Praat's, every check would pass
 and the suite would validate nothing — the exact failure that
 `plugin/dev/tests/REFERENCE_PROVENANCE.md` exists to prevent on the other
-side. Six literals remain and each is labelled where it sits: three
-constructed properties of the red-path tables in `v07`, one input row count
-in `v11`, and two degrees of freedom in `v13` read off the printed label
-`F(1,23)`, with a separate check asserting that label exists.
+side. Six literals remain and each is labelled where it sits:
+
+- **three in `v07`** — `441.0000`, `0.0023`, `0.5000` at lines 249–251. These
+  are not properties of the table, as this paragraph said until 6 Aug 2026:
+  they are the values the plugin *printed* on the 5 August drive of R2,
+  transcribed by hand and compared against R's recompute of the same
+  constructed table. **No capture of that drive is committed** —
+  `evidence/info/rp_r2_rmanova_info.txt` is the 6 August re-drive, on a
+  different table (see the R2 row below). So the transcription is unwitnessed:
+  R reproduces all three to the stated tolerance, which is what the checks
+  assert and what makes the arithmetic safe, but a reviewer cannot verify from
+  this repository that the plugin ever printed them. Treat them as a recorded
+  observation, not as evidence.
+- **one in `v11`** — an input row count.
+- **two in `v13`** — degrees of freedom read off the printed label `F(1,23)`,
+  with a separate check asserting that label exists.
 
 The inputs are the exact tables the plugin analysed, committed under
 `evidence/csv/`.
@@ -104,7 +125,14 @@ git clone <repo> && cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect exit status 1.** 402 checks, 401 passing, 1 failing on purpose:
+**Expect exit status 0.** 454 checks, all passing, plus 6 attestations
+reported separately and not counted as checks.
+
+Until 6 August 2026 this said "expect exit status 1", because R7 — the
+small-range axis case — had never been driven and its placeholder failed on
+purpose. It is driven now (headlessly: the draw procedures call no
+`beginPause:`, so they run under `praat --run` with no X server), and the
+suite has no designed failures left:
 R7, the one red-path case that has not been driven. It is an axis case,
 judged from a rendered figure, so it belongs with the graphing work rather
 than in an R suite — and it is left failing so the gap stays visible in the
@@ -212,12 +240,12 @@ believable next to what it replaced.
 | Case | Verdict | What happened |
 |---|---|---|
 | R1 | **Passes** (was partial) | States "complete cases n = 4" and "4 row(s) excluded for missing data" — the requirement, met twice. But every complete case was exactly linear, so the RM-ANOVA error term is identically zero, and the omnibus printed `F(2, 6) = 21110623253299200.0000` with a 48-place *p*, while its own post-hoc caught the same condition and refused. **D97 — FIXED 6 Aug**: the omnibus refuses too. The floor is relative (`ssErr <= 1e-10 * ssTot`); the residual sits at ~1e-16 of the total, so an equality test against zero would not have fired. |
-| R2 | **Passes** (was failing) | Computed *F*(2, 2) = 111, GG epsilon = 0.5000 and three post-hoc *p*-values from two subjects with no comment. The epsilon is exactly the 1/(*k*−1) floor forced by *n* = 2 — the tell was in hand at print time. **D98 — FIXED 6 Aug**: a caution now prints directly under the GG line. The suite asserts its POSITION as well as its text; at the foot of the report it would read as being about the post-hoc. |
+| R2 | **Passes** (was failing) | **Two drives on two different tables — read the numbers with that in mind.** On 5 Aug, on the table `v07` constructs (70/72, 80/83, 90/94), the plugin computed *F*(2, 2) = 441.0000, *p* = 0.0023, GG epsilon = 0.5000 and three post-hoc *p*-values from two subjects with no comment of any kind. That is the defect, D98. The epsilon is itself the tell: 0.5 is exactly the 1/(*k*−1) floor forced by *n* = 2, and the plugin has that value in hand at print time. **FIXED 6 Aug**, and re-driven on a different two-subject table (10/14/21, 12/17/22) which gives *F*(2, 2) = 111.0000, *p* = 0.0089 — the numbers in `evidence/info/rp_r2_rmanova_info.txt`. A caution now prints directly under the GG line; the suite asserts its POSITION as well as its text, since at the foot of the report it would read as being about the post-hoc. The input changed between drives, so this row is a before/after on the *behaviour*, not on the *numbers*. |
 | R3 | **Passes** | Refuses and names it: "All differences are identical (zero variance)". Fabricates no statistic. |
 | R4 | **Passes** | Refuses and names the group and its *n*: "Group ""Soprano"": n=6, group ""Alto"": n=1". |
 | R5 | **Passes** (was partial) | Refused before computing, which was the important half, but named only the first offending group — six singletons, six attempts — and leaked the internal procedure name. **D99 — FIXED 6 Aug**: "Group column ""singer_id"" has 6 groups for 6 rows - one per row. This is an identifier column, not a grouping column." |
 | R6 | **Passes** (was partial) | First recorded as a silent row-drop. That was **wrong** — the plugin printed `N (valid) 4` and `N (undefined) 1`. What it could not do was tell an empty cell from an unparseable string from a European decimal comma. Worse than the report suggested: `Get value:` returns 1 for `"1,5"`, so the comma cell was not dropped at all, it entered the mean as a different number. **D96 — FIXED 6 Aug**: one classifier, `@eml_classifyCell`, used by every extraction path including the row-wise ones; the three conditions are reported separately with row and value named, and the comma cell is excluded rather than guessed at. |
-| R7 | Not driven | An axis case, judged from a figure. Belongs with the graphing work. |
+| R7 | **Passes** (was not driven) | The small-range measure, D88 as a data case: contact quotient in 0.401–0.548, where a `roundTo` of 10 gives a 0–10 axis and the data occupies 1.5% of the panel. **Driven 6 Aug 2026**, headlessly — the draw procedures call no `beginPause:`, so the whole objection that this case "had to be judged from a figure" was never true; the axis is a number and can be read like any other. `@emlDrawSpaghettiPlot` on the reshaped table gives an axis of 0.380–0.580, so the data occupies **73.5%** of the panel. Capture: `evidence/info/v07_r7_axis_info.txt`. Figure: `evidence/figures/r7_small_range_axis.png`. |
 
 The requirement each case was written against, stated before the drive so
 the drive could fail:
@@ -262,7 +290,9 @@ photograph. Provenance, including interpreter versions, is recorded in
 `plugin/dev/tests/REFERENCE_PROVENANCE.md`.
 
 - `stats/eml-inferential.praat` — **28 of 28 procedures under an external
-  oracle**, 442 passing checks (409 from eight base-R scripts, 33 from a
+  oracle**, 454 passing checks (updated 6 Aug 2026; the figure had been left
+  at 442 when v16 and v17 were added, and again when five never-failing
+  attestations were reclassified out of the count — see V1/V8) (
   scikit-posthocs Dunn verifier). Welch and Student *t*, Mann-Whitney,
   one-way and two-way ANOVA, Tukey, Kruskal-Wallis, Dunn, Scheffé,
   Pearson and Spearman, linear regression, Theil-Sen, Shapiro-Wilk,

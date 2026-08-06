@@ -197,13 +197,53 @@ check_true("v16", "field is unique within (analysis, term_type, term)",
 # only where zero is the measurement; nothing may write zero to mean "not
 # applicable". The old omnibus row ended in eight of them.
 allrows <- allrows0
-zeros <- allrows[allrows$value == "0", ]
+# V9, 6 Aug 2026. This was a string-literal comparison, so it caught a bare
+# "0" and nothing else -- an export of "0.000000" into a df or descriptive
+# slot, which is the exact historical failure this check's header quotes,
+# walked straight past it. Numeric comparison catches every spelling of zero.
+zeros <- allrows[!is.na(suppressWarnings(as.numeric(allrows$value))) &
+                 suppressWarnings(as.numeric(allrows$value)) == 0, ]
 na_fields <- c("n", "n1", "n2", "mean", "sd", "median", "df", "df1", "df2",
                "ss", "ms", "statistic")
 check_true("v16", "D24: no descriptive or df field is exported as a bare zero",
            !any(zeros$field %in% na_fields))
-check_true("v16", "D24: no p is exported as a bare zero except a true zero",
+# V10, 6 Aug 2026, revised after measuring R rather than reasoning about it.
+#
+# The carve-out used to call this "a true zero", which is wrong: at rho = 1
+# the t-approximation has t -> Inf, so the exported 0 is the approximation at
+# its boundary, not a probability.
+#
+# But it is NOT a defect to be tolerated either, which is what an external
+# audit of this suite proposed and what an earlier revision of this comment
+# said. R returns EXACTLY ZERO here:
+#
+#     cor.test(1:12, 1:12, method = "spearman")$p.value   ->  0
+#     identical(that, 0)                                  ->  TRUE
+#     cor.test(1:12, 1:12, method = "pearson")$p.value    ->  0
+#
+# The familiar "p-value < 2.2e-16" is print.htest's DISPLAY, not the stored
+# value. R only computes an exact permutation p for small n -- at n = 6 it
+# returns 2/6! = 0.002778 -- and switches to the approximation above that.
+# So the plugin exporting 0 at n = 12 is not a hack; it is parity.
+#
+# The exemption therefore stands on its merits. The second check pins it to
+# the one condition that can produce it, so it cannot silently widen to cover
+# a p of zero that arrives some other way.
+check_true("v16", "D24: no p is exported as a bare zero, except at |rho| = 1 where R also returns exactly 0",
            !any(zeros$field == "p" & zeros$analysis != "Spearman correlation"))
+check_true("v16", "the tolerated Spearman zero occurs only where |rho| = 1",
+           {
+               sp <- allrows[allrows$analysis == "Spearman correlation", ]
+               z  <- sp$term[sp$field == "p" &
+                             !is.na(suppressWarnings(as.numeric(sp$value))) &
+                             suppressWarnings(as.numeric(sp$value)) == 0]
+               if (!length(z)) TRUE else {
+                   rho <- suppressWarnings(as.numeric(
+                       sp$value[sp$field %in% c("rho", "r", "estimate") &
+                                sp$term %in% z]))
+                   length(rho) > 0 && all(abs(abs(rho) - 1) < 1e-12)
+               }
+           })
 
 # The failure mode the long format makes impossible: a field name may mean
 # exactly one thing. If "mean" ever appears on a term that is a contrast

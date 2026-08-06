@@ -120,8 +120,13 @@ for (nm in names(cols)) {
     # Shape must not overrule the test. Before 5 August the gate was
     # `shape OR sw`, so a column SW had declined to reject was still sent
     # nonparametric on a rule of thumb.
+    # V11, 6 Aug 2026. The "|| length(x) > 50" escape excused a violation the
+    # stated rule never permits: the large-n override applies only when SW
+    # REJECTS, so it can never license overruling an SW that did not. It was
+    # vacuous on the committed data -- no column here has severe shape and all
+    # have n = 40 -- which is why it passed unnoticed. Dropped.
     check_true(id, "a column SW does not reject is not sent nonparametric on shape",
-               !(sw_ok && shape_severe && !e$parametric) || length(x) > 50)
+               !(sw_ok && shape_severe && !e$parametric))
 }
 
 # --- the summary block -----------------------------------------------------
