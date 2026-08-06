@@ -94,11 +94,37 @@ printed totals equal their printed parts, printed matrices are symmetric or
 antisymmetric as their statistic requires, each printed *t* equals its own
 printed estimate over its own printed SE.
 
-**Does not:** that the captures came from a real run of Praat. Nothing in R
-can settle that; only re-driving Praat can. If you want that assurance, ask
-for the plugin, Praat 6.6.30, and the harness under `harness/`. The suite is
-deliberately separable from all of it so the arithmetic can be checked without
-installing anything.
+**Does not:** *prove to you* that the captures came from a real run of Praat.
+
+That distinction matters, so read it carefully. The captures **are** real —
+they are the Praat Info window from the live plugin, written to disk with
+`info$()` during a GUI-driven session. Nothing here was typed by hand or
+reconstructed. But an R script cannot demonstrate that to a stranger: R opens
+a text file, and a text file that was fabricated would read identically. The
+limit is in the medium, not in the provenance.
+
+What does corroborate it, short of re-driving:
+
+- **Every capture carries Praat's own clock**, printed by the plugin at run
+  time — `Wed Aug 5 22:39:02 2026` in `v08`, `22:41:58` in `v09`, `22:42:52`
+  in `v10`, `22:47:20` in `v11`. That is a session working down the menu in
+  order over about eleven minutes. Someone faking these files would have to
+  have faked a plausible clock too. (Two lack a timestamp: `v15`, whose
+  report format has no date line, and `v07_r7_axis_info.txt`, which was
+  produced headlessly — see below.)
+- **The mutation driver** (`validate/mutation/`) corrupts these captures one
+  at a time and shows the suite catches it. A suite that passed regardless of
+  what the capture said would be validating nothing, real captures or not.
+
+**If you want certainty rather than corroboration**, ask for the plugin,
+Praat 6.6.30, and the harness under `harness/`, and re-drive it yourself. The
+suite is deliberately separable from all of that so the arithmetic can be
+checked without installing anything.
+
+One capture is different and should be named: `v07_r7_axis_info.txt` was
+generated on 6 August by calling the plugin's drawing procedures directly
+under `praat --run`, with no GUI. That is the shipping plugin code operating
+on the committed input, but it is not a session someone clicked through.
 
 It also says nothing about the graphing layer or the error paths.
 
