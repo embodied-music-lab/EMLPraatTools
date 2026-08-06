@@ -818,10 +818,13 @@ procedure eml_normalizeLabel: .raw$
         endif
     endwhile
 
-    # lowerCase$() is not present in Praat 6.4.x. This regex form is, and it
-    # lower-cases non-ASCII correctly too ("ÄÖ" -> "äö"), so the label
-    # canonicalisation behaves the same on every Praat the plugin claims to
-    # support. Found by the Tier A sweep on 6.4.06.
+    # Equivalent to lowerCase$(), including for non-ASCII ("ÄÖ" -> "äö").
+    #
+    # NOT a portability fix: the plugin floors at Praat 6.6.30 (see
+    # setup.praat), where lowerCase$() exists. The only reason for the regex
+    # form is that the headless sweep harness has to run wherever CI puts it,
+    # and this expression has been in Praat far longer. If that stops
+    # mattering, lowerCase$() reads better and should come back.
     .result$ = replace_regex$ (.result$, "(.)", "\l\1", 0)
 endproc
 
