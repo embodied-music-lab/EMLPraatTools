@@ -1,5 +1,14 @@
 # Degenerate-input stress run — 4 August 2026
 
+> **HISTORICAL RECORD.** This document describes the state of the project on
+> the date in its title. It is kept for provenance and is **not** a status
+> surface. Do not resume work from it and do not treat its queue, its counts,
+> or its instructions as current.
+>
+> **Current status lives in exactly one place: `audit/FINDINGS_INDEX.md`
+> (the rows, not the header prose), with the reasoning in
+> `audit/PHASE_ONE_AUDIT_2026-08-06.md`.**
+
 Answer to the question "are there harder stress test cases you should run?",
 gathered from a running probe rather than from opinion.
 

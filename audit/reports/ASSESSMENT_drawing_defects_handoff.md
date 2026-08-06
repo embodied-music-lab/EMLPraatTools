@@ -1,5 +1,14 @@
 # Assessment — PraatGen handoff "two drawing-rule violations in library source"
 
+> **HISTORICAL RECORD.** This document describes the state of the project on
+> the date in its title. It is kept for provenance and is **not** a status
+> surface. Do not resume work from it and do not treat its queue, its counts,
+> or its instructions as current.
+>
+> **Current status lives in exactly one place: `audit/FINDINGS_INDEX.md`
+> (the rows, not the header prose), with the reasoning in
+> `audit/PHASE_ONE_AUDIT_2026-08-06.md`.**
+
 **Reviewed:** 3 August 2026 (session date 2026-08-03)
 **Against:** `/root/eml_audit/plugin_EML_Praat_Tools`, working tree
 **Handoff under review:** `EML_PLUGIN_HANDOFF_drawing_defects.md`, from the

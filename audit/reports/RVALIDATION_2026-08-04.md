@@ -1,5 +1,14 @@
 # External-reference validation run — 4 August 2026
 
+> **HISTORICAL RECORD.** This document describes the state of the project on
+> the date in its title. It is kept for provenance and is **not** a status
+> surface. Do not resume work from it and do not treat its queue, its counts,
+> or its instructions as current.
+>
+> **Current status lives in exactly one place: `audit/FINDINGS_INDEX.md`
+> (the rows, not the header prose), with the reasoning in
+> `audit/PHASE_ONE_AUDIT_2026-08-06.md`.**
+
 Rule 32 cross-validation of the numeric literals baked into the Praat test
 suite, run against independent implementations (R 4.3.3, scipy 1.17.1,
 scikit-posthocs). Outputs saved to `/home/claude/rval/`.

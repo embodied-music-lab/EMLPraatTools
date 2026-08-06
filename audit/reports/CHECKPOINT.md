@@ -1,5 +1,14 @@
 # SESSION CHECKPOINT — EML Praat Tools
 
+> **HISTORICAL RECORD.** This document describes the state of the project on
+> the date in its title. It is kept for provenance and is **not** a status
+> surface. Do not resume work from it and do not treat its queue, its counts,
+> or its instructions as current.
+>
+> **Current status lives in exactly one place: `audit/FINDINGS_INDEX.md`
+> (the rows, not the header prose), with the reasoning in
+> `audit/PHASE_ONE_AUDIT_2026-08-06.md`.**
+
 Read THIS after a compact. Do not re-read the large artifacts to
 re-establish state; re-run the harness instead and trust its exit code.
 
