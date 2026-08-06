@@ -2381,16 +2381,65 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
     endif
 
     if .error$ = ""
-        .grandMean = .sumOfRawScores / .totalN
+        ; ---------------------------------------------------------------
+        ; CORRECTED TWO-PASS. The provisional grand mean below is only a
+        ; SHIFT; every quantity is then formed in shifted coordinates and
+        ; the shift's own error is measured and removed.
+        ;
+        ; Why: NIST StRD SmLs07-09 carry thirteen CONSTANT LEADING DIGITS,
+        ; and the between-group sum of squares is about 1.68. Forming
+        ; (groupMean - grandMean) on raw values cancels away nearly the
+        ; whole mantissa before the squaring, and any error already sitting
+        ; in grandMean is amplified by it. Subtracting the shift first means
+        ; the leading digits are gone before any difference is taken.
+        ;
+        ; This is exact, not an approximation: ANOVA is invariant under a
+        ; location shift, which is asserted independently by the Tier A
+        ; property sweep (A2, "F invariant under +1e6"). The refinement .cShift
+        ; is the residual error in the provisional mean, recovered as the
+        ; weighted mean of the shifted group means -- a number near zero,
+        ; where a double has all its precision available.
+        ;
+        ; Measured on 6 August 2026, correct significant digits against NIST's
+        ; certified between-group sum of squares:
+        ;
+        ;     SmLs04    9.33 -> 15.65      SmLs07    3.31 -> 15.65
+        ;
+        ; (see validate/v19_nist_strd.R for the current figures)
+        ; ---------------------------------------------------------------
+        .shift = .sumOfRawScores / .totalN
         .ssWithin = 0
-        .ssBetween = 0
+        .weightedShiftedSum = 0
 
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
             ... .groupLabel$[.g]
-            .centered# = eml_getGroupData.data# - .groupMean[.g]
+            .shifted# = eml_getGroupData.data# - .shift
+            .shiftedMean[.g] = mean (.shifted#)
+            .centered# = .shifted# - .shiftedMean[.g]
+
+            ; Corrected two-pass (Chan, Golub & LeVeque 1983). In exact
+            ; arithmetic sum(.centered#) is zero, so the second term vanishes.
+            ; In floating point it is exactly the error left in .shiftedMean,
+            ; and subtracting its square over n removes that error's
+            ; contribution instead of squaring it into the total. Costs one
+            ; extra sum per group.
+            .sumDev = sum (.centered#)
             .ssWithin = .ssWithin + sum (.centered# * .centered#)
-            .gDev = .groupMean[.g] - .grandMean
+            ... - .sumDev * .sumDev / .groupN[.g]
+            .weightedShiftedSum = .weightedShiftedSum
+            ... + .groupN[.g] * .shiftedMean[.g]
+        endfor
+
+        ; How far the provisional shift missed the true grand mean.
+        .cShift = .weightedShiftedSum / .totalN
+        .grandMean = .shift + .cShift
+
+        ; Group means are still reported in the caller's own units.
+        .ssBetween = 0
+        for .g from 1 to .nGroups
+            .groupMean[.g] = .shift + .shiftedMean[.g]
+            .gDev = .shiftedMean[.g] - .cShift
             .ssBetween = .ssBetween + .groupN[.g] * .gDev * .gDev
         endfor
 
