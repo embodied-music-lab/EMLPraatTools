@@ -19,6 +19,7 @@ if (!exists("eml_report")) {
 }
 
 d <- read_input("demo_3groups_input.csv")
+cap <- capture("pairwise_3groups_welch_bonferroni.txt")
 g <- split(d$SPL_dB, d$voice_type)
 ord <- c("Soprano", "Mezzo", "Alto")
 
@@ -35,19 +36,34 @@ dvals <- vapply(pairs, function(p) cohens_d(g[[p[1]]], g[[p[2]]]), numeric(1))
 # --- adjusted p-values, as printed in the Info window ----------------------
 # Soprano-Mezzo and Soprano-Alto printed as "< .001"; only the threshold
 # claim can be validated for those.
-check_below("v01", "Soprano-Mezzo adjusted p is < .001", 0.001, bonf[1])
-check_below("v01", "Soprano-Alto adjusted p is < .001",  0.001, bonf[2])
-check      ("v01", "Mezzo-Alto adjusted p",  0.3622, bonf[3], tol = 5e-5)
+check_true("v01", "Soprano-Mezzo adjusted p is floored in the matrix",
+           grepl("<", printed_cell(cap, "Adjusted p-values", "Soprano", "Mezzo", as_string = TRUE)))
+check_true("v01", "and R agrees it is below .001", bonf[1] < 0.001)
+check_true("v01", "Soprano-Alto adjusted p is floored in the matrix",
+           grepl("<", printed_cell(cap, "Adjusted p-values", "Soprano", "Alto", as_string = TRUE)))
+check_true("v01", "and R agrees it is below .001", bonf[2] < 0.001)
+check("v01", "Mezzo-Alto adjusted p", printed_cell(cap, "Adjusted p-values", "Mezzo", "Alto"), bonf[3], tol = 5e-5)
 
 # --- Cohen's d -------------------------------------------------------------
-check("v01", "Cohen's d Soprano-Mezzo", 1.784, dvals[1], tol = 5e-4)
-check("v01", "Cohen's d Soprano-Alto",  2.084, dvals[2], tol = 5e-4)
-check("v01", "Cohen's d Mezzo-Alto",    0.586, dvals[3], tol = 5e-4)
+check("v01", "Cohen's d Soprano-Mezzo", printed_cell(cap, "Cohen's d", "Soprano", "Mezzo"), dvals[1], tol = 5e-4)
+check("v01", "Cohen's d Soprano-Alto", printed_cell(cap, "Cohen's d", "Soprano", "Alto"), dvals[2], tol = 5e-4)
+check("v01", "Cohen's d Mezzo-Alto", printed_cell(cap, "Cohen's d", "Mezzo", "Alto"), dvals[3], tol = 5e-4)
+# Both matrices are printed with a full mirror, so their symmetry is
+# assertable from the capture alone: p is symmetric, d is antisymmetric.
+check("v01", "adjusted-p matrix is symmetric as printed",
+      printed_cell(cap, "Adjusted p-values", "Mezzo", "Alto"),
+      printed_cell(cap, "Adjusted p-values", "Alto", "Mezzo"), tol = 1e-12)
+check("v01", "Cohen's d matrix is antisymmetric as printed",
+      printed_cell(cap, "Cohen's d", "Soprano", "Mezzo"),
+      -printed_cell(cap, "Cohen's d", "Mezzo", "Soprano"), tol = 1e-12)
+check("v01", "groups reported", printed(cap, "Groups"), 3, tol = 0)
+check("v01", "pairs tested", printed(cap, "Pairs tested"), choose(3, 2), tol = 0)
 
 # --- the adjustment is Bonferroni and not something else -------------------
 # A relabelled no-op would leave the raw value in place. Assert the printed
 # value is the raw p multiplied by the number of pairs.
 check("v01", "Mezzo-Alto adjusted p equals raw x 3",
-      0.3622, min(raw[3] * 3, 1), tol = 5e-5)
+      printed_cell(cap, "Adjusted p-values", "Mezzo", "Alto"),
+      min(raw[3] * 3, 1), tol = 5e-5)
 
 if (!exists("EML_SUITE")) { eml_report("v01 pairwise Welch + Bonferroni"); eml_exit() }

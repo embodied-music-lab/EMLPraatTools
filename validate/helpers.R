@@ -170,3 +170,325 @@ eml_exit <- function() {
     if (!is.null(df) && any(!df$pass)) quit(status = 1)
     invisible(NULL)
 }
+
+
+# ============================================================================
+# Additions for the orchestrator suites (v08-v15), 5 August 2026
+#
+# Everything below is implemented from its standard definition because base
+# R has no direct function for it. That is deliberate: the suite must run on
+# a stock R install. It also means these definitions are themselves open to
+# challenge, which is the point — see "For an independent reviewer" in
+# REGISTRY.md.
+# ============================================================================
+
+# Skewness and excess kurtosis, in the SAMPLE-CORRECTED (unbiased) forms.
+#
+# These are the G1 and G2 of SPSS, SAS and Excel, and they are what the
+# plugin computes — read off @emlSkewness and @emlKurtosis in
+# stats/eml-core-descriptive.praat, not inferred from agreement:
+#
+#     z_i = (x_i - xbar) / s          with s the SAMPLE SD (n - 1)
+#     G1  = n / ((n-1)(n-2)) * sum z^3
+#     G2  = n(n+1) / ((n-1)(n-2)(n-3)) * sum z^4
+#           - 3(n-1)^2 / ((n-2)(n-3))
+#
+# Three distinct conventions get called "skewness" and "kurtosis" and they
+# do not agree:
+#   * the population moments g1 and g2, which R's own examples often use;
+#   * these sample-corrected G1 and G2;
+#   * Pearson's b2 for kurtosis, which is G2 + 3 and makes a normal
+#     distribution read 3 rather than 0.
+# On the n = 45 column in v14 the first two differ in the second decimal
+# (g1 = -0.0392 against G1 = -0.0406; g2 = -0.0052 against G2 = 0.1404),
+# which is inside the printed precision. A suite that left the convention
+# implicit would be asserting nothing.
+#
+# G2 is an EXCESS form: a normal distribution gives 0, not 3. That is what
+# the plugin's "Kurtosis (excess)" label claims, and v14 checks the claim.
+excess_kurtosis <- function(x) {
+    n <- length(x); z <- (x - mean(x)) / sd(x)
+    n * (n + 1) / ((n - 1) * (n - 2) * (n - 3)) * sum(z^4) -
+        3 * (n - 1)^2 / ((n - 2) * (n - 3))
+}
+
+skewness_g1 <- function(x) {
+    n <- length(x); z <- (x - mean(x)) / sd(x)
+    n / ((n - 1) * (n - 2)) * sum(z^3)
+}
+
+# Dunn's post-hoc test following the Kruskal-Wallis H test.
+#
+# z_ij = (Rbar_i - Rbar_j) / sqrt( ((N(N+1)/12) - T) * (1/n_i + 1/n_j) )
+#
+# with Rbar the mean rank of a group and T the tie correction
+# sum(t^3 - t) / (12(N-1)) over tied groups. Two-sided p from the normal.
+# This is Dunn (1964) as implemented by scikit-posthocs' posthoc_dunn.
+dunn_test <- function(x, g) {
+    ok <- !is.na(x) & !is.na(g)
+    x <- x[ok]; g <- factor(g[ok])
+    N <- length(x); r <- rank(x)
+    tie <- table(r)
+    Tc <- sum(tie^3 - tie) / (12 * (N - 1))
+    lv <- levels(g)
+    Rbar <- tapply(r, g, mean); n <- tapply(r, g, length)
+    z <- matrix(NA_real_, length(lv), length(lv), dimnames = list(lv, lv))
+    p <- z
+    for (i in seq_along(lv)) for (j in seq_along(lv)) {
+        if (i == j) next
+        se <- sqrt((N * (N + 1) / 12 - Tc) * (1 / n[i] + 1 / n[j]))
+        z[i, j] <- (Rbar[i] - Rbar[j]) / se
+        p[i, j] <- 2 * pnorm(-abs(z[i, j]))
+    }
+    list(z = z, p = p, meanrank = Rbar, n = n, levels = lv)
+}
+
+# Rank-biserial r for two INDEPENDENT groups, from the Mann-Whitney U:
+#
+#     r = (U1 - U2) / (n1 * n2)
+#
+# equivalently 2*U1/(n1*n2) - 1. This is the DIRECTED (common-language)
+# form: r is positive when group 1 tends to exceed group 2 and negative when
+# it does not, so its sign agrees with the sign of Cohen's d on the same
+# pair. The competing convention 1 - 2*U1/(n1*n2) is also in the literature
+# and gives the opposite sign; a reviewer who prefers it will see every
+# rank-biserial value in v08 and v10 flip, and nothing else change.
+#
+# The convention matters more than it looks. Sign is the only part of an
+# effect size a wrapper can get wrong while every magnitude stays right,
+# which is why v08 also asserts that the sign tracks the mean difference
+# rather than only asserting the number.
+rank_biserial_indep <- function(a, b) {
+    U1 <- suppressWarnings(unname(wilcox.test(a, b)$statistic))
+    U2 <- length(a) * length(b) - U1
+    (U1 - U2) / (length(a) * length(b))
+}
+
+# Epsilon-squared for Kruskal-Wallis: eps2 = H / ((N^2 - 1)/(N + 1)).
+epsilon_squared <- function(H, N) H / ((N^2 - 1) / (N + 1))
+
+# Holm step-down adjustment over a vector of raw p-values, written out
+# rather than using p.adjust so the monotonicity constraint is visible.
+holm_adjust <- function(p) {
+    m <- length(p); o <- order(p); adj <- numeric(m); run <- 0
+    for (i in seq_len(m)) {
+        run <- max(run, (m - i + 1) * p[o[i]])
+        adj[o[i]] <- min(1, run)
+    }
+    adj
+}
+
+# Partial eta-squared for a term in a factorial ANOVA:
+#   SS_effect / (SS_effect + SS_error).
+partial_eta2 <- function(ss_effect, ss_error) ss_effect / (ss_effect + ss_error)
+
+
+# ============================================================================
+# READING WHAT THE PLUGIN ACTUALLY PRINTED
+#
+# Everything above compares a number the plugin produced against a number R
+# computes. Until 5 August the plugin's number reached the comparison as a
+# LITERAL, typed into the script by hand from an Info-window capture. That
+# put an unwitnessed step in the middle of the chain:
+#
+#   Praat prints X -> [transcription] -> literal in the script -> R -> compare
+#
+# A reviewer running this suite verified the right-hand half only. If a
+# literal had been copied from R's own output instead of from Praat's, every
+# check would pass and the suite would validate nothing — which is precisely
+# the failure that plugin/dev/tests/REFERENCE_PROVENANCE.md exists to prevent
+# on the other side ("never from the library's own output. That rule is what
+# makes the suites a test of the library rather than a photograph").
+#
+# The functions below remove the step. @printed reads the value out of the
+# committed capture, so a green run means: what the capture says Praat
+# printed agrees with base R. The one remaining act of trust is that the
+# capture came from a real run, and only re-running Praat settles that.
+#
+# They FAIL LOUDLY. A label that is absent, or ambiguous, or does not parse
+# as a number, is an error and stops the script — never a silent skip. A
+# capture that drifts out of step with the script must break the suite, not
+# quietly stop testing anything.
+# ============================================================================
+
+capture <- function(name) {
+    p <- repo_path("evidence", "info", name)
+    if (!file.exists(p)) stop("capture not found: ", p)
+    structure(list(lines = readLines(p, warn = FALSE), name = name),
+              class = "eml_capture")
+}
+
+# Internal: the raw text to the right of a label, as whitespace-separated
+# fields. Praat pads labels and separates columns with runs of spaces, so
+# two-or-more spaces is the field separator and a single space inside a
+# label ("Mean difference", "Q2 (Median)") is preserved.
+.cap_fields <- function(cap, label, occurrence = 1L) {
+    stopifnot(inherits(cap, "eml_capture"))
+    # Matched WITHOUT a regex on the label. Praat labels contain characters
+    # that are regex metacharacters — "Cohen's d", "Q2 (Median)",
+    # "F(1,23)", "voice type x task" — and escaping them portably is more
+    # fragile than not needing to.
+    lt   <- trimws(cap$lines)
+    hits <- which(startsWith(lt, label) &
+                  substr(lt, nchar(label) + 1L, nchar(label) + 2L) == "  ")
+    if (!length(hits)) {
+        stop(sprintf("label '%s' not found in capture %s", label, cap$name))
+    }
+    if (occurrence > length(hits)) {
+        stop(sprintf("label '%s' occurs %d time(s) in %s; occurrence %d requested",
+                     label, length(hits), cap$name, occurrence))
+    }
+    rest <- substring(lt[hits[occurrence]], nchar(label) + 1L)
+    trimws(strsplit(trimws(rest), "[ \t]{2,}")[[1]])
+}
+
+# printed — the NUMBER the plugin printed against `label`.
+#
+#   field       which column, for table and matrix rows. Field 1 is the
+#               first value after the label.
+#   occurrence  which instance, when a label repeats (three "N" lines in
+#               the normality report, one per column).
+printed <- function(cap, label, field = 1L, occurrence = 1L) {
+    f <- .cap_fields(cap, label, occurrence)
+    if (field > length(f)) {
+        stop(sprintf("label '%s' in %s has %d field(s); field %d requested",
+                     label, cap$name, length(f), field))
+    }
+    raw <- f[field]
+    v <- suppressWarnings(as.numeric(raw))
+    if (is.na(v)) {
+        stop(sprintf("value '%s' for label '%s' in %s is not numeric — use printed_str()",
+                     raw, label, cap$name))
+    }
+    v
+}
+
+# printed_str — the raw TEXT, for the values that are deliberately not
+# numbers: "p < .001", "exact", "large effect", "---".
+printed_str <- function(cap, label, field = 1L, occurrence = 1L) {
+    f <- .cap_fields(cap, label, occurrence)
+    if (field > length(f)) {
+        stop(sprintf("label '%s' in %s has %d field(s); field %d requested",
+                     label, cap$name, length(f), field))
+    }
+    f[field]
+}
+
+# check_floored — the plugin floors small p-values to the string "< .001".
+# Asserts BOTH that the capture really says that and that R agrees it is
+# below the threshold. The old check_below() only did the second half, so it
+# could not tell a floored p from a p the script's author had assumed was
+# floored.
+check_floored <- function(id, what, cap, label, computed,
+                          field = 1L, occurrence = 1L, threshold = 0.001) {
+    s <- printed_str(cap, label, field, occurrence)
+    says <- grepl("<\\s*\\.?0*\\.?001", s)
+    pass <- says && is.finite(computed) && computed < threshold
+    EML_RESULTS$rows[[length(EML_RESULTS$rows) + 1L]] <- data.frame(
+        id = id, quantity = paste0(what, " [capture says '", s, "']"),
+        reported = NA_real_, computed = computed, tol = threshold,
+        expect = paste0("< ", threshold), pass = pass, stringsAsFactors = FALSE
+    )
+    invisible(pass)
+}
+
+
+# printed_cell — one cell of a printed MATRIX, addressed by section, row
+# name and column name rather than by position.
+#
+# The post-hoc matrices are where a transposition or an off-by-one would do
+# the most damage and be hardest to see: every value present, every value
+# correct, in the wrong place. Addressing a cell positionally would make the
+# check blind to exactly that. This resolves the column from the matrix's
+# own printed header, so a transposed matrix fails.
+#
+# It also sidesteps a real hazard: in the ANOVA capture the string "Soprano"
+# begins five different lines — a descriptives row, and the header and body
+# rows of two separate matrices — so occurrence counting is fragile there.
+printed_cell <- function(cap, section, row, col, as_string = FALSE) {
+    stopifnot(inherits(cap, "eml_capture"))
+    lt <- trimws(cap$lines)
+    sec <- grep(section, cap$lines, fixed = TRUE)
+    if (!length(sec)) {
+        stop(sprintf("section '%s' not found in capture %s", section, cap$name))
+    }
+    start <- sec[1] + 1L
+    hdr <- NA_integer_; cols <- character(0)
+    for (i in seq(start, length(lt))) {
+        if (!nzchar(lt[i])) next
+        f <- trimws(strsplit(lt[i], "[ \t]{2,}")[[1]])
+        if (col %in% f) { hdr <- i; cols <- f; break }
+        if (grepl("^──", lt[i])) break          # ran into the next section
+    }
+    if (is.na(hdr)) {
+        stop(sprintf("column '%s' not found in the header of section '%s' (%s)",
+                     col, section, cap$name))
+    }
+    ci <- which(cols == col)[1]
+    for (i in seq(hdr + 1L, length(lt))) {
+        if (grepl("^──", lt[i]) || grepl("^═", lt[i])) break
+        if (!startsWith(lt[i], row)) next
+        if (substr(lt[i], nchar(row) + 1L, nchar(row) + 2L) != "  ") next
+        f <- trimws(strsplit(trimws(substring(lt[i], nchar(row) + 1L)),
+                             "[ \t]{2,}")[[1]])
+        if (ci > length(f)) {
+            stop(sprintf("row '%s' in section '%s' has %d cell(s); column '%s' is #%d",
+                         row, section, length(f), col, ci))
+        }
+        raw <- f[ci]
+        if (as_string) return(raw)
+        v <- suppressWarnings(as.numeric(raw))
+        if (is.na(v)) {
+            stop(sprintf("cell [%s, %s] in '%s' is '%s', not numeric — use as_string",
+                         row, col, section, raw))
+        }
+        return(v)
+    }
+    stop(sprintf("row '%s' not found in section '%s' of %s", row, section, cap$name))
+}
+
+
+# printed_eq — for the Stats Wizard's report format, which is not the
+# column format the rest of the plugin uses. The wizard writes
+#
+#     SPL_soft mean = 72.4646
+#     F(2, 38) = 583.1232, p = 0.00000000000000000000000000003
+#     SPL_soft vs SPL_medium: p(raw) = 0.000002, p(adj) = 0.000006
+#
+# so a value is whatever follows an "=" rather than whatever sits in the
+# next whitespace-delimited column. @printed cannot read these and correctly
+# refuses to; this reads them.
+#
+#   key         text identifying the line, matched literally
+#   which       which "= value" on that line (1 = the first)
+#   occurrence  which matching line, when the key repeats — the post-hoc
+#               pair labels appear once under RM-ANOVA and again under
+#               Friedman in the same capture
+printed_eq <- function(cap, key, which = 1L, occurrence = 1L) {
+    stopifnot(inherits(cap, "eml_capture"))
+    hits <- grep(key, cap$lines, fixed = TRUE)
+    if (!length(hits)) {
+        stop(sprintf("key '%s' not found in capture %s", key, cap$name))
+    }
+    if (occurrence > length(hits)) {
+        stop(sprintf("key '%s' occurs %d time(s) in %s; occurrence %d requested",
+                     key, length(hits), cap$name, occurrence))
+    }
+    ln <- cap$lines[hits[occurrence]]
+    m  <- regmatches(ln, gregexpr("=\\s*(-?[0-9]+\\.?[0-9]*(e[-+]?[0-9]+)?)",
+                                  ln, perl = TRUE))[[1]]
+    if (!length(m)) {
+        stop(sprintf("no '= value' found on the line for key '%s' in %s:\n  %s",
+                     key, cap$name, trimws(ln)))
+    }
+    if (which > length(m)) {
+        stop(sprintf("line for key '%s' in %s has %d '= value' pair(s); %d requested",
+                     key, cap$name, length(m), which))
+    }
+    v <- suppressWarnings(as.numeric(sub("^=\\s*", "", m[which])))
+    if (is.na(v)) {
+        stop(sprintf("value '%s' for key '%s' in %s is not numeric",
+                     m[which], key, cap$name))
+    }
+    v
+}

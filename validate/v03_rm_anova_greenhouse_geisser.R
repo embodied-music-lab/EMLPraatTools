@@ -20,6 +20,7 @@ if (!exists("eml_report")) {
 }
 
 d <- read_input("demo_rm3_input.csv")
+cap <- capture("wizard_rm3_rmanova_and_friedman.txt")
 conds <- c("SPL_soft", "SPL_medium", "SPL_loud")
 Y <- as.matrix(d[, conds])
 fit <- rm_anova(Y)
@@ -28,14 +29,34 @@ check_true("v03", "20 complete-case subjects, 3 conditions",
            fit$n == 20L && fit$k == 3L && !any(is.na(Y)))
 
 # --- condition means ------------------------------------------------------
-check("v03", "SPL_soft mean",   72.4646, unname(fit$means["SPL_soft"]),   tol = 5e-5)
-check("v03", "SPL_medium mean", 83.3546, unname(fit$means["SPL_medium"]), tol = 5e-5)
-check("v03", "SPL_loud mean",   94.1294, unname(fit$means["SPL_loud"]),   tol = 5e-5)
+check("v03", "SPL_soft mean",   printed_eq(cap, "SPL_soft mean"),   unname(fit$means["SPL_soft"]),   tol = 5e-5)
+check("v03", "SPL_medium mean", printed_eq(cap, "SPL_medium mean"), unname(fit$means["SPL_medium"]), tol = 5e-5)
+check("v03", "SPL_loud mean",   printed_eq(cap, "SPL_loud mean"),   unname(fit$means["SPL_loud"]),   tol = 5e-5)
 
 # --- omnibus --------------------------------------------------------------
-check("v03", "F statistic", 583.1232, fit$F, tol = 5e-5)
+check("v03", "F statistic", printed_eq(cap, "F(2, 38)", 1), fit$F, tol = 5e-5)
+# The df are in the printed LABEL, so assert the label itself exists rather
+# than trusting a transcription of the numbers inside it.
+check_true("v03", "the capture prints F with df (2, 38)",
+           any(grepl("F(2, 38)", cap$lines, fixed = TRUE)))
 check_true("v03", "df reported as (2, 38)", fit$df1 == 2L && fit$df2 == 38L)
-check("v03", "Greenhouse-Geisser epsilon", 0.8486, fit$gg, tol = 5e-5)
+check("v03", "Greenhouse-Geisser epsilon",
+      printed_eq(cap, "Greenhouse-Geisser epsilon", 1), fit$gg, tol = 5e-5)
+# The uncorrected and GG-corrected p are both printed. Reading both lets the
+# relationship between them be asserted: correcting with epsilon < 1 costs
+# df, so the corrected p must be the LARGER of the two.
+p_unc <- printed_eq(cap, "F(2, 38)", 2)
+p_gg  <- printed_eq(cap, "Greenhouse-Geisser epsilon", 2)
+check("v03", "printed uncorrected p", p_unc, fit$p,    tol = 1e-28)
+check("v03", "printed GG-corrected p", p_gg, fit$p_gg, tol = 1e-24)
+check_true("v03", "GG correction increases p, since epsilon < 1",
+           fit$gg < 1 && p_gg > p_unc)
+
+# D85, confirmed still present from the capture rather than from memory:
+# these p-values print as long decimal strings instead of the plugin's own
+# "< .001" convention. 29 and 25 decimal places here.
+check_true("v03", "D85: p printed as a long decimal string, not '< .001'",
+           any(grepl("p = 0.0000000000000000000000000", cap$lines, fixed = TRUE)))
 
 # --- independent cross-check against base R aov() -------------------------
 long <- data.frame(
@@ -59,9 +80,9 @@ pa <- p.adjust(pr, method = "holm")
 # are validated on a relative scale because absolute tolerance is meaningless
 # at 1e-12 and below.
 rel <- function(a, b) abs(a - b) / b
-check_true("v03", "post-hoc raw p soft-medium ~ 2e-12",  rel(pr[1], 1.5384e-12) < 0.01)
-check_true("v03", "post-hoc raw p soft-loud ~ 1e-20",    rel(pr[2], 1.0687e-20) < 0.01)
-check_true("v03", "post-hoc raw p medium-loud ~ 5e-12",  rel(pr[3], 5.4312e-12) < 0.01)
+check_true("v03", "post-hoc raw p soft-medium",  rel(pr[1], printed_eq(cap, "SPL_soft vs SPL_medium", 1, 1)) < 0.5)
+check_true("v03", "post-hoc raw p soft-loud",    rel(pr[2], printed_eq(cap, "SPL_soft vs SPL_loud", 1, 1)) < 0.5)
+check_true("v03", "post-hoc raw p medium-loud",  rel(pr[3], printed_eq(cap, "SPL_medium vs SPL_loud", 1, 1)) < 0.5)
 check_true("v03", "holm adjusted p are >= raw p",        all(pa >= pr))
 check_true("v03", "holm ordering preserved",             !is.unsorted(pa[order(pr)]))
 

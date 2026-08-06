@@ -21,6 +21,11 @@ if (!exists("eml_report")) {
 }
 
 d <- read_input("demo_3groups_b_input.csv")
+# Two captures: the SAME table and columns run twice, one adjustment apart.
+# That is the whole design of this script — a control that relabelled the
+# adjustment without applying it could not produce two different matrices.
+capB <- capture("v02_pairwise_bonferroni_info.txt")
+capH <- capture("v02_pairwise_holm_info.txt")
 g <- split(d$SPL_dB, d$voice_type)
 pairs <- list(c("Soprano", "Mezzo"), c("Soprano", "Alto"), c("Mezzo", "Alto"))
 
@@ -31,19 +36,46 @@ holm <- p.adjust(raw, method = "holm")
 dvals <- vapply(pairs, function(p) cohens_d(g[[p[1]]], g[[p[2]]]), numeric(1))
 
 # --- run 1, Adjustment = Bonferroni ---------------------------------------
-check      ("v02", "Bonferroni Soprano-Mezzo", 0.0527, bonf[1], tol = 5e-5)
-check_below("v02", "Bonferroni Soprano-Alto is < .001", 0.001, bonf[2])
-check      ("v02", "Bonferroni Mezzo-Alto",    0.0342, bonf[3], tol = 5e-5)
+check("v02", "Bonferroni Soprano-Mezzo", printed_cell(capB, "Adjusted p-values", "Soprano", "Mezzo"), bonf[1], tol = 5e-5)
+check_true("v02", "Bonferroni Soprano-Alto is floored in the matrix",
+           grepl("<", printed_cell(capB, "Adjusted p-values", "Soprano", "Alto", as_string = TRUE)))
+check_true("v02", "and R agrees it is below .001", bonf[2] < 0.001)
+check("v02", "Bonferroni Mezzo-Alto", printed_cell(capB, "Adjusted p-values", "Mezzo", "Alto"), bonf[3], tol = 5e-5)
 
 # --- run 2, Adjustment = Holm ---------------------------------------------
-check      ("v02", "Holm Soprano-Mezzo", 0.0228, holm[1], tol = 5e-5)
-check_below("v02", "Holm Soprano-Alto is < .001", 0.001, holm[2])
-check      ("v02", "Holm Mezzo-Alto",    0.0228, holm[3], tol = 5e-5)
+check("v02", "Holm Soprano-Mezzo", printed_cell(capH, "Adjusted p-values", "Soprano", "Mezzo"), holm[1], tol = 5e-5)
+check_true("v02", "Holm Soprano-Alto is floored in the matrix",
+           grepl("<", printed_cell(capH, "Adjusted p-values", "Soprano", "Alto", as_string = TRUE)))
+check_true("v02", "and R agrees it is below .001", holm[2] < 0.001)
+check("v02", "Holm Mezzo-Alto", printed_cell(capH, "Adjusted p-values", "Mezzo", "Alto"), holm[3], tol = 5e-5)
+
+# THE DIFFERENTIAL, now asserted between two captures rather than between
+# two transcriptions. Soprano-Mezzo is 0.0527 under Bonferroni and 0.0228
+# under Holm — opposite sides of .05. An adjustment that was relabelled but
+# not applied would print the same number twice, and this is the check that
+# would catch it.
+check("v02", "the two captures disagree on Soprano-Mezzo",
+      printed_cell(capB, "Adjusted p-values", "Soprano", "Mezzo"),
+      printed_cell(capH, "Adjusted p-values", "Soprano", "Mezzo"),
+      tol = 5e-4, expect = "differ")
+check_true("v02", "and they fall on opposite sides of .05",
+      printed_cell(capB, "Adjusted p-values", "Soprano", "Mezzo") > 0.05 &&
+      printed_cell(capH, "Adjusted p-values", "Soprano", "Mezzo") < 0.05)
+# The headers must name the adjustment that was actually applied.
+check_true("v02", "the Bonferroni capture says bonferroni",
+           any(grepl("bonferroni", capB$lines, fixed = TRUE)))
+check_true("v02", "the Holm capture says holm",
+           any(grepl("holm", capH$lines, fixed = TRUE)))
+# Cohen's d is unaffected by the adjustment, so the two captures must AGREE
+# on it. That separates "the adjustment changed" from "the run changed".
+check("v02", "both captures report the same Cohen's d",
+      printed_cell(capB, "Cohen's d", "Soprano", "Mezzo"),
+      printed_cell(capH, "Cohen's d", "Soprano", "Mezzo"), tol = 1e-12)
 
 # --- Cohen's d is unaffected by the adjustment ----------------------------
-check("v02", "Cohen's d Soprano-Mezzo", 0.924, dvals[1], tol = 5e-4)
-check("v02", "Cohen's d Soprano-Alto",  2.100, dvals[2], tol = 5e-4)
-check("v02", "Cohen's d Mezzo-Alto",    0.990, dvals[3], tol = 5e-4)
+check("v02", "Cohen's d Soprano-Mezzo", printed_cell(capB, "Cohen's d", "Soprano", "Mezzo"), dvals[1], tol = 5e-4)
+check("v02", "Cohen's d Soprano-Alto", printed_cell(capB, "Cohen's d", "Soprano", "Alto"), dvals[2], tol = 5e-4)
+check("v02", "Cohen's d Mezzo-Alto", printed_cell(capB, "Cohen's d", "Mezzo", "Alto"), dvals[3], tol = 5e-4)
 
 # --- the differential itself ----------------------------------------------
 check_true("v02",

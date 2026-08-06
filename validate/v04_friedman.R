@@ -19,21 +19,25 @@ if (!exists("eml_report")) {
 }
 
 d <- read_input("demo_rm3_input.csv")
+cap <- capture("wizard_rm3_rmanova_and_friedman.txt")
 conds <- c("SPL_soft", "SPL_medium", "SPL_loud")
 Y <- as.matrix(d[, conds])
 
 ft <- friedman.test(Y)
 
-check("v04", "Friedman chi-square", 40.0000, unname(ft$statistic), tol = 5e-5)
+check("v04", "Friedman chi-square", printed_eq(cap, "chi-square(2)", 1),
+      unname(ft$statistic), tol = 5e-5)
+check_true("v04", "the capture prints chi-square with df 2",
+           any(grepl("chi-square(2)", cap$lines, fixed = TRUE)))
 check_true("v04", "df reported as 2", unname(ft$parameter) == 2L)
-check("v04", "Friedman p", 0.000000002, unname(ft$p.value), tol = 5e-10)
+check("v04", "Friedman p", printed_eq(cap, "chi-square(2)", 2), unname(ft$p.value), tol = 5e-10)
 
 # --- rank sums ------------------------------------------------------------
 ranks <- t(apply(Y, 1, rank))
 rs <- colSums(ranks)
-check("v04", "SPL_soft rank sum",   20, unname(rs["SPL_soft"]),   tol = 1e-9)
-check("v04", "SPL_medium rank sum", 40, unname(rs["SPL_medium"]), tol = 1e-9)
-check("v04", "SPL_loud rank sum",   60, unname(rs["SPL_loud"]),   tol = 1e-9)
+check("v04", "SPL_soft rank sum",   printed_eq(cap, "SPL_soft rank sum"),   unname(rs["SPL_soft"]),   tol = 1e-9)
+check("v04", "SPL_medium rank sum", printed_eq(cap, "SPL_medium rank sum"), unname(rs["SPL_medium"]), tol = 1e-9)
+check("v04", "SPL_loud rank sum",   printed_eq(cap, "SPL_loud rank sum"),   unname(rs["SPL_loud"]),   tol = 1e-9)
 
 # --- post-hoc Wilcoxon signed-rank, holm-adjusted -------------------------
 pr <- suppressWarnings(c(
@@ -43,9 +47,21 @@ pr <- suppressWarnings(c(
 ))
 pa <- p.adjust(pr, method = "holm")
 
-check("v04", "post-hoc raw p, all pairs",      0.000002, pr[1], tol = 5e-7)
+# occurrence 2: the pair labels appear under RM-ANOVA first, then under
+# Friedman in the same capture.
+check("v04", "post-hoc raw p, all pairs",
+      printed_eq(cap, "SPL_soft vs SPL_medium", 1, 2), pr[1], tol = 5e-7)
 check_true("v04", "all three raw p are equal", diff(range(pr)) < 1e-15)
-check("v04", "post-hoc holm adjusted p",       0.000006, pa[1], tol = 5e-7)
+check("v04", "post-hoc holm adjusted p",
+      printed_eq(cap, "SPL_soft vs SPL_medium", 2, 2), pa[1], tol = 5e-7)
+# The three pairs are tied, so Holm must give all three the SAME adjusted
+# value. Read all three from the capture and assert that, rather than
+# assuming the printed value repeats.
+adj3 <- c(printed_eq(cap, "SPL_soft vs SPL_medium",  2, 2),
+          printed_eq(cap, "SPL_soft vs SPL_loud",    2, 2),
+          printed_eq(cap, "SPL_medium vs SPL_loud",  2, 2))
+check_true("v04", "printed holm adjusted p are identical across the tied pairs",
+           diff(range(adj3)) < 1e-15)
 check_true("v04", "holm ties: all three adjusted p equal",
            diff(range(pa)) < 1e-15)
 check_true("v04", "holm tied value is raw x 3 (monotonicity, not step-down)",

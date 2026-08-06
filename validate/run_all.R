@@ -29,7 +29,17 @@ scripts <- c(
     "v04_friedman.R",
     "v05_paired_t.R",
     "v06_D15_effect_size_defect.R",
-    "v07_redpath_degenerate_inputs.R"
+    "v07_redpath_degenerate_inputs.R",
+    # Orchestrator suites, 5 August 2026. These cover stats/eml-analysis.praat
+    # — the layer that assembles a report out of already-oracled primitives.
+    "v08_twogroup_orchestrator.R",
+    "v09_anova_tukey_orchestrator.R",
+    "v10_kruskal_dunn_orchestrator.R",
+    "v11_twoway_orchestrator.R",
+    "v12_correlation_orchestrator.R",
+    "v13_regression_orchestrator.R",
+    "v14_descriptive_orchestrator.R",
+    "v15_normality_orchestrator.R"
 )
 
 cat("EML Praat Tools validation suite\n")

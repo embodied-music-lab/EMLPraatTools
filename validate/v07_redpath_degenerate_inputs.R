@@ -8,14 +8,21 @@
 # SHOULD fail, or that sit on a boundary where an implementation can quietly
 # produce a number instead of an error.
 #
-# STATUS: the R side is complete and runnable now. The plugin side is NOT
-# YET DRIVEN — no EML wrapper has been given any of these inputs. This file
-# is therefore two things at once:
+# STATUS as of 5 August 2026: SIX OF SEVEN CASES HAVE BEEN DRIVEN through
+# the plugin's real GUI. R7 has not; it is an axis case, judged from a
+# figure, and belongs with the graphing work rather than in an R suite.
 #
-#   1. a runnable record of what R does with each case, which is the
+# Of the six driven, two behave as required (R3, R4), one behaves as required
+# on the point it was written for and then fails on a second degeneracy the
+# case did not anticipate (R1), and three fail (R2, R5, R6). Four checks in
+# this file therefore fail ON PURPOSE and name the finding they belong to:
+# D96, D97, D98, D99. They pass when those findings are fixed, not before.
+#
+# Each case still carries two things:
+#   1. a runnable record of what R does with the input, which is the
 #      reference an independent reviewer can check, and
-#   2. the specification for the drive that has not happened yet — each
-#      case names the behaviour the plugin must show.
+#   2. the behaviour the plugin must show, stated before the drive rather
+#      than after, so the drive could fail.
 #
 # The generated tables are written to validate/redpath/ so the same files
 # can be loaded into Praat and driven through the GUI unchanged. Nothing
@@ -159,27 +166,129 @@ check_true("R7", "roundTo = 10 would give a 0-10 axis",
            ceiling((rng[2] + diff(rng) * 0.1) / 10) * 10 == 10)
 
 # ---------------------------------------------------------------------------
-# Plugin-side status. Each case that has NOT been given to the plugin through
-# its GUI carries a deliberately failing check, so the suite cannot report
-# green while that work is outstanding.
+# PLUGIN-SIDE STATUS — six of seven cases driven 5 August 2026
 #
-# R4 was driven on 5 August 2026 and is no longer pending. The table above
-# was loaded into Praat unchanged (Open > Read Table from comma-separated
-# file) and taken through the Stats Wizard: Compare > independent > two
-# groups > SPL_dB by voice_type > Welch > Run. The plugin refused, and the
-# refusal named the group and its n, which is what this case requires:
-#
-#     Each group needs at least 2 observations. Group "Soprano":
-#     n=6, group "Alto": n=1
-#
-# Screenshot: evidence/shots/d93_wizard_analysis_error_R4.png
+# Each case below was loaded into Praat unchanged (Open > Read Table from
+# comma-separated file) and taken through the wrapper named. Captures are in
+# evidence/info/. R7 remains undriven; it is a figure case and belongs with
+# the graphing work rather than here.
 # ---------------------------------------------------------------------------
-check_true("R4", "plugin refuses, naming the group and its n (driven 5 Aug 2026)",
-           TRUE)
 
-for (case in c("R1", "R2", "R3", "R5", "R6", "R7")) {
-    check_true(case, "plugin behaviour observed on this input (PENDING DRIVE)", FALSE)
-}
+# --- R1: 8 subjects, 4 complete cases --------------------------------------
+# Stats Wizard > Compare > paired/repeated > three or more > RM-ANOVA.
+#
+# The requirement was met: the plugin printed
+#   "Subjects (complete cases) n = 4, conditions k = 3"
+#   "Note: 4 row(s) excluded for missing data (analyzed n = 4 complete cases)."
+# It analysed 4 and said so, twice. It did NOT silently analyse 4 of 8.
+check_true("R1", "plugin states the complete-case count it analysed", TRUE)
+check_true("R1", "plugin states how many rows it excluded and why", TRUE)
+
+# But this table is also degenerate in a way the case did not anticipate, and
+# the plugin did not survive it. Every complete case has medium = soft + 10
+# and loud = soft + 20 exactly, so the subject x condition residual is
+# identically zero and the RM-ANOVA error term is 0. The plugin printed
+#   F(2, 6) = 21110623253299200.0000
+# — a floating-point artefact of dividing by a zero error term — and a
+# p-value in 48 decimal places. Its own post-hoc detected the same condition
+# correctly and refused ("All differences are identical (zero variance)") on
+# all three pairs, so the omnibus is the only place that does not check.
+# Recorded as finding D97; this check fails until the omnibus refuses too.
+Y  <- as.matrix(na.omit(read.csv(file.path(outdir, "r1_incomplete_cases.csv"))[, 2:4]))
+res <- Y - rowMeans(Y) %o% rep(1, 3) - rep(1, nrow(Y)) %o% colMeans(Y) + mean(Y)
+check_true("R1", "error term is exactly zero, so F is undefined",
+           max(abs(res)) < 1e-12)
+check_true("R1", "PLUGIN DEFECT D97: omnibus must refuse on a zero error term",
+           FALSE)
+
+# --- R2: n = 2 subjects, k = 3 ---------------------------------------------
+# Same path. The requirement was: compute or refuse, but SAY WHICH, and do
+# not present a p-value from df_error = 2 without comment.
+#
+# The plugin computed F(2, 2) = 441.0000, p = 0.0023, GG epsilon = 0.5000,
+# GG-corrected p = 0.0303, and three post-hoc p-values — with no comment of
+# any kind. It does print "Subjects (complete cases) n = 2", which is honest
+# as far as it goes, but nothing marks the result as uninterpretable.
+#
+# The epsilon is itself the tell: 0.5 is exactly the Greenhouse-Geisser lower
+# bound 1/(k-1), which is forced whenever n = 2. A value pinned to its floor
+# is a signal the design has no information left, and the plugin has it in
+# hand at the moment it prints.
+f2 <- rm_anova(as.matrix(read.csv(file.path(outdir, "r2_two_subjects.csv"))[, 2:4]))
+check("R2", "R reproduces the plugin's F", 441.0000, f2$F,   tol = 5e-4)
+check("R2", "R reproduces the plugin's p",   0.0023, f2$p,   tol = 5e-5)
+check("R2", "R reproduces the plugin's GG epsilon", 0.5000, f2$gg, tol = 5e-5)
+check_true("R2", "epsilon sits exactly on the 1/(k-1) floor",
+           abs(f2$gg - 1 / 2) < 1e-12)
+check_true("R2", "PLUGIN DEFECT D98: no comment on a df_error = 2 result",
+           FALSE)
+
+# --- R3: zero variance throughout ------------------------------------------
+# Compare paired/repeated, SPL_soft against SPL_medium.
+# Requirement: refuse, naming the zero variance. The plugin printed
+#   "SPL soft: Mean = 80.000, SD = 0, Median = 80.000"
+#   "Paired t-test error: All differences are identical (zero variance)"
+# It refused, named the condition, and fabricated no statistic. Case closed.
+check_true("R3", "plugin refuses and names the zero variance (driven)", TRUE)
+
+# --- R5: grouping column unique per row ------------------------------------
+# Compare k groups (ANOVA). Requirement: refuse BEFORE running, naming the
+# group count against the row count.
+#
+# The plugin refuses before computing, which is the important half. But it
+# names only the first offending group:
+#   emlOneWayAnova: group "G01" has fewer than 2 observations
+# A user with six singleton groups fixes G01, re-runs, and meets G02. The
+# diagnosis that would end it in one step — six groups for six rows, so this
+# column is an identifier and not a grouping — is never stated. The message
+# also leaks the internal procedure name into user-facing text.
+# Recorded as finding D99.
+check_true("R5", "plugin refuses before computing anything (driven)", TRUE)
+check_true("R5", "PLUGIN DEFECT D99: names one group, not the count-vs-rows diagnosis",
+           FALSE)
+
+# --- R6: non-numeric entry in a measure column -----------------------------
+# Describe Table column, SPL_soft — the column holding "n/a" in row 3 of 5.
+#
+# CORRECTION, same day. This case was first recorded as "the plugin silently
+# analyses 4 of 5 rows, naming nothing". That was WRONG, and it was wrong
+# because the capture was read from its tail. The header block says:
+#
+#     Column              SPL soft
+#     N (valid)           4
+#     N (undefined)       1
+#
+# The plugin reports the count. It follows the complete-case convention set
+# on 21 July (plugin/FIX_NOTES.md, audit item C1/C2): analyse the rows that
+# parse, state how many were excluded. Nothing is silent.
+check_true("R6", "plugin reports N (valid) 4 and N (undefined) 1 (driven)", TRUE)
+
+# What is genuinely missing is narrower, and is the open question the author
+# raised: "undefined" is one bucket holding three different conditions that
+# a user needs to tell apart —
+#
+#   1. an empty cell           — missing data, the C1/C2 convention applies
+#   2. an unparseable string   — a type error; the column is not a measure
+#   3. a European decimal comma — recoverable data being discarded
+#
+# `Get value:` returns undefined for all three, so nothing downstream can
+# distinguish them, and the report names neither the row nor the offending
+# value. A user cannot tell a gap in their data from a locale mismatch that
+# threw away a number they have. Recorded as finding D96, restated.
+r6read <- read.csv(file.path(outdir, "r6_nonnumeric_in_measure.csv"),
+                   stringsAsFactors = FALSE)
+check_true("R6", "constructed column has exactly one non-numeric entry",
+           sum(is.na(suppressWarnings(as.numeric(r6read$SPL_soft)))) == 1L)
+check_true("R6", "the offending value is a string, not an empty cell",
+           any(!is.na(r6read$SPL_soft) & r6read$SPL_soft != "" &
+               is.na(suppressWarnings(as.numeric(r6read$SPL_soft)))))
+check_true("R6", "PLUGIN DEFECT D96: missing, unparseable and locale-decimal are one bucket",
+           FALSE)
+
+# --- R7: small-range measure -----------------------------------------------
+# Not driven. This is an axis case, testable only by looking at a figure, and
+# it belongs with the graphing work rather than in an R suite.
+check_true("R7", "plugin behaviour observed on this input (PENDING DRIVE)", FALSE)
 
 cat("\nRed-path tables written to: ", outdir, "\n", sep = "")
 
