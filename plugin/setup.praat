@@ -22,6 +22,29 @@
 # Date: 2 August 2026
 # ============================================================================
 
+# ── Minimum Praat version ──────────────────────────────────────────────────
+#
+# The plugin targets Praat 6.6.30 and later. That is not an arbitrary line:
+# 6.6.30 is the version every capture under evidence/info/ was produced on, so
+# the supported floor and the validation evidence are the same build. Praat
+# 7.0 is also tested (macOS).
+#
+# Below the floor the plugin does not degrade gracefully, it fails at a
+# random point mid-analysis on whichever newer built-in it reaches first, with
+# an error naming a function rather than a version. Refusing at load time and
+# saying so is the whole point of this block.
+
+emlMinPraatVersion = 6630
+
+if praatVersion < emlMinPraatVersion
+    writeInfoLine: "EML Praat Tools requires Praat 6.6.30 or later."
+    appendInfoLine: "This is Praat ", praatVersion$, "."
+    appendInfoLine: ""
+    appendInfoLine: "The plugin has NOT been loaded. Update Praat from praat.org"
+    appendInfoLine: "and restart; no menu items were registered."
+    exitScript ()
+endif
+
 # ── Fixed menu: Objects → New → EML Tools cascade ──────────────────────────
 
 # Cascade header (no script = submenu title)
