@@ -40,6 +40,24 @@ dismissed).
 > running the shipped plugin cannot reproduce it. That test is now the
 > standard for this file, and `validate/tools/check_wired.sh` enforces the
 > mechanical half of it.
+>
+> **Re-audit, same day.** Because two of sixteen closures were false, every
+> remaining `RESOLVED` row was re-checked against a fresh clone of the
+> published repository rather than against a working tree or from memory.
+> Fourteen hold. D4, D10, D88, D91, D94, D95, D96, D100 and D101 were
+> confirmed mechanically against the shipped code; D15, D97 and D98 rest on
+> committed captures from a real GUI session, which satisfies the
+> reachability test by construction; D31 and D84 were never resolution
+> claims. **D92 and D93 could not be verified by static inspection** — one
+> needs a rendered figure, the other a GUI walk — and are now labelled as
+> unverified rather than left reading as confirmed.
+>
+> `validate/tools/check_calls.py` generalises D100 and D101: Praat resolves
+> procedure names at CALL time, so a script can carry the wrong include set
+> and look healthy until a user walks one branch. It reports zero
+> unresolvable calls in every registered script. The only script that fails
+> is `eml-tutorial.praat`, which has 23 and is already unregistered from the
+> menu — dead code in the tree, not a live defect.
 
 | ID | Class | Severity | First stated | Summary | Revisits (line) |
 |----|-------|----------|--------------|---------|-----------------|
@@ -134,8 +152,8 @@ dismissed).
 | D89 | GRAPHING  | medium — LIVE 6 Aug  | [L3790](DRIVE_FINDINGS_2026-08-04.md#L3790) | An empty Title field yields a figure with no title at all — D43 confirmed on the shared graphing form, not one graph type | — |
 | D90 | GRAPHING  | medium — LIVE 6 Aug  | [L3802](DRIVE_FINDINGS_2026-08-04.md#L3802) | Axis labels read `Value` and `Condition` — the reshape's internal role names — while the real column names sit in the tick labels | — |
 | D91 | GRAPHING  | RESOLVED (verified 6 Aug)  | [L3890](DRIVE_FINDINGS_2026-08-04.md#L3890) | The histogram frequency axis cannot be made data-derived without a tick constraint; **RESOLVED** via the `emlYAxisMinStep` constraint honoured by the four y-step procedures. All 16 axis-range sites now derive from the data | 3932 |
-| D92 | GRAPHING  | RESOLVED (verified 6 Aug)  | [L3996](DRIVE_FINDINGS_2026-08-04.md#L3996) | The annotated (bracket) path pinned violin and box y-axes to zero, and the inflated range then tripled the annotation headroom — **RESOLVED**, floor now derived from the data; bar charts keep their zero floor | — |
-| D93 | CLARITY  | RESOLVED (verified 6 Aug)  | [L4173](DRIVE_FINDINGS_2026-08-04.md#L4173) | Each wrapper entry form is a leaf: the menu selection IS the navigation, so an error naming a different tool leaves no route to it and the only exit is Quit. First statement described the error dialog and field reset — CORRECTED at L4250 to the structural defect. **RESOLVED** at L4312 per author ruling: no new navigation layer; wizard errors return into the wizard (19 sites, 13 of them former `exitScript:` teardowns found only by driving), menu errors name the tool and the menu route (14 sites), and form state now survives the return | 4312 |
+| D92 | GRAPHING  | RESOLVED (claim NOT re-verified 6 Aug — needs a rendered figure)  | [L3996](DRIVE_FINDINGS_2026-08-04.md#L3996) | The annotated (bracket) path pinned violin and box y-axes to zero, and the inflated range then tripled the annotation headroom — **RESOLVED**, floor now derived from the data; bar charts keep their zero floor | — |
+| D93 | CLARITY  | RESOLVED (claim NOT re-verified 6 Aug — needs a GUI walk)  | [L4173](DRIVE_FINDINGS_2026-08-04.md#L4173) | Each wrapper entry form is a leaf: the menu selection IS the navigation, so an error naming a different tool leaves no route to it and the only exit is Quit. First statement described the error dialog and field reset — CORRECTED at L4250 to the structural defect. **RESOLVED** at L4312 per author ruling: no new navigation layer; wizard errors return into the wizard (19 sites, 13 of them former `exitScript:` teardowns found only by driving), menu errors name the tool and the menu route (14 sites), and form state now survives the return | 4312 |
 | D94 | CLARITY  | RESOLVED (verified 6 Aug)  | [L4447](DRIVE_FINDINGS_2026-08-04.md#L4447) | `exitScript` written without its colon at 3 sites, so Praat parses it as a variable and Quit raises "Unknown variable: exitScript" instead of exiting quietly — **RESOLVED**, all three now `exitScript: ""` | 4447 |
 | D95 | ACCURACY  | RESOLVED (verified 6 Aug)  | [L4460](DRIVE_FINDINGS_2026-08-04.md#L4460) | Three shape-threshold sites disagreed: the normality report judged kurtosis at 3 while the recommendation gate beside it used 1, so one report could print "within typical limits" and then send the user nonparametric. Also the last unrelabelled bare `Kurtosis` from D4 — **RESOLVED**, every site reads `emlSkewThreshold` / `emlKurtosisThreshold` | 4460 |
 | D96 | ACCURACY  | RESOLVED  | [L4484](DRIVE_FINDINGS_2026-08-04.md#L4484) | **First statement WITHDRAWN** — it claimed the plugin silently dropped a row, which is false; it prints `N (undefined)`. Restated: `Get value:` collapses empty cell, unparseable string and locale decimal comma into one `undefined` bucket, so a genuine gap cannot be told from recoverable data being discarded, and neither row nor value is named | 4578 — FIXED 6 Aug: one classifier used by every extraction path; the comma cell is now excluded and named rather than silently read as a different number |
