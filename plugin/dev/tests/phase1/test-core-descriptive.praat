@@ -526,9 +526,11 @@ procedure test_emlDescribe
     @assertApprox: "describe kurtosis = -1.2", emlDescribe.kurtosis, -1.2, tolStat
     @assertApprox: "describe ci95Lower", emlDescribe.ci95Lower, 1.036417, tolCI
     @assertApprox: "describe ci95Upper", emlDescribe.ci95Upper, 4.963583, tolCI
-    # Verify summary string exists and is non-empty
-    .hasSum = length (emlDescribe.summary$) > 0
-    @assertExact: "describe summary$ non-empty", .hasSum, 1
+    # emlDescribe.summary$ was deleted on 6 Aug 2026 (D7): it was a second
+    # renderer of the same values that no shipping code read, and it had
+    # already drifted from the one users see -- it said "Kurtosis (excess)"
+    # where the report path said "Kurtosis", which is D4. The report path
+    # @emlReportDescriptives is what is tested now, in the wrapper tests.
     appendInfoLine: ""
 endproc
 
