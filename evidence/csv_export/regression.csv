@@ -1,21 +1,21 @@
-table,analysis,term,field,value
-demo_regression,OLS linear regression,,response_column,vibrato_pct
-demo_regression,OLS linear regression,,predictor_column,practice_hrs_wk
-demo_regression,OLS linear regression,,F,10670.635155097976
-demo_regression,OLS linear regression,,df1,1
-demo_regression,OLS linear regression,,df2,10
-demo_regression,OLS linear regression,,p,1.7712696338962426e-16
-demo_regression,OLS linear regression,,r,0.9995317534193463
-demo_regression,OLS linear regression,,r_squared,0.9990637260935529
-demo_regression,OLS linear regression,,adj_r_squared,0.9989700987029082
-demo_regression,OLS linear regression,,residual_se,0.3262614609182083
-demo_regression,OLS linear regression,,effect_label,large effect
-demo_regression,OLS linear regression,,n,12
-demo_regression,OLS linear regression,(Intercept),estimate,57.01729559748428
-demo_regression,OLS linear regression,(Intercept),se,0.20577730697828753
-demo_regression,OLS linear regression,(Intercept),t,277.0825239903661
-demo_regression,OLS linear regression,(Intercept),p,9.220404696187895e-21
-demo_regression,OLS linear regression,practice_hrs_wk,estimate,1.889937106918239
-demo_regression,OLS linear regression,practice_hrs_wk,se,0.0182958342236321
-demo_regression,OLS linear regression,practice_hrs_wk,t,103.29876647423227
-demo_regression,OLS linear regression,practice_hrs_wk,p,1.7712696338962426e-16
+table,analysis,term,term_type,field,value
+demo_regression,OLS linear regression,,omnibus,response_column,vibrato_pct
+demo_regression,OLS linear regression,,omnibus,predictor_column,practice_hrs_wk
+demo_regression,OLS linear regression,,omnibus,F,10670.635155097976
+demo_regression,OLS linear regression,,omnibus,df1,1
+demo_regression,OLS linear regression,,omnibus,df2,10
+demo_regression,OLS linear regression,,omnibus,p,1.7712696338962426e-16
+demo_regression,OLS linear regression,,omnibus,r,0.9995317534193463
+demo_regression,OLS linear regression,,omnibus,r_squared,0.9990637260935529
+demo_regression,OLS linear regression,,omnibus,adj_r_squared,0.9989700987029082
+demo_regression,OLS linear regression,,omnibus,residual_se,0.3262614609182083
+demo_regression,OLS linear regression,,omnibus,effect_label,large effect
+demo_regression,OLS linear regression,,omnibus,n,12
+demo_regression,OLS linear regression,(Intercept),coefficient,estimate,57.01729559748428
+demo_regression,OLS linear regression,(Intercept),coefficient,se,0.20577730697828753
+demo_regression,OLS linear regression,(Intercept),coefficient,t,277.0825239903661
+demo_regression,OLS linear regression,(Intercept),coefficient,p,9.220404696187895e-21
+demo_regression,OLS linear regression,practice_hrs_wk,coefficient,estimate,1.889937106918239
+demo_regression,OLS linear regression,practice_hrs_wk,coefficient,se,0.0182958342236321
+demo_regression,OLS linear regression,practice_hrs_wk,coefficient,t,103.29876647423227
+demo_regression,OLS linear regression,practice_hrs_wk,coefficient,p,1.7712696338962426e-16

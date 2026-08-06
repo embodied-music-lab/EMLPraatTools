@@ -1,47 +1,35 @@
-table,analysis,term,field,value
-demo_3groups,Kruskal-Wallis,,data_column,SPL_dB
-demo_3groups,Kruskal-Wallis,,group_column,voice_type
-demo_3groups,Kruskal-Wallis,,H,10.64
-demo_3groups,Kruskal-Wallis,,df,2
-demo_3groups,Kruskal-Wallis,,p,0.004892753725239476
-demo_3groups,Kruskal-Wallis,,epsilon_squared,0.76
-demo_3groups,Kruskal-Wallis,,effect_label,large effect
-demo_3groups,Dunn's test,Soprano vs Mezzo,adjustment,holm
-demo_3groups,Dunn's test,Soprano vs Mezzo,z,1.8384776310850237
-demo_3groups,Dunn's test,Soprano vs Mezzo,p_adjusted,0.131984110118695
-demo_3groups,Dunn's test,Soprano vs Mezzo,rank_biserial_r,0.92
-demo_3groups,Dunn's test,Soprano vs Mezzo,effect_label,large effect
-demo_3groups,Dunn's test,Soprano,n,5
-demo_3groups,Dunn's test,Soprano,mean,94.6
-demo_3groups,Dunn's test,Soprano,sd,2.0554804791094488
-demo_3groups,Dunn's test,Soprano,median,94.6
-demo_3groups,Dunn's test,Mezzo,n,5
-demo_3groups,Dunn's test,Mezzo,mean,90.6
-demo_3groups,Dunn's test,Mezzo,sd,2.0554804791094488
-demo_3groups,Dunn's test,Mezzo,median,90.6
-demo_3groups,Dunn's test,Soprano vs Alto,adjustment,holm
-demo_3groups,Dunn's test,Soprano vs Alto,z,3.252691193458119
-demo_3groups,Dunn's test,Soprano vs Alto,p_adjusted,0.00342952979206995
-demo_3groups,Dunn's test,Soprano vs Alto,rank_biserial_r,1
-demo_3groups,Dunn's test,Soprano vs Alto,effect_label,large effect
-demo_3groups,Dunn's test,Soprano,n,5
-demo_3groups,Dunn's test,Soprano,mean,94.6
-demo_3groups,Dunn's test,Soprano,sd,2.0554804791094488
-demo_3groups,Dunn's test,Soprano,median,94.6
-demo_3groups,Dunn's test,Alto,n,5
-demo_3groups,Dunn's test,Alto,mean,87.6
-demo_3groups,Dunn's test,Alto,sd,2.0554804791094488
-demo_3groups,Dunn's test,Alto,median,87.6
-demo_3groups,Dunn's test,Mezzo vs Alto,adjustment,holm
-demo_3groups,Dunn's test,Mezzo vs Alto,z,1.4142135623730947
-demo_3groups,Dunn's test,Mezzo vs Alto,p_adjusted,0.15729920705028522
-demo_3groups,Dunn's test,Mezzo vs Alto,rank_biserial_r,0.76
-demo_3groups,Dunn's test,Mezzo vs Alto,effect_label,large effect
-demo_3groups,Dunn's test,Mezzo,n,5
-demo_3groups,Dunn's test,Mezzo,mean,90.6
-demo_3groups,Dunn's test,Mezzo,sd,2.0554804791094488
-demo_3groups,Dunn's test,Mezzo,median,90.6
-demo_3groups,Dunn's test,Alto,n,5
-demo_3groups,Dunn's test,Alto,mean,87.6
-demo_3groups,Dunn's test,Alto,sd,2.0554804791094488
-demo_3groups,Dunn's test,Alto,median,87.6
+table,analysis,term,term_type,field,value
+demo_3groups,Kruskal-Wallis,,omnibus,data_column,SPL_dB
+demo_3groups,Kruskal-Wallis,,omnibus,group_column,voice_type
+demo_3groups,Kruskal-Wallis,,omnibus,H,10.64
+demo_3groups,Kruskal-Wallis,,omnibus,df,2
+demo_3groups,Kruskal-Wallis,,omnibus,p,0.004892753725239476
+demo_3groups,Kruskal-Wallis,,omnibus,epsilon_squared,0.76
+demo_3groups,Kruskal-Wallis,,omnibus,effect_label,large effect
+demo_3groups,Dunn's test,Soprano vs Mezzo,contrast,adjustment,holm
+demo_3groups,Dunn's test,Soprano vs Mezzo,contrast,z,1.8384776310850237
+demo_3groups,Dunn's test,Soprano vs Mezzo,contrast,p_adjusted,0.131984110118695
+demo_3groups,Dunn's test,Soprano vs Mezzo,contrast,rank_biserial_r,0.92
+demo_3groups,Dunn's test,Soprano vs Mezzo,contrast,effect_label,large effect
+demo_3groups,Dunn's test,Soprano,group,n,5
+demo_3groups,Dunn's test,Soprano,group,mean,94.6
+demo_3groups,Dunn's test,Soprano,group,sd,2.0554804791094488
+demo_3groups,Dunn's test,Soprano,group,median,94.6
+demo_3groups,Dunn's test,Mezzo,group,n,5
+demo_3groups,Dunn's test,Mezzo,group,mean,90.6
+demo_3groups,Dunn's test,Mezzo,group,sd,2.0554804791094488
+demo_3groups,Dunn's test,Mezzo,group,median,90.6
+demo_3groups,Dunn's test,Soprano vs Alto,contrast,adjustment,holm
+demo_3groups,Dunn's test,Soprano vs Alto,contrast,z,3.252691193458119
+demo_3groups,Dunn's test,Soprano vs Alto,contrast,p_adjusted,0.00342952979206995
+demo_3groups,Dunn's test,Soprano vs Alto,contrast,rank_biserial_r,1
+demo_3groups,Dunn's test,Soprano vs Alto,contrast,effect_label,large effect
+demo_3groups,Dunn's test,Alto,group,n,5
+demo_3groups,Dunn's test,Alto,group,mean,87.6
+demo_3groups,Dunn's test,Alto,group,sd,2.0554804791094488
+demo_3groups,Dunn's test,Alto,group,median,87.6
+demo_3groups,Dunn's test,Mezzo vs Alto,contrast,adjustment,holm
+demo_3groups,Dunn's test,Mezzo vs Alto,contrast,z,1.4142135623730947
+demo_3groups,Dunn's test,Mezzo vs Alto,contrast,p_adjusted,0.15729920705028522
+demo_3groups,Dunn's test,Mezzo vs Alto,contrast,rank_biserial_r,0.76
+demo_3groups,Dunn's test,Mezzo vs Alto,contrast,effect_label,large effect

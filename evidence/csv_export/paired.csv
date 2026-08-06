@@ -1,15 +1,15 @@
-table,analysis,term,field,value
-demo_paired,Paired t-test,jitter_pre vs jitter_post,design,paired
-demo_paired,Paired t-test,jitter_pre vs jitter_post,column_1,jitter_pre
-demo_paired,Paired t-test,jitter_pre vs jitter_post,column_2,jitter_post
-demo_paired,Paired t-test,jitter_pre vs jitter_post,t,17.360741598134844
-demo_paired,Paired t-test,jitter_pre vs jitter_post,df,9
-demo_paired,Paired t-test,jitter_pre vs jitter_post,p,3.151151226322776e-08
-demo_paired,Paired t-test,jitter_pre vs jitter_post,cohens_dz,5.48994853197377
-demo_paired,Paired t-test,jitter_pre vs jitter_post,n_pairs,10
-demo_paired,Paired t-test,jitter_pre,mean,1.548
-demo_paired,Paired t-test,jitter_pre,sd,0.1414056418802148
-demo_paired,Paired t-test,jitter_pre,median,1.565
-demo_paired,Paired t-test,jitter_post,mean,1.308
-demo_paired,Paired t-test,jitter_post,sd,0.11193251935380036
-demo_paired,Paired t-test,jitter_post,median,1.3
+table,analysis,term,term_type,field,value
+demo_paired,Paired t-test,jitter_pre vs jitter_post,contrast,design,paired
+demo_paired,Paired t-test,jitter_pre vs jitter_post,contrast,column_1,jitter_pre
+demo_paired,Paired t-test,jitter_pre vs jitter_post,contrast,column_2,jitter_post
+demo_paired,Paired t-test,jitter_pre vs jitter_post,contrast,t,17.360741598134844
+demo_paired,Paired t-test,jitter_pre vs jitter_post,contrast,df,9
+demo_paired,Paired t-test,jitter_pre vs jitter_post,contrast,p,3.151151226322776e-08
+demo_paired,Paired t-test,jitter_pre vs jitter_post,contrast,cohens_dz,5.48994853197377
+demo_paired,Paired t-test,jitter_pre vs jitter_post,contrast,n_pairs,10
+demo_paired,Paired t-test,jitter_pre,group,mean,1.548
+demo_paired,Paired t-test,jitter_pre,group,sd,0.1414056418802148
+demo_paired,Paired t-test,jitter_pre,group,median,1.565
+demo_paired,Paired t-test,jitter_post,group,mean,1.308
+demo_paired,Paired t-test,jitter_post,group,sd,0.11193251935380036
+demo_paired,Paired t-test,jitter_post,group,median,1.3
