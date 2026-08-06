@@ -446,6 +446,133 @@ appendInfoLine: "Cleanup complete."
 appendInfoLine: ""
 
 # ============================================================================
+# D96 — the classifying parse helper
+# ============================================================================
+# "Get value:" answers a narrower question than a user asks. These assert the
+# five kinds are told apart, and — the part that matters — that the row-wise
+# and column-wise readers give the SAME account of the same cell. Before the
+# D96 work they did not: "1,5" entered a column mean as 1 and was counted as
+# a present value by the paired reader.
+
+@emlTestSection: "D96 — cell classification"
+
+@eml_classifyCell: "70.1"
+@assertEqualNum: "D96 plain decimal is kind 0", 0, eml_classifyCell.kind, 0
+@eml_classifyCell: "-3.5"
+@assertEqualNum: "D96 signed decimal is kind 0", 0, eml_classifyCell.kind, 0
+@eml_classifyCell: "  62.4  "
+@assertEqualNum: "D96 surrounding space does not change the kind",
+... 0, eml_classifyCell.kind, 0
+@eml_classifyCell: ""
+@assertEqualNum: "D96 empty cell is kind 1", 1, eml_classifyCell.kind, 0
+@eml_classifyCell: "   "
+@assertEqualNum: "D96 whitespace-only cell is kind 1", 1, eml_classifyCell.kind, 0
+@eml_classifyCell: "--undefined--"
+@assertEqualNum: "D96 Praat's own undefined literal is kind 1",
+... 1, eml_classifyCell.kind, 0
+@eml_classifyCell: "1,5"
+@assertEqualNum: "D96 decimal comma is kind 2", 2, eml_classifyCell.kind, 0
+@assertEqualNum: "D96 decimal comma recovers 1.5", 1.5,
+... eml_classifyCell.recovered, tolerance
+@eml_classifyCell: "n/a"
+@assertEqualNum: "D96 text is kind 3", 3, eml_classifyCell.kind, 0
+@eml_classifyCell: "1/2"
+@assertEqualNum: "D96 fraction is kind 4", 4, eml_classifyCell.kind, 0
+@eml_classifyCell: "2 3"
+@assertEqualNum: "D96 internal space is kind 4", 4, eml_classifyCell.kind, 0
+@eml_classifyCell: "30%"
+@assertEqualNum: "D96 percent is kind 4, not kind 0", 4,
+... eml_classifyCell.kind, 0
+@eml_classifyCell: "1.234,5"
+@assertEqualNum: "D96 thousands dot with decimal comma is kind 4", 4,
+... eml_classifyCell.kind, 0
+@eml_classifyCell: ".5"
+@assertEqualNum: "D96 bare leading point is kind 5", 5, eml_classifyCell.kind, 0
+@assertEqualNum: "D96 bare leading point recovers 0.5", 0.5,
+... eml_classifyCell.recovered, tolerance
+@eml_classifyCell: "-.5"
+@assertEqualNum: "D96 signed bare leading point is kind 5", 5,
+... eml_classifyCell.kind, 0
+@assertEqualNum: "D96 signed bare leading point recovers -0.5", -0.5,
+... eml_classifyCell.recovered, tolerance
+
+@emlTestSection: "D96 — one account of the same cell, row-wise and column-wise"
+
+d96t = Create Table with column names: "d96", 5, "pre post"
+d96pre$ [1] = "10.0"
+d96pre$ [2] = "11.0"
+d96pre$ [3] = "12,5"
+d96pre$ [4] = "13.0"
+d96pre$ [5] = "20.0"
+d96post$ [1] = "12.0"
+d96post$ [2] = "13.0"
+d96post$ [3] = "14.0"
+d96post$ [4] = ""
+d96post$ [5] = "16.0"
+for d96i from 1 to 5
+    selectObject: d96t
+    Set string value: d96i, "pre", d96pre$ [d96i]
+    Set string value: d96i, "post", d96post$ [d96i]
+endfor
+
+@emlExtractColumn: d96t, "pre"
+@assertEqualNum: "D96 column reader keeps 4 of 5 in pre", 4,
+... emlExtractColumn.n, 0
+@assertEqualNum: "D96 column reader attributes the drop to a decimal comma",
+... 1, emlExtractColumn.nLocale, 0
+@assertTrue: "D96 column reader names the offending value",
+... index (emlExtractColumn.note$, "12,5") > 0
+@assertTrue: "D96 the excluded comma value is NOT in the data",
+... emlExtractColumn.n = size (emlExtractColumn.data#)
+# The fixture's last value is 20 and not 14 for a reason. With 14 the two
+# readings give the SAME mean -- 12 either way -- so the check would pass
+# whether or not the comma cell was excluded, which is worse than no check.
+# With 20 the clean mean is 13.5 and the coerced mean is 13.2, and the two
+# assertions below can only both hold under the corrected behaviour.
+@assertEqualNum: "D96 pre mean is over the clean values only",
+... 13.5, mean (emlExtractColumn.data#), tolerance
+@assertTrue: "D96 and is NOT the mean coercing 12,5 to 12 would give",
+... abs (mean (emlExtractColumn.data#) - 13.2) > 0.01
+
+@emlExtractColumn: d96t, "post"
+@assertEqualNum: "D96 column reader keeps 4 of 5 in post", 4,
+... emlExtractColumn.n, 0
+@assertEqualNum: "D96 and calls the post drop an empty cell", 1,
+... emlExtractColumn.nEmpty, 0
+@assertEqualNum: "D96 which is not a locale problem", 0,
+... emlExtractColumn.nLocale, 0
+
+@emlExtractPairedColumns: d96t, "pre", "post"
+@assertEqualNum: "D96 row-wise reader keeps 3 complete pairs", 3,
+... emlExtractPairedColumns.n, 0
+@assertEqualNum: "D96 row-wise reader excludes 2 rows", 2,
+... emlExtractPairedColumns.nExcludedRows, 0
+@assertTrue: "D96 row-wise x agrees with the column-wise reading",
+... emlExtractPairedColumns.data1# [1] = 10 and
+... emlExtractPairedColumns.data1# [2] = 11 and
+... emlExtractPairedColumns.data1# [3] = 20
+
+removeObject: d96t
+
+# A clean column must take the fast path and be untouched by any of this.
+d96c = Create Table with column names: "d96clean", 4, "v"
+for d96i from 1 to 4
+    selectObject: d96c
+    Set numeric value: d96i, "v", 10 + d96i / 4
+endfor
+@emlExtractColumn: d96c, "v"
+@assertEqualNum: "D96 clean column keeps every row", 4, emlExtractColumn.n, 0
+@assertEqualNum: "D96 clean column excludes nothing", 0,
+... emlExtractColumn.nUndefined, 0
+@assertEqualStr: "D96 clean column produces no note", "",
+... emlExtractColumn.note$
+@assertEqualNum: "D96 clean column values are unaltered", 10.25,
+... emlExtractColumn.data# [1], tolerance
+removeObject: d96c
+
+totalTests = testsPassed + testsFailed
+
+# ============================================================================
 # Final Summary
 # ============================================================================
 appendInfoLine: "============================================"
