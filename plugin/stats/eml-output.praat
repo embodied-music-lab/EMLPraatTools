@@ -630,20 +630,43 @@ emlCSV_n = 0
 # not write, so no sentinel is needed and none exists; and a new quantity is
 # a new field name, not a schema change.
 #
-#   table,analysis,term,field,value
+#   table,analysis,term,term_type,field,value
 #
-#   table    -- the source Table's name
-#   analysis -- "One-way ANOVA", "Tukey HSD", "Pearson correlation", ...
-#   term     -- what the row is about: a contrast ("Soprano vs Alto"), a
-#               factor ("voice_type"), a coefficient ("practice_hrs_wk"), a
-#               group ("Alto"), or "" for an omnibus/overall result
-#   field    -- "F", "df1", "df2", "p", "eta_squared", "estimate", "se",
-#               "ci_lower", "n", "mean", "sd", "median", ...
-#   value    -- the number, or a string for fields like "method"
+#   table     -- the source Table's name
+#   analysis  -- "One-way ANOVA", "Tukey HSD", "Pearson correlation", ...
+#   term      -- what the row is about: a contrast ("Soprano vs Alto"), a
+#                factor ("voice_type"), a coefficient ("practice_hrs_wk"), a
+#                group ("Alto"), or "" for an omnibus/overall result
+#   term_type -- WHICH KIND of thing `term` names. See below.
+#   field     -- "F", "df1", "df2", "p", "eta_squared", "estimate", "se",
+#                "ci_lower", "n", "mean", "sd", "median", ...
+#   value     -- the number, or a string for fields like "method"
 #
-# To get a wide table back in R:
-#   read.csv("x.csv") |> tidyr::pivot_wider(names_from = field,
-#                                           values_from = value)
+# WHY term_type IS A COLUMN AND NOT JUST ANOTHER FIELD ROW.
+# The first version of this format did not have it, and pivoting the result
+# produced a ragged table: a contrast ("Soprano vs Mezzo") and a group
+# ("Soprano") both live in `term`, so pivot_wider interleaved q and p_adjusted
+# rows with n and mean rows and filled the gaps with NA. Nothing was wrong —
+# every row was correct and self-labelled — but the reader had to know to
+# filter first, and "you have to know" is a smaller version of the disease
+# this format was written to cure. As a field row it would not have helped:
+# the whole problem is separating rows BEFORE the pivot, which needs a column.
+#
+#   omnibus     the analysis as a whole; `term` is ""
+#   contrast    a comparison between two levels
+#   group       one level's descriptives
+#   factor      a term in an ANOVA table (main effect, interaction)
+#   coefficient a regression coefficient
+#   error       the error line of an ANOVA table
+#   total       the total line of an ANOVA table
+#   variable    a single measured column (normality, correlation)
+#
+# So the useful reads are one filter and one pivot:
+#   d <- read.csv("x.csv")
+#   subset(d, term_type == "contrast") |>
+#       tidyr::pivot_wider(names_from = field, values_from = value)
+#   subset(d, term_type == "group") |>
+#       tidyr::pivot_wider(names_from = field, values_from = value)
 #
 # Numbers are written with string$, which is Praat's shortest round-trip
 # form: 0.002246 stays 0.002246 and 1.06e-14 stays 1.06e-14 rather than
@@ -651,11 +674,22 @@ emlCSV_n = 0
 # (D14's residual) without a separate decision about decimal places.
 # ============================================================================
 
-emlCSV_header$ = "table,analysis,term,field,value"
+emlCSV_header$ = "table,analysis,term,term_type,field,value"
 
 procedure emlCSVInit
     emlCSV_n = 0
     emlCSV_table$ = ""
+    emlCSV_termType$ = ""
+    emlCSV_nDesc = 0
+endproc
+
+
+# @emlCSVTermType: .kind$
+# Set the kind of thing the following rows' `term` names. Sticky: it applies
+# until changed, because the rows for one term are written as a contiguous
+# block. Set it once at the top of each block.
+procedure emlCSVTermType: .kind$
+    emlCSV_termType$ = .kind$
 endproc
 
 
@@ -706,12 +740,14 @@ procedure eml_csvAppend: .analysis$, .term$, .field$, .value$
     .b$ = eml_csvQuote.result$
     @eml_csvQuote: .term$
     .c$ = eml_csvQuote.result$
+    @eml_csvQuote: emlCSV_termType$
+    .t$ = eml_csvQuote.result$
     @eml_csvQuote: .field$
     .d$ = eml_csvQuote.result$
     @eml_csvQuote: .value$
     .e$ = eml_csvQuote.result$
-    emlCSV_row$ [emlCSV_n] = .a$ + "," + .b$ + "," + .c$ + "," + .d$ + ","
-    ... + .e$
+    emlCSV_row$ [emlCSV_n] = .a$ + "," + .b$ + "," + .c$ + "," + .t$ + ","
+    ... + .d$ + "," + .e$
 endproc
 
 
@@ -719,10 +755,34 @@ endproc
 # The group-descriptives block every reporter wants, written as named fields
 # so an absent one is absent rather than zero.
 procedure emlCSVAddDescriptives: .analysis$, .term$, .n, .mean, .sd, .median
+    # Idempotent by (analysis, term). The post-hoc reporters call this from
+    # inside their pairwise loop, so a group in k contrasts had its
+    # descriptives written k times: with three groups, Soprano's n, mean, sd
+    # and median each appeared twice, identical. Harmless to read one row at
+    # a time and wrong the moment anyone pivots or aggregates — R warns
+    # "multiple rows match" and silently takes the first.
+    #
+    # Guarded here rather than by restructuring each loop, because the loops
+    # differ between the Tukey and Dunn paths and a guard cannot be forgotten
+    # by the next reporter that copies the pattern.
+    .key$ = .analysis$ + "|" + .term$
+    if not variableExists ("emlCSV_nDesc")
+        emlCSV_nDesc = 0
+    endif
+    for .i from 1 to emlCSV_nDesc
+        if emlCSV_descKey$ [.i] = .key$
+            goto DESC_DONE
+        endif
+    endfor
+    emlCSV_nDesc = emlCSV_nDesc + 1
+    emlCSV_descKey$ [emlCSV_nDesc] = .key$
+
+    @emlCSVTermType: "group"
     @emlCSVAdd: .analysis$, .term$, "n", .n
     @emlCSVAdd: .analysis$, .term$, "mean", .mean
     @emlCSVAdd: .analysis$, .term$, "sd", .sd
     @emlCSVAdd: .analysis$, .term$, "median", .median
+    label DESC_DONE
 endproc
 
 procedure emlExportStatsCSV: .filePath$
