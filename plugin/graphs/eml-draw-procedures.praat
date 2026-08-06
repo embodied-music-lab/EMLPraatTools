@@ -875,6 +875,12 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
 
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
+    # @emlInitAlphaSprites is idempotent and cheap, but until 6 Aug 2026 the
+    # only call was in eml-graphs-form.praat, so this procedure aborted with
+    # "Unknown variable: emlInitAlphaSprites.available" for every caller that
+    # was not the form. Calling it here makes the procedure self-sufficient;
+    # in the form path the initialised flag short-circuits it immediately.
+    @emlInitAlphaSprites
 
     .hasGroup = 0
     .nGroups = 1
@@ -1229,6 +1235,12 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
 
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
+    # Categorical x-axis labels must exist before @emlDrawCategoricalXAxis
+    # renders them. In the form path the pre-dispatch block has already
+    # measured and this is a no-op; from anywhere else it is the difference
+    # between a figure and an aborted script. Must come before this
+    # procedure sets its own Axes: the measurement installs its own.
+    @emlEnsureCategoricalLabels: .objectId, .condCol$, .vpW, .vpH
 
     # ----------------------------------------------------------------
     # Extract unique conditions via single source
@@ -1333,7 +1345,7 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
         .yMax = .vMax
     endif
     .xMin = 0.5
-    .xMax = .nCond + 0.5
+    .xMax = max (1, .nCond) + 0.5   ; clamp: a 0-row table would make left = right
 
     # ----------------------------------------------------------------
     # Viewport
@@ -1694,6 +1706,18 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     # Step 1: Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
+    # emlBarData_* is produced by @emlMeasureBarData, which before 6 Aug 2026
+    # was called only from the form's pre-dispatch block — so a bar chart drawn
+    # from anywhere else died at "Unknown variable: emlBarData_nGroups" with
+    # nothing on the canvas. Every argument the measurement needs is already a
+    # parameter of this procedure, so it can guarantee its own precondition.
+    @emlEnsureBarData: .objectId, .groupCol$, .valueCol$, .errorMode, .errorCol$
+    # Categorical x-axis labels must exist before @emlDrawCategoricalXAxis
+    # renders them. In the form path the pre-dispatch block has already
+    # measured and this is a no-op; from anywhere else it is the difference
+    # between a figure and an aborted script. Must come before this
+    # procedure sets its own Axes: the measurement installs its own.
+    @emlEnsureCategoricalLabels: .objectId, .groupCol$, .vpW, .vpH
 
     # Sanitize title (axis labels handled at generation)
     @emlSanitizeLabel: .title$
@@ -1724,7 +1748,7 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
 
     # Step 4: Set x-axis range (categorical — one position per group)
     .xMin = 0.5
-    .xMax = .nGroups + 0.5
+    .xMax = max (1, .nGroups) + 0.5   ; clamp: a 0-row table would make left = right
 
     # Step 5: Set viewport and axes
     @emlSetPanelViewport
@@ -1865,7 +1889,7 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
 
     # Expose axis ranges for annotation bridge
     .axisXMin = 0.5
-    .axisXMax = .nGroups + 0.5
+    .axisXMax = max (1, .nGroups) + 0.5   ; clamp: a 0-row table would make left = right
     .axisYMin = .yMin
     .axisYMax = .yMax
 
@@ -1947,6 +1971,12 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # Step 1: Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
+    # Categorical x-axis labels must exist before @emlDrawCategoricalXAxis
+    # renders them. In the form path the pre-dispatch block has already
+    # measured and this is a no-op; from anywhere else it is the difference
+    # between a figure and an aborted script. Must come before this
+    # procedure sets its own Axes: the measurement installs its own.
+    @emlEnsureCategoricalLabels: .objectId, .groupCol$, .vpW, .vpH
 
     # Sanitize title (Rule 28J)
     @emlSanitizeLabel: .title$
@@ -2066,7 +2096,7 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
 
     # Step 5: Set x-axis range
     .xMin = 0.5
-    .xMax = .nGroups + 0.5
+    .xMax = max (1, .nGroups) + 0.5   ; clamp: a 0-row table would make left = right
 
     # Step 6: Set viewport and axes
     @emlSetPanelViewport
@@ -2134,7 +2164,7 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
 
     # Expose axis ranges for annotation bridge
     .axisXMin = 0.5
-    .axisXMax = .nGroups + 0.5
+    .axisXMax = max (1, .nGroups) + 0.5   ; clamp: a 0-row table would make left = right
     .axisYMin = .yMin
     .axisYMax = .yMax
 
@@ -2193,6 +2223,12 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
     # Step 1: Theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
+    # @emlInitAlphaSprites is idempotent and cheap, but until 6 Aug 2026 the
+    # only call was in eml-graphs-form.praat, so this procedure aborted with
+    # "Unknown variable: emlInitAlphaSprites.available" for every caller that
+    # was not the form. Calling it here makes the procedure self-sufficient;
+    # in the form path the initialised flag short-circuits it immediately.
+    @emlInitAlphaSprites
 
     # Step 2: Extract all data (for axis computation and ungrouped stats)
     selectObject: .objectId
@@ -2549,6 +2585,31 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
 
         @emlOptimizePaletteContrast: .nGroups
 
+        # Re-read the point colours AFTER the contrast optimisation.
+        #
+        # 6 Aug 2026. .pointColor$[] is filled near the top of this procedure,
+        # before the group count is even known, and @emlOptimizePaletteContrast
+        # then OVERWRITES emlSetColorPalette.line$[1..n] with a different
+        # ordering. The legend below reads the optimised array; the dots read
+        # the stale cache. Every grouped scatter plot therefore shipped a
+        # legend that disagreed with its own points. With three groups the
+        # optimiser skips sky blue as too close to blue and gives group 3
+        # green: the legend said green, the points were sky blue, and a reader
+        # matching swatch to cloud had no way to tell.
+        #
+        # This is not masked by the sprite path — plugin/sprites/ has never
+        # existed in the repository, so emlInitAlphaSprites.available is 0 and
+        # every dot goes through the .pointColor$ fallback.
+        if .colorMode$ = "bw"
+            for .c from 1 to 100
+                .pointColor$[.c] = emlSetColorPalette.fill$[.c]
+            endfor
+        else
+            for .c from 1 to 100
+                .pointColor$[.c] = emlSetColorPalette.line$[.c]
+            endfor
+        endif
+
         # Set up legend (use line$ for visual weight match with dots)
         legendN = .nGroups
         for .g from 1 to .nGroups
@@ -2841,6 +2902,12 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
     # Step 1: Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
+    # Categorical x-axis labels must exist before @emlDrawCategoricalXAxis
+    # renders them. In the form path the pre-dispatch block has already
+    # measured and this is a no-op; from anywhere else it is the difference
+    # between a figure and an aborted script. Must come before this
+    # procedure sets its own Axes: the measurement installs its own.
+    @emlEnsureCategoricalLabels: .objectId, .groupCol$, .vpW, .vpH
 
     @emlSanitizeLabel: .title$
     .title$ = emlSanitizeLabel.result$
@@ -2932,7 +2999,7 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
 
     # Step 5: Set x-axis range
     .xMin = 0.5
-    .xMax = .nGroups + 0.5
+    .xMax = max (1, .nGroups) + 0.5   ; clamp: a 0-row table would make left = right
 
     # Step 6: Set viewport and axes
     @emlSetPanelViewport
@@ -2998,7 +3065,7 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
 
     # Expose axis ranges for annotation bridge
     .axisXMin = 0.5
-    .axisXMax = .nGroups + 0.5
+    .axisXMax = max (1, .nGroups) + 0.5   ; clamp: a 0-row table would make left = right
     .axisYMin = .yMin
     .axisYMax = .yMax
 
@@ -3481,6 +3548,12 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     # Step 1: Theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
+    # Categorical x-axis labels must exist before @emlDrawCategoricalXAxis
+    # renders them. In the form path the pre-dispatch block has already
+    # measured and this is a no-op; from anywhere else it is the difference
+    # between a figure and an aborted script. Must come before this
+    # procedure sets its own Axes: the measurement installs its own.
+    @emlEnsureCategoricalLabels: .objectId, .catCol$, .vpW, .vpH
 
     @emlSanitizeLabel: .title$
     .title$ = emlSanitizeLabel.result$
@@ -3612,7 +3685,7 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
 
     # Step 6: X-axis layout
     .xMin = 0.5
-    .xMax = .nCats + 0.5
+    .xMax = max (1, .nCats) + 0.5   ; clamp: a 0-row table would make left = right
 
     # Step 7: Set viewport and axes
     @emlSetPanelViewport
@@ -3745,6 +3818,12 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
 
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
+    # Categorical x-axis labels must exist before @emlDrawCategoricalXAxis
+    # renders them. In the form path the pre-dispatch block has already
+    # measured and this is a no-op; from anywhere else it is the difference
+    # between a figure and an aborted script. Must come before this
+    # procedure sets its own Axes: the measurement installs its own.
+    @emlEnsureCategoricalLabels: .objectId, .catCol$, .vpW, .vpH
     @emlSanitizeLabel: .title$
     .title$ = emlSanitizeLabel.result$
 
@@ -3837,7 +3916,7 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
         .yMax = .vMax
     endif
     .xMin = 0.5
-    .xMax = .nCats + 0.5
+    .xMax = max (1, .nCats) + 0.5   ; clamp: a 0-row table would make left = right
 
     @emlSetPanelViewport
     Axes: .xMin, .xMax, .yMin, .yMax

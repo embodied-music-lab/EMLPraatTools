@@ -341,6 +341,27 @@ procedure emlInitDrawingDefaults
     # Typography
     emlFont$ = "Helvetica"
     emlSubtitle$ = ""
+    # Categorical x-axis fit state.
+    #
+    # @emlDrawCategoricalXAxis is a pure renderer: it READS
+    # emlFitCategoricalLabels.rotated / .actualVerticalInches rather than
+    # measuring, because overhang has to be known before margins are set and
+    # margins are set before any drawing happens. The only caller that
+    # measures is the pre-dispatch block in eml-graphs-form.praat, so until
+    # 6 Aug 2026 the six categorical graph types (bar, violin, box, grouped
+    # violin, grouped box, spaghetti) could not be drawn from anywhere else:
+    # the renderer aborted the whole figure with "Unknown variable:
+    # emlFitCategoricalLabels.rotated" before a single mark was placed.
+    # Found by calling @emlDrawViolinPlot from a test harness.
+    #
+    # Seeding them here makes the unmeasured case degrade to a horizontal,
+    # untruncated axis — labels may crowd, but the figure is produced — and
+    # any caller that does measure overwrites these on the way past.
+    emlFitCategoricalLabels.rotated = 0
+    emlFitCategoricalLabels.overhangInches = 0
+    emlFitCategoricalLabels.actualVerticalInches = 0
+    emlCatMeasuredKey$ = ""
+    emlBarData_key$ = ""
     # Scatter plot options
     scatterDotSize = 2
     scatterRegressionLine = 0
@@ -2771,13 +2792,55 @@ procedure emlMeasureCategoricalLabels: .tableId, .colName$, .vpW, .vpH
 
     # Measurement viewport — same geometry as production
     .xMin = 0.5
-    .xMax = .nLabels + 0.5
+    .xMax = max (1, .nLabels) + 0.5   ; clamp: 0 categories would make left = right
     Font size: emlSetAdaptiveTheme.bodySize
     @emlSetPanelViewport
     Axes: .xMin, .xMax, 0, 1
 
     # Measure rotation, truncation, overhang
     @emlFitCategoricalLabels: .nLabels, .xMin, .xMax
+
+    # Record what was measured, so @emlEnsureCategoricalLabels can tell a
+    # measurement that already covers this table/column/viewport from one that
+    # does not. Viewport dimensions belong in the key: rotation and truncation
+    # are both functions of available width.
+    emlCatMeasuredKey$ = string$ (.tableId) + "|" + .colName$ + "|"
+    ... + string$ (.vpW) + "x" + string$ (.vpH)
+endproc
+
+
+# ============================================================================
+# @emlEnsureCategoricalLabels
+# ============================================================================
+# Measures categorical labels unless the current measurement already covers
+# this table, column and viewport.
+#
+# @emlDrawCategoricalXAxis is a pure renderer over emlCatLabel$[] and
+# emlFitCategoricalLabels.*, and until 6 Aug 2026 the ONLY thing that
+# populated them was the pre-dispatch block in eml-graphs-form.praat. Every
+# other route into a categorical graph type — a PraatGen standalone script, a
+# test harness, any future wrapper — aborted the figure outright at
+# "Undefined indexed variable «emlCatLabel$[1]»", with nothing drawn and no
+# message a user could act on.
+#
+# Call this EARLY in a draw procedure — after @emlSetAdaptiveTheme, before the
+# procedure sets its own Axes. @emlMeasureCategoricalLabels installs its own
+# measurement viewport and axes, so calling it mid-draw would silently rescale
+# everything drawn afterwards.
+#
+# In the form path the key matches and this is a no-op, so the pre-dispatch
+# measurement (whose overhang feeds the margin calculation) still governs.
+# ============================================================================
+
+procedure emlEnsureCategoricalLabels: .tableId, .colName$, .vpW, .vpH
+    .key$ = string$ (.tableId) + "|" + .colName$ + "|"
+    ... + string$ (.vpW) + "x" + string$ (.vpH)
+    if not variableExists ("emlCatMeasuredKey$")
+        emlCatMeasuredKey$ = ""
+    endif
+    if emlCatMeasuredKey$ <> .key$
+        @emlMeasureCategoricalLabels: .tableId, .colName$, .vpW, .vpH
+    endif
 endproc
 
 
@@ -2917,6 +2980,24 @@ procedure emlDrawCategoricalXAxis: .nLabels, .xMin, .xMax, .yMin, .yMax, .xLabel
     else
         .drawTick$ = "no"
     endif
+    if .nLabels < 1
+        # Zero categories — a 0-row table, or a category column of blanks.
+        # The graphs form refuses this upstream (eml-graphs-form.praat:1305),
+        # so the case only reaches here from a PraatGen standalone script or
+        # another wrapper. Until 6 Aug 2026 every categorical type then died at
+        # "Left and right should not be equal" when Axes: received 0.5, 0.5.
+        # The x-range is clamped now, so say plainly what happened instead of
+        # handing back a blank rectangle the reader has to diagnose.
+        Font size: emlSetAdaptiveTheme.bodySize
+        Colour: "{0.45, 0.45, 0.45}"
+        Text: (.xMin + .xMax) / 2, "centre", (.yMin + .yMax) / 2, "half",
+        ... "No data to plot"
+        Colour: emlSetAdaptiveTheme.textColor$
+        appendInfoLine: "NOTE: no categories found in the group column — ",
+        ... "empty axes drawn."
+        goto CAT_LABELS_DONE
+    endif
+
     if emlFitCategoricalLabels.rotated
         for .i from 1 to .nLabels
             One mark bottom: .i, "no", .drawTick$, "no", ""
@@ -2930,6 +3011,9 @@ procedure emlDrawCategoricalXAxis: .nLabels, .xMin, .xMax, .yMin, .yMax, .xLabel
             One mark bottom: .i, "no", .drawTick$, "no", emlCatLabel$[.i]
         endfor
     endif
+
+    label CAT_LABELS_DONE
+
     # X-axis label
     if .xLabel$ <> "" and emlShowAxisNameX
         if emlFitCategoricalLabels.rotated = 0
@@ -2947,6 +3031,41 @@ procedure emlDrawCategoricalXAxis: .nLabels, .xMin, .xMax, .yMin, .yMax, .xLabel
             ... emlFont$, emlSetAdaptiveTheme.bodySize, "0", .xLabel$
         endif
     endif
+
+    # ------------------------------------------------------------------
+    # Tell the extent tracker where the rotated block actually landed.
+    #
+    # 6 Aug 2026. Rotated labels are drawn below and to the LEFT of the
+    # theme's outer box, and the x-axis title is pushed below them again.
+    # Neither was reported to @emlExpandDrawnExtent, so
+    # @emlAssertFullViewport — which every save path calls — selected a box
+    # that cut through both. Observed on three ordinary cohort names at
+    # 6x4 inches: "Preprofessional undergraduate" truncated correctly to
+    # "Preprofe…" and then rendered as "reprofe…" with its first character
+    # off-canvas, and the x-axis title "Cohort" vanished entirely. Redrawing
+    # the identical figure into a hand-widened viewport showed both intact,
+    # which is what identifies this as a save-extent fault and not a
+    # placement one. The overhang was already being measured — the form just
+    # spent it on the gap above the comparison matrix panel and nowhere else,
+    # so a figure with no matrix panel (the common case) lost the labels.
+    #
+    # At 45 degrees a right-anchored label extends left by the same physical
+    # distance it extends down, so one measurement serves both directions.
+    # ------------------------------------------------------------------
+    if emlFitCategoricalLabels.rotated
+        .extraDown = emlFitCategoricalLabels.actualVerticalInches
+        if .xLabel$ <> "" and emlShowAxisNameX
+            # Title sits a further font height below the rotated block.
+            .extraDown = .extraDown + emlSetAdaptiveTheme.bodySize / 72 * 2
+        endif
+        .leftReach = emlSetAdaptiveTheme.innerLeft
+        ... - emlFitCategoricalLabels.actualVerticalInches
+        @emlExpandDrawnExtent: emlPanelOriginX + .leftReach,
+        ... emlPanelOriginX + emlSetAdaptiveTheme.outerRight,
+        ... emlPanelOriginY + emlSetAdaptiveTheme.outerTop,
+        ... emlPanelOriginY + emlSetAdaptiveTheme.outerBottom + .extraDown
+    endif
+
 endproc
 
 
@@ -3167,8 +3286,35 @@ procedure emlMeasureBarData: .tableId, .groupCol$, .valueCol$, .errorMode, .erro
         endif
     endfor
 
+    # Key for @emlEnsureBarData: what this measurement actually covers.
+    emlBarData_key$ = string$ (.tableId) + "|" + .groupCol$ + "|"
+    ... + .valueCol$ + "|" + string$ (.errorMode) + "|" + .errorCol$
+
 endproc
 
+
+# ============================================================================
+# @emlEnsureBarData
+# ============================================================================
+# Measures bar chart data unless the current emlBarData_* state already covers
+# this table, these columns and this error mode.
+#
+# @emlDrawBarChart is a pure renderer over emlBarData_*; the only producer was
+# the pre-dispatch block in eml-graphs-form.praat, so every other caller hit
+# "Unknown variable: emlBarData_nGroups" and drew nothing. In the form path
+# the key matches and this costs one string comparison.
+# ============================================================================
+
+procedure emlEnsureBarData: .tableId, .groupCol$, .valueCol$, .errorMode, .errorCol$
+    .key$ = string$ (.tableId) + "|" + .groupCol$ + "|"
+    ... + .valueCol$ + "|" + string$ (.errorMode) + "|" + .errorCol$
+    if not variableExists ("emlBarData_key$")
+        emlBarData_key$ = ""
+    endif
+    if emlBarData_key$ <> .key$
+        @emlMeasureBarData: .tableId, .groupCol$, .valueCol$, .errorMode, .errorCol$
+    endif
+endproc
 
 # ============================================================================
 # END OF EML GRAPHS PROCEDURES
