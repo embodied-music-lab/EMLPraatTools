@@ -132,7 +132,7 @@ git clone <repo> && cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect exit status 0.** 948 checks, all passing, plus 8 attestations
+**Expect exit status 0.** 1045 checks, all passing, plus 8 attestations
 reported separately and not counted as checks.
 
 Until 6 August 2026 this said "expect exit status 1", because R7 — the
@@ -146,8 +146,8 @@ is driven now, and the suite has no designed failures left.
 An **attestation** is a claim backed by a screenshot or a recorded
 observation rather than by anything the script can evaluate. There are eight — seven in `v07`, and one in `v20` recording that its
 five files came from the shipping orchestrator rather than a harness. They print as `ATST`, are excluded from the check count and
-from the exit status, and are listed separately so that "948 checks passed"
-means 948 things were tested.
+from the exit status, and are listed separately so that "1045 checks passed"
+means 1045 things were tested.
 
 D96 through D99 were failing here until 6 August. They now pass, and they
 pass against captures re-driven after the fixes, not against the old ones.
@@ -300,6 +300,7 @@ be skipped without weakening a claim made in this document.
 | `v16_csv_export.R` | The CSV export: every number against R, plus the structural assertions that make the file unambiguous to pivot | `evidence/csv_export/*.csv` | 45 |
 | `v17_broom_parity.R` | The broom-shaped export: tidy / glance / augment / post-hoc / effect size against R, structurally and numerically | `evidence/csv_export/broom/` | 48 |
 | `v20_shipping_anova_broom.R` | **CSV migration checkpoint 1.** The SHIPPING one-way ANOVA path (`@emlRunAnovaAnalysis`) in broom's three-file shape: tidy / glance / augment, plus post-hoc and effect sizes as their own frames. Column names AND order asserted against broom's documented contract; every value against base R | `evidence/csv_export/broom/shipping_anova_*` | 55 |
+| `v21_shipping_paths_broom.R` | **CSV migration, paths 2-11.** The other ten shipping orchestrators in broom's three-file shape, every file written by the orchestrator the menu calls. Asserts that htest paths write NO augment, since broom has none for them | `evidence/csv_export/broom/ship_*` | 97 |
 | `v19_nist_strd.R` | **Tier C.** The plugin against NIST StRD certified values, scored in log relative error. Contributes checks only when the `.dat` files have been ingested; prints a loud SKIP otherwise | `evidence/nist/` | 98 |
 | `v18_sweep_parity.R` | **Tier B.** One-way ANOVA, Tukey-Kramer and Kruskal-Wallis over a 16-case designed grid: k = 2/3/5, n per cell 3-200, balanced and 6:1 unbalanced, tie-free to heavily tied, 1:1 and 10:1 variance ratios | `evidence/sweep/` | 294 |
 

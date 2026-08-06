@@ -61,7 +61,12 @@ scripts <- c(
     # broom's three-file shape. Distinct from v17, which checks the writer
     # called directly by a harness. A path is not converted until it has a
     # check at this level.
-    "v20_shipping_anova_broom.R"
+    "v20_shipping_anova_broom.R",
+    # v21 is the rest of the CSV migration: the other ten shipping paths in
+    # broom's three-file shape, every file written by the orchestrator the
+    # menu calls. Includes the assertion that htest paths write NO augment,
+    # since broom has none for them.
+    "v21_shipping_paths_broom.R"
 )
 
 cat("EML Praat Tools validation suite\n")
