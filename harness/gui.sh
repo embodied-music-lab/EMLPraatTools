@@ -231,7 +231,10 @@ EML_GRAPHS=$((747 + EML_YOFF))
 # addressed — restoring a menu entry means restoring its coordinate too, and
 # a coordinate with no entry is worse than no coordinate: the click lands on
 # whatever moved into its place.
-EML_DEMO=$((773 + EML_YOFF))
+# 6 Aug (later): "Check & repair data..." was added after EML Graphs, with a
+# separator, so Create Demo Table moved down one visible row.
+EML_CHECKDATA=$((773 + EML_YOFF))
+EML_DEMO=$((799 + EML_YOFF))
 # EML_BATCH=$((773 + EML_YOFF))       # tabled 6 Aug
 # EML_STATSDEMO=$((824 + EML_YOFF))   # tabled 6 Aug
 # EML_QUICKSTART=$((850 + EML_YOFF))  # tabled 6 Aug
