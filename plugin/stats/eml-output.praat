@@ -46,7 +46,7 @@
 #   @emlReportAPA, @emlReportToFile, @emlFormatEffectLabel,
 #   @emlPadRight, @emlUnderscoreToSpace, @emlSaveInfoToFile,
 #   @emlCSVInit, @emlCSVAddRow, @emlExportStatsCSV, @emlClearInfo,
-#   @emlReportPWithExact, @emlResetExplanations
+#   @emlReportPWithExact, @emlResetExplanations, @emlReportContext
 #
 # All procedures use the "eml" prefix (EML Stats).
 # ============================================================================
@@ -168,22 +168,101 @@ procedure emlClearInfo
 endproc
 
 
+# ────────────────────────────────────────────────────────────────────────────
+# REPORT PROVENANCE (D27)
+#
+# The Info window appends. That is deliberate (see @emlClearInfo, and the
+# "Clear Info window" toggle, which now persists), but it means one session
+# holds several report blocks at once, and until now the only thing telling
+# two blocks apart was the timestamp. An audited session produced three
+# Kruskal-Wallis blocks whose headers were byte-identical while two of them
+# reported different post-hoc p-values, because the adjustment had been
+# changed between them. Nothing in the header said so.
+#
+# Two facts fix that, and both belong in the header rather than buried in the
+# body, because the header is what a user scrolling back sees:
+#
+#   emlReportAnalysis$  WHERE this block came from — the analysis dialog, a
+#                       graph Draw, the wizard. Titles do not carry this: the
+#                       Run and the Draw of one test print the same title.
+#   emlReportAdjust$    the correction or adjustment in force for this block
+#                       (holm, bonferroni, bh, Tukey HSD, ...). The CSV
+#                       already self-documents this in its `test` column; the
+#                       Info window did not.
+#
+# Both are optional. A caller sets them with @emlReportContext immediately
+# before @emlReportHeader, and the header CONSUMES them — it prints them and
+# clears them. That is the whole discipline, and it is what keeps a stale
+# adjustment from a previous post-hoc test appearing on the header of a
+# report that has no post-hoc at all. Never read these two directly; never
+# leave them set.
+#
+# @emlHandleCommonFields sets the analysis-dialog origin on every Run, so the
+# wrapper path is labelled without any wrapper having to opt in. A block with
+# no origin line came from somewhere else — today, a graph Draw.
+#
+# Cost is one line, and only when there is something to say.
+# ────────────────────────────────────────────────────────────────────────────
+emlReportAnalysis$ = ""
+emlReportAdjust$ = ""
+
+# @emlReportContext: .analysis$, .adjustment$
+# Declare provenance for the NEXT @emlReportHeader. Either argument may be ""
+# to leave that half unstated. Consumed by the header.
+procedure emlReportContext: .analysis$, .adjustment$
+    emlReportAnalysis$ = .analysis$
+    emlReportAdjust$ = .adjustment$
+endproc
+
+
 procedure emlReportHeader: .title$
-    # Print report header with double-line borders and timestamp.
+    # Print report header with double-line borders, timestamp, and — when the
+    # caller declared them via @emlReportContext — the originating analysis
+    # and the correction in force (D27).
     # Always appends — never clears. Use @emlClearInfo for explicit clearing.
     .border$ = "══════════════════════════════════════════════"
     .indent$ = "  "
     .prefix$ = "EML Stats : "
     .titleLine$ = .indent$ + .prefix$ + .title$
     .timestamp$ = .indent$ + date$ ()
+
+    ; Provenance line. Built only from what the caller actually supplied, so
+    ; the header never asserts an origin or an adjustment it does not know.
+    .context$ = ""
+    .joiner$ = "  ·  "
+    if variableExists ("emlReportAnalysis$")
+        if emlReportAnalysis$ <> ""
+            .context$ = .indent$ + "from: " + emlReportAnalysis$
+        endif
+    endif
+    if variableExists ("emlReportAdjust$")
+        if emlReportAdjust$ <> ""
+            .adjustPart$ = "adjustment: " + emlReportAdjust$
+            if .context$ = ""
+                .context$ = .indent$ + .adjustPart$
+            else
+                .context$ = .context$ + .joiner$ + .adjustPart$
+            endif
+        endif
+    endif
+
     .sep$ = ""
     appendInfoLine: .sep$
     appendInfoLine: .border$
     appendInfoLine: .titleLine$
     appendInfoLine: .timestamp$
+    if .context$ <> ""
+        appendInfoLine: .context$
+    endif
     appendInfoLine: .border$
     .sep2$ = ""
     appendInfoLine: .sep2$
+
+    ; Consumed. A context declared for this report must not leak onto the
+    ; next one — that is how the stale-adjustment version of D27 would come
+    ; back, in a subtler form.
+    emlReportAnalysis$ = ""
+    emlReportAdjust$ = ""
 endproc
 
 
@@ -504,18 +583,24 @@ procedure emlFormatEffectLabel: .effectValue, .effectType$
     # Set thresholds based on effect type (Cohen's conventions)
     # d: negligible < 0.2, small 0.2–0.5, medium 0.5–0.8, large >= 0.8
     # r, w, V: negligible < 0.1, small 0.1–0.3, medium 0.3–0.5, large >= 0.5
-    # eta_squared, omega_squared: negligible < 0.01, small 0.01–0.06, medium 0.06–0.14, large >= 0.14
+    # eta_squared, epsilon2: negligible < 0.01, small 0.01–0.06, medium 0.06–0.14, large >= 0.14
     # r_squared: negligible < 0.01, small 0.01–0.09, medium 0.09–0.25, large >= 0.25
     #   (Cohen 1988: R-squared benchmarks are the squares of the r benchmarks
     #    0.1 / 0.3 / 0.5, so d thresholds mislabel them badly — R-squared = 0.3
     #    is a large effect, not a small one.)
+    #
+    # D21: an "omega_squared" token was accepted here. Nothing in the plugin
+    # computes omega-squared — the token appeared at no call site, in no test
+    # and in no validation script — so the branch could not be reached and
+    # advertised a capability the library does not have. Removed. If omega²
+    # is ever added as an estimator, add the token back beside .eta$: it takes
+    # the same 0.01 / 0.06 / 0.14 benchmarks.
 
     .d$ = "d"
     .r$ = "r"
     .w$ = "w"
     .vUpper$ = "V"
     .eta$ = "eta_squared"
-    .omega$ = "omega_squared"
     .eps$ = "epsilon2"
     .epsAlt$ = "epsilon_squared"
     .rSq$ = "r_squared"
@@ -530,7 +615,7 @@ procedure emlFormatEffectLabel: .effectValue, .effectType$
         .negligibleThresh = 0.1
         .mediumThresh = 0.3
         .largeThresh = 0.5
-    elsif .effectType$ = .eta$ or .effectType$ = .omega$ or .effectType$ = .eps$ or .effectType$ = .epsAlt$
+    elsif .effectType$ = .eta$ or .effectType$ = .eps$ or .effectType$ = .epsAlt$
         .negligibleThresh = 0.01
         .mediumThresh = 0.06
         .largeThresh = 0.14
@@ -1031,6 +1116,16 @@ procedure emlHandleCommonFields
     if clear_Info_window
         @emlClearInfo
     endif
+
+    ; D27: this runs once per Run, inside the wrapper's repeat loop, and it
+    ; runs before the orchestrator prints anything — so it is the one place
+    ; that can stamp the analysis path's origin on the report about to be
+    ; written, for every wrapper at once and with no wrapper edited.
+    ; @emlWrapperInit would be wrong: it is called once, outside the loop,
+    ; and would label only the first of a session's runs.
+    ; A wrapper that also knows its adjustment should call @emlReportContext
+    ; itself after this, which overwrites both halves.
+    @emlReportContext: "analysis dialog", ""
 endproc
 
 
@@ -1167,8 +1262,24 @@ endproc
 # D18/D65: the file name was .tableName$ + "_results" for every analysis, so
 # two different tests on one table proposed the same name and the second
 # silently overwrote the first. The analysis is now part of the proposal.
-# D18's other half — the paired wrapper passing its reshaped intermediate, so
-# the name came out "pairedLong_results" — is fixed at the call site.
+#
+# D105. An earlier version of this comment claimed that "D18's other half —
+# the paired wrapper passing its reshaped intermediate, so the name came out
+# 'pairedLong_results' — is fixed at the call site." That was wrong twice
+# over, and it is corrected here rather than deleted so the same claim is not
+# made again:
+#   1. The paired wrapper never passed the intermediate. It passes
+#      tableName$, taken from @emlWrapperInit, which is the source table the
+#      user selected (scripts/eml-compare-paired.praat). The reshaped
+#      "pairedLong" Table it builds for the spaghetti plot is never given to
+#      this procedure. There was nothing at that call site to fix.
+#   2. The "pairedLong_results" default the auditor actually saw does not
+#      come from this procedure at all. It comes from the graphs form, which
+#      builds its own export default from selected$ ("Table") — whatever
+#      Table happens to be selected at that moment, which after the reshape
+#      is the intermediate. That is where D18 is live, and it is not fixed by
+#      anything in this file.
+# Nothing below handles that case. Do not read this procedure as covering it.
 procedure emlWrapperExportCSV: .tableName$, .analysis$
     if not variableExists ("emlLastCSVFolder$")
         emlLastCSVFolder$ = homeDirectory$
@@ -1240,7 +1351,13 @@ procedure emlWrapperExportCSV: .tableName$, .analysis$
                     comment: "Please report this — it is a defect."
                 endPause: "OK", 1, 0
             endif
-            emlResult_declared = 0
+            ; NOT cleared here, deliberately. Clearing after a successful
+            ; export meant a SECOND press of CSV in the same analysis fell
+            ; through to the legacy single-file path and silently wrote a
+            ; different, older-format file. The declaration stays valid for as
+            ; long as the analysis it describes is the current one, and
+            ; @emlCSVInit -- which every orchestrator calls as its first
+            ; statement -- is what makes that true.
             goto WRAPPER_EXPORT_DONE
         endif
 

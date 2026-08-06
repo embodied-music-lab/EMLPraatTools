@@ -45,7 +45,7 @@
 #   include eml-core-descriptive.praat
 #   myData# = {1, 2, 3, 4, 5}
 #   @emlDescribe: myData#
-#   appendInfoLine: emlDescribe.summary$
+#   appendInfoLine: "Mean: " + fixed$ (emlDescribe.mean, 4)
 # ============================================================================
 
 
@@ -591,8 +591,23 @@ endproc
 #         .min, .max, .range
 #         .skewness, .kurtosis
 #         .ci95Lower, .ci95Upper
-#         .summary$ — multi-line formatted string
 # Calls all other pp procedures and assembles results.
+#
+# D7. This used to build a .summary$ as well — sixteen string concatenations
+# rendering the same fifteen numbers as a pre-formatted multi-line block, on
+# every call. Nothing in the shipped plugin ever read it. The Info window is
+# written by @emlReportDescriptives (stats/eml-output.praat), which lays the
+# same values out itself through @emlReportLine, and that is the only
+# rendering a user sees.
+#
+# It was not merely unused, it was actively harmful: two renderings of one
+# set of numbers drift, and this pair had already drifted — .summary$ said
+# "Kurtosis (excess)" while the report path said "Kurtosis" for the same
+# excess-kurtosis value, which is D4. Deleting the copy nobody reads removes
+# the drift rather than re-synchronising it.
+#
+# If a caller ever needs a pre-formatted block, render it from these outputs
+# at the point of use. Do not reintroduce a second renderer here.
 # ----------------------------------------------------------------------------
 procedure emlDescribe: .data#
     .n = size (.data#)
@@ -612,7 +627,6 @@ procedure emlDescribe: .data#
         .kurtosis = undefined
         .ci95Lower = undefined
         .ci95Upper = undefined
-        .summary$ = "Descriptive Statistics (n = 0): no data"
     else
         @emlMean: .data#
         .mean = emlMean.result
@@ -639,22 +653,6 @@ procedure emlDescribe: .data#
         @emlCI: .data#, 0.95
         .ci95Lower = emlCI.lower
         .ci95Upper = emlCI.upper
-        # Build summary string
-        .summary$ = "Descriptive Statistics (n = " + string$ (.n) + ")" + newline$
-        .summary$ = .summary$ + "  Mean:       " + fixed$ (.mean, 4) + newline$
-        .summary$ = .summary$ + "  Median:     " + fixed$ (.median, 4) + newline$
-        .summary$ = .summary$ + "  SD:         " + fixed$ (.sd, 4) + newline$
-        .summary$ = .summary$ + "  Variance:   " + fixed$ (.variance, 4) + newline$
-        .summary$ = .summary$ + "  SEM:        " + fixed$ (.sem, 4) + newline$
-        .summary$ = .summary$ + "  Min:        " + fixed$ (.min, 4) + newline$
-        .summary$ = .summary$ + "  Max:        " + fixed$ (.max, 4) + newline$
-        .summary$ = .summary$ + "  Range:      " + fixed$ (.range, 4) + newline$
-        .summary$ = .summary$ + "  Q1:         " + fixed$ (.q1, 4) + newline$
-        .summary$ = .summary$ + "  Q3:         " + fixed$ (.q3, 4) + newline$
-        .summary$ = .summary$ + "  IQR:        " + fixed$ (.iqr, 4) + newline$
-        .summary$ = .summary$ + "  Skewness:   " + fixed$ (.skewness, 4) + newline$
-        .summary$ = .summary$ + "  Kurtosis (excess): " + fixed$ (.kurtosis, 4) + newline$
-        .summary$ = .summary$ + "  95% CI:     [" + fixed$ (.ci95Lower, 4) + ", " + fixed$ (.ci95Upper, 4) + "]"
     endif
 endproc
 

@@ -328,7 +328,7 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
             @emlDeclareTukeyResult: .groupCol$
             @emlResultStageExtra: "posthoc"
         endif
-        @emlDeclareAnovaEffectSizes: .groupCol$
+        @emlDeclareAnovaEffectSizes: .groupCol$, .doTukey
         @emlResultStageExtra: "effectsize"
     endif
     @emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
@@ -413,9 +413,19 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
 
     if .error$ = ""
         @emlResultClearExtras
-        if .doDunn and emlDunnTest.error$ = ""
-            @emlDeclareDunnResult: .groupCol$
-            @emlResultStageExtra: "posthoc"
+        ; NESTED, NOT `and`. Praat evaluates BOTH operands of `and`, so
+        ; `if .doNon and emlX.error$ = ""` reads emlX's namespace even when
+        ; .doNon is 0 -- and on a single-family run that namespace does not
+        ; exist, which aborts the script before any wrapper code. Only "both"
+        ; survived, and "both" was what every driver used. Found 6 Aug 2026
+        ; by driving every branch of every orchestrator.
+        if .doDunn = 1
+            if variableExists ("emlDunnTest.error$")
+                if emlDunnTest.error$ = ""
+                    @emlDeclareDunnResult: .groupCol$
+                    @emlResultStageExtra: "posthoc"
+                endif
+            endif
         endif
         @emlDeclareKWResult: .tableName$, .dataCol$, .groupCol$
     endif
@@ -1325,6 +1335,20 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
     emlResult_declared = 0
+
+    ; These per-test locals are read UNCONDITIONALLY by
+    ; @emlDeclareCorrelationResult but assigned only inside their own branch.
+    ; Initialising them is load-bearing: without it a Pearson-only run --
+    ; this wrapper's DEFAULT -- aborted with "Unknown variable: .spearRho"
+    ; before any wrapper code ran.
+    .pearR = undefined
+    .pearT = undefined
+    .pearDf = undefined
+    .pearP = undefined
+    .spearRho = undefined
+    .spearT = undefined
+    .spearDf = undefined
+    .spearP = undefined
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -2197,9 +2221,15 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     ; BUILD: no reporter and no CSV emission ever existed for this path.
     if .error$ = ""
         @emlResultClearExtras
-        if .doPostHoc and emlRMPostHoc.nPairs > 0
-            @emlDeclareRMPostHoc
-            @emlResultStageExtra: "posthoc"
+        ; Nested, not `and`: with post-hoc off, @emlRMPostHoc never ran and
+        ; emlRMPostHoc.nPairs does not exist. Praat evaluates both operands.
+        if .doPostHoc = 1
+            if variableExists ("emlRMPostHoc.nPairs")
+                if emlRMPostHoc.nPairs > 0
+                    @emlDeclareRMPostHoc
+                    @emlResultStageExtra: "posthoc"
+                endif
+            endif
         endif
         @emlDeclareRMResult: .tableName$, .n, .k
     endif
@@ -2294,9 +2324,15 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     ; orchestrator's own.
     if .error$ = "" and emlExtractConditionMatrix.error$ = ""
         @emlResultClearExtras
-        if .doPostHoc and emlRMPostHoc.nPairs > 0
-            @emlDeclareFriedmanPostHoc
-            @emlResultStageExtra: "posthoc"
+        ; Nested, not `and`: with post-hoc off, @emlRMPostHoc never ran and
+        ; emlRMPostHoc.nPairs does not exist. Praat evaluates both operands.
+        if .doPostHoc = 1
+            if variableExists ("emlRMPostHoc.nPairs")
+                if emlRMPostHoc.nPairs > 0
+                    @emlDeclareFriedmanPostHoc
+                    @emlResultStageExtra: "posthoc"
+                endif
+            endif
         endif
         @emlDeclareFriedmanResult: .tableName$, .n, .k
     endif
@@ -2613,11 +2649,19 @@ endproc
 # frames in R; base aov and TukeyHSD carry neither. Same treatment here.
 # Call AFTER the Tukey frame has been flushed.
 # ============================================================================
-procedure emlDeclareAnovaEffectSizes: .groupCol$
+procedure emlDeclareAnovaEffectSizes: .groupCol$, .doTukey
     @emlTidyClear
     @emlTidyRow: .groupCol$
     @emlTidyNum: "effect.size", emlOneWayAnova.etaSquared
     @emlTidyStr: "effect.size.type", "eta.squared"
+
+    ; The per-pair Cohen's d, and the group names it labels them with, are
+    ; produced by the Tukey pass. With post-hoc off they do not exist, and
+    ; reading them aborts the script -- the same shape of defect as the
+    ; single-family guards above, found the same way.
+    if .doTukey <> 1
+        goto ANOVA_EFFECTS_DONE
+    endif
     for .i from 1 to emlOneWayAnova.nGroups - 1
         for .j from .i + 1 to emlOneWayAnova.nGroups
             @emlTidyRow: .groupCol$
@@ -2627,6 +2671,8 @@ procedure emlDeclareAnovaEffectSizes: .groupCol$
             @emlTidyStr: "effect.size.type", "cohens.d"
         endfor
     endfor
+
+    label ANOVA_EFFECTS_DONE
 endproc
 
 
@@ -2670,39 +2716,56 @@ procedure emlDeclareTwoGroupResult: .tableName$, .dataCol$, .groupCol$,
     ... .doPar, .doNon, .g1$, .g2$
     @emlResultBegin: .tableName$, "Two-group comparison"
 
-    if .doPar and emlTTest.error$ = ""
-        @emlTidyRow: ""
-        @emlTidyNum: "estimate",  emlTTest.meanDiff
-        @emlTidyNum: "estimate1", emlTTest.mean1
-        @emlTidyNum: "estimate2", emlTTest.mean2
-        @emlTidyNum: "statistic", emlTTest.t
-        @emlTidyNum: "p.value",   emlTTest.p
-        @emlTidyNum: "parameter", emlTTest.df
-        @emlTidyStr: "method",      emlTTest.method$
-        @emlTidyStr: "alternative", "two.sided"
+    if .doPar = 1
+        if variableExists ("emlTTest.error$")
+            if emlTTest.error$ = ""
+                @emlTidyRow: ""
+                @emlTidyNum: "estimate",  emlTTest.meanDiff
+                @emlTidyNum: "estimate1", emlTTest.mean1
+                @emlTidyNum: "estimate2", emlTTest.mean2
+                @emlTidyNum: "statistic", emlTTest.t
+                @emlTidyNum: "p.value",   emlTTest.p
+                @emlTidyNum: "parameter", emlTTest.df
+                @emlTidyStr: "method",      emlTTest.method$
+                @emlTidyStr: "alternative", "two.sided"
+            endif
+        endif
     endif
-    if .doNon and emlMannWhitneyU.error$ = ""
-        @emlTidyRow: ""
-        @emlTidyNum: "statistic",   emlMannWhitneyU.u1
-        @emlTidyNum: "p.value",     emlMannWhitneyU.p
-        @emlTidyStr: "method",      emlMannWhitneyU.method$
-        @emlTidyStr: "alternative", emlMannWhitneyU.alternative$
+    if .doNon = 1
+        if variableExists ("emlMannWhitneyU.error$")
+            if emlMannWhitneyU.error$ = ""
+                @emlTidyRow: ""
+                @emlTidyNum: "statistic",   emlMannWhitneyU.u1
+                @emlTidyNum: "p.value",     emlMannWhitneyU.p
+                @emlTidyStr: "method",      emlMannWhitneyU.method$
+                @emlTidyStr: "alternative", emlMannWhitneyU.alternative$
+            endif
+        endif
     endif
 
     ; glance for an htest is broom's tidy again, plus what we know about the
     ; design. The parametric row wins when both ran, matching the report.
-    if .doPar and emlTTest.error$ = ""
-        @emlGlanceNum: "statistic", emlTTest.t
-        @emlGlanceNum: "p.value",   emlTTest.p
-        @emlGlanceNum: "parameter", emlTTest.df
-        @emlGlanceNum: "estimate",  emlTTest.meanDiff
-        @emlGlanceStr: "method",    emlTTest.method$
-        @emlGlanceNum: "nobs",      emlTTest.n1 + emlTTest.n2
-    elsif .doNon and emlMannWhitneyU.error$ = ""
-        @emlGlanceNum: "statistic", emlMannWhitneyU.u1
-        @emlGlanceNum: "p.value",   emlMannWhitneyU.p
-        @emlGlanceStr: "method",    emlMannWhitneyU.method$
-        @emlGlanceNum: "nobs",      emlMannWhitneyU.n1 + emlMannWhitneyU.n2
+    if .doPar = 1
+        if variableExists ("emlTTest.error$")
+            if emlTTest.error$ = ""
+                @emlGlanceNum: "statistic", emlTTest.t
+                @emlGlanceNum: "p.value",   emlTTest.p
+                @emlGlanceNum: "parameter", emlTTest.df
+                @emlGlanceNum: "estimate",  emlTTest.meanDiff
+                @emlGlanceStr: "method",    emlTTest.method$
+                @emlGlanceNum: "nobs",      emlTTest.n1 + emlTTest.n2
+            endif
+        endif
+    endif
+    elsif .doNon = 1
+        if variableExists ("emlMannWhitneyU.error$")
+            if emlMannWhitneyU.error$ = ""
+                @emlGlanceNum: "statistic", emlMannWhitneyU.u1
+                @emlGlanceNum: "p.value",   emlMannWhitneyU.p
+                @emlGlanceStr: "method",    emlMannWhitneyU.method$
+                @emlGlanceNum: "nobs",      emlMannWhitneyU.n1 + emlMannWhitneyU.n2
+            endif
+        endif
     endif
     @emlGlanceNum: "n.groups", 2
 endproc
@@ -2710,18 +2773,26 @@ endproc
 
 procedure emlDeclareTwoGroupEffects: .doPar, .doNon
     @emlTidyClear
-    if .doPar and emlCohenD.error$ = ""
-        @emlTidyRow: ""
-        @emlTidyNum: "effect.size", emlCohenD.d
-        @emlTidyStr: "effect.size.type", "cohens.d"
-        @emlTidyRow: ""
-        @emlTidyNum: "effect.size", emlCohenD.g
-        @emlTidyStr: "effect.size.type", "hedges.g"
+    if .doPar = 1
+        if variableExists ("emlCohenD.error$")
+            if emlCohenD.error$ = ""
+                @emlTidyRow: ""
+                @emlTidyNum: "effect.size", emlCohenD.d
+                @emlTidyStr: "effect.size.type", "cohens.d"
+                @emlTidyRow: ""
+                @emlTidyNum: "effect.size", emlCohenD.g
+                @emlTidyStr: "effect.size.type", "hedges.g"
+            endif
+        endif
     endif
-    if .doNon and emlRankBiserialR.error$ = ""
-        @emlTidyRow: ""
-        @emlTidyNum: "effect.size", emlRankBiserialR.r
-        @emlTidyStr: "effect.size.type", "rank.biserial"
+    if .doNon = 1
+        if variableExists ("emlRankBiserialR.error$")
+            if emlRankBiserialR.error$ = ""
+                @emlTidyRow: ""
+                @emlTidyNum: "effect.size", emlRankBiserialR.r
+                @emlTidyStr: "effect.size.type", "rank.biserial"
+            endif
+        endif
     endif
 endproc
 
@@ -2923,52 +2994,77 @@ endproc
 procedure emlDeclarePairedResult: .tableName$, .col1$, .col2$, .doPar, .doNon
     @emlResultBegin: .tableName$, "Paired comparison"
 
-    if .doPar and emlTTestPaired.error$ = ""
-        @emlTidyRow: ""
-        @emlTidyNum: "estimate",  emlTTestPaired.meanDiff
-        @emlTidyNum: "statistic", emlTTestPaired.t
-        @emlTidyNum: "p.value",   emlTTestPaired.p
-        @emlTidyNum: "parameter", emlTTestPaired.df
-        @emlTidyStr: "method",      "Paired t-test"
-        @emlTidyStr: "alternative", "two.sided"
+    if .doPar = 1
+        if variableExists ("emlTTestPaired.error$")
+            if emlTTestPaired.error$ = ""
+                @emlTidyRow: ""
+                @emlTidyNum: "estimate",  emlTTestPaired.meanDiff
+                @emlTidyNum: "statistic", emlTTestPaired.t
+                @emlTidyNum: "p.value",   emlTTestPaired.p
+                @emlTidyNum: "parameter", emlTTestPaired.df
+                @emlTidyStr: "method",      "Paired t-test"
+                @emlTidyStr: "alternative", "two.sided"
+            endif
+        endif
     endif
     ; @emlMatchedPairsR re-runs @emlWilcoxonSignedRank, so the Wilcoxon row is
     ; declared BEFORE the effect sizes are staged. Ordering, not preference.
-    if .doNon and emlWilcoxonSignedRank.error$ = ""
-        @emlTidyRow: ""
-        @emlTidyNum: "statistic",   emlWilcoxonSignedRank.tPlus
-        @emlTidyNum: "p.value",     emlWilcoxonSignedRank.p
-        @emlTidyStr: "method",      emlWilcoxonSignedRank.method$
-        @emlTidyStr: "alternative", emlWilcoxonSignedRank.alternative$
+    if .doNon = 1
+        if variableExists ("emlWilcoxonSignedRank.error$")
+            if emlWilcoxonSignedRank.error$ = ""
+                @emlTidyRow: ""
+                @emlTidyNum: "statistic",   emlWilcoxonSignedRank.tPlus
+                @emlTidyNum: "p.value",     emlWilcoxonSignedRank.p
+                @emlTidyStr: "method",      emlWilcoxonSignedRank.method$
+                @emlTidyStr: "alternative", emlWilcoxonSignedRank.alternative$
+            endif
+        endif
     endif
 
-    if .doPar and emlTTestPaired.error$ = ""
-        @emlGlanceNum: "estimate",  emlTTestPaired.meanDiff
-        @emlGlanceNum: "statistic", emlTTestPaired.t
-        @emlGlanceNum: "p.value",   emlTTestPaired.p
-        @emlGlanceNum: "parameter", emlTTestPaired.df
-        @emlGlanceNum: "nobs",      emlTTestPaired.n
-        @emlGlanceStr: "method",    "Paired t-test"
-    elsif .doNon and emlWilcoxonSignedRank.error$ = ""
-        @emlGlanceNum: "statistic", emlWilcoxonSignedRank.tPlus
-        @emlGlanceNum: "p.value",   emlWilcoxonSignedRank.p
-        @emlGlanceNum: "nobs",      emlWilcoxonSignedRank.n
-        @emlGlanceStr: "method",    emlWilcoxonSignedRank.method$
+    if .doPar = 1
+        if variableExists ("emlTTestPaired.error$")
+            if emlTTestPaired.error$ = ""
+                @emlGlanceNum: "estimate",  emlTTestPaired.meanDiff
+                @emlGlanceNum: "statistic", emlTTestPaired.t
+                @emlGlanceNum: "p.value",   emlTTestPaired.p
+                @emlGlanceNum: "parameter", emlTTestPaired.df
+                @emlGlanceNum: "nobs",      emlTTestPaired.n
+                @emlGlanceStr: "method",    "Paired t-test"
+            endif
+        endif
+    endif
+    elsif .doNon = 1
+        if variableExists ("emlWilcoxonSignedRank.error$")
+            if emlWilcoxonSignedRank.error$ = ""
+                @emlGlanceNum: "statistic", emlWilcoxonSignedRank.tPlus
+                @emlGlanceNum: "p.value",   emlWilcoxonSignedRank.p
+                @emlGlanceNum: "nobs",      emlWilcoxonSignedRank.n
+                @emlGlanceStr: "method",    emlWilcoxonSignedRank.method$
+            endif
+        endif
     endif
 endproc
 
 
 procedure emlDeclarePairedEffects: .doPar, .doNon
     @emlTidyClear
-    if .doPar and emlCohenDz.error$ = ""
-        @emlTidyRow: ""
-        @emlTidyNum: "effect.size", emlCohenDz.dz
-        @emlTidyStr: "effect.size.type", "cohens.dz"
+    if .doPar = 1
+        if variableExists ("emlCohenDz.error$")
+            if emlCohenDz.error$ = ""
+                @emlTidyRow: ""
+                @emlTidyNum: "effect.size", emlCohenDz.dz
+                @emlTidyStr: "effect.size.type", "cohens.dz"
+            endif
+        endif
     endif
-    if .doNon and emlMatchedPairsR.error$ = ""
-        @emlTidyRow: ""
-        @emlTidyNum: "effect.size", emlMatchedPairsR.r
-        @emlTidyStr: "effect.size.type", "matched.pairs.rank.biserial"
+    if .doNon = 1
+        if variableExists ("emlMatchedPairsR.error$")
+            if emlMatchedPairsR.error$ = ""
+                @emlTidyRow: ""
+                @emlTidyNum: "effect.size", emlMatchedPairsR.r
+                @emlTidyStr: "effect.size.type", "matched.pairs.rank.biserial"
+            endif
+        endif
     endif
 endproc
 
