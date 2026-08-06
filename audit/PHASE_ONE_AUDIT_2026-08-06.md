@@ -10,6 +10,11 @@ the code, it says so instead of guessing.
 **Phase Two is multiple regression and linear mixed models. Nothing else.**
 Everything in this document is Phase One work.
 
+**Tabled by author ruling, and therefore absent from every count and cluster
+below: Stats Demo, Quick Start, the interactive tutorial, and Batch voice
+analysis.** All four are unregistered from the menu in `plugin/setup.praat`.
+A finding against their content is not a defect against this release.
+
 ---
 
 ## 1. State, verified
@@ -82,12 +87,12 @@ would have.
 ```
 findings on file                                        109
   resolved, re-verified against the emitting code        23
-  LIVE                                                   80
+  LIVE                                                   79
   misfiled / not defects (D2, D14, D31, D80, D81)         5
   needs a rendered figure to settle (D84)                 1
 ```
 
-**Eighty live.** Eight of them (D102–D109) were found during this pass and had
+**Seventy-nine live.** Eight of them (D102–D109) were found during this pass and had
 no finding covering them. D92 and D93 sit inside the resolved 23 but are
 flagged in their rows as not re-verifiable by static inspection — one needs a
 rendered figure, the other a GUI walk.
@@ -295,12 +300,11 @@ These three are the only places in this document where I would accept "document
 it as a known limitation" instead of building it — but that has to be a
 decision you make explicitly, not a default.
 
-### C13 · Packaging and provenance — 4 items
+### C13 · Packaging and provenance — 3 items
 
 | | |
 |---|---|
 | **D99** | The procedure name leaks into user-facing error text at **39 sites** in `eml-inferential.praat` — `emlTwoWayAnova` ×11, `emlTukeyHSD` ×6, `emlPairwiseT` ×4, `emlDunnTest` ×4, `emlKruskalWallis` ×3, and 11 more |
-| **D109** | `scripts/eml-tutorial.praat` calls 23 procedures nothing defines. Unregistered, so dead code rather than a live defect — delete or declare |
 | **—** | **35 files credit Claude** — `# Development: Claude (Anthropic)` in 21, `# Code generation: Claude (Anthropic)` in 15, six longer variants. Contradicts the sole-authorship rule and is the first thing a reader of a published tool will see |
 | **—** | Two executable bits (`harness/stress_graphs.sh`, `validate/mutation/mutate_drive.sh`) cannot be set through the GitHub web form |
 
@@ -327,7 +331,7 @@ be a blank panel. Nobody has looked at the image.
 
 The statistics are validated to a standard that is unusual for a Praat plugin,
 and that work is done. What is not done is everything the user sees around
-them, and eighty live findings is not a polish list.
+them, and seventy-nine live findings is not a polish list.
 
 The four clusters that would most embarrass a release, in order:
 
@@ -340,8 +344,49 @@ C2's `emlShowExplanations` reset belongs beside them: it is one line, and until
 it is fixed the reports are order-dependent within a session, which makes every
 other report finding intermittent and hard to reproduce.
 
-I am not proposing an order beyond that. Eighty findings is a real amount of
-work and the sequencing is yours.
+I am not proposing an order beyond that. Seventy-nine findings is a real
+amount of work and the sequencing is yours.
+
+---
+
+## 7. Why a resuming session kept rebuilding the wrong list
+
+Found by an independent adversarial pass (FABL, head `e813573`), confirmed
+here, and fixed in the same commit as this section.
+
+There were **five tracking surfaces that disagreed**, and one of them actively
+instructed a resuming session to adopt a stale state. `audit/reports/CHECKPOINT.md`
+opens with *"Read THIS after a compact... trust its exit code"* — and it
+predates `validate/`, the FABL review, v16–v19 and the CSV rewrite entirely.
+Its queue reads all-closed and it references paths that are not in the
+repository. `ACTIONABLE_2026-08-04.md` carries seven work items **with no
+status marks of any kind**, so nothing in it can be told done from undone
+without hand-cross-referencing the index.
+
+Meanwhile the repository's own front door, `README.md`, still advertised
+**"Expect 501 checks"** against a live 893 — two suite generations stale,
+missed by me while I was updating `validate/README.md` beside it.
+
+Fixed:
+
+- All ten documents in `audit/reports/` now carry a HISTORICAL RECORD banner
+  naming `FINDINGS_INDEX.md` rows as the sole status authority. Nothing
+  deleted.
+- Root `README.md` corrected to 893.
+- `check_registry_counts.R` extended (FABL's patch, adopted verbatim) to
+  verify the README expect-line as claim #22, so **no headline in either
+  README or REGISTRY can drift again without a checker going red.**
+- **Not done, and here is why:** 18 committed scratch probes in
+  `harness/probes/` carry sandbox paths and are session debris
+  (`_d`, `_dmp`, `_dump3`, `_clr`, `_cols`, `probe2`…). Retiring them is a
+  *move*, and the GitHub web upload form — the only push route available in
+  this session — cannot delete files. Doing half of it would leave the repo
+  with duplicates, which is worse than the debris. **This needs 18 deletions
+  from `harness/probes/` done directly**; everything except
+  `csv_export_drive.praat` can go.
+
+This is the mechanical half of the confusion. The other half was mine, and
+section 2 records it.
 
 ---
 

@@ -61,6 +61,17 @@ dismissed).
 > could not be settled by static inspection and are labelled so. Seven defects
 > that no finding covers were found during the pass and are filed as D102-D108.
 >
+> ## Tabled by author ruling — not open work, not deferred to Phase Two
+>
+> **Stats Demo, Quick Start, the interactive tutorial, and Batch voice
+> analysis are tabled.** All four are unregistered from the menu in
+> `plugin/setup.praat`, which documents each one. They are not counted in the
+> live total, they are not in the Phase One audit's clusters, and a finding
+> filed against their content is not a defect against this release.
+>
+> **Phase Two is multiple regression and linear mixed models. Nothing else.**
+> Everything else in this index is Phase One.
+>
 > `validate/tools/check_wired.sh` and `validate/tools/check_calls.py` enforce
 > the mechanical half of the standard: nothing unreachable, and no `@call` that
 > resolves to nothing at run time.
@@ -176,4 +187,4 @@ dismissed).
 | D106 | CLARITY | medium — NEW 6 Aug | — | `graphs/eml-annotation-procedures.praat:3946` reads `# D37: n1,n2 were literal 0,0. D41: effect_label was ""` — but the two-way block below emits no `effect_label` and prints no N to the Info window. A false closure record inside the shipped code | — |
 | D107 | ACCURACY | high — NEW 6 Aug | — | The D32 column-guessing fix was applied to the non-preset branch (`graphs/eml-graphs-form.praat:4422-4428`) but not to the preset branch (`:4396`), which is the branch the two-way wrapper takes; `gvSubIdx` there is still positional `min (2, nCols)` | — |
 | D108 | ACCURACY | high — NEW 6 Aug | — | `emlGraphsPresetCorrection$` was added so wrappers could carry their adjustment method into the figure and does seed the dialog, but on the parametric path the value is never read (`graphs/eml-annotation-procedures.praat:2151+`); only the Dunn branch consumes it. The wrapper advertises fidelity it does not have | — |
-| D109 | PACKAGING | medium — NEW 6 Aug | — | `scripts/eml-tutorial.praat` calls 23 procedures that nothing it includes defines (`validate/tools/check_calls.py`). Already unregistered from the menu, so dead code in the tree rather than a live defect, but it must be deleted or declared before release | — |
+| D109 | PACKAGING | **TABLED — author ruling** | — | `scripts/eml-tutorial.praat` calls 23 procedures that nothing it includes defines (`validate/tools/check_calls.py`). Already unregistered from the menu. The tutorial is TABLED by author ruling alongside Stats Demo, Quick Start and Batch voice analysis, so this is recorded for provenance and is NOT open work | — |
