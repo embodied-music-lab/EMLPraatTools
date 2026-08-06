@@ -207,17 +207,33 @@ raise () {
 # Submenu entry y coordinates, verified: see harness/MENU_MAP.md
 # Updated 5 Aug 2026 after the LMM entry was tabled: everything from
 # Pairwise comparisons down moved up by one row (26px).
-EML_WIZARD=467; EML_DESCRIBE=493; EML_NORMALITY=518; EML_TWOGROUP=544
-EML_PAIRED=569; EML_ANOVA=594; EML_KW=619; EML_TWOWAY=644
-EML_CORR=670; EML_REGRESS=695; EML_PAIRWISE=721
-EML_GRAPHS=747; EML_BATCH=773; EML_DEMO=799; EML_STATSDEMO=824
-EML_QUICKSTART=850
+# EML_YOFF exists because these coordinates are not a property of the
+# plugin. They are a property of how the window manager places the Objects
+# window, and that changed between two sessions on the same machine: on
+# 6 August every entry sat exactly 20px higher than on 5 August, with the
+# menu bar at y=14 instead of y=34. Rather than rewrite sixteen numbers and
+# lose the record of which layout they were measured in, the base values
+# below stay as measured on 5 August and the offset carries the difference.
+# Recalibrate by opening the submenu and reading the entry positions off a
+# screenshot; see harness/MENU_MAP.md.
+EML_YOFF=${EML_YOFF:--20}
+
+EML_WIZARD=$((467 + EML_YOFF)); EML_DESCRIBE=$((493 + EML_YOFF))
+EML_NORMALITY=$((518 + EML_YOFF)); EML_TWOGROUP=$((544 + EML_YOFF))
+EML_PAIRED=$((569 + EML_YOFF)); EML_ANOVA=$((594 + EML_YOFF))
+EML_KW=$((619 + EML_YOFF)); EML_TWOWAY=$((644 + EML_YOFF))
+EML_CORR=$((670 + EML_YOFF)); EML_REGRESS=$((695 + EML_YOFF))
+EML_PAIRWISE=$((721 + EML_YOFF))
+EML_GRAPHS=$((747 + EML_YOFF)); EML_BATCH=$((773 + EML_YOFF))
+EML_DEMO=$((799 + EML_YOFF)); EML_STATSDEMO=$((824 + EML_YOFF))
+EML_QUICKSTART=$((850 + EML_YOFF))
+EML_MENUBAR_Y=$((34 + EML_YOFF)); EML_TOOLS_Y=$((467 + EML_YOFF))
 
 # eml <y> -> open Objects>New>EML Tools and click the submenu entry at y
 eml () {
   raise "^Praat Objects$" >/dev/null || return 1
-  xdotool mousemove 76 34 click 1; sleep 1.2
-  xdotool mousemove 200 467 click 1; sleep 0.8
+  xdotool mousemove 76 $EML_MENUBAR_Y click 1; sleep 1.2
+  xdotool mousemove 200 $EML_TOOLS_Y click 1; sleep 0.8
   xdotool key --clearmodifiers Right; sleep 1.2
   xdotool mousemove 500 "$1" click 1; sleep 3
 }
@@ -242,25 +258,61 @@ livepause () {
 }
 
 # capture <label> -> save the selected Table and the Info text under evidence/
+#
+# 6 August: this used to raise a script editor holding cap/capture.praat and
+# press ctrl+R. Two things broke that. `raise` cannot focus the editor while
+# a pause form is modal, and the wrapper's repeat loop re-opens its form the
+# moment a run finishes — so the editor is unreachable at exactly the moment
+# there is something to capture. Sending the same script through sendpraat
+# needs no focus at all, and info$() read this way returns the LIVE Info
+# window (verified: after `clearinfo` it returns exactly one newline).
+#
+# Call it with the analysed Table still selected and the form quit. Do NOT
+# call `pick` first: pick writes its own line into the Info window, which
+# would then be the first line of the capture.
+# capture <label> [table-name-substring]
+# The table is found BY NAME, not by selection state. Relying on selection
+# cost an hour on 6 August: a wrapper leaves its table selected, but any
+# stray click in the Objects list, and every `pick`, changes that, and the
+# failure mode is a one-byte capture rather than an error.
 capture () {
-  echo "$1" > /home/claude/cap/label.txt
-  raise "Script .*capture.praat" >/dev/null || return 1
-  xdotool key --clearmodifiers ctrl+r; sleep 3
-  local f=/home/claude/EMLPraatTools/evidence/info/"$1"_info.txt
-  [ -f "$f" ] || { echo "CAPTURE FAILED: $1"; return 1; }
-  # Praat writes text as UTF-16 by default and the R suite reads these files.
+  local lab="$1"
+  local want="${2:-}"
+  cat > "$OUT/_cap.praat" << CEOF
+Text writing preferences: "UTF-8"
+want\$ = "${want}"
+tid = 0
+select all
+n = numberOfSelected ()
+for i from 1 to n
+    nm\$ = selected\$ (i)
+    if left\$ (nm\$, 6) = "Table " and (want\$ = "" or index (nm\$, want\$) > 0)
+        tid = selected (i)
+    endif
+endfor
+selectObject: tid
+Save as comma-separated file: "/home/claude/EMLPraatTools/evidence/csv/${lab}_input.csv"
+writeFile: "/home/claude/EMLPraatTools/evidence/info/${lab}_info.txt", info\$ ()
+CEOF
+  sendp "$OUT/_cap.praat"
+  local f=/home/claude/EMLPraatTools/evidence/info/"$lab"_info.txt
+  [ -f "$f" ] || { echo "CAPTURE FAILED: $lab"; return 1; }
   if file "$f" | grep -q UTF-16; then
     iconv -f UTF-16 -t UTF-8 "$f" -o "$f".u8 && mv "$f".u8 "$f"
   fi
-  wc -c < "$f" | sed "s|^|captured $1: |;s|$| bytes|"
+  wc -c < "$f" | sed "s|^|captured $lab: |;s|$| bytes|"
 }
 
 # clearinfo -> Praat Info window > Edit > Erase. Needed before running a
 # wrapper that has no "Clear Info window" checkbox, so info$() is exactly
 # one analysis. Praat is blocked while a pause form is up, so call this
 # BEFORE opening the wrapper, never during.
+# Clearing by Info > Edit > Erase was tried and abandoned on 6 August: the
+# click lands, the menu closes, and info$() still returns the old text. The
+# sendpraat route is deterministic and verified — after it, info$() is
+# exactly one newline. Praat is BLOCKED while a pause form is up, so this
+# must be called BEFORE opening a wrapper, never during one.
 clearinfo () {
-  raise "^Praat Info$" >/dev/null || return 1
-  xdotool mousemove 63 34 click 1; sleep 1.2
-  xdotool mousemove 91 189 click 1; sleep 1.2
+  printf 'writeInfoLine: ""\n' > "$OUT/_clr.praat"
+  sendp "$OUT/_clr.praat"
 }
