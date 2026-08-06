@@ -7,21 +7,25 @@
   Design:         Repeated measures (k conditions)
   Normality:      n/a
   Test:           RM-ANOVA (Greenhouse-Geisser)
-  Column 1:       SPL soft|SPL medium|SPL loud|
-  Table:          r2 two subjects
+  Column 1:       soft|medium|loud|
+  Table:          r2 rm two subjects
 
 ══════════════════════════════════════════════
   Running analysis...
 ══════════════════════════════════════════════
 
-Repeated-measures ANOVA — r2_two_subjects
+Repeated-measures ANOVA — r2_rm_two_subjects
   Subjects (complete cases) n = 2, conditions k = 3
-    SPL_soft mean = 71.0000
-    SPL_medium mean = 81.5000
-    SPL_loud mean = 92.0000
-  F(2, 2) = 441.0000, p = 0.0023
-  Greenhouse-Geisser epsilon = 0.5000, GG-corrected p = 0.0303
+    soft mean = 11.0000
+    medium mean = 15.5000
+    loud mean = 21.5000
+  F(2, 2) = 111.0000, p = 0.0089
+  Greenhouse-Geisser epsilon = 0.5000, GG-corrected p = 0.0602
+  Caution: n = 2 subjects. Greenhouse-Geisser epsilon is forced to its
+  lower bound 0.5000 for any data at this n, so the sphericity
+  correction carries no information. Read F, p and the corrected p as
+  description of these two subjects, not as a test.
   Post-hoc pairwise (parametric, holm-adjusted):
-    SPL_soft vs SPL_medium: p(raw) = 0.0303, p(adj) = 0.0909
-    SPL_soft vs SPL_loud: p(raw) = 0.0303, p(adj) = 0.0909
-    SPL_medium vs SPL_loud: p(raw) = 0.0303, p(adj) = 0.0909
+    soft vs medium: p(raw) = 0.0704, p(adj) = 0.1409
+    soft vs loud: p(raw) = 0.0303, p(adj) = 0.0909
+    medium vs loud: p(raw) = 0.1051, p(adj) = 0.1409

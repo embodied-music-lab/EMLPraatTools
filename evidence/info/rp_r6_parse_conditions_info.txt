@@ -1,0 +1,50 @@
+
+
+══════════════════════════════════════════════
+  EML Stats : Descriptive Statistics
+  Thu Aug  6 01:20:06 2026
+══════════════════════════════════════════════
+
+  Table               r6 three parse conditions
+  Column              SPL soft
+  N (valid)           3
+  N (excluded)        3
+  1 cell(s) use a comma where a decimal point belongs (row 4:
+  73,4). Praat reads these as a different number, so they are
+  excluded rather than guessed at. Replace the commas with
+  points to use these values. 1 cell(s) are not numeric in any
+  locale (row 3: n/a). This is a type error, not missing data. 1
+  cell(s) are empty (row 5 first). Treated as missing data.
+
+
+  ── Central Tendency ────────────────────────
+  Mean                72.2667
+  Median              71.2000
+  SEM                 1.6476
+
+
+  ── Dispersion ──────────────────────────────
+  SD                  2.8537
+  Variance            8.1433
+  Range               5.4000
+  Min                 70.1000
+  Max                 75.5000
+
+
+  ── Quartiles ───────────────────────────────
+  Q1                  70.6500
+  Q2 (Median)         71.2000
+  Q3                  73.3500
+  IQR                 2.7000
+
+
+  ── Distribution Shape ──────────────────────
+  Skewness            1.4470
+  Kurtosis (excess)   --undefined--
+
+
+  ── 95% Confidence Interval ─────────────────
+  Lower               65.1778
+  Upper               79.3555
+
+══════════════════════════════════════════════
