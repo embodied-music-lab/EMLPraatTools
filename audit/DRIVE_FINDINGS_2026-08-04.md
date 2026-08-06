@@ -4572,3 +4572,146 @@ with no Table selected the script exits at `@emlWrapperInit` before reaching
 the line. **FIXED** by hoisting the assignment; a static check across all
 eight patched wrappers confirms no other seed references a later-assigned
 variable.
+
+---
+
+## 6 August 2026 — D96 to D99 fixed, and two defects the fixes exposed
+
+Every fix below was driven through the GUI afterwards, not merely written.
+Captures are in `evidence/info/rp_r1_rmanova_info.txt`,
+`rp_r2_rmanova_info.txt`, `rp_r6_parse_conditions_info.txt`; the two refusals
+are modal dialogs rather than Info-window text, so they are evidenced by
+`evidence/shots/d97_r1_zero_error_term_refused.png` and
+`d99_r5_refusal_names_diagnosis.png`. `validate/v07` now asserts the fixed
+behaviour from those captures instead of recording the defects.
+
+### D99 — FIXED. The refusal states the diagnosis
+
+`@emlOneWayAnova` now sizes every group before it raises, so it can say what
+is actually wrong instead of naming the first offender:
+
+    Group column "singer_id" has 6 groups for 6 rows - one per row.
+    This is an identifier column, not a grouping column.
+
+Where the shape is not one-per-row it names the offenders together, capped at
+five with an "and N more" tail. The `emlOneWayAnova:` prefix is gone from
+every user-facing string in that procedure, along with `emlOneWayAnova
+(Tukey):`.
+
+### D97 — FIXED. The omnibus refuses a zero error term
+
+`@emlRMAnovaTest` gains `.error$` and refuses before dividing. **The floor
+has to be relative.** An exactly-linear design leaves `ssErr` at about 1e-16
+of `ssTot`, not at 0, so a test for equality with zero does not fire — which
+is precisely why the old code produced a finite-looking
+`F(2, 6) = 21110623253299200.0000` rather than an obvious `undefined`. The
+test is `ssErr <= 1e-10 * ssTot`, plus a separate branch for `ssTot = 0`.
+
+The two skipped checks in `dev/tests/phase2/test-repeated-measures.praat`
+(RM_D and RM_F, "not asserted until the author rules") are now assertions:
+the suite went from 96 checks with 6 skips to 102 with 4.
+
+### D98 — FIXED. A design with no information left says so
+
+Computed and printed, with a caution directly under the line it qualifies:
+
+    Greenhouse-Geisser epsilon = 0.5000, GG-corrected p = 0.0602
+    Caution: n = 2 subjects. Greenhouse-Geisser epsilon is forced to its
+    lower bound 0.5000 for any data at this n, so the sphericity
+    correction carries no information. ...
+
+Placement is asserted in v07, not left to chance: a caution printed at the
+foot of the report reads as being about the post-hoc table above it.
+
+A second branch fires whenever epsilon lands on the bound at any n, which is
+the maximum possible departure from sphericity.
+
+### D96 — FIXED. One classifier, used by every extraction path
+
+`@eml_classifyCell` sorts a cell into five kinds — numeric, empty, decimal
+comma, unreadable text, and coerced-to-something-else — and `@emlAuditColumn`
+turns the counts into sentences that name the row and the value. Driven
+output:
+
+    N (valid)           3
+    N (excluded)        3
+    1 cell(s) use a comma where a decimal point belongs (row 4: 73,4). ...
+    1 cell(s) are not numeric in any locale (row 3: n/a). This is a type
+    error, not missing data. 1 cell(s) are empty (row 5 first). ...
+
+**This changed a result, and that was the point.** `Get value:` returns 1 for
+`"1,5"`, so before this the comma cell was not dropped — it entered the mean
+as a different number, with nothing in the report to say so. It is now
+excluded and named. The value is not guessed at: `1,234` is 1.234 to a
+European reader and 1234 to an American one, and the plugin has no basis to
+choose. Two kinds found while building it and worth naming separately:
+
+- **`30%` is strictly numeric to Praat** and returns 0.3. The strict verdict
+  is true and useless there, so a percent sign is now checked before it.
+- **`.5` is not numeric to Praat at all.** Calling that "not numeric in any
+  locale" would be false, so it is its own kind with its own one-character
+  remedy.
+
+Every extraction entry point reads through `@eml_readCell`: the column-wise
+readers and the row-wise ones (paired columns, the condition matrix). That
+was the author's requirement — rows and columns handled identically — and it
+was not true before. A per-column fast path skips the classifier entirely
+when the column numericises strictly and holds no empty cell.
+
+### D100 — a wrapper called a procedure it does not include
+
+`scripts/eml-describe-table.praat` held a second copy of the descriptive
+report body, line for line identical to `@emlReportDescriptiveAnalysis`. The
+D96 work needed the same change in both, so the duplicate was replaced with a
+call. The wrapper does not include `stats/eml-analysis.praat`, where that
+procedure lived.
+
+**Praat resolves a procedure name when it is CALLED, not when the file is
+parsed.** The parse check passed. The menu item opened normally. The failure
+came the instant Run was clicked:
+
+    Procedure "emlReportDescriptiveAnalysis" not found.
+    Script line 9434 not performed or completed
+
+Fixed by moving the procedure to `stats/eml-output.praat`, which the wrapper
+does include and which is where a reporting procedure belongs.
+
+`harness/check_includes.py` was written in response: it resolves each entry
+script's include closure and reports any `@call` that nothing in that closure
+defines. It runs in under a second with no display.
+
+### D101 — nine wrappers carried four unresolvable calls each
+
+Found immediately by that checker. `@emlRunLMMAnalysis` lived in
+`stats/eml-analysis.praat`, which every wrapper includes; the engine it calls
+(`@emlLMM`, `@emlLMMSummary`, `@emlJohnsonR2`, `@emlWaldCI`) is in
+`stats/eml-lmm.praat`, which no wrapper includes. Same latency as D100 and
+the same invisibility to a parse check.
+
+Fixed by moving the orchestrator to the foot of `stats/eml-lmm.praat`, beside
+its engine. Including that module now gets both, including neither gets
+neither, and there is no third state. The checker is clean.
+
+---
+
+## Open questions for the author
+
+1. **`Development: Claude (Anthropic)` appears in 35 file headers.** The
+   standing instruction is that Ian Howell is the only person or entity ever
+   cited as author. These lines predate this session and were not touched.
+   Removing them is a 35-file edit and is the author's call, not mine.
+
+2. **LMM is off the menu but still reachable through the Stats Wizard.**
+   `scripts/eml-wizard.praat` includes `eml-lmm.praat` and offers the mixed
+   model as goal 4. The ruling was "entirely table and remove from menu for
+   now". If the reason for tabling is that it is unvalidated, the wizard
+   branch is a live route to it.
+
+3. **Friedman on all-tied data.** `dev/tests/phase2/test-repeated-measures.praat`
+   still skips RM_D's chi-square and p: the library returns p = 1 where scipy
+   returns nan. D97 ruled for the RM-ANOVA omnibus — refuse — and the same
+   argument seems to apply here, but Friedman was not named in the ruling.
+
+4. **`Kurtosis (excess) --undefined--`.** Excess kurtosis needs n >= 4, so on
+   the three-valid-row R6 table the descriptive report prints the literal
+   `--undefined--`. Correct, and ugly. A short "n < 4" note would read better.
