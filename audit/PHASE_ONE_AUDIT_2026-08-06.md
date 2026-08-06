@@ -15,6 +15,25 @@ below: Stats Demo, Quick Start, the interactive tutorial, and Batch voice
 analysis.** All four are unregistered from the menu in `plugin/setup.praat`.
 A finding against their content is not a defect against this release.
 
+
+> ## Status update, later the same day: 79 live -> 27
+>
+> Fifty-two of the findings below were fixed in one pass, by six agents working
+> in parallel with exclusive file ownership so their edits could not collide.
+> Two shared contracts were landed first so nobody had to wait on anybody:
+> `@emlFormatP` gaining `.bare$` and `.exact$` (which closes D9, D28, D35 and
+> D56 between them), and `@emlResetExplanations` (which closes D102, and with
+> it the order-dependence that made D42 and D44 intermittent).
+>
+> **D99 was worse than filed.** The finding said 39 procedure-name leaks; there
+> were **53**, across 12 procedures. `grep` over the whole plugin now returns
+> zero.
+>
+> Everything below still describes the state at the time of the audit. The
+> per-row status in `FINDINGS_INDEX.md` is current; this document is not.
+> **27 live**: D7 D8 D11 D18 D20 D21 D27 D30 D32 D33 D38 D40 D48 D49 D58 D60
+> D63 D64 D65 D66 D73 D89 D90 D104 D105 D106 D108.
+>
 ---
 
 ## 1. State, verified
