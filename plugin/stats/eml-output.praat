@@ -940,6 +940,17 @@ procedure emlWrapperInit: .minCols
     .guessDataIdx = emlGuessColumnRoles.dataIdx
     .guessGroupIdx = emlGuessColumnRoles.groupIdx
     .guessDataIdx2 = emlGuessColumnRoles.dataIdx2
+
+    # Say up front which cells will be excluded and why. @emlAuditColumn has
+    # classified them correctly since the C96 work, but its note reached the
+    # user on one path only, so on every other wrapper a column of "1,5" was
+    # quietly dropped and the only symptom was a smaller n than expected.
+    @emlCheckDataScheme: .tableId
+    .dataCheck$ = emlCheckDataScheme.report$
+    if .dataCheck$ <> ""
+        appendInfoLine: ""
+        appendInfoLine: .dataCheck$
+    endif
 endproc
 
 

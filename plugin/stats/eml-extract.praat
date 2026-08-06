@@ -2257,3 +2257,386 @@ procedure emlGuessColumnRoles: .tableId
 
     label GUESS_ROLES_DONE
 endproc
+
+
+# ============================================================================
+# @emlCheckDataScheme
+# ============================================================================
+# Audit EVERY column of a Table and produce one consolidated, user-facing
+# report of the things that will silently cost the user rows.
+#
+# @emlAuditColumn has classified cells correctly since the C96 work — locale
+# decimal commas, unreadable text, percent-coerced values, leading dots — and
+# its .note$ is written to be printed verbatim. But it had exactly one
+# consumer, in eml-analysis.praat, so on every other path a column full of
+# "1,5" was quietly excluded and the user was told only that n was smaller
+# than they expected. This walks the whole table so the disclosure happens
+# once, up front, wherever the data enters.
+#
+# Arguments:
+#   .tableId — ID of the Table object
+#
+# Output:
+#   .nIssues        — number of columns with something to report
+#   .nLocaleTotal   — cells that look like European decimal commas
+#   .report$        — "" when the table is clean; otherwise a printable block
+# ============================================================================
+
+procedure emlCheckDataScheme: .tableId
+    .nIssues = 0
+    .nLocaleTotal = 0
+    .report$ = ""
+
+    @emlTableColumnNames: .tableId
+    .nCols = emlTableColumnNames.nCols
+
+    for .c from 1 to .nCols
+        .col$ = emlTableColumnNames.name$ [.c]
+        @emlAuditColumn: .tableId, .col$
+        if emlAuditColumn.error$ = "" and emlAuditColumn.note$ <> ""
+            # A column of genuine text — a group label, a subject ID — is not
+            # a problem and must not be reported as one. Only say something
+            # when the column looks numeric in intent: some cells parsed, or
+            # some cell carries a decimal comma.
+            .looksNumeric = 0
+            if emlAuditColumn.nValid > 0
+                .looksNumeric = 1
+            endif
+            if emlAuditColumn.nLocale > 0
+                .looksNumeric = 1
+            endif
+            if .looksNumeric = 1
+                .nIssues = .nIssues + 1
+                .nLocaleTotal = .nLocaleTotal + emlAuditColumn.nLocale
+                .report$ = .report$ + "  Column """ + .col$ + """: "
+                ... + emlAuditColumn.note$ + newline$
+            endif
+        endif
+    endfor
+
+    if .nIssues > 0
+        .report$ = "DATA CHECK — some cells will be excluded:" + newline$
+        ... + .report$
+        if .nLocaleTotal > 0
+            .report$ = .report$ + newline$
+            ... + "  Praat TRUNCATES at a comma: 1,5 reads as 1, and so "
+            ... + "does 1,234. There is no" + newline$
+            ... + "  thousands-separator reading to fall back on — every "
+            ... + "comma cell is wrong," + newline$
+            ... + "  whatever it was meant to say, so these cells are "
+            ... + "excluded rather than guessed." + newline$
+            ... + "  A comma also spoils the column around it: with one "
+            ... + "comma cell present," + newline$
+            ... + "  Praat's own column queries return alphabetical RANKS "
+            ... + "instead of values, so" + newline$
+            ... + "  a mean of {70, 80,5, 90} comes back as 2. (This tool "
+            ... + "reads cells one at a" + newline$
+            ... + "  time and is not affected; anything else touching the "
+            ... + "Table is.)" + newline$
+            ... + "  Use Check & repair data to fix them, or re-export from "
+            ... + "your spreadsheet" + newline$
+            ... + "  with an English (United States) locale."
+            ... + newline$
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlCheckSourceFile
+# ============================================================================
+# Scan a CSV file as TEXT, before or independently of reading it into a Table.
+#
+# This exists because one class of damage cannot be detected afterwards at
+# all. Praat's "Read Table from comma-separated file" silently discards
+# RFC 4180 doubled-quote escapes: a field written as "Mezzo ""dramatic"""
+# arrives as Mezzo dramatic, with no error and no trace left in the Table for
+# any later check to find. Commas inside quotes survive; literal quotes do
+# not. Verified on Praat 6.6.30, 6 Aug 2026.
+#
+# So the only place to catch it is the file itself.
+#
+# Arguments:
+#   .path$ — path to the CSV file
+#
+# Output:
+#   .nIssues    — number of distinct problems found
+#   .nEscaped   — occurrences of a doubled quote inside a quoted field
+#   .semicolon  — 1 if the file looks semicolon-delimited
+#   .report$    — "" when clean; otherwise a printable block
+# ============================================================================
+
+procedure emlCheckSourceFile: .path$
+    .nIssues = 0
+    .nEscaped = 0
+    .semicolon = 0
+    .report$ = ""
+
+    if not fileReadable (.path$)
+        .report$ = ""
+        goto SOURCE_CHECK_DONE
+    endif
+
+    .text$ = readFile$ (.path$)
+
+    # Doubled quotes. A field that is exactly "" is an ordinary empty quoted
+    # field and is fine; a doubled quote with a non-delimiter character beside
+    # it is an escape that will be eaten. Counting occurrences that are NOT a
+    # bare empty field is enough to raise the flag, and the user is pointed at
+    # the character rather than at a row number, because after the read the
+    # row number would refer to something that no longer contains it.
+    .rest$ = .text$
+    .guard = 0
+    while index (.rest$, """""") > 0 and .guard < 10000
+        .guard = .guard + 1
+        .at = index (.rest$, """""")
+        .before$ = ""
+        if .at > 1
+            .before$ = mid$ (.rest$, .at - 1, 1)
+        endif
+        .after$ = mid$ (.rest$, .at + 2, 1)
+        .isEmptyField = 0
+        if (.before$ = "," or .before$ = "" or .before$ = newline$)
+        ... and (.after$ = "," or .after$ = "" or .after$ = newline$)
+            .isEmptyField = 1
+        endif
+        if .isEmptyField = 0
+            .nEscaped = .nEscaped + 1
+        endif
+        .rest$ = mid$ (.rest$, .at + 2, 1000000)
+    endwhile
+
+    # Semicolon-delimited export, the other half of the European locale
+    # problem: the whole file arrives as a single column.
+    .firstLine$ = .text$
+    if index (.firstLine$, newline$) > 0
+        .firstLine$ = left$ (.firstLine$, index (.firstLine$, newline$) - 1)
+    endif
+    .nSemi = 0
+    for .i from 1 to length (.firstLine$)
+        if mid$ (.firstLine$, .i, 1) = ";"
+            .nSemi = .nSemi + 1
+        endif
+    endfor
+    .nComma = 0
+    for .i from 1 to length (.firstLine$)
+        if mid$ (.firstLine$, .i, 1) = ","
+            .nComma = .nComma + 1
+        endif
+    endfor
+    if .nSemi > .nComma and .nSemi > 0
+        .semicolon = 1
+    endif
+
+    if .nEscaped > 0
+        .nIssues = .nIssues + 1
+        .report$ = .report$
+        ... + "  This file contains " + string$ (.nEscaped)
+        ... + " doubled-quote escape(s) inside quoted fields." + newline$
+        ... + "  Praat's CSV reader removes those quotes without warning, so "
+        ... + "a label written" + newline$
+        ... + "  as ""Mezzo """"dramatic"""""" arrives as Mezzo dramatic. "
+        ... + "Nothing downstream can" + newline$
+        ... + "  detect this, because no trace of it survives the read."
+        ... + newline$
+        ... + "  Remove the double quotes from your labels, or replace them "
+        ... + "with single" + newline$
+        ... + "  quotes, and re-import." + newline$
+    endif
+
+    if .semicolon = 1
+        .nIssues = .nIssues + 1
+        .report$ = .report$
+        ... + "  The header line uses semicolons rather than commas. This is "
+        ... + "a European-locale" + newline$
+        ... + "  export; Praat will read the whole line as one column. "
+        ... + "Re-export as comma-" + newline$
+        ... + "  separated with an English (United States) locale."
+        ... + newline$
+    endif
+
+    if .nIssues > 0
+        .report$ = "DATA CHECK — this file will not import cleanly:"
+        ... + newline$ + .report$
+    endif
+
+    label SOURCE_CHECK_DONE
+endproc
+
+
+# ============================================================================
+# @emlRepairClassify
+# ============================================================================
+# Decide whether a single cell has an UNAMBIGUOUS intended value, and what it
+# is. Deliberately narrower than @eml_classifyCell: that one describes what
+# Praat will do with a cell, this one answers the much stricter question of
+# whether we may change it without guessing.
+#
+# Arguments:
+#   .raw$ — the cell's literal contents
+#
+# Output:
+#   .kind   0 nothing to do
+#           1 decimal comma      -> .fixed$ has a point
+#           2 bare leading point -> .fixed$ has a leading zero
+#           3 missing-value placeholder -> caller should write ""
+#           4 percent            -> .fixed$ is the literal, caller decides
+#   .fixed$ the repaired literal (empty for kind 3)
+# ============================================================================
+
+procedure emlRepairClassify: .raw$
+    .kind = 0
+    .fixed$ = ""
+    .s$ = replace_regex$ (.raw$, "^[ \t]+|[ \t]+$", "", 0)
+    if .s$ = ""
+        goto REPAIR_CLASSIFY_DONE
+    endif
+
+    # Placeholder for missing. Case-insensitive, and only these exact tokens:
+    # a cell reading "no data recorded" is a note, not a placeholder, and
+    # silently blanking it would destroy information.
+    .low$ = replace_regex$ (.s$, "([A-Z])", "\l\1", 0)
+    if .low$ = "na" or .low$ = "n/a" or .low$ = "n.a." or .low$ = "nan"
+    ... or .low$ = "null" or .low$ = "nil" or .low$ = "-" or .low$ = "--"
+    ... or .low$ = "." or .low$ = "?" or .low$ = "missing"
+        .kind = 3
+        goto REPAIR_CLASSIFY_DONE
+    endif
+
+    # Percent. Reported, never silently altered: Praat already reads "30%" as
+    # 0.3 and does NOT exclude it, so this is the one condition where the
+    # default behaviour is a wrong number rather than a missing one.
+    if index_regex (.s$, "^-?[0-9]+([.,][0-9]+)?[ ]*%$") > 0
+        .kind = 4
+        .fixed$ = .s$
+        goto REPAIR_CLASSIFY_DONE
+    endif
+
+    # Any comma at all. Praat has no thousands separator — number("1,234") is
+    # 1 — so every comma cell is broken, and the only question is what the
+    # user meant. That is a COLUMN question, not a cell one, so this reports
+    # the cell as comma-bearing and @emlCommaColumnMode decides the reading.
+    # (Corrected 6 Aug 2026: this used to leave "1,234" alone on the grounds
+    # that it was probably a thousands separator, which Praat does not
+    # implement in any form.)
+    if index (.s$, ",") > 0
+        .kind = 1
+        .fixed$ = .s$
+        goto REPAIR_CLASSIFY_DONE
+    endif
+
+    # Bare leading point. Praat reads ".5" as undefined.
+    if index_regex (.s$, "^-?\.[0-9]+$") > 0
+        .kind = 2
+        if left$ (.s$, 1) = "-"
+            .fixed$ = "-0" + mid$ (.s$, 2, 1000)
+        else
+            .fixed$ = "0" + .s$
+        endif
+        goto REPAIR_CLASSIFY_DONE
+    endif
+
+    label REPAIR_CLASSIFY_DONE
+endproc
+
+
+# ============================================================================
+# @emlCommaColumnMode
+# ============================================================================
+# Decide, for a WHOLE column, what its commas mean.
+#
+# Written 6 August 2026 after the author pointed out that the per-cell rule it
+# replaces rested on a convention Praat does not have. The old rule left
+# "1,234" alone on the grounds that it was "far more likely a thousands
+# separator". Praat has no thousands separator: number("1,234") is 1. It
+# truncates at the comma and reports no error.
+#
+# Measured, same session:
+#     number("1,234")     = 1
+#     number("1,5")       = 1
+#     number("12,345,678")= 12
+#     number("1.234,5")   = 1.234
+#
+# And a comma does not merely spoil its own cell. With {70, "80,5", 90} in a
+# column, "Get all numbers in column:" returns 1, 2, 3 — the ALPHABETICAL
+# RANKS — and "Get mean:" returns 2 instead of 80.17. One comma anywhere
+# silently replaces every value in the column with its rank. (The plugin is
+# not exposed to this: @emlOpenColumn probes for it and every extraction path
+# goes through @eml_readCell. Anything else touching the Table is exposed.)
+#
+# So there is no reading under which a comma cell is safe, and "leave it" is
+# not a conservative choice — it is a guaranteed-wrong one. What is left is
+# the only real question: what did the USER mean. That is answerable from the
+# column, not from the cell.
+#
+# Arguments:
+#   .tableId, .columnName$
+#
+# Output:
+#   .mode   0 no commas in this column
+#           1 decimal comma      — repair "1,234" to 1.234
+#           2 digit grouping     — repair "1,234" to 1234
+#           3 ambiguous          — both patterns present, or the only
+#                                  evidence is a bare n,nnn; do not repair
+#   .nComma       cells containing a comma
+#   .nDecimal     cells that can only be a decimal comma  (n,d or n,dd)
+#   .nGrouped     cells that can only be digit grouping   (n,nnn,nnn)
+#   .nEither      cells consistent with both              (n,nnn)
+#   .why$         one sentence naming the evidence, for the user-facing report
+# ============================================================================
+
+procedure emlCommaColumnMode: .tableId, .columnName$
+    .mode = 0
+    .nComma = 0
+    .nDecimal = 0
+    .nGrouped = 0
+    .nEither = 0
+    .why$ = ""
+
+    selectObject: .tableId
+    .nRows = Get number of rows
+
+    for .r from 1 to .nRows
+        selectObject: .tableId
+        .cell$ = Get value: .r, .columnName$
+        .raw$ = replace_regex$ (.cell$, "^[ \t]+|[ \t]+$", "", 0)
+        if index (.raw$, ",") > 0
+            .nComma = .nComma + 1
+            # Two or more commas can only be grouping: 12,345,678.
+            if index_regex (.raw$, "^-?[0-9]{1,3}(,[0-9]{3}){2,}$") > 0
+                .nGrouped = .nGrouped + 1
+            # Exactly n,nnn is consistent with either reading.
+            elsif index_regex (.raw$, "^-?[0-9]{1,3},[0-9]{3}$") > 0
+                .nEither = .nEither + 1
+            # One comma with one or two trailing digits cannot be grouping.
+            elsif index_regex (.raw$, "^-?[0-9]+,[0-9]{1,2}$") > 0
+                .nDecimal = .nDecimal + 1
+            # Anything else with a comma is not repairable arithmetic.
+            endif
+        endif
+    endfor
+
+    if .nComma = 0
+        goto COMMA_MODE_DONE
+    endif
+
+    if .nDecimal > 0 and .nGrouped > 0
+        .mode = 3
+        .why$ = "this column mixes cells that can only be decimal commas "
+        ... + "with cells that can only be digit grouping"
+    elsif .nDecimal > 0
+        .mode = 1
+        .why$ = "another cell in this column has a comma followed by one or "
+        ... + "two digits, which digit grouping never produces"
+    elsif .nGrouped > 0
+        .mode = 2
+        .why$ = "another cell in this column groups digits in threes more "
+        ... + "than once, which a decimal comma never produces"
+    else
+        .mode = 3
+        .why$ = "every comma cell here is of the form n,nnn, which is a "
+        ... + "decimal comma and digit grouping written identically"
+    endif
+
+    label COMMA_MODE_DONE
+endproc
