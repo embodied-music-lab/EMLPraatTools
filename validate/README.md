@@ -9,7 +9,7 @@ cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect: `795 checks, 795 passed, 0 FAILED`, and exit status 0.**
+**Expect: `804 checks, 804 passed, 0 FAILED`, and exit status 0.**
 
 That is the whole thing. If it prints that, every number the plugin printed in
 a committed run agrees with what R computes from the same input file.
@@ -38,7 +38,7 @@ nothing is fetched.
 
 ## Check one by hand, in two minutes
 
-Do this once and the rest of the suite is just the same move repeated 795
+Do this once and the rest of the suite is just the same move repeated 804
 times.
 
 **1. The input the plugin was given** — `evidence/csv/v09_anova_tukey_input.csv`
@@ -150,10 +150,28 @@ Neither implies the other, which is why both are here. A correct procedure can
 still be printed into the wrong column; a correct report proves nothing about
 data the report was never run on.
 
-Still uncovered: the graphing layer, and the ill-conditioned inputs that
-separate a numerically stable implementation from an unstable one — see
-`validate/lre.R` and `validate/tools/nist_ingest.R` for the NIST StRD tier
-that addresses the second.
+**`v19` checks against an outside authority.** Everything above ultimately
+asks "does R agree?" — and R is a peer implementation, not a referee. `v19`
+runs the plugin on NIST Standard Reference Datasets and scores it against
+values NIST certified in multiple-precision arithmetic. It reports **correct
+significant digits** (log relative error), which is how this kind of result is
+conventionally stated, rather than pass/fail.
+
+On `SiRstv` — 25 resistivity measurements with three constant leading digits,
+built so that a textbook `sum(x^2) - sum(x)^2/n` routine loses about six
+digits — the plugin returns:
+
+```
+sumsq.between   LRE 13.44 digits
+F statistic     LRE 12.94 digits
+residual.sd     LRE 13.41 digits
+```
+
+The `.dat` files are NIST's and are not redistributed here, so a fresh clone
+has none and `v19` prints a loud SKIP with the fetch command rather than
+silently contributing nothing.
+
+Still uncovered: the graphing layer.
 
 ---
 
@@ -161,8 +179,8 @@ that addresses the second.
 
 Seven lines print as `ATST` rather than `PASS`. Those are **attestations** —
 claims backed by a screenshot or a recorded observation rather than by
-anything the script can evaluate. They are excluded from the 795 and from the
-exit status, and reported separately, so that "795 checks passed" means 795
+anything the script can evaluate. They are excluded from the 804 and from the
+exit status, and reported separately, so that "804 checks passed" means 804
 things were tested. They are all in `v07`.
 
 ---

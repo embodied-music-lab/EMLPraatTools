@@ -52,7 +52,11 @@ scripts <- c(
     # reads committed evidence like every other script, so it belongs in the
     # runner. It is DIFFERENT EVIDENCE from v01-v15, not more of it -- those
     # check the printed report, this checks the procedure behind it.
-    "v18_sweep_parity.R"
+    "v18_sweep_parity.R",
+    # v19 is the NIST StRD tier. It contributes checks only when the .dat
+    # files have been ingested (they are not redistributable), and prints a
+    # loud SKIP otherwise rather than silently contributing nothing.
+    "v19_nist_strd.R"
 )
 
 cat("EML Praat Tools validation suite\n")

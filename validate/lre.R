@@ -33,9 +33,13 @@ lre <- function(computed, certified) {
 # be tuned per dataset.
 check_lre <- function(id, what, computed, certified, floor_digits = 7) {
   v <- lre(computed, certified)
-  ok <- is.finite(v) && v >= floor_digits
-  detail <- sprintf("computed=%.17g certified=%.17g LRE=%.2f digits (floor %g)",
-                    computed, certified, v, floor_digits)
-  if (exists("check_true")) check_true(id, paste(what, "|", detail), ok)
+  # Recorded through check() rather than check_true() so the suite's own
+  # reported/computed columns carry the two numbers and a reader can see the
+  # disagreement, not just a verdict. The tolerance is the floor expressed as
+  # an absolute quantity, so "LRE >= floor" and "within tol" are the same
+  # statement rather than two that could drift apart.
+  scale <- if (certified == 0 || !is.finite(certified)) 1 else abs(certified)
+  check(id, sprintf("%s  [LRE %.2f digits, floor %g]", what, v, floor_digits),
+        computed, certified, tol = scale * 10^(-floor_digits))
   invisible(v)
 }

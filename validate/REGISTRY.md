@@ -132,7 +132,7 @@ git clone <repo> && cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect exit status 0.** 795 checks, all passing, plus 7 attestations
+**Expect exit status 0.** 804 checks, all passing, plus 7 attestations
 reported separately and not counted as checks.
 
 Until 6 August 2026 this said "expect exit status 1", because R7 — the
@@ -146,8 +146,8 @@ is driven now, and the suite has no designed failures left.
 An **attestation** is a claim backed by a screenshot or a recorded
 observation rather than by anything the script can evaluate. There are seven,
 all in `v07`. They print as `ATST`, are excluded from the check count and
-from the exit status, and are listed separately so that "795 checks passed"
-means 795 things were tested.
+from the exit status, and are listed separately so that "804 checks passed"
+means 804 things were tested.
 
 D96 through D99 were failing here until 6 August. They now pass, and they
 pass against captures re-driven after the fixes, not against the old ones.
@@ -299,6 +299,7 @@ be skipped without weakening a claim made in this document.
 | `v15_normality_orchestrator.R` | *Check normality (all columns)*: three columns, and the parametric/nonparametric recommendation | `evidence/csv/v15_normality_input.csv` | 43 |
 | `v16_csv_export.R` | The CSV export: every number against R, plus the structural assertions that make the file unambiguous to pivot | `evidence/csv_export/*.csv` | 45 |
 | `v17_broom_parity.R` | The broom-shaped export: tidy / glance / augment / post-hoc / effect size against R, structurally and numerically | `evidence/csv_export/broom/` | 48 |
+| `v19_nist_strd.R` | **Tier C.** The plugin against NIST StRD certified values, scored in log relative error. Contributes checks only when the `.dat` files have been ingested; prints a loud SKIP otherwise | `evidence/nist/` | 9 |
 | `v18_sweep_parity.R` | **Tier B.** One-way ANOVA, Tukey-Kramer and Kruskal-Wallis over a 16-case designed grid: k = 2/3/5, n per cell 3-200, balanced and 6:1 unbalanced, tie-free to heavily tied, 1:1 and 10:1 variance ratios | `evidence/sweep/` | 294 |
 
 ### Notes on individual scripts
@@ -451,7 +452,14 @@ Two further tiers exist as harness rather than as committed evidence:
   invariance, rank invariance of *H* under a monotone transform, matrix
   symmetry, and eight malformed-input cases whose refusal must *name* what
   is wrong). No oracle and no certified value, so nothing is transcribed.
-  It found the `lowerCase$` portability defect on Praat 6.4.06.
+
+  A correction, recorded rather than quietly edited: an earlier version of
+  this line called `lowerCase$` a portability defect Tier A had found. It is
+  not one. The plugin floors at Praat **6.6.30** — enforced in `setup.praat`,
+  which refuses to register any menu item below it — and `lowerCase$` exists
+  there. What Tier A actually hit was the sandbox's Praat 6.4.06, which is
+  below the supported floor. `eml_normalizeLabel` now uses an equivalent
+  regex only so the harness runs wherever CI puts it.
 - `validate/tools/nist_ingest.R` + `validate/lre.R` — the NIST StRD tier.
   The certified values are parsed out of NIST's published `.dat` files, never
   transcribed, and scored as **log relative error** (correct significant
