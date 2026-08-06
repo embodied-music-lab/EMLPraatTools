@@ -2,6 +2,13 @@
 
 Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 
+> **If you just want to check that the statistics are right, read
+> [`README.md`](README.md) instead.** It is one page, it names the exact
+> command, and it walks one number end to end by hand. This file is the full
+> reference: what every script covers, the conventions chosen where
+> statisticians disagree, the tolerance reasoning, the red-path cases, and an
+> honest statement of what is *not* covered. It is long on purpose.
+
 This folder is the validation record for the EML Praat Tools statistics
 layer. It exists so that the plugin's arithmetic can be checked by someone
 with no access to the audit session, the sandbox, or the GUI harness.
@@ -275,21 +282,21 @@ be skipped without weakening a claim made in this document.
 | Script | Covers | Input | Checks |
 |---|---|---|---|
 | `helpers.R` | Shared harness and the statistics base R lacks: Cohen's *d* and *d*z, *r* from *t*, matched-pairs rank-biserial, RM-ANOVA with Greenhouse-Geisser, Kendall's *W* | — | — |
-| `v01_pairwise_welch_bonferroni.R` | *Pairwise comparisons* wrapper: Welch *t*, Bonferroni, Cohen's *d* | `demo_3groups_input.csv` | 15 |
-| `v02_pairwise_holm_differential.R` | The same wrapper run twice, one control apart, to separate an applied adjustment from a labelled one. Also asserts, rather than assumes, that the two captures differ only in the adjustment | `demo_3groups_b_input.csv` | 24 |
-| `v03_rm_anova_greenhouse_geisser.R` | Stats Wizard RM-ANOVA: *F*, GG ε, condition means, Holm post-hoc | `demo_rm3_input.csv` | 21 |
-| `v04_friedman.R` | Stats Wizard Friedman: χ², rank sums, Wilcoxon post-hoc, Holm on ties | `demo_rm3_input.csv` | 14 |
-| `v05_paired_t.R` | *Compare paired/repeated*: paired *t*, descriptives, and the graphs-side CSV export row | `demo_paired_input.csv`, `pairedLong_results_5aug.csv` | 21 |
-| `v06_D15_effect_size_defect.R` | D15, now resolved: each paired test reports its own effect size | `demo_paired_input.csv` | 9 |
-| `v07_redpath_degenerate_inputs.R` (reported per case as R1–R7) | Red path: inputs that should fail or sit on a boundary. **All seven driven** as of 6 Aug 2026 | generated into `validate/redpath/` | 55 + 7 attested |
-| `v08_twogroup_orchestrator.R` | *Compare two groups*: Welch *t*, Mann-Whitney, Cohen's *d*, Hedges' *g*, rank-biserial | `v08_twogroup_input.csv` | 26 |
-| `v09_anova_tukey_orchestrator.R` | *Compare k groups (ANOVA)*: ANOVA table, eta-squared, Tukey matrix, pairwise *d* matrix | `v09_anova_tukey_input.csv` | 40 |
-| `v10_kruskal_dunn_orchestrator.R` | *Compare k groups (Kruskal-Wallis)*: *H*, epsilon-squared, mean ranks, Dunn *z* and adjusted *p*, rank-biserial matrix | `v10_kw_dunn_input.csv` | 34 |
-| `v11_twoway_orchestrator.R` | *Compare two-way (ANOVA)*: main effects, interaction, partial eta-squared | `v11_twoway_input.csv` | 31 |
-| `v12_correlation_orchestrator.R` | *Correlate two columns*: Pearson and Spearman with their *t* and df | `v12_correlation_input.csv` | 16 |
-| `v13_regression_orchestrator.R` | *Linear regression*: model, overall *F*, coefficient table, direction | `v13_regression_input.csv` | 30 |
-| `v14_descriptive_orchestrator.R` | *Describe Table column*: central tendency, dispersion, quartiles, shape, CI | `v14_descriptive_input.csv` | 29 |
-| `v15_normality_orchestrator.R` | *Check normality (all columns)*: three columns, and the parametric/nonparametric recommendation | `v15_normality_input.csv` | 43 |
+| `v01_pairwise_welch_bonferroni.R` | *Pairwise comparisons* wrapper: Welch *t*, Bonferroni, Cohen's *d* | `evidence/csv/demo_3groups_input.csv` | 15 |
+| `v02_pairwise_holm_differential.R` | The same wrapper run twice, one control apart, to separate an applied adjustment from a labelled one. Also asserts, rather than assumes, that the two captures differ only in the adjustment | `evidence/csv/demo_3groups_b_input.csv` | 24 |
+| `v03_rm_anova_greenhouse_geisser.R` | Stats Wizard RM-ANOVA: *F*, GG ε, condition means, Holm post-hoc | `evidence/csv/demo_rm3_input.csv` | 21 |
+| `v04_friedman.R` | Stats Wizard Friedman: χ², rank sums, Wilcoxon post-hoc, Holm on ties | `evidence/csv/demo_rm3_input.csv` | 14 |
+| `v05_paired_t.R` | *Compare paired/repeated*: paired *t*, descriptives, and the graphs-side CSV export row | `evidence/csv/demo_paired_input.csv`, `evidence/csv/pairedLong_results_5aug.csv` | 21 |
+| `v06_D15_effect_size_defect.R` | D15, now resolved: each paired test reports its own effect size | `evidence/csv/demo_paired_input.csv` | 9 |
+| `v07_redpath_degenerate_inputs.R` (reported per case as R1–R7) | Red path: inputs that should fail or sit on a boundary. **All seven driven** as of 6 Aug 2026 | generated into `validate/redpath/` by the script itself | 55 + 7 attested |
+| `v08_twogroup_orchestrator.R` | *Compare two groups*: Welch *t*, Mann-Whitney, Cohen's *d*, Hedges' *g*, rank-biserial | `evidence/csv/v08_twogroup_input.csv` | 26 |
+| `v09_anova_tukey_orchestrator.R` | *Compare k groups (ANOVA)*: ANOVA table, eta-squared, Tukey matrix, pairwise *d* matrix | `evidence/csv/v09_anova_tukey_input.csv` | 40 |
+| `v10_kruskal_dunn_orchestrator.R` | *Compare k groups (Kruskal-Wallis)*: *H*, epsilon-squared, mean ranks, Dunn *z* and adjusted *p*, rank-biserial matrix | `evidence/csv/v10_kw_dunn_input.csv` | 34 |
+| `v11_twoway_orchestrator.R` | *Compare two-way (ANOVA)*: main effects, interaction, partial eta-squared | `evidence/csv/v11_twoway_input.csv` | 31 |
+| `v12_correlation_orchestrator.R` | *Correlate two columns*: Pearson and Spearman with their *t* and df | `evidence/csv/v12_correlation_input.csv` | 16 |
+| `v13_regression_orchestrator.R` | *Linear regression*: model, overall *F*, coefficient table, direction | `evidence/csv/v13_regression_input.csv` | 30 |
+| `v14_descriptive_orchestrator.R` | *Describe Table column*: central tendency, dispersion, quartiles, shape, CI | `evidence/csv/v14_descriptive_input.csv` | 29 |
+| `v15_normality_orchestrator.R` | *Check normality (all columns)*: three columns, and the parametric/nonparametric recommendation | `evidence/csv/v15_normality_input.csv` | 43 |
 | `v16_csv_export.R` | The CSV export: every number against R, plus the structural assertions that make the file unambiguous to pivot | `evidence/csv_export/*.csv` | 45 |
 | `v17_broom_parity.R` | The broom-shaped export: tidy / glance / augment / post-hoc / effect size against R, structurally and numerically | `evidence/csv_export/broom/` | 48 |
 
