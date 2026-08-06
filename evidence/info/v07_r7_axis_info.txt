@@ -1,0 +1,9 @@
+EML R7 — small-range measure axis drive
+Table               r7_small_range_measure
+Data column         CQ
+axis min            0.380000
+axis max            0.580000
+axis span           0.200000
+data min            0.401000
+data max            0.548000
+data fraction       0.735000
