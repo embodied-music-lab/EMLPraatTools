@@ -16,48 +16,55 @@ unusable or ambiguous presentation), GRAPHING (figure defects), PACKAGING
 dismissed).
 
 
-> ## Correction, 6 August 2026 — sixteen findings were closed against code no user reaches
+> ## Correction, and a correction to the correction — 6 August 2026
 >
-> Fifteen CSV findings (D18, D19, D23, D24, D34, D37, D39, D41, D45, D46,
-> D54, D55, D65, D66, D76) were marked `RESOLVED (CSV rewrite, 6 Aug)`.
-> The rewrite is `plugin/stats/eml-result-writer.praat`. It is real, it is
-> validated by v16 and v17 (93 checks) — and **it is included by exactly one
-> file in the repository, `harness/broom_cases/anova_oneway.praat`, which is
-> a test harness.** No shipping script calls it. All eight exporting scripts
-> still use the legacy `@emlWrapperExportCSV`. Every defect those fifteen
-> findings describe is therefore still live for a user: the ANOVA export
-> still omits SS, MS and residual df; the descriptives are still six literal
-> zeros; the regression export still writes Y into the `group_col` slot.
+> **First error.** D99 was marked `RESOLVED` with the note "procedure name
+> gone from user-facing text". The fix touched `@emlOneWayAnova`. **Thirty-nine
+> other sites still leak it**, including `emlKruskalWallis: need >= 2 groups,
+> got 1`. Reopened, and it stands reopened.
 >
-> D99 was marked `RESOLVED` with the note "procedure name gone from
-> user-facing text". The fix touched `@emlOneWayAnova`. **Thirty-nine other
-> sites still leak it**, including `emlKruskalWallis: need >= 2 groups,
-> got 1`.
+> **Second error, in the opposite direction.** Fifteen CSV findings were then
+> reopened on the belief that "the CSV rewrite" meant
+> `plugin/stats/eml-result-writer.praat`, which no shipping script reaches.
+> That was wrong. There were **two** pieces of CSV work dated 6 Aug and they
+> were conflated:
 >
-> The common cause is that both were closed on the strength of the fix
-> **existing** rather than the fix being **reachable**, and nothing in the
-> process checked the difference. A finding is not resolved until a user
-> running the shipped plugin cannot reproduce it. That test is now the
-> standard for this file, and `validate/tools/check_wired.sh` enforces the
-> mechanical half of it.
+> - **Rewrite A** — `@emlCSVInit` / `@emlCSVAdd` / `@emlCSVWrite` in
+>   `plugin/stats/eml-output.praat` were rewritten in place to the long schema
+>   `table,analysis,term,term_type,field,value`, and every call site in
+>   `graphs/eml-annotation-procedures.praat` was rewritten with them. **This is
+>   live and reachable** — `@emlCSVInit` is called from `eml-analysis.praat`,
+>   `@emlCSVAdd` ~157 times from the reporter.
+> - **Rewrite B** — `eml-result-writer.praat`, a broom-style tidy/glance/augment
+>   writer, is reachable only from a test harness. It is a deferred
+>   enhancement, not the closure evidence for anything.
 >
-> **Re-audit, same day.** Because two of sixteen closures were false, every
-> remaining `RESOLVED` row was re-checked against a fresh clone of the
-> published repository rather than against a working tree or from memory.
-> Fourteen hold. D4, D10, D88, D91, D94, D95, D96, D100 and D101 were
-> confirmed mechanically against the shipped code; D15, D97 and D98 rest on
-> committed captures from a real GUI session, which satisfies the
-> reachability test by construction; D31 and D84 were never resolution
-> claims. **D92 and D93 could not be verified by static inspection** — one
-> needs a rendered figure, the other a GUI walk — and are now labelled as
-> unverified rather than left reading as confirmed.
+> Re-verified finding by finding against rewrite A: **nine are genuinely
+> fixed** (D19 D23 D24 D34 D45 D46 D54 D55 D76) and **six are not**
+> (D18 D37 D39 D41 D65 D66), each for a specific reason now recorded in its
+> row. So the original closure was wrong about six, and the blanket reopening
+> was wrong about nine.
 >
-> `validate/tools/check_calls.py` generalises D100 and D101: Praat resolves
-> procedure names at CALL time, so a script can carry the wrong include set
-> and look healthy until a user walks one branch. It reports zero
-> unresolvable calls in every registered script. The only script that fails
-> is `eml-tutorial.praat`, which has 23 and is already unregistered from the
-> menu — dead code in the tree, not a live defect.
+> **Two comments in the shipped code assert fixes that were never made:**
+> `eml-output.praat:991-993` (D18) and `eml-annotation-procedures.praat:3946`
+> (D37, D41). A fix comment is not evidence and was not treated as such in this
+> re-verification.
+>
+> **The standard, stated once.** A finding is resolved only when a user running
+> the shipped plugin cannot reproduce it, demonstrated against the emitting
+> code — not against a fix comment, not against a module's existence, and not
+> against a test that touches one call site of many.
+>
+> **Re-audit.** Every one of the 69 rows marked LIVE was re-checked against the
+> current code rather than trusted from its status column. All 69 are confirmed
+> still live; none had been incidentally fixed; D83 is half fixed. D92 and D93
+> could not be settled by static inspection and are labelled so. Seven defects
+> that no finding covers were found during the pass and are filed as D102-D108.
+>
+> `validate/tools/check_wired.sh` and `validate/tools/check_calls.py` enforce
+> the mechanical half of the standard: nothing unreachable, and no `@call` that
+> resolves to nothing at run time.
+
 
 | ID | Class | Severity | First stated | Summary | Revisits (line) |
 |----|-------|----------|--------------|---------|-----------------|
@@ -78,13 +85,13 @@ dismissed).
 | D15 | ACCURACY  | RESOLVED  | [L896](DRIVE_FINDINGS_2026-08-04.md#L896) | nonparametric effect size reported under the parametric test — demonstrated numerically 5 Aug: printed `Matched-pairs r 0.971` is the Wilcoxon rank-biserial; the t-derived r is 0.871 | 1116, 3728, 4110 |
 | D16 | CLARITY  | — — LIVE 6 Aug  | [L1125](DRIVE_FINDINGS_2026-08-04.md#L1125) | the dialog's own escaping instructions are wrong, and fail silently | — |
 | D17 | PACKAGING  | — — LIVE 6 Aug  | [L1172](DRIVE_FINDINGS_2026-08-04.md#L1172) | `effect_label` column populated inconsistently across analyses | 1522 |
-| D18 | CLARITY  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L1193](DRIVE_FINDINGS_2026-08-04.md#L1193) | default export filename names an internal artefact | 1549 |
-| D19 | CLARITY  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L1204](DRIVE_FINDINGS_2026-08-04.md#L1204) | ### D19 — CLARITY, LOW — paired results shoehorned into the two-group CSV schema | 1920 |
+| D18 | CLARITY  | **LIVE — re-verified 6 Aug**  | [L1193](DRIVE_FINDINGS_2026-08-04.md#L1193) | default export filename names an internal artefact | 1549 |
+| D19 | CLARITY  | RESOLVED (re-verified 6 Aug, rewrite A)  | [L1204](DRIVE_FINDINGS_2026-08-04.md#L1204) | ### D19 — CLARITY, LOW — paired results shoehorned into the two-group CSV schema | 1920 |
 | D20 | ACCURACY  | high — LIVE 6 Aug  | [L1380](DRIVE_FINDINGS_2026-08-04.md#L1380) | No variance-homogeneity check anywhere, and the plugin's own demo data violates the assumption | — |
 | D21 | CLARITY  | medium — LIVE 6 Aug  | [L1417](DRIVE_FINDINGS_2026-08-04.md#L1417) | : omega² is never computed, though the library already knows how to classify it | — |
 | D22 | CLARITY  | medium — LIVE 6 Aug  | [L1427](DRIVE_FINDINGS_2026-08-04.md#L1427) | ### D22 — CLARITY (medium): the Tukey table reports p-values only | — |
-| D23 | PACKAGING  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L1441](DRIVE_FINDINGS_2026-08-04.md#L1441) | : the omnibus CSV row carries only the numerator df | 1901 |
-| D24 | PACKAGING  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L1454](DRIVE_FINDINGS_2026-08-04.md#L1454) | : zero is used as the not-applicable sentinel in CSV exports | 1894 |
+| D23 | PACKAGING  | RESOLVED (re-verified 6 Aug, rewrite A)  | [L1441](DRIVE_FINDINGS_2026-08-04.md#L1441) | : the omnibus CSV row carries only the numerator df | 1901 |
+| D24 | PACKAGING  | RESOLVED (re-verified 6 Aug, rewrite A)  | [L1454](DRIVE_FINDINGS_2026-08-04.md#L1454) | : zero is used as the not-applicable sentinel in CSV exports | 1894 |
 | D25 | CLARITY  | medium — LIVE 6 Aug  | [L1483](DRIVE_FINDINGS_2026-08-04.md#L1483) | : the "Adjustment method" control is inert on the parametric k-group path | 1742 |
 | D26 | CLARITY  | — — LIVE 6 Aug  | [L1765](DRIVE_FINDINGS_2026-08-04.md#L1765) | the KW wrapper exposes no post-hoc control whatsoever | — |
 | D27 | CLARITY  | — — LIVE 6 Aug  | [L1796](DRIVE_FINDINGS_2026-08-04.md#L1796) | the Info window silently accumulates duplicate reports that can disagree with each other | — |
@@ -94,19 +101,19 @@ dismissed).
 | D31 | —  | MISFILED (verified 6 Aug)  | [L1864](DRIVE_FINDINGS_2026-08-04.md#L1864) | ### D31 — RESOLVED as designed, downgrade to LOW — violin KDE tails extend exactly one bandwidth past the data | — |
 | D32 | ACCURACY  | high — LIVE 6 Aug  | [L2061](DRIVE_FINDINGS_2026-08-04.md#L2061) | the graph preset bridge cannot carry a second factor, so the default figure silently drops it | — |
 | D33 | ACCURACY  | high — LIVE 6 Aug  | [L2116](DRIVE_FINDINGS_2026-08-04.md#L2116) | Draw annotates a two-way design with a two-group Welch t on one marginal | — |
-| D34 | CLARITY  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L2157](DRIVE_FINDINGS_2026-08-04.md#L2157) | the ANOVA CSV omits SS, MS, and residual df | — |
+| D34 | CLARITY  | RESOLVED (re-verified 6 Aug, rewrite A)  | [L2157](DRIVE_FINDINGS_2026-08-04.md#L2157) | the ANOVA CSV omits SS, MS, and residual df | — |
 | D35 | CLARITY  | high-medium — LIVE 6 Aug  | [L2186](DRIVE_FINDINGS_2026-08-04.md#L2186) | worst instance of the D28 family: nine orders of magnitude flattened to one string | — |
 | D36 | CLARITY  | medium-high — LIVE 6 Aug  | [L2202](DRIVE_FINDINGS_2026-08-04.md#L2202) | no cell means and no marginal means, despite a significant interaction | — |
-| D37 | CLARITY  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L2213](DRIVE_FINDINGS_2026-08-04.md#L2213) | no N reported anywhere in the two-way block | — |
+| D37 | CLARITY  | **LIVE — re-verified 6 Aug**  | [L2213](DRIVE_FINDINGS_2026-08-04.md#L2213) | no N reported anywhere in the two-way block | — |
 | D38 | CLARITY  | medium — LIVE 6 Aug  | [L2220](DRIVE_FINDINGS_2026-08-04.md#L2220) | no simple effects, no post-hoc, and no caution that the interaction qualifies the main effects | — |
-| D39 | PACKAGING  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L2228](DRIVE_FINDINGS_2026-08-04.md#L2228) | stats exports default into the plugin's own install directory | — |
+| D39 | PACKAGING  | **LIVE — re-verified 6 Aug**  | [L2228](DRIVE_FINDINGS_2026-08-04.md#L2228) | stats exports default into the plugin's own install directory | — |
 | D40 | GRAPHING  | medium — LIVE 6 Aug  | [L2254](DRIVE_FINDINGS_2026-08-04.md#L2254) | no interaction plot among the 14 graph types | — |
-| D41 | CLARITY  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L2266](DRIVE_FINDINGS_2026-08-04.md#L2266) | no effect-magnitude labels, inconsistent with wrappers 6 and 7 | — |
+| D41 | CLARITY  | **LIVE — re-verified 6 Aug**  | [L2266](DRIVE_FINDINGS_2026-08-04.md#L2266) | no effect-magnitude labels, inconsistent with wrappers 6 and 7 | — |
 | D42 | CLARITY  | low-medium — LIVE 6 Aug  | [L2274](DRIVE_FINDINGS_2026-08-04.md#L2274) | explanation narration is asymmetric within a single transcript | — |
 | D43 | GRAPHING  | low — LIVE 6 Aug  | [L2283](DRIVE_FINDINGS_2026-08-04.md#L2283) | ### D43 — GRAPHING (low) — no auto-title, against Rule 28A | — |
 | D44 | CLARITY  | — — LIVE 6 Aug  | [L2426](DRIVE_FINDINGS_2026-08-04.md#L2426) | R² is gated behind `emlShowExplanations`, so the Info window omits it while the figure annotation displays it | — |
-| D45 | ACCURACY  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L2454](DRIVE_FINDINGS_2026-08-04.md#L2454) | the CSV writes the Y variable into the `group_col` slot | — |
-| D46 | ACCURACY  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L2475](DRIVE_FINDINGS_2026-08-04.md#L2475) | CSV descriptives hardcoded to six literal zeros | — |
+| D45 | ACCURACY  | RESOLVED (re-verified 6 Aug, rewrite A)  | [L2454](DRIVE_FINDINGS_2026-08-04.md#L2454) | the CSV writes the Y variable into the `group_col` slot | — |
+| D46 | ACCURACY  | RESOLVED (re-verified 6 Aug, rewrite A)  | [L2475](DRIVE_FINDINGS_2026-08-04.md#L2475) | CSV descriptives hardcoded to six literal zeros | — |
 | D47 | CLARITY  | — — LIVE 6 Aug  | [L2496](DRIVE_FINDINGS_2026-08-04.md#L2496) | the `Group column` optionmenu is unfiltered and offers the correlated columns as grouping factors | — |
 | D48 | CLARITY  | — — LIVE 6 Aug  | [L2516](DRIVE_FINDINGS_2026-08-04.md#L2516) | per-group results print *after* the report's closing rule, with no summary and no terminator | — |
 | D49 | CLARITY  | — — LIVE 6 Aug  | [L2540](DRIVE_FINDINGS_2026-08-04.md#L2540) | 30 identical skip lines, each preceded by a blank line | — |
@@ -114,8 +121,8 @@ dismissed).
 | D51 | GRAPHING  | — — LIVE 6 Aug  | [L2567](DRIVE_FINDINGS_2026-08-04.md#L2567) | `Regression: None` is the default on a scatter launched from a correlation, while the same figure annotates R² | — |
 | D52 | CLARITY  | — — LIVE 6 Aug  | [L2598](DRIVE_FINDINGS_2026-08-04.md#L2598) | no loop repopulation; `New` resets every control to literal defaults | — |
 | D53 | CLARITY  | — — LIVE 6 Aug  | [L2611](DRIVE_FINDINGS_2026-08-04.md#L2611) | no assumption guidance, in the one wrapper that offers the nonparametric alternative in the same dialog | — |
-| D54 | ACCURACY  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L2761](DRIVE_FINDINGS_2026-08-04.md#L2761) | CSV descriptive columns are repurposed as regression coefficient slots, so the header lies about the payload | — |
-| D55 | ACCURACY  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L2775](DRIVE_FINDINGS_2026-08-04.md#L2775) | `group1` and `group2` both carry the sentinel | — |
+| D54 | ACCURACY  | RESOLVED (re-verified 6 Aug, rewrite A)  | [L2761](DRIVE_FINDINGS_2026-08-04.md#L2761) | CSV descriptive columns are repurposed as regression coefficient slots, so the header lies about the payload | — |
+| D55 | ACCURACY  | RESOLVED (re-verified 6 Aug, rewrite A)  | [L2775](DRIVE_FINDINGS_2026-08-04.md#L2775) | `group1` and `group2` both carry the sentinel | — |
 | D56 | CLARITY  | — — LIVE 6 Aug  | [L2782](DRIVE_FINDINGS_2026-08-04.md#L2782) | the coefficients table breaks the report's own layout | — |
 | D57 | CLARITY  | — — LIVE 6 Aug  | [L2792](DRIVE_FINDINGS_2026-08-04.md#L2792) | no confidence interval on slope or intercept, despite both | — |
 | D58 | CLARITY  | — — LIVE 6 Aug  | [L2798](DRIVE_FINDINGS_2026-08-04.md#L2798) | no residual diagnostics in the one wrapper whose entire | — |
@@ -125,8 +132,8 @@ dismissed).
 | D62 | CLARITY  | — — LIVE 6 Aug  | [L2855](DRIVE_FINDINGS_2026-08-04.md#L2855) | `Variance explained  large effect` formats a benchmark | — |
 | D63 | ACCURACY  | — — LIVE 6 Aug  | [L2926](DRIVE_FINDINGS_2026-08-04.md#L2926) | The figure and the exported CSV report a different test family than the analysis that launched them, with no disclosure on any screen | — |
 | D64 | ACCURACY  | — — LIVE 6 Aug  | [L2986](DRIVE_FINDINGS_2026-08-04.md#L2986) | The `Adjustment method` optionmenu on the graphing dialog is inert whenever `Test type = Parametric` and k ≥ 3 | — |
-| D65 | ACCURACY  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L3010](DRIVE_FINDINGS_2026-08-04.md#L3010) | The Draw path's CSV export is byte-identical to a different wrapper's export, and claims the same default filename | — |
-| D66 | ACCURACY  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L3037](DRIVE_FINDINGS_2026-08-04.md#L3037), [L3462](DRIVE_FINDINGS_2026-08-04.md#L3462) | `CSV` on the analysis-side `Analysis complete` dialog cannot ever succeed, and its failure message blames the filesystem — DEMONSTRATED on `emlRunPairwiseAnalysis` 5 Aug; row-building exists only in `graphs/eml-annotation-procedures.praat` | — |
+| D65 | ACCURACY  | **LIVE — re-verified 6 Aug**  | [L3010](DRIVE_FINDINGS_2026-08-04.md#L3010) | The Draw path's CSV export is byte-identical to a different wrapper's export, and claims the same default filename | — |
+| D66 | ACCURACY  | **LIVE — re-verified 6 Aug**  | [L3037](DRIVE_FINDINGS_2026-08-04.md#L3037), [L3462](DRIVE_FINDINGS_2026-08-04.md#L3462) | `CSV` on the analysis-side `Analysis complete` dialog cannot ever succeed, and its failure message blames the filesystem — DEMONSTRATED on `emlRunPairwiseAnalysis` 5 Aug; row-building exists only in `graphs/eml-annotation-procedures.praat` | — |
 | D67 | CLARITY  | — — LIVE 6 Aug  | [L3062](DRIVE_FINDINGS_2026-08-04.md#L3062) | Cohen's d is printed for every pair; n, means and SDs for the groups are printed nowhere | — |
 | D68 | CLARITY  | — — LIVE 6 Aug  | [L3070](DRIVE_FINDINGS_2026-08-04.md#L3070) | No test statistic and no degrees of freedom | — |
 | D69 | CLARITY  | — — LIVE 6 Aug  | [L3077](DRIVE_FINDINGS_2026-08-04.md#L3077) | ### D69 — CLARITY — The raw p is never shown | — |
@@ -136,7 +143,7 @@ dismissed).
 | D73 | GRAPHING  | — — LIVE 6 Aug  | [L3122](DRIVE_FINDINGS_2026-08-04.md#L3122) | ### D73 — GRAPHING — Auto-derived axis label drops the unit parenthesis | — |
 | D74 | CLARITY  | — — LIVE 6 Aug  | [L3131](DRIVE_FINDINGS_2026-08-04.md#L3131) | Dialog section rule is `--- Options ---` where every other wrapper uses the box-drawing rule | — |
 | D75 | CLARITY  | — — LIVE 6 Aug  | [L3138](DRIVE_FINDINGS_2026-08-04.md#L3138) | Report header casing does not match the control that set it | — |
-| D76 | CLARITY  | **REOPENED 6 Aug — writer built, NOT WIRED**  | [L3144](DRIVE_FINDINGS_2026-08-04.md#L3144) | The CSV omnibus row carries only `dfBetween`; `dfWithin` is dropped | — |
+| D76 | CLARITY  | RESOLVED (re-verified 6 Aug, rewrite A)  | [L3144](DRIVE_FINDINGS_2026-08-04.md#L3144) | The CSV omnibus row carries only `dfBetween`; `dfWithin` is dropped | — |
 | D77 | ACCURACY  | high — LIVE 6 Aug  | [L3242](DRIVE_FINDINGS_2026-08-04.md#L3242) | the `pre\|post` keyword makes the *time* role steal the second member of a paired pair | — |
 | D78 | ACCURACY  | medium — LIVE 6 Aug  | [L3298](DRIVE_FINDINGS_2026-08-04.md#L3298) | `groupIdx` and `subjectIdx` resolve to the same column | — |
 | D79 | CLARITY  | low — LIVE 6 Aug  | [L3379](DRIVE_FINDINGS_2026-08-04.md#L3379) | The `comment:` line documenting the subscript marker is the one line where GTK eats the marker — 13 sites in `graphs/eml-graphs-form.praat` | — |
@@ -162,3 +169,11 @@ dismissed).
 | D99 | CLARITY  | **PARTIAL — 1 of 40 sites**  | [L4528](DRIVE_FINDINGS_2026-08-04.md#L4528) | A refusal on singleton groups names only the first offending group, so six take six attempts; never states the six-groups-for-six-rows diagnosis though `@emlCountGroups` holds both numbers. Also leaks the internal procedure name into user-facing text | 4578 — FIXED 6 Aug: refusal states groups-against-rows; refusal states groups-against-rows. **The procedure-name half was NOT completed**: the fix touched @emlOneWayAnova only, and 39 other sites in eml-inferential.praat still prefix their own name into user-facing error text (emlTwoWayAnova x11, emlTukeyHSD x6, emlPairwiseT x4, emlDunnTest x4, emlKruskalWallis x3, and 11 more). Reopened 6 Aug |
 | D100 | ACCURACY  | high (RESOLVED)  | [L4661](DRIVE_FINDINGS_2026-08-04.md#L4661) | `scripts/eml-describe-table.praat` called `@emlReportDescriptiveAnalysis`, which lived in a module it does not include. Praat resolves a procedure name at CALL time, so the parse check passed and the menu item opened; "Procedure not found" came the instant Run was clicked. Fixed by moving the procedure to `stats/eml-output.praat`; `harness/check_includes.py` written to catch the class | — |
 | D101 | ACCURACY  | high (RESOLVED)  | [L4683](DRIVE_FINDINGS_2026-08-04.md#L4683) | Nine wrappers each carried four calls into `stats/eml-lmm.praat`, which no wrapper includes, via `@emlRunLMMAnalysis` in `stats/eml-analysis.praat`. Same call-time latency as D100. Fixed by moving the orchestrator beside its engine so the two cannot be included separately | — |
+| D102 | ACCURACY | high — NEW 6 Aug | — | `emlShowExplanations` is set to 1 by `@emlGraphsWorkflow` (`graphs/eml-graphs-form.praat:794`) and never reset, so after any Draw every later analysis report in the session becomes verbose. Report content is order-dependent within a session. Root cause shared with D42 and D44 | — |
+| D103 | ACCURACY | high — NEW 6 Aug | — | `graphs/eml-graphs-form.praat:3345-3346` overwrites `scatterRegressionLine` from `prev_scatterRegressionLine` AFTER the preset bridge sets it at `:1021-1024`, so on the second and later scatter in one session the regression wrapper's preset is silently discarded and the previous dialog's choice wins. Same clobber pattern for dot size, formula and dots | — |
+| D104 | ACCURACY | medium — NEW 6 Aug | — | `@emlCSVInit` runs once per orchestrator (`stats/eml-analysis.praat:858`) but `@emlReportCorrelationAnalysis` is re-invoked per group by `scripts/eml-correlate.praat:140` without re-init, so a grouped correlation export accumulates overall and per-group rows in one file, distinguished only by a `-- group` suffix on the table name | — |
+| D105 | CLARITY | medium — NEW 6 Aug | — | `stats/eml-output.praat:991-993` carries a comment asserting a D18 fix at the call site. The paired wrapper never passed the intermediate table, so the comment documents a fix to something that was not broken while the real defect at `graphs/eml-graphs-form.praat:5801` survives | — |
+| D106 | CLARITY | medium — NEW 6 Aug | — | `graphs/eml-annotation-procedures.praat:3946` reads `# D37: n1,n2 were literal 0,0. D41: effect_label was ""` — but the two-way block below emits no `effect_label` and prints no N to the Info window. A false closure record inside the shipped code | — |
+| D107 | ACCURACY | high — NEW 6 Aug | — | The D32 column-guessing fix was applied to the non-preset branch (`graphs/eml-graphs-form.praat:4422-4428`) but not to the preset branch (`:4396`), which is the branch the two-way wrapper takes; `gvSubIdx` there is still positional `min (2, nCols)` | — |
+| D108 | ACCURACY | high — NEW 6 Aug | — | `emlGraphsPresetCorrection$` was added so wrappers could carry their adjustment method into the figure and does seed the dialog, but on the parametric path the value is never read (`graphs/eml-annotation-procedures.praat:2151+`); only the Dunn branch consumes it. The wrapper advertises fidelity it does not have | — |
+| D109 | PACKAGING | medium — NEW 6 Aug | — | `scripts/eml-tutorial.praat` calls 23 procedures that nothing it includes defines (`validate/tools/check_calls.py`). Already unregistered from the menu, so dead code in the tree rather than a live defect, but it must be deleted or declared before release | — |
