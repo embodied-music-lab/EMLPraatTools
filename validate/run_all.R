@@ -39,7 +39,8 @@ scripts <- c(
     "v12_correlation_orchestrator.R",
     "v13_regression_orchestrator.R",
     "v14_descriptive_orchestrator.R",
-    "v15_normality_orchestrator.R"
+    "v15_normality_orchestrator.R",
+    "v16_csv_export.R"
 )
 
 cat("EML Praat Tools validation suite\n")
