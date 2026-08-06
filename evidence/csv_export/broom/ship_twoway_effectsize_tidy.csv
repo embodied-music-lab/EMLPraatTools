@@ -1,0 +1,4 @@
+term,effect.size,effect.size.type
+voice_type,0.63992873257264,partial.eta.squared
+task,0.8116676430671356,partial.eta.squared
+voice_type:task,0.05528435527456312,partial.eta.squared

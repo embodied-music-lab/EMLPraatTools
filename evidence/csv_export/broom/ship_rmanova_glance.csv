@@ -1,0 +1,2 @@
+statistic,p.value,df,df.residual,nobs,n.subjects,n.groups,partial.eta.squared,gg.epsilon,p.value.gg,method
+583.1232359492722,3.0359601434773946e-29,2,38,60,20,3,0.9684449978582114,0.8485644512752254,3.728026543095773e-25,Repeated-measures ANOVA

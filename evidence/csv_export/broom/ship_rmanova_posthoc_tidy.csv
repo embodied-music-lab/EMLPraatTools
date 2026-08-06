@@ -1,0 +1,4 @@
+term,contrast,p.value,adj.p.value,method
+condition,SPL_soft-SPL_medium,1.538445482638607e-12,3.076890965277214e-12,Paired t (holm)
+condition,SPL_soft-SPL_loud,1.0687107473120863e-20,3.206132241936259e-20,Paired t (holm)
+condition,SPL_medium-SPL_loud,5.431213120434684e-12,5.431213120434684e-12,Paired t (holm)
