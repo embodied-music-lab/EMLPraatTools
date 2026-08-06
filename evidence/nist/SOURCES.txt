@@ -1,1 +1,11 @@
 SiRstv.dat  md5=82669ffe62b152bdec9c4fe3404bd400  n=25  cols=2  certified_fields=9
+SmLs01.dat  md5=2a2ffb0dcca0d9d0cdee5e06b9ee50aa  n=189  cols=2  certified_fields=9
+SmLs02.dat  md5=cced43a5146860ce054c7ea5565ed40e  n=1809  cols=2  certified_fields=9
+SmLs03.dat  md5=684897a285c1ea3168a8bb02aedc5479  n=18009  cols=2  certified_fields=9
+AtmWtAg.dat  md5=375416464ff41c0aff49627285cb1553  n=48  cols=2  certified_fields=8
+SmLs04.dat  md5=ec66d9188c85d560a69cd3277f6dd0ce  n=189  cols=2  certified_fields=9
+SmLs05.dat  md5=a64dc9646a4938cadaab258b68f38661  n=1809  cols=2  certified_fields=9
+SmLs06.dat  md5=083bcbdc8557f8d10c06d1daac6d760d  n=18009  cols=2  certified_fields=9
+SmLs07.dat  md5=99f417aec483dc458729b61e369edf43  n=189  cols=2  certified_fields=9
+SmLs08.dat  md5=8ec16ff9c9a01910e6acaa847473640b  n=1809  cols=2  certified_fields=9
+SmLs09.dat  md5=5166ae8411967329293f33d975fea16e  n=18009  cols=2  certified_fields=9
