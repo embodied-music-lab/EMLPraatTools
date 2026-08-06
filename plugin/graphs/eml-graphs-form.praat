@@ -2097,19 +2097,25 @@ repeat
             endif
         else
             # Pass 1: keyword matching
-            for iCol from 1 to nCols
-                testCol$ = colName$[iCol]
-                if index_caseInsensitive (testCol$, "time") > 0
-                    tsTimeIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "value") > 0 or index_caseInsensitive (testCol$, "mean") > 0
-                    tsSeries1Idx = iCol
-                    tsValueIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "group") > 0 or index_caseInsensitive (testCol$, "condition") > 0
-                    tsGroupIdx = iCol + 1
-                endif
-            endfor
+            # Column-role defaults come from @emlGuessColumnRoles, the same
+            # weighted guesser the wizard and every stats wrapper already use.
+            # This site used to carry its own three-keyword copy of it; see the
+            # note at the top of this file. Only non-zero guesses overwrite the
+            # positional defaults set above, so an undetected role still falls
+            # back exactly as before.
+            @emlGuessColumnRoles: objectId
+            if emlGuessColumnRoles.timeIdx > 0
+                tsTimeIdx = emlGuessColumnRoles.timeIdx
+            endif
+            if emlGuessColumnRoles.dataIdx > 0
+                tsSeries1Idx = emlGuessColumnRoles.dataIdx
+            endif
+            if emlGuessColumnRoles.dataIdx > 0
+                tsValueIdx = emlGuessColumnRoles.dataIdx
+            endif
+            if emlGuessColumnRoles.groupIdx > 0
+                tsGroupIdx = emlGuessColumnRoles.groupIdx + 1
+            endif
             # Pass 2: verify time column is numeric; fallback to first numeric
             @emlCheckNumericColumn: objectId, colName$[tsTimeIdx]
             if emlCheckNumericColumn.isNumeric = 0
@@ -2539,14 +2545,21 @@ repeat
             barErrorIdx = prev_barErrorIdx
         else
             # Pass 1: keyword matching
+            # Column-role defaults come from @emlGuessColumnRoles, the same
+            # weighted guesser the wizard and every stats wrapper already use.
+            # This site used to carry its own three-keyword copy of it; see the
+            # note at the top of this file. Only non-zero guesses overwrite the
+            # positional defaults set above, so an undetected role still falls
+            # back exactly as before.
+            @emlGuessColumnRoles: objectId
+            if emlGuessColumnRoles.groupIdx > 0
+                barGroupIdx = emlGuessColumnRoles.groupIdx
+            endif
+            if emlGuessColumnRoles.dataIdx > 0
+                barValueIdx = emlGuessColumnRoles.dataIdx
+            endif
             for iCol from 1 to nCols
                 testCol$ = colName$[iCol]
-                if index_caseInsensitive (testCol$, "group") > 0 or index_caseInsensitive (testCol$, "condition") > 0 or index_caseInsensitive (testCol$, "category") > 0
-                    barGroupIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "value") > 0 or index_caseInsensitive (testCol$, "mean") > 0
-                    barValueIdx = iCol
-                endif
                 if index_caseInsensitive (testCol$, "error") > 0 or index_caseInsensitive (testCol$, "sd") > 0 or index_caseInsensitive (testCol$, "se") > 0
                     barErrorIdx = iCol + 3
                 endif
@@ -2900,15 +2913,19 @@ repeat
             violinValueIdx = prev_violinValueIdx
         else
             # Pass 1: keyword matching
-            for iCol from 1 to nCols
-                testCol$ = colName$[iCol]
-                if index_caseInsensitive (testCol$, "group") > 0 or index_caseInsensitive (testCol$, "condition") > 0 or index_caseInsensitive (testCol$, "category") > 0
-                    violinGroupIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "value") > 0 or index_caseInsensitive (testCol$, "mean") > 0
-                    violinValueIdx = iCol
-                endif
-            endfor
+            # Column-role defaults come from @emlGuessColumnRoles, the same
+            # weighted guesser the wizard and every stats wrapper already use.
+            # This site used to carry its own three-keyword copy of it; see the
+            # note at the top of this file. Only non-zero guesses overwrite the
+            # positional defaults set above, so an undetected role still falls
+            # back exactly as before.
+            @emlGuessColumnRoles: objectId
+            if emlGuessColumnRoles.groupIdx > 0
+                violinGroupIdx = emlGuessColumnRoles.groupIdx
+            endif
+            if emlGuessColumnRoles.dataIdx > 0
+                violinValueIdx = emlGuessColumnRoles.dataIdx
+            endif
             # Pass 2: verify value column is numeric; fallback to first numeric
             @emlCheckNumericColumn: objectId, colName$[violinValueIdx]
             if emlCheckNumericColumn.isNumeric = 0
@@ -3242,18 +3259,22 @@ repeat
             scatterGroupIdx = prev_scatterGroupIdx
         else
             # Pass 1: keyword matching
-            for iCol from 1 to nCols
-                testCol$ = colName$[iCol]
-                if index_caseInsensitive (testCol$, "x") > 0
-                    scatterXIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "y") > 0
-                    scatterYIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "group") > 0 or index_caseInsensitive (testCol$, "condition") > 0
-                    scatterGroupIdx = iCol
-                endif
-            endfor
+            # Column-role defaults come from @emlGuessColumnRoles, the same
+            # weighted guesser the wizard and every stats wrapper already use.
+            # This site used to carry its own three-keyword copy of it; see the
+            # note at the top of this file. Only non-zero guesses overwrite the
+            # positional defaults set above, so an undetected role still falls
+            # back exactly as before.
+            @emlGuessColumnRoles: objectId
+            if emlGuessColumnRoles.dataIdx > 0
+                scatterXIdx = emlGuessColumnRoles.dataIdx
+            endif
+            if emlGuessColumnRoles.dataIdx2 > 0
+                scatterYIdx = emlGuessColumnRoles.dataIdx2
+            endif
+            if emlGuessColumnRoles.groupIdx > 0
+                scatterGroupIdx = emlGuessColumnRoles.groupIdx
+            endif
             # Pass 2: verify X column is numeric; fallback to first numeric
             @emlCheckNumericColumn: objectId, colName$[scatterXIdx]
             if emlCheckNumericColumn.isNumeric = 0
@@ -3696,15 +3717,19 @@ repeat
             boxGroupIdx = prev_boxGroupIdx
             boxValueIdx = prev_boxValueIdx
         else
-            for iCol from 1 to nCols
-                testCol$ = colName$[iCol]
-                if index_caseInsensitive (testCol$, "group") > 0 or index_caseInsensitive (testCol$, "condition") > 0 or index_caseInsensitive (testCol$, "category") > 0
-                    boxGroupIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "value") > 0 or index_caseInsensitive (testCol$, "mean") > 0
-                    boxValueIdx = iCol
-                endif
-            endfor
+            # Column-role defaults come from @emlGuessColumnRoles, the same
+            # weighted guesser the wizard and every stats wrapper already use.
+            # This site used to carry its own three-keyword copy of it; see the
+            # note at the top of this file. Only non-zero guesses overwrite the
+            # positional defaults set above, so an undetected role still falls
+            # back exactly as before.
+            @emlGuessColumnRoles: objectId
+            if emlGuessColumnRoles.groupIdx > 0
+                boxGroupIdx = emlGuessColumnRoles.groupIdx
+            endif
+            if emlGuessColumnRoles.dataIdx > 0
+                boxValueIdx = emlGuessColumnRoles.dataIdx
+            endif
             @emlCheckNumericColumn: objectId, colName$[boxValueIdx]
             if emlCheckNumericColumn.isNumeric = 0
                 boxValueIdx = 0
@@ -4029,15 +4054,19 @@ repeat
             histValueIdx = prev_histValueIdx
             histGroupIdx = prev_histGroupIdx
         else
-            for iCol from 1 to nCols
-                testCol$ = colName$[iCol]
-                if index_caseInsensitive (testCol$, "value") > 0 or index_caseInsensitive (testCol$, "measure") > 0
-                    histValueIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "group") > 0 or index_caseInsensitive (testCol$, "condition") > 0
-                    histGroupIdx = iCol
-                endif
-            endfor
+            # Column-role defaults come from @emlGuessColumnRoles, the same
+            # weighted guesser the wizard and every stats wrapper already use.
+            # This site used to carry its own three-keyword copy of it; see the
+            # note at the top of this file. Only non-zero guesses overwrite the
+            # positional defaults set above, so an undetected role still falls
+            # back exactly as before.
+            @emlGuessColumnRoles: objectId
+            if emlGuessColumnRoles.dataIdx > 0
+                histValueIdx = emlGuessColumnRoles.dataIdx
+            endif
+            if emlGuessColumnRoles.groupIdx > 0
+                histGroupIdx = emlGuessColumnRoles.groupIdx
+            endif
             @emlCheckNumericColumn: objectId, colName$[histValueIdx]
             if emlCheckNumericColumn.isNumeric = 0
                 histValueIdx = 0
@@ -4384,18 +4413,22 @@ repeat
             gvSubIdx = prev_gvSubIdx
             gvValueIdx = prev_gvValueIdx
         else
-            for iCol from 1 to nCols
-                testCol$ = colName$[iCol]
-                if index_caseInsensitive (testCol$, "song") > 0 or index_caseInsensitive (testCol$, "category") > 0
-                    gvCatIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "platform") > 0 or index_caseInsensitive (testCol$, "group") > 0 or index_caseInsensitive (testCol$, "condition") > 0
-                    gvSubIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "value") > 0 or index_caseInsensitive (testCol$, "measure") > 0
-                    gvValueIdx = iCol
-                endif
-            endfor
+            # Column-role defaults come from @emlGuessColumnRoles, the same
+            # weighted guesser the wizard and every stats wrapper already use.
+            # This site used to carry its own three-keyword copy of it; see the
+            # note at the top of this file. Only non-zero guesses overwrite the
+            # positional defaults set above, so an undetected role still falls
+            # back exactly as before.
+            @emlGuessColumnRoles: objectId
+            if emlGuessColumnRoles.factor1Idx > 0
+                gvCatIdx = emlGuessColumnRoles.factor1Idx
+            endif
+            if emlGuessColumnRoles.factor2Idx > 0
+                gvSubIdx = emlGuessColumnRoles.factor2Idx
+            endif
+            if emlGuessColumnRoles.dataIdx > 0
+                gvValueIdx = emlGuessColumnRoles.dataIdx
+            endif
             @emlCheckNumericColumn: objectId, colName$[gvValueIdx]
             if emlCheckNumericColumn.isNumeric = 0
                 gvValueIdx = 0
@@ -4703,18 +4736,22 @@ repeat
             gbSubIdx = prev_gbSubIdx
             gbValueIdx = prev_gbValueIdx
         else
-            for iCol from 1 to nCols
-                testCol$ = colName$[iCol]
-                if index_caseInsensitive (testCol$, "song") > 0 or index_caseInsensitive (testCol$, "category") > 0
-                    gbCatIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "platform") > 0 or index_caseInsensitive (testCol$, "group") > 0 or index_caseInsensitive (testCol$, "condition") > 0
-                    gbSubIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "value") > 0 or index_caseInsensitive (testCol$, "measure") > 0
-                    gbValueIdx = iCol
-                endif
-            endfor
+            # Column-role defaults come from @emlGuessColumnRoles, the same
+            # weighted guesser the wizard and every stats wrapper already use.
+            # This site used to carry its own three-keyword copy of it; see the
+            # note at the top of this file. Only non-zero guesses overwrite the
+            # positional defaults set above, so an undetected role still falls
+            # back exactly as before.
+            @emlGuessColumnRoles: objectId
+            if emlGuessColumnRoles.factor1Idx > 0
+                gbCatIdx = emlGuessColumnRoles.factor1Idx
+            endif
+            if emlGuessColumnRoles.factor2Idx > 0
+                gbSubIdx = emlGuessColumnRoles.factor2Idx
+            endif
+            if emlGuessColumnRoles.dataIdx > 0
+                gbValueIdx = emlGuessColumnRoles.dataIdx
+            endif
             @emlCheckNumericColumn: objectId, colName$[gbValueIdx]
             if emlCheckNumericColumn.isNumeric = 0
                 gbValueIdx = 0
@@ -5032,22 +5069,28 @@ repeat
                 tmpUseGroup = prev_spUseGroup
             endif
         else
-            for iCol from 1 to nCols
-                testCol$ = colName$[iCol]
-                if index_caseInsensitive (testCol$, "condition") > 0 or index_caseInsensitive (testCol$, "time") > 0 or index_caseInsensitive (testCol$, "phase") > 0 or index_caseInsensitive (testCol$, "session") > 0
-                    spCondIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "value") > 0 or index_caseInsensitive (testCol$, "measure") > 0
-                    spValueIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "subject") > 0 or index_caseInsensitive (testCol$, "participant") > 0 or index_caseInsensitive (testCol$, "speaker") > 0 or index_caseInsensitive (testCol$, "singer") > 0 or index_caseInsensitive (testCol$, "id") > 0
-                    spSubjectIdx = iCol
-                endif
-                if index_caseInsensitive (testCol$, "group") > 0
-                    spGroupIdx = iCol
-                    tmpUseGroup = 1
-                endif
-            endfor
+            # Column-role defaults come from @emlGuessColumnRoles, the same
+            # weighted guesser the wizard and every stats wrapper already use.
+            # This site used to carry its own three-keyword copy of it; see the
+            # note at the top of this file. Only non-zero guesses overwrite the
+            # positional defaults set above, so an undetected role still falls
+            # back exactly as before.
+            @emlGuessColumnRoles: objectId
+            if emlGuessColumnRoles.groupIdx > 0
+                spCondIdx = emlGuessColumnRoles.groupIdx
+            endif
+            if emlGuessColumnRoles.dataIdx > 0
+                spValueIdx = emlGuessColumnRoles.dataIdx
+            endif
+            if emlGuessColumnRoles.subjectIdx > 0
+                spSubjectIdx = emlGuessColumnRoles.subjectIdx
+            endif
+            if emlGuessColumnRoles.factor2Idx > 0
+                spGroupIdx = emlGuessColumnRoles.factor2Idx
+            endif
+            if emlGuessColumnRoles.factor2Idx > 0
+                tmpUseGroup = 1
+            endif
             # Value column must be numeric
             @emlCheckNumericColumn: objectId, colName$[spValueIdx]
             if emlCheckNumericColumn.isNumeric = 0

@@ -2424,6 +2424,34 @@ procedure emlInitAlphaSprites
     .available = 0
     .dir$ = ""
 
+    # ------------------------------------------------------------------
+    # Platform gate. This has to come before the file search, because a
+    # readable sprite file is NOT evidence that the sprite will render.
+    #
+    # Praat draws an image from a file in Graphics_imageFromFile
+    # (sys/Graphics_image.cpp). That function has a GDI+ branch for
+    # Windows and a Quartz branch for macOS and NO cairo branch at all —
+    # on Linux it computes its coordinates and returns without drawing.
+    # No error, no return code, nothing on the canvas.
+    #
+    # So on Linux the old fileReadable test was actively harmful: it
+    # passed, .available went to 1, the Paint circle fallback was skipped,
+    # and every dot in a grouped scatter or a time-series CI band silently
+    # vanished. Verified 6 Aug 2026 on Praat 6.6.30/GTK by drawing a
+    # Paint circle and an Insert picture from file side by side in the
+    # Picture window: the circle appeared, the image did not, for both an
+    # RGBA sprite and a plain RGB PNG. Not an alpha problem, not a path
+    # problem — the platform has no implementation.
+    #
+    # Opaque dots on Linux are a real cosmetic loss in dense scatters.
+    # A blank plot is not a cosmetic loss. If Praat ever gains a cairo
+    # branch, delete this gate and nothing else changes.
+    # ------------------------------------------------------------------
+    if not (macintosh or windows)
+        emlAlphaSpritesInitialized = 1
+        goto SPRITES_INIT_DONE
+    endif
+
     # Strategy 1: installed plugin in preferences directory
     .tryPath$ = preferencesDirectory$ + "/plugin_EML_Praat_Tools/sprites/"
     .testFile$ = .tryPath$ + "dot_blue_a50_40.png"

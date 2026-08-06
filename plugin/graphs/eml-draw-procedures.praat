@@ -640,6 +640,113 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     endfor
     removeObject: .tempTable
 
+    # ------------------------------------------------------------------
+    # Step 3b: collapse repeated time points to their mean.
+    #
+    # 6 Aug 2026. Step 7 draws a segment between every consecutive pair of
+    # sorted rows. That is only a series when there is one row per time.
+    # Long format -- the shape every EML stats tool emits and every EML demo
+    # table uses -- has several observations per time, and the result was a
+    # figure that could invert the trend it was drawing.
+    #
+    # Worked example, two rising subjects: (1,10) (1,20) (2,12) (2,22)
+    # (3,14) (3,24). Sorted, the segments are 10->20 vertical at x=1, then
+    # 20->12 DOWN, then 12->22 vertical at x=2, then 22->14 DOWN, then
+    # 14->24 vertical at x=3. The three vertical segments land exactly on
+    # x = 1, 2, 3, two of which are the left and right axis lines, so what
+    # the reader sees is the two descending connectors: a falling line
+    # drawn from data that rises. Nothing was dropped and no arithmetic was
+    # wrong -- the rendering simply had no concept of a series.
+    #
+    # Collapsing to the per-time mean (per group when grouped) is what a
+    # time series of repeated measures means, and it is what the sibling
+    # @emlDrawTimeSeriesCI already does before it adds its band. Rows are
+    # already sorted by (group, time), so one linear pass suffices.
+    # ------------------------------------------------------------------
+    .nCollapsed = 0
+    .aggN = 0
+    .runSum = 0
+    .runCount = 0
+    .runT = undefined
+    .runGrp$ = ""
+    for .i from 1 to .nRows + 1
+        .isEnd = 0
+        if .i > .nRows
+            .isEnd = 1
+        else
+            .tThis = .rowT'.i'
+            .yThis = .rowY'.i'
+            .gThis$ = ""
+            if .hasGroup = 1
+                .gThis$ = .rowGrp'.i'$
+            endif
+        endif
+        # Flush the run whenever the (group, time) key changes or input ends.
+        .flush = 0
+        if .runCount > 0
+            if .isEnd = 1
+                .flush = 1
+            elsif .tThis <> .runT or .gThis$ <> .runGrp$
+                .flush = 1
+            endif
+        endif
+        if .flush = 1
+            .aggN = .aggN + 1
+            .aggT'.aggN' = .runT
+            .aggY'.aggN' = .runSum / .runCount
+            if .hasGroup = 1
+                .aggGrp'.aggN'$ = .runGrp$
+            endif
+            if .runCount > 1
+                .nCollapsed = .nCollapsed + .runCount - 1
+            endif
+            .runCount = 0
+            .runSum = 0
+        endif
+        if .isEnd = 0
+            # Undefined pairs are carried through untouched so the existing
+            # gap handling in Step 7 still sees them.
+            if .tThis = undefined or .yThis = undefined
+                .aggN = .aggN + 1
+                .aggT'.aggN' = .tThis
+                .aggY'.aggN' = .yThis
+                if .hasGroup = 1
+                    .aggGrp'.aggN'$ = .gThis$
+                endif
+                .runT = undefined
+                .runGrp$ = ""
+            else
+                if .runCount = 0
+                    .runT = .tThis
+                    .runGrp$ = .gThis$
+                endif
+                .runSum = .runSum + .yThis
+                .runCount = .runCount + 1
+            endif
+        endif
+    endfor
+
+    if .nCollapsed > 0
+        .nRows = .aggN
+        for .i from 1 to .nRows
+            .rowT'.i' = .aggT'.i'
+            .rowY'.i' = .aggY'.i'
+            if .hasGroup = 1
+                .rowGrp'.i'$ = .aggGrp'.i'$
+            endif
+        endfor
+        appendInfoLine: "NOTE: Time series — ", .nCollapsed,
+        ... " repeated observations were averaged into their time points. ",
+        ... "Use Spaghetti Plot to show individual series, or Time Series ",
+        ... "(with CI) to show the spread around each mean."
+        .savedSubtitle$ = emlSubtitle$
+        if emlSubtitle$ = ""
+            emlSubtitle$ = "Mean per time point"
+        else
+            emlSubtitle$ = emlSubtitle$ + " | Mean per time point"
+        endif
+    endif
+
     # Step 4: Axis ranges
     # v1.19 (C 95): the range used to be seeded from row 1 unconditionally.
     # If row 1 was blank or non-numeric the seed was undefined, every later
@@ -858,6 +965,11 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # Step 9: Reset
     Line width: 1.0
     Colour: "Black"
+    # Release the "Mean per time point" note if Step 3b added one, so it
+    # cannot leak onto the next figure drawn in this session.
+    if .nCollapsed > 0
+        emlSubtitle$ = .savedSubtitle$
+    endif
 endproc
 
 
