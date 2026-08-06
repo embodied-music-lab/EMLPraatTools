@@ -263,3 +263,65 @@ the same header. The generated exports are committed under
 `harness/probes/csv_export_drive.praat`.
 
 Suite total: 441 checks, 440 passing. Praat suites: 1258, 0 failures.
+
+### Follow-up: term_type, and a defect the fix introduced
+
+Demonstrating the pivot to the author exposed a wart in the first version of
+the long format. A contrast (`Soprano vs Mezzo`) and a group (`Soprano`) both
+live in `term`, so `pivot_wider` interleaved q and p_adjusted rows with n and
+mean rows and filled the gaps with NA. Nothing was wrong — every row was
+correct and self-labelled — but the reader had to know to filter first, and
+"you have to know" is a smaller version of the disease the format was written
+to cure.
+
+Ruled by the author: add `term_type` consistently, keep long form. It is a
+COLUMN, not another field row; as a field row it would not have helped, since
+the whole problem is separating rows *before* the pivot. Vocabulary: omnibus,
+contrast, group, factor, coefficient, error, total, variable.
+
+The same demonstration turned up a second defect, this one introduced by the
+conversion rather than inherited. The post-hoc reporters call
+`@emlCSVAddDescriptives` from inside their pairwise loop, so a group in *k*
+contrasts had its descriptives written *k* times — with three groups,
+Soprano's n, mean, sd and median each appeared twice, identical. Harmless
+read one row at a time, and silently truncated by any pivot: R warns
+"multiple rows match" and takes the first. Guarded in
+`@emlCSVAddDescriptives` by (analysis, term) rather than by restructuring
+each loop, because the loops differ between the Tukey and Dunn paths and a
+guard cannot be forgotten by the next reporter that copies the pattern.
+anova.csv went from 52 rows to 40.
+
+Five new checks in v16 pin all of it: term_type never blank, only the
+documented vocabulary, a term never given two different types, no duplicated
+row in any export, and field unique within (analysis, term_type, term) —
+which is the assertion that `pivot_wider` is unambiguous. 44 checks.
+
+---
+
+## Tabled, 6 August — batch voice analysis, Quick Start, Stats Demo, tutorial
+
+By author ruling, the same treatment as linear mixed models: disconnected
+from end users, nothing deleted. Only the menu registrations are removed;
+`scripts/eml-batch-process.praat`, `scripts/eml-quick-start.praat`,
+`scripts/eml-stats-demo.praat` and `scripts/eml-tutorial.praat` are intact
+and untouched, and setup.praat carries the removed lines commented, in place,
+with the restore instruction.
+
+- **Batch voice analysis** — never driven, and the one part of the plugin
+  calling Praat's own acoustic extraction (pitch, formants, intensity,
+  harmonicity) rather than doing its own arithmetic. A separate correctness
+  surface from the statistics, with no validation of any kind. To be covered.
+- **EML Stats Quick Start** — never driven; content not reviewed.
+- **Run Stats Demo** — the author has said it needs a complete redo, and a
+  demo that misrepresents the tools is worse than no demo.
+- **Interactive tutorial** — already unregistered at v1.4 because its include
+  is not shipped; the entry was live and the script could never run.
+
+**Create Demo Table stays.** It builds the tables the rest of the plugin is
+exercised with and is the most-driven wrapper in the audit.
+
+Verified by driving: `evidence/shots/menu_after_tabling_2026-08-06.png` is
+the submenu open, thirteen entries, ending at Create Demo Table. Create Demo
+Table moved up into Batch's old slot, so `harness/gui.sh` and
+`harness/MENU_MAP.md` are updated — a stale menu coordinate does not fail,
+it clicks whatever moved into its place.
