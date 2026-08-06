@@ -96,6 +96,12 @@ endif
 tableId = selected ("Table")
 tableName$ = selected$ ("Table")
 
+; Header quotes first: a column named `"value"` makes every later report
+; talk about a column the user cannot address. This is the one place the
+; repair is reported even when it finds nothing, since finding nothing is
+; itself the answer this tool exists to give.
+@emlStripHeaderQuotes: tableId
+
 @emlCheckDataScheme: tableId
 
 if emlCheckDataScheme.report$ = ""
@@ -147,6 +153,22 @@ endfor
 
 writeInfoLine: "DATA CHECK — ", tableName$
 appendInfoLine: ""
+
+if emlStripHeaderQuotes.nStripped > 0
+    appendInfoLine: "COLUMN NAMES — repaired"
+    appendInfoLine: string$ (emlStripHeaderQuotes.nStripped)
+    ... + " column name(s) arrived wrapped in double quotes:"
+    appendInfo: emlStripHeaderQuotes.report$
+    appendInfoLine: "Praat strips quotes from data cells but not from header"
+    appendInfoLine: "cells, so these columns could not be addressed by name."
+    appendInfoLine: "R's write.csv() quotes headers by default, which is the"
+    appendInfoLine: "usual way a table arrives in this state. Corrected."
+    appendInfoLine: ""
+else
+    appendInfoLine: "COLUMN NAMES — ok (no stray quotes)"
+    appendInfoLine: ""
+endif
+
 appendInfoLine: emlCheckDataScheme.report$
 
 if nCommaAmbig > 0
