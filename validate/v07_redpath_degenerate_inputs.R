@@ -351,8 +351,7 @@ check_true("R5", "every group in this input is a singleton",
            all(table(r5$voice_type) == 1L))
 check_true("R5", "so naming one offender at a time would take 6 attempts",
            length(unique(r5$voice_type)) == 6L)
-check_true("R5", "D99 FIXED: the refusal states groups-vs-rows, not one group",
-           TRUE)
+attest("R5", "D99 FIXED: the refusal states groups-vs-rows, not one group")
 
 # --- R6: non-numeric entry in a measure column -----------------------------
 # Describe Table column, SPL_soft — the column holding "n/a" in row 3 of 5.

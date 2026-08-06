@@ -40,7 +40,13 @@ scripts <- c(
     "v13_regression_orchestrator.R",
     "v14_descriptive_orchestrator.R",
     "v15_normality_orchestrator.R",
-    "v16_csv_export.R"
+    "v16_csv_export.R",
+    # v17 needs only stock R in BASE mode (it uses broom when broom is
+    # installed and falls back to base R otherwise, and says which), so it
+    # belongs in the runner like the rest. Added 6 Aug 2026 -- it had been
+    # written standalone and was invisible to a reviewer following the
+    # instructions in REGISTRY.
+    "v17_broom_parity.R"
 )
 
 cat("EML Praat Tools validation suite\n")
@@ -55,10 +61,23 @@ for (s in scripts) {
 df <- eml_report("SUMMARY — all scripts")
 
 if (!is.null(df)) {
+    # P4, 6 Aug 2026. This aggregate counted attestations while the headline
+    # did not, so the per-script column summed to 460 against a headline of
+    # 454 and R7 read 8/8 with an ATST inside it. Two presentations of the
+    # same run must not disagree. Attestations are excluded here and reported
+    # in their own column instead.
+    chk <- df[df$expect != "attested", , drop = FALSE]
     cat("\nBy script id:\n")
-    agg <- aggregate(pass ~ id, data = df,
+    agg <- aggregate(pass ~ id, data = chk,
                      FUN = function(x) sprintf("%d/%d", sum(x), length(x)))
     names(agg) <- c("id", "passed")
+    att <- df[df$expect == "attested", , drop = FALSE]
+    if (nrow(att)) {
+        n_att <- as.data.frame(table(att$id), stringsAsFactors = FALSE)
+        names(n_att) <- c("id", "attested")
+        agg <- merge(agg, n_att, by = "id", all.x = TRUE)
+        agg$attested[is.na(agg$attested)] <- 0L
+    }
     print(agg, row.names = FALSE)
 }
 

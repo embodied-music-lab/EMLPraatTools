@@ -32,9 +32,9 @@ to CI unchanged. Individual scripts are also runnable on their own:
 Rscript validate/v03_rm_anova_greenhouse_geisser.R
 ```
 
-**The suite currently exits 1 by design.** See "Reproducing this, as a
-reviewer" below for what that means and what a passing run does and does not
-establish.
+**The suite exits 0.** It exited 1 by design until 6 August 2026, when the
+last undriven red-path case (R7) was driven. See "Reproducing this, as a
+reviewer" below for what a passing run does and does not establish.
 
 ---
 
@@ -125,19 +125,22 @@ git clone <repo> && cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect exit status 0.** 454 checks, all passing, plus 6 attestations
+**Expect exit status 0.** 501 checks, all passing, plus 7 attestations
 reported separately and not counted as checks.
 
 Until 6 August 2026 this said "expect exit status 1", because R7 — the
 small-range axis case — had never been driven and its placeholder failed on
-purpose. It is driven now (headlessly: the draw procedures call no
-`beginPause:`, so they run under `praat --run` with no X server), and the
-suite has no designed failures left:
-R7, the one red-path case that has not been driven. It is an axis case,
-judged from a rendered figure, so it belongs with the graphing work rather
-than in an R suite — and it is left failing so the gap stays visible in the
-count instead of disappearing into a comment. A green run would mean the
-suite had stopped telling the truth. See "Expected failures".
+purpose. R7 was described for a month as an axis case that had to be judged
+from a rendered figure, and therefore belonged with the graphing work rather
+than in an R suite. That was wrong: the draw procedures call no `beginPause:`,
+so they run under `praat --run` with no X server, and an axis is a number. It
+is driven now, and the suite has no designed failures left.
+
+An **attestation** is a claim backed by a screenshot or a recorded
+observation rather than by anything the script can evaluate. There are seven,
+all in `v07`. They print as `ATST`, are excluded from the check count and
+from the exit status, and are listed separately so that "501 checks passed"
+means 501 things were tested.
 
 D96 through D99 were failing here until 6 August. They now pass, and they
 pass against captures re-driven after the fixes, not against the old ones.
@@ -169,12 +172,12 @@ that is not a number in an Info window.
 |---|---|---|---|
 | `helpers.R` | Shared harness and the statistics base R lacks: Cohen's *d* and *d*z, *r* from *t*, matched-pairs rank-biserial, RM-ANOVA with Greenhouse-Geisser, Kendall's *W* | — | — |
 | `v01_pairwise_welch_bonferroni.R` | *Pairwise comparisons* wrapper: Welch *t*, Bonferroni, Cohen's *d* | `demo_3groups_input.csv` | 15 |
-| `v02_pairwise_holm_differential.R` | The same wrapper run twice, one control apart, to separate an applied adjustment from a labelled one | `demo_3groups_b_input.csv` | 18 |
-| `v03_rm_anova_greenhouse_geisser.R` | Stats Wizard RM-ANOVA: *F*, GG ε, condition means, Holm post-hoc | `demo_rm3_input.csv` | 19 |
+| `v02_pairwise_holm_differential.R` | The same wrapper run twice, one control apart, to separate an applied adjustment from a labelled one. Also asserts, rather than assumes, that the two captures differ only in the adjustment | `demo_3groups_b_input.csv` | 24 |
+| `v03_rm_anova_greenhouse_geisser.R` | Stats Wizard RM-ANOVA: *F*, GG ε, condition means, Holm post-hoc | `demo_rm3_input.csv` | 21 |
 | `v04_friedman.R` | Stats Wizard Friedman: χ², rank sums, Wilcoxon post-hoc, Holm on ties | `demo_rm3_input.csv` | 14 |
 | `v05_paired_t.R` | *Compare paired/repeated*: paired *t*, descriptives, and the graphs-side CSV export row | `demo_paired_input.csv`, `pairedLong_results_5aug.csv` | 21 |
 | `v06_D15_effect_size_defect.R` | D15, now resolved: each paired test reports its own effect size | `demo_paired_input.csv` | 9 |
-| `v07_redpath_degenerate_inputs.R` | Red path: inputs that should fail or sit on a boundary. Six of seven driven | generated into `validate/redpath/` | 29 |
+| `v07_redpath_degenerate_inputs.R` (reported per case as R1–R7) | Red path: inputs that should fail or sit on a boundary. **All seven driven** as of 6 Aug 2026 | generated into `validate/redpath/` | 55 + 7 attested |
 | `v08_twogroup_orchestrator.R` | *Compare two groups*: Welch *t*, Mann-Whitney, Cohen's *d*, Hedges' *g*, rank-biserial | `v08_twogroup_input.csv` | 26 |
 | `v09_anova_tukey_orchestrator.R` | *Compare k groups (ANOVA)*: ANOVA table, eta-squared, Tukey matrix, pairwise *d* matrix | `v09_anova_tukey_input.csv` | 40 |
 | `v10_kruskal_dunn_orchestrator.R` | *Compare k groups (Kruskal-Wallis)*: *H*, epsilon-squared, mean ranks, Dunn *z* and adjusted *p*, rank-biserial matrix | `v10_kw_dunn_input.csv` | 34 |
@@ -183,6 +186,8 @@ that is not a number in an Info window.
 | `v13_regression_orchestrator.R` | *Linear regression*: model, overall *F*, coefficient table, direction | `v13_regression_input.csv` | 30 |
 | `v14_descriptive_orchestrator.R` | *Describe Table column*: central tendency, dispersion, quartiles, shape, CI | `v14_descriptive_input.csv` | 29 |
 | `v15_normality_orchestrator.R` | *Check normality (all columns)*: three columns, and the parametric/nonparametric recommendation | `v15_normality_input.csv` | 43 |
+| `v16_csv_export.R` | The CSV export: every number against R, plus the structural assertions that make the file unambiguous to pivot | `evidence/csv_export/*.csv` | 45 |
+| `v17_broom_parity.R` | The broom-shaped export: tidy / glance / augment / post-hoc / effect size against R, structurally and numerically | `evidence/csv_export/broom/` | 48 |
 
 ### Notes on individual scripts
 
@@ -290,10 +295,16 @@ photograph. Provenance, including interpreter versions, is recorded in
 `plugin/dev/tests/REFERENCE_PROVENANCE.md`.
 
 - `stats/eml-inferential.praat` — **28 of 28 procedures under an external
-  oracle**, 454 passing checks (updated 6 Aug 2026; the figure had been left
-  at 442 when v16 and v17 were added, and again when five never-failing
-  attestations were reclassified out of the count — see V1/V8) (
-  scikit-posthocs Dunn verifier). Welch and Student *t*, Mann-Whitney,
+  oracle**, 442 passing checks (409 from eight base-R scripts, 33 from a
+  scikit-posthocs Dunn verifier).
+
+  <!-- This 442 is the PRIMITIVES suite under plugin/dev/tests/. It is not
+  the validate/ figure and does not move when validate/ changes. On 6 Aug
+  2026 a global search-and-replace aimed at V1's stale validate/ counts
+  overwrote it with the validate/ headline and destroyed the 409 + 33
+  breakdown, leaving an orphaned parenthesis — in a document whose subject
+  is count accuracy. Restored, and flagged here so the next sweep does not
+  do it again. --> Welch and Student *t*, Mann-Whitney,
   one-way and two-way ANOVA, Tukey, Kruskal-Wallis, Dunn, Scheffé,
   Pearson and Spearman, linear regression, Theil-Sen, Shapiro-Wilk,
   Bonferroni, Holm, Benjamini-Hochberg, Cohen's *d*, rank-biserial. Four

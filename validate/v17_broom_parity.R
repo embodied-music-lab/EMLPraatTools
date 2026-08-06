@@ -21,12 +21,36 @@
 # Usage: Rscript validate/v17_broom_parity.R <dir-with-anova_*.csv> <fixture.csv>
 # ============================================================================
 
+# P3, 6 Aug 2026. The defaults pointed at /home/claude/stress/broom -- the
+# authoring sandbox, which exists for no reviewer -- so a bare
+# `Rscript validate/v17_broom_parity.R` died on a missing file even though the
+# fixture and all five exports ARE committed. Resolve from the repository
+# instead, via the same repo_path idiom the rest of the suite uses, and keep
+# the positional overrides for anyone regenerating into a scratch directory.
+#
+# helpers.R is sourced first because repo_path lives there. When run_all.R
+# sources this file, helpers is already loaded and the guard is a no-op; the
+# commandArgs read above must therefore tolerate run_all's own arguments,
+# which it does, since run_all passes none.
+if (!exists("repo_path")) {
+    .a <- commandArgs(FALSE); .f <- sub("^--file=", "", .a[grep("^--file=", .a)])
+    source(file.path(if (length(.f)) dirname(normalizePath(.f)) else ".",
+                     "helpers.R"))
+}
+
 args <- commandArgs(trailingOnly = TRUE)
-dir <- if (length(args) >= 1) args[1] else "/home/claude/stress/broom"
+dir <- if (length(args) >= 1) args[1] else repo_path("evidence", "csv_export",
+                                                     "broom")
 fixture <- if (length(args) >= 2) args[2] else file.path(dir, "fixture.csv")
 
 HAVE_BROOM <- requireNamespace("broom", quietly = TRUE)
 MODE <- if (HAVE_BROOM) "BROOM" else "BASE"
+
+# Standalone this script prints its own ok/FAIL lines; sourced from run_all.R
+# it must ALSO record into the shared harness, or its 48 checks are invisible
+# in the totals and in the per-script aggregate. Both, then: the local counters
+# drive the standalone summary, check_true drives the suite.
+.EML_V17_STANDALONE <- !exists("EML_RESULTS")
 
 pass <- 0L; fail <- 0L; notes <- character(0)
 ok <- function(label, cond, detail = "") {
@@ -34,6 +58,10 @@ ok <- function(label, cond, detail = "") {
   else { fail <<- fail + 1L
          cat(sprintf("  FAIL  %s%s\n", label,
                      if (nzchar(detail)) paste0("  [", detail, "]") else "")) }
+  if (exists("check_true")) {
+    check_true("v17", label, isTRUE(cond))
+  }
+  invisible(isTRUE(cond))
 }
 near <- function(a, b, tol = 1e-8) {
   if (length(a) != length(b)) return(FALSE)
@@ -230,4 +258,10 @@ if (MODE == "BASE") {
   cat("      broom is available before treating naming as validated.\n")
 }
 for (nte in notes) cat("NOTE:", nte, "\n")
-quit(status = if (fail > 0) 1 else 0)
+
+# Only exit the process when this script IS the process. Sourced from
+# run_all.R, a quit() here would terminate the whole suite before the report
+# is printed -- silently, and with a status that looks like success.
+if (.EML_V17_STANDALONE) {
+    quit(status = if (fail > 0) 1 else 0)
+}
