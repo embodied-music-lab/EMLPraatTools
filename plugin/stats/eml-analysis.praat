@@ -84,6 +84,13 @@
 # ============================================================================
 
 procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .equalVar
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
+    ; that bailed on "Need at least 2 condition columns" exported the previous
+    ; analysis's tidy and glance under the RM name.
+    emlResult_declared = 0
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -233,6 +240,16 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
         appendInfoLine: .rbNote$
     endif
 
+    ; --- three-file declaration. Extras first: staging reuses the tidy
+    ; collector, so the model's own tidy must be last in it.
+    if .error$ = ""
+        @emlResultClearExtras
+        @emlDeclareTwoGroupEffects: .doPar, .doNon
+        @emlResultStageExtra: "effectsize"
+        @emlDeclareTwoGroupResult: .tableName$, .dataCol$, .groupCol$,
+        ... .doPar, .doNon, .group1$, .group2$
+    endif
+
     label END_TWO_GROUP
     selectObject: .tableId
 endproc
@@ -245,6 +262,13 @@ endproc
 # ============================================================================
 
 procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
+    ; that bailed on "Need at least 2 condition columns" exported the previous
+    ; analysis's tidy and glance under the RM name.
+    emlResult_declared = 0
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -322,6 +346,13 @@ endproc
 # ============================================================================
 
 procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod$
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
+    ; that bailed on "Need at least 2 condition columns" exported the previous
+    ; analysis's tidy and glance under the RM name.
+    emlResult_declared = 0
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -380,6 +411,15 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
     @emlCSVInit
     @emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .nGroups, .doDunn
 
+    if .error$ = ""
+        @emlResultClearExtras
+        if .doDunn and emlDunnTest.error$ = ""
+            @emlDeclareDunnResult: .groupCol$
+            @emlResultStageExtra: "posthoc"
+        endif
+        @emlDeclareKWResult: .tableName$, .dataCol$, .groupCol$
+    endif
+
     label END_KW
     selectObject: .tableId
 endproc
@@ -392,6 +432,13 @@ endproc
 # ============================================================================
 
 procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjMethod$
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
+    ; that bailed on "Need at least 2 condition columns" exported the previous
+    ; analysis's tidy and glance under the RM name.
+    emlResult_declared = 0
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -442,6 +489,13 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
 
     @emlCSVInit
     @emlReportPairwiseComparison: .tableName$, .dataCol$, .groupCol$, .test$, .adjMethod$
+
+    ; BUILD, not a conversion: this orchestrator called @emlCSVInit and never
+    ; added a row, so its export could not succeed at all (D66).
+    if .error$ = ""
+        @emlResultClearExtras
+        @emlDeclarePairwiseResult: .tableName$, .groupCol$, .test$, .adjMethod$
+    endif
 
     label END_PAIRWISE
     selectObject: .tableId
@@ -690,6 +744,13 @@ endproc
 # ============================================================================
 
 procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
+    ; that bailed on "Need at least 2 condition columns" exported the previous
+    ; analysis's tidy and glance under the RM name.
+    emlResult_declared = 0
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -718,6 +779,14 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
     @emlCSVInit
     @emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
 
+    if .error$ = ""
+        @emlResultClearExtras
+        @emlDeclareTwoWayEffects: .factor1$, .factor2$
+        @emlResultStageExtra: "effectsize"
+        @emlDeclareTwoWayResult: .tableName$, .dataCol$, .factor1$, .factor2$,
+        ... .tableId
+    endif
+
     label END_TWOWAY
     selectObject: .tableId
 endproc
@@ -730,6 +799,13 @@ endproc
 # ============================================================================
 
 procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
+    ; that bailed on "Need at least 2 condition columns" exported the previous
+    ; analysis's tidy and glance under the RM name.
+    emlResult_declared = 0
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -795,6 +871,19 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
         appendInfoLine: .exclNote$
     endif
 
+    ; @emlMatchedPairsR re-runs @emlWilcoxonSignedRank, so the Wilcoxon row is
+    ; read inside the model declaration, which runs last.
+    if .error$ = ""
+        @emlResultClearExtras
+        @emlDeclarePairedEffects:
+        ... (.testType$ = "parametric" or .testType$ = "both"),
+        ... (.testType$ = "nonparametric" or .testType$ = "both")
+        @emlResultStageExtra: "effectsize"
+        @emlDeclarePairedResult: .tableName$, .col1$, .col2$,
+        ... (.testType$ = "parametric" or .testType$ = "both"),
+        ... (.testType$ = "nonparametric" or .testType$ = "both")
+    endif
+
     label END_PAIRED
     selectObject: .tableId
 endproc
@@ -807,6 +896,13 @@ endproc
 # ============================================================================
 
 procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
+    ; that bailed on "Need at least 2 condition columns" exported the previous
+    ; analysis's tidy and glance under the RM name.
+    emlResult_declared = 0
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -892,6 +988,15 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
         appendInfoLine: .exclNote$
     endif
 
+    if .error$ = ""
+        @emlResultClearExtras
+        @emlDeclareCorrelationResult: .tableName$, .colX$, .colY$, .n,
+        ... (.testType$ = "pearson" or .testType$ = "both"),
+        ... .pearR, .pearT, .pearDf, .pearP,
+        ... (.testType$ = "spearman" or .testType$ = "both"),
+        ... .spearRho, .spearT, .spearDf, .spearP
+    endif
+
     label END_CORR
     selectObject: .tableId
 endproc
@@ -904,6 +1009,13 @@ endproc
 # ============================================================================
 
 procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
+    ; that bailed on "Need at least 2 condition columns" exported the previous
+    ; analysis's tidy and glance under the RM name.
+    emlResult_declared = 0
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -948,6 +1060,13 @@ endproc
 # ============================================================================
 
 procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
+    ; that bailed on "Need at least 2 condition columns" exported the previous
+    ; analysis's tidy and glance under the RM name.
+    emlResult_declared = 0
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -1020,6 +1139,10 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         @emlCSVInit
         @emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
         ... .nValid, .nUndefined
+
+        @emlResultClearExtras
+        @emlDeclareRegressionResult: .tableName$, .depCol$, .predCol$,
+        ... .tableId, .nValid
     endif
 
     selectObject: .tableId
@@ -1033,6 +1156,13 @@ endproc
 # The parameter is retained because callers pass arguments positionally.
 # Do not remove it without updating every call site.
 procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
+    ; that bailed on "Need at least 2 condition columns" exported the previous
+    ; analysis's tidy and glance under the RM name.
+    emlResult_declared = 0
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -1161,6 +1291,13 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         ... .nValid, .nUndefined
     endif
 
+    if .error$ = ""
+        @emlResultClearExtras
+        @emlDeclareNormalityResult: .tableName$, .dataCol$, .swW, .swP,
+        ... .swError$, .skewness, .kurtosis, .nValid, .nUndefined,
+        ... .recommendation$
+    endif
+
     label END_NORMALITY
     selectObject: .tableId
 endproc
@@ -1170,6 +1307,13 @@ endproc
 # non-empty .error$ and computes nothing — callers must check .error$ before
 # reading any other output, because no other output is set.
 procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measure$, .scale$
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
+    ; that bailed on "Need at least 2 condition columns" exported the previous
+    ; analysis's tidy and glance under the RM name.
+    emlResult_declared = 0
     .error$ = "Not yet implemented — scheduled for Phase 4."
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -1527,6 +1671,13 @@ endproc
 # .adjMethod$ at every call site. It is kept for a future long-format path.
 # ============================================================================
 procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
+    ; that bailed on "Need at least 2 condition columns" exported the previous
+    ; analysis's tidy and glance under the RM name.
+    emlResult_declared = 0
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -1601,6 +1752,16 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
         endif
     endif
 
+    ; BUILD: no reporter and no CSV emission ever existed for this path.
+    if .error$ = ""
+        @emlResultClearExtras
+        if .doPostHoc and emlRMPostHoc.nPairs > 0
+            @emlDeclareRMPostHoc
+            @emlResultStageExtra: "posthoc"
+        endif
+        @emlDeclareRMResult: .tableName$, .n, .k
+    endif
+
     label END_RM
     selectObject: .tableId
 endproc
@@ -1613,6 +1774,13 @@ endproc
 # index identifies the subject. Retained because callers pass positionally.
 # ============================================================================
 procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
+    ; that bailed on "Need at least 2 condition columns" exported the previous
+    ; analysis's tidy and glance under the RM name.
+    emlResult_declared = 0
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -1662,6 +1830,18 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
                 appendInfoLine: "  ", emlWrapText.line$ [.pl]
             endfor
         endif
+    endif
+
+    ; BUILD. @emlFriedmanTest exposes NO .error$ field -- referencing one is a
+    ; runtime error -- so the gate is the extractor's error and the
+    ; orchestrator's own.
+    if .error$ = "" and emlExtractConditionMatrix.error$ = ""
+        @emlResultClearExtras
+        if .doPostHoc and emlRMPostHoc.nPairs > 0
+            @emlDeclareFriedmanPostHoc
+            @emlResultStageExtra: "posthoc"
+        endif
+        @emlDeclareFriedmanResult: .tableName$, .n, .k
     endif
 
     label END_FRIED
@@ -1976,5 +2156,574 @@ procedure emlDeclareAnovaEffectSizes: .groupCol$
             @emlTidyNum: "effect.size", emlOneWayAnova.dMatrix## [.i, .j]
             @emlTidyStr: "effect.size.type", "cohens.d"
         endfor
+    endfor
+endproc
+
+
+# ============================================================================
+#  BROOM-SHAPE DECLARATIONS FOR THE REMAINING ORCHESTRATORS
+# ============================================================================
+# Each @emlDeclare* below is called by its orchestrator AFTER the analysis has
+# run, and fills the tidy / glance / augment collectors in eml-result-writer.
+#
+# THREE RULES THESE ALL FOLLOW, EACH FOR A REASON FOUND THE HARD WAY:
+#
+# 1. Gate on `.error$ = ""`, never on "is the value defined". Praat globals
+#    persist across invocations, so a guard path leaves the PREVIOUS run's
+#    numbers sitting in the namespace. Declaring on definedness would export
+#    the last analysis's result under this one's name.
+#
+# 2. Stage the extra frames BEFORE the model frames. Staging reuses the one
+#    tidy collector, so the model's own tidy has to be the last thing left in
+#    it when @emlResultWrite runs.
+#
+# 3. Do not read a namespace that a later procedure re-enters. @emlRankBiserialR
+#    re-runs @emlMannWhitneyU, @emlMatchedPairsR re-runs @emlWilcoxonSignedRank,
+#    @emlDunnTest re-runs both. Read the outer values first or use the
+#    orchestrator's own restored locals.
+#
+# SHAPE NOTE. broom has no augment() for htest objects -- there is no model to
+# fit values from -- so the two-group, paired, correlation, KW, normality and
+# Friedman declarations emit tidy and glance only. That is broom's shape, not
+# an omission, and @emlResultWrite reports the absent augment as skipped
+# rather than writing an empty file.
+# ============================================================================
+
+
+# --- 2. Two independent groups ---------------------------------------------
+# tidy(t.test) is ONE row: estimate (the mean difference), estimate1,
+# estimate2, statistic, p.value, parameter (df), method, alternative. There is
+# no `term`. When the wrapper runs both families, one row per family is
+# emitted and `method` is what distinguishes them -- an extension of broom's
+# shape rather than a departure from it, since broom would produce two frames.
+procedure emlDeclareTwoGroupResult: .tableName$, .dataCol$, .groupCol$,
+    ... .doPar, .doNon, .g1$, .g2$
+    @emlResultBegin: .tableName$, "Two-group comparison"
+
+    if .doPar and emlTTest.error$ = ""
+        @emlTidyRow: ""
+        @emlTidyNum: "estimate",  emlTTest.meanDiff
+        @emlTidyNum: "estimate1", emlTTest.mean1
+        @emlTidyNum: "estimate2", emlTTest.mean2
+        @emlTidyNum: "statistic", emlTTest.t
+        @emlTidyNum: "p.value",   emlTTest.p
+        @emlTidyNum: "parameter", emlTTest.df
+        @emlTidyStr: "method",      emlTTest.method$
+        @emlTidyStr: "alternative", "two.sided"
+    endif
+    if .doNon and emlMannWhitneyU.error$ = ""
+        @emlTidyRow: ""
+        @emlTidyNum: "statistic",   emlMannWhitneyU.u1
+        @emlTidyNum: "p.value",     emlMannWhitneyU.p
+        @emlTidyStr: "method",      emlMannWhitneyU.method$
+        @emlTidyStr: "alternative", emlMannWhitneyU.alternative$
+    endif
+
+    ; glance for an htest is broom's tidy again, plus what we know about the
+    ; design. The parametric row wins when both ran, matching the report.
+    if .doPar and emlTTest.error$ = ""
+        @emlGlanceNum: "statistic", emlTTest.t
+        @emlGlanceNum: "p.value",   emlTTest.p
+        @emlGlanceNum: "parameter", emlTTest.df
+        @emlGlanceNum: "estimate",  emlTTest.meanDiff
+        @emlGlanceStr: "method",    emlTTest.method$
+        @emlGlanceNum: "nobs",      emlTTest.n1 + emlTTest.n2
+    elsif .doNon and emlMannWhitneyU.error$ = ""
+        @emlGlanceNum: "statistic", emlMannWhitneyU.u1
+        @emlGlanceNum: "p.value",   emlMannWhitneyU.p
+        @emlGlanceStr: "method",    emlMannWhitneyU.method$
+        @emlGlanceNum: "nobs",      emlMannWhitneyU.n1 + emlMannWhitneyU.n2
+    endif
+    @emlGlanceNum: "n.groups", 2
+endproc
+
+
+procedure emlDeclareTwoGroupEffects: .doPar, .doNon
+    @emlTidyClear
+    if .doPar and emlCohenD.error$ = ""
+        @emlTidyRow: ""
+        @emlTidyNum: "effect.size", emlCohenD.d
+        @emlTidyStr: "effect.size.type", "cohens.d"
+        @emlTidyRow: ""
+        @emlTidyNum: "effect.size", emlCohenD.g
+        @emlTidyStr: "effect.size.type", "hedges.g"
+    endif
+    if .doNon and emlRankBiserialR.error$ = ""
+        @emlTidyRow: ""
+        @emlTidyNum: "effect.size", emlRankBiserialR.r
+        @emlTidyStr: "effect.size.type", "rank.biserial"
+    endif
+endproc
+
+
+# --- 3. Kruskal-Wallis -----------------------------------------------------
+procedure emlDeclareKWResult: .tableName$, .dataCol$, .groupCol$
+    @emlResultBegin: .tableName$, "Kruskal-Wallis"
+    @emlTidyRow: .groupCol$
+    @emlTidyNum: "statistic", emlKruskalWallis.h
+    @emlTidyNum: "p.value",   emlKruskalWallis.p
+    @emlTidyNum: "parameter", emlKruskalWallis.df
+    @emlTidyStr: "method",    "Kruskal-Wallis rank sum test"
+
+    @emlGlanceNum: "statistic",       emlKruskalWallis.h
+    @emlGlanceNum: "p.value",         emlKruskalWallis.p
+    @emlGlanceNum: "parameter",       emlKruskalWallis.df
+    @emlGlanceNum: "epsilon.squared", emlKruskalWallis.epsilonSq
+    @emlGlanceNum: "tie.correction",  emlKruskalWallis.tieCorrection
+    @emlGlanceNum: "nobs",            emlKruskalWallis.n
+    @emlGlanceNum: "n.groups",        emlKruskalWallis.nGroups
+    @emlGlanceStr: "method",          "Kruskal-Wallis rank sum test"
+endproc
+
+
+# Dunn is a second object: its own frame, with the raw p AND the adjusted p,
+# because which one a reader wants depends on their correction policy and the
+# old exporter forced a choice.
+procedure emlDeclareDunnResult: .groupCol$
+    @emlTidyClear
+    .pair = 0
+    for .i from 1 to emlDunnTest.nGroups - 1
+        for .j from .i + 1 to emlDunnTest.nGroups
+            .pair = .pair + 1
+            @emlTidyRow: .groupCol$
+            @emlTidyStr: "contrast", emlDunnTest.groupName$ [.i] + "-"
+            ... + emlDunnTest.groupName$ [.j]
+            @emlTidyNum: "statistic",   emlDunnTest.zMatrix## [.i, .j]
+            @emlTidyNum: "p.value",     emlDunnTest.rawP# [.pair]
+            @emlTidyNum: "adj.p.value", emlDunnTest.adjustedP# [.pair]
+            @emlTidyStr: "method",      "Dunn (" + emlDunnTest.method$ + ")"
+        endfor
+    endfor
+endproc
+
+
+# --- 4. Pairwise comparisons — a BUILD, not a conversion -------------------
+# @emlRunPairwiseAnalysis called @emlCSVInit and never added a row, so its
+# export could not succeed at all (D66). There is no existing shape to mirror.
+# Three underlying procedures with three different output sets, so the branch
+# is on .test$ exactly as the orchestrator's is.
+procedure emlDeclarePairwiseResult: .tableName$, .groupCol$, .test$, .adjMethod$
+    @emlResultBegin: .tableName$, "Pairwise comparisons"
+
+    if .test$ = "wilcoxon"
+        .k = emlPairwiseWilcoxon.nGroups
+        .pair = 0
+        for .i from 1 to .k - 1
+            for .j from .i + 1 to .k
+                .pair = .pair + 1
+                @emlTidyRow: .groupCol$
+                @emlTidyStr: "contrast", emlPairwiseWilcoxon.groupName$ [.i]
+                ... + "-" + emlPairwiseWilcoxon.groupName$ [.j]
+                @emlTidyNum: "statistic",   emlPairwiseWilcoxon.uMatrix## [.i, .j]
+                @emlTidyNum: "p.value",     emlPairwiseWilcoxon.rawP# [.pair]
+                @emlTidyNum: "adj.p.value", emlPairwiseWilcoxon.adjustedP# [.pair]
+                @emlTidyNum: "effect.size",      emlPairwiseWilcoxon.rMatrix## [.i, .j]
+                @emlTidyStr: "effect.size.type", "rank.biserial"
+                @emlTidyStr: "method", "Wilcoxon rank sum"
+            endfor
+        endfor
+        @emlGlanceNum: "n.groups", .k
+        @emlGlanceNum: "n.pairs",  emlPairwiseWilcoxon.nPairs
+        @emlGlanceStr: "method",   "Pairwise Wilcoxon rank sum"
+        ; NOTE: emlPairwiseWilcoxon.method$ holds the ADJUSTMENT method, not a
+        ; test name -- the reverse of emlPairwiseT.method$. Using the literal
+        ; here rather than the field is deliberate.
+
+    elsif .test$ = "scheffe"
+        .k = emlScheffe.nGroups
+        for .i from 1 to .k - 1
+            for .j from .i + 1 to .k
+                @emlTidyRow: .groupCol$
+                @emlTidyStr: "contrast", emlScheffe.groupName$ [.i] + "-"
+                ... + emlScheffe.groupName$ [.j]
+                @emlTidyNum: "estimate",  emlScheffe.diffMatrix## [.i, .j]
+                @emlTidyNum: "statistic", emlScheffe.fMatrix## [.i, .j]
+                ; Scheffe's p IS the familywise-controlled one -- it exposes no
+                ; raw p, so adj.p.value is the honest column for it.
+                @emlTidyNum: "adj.p.value", emlScheffe.pMatrix## [.i, .j]
+                @emlTidyStr: "method", "Scheffe"
+            endfor
+        endfor
+        @emlGlanceNum: "n.groups",    .k
+        @emlGlanceNum: "n.pairs",     emlScheffe.nPairs
+        @emlGlanceNum: "df.residual", emlScheffe.dfWithin
+        @emlGlanceNum: "sigma",       sqrt (emlScheffe.mse)
+        @emlGlanceStr: "method",      "Scheffe"
+
+    else
+        .k = emlPairwiseT.nGroups
+        .pair = 0
+        for .i from 1 to .k - 1
+            for .j from .i + 1 to .k
+                .pair = .pair + 1
+                @emlTidyRow: .groupCol$
+                @emlTidyStr: "contrast", emlPairwiseT.groupName$ [.i] + "-"
+                ... + emlPairwiseT.groupName$ [.j]
+                @emlTidyNum: "statistic",   emlPairwiseT.tMatrix## [.i, .j]
+                @emlTidyNum: "p.value",     emlPairwiseT.rawP# [.pair]
+                @emlTidyNum: "adj.p.value", emlPairwiseT.adjustedP# [.pair]
+                @emlTidyNum: "effect.size",      emlPairwiseT.dMatrix## [.i, .j]
+                @emlTidyStr: "effect.size.type", "cohens.d"
+                @emlTidyStr: "method", emlPairwiseT.method$
+            endfor
+        endfor
+        @emlGlanceNum: "n.groups", .k
+        @emlGlanceNum: "n.pairs",  emlPairwiseT.nPairs
+        @emlGlanceStr: "method",   emlPairwiseT.method$
+    endif
+endproc
+
+
+# --- 5. Two-way ANOVA ------------------------------------------------------
+# The only orchestrator with a real augment available without re-deriving:
+# .cellOf[r] is indexed by TABLE ROW and .yValue[r] is that row's response.
+procedure emlDeclareTwoWayResult: .tableName$, .dataCol$, .factor1$, .factor2$,
+    ... .tableId
+    @emlResultBegin: .tableName$, "Two-way ANOVA"
+
+    @emlTidyRow: .factor1$
+    @emlTidyNum: "df", emlTwoWayAnova.dfA
+    @emlTidyNum: "sumsq", emlTwoWayAnova.ssA
+    @emlTidyNum: "meansq", emlTwoWayAnova.msA
+    @emlTidyNum: "statistic", emlTwoWayAnova.fA
+    @emlTidyNum: "p.value", emlTwoWayAnova.pA
+
+    @emlTidyRow: .factor2$
+    @emlTidyNum: "df", emlTwoWayAnova.dfB
+    @emlTidyNum: "sumsq", emlTwoWayAnova.ssB
+    @emlTidyNum: "meansq", emlTwoWayAnova.msB
+    @emlTidyNum: "statistic", emlTwoWayAnova.fB
+    @emlTidyNum: "p.value", emlTwoWayAnova.pB
+
+    ; R names the interaction "a:b". Matching that exactly is what lets a
+    ; reader join this frame against a broom frame without renaming.
+    @emlTidyRow: .factor1$ + ":" + .factor2$
+    @emlTidyNum: "df", emlTwoWayAnova.dfAB
+    @emlTidyNum: "sumsq", emlTwoWayAnova.ssAB
+    @emlTidyNum: "meansq", emlTwoWayAnova.msAB
+    @emlTidyNum: "statistic", emlTwoWayAnova.fAB
+    @emlTidyNum: "p.value", emlTwoWayAnova.pAB
+
+    @emlTidyRow: "Residuals"
+    @emlTidyNum: "df", emlTwoWayAnova.dfError
+    @emlTidyNum: "sumsq", emlTwoWayAnova.ssError
+    @emlTidyNum: "meansq", emlTwoWayAnova.msError
+
+    .nobs = emlTwoWayAnova.dfTotal + 1
+    @emlGlanceNum: "r.squared", 1 - emlTwoWayAnova.ssError / emlTwoWayAnova.ssTotal
+    @emlGlanceNum: "sigma", sqrt (emlTwoWayAnova.msError)
+    @emlGlanceNum: "df.residual", emlTwoWayAnova.dfError
+    @emlGlanceNum: "deviance", emlTwoWayAnova.ssError
+    @emlGlanceNum: "nobs", .nobs
+    @emlGlanceNum: "n.cells", emlTwoWayAnova.nCells
+    @emlGlanceStr: "method", "Two-way ANOVA"
+    if emlTwoWayAnova.warning$ <> ""
+        @emlGlanceStr: "warning", emlTwoWayAnova.warning$
+    endif
+
+    @emlAugmentFrom: .tableId
+    for .r from 1 to emlTwoWayAnova.nRows
+        .c = emlTwoWayAnova.cellOf [.r]
+        if .c > 0
+            .fit = emlTwoWayAnova.cellMean [.c]
+            @emlAugmentNum: ".fitted", .r, .fit
+            @emlAugmentNum: ".resid", .r, emlTwoWayAnova.yValue [.r] - .fit
+            @emlAugmentNum: ".std.resid", .r,
+            ... (emlTwoWayAnova.yValue [.r] - .fit) / sqrt (emlTwoWayAnova.msError)
+        endif
+    endfor
+endproc
+
+
+procedure emlDeclareTwoWayEffects: .factor1$, .factor2$
+    @emlTidyClear
+    @emlTidyRow: .factor1$
+    @emlTidyNum: "effect.size", emlTwoWayAnova.partialEtaSqA
+    @emlTidyStr: "effect.size.type", "partial.eta.squared"
+    @emlTidyRow: .factor2$
+    @emlTidyNum: "effect.size", emlTwoWayAnova.partialEtaSqB
+    @emlTidyStr: "effect.size.type", "partial.eta.squared"
+    @emlTidyRow: .factor1$ + ":" + .factor2$
+    @emlTidyNum: "effect.size", emlTwoWayAnova.partialEtaSqAB
+    @emlTidyStr: "effect.size.type", "partial.eta.squared"
+endproc
+
+
+# --- 6. Paired / repeated pair ---------------------------------------------
+procedure emlDeclarePairedResult: .tableName$, .col1$, .col2$, .doPar, .doNon
+    @emlResultBegin: .tableName$, "Paired comparison"
+
+    if .doPar and emlTTestPaired.error$ = ""
+        @emlTidyRow: ""
+        @emlTidyNum: "estimate",  emlTTestPaired.meanDiff
+        @emlTidyNum: "statistic", emlTTestPaired.t
+        @emlTidyNum: "p.value",   emlTTestPaired.p
+        @emlTidyNum: "parameter", emlTTestPaired.df
+        @emlTidyStr: "method",      "Paired t-test"
+        @emlTidyStr: "alternative", "two.sided"
+    endif
+    ; @emlMatchedPairsR re-runs @emlWilcoxonSignedRank, so the Wilcoxon row is
+    ; declared BEFORE the effect sizes are staged. Ordering, not preference.
+    if .doNon and emlWilcoxonSignedRank.error$ = ""
+        @emlTidyRow: ""
+        @emlTidyNum: "statistic",   emlWilcoxonSignedRank.tPlus
+        @emlTidyNum: "p.value",     emlWilcoxonSignedRank.p
+        @emlTidyStr: "method",      emlWilcoxonSignedRank.method$
+        @emlTidyStr: "alternative", emlWilcoxonSignedRank.alternative$
+    endif
+
+    if .doPar and emlTTestPaired.error$ = ""
+        @emlGlanceNum: "estimate",  emlTTestPaired.meanDiff
+        @emlGlanceNum: "statistic", emlTTestPaired.t
+        @emlGlanceNum: "p.value",   emlTTestPaired.p
+        @emlGlanceNum: "parameter", emlTTestPaired.df
+        @emlGlanceNum: "nobs",      emlTTestPaired.n
+        @emlGlanceStr: "method",    "Paired t-test"
+    elsif .doNon and emlWilcoxonSignedRank.error$ = ""
+        @emlGlanceNum: "statistic", emlWilcoxonSignedRank.tPlus
+        @emlGlanceNum: "p.value",   emlWilcoxonSignedRank.p
+        @emlGlanceNum: "nobs",      emlWilcoxonSignedRank.n
+        @emlGlanceStr: "method",    emlWilcoxonSignedRank.method$
+    endif
+endproc
+
+
+procedure emlDeclarePairedEffects: .doPar, .doNon
+    @emlTidyClear
+    if .doPar and emlCohenDz.error$ = ""
+        @emlTidyRow: ""
+        @emlTidyNum: "effect.size", emlCohenDz.dz
+        @emlTidyStr: "effect.size.type", "cohens.dz"
+    endif
+    if .doNon and emlMatchedPairsR.error$ = ""
+        @emlTidyRow: ""
+        @emlTidyNum: "effect.size", emlMatchedPairsR.r
+        @emlTidyStr: "effect.size.type", "matched.pairs.rank.biserial"
+    endif
+endproc
+
+
+# --- 7. Correlation --------------------------------------------------------
+# Reads the ORCHESTRATOR's restored locals rather than the procedure globals,
+# passed in, because @emlSpearmanCorrelation shares @eml_pearsonCore.
+procedure emlDeclareCorrelationResult: .tableName$, .colX$, .colY$, .n,
+    ... .doPear, .pearR, .pearT, .pearDf, .pearP,
+    ... .doSpear, .spearRho, .spearT, .spearDf, .spearP
+    @emlResultBegin: .tableName$, "Correlation"
+
+    if .doPear
+        @emlTidyRow: ""
+        @emlTidyNum: "estimate",  .pearR
+        @emlTidyNum: "statistic", .pearT
+        @emlTidyNum: "p.value",   .pearP
+        @emlTidyNum: "parameter", .pearDf
+        @emlTidyStr: "method",      "Pearson's product-moment correlation"
+        @emlTidyStr: "alternative", "two.sided"
+    endif
+    if .doSpear
+        @emlTidyRow: ""
+        @emlTidyNum: "estimate",  .spearRho
+        @emlTidyNum: "statistic", .spearT
+        @emlTidyNum: "p.value",   .spearP
+        @emlTidyNum: "parameter", .spearDf
+        @emlTidyStr: "method",      "Spearman's rank correlation rho"
+        @emlTidyStr: "alternative", "two.sided"
+    endif
+
+    if .doPear
+        @emlGlanceNum: "estimate",  .pearR
+        @emlGlanceNum: "r.squared", .pearR * .pearR
+        @emlGlanceNum: "statistic", .pearT
+        @emlGlanceNum: "p.value",   .pearP
+        @emlGlanceNum: "parameter", .pearDf
+        @emlGlanceStr: "method",    "Pearson's product-moment correlation"
+    elsif .doSpear
+        @emlGlanceNum: "estimate",  .spearRho
+        @emlGlanceNum: "statistic", .spearT
+        @emlGlanceNum: "p.value",   .spearP
+        @emlGlanceNum: "parameter", .spearDf
+        @emlGlanceStr: "method",    "Spearman's rank correlation rho"
+    endif
+    @emlGlanceNum: "nobs", .n
+endproc
+
+
+# --- 8. Simple linear regression -------------------------------------------
+# This is the one that is literally broom's tidy(lm): one row per coefficient,
+# term / estimate / std.error / statistic / p.value.
+procedure emlDeclareRegressionResult: .tableName$, .depCol$, .predCol$,
+    ... .tableId, .nValid
+    @emlResultBegin: .tableName$, "Linear regression"
+
+    @emlTidyRow: "(Intercept)"
+    @emlTidyNum: "estimate",  emlLinearRegression.intercept
+    @emlTidyNum: "std.error", emlLinearRegression.seIntercept
+    @emlTidyNum: "statistic", emlLinearRegression.tIntercept
+    @emlTidyNum: "p.value",   emlLinearRegression.pIntercept
+
+    @emlTidyRow: .predCol$
+    @emlTidyNum: "estimate",  emlLinearRegression.slope
+    @emlTidyNum: "std.error", emlLinearRegression.seSlope
+    @emlTidyNum: "statistic", emlLinearRegression.tSlope
+    @emlTidyNum: "p.value",   emlLinearRegression.pSlope
+
+    .n = emlLinearRegression.n
+    .rss = emlLinearRegression.ssRes
+    .logLik = -0.5 * .n * (ln (2 * pi) + ln (.rss / .n) + 1)
+    ; k = intercept + slope + residual variance
+    .k = 3
+    @emlGlanceNum: "r.squared", emlLinearRegression.rSquared
+    @emlGlanceNum: "adj.r.squared",
+    ... 1 - (1 - emlLinearRegression.rSquared) * (.n - 1) / (.n - 2)
+    @emlGlanceNum: "sigma",       emlLinearRegression.seResidual
+    @emlGlanceNum: "statistic",   emlLinearRegression.fStat
+    @emlGlanceNum: "p.value",     emlLinearRegression.pF
+    @emlGlanceNum: "df",          emlLinearRegression.dfReg
+    @emlGlanceNum: "logLik",      .logLik
+    @emlGlanceNum: "AIC",         -2 * .logLik + 2 * .k
+    @emlGlanceNum: "BIC",         -2 * .logLik + ln (.n) * .k
+    @emlGlanceNum: "deviance",    .rss
+    @emlGlanceNum: "df.residual", emlLinearRegression.dfRes
+    @emlGlanceNum: "nobs",        .n
+    @emlGlanceStr: "method",      "Simple linear regression"
+
+    @emlAugmentFrom: .tableId
+    selectObject: .tableId
+    .nRows = Get number of rows
+    for .r from 1 to .nRows
+        selectObject: .tableId
+        .x = Get value: .r, .predCol$
+        .y = Get value: .r, .depCol$
+        if .x <> undefined and .y <> undefined
+            .fit = emlLinearRegression.intercept + emlLinearRegression.slope * .x
+            @emlAugmentNum: ".fitted", .r, .fit
+            @emlAugmentNum: ".resid", .r, .y - .fit
+            @emlAugmentNum: ".std.resid", .r,
+            ... (.y - .fit) / emlLinearRegression.seResidual
+        endif
+    endfor
+endproc
+
+
+# --- 9. Normality ----------------------------------------------------------
+# Reads emlRunNormalityAnalysis.* -- the one orchestrator that copies every
+# value onto itself, so nothing here depends on procedure-global survival.
+procedure emlDeclareNormalityResult: .tableName$, .dataCol$, .swW, .swP,
+    ... .swError$, .skewness, .kurtosis, .nValid, .nUndefined, .recommendation$
+    @emlResultBegin: .tableName$, "Normality"
+
+    if .swError$ = ""
+        @emlTidyRow: .dataCol$
+        @emlTidyNum: "statistic", .swW
+        @emlTidyNum: "p.value",   .swP
+        @emlTidyStr: "method",    "Shapiro-Wilk normality test"
+        @emlGlanceNum: "statistic", .swW
+        @emlGlanceNum: "p.value",   .swP
+        @emlGlanceStr: "method",    "Shapiro-Wilk normality test"
+    else
+        ; Shapiro-Wilk out of range is not a failed export -- the shape
+        ; statistics are still the answer, and the reason is carried.
+        @emlTidyRow: .dataCol$
+        @emlTidyStr: "method", "Shape statistics only"
+        @emlGlanceStr: "method",  "Shape statistics only"
+        @emlGlanceStr: "warning", .swError$
+    endif
+    @emlGlanceNum: "skewness",    .skewness
+    @emlGlanceNum: "kurtosis",    .kurtosis
+    @emlGlanceNum: "nobs",        .nValid
+    @emlGlanceNum: "n.excluded",  .nUndefined
+    @emlGlanceStr: "alternative", .recommendation$
+endproc
+
+
+# --- 10. Repeated-measures ANOVA — a BUILD --------------------------------
+procedure emlDeclareRMResult: .tableName$, .n, .k
+    @emlResultBegin: .tableName$, "Repeated-measures ANOVA"
+
+    @emlTidyRow: "condition"
+    @emlTidyNum: "df",        emlRMAnovaTest.dfCond
+    @emlTidyNum: "sumsq",     emlRMAnovaTest.ssCond
+    @emlTidyNum: "meansq",    emlRMAnovaTest.msCond
+    @emlTidyNum: "statistic", emlRMAnovaTest.fStat
+    @emlTidyNum: "p.value",   emlRMAnovaTest.p
+
+    @emlTidyRow: "Residuals"
+    @emlTidyNum: "df",     emlRMAnovaTest.dfErr
+    @emlTidyNum: "sumsq",  emlRMAnovaTest.ssErr
+    @emlTidyNum: "meansq", emlRMAnovaTest.msErr
+
+    @emlGlanceNum: "statistic",   emlRMAnovaTest.fStat
+    @emlGlanceNum: "p.value",     emlRMAnovaTest.p
+    @emlGlanceNum: "df",          emlRMAnovaTest.dfCond
+    @emlGlanceNum: "df.residual", emlRMAnovaTest.dfErr
+    @emlGlanceNum: "gg.epsilon",  emlRMAnovaTest.ggEpsilon
+    @emlGlanceNum: "p.value.gg",  emlRMAnovaTest.pGG
+    @emlGlanceNum: "partial.eta.squared",
+    ... emlRMAnovaTest.ssCond / (emlRMAnovaTest.ssCond + emlRMAnovaTest.ssErr)
+    @emlGlanceNum: "n.subjects",  .n
+    @emlGlanceNum: "n.groups",    .k
+    @emlGlanceNum: "nobs",        .n * .k
+    @emlGlanceStr: "method",      "Repeated-measures ANOVA"
+    if emlRMAnovaTest.warning$ <> ""
+        @emlGlanceStr: "warning", emlRMAnovaTest.warning$
+    endif
+endproc
+
+
+# Post-hoc pair labels are INTEGERS indexing emlExtractConditionMatrix.colLabel$,
+# not strings -- the contrast text is built inline by the printer and stored
+# nowhere, so it is rebuilt here.
+procedure emlDeclareRMPostHoc
+    @emlTidyClear
+    for .i from 1 to emlRMPostHoc.nPairs
+        .a = emlRMPostHoc.pairLabelA [.i]
+        .b = emlRMPostHoc.pairLabelB [.i]
+        @emlTidyRow: "condition"
+        @emlTidyStr: "contrast", emlExtractConditionMatrix.colLabel$ [.a]
+        ... + "-" + emlExtractConditionMatrix.colLabel$ [.b]
+        @emlTidyNum: "p.value",     emlRMPostHoc.rawP# [.i]
+        @emlTidyNum: "adj.p.value", emlRMPostHoc.adj# [.i]
+        @emlTidyStr: "method", "Paired t (" + emlRMPostHoc.adjUsed$ + ")"
+    endfor
+endproc
+
+
+# --- 11. Friedman — a BUILD -----------------------------------------------
+# @emlFriedmanTest exposes NO .error$ field. Referencing one is a runtime
+# error, so the caller gates on emlExtractConditionMatrix.error$ instead.
+# It also exposes no effect size, so Kendall's W is computed here from its
+# definition, W = chiSq / (n * (k - 1)).
+procedure emlDeclareFriedmanResult: .tableName$, .n, .k
+    @emlResultBegin: .tableName$, "Friedman"
+
+    @emlTidyRow: "condition"
+    @emlTidyNum: "statistic", emlFriedmanTest.chiSq
+    @emlTidyNum: "p.value",   emlFriedmanTest.p
+    @emlTidyNum: "parameter", emlFriedmanTest.df
+    @emlTidyStr: "method",    "Friedman rank sum test"
+
+    @emlGlanceNum: "statistic",  emlFriedmanTest.chiSq
+    @emlGlanceNum: "p.value",    emlFriedmanTest.p
+    @emlGlanceNum: "parameter",  emlFriedmanTest.df
+    @emlGlanceNum: "kendalls.w", emlFriedmanTest.chiSq / (.n * (.k - 1))
+    @emlGlanceNum: "n.subjects", .n
+    @emlGlanceNum: "n.groups",   .k
+    @emlGlanceNum: "nobs",       .n * .k
+    @emlGlanceStr: "method",     "Friedman rank sum test"
+endproc
+
+
+procedure emlDeclareFriedmanPostHoc
+    @emlTidyClear
+    for .i from 1 to emlRMPostHoc.nPairs
+        .a = emlRMPostHoc.pairLabelA [.i]
+        .b = emlRMPostHoc.pairLabelB [.i]
+        @emlTidyRow: "condition"
+        @emlTidyStr: "contrast", emlExtractConditionMatrix.colLabel$ [.a]
+        ... + "-" + emlExtractConditionMatrix.colLabel$ [.b]
+        @emlTidyNum: "p.value",     emlRMPostHoc.rawP# [.i]
+        @emlTidyNum: "adj.p.value", emlRMPostHoc.adj# [.i]
+        @emlTidyStr: "method", "Wilcoxon signed rank ("
+        ... + emlRMPostHoc.adjUsed$ + ")"
     endfor
 endproc

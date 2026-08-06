@@ -91,9 +91,10 @@
 # puts conf.low, conf.high AFTER p.value. Putting adj.p.value last of the
 # five satisfies both, because adj.p.value only ever appears in a post-hoc
 # frame and p.value only ever in a model frame -- they never co-occur.
-emlVocabTidy$ = "term effect contrast null.value estimate std.error"
+emlVocabTidy$ = "term effect contrast null.value estimate estimate1"
+... + " estimate2 std.error"
 ... + " df num.df den.df sumsq meansq"
-... + " statistic p.value conf.low conf.high adj.p.value"
+... + " statistic p.value parameter conf.low conf.high adj.p.value"
 ... + " gg.epsilon hf.epsilon df.gg p.value.gg"
 ... + " effect.size effect.size.type method alternative"
 
@@ -107,7 +108,10 @@ emlVocabTidy$ = "term effect contrast null.value estimate std.error"
 # Our own additions trail after the broom block.
 emlVocabGlance$ = "r.squared adj.r.squared sigma statistic p.value df"
 ... + " logLik AIC BIC deviance df.residual nobs"
-... + " n.subjects n.groups partial.eta.squared method alternative"
+... + " n.subjects n.groups n.cells n.pairs n.excluded"
+... + " estimate parameter partial.eta.squared epsilon.squared"
+... + " tie.correction gg.epsilon p.value.gg kendalls.w"
+... + " skewness kurtosis method alternative warning"
 
 # augment's derived columns. The input table's own columns are carried
 # through ahead of these and are not vocabulary-checked, since they are the
@@ -385,6 +389,28 @@ procedure eml_orderedCols: .vocab$, .which$
                         .found = .c
                     endif
                 endfor
+                ; A tidy column that is empty in EVERY row carries no
+                ; information and broom would not have produced it. The one
+                ; that matters in practice is `term`: @emlTidyRow always sets
+                ; it, so an htest frame -- tidy(t.test), tidy(cor.test) --
+                ; would otherwise ship a column of blanks that broom's own
+                ; frame does not have, and a reader diffing the two would see
+                ; a spurious difference in the header.
+                ;
+                ; A column empty on SOME rows survives: tidy(aov) leaves
+                ; statistic and p.value blank on the Residuals row, and that
+                ; blank is broom's NA and has to stay.
+                if .found > 0
+                    .anySet = 0
+                    for .r from 1 to emlTidy_nRows
+                        if emlTidy_cell$ [.r, .found] <> ""
+                            .anySet = 1
+                        endif
+                    endfor
+                    if .anySet = 0
+                        .found = 0
+                    endif
+                endif
             elsif .which$ = "glance"
                 for .c from 1 to emlGlance_nCols
                     if emlGlance_col$ [.c] = .tok$
