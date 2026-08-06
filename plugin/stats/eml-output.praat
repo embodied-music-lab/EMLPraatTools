@@ -930,6 +930,22 @@ procedure emlWrapperInit: .minCols
         ... + "or Matrix object, then run this script again."
     endif
 
+    ; Praat's CSV reader strips quotes from data cells but leaves them on
+    ; header cells, so a table exported by R's write.csv() (which quotes
+    ; headers by default) arrives with columns literally named `"value"` and
+    ; every lookup fails with "Data column not found". Repaired here, at the
+    ; single point every wrapper enters through, and announced rather than
+    ; done silently -- the user's object is being modified.
+    @emlStripHeaderQuotes: .tableId
+    if emlStripHeaderQuotes.nStripped > 0
+        appendInfoLine: "Removed surrounding quotes from ",
+        ... emlStripHeaderQuotes.nStripped, " column name(s):"
+        appendInfo: emlStripHeaderQuotes.report$
+        appendInfoLine: "(Praat keeps quotes on headers but not on cells. "
+        ... + "The table object has been corrected.)"
+        appendInfoLine: ""
+    endif
+
     @emlTableColumnNames: .tableId
     .nCols = emlTableColumnNames.nCols
     if .nCols < .minCols

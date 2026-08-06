@@ -2647,3 +2647,70 @@ procedure emlCommaColumnMode: .tableId, .columnName$
 
     label COMMA_MODE_DONE
 endproc
+
+
+# ============================================================================
+# @emlStripHeaderQuotes
+# ============================================================================
+# Remove surrounding double quotes from every column LABEL of a Table.
+#
+# WHY THIS EXISTS
+#
+# Praat's CSV reader strips quotes from data cells but NOT from header cells.
+# Verified on 6 August 2026: reading
+#
+#     "grp","value","label"
+#     "A",1.5,"Mezzo"
+#
+# gives cell values A, 1.5 and Mezzo -- quotes gone -- but columns literally
+# named `"grp"`, `"value"`, `"label"`, quotes and all. Every lookup then fails
+# with "Data column not found: value" on a file that looks perfectly ordinary
+# in a text editor.
+#
+# This is not a rare edge case. R's write.csv() quotes headers BY DEFAULT, so
+# any table exported from R and imported here hits it, as do exports from a
+# good deal of other software.
+#
+# Stripping is safe rather than a judgement call, and the reason is the
+# inconsistency above: Praat has already decided that a quoted cell means the
+# text inside the quotes. Applying the same rule to the header is restoring
+# consistency, not imposing a convention. A column genuinely named with
+# literal quote characters could not survive a CSV round trip anyway.
+#
+# Only a MATCHED leading and trailing quote is removed, and only one layer, so
+# a header that is quoted oddly is left alone and reported rather than mangled.
+#
+# Input:
+#   .tableId - ID of the Table object (modified in place)
+#
+# Output:
+#   .nStripped - how many labels changed
+#   .report$   - one "old -> new" line per change, empty if none
+# ============================================================================
+procedure emlStripHeaderQuotes: .tableId
+    .nStripped = 0
+    .report$ = ""
+
+    selectObject: .tableId
+    .nCols = Get number of columns
+
+    for .c from 1 to .nCols
+        selectObject: .tableId
+        .lab$ = Get column label: .c
+        .len = length (.lab$)
+
+        if .len >= 2 and left$ (.lab$, 1) = """" and right$ (.lab$, 1) = """"
+            .clean$ = mid$ (.lab$, 2, .len - 2)
+
+            ; An empty result would leave the column unaddressable, which is
+            ; worse than the quotes. Leave "" alone.
+            if .clean$ <> ""
+                selectObject: .tableId
+                Set column label (index): .c, .clean$
+                .nStripped = .nStripped + 1
+                .report$ = .report$ + "  " + .lab$ + "  ->  " + .clean$
+                ... + newline$
+            endif
+        endif
+    endfor
+endproc
