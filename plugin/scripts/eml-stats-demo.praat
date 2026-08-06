@@ -40,12 +40,7 @@
 # ============================================================================
 
 # === INCLUDE CHAIN ===
-include ../stats/eml-core-utilities.praat
-include ../stats/eml-core-descriptive.praat
-include ../stats/eml-extract.praat
-include ../stats/eml-output.praat
-include ../stats/eml-inferential.praat
-include ../graphs/eml-graph-procedures.praat
+include eml-lib.praat
 
 # Initialize drawing-default globals (emlFont$, emlSubtitle$, emlShow* flags).
 # The graphs workflow normally does this; the demo draws via

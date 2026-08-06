@@ -26,11 +26,7 @@
 # appropriate application of this code.
 # ============================================================================
 
-include ../stats/eml-core-utilities.praat
-include ../stats/eml-core-descriptive.praat
-include ../stats/eml-extract.praat
-include ../stats/eml-output.praat
-include ../stats/eml-inferential.praat
+include eml-lib-stats.praat
 
 # ── Check that a Table is selected ──────────────────────────────────────────
 

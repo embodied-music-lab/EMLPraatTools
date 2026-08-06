@@ -21,19 +21,7 @@
 # were reviewed, tested, and validated by [your name].
 # ============================================================================
 
-include ../stats/eml-core-utilities.praat
-include ../stats/eml-core-descriptive.praat
-include ../stats/eml-extract.praat
-include ../stats/eml-output.praat
-include ../stats/eml-inferential.praat
-include ../stats/eml-linalg.praat
-include ../stats/eml-optimizer.praat
-include ../stats/eml-lmm.praat
-include ../stats/eml-analysis.praat
-include ../graphs/eml-graph-procedures.praat
-include ../graphs/eml-annotation-procedures.praat
-include ../graphs/eml-draw-procedures.praat
-include ../graphs/eml-graphs-form.praat
+include eml-lib-lmm.praat
 
 @emlWrapperInit: 2
 tableId = emlWrapperInit.tableId

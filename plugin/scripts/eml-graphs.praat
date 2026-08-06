@@ -23,14 +23,6 @@
 # ============================================================================
 
 
-include ../graphs/eml-graph-procedures.praat
-include ../stats/eml-core-utilities.praat
-include ../stats/eml-core-descriptive.praat
-include ../stats/eml-extract.praat
-include ../stats/eml-output.praat
-include ../stats/eml-inferential.praat
-include ../graphs/eml-annotation-procedures.praat
-include ../graphs/eml-draw-procedures.praat
-include ../graphs/eml-graphs-form.praat
+include eml-lib.praat
 
 @emlGraphsWorkflow: 0

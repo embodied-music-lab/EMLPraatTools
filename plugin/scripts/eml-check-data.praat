@@ -58,9 +58,7 @@
 #            Embodied Music Lab — www.embodiedmusiclab.com
 # ============================================================================
 
-include ../stats/eml-core-utilities.praat
-include ../stats/eml-core-descriptive.praat
-include ../stats/eml-extract.praat
+include eml-lib-stats.praat
 
 # ── Mode ────────────────────────────────────────────────────────────────────
 

@@ -19,16 +19,7 @@
 # Script author: [Your name here] — created and verified by this individual
 # ============================================================================
 
-include ../stats/eml-core-utilities.praat
-include ../stats/eml-core-descriptive.praat
-include ../stats/eml-extract.praat
-include ../stats/eml-output.praat
-include ../stats/eml-inferential.praat
-include ../stats/eml-analysis.praat
-include ../graphs/eml-graph-procedures.praat
-include ../graphs/eml-annotation-procedures.praat
-include ../graphs/eml-draw-procedures.praat
-include ../graphs/eml-graphs-form.praat
+include eml-lib.praat
 
 # ── Init ────────────────────────────────────────────────────────────────────
 
