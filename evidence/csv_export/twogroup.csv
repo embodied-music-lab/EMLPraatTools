@@ -1,0 +1,16 @@
+table,analysis,term,field,value
+demo_2groups,Welch,Soprano vs Alto,data_column,SPL_dB
+demo_2groups,Welch,Soprano vs Alto,group_column,voice_type
+demo_2groups,Welch,Soprano vs Alto,t,10.821940558783083
+demo_2groups,Welch,Soprano vs Alto,df,13.698818043560536
+demo_2groups,Welch,Soprano vs Alto,p,4.30833995602801e-08
+demo_2groups,Welch,Soprano vs Alto,cohens_d,5.410970279391542
+demo_2groups,Welch,Soprano vs Alto,effect_label,large effect
+demo_2groups,Welch,Soprano,n,8
+demo_2groups,Welch,Soprano,mean,72.8
+demo_2groups,Welch,Soprano,sd,1.4481515311399058
+demo_2groups,Welch,Soprano,median,72.94999999999999
+demo_2groups,Welch,Alto,n,8
+demo_2groups,Welch,Alto,mean,65.4875
+demo_2groups,Welch,Alto,sd,1.2472111746956556
+demo_2groups,Welch,Alto,median,65.6

@@ -1,0 +1,53 @@
+table,analysis,term,field,value
+demo_3groups,One-way ANOVA,,data_column,SPL_dB
+demo_3groups,One-way ANOVA,,group_column,voice_type
+demo_3groups,One-way ANOVA,,F,14.59566074950687
+demo_3groups,One-way ANOVA,,df1,2
+demo_3groups,One-way ANOVA,,df2,12
+demo_3groups,One-way ANOVA,,p,0.0006112982113522938
+demo_3groups,One-way ANOVA,,eta_squared,0.7086764987550273
+demo_3groups,One-way ANOVA,,effect_label,large effect
+demo_3groups,One-way ANOVA,,ss_between,123.33333333333333
+demo_3groups,One-way ANOVA,,ss_within,50.70000000000012
+demo_3groups,One-way ANOVA,,ms_between,61.666666666666664
+demo_3groups,One-way ANOVA,,ms_within,4.225000000000009
+demo_3groups,One-way ANOVA,,n_groups,3
+demo_3groups,Tukey HSD,Soprano vs Mezzo,q,4.351426345763365
+demo_3groups,Tukey HSD,Soprano vs Mezzo,df,12
+demo_3groups,Tukey HSD,Soprano vs Mezzo,p_adjusted,0.02415382861622073
+demo_3groups,Tukey HSD,Soprano vs Mezzo,cohens_d,1.9460170216420776
+demo_3groups,Tukey HSD,Soprano vs Mezzo,effect_label,large effect
+demo_3groups,Tukey HSD,Soprano,n,5
+demo_3groups,Tukey HSD,Soprano,mean,94.6
+demo_3groups,Tukey HSD,Soprano,sd,2.0554804791094488
+demo_3groups,Tukey HSD,Soprano,median,94.6
+demo_3groups,Tukey HSD,Mezzo,n,5
+demo_3groups,Tukey HSD,Mezzo,mean,90.6
+demo_3groups,Tukey HSD,Mezzo,sd,2.0554804791094488
+demo_3groups,Tukey HSD,Mezzo,median,90.6
+demo_3groups,Tukey HSD,Soprano vs Alto,q,7.614996105085887
+demo_3groups,Tukey HSD,Soprano vs Alto,df,12
+demo_3groups,Tukey HSD,Soprano vs Alto,p_adjusted,0.00044544782695676854
+demo_3groups,Tukey HSD,Soprano vs Alto,cohens_d,3.4055297878736357
+demo_3groups,Tukey HSD,Soprano vs Alto,effect_label,large effect
+demo_3groups,Tukey HSD,Soprano,n,5
+demo_3groups,Tukey HSD,Soprano,mean,94.6
+demo_3groups,Tukey HSD,Soprano,sd,2.0554804791094488
+demo_3groups,Tukey HSD,Soprano,median,94.6
+demo_3groups,Tukey HSD,Alto,n,5
+demo_3groups,Tukey HSD,Alto,mean,87.6
+demo_3groups,Tukey HSD,Alto,sd,2.0554804791094488
+demo_3groups,Tukey HSD,Alto,median,87.6
+demo_3groups,Tukey HSD,Mezzo vs Alto,q,3.263569759322523
+demo_3groups,Tukey HSD,Mezzo vs Alto,df,12
+demo_3groups,Tukey HSD,Mezzo vs Alto,p_adjusted,0.09314380760813412
+demo_3groups,Tukey HSD,Mezzo vs Alto,cohens_d,1.4595127662315581
+demo_3groups,Tukey HSD,Mezzo vs Alto,effect_label,large effect
+demo_3groups,Tukey HSD,Mezzo,n,5
+demo_3groups,Tukey HSD,Mezzo,mean,90.6
+demo_3groups,Tukey HSD,Mezzo,sd,2.0554804791094488
+demo_3groups,Tukey HSD,Mezzo,median,90.6
+demo_3groups,Tukey HSD,Alto,n,5
+demo_3groups,Tukey HSD,Alto,mean,87.6
+demo_3groups,Tukey HSD,Alto,sd,2.0554804791094488
+demo_3groups,Tukey HSD,Alto,median,87.6

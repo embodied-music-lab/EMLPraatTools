@@ -1,0 +1,15 @@
+table,analysis,term,field,value
+demo_regression,Pearson correlation,practice_hrs_wk ~ vibrato_pct,x_column,practice_hrs_wk
+demo_regression,Pearson correlation,practice_hrs_wk ~ vibrato_pct,y_column,vibrato_pct
+demo_regression,Pearson correlation,practice_hrs_wk ~ vibrato_pct,r,0.9995317534193463
+demo_regression,Pearson correlation,practice_hrs_wk ~ vibrato_pct,t,103.29876647423177
+demo_regression,Pearson correlation,practice_hrs_wk ~ vibrato_pct,df,10
+demo_regression,Pearson correlation,practice_hrs_wk ~ vibrato_pct,p,1.771269633896318e-16
+demo_regression,Pearson correlation,practice_hrs_wk ~ vibrato_pct,r_squared,0.9990637260935529
+demo_regression,Pearson correlation,practice_hrs_wk ~ vibrato_pct,n,12
+demo_regression,Spearman correlation,practice_hrs_wk ~ vibrato_pct,x_column,practice_hrs_wk
+demo_regression,Spearman correlation,practice_hrs_wk ~ vibrato_pct,y_column,vibrato_pct
+demo_regression,Spearman correlation,practice_hrs_wk ~ vibrato_pct,rho,1
+demo_regression,Spearman correlation,practice_hrs_wk ~ vibrato_pct,df,10
+demo_regression,Spearman correlation,practice_hrs_wk ~ vibrato_pct,p,0
+demo_regression,Spearman correlation,practice_hrs_wk ~ vibrato_pct,n,12
