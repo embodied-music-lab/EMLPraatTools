@@ -1540,26 +1540,52 @@ elsif goal = 3
 
 elsif goal = 4
 
-    # ── Predict: simple regression or mixed model? ─────────────────────────
-    label D_MODEL_TYPE
-    beginPause: "Predict — model type"
-        comment: "📋 Table: " + displayTable$
-        comment: "─────────────────────────────────────"
-        comment: ""
-        comment: "Is your data clustered, repeated, or nested?"
-        comment: "(e.g., several measures per singer, per school, per trial)"
-        optionmenu: "Model type", 1
-            option: "Simple linear regression (independent rows)"
-            option: "Mixed model (clustered / repeated / nested)"
-    clicked = endPause: "Quit", "Back", "Continue", 3, 0
-    if clicked = 1
-        exitScript: ""
-    elsif clicked = 2
-        goto Q1_GOAL
-    endif
-    if model_type = 2
-        goto D_LMM_FORMULA
-    endif
+    # ── Mixed models: DISCONNECTED from the wizard, 6 August 2026 ─────────
+    #
+    # Author ruling: table linear mixed models and take them away from end
+    # users for now — "including the wizard". Nothing is deleted. The engine
+    # (stats/eml-lmm.praat, 31 procedures), the standalone wrapper
+    # (scripts/eml-lmm.praat) and the formula page below are all intact.
+    #
+    # WHAT WAS REMOVED IS THE ROUTE, and only the route. A "Predict — model
+    # type" page used to sit here offering "Simple linear regression" and
+    # "Mixed model", and its second option was the last user-reachable way
+    # into D_LMM_FORMULA. With mixed models gone the page had one live
+    # choice left, so asking the question was worse than not asking it:
+    # goal 4 now goes straight to the regression columns.
+    #
+    # The other two routes were already closed on 5 August: setup.praat no
+    # longer registers the "Linear mixed model..." menu entry or the
+    # Objects-window button. With this page gone there is no surface left.
+    #
+    # TO RECONNECT: restore the block below, which is the page verbatim as
+    # it stood. Nothing else has to change — D_LMM_FORMULA, the include of
+    # stats/eml-lmm.praat, and the back-chain into Q1_GOAL are all still in
+    # place and still correct.
+    #
+    #     label D_MODEL_TYPE
+    #     beginPause: "Predict — model type"
+    #         comment: "📋 Table: " + displayTable$
+    #         comment: "─────────────────────────────────────"
+    #         comment: ""
+    #         comment: "Is your data clustered, repeated, or nested?"
+    #         comment: "(e.g., several measures per singer, per school, per trial)"
+    #         optionmenu: "Model type", 1
+    #             option: "Simple linear regression (independent rows)"
+    #             option: "Mixed model (clustered / repeated / nested)"
+    #     clicked = endPause: "Quit", "Back", "Continue", 3, 0
+    #     if clicked = 1
+    #         exitScript: ""
+    #     elsif clicked = 2
+    #         goto Q1_GOAL
+    #     endif
+    #     if model_type = 2
+    #         goto D_LMM_FORMULA
+    #     endif
+    #
+    # D_LMM_FORMULA's own Back button targeted D_MODEL_TYPE, which no longer
+    # exists, so it now targets Q1_GOAL — the page a user would have come
+    # from. That one line is the only edit inside the block itself.
 
     # ── Predict an outcome (simple linear regression) ─────────────────────
 
@@ -1633,6 +1659,20 @@ elsif goal = 4
     goto WIZ_WHAT_NEXT
 
     # ── Mixed model formula page ──────────────────────────────────────────
+    #
+    # UNREACHABLE as of 6 August 2026 — see the note under "elsif goal = 4"
+    # above. Kept live rather than commented out for two reasons: a fifty-
+    # line block reinstated by uncommenting is a fresh chance to introduce a
+    # bug, and while the code still parses, harness/check_includes.py keeps
+    # verifying that its four calls into stats/eml-lmm.praat resolve. That
+    # is the check which caught D101, and it only works on code that is
+    # still there to check.
+    #
+    # The cost of that choice is that eml-lmm.praat is still included and so
+    # still parsed on every wizard launch. It is dead weight, not a user
+    # surface. If the load time is worth reclaiming, the include and this
+    # block come out together — never one without the other, which is
+    # precisely the mistake D101 was.
     label D_LMM_FORMULA
     dColHint$ = ""
     for iCol from 1 to nCols
@@ -1661,7 +1701,9 @@ elsif goal = 4
     if clicked = 1
         exitScript: ""
     elsif clicked = 2
-        goto D_MODEL_TYPE
+        # Was D_MODEL_TYPE, which was removed when mixed models were
+        # disconnected. Q1_GOAL is where a user would now have come from.
+        goto Q1_GOAL
     endif
     if clear_Info_window
         @emlClearInfo
