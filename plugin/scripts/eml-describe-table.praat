@@ -112,47 +112,10 @@ endif
 
 # ── Format report ───────────────────────────────────────────────────────────
 
-displayColumn$ = replace$ (dataColumn$, "_", " ", 0)
-displayTable$ = replace$ (tableName$, "_", " ", 0)
+# The report body lived here as a second copy of
+# @emlReportDescriptiveAnalysis, line for line. Two copies of a report is
+# two places for a label to drift, and the D96 work needed a change in
+# both. Call the procedure instead; it is the same output.
 
-@emlReportHeader: "Descriptive Statistics"
-
-@emlReportLineString: "Table", displayTable$
-@emlReportLineString: "Column", displayColumn$
-@emlReportLine: "N (valid)", emlDescribe.n, 0
-if nUndefined > 0
-    @emlReportLine: "N (undefined)", nUndefined, 0
-endif
-
-@emlReportBlank
-@emlReportSection: "Central Tendency"
-@emlReportLine: "Mean", emlDescribe.mean, 4
-@emlReportLine: "Median", emlDescribe.median, 4
-@emlReportLine: "SEM", emlDescribe.sem, 4
-
-@emlReportBlank
-@emlReportSection: "Dispersion"
-@emlReportLine: "SD", emlDescribe.sd, 4
-@emlReportLine: "Variance", emlDescribe.variance, 4
-@emlReportLine: "Range", emlDescribe.range, 4
-@emlReportLine: "Min", emlDescribe.min, 4
-@emlReportLine: "Max", emlDescribe.max, 4
-
-@emlReportBlank
-@emlReportSection: "Quartiles"
-@emlReportLine: "Q1", emlDescribe.q1, 4
-@emlReportLine: "Q2 (Median)", emlDescribe.median, 4
-@emlReportLine: "Q3", emlDescribe.q3, 4
-@emlReportLine: "IQR", emlDescribe.iqr, 4
-
-@emlReportBlank
-@emlReportSection: "Distribution Shape"
-@emlReportLine: "Skewness", emlDescribe.skewness, 4
-@emlReportLine: "Kurtosis (excess)", emlDescribe.kurtosis, 4
-
-@emlReportBlank
-@emlReportSection: "95% Confidence Interval"
-@emlReportLine: "Lower", emlDescribe.ci95Lower, 4
-@emlReportLine: "Upper", emlDescribe.ci95Upper, 4
-
-@emlReportFooter
+@emlReportDescriptiveAnalysis: tableName$, dataColumn$, emlDescribe.n,
+... nUndefined, emlExtractColumn.note$
