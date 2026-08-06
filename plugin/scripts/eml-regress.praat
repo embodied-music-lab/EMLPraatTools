@@ -1,10 +1,17 @@
 # ============================================================================
 # EML Praat Tools — Simple Linear Regression
 # ============================================================================
-# Purpose: OLS simple linear regression (slope, intercept, R², SE, F, p)
-#          with Theil-Sen robust alternative.
+# Purpose: OLS simple linear regression (slope, intercept, R², SE, F, p).
+#          OLS is the only estimator this wrapper offers. The plugin also
+#          ships a Theil-Sen robust estimator (@emlTheilSen), but it is
+#          reachable only from the draw layer, and only on a Spearman
+#          scatter — not from here.
 # Date: 11 May 2026
-# Version: 2.1
+# Version: 2.2
+# v2.2: D61 — header corrected. It previously advertised a "Theil-Sen
+#        robust alternative" that this wrapper has never called and has no
+#        control for. D59 — the dialog's model line no longer uses the
+#        letter "x" as a multiplication sign next to the variable X.
 # v2.1: Use emlGraphsPresetRegressionLine and emlGraphsPresetCorrType$
 #        globals instead of direct variable set (survive per-call reset).
 # v2.0: Wrapper infrastructure refactor. repeat/until replaces goto/label.
@@ -37,7 +44,7 @@ repeat
         comment: "─────────────────────────────────────"
         comment: ""
         comment: "Select the predictor (X) and response (Y) columns."
-        comment: "The model will estimate: Y = slope x X + intercept"
+        comment: "The model will estimate: Y = (slope · X) + intercept"
         comment: ""
         optionmenu: "Predictor column", guessPredIdx
         for iCol from 1 to nCols

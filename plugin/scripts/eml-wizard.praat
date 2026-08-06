@@ -148,6 +148,14 @@ runAgain = 1
 while runAgain = 1
 
 wizCanDraw = 0
+# D87: drawing and exporting are separate capabilities and were gated by one
+# flag. Repeated measures and Friedman set wizCanDraw = 0 because there is no
+# figure for them yet — which also removed the CSV button from two analyses
+# the CSV migration had already built exports for. Every branch that runs an
+# orchestrator declaring results sets wizCanExport; the describe/normality
+# branches deliberately do not, because they fill no result buffer and the
+# button would lead only to "Nothing to Export".
+wizCanExport = 0
 wizDrawSource$ = ""
 wizTestType$ = "parametric"
 wizPairedCol1$ = ""
@@ -455,6 +463,7 @@ if goal = 1
                 endif
             endif
             wizCanDraw = 1
+            wizCanExport = 1
             wizDrawSource$ = "group"
 
             goto WIZ_WHAT_NEXT
@@ -697,6 +706,7 @@ if goal = 1
             endif
 
             wizCanDraw = 1
+            wizCanExport = 1
             wizDrawSource$ = "group"
 
             goto WIZ_WHAT_NEXT
@@ -773,6 +783,7 @@ if goal = 1
             endif
 
             wizCanDraw = 1
+            wizCanExport = 1
             wizDrawSource$ = "twoway"
             wizTwoWayFactor1$ = factor_1$
             wizTwoWayFactor2$ = factor_2$
@@ -807,7 +818,7 @@ if goal = 1
             goto A1_OBS_TYPE
         endif
         if conditions = 2
-            goto A3K_SELECT_PAGE
+            goto A3K_PREP
         endif
 
         @wizardPrepareTable: "paired"
@@ -955,11 +966,77 @@ if goal = 1
         wizPairedCol1$ = column_1$
         wizPairedCol2$ = column_2$
         wizCanDraw = 1
+        wizCanExport = 1
         wizDrawSource$ = "paired"
 
         goto WIZ_WHAT_NEXT
 
         # ── A3K: THREE OR MORE REPEATED CONDITIONS (RM-ANOVA / Friedman) ──
+        #
+        # D82: the six condition slots used to be seeded with fixed option
+        # indices 2/3/4 against a list whose first entry is "(none)" — i.e.
+        # table columns 1, 2 and 3 whatever they contained. On a wide RM
+        # table column 1 is normally the subject identifier, so the default
+        # selection made a string ID column into "Condition 1" and dropped
+        # the last real condition. Every row then read as missing on that
+        # condition and the analysis failed with "Need at least 2
+        # complete-case subjects" on complete data (D83).
+        #
+        # The list offered here is therefore built, not assumed: numeric
+        # columns only, with the column @emlGuessColumnRoles identifies as
+        # the subject identifier removed even when it is numeric. Because
+        # "(none)" is item 1 of THAT list, seeds 2/3/4 now mean the first
+        # three genuine conditions.
+        label A3K_PREP
+
+        @wizardPrepareTable: "paired"
+        @emlGuessColumnRoles: tableId
+        a3kSubjIdx = emlGuessColumnRoles.subjectIdx
+
+        a3kN = 0
+        for iCol from 1 to nCols
+            if iCol <> a3kSubjIdx
+                @emlValidateNumericColumn: tableId,
+                ... emlTableColumnNames.name$[iCol]
+                if emlValidateNumericColumn.nNumeric > 0
+                    a3kN = a3kN + 1
+                    a3kName$[a3kN] = emlTableColumnNames.name$[iCol]
+                endif
+            endif
+        endfor
+
+        if a3kN < 3
+            # Say which requirement is unmet, before the user picks anything.
+            # This is the D83 message the old code could not produce: the
+            # shortfall is in the TABLE's shape, and naming it here is not the
+            # same as telling a user with complete data that it is incomplete.
+            @emlErrorDialog: "Repeated measures needs at least 3 numeric"
+            ... + " condition columns. This Table has " + string$ (a3kN) + ".",
+            ... "Each condition needs its own numeric column, with one row"
+            ... + " per subject (wide format).|A column of text — a subject"
+            ... + " name or a condition label — cannot be a condition.|If a"
+            ... + " condition column is being read as text, run"
+            ... + " Check & repair data on it.", "wizard"
+            if emlErrorDialog.back
+                goto A3_NCOND_PAGE
+            endif
+            exitScript: ""
+        endif
+
+        # Seeds. Three slots filled, the rest left empty: a fourth or fifth
+        # numeric column is as likely to be a covariate as a condition, and
+        # adding one is a visible choice while removing a wrong one is not.
+        for iSlot from 1 to 6
+            a3kSel[iSlot] = 1
+        endfor
+        a3kSel[1] = 2
+        a3kSel[2] = 3
+        a3kSel[3] = 4
+        a3kTest = 1
+        a3kPost = 1
+        a3kAdj = 2
+        a3kClear = 0
+
         label A3K_SELECT_PAGE
 
         beginPause: "Repeated measures — select condition columns"
@@ -968,52 +1045,75 @@ if goal = 1
             comment: ""
             comment: "Pick the columns holding the repeated conditions"
             comment: "(select (none) to leave a slot empty; need >= 3)."
-            optionmenu: "Condition 1", 2
+            comment: "Only numeric columns are listed — " + string$ (a3kN)
+            ... + " of them."
+            optionmenu: "Condition 1", a3kSel[1]
                 option: "(none)"
-                for iCol from 1 to nCols
-                    option: emlTableColumnNames.name$[iCol]
+                for iCol from 1 to a3kN
+                    option: a3kName$[iCol]
                 endfor
-            optionmenu: "Condition 2", 3
+            optionmenu: "Condition 2", a3kSel[2]
                 option: "(none)"
-                for iCol from 1 to nCols
-                    option: emlTableColumnNames.name$[iCol]
+                for iCol from 1 to a3kN
+                    option: a3kName$[iCol]
                 endfor
-            optionmenu: "Condition 3", 4
+            optionmenu: "Condition 3", a3kSel[3]
                 option: "(none)"
-                for iCol from 1 to nCols
-                    option: emlTableColumnNames.name$[iCol]
+                for iCol from 1 to a3kN
+                    option: a3kName$[iCol]
                 endfor
-            optionmenu: "Condition 4", 1
+            optionmenu: "Condition 4", a3kSel[4]
                 option: "(none)"
-                for iCol from 1 to nCols
-                    option: emlTableColumnNames.name$[iCol]
+                for iCol from 1 to a3kN
+                    option: a3kName$[iCol]
                 endfor
-            optionmenu: "Condition 5", 1
+            optionmenu: "Condition 5", a3kSel[5]
                 option: "(none)"
-                for iCol from 1 to nCols
-                    option: emlTableColumnNames.name$[iCol]
+                for iCol from 1 to a3kN
+                    option: a3kName$[iCol]
                 endfor
-            optionmenu: "Condition 6", 1
+            optionmenu: "Condition 6", a3kSel[6]
                 option: "(none)"
-                for iCol from 1 to nCols
-                    option: emlTableColumnNames.name$[iCol]
+                for iCol from 1 to a3kN
+                    option: a3kName$[iCol]
                 endfor
             comment: ""
-            optionmenu: "Test approach", 1
+            optionmenu: "Test approach", a3kTest
                 option: "Parametric (RM-ANOVA)"
                 option: "Nonparametric (Friedman)"
-            boolean: "Pairwise post hoc", 1
-            optionmenu: "Adjustment", 2
+            boolean: "Pairwise post hoc", a3kPost
+            optionmenu: "Adjustment", a3kAdj
                 option: "bonferroni"
                 option: "holm"
                 option: "bh"
-            boolean: "Clear Info window", 0
+            boolean: "Clear Info window", a3kClear
         clicked = endPause: "Quit", "Back", "Run", 3, 0
         if clicked = 1
             exitScript: ""
         elsif clicked = 2
             goto A3_NCOND_PAGE
         endif
+
+        # D83: carry every answer back into the form. This page is re-entered
+        # by goto on three separate error paths, and before this it re-rendered
+        # from the seeds — so a user sent back by an error was shown the same
+        # selection that had just failed, with no sign it had not been kept.
+        @wizardCondSlot: condition_1$
+        a3kSel[1] = wizardCondSlot.idx
+        @wizardCondSlot: condition_2$
+        a3kSel[2] = wizardCondSlot.idx
+        @wizardCondSlot: condition_3$
+        a3kSel[3] = wizardCondSlot.idx
+        @wizardCondSlot: condition_4$
+        a3kSel[4] = wizardCondSlot.idx
+        @wizardCondSlot: condition_5$
+        a3kSel[5] = wizardCondSlot.idx
+        @wizardCondSlot: condition_6$
+        a3kSel[6] = wizardCondSlot.idx
+        a3kTest = test_approach
+        a3kPost = pairwise_post_hoc
+        a3kAdj = adjustment
+        a3kClear = clear_Info_window
 
         if clear_Info_window
             @emlClearInfo
@@ -1090,7 +1190,10 @@ if goal = 1
             wizTestType$ = "nonparametric"
         endif
 
+        # RM-ANOVA and Friedman have no figure yet, but they DO have a
+        # tidy/glance/augment export. (D87)
         wizCanDraw = 0
+        wizCanExport = 1
         goto WIZ_WHAT_NEXT
 
     endif
@@ -1205,6 +1308,7 @@ elsif goal = 2
         corrCol1$ = predictor_column$
         corrCol2$ = response_column$
         wizCanDraw = 1
+        wizCanExport = 1
         wizDrawSource$ = "regression"
 
         goto WIZ_WHAT_NEXT
@@ -1363,6 +1467,7 @@ elsif goal = 2
     endif
 
     wizCanDraw = 1
+    wizCanExport = 1
     wizDrawSource$ = "correlation"
 
     goto WIZ_WHAT_NEXT
@@ -1640,6 +1745,7 @@ elsif goal = 4
     corrCol1$ = predictor_column$
     corrCol2$ = outcome_column$
     wizCanDraw = 1
+    wizCanExport = 1
     wizDrawSource$ = "regression"
 
     goto WIZ_WHAT_NEXT
@@ -1727,7 +1833,9 @@ endif
 
 label WIZ_WHAT_NEXT
 
-if wizCanDraw
+# D87: four button sets, from two independent flags. Before this, one flag
+# decided both, so an analysis with no figure also lost its export.
+if wizCanDraw and wizCanExport
     beginPause: "Analysis complete"
         comment: "📊 Results are in the Info window."
     clicked = endPause: "Done", "CSV", "Draw", "New", 3, 0
@@ -1737,6 +1845,32 @@ if wizCanDraw
     elsif clicked = 2
         goto WIZ_EXPORT_CSV
     elsif clicked = 3
+        goto WIZ_DRAW_FIGURE
+    else
+        runAgain = 1
+        goto WIZ_LOOP_END
+    endif
+elsif wizCanExport
+    beginPause: "Analysis complete"
+        comment: "📊 Results are in the Info window."
+    clicked = endPause: "Done", "CSV", "New", 3, 0
+    if clicked = 1
+        runAgain = 0
+        goto WIZ_LOOP_END
+    elsif clicked = 2
+        goto WIZ_EXPORT_CSV
+    else
+        runAgain = 1
+        goto WIZ_LOOP_END
+    endif
+elsif wizCanDraw
+    beginPause: "Analysis complete"
+        comment: "📊 Results are in the Info window."
+    clicked = endPause: "Done", "Draw", "New", 3, 0
+    if clicked = 1
+        runAgain = 0
+        goto WIZ_LOOP_END
+    elsif clicked = 2
         goto WIZ_DRAW_FIGURE
     else
         runAgain = 1
@@ -1755,27 +1889,18 @@ else
 endif
 
 # ── CSV Export ────────────────────────────────────────────────────────────
+#
+# D39: this used to open on defaultDirectory$ — the PLUGIN's own script
+# folder — so a user's results landed inside the install tree, where an
+# upgrade can remove them and where nobody looks for data. Every other
+# wrapper exports through @emlWrapperExportCSV, which starts at
+# homeDirectory$ and remembers the last folder used. The wizard now does
+# the same, which also picks up the tidy/glance/augment fork that
+# @emlExportStatsCSV alone does not have.
 
 label WIZ_EXPORT_CSV
 
-beginPause: "Export Results"
-    folder: "Output folder", defaultDirectory$
-    word: "File name", tableName$ + "_results"
-clicked = endPause: "Go Back", "Save", 2, 0
-if clicked = 1
-    goto WIZ_WHAT_NEXT
-endif
-csvPath$ = output_folder$ + "/" + file_name$ + ".csv"
-@emlExportStatsCSV: csvPath$
-if emlExportStatsCSV.success
-    beginPause: "Export Complete"
-        comment: "Saved to: " + emlExportStatsCSV.actualPath$
-    endPause: "OK", 1, 0
-else
-    beginPause: "Export Failed"
-        comment: "Could not write CSV file."
-    endPause: "OK", 1, 0
-endif
+@emlWrapperExportCSV: tableName$, "results"
 goto WIZ_WHAT_NEXT
 
 
@@ -2172,6 +2297,30 @@ endproc
 #   .col2Default   — best-guess second measurement column
 #   .f1Default     — best-guess factor 1 column
 #   .f2Default     — best-guess factor 2 column
+
+# ============================================================================
+# @wizardCondSlot — position of a column name in the A3K condition list
+# ============================================================================
+# The repeated-measures form hands back NAMES; its optionmenus are seeded
+# with POSITIONS in the filtered numeric-column list built at A3K_PREP, whose
+# item 1 is "(none)". This converts one to the other so the form can be
+# re-rendered with what the user actually chose. (D83)
+#
+# Arguments:
+#   .name$ - a column name, or "(none)"
+#
+# Output:
+#   .idx   - menu position (1 = "(none)"); 1 for any name not in the list
+
+procedure wizardCondSlot: .name$
+    .idx = 1
+    for .i from 1 to a3kN
+        if a3kName$ [.i] = .name$
+            .idx = .i + 1
+        endif
+    endfor
+endproc
+
 
 procedure wizardPrepareTable: .hint$
     if hasTable = 0

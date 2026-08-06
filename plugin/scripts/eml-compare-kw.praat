@@ -4,7 +4,13 @@
 # Purpose: Compare 3+ groups using Kruskal-Wallis H test with Dunn's
 #          post-hoc and rank-biserial r effect sizes.
 # Date: 11 May 2026
-# Version: 3.0
+# Version: 3.1
+# v3.1: D26 — the post-hoc is now under the user's control. "Run Dunn post
+#        hoc" and "Adjustment" fields replace the hardcoded 1, "holm"
+#        arguments to @emlRunKWAnalysis, matching the ANOVA sibling's
+#        "Tukey HSD post hoc" control. The chosen adjustment is also carried
+#        into the graph annotation so Draw cannot silently disagree with the
+#        report.
 # v3.0: Wrapper infrastructure refactor. Shared @emlWrapperInit,
 #        @emlWrapperExportCSV. repeat/until replaces goto/label.
 # v2.0: Full convergence — orchestrator + @emlGuessColumnRoles.
@@ -25,6 +31,8 @@ guessGroupIdx = emlWrapperInit.guessGroupIdx
 # return to the form — after an error or after "New" — silently discarded
 # what the user had set. (D93)
 selGroupOrder = 1
+selDunn = 1
+selAdj = 2
 
 allDone = 0
 repeat
@@ -38,6 +46,11 @@ repeat
         for iCol from 1 to nCols
             option: emlTableColumnNames.name$ [iCol]
         endfor
+        boolean: "Run Dunn post hoc", selDunn
+        optionmenu: "Adjustment (post hoc only)", selAdj
+            option: "Bonferroni"
+            option: "Holm"
+            option: "Benjamini-Hochberg"
         optionmenu: "Group order", selGroupOrder
             option: "Table order"
             option: "Alphabetical"
@@ -56,7 +69,18 @@ repeat
     guessDataIdx = emlKeepChoice.idx
     @emlKeepChoice: groupCol$, guessGroupIdx
     guessGroupIdx = emlKeepChoice.idx
+    doDunn = run_Dunn_post_hoc
+    adjChoice = adjustment
+    selDunn = doDunn
+    selAdj = adjChoice
     selGroupOrder = group_order
+    if adjChoice = 1
+        adjMethod$ = "bonferroni"
+    elsif adjChoice = 2
+        adjMethod$ = "holm"
+    else
+        adjMethod$ = "bh"
+    endif
     if group_order = 2
         emlGroupSortAlphabetical = 1
     else
@@ -65,7 +89,7 @@ repeat
     @emlHandleCommonFields
 
     selectObject: tableId
-    @emlRunKWAnalysis: tableId, dataCol$, groupCol$, 1, "holm"
+    @emlRunKWAnalysis: tableId, dataCol$, groupCol$, doDunn, adjMethod$
     if emlRunKWAnalysis.error$ <> ""
         # D93: an error must not strand the user on a form the error has
         # just ruled out. Present it with guidance, and honour Quit.
@@ -90,6 +114,9 @@ repeat
                 emlGraphsPresetGroupCol$ = groupCol$
                 emlGraphsPresetTestType$ = "nonparametric"
                 emlGraphsPresetAnnotate = 1
+                ; Carry the dialog's adjustment into the annotation so the
+                ; figure cannot report a correction the analysis did not use.
+                emlGraphsPresetCorrection$ = adjMethod$
                 @emlGraphsWorkflow: tableId
             elsif clicked = 4
                 runAgain = 1

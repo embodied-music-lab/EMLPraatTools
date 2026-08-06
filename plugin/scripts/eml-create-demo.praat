@@ -5,7 +5,12 @@
 #          and tutorials. Creates realistic data with known properties.
 #          One demo table per wizard analysis path.
 # Date: 11 May 2026
-# Version: 2.0
+# Version: 2.1
+# v2.1: D1 — every "Try:" line now quotes the Stats Wizard's own option
+#        labels rather than paraphrasing them, and names the direct
+#        EML Tools menu entry as a second route. D3 — types 1-5 gained a
+#        "Note:" line stating the effect the generator builds in, matching
+#        what types 6 and 7 already did.
 # v2.0: Added regression, two-way ANOVA, and normality demos.
 #        All 7 wizard analysis paths now have a matching demo table.
 # v1.0: Initial release with 4 demo types.
@@ -55,9 +60,16 @@ if demo_type = 1
             ... max (0.1, randomGauss (2.1, 0.8))
     endfor
     description$ = "Two-group comparison (Control vs Patient)."
-        ... + newline$ + "  Try: Compare groups → Independent → Two groups"
         ... + newline$ + "  Data column: jitter_pct or F0_Hz"
         ... + newline$ + "  Group column: group"
+        ... + newline$ + "  Note: both measures carry a real built-in"
+        ... + newline$ + "        difference — Patients average 2.1% jitter"
+        ... + newline$ + "        against 0.8%, and 140 Hz against 120 Hz."
+        ... + newline$ + "  Try: Stats Wizard → Compare groups or conditions"
+        ... + newline$ + "       → No — different groups (independent)"
+        ... + newline$ + "       → Two groups"
+        ... + newline$ + "  Or go straight there: New → EML Tools →"
+        ... + newline$ + "       Compare two groups..."
 
 # ============================================================================
 # 2. Three independent groups: soprano / mezzo / alto
@@ -88,9 +100,18 @@ elsif demo_type = 2
             ... max (3, randomGauss (5.2, 0.5))
     endfor
     description$ = "Three-group comparison (Soprano / Mezzo / Alto)."
-        ... + newline$ + "  Try: Compare groups → Independent → Three or more"
         ... + newline$ + "  Data column: SPL_dB or vibrato_rate_Hz"
         ... + newline$ + "  Group column: voice_type"
+        ... + newline$ + "  Note: both measures decline across the three"
+        ... + newline$ + "        voice types — SPL_dB at 92 / 88 / 85 dB,"
+        ... + newline$ + "        vibrato_rate_Hz at 5.8 / 5.5 / 5.2 Hz."
+        ... + newline$ + "        The SPL gap is the larger of the two."
+        ... + newline$ + "  Try: Stats Wizard → Compare groups or conditions"
+        ... + newline$ + "       → No — different groups (independent)"
+        ... + newline$ + "       → Three or more groups"
+        ... + newline$ + "  Or go straight there: New → EML Tools →"
+        ... + newline$ + "       Compare k groups (ANOVA)... or"
+        ... + newline$ + "       Compare k groups (Kruskal-Wallis)..."
 
 # ============================================================================
 # 3. Paired: same subjects measured pre and post therapy
@@ -110,9 +131,17 @@ elsif demo_type = 3
         Set numeric value: i, "HNR_post", preHNR + randomGauss (3, 1.5)
     endfor
     description$ = "Paired pre/post therapy comparison."
-        ... + newline$ + "  Try: Compare groups → Paired / repeated"
         ... + newline$ + "  Column 1: jitter_pre (or HNR_pre)"
         ... + newline$ + "  Column 2: jitter_post (or HNR_post)"
+        ... + newline$ + "  Note: therapy is built in — jitter drops by"
+        ... + newline$ + "        about 0.8% and HNR rises by about 3 dB"
+        ... + newline$ + "        for every subject, so both tests should"
+        ... + newline$ + "        come out significant."
+        ... + newline$ + "  Try: Stats Wizard → Compare groups or conditions"
+        ... + newline$ + "       → Yes — same people, repeated (paired)"
+        ... + newline$ + "       → Two (paired t-test / Wilcoxon)"
+        ... + newline$ + "  Or go straight there: New → EML Tools →"
+        ... + newline$ + "       Compare paired/repeated..."
 
 # ============================================================================
 # 4. Correlation: speaking F0 vs singing F0
@@ -131,9 +160,16 @@ elsif demo_type = 4
             ... round (randomUniform (22, 65))
     endfor
     description$ = "Bivariate relationship (speaking F0 vs singing F0)."
-        ... + newline$ + "  Try: Examine a relationship → Correlation"
         ... + newline$ + "  Column X: speaking_F0_Hz"
         ... + newline$ + "  Column Y: singing_F0_Hz"
+        ... + newline$ + "  Note: singing F0 is built as 2.1 × speaking F0"
+        ... + newline$ + "        plus noise, so expect a strong positive r."
+        ... + newline$ + "        age_years is drawn independently and should"
+        ... + newline$ + "        show no relationship — a useful contrast."
+        ... + newline$ + "  Try: Stats Wizard → Examine a relationship"
+        ... + newline$ + "       → Correlation (both continuous)"
+        ... + newline$ + "  Or go straight there: New → EML Tools →"
+        ... + newline$ + "       Correlate two columns..."
 
 # ============================================================================
 # 5. Regression: practice hours predicting vibrato regularity
@@ -155,9 +191,17 @@ elsif demo_type = 5
             ... max (1, round (practiceHrs * 0.8 + randomGauss (0, 3)))
     endfor
     description$ = "Predictor → outcome relationship."
-        ... + newline$ + "  Try: Predict an outcome (or Examine → Regression)"
         ... + newline$ + "  Predictor (X): practice_hrs_wk"
         ... + newline$ + "  Response (Y): vibrato_regularity_pct"
+        ... + newline$ + "  Note: the generator uses regularity = 40 +"
+        ... + newline$ + "        3.2 × practice + noise, so the fitted slope"
+        ... + newline$ + "        should land near 3.2 and the intercept near"
+        ... + newline$ + "        40. Values are clipped at 100%, which flattens"
+        ... + newline$ + "        the slope a little at the top of the range."
+        ... + newline$ + "  Try: Stats Wizard → Predict an outcome"
+        ... + newline$ + "       (or Examine a relationship → Regression)"
+        ... + newline$ + "  Or go straight there: New → EML Tools →"
+        ... + newline$ + "       Linear regression..."
 
 # ============================================================================
 # 6. Two-way ANOVA: voice type × task
@@ -201,11 +245,17 @@ elsif demo_type = 6
         endfor
     endfor
     description$ = "Two-factor design (voice_type × task)."
-        ... + newline$ + "  Try: Compare groups → Independent → Two-factor design"
         ... + newline$ + "  Data column: SPL_dB"
         ... + newline$ + "  Factor 1: voice_type"
         ... + newline$ + "  Factor 2: task"
-        ... + newline$ + "  Note: contains an interaction effect"
+        ... + newline$ + "  Note: contains two main effects (singing +8 dB,"
+        ... + newline$ + "        Soprano +5 dB) and an interaction —"
+        ... + newline$ + "        Sopranos gain a further 3 dB when singing."
+        ... + newline$ + "  Try: Stats Wizard → Compare groups or conditions"
+        ... + newline$ + "       → No — different groups (independent)"
+        ... + newline$ + "       → Two-factor design (two grouping variables)"
+        ... + newline$ + "  Or go straight there: New → EML Tools →"
+        ... + newline$ + "       Compare two-way (ANOVA)..."
 
 # ============================================================================
 # 7. Normality check: normal vs skewed columns
@@ -227,10 +277,13 @@ elsif demo_type = 7
             ... max (0.05, randomGauss (1.2, 0.6))
     endfor
     description$ = "Data with different distributional shapes."
-        ... + newline$ + "  Try: Describe or summarize → Check normality"
         ... + newline$ + "  F0_Hz: approximately normal"
         ... + newline$ + "  shimmer_pct: right-skewed (try nonparametric)"
         ... + newline$ + "  jitter_pct: mildly skewed"
+        ... + newline$ + "  Try: Stats Wizard → Describe or summarize"
+        ... + newline$ + "       → Check normality"
+        ... + newline$ + "  Or go straight there: New → EML Tools →"
+        ... + newline$ + "       Check normality (all columns)..."
 
 endif
 
