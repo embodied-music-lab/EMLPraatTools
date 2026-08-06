@@ -109,7 +109,7 @@ severity list defers the small items forever; a cluster list gets them done in
 the same pass as the large one beside them, because they are the same edit
 session. Every live finding appears in exactly one cluster. Nothing is parked.
 
-### C1 · Finish the CSV export — 7 findings
+### C1 · The CSV path — 7 findings, plus the migration that is the point of them
 
 `stats/eml-output.praat`, `graphs/eml-annotation-procedures.praat`, `scripts/eml-wizard.praat`
 
@@ -126,9 +126,50 @@ the ones about *reaching* the exporter rather than its format.
 | **D39** | The Stats Wizard still defaults exports to `defaultDirectory$` (`eml-wizard.praat:1762`) — the plugin's own install folder |
 | **D104** | `@emlCSVInit` runs once per orchestrator but the correlation reporter is re-invoked per group without re-init, so grouped exports accumulate overall + per-group rows in one file |
 
-**Not in this cluster:** wiring `eml-result-writer.praat`. That is a format
-migration, it is validated by v17's 48 checks, and it can wait. The seven above
-cannot, because three of them mean the user gets no file or the wrong file.
+### C1a · The three-file split IS the deliverable — author ruling, 6 Aug
+
+**Correction to an earlier draft of this document, which called the migration
+to `eml-result-writer.praat` a downstream enhancement that could wait. It is
+not. It is a Phase One blocker, and the CSV output moves to the three split
+files — `tidy` / `glance` / `augment` — as its finished form.**
+
+The seven findings above are defects in the *current* exporter. They are not
+an alternative to the migration; several of them disappear into it and the
+rest have to be carried across. The migration is the work.
+
+**The surface area, measured 6 Aug rather than estimated:**
+
+| | |
+|---|---|
+| **11 orchestrators** initialise a CSV in `stats/eml-analysis.praat` | `emlRunTwoGroupAnalysis` (216), `emlRunAnovaAnalysis` (289), `emlRunKWAnalysis` (359), `emlRunPairwiseAnalysis` (422), `emlRunTwoWayAnalysis` (697), `emlRunPairedAnalysis` (769), `emlRunCorrelationAnalysis` (858), `emlRunRegressionAnalysis` (999), `emlRunNormalityAnalysis` (1138), `emlRunRepeatedMeasuresAnalysis` (1535), `emlRunFriedmanAnalysis` (1613) |
+| **157 row-emission sites** | all in `graphs/eml-annotation-procedures.praat`; `eml-analysis.praat` emits **zero** — it only inits |
+| **3 export surfaces** | `@emlWrapperExportCSV` (`eml-output.praat:565, 570`) reached from 8 wrapper scripts; the Draw path (`eml-graphs-form.praat:5801`); the Stats Wizard (`eml-wizard.praat:1775`) |
+| **1 writer to swap in** | `stats/eml-result-writer.praat`, which writes its three files at `:456, :526, :557` |
+
+Three of the eleven orchestrators — `emlRunPairwiseAnalysis`,
+`emlRunRepeatedMeasuresAnalysis`, `emlRunFriedmanAnalysis` — currently call
+`@emlCSVInit` and never add a row, so their export cannot succeed at all
+(D66). Those are not "convert" cases, they are "build" cases.
+
+**Every path that terminates at a CSV must be converted and each conversion
+confirmed — not asserted.** The confirmation mechanism has to be mechanical,
+because assertion is exactly what failed on this file once already: the
+migration was recorded as done when one harness case had been converted.
+
+The standard for "confirmed", per path:
+
+1. The orchestrator emits through the tidy/glance/augment writer, not `@emlCSVAdd`.
+2. A committed capture of its three files exists under `evidence/csv_export/broom/`.
+3. A check in `validate/` compares those files against `broom::tidy` /
+   `glance` / `augment` of the equivalent R model on the same input — column
+   names, column order, row count, and every value.
+4. `check_wired.sh` stays green, i.e. the writer is reachable from the
+   shipping script, not from a harness.
+
+v16 and v17 currently give 93 checks against **one** harness case
+(`harness/broom_cases/anova_oneway.praat`). Eleven orchestrators × three files
+is the actual target, and until a path has its own checks it is not converted,
+whatever the code looks like.
 
 ### C2 · The `emlShowExplanations` gate — 4 findings
 
@@ -335,8 +376,11 @@ them, and seventy-nine live findings is not a polish list.
 
 The four clusters that would most embarrass a release, in order:
 
-1. **C4** — a two-way design drawn and annotated as a two-group Welch test
-2. **C1** — three orchestrators whose export cannot succeed, and one that exports the wrong analysis
+1. **C1 / C1a** — the CSV output has to reach the three-file tidy/glance/augment
+   form. Author ruling, 6 Aug: a blocker, not an enhancement. Three of the
+   eleven orchestrators cannot currently export at all, and one exports the
+   wrong analysis
+2. **C4** — a two-way design drawn and annotated as a two-group Welch test
 3. **C7 / D20** — no variance-homogeneity check anywhere, on demo data that violates the assumption
 4. **C5** — the Wizard's repeated-measures path failing on complete data, then returning the user to the same broken defaults
 

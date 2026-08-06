@@ -61,6 +61,24 @@ dismissed).
 > could not be settled by static inspection and are labelled so. Seven defects
 > that no finding covers were found during the pass and are filed as D102-D108.
 >
+> ## Author ruling, 6 Aug 2026 — the CSV three-file split is a BLOCKER
+>
+> The CSV output moves to the three split files (`tidy` / `glance` /
+> `augment`) via `plugin/stats/eml-result-writer.praat`. **This is Phase One
+> and it is a blocker.** It is not a downstream enhancement, and any document
+> in this repository that says otherwise is superseded by this line.
+>
+> Every path that terminates at a CSV must be converted and each conversion
+> **confirmed against `broom` in `validate/`, not asserted**. Measured surface:
+> 11 orchestrators in `stats/eml-analysis.praat`, 157 row-emission sites in
+> `graphs/eml-annotation-procedures.praat`, 3 export surfaces (wrapper dialog,
+> Draw path, Stats Wizard). Three orchestrators — `emlRunPairwiseAnalysis`,
+> `emlRunRepeatedMeasuresAnalysis`, `emlRunFriedmanAnalysis` — init a CSV and
+> never add a row, so those are build cases rather than convert cases (D66).
+>
+> `check_wired.sh` reports RED until the writer is reachable from a shipping
+> script. That red is the migration's progress bar; do not silence it.
+>
 > ## Tabled by author ruling — not open work, not deferred to Phase Two
 >
 > **Stats Demo, Quick Start, the interactive tutorial, and Batch voice
