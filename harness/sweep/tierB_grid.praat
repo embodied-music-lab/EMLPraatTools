@@ -52,7 +52,13 @@ procedure emit: .case$, .test$, .stat$, .value
     if .value = undefined
         .txt$ = "NA"
     else
-        .txt$ = fixed$ (.value, 17)
+        ; string$(), not fixed$(v, 17). fixed$ counts DECIMAL PLACES, not
+        ; significant digits: on a quantity of order 1e-8 it keeps only nine
+        ; significant digits and silently throws the rest away. That cost two
+        ; spurious v19 failures on AtmWtAg before it was noticed -- the
+        ; harness was the defect, not the plugin. string$() emits enough
+        ; digits to round-trip a double at any magnitude.
+        .txt$ = string$ (.value)
     endif
     results$ = results$ + .case$ + "," + .test$ + "," + .stat$ + ","
     ... + .txt$ + newline$

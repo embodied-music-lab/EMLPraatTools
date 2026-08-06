@@ -58,23 +58,23 @@ for f from 1 to nFiles
         results$ = results$ + dsName$ + ",error,1" + newline$
     else
         results$ = results$ + dsName$ + ",df.between,"
-        ... + fixed$ (emlOneWayAnova.dfBetween, 17) + newline$
+        ... + string$ (emlOneWayAnova.dfBetween) + newline$
         results$ = results$ + dsName$ + ",sumsq.between,"
-        ... + fixed$ (emlOneWayAnova.ssBetween, 17) + newline$
+        ... + string$ (emlOneWayAnova.ssBetween) + newline$
         results$ = results$ + dsName$ + ",meansq.between,"
-        ... + fixed$ (emlOneWayAnova.msBetween, 17) + newline$
+        ... + string$ (emlOneWayAnova.msBetween) + newline$
         results$ = results$ + dsName$ + ",statistic,"
-        ... + fixed$ (emlOneWayAnova.fValue, 17) + newline$
+        ... + string$ (emlOneWayAnova.fValue) + newline$
         results$ = results$ + dsName$ + ",df.within,"
-        ... + fixed$ (emlOneWayAnova.dfWithin, 17) + newline$
+        ... + string$ (emlOneWayAnova.dfWithin) + newline$
         results$ = results$ + dsName$ + ",sumsq.within,"
-        ... + fixed$ (emlOneWayAnova.ssWithin, 17) + newline$
+        ... + string$ (emlOneWayAnova.ssWithin) + newline$
         results$ = results$ + dsName$ + ",meansq.within,"
-        ... + fixed$ (emlOneWayAnova.msWithin, 17) + newline$
+        ... + string$ (emlOneWayAnova.msWithin) + newline$
         results$ = results$ + dsName$ + ",r.squared,"
-        ... + fixed$ (emlOneWayAnova.etaSquared, 17) + newline$
+        ... + string$ (emlOneWayAnova.etaSquared) + newline$
         results$ = results$ + dsName$ + ",residual.sd,"
-        ... + fixed$ (sqrt (emlOneWayAnova.msWithin), 17) + newline$
+        ... + string$ (sqrt (emlOneWayAnova.msWithin)) + newline$
         nRun = nRun + 1
     endif
 
