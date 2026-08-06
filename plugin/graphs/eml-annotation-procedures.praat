@@ -2616,12 +2616,21 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
         endif
         @emlReportLine: "Hedges' g", emlCohenD.g, 3
         @emlReportLineString: "Magnitude", emlFormatEffectLabel.label$
-        @emlCSVAddRow: .tableName$, .dataCol$, .groupCol$,
-        ... .group1$, .group2$, emlTTest.method$,
-        ... emlTTest.t, emlTTest.df, emlTTest.p,
-        ... emlCohenD.d, "Cohen's d", emlFormatEffectLabel.label$,
-        ... .n1, .n2, .mean1, .sd1, .median1,
-        ... .mean2, .sd2, .median2
+        # D24/D19: named fields, and an absent value writes no row.
+        @emlCSVSetTable: .tableName$
+        .contrast$ = .group1$ + " vs " + .group2$
+        @emlCSVAddStr: emlTTest.method$, .contrast$, "data_column", .dataCol$
+        @emlCSVAddStr: emlTTest.method$, .contrast$, "group_column", .groupCol$
+        @emlCSVAdd: emlTTest.method$, .contrast$, "t", emlTTest.t
+        @emlCSVAdd: emlTTest.method$, .contrast$, "df", emlTTest.df
+        @emlCSVAdd: emlTTest.method$, .contrast$, "p", emlTTest.p
+        @emlCSVAdd: emlTTest.method$, .contrast$, "cohens_d", emlCohenD.d
+        @emlCSVAddStr: emlTTest.method$, .contrast$, "effect_label",
+        ... emlFormatEffectLabel.label$
+        @emlCSVAddDescriptives: emlTTest.method$, .group1$,
+        ... .n1, .mean1, .sd1, .median1
+        @emlCSVAddDescriptives: emlTTest.method$, .group2$,
+        ... .n2, .mean2, .sd2, .median2
     endif
 
     if .testType$ = "nonparametric" or .testType$ = "both"
@@ -2682,13 +2691,22 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
         else
             .mwuDf = 0
         endif
-        @emlCSVAddRow: .tableName$, .dataCol$, .groupCol$,
-        ... .group1$, .group2$, "Mann-Whitney U",
-        ... emlMannWhitneyU.u1, .mwuDf, emlMannWhitneyU.p,
-        ... emlRankBiserialR.r, "rank-biserial r",
-        ... emlFormatEffectLabel.label$,
-        ... .n1, .n2, .mean1, .sd1, .median1,
-        ... .mean2, .sd2, .median2
+        # D24: the Mann-Whitney has no df at all, so no df row is written
+        # rather than a zero standing in for one.
+        @emlCSVSetTable: .tableName$
+        .contrast$ = .group1$ + " vs " + .group2$
+        @emlCSVAddStr: "Mann-Whitney U", .contrast$, "data_column", .dataCol$
+        @emlCSVAddStr: "Mann-Whitney U", .contrast$, "group_column", .groupCol$
+        @emlCSVAdd: "Mann-Whitney U", .contrast$, "U", emlMannWhitneyU.u1
+        @emlCSVAdd: "Mann-Whitney U", .contrast$, "p", emlMannWhitneyU.p
+        @emlCSVAdd: "Mann-Whitney U", .contrast$, "rank_biserial_r",
+        ... emlRankBiserialR.r
+        @emlCSVAddStr: "Mann-Whitney U", .contrast$, "effect_label",
+        ... emlFormatEffectLabel.label$
+        @emlCSVAddDescriptives: "Mann-Whitney U", .group1$,
+        ... .n1, .mean1, .sd1, .median1
+        @emlCSVAddDescriptives: "Mann-Whitney U", .group2$,
+        ... .n2, .mean2, .sd2, .median2
     endif
 
     @emlReportFooter
@@ -2758,11 +2776,22 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
 
     @emlFormatEffectLabel: .etaSq, "eta_squared"
     .etaLabel$ = emlFormatEffectLabel.label$
-    @emlCSVAddRow: .tableName$, .dataCol$, .groupCol$,
-    ... "omnibus", "omnibus", "One-way ANOVA",
-    ... emlOneWayAnova.fValue, emlOneWayAnova.dfBetween, emlOneWayAnova.p,
-    ... .etaSq, "eta-squared", .etaLabel$,
-    ... 0, 0, 0, 0, 0, 0, 0, 0
+    # D24: this row used to end in eight zeros meaning "not applicable".
+    # D23/D76: both df now have their own field, so F(2,42) survives export.
+    @emlCSVSetTable: .tableName$
+    @emlCSVAddStr: "One-way ANOVA", "", "data_column", .dataCol$
+    @emlCSVAddStr: "One-way ANOVA", "", "group_column", .groupCol$
+    @emlCSVAdd: "One-way ANOVA", "", "F", emlOneWayAnova.fValue
+    @emlCSVAdd: "One-way ANOVA", "", "df1", emlOneWayAnova.dfBetween
+    @emlCSVAdd: "One-way ANOVA", "", "df2", emlOneWayAnova.dfWithin
+    @emlCSVAdd: "One-way ANOVA", "", "p", emlOneWayAnova.p
+    @emlCSVAdd: "One-way ANOVA", "", "eta_squared", .etaSq
+    @emlCSVAddStr: "One-way ANOVA", "", "effect_label", .etaLabel$
+    @emlCSVAdd: "One-way ANOVA", "", "ss_between", emlOneWayAnova.ssBetween
+    @emlCSVAdd: "One-way ANOVA", "", "ss_within", emlOneWayAnova.ssWithin
+    @emlCSVAdd: "One-way ANOVA", "", "ms_between", emlOneWayAnova.msBetween
+    @emlCSVAdd: "One-way ANOVA", "", "ms_within", emlOneWayAnova.msWithin
+    @emlCSVAdd: "One-way ANOVA", "", "n_groups", emlOneWayAnova.nGroups
 
     # Group descriptives
     @emlReportBlank
@@ -2850,13 +2879,19 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 .md2 = emlMedian.result
                 @emlFormatEffectLabel: .pairD, "d"
                 .dLabel$ = emlFormatEffectLabel.label$
-                @emlCSVAddRow: .tableName$, .dataCol$, .groupCol$,
-                ... .g1Label$, .g2Label$, "Tukey HSD",
-                ... emlOneWayAnova.qMatrix## [.iGroup, .jGroup],
-                ... emlOneWayAnova.dfWithin, .pVal,
-                ... .pairD, "Cohen's d", .dLabel$,
-                ... .n1, .n2,
-                ... .m1, .s1, .md1, .m2, .s2, .md2
+                @emlCSVSetTable: .tableName$
+                .contrast$ = .g1Label$ + " vs " + .g2Label$
+                @emlCSVAdd: "Tukey HSD", .contrast$, "q",
+                ... emlOneWayAnova.qMatrix## [.iGroup, .jGroup]
+                @emlCSVAdd: "Tukey HSD", .contrast$, "df",
+                ... emlOneWayAnova.dfWithin
+                @emlCSVAdd: "Tukey HSD", .contrast$, "p_adjusted", .pVal
+                @emlCSVAdd: "Tukey HSD", .contrast$, "cohens_d", .pairD
+                @emlCSVAddStr: "Tukey HSD", .contrast$, "effect_label", .dLabel$
+                @emlCSVAddDescriptives: "Tukey HSD", .g1Label$,
+                ... .n1, .m1, .s1, .md1
+                @emlCSVAddDescriptives: "Tukey HSD", .g2Label$,
+                ... .n2, .m2, .s2, .md2
             endfor
         endfor
     endif
@@ -2938,12 +2973,20 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 .md2 = emlMedian.result
                 @emlFormatEffectLabel: .pairD, "d"
                 .dLabel$ = emlFormatEffectLabel.label$
-                @emlCSVAddRow: .tableName$, .dataCol$, .groupCol$,
-                ... .g1Label$, .g2Label$, "Pairwise Cohen's d",
-                ... 0, 0, 0,
-                ... .pairD, "Cohen's d", .dLabel$,
-                ... .n1, .n2,
-                ... .m1, .s1, .md1, .m2, .s2, .md2
+                # D24 at its worst: this branch has no test statistic and
+                # no p, and used to write 0, 0, 0 — so the row read as the
+                # most significant result in the file. It now writes the
+                # effect size it actually has and nothing else.
+                @emlCSVSetTable: .tableName$
+                .contrast$ = .g1Label$ + " vs " + .g2Label$
+                @emlCSVAdd: "Pairwise Cohen's d", .contrast$, "cohens_d",
+                ... .pairD
+                @emlCSVAddStr: "Pairwise Cohen's d", .contrast$,
+                ... "effect_label", .dLabel$
+                @emlCSVAddDescriptives: "Pairwise Cohen's d", .g1Label$,
+                ... .n1, .m1, .s1, .md1
+                @emlCSVAddDescriptives: "Pairwise Cohen's d", .g2Label$,
+                ... .n2, .m2, .s2, .md2
             endfor
         endfor
     endif
@@ -2997,12 +3040,16 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
     @emlFormatEffectLabel: emlKruskalWallis.epsilonSq, "eta_squared"
     @emlReportLineString: "Effect magnitude", emlFormatEffectLabel.label$
 
-    @emlCSVAddRow: .tableName$, .dataCol$, .groupCol$,
-    ... "omnibus", "omnibus", "Kruskal-Wallis",
-    ... emlKruskalWallis.h, emlKruskalWallis.df, emlKruskalWallis.p,
-    ... emlKruskalWallis.epsilonSq, "epsilon-squared",
-    ... emlFormatEffectLabel.label$,
-    ... 0, 0, 0, 0, 0, 0, 0, 0
+    @emlCSVSetTable: .tableName$
+    @emlCSVAddStr: "Kruskal-Wallis", "", "data_column", .dataCol$
+    @emlCSVAddStr: "Kruskal-Wallis", "", "group_column", .groupCol$
+    @emlCSVAdd: "Kruskal-Wallis", "", "H", emlKruskalWallis.h
+    @emlCSVAdd: "Kruskal-Wallis", "", "df", emlKruskalWallis.df
+    @emlCSVAdd: "Kruskal-Wallis", "", "p", emlKruskalWallis.p
+    @emlCSVAdd: "Kruskal-Wallis", "", "epsilon_squared",
+    ... emlKruskalWallis.epsilonSq
+    @emlCSVAddStr: "Kruskal-Wallis", "", "effect_label",
+    ... emlFormatEffectLabel.label$
 
     # Group order controlled by @emlCountGroups
     # Group order from @emlCountGroups (no remapping needed)
@@ -3113,13 +3160,22 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                     .md2 = emlMedian.result
                     @emlFormatEffectLabel: .rVal, "r"
                     .rLabel$ = emlFormatEffectLabel.label$
-                    @emlCSVAddRow: .tableName$, .dataCol$, .groupCol$,
-                    ... .g1Label$, .g2Label$,
-                    ... "Dunn (" + .adjLabel$ + ")",
-                    ... .zVal, 0, .pVal,
-                    ... .rVal, "rank-biserial r", .rLabel$,
-                    ... .n1, .n2,
-                    ... .m1, .s1, .md1, .m2, .s2, .md2
+                    # D24: Dunn's z has no df; the zero is gone, not
+                    # replaced. The adjustment is its own field so a reader
+                    # does not have to parse it out of the test name.
+                    @emlCSVSetTable: .tableName$
+                    .dunn$ = "Dunn's test"
+                    .contrast$ = .g1Label$ + " vs " + .g2Label$
+                    @emlCSVAddStr: .dunn$, .contrast$, "adjustment",
+                    ... .adjLabel$
+                    @emlCSVAdd: .dunn$, .contrast$, "z", .zVal
+                    @emlCSVAdd: .dunn$, .contrast$, "p_adjusted", .pVal
+                    @emlCSVAdd: .dunn$, .contrast$, "rank_biserial_r", .rVal
+                    @emlCSVAddStr: .dunn$, .contrast$, "effect_label", .rLabel$
+                    @emlCSVAddDescriptives: .dunn$, .g1Label$,
+                    ... .n1, .m1, .s1, .md1
+                    @emlCSVAddDescriptives: .dunn$, .g2Label$,
+                    ... .n2, .m2, .s2, .md2
                 endfor
             endfor
         else
@@ -3204,12 +3260,15 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                 .md2 = emlMedian.result
                 @emlFormatEffectLabel: .rVal, "r"
                 .rLabel$ = emlFormatEffectLabel.label$
-                @emlCSVAddRow: .tableName$, .dataCol$, .groupCol$,
-                ... .g1Label$, .g2Label$, "Pairwise rank-biserial r",
-                ... 0, 0, 0,
-                ... .rVal, "rank-biserial r", .rLabel$,
-                ... .n1, .n2,
-                ... .m1, .s1, .md1, .m2, .s2, .md2
+                @emlCSVSetTable: .tableName$
+                .rbLab$ = "Pairwise rank-biserial r"
+                .contrast$ = .g1Label$ + " vs " + .g2Label$
+                @emlCSVAdd: .rbLab$, .contrast$, "rank_biserial_r", .rVal
+                @emlCSVAddStr: .rbLab$, .contrast$, "effect_label", .rLabel$
+                @emlCSVAddDescriptives: .rbLab$, .g1Label$,
+                ... .n1, .m1, .s1, .md1
+                @emlCSVAddDescriptives: .rbLab$, .g2Label$,
+                ... .n2, .m2, .s2, .md2
             endfor
         endfor
     endif
@@ -3265,12 +3324,27 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 @emlWizardExplainP: emlPearsonCorrelation.p
             endif
             @emlReportLineString: "p", emlFormatP.formatted$
-            @emlCSVAddRow: .tableName$, .colX$, .colY$,
-            ... "", "", "Pearson",
-            ... emlPearsonCorrelation.r, emlPearsonCorrelation.df,
-            ... emlPearsonCorrelation.p,
-            ... emlPearsonCorrelation.r, "r", "",
-            ... .n, .n, 0, 0, 0, 0, 0, 0
+            # D45: colY$ used to land in the group_col slot, so the file
+            # said the Y variable was a grouping column. Both variables now
+            # have their own named field. D46: the six descriptive slots
+            # were exported as 0 though both columns' descriptives exist —
+            # they are simply not written here, and the term names which
+            # pair the row is about.
+            @emlCSVSetTable: .tableName$
+            .term$ = .colX$ + " ~ " + .colY$
+            @emlCSVAddStr: "Pearson correlation", .term$, "x_column", .colX$
+            @emlCSVAddStr: "Pearson correlation", .term$, "y_column", .colY$
+            @emlCSVAdd: "Pearson correlation", .term$, "r",
+            ... emlPearsonCorrelation.r
+            @emlCSVAdd: "Pearson correlation", .term$, "t",
+            ... emlPearsonCorrelation.t
+            @emlCSVAdd: "Pearson correlation", .term$, "df",
+            ... emlPearsonCorrelation.df
+            @emlCSVAdd: "Pearson correlation", .term$, "p",
+            ... emlPearsonCorrelation.p
+            @emlCSVAdd: "Pearson correlation", .term$, "r_squared",
+            ... emlPearsonCorrelation.r * emlPearsonCorrelation.r
+            @emlCSVAdd: "Pearson correlation", .term$, "n", .n
         else
             appendInfoLine: newline$ + "Pearson error: " + emlPearsonCorrelation.error$
         endif
@@ -3301,12 +3375,19 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 @emlWizardExplainP: emlSpearmanCorrelation.p
             endif
             @emlReportLineString: "p", emlFormatP.formatted$
-            @emlCSVAddRow: .tableName$, .colX$, .colY$,
-            ... "", "", "Spearman",
-            ... emlSpearmanCorrelation.rho, emlSpearmanCorrelation.df,
-            ... emlSpearmanCorrelation.p,
-            ... emlSpearmanCorrelation.rho, "rho", "",
-            ... .n, .n, 0, 0, 0, 0, 0, 0
+            @emlCSVSetTable: .tableName$
+            .term$ = .colX$ + " ~ " + .colY$
+            @emlCSVAddStr: "Spearman correlation", .term$, "x_column", .colX$
+            @emlCSVAddStr: "Spearman correlation", .term$, "y_column", .colY$
+            @emlCSVAdd: "Spearman correlation", .term$, "rho",
+            ... emlSpearmanCorrelation.rho
+            @emlCSVAdd: "Spearman correlation", .term$, "t",
+            ... emlSpearmanCorrelation.t
+            @emlCSVAdd: "Spearman correlation", .term$, "df",
+            ... emlSpearmanCorrelation.df
+            @emlCSVAdd: "Spearman correlation", .term$, "p",
+            ... emlSpearmanCorrelation.p
+            @emlCSVAdd: "Spearman correlation", .term$, "n", .n
         endif
     endif
 
@@ -3430,17 +3511,38 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     ... + " as " + .displayPred$ + " increases)"
     @emlReportLineString: "Variance explained", emlFormatEffectLabel.label$
 
-    @emlCSVAddRow: .tableName$, .depCol$, .predCol$,
-    ... "regression", "regression", "OLS linear",
-    ... emlLinearRegression.fStat, emlLinearRegression.dfRes,
-    ... emlLinearRegression.pF,
-    ... emlLinearRegression.rSquared, "R-squared",
-    ... emlFormatEffectLabel.label$,
-    ... .nValid, 0,
-    ... emlLinearRegression.slope, emlLinearRegression.seSlope,
-    ... emlLinearRegression.intercept,
-    ... emlLinearRegression.seIntercept,
-    ... emlLinearRegression.r, 0
+    # D54 was the clearest case of slot reuse in the whole schema: the
+    # slope went into mean1, the slope's SE into sd1, the intercept into
+    # median1, its SE into mean2 and R into sd2. A reader taking a column
+    # mean over mean1 was averaging slopes with group means. D55: the
+    # literal "regression" was written into both group-level slots.
+    # Coefficients now have their own rows, one term each.
+    @emlCSVSetTable: .tableName$
+    .regLab$ = "OLS linear regression"
+    @emlCSVAddStr: .regLab$, "", "response_column", .depCol$
+    @emlCSVAddStr: .regLab$, "", "predictor_column", .predCol$
+    @emlCSVAdd: .regLab$, "", "F", emlLinearRegression.fStat
+    @emlCSVAdd: .regLab$, "", "df1", emlLinearRegression.dfReg
+    @emlCSVAdd: .regLab$, "", "df2", emlLinearRegression.dfRes
+    @emlCSVAdd: .regLab$, "", "p", emlLinearRegression.pF
+    @emlCSVAdd: .regLab$, "", "r", emlLinearRegression.r
+    @emlCSVAdd: .regLab$, "", "r_squared", emlLinearRegression.rSquared
+    @emlCSVAdd: .regLab$, "", "adj_r_squared", .adjR2
+    @emlCSVAdd: .regLab$, "", "residual_se", emlLinearRegression.seResidual
+    @emlCSVAddStr: .regLab$, "", "effect_label", emlFormatEffectLabel.label$
+    @emlCSVAdd: .regLab$, "", "n", .nValid
+
+    @emlCSVAdd: .regLab$, "(Intercept)", "estimate",
+    ... emlLinearRegression.intercept
+    @emlCSVAdd: .regLab$, "(Intercept)", "se",
+    ... emlLinearRegression.seIntercept
+    @emlCSVAdd: .regLab$, "(Intercept)", "t", emlLinearRegression.tIntercept
+    @emlCSVAdd: .regLab$, "(Intercept)", "p", emlLinearRegression.pIntercept
+
+    @emlCSVAdd: .regLab$, .predCol$, "estimate", emlLinearRegression.slope
+    @emlCSVAdd: .regLab$, .predCol$, "se", emlLinearRegression.seSlope
+    @emlCSVAdd: .regLab$, .predCol$, "t", emlLinearRegression.tSlope
+    @emlCSVAdd: .regLab$, .predCol$, "p", emlLinearRegression.pSlope
 
     @emlReportFooter
 endproc
@@ -3561,16 +3663,23 @@ procedure emlReportNormalityAnalysis: .tableName$, .dataCol$,
         ... + " Kruskal-Wallis, Spearman rho)."
     endif
 
-    @emlCSVAddRow: .tableName$, .dataCol$, "",
-    ... "normality", "normality", "Shapiro-Wilk",
-    ... emlRunNormalityAnalysis.swW, 0,
-    ... emlRunNormalityAnalysis.swP,
-    ... 0, "", emlRunNormalityAnalysis.recommendation$,
-    ... .nValid, 0,
-    ... emlRunNormalityAnalysis.mean, emlRunNormalityAnalysis.sd,
-    ... emlRunNormalityAnalysis.median,
-    ... emlRunNormalityAnalysis.skewness,
-    ... emlRunNormalityAnalysis.kurtosis, 0
+    # D24: skewness and kurtosis were being carried in the mean2/sd2 slots
+    # while n2 and median2 were zero-as-NA. Each is now its own field.
+    @emlCSVSetTable: .tableName$
+    @emlCSVAddStr: "Shapiro-Wilk", .dataCol$, "data_column", .dataCol$
+    @emlCSVAdd: "Shapiro-Wilk", .dataCol$, "W", emlRunNormalityAnalysis.swW
+    @emlCSVAdd: "Shapiro-Wilk", .dataCol$, "p", emlRunNormalityAnalysis.swP
+    @emlCSVAddStr: "Shapiro-Wilk", .dataCol$, "recommendation",
+    ... emlRunNormalityAnalysis.recommendation$
+    @emlCSVAdd: "Shapiro-Wilk", .dataCol$, "n", .nValid
+    @emlCSVAdd: "Shapiro-Wilk", .dataCol$, "mean", emlRunNormalityAnalysis.mean
+    @emlCSVAdd: "Shapiro-Wilk", .dataCol$, "sd", emlRunNormalityAnalysis.sd
+    @emlCSVAdd: "Shapiro-Wilk", .dataCol$, "median",
+    ... emlRunNormalityAnalysis.median
+    @emlCSVAdd: "Shapiro-Wilk", .dataCol$, "skewness",
+    ... emlRunNormalityAnalysis.skewness
+    @emlCSVAdd: "Shapiro-Wilk", .dataCol$, "excess_kurtosis",
+    ... emlRunNormalityAnalysis.kurtosis
 
     @emlReportFooter
 endproc
@@ -3639,12 +3748,24 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
                 @emlReportLineString: "Magnitude", emlFormatEffectLabel.label$
             endif
 
-            @emlCSVAddRow: .tableName$, .col1$, .col2$,
-            ... .col1$, .col2$, "Paired t-test",
-            ... emlTTestPaired.t, emlTTestPaired.df, emlTTestPaired.p,
-            ... emlCohenDz.dz, "Cohen's dz", "",
-            ... .n, .n, .mean1, .sd1, .median1,
-            ... .mean2, .sd2, .median2
+            # D19: the two column names used to be packed into all four
+            # level slots and n written twice, so a paired design was
+            # indistinguishable from a two-group one in the file. A paired
+            # design has ONE n, and it is written once.
+            @emlCSVSetTable: .tableName$
+            .term$ = .col1$ + " vs " + .col2$
+            @emlCSVAddStr: "Paired t-test", .term$, "design", "paired"
+            @emlCSVAddStr: "Paired t-test", .term$, "column_1", .col1$
+            @emlCSVAddStr: "Paired t-test", .term$, "column_2", .col2$
+            @emlCSVAdd: "Paired t-test", .term$, "t", emlTTestPaired.t
+            @emlCSVAdd: "Paired t-test", .term$, "df", emlTTestPaired.df
+            @emlCSVAdd: "Paired t-test", .term$, "p", emlTTestPaired.p
+            @emlCSVAdd: "Paired t-test", .term$, "cohens_dz", emlCohenDz.dz
+            @emlCSVAdd: "Paired t-test", .term$, "n_pairs", .n
+            @emlCSVAddDescriptives: "Paired t-test", .col1$,
+            ... undefined, .mean1, .sd1, .median1
+            @emlCSVAddDescriptives: "Paired t-test", .col2$,
+            ... undefined, .mean2, .sd2, .median2
         else
             appendInfoLine: newline$ + "Paired t-test error: "
             ... + emlTTestPaired.error$
@@ -3692,13 +3813,21 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
             else
                 .wsrDf = 0
             endif
-            @emlCSVAddRow: .tableName$, .col1$, .col2$,
-            ... .col1$, .col2$, "Wilcoxon signed-rank",
-            ... emlWilcoxonSignedRank.tPlus, .wsrDf,
-            ... emlWilcoxonSignedRank.p,
-            ... emlMatchedPairsR.r, "matched-pairs r", "",
-            ... .n, .n, .mean1, .sd1, .median1,
-            ... .mean2, .sd2, .median2
+            @emlCSVSetTable: .tableName$
+            .wLab$ = "Wilcoxon signed-rank"
+            .term$ = .col1$ + " vs " + .col2$
+            @emlCSVAddStr: .wLab$, .term$, "design", "paired"
+            @emlCSVAddStr: .wLab$, .term$, "column_1", .col1$
+            @emlCSVAddStr: .wLab$, .term$, "column_2", .col2$
+            @emlCSVAdd: .wLab$, .term$, "T_plus",
+            ... emlWilcoxonSignedRank.tPlus
+            @emlCSVAdd: .wLab$, .term$, "p", emlWilcoxonSignedRank.p
+            @emlCSVAdd: .wLab$, .term$, "matched_pairs_r", emlMatchedPairsR.r
+            @emlCSVAdd: .wLab$, .term$, "n_pairs", .n
+            @emlCSVAddDescriptives: .wLab$, .col1$,
+            ... undefined, .mean1, .sd1, .median1
+            @emlCSVAddDescriptives: .wLab$, .col2$,
+            ... undefined, .mean2, .sd2, .median2
         else
             appendInfoLine: newline$ + "Wilcoxon error: "
             ... + emlWilcoxonSignedRank.error$
@@ -3795,23 +3924,57 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
 
     # CSV rows — one per effect
     @emlFormatP: emlTwoWayAnova.pA
-    @emlCSVAddRow: .tableName$, .dataCol$, .factor1$,
-    ... "main effect", .factor1$, "Two-way ANOVA",
-    ... emlTwoWayAnova.fA, emlTwoWayAnova.dfA, emlTwoWayAnova.pA,
-    ... emlTwoWayAnova.partialEtaSqA, "partial eta-squared", "",
-    ... 0, 0, 0, 0, 0, 0, 0, 0
+    # D34: there was no denominator df, no SS and no MS, so F(1,28)
+    # exported as df=1.00 and the ANOVA table could not be reconstructed
+    # from the file. Every term now carries both df, its SS and its MS, and
+    # the error and total rows are exported too.
+    # D37: n1,n2 were literal 0,0. D41: effect_label was "".
+    @emlCSVSetTable: .tableName$
+    .twLab$ = "Two-way ANOVA"
+    @emlCSVAddStr: .twLab$, "", "data_column", .dataCol$
+    @emlCSVAddStr: .twLab$, "", "factor_1", .factor1$
+    @emlCSVAddStr: .twLab$, "", "factor_2", .factor2$
+    @emlCSVAdd: .twLab$, "", "n", emlTwoWayAnova.nRows
+    @emlCSVAdd: .twLab$, "", "n_cells", emlTwoWayAnova.nCells
 
-    @emlCSVAddRow: .tableName$, .dataCol$, .factor2$,
-    ... "main effect", .factor2$, "Two-way ANOVA",
-    ... emlTwoWayAnova.fB, emlTwoWayAnova.dfB, emlTwoWayAnova.pB,
-    ... emlTwoWayAnova.partialEtaSqB, "partial eta-squared", "",
-    ... 0, 0, 0, 0, 0, 0, 0, 0
+    @emlCSVAddStr: .twLab$, .factor1$, "term_type", "main effect"
+    @emlCSVAdd: .twLab$, .factor1$, "F", emlTwoWayAnova.fA
+    @emlCSVAdd: .twLab$, .factor1$, "df1", emlTwoWayAnova.dfA
+    @emlCSVAdd: .twLab$, .factor1$, "df2", emlTwoWayAnova.dfError
+    @emlCSVAdd: .twLab$, .factor1$, "p", emlTwoWayAnova.pA
+    @emlCSVAdd: .twLab$, .factor1$, "ss", emlTwoWayAnova.ssA
+    @emlCSVAdd: .twLab$, .factor1$, "ms", emlTwoWayAnova.msA
+    @emlCSVAdd: .twLab$, .factor1$, "partial_eta_squared",
+    ... emlTwoWayAnova.partialEtaSqA
 
-    @emlCSVAddRow: .tableName$, .dataCol$, .rawInterLabel$,
-    ... "interaction", .rawInterLabel$, "Two-way ANOVA",
-    ... emlTwoWayAnova.fAB, emlTwoWayAnova.dfAB, emlTwoWayAnova.pAB,
-    ... emlTwoWayAnova.partialEtaSqAB, "partial eta-squared", "",
-    ... 0, 0, 0, 0, 0, 0, 0, 0
+    @emlCSVAddStr: .twLab$, .factor2$, "term_type", "main effect"
+    @emlCSVAdd: .twLab$, .factor2$, "F", emlTwoWayAnova.fB
+    @emlCSVAdd: .twLab$, .factor2$, "df1", emlTwoWayAnova.dfB
+    @emlCSVAdd: .twLab$, .factor2$, "df2", emlTwoWayAnova.dfError
+    @emlCSVAdd: .twLab$, .factor2$, "p", emlTwoWayAnova.pB
+    @emlCSVAdd: .twLab$, .factor2$, "ss", emlTwoWayAnova.ssB
+    @emlCSVAdd: .twLab$, .factor2$, "ms", emlTwoWayAnova.msB
+    @emlCSVAdd: .twLab$, .factor2$, "partial_eta_squared",
+    ... emlTwoWayAnova.partialEtaSqB
+
+    @emlCSVAddStr: .twLab$, .rawInterLabel$, "term_type", "interaction"
+    @emlCSVAdd: .twLab$, .rawInterLabel$, "F", emlTwoWayAnova.fAB
+    @emlCSVAdd: .twLab$, .rawInterLabel$, "df1", emlTwoWayAnova.dfAB
+    @emlCSVAdd: .twLab$, .rawInterLabel$, "df2", emlTwoWayAnova.dfError
+    @emlCSVAdd: .twLab$, .rawInterLabel$, "p", emlTwoWayAnova.pAB
+    @emlCSVAdd: .twLab$, .rawInterLabel$, "ss", emlTwoWayAnova.ssAB
+    @emlCSVAdd: .twLab$, .rawInterLabel$, "ms", emlTwoWayAnova.msAB
+    @emlCSVAdd: .twLab$, .rawInterLabel$, "partial_eta_squared",
+    ... emlTwoWayAnova.partialEtaSqAB
+
+    @emlCSVAddStr: .twLab$, "Error", "term_type", "error"
+    @emlCSVAdd: .twLab$, "Error", "df1", emlTwoWayAnova.dfError
+    @emlCSVAdd: .twLab$, "Error", "ss", emlTwoWayAnova.ssError
+    @emlCSVAdd: .twLab$, "Error", "ms", emlTwoWayAnova.msError
+
+    @emlCSVAddStr: .twLab$, "Total", "term_type", "total"
+    @emlCSVAdd: .twLab$, "Total", "df1", emlTwoWayAnova.dfTotal
+    @emlCSVAdd: .twLab$, "Total", "ss", emlTwoWayAnova.ssTotal
 
     @emlReportFooter
 endproc
