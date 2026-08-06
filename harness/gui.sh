@@ -224,9 +224,17 @@ EML_PAIRED=$((569 + EML_YOFF)); EML_ANOVA=$((594 + EML_YOFF))
 EML_KW=$((619 + EML_YOFF)); EML_TWOWAY=$((644 + EML_YOFF))
 EML_CORR=$((670 + EML_YOFF)); EML_REGRESS=$((695 + EML_YOFF))
 EML_PAIRWISE=$((721 + EML_YOFF))
-EML_GRAPHS=$((747 + EML_YOFF)); EML_BATCH=$((773 + EML_YOFF))
-EML_DEMO=$((799 + EML_YOFF)); EML_STATSDEMO=$((824 + EML_YOFF))
-EML_QUICKSTART=$((850 + EML_YOFF))
+EML_GRAPHS=$((747 + EML_YOFF))
+# 6 Aug: Batch voice analysis, Run Stats Demo and EML Stats Quick Start were
+# tabled, so Create Demo Table moved up into the slot Batch used to hold.
+# The three removed constants are kept, commented, next to the entries they
+# addressed — restoring a menu entry means restoring its coordinate too, and
+# a coordinate with no entry is worse than no coordinate: the click lands on
+# whatever moved into its place.
+EML_DEMO=$((773 + EML_YOFF))
+# EML_BATCH=$((773 + EML_YOFF))       # tabled 6 Aug
+# EML_STATSDEMO=$((824 + EML_YOFF))   # tabled 6 Aug
+# EML_QUICKSTART=$((850 + EML_YOFF))  # tabled 6 Aug
 EML_MENUBAR_Y=$((34 + EML_YOFF)); EML_TOOLS_Y=$((467 + EML_YOFF))
 
 # eml <y> -> open Objects>New>EML Tools and click the submenu entry at y

@@ -98,3 +98,42 @@ times and failing loudly rather than letting the caller click blind.
 file chooser. `ctrl+l` then typing the absolute path is far more reliable
 than navigating the tree. This is the route for the `validate/redpath/`
 tables.
+
+---
+
+## 6 August 2026 — three entries tabled, one moved
+
+Batch voice analysis, Run Stats Demo and EML Stats Quick Start were removed
+from the submenu by author ruling (see setup.praat for what was removed and
+how to restore it). The submenu is now thirteen entries ending at Create
+Demo Table.
+
+**Create Demo Table moved up into Batch's old slot**, from 799 to 773 in base
+coordinates. That is the trap this file exists to prevent: a stale constant
+does not fail, it clicks whatever moved into its place. `EML_BATCH`,
+`EML_STATSDEMO` and `EML_QUICKSTART` are kept in gui.sh as comments beside
+the entries they addressed, so restoring a menu entry and restoring its
+coordinate are visibly the same job.
+
+Measured positions in this session's layout (`EML_YOFF = -20`):
+
+| Entry | y |
+|---|---:|
+| Stats Wizard | 447 |
+| Describe Table column | 473 |
+| Check normality | 498 |
+| Compare two groups | 524 |
+| Compare paired/repeated | 549 |
+| Compare k groups (ANOVA) | 574 |
+| Compare k groups (Kruskal-Wallis) | 599 |
+| Compare two-way (ANOVA) | 624 |
+| Correlate two columns | 650 |
+| Linear regression | 675 |
+| Pairwise comparisons | 701 |
+| EML Graphs | 727 |
+| Create Demo Table | 753 |
+
+Verified against `evidence/shots/menu_after_tabling_2026-08-06.png`, which is
+the submenu open. Recalibrate the same way: open it, screenshot, read the
+positions off the image. Never infer them from a diff of setup.praat — the
+separators are menu entries too and they do not all take the same height.
