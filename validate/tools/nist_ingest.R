@@ -29,13 +29,24 @@ L <- readLines(dat_file, warn = FALSE)
 name <- sub("^Dataset Name:\\s*", "", grep("^Dataset Name:", L, value = TRUE)[1])
 name <- trimws(sub("\\(.*", "", name))
 
-# "Data            Starts Line 61" -- the header states where the data begins,
-# so the parser never counts header lines itself.
-start <- as.integer(sub(".*Starts Line\\s+(\\d+).*", "\\1",
-                        grep("Starts Line", L, value = TRUE)[1]))
-if (is.na(start)) stop("could not find the 'Starts Line' header in ", dat_file)
+# The header states where each block lives, so the parser never counts header
+# lines itself. NIST writes this two ways -- "Data (lines 61 to 85)" in the
+# ANOVA sets and "Data   Starts Line 61" in some others -- so both are read,
+# and a file matching neither is an error rather than a guess.
+.span <- function(what) {
+  ln <- grep(paste0("^\\s*", what, "\\s"), L, value = TRUE)
+  ln <- grep("lines|Starts Line", ln, value = TRUE)
+  if (!length(ln)) return(c(NA_integer_, NA_integer_))
+  m <- regmatches(ln[1], gregexpr("[0-9]+", ln[1]))[[1]]
+  if (grepl("Starts Line", ln[1])) c(as.integer(tail(m, 1)), length(L))
+  else if (length(m) >= 2L) as.integer(m[1:2])
+  else c(NA_integer_, NA_integer_)
+}
+dspan <- .span("Data")
+if (is.na(dspan[1]))
+  stop("could not locate the data block header in ", dat_file)
 
-body <- L[start:length(L)]
+body <- L[dspan[1]:min(dspan[2], length(L))]
 body <- body[nzchar(trimws(body))]
 num  <- lapply(strsplit(trimws(body), "[[:space:]]+"), as.numeric)
 ncol <- length(num[[1]])
@@ -55,19 +66,30 @@ names(d) <- if (kind == "lls") {
 # its label. Parameter lines are "B0   <estimate>   <sd>"; the ANOVA table
 # lines are "Regression  <df>  <ss>  <ms>  <F>". Both are captured as a
 # label plus its numeric fields, and the scorer picks what it needs.
-cv_start <- grep("^Certified Values", L)[1]
-cv_end   <- grep("^Data\\b|^Number of Observations", L)
-cv_end   <- cv_end[cv_end > cv_start][1]
-if (is.na(cv_start)) stop("no Certified Values block in ", dat_file)
-block <- L[cv_start:min(cv_end - 1L, length(L))]
+cspan <- .span("Certified Values")
+if (is.na(cspan[1])) {
+  cv_start <- grep("^Certified Values", L)[1]
+  if (is.na(cv_start)) stop("no Certified Values block in ", dat_file)
+  cspan <- c(cv_start, dspan[1] - 1L)
+}
+block <- L[cspan[1]:min(cspan[2], length(L))]
 
+# Label = the leading run of tokens that are not numbers. This survives both
+# "Between Instrument  4  5.11E-02 ..." and the LLS parameter rows "B0
+# -0.2623 0.2328", where a naive "text before the first digit" rule would cut
+# B0 in half. A line with no numeric token at all is a table header and is
+# skipped; NIST's own units and blank lines fall out the same way.
 rows <- list()
 for (ln in block) {
-  m <- regmatches(ln, regexpr("^\\s*([A-Za-z0-9_ ()-]+?)\\s{2,}", ln))
-  nums <- suppressWarnings(as.numeric(
-            regmatches(ln, gregexpr("[-+]?[0-9]*\\.?[0-9]+([Ee][-+]?[0-9]+)?", ln))[[1]]))
-  if (!length(m) || !length(nums)) next
-  lab <- trimws(m)
+  tok <- strsplit(trimws(ln), "[[:space:]]+")[[1]]
+  tok <- tok[nzchar(tok)]
+  if (!length(tok)) next
+  isnum <- !is.na(suppressWarnings(as.numeric(tok)))
+  first <- which(isnum)[1]
+  if (is.na(first)) next
+  lab  <- if (first == 1L) "" else paste(tok[seq_len(first - 1L)], collapse = " ")
+  nums <- as.numeric(tok[first:length(tok)][isnum[first:length(tok)]])
+  if (!nzchar(lab)) next
   for (j in seq_along(nums))
     rows[[length(rows) + 1L]] <- data.frame(label = lab, field = j,
                                             certified = nums[j],
@@ -76,7 +98,12 @@ for (ln in block) {
 cert <- do.call(rbind, rows)
 
 out <- file.path("evidence", "nist"); dir.create(out, recursive = TRUE, showWarnings = FALSE)
-write.csv(d,    file.path(out, paste0(name, "_data.csv")),      row.names = FALSE)
+# quote = FALSE is load-bearing, not cosmetic. Praat's CSV reader does NOT
+# strip quotes from header cells: a file whose first line reads "grp","value"
+# gives columns literally named `"value"`, and every lookup then fails with
+# "Data column not found: value". Writing bare headers is the fix.
+write.csv(d, file.path(out, paste0(name, "_data.csv")),
+          row.names = FALSE, quote = FALSE)
 # 17 significant digits, not write.csv's default 15: NIST publishes 15, and
 # rounding the certified value before scoring would cap every LRE at 15 and
 # make a genuinely exact routine look inexact.
