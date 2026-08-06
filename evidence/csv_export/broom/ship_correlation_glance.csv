@@ -1,0 +1,2 @@
+r.squared,statistic,p.value,nobs,estimate,parameter,method
+0.9371169229277572,20.427208112165175,2.3285947015000792e-18,30,0.9680479961901461,28,Pearson's product-moment correlation

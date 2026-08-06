@@ -1,0 +1,4 @@
+term,contrast,statistic,p.value,adj.p.value,effect.size,effect.size.type,method
+voice_type,Soprano-Mezzo,4.885356132267499,4.559529102934477e-05,0.0001367858730880343,1.7838798367260675,cohens.d,Welch t-test
+voice_type,Soprano-Alto,5.707200519681138,9.806645664798047e-06,2.941993699439414e-05,2.0839749765563775,cohens.d,Welch t-test
+voice_type,Mezzo-Alto,1.6046513157500177,0.12072603934960424,0.3621781180488127,0.5859358150444196,cohens.d,Welch t-test

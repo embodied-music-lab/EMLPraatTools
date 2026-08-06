@@ -1,0 +1,2 @@
+statistic,p.value,nobs,n.groups,parameter,epsilon.squared,tie.correction,method
+18.617971014492753,9.060641812012781e-05,45,3,2,0.42313570487483526,1,Kruskal-Wallis rank sum test

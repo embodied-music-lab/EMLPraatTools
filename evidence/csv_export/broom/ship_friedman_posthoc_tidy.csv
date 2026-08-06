@@ -1,0 +1,4 @@
+term,contrast,p.value,adj.p.value,method
+condition,SPL_soft-SPL_medium,1.9073486328125e-06,5.7220458984375e-06,Wilcoxon signed rank (holm)
+condition,SPL_soft-SPL_loud,1.9073486328125e-06,5.7220458984375e-06,Wilcoxon signed rank (holm)
+condition,SPL_medium-SPL_loud,1.9073486328125e-06,5.7220458984375e-06,Wilcoxon signed rank (holm)

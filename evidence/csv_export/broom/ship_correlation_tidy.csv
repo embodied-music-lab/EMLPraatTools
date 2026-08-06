@@ -1,0 +1,3 @@
+estimate,statistic,p.value,parameter,method,alternative
+0.9680479961901461,20.427208112165175,2.3285947015000792e-18,28,Pearson's product-moment correlation,two.sided
+0.9449327013639451,15.278500022512516,4.116608996942006e-15,28,Spearman's rank correlation rho,two.sided
