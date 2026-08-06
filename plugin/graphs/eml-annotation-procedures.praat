@@ -1577,10 +1577,17 @@ procedure emlDrawMatrixPanel: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSize, .
             .cellB = .dataTop + (.i - 1) * .rowH + .rowH - .cellPad
 
             if .i = .j
+                # D72: the diagonal used the same em-dash as a cell that was
+                # tested and came out non-significant with the p suppressed,
+                # so "self-comparison, not applicable" and "tested, not
+                # significant" rendered as the same glyph at the figure's
+                # delivered scale. The diagonal now carries a centre dot,
+                # which cannot be mistaken for a dash at any size, and the
+                # suppressed-p cells keep the dash.
                 if .showText = 1
                     Colour: "{0.7, 0.7, 0.7}"
                     Text special: .cx, "centre", .ry, "half",
-                    ... emlFont$, .scaledFont, "0", "—"
+                    ... emlFont$, .scaledFont, "0", "·"
                 endif
 
             elsif .i < .j
@@ -1991,10 +1998,16 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                 .epsilonSq = .hVal / (.totalN - 1)
 
                 @emlFormatP: .pOmnibus
+                # D29: the caption read ", e2 = 0.272". "e2" is not notation
+                # for epsilon-squared. This string is only ever drawn by
+                # Text special / Text in the Picture window — as the matrix
+                # panel title or as the corner annotation block — so Praat's
+                # symbol escapes apply: \ep is epsilon, ^ superscripts the
+                # character after it.
                 .omnibus$ = "Kruskal-Wallis: H(" + string$ (.dfOmnibus) + ") = "
                 ... + fixed$ (.hVal, 2)
                 ... + ", " + emlFormatP.formatted$
-                ... + ", e2 = " + fixed$ (.epsilonSq, 3)
+                ... + ", \ep^2 = " + fixed$ (.epsilonSq, 3)
 
                 # Pairwise post-hoc
                 if .pOmnibus < .alpha
@@ -2571,7 +2584,6 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
     @emlReportDescriptiveRow: .displayG2$, .n2, .mean2, .sd2, .median2
 
     if .testType$ = "parametric" or .testType$ = "both"
-        @emlFormatP: emlTTest.p
         @emlFormatEffectLabel: emlCohenD.d, "d"
         @emlReportBlank
         @emlReportSection: emlTTest.method$
@@ -2595,7 +2607,11 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
         if emlShowExplanations
             @emlWizardExplainP: emlTTest.p
         endif
-        @emlReportLineString: "p", emlFormatP.formatted$
+        ; D9: the row label used to be "p" and the value "p = .032", so the
+        ; report said "p" twice. D28/D35: the < .001 floor also hid the real
+        ; value. @emlReportPWithExact prints the bare APA form and, when the
+        ; label is floored, the unrounded value beside it.
+        @emlReportPWithExact: "p", emlTTest.p
         if emlShowExplanations
             .diff = .mean1 - .mean2
             if .diff > 0
@@ -2604,7 +2620,35 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
                 emlWizardExplain$ = .displayG2$ + " mean is " + fixed$ (abs (.diff), 2) + " units higher"
             endif
         endif
-        @emlReportLine: "Mean difference", emlTTest.meanDiff, 4
+        ; D13: "Mean difference" alone never said which group was subtracted
+        ; from which, so the sign was unreadable without inferring it from the
+        ; descriptives table. The label now names the direction, using the same
+        ; ordered group labels that table printed.
+        .diffLabel$ = "Mean diff (" + .displayG1$ + " − " + .displayG2$ + ")"
+        if length (.diffLabel$) >= 20
+            ; @emlPadRight leaves an over-long label unpadded, which would run
+            ; the value straight into the ")". One space keeps them apart.
+            .diffLabel$ = .diffLabel$ + " "
+        endif
+        @emlReportLine: .diffLabel$, emlTTest.meanDiff, 4
+        ; D12: @emlTTest exposes no interval, so it is rebuilt here from the
+        ; three quantities it does expose. Both the Student and the Welch
+        ; branch form t as meanDiff / SE, so SE = meanDiff / t recovers the
+        ; standard error exactly, whichever branch ran.
+        .ciOK = 0
+        if emlTTest.t <> undefined and emlTTest.df <> undefined
+            if emlTTest.t <> 0 and emlTTest.df >= 1
+                .ciOK = 1
+            endif
+        endif
+        if .ciOK = 1
+            .seDiff = abs (emlTTest.meanDiff / emlTTest.t)
+            .tCritDiff = invStudentQ (0.025, emlTTest.df)
+            .diffLo = emlTTest.meanDiff - .tCritDiff * .seDiff
+            .diffHi = emlTTest.meanDiff + .tCritDiff * .seDiff
+            @emlReportLineString: "95% CI of diff",
+            ... "[" + fixed$ (.diffLo, 4) + ", " + fixed$ (.diffHi, 4) + "]"
+        endif
         @emlReportBlank
         @emlReportSection: "Effect Size"
         if emlShowExplanations
@@ -2635,7 +2679,6 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
     endif
 
     if .testType$ = "nonparametric" or .testType$ = "both"
-        @emlFormatP: emlMannWhitneyU.p
         @emlFormatEffectLabel: abs (emlRankBiserialR.r), "r"
         @emlReportBlank
         @emlReportSection: "Mann-Whitney U Test"
@@ -2654,7 +2697,8 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
         if emlShowExplanations
             @emlWizardExplainP: emlMannWhitneyU.p
         endif
-        @emlReportLineString: "p", emlFormatP.formatted$
+        ; D9/D28
+        @emlReportPWithExact: "p", emlMannWhitneyU.p
         # Report the method @emlMannWhitneyU actually used. Read it
         # defensively — a build of eml-inferential.praat that does not expose
         # .method$ must not abort the report. The routing rule is R's
@@ -2761,7 +2805,6 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     ... left$ (string$ (emlOneWayAnova.dfTotal) + "      ", 6)
 
     @emlReportBlank
-    @emlFormatP: emlOneWayAnova.p
     if emlShowExplanations
         @emlWizardExplainF: emlOneWayAnova.fValue
     endif
@@ -2769,7 +2812,8 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     if emlShowExplanations
         @emlWizardExplainP: emlOneWayAnova.p
     endif
-    @emlReportLineString: "p", emlFormatP.formatted$
+    ; D9/D28
+    @emlReportPWithExact: "p", emlOneWayAnova.p
     .etaSq = emlOneWayAnova.etaSquared
     if emlShowExplanations
         @emlWizardExplainEffectEta2: .etaSq
@@ -2853,6 +2897,46 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 .rowLine$ = .rowLine$ + left$ (.cellText$ + "            ", 12)
             endfor
             appendInfoLine: .rowLine$
+        endfor
+
+        # D22: the matrix above reports adjusted p and nothing else, so a
+        # reader cannot state a result — the quantity a result is stated in is
+        # the mean difference and its interval. No new numerics are needed:
+        # @emlOneWayAnova already exposes the signed differences, the critical
+        # q at alpha = .05, MS_within and the group sizes, so the family-wise
+        # half-width is qCritical * sqrt(MSw/2 * (1/ni + 1/nj)).
+        @emlReportBlank
+        @emlReportSection: "Tukey HSD Mean Differences (95% family-wise CI)"
+        appendInfoLine: ""
+        appendInfoLine: left$ ("Comparison" + "                          ", 26),
+        ... left$ ("Difference" + "              ", 14),
+        ... "95% CI"
+        for .iGroup from 1 to .nGroups - 1
+            for .jGroup from .iGroup + 1 to .nGroups
+                .ciName$ = replace$ (emlOneWayAnova.groupLabel$[.iGroup], "_", " ", 0)
+                ... + " − "
+                ... + replace$ (emlOneWayAnova.groupLabel$[.jGroup], "_", " ", 0)
+                if length (.ciName$) > 24
+                    .ciName$ = left$ (.ciName$, 24)
+                endif
+                .tukeyDiff = emlOneWayAnova.meanDiff## [.iGroup, .jGroup]
+                .tukeyHalf = undefined
+                if emlOneWayAnova.qCritical <> undefined
+                    .tukeyHalf = emlOneWayAnova.qCritical
+                    ... * sqrt (emlOneWayAnova.msWithin / 2
+                    ... * (1 / emlOneWayAnova.groupN[.iGroup]
+                    ... + 1 / emlOneWayAnova.groupN[.jGroup]))
+                endif
+                if .tukeyHalf = undefined or .tukeyDiff = undefined
+                    .ciText$ = "not available"
+                else
+                    .ciText$ = "[" + fixed$ (.tukeyDiff - .tukeyHalf, 4)
+                    ... + ", " + fixed$ (.tukeyDiff + .tukeyHalf, 4) + "]"
+                endif
+                appendInfoLine: left$ (.ciName$ + "                          ", 26),
+                ... left$ (fixed$ (.tukeyDiff, 4) + "              ", 14),
+                ... .ciText$
+            endfor
         endfor
 
         # CSV rows for Tukey pairwise
@@ -3033,11 +3117,12 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
         ... + ") minus 1. Controls the chi-squared reference distribution."
     endif
     @emlReportLine: "df", emlKruskalWallis.df, 0
-    @emlFormatP: emlKruskalWallis.p
     if emlShowExplanations
         @emlWizardExplainP: emlKruskalWallis.p
     endif
-    @emlReportLineString: "p", emlFormatP.formatted$
+    ; D28: the omnibus p was floored to "p = .003" with the real value
+    ; reachable only from the CSV, and the label was printed twice (D9).
+    @emlReportPWithExact: "p", emlKruskalWallis.p
     if emlShowExplanations
         @emlWizardExplainEffectEta2: emlKruskalWallis.epsilonSq
     endif
@@ -3304,7 +3389,6 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
 
     if .testType$ = "pearson" or .testType$ = "both"
         if emlPearsonCorrelation.error$ = ""
-            @emlFormatP: emlPearsonCorrelation.p
             @emlReportBlank
             @emlReportSection: "Pearson Correlation"
             if emlShowExplanations
@@ -3315,11 +3399,16 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 @emlWizardExplainCorrelation: emlPearsonCorrelation.r
             endif
             @emlReportLine: "r", emlPearsonCorrelation.r, 4
+            ; D44: R-squared used to sit inside the explanations gate, so the
+            ; Info window omitted the one number most correlation write-ups
+            ; quote while the scatter figure from the same run annotated it.
+            ; R-squared is a statistic, not an explanation — only the prose
+            ; gloss is gated now.
+            .r2 = emlPearsonCorrelation.r * emlPearsonCorrelation.r
             if emlShowExplanations
-                .r2 = emlPearsonCorrelation.r * emlPearsonCorrelation.r
                 @emlWizardExplainR2: .r2
-                @emlReportLine: "R-squared", .r2, 4
             endif
+            @emlReportLine: "R-squared", .r2, 4
             if emlShowExplanations
                 @emlWizardExplainT: emlPearsonCorrelation.t
             endif
@@ -3331,7 +3420,36 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
             if emlShowExplanations
                 @emlWizardExplainP: emlPearsonCorrelation.p
             endif
-            @emlReportLineString: "p", emlFormatP.formatted$
+            ; D9/D28
+            @emlReportPWithExact: "p", emlPearsonCorrelation.p
+            # D50: r was reported as a point estimate with no interval. The
+            # Fisher z transform gives one from numbers already in hand:
+            # z = atanh(r), se = 1/sqrt(n-3), interval = tanh(z +/- 1.96 se).
+            # Undefined for n <= 3 (se blows up) and for |r| = 1 (atanh is
+            # infinite), so both are guarded rather than printed as garbage.
+            .rPearson = emlPearsonCorrelation.r
+            .fisherOK = 0
+            if .n > 3 and .rPearson <> undefined
+                if abs (.rPearson) < 1
+                    .fisherOK = 1
+                endif
+            endif
+            if .fisherOK = 1
+                .fisherZ = 0.5 * ln ((1 + .rPearson) / (1 - .rPearson))
+                .fisherSE = 1 / sqrt (.n - 3)
+                .zLo = .fisherZ - 1.96 * .fisherSE
+                .zHi = .fisherZ + 1.96 * .fisherSE
+                .rLo = (exp (2 * .zLo) - 1) / (exp (2 * .zLo) + 1)
+                .rHi = (exp (2 * .zHi) - 1) / (exp (2 * .zHi) + 1)
+                @emlReportLineString: "95% CI for r",
+                ... "[" + fixed$ (.rLo, 4) + ", " + fixed$ (.rHi, 4) + "]"
+            endif
+            # D17: the row carried r and r_squared but left effect_label
+            # empty, so a consumer joining these exports got a column that is
+            # populated for the group comparisons and blank here.
+            @emlFormatEffectLabel: abs (.rPearson), "r"
+            .pearsonLabel$ = emlFormatEffectLabel.label$
+            @emlReportLineString: "Magnitude", .pearsonLabel$
             # D45: colY$ used to land in the group_col slot, so the file
             # said the Y variable was a grouping column. Both variables now
             # have their own named field. D46: the six descriptive slots
@@ -3353,6 +3471,8 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
             ... emlPearsonCorrelation.p
             @emlCSVAdd: "Pearson correlation", .term$, "r_squared",
             ... emlPearsonCorrelation.r * emlPearsonCorrelation.r
+            @emlCSVAddStr: "Pearson correlation", .term$, "effect_label",
+            ... .pearsonLabel$
             @emlCSVAdd: "Pearson correlation", .term$, "n", .n
         else
             appendInfoLine: newline$ + "Pearson error: " + emlPearsonCorrelation.error$
@@ -3361,7 +3481,6 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
 
     if .testType$ = "spearman" or .testType$ = "both"
         if emlSpearmanCorrelation.error$ = ""
-            @emlFormatP: emlSpearmanCorrelation.p
             @emlReportBlank
             @emlReportSection: "Spearman Correlation"
             if emlShowExplanations
@@ -3383,7 +3502,13 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
             if emlShowExplanations
                 @emlWizardExplainP: emlSpearmanCorrelation.p
             endif
-            @emlReportLineString: "p", emlFormatP.formatted$
+            ; D9/D28
+            @emlReportPWithExact: "p", emlSpearmanCorrelation.p
+            # D17: rho is an effect size and had no magnitude gloss in the
+            # report and no effect_label in the export.
+            @emlFormatEffectLabel: abs (emlSpearmanCorrelation.rho), "r"
+            .spearmanLabel$ = emlFormatEffectLabel.label$
+            @emlReportLineString: "Magnitude", .spearmanLabel$
             @emlCSVSetTable: .tableName$
             @emlCSVTermType: "variable"
             .term$ = .colX$ + " ~ " + .colY$
@@ -3397,6 +3522,8 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
             ... emlSpearmanCorrelation.df
             @emlCSVAdd: "Spearman correlation", .term$, "p",
             ... emlSpearmanCorrelation.p
+            @emlCSVAddStr: "Spearman correlation", .term$, "effect_label",
+            ... .spearmanLabel$
             @emlCSVAdd: "Spearman correlation", .term$, "n", .n
         endif
     endif
@@ -3474,36 +3601,67 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
         emlWizardExplain$ = "Overall model significance — ratio of explained to unexplained variance"
     endif
     @emlReportLine: .dfLabel$, emlLinearRegression.fStat, 4
-    @emlFormatP: emlLinearRegression.pF
     if emlShowExplanations
         @emlWizardExplainP: emlLinearRegression.pF
     endif
-    @emlReportLineString: "p", emlFormatP.formatted$
+    ; D9/D28
+    @emlReportPWithExact: "p", emlLinearRegression.pF
 
     @emlReportBlank
     @emlReportSection: "Coefficients"
     appendInfoLine: ""
-    .hdr$ = left$ ("" + "                    ", 20)
+    # D56: the block was flush-left inside a report whose every other block is
+    # indented two spaces, the term column had no header at all, and the cells
+    # under the numeric-aligned "p" header held the string "p < .001". The
+    # block is now indented, the term column is headed, and the cells carry
+    # @emlFormatP's bare form so the column contains values, not labels.
+    # D57: SE was printed without the interval it defines. dfRes and the two
+    # standard errors are already on screen, so the 95% CI is one t quantile
+    # away and is printed beside each coefficient.
+    .ciWidth = 0
+    if emlLinearRegression.dfRes <> undefined
+        if emlLinearRegression.dfRes >= 1
+            .ciWidth = invStudentQ (0.025, emlLinearRegression.dfRes)
+        endif
+    endif
+    .hdr$ = "  " + left$ ("Term" + "                    ", 20)
     ... + left$ ("Estimate" + "              ", 14)
     ... + left$ ("SE" + "              ", 14)
-    ... + left$ ("t" + "              ", 14)
-    ... + "p"
+    ... + left$ ("t" + "              ", 12)
+    ... + left$ ("p" + "            ", 12)
+    ... + "95% CI"
     appendInfoLine: .hdr$
     # Intercept row
     @emlFormatP: emlLinearRegression.pIntercept
-    .intRow$ = left$ ("Intercept" + "                    ", 20)
+    if .ciWidth > 0
+        .intHalf = .ciWidth * emlLinearRegression.seIntercept
+        .intCI$ = "[" + fixed$ (emlLinearRegression.intercept - .intHalf, 4)
+        ... + ", " + fixed$ (emlLinearRegression.intercept + .intHalf, 4) + "]"
+    else
+        .intCI$ = "not available"
+    endif
+    .intRow$ = "  " + left$ ("(Intercept)" + "                    ", 20)
     ... + left$ (fixed$ (emlLinearRegression.intercept, 4) + "              ", 14)
     ... + left$ (fixed$ (emlLinearRegression.seIntercept, 4) + "              ", 14)
-    ... + left$ (fixed$ (emlLinearRegression.tIntercept, 3) + "              ", 14)
-    ... + emlFormatP.formatted$
+    ... + left$ (fixed$ (emlLinearRegression.tIntercept, 3) + "              ", 12)
+    ... + left$ (emlFormatP.bare$ + "            ", 12)
+    ... + .intCI$
     appendInfoLine: .intRow$
     # Slope row
     @emlFormatP: emlLinearRegression.pSlope
-    .slopeRow$ = left$ (.displayPred$ + "                    ", 20)
+    if .ciWidth > 0
+        .slopeHalf = .ciWidth * emlLinearRegression.seSlope
+        .slopeCI$ = "[" + fixed$ (emlLinearRegression.slope - .slopeHalf, 4)
+        ... + ", " + fixed$ (emlLinearRegression.slope + .slopeHalf, 4) + "]"
+    else
+        .slopeCI$ = "not available"
+    endif
+    .slopeRow$ = "  " + left$ (.displayPred$ + "                    ", 20)
     ... + left$ (fixed$ (emlLinearRegression.slope, 4) + "              ", 14)
     ... + left$ (fixed$ (emlLinearRegression.seSlope, 4) + "              ", 14)
-    ... + left$ (fixed$ (emlLinearRegression.tSlope, 3) + "              ", 14)
-    ... + emlFormatP.formatted$
+    ... + left$ (fixed$ (emlLinearRegression.tSlope, 3) + "              ", 12)
+    ... + left$ (emlFormatP.bare$ + "            ", 12)
+    ... + .slopeCI$
     appendInfoLine: .slopeRow$
 
     # Direction and magnitude
@@ -3519,7 +3677,18 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     appendInfoLine: "  Direction: " + .dir$
     ... + " (" + .displayDep$ + " " + .verb$
     ... + " as " + .displayPred$ + " increases)"
-    @emlReportLineString: "Variance explained", emlFormatEffectLabel.label$
+    # D62: this printed as "Variance explained   large effect" in the same
+    # label/value layout as "R-squared   0.8770", so a Cohen benchmark verdict
+    # wore the visual authority of a second computed statistic — and read as a
+    # different quantity from R-squared when it is R-squared, glossed. Stated
+    # as prose naming the number it is a verdict about.
+    appendInfoLine: "  Variance explained: R-squared = "
+    ... + fixed$ (emlLinearRegression.rSquared, 4)
+    ... + " ("
+    ... + fixed$ (100 * emlLinearRegression.rSquared, 1)
+    ... + "% of the variance in " + .displayDep$
+    ... + "), a " + emlFormatEffectLabel.label$
+    ... + " by Cohen's R-squared benchmarks"
 
     # D54 was the clearest case of slot reuse in the whole schema: the
     # slope went into mean1, the slope's SE into sd1, the intercept into
@@ -3550,11 +3719,24 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     ... emlLinearRegression.seIntercept
     @emlCSVAdd: .regLab$, "(Intercept)", "t", emlLinearRegression.tIntercept
     @emlCSVAdd: .regLab$, "(Intercept)", "p", emlLinearRegression.pIntercept
+    # D57: the interval the report now prints is exported alongside it.
+    if .ciWidth > 0
+        @emlCSVAdd: .regLab$, "(Intercept)", "ci_lower",
+        ... emlLinearRegression.intercept - .intHalf
+        @emlCSVAdd: .regLab$, "(Intercept)", "ci_upper",
+        ... emlLinearRegression.intercept + .intHalf
+    endif
 
     @emlCSVAdd: .regLab$, .predCol$, "estimate", emlLinearRegression.slope
     @emlCSVAdd: .regLab$, .predCol$, "se", emlLinearRegression.seSlope
     @emlCSVAdd: .regLab$, .predCol$, "t", emlLinearRegression.tSlope
     @emlCSVAdd: .regLab$, .predCol$, "p", emlLinearRegression.pSlope
+    if .ciWidth > 0
+        @emlCSVAdd: .regLab$, .predCol$, "ci_lower",
+        ... emlLinearRegression.slope - .slopeHalf
+        @emlCSVAdd: .regLab$, .predCol$, "ci_upper",
+        ... emlLinearRegression.slope + .slopeHalf
+    endif
 
     @emlReportFooter
 endproc
@@ -3637,11 +3819,12 @@ procedure emlReportNormalityAnalysis: .tableName$, .dataCol$,
             @emlWizardExplainNormW: emlRunNormalityAnalysis.swW
         endif
         @emlReportLine: "W", emlRunNormalityAnalysis.swW, 4
-        @emlFormatP: emlRunNormalityAnalysis.swP
         if emlShowExplanations
             @emlWizardExplainP: emlRunNormalityAnalysis.swP
         endif
-        @emlReportLineString: "p", emlFormatP.formatted$
+        ; D9/D28. Shapiro-Wilk has no effect size, so no magnitude row
+        ; belongs here and none is added (D17).
+        @emlReportPWithExact: "p", emlRunNormalityAnalysis.swP
         if emlRunNormalityAnalysis.swFail
             appendInfoLine: "  → Rejects normality (p < 0.05)"
         else
@@ -3726,7 +3909,6 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
 
     if .testType$ = "parametric" or .testType$ = "both"
         if emlTTestPaired.error$ = ""
-            @emlFormatP: emlTTestPaired.p
             @emlReportBlank
             @emlReportSection: "Paired t-test"
             if emlShowExplanations
@@ -3744,7 +3926,8 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
             if emlShowExplanations
                 @emlWizardExplainP: emlTTestPaired.p
             endif
-            @emlReportLineString: "p", emlFormatP.formatted$
+            ; D9/D28
+            @emlReportPWithExact: "p", emlTTestPaired.p
             @emlReportLine: "Mean difference", emlTTestPaired.meanDiff, 4
             @emlReportLine: "SD of differences", emlTTestPaired.sdDiff, 4
 
@@ -3752,13 +3935,17 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
             # same quantity the t is derived from. The matched-pairs rank
             # statistic belongs to the Wilcoxon and is reported in that
             # section, not here (D15).
+            # D17: the magnitude was printed here but never reached the
+            # export, so effect_label was blank on every paired row.
+            .dzLabel$ = ""
             if emlCohenDz.error$ = ""
                 @emlFormatEffectLabel: abs (emlCohenDz.dz), "d"
+                .dzLabel$ = emlFormatEffectLabel.label$
                 @emlReportBlank
                 @emlReportSection: "Effect Size"
                 @emlReportLine: "Cohen's dz", emlCohenDz.dz, 3
                 @emlReportLine: "r (from t)", emlCohenDz.rFromT, 3
-                @emlReportLineString: "Magnitude", emlFormatEffectLabel.label$
+                @emlReportLineString: "Magnitude", .dzLabel$
             endif
 
             # D19: the two column names used to be packed into all four
@@ -3775,6 +3962,7 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
             @emlCSVAdd: "Paired t-test", .term$, "df", emlTTestPaired.df
             @emlCSVAdd: "Paired t-test", .term$, "p", emlTTestPaired.p
             @emlCSVAdd: "Paired t-test", .term$, "cohens_dz", emlCohenDz.dz
+            @emlCSVAddStr: "Paired t-test", .term$, "effect_label", .dzLabel$
             @emlCSVAdd: "Paired t-test", .term$, "n_pairs", .n
             @emlCSVAddDescriptives: "Paired t-test", .col1$,
             ... undefined, .mean1, .sd1, .median1
@@ -3788,7 +3976,6 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
 
     if .testType$ = "nonparametric" or .testType$ = "both"
         if emlWilcoxonSignedRank.error$ = ""
-            @emlFormatP: emlWilcoxonSignedRank.p
             @emlReportBlank
             @emlReportSection: "Wilcoxon Signed-Rank Test"
             if emlShowExplanations
@@ -3809,17 +3996,22 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
             if emlShowExplanations
                 @emlWizardExplainP: emlWilcoxonSignedRank.p
             endif
-            @emlReportLineString: "p", emlFormatP.formatted$
+            ; D9/D28
+            @emlReportPWithExact: "p", emlWilcoxonSignedRank.p
 
+            # D17: the matched-pairs magnitude was printed and then dropped on
+            # the way to the export.
+            .mprLabel$ = ""
             if emlMatchedPairsR.error$ = ""
                 @emlFormatEffectLabel: abs (emlMatchedPairsR.r), "r"
+                .mprLabel$ = emlFormatEffectLabel.label$
                 @emlReportBlank
                 @emlReportSection: "Nonparametric Effect Size"
                 if emlShowExplanations
                     @emlWizardExplainEffectR: emlMatchedPairsR.r
                 endif
                 @emlReportLine: "Matched-pairs r", emlMatchedPairsR.r, 3
-                @emlReportLineString: "Magnitude", emlFormatEffectLabel.label$
+                @emlReportLineString: "Magnitude", .mprLabel$
             endif
 
             if emlWilcoxonSignedRank.z <> undefined
@@ -3838,6 +4030,7 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
             ... emlWilcoxonSignedRank.tPlus
             @emlCSVAdd: .wLab$, .term$, "p", emlWilcoxonSignedRank.p
             @emlCSVAdd: .wLab$, .term$, "matched_pairs_r", emlMatchedPairsR.r
+            @emlCSVAddStr: .wLab$, .term$, "effect_label", .mprLabel$
             @emlCSVAdd: .wLab$, .term$, "n_pairs", .n
             @emlCSVAddDescriptives: .wLab$, .col1$,
             ... undefined, .mean1, .sd1, .median1
@@ -3871,6 +4064,19 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     @emlReportLineString: "Data column", .displayData$
     @emlReportLineString: "Factor 1", .displayF1$
     @emlReportLineString: "Factor 2", .displayF2$
+    # D37: the Info block named the table, the column and the two factors and
+    # reported no N of any kind — not total, not per level, not per cell —
+    # while the two-group section appended to the same transcript reported
+    # N 24 / 24. @emlTwoWayAnova already carries all of it.
+    @emlReportLine: "Total N", emlTwoWayAnova.nRows, 0
+    @emlReportLine: "Cells", emlTwoWayAnova.nCells, 0
+    if emlTwoWayAnova.minCellN = emlTwoWayAnova.maxCellN
+        @emlReportLine: "n per cell", emlTwoWayAnova.minCellN, 0
+    else
+        @emlReportLineString: "n per cell",
+        ... string$ (emlTwoWayAnova.minCellN) + " to "
+        ... + string$ (emlTwoWayAnova.maxCellN) + " (unbalanced)"
+    endif
 
     @emlReportBlank
     @emlReportSection: "ANOVA Table"
@@ -3886,23 +4092,37 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     ... left$ ("F" + "            ", 12),
     ... "p"
 
+    # D35: all three rows printed @emlFormatP's "p = " form under a column
+    # already headed "p" (D9 in table form), and all three floored to
+    # "p < .001" — 5.8e-07, 2.1e-13 and 3.0e-04 reported identically, nine
+    # orders of magnitude flattened in the one table whose whole point is the
+    # relative strength of the three effects. The cells now carry the bare
+    # APA form, and .exact$ records which of them were floored so the
+    # unrounded values can be printed below the table.
     @emlFormatP: emlTwoWayAnova.pA
+    .pCellA$ = emlFormatP.bare$
+    .exactA$ = emlFormatP.exact$
+    @emlFormatP: emlTwoWayAnova.pB
+    .pCellB$ = emlFormatP.bare$
+    .exactB$ = emlFormatP.exact$
+    @emlFormatP: emlTwoWayAnova.pAB
+    .pCellAB$ = emlFormatP.bare$
+    .exactAB$ = emlFormatP.exact$
+
     appendInfoLine: left$ (.displayF1$ + "                    ", 20),
     ... left$ (fixed$ (emlTwoWayAnova.ssA, 2) + "                ", 16),
     ... left$ (string$ (emlTwoWayAnova.dfA) + "      ", 6),
     ... left$ (fixed$ (emlTwoWayAnova.msA, 2) + "                ", 16),
     ... left$ (fixed$ (emlTwoWayAnova.fA, 4) + "            ", 12),
-    ... emlFormatP.formatted$
+    ... .pCellA$
 
-    @emlFormatP: emlTwoWayAnova.pB
     appendInfoLine: left$ (.displayF2$ + "                    ", 20),
     ... left$ (fixed$ (emlTwoWayAnova.ssB, 2) + "                ", 16),
     ... left$ (string$ (emlTwoWayAnova.dfB) + "      ", 6),
     ... left$ (fixed$ (emlTwoWayAnova.msB, 2) + "                ", 16),
     ... left$ (fixed$ (emlTwoWayAnova.fB, 4) + "            ", 12),
-    ... emlFormatP.formatted$
+    ... .pCellB$
 
-    @emlFormatP: emlTwoWayAnova.pAB
     .interLabel$ = .displayF1$ + " x " + .displayF2$
     .rawInterLabel$ = .factor1$ + "_x_" + .factor2$
     appendInfoLine: left$ (.interLabel$ + "                    ", 20),
@@ -3910,7 +4130,7 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     ... left$ (string$ (emlTwoWayAnova.dfAB) + "      ", 6),
     ... left$ (fixed$ (emlTwoWayAnova.msAB, 2) + "                ", 16),
     ... left$ (fixed$ (emlTwoWayAnova.fAB, 4) + "            ", 12),
-    ... emlFormatP.formatted$
+    ... .pCellAB$
 
     appendInfoLine: left$ ("Error" + "                    ", 20),
     ... left$ (fixed$ (emlTwoWayAnova.ssError, 2) + "                ", 16),
@@ -3921,29 +4141,181 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     ... left$ (fixed$ (emlTwoWayAnova.ssTotal, 2) + "                ", 16),
     ... left$ (string$ (emlTwoWayAnova.dfTotal) + "      ", 6)
 
+    # Only the floored rows need restating; at three decimals the table
+    # already shows the value exactly, so this block stays silent unless a
+    # p actually hit the .001 (or .999) floor.
+    if .exactA$ <> "" or .exactB$ <> "" or .exactAB$ <> ""
+        @emlReportBlank
+        @emlReportSection: "Exact p-values"
+        @emlReportPWithExact: .displayF1$, emlTwoWayAnova.pA
+        @emlReportPWithExact: .displayF2$, emlTwoWayAnova.pB
+        @emlReportPWithExact: .interLabel$, emlTwoWayAnova.pAB
+    endif
+
     # Effect sizes
+    # D41: the three partial eta-squareds were printed bare, with no
+    # small/medium/large gloss, while the one-way and Kruskal-Wallis reports
+    # both gloss theirs. The label is computed once per effect here and the
+    # same string goes to the report and to the export.
+    @emlFormatEffectLabel: emlTwoWayAnova.partialEtaSqA, "eta_squared"
+    .etaLabelA$ = emlFormatEffectLabel.label$
+    @emlFormatEffectLabel: emlTwoWayAnova.partialEtaSqB, "eta_squared"
+    .etaLabelB$ = emlFormatEffectLabel.label$
+    @emlFormatEffectLabel: emlTwoWayAnova.partialEtaSqAB, "eta_squared"
+    .etaLabelAB$ = emlFormatEffectLabel.label$
+
     @emlReportBlank
     @emlReportSection: "Effect Sizes (partial eta-squared)"
     if emlShowExplanations
         @emlWizardExplainEffectEta2: emlTwoWayAnova.partialEtaSqA
     endif
-    @emlReportLine: .displayF1$, emlTwoWayAnova.partialEtaSqA, 4
+    .etaTextA$ = fixed$ (emlTwoWayAnova.partialEtaSqA, 4)
+    if .etaLabelA$ <> ""
+        .etaTextA$ = .etaTextA$ + "  (" + .etaLabelA$ + ")"
+    endif
+    @emlReportLineString: .displayF1$, .etaTextA$
     if emlShowExplanations
         @emlWizardExplainEffectEta2: emlTwoWayAnova.partialEtaSqB
     endif
-    @emlReportLine: .displayF2$, emlTwoWayAnova.partialEtaSqB, 4
+    .etaTextB$ = fixed$ (emlTwoWayAnova.partialEtaSqB, 4)
+    if .etaLabelB$ <> ""
+        .etaTextB$ = .etaTextB$ + "  (" + .etaLabelB$ + ")"
+    endif
+    @emlReportLineString: .displayF2$, .etaTextB$
     if emlShowExplanations
         @emlWizardExplainEffectEta2: emlTwoWayAnova.partialEtaSqAB
     endif
-    @emlReportLine: .interLabel$, emlTwoWayAnova.partialEtaSqAB, 4
+    .etaTextAB$ = fixed$ (emlTwoWayAnova.partialEtaSqAB, 4)
+    if .etaLabelAB$ <> ""
+        .etaTextAB$ = .etaTextAB$ + "  (" + .etaLabelAB$ + ")"
+    endif
+    @emlReportLineString: .interLabel$, .etaTextAB$
+
+    # D36: the block went ANOVA table → partial eta-squared → CSV → footer
+    # with no cell means and no marginal means, so a significant interaction
+    # said the factors are not additive but never in which direction. The
+    # values were already computed: @emlTwoWayAnova carries every cell's
+    # label, n and mean, and both factors' level lists.
+    if emlTwoWayAnova.nCells > 0
+        @emlReportBlank
+        @emlReportSection: "Cell Means"
+        appendInfoLine: ""
+        appendInfoLine: left$ (.displayF1$ + "                    ", 18),
+        ... left$ (.displayF2$ + "                    ", 18),
+        ... left$ ("n" + "        ", 8),
+        ... "Mean"
+        for .a from 1 to emlTwoWayAnova.nLev1
+            for .b from 1 to emlTwoWayAnova.nLev2
+                # @emlTwoWayAnova keys cells as level1 + newline$ + level2.
+                .cellKey$ = emlTwoWayAnova.lev1$[.a] + newline$
+                ... + emlTwoWayAnova.lev2$[.b]
+                .hit = 0
+                for .c from 1 to emlTwoWayAnova.nCells
+                    if emlTwoWayAnova.cellLabel$[.c] = .cellKey$
+                        .hit = .c
+                    endif
+                endfor
+                .rowA$ = replace$ (emlTwoWayAnova.lev1$[.a], "_", " ", 0)
+                if length (.rowA$) > 16
+                    .rowA$ = left$ (.rowA$, 16)
+                endif
+                .rowB$ = replace$ (emlTwoWayAnova.lev2$[.b], "_", " ", 0)
+                if length (.rowB$) > 16
+                    .rowB$ = left$ (.rowB$, 16)
+                endif
+                if .hit = 0
+                    .cellNText$ = "0"
+                    .cellMeanText$ = "empty cell"
+                else
+                    .cellNText$ = string$ (emlTwoWayAnova.cellN[.hit])
+                    .cellMeanText$ = fixed$ (emlTwoWayAnova.cellMean[.hit], 4)
+                endif
+                appendInfoLine: left$ (.rowA$ + "                    ", 18),
+                ... left$ (.rowB$ + "                    ", 18),
+                ... left$ (.cellNText$ + "        ", 8),
+                ... .cellMeanText$
+            endfor
+        endfor
+
+        # Marginal means, weighted by cell n so they stay correct on an
+        # unbalanced design.
+        @emlReportBlank
+        @emlReportSection: "Marginal Means"
+        appendInfoLine: ""
+        appendInfoLine: left$ ("Level" + "                            ", 30),
+        ... left$ ("n" + "        ", 8),
+        ... "Mean"
+        for .a from 1 to emlTwoWayAnova.nLev1
+            .margN = 0
+            .margSum = 0
+            .keyA$ = emlTwoWayAnova.lev1$[.a] + newline$
+            for .c from 1 to emlTwoWayAnova.nCells
+                # The newline in the key anchors the match, so a level named
+                # "a" cannot swallow the cells of a level named "ab".
+                .headA$ = left$ (emlTwoWayAnova.cellLabel$[.c],
+                ... length (.keyA$))
+                if .headA$ = .keyA$
+                    .margN = .margN + emlTwoWayAnova.cellN[.c]
+                    .margSum = .margSum
+                    ... + emlTwoWayAnova.cellN[.c] * emlTwoWayAnova.cellMean[.c]
+                endif
+            endfor
+            .margLabel$ = .displayF1$ + ": "
+            ... + replace$ (emlTwoWayAnova.lev1$[.a], "_", " ", 0)
+            if length (.margLabel$) > 28
+                .margLabel$ = left$ (.margLabel$, 28)
+            endif
+            if .margN > 0
+                .margText$ = fixed$ (.margSum / .margN, 4)
+            else
+                .margText$ = "no data"
+            endif
+            appendInfoLine: left$ (.margLabel$ + "                            ", 30),
+            ... left$ (string$ (.margN) + "        ", 8),
+            ... .margText$
+        endfor
+        for .b from 1 to emlTwoWayAnova.nLev2
+            .margN = 0
+            .margSum = 0
+            .keyB$ = newline$ + emlTwoWayAnova.lev2$[.b]
+            for .c from 1 to emlTwoWayAnova.nCells
+                .tailB$ = right$ (emlTwoWayAnova.cellLabel$[.c],
+                ... length (.keyB$))
+                if .tailB$ = .keyB$
+                    .margN = .margN + emlTwoWayAnova.cellN[.c]
+                    .margSum = .margSum
+                    ... + emlTwoWayAnova.cellN[.c] * emlTwoWayAnova.cellMean[.c]
+                endif
+            endfor
+            .margLabel$ = .displayF2$ + ": "
+            ... + replace$ (emlTwoWayAnova.lev2$[.b], "_", " ", 0)
+            if length (.margLabel$) > 28
+                .margLabel$ = left$ (.margLabel$, 28)
+            endif
+            if .margN > 0
+                .margText$ = fixed$ (.margSum / .margN, 4)
+            else
+                .margText$ = "no data"
+            endif
+            appendInfoLine: left$ (.margLabel$ + "                            ", 30),
+            ... left$ (string$ (.margN) + "        ", 8),
+            ... .margText$
+        endfor
+    endif
 
     # CSV rows — one per effect
-    @emlFormatP: emlTwoWayAnova.pA
     # D34: there was no denominator df, no SS and no MS, so F(1,28)
     # exported as df=1.00 and the ANOVA table could not be reconstructed
     # from the file. Every term now carries both df, its SS and its MS, and
     # the error and total rows are exported too.
-    # D37: n1,n2 were literal 0,0. D41: effect_label was "".
+    #
+    # The two claims that used to stand here were both false when written.
+    # D37 was recorded as fixed by the n/n_cells fields below, but the Info
+    # window still reported no N at all — that is fixed above, where the
+    # header block now prints total N, cell count and per-cell n. D41 was
+    # recorded as fixed, but all three factor rows still emitted
+    # partial_eta_squared with no effect_label beside it — the labels are
+    # computed above and written below.
     @emlCSVSetTable: .tableName$
     @emlCSVTermType: "omnibus"
     .twLab$ = "Two-way ANOVA"
@@ -3962,6 +4334,7 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     @emlCSVAdd: .twLab$, .factor1$, "ms", emlTwoWayAnova.msA
     @emlCSVAdd: .twLab$, .factor1$, "partial_eta_squared",
     ... emlTwoWayAnova.partialEtaSqA
+    @emlCSVAddStr: .twLab$, .factor1$, "effect_label", .etaLabelA$
 
     @emlCSVAdd: .twLab$, .factor2$, "F", emlTwoWayAnova.fB
     @emlCSVAdd: .twLab$, .factor2$, "df1", emlTwoWayAnova.dfB
@@ -3971,6 +4344,7 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     @emlCSVAdd: .twLab$, .factor2$, "ms", emlTwoWayAnova.msB
     @emlCSVAdd: .twLab$, .factor2$, "partial_eta_squared",
     ... emlTwoWayAnova.partialEtaSqB
+    @emlCSVAddStr: .twLab$, .factor2$, "effect_label", .etaLabelB$
 
     @emlCSVAdd: .twLab$, .rawInterLabel$, "F", emlTwoWayAnova.fAB
     @emlCSVAdd: .twLab$, .rawInterLabel$, "df1", emlTwoWayAnova.dfAB
@@ -3980,6 +4354,7 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     @emlCSVAdd: .twLab$, .rawInterLabel$, "ms", emlTwoWayAnova.msAB
     @emlCSVAdd: .twLab$, .rawInterLabel$, "partial_eta_squared",
     ... emlTwoWayAnova.partialEtaSqAB
+    @emlCSVAddStr: .twLab$, .rawInterLabel$, "effect_label", .etaLabelAB$
 
     @emlCSVTermType: "error"
     @emlCSVAdd: .twLab$, "Error", "df1", emlTwoWayAnova.dfError

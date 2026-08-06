@@ -125,6 +125,26 @@ emlGraphsPresetYCol$ = ""
 emlGraphsPresetRegressionLine = 0
 emlGraphsPresetCorrType$ = ""
 emlGraphsPresetCorrection$ = ""
+# Scatter dot presets. 0 / -1 mean "not supplied" — a wrapper that wants the
+# figure drawn with a particular dot size or with points hidden sets these,
+# and the D103 sentinels below make that choice beat the remembered previous
+# dialog value on the second and later scatter of a session.
+emlGraphsPresetDotSize = 0
+emlGraphsPresetShowDots = -1
+
+# D103 — "a preset arrived for this call" sentinels.
+#
+# The scatter column-mapping page rebuilds its dialog defaults on every pass.
+# It used to do that by copying prev_* over whatever the preset bridge had
+# just set, so the FIRST scatter in a session honoured the wrapper's preset
+# (prev_* was still at its "unset" initializer) and every later one silently
+# discarded it in favour of the last dialog's choice. Each sentinel is raised
+# only when a preset was actually supplied, and cleared as soon as the page
+# consumes it, so a preset wins when present and the remembered value still
+# applies when it is absent. Same shape as scatterPresetHasGroup.
+scatterPresetHasRegression = 0
+scatterPresetHasDotSize = 0
+scatterPresetHasDots = 0
 scatterPresetHasGroup = 0
 histPresetHasGroup = 0
 spPresetHasGroup = 0
@@ -756,9 +776,18 @@ endproc
 # ============================================================================
 # ADJUSTMENT-METHOD LOOKUP
 # ============================================================================
-# Maps the "Adjustment method" optionmenu index used by every annotate-capable
-# column-mapping dialog onto the string that @emlBridgeGroupComparison expects
-# in annotCorrectionMethod$. Index 2 (Holm) is the default everywhere.
+# Maps the "Adjustment method (nonparametric post-hoc only)" optionmenu index
+# used by every annotate-capable column-mapping dialog onto the string that
+# @emlBridgeGroupComparison expects in annotCorrectionMethod$. Index 2 (Holm)
+# is the default everywhere.
+#
+# D25. The control is consumed ONLY on the nonparametric (Dunn) post-hoc path.
+# A parametric k >= 3 comparison annotates with Tukey, which carries its own
+# correction, so the setting is inert there. Praat cannot grey a field out
+# conditionally inside a single form — the whole form is built before the user
+# touches anything — so the field NAME carries the condition instead. The
+# parenthesised part is stripped by Praat when it derives the variable name,
+# so the value still arrives as adjustment_method and no call site changes.
 #
 # Arguments:
 #   .idx — 1 = Bonferroni, 2 = Holm, 3 = Benjamini-Hochberg
@@ -777,6 +806,153 @@ endproc
 
 
 # ============================================================================
+# DEFAULT FIGURE TITLE
+# ============================================================================
+# D43 / D89 (Rule 28A). The figure used to be drawn with no title at all
+# whenever the Title field was left blank, which is the out-of-box case on
+# every path: the plugin knew the table name and every mapped column and put
+# none of it on the figure, so a reader given the PNG alone could not tell
+# what was measured or on what.
+#
+# WHY IT IS COMPOSED HERE AND NOT IN THE FORM. The Title field lives on the
+# FIRST page of the dialog — above the graph-type menu and two pages above the
+# column mapping — so at the moment Praat builds that field there is nothing
+# to compose from. Praat forms are built in one pass; a field cannot read a
+# value the user has not been shown yet. The title is therefore composed at
+# draw time, where every mapped column name is known, and written back into
+# prev_title$ so that from the SECOND invocation onwards the Title field opens
+# pre-filled with the composed text and the user can edit or clear it.
+#
+# The caller keeps prev_autoTitle$ = this procedure's last result. A title
+# equal to that string is one the user accepted rather than wrote, so it is
+# recomposed from the current mapping instead of being carried over stale when
+# the graph type or the columns change.
+#
+# Column names go through @emlCapitalizeLabel / @emlSanitizeLabel, so an
+# underscore in a column name becomes a space rather than a Praat subscript
+# marker and a "%" cannot turn the rest of the title italic. A title the user
+# typed never reaches this procedure and is never rewritten.
+#
+# Reads main-scope state: graph_type, objectId and the per-type column-name
+# variables. Only the branch for the live graph type is evaluated, so the
+# variables belonging to other types need not exist.
+#
+# Outputs:
+#   .result$ — composed title, or "" when there is nothing to say
+# ============================================================================
+procedure emlComposeGraphTitle
+    .result$ = ""
+    .source$ = ""
+    .value$ = ""
+    .x$ = ""
+    .sub$ = ""
+
+    if objectId > 0
+        selectObject: objectId
+        .full$ = selected$ ()
+        ; "Table demo_twoway" -> "demo_twoway"; works for Sound/Pitch/Ltas too
+        .space = index (.full$, " ")
+        if .space > 0
+            .source$ = right$ (.full$, length (.full$) - .space)
+        else
+            .source$ = .full$
+        endif
+        @emlSanitizeLabel: .source$
+        .source$ = emlSanitizeLabel.result$
+    endif
+
+    if graph_type <= 4
+        ; Acoustic objects have no column mapping — name the object and the view
+        if .source$ <> ""
+            .result$ = graphTypeName$[graph_type] + ": " + .source$
+        endif
+        goto COMPOSE_TITLE_DONE
+    endif
+
+    if graph_type = 5
+        .value$ = valueColName$
+        .x$ = timeColName$
+        .sub$ = groupColName$
+    elsif graph_type = 6 or graph_type = 7 or graph_type = 9
+        .value$ = valueColName$
+        .x$ = groupColName$
+    elsif graph_type = 8
+        .value$ = scatterYCol$
+        .x$ = scatterXCol$
+        .sub$ = scatterGroupCol$
+    elsif graph_type = 10
+        .value$ = histValueCol$
+        .sub$ = histGroupCol$
+    elsif graph_type = 11
+        .value$ = gvValueCol$
+        .x$ = gvCatCol$
+        .sub$ = gvSubCol$
+    elsif graph_type = 12
+        .value$ = gbValueCol$
+        .x$ = gbCatCol$
+        .sub$ = gbSubCol$
+    elsif graph_type = 13
+        .value$ = ciValueCol$
+        .x$ = ciTimeCol$
+        .sub$ = ciGroupCol$
+    elsif graph_type = 14
+        .value$ = spValueCol$
+        .x$ = spCondCol$
+        .sub$ = spGroupCol$
+    endif
+
+    ; A subgroup that repeats the x column says nothing twice
+    if .sub$ = .x$
+        .sub$ = ""
+    endif
+
+    if .value$ = ""
+        ; Nothing mapped yet — fall back to naming the source
+        if .source$ <> ""
+            .result$ = graphTypeName$[graph_type] + ": " + .source$
+        endif
+        goto COMPOSE_TITLE_DONE
+    endif
+
+    @emlCapitalizeLabel: .value$
+    .result$ = emlCapitalizeLabel.result$
+
+    if graph_type = 10
+        .result$ = "Distribution of " + .result$
+    endif
+
+    if .x$ <> ""
+        @emlSanitizeLabel: .x$
+        if graph_type = 5 or graph_type = 13
+            .result$ = .result$ + " over " + emlSanitizeLabel.result$
+        elsif graph_type = 8
+            .result$ = .result$ + " vs " + emlSanitizeLabel.result$
+        else
+            .result$ = .result$ + " by " + emlSanitizeLabel.result$
+        endif
+    endif
+
+    if .sub$ <> ""
+        @emlSanitizeLabel: .sub$
+        if .x$ = ""
+            .result$ = .result$ + " by " + emlSanitizeLabel.result$
+        else
+            .result$ = .result$ + " and " + emlSanitizeLabel.result$
+        endif
+    endif
+
+    if .source$ <> ""
+        .result$ = .result$ + " (" + .source$ + ")"
+    endif
+
+    label COMPOSE_TITLE_DONE
+    if objectId > 0
+        selectObject: objectId
+    endif
+endproc
+
+
+# ============================================================================
 # WORKFLOW — Main interactive graph creation loop
 # ============================================================================
 # WARNING: This procedure reads and writes main-body scope variables
@@ -790,7 +966,19 @@ endproc
 # ============================================================================
 procedure emlGraphsWorkflow: .objectId
 
-    # Enable explanations in the graphs/drawing path
+    # Enable explanations in the graphs/drawing path.
+    #
+    # D102. This gate is global. Raising it here and walking away made every
+    # LATER analysis report in the same session verbose, so report content was
+    # order-dependent: the same test printed different text depending on
+    # whether a figure had been drawn first. The bottom of this procedure now
+    # calls @emlResetExplanations, which puts the gate back to the default
+    # declared in stats/eml-output.praat — deliberately the declared default
+    # and not a literal 0, so this file cannot drift from that declaration the
+    # way the original hardcoded pair did. Whatever the calling wrapper does
+    # after Draw returns, it sees the same gate it would have seen without the
+    # Draw. The "Quit" buttons inside the form call exitScript, which ends the
+    # script and its entire variable scope, so they need no reset of their own.
     emlShowExplanations = 1
 
     # =================================================================
@@ -898,6 +1086,12 @@ prev_violinShowJitter = 0
 # Range persistence (per graph type, retained across "Draw Another")
 lastDrawnGraphType = 0
 prev_title$ = ""
+# D43 / D89. The last title @emlComposeGraphTitle produced. prev_title$ holds
+# what the Title field will show next time; prev_autoTitle$ records whether
+# that text was composed for the user or typed by them, which is the only way
+# to tell an accepted auto-title (recompose from the new mapping) from a
+# deliberate one (leave it alone).
+prev_autoTitle$ = ""
 prev_subtitle$ = ""
 prev_f0_timeMin = 0
 prev_f0_timeMax = 0
@@ -1008,12 +1202,17 @@ scatterShowDots = 1
         endif
     endif
 
+    # D103. Every preset that lands in a scatter dialog default also raises its
+    # sentinel. Without it the scatter page overwrote these three lines from
+    # prev_* further down and the wrapper's request was lost on every call
+    # after the first.
     if emlGraphsPresetAnalysisType > 0
         scatterAnalysisType = emlGraphsPresetAnalysisType
         annotate = 1
         if scatterAnalysisType >= 2
             scatterRegressionLine = 1
             scatterShowFormula = 1
+            scatterPresetHasRegression = 1
         endif
         emlGraphsPresetAnalysisType = 0
     endif
@@ -1021,7 +1220,20 @@ scatterShowDots = 1
     if emlGraphsPresetRegressionLine > 0
         scatterRegressionLine = 1
         scatterShowFormula = 1
+        scatterPresetHasRegression = 1
         emlGraphsPresetRegressionLine = 0
+    endif
+
+    if emlGraphsPresetDotSize > 0
+        scatterDotSize = emlGraphsPresetDotSize
+        scatterPresetHasDotSize = 1
+        emlGraphsPresetDotSize = 0
+    endif
+
+    if emlGraphsPresetShowDots >= 0
+        scatterShowDots = emlGraphsPresetShowDots
+        scatterPresetHasDots = 1
+        emlGraphsPresetShowDots = -1
     endif
 
     if emlGraphsPresetCorrType$ <> ""
@@ -1126,7 +1338,7 @@ repeat
                 for iMenu from 1 to filteredNMenuItems
                     option: filteredMenuLabel$[iMenu]
                 endfor
-            sentence: "Title", prev_title$
+            sentence: "Title (blank = auto from table and columns)", prev_title$
             sentence: "Subtitle", prev_subtitle$
             optionmenu: "Color mode", config_colorMode
                 option: "Color"
@@ -1439,7 +1651,7 @@ repeat
                         option: "Palatino"
                         option: "Courier"
                     comment: "🏷️ Axis labels"
-                    comment: "Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)"
+                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -1638,7 +1850,7 @@ repeat
                         option: "Palatino"
                         option: "Courier"
                     comment: "🏷️ Axis labels"
-                    comment: "Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)"
+                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -1789,7 +2001,7 @@ repeat
                         option: "Palatino"
                         option: "Courier"
                     comment: "🏷️ Axis labels"
-                    comment: "Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)"
+                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -1953,7 +2165,7 @@ repeat
                     boolean: "Show poles", tmpShowPoles
                     boolean: "Show speckles", tmpShowSpeckles
                     comment: "🏷️ Axis labels"
-                    comment: "Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)"
+                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -2289,7 +2501,7 @@ repeat
                                 option: "Palatino"
                                 option: "Courier"
                             comment: "🏷️ Axis labels (blank = auto from column)"
-                            comment: "Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)"
+                            comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
                             sentence: "X axis label", tmpXLabel$
                             sentence: "Y axis label", tmpYLabel$
                         endif
@@ -2642,7 +2854,7 @@ repeat
                     optionmenu: "Test type", tmpBarTestType
                         option: "Parametric"
                         option: "Nonparametric"
-                    optionmenu: "Adjustment method", prev_annotAdjustIdx
+                    optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
                         option: "Bonferroni"
                         option: "Holm"
                         option: "Benjamini-Hochberg"
@@ -2688,7 +2900,7 @@ repeat
                         option: "Palatino"
                         option: "Courier"
                     comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)"
+                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -2997,7 +3209,7 @@ repeat
                     optionmenu: "Test type", tmpViolinTestType
                         option: "Parametric"
                         option: "Nonparametric"
-                    optionmenu: "Adjustment method", prev_annotAdjustIdx
+                    optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
                         option: "Bonferroni"
                         option: "Holm"
                         option: "Benjamini-Hochberg"
@@ -3044,7 +3256,7 @@ repeat
                         option: "Palatino"
                         option: "Courier"
                     comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)"
+                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -3342,8 +3554,23 @@ repeat
         endif
 
         # Regression defaults (1=None, 2=Line, 3=Formula, 4=Both)
-        if prev_scatterRegressionLine >= 0
-            scatterRegressionLine = prev_scatterRegressionLine
+        #
+        # D103. Preset first, remembered value second. The restore below used
+        # to run unconditionally and therefore ran AFTER the preset bridge had
+        # already set scatterRegressionLine / scatterShowFormula, so the second
+        # and every later scatter of a session threw the calling wrapper's
+        # preset away and re-used the last dialog's choice instead. The
+        # sentinel is consumed here, so a Redraw goes back to the remembered
+        # value — which is what the user last chose in this very dialog.
+        if scatterPresetHasRegression
+            scatterPresetHasRegression = 0
+        else
+            if prev_scatterRegressionLine >= 0
+                scatterRegressionLine = prev_scatterRegressionLine
+            endif
+            if prev_scatterShowFormula >= 0
+                scatterShowFormula = prev_scatterShowFormula
+            endif
         endif
         if scatterRegressionLine = 1 and scatterShowFormula = 1
             tmpRegression = 4
@@ -3355,12 +3582,16 @@ repeat
             tmpRegression = 1
         endif
 
-        # Scatter-specific controls
-        if prev_scatterDotSize > 0
+        # Scatter-specific controls — same preset-beats-remembered rule (D103)
+        if scatterPresetHasDotSize
+            scatterPresetHasDotSize = 0
+        elsif prev_scatterDotSize > 0
             scatterDotSize = prev_scatterDotSize
         endif
         tmpDotSize = scatterDotSize
-        if prev_scatterShowDots >= 0
+        if scatterPresetHasDots
+            scatterPresetHasDots = 0
+        elsif prev_scatterShowDots >= 0
             scatterShowDots = prev_scatterShowDots
         endif
         tmpShowDots = scatterShowDots
@@ -3459,7 +3690,7 @@ repeat
                         option: "Palatino"
                         option: "Courier"
                     comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)"
+                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -3799,7 +4030,7 @@ repeat
                     optionmenu: "Test type", tmpBoxTestType
                         option: "Parametric"
                         option: "Nonparametric"
-                    optionmenu: "Adjustment method", prev_annotAdjustIdx
+                    optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
                         option: "Bonferroni"
                         option: "Holm"
                         option: "Benjamini-Hochberg"
@@ -3846,7 +4077,7 @@ repeat
                         option: "Palatino"
                         option: "Courier"
                     comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)"
+                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -4141,7 +4372,7 @@ repeat
                     optionmenu: "Test type", prev_histAnnotTestType
                         option: "Parametric"
                         option: "Nonparametric"
-                    optionmenu: "Adjustment method", prev_annotAdjustIdx
+                    optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
                         option: "Bonferroni"
                         option: "Holm"
                         option: "Benjamini-Hochberg"
@@ -4184,7 +4415,7 @@ repeat
                         option: "Palatino"
                         option: "Courier"
                     comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)"
+                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -4405,6 +4636,45 @@ repeat
                     gvValueIdx = .iPreset
                 endif
             endfor
+
+            # D107 (D32 in this branch). The preset bridge carries a category
+            # and a value column and has no slot for the SECOND factor, so
+            # gvSubIdx used to keep the positional initializer min (2, nCols)
+            # here. On demo_twoway (subject, voice_type, task, SPL_dB) that is
+            # voice_type — the column the preset had just assigned to Category
+            # — so the two-way wrapper's out-of-box figure opened with Category
+            # and Subgroup pointing at the same column and drew a single-factor
+            # plot with `task` absent entirely. The D32 role-guessing fix went
+            # into the else-branch below and NOT into this one, which is the
+            # branch the two-way wrapper actually takes. Same guesser, run here
+            # too, with a collision guard so it cannot re-suggest a column the
+            # preset already claimed.
+            @emlGuessColumnRoles: objectId
+            .gvSubGuess = emlGuessColumnRoles.factor2Idx
+            if .gvSubGuess = gvCatIdx or .gvSubGuess = gvValueIdx
+                .gvSubGuess = emlGuessColumnRoles.factor1Idx
+            endif
+            if .gvSubGuess > 0 and .gvSubGuess <> gvCatIdx and .gvSubGuess <> gvValueIdx
+                gvSubIdx = .gvSubGuess
+            endif
+            if gvSubIdx = gvCatIdx or gvSubIdx = gvValueIdx
+                # Still colliding: take the first CATEGORICAL column that is
+                # neither Category nor Value and is not the subject/ID column.
+                # min (2, nCols) is a column-order accident — it is what put a
+                # 48-level identifier one sort order away from becoming the
+                # subgroup — so the fallback tests the data, not the position.
+                .gvSubFound = 0
+                for .iSub from 1 to nCols
+                    if .iSub <> gvCatIdx and .iSub <> gvValueIdx and .iSub <> emlGuessColumnRoles.subjectIdx and .gvSubFound = 0
+                        @emlCheckNumericColumn: objectId, colName$[.iSub]
+                        if emlCheckNumericColumn.isNumeric = 0
+                            gvSubIdx = .iSub
+                            .gvSubFound = 1
+                        endif
+                    endif
+                endfor
+            endif
+
             # Consumed — clear so Redraw uses prev_* persistence
             emlGraphsPresetGroupCol$ = ""
             emlGraphsPresetDataCol$ = ""
@@ -4486,7 +4756,7 @@ repeat
                     optionmenu: "Test type", prev_gvAnnotTestType
                         option: "Parametric"
                         option: "Nonparametric"
-                    optionmenu: "Adjustment method", prev_annotAdjustIdx
+                    optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
                         option: "Bonferroni"
                         option: "Holm"
                         option: "Benjamini-Hochberg"
@@ -4529,7 +4799,7 @@ repeat
                         option: "Palatino"
                         option: "Courier"
                     comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)"
+                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -4809,7 +5079,7 @@ repeat
                     optionmenu: "Test type", prev_gbAnnotTestType
                         option: "Parametric"
                         option: "Nonparametric"
-                    optionmenu: "Adjustment method", prev_annotAdjustIdx
+                    optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
                         option: "Bonferroni"
                         option: "Holm"
                         option: "Benjamini-Hochberg"
@@ -4852,7 +5122,7 @@ repeat
                         option: "Palatino"
                         option: "Courier"
                     comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)"
+                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -5193,7 +5463,7 @@ repeat
                         option: "Palatino"
                         option: "Courier"
                     comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · _sub · \_% prints % (e.g. %F_0)"
+                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -5569,6 +5839,22 @@ repeat
     totalCanvasHeight = figure_height + matrixGap + matrixPanelHeight
 
     # =================================================================
+    # PRE-DISPATCH: default title (D43 / D89)
+    # =================================================================
+    # Last possible moment before the title is measured and drawn, and the
+    # first moment at which the column mapping exists. See the header on
+    # @emlComposeGraphTitle for why it cannot be done in the form itself.
+    # Blank means "auto"; a title the user typed is left exactly as typed.
+    @emlComposeGraphTitle
+    if title$ = "" or title$ = prev_autoTitle$
+        title$ = emlComposeGraphTitle.result$
+    endif
+    prev_autoTitle$ = emlComposeGraphTitle.result$
+    # Pre-fill the Title field for the next pass through the form, so a Redraw
+    # shows the composed title as editable text rather than an empty box.
+    prev_title$ = title$
+
+    # =================================================================
     # PRE-DISPATCH: universal frame measurement
     # =================================================================
     @emlMeasureGraphLayout: figure_width, figure_height, title$, x_axis_label$, y_axis_label$
@@ -5871,4 +6157,27 @@ until keepGoing = 0
     emlGraphsPresetAnnotate = 0
     emlGraphsPresetXCol$ = ""
     emlGraphsPresetYCol$ = ""
+    emlGraphsPresetRegressionLine = 0
+    emlGraphsPresetAnalysisType = 0
+    emlGraphsPresetCorrType$ = ""
+    emlGraphsPresetCorrection$ = ""
+    emlGraphsPresetDotSize = 0
+    emlGraphsPresetShowDots = -1
+
+    # --- D103: clear the scatter preset sentinels ---
+    # These say "a wrapper supplied this setting for THIS call". Leaving one
+    # set would make the next call's dialog defaults ignore the user's own
+    # remembered choice, which is the mirror image of the bug they fix.
+    scatterPresetHasRegression = 0
+    scatterPresetHasDotSize = 0
+    scatterPresetHasDots = 0
+    scatterPresetHasGroup = 0
+
+    # --- D102: restore the explanation gate ---
+    # Raised at the top of this procedure for the graphs path only. It is a
+    # global, so leaving it raised made every later analysis report in the
+    # session verbose and made report content depend on draw order. The gate
+    # goes back to the default declared in stats/eml-output.praat, not to a
+    # literal written out here.
+    @emlResetExplanations
 endproc
