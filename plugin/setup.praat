@@ -69,6 +69,15 @@ Add menu command: "Objects", "New", "Pairwise comparisons...", "-- eml posthoc -
 Add menu command: "Objects", "New", "-- eml graphs --", "Pairwise comparisons...", 1, ""
 Add menu command: "Objects", "New", "EML Graphs...", "-- eml graphs --", 1, "scripts/eml-graphs.praat"
 
+# Data
+# Placed after the analyses rather than before them because it is most often
+# reached AFTER a result looks wrong -- "why is n only 38?" -- even though the
+# best time to run it is before. It works with or without a Table selected:
+# without one it offers file mode, which is the only way to catch a problem
+# Praat's CSV reader destroys on the way in.
+Add menu command: "Objects", "New", "-- eml data --", "EML Graphs...", 1, ""
+Add menu command: "Objects", "New", "Check & repair data...", "-- eml data --", 1, "scripts/eml-check-data.praat"
+
 # ── TABLED, 6 August 2026, by author ruling ───────────────────────────────
 #
 # Batch voice analysis, EML Stats Quick Start and the interactive tutorial
