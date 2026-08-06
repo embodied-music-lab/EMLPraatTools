@@ -4306,3 +4306,80 @@ procedure emlLMMSummary
         appendInfoLine: "boundary (singular) fit: see help('isSingular')"
     endif
 endproc
+
+
+# ============================================================================
+# @emlRunLMMAnalysis — Linear mixed model orchestrator (Phase 4).
+# Shared entry point for the menu front-end, the wizard, and the direct API.
+#
+# Moved here from stats/eml-analysis.praat on 6 August 2026 so that the
+# orchestrator and the engine it calls cannot be included separately. See
+# the note left at its old location.
+# Wraps the verified EML LMM engine (@emlLMM) and its lme4-style reporter
+# (@emlLMMSummary), then appends marginal/conditional R-squared and, on
+# request, 95% Wald CIs. DRY: every path calls THIS, so a change here
+# propagates to all of them.
+#
+# Input:  .tableId          — Table with the response + predictor + group cols
+#         .formula$         — lme4-style formula, e.g. "y ~ x + (1 + x | group)"
+#         .contrastCoding$  — "treatment" / "sum" / "helmert" / "poly"
+#         .useREML          — 1 = REML (default), 0 = ML
+#         .doR2             — 1 = append Nakagawa/Johnson R-squared
+#         .doCI             — 1 = append 95% Wald CIs for fixed effects
+# Output: .error$           — non-empty on failure (nothing printed)
+# ============================================================================
+procedure emlRunLMMAnalysis: .tableId, .formula$, .contrastCoding$, .useREML, .doR2, .doCI
+    .error$ = ""
+    # Menu item that WOULD work on this table, when one exists (D93).
+    .remedy$ = ""
+
+    selectObject: .tableId
+    .tableName$ = selected$ ("Table")
+
+    @emlLMM: .tableId, .formula$, .contrastCoding$, .useREML, 3000
+    if emlLMM.error$ <> ""
+        .error$ = emlLMM.error$
+        goto END_LMM_ORCH
+    endif
+
+    # Standard lme4-style summary (engine's own reporter — reused, not copied).
+    @emlLMMSummary
+
+    # Marginal / conditional R-squared (canonical Nakagawa/Johnson).
+    if .doR2
+        @emlJohnsonR2
+        appendInfoLine: ""
+        .r2mLine$ = "Marginal R" + "^2" + " (fixed effects): "
+            ... + fixed$ (emlJohnsonR2.r2Marginal, 4)
+        appendInfoLine: .r2mLine$
+        .r2cLine$ = "Conditional R" + "^2" + " (fixed + random): "
+            ... + fixed$ (emlJohnsonR2.r2Conditional, 4)
+        appendInfoLine: .r2cLine$
+    endif
+
+    # 95% Wald confidence intervals for the fixed effects (t / Satterthwaite df).
+    if .doCI
+        @emlWaldCI: 0.95
+        appendInfoLine: ""
+        .ciHdr$ = "95% Wald confidence intervals (fixed effects):"
+        appendInfoLine: .ciHdr$
+        for .j from 1 to emlLMM.nFixedCols
+            .cn$ = emlModelMatrix.colName'.j'$
+            .lo$ = fixed$ (emlWaldCI.lower# [.j], 4)
+            .hi$ = fixed$ (emlWaldCI.upper# [.j], 4)
+            .ciRow$ = "  " + .cn$ + ": [" + .lo$ + ", " + .hi$ + "]"
+            appendInfoLine: .ciRow$
+        endfor
+    endif
+
+    if emlLMM.converged = 0
+        appendInfoLine: ""
+        .warnLine$ = "WARNING: the optimizer did not fully converge — "
+            ... + "interpret estimates with caution (try simplifying the "
+            ... + "random-effects structure)."
+        appendInfoLine: .warnLine$
+    endif
+
+    label END_LMM_ORCH
+    selectObject: .tableId
+endproc

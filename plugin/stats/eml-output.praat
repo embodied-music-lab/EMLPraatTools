@@ -1186,3 +1186,69 @@ endproc
 # ============================================================================
 # END OF MODULE
 # ============================================================================
+
+
+# ============================================================================
+# @emlReportDescriptiveAnalysis
+#
+# Lives here, in the output module, and not in eml-analysis.praat, because
+# scripts/eml-describe-table.praat calls it and does not include the analysis
+# module. Moving it here was forced by driving the wrapper: the parse check
+# passed and the menu item raised "Procedure not found" at line 9434 the
+# moment Run was clicked. A reporting procedure belongs with the reporting
+# procedures anyway.
+# ============================================================================
+
+procedure emlReportDescriptiveAnalysis: .tableName$, .dataCol$, .nValid,
+... .nUndefined, .parseNote$
+    .displayColumn$ = replace$ (.dataCol$, "_", " ", 0)
+    .displayTable$ = replace$ (.tableName$, "_", " ", 0)
+
+    @emlReportHeader: "Descriptive Statistics"
+
+    @emlReportLineString: "Table", .displayTable$
+    @emlReportLineString: "Column", .displayColumn$
+    @emlReportLine: "N (valid)", .nValid, 0
+    if .nUndefined > 0
+        @emlReportLine: "N (excluded)", .nUndefined, 0
+        if .parseNote$ <> ""
+            @emlWrapText: .parseNote$, 62
+            for .pl from 1 to emlWrapText.nLines
+                appendInfoLine: "  ", emlWrapText.line$ [.pl]
+            endfor
+        endif
+    endif
+
+    @emlReportBlank
+    @emlReportSection: "Central Tendency"
+    @emlReportLine: "Mean", emlDescribe.mean, 4
+    @emlReportLine: "Median", emlDescribe.median, 4
+    @emlReportLine: "SEM", emlDescribe.sem, 4
+
+    @emlReportBlank
+    @emlReportSection: "Dispersion"
+    @emlReportLine: "SD", emlDescribe.sd, 4
+    @emlReportLine: "Variance", emlDescribe.variance, 4
+    @emlReportLine: "Range", emlDescribe.range, 4
+    @emlReportLine: "Min", emlDescribe.min, 4
+    @emlReportLine: "Max", emlDescribe.max, 4
+
+    @emlReportBlank
+    @emlReportSection: "Quartiles"
+    @emlReportLine: "Q1", emlDescribe.q1, 4
+    @emlReportLine: "Q2 (Median)", emlDescribe.median, 4
+    @emlReportLine: "Q3", emlDescribe.q3, 4
+    @emlReportLine: "IQR", emlDescribe.iqr, 4
+
+    @emlReportBlank
+    @emlReportSection: "Distribution Shape"
+    @emlReportLine: "Skewness", emlDescribe.skewness, 4
+    @emlReportLine: "Kurtosis (excess)", emlDescribe.kurtosis, 4
+
+    @emlReportBlank
+    @emlReportSection: "95% Confidence Interval"
+    @emlReportLine: "Lower", emlDescribe.ci95Lower, 4
+    @emlReportLine: "Upper", emlDescribe.ci95Upper, 4
+
+    @emlReportFooter
+endproc

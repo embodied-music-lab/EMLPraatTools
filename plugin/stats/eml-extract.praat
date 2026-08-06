@@ -79,14 +79,20 @@ procedure emlExtractColumn: .tableId, .columnName$
     # Initialize outputs
     .n = 0
     .nUndefined = 0
+    .nEmpty = 0
+    .nLocale = 0
+    .nUnreadable = 0
+    .nCoerced = 0
+    .nLeadingDot = 0
+    .note$ = ""
     .error$ = ""
     .data# = zero#(0)
-    
+
     # Select table and get dimensions
     selectObject: .tableId
     .nRows = Get number of rows
     .nCols = Get number of columns
-    
+
     # Check if column exists
     .colExists = 0
     for .c from 1 to .nCols
@@ -96,7 +102,7 @@ procedure emlExtractColumn: .tableId, .columnName$
             .colExists = 1
         endif
     endfor
-    
+
     if .colExists = 0
         .error$ = "Column not found: "
         .error$ = .error$ + .columnName$
@@ -105,23 +111,49 @@ procedure emlExtractColumn: .tableId, .columnName$
         .data# = zero#(0)
         .n = 0
     else
-        # Allocate vector
+        # D96. The old body kept every cell for which "Get value:" returned
+        # something other than undefined, which sounds like the right filter
+        # and is not. Praat coerces "1,5" to 1, so a European decimal comma
+        # did not drop a row — it put a DIFFERENT NUMBER into the mean, with
+        # nothing anywhere in the report to say so. Rows are now kept only if
+        # the cell is strictly the number it looks like, and the reasons the
+        # others were dropped are counted separately by @emlAuditColumn.
+        #
+        # The fast path exists because the classifier probes Praat's
+        # numericiser per cell, which is not free. A column that passes the
+        # column-level strict test and contains no empty cell cannot contain
+        # any of the four bad kinds, so the per-cell pass is skipped.
+        @eml_strictNumericColumn: .tableId, .columnName$
+        .fastPath = 0
+        if eml_strictNumericColumn.strict = 1
+            if eml_strictNumericColumn.unreadable = 0
+                .fastPath = 1
+            endif
+        endif
+
         .data# = zero#(.nRows)
         .n = 0
-        .nUndefined = 0
-        
-        # Extract values
+
+        if .fastPath = 0
+            @emlAuditColumn: .tableId, .columnName$
+            .nEmpty = emlAuditColumn.nEmpty
+            .nLocale = emlAuditColumn.nLocale
+            .nUnreadable = emlAuditColumn.nUnreadable
+            .nCoerced = emlAuditColumn.nCoerced
+            .nLeadingDot = emlAuditColumn.nLeadingDot
+            .note$ = emlAuditColumn.note$
+        endif
+
         for .row from 1 to .nRows
-            selectObject: .tableId
-            .val = Get value: .row, .columnName$
-            if .val <> undefined
+            @eml_readCell: .tableId, .row, .columnName$, .fastPath
+            if eml_readCell.value <> undefined
                 .n = .n + 1
-                .data#[.n] = .val
-            else
-                .nUndefined = .nUndefined + 1
+                .data#[.n] = eml_readCell.value
             endif
         endfor
-        
+
+        .nUndefined = .nRows - .n
+
         # Resize to actual count if there were undefined values
         if .n < .nRows and .n > 0
             .temp# = zero#(.n)
@@ -233,11 +265,16 @@ procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, 
         .count2 = 0
         .countExcluded = 0
         
+        # D96: one decision per column, then one read path per cell.
+        @eml_openColumn: .tableId, .measureCol$
+        .measureClean = eml_openColumn.clean
+
         for .row from 1 to .nRows
             selectObject: .tableId
             .grp$ = Get value: .row, .groupCol$
-            .val = Get value: .row, .measureCol$
-            
+            @eml_readCell: .tableId, .row, .measureCol$, .measureClean
+            .val = eml_readCell.value
+
             if .val <> undefined
                 if .grp$ = .label1$
                     .count1 = .count1 + 1
@@ -266,8 +303,9 @@ procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, 
         for .row from 1 to .nRows
             selectObject: .tableId
             .grp$ = Get value: .row, .groupCol$
-            .val = Get value: .row, .measureCol$
-            
+            @eml_readCell: .tableId, .row, .measureCol$, .measureClean
+            .val = eml_readCell.value
+
             if .val <> undefined
                 if .grp$ = .label1$
                     .idx1 = .idx1 + 1
@@ -342,13 +380,20 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
         # First pass: count complete pairs
         .countComplete = 0
         .countExcluded = 0
-        
+
+        # D96: this is the ROW-wise path. It must agree cell for cell with
+        # the column-wise paths above, so it reads through the same helper.
+        @eml_openColumn: .tableId, .col1$
+        .clean1 = eml_openColumn.clean
+        @eml_openColumn: .tableId, .col2$
+        .clean2 = eml_openColumn.clean
+
         for .row from 1 to .nRows
-            selectObject: .tableId
-            .val1 = Get value: .row, .col1$
-            selectObject: .tableId
-            .val2 = Get value: .row, .col2$
-            
+            @eml_readCell: .tableId, .row, .col1$, .clean1
+            .val1 = eml_readCell.value
+            @eml_readCell: .tableId, .row, .col2$, .clean2
+            .val2 = eml_readCell.value
+
             if .val1 <> undefined and .val2 <> undefined
                 .countComplete = .countComplete + 1
             else
@@ -364,11 +409,11 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
             # Second pass: populate
             .idx = 0
             for .row from 1 to .nRows
-                selectObject: .tableId
-                .val1 = Get value: .row, .col1$
-                selectObject: .tableId
-                .val2 = Get value: .row, .col2$
-                
+                @eml_readCell: .tableId, .row, .col1$, .clean1
+                .val1 = eml_readCell.value
+                @eml_readCell: .tableId, .row, .col2$, .clean2
+                .val2 = eml_readCell.value
+
                 if .val1 <> undefined and .val2 <> undefined
                     .idx = .idx + 1
                     .data1#[.idx] = .val1
@@ -840,6 +885,386 @@ procedure eml_strictNumericColumn: .tableId, .columnName$
             removeObject: .probeId
         endif
     endif
+endproc
+
+
+# ============================================================================
+# @eml_classifyCell (internal helper)                                    D96
+# ============================================================================
+# Decide what ONE cell actually is. "Get value:" answers a narrower question
+# than a user asks: it returns `undefined` for an empty cell and for the
+# string "n/a" alike, and it returns a plausible WRONG NUMBER for "1,5". Three
+# different problems, one indistinguishable outcome, which is finding D96.
+#
+# The kinds, and why each is separate:
+#
+#   0  numeric     the cell reads as the number it looks like
+#   1  empty       nothing is there; this is missing data, and the
+#                  complete-case convention of 21 July (FIX_NOTES.md,
+#                  audit item C1/C2) is the right treatment for it
+#   2  locale      a comma stands where a decimal point belongs. Praat reads
+#                  "1,5" as 1 — not a dropped row, a DIFFERENT NUMBER. The
+#                  user has the value; it is being discarded or corrupted by
+#                  a locale mismatch, and that is recoverable if they are
+#                  told. It is not guessed at automatically: "1,234" is 1.234
+#                  to a European reader and 1234 to an American one, and this
+#                  procedure has no basis to choose.
+#   3  unreadable  text that is not a number in any locale. The column is not
+#                  a measure — this is the D82 family arriving by another
+#                  route, and it is not missing data.
+#   4  coerced     reads as a number, but not the one written: "1/2" is 1,
+#                  "2 3" is 2, "30%" is 0.3. Silently wrong, like kind 2, but
+#                  with no locale story behind it.
+#   5  leadingDot  ".5" — a decimal point with no leading zero. Praat does
+#                  not read it at all, so it is a dropped row rather than a
+#                  wrong value, and the remedy is one character. Separated
+#                  from kind 3 for that reason.
+#
+# Strictness is decided by @eml_strictNumericColumn's sentinel probe, not by
+# reimplementing Praat's numeric grammar, and not by number(): number() parses
+# a LEADING PREFIX, so number("1.234,5") is 1.234 and a defined result proves
+# nothing. Verified against Praat 6.6.30 before this was written.
+#
+# Arguments:
+#   .raw$ - the cell's literal contents
+#
+# Output:
+#   .kind      - 0..5 as above
+#   .trimmed$  - .raw$ with surrounding whitespace removed (case preserved)
+#   .recovered - for kinds 2 and 5, the value the cell would have once
+#                written the way Praat reads numbers; undefined otherwise
+# ============================================================================
+procedure eml_classifyCell: .raw$
+    .kind = 3
+    .recovered = undefined
+
+    # eml_normalizeLabel lower-cases as well as trimming, which is wanted for
+    # label matching and not wanted here, so trim without it.
+    .trimmed$ = .raw$
+    .trimming = 1
+    while .trimming = 1
+        .trimming = 0
+        if length (.trimmed$) > 0
+            .c1$ = left$ (.trimmed$, 1)
+            if .c1$ = " " or .c1$ = tab$
+                .trimmed$ = right$ (.trimmed$, length (.trimmed$) - 1)
+                .trimming = 1
+            endif
+        endif
+    endwhile
+    .trimming = 1
+    while .trimming = 1
+        .trimming = 0
+        if length (.trimmed$) > 0
+            .c2$ = right$ (.trimmed$, 1)
+            if .c2$ = " " or .c2$ = tab$
+                .trimmed$ = left$ (.trimmed$, length (.trimmed$) - 1)
+                .trimming = 1
+            endif
+        endif
+    endwhile
+
+    if .trimmed$ = "" or .trimmed$ = "--undefined--"
+        .kind = 1
+        goto CLASSIFY_DONE
+    endif
+
+    # A percent sign is tested BEFORE strictness, because Praat's numericiser
+    # accepts "30%" — verified, it passes the sentinel probe — and returns
+    # 0.3. Someone writing 30% in a measure column means 30, so the strict
+    # verdict is true and useless: the cell reads as a number a hundred times
+    # smaller than the one written. That is kind 4 by definition.
+    if index (.trimmed$, "%") > 0
+        .kind = 4
+        goto CLASSIFY_DONE
+    endif
+
+    @eml_strictOneCell: .trimmed$
+    if eml_strictOneCell.strict = 1
+        .kind = 0
+        goto CLASSIFY_DONE
+    endif
+
+    # A bare leading decimal point is not numeric to Praat, so ".5" is a
+    # dropped row and not a wrong value. It is separated from kind 3 because
+    # it is unambiguously recoverable and the remedy is one character, where
+    # kind 3 means the column is not a measure at all.
+    .lead1$ = left$ (.trimmed$, 1)
+    .lead2$ = left$ (.trimmed$, 2)
+    if .lead1$ = "." or .lead2$ = "-." or .lead2$ = "+."
+        @eml_strictOneCell: "0" + .trimmed$
+        if eml_strictOneCell.strict = 1
+            .kind = 5
+            .recovered = number ("0" + .trimmed$)
+            goto CLASSIFY_DONE
+        endif
+        if .lead2$ = "-." or .lead2$ = "+."
+            @eml_strictOneCell: .lead1$ + "0"
+            ... + right$ (.trimmed$, length (.trimmed$) - 1)
+            if eml_strictOneCell.strict = 1
+                .kind = 5
+                .recovered = number (.lead1$ + "0"
+                ... + right$ (.trimmed$, length (.trimmed$) - 1))
+                goto CLASSIFY_DONE
+            endif
+        endif
+    endif
+
+    if index (.trimmed$, ",") > 0
+        .swapped$ = replace$ (.trimmed$, ",", ".", 0)
+        @eml_strictOneCell: .swapped$
+        if eml_strictOneCell.strict = 1
+            .kind = 2
+            .recovered = number (.swapped$)
+            goto CLASSIFY_DONE
+        endif
+    endif
+
+    # Not strictly numeric and not a decimal comma. If Praat still coerces it
+    # to something, the row is not dropped — it is silently altered.
+    .lenient = number (.trimmed$)
+    if .lenient <> undefined
+        .kind = 4
+    else
+        .kind = 3
+    endif
+
+    label CLASSIFY_DONE
+endproc
+
+
+# ============================================================================
+# @eml_strictOneCell (internal helper)
+# Strictness verdict for a single literal, via the same sentinel probe
+# @eml_strictNumericColumn uses on a whole column.
+# ============================================================================
+procedure eml_openColumn: .tableId, .columnName$
+    # Decide ONCE per column whether the per-cell classifier is needed. A
+    # column that numericises strictly and holds no empty cell cannot hold a
+    # bad cell of any kind, so every read from it can go straight through
+    # "Get value:". Callers hoist this out of their row loop and pass the
+    # answer to @eml_readCell.
+    .clean = 0
+    selectObject: .tableId
+    .rows = Get number of rows
+    if .rows > 0
+        @eml_strictNumericColumn: .tableId, .columnName$
+        if eml_strictNumericColumn.strict = 1
+            if eml_strictNumericColumn.unreadable = 0
+                .clean = 1
+            endif
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @eml_readCell (internal helper)                                        D96
+# ============================================================================
+# The single numeric read. Returns the cell's value when the cell is strictly
+# the number it looks like, and `undefined` otherwise — including for "1,5",
+# which "Get value:" would have returned as 1.
+#
+# Every extraction path in this file reads through here, which is the point:
+# the row-wise paths (condition matrices, paired columns) and the column-wise
+# paths (single column, group vectors) cannot otherwise be relied on to give
+# the same account of the same cell, and before this they did not.
+#
+# Arguments:
+#   .tableId, .row, .columnName$
+#   .clean - @eml_openColumn's verdict for this column
+#
+# Output:
+#   .value - the number, or undefined
+# ============================================================================
+procedure eml_readCell: .tableId, .row, .columnName$, .clean
+    selectObject: .tableId
+    if .clean = 1
+        .value = Get value: .row, .columnName$
+    else
+        .cell$ = Get value: .row, .columnName$
+        @eml_classifyCell: .cell$
+        if eml_classifyCell.kind = 0
+            .value = number (eml_classifyCell.trimmed$)
+        else
+            .value = undefined
+        endif
+    endif
+endproc
+
+
+procedure eml_strictOneCell: .literal$
+    .strict = 0
+    if .literal$ <> ""
+        .probe = Create Table with column names: "eml_oneCellProbe", 1, "v"
+        Set string value: 1, "v", .literal$
+        @eml_strictNumericColumn: .probe, "v"
+        .strict = eml_strictNumericColumn.strict
+        removeObject: .probe
+    endif
+endproc
+
+
+# ============================================================================
+# @emlAuditColumn                                                        D96
+# ============================================================================
+# Classify EVERY cell of a column and report the conditions separately, with
+# the first offending row and its literal contents for each. This is the one
+# place that decision is made; every caller that needs to describe why rows
+# went missing asks here, so a table read row-wise and a table read
+# column-wise cannot give different accounts of the same cell.
+#
+# It does NOT change which rows are analysed. Complete-case with the exclusion
+# stated is the convention settled on 21 July and it is not reopened here.
+# What changes is that the statement is specific.
+#
+# Arguments:
+#   .tableId     - ID of the Table object
+#   .columnName$ - name of the column to audit
+#
+# Output:
+#   .nRows, .nValid, .nEmpty, .nLocale, .nUnreadable, .nCoerced
+#   .firstEmptyRow / .firstLocaleRow / .firstUnreadableRow / .firstCoercedRow
+#   .firstLocaleValue$ / .firstUnreadableValue$ / .firstCoercedValue$
+#   .note$  - user-facing sentences, one per condition present, "" if the
+#             column is clean. Callers print it verbatim.
+#   .error$ - column not found
+# ============================================================================
+procedure emlAuditColumn: .tableId, .columnName$
+    .nRows = 0
+    .nValid = 0
+    .nEmpty = 0
+    .nLocale = 0
+    .nUnreadable = 0
+    .nCoerced = 0
+    .nLeadingDot = 0
+    .firstEmptyRow = 0
+    .firstLocaleRow = 0
+    .firstUnreadableRow = 0
+    .firstCoercedRow = 0
+    .firstLeadingDotRow = 0
+    .firstLocaleValue$ = ""
+    .firstUnreadableValue$ = ""
+    .firstCoercedValue$ = ""
+    .firstLeadingDotValue$ = ""
+    .note$ = ""
+    .error$ = ""
+
+    selectObject: .tableId
+    .nRows = Get number of rows
+    .nCols = Get number of columns
+
+    .colExists = 0
+    for .c from 1 to .nCols
+        selectObject: .tableId
+        .checkName$ = Get column label: .c
+        if .checkName$ = .columnName$
+            .colExists = 1
+        endif
+    endfor
+
+    if .colExists = 0
+        .error$ = "Column not found: " + .columnName$
+        goto AUDIT_DONE
+    endif
+
+    # Fast path, for the same reason as in @emlExtractColumn: a column that
+    # numericises strictly and has no empty cell is all kind 0, and probing
+    # each cell to rediscover that is wasted work on a long table.
+    if .nRows > 0
+        @eml_strictNumericColumn: .tableId, .columnName$
+        if eml_strictNumericColumn.strict = 1
+            if eml_strictNumericColumn.unreadable = 0
+                .nValid = .nRows
+                goto AUDIT_DONE
+            endif
+        endif
+    endif
+
+    for .row from 1 to .nRows
+        selectObject: .tableId
+        .cell$ = Get value: .row, .columnName$
+        @eml_classifyCell: .cell$
+
+        if eml_classifyCell.kind = 0
+            .nValid = .nValid + 1
+        elsif eml_classifyCell.kind = 1
+            .nEmpty = .nEmpty + 1
+            if .firstEmptyRow = 0
+                .firstEmptyRow = .row
+            endif
+        elsif eml_classifyCell.kind = 2
+            .nLocale = .nLocale + 1
+            if .firstLocaleRow = 0
+                .firstLocaleRow = .row
+                .firstLocaleValue$ = eml_classifyCell.trimmed$
+            endif
+        elsif eml_classifyCell.kind = 4
+            .nCoerced = .nCoerced + 1
+            if .firstCoercedRow = 0
+                .firstCoercedRow = .row
+                .firstCoercedValue$ = eml_classifyCell.trimmed$
+            endif
+        elsif eml_classifyCell.kind = 5
+            .nLeadingDot = .nLeadingDot + 1
+            if .firstLeadingDotRow = 0
+                .firstLeadingDotRow = .row
+                .firstLeadingDotValue$ = eml_classifyCell.trimmed$
+            endif
+        else
+            .nUnreadable = .nUnreadable + 1
+            if .firstUnreadableRow = 0
+                .firstUnreadableRow = .row
+                .firstUnreadableValue$ = eml_classifyCell.trimmed$
+            endif
+        endif
+    endfor
+
+    # --- the note ---
+    # Ordered by how much damage the condition does, not by how common it is.
+    # A wrong number outranks a missing one: a dropped row shows up in N, a
+    # corrupted value does not show up anywhere.
+    .sep$ = ""
+    if .nLocale > 0
+        .note$ = .note$ + .sep$ + string$ (.nLocale)
+        ... + " cell(s) use a comma where a decimal point belongs (row "
+        ... + string$ (.firstLocaleRow) + ": " + .firstLocaleValue$
+        ... + "). Praat reads these as a different number, so they are "
+        ... + "excluded rather than guessed at. Replace the commas with "
+        ... + "points to use these values."
+        .sep$ = " "
+    endif
+    if .nCoerced > 0
+        .note$ = .note$ + .sep$ + string$ (.nCoerced)
+        ... + " cell(s) are read as a number other than the one written "
+        ... + "(row " + string$ (.firstCoercedRow) + ": "
+        ... + .firstCoercedValue$ + "). Excluded."
+        .sep$ = " "
+    endif
+    if .nLeadingDot > 0
+        .note$ = .note$ + .sep$ + string$ (.nLeadingDot)
+        ... + " cell(s) begin with a bare decimal point (row "
+        ... + string$ (.firstLeadingDotRow) + ": "
+        ... + .firstLeadingDotValue$ + "). Praat does not read these as "
+        ... + "numbers. Write a leading zero to use these values."
+        .sep$ = " "
+    endif
+    if .nUnreadable > 0
+        .note$ = .note$ + .sep$ + string$ (.nUnreadable)
+        ... + " cell(s) are not numeric in any locale (row "
+        ... + string$ (.firstUnreadableRow) + ": "
+        ... + .firstUnreadableValue$ + "). This is a type error, not "
+        ... + "missing data."
+        .sep$ = " "
+    endif
+    if .nEmpty > 0
+        .note$ = .note$ + .sep$ + string$ (.nEmpty)
+        ... + " cell(s) are empty (row " + string$ (.firstEmptyRow)
+        ... + " first). Treated as missing data."
+        .sep$ = " "
+    endif
+
+    label AUDIT_DONE
 endproc
 
 
@@ -1391,34 +1816,33 @@ endproc
 # uses lenient coercion and keeps cells such as "1,5", "30%" and "1/2".
 # ============================================================================
 procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
+    # D96. This used to filter rows with "self [col] <> undefined", which is
+    # Praat's LENIENT test: it keeps "1,5" (as 1) and "30%" (as 0.3). The
+    # survivors were then handed to the strict numericiser, which of course
+    # rejected them, and the procedure called exitScript: — tearing the whole
+    # run down from inside a helper, with a message about ranks, because one
+    # cell in one group was written in a European locale.
+    #
+    # @emlExtractColumn now applies exactly the same per-cell classification
+    # every other path uses, so the row is dropped for a stated reason and
+    # the analysis continues on the rows that are genuinely usable.
     .error$ = ""
     @eml_groupSubset: .tableId, .groupCol$, .groupLabel$
     .tempGroup = eml_groupSubset.subsetId
-    selectObject: .tempGroup
-    .tempClean = Extract rows where: ~self [.dataCol$] <> undefined
-    removeObject: .tempGroup
-    selectObject: .tempClean
-    .n = Get number of rows
-    if .n > 0
-        @eml_strictNumericColumn: .tempClean, .dataCol$
-        .isStrict = eml_strictNumericColumn.strict
-        if .isStrict = 1
-            selectObject: .tempClean
-            .data# = Get all numbers in column: .dataCol$
-        else
-            @emlValidateNumericColumn: .tempClean, .dataCol$
-            .error$ = "Column '" + .dataCol$ + "' in group '"
-            .error$ = .error$ + .groupLabel$ + "': "
-            .error$ = .error$ + emlValidateNumericColumn.message$
-            .n = 0
-            .data# = zero# (0)
-            removeObject: .tempClean
-            exitScript: .error$
-        endif
-    else
+    @emlExtractColumn: .tempGroup, .dataCol$
+    if emlExtractColumn.error$ <> ""
+        .error$ = emlExtractColumn.error$
+        .n = 0
         .data# = zero# (0)
+        .nExcluded = 0
+        .note$ = ""
+    else
+        .n = emlExtractColumn.n
+        .data# = emlExtractColumn.data#
+        .nExcluded = emlExtractColumn.nUndefined
+        .note$ = emlExtractColumn.note$
     endif
-    removeObject: .tempClean
+    removeObject: .tempGroup
 endproc
 
 
@@ -1451,46 +1875,26 @@ endproc
 # the "<> undefined" filter is not sufficient protection.
 # ============================================================================
 procedure eml_getGroupPairedData: .tableId, .colX$, .colY$, .groupCol$, .groupLabel$
+    # D96, same rewrite as @eml_getGroupData: the lenient row filter and the
+    # exitScript: teardown are gone, replaced by @emlExtractPairedColumns,
+    # which reads both columns through @eml_readCell.
     .error$ = ""
     @eml_groupSubset: .tableId, .groupCol$, .groupLabel$
     .tempGroup = eml_groupSubset.subsetId
-    selectObject: .tempGroup
-    .beforeN = Get number of rows
-    .tempClean = Extract rows where: ~self [.colX$] <> undefined and self [.colY$] <> undefined
-    removeObject: .tempGroup
-    selectObject: .tempClean
-    .n = Get number of rows
-    if .n > 0
-        @eml_strictNumericColumn: .tempClean, .colX$
-        .strictX = eml_strictNumericColumn.strict
-        @eml_strictNumericColumn: .tempClean, .colY$
-        .strictY = eml_strictNumericColumn.strict
-        if .strictX = 1 and .strictY = 1
-            selectObject: .tempClean
-            .dataX# = Get all numbers in column: .colX$
-            .dataY# = Get all numbers in column: .colY$
-        else
-            .badCol$ = .colY$
-            if .strictX = 0
-                .badCol$ = .colX$
-            endif
-            @emlValidateNumericColumn: .tempClean, .badCol$
-            .error$ = "Column '" + .badCol$ + "' in group '"
-            .error$ = .error$ + .groupLabel$ + "': "
-            .error$ = .error$ + emlValidateNumericColumn.message$
-            .n = 0
-            .dataX# = zero# (0)
-            .dataY# = zero# (0)
-            .nExcluded = 0
-            removeObject: .tempClean
-            exitScript: .error$
-        endif
-    else
+    @emlExtractPairedColumns: .tempGroup, .colX$, .colY$
+    if emlExtractPairedColumns.error$ <> ""
+        .error$ = emlExtractPairedColumns.error$
+        .n = 0
         .dataX# = zero# (0)
         .dataY# = zero# (0)
+        .nExcluded = 0
+    else
+        .n = emlExtractPairedColumns.n
+        .dataX# = emlExtractPairedColumns.data1#
+        .dataY# = emlExtractPairedColumns.data2#
+        .nExcluded = emlExtractPairedColumns.nExcludedRows
     endif
-    .nExcluded = .beforeN - .n
-    removeObject: .tempClean
+    removeObject: .tempGroup
 endproc
 
 

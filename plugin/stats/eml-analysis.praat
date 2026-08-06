@@ -906,64 +906,18 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
 
     @emlDescribe: .data#
 
-    @emlReportDescriptiveAnalysis: .tableName$, .dataCol$, .nValid, .nUndefined
+    # D96. The count of excluded rows was already honest; what it did not say
+    # was WHY, and the three conditions need different responses from the
+    # user. @emlExtractColumn has the breakdown, so pass it through rather
+    # than recomputing it here and risking a second, disagreeing account.
+    @emlReportDescriptiveAnalysis: .tableName$, .dataCol$, .nValid,
+    ... .nUndefined, emlExtractColumn.note$
 
     label END_DESCRIBE
     selectObject: .tableId
 endproc
 
 
-# ============================================================================
-# @emlReportDescriptiveAnalysis — NEW
-# Extracted from inline code in eml-describe-table.praat.
-# ============================================================================
-
-procedure emlReportDescriptiveAnalysis: .tableName$, .dataCol$, .nValid, .nUndefined
-    .displayColumn$ = replace$ (.dataCol$, "_", " ", 0)
-    .displayTable$ = replace$ (.tableName$, "_", " ", 0)
-
-    @emlReportHeader: "Descriptive Statistics"
-
-    @emlReportLineString: "Table", .displayTable$
-    @emlReportLineString: "Column", .displayColumn$
-    @emlReportLine: "N (valid)", .nValid, 0
-    if .nUndefined > 0
-        @emlReportLine: "N (undefined)", .nUndefined, 0
-    endif
-
-    @emlReportBlank
-    @emlReportSection: "Central Tendency"
-    @emlReportLine: "Mean", emlDescribe.mean, 4
-    @emlReportLine: "Median", emlDescribe.median, 4
-    @emlReportLine: "SEM", emlDescribe.sem, 4
-
-    @emlReportBlank
-    @emlReportSection: "Dispersion"
-    @emlReportLine: "SD", emlDescribe.sd, 4
-    @emlReportLine: "Variance", emlDescribe.variance, 4
-    @emlReportLine: "Range", emlDescribe.range, 4
-    @emlReportLine: "Min", emlDescribe.min, 4
-    @emlReportLine: "Max", emlDescribe.max, 4
-
-    @emlReportBlank
-    @emlReportSection: "Quartiles"
-    @emlReportLine: "Q1", emlDescribe.q1, 4
-    @emlReportLine: "Q2 (Median)", emlDescribe.median, 4
-    @emlReportLine: "Q3", emlDescribe.q3, 4
-    @emlReportLine: "IQR", emlDescribe.iqr, 4
-
-    @emlReportBlank
-    @emlReportSection: "Distribution Shape"
-    @emlReportLine: "Skewness", emlDescribe.skewness, 4
-    @emlReportLine: "Kurtosis (excess)", emlDescribe.kurtosis, 4
-
-    @emlReportBlank
-    @emlReportSection: "95% Confidence Interval"
-    @emlReportLine: "Lower", emlDescribe.ci95Lower, 4
-    @emlReportLine: "Upper", emlDescribe.ci95Upper, 4
-
-    @emlReportFooter
-endproc
 
 
 # ============================================================================
@@ -1211,6 +1165,7 @@ endproc
 # ============================================================================
 procedure emlExtractConditionMatrix: .tableId, .conditionCols$
     .error$ = ""
+    .parseNote$ = ""
     .nExcluded = 0
     .k = 0
     .rest$ = .conditionCols$ + "|"
@@ -1239,14 +1194,31 @@ procedure emlExtractConditionMatrix: .tableId, .conditionCols$
             goto END_EXTRACT_COND
         endif
     endfor
+    # D96. This is the row-wise reader: a subject is complete only if every
+    # condition cell is present. It used to ask "Get value:", which counts a
+    # European "1,5" as present and then puts 1 into the matrix. It now goes
+    # through @eml_readCell like every other extraction path, so a row is
+    # complete here exactly when it would be complete anywhere else.
+    for .j from 1 to .k
+        @eml_openColumn: .tableId, .colLabel$ [.j]
+        .clean [.j] = eml_openColumn.clean
+        @emlAuditColumn: .tableId, .colLabel$ [.j]
+        if emlAuditColumn.note$ <> ""
+            if .parseNote$ <> ""
+                .parseNote$ = .parseNote$ + " "
+            endif
+            .parseNote$ = .parseNote$ + .colLabel$ [.j] + ": "
+            ... + emlAuditColumn.note$
+        endif
+    endfor
+
     # First pass: count complete rows
     .nComplete = 0
     for .row from 1 to .nRows
         .complete = 1
         for .j from 1 to .k
-            selectObject: .tableId
-            .cellVal = Get value: .row, .colLabel$ [.j]
-            if .cellVal = undefined
+            @eml_readCell: .tableId, .row, .colLabel$ [.j], .clean [.j]
+            if eml_readCell.value = undefined
                 .complete = 0
             endif
         endfor
@@ -1266,17 +1238,16 @@ procedure emlExtractConditionMatrix: .tableId, .conditionCols$
     for .row from 1 to .nRows
         .complete = 1
         for .j from 1 to .k
-            selectObject: .tableId
-            .cellVal = Get value: .row, .colLabel$ [.j]
-            if .cellVal = undefined
+            @eml_readCell: .tableId, .row, .colLabel$ [.j], .clean [.j]
+            .cellValue [.j] = eml_readCell.value
+            if eml_readCell.value = undefined
                 .complete = 0
             endif
         endfor
         if .complete = 1
             .r = .r + 1
             for .j from 1 to .k
-                selectObject: .tableId
-                .data## [.r, .j] = Get value: .row, .colLabel$ [.j]
+                .data## [.r, .j] = .cellValue [.j]
             endfor
         endif
     endfor
@@ -1449,15 +1420,79 @@ procedure emlRMAnovaTest: .data##, .n, .k
         endfor
     endfor
     .ssErr = .ssTot - .ssCond - .ssSubj
+    if .ssErr < 0
+        .ssErr = 0
+    endif
     .dfCond = .k - 1
     .dfErr = (.k - 1) * (.n - 1)
     .msCond = .ssCond / .dfCond
     .msErr = .ssErr / .dfErr
+
+    # --- D97: refuse a zero error term -----------------------------------
+    # If every subject shows the same pattern across conditions, the
+    # subject x condition residual is identically zero, .ssErr is zero, and
+    # F is a division by zero. Praat does not raise on that; it returns a
+    # finite number built out of the last bits of the subtraction, which is
+    # how this printed F(2, 6) = 21110623253299200.0000 with a p-value
+    # carrying 48 decimal places. The post-hoc in this same module already
+    # caught the condition and refused, naming it "All differences are
+    # identical (zero variance)" — the omnibus simply never asked.
+    #
+    # The floor has to be RELATIVE. An exactly-linear design leaves .ssErr
+    # at around 1e-16 of .ssTot rather than at 0, so an absolute test for
+    # equality with zero does not fire.
+    .error$ = ""
+    .warning$ = ""
+    .degenerate = 0
+    if .ssTot <= 0
+        .degenerate = 1
+        .error$ = "Every value in every condition is identical, so there "
+        ... + "is no variance to partition."
+    elsif .ssErr <= 1e-10 * .ssTot
+        .degenerate = 1
+        .error$ = "The subject x condition residual is zero: every "
+        ... + "subject shows exactly the same pattern across conditions. "
+        ... + "The error term for the F test is therefore zero and F is "
+        ... + "undefined. Data that behaves this way is usually "
+        ... + "simulated, already averaged, or derived from one of its "
+        ... + "own columns."
+    endif
+
+    if .degenerate
+        .fStat = undefined
+        .p = undefined
+        .ggEpsilon = undefined
+        .pGG = undefined
+        goto RM_TEST_DONE
+    endif
+
     .fStat = .msCond / .msErr
     .p = fisherQ (.fStat, .dfCond, .dfErr)
     @emlGGEpsilon: .data##, .n, .k
     .ggEpsilon = emlGGEpsilon.epsilon
     .pGG = fisherQ (.fStat, .dfCond * .ggEpsilon, .dfErr * .ggEpsilon)
+
+    # --- D98: say when the design has no information left ----------------
+    # With n = 2 subjects, df error = k - 1 and the Greenhouse-Geisser
+    # epsilon is forced to its lower bound 1 / (k - 1) whatever the data
+    # are. The result computes and prints; nothing about it is
+    # interpretable. Epsilon pinned to the bound is the tell, and it is
+    # already in hand at the moment of printing.
+    if .n <= 2
+        .warning$ = "n = " + string$ (.n) + " subjects. Greenhouse-Geisser "
+        ... + "epsilon is forced to its lower bound "
+        ... + fixed$ (1 / (.k - 1), 4) + " for any data at this n, so the "
+        ... + "sphericity correction carries no information. Read F, p "
+        ... + "and the corrected p as description of these two subjects, "
+        ... + "not as a test."
+    elsif .ggEpsilon <= 1 / (.k - 1) + 1e-9
+        .warning$ = "Greenhouse-Geisser epsilon is at its lower bound "
+        ... + fixed$ (1 / (.k - 1), 4) + ", the maximum possible departure "
+        ... + "from sphericity. The corrected p is the most conservative "
+        ... + "value the correction can produce."
+    endif
+
+    label RM_TEST_DONE
 endproc
 
 # ============================================================================
@@ -1489,6 +1524,14 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
 
     @emlRMAnovaTest: .data##, .n, .k
 
+    # D97. A zero error term is a property of the data, not a bad form
+    # setting, so there is no other menu item that would work on it: the
+    # remedy stays empty and the dialog says only what is wrong.
+    if emlRMAnovaTest.error$ <> ""
+        .error$ = emlRMAnovaTest.error$
+        goto END_RM
+    endif
+
     @emlCSVInit
     .h$ = "Repeated-measures ANOVA — " + .tableName$
     appendInfoLine: .h$
@@ -1510,6 +1553,16 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
         ... + fixed$ (emlRMAnovaTest.pGG, 4)
     appendInfoLine: .ggLine$
 
+    # D98. Printed immediately under the numbers it qualifies, not at the
+    # foot of the report, because a caveat below the post-hoc table reads
+    # as being about the post-hoc.
+    if emlRMAnovaTest.warning$ <> ""
+        @emlWrapText: "Caution: " + emlRMAnovaTest.warning$, 68
+        for .wl from 1 to emlWrapText.nLines
+            appendInfoLine: "  ", emlWrapText.line$ [.wl]
+        endfor
+    endif
+
     if .doPostHoc
         @emlRMPostHoc: .data##, .n, .k, "parametric", .adjMethod$
     endif
@@ -1518,6 +1571,13 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
             ... + " row(s) excluded for missing data (analyzed n = "
             ... + string$ (.n) + " complete cases)."
         appendInfoLine: .exclNote$
+        # D96: say WHICH condition dropped the row and why.
+        if emlExtractConditionMatrix.parseNote$ <> ""
+            @emlWrapText: emlExtractConditionMatrix.parseNote$, 66
+            for .pl from 1 to emlWrapText.nLines
+                appendInfoLine: "  ", emlWrapText.line$ [.pl]
+            endfor
+        endif
     endif
 
     label END_RM
@@ -1574,6 +1634,13 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
             ... + " row(s) excluded for missing data (analyzed n = "
             ... + string$ (.n) + " complete cases)."
         appendInfoLine: .exclNote$
+        # D96: say WHICH condition dropped the row and why.
+        if emlExtractConditionMatrix.parseNote$ <> ""
+            @emlWrapText: emlExtractConditionMatrix.parseNote$, 66
+            for .pl from 1 to emlWrapText.nLines
+                appendInfoLine: "  ", emlWrapText.line$ [.pl]
+            endfor
+        endif
     endif
 
     label END_FRIED
@@ -1695,76 +1762,21 @@ endproc
 
 
 # ============================================================================
-# @emlRunLMMAnalysis — Linear mixed model orchestrator (Phase 4).
-# Shared entry point for the menu front-end, the wizard, and the direct API.
-# Wraps the verified EML LMM engine (@emlLMM) and its lme4-style reporter
-# (@emlLMMSummary), then appends marginal/conditional R-squared and, on
-# request, 95% Wald CIs. DRY: every path calls THIS, so a change here
-# propagates to all of them.
+# @emlRunLMMAnalysis lived here until 6 August 2026. It now lives at the
+# foot of stats/eml-lmm.praat, beside the engine it calls.
 #
-# Input:  .tableId          — Table with the response + predictor + group cols
-#         .formula$         — lme4-style formula, e.g. "y ~ x + (1 + x | group)"
-#         .contrastCoding$  — "treatment" / "sum" / "helmert" / "poly"
-#         .useREML          — 1 = REML (default), 0 = ML
-#         .doR2             — 1 = append Nakagawa/Johnson R-squared
-#         .doCI             — 1 = append 95% Wald CIs for fixed effects
-# Output: .error$           — non-empty on failure (nothing printed)
+# It was moved, not deleted. The author tabled linear mixed models and took
+# the menu entry out of setup.praat on 5 August, but the orchestrator stayed
+# in this file — which every wrapper includes — while the engine it calls
+# (@emlLMM, @emlLMMSummary, @emlJohnsonR2, @emlWaldCI) is in a module no
+# wrapper includes. Praat resolves a procedure name when it is CALLED, so
+# nine wrappers carried four calls apiece that could not resolve, invisible
+# to any parse check. harness/check_includes.py finds this class of defect;
+# it was written after the same thing bit the describe wrapper on 6 August.
+#
+# Orchestrator and engine now travel together: including eml-lmm.praat gets
+# both, including neither gets neither, and there is no third state.
 # ============================================================================
-procedure emlRunLMMAnalysis: .tableId, .formula$, .contrastCoding$, .useREML, .doR2, .doCI
-    .error$ = ""
-    # Menu item that WOULD work on this table, when one exists (D93).
-    .remedy$ = ""
-
-    selectObject: .tableId
-    .tableName$ = selected$ ("Table")
-
-    @emlLMM: .tableId, .formula$, .contrastCoding$, .useREML, 3000
-    if emlLMM.error$ <> ""
-        .error$ = emlLMM.error$
-        goto END_LMM_ORCH
-    endif
-
-    # Standard lme4-style summary (engine's own reporter — reused, not copied).
-    @emlLMMSummary
-
-    # Marginal / conditional R-squared (canonical Nakagawa/Johnson).
-    if .doR2
-        @emlJohnsonR2
-        appendInfoLine: ""
-        .r2mLine$ = "Marginal R" + "^2" + " (fixed effects): "
-            ... + fixed$ (emlJohnsonR2.r2Marginal, 4)
-        appendInfoLine: .r2mLine$
-        .r2cLine$ = "Conditional R" + "^2" + " (fixed + random): "
-            ... + fixed$ (emlJohnsonR2.r2Conditional, 4)
-        appendInfoLine: .r2cLine$
-    endif
-
-    # 95% Wald confidence intervals for the fixed effects (t / Satterthwaite df).
-    if .doCI
-        @emlWaldCI: 0.95
-        appendInfoLine: ""
-        .ciHdr$ = "95% Wald confidence intervals (fixed effects):"
-        appendInfoLine: .ciHdr$
-        for .j from 1 to emlLMM.nFixedCols
-            .cn$ = emlModelMatrix.colName'.j'$
-            .lo$ = fixed$ (emlWaldCI.lower# [.j], 4)
-            .hi$ = fixed$ (emlWaldCI.upper# [.j], 4)
-            .ciRow$ = "  " + .cn$ + ": [" + .lo$ + ", " + .hi$ + "]"
-            appendInfoLine: .ciRow$
-        endfor
-    endif
-
-    if emlLMM.converged = 0
-        appendInfoLine: ""
-        .warnLine$ = "WARNING: the optimizer did not fully converge — "
-            ... + "interpret estimates with caution (try simplifying the "
-            ... + "random-effects structure)."
-        appendInfoLine: .warnLine$
-    endif
-
-    label END_LMM_ORCH
-    selectObject: .tableId
-endproc
 
 
 # ============================================================================

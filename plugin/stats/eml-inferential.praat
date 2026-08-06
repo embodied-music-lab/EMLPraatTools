@@ -2268,23 +2268,21 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
     selectObject: .tableId
     .nRows = Get number of rows
     if .nRows < 3
-        .error$ = "emlOneWayAnova: need at least 3 observations, got "
-        ... + string$ (.nRows)
+        .error$ = "Need at least 3 observations, got "
+        ... + string$ (.nRows) + "."
     endif
 
     if .error$ = ""
         .colIdx1 = Get column index: .dataColumn$
         if .colIdx1 = 0
-            .error$ = "emlOneWayAnova: data column not found: "
-            ... + .dataColumn$
+            .error$ = "Data column not found: " + .dataColumn$
         endif
     endif
 
     if .error$ = ""
         .colIdx2 = Get column index: .factorColumn$
         if .colIdx2 = 0
-            .error$ = "emlOneWayAnova: factor column not found: "
-            ... + .factorColumn$
+            .error$ = "Factor column not found: " + .factorColumn$
         endif
     endif
 
@@ -2293,15 +2291,61 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
     if .error$ = ""
         @emlCountGroups: .tableId, .factorColumn$
         if emlCountGroups.error$ <> ""
-            .error$ = "emlOneWayAnova: " + emlCountGroups.error$
+            .error$ = emlCountGroups.error$
         else
             .nGroups = emlCountGroups.nGroups
         endif
     endif
 
     if .error$ = "" and .nGroups < 2
-        .error$ = "emlOneWayAnova: need at least 2 groups, got "
-        ... + string$ (.nGroups)
+        .error$ = "Group column """ + .factorColumn$ + """ has "
+        ... + string$ (.nGroups) + " group. This test compares 2 or more."
+    endif
+
+    # --- Group sizes: state the diagnosis, not the first offender ---
+    # D99. The old form raised on the first group it found with fewer than
+    # two observations, so a factor column that is unique per row took one
+    # attempt per row to diagnose. Both numbers needed to say what is
+    # actually wrong are already in hand from @emlCountGroups, so say it:
+    # as many groups as rows means the column is an identifier, not a
+    # grouping. Where that is not the shape, name the offenders together.
+
+    if .error$ = ""
+        .nSingleton = 0
+        .singletonList$ = ""
+        for .g from 1 to .nGroups
+            @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
+            ... emlCountGroups.groupLabel$[.g]
+            if eml_getGroupData.n < 2
+                .nSingleton = .nSingleton + 1
+                if .nSingleton <= 5
+                    if .singletonList$ <> ""
+                        .singletonList$ = .singletonList$ + ", "
+                    endif
+                    .singletonList$ = .singletonList$ + """"
+                    ... + emlCountGroups.groupLabel$[.g] + """"
+                endif
+            endif
+        endfor
+
+        if .nSingleton > 0
+            if .nGroups = .nRows
+                .error$ = "Group column """ + .factorColumn$ + """ has "
+                ... + string$ (.nGroups) + " groups for "
+                ... + string$ (.nRows) + " rows - one per row. This is an "
+                ... + "identifier column, not a grouping column."
+            else
+                .error$ = string$ (.nSingleton) + " of "
+                ... + string$ (.nGroups) + " groups in """
+                ... + .factorColumn$ + """ have fewer than 2 observations: "
+                ... + .singletonList$
+                if .nSingleton > 5
+                    .error$ = .error$ + ", and "
+                    ... + string$ (.nSingleton - 5) + " more"
+                endif
+                .error$ = .error$ + ". Every group needs at least 2."
+            endif
+        endif
     endif
 
     # --- Compute ANOVA (two-pass sums of squares) ---
@@ -2323,21 +2367,16 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
             .gN = eml_getGroupData.n
             .gData# = eml_getGroupData.data#
 
-            if .gN < 2
-                .error$ = "emlOneWayAnova: group """
-                ... + emlCountGroups.groupLabel$[.g]
-                ... + """ has fewer than 2 observations"
-                .g = .nGroups
-            else
-                .gSum = sum (.gData#)
+            # Group sizes were validated above, so every group here has
+            # at least 2 observations.
+            .gSum = sum (.gData#)
 
-                .totalN = .totalN + .gN
-                .sumOfRawScores = .sumOfRawScores + .gSum
+            .totalN = .totalN + .gN
+            .sumOfRawScores = .sumOfRawScores + .gSum
 
-                .groupMean[.g] = mean (.gData#)
-                .groupN[.g] = .gN
-                .groupLabel$[.g] = emlCountGroups.groupLabel$[.g]
-            endif
+            .groupMean[.g] = mean (.gData#)
+            .groupN[.g] = .gN
+            .groupLabel$[.g] = emlCountGroups.groupLabel$[.g]
         endfor
     endif
 
@@ -2373,7 +2412,7 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
         else
             .fValue = undefined
             .p = undefined
-            .warning$ = "emlOneWayAnova: within-groups mean square is "
+            .warning$ = "Within-groups mean square is "
             ... + "zero (no variance inside any group); F and p are "
             ... + "undefined"
         endif
@@ -2382,7 +2421,7 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
             .etaSquared = .ssBetween / .ssTotal
         else
             .etaSquared = undefined
-            .warning$ = "emlOneWayAnova: total sum of squares is zero "
+            .warning$ = "Total sum of squares is zero "
             ... + "(all observations identical); eta-squared is undefined"
         endif
     endif
@@ -2392,8 +2431,7 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
     if .error$ = "" and .tukey = 1
         @emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, 0.05
         if emlTukeyHSD.error$ <> ""
-            .error$ = "emlOneWayAnova (Tukey): "
-            ... + emlTukeyHSD.error$
+            .error$ = "Tukey HSD: " + emlTukeyHSD.error$
         else
             .nPairs = emlTukeyHSD.nPairs
             .pMatrix## = emlTukeyHSD.pMatrix##
