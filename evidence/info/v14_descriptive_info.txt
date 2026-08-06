@@ -1,0 +1,42 @@
+
+══════════════════════════════════════════════
+  EML Stats : Descriptive Statistics
+  Thu Aug  6 00:34:50 2026
+══════════════════════════════════════════════
+
+  Table               v14 descriptive input
+  Column              SPL dB
+  N (valid)           45
+
+
+  ── Central Tendency ────────────────────────
+  Mean                88.3272
+  Median              88.9667
+  SEM                 0.7744
+
+
+  ── Dispersion ──────────────────────────────
+  SD                  5.1950
+  Variance            26.9878
+  Range               26.0158
+  Min                 75.1963
+  Max                 101.2121
+
+
+  ── Quartiles ───────────────────────────────
+  Q1                  84.2470
+  Q2 (Median)         88.9667
+  Q3                  92.3109
+  IQR                 8.0640
+
+
+  ── Distribution Shape ──────────────────────
+  Skewness            -0.0406
+  Kurtosis (excess)   0.1404
+
+
+  ── 95% Confidence Interval ─────────────────
+  Lower               86.7664
+  Upper               89.8879
+
+══════════════════════════════════════════════

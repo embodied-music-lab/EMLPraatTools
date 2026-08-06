@@ -1,0 +1,27 @@
+
+
+══════════════════════════════════════════════
+  EML Stats : Correlation Analysis
+  Wed Aug  5 22:48:50 2026
+══════════════════════════════════════════════
+
+  Table               demo correlation
+  Column X            speaking F0 Hz
+  Column Y            singing F0 Hz
+  N                   30
+
+
+  ── Pearson Correlation ─────────────────────
+  r                   0.9680
+  t                   20.427
+  df                  28
+  p                   p < .001
+
+
+  ── Spearman Correlation ────────────────────
+  rho                 0.9449
+  t                   15.279
+  df                  28
+  p                   p < .001
+
+══════════════════════════════════════════════

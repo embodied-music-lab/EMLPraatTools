@@ -1,0 +1,30 @@
+
+
+══════════════════════════════════════════════
+  EML Stats : Pairwise Welch t-test (holm adjustment)
+  Thu Aug  6 00:31:07 2026
+══════════════════════════════════════════════
+
+  Table               demo 3groups b input
+  Data column         SPL dB
+  Group column        voice type
+  Groups              3
+  Pairs tested        3
+
+
+  ── Adjusted p-values ───────────────────────
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         0.0228      < .001      
+Mezzo         0.0228      ---         0.0228      
+Alto          < .001      0.0228      ---         
+
+
+  ── Cohen's d (effect sizes) ────────────────
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         0.924       2.100       
+Mezzo         -0.924      ---         0.990       
+Alto          -2.100      -0.990      ---         
+
+══════════════════════════════════════════════

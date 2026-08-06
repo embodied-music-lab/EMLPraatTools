@@ -1,0 +1,48 @@
+
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Wed Aug  5 22:41:58 2026
+══════════════════════════════════════════════
+
+  Table               demo 3groups
+  Data column         SPL dB
+  Group column        voice type
+  Groups              3
+
+
+  ── ANOVA Table ─────────────────────────────
+
+Source              SS              df    MS              F           p
+Between             480.41          2     240.21          14.2687     0.000019
+Within              707.05          42    16.83           
+Total               1187.46         44    
+
+  F                   14.2687
+  p                   p < .001
+  Effect size         eta-squared = 0.4046
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  Soprano       15    92.76     3.81      92.57     
+  Mezzo         15    87.23     3.94      86.49     
+  Alto          15    84.99     4.52      85.77     
+
+
+  ── Tukey HSD Pairwise Comparisons (p-values) ───
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         0.0018      < .001      
+Mezzo         0.0018      ---         0.3016      
+Alto          < .001      0.3016      ---         
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         1.426       1.860       
+Mezzo         -1.426      ---         0.530       
+Alto          -1.860      -0.530      ---         
+
+══════════════════════════════════════════════

@@ -1,0 +1,41 @@
+
+
+══════════════════════════════════════════════
+  EML Stats : Two-Group Comparison
+  Wed Aug  5 22:39:02 2026
+══════════════════════════════════════════════
+
+  Table               demo 2groups
+  Data column         jitter pct
+  Group column        group
+
+  Group         N     Mean      SD        Median    
+  Control       20    0.80      0.33      0.79      
+  Patient       20    2.14      0.84      2.34      
+
+
+  ── Welch ───────────────────────────────────
+  t                   -6.656
+  df                  24.7
+  p                   p < .001
+  Mean difference     -1.3421
+
+
+  ── Effect Size ─────────────────────────────
+  Cohen's d           -2.105
+  Hedges' g           -2.063
+  Magnitude           large effect
+
+
+  ── Mann-Whitney U Test ─────────────────────
+  U1                  24.0
+  U2                  376.0
+  p                   p < .001
+  Method              exact
+
+
+  ── Nonparametric Effect Size ───────────────
+  Rank-biserial r     -0.880
+  Magnitude           large effect
+
+══════════════════════════════════════════════

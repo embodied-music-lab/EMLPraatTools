@@ -1,0 +1,36 @@
+
+
+══════════════════════════════════════════════
+  EML Stats : Simple Linear Regression
+  Wed Aug  5 22:49:57 2026
+══════════════════════════════════════════════
+
+  Table               demo regression
+  Response (Y)        vibrato regularity pct
+  Predictor (X)       practice hrs wk
+  N                   25
+
+
+  ── Model ───────────────────────────────────
+  Equation            y = 2.6222x + 47.0585
+  R                   0.9000
+  R-squared           0.8101
+  Adj. R-squared      0.8018
+  Residual SE         7.0737
+
+
+  ── Overall Model Test (F) ──────────────────
+  F(1,23)             98.0903
+  p                   p < .001
+
+
+  ── Coefficients ────────────────────────────
+
+                    Estimate      SE            t             p
+Intercept           47.0585       3.5546        13.239        p < .001
+practice hrs wk     2.6222        0.2648        9.904         p < .001
+
+  Direction: positive (vibrato regularity pct increases as practice hrs wk increases)
+  Variance explained  large effect
+
+══════════════════════════════════════════════

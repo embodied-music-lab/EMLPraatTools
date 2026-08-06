@@ -1,0 +1,32 @@
+
+
+══════════════════════════════════════════════
+  EML Stats Wizard — Analysis Plan
+══════════════════════════════════════════════
+
+  Design:         Repeated measures (k conditions)
+  Normality:      n/a
+  Test:           RM-ANOVA (Greenhouse-Geisser)
+  Column 1:       SPL soft|SPL medium|SPL loud|
+  Table:          r1 incomplete cases
+
+══════════════════════════════════════════════
+  Running analysis...
+══════════════════════════════════════════════
+
+Repeated-measures ANOVA — r1_incomplete_cases
+  Subjects (complete cases) n = 4, conditions k = 3
+    SPL_soft mean = 72.8500
+    SPL_medium mean = 82.8500
+    SPL_loud mean = 92.8500
+  F(2, 6) = 21110623253299200.0000, p = 0.000000000000000000000000000000000000000000000003
+  Greenhouse-Geisser epsilon = 1.0000, GG-corrected p = 0.000000000000000000000000000000000000000000000003
+  Post-hoc pairwise (parametric, holm-adjusted):
+    SPL_soft vs SPL_medium: p(raw) = n/a, p(adj) = n/a
+    SPL_soft vs SPL_loud: p(raw) = n/a, p(adj) = n/a
+    SPL_medium vs SPL_loud: p(raw) = n/a, p(adj) = n/a
+    NOTE: 3 of 3 comparisons could not be computed and are excluded from the multiplicity adjustment:
+      SPL_soft vs SPL_medium: All differences are identical (zero variance)
+      SPL_soft vs SPL_loud: All differences are identical (zero variance)
+      SPL_medium vs SPL_loud: All differences are identical (zero variance)
+  Note: 4 row(s) excluded for missing data (analyzed n = 4 complete cases).

@@ -1,0 +1,41 @@
+
+
+══════════════════════════════════════════════
+  EML Stats : Paired Comparison
+  Thu Aug  6 00:29:19 2026
+══════════════════════════════════════════════
+
+  Table               demo paired input
+  Column 1            jitter pre
+  Column 2            jitter post
+  N (pairs)           20
+
+  jitter pre: Mean = 2.696, SD = 0.823, Median = 2.683
+  jitter post: Mean = 1.967, SD = 0.917, Median = 2.280
+
+
+  ── Paired t-test ───────────────────────────
+  t                   7.726
+  df                  19
+  p                   p < .001
+  Mean difference     0.7285
+  SD of differences   0.4217
+
+
+  ── Effect Size ─────────────────────────────
+  Cohen's dz          1.728
+  r (from t)          0.871
+  Magnitude           large effect
+
+
+  ── Wilcoxon Signed-Rank Test ───────────────
+  T+                  207.0
+  T-                  3.0
+  p                   p < .001
+
+
+  ── Nonparametric Effect Size ───────────────
+  Matched-pairs r     0.971
+  Magnitude           large effect
+
+══════════════════════════════════════════════

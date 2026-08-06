@@ -1,0 +1,18 @@
+
+
+══════════════════════════════════════════════
+  EML Stats : Paired Comparison
+  Wed Aug  5 23:07:52 2026
+══════════════════════════════════════════════
+
+  Table               r3 zero variance
+  Column 1            SPL soft
+  Column 2            SPL medium
+  N (pairs)           6
+
+  SPL soft: Mean = 80.000, SD = 0, Median = 80.000
+  SPL medium: Mean = 80.000, SD = 0, Median = 80.000
+
+Paired t-test error: All differences are identical (zero variance)
+
+══════════════════════════════════════════════
