@@ -55,18 +55,21 @@ The submenu spans x≈380–680; click at x≈500.
 | 670 | ⁺Correlate two columns... | eml-correlate.praat |
 | 695 | ⁺Linear regression... | eml-regress.praat |
 | | ─── separator ─── | |
-| 721 | ⁺Linear mixed model... | eml-lmm.praat — **TABLED, SKIP** |
+| 721 | ⁺Pairwise comparisons... | eml-pairwise.praat |
 | | ─── separator ─── | |
-| 747 | ⁺Pairwise comparisons... | eml-pairwise.praat |
+| 747 | ⁺EML Graphs... | eml-graphs.praat |
 | | ─── separator ─── | |
-| 773 | ⁺EML Graphs... | eml-graphs.praat |
+| 773 | ⁺Batch voice analysis... | eml-batch-process.praat |
 | | ─── separator ─── | |
-| 799 | ⁺Batch voice analysis... | eml-batch-process.praat |
+| 799 | ⁺Create Demo Table... | eml-create-demo.praat |
+| 824 | ⁺Run Stats Demo | eml-stats-demo.praat — **REDO PENDING, SKIP** |
 | | ─── separator ─── | |
-| 825 | ⁺Create Demo Table... | eml-create-demo.praat |
-| 850 | ⁺Run Stats Demo | eml-stats-demo.praat — **REDO PENDING, SKIP** |
-| | ─── separator ─── | |
-| 876 | ⁺EML Stats Quick Start | eml-quick-start.praat |
+| 850 | ⁺EML Stats Quick Start | eml-quick-start.praat |
+
+**Linear mixed model was removed from the submenu on 5 August 2026** by
+author ruling. Everything from *Pairwise comparisons* down therefore moved up
+by one row (26px) from the coordinates recorded earlier that day. The module
+files are still present; only the entry point is gone.
 
 ---
 

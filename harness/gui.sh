@@ -177,10 +177,19 @@ typein () {
 
 # raise <name-regex> -> raise a window and CONFIRM it is active before returning.
 # Returns 1 if it could not be confirmed, so callers never click blind.
+#
+# Matches against `xdotool getwindowname`, NOT `xdotool search --name`. The two
+# read different properties: search reads WM_NAME, getwindowname prefers
+# _NET_WM_NAME, and for Praat's script editor they differ — WM_NAME is just
+# "Script" while the visible title carries the path in curly quotes. Searching
+# on the visible title silently found nothing.
 raise () {
-  local w tries=0 act
-  w=$(for x in $(xdotool search --name "$1" 2>/dev/null); do
-        xwininfo -id "$x" 2>/dev/null | grep -q IsViewable && echo "$x"; done | tail -1)
+  local w tries=0 act cand=""
+  for x in $(xdotool search --name "." 2>/dev/null); do
+    xwininfo -id "$x" 2>/dev/null | grep -q IsViewable || continue
+    if xdotool getwindowname "$x" 2>/dev/null | grep -qE "$1"; then cand="$x"; fi
+  done
+  w="$cand"
   [ -z "$w" ] && { echo "NOWIN"; return 1; }
   while [ $tries -lt 6 ]; do
     xdotool windowraise "$w" 2>/dev/null
@@ -192,4 +201,66 @@ raise () {
     tries=$((tries+1))
   done
   echo "NOTRAISED $w (active=$act)"; return 1
+}
+
+# --- Orchestrator drive helpers (5 August 2026) -----------------------------
+# Submenu entry y coordinates, verified: see harness/MENU_MAP.md
+# Updated 5 Aug 2026 after the LMM entry was tabled: everything from
+# Pairwise comparisons down moved up by one row (26px).
+EML_WIZARD=467; EML_DESCRIBE=493; EML_NORMALITY=518; EML_TWOGROUP=544
+EML_PAIRED=569; EML_ANOVA=594; EML_KW=619; EML_TWOWAY=644
+EML_CORR=670; EML_REGRESS=695; EML_PAIRWISE=721
+EML_GRAPHS=747; EML_BATCH=773; EML_DEMO=799; EML_STATSDEMO=824
+EML_QUICKSTART=850
+
+# eml <y> -> open Objects>New>EML Tools and click the submenu entry at y
+eml () {
+  raise "^Praat Objects$" >/dev/null || return 1
+  xdotool mousemove 76 34 click 1; sleep 1.2
+  xdotool mousemove 200 467 click 1; sleep 0.8
+  xdotool key --clearmodifiers Right; sleep 1.2
+  xdotool mousemove 500 "$1" click 1; sleep 3
+}
+
+# demo <n>  -> Create Demo Table, pick option n (1..7), Create, then Quit
+#   1 Two groups(40)  2 Three groups(45)  3 Paired(20)  4 Correlation(30)
+#   5 Regression(25)  6 Two-way(48)       7 Normality(40)
+demo () {
+  eml $EML_DEMO
+  xdotool mousemove 830 535 click 1; sleep 1.5
+  xdotool mousemove 806 $((538 + 29 * ($1 - 1))) click 1; sleep 1.2
+  xdotool mousemove 792 581 click 1; sleep 3
+  xdotool mousemove 604 581 click 1; sleep 2
+}
+
+# livepause -> print id+title of the single mapped Pause window, if any
+livepause () {
+  for x in $(xdotool search --name "^Pause" 2>/dev/null); do
+    xwininfo -id "$x" 2>/dev/null | grep -q IsViewable && \
+      echo "$x $(xdotool getwindowname $x)"
+  done
+}
+
+# capture <label> -> save the selected Table and the Info text under evidence/
+capture () {
+  echo "$1" > /home/claude/cap/label.txt
+  raise "Script .*capture.praat" >/dev/null || return 1
+  xdotool key --clearmodifiers ctrl+r; sleep 3
+  local f=/home/claude/EMLPraatTools/evidence/info/"$1"_info.txt
+  [ -f "$f" ] || { echo "CAPTURE FAILED: $1"; return 1; }
+  # Praat writes text as UTF-16 by default and the R suite reads these files.
+  if file "$f" | grep -q UTF-16; then
+    iconv -f UTF-16 -t UTF-8 "$f" -o "$f".u8 && mv "$f".u8 "$f"
+  fi
+  wc -c < "$f" | sed "s|^|captured $1: |;s|$| bytes|"
+}
+
+# clearinfo -> Praat Info window > Edit > Erase. Needed before running a
+# wrapper that has no "Clear Info window" checkbox, so info$() is exactly
+# one analysis. Praat is blocked while a pause form is up, so call this
+# BEFORE opening the wrapper, never during.
+clearinfo () {
+  raise "^Praat Info$" >/dev/null || return 1
+  xdotool mousemove 63 34 click 1; sleep 1.2
+  xdotool mousemove 91 189 click 1; sleep 1.2
 }
