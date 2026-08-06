@@ -76,8 +76,23 @@ dismissed).
 > `emlRunRepeatedMeasuresAnalysis`, `emlRunFriedmanAnalysis` — init a CSV and
 > never add a row, so those are build cases rather than convert cases (D66).
 >
-> `check_wired.sh` reports RED until the writer is reachable from a shipping
-> script. That red is the migration's progress bar; do not silence it.
+> ### Migration progress
+>
+> | | |
+> |---|---|
+> | **1 of 11 converted** | `emlRunAnovaAnalysis` — confirmed by `validate/v20_shipping_anova_broom.R`, 55 checks against base R and broom's documented column contract, on files produced by the orchestrator the menu calls |
+> | remaining | TwoGroup, KW, TwoWay, Paired, Correlation, Regression, Normality — convert. Pairwise, RepeatedMeasures, Friedman — build, they emit no rows today (D66) |
+>
+> `check_wired.sh` is now GREEN: `eml-result-writer.praat` is reachable through
+> `plugin/scripts/eml-lib-stats.praat`. It no longer tracks migration progress —
+> `v20`-style per-path checks do.
+>
+> **Cross-contamination guard, added 6 Aug and demonstrated first.** Running a
+> converted analysis and then an unconverted one left `emlResult_declared` at 1,
+> so an export would have written the first analysis's tables under the second
+> analysis's name. `@emlCSVInit` now clears the flag and the staged frames, and
+> every orchestrator calls it. This is the class of defect the "confirm each
+> path" rule exists for.
 >
 > ## Tabled by author ruling — not open work, not deferred to Phase Two
 >
