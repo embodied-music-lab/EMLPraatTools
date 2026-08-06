@@ -488,7 +488,10 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     endif
 
     @emlCSVInit
-    @emlReportPairwiseComparison: .tableName$, .dataCol$, .groupCol$, .test$, .adjMethod$
+    ; .tableId leads the argument list because the reporter now prints the
+    ; per-group n / mean / SD (D67) and has to re-read the column to do it.
+    @emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupCol$,
+    ... .test$, .adjMethod$
 
     ; BUILD, not a conversion: this orchestrator called @emlCSVInit and never
     ; added a row, so its export could not succeed at all (D66).
@@ -503,17 +506,258 @@ endproc
 
 
 # ============================================================================
-# @emlReportPairwiseComparison — NEW
+# @emlAdjustMethodDisplay — display casing for a p-adjustment key (D75)
+# ============================================================================
+# The key travels through the plugin lowercase ("bonferroni", "holm", "bh")
+# because that is what @emlPairwiseT, @emlHolm and R's p.adjust all accept.
+# Interpolating it straight into a report heading produced
+#   Pairwise Welch t-test (bonferroni adjustment)
+# which matches neither the "Bonferroni" the user picked in the optionmenu
+# nor any way a reader would write Benjamini-Hochberg.
+#
+# This is DISPLAY ONLY. Nothing may branch on .name$ — the lowercase key
+# stays canonical everywhere a comparison is made.
+#
+# NAME. The obvious name @emlAdjustMethodName is already defined in
+# graphs/eml-graphs-form.praat, where it maps an optionmenu INDEX to the
+# lowercase key. Praat resolves a duplicated procedure name to whichever
+# definition it meets first, and scripts/eml-lib.praat includes THIS file
+# before eml-graphs-form.praat — so defining that name here would silently
+# capture the graphs form's integer calls and pass a number into a string
+# parameter. Hence the distinct name.
+#
+# Arguments:
+#   .key$  — "bonferroni", "holm" or "bh" (surrounding space tolerated)
+# Output:
+#   .name$ — "Bonferroni", "Holm", "Benjamini-Hochberg". An unrecognised key
+#            is returned unchanged, so a new method shows up in the report
+#            rather than being silently renamed to a wrong one.
+# ============================================================================
+procedure emlAdjustMethodDisplay: .key$
+    .trimmed$ = replace_regex$ (.key$, "^\s+|\s+$", "", 0)
+    if .trimmed$ = "bonferroni" or .trimmed$ = "Bonferroni"
+        .name$ = "Bonferroni"
+    elsif .trimmed$ = "holm" or .trimmed$ = "Holm"
+        .name$ = "Holm"
+    elsif .trimmed$ = "bh" or .trimmed$ = "BH" or .trimmed$ = "Bh"
+        .name$ = "Benjamini-Hochberg"
+    elsif .trimmed$ = "none" or .trimmed$ = "None"
+        .name$ = "none"
+    else
+        .name$ = .trimmed$
+    endif
+endproc
+
+
+# ============================================================================
+# @emlReportAlpha — the alpha the report marks significance against (D70)
+# ============================================================================
+# No stats dialog in the plugin collects an alpha; only the graphing form
+# does (annotAlpha). A report that marks significance must nevertheless say
+# what it marked against, so this returns the criterion in force: a caller's
+# global emlAlpha when one has been set to a usable value, otherwise .05.
+#
+# Output:
+#   .value — the alpha, as a number
+#   .text$ — the same value formatted for printing
+# ============================================================================
+procedure emlReportAlpha
+    .value = 0.05
+    if variableExists ("emlAlpha")
+        if emlAlpha <> undefined and emlAlpha > 0 and emlAlpha < 1
+            .value = emlAlpha
+        endif
+    endif
+    ; Three decimals so .001 and .010 survive, then trailing zeros trimmed
+    ; back to two places so the ordinary case reads "0.05" and not "0.050".
+    .text$ = fixed$ (.value, 3)
+    while right$ (.text$, 1) = "0" and length (.text$) > 4
+        .text$ = left$ (.text$, length (.text$) - 1)
+    endwhile
+endproc
+
+
+# ============================================================================
+# @emlInlineP — a p-value inside a running sentence (D85)
+# ============================================================================
+# @emlReportPWithExact prints a LABELLED ROW. The repeated-measures and
+# Friedman reporters do not print rows — they compose one line per test
+# ("F(2, 38) = 583.1232, p = ...") — so they cannot call it, and they instead
+# reached for fixed$ (p, 4), which renders a p of 3e-29 as twenty-nine
+# decimal places. This is the same rendering @emlReportPWithExact applies,
+# returned as a string a caller can concatenate.
+#
+# Arguments:
+#   .pValue — the p-value
+# Output:
+#   .text$  — "p = .032" / "p < .001  (3.0114e-29)", i.e. the APA form with
+#             the unrounded value appended only when the APA form floored it
+#   .bare$  — the same without the leading "p = ", for a caller whose own
+#             label already names which p this is ("p(adj) = ...")
+# ============================================================================
+procedure emlInlineP: .pValue
+    @emlFormatP: .pValue
+    .text$ = emlFormatP.formatted$
+    .bare$ = emlFormatP.bare$
+    if emlFormatP.exact$ <> ""
+        .suffix$ = "  (" + emlFormatP.exact$ + ")"
+        .text$ = .text$ + .suffix$
+        .bare$ = .bare$ + .suffix$
+    endif
+endproc
+
+
+# ============================================================================
+# @emlSigMark — significance marker for one p-value (D70)
+# ============================================================================
+# Output: .mark$ — " *" when the p-value clears alpha, "" otherwise, "" for
+#                  an undefined p (a comparison that could not be made is
+#                  missing, not significant).
+# ============================================================================
+procedure emlSigMark: .pValue, .alpha
+    if .pValue = undefined
+        .mark$ = ""
+    elsif .pValue < .alpha
+        .mark$ = " *"
+    else
+        .mark$ = ""
+    endif
+endproc
+
+
+# ============================================================================
+# @emlPadCell — fixed-width column cell for the fixed-pitch report tables
+# ============================================================================
+# @emlPadRight pads but never truncates, so one long group label shifts every
+# column to its right. These tables are read down the column, so a cell that
+# overflows is worse than one that is cut: truncate to width-1 and always
+# leave at least one separating space.
+# ============================================================================
+procedure emlPadCell: .text$, .width
+    .out$ = .text$
+    if length (.out$) > .width - 1
+        .out$ = left$ (.out$, .width - 1)
+    endif
+    while length (.out$) < .width
+        .out$ = .out$ + " "
+    endwhile
+    .result$ = .out$
+endproc
+
+
+# ============================================================================
+# @emlReportPairwiseDescriptives — n, mean and SD per group (D67)
+# ============================================================================
+# The pairwise report handed the reader Cohen's d for every pair and never
+# printed a single input to it: no group n, no group mean, no group SD. The
+# CSV carried all of them, so the numbers were in hand and simply not shown.
+#
+# Group labels and their ORDER come from @emlCountGroups, which is the same
+# procedure and the same table @emlPairwiseT / @emlPairwiseWilcoxon /
+# @emlScheffe used to build their matrices, so row i here is group i there.
+#
+# Arguments:
+#   .tableId, .dataCol$, .groupCol$ — as passed to the test
+# ============================================================================
+procedure emlReportPairwiseDescriptives: .tableId, .dataCol$, .groupCol$
+    @emlCountGroups: .tableId, .groupCol$
+    if emlCountGroups.error$ <> ""
+        goto PAIR_DESCR_DONE
+    endif
+    .k = emlCountGroups.nGroups
+
+    @emlReportBlank
+    @emlReportSection: "Group descriptives"
+    appendInfoLine: ""
+    @emlPadCell: "Group", 20
+    .hdr$ = "  " + emlPadCell.result$
+    @emlPadCell: "n", 7
+    .hdr$ = .hdr$ + emlPadCell.result$
+    @emlPadCell: "Mean", 13
+    .hdr$ = .hdr$ + emlPadCell.result$
+    .hdr$ = .hdr$ + "SD"
+    appendInfoLine: .hdr$
+
+    for .g from 1 to .k
+        ; D6: the LITERAL label, not an underscore-stripped prettification.
+        ; This is a value the user has to type into a form or match against
+        ; the table, so it is printed exactly as it is stored.
+        .label$ = emlCountGroups.groupLabel$ [.g]
+        @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .label$
+        if eml_getGroupData.error$ <> ""
+            .nG = 0
+            .meanTxt$ = "n/a"
+            .sdTxt$ = "n/a"
+        else
+            .nG = eml_getGroupData.n
+            @emlMean: eml_getGroupData.data#
+            @emlSD: eml_getGroupData.data#
+            if emlMean.result = undefined
+                .meanTxt$ = "n/a"
+            else
+                .meanTxt$ = fixed$ (emlMean.result, 4)
+            endif
+            if emlSD.result = undefined
+                .sdTxt$ = "n/a"
+            else
+                .sdTxt$ = fixed$ (emlSD.result, 4)
+            endif
+        endif
+        @emlPadCell: .label$, 20
+        .row$ = "  " + emlPadCell.result$
+        @emlPadCell: string$ (.nG), 7
+        .row$ = .row$ + emlPadCell.result$
+        @emlPadCell: .meanTxt$, 13
+        .row$ = .row$ + emlPadCell.result$
+        .row$ = .row$ + .sdTxt$
+        appendInfoLine: .row$
+    endfor
+
+    label PAIR_DESCR_DONE
+endproc
+
+
+# ============================================================================
+# @emlReportPairwiseComparison
 # Extracted from inline code in eml-pairwise.praat.
 # ============================================================================
+# WHAT CHANGED, 6 Aug 2026 (D67–D71, D75, D6):
+#
+#   D67  n, mean and SD per group are printed. They were in the CSV and
+#        nowhere in the Info window, so d was reported without any of its
+#        inputs.
+#   D68  t and df are printed per pair. For Welch, df is fractional and
+#        differs per pair, and without it the result cannot be re-tested.
+#   D69  BOTH the raw and the adjusted p are printed, each labelled. Only
+#        the adjusted one was shown, under a heading that named no method.
+#   D70  Significant pairs carry "*", and the alpha that marks them is
+#        echoed in the header block and again in the legend.
+#   D71  The Cohen's d matrix is antisymmetric because the sign carries the
+#        direction of the difference. Nothing said so, and a reader scanning
+#        it in the same idiom as the symmetric p matrix above read a
+#        negative d as a negative effect size. The convention is now stated
+#        under the matrix that uses it.
+#   D75  The adjustment method is title-cased for display through
+#        @emlAdjustMethodDisplay, so the heading matches the optionmenu.
+#   D6   Table, column and group names print LITERALLY. They used to be
+#        underscore-stripped (F0_Hz -> "F0 Hz", demo_3groups ->
+#        "demo 3groups"), which renamed the user's data in the one place
+#        they need to copy it back out of. Underscore-to-space is a Picture
+#        window convention (Rule 28B); it does not belong in plain text
+#        that names something the user has to type or select.
+#
+# Arguments:
+#   .tableId — the table the test ran on. Required for the per-group
+#              descriptives, which re-read the column; the reporter used to
+#              take only the table's NAME.
+# ============================================================================
 
-procedure emlReportPairwiseComparison: .tableName$, .dataCol$, .groupCol$, .test$, .adjMethod$
-    @emlUnderscoreToSpace: .tableName$
-    .displayTable$ = emlUnderscoreToSpace.result$
-    @emlUnderscoreToSpace: .dataCol$
-    .displayData$ = emlUnderscoreToSpace.result$
-    @emlUnderscoreToSpace: .groupCol$
-    .displayGroup$ = emlUnderscoreToSpace.result$
+procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupCol$, .test$, .adjMethod$
+    @emlReportAlpha
+    .alpha = emlReportAlpha.value
+    .alphaText$ = emlReportAlpha.text$
+    @emlAdjustMethodDisplay: .adjMethod$
+    .adjLabel$ = emlAdjustMethodDisplay.name$
 
     if .test$ = "welch" or .test$ = "student"
         # v1.2 item 5: emlPairwiseT.method$ is the ADJUSTMENT method
@@ -525,50 +769,105 @@ procedure emlReportPairwiseComparison: .tableName$, .dataCol$, .groupCol$, .test
         else
             .testLabel$ = "Student t-test"
         endif
-        .methodLabel$ = "Pairwise " + .testLabel$ + " (" + .adjMethod$ + " adjustment)"
+        .methodLabel$ = "Pairwise " + .testLabel$ + " (" + .adjLabel$
+            ... + " adjustment)"
         .nGroups = emlPairwiseT.nGroups
 
         @emlReportHeader: .methodLabel$
-        @emlReportLineString: "Table", .displayTable$
-        @emlReportLineString: "Data column", .displayData$
-        @emlReportLineString: "Group column", .displayGroup$
+        @emlReportLineString: "Table", .tableName$
+        @emlReportLineString: "Data column", .dataCol$
+        @emlReportLineString: "Group column", .groupCol$
         @emlReportLine: "Groups", .nGroups, 0
         @emlReportLine: "Pairs tested", emlPairwiseT.nPairs, 0
+        @emlReportLineString: "p adjustment", .adjLabel$
+        @emlReportLineString: "Alpha", .alphaText$
+
+        @emlReportPairwiseDescriptives: .tableId, .dataCol$, .groupCol$
 
         @emlReportBlank
-        @emlReportSection: "Adjusted p-values"
+        @emlReportSection: "Per-pair results"
+        appendInfoLine: ""
+        @emlPadCell: "Comparison", 26
+        .hdr$ = "  " + emlPadCell.result$
+        @emlPadCell: "t (df)", 20
+        .hdr$ = .hdr$ + emlPadCell.result$
+        @emlPadCell: "p (raw)", 11
+        .hdr$ = .hdr$ + emlPadCell.result$
+        @emlPadCell: "p (adj)", 11
+        .hdr$ = .hdr$ + emlPadCell.result$
+        .hdr$ = .hdr$ + "d"
+        appendInfoLine: .hdr$
+
+        .pair = 0
+        for .iGroup from 1 to .nGroups - 1
+            for .jGroup from .iGroup + 1 to .nGroups
+                .pair = .pair + 1
+                .cmp$ = emlPairwiseT.groupName$ [.iGroup] + " vs "
+                    ... + emlPairwiseT.groupName$ [.jGroup]
+                .tVal = emlPairwiseT.tMatrix## [.iGroup, .jGroup]
+                .dfVal = emlPairwiseT.dfMatrix## [.iGroup, .jGroup]
+                if .tVal = undefined or .dfVal = undefined
+                    .statTxt$ = "not computed"
+                else
+                    .statTxt$ = fixed$ (.tVal, 3) + " (" + fixed$ (.dfVal, 2)
+                        ... + ")"
+                endif
+                @emlFormatP: emlPairwiseT.rawP# [.pair]
+                .rawTxt$ = emlFormatP.bare$
+                .adjP = emlPairwiseT.adjustedP# [.pair]
+                @emlFormatP: .adjP
+                .adjTxt$ = emlFormatP.bare$
+                .dVal = emlPairwiseT.dMatrix## [.iGroup, .jGroup]
+                if .dVal = undefined
+                    .dTxt$ = "n/a"
+                else
+                    .dTxt$ = fixed$ (.dVal, 3)
+                endif
+                @emlSigMark: .adjP, .alpha
+                @emlPadCell: .cmp$, 26
+                .row$ = "  " + emlPadCell.result$
+                @emlPadCell: .statTxt$, 20
+                .row$ = .row$ + emlPadCell.result$
+                @emlPadCell: .rawTxt$, 11
+                .row$ = .row$ + emlPadCell.result$
+                @emlPadCell: .adjTxt$, 11
+                .row$ = .row$ + emlPadCell.result$
+                .row$ = .row$ + .dTxt$ + emlSigMark.mark$
+                appendInfoLine: .row$
+            endfor
+        endfor
+        appendInfoLine: "  * adjusted p < ", .alphaText$,
+            ... ". d is Cohen's d, first group minus second."
+
+        @emlReportBlank
+        @emlReportSection: "Adjusted p-values (" + .adjLabel$ + ")"
         appendInfoLine: ""
         .headerLine$ = left$ ("" + "                ", 14)
         for .jGroup from 1 to .nGroups
-            .colName$ = replace$ (emlPairwiseT.groupName$ [.jGroup], "_", " ", 0)
-            if length (.colName$) > 10
-                .colName$ = left$ (.colName$, 10)
-            endif
-            .headerLine$ = .headerLine$ + left$ (.colName$ + "            ", 12)
+            @emlPadCell: emlPairwiseT.groupName$ [.jGroup], 12
+            .headerLine$ = .headerLine$ + emlPadCell.result$
         endfor
         appendInfoLine: .headerLine$
 
         for .iGroup from 1 to .nGroups
-            .rowName$ = replace$ (emlPairwiseT.groupName$ [.iGroup], "_", " ", 0)
-            if length (.rowName$) > 12
-                .rowName$ = left$ (.rowName$, 12)
-            endif
-            .rowLine$ = left$ (.rowName$ + "                ", 14)
+            @emlPadCell: emlPairwiseT.groupName$ [.iGroup], 14
+            .rowLine$ = emlPadCell.result$
             for .jGroup from 1 to .nGroups
                 if .iGroup = .jGroup
                     .cellText$ = "---"
                 else
                     .pVal = emlPairwiseT.pMatrix## [.iGroup, .jGroup]
-                    if .pVal < 0.001
-                        .cellText$ = "< .001"
-                    else
-                        .cellText$ = fixed$ (.pVal, 4)
-                    endif
+                    @emlFormatP: .pVal
+                    @emlSigMark: .pVal, .alpha
+                    .cellText$ = emlFormatP.bare$ + emlSigMark.mark$
                 endif
-                .rowLine$ = .rowLine$ + left$ (.cellText$ + "            ", 12)
+                @emlPadCell: .cellText$, 12
+                .rowLine$ = .rowLine$ + emlPadCell.result$
             endfor
             appendInfoLine: .rowLine$
         endfor
+        appendInfoLine: "  Symmetric: the p for A vs B is the p for B vs A."
+        appendInfoLine: "  * adjusted p < ", .alphaText$
 
         @emlReportBlank
         @emlReportSection: "Cohen's d (effect sizes)"
@@ -576,68 +875,130 @@ procedure emlReportPairwiseComparison: .tableName$, .dataCol$, .groupCol$, .test
         appendInfoLine: .headerLine$
 
         for .iGroup from 1 to .nGroups
-            .rowName$ = replace$ (emlPairwiseT.groupName$ [.iGroup], "_", " ", 0)
-            if length (.rowName$) > 12
-                .rowName$ = left$ (.rowName$, 12)
-            endif
-            .rowLine$ = left$ (.rowName$ + "                ", 14)
+            @emlPadCell: emlPairwiseT.groupName$ [.iGroup], 14
+            .rowLine$ = emlPadCell.result$
             for .jGroup from 1 to .nGroups
                 if .iGroup = .jGroup
                     .cellText$ = "---"
                 else
                     .dVal = emlPairwiseT.dMatrix## [.iGroup, .jGroup]
-                    .cellText$ = fixed$ (.dVal, 3)
+                    if .dVal = undefined
+                        .cellText$ = "n/a"
+                    else
+                        .cellText$ = fixed$ (.dVal, 3)
+                    endif
                 endif
-                .rowLine$ = .rowLine$ + left$ (.cellText$ + "            ", 12)
+                @emlPadCell: .cellText$, 12
+                .rowLine$ = .rowLine$ + emlPadCell.result$
             endfor
             appendInfoLine: .rowLine$
         endfor
+        ; D71. Unlike the p matrix above, this one is ANTISYMMETRIC: the
+        ; sign is the direction of the difference, not the sign of the
+        ; effect. Say so, under the matrix it applies to.
+        appendInfoLine: "  Row minus column: a negative d means the ROW "
+            ... + "group's mean is"
+        appendInfoLine: "  lower than the COLUMN group's. |d| is the "
+            ... + "effect size."
 
     elsif .test$ = "wilcoxon"
-        .methodLabel$ = "Pairwise Wilcoxon/Mann-Whitney (" + .adjMethod$ + " adjustment)"
+        .methodLabel$ = "Pairwise Wilcoxon/Mann-Whitney (" + .adjLabel$
+            ... + " adjustment)"
         .nGroups = emlPairwiseWilcoxon.nGroups
 
         @emlReportHeader: .methodLabel$
-        @emlReportLineString: "Table", .displayTable$
-        @emlReportLineString: "Data column", .displayData$
-        @emlReportLineString: "Group column", .displayGroup$
+        @emlReportLineString: "Table", .tableName$
+        @emlReportLineString: "Data column", .dataCol$
+        @emlReportLineString: "Group column", .groupCol$
         @emlReportLine: "Groups", .nGroups, 0
         @emlReportLine: "Pairs tested", emlPairwiseWilcoxon.nPairs, 0
+        @emlReportLineString: "p adjustment", .adjLabel$
+        @emlReportLineString: "Alpha", .alphaText$
+
+        @emlReportPairwiseDescriptives: .tableId, .dataCol$, .groupCol$
 
         @emlReportBlank
-        @emlReportSection: "Adjusted p-values"
+        @emlReportSection: "Per-pair results"
+        appendInfoLine: ""
+        @emlPadCell: "Comparison", 26
+        .hdr$ = "  " + emlPadCell.result$
+        @emlPadCell: "U", 20
+        .hdr$ = .hdr$ + emlPadCell.result$
+        @emlPadCell: "p (raw)", 11
+        .hdr$ = .hdr$ + emlPadCell.result$
+        @emlPadCell: "p (adj)", 11
+        .hdr$ = .hdr$ + emlPadCell.result$
+        .hdr$ = .hdr$ + "r"
+        appendInfoLine: .hdr$
+
+        .pair = 0
+        for .iGroup from 1 to .nGroups - 1
+            for .jGroup from .iGroup + 1 to .nGroups
+                .pair = .pair + 1
+                .cmp$ = emlPairwiseWilcoxon.groupName$ [.iGroup] + " vs "
+                    ... + emlPairwiseWilcoxon.groupName$ [.jGroup]
+                .uVal = emlPairwiseWilcoxon.uMatrix## [.iGroup, .jGroup]
+                if .uVal = undefined
+                    .statTxt$ = "not computed"
+                else
+                    .statTxt$ = fixed$ (.uVal, 2)
+                endif
+                @emlFormatP: emlPairwiseWilcoxon.rawP# [.pair]
+                .rawTxt$ = emlFormatP.bare$
+                .adjP = emlPairwiseWilcoxon.adjustedP# [.pair]
+                @emlFormatP: .adjP
+                .adjTxt$ = emlFormatP.bare$
+                .rVal = emlPairwiseWilcoxon.rMatrix## [.iGroup, .jGroup]
+                if .rVal = undefined
+                    .rTxt$ = "n/a"
+                else
+                    .rTxt$ = fixed$ (.rVal, 3)
+                endif
+                @emlSigMark: .adjP, .alpha
+                @emlPadCell: .cmp$, 26
+                .row$ = "  " + emlPadCell.result$
+                @emlPadCell: .statTxt$, 20
+                .row$ = .row$ + emlPadCell.result$
+                @emlPadCell: .rawTxt$, 11
+                .row$ = .row$ + emlPadCell.result$
+                @emlPadCell: .adjTxt$, 11
+                .row$ = .row$ + emlPadCell.result$
+                .row$ = .row$ + .rTxt$ + emlSigMark.mark$
+                appendInfoLine: .row$
+            endfor
+        endfor
+        appendInfoLine: "  * adjusted p < ", .alphaText$,
+            ... ". U is for the first group of the pair."
+
+        @emlReportBlank
+        @emlReportSection: "Adjusted p-values (" + .adjLabel$ + ")"
         appendInfoLine: ""
         .headerLine$ = left$ ("" + "                ", 14)
         for .jGroup from 1 to .nGroups
-            .colName$ = replace$ (emlPairwiseWilcoxon.groupName$ [.jGroup], "_", " ", 0)
-            if length (.colName$) > 10
-                .colName$ = left$ (.colName$, 10)
-            endif
-            .headerLine$ = .headerLine$ + left$ (.colName$ + "            ", 12)
+            @emlPadCell: emlPairwiseWilcoxon.groupName$ [.jGroup], 12
+            .headerLine$ = .headerLine$ + emlPadCell.result$
         endfor
         appendInfoLine: .headerLine$
 
         for .iGroup from 1 to .nGroups
-            .rowName$ = replace$ (emlPairwiseWilcoxon.groupName$ [.iGroup], "_", " ", 0)
-            if length (.rowName$) > 12
-                .rowName$ = left$ (.rowName$, 12)
-            endif
-            .rowLine$ = left$ (.rowName$ + "                ", 14)
+            @emlPadCell: emlPairwiseWilcoxon.groupName$ [.iGroup], 14
+            .rowLine$ = emlPadCell.result$
             for .jGroup from 1 to .nGroups
                 if .iGroup = .jGroup
                     .cellText$ = "---"
                 else
                     .pVal = emlPairwiseWilcoxon.pMatrix## [.iGroup, .jGroup]
-                    if .pVal < 0.001
-                        .cellText$ = "< .001"
-                    else
-                        .cellText$ = fixed$ (.pVal, 4)
-                    endif
+                    @emlFormatP: .pVal
+                    @emlSigMark: .pVal, .alpha
+                    .cellText$ = emlFormatP.bare$ + emlSigMark.mark$
                 endif
-                .rowLine$ = .rowLine$ + left$ (.cellText$ + "            ", 12)
+                @emlPadCell: .cellText$, 12
+                .rowLine$ = .rowLine$ + emlPadCell.result$
             endfor
             appendInfoLine: .rowLine$
         endfor
+        appendInfoLine: "  Symmetric: the p for A vs B is the p for B vs A."
+        appendInfoLine: "  * adjusted p < ", .alphaText$
 
         @emlReportBlank
         @emlReportSection: "Rank-biserial r (effect sizes)"
@@ -645,69 +1006,124 @@ procedure emlReportPairwiseComparison: .tableName$, .dataCol$, .groupCol$, .test
         appendInfoLine: .headerLine$
 
         for .iGroup from 1 to .nGroups
-            .rowName$ = replace$ (emlPairwiseWilcoxon.groupName$ [.iGroup], "_", " ", 0)
-            if length (.rowName$) > 12
-                .rowName$ = left$ (.rowName$, 12)
-            endif
-            .rowLine$ = left$ (.rowName$ + "                ", 14)
+            @emlPadCell: emlPairwiseWilcoxon.groupName$ [.iGroup], 14
+            .rowLine$ = emlPadCell.result$
             for .jGroup from 1 to .nGroups
                 if .iGroup = .jGroup
                     .cellText$ = "---"
                 else
                     .rVal = emlPairwiseWilcoxon.rMatrix## [.iGroup, .jGroup]
-                    .cellText$ = fixed$ (.rVal, 3)
+                    if .rVal = undefined
+                        .cellText$ = "n/a"
+                    else
+                        .cellText$ = fixed$ (.rVal, 3)
+                    endif
                 endif
-                .rowLine$ = .rowLine$ + left$ (.cellText$ + "            ", 12)
+                @emlPadCell: .cellText$, 12
+                .rowLine$ = .rowLine$ + emlPadCell.result$
             endfor
             appendInfoLine: .rowLine$
         endfor
+        ; D71, same convention as the d matrix above.
+        appendInfoLine: "  Row minus column: a negative r means the ROW "
+            ... + "group ranks"
+        appendInfoLine: "  lower than the COLUMN group. |r| is the effect "
+            ... + "size."
 
     elsif .test$ = "scheffe"
         .nGroups = emlScheffe.nGroups
 
         @emlReportHeader: "Scheffe Post-Hoc Comparisons"
-        @emlReportLineString: "Table", .displayTable$
-        @emlReportLineString: "Data column", .displayData$
-        @emlReportLineString: "Group column", .displayGroup$
+        @emlReportLineString: "Table", .tableName$
+        @emlReportLineString: "Data column", .dataCol$
+        @emlReportLineString: "Group column", .groupCol$
         @emlReportLine: "Groups", .nGroups, 0
         @emlReportLine: "Pairs tested", emlScheffe.nPairs, 0
         @emlReportLine: "MSE", emlScheffe.mse, 4
         @emlReportLine: "df (within)", emlScheffe.dfWithin, 0
+        ; Scheffe's p IS familywise-controlled; there is no separate
+        ; adjustment step and therefore no raw p to show beside it.
+        @emlReportLineString: "p adjustment", "Scheffe (familywise, built in)"
+        @emlReportLineString: "Alpha", .alphaText$
+
+        @emlReportPairwiseDescriptives: .tableId, .dataCol$, .groupCol$
+
+        @emlReportBlank
+        @emlReportSection: "Per-pair results"
+        appendInfoLine: ""
+        @emlPadCell: "Comparison", 26
+        .hdr$ = "  " + emlPadCell.result$
+        @emlPadCell: "F (df)", 20
+        .hdr$ = .hdr$ + emlPadCell.result$
+        @emlPadCell: "p", 11
+        .hdr$ = .hdr$ + emlPadCell.result$
+        .hdr$ = .hdr$ + "Mean diff"
+        appendInfoLine: .hdr$
+
+        for .iGroup from 1 to .nGroups - 1
+            for .jGroup from .iGroup + 1 to .nGroups
+                .cmp$ = emlScheffe.groupName$ [.iGroup] + " vs "
+                    ... + emlScheffe.groupName$ [.jGroup]
+                .fVal = emlScheffe.fMatrix## [.iGroup, .jGroup]
+                if .fVal = undefined
+                    .statTxt$ = "not computed"
+                else
+                    .statTxt$ = fixed$ (.fVal, 3) + " ("
+                        ... + string$ (.nGroups - 1) + ", "
+                        ... + string$ (emlScheffe.dfWithin) + ")"
+                endif
+                .pVal = emlScheffe.pMatrix## [.iGroup, .jGroup]
+                @emlFormatP: .pVal
+                .pTxt$ = emlFormatP.bare$
+                .diffVal = emlScheffe.diffMatrix## [.iGroup, .jGroup]
+                if .diffVal = undefined
+                    .diffTxt$ = "n/a"
+                else
+                    .diffTxt$ = fixed$ (.diffVal, 3)
+                endif
+                @emlSigMark: .pVal, .alpha
+                @emlPadCell: .cmp$, 26
+                .row$ = "  " + emlPadCell.result$
+                @emlPadCell: .statTxt$, 20
+                .row$ = .row$ + emlPadCell.result$
+                @emlPadCell: .pTxt$, 11
+                .row$ = .row$ + emlPadCell.result$
+                .row$ = .row$ + .diffTxt$ + emlSigMark.mark$
+                appendInfoLine: .row$
+            endfor
+        endfor
+        appendInfoLine: "  * p < ", .alphaText$,
+            ... ". Mean diff is first group minus second."
 
         @emlReportBlank
         @emlReportSection: "Scheffe p-values"
         appendInfoLine: ""
         .headerLine$ = left$ ("" + "                ", 14)
         for .jGroup from 1 to .nGroups
-            .colName$ = replace$ (emlScheffe.groupName$ [.jGroup], "_", " ", 0)
-            if length (.colName$) > 10
-                .colName$ = left$ (.colName$, 10)
-            endif
-            .headerLine$ = .headerLine$ + left$ (.colName$ + "            ", 12)
+            @emlPadCell: emlScheffe.groupName$ [.jGroup], 12
+            .headerLine$ = .headerLine$ + emlPadCell.result$
         endfor
         appendInfoLine: .headerLine$
 
         for .iGroup from 1 to .nGroups
-            .rowName$ = replace$ (emlScheffe.groupName$ [.iGroup], "_", " ", 0)
-            if length (.rowName$) > 12
-                .rowName$ = left$ (.rowName$, 12)
-            endif
-            .rowLine$ = left$ (.rowName$ + "                ", 14)
+            @emlPadCell: emlScheffe.groupName$ [.iGroup], 14
+            .rowLine$ = emlPadCell.result$
             for .jGroup from 1 to .nGroups
                 if .iGroup = .jGroup
                     .cellText$ = "---"
                 else
                     .pVal = emlScheffe.pMatrix## [.iGroup, .jGroup]
-                    if .pVal < 0.001
-                        .cellText$ = "< .001"
-                    else
-                        .cellText$ = fixed$ (.pVal, 4)
-                    endif
+                    @emlFormatP: .pVal
+                    @emlSigMark: .pVal, .alpha
+                    .cellText$ = emlFormatP.bare$ + emlSigMark.mark$
                 endif
-                .rowLine$ = .rowLine$ + left$ (.cellText$ + "            ", 12)
+                @emlPadCell: .cellText$, 12
+                .rowLine$ = .rowLine$ + emlPadCell.result$
             endfor
             appendInfoLine: .rowLine$
         endfor
+        appendInfoLine: "  Symmetric: the p for A vs B is the p for B vs A."
+        appendInfoLine: "  * p < ", .alphaText$
 
         @emlReportBlank
         @emlReportSection: "Mean Differences"
@@ -715,22 +1131,28 @@ procedure emlReportPairwiseComparison: .tableName$, .dataCol$, .groupCol$, .test
         appendInfoLine: .headerLine$
 
         for .iGroup from 1 to .nGroups
-            .rowName$ = replace$ (emlScheffe.groupName$ [.iGroup], "_", " ", 0)
-            if length (.rowName$) > 12
-                .rowName$ = left$ (.rowName$, 12)
-            endif
-            .rowLine$ = left$ (.rowName$ + "                ", 14)
+            @emlPadCell: emlScheffe.groupName$ [.iGroup], 14
+            .rowLine$ = emlPadCell.result$
             for .jGroup from 1 to .nGroups
                 if .iGroup = .jGroup
                     .cellText$ = "---"
                 else
                     .diffVal = emlScheffe.diffMatrix## [.iGroup, .jGroup]
-                    .cellText$ = fixed$ (.diffVal, 3)
+                    if .diffVal = undefined
+                        .cellText$ = "n/a"
+                    else
+                        .cellText$ = fixed$ (.diffVal, 3)
+                    endif
                 endif
-                .rowLine$ = .rowLine$ + left$ (.cellText$ + "            ", 12)
+                @emlPadCell: .cellText$, 12
+                .rowLine$ = .rowLine$ + emlPadCell.result$
             endfor
             appendInfoLine: .rowLine$
         endfor
+        ; D71. Antisymmetric, for the same reason the d matrix is.
+        appendInfoLine: "  Row minus column: a negative difference means "
+            ... + "the ROW group's"
+        appendInfoLine: "  mean is lower than the COLUMN group's."
     endif
 
     @emlReportFooter
@@ -1715,15 +2137,35 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
             ... + fixed$ (emlRMAnovaTest.condMean# [.j], 4)
         appendInfoLine: .cm$
     endfor
+    ; D85. This line used to end "p = " + fixed$ (p, 4), which for a real
+    ; RM-ANOVA p of 3e-29 printed twenty-nine decimal places. @emlInlineP
+    ; gives the APA rendering the rest of the plugin uses, and appends the
+    ; unrounded value when that rendering has floored it.
+    @emlInlineP: emlRMAnovaTest.p
     .fLine$ = "  F(" + string$ (emlRMAnovaTest.dfCond) + ", "
         ... + string$ (emlRMAnovaTest.dfErr) + ") = "
-        ... + fixed$ (emlRMAnovaTest.fStat, 4) + ", p = "
-        ... + fixed$ (emlRMAnovaTest.p, 4)
+        ... + fixed$ (emlRMAnovaTest.fStat, 4) + ", " + emlInlineP.text$
     appendInfoLine: .fLine$
+    @emlInlineP: emlRMAnovaTest.pGG
     .ggLine$ = "  Greenhouse-Geisser epsilon = "
-        ... + fixed$ (emlRMAnovaTest.ggEpsilon, 4) + ", GG-corrected p = "
-        ... + fixed$ (emlRMAnovaTest.pGG, 4)
+        ... + fixed$ (emlRMAnovaTest.ggEpsilon, 4) + ", GG-corrected "
+        ... + emlInlineP.text$
     appendInfoLine: .ggLine$
+
+    ; D86. The path reported F, p and epsilon and no effect size at all, so
+    ; nothing in the report said how big the condition effect was — only
+    ; that it was unlikely under the null. Partial eta squared is
+    ; ssCond / (ssCond + ssErr) and both terms are already computed; this is
+    ; the same quantity the glance frame exports as partial.eta.squared.
+    .denom = emlRMAnovaTest.ssCond + emlRMAnovaTest.ssErr
+    if .denom > 0
+        .petaLine$ = "  Partial eta squared = "
+            ... + fixed$ (emlRMAnovaTest.ssCond / .denom, 4)
+            ... + "  (condition SS / (condition SS + error SS))"
+    else
+        .petaLine$ = "  Partial eta squared = n/a (no variance to partition)"
+    endif
+    appendInfoLine: .petaLine$
 
     # D98. Printed immediately under the numbers it qualifies, not at the
     # foot of the report, because a caveat below the post-hoc table reads
@@ -1810,10 +2252,25 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
             ... + fixed$ (emlFriedmanTest.rankSum# [.j], 1)
         appendInfoLine: .rs$
     endfor
+    ; D85, as on the RM path: fixed$ (p, 4) here rendered a p of 2e-25 as a
+    ; twenty-five place decimal string.
+    @emlInlineP: emlFriedmanTest.p
     .chiLine$ = "  chi-square(" + string$ (emlFriedmanTest.df) + ") = "
-        ... + fixed$ (emlFriedmanTest.chiSq, 4) + ", p = "
-        ... + fixed$ (emlFriedmanTest.p, 4)
+        ... + fixed$ (emlFriedmanTest.chiSq, 4) + ", " + emlInlineP.text$
     appendInfoLine: .chiLine$
+
+    ; D86. Friedman reported chi-square and p and no effect size. Kendall's
+    ; W is chi-square / (n * (k - 1)) — the same quantity the glance frame
+    ; exports as kendalls.w — and runs 0 (no agreement across subjects) to
+    ; 1 (every subject ranks the conditions identically).
+    if .n > 0 and .k > 1
+        .wLine$ = "  Kendall's W = "
+            ... + fixed$ (emlFriedmanTest.chiSq / (.n * (.k - 1)), 4)
+            ... + "  (0 = no agreement, 1 = identical rankings)"
+    else
+        .wLine$ = "  Kendall's W = n/a"
+    endif
+    appendInfoLine: .wLine$
 
     if .doPostHoc
         @emlRMPostHoc: .data##, .n, .k, "nonparametric", .adjMethod$
@@ -1918,8 +2375,12 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
         @emlHolm: .rawP#
         .adj# = emlHolm.adjusted#
     endif
+    ; D75, same reason as the pairwise report header: the adjustment key is
+    ; lowercase because that is what the engines take; the heading should
+    ; read the way the user's optionmenu reads.
+    @emlAdjustMethodDisplay: .adjUsed$
     .phHdr$ = "  Post-hoc pairwise (" + .testType$ + ", "
-        ... + .adjUsed$ + "-adjusted):"
+        ... + emlAdjustMethodDisplay.name$ + "-adjusted):"
     appendInfoLine: .phHdr$
     if .adjWarn$ <> ""
         appendInfoLine: .adjWarn$
@@ -1927,20 +2388,29 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
     for .pp from 1 to .nPairs
         .ai = .pairLabelA [.pp]
         .bi = .pairLabelB [.pp]
+        ; D85. Both of these were fixed$ (p, 4) and printed p-values as
+        ; long decimal strings. @emlInlineP.bare$ is the APA rendering
+        ; without the "p = " prefix, because the label here already says
+        ; which p it is.
         if .rawP# [.pp] = undefined
-            .rawTxt$ = "n/a"
-            .adjTxt$ = "n/a"
+            .rawTxt$ = "p n/a"
+            .adjTxt$ = "p n/a"
         else
-            .rawTxt$ = fixed$ (.rawP# [.pp], 4)
+            @emlInlineP: .rawP# [.pp]
+            .rawTxt$ = emlInlineP.text$
             if .adj# [.pp] = undefined
-                .adjTxt$ = "n/a"
+                .adjTxt$ = "p n/a"
             else
-                .adjTxt$ = fixed$ (.adj# [.pp], 4)
+                @emlInlineP: .adj# [.pp]
+                .adjTxt$ = emlInlineP.text$
             endif
         endif
+        ; "raw p < .001" rather than "p(raw) = < .001": the APA rendering
+        ; carries its own relational operator, so the label must not supply
+        ; a second one.
         .row$ = "    " + emlExtractConditionMatrix.colLabel$ [.ai] + " vs "
-            ... + emlExtractConditionMatrix.colLabel$ [.bi] + ": p(raw) = "
-            ... + .rawTxt$ + ", p(adj) = " + .adjTxt$
+            ... + emlExtractConditionMatrix.colLabel$ [.bi] + ": raw "
+            ... + .rawTxt$ + ", adj " + .adjTxt$
         appendInfoLine: .row$
     endfor
     if .nSkipped > 0

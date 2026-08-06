@@ -2147,10 +2147,22 @@ procedure emlGuessColumnRoles: .tableId
 
     # ── PASS 3: Global greedy assignment ─────────────────────────────
     # Find the highest-scoring (column, role) pair globally, assign it,
-    # remove both from consideration. Repeat for all 4 roles.
+    # remove both from consideration. Repeat for the three roles a dialog
+    # actually consumes: group, data, subject.
     # This prevents low-priority roles from stealing high-confidence
     # matches. E.g., "participant" scores group=6 (via "part") but
     # subject=10 — the subject match wins globally.
+    #
+    # D77. The TIME role used to be the fourth competitor in this same
+    # loop, and that is what made it dangerous: it competes on its own
+    # keyword weight, not on how much anything needs the answer. A column
+    # named `repetition_rate` scores time=8 ("repetition") against data=6
+    # ("rate"), so the time role won it and the measure role — which every
+    # comparison dialog reads — was left to whatever came next.
+    #
+    # Time is the only one of the four roles that NO dialog consumes, so
+    # it is the only one that can safely yield. It is now assigned after
+    # group, data and subject have settled, out of whatever is left.
 
     for .col from 1 to .nCols
         .taken[.col] = 0
@@ -2160,7 +2172,7 @@ procedure emlGuessColumnRoles: .tableId
     .roleDone[3] = 0
     .roleDone[4] = 0
 
-    for .assignRound from 1 to 4
+    for .assignRound from 1 to 3
         .bestScore = 0
         .bestCol = 0
         .bestRole = 0
@@ -2181,11 +2193,6 @@ procedure emlGuessColumnRoles: .tableId
                     .bestCol = .col
                     .bestRole = 3
                 endif
-                if .roleDone[4] = 0 and .tS[.col] > .bestScore
-                    .bestScore = .tS[.col]
-                    .bestCol = .col
-                    .bestRole = 4
-                endif
             endif
         endfor
         if .bestScore > 0
@@ -2197,15 +2204,50 @@ procedure emlGuessColumnRoles: .tableId
                 .dataIdx = .bestCol
             elsif .bestRole = 3
                 .subjectIdx = .bestCol
-            elsif .bestRole = 4
-                .timeIdx = .bestCol
             endif
         endif
     endfor
 
+    # ── Time role, assigned last, and yielding (D77) ─────────────────
+    # Best remaining column with time evidence — subject to the column's
+    # time evidence being at least as strong as its measurement evidence.
+    #
+    # Running last is not on its own enough. On `subject, jitter_pre,
+    # jitter_post, HNR_pre, HNR_post` the measure role is filled by
+    # `jitter_pre`, which leaves `jitter_post` free at this point, and the
+    # weight-6 token `post` would take it for a role nothing reads —
+    # stranding the second half of the pair. `jitter_post` scores data=10
+    # against time=6, so the second condition is what actually saves it:
+    # where a column's own evidence says measurement more loudly than it
+    # says time, time does not claim it at all.
+
+    .bestTime = 0
+    for .col from 1 to .nCols
+        if .taken[.col] = 0 and .tS[.col] > .bestTime
+            ... and .tS[.col] >= .dS[.col]
+            .bestTime = .tS[.col]
+            .timeIdx = .col
+        endif
+    endfor
+    if .timeIdx > 0
+        .taken[.timeIdx] = 1
+        .roleDone[4] = 1
+    endif
+
     # ── Secondary data column (paired/correlation) ───────────────────
     # Best unassigned column with a data score, for dialogs needing
     # two numeric columns (paired t-test, correlation).
+    #
+    # D77, second half. On a pre/post table the token that identifies a
+    # column as the second half of the pair (`post` in `jitter_post`) is
+    # the same token that gives it a time score. Ordering alone does not
+    # save it: with `jitter_pre` taken as the measure, `jitter_post` is
+    # free when the time role runs, so time still claims it and this scan
+    # still skips it — and `Column 2` on Compare paired defaults to a
+    # different measure entirely, which computes cleanly and looks like a
+    # result. The time column is therefore eligible here, but strictly as
+    # a fallback: any genuinely unassigned column with a data score wins
+    # first, and time is used only when nothing else is left.
 
     .bestD2 = 0
     for .col from 1 to .nCols
@@ -2214,6 +2256,18 @@ procedure emlGuessColumnRoles: .tableId
             .dataIdx2 = .col
         endif
     endfor
+    if .dataIdx2 = 0 and .timeIdx > 0 and .timeIdx <> .dataIdx
+        if .dS[.timeIdx] > 0
+            .dataIdx2 = .timeIdx
+        endif
+    endif
+    ; D78. The secondary data column is one of the roles the audit found
+    ; invisible to the fallbacks below: without this, the group fallback
+    ; hands `Compare two groups` the same column that Compare paired is
+    ; offering as its Column 2.
+    if .dataIdx2 > 0
+        .taken[.dataIdx2] = 1
+    endif
 
     # ── Factor assignment (two-way designs) ──────────────────────────
     # factor1 = groupIdx. factor2 = next-best unassigned column with
@@ -2238,23 +2292,53 @@ procedure emlGuessColumnRoles: .tableId
 
     if .groupIdx = 0 and .dataIdx = 0
         .groupIdx = 1
+        .taken[1] = 1
         if .nCols >= 2
             .dataIdx = 2
+            .taken[2] = 1
         endif
     elsif .groupIdx = 0
-        # Data found but no group — first column != dataIdx
+        # Data found but no group — first column no other role holds.
+        #
+        # D78. The guard here used to be `.col <> .dataIdx` alone. Every
+        # other role — subject, time, secondary data — was invisible to
+        # it, so on a repeated-measures table column 1 came back as BOTH
+        # subjectIdx and groupIdx, and `Compare two groups` on demo_paired
+        # defaulted its grouping variable to the subject id: 20 groups of
+        # n = 1. Consult .taken[], and mark the column taken once it is
+        # claimed so nothing downstream can claim it a second time.
         for .col from 1 to .nCols
-            if .col <> .dataIdx and .groupIdx = 0
+            if .col <> .dataIdx and .taken[.col] = 0 and .groupIdx = 0
                 .groupIdx = .col
+                .taken[.col] = 1
             endif
         endfor
+        # Every column already carries a role. A duplicated default is bad;
+        # no default at all is worse, because the dialog then opens on
+        # whatever the form's first entry happens to be. Fall back to the
+        # old lenient rule rather than leave the role unfilled.
+        if .groupIdx = 0
+            for .col from 1 to .nCols
+                if .col <> .dataIdx and .groupIdx = 0
+                    .groupIdx = .col
+                endif
+            endfor
+        endif
     elsif .dataIdx = 0
-        # Group found but no data — first column != groupIdx
+        # Group found but no data — same rule, same reason (D78).
         for .col from 1 to .nCols
-            if .col <> .groupIdx and .dataIdx = 0
+            if .col <> .groupIdx and .taken[.col] = 0 and .dataIdx = 0
                 .dataIdx = .col
+                .taken[.col] = 1
             endif
         endfor
+        if .dataIdx = 0
+            for .col from 1 to .nCols
+                if .col <> .groupIdx and .dataIdx = 0
+                    .dataIdx = .col
+                endif
+            endfor
+        endif
     endif
 
     # Ensure factor1 has a value if group was detected

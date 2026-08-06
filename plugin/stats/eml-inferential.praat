@@ -1796,7 +1796,8 @@ procedure eml_parseAnovaLine: .info$, .rowLabel$
     endfor
 
     if .found = 0
-        .error$ = "eml_parseAnovaLine: row label not found: " + .rowLabel$
+        .error$ = "The ANOVA table has no row labelled """
+        ... + .rowLabel$ + """."
     else
         # Replace tabs with spaces for consistent tokenization
         .remainder$ = replace$ (.remainder$, tab$, " ", 0)
@@ -1825,8 +1826,8 @@ procedure eml_parseAnovaLine: .info$, .rowLabel$
         endwhile
 
         if .remainder$ = ""
-            .error$ = "eml_parseAnovaLine: no numeric data after label: "
-            ... + .rowLabel$
+            .error$ = "The ANOVA table row labelled """ + .rowLabel$
+            ... + """ has no numeric values after the label."
         else
             # Tokenize by single spaces
             .nTokens = 0
@@ -1909,8 +1910,8 @@ procedure emlTableFromGroups: .nGroups, .dataColName$, .factorColName$
     # --- Validate inputs ---
 
     if .nGroups < 1
-        .error$ = "emlTableFromGroups: nGroups must be >= 1, got "
-        ... + string$ (.nGroups)
+        .error$ = "Building a table needs at least 1 group; got "
+        ... + string$ (.nGroups) + "."
     endif
 
     if .error$ = ""
@@ -1920,7 +1921,8 @@ procedure emlTableFromGroups: .nGroups, .dataColName$, .factorColName$
         endfor
 
         if .nRows < 1
-            .error$ = "emlTableFromGroups: total rows = 0 (all groups empty)"
+            .error$ = "Every group is empty, so the table would have 0 "
+            ... + "rows. Each group needs at least 1 observation."
         endif
     endif
 
@@ -1928,10 +1930,9 @@ procedure emlTableFromGroups: .nGroups, .dataColName$, .factorColName$
         # Verify data vector length matches sum of group sizes
         .dataLen = size (.data#)
         if .nRows <> .dataLen
-            .error$ = "emlTableFromGroups: sum of groupSize ("
-            ... + string$ (.nRows)
-            ... + ") does not match data# length ("
-            ... + string$ (.dataLen) + ")"
+            .error$ = "The group sizes add up to " + string$ (.nRows)
+            ... + " observations, but the data vector holds "
+            ... + string$ (.dataLen) + ". They must match."
         endif
     endif
 
@@ -2033,23 +2034,21 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
     selectObject: .tableId
     .nRows = Get number of rows
     if .nRows < 3
-        .error$ = "emlTukeyHSD: need at least 3 observations, got "
-        ... + string$ (.nRows)
+        .error$ = "This test needs at least 3 observations; the table "
+        ... + "has " + string$ (.nRows) + "."
     endif
 
     if .error$ = ""
         .colIdx1 = Get column index: .dataColumn$
         if .colIdx1 = 0
-            .error$ = "emlTukeyHSD: data column not found: "
-            ... + .dataColumn$
+            .error$ = "Data column not found: " + .dataColumn$
         endif
     endif
 
     if .error$ = ""
         .colIdx2 = Get column index: .factorColumn$
         if .colIdx2 = 0
-            .error$ = "emlTukeyHSD: factor column not found: "
-            ... + .factorColumn$
+            .error$ = "Factor column not found: " + .factorColumn$
         endif
     endif
 
@@ -2058,16 +2057,15 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
     if .error$ = ""
         @emlCountGroups: .tableId, .factorColumn$
         if emlCountGroups.error$ <> ""
-            .error$ = "emlTukeyHSD: "
-            ... + emlCountGroups.error$
+            .error$ = emlCountGroups.error$
         else
             .nGroups = emlCountGroups.nGroups
         endif
     endif
 
     if .error$ = "" and .nGroups < 2
-        .error$ = "emlTukeyHSD: need at least 2 groups, got "
-        ... + string$ (.nGroups)
+        .error$ = "This test compares 2 or more groups; the group column "
+        ... + """" + .factorColumn$ + """ has " + string$ (.nGroups) + "."
     endif
 
     # --- Sort groups alphabetically ---
@@ -2101,8 +2099,10 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
 
         .dfWithin = .totalN - .nGroups
         if .dfWithin < 1
-            .error$ = "emlTukeyHSD: dfWithin < 1 "
-            ... + "(need more observations than groups)"
+            .error$ = string$ (.totalN) + " observations across "
+            ... + string$ (.nGroups) + " groups leave no within-groups "
+            ... + "degrees of freedom. There must be more observations "
+            ... + "than groups."
         else
             .msWithin = .ssWithin / .dfWithin
         endif
@@ -2178,7 +2178,7 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
         .qCritical = Get invTukeyQ: .alpha, .nGroups, .dfWithin, 1
 
         if .nUndefined > 0
-            .warning$ = "emlTukeyHSD: " + string$ (.nUndefined)
+            .warning$ = string$ (.nUndefined)
             ... + " of " + string$ (.nPairs) + " comparisons have an "
             ... + "undefined q (zero or undefined pooled standard "
             ... + "error); their p-values are undefined, not 1"
@@ -2611,31 +2611,28 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     selectObject: .tableId
     .nRows = Get number of rows
     if .nRows < 4
-        .error$ = "emlTwoWayAnova: need at least 4 observations, got "
-        ... + string$ (.nRows)
+        .error$ = "This test needs at least 4 observations; the table "
+        ... + "has " + string$ (.nRows) + "."
     endif
 
     if .error$ = ""
         .colIdx1 = Get column index: .dataCol$
         if .colIdx1 = 0
-            .error$ = "emlTwoWayAnova: data column not found: "
-            ... + .dataCol$
+            .error$ = "Data column not found: " + .dataCol$
         endif
     endif
 
     if .error$ = ""
         .colIdx2 = Get column index: .factor1$
         if .colIdx2 = 0
-            .error$ = "emlTwoWayAnova: factor1 column not found: "
-            ... + .factor1$
+            .error$ = "First factor column not found: " + .factor1$
         endif
     endif
 
     if .error$ = ""
         .colIdx3 = Get column index: .factor2$
         if .colIdx3 = 0
-            .error$ = "emlTwoWayAnova: factor2 column not found: "
-            ... + .factor2$
+            .error$ = "Second factor column not found: " + .factor2$
         endif
     endif
 
@@ -2654,8 +2651,8 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     if .error$ = ""
         .sourcePos = index (.anovaInfo$, "Source")
         if .sourcePos = 0
-            .error$ = "emlTwoWayAnova: could not find Source header "
-            ... + "in Info window output"
+            .error$ = "Praat's two-way ANOVA report could not be read: "
+            ... + "no Source header was found in its output."
         endif
     endif
 
@@ -2667,8 +2664,8 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
         # Find the first newline to skip the "Source SS Df MS F P" header
         .nlPos = index (.fromSource$, newline$)
         if .nlPos = 0
-            .error$ = "emlTwoWayAnova: malformed Info window output "
-            ... + "(no newline after Source header)"
+            .error$ = "Praat's two-way ANOVA report could not be read: "
+            ... + "nothing follows the Source header line."
         else
             .dataSection$ = mid$ (.fromSource$, .nlPos + 1,
             ... length (.fromSource$) - .nlPos)
@@ -2680,7 +2677,7 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     if .error$ = ""
         @eml_parseAnovaLine: .dataSection$, .factor1$
         if eml_parseAnovaLine.error$ <> ""
-            .error$ = "emlTwoWayAnova (factor1): "
+            .error$ = "Could not read the row for the first factor. "
             ... + eml_parseAnovaLine.error$
         else
             .ssA = eml_parseAnovaLine.ss
@@ -2696,7 +2693,7 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     if .error$ = ""
         @eml_parseAnovaLine: .dataSection$, .factor2$
         if eml_parseAnovaLine.error$ <> ""
-            .error$ = "emlTwoWayAnova (factor2): "
+            .error$ = "Could not read the row for the second factor. "
             ... + eml_parseAnovaLine.error$
         else
             .ssB = eml_parseAnovaLine.ss
@@ -2713,7 +2710,7 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
         .interactionLabel$ = .factor1$ + " x " + .factor2$
         @eml_parseAnovaLine: .dataSection$, .interactionLabel$
         if eml_parseAnovaLine.error$ <> ""
-            .error$ = "emlTwoWayAnova (interaction): "
+            .error$ = "Could not read the interaction row. "
             ... + eml_parseAnovaLine.error$
         else
             .ssAB = eml_parseAnovaLine.ss
@@ -2730,7 +2727,7 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     if .error$ = ""
         @eml_parseAnovaLine: .dataSection$, "Error"
         if eml_parseAnovaLine.error$ <> ""
-            .error$ = "emlTwoWayAnova (error): "
+            .error$ = "Could not read the Error row. "
             ... + eml_parseAnovaLine.error$
         else
             .ssErrorReported = eml_parseAnovaLine.ss
@@ -2744,7 +2741,7 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     if .error$ = ""
         @eml_parseAnovaLine: .dataSection$, "Total"
         if eml_parseAnovaLine.error$ <> ""
-            .error$ = "emlTwoWayAnova (total): "
+            .error$ = "Could not read the Total row. "
             ... + eml_parseAnovaLine.error$
         else
             .ssTotalReported = eml_parseAnovaLine.ss
@@ -2848,18 +2845,18 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
 
         # --- Negative sum-of-squares guard ---
         if .ssError < 0
-            .warning$ = "emlTwoWayAnova: computed SS_Error was negative "
-            ... + "(" + fixed$ (.ssError, 10) + "); clamped to 0"
+            .warning$ = "The computed error sum of squares was negative "
+            ... + "(" + fixed$ (.ssError, 10) + "); it was clamped to 0."
             .ssError = 0
         endif
         if .ssTotal < 0
-            .warning$ = "emlTwoWayAnova: computed SS_Total was negative "
-            ... + "(" + fixed$ (.ssTotal, 10) + "); clamped to 0"
+            .warning$ = "The computed total sum of squares was negative "
+            ... + "(" + fixed$ (.ssTotal, 10) + "); it was clamped to 0."
             .ssTotal = 0
         endif
         if .ssA < 0 or .ssB < 0 or .ssAB < 0
-            .warning$ = "emlTwoWayAnova: at least one Type III effect "
-            ... + "sum of squares is negative; the model is degenerate"
+            .warning$ = "At least one Type III effect sum of squares is "
+            ... + "negative; the model is degenerate."
         endif
 
         # --- Design balance check ---
@@ -2876,23 +2873,25 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
         endfor
         if .nCells <> .nLev1 * .nLev2
             .balanced = 0
-            .warning$ = "emlTwoWayAnova: design has empty cells ("
+            .warning$ = "The design has empty cells ("
             ... + string$ (.nCells) + " of " + string$ (.nLev1 * .nLev2)
             ... + " factor combinations present); Type III sums of "
-            ... + "squares are not estimable for this design"
+            ... + "squares are not estimable for this design."
         elsif .minCellN <> .maxCellN
             .balanced = 0
-            .warning$ = "emlTwoWayAnova: unbalanced design (cell sizes "
+            .warning$ = "The design is unbalanced (cell sizes "
             ... + string$ (.minCellN) + " to " + string$ (.maxCellN)
-            ... + "); Type III sums of squares do not add up to SS_Total"
+            ... + "); Type III sums of squares do not add up to the "
+            ... + "total sum of squares."
         endif
 
         if .dfError > 0
             .msError = .ssError / .dfError
         else
             .msError = undefined
-            .warning$ = "emlTwoWayAnova: df_Error is "
-            ... + string$ (.dfError) + "; MS_Error, F and P are undefined"
+            .warning$ = "The error degrees of freedom is "
+            ... + string$ (.dfError) + ", so the error mean square, F "
+            ... + "and p are undefined."
         endif
 
         # --- Re-derive F and P from the corrected MS_Error ---
@@ -2914,8 +2913,8 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
                 .pB = fisherQ (.fB, .dfB, .dfError)
                 .pAB = fisherQ (.fAB, .dfAB, .dfError)
             else
-                .warning$ = "emlTwoWayAnova: MS_Error is zero (no "
-                ... + "within-cell variance); F and P are undefined"
+                .warning$ = "The error mean square is zero (no "
+                ... + "within-cell variance), so F and p are undefined."
             endif
         endif
     endif
@@ -2969,11 +2968,11 @@ procedure emlEpsilonSquared: .h, .n
     .error$ = ""
 
     if .n <= 1
-        .error$ = "emlEpsilonSquared: N must be > 1, got "
-        ... + string$ (.n)
+        .error$ = "Epsilon-squared needs a total sample size greater "
+        ... + "than 1; got " + string$ (.n) + "."
     elsif .h < 0
-        .error$ = "emlEpsilonSquared: H must be >= 0, got "
-        ... + string$ (.h)
+        .error$ = "Epsilon-squared needs an H statistic of 0 or more; "
+        ... + "got " + string$ (.h) + "."
     else
         .result = .h / (.n - 1)
         # epsilon-squared is a proportion of variance and cannot exceed
@@ -2981,8 +2980,9 @@ procedure emlEpsilonSquared: .h, .n
         # which previously produced values above 1.
         if .result > 1
             .capped = 1
-            .warning$ = "emlEpsilonSquared: raw H / (N - 1) = "
-            ... + fixed$ (.result, 6) + " exceeds 1; capped at 1"
+            .warning$ = "Epsilon-squared came out as H / (N - 1) = "
+            ... + fixed$ (.result, 6) + ", which exceeds 1; it was "
+            ... + "capped at 1."
             .result = 1
         endif
     endif
@@ -3055,14 +3055,14 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
     @emlCountGroups: .tableId, .factorCol$
 
     if emlCountGroups.error$ <> ""
-        .error$ = "emlKruskalWallis: "
-        ... + emlCountGroups.error$
+        .error$ = emlCountGroups.error$
     else
         .nGroups = emlCountGroups.nGroups
 
         if .nGroups < 2
-            .error$ = "emlKruskalWallis: need >= 2 groups, got "
-            ... + string$ (.nGroups)
+            .error$ = "This test compares 2 or more groups; the group "
+            ... + "column """ + .factorCol$ + """ has "
+            ... + string$ (.nGroups) + "."
         endif
     endif
 
@@ -3075,8 +3075,9 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
             ... .groupName$[.g]
             .groupN[.g] = eml_getGroupData.n
             if .groupN[.g] = 0
-                .error$ = "emlKruskalWallis: group "
-                ... + .groupName$[.g] + " has 0 observations"
+                .error$ = "Group """ + .groupName$[.g]
+                ... + """ has 0 observations. Every group needs at "
+                ... + "least 1."
             endif
             .n = .n + .groupN[.g]
         endfor
@@ -3256,8 +3257,8 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
 
     if .method$ <> "bonferroni" and .method$ <> "holm"
     ... and .method$ <> "bh"
-        .error$ = "emlDunnTest: method must be bonferroni, holm, "
-        ... + "or bh, got: " + .method$
+        .error$ = "The p-value adjustment method must be bonferroni, "
+        ... + "holm, or bh; got: " + .method$
     endif
 
     # --- Discover groups ---
@@ -3266,14 +3267,14 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
         @emlCountGroups: .tableId, .factorCol$
 
         if emlCountGroups.error$ <> ""
-            .error$ = "emlDunnTest: "
-            ... + emlCountGroups.error$
+            .error$ = emlCountGroups.error$
         else
             .nGroups = emlCountGroups.nGroups
 
             if .nGroups < 2
-                .error$ = "emlDunnTest: need >= 2 groups, got "
-                ... + string$ (.nGroups)
+                .error$ = "This test compares 2 or more groups; the "
+                ... + "group column """ + .factorCol$ + """ has "
+                ... + string$ (.nGroups) + "."
             endif
         endif
     endif
@@ -3287,8 +3288,9 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
             ... .groupName$[.g]
             .groupN[.g] = eml_getGroupData.n
             if .groupN[.g] = 0
-                .error$ = "emlDunnTest: group "
-                ... + .groupName$[.g] + " has 0 observations"
+                .error$ = "Group """ + .groupName$[.g]
+                ... + """ has 0 observations. Every group needs at "
+                ... + "least 1."
             endif
             .n = .n + .groupN[.g]
         endfor
@@ -3470,6 +3472,12 @@ endproc
 # Output:
 #   .pMatrix##     - k x k adjusted p-values (symmetric, diagonal = 1)
 #   .tMatrix##     - k x k t-statistics (antisymmetric, diagonal = 0)
+#   .dfMatrix##    - k x k degrees of freedom for the matching t
+#                    (symmetric, diagonal = 0). Welch-Satterthwaite
+#                    when .type$ is "welch", pooled n1 + n2 - 2 when
+#                    it is "student" — the same df the p-value in
+#                    .pMatrix## was computed from, so a report can
+#                    print t(df). Undefined wherever .tMatrix## is.
 #   .dMatrix##     - k x k Cohen's d (antisymmetric, diagonal = 0)
 #   .rawP#         - unadjusted p-values, C(k,2) length
 #   .adjustedP#    - adjusted p-values, C(k,2) length
@@ -3512,16 +3520,16 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
 
     if .method$ <> "bonferroni" and .method$ <> "holm"
     ... and .method$ <> "bh"
-        .error$ = "emlPairwiseT: method must be bonferroni, holm, "
-        ... + "or bh, got: " + .method$
+        .error$ = "The p-value adjustment method must be bonferroni, "
+        ... + "holm, or bh; got: " + .method$
     endif
 
     # --- Validate type ---
 
     if .error$ = ""
         if .type$ <> "welch" and .type$ <> "student"
-            .error$ = "emlPairwiseT: type must be welch or student, "
-            ... + "got: " + .type$
+            .error$ = "The test type must be welch or student; got: "
+            ... + .type$
         endif
     endif
 
@@ -3545,13 +3553,13 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
         @emlCountGroups: .tableId, .factorCol$
 
         if emlCountGroups.error$ <> ""
-            .error$ = "emlPairwiseT: "
-            ... + emlCountGroups.error$
+            .error$ = emlCountGroups.error$
         else
             .nGroups = emlCountGroups.nGroups
             if .nGroups < 2
-                .error$ = "emlPairwiseT: need >= 2 groups, got "
-                ... + string$ (.nGroups)
+                .error$ = "This test compares 2 or more groups; the "
+                ... + "group column """ + .factorCol$ + """ has "
+                ... + string$ (.nGroups) + "."
             endif
         endif
     endif
@@ -3572,6 +3580,7 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
         .nPairs = .nGroups * (.nGroups - 1) / 2
         .rawP# = zero# (.nPairs)
         .tFlat# = zero# (.nPairs)
+        .dfFlat# = zero# (.nPairs)
         .dFlat# = zero# (.nPairs)
 
         .pairIdx = 0
@@ -3597,6 +3606,7 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
                     # comparison that could not be made is missing, not
                     # non-significant. The adjustment step is NA-safe.
                     .tFlat#[.pairIdx] = undefined
+                    .dfFlat#[.pairIdx] = undefined
                     .rawP#[.pairIdx] = undefined
                     .nSkipped = .nSkipped + 1
                     if .skipReason$ = ""
@@ -3607,6 +3617,11 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
                     endif
                 else
                     .tFlat#[.pairIdx] = emlTTest.t
+                    # Same df the p-value above came from: Welch-
+                    # Satterthwaite for .type$ "welch", pooled
+                    # n1 + n2 - 2 for "student". @emlTTest picks it
+                    # from .eqVar, so no branch is needed here.
+                    .dfFlat#[.pairIdx] = emlTTest.df
                     .rawP#[.pairIdx] = emlTTest.p
                 endif
 
@@ -3637,6 +3652,7 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
 
         .pMatrix## = zero## (.nGroups, .nGroups)
         .tMatrix## = zero## (.nGroups, .nGroups)
+        .dfMatrix## = zero## (.nGroups, .nGroups)
         .dMatrix## = zero## (.nGroups, .nGroups)
 
         for .g from 1 to .nGroups
@@ -3651,6 +3667,10 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
                 .pMatrix##[.j, .i] = .adjustedP#[.pairIdx]
                 .tMatrix##[.i, .j] = .tFlat#[.pairIdx]
                 .tMatrix##[.j, .i] = -.tFlat#[.pairIdx]
+                # df is unsigned, so this matrix is symmetric where
+                # .tMatrix## is antisymmetric.
+                .dfMatrix##[.i, .j] = .dfFlat#[.pairIdx]
+                .dfMatrix##[.j, .i] = .dfFlat#[.pairIdx]
                 .dMatrix##[.i, .j] = .dFlat#[.pairIdx]
                 .dMatrix##[.j, .i] = -.dFlat#[.pairIdx]
             endfor
@@ -3719,8 +3739,8 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
 
     if .method$ <> "bonferroni" and .method$ <> "holm"
     ... and .method$ <> "bh"
-        .error$ = "emlPairwiseWilcoxon: method must be bonferroni, "
-        ... + "holm, or bh, got: " + .method$
+        .error$ = "The p-value adjustment method must be bonferroni, "
+        ... + "holm, or bh; got: " + .method$
     endif
 
     # --- Discover groups ---
@@ -3729,13 +3749,13 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
         @emlCountGroups: .tableId, .factorCol$
 
         if emlCountGroups.error$ <> ""
-            .error$ = "emlPairwiseWilcoxon: "
-            ... + emlCountGroups.error$
+            .error$ = emlCountGroups.error$
         else
             .nGroups = emlCountGroups.nGroups
             if .nGroups < 2
-                .error$ = "emlPairwiseWilcoxon: need >= 2 groups, "
-                ... + "got " + string$ (.nGroups)
+                .error$ = "This test compares 2 or more groups; the "
+                ... + "group column """ + .factorCol$ + """ has "
+                ... + string$ (.nGroups) + "."
             endif
         endif
     endif
@@ -3896,13 +3916,13 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
     @emlCountGroups: .tableId, .factorCol$
 
     if emlCountGroups.error$ <> ""
-        .error$ = "emlScheffe: "
-        ... + emlCountGroups.error$
+        .error$ = emlCountGroups.error$
     else
         .nGroups = emlCountGroups.nGroups
         if .nGroups < 2
-            .error$ = "emlScheffe: need >= 2 groups, got "
-            ... + string$ (.nGroups)
+            .error$ = "This test compares 2 or more groups; the group "
+            ... + "column """ + .factorCol$ + """ has "
+            ... + string$ (.nGroups) + "."
         endif
     endif
 
@@ -3939,9 +3959,10 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
         # MSE
         .dfWithin = .totalN - .nGroups
         if .dfWithin <= 0
-            .error$ = "emlScheffe: dfWithin <= 0 (N="
-            ... + string$ (.totalN) + ", k="
-            ... + string$ (.nGroups) + ")"
+            .error$ = string$ (.totalN) + " observations across "
+            ... + string$ (.nGroups) + " groups leave no within-groups "
+            ... + "degrees of freedom. There must be more observations "
+            ... + "than groups."
         else
             .mse = .ssWithin / .dfWithin
         endif
@@ -4147,9 +4168,12 @@ procedure emlTheilSen: .x#, .y#
 
     .n = size (.x#)
     if .n <> size (.y#)
-        .error$ = "emlTheilSen: x and y must have equal length"
+        .error$ = "The x and y vectors must have equal length; x has "
+        ... + string$ (.n) + " values and y has "
+        ... + string$ (size (.y#)) + "."
     elsif .n < 2
-        .error$ = "emlTheilSen: need at least 2 observations"
+        .error$ = "This estimator needs at least 2 observations; got "
+        ... + string$ (.n) + "."
     endif
 
     if .error$ = ""
@@ -4171,7 +4195,8 @@ procedure emlTheilSen: .x#, .y#
         .nSlopes = .count
 
         if .nSlopes = 0
-            .error$ = "emlTheilSen: all x values are identical"
+            .error$ = "All " + string$ (.n) + " x values are identical, "
+            ... + "so no slope can be estimated. The predictor must vary."
         else
             # Extract valid slopes and sort for median
             .validSlopes# = zero# (.nSlopes)

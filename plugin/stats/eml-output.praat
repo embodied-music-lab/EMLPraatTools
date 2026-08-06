@@ -45,7 +45,8 @@
 #   @emlReportDescriptiveRow, @emlReportDescriptiveHeader,
 #   @emlReportAPA, @emlReportToFile, @emlFormatEffectLabel,
 #   @emlPadRight, @emlUnderscoreToSpace, @emlSaveInfoToFile,
-#   @emlCSVInit, @emlCSVAddRow, @emlExportStatsCSV, @emlClearInfo
+#   @emlCSVInit, @emlCSVAddRow, @emlExportStatsCSV, @emlClearInfo,
+#   @emlReportPWithExact, @emlResetExplanations
 #
 # All procedures use the "eml" prefix (EML Stats).
 # ============================================================================
@@ -56,11 +57,44 @@
 # ============================================================================
 # When emlShowExplanations = 1, report procedures append value-anchored
 # interpretations as a third column (tab-separated).
-# Set by the wizard; wrappers leave at 0.
 # emlWizardExplain$ is set before each @emlReportLine/@emlReportLineString
 # call and consumed (cleared) by the procedure.
+#
+# D42/D102. The default was 0 and no wrapper ever raised it, so glosses were
+# absent from every wrapper report while the graph path (which sets the gate
+# to 1) had them — the same analysis narrated two different ways depending on
+# whether a figure had been drawn earlier in the session. The default is now
+# 1: a wrapper report explains itself without the user having to know that a
+# gate exists.
+#
+# THE DEFAULT IS DECLARED ONCE, HERE. @emlResetExplanations restores this
+# variable rather than a literal, so the initial value and the restored value
+# cannot drift apart — which is exactly how D102 survived: the reset put the
+# gate back to a number that was written out a second time by hand.
 # ============================================================================
-emlShowExplanations = 0
+emlShowExplanationsDefault = 1
+emlShowExplanations = emlShowExplanationsDefault
+
+# ----------------------------------------------------------------------------
+# @emlResetExplanations
+# ----------------------------------------------------------------------------
+# Put the explanation gate back to its default (emlShowExplanationsDefault).
+#
+# D102. @emlGraphsWorkflow sets emlShowExplanations = 1 and never resets it, so
+# after any Draw every later analysis report in the same session silently
+# becomes verbose. Report content was therefore ORDER-DEPENDENT: the same
+# analysis produced different text depending on whether a figure had been drawn
+# earlier. That also made D42 and D44 intermittent and hard to reproduce.
+#
+# Any code that raises the gate for its own scope must lower it again through
+# this procedure when that scope ends.
+# ----------------------------------------------------------------------------
+procedure emlResetExplanations
+    if not variableExists ("emlShowExplanationsDefault")
+        emlShowExplanationsDefault = 1
+    endif
+    emlShowExplanations = emlShowExplanationsDefault
+endproc
 
 # ----------------------------------------------------------------------------
 # Distribution-shape thresholds
@@ -154,10 +188,34 @@ endproc
 
 
 procedure emlReportFooter
-    # Print closing double-line border
+    # Print the estimator conventions, then the closing double-line border.
+    #
+    # D5. Nothing in the report said which estimators produced the numbers,
+    # and these are the exact quantities that differ visibly between packages
+    # — a quartile is not one number, and a variance divided by n is not the
+    # one divided by n-1. A user pasting Q1 or SD into a paper had no way to
+    # say what they had computed. Two lines, on every report, make the output
+    # citable.
+    #
+    # WHAT THESE CLAIM, AND WHERE IT IS ENFORCED. Change the line only when
+    # the code below changes:
+    #   quartiles   @emlPercentile (eml-core-descriptive.praat) interpolates
+    #               with h = (n-1)p/100 + 1, which is R's type 7 / the
+    #               default of R's quantile(). @emlQuartiles is a thin caller.
+    #   SD/variance @emlVariance and @emlSD use the n-1 denominator (sample,
+    #               not population).
+    #   rank ties   @emlRankVector assigns the average of the tied positions
+    #               and reports the tie-correction sum; the Mann-Whitney and
+    #               Kruskal-Wallis paths apply that correction to the normal
+    #               approximation, and fall back to it from the exact null
+    #               distribution whenever ties are present (as R does).
     .empty$ = ""
     .border$ = "══════════════════════════════════════════════"
+    .conv1$ = "  Conventions: quartiles R type 7 · SD & variance n-1"
+    .conv2$ = "  · rank tests average tied ranks (tie-corrected)."
     appendInfoLine: .empty$
+    appendInfoLine: .conv1$
+    appendInfoLine: .conv2$
     appendInfoLine: .border$
 endproc
 
@@ -230,12 +288,75 @@ procedure emlReportBlank
 endproc
 
 
+# ----------------------------------------------------------------------------
+# @emlReportPWithExact: .label$, .pValue
+# ----------------------------------------------------------------------------
+# Print one p-value row that is BOTH reportable and exact.
+#
+# D28/D35. The APA rendering floors at .001, so 5.8e-07, 2.1e-13 and 3.0e-04
+# all print as "p < .001" — nine orders of magnitude flattened into one
+# string, with the real value reachable only from the CSV. The floor is
+# correct for a manuscript and useless for reading a result, and the report
+# has room for both, so it prints both:
+#
+#   p                   < .001  (5.8e-07)
+#   Kruskal-Wallis      p = .003
+#
+# The parenthesis appears ONLY when @emlFormatP says the label is inexact
+# (.exact$ non-empty), i.e. on the < .001 and > .999 floors. A p of .032 is
+# already exact to the printed precision and gets nothing appended.
+#
+# D9. When the row label already reads "p", the bare form is used so the row
+# does not say "p" twice ("p    p < .001"). Any other label — a test name, a
+# contrast, "p (adjusted)" — takes the full "p = " form, which is what makes
+# the row self-describing away from a column header.
+#
+# Outputs (for callers that want the same text somewhere else):
+#   .value$ — the value column exactly as printed
+#   .exact$ — the unrounded value, or "" when the label was already exact
+# ----------------------------------------------------------------------------
+procedure emlReportPWithExact: .label$, .pValue
+    @emlFormatP: .pValue
+    .exact$ = emlFormatP.exact$
+
+    ; Does the label already name p? Then do not repeat the "p".
+    .trimmed$ = replace_regex$ (.label$, "^\s+|\s+$", "", 0)
+    if .trimmed$ = "p" or .trimmed$ = "P"
+        .value$ = emlFormatP.bare$
+    else
+        .value$ = emlFormatP.formatted$
+    endif
+
+    if .exact$ <> ""
+        .value$ = .value$ + "  (" + .exact$ + ")"
+    endif
+
+    @emlReportLineString: .label$, .value$
+endproc
+
+
 # ============================================================================
 # FORMATTING PROCEDURES (produce strings, do NOT write to Info window)
 # ============================================================================
 
 procedure emlFormatP: .pValue
     # Format p-value according to APA guidelines
+    #
+    # Outputs:
+    #   .formatted$ - the full label, e.g. "p = .032" / "p < .001"
+    #   .bare$      - the SAME value with no "p " prefix, e.g. ".032" / "< .001"
+    #   .exact$     - the unrounded value in Praat's round-trip form, or "" when
+    #                 .formatted$ already shows the number exactly
+    #
+    # .bare$ exists because ten call sites printed the label twice: they pass
+    # "p" as the row label and then print .formatted$, which carries its own
+    # "p = " (D9). A column header of "p" over a cell reading "p = .032" is the
+    # same defect in table form (D56).
+    #
+    # .exact$ exists because flooring at .001 flattens real distinctions:
+    # 5.8e-07, 2.1e-13 and 3.0e-04 all render "p < .001", nine orders of
+    # magnitude reported identically (D35, D28). A caller that has room can
+    # print .exact$ beside the floored label instead of choosing between them.
     # Output: .formatted$
     # p < 0.001 -> "p < .001"
     # 0.9995 <= p < 1 -> "p > .999"  (would otherwise round to a false 1.000)
@@ -263,6 +384,23 @@ procedure emlFormatP: .pValue
         .prefix$ = "p = "
         .formatted$ = .prefix$ + .noLeadingZero$
     endif
+    # --- derived outputs (see header) ---
+    if .pValue = undefined
+        .bare$ = "undefined"
+        .exact$ = ""
+    else
+        ; Strip a leading "p " or "p = " from whatever the branches produced,
+        ; rather than rebuilding the formatting a second time and risking the
+        ; two drifting apart.
+        .bare$ = replace_regex$ (.formatted$, "^p\s*=\s*", "", 1)
+        .bare$ = replace_regex$ (.bare$, "^p\s*", "", 1)
+        if .pValue < 0.001 or (.pValue >= 0.9995 and .pValue < 1)
+            .exact$ = string$ (.pValue)
+        else
+            .exact$ = ""
+        endif
+    endif
+
 endproc
 
 
@@ -841,10 +979,23 @@ endproc
 # active dialog (Praat 6.4.62, macOS, 13 April 2026).
 #
 # Fields:
-#   boolean: "Clear Info window", 0
+#   boolean: "Clear Info window", emlLastClearInfo
 #
 # Variable derivation (available after endPause):
 #   clear_Info_window (numeric, 0 or 1)
+#
+# D74: the section marker was `comment: "--- Options ---"`, the only ASCII
+# rule in the plugin and the only labelled one. Every dialog separates its
+# zones with the heavy box-drawing rule (see dev/DESIGN_DIALOG_SYSTEM.md,
+# "Separator"), and this procedure appears in every wrapper, so the outlier
+# was visible everywhere. It now emits that rule.
+#
+# D52: the toggle was the literal 0, so it reset to unchecked on every
+# `New` — the user re-checked "Clear Info window" once per iteration of a
+# loop whose whole purpose is iteration. The choice now persists in
+# emlLastClearInfo for the rest of the session, the same way
+# emlLastCSVFolder$ persists the export folder. @emlHandleCommonFields
+# records it, because that is the procedure that already reads the answer.
 #
 # Usage:
 #   beginPause: "My Analysis"
@@ -857,9 +1008,15 @@ endproc
 # Group order is NOT included — not all wrappers have group columns.
 # Wrappers needing group order add it to their own dialog.
 # ────────────────────────────────────────────────────────────────────────────
+emlLastClearInfo = 0
+
 procedure emlWrapperCommonFields
-    comment: "--- Options ---"
-    boolean: "Clear Info window", 0
+    if not variableExists ("emlLastClearInfo")
+        emlLastClearInfo = 0
+    endif
+    comment: ""
+    comment: "─────────────────────────────────────"
+    boolean: "Clear Info window", emlLastClearInfo
 endproc
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -868,6 +1025,9 @@ endproc
 # return value and variable derivation, before the orchestrator call.
 # ────────────────────────────────────────────────────────────────────────────
 procedure emlHandleCommonFields
+    ; D52: remember the answer so the next trip round the wrapper's repeat
+    ; loop (and the next wrapper this session) reopens with it still set.
+    emlLastClearInfo = clear_Info_window
     if clear_Info_window
         @emlClearInfo
     endif
