@@ -104,9 +104,15 @@ git clone <repo> && cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect exit status 1.** 374 checks, 369 passing, 5 failing on purpose —
-four name an open plugin defect and one marks an undriven case. A green run
-would mean the suite had stopped telling the truth. See "Expected failures".
+**Expect exit status 1.** 402 checks, 401 passing, 1 failing on purpose:
+R7, the one red-path case that has not been driven. It is an axis case,
+judged from a rendered figure, so it belongs with the graphing work rather
+than in an R suite — and it is left failing so the gap stays visible in the
+count instead of disappearing into a comment. A green run would mean the
+suite had stopped telling the truth. See "Expected failures".
+
+D96 through D99 were failing here until 6 August. They now pass, and they
+pass against captures re-driven after the fixes, not against the old ones.
 
 ### What a passing run establishes
 
@@ -176,8 +182,9 @@ prints `< .001` — and checking only one surface would miss that.
 
 ## Expected failures
 
-Two categories of check fail on purpose. A green run would mean the suite
-had stopped telling the truth.
+One check fails on purpose. Two more used to, and the record of what they
+were is kept rather than deleted — a suite that quietly drops its failures
+as they are fixed leaves no way to tell a fix from a deletion.
 
 ### 1. ~~`v06` pins a defect~~ — RESOLVED 5 August 2026
 
@@ -193,22 +200,23 @@ corrected behaviour and **passes**; it retains a guard check that the two
 effect sizes stay numerically distinct, so a future regression that routes
 the rank statistic back under the parametric heading would fail the suite.
 
-### 2. `v07` fails on four open findings and one undriven case
+### 2. ~~`v07` fails on four open findings~~ — RESOLVED 6 August 2026,
+### and one undriven case, which still fails
 
 The red path was driven on 5 August 2026: six of the seven cases were loaded
-into Praat unchanged and taken through a wrapper. **Two behave as required,
-one behaves as required and then fails on a second degeneracy, and three
-fail.** The failing checks name their findings and pass when those are
-fixed, not before.
+into Praat unchanged and taken through a wrapper. Four of them exposed
+defects — D96, D97, D98, D99 — and all four were fixed on 6 August and the
+cases re-driven. The table below records both states, because the fix is only
+believable next to what it replaced.
 
 | Case | Verdict | What happened |
 |---|---|---|
-| R1 | **Partial** | States "complete cases n = 4" and "4 row(s) excluded for missing data" — the requirement, met twice. But every complete case is exactly linear, so the RM-ANOVA error term is identically zero, and the omnibus printed `F(2, 6) = 21110623253299200.0000` with a 48-place *p*. Its own post-hoc caught the same condition and refused. **D97** |
-| R2 | **Fails** | Computed *F*(2, 2) = 441, *p* = .0023, GG-corrected *p* = .0303 and three post-hoc *p*-values from two subjects, with no comment. The GG epsilon printed 0.5000, exactly the 1/(*k*−1) floor forced by *n* = 2 — the plugin has the tell in hand as it prints. **D98** |
+| R1 | **Passes** (was partial) | States "complete cases n = 4" and "4 row(s) excluded for missing data" — the requirement, met twice. But every complete case was exactly linear, so the RM-ANOVA error term is identically zero, and the omnibus printed `F(2, 6) = 21110623253299200.0000` with a 48-place *p*, while its own post-hoc caught the same condition and refused. **D97 — FIXED 6 Aug**: the omnibus refuses too. The floor is relative (`ssErr <= 1e-10 * ssTot`); the residual sits at ~1e-16 of the total, so an equality test against zero would not have fired. |
+| R2 | **Passes** (was failing) | Computed *F*(2, 2) = 111, GG epsilon = 0.5000 and three post-hoc *p*-values from two subjects with no comment. The epsilon is exactly the 1/(*k*−1) floor forced by *n* = 2 — the tell was in hand at print time. **D98 — FIXED 6 Aug**: a caution now prints directly under the GG line. The suite asserts its POSITION as well as its text; at the foot of the report it would read as being about the post-hoc. |
 | R3 | **Passes** | Refuses and names it: "All differences are identical (zero variance)". Fabricates no statistic. |
 | R4 | **Passes** | Refuses and names the group and its *n*: "Group ""Soprano"": n=6, group ""Alto"": n=1". |
-| R5 | **Partial** | Refuses before computing, which is the important half. Names only the first offending group, so six singleton groups take six attempts; never states the six-groups-for-six-rows diagnosis. Also leaks the internal procedure name into user-facing text. **D99** |
-| R6 | **Partial** | First recorded as a silent row-drop. That was **wrong** — the plugin prints `N (valid) 4` and `N (undefined) 1`, following the complete-case convention set on 21 July. What it cannot do is tell an empty cell from an unparseable string from a European decimal comma: `Get value:` returns `undefined` for all three, so recoverable data is discarded as if it were missing, and neither row nor value is named. **D96, restated** |
+| R5 | **Passes** (was partial) | Refused before computing, which was the important half, but named only the first offending group — six singletons, six attempts — and leaked the internal procedure name. **D99 — FIXED 6 Aug**: "Group column ""singer_id"" has 6 groups for 6 rows - one per row. This is an identifier column, not a grouping column." |
+| R6 | **Passes** (was partial) | First recorded as a silent row-drop. That was **wrong** — the plugin printed `N (valid) 4` and `N (undefined) 1`. What it could not do was tell an empty cell from an unparseable string from a European decimal comma. Worse than the report suggested: `Get value:` returns 1 for `"1,5"`, so the comma cell was not dropped at all, it entered the mean as a different number. **D96 — FIXED 6 Aug**: one classifier, `@eml_classifyCell`, used by every extraction path including the row-wise ones; the three conditions are reported separately with row and value named, and the comma cell is excluded rather than guessed at. |
 | R7 | Not driven | An axis case, judged from a figure. Belongs with the graphing work. |
 
 The requirement each case was written against, stated before the drive so

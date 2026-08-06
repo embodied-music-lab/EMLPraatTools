@@ -35,6 +35,10 @@ if (!exists("eml_report")) {
 }
 
 outdir <- repo_path("validate", "redpath")
+# Where the DRIVEN inputs live. The tables under outdir are constructed here
+# for R to reason about; the tables under indir are the ones actually loaded
+# into Praat, saved out of the live instance before the analysis ran.
+indir  <- repo_path("evidence", "csv")
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 w <- function(name, df) {
     write.csv(df, file.path(outdir, name), row.names = FALSE, quote = FALSE)
@@ -185,43 +189,99 @@ check_true("R1", "plugin states the complete-case count it analysed", TRUE)
 check_true("R1", "plugin states how many rows it excluded and why", TRUE)
 
 # But this table is also degenerate in a way the case did not anticipate, and
-# the plugin did not survive it. Every complete case has medium = soft + 10
-# and loud = soft + 20 exactly, so the subject x condition residual is
-# identically zero and the RM-ANOVA error term is 0. The plugin printed
+# on 5 August the plugin did not survive it. Every complete case has
+# medium = soft + 10 and loud = soft + 20 exactly, so the subject x condition
+# residual is identically zero and the RM-ANOVA error term is 0. The plugin
+# printed
 #   F(2, 6) = 21110623253299200.0000
 # — a floating-point artefact of dividing by a zero error term — and a
 # p-value in 48 decimal places. Its own post-hoc detected the same condition
 # correctly and refused ("All differences are identical (zero variance)") on
-# all three pairs, so the omnibus is the only place that does not check.
-# Recorded as finding D97; this check fails until the omnibus refuses too.
+# all three pairs, so the omnibus was the only place that did not check.
+# Recorded as finding D97.
+#
+# FIXED 6 August, and re-driven on a purpose-built exactly-linear table
+# (evidence/csv/rp_r1_rmanova_input.csv). The floor has to be RELATIVE: the
+# residual leaves ssErr at around 1e-16 of ssTot rather than at 0, so an
+# equality test against zero does not fire. R confirms the residual below.
 Y  <- as.matrix(na.omit(read.csv(file.path(outdir, "r1_incomplete_cases.csv"))[, 2:4]))
 res <- Y - rowMeans(Y) %o% rep(1, 3) - rep(1, nrow(Y)) %o% colMeans(Y) + mean(Y)
 check_true("R1", "error term is exactly zero, so F is undefined",
            max(abs(res)) < 1e-12)
-check_true("R1", "PLUGIN DEFECT D97: omnibus must refuse on a zero error term",
-           FALSE)
+
+r1cap <- capture("rp_r1_rmanova_info.txt")
+Y1 <- as.matrix(read.csv(file.path(indir, "rp_r1_rmanova_input.csv"))[, 2:4])
+res1 <- Y1 - rowMeans(Y1) %o% rep(1, 3) -
+        rep(1, nrow(Y1)) %o% colMeans(Y1) + mean(Y1)
+check_true("R1", "the driven table has a zero subject x condition residual",
+           max(abs(res1)) < 1e-12)
+check_true("R1", "D97 FIXED: the omnibus printed no F at all",
+           !any(grepl("F(", r1cap$lines, fixed = TRUE)))
+check_true("R1", "D97 FIXED: and no p-value",
+           !any(grepl("p = ", r1cap$lines, fixed = TRUE)))
+check_true("R1", "the capture stops at 'Running analysis...'",
+           any(grepl("Running analysis", r1cap$lines, fixed = TRUE)))
+# The refusal itself is a modal dialog, not Info-window text, so it is
+# evidenced by screenshot: evidence/shots/d97_r1_zero_error_term_refused.png.
+check_true("R1", "the wizard reached the analysis with RM-ANOVA selected",
+           any(grepl("RM-ANOVA", r1cap$lines, fixed = TRUE)))
 
 # --- R2: n = 2 subjects, k = 3 ---------------------------------------------
 # Same path. The requirement was: compute or refuse, but SAY WHICH, and do
 # not present a p-value from df_error = 2 without comment.
 #
-# The plugin computed F(2, 2) = 441.0000, p = 0.0023, GG epsilon = 0.5000,
-# GG-corrected p = 0.0303, and three post-hoc p-values — with no comment of
-# any kind. It does print "Subjects (complete cases) n = 2", which is honest
-# as far as it goes, but nothing marks the result as uninterpretable.
+# On 5 August the plugin computed F(2, 2) = 441.0000, p = 0.0023,
+# GG epsilon = 0.5000, GG-corrected p = 0.0303 and three post-hoc p-values,
+# with no comment of any kind. It does print "Subjects (complete cases)
+# n = 2", which is honest as far as it goes, but nothing marked the result as
+# uninterpretable. Recorded as finding D98.
 #
 # The epsilon is itself the tell: 0.5 is exactly the Greenhouse-Geisser lower
 # bound 1/(k-1), which is forced whenever n = 2. A value pinned to its floor
-# is a signal the design has no information left, and the plugin has it in
-# hand at the moment it prints.
+# means the design has no information left for the correction to use, and the
+# plugin has that value in hand at the moment it prints.
+#
+# FIXED 6 August. The result is still computed and printed — refusing would
+# be too strong, the numbers are a fair description of two subjects — but a
+# caution now sits directly under the line it qualifies. Position matters: a
+# note at the foot of the report would read as being about the post-hoc.
 f2 <- rm_anova(as.matrix(read.csv(file.path(outdir, "r2_two_subjects.csv"))[, 2:4]))
 check("R2", "R reproduces the plugin's F", 441.0000, f2$F,   tol = 5e-4)
 check("R2", "R reproduces the plugin's p",   0.0023, f2$p,   tol = 5e-5)
 check("R2", "R reproduces the plugin's GG epsilon", 0.5000, f2$gg, tol = 5e-5)
 check_true("R2", "epsilon sits exactly on the 1/(k-1) floor",
            abs(f2$gg - 1 / 2) < 1e-12)
-check_true("R2", "PLUGIN DEFECT D98: no comment on a df_error = 2 result",
-           FALSE)
+
+# Re-driven 6 August on a two-subject table. Every printed number is read
+# from the capture and checked against R, so the caution cannot have been
+# bought by breaking the arithmetic.
+r2cap <- capture("rp_r2_rmanova_info.txt")
+D2 <- as.matrix(read.csv(file.path(indir, "rp_r2_rmanova_input.csv"))[, 2:4])
+g2 <- rm_anova(D2)
+# The RM report is written as "label = value", not in the two-space columnar
+# form the descriptive reports use, so these read through printed_eq().
+check("R2", "driven F",   printed_eq(r2cap, "F(2, 2) ="), g2$F, tol = 5e-4)
+check("R2", "driven p",   printed_eq(r2cap, "F(2, 2) =", which = 2), g2$p,
+      tol = 5e-5)
+check("R2", "driven GG epsilon",
+      printed_eq(r2cap, "Greenhouse-Geisser epsilon ="), g2$gg, tol = 5e-5)
+check("R2", "driven GG-corrected p",
+      printed_eq(r2cap, "Greenhouse-Geisser epsilon =", which = 2),
+      g2$p_gg, tol = 5e-5)
+check_true("R2", "driven epsilon is on the floor 1/(k-1)",
+           abs(printed_eq(r2cap, "Greenhouse-Geisser epsilon =") - 0.5) < 5e-5)
+check_true("R2", "D98 FIXED: the report carries a caution",
+           any(grepl("Caution:", r2cap$lines, fixed = TRUE)))
+check_true("R2", "the caution names n = 2 as the cause",
+           any(grepl("n = 2 subjects", r2cap$lines, fixed = TRUE)))
+check_true("R2", "and names the forced lower bound",
+           any(grepl("lower bound", r2cap$lines, fixed = TRUE)))
+# Placement: the caution must come after the GG line and before the post-hoc.
+.gg  <- grep("Greenhouse-Geisser epsilon", r2cap$lines, fixed = TRUE)[1]
+.cau <- grep("Caution:", r2cap$lines, fixed = TRUE)[1]
+.ph  <- grep("Post-hoc", r2cap$lines, fixed = TRUE)[1]
+check_true("R2", "the caution sits between the GG line and the post-hoc",
+           .gg < .cau && .cau < .ph)
 
 # --- R3: zero variance throughout ------------------------------------------
 # Compare paired/repeated, SPL_soft against SPL_medium.
@@ -235,17 +295,31 @@ check_true("R3", "plugin refuses and names the zero variance (driven)", TRUE)
 # Compare k groups (ANOVA). Requirement: refuse BEFORE running, naming the
 # group count against the row count.
 #
-# The plugin refuses before computing, which is the important half. But it
-# names only the first offending group:
+# On 5 August the plugin refused before computing, which is the important
+# half, but it named only the first offending group:
 #   emlOneWayAnova: group "G01" has fewer than 2 observations
 # A user with six singleton groups fixes G01, re-runs, and meets G02. The
-# diagnosis that would end it in one step — six groups for six rows, so this
-# column is an identifier and not a grouping — is never stated. The message
-# also leaks the internal procedure name into user-facing text.
+# diagnosis that ends it in one step — six groups for six rows, so this
+# column is an identifier and not a grouping — was never stated, and the
+# message leaked the internal procedure name into user-facing text.
 # Recorded as finding D99.
+#
+# FIXED 6 August and re-driven. The refusal is a modal dialog rather than
+# Info-window text, so the evidence is the screenshot
+# evidence/shots/d99_r5_refusal_names_diagnosis.png, which reads:
+#
+#   Group column "singer_id" has 6 groups for 6 rows - one per row.
+#   This is an identifier column, not a grouping column.
+#
+# What R can assert here is the shape of the input that must produce it, and
+# that the old message's premise (one nameable offender) was never true.
 check_true("R5", "plugin refuses before computing anything (driven)", TRUE)
-check_true("R5", "PLUGIN DEFECT D99: names one group, not the count-vs-rows diagnosis",
-           FALSE)
+check_true("R5", "every group in this input is a singleton",
+           all(table(r5$voice_type) == 1L))
+check_true("R5", "so naming one offender at a time would take 6 attempts",
+           length(unique(r5$voice_type)) == 6L)
+check_true("R5", "D99 FIXED: the refusal states groups-vs-rows, not one group",
+           TRUE)
 
 # --- R6: non-numeric entry in a measure column -----------------------------
 # Describe Table column, SPL_soft — the column holding "n/a" in row 3 of 5.
@@ -282,12 +356,64 @@ check_true("R6", "constructed column has exactly one non-numeric entry",
 check_true("R6", "the offending value is a string, not an empty cell",
            any(!is.na(r6read$SPL_soft) & r6read$SPL_soft != "" &
                is.na(suppressWarnings(as.numeric(r6read$SPL_soft)))))
-check_true("R6", "PLUGIN DEFECT D96: missing, unparseable and locale-decimal are one bucket",
-           FALSE)
+# FIXED 6 August, and re-driven on a table carrying all three conditions at
+# once (evidence/csv/rp_r6_parse_conditions_input.csv): "n/a" in row 3,
+# "73,4" in row 4, an empty cell in row 5.
+#
+# The fix is one classifier, @eml_classifyCell, used by every extraction
+# entry point in eml-extract.praat — the row-wise readers as well as the
+# column-wise ones, which is what the author asked for. It also changed a
+# result: "73,4" used to coerce to 73 and enter the mean. It is now excluded
+# and named, because 1,234 is 1.234 to a European reader and 1234 to an
+# American one and the plugin has no basis to choose.
+r6cap <- capture("rp_r6_parse_conditions_info.txt")
+# The parse note is word-wrapped to the report width, so a sentence spans
+# lines and a line-by-line grep would miss it. Collapse to one string first;
+# that is what a reader sees, and it is what should be asserted.
+r6flat <- paste(trimws(r6cap$lines), collapse = " ")
+r6drv <- read.csv(file.path(indir, "rp_r6_parse_conditions_input.csv"),
+                  colClasses = "character")
+check_true("R6", "driven input has 6 rows", nrow(r6drv) == 6L)
+check_true("R6", "one cell is an unparseable string", r6drv$SPL_soft[3] == "n/a")
+check_true("R6", "one cell is a decimal comma", r6drv$SPL_soft[4] == "73,4")
+check_true("R6", "one cell is empty", r6drv$SPL_soft[5] == "")
+
+check("R6", "D96 FIXED: N (valid) counts only the 3 clean cells",
+      printed(r6cap, "N (valid)"), 3, tol = 0)
+check("R6", "N (excluded) counts the other 3",
+      printed(r6cap, "N (excluded)"), 3, tol = 0)
+check_true("R6", "the decimal comma is reported as its own condition",
+           grepl("comma where a decimal point belongs", r6flat, fixed = TRUE))
+check_true("R6", "and the offending row and value are named",
+           grepl("row 4: 73,4", r6flat, fixed = TRUE))
+check_true("R6", "the unparseable string is reported separately",
+           grepl("not numeric in any locale", r6flat, fixed = TRUE))
+check_true("R6", "and named as a type error rather than missing data",
+           grepl("type error, not missing data", r6flat, fixed = TRUE))
+check_true("R6", "and its row and value are named",
+           grepl("row 3: n/a", r6flat, fixed = TRUE))
+check_true("R6", "the empty cell is reported as missing data",
+           grepl("cell(s) are empty (row 5 first)", r6flat, fixed = TRUE))
+check_true("R6", "the three conditions are three distinct sentences",
+           length(gregexpr("cell(s)", r6flat, fixed = TRUE)[[1]]) == 3L)
+
+# The mean must be the mean of the three CLEAN values. If "73,4" had been
+# coerced the way it was before, the mean would be 72.45 instead of 72.2667 —
+# a difference no other number in the report would contradict.
+clean <- as.numeric(r6drv$SPL_soft[c(1, 2, 6)])
+check("R6", "mean is over the clean values only",
+      printed(r6cap, "Mean"), mean(clean), tol = 5e-4)
+with_coerced <- c(clean, 73)
+check("R6", "and is NOT the mean that coercing the comma cell would give",
+      mean(clean), mean(with_coerced), tol = 5e-3, expect = "differ")
 
 # --- R7: small-range measure -----------------------------------------------
 # Not driven. This is an axis case, testable only by looking at a figure, and
 # it belongs with the graphing work rather than in an R suite.
+# Still not driven. It is an axis case: the only way to see it is to look at
+# a rendered figure, which belongs with the graphing work and not in an R
+# suite. Left failing deliberately so the gap stays visible in the count
+# rather than disappearing into a comment.
 check_true("R7", "plugin behaviour observed on this input (PENDING DRIVE)", FALSE)
 
 cat("\nRed-path tables written to: ", outdir, "\n", sep = "")
