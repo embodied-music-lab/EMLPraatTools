@@ -4407,3 +4407,168 @@ surface across the plugin, and was **not driven** — it remains out of scope
 by author ruling. The two-way, correlation, regression, Kruskal-Wallis and
 pairwise wrappers were parse-checked and their code paths are identical to
 the two that were driven, but they were not individually exercised.
+
+
+---
+
+## Orchestrator validation drive — 5 August 2026
+
+The author challenged the phrase "eight untested analysis wrappers", and was
+right to. It was wrong, and the correction matters more than the wording.
+
+**The statistics are externally validated.** `stats/eml-inferential.praat` is
+28 of 28 procedures under an external R or scipy oracle at 442 passing
+checks; descriptives are asserted against closed-form analytic values. That
+was measured properly in `audit/reports/CORRECTION_coverage_2026-08-04.md`.
+
+What had never been tested is `stats/eml-analysis.praat` — fourteen
+orchestrators that do no arithmetic, but read the Table, choose which
+already-validated primitive to call from the form's menus, hand it arguments,
+and assemble the printed report. Zero had a direct oracle. Seven were touched
+by `test-workflow-verification.praat`, which checks that report procedures
+emit the expected *markers* — headings, spacing — not that the right value
+lands under the right one.
+
+That layer is where D15 lived: two individually-correct effect sizes, one
+printed under the other's heading. A primitive-level suite cannot reach it.
+
+Eight orchestrators were driven through their real GUI and given an R script
+each: `validate/v08`–`v15`, 237 new checks, all passing. With the four
+already covered by v01–v06 that is twelve of fourteen; the remaining two are
+LMM (tabled) and reliability (a stub).
+
+The scripts do not only re-check magnitudes. Each asserts the properties a
+wrapper can break while every number stays individually right: that a
+post-hoc matrix is antisymmetric, that a *t* equals its own estimate over its
+own SE, that the sign of a rank effect size tracks the mean difference, that
+partial eta-squared is SS/(SS+SS_error) and not SS/SS_total, that reversing
+predictor and response changes the slope but not R².
+
+### D94 — `exitScript` without a colon; Quit raises a Praat error
+
+Found by clicking Quit on *Describe Table column*. Praat parses a bare
+`exitScript` as a variable reference and raises
+
+    Unknown variable: « exitScript »
+    This happened after you clicked "Quit" in the pause form.
+
+Three sites: `eml-describe-table.praat:89` and `eml-batch-process.praat:112`
+and `:183`. The script does terminate, so the effect is an alarming error
+dialog on a normal Quit rather than a dead end. **FIXED** — all three now
+`exitScript: ""`. No other bare command usages exist in the plugin.
+
+### D95 — three shape-threshold sites disagreed with each other
+
+The normality report printed `Kurtosis` with no `(excess)` — the site D4's
+relabelling missed — and judged it against hard-coded 1 and 3, while
+`@emlRunNormalityAnalysis`'s own recommendation gate beside it read
+`emlSkewThreshold` and `emlKurtosisThreshold`, both 1. With G2 between 1 and
+3 the same report would print "Kurtosis within typical limits" on one line
+and recommend a nonparametric test on the next. The wizard's
+`@wizardNormCheck` had a third copy, also 1 and 3, and printed a sentence
+claiming 3 while enforcing 1.
+
+**FIXED** — `eml-annotation-procedures.praat`, `eml-wizard.praat` and
+`eml-output.praat` now read the constants at every site, and the printed
+sentence interpolates them rather than restating a literal. Re-driven after
+the fix; `validate/v15` asserts the verdicts against the constants, so
+changing the house convention and re-running is a coherent operation.
+
+### The red path, driven
+
+Six of seven cases loaded into Praat unchanged and taken through a wrapper.
+Two behave as required (R3 refuses on zero variance and names it; R4 refuses
+and names the group and its n). Four new findings follow. Full verdict table
+in `validate/REGISTRY.md`.
+
+### D96 — "undefined" is one bucket holding three different conditions
+
+**Corrected the same day, on the author's challenge.** This was first written
+as "a non-numeric cell silently costs a row, and nothing says so". That is
+false. I read the capture from its tail and missed the header, which says:
+
+    Column              SPL soft
+    N (valid)           4
+    N (undefined)       1
+
+The plugin reports the count, and follows the complete-case convention set on
+21 July (`plugin/FIX_NOTES.md`, audit item C1/C2): analyse the rows that
+parse, state how many were excluded. Nothing is silent, and the severity
+claim that rested on silence is withdrawn.
+
+**The real defect is narrower and is the one the author named.** `Get value:`
+returns `undefined` for three conditions that a user needs to tell apart:
+
+1. **an empty cell** — missing data; the C1/C2 convention is correct for it;
+2. **an unparseable string** — a type error, meaning this column is not a
+   measure at all, which is the D82 family arriving by a different route;
+3. **a decimal comma** — `1,5` written by anyone working in a European
+   locale. This is *recoverable data being discarded*. The user has the
+   number; the plugin throws it away and calls the row missing.
+
+Nothing downstream can distinguish them, because the distinction is destroyed
+at `Get value:`. The report names neither the row nor the offending value, so
+a user cannot tell a genuine gap in their data from a locale mismatch.
+
+**The convention this needs to satisfy is already written down** and is not a
+new decision: complete-case, with the exclusion stated. What is missing is
+the classification underneath it, applied identically to rows and to columns.
+That requires a shared parse helper at the extraction layer — there are ten
+entry points in `stats/eml-extract.praat` — which classifies each cell as
+numeric, empty, locale-decimal, or non-numeric, and a report line that names
+the column and the count per class. Severity: **medium**, not high.
+
+### D97 — RM-ANOVA omnibus does not check for a zero error term
+
+R1's four complete cases are exactly linear: every subject has
+medium = soft + 10 and loud = soft + 20, so the subject × condition residual
+is identically zero and the error SS is 0. Verified in R: `max |residual|`
+is 0 exactly. The plugin printed
+
+    F(2, 6) = 21110623253299200.0000, p = 0.000000000000000000000000000000000000000000000003
+
+The value is a floating-point artefact of dividing by a zero error term. The
+same run's **post-hoc caught the identical condition and refused** on all
+three pairs, naming it: "All differences are identical (zero variance)". So
+the check exists in the module and the omnibus does not call it.
+
+The 48-place p-value is D85 (repeated-measures p-values bypassing the
+plugin's own `< .001` convention), confirmed still present.
+
+### D98 — a two-subject design produces a full result with no caveat
+
+R2, n = 2 subjects and k = 3. df error = 2. The plugin computed F(2, 2) =
+441.0000, p = 0.0023, GG-corrected p = 0.0303 and three post-hoc p-values,
+with no comment of any kind. It does print "Subjects (complete cases) n = 2",
+which is honest as far as it goes, but nothing marks the result as
+uninterpretable.
+
+The Greenhouse-Geisser epsilon is the tell and the plugin has it in hand as
+it prints: 0.5000 is exactly the lower bound 1/(k−1), which is forced
+whenever n = 2. An epsilon pinned to its floor means the design has no
+information left to correct.
+
+### D99 — refusal names one group, not the diagnosis
+
+R5, a grouping column unique per row. The plugin refuses before computing
+anything, which is the half that matters. But it names only the first
+offending group:
+
+    emlOneWayAnova: group "G01" has fewer than 2 observations
+
+Six singleton groups therefore take six attempts to diagnose. The statement
+that would end it in one — six groups for six rows, so this column is an
+identifier and not a grouping — is never made, though `@emlCountGroups` has
+both numbers. The message also leaks the internal procedure name into
+user-facing text.
+
+### Regression introduced and fixed in the same session
+
+The D93 state-preservation patch put `selSubjectIdx = guessSubjectIdx + 1`
+before `guessSubjectIdx` was assigned, which was inside the loop. *Compare
+paired/repeated* raised `Unknown variable: guessSubjectIdx` and would not
+open at all. Found by driving, not by the parse check — which passed, because
+with no Table selected the script exits at `@emlWrapperInit` before reaching
+the line. **FIXED** by hoisting the assignment; a static check across all
+eight patched wrappers confirms no other seed references a later-assigned
+variable.
