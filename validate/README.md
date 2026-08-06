@@ -9,7 +9,7 @@ cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect: `804 checks, 804 passed, 0 FAILED`, and exit status 0.**
+**Expect: `893 checks, 893 passed, 0 FAILED`, and exit status 0.**
 
 That is the whole thing. If it prints that, every number the plugin printed in
 a committed run agrees with what R computes from the same input file.
@@ -38,7 +38,7 @@ nothing is fetched.
 
 ## Check one by hand, in two minutes
 
-Do this once and the rest of the suite is just the same move repeated 804
+Do this once and the rest of the suite is just the same move repeated 893
 times.
 
 **1. The input the plugin was given** — `evidence/csv/v09_anova_tukey_input.csv`
@@ -157,15 +157,35 @@ values NIST certified in multiple-precision arithmetic. It reports **correct
 significant digits** (log relative error), which is how this kind of result is
 conventionally stated, rather than pass/fail.
 
-On `SiRstv` — 25 resistivity measurements with three constant leading digits,
-built so that a textbook `sum(x^2) - sum(x)^2/n` routine loses about six
-digits — the plugin returns:
+All eleven ANOVA datasets are run. Correct significant digits on the
+between-group sum of squares — the quantity the difficulty grading is built
+to stress — against base R on the same file:
 
 ```
-sumsq.between   LRE 13.44 digits
-F statistic     LRE 12.94 digits
-residual.sd     LRE 13.41 digits
+AtmWtAg   plugin  10.24   base R   9.65
+SiRstv    plugin  14.03   base R  12.74
+SmLs01    plugin  15.10   base R  15.03
+SmLs02    plugin  15.05   base R  14.26
+SmLs03    plugin  15.15   base R  13.35
+SmLs04    plugin  10.05   base R  10.05
+SmLs05    plugin   9.94   base R   9.94
+SmLs06    plugin   9.94   base R   9.94
+SmLs07    plugin   4.03   base R   4.03
+SmLs08    plugin   3.92   base R   3.89
+SmLs09    plugin   3.91   base R   2.97
 ```
+
+Read that column downward before reading it across. **Both implementations
+lose digits on the harder sets, together.** The SmLs family increases the
+number of constant leading digits in the observations — 1, then 7, then 13 —
+while the between-group sum of squares stays near 1.68, so forming it means
+cancelling away almost the whole mantissa. Four correct digits at SmLs09 is
+what a 64-bit float has left, not a defect.
+
+What the suite therefore asserts is **relative**: the plugin must come within
+one significant digit of base R on the same data. That is a question about
+this code rather than about IEEE 754. It holds on all eleven, and on five of
+them the plugin is ahead.
 
 The `.dat` files are NIST's and are not redistributed here, so a fresh clone
 has none and `v19` prints a loud SKIP with the fetch command rather than
@@ -179,8 +199,8 @@ Still uncovered: the graphing layer.
 
 Seven lines print as `ATST` rather than `PASS`. Those are **attestations** —
 claims backed by a screenshot or a recorded observation rather than by
-anything the script can evaluate. They are excluded from the 804 and from the
-exit status, and reported separately, so that "804 checks passed" means 804
+anything the script can evaluate. They are excluded from the 893 and from the
+exit status, and reported separately, so that "893 checks passed" means 893
 things were tested. They are all in `v07`.
 
 ---
