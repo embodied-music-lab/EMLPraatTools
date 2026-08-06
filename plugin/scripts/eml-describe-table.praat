@@ -86,7 +86,7 @@ beginPause: "Describe Table Column"
     endfor
 clicked = endPause: "Quit", "Run", 2, 0
 if clicked = 1
-    exitScript
+    exitScript: ""
 endif
 
 dataColumn$ = column$

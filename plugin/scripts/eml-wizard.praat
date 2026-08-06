@@ -1900,7 +1900,12 @@ procedure wizardNormDiag: .data#, .label$
     endif
 
     # Rule-of-thumb + formal test combined
-    .skKurtFail = abs (.sk) >= 1 or abs (.ku) >= 3
+    # Same thresholds as every other shape verdict in the plugin.
+    # These were hard-coded 1 and 3 while the constants said 1 and 1,
+    # so the wizard's normality check and the Check-normality wrapper
+    # could reach opposite conclusions on the same column. (D95)
+    .skKurtFail = abs (.sk) >= emlSkewThreshold
+    ... or abs (.ku) >= emlKurtosisThreshold
     .swFail = 0
     if emlShapiroWilk.error$ = ""
         if emlShapiroWilk.p < 0.05
@@ -1924,7 +1929,10 @@ procedure wizardNormDiag: .data#, .label$
             endif
             if .skKurtFail
                 appendInfoLine: "    → Skewness/kurtosis outside typical "
-                ... + "limits (|skew| < 1, |kurt| < 3)"
+                ... + "limits (|skew| < "
+                ... + fixed$ (emlSkewThreshold, 0)
+                ... + ", |excess kurt| < "
+                ... + fixed$ (emlKurtosisThreshold, 0) + ")"
             endif
         endif
     else

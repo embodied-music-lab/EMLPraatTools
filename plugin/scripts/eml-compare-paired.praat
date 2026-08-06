@@ -35,15 +35,20 @@ endif
 # the D93 fix these were re-read from the guess on every iteration, so any
 # return to the form — after an error or after "New" — silently discarded
 # what the user had set. (D93)
+# Hoisted out of the loop. @emlWrapperInit has already run
+# @emlGuessColumnRoles, so this is loop-invariant, and the seed below needs
+# it before the first iteration. It was assigned inside the loop until
+# 5 August, which made "Unknown variable: guessSubjectIdx" the first thing
+# this wrapper did once the seed was added.
+guessSubjectIdx = emlGuessColumnRoles.subjectIdx
+
 selTest = 1
+# +1 because this menu carries a leading "(row number)" entry.
 selSubjectIdx = guessSubjectIdx + 1
 selGroupIdx = 1
 
 allDone = 0
 repeat
-    # Guess subject column
-    guessSubjectIdx = emlGuessColumnRoles.subjectIdx
-
     beginPause: "Compare Paired Observations"
         comment: "📋 Table: " + tableName$
         comment: "─────────────────────────────────────"

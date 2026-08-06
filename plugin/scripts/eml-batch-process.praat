@@ -109,7 +109,7 @@ repeat
         boolean: "Clear Info window", 0
     clicked = endPause: "Quit", "Standard", "Run", 3, 0
     if clicked = 1
-        exitScript
+        exitScript: ""
     elsif clicked = 2
         # Reset analysis parameters to canonical defaults
         mean_F0 = 1
@@ -180,7 +180,7 @@ beginPause: "Batch range"
 clicked = endPause: "Quit", "Run", 2, 0
 if clicked = 1
     removeObject: fileListId
-    exitScript
+    exitScript: ""
 endif
 
 # ============================================================================
