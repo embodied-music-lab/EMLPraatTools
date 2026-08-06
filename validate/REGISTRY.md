@@ -166,6 +166,110 @@ that is not a number in an Info window.
 
 ---
 
+## The optional tiers
+
+`run_all.R` needs **stock R and nothing else**, and that charter is
+load-bearing: it is what lets a reviewer with a bare R installation check the
+arithmetic without any of this project's apparatus. Three further tiers sit
+outside it. None is required by `run_all.R`; each answers a question the base
+suite cannot.
+
+Contributed by an external audit (FABL-5) on 6 August 2026, after the response
+to that audit asked for them: the claims they make had until then existed only
+as assertions in a report, which is the same category of gap as the
+unwitnessed transcription described above.
+
+### `validate/tools/check_registry_counts.R` — stock R
+
+Parses every per-script figure in the script table below, the `v07` row's
+`N + M attested` composite, and the headline claim, and diffs each against a
+live run. A row it cannot parse is a **failure, not a skip**.
+
+This exists because two of the defects in this document were count claims that
+I checked by eye and by `grep`, in a document whose subject is count accuracy —
+including one where a line-based pattern missed a wrapped `TRUE)` and I
+confidently contradicted a correct audit finding. Verified to fail correctly:
+corrupting one table figure produces `FAIL v09 checks: claimed 41, live 40`.
+
+```
+Rscript validate/run_all.R | tee /tmp/suite.log
+Rscript validate/tools/check_registry_counts.R /tmp/suite.log
+```
+
+Currently: **21 claims, 0 mismatches.**
+
+### `validate/oracle/` — R for the dump, Python for the comparison
+
+Answers "is `helpers.R` right?" against scipy, pingouin, scikit-posthocs and
+statsmodels, for the 25 quantities base R does not provide.
+
+The two-file split is the point. `oracle_dump.R` has **`helpers.R` itself**
+compute the values and write `oracle_values.csv`; `oracle_check.py` compares
+that file against the independent libraries. An oracle that re-implements the
+formulas in another language is a transcription, and a transcription can
+silently correct the thing it copies. This one tests the functions that ship.
+It also fails on a dumped value with no oracle counterpart *and* on an oracle
+value with no dump counterpart, so the two halves cannot drift apart quietly.
+
+```
+Rscript validate/oracle/oracle_dump.R
+python3 -m pip install -r validate/oracle/requirements.txt
+python3 validate/oracle/oracle_check.py
+```
+
+Currently: **25 statistics, 25 agree**, worst disagreement 8.8e-10 (a
+Shapiro-Wilk *p*; every other value agrees to 1e-11 or better).
+
+`oracle_values.csv` **is committed**, as a pinned reference. The dump is
+deterministic on committed inputs, so regenerating it must produce no diff —
+which makes it a regression detector rather than stale output:
+
+```
+Rscript validate/oracle/oracle_dump.R
+git diff --exit-code validate/oracle/oracle_values.csv
+```
+
+A diff there means `helpers.R` or a committed input changed. That is a
+finding, and it is the reason this file is committed rather than ignored.
+
+### `validate/mutation/mutate_drive.sh` — bash, git and R
+
+Answers "would this suite notice if a capture were wrong?" It corrupts one
+committed evidence file at a time, re-runs the suite, and requires the suite
+to respond — either by gaining a failure over the baseline or by halting. A
+suite that stays green under a corrupted capture is validating nothing.
+
+It is baseline-relative rather than count-hardcoded, so it survives the suite
+growing. It refuses to run on a dirty `evidence/` tree, restores through
+`git checkout --`, and verifies the restoration at the end. A `sed` pattern
+that no longer matches reports `SKIP`, never a false `OK`.
+
+```
+bash validate/mutation/mutate_drive.sh
+```
+
+Currently: **7 mutations, 7 detected, clean restoration.** Six raise a failure
+count; deleting the `Cohen's dz` label halts the harness, which is the
+behaviour the accessors promise.
+
+### CI order
+
+```
+Rscript validate/run_all.R | tee /tmp/suite.log
+Rscript validate/tools/check_registry_counts.R /tmp/suite.log
+Rscript validate/oracle/oracle_dump.R
+git diff --exit-code validate/oracle/oracle_values.csv
+python3 -m pip install -r validate/oracle/requirements.txt
+python3 validate/oracle/oracle_check.py
+bash    validate/mutation/mutate_drive.sh
+```
+
+The first two need only R. The mutation driver needs a clean tree and a git
+checkout. Only the third pair needs Python, and it is the only step that may
+be skipped without weakening a claim made in this document.
+
+---
+
 ## The scripts
 
 | Script | Covers | Input | Checks |
