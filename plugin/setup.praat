@@ -46,12 +46,23 @@ Add menu command: "Objects", "New", "-- eml correlate --", "Compare two-way (ANO
 Add menu command: "Objects", "New", "Correlate two columns...", "-- eml correlate --", 1, "scripts/eml-correlate.praat"
 Add menu command: "Objects", "New", "Linear regression...", "Correlate two columns...", 1, "scripts/eml-regress.praat"
 
-# Mixed models
-Add menu command: "Objects", "New", "-- eml mixed --", "Linear regression...", 1, ""
-Add menu command: "Objects", "New", "Linear mixed model...", "-- eml mixed --", 1, "scripts/eml-lmm.praat"
+# Mixed models — TABLED, 5 August 2026, by author ruling.
+#
+# The "Linear mixed model..." menu entry and its "-- eml mixed --" separator
+# are removed, and the Post-Hoc separator below is rechained to follow
+# "Linear regression..." so the submenu has no gap. scripts/eml-lmm.praat and
+# stats/eml-lmm.praat are LEFT IN PLACE and untouched — this hides the entry
+# point, it does not delete the module. Restoring it means restoring these
+# two lines and rechaining "-- eml posthoc --" back to it.
+#
+# The module has no test of any kind: 31 procedures in eml-lmm.praat plus the
+# 10 in eml-linalg.praat and 8 in eml-optimizer.praat that only it calls, none
+# under any oracle (audit/reports/CORRECTION_coverage_2026-08-04.md). Leaving
+# a reachable menu entry on an untested mixed-model implementation is the
+# thing being removed.
 
 # Post-Hoc
-Add menu command: "Objects", "New", "-- eml posthoc --", "Linear mixed model...", 1, ""
+Add menu command: "Objects", "New", "-- eml posthoc --", "Linear regression...", 1, ""
 Add menu command: "Objects", "New", "Pairwise comparisons...", "-- eml posthoc --", 1, "scripts/eml-pairwise.praat"
 
 # Graphs
@@ -81,7 +92,7 @@ Add action command: "Table", 1, "", 0, "", 0, "EML: Check normality...", "", 0, 
 Add action command: "Table", 1, "", 0, "", 0, "EML: Compare groups...", "", 0, "scripts/eml-compare-groups.praat"
 Add action command: "Table", 1, "", 0, "", 0, "EML: Correlate columns...", "", 0, "scripts/eml-correlate.praat"
 Add action command: "Table", 1, "", 0, "", 0, "EML: Linear regression...", "", 0, "scripts/eml-regress.praat"
-Add action command: "Table", 1, "", 0, "", 0, "EML: Linear mixed model...", "", 0, "scripts/eml-lmm.praat"
+# TABLED with the menu entry above: the Objects-window button for LMM.
 Add action command: "Table", 1, "", 0, "", 0, "EML Graphs...", "", 0, "scripts/eml-graphs.praat"
 Add action command: "Table", 1, "", 0, "", 0, "EML: Edit Table...", "", 0, "scripts/eml-edit-table-launch.praat"
 Add action command: "Table", 1, "", 0, "", 0, "EML: Stats Wizard...", "", 0, "scripts/eml-wizard.praat"
