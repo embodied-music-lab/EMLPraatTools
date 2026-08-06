@@ -594,42 +594,151 @@ endproc
 # Reporters append rows; @emlExportStatsCSV writes the file.
 
 emlCSV_n = 0
-emlCSV_header$ = "table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,effect_type,effect_label,n1,n2,mean1,sd1,median1,mean2,sd2,median2"
+# ============================================================================
+# CSV EXPORT — tidy long format                              D24 and 13 others
+# ============================================================================
+# This replaced a fixed 20-column wide schema on 6 August 2026. That schema
+# was one header --
+#
+#   table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,
+#   effect_type,effect_label,n1,n2,mean1,sd1,median1,mean2,sd2,median2
+#
+# -- made to carry the output of every test in the plugin, and it failed in
+# fourteen separate findings for three structural reasons:
+#
+#   1. NO WAY TO SAY "NOT APPLICABLE". Every argument went through fixed$ or
+#      string$, so a caller with nothing to report had to pass a number, and
+#      every caller passed 0. The one-way omnibus row ended in eight zeros
+#      meaning "not applicable", indistinguishable from eight measurements
+#      of zero; the doTukey = 0 fallback wrote p = 0.000000, which reads as
+#      the most significant result in the file. (D24, and D23/D37/D46/D76.)
+#
+#   2. SLOTS REUSED FOR UNRELATED QUANTITIES. Regression wrote its slope
+#      into mean1, the slope's SE into sd1, the intercept into median1 and R
+#      into sd2. Correlation wrote the Y variable into group_col. Paired
+#      tests packed two column names into all four level slots. The header
+#      said one thing and the file contained another. (D45/D54/D55/D19.)
+#
+#   3. NOTHING COULD BE ADDED. One df column cannot hold a numerator and a
+#      denominator, so F(1,28) exported as df=1.00 and could not be
+#      reconstructed; there was nowhere to put SS, MS, a confidence interval
+#      or a per-cell n. (D34/D57/D23/D76.)
+#
+# The long format cannot have any of these problems, which is the point of
+# choosing it over widening the wide one. Every value is named where it is
+# written, so no slot can be reused; a value you do not have is a row you do
+# not write, so no sentinel is needed and none exists; and a new quantity is
+# a new field name, not a schema change.
+#
+#   table,analysis,term,field,value
+#
+#   table    -- the source Table's name
+#   analysis -- "One-way ANOVA", "Tukey HSD", "Pearson correlation", ...
+#   term     -- what the row is about: a contrast ("Soprano vs Alto"), a
+#               factor ("voice_type"), a coefficient ("practice_hrs_wk"), a
+#               group ("Alto"), or "" for an omnibus/overall result
+#   field    -- "F", "df1", "df2", "p", "eta_squared", "estimate", "se",
+#               "ci_lower", "n", "mean", "sd", "median", ...
+#   value    -- the number, or a string for fields like "method"
+#
+# To get a wide table back in R:
+#   read.csv("x.csv") |> tidyr::pivot_wider(names_from = field,
+#                                           values_from = value)
+#
+# Numbers are written with string$, which is Praat's shortest round-trip
+# form: 0.002246 stays 0.002246 and 1.06e-14 stays 1.06e-14 rather than
+# becoming 0.00000000000001. That also ends the p-value flooring in exports
+# (D14's residual) without a separate decision about decimal places.
+# ============================================================================
+
+emlCSV_header$ = "table,analysis,term,field,value"
 
 procedure emlCSVInit
     emlCSV_n = 0
+    emlCSV_table$ = ""
 endproc
 
-procedure emlCSVAddRow: .table$, .dataCol$, .groupCol$, .g1$, .g2$, .test$, .stat, .df, .p, .es, .esType$, .esLabel$, .n1, .n2, .mean1, .sd1, .median1, .mean2, .sd2, .median2
+
+# @emlCSVSetTable: .table$
+# Called once per analysis, before any @emlCSVAdd. Every row carries it.
+procedure emlCSVSetTable: .table$
+    emlCSV_table$ = .table$
+endproc
+
+
+# @eml_csvQuote: .s$  -- RFC 4180 quoting, so a column label containing a
+# comma or a quote cannot silently split a row into two fields. The old
+# writer concatenated raw strings and had no protection at all.
+procedure eml_csvQuote: .s$
+    if index (.s$, ",") > 0 or index (.s$, """") > 0 or index (.s$, newline$) > 0
+        .result$ = """" + replace$ (.s$, """", """""", 0) + """"
+    else
+        .result$ = .s$
+    endif
+endproc
+
+
+# @emlCSVAdd: .analysis$, .term$, .field$, .value
+# One numeric result. An undefined value writes nothing at all — that is the
+# replacement for the zero sentinel, and it is why no sentinel is needed.
+procedure emlCSVAdd: .analysis$, .term$, .field$, .value
+    if .value <> undefined
+        @eml_csvAppend: .analysis$, .term$, .field$, string$ (.value)
+    endif
+endproc
+
+
+# @emlCSVAddStr: .analysis$, .term$, .field$, .value$
+# One string-valued result (a method name, a direction, an effect label).
+# An empty string writes nothing, for the same reason.
+procedure emlCSVAddStr: .analysis$, .term$, .field$, .value$
+    if .value$ <> ""
+        @eml_csvAppend: .analysis$, .term$, .field$, .value$
+    endif
+endproc
+
+
+procedure eml_csvAppend: .analysis$, .term$, .field$, .value$
     emlCSV_n = emlCSV_n + 1
-    .sep$ = ","
-    emlCSV_row$[emlCSV_n] = .table$ + .sep$
-    ... + .dataCol$ + .sep$
-    ... + .groupCol$ + .sep$
-    ... + .g1$ + .sep$
-    ... + .g2$ + .sep$
-    ... + .test$ + .sep$
-    ... + fixed$ (.stat, 6) + .sep$
-    ... + fixed$ (.df, 2) + .sep$
-    ... + fixed$ (.p, 6) + .sep$
-    ... + fixed$ (.es, 4) + .sep$
-    ... + .esType$ + .sep$
-    ... + .esLabel$ + .sep$
-    ... + string$ (.n1) + .sep$
-    ... + string$ (.n2) + .sep$
-    ... + fixed$ (.mean1, 4) + .sep$
-    ... + fixed$ (.sd1, 4) + .sep$
-    ... + fixed$ (.median1, 4) + .sep$
-    ... + fixed$ (.mean2, 4) + .sep$
-    ... + fixed$ (.sd2, 4) + .sep$
-    ... + fixed$ (.median2, 4)
+    @eml_csvQuote: emlCSV_table$
+    .a$ = eml_csvQuote.result$
+    @eml_csvQuote: .analysis$
+    .b$ = eml_csvQuote.result$
+    @eml_csvQuote: .term$
+    .c$ = eml_csvQuote.result$
+    @eml_csvQuote: .field$
+    .d$ = eml_csvQuote.result$
+    @eml_csvQuote: .value$
+    .e$ = eml_csvQuote.result$
+    emlCSV_row$ [emlCSV_n] = .a$ + "," + .b$ + "," + .c$ + "," + .d$ + ","
+    ... + .e$
+endproc
+
+
+# @emlCSVAddDescriptives: .analysis$, .term$, .n, .mean, .sd, .median
+# The group-descriptives block every reporter wants, written as named fields
+# so an absent one is absent rather than zero.
+procedure emlCSVAddDescriptives: .analysis$, .term$, .n, .mean, .sd, .median
+    @emlCSVAdd: .analysis$, .term$, "n", .n
+    @emlCSVAdd: .analysis$, .term$, "mean", .mean
+    @emlCSVAdd: .analysis$, .term$, "sd", .sd
+    @emlCSVAdd: .analysis$, .term$, "median", .median
 endproc
 
 procedure emlExportStatsCSV: .filePath$
     # Write accumulated CSV rows with overwrite protection.
-    # Output: .success (1/0), .actualPath$
+    # Output: .success (1/0), .actualPath$, .reason$
+    #
+    # D66: an empty buffer used to return .success = 0, and the only caller
+    # rendered that as "Could not write CSV file." — a disk-failure message
+    # for a file the plugin never attempted to write. Three orchestrators
+    # called @emlCSVInit and then never added a row, so their CSV button
+    # could not succeed and reported the wrong reason for it. .reason$ now
+    # distinguishes the two cases so a caller can say which happened.
+    .reason$ = ""
     if emlCSV_n = 0
         .success = 0
+        .reason$ = "empty"
         .actualPath$ = .filePath$
     else
         # Build full content
@@ -640,6 +749,9 @@ procedure emlExportStatsCSV: .filePath$
         @emlReportToFile: .filePath$, .content$
         .success = emlReportToFile.success
         .actualPath$ = emlReportToFile.actualPath$
+        if .success = 0
+            .reason$ = "write"
+        endif
     endif
 endproc
 
@@ -779,17 +891,53 @@ endproc
 # Parameters:
 #   .tableName$ — used for default filename
 # ────────────────────────────────────────────────────────────────────────────
-procedure emlWrapperExportCSV: .tableName$
+# @emlWrapperExportCSV: .tableName$, .analysis$
+#
+# D39: the folder defaulted to defaultDirectory$, which is the directory of
+# the running script — inside the plugin tree. Saving there puts a user's
+# results among the plugin's own files, where an update will overwrite or
+# lose them. It now remembers the last folder used, seeded from the user's
+# home directory, and remembers it across analyses within a session.
+#
+# D18/D65: the file name was .tableName$ + "_results" for every analysis, so
+# two different tests on one table proposed the same name and the second
+# silently overwrote the first. The analysis is now part of the proposal.
+# D18's other half — the paired wrapper passing its reshaped intermediate, so
+# the name came out "pairedLong_results" — is fixed at the call site.
+procedure emlWrapperExportCSV: .tableName$, .analysis$
+    if not variableExists ("emlLastCSVFolder$")
+        emlLastCSVFolder$ = homeDirectory$
+    endif
+    if emlLastCSVFolder$ = ""
+        emlLastCSVFolder$ = homeDirectory$
+    endif
+    .slug$ = replace$ (.analysis$, " ", "_", 0)
+    .slug$ = replace$ (.slug$, "/", "-", 0)
+    .slug$ = replace$ (.slug$, "'", "", 0)
+    .defaultName$ = .tableName$ + "_" + .slug$
+    if .slug$ = ""
+        .defaultName$ = .tableName$ + "_results"
+    endif
     beginPause: "Export Results"
-        folder: "Output folder", defaultDirectory$
-        word: "File name", .tableName$ + "_results"
+        folder: "Output folder", emlLastCSVFolder$
+        word: "File name", .defaultName$
     .clicked = endPause: "Go Back", "Save", 2, 0
     if .clicked = 2
+        emlLastCSVFolder$ = output_folder$
         .csvPath$ = output_folder$ + "/" + file_name$ + ".csv"
         @emlExportStatsCSV: .csvPath$
         if emlExportStatsCSV.success
             beginPause: "Export Complete"
                 comment: "Saved to: " + emlExportStatsCSV.actualPath$
+            endPause: "OK", 1, 0
+        elsif emlExportStatsCSV.reason$ = "empty"
+            # D66: this is not a disk failure and must not read as one.
+            beginPause: "Nothing to Export"
+                comment: "This analysis produced no exportable rows."
+                comment: ""
+                comment: "The results are in the Info window; the CSV"
+                comment: "buffer for this test is empty. Please report"
+                comment: "this — it is a defect, not a setting."
             endPause: "OK", 1, 0
         else
             beginPause: "Export Failed"
