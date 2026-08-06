@@ -151,16 +151,52 @@ check_true("v16", "D19: the design is stated in the file",
 
 # --- the structural guarantees --------------------------------------------
 files <- list.files(csvdir, pattern = "\\.csv$")
-check_true("v16", "every export has the same five-column header",
+check_true("v16", "every export has the same six-column header",
            all(vapply(files, function(f)
                identical(names(csv_of(f)),
-                         c("table", "analysis", "term", "field", "value")),
+                         c("table", "analysis", "term", "term_type",
+                           "field", "value")),
                logical(1))))
+
+# --- term_type: the column that makes the format usable -------------------
+# The first version of the long format did not have this, and pivoting the
+# result produced a ragged table, because a contrast ("Soprano vs Mezzo") and
+# a group ("Soprano") both live in `term`. These checks assert that the
+# column exists, is never blank, uses only the documented vocabulary, and —
+# the one that matters — that filtering on it yields a pivot with one row per
+# term and no collisions.
+allrows0 <- do.call(rbind, lapply(files, csv_of))
+check_true("v16", "term_type is never blank", !any(allrows0$term_type == ""))
+check_true("v16", "term_type uses only the documented vocabulary",
+           all(allrows0$term_type %in%
+               c("omnibus", "contrast", "group", "factor",
+                 "coefficient", "error", "total", "variable")))
+check_true("v16", "a term is never given two different term_types",
+           !any(duplicated(unique(allrows0[, c("analysis", "term",
+                                               "term_type")])[, c("analysis",
+                                                                  "term")])))
+
+# No row may be written twice. The post-hoc reporters call
+# @emlCSVAddDescriptives from inside their pairwise loop, so before the
+# guard a group in k contrasts had its descriptives written k times —
+# identical rows, harmless read one at a time, and silently truncated by
+# any pivot ("multiple rows match, first taken").
+check_true("v16", "no export contains a duplicated row",
+           all(vapply(files, function(f) {
+               d <- csv_of(f)
+               !any(duplicated(d))
+           }, logical(1))))
+
+# The point of the whole design: within one analysis and one term_type, a
+# field appears at most once per term, so pivot_wider is unambiguous.
+check_true("v16", "field is unique within (analysis, term_type, term)",
+           !any(duplicated(allrows0[, c("table", "analysis", "term_type",
+                                        "term", "field")])))
 
 # D24, the whole point. Scan every value in every export. A zero is allowed
 # only where zero is the measurement; nothing may write zero to mean "not
 # applicable". The old omnibus row ended in eight of them.
-allrows <- do.call(rbind, lapply(files, csv_of))
+allrows <- allrows0
 zeros <- allrows[allrows$value == "0", ]
 na_fields <- c("n", "n1", "n2", "mean", "sd", "median", "df", "df1", "df2",
                "ss", "ms", "statistic")
@@ -174,7 +210,7 @@ check_true("v16", "D24: no p is exported as a bare zero except a true zero",
 # rather than a group, a slot is being reused again.
 check_true("v16", "no descriptive field is attached to a contrast term",
            !any(allrows$field %in% c("mean", "sd", "median") &
-                grepl(" vs ", allrows$term, fixed = TRUE)))
+                allrows$term_type == "contrast"))
 
 # D66: an analysis that produces no rows must be distinguishable from a
 # disk failure. The drive script asserts the reason string; here we assert
