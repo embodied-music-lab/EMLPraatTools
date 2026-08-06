@@ -46,7 +46,13 @@ scripts <- c(
     # belongs in the runner like the rest. Added 6 Aug 2026 -- it had been
     # written standalone and was invisible to a reviewer following the
     # instructions in REGISTRY.
-    "v17_broom_parity.R"
+    "v17_broom_parity.R",
+    # v18 is the Tier B grid: the shipping statistical procedures over 16
+    # designed shapes rather than one GUI-driven table each. Stock R, and it
+    # reads committed evidence like every other script, so it belongs in the
+    # runner. It is DIFFERENT EVIDENCE from v01-v15, not more of it -- those
+    # check the printed report, this checks the procedure behind it.
+    "v18_sweep_parity.R"
 )
 
 cat("EML Praat Tools validation suite\n")

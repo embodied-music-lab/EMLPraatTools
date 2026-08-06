@@ -132,7 +132,7 @@ git clone <repo> && cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect exit status 0.** 501 checks, all passing, plus 7 attestations
+**Expect exit status 0.** 795 checks, all passing, plus 7 attestations
 reported separately and not counted as checks.
 
 Until 6 August 2026 this said "expect exit status 1", because R7 — the
@@ -146,8 +146,8 @@ is driven now, and the suite has no designed failures left.
 An **attestation** is a claim backed by a screenshot or a recorded
 observation rather than by anything the script can evaluate. There are seven,
 all in `v07`. They print as `ATST`, are excluded from the check count and
-from the exit status, and are listed separately so that "501 checks passed"
-means 501 things were tested.
+from the exit status, and are listed separately so that "795 checks passed"
+means 795 things were tested.
 
 D96 through D99 were failing here until 6 August. They now pass, and they
 pass against captures re-driven after the fixes, not against the old ones.
@@ -299,6 +299,7 @@ be skipped without weakening a claim made in this document.
 | `v15_normality_orchestrator.R` | *Check normality (all columns)*: three columns, and the parametric/nonparametric recommendation | `evidence/csv/v15_normality_input.csv` | 43 |
 | `v16_csv_export.R` | The CSV export: every number against R, plus the structural assertions that make the file unambiguous to pivot | `evidence/csv_export/*.csv` | 45 |
 | `v17_broom_parity.R` | The broom-shaped export: tidy / glance / augment / post-hoc / effect size against R, structurally and numerically | `evidence/csv_export/broom/` | 48 |
+| `v18_sweep_parity.R` | **Tier B.** One-way ANOVA, Tukey-Kramer and Kruskal-Wallis over a 16-case designed grid: k = 2/3/5, n per cell 3-200, balanced and 6:1 unbalanced, tie-free to heavily tied, 1:1 and 10:1 variance ratios | `evidence/sweep/` | 294 |
 
 ### Notes on individual scripts
 
@@ -430,6 +431,35 @@ What that table implies, stated as findings rather than left to be noticed:
 None of this makes a passing check wrong. It bounds what the checks are
 evidence *of*: correct arithmetic on well-conditioned, balanced, complete
 data, which is the common case and not the hard one.
+
+### The tiers that answer it
+
+`v18_sweep_parity.R` (added 6 August 2026) takes the first two of those
+findings off the list for one-way ANOVA, Tukey and Kruskal-Wallis. It is a
+different kind of evidence and is labelled as such: the cases are generated
+headlessly by `harness/sweep/tierB_grid.praat`, which calls the shipping
+procedures directly under `praat --run`, so there is no click-through
+provenance behind any of its 294 checks. What it establishes is that the
+procedure is right on 16 shapes the GUI drives never produced — including
+6:1 unbalanced Tukey-Kramer and heavy ties in Kruskal-Wallis.
+
+Two further tiers exist as harness rather than as committed evidence:
+
+- `harness/sweep/tierA_properties.praat` — 22 invariance and refusal
+  properties that hold whatever the data is (one-way *F* = *t*² at *k* = 2,
+  location invariance, scale equivariance, group-label permutation
+  invariance, rank invariance of *H* under a monotone transform, matrix
+  symmetry, and eight malformed-input cases whose refusal must *name* what
+  is wrong). No oracle and no certified value, so nothing is transcribed.
+  It found the `lowerCase$` portability defect on Praat 6.4.06.
+- `validate/tools/nist_ingest.R` + `validate/lre.R` — the NIST StRD tier.
+  The certified values are parsed out of NIST's published `.dat` files, never
+  transcribed, and scored as **log relative error** (correct significant
+  digits) rather than pass/fail, which is the convention StRD work is
+  reported in. The `.dat` files are not redistributed here; `nist_ingest.R`
+  documents the two `curl` lines that fetch them. **This is the only external
+  authority anywhere in this folder** — every other check is ultimately "R
+  agrees", and R is a peer, not a referee.
 
 **Not covered, and why.** The LMM orchestrator (module tabled by author
 ruling of 4 August) and the reliability orchestrator (a Phase 4 stub that

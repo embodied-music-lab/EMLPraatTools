@@ -9,7 +9,7 @@ cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect: `501 checks, 501 passed, 0 FAILED`, and exit status 0.**
+**Expect: `795 checks, 795 passed, 0 FAILED`, and exit status 0.**
 
 That is the whole thing. If it prints that, every number the plugin printed in
 a committed run agrees with what R computes from the same input file.
@@ -38,7 +38,7 @@ nothing is fetched.
 
 ## Check one by hand, in two minutes
 
-Do this once and the rest of the suite is just the same move repeated 501
+Do this once and the rest of the suite is just the same move repeated 795
 times.
 
 **1. The input the plugin was given** — `evidence/csv/v09_anova_tukey_input.csv`
@@ -128,17 +128,32 @@ on the committed input, but it is not a session someone clicked through.
 
 ---
 
-## The limit worth knowing before you start
+## Two kinds of evidence, and the limit on each
 
-**Each test is driven on exactly one input table**, and every between-groups
-table is balanced (3 × 15, 2 × 20, 2 × 2 × 12), complete, and — in the
-Kruskal-Wallis/Dunn case — free of ties. So a green run establishes correct
-arithmetic on well-conditioned data. It does not exercise unequal *n*, ties,
-missing data outside the seven red-path cases, or the ill-conditioned inputs
-that separate a numerically stable implementation from an unstable one.
-`REGISTRY.md` §"One dataset per test" lists every input with its shape.
+**`v01`–`v17` check the printed report.** Each is driven on **exactly one
+input table**, taken through the real GUI, and every between-groups table is
+balanced (3 × 15, 2 × 20, 2 × 2 × 12), complete, and — in the
+Kruskal-Wallis/Dunn case — free of ties. That is strong evidence that what a
+user *sees* is right, and no evidence at all about shapes the demo tables
+never produce. `REGISTRY.md` §"One dataset per test" lists every input with
+its shape.
 
-It also says nothing about the graphing layer.
+**`v18` checks the procedures underneath**, over a 16-case designed grid:
+*k* = 2/3/5, cells from *n* = 3 to *n* = 200, balanced and 6:1 unbalanced,
+tie-free through heavily tied, 1:1 and 10:1 variance ratios. Those cases are
+generated headlessly by `harness/sweep/tierB_grid.praat` calling the shipping
+procedures directly — no GUI, and therefore no click-through provenance. It
+covers the unbalanced Tukey-Kramer path and the Kruskal-Wallis tie correction,
+neither of which `v01`–`v17` reach.
+
+Neither implies the other, which is why both are here. A correct procedure can
+still be printed into the wrong column; a correct report proves nothing about
+data the report was never run on.
+
+Still uncovered: the graphing layer, and the ill-conditioned inputs that
+separate a numerically stable implementation from an unstable one — see
+`validate/lre.R` and `validate/tools/nist_ingest.R` for the NIST StRD tier
+that addresses the second.
 
 ---
 
@@ -146,8 +161,8 @@ It also says nothing about the graphing layer.
 
 Seven lines print as `ATST` rather than `PASS`. Those are **attestations** —
 claims backed by a screenshot or a recorded observation rather than by
-anything the script can evaluate. They are excluded from the 501 and from the
-exit status, and reported separately, so that "501 checks passed" means 501
+anything the script can evaluate. They are excluded from the 795 and from the
+exit status, and reported separately, so that "795 checks passed" means 795
 things were tested. They are all in `v07`.
 
 ---
