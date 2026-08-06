@@ -56,7 +56,12 @@ scripts <- c(
     # v19 is the NIST StRD tier. It contributes checks only when the .dat
     # files have been ingested (they are not redistributable), and prints a
     # loud SKIP otherwise rather than silently contributing nothing.
-    "v19_nist_strd.R"
+    "v19_nist_strd.R",
+    # v20 is the first CSV migration checkpoint: the SHIPPING ANOVA path in
+    # broom's three-file shape. Distinct from v17, which checks the writer
+    # called directly by a harness. A path is not converted until it has a
+    # check at this level.
+    "v20_shipping_anova_broom.R"
 )
 
 cat("EML Praat Tools validation suite\n")

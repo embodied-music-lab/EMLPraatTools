@@ -9,7 +9,7 @@ cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect: `893 checks, 893 passed, 0 FAILED`, and exit status 0.**
+**Expect: `948 checks, 948 passed, 0 FAILED`, and exit status 0.**
 
 That is the whole thing. If it prints that, every number the plugin printed in
 a committed run agrees with what R computes from the same input file.
@@ -38,7 +38,7 @@ nothing is fetched.
 
 ## Check one by hand, in two minutes
 
-Do this once and the rest of the suite is just the same move repeated 893
+Do this once and the rest of the suite is just the same move repeated 948
 times.
 
 **1. The input the plugin was given** — `evidence/csv/v09_anova_tukey_input.csv`
@@ -197,11 +197,11 @@ Still uncovered: the graphing layer.
 
 ## The one thing that is not a check
 
-Seven lines print as `ATST` rather than `PASS`. Those are **attestations** —
+Eight lines print as `ATST` rather than `PASS`. Those are **attestations** —
 claims backed by a screenshot or a recorded observation rather than by
-anything the script can evaluate. They are excluded from the 893 and from the
-exit status, and reported separately, so that "893 checks passed" means 893
-things were tested. They are all in `v07`.
+anything the script can evaluate. They are excluded from the 948 and from the
+exit status, and reported separately, so that "948 checks passed" means 948
+things were tested. Seven are in `v07`; the eighth is in `v20`.
 
 ---
 
