@@ -114,7 +114,7 @@ repeat
                 if clicked = 1
                     allDone = 1
                 elsif clicked = 2
-                    @emlWrapperExportCSV: tableName$
+                    @emlWrapperExportCSV: tableName$, "regression"
                 elsif clicked = 3
                     emlGraphsPresetCorrType$ = "pearson"
                     emlGraphsPresetType = 8

@@ -99,7 +99,7 @@ repeat
             if clicked = 1
                 allDone = 1
             elsif clicked = 2
-                @emlWrapperExportCSV: tableName$
+                @emlWrapperExportCSV: tableName$, "ANOVA"
             elsif clicked = 3
                 emlGraphsPresetType = 7
                 emlGraphsPresetDataCol$ = dataCol$

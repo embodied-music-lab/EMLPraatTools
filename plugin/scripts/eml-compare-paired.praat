@@ -150,7 +150,7 @@ repeat
                 if clicked = 1
                     allDone = 1
                 elsif clicked = 2
-                    @emlWrapperExportCSV: tableName$
+                    @emlWrapperExportCSV: tableName$, "paired"
                 elsif clicked = 3
                     # Reshape to long format for spaghetti plot
                     selectObject: tableId

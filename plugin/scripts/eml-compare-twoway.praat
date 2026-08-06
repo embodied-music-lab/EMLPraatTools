@@ -111,7 +111,7 @@ repeat
                 if clicked = 1
                     allDone = 1
                 elsif clicked = 2
-                    @emlWrapperExportCSV: tableName$
+                    @emlWrapperExportCSV: tableName$, "two-way ANOVA"
                 elsif clicked = 3
                     # Grouped violin with factor1 as category
                     emlGraphsPresetType = 11

@@ -141,7 +141,7 @@ repeat
             if clicked = 1
                 allDone = 1
             elsif clicked = 2
-                @emlWrapperExportCSV: tableName$
+                @emlWrapperExportCSV: tableName$, "two-group"
             elsif clicked = 3
                 if testChoice = 3
                     presetTestType$ = "nonparametric"

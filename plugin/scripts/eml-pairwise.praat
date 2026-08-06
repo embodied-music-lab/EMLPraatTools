@@ -136,7 +136,7 @@ repeat
             if clicked = 1
                 allDone = 1
             elsif clicked = 2
-                @emlWrapperExportCSV: tableName$
+                @emlWrapperExportCSV: tableName$, "pairwise"
             elsif clicked = 3
                 if test$ = "wilcoxon"
                     presetTestType$ = "nonparametric"
