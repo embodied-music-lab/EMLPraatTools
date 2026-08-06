@@ -27,3 +27,4 @@ include ../stats/eml-core-descriptive.praat
 include ../stats/eml-extract.praat
 include ../stats/eml-output.praat
 include ../stats/eml-inferential.praat
+include ../stats/eml-result-writer.praat
