@@ -668,7 +668,7 @@ endfor
 
 @emlOneWayAnova: tableId9a, "wrongColumn", "group", 0
 @emlTestAssertContains: "9.1 missing data col",
-    ... emlOneWayAnova.error$, "data column not found"
+    ... emlOneWayAnova.error$, "Data column not found"
 
 removeObject: tableId9a
 
@@ -683,7 +683,7 @@ endfor
 
 @emlOneWayAnova: tableId9b, "score", "wrongFactor", 0
 @emlTestAssertContains: "9.2 missing factor col",
-    ... emlOneWayAnova.error$, "factor column not found"
+    ... emlOneWayAnova.error$, "Factor column not found"
 
 removeObject: tableId9b
 

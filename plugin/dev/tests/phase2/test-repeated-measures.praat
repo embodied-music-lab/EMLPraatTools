@@ -393,8 +393,19 @@ removeObject: f5Id
 @emlTestAssertEqualNum: "RM_D RM-ANOVA dfErr", 6, emlRMAnovaTest.dfErr, 0
 @emlTestAssertVectorsEqual: "RM_D RM-ANOVA condition means",
 ... {7, 7, 7}, emlRMAnovaTest.condMean#, toleranceExact
-@emlTestSkip: "RM_D RM-ANOVA F and p",
-... "all observations identical: msErr = 0, so F = 0/0. The library returns undefined; statsmodels returns F = 0, p = 1. Not asserted until the author rules — see RM_D Friedman chiSq."
+# The author's ruling, 5 August, is D97: refuse. statsmodels reports
+# F = 0, p = 1 and pingouin reports nan for this input; neither is a
+# result, and printing either invites a reader to interpret it. The
+# library now returns an error naming the condition and leaves F and p
+# undefined, which is asserted here rather than skipped.
+@emlTestAssertTrue: "RM_D RM-ANOVA refuses (D97)",
+... emlRMAnovaTest.error$ <> ""
+@emlTestAssertTrue: "RM_D RM-ANOVA F is undefined",
+... emlRMAnovaTest.fStat = undefined
+@emlTestAssertTrue: "RM_D RM-ANOVA p is undefined",
+... emlRMAnovaTest.p = undefined
+@emlTestAssertContains: "RM_D refusal names the absence of variance",
+... emlRMAnovaTest.error$, "no variance to partition"
 
 # --- RM_F: zero residual ---------------------------------------------------
 @emlRMAnovaTest: rmF##, 3, 3
@@ -403,8 +414,18 @@ removeObject: f5Id
 @emlTestAssertVectorsEqual: "RM_F RM-ANOVA condition means",
 ... {4.333333333333333, 9.333333333333334, 13.333333333333334},
 ... emlRMAnovaTest.condMean#, toleranceTight
-@emlTestSkip: "RM_F RM-ANOVA F and p",
-... "perfectly additive data: ssErr is floating-point noise, so F is x/0. statsmodels reports 3.09e31 and pingouin 8.59e15 for the same input — no reference value exists."
+# D97. statsmodels reports 3.09e31 here and pingouin 8.59e15 for the same
+# input: the disagreement IS the evidence that neither is a number. The
+# floor that catches this is relative — ssErr is around 1e-16 of ssTot,
+# not zero — so an equality test against 0 would not fire.
+@emlTestAssertTrue: "RM_F RM-ANOVA refuses (D97)",
+... emlRMAnovaTest.error$ <> ""
+@emlTestAssertTrue: "RM_F RM-ANOVA F is undefined",
+... emlRMAnovaTest.fStat = undefined
+@emlTestAssertTrue: "RM_F RM-ANOVA p is undefined",
+... emlRMAnovaTest.p = undefined
+@emlTestAssertContains: "RM_F refusal names the zero residual",
+... emlRMAnovaTest.error$, "residual is zero"
 
 
 # ============================================================================
