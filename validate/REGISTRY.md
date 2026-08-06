@@ -344,13 +344,14 @@ corrected behaviour and **passes**; it retains a guard check that the two
 effect sizes stay numerically distinct, so a future regression that routes
 the rank statistic back under the parametric heading would fail the suite.
 
-### 2. ~~`v07` fails on four open findings~~ — RESOLVED 6 August 2026,
-### and one undriven case, which still fails
+### 2. ~~`v07` fails on four open findings, and one undriven case~~
+### — RESOLVED 6 August 2026, all seven cases driven
 
-The red path was driven on 5 August 2026: six of the seven cases were loaded
-into Praat unchanged and taken through a wrapper. Four of them exposed
-defects — D96, D97, D98, D99 — and all four were fixed on 6 August and the
-cases re-driven. The table below records both states, because the fix is only
+Six of the seven cases were driven on 5 August 2026, loaded into Praat
+unchanged and taken through a wrapper. Four of them exposed defects — D96,
+D97, D98, D99 — and all four were fixed on 6 August and the cases re-driven.
+The seventh, R7, was driven headlessly on 6 August (see its row below), so
+the red path is now complete. The table below records both states, because the fix is only
 believable next to what it replaced.
 
 | Case | Verdict | What happened |
@@ -386,7 +387,49 @@ against base R: two-group, *k*-group ANOVA with Tukey, Kruskal-Wallis with
 Dunn, two-way, pairwise with Bonferroni and Holm, paired *t*, RM-ANOVA with
 Greenhouse-Geisser, Friedman, correlation, regression, descriptive, and
 normality including the parametric/nonparametric recommendation it issues.
-Plus one CSV export row and six of the seven red-path cases.
+Plus one CSV export row and all seven red-path cases.
+
+### One dataset per test — say so plainly
+
+Every orchestrator above is driven on **exactly one input table**, and this
+is the single largest limit on what a green run means. The shapes:
+
+| Script | Input | n | Design |
+|---|---|---|---|
+| v01 | `demo_3groups_input.csv` | 45 | 3 × 15, balanced |
+| v02 | `demo_3groups_b_input.csv` | 45 | 3 × 15, balanced |
+| v03, v04 | `demo_rm3_input.csv` | 20 | 3 within-subject levels, complete |
+| v05, v06 | `demo_paired_input.csv` | 20 | complete pairs |
+| v08 | `v08_twogroup_input.csv` | 40 | 2 × 20, balanced |
+| v09 | `v09_anova_tukey_input.csv` | 45 | 3 × 15, balanced |
+| v10 | `v10_kw_dunn_input.csv` | 45 | 3 × 15, balanced |
+| v11 | `v11_twoway_input.csv` | 48 | 2 × 2 × 12, fully crossed and balanced |
+| v12 | `v12_correlation_input.csv` | 30 | bivariate |
+| v13 | `v13_regression_input.csv` | 25 | one predictor |
+| v14 | `v14_descriptive_input.csv` | 45 | 3 × 15 |
+| v15 | `v15_normality_input.csv` | 40 | three measured columns |
+| v07, v16, v17 | constructed in-script | 2–8 | degenerate / export / broom parity |
+
+What that table implies, stated as findings rather than left to be noticed:
+
+- **Every between-groups design is balanced.** No unequal-*n* case reaches
+  Tukey, Dunn, Games-Howell, or the two-way sums of squares. Type I vs
+  Type III SS cannot diverge on a balanced crossed design, so v11 cannot
+  distinguish them — the convention recorded above is asserted, not tested.
+- **`v10_kw_dunn_input.csv` has no ties**: 45 values, 45 distinct. The
+  plugin's Dunn/Kruskal-Wallis tie correction has therefore never executed
+  on a driven dataset. It is covered only by the primitives suite under
+  `plugin/dev/tests/`. This is the sharpest single gap in the folder.
+- **No missing data outside the red path.** Every green-path input is
+  complete; the complete-case convention is exercised only by R1 and R6.
+- **No ill-conditioned or wide-magnitude data.** Every measured column sits
+  in an ordinary acoustic range (F0 in Hz, SPL in dB, jitter in percent).
+  Nothing here would separate a numerically stable implementation from an
+  unstable one — the class of failure the NIST StRD sets are built to find.
+
+None of this makes a passing check wrong. It bounds what the checks are
+evidence *of*: correct arithmetic on well-conditioned, balanced, complete
+data, which is the common case and not the hard one.
 
 **Not covered, and why.** The LMM orchestrator (module tabled by author
 ruling of 4 August) and the reliability orchestrator (a Phase 4 stub that

@@ -126,7 +126,19 @@ generated on 6 August by calling the plugin's drawing procedures directly
 under `praat --run`, with no GUI. That is the shipping plugin code operating
 on the committed input, but it is not a session someone clicked through.
 
-It also says nothing about the graphing layer or the error paths.
+---
+
+## The limit worth knowing before you start
+
+**Each test is driven on exactly one input table**, and every between-groups
+table is balanced (3 × 15, 2 × 20, 2 × 2 × 12), complete, and — in the
+Kruskal-Wallis/Dunn case — free of ties. So a green run establishes correct
+arithmetic on well-conditioned data. It does not exercise unequal *n*, ties,
+missing data outside the seven red-path cases, or the ill-conditioned inputs
+that separate a numerically stable implementation from an unstable one.
+`REGISTRY.md` §"One dataset per test" lists every input with its shape.
+
+It also says nothing about the graphing layer.
 
 ---
 
