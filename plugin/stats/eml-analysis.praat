@@ -1122,34 +1122,63 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         .swP = emlShapiroWilk.p
         .swError$ = emlShapiroWilk.error$
 
-        # Interpretation
-        # Thresholds come from emlSkewThreshold / emlKurtosisThreshold
-        # (stats/eml-output.praat) so this gate cannot drift from the
-        # wizard's classifier, which it had — 3 here against 1 there.
-        .skKurtFail = abs (.skewness) >= emlSkewThreshold
+        # ── Interpretation ─────────────────────────────────────────────
+        #
+        # SHAPIRO-WILK IS THE TEST. Skewness and kurtosis are descriptive
+        # statistics, not tests, and they act as a backup — used to decide
+        # only where Shapiro-Wilk cannot.
+        #
+        # Until 5 August this gate read `skKurtFail OR swFail`, which let a
+        # descriptive rule of thumb overrule a formal test: a column
+        # Shapiro-Wilk had declined to reject was still sent nonparametric
+        # because its skewness crossed a threshold. That inverts the
+        # hierarchy. Shapiro-Wilk is the most powerful of the common
+        # omnibus normality tests across a broad range of alternatives
+        # (Razali & Wah 2011); a rule of thumb does not outvote it.
+        #
+        # The one place shape legitimately intervenes is the large-n case,
+        # where Shapiro-Wilk rejects departures too small to matter for a
+        # parametric test. That override is kept, unchanged.
+        #
+        # Thresholds live in emlSkewThreshold / emlKurtosisThreshold
+        # (stats/eml-output.praat) so this gate, the wizard's classifier and
+        # the printed verdicts cannot drift apart, which they had.
+        .shapeSevere = abs (.skewness) >= emlSkewThreshold
         ... or abs (.kurtosis) >= emlKurtosisThreshold
+        .swUsable = (.swError$ = "")
         .swFail = 0
-        if .swError$ = ""
-            if .swP < 0.05
-                .swFail = 1
-            endif
+        if .swUsable and .swP < 0.05
+            .swFail = 1
         endif
 
-        if .skKurtFail or .swFail
-            # Large-n override: Shapiro-Wilk rejects trivial departures
-            # at large n. If distribution shape is acceptable (skewness
-            # and kurtosis within limits), recommend parametric anyway —
-            # parametric tests are robust at this sample size.
-            if .swFail and (not .skKurtFail) and .nValid > 50
-                .recommendation$ = "parametric"
-                .largeNOverride = 1
+        .largeNOverride = 0
+        if .swUsable
+            if .swFail
+                # Large-n override: Shapiro-Wilk rejects trivial departures
+                # at large n. If the shape is not severe by the published
+                # guideline, recommend parametric anyway — parametric tests
+                # are robust at this sample size.
+                if (not .shapeSevere) and .nValid > 50
+                    .recommendation$ = "parametric"
+                    .largeNOverride = 1
+                else
+                    .recommendation$ = "nonparametric"
+                endif
             else
-                .recommendation$ = "nonparametric"
-                .largeNOverride = 0
+                # The test did not reject. Severe shape is still REPORTED —
+                # @emlReportNormalityAnalysis prints the verdict either way —
+                # but it does not overturn the test's finding.
+                .recommendation$ = "parametric"
             endif
         else
-            .recommendation$ = "parametric"
-            .largeNOverride = 0
+            # Shapiro-Wilk unavailable (n outside its defined range, or an
+            # internal error). This is the backup case, and the only one in
+            # which shape decides anything.
+            if .shapeSevere
+                .recommendation$ = "nonparametric"
+            else
+                .recommendation$ = "parametric"
+            endif
         endif
 
         @emlCSVInit

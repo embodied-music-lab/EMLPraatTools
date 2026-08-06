@@ -65,19 +65,29 @@ emlShowExplanations = 0
 # ----------------------------------------------------------------------------
 # Distribution-shape thresholds
 #
-# @emlKurtosis and @emlSkewness both return the EXCESS form: a normal
-# distribution gives 0, not 3. These two constants are the flags applied to
-# them, declared here so the shape gate, the wizard's classifier and the
-# sentence the classifier prints cannot drift apart — which they had. Before
-# 5 August the gate used 3, the classifier used 1, and the printed sentence
-# claimed 3 while the code beside it enforced 1.
+# @emlKurtosis and @emlSkewness both return the EXCESS / sample-corrected
+# form: a normal distribution gives 0, not 3. These two constants are the
+# flags applied to them, declared here so the shape verdict, the wizard's
+# classifier and the sentence the classifier prints cannot drift apart —
+# which they had. Before 5 August the gate used 3, the classifier used 1,
+# and the printed sentence claimed 3 while the code beside it enforced 1.
 #
-# The defaults are the conventional strict pair, |skew| > 1 with
-# |excess kurtosis| > 1. Kline's looser pair is 2 and 7. To change the house
-# convention, change it here — every consumer reads these.
+# THE VALUES ARE 2 AND 7, from West, Finch & Curran (1995), who give
+# |skewness| > 2 and |kurtosis| > 7 as indicative of moderate-to-serious
+# non-normality. They are explicitly loose guidelines for describing a
+# distribution, not a test of it, and that is the only role they have here:
+# Shapiro-Wilk decides, and these flag severity. See the interpretation
+# block in @emlRunNormalityAnalysis.
+#
+# They were 1 and 1 earlier on 5 August. That pair had no published source —
+# it was carried in from the code it replaced. A threshold that changes what
+# the plugin recommends has to be attributable.
+#
+# To change the house convention, change it here; every consumer reads these.
+# Kline's stricter pair for SEM work is 3 and 10.
 # ----------------------------------------------------------------------------
-emlSkewThreshold = 1
-emlKurtosisThreshold = 1
+emlSkewThreshold = 2
+emlKurtosisThreshold = 7
 emlWizardExplain$ = ""
 
 
