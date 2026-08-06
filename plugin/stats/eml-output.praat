@@ -677,6 +677,24 @@ emlCSV_n = 0
 emlCSV_header$ = "table,analysis,term,term_type,field,value"
 
 procedure emlCSVInit
+    ; MIGRATION SAFETY. Every orchestrator calls this first, so this is the
+    ; one place that can guarantee the three-file declaration flag describes
+    ; the analysis about to run rather than a previous one.
+    ;
+    ; Without it: run ANOVA (declares), then run an unconverted analysis
+    ; (does not declare), then export -- emlResult_declared is still 1 and the
+    ; export writes the ANOVA's stale tidy/glance/augment under the new
+    ; analysis's name. Demonstrated 6 Aug 2026 before this line existed.
+    ;
+    ; The staged extra frames go with it, for the same reason.
+    emlResult_declared = 0
+    if variableExists ("emlResult_extra1$")
+        emlResult_extra1$ = ""
+        emlResult_extra2$ = ""
+        emlResult_extra1Text$ = ""
+        emlResult_extra2Text$ = ""
+    endif
+
     emlCSV_n = 0
     emlCSV_table$ = ""
     emlCSV_termType$ = ""
@@ -1011,6 +1029,61 @@ procedure emlWrapperExportCSV: .tableName$, .analysis$
     .clicked = endPause: "Go Back", "Save", 2, 0
     if .clicked = 2
         emlLastCSVFolder$ = output_folder$
+
+        ; ---------------------------------------------------------------
+        ; MIGRATION FORK. A path that has been converted to the three-file
+        ; broom shape declares its results into the tidy/glance/augment
+        ; collectors; @emlResultBegin sets emlResult_declared. A path that
+        ; has not still fills the single-file buffer.
+        ;
+        ; The fork is on the DECLARATION, not on a per-analysis list, so a
+        ; path converts by declaring and nothing here has to be edited for
+        ; each one. It also means a half-converted path -- declaring but
+        ; producing no rows -- reports as an empty export rather than
+        ; silently writing the legacy file, which is the failure mode that
+        ; let the previous migration be recorded as done.
+        ; ---------------------------------------------------------------
+        if variableExists ("emlResult_declared") and emlResult_declared = 1
+            @emlResultWrite: output_folder$, file_name$
+            .nWritten = emlResultWrite.written
+            .fileList$ = emlResultWrite.files$
+            .skipped$ = emlResultWrite.skipped$
+
+            ; Post-hoc and effect sizes are separate model objects in R and
+            ; are separate files here. Written only if the analysis declared
+            ; them, which it signals by leaving a non-empty extras name.
+            if emlResult_extra1$ <> ""
+                .p1$ = output_folder$ + "/" + file_name$ + "_"
+                ... + emlResult_extra1$ + "_tidy.csv"
+                writeFile: .p1$, emlResult_extra1Text$
+                .nWritten = .nWritten + 1
+                .fileList$ = .fileList$ + .p1$ + newline$
+            endif
+            if emlResult_extra2$ <> ""
+                .p2$ = output_folder$ + "/" + file_name$ + "_"
+                ... + emlResult_extra2$ + "_tidy.csv"
+                writeFile: .p2$, emlResult_extra2Text$
+                .nWritten = .nWritten + 1
+                .fileList$ = .fileList$ + .p2$ + newline$
+            endif
+
+            if .nWritten > 0
+                beginPause: "Export Complete"
+                    comment: "Wrote " + string$ (.nWritten) + " files:"
+                    comment: .fileList$
+                endPause: "OK", 1, 0
+            else
+                beginPause: "Nothing to Export"
+                    comment: "This analysis declared a result but produced"
+                    comment: "no rows:"
+                    comment: .skipped$
+                    comment: "Please report this — it is a defect."
+                endPause: "OK", 1, 0
+            endif
+            emlResult_declared = 0
+            goto WRAPPER_EXPORT_DONE
+        endif
+
         .csvPath$ = output_folder$ + "/" + file_name$ + ".csv"
         @emlExportStatsCSV: .csvPath$
         if emlExportStatsCSV.success
@@ -1032,6 +1105,7 @@ procedure emlWrapperExportCSV: .tableName$, .analysis$
             endPause: "OK", 1, 0
         endif
     endif
+    label WRAPPER_EXPORT_DONE
 endproc
 
 

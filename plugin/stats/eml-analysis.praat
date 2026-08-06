@@ -289,6 +289,27 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     @emlCSVInit
     @emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .nGroups, .doTukey
 
+    ; Declare the same result in broom's three-file shape. Placed AFTER the
+    ; reporter, not inside it, for two reasons: @emlReportAnovaComparison
+    ; re-runs @emlOneWayAnova itself, so its outputs here are exactly the
+    ; numbers that were printed; and the lifecycle then sits beside
+    ; @emlCSVInit in the orchestrator rather than being split across
+    ; graphs/eml-annotation-procedures.praat.
+    ; ORDER MATTERS. The separate frames are staged FIRST, because staging
+    ; reuses the one tidy collector and the model's own tidy has to be what
+    ; is left in it when @emlResultWrite runs.
+    if emlOneWayAnova.error$ = ""
+        @emlResultClearExtras
+        if .doTukey
+            @emlDeclareTukeyResult: .groupCol$
+            @emlResultStageExtra: "posthoc"
+        endif
+        @emlDeclareAnovaEffectSizes: .groupCol$
+        @emlResultStageExtra: "effectsize"
+    endif
+    @emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
+    ... .tableId, .doTukey
+
     label END_ANOVA
     selectObject: .tableId
 endproc
@@ -1782,3 +1803,178 @@ endproc
 # ============================================================================
 # END OF EML ANALYSIS ORCHESTRATORS
 # ============================================================================
+
+
+# ============================================================================
+# @emlDeclareOneWayAnovaResult
+# ============================================================================
+# Declare a completed one-way ANOVA in broom's three-file shape, so the export
+# surface can write tidy / glance / augment instead of one wide file.
+#
+# WHY THE SPLIT IS THREE FILES AND NOT ONE
+#
+# broom's three verbs answer three different questions and have three
+# different row counts, which is exactly why they cannot share a table:
+#
+#   tidy()     one row per model TERM        (here: the factor, and Residuals)
+#   glance()   one row for the MODEL         (r.squared, AIC, nobs, ...)
+#   augment()  one row per OBSERVATION       (.fitted, .resid, .std.resid)
+#
+# A single wide file has to pick one of those row counts and pad or repeat for
+# the other two, which is what the old exporter did.
+#
+# TukeyHSD and the effect sizes are SEPARATE MODEL OBJECTS in R --
+# tidy(TukeyHSD(fit)) and effectsize::eta_squared(fit) each return their own
+# frame, and base aov carries neither. Keeping them out of the two files above
+# is what makes those two comparable with broom's own output rather than
+# merely broom-flavoured. They are written as their own tidy files.
+#
+# Called by @emlRunAnovaAnalysis AFTER the reporter, so emlOneWayAnova.* holds
+# the values that were actually printed.
+#
+# Input:
+#   .tableName$ - name of the source Table, for the file base name
+#   .dataCol$   - measure column
+#   .groupCol$  - factor column
+#   .tableId    - the Table, for augment
+#   .doTukey    - whether post-hoc contrasts were run
+#
+# Output:
+#   emlResult_* collectors, ready for @emlResultWrite / @emlResultWriteTidy
+#   .extraTidy$ - newline-separated base names of the additional tidy frames
+# ============================================================================
+procedure emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
+    ... .tableId, .doTukey
+    .extraTidy$ = ""
+
+    if emlOneWayAnova.error$ <> ""
+        goto DECLARE_ANOVA_DONE
+    endif
+
+    @emlResultBegin: .tableName$, "One-way ANOVA"
+
+    ; ---- tidy: one row per term, then Residuals, exactly as tidy(aov) ----
+    @emlTidyRow: .groupCol$
+    @emlTidyNum: "df", emlOneWayAnova.dfBetween
+    @emlTidyNum: "sumsq", emlOneWayAnova.ssBetween
+    @emlTidyNum: "meansq", emlOneWayAnova.msBetween
+    @emlTidyNum: "statistic", emlOneWayAnova.fValue
+    @emlTidyNum: "p.value", emlOneWayAnova.p
+
+    @emlTidyRow: "Residuals"
+    @emlTidyNum: "df", emlOneWayAnova.dfWithin
+    @emlTidyNum: "sumsq", emlOneWayAnova.ssWithin
+    @emlTidyNum: "meansq", emlOneWayAnova.msWithin
+    ; statistic and p.value deliberately absent on Residuals: broom leaves them
+    ; NA, and an empty cell is how this writer says NA.
+
+    ; ---- glance: one row for the model ----
+    .nobs = 0
+    for .g from 1 to emlOneWayAnova.nGroups
+        .nobs = .nobs + emlOneWayAnova.groupN [.g]
+    endfor
+    @emlGlanceNum: "r.squared", emlOneWayAnova.etaSquared
+    @emlGlanceNum: "adj.r.squared", 1 - (1 - emlOneWayAnova.etaSquared)
+    ... * (.nobs - 1) / emlOneWayAnova.dfWithin
+    @emlGlanceNum: "sigma", sqrt (emlOneWayAnova.msWithin)
+    @emlGlanceNum: "statistic", emlOneWayAnova.fValue
+    @emlGlanceNum: "p.value", emlOneWayAnova.p
+    @emlGlanceNum: "df", emlOneWayAnova.dfBetween
+
+    ; Gaussian log-likelihood in closed form, so AIC and BIC are the numbers R
+    ; reports. k = nGroups fitted means + 1 residual variance.
+    .rss = emlOneWayAnova.ssWithin
+    .logLik = -0.5 * .nobs * (ln (2 * pi) + ln (.rss / .nobs) + 1)
+    .k = emlOneWayAnova.nGroups + 1
+    @emlGlanceNum: "logLik", .logLik
+    @emlGlanceNum: "AIC", -2 * .logLik + 2 * .k
+    @emlGlanceNum: "BIC", -2 * .logLik + ln (.nobs) * .k
+    @emlGlanceNum: "deviance", .rss
+    @emlGlanceNum: "df.residual", emlOneWayAnova.dfWithin
+    @emlGlanceNum: "nobs", .nobs
+    @emlGlanceNum: "n.groups", emlOneWayAnova.nGroups
+    @emlGlanceStr: "method", "One-way ANOVA"
+
+    ; ---- augment: the input table plus what the model says about each row ----
+    @emlAugmentFrom: .tableId
+    selectObject: .tableId
+    .nRows = Get number of rows
+    for .r from 1 to .nRows
+        selectObject: .tableId
+        .g$ = Get value: .r, .groupCol$
+        .v$ = Get value: .r, .dataCol$
+        .v = number (.v$)
+        .fit = undefined
+        for .g from 1 to emlOneWayAnova.nGroups
+            if emlOneWayAnova.groupLabel$ [.g] = .g$
+                .fit = emlOneWayAnova.groupMean [.g]
+            endif
+        endfor
+        if .fit <> undefined and .v <> undefined
+            @emlAugmentNum: ".fitted", .r, .fit
+            @emlAugmentNum: ".resid", .r, .v - .fit
+            @emlAugmentNum: ".std.resid", .r,
+            ... (.v - .fit) / sqrt (emlOneWayAnova.msWithin)
+        endif
+    endfor
+
+    label DECLARE_ANOVA_DONE
+endproc
+
+
+# ============================================================================
+# @emlDeclareTukeyResult
+# ============================================================================
+# tidy(TukeyHSD(fit)) is its own frame: term, contrast, null.value, estimate,
+# conf.low, conf.high, adj.p.value. The interval is Tukey's own,
+# diff +/- qCrit * sqrt(msWithin/2 * (1/ni + 1/nj)), using the studentised-range
+# critical value @emlTukeyHSD already computed -- not a t interval, which would
+# be narrower and would not carry the familywise correction adj.p carries.
+#
+# Call AFTER @emlResultWrite has flushed tidy/glance/augment, since it reuses
+# the tidy collector.
+# ============================================================================
+procedure emlDeclareTukeyResult: .groupCol$
+    @emlTidyClear
+    for .i from 1 to emlOneWayAnova.nGroups - 1
+        for .j from .i + 1 to emlOneWayAnova.nGroups
+            .diff = emlOneWayAnova.meanDiff## [.i, .j]
+            .ni = emlOneWayAnova.groupN [.i]
+            .nj = emlOneWayAnova.groupN [.j]
+            .halfWidth = emlOneWayAnova.qCritical
+            ... * sqrt (emlOneWayAnova.msWithin / 2 * (1 / .ni + 1 / .nj))
+            @emlTidyRow: .groupCol$
+            @emlTidyStr: "contrast", emlOneWayAnova.groupName$ [.i] + "-"
+            ... + emlOneWayAnova.groupName$ [.j]
+            @emlTidyNum: "null.value", 0
+            @emlTidyNum: "estimate", .diff
+            @emlTidyNum: "conf.low", .diff - .halfWidth
+            @emlTidyNum: "conf.high", .diff + .halfWidth
+            @emlTidyNum: "adj.p.value", emlOneWayAnova.pMatrix## [.i, .j]
+        endfor
+    endfor
+endproc
+
+
+# ============================================================================
+# @emlDeclareAnovaEffectSizes
+# ============================================================================
+# effectsize::eta_squared(fit) and effectsize::cohens_d() are again separate
+# frames in R; base aov and TukeyHSD carry neither. Same treatment here.
+# Call AFTER the Tukey frame has been flushed.
+# ============================================================================
+procedure emlDeclareAnovaEffectSizes: .groupCol$
+    @emlTidyClear
+    @emlTidyRow: .groupCol$
+    @emlTidyNum: "effect.size", emlOneWayAnova.etaSquared
+    @emlTidyStr: "effect.size.type", "eta.squared"
+    for .i from 1 to emlOneWayAnova.nGroups - 1
+        for .j from .i + 1 to emlOneWayAnova.nGroups
+            @emlTidyRow: .groupCol$
+            @emlTidyStr: "contrast", emlOneWayAnova.groupName$ [.i] + "-"
+            ... + emlOneWayAnova.groupName$ [.j]
+            @emlTidyNum: "effect.size", emlOneWayAnova.dMatrix## [.i, .j]
+            @emlTidyStr: "effect.size.type", "cohens.d"
+        endfor
+    endfor
+endproc

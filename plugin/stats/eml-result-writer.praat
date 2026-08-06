@@ -156,6 +156,17 @@ endproc
 # Clears all three collectors. Call once at the top of an analysis.
 # ----------------------------------------------------------------------------
 procedure emlResultBegin: .tableName$, .analysis$
+    ; Migration state. emlResult_declared is what the export surface forks
+    ; on, so a path converts by declaring and no list has to be edited.
+    ;
+    ; The extra-frame slots are NOT cleared here, deliberately. They are
+    ; staged BEFORE the model frames, because staging reuses the single tidy
+    ; collector and the model's own tidy must be the last thing left in it.
+    ; Clearing them here would discard the post-hoc and effect-size frames
+    ; that were just staged. Use @emlResultClearExtras at the start of a
+    ; declaration sequence instead.
+    emlResult_declared = 1
+    @eml_ensureExtraSlots
     emlResult_table$ = .tableName$
     emlResult_analysis$ = .analysis$
 
@@ -430,32 +441,98 @@ endproc
 # ----------------------------------------------------------------------------
 # @eml_writeTidyFile: .path$   ->  .wrote
 # ----------------------------------------------------------------------------
-procedure eml_writeTidyFile: .path$
-    .wrote = 0
+# Render the current tidy collector to CSV text without writing it. Factored
+# out of @eml_writeTidyFile so a frame can be STAGED at declare time and
+# written later: the analysis knows its contents when it runs, but the user
+# does not choose the output folder until the export dialog, and the single
+# tidy collector has been cleared and refilled several times by then.
+procedure eml_renderTidy
+    .text$ = ""
     if emlTidy_nRows >= 1
         @eml_orderedCols: emlVocabTidy$, "tidy"
-        .out$ = ""
         for .k from 1 to eml_orderedCols.n
             if .k > 1
-                .out$ = .out$ + ","
+                .text$ = .text$ + ","
             endif
             @eml_rwQuote: eml_orderedCols.name$ [.k]
-            .out$ = .out$ + eml_rwQuote.result$
+            .text$ = .text$ + eml_rwQuote.result$
         endfor
-        .out$ = .out$ + newline$
+        .text$ = .text$ + newline$
         for .r from 1 to emlTidy_nRows
             for .k from 1 to eml_orderedCols.n
                 if .k > 1
-                    .out$ = .out$ + ","
+                    .text$ = .text$ + ","
                 endif
                 @eml_rwQuote: emlTidy_cell$ [.r, eml_orderedCols.src [.k]]
-                .out$ = .out$ + eml_rwQuote.result$
+                .text$ = .text$ + eml_rwQuote.result$
             endfor
-            .out$ = .out$ + newline$
+            .text$ = .text$ + newline$
         endfor
-        writeFile: .path$, .out$
+    endif
+endproc
+
+
+procedure eml_writeTidyFile: .path$
+    .wrote = 0
+    @eml_renderTidy
+    if eml_renderTidy.text$ <> ""
+        writeFile: .path$, eml_renderTidy.text$
         .wrote = 1
     endif
+endproc
+
+
+# ============================================================================
+# @emlResultStageExtra: .suffix$
+# ============================================================================
+# Freeze the current tidy collector as an additional frame to be written
+# alongside tidy/glance/augment, under <base>_<suffix>_tidy.csv.
+#
+# TukeyHSD and the effect sizes are separate model objects in R -- each is its
+# own tidy() call returning its own frame -- so they are separate files here.
+# Staging rather than writing keeps the export folder a user decision.
+#
+# Two slots, which is what the converted paths need; a third would be a
+# straightforward addition. Slots are cleared by @emlResultBegin.
+# ============================================================================
+# Create the extra-frame slots without disturbing anything already staged.
+procedure eml_ensureExtraSlots
+    if not variableExists ("emlResult_extra1$")
+        emlResult_extra1$ = ""
+        emlResult_extra2$ = ""
+        emlResult_extra1Text$ = ""
+        emlResult_extra2Text$ = ""
+    endif
+endproc
+
+
+# Drop any staged extra frames. Call this ONCE at the start of a declaration
+# sequence, before the first @emlResultStageExtra.
+procedure emlResultClearExtras
+    emlResult_extra1$ = ""
+    emlResult_extra2$ = ""
+    emlResult_extra1Text$ = ""
+    emlResult_extra2Text$ = ""
+endproc
+
+
+procedure emlResultStageExtra: .suffix$
+    @eml_ensureExtraSlots
+    @eml_renderTidy
+    if eml_renderTidy.text$ = ""
+        goto STAGE_EXTRA_DONE
+    endif
+    if emlResult_extra1$ = ""
+        emlResult_extra1$ = .suffix$
+        emlResult_extra1Text$ = eml_renderTidy.text$
+    elsif emlResult_extra2$ = ""
+        emlResult_extra2$ = .suffix$
+        emlResult_extra2Text$ = eml_renderTidy.text$
+    else
+        exitScript: "emlResultStageExtra: more than two extra frames "
+        ... + "declared; add a slot in eml-result-writer.praat."
+    endif
+    label STAGE_EXTRA_DONE
 endproc
 
 
