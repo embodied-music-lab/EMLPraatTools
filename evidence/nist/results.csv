@@ -1,0 +1,11 @@
+dataset,statistic,value
+SiRstv,df.between,4.00000000000000000
+SiRstv,sumsq.between,0.05114626159999816
+SiRstv,meansq.between,0.01278656539999954
+SiRstv,statistic,1.18046237440241542
+SiRstv,df.within,20.00000000000000000
+SiRstv,sumsq.within,0.21663656000001649
+SiRstv,meansq.within,0.01083182800000082
+SiRstv,r.squared,0.19099903905111201
+SiRstv,residual.sd,0.10407606833466003
+
