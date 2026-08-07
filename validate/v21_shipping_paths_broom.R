@@ -199,6 +199,26 @@ au <- rd("ship_regression", "augment")
 check("v21", "regression augment .resid total deviation",
       sum(abs(au$.resid[!is.na(au$.resid)] - residuals(fit))), 0, tol = 1e-8)
 
+# The augment frame gained .hat and .cooksd, and .std.resid became
+# leverage-corrected, when @emlOLSInfluence was wired in at
+# eml-analysis.praat's regression declaration. v24 checks the procedure; these
+# check the file the MENU produces, which is the only thing a user ever sees.
+check_true("v21", "regression augment carries .hat and .cooksd",
+           all(c(".hat", ".cooksd") %in% names(au)))
+check("v21", "regression augment .hat total deviation",
+      sum(abs(au$.hat[!is.na(au$.hat)] - unname(hatvalues(fit)))), 0, tol = 1e-10)
+check("v21", "regression augment .cooksd total deviation",
+      sum(abs(au$.cooksd[!is.na(au$.cooksd)] - unname(cooks.distance(fit)))),
+      0, tol = 1e-10)
+check("v21", "regression augment .std.resid is rstandard, not resid/sigma",
+      sum(abs(au$.std.resid[!is.na(au$.std.resid)] - unname(rstandard(fit)))),
+      0, tol = 1e-10)
+# Pin the OLD convention as WRONG. Reverting the augment site would satisfy
+# every check above except this one, which is the point of having it.
+check_true("v21", "regression .std.resid is NOT the uncorrected resid/sigma",
+           sum(abs(au$.std.resid[!is.na(au$.std.resid)] -
+                   residuals(fit) / summary(fit)$sigma)) > 1e-3)
+
 # ---- 9. normality ---------------------------------------------------------
 d  <- E("v15_normality_input.csv")
 sw <- shapiro.test(d$F0_Hz)

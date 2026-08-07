@@ -132,7 +132,7 @@ git clone <repo> && cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect exit status 0.** 1045 checks, all passing, plus 8 attestations
+**Expect exit status 0.** 1937 checks, all passing, plus 8 attestations
 reported separately and not counted as checks.
 
 Until 6 August 2026 this said "expect exit status 1", because R7 — the
@@ -146,8 +146,8 @@ is driven now, and the suite has no designed failures left.
 An **attestation** is a claim backed by a screenshot or a recorded
 observation rather than by anything the script can evaluate. There are eight — seven in `v07`, and one in `v20` recording that its
 five files came from the shipping orchestrator rather than a harness. They print as `ATST`, are excluded from the check count and
-from the exit status, and are listed separately so that "1045 checks passed"
-means 1045 things were tested.
+from the exit status, and are listed separately so that "1937 checks passed"
+means 1937 things were tested.
 
 D96 through D99 were failing here until 6 August. They now pass, and they
 pass against captures re-driven after the fixes, not against the old ones.
@@ -300,9 +300,14 @@ be skipped without weakening a claim made in this document.
 | `v16_csv_export.R` | The CSV export: every number against R, plus the structural assertions that make the file unambiguous to pivot | `evidence/csv_export/*.csv` | 45 |
 | `v17_broom_parity.R` | The broom-shaped export: tidy / glance / augment / post-hoc / effect size against R, structurally and numerically | `evidence/csv_export/broom/` | 48 |
 | `v20_shipping_anova_broom.R` | **CSV migration checkpoint 1.** The SHIPPING one-way ANOVA path (`@emlRunAnovaAnalysis`) in broom's three-file shape: tidy / glance / augment, plus post-hoc and effect sizes as their own frames. Column names AND order asserted against broom's documented contract; every value against base R | `evidence/csv_export/broom/shipping_anova_*` | 55 |
-| `v21_shipping_paths_broom.R` | **CSV migration, paths 2-11.** The other ten shipping orchestrators in broom's three-file shape, every file written by the orchestrator the menu calls. Asserts that htest paths write NO augment, since broom has none for them | `evidence/csv_export/broom/ship_*` | 97 |
+| `v21_shipping_paths_broom.R` | **CSV migration, paths 2-11.** The other ten shipping orchestrators in broom's three-file shape, every file written by the orchestrator the menu calls. Asserts that htest paths write NO augment, since broom has none for them, and that the regression augment carries broom's `.hat`, `.cooksd` and leverage-corrected `.std.resid` | `evidence/csv_export/broom/ship_*` | 102 |
 | `v19_nist_strd.R` | **Tier C.** The plugin against NIST StRD certified values, scored in log relative error. Contributes checks only when the `.dat` files have been ingested; prints a loud SKIP otherwise | `evidence/nist/` | 98 |
 | `v18_sweep_parity.R` | **Tier B.** One-way ANOVA, Tukey-Kramer and Kruskal-Wallis over a 16-case designed grid: k = 2/3/5, n per cell 3-200, balanced and 6:1 unbalanced, tie-free to heavily tied, 1:1 and 10:1 variance ratios | `evidence/sweep/` | 294 |
+| `v22_homogeneity.R` | **Ruling 1 numerics.** Brown-Forsythe (median-centred Levene), Welch's *k*-sample *F*, and Games-Howell, over a 17-case grid including the *k* = 2 identity (Welch *F* = Welch *t*²), a +1e6 offset case, a skewed case that would catch a mean-centred "Brown-Forsythe", and eight red paths asserted by exact refusal string | `harness/homogeneity/out/` | 447 |
+| `v23_qq_points.R` | **The Q-Q figure's own points.** Theoretical axis against `qnorm(ppoints(n, a = 3/8))`, sample axis against `sort(x)`, reference line against `lm()`, and *W* against `shapiro.test()` — so the figure and the reported test are bound to the same points. Also pins the Blom-vs-`qqnorm` plotting-position difference above n = 10, and asserts no temp Table leaks | `harness/qq_out/` | 177 |
+| `v24_influence.R` | **Ruling 4(d).** Leverage, Cook's distance and the leverage-corrected standardised residual from `@emlOLSInfluence` against `hatvalues()`, `cooks.distance()` and `rstandard()`. Pins the OLD `resid/sigma` form as wrong, so reverting the augment site turns this red. Red paths include a leverage-1 row at both ulp neighbours | `evidence/influence/` | 214 |
+| `v25_anova_showboth.R` | **Ruling 1 at the report level.** Two captures from the same committed input differing only in data column, so the conditional is asserted in BOTH directions. The ABSENT case carries the constraint: on data that does not trip the check the report must look as it did before the feature existed, and the primary *F* must still be `aov()`'s pooled *F* rather than `oneway.test()`'s | `evidence/info/v25_showboth_*` | 31 |
+| `v26_twoway_caveat.R` | **Ruling 3(a).** The interaction caveat asserted in both directions from two committed two-way inputs, plus its placement under the table it qualifies rather than under the effect sizes (D98), plus the assertion that the three *F* values are identical whether the caveat fires or not | `evidence/info/v26_caveat_*` | 18 |
 
 ### Notes on individual scripts
 
@@ -538,8 +543,37 @@ are out of scope: the LMM orchestrator (module tabled by author ruling of
 4 August) and the reliability orchestrator (a Phase 4 stub that returns
 "not yet implemented").
 
-**Not a validation of the graphing layer.** Figure defects (D88, D89, D90)
-are recorded in the audit log and are not testable from R.
+**Only partly a validation of the graphing layer.** `v23` is the first
+R-side check of anything drawn: it reads the Q-Q figure's own plotted point
+pairs and binds them to the same numbers the reported *W* came from. The
+annotation layer — `@emlBridgeGroupComparison` and everything it renders onto
+a figure — is still uncovered, and is scheduled to gain coverage together
+with the Ruling 2 unification, which requires the harness to land with the
+change rather than after it. Purely visual defects (D88, D89, D90) remain
+recorded in the audit log and are not testable from R.
+
+### Refused permanently, with the reason on record
+
+**Durbin–Watson.** Not implemented, and not to be implemented. Two reasons,
+the second being the binding one:
+
+1. Its *p*-value needs eigenvalues, and `stats/eml-linalg.praat` has no eigen
+   routine.
+2. **The statistic is order-dependent and the plugin's Tables carry no
+   ordering semantics.** On `practice_hrs_wk` it would report autocorrelation
+   in *spreadsheet row order* — a number that looks meaningful, is not, and
+   gives no signal to the user that it is not. Adding an eigen routine would
+   fix reason 1 and leave reason 2 exactly where it is.
+
+### Documented gaps, ruled out of Phase One rather than overlooked
+
+- **Histogram with normal overlay** beside the Q-Q. Ruled out on the
+  convention argument: the Q-Q is the normality figure in R's standard
+  diagnostic set, and `Shapiro–Wilk` + Q-Q is the pairing a reviewer expects.
+  Revisitable on practitioner feedback.
+- **`Describe Table column` has no visual output** and no completion dialog
+  to hang one on. Adding one means a new dialog, a new include of the graph
+  layer, and a column picker. Ruled a Phase One gap, not a Phase One task.
 
 ---
 

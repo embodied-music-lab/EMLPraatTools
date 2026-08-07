@@ -66,7 +66,36 @@ scripts <- c(
     # broom's three-file shape, every file written by the orchestrator the
     # menu calls. Includes the assertion that htest paths write NO augment,
     # since broom has none for them.
-    "v21_shipping_paths_broom.R"
+    "v21_shipping_paths_broom.R",
+    # v22 covers the Ruling 1 numerics: Brown-Forsythe (median-centred
+    # Levene), Welch's k-sample F, and Games-Howell. None of the three
+    # existed before the ruling, so nothing above reaches them. Includes the
+    # k = 2 identity -- Welch's F is Welch t-squared, which is what keeps
+    # Tier A property A1 honest once these are reachable from the reporter.
+    "v22_homogeneity.R",
+    # v23 checks the Q-Q figure's own point pairs against qnorm/ppoints and
+    # sort(x), so the figure and the reported W are bound to the same points.
+    # Also pins the Blom-vs-qqnorm plotting-position difference above n = 10
+    # rather than leaving it to be discovered.
+    "v23_qq_points.R",
+    # v24 checks leverage, Cook's distance and the leverage-corrected
+    # standardised residual against hatvalues/cooks.distance/rstandard.
+    # It pins the OLD .std.resid form as WRONG, so reverting the augment
+    # site turns this red rather than passing quietly.
+    "v24_influence.R",
+    # v25 is Ruling 1 at the REPORT level -- two captures from the same input
+    # file differing only in data column, so the conditional can be asserted
+    # in BOTH directions. The absent case carries the ruling's real
+    # constraint: on data that does not trip the check, a run must look as it
+    # did before the feature existed, and the primary F must still be aov()'s
+    # pooled F rather than oneway.test()'s.
+    "v25_anova_showboth.R",
+    # v26 is Ruling 3(a) at the report level, same two-direction shape as v25:
+    # the interaction caveat must appear when the interaction is significant
+    # and stay away when it is not, and the three F values must be identical
+    # either way. Also pins that the caveat sits under the table it qualifies
+    # rather than under the effect sizes, per the D98 placement ruling.
+    "v26_twoway_caveat.R"
 )
 
 cat("EML Praat Tools validation suite\n")

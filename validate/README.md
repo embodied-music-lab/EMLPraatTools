@@ -9,7 +9,7 @@ cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect: `1045 checks, 1045 passed, 0 FAILED`, and exit status 0.**
+**Expect: `1937 checks, 1937 passed, 0 FAILED`, and exit status 0.**
 
 That is the whole thing. If it prints that, every number the plugin printed in
 a committed run agrees with what R computes from the same input file.
@@ -38,7 +38,7 @@ nothing is fetched.
 
 ## Check one by hand, in two minutes
 
-Do this once and the rest of the suite is just the same move repeated 1045
+Do this once and the rest of the suite is just the same move repeated 1937
 times.
 
 **1. The input the plugin was given** — `evidence/csv/v09_anova_tukey_input.csv`
@@ -191,7 +191,11 @@ The `.dat` files are NIST's and are not redistributed here, so a fresh clone
 has none and `v19` prints a loud SKIP with the fetch command rather than
 silently contributing nothing.
 
-Still uncovered: the graphing layer.
+**`v23` is the first check of anything drawn.** It reads the Q-Q plot's own
+plotted point pairs and compares them with `qnorm(ppoints(n, a = 3/8))` and
+`sort(x)`, so the figure and the Shapiro-Wilk value beside it are bound to the
+same numbers. Still uncovered: the annotation layer — everything
+`@emlBridgeGroupComparison` renders onto a figure.
 
 ---
 
@@ -199,8 +203,8 @@ Still uncovered: the graphing layer.
 
 Eight lines print as `ATST` rather than `PASS`. Those are **attestations** —
 claims backed by a screenshot or a recorded observation rather than by
-anything the script can evaluate. They are excluded from the 1045 and from the
-exit status, and reported separately, so that "1045 checks passed" means 1045
+anything the script can evaluate. They are excluded from the 1937 and from the
+exit status, and reported separately, so that "1937 checks passed" means 1937
 things were tested. Seven are in `v07`; the eighth is in `v20`.
 
 ---
