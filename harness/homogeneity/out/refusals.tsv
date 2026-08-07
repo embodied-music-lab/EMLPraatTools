@@ -1,0 +1,25 @@
+case	test	error
+c09	welch	1 of 2 groups in "grp" have zero variance: "G2". Welch's F weights each group by n/variance, which is undefined when every observation in a group is identical.
+r01	bf	1 of 3 groups in "grp" have fewer than 2 observations: "G3". Every group needs at least 2.
+r01	welch	1 of 3 groups in "grp" have fewer than 2 observations: "G3". Every group needs at least 2.
+r01	gh	1 of 3 groups in "grp" have fewer than 2 observations: "G3". Every group needs at least 2.
+r02	welch	1 of 3 groups in "grp" have zero variance: "G3". Welch's F weights each group by n/variance, which is undefined when every observation in a group is identical.
+r03	bf	Group column "grp" has 9 groups for 9 rows - one per row. This is an identifier column, not a grouping column.
+r03	welch	Group column "grp" has 9 groups for 9 rows - one per row. This is an identifier column, not a grouping column.
+r03	gh	Group column "grp" has 9 groups for 9 rows - one per row. This is an identifier column, not a grouping column.
+r04	bf	Group column "grp" has 1 group. This test compares 2 or more.
+r04	welch	Group column "grp" has 1 group. This test compares 2 or more.
+r04	gh	This test compares 2 or more groups; the group column "grp" has 1.
+r05	bf.warning	Within-groups mean square of the absolute deviations is zero (every observation is the same distance from its group median); F and p are undefined
+r05	welch	3 of 3 groups in "grp" have zero variance: "G1", "G2", "G3". Welch's F weights each group by n/variance, which is undefined when every observation in a group is identical.
+r05	gh.warning	3 of 3 comparisons have an undefined q (both groups have zero variance, so the pairwise standard error is zero); their p-values are undefined, not 1
+r06	bf	3 of 3 groups in "grp" have fewer than 2 observations: "G1", "G2", "G3". Every group needs at least 2.
+r06	welch	3 of 3 groups in "grp" have fewer than 2 observations: "G1", "G2", "G3". Every group needs at least 2.
+r06	gh	3 of 3 groups in "grp" have fewer than 2 observations: "G1", "G2", "G3". Every group needs at least 2.
+r07	bf	Need at least 3 observations, got 2.
+r07	welch	Need at least 3 observations, got 2.
+r07	gh	This test needs at least 3 observations; the table has 2.
+r08	bf	Data column not found: value
+r08	welch	Data column not found: value
+r08	gh	Data column not found: value
+
