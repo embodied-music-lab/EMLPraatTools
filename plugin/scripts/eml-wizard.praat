@@ -82,20 +82,13 @@
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
-# Code generation: Claude (Anthropic)
 # Script author: [Your name here] — created and verified by this individual
 #
 # RESEARCH USE DISCLOSURE
-# If this script is used in research or publication, disclose AI use
-# per your target journal's policy. Suggested language:
-#
-#   "Acoustic analysis scripts were developed using the EML Praat
-#    Assistant (Howell, Embodied Music Lab) with code generation
-#    by Claude (Anthropic). All scripts were reviewed, tested,
-#    and validated by [your name]."
-#
-# The script author assumes responsibility for the correctness and
-# appropriate application of this code.
+# If this script is used in research or publication, disclose AI use per your
+# target journal's policy. All scripts were reviewed, tested, and validated by
+# [your name], who assumes responsibility for the correctness and appropriate
+# application of this code.
 # ============================================================================
 
 include eml-lib-lmm.praat
@@ -2004,7 +1997,7 @@ elsif wizDrawSource$ = "paired"
         plFactor$ = wizPairedCol1$ + " vs " + wizPairedCol2$
     endif
 
-    emlGraphsPresetType = 14
+    emlGraphsPresetType = 13
     # The graph layer's D90 half is a registry keyed by column name
     # (graphs/eml-graph-procedures.praat), consulted by the spaghetti page's
     # @emlCapitalizeLabel calls on spCondCol$ / spValueCol$. It is cleared

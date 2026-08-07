@@ -4,8 +4,15 @@
 # Purpose: Test normality for one or more numeric columns, optionally
 #          broken out by group. Reports Shapiro-Wilk, skewness, kurtosis,
 #          and a parametric/nonparametric recommendation per column.
-# Version: 2.0
-# Date: 11 May 2026
+# Version: 2.1
+# Date: 7 August 2026
+# v2.1: Draw button on the completion dialog — a normal Q-Q plot for ONE
+#        column at a time, behind an explicit column picker. The picker is
+#        not optional: this checker tests every numeric column in one run,
+#        so a figure drawn from an assumed column would be a silently wrong
+#        figure. In grouped mode the picker asks for the group as well,
+#        because in that mode a column is not what was tested — a column
+#        within a group is.
 # v2.0: Full convergence — @emlWrapperInit for Table check,
 #        @emlRunNormalityAnalysis orchestrator for overall mode (fixes
 #        double-report bug and wrong-type 4th parameter in v1.0).
@@ -15,10 +22,16 @@
 # ATTRIBUTION
 # Framework: EML Praat Tools by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
-# Code generation: Claude (Anthropic)
 # ============================================================================
 
 include eml-lib.praat
+# @emlDrawQQPlot is not part of eml-lib-graphs yet, so it is pulled in here.
+# The path is relative to the TOP-LEVEL script's folder — this file's own
+# folder, plugin/scripts — which is why it reads ../graphs and not ./graphs.
+# Praat tolerates the same procedure being defined twice (the later
+# definition wins), so adding this file to eml-lib-graphs.praat later will
+# not collide with this line. Verified 7 Aug 2026.
+include ../graphs/eml-draw-qq.praat
 
 # ── Init ───────────────────────────────────────────────────────────────────
 
@@ -102,6 +115,18 @@ repeat
     nParametric = 0
     nNonparametric = 0
 
+    # ── Q-Q picker state ──────────────────────────────────────────────────
+    # qqNGroups stays 0 unless the grouped branch fills it. It is read only
+    # under `if hasGroupCol`, but it is initialised here anyway: Praat does
+    # not short-circuit `and`/`or`, so a guard is never a substitute for an
+    # initialised variable, and an undefined global aborts the whole script.
+    # qqLastCol / qqLastGroup remember the previous choice so a second Draw
+    # opens where the last one left off; reset per run because the column
+    # list and the group list belong to THIS run.
+    qqNGroups = 0
+    qqLastCol = 1
+    qqLastGroup = 1
+
     for iSel from 1 to nNumericCols
         col$ = numericCol$ [iSel]
         displayCol$ = replace$ (col$, "_", " ", 0)
@@ -113,6 +138,17 @@ repeat
             selectObject: tableId
             @emlCountGroups: tableId, groupCol$
             .allGroupsOK = 1
+
+            # Group labels for the Q-Q picker, captured from the same
+            # @emlCountGroups call the analysis used rather than recomputed
+            # later. The grouping column does not change within a run, so
+            # the first column's labels are every column's labels.
+            if iSel = 1
+                qqNGroups = emlCountGroups.nGroups
+                for iQQg from 1 to qqNGroups
+                    qqGroupLabel$ [iQQg] = emlCountGroups.groupLabel$ [iQQg]
+                endfor
+            endif
 
             for iGroup from 1 to emlCountGroups.nGroups
                 .gLabel$ = emlCountGroups.groupLabel$ [iGroup]
@@ -204,14 +240,122 @@ repeat
     selectObject: tableId
 
     # ── Post-analysis ─────────────────────────────────────────────────────
+    #
+    # Three buttons, in the house order the other wrappers use (Done, Draw,
+    # New — see eml-compare-groups.praat and eml-correlate.praat, which sit
+    # a CSV button between the first two). Draw returns here rather than
+    # ending the run, so several columns can be plotted from one analysis.
 
-    beginPause: "Normality assessment complete"
-        comment: "📊 Results are in the Info window."
-    clicked = endPause: "Done", "New", 2, 0
-    if clicked = 1
-        allDone = 1
-    endif
+    runAgain = 0
+    repeat
+        beginPause: "Normality assessment complete"
+            comment: "📊 Results are in the Info window."
+            comment: ""
+            comment: "Draw plots a normal Q-Q plot for one column."
+        clicked = endPause: "Done", "Draw", "New", 2, 0
 
-    if not allDone
-    endif
+        if clicked = 1
+            allDone = 1
+
+        elsif clicked = 2
+
+            # ── Column picker ─────────────────────────────────────────────
+            # NOT optional, and not inferred. This wrapper tests every
+            # numeric column in one pass, so there is no "the" column to
+            # draw; a figure drawn from a guess would carry a real column's
+            # name over another column's data. The menu holds exactly the
+            # columns this run tested, in the order it tested them.
+            beginPause: "Draw Q-Q plot"
+                comment: "📈 A normal Q-Q plot is drawn for one column at a time."
+                comment: "─────────────────────────────────────"
+                comment: "Points on the line mean the column matches a normal"
+                comment: "distribution; systematic curves away from it do not."
+                comment: ""
+                optionmenu: "Plot column", qqLastCol
+                for iCol from 1 to nNumericCols
+                    option: numericCol$ [iCol]
+                endfor
+                if hasGroupCol
+                    comment: ""
+                    comment: "This run tested each column WITHIN a group, so the"
+                    comment: "plot needs a group too."
+                    optionmenu: "Plot group", qqLastGroup
+                    for iQQg from 1 to qqNGroups
+                        option: qqGroupLabel$ [iQQg]
+                    endfor
+                endif
+            qqClicked = endPause: "Cancel", "Draw plot", 2, 0
+
+            if qqClicked = 2
+                qqLastCol = plot_column
+                qqCol$ = numericCol$ [plot_column]
+                qqLabel$ = qqCol$
+                qqReady = 0
+                qqFail$ = ""
+
+                if hasGroupCol
+                    qqLastGroup = plot_group
+                    qqGroup$ = qqGroupLabel$ [plot_group]
+                    qqLabel$ = qqCol$ + " — " + qqGroup$
+                    selectObject: tableId
+                    @eml_getGroupData: tableId, qqCol$, groupCol$, qqGroup$
+                    if eml_getGroupData.error$ <> ""
+                        qqFail$ = eml_getGroupData.error$
+                    else
+                        qqData# = eml_getGroupData.data#
+                        qqReady = 1
+                    endif
+                else
+                    # Every row, undefined cells included: @emlDrawQQPlot
+                    # drops them itself and counts them onto the figure, so
+                    # the vector it sees is the vector the checker read.
+                    qqData# = zero# (nRows)
+                    for iRow from 1 to nRows
+                        selectObject: tableId
+                        qqData# [iRow] = Get value: iRow, qqCol$
+                    endfor
+                    qqReady = 1
+                endif
+
+                # Nested, not ANDed. Praat evaluates BOTH sides of `and`,
+                # so `if qqReady = 1 and emlDrawQQPlot.drew = 1` would read
+                # a variable that does not exist yet on the failure path.
+                if qqReady = 1
+                    @emlDrawQQPlot: qqData#, qqLabel$, 6, 4.5, "color", 1
+                    if emlDrawQQPlot.drew = 0
+                        qqFail$ = emlDrawQQPlot.error$
+                    else
+                        appendInfoLine: ""
+                        appendInfoLine: "Q-Q plot drawn: ", qqLabel$,
+                        ... "  (n = ", emlDrawQQPlot.n, ")"
+                        if emlDrawQQPlot.nDropped > 0
+                            appendInfoLine: "  ", emlDrawQQPlot.nDropped,
+                            ... " row(s) excluded as missing."
+                        endif
+                    endif
+                endif
+
+                if qqFail$ <> ""
+                    beginPause: "Cannot draw this Q-Q plot"
+                        comment: "⚠  No figure was drawn."
+                        comment: "─────────────────────────────────────"
+                        @emlWrapText: qqFail$, 62
+                        for iWrap from 1 to emlWrapText.nLines
+                            comment: emlWrapText.line$ [iWrap]
+                        endfor
+                        comment: "─────────────────────────────────────"
+                        comment: ""
+                        comment: "Column: " + replace$ (qqLabel$, "_", " ", 0)
+                        comment: "The results already in the Info window are"
+                        comment: "unaffected. Choose another column and try again."
+                    qqDismissed = endPause: "OK", 1, 0
+                endif
+
+                selectObject: tableId
+            endif
+
+        elsif clicked = 3
+            runAgain = 1
+        endif
+    until allDone or runAgain
 until allDone

@@ -8,7 +8,6 @@
 # Location: plugin_EML_Praat_Tools/scripts/eml-tutorial.praat
 #
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# Development: Claude (Anthropic)
 # Version: 0.19
 # Date: 2 August 2026
 #

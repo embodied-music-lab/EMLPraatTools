@@ -245,7 +245,7 @@ repeat
                         lblFactor$ = col1$ + " vs " + col2$
                     endif
 
-                    emlGraphsPresetType = 14
+                    emlGraphsPresetType = 13
                     if hasGroupCol
                         emlGraphsPresetGroupCol$ = "Group"
                     endif

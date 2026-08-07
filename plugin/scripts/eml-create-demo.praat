@@ -18,7 +18,6 @@
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
-# Code generation: Claude (Anthropic)
 # ============================================================================
 
 beginPause: "Create Demo Table"
