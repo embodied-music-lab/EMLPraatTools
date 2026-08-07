@@ -1,0 +1,2 @@
+case,column,nrows,n,ndropped,refused,reason,slope,intercept,sw_w,sw_p,objects_after_draw
+r3_constant,SPL_medium,6,6,0,1,All values identical (zero range),NA,NA,NA,NA,1

@@ -1,0 +1,2 @@
+case,column,nrows,n,ndropped,refused,reason,slope,intercept,sw_w,sw_p,objects_after_draw
+r2_n2,SPL_soft,2,2,0,1,Need at least 3 non-missing values to draw a Q-Q plot (found 2).,NA,NA,NA,NA,1

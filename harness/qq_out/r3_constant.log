@@ -1,0 +1,3 @@
+QQ drive: case=r3_constant col=SPL_medium src=/home/claude/EMLPraatTools/validate/redpath/r3_zero_variance.csv
+EXPECTED-REFUSAL All values identical (zero range)
+OBJECTS-AFTER-DRAW 1

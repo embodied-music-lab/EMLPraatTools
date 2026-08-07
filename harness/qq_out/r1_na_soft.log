@@ -1,0 +1,5 @@
+QQ drive: case=r1_na_soft col=SPL_soft src=/home/claude/EMLPraatTools/validate/redpath/r1_incomplete_cases.csv
+OLS fitted line: y = 2.8807x + 73.9500
+SAVED /home/claude/EMLPraatTools/harness/qq_out/r1_na_soft.png
+SAVED-CHROME /home/claude/EMLPraatTools/harness/qq_out/r1_na_soft_chrome.png
+OBJECTS-AFTER-DRAW 1
