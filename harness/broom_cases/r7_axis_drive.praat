@@ -8,14 +8,14 @@
 # draw procedure, writes the resulting axis to a capture v07 can read, and
 # saves the figure as visual evidence.
 
-include /home/claude/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-utilities.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-extract.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-output.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-inferential.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
+include ../../plugin/graphs/eml-graph-procedures.praat
+include ../../plugin/stats/eml-core-utilities.praat
+include ../../plugin/stats/eml-core-descriptive.praat
+include ../../plugin/stats/eml-extract.praat
+include ../../plugin/stats/eml-output.praat
+include ../../plugin/stats/eml-inferential.praat
+include ../../plugin/graphs/eml-annotation-procedures.praat
+include ../../plugin/graphs/eml-draw-procedures.praat
 
 # Praat writes UTF-16 on Linux even under --utf8, and capture() in the R
 # harness reads UTF-8. Without this the capture is unreadable and every label
