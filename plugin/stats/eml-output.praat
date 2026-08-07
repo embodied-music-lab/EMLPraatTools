@@ -36,7 +36,8 @@
 #
 # Part of the EML Stats library (EML Praat Tools).
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# License: Creative Commons Share-Alike
+# Development: Claude (Anthropic)
+# License: GPL-3.0-or-later
 #
 # Provides: @emlReportHeader, @emlReportFooter, @emlReportSection,
 #   @emlReportLine, @emlReportLineString, @emlReportBlank,

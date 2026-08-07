@@ -6,6 +6,7 @@
 # Date: 17 May 2026
 #
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
+# Development: Claude (Anthropic)
 # License: GPL-3.0-or-later
 #
 # Provides linear mixed-effects model (LMM) fitting equivalent to R's
