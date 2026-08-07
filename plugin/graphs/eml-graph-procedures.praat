@@ -2,7 +2,6 @@
 # EML GRAPHS — STANDARD DRAWING PROCEDURES
 # ============================================================================
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
-# Development: Claude (Anthropic)
 # License: Creative Commons Share-Alike
 # Version: 3.22
 # Date: 2 August 2026

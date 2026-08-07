@@ -2,7 +2,6 @@
 # EML GRAPHS — ANNOTATION + STATS BRIDGE PROCEDURES
 # ============================================================================
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
-# Development: Claude (Anthropic)
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
 # Version: 3.18
 # Date: 2 August 2026
@@ -2839,6 +2838,47 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     endif
     @emlReportLineString: "Effect size", "eta-squared = " + fixed$ (.etaSq, 4)
 
+    ; --- Equal-spread check (Ruling 1: conditional show-both) ---------------
+    ; Brown-Forsythe runs ALWAYS and prints ALWAYS. The test above is never
+    ; replaced and never switched: what the plugin reports as Student's F it
+    ; goes on calling Student's F, whatever this line says. When the check
+    ; rejects, a second block is appended below with Welch's F and
+    ; Games-Howell, so the user is handed the tolerant version rather than
+    ; only being told there is a problem.
+    ;
+    ; Wording is deliberate. This is a smoke alarm, not a verdict -- at small
+    ; n it misses real inequality, at large n it flags inequality too small to
+    ; matter. It never says the data failed anything.
+    @emlBrownForsythe: .tableId, .dataCol$, .groupCol$
+    .bfRan = 0
+    .bfFlags = 0
+    if emlBrownForsythe.error$ = ""
+        .bfRan = 1
+        if emlBrownForsythe.p < 0.05
+            .bfFlags = 1
+        endif
+    endif
+
+    if .bfRan
+        if emlShowExplanations
+            appendInfoLine: "  Why: The ANOVA above pools one within-group "
+            ... + "spread across all groups. This checks whether that is a "
+            ... + "fair thing to do here."
+        endif
+        @emlReportLineString: "Equal spread",
+        ... "Brown-Forsythe F(" + string$ (emlBrownForsythe.df1) + ", "
+        ... + string$ (emlBrownForsythe.df2) + ") = "
+        ... + fixed$ (emlBrownForsythe.f, 4)
+        @emlReportPWithExact: "Equal-spread p", emlBrownForsythe.p
+        if .bfFlags
+            @emlReportNote: "Note: the groups differ in spread more than "
+            ... + "this ANOVA's pooled error term likes. The result above is "
+            ... + "still the one being reported. A version that tolerates "
+            ... + "unequal spread is printed at the end of this report, "
+            ... + "under If the spreads are unequal; compare the two."
+        endif
+    endif
+
     @emlFormatEffectLabel: .etaSq, "eta_squared"
     .etaLabel$ = emlFormatEffectLabel.label$
     # D24: this row used to end in eight zeros meaning "not applicable".
@@ -3097,6 +3137,128 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 ... .n2, .m2, .s2, .md2
             endfor
         endfor
+    endif
+
+    ; --- The tolerant version, printed only when the check rejected --------
+    ; Ruling 1: never replace, never auto-switch, never make the reported
+    ; primary test depend on the data. This block is ADDITIONAL. When
+    ; Brown-Forsythe does not reject, a run looks exactly as it did before
+    ; this feature existed, apart from the two equal-spread lines above --
+    ; which is what keeps every committed capture, and Tier A property A1
+    ; (F = t^2 at k = 2, an identity that Welch's F does NOT satisfy against
+    ; Student's t), valid.
+    if .bfFlags
+        @emlReportBlank
+        @emlReportSection: "If the spreads are unequal"
+        @emlReportNote: "Welch's F does not pool the within-group spread, "
+        ... + "and Games-Howell uses each pair's own spread instead of one "
+        ... + "shared error term. Where these agree with the block above, "
+        ... + "the unequal spread did not change the conclusion. Where they "
+        ... + "disagree, prefer these -- that is what they are for."
+
+        @emlWelchAnova: .tableId, .dataCol$, .groupCol$
+        if emlWelchAnova.error$ <> ""
+            @emlReportLineString: "Welch's F",
+            ... "not available -- " + emlWelchAnova.error$
+        else
+            @emlReportBlank
+            @emlReportLineString: "Welch's F",
+            ... "F(" + string$ (emlWelchAnova.df1) + ", "
+            ... + fixed$ (emlWelchAnova.df2, 2) + ") = "
+            ... + fixed$ (emlWelchAnova.f, 4)
+            @emlReportPWithExact: "Welch p", emlWelchAnova.p
+
+            @emlCSVSetTable: .tableName$
+            @emlCSVTermType: "omnibus"
+            @emlCSVAddStr: "Welch ANOVA", "", "data_column", .dataCol$
+            @emlCSVAddStr: "Welch ANOVA", "", "group_column", .groupCol$
+            @emlCSVAdd: "Welch ANOVA", "", "F", emlWelchAnova.f
+            @emlCSVAdd: "Welch ANOVA", "", "df1", emlWelchAnova.df1
+            @emlCSVAdd: "Welch ANOVA", "", "df2", emlWelchAnova.df2
+            @emlCSVAdd: "Welch ANOVA", "", "p", emlWelchAnova.p
+            @emlCSVAdd: "Welch ANOVA", "", "n_groups", emlWelchAnova.nGroups
+        endif
+
+        ; Games-Howell only when there is more than one pair to draw. At
+        ; k = 2 Welch's F above already IS that comparison, and a one-cell
+        ; matrix would restate it.
+        if .nGroups > 2
+            @emlGamesHowell: .tableId, .dataCol$, .groupCol$, 0.05
+            if emlGamesHowell.error$ <> ""
+                @emlReportLineString: "Games-Howell",
+                ... "not available -- " + emlGamesHowell.error$
+            else
+                @emlReportBlank
+                @emlReportSection:
+                ... "Games-Howell Pairwise Comparisons (p-values)"
+                appendInfoLine: ""
+                .ghHeader$ = left$ ("" + "                ", 14)
+                for .jGroup from 1 to .nGroups
+                    .ghCol$ = replace$ (emlGamesHowell.groupName$[.jGroup],
+                    ... "_", " ", 0)
+                    if length (.ghCol$) > 10
+                        .ghCol$ = left$ (.ghCol$, 10)
+                    endif
+                    .ghHeader$ = .ghHeader$
+                    ... + left$ (.ghCol$ + "            ", 12)
+                endfor
+                appendInfoLine: .ghHeader$
+                for .iGroup from 1 to .nGroups
+                    .ghRow$ = replace$ (emlGamesHowell.groupName$[.iGroup],
+                    ... "_", " ", 0)
+                    if length (.ghRow$) > 12
+                        .ghRow$ = left$ (.ghRow$, 12)
+                    endif
+                    .ghLine$ = left$ (.ghRow$ + "              ", 14)
+                    for .jGroup from 1 to .nGroups
+                        if .iGroup = .jGroup
+                            .ghCell$ = "--"
+                        else
+                            .ghP = emlGamesHowell.pMatrix## [.iGroup, .jGroup]
+                            if .ghP = undefined
+                                .ghCell$ = "n/a"
+                            else
+                                @emlFormatP: .ghP
+                                .ghCell$ = emlFormatP.bare$
+                            endif
+                        endif
+                        .ghLine$ = .ghLine$
+                        ... + left$ (.ghCell$ + "            ", 12)
+                    endfor
+                    appendInfoLine: .ghLine$
+                endfor
+
+                for .iGroup from 1 to .nGroups - 1
+                    for .jGroup from .iGroup + 1 to .nGroups
+                        .ghP = emlGamesHowell.pMatrix## [.iGroup, .jGroup]
+                        if .ghP <> undefined
+                            @emlCSVSetTable: .tableName$
+                            @emlCSVTermType: "contrast"
+                            .ghContrast$ = emlGamesHowell.groupName$[.iGroup]
+                            ... + " vs " + emlGamesHowell.groupName$[.jGroup]
+                            @emlCSVAdd: "Games-Howell", .ghContrast$, "q",
+                            ... emlGamesHowell.qMatrix## [.iGroup, .jGroup]
+                            @emlCSVAdd: "Games-Howell", .ghContrast$, "df",
+                            ... emlGamesHowell.dfMatrix## [.iGroup, .jGroup]
+                            @emlCSVAdd: "Games-Howell", .ghContrast$,
+                            ... "p_adjusted", .ghP
+                            @emlCSVAdd: "Games-Howell", .ghContrast$,
+                            ... "cohens_d",
+                            ... emlGamesHowell.dMatrix## [.iGroup, .jGroup]
+                        endif
+                    endfor
+                endfor
+
+                if emlGamesHowell.nUndefined > 0
+                    @emlReportNote: string$ (emlGamesHowell.nUndefined)
+                    ... + " pair(s) could not be computed -- a group with "
+                    ... + "fewer than two values, or zero variance in both "
+                    ... + "groups of a pair, leaves the Welch denominator "
+                    ... + "undefined. Those cells read n/a rather than "
+                    ... + "carrying a number with no meaning."
+                endif
+            endif
+        endif
     endif
 
     @emlReportFooter
@@ -4178,6 +4340,34 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
         @emlReportPWithExact: .displayF1$, emlTwoWayAnova.pA
         @emlReportPWithExact: .displayF2$, emlTwoWayAnova.pB
         @emlReportPWithExact: .interLabel$, emlTwoWayAnova.pAB
+    endif
+
+    ; @emlTwoWayAnova sets .warning$ for conditions the user needs to know
+    ; about -- unbalanced cells, an empty cell, a design the Type of sums of
+    ; squares assumption does not fit. It was written to the glance frame at
+    ; eml-analysis.praat:2961 and printed NOWHERE, so a user reading the
+    ; report never saw it and only a user who exported the CSV ever did.
+    ; Placed immediately under the table it qualifies, following the D98
+    ; ruling on caveat placement: a caveat below the effect sizes reads as
+    ; being about the effect sizes.
+    if emlTwoWayAnova.warning$ <> ""
+        @emlReportBlank
+        @emlReportNote: "Caution: " + emlTwoWayAnova.warning$
+    endif
+
+    ; A significant interaction qualifies both main effects: it says the
+    ; effect of each factor DEPENDS on the level of the other, so a single
+    ; main-effect F averaged across that dependence can be misleading on its
+    ; own. Precedent for the wording and the placement is the RM-ANOVA
+    ; caution at eml-analysis.praat:2194.
+    if emlTwoWayAnova.pAB < 0.05
+        @emlReportBlank
+        @emlReportNote: "Caution: the interaction is significant, so the "
+        ... + "two main-effect rows above are averages taken across a "
+        ... + "difference that is itself real. Each factor's effect depends "
+        ... + "on the level of the other, and reporting either main effect "
+        ... + "on its own will understate that. Read the cell means below "
+        ... + "before reading the main effects."
     endif
 
     # Effect sizes

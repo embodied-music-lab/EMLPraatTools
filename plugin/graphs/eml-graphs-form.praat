@@ -3,9 +3,18 @@
 # ============================================================================
 # EML Graphs Plugin
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
-# Development: Claude (Anthropic)
 # License: Creative Commons Share-Alike
-# Version: 2.3
+# Version: 2.4
+# v2.4: D3b — the graph type registry drops from 14 entries to 13. Type 13,
+#       "Time Series (with CI)", lost its form page when CI became a toggle on
+#       type 5 (Line Chart); the registry row and its dispatch branches stayed
+#       behind, unreachable (typeToMenu[13] was 0) and reading three column
+#       variables — ciTimeCol$ / ciValueCol$ / ciGroupCol$ — that nothing ever
+#       wrote. Spaghetti Plot moves 14 -> 13; nGraphTypes and all six parallel
+#       registry arrays, menuToType[16] and typeToMenu shrink with it.
+#       @emlDrawTimeSeriesCI is untouched and still dispatched from type 5.
+#       CALLERS: any script setting emlGraphsPresetType = 14 for a spaghetti
+#       plot must now set 13.
 # v2.3: D18/D65/D32/D60/D108.
 #       * D18 + D65 (filename half) — the Draw path's Export Results dialog
 #         proposed selected$ ("Table") + "_results" on originalSourceId, which
@@ -160,6 +169,17 @@ emlGraphsPresetCorrection$ = ""
 # figure drawn with a particular dot size or with points hidden sets these,
 # and the D103 sentinels below make that choice beat the remembered previous
 # dialog value on the second and later scatter of a session.
+#
+# NOTE (7 Aug 2026): these two are the only preset slots no shipping caller
+# writes. Every other emlGraphsPreset* is set by at least one of the stats
+# wrappers; these are set ONLY here and in the clear block at the end of
+# @emlGraphsWorkflow, so the two reads in PRESET READING never fire in
+# practice. That is not a defect and the reads are not dead: the sentinels
+# below are exactly what make "unset" safe, so both branches are correctly
+# skipped rather than acting on an undefined value. The slot is left wired
+# end to end because it is the bridge's only channel for dot appearance —
+# the wrapper side is the half that is missing, not this one. Anything that
+# changes here must change in the clear block too.
 emlGraphsPresetDotSize = 0
 emlGraphsPresetShowDots = -1
 
@@ -185,7 +205,14 @@ spPresetGroupIdx = 0
 # GRAPH TYPE REGISTRY
 # ============================================================================
 
-nGraphTypes = 14
+# D3b. The registry used to declare 14 types. Type 13 was "Time Series (with
+# CI)", whose form page was folded into type 5 (Line Chart) as a "Show
+# confidence interval" toggle — the page went, the registry row stayed, and
+# typeToMenu[13] = 0 meant the row could not be reached from the menu at all.
+# A registry entry no user can select and no page can fill is a sign pointing
+# at a demolished room, so it is gone and Spaghetti Plot has moved up into 13.
+# @emlDrawTimeSeriesCI is unaffected: it is still dispatched from type 5.
+nGraphTypes = 13
 
 graphTypeName$[1] = "Pitch Contour"
 graphTypeName$[2] = "Waveform"
@@ -199,8 +226,7 @@ graphTypeName$[9] = "Box Plot"
 graphTypeName$[10] = "Histogram"
 graphTypeName$[11] = "Grouped Violin"
 graphTypeName$[12] = "Grouped Box Plot"
-graphTypeName$[13] = "Time Series (with CI)"
-graphTypeName$[14] = "Spaghetti Plot"
+graphTypeName$[13] = "Spaghetti Plot"
 
 requiredType$[1] = "Pitch"
 requiredType$[2] = "Sound"
@@ -215,7 +241,6 @@ requiredType$[10] = "Table"
 requiredType$[11] = "Table"
 requiredType$[12] = "Table"
 requiredType$[13] = "Table"
-requiredType$[14] = "Table"
 
 defaultXLabel$[1] = "Time (s)"
 defaultXLabel$[2] = "Time (s)"
@@ -230,7 +255,6 @@ defaultXLabel$[10] = ""
 defaultXLabel$[11] = ""
 defaultXLabel$[12] = ""
 defaultXLabel$[13] = ""
-defaultXLabel$[14] = ""
 
 defaultYLabel$[1] = "Frequency (Hz)"
 defaultYLabel$[2] = "Amplitude (Pa)"
@@ -245,7 +269,6 @@ defaultYLabel$[10] = ""
 defaultYLabel$[11] = ""
 defaultYLabel$[12] = ""
 defaultYLabel$[13] = ""
-defaultYLabel$[14] = ""
 
 hasGridlines[1] = 1
 hasGridlines[2] = 1
@@ -260,7 +283,6 @@ hasGridlines[10] = 1
 hasGridlines[11] = 1
 hasGridlines[12] = 1
 hasGridlines[13] = 1
-hasGridlines[14] = 1
 
 isTableType[1] = 0
 isTableType[2] = 0
@@ -275,7 +297,6 @@ isTableType[10] = 1
 isTableType[11] = 1
 isTableType[12] = 1
 isTableType[13] = 1
-isTableType[14] = 1
 
 # ============================================================================
 # MENU ↔ TYPE MAPPING (divider support)
@@ -317,7 +338,7 @@ menuToType[12] = 0
 menuToType[13] = 6
 menuToType[14] = 8
 menuToType[15] = 5
-menuToType[16] = 14
+menuToType[16] = 13
 
 typeToMenu[1] = 2
 typeToMenu[2] = 3
@@ -331,8 +352,7 @@ typeToMenu[9] = 9
 typeToMenu[10] = 11
 typeToMenu[11] = 8
 typeToMenu[12] = 10
-typeToMenu[13] = 0
-typeToMenu[14] = 16
+typeToMenu[13] = 16
 
 # ============================================================================
 # PROCEDURES — Utilities
@@ -722,7 +742,7 @@ endproc
 #          filteredNMenuItems
 # ----------------------------------------------------------------------------
 procedure emlBuildFilteredMenu
-    # Step 1: Determine which internal types (1–14) are valid
+    # Step 1: Determine which internal types (1–13) are valid
     for .iType from 1 to nGraphTypes
         .typeValid[.iType] = 0
     endfor
@@ -1131,10 +1151,6 @@ procedure emlComposeGraphTitle
         .x$ = gbCatCol$
         .sub$ = gbSubCol$
     elsif graph_type = 13
-        .value$ = ciValueCol$
-        .x$ = ciTimeCol$
-        .sub$ = ciGroupCol$
-    elsif graph_type = 14
         .value$ = spValueCol$
         .x$ = spCondCol$
         .sub$ = spGroupCol$
@@ -1162,7 +1178,7 @@ procedure emlComposeGraphTitle
 
     if .x$ <> ""
         @emlSanitizeLabel: .x$
-        if graph_type = 5 or graph_type = 13
+        if graph_type = 5
             .result$ = .result$ + " over " + emlSanitizeLabel.result$
         elsif graph_type = 8
             .result$ = .result$ + " vs " + emlSanitizeLabel.result$
@@ -1830,9 +1846,10 @@ repeat
     gbCatCol$ = ""
     gbSubCol$ = ""
     gbValueCol$ = ""
-    ciTimeCol$ = ""
-    ciValueCol$ = ""
-    ciGroupCol$ = ""
+    ; D3b: ciTimeCol$ / ciValueCol$ / ciGroupCol$ went with the old type 13.
+    ; They were only ever cleared here and read by that type's dispatch, never
+    ; written, so the CI draw call they fed was passing three empty strings.
+    ; Type 5's toggle uses timeColName$ / valueColName$ / groupColName$.
     spCondCol$ = ""
     spValueCol$ = ""
     spSubjectCol$ = ""
@@ -2556,6 +2573,16 @@ repeat
         # =============================================================
         # Time Series — Page 2 (format selection + column mapping)
         # =============================================================
+        #
+        # D3b. This page absorbed the old type 13, "Time Series (with CI)",
+        # whose registry row has now gone. The only trace a user could follow
+        # to it is the toggle below, so the toggle's label carries the retired
+        # type's name: "Show confidence interval (Time Series with CI)".
+        # Praat drops a TRAILING parenthesised part when it derives the form
+        # variable name (same trick as "Adjustment method (nonparametric
+        # post-hoc only)" further down), so the value still arrives as
+        # show_confidence_interval and the two read sites below are unchanged.
+        # Do not move the parentheses into the middle of the label.
 
         # --- Auto-detect column defaults ---
         tsTimeIdx = 1
@@ -2727,7 +2754,7 @@ repeat
                                 for iCol from 1 to nCols
                                     option: colName$[iCol]
                                 endfor
-                            boolean: "Show confidence interval", tsShowCI
+                            boolean: "Show confidence interval (Time Series with CI)", tsShowCI
                         else
                             optionmenu: "Value column", tsValueIdx
                                 for iCol from 1 to nCols
@@ -2741,7 +2768,7 @@ repeat
                             optionmenu: "Group order", prev_groupSort
                                 option: "Table order"
                                 option: "Alphabetical"
-                            boolean: "Show confidence interval", tsShowCI
+                            boolean: "Show confidence interval (Time Series with CI)", tsShowCI
                         endif
                         if config_showAdvanced
                             comment: "📐 X-axis range (both 0 = auto)"
@@ -5619,12 +5646,7 @@ repeat
         until gbFormDone = 1
 
 
-    # Type 13 (Time Series with CI) form section removed.
-    # CI is now a toggle within type 5 (Line Chart).
-    # The draw procedure @emlDrawTimeSeriesCI is still available
-    # and dispatched from type 5 when tsShowCI = 1.
-
-    elsif graph_type = 14
+    elsif graph_type = 13
         # =============================================================
         # Spaghetti Plot — Page 2 (column mapping)
         # =============================================================
@@ -5707,7 +5729,7 @@ repeat
             spPresetHasGroup = 0
         endif
 
-        if lastDrawnGraphType = 14
+        if lastDrawnGraphType = 13
             tmpVMin$ = string$ (prev_sp_valueMin)
             tmpVMax$ = string$ (prev_sp_valueMax)
         else
@@ -6132,7 +6154,7 @@ repeat
         catMeasureCol$ = gvCatCol$
     elsif graph_type = 12
         catMeasureCol$ = gbCatCol$
-    elsif graph_type = 14
+    elsif graph_type = 13
         catMeasureCol$ = spCondCol$
     endif
 
@@ -6247,9 +6269,6 @@ repeat
         @emlDrawGroupedBoxPlot: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, gbCatCol$, gbSubCol$, gbValueCol$, valueMin, valueMax
 
     elsif graph_type = 13
-        @emlDrawTimeSeriesCI: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, ciTimeCol$, ciValueCol$, ciGroupCol$, timeMin, timeMax, valueMin, valueMax
-
-    elsif graph_type = 14
         @emlDrawSpaghettiPlot: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, spCondCol$, spValueCol$, spSubjectCol$, spGroupCol$, spShowMean, valueMin, valueMax
     endif
 
