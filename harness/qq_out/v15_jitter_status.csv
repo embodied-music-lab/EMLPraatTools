@@ -1,0 +1,2 @@
+case,column,nrows,n,ndropped,refused,reason,slope,intercept,sw_w,sw_p,objects_after_draw
+v15_jitter,jitter_pct,40,40,0,0,-,0.527153544079,1.189425350464,0.977386999625,0.593351726456,1

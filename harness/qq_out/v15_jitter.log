@@ -1,0 +1,5 @@
+QQ drive: case=v15_jitter col=jitter_pct src=/home/claude/EMLPraatTools/evidence/csv/v15_normality_input.csv
+OLS fitted line: y = 0.5272x + 1.1894
+SAVED /home/claude/EMLPraatTools/harness/qq_out/v15_jitter.png
+SAVED-CHROME /home/claude/EMLPraatTools/harness/qq_out/v15_jitter_chrome.png
+OBJECTS-AFTER-DRAW 1

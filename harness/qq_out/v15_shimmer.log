@@ -1,0 +1,5 @@
+QQ drive: case=v15_shimmer col=shimmer_pct src=/home/claude/EMLPraatTools/evidence/csv/v15_normality_input.csv
+OLS fitted line: y = 1.0836x + 2.2135
+SAVED /home/claude/EMLPraatTools/harness/qq_out/v15_shimmer.png
+SAVED-CHROME /home/claude/EMLPraatTools/harness/qq_out/v15_shimmer_chrome.png
+OBJECTS-AFTER-DRAW 1

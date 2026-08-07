@@ -1,0 +1,5 @@
+QQ drive: case=v15_f0 col=F0_Hz src=/home/claude/EMLPraatTools/evidence/csv/v15_normality_input.csv
+OLS fitted line: y = 27.0341x + 185.6705
+SAVED /home/claude/EMLPraatTools/harness/qq_out/v15_f0.png
+SAVED-CHROME /home/claude/EMLPraatTools/harness/qq_out/v15_f0_chrome.png
+OBJECTS-AFTER-DRAW 1
