@@ -7,7 +7,6 @@
 #
 # Part of the EML Stats library (EML Praat Tools).
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# Development: Claude (Anthropic)
 # License: Creative Commons Share-Alike
 #
 # Provides: @emlTestInit, @emlTestSection, @emlTestAssertTrue,

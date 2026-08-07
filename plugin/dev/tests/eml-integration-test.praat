@@ -16,7 +16,6 @@
 #        rewritten against the current extraction API.
 #
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# Development: Claude (Anthropic)
 # License: Creative Commons Share-Alike
 #
 # Exercises all four Phase 1 modules in a realistic workflow.
