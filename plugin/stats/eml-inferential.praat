@@ -70,7 +70,6 @@
 #
 # Part of the EML Stats library (EML Praat Tools).
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# Development: Claude (Anthropic)
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
 #
 # Provides: @emlTTest, @emlTTestPaired, @emlCohenD,
@@ -80,7 +79,8 @@
 #   @emlBonferroni, @emlHolm, @emlBenjaminiHochberg,
 #   @emlTableFromGroups, @emlOneWayAnova, @emlTwoWayAnova, @emlTukeyHSD,
 #   @emlEpsilonSquared, @emlKruskalWallis, @emlDunnTest,
-#   @emlPairwiseT, @emlPairwiseWilcoxon, @emlScheffe
+#   @emlPairwiseT, @emlPairwiseWilcoxon, @emlScheffe,
+#   @emlBrownForsythe, @emlWelchAnova, @emlGamesHowell
 #
 # Dependencies:
 #   @emlSpearmanCorrelation requires @emlRankVector from
@@ -4012,6 +4012,818 @@ endproc
 
 
 # ============================================================================
+# @emlBrownForsythe
+# ============================================================================
+# Levene's test for homogeneity of variance with MEDIAN centring
+# (Brown & Forsythe 1974), i.e. a one-way ANOVA on the absolute
+# deviations from each group's own median:
+#
+#     z_ij = |x_ij - median_j|,  F = MS_between(z) / MS_within(z)
+#
+# Median centring is the robust variant: it holds its nominal size on
+# skewed and heavy-tailed data, where mean centring (the original
+# Levene 1960 statistic) is liberal. This is what R's
+# car::leveneTest(center = median) computes, and what SPSS labels
+# "Based on Median".
+#
+# Arguments:
+#   .tableId    - ID of a Table object (must be in object list)
+#   .dataCol$   - name of the numeric data column
+#   .factorCol$ - name of the string factor column
+#
+# Output:
+#   .f          - F statistic on the absolute deviations
+#   .df1        - between-groups degrees of freedom (k - 1)
+#   .df2        - within-groups degrees of freedom (N - k)
+#   .p          - p-value (from fisherQ)
+#   .nGroups    - number of groups (k)
+#   .totalN     - number of observations used (N)
+#   .ssBetween  - between-groups sum of squares of the deviations
+#   .ssWithin   - within-groups sum of squares of the deviations
+#   .msBetween  - .ssBetween / .df1
+#   .msWithin   - .ssWithin / .df2
+#   .groupLabel$[g] - label of group g (1..k, alphabetical)
+#   .groupN[g]      - size of group g
+#   .groupMedian[g] - median of group g (in the caller's own units)
+#   .groupMeanDev[g] - mean absolute deviation of group g
+#   .warning$   - non-fatal disclosure, or "" if none
+#   .error$     - "" on success, diagnostic message on failure
+#
+# Notes:
+#   - Refuses on exactly the conditions @emlOneWayAnova refuses on, with
+#     the same messages: fewer than 3 rows, a missing column, fewer than
+#     2 groups, and any group with fewer than 2 usable observations
+#     (which is also how a non-numeric data column presents, since
+#     @eml_getGroupData drops the unusable rows first). The offending
+#     groups are named.
+#   - Does NOT call @emlOneWayAnova. The ANOVA on the deviations is
+#     computed here so that this procedure leaves emlOneWayAnova's own
+#     outputs untouched for a caller that reports both.
+#   - Sums of squares use the corrected two-pass form, as in
+#     @emlOneWayAnova. The deviations are already centred near zero, so
+#     the location shift @emlOneWayAnova needs is not required here.
+#   - Dependencies: @emlCountGroups, @eml_getGroupData (eml-extract.praat)
+#   - Original Table selection is restored on return
+# ============================================================================
+
+procedure emlBrownForsythe: .tableId, .dataCol$, .factorCol$
+    .f = undefined
+    .df1 = undefined
+    .df2 = undefined
+    .p = undefined
+    .nGroups = 0
+    .totalN = 0
+    .ssBetween = undefined
+    .ssWithin = undefined
+    .msBetween = undefined
+    .msWithin = undefined
+    .warning$ = ""
+    .error$ = ""
+
+    # --- Validate inputs ---
+
+    selectObject: .tableId
+    .nRows = Get number of rows
+    if .nRows < 3
+        .error$ = "Need at least 3 observations, got "
+        ... + string$ (.nRows) + "."
+    endif
+
+    if .error$ = ""
+        .colIdx1 = Get column index: .dataCol$
+        if .colIdx1 = 0
+            .error$ = "Data column not found: " + .dataCol$
+        endif
+    endif
+
+    if .error$ = ""
+        .colIdx2 = Get column index: .factorCol$
+        if .colIdx2 = 0
+            .error$ = "Factor column not found: " + .factorCol$
+        endif
+    endif
+
+    # --- Count and extract groups ---
+
+    if .error$ = ""
+        @emlCountGroups: .tableId, .factorCol$
+        if emlCountGroups.error$ <> ""
+            .error$ = emlCountGroups.error$
+        else
+            .nGroups = emlCountGroups.nGroups
+        endif
+    endif
+
+    if .error$ = ""
+        if .nGroups < 2
+            .error$ = "Group column """ + .factorCol$ + """ has "
+            ... + string$ (.nGroups) + " group. This test compares 2 or more."
+        endif
+    endif
+
+    # --- Group sizes: state the diagnosis, not the first offender ---
+    # Same rule, and the same message, as @emlOneWayAnova (D99): as many
+    # groups as rows means the column is an identifier; otherwise name the
+    # offenders together rather than raising on the first one found.
+
+    if .error$ = ""
+        .nSingleton = 0
+        .singletonList$ = ""
+        for .g from 1 to .nGroups
+            @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
+            ... emlCountGroups.groupLabel$[.g]
+            if eml_getGroupData.n < 2
+                .nSingleton = .nSingleton + 1
+                if .nSingleton <= 5
+                    if .singletonList$ <> ""
+                        .singletonList$ = .singletonList$ + ", "
+                    endif
+                    .singletonList$ = .singletonList$ + """"
+                    ... + emlCountGroups.groupLabel$[.g] + """"
+                endif
+            endif
+        endfor
+
+        if .nSingleton > 0
+            if .nGroups = .nRows
+                .error$ = "Group column """ + .factorCol$ + """ has "
+                ... + string$ (.nGroups) + " groups for "
+                ... + string$ (.nRows) + " rows - one per row. This is an "
+                ... + "identifier column, not a grouping column."
+            else
+                .error$ = string$ (.nSingleton) + " of "
+                ... + string$ (.nGroups) + " groups in """
+                ... + .factorCol$ + """ have fewer than 2 observations: "
+                ... + .singletonList$
+                if .nSingleton > 5
+                    .error$ = .error$ + ", and "
+                    ... + string$ (.nSingleton - 5) + " more"
+                endif
+                .error$ = .error$ + ". Every group needs at least 2."
+            endif
+        endif
+    endif
+
+    # --- Pass 1: group medians, absolute deviations, SS within ---
+
+    if .error$ = ""
+        .totalN = 0
+        .ssWithin = 0
+        .sumOfDeviations = 0
+
+        for .g from 1 to .nGroups
+            @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
+            ... emlCountGroups.groupLabel$[.g]
+            .gN = eml_getGroupData.n
+            .gData# = eml_getGroupData.data#
+
+            ; Median of the group. Sizes were validated above, so .gN >= 2.
+            .sorted# = sort# (.gData#)
+            if .gN mod 2 = 1
+                .med = .sorted# [(.gN + 1) / 2]
+            else
+                .med = (.sorted# [.gN / 2] + .sorted# [.gN / 2 + 1]) / 2
+            endif
+
+            .dev# = abs# (.gData# - .med)
+
+            .groupLabel$[.g] = emlCountGroups.groupLabel$[.g]
+            .groupN[.g] = .gN
+            .groupMedian[.g] = .med
+            .groupMeanDev[.g] = mean (.dev#)
+
+            ; Corrected two-pass within-group sum of squares (Chan, Golub &
+            ; LeVeque 1983), as in @emlOneWayAnova: the second term is the
+            ; error left in the group mean, removed rather than squared in.
+            .centered# = .dev# - .groupMeanDev[.g]
+            .sumDev = sum (.centered#)
+            .ssWithin = .ssWithin + sum (.centered# * .centered#)
+            ... - .sumDev * .sumDev / .gN
+
+            .totalN = .totalN + .gN
+            .sumOfDeviations = .sumOfDeviations + sum (.dev#)
+        endfor
+    endif
+
+    # --- Pass 2: between-groups sum of squares, F, p ---
+
+    if .error$ = ""
+        .grandMeanDev = .sumOfDeviations / .totalN
+
+        .ssBetween = 0
+        for .g from 1 to .nGroups
+            .gDev = .groupMeanDev[.g] - .grandMeanDev
+            .ssBetween = .ssBetween + .groupN[.g] * .gDev * .gDev
+        endfor
+
+        .df1 = .nGroups - 1
+        .df2 = .totalN - .nGroups
+        .msBetween = .ssBetween / .df1
+        .msWithin = .ssWithin / .df2
+
+        ; Every observation the same distance from its group median (two
+        ; observations per group, say) makes MS-within zero. F is then a
+        ; division by zero, so it is refused rather than reported, in the
+        ; same shape @emlOneWayAnova uses for the same degeneracy.
+        if .msWithin > 0
+            .f = .msBetween / .msWithin
+            .p = fisherQ (.f, .df1, .df2)
+        else
+            .f = undefined
+            .p = undefined
+            .warning$ = "Within-groups mean square of the absolute "
+            ... + "deviations is zero (every observation is the same "
+            ... + "distance from its group median); F and p are undefined"
+        endif
+    endif
+
+    # --- Restore selection ---
+
+    selectObject: .tableId
+endproc
+
+
+# ============================================================================
+# @emlWelchAnova
+# ============================================================================
+# Welch's heteroscedastic k-sample F test (Welch 1951): a one-way
+# analysis of means that does not assume equal variances. This is what
+# R's oneway.test(var.equal = FALSE) computes.
+#
+# With w_j = n_j / s_j^2 and W = sum(w_j):
+#
+#     xbar_w = sum(w_j * xbar_j) / W
+#     A      = sum(w_j * (xbar_j - xbar_w)^2) / (k - 1)
+#     L      = sum( (1 - w_j/W)^2 / (n_j - 1) )
+#     B      = 2*(k - 2) / (k^2 - 1) * L
+#     F      = A / (1 + B)
+#     df1    = k - 1
+#     df2    = (k^2 - 1) / (3 * L)
+#
+# The df2 given here is the same quantity as the more commonly written
+# 1 / (3*B / (2*(k - 2))): substituting B cancels the (k - 2) factor,
+# leaving (k^2 - 1) / (3L). Written this way it is also correct at
+# k = 2, where B = 0 and the textbook form is 0/0. At k = 2 the
+# statistic reduces exactly to Welch's t^2 with the
+# Welch-Satterthwaite df:
+#
+#     A = (xbar_1 - xbar_2)^2 / (v_1 + v_2) = t_welch^2
+#     (k^2-1)/(3L) = (v_1 + v_2)^2
+#                    / (v_1^2/(n_1-1) + v_2^2/(n_2-1))
+#
+# with v_j = s_j^2/n_j. That identity is asserted numerically in
+# validate/v22_homogeneity.R, not merely claimed here.
+#
+# Arguments:
+#   .tableId    - ID of a Table object (must be in object list)
+#   .dataCol$   - name of the numeric data column
+#   .factorCol$ - name of the string factor column
+#
+# Output:
+#   .f          - Welch's F statistic
+#   .df1        - k - 1
+#   .df2        - fractional denominator degrees of freedom
+#   .p          - p-value (from fisherQ)
+#   .nGroups    - number of groups (k)
+#   .totalN     - number of observations used (N)
+#   .sumWeights - W = sum(n_j / s_j^2)
+#   .weightedMean - xbar_w
+#   .lambda     - L, the weight-dispersion sum above
+#   .groupLabel$[g] - label of group g (1..k, alphabetical)
+#   .groupN[g]      - size of group g
+#   .groupMean[g]   - mean of group g
+#   .groupVar[g]    - sample variance of group g (n - 1 denominator)
+#   .groupWeight[g] - w_j for group g
+#   .warning$   - non-fatal disclosure, or "" if none
+#   .error$     - "" on success, diagnostic message on failure
+#
+# Notes:
+#   - Refuses, naming the offending groups, when any group has fewer
+#     than 2 observations or zero variance. A zero variance is not a
+#     recoverable degeneracy here: w_j = n_j/0 is the weight the whole
+#     statistic is built on.
+#   - Group means are formed in shifted coordinates before the weighted
+#     grand mean is subtracted, for the same reason @emlOneWayAnova
+#     shifts: on data with many constant leading digits, forming
+#     (xbar_j - xbar_w) on raw values cancels away the mantissa before
+#     the squaring. The shift is exact -- F is invariant under it.
+#   - Dependencies: @emlCountGroups, @eml_getGroupData (eml-extract.praat)
+#   - Original Table selection is restored on return
+# ============================================================================
+
+procedure emlWelchAnova: .tableId, .dataCol$, .factorCol$
+    .f = undefined
+    .df1 = undefined
+    .df2 = undefined
+    .p = undefined
+    .nGroups = 0
+    .totalN = 0
+    .sumWeights = undefined
+    .weightedMean = undefined
+    .lambda = undefined
+    .warning$ = ""
+    .error$ = ""
+
+    # --- Validate inputs ---
+
+    selectObject: .tableId
+    .nRows = Get number of rows
+    if .nRows < 3
+        .error$ = "Need at least 3 observations, got "
+        ... + string$ (.nRows) + "."
+    endif
+
+    if .error$ = ""
+        .colIdx1 = Get column index: .dataCol$
+        if .colIdx1 = 0
+            .error$ = "Data column not found: " + .dataCol$
+        endif
+    endif
+
+    if .error$ = ""
+        .colIdx2 = Get column index: .factorCol$
+        if .colIdx2 = 0
+            .error$ = "Factor column not found: " + .factorCol$
+        endif
+    endif
+
+    # --- Count and extract groups ---
+
+    if .error$ = ""
+        @emlCountGroups: .tableId, .factorCol$
+        if emlCountGroups.error$ <> ""
+            .error$ = emlCountGroups.error$
+        else
+            .nGroups = emlCountGroups.nGroups
+        endif
+    endif
+
+    if .error$ = ""
+        if .nGroups < 2
+            .error$ = "Group column """ + .factorCol$ + """ has "
+            ... + string$ (.nGroups) + " group. This test compares 2 or more."
+        endif
+    endif
+
+    # --- Group sizes and variances, in one pass, naming every offender ---
+
+    if .error$ = ""
+        .totalN = 0
+        .sumOfMeans = 0
+        .nSingleton = 0
+        .singletonList$ = ""
+        .nFlat = 0
+        .flatList$ = ""
+
+        for .g from 1 to .nGroups
+            @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
+            ... emlCountGroups.groupLabel$[.g]
+            .gN = eml_getGroupData.n
+            .groupLabel$[.g] = emlCountGroups.groupLabel$[.g]
+            .groupN[.g] = .gN
+
+            if .gN < 2
+                .groupMean[.g] = undefined
+                .groupVar[.g] = undefined
+                .nSingleton = .nSingleton + 1
+                if .nSingleton <= 5
+                    if .singletonList$ <> ""
+                        .singletonList$ = .singletonList$ + ", "
+                    endif
+                    .singletonList$ = .singletonList$ + """"
+                    ... + .groupLabel$[.g] + """"
+                endif
+            else
+                .gData# = eml_getGroupData.data#
+                .groupMean[.g] = mean (.gData#)
+
+                ; Corrected two-pass variance, as elsewhere in this file.
+                .centered# = .gData# - .groupMean[.g]
+                .sumDev = sum (.centered#)
+                .gSS = sum (.centered# * .centered#)
+                ... - .sumDev * .sumDev / .gN
+                if .gSS < 0
+                    .gSS = 0
+                endif
+                .groupVar[.g] = .gSS / (.gN - 1)
+
+                .totalN = .totalN + .gN
+                .sumOfMeans = .sumOfMeans + .groupMean[.g]
+
+                if .groupVar[.g] <= 0
+                    .nFlat = .nFlat + 1
+                    if .nFlat <= 5
+                        if .flatList$ <> ""
+                            .flatList$ = .flatList$ + ", "
+                        endif
+                        .flatList$ = .flatList$ + """"
+                        ... + .groupLabel$[.g] + """"
+                    endif
+                endif
+            endif
+        endfor
+
+        ; Too-small groups first: a group of one has no variance to be
+        ; zero, so reporting it as flat would name the wrong defect.
+        if .nSingleton > 0
+            if .nGroups = .nRows
+                .error$ = "Group column """ + .factorCol$ + """ has "
+                ... + string$ (.nGroups) + " groups for "
+                ... + string$ (.nRows) + " rows - one per row. This is an "
+                ... + "identifier column, not a grouping column."
+            else
+                .error$ = string$ (.nSingleton) + " of "
+                ... + string$ (.nGroups) + " groups in """
+                ... + .factorCol$ + """ have fewer than 2 observations: "
+                ... + .singletonList$
+                if .nSingleton > 5
+                    .error$ = .error$ + ", and "
+                    ... + string$ (.nSingleton - 5) + " more"
+                endif
+                .error$ = .error$ + ". Every group needs at least 2."
+            endif
+        elsif .nFlat > 0
+            .error$ = string$ (.nFlat) + " of "
+            ... + string$ (.nGroups) + " groups in """
+            ... + .factorCol$ + """ have zero variance: " + .flatList$
+            if .nFlat > 5
+                .error$ = .error$ + ", and "
+                ... + string$ (.nFlat - 5) + " more"
+            endif
+            .error$ = .error$ + ". Welch's F weights each group by "
+            ... + "n/variance, which is undefined when every observation "
+            ... + "in a group is identical."
+        endif
+    endif
+
+    # --- Weights, weighted grand mean, A, L, B, F ---
+
+    if .error$ = ""
+        ; The shift is only a change of origin; every difference below is
+        ; formed in shifted coordinates, so the leading digits are gone
+        ; before any cancellation can happen. Welch's F is invariant.
+        .shift = .sumOfMeans / .nGroups
+
+        .sumWeights = 0
+        .weightedShiftedSum = 0
+        for .g from 1 to .nGroups
+            .groupWeight[.g] = .groupN[.g] / .groupVar[.g]
+            .shiftedMean[.g] = .groupMean[.g] - .shift
+            .sumWeights = .sumWeights + .groupWeight[.g]
+            .weightedShiftedSum = .weightedShiftedSum
+            ... + .groupWeight[.g] * .shiftedMean[.g]
+        endfor
+
+        .shiftedWeightedMean = .weightedShiftedSum / .sumWeights
+        .weightedMean = .shift + .shiftedWeightedMean
+
+        .aTerm = 0
+        .lambda = 0
+        for .g from 1 to .nGroups
+            .dev = .shiftedMean[.g] - .shiftedWeightedMean
+            .aTerm = .aTerm + .groupWeight[.g] * .dev * .dev
+            .share = 1 - .groupWeight[.g] / .sumWeights
+            .lambda = .lambda
+            ... + .share * .share / (.groupN[.g] - 1)
+        endfor
+
+        .df1 = .nGroups - 1
+        .aTerm = .aTerm / .df1
+        .bTerm = 2 * (.nGroups - 2) / (.nGroups * .nGroups - 1) * .lambda
+
+        if .lambda > 0
+            .f = .aTerm / (1 + .bTerm)
+            .df2 = (.nGroups * .nGroups - 1) / (3 * .lambda)
+            .p = fisherQ (.f, .df1, .df2)
+        else
+            ; L is a sum of squares over positive denominators and cannot
+            ; be zero for k >= 2 with positive variances, but a caller
+            ; deserves an undefined rather than a division by zero if the
+            ; arithmetic ever underflows to it.
+            .f = undefined
+            .df2 = undefined
+            .p = undefined
+            .warning$ = "The Welch weight-dispersion term is zero; the "
+            ... + "denominator degrees of freedom and p are undefined"
+        endif
+    endif
+
+    # --- Restore selection ---
+
+    selectObject: .tableId
+endproc
+
+
+# ============================================================================
+# @emlGamesHowell
+# ============================================================================
+# Games-Howell post-hoc test: all pairwise comparisons with Welch
+# standard errors and Welch-Satterthwaite degrees of freedom, referred
+# to the studentized range distribution on k means.
+#
+#     q_ij  = |xbar_i - xbar_j| / sqrt((s_i^2/n_i + s_j^2/n_j) / 2)
+#     df_ij = (v_i + v_j)^2 / (v_i^2/(n_i-1) + v_j^2/(n_j-1)),
+#             v_j = s_j^2/n_j
+#     p_ij  = studentized-range upper tail of q_ij on (k, df_ij)
+#
+# This is Tukey-Kramer's structure with the pooled MSE replaced, per
+# pair, by the two groups' own variances. Use it when the variances are
+# not equal; use @emlTukeyHSD when they are.
+#
+# Arguments:
+#   .tableId    - ID of a Table object (must be in object list)
+#   .dataCol$   - name of the numeric data column
+#   .factorCol$ - name of the string factor column
+#   .alpha      - significance level for the critical q (e.g. 0.05)
+#
+# Output (same shape as @emlTukeyHSD, so a reporter can consume either):
+#   .pMatrix##       - k x k symmetric matrix of pairwise p-values
+#                      (diagonal = 1, off-diagonal = Games-Howell p)
+#   .qMatrix##       - k x k symmetric matrix of q statistics
+#                      (diagonal = 0)
+#   .meanDiff##      - k x k antisymmetric mean differences
+#                      (meanDiff[i,j] = mean_i - mean_j)
+#   .dMatrix##       - k x k antisymmetric Cohen's d matrix
+#                      (dMatrix[i,j] = d for group i vs group j; signed)
+#   .groupName$[i]   - group label for row/column i (1..nGroups)
+#   .nGroups         - number of groups (k)
+#   .nPairs          - number of unique pairwise comparisons (k*(k-1)/2)
+#   .sortMap[s]      - maps sorted index s to extraction index (identity)
+#   .nUndefined      - number of comparisons whose q (and therefore p)
+#                      is undefined because the pairwise SE was zero;
+#                      such cells hold undefined, not 1
+#   .warning$        - non-fatal disclosure, or "" if none
+#   .error$          - "" on success, diagnostic message on failure
+#
+# Output (per-pair, where Tukey has one pooled scalar):
+#   .dfMatrix##      - k x k Welch-Satterthwaite df for each pair
+#   .seMatrix##      - k x k pairwise SE, sqrt((v_i + v_j)/2); this is
+#                      the same quantity @emlTukeyHSD divides by, so a
+#                      confidence half-width is qCrit * se in both
+#   .qCritMatrix##   - k x k critical q at .alpha on (k, df_ij)
+#   .groupN[g], .groupMean[g], .groupVar[g]
+#
+# Deliberately undefined, and NOT interchangeable with @emlTukeyHSD:
+#   .msWithin, .dfWithin, .qCritical
+#     Games-Howell pools nothing, so there is no single MSE, no single
+#     within-groups df, and no single critical q. The names exist, and
+#     hold undefined, so that a reporter written against @emlTukeyHSD's
+#     shape does not abort on a missing variable -- but a reporter that
+#     prints a Games-Howell interval must use .qCritMatrix## and
+#     .seMatrix##, not these.
+#
+# Access pattern:
+#   p-value for group 2 vs group 4: emlGamesHowell.pMatrix##[2, 4]
+#   df for that pair:               emlGamesHowell.dfMatrix##[2, 4]
+#
+# Notes:
+#   - Groups are sorted alphabetically (matches R convention), by the
+#     same @emlCountGroups mechanism @emlTukeyHSD uses
+#   - Refuses when any group has fewer than 2 observations, naming the
+#     offenders: Games-Howell needs a variance inside every group
+#   - A pair in which BOTH groups have zero variance has an undefined q
+#     and an undefined df; it is counted in .nUndefined and disclosed in
+#     .warning$, never reported as p = 1. One flat group against one
+#     varying group is a defined comparison and is computed normally.
+#   - Cohen's d per pair uses the two-group pooled SD (via @emlCohenD),
+#     identical to @emlTukeyHSD, so the effect-size column means the
+#     same thing whichever post-hoc produced it
+#   - Uses Get TukeyQ: for p-values and Get invTukeyQ: for critical q,
+#     both of which accept a fractional df
+#   - Dependencies: @emlCountGroups, @eml_getGroupData (eml-extract.praat),
+#     @emlCohenD (eml-inferential.praat)
+#   - Original Table selection is restored on return
+# ============================================================================
+
+procedure emlGamesHowell: .tableId, .dataCol$, .factorCol$, .alpha
+    .nGroups = 0
+    .nPairs = 0
+    .msWithin = undefined
+    .dfWithin = undefined
+    .qCritical = undefined
+    .nUndefined = 0
+    .warning$ = ""
+    .error$ = ""
+
+    # --- Validate inputs (same conditions as @emlTukeyHSD) ---
+
+    selectObject: .tableId
+    .nRows = Get number of rows
+    if .nRows < 3
+        .error$ = "This test needs at least 3 observations; the table "
+        ... + "has " + string$ (.nRows) + "."
+    endif
+
+    if .error$ = ""
+        .colIdx1 = Get column index: .dataCol$
+        if .colIdx1 = 0
+            .error$ = "Data column not found: " + .dataCol$
+        endif
+    endif
+
+    if .error$ = ""
+        .colIdx2 = Get column index: .factorCol$
+        if .colIdx2 = 0
+            .error$ = "Factor column not found: " + .factorCol$
+        endif
+    endif
+
+    # --- Discover groups ---
+
+    if .error$ = ""
+        @emlCountGroups: .tableId, .factorCol$
+        if emlCountGroups.error$ <> ""
+            .error$ = emlCountGroups.error$
+        else
+            .nGroups = emlCountGroups.nGroups
+        endif
+    endif
+
+    if .error$ = ""
+        if .nGroups < 2
+            .error$ = "This test compares 2 or more groups; the group column "
+            ... + """" + .factorCol$ + """ has " + string$ (.nGroups) + "."
+        endif
+    endif
+
+    # --- Group order: identity map, as in @emlTukeyHSD ---
+
+    if .error$ = ""
+        for .s from 1 to .nGroups
+            .groupName$[.s] = emlCountGroups.groupLabel$[.s]
+            .sortMap[.s] = .s
+        endfor
+    endif
+
+    # --- Group sizes, means and variances ---
+    # Unlike @emlTukeyHSD there is no pooled dfWithin to fall back on:
+    # every group needs a variance of its own, so a group of one is
+    # refused here and the offenders are named together (D99).
+
+    if .error$ = ""
+        .totalN = 0
+        .nSingleton = 0
+        .singletonList$ = ""
+
+        for .g from 1 to .nGroups
+            @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
+            ... .groupName$[.g]
+            .gN = eml_getGroupData.n
+            .groupN[.g] = .gN
+
+            if .gN < 2
+                .groupMean[.g] = undefined
+                .groupVar[.g] = undefined
+                .nSingleton = .nSingleton + 1
+                if .nSingleton <= 5
+                    if .singletonList$ <> ""
+                        .singletonList$ = .singletonList$ + ", "
+                    endif
+                    .singletonList$ = .singletonList$ + """"
+                    ... + .groupName$[.g] + """"
+                endif
+            else
+                .gData# = eml_getGroupData.data#
+                .groupMean[.g] = mean (.gData#)
+                .centered# = .gData# - .groupMean[.g]
+                .sumDev = sum (.centered#)
+                .gSS = sum (.centered# * .centered#)
+                ... - .sumDev * .sumDev / .gN
+                if .gSS < 0
+                    .gSS = 0
+                endif
+                .groupVar[.g] = .gSS / (.gN - 1)
+                .totalN = .totalN + .gN
+            endif
+        endfor
+
+        if .nSingleton > 0
+            if .nGroups = .nRows
+                .error$ = "Group column """ + .factorCol$ + """ has "
+                ... + string$ (.nGroups) + " groups for "
+                ... + string$ (.nRows) + " rows - one per row. This is an "
+                ... + "identifier column, not a grouping column."
+            else
+                .error$ = string$ (.nSingleton) + " of "
+                ... + string$ (.nGroups) + " groups in """
+                ... + .factorCol$ + """ have fewer than 2 observations: "
+                ... + .singletonList$
+                if .nSingleton > 5
+                    .error$ = .error$ + ", and "
+                    ... + string$ (.nSingleton - 5) + " more"
+                endif
+                .error$ = .error$ + ". Every group needs at least 2."
+            endif
+        endif
+    endif
+
+    # --- Pairwise q, df, p and critical q ---
+
+    if .error$ = ""
+        selectObject: .tableId
+
+        .pMatrix## = zero## (.nGroups, .nGroups)
+        .qMatrix## = zero## (.nGroups, .nGroups)
+        .meanDiff## = zero## (.nGroups, .nGroups)
+        .dMatrix## = zero## (.nGroups, .nGroups)
+        .dfMatrix## = zero## (.nGroups, .nGroups)
+        .seMatrix## = zero## (.nGroups, .nGroups)
+        .qCritMatrix## = zero## (.nGroups, .nGroups)
+
+        for .i from 1 to .nGroups
+            .pMatrix##[.i, .i] = 1
+        endfor
+
+        .nPairs = .nGroups * (.nGroups - 1) / 2
+
+        for .i from 1 to .nGroups
+            for .j from .i + 1 to .nGroups
+                .diff = .groupMean[.i] - .groupMean[.j]
+                .termI = .groupVar[.i] / .groupN[.i]
+                .termJ = .groupVar[.j] / .groupN[.j]
+                .se = sqrt ((.termI + .termJ) / 2)
+
+                ; Fail closed, as @emlTukeyHSD does. Two flat groups give a
+                ; zero SE; reporting p = 1 there would read as a computed
+                ; non-significant result rather than as no result at all.
+                .q = undefined
+                .df = undefined
+                .pVal = undefined
+                .qCrit = undefined
+                if .termI + .termJ > 0
+                    .q = abs (.diff) / .se
+                    .df = (.termI + .termJ) * (.termI + .termJ)
+                    ... / (.termI * .termI / (.groupN[.i] - 1)
+                    ... + .termJ * .termJ / (.groupN[.j] - 1))
+                endif
+
+                if .q <> undefined
+                    if .q > 0
+                        .pVal = Get TukeyQ: .q, .nGroups, .df, 1
+                    else
+                        .pVal = 1
+                    endif
+                    .qCrit = Get invTukeyQ: .alpha, .nGroups, .df, 1
+                else
+                    .nUndefined = .nUndefined + 1
+                endif
+
+                .qMatrix##[.i, .j] = .q
+                .qMatrix##[.j, .i] = .q
+                .pMatrix##[.i, .j] = .pVal
+                .pMatrix##[.j, .i] = .pVal
+                .meanDiff##[.i, .j] = .diff
+                .meanDiff##[.j, .i] = -.diff
+                .dfMatrix##[.i, .j] = .df
+                .dfMatrix##[.j, .i] = .df
+                .seMatrix##[.i, .j] = .se
+                .seMatrix##[.j, .i] = .se
+                .qCritMatrix##[.i, .j] = .qCrit
+                .qCritMatrix##[.j, .i] = .qCrit
+            endfor
+        endfor
+
+        if .nUndefined > 0
+            .warning$ = string$ (.nUndefined)
+            ... + " of " + string$ (.nPairs) + " comparisons have an "
+            ... + "undefined q (both groups have zero variance, so the "
+            ... + "pairwise standard error is zero); their p-values are "
+            ... + "undefined, not 1"
+        endif
+    endif
+
+    # --- Cohen's d per pair (two-group pooled SD, as in @emlTukeyHSD) ---
+    # Separated from the loop above so that the studentized-range calls
+    # are not interleaved with the object create/remove @eml_getGroupData
+    # performs.
+
+    if .error$ = ""
+        for .i from 1 to .nGroups
+            for .j from .i + 1 to .nGroups
+                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
+                ... .groupName$[.i]
+                .vI# = eml_getGroupData.data#
+                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
+                ... .groupName$[.j]
+                @emlCohenD: .vI#, eml_getGroupData.data#
+                if emlCohenD.error$ = ""
+                    .dMatrix##[.i, .j] = emlCohenD.d
+                    .dMatrix##[.j, .i] = -emlCohenD.d
+                else
+                    .dMatrix##[.i, .j] = undefined
+                    .dMatrix##[.j, .i] = undefined
+                endif
+            endfor
+        endfor
+    endif
+
+    # --- Restore selection ---
+
+    selectObject: .tableId
+endproc
+
+
+# ============================================================================
 # @emlLinearRegression — Simple OLS linear regression
 # ============================================================================
 # Inputs:
@@ -4234,6 +5046,310 @@ procedure emlTheilSen: .x#, .y#
             .intercept = .medY - .slope * .medX
         endif
     endif
+endproc
+
+
+# ============================================================================
+# @emlOLSInfluence: .tableId, .xCol$, .yCol$
+# ============================================================================
+# Leverage, Cook's distance and LEVERAGE-CORRECTED standardised residuals for
+# a SIMPLE ordinary-least-squares regression (one predictor, one response,
+# intercept fitted — so p = 2). This is the p = 2 sibling of
+# @emlLMMInfluence, written separately rather than by driving that procedure
+# with a fabricated fit. Three reasons, in order of weight:
+#
+#   1. @emlLMMInfluence reads its whole input from the emlLMM.* namespace —
+#      x##, y#, beta#, sigma, vcovBeta##, seBeta#, thetaOpt#, z##, nObs,
+#      nFixedCols, nRandomCols. Calling it for an OLS fit means WRITING all
+#      eleven of those, which silently destroys any real LMM fit held in the
+#      same session. A diagnostic that corrupts the model it was called
+#      alongside is not reusable, it is a trap.
+#   2. For p = 2 the leverage has the closed form below. @emlLMMInfluence
+#      gets the same number by forming a (p+q)x(p+q) matrix, inverting it
+#      with solve##, and taking n row inner products. Reusing it here would
+#      not be sharing work, it would be paying for machinery that cancels.
+#   3. Every FIT quantity this needs — slope, intercept, xMean, ssXX,
+#      seResidual, n — is already computed and already exposed by
+#      @emlLinearRegression. So this procedure repeats no statistic: it
+#      delegates the fit and adds only the three quantities that fit does
+#      not carry. The one thing it does repeat is the table-to-vector
+#      listwise-deletion pass, and that is unavoidable, because the outputs
+#      must be addressed by TABLE ROW (see "Row alignment" below).
+#
+# THIS PROCEDURE RE-FITS. It calls @emlLinearRegression on the same table and
+# columns, with the same listwise rule @emlRunRegressionAnalysis uses, so
+# emlLinearRegression.* is left holding bit-identical values to whatever it
+# held before. Calling it on a DIFFERENT table than the one last fitted will
+# leave emlLinearRegression.* describing THIS fit; that is intended, but a
+# caller that reads emlLinearRegression.* afterwards must know it.
+#
+# Arguments:
+#   .tableId    — Table object id
+#   .xCol$      — predictor column name
+#   .yCol$      — response column name
+#
+# Outputs — ROW ALIGNED. Every vector has one entry per TABLE ROW, not one
+# per fitted observation, and rows dropped by listwise deletion carry
+# `undefined`. That is what makes the augment loop a straight read: no
+# second counter, no index map, nothing to keep in step.
+#   .used#      — 1 if the row entered the fit, 0 if it was dropped
+#   .fitted#    — a + b*x
+#   .resid#     — y - fitted
+#   .hat#       — h_i = 1/n + (x_i - xbar)^2 / SSxx
+#   .stdResid#  — e_i / (s * sqrt(1 - h_i))          <- broom's .std.resid
+#   .cooksd#    — e_i^2 * h_i / (p * s^2 * (1 - h_i)^2)
+# Scalars:
+#   .n          — observations that entered the fit
+#   .nRows      — rows in the table
+#   .p          — 2 (intercept + slope), the rank of the model
+#   .sigma      — residual standard error, sqrt(sum(e^2) / (n - 2)). Formed
+#                 from the residuals, NOT read off emlLinearRegression —
+#                 see the note at the computation for the measured reason.
+#   .slope, .intercept, .xMean, .ssXX
+#   .nSingular  — how many rows sat at leverage 1
+#   .error$     — "" on success; a refusal otherwise
+#
+# WHY .stdResid# IS NOT resid/s. The augment sites emitted `.std.resid` as
+# resid / seResidual, with no leverage term. broom, and R's rstandard(),
+# divide by s * sqrt(1 - h_i): a point far out in x has its residual shrunk
+# by the fit, and dividing by s alone understates it — exactly for the
+# points where a diagnostic is supposed to raise its voice. The two agree
+# only as h_i -> 0. This is why 4(d) lands as one change: emitting the
+# corrected residual and emitting .hat/.cooksd cannot be separated without
+# leaving the file carrying two columns under two different conventions.
+#
+# REFUSALS, and why each is a refusal rather than a value.
+#   n < 3, n <> other column's length, zero-variance predictor, zero-variance
+#     response — inherited verbatim from @emlLinearRegression, so the wording
+#     a user sees is the wording the regression itself would have used. n < 3
+#     is n <= p: no residual degrees of freedom, so s does not exist.
+#   s = 0 (a perfectly collinear x,y — every point on the line) — refused
+#     here. Every quantity below divides by s, so there is nothing to report
+#     rather than something to report carefully.
+#
+#     R does NOT refuse this, and the difference is worth knowing. On
+#     y = 2x + 1, x = 1..9, R fits by QR, leaves residuals of order 1e-15,
+#     and reports rstandard() values of -1.43, 2.52, 0.88 — quantities
+#     computed entirely from rounding error, behind a warning most callers
+#     never see. The normal-equations RSS here comes out exactly 0, so this
+#     refuses instead. Measured, not assumed; v24 asserts both halves.
+#
+#     The guard is s > 0 EXACTLY, with no tolerance, so a fit that misses by
+#     1e-9 is not refused and does produce large standardised residuals.
+#     That is deliberate parity with R rather than an oversight — v24's
+#     `nearperfect` case pins it, so widening this to a tolerance will break
+#     something visible rather than silently changing what gets reported.
+#
+# LEVERAGE 1 IS NOT A REFUSAL. It is a property of ONE ROW, and the other
+# rows are still worth reporting, so it is handled per row: h_i is clamped to
+# exactly 1 and .stdResid#/.cooksd# for that row are `undefined`. The clamp
+# threshold is 1 - 10*eps, which is R's: lm.influence passes
+# tol = 10 * .Machine$double.eps to its C helper, which rounds any hat above
+# 1 - tol up to 1, after which rstandard and cooks.distance map the resulting
+# non-finite value to NaN.
+#
+# The clamp is the whole point and it is not cosmetic. A genuine leverage-1
+# point does not land on 1.0 in floating point; it lands a few ulp either
+# side. Measured on the p = 2 reduction of @emlLMMInfluence, 24 rows, one
+# point carrying all the x variation: at x24 = 1.4 the hat came out
+# 0.9999999999999999, passed that procedure's bare `if h < 1` test, and
+# produced a Cook's D of 46.56 — a ratio of two rounding errors, printed to
+# a user as the most influential point they have ever seen. R returns NaN.
+# One ulp the other way (x24 = 0.7, hat 1.0000000000000002) and the same
+# procedure returns undefined. A guard whose answer depends on the last bit
+# of the input is not a guard.
+#
+# Provenance: written 7 Aug 2026 for ruling 4(d). Checked against base R's
+# hatvalues(), rstandard() and cooks.distance() by validate/v24_influence.R,
+# driven by harness/influence/ols_influence_drive.praat. Not verified against
+# anything else, and in particular not against its own author's arithmetic.
+# ============================================================================
+procedure emlOLSInfluence: .tableId, .xCol$, .yCol$
+    .error$ = ""
+    .n = 0
+    .nRows = 0
+    .p = 2
+    .sigma = undefined
+    .slope = undefined
+    .intercept = undefined
+    .xMean = undefined
+    .ssXX = undefined
+    .nSingular = 0
+    .nValid = 0
+
+    # 1 - 10*eps, R's lm.influence tolerance. Written as a literal because
+    # Praat has no double-epsilon constant; string$() round-trips it.
+    .hatOne = 0.999999999999997779553950749686919152736663818359375
+
+    selectObject: .tableId
+    .tableName$ = selected$ ("Table")
+    .nRows = Get number of rows
+    .xIdx = Get column index: .xCol$
+    .yIdx = Get column index: .yCol$
+
+    # Allocate FIRST, and to undefined. A caller that reads .hat# after a
+    # refusal gets a vector of undefined rather than a vector of zeros, and
+    # zero is a legal leverage.
+    .alloc = max (.nRows, 1)
+    .used# = zero# (.alloc)
+    .fitted# = zero# (.alloc)
+    .resid# = zero# (.alloc)
+    .hat# = zero# (.alloc)
+    .stdResid# = zero# (.alloc)
+    .cooksd# = zero# (.alloc)
+    for .i from 1 to .alloc
+        .fitted# [.i] = undefined
+        .resid# [.i] = undefined
+        .hat# [.i] = undefined
+        .stdResid# [.i] = undefined
+        .cooksd# [.i] = undefined
+    endfor
+
+    if .xIdx = 0
+        .error$ = "Column """ + .xCol$ + """ not found in table """
+        ... + .tableName$ + """."
+    elsif .yIdx = 0
+        .error$ = "Column """ + .yCol$ + """ not found in table """
+        ... + .tableName$ + """."
+    endif
+
+    # --- listwise deletion, the same rule @emlRunRegressionAnalysis uses ---
+    if .error$ = ""
+        for .r from 1 to .nRows
+            selectObject: .tableId
+            .xv = Get value: .r, .xCol$
+            .yv = Get value: .r, .yCol$
+            # Praat evaluates BOTH sides of `and`, so this is nested, not
+            # conjoined. Same everywhere below.
+            if .xv <> undefined
+                if .yv <> undefined
+                    .nValid = .nValid + 1
+                endif
+            endif
+        endfor
+        if .nValid < 3
+            .error$ = "Need at least 3 non-missing paired observations "
+            ... + "(found " + string$ (.nValid) + ")."
+        endif
+    endif
+
+    if .error$ = ""
+        .xClean# = zero# (.nValid)
+        .yClean# = zero# (.nValid)
+        .k = 0
+        for .r from 1 to .nRows
+            selectObject: .tableId
+            .xv = Get value: .r, .xCol$
+            .yv = Get value: .r, .yCol$
+            if .xv <> undefined
+                if .yv <> undefined
+                    .k = .k + 1
+                    .xClean# [.k] = .xv
+                    .yClean# [.k] = .yv
+                endif
+            endif
+        endfor
+
+        # The fit itself is not recomputed here. @emlLinearRegression already
+        # exposes every term the formulae below need.
+        @emlLinearRegression: .xClean#, .yClean#
+        if emlLinearRegression.error$ <> ""
+            .error$ = emlLinearRegression.error$
+        endif
+    endif
+
+    # --- pass 1: fitted, residual, leverage, and RSS ------------------------
+    if .error$ = ""
+        .n = emlLinearRegression.n
+        .slope = emlLinearRegression.slope
+        .intercept = emlLinearRegression.intercept
+        .xMean = emlLinearRegression.xMean
+        .ssXX = emlLinearRegression.ssXX
+        .rss = 0
+
+        for .r from 1 to .nRows
+            selectObject: .tableId
+            .xv = Get value: .r, .xCol$
+            .yv = Get value: .r, .yCol$
+            .ok = 0
+            if .xv <> undefined
+                if .yv <> undefined
+                    .ok = 1
+                endif
+            endif
+            if .ok = 1
+                .used# [.r] = 1
+                .dx = .xv - .xMean
+                .h = 1 / .n + .dx * .dx / .ssXX
+                if .h > .hatOne
+                    .h = 1
+                endif
+                .hat# [.r] = .h
+                .fit = .intercept + .slope * .xv
+                .fitted# [.r] = .fit
+                .e = .yv - .fit
+                .resid# [.r] = .e
+                .rss = .rss + .e * .e
+            endif
+        endfor
+
+        # sigma FROM THE RESIDUALS, not from emlLinearRegression.seResidual.
+        #
+        # This is the one number here that is deliberately NOT taken from the
+        # fit, and the reason is numerical. @emlLinearRegression forms
+        # RSS = SSyy - b*SSxy, a difference of two quantities that are equal
+        # to the extent the fit is good. On y = 2x + 1 with one point moved
+        # by 1e-9 (v24's `nearperfect`) both terms are 240 and their true
+        # difference is 8.9e-19, so the subtraction returns 8.5e-14 —
+        # RSS too large by a factor of 96,000, sigma too large by 253.
+        # Residuals, leverage, slope and intercept are all correct there to
+        # the last bit; sigma alone is wrong, and every standardised residual
+        # and Cook's D inherits it. Measured, 7 Aug 2026.
+        #
+        # sum(e^2) has no cancellation: every term is non-negative. The
+        # residuals are in hand from the loop above, so this costs nothing.
+        # It is not a second copy of the fit's arithmetic, it is a
+        # better-conditioned form of one line of it.
+        #
+        # On ordinary data the two agree to within rounding, and v24 asserts
+        # that on every green case — so if this ever drifts into disagreeing
+        # with the `sigma` the glance frame reports, a test says so.
+        .sigma = sqrt (.rss / (.n - .p))
+
+        # not (s > 0) rather than s = 0, so a sigma that arrived as
+        # `undefined` is caught by the same test.
+        if not (.sigma > 0)
+            .error$ = "Residual standard error is zero (the points lie "
+            ... + "exactly on the line); influence diagnostics are undefined."
+        endif
+    endif
+
+    # --- pass 2: the standardised quantities --------------------------------
+    if .error$ = ""
+        .sigSq = .sigma * .sigma
+        for .r from 1 to .nRows
+            if .used# [.r] = 1
+                .h = .hat# [.r]
+                .e = .resid# [.r]
+                .oneMinusH = 1 - .h
+                if .oneMinusH > 0
+                    .stdResid# [.r] = .e / (.sigma * sqrt (.oneMinusH))
+                    .cooksd# [.r] = (.e * .e * .h) /
+                    ... (.p * .sigSq * .oneMinusH * .oneMinusH)
+                else
+                    # Leverage 1: the line passes through this point by
+                    # construction, so its residual is zero by construction
+                    # and both quantities are 0/0. Not inf, not a huge
+                    # finite number — undefined, which is R's NaN.
+                    .nSingular = .nSingular + 1
+                    .stdResid# [.r] = undefined
+                    .cooksd# [.r] = undefined
+                endif
+            endif
+        endfor
+    endif
+
+    selectObject: .tableId
 endproc
 
 

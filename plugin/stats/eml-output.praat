@@ -36,7 +36,6 @@
 #
 # Part of the EML Stats library (EML Praat Tools).
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# Development: Claude (Anthropic)
 # License: Creative Commons Share-Alike
 #
 # Provides: @emlReportHeader, @emlReportFooter, @emlReportSection,
@@ -1660,6 +1659,25 @@ procedure emlWrapText: .s$, .width
         .nLines = 1
         .line$ [1] = ""
     endif
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @emlReportNote: .s$
+#
+# Wrap a note to the report's 68-column body width and print it indented, in
+# the two-space report frame. This is the pattern every caller of
+# @emlWrapText was writing out by hand -- wrap, then loop over .line$ [] with
+# a literal "  " -- so the loop lives here once instead of at each site.
+#
+# @emlWrapText itself stays public: a caller that needs a different width, or
+# the lines without printing them, still uses it directly.
+# ────────────────────────────────────────────────────────────────────────────
+procedure emlReportNote: .s$
+    @emlWrapText: .s$, 68
+    for .nl from 1 to emlWrapText.nLines
+        appendInfoLine: "  ", emlWrapText.line$ [.nl]
+    endfor
 endproc
 
 

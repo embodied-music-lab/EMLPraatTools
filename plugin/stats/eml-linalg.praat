@@ -6,7 +6,6 @@
 # Date: 13 May 2026
 #
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# Development: Claude (Anthropic)
 # License: GPL-3.0-or-later
 #
 # Provides matrix decomposition and solution procedures for the LMM engine.

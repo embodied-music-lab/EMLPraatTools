@@ -3154,20 +3154,34 @@ procedure emlDeclareRegressionResult: .tableName$, .depCol$, .predCol$,
     @emlGlanceStr: "method",      "Simple linear regression"
 
     @emlAugmentFrom: .tableId
-    selectObject: .tableId
-    .nRows = Get number of rows
-    for .r from 1 to .nRows
-        selectObject: .tableId
-        .x = Get value: .r, .predCol$
-        .y = Get value: .r, .depCol$
-        if .x <> undefined and .y <> undefined
-            .fit = emlLinearRegression.intercept + emlLinearRegression.slope * .x
-            @emlAugmentNum: ".fitted", .r, .fit
-            @emlAugmentNum: ".resid", .r, .y - .fit
-            @emlAugmentNum: ".std.resid", .r,
-            ... (.y - .fit) / emlLinearRegression.seResidual
-        endif
-    endfor
+
+    ; Leverage, Cook's distance and the LEVERAGE-CORRECTED standardised
+    ; residual come from @emlOLSInfluence (stats/eml-inferential.praat).
+    ; .std.resid was previously resid / sigma with no leverage term, which is
+    ; not broom's rstandard(); the correction is largest exactly where
+    ; leverage is largest. .hat and .cooksd were already reserved in
+    ; emlVocabAugment$ but never emitted.
+    ;
+    ; Every returned vector is indexed by TABLE ROW, not by fitted
+    ; observation, so listwise-dropped rows carry undefined and
+    ; @emlAugmentNum skips them into an empty cell that reads back as NA.
+    ;
+    ; Called AFTER the glance emissions above: it re-enters
+    ; @emlLinearRegression on the same table and columns under the same
+    ; listwise rule, so emlLinearRegression.* is left bit-identical either
+    ; way, but this ordering makes that irrelevant rather than merely safe.
+    @emlOLSInfluence: .tableId, .predCol$, .depCol$
+    if emlOLSInfluence.error$ = ""
+        for .r from 1 to emlOLSInfluence.nRows
+            if emlOLSInfluence.used# [.r] = 1
+                @emlAugmentNum: ".fitted",    .r, emlOLSInfluence.fitted# [.r]
+                @emlAugmentNum: ".resid",     .r, emlOLSInfluence.resid# [.r]
+                @emlAugmentNum: ".hat",       .r, emlOLSInfluence.hat# [.r]
+                @emlAugmentNum: ".std.resid", .r, emlOLSInfluence.stdResid# [.r]
+                @emlAugmentNum: ".cooksd",    .r, emlOLSInfluence.cooksd# [.r]
+            endif
+        endfor
+    endif
 endproc
 
 

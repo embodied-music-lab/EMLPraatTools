@@ -6,7 +6,6 @@
 # Date: 17 May 2026
 #
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# Development: Claude (Anthropic)
 # License: GPL-3.0-or-later
 #
 # Provides linear mixed-effects model (LMM) fitting equivalent to R's
@@ -4093,6 +4092,12 @@ procedure emlLMMInfluence
         endif
     endfor
 endproc
+
+# @emlOLSInfluence moved to stats/eml-inferential.praat beside
+# @emlLinearRegression. It has no LMM dependency, and eml-lib.praat (which
+# eml-regress.praat includes) does not pull in this file, so it was
+# unreachable from the regression path while it lived here.
+
 
 # ============================================================================
 # @emlLMMPredict
