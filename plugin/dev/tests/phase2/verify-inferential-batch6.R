@@ -11,6 +11,8 @@
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
+# Code generation: Claude (Anthropic)
 #
 # EXIT-CODE CONTRACT (shared by every verifier in this directory)
 # ---------------------------------------------------------------
