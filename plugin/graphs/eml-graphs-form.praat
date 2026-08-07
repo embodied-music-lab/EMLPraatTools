@@ -3,7 +3,8 @@
 # ============================================================================
 # EML Graphs Plugin
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
-# License: Creative Commons Share-Alike
+# Development: Claude (Anthropic)
+# License: GPL-3.0-or-later
 # Version: 2.4
 # v2.4: D3b — the graph type registry drops from 14 entries to 13. Type 13,
 #       "Time Series (with CI)", lost its form page when CI became a toggle on
