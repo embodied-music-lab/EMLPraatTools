@@ -1,0 +1,84 @@
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Fri Aug  7 03:20:23 2026
+══════════════════════════════════════════════
+
+  Table               v09 anova tukey input
+  Data column         vibrato rate Hz
+  Group column        voice type
+  Groups              3
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests whether group means differ when normality and equal variances hold.
+
+Source              SS              df    MS              F           p
+Between             1.45            2     0.73            2.4240      0.100865
+Within              12.56           42    0.30            
+Total               14.01           44    
+
+  F                   2.4240		Ratio of between-group to within-group variance: groups differ 2.4x more than expected by chance
+  p                   .101		Not statistically significant at the 5% level
+  Effect size         eta-squared = 0.1035		Effect size: medium (>0.14 = large). 10% of variance explained by group membership
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(2, 42) = 3.8266
+  Equal-spread p      p = .030
+  Note: the groups differ in spread more than this ANOVA's pooled
+  error term likes. The result above is still the one being reported.
+  A version that tolerates unequal spread is printed at the end of
+  this report, under If the spreads are unequal; compare the two.
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  Soprano       15    5.69      0.64      5.78      
+  Mezzo         15    5.46      0.61      5.31      
+  Alto          15    5.25      0.33      5.26      
+
+
+  ── Tukey HSD Pairwise Comparisons (p-values) ───
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         0.4918      0.0826      
+Mezzo         0.4918      ---         0.5467      
+Alto          0.0826      0.5467      ---         
+
+
+  ── Tukey HSD Mean Differences (95% family-wise CI) ───
+
+Comparison                Difference    95% CI
+Soprano − Mezzo           0.2288        [-0.2564, 0.7140]
+Soprano − Alto            0.4396        [-0.0456, 0.9248]
+Mezzo − Alto              0.2108        [-0.2744, 0.6960]
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         0.365       0.860       
+Mezzo         -0.365      ---         0.429       
+Alto          -0.860      -0.429      ---         
+
+
+  ── If the spreads are unequal ──────────────
+  Welch's F does not pool the within-group spread, and Games-Howell
+  uses each pair's own spread instead of one shared error term. Where
+  these agree with the block above, the unequal spread did not change
+  the conclusion. Where they disagree, prefer these -- that is what
+  they are for.
+
+  Welch's F           F(2, 25.28) = 2.9239
+  Welch p             p = .072
+
+
+  ── Games-Howell Pairwise Comparisons (p-values) ───
+
+              Soprano     Mezzo       Alto        
+Soprano       --          .584        .070        
+Mezzo         .584        --          .481        
+Alto          .070        .481        --          
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════

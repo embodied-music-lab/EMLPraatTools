@@ -1,0 +1,65 @@
+
+
+══════════════════════════════════════════════
+  EML Stats : Two-Way ANOVA
+  Fri Aug  7 03:24:01 2026
+══════════════════════════════════════════════
+
+  Table               dump demo twoway
+  Data column         SPL dB
+  Factor 1            voice type
+  Factor 2            task
+  Total N             48
+  Cells               4
+  n per cell          12
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests main effects of two factors and their interaction.
+
+Source              SS              df    MS              F           p
+voice type          276.98          1     276.98          34.1104     < .001
+task                874.27          1     874.27          107.6672    < .001
+voice type x task   125.00          1     125.00          15.3943     < .001
+Error               357.28          44    8.12            
+Total               1633.53         47    
+
+
+  ── Exact p-values ──────────────────────────
+  voice type          p < .001  (5.788464268318525e-07)
+  task                p < .001  (2.1120980545720775e-13)
+  voice type x task   p < .001  (0.0003024777817963908)
+
+  Caution: the interaction is significant, so the two main-effect rows
+  above are averages taken across a difference that is itself real.
+  Each factor's effect depends on the level of the other, and
+  reporting either main effect on its own will understate that. Read
+  the cell means below before reading the main effects.
+
+
+  ── Effect Sizes (partial eta-squared) ──────
+  voice type          0.4367  (large effect)		Effect size: large (>0.14 = large). 44% of variance explained by group membership
+  task                0.7099  (large effect)		Effect size: large (>0.14 = large). 71% of variance explained by group membership
+  voice type x task   0.2592  (large effect)		Effect size: large (>0.14 = large). 26% of variance explained by group membership
+
+
+  ── Cell Means ──────────────────────────────
+
+voice type        task              n       Mean
+Soprano           Speech            12      88.7645
+Soprano           Singing           12      100.5276
+Alto              Speech            12      87.1877
+Alto              Singing           12      92.4957
+
+
+  ── Marginal Means ──────────────────────────
+
+Level                         n       Mean
+voice type: Soprano           24      94.6460
+voice type: Alto              24      89.8417
+task: Speech                  24      87.9761
+task: Singing                 24      96.5116
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
