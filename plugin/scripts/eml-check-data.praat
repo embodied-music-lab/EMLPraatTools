@@ -56,6 +56,7 @@
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
 # ============================================================================
 
 include eml-lib-stats.praat
