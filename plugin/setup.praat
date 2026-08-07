@@ -9,8 +9,10 @@
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
+# Code generation: Claude (Anthropic)
 #
-# License: Creative Commons Share-Alike
+# License: GPL-3.0-or-later
 # Version: 1.4
 # v1.4: Item 4 — unregistered the "EML Interactive Tutorial" menu entry.
 #       scripts/eml-tutorial.praat includes tutorial/eml-demo-procedures.praat,

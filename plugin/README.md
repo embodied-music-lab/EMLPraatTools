@@ -140,4 +140,4 @@ The graphs module is independent of the stats modules. Stats-only scripts can om
 ## Attribution
 
 **Author:** Ian Howell, Embodied Music Lab ([www.embodiedmusiclab.com](http://www.embodiedmusiclab.com))
-**License:** Creative Commons Share-Alike
+**License:** GPL-3.0-or-later
