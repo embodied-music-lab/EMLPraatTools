@@ -3,7 +3,8 @@
 # ============================================================================
 # EML Graphs Plugin
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
-# License: Creative Commons Share-Alike
+# Development: Claude (Anthropic)
+# License: GPL-3.0-or-later
 # Version: 3.0
 # Date: 4 April 2026
 #

@@ -22,6 +22,7 @@
 # ATTRIBUTION
 # Framework: EML Praat Tools by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
+# Code generation: Claude (Anthropic)
 # ============================================================================
 
 include eml-lib.praat

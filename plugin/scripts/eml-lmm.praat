@@ -11,13 +11,15 @@
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
-# Script author: [Your name here] — created and verified by this individual
+#            https://github.com/embodied-music-lab/PraatGen
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
 #
 # RESEARCH USE DISCLOSURE
 # If this script is used in research or publication, disclose AI use per your
 # target journal's policy. The mixed-model engine reproduces lme4/lmerTest to
 # 5-6 decimals and R-squared matches performance::r2_nakagawa; all scripts
-# were reviewed, tested, and validated by [your name].
+# were reviewed, tested, and validated by Ian Howell.
 # ============================================================================
 
 include eml-lib-lmm.praat
