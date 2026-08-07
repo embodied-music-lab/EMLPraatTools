@@ -1,0 +1,5 @@
+QQ drive: case=qq_n3 col=value src=/home/claude/EMLPraatTools/harness/qq_cases/qq_n3.csv
+OLS fitted line: y = 2.8755x + 12.1667
+SAVED /home/claude/EMLPraatTools/harness/qq_out/qq_n3.png
+SAVED-CHROME /home/claude/EMLPraatTools/harness/qq_out/qq_n3_chrome.png
+OBJECTS-AFTER-DRAW 1

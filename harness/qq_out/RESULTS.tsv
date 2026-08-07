@@ -1,0 +1,12 @@
+v15_f0	draw	DREW	3.46/1.60%	OK
+v15_shimmer	draw	DREW	3.41/1.58%	OK
+v15_jitter	draw	DREW	3.32/1.55%	OK
+r1_na_soft	draw	DREW	2.38/1.72%	OK
+r1_na_medium	draw	DREW	2.61/2.08%	OK
+r1_na_loud	draw	DREW	2.51/1.98%	OK
+r2_n2	refuse	REFUSED	%	OK
+r3_constant	refuse	REFUSED	%	OK
+qq_na_below_3	refuse	REFUSED	%	OK
+qq_n3	draw	DREW	1.85/1.50%	OK
+qq_skewed	draw	DREW	3.30/1.55%	OK
+qq_n10	draw	DREW	2.41/1.61%	OK

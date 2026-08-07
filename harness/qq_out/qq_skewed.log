@@ -1,0 +1,5 @@
+QQ drive: case=qq_skewed col=value src=/home/claude/EMLPraatTools/harness/qq_cases/qq_skewed.csv
+OLS fitted line: y = 20.3278x + 24.3056
+SAVED /home/claude/EMLPraatTools/harness/qq_out/qq_skewed.png
+SAVED-CHROME /home/claude/EMLPraatTools/harness/qq_out/qq_skewed_chrome.png
+OBJECTS-AFTER-DRAW 1
