@@ -7,7 +7,6 @@
 #
 # Validates all procedures in eml-output.praat
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# Development: Claude (Anthropic)
 #
 # v1.2: Brought under the TEST RESULT REPORTING CONTRACT (v1.1, declared in
 #        dev/tests/eml-test-helpers.praat). The hand-rolled summary printed
