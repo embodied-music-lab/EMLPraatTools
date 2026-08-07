@@ -7,7 +7,8 @@
 #
 # Validation tests for eml-extract.praat
 # Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# License: Creative Commons Share-Alike
+# Development: Claude (Anthropic)
+# License: GPL-3.0-or-later
 #
 # v1.1: Brought under the TEST RESULT REPORTING CONTRACT (v1.1, declared in
 #        dev/tests/eml-test-helpers.praat). The hand-rolled summary printed
