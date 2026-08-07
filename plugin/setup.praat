@@ -9,7 +9,6 @@
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
-# Code generation: Claude (Anthropic)
 #
 # License: Creative Commons Share-Alike
 # Version: 1.4
