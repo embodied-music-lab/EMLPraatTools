@@ -1,6 +1,6 @@
 # Findings index — EML Praat Tools GUI drive audit
 
-101 findings (D1–D101) extracted from `DRIVE_FINDINGS_2026-08-04.md`. Each row
+110 findings (D1–D110) extracted from `DRIVE_FINDINGS_2026-08-04.md`. Each row
 links to the line where the finding is first stated. **Every row was
 re-verified against the code on 6 August 2026 — see VERIFICATION_2026-08-06.md
 for the method, the evidence and the root-cause clustering. 80 are LIVE, 7 had
@@ -9,6 +9,14 @@ Before that sweep this file recorded what had been FILED, not what was TRUE.** T
 lists line numbers where the finding was later reconfirmed, revised, scoped
 down, resolved, or reopened — several findings changed severity after further
 evidence, so read the revisits before acting on a row.
+
+> **Status as of 7 August 2026.** After the author rulings
+> (`reviews/AUTHOR_RULINGS_2026-08-06.md`): **4 rows LIVE, 1 PARTIAL.**
+> D33, D63 and D64 are the Ruling 2 unification and are UNTOUCHED. D40 is
+> Ruling 3's interaction plot, also untouched. D38 is PARTIAL — its caution
+> half landed, its simple-effects half did not. D110 is new, filed 7 Aug.
+> D8, D20 and D58 closed with validators behind them (v22–v26, 869 checks).
+> Suite 1937/1937, exit 0.
 
 Classes: ACCURACY (wrong number or wrong test reported), CLARITY (right number,
 unusable or ambiguous presentation), GRAPHING (figure defects), PACKAGING
@@ -146,7 +154,7 @@ dismissed).
 | D5 | CLARITY  | RESOLVED (6 Aug, verified) | [L488](DRIVE_FINDINGS_2026-08-04.md#L488) | No estimator conventions are disclosed anywhere | — |
 | D6 | CLARITY  | RESOLVED (6 Aug, verified) | [L497](DRIVE_FINDINGS_2026-08-04.md#L497) | Identifiers are underscore-stripped for display: `demo_normality` → `demo normality`, `F0_Hz` → `F0 Hz` (`eml-describe-table.praat:114–115`). Undersco | 634, 781, 973, 1070 |
 | D7 | PACKAGING  | RESOLVED (6 Aug, verified) | [L508](DRIVE_FINDINGS_2026-08-04.md#L508) | `emlDescribe.summary$` is assembled but never used by the report path — dead abstraction | — |
-| D8 | GRAPHING  | high — LIVE 6 Aug  | [L583](DRIVE_FINDINGS_2026-08-04.md#L583) | `Check normality` offers no `Draw` button — no visual check accompanies the numeric one | — |
+| D8 | GRAPHING  | RESOLVED (7 Aug, v23) | [L583](DRIVE_FINDINGS_2026-08-04.md#L583) | `Check normality` offers no `Draw` button — no visual check accompanies the numeric one — **Ruling 4.** `Draw` added to `Check normality` (`eml-check-normality.praat:210`), Q-Q from the Blom order statistics `@emlShapiroWilk` already computes, behind a mandatory column picker (and a group picker in grouped mode). `Describe Table` half ruled a documented Phase One gap; histogram overlay ruled out. v23, 177 checks | — |
 | D9 | CLARITY  | RESOLVED (6 Aug, verified) | [L591](DRIVE_FINDINGS_2026-08-04.md#L591) | The p-value row prints its label twice: | 791, 967 |
 | D10 | ACCURACY  | RESOLVED (verified 6 Aug)  | [L610](DRIVE_FINDINGS_2026-08-04.md#L610) | Kurtosis threshold is very likely off by 3. `emlReportNormalityAnalysis` (`graphs/eml-annotation-procedures.praat:3491–3501`) flags shape with: | 4081 |
 | D11 | CLARITY  | RESOLVED (6 Aug, verified) | [L644](DRIVE_FINDINGS_2026-08-04.md#L644) | `"→ Skewness outside typical limits (\|skew\| < 1)"` | — |
@@ -158,7 +166,7 @@ dismissed).
 | D17 | PACKAGING  | RESOLVED (6 Aug, verified) | [L1172](DRIVE_FINDINGS_2026-08-04.md#L1172) | `effect_label` column populated inconsistently across analyses | 1522 |
 | D18 | CLARITY  | RESOLVED (6 Aug, verified) | [L1193](DRIVE_FINDINGS_2026-08-04.md#L1193) | default export filename names an internal artefact | 1549 |
 | D19 | CLARITY  | RESOLVED (re-verified 6 Aug, rewrite A)  | [L1204](DRIVE_FINDINGS_2026-08-04.md#L1204) | ### D19 — CLARITY, LOW — paired results shoehorned into the two-group CSV schema | 1920 |
-| D20 | ACCURACY  | high — LIVE 6 Aug  | [L1380](DRIVE_FINDINGS_2026-08-04.md#L1380) | No variance-homogeneity check anywhere, and the plugin's own demo data violates the assumption | — |
+| D20 | ACCURACY  | RESOLVED (7 Aug, v22+v25) | [L1380](DRIVE_FINDINGS_2026-08-04.md#L1380) | No variance-homogeneity check anywhere, and the plugin's own demo data violates the assumption — **Ruling 1, conditional show-both.** Brown-Forsythe prints always; Welch F + Games-Howell append only when it rejects. Primary test never switched. **The finding's second claim was FALSE**: the demo generator is designed near-homoscedastic (`eml-create-demo.praat:78-101`, variance ratios 1.5625 and 1.96). But FABL's counter-correction stands and is wider — `demo_3groups` vibrato p=.0391, `dump_demo_twoway` SPL p=.0014, and v09/v10/v14's own `vibrato_rate_Hz` p=.0297 all reject. v22 447 checks, v25 31 | — |
 | D21 | CLARITY  | RESOLVED (6 Aug, verified) | [L1417](DRIVE_FINDINGS_2026-08-04.md#L1417) | : omega² is never computed, though the library already knows how to classify it | — |
 | D22 | CLARITY  | RESOLVED (6 Aug, verified) | [L1427](DRIVE_FINDINGS_2026-08-04.md#L1427) | ### D22 — CLARITY (medium): the Tukey table reports p-values only | — |
 | D23 | PACKAGING  | RESOLVED (re-verified 6 Aug, rewrite A)  | [L1441](DRIVE_FINDINGS_2026-08-04.md#L1441) | : the omnibus CSV row carries only the numerator df | 1901 |
@@ -171,14 +179,14 @@ dismissed).
 | D30 | GRAPHING  | RESOLVED (6 Aug, verified) | [L1855](DRIVE_FINDINGS_2026-08-04.md#L1855) | caption sub-line is low-contrast grey on white | — |
 | D31 | —  | MISFILED (verified 6 Aug)  | [L1864](DRIVE_FINDINGS_2026-08-04.md#L1864) | ### D31 — RESOLVED as designed, downgrade to LOW — violin KDE tails extend exactly one bandwidth past the data | — |
 | D32 | ACCURACY  | RESOLVED (6 Aug, verified) | [L2061](DRIVE_FINDINGS_2026-08-04.md#L2061) | the graph preset bridge cannot carry a second factor, so the default figure silently drops it | — |
-| D33 | ACCURACY  | high — LIVE 6 Aug  | [L2116](DRIVE_FINDINGS_2026-08-04.md#L2116) | Draw annotates a two-way design with a two-group Welch t on one marginal | — |
+| D33 | ACCURACY  | LIVE 7 Aug — Ruling 2 | [L2116](DRIVE_FINDINGS_2026-08-04.md#L2116) | Draw annotates a two-way design with a two-group Welch t on one marginal — **Ruling 2 governs.** Not a refusal: the graphing door is to call the same machinery as the wrappers, passing the launching analysis's result through and computing fresh only when entered standalone. Untouched as of 7 Aug | — |
 | D34 | CLARITY  | RESOLVED (re-verified 6 Aug, rewrite A)  | [L2157](DRIVE_FINDINGS_2026-08-04.md#L2157) | the ANOVA CSV omits SS, MS, and residual df | — |
 | D35 | CLARITY  | RESOLVED (6 Aug, verified) | [L2186](DRIVE_FINDINGS_2026-08-04.md#L2186) | worst instance of the D28 family: nine orders of magnitude flattened to one string | — |
 | D36 | CLARITY  | RESOLVED (6 Aug, verified) | [L2202](DRIVE_FINDINGS_2026-08-04.md#L2202) | no cell means and no marginal means, despite a significant interaction | — |
 | D37 | CLARITY  | RESOLVED (6 Aug, verified) | [L2213](DRIVE_FINDINGS_2026-08-04.md#L2213) | no N reported anywhere in the two-way block | — |
-| D38 | CLARITY  | medium — LIVE 6 Aug  | [L2220](DRIVE_FINDINGS_2026-08-04.md#L2220) | no simple effects, no post-hoc, and no caution that the interaction qualifies the main effects | — |
+| D38 | CLARITY   | PARTIAL (7 Aug, v26) | [L2220](DRIVE_FINDINGS_2026-08-04.md#L2220) | no simple effects, no post-hoc, and no caution that the interaction qualifies the main effects — Caution half RESOLVED — significant interaction now prints the caveat under the table it qualifies (D98 placement), and `emlTwoWayAnova.warning$` prints at all for the first time. **Simple effects still LIVE** | — |
 | D39 | PACKAGING  | RESOLVED (6 Aug, verified) | [L2228](DRIVE_FINDINGS_2026-08-04.md#L2228) | stats exports default into the plugin's own install directory | — |
-| D40 | GRAPHING  | medium — LIVE 6 Aug  | [L2254](DRIVE_FINDINGS_2026-08-04.md#L2254) | no interaction plot among the 14 graph types | — |
+| D40 | GRAPHING  | LIVE 7 Aug — Ruling 3 | [L2254](DRIVE_FINDINGS_2026-08-04.md#L2254) | no interaction plot among the 14 graph types — **Ruling 3.** Interaction plot goes in the two-way results Draw flow (Interaction plot / Grouped violin / Both, default Both, sequential), NOT as a registry type. Untouched as of 7 Aug | — |
 | D41 | CLARITY  | RESOLVED (6 Aug, verified) | [L2266](DRIVE_FINDINGS_2026-08-04.md#L2266) | no effect-magnitude labels, inconsistent with wrappers 6 and 7 | — |
 | D42 | CLARITY  | RESOLVED (6 Aug, verified) | [L2274](DRIVE_FINDINGS_2026-08-04.md#L2274) | explanation narration is asymmetric within a single transcript | — |
 | D43 | GRAPHING  | RESOLVED (6 Aug, verified) | [L2283](DRIVE_FINDINGS_2026-08-04.md#L2283) | ### D43 — GRAPHING (low) — no auto-title, against Rule 28A | — |
@@ -196,13 +204,13 @@ dismissed).
 | D55 | ACCURACY  | RESOLVED (re-verified 6 Aug, rewrite A)  | [L2775](DRIVE_FINDINGS_2026-08-04.md#L2775) | `group1` and `group2` both carry the sentinel | — |
 | D56 | CLARITY  | RESOLVED (6 Aug, verified) | [L2782](DRIVE_FINDINGS_2026-08-04.md#L2782) | the coefficients table breaks the report's own layout | — |
 | D57 | CLARITY  | RESOLVED (6 Aug, verified) | [L2792](DRIVE_FINDINGS_2026-08-04.md#L2792) | no confidence interval on slope or intercept, despite both | — |
-| D58 | CLARITY  | — — LIVE 6 Aug  | [L2798](DRIVE_FINDINGS_2026-08-04.md#L2798) | no residual diagnostics in the one wrapper whose entire | — |
+| D58 | CLARITY   | RESOLVED (7 Aug, v24+v21) | [L2798](DRIVE_FINDINGS_2026-08-04.md#L2798) | no residual diagnostics in the one wrapper whose entire — **Ruling 4(d).** `@emlOLSInfluence` wired into the regression augment; `.hat` and `.cooksd` exported for the first time and `.std.resid` corrected to `rstandard()`. Durbin-Watson REFUSED permanently (order-dependent; Tables carry no ordering semantics) with the reason in REGISTRY. v24 214 checks, v21 +5 | — |
 | D59 | CLARITY  | RESOLVED (6 Aug, verified) | [L2806](DRIVE_FINDINGS_2026-08-04.md#L2806) | `Y = slope x X + intercept` uses the letter `x` as the multiplication sign immediately adjacent to the variable `X` (`eml-regress.praat:42`). In a dia | — |
 | D60 | GRAPHING  | RESOLVED (6 Aug, verified) | [L2815](DRIVE_FINDINGS_2026-08-04.md#L2815) | the scatter's Y axis runs 40–110 on a variable named | — |
 | D61 | CLARITY  | RESOLVED (6 Aug, verified) | [L2825](DRIVE_FINDINGS_2026-08-04.md#L2825) | the wrapper's documented "Theil-Sen robust alternative" is unreachable from the wrapper, and the `Regression: Both` control does not mean what it appe | — |
 | D62 | CLARITY  | RESOLVED (6 Aug, verified) | [L2855](DRIVE_FINDINGS_2026-08-04.md#L2855) | `Variance explained  large effect` formats a benchmark | — |
-| D63 | ACCURACY  | — — LIVE 6 Aug  | [L2926](DRIVE_FINDINGS_2026-08-04.md#L2926) | The figure and the exported CSV report a different test family than the analysis that launched them, with no disclosure on any screen | — |
-| D64 | ACCURACY  | — — LIVE 6 Aug  | [L2986](DRIVE_FINDINGS_2026-08-04.md#L2986) | The `Adjustment method` optionmenu on the graphing dialog is inert whenever `Test type = Parametric` and k ≥ 3 | — |
+| D63 | ACCURACY  | LIVE 7 Aug — Ruling 2 | [L2926](DRIVE_FINDINGS_2026-08-04.md#L2926) | The figure and the exported CSV report a different test family than the analysis that launched them, with no disclosure on any screen — **Ruling 2 governs.** Dissolves with the unification. Untouched as of 7 Aug | — |
+| D64 | ACCURACY  | LIVE 7 Aug — Ruling 2 | [L2986](DRIVE_FINDINGS_2026-08-04.md#L2986) | The `Adjustment method` optionmenu on the graphing dialog is inert whenever `Test type = Parametric` and k ≥ 3 — **Ruling 2 governs.** The Adjustment menu becomes real once the machinery is shared. Untouched as of 7 Aug | — |
 | D65 | ACCURACY  | RESOLVED (6 Aug, verified) | [L3010](DRIVE_FINDINGS_2026-08-04.md#L3010) | The Draw path's CSV export is byte-identical to a different wrapper's export, and claims the same default filename | — |
 | D66 | ACCURACY  | RESOLVED (6 Aug, verified) | [L3037](DRIVE_FINDINGS_2026-08-04.md#L3037), [L3462](DRIVE_FINDINGS_2026-08-04.md#L3462) | `CSV` on the analysis-side `Analysis complete` dialog cannot ever succeed, and its failure message blames the filesystem — DEMONSTRATED on `emlRunPairwiseAnalysis` 5 Aug; row-building exists only in `graphs/eml-annotation-procedures.praat` | — |
 | D67 | CLARITY  | RESOLVED (6 Aug, verified) | [L3062](DRIVE_FINDINGS_2026-08-04.md#L3062) | Cohen's d is printed for every pair; n, means and SDs for the groups are printed nowhere | — |
@@ -248,3 +256,4 @@ dismissed).
 | D107 | ACCURACY | RESOLVED (6 Aug, verified) | — | The D32 column-guessing fix was applied to the non-preset branch (`graphs/eml-graphs-form.praat:4422-4428`) but not to the preset branch (`:4396`), which is the branch the two-way wrapper takes; `gvSubIdx` there is still positional `min (2, nCols)` | — |
 | D108 | ACCURACY | RESOLVED (6 Aug, verified) | — | `emlGraphsPresetCorrection$` was added so wrappers could carry their adjustment method into the figure and does seed the dialog, but on the parametric path the value is never read (`graphs/eml-annotation-procedures.praat:2151+`); only the Dunn branch consumes it. The wrapper advertises fidelity it does not have | — |
 | D109 | PACKAGING | **TABLED — author ruling** | — | `scripts/eml-tutorial.praat` calls 23 procedures that nothing it includes defines (`validate/tools/check_calls.py`). Already unregistered from the menu. The tutorial is TABLED by author ruling alongside Stats Demo, Quick Start and Batch voice analysis, so this is recorded for provenance and is NOT open work | — |
+| D110 | CLARITY | **LIVE 7 Aug** | — | Two *p* formats in one report. The Tukey matrix prints `fixed$(p, 4)` (`0.4918`) and the Games-Howell matrix 35 lines below it prints `@emlFormatP.bare$` (`.584`) — both in `graphs/eml-annotation-procedures.praat`, both in the one-way ANOVA block, visible together in `evidence/info/v25_showboth_present_info.txt:43` and `:78`. The bare APA form is the D9/D28 direction and is correct; the Tukey matrix is the one that should move. Found while writing v25 on 7 Aug and recorded there in a comment rather than filed. **Cost:** changing the Tukey matrix format moves numbers that `v09` and `v10` read out of committed captures, so it needs those captures re-driven, which is why it is filed rather than swept | — |
