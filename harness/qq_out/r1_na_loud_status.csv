@@ -1,2 +1,2 @@
-case,column,nrows,n,ndropped,refused,reason,slope,intercept,sw_w,sw_p,objects_after_draw
-r1_na_loud,SPL_loud,8,6,2,0,-,2.744607865525,93.216666666667,0.957542206242,0.800612383158,1
+case,column,nrows,n,ndropped,refused,reason,slope,intercept,sw_w,sw_p,objects_after_draw,annotate,subtitle_after,disclose_fig_n,disclose_info_n
+r1_na_loud,SPL_loud,8,6,2,0,-,2.744607865525,93.216666666667,0.957542206242,0.800612383158,1,0,SENTINEL-SUBTITLE,0,2

@@ -1,2 +1,2 @@
-case,column,nrows,n,ndropped,refused,reason,slope,intercept,sw_w,sw_p,objects_after_draw
-qq_skewed,value,40,40,0,0,-,20.327847178869,24.305590975000,0.820767924883,0.000018916033,1
+case,column,nrows,n,ndropped,refused,reason,slope,intercept,sw_w,sw_p,objects_after_draw,annotate,subtitle_after,disclose_fig_n,disclose_info_n
+qq_skewed,value,40,40,0,0,-,20.327847178869,24.305590975000,0.820767924883,0.000018916033,1,0,SENTINEL-SUBTITLE,0,1

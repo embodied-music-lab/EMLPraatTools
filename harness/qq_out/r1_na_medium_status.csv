@@ -1,2 +1,2 @@
-case,column,nrows,n,ndropped,refused,reason,slope,intercept,sw_w,sw_p,objects_after_draw
-r1_na_medium,SPL_medium,8,6,2,0,-,3.249461868070,83.950000000000,0.957637776250,0.801362591935,1
+case,column,nrows,n,ndropped,refused,reason,slope,intercept,sw_w,sw_p,objects_after_draw,annotate,subtitle_after,disclose_fig_n,disclose_info_n
+r1_na_medium,SPL_medium,8,6,2,0,-,3.249461868070,83.950000000000,0.957637776250,0.801362591935,1,0,SENTINEL-SUBTITLE,0,2
