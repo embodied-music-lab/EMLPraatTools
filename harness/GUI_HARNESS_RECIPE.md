@@ -7,6 +7,57 @@ empirically verified in this session unless marked otherwise.
 
 ---
 
+## Standing rule — kill by exact process NAME, never by command line
+
+**Every `pkill`/`pgrep` in this harness uses `-x` (exact process name). None
+uses `-f` (full command line).** `-f` matches the pattern against every
+process's *entire* command line — including the driving shell's own, which
+contains the string precisely because it is running the command. The kill then
+takes out the shell that issued it. This has fired: a teardown using
+`pkill -9 -f matchbox` died with **exit 144** (128+16, SIGTERM) — finding D126.
+
+| Target | Use | Never |
+|---|---|---|
+| Praat | `pkill -9 -x praat` | `pkill -f praat` |
+| Xvfb | `pkill -9 -x Xvfb` | `pkill -f Xvfb` |
+| matchbox WM | `pkill -9 -x matchbox-window` | `pkill -f matchbox` |
+
+`matchbox-window` is not a typo. `-x` matches `/proc/<pid>/comm`, which Linux
+truncates to **15 characters**, so `matchbox-window-manager` is carried as
+`matchbox-window`. The untruncated name does not merely miss — `pgrep` refuses
+it outright.
+
+Verified 8 August 2026 on this image (`Xvfb :77` + matchbox):
+
+```
+$ pgrep -a -f matchbox
+14794 /bin/bash -c ... eval '... matchbox ...'      <- THE DRIVING SHELL
+15885 matchbox-window-manager -use_titlebar no
+$ pgrep -a -x matchbox-window
+15885 matchbox-window-manager -use_titlebar no      <- the WM, and nothing else
+$ ps -o comm= -p 15885
+matchbox-window
+$ pgrep -x matchbox-window-manager
+pgrep: pattern that searches for process name longer than 15 characters will
+result in zero matches
+```
+
+The same holds for Praat: `pgrep -f praat` returned the driving shell alongside
+Praat; `pgrep -x praat` returned Praat alone.
+
+**One step narrower when anything else is running.** `-x` fixes the self-kill,
+but `pkill -9 -x praat` still kills *every* Praat on the machine, including one
+another display or another agent's stress run owns — observed on 8 Aug 2026,
+when a `harness/stress_cases/` run appeared under `pgrep -x praat` mid-teardown.
+Where a driver knows its own pid, kill that pid: `harness/walks/rig.sh:45`
+carries this rule, and `walks/d117/lib.sh:37` and `walks/d93/drive.sh:3` kill by
+recorded pid for exactly this reason. Whole-name `pkill -9 -x praat` is for a
+sandbox you are alone in.
+
+Stated here once. The sections below apply the rule and do not re-derive it.
+
+---
+
 ## 0. Why this exists
 
 `beginPause:` hard-crashes under `praat --run` (Praat 6.6.30, Linux):
@@ -26,7 +77,7 @@ GUI + synthetic input is therefore the only route to end-to-end exercise.
 | Tool | Path / note |
 |---|---|
 | Praat full GUI | `/home/claude/praat` (6.6.30) |
-| Praat barren | `/home/claude/praat_barren` |
+| Praat barren | `/home/claude/praat_barren` — **ABSENT on the current image** (8 Aug 2026: only `praat6630` and `praat7000` are present, with `praat` symlinked to `praat6630`). Used by the static-review and stress harnesses; install before following any step that names it |
 | Xvfb | present |
 | **matchbox-window-manager** | `/usr/bin/matchbox-window-manager` — **REQUIRED** |
 | xdotool | present |
@@ -45,17 +96,22 @@ Bare Xvfb has **no window manager**. Without one:
 `windowactivate --sync` and `windowfocus --sync` succeed, `getwindowfocus`
 returns the dialog id, and typing lands. Matchbox maximizes top-level windows
 (Praat Objects becomes 1400x1000 at 0,0) and centers dialogs (a Pause window
-lands at 442,444, 524x167).
+lands at 442,444, 524x167 — the size varies per dialog; see §9.5).
+
+**`-use_titlebar no` does not mean "no window chrome".** It suppresses chrome
+on the maximized top-level windows only. Every `beginPause:` dialog is still
+drawn with a 20 px titlebar, a close box and 4 px borders, and
+`xdotool getwindowgeometry` mis-reports the dialog origin as a result.
+Measured under §10, *"matchbox must run with `-use_titlebar no`"*.
 
 ---
 
 ## 2. Launch sequence
 
 ```bash
-# 2.1 Clean slate — note: pkill -9 -x praat, NEVER pkill -f praat
-#     (-f would match and kill the driving shell itself)
+# 2.1 Clean slate — exact NAME only, no -f anywhere (see "Standing rule" above)
 pkill -9 -x praat 2>/dev/null; pkill -9 -x Xvfb 2>/dev/null
-pkill -9 -f matchbox 2>/dev/null; sleep 1
+pkill -9 -x matchbox-window 2>/dev/null; sleep 1
 rm -f /tmp/.X99-lock /tmp/.X11-unix/X99        # stale lock => Xvfb exits 1
 
 # 2.2 Display
@@ -67,7 +123,7 @@ xdpyinfo | head -3                              # sanity check
 # 2.3 Window manager
 matchbox-window-manager -use_titlebar no > /home/claude/drive/out/wm.log 2>&1 &
 sleep 2
-pgrep -f matchbox        # NOT pgrep -x: process names >15 chars never match
+pgrep -x matchbox-window # 15-char comm; -f would also match this shell
 ```
 
 ### 2.4a Interactive / idle Praat — for menu driving
@@ -97,11 +153,12 @@ nohup ./praat --new-send --pref-dir=/home/claude/drive/prefs --utf8 \
 ## 3. Interaction primitives (all verified)
 
 ```bash
-# Locate windows
-xdotool search --name "." getwindowname %@
-#   => matchbox / Praat / Praat Objects / Praat Picture / Pause: <title>
-W=$(xdotool search --name "^Pause:" | head -1)
-xdotool getwindowgeometry $W
+# Locate windows — do NOT use `xdotool search --name`; see §4 and §11.
+#   `wins` / `findwin <regex>` / `pausewin` in gui.sh walk _NET_CLIENT_LIST.
+wins
+#   => Praat Objects / Praat Picture / Praat Info / Pause: <title>
+W=$(pausewin | cut -d' ' -f1)
+xwininfo -id $W        # geometry: "Absolute upper-left" is the CLIENT origin
 
 # Focus (works ONLY with a WM running)
 xdotool windowactivate --sync $W
@@ -149,13 +206,17 @@ Rule 20 derivation confirmed empirically by this probe:
 | Symptom | Cause | Fix |
 |---|---|---|
 | Xvfb exits 1 | stale `/tmp/.X99-lock` | `rm -f /tmp/.X99-lock /tmp/.X11-unix/X99` |
-| `pgrep -x matchbox-window-manager` empty | name >15 chars | `pgrep -f matchbox` |
+| `pgrep -x matchbox-window-manager` refuses ("longer than 15 characters") | `-x` matches `/proc/<pid>/comm`, truncated to 15 chars | `pgrep -x matchbox-window` — the truncated name. **Not** `-f`; see Standing rule |
 | Typed text never lands | no window manager | run matchbox |
 | Praat exits right after launch | `--new-send` with a non-blocking script | launch with no script arg |
 | "instance ... already running" | stale `pid`/`message` in pref dir | delete just those two files |
 | Submenu won't open on hover/click | Praat/matchbox behaviour | `xdotool key Right` |
 | exit 124 from `timeout` | modal dialog is up | expected; not a failure |
-| Killing own shell | `pkill -f praat` | use `pkill -9 -x praat` |
+| Killing own shell (exit 143/144 from a teardown) | any `pkill -f <pattern>` — `-f` matches the driving shell's own command line | kill by exact name: `pkill -9 -x praat` / `-x Xvfb` / `-x matchbox-window`. See Standing rule |
+| `xdotool search --name` finds nothing, but the window is on screen | title is not Latin-1 (wizard pages use em dashes) so GTK sets **only `_NET_WM_NAME`**, never `WM_NAME` — which is all `search` reads | use `findwin`/`pausewin` in `gui.sh` (enumerate `_NET_CLIENT_LIST`, read the name with `xdotool getwindowname`). A UTF-8 locale does **not** help |
+| `xdotool search --name "^Pause:"` returns a growing list of ids | Praat leaves every dismissed pause window in the tree, unmapped, still named | filter on `IsViewable`; `_NET_CLIENT_LIST` already excludes them |
+| `xwins` prints a column of `0`s and every later call fails | no window manager: `xprop -root _NET_CLIENT_LIST` prints "no such atom on any window." **on stdout, exit 0**, and an unanchored `sed 's/.*# //'` passes that sentence through as if it were a window list | fixed 7 Aug in `gui.sh`, `walks/d117/lib.sh` and `walks/gridmode/lib.sh` — `sed -n 's/.*# //p'`. `xwins` now warns on stderr and falls back. If you see the warning, start matchbox or openbox |
+| `windowactivate` fails with "claims not to support `_NET_ACTIVE_WINDOW`" | **no window manager** — not matchbox. matchbox advertises it (§9.4) | run matchbox; do not switch to `windowraise` |
 
 ---
 
@@ -220,17 +281,55 @@ No window chrome, no screen scraping. Caveat: it does reset the outer viewport
 selection — harmless because every EML draw procedure sets its own viewport,
 but do not run it *between* two halves of a multi-panel draw.
 
-### 9.4 `windowactivate` does not work under matchbox — use `windowraise`
+### 9.4 Raise the Objects window before clicking its menubar
+
+After the Info window has been raised, Info is 620x400 at 0,0 and covers the
+Objects menubar at y=14, so a menu click lands on Info and nothing happens —
+silently. Bring the Objects window forward first, with the same two calls
+everything else in this document uses:
+
+```bash
+xdotool windowactivate --sync $id
+xdotool windowfocus $id
+```
+
+**WITHDRAWN, C2, 7 Aug 2026.** This section used to be headed *"`windowactivate`
+does not work under matchbox — use `windowraise`"* and to claim, over the error
+string `Your windowmanager claims not to support _NET_ACTIVE_WINDOW`, that
+"`xdotool windowactivate` and `getactivewindow` both fail" and that
+`windowraise` "is what `emlmenu` needs".
+
+Every part of that was wrong, and it contradicted §1, §3 and §10 of this same
+document — four sections, three mutually exclusive instructions for one
+primitive. That error string belongs to **no window manager at all**, which is
+§1's finding; matchbox advertises `_NET_ACTIVE_WINDOW`. Re-measured on a fresh
+`Xvfb :99` + `matchbox-window-manager -use_titlebar no` + Praat 6.6.30, this
+sandbox, with a pause dialog up:
 
 ```
-Your windowmanager claims not to support _NET_ACTIVE_WINDOW ...
+$ xprop -root _NET_SUPPORTED | tr ',' '\n' | grep -i active_window
+ _NET_ACTIVE_WINDOW
+$ xdotool windowactivate --sync 0x40000f ; echo rc=$?
+rc=0
+$ xdotool getactivewindow                               -> 4194319  (= 0x40000f)
+$ xdotool windowfocus 0x40000f ; xdotool getwindowfocus -> 4194319
 ```
 
-`xdotool windowactivate` and `getactivewindow` both fail. `xdotool windowraise
-<id>` works and is what `emlmenu` needs before clicking the menubar. This bites
-specifically after the Info window has been raised: Info is 620x400 at 0,0 and
-covers the Objects menubar at y=14, so the menu click lands on Info and nothing
-happens — silently.
+`gui.sh:raise` additionally *confirms* with `getactivewindow` and returns
+`NOTRAISED` if it does not match; driven on the same display it returned
+`4194319 Window 4194319 Position: 382,410 Geometry: 524x135`.
+
+Following the withdrawn advice would have cost more than a wasted call.
+`gui.sh:typein`'s own verified note records that with `windowraise` alone "the
+entry takes the click (caret shows) but receives no key events, so the field
+stays empty and the script silently proceeds with the default" — silent wrong
+data, the D126 family. And `emlmenu` does not use `windowraise`; it uses
+`windowactivate --sync` then `windowfocus`, and `grep -n windowraise
+harness/gui.sh` returns only `typein` and `raise`, in both of which it is
+*followed* by `windowfocus`.
+
+See §10, *"`xdotool windowraise` is not enough under matchbox"*, which has had
+the right answer all along.
 
 ### 9.5 Window geometry is NOT stable across relaunches
 
@@ -258,16 +357,39 @@ These were each hit at least once and cost real time. They are not in the
 gotchas table above because they are behaviours to design around rather than
 symptoms with a one-line fix.
 
-### matchbox must run with `-use_titlebar no`
+### matchbox must run with `-use_titlebar no` — but it is not a "no chrome" flag
 
-With titlebars on, matchbox adds ~20px of chrome above every window and
-**every mapped coordinate in `MENU_MAP.md` shifts down by that amount.** The
-map, and every dialog absolute recorded in the findings log, assume no
-titlebar. Launch:
+With titlebars on, matchbox adds ~20px of chrome above every **top-level**
+window and **every mapped coordinate in `MENU_MAP.md` shifts down by that
+amount.** The map, and every dialog absolute recorded in the findings log,
+assume the flag is set. Launch:
 
 ```bash
 setsid matchbox-window-manager -use_titlebar no < /dev/null &
 ```
+
+**D126, corrected 8 August 2026 — the flag does NOT suppress chrome on
+dialogs.** This document previously read as though `-use_titlebar no` removed
+window chrome outright. Observation contradicts that. Re-measured on a fresh
+`Xvfb :77` + `matchbox-window-manager -use_titlebar no` + Praat 6.6.30, this
+image, with a `beginPause:` dialog up:
+
+| Window | matchbox frame | client | chrome |
+|---|---|---|---|
+| Praat Objects / Praat Picture | 1400x1000 at 0,0 | 1400x1000 at 0,0 | **none** — zero offset |
+| `Pause:` dialog | 532x159 at 434,420 | 524x135 at 438,440 | **20 px titlebar + close box, and 4 px borders** |
+
+The dialog titlebar is real, not a phantom of the frame arithmetic: cropped
+from a root screenshot and read at 300% it showed the title text and a ✖ close
+box at the right edge. `audit/DRIVE_FINDINGS_2026-08-04.md:44-52` recorded the
+same titlebar independently, and was right.
+
+The consequence that costs time: for that dialog `xdotool getwindowgeometry`
+reported **442,460** — the client origin (438,440) with the (+4,+20) frame
+offset applied a *second* time. It matches neither the frame nor the client.
+`xwininfo -id <client>`'s "Absolute upper-left" gives the true 438,440. **Never
+derive dialog click coordinates from `getwindowgeometry`**; use `xwininfo`
+(which is what `pgeom` in `gui.sh` reads) or a screenshot — §9.5.
 
 ### matchbox must be restarted with `setsid ... < /dev/null &`
 
@@ -297,7 +419,16 @@ xdotool windowactivate --sync $id
 xdotool windowfocus $id
 ```
 
-`emlmenu` in `gui.sh` still uses `windowraise` — known latent bug, unfixed.
+This section is correct and has been since it was written. §9.4 used to say
+the opposite of it, in the same document; that claim is now withdrawn, with
+the measurement, under §9.4.
+
+**C6, 7 Aug 2026.** This section also carried "`emlmenu` in `gui.sh` still uses
+`windowraise` — known latent bug, unfixed." It does not and has not for some
+time; `emlmenu` opens with `windowactivate --sync` then `windowfocus`, and
+`grep -n windowraise harness/gui.sh` returns only `typein` and `raise`, in
+both of which it is *followed* by `windowfocus`. The sentence is struck — a
+false open-defect record costs the next reader a re-derivation.
 
 ### Shell cwd does not persist between Bash tool calls
 
@@ -321,14 +452,21 @@ will succeed against a destroyed window, so the failure is silent.
 
 ### `infotext` takes no argument
 
-`infotext <path>` prints to stdout, exits 1, and **does not create the file.**
-Use argument-less `infotext` with a shell redirect:
+`infotext <path>` prints to stdout and **does not create the file.** Use
+argument-less `infotext` with a shell redirect:
 
 ```bash
 infotext > out/w5_run_info.txt
 ```
 
-Known latent bug, unfixed.
+**C8, 7 Aug 2026 — corrected, and the function now refuses.** This used to say
+`infotext <path>` "prints to stdout, **exits 1**, and does not create the
+file". The "does not create the file" half was right; "exits 1" was wrong —
+it exited **0**, which is the worse case and the reason to care. A caller
+written as `infotext out/x.txt && wc -l out/x.txt` saw success and then read a
+file that was never written; an exit 1 would have stopped it. `infotext` now
+rejects an argument outright and returns 2, so the mistake is loud at the
+first call rather than latent in the second.
 
 ### Blind `iconv -f UTF-16` is unsafe
 
@@ -361,3 +499,37 @@ Crop by absolute pixels.
 A query command nested inside a function call in a probe script produces no
 output and no error over `--send`. If a probe returns nothing, suspect the
 probe before suspecting the plugin.
+
+---
+
+## 11. Window lookup: `_NET_WM_NAME`, not `WM_NAME` (added 2026-08-07)
+
+`xdotool search --name` matches **`WM_NAME`**. GTK sets `WM_NAME` only when the
+title is representable in Latin-1. Every EML wizard page title carries an em
+dash, so those windows have **no `WM_NAME` at all** — only `_NET_WM_NAME`.
+Verified on Praat 6.6.30 under both matchbox and openbox:
+
+```
+$ xprop -id 0x600017 WM_NAME        -> WM_NAME:  not found.
+$ xprop -id 0x600017 _NET_WM_NAME   -> "Pause: Step 1 \342\200\224 Choose data"
+$ xdotool search --name '^Pause:'   -> (nothing, rc=1)
+```
+
+The dialog is on screen and taking clicks; only the lookup is blind. It reads
+as a **hung walk**, not as a lookup failure — that is what makes it expensive.
+An ASCII-titled pause window *does* carry `WM_NAME`, so a probe written with a
+plain title will not reproduce it.
+
+A UTF-8 locale does **not** fix this. `LC_ALL=C.UTF-8` repairs `xwininfo`'s
+*display* of the title, but no locale can restore a property the toolkit never
+set. (`harness/walks/d117/lib.sh` sets `LC_ALL` for the display half; the
+lookup half is `_NET_CLIENT_LIST`.)
+
+Use `xwins` / `winname` / `findwin` / `pausewin` in `gui.sh`, which walk
+`_NET_CLIENT_LIST` — the window manager's own list of managed top-levels, kept
+by matchbox and openbox alike. It also excludes the withdrawn husks Praat
+leaves behind for every dismissed pause dialog, which `xdotool search` returns
+forever. `harness/walks/d117/lib.sh:pwin` is the same route; keep them in step.
+
+Evidence: `evidence/walks/gui_harness/` (`before_after.txt`, `walk_log.txt`,
+`walk_page1..3.png`, `manifest.csv`).

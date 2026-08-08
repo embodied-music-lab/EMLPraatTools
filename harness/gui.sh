@@ -1,30 +1,113 @@
 #!/bin/bash
 # GUI driving helpers for EML Praat Tools menu exercise.
 # Source this: . /home/claude/drive/gui.sh
-export DISPLAY=:99
-SHOTS=/home/claude/drive/out/shots
+# Defaults, not mandates: the parallel rig (harness/walks/rig.sh) puts each
+# instance on its own display, so a caller that has already set DISPLAY/SHOTS
+# keeps them. Bare `. harness/gui.sh` is unchanged — :99 and drive/out/shots.
+export DISPLAY=${DISPLAY:-:99}
+SHOTS=${SHOTS:-/home/claude/drive/out/shots}
 mkdir -p "$SHOTS"
 
 # shot <name>  -> full-screen screenshot
 shot () { import -window root "$SHOTS/$1.png"; echo "$SHOTS/$1.png"; }
 
-# wins -> list windows
-wins () { xdotool search --name "." getwindowname %@ 2>/dev/null; }
+# ---------------------------------------------------------------------------
+# Window lookup — enumerate _NET_CLIENT_LIST, NEVER `xdotool search --name`
+# ---------------------------------------------------------------------------
+# 7 Aug 2026. `xdotool search --name` matches the X property WM_NAME. GTK sets
+# WM_NAME only when the title is representable in Latin-1; a title carrying a
+# character outside it — the wizard's em dashes — leaves WM_NAME UNSET, with
+# only _NET_WM_NAME populated. Verified with xprop on Praat 6.6.30, under both
+# openbox (:91) and matchbox (:99):
+#
+#   $ xprop -id 0x600017 WM_NAME       -> WM_NAME:  not found.
+#   $ xprop -id 0x600017 _NET_WM_NAME  -> "Pause: Step 1 \342\200\224 Choose data"
+#   $ xdotool search --name '^Pause:'  -> nothing, rc=1
+#
+# The dialog is on screen and taking clicks; the lookup simply cannot see it,
+# which reads as a hung walk rather than as a lookup failure. A UTF-8 locale
+# does NOT fix it: no locale can restore a property the toolkit never set.
+# An ASCII-titled pause window DOES carry WM_NAME, which is why this stayed
+# latent here — this harness drives one page at a time off screenshot anchors.
+# Evidence: evidence/walks/gui_harness/before_after.txt
+#
+# _NET_CLIENT_LIST is the window manager's own list of managed top-levels, and
+# both matchbox and openbox maintain it (checked). It also excludes the
+# withdrawn husks Praat leaves behind for every dismissed pause dialog, which
+# `xdotool search` goes on returning forever.
+#
+# Same route as harness/walks/d117/lib.sh:pwin — keep the two in step.
 
-# pausewin -> id + geometry of the currently MAPPED Pause window
-pausewin () {
-  for w in $(xdotool search --name "^Pause:" 2>/dev/null); do
-    if xwininfo -id "$w" 2>/dev/null | grep -q "IsViewable"; then
-      echo -n "$w "; xdotool getwindowname "$w"
-    fi
+# xwins -> decimal ids of every window the WM currently manages.
+#   Decimal, not the hex xprop prints, so ids compare equal to what
+#   `xdotool getactivewindow` returns (see `raise`).
+xwins () {
+  local raw w
+  # `sed -n 's/.*# //p'`, not `sed 's/.*# //'`. When the atom is absent xprop
+  # prints "_NET_CLIENT_LIST:  no such atom on any window." — on STDOUT, exit
+  # 0 — and the unanchored substitution passes that sentence straight through
+  # as `raw`. It is not empty, so the fallback below never ran; instead the
+  # loop at the bottom printf'd `%d` over seven English words and xwins
+  # returned SEVEN ZEROS. Every caller then ran `xwininfo -id 0`. Found while
+  # closing C7 (the "make the fallback audible" item) — the fallback the
+  # comment defends was unreachable, and what happened instead was worse than
+  # either branch. `-n ... p` prints only lines that actually matched.
+  raw=$(xprop -root _NET_CLIENT_LIST 2>/dev/null | sed -n 's/.*# //p' | tr -d ',')
+  if [ -z "$raw" ]; then
+    # No EWMH window manager. Nothing else in this harness works without one,
+    # but a degraded list beats a silently empty one.
+    #
+    # C7. This is the one place the banner's "NEVER `xdotool search --name`"
+    # is deliberately broken, and it is broken into exactly the failure the
+    # banner is about: `xdotool search --name "."` lists only windows that
+    # have a WM_NAME at all, so an em-dash-titled pause window never enters
+    # the list. `findwin "^Pause:"` then returns nothing while the dialog is
+    # on screen and `raise` reports NOWIN — indistinguishable from "no such
+    # window", which §11 spends a page explaining is the expensive failure.
+    # Keeping the fallback is a judgement call; taking it silently is not.
+    echo "WARNING: no _NET_CLIENT_LIST — is a window manager running? Falling" >&2
+    echo "         back to WM_NAME search; windows titled with an em dash (every" >&2
+    echo "         EML wizard page) will be INVISIBLE to findwin/pausewin/raise." >&2
+    xdotool search --name "." 2>/dev/null
+    return
+  fi
+  for w in $raw; do printf '%d\n' "$w" 2>/dev/null; done
+}
+
+# winname <id> -> window title. `xdotool getwindowname` prefers _NET_WM_NAME
+#   and decodes it; the xprop fallback is for the reverse case (WM_NAME only).
+winname () {
+  local n
+  n=$(xdotool getwindowname "$1" 2>/dev/null)
+  [ -n "$n" ] || n=$(xprop -id "$1" _NET_WM_NAME 2>/dev/null \
+                     | sed -n 's/^_NET_WM_NAME(UTF8_STRING) = "\(.*\)"$/\1/p')
+  printf '%s\n' "$n"
+}
+
+# findwin <title-regex> -> ids of every MAPPED managed window whose title matches
+findwin () {
+  local w
+  for w in $(xwins); do
+    xwininfo -id "$w" 2>/dev/null | grep -q IsViewable || continue
+    winname "$w" | grep -qE "$1" && printf '%s\n' "$w"
   done
+  return 0
+}
+
+# wins -> "id title" for every managed window
+wins () { local w; for w in $(xwins); do echo "$w $(winname "$w")"; done; }
+
+# pausewin -> id + title of the currently MAPPED Pause window
+pausewin () {
+  local w
+  for w in $(findwin "^Pause:"); do echo "$w $(winname "$w")"; done
 }
 
 # emlmenu <y> -> open Objects>New>EML Tools and click submenu entry at y
 emlmenu () {
   local y="$1"
   local o
-  o=$(xdotool search --name "^Praat Objects$" | head -1)
+  o=$(findwin "^Praat Objects$" | head -1)
   xdotool windowactivate --sync "$o" 2>/dev/null; sleep 0.6
   xdotool windowfocus "$o" 2>/dev/null
   sleep 1.0
@@ -37,7 +120,7 @@ emlmenu () {
 # infoshot <name> -> raise Praat Info and screenshot it
 infoshot () {
   local i
-  i=$(xdotool search --name "^Praat Info$" | head -1)
+  i=$(findwin "^Praat Info$" | head -1)
   xdotool windowactivate --sync "$i" 2>/dev/null; sleep 1
   import -window root "$SHOTS/$1.png"; echo "$SHOTS/$1.png"
 }
@@ -45,7 +128,7 @@ infoshot () {
 # picshot <name> -> raise Praat Picture and screenshot it
 picshot () {
   local p
-  p=$(xdotool search --name "^Praat Picture$" | head -1)
+  p=$(findwin "^Praat Picture$" | head -1)
   xdotool windowactivate --sync "$p" 2>/dev/null; sleep 1
   import -window root "$SHOTS/$1.png"; echo "$SHOTS/$1.png"
 }
@@ -53,7 +136,7 @@ picshot () {
 # objshot <name> -> raise Objects window and screenshot
 objshot () {
   local o
-  o=$(xdotool search --name "^Praat Objects$" | head -1)
+  o=$(findwin "^Praat Objects$" | head -1)
   xdotool windowactivate --sync "$o" 2>/dev/null; sleep 1
   import -window root "$SHOTS/$1.png"; echo "$SHOTS/$1.png"
 }
@@ -89,7 +172,18 @@ sendp () { ($PRAAT $PREFS --utf8 --send "$1" >/dev/null 2>&1); sleep 1.5; }
 sendl () { cat > "$OUT/_inline.praat"; sendp "$OUT/_inline.praat"; }
 
 # infotext -> dump the Info window verbatim to stdout (exact chars, no OCR)
+#
+# C8. It takes NO argument and never has. It used to ignore one silently and
+# still exit 0, so `infotext out/x.txt && wc -l out/x.txt` reported success
+# and then read a file nothing had written. Refusing is one line and moves
+# the failure to the call that is wrong. The recipe used to describe this as
+# "exits 1"; it exited 0, which is why it was worth changing rather than
+# documenting.
 infotext () {
+  if [ $# -gt 0 ]; then
+    echo "infotext takes no argument; use a shell redirect: infotext > $1" >&2
+    return 2
+  fi
   sendp /home/claude/drive/scripts/_dumpinfo.praat
   # Praat writes UTF-16 on Linux even under --utf8; normalise before reading.
   if file -b "$OUT/info.txt" | grep -q "UTF-16"; then
@@ -139,25 +233,43 @@ clearinfo () { printf 'writeInfoLine: ""\n' > "$OUT/_clr.praat"; sendp "$OUT/_cl
 # search returns a growing list of dead ids; and the LIVE dialog is
 # frequently absent from `xdotool search` results altogether while plainly
 # visible and accepting clicks. `getactivewindow` returns it every time.
+#
+# 7 Aug 2026: the "absent from search results" half of that is now explained —
+# see the _NET_WM_NAME note at the top of this file. `getactivewindow` is kept
+# as the first route because it is one round trip; the client-list fallback is
+# there for the withdrawn-husk problem, so that a dismissed pause window that
+# still answers to its old name cannot be mistaken for the live one.
+#
+# C2. This comment used to add "but it fails outright under matchbox
+# ('windowmanager claims not to support _NET_ACTIVE_WINDOW', §9.4 of the
+# recipe)" — five lines below "getactivewindow returns it every time", in the
+# same comment block, citing a recipe section that was itself wrong. matchbox
+# advertises _NET_ACTIVE_WINDOW; measured again 7 Aug on a fresh
+# `Xvfb :99` + `matchbox-window-manager -use_titlebar no` with a pause dialog
+# up, `windowactivate --sync` returned 0 and `getactivewindow` returned the
+# dialog. The fallback stays; its justification does not.
 curpause () {
   local id
-  id=$(xdotool getactivewindow 2>/dev/null) || return
-  case "$(xdotool getwindowname "$id" 2>/dev/null)" in
-    Pause:*) echo "$id" ;;
-  esac
+  id=$(xdotool getactivewindow 2>/dev/null)
+  if [ -n "$id" ]; then
+    case "$(winname "$id")" in
+      Pause:*) echo "$id"; return 0 ;;
+    esac
+  fi
+  findwin "^Pause:" | tail -1
 }
 
 # curwin -> the active window whatever it is, for typing into a GTK entry.
 curwin () { xdotool getactivewindow 2>/dev/null; }
 
-pgeom () { local id=$(curpause); [ -n "$id" ] || { echo "no pause form"; return 1; }; echo "$id $(xdotool getwindowname $id) $(xwininfo -id $id | grep -E 'Absolute upper-left|Width|Height' | tr -d ' \n')"; }
+pgeom () { local id=$(curpause); [ -n "$id" ] || { echo "no pause form"; return 1; }; echo "$id $(winname $id) $(xwininfo -id $id | grep -E 'Absolute upper-left|Width|Height' | tr -d ' \n')"; }
 
 # Praat allows only ONE pause form at a time. Opening a wrapper while a
 # completion dialog is still up raises "Praat cannot have more than one
 # pause form at a time" and leaves a modal error window grabbing input.
 needclear () {
   local p=$(curpause)
-  if [ -n "$p" ]; then echo "BLOCKED: pause form open -> $(xdotool getwindowname $p)"; return 1; fi
+  if [ -n "$p" ]; then echo "BLOCKED: pause form open -> $(winname $p)"; return 1; fi
   return 0
 }
 
@@ -183,12 +295,14 @@ typein () {
 # _NET_WM_NAME, and for Praat's script editor they differ — WM_NAME is just
 # "Script" while the visible title carries the path in curly quotes. Searching
 # on the visible title silently found nothing.
+#
+# 7 Aug 2026: matching on getwindowname was right, but the ENUMERATION was
+# still `xdotool search --name "."`, which only lists windows that have a
+# WM_NAME at all — so a pause window titled with an em dash never entered the
+# loop to be matched. `findwin` enumerates _NET_CLIENT_LIST instead.
 raise () {
   local w tries=0 act cand=""
-  for x in $(xdotool search --name "." 2>/dev/null); do
-    xwininfo -id "$x" 2>/dev/null | grep -q IsViewable || continue
-    if xdotool getwindowname "$x" 2>/dev/null | grep -qE "$1"; then cand="$x"; fi
-  done
+  cand=$(findwin "$1" | tail -1)
   w="$cand"
   [ -z "$w" ] && { echo "NOWIN"; return 1; }
   while [ $tries -lt 6 ]; do
@@ -262,10 +376,8 @@ demo () {
 
 # livepause -> print id+title of the single mapped Pause window, if any
 livepause () {
-  for x in $(xdotool search --name "^Pause" 2>/dev/null); do
-    xwininfo -id "$x" 2>/dev/null | grep -q IsViewable && \
-      echo "$x $(xdotool getwindowname $x)"
-  done
+  local x
+  for x in $(findwin "^Pause"); do echo "$x $(winname "$x")"; done
 }
 
 # capture <label> -> save the selected Table and the Info text under evidence/

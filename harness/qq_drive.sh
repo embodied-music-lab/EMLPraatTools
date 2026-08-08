@@ -31,20 +31,38 @@ FILTER="${1:-}"
 mkdir -p "$OUT"
 : > "$OUT/RESULTS.tsv"
 
-# case | input csv | column | expectation (draw | refuse)
+# case | input csv | column | expectation (draw | refuse) | annotate (0 | 1)
+#
+# The _annot rows are the SAME data drawn a second time with the user's
+# Annotate box ticked. They exist because the disclosure rule has two
+# directions and only one of them is visible in a single run: the Q-Q plot's
+# "n = N, Blom plotting positions (a = 3/8)." must be ON the figure when
+# Annotate is ticked and ABSENT when it is not. The pair also gives
+# validate/v23_qq_points.R a pixel-level handle on the gate — the annotated
+# render must carry strictly more ink than the plain one — without the
+# validator needing an image tool of its own.
+#
+# Four cases carry the annotated pass rather than all twelve: a dense one
+# (v15_f0), a curved one whose points crowd a corner (qq_skewed), one with
+# rows dropped so the box has two lines (r1_na_medium, 6 of 8), and the
+# smallest legal one (qq_n3), where a box has the least room to avoid data.
 CASES="
-v15_f0|evidence/csv/v15_normality_input.csv|F0_Hz|draw
-v15_shimmer|evidence/csv/v15_normality_input.csv|shimmer_pct|draw
-v15_jitter|evidence/csv/v15_normality_input.csv|jitter_pct|draw
-r1_na_soft|validate/redpath/r1_incomplete_cases.csv|SPL_soft|draw
-r1_na_medium|validate/redpath/r1_incomplete_cases.csv|SPL_medium|draw
-r1_na_loud|validate/redpath/r1_incomplete_cases.csv|SPL_loud|draw
-r2_n2|validate/redpath/r2_two_subjects.csv|SPL_soft|refuse
-r3_constant|validate/redpath/r3_zero_variance.csv|SPL_medium|refuse
-qq_na_below_3|harness/qq_cases/qq_na_below_3.csv|value|refuse
-qq_n3|harness/qq_cases/qq_n3.csv|value|draw
-qq_skewed|harness/qq_cases/qq_skewed.csv|value|draw
-qq_n10|harness/qq_cases/qq_n10.csv|value|draw
+v15_f0|evidence/csv/v15_normality_input.csv|F0_Hz|draw|0
+v15_shimmer|evidence/csv/v15_normality_input.csv|shimmer_pct|draw|0
+v15_jitter|evidence/csv/v15_normality_input.csv|jitter_pct|draw|0
+r1_na_soft|validate/redpath/r1_incomplete_cases.csv|SPL_soft|draw|0
+r1_na_medium|validate/redpath/r1_incomplete_cases.csv|SPL_medium|draw|0
+r1_na_loud|validate/redpath/r1_incomplete_cases.csv|SPL_loud|draw|0
+r2_n2|validate/redpath/r2_two_subjects.csv|SPL_soft|refuse|0
+r3_constant|validate/redpath/r3_zero_variance.csv|SPL_medium|refuse|0
+qq_na_below_3|harness/qq_cases/qq_na_below_3.csv|value|refuse|0
+qq_n3|harness/qq_cases/qq_n3.csv|value|draw|0
+qq_skewed|harness/qq_cases/qq_skewed.csv|value|draw|0
+qq_n10|harness/qq_cases/qq_n10.csv|value|draw|0
+v15_f0_annot|evidence/csv/v15_normality_input.csv|F0_Hz|draw|1
+r1_na_medium_annot|validate/redpath/r1_incomplete_cases.csv|SPL_medium|draw|1
+qq_n3_annot|harness/qq_cases/qq_n3.csv|value|draw|1
+qq_skewed_annot|harness/qq_cases/qq_skewed.csv|value|draw|1
 "
 
 for spec in $CASES; do
@@ -54,7 +72,9 @@ for spec in $CASES; do
     input=${rest%%|*}
     rest=${rest#*|}
     column=${rest%%|*}
-    expect=${rest#*|}
+    rest=${rest#*|}
+    expect=${rest%%|*}
+    annot=${rest#*|}
     [ -n "$FILTER" ] && case "$name" in *"$FILTER"*) ;; *) continue ;; esac
 
     # Retried up to three times, and ONLY for one specific environment fault.
@@ -72,12 +92,14 @@ for spec in $CASES; do
         attempt=$((attempt + 1))
         rm -f "$OUT/$name.png" "$OUT/${name}_chrome.png" \
               "$OUT/${name}_points.csv" \
-              "$OUT/${name}_status.csv"
+              "$OUT/${name}_status.csv" \
+              "$OUT/${name}_disclosure.tsv"
         env -u DISPLAY \
             EML_QQ_INPUT="$ROOT/$input" \
             EML_QQ_COL="$column" \
             EML_QQ_CASE="$name" \
             EML_QQ_OUTDIR="$OUT" \
+            EML_QQ_ANNOTATE="$annot" \
             "$PRAAT" --run "$DRIVER" > "$OUT/$name.log" 2>&1
         grep -q "this is a folder, not a file" "$OUT/$name.log" || break
     done
