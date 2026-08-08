@@ -3,7 +3,56 @@
 # ============================================================================
 # EML Graphs Plugin
 # License: GPL-3.0-or-later
-# Version: 2.4
+# Version: 2.5
+# v2.5: D136 — LEGEND PLACEMENT. The user's width and height describe the
+#       PLOT, and until now a legend could only be drawn inside it, so the
+#       only way to give a legend room was to take room from the data and
+#       "make my figure square" could not be satisfied. New shared setting,
+#       one canonical encoding for every graph type:
+#
+#           config_legendPlacement
+#             1 Inside plot (DEFAULT — today's behaviour, auto-corner)
+#             2 Right of plot      3 Below plot
+#             4 Separate figure    5 None
+#
+#       THE PLOT IS THE SAME SIZE IN ALL FIVE. Placements 2 and 3 grow the
+#       SAVED IMAGE around an unchanged plot rectangle; placement 4 writes
+#       the legend as a second file. figure_width and figure_height are not
+#       adjusted anywhere for a legend, which is the whole point. The
+#       geometry lives in @emlDrawLegend / @emlDrawLegendPanel in
+#       eml-graph-procedures.praat v3.28; this file owns the encoding, the
+#       registry, the dialog and the second file.
+#
+#       * REGISTRY. New legendPlacementStyle[1..nGraphTypes], 5 = offers the
+#         menu / 0 = this type has no legend, beside gridModeStyle[] and in
+#         the same shape for the same reason (see the C1 block there: two
+#         encodings on one persisted key once left a dropdown blank and
+#         unusable, on disk, surviving a restart). Six types draw a legend —
+#         5, 8, 10, 11, 12, 13, which is exactly the set whose draw
+#         procedures call @emlDrawLegend. A missing or out-of-range entry
+#         fails at INCLUDE time from a file-scope loop, and
+#         @emlLegendPlacementStyle refuses an unregistered type by name at
+#         runtime. Adding a graph type without a legend entry cannot ship.
+#       * ENCODING. @emlLegendPlacementToMenu / @emlLegendPlacementFromMenu /
+#         @emlSeedLegendPlacement / @emlCommitLegendPlacement, mirroring the
+#         gridline set. There is only ONE encoding today, so the translations
+#         are identities; they exist so that a second one, if it is ever
+#         needed, has one place to go instead of fourteen. The clamp is at
+#         @emlLoadConfig, where the file is read, so an out-of-range value in
+#         a hand-edited config becomes the default rather than a blank
+#         dropdown and a form that refuses to close.
+#       * DIALOG. "Legend placement" optionmenu in the Advanced block of the
+#         six legend-capable pages only, seeded and committed through the two
+#         single-token procedures.
+#       * SECOND FILE. Placement 4's legend is drawn on a parked patch of the
+#         picture and deliberately not reported to @emlExpandDrawnExtent, so
+#         the figure still saves at its own extent; the Save branch then
+#         selects the parked rectangle and writes <name>_legend.png beside
+#         <name>.png — same folder, same base name, same DPI, same
+#         non-destructive @emlGenerateUniquePath. No new path convention.
+#         It inherits the figure's annotSize rather than recomputing a size
+#         from the legend canvas, so the two files' text matches when they
+#         are placed side by side in a manuscript.
 # v2.4: D3b — the graph type registry drops from 14 entries to 13. Type 13,
 #       "Time Series (with CI)", lost its form page when CI became a toggle on
 #       type 5 (Line Chart); the registry row and its dispatch branches stayed
@@ -378,6 +427,87 @@ for iGridChk from 1 to nGraphTypes
     endif
 endfor
 
+# ----------------------------------------------------------------------------
+# legendPlacementStyle[t] — how many options type t's "Legend placement"
+# optionmenu has.
+#
+#   5 = the full menu: Inside plot / Right of plot / Below plot /
+#       Separate figure / None
+#   0 = this graph type has no legend, and shows no menu at all
+#
+# D136. NOT EVERY GRAPH TYPE HAS A LEGEND. Seven of the thirteen never call
+# @emlDrawLegend — the four acoustic types (Pitch Contour, Waveform,
+# Spectrum, LTAS) draw one series, and Bar Chart, Violin Plot and Box Plot
+# put their group names on the x-axis where a key would be a second copy of
+# the same information. The six that do are the six whose draw procedures
+# contain a call:
+#
+#     grep -n '@emlDrawLegend' plugin/graphs/eml-draw-procedures.praat
+#
+# returns @emlDrawTimeSeries and @emlDrawTimeSeriesCI (both type 5),
+# @emlDrawScatterPlot (8), @emlDrawHistogram (10), @emlDrawGroupedViolin
+# (11), @emlDrawGroupedBoxPlot (12) and @emlDrawSpaghettiPlot (13). A type
+# whose legend is conditional on a grouping column — scatter, histogram, line
+# chart — still offers the control, because the type can produce a legend;
+# the draw procedure decides whether this particular figure has one.
+#
+# THIS IS THE SAME SHAPE AS gridModeStyle[] ABOVE, AND FOR THE SAME REASON.
+# Read that block for the defect the shape exists to prevent: two encodings
+# sharing one persisted key, a dropdown drawn blank because its default index
+# exceeded its option count, and a dialog with no way out that survived a
+# restart because the bad value was on disk. `config_legendPlacement` has
+# exactly ONE encoding — 1 Inside plot / 2 Right of plot / 3 Below plot /
+# 4 Separate figure / 5 None, on disk and in memory, for every type — so the
+# translation @emlSeedGridMode has to perform is an identity here. It is
+# still routed through @emlSeedLegendPlacement and @emlCommitLegendPlacement,
+# because the clamp, the registry check and the single-token seed site are
+# the parts that were load-bearing, and because a second encoding invented
+# later has one place to go rather than fourteen.
+#
+# ADDING A GRAPH TYPE: add its row here. You cannot forget —
+# @emlLegendPlacementStyle refuses an unregistered type by name, and the
+# file-scope check below refuses to load at all if any type in 1..nGraphTypes
+# is missing or is neither 0 nor 5.
+# ----------------------------------------------------------------------------
+legendPlacementStyle[1] = 0
+legendPlacementStyle[2] = 0
+legendPlacementStyle[3] = 0
+legendPlacementStyle[4] = 0
+legendPlacementStyle[5] = 5
+legendPlacementStyle[6] = 0
+legendPlacementStyle[7] = 0
+legendPlacementStyle[8] = 5
+legendPlacementStyle[9] = 0
+legendPlacementStyle[10] = 5
+legendPlacementStyle[11] = 5
+legendPlacementStyle[12] = 5
+legendPlacementStyle[13] = 5
+
+# File-scope completeness check, exactly as gridModeStyle[] has. Runs at
+# include time over literals declared a few lines above, so it can only fire
+# on a tree where someone has added a graph type and not a legend registry
+# entry for it. That is the whole point: the failure lands on the developer
+# who added the type, not on a user who picks it six months later.
+for iLegChk from 1 to nGraphTypes
+    if not variableExists ("legendPlacementStyle[" + string$ (iLegChk) + "]")
+        exitScript: "eml-graphs-form.praat: graph type ", iLegChk, " (",
+            ... "declared by nGraphTypes = ", nGraphTypes, ") has no",
+            ... " legendPlacementStyle[] entry. Add legendPlacementStyle[",
+            ... iLegChk, "] = 5 (the type draws a legend and offers the",
+            ... " placement menu) or = 0 (the type has no legend) next to",
+            ... " gridModeStyle[", iLegChk, "]."
+    endif
+endfor
+for iLegChk from 1 to nGraphTypes
+    if legendPlacementStyle[iLegChk] <> 0 and legendPlacementStyle[iLegChk] <> 5
+        exitScript: "eml-graphs-form.praat: legendPlacementStyle[", iLegChk,
+            ... "] = ", legendPlacementStyle[iLegChk], ". It must be 5 (Inside",
+            ... " plot / Right of plot / Below plot / Separate figure / None)",
+            ... " or 0 (no legend) — it is the option COUNT of that type's",
+            ... " Legend placement menu."
+    endif
+endfor
+
 isTableType[1] = 0
 isTableType[2] = 0
 isTableType[3] = 0
@@ -583,6 +713,10 @@ procedure emlLoadConfig
     config_width = 6
     config_height = 4
     config_gridlineMode = 1
+    ; D136. One canonical encoding for every graph type:
+    ; 1 Inside plot / 2 Right of plot / 3 Below plot / 4 Separate
+    ; figure / 5 None. 1 is what the plugin has always drawn.
+    config_legendPlacement = 1
     config_showInnerBox = 1
     config_showAxisNames = 2
     config_showTicks = 2
@@ -658,6 +792,8 @@ procedure emlLoadConfig
                         config_height = number (.value$)
                     elsif .key$ = "gridlineMode"
                         config_gridlineMode = number (.value$)
+                    elsif .key$ = "legendPlacement"
+                        config_legendPlacement = number (.value$)
                     elsif .key$ = "showInnerBox"
                         config_showInnerBox = number (.value$)
                     elsif .key$ = "showTicks"
@@ -723,6 +859,20 @@ procedure emlLoadConfig
     if config_gridlineMode > 4
         config_gridlineMode = 1
     endif
+
+    # D136. Same refusal, same reason. legendPlacement has only ever had
+    # one encoding, so an in-range value is always readable as itself; a
+    # value that is not an option at all, from a hand-edited or truncated
+    # file, would seed a blank optionmenu and Praat then refuses the form.
+    # That is the dead end C1 is about, and it survives a restart because
+    # the bad value is on disk. Clamped to the default here, once, where
+    # the file is read, rather than at fourteen dialogs.
+    if config_legendPlacement < 1
+        config_legendPlacement = 1
+    endif
+    if config_legendPlacement > 5
+        config_legendPlacement = 1
+    endif
 endproc
 
 # ----------------------------------------------------------------------------
@@ -740,6 +890,7 @@ procedure emlSaveConfig
     appendFileLine: .configPath$, "width: ", config_width
     appendFileLine: .configPath$, "height: ", config_height
     appendFileLine: .configPath$, "gridlineMode: ", config_gridlineMode
+    appendFileLine: .configPath$, "legendPlacement: ", config_legendPlacement
     appendFileLine: .configPath$, "showInnerBox: ", config_showInnerBox
     appendFileLine: .configPath$, "showAxisNames: ", config_showAxisNames
     appendFileLine: .configPath$, "showTicks: ", config_showTicks
@@ -892,6 +1043,133 @@ endproc
 procedure emlCommitGridMode: .chosen
     @emlGridModeFromMenu: graph_type, .chosen
     config_gridlineMode = emlGridModeFromMenu.canonical
+endproc
+
+# ============================================================================
+# PROCEDURES — Legend placement: one canonical encoding, one registry
+# ============================================================================
+#
+# D136. `config_legendPlacement` is the ONE persisted legend key and it is
+# ALWAYS in this encoding, in memory and on disk, whichever type wrote it —
+#
+#     1 = Inside plot   2 = Right of plot   3 = Below plot
+#     4 = Separate figure   5 = None
+#
+# WHAT THE PLACEMENT MEANS, because it is the reason the setting exists: the
+# user's width and height describe the PLOT, and the plot is the same size in
+# all five. Placement 1 draws the legend inside the data area and the saved
+# image is the plot rectangle, exactly as before. Placements 2 and 3 put the
+# legend in its own rectangle beside or below the plot and the SAVED IMAGE
+# GROWS to cover it — a 6 x 4 request still yields a 6 x 4 plot and simply
+# exports a bigger picture. Placement 4 writes the legend as a second file.
+# Placement 5 draws none. The geometry is in @emlDrawLegend and the block
+# above @emlDrawLegendPanel in eml-graph-procedures.praat; nothing here
+# computes a rectangle.
+#
+# WHY THE GRIDLINE SHAPE, WHEN THERE IS ONLY ONE ENCODING. Read the
+# gridModeStyle[] block in the GRAPH TYPE REGISTRY: two encodings once shared
+# one persisted key and left a dropdown blank and unusable, on disk, surviving
+# a restart. The translation that fixed it is only half of what that pattern
+# provides. The other half — a registry every type must appear in, a named
+# refusal for one that does not, a clamp at the single point where the value
+# is read from disk, and ONE seed token and ONE commit token so a fifteenth
+# call site cannot be written differently — is what keeps a second encoding
+# from being invented here later. So the translation procedures exist and are
+# identities today. If a type ever needs a shorter menu, this is where it
+# goes, and no per-type section has to learn about it.
+
+# ----------------------------------------------------------------------------
+# @emlLegendPlacementStyle
+# Option count of one graph type's Legend placement menu, with a named
+# refusal for a type nobody registered. This is the guard that makes an
+# unregistered type unreachable at runtime; the file-scope loop next to
+# legendPlacementStyle[] makes it unreachable at include time.
+# Arguments:
+#   .type — internal graph type id (1..nGraphTypes)
+# Outputs:
+#   .style — 5 (offers the menu) or 0 (this type has no legend)
+# ----------------------------------------------------------------------------
+procedure emlLegendPlacementStyle: .type
+    .style = -1
+    if variableExists ("legendPlacementStyle[" + string$ (.type) + "]")
+        .style = legendPlacementStyle[.type]
+    endif
+    if .style <> 0 and .style <> 5
+        exitScript: "Graph type ", .type, " has no legend-placement",
+            ... " encoding. Add legendPlacementStyle[", .type, "] = 5 (the",
+            ... " type draws a legend: Inside plot / Right of plot / Below",
+            ... " plot / Separate figure / None) or = 0 (the type has no",
+            ... " legend) to the GRAPH TYPE REGISTRY in",
+            ... " eml-graphs-form.praat, next to gridModeStyle[", .type, "]."
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlLegendPlacementToMenu
+# Canonical value -> the option index of .type's own menu.
+# Arguments:
+#   .type      — internal graph type id
+#   .canonical — 1 Inside plot / 2 Right of plot / 3 Below plot /
+#                4 Separate figure / 5 None
+# Outputs:
+#   .menu — index valid for .type's menu (1..5)
+# ----------------------------------------------------------------------------
+procedure emlLegendPlacementToMenu: .type, .canonical
+    @emlLegendPlacementStyle: .type
+    .menu = .canonical
+    ; A config file hand-edited, or written by a build that predates this
+    ; key, can carry anything. Anything outside the canonical range becomes
+    ; the default rather than a blank dropdown.
+    if .menu < 1
+        .menu = 1
+    endif
+    if .menu > 5
+        .menu = 1
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlLegendPlacementFromMenu
+# The option index of .type's own menu -> canonical value.
+# Arguments:
+#   .type — internal graph type id
+#   .menu — what the user chose in that type's Legend placement menu
+# Outputs:
+#   .canonical — 1..5
+# ----------------------------------------------------------------------------
+procedure emlLegendPlacementFromMenu: .type, .menu
+    @emlLegendPlacementStyle: .type
+    .canonical = .menu
+    if .canonical < 1
+        .canonical = 1
+    endif
+    if .canonical > 5
+        .canonical = 1
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlSeedLegendPlacement
+# Seeds tmpLegendPlacement for the graph type currently being configured.
+# Reads the globals `graph_type` and `config_legendPlacement`; writes the
+# global `tmpLegendPlacement`. Deliberately argument-free so that the seed
+# sites are one identical token and another cannot be written differently.
+# ----------------------------------------------------------------------------
+procedure emlSeedLegendPlacement
+    @emlLegendPlacementToMenu: graph_type, config_legendPlacement
+    tmpLegendPlacement = emlLegendPlacementToMenu.menu
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlCommitLegendPlacement
+# Records the user's choice from the graph type currently being configured.
+# Reads the global `graph_type`; writes the global `config_legendPlacement`.
+# Arguments:
+#   .chosen — the menu index the form returned in `legend_placement`
+# ----------------------------------------------------------------------------
+procedure emlCommitLegendPlacement: .chosen
+    @emlLegendPlacementFromMenu: graph_type, .chosen
+    config_legendPlacement = emlLegendPlacementFromMenu.canonical
 endproc
 
 # ============================================================================
@@ -2137,6 +2415,7 @@ repeat
     # and the three clamps that used to sit in the per-type blocks are gone —
     # per-type sections do not have to know, which is what this comment says.
     @emlSeedGridMode
+    @emlSeedLegendPlacement
     tmpShowInnerBox = config_showInnerBox
     tmpShowAxisNames = config_showAxisNames
     tmpShowTicks = config_showTicks
@@ -3058,6 +3337,12 @@ repeat
                                 option: "Horizontal only"
                                 option: "Vertical only"
                                 option: "Off"
+                            optionmenu: "Legend placement", tmpLegendPlacement
+                                option: "Inside plot"
+                                option: "Right of plot"
+                                option: "Below plot"
+                                option: "Separate figure"
+                                option: "None"
                             optionmenu: "Output DPI", tmpDPI
                                 option: "300 dpi"
                                 option: "600 dpi"
@@ -3118,6 +3403,7 @@ repeat
                             tmpVMin$ = string$ (value_minimum)
                             tmpVMax$ = string$ (value_maximum)
                             tmpGridMode = gridline_mode
+                            tmpLegendPlacement = legend_placement
                             tmpShowInnerBox = show_inner_box
                             tmpShowAxisNames = show_axis_names
                             tmpShowTicks = show_ticks
@@ -3132,6 +3418,7 @@ repeat
                             tmpVMin$ = "0"
                             tmpVMax$ = "0"
                             @emlSeedGridMode
+                            @emlSeedLegendPlacement
                             tmpShowInnerBox = config_showInnerBox
                             tmpShowAxisNames = config_showAxisNames
                             tmpShowTicks = config_showTicks
@@ -3155,6 +3442,7 @@ repeat
                             tmpVMin$ = string$ (value_minimum)
                             tmpVMax$ = string$ (value_maximum)
                             tmpGridMode = gridline_mode
+                            tmpLegendPlacement = legend_placement
                             tmpShowInnerBox = show_inner_box
                             tmpShowAxisNames = show_axis_names
                             tmpShowTicks = show_ticks
@@ -3164,6 +3452,7 @@ repeat
                             tmpXLabel$ = x_axis_label$
                             tmpYLabel$ = y_axis_label$
                             @emlCommitGridMode: gridline_mode
+                            @emlCommitLegendPlacement: legend_placement
                             emlShowInnerBox = show_inner_box
                             emlFont$ = font$
                             config_showInnerBox = show_inner_box
@@ -4237,6 +4526,12 @@ repeat
                         option: "Horizontal only"
                         option: "Vertical only"
                         option: "Off"
+                    optionmenu: "Legend placement", tmpLegendPlacement
+                        option: "Inside plot"
+                        option: "Right of plot"
+                        option: "Below plot"
+                        option: "Separate figure"
+                        option: "None"
                     optionmenu: "Output DPI", tmpDPI
                         option: "300 dpi"
                         option: "600 dpi"
@@ -4311,6 +4606,7 @@ repeat
                     tmpYMin$ = "0"
                     tmpYMax$ = "0"
                     @emlSeedGridMode
+                    @emlSeedLegendPlacement
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -4353,6 +4649,7 @@ repeat
                     tmpYMin$ = string$ (y_minimum)
                     tmpYMax$ = string$ (y_maximum)
                     tmpGridMode = gridline_mode
+                    tmpLegendPlacement = legend_placement
                     tmpShowInnerBox = show_inner_box
                     tmpShowAxisNames = show_axis_names
                     tmpShowTicks = show_ticks
@@ -4362,6 +4659,7 @@ repeat
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
                     @emlCommitGridMode: gridline_mode
+                    @emlCommitLegendPlacement: legend_placement
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -4957,6 +5255,12 @@ repeat
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
+                    optionmenu: "Legend placement", tmpLegendPlacement
+                        option: "Inside plot"
+                        option: "Right of plot"
+                        option: "Below plot"
+                        option: "Separate figure"
+                        option: "None"
                     optionmenu: "Output DPI", tmpDPI
                         option: "300 dpi"
                         option: "600 dpi"
@@ -5029,6 +5333,7 @@ repeat
                     tmpVMax$ = "0"
                     tmpFreqMax$ = "0"
                     @emlSeedGridMode
+                    @emlSeedLegendPlacement
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -5087,6 +5392,7 @@ repeat
                     tmpVMax$ = string$ (value_maximum)
                     tmpFreqMax$ = string$ (frequency_maximum)
                     tmpGridMode = gridline_mode
+                    tmpLegendPlacement = legend_placement
                     tmpShowInnerBox = show_inner_box
                     tmpShowAxisNames = show_axis_names
                     tmpShowTicks = show_ticks
@@ -5096,6 +5402,7 @@ repeat
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
                     @emlCommitGridMode: gridline_mode
+                    @emlCommitLegendPlacement: legend_placement
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -5369,6 +5676,12 @@ repeat
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
+                    optionmenu: "Legend placement", tmpLegendPlacement
+                        option: "Inside plot"
+                        option: "Right of plot"
+                        option: "Below plot"
+                        option: "Separate figure"
+                        option: "None"
                     optionmenu: "Output DPI", tmpDPI
                         option: "300 dpi"
                         option: "600 dpi"
@@ -5443,6 +5756,7 @@ repeat
                     tmpVMin$ = "0"
                     tmpVMax$ = "0"
                     @emlSeedGridMode
+                    @emlSeedLegendPlacement
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -5487,6 +5801,7 @@ repeat
                     tmpVMin$ = string$ (value_minimum)
                     tmpVMax$ = string$ (value_maximum)
                     tmpGridMode = gridline_mode
+                    tmpLegendPlacement = legend_placement
                     tmpShowInnerBox = show_inner_box
                     tmpShowAxisNames = show_axis_names
                     tmpShowTicks = show_ticks
@@ -5496,6 +5811,7 @@ repeat
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
                     @emlCommitGridMode: gridline_mode
+                    @emlCommitLegendPlacement: legend_placement
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -5707,6 +6023,12 @@ repeat
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
+                    optionmenu: "Legend placement", tmpLegendPlacement
+                        option: "Inside plot"
+                        option: "Right of plot"
+                        option: "Below plot"
+                        option: "Separate figure"
+                        option: "None"
                     optionmenu: "Output DPI", tmpDPI
                         option: "300 dpi"
                         option: "600 dpi"
@@ -5781,6 +6103,7 @@ repeat
                     tmpVMin$ = "0"
                     tmpVMax$ = "0"
                     @emlSeedGridMode
+                    @emlSeedLegendPlacement
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -5823,6 +6146,7 @@ repeat
                     tmpVMin$ = string$ (value_minimum)
                     tmpVMax$ = string$ (value_maximum)
                     tmpGridMode = gridline_mode
+                    tmpLegendPlacement = legend_placement
                     tmpShowInnerBox = show_inner_box
                     tmpShowAxisNames = show_axis_names
                     tmpShowTicks = show_ticks
@@ -5832,6 +6156,7 @@ repeat
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
                     @emlCommitGridMode: gridline_mode
+                    @emlCommitLegendPlacement: legend_placement
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -6043,6 +6368,12 @@ repeat
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
+                    optionmenu: "Legend placement", tmpLegendPlacement
+                        option: "Inside plot"
+                        option: "Right of plot"
+                        option: "Below plot"
+                        option: "Separate figure"
+                        option: "None"
                     optionmenu: "Output DPI", tmpDPI
                         option: "300 dpi"
                         option: "600 dpi"
@@ -6092,6 +6423,7 @@ repeat
                     tmpVMin$ = "0"
                     tmpVMax$ = "0"
                     @emlSeedGridMode
+                    @emlSeedLegendPlacement
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -6109,6 +6441,7 @@ repeat
                     tmpVMin$ = string$ (value_minimum)
                     tmpVMax$ = string$ (value_maximum)
                     tmpGridMode = gridline_mode
+                    tmpLegendPlacement = legend_placement
                     tmpShowInnerBox = show_inner_box
                     tmpShowAxisNames = show_axis_names
                     tmpShowTicks = show_ticks
@@ -6118,6 +6451,7 @@ repeat
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
                     @emlCommitGridMode: gridline_mode
+                    @emlCommitLegendPlacement: legend_placement
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -6491,6 +6825,28 @@ repeat
 
     Erase all
     @emlResetDrawnExtent
+
+    # D136. Hand the drawing layer the placement the user chose. This is the
+    # ONLY write to emlLegendPlacement in the plugin, and it is the boundary
+    # between the persisted encoding (config_legendPlacement, canonical, one
+    # meaning for every type) and the drawing layer, which reads the global
+    # through variableExists and defaults to 1. Every caller that predates
+    # this — the seven @emlDrawLegend sites in eml-draw-procedures.praat,
+    # every stress case, every PraatGen companion — sets nothing and draws
+    # the inside-plot corner box it has always drawn.
+    #
+    # The user's figure_width and figure_height are NOT adjusted here, and
+    # must not be: they describe the PLOT, and a legend that took a share of
+    # them would make "6 x 4" and "square" mean whatever the legend happened
+    # to need. Placements 2 and 3 grow the SAVED IMAGE instead, by reporting
+    # the legend rectangle to @emlExpandDrawnExtent from inside
+    # @emlDrawLegend. See EXPORT GEOMETRY above @emlDrawLegendPanel.
+    emlLegendPlacement = config_legendPlacement
+    # Cleared before the draw as well as inside @emlDrawLegend, because a
+    # figure whose type has no legend at all never reaches that procedure and
+    # would otherwise leave the previous figure's parked rectangle armed.
+    emlLegendSepActive = 0
+
     Select outer viewport: 0, figure_width, 0, totalCanvasHeight
 
     if graph_type = 1
@@ -6695,8 +7051,48 @@ repeat
                 appendInfoLine: ""
                 appendInfoLine: "Saved to: " + outputPath$
 
+                # ---------------------------------------------------------
+                # D136, LEGEND PLACEMENT 4 — THE SECOND FILE.
+                #
+                # The figure has just been saved at its own extent, because
+                # @emlDrawLegend deliberately did NOT report the parked
+                # legend to @emlExpandDrawnExtent. The legend is nonetheless
+                # already ON the picture, 24-odd inches below everything
+                # else, so writing it is a matter of selecting that rectangle
+                # and saving again — no Erase, no redraw, and the figure the
+                # user is looking at survives for a second Save.
+                #
+                # Same folder, same base name, same DPI, same non-destructive
+                # uniquing as the figure: <name>_legend.png beside
+                # <name>.png. No new output-path convention is invented here.
+                # ---------------------------------------------------------
+                legendSaved$ = ""
+                if emlLegendSepActive = 1
+                    legendPath$ = output_folder$ + "/" + file_name$
+                    ... + "_legend.png"
+                    if fileReadable (legendPath$)
+                        @emlGenerateUniquePath: legendPath$
+                        legendPath$ = emlGenerateUniquePath.result$
+                    endif
+                    Select outer viewport: emlLegendSepX0, emlLegendSepX1,
+                    ... emlLegendSepY0, emlLegendSepY1
+                    if output_DPI = 1
+                        Save as 300-dpi PNG file: legendPath$
+                    else
+                        Save as 600-dpi PNG file: legendPath$
+                    endif
+                    # Put the figure's extent back, so a second Save from
+                    # this same dialog writes the figure and not the legend.
+                    @emlAssertFullViewport
+                    legendSaved$ = legendPath$
+                    appendInfoLine: "Legend saved to: " + legendPath$
+                endif
+
                 beginPause: "Save Complete"
                     comment: "Saved to: " + outputPath$
+                    if legendSaved$ <> ""
+                        comment: "Legend saved to: " + legendSaved$
+                    endif
                 endPause: "OK", 1, 0
             endif
             # Go Back or save complete — loop continues to main dialog

@@ -4,8 +4,71 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # License: GPL-3.0-or-later
-# Version: 3.27
+# Version: 3.28
 # Date: 8 August 2026
+#
+# v3.28: THE LEGEND STOPS BILLING ITS RENT TO THE PLOT (D136), and D135 —
+#        the label wider than the frame — closes with it.
+#
+#        THE OBJECTION. A user types 6 x 4 and means the DATA AREA. Until
+#        now the only place a legend could go was inside the plot, so the
+#        only way to give a legend room was to take room from the data, and
+#        "make my figure square" became unsatisfiable — a square canvas with
+#        a legend carved out of it is not a square plot. The answer is that
+#        the legend moves OUT and the EXPORT grows, rather than the plot
+#        shrinking IN. The plot rectangle is now identical in all five
+#        placements; what changes is how much of the picture is saved.
+#
+#        NEW: @emlDrawLegendPanel and @emlMeasureLegendPanel, a renderer that
+#        is handed a rectangle in inches and a measurer that reports what
+#        would fit in one. Both work in a viewport whose world unit is one
+#        inch, both set the font size BEFORE selecting it, and the renderer
+#        lays itself out by calling the measurer, so the two cannot disagree.
+#        The renderer MUST NOT draw outside its rectangle and MUST NOT call
+#        @emlExpandDrawnExtent — the caller reports, which is what lets one
+#        procedure serve a corner box (must not grow the export) and a side
+#        panel (must). Also new: @emlEllipsizeToWidth.
+#
+#        @emlDrawLegend keeps its signature and every behaviour of an entry —
+#        multi-column layout, "+N more" truncation with its Info-window NOTE,
+#        the swatch drawn as the mark, the viewport re-selected at legend
+#        font size — and becomes a placement dispatcher over the new panel.
+#        Placement is the global emlLegendPlacement, read through
+#        variableExists and defaulting to 1, so every existing caller (the
+#        seven sites in eml-draw-procedures.praat, every stress case, every
+#        PraatGen companion) draws exactly what it drew before.
+#            1 Inside plot (DEFAULT) — export = plot rectangle, unchanged
+#            2 Right of plot         — caller reports; export widens
+#            3 Below plot            — caller reports; export heightens
+#            4 Separate figure       — parked off-figure, saved as a 2nd file
+#            5 None
+#        The encoding, its registry and its dialog are in eml-graphs-form.
+#
+#        D135 CLOSED. "NOT HANDLED HERE: a single label wide enough that one
+#        column does not fit the frame width" was true of every revision up
+#        to v3.27, and it was structural: a legend that computed its own box
+#        had nothing to clamp against. A legend that is GIVEN its bounds
+#        does. When one column of full-width labels will not fit, the column
+#        is clamped to the width that IS available and @emlEllipsizeToWidth
+#        shortens each label to it, so the label comes out as
+#        "Extremely long gro..." inside the box instead of running off the
+#        canvas — and a NOTE says so, because a silent ellipsis is the same
+#        defect as a silent truncation.
+#
+#        @emlMeasureGraphLayout's legend estimate is no longer dead OR wrong.
+#        It now delegates to @emlMeasureLegendPanel instead of carrying a
+#        single-column stack measured at bodySize (the legend is drawn at
+#        annotSize at all seven call sites; measuring at the wrong size
+#        inflates every width — 0.4967" vs 3.6229" for "Group label",
+#        measured 8 Aug 2026 on Praat 6.6.30). New alongside the two
+#        existing globals: emlLayout_legendCols / Rows / Fits.
+#
+#        One latent defect fixed in passing: the alpha-sprite legend
+#        background called `Insert picture from file:`, which leaves the
+#        viewport set to the image's bounding box, and the old code restored
+#        the viewport only at the END of the procedure — after every swatch
+#        and label had been drawn through it. Restored immediately now. Not
+#        observable on Linux, where @emlInitAlphaSprites is gated off.
 #
 # v3.27: COMMENTS ONLY — no executable line changed. Five statements the code
 #        or the checks contradict, corrected.
@@ -472,6 +535,16 @@ procedure emlInitDrawingDefaults
     # fractions of something that has none. A procedure that sets it is
     # responsible for clearing it before returning.
     emlYAxisMinStep = 0
+    # Legend placement (D136). 1 Inside plot / 2 Right of plot / 3 Below plot
+    # / 4 Separate figure / 5 None. 1 is the default everywhere, and it is
+    # the placement whose exported extent equals the plot rectangle — a
+    # standalone script that sets nothing gets the figure it has always got.
+    # The plugin does not call this procedure; it sets emlLegendPlacement
+    # from config_legendPlacement in eml-graphs-form.praat.
+    emlLegendPlacement = 1
+    # The parked-legend handshake for placement 4, cleared here so a save
+    # path can test it without variableExists.
+    emlLegendSepActive = 0
     # Axis display
     emlShowInnerBox = 1
     emlShowAxisNameX = 1
@@ -3426,431 +3499,1192 @@ procedure emlCheckPlausibility: .value, .lowerBound, .upperBound, .measureName$,
     endif
 endproc
 
+# ============================================================================
+# THE LEGEND PANEL — a legend that is handed a rectangle and stays inside it
+# ============================================================================
+#
+# WHY THIS EXISTS (D136, author's ruling 8 August 2026).
+#
+# The user types 6 x 4 and means it. Until this revision the only place a
+# legend could go was INSIDE the plot, so the only way to give a legend more
+# room was to take room away from the data. "Make my figure square" was then
+# unsatisfiable: a square canvas with a legend carved out of it is not a
+# square plot. The dimensions the user types describe the DATA AREA, and
+# furniture must not be billed to it.
+#
+# So the legend moves OUT and the EXPORT grows to cover it, rather than the
+# plot shrinking IN. No new save path was invented for that:
+# @emlAssertFullViewport already selects the bounding box of everything
+# reported to @emlExpandDrawnExtent, and that is exactly the mechanism this
+# needs.
+#
+# ---------------------------------------------------------------------------
+# EXPORT GEOMETRY — READ THIS BEFORE TOUCHING ANY PLACEMENT
+# ---------------------------------------------------------------------------
+# THE PLOT RECTANGLE IS IDENTICAL IN ALL FIVE PLACEMENTS. It is
+# @emlSetAdaptiveTheme's outer viewport, sized from the width and height the
+# user asked for; nothing below ever moves it, shrinks it, or re-derives it.
+# What the placement changes is how much of the picture the SAVED IMAGE
+# covers:
+#
+#   1 Inside plot      Legend inside the data area, auto-corner. The caller
+#                      reports NOTHING to @emlExpandDrawnExtent, so the
+#                      exported extent equals the plot rectangle. This is
+#                      what the plugin has always drawn, and it is the
+#                      DEFAULT — an existing script's figure is unchanged.
+#   2 Right of plot    Legend in its own rectangle beside the plot. The
+#                      CALLER reports that rectangle, so
+#                      @emlAssertFullViewport widens the saved image. A 6 x 4
+#                      request still yields a 6 x 4 PLOT; the PNG simply
+#                      comes out wider than 6 inches.
+#   3 Below plot       The same, in height instead of width.
+#   4 Separate figure  Legend drawn on its own parked canvas and NOT
+#                      reported, so the figure exports at its own extent; the
+#                      save path then writes the legend as a SECOND FILE
+#                      beside the first (<name>_legend.png).
+#   5 None             Nothing drawn, nothing reported.
+#
+# THAT IS WHY @emlDrawLegendPanel MUST NOT CALL @emlExpandDrawnExtent. One
+# renderer serves a corner box that must not grow the export and a side panel
+# that must; only the caller knows which it is asking for. Moving the report
+# into the renderer would make placements 1 and 4 impossible to express.
+#
+# WHY THE RENDERER TAKES A RECTANGLE. Before this, the legend computed its
+# own box from the axes and drew wherever that landed — which is how a label
+# wider than the frame came to overhang the picture (D135). A renderer that
+# is GIVEN its bounds can clamp to them, and this one does: every label is
+# measured, and one that will not fit its column is shortened with an
+# ellipsis rather than drawn past the edge. Containment stopped being a thing
+# the caller has to hope for and became arithmetic the renderer performs.
+#
+# WHAT IS MEASURED, AND WHERE. Both procedures below select the legend's OWN
+# rectangle with `Axes: 0, w, 0, h` over a w x h inch rectangle, so one world
+# unit is one inch and `Text width (world coordinates)` returns inches
+# directly. Font size is set BEFORE `Select inner viewport` at every site.
+# That is not a style rule: Praat converts the inner rectangle to an outer
+# one using the font size IN FORCE AT THE TIME OF THE CALL and then maps
+# world coordinates back through the font size in force LATER, so measuring
+# at a font size other than the one that was set when the viewport was
+# selected inflates every width. Measured 8 Aug 2026 on Praat 6.6.30: the
+# string "Group label" measures 0.4967" when the viewport is selected at 7 pt
+# and read at 7 pt, and 3.6229" when the viewport is selected at 7 pt and
+# read at 20 pt — a factor of 2.55 on a font-size ratio of 2.86. That is the
+# defect in @emlMeasureGraphLayout's legend estimate, which measures at
+# bodySize the box that @emlDrawLegend draws at annotSize.
+
+# ----------------------------------------------------------------------------
+# @emlEllipsizeToWidth
+# Shortens .text$ until it renders no wider than .maxWidth, appending "..."
+# whenever anything was removed.
+#
+# REQUIRES a viewport already selected whose world units are inches (the
+# legend panel's own `Axes: 0, w, 0, h`), and the font size already set to
+# the size the text will be drawn at. Width comes from
+# `Text width (world coordinates)`, so this is the real rendered width of the
+# real string in the real font, not a character-count estimate.
+#
+# Arguments:
+#   .text$     — the label, ALREADY passed through @emlSanitizeLabel
+#   .maxWidth  — the budget, in world units (= inches)
+# Outputs:
+#   .result$   — the label, possibly shortened; "" if not even "..." fits
+#   .didClip   — 1 if anything was removed
+#
+# THE TRAILING-BACKSLASH GUARD IS NOT DECORATION. @emlSanitizeLabel turns a
+# user's "%" into "\% ", so a cut can land between the backslash and the
+# character it escapes. A dangling "\" at the end of a Praat text string
+# escapes what follows it and the label draws as garbage, so one more
+# character comes off whenever a cut leaves one.
+# ----------------------------------------------------------------------------
+procedure emlEllipsizeToWidth: .text$, .maxWidth
+    .result$ = .text$
+    .didClip = 0
+    .w = Text width (world coordinates): .result$
+    if .w > .maxWidth
+        .didClip = 1
+        .n = length (.text$)
+        .placed = 0
+        while .placed = 0
+            if .n < 1
+                .result$ = ""
+                .placed = 1
+            else
+                .cand$ = left$ (.text$, .n)
+                ; `and` does not short-circuit in Praat, so both operands
+                ; have to be safe to evaluate at .n = 0. right$ ("", 1) is
+                ; "", which is simply not a backslash, so they are.
+                while .n > 0 and right$ (.cand$, 1) = "\"
+                    .n = .n - 1
+                    .cand$ = left$ (.text$, .n)
+                endwhile
+                .cand$ = .cand$ + "..."
+                .w = Text width (world coordinates): .cand$
+                if .w <= .maxWidth
+                    .result$ = .cand$
+                    .placed = 1
+                else
+                    .n = .n - 1
+                endif
+            endif
+        endwhile
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlMeasureLegendPanel
+# Lays the legend out inside a .maxWidth x .maxHeight inch rectangle and
+# reports what it would consume. DRAWS NOTHING.
+#
+# This is the procedure @emlMeasureGraphLayout's legend estimate should
+# always have been. That estimate measures at bodySize a box that is drawn at
+# annotSize, and models one column where the drawing has folded into several
+# since D123 — so it was both wrong and, as its own header says, unread. This
+# one measures at the font size the legend is actually drawn at, in the
+# legend's own viewport, using the same layout arithmetic the renderer uses,
+# because the renderer calls THIS to lay itself out. The two cannot disagree.
+#
+# Arguments:
+#   .maxWidth   — width budget, inches
+#   .maxHeight  — height budget, inches
+#   .fontSize   — the size the legend will be DRAWN at (typically annotSize)
+#
+# Outputs (the contract):
+#   .width   — inches the laid-out legend consumes, <= .maxWidth
+#   .height  — inches it consumes, <= .maxHeight
+#   .cols    — columns chosen
+#   .rows    — rows per column
+#   .fits    — 1 when every entry is shown at its full label inside the
+#              budget; 0 when anything was dropped, ellipsized, or the
+#              rectangle could not hold even one row
+#
+# Further outputs, for @emlDrawLegendPanel and for fixtures:
+#   .cells      — cells to draw, including the "+N more" cell if any
+#   .shown      — entries drawn in full
+#   .hidden     — entries folded into "+N more"
+#   .capacity   — .rowsMax x .colsMax, the rectangle's room
+#   .truncated  — 1 if any entry was dropped
+#   .clamped    — 1 if any label was ellipsized to fit the width
+#   .label$[]   — the (possibly ellipsized) labels, parallel to legendLabel$[]
+#   .cellW[], .colTextW[], .colOff[], .swatchSide, .lineH, .xPad, .yPad,
+#   .colGap, .moreLabel$, .patterned, .markered, .markerLine
+#
+# READS THE EXISTING LEGEND ENTRY GLOBALS AND ONLY THOSE — legendN,
+# legendLabel$[], legendColor$[], legendFill$[], legendPattern[],
+# legendMarker[], legendPatterned, legendMarkered, legendMarkerLine. How
+# entries are populated is unchanged and no caller has to be touched.
+#
+# EMITS NOTHING TO THE INFO WINDOW. It is called repeatedly while a caller
+# searches for a band height, and a NOTE per probe would be noise. The NOTE
+# about dropped entries belongs to @emlDrawLegendPanel, which is the
+# procedure that actually drops them.
+#
+# Restores `Font size: bodySize` and the panel viewport before returning,
+# the same invariant @emlMeasureGraphLayout keeps.
+# ----------------------------------------------------------------------------
+procedure emlMeasureLegendPanel: .maxWidth, .maxHeight, .fontSize
+    .width = 0
+    .height = 0
+    .cols = 0
+    .rows = 0
+    .fits = 0
+    .cells = 0
+    .shown = 0
+    .hidden = 0
+    .capacity = 0
+    .rowsMax = 0
+    .colsMax = 0
+    .truncated = 0
+    .clamped = 0
+    .moreLabel$ = ""
+    .patterned = 0
+    .markered = 0
+    .markerLine = 0
+    .swatchSide = 0
+    .lineH = 0
+    .xPad = 0
+    .yPad = 0
+    .colGap = 0
+
+    .n = 0
+    if variableExists ("legendN")
+        .n = legendN
+    endif
+    if .n = undefined
+        .n = 0
+    endif
+
+    ; Three independent refusals, each its own test — `and` does not
+    ; short-circuit, so chaining them would evaluate all three anyway and
+    ; read as though it did not.
+    .go = 1
+    if .n < 1
+        .go = 0
+    endif
+    if .maxWidth < 0.05
+        .go = 0
+    endif
+    if .maxHeight < 0.05
+        .go = 0
+    endif
+
+    if .go = 1
+        ; --- swatch style, read exactly as @emlDrawLegend has always read it
+        if variableExists ("legendPatterned")
+            if legendPatterned = 1
+                .patterned = 1
+            endif
+        endif
+        if variableExists ("legendMarkered")
+            if legendMarkered = 1
+                .markered = 1
+            endif
+        endif
+        if .markered = 1
+            if variableExists ("legendMarkerLine")
+                if legendMarkerLine = 1
+                    .markerLine = 1
+                endif
+            endif
+        endif
+
+        .fontInch = .fontSize / 72
+        .sf = emlSetAdaptiveTheme.spacingFactor
+        .lineH = .fontInch * 1.4
+        .xPad = .fontInch * (0.3 + 0.3 * .sf)
+        .yPad = .fontInch * (0.3 + 0.2 * .sf)
+        ; Patterned swatches are drawn larger: three hatch stripes or two dot
+        ; rows do not survive in a 0.8-em square. Markered ones larger again:
+        ; a triangle in a 0.8-em cell is four pixels at a 7 pt legend.
+        .swatchSide = .fontInch * 0.8
+        if .patterned = 1
+            .swatchSide = .fontInch * 1.25
+        endif
+        if .markered = 1
+            .swatchSide = .fontInch * 1.4
+        endif
+        ; One xPad ON TOP OF the xPad that already trails every column, so
+        ; the eye reads two columns rather than one wide one.
+        .colGap = .xPad
+
+        ; --- MEASURE AT THE REAL FONT SIZE, IN A ONE-WORLD-UNIT-PER-INCH
+        ; --- VIEWPORT THE SIZE OF THE BUDGET. Font size FIRST; see the
+        ; --- section header for the 2.55x error the other order produces.
+        Font size: .fontSize
+        Select inner viewport: 0, .maxWidth, 0, .maxHeight
+        Axes: 0, .maxWidth, 0, .maxHeight
+
+        ; Per entry, because a multi-column box sizes each column to its own
+        ; widest label. The 1.05 safety margin is applied per entry, before
+        ; the max rather than after, which is what leaves a one-column box
+        ; bit-identical to the geometry v1.25 drew.
+        .maxLabelW = 0
+        for .i from 1 to .n
+            .label$[.i] = legendLabel$[.i]
+            .w = Text width (world coordinates): .label$[.i]
+            .cellW[.i] = .w * 1.05
+            if .cellW[.i] > .maxLabelW
+                .maxLabelW = .cellW[.i]
+            endif
+        endfor
+
+        ; THE EPSILON IS NOT DECORATION, AND IT IS NOT A FUDGE FACTOR.
+        ;
+        ; A caller that sizes a budget to hold exactly K rows computes
+        ; 2 * yPad + K * lineH, hands that in as a rectangle, and this line
+        ; divides it back out — so the quotient is mathematically the whole
+        ; number K and floor() is being asked to stand on a boundary. The
+        ; rectangle arrives as .y1 - .y0, a difference of two picture
+        ; coordinates several inches from the origin, so it is a few units in
+        ; the last place BELOW the value the caller computed, the quotient is
+        ; K - 1e-16, and floor() returns K - 1. One whole row of the legend
+        ; disappears and the entries in it are reported as truncated.
+        ;
+        ; Observed, not theorised: placement 3's band search settled on three
+        ; rows for a twelve-entry legend on a 5 x 5 figure and the panel then
+        ; laid out two, dropping three entries into "+3 more" (8 Aug 2026).
+        ;
+        ; 1e-9 of a row is 2.5e-7 pixels at 300 dpi. It can only promote a
+        ; quotient already within a billionth of a whole number, which is
+        ; never a row that genuinely does not fit.
+        .epsFit = 0.000000001
+        .rowsMax = floor ((.maxHeight - 2 * .yPad) / .lineH + .epsFit)
+        if .rowsMax < 0
+            .rowsMax = 0
+        endif
+
+        ; The overflow cell's width has to be known BEFORE capacity is, or
+        ; the cell that announces the truncation could be the thing that
+        ; overflows. Measured with .n in it, which has at least as many
+        ; digits as any hidden count, so it is an upper bound on the notice.
+        .moreLabel$ = "+" + string$ (.n) + " more"
+        .w = Text width (world coordinates): .moreLabel$
+        .unitW = .w * 1.05
+        if .maxLabelW > .unitW
+            .unitW = .maxLabelW
+        endif
+
+        ; Same boundary, same epsilon — see .rowsMax above.
+        .colsMax = floor ((.maxWidth - 2 * .xPad + .colGap)
+        ... / (.swatchSide + .xPad + .unitW + .colGap) + .epsFit)
+
+        if .colsMax < 1
+            ; D135. One column of full-width labels does not fit the
+            ; rectangle. This is where the legend used to give up and draw
+            ; past the edge — the box was laid out AS THOUGH one column
+            ; fitted and the overhang was left to the picture.
+            ;
+            ; A renderer that is given its bounds does not have that option.
+            ; The column is clamped to the width that IS available and every
+            ; label is ellipsized to it, so a label wider than the whole
+            ; frame comes out as "Extremely long gro..." inside the box
+            ; instead of running off the canvas. The ellipsis is visible, and
+            ; @emlDrawLegendPanel says so in the Info window, so nothing is
+            ; shortened in silence either.
+            .colsMax = 1
+            .clamped = 1
+            .budget = .maxWidth - 3 * .xPad - .swatchSide
+            if .budget < 0
+                .budget = 0
+            endif
+            ; Ellipsize against the budget BEFORE the 1.05 margin, so that
+            ; cellW (which carries the margin) still lands inside it.
+            .textBudget = .budget / 1.05
+            .maxLabelW = 0
+            for .i from 1 to .n
+                @emlEllipsizeToWidth: .label$[.i], .textBudget
+                .label$[.i] = emlEllipsizeToWidth.result$
+                .w = Text width (world coordinates): .label$[.i]
+                .cellW[.i] = .w * 1.05
+                if .cellW[.i] > .maxLabelW
+                    .maxLabelW = .cellW[.i]
+                endif
+            endfor
+            @emlEllipsizeToWidth: .moreLabel$, .textBudget
+            .moreLabel$ = emlEllipsizeToWidth.result$
+            .w = Text width (world coordinates): .moreLabel$
+            .unitW = .w * 1.05
+            if .maxLabelW > .unitW
+                .unitW = .maxLabelW
+            endif
+        endif
+
+        .capacity = .rowsMax * .colsMax
+        .cells = .n
+        .shown = .n
+        .hidden = 0
+
+        if .rowsMax < 1
+            ; Not one row fits. Drawing a row anyway is what the old code
+            ; did (rowsMax was floored to 1) and it is drawing outside the
+            ; rectangle, which is the one thing this renderer may not do.
+            .cells = 0
+            .shown = 0
+            .hidden = .n
+            .truncated = 1
+        elsif .n > .capacity
+            ; TRUNCATION IS THE LAST RESORT AND IT IS NEVER SILENT. The last
+            ; cell becomes "+N more" ON THE FIGURE and @emlDrawLegendPanel
+            ; puts a NOTE naming both counts in the Info window.
+            .shown = .capacity - 1
+            if .shown < 0
+                .shown = 0
+            endif
+            .hidden = .n - .shown
+            .cells = .shown + 1
+            .truncated = 1
+            .moreLabel$ = "+" + string$ (.hidden) + " more"
+            if .clamped = 1
+                @emlEllipsizeToWidth: .moreLabel$, .textBudget
+                .moreLabel$ = emlEllipsizeToWidth.result$
+            endif
+            .w = Text width (world coordinates): .moreLabel$
+            .cellW[.cells] = .w * 1.05
+        endif
+
+        if .cells > 0
+            ; Fewest columns that fit the height, so the box stays narrow.
+            ; .cells <= .rowsMax x .colsMax by construction, so .cols never
+            ; exceeds .colsMax and the width below cannot exceed .maxWidth.
+            ; A caller that wants a WIDE, SHORT panel (placement 3, below the
+            ; plot) gets one by handing in a short .maxHeight rather than by
+            ; asking for a different algorithm.
+            .cols = ceiling (.cells / .rowsMax)
+            if .cols < 1
+                .cols = 1
+            endif
+            if .cols > .colsMax
+                .cols = .colsMax
+            endif
+            .rows = ceiling (.cells / .cols)
+            if .rows > .rowsMax
+                .rows = .rowsMax
+            endif
+            if .cols * .rows < .cells
+                ; Belt and braces. The arithmetic above says this cannot
+                ; happen; if it ever does, a cell without a slot would be
+                ; drawn on top of another one, so the count is cut to the
+                ; slots that exist and the truncation is reported.
+                .cells = .cols * .rows
+                .shown = .cells - 1
+                if .shown < 0
+                    .shown = 0
+                endif
+                .hidden = .n - .shown
+                .truncated = 1
+            endif
+
+            .width = 2 * .xPad + (.cols - 1) * .colGap
+            .off = .xPad
+            for .c from 1 to .cols
+                .colTextW[.c] = 0
+                for .r from 1 to .rows
+                    ; Column-major fill: cell k is in column
+                    ; (k-1) div rows + 1, which keeps the palette's hue order
+                    ; running top-to-bottom down each column.
+                    .k = (.c - 1) * .rows + .r
+                    if .k <= .cells
+                        if .cellW[.k] > .colTextW[.c]
+                            .colTextW[.c] = .cellW[.k]
+                        endif
+                    endif
+                endfor
+                .colOff[.c] = .off
+                .off = .off + .swatchSide + .xPad + .colTextW[.c] + .colGap
+                .width = .width + .swatchSide + .xPad + .colTextW[.c]
+            endfor
+            .height = 2 * .yPad + .rows * .lineH
+        endif
+
+        .fits = 1
+        if .truncated = 1
+            .fits = 0
+        endif
+        if .clamped = 1
+            .fits = 0
+        endif
+        if .width > .maxWidth
+            .fits = 0
+        endif
+        if .height > .maxHeight
+            .fits = 0
+        endif
+    endif
+
+    ; Restore the invariant the rest of the figure runs on. Font size BEFORE
+    ; the viewport, for the reason in the section header.
+    Font size: emlSetAdaptiveTheme.bodySize
+    @emlSetPanelViewport
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlDrawLegendPanel
+# Draws the legend into EXACTLY the rectangle it is handed.
+#
+# Arguments (inches, Praat picture coordinates — x rightward and y DOWNWARD
+# from the top-left of the picture, the same system @emlSetAdaptiveTheme's
+# outerLeft/outerRight/outerTop/outerBottom are in):
+#   .x0, .x1   — left and right edge
+#   .y0, .y1   — top and bottom edge
+#   .fontSize  — the size legend text is drawn at
+#
+# Outputs (the contract):
+#   .usedWidth   — inches actually consumed, <= .x1 - .x0
+#   .usedHeight  — inches actually consumed, <= .y1 - .y0
+#   .shown       — entries drawn in full
+#   .truncated   — 1 if any entry was dropped
+# and, passed through from the layout: .cells, .cols, .rows, .hidden,
+# .capacity, .clamped; plus .usedX0/.usedX1/.usedY0/.usedY1, the consumed
+# sub-rectangle in the SAME picture inches the arguments are in, which is
+# what a caller reports to @emlExpandDrawnExtent.
+#
+# THE RECTANGLE IS A BUDGET, NOT A BOX. Hand in the space the legend is
+# ALLOWED to occupy; the procedure lays out inside it, consumes what it needs
+# and reports what it took. Do NOT hand in a rectangle you obtained by
+# measuring first: the layout sizes each column to ITS OWN widest label while
+# the column COUNT is derived from the widest label overall, so a rectangle
+# shrunk to a previous measurement can fit fewer columns than that
+# measurement chose. Measured 8 Aug 2026 on the 24-entry fixture
+# harness/stress_cases/legend_cap.praat: measuring 6 x 4's data area gives
+# two columns of twelve, and re-measuring inside the resulting box gives one
+# column of eleven with fourteen entries dropped. Hence one measurement, of
+# the budget, here — and hence .usedWidth/.usedHeight, so a caller that needs
+# the real size can have it without measuring again.
+#
+# CONTENT IS ANCHORED TOP-LEFT unless the global emlLegendPanelAnchor$ says
+# otherwise ("top-left" default, "top-right", "bottom-left", "bottom-right").
+# That global is how placement 1 reaches a corner of the data area while
+# still handing in the whole data area as its budget; every other placement
+# leaves it at the default. It is read through variableExists, so a caller
+# that has never heard of it gets top-left.
+#
+# MUST NOT DRAW OUTSIDE THE RECTANGLE. That is the load-bearing constraint of
+# this whole design and it is what makes D135 fixable rather than structural:
+# the layout clamps the width, the ellipsis clamps the labels, the row count
+# clamps the height, and Praat's own viewport clipping is the backstop. A
+# change here that lets ink escape the rectangle re-opens the overhang for
+# every placement at once.
+#
+# MUST NOT CALL @emlExpandDrawnExtent. See EXPORT GEOMETRY in the section
+# header: an inside-plot legend must not grow the saved image and a side
+# panel must, and only the caller knows which one it asked for. The caller
+# reports.
+#
+# Reads the existing legend entry globals; does not write any of them.
+#
+# Leaves Colour Black, Line width 1.0 and `Font size: bodySize`. Leaves the
+# VIEWPORT on the panel rectangle — a caller that will draw more of the
+# figure afterwards must re-select its own, exactly as @emlDrawLegend does.
+# ----------------------------------------------------------------------------
+procedure emlDrawLegendPanel: .x0, .x1, .y0, .y1, .fontSize
+    .w = .x1 - .x0
+    .h = .y1 - .y0
+
+    @emlMeasureLegendPanel: .w, .h, .fontSize
+    .usedWidth = emlMeasureLegendPanel.width
+    .usedHeight = emlMeasureLegendPanel.height
+    .shown = emlMeasureLegendPanel.shown
+    .truncated = emlMeasureLegendPanel.truncated
+    .hidden = emlMeasureLegendPanel.hidden
+    .cells = emlMeasureLegendPanel.cells
+    .cols = emlMeasureLegendPanel.cols
+    .rows = emlMeasureLegendPanel.rows
+    .capacity = emlMeasureLegendPanel.capacity
+    .clamped = emlMeasureLegendPanel.clamped
+
+    ; Where the consumed box sits inside the budget. Anchoring is the only
+    ; thing the anchor global changes; the layout above is already decided.
+    .anchor$ = "top-left"
+    if variableExists ("emlLegendPanelAnchor$")
+        .anchor$ = emlLegendPanelAnchor$
+    endif
+    .usedX0 = .x0
+    if .anchor$ = "top-right"
+        .usedX0 = .x1 - .usedWidth
+    endif
+    if .anchor$ = "bottom-right"
+        .usedX0 = .x1 - .usedWidth
+    endif
+    .usedY0 = .y0
+    if .anchor$ = "bottom-left"
+        .usedY0 = .y1 - .usedHeight
+    endif
+    if .anchor$ = "bottom-right"
+        .usedY0 = .y1 - .usedHeight
+    endif
+    .usedX1 = .usedX0 + .usedWidth
+    .usedY1 = .usedY0 + .usedHeight
+
+    if .cells > 0
+        .patterned = emlMeasureLegendPanel.patterned
+        .markered = emlMeasureLegendPanel.markered
+        .markerLine = emlMeasureLegendPanel.markerLine
+        .swatchSide = emlMeasureLegendPanel.swatchSide
+        .lineH = emlMeasureLegendPanel.lineH
+        .xPad = emlMeasureLegendPanel.xPad
+        .yPad = emlMeasureLegendPanel.yPad
+
+        ; Font size FIRST, then the viewport. One world unit is one inch
+        ; inside it, which is what lets every number below be an inch.
+        Font size: .fontSize
+        Select inner viewport: .x0, .x1, .y0, .y1
+        Axes: 0, .w, 0, .h
+
+        ; The pattern and marker scale for THIS viewport. @emlSetPatternScale
+        ; cannot be used: it derives world-per-inch from @emlSetAdaptiveTheme's
+        ; INNER viewport, which is the plot's rectangle and not this one. Here
+        ; world units are inches by construction, so the scale is exactly 1 on
+        ; both axes — which also makes the swatch square without a correction.
+        ; The panel's own scale is restored on the way out, because the caller
+        ; may still have marks to draw.
+        .savedSX = 0
+        .savedSY = 0
+        .hadScale = 0
+        if variableExists ("emlPatWorldPerInchX")
+            .savedSX = emlPatWorldPerInchX
+            .savedSY = emlPatWorldPerInchY
+            .hadScale = 1
+        endif
+        emlPatWorldPerInchX = 1
+        emlPatWorldPerInchY = 1
+
+        ; y is measured UPWARD from the rectangle's bottom in this world,
+        ; while the arguments are picture inches measured DOWNWARD from the
+        ; top, so the anchored top edge flips as it comes in.
+        .boxLeft = .usedX0 - .x0
+        .boxRight = .boxLeft + .usedWidth
+        .boxTop = .h - (.usedY0 - .y0)
+        .boxBottom = .boxTop - .usedHeight
+
+        ; Background fill + border (semi-transparent if sprites available)
+        if variableExists ("emlAlphaSpritesInitialized")
+            if emlAlphaSpritesInitialized = 1 and emlInitAlphaSprites.available = 1
+                .bgFile$ = emlInitAlphaSprites.dir$ + "bg_white_a70_40.png"
+                if fileReadable (.bgFile$)
+                    Insert picture from file: .bgFile$, .boxLeft, .boxRight,
+                    ... .boxBottom, .boxTop
+                    ; `Insert picture from file:` leaves the VIEWPORT set to
+                    ; the image's own bounding box. Every coordinate below is
+                    ; in this panel's world, so the panel has to be selected
+                    ; again right here rather than at the end of the
+                    ; procedure — restoring it after the swatches are drawn
+                    ; restores nothing, it just stops the damage spreading.
+                    Font size: .fontSize
+                    Select inner viewport: .x0, .x1, .y0, .y1
+                    Axes: 0, .w, 0, .h
+                else
+                    Paint rectangle: "White", .boxLeft, .boxRight,
+                    ... .boxBottom, .boxTop
+                endif
+            else
+                Paint rectangle: "White", .boxLeft, .boxRight, .boxBottom,
+                ... .boxTop
+            endif
+        else
+            Paint rectangle: "White", .boxLeft, .boxRight, .boxBottom, .boxTop
+        endif
+        Colour: "{0.7, 0.7, 0.7}"
+        Line width: 0.5
+        Draw rectangle: .boxLeft, .boxRight, .boxBottom, .boxTop
+
+        ; Entries — filled swatches with axis-colored text labels
+        Font size: .fontSize
+        for .i from 1 to .cells
+            .col = (.i - 1) div .rows + 1
+            .row = .i - (.col - 1) * .rows
+            .entryY = .boxTop - .yPad - (.row - 0.5) * .lineH
+            .swatchLeft = .boxLeft + emlMeasureLegendPanel.colOff[.col]
+            .swatchRight = .swatchLeft + .swatchSide
+            .swatchTop = .entryY + .swatchSide / 2
+            .swatchBottom = .entryY - .swatchSide / 2
+            .textX = .swatchRight + .xPad
+
+            if .i > .shown
+                ; The overflow cell. No swatch — it stands for no one style —
+                ; and it starts at the swatch column so it reads as a line of
+                ; the key rather than a stray label.
+                Colour: emlSetAdaptiveTheme.textColor$
+                Text: .swatchLeft, "left", .entryY, "half",
+                ... emlMeasureLegendPanel.moreLabel$
+            elsif .markered = 1
+                ; The key IS the mark: same @emlDrawMarker, same shape index,
+                ; same colour, at the panel's own scale.
+                .midX = (.swatchLeft + .swatchRight) / 2
+                if .markerLine = 1
+                    Colour: legendColor$[.i]
+                    Line width: emlSetAdaptiveTheme.dataLineWidth
+                    Draw line: .swatchLeft, .entryY, .swatchRight, .entryY
+                    Line width: 0.5
+                endif
+                @emlDrawMarker: .midX, .entryY, .swatchSide * 0.42,
+                ... legendMarker[.i], legendColor$[.i]
+            elsif .patterned = 1
+                ; Same construction the mark uses: fill, then pattern in the
+                ; same ink, then the stroke colour as an outline.
+                ; @emlPatternSetup is given the swatch's own half-width, so
+                ; the stripe pitch scales to the swatch.
+                .halfW = (.swatchRight - .swatchLeft) / 2
+                .midX = (.swatchLeft + .swatchRight) / 2
+                Paint rectangle: legendFill$[.i], .swatchLeft, .swatchRight,
+                ... .swatchBottom, .swatchTop
+                .lp = legendPattern[.i]
+                .lpDo = 0
+                if .lp = 2 or .lp = 3
+                    .lpDo = 1
+                endif
+                if .lpDo = 1
+                    @emlPatternSetup: legendFill$[.i], legendColor$[.i],
+                    ... .halfW, 0, .h
+                    if emlPatternSetup.usable = 0
+                        .lpDo = 0
+                    endif
+                endif
+                if .lpDo = 1 and .lp = 2
+                    .rowH = 0.004 * emlPatternSetup.sy
+                    .nRows = 1
+                    if .rowH > 0
+                        .nRows = ceiling ((.swatchTop - .swatchBottom) / .rowH)
+                    endif
+                    if .nRows < 1
+                        .nRows = 1
+                    endif
+                    .rowStep = (.swatchTop - .swatchBottom) / .nRows
+                    for .r from 1 to .nRows
+                        @emlPaintHatchRow: .midX, .halfW,
+                        ... .swatchBottom + (.r - 1) * .rowStep,
+                        ... .swatchBottom + .r * .rowStep, .swatchBottom
+                    endfor
+                endif
+                if .lpDo = 1 and .lp = 3
+                    .dotStepY = emlPatternSetup.dotPitch * emlPatternSetup.sy
+                    .dotRY = emlPatternSetup.dotR * emlPatternSetup.sy
+                    .nDotRows = 0
+                    if .dotStepY > 0
+                        .nDotRows = floor ((.swatchTop - .swatchBottom)
+                        ... / .dotStepY)
+                    endif
+                    for .r from 0 to .nDotRows
+                        .dy = .swatchBottom + (.r + 0.5) * .dotStepY
+                        if .dy - .dotRY >= .swatchBottom
+                            if .dy + .dotRY <= .swatchTop
+                                @emlPaintDotRow: .midX, .halfW, .dy, .r,
+                                ... .swatchBottom
+                            endif
+                        endif
+                    endfor
+                endif
+                ; The swatch OUTLINE takes the same @emlMarkInk flip the
+                ; mark's outline takes, or a slot-8 greyscale swatch would
+                ; draw a near-black border on a near-black fill.
+                @emlMarkInk: legendFill$[.i], legendColor$[.i]
+                Colour: emlMarkInk.result$
+                Line width: 0.8
+                Draw rectangle: .swatchLeft, .swatchRight, .swatchBottom,
+                ... .swatchTop
+                Line width: 0.5
+            else
+                Colour: legendColor$[.i]
+                Paint rectangle: legendColor$[.i], .swatchLeft, .swatchRight,
+                ... .swatchBottom, .swatchTop
+            endif
+            if .i <= .shown
+                Colour: emlSetAdaptiveTheme.textColor$
+                Text: .textX, "left", .entryY, "half",
+                ... emlMeasureLegendPanel.label$[.i]
+            endif
+        endfor
+
+        Colour: "Black"
+        Line width: 1.0
+
+        if .hadScale = 1
+            emlPatWorldPerInchX = .savedSX
+            emlPatWorldPerInchY = .savedSY
+        endif
+    endif
+
+    ; NOTHING IS DROPPED OR SHORTENED IN SILENCE. Both notices come from
+    ; here, the procedure that actually did it, and not from
+    ; @emlMeasureLegendPanel, which a caller may run several times while it
+    ; searches for a band height.
+    if .truncated = 1
+        appendInfoLine: "NOTE: legend shows ", .shown, " of ", legendN,
+        ... " entries — the panel has room for ", .capacity,
+        ... ". The other ", .hidden, " are marked ",
+        ... emlMeasureLegendPanel.moreLabel$, " on the figure."
+    endif
+    if .clamped = 1
+        appendInfoLine: "NOTE: legend labels were shortened with an ellipsis",
+        ... " — the widest one does not fit a ",
+        ... fixed$ (.w, 2), " inch panel at ", fixed$ (.fontSize, 1),
+        ... " pt. Widen the figure, shorten the labels, or set Legend",
+        ... " placement to Right of plot or Separate figure."
+    endif
+
+    Font size: emlSetAdaptiveTheme.bodySize
+endproc
+
 # ----------------------------------------------------------------------------
 # @emlDrawLegend
-# Draws a legend box with filled background, colored swatches, and labels.
-# Positions the legend in a corner of the current plot area using data coords.
+# Draws the legend for the current panel, WHERE THE USER ASKED FOR IT.
+#
+# This is the entry point every draw procedure calls, and its signature has
+# not changed. What changed is that it is now a PLACEMENT DISPATCHER over
+# @emlDrawLegendPanel rather than a renderer of its own: it works out the
+# rectangle the legend is allowed to occupy, hands that rectangle to the
+# panel renderer, and — only when the placement puts the legend outside the
+# plot — reports the rectangle to @emlExpandDrawnExtent so the saved image
+# grows to cover it. See EXPORT GEOMETRY in the section header above.
+#
+# THE PLOT RECTANGLE IS NEVER TOUCHED BY ANY OF THIS. A 6 x 4 request yields
+# a 6 x 4 plot in all five placements; placements 2 and 3 make the saved PNG
+# larger than 6 x 4, they do not make the plot smaller.
+#
+# PLACEMENT COMES FROM THE GLOBAL emlLegendPlacement, read through
+# variableExists and defaulting to 1. A script that predates this — every
+# stress case, every PraatGen companion file, every caller in
+# eml-draw-procedures.praat — sets nothing and gets placement 1, which is the
+# corner box it has always drawn, at the geometry it has always drawn it.
+# The plugin sets emlLegendPlacement from config_legendPlacement, whose
+# encoding, registry and dialog live in eml-graphs-form.praat.
+#
+#   1 Inside plot     — DEFAULT. Auto-corner box inside the data area.
+#   2 Right of plot   — own rectangle to the right; export widens.
+#   3 Below plot      — own rectangle below; export heightens.
+#   4 Separate figure — parked off-figure and saved as a second file.
+#   5 None            — not drawn.
 #
 # Requires global variables before call:
 #   legendN          — integer, number of entries. The palette holds 24
 #                      sub-group styles, so 24 is the number this has to
 #                      draw; there is no hard ceiling above it, because the
-#                      LAYOUT is what limits the box (see below) and a
-#                      ceiling written here would be a second, disagreeing
-#                      limit. (Was documented as "1–6" through v3.25, which
-#                      no caller had honoured since the palette reached ten.)
+#                      LAYOUT is what limits the box and a ceiling written
+#                      here would be a second, disagreeing limit.
 #   legendColor$[1..N] — RGB colour strings for each entry
-#   legendLabel$[1..N] — text labels for each entry (pre-sanitized if needed)
+#   legendLabel$[1..N] — text labels for each entry (pre-sanitized)
 #
-# Optional globals (v1.23 — the PATTERNED legend):
-#   legendPatterned    — 1 to draw swatches as fill + pattern + outline
-#                        instead of a solid block of legendColor$. Cleared to
-#                        0 by @emlSetColorPalette, so it must be set AFTER the
-#                        palette call and it cannot leak into the next figure.
-#   legendPattern[1..N]  — 1 solid | 2 diagonal hatch | 3 dots, per entry
-#   legendFill$[1..N]    — the body fill colour for each entry
+# Optional globals, unchanged in meaning:
+#   legendPatterned / legendPattern[] / legendFill$[]  — patterned swatches
+#   legendMarkered  / legendMarker[]  / legendMarkerLine — the marker key
 #
-# WHY THE SWATCH HAS TO CARRY THE PATTERN. The palette's 24 styles are 8 hues
-# x 3 fill patterns, so entries 1 and 9 have the SAME legendColor$ and differ
-# only in the pattern. A legend that drew colour alone would print two
-# identical swatches against two different names — which is precisely the
-# defect (D127) the patterns were introduced to remove, relocated from the
-# figure into the key. When legendPatterned is 0 the swatch is the solid
-# block it has always been, so every unpatterned chart is unchanged.
+# WHY THE SWATCH CARRIES THE PATTERN AND THE MARK. The palette's 24 styles
+# are 8 hues x 3 fill patterns, so entries 1 and 9 have the SAME
+# legendColor$ and differ only in the pattern; a legend that drew colour
+# alone would print two identical swatches against two different names, which
+# is D127 relocated from the figure into the key. The same argument makes the
+# marker key draw @emlDrawMarker rather than a square. Both are unchanged
+# here — this revision moves the legend, it does not restyle an entry.
 #
-# THE BOX IS LAID OUT TO FIT THE FRAME (v1.25 — D123)
-#
-# Until v1.24 the box was one column of legendN rows and nothing measured it
-# against the panel. At the annotation font on a 6 x 4 figure a row is 0.162",
-# the panel is 3.11" tall, and 24 entries want 3.94" — so a 24-sub-group
-# grouped violin, which is exactly what the 24-style palette exists to draw,
-# put a legend a full inch past the frame edge, swatches and labels with it.
-# Measured before the fix on harness/stress_cases/legend_cap.praat: the box
-# overhung the frame by 304 px at 300 dpi.
-#
-# The fix is a layout, not a cap. The frame is measured first:
-#
-#   rowsMax = how many rows fit between the insets
-#   colsMax = how many columns of (swatch + widest label) fit across
-#   capacity = rowsMax x colsMax
-#
-# and the entries are then poured down the columns, hue order preserved, in
-# the FEWEST columns that fit the height — so the box is as narrow as it can
-# be and never taller than the panel. At 24 entries on a 6 x 4 figure that is
-# two columns of 12. One entry, or any number that fits in one column, gets
-# the identical single-column geometry v1.24 drew, to the last decimal.
-#
-# TRUNCATION IS THE LAST RESORT AND IT IS NEVER SILENT. If legendN still
-# exceeds capacity — a very short frame, or labels wide enough that only one
-# column fits — the last cell becomes "+N more" ON THE FIGURE and a NOTE goes
-# to the Info window naming both counts. A legend that quietly dropped
-# entries would be D127's silence again: names present, marks unexplained.
-#
-# NOT HANDLED HERE: a single label wide enough that one column does not fit
-# the frame width. The anchor is the `if .colsMax < 1` floor in the LAYOUT
-# block below — capacity is computed as though one column fitted, and the box
-# then overhangs to the right, exactly as it did before this revision. It is
-# not a regression introduced by this layout.
-#
-# This is the legend's copy of the D124 defect, and D124 is the reason to
-# name it: the annotation block had the same overhang and it has since been
-# fixed (@emlDrawAnnotationBlock now wraps every entry to a share of the
-# frame — emlAnnotBlockWidthShare, default 0.55 — so it no longer runs off
-# the canvas). The legend has NOT had that treatment. A label wider than the
-# frame is still drawn whole and still overhangs; the fix, when someone
-# writes it, is the same wrap-or-ellipsis @emlDrawAnnotationBlock now does.
+# THE BOX IS LAID OUT TO FIT ITS RECTANGLE. Rows that fit the height and
+# columns that fit the width are counted, the entries are poured down the
+# FEWEST columns that fit the height, and only if the rectangle is still
+# exceeded is anything dropped — and then the last cell reads "+N more" ON
+# THE FIGURE and a NOTE naming both counts goes to the Info window. At 24
+# entries on a 6 x 4 figure that is two columns of 12; a legend that fits in
+# one column gets the identical single-column geometry v1.24 drew. All of
+# that now lives in @emlMeasureLegendPanel and is shared with every
+# placement. See there for the D135 ellipsis, which is new: a label wider
+# than the frame is shortened rather than drawn past the edge.
 #
 # Arguments:
 #   xMin, xMax, yMin, yMax — current axis bounds (data coordinates)
-#   position$ — "top-left" or "top-right"
-#   fontSize  — font size for legend text (typically bodySize - 1)
+#   position$ — corner for placement 1: "top-left" (default), "top-right",
+#               "bottom-left", "bottom-right". Ignored by placements 2-5,
+#               which have only one place to be.
+#   fontSize  — font size for legend text (typically annotSize)
 #
-# Reports (procedure locals, readable by the caller after return):
+# Reports (procedure locals, readable by the caller after return — the names
+# and meanings @emlDrawLegend has always published):
 #   .nCols, .rowsPerCol — the layout chosen
 #   .shown, .hidden     — entries drawn, entries folded into "+N more"
-#   .capacity           — rowsMax x colsMax, the frame's room
-#   .boxLeft/.boxRight/.boxTop/.boxBottom — the box, in data coordinates
+#   .capacity           — the rectangle's room, in cells
+#   .boxLeft/.boxRight/.boxTop/.boxBottom — the box, IN DATA COORDINATES, so
+#                         a caller keeping clear of the legend still can. For
+#                         placements 2-4 these describe a rectangle outside
+#                         the axis range, which is truthful: the legend is
+#                         not in the plot any more and nothing in the plot
+#                         needs to avoid it. For placement 5 the box is empty.
+#   .placement          — the placement actually used, after clamping
+#   .panelX0/.panelX1/.panelY0/.panelY1 — the rectangle, in inches
+#   .truncated, .clamped — anything dropped / any label ellipsized
 #
-# Draws: filled white rectangle, thin grey border, colored square swatches,
-#   and text labels in axis text color. Leaves Colour as Black and Line width as 1.0.
-# Note: Font size is set to fontSize and NOT restored. Caller manages
-#   font state after return (e.g., @emlDrawAxes will set its own size).
+# Draws: filled white background, thin grey border, swatches drawn as the
+#   mark, and text labels in axis text colour. Leaves Colour Black and Line
+#   width 1.0. Restores Font size: bodySize and the panel viewport and axes
+#   before returning, so the caller can carry on drawing the figure.
 # ----------------------------------------------------------------------------
 procedure emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .position$, .fontSize
-    .xRange = .xMax - .xMin
-    .yRange = .yMax - .yMin
+    .placement = 1
+    if variableExists ("emlLegendPlacement")
+        .placement = emlLegendPlacement
+    endif
+    ; A hand-edited config, or a caller that computed the value, can hand in
+    ; anything. Out of range becomes the default rather than no legend at all.
+    if .placement = undefined
+        .placement = 1
+    endif
+    if .placement < 1
+        .placement = 1
+    endif
+    if .placement > 5
+        .placement = 1
+    endif
 
-    # Compute world-per-inch for both axes so all spacing is
-    # physically uniform regardless of axis scale differences
+    .nCols = 0
+    .rowsPerCol = 0
+    .shown = 0
+    .hidden = 0
+    .capacity = 0
+    .truncated = 0
+    .clamped = 0
+    .boxLeft = .xMin
+    .boxRight = .xMin
+    .boxTop = .yMax
+    .boxBottom = .yMax
+    .panelX0 = 0
+    .panelX1 = 0
+    .panelY0 = 0
+    .panelY1 = 0
+
+    .n = 0
+    if variableExists ("legendN")
+        .n = legendN
+    endif
+    if .n = undefined
+        .n = 0
+    endif
+
+    ; The parked-legend handshake with the save path. Cleared on EVERY call,
+    ; so a figure whose placement changed from 4 to something else cannot
+    ; leave a stale second file waiting to be written.
+    emlLegendSepActive = 0
+
+    .inset = emlSetAdaptiveTheme.boxInsetInches
     .innerW = emlSetAdaptiveTheme.innerRight - emlSetAdaptiveTheme.innerLeft
     .innerH = emlSetAdaptiveTheme.innerBottom - emlSetAdaptiveTheme.innerTop
-    .wpiX = .xRange / .innerW
-    .wpiY = .yRange / .innerH
 
-    # All spacing derived from font size (in inches) × world-per-inch
-    .fontInch = .fontSize / 72
-    .sf = emlSetAdaptiveTheme.spacingFactor
-    .lineH = .fontInch * 1.4 * .wpiY
-    .xPad = .fontInch * (0.3 + 0.3 * .sf) * .wpiX
-    .yPad = .fontInch * (0.3 + 0.2 * .sf) * .wpiY
-    # Patterned swatches are drawn larger: three hatch stripes or two dot
-    # rows do not survive in a 0.8-em square, and a swatch that cannot show
-    # its pattern is the same silence as no pattern at all.
-    .patterned = 0
-    if variableExists ("legendPatterned")
-        if legendPatterned = 1
-            .patterned = 1
-        endif
+    .draw = 1
+    if .n < 1
+        .draw = 0
     endif
-    # v1.24: the marker key. A scatter whose group 9 draws squares and whose
-    # key draws a circle is the same defect class as a hatched violin with a
-    # solid swatch -- the reader is told the series differ only in hue when
-    # they do not. legendMarker[] carries the shape; legendMarkerLine says
-    # whether the series is a LINE with markers on it (time series, line
-    # chart, spaghetti) or bare points (scatter), because the key has to show
-    # which of those it is.
-    .markered = 0
-    if variableExists ("legendMarkered")
-        if legendMarkered = 1
-            .markered = 1
-        endif
-    endif
-    .markerLine = 0
-    if .markered = 1
-        if variableExists ("legendMarkerLine")
-            if legendMarkerLine = 1
-                .markerLine = 1
-            endif
-        endif
-    endif
-    .swatchSide = .fontInch * 0.8
-    if .patterned = 1
-        .swatchSide = .fontInch * 1.25
-    endif
-    if .markered = 1
-        # A marker inside a 0.8-em cell is four pixels of triangle at a
-        # 7 pt legend. The cell is widened so the shape survives at the
-        # production font size, which is what the fixture measures.
-        .swatchSide = .fontInch * 1.4
-    endif
-    .swatchW = .swatchSide * .wpiX
-    .swatchH = .swatchSide * .wpiY
-    .insetX = emlSetAdaptiveTheme.boxInsetInches * .wpiX
-    .insetY = emlSetAdaptiveTheme.boxInsetInches * .wpiY
-
-    # Measure actual rendered width of longest label (exact, font-aware)
-    #
-    # v1.23: the viewport is RE-SELECTED at the legend's own font size before
-    # anything is measured or drawn. Praat's `Select inner viewport` converts
-    # the inner rectangle to an outer one using the font size IN FORCE AT THE
-    # TIME OF THE CALL, and every later world-to-page mapping is taken from
-    # that outer rectangle minus the margins for the font size in force THEN.
-    # The panel viewport was selected at bodySize; this procedure then set
-    # Font size to .fontSize and drew, so the whole legend -- background,
-    # border, swatches and text together -- was rendered into a rectangle
-    # slightly smaller than, and offset from, the .boxLeft/.boxTop it had
-    # just computed. It LOOKED right because every part of it moved by the
-    # same amount, but the box the caller was told about (and kept the
-    # disclosure block clear of) was not the box on the page. At the usual
-    # one- or two-point difference the offset is small; at a large legend
-    # font it is gross. Re-selecting here makes the computed geometry and the
-    # drawn geometry the same thing. The tail of this procedure already
-    # restores bodySize and the panel viewport.
-    Font size: .fontSize
-    Select inner viewport: emlSetAdaptiveTheme.innerLeft,
-    ... emlSetAdaptiveTheme.innerRight,
-    ... emlSetAdaptiveTheme.innerTop,
-    ... emlSetAdaptiveTheme.innerBottom
-    Axes: .xMin, .xMax, .yMin, .yMax
-    # Per entry, because a multi-column box sizes each column to its own
-    # widest label. Safety margin (1.05) applied per entry: screen font
-    # metrics differ slightly from PNG export. Taking the margin before the
-    # max rather than after leaves the one-column width bit-identical to
-    # v1.24's.
-    .textWidth = 0
-    for .i from 1 to legendN
-        .w = Text width (world coordinates): legendLabel$[.i]
-        .cellW[.i] = .w * 1.05
-        if .cellW[.i] > .textWidth
-            .textWidth = .cellW[.i]
-        endif
-    endfor
-
-    # ------------------------------------------------------------------
-    # LAYOUT (v1.25, D123). Measure the frame, then pour the entries into
-    # it. Everything here is in world units, both axes, so a legend on a
-    # 0-1 y-axis and one on a 0-5000 y-axis get the same physical box.
-    # ------------------------------------------------------------------
-    .availW = .xRange - 2 * .insetX
-    .availH = .yRange - 2 * .insetY
-    .rowsMax = floor ((.availH - 2 * .yPad) / .lineH)
-    if .rowsMax < 1
-        .rowsMax = 1
-    endif
-    # Gap between one column's label and the next column's swatch. One xPad
-    # ON TOP OF the xPad that already trails every column, so the eye reads
-    # two columns rather than one wide one.
-    .colGap = .xPad
-    # The overflow cell's width has to be known BEFORE capacity is, or the
-    # cell that announces the truncation could be the thing that overflows.
-    # Measured with legendN in it, which has at least as many digits as any
-    # hidden count, so this is an upper bound on the real notice.
-    .moreLabel$ = "+" + string$ (legendN) + " more"
-    .w = Text width (world coordinates): .moreLabel$
-    .unitW = .w * 1.05
-    if .textWidth > .unitW
-        .unitW = .textWidth
-    endif
-    .colsMax = floor ((.availW - 2 * .xPad + .colGap)
-    ... / (.swatchW + .xPad + .unitW + .colGap))
-    if .colsMax < 1
-        # One column does not fit the frame width. See NOT HANDLED HERE in
-        # the header: the box overhangs to the right, as it always has.
-        .colsMax = 1
-    endif
-    .capacity = .rowsMax * .colsMax
-
-    .shown = legendN
-    .hidden = 0
-    .cells = legendN
-    if legendN > .capacity
-        .shown = .capacity - 1
-        if .shown < 0
-            .shown = 0
-        endif
-        .hidden = legendN - .shown
-        .cells = .shown + 1
-        .moreLabel$ = "+" + string$ (.hidden) + " more"
-        .w = Text width (world coordinates): .moreLabel$
-        .cellW[.cells] = .w * 1.05
-        appendInfoLine: "NOTE: legend shows ", .shown, " of ", legendN,
-        ... " entries — the frame has room for ", .capacity,
-        ... ". The other ", .hidden, " are marked ", .moreLabel$,
-        ... " on the figure."
+    if .placement = 5
+        .draw = 0
     endif
 
-    # Fewest columns that fit the height, so the box stays narrow. cells <=
-    # rowsMax x colsMax by construction, so .nCols <= .colsMax and the width
-    # below cannot exceed .availW either.
-    .nCols = ceiling (.cells / .rowsMax)
-    if .nCols < 1
-        .nCols = 1
-    endif
-    .rowsPerCol = ceiling (.cells / .nCols)
-
-    # Box dimensions. Column-major fill: cell k is column
-    # (k-1) div rowsPerCol + 1, which keeps the palette's hue order running
-    # top-to-bottom down each column.
-    .totalWidth = 2 * .xPad + (.nCols - 1) * .colGap
-    .off = .xPad
-    for .c from 1 to .nCols
-        .colTextW[.c] = 0
-        for .r from 1 to .rowsPerCol
-            .k = (.c - 1) * .rowsPerCol + .r
-            if .k <= .cells
-                if .cellW[.k] > .colTextW[.c]
-                    .colTextW[.c] = .cellW[.k]
-                endif
-            endif
-        endfor
-        .colOff[.c] = .off
-        .off = .off + .swatchW + .xPad + .colTextW[.c] + .colGap
-        .totalWidth = .totalWidth + .swatchW + .xPad + .colTextW[.c]
-    endfor
-    .totalHeight = .yPad + .rowsPerCol * .lineH + .yPad
-
-    # Anchor position (uniform physical inset from axes)
-    if .position$ = "top-right"
-        .boxLeft = .xMax - .insetX - .totalWidth
-        .boxTop = .yMax - .insetY
-    elsif .position$ = "bottom-left"
-        .boxLeft = .xMin + .insetX
-        .boxTop = .yMin + .insetY + .totalHeight
-    elsif .position$ = "bottom-right"
-        .boxLeft = .xMax - .insetX - .totalWidth
-        .boxTop = .yMin + .insetY + .totalHeight
-    else
-        # Default: top-left
-        .boxLeft = .xMin + .insetX
-        .boxTop = .yMax - .insetY
-    endif
-    .boxRight = .boxLeft + .totalWidth
-    .boxBottom = .boxTop - .totalHeight
-
-    # Background fill + border (semi-transparent if sprites available)
-    if variableExists ("emlAlphaSpritesInitialized")
-        if emlAlphaSpritesInitialized = 1 and emlInitAlphaSprites.available = 1
-            .bgFile$ = emlInitAlphaSprites.dir$ + "bg_white_a70_40.png"
-            if fileReadable (.bgFile$)
-                Insert picture from file: .bgFile$, .boxLeft, .boxRight, .boxBottom, .boxTop
+    if .draw = 1
+        ; -------------------------------------------------------------------
+        ; Each branch computes a BUDGET rectangle — the space the legend is
+        ; allowed to occupy — and an anchor inside it. @emlDrawLegendPanel
+        ; measures that budget once, consumes what it needs and reports the
+        ; sub-rectangle it took back in .usedX0/.usedX1/.usedY0/.usedY1.
+        ;
+        ; Handing it a budget rather than a pre-measured box is not a style
+        ; choice. Column COUNT comes from the widest label overall while each
+        ; column is sized to its OWN widest label, so a box shrunk to a
+        ; previous measurement can fit fewer columns than that measurement
+        ; chose: on the 24-entry fixture, two columns of twelve measured
+        ; against 6 x 4's data area become one column of eleven with fourteen
+        ; entries dropped when re-measured inside their own box. One
+        ; measurement, of the budget, is the fix.
+        ; -------------------------------------------------------------------
+        emlLegendPanelAnchor$ = "top-left"
+        if .placement = 1
+            ; ---------------------------------------------------------------
+            ; 1 INSIDE PLOT — the corner box, unchanged.
+            ;
+            ; Budget is the whole data area inset by boxInsetInches on all
+            ; four sides, which is the same uniform physical inset every
+            ; overlay box uses, and the anchor puts the box in the requested
+            ; corner of it. Expressed in inches this is arithmetically the
+            ; same budget and the same corner the world-coordinate version
+            ; computed, so the pixels are the ones the plugin has always
+            ; produced.
+            ;
+            ; NOTHING IS REPORTED TO @emlExpandDrawnExtent. The legend is
+            ; inside the plot, the plot is already reported, and the exported
+            ; extent is the plot rectangle.
+            ; ---------------------------------------------------------------
+            .panelX0 = emlSetAdaptiveTheme.innerLeft + .inset
+            .panelX1 = emlSetAdaptiveTheme.innerRight - .inset
+            .panelY0 = emlSetAdaptiveTheme.innerTop + .inset
+            .panelY1 = emlSetAdaptiveTheme.innerBottom - .inset
+            if .position$ = "top-right"
+                emlLegendPanelAnchor$ = "top-right"
+            elsif .position$ = "bottom-right"
+                emlLegendPanelAnchor$ = "bottom-right"
+            elsif .position$ = "bottom-left"
+                emlLegendPanelAnchor$ = "bottom-left"
             else
-                Paint rectangle: "White", .boxLeft, .boxRight, .boxBottom, .boxTop
+                ; Default: top-left
+                emlLegendPanelAnchor$ = "top-left"
             endif
+
+        elsif .placement = 2
+            ; ---------------------------------------------------------------
+            ; 2 RIGHT OF PLOT — its own rectangle beside the figure.
+            ;
+            ; Height budget is the data area's height, so the panel folds
+            ; into as few columns as that allows, which is as NARROW as it
+            ; can be. Width budget is one figure width: a legend may double
+            ; the image, it may not run away with it, and a label wider than
+            ; that is ellipsized by @emlMeasureLegendPanel rather than drawn
+            ; past the edge.
+            ; ---------------------------------------------------------------
+            .panelX0 = emlSetAdaptiveTheme.outerRight + .inset
+            .panelX1 = .panelX0 + (emlSetAdaptiveTheme.outerRight
+            ... - emlSetAdaptiveTheme.outerLeft)
+            .panelY0 = emlSetAdaptiveTheme.innerTop
+            .panelY1 = .panelY0 + .innerH
+
+        elsif .placement = 3
+            ; ---------------------------------------------------------------
+            ; 3 BELOW PLOT — its own rectangle under the figure.
+            ;
+            ; The layout pours entries down the fewest columns that fit the
+            ; HEIGHT, so a wide short strip is asked for by handing in a
+            ; short height rather than by a second algorithm. The band starts
+            ; at one row and grows a row at a time until everything fits or
+            ; half the figure height is reached; the band that is drawn is
+            ; the band the search stopped on, and the panel re-measures
+            ; against that same band, so the two agree by construction.
+            ;
+            ; The band clears the matrix panel when there is one. The form
+            ; sizes that panel before dispatching the draw and leaves the
+            ; total in totalCanvasHeight, so the legend reads it here and
+            ; sits below both rather than on top of the comparison matrix.
+            ; ---------------------------------------------------------------
+            .fontInch = .fontSize / 72
+            .lineH = .fontInch * 1.4
+            .yPad = .fontInch * (0.3 + 0.2 * emlSetAdaptiveTheme.spacingFactor)
+            ; Left edge aligned with the DATA area, not the figure's outer
+            ; edge. Aligning to outerLeft puts the panel's border on pixel
+            ; column 0 of the exported PNG, where a 0.5-width line is drawn
+            ; half outside the image, and leaves the key hanging to the left
+            ; of everything else on the page. The band search below has to
+            ; run against THIS width, not a wider one, or the row count it
+            ; settles on is one the panel cannot reproduce.
+            .panelX0 = emlSetAdaptiveTheme.innerLeft
+            .panelX1 = emlSetAdaptiveTheme.outerRight
+            .maxW = .panelX1 - .panelX0
+            .bandCap = (emlSetAdaptiveTheme.outerBottom
+            ... - emlSetAdaptiveTheme.outerTop) * 0.5
+            .tryRows = 1
+            .searching = 1
+            while .searching = 1
+                .band = 2 * .yPad + .tryRows * .lineH
+                @emlMeasureLegendPanel: .maxW, .band, .fontSize
+                if emlMeasureLegendPanel.fits = 1
+                    .searching = 0
+                elsif .band + .lineH > .bandCap
+                    .searching = 0
+                else
+                    .tryRows = .tryRows + 1
+                endif
+            endwhile
+            .below = emlSetAdaptiveTheme.outerBottom
+            if variableExists ("totalCanvasHeight")
+                if totalCanvasHeight > .below
+                    .below = totalCanvasHeight
+                endif
+            endif
+            .panelY0 = .below + .inset
+            .panelY1 = .panelY0 + .band
+
         else
-            Paint rectangle: "White", .boxLeft, .boxRight, .boxBottom, .boxTop
+            ; ---------------------------------------------------------------
+            ; 4 SEPARATE FIGURE — parked off-figure, saved as a second file.
+            ;
+            ; The legend is drawn NOW, on a patch of picture far below
+            ; anything the figure will ever report, and is deliberately NOT
+            ; reported to @emlExpandDrawnExtent — so @emlAssertFullViewport
+            ; saves the figure at exactly its own extent, as if there were no
+            ; legend at all. The save path then selects the parked rectangle
+            ; and writes it as a second PNG beside the first.
+            ;
+            ; Drawing it now and selecting it later, rather than erasing the
+            ; picture and redrawing, is what lets BOTH files come out of one
+            ; figure: an Erase would destroy the figure the user is about to
+            ; save again, and a redraw would re-run the whole analysis.
+            ;
+            ; THE FONT SIZE IS THE PARENT FIGURE'S. .fontSize arrives from
+            ; the caller as emlSetAdaptiveTheme.annotSize — the figure's own
+            ; annotation size — and is passed straight through rather than
+            ; recomputed from the legend canvas. A legend canvas is small, so
+            ; a recomputed size would be smaller, and a user placing the two
+            ; side by side in a manuscript would get legend text visibly
+            ; unlike the figure's axis labels.
+            ; ---------------------------------------------------------------
+            .park = 24
+            if variableExists ("totalCanvasHeight")
+                if totalCanvasHeight + 12 > .park
+                    .park = totalCanvasHeight + 12
+                endif
+            endif
+            .panelX0 = .inset
+            .panelX1 = .panelX0 + (emlSetAdaptiveTheme.outerRight
+            ... - emlSetAdaptiveTheme.outerLeft)
+            .panelY0 = .park + .inset
+            .panelY1 = .panelY0 + (emlSetAdaptiveTheme.outerBottom
+            ... - emlSetAdaptiveTheme.outerTop)
         endif
-    else
-        Paint rectangle: "White", .boxLeft, .boxRight, .boxBottom, .boxTop
+
+        if .panelX1 > .panelX0
+            @emlDrawLegendPanel: .panelX0, .panelX1, .panelY0, .panelY1,
+            ... .fontSize
+            .nCols = emlDrawLegendPanel.cols
+            .rowsPerCol = emlDrawLegendPanel.rows
+            .shown = emlDrawLegendPanel.shown
+            .hidden = emlDrawLegendPanel.hidden
+            .capacity = emlDrawLegendPanel.capacity
+            .truncated = emlDrawLegendPanel.truncated
+            .clamped = emlDrawLegendPanel.clamped
+
+            ; What the panel actually took, inside the budget it was given.
+            ; Everything below — the extent report, the parked rectangle, the
+            ; data-coordinate box — describes THIS and not the budget, or a
+            ; short legend beside a tall plot would report a rectangle three
+            ; times its own height and pad the exported image with white.
+            .panelX0 = emlDrawLegendPanel.usedX0
+            .panelX1 = emlDrawLegendPanel.usedX1
+            .panelY0 = emlDrawLegendPanel.usedY0
+            .panelY1 = emlDrawLegendPanel.usedY1
+
+            ; ---------------------------------------------------------------
+            ; THE REPORT. This is the whole point of the change, so it is the
+            ; one place to read if the exported image is the wrong size.
+            ;
+            ; Placements 1 and 5 report NOTHING: the exported extent stays
+            ; equal to the plot rectangle, which is what makes a 5 x 5
+            ; request come out 5 x 5.
+            ;
+            ; Placements 2 and 3 report the LEGEND rectangle, and only that.
+            ; @emlAssertFullViewport unions it with the plot rectangle, so
+            ; the saved image widens or heightens to hold both. The plot
+            ; rectangle is not consulted, not modified, and not re-derived —
+            ; a 5 x 5 request still draws a 5 x 5 plot and simply exports a
+            ; larger picture around it.
+            ;
+            ; Placement 4 reports NOTHING either: its legend is a SECOND
+            ; FILE, and reporting it would drag the figure's extent 24
+            ; inches down the canvas.
+            ; ---------------------------------------------------------------
+            ;
+            ; The reported rectangle carries one boxInsetInches of trailing
+            ; margin on the side that grows — the same physical gap that
+            ; separates the panel from the plot, mirrored on the outside.
+            ; Without it the panel's own border IS the last pixel column of
+            ; the PNG, and a 0.5-width line centred on the boundary is drawn
+            ; half outside the image. Measured before adding it on a 5 x 5
+            ; figure: the exported width was 1697 px and the panel's right
+            ; edge was at 1697.
+            if .placement = 2
+                @emlExpandDrawnExtent: .panelX0, .panelX1 + .inset,
+                ... .panelY0, .panelY1
+            endif
+            if .placement = 3
+                @emlExpandDrawnExtent: .panelX0, .panelX1,
+                ... .panelY0, .panelY1 + .inset
+            endif
+            if .placement = 4
+                emlLegendSepActive = 1
+                emlLegendSepX0 = .panelX0 - .inset
+                emlLegendSepX1 = .panelX1 + .inset
+                emlLegendSepY0 = .panelY0 - .inset
+                emlLegendSepY1 = .panelY1 + .inset
+                emlLegendSepFontSize = .fontSize
+            endif
+
+            ; The box in DATA coordinates, for callers that keep clear of it.
+            .wpiX = 0
+            .wpiY = 0
+            if .innerW > 0
+                .wpiX = (.xMax - .xMin) / .innerW
+            endif
+            if .innerH > 0
+                .wpiY = (.yMax - .yMin) / .innerH
+            endif
+            .boxLeft = .xMin
+            ... + (.panelX0 - emlSetAdaptiveTheme.innerLeft) * .wpiX
+            .boxRight = .xMin
+            ... + (.panelX1 - emlSetAdaptiveTheme.innerLeft) * .wpiX
+            .boxTop = .yMax
+            ... - (.panelY0 - emlSetAdaptiveTheme.innerTop) * .wpiY
+            .boxBottom = .yMax
+            ... - (.panelY1 - emlSetAdaptiveTheme.innerTop) * .wpiY
+        endif
     endif
-    Colour: "{0.7, 0.7, 0.7}"
-    Line width: 0.5
-    Draw rectangle: .boxLeft, .boxRight, .boxBottom, .boxTop
-
-    # Entries — filled swatches with axis-colored text labels
-    Font size: .fontSize
-    for .i from 1 to .cells
-        .col = (.i - 1) div .rowsPerCol + 1
-        .row = .i - (.col - 1) * .rowsPerCol
-        .entryY = .boxTop - .yPad - (.row - 0.5) * .lineH
-        .swatchLeft = .boxLeft + .colOff[.col]
-        .swatchRight = .swatchLeft + .swatchW
-        .swatchTop = .entryY + .swatchH / 2
-        .swatchBottom = .entryY - .swatchH / 2
-        .textX = .swatchRight + .xPad
-
-        if .i > .shown
-            # The overflow cell. No swatch — it stands for no one style —
-            # and it starts at the swatch column so it reads as a line of
-            # the key rather than a stray label.
-            Colour: emlSetAdaptiveTheme.textColor$
-            Text: .swatchLeft, "left", .entryY, "half", .moreLabel$
-        elsif .markered = 1
-            # The key IS the mark: same @emlDrawMarker, same shape index, same
-            # colour. @emlSetPatternScale is called for the axes the legend was
-            # handed, which are the panel's own, so the marker comes out the
-            # same physical size and shape here as it does in the panel.
-            @emlSetPatternScale: .xMin, .xMax, .yMin, .yMax
-            .midX = (.swatchLeft + .swatchRight) / 2
-            if .markerLine = 1
-                Colour: legendColor$[.i]
-                Line width: emlSetAdaptiveTheme.dataLineWidth
-                Draw line: .swatchLeft, .entryY, .swatchRight, .entryY
-                Line width: 0.5
-            endif
-            @emlDrawMarker: .midX, .entryY, .swatchSide * 0.42,
-            ... legendMarker[.i], legendColor$[.i]
-        elsif .patterned = 1
-            # Same construction the mark uses: fill, then pattern in the same
-            # ink, then the stroke colour as an outline. @emlPatternSetup is
-            # given the swatch's own half-width, so the stripe pitch scales
-            # to the swatch instead of being the violin's pitch cropped.
-            .halfW = (.swatchRight - .swatchLeft) / 2
-            .midX = (.swatchLeft + .swatchRight) / 2
-            Paint rectangle: legendFill$[.i], .swatchLeft, .swatchRight,
-            ... .swatchBottom, .swatchTop
-            .lp = legendPattern[.i]
-            .lpDo = 0
-            if .lp = 2 or .lp = 3
-                .lpDo = 1
-            endif
-            if .lpDo = 1
-                @emlPatternSetup: legendFill$[.i], legendColor$[.i], .halfW,
-                ... .yMin, .yMax
-                if emlPatternSetup.usable = 0
-                    .lpDo = 0
-                endif
-            endif
-            if .lpDo = 1 and .lp = 2
-                .rowH = 0.004 * emlPatternSetup.sy
-                .nRows = 1
-                if .rowH > 0
-                    .nRows = ceiling ((.swatchTop - .swatchBottom) / .rowH)
-                endif
-                if .nRows < 1
-                    .nRows = 1
-                endif
-                .rowStep = (.swatchTop - .swatchBottom) / .nRows
-                for .r from 1 to .nRows
-                    @emlPaintHatchRow: .midX, .halfW,
-                    ... .swatchBottom + (.r - 1) * .rowStep,
-                    ... .swatchBottom + .r * .rowStep, .swatchBottom
-                endfor
-            endif
-            if .lpDo = 1 and .lp = 3
-                .dotStepY = emlPatternSetup.dotPitch * emlPatternSetup.sy
-                .dotRY = emlPatternSetup.dotR * emlPatternSetup.sy
-                .nDotRows = 0
-                if .dotStepY > 0
-                    .nDotRows = floor ((.swatchTop - .swatchBottom) / .dotStepY)
-                endif
-                for .r from 0 to .nDotRows
-                    .dy = .swatchBottom + (.r + 0.5) * .dotStepY
-                    if .dy - .dotRY >= .swatchBottom and .dy + .dotRY <= .swatchTop
-                        @emlPaintDotRow: .midX, .halfW, .dy, .r, .swatchBottom
-                    endif
-                endfor
-            endif
-            # v1.24: the swatch OUTLINE takes the same @emlMarkInk flip the
-            # mark's outline takes, or a slot-8 greyscale swatch would draw a
-            # near-black border on a near-black fill while its violin drew a
-            # white one -- the key disagreeing with the mark again, in the
-            # one detail the reader uses to see the swatch is a swatch.
-            @emlMarkInk: legendFill$[.i], legendColor$[.i]
-            Colour: emlMarkInk.result$
-            Line width: 0.8
-            Draw rectangle: .swatchLeft, .swatchRight, .swatchBottom,
-            ... .swatchTop
-            Line width: 0.5
-        else
-            Colour: legendColor$[.i]
-            Paint rectangle: legendColor$[.i], .swatchLeft, .swatchRight, .swatchBottom, .swatchTop
-        endif
-        if .i <= .shown
-            Colour: emlSetAdaptiveTheme.textColor$
-            Text: .textX, "left", .entryY, "half", legendLabel$[.i]
-        endif
-    endfor
 
     Colour: "Black"
     Line width: 1.0
 
-    # Restore font size BEFORE viewport — Select inner viewport uses
-    # current font size to compute margin widths. Must be bodySize.
-    Font size: emlSetAdaptiveTheme.bodySize
+    ; Put the anchor back to the default. It is a global, and a caller that
+    ; reaches @emlDrawLegendPanel directly after a top-right legend should
+    ; not inherit a corner it never asked for.
+    emlLegendPanelAnchor$ = "top-left"
 
-    # Restore viewport and axes — Insert picture from file: changes
-    # the selected viewport to the image's bounding box, which corrupts
-    # all subsequent drawing commands (ticks, labels, inner box).
+    ; Restore font size BEFORE viewport — Select inner viewport uses the
+    ; current font size to compute margin widths, so restoring them the other
+    ; way round installs a viewport measured at the legend's font.
+    Font size: emlSetAdaptiveTheme.bodySize
     Select inner viewport: emlSetAdaptiveTheme.innerLeft,
     ... emlSetAdaptiveTheme.innerRight,
     ... emlSetAdaptiveTheme.innerTop,
@@ -4499,6 +5333,13 @@ endproc
 #   emlLayout_yLabelWidthInches  — y-axis label width including gap
 #   emlLayout_legendWidthInches  — legend box width (0 if no legend)
 #   emlLayout_legendHeightInches — legend box height (0 if no legend)
+#   emlLayout_legendCols         — columns the legend folds into
+#   emlLayout_legendRows         — rows per column
+#   emlLayout_legendFits         — 1 if every entry fits at its full label
+#
+# The five legend outputs come from @emlMeasureLegendPanel, the same layout
+# @emlDrawLegend draws with, at the same font size (annotSize) — see the
+# Legend dimensions block below for what they used to be and why.
 # ============================================================================
 procedure emlMeasureGraphLayout: .vpW, .vpH, .title$, .xLabel$, .yLabel$
     .bodySize = emlSetAdaptiveTheme.bodySize
@@ -4549,48 +5390,60 @@ procedure emlMeasureGraphLayout: .vpW, .vpH, .title$, .xLabel$, .yLabel$
     endif
 
     # --- Legend dimensions ---
+    #
+    # v3.28 (D136): THIS NO LONGER HAS A LAYOUT OF ITS OWN. It delegates to
+    # @emlMeasureLegendPanel, which is the same procedure @emlDrawLegend uses
+    # to lay itself out, so the estimate and the drawing cannot disagree.
+    #
+    # What it used to be, and why that was worth deleting rather than
+    # documenting a third time: a SINGLE-COLUMN, UNCAPPED stack measured at
+    # bodySize. Both halves were wrong. Single-column stopped being the
+    # geometry at D123, when the legend began folding into as many columns as
+    # the frame needs; and bodySize was never the size it is drawn at —
+    # every one of the seven call sites in eml-draw-procedures.praat passes
+    # emlSetAdaptiveTheme.annotSize. Measuring at the wrong size is not a
+    # rounding error: Praat maps world coordinates through the font size in
+    # force when the viewport was selected, and "Group label" measures
+    # 0.4967" selected and read at 7 pt against 3.6229" selected at 7 pt and
+    # read at 20 pt (8 Aug 2026, Praat 6.6.30). The v3.26 note said the two
+    # globals had no reader anywhere and left it there. Being unread is what
+    # let it stay wrong; it is now correct instead, and it is the same code
+    # path the renderer runs, so it stays correct.
+    #
+    # The budget measured is PLACEMENT 1's — the data area inset by
+    # boxInsetInches on all four sides — because that is the placement whose
+    # box has to be planned around. Placements 2 and 3 do not consume figure
+    # margins at all; they grow the exported image instead. See EXPORT
+    # GEOMETRY above @emlDrawLegendPanel.
     if variableExists ("legendN")
         if legendN > 0
-            .fontInch = .bodySize / 72
-            .lineH = .fontInch * 1.4
-            .xPad = .fontInch * (0.3 + 0.3 * .sf)
-            .yPad = .fontInch * (0.3 + 0.2 * .sf)
-            .swatchSide = .fontInch * 0.8
-
+            .inset = emlSetAdaptiveTheme.boxInsetInches
+            @emlMeasureLegendPanel: .innerW - 2 * .inset,
+            ... .innerH - 2 * .inset, .annotSize
+            emlLayout_legendWidthInches = emlMeasureLegendPanel.width
+            emlLayout_legendHeightInches = emlMeasureLegendPanel.height
+            emlLayout_legendCols = emlMeasureLegendPanel.cols
+            emlLayout_legendRows = emlMeasureLegendPanel.rows
+            emlLayout_legendFits = emlMeasureLegendPanel.fits
+            # @emlMeasureLegendPanel leaves the panel viewport selected and
+            # bodySize in force, but not the 0..innerW x 0..innerH axes this
+            # procedure measures in, so they go back.
             Font size: .bodySize
-            .maxLabelW = 0
-            for .i from 1 to legendN
-                .w = Text width (world coordinates): legendLabel$[.i]
-                if .w > .maxLabelW
-                    .maxLabelW = .w
-                endif
-            endfor
-            .maxLabelW = .maxLabelW * 1.05
-
-            # NOTE (v3.26): this is the SINGLE-COLUMN, UNCAPPED measure, and
-            # since D123 it is no longer the box @emlDrawLegend draws — that
-            # procedure now folds the entries into as many columns as the
-            # frame needs (and at bodySize rather than the annotSize it is
-            # actually called with, which this estimate never modelled
-            # either). Above one column's worth of entries, read the height
-            # as an upper bound and the width as a lower one. Nothing
-            # consumes these two globals today; they exist for the responsive
-            # margins of TODO-047, and whoever builds that should call
-            # @emlDrawLegend's own .nCols/.rowsPerCol instead of this.
-            # Re-checked 8 Aug 2026, and checkable again with
-            #     grep -rn "emlLayout_legend" plugin/ harness/ validate/
-            # which returns this comment, the two Output lines in this
-            # procedure's header, and the four assignments in the if/else
-            # here. No READER, anywhere.
-            emlLayout_legendWidthInches = .xPad + .swatchSide + .xPad + .maxLabelW + .xPad
-            emlLayout_legendHeightInches = .yPad + legendN * .lineH + .yPad
+            @emlSetPanelViewport
+            Axes: 0, .innerW, 0, .innerH
         else
             emlLayout_legendWidthInches = 0
             emlLayout_legendHeightInches = 0
+            emlLayout_legendCols = 0
+            emlLayout_legendRows = 0
+            emlLayout_legendFits = 1
         endif
     else
         emlLayout_legendWidthInches = 0
         emlLayout_legendHeightInches = 0
+        emlLayout_legendCols = 0
+        emlLayout_legendRows = 0
+        emlLayout_legendFits = 1
     endif
 
     # Restore font state invariant
