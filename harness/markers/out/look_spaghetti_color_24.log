@@ -1,0 +1,35 @@
+
+══════════════════════════════════════════════
+  EML Stats : Spaghetti Plot Summary
+  Sat Aug  8 12:55:34 2026
+══════════════════════════════════════════════
+
+  Table               look
+  Condition column    cat
+  Value column        val
+  ID column           id
+  Conditions          3
+  Groups              24
+
+
+  ── C1 ──────────────────────────────────────
+  N                   120
+  Mean                41.504
+  SD                  9.791
+
+
+  ── C2 ──────────────────────────────────────
+  N                   120
+  Mean                43.706
+  SD                  9.790
+
+
+  ── C3 ──────────────────────────────────────
+  N                   120
+  Mean                45.903
+  SD                  9.788
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+SAVED /home/claude/EMLPraatTools/harness/markers/out/look_spaghetti_color_24.png

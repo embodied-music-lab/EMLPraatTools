@@ -1,0 +1,4 @@
+STYLE mode=color index=17 hue=1 marker=3 shape=floor
+PALETTE colour={0.00, 0.45, 0.70} halfInches=0.0267
+CROP 888 571 24 24
+SAVED /home/claude/EMLPraatTools/harness/markers/out/floor_016_17.png
