@@ -1,0 +1,4 @@
+STYLE mode=bw index=4 hue=4 marker=1 shape=keyline
+PALETTE colour={0.47, 0.47, 0.47} halfInches=0.0648
+CROP 305 168 61 61
+SAVED /home/claude/EMLPraatTools/harness/markers/out/bw_keyline_04.png

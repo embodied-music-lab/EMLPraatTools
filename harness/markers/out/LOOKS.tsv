@@ -1,0 +1,12 @@
+scatter	color	8	OK	332836
+scatter	color	16	OK	309228
+scatter	color	24	OK	324924
+scatter	bw	8	OK	315966
+scatter	bw	16	OK	294286
+scatter	bw	24	OK	310409
+spaghetti	color	8	OK	491780
+spaghetti	color	16	OK	572859
+spaghetti	color	24	OK	667198
+spaghetti	bw	8	OK	431200
+spaghetti	bw	16	OK	481940
+spaghetti	bw	24	OK	542450
