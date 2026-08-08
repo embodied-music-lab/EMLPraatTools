@@ -1,0 +1,27 @@
+case,claim,step,path,verdict
+w1_menu_remedy,2+3,form as entered from the menu (defaults),evidence/walks/d93/w1_01_form_before.png,context
+w1_menu_remedy,3,three fields deliberately changed before Run,evidence/walks/d93/w1_02_form_set.png,context
+w1_menu_remedy,2,error dialog names both k-group tools and the New > EML Tools > route,evidence/walks/d93/w1_03_error_dialog.png,CONFIRMED
+w1_menu_remedy,3,after Back — vibrato_rate_Hz / Both parametric and nonparametric / Alphabetical all intact,evidence/walks/d93/w1_04_after_back.png,CONFIRMED
+w1_menu_remedy,2,after Quit — script ends, no pause window, table still selected,evidence/walks/d93/w1_05_after_quit.png,CONFIRMED
+w2_wizard_analysis_error,1,wizard two-group column page (r4 singleton data),evidence/walks/d93/w2_01_columns.png,context
+w2_wizard_analysis_error,3,test page with Variance assumption deliberately set to Pooled,evidence/walks/d93/w2_02_testpage_pooled.png,context
+w2_wizard_analysis_error,1,error dialog at former exitScript site eml-wizard.praat:448,evidence/walks/d93/w2_03_error_dialog.png,CONFIRMED
+w2_wizard_analysis_error,1,after Back — wizard alive at Two groups — Select columns,evidence/walks/d93/w2_04_after_back.png,CONFIRMED
+w2_wizard_analysis_error,3,test page after the return still shows Pooled,evidence/walks/d93/w2_05_testpage_state.png,CONFIRMED
+w2_wizard_analysis_error,1,Back chain from the returned page reaches the goal chooser,evidence/walks/d93/w2_06_backchain_goal.png,CONFIRMED
+w3_wizard_samecolumn,1+3,correlation page with Column 1 = Column 2 = vibrato_rate_Hz and Check normality ticked,evidence/walks/d93/w3_01_form_set.png,context
+w3_wizard_samecolumn,1,error dialog at former exitScript site eml-wizard.praat:1375,evidence/walks/d93/w3_02_error_dialog.png,CONFIRMED
+w3_wizard_samecolumn,3,after Back — columns reset to jitter_pct/SPL_dB and Check normality unticked,evidence/walks/d93/w3_03_after_back.png,REFUTED
+w3_wizard_regression,1+3,regression page with Predictor deliberately set to singer,evidence/walks/d93/w3_04_reg_form_set.png,context
+w3_wizard_regression,1,error dialog at former exitScript site eml-wizard.praat:1307,evidence/walks/d93/w3_05_reg_error.png,CONFIRMED
+w3_wizard_regression,3,after Back — Predictor reset to jitter_pct; user choice discarded,evidence/walks/d93/w3_06_reg_after_back.png,REFUTED
+w3_wizard_regression,3,pressing Run again silently ran jitter_pct ~ SPL_dB instead of the user's model,evidence/walks/d93/w3_07_silently_ran_other_analysis.png,REFUTED
+w4_menu_noremedy,2+3,regression form with three fields deliberately set (Response = Predictor),evidence/walks/d93/w4_01_form_set.png,context
+w4_menu_noremedy,2,remedy-less menu error names the menu route but no tool (by design),evidence/walks/d93/w4_02_error_dialog.png,PARTIAL
+w4_menu_noremedy,3,after Back — Predictor/Response/Group column all intact,evidence/walks/d93/w4_03_after_back.png,CONFIRMED
+w5_wizard_twoway,incidental,two-factor page set to Data column = singer / Factor 1 = style / Factor 2 = sex before Run,evidence/walks/d93/w5_01_form_set.png,context
+w5_wizard_twoway,incidental,two-way ANOVA ran on the string column "singer" and reported results with no error,evidence/walks/d93/w5_02_twoway_ran_on_string_column.png,OUT-OF-SCOPE NOTE
+w5_wizard_twoway,1+3,two-factor page with Data column = singer / Factor 1 = sex / Factor 2 = sex,evidence/walks/d93/w5_03_form_set_samefactor.png,context
+w5_wizard_twoway,1,guard dialog at former exitScript site eml-wizard.praat:761,evidence/walks/d93/w5_04_error_dialog.png,CONFIRMED
+w5_wizard_twoway,3,after Back — page reset to SPL_dB / sex / style; all three user choices discarded,evidence/walks/d93/w5_05_after_back.png,REFUTED
