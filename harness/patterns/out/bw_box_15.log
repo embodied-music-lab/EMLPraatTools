@@ -1,0 +1,4 @@
+STYLE mode=bw index=15 hue=7 pattern=2 shape=box
+PALETTE fill={0.22, 0.22, 0.22} line={0.09, 0.09, 0.09}
+CROP 706 511 389 61
+SAVED /home/claude/EMLPraatTools/harness/patterns/out/bw_box_15.png
