@@ -1,0 +1,54 @@
+case	test	error
+m01	twoway	Data column "y" is not numeric in every row. This test reads the column as a whole, so one unusable cell replaces every value with its alphabetical rank; the unusable rows cannot be dropped individually here. 1 cell(s) are not numeric in any locale (row 3: n/a). This is a type error, not missing data.
+r01	twogroup	Data column "y" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Singer_1). This is a type error, not missing data.
+r01	anova	Data column "y" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Singer_1). This is a type error, not missing data.
+r01	kw	Data column "y" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Singer_1). This is a type error, not missing data.
+r01	pairwise	Data column "y" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Singer_1). This is a type error, not missing data.
+r01	twoway	Data column "y" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Singer_1). This is a type error, not missing data.
+r01	paired	First column "y" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Singer_1). This is a type error, not missing data.
+r01	correlation	X column "y" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Singer_1). This is a type error, not missing data.
+r01	descriptive	Data column "y" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Singer_1). This is a type error, not missing data.
+r01	regression	Dependent column "y" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Singer_1). This is a type error, not missing data.
+r01	normality	Data column "y" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Singer_1). This is a type error, not missing data.
+r01	rm	Condition column "y" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Singer_1). This is a type error, not missing data.
+r01	friedman	Condition column "y" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Singer_1). This is a type error, not missing data.
+r02	twogroup	Data column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+r02	anova	Data column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+r02	kw	Data column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+r02	pairwise	Data column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+r02	twoway	Data column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+r02	paired	First column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+r02	correlation	X column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+r02	descriptive	Data column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+r02	regression	Dependent column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+r02	normality	Data column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+r02	rm	Condition column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+r02	friedman	Condition column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+r03	twogroup	Data column "y" holds no numbers. 36 cell(s) use a comma where a decimal point belongs (row 1: 1,5). Praat reads these as a different number, so they are excluded rather than guessed at. Replace the commas with points to use these values.
+r03	anova	Data column "y" holds no numbers. 36 cell(s) use a comma where a decimal point belongs (row 1: 1,5). Praat reads these as a different number, so they are excluded rather than guessed at. Replace the commas with points to use these values.
+r03	kw	Data column "y" holds no numbers. 36 cell(s) use a comma where a decimal point belongs (row 1: 1,5). Praat reads these as a different number, so they are excluded rather than guessed at. Replace the commas with points to use these values.
+r03	pairwise	Data column "y" holds no numbers. 36 cell(s) use a comma where a decimal point belongs (row 1: 1,5). Praat reads these as a different number, so they are excluded rather than guessed at. Replace the commas with points to use these values.
+r03	twoway	Data column "y" holds no numbers. 36 cell(s) use a comma where a decimal point belongs (row 1: 1,5). Praat reads these as a different number, so they are excluded rather than guessed at. Replace the commas with points to use these values.
+r03	paired	First column "y" holds no numbers. 36 cell(s) use a comma where a decimal point belongs (row 1: 1,5). Praat reads these as a different number, so they are excluded rather than guessed at. Replace the commas with points to use these values.
+r03	correlation	X column "y" holds no numbers. 36 cell(s) use a comma where a decimal point belongs (row 1: 1,5). Praat reads these as a different number, so they are excluded rather than guessed at. Replace the commas with points to use these values.
+r03	descriptive	Data column "y" holds no numbers. 36 cell(s) use a comma where a decimal point belongs (row 1: 1,5). Praat reads these as a different number, so they are excluded rather than guessed at. Replace the commas with points to use these values.
+r03	regression	Dependent column "y" holds no numbers. 36 cell(s) use a comma where a decimal point belongs (row 1: 1,5). Praat reads these as a different number, so they are excluded rather than guessed at. Replace the commas with points to use these values.
+r03	normality	Data column "y" holds no numbers. 36 cell(s) use a comma where a decimal point belongs (row 1: 1,5). Praat reads these as a different number, so they are excluded rather than guessed at. Replace the commas with points to use these values.
+r03	rm	Condition column "y" holds no numbers. 36 cell(s) use a comma where a decimal point belongs (row 1: 1,5). Praat reads these as a different number, so they are excluded rather than guessed at. Replace the commas with points to use these values.
+r03	friedman	Condition column "y" holds no numbers. 36 cell(s) use a comma where a decimal point belongs (row 1: 1,5). Praat reads these as a different number, so they are excluded rather than guessed at. Replace the commas with points to use these values.
+r04	twogroup	Data column not found: y
+r04	anova	Data column not found: y
+r04	kw	Data column not found: y
+r04	pairwise	Data column not found: y
+r04	twoway	Data column not found: y
+r04	paired	Column not found: y
+r04	correlation	Column not found: y
+r04	descriptive	Column not found: y
+r04	regression	Column "y" not found in table "coltype".
+r04	normality	Column "y" not found in table "coltype".
+r04	rm	Column not found: y
+r04	friedman	Column not found: y
+r05	paired	Second column "x" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Take_1). This is a type error, not missing data.
+r05	correlation	Y column "x" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Take_1). This is a type error, not missing data.
+r05	regression	Predictor column "x" holds no numbers. 36 cell(s) are not numeric in any locale (row 1: Take_1). This is a type error, not missing data.
+

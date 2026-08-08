@@ -1,0 +1,9 @@
+case,n_rows,kind
+c01,36,numeric
+m01,36,mixed
+r01,36,string
+r02,36,empty
+r03,36,locale
+r04,36,notfound
+r05,36,string-second
+
