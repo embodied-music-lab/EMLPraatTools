@@ -1,0 +1,7 @@
+Time Series (with CI): 2 group(s)
+  Group: S1 — 3 time points
+  Observations per time point: up to 6
+  Group: S2 — 3 time points
+  Observations per time point: up to 6
+Time series (with CI): Line shows the mean; band shows the 95% CI. 30 repeated observation(s) were averaged into their time points. Use Spaghetti Plot to show the individual series behind the mean.
+SAVED /home/claude/EMLPraatTools/harness/stress_out/tsci_baseline.png

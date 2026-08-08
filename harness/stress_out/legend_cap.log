@@ -1,0 +1,5 @@
+LEGENDCASE n=24 vpW=6.00 vpH=4.00 cols=2 rows=12 shown=24 hidden=0
+FRAMEPX x=252 y=117 w=1296 h=933
+BOXPX x=294 y=159 w=303 h=613
+LEGENDFIT ok=1 left=42 right=951 top=42 bottom=278
+SAVED /home/claude/EMLPraatTools/harness/stress_out/legend_cap.png

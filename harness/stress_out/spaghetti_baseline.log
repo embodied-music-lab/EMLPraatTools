@@ -1,0 +1,34 @@
+
+══════════════════════════════════════════════
+  EML Stats : Spaghetti Plot Summary
+  Sat Aug  8 12:52:57 2026
+══════════════════════════════════════════════
+
+  Table               d
+  Condition column    cat
+  Value column        val
+  ID column           id
+  Conditions          3
+
+
+  ── Cat1 ────────────────────────────────────
+  N                   12
+  Mean                29.059
+  SD                  2.982
+
+
+  ── Cat2 ────────────────────────────────────
+  N                   12
+  Mean                32.791
+  SD                  2.318
+
+
+  ── Cat3 ────────────────────────────────────
+  N                   12
+  Mean                36.627
+  SD                  2.791
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+SAVED /home/claude/EMLPraatTools/harness/stress_out/spaghetti_baseline.png
