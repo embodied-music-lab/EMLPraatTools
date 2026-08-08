@@ -1,0 +1,4 @@
+STYLE mode=color index=8 hue=8 marker=1 shape=keyline
+PALETTE colour={0.00, 0.00, 0.00} halfInches=0.0648
+CROP 305 168 61 61
+SAVED /home/claude/EMLPraatTools/harness/markers/out/color_keyline_08.png

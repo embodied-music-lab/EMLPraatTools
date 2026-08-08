@@ -1,0 +1,4 @@
+STYLE mode=color index=23 hue=7 marker=3 shape=key
+PALETTE colour={0.95, 0.90, 0.25} halfInches=0.0648
+CROP 305 168 61 61
+SAVED /home/claude/EMLPraatTools/harness/markers/out/color_key_23.png
