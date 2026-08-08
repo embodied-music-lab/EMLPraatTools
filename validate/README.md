@@ -9,7 +9,7 @@ cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect: `1937 checks, 1937 passed, 0 FAILED`, and exit status 0.**
+**Expect: `4058 checks, 4058 passed, 0 FAILED`, and exit status 0.**
 
 That is the whole thing. If it prints that, every number the plugin printed in
 a committed run agrees with what R computes from the same input file.
@@ -38,7 +38,7 @@ nothing is fetched.
 
 ## Check one by hand, in two minutes
 
-Do this once and the rest of the suite is just the same move repeated 1937
+Do this once and the rest of the suite is just the same move repeated 4058
 times.
 
 **1. The input the plugin was given** — `evidence/csv/v09_anova_tukey_input.csv`
@@ -74,11 +74,11 @@ voice_type   2 480.41  240.21  14.269  1.868e-05
 480.41, 2, 240.21, 14.269. The plugin printed 480.41, 2, 240.21, 14.2687.
 
 **4. Where the suite does that for you** —
-`validate/v09_anova_tukey_orchestrator.R`, line 60:
+`validate/v09_anova_tukey_orchestrator.R` — search it for
+`"F (summary line)"`, currently line 84:
 
 ```r
-check("v09", "F (summary line)", printed(cap, "F"),
-      unname(s[["F value"]][1]), tol = 5e-5)
+check("v09", "F (summary line)",     printed(cap, "F"),           unname(s[["F value"]][1]), tol = 5e-5)
 ```
 
 `printed(cap, "F")` reads 14.2687 out of the capture. `s[["F value"]][1]` is
@@ -203,8 +203,8 @@ same numbers. Still uncovered: the annotation layer — everything
 
 Eight lines print as `ATST` rather than `PASS`. Those are **attestations** —
 claims backed by a screenshot or a recorded observation rather than by
-anything the script can evaluate. They are excluded from the 1937 and from the
-exit status, and reported separately, so that "1937 checks passed" means 1937
+anything the script can evaluate. They are excluded from the 4058 and from the
+exit status, and reported separately, so that "4058 checks passed" means 4058
 things were tested. Seven are in `v07`; the eighth is in `v20`.
 
 ---
@@ -216,8 +216,12 @@ things were tested. Seven are in `v07`; the eighth is in `v20`.
   red-path cases, and an honest coverage statement including what is *not*
   covered. It is long because it is a reference, not a front door.
 - **`validate/tools/check_registry_counts.R`** — verifies that every count
-  claimed in `REGISTRY.md` matches a live run, so the document cannot drift
-  from the code.
+  claimed in `REGISTRY.md` matches a live run, plus the headline in the
+  repository-root `README.md`. It does **not** yet read this file, so the
+  three totals above (`4058`, in the expect-line, the walkthrough and the
+  attestation paragraph) are hand-maintained. Anyone bumping the headline has
+  four documents to change, not two: `README.md`, `validate/REGISTRY.md`,
+  this file, and whatever new validator moved the number.
 - **`validate/oracle/`** and **`validate/mutation/`** — two optional tiers:
   one checks `helpers.R` against scipy/pingouin/scikit-posthocs, the other
   corrupts committed captures to prove the suite notices. Neither is needed

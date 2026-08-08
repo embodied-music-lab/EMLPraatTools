@@ -22,9 +22,28 @@
 # so this script re-checks the group sizes and the rank ordering against v09's
 # mean ordering.
 #
-# DRIVEN 5 August 2026:
+# PROVENANCE — READ THIS BEFORE CITING THIS SCRIPT AS GUI EVIDENCE.
+#
+# ORIGINALLY DRIVEN 5 August 2026 through the real GUI:
 #   New > EML Tools > Compare k groups (Kruskal-Wallis)...
 #   Data column SPL_dB, Group column voice_type, Group order = Table order.
+#
+# RE-DRIVEN HEADLESSLY 7 August 2026 for D110, by
+# harness/broom_cases/d110_orchestrator_redrive.praat under `praat --run`:
+# @emlRunKWAnalysis on the same committed input with the same arguments
+# (Dunn ON, Holm adjustment). That is the shipping orchestrator the menu
+# calls, on the committed CSV, but it is NOT a session someone clicked
+# through. The capture this script reads is therefore the same KIND of
+# evidence as v07_r7_axis_info.txt and the v18 grid, not the same kind as the
+# 5 August GUI captures — see validate/README.md §"Two kinds of evidence".
+#
+# D110 forced the re-drive: the Dunn matrix moved from fixed$ (p, 4) to
+# @emlFormatP's bare APA form. The re-drive also picked up two unrelated
+# changes that had landed in the plugin since 5 August and were therefore
+# absent from the committed capture — the wizard explanation column, whose
+# default became 1 (D42/D102), and the "p" row's bare form with the unrounded
+# value beside it (D9/D28), where the old capture read "p    p < .001".
+# Neither changes a number; both change what the capture says.
 #
 # Input:  evidence/csv/v10_kw_dunn_input.csv
 # Output: evidence/info/v10_kw_dunn_info.txt
@@ -99,8 +118,19 @@ raw <- c(SM = dn$p["Soprano", "Mezzo"],
          MA = dn$p["Mezzo",   "Alto"])
 adj <- holm_adjust(raw)
 names(adj) <- names(raw)
-check("v10", "Dunn adj p Soprano-Mezzo", printed_cell(cap, "Dunn's Post-Hoc", "Soprano", "Mezzo"), adj[["SM"]], tol = 5e-5)
-check("v10", "Dunn adj p Mezzo-Alto",    printed_cell(cap, "Dunn's Post-Hoc", "Mezzo", "Alto"), adj[["MA"]], tol = 5e-5)
+# D110. The matrix printed fixed$ (p, 4) — "0.0047" — and these tolerances
+# were 5e-5, half of that last decimal place. The cells now carry
+# @emlFormatP's bare APA form at three decimals (".005"), so the tolerance is
+# 5e-4 on the same rule: half of the last place the plugin actually prints.
+# Nothing was loosened to make a red check green — the printed precision
+# changed and the tolerance follows it. The form itself is asserted below, so
+# a silent return to four decimals under a 5e-4 tolerance would not pass
+# unnoticed.
+check("v10", "Dunn adj p Soprano-Mezzo", printed_cell(cap, "Dunn's Post-Hoc", "Soprano", "Mezzo"), adj[["SM"]], tol = 5e-4)
+check("v10", "Dunn adj p Mezzo-Alto",    printed_cell(cap, "Dunn's Post-Hoc", "Mezzo", "Alto"), adj[["MA"]], tol = 5e-4)
+check_true("v10", "the Dunn matrix uses the bare APA form (no leading zero)",
+           grepl("^\\.[0-9]{3}$",
+                 printed_cell(cap, "Dunn's Post-Hoc", "Soprano", "Mezzo", as_string = TRUE)))
 check_true("v10", "Dunn adj p Soprano-Alto is floored in the matrix",
            grepl("<", printed_cell(cap, "Dunn's Post-Hoc", "Soprano", "Alto", as_string = TRUE)))
 check_true("v10", "and R agrees it is below .001", adj[["SA"]] < 0.001)

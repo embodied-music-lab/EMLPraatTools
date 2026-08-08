@@ -132,7 +132,7 @@ git clone <repo> && cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect exit status 0.** 1937 checks, all passing, plus 8 attestations
+**Expect exit status 0.** 4104 checks, all passing, plus 8 attestations
 reported separately and not counted as checks.
 
 Until 6 August 2026 this said "expect exit status 1", because R7 — the
@@ -146,8 +146,8 @@ is driven now, and the suite has no designed failures left.
 An **attestation** is a claim backed by a screenshot or a recorded
 observation rather than by anything the script can evaluate. There are eight — seven in `v07`, and one in `v20` recording that its
 five files came from the shipping orchestrator rather than a harness. They print as `ATST`, are excluded from the check count and
-from the exit status, and are listed separately so that "1937 checks passed"
-means 1937 things were tested.
+from the exit status, and are listed separately so that "4104 checks passed"
+means 4104 things were tested.
 
 D96 through D99 were failing here until 6 August. They now pass, and they
 pass against captures re-driven after the fixes, not against the old ones.
@@ -247,9 +247,13 @@ to respond — either by gaining a failure over the baseline or by halting. A
 suite that stays green under a corrupted capture is validating nothing.
 
 It is baseline-relative rather than count-hardcoded, so it survives the suite
-growing. It refuses to run on a dirty `evidence/` tree, restores through
-`git checkout --`, and verifies the restoration at the end. A `sed` pattern
-that no longer matches reports `SKIP`, never a false `OK`.
+growing. It refuses to run on a dirty `evidence/` tree. A preflight pass applies
+every case to a copy before any suite runs; a `sed` pattern that no longer
+matches is a **DEAD CASE** and exits 3, because a mutation that cannot fire is
+not a pass. A case may opt out only by declaring a named `SKIPPABLE:<reason>`.
+Restoration is by file copy under a terminating signal trap — the driver runs no
+git command that writes — and is verified by byte-comparing every touched file
+with its pre-run copy.
 
 ```
 bash validate/mutation/mutate_drive.sh
@@ -290,8 +294,8 @@ be skipped without weakening a claim made in this document.
 | `v06_D15_effect_size_defect.R` | D15, now resolved: each paired test reports its own effect size | `evidence/csv/demo_paired_input.csv` | 9 |
 | `v07_redpath_degenerate_inputs.R` (reported per case as R1–R7) | Red path: inputs that should fail or sit on a boundary. **All seven driven** as of 6 Aug 2026 | generated into `validate/redpath/` by the script itself | 55 + 7 attested |
 | `v08_twogroup_orchestrator.R` | *Compare two groups*: Welch *t*, Mann-Whitney, Cohen's *d*, Hedges' *g*, rank-biserial | `evidence/csv/v08_twogroup_input.csv` | 26 |
-| `v09_anova_tukey_orchestrator.R` | *Compare k groups (ANOVA)*: ANOVA table, eta-squared, Tukey matrix, pairwise *d* matrix | `evidence/csv/v09_anova_tukey_input.csv` | 40 |
-| `v10_kruskal_dunn_orchestrator.R` | *Compare k groups (Kruskal-Wallis)*: *H*, epsilon-squared, mean ranks, Dunn *z* and adjusted *p*, rank-biserial matrix | `evidence/csv/v10_kw_dunn_input.csv` | 34 |
+| `v09_anova_tukey_orchestrator.R` | *Compare k groups (ANOVA)*: ANOVA table, eta-squared, Tukey matrix, pairwise *d* matrix | `evidence/csv/v09_anova_tukey_input.csv` | 55 |
+| `v10_kruskal_dunn_orchestrator.R` | *Compare k groups (Kruskal-Wallis)*: *H*, epsilon-squared, mean ranks, Dunn *z* and adjusted *p*, rank-biserial matrix | `evidence/csv/v10_kw_dunn_input.csv` | 35 |
 | `v11_twoway_orchestrator.R` | *Compare two-way (ANOVA)*: main effects, interaction, partial eta-squared | `evidence/csv/v11_twoway_input.csv` | 31 |
 | `v12_correlation_orchestrator.R` | *Correlate two columns*: Pearson and Spearman with their *t* and df | `evidence/csv/v12_correlation_input.csv` | 16 |
 | `v13_regression_orchestrator.R` | *Linear regression*: model, overall *F*, coefficient table, direction | `evidence/csv/v13_regression_input.csv` | 30 |
@@ -304,10 +308,15 @@ be skipped without weakening a claim made in this document.
 | `v19_nist_strd.R` | **Tier C.** The plugin against NIST StRD certified values, scored in log relative error. Contributes checks only when the `.dat` files have been ingested; prints a loud SKIP otherwise | `evidence/nist/` | 98 |
 | `v18_sweep_parity.R` | **Tier B.** One-way ANOVA, Tukey-Kramer and Kruskal-Wallis over a 16-case designed grid: k = 2/3/5, n per cell 3-200, balanced and 6:1 unbalanced, tie-free to heavily tied, 1:1 and 10:1 variance ratios | `evidence/sweep/` | 294 |
 | `v22_homogeneity.R` | **Ruling 1 numerics.** Brown-Forsythe (median-centred Levene), Welch's *k*-sample *F*, and Games-Howell, over a 17-case grid including the *k* = 2 identity (Welch *F* = Welch *t*²), a +1e6 offset case, a skewed case that would catch a mean-centred "Brown-Forsythe", and eight red paths asserted by exact refusal string | `harness/homogeneity/out/` | 447 |
-| `v23_qq_points.R` | **The Q-Q figure's own points.** Theoretical axis against `qnorm(ppoints(n, a = 3/8))`, sample axis against `sort(x)`, reference line against `lm()`, and *W* against `shapiro.test()` — so the figure and the reported test are bound to the same points. Also pins the Blom-vs-`qqnorm` plotting-position difference above n = 10, and asserts no temp Table leaks | `harness/qq_out/` | 177 |
+| `v23_qq_points.R` | **The Q-Q figure's own points.** Theoretical axis against `qnorm(ppoints(n, a = 3/8))`, sample axis against `sort(x)`, reference line against `lm()`, and *W* against `shapiro.test()` — so the figure and the reported test are bound to the same points. Also pins the Blom-vs-`qqnorm` plotting-position difference above n = 10, and asserts no temp Table leaks | `harness/qq_out/` | 396 |
 | `v24_influence.R` | **Ruling 4(d).** Leverage, Cook's distance and the leverage-corrected standardised residual from `@emlOLSInfluence` against `hatvalues()`, `cooks.distance()` and `rstandard()`. Pins the OLD `resid/sigma` form as wrong, so reverting the augment site turns this red. Red paths include a leverage-1 row at both ulp neighbours | `evidence/influence/` | 214 |
-| `v25_anova_showboth.R` | **Ruling 1 at the report level.** Two captures from the same committed input differing only in data column, so the conditional is asserted in BOTH directions. The ABSENT case carries the constraint: on data that does not trip the check the report must look as it did before the feature existed, and the primary *F* must still be `aov()`'s pooled *F* rather than `oneway.test()`'s | `evidence/info/v25_showboth_*` | 31 |
+| `v25_anova_showboth.R` | **Ruling 1 at the report level.** Two captures from the same committed input differing only in data column, so the conditional is asserted in BOTH directions. The ABSENT case carries the constraint: on data that does not trip the check the report must look as it did before the feature existed, and the primary *F* must still be `aov()`'s pooled *F* rather than `oneway.test()`'s | `evidence/info/v25_showboth_*` | 34 |
 | `v26_twoway_caveat.R` | **Ruling 3(a).** The interaction caveat asserted in both directions from two committed two-way inputs, plus its placement under the table it qualifies rather than under the effect sizes (D98), plus the assertion that the three *F* values are identical whether the caveat fires or not | `evidence/info/v26_caveat_*` | 18 |
+| `v27_empty_frames.R` | **D111 uniformity guard.** Every Table-consuming draw procedure, given no usable data, must fall back to a unit axis and draw the labelled empty frame with its own disclosure line. The histogram used to `goto` past its own `Axes:` and write a blank white page. Includes a STATIC check that no `goto` returns to the draw library — that construct is how the defect got in. Reads `harness/stress_out/`, so `harness/stress_graphs.sh` must run first | `harness/stress_out/` | 181 |
+| `v28_column_type_guard.R` | **Column TYPE guard, all twelve orchestrators.** Praat has two column readers that disagree: the row-wise one returns undefined for a text cell, but `Report two-way anova:` numericises the column as a whole and substitutes each value's ALPHABETICAL RANK — so the two-way test reported F = 132.92, p = 6.9e-15 on a column of singers' names, and one bad cell in 48 moved a real F from 34.11 to 0.7356. Asserts the refusal by exact message, that the printed output is EMPTY on refusal (the failure was an empty `error$` beside a full table), and that every legitimate analysis still runs | `harness/coltype/` | 613 |
+| `v29_figure_disclosure.R` | **The figure-disclosure ruling**, all ten draw procedures: Info window always, the figure only when Annotate is ticked, the user's subtitle never. Asserts the exact skipped-row count in house wording, both directions of the Annotate gate (the OFF direction is the ruling), an `emlSubtitle$` sentinel unchanged across 40 renders, clean data producing no disclosure at all, and that the disclosure box and the form's omnibus box never share a corner. Includes a STATIC ban on `emlSubtitle$ =` across **every** file in `plugin/graphs/`, in three rules: no self-referential append anywhere, no assignment inside any `@emlDraw*` procedure, and a pinned inventory of the legitimate sites so a new one must be argued for. Also covers the three over-cap defects: the grouped-scatter annotation budget, a bar chart's missing group versus a measured zero, and the sub-group ceiling, now 24 = 8 hues x 3 fill patterns. All 24 styles are asserted pairwise distinguishable FROM THE RENDERED IMAGE, per channel, in colour and greyscale -- not from the palette table, which is what let two duplicate slots survive undetected. A negative control with the pattern dimension removed reports 24 confusable pairs | `harness/disclosure/out/` | 1066 |
+| `v30_wizard_state.R` | **An error return keeps the user's columns.** The wizard printed "Nothing has been lost" and re-rendered from a column guess; a user who pressed Run without touching anything had a different analysis reported as theirs. Asserts from before/after Info captures that the fixed one never names a guessed column and runs nothing after the return, plus three source guards: the helper is defined once, no hand-written copy survives, and all 16 call sites are present | `evidence/walks/d117/` | 23 |
+| `v31_gridmode.R` | **One canonical gridline encoding.** Two incompatible encodings — `1 Both / 2 Horizontal / 3 Vertical / 4 Off` for the seven continuous types, `1 Horizontal / 2 Off` for the seven categorical — shared ONE persisted key, so a scatter drawn with gridlines off left a histogram's dropdown blank and refusing OK, on disk and surviving a restart. Three types clamped by INDEX, so "Horizontal only" silently became "Off". Now one canonical encoding translated at the dialog. The load-bearing checks are the registry ones: the plugin refuses to LOAD if a future graph type omits its entry | `evidence/walks/gridmode/` | 46 |
 
 ### Notes on individual scripts
 

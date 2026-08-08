@@ -17,10 +17,34 @@
 # EVERY REPORTED VALUE IS READ FROM THE COMMITTED CAPTURE. No number below
 # is typed in by hand; see the note at the head of v08.
 #
-# DRIVEN 5 August 2026:
+# PROVENANCE — READ THIS BEFORE CITING THIS SCRIPT AS GUI EVIDENCE.
+#
+# ORIGINALLY DRIVEN 5 August 2026 through the real GUI:
 #   New > EML Tools > Compare k groups (ANOVA)...
 #   Data column SPL_dB, Group column voice_type, Tukey HSD post hoc ON,
 #   Group order = Table order.
+#
+# RE-DRIVEN HEADLESSLY 7 August 2026 for D110, by
+# harness/broom_cases/d110_orchestrator_redrive.praat under `praat --run`:
+# @emlRunAnovaAnalysis on the same committed input with the same arguments.
+# That is the shipping orchestrator the menu calls, on the committed CSV, but
+# it is NOT a session someone clicked through. The capture this script reads
+# is therefore the same KIND of evidence as v07_r7_axis_info.txt and the v18
+# grid, not the same kind as the 5 August GUI captures — see validate/README.md
+# §"Two kinds of evidence, and the limit on each".
+#
+# D110 forced the re-drive: the ANOVA source table's p cell and the Tukey
+# matrix moved from fixed$ (p, n) to @emlFormatP's bare APA form, so the
+# strings this script reads changed. The re-drive also picked up four
+# unrelated changes that had landed in the plugin since 5 August and were
+# therefore ABSENT from the committed capture — the report had drifted from
+# its evidence:
+#   * the Tukey HSD mean-difference / family-wise CI block (D22)
+#   * the unconditional Brown-Forsythe equal-spread lines (Ruling 1)
+#   * the wizard explanation column, whose default became 1 (D42/D102)
+#   * the "p" summary row's bare form with the unrounded value beside it
+#     (D9/D28), where the old capture read "p    p < .001"
+# None of them changes a number; all of them change what the capture says.
 #
 # Input:  evidence/csv/v09_anova_tukey_input.csv
 # Output: evidence/info/v09_anova_tukey_info.txt
@@ -58,10 +82,27 @@ check("v09", "MS between", printed(cap, "Between", 3), ss_b / df_b, tol = 5e-3)
 check("v09", "MS within",  printed(cap, "Within", 3), ss_w / df_w, tol = 5e-3)
 check("v09", "F (ANOVA table row)", printed(cap, "Between", 4), unname(s[["F value"]][1]), tol = 5e-5)
 check("v09", "F (summary line)",     printed(cap, "F"),           unname(s[["F value"]][1]), tol = 5e-5)
-check("v09", "p (full precision in the table row)",
-      printed(cap, "Between", 5), unname(s[["Pr(>F)"]][1]), tol = 5e-7)
+# D110. This cell used to print fixed$ (p, 6) — "0.000019", full precision and
+# a leading zero, under a column headed "p", in a report that spelled the same
+# quantity ".584" further down. It now carries @emlFormatP's bare APA form, so
+# the table row FLOORS. The check changed with it: the row is asserted to say
+# "< .001" and R is asserted to agree, which is what the string now claims.
+#
+# The precision is not lost, and that is the point of the pair of checks
+# below. @emlReportPWithExact restates the unrounded p beside the floored
+# label in the "p" summary row, so the exact value is still IN THE REPORT and
+# is still read out of the capture here — it just moved out of the table cell.
+# If a future edit floors the summary row too, the second check goes red.
+check_floored("v09", "p is floored in the ANOVA table row", cap, "Between",
+              unname(s[["Pr(>F)"]][1]), field = 5)
 check_floored("v09", "p also floored in the summary line", cap, "p",
               unname(s[["Pr(>F)"]][1]))
+exact_field <- printed_str(cap, "p", 2)
+check_true("v09", "the floored summary p is followed by a parenthesised exact value",
+           grepl("^\\(.*\\)$", exact_field))
+check("v09", "and that exact value is R's p to full double precision",
+      as.numeric(gsub("[()]", "", exact_field)), unname(s[["Pr(>F)"]][1]),
+      tol = 1e-18)
 
 # Total SS must equal between + within. Trivially true in R; the check is
 # that the plugin PRINTS a total consistent with the parts it printed.
@@ -101,8 +142,19 @@ tp <- function(x, y) {
     i <- which(nm == paste0(x, "-", y)); if (length(i)) return(tk[i, "p adj"])
     i <- which(nm == paste0(y, "-", x)); tk[i, "p adj"]
 }
-check("v09", "Tukey p Soprano-Mezzo", printed_cell(cap, "Tukey HSD", "Soprano", "Mezzo"), tp("Soprano", "Mezzo"), tol = 5e-5)
-check("v09", "Tukey p Mezzo-Alto",    printed_cell(cap, "Tukey HSD", "Mezzo", "Alto"),    tp("Mezzo", "Alto"), tol = 5e-5)
+# D110. The matrix printed fixed$ (p, 4) — "0.0018" — and these tolerances
+# were 5e-5, half of that last decimal place. The cells now carry
+# @emlFormatP's bare APA form, which is THREE decimals (".002"), so the
+# tolerance is 5e-4 on the same reasoning: half of the last place the plugin
+# actually prints. This is a coarser printed value, not a looser check —
+# 5e-4 is exactly as tight as the new format allows, and a wrong number is
+# still caught. printed_cell reads ".002" through as.numeric, which parses a
+# bare leading point.
+check("v09", "Tukey p Soprano-Mezzo", printed_cell(cap, "Tukey HSD", "Soprano", "Mezzo"), tp("Soprano", "Mezzo"), tol = 5e-4)
+check("v09", "Tukey p Mezzo-Alto",    printed_cell(cap, "Tukey HSD", "Mezzo", "Alto"),    tp("Mezzo", "Alto"), tol = 5e-4)
+check_true("v09", "the Tukey matrix uses the bare APA form (no leading zero)",
+           grepl("^\\.[0-9]{3}$",
+                 printed_cell(cap, "Tukey HSD", "Soprano", "Mezzo", as_string = TRUE)))
 check_true("v09", "Tukey p Soprano-Alto is floored in the matrix",
            grepl("<", printed_cell(cap, "Tukey HSD", "Soprano", "Alto", as_string = TRUE)))
 check_true("v09", "and R agrees it is below .001", tp("Soprano", "Alto") < 0.001)
@@ -115,6 +167,40 @@ check("v09", "Tukey matrix is symmetric as printed: [S,M] = [M,S]",
 check("v09", "Tukey matrix is symmetric as printed: [M,A] = [A,M]",
       printed_cell(cap, "Tukey HSD", "Mezzo", "Alto"),
       printed_cell(cap, "Tukey HSD", "Alto", "Mezzo"), tol = 1e-12)
+
+# --- Tukey mean differences and family-wise CIs ----------------------------
+# This block (D22) landed in the plugin after the 5 August GUI drive, so it
+# was absent from the old capture and unchecked anywhere in the suite. The
+# D110 re-drive brought twelve numbers into committed evidence; they are
+# checked here rather than left sitting in a capture that nothing reads.
+#
+# The rows read "Soprano − Mezzo   5.5295   [1.8896, 9.1694]" and the
+# separator is U+2212 MINUS SIGN, not a hyphen, so the row is matched on the
+# group names rather than on the dash. TukeyHSD gives the same three
+# quantities; the plugin builds its half-width from qCritical and MS_within
+# instead, which is what makes this an independent path rather than a restatement.
+tci <- function(x, y) {
+    nm <- rownames(tk)
+    i <- which(nm == paste0(x, "-", y))
+    if (length(i)) return(tk[i, c("diff", "lwr", "upr")])
+    i <- which(nm == paste0(y, "-", x))
+    -tk[i, c("diff", "upr", "lwr")]          # reversed pair: negate and swap
+}
+tci_row <- function(x, y) {
+    ln <- grep(paste0("^", x, "\\s+\\S+\\s+", y, "\\s"), trimws(cap$lines),
+               value = TRUE)
+    stopifnot(length(ln) == 1)
+    as.numeric(regmatches(ln, gregexpr("-?[0-9]+\\.[0-9]+", ln))[[1]])
+}
+for (pr in list(c("Soprano", "Mezzo"), c("Soprano", "Alto"), c("Mezzo", "Alto"))) {
+    got <- tci_row(pr[1], pr[2]); want <- unname(tci(pr[1], pr[2]))
+    lab <- paste(pr[1], "vs", pr[2])
+    check("v09", paste("Tukey mean difference", lab),  got[1], want[1], tol = 5e-5)
+    check("v09", paste("Tukey CI lower", lab),         got[2], want[2], tol = 5e-5)
+    check("v09", paste("Tukey CI upper", lab),         got[3], want[3], tol = 5e-5)
+    check_true("v09", paste("printed CI brackets the printed difference,", lab),
+               got[2] <= got[1] && got[1] <= got[3])
+}
 
 # --- pairwise Cohen's d ----------------------------------------------------
 # The printed matrix is antisymmetric: cell [i,j] = -cell [j,i]. That is a

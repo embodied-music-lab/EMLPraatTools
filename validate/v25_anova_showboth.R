@@ -129,10 +129,13 @@ gh <- function(y, g) {
 }
 ghR <- gh(d$vibrato_rate_Hz, d$voice_type)
 
-# The printed matrix is APA-bare (".584"), unlike the Tukey matrix above it
-# which is fixed$(p, 4) ("0.4918"). Parse what is actually there rather than
-# assuming the two matrices agree on format -- they do not, and that
-# inconsistency is recorded as a finding rather than papered over here.
+# The printed matrix is APA-bare (".584"). It used to be the ODD ONE OUT: the
+# Tukey matrix 35 lines above it printed fixed$ (p, 4) ("0.4918"), so this one
+# report spelled the same quantity two ways, and this comment recorded that as
+# a finding rather than papering over it. D110 moved the Tukey matrix onto
+# @emlFormatP, so both now read ".492" / ".584". The parse below still reads
+# what is actually there rather than assuming a format, and the check after it
+# asserts the agreement instead of leaving it to a comment.
 i0 <- grep("── Games-Howell Pairwise", cap_p)
 check_true("v25", "Games-Howell matrix is present", length(i0) == 1)
 blk  <- cap_p[(i0 + 1):(i0 + 8)]
@@ -151,6 +154,36 @@ for (nm in names(ghR)) {
   check("v25", paste("Games-Howell matrix symmetric", ij[1], ij[2]),
         M[ij[1], ij[2]], M[ij[2], ij[1]], tol = 0)
 }
+
+# ---- 5b. one report, one spelling of a p-value (D110) ---------------------
+# This capture is where the defect was visible: both post-hoc matrices are in
+# it, 35 lines apart, and until D110 one read "0.4918" and the other ".584".
+# The assertion is deliberately about FORM, not value -- every off-diagonal
+# cell of both matrices must be the bare APA form (no leading zero, three
+# decimals) or the ".001" floor. A regression that put fixed$ back would leave
+# every number correct and fail here, which is the only way this comes back.
+apa_cell <- function(s) grepl("^(\\.[0-9]{3}|<\\s*\\.001|>\\s*\\.999|n/a|--+)$", s)
+matrix_cells <- function(cap, rule) {
+  i0 <- grep(rule, cap)
+  stopifnot(length(i0) == 1)
+  blk  <- cap[(i0 + 1):(i0 + 8)]
+  hdr  <- grep("Soprano", blk)[1]
+  labs <- strsplit(trimws(blk[hdr]), "\\s{2,}")[[1]]
+  rows <- blk[(hdr + 1):(hdr + length(labs))]
+  unlist(lapply(rows, function(r)
+      strsplit(trimws(r), "\\s{2,}")[[1]][-1]))
+}
+for (rule in c("── Tukey HSD Pairwise", "── Games-Howell Pairwise")) {
+  cells <- matrix_cells(cap_p, rule)
+  check_true("v25", paste0("every cell of the ", sub("── ", "", rule),
+                           " matrix is the bare APA form"),
+             length(cells) > 0 && all(apa_cell(cells)))
+}
+# And the source-table p cell, which D110 moved off fixed$ (p, 6) as well.
+tbl_p <- strsplit(trimws(grep("^Between\\s", trimws(cap_p), value = TRUE)[1]),
+                  "\\s{2,}")[[1]]
+check_true("v25", "the ANOVA source table's p cell is the bare APA form too",
+           apa_cell(tbl_p[length(tbl_p)]))
 
 # ---- 6. the two captures differ ONLY where they should --------------------
 # Everything from the report header down to the equal-spread line is the same

@@ -95,7 +95,45 @@ scripts <- c(
     # and stay away when it is not, and the three F values must be identical
     # either way. Also pins that the caveat sits under the table it qualifies
     # rather than under the effect sizes, per the D98 placement ruling.
-    "v26_twoway_caveat.R"
+    "v26_twoway_caveat.R",
+    # v27 is the D111 uniformity guard: every Table-consuming draw procedure,
+    # given no usable data, must fall back to a unit axis and draw the
+    # labelled empty frame. The histogram used to `goto` past its own `Axes:`
+    # and write a blank white page. Includes a static check that no `goto`
+    # returns to the draw library, which is how the defect got in.
+    # Reads harness/stress_out/, so harness/stress_graphs.sh must run first --
+    # same dependency shape as v23 on harness/qq_drive.sh.
+    "v27_empty_frames.R",
+    # v28 guards column TYPE. Praat has two column readers that disagree: the
+    # row-wise one returns undefined for a text cell, which every other path
+    # already drops, but `Report two-way anova:` numericises the column as a
+    # whole and substitutes each value's ALPHABETICAL RANK. The two-way test
+    # therefore reported F = 132.92, p = 6.9e-15 on a column of singers'
+    # names. One bad cell is enough. Asserts the refusal by exact message AND
+    # that every legitimate analysis still runs -- a guard that refused
+    # everything would pass the first half alone.
+    "v28_column_type_guard.R",
+    # v29 is the figure-disclosure ruling: "draw the image as the image unless
+    # someone asks to annotate". Info window always, the figure only when
+    # Annotate is ticked, the user's subtitle never. The ANNOTATE-OFF direction
+    # is the load-bearing half -- that is the ruling. Includes a static ban on
+    # assigning to emlSubtitle$ in the draw library, the same shape as v27's
+    # static ban on goto. Reads harness/disclosure/out/.
+    "v29_figure_disclosure.R",
+    # v30 pins that an error return in the wizard keeps the USER'S columns.
+    # The wizard said "Nothing has been lost" and then re-rendered from a
+    # column guess; a user who pressed Run without touching anything got a
+    # different analysis reported as theirs. Asserts from before/after captures
+    # that the fixed one never names a guessed column.
+    "v30_wizard_state.R",
+    # v31 pins the gridline-mode encoding. Two incompatible encodings shared
+    # one persisted key, so drawing a scatter with gridlines off left a
+    # histogram's dropdown blank and refusing to proceed -- on disk, so it
+    # survived a restart. One canonical encoding now, translated at the
+    # dialog. The registry checks are the load-bearing half: they fail at
+    # INCLUDE time if a future graph type omits its entry, which is how the
+    # bug got in.
+    "v31_gridmode.R"
 )
 
 cat("EML Praat Tools validation suite\n")
