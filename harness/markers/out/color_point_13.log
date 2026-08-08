@@ -1,0 +1,4 @@
+STYLE mode=color index=13 hue=5 marker=2 shape=point
+PALETTE colour={0.84, 0.37, 0.00} halfInches=0.0648
+CROP 871 554 58 58
+SAVED /home/claude/EMLPraatTools/harness/markers/out/color_point_13.png
