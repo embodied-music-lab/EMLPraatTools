@@ -25,7 +25,7 @@ no packages, no network:
 Rscript validate/run_all.R
 ```
 
-Expect `1937 checks, 1937 passed, 0 FAILED`. Each check pairs a number the
+Expect `4104 checks, 4104 passed, 0 FAILED`. Each check pairs a number the
 plugin *printed* (read out of a committed Info-window capture in
 `evidence/info/`) with a number R computes from the same committed input in
 `evidence/csv/`.
