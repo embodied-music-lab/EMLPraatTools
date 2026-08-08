@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Fri Aug  7 03:20:23 2026
+  Fri Aug  7 13:18:13 2026
 ══════════════════════════════════════════════
 
   Table               v09 anova tukey input
@@ -14,7 +14,7 @@
   Why: Tests whether group means differ when normality and equal variances hold.
 
 Source              SS              df    MS              F           p
-Between             480.41          2     240.21          14.2687     0.000019
+Between             480.41          2     240.21          14.2687     < .001
 Within              707.05          42    16.83           
 Total               1187.46         44    
 
@@ -36,9 +36,9 @@ Total               1187.46         44
   ── Tukey HSD Pairwise Comparisons (p-values) ───
 
               Soprano     Mezzo       Alto        
-Soprano       ---         0.0018      < .001      
-Mezzo         0.0018      ---         0.3016      
-Alto          < .001      0.3016      ---         
+Soprano       ---         .002        < .001      
+Mezzo         .002        ---         .302        
+Alto          < .001      .302        ---         
 
 
   ── Tukey HSD Mean Differences (95% family-wise CI) ───

@@ -1,11 +1,10 @@
 
-
 ══════════════════════════════════════════════
   EML Stats : Kruskal-Wallis H Test
-  Wed Aug  5 22:42:52 2026
+  Fri Aug  7 13:18:12 2026
 ══════════════════════════════════════════════
 
-  Table               demo 3groups
+  Table               v10 kw dunn input
   Data column         SPL dB
   Group column        voice type
   Groups              3
@@ -13,10 +12,11 @@
 
 
   ── Omnibus Test ────────────────────────────
-  H                   18.6180
-  df                  2
-  p                   p < .001
-  Epsilon-squared     0.4231
+  Why: Nonparametric comparison of three or more groups — no normality assumption needed.
+  H                   18.6180		Test statistic: measures rank dispersion across groups (chi-squared distributed)
+  df                  2		Number of groups (3) minus 1. Controls the chi-squared reference distribution.
+  p                   < .001  (9.060641812012781e-05)		Statistically significant: <0.1% probability due to chance
+  Epsilon-squared     0.4231		Effect size: large (>0.14 = large). 42% of variance explained by group membership
   Effect magnitude    large effect
 
 
@@ -31,9 +31,9 @@ Alto          15    14.53
   ── Dunn's Post-Hoc (adjusted p, holm) ──────
 
               Soprano     Mezzo       Alto        
-Soprano       ---         0.0047      < .001      
-Mezzo         0.0047      ---         0.2602      
-Alto          < .001      0.2602      ---         
+Soprano       ---         .005        < .001      
+Mezzo         .005        ---         .260        
+Alto          < .001      .260        ---         
 
 
   ── Dunn's z-statistics ─────────────────────
@@ -51,4 +51,6 @@ Soprano       ---         0.662       0.876
 Mezzo         -0.662      ---         0.253       
 Alto          -0.876      -0.253      ---         
 
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════

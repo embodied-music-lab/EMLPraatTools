@@ -1,26 +1,29 @@
 
-
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Wed Aug  5 22:41:58 2026
+  Fri Aug  7 13:18:12 2026
 ══════════════════════════════════════════════
 
-  Table               demo 3groups
+  Table               v09 anova tukey input
   Data column         SPL dB
   Group column        voice type
   Groups              3
 
 
   ── ANOVA Table ─────────────────────────────
+  Why: Tests whether group means differ when normality and equal variances hold.
 
 Source              SS              df    MS              F           p
-Between             480.41          2     240.21          14.2687     0.000019
+Between             480.41          2     240.21          14.2687     < .001
 Within              707.05          42    16.83           
 Total               1187.46         44    
 
-  F                   14.2687
-  p                   p < .001
-  Effect size         eta-squared = 0.4046
+  F                   14.2687		Ratio of between-group to within-group variance: groups differ 14.3x more than expected by chance
+  p                   < .001  (1.868178583330422e-05)		Statistically significant: <0.1% probability due to chance
+  Effect size         eta-squared = 0.4046		Effect size: large (>0.14 = large). 40% of variance explained by group membership
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(2, 42) = 0.3927
+  Equal-spread p      p = .678
 
 
   ── Group Descriptives ──────────────────────
@@ -33,9 +36,17 @@ Total               1187.46         44
   ── Tukey HSD Pairwise Comparisons (p-values) ───
 
               Soprano     Mezzo       Alto        
-Soprano       ---         0.0018      < .001      
-Mezzo         0.0018      ---         0.3016      
-Alto          < .001      0.3016      ---         
+Soprano       ---         .002        < .001      
+Mezzo         .002        ---         .302        
+Alto          < .001      .302        ---         
+
+
+  ── Tukey HSD Mean Differences (95% family-wise CI) ───
+
+Comparison                Difference    95% CI
+Soprano − Mezzo           5.5295        [1.8896, 9.1694]
+Soprano − Alto            7.7757        [4.1359, 11.4156]
+Mezzo − Alto              2.2462        [-1.3936, 5.8861]
 
 
   ── Pairwise Effect Sizes (Cohen's d) ───────
@@ -45,4 +56,6 @@ Soprano       ---         1.426       1.860
 Mezzo         -1.426      ---         0.530       
 Alto          -1.860      -0.530      ---         
 
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════
