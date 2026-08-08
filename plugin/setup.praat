@@ -6,21 +6,38 @@
 #          by Praat on startup when the plugin_EML_Praat_Tools folder is placed
 #          in the Praat preferences directory.
 #
-# ATTRIBUTION
-# Framework: EML PraatGen by Ian Howell
-#            Embodied Music Lab — www.embodiedmusiclab.com
-#            https://github.com/embodied-music-lab/PraatGen
-# Code generation: Claude (Anthropic)
-#
 # License: GPL-3.0-or-later
-# Version: 1.4
+# Version: 1.5
+# v1.5: Corrected the eml-lmm.praat procedure count in the tabled-mixed-models
+#       note from 31 to 32, and recorded the grep that re-derives it (and the
+#       two counts beside it) so the next reader does not have to trust the
+#       number. Comment only; no menu registration changed.
 # v1.4: Item 4 — unregistered the "EML Interactive Tutorial" menu entry.
 #       scripts/eml-tutorial.praat includes tutorial/eml-demo-procedures.praat,
 #       a directory that does not exist in the plugin, so the menu item was
 #       live but dead. No tutorial content invented.
 # v1.3: Added TableOfReal and Matrix action buttons for stats tools
 #       (Describe, Compare, Correlate, Regression, Wizard).
-# Date: 2 August 2026
+# Date: 8 August 2026
+#
+# ATTRIBUTION
+# Framework: EML PraatGen by Ian Howell
+#            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
+#
+# RESEARCH USE DISCLOSURE
+# If this script is used in research or publication, disclose AI use
+# per your target journal's policy. Suggested language:
+#
+#   "Praat analysis scripts were developed using the EML PraatGen
+#    Scripting Assistant (Howell, Embodied Music Lab) with code
+#    generation by Claude (Anthropic). All scripts were reviewed,
+#    tested, and validated by Ian Howell."
+#
+# The script author assumes responsibility for the correctness and
+# appropriate application of this code.
 # ============================================================================
 
 # ── Minimum Praat version ──────────────────────────────────────────────────
@@ -79,11 +96,17 @@ Add menu command: "Objects", "New", "Linear regression...", "Correlate two colum
 # point, it does not delete the module. Restoring it means restoring these
 # two lines and rechaining "-- eml posthoc --" back to it.
 #
-# The module has no test of any kind: 31 procedures in eml-lmm.praat plus the
+# The module has no test of any kind: 32 procedures in eml-lmm.praat plus the
 # 10 in eml-linalg.praat and 8 in eml-optimizer.praat that only it calls, none
 # under any oracle (audit/reports/CORRECTION_coverage_2026-08-04.md). Leaving
 # a reachable menu entry on an untested mixed-model implementation is the
 # thing being removed.
+#
+# Re-derive those three counts before citing them; they were 31/10/8 here and
+# the first was already stale:
+#   grep -c "^procedure " plugin/stats/eml-lmm.praat        -> 32
+#   grep -c "^procedure " plugin/stats/eml-linalg.praat     -> 10
+#   grep -c "^procedure " plugin/stats/eml-optimizer.praat  ->  8
 
 # Post-Hoc
 Add menu command: "Objects", "New", "-- eml posthoc --", "Linear regression...", 1, ""
