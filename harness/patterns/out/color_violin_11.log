@@ -1,0 +1,4 @@
+STYLE mode=color index=11 hue=3 pattern=2 shape=violin
+PALETTE fill={0.80, 0.91, 0.97} line={0.34, 0.71, 0.91}
+CROP 978 518 143 131
+SAVED /home/claude/EMLPraatTools/harness/patterns/out/color_violin_11.png
