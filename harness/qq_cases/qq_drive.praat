@@ -8,9 +8,35 @@
 # calls exactly the procedure the Draw button calls, with exactly the vector
 # the wrapper hands it, and records three things —
 #
-#   <case>_points.csv   the plotted point pairs, theoretical against sample
-#   <case>_status.csv   n, dropped rows, refusal flag, refusal text, fit line
-#   <case>.png          the rendered figure, as visual evidence
+#   <case>_points.csv     the plotted point pairs, theoretical against sample
+#   <case>_status.csv     n, dropped rows, refusal flag, refusal text, fit
+#                         line, the emlSubtitle$ sentinel, disclosure counts
+#   <case>_disclosure.tsv the disclosure lines that reached the FIGURE
+#   <case>.png            the rendered figure, as visual evidence
+#
+# DISCLOSURE (v1.1, 7 Aug 2026)
+# ----------------------------
+# @emlDrawQQPlot used to write its "n = N, Blom plotting positions" caption
+# into emlSubtitle$, the user's own field, and so did this driver when it
+# rebuilt the chrome reference. Both are gone. Two things are recorded here
+# so validate/v23_qq_points.R can hold the replacement to its rule:
+#
+#   the sentinel   emlSubtitle$ is set to SENTINEL-SUBTITLE before the call
+#                  and written to the status CSV after it. Anything other than
+#                  the sentinel coming back means the Q-Q path wrote to the
+#                  user's field. Same sentinel and same idea as
+#                  harness/disclosure/case.praat.
+#   the ledger     @emlDiscloseBegin leaves emlDiscloseFigN and
+#                  emlDiscloseFigLabel$[] behind — what actually reached the
+#                  FIGURE, as opposed to the Info window. The Info channel is
+#                  visible in <case>.log; the figure channel is not, short of
+#                  decoding a PNG, so it is dumped to <case>_disclosure.tsv.
+#                  Tab-separated because the disclosure text contains commas.
+#
+# EML_QQ_ANNOTATE drives the gate. The same case is run twice by
+# harness/qq_drive.sh, once with it unset and once with it 1, and the two
+# runs must differ: no lines on the figure with Annotate off, lines on it with
+# Annotate on, and the Info window carrying them either way.
 #
 # The column is extracted with the same "Get value: row, col — keep if not
 # undefined" loop @emlRunNormalityAnalysis uses, so the vector under test is
@@ -24,7 +50,8 @@
 #   EML_QQ_INPUT   path to the input CSV
 #   EML_QQ_COL     column to plot
 #   EML_QQ_CASE    case name, used for the output filenames
-#   EML_QQ_OUTDIR  directory for the three outputs
+#   EML_QQ_OUTDIR  directory for the outputs
+#   EML_QQ_ANNOTATE  "1" to tick Annotate, anything else to leave it off
 # ============================================================================
 
 include ../../plugin/graphs/eml-graph-procedures.praat
@@ -50,10 +77,22 @@ outDir$ = environment$ ("EML_QQ_OUTDIR")
 
 pointsOut$ = outDir$ + "/" + case$ + "_points.csv"
 statusOut$ = outDir$ + "/" + case$ + "_status.csv"
+discOut$ = outDir$ + "/" + case$ + "_disclosure.tsv"
 figOut$ = outDir$ + "/" + case$ + ".png"
 chromeOut$ = outDir$ + "/" + case$ + "_chrome.png"
 
-writeInfoLine: "QQ drive: case=", case$, " col=", col$, " src=", src$
+# The user's Annotate tick. @emlDiscloseBegin reads this global through
+# variableExists, so leaving it undefined would also mean "off" — it is set
+# explicitly either way so that the OFF direction is a deliberate 0 under
+# test and not an accident of the harness never having defined it.
+if environment$ ("EML_QQ_ANNOTATE") = "1"
+    annotate = 1
+else
+    annotate = 0
+endif
+
+writeInfoLine: "QQ drive: case=", case$, " col=", col$, " src=", src$,
+... " annotate=", annotate
 
 tbl = Read Table from comma-separated file: src$
 selectObject: tbl
@@ -66,7 +105,28 @@ for iRow from 1 to nRows
     raw# [iRow] = Get value: iRow, col$
 endfor
 
+# emlSubtitle$ SENTINEL. This is the user's field: the graphs form asks for
+# it ("Subtitle") and persists it to config. @emlDrawQQPlot must come back
+# having left it exactly as it found it — not saved-and-restored around a
+# write, which is what it used to do and which still put words the user never
+# typed onto the DRAWN figure. The value is echoed into the status CSV.
+emlSubtitle$ = "SENTINEL-SUBTITLE"
+
 @emlDrawQQPlot: raw#, col$, 6, 4.5, "color", 1
+
+subtitleAfter$ = emlSubtitle$
+
+# The disclosure ledger. Absent on a refusal, because @emlDiscloseBegin is
+# only reached once the figure is going to be drawn — hence variableExists
+# rather than a bare read, which Praat aborts on.
+figN = 0
+infoN = 0
+if variableExists ("emlDiscloseFigN")
+    figN = emlDiscloseFigN
+endif
+if variableExists ("emlDiscloseInfoN")
+    infoN = emlDiscloseInfoN
+endif
 
 # Object-leak assertion, taken HERE and not after the save: @emlDrawQQPlot
 # builds a temporary Table, and the input Table is the only object that should
@@ -102,11 +162,24 @@ endif
 refused = 1 - drew
 
 writeFile: statusOut$, "case,column,nrows,n,ndropped,refused,reason,"
-... + "slope,intercept,sw_w,sw_p,objects_after_draw" + newline$
+... + "slope,intercept,sw_w,sw_p,objects_after_draw,"
+... + "annotate,subtitle_after,disclose_fig_n,disclose_info_n" + newline$
 appendFile: statusOut$, case$, ",", col$, ",", string$ (nRows), ",",
 ... string$ (nPts), ",", string$ (nDrop), ",", string$ (refused), ",",
 ... errClean$, ",", slope$, ",", intercept$, ",", swW$, ",", swP$, ",",
-... string$ (objectsAfterDraw), newline$
+... string$ (objectsAfterDraw), ",", string$ (annotate), ",",
+... subtitleAfter$, ",", string$ (figN), ",", string$ (infoN), newline$
+
+# What reached the FIGURE, one line per disclosure, in order. Tab-separated:
+# the disclosure text contains commas and Praat's CSV reader does not strip
+# quotes, so quoting would put the quotes inside the value on the way back.
+# The header is written even on a refusal, so the validator can tell "nothing
+# was disclosed" from "the driver never ran".
+writeFile: discOut$, "i" + tab$ + "text" + newline$
+for i from 1 to figN
+    appendFile: discOut$, string$ (i), tab$, emlDiscloseFigLabel$ [i],
+    ... newline$
+endfor
 
 # The plotted pairs. On a refusal the file is written with a header and no
 # rows, so the validator can tell "refused" from "the driver never ran".
@@ -152,13 +225,21 @@ if drew = 1
         Set numeric value: i, "sample", emlShapiroWilk.sorted# [i]
     endfor
 
+    # No subtitle is written here either. The chrome reference exists to
+    # measure the ink of the figure's OWN furniture, so it has to carry the
+    # same furniture the real figure carries and nothing else. Writing a
+    # caption into emlSubtitle$ — which is what this driver used to do,
+    # mirroring the defect in @emlDrawQQPlot — put a line of text on the
+    # reference that the real figure no longer has.
+    #
+    # The disclosure box is deliberately NOT reproduced here. It is content,
+    # not chrome. With Annotate on, the box adds ink the reference does not
+    # have, which only makes the "more ink than its own chrome" test easier
+    # to pass; the blank-frame protection for those cases comes from the
+    # Annotate-off run of the same case, which draws the same dots and the
+    # same line and has no box at all.
     @emlSanitizeLabel: col$
     disp$ = emlSanitizeLabel.result$
-    emlSubtitle$ = "n = " + string$ (nPts) + ", Blom plotting positions"
-    if nDrop > 0
-        emlSubtitle$ = emlSubtitle$ + "; " + string$ (nDrop)
-        ... + " row(s) excluded as missing"
-    endif
     scatterShowDots = 0
     scatterRegressionLine = 0
 
