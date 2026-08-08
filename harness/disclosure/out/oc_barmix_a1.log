@@ -1,0 +1,19 @@
+Bar chart: Bars show the group mean, not individual values. Use Violin Plot or Box Plot to show the distribution within each group.
+Bar chart: Error bars: +/-1 SE.
+Bar chart: 1 error bar(s) not drawn (error undefined). An error bar is undefined when the group holds a single observation, or when its custom error cell is missing. A bar with no whisker is not a bar with zero spread.
+Bar chart: 1 bar(s) not drawn (no usable observation): G3. Those group names appear on the x-axis with nothing above them. A bar of height zero is a measured zero, not a missing group.
+Bar chart: 3 row(s) skipped (missing or non-numeric value).
+BARSTAT nGroups=4 skippedBars=1 skippedErrors=1 invalidGroups=1 names=[G3]
+BARGROUP 1 label=G1 valid=1 meanDefined=1 mean=20.0000 errorDefined=1 errorSlotDefined=1
+BARGROUP 2 label=G2 valid=1 meanDefined=1 mean=25.0000 errorDefined=0 errorSlotDefined=0
+BARGROUP 3 label=G3 valid=0 meanDefined=0 mean=undefined errorDefined=0 errorSlotDefined=0
+BARGROUP 4 label=G4 valid=1 meanDefined=1 mean=-13.0000 errorDefined=1 errorSlotDefined=1
+LEDGER case=barmix chart=Bar chart annotate=1 info=5 fig=5
+FIGLINE 1: Bars show the group mean, not individual values.
+FIGLINE 2: Error bars: +/-1 SE.
+FIGLINE 3: 1 error bar(s) not drawn (error undefined).
+FIGLINE 4: 1 bar(s) not drawn (no usable observation): G3.
+FIGLINE 5: 3 row(s) skipped (missing or non-numeric value).
+SUBTITLE [SENTINEL-SUBTITLE]
+CHARTNAME [Bar chart]
+SAVED /home/claude/EMLPraatTools/harness/disclosure/out/oc_barmix_a1.png

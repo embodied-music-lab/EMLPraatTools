@@ -1,0 +1,5 @@
+Bar chart: Bars show the group mean, not individual values. Use Violin Plot or Box Plot to show the distribution within each group.
+Bar chart: Error bars: +/-1 SE.
+LEDGER chart=Bar chart annotate=0 dirty=0 info=2 fig=0
+SUBTITLE [SENTINEL-SUBTITLE]
+SAVED /home/claude/EMLPraatTools/harness/disclosure/out/bar_a0_d0.png

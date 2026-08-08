@@ -1,0 +1,9 @@
+Bar chart: Bars show the group mean, not individual values. Use Violin Plot or Box Plot to show the distribution within each group.
+Bar chart: Error bars: +/-1 SE.
+Bar chart: 6 row(s) skipped (missing or non-numeric value).
+LEDGER chart=Bar chart annotate=1 dirty=1 info=3 fig=3
+FIGLINE 1: Bars show the group mean, not individual values.
+FIGLINE 2: Error bars: +/-1 SE.
+FIGLINE 3: 6 row(s) skipped (missing or non-numeric value).
+SUBTITLE [SENTINEL-SUBTITLE]
+SAVED /home/claude/EMLPraatTools/harness/disclosure/out/bar_a1_d1.png

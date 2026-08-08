@@ -1,0 +1,49 @@
+Spaghetti plot: 6 row(s) skipped (missing or non-numeric value).
+
+══════════════════════════════════════════════
+  EML Stats : Spaghetti Plot Summary
+  Sat Aug  8 12:53:15 2026
+══════════════════════════════════════════════
+
+  Table               disc
+  Condition column    cond
+  Value column        v
+  ID column           id
+  Conditions          5
+
+
+  ── C1 ──────────────────────────────────────
+  N                   3
+  Mean                15.667
+  SD                  1.528
+
+
+  ── C2 ──────────────────────────────────────
+  N                   3
+  Mean                17.667
+  SD                  2.082
+
+
+  ── C3 ──────────────────────────────────────
+  N                   3
+  Mean                18.667
+  SD                  1.528
+
+
+  ── C4 ──────────────────────────────────────
+  N                   3
+  Mean                21.333
+  SD                  1.528
+
+
+  ── C5 ──────────────────────────────────────
+  N                   2
+  Mean                23.000
+  SD                  1.414
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+LEDGER chart=Spaghetti plot annotate=0 dirty=1 info=1 fig=0
+SUBTITLE [SENTINEL-SUBTITLE]
+SAVED /home/claude/EMLPraatTools/harness/disclosure/out/spaghetti_a0_d1.png

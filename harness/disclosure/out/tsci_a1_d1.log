@@ -1,0 +1,10 @@
+Time Series (with CI): 1 group(s)
+  5 time points
+  Observations per time point: up to 3
+Time series (with CI): Line shows the mean; band shows the 95% CI. 9 repeated observation(s) were averaged into their time points. Use Spaghetti Plot to show the individual series behind the mean.
+Time series (with CI): 6 row(s) skipped (missing or non-numeric value).
+LEDGER chart=Time series (with CI) annotate=1 dirty=1 info=2 fig=2
+FIGLINE 1: Line shows the mean; band shows the 95% CI.
+FIGLINE 2: 6 row(s) skipped (missing or non-numeric value).
+SUBTITLE [SENTINEL-SUBTITLE]
+SAVED /home/claude/EMLPraatTools/harness/disclosure/out/tsci_a1_d1.png

@@ -1,0 +1,6 @@
+Grouped violin: 1 sub-group(s) not drawn (palette holds 24). Not drawn: P25 (16 row(s)). The palette defines 24 distinguishable styles — 8 hues x 3 fill patterns (solid, diagonal hatch, dots) — so a further sub-group would repeat a style already in the legend. Reduce the sub-group column to 24 levels, or draw the rest as a second figure.
+SUBSTAT nSubs=25 drawn=24 dropped=1 droppedRows=16 legendN=24 names=[P25]
+LEDGER case=gviolin25 chart=Grouped violin annotate=0 info=1 fig=0
+SUBTITLE [SENTINEL-SUBTITLE]
+CHARTNAME [Grouped violin]
+SAVED /home/claude/EMLPraatTools/harness/disclosure/out/oc_gviolin25_a0.png

@@ -1,0 +1,4 @@
+Time series: Line shows the mean per time point. 15 repeated observation(s) were averaged. Use Spaghetti Plot to show individual series, or Time Series (with CI) to show the spread around each mean.
+LEDGER chart=Time series annotate=0 dirty=0 info=1 fig=0
+SUBTITLE [SENTINEL-SUBTITLE]
+SAVED /home/claude/EMLPraatTools/harness/disclosure/out/ts_a0_d0.png

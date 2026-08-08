@@ -1,0 +1,5 @@
+Scatter plot: 6 row(s) skipped (missing or non-numeric value).
+LEDGER chart=Scatter plot annotate=1 dirty=1 info=1 fig=1
+FIGLINE 1: 6 row(s) skipped (missing or non-numeric value).
+SUBTITLE [SENTINEL-SUBTITLE]
+SAVED /home/claude/EMLPraatTools/harness/disclosure/out/scatter_a1_d1.png

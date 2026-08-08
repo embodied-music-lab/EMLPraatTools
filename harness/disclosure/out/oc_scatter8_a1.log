@@ -1,0 +1,41 @@
+  Group1: OLS fitted line: y = 1.5357x + 5.9643  (R² = 0.954)
+  Group2: OLS fitted line: y = 1.5357x + 10.9643  (R² = 0.954)
+  Group3: OLS fitted line: y = 1.5357x + 15.9643  (R² = 0.932)
+  Group4: OLS fitted line: y = 1.5357x + 20.9643  (R² = 0.954)
+  Group5: OLS fitted line: y = 1.6148x + 25.4426  (R² = 0.963)
+  Group6: OLS fitted line: y = 1.5357x + 30.9643  (R² = 0.954)
+  Group7: OLS fitted line: y = 1.4891x + 36.3370  (R² = 0.962)
+  Group8: OLS fitted line: y = 1.5357x + 40.9643  (R² = 0.954)
+Scatter plot: Per-group stats (8 groups): Info window only. 24 line(s) do not fit the 20-line annotation block, so none were placed on the figure: a box that tall covers the data it describes, and a box holding only the first few groups would look complete. They follow here in full.
+  Group1: r = 0.977, ***
+  Group1: rs = 0.952, ***
+  Group1: OLS: y = 1.5357x + 5.9643  (R² = 0.954)
+  Group2: r = 0.977, ***
+  Group2: rs = 0.952, ***
+  Group2: OLS: y = 1.5357x + 10.9643  (R² = 0.954)
+  Group3: r = 0.965, ***
+  Group3: rs = 0.929, **
+  Group3: OLS: y = 1.5357x + 15.9643  (R² = 0.932)
+  Group4: r = 0.977, ***
+  Group4: rs = 0.952, ***
+  Group4: OLS: y = 1.5357x + 20.9643  (R² = 0.954)
+  Group5: r = 0.981, ***
+  Group5: rs = 0.964, ***
+  Group5: OLS: y = 1.6148x + 25.4426  (R² = 0.963)
+  Group6: r = 0.977, ***
+  Group6: rs = 0.952, ***
+  Group6: OLS: y = 1.5357x + 30.9643  (R² = 0.954)
+  Group7: r = 0.981, ***
+  Group7: rs = 0.964, ***
+  Group7: OLS: y = 1.4891x + 36.3370  (R² = 0.962)
+  Group8: r = 0.977, ***
+  Group8: rs = 0.952, ***
+  Group8: OLS: y = 1.5357x + 40.9643  (R² = 0.954)
+Scatter plot: 3 row(s) skipped (missing or non-numeric value).
+SCATSTAT nGroups=8 buffered=24 room=18 annotBlockN=2
+LEDGER case=scatter8 chart=Scatter plot annotate=1 info=2 fig=2
+FIGLINE 1: Per-group stats (8 groups): Info window only.
+FIGLINE 2: 3 row(s) skipped (missing or non-numeric value).
+SUBTITLE [SENTINEL-SUBTITLE]
+CHARTNAME [Scatter plot]
+SAVED /home/claude/EMLPraatTools/harness/disclosure/out/oc_scatter8_a1.png
