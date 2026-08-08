@@ -5,4 +5,6 @@ LAYOUT legendW=0.8885 legendH=0.6899
 EXTENT minX=0 maxX=10.0000 minY=0 maxY=3.0000
 LEGENDBOX x=305 y=187 w=266 h=207
 LEGENDLAYOUT cols=1 rows=3 shown=3 hidden=0
+MATRIX k=0 tch=1 suppressed=1 gap=0 panelH=0 total=3.0000 top=3.0000 bot=3.0000
+BANDS panelBot=900 mxTop=-1 mxBot=-1
 SAVED /home/claude/EMLPraatTools/harness/legend/out/10x3_bw_g3.png
