@@ -1,0 +1,3 @@
+r01_blank	analysis	Data column "y" holds no numbers. 12 cell(s) are empty (row 1 first). Treated as missing data.
+r01_blank	wizard	DRIVER SKIP: column holds no defined values, and a zero-length vector cannot be constructed
+
