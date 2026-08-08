@@ -1,0 +1,20 @@
+graphType: 8
+source: 1
+colorMode: 1
+width: 6
+height: 4
+gridlineMode: 2
+showInnerBox: 1
+showAxisNames: 2
+showTicks: 2
+showAxisValues: 2
+font: Helvetica
+outputDPI: 1
+xLabel: 
+yLabel: 
+lastInputFolder: 
+lastPNGFolder: /home/claude/rig/prefs_1
+lastCSVFolder: /home/claude/rig/prefs_1
+showAdvanced: 1
+subtitle: 
+groupSort: 1

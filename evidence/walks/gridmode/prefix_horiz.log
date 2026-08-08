@@ -1,0 +1,10 @@
+[prefix_horiz] config before:      showAdvanced: 1 
+[prefix_horiz] page: Pause: EML Graphs
+[prefix_horiz] page: Pause: Scatter Plot -- Column Mapping
+[prefix_horiz] page: Pause: Graph Complete
+[prefix_horiz] config after scatter: graphType: 8 source: 1 colorMode: 1 width: 6 height: 4 gridlineMode: 2 showInnerBox: 1 showAxisNames: 2 showTicks: 2 showAxisValues: 2 font: Helvetica outputDPI: 1 xLabel: yLabel: lastInputFolder: lastPNGFolder: /home/claude/rig/prefs_1 lastCSVFolder: /home/claude/rig/prefs_1 showAdvanced: 1 subtitle: groupSort: 1 
+[prefix_horiz] page: Pause: EML Graphs
+[prefix_horiz] page: Pause: Histogram -- Column Mapping
+[prefix_horiz] after Draw: Pause: Graph Complete
+[prefix_horiz] accepted: Draw proceeded, no error dialog
+[prefix_horiz] config after histogram: graphType: 10 source: 1 colorMode: 1 width: 6 height: 4 gridlineMode: 2 showInnerBox: 1 showAxisNames: 2 showTicks: 2 showAxisValues: 2 font: Helvetica outputDPI: 1 xLabel: yLabel: lastInputFolder: lastPNGFolder: /home/claude/rig/prefs_1 lastCSVFolder: /home/claude/rig/prefs_1 showAdvanced: 1 subtitle: groupSort: 1 
