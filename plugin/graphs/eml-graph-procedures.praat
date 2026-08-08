@@ -4,8 +4,49 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # License: GPL-3.0-or-later
-# Version: 3.28
+# Version: 3.29
 # Date: 8 August 2026
+#
+# v3.29: THE LEGEND BAND NO LONGER LANDS ON THE COMPARISON MATRIX WHEN THE
+#        CALLER IS NOT THE FORM.
+#
+#        v3.28 gave placement 3 (Below plot) one way to find out what was
+#        already occupying the page under the plot: the global
+#        totalCanvasHeight, read through variableExists. Inside the graphs
+#        form that is exactly right — the form sizes the comparison-matrix
+#        panel before it dispatches the draw and leaves
+#        figure_height + matrixGap + matrixPanelHeight there — and rendering
+#        the two together confirms it: on a 6 x 4 figure with a four-group
+#        Tukey matrix the panel occupies 4.130 to 6.204 inches and the legend
+#        band starts at 6.344, one boxInsetInches below it.
+#
+#        BUT totalCanvasHeight IS A FORM LOCAL. @emlInitDrawingDefaults, the
+#        documented entry point for "standalone scripts or PraatGen companion
+#        files", sets emlLegendPlacement and does NOT set totalCanvasHeight.
+#        A caller outside the form that laid out its own matrix and asked for
+#        placement 3 therefore got a band starting at the plot's own bottom
+#        edge, drawn straight THROUGH the panel: measured on the same figure,
+#        band 4.140 to 4.566 against a panel at 4.130 to 6.204, with the
+#        omnibus line and the correction subtitle overprinted by the legend's
+#        entries. 11636 dark pixels of legend ink inside the matrix band.
+#
+#        FIXED by settling the page bottom ONCE, before the placement branch
+#        dispatches, from the larger of two sources: the form's
+#        totalCanvasHeight, and the matrix's own published measurement
+#        (annotMatrixN, emlMatrixLayout_suppressed, emlMatrixLayout_yMax,
+#        emlFitCategoricalLabels.overhangInches — all drawing-layer globals,
+#        and all necessarily already set, since @emlMeasureMatrixLayout is a
+#        precondition of @emlDrawMatrixPanel). Neither source can pull the
+#        band up; a form-driven figure is unchanged because the two agree
+#        there. Placement 4's park now reads the same page bottom instead of
+#        totalCanvasHeight alone, for the same reason.
+#
+#        Nothing else moved. Placements 1, 2 and 5 do not consult the page
+#        bottom, and a figure with no matrix publishes no measurement, so
+#        every render in harness/legend/ block 1 and block 2 is bit-identical
+#        to v3.28's. Driven and measured on the pixels in
+#        harness/legend/run.sh blocks 3 and 4; asserted in
+#        validate/v32_legend_geometry.R sections 8 and 9.
 #
 # v3.28: THE LEGEND STOPS BILLING ITS RENT TO THE PLOT (D136), and D135 —
 #        the label wider than the frame — closes with it.
@@ -4446,6 +4487,106 @@ procedure emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .position$, .fontSize
         ; entries dropped when re-measured inside their own box. One
         ; measurement, of the budget, is the fix.
         ; -------------------------------------------------------------------
+        ;
+        ; -------------------------------------------------------------------
+        ; THE BOTTOM OF THE PAGE, as everything already committed below the
+        ; plot has left it. Placements 3 and 4 both need it — 3 puts its band
+        ; under it, 4 parks its panel a clear twelve inches beyond it — and
+        ; both used to read it from ONE source. This is the second.
+        ;
+        ; SOURCE ONE, totalCanvasHeight. The graphs form sizes the comparison
+        ; matrix panel before it dispatches the draw and leaves
+        ; figure_height + matrixGap + matrixPanelHeight in that global, so
+        ; inside the form it is the whole answer and this block changes
+        ; nothing there.
+        ;
+        ; SOURCE TWO, THE MATRIX'S OWN MEASUREMENT, and why it had to be
+        ; added. totalCanvasHeight is a FORM local. @emlDrawLegend is reached
+        ; from outside the form as well: a standalone script or a PraatGen
+        ; companion file calls @emlInitDrawingDefaults, which sets
+        ; emlLegendPlacement and does NOT set totalCanvasHeight. Such a caller
+        ; that laid out its own matrix and then asked for placement 3 got a
+        ; band starting at the plot's own bottom edge, drawn straight THROUGH
+        ; the matrix panel. Measured 8 Aug 2026 on a 6 x 4 figure with a
+        ; four-group Tukey matrix: the band ran 4.140 to 4.566 inches while
+        ; the panel ran 4.130 to 6.204, and the panel's omnibus line and its
+        ; correction subtitle came out overprinted by the legend's entries —
+        ; 11636 pixels of legend ink inside the matrix band, against 0 now.
+        ;
+        ; @emlMeasureMatrixLayout is a PRECONDITION of @emlDrawMatrixPanel —
+        ; the panel is a pure renderer and reads emlMatrixLayout_* — so any
+        ; caller that is going to draw a matrix has already published its
+        ; height by the time a legend is drawn, wherever that caller lives.
+        ; The arithmetic mirrors the form's, term for term:
+        ;
+        ;     totalCanvasHeight = figure_height       <- outerBottom
+        ;                       + matrixGap           <- bodyInch + overhang
+        ;                       + matrixPanelHeight   <- max (yMax, 1.0)
+        ;
+        ; graphOverhangInches is another form local, but the value it is
+        ; assigned from — emlFitCategoricalLabels.overhangInches — is a
+        ; drawing-layer global that @emlInitDrawingDefaults seeds at 0, so the
+        ; rotated-label allowance is read from where it actually lives.
+        ;
+        ; THE LARGER OF THE TWO WINS, and neither can pull the band UP: the
+        ; page bottom starts at the plot's own bottom edge and only ever
+        ; grows. A form-driven figure is unaffected because the two sources
+        ; agree there; a caller that publishes neither is unaffected because
+        ; it has drawn nothing below the plot to clear.
+        ; -------------------------------------------------------------------
+        .pageBottom = emlSetAdaptiveTheme.outerBottom
+        if variableExists ("totalCanvasHeight")
+            if totalCanvasHeight <> undefined
+                if totalCanvasHeight > .pageBottom
+                    .pageBottom = totalCanvasHeight
+                endif
+            endif
+        endif
+        ; A matrix is "live" only if there are at least two groups to compare
+        ; AND @emlMeasureMatrixLayout has published a layout that is not
+        ; suppressed. No published measurement means no panel can be drawn at
+        ; all, so there is nothing below the plot to clear.
+        .matrixLive = 0
+        if variableExists ("annotMatrixN")
+            if annotMatrixN <> undefined
+                if annotMatrixN >= 2
+                    .matrixLive = 1
+                endif
+            endif
+        endif
+        if .matrixLive = 1
+            if variableExists ("emlMatrixLayout_suppressed")
+                if emlMatrixLayout_suppressed <> 0
+                    .matrixLive = 0
+                endif
+            else
+                .matrixLive = 0
+            endif
+        endif
+        if .matrixLive = 1
+            ; max (yMax, 1.0) — the form's floor, and the panel's own
+            ; top-down sizing never puts the drawn bottom past it.
+            .matrixH = 1.0
+            if variableExists ("emlMatrixLayout_yMax")
+                if emlMatrixLayout_yMax <> undefined
+                    if emlMatrixLayout_yMax > .matrixH
+                        .matrixH = emlMatrixLayout_yMax
+                    endif
+                endif
+            endif
+            .matrixOverhang = 0
+            if variableExists ("emlFitCategoricalLabels.overhangInches")
+                if emlFitCategoricalLabels.overhangInches <> undefined
+                    .matrixOverhang = emlFitCategoricalLabels.overhangInches
+                endif
+            endif
+            .matrixBottom = emlSetAdaptiveTheme.outerBottom
+            ... + emlSetAdaptiveTheme.bodyInch + .matrixOverhang + .matrixH
+            if .matrixBottom > .pageBottom
+                .pageBottom = .matrixBottom
+            endif
+        endif
+
         emlLegendPanelAnchor$ = "top-left"
         if .placement = 1
             ; ---------------------------------------------------------------
@@ -4507,10 +4648,12 @@ procedure emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .position$, .fontSize
             ; the band the search stopped on, and the panel re-measures
             ; against that same band, so the two agree by construction.
             ;
-            ; The band clears the matrix panel when there is one. The form
-            ; sizes that panel before dispatching the draw and leaves the
-            ; total in totalCanvasHeight, so the legend reads it here and
-            ; sits below both rather than on top of the comparison matrix.
+            ; The band clears the matrix panel when there is one. Where the
+            ; page bottom comes from — the form's totalCanvasHeight, or the
+            ; matrix's own published measurement when the caller is not the
+            ; form — is settled once in .pageBottom above; here the band
+            ; simply starts one inset below it, so the legend sits under the
+            ; comparison matrix rather than on top of it.
             ; ---------------------------------------------------------------
             .fontInch = .fontSize / 72
             .lineH = .fontInch * 1.4
@@ -4540,12 +4683,7 @@ procedure emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .position$, .fontSize
                     .tryRows = .tryRows + 1
                 endif
             endwhile
-            .below = emlSetAdaptiveTheme.outerBottom
-            if variableExists ("totalCanvasHeight")
-                if totalCanvasHeight > .below
-                    .below = totalCanvasHeight
-                endif
-            endif
+            .below = .pageBottom
             .panelY0 = .below + .inset
             .panelY1 = .panelY0 + .band
 
@@ -4573,11 +4711,12 @@ procedure emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .position$, .fontSize
             ; side by side in a manuscript would get legend text visibly
             ; unlike the figure's axis labels.
             ; ---------------------------------------------------------------
+            ; Twelve inches clear of the bottom of the page, and never less
+            ; than 24 — the same .pageBottom placement 3 uses, so a matrix
+            ; measured outside the form pushes the park down here too.
             .park = 24
-            if variableExists ("totalCanvasHeight")
-                if totalCanvasHeight + 12 > .park
-                    .park = totalCanvasHeight + 12
-                endif
+            if .pageBottom + 12 > .park
+                .park = .pageBottom + 12
             endif
             .panelX0 = .inset
             .panelX1 = .panelX0 + (emlSetAdaptiveTheme.outerRight
