@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------
 # GEOMETRY FROM THE RENDERED PIXELS.
 #
-#   harness/legend/measure.py <figure.png>
+#   harness/legend/measure.py <figure.png> [frame-search-row-limit]
 #
 # Prints one tab-separated line:
 #
@@ -30,6 +30,22 @@
 # at 50% grey, take the LONGEST RUN of dark pixels in each row and in each
 # column, and keep the rows/columns whose longest run is at least half the
 # image's width/height. The first and last of those are the frame's edges.
+#
+# THE OPTIONAL ROW LIMIT, and why it exists. "At least half the image" is a
+# statement about a figure whose image IS the plot panel, and every figure in
+# blocks 1 and 2 is one. A figure carrying a comparison-matrix panel is not:
+# the saved image is the panel PLUS the matrix band, so on a 6 x 4 with a
+# four-group matrix the image is 2072 px tall while the frame's vertical edges
+# are still 934 px, and the frame stops being found at all. The row limit
+# confines the frame SEARCH to the plot panel — the caller passes the panel's
+# own height in pixels — so the fraction goes on measuring the same thing it
+# always measured. Passing no limit searches the whole image, which is what
+# every case without a matrix does, so those numbers are untouched.
+#
+# The ink bands below are ALWAYS counted over the whole image, limit or not.
+# The matrix band's ink belongs in `below`, and a measurement that quietly
+# stopped at the limit would report a figure with a matrix as a figure
+# without one.
 #
 # Thresholding at 50% rather than at "not white" is deliberate. The gridlines
 # are {0.85, ...} and {0.90, ...} and the legend border is {0.7, 0.7, 0.7};
@@ -79,10 +95,10 @@ def load_gray(path):
     return w, h, raw
 
 
-def longest_run_rows(w, h, raw):
-    """Longest run of dark pixels in each row."""
+def longest_run_rows(w, h, raw, limit):
+    """Longest run of dark pixels in each row, rows [0, limit)."""
     out = []
-    for y in range(h):
+    for y in range(limit):
         row = raw[y * w:(y + 1) * w]
         best = run = 0
         for v in row:
@@ -96,11 +112,11 @@ def longest_run_rows(w, h, raw):
     return out
 
 
-def longest_run_cols(w, h, raw):
-    """Longest run of dark pixels in each column, one pass over the image."""
+def longest_run_cols(w, h, raw, limit):
+    """Longest run of dark pixels in each column, rows [0, limit)."""
     run = [0] * w
     best = [0] * w
-    for y in range(h):
+    for y in range(limit):
         base = y * w
         for x in range(w):
             if raw[base + x] < DARK:
@@ -113,15 +129,17 @@ def longest_run_cols(w, h, raw):
 
 
 def main():
-    if len(sys.argv) != 2:
-        raise SystemExit("usage: measure.py <figure.png>")
+    if len(sys.argv) not in (2, 3):
+        raise SystemExit("usage: measure.py <figure.png> [row-limit]")
     path = sys.argv[1]
     w, h, raw = load_gray(path)
+    limit = int(sys.argv[2]) if len(sys.argv) == 3 else h
+    limit = max(1, min(limit, h))
 
-    rows = longest_run_rows(w, h, raw)
-    cols = longest_run_cols(w, h, raw)
+    rows = longest_run_rows(w, h, raw, limit)
+    cols = longest_run_cols(w, h, raw, limit)
     ys = [y for y, r in enumerate(rows) if r >= FRAME_FRACTION * w]
-    xs = [x for x, c in enumerate(cols) if c >= FRAME_FRACTION * h]
+    xs = [x for x, c in enumerate(cols) if c >= FRAME_FRACTION * limit]
     if not ys or not xs:
         print("FRAME_NOT_FOUND")
         return 1

@@ -58,6 +58,37 @@ include ../stress_cases/_prelude.praat
 #   EML_LABELS   normal | wide                     default normal
 #   EML_LEGEND   1 draw a legend, 0 draw none      default 1
 #   EML_PLACEMENT 1..5, or empty to declare none    default none declared
+#   EML_MATRIX   0 none; k >= 2 = a REAL k-group   default 0
+#                post-hoc comparison matrix below
+#                the plot, laid out the way the
+#                graphs form lays one out
+#   EML_TCH      1 declare totalCanvasHeight as    default 1
+#                the form does, 0 leave it unset
+#
+# THE MATRIX VARIANT, and what it is for. A figure can already put a second
+# panel below the plot — the pairwise comparison matrix @emlDrawMatrixPanel
+# renders — and placement 3 puts the LEGEND below the plot as well. Nothing
+# in the tree rendered the two together, so whether they collide was an
+# argument from reading @emlDrawLegend's placement-3 branch and not a
+# measurement. This is the measurement.
+#
+# THE MATRIX IS REAL, NOT SYNTHESISED. @emlBridgeGroupComparison is called on
+# a deterministic k-group table, so annotMatrixN, annotMatrixLabel$[], the
+# cell strings, the significance flags and the Cohen's d values are the ones
+# a one-way ANOVA with Tukey HSD actually produces. A hand-filled matrix
+# would exercise the renderer while missing anything the bridge does to the
+# globals the renderer reads — the label sanitisation, the omnibus line, the
+# effect-size column that decides the panel's height.
+#
+# EML_TCH IS THE RED PATH, AND IT IS ONE VARIABLE. The form computes
+# figure_height + matrixGap + matrixPanelHeight and leaves it in
+# totalCanvasHeight before it selects the outer viewport, so inside the form
+# that global is always there. It is a FORM LOCAL: @emlInitDrawingDefaults —
+# the documented entry point for "standalone scripts or PraatGen companion
+# files" — sets emlLegendPlacement and does NOT set it. EML_TCH=0 is that
+# caller. Everything else about the page is identical between the two,
+# including the outer viewport, which is selected from a LOCAL copy of the
+# same number; the only difference is whether the global exists.
 #
 # Prints (the driver parses these; the validator reads the driver's TSV):
 #   LGCASE      name, and every input echoed back
@@ -72,6 +103,16 @@ include ../stress_cases/_prelude.praat
 #               will select, i.e. exactly what the PNG will cover.
 #   LEGENDBOX   the box @emlDrawLegend says it drew, in pixels
 #   LEGENDLAYOUT cols, rows per column, shown, hidden
+#   MATRIX      the comparison matrix, if one was asked for: group count,
+#               whether totalCanvasHeight was declared, the gap and panel
+#               height the form's arithmetic produced, and the panel's
+#               viewport top and its bottom AFTER @emlDrawMatrixPanel's own
+#               top-down sizing adjusted it. Absent when EML_MATRIX is 0.
+#   BANDS       the same three horizontal boundaries in PIXELS of the saved
+#               PNG — the plot panel's bottom, the matrix band's top and its
+#               bottom — which is what harness/legend/measure_bands.py is
+#               handed. Printed for every case, matrix or not, so the driver
+#               has one field to read rather than two shapes.
 #
 # THIS CASE NEVER EXITS ON AN OVERHANG. legend_cap.praat does, because
 # containment is its subject and a figure that fails it is a broken figure.
@@ -125,6 +166,15 @@ if placement <> undefined
     emlLegendPlacement = placement
 endif
 
+matrixK = number (environment$ ("EML_MATRIX"))
+if matrixK = undefined
+    matrixK = 0
+endif
+declareTotal = number (environment$ ("EML_TCH"))
+if declareTotal = undefined
+    declareTotal = 1
+endif
+
 xMin = 0
 xMax = 2
 yMin = 0
@@ -165,6 +215,90 @@ for i to nEntries
 endfor
 if labels$ = "wide" and nEntries >= 1
     legendLabel$[1] = wideLabel$
+endif
+
+# ---------------------------------------------------------------------------
+# THE COMPARISON MATRIX, and the form's PRE-DISPATCH sizing path.
+#
+# Nothing below runs unless EML_MATRIX asks for one, so every case in blocks
+# 1 and 2 renders exactly the pixels it rendered before this section existed.
+#
+# THE ORDER IS THE FORM'S ORDER, and the order is the whole point. The graphs
+# form measures the matrix, computes matrixGap and matrixPanelHeight, sets
+# totalCanvasHeight, selects the outer viewport, dispatches the draw — which
+# is where @emlDrawLegend is reached, BEFORE any matrix ink exists — and only
+# then, post-dispatch, renders @emlDrawMatrixPanel. A fixture that drew the
+# panel first would be measuring a figure the plugin never produces, and the
+# legend would have a drawn extent to consult that in the plugin it does not.
+#
+#     grep -n 'totalCanvasHeight =' plugin/graphs/eml-graphs-form.praat
+#     grep -n '@emlDrawMatrixPanel' plugin/graphs/eml-graphs-form.praat
+#
+# THE SAMPLE. k groups of twelve, each group the inverse normal CDF at twelve
+# evenly spaced probabilities shifted by a per-group mean, so the ANOVA is
+# significant, every Tukey pair is significant, and the Cohen's d column is
+# populated — which is what makes the panel take its TALL shape, with the
+# effect-size legend row under the grid. A matrix of non-significant cells
+# would be a shorter panel and a weaker test of the band below it.
+matrixSuppressed = 1
+matrixGap = 0
+matrixPanelHeight = 0
+matrixTotal = vpH
+matrixTop = vpH
+matrixBottom = vpH
+if matrixK >= 2
+    annotAlpha = 0.05
+    @emlClearAnnotations
+    mxPerGroup = 12
+    mxTable = Create Table with column names: "legendmx",
+    ... matrixK * mxPerGroup, "grp val"
+    for gi to matrixK
+        for ki to mxPerGroup
+            mxRow = (gi - 1) * mxPerGroup + ki
+            Set string value: mxRow, "grp", "Cond " + string$ (gi)
+            Set numeric value: mxRow, "val", 10 + 1.5 * gi
+            ... + 0.9 * invGaussQ ((ki - 0.5) / mxPerGroup)
+        endfor
+    endfor
+    @emlBridgeGroupComparison: mxTable, "val", "grp", 0.05, "p-value",
+    ... 1, 1, "parametric", 3
+    removeObject: mxTable
+    appendInfoLine: "BRIDGE error=[", emlBridgeGroupComparison.error$,
+    ... "] n=", annotMatrixN
+
+    # The form's pre-dispatch block, term for term. See the PRE-DISPATCH
+    # matrix panel measurement section of eml-graphs-form.praat.
+    if annotMatrixN > 0
+        mxFontInch = emlSetAdaptiveTheme.matrixSize / 72
+        mxEstHeight = mxFontInch * (6 + annotMatrixN * 2.5)
+        if mxEstHeight < 1.0
+            mxEstHeight = 1.0
+        endif
+        @emlMeasureMatrixLayout: 0, vpW, vpH, vpH + mxEstHeight,
+        ... emlSetAdaptiveTheme.matrixSize
+        matrixSuppressed = emlMatrixLayout_suppressed
+        if matrixSuppressed = 0
+            matrixPanelHeight = emlMatrixLayout_yMax
+            if matrixPanelHeight < 1.0
+                matrixPanelHeight = 1.0
+            endif
+        endif
+    endif
+    if matrixPanelHeight > 0
+        # graphOverhangInches is 0 here: this fixture draws violins on a
+        # numeric axis, so no categorical labels are measured and no rotated
+        # label overhangs below the frame.
+        matrixGap = emlSetAdaptiveTheme.bodyInch * 1.0
+    endif
+    matrixTotal = vpH + matrixGap + matrixPanelHeight
+
+    # THE ONE VARIABLE. The outer viewport is selected from matrixTotal, a
+    # LOCAL, in both arms — so the page is the same page — and the GLOBAL the
+    # drawing layer reads is written only when EML_TCH says the form wrote it.
+    if declareTotal = 1
+        totalCanvasHeight = matrixTotal
+    endif
+    Select outer viewport: 0, vpW, 0, matrixTotal
 endif
 
 # The form calls @emlMeasureGraphLayout once before draw dispatch, so the
@@ -215,6 +349,18 @@ endif
 
 @emlDrawAxes: xMin, xMax, yMin, yMax, "Category", "Value",
 ... "Legend geometry", vpW, vpH
+
+# POST-DISPATCH, where the form draws it: after the figure, after the legend.
+# The panel does its own top-down sizing on the viewport it is handed, so the
+# bottom it actually drew to is @emlDrawMatrixPanel's own .vpBottom and NOT
+# the one passed in — the two differ whenever the measured content is shorter
+# than the 1.0 inch floor the form applies to matrixPanelHeight.
+if matrixK >= 2 and matrixPanelHeight > 0
+    matrixTop = vpH + matrixGap
+    @emlDrawMatrixPanel: 0, vpW, matrixTop, matrixTotal,
+    ... emlSetAdaptiveTheme.matrixSize, mode$
+    matrixBottom = emlDrawMatrixPanel.vpBottom
+endif
 
 # World -> inches -> pixels, the conversion legend_cap.praat and
 # harness/patterns/style_case.praat both use. The PNG covers the drawn extent
@@ -293,5 +439,33 @@ appendInfoLine: "LEGENDBOX x=", boxL, " y=", boxT, " w=", boxR - boxL,
 ... " h=", boxB - boxT
 appendInfoLine: "LEGENDLAYOUT cols=", cols, " rows=", rows,
 ... " shown=", shown, " hidden=", hidden
+
+# The matrix, in inches, and the same boundaries in pixels of the PNG that is
+# about to be written. Both are printed for EVERY case: a case with no matrix
+# reports k=0 and a matrix band of -1..-1, which is what
+# harness/legend/measure_bands.py reads as "this band does not exist", so the
+# driver has one field to pull rather than two shapes to branch on.
+#
+# BANDS panelBot is the plot panel's own bottom edge, which is where
+# measure.py's frame search stops and where measure_bands.py starts counting.
+# It is emlSetAdaptiveTheme.outerBottom and not vpH, so a panel origin other
+# than zero would carry through.
+appendInfoLine: "MATRIX k=", matrixK, " tch=", declareTotal,
+... " suppressed=", matrixSuppressed,
+... " gap=", fixed$ (matrixGap, 4),
+... " panelH=", fixed$ (matrixPanelHeight, 4),
+... " total=", fixed$ (matrixTotal, 4),
+... " top=", fixed$ (matrixTop, 4),
+... " bot=", fixed$ (matrixBottom, 4)
+
+bandPanelBot = round ((emlSetAdaptiveTheme.outerBottom - emlDrawnMinY) * 300)
+bandMxTop = -1
+bandMxBot = -1
+if matrixK >= 2 and matrixPanelHeight > 0
+    bandMxTop = round ((matrixTop - emlDrawnMinY) * 300)
+    bandMxBot = round ((matrixBottom - emlDrawnMinY) * 300)
+endif
+appendInfoLine: "BANDS panelBot=", bandPanelBot,
+... " mxTop=", bandMxTop, " mxBot=", bandMxBot
 
 @stressSave: vpW, vpH
