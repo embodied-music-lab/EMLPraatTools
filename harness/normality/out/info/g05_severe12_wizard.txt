@@ -1,0 +1,7 @@
+  y (n = 12)
+    Skewness:     2.350
+    Kurtosis (excess): 5.956
+    Shapiro-Wilk: W = 0.7092, p = 0.0010
+    → Shapiro-Wilk rejects normality (p < 0.05)
+    → Skewness/kurtosis outside typical limits (|skew| < 2, |excess kurt| < 7)
+

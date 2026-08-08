@@ -1,0 +1,6 @@
+  y (n = 10)
+    Skewness:     -0.743
+    Kurtosis (excess): 3.517
+    Shapiro-Wilk: W = 0.8723, p = 0.1063
+    → Normality appears reasonable
+

@@ -1,0 +1,6 @@
+  y (n = 18)
+    Skewness:     1.205
+    Kurtosis (excess): 1.917
+    Shapiro-Wilk: W = 0.9194, p = 0.1264
+    → Normality appears reasonable
+

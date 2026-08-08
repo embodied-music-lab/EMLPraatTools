@@ -1,0 +1,6 @@
+  y (n = 5001)
+    Skewness:     0.0002
+    Kurtosis (excess): -1.122
+    Shapiro-Wilk: Shapiro-Wilk requires n <= 5000, got 5001
+    → Shapiro-Wilk unavailable; shape within limits
+

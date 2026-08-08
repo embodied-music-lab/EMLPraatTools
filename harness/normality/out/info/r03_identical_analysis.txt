@@ -1,0 +1,37 @@
+
+══════════════════════════════════════════════
+  EML Stats : Normality Assessment
+  Sat Aug  8 13:16:54 2026
+══════════════════════════════════════════════
+
+  Table               norm r03 identical
+  Column              y
+  N                   10
+
+
+  ── Descriptive Statistics ──────────────────
+  Mean                7.5000
+  SD                  0
+  Median              7.5000
+
+
+  ── Distribution Shape ──────────────────────
+  Why: Skewness and kurtosis indicate departures from a normal (bell-shaped) distribution.
+  Skewness            --undefined--		Substantial left skew (|skew| < 2 is typically acceptable)
+  Kurtosis (excess)   --undefined--		Light-tailed (platykurtic) (0 = normal; |excess| < 7 treated as typical)
+  → Skewness within typical limits (criterion: |skew| < 2)
+  → Kurtosis within typical limits (criterion: |excess kurt| < 7)
+
+
+  ── Shapiro-Wilk Test ───────────────────────
+  Why: Formal test of whether the data are drawn from a normal distribution.
+  Error               All values identical (zero range)
+
+
+  ── Recommendation ──────────────────────────
+  Normality appears reasonable.
+  → Parametric tests (t-test, ANOVA, Pearson r) are appropriate.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════

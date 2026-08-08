@@ -1,0 +1,6 @@
+  y (n = 30)
+    Skewness:     1.234
+    Kurtosis (excess): 1.635
+    Shapiro-Wilk: W = 0.8982, p = 0.0076
+    → Shapiro-Wilk rejects normality (p < 0.05)
+

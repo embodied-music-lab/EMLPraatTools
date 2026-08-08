@@ -1,0 +1,6 @@
+  y (n = 10)
+    Skewness:     --undefined--
+    Kurtosis (excess): --undefined--
+    Shapiro-Wilk: All values identical (zero range)
+    → Shapiro-Wilk unavailable; shape within limits
+
