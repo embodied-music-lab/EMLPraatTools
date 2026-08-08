@@ -32,9 +32,19 @@ procedure stressSave: .vpW, .vpH
     if .nSel > 0
         Remove
     endif
-    # Use the plugin's own pre-save idiom (eml-graphs-form.praat:5735) rather
-    # than a fixed viewport, so what the harness saves is what the plugin
-    # saves. Anything clipped here is clipped in the product too.
+    # Use the plugin's own pre-save idiom rather than a fixed viewport, so
+    # what the harness saves is what the plugin saves. Anything clipped here
+    # is clipped in the product too.
+    #
+    # ANCHOR, not a line number:
+    #     grep -n '@emlAssertFullViewport' plugin/graphs/eml-graphs-form.praat
+    # returns the plugin's two pre-save call sites. The procedure itself is
+    # `procedure emlAssertFullViewport` in graphs/eml-graph-procedures.praat.
+    # (C5: this comment used to cite `:5735`, which is
+    # `spGroupIdx = spPresetGroupIdx`; it was retargeted to `:6595`/`:6670`,
+    # and those had already drifted to `:6612`/`:6687` within the hour. Two
+    # retargetings in two days is the argument for grepping the name. Do NOT
+    # write a line number back into this comment.)
     @emlAssertFullViewport
     Save as 300-dpi PNG file: stressOut$
     appendInfoLine: "SAVED ", stressOut$
