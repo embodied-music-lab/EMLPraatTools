@@ -1,0 +1,4 @@
+STYLE mode=bw index=19 hue=3 pattern=3 shape=violin
+PALETTE fill={0.70, 0.70, 0.70} line={0.45, 0.45, 0.45}
+CROP 978 518 143 131
+SAVED /home/claude/EMLPraatTools/harness/patterns/out/bw_violin_19.png

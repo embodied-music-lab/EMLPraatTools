@@ -1,0 +1,4 @@
+STYLE mode=bw index=18 hue=2 pattern=3 shape=swatch
+PALETTE fill={0.82, 0.82, 0.82} line={0.54, 0.54, 0.54}
+CROP 316 181 35 35
+SAVED /home/claude/EMLPraatTools/harness/patterns/out/bw_swatch_18.png
