@@ -1,0 +1,9 @@
+NOTE: legend labels were shortened with an ellipsis — the widest one does not fit a 3.32 inch panel at 8.0 pt. Widen the figure, shorten the labels, or set Legend placement to Right of plot or Separate figure.
+LGCASE name=5x5_bw_wide n=3 vpW=5.000 vpH=5.000 mode=bw labels=wide legend=1
+PLACEMENT requested=-1 actual=1
+THEME body=9.0000 annot=8.0000 mL=0.7000 mR=0.7000 mT=0.3750 mB=0.5000 innerL=0.7000 innerR=4.3000 innerT=0.3750 innerB=4.5000
+LAYOUT legendW=3.3116 legendH=0.5667
+EXTENT minX=0 maxX=5.0000 minY=0 maxY=5.0000
+LEGENDBOX x=251 y=154 w=994 h=170
+LEGENDLAYOUT cols=1 rows=3 shown=3 hidden=0
+SAVED /home/claude/EMLPraatTools/harness/legend/out/5x5_bw_wide.png

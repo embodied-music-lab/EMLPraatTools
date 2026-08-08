@@ -1,0 +1,8 @@
+LGCASE name=10x3_p2 n=12 vpW=10.000 vpH=3.000 mode=color labels=normal legend=1
+PLACEMENT requested=2 actual=2
+THEME body=11.0000 annot=9.7778 mL=0.8500 mR=0.8500 mT=0.4583 mB=0.4200 innerL=0.8500 innerR=9.1500 innerT=0.4583 innerB=2.5800
+LAYOUT legendW=1.7866 legendH=1.2602
+EXTENT minX=0 maxX=12.1166 minY=0 maxY=3.0000
+LEGENDBOX x=3049 y=138 w=536 h=378
+LEGENDLAYOUT cols=2 rows=6 shown=12 hidden=0
+SAVED /home/claude/EMLPraatTools/harness/legend/out/10x3_p2.png

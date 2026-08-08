@@ -1,0 +1,8 @@
+LGCASE name=5x5_color_none n=24 vpW=5.000 vpH=5.000 mode=color labels=normal legend=0
+PLACEMENT requested=-1 actual=-1
+THEME body=9.0000 annot=8.0000 mL=0.7000 mR=0.7000 mT=0.3750 mB=0.5000 innerL=0.7000 innerR=4.3000 innerT=0.3750 innerB=4.5000
+LAYOUT legendW=0.7969 legendH=3.8333
+EXTENT minX=0 maxX=5.0000 minY=0 maxY=5.0000
+LEGENDBOX x=-1 y=-1 w=0 h=0
+LEGENDLAYOUT cols=0 rows=0 shown=0 hidden=0
+SAVED /home/claude/EMLPraatTools/harness/legend/out/5x5_color_none.png
