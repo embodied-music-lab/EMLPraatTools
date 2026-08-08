@@ -3,7 +3,7 @@
 # ============================================================================
 # Tests: @emlTableFromGroups, @emlOneWayAnova, @emlTwoWayAnova, @emlTukeyHSD
 # Date: 18 March 2026
-# Version: 2.0 (Batch 9: TukeyHSD refactor, etaSquared, partialEtaSq,
+# Version: 2.1 (Batch 9: TukeyHSD refactor, etaSquared, partialEtaSq,
 #   alphabetical group ordering, q statistics, unbalanced design test)
 #
 # Uses shared test helpers (eml-test-helpers.praat).
@@ -14,6 +14,32 @@
 # No eml-core-utilities.praat needed — Batch 6 procedures don't use
 # ranking helpers.
 #
+# NOTE: As of Batch 9, @emlTukeyHSD sorts groups alphabetically
+# (matching R convention). Earlier versions used Praat's mean-sorted order.
+#
+# CHANGELOG
+# 2.1 (8 Aug 2026) — Three error-path needles (9.4, 9.5, 9.6) updated for
+#     D99. All three asserted the pre-D99 refusal text, which prefixed the
+#     procedure's own name into user-facing output:
+#         9.4  "factor1 column not found"   was "emlTwoWayAnova: factor1
+#              column not found: <col>"; now "First factor column not
+#              found: <col>"
+#         9.5  "does not match"             was "... (6) does not match
+#              data# length (4)"; now "The group sizes add up to 6
+#              observations, but the data vector holds 4. They must match."
+#         9.6  "nGroups must be >= 1"       was "emlTableFromGroups: nGroups
+#              must be >= 1, got 0"; now "Building a table needs at least 1
+#              group; got 0."
+#     The rewrite is deliberate and documented, not drift: D99 in
+#     audit/FINDINGS_INDEX.md ("The procedure name leaks into user-facing
+#     error text at 39 sites in eml-inferential.praat") was closed by commit
+#     9c50112 "Stats layer: 53 procedure-name leaks removed", whose diff
+#     contains exactly these three substitutions. The needles that replace
+#     them deliberately carry the offending VALUE (the column name, the two
+#     counts, the group count), so a refusal that goes vague — the failure
+#     mode D99 was filed against — still fails here. No numeric expectation
+#     was touched and the check count is unchanged at 165.
+#
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
@@ -21,8 +47,17 @@
 # Code generation: Claude (Anthropic)
 # Script author: Ian Howell — created and verified by this individual
 #
-# NOTE: As of Batch 9, @emlTukeyHSD sorts groups alphabetically
-# (matching R convention). Earlier versions used Praat's mean-sorted order.
+# RESEARCH USE DISCLOSURE
+# If this script is used in research or publication, disclose AI use
+# per your target journal's policy. Suggested language:
+#
+#   "Praat analysis scripts were developed using the EML PraatGen
+#    Scripting Assistant (Howell, Embodied Music Lab) with code
+#    generation by Claude (Anthropic). All scripts were reviewed,
+#    tested, and validated by Ian Howell."
+#
+# The script author assumes responsibility for the correctness and
+# appropriate application of this code.
 # ============================================================================
 
 include ../../../stats/eml-extract.praat
@@ -723,8 +758,11 @@ for iRow from 1 to 4
 endfor
 
 @emlTwoWayAnova: tableId9d, "value", "Missing", "Factor2"
+; Post-D99 wording: "First factor column", not the argument name factor1.
+; The needle keeps the offending column name so the refusal must still say
+; WHICH column it could not find.
 @emlTestAssertContains: "9.4 missing factor1 two-way",
-    ... emlTwoWayAnova.error$, "factor1 column not found"
+    ... emlTwoWayAnova.error$, "First factor column not found: Missing"
 
 removeObject: tableId9d
 
@@ -736,8 +774,11 @@ emlTableFromGroups.groupSize[1] = 3
 emlTableFromGroups.groupSize[2] = 3
 emlTableFromGroups.data# = {1, 2, 3, 4}
 @emlTableFromGroups: 2, "val", "grp"
+; Post-D99 wording. The needle carries both counts (6 declared, 4 supplied)
+; so a refusal that states the mismatch without saying by how much fails.
 @emlTestAssertContains: "9.5 data vector mismatch",
-    ... emlTableFromGroups.error$, "does not match"
+    ... emlTableFromGroups.error$,
+    ... "add up to 6 observations, but the data vector holds 4"
 
 # --- 9.6: @emlTableFromGroups — zero groups ---
 
@@ -745,8 +786,10 @@ emlTableFromGroups.data# = {1}
 emlTableFromGroups.groupSize[1] = 1
 emlTableFromGroups.groupLabel$[1] = "X"
 @emlTableFromGroups: 0, "val", "grp"
+; Post-D99 wording: no procedure name, no nGroups. The needle keeps the
+; offending value so the refusal must still report what it was given.
 @emlTestAssertContains: "9.6 zero groups",
-    ... emlTableFromGroups.error$, "nGroups must be >= 1"
+    ... emlTableFromGroups.error$, "at least 1 group; got 0"
 
 
 # ══════════════════════════════════════════════════════════════════════════════

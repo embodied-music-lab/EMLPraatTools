@@ -2,10 +2,20 @@
 # ============================================================================
 # EML @emlTheilSen — Reference Value Computation (scipy)
 # ============================================================================
-# Version: 1.2
+# Version: 1.3
 # Date: 3 August 2026
 #
 # Generates the reference literals asserted by test-theilsen.praat.
+#
+# v1.3 (8 Aug 2026) — the printed E-3 expectation still quoted the pre-D99
+#   refusal text ("all x values are identical"). eml-inferential.praat emits
+#   "All <n> x values are identical, so no slope can be estimated." since the
+#   procedure-name leaks were removed (D99), so this crib was describing a
+#   message that no longer exists and would have sent the next reader to
+#   "fix" the library. Wording only; no numeric output changed. The scipy
+#   behaviour it summarises was re-confirmed on scipy 1.17.1: theilslopes on
+#   x = [4,4,4] warns "All `x` coordinates are identical" and returns
+#   slope = nan, intercept = nan.
 #
 # v1.2 — the file declared its eight test vectors TWICE: once in a series of
 #   refs(...) calls and again in a `_sets` list feeding the DISCRIMINATION
@@ -40,10 +50,22 @@
 # EML_PROCEDURE_REGISTRY.md described @emlTheilSen as "scipy-verified".
 # No test for it existed anywhere in dev/tests/ and no verification
 # annotation appeared in its header. The claim was unbacked. @emlTheilSen
-# is not dead code — it is live in the graphing path
-# (graphs/eml-draw-procedures.praat:2410 and :2660), so a wrong slope
-# reaches the user as a drawn trend line, which is exactly the class of
-# error a reader will not catch by eye.
+# is not dead code — it is live in the graphing path. Both call sites are
+# inside `procedure emlDrawScatterPlot` in graphs/eml-draw-procedures.praat,
+# each guarded by `.useTheilSen = 1` / `.gUseTheilSen = 1` (set when the
+# annotation correlation is Spearman and OLS was not reported):
+#     `@emlTheilSen: .xData#, .yData#`     ungrouped trend line
+#     `@emlTheilSen: .gXTrim#, .gYTrim#`   per-group trend line
+# A wrong slope reaches the user as a drawn trend line, which is exactly the
+# class of error a reader will not catch by eye. Verified 8 August 2026:
+#     grep -n "@emlTheilSen:" graphs/eml-draw-procedures.praat   -> 2 hits
+#
+# Deliberately no line numbers: they drift faster than this comment is
+# revisited. It used to cite ":2410 and :2660", which the 7 August 2026
+# contradiction sweep found pointing at bar-chart gridline and bar-quadrant
+# code instead. The sweep's own replacement (":3253-3258" / ":3550-3557") was
+# stale by 8 August, and the two call sites moved again — by 68 lines — inside
+# the single session that wrote this paragraph. Grep the call strings.
 #
 # INTERCEPT CONVENTION — the thing this file is actually pinning down
 # There are two intercept conventions in circulation for Theil-Sen:
@@ -266,7 +288,7 @@ print("ERROR-PATH CASES (no scipy reference — asserted on .error$ only)")
 print("=" * 70)
 print("  E-1: size(x) != size(y)      -> 'x and y must have equal length'")
 print("  E-2: n = 1                   -> 'need at least 2 observations'")
-print("  E-3: all x identical, n >= 2 -> 'all x values are identical'")
+print("  E-3: all x identical, n >= 2 -> 'All 3 x values are identical'")
 print("       scipy.stats.theilslopes on all-identical x returns nan/raises;")
 print("       there is no external reference to check against, so the")
 print("       .praat suite asserts the guard fires and that .slope stays")

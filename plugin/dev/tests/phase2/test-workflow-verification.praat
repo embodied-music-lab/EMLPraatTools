@@ -2,7 +2,7 @@
 # EML Stats : Workflow Verification Test Suite
 # ============================================================================
 # Module: test-workflow-verification.praat
-# Version: 1.0
+# Version: 1.1
 # Date: 11 May 2026
 #
 # Verifies:
@@ -10,6 +10,44 @@
 #   B. Double-tab spacing in explanation column
 #   C. Info window persistence through report procedures
 #   D. All orchestrator report procedures produce expected markers
+#
+# CHANGELOG
+# 1.1 (8 Aug 2026) — Two pre-existing failures, both in this file.
+#     (a) Section A asserted the default emlShowExplanations = 0. The default
+#         is now 1 and that is deliberate (D42/D102 — see the comment at the
+#         assertion and the block above `emlShowExplanationsDefault = 1` in
+#         stats/eml-output.praat). Stale test, not a regression; expectation
+#         moved to 1 with the reason written beside it so it is not moved
+#         back. Nothing else in the file depended on the old default —
+#         Section A sets the gate explicitly before each behavioural check.
+#     (b) Section D died with `Procedure "emlResultClearExtras" not found`.
+#         The procedure is NOT missing: it is defined in
+#         stats/eml-result-writer.praat and called from eml-analysis.praat.
+#         This file included the orchestrators without the writer, and Praat
+#         resolves procedure names at call time, so the omission survived
+#         every parse check and surfaced only when a report ran. Added the
+#         include, in the same position scripts/eml-lib-stats.praat gives it.
+#         harness/check_includes.py is the static check for this class.
+# 1.0 (11 May 2026) — Initial.
+#
+# ATTRIBUTION
+# Framework: EML PraatGen by Ian Howell
+#            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
+#
+# RESEARCH USE DISCLOSURE
+# If this script is used in research or publication, disclose AI use
+# per your target journal's policy. Suggested language:
+#
+#   "Praat analysis scripts were developed using the EML PraatGen
+#    Scripting Assistant (Howell, Embodied Music Lab) with code
+#    generation by Claude (Anthropic). All scripts were reviewed,
+#    tested, and validated by Ian Howell."
+#
+# The script author assumes responsibility for the correctness and
+# appropriate application of this code.
 # ============================================================================
 
 include ../../../stats/eml-core-utilities.praat
@@ -17,6 +55,12 @@ include ../../../stats/eml-core-descriptive.praat
 include ../../../stats/eml-extract.praat
 include ../../../stats/eml-inferential.praat
 include ../../../stats/eml-output.praat
+; eml-result-writer.praat defines @emlResultClearExtras / @emlResultStageExtra,
+; which the orchestrators in eml-analysis.praat call. Praat resolves procedure
+; names at CALL time, so omitting it parsed fine and died mid-report. Shipped
+; wrappers get it from scripts/eml-lib-stats.praat, which lists it here in the
+; same slot — between eml-inferential and the orchestrators.
+include ../../../stats/eml-result-writer.praat
 include ../../../stats/eml-analysis.praat
 include ../../../graphs/eml-annotation-procedures.praat
 include ../eml-test-helpers.praat
@@ -29,9 +73,16 @@ include ../eml-test-helpers.praat
 
 @emlTestSection: "emlShowExplanations flag"
 
-# Default should be 0
-@emlTestAssertEqualNum: "default emlShowExplanations = 0",
-    ... 0, emlShowExplanations, 0
+# The default is 1, ON PURPOSE. Do not "fix" this back to 0.
+# It was 0 and no wrapper ever raised it, so glosses were missing from every
+# wrapper report while the graph path (which sets the gate to 1) had them —
+# the same analysis narrated two different ways depending on whether a figure
+# had been drawn earlier in the session. Findings D42/D102; the rationale is
+# written out above `emlShowExplanationsDefault = 1` in stats/eml-output.praat.
+# That variable is the single declaration: @emlResetExplanations restores it
+# rather than a literal, so the initial and restored values cannot drift.
+@emlTestAssertEqualNum: "default emlShowExplanations = 1",
+    ... 1, emlShowExplanations, 0
 
 # With flag OFF, @emlReportLine should not append explanation
 emlShowExplanations = 0

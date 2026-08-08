@@ -3,7 +3,7 @@
 # ============================================================================
 # Tests: @emlTheilSen
 # Date: 3 August 2026
-# Version: 1.0
+# Version: 1.1
 #
 # Reference values: scipy.stats.theilslopes, via theilsen_scipy_refs.py
 #                   (committed alongside this file — run it to regenerate)
@@ -50,6 +50,42 @@
 # value as misuse and would fail it.
 #
 # Uses shared test helpers (eml-test-helpers.praat).
+#
+# CHANGELOG
+# 1.1 (8 Aug 2026) — E-3's expected refusal text updated for D99. The needle
+#     was "all x values are identical", which matched the pre-D99 message
+#     "emlTheilSen: all x values are identical". D99 (audit/FINDINGS_INDEX.md,
+#     CLARITY) required the internal procedure name out of user-facing text,
+#     and eml-inferential.praat now emits "All <n> x values are identical, so
+#     no slope can be estimated. The predictor must vary." — capital A, so the
+#     old needle no longer occurs. The needle now reads "All 3 x values are
+#     identical", which also asserts the count is the real n rather than a
+#     hard-coded word. The NUMERIC contract was never in question and is
+#     unchanged: scipy.stats.theilslopes on x = {4,4,4} warns "All `x`
+#     coordinates are identical" and returns slope = nan, intercept = nan
+#     (scipy 1.17.1), and the three companion checks — slope undefined,
+#     intercept undefined, nSlopes = 0 — passed before and after. Only the
+#     message wording was stale. Check count is unchanged at 47.
+# 1.0 (3 Aug 2026) — Initial.
+#
+# ATTRIBUTION
+# Framework: EML PraatGen by Ian Howell
+#            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
+#
+# RESEARCH USE DISCLOSURE
+# If this script is used in research or publication, disclose AI use
+# per your target journal's policy. Suggested language:
+#
+#   "Praat analysis scripts were developed using the EML PraatGen
+#    Scripting Assistant (Howell, Embodied Music Lab) with code
+#    generation by Claude (Anthropic). All scripts were reviewed,
+#    tested, and validated by Ian Howell."
+#
+# The script author assumes responsibility for the correctness and
+# appropriate application of this code.
 # ============================================================================
 
 include ../../../stats/eml-core-utilities.praat
@@ -217,8 +253,9 @@ e2Y# = { 7 }
 e3X# = { 4, 4, 4 }
 e3Y# = { 1, 2, 3 }
 @emlTheilSen: e3X#, e3Y#
+; Post-D99 wording: no procedure name, and the count is the real n.
 @emlTestAssertContains: "E-3 error message", emlTheilSen.error$,
-... "all x values are identical"
+... "All 3 x values are identical"
 @emlTestAssertUndefined: "E-3 slope undefined", emlTheilSen.slope
 @emlTestAssertUndefined: "E-3 intercept undefined", emlTheilSen.intercept
 @emlTestAssertEqualNum: "E-3 nSlopes = 0", 0, emlTheilSen.nSlopes, tsExact
