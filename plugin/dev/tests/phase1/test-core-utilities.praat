@@ -5,9 +5,6 @@
 # Version: 1.1
 # Date: 3 August 2026
 #
-# Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# Development: Claude (Anthropic)
-#
 # v1.1: Brought under the TEST RESULT REPORTING CONTRACT (v1.1, declared in
 #        dev/tests/eml-test-helpers.praat). The hand-rolled summary printed
 #        "SOME TESTS FAILED" and then returned normally, so the process
@@ -22,6 +19,25 @@
 # resolves a procedure definition wherever it sits, so the ordering is
 # correct — but it means the bridge belongs immediately after the summary
 # block, NOT at the file tail. Code after the last endproc never executes.
+#
+# ATTRIBUTION
+# Framework: EML PraatGen by Ian Howell
+#            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
+#
+# RESEARCH USE DISCLOSURE
+# If this script is used in research or publication, disclose AI use
+# per your target journal's policy. Suggested language:
+#
+#   "Praat analysis scripts were developed using the EML PraatGen
+#    Scripting Assistant (Howell, Embodied Music Lab) with code
+#    generation by Claude (Anthropic). All scripts were reviewed,
+#    tested, and validated by Ian Howell."
+#
+# The script author assumes responsibility for the correctness and
+# appropriate application of this code.
 # ============================================================================
 
 include ../../../stats/eml-core-utilities.praat
