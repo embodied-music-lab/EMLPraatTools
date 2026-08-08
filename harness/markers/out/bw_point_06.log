@@ -1,0 +1,4 @@
+STYLE mode=bw index=6 hue=6 marker=1 shape=point
+PALETTE colour={0.26, 0.26, 0.26} halfInches=0.0648
+CROP 871 554 58 58
+SAVED /home/claude/EMLPraatTools/harness/markers/out/bw_point_06.png
