@@ -1,0 +1,4 @@
+case,n_rows,kind
+g01,36,numeric
+n01,36,notfound
+n02,36,empty

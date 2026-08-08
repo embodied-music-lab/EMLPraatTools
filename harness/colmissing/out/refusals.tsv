@@ -1,0 +1,23 @@
+case	site	error
+n01	tukey	Data column not found: y
+n01	anova	Data column not found: y
+n01	twoway	Data column not found: y
+n01	kw	Data column not found: y
+n01	dunn	Data column not found: y
+n01	pairwiset	Data column not found: y
+n01	pairwisew	Data column not found: y
+n01	scheffe	Data column not found: y
+n01	bf	Data column not found: y
+n01	welch	Data column not found: y
+n01	gh	Data column not found: y
+n02	tukey	0 observations across 3 groups leave no within-groups degrees of freedom. There must be more observations than groups.
+n02	anova	3 of 3 groups in "grp3" have fewer than 2 observations: "H1", "H2", "H3". Every group needs at least 2.
+n02	twoway	Data column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+n02	kw	Group "H3" has 0 observations. Every group needs at least 1.
+n02	dunn	Group "H3" has 0 observations. Every group needs at least 1.
+n02	pairwiset	Data column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+n02	pairwisew	Data column "y" holds no numbers. 36 cell(s) are empty (row 1 first). Treated as missing data.
+n02	scheffe	0 observations across 3 groups leave no within-groups degrees of freedom. There must be more observations than groups.
+n02	bf	3 of 3 groups in "grp3" have fewer than 2 observations: "H1", "H2", "H3". Every group needs at least 2.
+n02	welch	3 of 3 groups in "grp3" have fewer than 2 observations: "H1", "H2", "H3". Every group needs at least 2.
+n02	gh	3 of 3 groups in "grp3" have fewer than 2 observations: "H1", "H2", "H3". Every group needs at least 2.
