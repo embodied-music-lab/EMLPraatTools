@@ -133,7 +133,23 @@ scripts <- c(
     # dialog. The registry checks are the load-bearing half: they fail at
     # INCLUDE time if a future graph type omits its entry, which is how the
     # bug got in.
-    "v31_gridmode.R"
+    "v31_gridmode.R",
+    # v32 pins the plot rectangle. The dimensions a user types describe the
+    # DATA AREA, not the data area plus its furniture -- if a legend carves
+    # space out of the 6 x 4 someone asked for, "make my figure square" stops
+    # being satisfiable. So the plot rectangle must be identical in all five
+    # legend placements, and a legend that needs room outside it has to grow
+    # the SAVED IMAGE instead. 57 renders: the legend matrix at three figure
+    # sizes with no placement declared, which is what every existing caller
+    # supplies, plus the five placements driven one render each. Every number
+    # is measured on the rendered PIXELS, not read back from what the script
+    # believed it drew -- both sides of that comparison are computed by the
+    # same arithmetic and move together. Also pins the D135 over-wide label,
+    # both before and after it was closed, and the static rule that a legend
+    # renderer draws into the rectangle it was HANDED. Reads
+    # harness/legend/out/, so harness/legend/run.sh must run first -- same
+    # dependency shape as v27 on harness/stress_graphs.sh.
+    "v32_legend_geometry.R"
 )
 
 cat("EML Praat Tools validation suite\n")
