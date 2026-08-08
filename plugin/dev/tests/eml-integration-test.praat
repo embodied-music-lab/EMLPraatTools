@@ -15,8 +15,6 @@
 # v1.1: Item 2 — test 2.4 called the removed @emlExtractMultipleGroups;
 #        rewritten against the current extraction API.
 #
-# Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# Development: Claude (Anthropic)
 # License: GPL-3.0-or-later
 #
 # Exercises all four Phase 1 modules in a realistic workflow.
@@ -25,6 +23,25 @@
 #
 # SETUP: run from anywhere. Praat resolves an include relative to the folder
 # holding THIS script, so the library paths below are relative to dev/tests/.
+#
+# ATTRIBUTION
+# Framework: EML PraatGen by Ian Howell
+#            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
+#
+# RESEARCH USE DISCLOSURE
+# If this script is used in research or publication, disclose AI use
+# per your target journal's policy. Suggested language:
+#
+#   "Praat analysis scripts were developed using the EML PraatGen
+#    Scripting Assistant (Howell, Embodied Music Lab) with code
+#    generation by Claude (Anthropic). All scripts were reviewed,
+#    tested, and validated by Ian Howell."
+#
+# The script author assumes responsibility for the correctness and
+# appropriate application of this code.
 # ============================================================================
 
 include ../../stats/eml-core-utilities.praat
