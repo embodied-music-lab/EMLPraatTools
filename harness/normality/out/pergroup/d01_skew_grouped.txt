@@ -1,0 +1,22 @@
+══════════════════════════════════════════════
+  Normality Assessment
+  Table: d01 skew
+  Grouped by: grp
+══════════════════════════════════════════════
+
+── y ──
+
+  All (n = 18):
+    W = 0.9194  p = 0.1264
+    Skewness = 1.205  Kurtosis (excess) = 1.917
+    → Normality OK
+
+  Summary: all groups pass → parametric
+
+══════════════════════════════════════════════
+  SUMMARY: 1 columns tested
+  Parametric OK:     1
+  Nonparametric rec: 0
+
+  All columns pass → parametric tests appropriate.
+══════════════════════════════════════════════

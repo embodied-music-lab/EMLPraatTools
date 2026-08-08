@@ -1,0 +1,22 @@
+══════════════════════════════════════════════
+  Normality Assessment
+  Table: d02 kurt
+  Grouped by: grp
+══════════════════════════════════════════════
+
+── y ──
+
+  All (n = 10):
+    W = 0.8723  p = 0.1063
+    Skewness = -0.743  Kurtosis (excess) = 3.517
+    → Normality OK
+
+  Summary: all groups pass → parametric
+
+══════════════════════════════════════════════
+  SUMMARY: 1 columns tested
+  Parametric OK:     1
+  Nonparametric rec: 0
+
+  All columns pass → parametric tests appropriate.
+══════════════════════════════════════════════

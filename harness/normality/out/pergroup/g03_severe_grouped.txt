@@ -1,0 +1,22 @@
+══════════════════════════════════════════════
+  Normality Assessment
+  Table: g03 severe
+  Grouped by: grp
+══════════════════════════════════════════════
+
+── y ──
+
+  All (n = 60):
+    W = 0.7465  p = 0.000000008
+    Skewness = 2.650  Kurtosis (excess) = 9.261
+    → Nonparametric recommended
+
+  Summary: one or more groups fail → nonparametric
+
+══════════════════════════════════════════════
+  SUMMARY: 1 columns tested
+  Parametric OK:     0
+  Nonparametric rec: 1
+
+  All columns fail → consider nonparametric tests.
+══════════════════════════════════════════════
