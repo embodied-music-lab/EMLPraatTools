@@ -21,7 +21,7 @@
 #     harness/legend/run.sh             regenerate the inputs to this script
 #     Rscript validate/v32_legend_geometry.R
 #
-# Input:  <legend>/RESULTS.tsv     46 fields per case; see harness/legend/run.sh
+# Input:  <legend>/RESULTS.tsv     61 fields per case; see harness/legend/run.sh
 #         <legend>/<case>.png      the rendered figure
 #         <legend>/<case>.log      the Info-window transcript
 #         plugin/graphs/eml-graph-procedures.praat   read here, statically
@@ -32,12 +32,47 @@
 #   HARD STOP, not a skip, for the reason v27 gives: "the driver never ran
 #   this" is precisely the failure a silently shrinking suite would hide.
 #
-# WHAT IS DRIVEN. 57 figures. 42 of them are the legend matrix -- three figure
-# sizes including a SQUARE one, entry counts 0 / 1 / 3 / 12 / 24, one label
-# 480 characters wide, colour and greyscale, and a no-legend control at every
-# size -- rendered with no emlLegendPlacement declared at all, which is the
-# calling convention every existing caller uses. The other 15 are the five
-# placements at twelve entries, one render each per size.
+# WHAT IS DRIVEN. 103 figures, in four blocks.
+#
+#   BLOCK 1, 42 figures: the legend matrix -- three figure sizes including a
+#   SQUARE one, entry counts 0 / 1 / 3 / 12 / 24, one label 480 characters
+#   wide, colour and greyscale, and a no-legend control at every size --
+#   rendered with no emlLegendPlacement declared at all, which is the calling
+#   convention every existing caller uses.
+#
+#   BLOCK 2, 15 figures: the five placements at twelve entries, one render
+#   each per size.
+#
+#   BLOCK 3, 36 figures: the five placements AGAIN, this time with a real
+#   four-group post-hoc comparison matrix drawn below the plot, at twelve and
+#   at twenty-four entries, per size, each with a legend-free control.
+#
+#   BLOCK 4, 10 figures: the red paths, named rp_*.
+#
+# WHY BLOCKS 3 AND 4 EXIST, which is a question the author asked in one
+# sentence: a graph carrying a post-hoc comparison matrix puts that matrix in
+# a band BELOW the plot, and placement 3 puts the legend below the plot too --
+# do they collide? Reading the code says no, and the reading is correct as far
+# as it goes: @emlDrawLegend's placement-3 branch reads totalCanvasHeight and
+# starts its band below it, and the form sets that global before it selects
+# the outer viewport and before any draw procedure runs. But nothing in the
+# tree had ever RENDERED the two together, so that was an argument. Block 3 is
+# the rendering, and it settles the argument in the direction the reading
+# predicted: at every size, at both counts, in all five placements, the ink
+# inside the matrix band is EXACTLY the ink the matrix draws on its own.
+#
+# BLOCK 4 IS WHERE THE DEFECT WAS. totalCanvasHeight is a FORM local.
+# @emlInitDrawingDefaults -- the documented entry point for "standalone
+# scripts or PraatGen companion files" -- sets emlLegendPlacement and does not
+# set it. A caller outside the form that laid out its own matrix and asked for
+# placement 3 got a legend band starting at the plot's own bottom edge, drawn
+# straight through the panel: 11636 dark pixels of legend ink inside the
+# matrix band on the default figure, and 25564 on the twelve-group one, with
+# the panel's omnibus line and its correction subtitle overprinted. Closed in
+# eml-graph-procedures.praat v3.29 by settling the page bottom once, from the
+# form's global OR the matrix's own published measurement, whichever is lower
+# down the page. Section 9 asserts the closed behaviour and keeps the open
+# numbers as the guard.
 #
 # WHERE THE GEOMETRY COMES FROM
 # -----------------------------
@@ -150,6 +185,16 @@
 #   [F7] the compatibility guarantee (sections 3b and 7a): a caller that
 #        declares no emlLegendPlacement gets placement 1, and placement 1 is
 #        byte-for-byte the figure it has always drawn.
+#   [F8] DISJOINTNESS (sections 8 and 9), and this is the load-bearing one of
+#        the two new sections. The legend band and the comparison-matrix band
+#        must not overlap -- in any placement, at any figure size, at any
+#        entry count, whether or not the caller published totalCanvasHeight.
+#        It is asserted twice over and the two are independent: on the
+#        RECTANGLES the two procedures reported, which is arithmetic, and on
+#        the PIXELS, by counting the ink inside the matrix band and requiring
+#        it to equal, exactly, the count in the same figure drawn with no
+#        legend at all. A failure here is a figure in which a reader cannot
+#        read one of the two things the figure was drawn to say.
 #
 # WHAT THIS FILE DOES NOT COVER. Placement 4 saves a SECOND FILE, and this
 # fixture drives @emlDrawLegend directly rather than through the form, so it
@@ -198,8 +243,20 @@ res <- read.delim(res_p, header = FALSE, stringsAsFactors = FALSE,
                                 "mL", "mR", "mT", "mB",
                                 "innerL", "innerR", "innerT", "innerB",
                                 "extMinX", "extMaxX", "extMinY", "extMaxY",
-                                "layoutW", "layoutH", "note"))
-num <- c("vpW", "vpH", "n", "legend", "pReq", "pAct",
+                                "layoutW", "layoutH", "note",
+                                # The comparison-matrix band. 0 / -1 on every
+                                # case that carries no matrix; see the head of
+                                # harness/legend/measure_bands.py for what
+                                # each ink count is counted over.
+                                "mxK", "mxTch", "mxSupp",
+                                "mxGap", "mxPanelH", "mxTotal",
+                                "panelBot", "mxTop", "mxBot",
+                                "mxInk", "lgInk", "strayInk", "belowInk",
+                                "inkTop", "inkBot"))
+num <- c("mxK", "mxTch", "mxSupp", "mxGap", "mxPanelH", "mxTotal",
+         "panelBot", "mxTop", "mxBot", "mxInk", "lgInk", "strayInk",
+         "belowInk", "inkTop", "inkBot",
+         "vpW", "vpH", "n", "legend", "pReq", "pAct",
          "imgW", "imgH", "frameL", "frameT",
          "frameR", "frameB", "inkLeft", "inkRight", "inkAbove", "inkBelow",
          "edgeR", "edgeB", "inkDark", "boxX", "boxY", "boxW", "boxH",
@@ -237,8 +294,19 @@ res$frameTin <- res$frameT / res$dpiY
 # in. BLOCK 2 is the five placements, twelve entries, one render each per
 # size. They are kept apart because block 2 deliberately changes the size of
 # the saved file and block 1 deliberately does not.
-b1 <- res[!is.na(res$pReq) & res$pReq == -1, ]
-b2 <- res[!is.na(res$pReq) & res$pReq >= 1, ]
+#
+# BOTH ARE FILTERED ON mxK == 0, which is the whole of what blocks 1 and 2
+# were before blocks 3 and 4 existed: no comparison matrix. Without the
+# filter the new legend-free controls, which declare no placement, would fall
+# into block 1 and the new placement renders into block 2, and every count
+# and every "identical in all 14 renders" below would be quietly measuring a
+# different population. Block 3 is the matrix cases that name a placement;
+# block 4 is the red paths, which are named rather than counted because each
+# one is a different question.
+b1 <- res[!is.na(res$pReq) & res$pReq == -1 & res$mxK == 0, ]
+b2 <- res[!is.na(res$pReq) & res$pReq >= 1 & res$mxK == 0, ]
+b3 <- res[res$mxK > 0 & !startsWith(res$case, "rp_"), ]
+b4 <- res[startsWith(res$case, "rp_"), ]
 
 # ---------------------------------------------------------------------------
 # THE MATRIX IS ITSELF AN ASSERTION.
@@ -314,10 +382,46 @@ expected_cases <- as.vector(t(outer(
 PLACEMENT_CASES <- as.vector(t(outer(SIZES$size, paste0("p", 1:5),
                                      paste, sep = "_")))
 
+# BLOCK 3, and the shape of its inventory. Three sizes x two entry counts x
+# (five placements + one legend-free control). The control is what makes the
+# block a measurement rather than a picture: it is the same figure with the
+# same matrix and WITHOUT the @emlDrawLegend call, so the ink it counts
+# inside the matrix band is the matrix's own and nothing else.
+MX_COUNTS <- c(12, 24)
+MATRIX_CASES <- as.vector(t(outer(
+    paste(rep(SIZES$size, each = length(MX_COUNTS)),
+          paste0("n", MX_COUNTS), sep = "_"),
+    c(paste0("mx_p", 1:5), "mx_ctl"), paste, sep = "_")))
+
+# BLOCK 4, named one by one because each is a different question. The three
+# groups share their controls; RP_CTL says which control answers for which
+# treatment, and the treatments are compared against it by name below.
+RP_CASES <- c("rp_notch_p3", "rp_notch_p2", "rp_notch_p4", "rp_notch_ctl",
+              "rp_tall_p3", "rp_tall_p2", "rp_tallnotch_p3", "rp_tall_ctl",
+              "rp_supp_p3", "rp_supp_ctl")
+RP_CTL <- c(rp_notch_p3 = "rp_notch_ctl", rp_notch_p2 = "rp_notch_ctl",
+            rp_notch_p4 = "rp_notch_ctl",
+            rp_tall_p3 = "rp_tall_ctl", rp_tall_p2 = "rp_tall_ctl",
+            rp_tallnotch_p3 = "rp_tall_ctl",
+            rp_supp_p3 = "rp_supp_ctl")
+
 check("v32", "block 1 rendered in full (3 sizes x 2 modes x 7 variants)",
       nrow(b1), length(expected_cases), tol = 0)
 check("v32", "block 2 rendered in full (3 sizes x 5 placements)",
       nrow(b2), length(PLACEMENT_CASES), tol = 0)
+check("v32", "block 3 rendered in full (3 sizes x 2 counts x 5 placements + control)",
+      nrow(b3), length(MATRIX_CASES), tol = 0)
+check("v32", "block 4 rendered in full (the ten red paths)",
+      nrow(b4), length(RP_CASES), tol = 0)
+check_true("v32", "every matrix case in block 3 is present",
+           all(MATRIX_CASES %in% b3$case))
+check_true("v32", "every red path in block 4 is present",
+           all(RP_CASES %in% b4$case))
+# The four blocks partition the file. A case that fell out of all four -- a
+# new name, a mis-typed prefix -- would otherwise be rendered, measured and
+# never looked at.
+check("v32", "the four blocks account for every rendered case",
+      nrow(b1) + nrow(b2) + nrow(b3) + nrow(b4), nrow(res), tol = 0)
 check("v32", "no duplicate case name", length(unique(res$case)), nrow(res), tol = 0)
 check_true("v32", "every case in block 1 is present",
            all(expected_cases %in% b1$case))
@@ -1221,5 +1325,506 @@ check_true("v32", "the fixture sets up the legend the way the grouped types do",
            any(grepl("legendFill\\$\\[i\\]", case_src)))
 check_true("v32", "the fixture calls @emlMeasureGraphLayout where the form does",
            any(grepl("@emlMeasureGraphLayout:", case_src, fixed = TRUE)))
+
+# --- ...and the matrix half of it drives the real thing too. The matrix has
+# to be REAL -- @emlBridgeGroupComparison run on a table, not a hand-filled
+# set of annotMatrix* globals -- or the panel would be measured against
+# content the bridge never produces, and the height that decides where the
+# legend band starts is content-driven. The order matters as much: the form
+# measures the matrix BEFORE dispatch and renders it AFTER, so the legend is
+# drawn while the matrix exists as a measurement and not yet as ink.
+check_true("v32", "the fixture's matrix comes from the real bridge",
+           any(grepl("@emlBridgeGroupComparison:", case_src, fixed = TRUE)))
+check_true("v32", "the fixture sizes the matrix the way the form's pre-dispatch block does",
+           any(grepl("@emlMeasureMatrixLayout:", case_src, fixed = TRUE)) &&
+           any(grepl("emlMatrixLayout_yMax", case_src, fixed = TRUE)) &&
+           any(grepl("emlMatrixLayout_suppressed", case_src, fixed = TRUE)))
+check_true("v32", "the fixture renders the matrix through @emlDrawMatrixPanel",
+           any(grepl("@emlDrawMatrixPanel:", case_src, fixed = TRUE)))
+# The one variable of the red path, read out of the fixture: the global is
+# written under a condition, and the outer viewport is NOT -- so the two arms
+# differ in whether totalCanvasHeight exists and in nothing else.
+check_true("v32", "the fixture writes totalCanvasHeight conditionally",
+           any(grepl("^[[:space:]]+totalCanvasHeight = matrixTotal$", case_src)) &&
+           any(grepl("^[[:space:]]+if declareTotal = 1$", case_src)))
+check_true("v32", "the fixture selects the outer viewport from a local, not from the global",
+           any(grepl("Select outer viewport: 0, vpW, 0, matrixTotal",
+                     case_src, fixed = TRUE)))
+
+# ---------------------------------------------------------------------------
+# 8. THE COMPARISON MATRIX AND THE LEGEND, ON THE SAME PAGE.
+#
+# THE AUTHOR'S QUESTION, and it is a good one: a graph carrying a post-hoc
+# comparison matrix puts that matrix in a band BELOW the plot, and the
+# legend's "Below plot" placement wants a band below the plot too. Do they
+# collide?
+#
+# Reading the code says no. @emlDrawLegend's placement-3 branch takes the
+# bottom of the page rather than the bottom of the plot, and the graphs form
+# has already pushed that past the matrix panel before it selects the outer
+# viewport and before any draw procedure runs. That is an argument. This
+# section is the rendering: 36 figures, three sizes, twelve and twenty-four
+# entries, a REAL four-group one-way ANOVA with Tukey HSD in the panel, every
+# one of the five placements, and a legend-free control for each.
+#
+# THE ANSWER IS NO, AND HERE IS WHAT IT IS MEASURED ON. The load-bearing
+# check is stated twice, on two independent kinds of evidence:
+#
+#   (a) THE RECTANGLES. The band @emlDrawLegend reported and the band
+#       @emlDrawMatrixPanel was drawn into do not overlap. Arithmetic, on two
+#       numbers each procedure computed for itself.
+#
+#   (b) THE PIXELS. The count of dark pixels inside the matrix band is
+#       EXACTLY the count in the same figure drawn with no legend call at
+#       all. Not "close to": exactly. If the legend put one mark inside the
+#       panel this number moves, and (a) could still pass -- a rectangle is
+#       only as good as the drawing that honours it, and v1.23 of this same
+#       procedure reported a box it did not draw.
+#
+# WHY EXACT AND NOT WITHIN A TOLERANCE. The two files are different sizes, so
+# the same panel is written into a slightly different number of pixels and its
+# anti-aliased edges do move -- 3256 grey values differ between the 6 x 4
+# placement-3 figure and its control. The THRESHOLDED ink count does not: it
+# was 17621 both ways on 8 August 2026, and 16365 and 26149 both ways on the
+# other two sizes. So the comparison needs no tolerance and is given none,
+# and a failure is a real mark in a place it should not be.
+#
+# AND THE PLOT IS STILL THE PLOT. Two panels below one figure is the case in
+# which "the dimensions you typed describe the DATA AREA" is under the most
+# pressure, so section 3's composition check is repeated here with BOTH
+# present, against the same figure drawn with neither.
+# ---------------------------------------------------------------------------
+MXBAND <- rbind(
+  # size    the band the form's arithmetic produced, and the ink in it
+  data.frame(size = "6x4",  gap = 0.1300, panelH = 2.0736, total = 6.2036,
+             mxTop = 1239, mxBot = 1861, mxInk = 17621, ctlImgH = 1861),
+  data.frame(size = "5x5",  gap = 0.1250, panelH = 1.9938, total = 7.1188,
+             mxTop = 1538, mxBot = 2136, mxInk = 16365, ctlImgH = 2135),
+  data.frame(size = "10x3", gap = 0.1528, panelH = 2.4369, total = 5.5897,
+             mxTop = 946,  mxBot = 1677, mxInk = 26149, ctlImgH = 1676),
+  stringsAsFactors = FALSE)
+# What placement 3 costs the FILE once a matrix is already under the plot: the
+# legend band, on top of a canvas that is already the plot plus the panel.
+MXGROWTH <- rbind(
+  data.frame(size = "6x4",  n12H = 2072, n24H = 2169, n12W = 2130, n24W = 2359),
+  data.frame(size = "5x5",  n12H = 2388, n24H = 2481, n12W = 1821, n24W = 1821),
+  data.frame(size = "10x3", n12H = 1925, n24H = 1982, n12W = 3634, n24W = 3904),
+  stringsAsFactors = FALSE)
+
+# THE DISJOINTNESS PREDICATE, written once and used by both sections. Two
+# horizontal bands are disjoint when one ends at or before the other begins.
+# A row with no legend box (placement 5, or a legend-free control) has no
+# band and cannot overlap anything, and a row with no matrix band (mxTop = -1,
+# the suppressed panel) likewise -- both are TRUE rather than skipped, so a
+# case that stopped drawing its legend does not disappear from this check.
+bands_disjoint <- function(r) {
+  if (is.na(r$mxTop) || r$mxTop < 0 || is.na(r$boxW) || r$boxW <= 0)
+      return(TRUE)
+  lgTop <- r$boxY
+  lgBot <- r$boxY + r$boxH
+  isTRUE(lgBot <= r$mxTop || lgTop >= r$mxBot)
+}
+
+for (s in seq_len(nrow(SIZES))) {
+  sz  <- SIZES$size[s]
+  e   <- MXBAND[MXBAND$size == sz, ]
+  gr  <- MXGROWTH[MXGROWTH$size == sz, ]
+  # The same figure at the same size with NO matrix and NO legend: the
+  # reference for "the plot rectangle did not move".
+  ref <- b1[b1$case == paste0(sz, "_color_none"), ]
+  if (!check_true("v32", sprintf("%s: the no-matrix reference rendered", sz),
+                  nrow(ref) == 1)) next
+
+  for (nn in MX_COUNTS) {
+    ctl <- b3[b3$case == sprintf("%s_n%d_mx_ctl", sz, nn), ]
+    lab0 <- sprintf("%s matrix, %d entries", sz, nn)
+    if (!check_true("v32", paste(lab0, "control rendered"), nrow(ctl) == 1))
+        next
+
+    # --- The control, pinned. Everything below is measured against it, so
+    # what it is has to be stated rather than assumed.
+    check("v32", paste(lab0, "control: matrix gap (inches)"),
+          ctl$mxGap, e$gap, tol = 0.0001)
+    check("v32", paste(lab0, "control: matrix panel height (inches)"),
+          ctl$mxPanelH, e$panelH, tol = 0.0001)
+    check("v32", paste(lab0, "control: total canvas height (inches)"),
+          ctl$mxTotal, e$total, tol = 0.0001)
+    check("v32", paste(lab0, "control: matrix band top (px)"),
+          ctl$mxTop, e$mxTop, tol = 0)
+    check("v32", paste(lab0, "control: matrix band bottom (px)"),
+          ctl$mxBot, e$mxBot, tol = 0)
+    check("v32", paste(lab0, "control: ink inside the matrix band (px)"),
+          ctl$mxInk, e$mxInk, tol = 0)
+    check("v32", paste(lab0, "control: the matrix was measured, not suppressed"),
+          ctl$mxSupp, 0, tol = 0)
+    # The panel is genuinely below the plot and genuinely there: it starts
+    # below the plot panel's own bottom edge and it carries ink.
+    check_true("v32", paste(lab0, "control: the panel begins below the plot"),
+               ctl$mxTop > ctl$panelBot && ctl$mxInk > 0)
+    # ...and the legend-free control draws no legend, which is what makes it
+    # a control. Stated rather than assumed: a control that had quietly
+    # started drawing one would make every comparison below vacuous.
+    check_true("v32", paste(lab0, "control: no legend box was drawn"),
+               ctl$boxW == 0 && ctl$boxH == 0 && ctl$lgInk == 0)
+
+    for (p in 1:5) {
+      cs  <- sprintf("%s_n%d_mx_p%d", sz, nn, p)
+      lab <- sprintf("%s matrix, %d entries, placement %d", sz, nn, p)
+      r   <- b3[b3$case == cs, ]
+      if (!check_true("v32", paste(lab, "rendered"), nrow(r) == 1)) next
+      check_true("v32", paste(lab, "drew cleanly"), r$verdict == "OK")
+      check_true("v32", paste(lab, "got the placement it asked for"),
+                 r$pAct == p)
+
+      # --- (a) THE RECTANGLES DO NOT OVERLAP. [F8]
+      check_true("v32", paste(lab, "the legend band and the matrix band are disjoint"),
+                 bands_disjoint(r))
+      # --- (b) THE PIXELS SAY THE SAME THING, and they say it exactly. [F8]
+      check("v32", paste(lab, "ink inside the matrix band is the matrix's own, to the pixel"),
+            r$mxInk, ctl$mxInk, tol = 0)
+      # Nothing below the plot belongs to neither band. Ink that no procedure
+      # reported is ink nobody made room for, and it is how a THIRD thing
+      # drifting under the plot would show.
+      check("v32", paste(lab, "no ink below the plot outside the two bands"),
+            r$strayInk, 0, tol = 0)
+      # The three counts are the whole of the ink below the plot. An identity,
+      # checked rather than assumed, because measure_bands.py attributes a row
+      # that falls in BOTH bands to the matrix -- so if the bands ever did
+      # overlap, this is a second place it would surface.
+      check("v32", paste(lab, "the band counts account for all the ink below the plot"),
+            r$mxInk + r$lgInk + r$strayInk, r$belowInk, tol = 0)
+
+      # --- THE MATRIX IS FULLY INSIDE THE EXPORTED IMAGE. The panel reports
+      # itself to @emlExpandDrawnExtent, so the save has to cover it. Within
+      # one pixel on the band's own boundary, which is the same rounding
+      # section 3b describes: the band's bottom edge is an inch measurement
+      # rounded to a pixel and the file's height is the extent rounded to a
+      # pixel, and on 5 x 5 and 10 x 3 those two round apart.
+      check_true("v32", paste(lab, "the matrix band is inside the saved image"),
+                 r$mxBot <= r$imgH + 1)
+      # ...and its INK is strictly inside, with no rounding excuse: the panel
+      # draws into an inner viewport, so its marks stop short of the band's
+      # own edges.
+      check_true("v32", paste(lab, "the matrix's ink is inside the saved image"),
+                 r$inkBot > 0 && r$inkBot < r$imgH)
+      check("v32", paste(lab, "nothing clipped at the bottom edge of the canvas"),
+            r$edgeB, 0, tol = 0)
+      check("v32", paste(lab, "nothing clipped at the right edge of the canvas"),
+            r$edgeR, 0, tol = 0)
+
+      # --- THE PLOT RECTANGLE, WITH BOTH PRESENT. This is the author's
+      # constraint under the most pressure it ever comes under: two panels
+      # below one figure, and the plot still the size that was typed.
+      check_true("v32", paste(lab, "the plot frame is the no-matrix frame, within 1 px"),
+                 abs(r$frameW - ref$frameW) <= 1 &&
+                 abs(r$frameH - ref$frameH) <= 1 &&
+                 abs(r$frameL - ref$frameL) <= 1 &&
+                 abs(r$frameT - ref$frameT) <= 1)
+      check("v32", paste(lab, "frame + margins is still the requested width"),
+            r$frameWin + r$mL + r$mR, r$vpW, tol = 0.01)
+      check("v32", paste(lab, "frame + margins is still the requested height"),
+            r$frameHin + r$mT + r$mB, r$vpH, tol = 0.01)
+
+      # --- WHAT EACH PLACEMENT DOES TO THE FILE, on top of a canvas that is
+      # already the plot plus the panel. 1, 4 and 5 add nothing; 2 widens;
+      # 3 heightens. The same rule as section 3b, restated with the matrix in
+      # the picture, because the matrix's own growth must not be mistaken for
+      # the legend's.
+      if (p %in% c(1, 4, 5)) {
+        check("v32", paste(lab, "the file is the control's file, exactly"),
+              r$imgH, ctl$imgH, tol = 0)
+        check("v32", paste(lab, "...and the same width"), r$imgW, ctl$imgW, tol = 0)
+        check("v32", paste(lab, "no legend ink below the plot"), r$lgInk, 0, tol = 0)
+      } else if (p == 2) {
+        check("v32", paste(lab, "the file widened for the legend"),
+              r$imgW, if (nn == 12) gr$n12W else gr$n24W, tol = 0)
+        check("v32", paste(lab, "...and did not grow downwards"),
+              r$imgH, ctl$imgH, tol = 0)
+        # The legend is beside the PLOT, which is above the matrix band, so
+        # nothing of it lands below the plot at all.
+        check("v32", paste(lab, "no legend ink below the plot"), r$lgInk, 0, tol = 0)
+      } else {
+        check("v32", paste(lab, "the file heightened for the legend band"),
+              r$imgH, if (nn == 12) gr$n12H else gr$n24H, tol = 0)
+        check("v32", paste(lab, "...and did not grow across"),
+              r$imgW, ctl$imgW, tol = 0)
+        # THE BAND IS UNDER THE MATRIX, not over it and not beside it. This
+        # is the sentence the whole section exists to be able to say.
+        check_true("v32", paste(lab, "the legend band starts below the matrix band"),
+                   r$boxY >= r$mxBot)
+        check_true("v32", paste(lab, "and it carries the legend's ink"),
+                   r$lgInk > 0)
+      }
+      check("v32", paste(lab, "no entry was dropped"), r$hidden, 0, tol = 0)
+      check("v32", paste(lab, "entries shown"), r$shown,
+            if (p == 5) 0 else nn, tol = 0)
+    }
+  }
+  # The matrix does not depend on the legend, in either direction: the same
+  # panel at twelve entries and at twenty-four, in every placement.
+  b12 <- b3[b3$case %in% sprintf("%s_n12_mx_p%d", sz, 1:5), ]
+  b24 <- b3[b3$case %in% sprintf("%s_n24_mx_p%d", sz, 1:5), ]
+  check_true("v32", sprintf("%s: the matrix band is the same whatever the legend holds", sz),
+             nrow(b12) == 5 && nrow(b24) == 5 &&
+             length(unique(c(b12$mxInk, b24$mxInk))) == 1 &&
+             length(unique(c(b12$mxTop, b24$mxTop))) == 1 &&
+             length(unique(c(b12$mxBot, b24$mxBot))) == 1)
+}
+
+# ---------------------------------------------------------------------------
+# 9. RED PATHS: THE MATRIX AT THE EDGES OF WHAT THE PAGE BOTTOM CAN BE.
+#
+# Section 8 drives the matrix the way the graphs form drives it, and the form
+# always publishes totalCanvasHeight. Three things it cannot publish are
+# driven here.
+#
+# --- rp_notch_*  THE GLOBAL IS NOT THERE, AND THIS IS WHERE THE DEFECT WAS.
+#
+# totalCanvasHeight is a FORM local. @emlInitDrawingDefaults -- whose own
+# comment says it is for "standalone scripts or PraatGen companion files" --
+# sets emlLegendPlacement and does not set it. So "matrix present, page bottom
+# unpublished" is not a contrived input: it is every caller of the drawing
+# layer that is not the form.
+#
+# MEASURED OPEN, 8 Aug 2026, against eml-graph-procedures.praat v3.28, on a
+# 6 x 4 figure with a four-group Tukey matrix:
+#
+#     the matrix band ran 4.130 to 6.204 inches   (px 1239 to 1861)
+#     the legend band ran 4.140 to 4.566 inches   (px 1242, height 128)
+#     ink inside the matrix band     29257 px, against 17621 for the matrix
+#                                    alone -- 11636 pixels of legend drawn
+#                                    through the panel
+#     the saved file                 1800 x 1861, i.e. the legend band did not
+#                                    even grow it, because it was inside the
+#                                    matrix's own extent
+#
+# and on the twelve-group matrix, 90398 against 64834: 25564 pixels. What was
+# overprinted was the panel's omnibus line and the subtitle naming the
+# correction -- the two lines that say which test produced the p-values.
+#
+# CLOSED in v3.29 by settling the page bottom once, before the placement
+# branch dispatches, from totalCanvasHeight OR the matrix's own published
+# measurement, whichever is further down. What is asserted below is the
+# closed behaviour, with the open numbers kept as the guard, and the closure
+# is stated in the strongest available form: the figure a caller gets WITHOUT
+# the global is now identical, in every measurement this fixture takes, to
+# the figure the form gets WITH it.
+#
+# --- rp_tall_*   A PANEL AS DEEP AS THE FIGURE. Twelve groups on a 6 x 4:
+# the panel is 3.96 inches under a 4 inch plot, so the legend band starts past
+# 8 inches on a figure the user asked for 4 of. The question this answers is
+# whether anything is pushed off the canvas -- and the answer is that nothing
+# is, because the band is reported to @emlExpandDrawnExtent and Praat's
+# picture space is not bounded at the 12 inches the Picture window shows
+# (probed to 44 inches on 8 Aug 2026). The file simply gets taller.
+#
+# --- rp_supp_*   A PANEL THAT WAS MEASURED AND REFUSED. Sixteen groups on a
+# 2 x 2 figure: @emlMeasureMatrixLayout sets emlMatrixLayout_suppressed and no
+# panel is drawn at all. The band must NOT reserve space for it -- a guard
+# that keyed off "annotMatrixN > 0" alone would leave an inch and a half of
+# white page between the plot and a legend, on the smallest figure in the
+# suite, for a panel that does not exist.
+# ---------------------------------------------------------------------------
+
+# Every measurement the fixture takes, for the identity comparisons below.
+# Named rather than "all numeric columns" so that adding a column does not
+# silently weaken a check that reads as exhaustive.
+MEASURED <- c("imgW", "imgH", "frameL", "frameT", "frameR", "frameB",
+              "inkLeft", "inkRight", "inkAbove", "inkBelow",
+              "edgeR", "edgeB", "inkDark",
+              "boxX", "boxY", "boxW", "boxH", "cols", "rows", "shown",
+              "extMinX", "extMaxX", "extMinY", "extMaxY",
+              "mxTop", "mxBot", "mxInk", "lgInk", "strayInk", "belowInk",
+              "inkTop", "inkBot")
+same_figure <- function(a, b) {
+  nrow(a) == 1 && nrow(b) == 1 &&
+    all(vapply(MEASURED, function(k) isTRUE(a[[k]] == b[[k]]), logical(1)))
+}
+
+# --- Every red path drew, and drew cleanly. Section 1 has already said so for
+# the whole file; this says it again over block 4 alone, so a red path that
+# stopped rendering reads as a red path rather than as a count.
+check_true("v32", "every red path drew cleanly",
+           nrow(b4) == length(RP_CASES) && all(b4$verdict == "OK"))
+check_true("v32", "every red path set up a matrix", all(b4$mxK >= 2))
+# ...and the three controls really are legend-free, which is what the ink
+# comparisons below rest on.
+check_true("v32", "the red-path controls draw no legend",
+           all(b4$boxW[endsWith(b4$case, "_ctl")] == 0))
+
+# --- THE LOAD-BEARING CHECK, over every red path at once: disjoint bands and
+# the matrix's own ink, unchanged. [F8]
+for (cs in names(RP_CTL)) {
+  r   <- b4[b4$case == cs, ]
+  ctl <- b4[b4$case == RP_CTL[[cs]], ]
+  if (!check_true("v32", sprintf("red path %s and its control rendered", cs),
+                  nrow(r) == 1 && nrow(ctl) == 1)) next
+  check_true("v32", sprintf("red path %s: the legend band and the matrix band are disjoint", cs),
+             bands_disjoint(r))
+  check("v32", sprintf("red path %s: ink inside the matrix band is the matrix's own", cs),
+        r$mxInk, ctl$mxInk, tol = 0)
+  check("v32", sprintf("red path %s: no ink below the plot outside the two bands", cs),
+        r$strayInk, 0, tol = 0)
+  check("v32", sprintf("red path %s: the band counts account for the ink below the plot", cs),
+        r$mxInk + r$lgInk + r$strayInk, r$belowInk, tol = 0)
+  check("v32", sprintf("red path %s: nothing clipped at the bottom of the canvas", cs),
+        r$edgeB, 0, tol = 0)
+  check("v32", sprintf("red path %s: nothing clipped at the right of the canvas", cs),
+        r$edgeR, 0, tol = 0)
+  check_true("v32", sprintf("red path %s: every mark below the plot is inside the file", cs),
+             r$inkBot < r$imgH)
+  check("v32", sprintf("red path %s: nothing folded into '+N more'", cs),
+        r$hidden, 0, tol = 0)
+}
+
+# --- rp_notch: THE GLOBAL IS ABSENT AND IT NO LONGER MATTERS.
+notch3  <- b4[b4$case == "rp_notch_p3", ]
+notchC  <- b4[b4$case == "rp_notch_ctl", ]
+form3   <- b3[b3$case == "6x4_n12_mx_p3", ]
+check_true("v32", "rp_notch_p3 declared no totalCanvasHeight",
+           nrow(notch3) == 1 && notch3$mxTch == 0 && notch3$mxK == 4)
+check_true("v32", "6x4_n12_mx_p3 did declare one",
+           nrow(form3) == 1 && form3$mxTch == 1)
+# THE CLOSURE, in its strongest form: same figure, both ways.
+check_true("v32",
+           "placement 3 with a matrix is the same figure with and without totalCanvasHeight",
+           same_figure(notch3, form3))
+# The pinned numbers, closed. Open they were imgH 1861, boxY 1242, mxInk 29257.
+check("v32", "rp_notch_p3: saved image height (was 1861 with the band on the panel)",
+      notch3$imgH, 2072, tol = 0)
+check("v32", "rp_notch_p3: legend band top (px) (was 1242, inside the panel)",
+      notch3$boxY, 1903, tol = 0)
+check("v32", "rp_notch_p3: ink inside the matrix band (was 29257)",
+      notch3$mxInk, 17621, tol = 0)
+check_true("v32", "rp_notch_p3: the band starts below the matrix band, not inside it",
+           notch3$boxY >= notch3$mxBot && notch3$mxBot == 1861)
+check("v32", "rp_notch_p3: legend ink below the plot (was 0 -- it was all on the panel)",
+      notch3$lgInk, 12451, tol = 0)
+# THE GUARD. 11636 px is the defect, stated as the number that must stay
+# absent: legend ink counted inside the matrix band.
+check("v32", "rp_notch_p3: no legend ink inside the matrix band (was 11636 px)",
+      notch3$mxInk - notchC$mxInk, 0, tol = 0)
+
+# Placements 2 and 4 are the control for the claim above: they do not consult
+# the page bottom at all, so the missing global cannot have changed them --
+# and both were bit-identical before and after v3.29.
+for (p in c(2, 4)) {
+  a <- b4[b4$case == sprintf("rp_notch_p%d", p), ]
+  b <- b3[b3$case == sprintf("6x4_n12_mx_p%d", p), ]
+  check_true("v32",
+             sprintf("placement %d with a matrix is unaffected by totalCanvasHeight", p),
+             same_figure(a, b))
+}
+check_true("v32", "rp_notch_ctl is the same page as the form-driven control",
+           same_figure(notchC, b3[b3$case == "6x4_n12_mx_ctl", ]))
+# Placement 4 parks its panel off the figure, and a matrix under the plot does
+# not change that: the park is twelve inches clear of the page bottom or 24,
+# whichever is lower, and on this figure the floor still wins.
+np4 <- b4[b4$case == "rp_notch_p4", ]
+check_true("v32", "rp_notch_p4: the parked legend is still outside the saved area",
+           nrow(np4) == 1 && np4$boxY == 7242 && np4$boxY > np4$imgH)
+
+# --- rp_tall: A PANEL AS DEEP AS THE PLOT ABOVE IT.
+tall3 <- b4[b4$case == "rp_tall_p3", ]
+tallN <- b4[b4$case == "rp_tallnotch_p3", ]
+tallC <- b4[b4$case == "rp_tall_ctl", ]
+check_true("v32", "rp_tall: twelve groups make a panel almost as deep as the figure",
+           nrow(tallC) == 1 && abs(tallC$mxPanelH - 3.9563) < 0.0001 &&
+           abs(tallC$mxTotal - 8.0863) < 0.0001)
+check("v32", "rp_tall_p3: the legend band starts past the panel (px)",
+      tall3$boxY, 2468, tol = 0)
+check_true("v32", "rp_tall_p3: the band is below a 2426 px matrix band",
+           tall3$mxBot == 2426 && tall3$boxY >= tall3$mxBot)
+# NOTHING IS PUSHED OFF THE CANVAS. A 4 inch figure saved 9.11 inches tall,
+# and every mark of both panels inside it.
+check("v32", "rp_tall_p3: the file grew to hold plot, panel and band",
+      tall3$imgH, 2734, tol = 0)
+check("v32", "rp_tall_p3: the exported extent is 9.1159 inches",
+      tall3$extMaxY, 9.1159, tol = 0.0001)
+check_true("v32", "rp_tall_p3: the last mark on the page is inside the page",
+           tall3$inkBot == 2674 && tall3$inkBot < tall3$imgH)
+# ...and the same, with the global unpublished. Open, this figure put 25564 px
+# of legend on the panel and saved 1800 x 2425.
+check_true("v32",
+           "rp_tallnotch_p3: the deep panel is cleared with no totalCanvasHeight either",
+           same_figure(tallN, tall3))
+check("v32", "rp_tallnotch_p3: ink inside the matrix band (was 90398)",
+      tallN$mxInk, tallC$mxInk, tol = 0)
+check("v32", "rp_tallnotch_p3: saved image height (was 2425)",
+      tallN$imgH, 2734, tol = 0)
+# Placement 2 beside a deep panel: the legend goes to the RIGHT of the plot,
+# the matrix stays under it, and the file grows in both directions -- across
+# for the legend and down for the panel. Neither growth is the other's.
+tall2 <- b4[b4$case == "rp_tall_p2", ]
+check_true("v32", "rp_tall_p2: the file widened for the legend and deepened for the panel",
+           nrow(tall2) == 1 && tall2$imgW == 2359 && tall2$imgH == 2425 &&
+           tall2$imgH == tallC$imgH && tall2$imgW > tallC$imgW)
+check("v32", "rp_tall_p2: no legend ink below the plot at all",
+      tall2$lgInk, 0, tol = 0)
+
+# --- rp_supp: A PANEL THAT WAS REFUSED RESERVES NOTHING.
+supp3 <- b4[b4$case == "rp_supp_p3", ]
+suppC <- b4[b4$case == "rp_supp_ctl", ]
+check_true("v32", "rp_supp: sixteen groups on a 2 x 2 figure are suppressed",
+           nrow(supp3) == 1 && supp3$mxSupp == 1 && supp3$mxK == 16)
+check_true("v32", "rp_supp: no panel was drawn, and no band was reported",
+           supp3$mxTop == -1 && supp3$mxBot == -1 && supp3$mxInk == 0)
+check_true("v32", "rp_supp: the control's page is empty below the plot",
+           nrow(suppC) == 1 && suppC$belowInk == 0 && suppC$inkBot == -1)
+# The band sits directly under the plot, one boxInsetInches down -- exactly
+# where it sits on a figure that never had a matrix at all. panelBot is 600 px
+# (2 inches at 300 dpi) and the band's top is 636.
+check_true("v32", "rp_supp: the legend band sits directly below the plot",
+           supp3$boxY == 636 && supp3$panelBot == 600 &&
+           supp3$boxY - supp3$panelBot < 0.2 * DPI)
+check_true("v32", "rp_supp: the file grew by the band and nothing else",
+           supp3$imgH == 912 && suppC$imgH == 600 && supp3$imgW == suppC$imgW)
+check_true("v32", "rp_supp: the band is on the page, not off the bottom of it",
+           supp3$lgInk > 0 && supp3$inkBot < supp3$imgH)
+
+# ---------------------------------------------------------------------------
+# 9b. THE PAGE BOTTOM, READ OUT OF THE SOURCE.
+#
+# Section 9 measures that placements 3 and 4 clear whatever is below the plot.
+# This is the same statement about the SHAPE of the code, in v27's and v29's
+# style: the quantity is computed ONCE and both branches read it, so a sixth
+# placement, or a future edit to one branch, cannot leave the other reading a
+# stale rule. The failure this catches is the one that was there: two branches
+# each consulting the page bottom in their own words, and only one of them
+# ever being corrected.
+# ---------------------------------------------------------------------------
+if (!is.null(legend_body)) {
+  check("v32", "@emlDrawLegend computes the page bottom exactly once",
+        sum(grepl("^\\.pageBottom = emlSetAdaptiveTheme\\.outerBottom$",
+                  legend_body)), 1, tol = 0)
+  # It is SEEDED with the plot's own bottom edge and every later write is a
+  # widening comparison, so no source can ever pull the band up above the
+  # plot. Two writes, both of them behind a `>` test.
+  check("v32", "every later write to the page bottom is a widening one",
+        sum(grepl("^\\.pageBottom = ", legend_body)), 3, tol = 0)
+  check("v32", "...and each of the two is guarded by a comparison against it",
+        sum(grepl("^if (totalCanvasHeight|\\.matrixBottom) > \\.pageBottom$",
+                  legend_body)), 2, tol = 0)
+  check_true("v32", "the placement-3 band starts from the page bottom",
+             any(grepl("^\\.below = \\.pageBottom$", legend_body)))
+  check_true("v32", "the placement-4 park clears the page bottom",
+             any(grepl("^\\.park = \\.pageBottom \\+ 12$", legend_body)))
+  # NEITHER PLACEMENT BRANCH READS totalCanvasHeight ANY MORE. The form's
+  # global appears in the page-bottom block and nowhere else -- four mentions,
+  # which are the variableExists test, the undefined test, the comparison and
+  # the assignment. A fifth would be a second rule, and a second rule is how
+  # placements 3 and 4 came to disagree in the first place.
+  check("v32", "totalCanvasHeight is read only where the page bottom is settled",
+        sum(grepl("totalCanvasHeight", legend_body)), 4, tol = 0)
+  # The matrix half of the answer, and the guard on it: the measurement is
+  # consulted through variableExists, so a caller that publishes nothing at
+  # all still draws, and the suppressed flag is honoured so a refused panel
+  # reserves no space.
+  check_true("v32", "the page bottom consults the matrix's own measurement",
+             any(grepl('variableExists \\("emlMatrixLayout_yMax"\\)', legend_body)) &&
+             any(grepl('variableExists \\("annotMatrixN"\\)', legend_body)))
+  check_true("v32", "...and honours a suppressed panel",
+             any(grepl("emlMatrixLayout_suppressed", legend_body)))
+}
 
 if (!exists("EML_SUITE")) { eml_report("v32 legend geometry: the plot is what the user asked for"); eml_exit() }
