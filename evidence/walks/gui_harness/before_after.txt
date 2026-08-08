@@ -1,0 +1,19 @@
+# _NET_WM_NAME defect — before/after, 2026-08-07T19:16:54Z
+# Praat 6.6.30, DISPLAY=:91 (rig.sh instance 1, openbox)
+# Script: /home/claude/rig/walk/emdash.praat  page 1 = 'Step 1 - Choose data' (em dash)
+
+$ xprop -id 0x600017 WM_NAME
+  WM_NAME:  not found.
+$ xprop -id 0x600017 _NET_WM_NAME
+  _NET_WM_NAME(UTF8_STRING) = "Pause: Step 1 \342\200\224 Choose data"
+
+BEFORE  $ xdotool search --name '^Pause:'
+  rc=1   (no output = window not found)
+BEFORE  $ LC_ALL=C.UTF-8 xdotool search --name '^Pause:'   (locale is not the cause)
+  rc=1
+
+AFTER   $ _NET_CLIENT_LIST + _NET_WM_NAME route
+  0x600017  Pause: Step 1 \342\200\224 Choose data
+
+CONTROL: an ASCII-titled pause window ('Pause: Page one') DOES carry WM_NAME(STRING),
+which is why this never bit the single-page gui.sh harness.

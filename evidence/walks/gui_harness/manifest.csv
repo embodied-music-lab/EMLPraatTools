@@ -1,0 +1,9 @@
+file,what,display,wm,note
+before_after.txt,"xprop proof + old vs new lookup on the same window",:91,openbox,"WM_NAME not found; _NET_WM_NAME set; xdotool search rc=1; client-list route finds it"
+03_emdash_page1.png,"em-dash-titled pause page 1, the window the old lookup could not see",:91,openbox,"reproduction shot, taken before the fix"
+01_page1.png,"ASCII-titled pause page 1 (control)",:91,openbox,"this window DOES carry WM_NAME - why the bug stayed latent"
+02_page2.png,"ASCII-titled pause page 2 (control)",:91,openbox,"old route finds it; em-dash equivalent it cannot"
+walk_log.txt,"3-page walk driven by the fixed helpers, old vs new lookup logged per page",:99,matchbox,"old route empty on all 3 pages; pausewin found all 3"
+walk_page1.png,"page 1 as found and clicked by fixed pausewin",:99,matchbox,"Pause: Step 1 - Choose data"
+walk_page2.png,"page 2 as found and clicked by fixed pausewin",:99,matchbox,"Pause: Step 2 - Choose test; Info shows p1=2 from page 1"
+walk_page3.png,"page 3 as found and clicked by fixed pausewin",:99,matchbox,"Pause: Step 3 - Done"

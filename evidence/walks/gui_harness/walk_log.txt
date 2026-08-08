@@ -1,0 +1,25 @@
+# Fixed-helper walk — 2026-08-07T19:20:31Z
+# DISPLAY=:99, matchbox-window-manager -use_titlebar no, Praat 6.6.30
+# script: /home/claude/rig/walk/emdash.praat  — 3 sequential beginPause: pages,
+#   every page title carrying an em dash (as the EML wizard's do).
+
+page 1  OLD  xdotool search --name '^Pause:'  -> []
+page 1  NEW  pausewin (_NET_CLIENT_LIST)      -> [4194327 Pause: Step 1 — Choose data]
+page 1  geom=[438 451 524 113]  click (851,528)  shot=walk_page1.png
+
+page 2  OLD  xdotool search --name '^Pause:'  -> []
+page 2  NEW  pausewin (_NET_CLIENT_LIST)      -> [4195619 Pause: Step 2 — Choose test]
+page 2  geom=[438 451 524 113]  click (851,528)  shot=walk_page2.png
+
+page 3  OLD  xdotool search --name '^Pause:'  -> []
+page 3  NEW  pausewin (_NET_CLIENT_LIST)      -> [4196315 Pause: Step 3 — Done]
+page 3  geom=[438 451 524 113]  click (662,528)  shot=walk_page3.png
+
+after last click, pausewin -> []   (empty = all pages dismissed)
+
+--- Praat's own record of the clicks (result2.txt):
+  start
+  p1=2
+  p2=2
+  p3=1
+  p1=2 -> Next, p2=2 -> Next, p3=1 -> OK : all three pages reached and clicked.
