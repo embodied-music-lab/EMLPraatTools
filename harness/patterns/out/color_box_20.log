@@ -1,0 +1,4 @@
+STYLE mode=color index=20 hue=4 pattern=3 shape=box
+PALETTE fill={0.70, 0.89, 0.83} line={0.00, 0.62, 0.45}
+CROP 706 511 389 61
+SAVED /home/claude/EMLPraatTools/harness/patterns/out/color_box_20.png
