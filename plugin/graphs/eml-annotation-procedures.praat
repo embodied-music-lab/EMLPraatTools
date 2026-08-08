@@ -4,8 +4,48 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
-# Version: 3.18
-# Date: 2 August 2026
+# Version: 3.19
+# Date: 8 August 2026
+#
+# v3.19: D124 — @emlDrawAnnotationBlock wraps.
+#        [1] The box was sized to its longest line exactly as handed in, so
+#            one long disclosure line made it wide enough to sit over the
+#            data and, on a narrow figure, to run off the canvas. Lines are
+#            now wrapped through @emlWrapText to a budget taken from the
+#            frame (emlAnnotBlockWidthShare, 0.55 of the inner viewport less
+#            the box's padding and inset), never from a character constant —
+#            annotSize scales with the viewport, so a character is a near
+#            constant FRACTION of the panel and "keep it under 50
+#            characters" has always meant "up to seven eighths of the panel".
+#            Measured 8 Aug 2026 on a 3.6 x 3 inch 4-bar chart: box width
+#            fell from 1.79 to 0.52 of the axis range, and the rightmost
+#            inked pixel column from 1079 (the canvas edge, i.e. clipped)
+#            to 929, which is exactly where a figure carrying no box at all
+#            ends. On the real @emlDisclose path the box fell from 0.75 to
+#            0.49 of the frame and the data pixels it covered from 28 to 0.
+#        [2] Wrapping can only trade width for height, so the box is
+#            re-wrapped wider (to at most 0.72) when it would otherwise
+#            stand taller than the frame. Nothing is ever truncated.
+#        [3] Praat markup survives the break: a wrapped line's Draw string is
+#            cut at the same word boundaries as its Label, guarded by a word
+#            count check, so the omnibus "%H(3) = ..., %p = ..." keeps its
+#            italics on both halves. New helper @emlSpaceCount.
+#        [4] Comment corrections. The wizard pointer for the skew/kurtosis
+#            criterion was :2085 (a "Data column:" padding line) and is now
+#            :2170-2175. The D95 note claimed the gate's kurtosis threshold
+#            was 1; it is 7 (emlSkewThreshold 2 / emlKurtosisThreshold 7 in
+#            stats/eml-output.praat), which reverses the direction of the
+#            contradiction it describes — rewritten to match the code, the
+#            threshold itself untouched. Two eml-analysis.praat pointers had
+#            drifted (:2961 now sits in @emlDeclareKWResult, :2194 in
+#            @emlRMAnovaTest's arithmetic) and now name their anchors.
+#            @emlCSVAddRow, named as the reporters' CSV entry point, does
+#            not exist anywhere in the plugin — the real ones are @emlCSVAdd
+#            / @emlCSVAddStr / @emlCSVAddDescriptives. The Procedures index
+#            listed 15 of the file's 26. v2.7's "all 6 test paths" is 4,
+#            which is what its own list names and what the code has.
+#            annotBlockLabel$'s "max 20 lines" is @emlDisclose's disclosure
+#            cap, not the array's — the form appends a 21st.
 #
 # v3.18: Audit fixes (annotation/stats-bridge layer).
 #        [1] @emlClearAnnotations now clears annotMatrixLabel$[] over the
@@ -140,8 +180,10 @@
 #        effect sizes shown. Previously only showed "Lower: [effect label]"
 #        with no description of what the upper triangle contains.
 # v2.7: annotMatrixPosthoc$ global — set by @emlBridgeGroupComparison at
-#        all 6 test paths (Welch t-test, Mann-Whitney U, Tukey HSD,
-#        Dunn's test with configurable correction method). Cleared by
+#        all 4 test paths (Welch t-test, Mann-Whitney U, Tukey HSD,
+#        Dunn's test with configurable correction method) — the count read
+#        "6" against its own list of four, and four is also what the code
+#        has. Cleared by
 #        @emlClearAnnotations. Subtitle in @emlDrawMatrixPanel now reads
 #        "Tukey HSD · Lower: |Cohen's d|" (with effect) or just the
 #        test name (without). Info window report shows "Test:" (2-group)
@@ -241,23 +283,35 @@
 #     populate the annotation arrays. The main script orchestrates:
 #     bridge -> stack -> draw data -> draw annotations -> draw axes.
 #
-# Procedures:
-#   @emlClearAnnotations        — reset all annotation arrays
-#   @emlFormatStars             — p-value to star notation
-#   @emlFormatAnnotLabel        — format bracket label from p, d, style
-#   @emlStackBrackets           — assign vertical tiers to brackets
-#   @emlDrawBracket             — render one significance bracket
-#   @emlDrawAnnotation          — render positioned text box
-#   @emlDrawAnnotations         — umbrella: draw all annotations
-#   @emlDrawRegressionLine      — render regression line on scatter plot
+# Procedures (all 26, in file order — this list used to name 15 and silently
+# omit @emlOppositeCorner, @emlDrawAnnotationBlock, @emlDrawMatrixPanel and
+# every shared reporter except the last two):
+#   @emlClearAnnotations         — reset all annotation arrays
+#   @emlFormatStars              — p-value to star notation
+#   @emlFormatAnnotLabel         — format bracket label from p, d, style
+#   @emlStackBrackets            — assign vertical tiers to brackets
+#   @emlDrawBracket              — render one significance bracket
+#   @emlDrawAnnotation           — render positioned text box
+#   @emlDrawAnnotations          — umbrella: draw all annotations
+#   @emlDrawRegressionLine       — render regression line on scatter plot
 #   @emlPlaceElements            — pick best corners for legend + annotation block
 #   @emlComputeAnnotationHeadroom — compute extra y-space for brackets
+#   @emlOppositeCorner           — diagonally opposite corner name
+#   @emlSpaceCount               — spaces in a string (word counting helper)
+#   @emlDrawAnnotationBlock      — render the multi-line corner text box
 #   @emlMeasureMatrixLayout      — measure matrix panel geometry (rotate, truncate, stack)
-#   @emlBridgeGroupComparison   — run group test, populate brackets
-#   @emlBridgeCorrelation       — run correlation, populate regression
-#   @emlReportBridgeStats       — thin dispatcher: graphs tool → shared reporter
-#   @emlReportPairedComparison  — shared reporter: paired comparison
-#   @emlReportTwoWayAnova       — shared reporter: two-way ANOVA
+#   @emlDrawMatrixPanel          — render the comparison matrix panel
+#   @emlBridgeGroupComparison    — run group test, populate brackets
+#   @emlBridgeCorrelation        — run correlation, populate regression (UNUSED)
+#   @emlReportBridgeStats        — thin dispatcher: graphs tool → shared reporter
+#   @emlReportTwoGroupComparison — shared reporter: two-group comparison
+#   @emlReportAnovaComparison    — shared reporter: one-way ANOVA
+#   @emlReportKWComparison       — shared reporter: Kruskal-Wallis
+#   @emlReportCorrelationAnalysis — shared reporter: correlation
+#   @emlReportRegressionAnalysis — shared reporter: regression
+#   @emlReportNormalityAnalysis  — shared reporter: normality
+#   @emlReportPairedComparison   — shared reporter: paired comparison
+#   @emlReportTwoWayAnova        — shared reporter: two-way ANOVA
 # ============================================================================
 
 
@@ -306,8 +360,15 @@
 #
 # Multi-line annotation block (scatter stats + formula):
 #   annotBlockN                  — number of lines in block
-#   annotBlockLabel$[1..N]       — line text (max 20 lines)
+#   annotBlockLabel$[1..N]       — line text, raw (no Picture markup)
 #   annotBlockDraw$[1..N]        — Picture-window version (with markup)
+#
+#   N is capped at 20 by @emlDisclose (eml-draw-procedures.praat), but that
+#   is a cap on DISCLOSURES, not on the array: the graphs form appends its
+#   omnibus line afterwards, so 21 is reachable on the form path. The number
+#   of lines actually DRAWN is larger again — @emlDrawAnnotationBlock wraps
+#   each entry to the frame and renders the segments, so a 5-entry block can
+#   render as a dozen lines.
 # ============================================================================
 
 
@@ -886,6 +947,20 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlSpaceCount: .s$
+# Number of space characters in .s$. Used by @emlDrawAnnotationBlock to count
+# words (spaces + 1) so a wrapped line's Praat markup can be cut at the same
+# word boundaries as its plain text. Praat has no strcount, and replace$
+# reports its substitution count only through the length difference.
+#
+# Output: .result
+# ----------------------------------------------------------------------------
+procedure emlSpaceCount: .s$
+    .result = length (.s$) - length (replace$ (.s$, " ", "", 0))
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlDrawAnnotationBlock
 # Render a multi-line text box with background fill in a specified corner.
 # Reads from annotBlockN / annotBlockDraw$[1..N] globals.
@@ -898,6 +973,51 @@ endproc
 # Draws directly; no output variables.
 # Uses annotBlockDraw$[] for Picture window text (may contain %% markup).
 # Caller is responsible for populating annotBlockN and annotBlockDraw$[].
+#
+# WRAPPING (D124). The box used to be exactly as wide as its longest line as
+# handed in. One long disclosure line therefore made the box wide enough to
+# sit on top of the data, and on a narrow figure wide enough to run off the
+# canvas: measured 8 Aug 2026, a 5-line block whose second line was 118
+# characters, on a 3.6 x 3 inch 4-bar chart, drew a box 179% of the axis
+# width — over all four bars, with the text clipped at the frame edge.
+#
+# Lines are now wrapped to a budget taken from the PLOTTING FRAME, never from
+# a character constant. @emlReportNote is the Info window's equivalent and
+# follows the same rule in its own frame — it wraps to 68 of the report's
+# 72-column body, i.e. the frame less its indent. Here the frame is
+# emlSetAdaptiveTheme's inner viewport and the deductions are the box's own
+# padding and corner inset.
+#
+# A character constant cannot do this job, and the reason is worth writing
+# down because @emlDisclose's "keep .short$ under about 50 characters" reads
+# as though it could. annotSize scales WITH the viewport, so a character is
+# very nearly a fixed fraction of the panel no matter how big the panel is.
+# Measured 8 Aug 2026 at annotSize, as a share of the inner width:
+#
+#                          6 x 4      4.5 x 3.5     3.6 x 3
+#     37 chars (the        0.506        0.537        0.653
+#       omnibus line)
+#     48 chars (a real     0.682        0.722        0.881
+#       disclosure)
+#     50 chars             0.874        0.930        1.128
+#
+# So "under 50 characters" has always meant "up to seven eighths of the panel",
+# on every figure size — the advice could not have prevented D124. The budget
+# has to be stated as the share itself, which is emlAnnotBlockWidthShare
+# (0.55): a corner box may take a little over half the frame, and the omnibus
+# line that every annotated categorical figure carries still fits on one line
+# at every size above.
+#
+# Markup survives the break. A line short enough to fit keeps its
+# caller-supplied annotBlockDraw$ verbatim. A line that must be wrapped is
+# broken on the LABEL — the plain text, which is what @emlWrapText and the
+# width measurement can both reason about — and the Draw string is then cut at
+# the same word boundaries, which works because Praat's "%" attaches to the
+# word after it and @emlWrapText breaks at spaces. Word-for-word alignment is
+# only valid while the two strings have the same word count, so that is
+# checked; when it fails (a sanitized "\% " escape adds a space, an over-long
+# token gets hard-broken mid-word) the segments fall back to being re-derived
+# through @emlSanitizeLabel, exactly as @emlDisclose derives Draw from Label.
 # ----------------------------------------------------------------------------
 procedure emlDrawAnnotationBlock: .corner$, .xMin, .xMax, .yMin, .yMax, .fontSize
     if annotBlockN = 0
@@ -914,27 +1034,177 @@ procedure emlDrawAnnotationBlock: .corner$, .xMin, .xMax, .yMin, .yMax, .fontSiz
         .fontInch = .fontSize / 72
         .lineH = .fontInch * 1.4 * .wpiY
 
+        # Padding and insets: scale with spacingFactor
+        .sf = emlSetAdaptiveTheme.spacingFactor
+        .padXInch = .fontInch * (0.3 + 0.2 * .sf)
+        .padX = .padXInch * .wpiX
+        .padY = .lineH * (0.2 + 0.15 * .sf)
+
         # Set font size before measuring — query uses current font metrics
         Font size: .fontSize
 
-        # Measure actual rendered width of each line (exact, font-aware)
-        # Use annotBlockLabel$ (plain text) not annotBlockDraw$ (markup)
-        # because %% markup chars affect Text width measurement
-        .textW = 0
-        for .i from 1 to annotBlockN
-            .w = Text width (world coordinates): annotBlockLabel$[.i]
-            if .w > .textW
-                .textW = .w
+        ; ---- Text budget, as a share of the frame -----------------------
+        if variableExists ("emlAnnotBlockWidthShare")
+            .share = emlAnnotBlockWidthShare
+        else
+            .share = 0.55
+        endif
+
+        ; ---- Wrap, then measure ----------------------------------------
+        ; Two things can send the pass round again.
+        ;
+        ; WIDTH. @emlWrapText counts CHARACTERS and the budget is in world
+        ; units, so each over-long line converts its own budget with its own
+        ; measured average character width. That estimate is off whenever a
+        ; segment is unusually wide or narrow for the line it came from, so
+        ; the pass repeats against the width actually measured, shrinking
+        ; .fit until the widest segment fits.
+        ;
+        ; HEIGHT. Wrapping trades width for height, so a width budget can
+        ; push the box off the TOP or BOTTOM of the frame instead — the same
+        ; defect rotated 90°. When the wrapped box would stand taller than
+        ; emlAnnotBlockHeightShare of the plotting frame the width share
+        ; grows and the block is wrapped again, wider and shorter, up to
+        ; 0.72. This is a fitting constraint and not a taste one, which is
+        ; why the default is 0.95 and not something tidier: a tall narrow box
+        ; is measurably the better shape. Measured 8 Aug 2026 on the
+        ; 4-bar / 5-line figure of D124 at 3.6 x 3 inches — kept narrow the
+        ; box is 0.38 x 0.72 of the frame and TWO bar tops stay readable;
+        ; forced out to 0.72 wide it is 0.59 x 0.51 and only ONE does.
+        ; Widening is what you do to avoid running off the canvas, not by
+        ; preference.
+        ; A block that does not fit even at 0.72 is too much text for the
+        ; figure; it is drawn tall rather than silently truncated.
+        .maxShare = 0.72
+        if variableExists ("emlAnnotBlockHeightShare")
+            .hShare = emlAnnotBlockHeightShare
+        else
+            .hShare = 0.95
+        endif
+        .fit = 1.0
+        .pass = 0
+        repeat
+            .pass = .pass + 1
+            ; Inner viewport share, less the box's own two paddings and the
+            ; corner inset it is held off the axis by. Floored at four
+            ; characters' worth so a pathologically small viewport still
+            ; produces a wrap width @emlWrapText can work with rather than a
+            ; zero or negative one.
+            .availInch = .innerW * .share - 2 * .padXInch
+            ... - emlSetAdaptiveTheme.boxInsetInches
+            if .availInch < .fontInch * 4
+                .availInch = .fontInch * 4
             endif
-        endfor
+            .availW = .availInch * .wpiX
+            .wN = 0
+            for .i from 1 to annotBlockN
+                .lineW = Text width (world coordinates): annotBlockLabel$[.i]
+                if .lineW <= .availW
+                    .wN = .wN + 1
+                    .wLabel$[.wN] = annotBlockLabel$[.i]
+                    .wDraw$[.wN] = annotBlockDraw$[.i]
+                else
+                    .maxChars = floor (length (annotBlockLabel$[.i])
+                    ... * .availW * .fit / .lineW)
+                    if .maxChars < 4
+                        .maxChars = 4
+                    endif
+                    @emlWrapText: annotBlockLabel$[.i], .maxChars
+                    ; Copy the segments out of emlWrapText's namespace before
+                    ; anything else can call it, and count the words in each
+                    ; on the way past. @emlSpaceCount is this file's helper:
+                    ; words = spaces + 1 on a single-spaced string.
+                    .nSeg = emlWrapText.nLines
+                    .segWordSum = 0
+                    for .s from 1 to .nSeg
+                        .seg$[.s] = emlWrapText.line$[.s]
+                        @emlSpaceCount: .seg$[.s]
+                        .segWords[.s] = emlSpaceCount.result + 1
+                        .segWordSum = .segWordSum + .segWords[.s]
+                    endfor
+
+                    ; Can the caller's markup be carried across the breaks?
+                    ; Only if Label and Draw agree word for word AND the
+                    ; segments account for exactly the Label's words (a
+                    ; hard-broken over-long token would add one).
+                    @emlSpaceCount: annotBlockLabel$[.i]
+                    .labWords = emlSpaceCount.result + 1
+                    @emlSpaceCount: annotBlockDraw$[.i]
+                    .drawWords = emlSpaceCount.result + 1
+                    .aligned = 0
+                    if .drawWords = .labWords
+                        if .segWordSum = .labWords
+                            .aligned = 1
+                        endif
+                    endif
+
+                    if .aligned = 1
+                        ; Cut Draw at the same word boundaries.
+                        .rest$ = annotBlockDraw$[.i]
+                        for .s from 1 to .nSeg
+                            .take$ = ""
+                            for .q from 1 to .segWords[.s]
+                                .sp = index (.rest$, " ")
+                                if .sp = 0
+                                    .tok$ = .rest$
+                                    .rest$ = ""
+                                else
+                                    .tok$ = left$ (.rest$, .sp - 1)
+                                    .rest$ = mid$ (.rest$, .sp + 1,
+                                    ... length (.rest$))
+                                endif
+                                if .q = 1
+                                    .take$ = .tok$
+                                else
+                                    .take$ = .take$ + " " + .tok$
+                                endif
+                            endfor
+                            .segDraw$[.s] = .take$
+                        endfor
+                    else
+                        ; Re-derive, the way @emlDisclose does.
+                        for .s from 1 to .nSeg
+                            @emlSanitizeLabel: .seg$[.s]
+                            .segDraw$[.s] = emlSanitizeLabel.result$
+                        endfor
+                    endif
+
+                    for .s from 1 to .nSeg
+                        .wN = .wN + 1
+                        .wLabel$[.wN] = .seg$[.s]
+                        .wDraw$[.wN] = .segDraw$[.s]
+                    endfor
+                endif
+            endfor
+            ; Measure actual rendered width of each line (exact, font-aware).
+            ; Use .wLabel$ (plain text) not .wDraw$ (markup) because markup
+            ; chars affect Text width measurement.
+            .textW = 0
+            for .i from 1 to .wN
+                .w = Text width (world coordinates): .wLabel$[.i]
+                if .w > .textW
+                    .textW = .w
+                endif
+            endfor
+            ; `and` / `or` do not short-circuit here, so both operands of the
+            ; height test have to be safe to evaluate unconditionally. They
+            ; are: .wN >= 1 and .share is a number on every pass.
+            .redo = 0
+            if .textW > .availW
+                .redo = 1
+                .fit = .fit * (.availW / .textW) * 0.98
+            elsif .wN * .lineH + 2 * .padY > .yRange * .hShare
+            ... and .share < .maxShare
+                .redo = 1
+                .share = min (.maxShare, .share * 1.35)
+                .fit = 1.0
+            endif
+        until .redo = 0 or .pass >= 6
+
         # Safety margin: screen font metrics differ slightly from PNG export
         .textW = .textW * 1.05
 
-        .textH = annotBlockN * .lineH
-        # Padding and insets: scale with spacingFactor
-        .sf = emlSetAdaptiveTheme.spacingFactor
-        .padX = .fontInch * (0.3 + 0.2 * .sf) * .wpiX
-        .padY = .lineH * (0.2 + 0.15 * .sf)
+        .textH = .wN * .lineH
         .boxW = .textW + 2 * .padX
         .boxH = .textH + 2 * .padY
 
@@ -989,11 +1259,11 @@ procedure emlDrawAnnotationBlock: .corner$, .xMin, .xMax, .yMin, .yMax, .fontSiz
         Line width: 0.5
         Draw rectangle: .boxLeft, .boxRight, .boxBottom, .boxTop
 
-        # Draw lines top-to-bottom
+        # Draw lines top-to-bottom (the wrapped list, not the caller's)
         Colour: "{0.1, 0.1, 0.1}"
         .yLine = .boxTop - .padY - .lineH / 2
-        for .i from 1 to annotBlockN
-            Text: .textX, "left", .yLine, "half", annotBlockDraw$[.i]
+        for .i from 1 to .wN
+            Text: .textX, "left", .yLine, "half", .wDraw$[.i]
             .yLine = .yLine - .lineH
         endfor
 
@@ -2573,8 +2843,10 @@ endproc
 # They read from test result globals — callers must run the relevant
 # test procedures BEFORE calling these reporters.
 #
-# Each reporter also populates CSV rows via @emlCSVAddRow (from
-# eml-output.praat) so @emlExportStatsCSV can write results to file.
+# Each reporter also populates CSV rows via @emlCSVAdd / @emlCSVAddStr /
+# @emlCSVAddDescriptives (eml-output.praat) so @emlExportStatsCSV can write
+# results to file. (This used to name @emlCSVAddRow, which has never existed
+# in the plugin — nothing by that name is defined anywhere.)
 # ============================================================================
 
 
@@ -2809,12 +3081,24 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     ... left$ ("MS" + "                ", 16),
     ... left$ ("F" + "            ", 12),
     ... "p"
+
+    # D110. This cell was fixed$ (p, 6): "0.000019" under a column headed "p",
+    # in the same report whose Games-Howell matrix prints the bare APA form
+    # (".584") — one report, two spellings of the same quantity. It now takes
+    # @emlFormatP's bare form, which is the shape the two-way source table
+    # already uses (D35) and the direction D9/D28 established: no leading
+    # zero, floored at .001. Nothing is lost by the floor here — the "p" row
+    # printed a few lines below goes through @emlReportPWithExact, which
+    # restates the unrounded value in parentheses whenever the floor bites.
+    @emlFormatP: emlOneWayAnova.p
+    .pCell$ = emlFormatP.bare$
+
     appendInfoLine: left$ ("Between" + "                    ", 20),
     ... left$ (fixed$ (emlOneWayAnova.ssBetween, 2) + "                ", 16),
     ... left$ (string$ (emlOneWayAnova.dfBetween) + "      ", 6),
     ... left$ (fixed$ (emlOneWayAnova.msBetween, 2) + "                ", 16),
     ... left$ (fixed$ (emlOneWayAnova.fValue, 4) + "            ", 12),
-    ... fixed$ (emlOneWayAnova.p, 6)
+    ... .pCell$
     appendInfoLine: left$ ("Within" + "                    ", 20),
     ... left$ (fixed$ (emlOneWayAnova.ssWithin, 2) + "                ", 16),
     ... left$ (string$ (emlOneWayAnova.dfWithin) + "      ", 6),
@@ -2947,12 +3231,18 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 if .iGroup = .jGroup
                     .cellText$ = "---"
                 else
+                    ; D110. Was a hand-rolled floor plus fixed$ (p, 4), so
+                    ; this matrix printed "0.4918" while the Games-Howell
+                    ; matrix 35 lines below printed ".584" — the same
+                    ; quantity, two formats, visible together in one report.
+                    ; @emlFormatP is the single spelling: no leading zero,
+                    ; the .001 floor, and the .999 ceiling and the undefined
+                    ; case that the hand-rolled branch did not cover (an
+                    ; undefined p fell through to fixed$ and rendered as
+                    ; "--undefined--").
                     .pVal = emlOneWayAnova.pMatrix## [.iGroup, .jGroup]
-                    if .pVal < 0.001
-                        .cellText$ = "< .001"
-                    else
-                        .cellText$ = fixed$ (.pVal, 4)
-                    endif
+                    @emlFormatP: .pVal
+                    .cellText$ = emlFormatP.bare$
                 endif
                 .rowLine$ = .rowLine$ + left$ (.cellText$ + "            ", 12)
             endfor
@@ -3369,12 +3659,13 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                     if .iGroup = .jGroup
                         .cellText$ = "---"
                     else
+                        ; D110, as in the Tukey matrix above: one spelling of
+                        ; a p-value per report. @emlFormatP also covers the
+                        ; .999 ceiling and undefined, which the hand-rolled
+                        ; floor did not.
                         .pVal = emlDunnTest.pMatrix## [.iGroup, .jGroup]
-                        if .pVal < 0.001
-                            .cellText$ = "< .001"
-                        else
-                            .cellText$ = fixed$ (.pVal, 4)
-                        endif
+                        @emlFormatP: .pVal
+                        .cellText$ = emlFormatP.bare$
                     endif
                     .rowLine$ = .rowLine$ + left$ (.cellText$ + "            ", 12)
                 endfor
@@ -3972,18 +4263,24 @@ procedure emlReportNormalityAnalysis: .tableName$, .dataCol$,
     @emlReportLine: "Kurtosis (excess)", emlRunNormalityAnalysis.kurtosis, 4
 
     # These two verdicts must use the SAME thresholds as the recommendation
-    # gate in @emlRunNormalityAnalysis, which reads emlSkewThreshold and
-    # emlKurtosisThreshold. They previously hard-coded 1 and 3. With the
-    # kurtosis threshold at 1, a g2 of 1.5 made the gate recommend a
-    # nonparametric test while the line directly above it said "within
-    # typical limits" — two contradictory verdicts in one report. (D95)
+    # gate in @emlRunNormalityAnalysis (stats/eml-analysis.praat), which reads
+    # emlSkewThreshold and emlKurtosisThreshold — set in stats/eml-output.praat
+    # to 2 and 7. These lines previously hard-coded 1 and 3. Against a gate at
+    # 2 and 7 that is stricter, not looser, so the contradiction ran this way:
+    # a g2 of 4 printed "Kurtosis outside typical limits" here while the gate,
+    # for which 4 is well inside 7, went on to recommend a parametric test —
+    # two contradictory verdicts in one report. A skewness of 1.5 did the same
+    # against the old 1. (D95)
     # D11: the parenthetical used to read "(|skew| < 1)" on the FAILING branch
     # only — an assertion of the criterion at the moment it is announcing the
     # opposite, and invisible to the reader who passes. The parenthetical is
     # now worded as a stated criterion ("criterion: ...") and printed on BOTH
     # branches, so a passing reader learns what threshold was cleared.
-    # The same two lines exist in scripts/eml-wizard.praat:2085 — not fixed
-    # here because that file is owned elsewhere.
+    # The same two thresholds are announced in scripts/eml-wizard.praat, in
+    # the .skKurtFail branch of its normality summary — currently :2170-2175.
+    # Not fixed here because that file is owned elsewhere. (The pointer used
+    # to read :2085, which is a "Data column:" padding line in the analysis
+    # plan; grep for skKurtFail, the line numbers move on every insertion.)
     if abs (emlRunNormalityAnalysis.skewness) >= emlSkewThreshold
         appendInfoLine: "  → Skewness outside typical limits (criterion: |skew| < ",
         ... fixed$ (emlSkewThreshold, 0), ")"
@@ -4345,9 +4642,12 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
 
     ; @emlTwoWayAnova sets .warning$ for conditions the user needs to know
     ; about -- unbalanced cells, an empty cell, a design the Type of sums of
-    ; squares assumption does not fit. It was written to the glance frame at
-    ; eml-analysis.praat:2961 and printed NOWHERE, so a user reading the
+    ; squares assumption does not fit. It was written to the glance frame in
+    ; @emlDeclareTwoWayResult (eml-analysis.praat, the @emlGlanceStr:
+    ; "warning" line, ~:3118) and printed NOWHERE, so a user reading the
     ; report never saw it and only a user who exported the CSV ever did.
+    ; (The pointer used to read :2961, which is now inside
+    ; @emlDeclareKWResult; grep the anchor, the line numbers move.)
     ; Placed immediately under the table it qualifies, following the D98
     ; ruling on caveat placement: a caveat below the effect sizes reads as
     ; being about the effect sizes.
@@ -4360,7 +4660,10 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     ; effect of each factor DEPENDS on the level of the other, so a single
     ; main-effect F averaged across that dependence can be misleading on its
     ; own. Precedent for the wording and the placement is the RM-ANOVA
-    ; caution at eml-analysis.praat:2194.
+    ; caution in @emlRunRepeatedMeasuresAnalysis (eml-analysis.praat, the
+    ; `emlRMAnovaTest.warning$` block, ~:2354). (The pointer used to read
+    ; :2194, which is @emlRMAnovaTest's own .msErr arithmetic; grep the
+    ; anchor, the line numbers move.)
     if emlTwoWayAnova.pAB < 0.05
         @emlReportBlank
         @emlReportNote: "Caution: the interaction is significant, so the "

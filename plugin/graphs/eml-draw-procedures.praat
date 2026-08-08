@@ -4,7 +4,155 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
-# Version: 1.20
+# Version: 1.26
+# v1.26: COMMENTS ONLY — no executable line changed. The D124 wave falsified
+#        this file's account of the annotation block; three statements fixed.
+#        (1) @emlDisclose's contract said "@emlDrawAnnotationBlock does not
+#        wrap: the box is as wide as its longest line" and "KEEP .short$ UNDER
+#        ABOUT 50 CHARACTERS". The block wraps now — every entry is broken
+#        through @emlWrapText against emlAnnotBlockWidthShare (default 0.55 of
+#        the inner viewport), with a height guard that re-wraps wider, to at
+#        most 0.72, only when the box would exceed emlAnnotBlockHeightShare
+#        (0.95) of the frame. The character rule was never a width guarantee
+#        even before that: annotSize scales WITH the viewport, so a
+#        48-character line took 0.68 of the inner width at 6 x 4 inches and
+#        0.88 at 3.6 x 3 — inside the old rule, over half the panel at both.
+#        The contract now states the share, what the 20-line budget actually
+#        counts, and why shorter is still better.
+#        (2) The LINE BUDGET note claimed @emlDrawAnnotationBlock's contract
+#        documents the 20-line maximum. It does not and never did — it points
+#        back here. Rewritten to say what the 20 is: a cap on @emlDisclose's
+#        own entries, not on annotBlockN (@emlDrawScatterPlot and
+#        eml-graphs-form.praat both append outside it) and not on drawn rows,
+#        which wrapping makes larger again.
+#        (3) The @emlDiscloseBegin counting rule said the indent excludes
+#        "the three mentions of it in comments"; there are eight, and the
+#        figure moves whenever one of these comments is reworded, so the rule
+#        no longer quotes it.
+# v1.25: COMMENTS ONLY — no executable line changed. Eight stale statements
+#        corrected: counts that disagreed with the list or the code under
+#        them, and pointers to things that do not exist. Three came from the
+#        7 Aug 2026 contradiction sweep
+#        (audit/reviews/CONTRADICTION_SWEEP_2026-08-07.md, C10); the rest
+#        from a file-wide sweep for the same class of error.
+#        (1) "Contains all 14 drawing procedures" (v1.0 entry below): there
+#        are 15. The count now carries the rule that derives it, under
+#        Procedures, so the next reader does not have to trust it.
+#        (2) The Procedures list itself was missing @emlDrawLMMForest, which
+#        is how the 14 went unnoticed: the list agreed with it.
+#        (3) "Real implementations for all 7 graph types" above the DRAWING
+#        PROCEDURES section: two different counts of one thing in one header,
+#        neither of them 15.
+#        (4) "the MAIN EXECUTION section below": there is no such section in
+#        this file or anywhere in the plugin. The dispatch it meant is the
+#        DISPATCH (DRAW) block of eml-graphs-form.praat, now named.
+#        (5) @emlDrawTimeSeries's header still described drawing modes B and
+#        C (spaghetti strands by ID, mean overlay) and a CI band. The
+#        procedure takes no .idCol$, no .showMean and no band columns — the
+#        banner immediately under it has said "reverted, modes A + D only"
+#        the whole time. The palette line was also pre-v1.24: point marks
+#        now cycle 8 hues x 3 marker shapes, not 8 hues.
+#        (6) @emlDrawHistogram's header called its second grouped mode
+#        "side-by-side". The code at Step 9-10 draws FACETED vertically
+#        stacked panels with shared axes; every other mention in the file
+#        says faceted. Also: eml-output.praat added to Dependencies (the
+#        spaghetti summary calls @emlReportHeader and four siblings) and
+#        @emlDrawGroupedBoxPlot's "See the note above Step 3's equivalent"
+#        repointed, that procedure having no numbered steps.
+#
+# v1.24: MARKER SHAPES for the four chart types that draw dots and lines.
+#        v1.23 gave the AREA marks a second dimension (8 hues x 3 fill
+#        patterns) and left the point marks where they were: a scatter, a
+#        line chart, a spaghetti plot and a time series have no area to fill,
+#        so all four went on cycling eight hues in silence above eight
+#        groups. Each now draws through @emlDrawMarker and takes its shape
+#        from emlSetColorPalette.marker[] -- circle, square, triangle, on the
+#        same slot arithmetic, so the ceiling is 24 for both families -- and
+#        each sets the legend's marker key so the key shows the shape and not
+#        merely the hue. @emlDrawTimeSeries and @emlDrawTimeSeriesCI drew no
+#        point markers at all before this and now place one at every plotted
+#        vertex that lies on the panel (not clamped: a clamped marker would
+#        claim an observation at a value nobody measured).
+#        @emlDrawScatterPlot additionally stands its alpha-sprite path down
+#        above eight groups -- the sprite set is circles only, so on macOS
+#        and Windows, where the sprites actually render, the shape would
+#        never have reached the page. Its B/W point colour moves from .fill$
+#        to .lightLine$, because the widened grey ramp takes .fill$ to 0.94
+#        and a 0.94 dot with no outline is not on the page at all.
+#
+# v1.23: The sub-group ceiling goes from 10 to 24. @emlSetColorPalette now
+#        defines a style as (one of 8 hues) x (one of 3 fill patterns:
+#        solid, diagonal hatch, dots), so 24 sub-groups can be drawn
+#        distinguishably where 10 could not — the old ten included two
+#        literal duplicates (D127) and refused eight styles that were
+#        genuinely available. @emlDrawGroupedViolin and @emlDrawGroupedBoxPlot
+#        pass the pattern through to the primitives, the legend carries it,
+#        and the over-cap disclosure names the 8 x 3 space rather than a bare
+#        count. Set on the author's ruling that the boundary be "in excess of
+#        what we think is reasonable" — 24 sub-violins are not readable on a
+#        default 6-inch figure and are perfectly readable on a wide one, and
+#        that is the user's call to make.
+#
+# v1.22: Three more silences, all found by the v1.21 disclosure work — a
+#        procedure that knew it had dropped something and did not say so.
+#        Same ruling, same three channels, same helpers.
+#        (1) THE OVER-CAP SCATTER. @emlDrawScatterPlot's grouped path writes
+#        a Pearson line, a Spearman line and a fitted-line formula PER GROUP
+#        straight into annotBlockN, bypassing @emlDisclose and its 20-line
+#        budget. At eight groups that is 24 lines: measured 7 Aug 2026, the
+#        box ran from the top of the panel, across the x-axis and off the
+#        bottom edge of the figure, and the dropped-row disclosure that
+#        followed was refused by the spent budget and never appeared. The
+#        lines are now buffered and committed ALL OR NONE — a box holding six
+#        of eight groups is indistinguishable from a complete one — and when
+#        they do not fit, every one of them is printed to the Info window and
+#        the figure says so in one line.
+#        (2) ZERO IS NOT "NO DATA". @emlMeasureBarData (v3.23, in
+#        eml-graph-procedures.praat) seeded emlBarData_mean[] and
+#        emlBarData_error[] to 0 rather than undefined, so this file's
+#        "<> undefined" guards for the bar and the whisker could never fire:
+#        .nSkippedBars and .nSkippedErrors were dead code and both
+#        disclosures reading them were unreachable. A group with no usable
+#        observation drew as a bar of height zero — the same mark a measured
+#        zero draws — and a whisker whose error was undefined simply did not
+#        appear. Fixed at the root; both guards now fire, the omitted bars
+#        are NAMED, and the v1.21 stopgap line "N group(s) shown at zero" is
+#        gone with the behaviour it described.
+#        (3) THE ELEVENTH SUB-GROUP. @emlDrawGroupedViolin and
+#        @emlDrawGroupedBoxPlot drop sub-groups past the tenth because
+#        @emlSetColorPalette declares ten fill/line pairs over eight hues.
+#        THE CAP IS LEGITIMATE AND IS NOT RAISED. It was silent, and the
+#        legend still listed sub-groups that had no violin or box anywhere on
+#        the figure. Now disclosed by name and row count, the legend is
+#        capped to what was drawn, and the slot geometry divides by the drawn
+#        count so the remaining violins stay centred.
+#        Verified by validate/v29_figure_disclosure.R.
+# v1.21: Figure disclosure unified across the ten Table-consuming draw
+#        procedures, to the author's ruling of 7 Aug 2026 — "Let's draw the
+#        image as the image unless someone asks to annotate."
+#        (1) Nothing in this file writes to emlSubtitle$ any more.
+#        @emlDrawTimeSeries appended " | Mean per time point" and
+#        @emlDrawBarChart appended an error-bar/truncation/omitted-bars
+#        caption; both saved and restored the global, so it was never
+#        permanently corrupted, but the DRAWN figure carried the user's own
+#        subtitle with a machine tail after " | ", and drew it whether or not
+#        Annotate was ticked. emlSubtitle$ is the user's field: the graphs
+#        form asks for it and persists it to config.
+#        (2) All ten disclose dropped rows, in one wording and one counter
+#        idiom taken from @emlDrawViolinPlot and @emlDrawBoxPlot, which were
+#        the only two that did. Silent before: histogram, bar, scatter,
+#        grouped violin, grouped box, spaghetti, time series; time series
+#        with CI had the count but in its own words and indentation.
+#        (3) The four procedures that plot a MEAN rather than raw values now
+#        all say so — @emlDrawTimeSeries already did, @emlDrawTimeSeriesCI,
+#        @emlDrawBarChart and the line chart (graph type 5 with CI off, which
+#        IS @emlDrawTimeSeries) did not.
+#        (4) New @emlDiscloseBegin / @emlDisclose / @emlDiscloseEnd carry all
+#        of the above: Info window always, figure only when the user ticked
+#        Annotate, through the existing annotation block. See the block
+#        comment on those procedures for why the gate could not simply be
+#        left to @emlDrawAnnotationBlock.
+#        Verified by validate/v29_figure_disclosure.R.
 # v1.20: @emlDrawLMMForest brought into line with the drawing standards.
 #        (1) Rule 1: the bare `Marks bottom: 5` is replaced by
 #        @emlDrawAlignedMarksBottom with theme-derived tick targets, so the
@@ -123,17 +271,48 @@
 #        per-facet tick count from panel height instead of full canvas.
 # v1.0: Extracted from eml-graphs.praat v2.28 to enable shared use by
 #        both the graph UI (eml-graphs.praat) and stats wrapper scripts.
-#        Contains all 14 drawing procedures. No standalone executable code.
+#        Contains the drawing procedures and no standalone executable code.
+#        The count stated here was 14 and was never updated when
+#        @emlDrawLMMForest was added; it is 15 now. See Procedures
+#        below for the live count and the rule that derives it.
 #
 # Dependencies:
 #   eml-graph-procedures.praat   — theme, palette, axes, violin/box primitives
 #   eml-annotation-procedures.praat — bridge, annotation rendering
-#   eml-core-utilities.praat     — table utilities
-#   eml-core-descriptive.praat   — descriptive stats
+#   eml-output.praat             — @emlReportHeader / @emlReportSection /
+#                                  @emlReportLine / @emlReportLineString /
+#                                  @emlReportBlank / @emlReportFooter /
+#                                  @emlUnderscoreToSpace (spaghetti summary)
+#   eml-core-utilities.praat     — vector utilities; reached indirectly, via
+#                                  @emlSpearmanCorrelation -> @emlRankVector
+#   eml-core-descriptive.praat   — descriptive stats; reached indirectly, via
+#                                  @emlDrawViolin / @emlDrawBox -> @emlQuartiles
 #   eml-extract.praat            — group extraction
 #   eml-inferential.praat        — statistical tests
 #
-# Procedures:
+# Procedures: 15 of them. THE COUNTING RULE, so this number can be checked
+# rather than believed:
+#     grep -c "^procedure emlDraw" plugin/graphs/eml-draw-procedures.praat
+# A drawing procedure is defined at column 1 and named emlDraw*; every one of
+# them is a whole-figure entry point, and this file holds no emlDraw* helpers
+# (the primitives — @emlDrawViolin, @emlDrawBox, @emlDrawMarker, @emlDrawAxes
+# and the rest — live in eml-graph-procedures.praat and are NOT counted here).
+# The 15 split three ways by what they consume:
+#   * 10 take a Table object id plus column names (@emlDrawTimeSeries through
+#     @emlDrawGroupedBoxPlot below). These are exactly the ten that disclose:
+#     grep -c "^    @emlDiscloseBegin:" on this file returns 10. The leading
+#     four-space indent is what makes that a count of CALL SITES rather than
+#     of mentions: every mention in a comment block begins with "#", or with
+#     spaces then "#", so none of them matches. (The bare pattern without the
+#     indent does NOT return 10, and the figure it does return moves whenever
+#     one of these comments is reworded — do not quote it here.)
+#   * 4 take another Praat object — Pitch, Sound, Spectrum, Ltas.
+#   * 1, @emlDrawLMMForest, takes no argument at all and reads emlLMM.* /
+#     emlWaldCI.* globals.
+# Fourteen of the 15 are reached from the DISPATCH (DRAW) block of
+# eml-graphs-form.praat; @emlDrawLMMForest is called by eml-lmm.praat.
+#
+# The 15, in the order they are defined below:
 #   @emlDrawF0Contour       — F0 contour from Pitch object
 #   @emlDrawWaveform        — waveform from Sound object
 #   @emlDrawSpectrum        — spectrum from Spectrum object
@@ -148,13 +327,309 @@
 #   @emlDrawHistogram       — histogram (overlap or faceted)
 #   @emlDrawGroupedViolin   — two-factor violin (category × sub-group)
 #   @emlDrawGroupedBoxPlot  — two-factor box plot
+#   @emlDrawLMMForest       — LMM fixed-effect coefficient forest plot
+#                             (no arguments; not on the graphs-form dispatch)
+#
+# Disclosure helpers (v1.21):
+#   @emlDiscloseBegin       — open a disclosure batch for one figure
+#   @emlDisclose            — one disclosure, routed to its channels
+#   @emlDiscloseEnd         — render the batch into the annotation block
 # ============================================================================
+
+# ============================================================================
+# FIGURE DISCLOSURE — @emlDiscloseBegin / @emlDisclose / @emlDiscloseEnd
+# ============================================================================
+# v1.21, 7 Aug 2026. The author's ruling: "Let's draw the image as the image
+# unless someone asks to annotate." Three channels, one rule each.
+#
+#   Info window   ALWAYS. Every disclosure goes here unconditionally, whatever
+#                 the caller is and whatever the user ticked. The Info window
+#                 is where a reader goes to find out what a figure did, and it
+#                 costs the figure nothing.
+#
+#   The figure    ONLY when the user ticked Annotate. Rendered through the
+#                 EXISTING annotation block — annotBlockN / annotBlockLabel$[]
+#                 / annotBlockDraw$[], drawn by @emlDrawAnnotationBlock into a
+#                 corner chosen by @emlPlaceElements. No new text slot and no
+#                 new class of on-figure element were invented for this.
+#
+#   emlSubtitle$  NEVER. It is the USER'S field: the graphs form asks for it
+#                 ("Subtitle") and persists it to config. @emlDrawTimeSeries
+#                 and @emlDrawBarChart used to append a machine caption to it
+#                 after " | " — saved and restored, so the global survived,
+#                 but the DRAWN figure carried the user's own words with a
+#                 tail bolted on that the user never wrote and could not
+#                 remove, whether or not Annotate was ticked. Both are gone.
+#                 Nothing in this file writes to emlSubtitle$.
+#
+# WHY THE GATE LIVES HERE AND NOT IN @emlDrawAnnotationBlock
+# ----------------------------------------------------------
+# The block is NOT already gated on `annotate`. Verified 7 Aug 2026 by drawing
+# a scatter plot with annotate = 0 and scatterShowFormula = 1: the OLS formula
+# box rendered. @emlDrawScatterPlot's two call sites under the comment
+# "Formula on graph if requested (independent of annotate)" populate the block
+# from scatterShowFormula alone, and the render site is guarded only by
+# `if annotBlockN > 0`. So a non-empty block does not mean the user asked for
+# annotations, and the ruling has to be enforced at the point where a line is
+# ADDED. That is what @emlDisclose does. The pre-existing formula and
+# correlation lines keep their own behaviour; only disclosures are gated.
+#
+# `annotate` is a graphs-form global. Standalone callers — the stats wrappers,
+# the LMM tool, harness/stress_cases — never set it, so it is read through
+# variableExists: undefined means "the user ticked nothing", which is the safe
+# reading of a ruling whose default is a clean figure.
+#
+# LINE BUDGET
+# -----------
+# @emlDisclose stops adding at 20 entries. The Info window is never capped.
+#
+# 20 is a budget on what one figure may TRY to say. It is not a ceiling on
+# annotBlockN and it is not a promise about the box:
+#   * Other code writes into the block directly. @emlDrawScatterPlot's stats
+#     lines and eml-graphs-form.praat's POST-DISPATCH omnibus line both append
+#     to annotBlockN without going through @emlDisclose, so neither is counted
+#     against the 20.
+#   * Since D124 (8 Aug 2026) @emlDrawAnnotationBlock WRAPS each entry to a
+#     share of the plotting frame, so the number of rows RENDERED is larger
+#     again — one long entry can render as four. Height, not width, is now
+#     what a wordy disclosure costs. See the contract on @emlDisclose below.
+# The glossary entry for annotBlockN in eml-annotation-procedures.praat is the
+# other half of this; this comment used to claim that
+# @emlDrawAnnotationBlock's contract documented the 20 itself, which it never
+# did — it points back here.
+#
+# USAGE inside a draw procedure:
+#     @emlDiscloseBegin: "Bar chart"
+#     ... draw the data ...
+#     @emlDisclose: "3 row(s) skipped (missing or non-numeric value).", ""
+#     @emlDiscloseEnd: xMin, xMax, yMin, yMax, qTL, qTR, qBL, qBR, legendCorner$
+#
+# .legendCorner$ is the corner this figure's legend went to, or "" if it drew
+# none. The disclosure box must not land there, and it must not land on the
+# graphs form's own omnibus box either — see @emlDiscloseEnd.
+#
+# @emlDrawScatterPlot is the one exception: it already owns an annotation
+# block and already renders it, so it calls @emlDiscloseBegin/@emlDisclose and
+# lets its own existing render site carry the lines. It does not call
+# @emlDiscloseEnd — doing so would draw a second box.
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# @emlDiscloseBegin: .chart$
+# Opens a disclosure batch. .chart$ is the figure's name in prose; it prefixes
+# every Info-window line so a transcript with several figures in it says which
+# figure each note came from.
+#
+# Outputs (globals, deliberately — @emlDisclose and @emlDiscloseEnd are
+# separate procedures and Praat has no other way to share state between them):
+#   emlDiscloseChart$    — the name passed in
+#   emlDiscloseBase      — annotBlockN on entry, restored by @emlDiscloseEnd
+#   emlDiscloseOnFigure  — 1 if the user ticked Annotate, else 0
+#   emlDiscloseInfoN     — lines sent to the Info window this figure
+#   emlDiscloseFigN      — lines placed on the figure this figure
+#   emlDiscloseFigLabel$[1..emlDiscloseFigN] — their text
+#
+# The last three are the disclosure LEDGER. The Info channel is observable
+# from the transcript; the figure channel is not, short of decoding a PNG, so
+# the ledger is how a caller — or validate/v29_figure_disclosure.R — finds out
+# what actually reached the figure. It survives @emlDiscloseEnd, which hands
+# annotBlockN back to its entry value.
+# ----------------------------------------------------------------------------
+procedure emlDiscloseBegin: .chart$
+    emlDiscloseChart$ = .chart$
+    if variableExists ("annotBlockN") = 0
+        annotBlockN = 0
+    endif
+    emlDiscloseBase = annotBlockN
+    emlDiscloseOnFigure = 0
+    if variableExists ("annotate")
+        if annotate = 1
+            emlDiscloseOnFigure = 1
+        endif
+    endif
+    emlDiscloseInfoN = 0
+    emlDiscloseFigN = 0
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlDisclose: .short$, .advice$
+# One disclosure.
+#   .short$   the fact. Goes to BOTH channels, so it has to fit in a corner
+#             box.
+#
+#             WHAT THE BOX GUARANTEES (D124, 8 Aug 2026).
+#             @emlDrawAnnotationBlock WRAPS. Every entry is broken through
+#             @emlWrapText against a budget taken from the PLOTTING FRAME —
+#             emlAnnotBlockWidthShare, default 0.55 of the inner viewport,
+#             less the box's own padding and its corner inset — so however
+#             long .short$ is, the box no longer reaches across the panel or
+#             off the canvas. A height guard re-wraps wider, to at most 0.72,
+#             and only when the box would otherwise stand taller than
+#             emlAnnotBlockHeightShare (default 0.95) of the frame. Both
+#             globals are read through variableExists, so a caller that wants
+#             a narrower or a taller box may set either before it draws.
+#
+#             WHAT IT COSTS INSTEAD IS HEIGHT. The 20 above is 20 CALLER
+#             ENTRIES, not 20 drawn rows: a long .short$ spends one of the 20
+#             and can render as four rows. So shorter is still better — not
+#             because a long line overhangs any more, but because a corner box
+#             half the frame wide and a third of it tall covers the data it is
+#             about. @emlDrawScatterPlot's formula line, at 39 characters, is
+#             the calibration for a line that reads as a caption.
+#
+#             THE CHARACTER RULE IS GONE, AND WAS NEVER A GUARANTEE. This
+#             contract used to say "KEEP .short$ UNDER ABOUT 50 CHARACTERS".
+#             It could not have prevented D124: annotSize scales WITH the
+#             viewport, so a character is very nearly a fixed FRACTION of the
+#             panel at every figure size, and a fraction is not what a
+#             character count controls. Measured 8 Aug 2026 at annotSize, a
+#             48-character line took 0.68 of the inner width at 6 x 4 inches
+#             and 0.88 at 3.6 x 3 — inside the old rule, over half the panel
+#             at both sizes. The observation the rule came from is still a
+#             real defect and is the one the wrap fixes: 7 Aug 2026, a
+#             71-character mean note on a 6-inch time series, placed in the
+#             correct corner, with the rising line running underneath it.
+#             The full measurement table is in @emlDrawAnnotationBlock's own
+#             header in eml-annotation-procedures.praat.
+#   .advice$  the counts and what to do about it — including the sentence
+#             @emlDrawTimeSeries already wrote, which names the graph type
+#             that would show what this one cannot. Info window ONLY: it is a
+#             paragraph, not a caption. Pass "" when there is nothing to add.
+# ----------------------------------------------------------------------------
+procedure emlDisclose: .short$, .advice$
+    .infoLine$ = emlDiscloseChart$ + ": " + .short$
+    if .advice$ <> ""
+        .infoLine$ = .infoLine$ + " " + .advice$
+    endif
+    appendInfoLine: .infoLine$
+    emlDiscloseInfoN = emlDiscloseInfoN + 1
+    if emlDiscloseOnFigure = 1
+        if annotBlockN < 20
+            annotBlockN = annotBlockN + 1
+            ; Label is measured, Draw is rendered.
+            ;
+            ; Draw goes through @emlSanitizeLabel because Praat's text
+            ; renderer reads "%", "#" and "^" as markup, not as characters.
+            ; Observed 7 Aug 2026: @emlDrawTimeSeriesCI's "band shows the
+            ; 95% CI." rendered on the figure as "band shows the 95 CI." —
+            ; the per-cent sign silently became an italic toggle and
+            ; disappeared. Any disclosure that quotes a confidence level, or
+            ; a user's column name, can carry one of those three.
+            ;
+            ; Label stays raw, which is what @emlDrawAnnotationBlock's own
+            ; comment asks for: it measures Label because the backslash
+            ; escapes in Draw would be counted as characters and the box
+            ; would come out wider than the text it holds.
+            annotBlockLabel$[annotBlockN] = .short$
+            @emlSanitizeLabel: .short$
+            annotBlockDraw$[annotBlockN] = emlSanitizeLabel.result$
+            emlDiscloseFigN = emlDiscloseFigN + 1
+            emlDiscloseFigLabel$[emlDiscloseFigN] = .short$
+        endif
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlDiscloseEnd: .xMin, .xMax, .yMin, .yMax, .qTL, .qTR, .qBL, .qBR,
+#                  .legendCorner$
+# Renders whatever @emlDisclose put on the figure, then hands the annotation
+# block back exactly as it was found.
+#
+# THE RESTORE. eml-graphs-form.praat's POST-DISPATCH block appends its own
+# omnibus line to annotBlockN AFTER the draw procedure returns and renders the
+# block itself; lines left behind here would be drawn a second time, in a
+# second box.
+#
+# THE CORNER. Two boxes can be on an annotated categorical figure at once —
+# this one, and the form's omnibus box. The form's corner is not negotiable
+# and not visible to @emlPlaceElements: eml-graphs-form.praat sends it to
+# "bottom-right" when there are brackets and "top-right" when there are not.
+# Drawn 7 Aug 2026 without this guard, an annotated violin plot with two
+# significance brackets put BOTH boxes in the bottom-right corner and the
+# Kruskal-Wallis line was painted over the top of "6 row(s) skip…".
+#
+# Rather than second-guess @emlPlaceElements, the corners that are already
+# spoken for — the legend's, and the form's — are declared BUSY by adding a
+# large occupancy weight to their quadrants. That is the currency
+# @emlPlaceElements already reasons in, so the library keeps making the
+# choice and this procedure only tells it what is in the way.
+#
+# The form's rule is duplicated here, which is a coupling worth naming: the
+# right long-term fix is for the form to route its omnibus line through this
+# same block instead of rendering a second one, and that is a change in
+# eml-graphs-form.praat.
+#
+# Call this while the panel viewport and the data's Axes: are still current —
+# the block is positioned in world coordinates.
+# ----------------------------------------------------------------------------
+procedure emlDiscloseEnd: .xMin, .xMax, .yMin, .yMax, .qTL, .qTR, .qBL, .qBR, .legendCorner$
+    if annotBlockN > emlDiscloseBase
+        # Occupancy weight big enough to outrank any real quadrant count.
+        # A quadrant holds at most one point per table row, and Praat tables
+        # in this plugin are not millions of rows.
+        .busy = 1000000
+
+        # (a) The legend, if this figure drew one.
+        if .legendCorner$ = "top-left"
+            .qTL = .qTL + .busy
+        elsif .legendCorner$ = "top-right"
+            .qTR = .qTR + .busy
+        elsif .legendCorner$ = "bottom-left"
+            .qBL = .qBL + .busy
+        elsif .legendCorner$ = "bottom-right"
+            .qBR = .qBR + .busy
+        endif
+
+        # (b) The graphs form's omnibus box, if the form is going to draw
+        # one after this procedure returns. Mirrors the POST-DISPATCH
+        # condition in eml-graphs-form.praat: it renders only when Annotate
+        # is on AND (there are brackets, OR there is an omnibus line and no
+        # comparison-matrix panel); the corner is bottom-right with brackets
+        # and top-right without. Every global is read through
+        # variableExists — a standalone caller sets none of them.
+        .fBrackets = 0
+        .fText = 0
+        .fMatrix = 0
+        .fAnnotate = 0
+        if variableExists ("annotate")
+            .fAnnotate = annotate
+        endif
+        if variableExists ("annotBracketN")
+            .fBrackets = annotBracketN
+        endif
+        if variableExists ("annotTextN")
+            .fText = annotTextN
+        endif
+        if variableExists ("annotMatrixN")
+            .fMatrix = annotMatrixN
+        endif
+        if .fAnnotate = 1
+            if .fBrackets > 0
+                .qBR = .qBR + .busy
+            elsif .fText > 0
+                if .fMatrix = 0
+                    .qTR = .qTR + .busy
+                endif
+            endif
+        endif
+
+        @emlPlaceElements: .qTL, .qTR, .qBL, .qBR, (.xMin + .xMax) / 2, 1
+        @emlDrawAnnotationBlock: emlPlaceElements.corner1$,
+        ... .xMin, .xMax, .yMin, .yMax, emlSetAdaptiveTheme.annotSize
+        annotBlockN = emlDiscloseBase
+    endif
+endproc
 
 # ============================================================================
 # DRAWING PROCEDURES
 # ============================================================================
-# Real implementations for all 7 graph types. Each procedure's signature
-# matches the dispatch calls in the MAIN EXECUTION section below.
+# The 15 drawing procedures themselves, counted by the rule stated under
+# Procedures at the top of this file. Fourteen of them are reached from the
+# DISPATCH (DRAW) block of eml-graphs-form.praat, whose 13 graph_type branches
+# cover all fourteen — branch 5 chooses between @emlDrawTimeSeries and
+# @emlDrawTimeSeriesCI — and each signature here matches its call there.
+# @emlDrawLMMForest is the fifteenth: it is not on that dispatch, takes no
+# arguments, and is called from plugin/scripts/eml-lmm.praat.
 # ============================================================================
 
 # ----------------------------------------------------------------------------
@@ -576,18 +1051,24 @@ endproc
 
 # ----------------------------------------------------------------------------
 # @emlDrawTimeSeries
-# Draws a publication-quality time series plot with optional spaghetti
-# strands (individual traces), grouped lines, and mean overlays.
+# Draws a publication-quality time series plot: one line, or one line per
+# group, with a marker at every plotted vertex.
 #
 # Drawing modes (determined by column configuration):
-#   A — No ID, no group: single line + optional band (original behavior)
-#   B — ID, no group: spaghetti strands (muted), optional mean overlay
-#   C — ID + group: spaghetti colored by group, per-group mean overlay
-#   D — No ID + group: one line per group (grouped time series)
+#   A — No group column: a single line
+#   D — Group column: one line per group (grouped time series)
 #
-# Band columns apply to mode A only (CI around a single series).
-# Mean overlay is optional (boolean) and applies to modes B and C.
-# Palette cycles 8 Okabe-Ito hues for unlimited groups. ID count is uncapped.
+# There are no modes B and C. They were spaghetti strands keyed on an ID
+# column, with an optional mean overlay, and they were reverted — the banner
+# immediately below has said so the whole time this header contradicted it.
+# The signature is the proof: no .idCol$, no .showMean, and no band columns
+# either, so the CI band this header used to promise for mode A is not here.
+# Individual traces are @emlDrawSpaghettiPlot; a CI band is
+# @emlDrawTimeSeriesCI.
+#
+# The group count is not capped. v1.24: the palette gives each group one of
+# 8 Okabe-Ito hues AND one of 3 marker shapes, so 24 groups are drawn
+# distinguishably; past 24 the (hue, shape) pair repeats.
 # ----------------------------------------------------------------------------
 # ============================================================================
 # @emlDrawTimeSeries (reverted — modes A + D only)
@@ -601,6 +1082,13 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # Step 1: Setup
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
+    # v1.21: this procedure is also the LINE CHART. Graph type 5 with the CI
+    # toggle off dispatches here; with it on, to @emlDrawTimeSeriesCI. There
+    # is no separate @emlDrawLineChart.
+    @emlDiscloseBegin: "Time series"
+    # v1.21: the corner the legend takes, so @emlDiscloseEnd can keep the
+    # disclosure box out of it. Empty until a legend is actually drawn.
+    .legendCorner$ = ""
 
     .hasGroup = 0
     .nGroups = 0
@@ -628,6 +1116,10 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # Step 3: Read data
     selectObject: .tempTable
     .nRows = Get number of rows
+    # v1.21: count the rows the figure will not use, HERE, before Step 3b
+    # rewrites .nRows to the collapsed length. Same counter idiom as
+    # @emlDrawViolinPlot; reported at the end of the procedure.
+    .nSkippedRows = 0
     for .i from 1 to .nRows
         selectObject: .tempTable
         .val$ = Get value: .i, .timeCol$
@@ -636,6 +1128,17 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         .rowY'.i' = number (.val$)
         if .hasGroup = 1
             .rowGrp'.i'$ = Get value: .i, .groupCol$
+        endif
+        ; Nested, not "or": and/or do not short-circuit in Praat, and both
+        ; operands here are already evaluated anyway.
+        .rowUsable = 0
+        if .rowT'.i' <> undefined
+            if .rowY'.i' <> undefined
+                .rowUsable = 1
+            endif
+        endif
+        if .rowUsable = 0
+            .nSkippedRows = .nSkippedRows + 1
         endif
     endfor
     removeObject: .tempTable
@@ -704,18 +1207,41 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
             .runSum = 0
         endif
         if .isEnd = 0
-            # Undefined pairs are carried through untouched so the existing
-            # gap handling in Step 7 still sees them.
-            if .tThis = undefined or .yThis = undefined
-                .aggN = .aggN + 1
-                .aggT'.aggN' = .tThis
-                .aggY'.aggN' = .yThis
-                if .hasGroup = 1
-                    .aggGrp'.aggN'$ = .gThis$
+            # v1.21. An undefined observation is DROPPED here. It used to be
+            # carried through as its own aggregate entry, "so the existing
+            # gap handling in Step 7 still sees them" — and in doing so it
+            # set .runT = undefined while a run was still open. The next row
+            # of the SAME time point then saw .tThis <> .runT and flushed,
+            # and the flush writes `.aggT = .runT`, which was by then
+            # undefined. The mean of that time point was therefore filed at
+            # an undefined x and never drawn.
+            #
+            # Reproduced 7 Aug 2026 against the unmodified v1.20 file:
+            # 20 rows, t = 1..5 with four observations each, six values
+            # blank. Every one of the five time points contained a blank, so
+            # every mean got an undefined time and the LINE CHART CAME OUT
+            # COMPLETELY EMPTY — axes, title and subtitle, no data — while
+            # the Info window said "6 repeated observations were averaged".
+            # @emlDrawTimeSeriesCI, given the identical table, drew its five
+            # points correctly, because it drops undefined rows outright
+            # instead of carrying them.
+            #
+            # Dropping is now what this procedure does too, which is also
+            # what makes the two agree. Consequence to be aware of: a time
+            # point at which EVERY observation is missing no longer produces
+            # a gap in the collapsed series — it produces no point, and the
+            # line bridges it. The genuinely-ungrouped, one-row-per-time
+            # case is untouched: .nCollapsed stays 0 there, the copy-back
+            # below does not run, and Step 7 still sees the undefined rows
+            # and still gaps at them. The rows dropped here are counted in
+            # .nSkippedRows and disclosed.
+            .pairOk = 0
+            if .tThis <> undefined
+                if .yThis <> undefined
+                    .pairOk = 1
                 endif
-                .runT = undefined
-                .runGrp$ = ""
-            else
+            endif
+            if .pairOk = 1
                 if .runCount = 0
                     .runT = .tThis
                     .runGrp$ = .gThis$
@@ -735,16 +1261,6 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
                 .rowGrp'.i'$ = .aggGrp'.i'$
             endif
         endfor
-        appendInfoLine: "NOTE: Time series — ", .nCollapsed,
-        ... " repeated observations were averaged into their time points. ",
-        ... "Use Spaghetti Plot to show individual series, or Time Series ",
-        ... "(with CI) to show the spread around each mean."
-        .savedSubtitle$ = emlSubtitle$
-        if emlSubtitle$ = ""
-            emlSubtitle$ = "Mean per time point"
-        else
-            emlSubtitle$ = emlSubtitle$ + " | Mean per time point"
-        endif
     endif
 
     # Step 4: Axis ranges
@@ -831,6 +1347,20 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # Step 5: Viewport and axes
     @emlSetPanelViewport
     Axes: .xMin, .xMax, .yMin, .yMax
+    # World-per-inch on both axes, for @emlDrawMarker (see @emlDrawScatterPlot).
+    @emlSetPatternScale: .xMin, .xMax, .yMin, .yMax
+
+    # Marker radius, in inches. v1.24: a time series (and therefore the LINE
+    # CHART, which dispatches here) drew bare lines and nothing else, so its
+    # only cue was hue and it cycled eight of them silently above eight
+    # groups -- D127's shape, in the chart type where the reader has the
+    # fewest other clues. A marker at every plotted vertex gives it the same
+    # 8 x 3 style space the area marks have. 1.4 mm radius, ~33 pixels
+    # across at 300 dpi.
+    .markerHalfIn = emlSetAdaptiveTheme.markerSize * 1.4 / 25.4
+    if .markerHalfIn < 1.0 / 25.4
+        .markerHalfIn = 1.0 / 25.4
+    endif
 
     # Step 6: Gridlines
     # gridMode: 1=Both, 2=Horizontal only, 3=Vertical only, 4=Off
@@ -879,6 +1409,43 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
                 endif
             endif
         endfor
+        # A marker at every vertex that is actually on the panel. Segments
+        # are CLAMPED to the axes above, which is right for a line -- it
+        # keeps entering and leaving the frame -- but a clamped marker would
+        # sit on the axis and claim an observation at a value nobody
+        # measured, so an off-panel point gets no marker.
+        for .i from 1 to .nRows
+            .mOk = 0
+            if .rowT'.i' <> undefined
+                if .rowY'.i' <> undefined
+                    .mOk = 1
+                endif
+            endif
+            if .mOk = 1
+                if .rowT'.i' < .xMin
+                    .mOk = 0
+                endif
+            endif
+            if .mOk = 1
+                if .rowT'.i' > .xMax
+                    .mOk = 0
+                endif
+            endif
+            if .mOk = 1
+                if .rowY'.i' < .yMin
+                    .mOk = 0
+                endif
+            endif
+            if .mOk = 1
+                if .rowY'.i' > .yMax
+                    .mOk = 0
+                endif
+            endif
+            if .mOk = 1
+                @emlDrawMarker: .rowT'.i', .rowY'.i', .markerHalfIn,
+                ... emlSetColorPalette.marker[1], emlSetColorPalette.line$[1]
+            endif
+        endfor
     else
         # One line per group
         for .g from 1 to .nGroups
@@ -908,6 +1475,38 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
                             .cy2 = max (.yMin, min (.yMax, .thisY))
                             Draw line: .cx1, .cy1, .cx2, .cy2
                         endif
+                        # Marker at the vertex, only when it is on the panel
+                        # (see the ungrouped path for why it is not clamped).
+                        .mOk = 1
+                        if .thisT < .xMin
+                            .mOk = 0
+                        endif
+                        if .mOk = 1
+                            if .thisT > .xMax
+                                .mOk = 0
+                            endif
+                        endif
+                        if .mOk = 1
+                            if .thisY < .yMin
+                                .mOk = 0
+                            endif
+                        endif
+                        if .mOk = 1
+                            if .thisY > .yMax
+                                .mOk = 0
+                            endif
+                        endif
+                        if .mOk = 1
+                            @emlDrawMarker: .thisT, .thisY, .markerHalfIn,
+                            ... emlSetColorPalette.marker[.g],
+                            ... emlSetColorPalette.line$[.g]
+                        endif
+                        # Drawing a marker leaves Praat's current colour and
+                        # line width alone, but @emlDrawMarker's fallback
+                        # does not, so the stroke state is reasserted for the
+                        # next segment rather than assumed.
+                        Colour: emlSetColorPalette.line$[.g]
+                        Line width: emlSetAdaptiveTheme.dataLineWidth
                         .prevT = .thisT
                         .prevY = .thisY
                         .started = 1
@@ -948,15 +1547,77 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         @emlPlaceElements: .qTL, .qTR, .qBL, .qBR, .xMidQ, 1
 
         # Legend
+        # v1.24: line plus marker, because that is what the series is.
+        legendMarkered = 1
+        legendMarkerLine = 1
         legendN = .nGroups
         for .g from 1 to .nGroups
             legendColor$[.g] = emlSetColorPalette.line$[.g]
+            legendMarker[.g] = emlSetColorPalette.marker[.g]
             @emlSanitizeLabel: .grpLabel$[.g]
             legendLabel$[.g] = emlSanitizeLabel.result$
         endfor
-        @emlDrawLegend: .xMin, .xMax, .yMin, .yMax, emlPlaceElements.corner1$,
+        .legendCorner$ = emlPlaceElements.corner1$
+        @emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .legendCorner$,
         ... emlSetAdaptiveTheme.annotSize
     endif
+
+    # Step 7B: Disclosures (v1.21)
+    # Two facts a reader cannot recover from the figure: that the line is a
+    # MEAN wherever a time point carried more than one observation, and that
+    # rows were dropped. Both used to be Info-window-only or absent; the mean
+    # note additionally hijacked emlSubtitle$ and drew there unconditionally.
+    if .nCollapsed > 0
+        @emlDisclose: "Line shows the mean per time point.",
+        ... string$ (.nCollapsed) + " repeated observation(s) were averaged. "
+        ... + "Use Spaghetti Plot to show individual series, or Time Series "
+        ... + "(with CI) to show the spread around each mean."
+    endif
+    if .nSkippedRows > 0
+        @emlDisclose: string$ (.nSkippedRows)
+        ... + " row(s) skipped (missing or non-numeric value).", ""
+    endif
+
+    # Quadrant scan for the disclosure block's corner. Independent of the
+    # legend's scan above, which only exists on the grouped path.
+    .dxMid = (.xMin + .xMax) / 2
+    .dyMid = (.yMin + .yMax) / 2
+    .dTL = 0
+    .dTR = 0
+    .dBL = 0
+    .dBR = 0
+    selectObject: .objectId
+    .dScanRows = Get number of rows
+    for .di from 1 to .dScanRows
+        selectObject: .objectId
+        .drx = Get value: .di, .timeCol$
+        .dry = Get value: .di, .valueCol$
+        .dOk = 0
+        if .drx <> undefined
+            if .dry <> undefined
+                .dOk = 1
+            endif
+        endif
+        if .dOk = 1
+            if .dry >= .dyMid
+                if .drx < .dxMid
+                    .dTL = .dTL + 1
+                else
+                    .dTR = .dTR + 1
+                endif
+            else
+                if .drx < .dxMid
+                    .dBL = .dBL + 1
+                else
+                    .dBR = .dBR + 1
+                endif
+            endif
+        endif
+    endfor
+    # A legend is drawn on the grouped path only; where there is one, the
+    # block takes the corner diagonally opposite it.
+    @emlDiscloseEnd: .xMin, .xMax, .yMin, .yMax, .dTL, .dTR, .dBL, .dBR,
+    ... .legendCorner$
 
     # Step 8: Axes
     @emlDrawAxes: .xMin, .xMax, .yMin, .yMax, .xLabel$, .yLabel$,
@@ -965,11 +1626,6 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # Step 9: Reset
     Line width: 1.0
     Colour: "Black"
-    # Release the "Mean per time point" note if Step 3b added one, so it
-    # cannot leak onto the next figure drawn in this session.
-    if .nCollapsed > 0
-        emlSubtitle$ = .savedSubtitle$
-    endif
 endproc
 
 
@@ -993,6 +1649,10 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
     # was not the form. Calling it here makes the procedure self-sufficient;
     # in the form path the initialised flag short-circuits it immediately.
     @emlInitAlphaSprites
+    @emlDiscloseBegin: "Time series (with CI)"
+    # v1.21: the corner the legend takes, so @emlDiscloseEnd can keep the
+    # disclosure box out of it. Empty until a legend is actually drawn.
+    .legendCorner$ = ""
 
     .hasGroup = 0
     .nGroups = 1
@@ -1031,6 +1691,11 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
     .xDataMin = undefined
     .xDataMax = undefined
     .nDroppedRows = 0
+    # v1.21: the CI figure collapses repeated observations to a mean at each
+    # time point exactly as @emlDrawTimeSeries does, and said nothing about
+    # it. .nUsedRows - .nPoints is how many observations that cost.
+    .nUsedRows = 0
+    .nPoints = 0
 
     for .g from 1 to .nGroups
         if .hasGroup = 1
@@ -1060,6 +1725,7 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
                 if .rowOk = 0
                     .nDroppedRows = .nDroppedRows + 1
                 else
+                    .nUsedRows = .nUsedRows + 1
                     .isNew = 1
                     for .k from 1 to .nUT
                         if abs (.t - .gUT'.g'_'.k') < 0.0001
@@ -1081,6 +1747,7 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
             endif
         endfor
         .gNUT'.g' = .nUT
+        .nPoints = .nPoints + .nUT
 
         # Sort unique times (insertion sort)
         for .i from 2 to .nUT
@@ -1151,11 +1818,21 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
         endfor
     endfor
 
+    # v1.21: how many observations the mean absorbed. Zero when the table
+    # holds one row per (group, time) — the line is then the data itself and
+    # there is nothing to disclose.
+    .nCollapsed = .nUsedRows - .nPoints
+
+    # D111: the unit-axis fallback was already here but said nothing, so an
+    # empty CI figure was the one empty frame in the set that arrived with no
+    # explanation at all. Same words as @emlDrawTimeSeries.
     if .xDataMin = undefined
         .xDataMin = 0
         .xDataMax = 1
         .yDataMin = 0
         .yDataMax = 1
+        .noDataMsg$ = "NOTE: Time series (with CI) — no usable (time, value) pair; empty axes drawn."
+        appendInfoLine: .noDataMsg$
     endif
 
     # Axis ranges
@@ -1184,6 +1861,15 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
     # Viewport
     @emlSetPanelViewport
     Axes: .xMin, .xMax, .yMin, .yMax
+    # World-per-inch on both axes, for @emlDrawMarker (see @emlDrawScatterPlot).
+    @emlSetPatternScale: .xMin, .xMax, .yMin, .yMax
+
+    # Marker radius in inches -- same value and same reasoning as
+    # @emlDrawTimeSeries, which this procedure is the CI variant of.
+    .markerHalfIn = emlSetAdaptiveTheme.markerSize * 1.4 / 25.4
+    if .markerHalfIn < 1.0 / 25.4
+        .markerHalfIn = 1.0 / 25.4
+    endif
 
     # Gridlines
     # gridMode: 1=Both, 2=Horizontal only, 3=Vertical only, 4=Off
@@ -1241,6 +1927,47 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
                 ... min (.mt2, .xMax), .my2
             endif
         endfor
+
+        # Marker at every mean point on the panel. Not clamped -- see the
+        # same loop in @emlDrawTimeSeries.
+        for .k from 1 to .nUT
+            .mkT = .gUT'.g'_'.k'
+            .mkY = .gMean'.g'_'.k'
+            .mOk = 1
+            if .mkT = undefined
+                .mOk = 0
+            endif
+            if .mOk = 1
+                if .mkY = undefined
+                    .mOk = 0
+                endif
+            endif
+            if .mOk = 1
+                if .mkT < .xMin
+                    .mOk = 0
+                endif
+            endif
+            if .mOk = 1
+                if .mkT > .xMax
+                    .mOk = 0
+                endif
+            endif
+            if .mOk = 1
+                if .mkY < .yMin
+                    .mOk = 0
+                endif
+            endif
+            if .mOk = 1
+                if .mkY > .yMax
+                    .mOk = 0
+                endif
+            endif
+            if .mOk = 1
+                @emlDrawMarker: .mkT, .mkY, .markerHalfIn,
+                ... emlSetColorPalette.marker[.colorIdx],
+                ... emlSetColorPalette.line$[.colorIdx]
+            endif
+        endfor
     endfor
 
     # Legend
@@ -1275,13 +2002,18 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
         endfor
         @emlPlaceElements: .qTL, .qTR, .qBL, .qBR, .xMidQ, 1
 
+        # v1.24: line plus marker, as drawn.
+        legendMarkered = 1
+        legendMarkerLine = 1
         legendN = .nGroups
         for .g from 1 to .nGroups
             legendColor$[.g] = emlSetColorPalette.line$[.g]
+            legendMarker[.g] = emlSetColorPalette.marker[.g]
             @emlSanitizeLabel: .grpLabel$[.g]
             legendLabel$[.g] = emlSanitizeLabel.result$
         endfor
-        @emlDrawLegend: .xMin, .xMax, .yMin, .yMax, emlPlaceElements.corner1$,
+        .legendCorner$ = emlPlaceElements.corner1$
+        @emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .legendCorner$,
         ... emlSetAdaptiveTheme.annotSize
     endif
 
@@ -1307,14 +2039,63 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
             appendInfoLine: "  Observations per time point: up to ", .maxN
         endif
     endfor
-    # v1.19 (C 96): rows with a missing time or value are dropped above;
-    # say so rather than letting the point count quietly disagree with
-    # the table.
-    if .nDroppedRows > 0
-        .dropMsg$ = "  NOTE: " + string$ (.nDroppedRows)
-        ... + " row(s) skipped (missing time or value)."
-        appendInfoLine: .dropMsg$
+    # v1.21: disclosures.
+    # (a) The mean. "Per group: accumulate unique time points, compute
+    #     mean ± CI" is the same collapse @emlDrawTimeSeries performs and
+    #     discloses; this procedure performed it silently.
+    # (b) Dropped rows. v1.19 already counted them, but in this procedure's
+    #     own words and indentation ("  NOTE: N row(s) skipped (missing time
+    #     or value).") — the count was right and the sentence did not match
+    #     the other nine. One wording now, @emlDrawViolinPlot's.
+    if .nCollapsed > 0
+        @emlDisclose: "Line shows the mean; band shows the "
+        ... + fixed$ (100 * (1 - annotAlpha), 0) + "% CI.",
+        ... string$ (.nCollapsed) + " repeated observation(s) were averaged "
+        ... + "into their time points. Use Spaghetti Plot to show the "
+        ... + "individual series behind the mean."
     endif
+    if .nDroppedRows > 0
+        @emlDisclose: string$ (.nDroppedRows)
+        ... + " row(s) skipped (missing or non-numeric value).", ""
+    endif
+
+    # Quadrant scan for the disclosure block's corner.
+    .dxMid = (.xMin + .xMax) / 2
+    .dyMid = (.yMin + .yMax) / 2
+    .dTL = 0
+    .dTR = 0
+    .dBL = 0
+    .dBR = 0
+    selectObject: .objectId
+    .dScanRows = Get number of rows
+    for .di from 1 to .dScanRows
+        selectObject: .objectId
+        .drx = Get value: .di, .timeCol$
+        .dry = Get value: .di, .valueCol$
+        .dOk = 0
+        if .drx <> undefined
+            if .dry <> undefined
+                .dOk = 1
+            endif
+        endif
+        if .dOk = 1
+            if .dry >= .dyMid
+                if .drx < .dxMid
+                    .dTL = .dTL + 1
+                else
+                    .dTR = .dTR + 1
+                endif
+            else
+                if .drx < .dxMid
+                    .dBL = .dBL + 1
+                else
+                    .dBR = .dBR + 1
+                endif
+            endif
+        endif
+    endfor
+    @emlDiscloseEnd: .xMin, .xMax, .yMin, .yMax, .dTL, .dTR, .dBL, .dBR,
+    ... .legendCorner$
 
     # Axes
     @emlDrawAxes: .xMin, .xMax, .yMin, .yMax, .xLabel$, .yLabel$,
@@ -1353,6 +2134,10 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     # between a figure and an aborted script. Must come before this
     # procedure sets its own Axes: the measurement installs its own.
     @emlEnsureCategoricalLabels: .objectId, .condCol$, .vpW, .vpH
+    @emlDiscloseBegin: "Spaghetti plot"
+    # v1.21: the corner the legend takes, so @emlDiscloseEnd can keep the
+    # disclosure box out of it. Empty until a legend is actually drawn.
+    .legendCorner$ = ""
 
     # ----------------------------------------------------------------
     # Extract unique conditions via single source
@@ -1391,6 +2176,9 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     # Read all rows: map condition label → integer x-position,
     # read value, subject ID, and optional group
     # ----------------------------------------------------------------
+    # v1.21: count the rows no strand will pass through. Same counter idiom
+    # and same wording as @emlDrawViolinPlot.
+    .nSkippedRows = 0
     for .i from 1 to .nRows
         selectObject: .objectId
         .thisCond$ = Get value: .i, .condCol$
@@ -1406,6 +2194,9 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
         .rowId$[.i] = Get value: .i, .idCol$
         if .hasGroup = 1
             .rowGrp$[.i] = Get value: .i, .groupCol$
+        endif
+        if .rowY[.i] = undefined
+            .nSkippedRows = .nSkippedRows + 1
         endif
     endfor
 
@@ -1464,6 +2255,8 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     # ----------------------------------------------------------------
     @emlSetPanelViewport
     Axes: .xMin, .xMax, .yMin, .yMax
+    # World-per-inch on both axes, for @emlDrawMarker (see @emlDrawScatterPlot).
+    @emlSetPatternScale: .xMin, .xMax, .yMin, .yMax
 
     # Gridlines (horizontal only — categorical x-axis)
     # gridMode: 1=Horizontal, 2=Off
@@ -1494,6 +2287,12 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     if .meanDotSize < 1.5
         .meanDotSize = 1.5
     endif
+    # The same two sizes in INCHES for @emlDrawMarker. Both were millimetre
+    # radii for `Paint circle (mm)`; a square and a triangle need a physical
+    # size on both axes instead, and inches is what the marker procedure
+    # takes. 1.5 mm and 2.5 mm are 35 and 59 pixels across at 300 dpi.
+    .dotHalfIn = .dotSize / 25.4
+    .meanHalfIn = .meanDotSize / 25.4
 
     # ----------------------------------------------------------------
     # Draw strands + endpoint dots
@@ -1538,7 +2337,8 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
                         Draw line: .prevX, .prevY, .thisX, .thisY
                     endif
                     # Endpoint dot
-                    Paint circle (mm): .strandColor$, .thisX, .thisY, .dotSize
+                    @emlDrawMarker: .thisX, .thisY, .dotHalfIn,
+                    ... emlSetColorPalette.marker[1], .strandColor$
                     .prevX = .thisX
                     .prevY = .thisY
                     .hasPrev = 1
@@ -1571,7 +2371,8 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
                     if .hasPrevMean = 1
                         Draw line: .prevMeanX, .prevMeanY, .c, .meanY
                     endif
-                    Paint circle (mm): emlSetColorPalette.line$[1], .c, .meanY, .meanDotSize
+                    @emlDrawMarker: .c, .meanY, .meanHalfIn,
+                    ... emlSetColorPalette.marker[1], emlSetColorPalette.line$[1]
                     .prevMeanX = .c
                     .prevMeanY = .meanY
                     .hasPrevMean = 1
@@ -1628,7 +2429,8 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
                     if .hasPrev = 1
                         Draw line: .prevX, .prevY, .thisX, .thisY
                     endif
-                    Paint circle (mm): .strandCol$[.sGrp], .thisX, .thisY, .dotSize
+                    @emlDrawMarker: .thisX, .thisY, .dotHalfIn,
+                    ... emlSetColorPalette.marker[.sGrp], .strandCol$[.sGrp]
                     .prevX = .thisX
                     .prevY = .thisY
                     .hasPrev = 1
@@ -1662,7 +2464,8 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
                         if .hasPrevMean = 1
                             Draw line: .prevMeanX, .prevMeanY, .c, .meanY
                         endif
-                        Paint circle (mm): emlSetColorPalette.line$[.g], .c, .meanY, .meanDotSize
+                        @emlDrawMarker: .c, .meanY, .meanHalfIn,
+                        ... emlSetColorPalette.marker[.g], emlSetColorPalette.line$[.g]
                         .prevMeanX = .c
                         .prevMeanY = .meanY
                         .hasPrevMean = 1
@@ -1712,15 +2515,61 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
         @emlPlaceElements: .qTL, .qTR, .qBL, .qBR, .xMidQ, 1
 
         # Legend
+        # v1.24: strands and mean dots carry the marker shape above eight
+        # groups, so the key shows it. legendMarkerLine = 1 -- a spaghetti
+        # series IS a connected line with markers on it, and a key of bare
+        # points would misdescribe it.
+        legendMarkered = 1
+        legendMarkerLine = 1
         legendN = .nGroups
         for .g from 1 to .nGroups
             legendColor$[.g] = emlSetColorPalette.line$[.g]
+            legendMarker[.g] = emlSetColorPalette.marker[.g]
             @emlSanitizeLabel: .grpLabel$[.g]
             legendLabel$[.g] = emlSanitizeLabel.result$
         endfor
-        @emlDrawLegend: .xMin, .xMax, .yMin, .yMax, emlPlaceElements.corner1$,
+        .legendCorner$ = emlPlaceElements.corner1$
+        @emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .legendCorner$,
         ... emlSetAdaptiveTheme.annotSize
     endif
+
+    # ----------------------------------------------------------------
+    # Disclosures (v1.21)
+    # ----------------------------------------------------------------
+    # A spaghetti plot draws the raw observations, so it has nothing to
+    # confess about summarising. What it did not draw, it must still say.
+    if .nSkippedRows > 0
+        @emlDisclose: string$ (.nSkippedRows)
+        ... + " row(s) skipped (missing or non-numeric value).", ""
+    endif
+
+    .dxMid = (.xMin + .xMax) / 2
+    .dyMid = (.yMin + .yMax) / 2
+    .dTL = 0
+    .dTR = 0
+    .dBL = 0
+    .dBR = 0
+    for .di from 1 to .nRows
+        if .rowX[.di] > 0
+            if .rowY[.di] <> undefined
+                if .rowY[.di] >= .dyMid
+                    if .rowX[.di] < .dxMid
+                        .dTL = .dTL + 1
+                    else
+                        .dTR = .dTR + 1
+                    endif
+                else
+                    if .rowX[.di] < .dxMid
+                        .dBL = .dBL + 1
+                    else
+                        .dBR = .dBR + 1
+                    endif
+                endif
+            endif
+        endif
+    endfor
+    @emlDiscloseEnd: .xMin, .xMax, .yMin, .yMax, .dTL, .dTR, .dBL, .dBR,
+    ... .legendCorner$
 
     # ----------------------------------------------------------------
     # Axes — categorical x with condition labels (pre-measured)
@@ -1830,6 +2679,7 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     # between a figure and an aborted script. Must come before this
     # procedure sets its own Axes: the measurement installs its own.
     @emlEnsureCategoricalLabels: .objectId, .groupCol$, .vpW, .vpH
+    @emlDiscloseBegin: "Bar chart"
 
     # Sanitize title (axis labels handled at generation)
     @emlSanitizeLabel: .title$
@@ -1838,6 +2688,27 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     # Step 2: Read pre-computed data from @emlMeasureBarData globals
     .nGroups = emlBarData_nGroups
     @emlOptimizePaletteContrast: .nGroups
+
+    # D111: this procedure had no no-data branch of its own. It survived an
+    # empty table only because emlBarData_visibleMin/visibleMax both seed at 0
+    # and emlComputeAxisRange happens to widen a zero span — an accident, not a
+    # decision, and it left the reader with no note and an axis a fifth shorter
+    # than every sibling's empty frame. State the fallback the way the violin
+    # family states it: a unit data range, disclosed.
+    .nUsableGroups = 0
+    for .g from 1 to .nGroups
+        if emlBarData_valid[.g] = 1
+            .nUsableGroups = .nUsableGroups + 1
+        endif
+    endfor
+    .visibleMin = emlBarData_visibleMin
+    .visibleMax = emlBarData_visibleMax
+    if .nUsableGroups = 0
+        .visibleMin = 0
+        .visibleMax = 1
+        .noDataMsg$ = "NOTE: Bar chart — no usable value; empty axes drawn."
+        appendInfoLine: .noDataMsg$
+    endif
 
     # Step 3: Compute y-axis range (both 0 = auto)
     # Route through emlComputeAxisRange with the tracked data min so all-negative
@@ -1848,9 +2719,9 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
         # Adaptive rounding grid: derive roundTo from a nice step over the data
         # range (the same nice-number logic the gridlines use) so fractional data
         # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
-        @emlComputeNiceStep: emlBarData_visibleMax - (emlBarData_visibleMin), emlSetAdaptiveTheme.targetTicksY
+        @emlComputeNiceStep: .visibleMax - (.visibleMin), emlSetAdaptiveTheme.targetTicksY
         .axisRoundTo = emlComputeNiceStep.step
-        @emlComputeAxisRange: emlBarData_visibleMin, emlBarData_visibleMax, .axisRoundTo, 0
+        @emlComputeAxisRange: .visibleMin, .visibleMax, .axisRoundTo, 0
         .yMin = emlComputeAxisRange.axisMin
         .yMax = emlComputeAxisRange.axisMax
     else
@@ -2015,53 +2886,121 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
         Text left: "yes", .yLabel$
     endif
 
-    # v1.19 (C 99): the figure never said whether the error bars were SE, SD
-    # or a custom column, so the reader could not interpret them. Build the
-    # disclosure and carry it on the caption line under the title, together
-    # with notes for any truncated whisker or skipped bar.
-    .errDesc$ = ""
-    if .errorMode = 1
-        .errDesc$ = "Error bars: +/-1 SE"
-    elsif .errorMode = 2
-        .errDesc$ = "Error bars: +/-1 SD"
-    elsif .errorMode = 3
-        .errDesc$ = "Error bars: " + .errorCol$ + " (custom)"
-    else
-        .errDesc$ = "No error bars"
-    endif
-
-    .caption$ = .errDesc$
-    if .nTruncated > 0
-        .caption$ = .caption$ + "; " + string$ (.nTruncated)
-        ... + " truncated at axis limit (arrowheads)"
-    endif
-    if .nSkippedErrors > 0
-        .caption$ = .caption$ + "; " + string$ (.nSkippedErrors)
-        ... + " undefined"
-    endif
-    if .nSkippedBars > 0
-        .caption$ = .caption$ + "; bars omitted (no value): " + .skippedBars$
-    endif
-
-    # Carry the caption on emlSubtitle$ (drawn in grey under the title by
-    # @emlDrawTitle), appending to any user subtitle and restoring the global
-    # afterwards so this procedure has no lasting side effect on it.
-    .savedSubtitle$ = emlSubtitle$
-    if emlSubtitle$ = ""
-        emlSubtitle$ = .caption$
-    else
-        emlSubtitle$ = emlSubtitle$ + " | " + .caption$
-    endif
-
     # Title
     @emlDrawTitle: .title$, .vpW, .vpH, .xMin, .xMax, .yMin, .yMax
 
-    emlSubtitle$ = .savedSubtitle$
+    # Step 8B: Disclosures (v1.21)
+    #
+    # v1.19 built all of this as one semicolon-joined caption and carried it
+    # on emlSubtitle$ — the user's own field, which the graphs form asks for
+    # and persists to config. It was saved and restored, so the global was
+    # never corrupted, but the drawn figure showed the user's subtitle with
+    # " | Error bars: +/-1 SE; 2 truncated at axis limit (arrowheads)"
+    # appended, whether or not Annotate was ticked, and nothing in the form
+    # could turn it off. The facts were right and the channel was wrong.
+    #
+    # They are now separate disclosures on the two correct channels. Each is
+    # emitted only when it has something to report: "No error bars" was
+    # printed on every bar chart drawn without them, which told a reader
+    # nothing that the absence of error bars had not already told them.
+    #
+    # THE BAR IS A MEAN. @emlMeasureBarData divides each group's sum by its
+    # count, so every bar is an average of the rows in that group — the one
+    # fact a bar chart most reliably hides, and the one this procedure never
+    # stated. Disclosed whenever at least one group really was averaged; with
+    # a single row per group the bar IS the observation and there is nothing
+    # to say.
+    .nAveragedGroups = 0
+    for .g from 1 to .nGroups
+        if emlBarData_count[.g] > 1
+            .nAveragedGroups = .nAveragedGroups + 1
+        endif
+    endfor
+    if .nAveragedGroups > 0
+        @emlDisclose: "Bars show the group mean, not individual values.",
+        ... "Use Violin Plot or Box Plot to show the distribution within "
+        ... + "each group."
+    endif
 
-    # Same disclosure to the Info window, so the caption survives copy-paste
-    # of the numbers as well as the figure.
-    .infoLine$ = "Bar chart — " + .caption$
-    appendInfoLine: .infoLine$
+    if .errorMode = 1
+        @emlDisclose: "Error bars: +/-1 SE.", ""
+    elsif .errorMode = 2
+        @emlDisclose: "Error bars: +/-1 SD.", ""
+    elsif .errorMode = 3
+        @emlDisclose: "Error bars: " + .errorCol$ + " (custom).", ""
+    endif
+    if .nTruncated > 0
+        @emlDisclose: string$ (.nTruncated)
+        ... + " error bar(s) truncated at the axis limit.",
+        ... "The truncated ends carry an outward arrowhead instead of a "
+        ... + "flat cap. Widen the value range to show them in full."
+    endif
+    # v1.22: THESE TWO WERE DEAD CODE UNTIL TODAY. @emlMeasureBarData seeded
+    # emlBarData_mean[] and emlBarData_error[] to 0 rather than undefined, so
+    # the `<> undefined` guards in the bar loop above never fired,
+    # .nSkippedBars and .nSkippedErrors were never non-zero, and neither
+    # disclosure could be reached. The consequences were the two silences
+    # this release closes: a group with no usable observation drew as a bar
+    # of height zero — the same picture a measured zero draws — and a whisker
+    # whose error was undefined simply did not appear. The sentinel is fixed
+    # at the root in @emlMeasureBarData (v3.23) and both guards now fire.
+    if .nSkippedErrors > 0
+        @emlDisclose: string$ (.nSkippedErrors)
+        ... + " error bar(s) not drawn (error undefined).",
+        ... "An error bar is undefined when the group holds a single "
+        ... + "observation, or when its custom error cell is missing. A bar "
+        ... + "with no whisker is not a bar with zero spread."
+    endif
+    # The group names are carried in .short$, on purpose: which group is
+    # missing is the fact that lets a reader tell "no measurement" from
+    # "measured zero", and a bare count does not. The bar is OMITTED, not
+    # drawn at zero — a measured zero still draws its outline flat on the
+    # baseline, so the two are different marks under the same x-axis label.
+    # emlBarData_nInvalidGroups now equals .nSkippedBars by construction and
+    # is no longer disclosed separately; the v1.21 line that read
+    # "N group(s) shown at zero (no usable observation)" described the defect,
+    # not the behaviour, and is gone with it.
+    if .nSkippedBars > 0
+        @emlDisclose: string$ (.nSkippedBars)
+        ... + " bar(s) not drawn (no usable observation): "
+        ... + .skippedBars$ + ".",
+        ... "Those group names appear on the x-axis with nothing above them. "
+        ... + "A bar of height zero is a measured zero, not a missing group."
+    endif
+    if emlBarData_nSkipped > 0
+        @emlDisclose: string$ (emlBarData_nSkipped)
+        ... + " row(s) skipped (missing or non-numeric value).", ""
+    endif
+
+    # Quadrant occupancy for the disclosure block's corner. A bar is not a
+    # point cloud: it fills everything between the baseline and its top, so
+    # every bar occupies its bottom quadrant and additionally its top
+    # quadrant when it rises past the midline. Scoring only the bar TOPS —
+    # the point-cloud idiom the other procedures use — would report the
+    # bottom half as free when it is solid ink.
+    .dxMid = (.xMin + .xMax) / 2
+    .dyMid = (.yMin + .yMax) / 2
+    .dTL = 0
+    .dTR = 0
+    .dBL = 0
+    .dBR = 0
+    for .g from 1 to .nGroups
+        if emlBarData_valid[.g] = 1
+            if .g < .dxMid
+                .dBL = .dBL + 1
+                if emlBarData_mean[.g] >= .dyMid
+                    .dTL = .dTL + 1
+                endif
+            else
+                .dBR = .dBR + 1
+                if emlBarData_mean[.g] >= .dyMid
+                    .dTR = .dTR + 1
+                endif
+            endif
+        endif
+    endfor
+    # A bar chart draws no legend — the group names are the x-axis.
+    @emlDiscloseEnd: .xMin, .xMax, .yMin, .yMax, .dTL, .dTR, .dBL, .dBR, ""
 
     # Step 9: Reset state
     Colour: "Black"
@@ -2089,6 +3028,7 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # between a figure and an aborted script. Must come before this
     # procedure sets its own Axes: the measurement installs its own.
     @emlEnsureCategoricalLabels: .objectId, .groupCol$, .vpW, .vpH
+    @emlDiscloseBegin: "Violin plot"
 
     # Sanitize title (Rule 28J)
     @emlSanitizeLabel: .title$
@@ -2160,9 +3100,14 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # v1.19 (C 96): with no usable value anywhere, .globalMin stayed undefined
     # and the undefined axis limits aborted the figure at Axes:. Fall back to
     # a unit axis, as @emlDrawGroupedViolin already does.
+    # D111: the fallback was silent. Say so on the same channel and in the
+    # same words as @emlDrawTimeSeries and @emlDrawSpaghettiPlot, so an
+    # empty frame reads the same whichever figure produced it.
     if .globalMin = undefined
         .globalMin = 0
         .globalMax = 1
+        .noDataMsg$ = "NOTE: Violin plot — no usable value; empty axes drawn."
+        appendInfoLine: .noDataMsg$
     endif
 
     # Extend range by largest per-group KDE bandwidth so violin
@@ -2213,6 +3158,9 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # Step 6: Set viewport and axes
     @emlSetPanelViewport
     Axes: .xMin, .xMax, .yMin, .yMax
+    # Physical scale for fill patterns: a 45-degree hatch has to be 45
+    # degrees ON THE PAGE, not at whatever angle the two axis ranges imply.
+    @emlSetPatternScale: .xMin, .xMax, .yMin, .yMax
 
     # Step 7: Draw horizontal gridlines (if requested)
     # gridMode: 1=Horizontal, 2=Off
@@ -2239,7 +3187,9 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
             # Determine color index (cycle through palette)
             .colorIdx = .g
 
-            @emlDrawViolin: .g, .data#, emlSetColorPalette.fill$[.colorIdx], emlSetColorPalette.line$[.colorIdx], .yMin, .yMax, 0.35
+            @emlDrawViolin: .g, .data#, emlSetColorPalette.fill$[.colorIdx],
+            ... emlSetColorPalette.line$[.colorIdx], .yMin, .yMax, 0.35,
+            ... emlSetColorPalette.pattern[.colorIdx]
         endif
     endfor
 
@@ -2263,15 +3213,17 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
 
     # v1.19 (C 96): report anything the guards above dropped, so a thinner
     # figure is never mistaken for the whole data set.
+    # v1.21: the wording and the counter idiom are unchanged — this pair is
+    # what the other eight procedures were made to match. What changed is the
+    # routing: through @emlDisclose, so the same sentence also reaches the
+    # figure when the user ticked Annotate.
     if .nSkippedRows > 0
-        .skipMsg$ = "Violin plot: " + string$ (.nSkippedRows)
-        ... + " row(s) skipped (missing or non-numeric value)."
-        appendInfoLine: .skipMsg$
+        @emlDisclose: string$ (.nSkippedRows)
+        ... + " row(s) skipped (missing or non-numeric value).", ""
     endif
     if .nEmptyGroups > 0
-        .emptyMsg$ = "Violin plot: " + string$ (.nEmptyGroups)
-        ... + " group(s) not drawn (no usable observation)."
-        appendInfoLine: .emptyMsg$
+        @emlDisclose: string$ (.nEmptyGroups)
+        ... + " group(s) not drawn (no usable observation).", ""
     endif
 
     # Expose axis ranges for annotation bridge
@@ -2279,6 +3231,37 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     .axisXMax = max (1, .nGroups) + 0.5   ; clamp: a 0-row table would make left = right
     .axisYMin = .yMin
     .axisYMax = .yMax
+
+    # Quadrant occupancy for the disclosure block's corner (v1.21). A violin
+    # is a density, so score the observations that made it.
+    .dxMid = (.axisXMin + .axisXMax) / 2
+    .dyMid = (.yMin + .yMax) / 2
+    .dTL = 0
+    .dTR = 0
+    .dBL = 0
+    .dBR = 0
+    for .g from 1 to .nGroups
+        .dn = .groupCount'.g'
+        for .dk from 1 to .dn
+            .dv = .groupData'.g'_'.dk'
+            if .dv >= .dyMid
+                if .g < .dxMid
+                    .dTL = .dTL + 1
+                else
+                    .dTR = .dTR + 1
+                endif
+            else
+                if .g < .dxMid
+                    .dBL = .dBL + 1
+                else
+                    .dBR = .dBR + 1
+                endif
+            endif
+        endfor
+    endfor
+    # A violin plot draws no legend — the group names are the x-axis.
+    @emlDiscloseEnd: .axisXMin, .axisXMax, .yMin, .yMax,
+    ... .dTL, .dTR, .dBL, .dBR, ""
 
     # Step 9: Draw axes with group labels (manual — no @emlDrawAxes)
     Colour: emlSetAdaptiveTheme.axisColor$
@@ -2341,6 +3324,13 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
     # was not the form. Calling it here makes the procedure self-sufficient;
     # in the form path the initialised flag short-circuits it immediately.
     @emlInitAlphaSprites
+    # v1.21: @emlDiscloseBegin only records state; it does not clear the
+    # annotation block. This procedure clears it itself at Step 7 and renders
+    # it itself at the end of each path, so the disclosures added below join
+    # the correlation and formula lines in the SAME box rather than opening a
+    # second one. That is also why this procedure never calls
+    # @emlDiscloseEnd.
+    @emlDiscloseBegin: "Scatter plot"
 
     # Step 2: Extract all data (for axis computation and ungrouped stats)
     selectObject: .objectId
@@ -2363,6 +3353,10 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
     if .nValid < 2
         appendInfoLine: "WARNING: Fewer than 2 valid data points for scatter plot."
     endif
+    # v1.21: a scatter plot with a hole in it looks exactly like a scatter
+    # plot. Count what did not become a dot; disclosed at the end of whichever
+    # path runs.
+    .nSkippedRows = .nRows - .nValid
 
     # Trim to valid length (avoids trailing zeros biasing corner selection)
     if .nValid > 0 and .nValid < .nRows
@@ -2434,6 +3428,11 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
     # Step 4: Set viewport and axes
     @emlSetPanelViewport
     Axes: .axisXMin, .axisXMax, .axisYMin, .axisYMax
+    # World-per-inch for the current axes. @emlDrawMarker needs it on BOTH
+    # axes or a square comes out as a rectangle stretched by the axis aspect
+    # ratio; the alpha-sprite path needed the same numbers and got them from
+    # @emlSetAlphaDotGeometry.
+    @emlSetPatternScale: .axisXMin, .axisXMax, .axisYMin, .axisYMax
 
     # Step 5: Gridlines
     # gridMode: 1=Both, 2=Horizontal only, 3=Vertical only, 4=Off
@@ -2456,12 +3455,34 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
     .markerRadius = emlSetAdaptiveTheme.markerSize * .sizeScale
     .xRange = .axisXMax - .axisXMin
     .radiusWorld = .markerRadius * .xRange
+    # The same radius in INCHES, which is what @emlDrawMarker takes -- a
+    # square and a triangle need a physical size on both axes, not an x-world
+    # one. On a 6 x 4 figure this is 0.035 / 0.065 / 0.108 inches for the
+    # three dot sizes, i.e. 21 / 39 / 65 pixels across at 300 dpi.
+    .markerHalfIn = .radiusWorld
+    if emlPatWorldPerInchX > 0
+        .markerHalfIn = .radiusWorld / emlPatWorldPerInchX
+    endif
 
     # Step 6B: Alpha dot geometry (aspect-corrected for circular dots)
     @emlSetAlphaDotGeometry: .axisXMin, .axisXMax, .axisYMin, .axisYMax, emlSetAdaptiveTheme.innerLeft, emlSetAdaptiveTheme.innerRight, emlSetAdaptiveTheme.innerTop, emlSetAdaptiveTheme.innerBottom, .radiusWorld
 
     # Step 6C: Auto-transparency decision
     # Alpha always on when sprites available — density benefits from transparency
+    #
+    # v1.24 — THE SPRITE SET IS CIRCLES ONLY. plugin/sprites/ holds 168 dot
+    # PNGs, one per (hue, alpha, size); there is no shape axis in the naming
+    # scheme and none in emlSetColorPalette.sprite$[], which indexes hue.
+    # So on macOS and Windows, where emlInitAlphaSprites.available is 1, the
+    # sprite branch would stamp a translucent CIRCLE for every group and the
+    # marker shape — the only thing that tells group 9 from group 1 — would
+    # never reach the page, on those two platforms only. That is a worse
+    # failure than losing transparency, and it is invisible from Linux.
+    #
+    # Above eight groups the whole figure therefore drops to native markers.
+    # Not group-by-group: a scatter with translucent circles for groups 1-8
+    # and opaque triangles for 9-24 reads as two different kinds of data.
+    # The switch is made in the grouped path, where .nGroups is known.
     .useAlpha = emlInitAlphaSprites.available
     .alphaLevel$ = "a50"
     if scatterRegressionLine = 1
@@ -2479,10 +3500,19 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
     # Step 7: Initialize annotation block
     annotBlockN = 0
 
-    # Point color: in B/W mode use lighter fill so regression lines are visible
+    # Point colour: in B/W mode a lighter ink than the series stroke, so a
+    # regression line drawn over a cloud still reads as a line.
+    #
+    # v1.24: that used to be .fill$, which is a BODY colour meant to be read
+    # inside an outline, and the widened grey ramp takes its light end to 0.94
+    # -- six hundredths off the white page, invisible as a bare dot with no
+    # outline around it. (At the old 0.90 it was barely better.) .lightLine$
+    # is the midpoint of the fill and the stroke: 0.79 down to 0.05 across the
+    # eight slots, a wider spread than the fills it replaces AND darker at the
+    # light end, which is the only end that was ever in question.
     if .colorMode$ = "bw"
         for .c from 1 to 100
-            .pointColor$[.c] = emlSetColorPalette.fill$[.c]
+            .pointColor$[.c] = emlSetColorPalette.lightLine$[.c]
         endfor
     else
         for .c from 1 to 100
@@ -2501,7 +3531,11 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                 if .useAlpha = 1 and emlInitAlphaSprites.available = 1
                     @emlDrawAlphaDot: .xData#[.i], .yData#[.i], 1, .colorMode$, .alphaLevel$, .pointColor$[1]
                 else
-                    Paint circle: .pointColor$[1], .xData#[.i], .yData#[.i], .radiusWorld
+                    # Ungrouped: palette slot 1, which is marker 1, a circle.
+                    # Written through @emlDrawMarker anyway so the ungrouped
+                    # and grouped paths cannot drift apart in dot size.
+                    @emlDrawMarker: .xData#[.i], .yData#[.i], .markerHalfIn,
+                    ... emlSetColorPalette.marker[1], .pointColor$[1]
                 endif
             endfor
         endif
@@ -2660,6 +3694,13 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
             endif
         endif
 
+        # Disclosure (v1.21) — joins the correlation and formula lines in
+        # this path's own block, and only when the user ticked Annotate.
+        if .nSkippedRows > 0
+            @emlDisclose: string$ (.nSkippedRows)
+            ... + " row(s) skipped (missing or non-numeric value).", ""
+        endif
+
         # Draw annotation block
         if annotBlockN > 0
             .xMidQ = (.axisXMin + .axisXMax) / 2
@@ -2695,6 +3736,13 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
         @emlCountGroups: .objectId, .groupCol$
         .nGroups = emlCountGroups.nGroups
 
+        # The sprite set has no squares and no triangles (Step 6C). Once the
+        # ninth group exists, the shape is carrying information the sprites
+        # cannot, so the sprites go.
+        if .nGroups > emlSetColorPalette.nHues
+            .useAlpha = 0
+        endif
+
         @emlOptimizePaletteContrast: .nGroups
 
         # Re-read the point colours AFTER the contrast optimisation.
@@ -2709,12 +3757,16 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
         # green: the legend said green, the points were sky blue, and a reader
         # matching swatch to cloud had no way to tell.
         #
-        # This is not masked by the sprite path — plugin/sprites/ has never
-        # existed in the repository, so emlInitAlphaSprites.available is 0 and
-        # every dot goes through the .pointColor$ fallback.
+        # This is not masked by the sprite path. plugin/sprites/ DOES exist
+        # (204 tracked PNGs since a31a669; the 6 Aug audit note saying it never
+        # has is wrong), but @emlInitAlphaSprites gates on the platform and
+        # returns .available = 0 on anything that is not macOS or Windows, so
+        # on the machine this is measured on every dot goes through the
+        # .pointColor$ fallback. On macOS and Windows it does not, which is
+        # why the sprite branch is disabled above eight groups -- see Step 6C.
         if .colorMode$ = "bw"
             for .c from 1 to 100
-                .pointColor$[.c] = emlSetColorPalette.fill$[.c]
+                .pointColor$[.c] = emlSetColorPalette.lightLine$[.c]
             endfor
         else
             for .c from 1 to 100
@@ -2723,10 +3775,19 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
         endif
 
         # Set up legend (use line$ for visual weight match with dots)
+        #
+        # v1.24: the key carries the MARKER SHAPE as well as the hue. Above
+        # eight groups the hue repeats by construction -- group 9 is group 1's
+        # blue -- and until the key showed the shape it said the two were the
+        # same series. legendMarkerLine = 0: a scatter is bare points, no
+        # connecting line, and the key must not imply one.
+        legendMarkered = 1
+        legendMarkerLine = 0
         legendN = .nGroups
         for .g from 1 to .nGroups
             .colorIdx = .g
             legendColor$[.g] = emlSetColorPalette.line$[.colorIdx]
+            legendMarker[.g] = emlSetColorPalette.marker[.colorIdx]
             @emlSanitizeLabel: emlCountGroups.groupLabel$[.g]
             legendLabel$[.g] = emlSanitizeLabel.result$
         endfor
@@ -2749,7 +3810,9 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                     if .useAlpha = 1 and emlInitAlphaSprites.available = 1
                         @emlDrawAlphaDot: .xVal, .yVal, .gIdx, .colorMode$, .alphaLevel$, .pointColor$[.colorIdx]
                     else
-                        Paint circle: .pointColor$[.colorIdx], .xVal, .yVal, .radiusWorld
+                        @emlDrawMarker: .xVal, .yVal, .markerHalfIn,
+                        ... emlSetColorPalette.marker[.colorIdx],
+                        ... .pointColor$[.colorIdx]
                     endif
                 endif
             endfor
@@ -2757,6 +3820,29 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
 
         # Per-group correlations and regression lines
         # Per-group statistics and regression lines
+        #
+        # v1.22 — THE OVER-CAP BOX. Each group can contribute THREE lines to
+        # the annotation block: a Pearson line, a Spearman line (Correlation
+        # type = Both) and a fitted-line formula. None of the three went
+        # through @emlDisclose, so none of them was subject to its 20-line
+        # budget: they were written straight into annotBlockN, and
+        # @emlDrawAnnotationBlock renders whatever it is handed. Measured
+        # 7 Aug 2026 on eight groups: annotBlockN = 24, and the box ran from
+        # the top of the panel, through the x-axis, and off the bottom edge
+        # of the figure. Two lines of it were never on the page at all, and
+        # the dropped-row disclosure that @emlDisclose tried to add
+        # afterwards was refused by the budget and vanished — so the figure
+        # that overflowed was also the figure that stopped confessing.
+        #
+        # The lines are now BUFFERED here and committed to the block after
+        # the loop, all or none. All-or-none, rather than "fill to twenty",
+        # because a truncated per-group box is worse than no per-group box:
+        # it is indistinguishable from a complete one, and a reader counting
+        # six group names in the corner of an eight-group figure has no way
+        # to know two are missing. When they do not fit, every line is
+        # printed to the Info window instead and the figure says so. See the
+        # commit site below the loop.
+        .pgN = 0
         if .annotate = 1 or scatterRegressionLine = 1
 
             for .g from 1 to .nGroups
@@ -2806,9 +3892,9 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                                 @emlFormatAnnotLabel: .gPearsonP, 0, annotStyle$, 0, ""
                                 .pText$ = emlFormatAnnotLabel.result$
 
-                                annotBlockN = annotBlockN + 1
-                                annotBlockLabel$[annotBlockN] = .groupDispLabel$ + ": r = " + fixed$ (.gPearsonR, 3) + ", " + .pText$
-                                annotBlockDraw$[annotBlockN] = .groupDispLabel$ + ": %r = " + fixed$ (.gPearsonR, 3) + ", " + .pText$
+                                .pgN = .pgN + 1
+                                .pgLabel$[.pgN] = .groupDispLabel$ + ": r = " + fixed$ (.gPearsonR, 3) + ", " + .pText$
+                                .pgDraw$[.pgN] = .groupDispLabel$ + ": %r = " + fixed$ (.gPearsonR, 3) + ", " + .pText$
                             endif
                         endif
 
@@ -2822,9 +3908,9 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                                 @emlFormatAnnotLabel: .gSpearmanP, 0, annotStyle$, 0, ""
                                 .pText$ = emlFormatAnnotLabel.result$
 
-                                annotBlockN = annotBlockN + 1
-                                annotBlockLabel$[annotBlockN] = .groupDispLabel$ + ": rs = " + fixed$ (.gSpearmanR, 3) + ", " + .pText$
-                                annotBlockDraw$[annotBlockN] = .groupDispLabel$ + ": %%r%_s = " + fixed$ (.gSpearmanR, 3) + ", " + .pText$
+                                .pgN = .pgN + 1
+                                .pgLabel$[.pgN] = .groupDispLabel$ + ": rs = " + fixed$ (.gSpearmanR, 3) + ", " + .pText$
+                                .pgDraw$[.pgN] = .groupDispLabel$ + ": %%r%_s = " + fixed$ (.gSpearmanR, 3) + ", " + .pText$
                             endif
                         endif
                     endif
@@ -2936,15 +4022,15 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                             # v1.19: on-graph formula is labelled with the
                             # estimator actually drawn. R² only for OLS.
                             if scatterShowFormula = 1
-                                annotBlockN = annotBlockN + 1
+                                .pgN = .pgN + 1
                                 .gMethodTag$ = .gLineMethod$ + ": "
                                 if .gLineMethod$ = "OLS"
                                     .gR2Annot = .gPearsonR * .gPearsonR
-                                    annotBlockLabel$[annotBlockN] = .groupDispLabel$ + ": " + .gMethodTag$ + "y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4) + "  (R² = " + fixed$ (.gR2Annot, 3) + ")"
-                                    annotBlockDraw$[annotBlockN] = .groupDispLabel$ + ": " + .gMethodTag$ + "%y = " + fixed$ (.gSlope, 4) + "%x + " + fixed$ (.gIntercept, 4) + "  (%R² = " + fixed$ (.gR2Annot, 3) + ")"
+                                    .pgLabel$[.pgN] = .groupDispLabel$ + ": " + .gMethodTag$ + "y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4) + "  (R² = " + fixed$ (.gR2Annot, 3) + ")"
+                                    .pgDraw$[.pgN] = .groupDispLabel$ + ": " + .gMethodTag$ + "%y = " + fixed$ (.gSlope, 4) + "%x + " + fixed$ (.gIntercept, 4) + "  (%R² = " + fixed$ (.gR2Annot, 3) + ")"
                                 else
-                                    annotBlockLabel$[annotBlockN] = .groupDispLabel$ + ": " + .gMethodTag$ + "y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4)
-                                    annotBlockDraw$[annotBlockN] = .groupDispLabel$ + ": " + .gMethodTag$ + "%y = " + fixed$ (.gSlope, 4) + "%x + " + fixed$ (.gIntercept, 4)
+                                    .pgLabel$[.pgN] = .groupDispLabel$ + ": " + .gMethodTag$ + "y = " + fixed$ (.gSlope, 4) + "x + " + fixed$ (.gIntercept, 4)
+                                    .pgDraw$[.pgN] = .groupDispLabel$ + ": " + .gMethodTag$ + "%y = " + fixed$ (.gSlope, 4) + "%x + " + fixed$ (.gIntercept, 4)
                                 endif
                             endif
                         endif
@@ -2955,6 +4041,51 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                     endif
                 endif
             endfor
+        endif
+
+        # v1.22 — COMMIT THE BUFFERED PER-GROUP LINES, ALL OR NONE.
+        #
+        # The budget is @emlDisclose's 20-line block cap, less whatever is
+        # already in the block, less TWO lines held back for the disclosures
+        # that follow: the over-cap note itself, and the dropped-row note.
+        # Without that reserve an exactly-fitting set of group lines would
+        # push the disclosures out of the box, which is how the eight-group
+        # figure came to overflow AND fall silent at the same time.
+        #
+        # 3 lines per group at Correlation type = Both with the formula on,
+        # so six groups fit and seven do not. The Info window is never
+        # capped, so nothing is lost when they do not: every buffered line is
+        # printed there verbatim, in the same order it would have appeared in
+        # the box.
+        .pgRoom = 20 - annotBlockN - 2
+        if .pgRoom < 0
+            .pgRoom = 0
+        endif
+        if .pgN > 0
+            if .pgN <= .pgRoom
+                for .k from 1 to .pgN
+                    annotBlockN = annotBlockN + 1
+                    annotBlockLabel$[annotBlockN] = .pgLabel$[.k]
+                    annotBlockDraw$[annotBlockN] = .pgDraw$[.k]
+                endfor
+            else
+                @emlDisclose: "Per-group stats (" + string$ (.nGroups)
+                ... + " groups): Info window only.",
+                ... string$ (.pgN) + " line(s) do not fit the "
+                ... + "20-line annotation block, so none were placed on the "
+                ... + "figure: a box that tall covers the data it describes, "
+                ... + "and a box holding only the first few groups would "
+                ... + "look complete. They follow here in full."
+                for .k from 1 to .pgN
+                    appendInfoLine: "  " + .pgLabel$[.k]
+                endfor
+            endif
+        endif
+
+        # Disclosure (v1.21) — same line, this path's block.
+        if .nSkippedRows > 0
+            @emlDisclose: string$ (.nSkippedRows)
+            ... + " row(s) skipped (missing or non-numeric value).", ""
         endif
 
         # Place annotation block and legend — adaptive corner selection
@@ -3020,6 +4151,7 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
     # between a figure and an aborted script. Must come before this
     # procedure sets its own Axes: the measurement installs its own.
     @emlEnsureCategoricalLabels: .objectId, .groupCol$, .vpW, .vpH
+    @emlDiscloseBegin: "Box plot"
 
     @emlSanitizeLabel: .title$
     .title$ = emlSanitizeLabel.result$
@@ -3088,9 +4220,14 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
     # v1.19 (C 96): with no usable value anywhere, .globalMin stayed undefined
     # and the undefined axis limits aborted the figure at Axes:. Fall back to
     # a unit axis, as @emlDrawGroupedBoxPlot already does.
+    # D111: the fallback was silent. Say so on the same channel and in the
+    # same words as @emlDrawTimeSeries and @emlDrawSpaghettiPlot, so an
+    # empty frame reads the same whichever figure produced it.
     if .globalMin = undefined
         .globalMin = 0
         .globalMax = 1
+        .noDataMsg$ = "NOTE: Box plot — no usable value; empty axes drawn."
+        appendInfoLine: .noDataMsg$
     endif
     # Adaptive rounding grid: derive roundTo from a nice step over the data
     # range (the same nice-number logic the gridlines use) so fractional data
@@ -3116,6 +4253,9 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
     # Step 6: Set viewport and axes
     @emlSetPanelViewport
     Axes: .xMin, .xMax, .yMin, .yMax
+    # Physical scale for fill patterns: a 45-degree hatch has to be 45
+    # degrees ON THE PAGE, not at whatever angle the two axis ranges imply.
+    @emlSetPatternScale: .xMin, .xMax, .yMin, .yMax
 
     # Step 7: Draw horizontal gridlines (if requested)
     # gridMode: 1=Horizontal, 2=Off
@@ -3140,7 +4280,9 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
 
             .colorIdx = .g
 
-            @emlDrawBox: .g, .data#, emlSetColorPalette.fill$[.colorIdx], emlSetColorPalette.line$[.colorIdx], .yMin, .yMax, 0.25
+            @emlDrawBox: .g, .data#, emlSetColorPalette.fill$[.colorIdx],
+            ... emlSetColorPalette.line$[.colorIdx], .yMin, .yMax, 0.25,
+            ... emlSetColorPalette.pattern[.colorIdx]
         endif
     endfor
 
@@ -3164,15 +4306,15 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
 
     # v1.19 (C 96): report anything the guards above dropped, so a thinner
     # figure is never mistaken for the whole data set.
+    # v1.21: same wording, same counters; routed through @emlDisclose so the
+    # sentence also reaches the figure when the user ticked Annotate.
     if .nSkippedRows > 0
-        .skipMsg$ = "Box plot: " + string$ (.nSkippedRows)
-        ... + " row(s) skipped (missing or non-numeric value)."
-        appendInfoLine: .skipMsg$
+        @emlDisclose: string$ (.nSkippedRows)
+        ... + " row(s) skipped (missing or non-numeric value).", ""
     endif
     if .nEmptyGroups > 0
-        .emptyMsg$ = "Box plot: " + string$ (.nEmptyGroups)
-        ... + " group(s) not drawn (no usable observation)."
-        appendInfoLine: .emptyMsg$
+        @emlDisclose: string$ (.nEmptyGroups)
+        ... + " group(s) not drawn (no usable observation).", ""
     endif
 
     # Expose axis ranges for annotation bridge
@@ -3180,6 +4322,36 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
     .axisXMax = max (1, .nGroups) + 0.5   ; clamp: a 0-row table would make left = right
     .axisYMin = .yMin
     .axisYMax = .yMax
+
+    # Quadrant occupancy for the disclosure block's corner (v1.21).
+    .dxMid = (.axisXMin + .axisXMax) / 2
+    .dyMid = (.yMin + .yMax) / 2
+    .dTL = 0
+    .dTR = 0
+    .dBL = 0
+    .dBR = 0
+    for .g from 1 to .nGroups
+        .dn = .groupCount'.g'
+        for .dk from 1 to .dn
+            .dv = .groupData'.g'_'.dk'
+            if .dv >= .dyMid
+                if .g < .dxMid
+                    .dTL = .dTL + 1
+                else
+                    .dTR = .dTR + 1
+                endif
+            else
+                if .g < .dxMid
+                    .dBL = .dBL + 1
+                else
+                    .dBR = .dBR + 1
+                endif
+            endif
+        endfor
+    endfor
+    # A box plot draws no legend — the group names are the x-axis.
+    @emlDiscloseEnd: .axisXMin, .axisXMax, .yMin, .yMax,
+    ... .dTL, .dTR, .dBL, .dBR, ""
 
     # Step 9: Draw axes with group labels
     @emlDrawInnerBoxIf
@@ -3204,7 +4376,10 @@ endproc
 # @emlDrawHistogram
 # ============================================================================
 # Draws a histogram from Table data with optional grouped display.
-# Grouped modes: overlap (alpha-composited bars) or side-by-side.
+# Grouped modes (.displayMode): 1 = overlap (alpha-composited bars, one
+# panel, legend), 2 = faceted (one vertically stacked panel per group,
+# shared x and y axes, group names in the left margin instead of a legend).
+# Mode 2 is faceted, not side-by-side: see the branch at Step 9-10.
 # Auto-bins via Sturges formula when binCount = 0.
 # ============================================================================
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
@@ -3219,6 +4394,10 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
     # instead of pinned to a literal.
     emlYAxisMinStep = 1
     @emlSetColorPalette: .colorMode$
+    @emlDiscloseBegin: "Histogram"
+    # v1.21: the corner the legend takes, so @emlDiscloseEnd can keep the
+    # disclosure box out of it. Empty until a legend is actually drawn.
+    .legendCorner$ = ""
 
     @emlSanitizeLabel: .title$
     .title$ = emlSanitizeLabel.result$
@@ -3238,28 +4417,43 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
         endif
     endfor
 
+    # D111: this branch used to `goto HIST_END`, which jumps past this
+    # procedure's OWN Axes: call at Step 8 — so an empty table produced a
+    # 1800x1200 PNG of a single colour: no box, no ticks, no title, nothing
+    # for the reader to diagnose. Every sibling draws the labelled empty
+    # frame instead. Fall back to a unit value axis and continue down the
+    # normal path, the same fix @emlDrawViolinPlot took from
+    # @emlDrawGroupedViolin at v1.19 (C 96).
+    .noData = 0
     if .nValid < 1
         appendInfoLine: "WARNING: No valid data for histogram."
-        goto HIST_END
+        .noData = 1
     endif
 
-    # Trim to valid
-    .trimData# = zero# (.nValid)
-    for .i from 1 to .nValid
-        .trimData#[.i] = .allData#[.i]
-    endfor
+    if .noData = 1
+        # zero# (0) has no element 1, so the trim and the seeded range below
+        # cannot run at all here. Unit value axis, as the violin family uses.
+        .dataMin = 0
+        .dataMax = 1
+    else
+        # Trim to valid
+        .trimData# = zero# (.nValid)
+        for .i from 1 to .nValid
+            .trimData#[.i] = .allData#[.i]
+        endfor
 
-    # Step 3: Compute data range
-    .dataMin = .trimData#[1]
-    .dataMax = .trimData#[1]
-    for .i from 2 to .nValid
-        if .trimData#[.i] < .dataMin
-            .dataMin = .trimData#[.i]
-        endif
-        if .trimData#[.i] > .dataMax
-            .dataMax = .trimData#[.i]
-        endif
-    endfor
+        # Step 3: Compute data range
+        .dataMin = .trimData#[1]
+        .dataMax = .trimData#[1]
+        for .i from 2 to .nValid
+            if .trimData#[.i] < .dataMin
+                .dataMin = .trimData#[.i]
+            endif
+            if .trimData#[.i] > .dataMax
+                .dataMax = .trimData#[.i]
+            endif
+        endfor
+    endif
 
     # Value axis range
     if .vMin = 0 and .vMax = 0
@@ -3272,10 +4466,18 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
 
     # Step 4: Compute bins
     if .binCount <= 0
-        # Sturges formula
-        .nBins = ceiling (1 + 3.322 * log10 (.nValid))
-        if .nBins < 3
+        if .noData = 1
+            # Sturges is undefined at n = 0 (log10 (0)), and an undefined
+            # .nBins would take out every bin loop below. The empty frame
+            # needs a bin count only to keep the axis arithmetic defined,
+            # so use the same floor the populated branch clamps to.
             .nBins = 3
+        else
+            # Sturges formula
+            .nBins = ceiling (1 + 3.322 * log10 (.nValid))
+            if .nBins < 3
+                .nBins = 3
+            endif
         endif
     else
         .nBins = .binCount
@@ -3595,8 +4797,58 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
             @emlSanitizeLabel: emlCountGroups.groupLabel$[.g]
             legendLabel$[.g] = emlSanitizeLabel.result$
         endfor
-        @emlDrawLegend: .xMin, .xMax, .yMin, .yMax, emlPlaceElements.corner1$, emlSetAdaptiveTheme.annotSize
+        .legendCorner$ = emlPlaceElements.corner1$
+        @emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .legendCorner$, emlSetAdaptiveTheme.annotSize
     endif
+
+    # Step 11B: Disclosures (v1.21)
+    #
+    # Verified 7 Aug 2026 on a 20-row table with 6 undefined values: this
+    # procedure printed "Histogram: 10 bins, bin width = 1.8000 / Groups: 1"
+    # and nothing else. It drew 14 observations while the reader believed 20,
+    # and a histogram gives no way to notice — the bars simply stand shorter.
+    #
+    # Both branches converge on the same coordinate system before this point:
+    # the faceted branch restores the shared inner viewport and Axes: at the
+    # end of its loop, and the non-faceted branch never left them.
+    if .nRows > .nValid
+        @emlDisclose: string$ (.nRows - .nValid)
+        ... + " row(s) skipped (missing or non-numeric value).", ""
+    endif
+
+    # Quadrant occupancy for the disclosure block's corner. Bars stand on
+    # zero, so a bar owns its bottom quadrant outright and its top quadrant
+    # only when it rises past the midline.
+    .dxMid = (.xMin + .xMax) / 2
+    .dyMid = (.yMin + .yMax) / 2
+    .dTL = 0
+    .dTR = 0
+    .dBL = 0
+    .dBR = 0
+    for .g from 1 to .nGroups
+        for .b from 1 to .nBins
+            .dv = .count'.g'_'.b'
+            if .dv > 0
+                .dc = .xMin + (.b - 0.5) * .binWidth
+                if .dc < .dxMid
+                    .dBL = .dBL + 1
+                    if .dv >= .dyMid
+                        .dTL = .dTL + 1
+                    endif
+                else
+                    .dBR = .dBR + 1
+                    if .dv >= .dyMid
+                        .dTR = .dTR + 1
+                    endif
+                endif
+            endif
+        endfor
+    endfor
+    # A legend is drawn in overlap mode only; faceted mode labels its panels
+    # in the left margin and ungrouped mode has nothing to label, so
+    # .legendCorner$ is still "" in both of those.
+    @emlDiscloseEnd: .xMin, .xMax, .yMin, .yMax, .dTL, .dTR, .dBL, .dBR,
+    ... .legendCorner$
 
     # Step 12: Axes
     if .displayMode <> 2
@@ -3639,7 +4891,9 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
     Line width: 1.0
     Font size: emlSetAdaptiveTheme.bodySize
 
-    label HIST_END
+    # The `label HIST_END` that stood here was the landing point of the
+    # no-data goto removed at Step 2 (D111). Nothing jumps here any more, and
+    # the empty case now reaches this line the same way a populated one does.
 
     # Release the integral-axis constraint: it is scoped to this figure.
     emlYAxisMinStep = 0
@@ -3666,6 +4920,10 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     # between a figure and an aborted script. Must come before this
     # procedure sets its own Axes: the measurement installs its own.
     @emlEnsureCategoricalLabels: .objectId, .catCol$, .vpW, .vpH
+    @emlDiscloseBegin: "Grouped violin"
+    # v1.21: the corner the legend takes, so @emlDiscloseEnd can keep the
+    # disclosure box out of it. Empty until a legend is actually drawn.
+    .legendCorner$ = ""
 
     @emlSanitizeLabel: .title$
     .title$ = emlSanitizeLabel.result$
@@ -3684,10 +4942,52 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
         .sub$[.s] = emlCountGroups.groupLabel$[.s]
     endfor
 
+    # THE PALETTE CEILING. @emlSetColorPalette defines a style as a pair —
+    # one of EIGHT hues and one of THREE fill patterns (solid, diagonal
+    # hatch, dots) — so it holds 24 sub-group styles that are distinguishable
+    # from one another both on the figure and in the legend. Past 24 the pair
+    # repeats and a sub-group would be drawn exactly like one already on the
+    # figure. The cap is a real limit of the palette, not an arbitrary
+    # number.
+    #
+    # v1.23 raised it from 10 to 24 on the author's ruling: "let's make the
+    # boundary in excess of what we think is reasonable... maybe there's some
+    # person who wants to do a twenty four participant comparison, and
+    # they're gonna make their figure sixty inches wide. Like, we just don't
+    # know." Twenty-four sub-violins on a default 6-inch figure are NOT
+    # readable — see the rendered evidence in the v29 header — but that is
+    # the user's judgement to make on their own figure width, and the drawing
+    # code is correct at every count up to 24.
+    #
+    # The old ceiling was ten because ten fill/line pairs were declared, and
+    # that number was WRONG IN BOTH DIRECTIONS: slots 9 and 10 were literal
+    # duplicates of 1 and 2, so a ten-sub-group figure already drew two pairs
+    # of sub-groups identically and said nothing (D127), while eight genuinely
+    # distinct styles were being refused a legitimate eleventh.
+    #
+    # v1.22: what was wrong before that was the SILENCE. The extraction guard
+    # below dropped sub-groups past the cap with no message, while `legendN`
+    # was still set to .nSubs, so the legend listed sub-groups that had no
+    # violin anywhere on the figure. The count is now carried to Step 10B and
+    # disclosed, the legend is capped to what was actually drawn, and the
+    # slot geometry below divides the category by the DRAWN count so the
+    # remaining violins stay centred instead of leaving a phantom gap.
+    .maxSubs = 24
+    .nSubsDrawn = min (.nSubs, .maxSubs)
+    .nSubsDropped = .nSubs - .nSubsDrawn
+    .droppedSubs$ = ""
+    for .s from .nSubsDrawn + 1 to .nSubs
+        if .droppedSubs$ <> ""
+            .droppedSubs$ = .droppedSubs$ + ", "
+        endif
+        .droppedSubs$ = .droppedSubs$ + .sub$[.s]
+    endfor
+    .nDroppedSubRows = 0
+
     selectObject: .objectId
     .nRows = Get number of rows
 
-    @emlOptimizePaletteContrast: .nSubs
+    @emlOptimizePaletteContrast: .nSubsDrawn
 
     # Step 4: Extract data per category x sub-group
     for .c from 1 to .nCats
@@ -3696,6 +4996,8 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
         endfor
     endfor
 
+    # v1.21: same counter idiom as @emlDrawViolinPlot.
+    .nSkippedRows = 0
     for .i from 1 to .nRows
         selectObject: .objectId
         .thisCat$ = Get value: .i, .catCol$
@@ -3703,7 +5005,9 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
         .val$ = Get value: .i, .valueCol$
         .thisVal = number (.val$)
 
-        if .thisVal <> undefined
+        if .thisVal = undefined
+            .nSkippedRows = .nSkippedRows + 1
+        else
             .cIdx = 0
             for .c from 1 to .nCats
                 if .thisCat$ = .cat$[.c]
@@ -3717,7 +5021,14 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
                 endif
             endfor
 
-            if .cIdx > 0 and .sIdx > 0 and .sIdx <= 10
+            # v1.22: the `.sIdx <= .maxSubs` arm is the palette ceiling
+            # documented at Step 3. A row that lands past it is counted, so
+            # Step 10B can say how much of the table never reached the
+            # figure; it used to be discarded in silence.
+            if .cIdx > 0 and .sIdx > .nSubsDrawn
+                .nDroppedSubRows = .nDroppedSubRows + 1
+            endif
+            if .cIdx > 0 and .sIdx > 0 and .sIdx <= .nSubsDrawn
                 .cellCount'.cIdx'_'.sIdx' = .cellCount'.cIdx'_'.sIdx' + 1
                 .k = .cellCount'.cIdx'_'.sIdx'
                 .cellData'.cIdx'_'.sIdx'_'.k' = .thisVal
@@ -3729,7 +5040,7 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     .globalMin = undefined
     .globalMax = undefined
     for .c from 1 to .nCats
-        for .s from 1 to .nSubs
+        for .s from 1 to .nSubsDrawn
             .n = .cellCount'.c'_'.s'
             for .k from 1 to .n
                 .val = .cellData'.c'_'.s'_'.k'
@@ -3748,15 +5059,19 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
         endfor
     endfor
 
+    # D111: this is the fallback @emlDrawViolinPlot was told to copy, and it
+    # was the silent one. Disclose it in the same words as the rest.
     if .globalMin = undefined
         .globalMin = 0
         .globalMax = 1
+        .noDataMsg$ = "NOTE: Grouped violin — no usable value; empty axes drawn."
+        appendInfoLine: .noDataMsg$
     endif
 
     # Extend range by largest per-cell KDE bandwidth (violin tails)
     .maxBW = 0
     for .c from 1 to .nCats
-        for .s from 1 to .nSubs
+        for .s from 1 to .nSubsDrawn
             .n = .cellCount'.c'_'.s'
             if .n >= 4
                 .gMean = 0
@@ -3802,6 +5117,9 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     # Step 7: Set viewport and axes
     @emlSetPanelViewport
     Axes: .xMin, .xMax, .yMin, .yMax
+    # Physical scale for fill patterns: a 45-degree hatch has to be 45
+    # degrees ON THE PAGE, not at whatever angle the two axis ranges imply.
+    @emlSetPatternScale: .xMin, .xMax, .yMin, .yMax
 
     # Step 8: Gridlines
     # gridMode: 1=Horizontal, 2=Off
@@ -3811,11 +5129,11 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
 
     # Step 9: Draw grouped violins
     .slotWidth = 0.82
-    .spacing = .slotWidth / .nSubs
+    .spacing = .slotWidth / .nSubsDrawn
     .subViolinWidth = .spacing * 0.4
 
     for .c from 1 to .nCats
-        for .s from 1 to .nSubs
+        for .s from 1 to .nSubsDrawn
             .n = .cellCount'.c'_'.s'
             if .n >= 1
                 .data# = zero# (.n)
@@ -3824,11 +5142,14 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
                 endfor
 
                 # Sub-violin x-center
-                .totalGroupWidth = (.nSubs - 1) * .spacing
+                .totalGroupWidth = (.nSubsDrawn - 1) * .spacing
                 .subCenter = .c - .totalGroupWidth / 2 + (.s - 1) * .spacing
 
                 .colorIdx = .s
-                @emlDrawViolin: .subCenter, .data#, emlSetColorPalette.fill$[.colorIdx], emlSetColorPalette.line$[.colorIdx], .yMin, .yMax, .subViolinWidth
+                @emlDrawViolin: .subCenter, .data#,
+                ... emlSetColorPalette.fill$[.colorIdx],
+                ... emlSetColorPalette.line$[.colorIdx], .yMin, .yMax,
+                ... .subViolinWidth, emlSetColorPalette.pattern[.colorIdx]
             endif
         endfor
     endfor
@@ -3837,14 +5158,14 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     if variableExists ("prev_gvShowJitter")
         if prev_gvShowJitter = 1
             for .c from 1 to .nCats
-                for .s from 1 to .nSubs
+                for .s from 1 to .nSubsDrawn
                     .n = .cellCount'.c'_'.s'
                     if .n >= 1
                         jitterData# = zero# (.n)
                         for .k from 1 to .n
                             jitterData#[.k] = .cellData'.c'_'.s'_'.k'
                         endfor
-                        .totalGroupWidth = (.nSubs - 1) * .spacing
+                        .totalGroupWidth = (.nSubsDrawn - 1) * .spacing
                         .subCenter = .c - .totalGroupWidth / 2 + (.s - 1) * .spacing
                         .colorIdx = .s
                         .jitterW = .subViolinWidth * 0.3
@@ -3863,7 +5184,7 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     .qBL = 0
     .qBR = 0
     for .c from 1 to .nCats
-        for .s from 1 to .nSubs
+        for .s from 1 to .nSubsDrawn
             .n = .cellCount'.c'_'.s'
             for .k from 1 to .n
                 .val = .cellData'.c'_'.s'_'.k'
@@ -3884,14 +5205,44 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
         endfor
     endfor
     @emlPlaceElements: .qTL, .qTR, .qBL, .qBR, .xMid, 1
-    legendN = .nSubs
-    for .s from 1 to .nSubs
+    legendN = .nSubsDrawn
+    # The swatch must carry the FILL PATTERN, not just the hue: sub-groups 1
+    # and 9 share a hue and differ only in pattern, so a colour-only legend
+    # would print two identical swatches against two different names — the
+    # same defect the patterns exist to remove, moved into the key.
+    legendPatterned = 1
+    for .s from 1 to .nSubsDrawn
         .colorIdx = .s
         legendColor$[.s] = emlSetColorPalette.line$[.colorIdx]
+        legendFill$[.s] = emlSetColorPalette.fill$[.colorIdx]
+        legendPattern[.s] = emlSetColorPalette.pattern[.colorIdx]
         @emlSanitizeLabel: .sub$[.s]
         legendLabel$[.s] = emlSanitizeLabel.result$
     endfor
-    @emlDrawLegend: .xMin, .xMax, .yMin, .yMax, emlPlaceElements.corner1$, emlSetAdaptiveTheme.annotSize
+    .legendCorner$ = emlPlaceElements.corner1$
+    @emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .legendCorner$, emlSetAdaptiveTheme.annotSize
+
+    # Step 10B: Disclosures (v1.21). The legend has taken corner1$;
+    # @emlDiscloseEnd is told so and keeps the block out of it.
+    if .nSkippedRows > 0
+        @emlDisclose: string$ (.nSkippedRows)
+        ... + " row(s) skipped (missing or non-numeric value).", ""
+    endif
+    # v1.22: the palette ceiling, said out loud. See Step 3.
+    if .nSubsDropped > 0
+        @emlDisclose: string$ (.nSubsDropped)
+        ... + " sub-group(s) not drawn (palette holds "
+        ... + string$ (.maxSubs) + ").",
+        ... "Not drawn: " + .droppedSubs$ + " ("
+        ... + string$ (.nDroppedSubRows) + " row(s)). The palette defines "
+        ... + string$ (.maxSubs) + " distinguishable styles — 8 hues x 3 "
+        ... + "fill patterns (solid, diagonal hatch, dots) — so a further "
+        ... + "sub-group would repeat a style already in the legend. Reduce "
+        ... + "the sub-group column to " + string$ (.maxSubs) + " levels, or "
+        ... + "draw the rest as a second figure."
+    endif
+    @emlDiscloseEnd: .xMin, .xMax, .yMin, .yMax, .qTL, .qTR, .qBL, .qBR,
+    ... .legendCorner$
 
     # Step 11: Axes with category labels
     @emlDrawInnerBoxIf
@@ -3936,6 +5287,10 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
     # between a figure and an aborted script. Must come before this
     # procedure sets its own Axes: the measurement installs its own.
     @emlEnsureCategoricalLabels: .objectId, .catCol$, .vpW, .vpH
+    @emlDiscloseBegin: "Grouped box plot"
+    # v1.21: the corner the legend takes, so @emlDiscloseEnd can keep the
+    # disclosure box out of it. Empty until a legend is actually drawn.
+    .legendCorner$ = ""
     @emlSanitizeLabel: .title$
     .title$ = emlSanitizeLabel.result$
 
@@ -3952,23 +5307,47 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
         .sub$[.s] = emlCountGroups.groupLabel$[.s]
     endfor
 
+    # THE PALETTE CEILING — identical to @emlDrawGroupedViolin's, which
+    # carries the full note. @emlSetColorPalette holds 8 hues x 3 fill
+    # patterns = 24 distinguishable styles; the twenty-fifth sub-group would
+    # be drawn exactly like one already on the figure. v1.23 raised the cap
+    # from 10 to 24 (the old ten included two literal duplicates — D127).
+    # v1.22 makes the drop audible: the dropped sub-groups are named in a
+    # disclosure, the legend no longer advertises them, and the slot geometry
+    # divides by the drawn count so the boxes stay centred.
+    .maxSubs = 24
+    .nSubsDrawn = min (.nSubs, .maxSubs)
+    .nSubsDropped = .nSubs - .nSubsDrawn
+    .droppedSubs$ = ""
+    for .s from .nSubsDrawn + 1 to .nSubs
+        if .droppedSubs$ <> ""
+            .droppedSubs$ = .droppedSubs$ + ", "
+        endif
+        .droppedSubs$ = .droppedSubs$ + .sub$[.s]
+    endfor
+    .nDroppedSubRows = 0
+
     selectObject: .objectId
     .nRows = Get number of rows
 
-    @emlOptimizePaletteContrast: .nSubs
+    @emlOptimizePaletteContrast: .nSubsDrawn
 
     for .c from 1 to .nCats
         for .s from 1 to .nSubs
             .cellCount'.c'_'.s' = 0
         endfor
     endfor
+    # v1.21: same counter idiom as @emlDrawBoxPlot.
+    .nSkippedRows = 0
     for .i from 1 to .nRows
         selectObject: .objectId
         .thisCat$ = Get value: .i, .catCol$
         .thisSub$ = Get value: .i, .subCol$
         .val$ = Get value: .i, .valueCol$
         .thisVal = number (.val$)
-        if .thisVal <> undefined
+        if .thisVal = undefined
+            .nSkippedRows = .nSkippedRows + 1
+        else
             .cIdx = 0
             for .c from 1 to .nCats
                 if .thisCat$ = .cat$[.c]
@@ -3981,7 +5360,14 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
                     .sIdx = .s
                 endif
             endfor
-            if .cIdx > 0 and .sIdx > 0 and .sIdx <= 10
+            # v1.22: rows past the palette ceiling are counted, not silently
+            # discarded. See THE PALETTE CEILING note above, where .maxSubs
+            # is set (this procedure has no numbered steps; the equivalent
+            # note in @emlDrawGroupedViolin sits at its Step 3).
+            if .cIdx > 0 and .sIdx > .nSubsDrawn
+                .nDroppedSubRows = .nDroppedSubRows + 1
+            endif
+            if .cIdx > 0 and .sIdx > 0 and .sIdx <= .nSubsDrawn
                 .cellCount'.cIdx'_'.sIdx' = .cellCount'.cIdx'_'.sIdx' + 1
                 .k = .cellCount'.cIdx'_'.sIdx'
                 .cellData'.cIdx'_'.sIdx'_'.k' = .thisVal
@@ -3992,7 +5378,7 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
     .globalMin = undefined
     .globalMax = undefined
     for .c from 1 to .nCats
-        for .s from 1 to .nSubs
+        for .s from 1 to .nSubsDrawn
             .n = .cellCount'.c'_'.s'
             for .k from 1 to .n
                 .val = .cellData'.c'_'.s'_'.k'
@@ -4010,9 +5396,13 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
             endfor
         endfor
     endfor
+    # D111: this is the fallback @emlDrawBoxPlot was told to copy, and it was
+    # the silent one. Disclose it in the same words as the rest.
     if .globalMin = undefined
         .globalMin = 0
         .globalMax = 1
+        .noDataMsg$ = "NOTE: Grouped box plot — no usable value; empty axes drawn."
+        appendInfoLine: .noDataMsg$
     endif
     # Adaptive rounding grid: derive roundTo from a nice step over the data
     # range (the same nice-number logic the gridlines use) so fractional data
@@ -4032,26 +5422,32 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
 
     @emlSetPanelViewport
     Axes: .xMin, .xMax, .yMin, .yMax
+    # Physical scale for fill patterns: a 45-degree hatch has to be 45
+    # degrees ON THE PAGE, not at whatever angle the two axis ranges imply.
+    @emlSetPatternScale: .xMin, .xMax, .yMin, .yMax
     # gridMode: 1=Horizontal, 2=Off
     if .gridMode = 1
         @emlDrawHorizontalGridlines: .xMin, .xMax, .yMin, .yMax, emlSetAdaptiveTheme.targetTicksY, emlSetAdaptiveTheme.useMinorTicks
     endif
 
     .slotWidth = 0.82
-    .spacing = .slotWidth / .nSubs
+    .spacing = .slotWidth / .nSubsDrawn
     .subBoxWidth = .spacing * 0.35
     for .c from 1 to .nCats
-        for .s from 1 to .nSubs
+        for .s from 1 to .nSubsDrawn
             .n = .cellCount'.c'_'.s'
             if .n >= 1
                 .data# = zero# (.n)
                 for .k from 1 to .n
                     .data#[.k] = .cellData'.c'_'.s'_'.k'
                 endfor
-                .totalGroupWidth = (.nSubs - 1) * .spacing
+                .totalGroupWidth = (.nSubsDrawn - 1) * .spacing
                 .subCenter = .c - .totalGroupWidth / 2 + (.s - 1) * .spacing
                 .colorIdx = .s
-                @emlDrawBox: .subCenter, .data#, emlSetColorPalette.fill$[.colorIdx], emlSetColorPalette.line$[.colorIdx], .yMin, .yMax, .subBoxWidth
+                @emlDrawBox: .subCenter, .data#,
+                ... emlSetColorPalette.fill$[.colorIdx],
+                ... emlSetColorPalette.line$[.colorIdx], .yMin, .yMax,
+                ... .subBoxWidth, emlSetColorPalette.pattern[.colorIdx]
             endif
         endfor
     endfor
@@ -4059,14 +5455,14 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
     if variableExists ("prev_gbShowJitter")
         if prev_gbShowJitter = 1
             for .c from 1 to .nCats
-                for .s from 1 to .nSubs
+                for .s from 1 to .nSubsDrawn
                     .n = .cellCount'.c'_'.s'
                     if .n >= 1
                         jitterData# = zero# (.n)
                         for .k from 1 to .n
                             jitterData#[.k] = .cellData'.c'_'.s'_'.k'
                         endfor
-                        .totalGroupWidth = (.nSubs - 1) * .spacing
+                        .totalGroupWidth = (.nSubsDrawn - 1) * .spacing
                         .subCenter = .c - .totalGroupWidth / 2 + (.s - 1) * .spacing
                         .colorIdx = .s
                         @emlDrawJitteredPoints: .subCenter, emlSetColorPalette.line$[.colorIdx], emlSetAdaptiveTheme.markerSize * 0.4, .subBoxWidth * 0.3
@@ -4084,7 +5480,7 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
     .qBL = 0
     .qBR = 0
     for .c from 1 to .nCats
-        for .s from 1 to .nSubs
+        for .s from 1 to .nSubsDrawn
             .n = .cellCount'.c'_'.s'
             for .k from 1 to .n
                 .val = .cellData'.c'_'.s'_'.k'
@@ -4106,14 +5502,44 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
     endfor
     @emlPlaceElements: .qTL, .qTR, .qBL, .qBR, .xMid, 1
 
-    legendN = .nSubs
-    for .s from 1 to .nSubs
+    legendN = .nSubsDrawn
+    # The swatch must carry the FILL PATTERN, not just the hue: sub-groups 1
+    # and 9 share a hue and differ only in pattern, so a colour-only legend
+    # would print two identical swatches against two different names — the
+    # same defect the patterns exist to remove, moved into the key.
+    legendPatterned = 1
+    for .s from 1 to .nSubsDrawn
         .colorIdx = .s
         legendColor$[.s] = emlSetColorPalette.line$[.colorIdx]
+        legendFill$[.s] = emlSetColorPalette.fill$[.colorIdx]
+        legendPattern[.s] = emlSetColorPalette.pattern[.colorIdx]
         @emlSanitizeLabel: .sub$[.s]
         legendLabel$[.s] = emlSanitizeLabel.result$
     endfor
-    @emlDrawLegend: .xMin, .xMax, .yMin, .yMax, emlPlaceElements.corner1$, emlSetAdaptiveTheme.annotSize
+    .legendCorner$ = emlPlaceElements.corner1$
+    @emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .legendCorner$, emlSetAdaptiveTheme.annotSize
+
+    # Disclosures (v1.21). The legend has taken corner1$; @emlDiscloseEnd is
+    # told so and keeps the block out of it.
+    if .nSkippedRows > 0
+        @emlDisclose: string$ (.nSkippedRows)
+        ... + " row(s) skipped (missing or non-numeric value).", ""
+    endif
+    # v1.22: the palette ceiling, in @emlDrawGroupedViolin's exact wording.
+    if .nSubsDropped > 0
+        @emlDisclose: string$ (.nSubsDropped)
+        ... + " sub-group(s) not drawn (palette holds "
+        ... + string$ (.maxSubs) + ").",
+        ... "Not drawn: " + .droppedSubs$ + " ("
+        ... + string$ (.nDroppedSubRows) + " row(s)). The palette defines "
+        ... + string$ (.maxSubs) + " distinguishable styles — 8 hues x 3 "
+        ... + "fill patterns (solid, diagonal hatch, dots) — so a further "
+        ... + "sub-group would repeat a style already in the legend. Reduce "
+        ... + "the sub-group column to " + string$ (.maxSubs) + " levels, or "
+        ... + "draw the rest as a second figure."
+    endif
+    @emlDiscloseEnd: .xMin, .xMax, .yMin, .yMax, .qTL, .qTR, .qBL, .qBR,
+    ... .legendCorner$
 
     @emlDrawInnerBoxIf
     @emlDrawAlignedMarksLeft: .yMin, .yMax, emlSetAdaptiveTheme.targetTicksY, emlSetAdaptiveTheme.useMinorTicks

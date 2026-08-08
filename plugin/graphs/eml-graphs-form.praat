@@ -2,8 +2,6 @@
 # EML Graphs — Form System and Workflow
 # ============================================================================
 # EML Graphs Plugin
-# Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
-# Development: Claude (Anthropic)
 # License: GPL-3.0-or-later
 # Version: 2.4
 # v2.4: D3b — the graph type registry drops from 14 entries to 13. Type 13,
@@ -137,6 +135,25 @@
 #   ../stats/eml-extract.praat
 #   ../stats/eml-output.praat
 #   ../stats/eml-inferential.praat
+#
+# ATTRIBUTION
+# Framework: EML PraatGen by Ian Howell
+#            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
+#
+# RESEARCH USE DISCLOSURE
+# If this script is used in research or publication, disclose AI use
+# per your target journal's policy. Suggested language:
+#
+#   "Praat analysis scripts were developed using the EML PraatGen
+#    Scripting Assistant (Howell, Embodied Music Lab) with code
+#    generation by Claude (Anthropic). All scripts were reviewed,
+#    tested, and validated by Ian Howell."
+#
+# The script author assumes responsibility for the correctness and
+# appropriate application of this code.
 # ============================================================================
 
 # ============================================================================
@@ -284,6 +301,82 @@ hasGridlines[10] = 1
 hasGridlines[11] = 1
 hasGridlines[12] = 1
 hasGridlines[13] = 1
+
+# ----------------------------------------------------------------------------
+# gridModeStyle[t] — how many options type t's "Gridline mode" optionmenu has.
+#
+#   4 = "Both" / "Horizontal only" / "Vertical only" / "Off"   (continuous x)
+#   2 = "Horizontal" / "Off"                                   (categorical x)
+#
+# C1. These two menus are NOT two spellings of one control; they are two
+# different encodings of `.gridMode`, and the draw layer documents both
+# (eml-draw-procedures.praat :560 :656 :721 :789 :1180 :1607 :2970 for the
+# four-option form, :1947 :2409 :2831 for the two-option form). They used to
+# share ONE persisted key, `config_gridlineMode`, written from whichever type
+# was drawn last and seeded straight back into whichever type was opened next.
+# Two consequences, both shipped:
+#
+#   1. A four-option type could put 3 or 4 into a two-option menu. Praat draws
+#      an optionmenu whose default index exceeds its option count BLANK and
+#      then refuses the form — "No option chosen for 'Gridline mode'." The
+#      value is on disk, so the dead-end dialog survived a restart. Bar,
+#      violin and box carried a hand-propagated clamp; histogram, grouped
+#      violin, grouped box and spaghetti did not.
+#   2. The clamp that did exist preserved the INDEX, not the MEANING:
+#      "Horizontal only" (4-option 2) arrived as "Off" (2-option 2), and "Off"
+#      (4-option 4) arrived as "Horizontal" (2-option 1). Inverted both ways.
+#
+# The fix is one canonical encoding — `config_gridlineMode` is ALWAYS the
+# four-option encoding, on disk and in memory — plus translation at the one
+# boundary where the two encodings meet, the dialog. @emlSeedGridMode converts
+# canonical -> this type's menu, @emlCommitGridMode converts back. `tmpGridMode`
+# and the form's own `gridline_mode` are always in the OPENED TYPE'S encoding,
+# which is also what the draw procedures expect, so the dispatch calls at the
+# bottom of this file are unchanged.
+#
+# ADDING A GRAPH TYPE: add its row here. You cannot forget — @emlGridModeStyle
+# refuses an unregistered type by name, and the file-scope check below refuses
+# to load at all if any type in 1..nGraphTypes is missing or is neither 2 nor
+# 4. validate/v31_gridmode.R additionally cross-checks every row here against
+# the option list actually written under that type's optionmenu, so a row that
+# disagrees with its own dialog fails the suite.
+# ----------------------------------------------------------------------------
+gridModeStyle[1] = 4
+gridModeStyle[2] = 4
+gridModeStyle[3] = 4
+gridModeStyle[4] = 4
+gridModeStyle[5] = 4
+gridModeStyle[6] = 2
+gridModeStyle[7] = 2
+gridModeStyle[8] = 4
+gridModeStyle[9] = 2
+gridModeStyle[10] = 2
+gridModeStyle[11] = 2
+gridModeStyle[12] = 2
+gridModeStyle[13] = 2
+
+# File-scope completeness check. Runs at include time, over literals declared
+# a few lines above, so it can only fire on a tree where someone has added a
+# graph type and not a gridline encoding for it. That is the whole point: the
+# failure lands on the developer who added the type, not on a user who picks
+# it six months later and gets a blank dropdown.
+for iGridChk from 1 to nGraphTypes
+    if not variableExists ("gridModeStyle[" + string$ (iGridChk) + "]")
+        exitScript: "eml-graphs-form.praat: graph type ", iGridChk, " (",
+            ... "declared by nGraphTypes = ", nGraphTypes, ") has no",
+            ... " gridModeStyle[] entry. Add gridModeStyle[", iGridChk,
+            ... "] = 4 (Both/Horizontal only/Vertical only/Off) or = 2",
+            ... " (Horizontal/Off) next to hasGridlines[", iGridChk, "]."
+    endif
+endfor
+for iGridChk from 1 to nGraphTypes
+    if gridModeStyle[iGridChk] <> 2 and gridModeStyle[iGridChk] <> 4
+        exitScript: "eml-graphs-form.praat: gridModeStyle[", iGridChk,
+            ... "] = ", gridModeStyle[iGridChk], ". It must be 4 (Both/",
+            ... "Horizontal only/Vertical only/Off) or 2 (Horizontal/Off) —",
+            ... " it is the option COUNT of that type's Gridline mode menu."
+    endif
+endfor
 
 isTableType[1] = 0
 isTableType[2] = 0
@@ -615,6 +708,21 @@ procedure emlLoadConfig
             endif
         endwhile
     endif
+
+    # C1. gridlineMode on disk is canonical — 1 Both / 2 Horizontal only /
+    # 3 Vertical only / 4 Off. A file written by a pre-C1 build could hold a
+    # categorical index whose MEANING was different but whose value is still
+    # in 1..4; nothing can recover that, and every in-range value is a legal
+    # canonical one, so it is read as canonical and the user's next choice
+    # corrects it. What is worth refusing is a value that is not an option at
+    # all, from a hand-edited or truncated file: left alone it would seed a
+    # blank optionmenu, which is precisely the dead end C1 is about.
+    if config_gridlineMode < 1
+        config_gridlineMode = 1
+    endif
+    if config_gridlineMode > 4
+        config_gridlineMode = 1
+    endif
 endproc
 
 # ----------------------------------------------------------------------------
@@ -646,6 +754,144 @@ procedure emlSaveConfig
     appendFileLine: .configPath$, "showAdvanced: ", config_showAdvanced
     appendFileLine: .configPath$, "subtitle: ", config_subtitle$
     appendFileLine: .configPath$, "groupSort: ", config_groupSort
+endproc
+
+# ============================================================================
+# PROCEDURES — Gridline mode: one canonical encoding, translated at the dialog
+# ============================================================================
+#
+# C1. See the gridModeStyle[] block in the GRAPH TYPE REGISTRY for the defect
+# these close. In short: `config_gridlineMode` is the ONE persisted gridline
+# key and it is ALWAYS in the four-option encoding —
+#
+#     1 = Both   2 = Horizontal only   3 = Vertical only   4 = Off
+#
+# — regardless of which type wrote it. Types whose x-axis is categorical show
+# a two-option menu (1 = Horizontal, 2 = Off) and therefore need a translation
+# in both directions. Every seed of `tmpGridMode` goes through
+# @emlSeedGridMode and every write back to `config_gridlineMode` goes through
+# @emlCommitGridMode, so no per-type section has to know that two encodings
+# exist. That is what the shared-tmp comment in @emlGraphsWorkflow always
+# claimed and, until this change, was not true of this one variable.
+#
+# Round trip, for the two values a user can actually express on a categorical
+# type: "Horizontal" -> canonical 2 -> "Horizontal" (stable), "Off" ->
+# canonical 4 -> "Off" (stable). Coming the other way the map is lossy because
+# it must be — a two-option menu cannot express "Both" or "Vertical only" —
+# but it is lossy by MEANING and not by index: "Both" and "Horizontal only"
+# both arrive as "Horizontal", "Vertical only" and "Off" both arrive as "Off".
+# Turning gridlines off on a scatter plot now turns them off on the next
+# histogram, which is the whole user-visible point.
+
+# ----------------------------------------------------------------------------
+# @emlGridModeStyle
+# Option count of one graph type's Gridline mode menu, with a named refusal
+# for a type nobody registered. This is the guard that makes the C1 bug
+# unreachable by omission at runtime; the file-scope loop next to
+# gridModeStyle[] makes it unreachable at include time.
+# Arguments:
+#   .type — internal graph type id (1..nGraphTypes)
+# Outputs:
+#   .style — 2 or 4
+# ----------------------------------------------------------------------------
+procedure emlGridModeStyle: .type
+    .style = 0
+    if variableExists ("gridModeStyle[" + string$ (.type) + "]")
+        .style = gridModeStyle[.type]
+    endif
+    if .style <> 2 and .style <> 4
+        exitScript: "Graph type ", .type, " has no gridline-mode encoding.",
+            ... " Add gridModeStyle[", .type, "] = 4 (Both / Horizontal only",
+            ... " / Vertical only / Off) or = 2 (Horizontal / Off) to the",
+            ... " GRAPH TYPE REGISTRY in eml-graphs-form.praat, next to",
+            ... " hasGridlines[", .type, "]."
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlGridModeToMenu
+# Canonical (four-option) value -> the option index of .type's own menu.
+# Arguments:
+#   .type      — internal graph type id
+#   .canonical — 1 Both / 2 Horizontal only / 3 Vertical only / 4 Off
+# Outputs:
+#   .menu — index valid for .type's menu (1..2 or 1..4)
+# ----------------------------------------------------------------------------
+procedure emlGridModeToMenu: .type, .canonical
+    @emlGridModeStyle: .type
+    .menu = .canonical
+    ; A config file hand-edited (or written by a pre-C1 build, which committed
+    ; a categorical index into this key) can carry anything. Anything outside
+    ; the canonical range becomes the default rather than a blank dropdown.
+    if .menu < 1
+        .menu = 1
+    endif
+    if .menu > 4
+        .menu = 1
+    endif
+    if emlGridModeStyle.style = 2
+        if .menu <= 2
+            ; Both, Horizontal only -> Horizontal
+            .menu = 1
+        else
+            ; Vertical only, Off -> Off
+            .menu = 2
+        endif
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlGridModeFromMenu
+# The option index of .type's own menu -> canonical (four-option) value.
+# Arguments:
+#   .type — internal graph type id
+#   .menu — what the user chose in that type's Gridline mode menu
+# Outputs:
+#   .canonical — 1 Both / 2 Horizontal only / 3 Vertical only / 4 Off
+# ----------------------------------------------------------------------------
+procedure emlGridModeFromMenu: .type, .menu
+    @emlGridModeStyle: .type
+    .canonical = .menu
+    if emlGridModeStyle.style = 2
+        if .menu = 1
+            ; Horizontal -> Horizontal only. NOT 1: 1 is "Both", and a
+            ; categorical plot has no vertical gridlines to promise.
+            .canonical = 2
+        else
+            ; Off -> Off
+            .canonical = 4
+        endif
+    endif
+    if .canonical < 1
+        .canonical = 1
+    endif
+    if .canonical > 4
+        .canonical = 1
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlSeedGridMode
+# Seeds tmpGridMode for the graph type currently being configured. Reads the
+# globals `graph_type` and `config_gridlineMode`; writes the global
+# `tmpGridMode`. Deliberately argument-free so that the fourteen seed sites
+# are one identical token and a fifteenth cannot be written differently.
+# ----------------------------------------------------------------------------
+procedure emlSeedGridMode
+    @emlGridModeToMenu: graph_type, config_gridlineMode
+    tmpGridMode = emlGridModeToMenu.menu
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlCommitGridMode
+# Records the user's choice from the graph type currently being configured.
+# Reads the global `graph_type`; writes the global `config_gridlineMode`.
+# Arguments:
+#   .chosen — the menu index the form returned in `gridline_mode`
+# ----------------------------------------------------------------------------
+procedure emlCommitGridMode: .chosen
+    @emlGridModeFromMenu: graph_type, .chosen
+    config_gridlineMode = emlGridModeFromMenu.canonical
 endproc
 
 # ============================================================================
@@ -1503,7 +1749,11 @@ scatterShowDots = 1
     #
     # D108. annotCorrectionMethod$ is the ONLY channel this value has:
     # @emlBridgeGroupComparison does not take it as an argument, it reads the
-    # global (eml-annotation-procedures.praat:1808). So the job here is to make
+    # global — the `.correction$ = "holm"` resolution block inside
+    # @emlBridgeGroupComparison, eml-annotation-procedures.praat, currently
+    # :1821-1837. (C5. This used to say `:1808`, which is
+    # `.nGroups = emlCountGroups.nGroups`. Search for the assignment, not the
+    # number: this reference has already drifted once.) So the job here is to make
     # sure the global is well defined by the time the bridge runs, on BOTH test
     # paths — the bridge resolves .correction$ before it branches on test type,
     # so a parametric run has the wrapper's method in hand exactly as a
@@ -1526,8 +1776,12 @@ scatterShowDots = 1
     #
     # What is NOT fixed here, because it is not in this file: on the parametric
     # k >= 3 path the consuming side still ignores the value. The Tukey branch
-    # of @emlBridgeGroupComparison (eml-annotation-procedures.praat:2151+)
-    # never reads .correction$ — only the Dunn branch does. Delivering the
+    # of @emlBridgeGroupComparison — the branch opening
+    # `# --- One-way ANOVA + Tukey HSD ---`, eml-annotation-procedures.praat,
+    # currently :2183 — never reads .correction$; only the Dunn branch does.
+    # (C4. This used to say `:2151+`, which is inside the DUNN branch — the
+    # one line the sentence says DOES read .correction$. The claim was right
+    # and the pointer landed on its counterexample.) Delivering the
     # method is this file's half of D108; using it, or saying in the figure
     # that Tukey carries its own correction instead, is a change to
     # eml-annotation-procedures.praat, which this pass does not own.
@@ -1594,6 +1848,11 @@ repeat
     # =================================================================
 
     # Initialize display settings from config (form will override if fields shown)
+    # C1. No translation here and none possible: the graph type is chosen by
+    # the form immediately below, so there is no type whose encoding this
+    # could be in. The value is a placeholder only — it is re-seeded through
+    # @emlGridModeToMenu the moment graph_type is known, and again per type at
+    # the shared tmp seed. Nothing between here and there reads it.
     gridline_mode = config_gridlineMode
     emlShowInnerBox = config_showInnerBox
     @emlExpandAxisControls
@@ -1671,7 +1930,13 @@ repeat
     config_subtitle$ = subtitle$
 
     # Initialize advanced fields from config (page 2 will override if shown)
-    gridline_mode = config_gridlineMode
+    # C1. `gridline_mode` is what reaches the draw procedure, and every draw
+    # procedure reads it in ITS OWN type's encoding — so the canonical config
+    # value has to be translated here, not copied. graph_type is known from
+    # the line above; the same translation runs again per type at the shared
+    # tmp seed, and page 2 overwrites this from the dialog when shown.
+    @emlGridModeToMenu: graph_type, config_gridlineMode
+    gridline_mode = emlGridModeToMenu.menu
     emlShowInnerBox = config_showInnerBox
     @emlExpandAxisControls
     emlFont$ = config_font$
@@ -1861,7 +2126,17 @@ repeat
     # branching. Ensures valid defaults exist on first pass regardless
     # of which graph type is selected. Per-type sections may override
     # graph-specific tmp vars but inherit these shared ones.
-    tmpGridMode = config_gridlineMode
+    #
+    # C1. "Valid defaults regardless of which graph type is selected" was the
+    # claim, and for tmpGridMode it was false: a plain copy of
+    # config_gridlineMode put a four-option index into a two-option menu,
+    # which Praat draws blank and then refuses. Bar, violin and box carried a
+    # hand-copied clamp; histogram, grouped violin, grouped box and spaghetti
+    # did not, so those four could be opened into a dialog with no way out.
+    # @emlSeedGridMode makes the claim true for every registered type at once,
+    # and the three clamps that used to sit in the per-type blocks are gone —
+    # per-type sections do not have to know, which is what this comment says.
+    @emlSeedGridMode
     tmpShowInnerBox = config_showInnerBox
     tmpShowAxisNames = config_showAxisNames
     tmpShowTicks = config_showTicks
@@ -1982,7 +2257,7 @@ repeat
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
                     # Toggling TO beginner: reset advanced-only fields
-                    tmpGridMode = config_gridlineMode
+                    @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -2029,7 +2304,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    config_gridlineMode = gridline_mode
+                    @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -2174,7 +2449,7 @@ repeat
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
                     # Toggling TO beginner: reset advanced-only fields
-                    tmpGridMode = config_gridlineMode
+                    @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -2208,7 +2483,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    config_gridlineMode = gridline_mode
+                    @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -2325,7 +2600,7 @@ repeat
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
                     # Toggling TO beginner: reset advanced-only fields
-                    tmpGridMode = config_gridlineMode
+                    @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -2359,7 +2634,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    config_gridlineMode = gridline_mode
+                    @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -2493,7 +2768,7 @@ repeat
                     tmpShowPoles = show_poles
                     tmpShowSpeckles = show_speckles
                     # Toggling TO beginner: reset advanced-only fields
-                    tmpGridMode = config_gridlineMode
+                    @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -2535,7 +2810,7 @@ repeat
                     tmpShowBars = show_bars
                     tmpShowPoles = show_poles
                     tmpShowSpeckles = show_speckles
-                    config_gridlineMode = gridline_mode
+                    @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -2856,7 +3131,7 @@ repeat
                             tmpTMax$ = "0"
                             tmpVMin$ = "0"
                             tmpVMax$ = "0"
-                            tmpGridMode = config_gridlineMode
+                            @emlSeedGridMode
                             tmpShowInnerBox = config_showInnerBox
                             tmpShowAxisNames = config_showAxisNames
                             tmpShowTicks = config_showTicks
@@ -2888,7 +3163,7 @@ repeat
                             tmpDPI = output_DPI
                             tmpXLabel$ = x_axis_label$
                             tmpYLabel$ = y_axis_label$
-                            config_gridlineMode = gridline_mode
+                            @emlCommitGridMode: gridline_mode
                             emlShowInnerBox = show_inner_box
                             emlFont$ = font$
                             config_showInnerBox = show_inner_box
@@ -3109,11 +3384,6 @@ repeat
             tmpVMin$ = "0"
             tmpVMax$ = "0"
         endif
-        if config_gridlineMode = 2
-            tmpGridMode = 2
-        else
-            tmpGridMode = 1
-        endif
         tmpDPI = config_outputDPI
         tmpXLabel$ = ""
         tmpYLabel$ = ""
@@ -3254,7 +3524,7 @@ repeat
                     tmpBarAnnotStyle = 1
                     tmpVMin$ = "0"
                     tmpVMax$ = "0"
-                    tmpGridMode = config_gridlineMode
+                    @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -3303,7 +3573,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    config_gridlineMode = gridline_mode
+                    @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -3471,11 +3741,6 @@ repeat
             tmpVMin$ = "0"
             tmpVMax$ = "0"
         endif
-        if config_gridlineMode = 2
-            tmpGridMode = 2
-        else
-            tmpGridMode = 1
-        endif
         tmpDPI = config_outputDPI
         tmpXLabel$ = ""
         tmpYLabel$ = ""
@@ -3611,7 +3876,7 @@ repeat
                     tmpViolinAnnotStyle = 1
                     tmpVMin$ = "0"
                     tmpVMax$ = "0"
-                    tmpGridMode = config_gridlineMode
+                    @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -3661,7 +3926,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    config_gridlineMode = gridline_mode
+                    @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -4045,7 +4310,7 @@ repeat
                     tmpXMax$ = "0"
                     tmpYMin$ = "0"
                     tmpYMax$ = "0"
-                    tmpGridMode = config_gridlineMode
+                    @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -4096,7 +4361,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    config_gridlineMode = gridline_mode
+                    @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -4292,11 +4557,6 @@ repeat
             tmpVMin$ = "0"
             tmpVMax$ = "0"
         endif
-        if config_gridlineMode = 2
-            tmpGridMode = 2
-        else
-            tmpGridMode = 1
-        endif
         tmpDPI = config_outputDPI
         tmpXLabel$ = ""
         tmpYLabel$ = ""
@@ -4432,7 +4692,7 @@ repeat
                     tmpBoxAnnotStyle = 1
                     tmpVMin$ = "0"
                     tmpVMax$ = "0"
-                    tmpGridMode = config_gridlineMode
+                    @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -4482,7 +4742,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    config_gridlineMode = gridline_mode
+                    @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -4768,7 +5028,7 @@ repeat
                     tmpVMin$ = "0"
                     tmpVMax$ = "0"
                     tmpFreqMax$ = "0"
-                    tmpGridMode = config_gridlineMode
+                    @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -4835,7 +5095,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    config_gridlineMode = gridline_mode
+                    @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -5182,7 +5442,7 @@ repeat
                     prev_gvAnnotStyle = 1
                     tmpVMin$ = "0"
                     tmpVMax$ = "0"
-                    tmpGridMode = config_gridlineMode
+                    @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -5235,7 +5495,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    config_gridlineMode = gridline_mode
+                    @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -5520,7 +5780,7 @@ repeat
                     prev_gbAnnotStyle = 1
                     tmpVMin$ = "0"
                     tmpVMax$ = "0"
-                    tmpGridMode = config_gridlineMode
+                    @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -5571,7 +5831,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    config_gridlineMode = gridline_mode
+                    @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -5831,7 +6091,7 @@ repeat
                 if config_showAdvanced
                     tmpVMin$ = "0"
                     tmpVMax$ = "0"
-                    tmpGridMode = config_gridlineMode
+                    @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
                     tmpShowAxisNames = config_showAxisNames
                     tmpShowTicks = config_showTicks
@@ -5857,7 +6117,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    config_gridlineMode = gridline_mode
+                    @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
                     config_showInnerBox = show_inner_box
@@ -5983,6 +6243,10 @@ repeat
     # Write to rendering globals (eml*), not config_* — preserves saved
     # advanced preferences for when the user switches back.
     if config_showAdvanced = 0
+        # C1. 1 is the only gridline value that means the same thing in both
+        # encodings — "Both" on a four-option type, "Horizontal" on a
+        # two-option one. Both are the gridlines-on reading this block wants,
+        # so this needs no translation. Any other literal here would.
         gridline_mode = 1
         emlShowInnerBox = 1
         emlShowAxisNameX = 1

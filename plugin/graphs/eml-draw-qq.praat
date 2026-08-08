@@ -42,8 +42,64 @@
 #   * more than 5000 values         — @emlShapiroWilk's documented ceiling,
 #                                     and the normal scores come from it
 # Undefined cells are dropped first and counted in .nDropped, matching what
-# @emlRunNormalityAnalysis tested; the count is disclosed in the subtitle so
-# a figure drawn from 6 of 8 rows cannot pass for a figure of all 8.
+# @emlRunNormalityAnalysis tested; the count is disclosed so a figure drawn
+# from 6 of 8 rows cannot pass for a figure of all 8. See DISCLOSURE below
+# for where that count goes and where it deliberately does not.
+#
+# DISCLOSURE
+# ----------
+# v1.1, 7 Aug 2026. This procedure used to write "n = N, Blom plotting
+# positions" into emlSubtitle$, saving and restoring the global around the
+# call. The global survived; the DRAWN figure did not. emlSubtitle$ is the
+# user's own field — the graphs form asks for it ("Subtitle") and persists it
+# to config — so a user who had typed a subtitle got a machine-generated tail
+# bolted on after " | " that they never wrote and could not remove, ticked or
+# not. @emlDrawTimeSeries and @emlDrawBarChart carried the same defect and it
+# was removed from both on 7 Aug 2026 (D112); this file was written the day
+# before and repeated it (D119).
+#
+# The house mechanism is @emlDiscloseBegin / @emlDisclose / @emlDiscloseEnd in
+# eml-draw-procedures.praat, which both of this file's include chains already
+# pull in (plugin/scripts/eml-lib.praat -> eml-lib-graphs.praat, and
+# harness/qq_cases/qq_drive.praat directly). The rule it enforces, from the
+# author's ruling "draw the image as the image unless someone asks to
+# annotate":
+#
+#   Info window   ALWAYS
+#   The figure    ONLY when the user ticked Annotate
+#   emlSubtitle$  NEVER
+#
+# WHY THE DISCLOSURE RUNS AFTER @emlDrawScatterPlot, NOT BEFORE
+# @emlDrawScatterPlot sets annotBlockN = 0 at its Step 7 and renders the block
+# itself, so anything added before the call is erased before it can be drawn.
+# Adding it afterwards is the same shape eml-graphs-form.praat's POST-DISPATCH
+# block already uses for the omnibus line: the panel viewport and the data
+# Axes: are still current when the draw procedure returns (@emlDrawTitle
+# restores both on its way out), and the axis bounds are read back from
+# emlDrawScatterPlot's own locals. With scatterShowFormula = 0 and the
+# correlation annotations off, the scatter's block is empty and this is the
+# only box on the figure, so no second box is drawn.
+#
+# THE ANNOTATE THIS GATE READS is the graphs-form global, which is the user's
+# tick. It is NOT the .annotate = 0 this procedure passes to
+# @emlDrawScatterPlot — that argument suppresses a Pearson r on a Q-Q plot for
+# a different reason, given at the call site, and has nothing to say about
+# whether the user asked to see how the figure was built.
+#
+# WHAT IS DISCLOSED, AND WHAT WAS DROPPED
+#   "n = N, Blom plotting positions (a = 3/8)."  KEPT. n is not on either
+#     axis and it is not countable off the panel — the dots are drawn with
+#     alpha and overlap — yet it is the number that decides how much tail
+#     wiggle a reader should forgive, and it is the parameter of the plotting
+#     formula named in the same breath. The a = 3/8 is load-bearing rather
+#     than pedantry: R's qqnorm() uses a = 1/2 above n = 10, so a reader
+#     laying this figure beside qqnorm() output and finding the tails moved
+#     would otherwise conclude the plugin is wrong. validate/v23_qq_points.R
+#     asserts that difference deliberately.
+#   the derivation and the qqnorm() comparison  Info window only, via the
+#     .advice$ channel. It is a paragraph, not a caption.
+#   the dropped-row count  KEPT, in the house wording used by every other
+#     draw procedure ("N row(s) ...").
 #
 # Arguments:
 #   .data#      — the column, undefined cells allowed (they are dropped)
@@ -62,6 +118,25 @@
 #   .w, .p      — Shapiro-Wilk W and p for the same points
 #
 # Requires: @emlShapiroWilk, @emlDrawScatterPlot, @emlSanitizeLabel.
+#
+# ATTRIBUTION
+# Framework: EML PraatGen by Ian Howell
+#            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
+#
+# RESEARCH USE DISCLOSURE
+# If this script is used in research or publication, disclose AI use
+# per your target journal's policy. Suggested language:
+#
+#   "Praat analysis scripts were developed using the EML PraatGen
+#    Scripting Assistant (Howell, Embodied Music Lab) with code
+#    generation by Claude (Anthropic). All scripts were reviewed,
+#    tested, and validated by Ian Howell."
+#
+# The script author assumes responsibility for the correctness and
+# appropriate application of this code.
 # ============================================================================
 
 procedure emlDrawQQPlot: .data#, .colLabel$, .vpW, .vpH, .colorMode$, .gridMode
@@ -130,14 +205,26 @@ procedure emlDrawQQPlot: .data#, .colLabel$, .vpW, .vpH, .colorMode$, .gridMode
             @emlInitDrawingDefaults
         endif
 
+        ; ── The plotted pairs, snapshotted ────────────────────────────────
+        ; Copied out of @emlShapiroWilk's vectors before anything else runs,
+        ; so the quadrant count that chooses the disclosure corner after the
+        ; draw is computed from the points this figure was built from and not
+        ; from whatever happens to be in emlShapiroWilk.m# by then.
+        .theo# = zero# (.n)
+        .samp# = zero# (.n)
+        for .i from 1 to .n
+            .theo# [.i] = emlShapiroWilk.m# [.i]
+            .samp# [.i] = emlShapiroWilk.sorted# [.i]
+        endfor
+
         ; ── Point table ───────────────────────────────────────────────────
         ; Two columns, one row per order statistic. Removed before return.
         .tmpId = Create Table with column names: "eml_qq_points", .n,
         ... "theoretical sample"
         selectObject: .tmpId
         for .i from 1 to .n
-            Set numeric value: .i, "theoretical", emlShapiroWilk.m# [.i]
-            Set numeric value: .i, "sample", emlShapiroWilk.sorted# [.i]
+            Set numeric value: .i, "theoretical", .theo# [.i]
+            Set numeric value: .i, "sample", .samp# [.i]
         endfor
 
         ; ── Labels ────────────────────────────────────────────────────────
@@ -146,18 +233,6 @@ procedure emlDrawQQPlot: .data#, .colLabel$, .vpW, .vpH, .colorMode$, .gridMode
         .title$ = "Normal Q-Q plot: " + .display$
         .xLabel$ = "Theoretical quantiles (z)"
         .yLabel$ = "Sample quantiles: " + .display$
-
-        ; The dropped-row count belongs ON the figure. A Q-Q of 6 complete
-        ; cases out of 8 rows is a different claim from a Q-Q of 8.
-        .savedSubtitle$ = ""
-        if variableExists ("emlSubtitle$")
-            .savedSubtitle$ = emlSubtitle$
-        endif
-        emlSubtitle$ = "n = " + string$ (.n) + ", Blom plotting positions"
-        if .nDropped > 0
-            emlSubtitle$ = emlSubtitle$ + "; " + string$ (.nDropped)
-            ... + " row(s) excluded as missing"
-        endif
 
         ; ── Draw ──────────────────────────────────────────────────────────
         ; Scatter-plot globals are saved and restored: this procedure is
@@ -188,11 +263,65 @@ procedure emlDrawQQPlot: .data#, .colLabel$, .vpW, .vpH, .colorMode$, .gridMode
         .slope = emlDrawScatterPlot.slope
         .intercept = emlDrawScatterPlot.intercept
 
+        ; ── Disclosure ────────────────────────────────────────────────────
+        ; See DISCLOSURE in the header. Info window always, the figure only
+        ; when the user ticked Annotate, the user's subtitle never.
+        @emlDiscloseBegin: "Normal Q-Q plot"
+        @emlDisclose: "n = " + string$ (.n)
+        ... + ", Blom plotting positions (a = 3/8).",
+        ... "Theoretical quantiles are qnorm ((i - 0.375) / (n + 0.25)) "
+        ... + "- the same normal scores the reported Shapiro-Wilk W was "
+        ... + "computed from, so the figure and the test cannot disagree "
+        ... + "about which quantiles are expected. R's qqnorm() uses "
+        ... + "a = 1/2 above n = 10, so its tails sit slightly wider than "
+        ... + "this axis."
+        if .nDropped > 0
+            @emlDisclose: string$ (.nDropped)
+            ... + " row(s) excluded as missing.",
+            ... "Plotted from the " + string$ (.n) + " complete value(s). "
+            ... + "The Shapiro-Wilk reported beside this figure used the "
+            ... + "same ones."
+        endif
+
+        ; The corner. A Q-Q plot's points lie along a rising diagonal, so
+        ; the top-left and bottom-right quadrants are the empty ones and
+        ; @emlPlaceElements has somewhere clean to put the box. Counting is
+        ; done here, on the snapshotted pairs, against the midpoints of the
+        ; axis bounds @emlDrawScatterPlot actually used — the same currency
+        ; the scatter plot itself hands @emlPlaceElements. No legend is
+        ; drawn on this figure (the scatter is ungrouped), hence the "".
+        .axXMin = emlDrawScatterPlot.axisXMin
+        .axXMax = emlDrawScatterPlot.axisXMax
+        .axYMin = emlDrawScatterPlot.axisYMin
+        .axYMax = emlDrawScatterPlot.axisYMax
+        .xMidQ = (.axXMin + .axXMax) / 2
+        .yMidQ = (.axYMin + .axYMax) / 2
+        .qTL = 0
+        .qTR = 0
+        .qBL = 0
+        .qBR = 0
+        for .i from 1 to .n
+            if .samp# [.i] >= .yMidQ
+                if .theo# [.i] < .xMidQ
+                    .qTL = .qTL + 1
+                else
+                    .qTR = .qTR + 1
+                endif
+            else
+                if .theo# [.i] < .xMidQ
+                    .qBL = .qBL + 1
+                else
+                    .qBR = .qBR + 1
+                endif
+            endif
+        endfor
+        @emlDiscloseEnd: .axXMin, .axXMax, .axYMin, .axYMax,
+        ... .qTL, .qTR, .qBL, .qBR, ""
+
         scatterRegressionLine = .savedReg
         scatterShowDots = .savedDots
         scatterShowFormula = .savedFormula
         annotCorrType$ = .savedCorr$
-        emlSubtitle$ = .savedSubtitle$
 
         ; ── Clean up the temporary Table ──────────────────────────────────
         ; Unconditional. A leaked object survives the figure and turns up in

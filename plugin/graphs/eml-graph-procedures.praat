@@ -4,8 +4,148 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # License: GPL-3.0-or-later
-# Version: 3.22
-# Date: 2 August 2026
+# Version: 3.27
+# Date: 8 August 2026
+#
+# v3.27: COMMENTS ONLY — no executable line changed. Five statements the code
+#        or the checks contradict, corrected.
+#        (1) Two places said "the annotation block does not wrap either" —
+#            the v3.26 entry below, and NOT HANDLED HERE in @emlDrawLegend's
+#            header. D124 closed the same day: @emlDrawAnnotationBlock now
+#            wraps every entry to emlAnnotBlockWidthShare (default 0.55) of
+#            the frame. The legend is now the ONLY element that does not, and
+#            both places say so instead.
+#        (2) The overhang itself is unchanged and still not fixed. Its
+#            documentation is now anchored on `if .colsMax < 1` rather than
+#            on a line number.
+#        (3) @emlSetColorPalette's B/W branch reported the measured minimum
+#            greyscale separation as 0.120, disagreeing with the v3.25 entry
+#            below (0.1176) and with the check that produces it. Run 8 Aug
+#            2026: validate/v29_figure_disclosure.R reports 0.1176. Two
+#            "See validate/v29." pointers were also completed to the real
+#            filename, and harness/stress_cases/legend_cap to legend_cap.praat.
+#        (4) The v3.26 entry, and the zero-category branch of
+#            @emlDrawCategoricalXAxis, both quoted a line of
+#            eml-graphs-form.praat as the home of `prev_gvAnnotStyle = 1`.
+#            That had drifted again within the day — it is ~250 lines further
+#            down now. Neither quotes a line number any more; the argument
+#            for the anchor was being made by a citation that could not hold.
+#        (5) @emlMeasureGraphLayout's note that nothing consumes
+#            emlLayout_legendWidthInches / HeightInches is TRUE, re-checked
+#            8 Aug 2026, and now carries the grep that shows it.
+#
+# v3.26: THE LEGEND IS LAID OUT TO FIT THE FRAME (D123), and one stale
+#        cross-reference corrected.
+#        (1) LEGEND. @emlDrawLegend stacked one row per entry and measured
+#            that stack against nothing. The palette holds 24 sub-group
+#            styles, so 24 entries is a figure the plugin is built to draw:
+#            at the annotation font on a 6 x 4 figure a row is 0.162", the
+#            panel is 3.11" tall, and 24 rows want 3.94". Rendered before the
+#            fix, the box overhung the frame by 304 px at 300 dpi and its
+#            last entries ran clean off the bottom of the PNG. The fix is a
+#            LAYOUT, not a cap: the frame is measured (rowsMax x colsMax =
+#            capacity) and the entries are poured down the fewest columns
+#            that fit the height, so 24 entries become two columns of 12 on
+#            a 6 x 4 figure and three of 8 on a 10 x 3 one. Hue order runs
+#            top-to-bottom down each column. A legend that fits in one column
+#            gets the identical single-column geometry v3.25 drew, to the
+#            last decimal — verified by rendering: a 3-entry legend's pixels
+#            are unchanged. Only when capacity is still exceeded (a very
+#            short frame, or labels wide enough that one column is all that
+#            fits) is anything dropped, and then the last cell reads
+#            "+N more" ON THE FIGURE and a NOTE naming both counts goes to
+#            the Info window. Nothing is dropped in silence. New reports for
+#            callers and fixtures: .nCols, .rowsPerCol, .shown, .hidden,
+#            .capacity. NOT fixed here: a single label wider than the frame
+#            still overhangs to the right. That is the legend's copy of the
+#            D124 defect — and D124 itself was closed the same day, so the
+#            annotation block now wraps to a share of the frame and the
+#            legend is the only element left that does not. See NOT HANDLED
+#            HERE in @emlDrawLegend's header.
+#        (2) The zero-category branch of @emlDrawCategoricalXAxis cited
+#            eml-graphs-form.praat by LINE NUMBER for the refusal that keeps
+#            an empty table out of it. The line it named held
+#            `prev_gvAnnotStyle = 1`, a grouped-violin persistence variable —
+#            the citation was ~750 lines stale (7 Aug contradiction sweep,
+#            C3), and the line number quoted in this entry had itself drifted
+#            again within the day, which is the whole argument. It now names
+#            the guard by its string, `exitScript: "Table has no
+#            rows."`, which cannot drift. Checking it also showed the same
+#            comment's other claim to be false: an all-blank category column
+#            does NOT reach that branch, because @emlCountGroups counts the
+#            empty string as a group (measured: nGroups = 1 on a 3-row table
+#            of blanks). Both statements are corrected in place.
+#
+# v3.25: POINT MARKERS, and a greyscale ramp that uses the page.
+#        (1) MARKERS. The v3.24 fill pattern needs an AREA. Scatter, line
+#            chart, spaghetti and time series draw dots and lines, so all
+#            four still cycled eight hues in silence above eight groups --
+#            D127 unfixed, in four more chart types. New @emlDrawMarker draws
+#            circle / square / triangle from NATIVE primitives (Paint circle,
+#            Paint rectangle, and a stack of horizontal slices for the
+#            triangle -- the same construction @emlDrawViolin uses for its
+#            body). New emlSetColorPalette.marker[] gives 8 hues x 3 shapes =
+#            24, the same arithmetic and the same cap as the fill patterns.
+#            @emlDrawLegend grew a marker key (legendMarkered,
+#            legendMarker[], legendMarkerLine) so the key shows the SHAPE and
+#            not merely the hue. Not sprites: plugin/sprites/ is real and has
+#            204 PNGs, but every one of them is a dot or a rectangle indexed
+#            by hue, and @emlInitAlphaSprites is disabled on anything that is
+#            not macOS or Windows because Praat has no cairo image branch.
+#            @emlDrawScatterPlot therefore drops the sprite path above eight
+#            groups, or on those two platforms the shape would never reach
+#            the page.
+#        (2) GREYSCALE. The v3.24 ramp ran 0.90 to 0.25, a span of 0.65, and
+#            what held it there was not the eye: the stroke was derived as
+#            fill - 0.30 and clamped at zero, so a fill below 0.30 collapsed
+#            the stroke ramp -- and at 0.25 it already had, leaving the two
+#            darkest strokes 0.043 and 0.000 apart and a greyscale LINE chart
+#            with two indistinguishable series at eight groups. The fill and
+#            stroke ramps are now independent: fills 0.94 to 0.10 (a span of
+#            0.84) and strokes 0.63 to 0.00. New @emlMarkInk pays the cost --
+#            a mark's outline, median, whiskers and pattern flip to white on
+#            a dark fill and black on a light one, per channel so that
+#            Okabe-Ito yellow (whose contrast is all in the blue channel) is
+#            not misjudged. New @emlParseRGB underneath it. Measured
+#            minimum greyscale separation on the rendered pixels: 0.1176,
+#            was 0.090.
+#
+# v3.24: FILL PATTERNS — the palette has eight colours, not ten, and now has
+#        a second dimension. @emlSetColorPalette declared ten fill/line pairs
+#        whose slots 9 and 10 were LITERAL DUPLICATES of 1 and 2, so a nine-
+#        or ten-sub-group figure drew two pairs of sub-groups in
+#        indistinguishable colours, on the figure and in the legend, with no
+#        disclosure (D127). Fixed by declaring the eight hues once and adding
+#        a fill-pattern axis: 8 hues x 3 patterns (solid, diagonal hatch,
+#        dots) = 24 distinguishable styles, hue cycling first so adjacent
+#        sub-groups differ in the stronger cue. @emlDrawViolin and
+#        @emlDrawBox take a .pattern argument and clip the pattern to the
+#        mark using the scanline structure they already build; @emlDrawLegend
+#        draws the swatch as the mark rather than as a block of colour, so
+#        the key cannot say "solid" where the figure says "hatched". The B/W
+#        branch's ten fills, which sat between 0.82 and 0.96, are replaced by
+#        the eight-step 0.90-0.25 ramp @emlOptimizePaletteContrast was
+#        already computing, so greyscale reaches the same 24.
+#        Also fixed here: @emlDrawLegend measured and drew itself at its own
+#        font size while the viewport had been selected at the body size, so
+#        the legend was rendered into a rectangle slightly smaller than, and
+#        offset from, the .boxLeft/.boxTop it reported to its caller. It
+#        looked right because the whole legend moved together, but the box
+#        the caller kept the disclosure block clear of was not the box on the
+#        page. The viewport is now re-selected at the legend's font size.
+#
+# v3.23: @emlMeasureBarData: zero is not "no data". emlBarData_mean[g] is now
+#        UNDEFINED when the group has no usable observation, and
+#        emlBarData_error[g] UNDEFINED when there is no error to compute,
+#        instead of both being seeded to 0. v3.22 seeded them at 0 to keep
+#        undefined out of the drawing commands; the side effect was that
+#        @emlDrawBarChart's "<> undefined" guards for the bar and the whisker
+#        could never fire, so a group with nothing in it drew as a bar of
+#        height zero — indistinguishable from a measured zero — and an
+#        undefined error bar vanished in silence. Both are now suppressed by
+#        the existing guards and disclosed. The visible-range fold at the end
+#        of the procedure substitutes 0 for an undefined error so the axis
+#        range is unaffected. See the invariant block on @emlMeasureBarData.
 #
 # v3.22: Undefined/validation hardening (audit items 1-3).
 #        (1) @emlCheckNumericColumn no longer samples the first 5 rows and
@@ -24,9 +164,11 @@
 #            skipped and counted; means, SE/SD and the visible min/max fold
 #            are guarded with explicit "<> undefined" tests; single-
 #            observation groups are handled explicitly (no undefined error
-#            bar). emlBarData_mean[] and emlBarData_error[] are now
-#            guaranteed defined on return, so nothing undefined can reach a
-#            drawing command. New disclosure globals: emlBarData_valid[],
+#            bar). emlBarData_mean[] and emlBarData_error[] were made
+#            guaranteed-defined on return (SUPERSEDED by v3.23, which
+#            restores undefined as the "no measurement" sentinel and puts the
+#            burden of guarding back on the callers, where it already was).
+#            New disclosure globals: emlBarData_valid[],
 #            emlBarData_errorDefined[], emlBarData_skipped[],
 #            emlBarData_errSkipped[], emlBarData_nSkipped,
 #            emlBarData_nErrSkipped, emlBarData_nInvalidGroups,
@@ -506,17 +648,99 @@ endproc
 
 # ----------------------------------------------------------------------------
 # @emlSetColorPalette
-# Populates color arrays for data series.
-# Default "color" palette is Okabe-Ito (CVD-accessible).
+# Populates colour AND FILL-PATTERN arrays for data series.
+#
+# THE STYLE SPACE IS TWO-DIMENSIONAL (v1.23, author's ruling 7 Aug 2026).
+#
+# Before this revision the procedure declared TEN fill/line pairs, and slots 9
+# and 10 were literal duplicates of 1 and 2: .fill$[9] and .fill$[1] were both
+# "{0.70, 0.83, 0.91}", .fill$[10] and .fill$[2] both "{0.97, 0.89, 0.70}",
+# and the line colours duplicated identically. The cycling rule above ten was
+# `mod 8`, which is the giveaway -- this was always an EIGHT-colour palette
+# whose literal declarations happened to run to ten. A nine- or ten-sub-group
+# figure therefore drew two pairs of sub-groups in INDISTINGUISHABLE colours,
+# on the figure and in the legend, and said nothing about it (D127).
+#
+# The fix is not to cut the ceiling to eight. It is to add a second dimension
+# the eye reads independently of hue:
+#
+#     8 hues  x  3 fill patterns  =  24 distinguishable sub-group styles
+#
+# ORDERING -- HUE CYCLES FIRST:
+#     index   1..8    the eight hues, SOLID
+#     index   9..16   the same eight hues, DIAGONAL HATCH
+#     index  17..24   the same eight hues, DOTTED
+#
+#     hue     = ((index - 1) mod 8) + 1
+#     pattern = (((index - 1) div 8) mod 3) + 1      1 solid, 2 hatch, 3 dots
+#
+# Hue-first is deliberate. Sub-groups take consecutive indices, so ADJACENT
+# sub-groups differ in hue -- the stronger cue -- and the weaker cue (pattern)
+# only ever has to separate marks that are eight apart. Pattern-first would
+# have put three near-identical blues next to each other.
+#
+# Above 24 the pair (hue, pattern) repeats. That is the ceiling
+# @emlDrawGroupedViolin and @emlDrawGroupedBoxPlot hold at 24 and disclose;
+# it is not raised silently anywhere.
+#
 # Arguments: mode$ ("color" or "bw")
-# Outputs: .line$[1-10], .fill$[1-10], .lightLine$[1-10], .sprite$[1-10]
-# Note: For API users who need custom colors, set .line$[n], .fill$[n],
-# and .lightLine$[n] directly after calling this procedure.
+#
+# Outputs:
+#   .line$[1..100]      stroke colour        (hue only -- repeats every 8)
+#   .fill$[1..100]      body fill colour     (hue only -- repeats every 8)
+#   .lightLine$[1..100] 50% blend to white   (hue only -- repeats every 8)
+#   .sprite$[1..100]    alpha sprite stem    (hue only -- repeats every 8)
+#   .pattern[1..100]    1 solid | 2 diagonal hatch | 3 dots   (AREA marks)
+#   .marker[1..100]     1 circle | 2 square | 3 triangle      (POINT marks)
+#   .hue[1..100]        which of the eight hues this index carries
+#   .nHues = 8, .nPatterns = 3, .nMarkers = 3, .nStyles = 24
+#
+# TWO SECOND DIMENSIONS, ONE INDEX (v1.24, author's ruling 7 Aug 2026: "in
+# terms of the scatter line spaghetti and time series ... we need to go ahead
+# and add a square and a triangle").
+#
+# .pattern is a FILL pattern and needs an area to live in. A scatter dot, a
+# spaghetti endpoint and a line-chart vertex have no area to fill, so those
+# four chart types read .pattern, found nothing they could draw, and cycled
+# eight hues silently above eight groups -- the same silence D127 was. Their
+# second dimension is the marker SHAPE, and it is the same arithmetic on the
+# same index, so slot i is "hue h, style band b" for both families and the
+# cap is 24 for both:
+#
+#     .pattern[i] = .marker[i] = (((i - 1) div 8) mod 3) + 1
+#
+# The two are separate arrays anyway, deliberately: they are read by
+# different procedures, a consumer that wants one and gets the other is a
+# bug, and naming the shape "pattern" would have hidden it.
+#
+# NOTE THE ASYMMETRY. .line$[9] and .fill$[9] are IDENTICAL to index 1 by
+# construction. That is not D127 coming back: .pattern differs, so the drawn
+# mark differs. But it does mean that any consumer that reads .line$/.fill$
+# and IGNORES .pattern is back to drawing two sub-groups the same way. That
+# is exactly what the legend used to do, and why @emlDrawLegend now reads the
+# pattern too.
+#
+# Note: For API users who need custom colours, set .line$[n], .fill$[n],
+# .lightLine$[n] and .pattern[n] directly after calling this procedure.
 # ----------------------------------------------------------------------------
 procedure emlSetColorPalette: .mode$
+    .nHues = 8
+    .nPatterns = 3
+    .nMarkers = 3
+    .nStyles = .nHues * .nPatterns
+    # Which branch ran, said out loud. @emlOptimizePaletteContrast used to
+    # sniff this by comparing .line$[2] against the literal "{0.35, 0.35,
+    # 0.35}" -- a test that silently reclassified the whole palette as
+    # "colour" the moment the grey ramp changed, which it does below.
+    .isBW = 1
     if .mode$ = "color"
-        # Okabe-Ito palette (accessible for color vision deficiency)
-        # Line colors (8 distinct hues; 9-10 cycle)
+        .isBW = 0
+    endif
+
+    if .mode$ = "color"
+        # Okabe-Ito palette (accessible for colour vision deficiency).
+        # EIGHT hues, declared once each. There is no ninth.
+        # Line colours
         .line$[1] = "{0.00, 0.45, 0.70}"
         .line$[2] = "{0.90, 0.62, 0.00}"
         .line$[3] = "{0.34, 0.71, 0.91}"
@@ -525,9 +749,7 @@ procedure emlSetColorPalette: .mode$
         .line$[6] = "{0.80, 0.47, 0.65}"
         .line$[7] = "{0.95, 0.90, 0.25}"
         .line$[8] = "{0.00, 0.00, 0.00}"
-        .line$[9] = "{0.00, 0.45, 0.70}"
-        .line$[10] = "{0.90, 0.62, 0.00}"
-        # Fill colors (70% blend toward white)
+        # Fill colours (70% blend toward white)
         .fill$[1] = "{0.70, 0.83, 0.91}"
         .fill$[2] = "{0.97, 0.89, 0.70}"
         .fill$[3] = "{0.80, 0.91, 0.97}"
@@ -536,9 +758,7 @@ procedure emlSetColorPalette: .mode$
         .fill$[6] = "{0.94, 0.84, 0.90}"
         .fill$[7] = "{0.99, 0.97, 0.78}"
         .fill$[8] = "{0.70, 0.70, 0.70}"
-        .fill$[9] = "{0.70, 0.83, 0.91}"
-        .fill$[10] = "{0.97, 0.89, 0.70}"
-        # Light line colors (50% blend toward white)
+        # Light line colours (50% blend toward white)
         .lightLine$[1] = "{0.50, 0.73, 0.85}"
         .lightLine$[2] = "{0.95, 0.81, 0.50}"
         .lightLine$[3] = "{0.67, 0.85, 0.96}"
@@ -547,8 +767,6 @@ procedure emlSetColorPalette: .mode$
         .lightLine$[6] = "{0.90, 0.73, 0.82}"
         .lightLine$[7] = "{0.98, 0.95, 0.63}"
         .lightLine$[8] = "{0.50, 0.50, 0.50}"
-        .lightLine$[9] = "{0.50, 0.73, 0.85}"
-        .lightLine$[10] = "{0.95, 0.81, 0.50}"
         # Alpha sprite stems (match line$ ordering for group consistency)
         .sprite$[1] = "blue"
         .sprite$[2] = "orange"
@@ -558,54 +776,68 @@ procedure emlSetColorPalette: .mode$
         .sprite$[6] = "purple"
         .sprite$[7] = "yellow"
         .sprite$[8] = "black"
-        .sprite$[9] = "blue"
-        .sprite$[10] = "orange"
-        # Cycle 8 Okabe-Ito hues for any number of groups
-        for .i from 11 to 100
-            .cycleIdx = ((.i - 1) mod 8) + 1
-            .line$[.i] = .line$[.cycleIdx]
-            .fill$[.i] = .fill$[.cycleIdx]
-            .lightLine$[.i] = .lightLine$[.cycleIdx]
-            .sprite$[.i] = .sprite$[.cycleIdx]
-        endfor
     else
-        # B&W line colors
-        .line$[1] = "{0.00, 0.00, 0.00}"
-        .line$[2] = "{0.35, 0.35, 0.35}"
-        .line$[3] = "{0.55, 0.55, 0.55}"
-        .line$[4] = "{0.45, 0.45, 0.45}"
-        .line$[5] = "{0.25, 0.25, 0.25}"
-        .line$[6] = "{0.65, 0.65, 0.65}"
-        .line$[7] = "{0.15, 0.15, 0.15}"
-        .line$[8] = "{0.50, 0.50, 0.50}"
-        .line$[9] = "{0.40, 0.40, 0.40}"
-        .line$[10] = "{0.75, 0.75, 0.75}"
-        # B&W fill colors
-        .fill$[1] = "{0.85, 0.85, 0.85}"
-        .fill$[2] = "{0.90, 0.90, 0.90}"
-        .fill$[3] = "{0.93, 0.93, 0.93}"
-        .fill$[4] = "{0.88, 0.88, 0.88}"
-        .fill$[5] = "{0.82, 0.82, 0.82}"
-        .fill$[6] = "{0.95, 0.95, 0.95}"
-        .fill$[7] = "{0.83, 0.83, 0.83}"
-        .fill$[8] = "{0.92, 0.92, 0.92}"
-        .fill$[9] = "{0.86, 0.86, 0.86}"
-        .fill$[10] = "{0.96, 0.96, 0.96}"
-        # B&W light line colors
-        .lightLine$[1] = "{0.6, 0.6, 0.6}"
-        .lightLine$[2] = "{0.7, 0.7, 0.7}"
-        .lightLine$[3] = "{0.75, 0.75, 0.75}"
-        .lightLine$[4] = "{0.72, 0.72, 0.72}"
-        .lightLine$[5] = "{0.65, 0.65, 0.65}"
-        .lightLine$[6] = "{0.78, 0.78, 0.78}"
-        .lightLine$[7] = "{0.58, 0.58, 0.58}"
-        .lightLine$[8] = "{0.73, 0.73, 0.73}"
-        .lightLine$[9] = "{0.68, 0.68, 0.68}"
-        .lightLine$[10] = "{0.80, 0.80, 0.80}"
-        # Alpha sprite stems — grey-based (v5): sprites use distinct grey RGB
+        # B&W: EIGHT greys evenly spaced over the usable print range.
+        #
+        # v1.23: the old branch declared ten fills between 0.82 and 0.96 --
+        # fifteen thousandths of luminance apart at the closest pair, which
+        # neither a printer nor an eye resolves.
+        #
+        # v1.24 (author's ruling, 7 Aug 2026: "a very narrow grayscale range
+        # ... make sure that we have a wide range across the entire potential
+        # palette"). The 0.90 -> 0.25 ramp that replaced it spanned 0.65 of a
+        # possible 1.00 and was still bounded by an accident: the stroke was
+        # DERIVED from the fill as fill - 0.30, clamped at zero, so the fill
+        # could not go below 0.30 without the stroke ramp collapsing. It
+        # already had: with fills reaching 0.25 the two darkest strokes were
+        # 0.043 and 0.000, four hundredths apart, and a greyscale LINE chart
+        # (which draws in .line$ and never touches .fill$) therefore had two
+        # series in indistinguishable ink at eight groups. Same defect class
+        # as D127, in the other array.
+        #
+        # The two ramps are now INDEPENDENT, because they do different jobs:
+        #
+        #   .fill$   the body of an area mark, read against the WHITE PAGE.
+        #            0.94 down to 0.10 in steps of 0.12 -- 84% of the full
+        #            range. 0.94 still separates from the page (and every mark
+        #            is outlined); 0.10 still separates from pure black text
+        #            and axis ink.
+        #   .line$   ink drawn ON the page: series lines, scatter points,
+        #            outlines, medians, whiskers, hatch. 0.63 down to 0.00 in
+        #            steps of 0.09. 0.63 is about as pale as a 1-2 pt line
+        #            survives at 300 dpi; nothing paler is offered.
+        #
+        # Direct pairing (pale fill with pale ink) keeps a slot's fill and its
+        # stroke recognisably the same "value", but it leaves the dark end
+        # with a dark stroke on a dark fill. That is what @emlMarkInk fixes,
+        # at the point of drawing, by the same rule @emlPatternSetup already
+        # used for the hatch: when a mark's stroke does not separate from its
+        # own fill, the stroke flips to white (dark fill) or black (light
+        # fill). Slots 4-8 flip; slots 1-3 do not. Measured minimum separation
+        # on the rendered pixels: 0.1176 (was 0.090). This said 0.120, which
+        # disagreed with the same measurement in this file's own v3.25 header
+        # and with the check that produces it — `MEASURED minimum greyscale
+        # separation` in validate/v29_figure_disclosure.R, which reports
+        # 0.1176 and asserts it clears 0.110.
+        .fillMax = 0.94
+        .fillMin = 0.10
+        .inkMax = 0.63
+        .inkMin = 0.00
+        for .h from 1 to .nHues
+            .fillVal = .fillMax - (.h - 1) * (.fillMax - .fillMin) / (.nHues - 1)
+            .lineVal = .inkMax - (.h - 1) * (.inkMax - .inkMin) / (.nHues - 1)
+            .lightVal = (.fillVal + .lineVal) / 2
+            .fill$[.h] = "{" + fixed$ (.fillVal, 2) + ", "
+            ... + fixed$ (.fillVal, 2) + ", " + fixed$ (.fillVal, 2) + "}"
+            .line$[.h] = "{" + fixed$ (.lineVal, 2) + ", "
+            ... + fixed$ (.lineVal, 2) + ", " + fixed$ (.lineVal, 2) + "}"
+            .lightLine$[.h] = "{" + fixed$ (.lightVal, 2) + ", "
+            ... + fixed$ (.lightVal, 2) + ", " + fixed$ (.lightVal, 2) + "}"
+        endfor
+        # Alpha sprite stems -- grey-based (v5): sprites use distinct grey RGB
         # values at fixed alpha, so dense overlap darkens but never reaches
-        # pure black. Ordered: medium contrast first for 2-group case.
-        # 2 groups: bw04 (dark-medium grey) + bw08 (light grey) — clear separation
+        # pure black. Ordered: medium contrast first for the 2-group case.
+        # 2 groups: bw04 (dark-medium grey) + bw08 (light grey)
         # 3 groups: adds bw06 (medium-light)
         .sprite$[1] = "bw04"
         .sprite$[2] = "bw08"
@@ -615,17 +847,35 @@ procedure emlSetColorPalette: .mode$
         .sprite$[6] = "bw05"
         .sprite$[7] = "bw03"
         .sprite$[8] = "bw07"
-        .sprite$[9] = "bw10"
-        .sprite$[10] = "bw01"
-        # Cycle BW sprites for groups beyond 10
-        for .i from 11 to 100
-            .cycleIdx = ((.i - 1) mod 8) + 1
-            .line$[.i] = .line$[.cycleIdx]
-            .fill$[.i] = .fill$[.cycleIdx]
-            .lightLine$[.i] = .lightLine$[.cycleIdx]
-            .sprite$[.i] = .sprite$[.cycleIdx]
-        endfor
     endif
+
+    # The second dimension, and the cycle above it -- identical in both
+    # branches. Indices 1..8 keep the hue they were just given and take
+    # pattern 1; 9..16 repeat the hues under pattern 2; 17..24 under
+    # pattern 3; 25+ repeat the whole 24-style space.
+    for .i from 1 to 100
+        .hIdx = ((.i - 1) mod .nHues) + 1
+        .hue[.i] = .hIdx
+        .pattern[.i] = (((.i - 1) div .nHues) mod .nPatterns) + 1
+        .marker[.i] = (((.i - 1) div .nHues) mod .nMarkers) + 1
+        if .i > .nHues
+            .line$[.i] = .line$[.hIdx]
+            .fill$[.i] = .fill$[.hIdx]
+            .lightLine$[.i] = .lightLine$[.hIdx]
+            .sprite$[.i] = .sprite$[.hIdx]
+        endif
+    endfor
+
+    # A legend shows a fill pattern only when the caller asks for one. Every
+    # draw procedure calls this procedure first, so clearing the flag HERE is
+    # what stops a patterned grouped violin from leaking its patterns into
+    # the next figure's legend inside the same Praat session.
+    legendPatterned = 0
+    # Same argument, same place, for the marker key: a scatter drawn after a
+    # grouped violin in one session must not inherit the violin's swatches,
+    # and a violin drawn after a scatter must not inherit its markers.
+    legendMarkered = 0
+    legendMarkerLine = 0
 endproc
 
 # ----------------------------------------------------------------------------
@@ -636,23 +886,35 @@ endproc
 # and defers vermillion (5) when K < 5 to avoid orange/vermillion overlap.
 # Arguments: .nGroups (number of groups that will be drawn)
 # Side effect: overwrites emlSetColorPalette arrays [1..nGroups]
+#
+# v1.23: this procedure permutes HUE ONLY. emlSetColorPalette.pattern[] is
+# indexed by slot, not by hue, so it is deliberately left alone: slots 1-8
+# stay solid, 9-16 hatched, 17-24 dotted whatever hues land in them, and each
+# band of eight still receives a permutation of the eight hues. That is what
+# keeps all 24 (hue, pattern) pairs distinct after optimisation.
+#
+# v1.24: emlSetColorPalette.marker[] is left alone for exactly the same
+# reason -- slots 1-8 circles, 9-16 squares, 17-24 triangles, whatever hues
+# land in them -- so all 24 (hue, marker) pairs stay distinct too.
 # ----------------------------------------------------------------------------
 procedure emlOptimizePaletteContrast: .nGroups
     # Only remap for 2+ groups
     if .nGroups >= 2
-        # Save originals
-        for .i from 1 to 10
+        # Save originals. 24 slots, not 10 -- the sub-group ceiling is now 24
+        # and .src can name any of them.
+        for .i from 1 to 24
             .origLine$[.i] = emlSetColorPalette.line$[.i]
             .origFill$[.i] = emlSetColorPalette.fill$[.i]
             .origLightLine$[.i] = emlSetColorPalette.lightLine$[.i]
             .origSprite$[.i] = emlSetColorPalette.sprite$[.i]
         endfor
 
-        # Detect B/W mode: index 2 line color is grey in B/W, orange in color
-        .isBW = 0
-        if .origLine$[2] = "{0.35, 0.35, 0.35}"
-            .isBW = 1
-        endif
+        # Which branch @emlSetColorPalette ran, read from the flag it sets.
+        # This used to compare .origLine$[2] against the literal "{0.35,
+        # 0.35, 0.35}", which stopped being the B/W value the moment the grey
+        # ramp was respread -- a silent reclassification of every B/W figure
+        # as colour.
+        .isBW = emlSetColorPalette.isBW
 
         if .isBW = 0
             # === COLOR MODE ===
@@ -707,31 +969,16 @@ procedure emlOptimizePaletteContrast: .nGroups
                 .src[6] = 3
                 .src[7] = 5
                 .src[8] = 8
-            elsif .nGroups = 9
-                # 8 hues + cycle blue — keep cycle away from original
-                .src[1] = 1
-                .src[2] = 2
-                .src[3] = 4
-                .src[4] = 6
-                .src[5] = 7
-                .src[6] = 3
-                .src[7] = 5
-                .src[8] = 8
-                .src[9] = 9
-            elsif .nGroups = 10
-                # 8 hues + cycle blue, orange
-                .src[1] = 1
-                .src[2] = 2
-                .src[3] = 4
-                .src[4] = 6
-                .src[5] = 7
-                .src[6] = 3
-                .src[7] = 5
-                .src[8] = 8
-                .src[9] = 9
-                .src[10] = 10
             else
-                # >10 groups: 8-hue optimized order, then cycle
+                # 9+ groups: the 8-hue optimised order, REPEATED VERBATIM in
+                # every band of eight. v1.23: the band above eight used to be
+                # the raw declaration order (blue, orange, skyblue, green...)
+                # while the band below it was the optimised one (blue,
+                # orange, green, purple...), so slot 3 was green and slot 11
+                # was skyblue-hatched and the key read as sixteen unrelated
+                # styles. Repeating the order makes the structure legible:
+                # slot i and slot i+8 are THE SAME HUE under a different fill
+                # pattern, which is exactly what the palette is.
                 .src[1] = 1
                 .src[2] = 2
                 .src[3] = 4
@@ -741,25 +988,39 @@ procedure emlOptimizePaletteContrast: .nGroups
                 .src[7] = 5
                 .src[8] = 8
                 for .i from 9 to .nGroups
-                    .src[.i] = ((.i - 1) mod 8) + 1
+                    .bandIdx = ((.i - 1) mod 8) + 1
+                    .src[.i] = .src[.bandIdx]
                 endfor
             endif
         else
             # === B/W MODE ===
-            # Default B/W fills (0.82-0.96) are too narrow for overlap.
-            # Compute evenly-spaced fills across usable greyscale range.
-            # Lines are 0.30 darker than fill for consistent contrast.
-            # Compute up to 8 distinct greys, then cycle for >8 groups.
-            .fillMin = 0.25
-            .fillMax = 0.90
+            # The same TWO INDEPENDENT RAMPS @emlSetColorPalette declares,
+            # spread over however many groups there are rather than over
+            # eight, so a two-group figure gets the extreme ends and a
+            # six-group figure gets six evenly spaced steps. Ascending here
+            # (group 1 darkest), which is the direction this procedure has
+            # always used; the base palette declares the same values
+            # descending. Same set either way -- what must not drift is the
+            # ENDPOINTS, and they are named once in each place and stated in
+            # the comment on @emlSetColorPalette's B/W branch.
+            #
+            # v1.24: .lineVal is no longer fill - 0.30. That derivation is
+            # what pinned .fillMin at 0.25 (below it the stroke ramp clamped
+            # at zero and collapsed) and it had already collapsed at the
+            # bottom two slots. See @emlSetColorPalette and @emlMarkInk.
+            .fillMin = 0.10
+            .fillMax = 0.94
+            .inkMin = 0.00
+            .inkMax = 0.63
             .distinctN = min (.nGroups, 8)
             for .i from 1 to .distinctN
                 if .distinctN > 1
-                    .fillVal = .fillMin + (.i - 1) * (.fillMax - .fillMin) / (.distinctN - 1)
+                    .t = (.i - 1) / (.distinctN - 1)
                 else
-                    .fillVal = 0.85
+                    .t = 0.5
                 endif
-                .lineVal = max (0, .fillVal - 0.30)
+                .fillVal = .fillMin + .t * (.fillMax - .fillMin)
+                .lineVal = .inkMin + .t * (.inkMax - .inkMin)
                 .lightVal = (.fillVal + .lineVal) / 2
                 emlSetColorPalette.fill$[.i] = "{" + fixed$ (.fillVal, 2) + ", " + fixed$ (.fillVal, 2) + ", " + fixed$ (.fillVal, 2) + "}"
                 emlSetColorPalette.line$[.i] = "{" + fixed$ (.lineVal, 2) + ", " + fixed$ (.lineVal, 2) + ", " + fixed$ (.lineVal, 2) + "}"
@@ -786,6 +1047,366 @@ procedure emlOptimizePaletteContrast: .nGroups
         endif
     endif
 endproc
+
+# ============================================================================
+# FILL PATTERNS
+# ============================================================================
+# Praat has no native pattern fill. What works, and renders cleanly at
+# 300 dpi, is to paint the shape solid and then draw the pattern OVER it,
+# clipped to the shape by arithmetic the caller is already doing:
+#
+#   @emlDrawViolin already paints the body as a stack of ~500 thin horizontal
+#   Paint rectangle slices, each with a known centre and half-width. For any
+#   scanline the left and right extent of the body are therefore already in
+#   hand, and a diagonal stripe clipped to that scanline is one subtraction.
+#   @emlDrawBox is a rectangle, which is the same thing with a constant
+#   half-width. NO GENERAL POLYGON CLIP IS COMPUTED ANYWHERE.
+#
+# Pattern codes, matching emlSetColorPalette.pattern[]:
+#   1  solid            nothing drawn over the fill
+#   2  diagonal hatch   45 degrees on the page, up to the right
+#   3  dots             hexagonally packed, each dot drawn only where the
+#                       WHOLE dot fits inside the shape, so no dot is ever
+#                       chopped in half at the outline
+#
+# Anything other than 2 or 3 is treated as solid, so an uninitialised or
+# out-of-range pattern degrades to today's behaviour rather than to an error.
+# ----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
+# @emlSetPatternScale
+# Records the world-units-per-inch of the CURRENTLY INSTALLED axes, so that
+# the pattern primitives can lay out a hatch at 45 degrees ON THE PAGE and a
+# dot grid that is round on the page, rather than at whatever angle the ratio
+# of the two axis ranges happens to imply.
+#
+# Call once, immediately after `Axes:`, in any procedure that will draw a
+# patterned mark. @emlDrawViolin and @emlDrawBox fall back to an assumed
+# geometry when it has never been called, so an API caller that forgets gets
+# a slightly-off hatch angle, not a wrong figure.
+#
+# Arguments: .xMin, .xMax, .yMin, .yMax (the axes just installed)
+# Sets globals: emlPatWorldPerInchX, emlPatWorldPerInchY
+# ----------------------------------------------------------------------------
+procedure emlSetPatternScale: .xMin, .xMax, .yMin, .yMax
+    .innerW = emlSetAdaptiveTheme.innerRight - emlSetAdaptiveTheme.innerLeft
+    .innerH = emlSetAdaptiveTheme.innerBottom - emlSetAdaptiveTheme.innerTop
+    emlPatWorldPerInchX = 0
+    emlPatWorldPerInchY = 0
+    if .innerW > 0
+        emlPatWorldPerInchX = (.xMax - .xMin) / .innerW
+    endif
+    if .innerH > 0
+        emlPatWorldPerInchY = (.yMax - .yMin) / .innerH
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlPatternSetup
+# Everything a patterned fill needs, in one call: the world-per-inch scales,
+# the stripe/dot geometry in inches scaled to the mark being drawn, and the
+# ink colour.
+#
+# Arguments:
+#   .fillColor$   the fill the pattern will be drawn on top of
+#   .lineColor$   the mark's stroke colour
+#   .halfWidth    half-width of the mark in x world units
+#   .yMin, .yMax  the y axis range (used only for the scale fallback)
+#
+# Outputs (inches unless stated):
+#   .sx, .sy      world units per inch, x and y   (world, per inch)
+#   .halfIn       .halfWidth expressed in inches
+#   .pitch        distance between stripe centres, measured along x
+#   .stripe       stripe thickness, measured along x
+#   .dotPitch     dot centre spacing, both axes
+#   .dotR         dot radius
+#   .ink$         the colour to draw the pattern in
+#   .usable       0 when the geometry degenerates (zero-width mark, no scale)
+#
+# THE INK. White-on-fill is what the prototype used, and it fails on this
+# palette: every colour fill is a 70% blend toward white, so a white hatch on
+# "{0.99, 0.97, 0.78}" (pale yellow) is very nearly invisible, and the same
+# is true of the light end of the grey ramp. The pattern is therefore drawn
+# in the mark's own stroke colour -- which is the SAME hue, so the pattern
+# cannot be mistaken for a different sub-group -- except on fills dark enough
+# that a dark stroke would disappear into them, where it flips.
+#
+# v1.24: the rule moved to @emlMarkInk, which the mark's OUTLINE, median and
+# whiskers now use as well, so a mark is drawn in exactly one ink throughout
+# instead of a hatch that flips and an outline that does not. See there for
+# why the test is per-channel rather than on the red channel alone.
+# ----------------------------------------------------------------------------
+procedure emlPatternSetup: .fillColor$, .lineColor$, .halfWidth, .yMin, .yMax
+    .usable = 1
+
+    # World-per-inch, from @emlSetPatternScale when it has run.
+    .sx = 0
+    .sy = 0
+    if variableExists ("emlPatWorldPerInchX")
+        .sx = emlPatWorldPerInchX
+    endif
+    if variableExists ("emlPatWorldPerInchY")
+        .sy = emlPatWorldPerInchY
+    endif
+    if .sx = undefined
+        .sx = 0
+    endif
+    if .sy = undefined
+        .sy = 0
+    endif
+    # Fallback: assume a mark 0.15 inches wide on a 3-inch-tall panel. Wrong
+    # in detail, right in order of magnitude, and it keeps the hatch a hatch.
+    if .sx <= 0
+        .sx = .halfWidth / 0.15
+    endif
+    if .sy <= 0
+        .sy = (.yMax - .yMin) / 3.0
+    endif
+    if .sx <= 0
+        .usable = 0
+        .sx = 1
+    endif
+    if .sy <= 0
+        .usable = 0
+        .sy = 1
+    endif
+
+    .halfIn = .halfWidth / .sx
+    if .halfIn <= 0
+        .usable = 0
+    endif
+
+    # Stripe pitch scales with the mark so a narrow sub-violin still carries
+    # about three stripes, and is then clamped: below ~0.022" the stripes
+    # merge into a tint at 300 dpi, above ~0.075" a single wide mark shows
+    # only one or two and reads as a stray line.
+    .pitch = .halfIn * 0.62
+    if .pitch < 0.022
+        .pitch = 0.022
+    endif
+    if .pitch > 0.075
+        .pitch = 0.075
+    endif
+    .stripe = .pitch * 0.40
+
+    .dotPitch = .pitch * 1.20
+    .dotR = .dotPitch * 0.26
+
+    # Ink -- one rule, one place. @emlMarkInk is idempotent, so it does not
+    # matter whether the caller already flipped the stroke it handed in.
+    @emlMarkInk: .fillColor$, .lineColor$
+    .ink$ = emlMarkInk.result$
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlParseRGB
+# Pulls the three channels out of a Praat colour string "{r, g, b}".
+#
+# extractNumber (s$, prefix$) reads the first number AFTER the first
+# occurrence of prefix$, so "{" gives red and "," gives green directly; blue
+# needs the string re-anchored past the first comma first.
+#
+# Arguments: .rgb$
+# Outputs:   .r, .g, .b   channels, 0..1  (0 when .ok = 0)
+#            .ok          1 when all three parsed; 0 for a NAMED colour
+#                         ("Black", "White", "Red"), which has no channels
+#                         to read and must not be silently treated as {0,0,0}
+# ----------------------------------------------------------------------------
+procedure emlParseRGB: .rgb$
+    .ok = 0
+    .r = 0
+    .g = 0
+    .b = 0
+    .rr = extractNumber (.rgb$, "{")
+    .gg = extractNumber (.rgb$, ",")
+    .comma = index (.rgb$, ",")
+    .rest$ = ""
+    if .comma > 0
+        .rest$ = right$ (.rgb$, length (.rgb$) - .comma)
+    endif
+    .bb = extractNumber (.rest$, ",")
+    # Nested, not "or": Praat evaluates both operands of or/and regardless.
+    .bad = 0
+    if .rr = undefined
+        .bad = 1
+    endif
+    if .gg = undefined
+        .bad = 1
+    endif
+    if .bb = undefined
+        .bad = 1
+    endif
+    if .bad = 0
+        .r = .rr
+        .g = .gg
+        .b = .bb
+        .ok = 1
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlMarkInk
+# The colour a mark's own detail is drawn in: outline, median, whiskers, and
+# the hatch or dot pattern. Normally that is the mark's stroke colour -- same
+# hue as the fill, so the detail can never be mistaken for a different
+# sub-group. When the stroke does not separate from the fill it flips to
+# white (on a dark fill) or black (on a light one).
+#
+# PER CHANNEL, not on the red channel and not on a luminance conversion.
+# Okabe-Ito yellow is fill {0.99, 0.97, 0.78} against stroke
+# {0.95, 0.90, 0.25}: the red channels are FOUR HUNDREDTHS apart and the blue
+# channels are 0.53 apart. A red-channel test (which is what @emlPatternSetup
+# used before v1.24, and which was correct while every fill was a pastel or a
+# grey) declares yellow unreadable and paints its hatch black -- a visible
+# regression, and one that would have been introduced by this very change.
+# Rec.601 luminance makes the same mistake for the same reason: it weights
+# blue at 0.114. The channel that actually carries the contrast decides.
+#
+# THRESHOLD 0.235. Below about a quarter a 0.5 pt outline and a 0.4 pt hatch
+# stripe stop reading at 300 dpi. On the v1.24 greyscale ramp the fill/stroke
+# separation runs 0.31, 0.28, 0.25, 0.22, 0.19, 0.16, 0.13, 0.10 down the
+# eight slots, so slots 1-3 keep their grey stroke and slots 4-8 flip --
+# slot 4 to black (its fill is 0.58, light), slots 5-8 to white. No pair in
+# the colour palette is closer than 0.37 on its best channel, so NO COLOUR
+# FILL EVER FLIPS; the colour figures this repo already ships are unchanged.
+#
+# The odd-looking 0.235 is deliberate: it sits halfway between the two ramp
+# separations it has to separate, 0.22 and 0.25. A round 0.25 lands ON one of
+# them, and "0.70 - 0.45 < 0.25" is TRUE in IEEE doubles (0.24999999999999997)
+# and false in decimal, so slot 3 flipped or did not flip depending on how
+# the ramp happened to be rounded. Measured that way once, on the render:
+# slot 11's hatch came out black instead of the 0.45 grey the ramp asks for.
+#
+# Arguments: .fillColor$, .strokeColor$
+# Output:    .result$   the ink, as an "{r, g, b}" string or the stroke as
+#                       handed in. Idempotent: feeding .result$ back in as
+#                       the stroke returns it unchanged, because white on a
+#                       dark fill and black on a light one both separate.
+# ----------------------------------------------------------------------------
+procedure emlMarkInk: .fillColor$, .strokeColor$
+    .result$ = .strokeColor$
+    @emlParseRGB: .fillColor$
+    .fOk = emlParseRGB.ok
+    .fr = emlParseRGB.r
+    .fg = emlParseRGB.g
+    .fb = emlParseRGB.b
+    @emlParseRGB: .strokeColor$
+    .sOk = emlParseRGB.ok
+    .sr = emlParseRGB.r
+    .sg = emlParseRGB.g
+    .sb = emlParseRGB.b
+    # A named colour on either side cannot be measured, so it is left alone.
+    .measurable = 0
+    if .fOk = 1
+        if .sOk = 1
+            .measurable = 1
+        endif
+    endif
+    if .measurable = 1
+        .sep = abs (.fr - .sr)
+        if abs (.fg - .sg) > .sep
+            .sep = abs (.fg - .sg)
+        endif
+        if abs (.fb - .sb) > .sep
+            .sep = abs (.fb - .sb)
+        endif
+        if .sep < 0.235
+            .lum = (.fr + .fg + .fb) / 3
+            if .lum < 0.5
+                .result$ = "{1.00, 1.00, 1.00}"
+            else
+                .result$ = "{0.00, 0.00, 0.00}"
+            endif
+        endif
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlPaintHatchRow
+# One scanline of a 45-degree hatch, clipped to [.xC - .d, .xC + .d].
+#
+# The stripe family is x_inches = y_inches + k * pitch, k integer, with
+# x measured from the mark's centre and y from the axis floor. Solving for
+# the k that can touch this scanline is two divisions; each surviving k
+# contributes one Paint rectangle whose x extent is the stripe intersected
+# with the body. That is the whole "clip" -- there is no polygon anywhere.
+#
+# Phase is locked to the MARK'S CENTRE, not to the panel, so every violin in
+# a figure carries the same stripe phase and the legend swatch can reproduce
+# it exactly.
+#
+# Arguments: .xC (centre, world x), .d (half-width, world x), .y1, .y2
+#            (the scanline's world y extent), .yFloor (axis y minimum)
+# Reads: emlPatternSetup.sx / .sy / .pitch / .stripe / .ink$
+# ----------------------------------------------------------------------------
+procedure emlPaintHatchRow: .xC, .d, .y1, .y2, .yFloor
+    if .d > 0
+        .dIn = .d / emlPatternSetup.sx
+        .yIn = ((.y1 + .y2) / 2 - .yFloor) / emlPatternSetup.sy
+        .p = emlPatternSetup.pitch
+        .halfStripe = emlPatternSetup.stripe / 2
+        .dNeg = 0 - .dIn
+        .kLo = ceiling ((.dNeg - .halfStripe - .yIn) / .p)
+        .kHi = floor ((.dIn + .halfStripe - .yIn) / .p)
+        for .k from .kLo to .kHi
+            .c = .yIn + .k * .p
+            .a = .c - .halfStripe
+            .b = .c + .halfStripe
+            if .a < .dNeg
+                .a = .dNeg
+            endif
+            if .b > .dIn
+                .b = .dIn
+            endif
+            if .b > .a
+                Paint rectangle: emlPatternSetup.ink$,
+                ... .xC + .a * emlPatternSetup.sx,
+                ... .xC + .b * emlPatternSetup.sx, .y1, .y2
+            endif
+        endfor
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlPaintDotRow
+# One row of the dot grid, at world y .y, clipped to [.xC - .d, .xC + .d].
+#
+# .d must already be the SMALLEST half-width over the row's full vertical
+# extent, so that requiring |x| + r <= d guarantees the whole dot is inside
+# the shape. Dots that would be clipped are not drawn at all: a half-eaten
+# dot at the outline reads as a printing fault, an absent one reads as the
+# taper it is.
+#
+# Rows alternate a half-pitch offset (hexagonal packing), which is what keeps
+# the dot field from reading as a fine vertical stripe pattern and being
+# confused with the hatch.
+#
+# Arguments: .xC, .d (world x), .y (world y), .row (integer row index),
+#            .yFloor (axis y minimum)
+# Reads: emlPatternSetup.sx / .dotPitch / .dotR / .ink$
+# ----------------------------------------------------------------------------
+procedure emlPaintDotRow: .xC, .d, .y, .row, .yFloor
+    if .d > 0
+        .dIn = .d / emlPatternSetup.sx - emlPatternSetup.dotR
+        if .dIn > 0
+            .p = emlPatternSetup.dotPitch
+            .offset = 0
+            if .row mod 2 <> 0
+                .offset = .p / 2
+            endif
+            .dNeg = 0 - .dIn
+            .kLo = ceiling ((.dNeg - .offset) / .p)
+            .kHi = floor ((.dIn - .offset) / .p)
+            for .k from .kLo to .kHi
+                .cx = .offset + .k * .p
+                Paint circle: emlPatternSetup.ink$,
+                ... .xC + .cx * emlPatternSetup.sx, .y,
+                ... emlPatternSetup.dotR * emlPatternSetup.sx
+            endfor
+        endif
+    endif
+endproc
+
 
 # ----------------------------------------------------------------------------
 # @emlComputeAxisRange
@@ -1858,10 +2479,20 @@ endproc
 # ----------------------------------------------------------------------------
 # @emlDrawViolin
 # Draws smooth violin plot with kernel density estimation and quartile box
-# Arguments: xCenter, data#, fillColor$, lineColor$, axisYMin, axisYMax, width
+# Arguments: xCenter, data#, fillColor$, lineColor$, axisYMin, axisYMax,
+#            width, pattern
 # axisYMin/axisYMax: axis bounds for clipping (prevents drawing outside frame)
 # width: half-width of the violin in x-units (typically 0.35)
+# pattern (v1.23): fill pattern, 1 solid | 2 diagonal hatch | 3 dots. Anything
+#            else is drawn solid. Pass emlSetColorPalette.pattern[idx].
 # Output (v3.22): .nSkipped = observations dropped because they were undefined
+#
+# v1.23: the pattern is drawn OVER the painted body, between the fill and the
+# outline, and is clipped using the body's own scanline structure -- the fill
+# loop already knows the half-width .d at every slice, so it stores it and the
+# pattern pass reuses it. No density is computed twice for the hatch, and no
+# polygon clip exists. The pattern is under the outline and under the quartile
+# box on purpose: both must stay readable.
 #
 # v3.22: undefined observations are now skipped during the fallback draw and
 # detected before the KDE runs. Previously "if .sd = 0" was the only validity
@@ -1869,7 +2500,15 @@ endproc
 # comparison is FALSE, and the undefined bandwidth propagates into
 # Paint rectangle:, which aborts the entire figure with a hard error.
 # ----------------------------------------------------------------------------
-procedure emlDrawViolin: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, .axisYMax, .width
+procedure emlDrawViolin: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, .axisYMax, .width, .pattern
+    # v1.24: ONE ink for the whole mark. The hatch already flipped to white on
+    # a dark fill and the outline, quartile box and median did not, so on the
+    # widened grey ramp a slot-8 violin (fill 0.10) drew its internal box in
+    # near-black on near-black and lost it. .lineColor$ is a procedure-local,
+    # so rewriting it here reaches every use below -- including the
+    # @emlPatternSetup call, where @emlMarkInk is idempotent.
+    @emlMarkInk: .fillColor$, .lineColor$
+    .lineColor$ = emlMarkInk.result$
     .n = size (.data#)
     .nSkipped = 0
 
@@ -1973,6 +2612,9 @@ procedure emlDrawViolin: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, 
     # gap artifacts from coordinate rounding. Fill is opaque, so
     # overlap is invisible — eliminates banding.
     .overlapMargin = .evalStepFill * 0.5
+    # Half-width per slice, kept so the pattern pass below can clip to the
+    # body without recomputing 500 kernel sums.
+    .dFill# = zero# (.nEvalFill - 1)
     for .e from 1 to .nEvalFill - 1
         .y1 = .evalMin + (.e - 1) * .evalStepFill
         .y2 = .evalMin + .e * .evalStepFill
@@ -1984,6 +2626,7 @@ procedure emlDrawViolin: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, 
             .d = .d + exp (-0.5 * .u * .u)
         endfor
         .d = .d / (.n * .bandwidth * sqrt (2 * pi)) * .scaleFactor
+        .dFill#[.e] = .d
 
         # Clamp fill rectangle to axis bounds with sub-pixel overlap
         .drawY1 = max (.y1 - .overlapMargin, .axisYMin)
@@ -1992,6 +2635,79 @@ procedure emlDrawViolin: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, 
             Paint rectangle: .fillColor$, .xCenter - .d, .xCenter + .d, .drawY1, .drawY2
         endif
     endfor
+
+    # === FILL PATTERN (over the body, under the outline) ===
+    # .pattern is a parameter, so it is always defined here; 1 and anything
+    # unrecognised fall through and the body stays solid.
+    .doHatch = 0
+    .doDots = 0
+    if .pattern = 2
+        .doHatch = 1
+    endif
+    if .pattern = 3
+        .doDots = 1
+    endif
+    if .doHatch = 1 or .doDots = 1
+        @emlPatternSetup: .fillColor$, .lineColor$, .width, .axisYMin, .axisYMax
+        if emlPatternSetup.usable = 0
+            .doHatch = 0
+            .doDots = 0
+        endif
+    endif
+
+    if .doHatch = 1
+        # One scanline per fill slice: the stripes then step by well under a
+        # device pixel, so the diagonal edge is as smooth as the body's own.
+        for .e from 1 to .nEvalFill - 1
+            .y1 = .evalMin + (.e - 1) * .evalStepFill
+            .y2 = .evalMin + .e * .evalStepFill
+            .drawY1 = max (.y1 - .overlapMargin, .axisYMin)
+            .drawY2 = min (.y2 + .overlapMargin, .axisYMax)
+            if .drawY1 < .drawY2
+                @emlPaintHatchRow: .xCenter, .dFill#[.e], .drawY1, .drawY2,
+                ... .axisYMin
+            endif
+        endfor
+    endif
+
+    if .doDots = 1
+        # Dot rows are laid out on the inch grid, not the slice grid, and each
+        # row's clip half-width is the SMALLEST body half-width over the row's
+        # full vertical extent, so a dot is drawn only where all of it fits.
+        .dotStepY = emlPatternSetup.dotPitch * emlPatternSetup.sy
+        .dotRWorldY = emlPatternSetup.dotR * emlPatternSetup.sy
+        .patLow = max (.evalMin, .axisYMin)
+        .patHigh = min (.evalMax, .axisYMax)
+        .nDotRows = 0
+        if .dotStepY > 0
+            .nDotRows = floor ((.patHigh - .patLow) / .dotStepY)
+        endif
+        for .r from 0 to .nDotRows
+            .dy = .patLow + (.r + 0.5) * .dotStepY
+            .dTop = .dy + .dotRWorldY
+            .dBot = .dy - .dotRWorldY
+            if .dTop <= .patHigh and .dBot >= .patLow
+                .eLo = floor ((.dBot - .evalMin) / .evalStepFill) + 1
+                .eHi = floor ((.dTop - .evalMin) / .evalStepFill) + 1
+                if .eLo < 1
+                    .eLo = 1
+                endif
+                if .eHi > .nEvalFill - 1
+                    .eHi = .nEvalFill - 1
+                endif
+                .dMin = 0
+                if .eLo <= .eHi
+                    .dMin = .dFill#[.eLo]
+                    for .e from .eLo to .eHi
+                        if .dFill#[.e] < .dMin
+                            .dMin = .dFill#[.e]
+                        endif
+                    endfor
+                endif
+                @emlPaintDotRow: .xCenter, .dMin, .dy, .r, .axisYMin
+            endif
+        endfor
+    endif
 
     # === OUTLINE ===
     .nEvalLine = 80
@@ -2099,6 +2815,9 @@ endproc
 #   .axisYMin   — y-axis lower bound for clipping
 #   .axisYMax   — y-axis upper bound for clipping
 #   .width      — half-width of box body in x-units
+#   .pattern    — fill pattern (v1.23): 1 solid | 2 diagonal hatch | 3 dots.
+#                 Anything else draws solid. Pass
+#                 emlSetColorPalette.pattern[idx].
 # Outputs:
 #   .q1Out, .medianOut, .q3Out — quartile values
 #   .whiskerLowOut, .whiskerHighOut — Tukey whisker endpoints
@@ -2111,7 +2830,10 @@ endproc
 # reached Draw line: with an undefined y and aborted the figure. Undefined
 # observations are now detected up front and reported through .nSkipped.
 # ----------------------------------------------------------------------------
-procedure emlDrawBox: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, .axisYMax, .width
+procedure emlDrawBox: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, .axisYMax, .width, .pattern
+    # One ink for the whole mark -- see the same two lines in @emlDrawViolin.
+    @emlMarkInk: .fillColor$, .lineColor$
+    .lineColor$ = emlMarkInk.result$
     .n = size (.data#)
     .nSkipped = 0
 
@@ -2196,6 +2918,64 @@ procedure emlDrawBox: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, .ax
         Paint rectangle: .fillColor$, .xCenter - .width, .xCenter + .width, .drawQ1, .drawQ3
     endif
 
+    # === FILL PATTERN (over the body, under the outline and the median) ===
+    # A box is a rectangle, so the "clip to the shape" the violin does with
+    # its stored per-slice half-width is here a constant half-width. Same two
+    # row painters, same geometry, same ink rule.
+    .doHatch = 0
+    .doDots = 0
+    if .pattern = 2
+        .doHatch = 1
+    endif
+    if .pattern = 3
+        .doDots = 1
+    endif
+    if .drawQ1 >= .drawQ3
+        .doHatch = 0
+        .doDots = 0
+    endif
+    if .doHatch = 1 or .doDots = 1
+        @emlPatternSetup: .fillColor$, .lineColor$, .width, .axisYMin, .axisYMax
+        if emlPatternSetup.usable = 0
+            .doHatch = 0
+            .doDots = 0
+        endif
+    endif
+
+    if .doHatch = 1
+        # 0.004" scanlines: about one device pixel at 300 dpi, so the stripe
+        # edges are as clean as the violin's.
+        .rowH = 0.004 * emlPatternSetup.sy
+        .nRows = 1
+        if .rowH > 0
+            .nRows = ceiling ((.drawQ3 - .drawQ1) / .rowH)
+        endif
+        if .nRows < 1
+            .nRows = 1
+        endif
+        .rowStep = (.drawQ3 - .drawQ1) / .nRows
+        for .r from 1 to .nRows
+            .ry1 = .drawQ1 + (.r - 1) * .rowStep
+            .ry2 = .drawQ1 + .r * .rowStep
+            @emlPaintHatchRow: .xCenter, .width, .ry1, .ry2, .axisYMin
+        endfor
+    endif
+
+    if .doDots = 1
+        .dotStepY = emlPatternSetup.dotPitch * emlPatternSetup.sy
+        .dotRWorldY = emlPatternSetup.dotR * emlPatternSetup.sy
+        .nDotRows = 0
+        if .dotStepY > 0
+            .nDotRows = floor ((.drawQ3 - .drawQ1) / .dotStepY)
+        endif
+        for .r from 0 to .nDotRows
+            .dy = .drawQ1 + (.r + 0.5) * .dotStepY
+            if .dy - .dotRWorldY >= .drawQ1 and .dy + .dotRWorldY <= .drawQ3
+                @emlPaintDotRow: .xCenter, .width, .dy, .r, .axisYMin
+            endif
+        endfor
+    endif
+
     # === BOX OUTLINE ===
     Colour: .lineColor$
     Line width: 0.8
@@ -2246,6 +3026,215 @@ procedure emlDrawBox: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, .ax
     Line width: 1.0
 
     label BOX_END
+endproc
+
+
+# ============================================================================
+# POINT MARKERS
+# ============================================================================
+# The second dimension for the four chart types that draw dots and lines --
+# scatter, line chart, spaghetti, time series. Author's ruling, 7 Aug 2026:
+# "we need to go ahead and add a square and a triangle. If these are gonna be
+# sprites, go ahead and write a Python script to generate those."
+#
+# THEY ARE NOT SPRITES, and the "if" is why. Three findings, in order:
+#
+#   1. The .sprite$[] array that @emlSetColorPalette already carries is READ
+#      in exactly two places, @emlDrawAlphaDot and @emlDrawAlphaRect, and both
+#      are gated on emlInitAlphaSprites.available.
+#
+#      A NOTE ON THE RECORD, because it matters for anyone reading the audit:
+#      audit/reviews/GRAPH_STRESS_2026-08-06.md finding 6 says "plugin/sprites/
+#      has never existed in the repository". THAT IS WRONG. The folder is
+#      there and has been since commit a31a669 -- 204 tracked PNGs, 168 dots,
+#      34 rectangles, 2 backgrounds -- and dot_blue_a50_40.png, the file
+#      @emlInitAlphaSprites probes for, is one of them. So the array is live
+#      on macOS and on Windows.
+#
+#      It is nonetheless useless for THIS job, for two independent reasons.
+#      First, every sprite in the set is a DOT or a RECTANGLE: the array
+#      indexes HUE, one stem per colour, and there is no shape axis in it at
+#      all. Adding one means 168 more files for squares and 168 for triangles,
+#      at every alpha level and every size, to express what two lines of
+#      arithmetic express. Second, @emlInitAlphaSprites returns early on
+#      anything that is not macOS or Windows, because Praat's
+#      Graphics_imageFromFile has a GDI+ branch and a Quartz branch and NO
+#      cairo branch -- on Linux it computes its coordinates and draws nothing,
+#      with no error and no return code. A raster marker would therefore
+#      render as a BLANK on the platform this harness measures, which is
+#      exactly the failure the gate was added to stop.
+#
+#   2. Praat has no filled-polygon primitive to lean on either (the Polygon
+#      OBJECT has "Draw (closed)", an outline, and creating and removing an
+#      object per dot inside a draw loop that is already juggling Table
+#      selections is not something to do). A triangle is therefore painted as
+#      a stack of horizontal `Paint rectangle` slices -- the same construction
+#      @emlDrawViolin uses for its body, and the same one @emlPaintHatchRow
+#      uses for a stripe. Nothing new is being invented here.
+#
+#   3. Native drawing scales with the figure and a 40-pixel PNG does not. The
+#      plugin renders anything from a 3-inch panel to a 20-inch one at 300 dpi;
+#      a stamped raster is soft at the top of that range and no smaller file
+#      helps at the bottom.
+#
+# So: native primitives, no generated assets, no Python. If Praat ever gains
+# a cairo image branch that changes the calculus for ALPHA, not for shape.
+#
+# GEOMETRY, at the plugin's real dot sizes. `.halfIn` is the marker's radius
+# in INCHES -- the circle's radius, and the reference the other two shapes are
+# sized against. On a 6 x 4 inch figure @emlSetAdaptiveTheme.markerSize is
+# 1.0 and @emlDrawScatterPlot's three dot sizes give .halfIn = 0.035, 0.065
+# and 0.108 inches, i.e. 21, 39 and 65 pixels ACROSS at 300 dpi. Spaghetti
+# and time-series markers are set in millimetres and land at 1.5 mm and
+# 1.4 mm radius, about 35 and 33 pixels across. A triangle is legible from
+# roughly 8 pixels across, so every one of those has room to spare; the
+# measured floor is in validate/v29_figure_disclosure.R.
+#
+#   1 circle    radius .halfIn.                        area  3.142 halfIn^2
+#   2 square    half-side 0.8862 * .halfIn.            area  3.142 halfIn^2
+#   3 triangle  equilateral, circumradius 1.45*.halfIn,
+#               apex up, base flat.                    area  2.731 halfIn^2
+#
+# The square is sized for EQUAL AREA with the circle so the two carry the
+# same visual weight. An equal-area triangle would need circumradius
+# 1.5551 * .halfIn and a bounding box 2.69 x 2.33 times the circle's radius,
+# which crowds a dense scatter; 1.45 gives it 87% of the circle's ink in a
+# 2.51 x 2.18 box, which reads as the same weight without spreading further.
+# ----------------------------------------------------------------------------
+# @emlDrawMarker
+# One point marker, filled, no outline, at world coordinates (.x, .y).
+#
+# Arguments:
+#   .x, .y     world coordinates of the marker CENTRE
+#   .halfIn    marker radius in inches (see the geometry note above)
+#   .shape     1 circle | 2 square | 3 triangle; anything else wraps mod 3
+#   .color$    fill colour
+#
+# Requires @emlSetPatternScale to have been called for the CURRENT axes --
+# the square and the triangle need world-per-inch on both axes to come out
+# square rather than stretched by the axis aspect ratio, exactly as the alpha
+# sprite path needed @emlSetAlphaDotGeometry. When the scale is unavailable
+# or degenerate the marker falls back to `Paint circle (mm)`, which needs no
+# scale at all: a circle where a triangle was asked for is a lost cue, a
+# skipped point is a lost observation, and the observation wins.
+# ----------------------------------------------------------------------------
+procedure emlDrawMarker: .x, .y, .halfIn, .shape, .color$
+    .sx = 0
+    .sy = 0
+    if variableExists ("emlPatWorldPerInchX")
+        .sx = emlPatWorldPerInchX
+    endif
+    if variableExists ("emlPatWorldPerInchY")
+        .sy = emlPatWorldPerInchY
+    endif
+    if .sx = undefined
+        .sx = 0
+    endif
+    if .sy = undefined
+        .sy = 0
+    endif
+
+    # Nested, never "or": Praat evaluates both operands of or/and, and an
+    # undefined coordinate compared with <= is FALSE rather than an error, so
+    # every test is written to catch undefined explicitly.
+    .placeable = 1
+    if .x = undefined
+        .placeable = 0
+    endif
+    if .y = undefined
+        .placeable = 0
+    endif
+    if .halfIn = undefined
+        .placeable = 0
+    endif
+    if .placeable = 1
+        if .halfIn <= 0
+            .placeable = 0
+        endif
+    endif
+    if .placeable = 0
+        goto MARKER_END
+    endif
+
+    .scaled = 1
+    if .sx <= 0
+        .scaled = 0
+    endif
+    if .sy <= 0
+        .scaled = 0
+    endif
+    if .scaled = 0
+        Paint circle (mm): .color$, .x, .y, .halfIn * 25.4
+        goto MARKER_END
+    endif
+
+    # An undefined or out-of-range shape draws a circle rather than nothing:
+    # `undefined mod 3` is undefined, and every branch below would then be
+    # FALSE and the point would vanish without a word.
+    .sh = 1
+    if .shape <> undefined
+        .sh = ((.shape - 1) mod 3) + 1
+    endif
+
+    if .sh = 1
+        # Praat's Paint circle takes its radius in world x-units and draws a
+        # physically round circle, so this needs no aspect correction.
+        Paint circle: .color$, .x, .y, .halfIn * .sx
+    elsif .sh = 2
+        .half = .halfIn * 0.8862
+        Paint rectangle: .color$,
+        ... .x - .half * .sx, .x + .half * .sx,
+        ... .y - .half * .sy, .y + .half * .sy
+    else
+        # Equilateral triangle, apex up, painted as horizontal slices.
+        # Circumradius .rad: apex at +rad, base at -rad/2, half-base
+        # 0.8660 * rad, total height 1.5 * rad.
+        .rad = .halfIn * 1.45
+        .heightIn = 1.5 * .rad
+        .baseHalf = 0.8660 * .rad
+        # One slice per ~0.9 device pixels at 300 dpi, floor 8 (so the shape
+        # survives at a tiny marker) and ceiling 48 (so a scatter of a
+        # thousand triangles is 48k rectangles, not an unbounded number).
+        # At 1.6 px per slice the diagonal edge was visibly stepped under
+        # magnification; at 0.9 it is not, and the cost is one Paint
+        # rectangle per device pixel row, which is what the violin body has
+        # always cost.
+        .nSlices = round (.heightIn * 300 / 0.9)
+        if .nSlices < 8
+            .nSlices = 8
+        endif
+        if .nSlices > 48
+            .nSlices = 48
+        endif
+        .sliceIn = .heightIn / .nSlices
+        # .rad is in INCHES and .y is in WORLD units, so the drop from the
+        # centre to the base has to be scaled before it is subtracted. It was
+        # not, in the first draft, and the triangle came out ten pixels high
+        # -- caught by the crop in harness/markers/marker_case.praat, which is
+        # computed from the declared geometry and clipped the apex.
+        .baseY = .y - (.rad / 2) * .sy
+        for .s from 0 to .nSlices - 1
+            .y0 = .s * .sliceIn
+            .y1 = .y0 + .sliceIn
+            # Slices overlap by a third of their height. Praat antialiases
+            # every rectangle edge, and abutting edges leave a visible seam
+            # in the fill; an overlap costs nothing and removes it.
+            .y1 = .y1 + .sliceIn / 3
+            if .y1 > .heightIn
+                .y1 = .heightIn
+            endif
+            # Half-width at the slice's LOWER edge, which over-fills by less
+            # than one slice and keeps the apex from tapering to nothing.
+            .w = .baseHalf * (1 - .y0 / .heightIn)
+            if .w > 0
+                Paint rectangle: .color$,
+                ... .x - .w * .sx, .x + .w * .sx,
+                ... .baseY + .y0 * .sy, .baseY + .y1 * .sy
+            endif
+        endfor
+    endif
+
+    label MARKER_END
 endproc
 
 
@@ -2443,14 +3432,84 @@ endproc
 # Positions the legend in a corner of the current plot area using data coords.
 #
 # Requires global variables before call:
-#   legendN          — integer, number of entries (1–6)
+#   legendN          — integer, number of entries. The palette holds 24
+#                      sub-group styles, so 24 is the number this has to
+#                      draw; there is no hard ceiling above it, because the
+#                      LAYOUT is what limits the box (see below) and a
+#                      ceiling written here would be a second, disagreeing
+#                      limit. (Was documented as "1–6" through v3.25, which
+#                      no caller had honoured since the palette reached ten.)
 #   legendColor$[1..N] — RGB colour strings for each entry
 #   legendLabel$[1..N] — text labels for each entry (pre-sanitized if needed)
+#
+# Optional globals (v1.23 — the PATTERNED legend):
+#   legendPatterned    — 1 to draw swatches as fill + pattern + outline
+#                        instead of a solid block of legendColor$. Cleared to
+#                        0 by @emlSetColorPalette, so it must be set AFTER the
+#                        palette call and it cannot leak into the next figure.
+#   legendPattern[1..N]  — 1 solid | 2 diagonal hatch | 3 dots, per entry
+#   legendFill$[1..N]    — the body fill colour for each entry
+#
+# WHY THE SWATCH HAS TO CARRY THE PATTERN. The palette's 24 styles are 8 hues
+# x 3 fill patterns, so entries 1 and 9 have the SAME legendColor$ and differ
+# only in the pattern. A legend that drew colour alone would print two
+# identical swatches against two different names — which is precisely the
+# defect (D127) the patterns were introduced to remove, relocated from the
+# figure into the key. When legendPatterned is 0 the swatch is the solid
+# block it has always been, so every unpatterned chart is unchanged.
+#
+# THE BOX IS LAID OUT TO FIT THE FRAME (v1.25 — D123)
+#
+# Until v1.24 the box was one column of legendN rows and nothing measured it
+# against the panel. At the annotation font on a 6 x 4 figure a row is 0.162",
+# the panel is 3.11" tall, and 24 entries want 3.94" — so a 24-sub-group
+# grouped violin, which is exactly what the 24-style palette exists to draw,
+# put a legend a full inch past the frame edge, swatches and labels with it.
+# Measured before the fix on harness/stress_cases/legend_cap.praat: the box
+# overhung the frame by 304 px at 300 dpi.
+#
+# The fix is a layout, not a cap. The frame is measured first:
+#
+#   rowsMax = how many rows fit between the insets
+#   colsMax = how many columns of (swatch + widest label) fit across
+#   capacity = rowsMax x colsMax
+#
+# and the entries are then poured down the columns, hue order preserved, in
+# the FEWEST columns that fit the height — so the box is as narrow as it can
+# be and never taller than the panel. At 24 entries on a 6 x 4 figure that is
+# two columns of 12. One entry, or any number that fits in one column, gets
+# the identical single-column geometry v1.24 drew, to the last decimal.
+#
+# TRUNCATION IS THE LAST RESORT AND IT IS NEVER SILENT. If legendN still
+# exceeds capacity — a very short frame, or labels wide enough that only one
+# column fits — the last cell becomes "+N more" ON THE FIGURE and a NOTE goes
+# to the Info window naming both counts. A legend that quietly dropped
+# entries would be D127's silence again: names present, marks unexplained.
+#
+# NOT HANDLED HERE: a single label wide enough that one column does not fit
+# the frame width. The anchor is the `if .colsMax < 1` floor in the LAYOUT
+# block below — capacity is computed as though one column fitted, and the box
+# then overhangs to the right, exactly as it did before this revision. It is
+# not a regression introduced by this layout.
+#
+# This is the legend's copy of the D124 defect, and D124 is the reason to
+# name it: the annotation block had the same overhang and it has since been
+# fixed (@emlDrawAnnotationBlock now wraps every entry to a share of the
+# frame — emlAnnotBlockWidthShare, default 0.55 — so it no longer runs off
+# the canvas). The legend has NOT had that treatment. A label wider than the
+# frame is still drawn whole and still overhangs; the fix, when someone
+# writes it, is the same wrap-or-ellipsis @emlDrawAnnotationBlock now does.
 #
 # Arguments:
 #   xMin, xMax, yMin, yMax — current axis bounds (data coordinates)
 #   position$ — "top-left" or "top-right"
 #   fontSize  — font size for legend text (typically bodySize - 1)
+#
+# Reports (procedure locals, readable by the caller after return):
+#   .nCols, .rowsPerCol — the layout chosen
+#   .shown, .hidden     — entries drawn, entries folded into "+N more"
+#   .capacity           — rowsMax x colsMax, the frame's room
+#   .boxLeft/.boxRight/.boxTop/.boxBottom — the box, in data coordinates
 #
 # Draws: filled white rectangle, thin grey border, colored square swatches,
 #   and text labels in axis text color. Leaves Colour as Black and Line width as 1.0.
@@ -2474,27 +3533,171 @@ procedure emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .position$, .fontSize
     .lineH = .fontInch * 1.4 * .wpiY
     .xPad = .fontInch * (0.3 + 0.3 * .sf) * .wpiX
     .yPad = .fontInch * (0.3 + 0.2 * .sf) * .wpiY
+    # Patterned swatches are drawn larger: three hatch stripes or two dot
+    # rows do not survive in a 0.8-em square, and a swatch that cannot show
+    # its pattern is the same silence as no pattern at all.
+    .patterned = 0
+    if variableExists ("legendPatterned")
+        if legendPatterned = 1
+            .patterned = 1
+        endif
+    endif
+    # v1.24: the marker key. A scatter whose group 9 draws squares and whose
+    # key draws a circle is the same defect class as a hatched violin with a
+    # solid swatch -- the reader is told the series differ only in hue when
+    # they do not. legendMarker[] carries the shape; legendMarkerLine says
+    # whether the series is a LINE with markers on it (time series, line
+    # chart, spaghetti) or bare points (scatter), because the key has to show
+    # which of those it is.
+    .markered = 0
+    if variableExists ("legendMarkered")
+        if legendMarkered = 1
+            .markered = 1
+        endif
+    endif
+    .markerLine = 0
+    if .markered = 1
+        if variableExists ("legendMarkerLine")
+            if legendMarkerLine = 1
+                .markerLine = 1
+            endif
+        endif
+    endif
     .swatchSide = .fontInch * 0.8
+    if .patterned = 1
+        .swatchSide = .fontInch * 1.25
+    endif
+    if .markered = 1
+        # A marker inside a 0.8-em cell is four pixels of triangle at a
+        # 7 pt legend. The cell is widened so the shape survives at the
+        # production font size, which is what the fixture measures.
+        .swatchSide = .fontInch * 1.4
+    endif
     .swatchW = .swatchSide * .wpiX
     .swatchH = .swatchSide * .wpiY
     .insetX = emlSetAdaptiveTheme.boxInsetInches * .wpiX
     .insetY = emlSetAdaptiveTheme.boxInsetInches * .wpiY
 
     # Measure actual rendered width of longest label (exact, font-aware)
+    #
+    # v1.23: the viewport is RE-SELECTED at the legend's own font size before
+    # anything is measured or drawn. Praat's `Select inner viewport` converts
+    # the inner rectangle to an outer one using the font size IN FORCE AT THE
+    # TIME OF THE CALL, and every later world-to-page mapping is taken from
+    # that outer rectangle minus the margins for the font size in force THEN.
+    # The panel viewport was selected at bodySize; this procedure then set
+    # Font size to .fontSize and drew, so the whole legend -- background,
+    # border, swatches and text together -- was rendered into a rectangle
+    # slightly smaller than, and offset from, the .boxLeft/.boxTop it had
+    # just computed. It LOOKED right because every part of it moved by the
+    # same amount, but the box the caller was told about (and kept the
+    # disclosure block clear of) was not the box on the page. At the usual
+    # one- or two-point difference the offset is small; at a large legend
+    # font it is gross. Re-selecting here makes the computed geometry and the
+    # drawn geometry the same thing. The tail of this procedure already
+    # restores bodySize and the panel viewport.
     Font size: .fontSize
+    Select inner viewport: emlSetAdaptiveTheme.innerLeft,
+    ... emlSetAdaptiveTheme.innerRight,
+    ... emlSetAdaptiveTheme.innerTop,
+    ... emlSetAdaptiveTheme.innerBottom
+    Axes: .xMin, .xMax, .yMin, .yMax
+    # Per entry, because a multi-column box sizes each column to its own
+    # widest label. Safety margin (1.05) applied per entry: screen font
+    # metrics differ slightly from PNG export. Taking the margin before the
+    # max rather than after leaves the one-column width bit-identical to
+    # v1.24's.
     .textWidth = 0
     for .i from 1 to legendN
         .w = Text width (world coordinates): legendLabel$[.i]
-        if .w > .textWidth
-            .textWidth = .w
+        .cellW[.i] = .w * 1.05
+        if .cellW[.i] > .textWidth
+            .textWidth = .cellW[.i]
         endif
     endfor
-    # Safety margin: screen font metrics differ slightly from PNG export
-    .textWidth = .textWidth * 1.05
 
-    # Box dimensions
-    .totalHeight = .yPad + legendN * .lineH + .yPad
-    .totalWidth = .xPad + .swatchW + .xPad + .textWidth + .xPad
+    # ------------------------------------------------------------------
+    # LAYOUT (v1.25, D123). Measure the frame, then pour the entries into
+    # it. Everything here is in world units, both axes, so a legend on a
+    # 0-1 y-axis and one on a 0-5000 y-axis get the same physical box.
+    # ------------------------------------------------------------------
+    .availW = .xRange - 2 * .insetX
+    .availH = .yRange - 2 * .insetY
+    .rowsMax = floor ((.availH - 2 * .yPad) / .lineH)
+    if .rowsMax < 1
+        .rowsMax = 1
+    endif
+    # Gap between one column's label and the next column's swatch. One xPad
+    # ON TOP OF the xPad that already trails every column, so the eye reads
+    # two columns rather than one wide one.
+    .colGap = .xPad
+    # The overflow cell's width has to be known BEFORE capacity is, or the
+    # cell that announces the truncation could be the thing that overflows.
+    # Measured with legendN in it, which has at least as many digits as any
+    # hidden count, so this is an upper bound on the real notice.
+    .moreLabel$ = "+" + string$ (legendN) + " more"
+    .w = Text width (world coordinates): .moreLabel$
+    .unitW = .w * 1.05
+    if .textWidth > .unitW
+        .unitW = .textWidth
+    endif
+    .colsMax = floor ((.availW - 2 * .xPad + .colGap)
+    ... / (.swatchW + .xPad + .unitW + .colGap))
+    if .colsMax < 1
+        # One column does not fit the frame width. See NOT HANDLED HERE in
+        # the header: the box overhangs to the right, as it always has.
+        .colsMax = 1
+    endif
+    .capacity = .rowsMax * .colsMax
+
+    .shown = legendN
+    .hidden = 0
+    .cells = legendN
+    if legendN > .capacity
+        .shown = .capacity - 1
+        if .shown < 0
+            .shown = 0
+        endif
+        .hidden = legendN - .shown
+        .cells = .shown + 1
+        .moreLabel$ = "+" + string$ (.hidden) + " more"
+        .w = Text width (world coordinates): .moreLabel$
+        .cellW[.cells] = .w * 1.05
+        appendInfoLine: "NOTE: legend shows ", .shown, " of ", legendN,
+        ... " entries — the frame has room for ", .capacity,
+        ... ". The other ", .hidden, " are marked ", .moreLabel$,
+        ... " on the figure."
+    endif
+
+    # Fewest columns that fit the height, so the box stays narrow. cells <=
+    # rowsMax x colsMax by construction, so .nCols <= .colsMax and the width
+    # below cannot exceed .availW either.
+    .nCols = ceiling (.cells / .rowsMax)
+    if .nCols < 1
+        .nCols = 1
+    endif
+    .rowsPerCol = ceiling (.cells / .nCols)
+
+    # Box dimensions. Column-major fill: cell k is column
+    # (k-1) div rowsPerCol + 1, which keeps the palette's hue order running
+    # top-to-bottom down each column.
+    .totalWidth = 2 * .xPad + (.nCols - 1) * .colGap
+    .off = .xPad
+    for .c from 1 to .nCols
+        .colTextW[.c] = 0
+        for .r from 1 to .rowsPerCol
+            .k = (.c - 1) * .rowsPerCol + .r
+            if .k <= .cells
+                if .cellW[.k] > .colTextW[.c]
+                    .colTextW[.c] = .cellW[.k]
+                endif
+            endif
+        endfor
+        .colOff[.c] = .off
+        .off = .off + .swatchW + .xPad + .colTextW[.c] + .colGap
+        .totalWidth = .totalWidth + .swatchW + .xPad + .colTextW[.c]
+    endfor
+    .totalHeight = .yPad + .rowsPerCol * .lineH + .yPad
 
     # Anchor position (uniform physical inset from axes)
     if .position$ = "top-right"
@@ -2535,18 +3738,107 @@ procedure emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .position$, .fontSize
 
     # Entries — filled swatches with axis-colored text labels
     Font size: .fontSize
-    for .i from 1 to legendN
-        .entryY = .boxTop - .yPad - (.i - 0.5) * .lineH
-        .swatchLeft = .boxLeft + .xPad
+    for .i from 1 to .cells
+        .col = (.i - 1) div .rowsPerCol + 1
+        .row = .i - (.col - 1) * .rowsPerCol
+        .entryY = .boxTop - .yPad - (.row - 0.5) * .lineH
+        .swatchLeft = .boxLeft + .colOff[.col]
         .swatchRight = .swatchLeft + .swatchW
         .swatchTop = .entryY + .swatchH / 2
         .swatchBottom = .entryY - .swatchH / 2
         .textX = .swatchRight + .xPad
 
-        Colour: legendColor$[.i]
-        Paint rectangle: legendColor$[.i], .swatchLeft, .swatchRight, .swatchBottom, .swatchTop
-        Colour: emlSetAdaptiveTheme.textColor$
-        Text: .textX, "left", .entryY, "half", legendLabel$[.i]
+        if .i > .shown
+            # The overflow cell. No swatch — it stands for no one style —
+            # and it starts at the swatch column so it reads as a line of
+            # the key rather than a stray label.
+            Colour: emlSetAdaptiveTheme.textColor$
+            Text: .swatchLeft, "left", .entryY, "half", .moreLabel$
+        elsif .markered = 1
+            # The key IS the mark: same @emlDrawMarker, same shape index, same
+            # colour. @emlSetPatternScale is called for the axes the legend was
+            # handed, which are the panel's own, so the marker comes out the
+            # same physical size and shape here as it does in the panel.
+            @emlSetPatternScale: .xMin, .xMax, .yMin, .yMax
+            .midX = (.swatchLeft + .swatchRight) / 2
+            if .markerLine = 1
+                Colour: legendColor$[.i]
+                Line width: emlSetAdaptiveTheme.dataLineWidth
+                Draw line: .swatchLeft, .entryY, .swatchRight, .entryY
+                Line width: 0.5
+            endif
+            @emlDrawMarker: .midX, .entryY, .swatchSide * 0.42,
+            ... legendMarker[.i], legendColor$[.i]
+        elsif .patterned = 1
+            # Same construction the mark uses: fill, then pattern in the same
+            # ink, then the stroke colour as an outline. @emlPatternSetup is
+            # given the swatch's own half-width, so the stripe pitch scales
+            # to the swatch instead of being the violin's pitch cropped.
+            .halfW = (.swatchRight - .swatchLeft) / 2
+            .midX = (.swatchLeft + .swatchRight) / 2
+            Paint rectangle: legendFill$[.i], .swatchLeft, .swatchRight,
+            ... .swatchBottom, .swatchTop
+            .lp = legendPattern[.i]
+            .lpDo = 0
+            if .lp = 2 or .lp = 3
+                .lpDo = 1
+            endif
+            if .lpDo = 1
+                @emlPatternSetup: legendFill$[.i], legendColor$[.i], .halfW,
+                ... .yMin, .yMax
+                if emlPatternSetup.usable = 0
+                    .lpDo = 0
+                endif
+            endif
+            if .lpDo = 1 and .lp = 2
+                .rowH = 0.004 * emlPatternSetup.sy
+                .nRows = 1
+                if .rowH > 0
+                    .nRows = ceiling ((.swatchTop - .swatchBottom) / .rowH)
+                endif
+                if .nRows < 1
+                    .nRows = 1
+                endif
+                .rowStep = (.swatchTop - .swatchBottom) / .nRows
+                for .r from 1 to .nRows
+                    @emlPaintHatchRow: .midX, .halfW,
+                    ... .swatchBottom + (.r - 1) * .rowStep,
+                    ... .swatchBottom + .r * .rowStep, .swatchBottom
+                endfor
+            endif
+            if .lpDo = 1 and .lp = 3
+                .dotStepY = emlPatternSetup.dotPitch * emlPatternSetup.sy
+                .dotRY = emlPatternSetup.dotR * emlPatternSetup.sy
+                .nDotRows = 0
+                if .dotStepY > 0
+                    .nDotRows = floor ((.swatchTop - .swatchBottom) / .dotStepY)
+                endif
+                for .r from 0 to .nDotRows
+                    .dy = .swatchBottom + (.r + 0.5) * .dotStepY
+                    if .dy - .dotRY >= .swatchBottom and .dy + .dotRY <= .swatchTop
+                        @emlPaintDotRow: .midX, .halfW, .dy, .r, .swatchBottom
+                    endif
+                endfor
+            endif
+            # v1.24: the swatch OUTLINE takes the same @emlMarkInk flip the
+            # mark's outline takes, or a slot-8 greyscale swatch would draw a
+            # near-black border on a near-black fill while its violin drew a
+            # white one -- the key disagreeing with the mark again, in the
+            # one detail the reader uses to see the swatch is a swatch.
+            @emlMarkInk: legendFill$[.i], legendColor$[.i]
+            Colour: emlMarkInk.result$
+            Line width: 0.8
+            Draw rectangle: .swatchLeft, .swatchRight, .swatchBottom,
+            ... .swatchTop
+            Line width: 0.5
+        else
+            Colour: legendColor$[.i]
+            Paint rectangle: legendColor$[.i], .swatchLeft, .swatchRight, .swatchBottom, .swatchTop
+        endif
+        if .i <= .shown
+            Colour: emlSetAdaptiveTheme.textColor$
+            Text: .textX, "left", .entryY, "half", legendLabel$[.i]
+        endif
     endfor
 
     Colour: "Black"
@@ -3275,6 +4567,21 @@ procedure emlMeasureGraphLayout: .vpW, .vpH, .title$, .xLabel$, .yLabel$
             endfor
             .maxLabelW = .maxLabelW * 1.05
 
+            # NOTE (v3.26): this is the SINGLE-COLUMN, UNCAPPED measure, and
+            # since D123 it is no longer the box @emlDrawLegend draws — that
+            # procedure now folds the entries into as many columns as the
+            # frame needs (and at bodySize rather than the annotSize it is
+            # actually called with, which this estimate never modelled
+            # either). Above one column's worth of entries, read the height
+            # as an upper bound and the width as a lower one. Nothing
+            # consumes these two globals today; they exist for the responsive
+            # margins of TODO-047, and whoever builds that should call
+            # @emlDrawLegend's own .nCols/.rowsPerCol instead of this.
+            # Re-checked 8 Aug 2026, and checkable again with
+            #     grep -rn "emlLayout_legend" plugin/ harness/ validate/
+            # which returns this comment, the two Output lines in this
+            # procedure's header, and the four assignments in the if/else
+            # here. No READER, anywhere.
             emlLayout_legendWidthInches = .xPad + .swatchSide + .xPad + .maxLabelW + .xPad
             emlLayout_legendHeightInches = .yPad + legendN * .lineH + .yPad
         else
@@ -3316,9 +4623,29 @@ procedure emlDrawCategoricalXAxis: .nLabels, .xMin, .xMax, .yMin, .yMax, .xLabel
         .drawTick$ = "no"
     endif
     if .nLabels < 1
-        # Zero categories — a 0-row table, or a category column of blanks.
-        # The graphs form refuses this upstream (eml-graphs-form.praat:1305),
-        # so the case only reaches here from a PraatGen standalone script or
+        # Zero categories. Checked against the code 8 Aug 2026, and BOTH
+        # halves of what this comment used to say were wrong.
+        #
+        # It is NOT "a category column of blanks". @emlCountGroups treats the
+        # empty string as a label like any other, so an all-blank column comes
+        # back as ONE group whose name is "" — measured on a 3-row table of
+        # blanks: nGroups = 1. What actually arrives here is a 0-ROW table, or
+        # a group column that does not exist (nGroups = 0 with .error$ set).
+        #
+        # And the refusal is not where this comment used to point. It cited a
+        # line of eml-graphs-form.praat that in fact held
+        # `prev_gvAnnotStyle = 1`, a grouped-violin persistence variable; the
+        # citation was ~750 lines stale and was carried by eleven files until
+        # the 7 Aug contradiction sweep (C3). No line number is quoted here
+        # any more, because the replacement number went stale inside a day
+        # too. Grep the form for the string instead:
+        #
+        #     exitScript: "Table has no rows."
+        #
+        # with `exitScript: "Table has no columns."` immediately above it. The
+        # form also builds its column menus from the table's own header, so a
+        # non-existent group column cannot be chosen there either. Both cases
+        # therefore reach here only from a PraatGen standalone script or
         # another wrapper. Until 6 Aug 2026 every categorical type then died at
         # "Left and right should not be equal" when Axes: received 0.5, 0.5.
         # The x-range is clamped now, so say plainly what happened instead of
@@ -3429,28 +4756,55 @@ endproc
 # counted, and disclosed; every use of a mean or variance is guarded with an
 # explicit "<> undefined" test.
 #
-# Invariant (hard): emlBarData_mean[g] and emlBarData_error[g] are ALWAYS
-# defined numbers on return, so no undefined can reach a drawing command.
-# A group with no usable observation gets mean = 0 / error = 0 and
-# emlBarData_valid[g] = 0 — it paints as a zero-height (invisible) bar rather
-# than aborting the figure. Callers should consult emlBarData_valid[g] before
-# treating a bar as data.
+# v3.23 (7 Aug 2026): ZERO IS NOT "NO DATA". The v3.22 invariant below used
+# to read "emlBarData_mean[g] and emlBarData_error[g] are ALWAYS defined
+# numbers on return", with 0 standing in for both "no usable observation" and
+# "undefined error". It kept undefined out of the drawing commands, and it
+# also made the two claims indistinguishable downstream: @emlDrawBarChart
+# guards every bar with "emlBarData_mean[g] <> undefined" and every whisker
+# with "emlBarData_error[g] <> undefined", and NEITHER GUARD COULD EVER FIRE.
+# Its .nSkippedBars and .nSkippedErrors counters were dead code and both
+# disclosures that read them were unreachable. A group with nothing in it
+# drew as a bar of height zero — the same picture a genuine measurement of
+# zero draws — and an undefined error bar drew no whisker with no note.
+#
+# Invariant (hard, revised): emlBarData_mean[g] is undefined exactly when
+# emlBarData_valid[g] = 0, and emlBarData_error[g] is undefined exactly when
+# emlBarData_errorDefined[g] = 0. The sentinel is the SAME undefined the
+# consumers already test for, so "no measurement" now reaches the caller as a
+# distinct value from a measurement of zero, and the two existing guards
+# suppress the bar and the whisker on their own.
+#
+# CALLERS MUST GUARD. Every read of emlBarData_mean[g] / emlBarData_error[g]
+# needs either a "<> undefined" test or a valid[g] / errorDefined[g] test
+# first; an unguarded one reaches Praat's drawing commands and aborts the
+# figure with «Argument "To y" has the value "undefined"», which is the very
+# failure v3.22 was written to stop. The three readers in this repository —
+# @emlDrawBarChart's bar loop, its error-bar loop, and its quadrant-occupancy
+# scan — were already written that way, which is why they were dead. The
+# visible-range scan at the foot of this procedure was NOT: it summed
+# mean + error unguarded and would have dropped every group from the axis
+# range under errorMode = 0, so it now substitutes 0 for an undefined error.
 #
 # Outputs (module-level globals):
 #   emlBarData_nGroups          — number of unique groups
 #   emlBarData_label$[g]        — group name for group g
-#   emlBarData_mean[g]          — mean of value column for group g
-#                                 (always defined; 0 when valid[g] = 0)
-#   emlBarData_error[g]         — error value for group g (SE/SD/custom/0)
-#                                 (always defined; 0 when errorDefined[g] = 0)
+#   emlBarData_mean[g]          — mean of value column for group g;
+#                                 UNDEFINED when valid[g] = 0
+#   emlBarData_error[g]         — error value for group g (SE/SD/custom);
+#                                 UNDEFINED when errorDefined[g] = 0
 #   emlBarData_count[g]         — count of USABLE observations for group g
 #   emlBarData_visibleMax       — max(mean + error) across valid groups
 #   emlBarData_visibleMin       — min(mean - error) across valid groups
 #   emlBarData_valid[g]         — 1 if group g has >= 1 usable observation
 #   emlBarData_errorDefined[g]  — 1 if the error bar for group g is a real
-#                                 quantity; 0 when it is undefined and was
-#                                 substituted with 0 (n = 1, no usable custom
-#                                 error value, or a non-positive variance)
+#                                 quantity; 0 when there is none to compute
+#                                 (n = 1, no usable custom error value, or
+#                                 the group itself has no observation), in
+#                                 which case emlBarData_error[g] is undefined.
+#                                 A non-positive variance is NOT this case:
+#                                 the spread really is nil, so error = 0 with
+#                                 errorDefined = 1.
 #   emlBarData_skipped[g]       — undefined value cells skipped in group g
 #   emlBarData_errSkipped[g]    — undefined custom-error cells skipped (mode 3)
 #   emlBarData_nSkipped         — total undefined value cells skipped
@@ -3538,8 +4892,11 @@ procedure emlMeasureBarData: .tableId, .groupCol$, .valueCol$, .errorMode, .erro
     # guarded; the outputs are guaranteed defined so no undefined can reach a
     # drawing command downstream.
     for .g from 1 to emlBarData_nGroups
-        emlBarData_mean[.g] = 0
-        emlBarData_error[.g] = 0
+        # v3.23: undefined, not 0. See the invariant at the head of this
+        # procedure — 0 is a measurement, and a group with no observation has
+        # not made one.
+        emlBarData_mean[.g] = undefined
+        emlBarData_error[.g] = undefined
         emlBarData_errorDefined[.g] = 0
 
         if emlBarData_count[.g] > 0
@@ -3606,13 +4963,23 @@ procedure emlMeasureBarData: .tableId, .groupCol$, .valueCol$, .errorMode, .erro
     emlBarData_visibleMin = 0
     for .g from 1 to emlBarData_nGroups
         if emlBarData_valid[.g] = 1
-            .topVal = emlBarData_mean[.g] + emlBarData_error[.g]
+            # v3.23: an undefined error contributes no headroom. Before the
+            # sentinel change emlBarData_error[g] was 0 here whenever there
+            # was nothing to compute, so this sum was always defined; it is
+            # now undefined under errorMode = 0 (every group), n = 1, and a
+            # missing custom error, and an unguarded sum would have failed the
+            # "<> undefined" tests below and collapsed the axis to 0..0.
+            .errForRange = 0
+            if emlBarData_errorDefined[.g] = 1
+                .errForRange = emlBarData_error[.g]
+            endif
+            .topVal = emlBarData_mean[.g] + .errForRange
             if .topVal <> undefined
                 if .topVal > emlBarData_visibleMax
                     emlBarData_visibleMax = .topVal
                 endif
             endif
-            .botVal = emlBarData_mean[.g] - emlBarData_error[.g]
+            .botVal = emlBarData_mean[.g] - .errForRange
             if .botVal <> undefined
                 if .botVal < emlBarData_visibleMin
                     emlBarData_visibleMin = .botVal
