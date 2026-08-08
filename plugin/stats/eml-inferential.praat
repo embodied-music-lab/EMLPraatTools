@@ -2,8 +2,21 @@
 # EML Stats : Inferential Statistics
 # ============================================================================
 # Module: eml-inferential.praat
-# Version: 1.3
+# Version: 1.4
 # Date: 2 August 2026
+#
+# v1.4: D125 — @emlPairwiseT and @emlPairwiseWilcoxon now call
+#        @emlRequireNumericColumn (.strict = 0) straight after the
+#        @emlRequireColumnPresent check D116 gave them. An all-blank data
+#        column used to leave both with an empty error$ and a matrix of
+#        undefined: no number was produced, so nothing could be misread as
+#        a result, but a direct caller could not tell a refusal from a
+#        computation and was told nothing about why. They now refuse in
+#        @emlAuditColumn's words, the same sentence @emlTwoWayAnova gives
+#        for the same column. Not reachable from the menus, where
+#        @emlRunPairwiseAnalysis asks both questions first; reachable from
+#        eml-lib-stats.praat, which is the supported direct-call path.
+#        No change on any column that holds numbers.
 #
 # v1.3: Statistical-correctness fixes (audit items 1-13).
 #   item 1  - @emlSpearmanCorrelation no longer clobbers
@@ -69,8 +82,6 @@
 #        @eml_getGroupData from eml-extract.praat.
 #
 # Part of the EML Stats library (EML Praat Tools).
-# Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# Development: Claude (Anthropic)
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
 #
 # Provides: @emlTTest, @emlTTestPaired, @emlCohenD,
@@ -98,6 +109,25 @@
 #
 # All procedures use the "eml" prefix (EML Stats) to avoid
 # namespace collisions with user scripts.
+#
+# ATTRIBUTION
+# Framework: EML PraatGen by Ian Howell
+#            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
+#
+# RESEARCH USE DISCLOSURE
+# If this script is used in research or publication, disclose AI use
+# per your target journal's policy. Suggested language:
+#
+#   "Praat analysis scripts were developed using the EML PraatGen
+#    Scripting Assistant (Howell, Embodied Music Lab) with code
+#    generation by Claude (Anthropic). All scripts were reviewed,
+#    tested, and validated by Ian Howell."
+#
+# The script author assumes responsibility for the correctness and
+# appropriate application of this code.
 # ============================================================================
 
 
@@ -2040,17 +2070,13 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
     endif
 
     if .error$ = ""
-        .colIdx1 = Get column index: .dataColumn$
-        if .colIdx1 = 0
-            .error$ = "Data column not found: " + .dataColumn$
-        endif
+        @emlRequireColumnPresent: .tableId, "Data column", .dataColumn$
+        .error$ = emlRequireColumnPresent.error$
     endif
 
     if .error$ = ""
-        .colIdx2 = Get column index: .factorColumn$
-        if .colIdx2 = 0
-            .error$ = "Factor column not found: " + .factorColumn$
-        endif
+        @emlRequireColumnPresent: .tableId, "Factor column", .factorColumn$
+        .error$ = emlRequireColumnPresent.error$
     endif
 
     # --- Discover groups ---
@@ -2274,17 +2300,13 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
     endif
 
     if .error$ = ""
-        .colIdx1 = Get column index: .dataColumn$
-        if .colIdx1 = 0
-            .error$ = "Data column not found: " + .dataColumn$
-        endif
+        @emlRequireColumnPresent: .tableId, "Data column", .dataColumn$
+        .error$ = emlRequireColumnPresent.error$
     endif
 
     if .error$ = ""
-        .colIdx2 = Get column index: .factorColumn$
-        if .colIdx2 = 0
-            .error$ = "Factor column not found: " + .factorColumn$
-        endif
+        @emlRequireColumnPresent: .tableId, "Factor column", .factorColumn$
+        .error$ = emlRequireColumnPresent.error$
     endif
 
     # --- Count and extract groups ---
@@ -2500,6 +2522,204 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
     selectObject: .tableId
 endproc
 
+
+# ============================================================================
+# @emlRequireColumnPresent                                               D116
+# ============================================================================
+# THE ONE column-presence guard, and the sentence before @emlRequireNumeric-
+# Column's. Presence, then type: a column that is not in the table has no
+# type to diagnose, and @emlRequireNumericColumn deliberately returns "" for
+# it so that this question is answered here instead.
+#
+# WHY THIS EXISTS. When the data column was simply ABSENT, two entry points
+# refused by describing what the absence did to the groups rather than
+# naming the column:
+#
+#   @emlRunTwoGroupAnalysis  Each group needs at least 2 observations.
+#                            Group "G1": n=0, group "G2": n=0
+#   @emlKruskalWallis        Group "H3" has 0 observations. Every group
+#                            needs at least 1.
+#   @emlScheffe              0 observations across 3 groups leave no
+#                            within-groups degrees of freedom. ...
+#
+# Every one of those is TRUE and every one of them sends the reader to
+# inspect their grouping variable, which is fine. The mirror image of D113:
+# there, a type error was reported as missing data; here, a missing column
+# is reported as a group shortage. Two more entry points -- @emlPairwiseT
+# and @emlPairwiseWilcoxon -- did not refuse at all, returning an empty
+# error$ and a matrix of undefined, which is D113a's shape surviving at the
+# library layer because that fix was applied only to the orchestrator above
+# them.
+#
+# ONLY THE ABSENT COLUMN, THOUGH. What this procedure fixed in those two was
+# the column that is not in the table. A column that WAS in the table and
+# held nothing usable went on returning an empty error$ and a matrix of
+# undefined for another day, because presence and type are two guards and
+# D116 added one of them (D125). Both tests now ask
+# @emlRequireNumericColumn as well, immediately after asking here, and the
+# order matters in the way described below: a column that is not there has
+# no type to diagnose. v28 pins both refusals, separately, at this layer.
+#
+# WHERE IT LIVES, AND WHY THE LIBRARY AND NOT THE ORCHESTRATOR. Six of the
+# eleven table-taking tests in this file already asked this question --
+# @emlTukeyHSD, @emlOneWayAnova, @emlTwoWayAnova, @emlBrownForsythe,
+# @emlWelchAnova, @emlGamesHowell -- each with its own two-line copy of the
+# same code and the same words, thirteen copies between them. This procedure
+# is those copies, collected; the other five now call it too, and the
+# wording exists once.
+#
+# Putting the guard in the TEST rather than in the orchestrator above it is
+# what makes it reach the supported direct-call path: eml-lib-stats.praat
+# pulls this file in without any orchestrator, and a script that calls
+# @emlKruskalWallis straight is exactly as entitled to a true diagnosis as a
+# menu item is. That is also the lesson of the two pairwise tests above --
+# D113a was fixed in @emlRunPairwiseAnalysis and the tests underneath it
+# stayed silent for a day. @emlRunTwoGroupAnalysis is the one caller that
+# takes the guard at the orchestrator instead, because its tests (@emlTTest,
+# @emlMannWhitneyU) take vectors and it is itself the lowest layer on that
+# path that ever sees the Table.
+#
+# THE WORDING IS NOT NEW. ".role$ + \" not found: \" + .columnName$" is
+# character-for-character what those six have always said, and what v22 and
+# v28 already assert verbatim. Nothing about their refusals changes; they
+# simply stopped being thirteen copies of a sentence.
+#
+# NOT THE EMPTY COLUMN. A column that IS in the table and holds nothing
+# usable is a different fault with a different remedy -- fill in the data,
+# not pick another column -- and it is @emlRequireNumericColumn's, which
+# says so in @emlAuditColumn's words ("36 cell(s) are empty (row 1 first).
+# Treated as missing data."). The two must not be merged: "not found" told
+# to someone whose column is merely blank would be as wrong as the group
+# message this replaces.
+#
+# Arguments:
+#   .tableId     - ID of the Table object
+#   .role$       - what this column is TO THE CALLER, capitalised and
+#                  leading the message: "Data column", "Factor column",
+#                  "First factor column", "Second factor column".
+#   .columnName$ - name of the column that must exist
+#
+# Output:
+#   .error$ - refusal message, or "" if the column is in the table
+#   .index  - the column's index, or 0. Callers that used to keep this in a
+#             local .colIdx are welcome to it; none currently reads it.
+#
+# Leaves .tableId selected, which every caller already required.
+# ============================================================================
+procedure emlRequireColumnPresent: .tableId, .role$, .columnName$
+    .error$ = ""
+    selectObject: .tableId
+    .index = Get column index: .columnName$
+    if .index = 0
+        .error$ = .role$ + " not found: " + .columnName$
+    endif
+endproc
+
+
+# ============================================================================
+# @emlRequireNumericColumn                                               D113
+# ============================================================================
+# THE ONE column-type guard. Every analysis entry point that takes a column
+# of measurements asks here before it computes anything, so that "you gave me
+# a column of text" is diagnosed once, in one wording, in one place.
+#
+# WHY THIS EXISTS. Driven through the GUI on 7 August 2026: the two-way ANOVA
+# accepted `singer` — a column of subject identifiers like "Singer_1" — as the
+# measurement column and printed a full result table, F = 132.92, p = 7e-15,
+# with no complaint. Praat's Table numericiser is the mechanism. `Get value:`
+# on a text cell returns undefined, which every row-wise reader in this plugin
+# already drops; but `Get all numbers in column:` and the built-in
+# `Report two-way anova:` numericise the column AS A WHOLE, and when any cell
+# is not strictly numeric they silently substitute each row's ALPHABETICAL
+# RANK. Sorting twelve singer names and calling the sort order a sound
+# pressure level produces a number, and nothing downstream can tell that it
+# is not a measurement.
+#
+# The row-wise paths were not silent, but they were not honest either: they
+# refused with "Need at least 3 non-missing values (found 0)", which tells a
+# user their data is missing when in fact their column is the wrong type.
+# One diagnosis, not eleven near-misses.
+#
+# WHERE IT LIVES. Conceptually this belongs beside @emlAuditColumn in
+# eml-extract.praat. It is here because eml-inferential.praat is the lowest
+# module that both the orchestrators (eml-analysis.praat) and the tests in
+# this file are guaranteed to have loaded: eml-lib-stats.praat pulls this
+# file in without eml-analysis.praat, so a guard defined there would be
+# unresolvable when @emlTwoWayAnova is called from a stats-only script.
+#
+# NO NEW CLASSIFIER. The verdict and every user-facing sentence come from
+# @emlAuditColumn, which is already "the one place that decision is made".
+# This procedure adds a sentence naming the column and its role and otherwise
+# quotes the audit verbatim, so the type diagnosis cannot drift away from the
+# missing-data diagnosis printed by the extraction paths.
+#
+# Arguments:
+#   .tableId     - ID of the Table object
+#   .role$       - what this column is TO THE CALLER, capitalised, e.g.
+#                  "Data column", "X column", "Dependent column". Leads the
+#                  message, so it reads as a sentence.
+#   .columnName$ - name of the column to check
+#   .strict      - 0 = refuse only when the column holds no numbers at all.
+#                      A column with SOME unusable cells is not refused: the
+#                      complete-case convention settled 21 July (C1/C2, and
+#                      restated for D96) drops those rows and discloses the
+#                      count, and that convention is not reopened here.
+#                  1 = refuse when ANY cell is unusable. For callers that
+#                      read the column through Praat's whole-column
+#                      numericiser, where a single bad cell replaces EVERY
+#                      value with its alphabetical rank and there is no
+#                      per-row drop to fall back on.
+#
+# Output:
+#   .error$ - refusal message, or "" if the column may be analysed.
+#
+# A column that does not exist and a table with no rows both return "". A
+# column that is not there has no type to diagnose: that question belongs to
+# @emlRequireColumnPresent above, which every caller here asks first, and
+# answering it in two places would be the start of two wordings for it. An
+# empty TABLE is still the callers' own guard, worded per call site because
+# the minimum n differs by test.
+# ============================================================================
+procedure emlRequireNumericColumn: .tableId, .role$, .columnName$, .strict
+    .error$ = ""
+    .nRows = 0
+    .nValid = 0
+    .note$ = ""
+
+    @emlAuditColumn: .tableId, .columnName$
+    ; Praat does not short-circuit `and`, so these are nested rather than
+    ; combined: emlAuditColumn.nValid is meaningless when the column was
+    ; not found.
+    if emlAuditColumn.error$ = ""
+        .nRows = emlAuditColumn.nRows
+        .nValid = emlAuditColumn.nValid
+        .note$ = emlAuditColumn.note$
+
+        if .nRows > 0
+            if .nValid = 0
+                .error$ = .role$ + " """ + .columnName$
+                ... + """ holds no numbers."
+                if .note$ <> ""
+                    .error$ = .error$ + " " + .note$
+                endif
+            elsif .strict = 1
+                if .nValid < .nRows
+                    .error$ = .role$ + " """ + .columnName$
+                    ... + """ is not numeric in every row. This test reads "
+                    ... + "the column as a whole, so one unusable cell "
+                    ... + "replaces every value with its alphabetical rank; "
+                    ... + "the unusable rows cannot be dropped individually "
+                    ... + "here."
+                    if .note$ <> ""
+                        .error$ = .error$ + " " + .note$
+                    endif
+                endif
+            endif
+        endif
+    endif
+endproc
+
+
 # ============================================================================
 # @emlTwoWayAnova
 # ============================================================================
@@ -2617,24 +2837,32 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     endif
 
     if .error$ = ""
-        .colIdx1 = Get column index: .dataCol$
-        if .colIdx1 = 0
-            .error$ = "Data column not found: " + .dataCol$
-        endif
+        @emlRequireColumnPresent: .tableId, "Data column", .dataCol$
+        .error$ = emlRequireColumnPresent.error$
     endif
 
     if .error$ = ""
-        .colIdx2 = Get column index: .factor1$
-        if .colIdx2 = 0
-            .error$ = "First factor column not found: " + .factor1$
-        endif
+        @emlRequireColumnPresent: .tableId, "First factor column", .factor1$
+        .error$ = emlRequireColumnPresent.error$
     endif
 
     if .error$ = ""
-        .colIdx3 = Get column index: .factor2$
-        if .colIdx3 = 0
-            .error$ = "Second factor column not found: " + .factor2$
-        endif
+        @emlRequireColumnPresent: .tableId, "Second factor column", .factor2$
+        .error$ = emlRequireColumnPresent.error$
+    endif
+
+    # --- The data column must be a column of numbers (D113) ---
+    #
+    # STRICT, uniquely among the tests in this file. Every other path reads
+    # the data column row by row and can drop an unusable cell; the built-in
+    # below numericises the whole column in one go and silently substitutes
+    # alphabetical ranks when any cell fails, so there is no partial answer
+    # to give. This guard runs BEFORE the built-in, which is also the last
+    # moment at which the Info window is still the caller's.
+
+    if .error$ = ""
+        @emlRequireNumericColumn: .tableId, "Data column", .dataCol$, 1
+        .error$ = emlRequireNumericColumn.error$
     endif
 
     # --- Run Report two-way anova ---
@@ -3051,19 +3279,32 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
     .tieCorrection = undefined
     .error$ = ""
 
+    # --- The data column must be in the table (D116) ---
+    #
+    # Ahead of @emlCountGroups, because a column that is not there makes
+    # every group look empty and the per-group guard below then reports the
+    # first empty group -- "Group "H3" has 0 observations" -- which is true,
+    # is about the groups, and is not the problem. See
+    # @emlRequireColumnPresent.
+
+    @emlRequireColumnPresent: .tableId, "Data column", .dataCol$
+    .error$ = emlRequireColumnPresent.error$
+
     # --- Discover groups ---
 
-    @emlCountGroups: .tableId, .factorCol$
+    if .error$ = ""
+        @emlCountGroups: .tableId, .factorCol$
 
-    if emlCountGroups.error$ <> ""
-        .error$ = emlCountGroups.error$
-    else
-        .nGroups = emlCountGroups.nGroups
+        if emlCountGroups.error$ <> ""
+            .error$ = emlCountGroups.error$
+        else
+            .nGroups = emlCountGroups.nGroups
 
-        if .nGroups < 2
-            .error$ = "This test compares 2 or more groups; the group "
-            ... + "column """ + .factorCol$ + """ has "
-            ... + string$ (.nGroups) + "."
+            if .nGroups < 2
+                .error$ = "This test compares 2 or more groups; the group "
+                ... + "column """ + .factorCol$ + """ has "
+                ... + string$ (.nGroups) + "."
+            endif
         endif
     endif
 
@@ -3260,6 +3501,19 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
     ... and .method$ <> "bh"
         .error$ = "The p-value adjustment method must be bonferroni, "
         ... + "holm, or bh; got: " + .method$
+    endif
+
+    # --- The data column must be in the table (D116) ---
+    #
+    # Ahead of the group work, because a column that is not there
+    # makes every group look empty and the diagnosis then lands on
+    # the grouping variable instead of the column the caller named.
+    # Was: "Group ""H3"" has 0 observations" -- true, about the
+    # groups, and not the problem.
+
+    if .error$ = ""
+        @emlRequireColumnPresent: .tableId, "Data column", .dataCol$
+        .error$ = emlRequireColumnPresent.error$
     endif
 
     # --- Discover groups ---
@@ -3548,6 +3802,42 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
         endif
     endif
 
+    # --- The data column must be in the table (D116) ---
+    #
+    # Ahead of the group work, because a column that is not there
+    # makes every group look empty and the diagnosis then lands on
+    # the grouping variable instead of the column the caller named.
+    # Was: nothing at all. This test returned an EMPTY error$ and a
+    # matrix of undefined, which is D113a's shape surviving one layer
+    # below the orchestrator that was patched for it.
+
+    if .error$ = ""
+        @emlRequireColumnPresent: .tableId, "Data column", .dataCol$
+        .error$ = emlRequireColumnPresent.error$
+    endif
+
+    # --- ...and it must hold numbers (D125) ---
+    #
+    # NOT strict. This test reads the column row by row through
+    # @eml_getGroupData, so the complete-case convention applies: a
+    # column with SOME unusable cells is analysed on the rows that
+    # parse. Only a column holding no numbers at all is refused.
+    #
+    # D116 gave this test a presence guard and stopped there, so an
+    # all-blank column still ended in an empty error$ and a matrix of
+    # undefined. No number was produced and none could be misread as a
+    # result -- what was missing was the sentence saying why, and the
+    # caller had no way to tell a refusal from a computation. The menu
+    # path never reached it, because @emlRunPairwiseAnalysis asks the
+    # same two questions first; a script calling this test straight,
+    # which eml-lib-stats.praat exists to support, is entitled to the
+    # same answer. Same reasoning as D116's, one guard further on.
+
+    if .error$ = ""
+        @emlRequireNumericColumn: .tableId, "Data column", .dataCol$, 0
+        .error$ = emlRequireNumericColumn.error$
+    endif
+
     # --- Discover groups ---
 
     if .error$ = ""
@@ -3744,6 +4034,36 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
         ... + "holm, or bh; got: " + .method$
     endif
 
+    # --- The data column must be in the table (D116) ---
+    #
+    # Ahead of the group work, because a column that is not there
+    # makes every group look empty and the diagnosis then lands on
+    # the grouping variable instead of the column the caller named.
+    # Was: nothing at all. This test returned an EMPTY error$ and a
+    # matrix of undefined, which is D113a's shape surviving one layer
+    # below the orchestrator that was patched for it.
+
+    if .error$ = ""
+        @emlRequireColumnPresent: .tableId, "Data column", .dataCol$
+        .error$ = emlRequireColumnPresent.error$
+    endif
+
+    # --- ...and it must hold numbers (D125) ---
+    #
+    # NOT strict, for the same reason as @emlPairwiseT above: this test
+    # reads the column row by row through @eml_getGroupData, so a column
+    # with SOME unusable cells is analysed on the rows that parse and
+    # only a column holding no numbers at all is refused. The full note
+    # is at @emlPairwiseT; these two were the pair D116 left with a
+    # presence guard and no type guard, and they are closed together
+    # because a caller cannot be expected to know which of the two
+    # pairwise tests answers.
+
+    if .error$ = ""
+        @emlRequireNumericColumn: .tableId, "Data column", .dataCol$, 0
+        .error$ = emlRequireNumericColumn.error$
+    endif
+
     # --- Discover groups ---
 
     if .error$ = ""
@@ -3912,18 +4232,39 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
     .dfWithin = undefined
     .error$ = ""
 
+    # --- The data column must be in the table (D116) ---
+    #
+    # Ahead of the group work, because a column that is not there
+    # makes every group look empty and the diagnosis then lands on
+    # the grouping variable instead of the column the caller named.
+    # Was: "0 observations across 3 groups leave no within-groups
+    # degrees of freedom" -- a statement about the design.
+
+    if .error$ = ""
+        @emlRequireColumnPresent: .tableId, "Data column", .dataCol$
+        .error$ = emlRequireColumnPresent.error$
+    endif
+
     # --- Discover groups ---
+    #
+    # NESTED in `if .error$ = ""`, unlike the version this replaces. The
+    # block used to run unconditionally and assign emlCountGroups.error$
+    # over whatever was already in .error$, which would have thrown away
+    # the missing-column refusal above whenever the FACTOR column happened
+    # to be fine -- the exact case the guard exists for.
 
-    @emlCountGroups: .tableId, .factorCol$
+    if .error$ = ""
+        @emlCountGroups: .tableId, .factorCol$
 
-    if emlCountGroups.error$ <> ""
-        .error$ = emlCountGroups.error$
-    else
-        .nGroups = emlCountGroups.nGroups
-        if .nGroups < 2
-            .error$ = "This test compares 2 or more groups; the group "
-            ... + "column """ + .factorCol$ + """ has "
-            ... + string$ (.nGroups) + "."
+        if emlCountGroups.error$ <> ""
+            .error$ = emlCountGroups.error$
+        else
+            .nGroups = emlCountGroups.nGroups
+            if .nGroups < 2
+                .error$ = "This test compares 2 or more groups; the group "
+                ... + "column """ + .factorCol$ + """ has "
+                ... + string$ (.nGroups) + "."
+            endif
         endif
     endif
 
@@ -4091,17 +4432,13 @@ procedure emlBrownForsythe: .tableId, .dataCol$, .factorCol$
     endif
 
     if .error$ = ""
-        .colIdx1 = Get column index: .dataCol$
-        if .colIdx1 = 0
-            .error$ = "Data column not found: " + .dataCol$
-        endif
+        @emlRequireColumnPresent: .tableId, "Data column", .dataCol$
+        .error$ = emlRequireColumnPresent.error$
     endif
 
     if .error$ = ""
-        .colIdx2 = Get column index: .factorCol$
-        if .colIdx2 = 0
-            .error$ = "Factor column not found: " + .factorCol$
-        endif
+        @emlRequireColumnPresent: .tableId, "Factor column", .factorCol$
+        .error$ = emlRequireColumnPresent.error$
     endif
 
     # --- Count and extract groups ---
@@ -4335,17 +4672,13 @@ procedure emlWelchAnova: .tableId, .dataCol$, .factorCol$
     endif
 
     if .error$ = ""
-        .colIdx1 = Get column index: .dataCol$
-        if .colIdx1 = 0
-            .error$ = "Data column not found: " + .dataCol$
-        endif
+        @emlRequireColumnPresent: .tableId, "Data column", .dataCol$
+        .error$ = emlRequireColumnPresent.error$
     endif
 
     if .error$ = ""
-        .colIdx2 = Get column index: .factorCol$
-        if .colIdx2 = 0
-            .error$ = "Factor column not found: " + .factorCol$
-        endif
+        @emlRequireColumnPresent: .tableId, "Factor column", .factorCol$
+        .error$ = emlRequireColumnPresent.error$
     endif
 
     # --- Count and extract groups ---
@@ -4616,17 +4949,13 @@ procedure emlGamesHowell: .tableId, .dataCol$, .factorCol$, .alpha
     endif
 
     if .error$ = ""
-        .colIdx1 = Get column index: .dataCol$
-        if .colIdx1 = 0
-            .error$ = "Data column not found: " + .dataCol$
-        endif
+        @emlRequireColumnPresent: .tableId, "Data column", .dataCol$
+        .error$ = emlRequireColumnPresent.error$
     endif
 
     if .error$ = ""
-        .colIdx2 = Get column index: .factorCol$
-        if .colIdx2 = 0
-            .error$ = "Factor column not found: " + .factorCol$
-        endif
+        @emlRequireColumnPresent: .tableId, "Factor column", .factorCol$
+        .error$ = emlRequireColumnPresent.error$
     endif
 
     # --- Discover groups ---

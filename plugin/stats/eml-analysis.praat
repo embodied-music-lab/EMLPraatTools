@@ -2,8 +2,18 @@
 # EML Stats : Analysis Orchestrators
 # ============================================================================
 # Module: eml-analysis.praat
-# Version: 1.2
-# Date: 2 August 2026
+# Version: 1.3
+# Date: 8 August 2026
+#
+# v1.3: The normality decision rule is extracted into
+#        @emlNormalityRecommendation and is now written down in exactly ONE
+#        place. It had three hand-maintained copies that disagreed: this
+#        file, @wizardNormDiag (scripts/eml-wizard.praat) and the per-group
+#        branch of scripts/eml-check-normality.praat, the last still on
+#        hard-coded thresholds of 1 and 3 and on the `skKurtFail or swFail`
+#        gate this file retired on 5 August. All three sites now call the
+#        one procedure. The rule and the thresholds are unchanged here;
+#        @emlRunNormalityAnalysis's outputs are identical. (D137)
 #
 # v1.2: Correctness + robustness fixes in the orchestrator layer.
 #   item 1 — emlRMPostHoc no longer renders a failed pairwise test as an
@@ -74,6 +84,25 @@
 # all procedure names at parse time, so forward references work.
 #
 # Architecture: EML_V1_ARCHITECTURE.md §5
+#
+# ATTRIBUTION
+# Framework: EML PraatGen by Ian Howell
+#            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
+#
+# RESEARCH USE DISCLOSURE
+# If this script is used in research or publication, disclose AI use
+# per your target journal's policy. Suggested language:
+#
+#   "Praat analysis scripts were developed using the EML PraatGen
+#    Scripting Assistant (Howell, Embodied Music Lab) with code
+#    generation by Claude (Anthropic). All scripts were reviewed,
+#    tested, and validated by Ian Howell."
+#
+# The script author assumes responsibility for the correctness and
+# appropriate application of this code.
 # ============================================================================
 
 
@@ -115,6 +144,34 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     endif
 
     if .error$ <> ""
+        goto END_TWO_GROUP
+    endif
+
+    ; D116. The data column must BE there, asked before it is asked to hold
+    ; numbers. Every other orchestrator hands the Table to something that
+    ; asks this itself -- a test in eml-inferential.praat, or a reader in
+    ; eml-extract.praat -- and gets the refusal back from there. This one
+    ; cannot: @emlTTest and @emlMannWhitneyU take vectors, and
+    ; @eml_getGroupData answers a missing column with an empty vector rather
+    ; than an error, so this orchestrator is the lowest layer on this path
+    ; that ever sees the Table. Without the guard the n1/n2 check below fired
+    ; instead and said
+    ;   Each group needs at least 2 observations. Group "G1": n=0, ...
+    ; which is true, is about the groups, and sends the reader to inspect a
+    ; grouping variable that is perfectly fine.
+    @emlRequireColumnPresent: .tableId, "Data column", .dataCol$
+    if emlRequireColumnPresent.error$ <> ""
+        .error$ = emlRequireColumnPresent.error$
+        goto END_TWO_GROUP
+    endif
+
+    ; D113. The data column must hold numbers. See @emlRequireNumericColumn
+    ; in eml-inferential.praat: this call is the same in every orchestrator
+    ; below and differs only in the role word and the column, which is the
+    ; whole point -- the diagnosis is written once.
+    @emlRequireNumericColumn: .tableId, "Data column", .dataCol$, 0
+    if emlRequireNumericColumn.error$ <> ""
+        .error$ = emlRequireNumericColumn.error$
         goto END_TWO_GROUP
     endif
 
@@ -287,6 +344,13 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
         goto END_ANOVA
     endif
 
+    ; D113 -- see the note in @emlRunTwoGroupAnalysis.
+    @emlRequireNumericColumn: .tableId, "Data column", .dataCol$, 0
+    if emlRequireNumericColumn.error$ <> ""
+        .error$ = emlRequireNumericColumn.error$
+        goto END_ANOVA
+    endif
+
     @emlOneWayAnova: .tableId, .dataCol$, .groupCol$, .doTukey
     if emlOneWayAnova.error$ <> ""
         .error$ = emlOneWayAnova.error$
@@ -368,6 +432,13 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
     .nGroups = emlCountGroups.nGroups
     if .nGroups < 2
         .error$ = "Group column """ + .groupCol$ + """ has fewer than 2 groups."
+        goto END_KW
+    endif
+
+    ; D113 -- see the note in @emlRunTwoGroupAnalysis.
+    @emlRequireNumericColumn: .tableId, "Data column", .dataCol$, 0
+    if emlRequireNumericColumn.error$ <> ""
+        .error$ = emlRequireNumericColumn.error$
         goto END_KW
     endif
 
@@ -463,6 +534,32 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     endif
     if emlCountGroups.nGroups < 2
         .error$ = "Group column """ + .groupCol$ + """ has fewer than 2 groups."
+        goto END_PAIRWISE
+    endif
+
+    ; D113a. This orchestrator had NO data-column guard at all, and neither
+    ; does @emlPairwiseT: pointed at a column that is not in the table it
+    ; returned an empty error$ and printed a full comparison matrix of "n/a"
+    ; -- the same shape as the two-way defect, one degree less dangerous
+    ; only because the cells read n/a rather than plausible numbers. Found by
+    ; harness/coltype's r04 case. Wording is @emlOneWayAnova's, verbatim.
+    ;
+    ; D116. The inline copy of that check is gone; this is the shared guard,
+    ; and @emlPairwiseT, @emlPairwiseWilcoxon and @emlScheffe now ask it too
+    ; -- the fix above stopped at this orchestrator, so a script calling
+    ; those three directly still got an empty error$ from the first two and
+    ; a sentence about within-groups degrees of freedom from the third. The
+    ; message here is unchanged, which is the point of moving it.
+    @emlRequireColumnPresent: .tableId, "Data column", .dataCol$
+    if emlRequireColumnPresent.error$ <> ""
+        .error$ = emlRequireColumnPresent.error$
+        goto END_PAIRWISE
+    endif
+
+    ; D113 -- see the note in @emlRunTwoGroupAnalysis.
+    @emlRequireNumericColumn: .tableId, "Data column", .dataCol$, 0
+    if emlRequireNumericColumn.error$ <> ""
+        .error$ = emlRequireNumericColumn.error$
         goto END_PAIRWISE
     endif
 
@@ -1246,6 +1343,20 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
+    ; D113 -- see the note in @emlRunTwoGroupAnalysis. Both columns are
+    ; checked, first then second, so the message names the one the user has
+    ; to change rather than reporting the pair count that resulted.
+    @emlRequireNumericColumn: .tableId, "First column", .col1$, 0
+    if emlRequireNumericColumn.error$ <> ""
+        .error$ = emlRequireNumericColumn.error$
+        goto END_PAIRED
+    endif
+    @emlRequireNumericColumn: .tableId, "Second column", .col2$, 0
+    if emlRequireNumericColumn.error$ <> ""
+        .error$ = emlRequireNumericColumn.error$
+        goto END_PAIRED
+    endif
+
     # Row-wise complete-case extraction: a pair is kept only when BOTH
     # columns are defined in the same row, preserving the pairing.
     # Extracting each column independently (per-column undefined removal)
@@ -1356,6 +1467,18 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
 
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
+
+    ; D113 -- see the note in @emlRunTwoGroupAnalysis.
+    @emlRequireNumericColumn: .tableId, "X column", .colX$, 0
+    if emlRequireNumericColumn.error$ <> ""
+        .error$ = emlRequireNumericColumn.error$
+        goto END_CORR
+    endif
+    @emlRequireNumericColumn: .tableId, "Y column", .colY$, 0
+    if emlRequireNumericColumn.error$ <> ""
+        .error$ = emlRequireNumericColumn.error$
+        goto END_CORR
+    endif
 
     # Row-wise complete-case extraction: keep a row only when BOTH X and Y
     # are defined, preserving the pairing. Independent per-column extraction
@@ -1469,6 +1592,15 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
+    ; D113 -- see the note in @emlRunTwoGroupAnalysis. This orchestrator
+    ; already refused a text column, but with "contains no valid numeric
+    ; values", which names neither the offending cell nor the diagnosis.
+    @emlRequireNumericColumn: .tableId, "Data column", .dataCol$, 0
+    if emlRequireNumericColumn.error$ <> ""
+        .error$ = emlRequireNumericColumn.error$
+        goto END_DESCRIBE
+    endif
+
     @emlExtractColumn: .tableId, .dataCol$
     if emlExtractColumn.error$ <> ""
         .error$ = emlExtractColumn.error$
@@ -1540,6 +1672,16 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         endif
     endif
 
+    ; D113 -- see the note in @emlRunTwoGroupAnalysis.
+    if .error$ = ""
+        @emlRequireNumericColumn: .tableId, "Dependent column", .depCol$, 0
+        .error$ = emlRequireNumericColumn.error$
+    endif
+    if .error$ = ""
+        @emlRequireNumericColumn: .tableId, "Predictor column", .predCol$, 0
+        .error$ = emlRequireNumericColumn.error$
+    endif
+
     if .error$ = ""
         # Extract paired values, pairwise-delete undefined
         .nValid = 0
@@ -1594,6 +1736,114 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
     selectObject: .tableId
 endproc
 
+# ============================================================================
+# @emlNormalityRecommendation
+# ============================================================================
+# THE normality decision rule. This procedure is the ONLY place in the plugin
+# where the hierarchy and its thresholds are written down.
+#
+# Until 8 August the rule existed in three hand-maintained copies — here, in
+# @wizardNormDiag (scripts/eml-wizard.praat) and in the per-group branch of
+# scripts/eml-check-normality.praat — and they did not agree. The
+# check-normality copy still carried hard-coded thresholds of 1 and 3 against
+# shared constants of 2 and 7, and still used the pre-5-August
+# `skKurtFail or swFail` gate, so ONE wrapper gave two different answers for
+# the same data depending on whether the user picked a grouping column. Three
+# copies of a rule is three chances to drift; this is one copy with three
+# callers. (D137)
+#
+# THE HIERARCHY
+#
+# SHAPIRO-WILK IS THE TEST. Skewness and kurtosis are descriptive statistics,
+# not tests. They are the backup — they decide only where Shapiro-Wilk cannot
+# — plus the one large-n override below.
+#
+#   Shapiro-Wilk usable and rejects (p < 0.05)
+#       shape not severe and n > 50  → parametric  (large-n override)
+#       otherwise                    → nonparametric
+#   Shapiro-Wilk usable, does not reject
+#                                    → parametric. Severe shape is REPORTED
+#                                      by the caller but does not overturn a
+#                                      formal test. Shapiro-Wilk is the most
+#                                      powerful of the common omnibus
+#                                      normality tests across a broad range
+#                                      of alternatives (Razali & Wah 2011); a
+#                                      rule of thumb does not outvote it.
+#   Shapiro-Wilk unusable            → shape decides, and this is the ONLY
+#                                      branch in which it decides anything.
+#
+# The large-n override exists because Shapiro-Wilk rejects departures too
+# small to matter for a parametric test once n is large.
+#
+# Arguments:
+#   .skewness — sample skewness
+#   .kurtosis — EXCESS kurtosis (0 = normal), not raw kurtosis
+#   .n        — count the statistics were computed on (non-missing values)
+#   .swP      — @emlShapiroWilk's .p. MAY BE undefined; see the note below.
+#   .swError$ — @emlShapiroWilk's .error$; "" means the test produced a p
+#
+# Output:
+#   .recommendation$ — "parametric" or "nonparametric"
+#   .swUsable        — 1 when Shapiro-Wilk produced a p-value
+#   .swFail          — 1 when Shapiro-Wilk ran AND rejected (p < 0.05)
+#   .shapeSevere     — 1 when |skew| >= emlSkewThreshold or
+#                      |excess kurtosis| >= emlKurtosisThreshold
+#   .largeNOverride  — 1 when Shapiro-Wilk rejected but shape is within
+#                      limits at n > 50, so the answer is parametric anyway
+#
+# This procedure is PURE DECISION. It prints nothing, declares no result
+# object, touches no global and selects no object, so the wizard can call it
+# without disturbing wizard state. Callers own every message; they select it
+# from the flags above rather than re-deriving the rule.
+#
+# Thresholds are emlSkewThreshold / emlKurtosisThreshold (stats/
+# eml-output.praat), the same constants the printed verdicts use, so the gate
+# and the prose cannot disagree.
+#
+# UNDEFINED .swP IS EXPECTED, NOT AN ERROR. @emlShapiroWilk initialises .p to
+# undefined and leaves it there whenever it sets .error$ (n < 3, n > 5000,
+# zero range). The .swUsable test is therefore NESTED, not `and`-ed: Praat
+# does not short-circuit `and`, so `.swError$ = "" and .swP < 0.05` evaluates
+# the comparison against undefined on every call. Do not "simplify" it back.
+# ============================================================================
+procedure emlNormalityRecommendation: .skewness, .kurtosis, .n, .swP, .swError$
+    .shapeSevere = abs (.skewness) >= emlSkewThreshold
+    ... or abs (.kurtosis) >= emlKurtosisThreshold
+
+    .swUsable = 0
+    if .swError$ = ""
+        .swUsable = 1
+    endif
+
+    ; Nested, not `and` -- .swP is undefined when .swUsable is 0.
+    .swFail = 0
+    if .swUsable
+        if .swP < 0.05
+            .swFail = 1
+        endif
+    endif
+
+    .largeNOverride = 0
+    if .swUsable
+        if .swFail
+            if (not .shapeSevere) and .n > 50
+                .recommendation$ = "parametric"
+                .largeNOverride = 1
+            else
+                .recommendation$ = "nonparametric"
+            endif
+        else
+            .recommendation$ = "parametric"
+        endif
+    else
+        if .shapeSevere
+            .recommendation$ = "nonparametric"
+        else
+            .recommendation$ = "parametric"
+        endif
+    endif
+endproc
+
 # v1.2 item 7: .testType$ is RESERVED and deliberately unread. This
 # orchestrator always computes both families of evidence — descriptive shape
 # (skewness/kurtosis) and the formal Shapiro-Wilk test — and combines them
@@ -1623,6 +1873,13 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
     if .dataIdx = 0
         .error$ = "Column """ + .dataCol$ + """ not found in table """
         ... + .tableName$ + """."
+        goto END_NORMALITY
+    endif
+
+    ; D113 -- see the note in @emlRunTwoGroupAnalysis.
+    @emlRequireNumericColumn: .tableId, "Data column", .dataCol$, 0
+    if emlRequireNumericColumn.error$ <> ""
+        .error$ = emlRequireNumericColumn.error$
         goto END_NORMALITY
     endif
 
@@ -1675,62 +1932,23 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
 
         # ── Interpretation ─────────────────────────────────────────────
         #
-        # SHAPIRO-WILK IS THE TEST. Skewness and kurtosis are descriptive
-        # statistics, not tests, and they act as a backup — used to decide
-        # only where Shapiro-Wilk cannot.
+        # The rule itself lives in @emlNormalityRecommendation, above. It is
+        # not restated here, and it must not be: the wizard's @wizardNormDiag
+        # and the per-group branch of scripts/eml-check-normality.praat call
+        # the same procedure with the same five arguments, and the whole
+        # point of v1.3 is that there is now exactly one copy to maintain.
         #
-        # Until 5 August this gate read `skKurtFail OR swFail`, which let a
-        # descriptive rule of thumb overrule a formal test: a column
-        # Shapiro-Wilk had declined to reject was still sent nonparametric
-        # because its skewness crossed a threshold. That inverts the
-        # hierarchy. Shapiro-Wilk is the most powerful of the common
-        # omnibus normality tests across a broad range of alternatives
-        # (Razali & Wah 2011); a rule of thumb does not outvote it.
-        #
-        # The one place shape legitimately intervenes is the large-n case,
-        # where Shapiro-Wilk rejects departures too small to matter for a
-        # parametric test. That override is kept, unchanged.
-        #
-        # Thresholds live in emlSkewThreshold / emlKurtosisThreshold
-        # (stats/eml-output.praat) so this gate, the wizard's classifier and
-        # the printed verdicts cannot drift apart, which they had.
-        .shapeSevere = abs (.skewness) >= emlSkewThreshold
-        ... or abs (.kurtosis) >= emlKurtosisThreshold
-        .swUsable = (.swError$ = "")
-        .swFail = 0
-        if .swUsable and .swP < 0.05
-            .swFail = 1
-        endif
-
-        .largeNOverride = 0
-        if .swUsable
-            if .swFail
-                # Large-n override: Shapiro-Wilk rejects trivial departures
-                # at large n. If the shape is not severe by the published
-                # guideline, recommend parametric anyway — parametric tests
-                # are robust at this sample size.
-                if (not .shapeSevere) and .nValid > 50
-                    .recommendation$ = "parametric"
-                    .largeNOverride = 1
-                else
-                    .recommendation$ = "nonparametric"
-                endif
-            else
-                # The test did not reject. Severe shape is still REPORTED —
-                # @emlReportNormalityAnalysis prints the verdict either way —
-                # but it does not overturn the test's finding.
-                .recommendation$ = "parametric"
-            endif
-        else
-            # Shapiro-Wilk unavailable (n outside its defined range, or an
-            # internal error). This is the backup case, and the only one in
-            # which shape decides anything.
-            if .shapeSevere
-                .recommendation$ = "nonparametric"
-            else
-                .recommendation$ = "parametric"
-            endif
-        endif
+        # The flags are copied out into this orchestrator's own namespace
+        # because @emlReportNormalityAnalysis and @emlDeclareNormalityResult
+        # read them from here, and because anything called between now and
+        # those two could re-enter @emlNormalityRecommendation.
+        @emlNormalityRecommendation: .skewness, .kurtosis, .nValid,
+        ... .swP, .swError$
+        .shapeSevere = emlNormalityRecommendation.shapeSevere
+        .swUsable = emlNormalityRecommendation.swUsable
+        .swFail = emlNormalityRecommendation.swFail
+        .largeNOverride = emlNormalityRecommendation.largeNOverride
+        .recommendation$ = emlNormalityRecommendation.recommendation$
 
         @emlCSVInit
         @emlReportNormalityAnalysis: .tableName$, .dataCol$,
@@ -1805,6 +2023,23 @@ procedure emlExtractConditionMatrix: .tableId, .conditionCols$
             goto END_EXTRACT_COND
         endif
     endfor
+
+    ; D113. Both @emlRunRepeatedMeasuresAnalysis and @emlRunFriedmanAnalysis
+    ; reach their condition columns through here, so the column-type guard is
+    ; applied ONCE, for both, at the shared reader -- see the note in
+    ; @emlRunTwoGroupAnalysis. Without it a text condition column presented
+    ; as "Need at least 2 complete-case subjects", which reads as a data
+    ; shortage rather than as the wrong column.
+    for .j from 1 to .k
+        if .error$ = ""
+            @emlRequireNumericColumn: .tableId, "Condition column",
+            ... .colLabel$ [.j], 0
+            .error$ = emlRequireNumericColumn.error$
+        endif
+    endfor
+    if .error$ <> ""
+        goto END_EXTRACT_COND
+    endif
     # D96. This is the row-wise reader: a subject is complete only if every
     # condition cell is present. It used to ask "Get value:", which counts a
     # European "1,5" as present and then puts 1 into the matrix. It now goes

@@ -2,7 +2,31 @@
 # EML Stats : Output Formatting
 # ============================================================================
 # Module: eml-output.praat
-# Version: 1.8
+# Version: 1.9
+# v1.9: COMMENTS ONLY — no executable line changed. Five statements that the
+#       code under them contradicts, corrected.
+#       (1) The Provides list named @emlCSVAddRow. No procedure of that name
+#         has ever existed anywhere in the plugin. The list is now the real
+#         CSV primitives (@emlCSVInit / @emlCSVSetTable / @emlCSVTermType /
+#         @emlCSVAdd / @emlCSVAddStr / @emlCSVAddDescriptives /
+#         @emlExportStatsCSV), the rest of the public surface by family, and
+#         a counting rule so the whole thing can be checked rather than
+#         believed.
+#       (2) @emlWrapText's header cited "@comment:", which reads as a
+#         procedure call in this file's notation and is not one — `comment:`
+#         is a Praat dialog command. It also described @emlErrorDialog as the
+#         only consumer; @emlReportNote and, since D124,
+#         @emlDrawAnnotationBlock also wrap through it.
+#       (3) The D27 provenance note said the CSV self-documents the
+#         adjustment "in its `test` column". The long-format schema
+#         (emlCSV_header$) has no `test` column; the adjustment is a row
+#         whose `field` is "adjustment".
+#       (4) An "END OF MODULE" banner sat above @emlReportDescriptiveAnalysis
+#         rather than at the end of the module.
+#       (5) That procedure's note cited a bare "line 9434" for a
+#         "Procedure not found" error. Praat counts that line in the
+#         FLATTENED script, after include expansion, so it names no line of
+#         any file on disk. Replaced with the anchor and the reason.
 # v1.8: Audit fixes (items 8, 9).
 #       Item 8 — @emlFormatEffectLabel labelled R-squared values with
 #         Cohen's d thresholds. It now recognises "r_squared" (and the
@@ -35,20 +59,60 @@
 #        Timestamp added to every report.
 #
 # Part of the EML Stats library (EML Praat Tools).
-# Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# Development: Claude (Anthropic)
 # License: GPL-3.0-or-later
 #
-# Provides: @emlReportHeader, @emlReportFooter, @emlReportSection,
-#   @emlReportLine, @emlReportLineString, @emlReportBlank,
-#   @emlFormatP, @emlFormatCI, @emlFormatTestResult,
-#   @emlReportDescriptiveRow, @emlReportDescriptiveHeader,
-#   @emlReportAPA, @emlReportToFile, @emlFormatEffectLabel,
-#   @emlPadRight, @emlUnderscoreToSpace, @emlSaveInfoToFile,
-#   @emlCSVInit, @emlCSVAddRow, @emlExportStatsCSV, @emlClearInfo,
-#   @emlReportPWithExact, @emlResetExplanations, @emlReportContext
+# Provides: 55 procedures. THE COUNTING RULE, so the number can be checked
+# rather than believed:
+#     grep -c "^procedure " plugin/stats/eml-output.praat
+# Two of the 55 are private and are named with an underscore after the prefix
+# (@eml_csvQuote, @eml_csvAppend); the other 53 are public. By family:
+#
+#   Report frame — @emlReportHeader, @emlReportFooter, @emlReportSection,
+#     @emlReportLine, @emlReportLineString, @emlReportBlank,
+#     @emlReportPWithExact, @emlReportContext, @emlReportNote,
+#     @emlReportDescriptiveHeader, @emlReportDescriptiveRow,
+#     @emlReportDescriptiveAnalysis, @emlReportAPA, @emlReportToFile,
+#     @emlSaveInfoToFile, @emlClearInfo
+#   Formatting — @emlFormatP, @emlFormatCI, @emlFormatTestResult,
+#     @emlFormatEffectLabel, @emlPadRight, @emlUnderscoreToSpace,
+#     @emlWrapText
+#   CSV export — @emlCSVInit, @emlCSVSetTable, @emlCSVTermType, @emlCSVAdd,
+#     @emlCSVAddStr, @emlCSVAddDescriptives, @emlExportStatsCSV
+#     (this list read "@emlCSVAddRow" until 8 Aug 2026. No such procedure has
+#     ever existed anywhere in the plugin —
+#     grep -rn "^procedure emlCSVAddRow" plugin/ returns nothing — although
+#     the notes under audit/ name it fourteen times, having taken it from
+#     here. The export is LONG format: emlCSV_header$ is
+#     "table,analysis,term,term_type,field,value", and @emlCSVAdd /
+#     @emlCSVAddStr each append ONE such row, i.e. one field of one term.
+#     There is no procedure that writes a whole analysis in one call, which
+#     is what the name @emlCSVAddRow implied.)
+#   Wrapper plumbing — @emlWrapperInit, @emlWrapperExportCSV,
+#     @emlWrapperCommonFields, @emlHandleCommonFields
+#   Wizard glosses — @emlResetExplanations plus the 17 @emlWizardExplain*
+#     helpers (grep -c "^procedure emlWizardExplain")
+#   Errors — @emlErrorDialog
 #
 # All procedures use the "eml" prefix (EML Stats).
+#
+# ATTRIBUTION
+# Framework: EML PraatGen by Ian Howell
+#            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
+#
+# RESEARCH USE DISCLOSURE
+# If this script is used in research or publication, disclose AI use
+# per your target journal's policy. Suggested language:
+#
+#   "Praat analysis scripts were developed using the EML PraatGen
+#    Scripting Assistant (Howell, Embodied Music Lab) with code
+#    generation by Claude (Anthropic). All scripts were reviewed,
+#    tested, and validated by Ian Howell."
+#
+# The script author assumes responsibility for the correctness and
+# appropriate application of this code.
 # ============================================================================
 
 
@@ -187,8 +251,16 @@ endproc
 #                       Run and the Draw of one test print the same title.
 #   emlReportAdjust$    the correction or adjustment in force for this block
 #                       (holm, bonferroni, bh, Tukey HSD, ...). The CSV
-#                       already self-documents this in its `test` column; the
-#                       Info window did not.
+#                       already self-documents this; the Info window did not.
+#                       Not in a column of its own, though — this used to say
+#                       "its `test` column", and the export has had no such
+#                       column since the long-format rewrite. The schema is
+#                       emlCSV_header$ further down this file,
+#                       "table,analysis,term,term_type,field,value": the
+#                       `analysis` cell names the test, and the adjustment
+#                       arrives as an ordinary row whose `field` is
+#                       "adjustment" (written by the Dunn's reporter in
+#                       graphs/eml-annotation-procedures.praat).
 #
 # Both are optional. A caller sets them with @emlReportContext immediately
 # before @emlReportHeader, and the header CONSUMES them — it prints them and
@@ -1620,8 +1692,18 @@ endproc
 # ────────────────────────────────────────────────────────────────────────────
 # @emlWrapText: .s$, .width
 #
-# Greedy word wrap. @comment: does not wrap, and orchestrator error strings
-# run well past any sensible dialog width, so they are broken up here.
+# Greedy word wrap. Written for @emlErrorDialog: Praat's `comment:` field in a
+# pause dialog does not wrap, and orchestrator error strings run well past any
+# sensible dialog width, so they are broken up here. (This used to be written
+# "@comment:", which reads as a procedure call in this file's own notation and
+# is not one — `comment:` is a Praat dialog command, not an EML procedure.)
+#
+# It is no longer only the dialog's. @emlReportNote wraps to the report's
+# 68-column body through this, and since D124 @emlDrawAnnotationBlock
+# (graphs/eml-annotation-procedures.praat) wraps annotation lines through it
+# to a character budget converted from the plotting frame. So .width is a
+# CHARACTER count and every caller owns the conversion from whatever units it
+# actually cares about; do not add a unit assumption here.
 #
 # Sets: .nLines, .line$ [1 .. .nLines]
 # ────────────────────────────────────────────────────────────────────────────
@@ -1789,19 +1871,29 @@ endproc
 
 
 # ============================================================================
-# END OF MODULE
+# END OF ERROR PRESENTATION
 # ============================================================================
+# (This banner read "END OF MODULE" and had one procedure after it, which is
+# a section pointer that contradicts the file under it. The module ends at
+# the bottom of @emlReportDescriptiveAnalysis, below.)
 
 
 # ============================================================================
 # @emlReportDescriptiveAnalysis
 #
 # Lives here, in the output module, and not in eml-analysis.praat, because
-# scripts/eml-describe-table.praat calls it and does not include the analysis
-# module. Moving it here was forced by driving the wrapper: the parse check
-# passed and the menu item raised "Procedure not found" at line 9434 the
-# moment Run was clicked. A reporting procedure belongs with the reporting
-# procedures anyway.
+# scripts/eml-describe-table.praat calls it and includes only
+# eml-lib-stats.praat, which does not pull in the analysis module. (The other
+# caller, @emlRunDescriptiveAnalysis in eml-analysis.praat, gets it either
+# way.) Moving it here was forced by driving the wrapper: the parse check
+# passed and the menu item raised "Procedure not found" the moment Run was
+# clicked, because Praat resolves a procedure name when it is CALLED, not
+# when the script is parsed. The error's line number is no use as a citation
+# — it counts lines in the flattened script, after every `include` has been
+# pasted in, so it names no line of any file on disk. harness/check_includes.py
+# was written after this to find the class statically; the note above
+# @emlRunLMMAnalysis's old home in eml-analysis.praat describes the same trap.
+# A reporting procedure belongs with the reporting procedures anyway.
 # ============================================================================
 
 procedure emlReportDescriptiveAnalysis: .tableName$, .dataCol$, .nValid,

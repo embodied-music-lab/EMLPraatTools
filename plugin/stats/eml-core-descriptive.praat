@@ -28,8 +28,6 @@
 #        Verified against scipy.stats.shapiro and R shapiro.test.
 #
 # Part of the EML Stats library (EML Praat Tools).
-# Author: Ian Howell, Embodied Music Lab (www.embodiedmusiclab.com)
-# Development: Claude (Anthropic)
 # License: GPL-3.0-or-later
 #
 # Provides: @emlMean, @emlMedian, @emlMode, @emlPercentile, @emlQuartiles,
@@ -46,6 +44,25 @@
 #   myData# = {1, 2, 3, 4, 5}
 #   @emlDescribe: myData#
 #   appendInfoLine: "Mean: " + fixed$ (emlDescribe.mean, 4)
+#
+# ATTRIBUTION
+# Framework: EML PraatGen by Ian Howell
+#            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
+#
+# RESEARCH USE DISCLOSURE
+# If this script is used in research or publication, disclose AI use
+# per your target journal's policy. Suggested language:
+#
+#   "Praat analysis scripts were developed using the EML PraatGen
+#    Scripting Assistant (Howell, Embodied Music Lab) with code
+#    generation by Claude (Anthropic). All scripts were reviewed,
+#    tested, and validated by Ian Howell."
+#
+# The script author assumes responsibility for the correctness and
+# appropriate application of this code.
 # ============================================================================
 
 
