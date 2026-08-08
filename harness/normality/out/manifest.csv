@@ -1,0 +1,17 @@
+case,n_rows,kind
+d01_skew,18,green
+d02_kurt,10,green
+g01_normal,24,green
+g02_largen,60,green
+g03_severe,60,green
+g04_reject30,30,green
+g05_severe12,12,green
+g06_min3,3,green
+p01_groups,32,green
+r01_blank,12,red
+r02_single,1,red
+r03_identical,10,red
+r04_n2,2,red
+r05_swceil,5001,red
+r06_text,12,red
+r07_swceil_sev,5001,red

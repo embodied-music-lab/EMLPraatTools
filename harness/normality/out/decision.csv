@@ -1,0 +1,361 @@
+skewness,kurtosis,n,sw_p,sw_error,recommendation,sw_usable,sw_fail,shape_severe,large_n_override
+-2.5,-7,3,0.001,,nonparametric,1,1,1,0
+-2.5,-7,3,0.049,,nonparametric,1,1,1,0
+-2.5,-7,3,0.05,,parametric,1,0,1,0
+-2.5,-7,3,0.9,,parametric,1,0,1,0
+-2.5,-7,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2.5,-7,50,0.001,,nonparametric,1,1,1,0
+-2.5,-7,50,0.049,,nonparametric,1,1,1,0
+-2.5,-7,50,0.05,,parametric,1,0,1,0
+-2.5,-7,50,0.9,,parametric,1,0,1,0
+-2.5,-7,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2.5,-7,51,0.001,,nonparametric,1,1,1,0
+-2.5,-7,51,0.049,,nonparametric,1,1,1,0
+-2.5,-7,51,0.05,,parametric,1,0,1,0
+-2.5,-7,51,0.9,,parametric,1,0,1,0
+-2.5,-7,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2.5,0,3,0.001,,nonparametric,1,1,1,0
+-2.5,0,3,0.049,,nonparametric,1,1,1,0
+-2.5,0,3,0.05,,parametric,1,0,1,0
+-2.5,0,3,0.9,,parametric,1,0,1,0
+-2.5,0,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2.5,0,50,0.001,,nonparametric,1,1,1,0
+-2.5,0,50,0.049,,nonparametric,1,1,1,0
+-2.5,0,50,0.05,,parametric,1,0,1,0
+-2.5,0,50,0.9,,parametric,1,0,1,0
+-2.5,0,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2.5,0,51,0.001,,nonparametric,1,1,1,0
+-2.5,0,51,0.049,,nonparametric,1,1,1,0
+-2.5,0,51,0.05,,parametric,1,0,1,0
+-2.5,0,51,0.9,,parametric,1,0,1,0
+-2.5,0,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2.5,6.9,3,0.001,,nonparametric,1,1,1,0
+-2.5,6.9,3,0.049,,nonparametric,1,1,1,0
+-2.5,6.9,3,0.05,,parametric,1,0,1,0
+-2.5,6.9,3,0.9,,parametric,1,0,1,0
+-2.5,6.9,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2.5,6.9,50,0.001,,nonparametric,1,1,1,0
+-2.5,6.9,50,0.049,,nonparametric,1,1,1,0
+-2.5,6.9,50,0.05,,parametric,1,0,1,0
+-2.5,6.9,50,0.9,,parametric,1,0,1,0
+-2.5,6.9,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2.5,6.9,51,0.001,,nonparametric,1,1,1,0
+-2.5,6.9,51,0.049,,nonparametric,1,1,1,0
+-2.5,6.9,51,0.05,,parametric,1,0,1,0
+-2.5,6.9,51,0.9,,parametric,1,0,1,0
+-2.5,6.9,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2.5,7,3,0.001,,nonparametric,1,1,1,0
+-2.5,7,3,0.049,,nonparametric,1,1,1,0
+-2.5,7,3,0.05,,parametric,1,0,1,0
+-2.5,7,3,0.9,,parametric,1,0,1,0
+-2.5,7,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2.5,7,50,0.001,,nonparametric,1,1,1,0
+-2.5,7,50,0.049,,nonparametric,1,1,1,0
+-2.5,7,50,0.05,,parametric,1,0,1,0
+-2.5,7,50,0.9,,parametric,1,0,1,0
+-2.5,7,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2.5,7,51,0.001,,nonparametric,1,1,1,0
+-2.5,7,51,0.049,,nonparametric,1,1,1,0
+-2.5,7,51,0.05,,parametric,1,0,1,0
+-2.5,7,51,0.9,,parametric,1,0,1,0
+-2.5,7,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2,-7,3,0.001,,nonparametric,1,1,1,0
+-2,-7,3,0.049,,nonparametric,1,1,1,0
+-2,-7,3,0.05,,parametric,1,0,1,0
+-2,-7,3,0.9,,parametric,1,0,1,0
+-2,-7,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2,-7,50,0.001,,nonparametric,1,1,1,0
+-2,-7,50,0.049,,nonparametric,1,1,1,0
+-2,-7,50,0.05,,parametric,1,0,1,0
+-2,-7,50,0.9,,parametric,1,0,1,0
+-2,-7,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2,-7,51,0.001,,nonparametric,1,1,1,0
+-2,-7,51,0.049,,nonparametric,1,1,1,0
+-2,-7,51,0.05,,parametric,1,0,1,0
+-2,-7,51,0.9,,parametric,1,0,1,0
+-2,-7,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2,0,3,0.001,,nonparametric,1,1,1,0
+-2,0,3,0.049,,nonparametric,1,1,1,0
+-2,0,3,0.05,,parametric,1,0,1,0
+-2,0,3,0.9,,parametric,1,0,1,0
+-2,0,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2,0,50,0.001,,nonparametric,1,1,1,0
+-2,0,50,0.049,,nonparametric,1,1,1,0
+-2,0,50,0.05,,parametric,1,0,1,0
+-2,0,50,0.9,,parametric,1,0,1,0
+-2,0,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2,0,51,0.001,,nonparametric,1,1,1,0
+-2,0,51,0.049,,nonparametric,1,1,1,0
+-2,0,51,0.05,,parametric,1,0,1,0
+-2,0,51,0.9,,parametric,1,0,1,0
+-2,0,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2,6.9,3,0.001,,nonparametric,1,1,1,0
+-2,6.9,3,0.049,,nonparametric,1,1,1,0
+-2,6.9,3,0.05,,parametric,1,0,1,0
+-2,6.9,3,0.9,,parametric,1,0,1,0
+-2,6.9,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2,6.9,50,0.001,,nonparametric,1,1,1,0
+-2,6.9,50,0.049,,nonparametric,1,1,1,0
+-2,6.9,50,0.05,,parametric,1,0,1,0
+-2,6.9,50,0.9,,parametric,1,0,1,0
+-2,6.9,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2,6.9,51,0.001,,nonparametric,1,1,1,0
+-2,6.9,51,0.049,,nonparametric,1,1,1,0
+-2,6.9,51,0.05,,parametric,1,0,1,0
+-2,6.9,51,0.9,,parametric,1,0,1,0
+-2,6.9,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2,7,3,0.001,,nonparametric,1,1,1,0
+-2,7,3,0.049,,nonparametric,1,1,1,0
+-2,7,3,0.05,,parametric,1,0,1,0
+-2,7,3,0.9,,parametric,1,0,1,0
+-2,7,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2,7,50,0.001,,nonparametric,1,1,1,0
+-2,7,50,0.049,,nonparametric,1,1,1,0
+-2,7,50,0.05,,parametric,1,0,1,0
+-2,7,50,0.9,,parametric,1,0,1,0
+-2,7,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+-2,7,51,0.001,,nonparametric,1,1,1,0
+-2,7,51,0.049,,nonparametric,1,1,1,0
+-2,7,51,0.05,,parametric,1,0,1,0
+-2,7,51,0.9,,parametric,1,0,1,0
+-2,7,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+-1.9,-7,3,0.001,,nonparametric,1,1,1,0
+-1.9,-7,3,0.049,,nonparametric,1,1,1,0
+-1.9,-7,3,0.05,,parametric,1,0,1,0
+-1.9,-7,3,0.9,,parametric,1,0,1,0
+-1.9,-7,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+-1.9,-7,50,0.001,,nonparametric,1,1,1,0
+-1.9,-7,50,0.049,,nonparametric,1,1,1,0
+-1.9,-7,50,0.05,,parametric,1,0,1,0
+-1.9,-7,50,0.9,,parametric,1,0,1,0
+-1.9,-7,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+-1.9,-7,51,0.001,,nonparametric,1,1,1,0
+-1.9,-7,51,0.049,,nonparametric,1,1,1,0
+-1.9,-7,51,0.05,,parametric,1,0,1,0
+-1.9,-7,51,0.9,,parametric,1,0,1,0
+-1.9,-7,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+-1.9,0,3,0.001,,nonparametric,1,1,0,0
+-1.9,0,3,0.049,,nonparametric,1,1,0,0
+-1.9,0,3,0.05,,parametric,1,0,0,0
+-1.9,0,3,0.9,,parametric,1,0,0,0
+-1.9,0,3,NA,All values identical (zero range),parametric,0,0,0,0
+-1.9,0,50,0.001,,nonparametric,1,1,0,0
+-1.9,0,50,0.049,,nonparametric,1,1,0,0
+-1.9,0,50,0.05,,parametric,1,0,0,0
+-1.9,0,50,0.9,,parametric,1,0,0,0
+-1.9,0,50,NA,All values identical (zero range),parametric,0,0,0,0
+-1.9,0,51,0.001,,parametric,1,1,0,1
+-1.9,0,51,0.049,,parametric,1,1,0,1
+-1.9,0,51,0.05,,parametric,1,0,0,0
+-1.9,0,51,0.9,,parametric,1,0,0,0
+-1.9,0,51,NA,All values identical (zero range),parametric,0,0,0,0
+-1.9,6.9,3,0.001,,nonparametric,1,1,0,0
+-1.9,6.9,3,0.049,,nonparametric,1,1,0,0
+-1.9,6.9,3,0.05,,parametric,1,0,0,0
+-1.9,6.9,3,0.9,,parametric,1,0,0,0
+-1.9,6.9,3,NA,All values identical (zero range),parametric,0,0,0,0
+-1.9,6.9,50,0.001,,nonparametric,1,1,0,0
+-1.9,6.9,50,0.049,,nonparametric,1,1,0,0
+-1.9,6.9,50,0.05,,parametric,1,0,0,0
+-1.9,6.9,50,0.9,,parametric,1,0,0,0
+-1.9,6.9,50,NA,All values identical (zero range),parametric,0,0,0,0
+-1.9,6.9,51,0.001,,parametric,1,1,0,1
+-1.9,6.9,51,0.049,,parametric,1,1,0,1
+-1.9,6.9,51,0.05,,parametric,1,0,0,0
+-1.9,6.9,51,0.9,,parametric,1,0,0,0
+-1.9,6.9,51,NA,All values identical (zero range),parametric,0,0,0,0
+-1.9,7,3,0.001,,nonparametric,1,1,1,0
+-1.9,7,3,0.049,,nonparametric,1,1,1,0
+-1.9,7,3,0.05,,parametric,1,0,1,0
+-1.9,7,3,0.9,,parametric,1,0,1,0
+-1.9,7,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+-1.9,7,50,0.001,,nonparametric,1,1,1,0
+-1.9,7,50,0.049,,nonparametric,1,1,1,0
+-1.9,7,50,0.05,,parametric,1,0,1,0
+-1.9,7,50,0.9,,parametric,1,0,1,0
+-1.9,7,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+-1.9,7,51,0.001,,nonparametric,1,1,1,0
+-1.9,7,51,0.049,,nonparametric,1,1,1,0
+-1.9,7,51,0.05,,parametric,1,0,1,0
+-1.9,7,51,0.9,,parametric,1,0,1,0
+-1.9,7,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+0,-7,3,0.001,,nonparametric,1,1,1,0
+0,-7,3,0.049,,nonparametric,1,1,1,0
+0,-7,3,0.05,,parametric,1,0,1,0
+0,-7,3,0.9,,parametric,1,0,1,0
+0,-7,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+0,-7,50,0.001,,nonparametric,1,1,1,0
+0,-7,50,0.049,,nonparametric,1,1,1,0
+0,-7,50,0.05,,parametric,1,0,1,0
+0,-7,50,0.9,,parametric,1,0,1,0
+0,-7,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+0,-7,51,0.001,,nonparametric,1,1,1,0
+0,-7,51,0.049,,nonparametric,1,1,1,0
+0,-7,51,0.05,,parametric,1,0,1,0
+0,-7,51,0.9,,parametric,1,0,1,0
+0,-7,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+0,0,3,0.001,,nonparametric,1,1,0,0
+0,0,3,0.049,,nonparametric,1,1,0,0
+0,0,3,0.05,,parametric,1,0,0,0
+0,0,3,0.9,,parametric,1,0,0,0
+0,0,3,NA,All values identical (zero range),parametric,0,0,0,0
+0,0,50,0.001,,nonparametric,1,1,0,0
+0,0,50,0.049,,nonparametric,1,1,0,0
+0,0,50,0.05,,parametric,1,0,0,0
+0,0,50,0.9,,parametric,1,0,0,0
+0,0,50,NA,All values identical (zero range),parametric,0,0,0,0
+0,0,51,0.001,,parametric,1,1,0,1
+0,0,51,0.049,,parametric,1,1,0,1
+0,0,51,0.05,,parametric,1,0,0,0
+0,0,51,0.9,,parametric,1,0,0,0
+0,0,51,NA,All values identical (zero range),parametric,0,0,0,0
+0,6.9,3,0.001,,nonparametric,1,1,0,0
+0,6.9,3,0.049,,nonparametric,1,1,0,0
+0,6.9,3,0.05,,parametric,1,0,0,0
+0,6.9,3,0.9,,parametric,1,0,0,0
+0,6.9,3,NA,All values identical (zero range),parametric,0,0,0,0
+0,6.9,50,0.001,,nonparametric,1,1,0,0
+0,6.9,50,0.049,,nonparametric,1,1,0,0
+0,6.9,50,0.05,,parametric,1,0,0,0
+0,6.9,50,0.9,,parametric,1,0,0,0
+0,6.9,50,NA,All values identical (zero range),parametric,0,0,0,0
+0,6.9,51,0.001,,parametric,1,1,0,1
+0,6.9,51,0.049,,parametric,1,1,0,1
+0,6.9,51,0.05,,parametric,1,0,0,0
+0,6.9,51,0.9,,parametric,1,0,0,0
+0,6.9,51,NA,All values identical (zero range),parametric,0,0,0,0
+0,7,3,0.001,,nonparametric,1,1,1,0
+0,7,3,0.049,,nonparametric,1,1,1,0
+0,7,3,0.05,,parametric,1,0,1,0
+0,7,3,0.9,,parametric,1,0,1,0
+0,7,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+0,7,50,0.001,,nonparametric,1,1,1,0
+0,7,50,0.049,,nonparametric,1,1,1,0
+0,7,50,0.05,,parametric,1,0,1,0
+0,7,50,0.9,,parametric,1,0,1,0
+0,7,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+0,7,51,0.001,,nonparametric,1,1,1,0
+0,7,51,0.049,,nonparametric,1,1,1,0
+0,7,51,0.05,,parametric,1,0,1,0
+0,7,51,0.9,,parametric,1,0,1,0
+0,7,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+1.9,-7,3,0.001,,nonparametric,1,1,1,0
+1.9,-7,3,0.049,,nonparametric,1,1,1,0
+1.9,-7,3,0.05,,parametric,1,0,1,0
+1.9,-7,3,0.9,,parametric,1,0,1,0
+1.9,-7,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+1.9,-7,50,0.001,,nonparametric,1,1,1,0
+1.9,-7,50,0.049,,nonparametric,1,1,1,0
+1.9,-7,50,0.05,,parametric,1,0,1,0
+1.9,-7,50,0.9,,parametric,1,0,1,0
+1.9,-7,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+1.9,-7,51,0.001,,nonparametric,1,1,1,0
+1.9,-7,51,0.049,,nonparametric,1,1,1,0
+1.9,-7,51,0.05,,parametric,1,0,1,0
+1.9,-7,51,0.9,,parametric,1,0,1,0
+1.9,-7,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+1.9,0,3,0.001,,nonparametric,1,1,0,0
+1.9,0,3,0.049,,nonparametric,1,1,0,0
+1.9,0,3,0.05,,parametric,1,0,0,0
+1.9,0,3,0.9,,parametric,1,0,0,0
+1.9,0,3,NA,All values identical (zero range),parametric,0,0,0,0
+1.9,0,50,0.001,,nonparametric,1,1,0,0
+1.9,0,50,0.049,,nonparametric,1,1,0,0
+1.9,0,50,0.05,,parametric,1,0,0,0
+1.9,0,50,0.9,,parametric,1,0,0,0
+1.9,0,50,NA,All values identical (zero range),parametric,0,0,0,0
+1.9,0,51,0.001,,parametric,1,1,0,1
+1.9,0,51,0.049,,parametric,1,1,0,1
+1.9,0,51,0.05,,parametric,1,0,0,0
+1.9,0,51,0.9,,parametric,1,0,0,0
+1.9,0,51,NA,All values identical (zero range),parametric,0,0,0,0
+1.9,6.9,3,0.001,,nonparametric,1,1,0,0
+1.9,6.9,3,0.049,,nonparametric,1,1,0,0
+1.9,6.9,3,0.05,,parametric,1,0,0,0
+1.9,6.9,3,0.9,,parametric,1,0,0,0
+1.9,6.9,3,NA,All values identical (zero range),parametric,0,0,0,0
+1.9,6.9,50,0.001,,nonparametric,1,1,0,0
+1.9,6.9,50,0.049,,nonparametric,1,1,0,0
+1.9,6.9,50,0.05,,parametric,1,0,0,0
+1.9,6.9,50,0.9,,parametric,1,0,0,0
+1.9,6.9,50,NA,All values identical (zero range),parametric,0,0,0,0
+1.9,6.9,51,0.001,,parametric,1,1,0,1
+1.9,6.9,51,0.049,,parametric,1,1,0,1
+1.9,6.9,51,0.05,,parametric,1,0,0,0
+1.9,6.9,51,0.9,,parametric,1,0,0,0
+1.9,6.9,51,NA,All values identical (zero range),parametric,0,0,0,0
+1.9,7,3,0.001,,nonparametric,1,1,1,0
+1.9,7,3,0.049,,nonparametric,1,1,1,0
+1.9,7,3,0.05,,parametric,1,0,1,0
+1.9,7,3,0.9,,parametric,1,0,1,0
+1.9,7,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+1.9,7,50,0.001,,nonparametric,1,1,1,0
+1.9,7,50,0.049,,nonparametric,1,1,1,0
+1.9,7,50,0.05,,parametric,1,0,1,0
+1.9,7,50,0.9,,parametric,1,0,1,0
+1.9,7,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+1.9,7,51,0.001,,nonparametric,1,1,1,0
+1.9,7,51,0.049,,nonparametric,1,1,1,0
+1.9,7,51,0.05,,parametric,1,0,1,0
+1.9,7,51,0.9,,parametric,1,0,1,0
+1.9,7,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+2,-7,3,0.001,,nonparametric,1,1,1,0
+2,-7,3,0.049,,nonparametric,1,1,1,0
+2,-7,3,0.05,,parametric,1,0,1,0
+2,-7,3,0.9,,parametric,1,0,1,0
+2,-7,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+2,-7,50,0.001,,nonparametric,1,1,1,0
+2,-7,50,0.049,,nonparametric,1,1,1,0
+2,-7,50,0.05,,parametric,1,0,1,0
+2,-7,50,0.9,,parametric,1,0,1,0
+2,-7,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+2,-7,51,0.001,,nonparametric,1,1,1,0
+2,-7,51,0.049,,nonparametric,1,1,1,0
+2,-7,51,0.05,,parametric,1,0,1,0
+2,-7,51,0.9,,parametric,1,0,1,0
+2,-7,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+2,0,3,0.001,,nonparametric,1,1,1,0
+2,0,3,0.049,,nonparametric,1,1,1,0
+2,0,3,0.05,,parametric,1,0,1,0
+2,0,3,0.9,,parametric,1,0,1,0
+2,0,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+2,0,50,0.001,,nonparametric,1,1,1,0
+2,0,50,0.049,,nonparametric,1,1,1,0
+2,0,50,0.05,,parametric,1,0,1,0
+2,0,50,0.9,,parametric,1,0,1,0
+2,0,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+2,0,51,0.001,,nonparametric,1,1,1,0
+2,0,51,0.049,,nonparametric,1,1,1,0
+2,0,51,0.05,,parametric,1,0,1,0
+2,0,51,0.9,,parametric,1,0,1,0
+2,0,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+2,6.9,3,0.001,,nonparametric,1,1,1,0
+2,6.9,3,0.049,,nonparametric,1,1,1,0
+2,6.9,3,0.05,,parametric,1,0,1,0
+2,6.9,3,0.9,,parametric,1,0,1,0
+2,6.9,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+2,6.9,50,0.001,,nonparametric,1,1,1,0
+2,6.9,50,0.049,,nonparametric,1,1,1,0
+2,6.9,50,0.05,,parametric,1,0,1,0
+2,6.9,50,0.9,,parametric,1,0,1,0
+2,6.9,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+2,6.9,51,0.001,,nonparametric,1,1,1,0
+2,6.9,51,0.049,,nonparametric,1,1,1,0
+2,6.9,51,0.05,,parametric,1,0,1,0
+2,6.9,51,0.9,,parametric,1,0,1,0
+2,6.9,51,NA,All values identical (zero range),nonparametric,0,0,1,0
+2,7,3,0.001,,nonparametric,1,1,1,0
+2,7,3,0.049,,nonparametric,1,1,1,0
+2,7,3,0.05,,parametric,1,0,1,0
+2,7,3,0.9,,parametric,1,0,1,0
+2,7,3,NA,All values identical (zero range),nonparametric,0,0,1,0
+2,7,50,0.001,,nonparametric,1,1,1,0
+2,7,50,0.049,,nonparametric,1,1,1,0
+2,7,50,0.05,,parametric,1,0,1,0
+2,7,50,0.9,,parametric,1,0,1,0
+2,7,50,NA,All values identical (zero range),nonparametric,0,0,1,0
+2,7,51,0.001,,nonparametric,1,1,1,0
+2,7,51,0.049,,nonparametric,1,1,1,0
+2,7,51,0.05,,parametric,1,0,1,0
+2,7,51,0.9,,parametric,1,0,1,0
+2,7,51,NA,All values identical (zero range),nonparametric,0,0,1,0

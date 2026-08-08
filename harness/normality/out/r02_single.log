@@ -1,0 +1,7 @@
+  y (n = 1)
+    Skewness:     --undefined--
+    Kurtosis (excess): --undefined--
+    Shapiro-Wilk: Shapiro-Wilk requires n >= 3, got 1
+    → Shapiro-Wilk unavailable; shape within limits
+
+CASE r02_single rows=1 nValid=1

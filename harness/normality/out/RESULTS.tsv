@@ -1,0 +1,16 @@
+g01_normal	OK	0
+g02_largen	OK	0
+g03_severe	OK	0
+g04_reject30	OK	0
+g05_severe12	OK	0
+g06_min3	OK	0
+d01_skew	OK	0
+d02_kurt	OK	0
+p01_groups	OK	0
+r01_blank	OK	0
+r02_single	OK	0
+r03_identical	OK	0
+r04_n2	OK	0
+r05_swceil	OK	0
+r06_text	OK	0
+r07_swceil_sev	OK	0

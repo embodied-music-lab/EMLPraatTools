@@ -1,0 +1,47 @@
+
+══════════════════════════════════════════════
+  EML Stats : Normality Assessment
+  Sat Aug  8 13:16:53 2026
+══════════════════════════════════════════════
+
+  Table               norm g03 severe
+  Column              y
+  N                   60
+
+
+  ── Descriptive Statistics ──────────────────
+  Mean                26.5283
+  SD                  22.5375
+  Median              21.3000
+
+
+  ── Distribution Shape ──────────────────────
+  Why: Skewness and kurtosis indicate departures from a normal (bell-shaped) distribution.
+  Skewness            2.6503		Substantial right skew (|skew| < 2 is typically acceptable)
+  Kurtosis (excess)   9.2608		Heavy-tailed (leptokurtic) (0 = normal; |excess| < 7 treated as typical)
+  → Skewness outside typical limits (criterion: |skew| < 2)
+  → Kurtosis outside typical limits (criterion: |excess kurt| < 7)
+
+
+  ── Shapiro-Wilk Test ───────────────────────
+  Why: Formal test of whether the data are drawn from a normal distribution.
+  W                   0.7465		Closer to 1 = more normal (range: 0 to 1)
+  p                   < .001  (7.834095677750921e-09)		Statistically significant: <0.1% probability due to chance
+  → Rejects normality (p < 0.05)
+
+
+  ── Recommendation ──────────────────────────
+  Evidence against normality.
+  → Consider nonparametric tests (Mann-Whitney, Kruskal-Wallis, Spearman rho).
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+  y (n = 60)
+    Skewness:     2.650
+    Kurtosis (excess): 9.261
+    Shapiro-Wilk: W = 0.7465, p = 0.000000008
+    → Shapiro-Wilk rejects normality (p < 0.05)
+    → Skewness/kurtosis outside typical limits (|skew| < 2, |excess kurt| < 7)
+
+CASE g03_severe rows=60 nValid=60

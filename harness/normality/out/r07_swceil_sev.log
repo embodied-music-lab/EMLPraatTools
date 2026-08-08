@@ -1,0 +1,45 @@
+
+══════════════════════════════════════════════
+  EML Stats : Normality Assessment
+  Sat Aug  8 13:16:56 2026
+══════════════════════════════════════════════
+
+  Table               norm r07 swceil sev
+  Column              y
+  N                   5001
+
+
+  ── Descriptive Statistics ──────────────────
+  Mean                11.6524
+  SD                  20.3130
+  Median              10.0347
+
+
+  ── Distribution Shape ──────────────────────
+  Why: Skewness and kurtosis indicate departures from a normal (bell-shaped) distribution.
+  Skewness            12.1052		Substantial right skew (|skew| < 2 is typically acceptable)
+  Kurtosis (excess)   145.3419		Heavy-tailed (leptokurtic) (0 = normal; |excess| < 7 treated as typical)
+  → Skewness outside typical limits (criterion: |skew| < 2)
+  → Kurtosis outside typical limits (criterion: |excess kurt| < 7)
+
+
+  ── Shapiro-Wilk Test ───────────────────────
+  Why: Formal test of whether the data are drawn from a normal distribution.
+  Error               Shapiro-Wilk requires n <= 5000, got 5001
+
+
+  ── Recommendation ──────────────────────────
+  Evidence against normality.
+  → Consider nonparametric tests (Mann-Whitney, Kruskal-Wallis, Spearman rho).
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+  y (n = 5001)
+    Skewness:     12.105
+    Kurtosis (excess): 145.342
+    Shapiro-Wilk: Shapiro-Wilk requires n <= 5000, got 5001
+    → Skewness/kurtosis outside typical limits (|skew| < 2, |excess kurt| < 7)
+    → Shapiro-Wilk unavailable; shape decides
+
+CASE r07_swceil_sev rows=5001 nValid=5001
