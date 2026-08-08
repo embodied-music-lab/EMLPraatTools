@@ -1,0 +1,32 @@
+
+══════════════════════════════════════════════
+  EML Stats Wizard — Analysis Plan
+══════════════════════════════════════════════
+
+  Design:         Two-factor design
+  Normality:      n/a
+  Test:           Two-way ANOVA
+  Data column:    singer
+  Group column:   style × sex
+  Table:          demo 2factor
+
+══════════════════════════════════════════════
+  Running analysis...
+══════════════════════════════════════════════
+
+
+══════════════════════════════════════════════
+  EML Stats Wizard — Analysis Plan
+══════════════════════════════════════════════
+
+  Design:         Two-factor design
+  Normality:      n/a
+  Test:           Two-way ANOVA
+  Data column:    singer
+  Group column:   style × sex
+  Table:          demo 2factor
+
+══════════════════════════════════════════════
+  Running analysis...
+══════════════════════════════════════════════
+

@@ -1,0 +1,32 @@
+
+══════════════════════════════════════════════
+  EML Stats Wizard — Analysis Plan
+══════════════════════════════════════════════
+
+  Design:         Simple linear regression
+  Normality:      n/a (residual normality assumed)
+  Test:           OLS regression (R², F-test)
+  Column 1:       singer
+  Column 2:       vibrato rate Hz
+  Table:          demo reg
+
+══════════════════════════════════════════════
+  Running analysis...
+══════════════════════════════════════════════
+
+
+══════════════════════════════════════════════
+  EML Stats Wizard — Analysis Plan
+══════════════════════════════════════════════
+
+  Design:         Simple linear regression
+  Normality:      n/a (residual normality assumed)
+  Test:           OLS regression (R², F-test)
+  Column 1:       singer
+  Column 2:       vibrato rate Hz
+  Table:          demo reg
+
+══════════════════════════════════════════════
+  Running analysis...
+══════════════════════════════════════════════
+

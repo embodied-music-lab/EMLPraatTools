@@ -1,0 +1,71 @@
+
+══════════════════════════════════════════════
+  EML Stats Wizard — Analysis Plan
+══════════════════════════════════════════════
+
+  Design:         Simple linear regression
+  Normality:      n/a (residual normality assumed)
+  Test:           OLS regression (R², F-test)
+  Column 1:       singer
+  Column 2:       vibrato rate Hz
+  Table:          demo reg
+
+══════════════════════════════════════════════
+  Running analysis...
+══════════════════════════════════════════════
+
+
+══════════════════════════════════════════════
+  EML Stats Wizard — Analysis Plan
+══════════════════════════════════════════════
+
+  Design:         Simple linear regression
+  Normality:      n/a (residual normality assumed)
+  Test:           OLS regression (R², F-test)
+  Column 1:       jitter pct
+  Column 2:       SPL dB
+  Table:          demo reg
+
+══════════════════════════════════════════════
+  Running analysis...
+══════════════════════════════════════════════
+
+
+══════════════════════════════════════════════
+  EML Stats : Simple Linear Regression
+  Fri Aug  7 15:13:27 2026
+══════════════════════════════════════════════
+
+  Table               demo reg
+  Response (Y)        SPL dB
+  Predictor (X)       jitter pct
+  N                   20
+
+
+  ── Model ───────────────────────────────────
+  Why: Tests whether the predictor linearly predicts the response.
+  Equation            y = -2.2500x + 86.4500
+  SPL dB = -2.2500 x jitter pct + 86.4500
+  R                   0.1240		Weak negative relationship (range: -1 to 1)
+  R-squared           0.0154		2% of variance in Y is explained by X
+  Adj. R-squared      -0.0393		R-squared adjusted for number of predictors — penalizes model complexity
+  Residual SE         2.6846		Typical prediction error — points deviate from the line by +/-2.68 units on average
+
+
+  ── Overall Model Test (F) ──────────────────
+  F(1,18)             0.2810		Overall model significance — ratio of explained to unexplained variance
+  p                   .603		Not statistically significant at the 5% level
+
+
+  ── Coefficients ────────────────────────────
+
+  Term                Estimate      SE            t           p           95% CI
+  (Intercept)         86.4500       5.1289        16.856      < .001      [75.6746, 97.2254]
+  jitter pct          -2.2500       4.2447        -0.530      .603        [-11.1678, 6.6678]
+
+  Direction: negative (SPL dB decreases as jitter pct increases)
+  Variance explained: R-squared = 0.0154 (1.5% of the variance in SPL dB), a small effect by Cohen's R-squared benchmarks
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
