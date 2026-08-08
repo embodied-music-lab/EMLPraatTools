@@ -4,8 +4,18 @@
 # Purpose: Test normality for one or more numeric columns, optionally
 #          broken out by group. Reports Shapiro-Wilk, skewness, kurtosis,
 #          and a parametric/nonparametric recommendation per column.
-# Version: 2.1
-# Date: 7 August 2026
+# Version: 2.2
+# Date: 8 August 2026
+# v2.2: D137 — per-group mode no longer carries its own normality rule. It
+#        had hard-coded thresholds of 1 and 3 against the shared constants
+#        of 2 and 7, and the pre-5-August `skKurtFail or swFail` gate, while
+#        the SAME script's overall mode called @emlRunNormalityAnalysis,
+#        which had neither. One wrapper, two answers for the same data
+#        depending on whether a grouping column was picked: a group with
+#        |skew| >= 1 that Shapiro-Wilk did not reject came out nonparametric
+#        grouped and parametric ungrouped. Both modes now reach the one
+#        shared rule, @emlNormalityRecommendation (stats/eml-analysis.praat).
+#        This CHANGES per-group verdicts, which is the point.
 # v2.1: Draw button on the completion dialog — a normal Q-Q plot for ONE
 #        column at a time, behind an explicit column picker. The picker is
 #        not optional: this checker tests every numeric column in one run,
@@ -20,9 +30,23 @@
 # v1.0: Initial release.
 #
 # ATTRIBUTION
-# Framework: EML Praat Tools by Ian Howell
+# Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab — www.embodiedmusiclab.com
+#            https://github.com/embodied-music-lab/PraatGen
 # Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
+#
+# RESEARCH USE DISCLOSURE
+# If this script is used in research or publication, disclose AI use
+# per your target journal's policy. Suggested language:
+#
+#   "Praat analysis scripts were developed using the EML PraatGen
+#    Scripting Assistant (Howell, Embodied Music Lab) with code
+#    generation by Claude (Anthropic). All scripts were reviewed,
+#    tested, and validated by Ian Howell."
+#
+# The script author assumes responsibility for the correctness and
+# appropriate application of this code.
 # ============================================================================
 
 include eml-lib.praat
@@ -169,8 +193,47 @@ repeat
                     .skew = emlSkewness.result
                     @emlKurtosis: .data#
                     .kurt = emlKurtosis.result
-                    .skKurtFail = (abs (.skew) >= 1) or (abs (.kurt) >= 3)
-                    .swFail = (.swP < 0.05 and emlShapiroWilk.error$ = "")
+
+                    # ── The decision ──────────────────────────────────────
+                    #
+                    # This branch used to carry its OWN copy of the rule,
+                    # and it was the copy that had drifted furthest:
+                    #
+                    #   .skKurtFail = (abs(.skew) >= 1) or (abs(.kurt) >= 3)
+                    #   ... elsif .skKurtFail or .swFail
+                    #
+                    # Two defects in three lines. The thresholds were
+                    # hard-coded 1 and 3 against shared constants of 2 and 7
+                    # (emlSkewThreshold / emlKurtosisThreshold in
+                    # stats/eml-output.praat), and the gate was the
+                    # pre-5-August `skKurtFail or swFail` rule that lets a
+                    # descriptive rule of thumb overrule a formal test.
+                    #
+                    # It mattered because the OVERALL branch of this very
+                    # script (the else below) calls
+                    # @emlRunNormalityAnalysis, which had neither defect. So
+                    # one wrapper gave two different answers for the same
+                    # data depending on whether the user picked a grouping
+                    # column: any group with |skew| >= 1 that Shapiro-Wilk
+                    # did not reject was called nonparametric here and
+                    # parametric there. Both branches now reach the same
+                    # rule, @emlNormalityRecommendation. (D137)
+                    #
+                    # emlShapiroWilk.p is undefined whenever .error$ is set,
+                    # so it is passed straight through with the error string
+                    # rather than tested here; the shared procedure guards
+                    # it with a NESTED if, because Praat's `and` evaluates
+                    # both sides. The line replaced above,
+                    # `.swP < 0.05 and emlShapiroWilk.error$ = ""`, was that
+                    # comparison against undefined — benign by accident.
+                    @emlNormalityRecommendation: .skew, .kurt, .n,
+                    ... emlShapiroWilk.p, emlShapiroWilk.error$
+                    .largeNOverride = emlNormalityRecommendation.largeNOverride
+                    .rec$ = emlNormalityRecommendation.recommendation$
+                    .groupNonparametric = 0
+                    if .rec$ = "nonparametric"
+                        .groupNonparametric = 1
+                    endif
 
                     appendInfoLine: "  ", .gDisplay$, " (n = ", .n, "):"
                     appendInfoLine: "    W = ", fixed$ (.swW, 4),
@@ -178,10 +241,10 @@ repeat
                     appendInfoLine: "    Skewness = ", fixed$ (.skew, 3),
                     ... "  Kurtosis (excess) = ", fixed$ (.kurt, 3)
 
-                    if .swFail and (not .skKurtFail) and .n > 50
+                    if .largeNOverride
                         appendInfoLine: "    → Parametric (large-n override:"
                         ... + " shape within limits)"
-                    elsif .skKurtFail or .swFail
+                    elsif .groupNonparametric
                         appendInfoLine: "    → Nonparametric recommended"
                         .allGroupsOK = 0
                     else

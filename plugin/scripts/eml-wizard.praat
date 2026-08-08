@@ -10,9 +10,30 @@
 #            Layer 2 — Direct tools: Named tests from EML Tools menu
 #            Layer 3 — Scripting API: Include-file procedures for power users
 #
-# Version: 2.4
-# Date: 2 August 2026
+# Version: 2.6
+# Date: 8 August 2026
 #
+# v2.6: D137 — @wizardNormDiag no longer carries its own copy of the
+#        normality decision rule. v2.5 made the wizard's copy AGREE with
+#        stats/eml-analysis.praat; this removes the copy. The gate now calls
+#        the shared @emlNormalityRecommendation (stats/eml-analysis.praat,
+#        reached through eml-lib-lmm.praat) and reads .recommendation$ back;
+#        everything left in this procedure is presentation, chosen from the
+#        returned .swUsable / .swFail / .largeNOverride / .shapeSevere flags.
+#        No wording and no verdict changes.
+# v2.5: D134 — @wizardNormDiag's normality gate was still the pre-5-August
+#        `skKurtFail or swFail` rule that stats/eml-analysis.praat replaced
+#        for inverting the hierarchy, so on the Shapiro-Wilk-passes branch
+#        the wizard returned nonparametric where @emlRunNormalityAnalysis
+#        returned parametric. The gate now mirrors eml-analysis.praat's
+#        .swUsable block branch for branch: Shapiro-Wilk decides, shape is
+#        reported but does not overturn it, shape decides only when
+#        Shapiro-Wilk is unavailable, and the large-n override is unchanged.
+#        Also corrected three stale documentation claims: the shape
+#        thresholds are 2 and 7, not 1 and 1 (D95 note); eml-lmm.praat has
+#        32 procedures, not 31; and the Grouped Violin subgroup preset in
+#        graphs/eml-graphs-form.praat has landed, so the D32 note no longer
+#        describes it as pending.
 # v2.4: D90 — the spaghetti plot's axes no longer carry the wide->long
 #        reshape's role names; the measure and the contrast are derived from
 #        the two paired column names and registered against the role names
@@ -328,15 +349,12 @@ if goal = 1
             dataCol$ = data_column$
             groupCol$ = group_column$
 
-            # Preserve column indices for Back navigation
-            for iCol from 1 to nCols
-                if emlTableColumnNames.name$[iCol] = dataCol$
-                    dataDefault = iCol
-                endif
-                if emlTableColumnNames.name$[iCol] = groupCol$
-                    groupDefault = iCol
-                endif
-            endfor
+            # Preserve column indices for Back navigation (D117: through
+            # @wizardColIdx, the one idiom every page in the file now uses)
+            @wizardColIdx: dataCol$
+            dataDefault = wizardColIdx.idx
+            @wizardColIdx: groupCol$
+            groupDefault = wizardColIdx.idx
 
             # Validate group count before proceeding
             selectObject: tableId
@@ -519,15 +537,12 @@ if goal = 1
             dataCol$ = data_column$
             groupCol$ = group_column$
 
-            # Preserve column indices for Back navigation
-            for iCol from 1 to nCols
-                if emlTableColumnNames.name$[iCol] = dataCol$
-                    dataDefault = iCol
-                endif
-                if emlTableColumnNames.name$[iCol] = groupCol$
-                    groupDefault = iCol
-                endif
-            endfor
+            # Preserve column indices for Back navigation (D117: through
+            # @wizardColIdx, the one idiom every page in the file now uses)
+            @wizardColIdx: dataCol$
+            dataDefault = wizardColIdx.idx
+            @wizardColIdx: groupCol$
+            groupDefault = wizardColIdx.idx
 
             # Validate group count before proceeding
             selectObject: tableId
@@ -756,6 +771,19 @@ if goal = 1
                 goto A2_INDEP_DESIGN
             endif
 
+            # D117: this page had no preserve step at all — its three seeds
+            # were written once at A2C entry and never again, so both
+            # `goto A2C_TWOFACTOR` returns re-rendered the guess. Worse, the
+            # Run button is on this page: a user who pressed Run without
+            # touching anything after such a return got the GUESSED model
+            # run and reported as if it were theirs.
+            @wizardColIdx: data_column$
+            dataDefault = wizardColIdx.idx
+            @wizardColIdx: factor_1$
+            f1Default = wizardColIdx.idx
+            @wizardColIdx: factor_2$
+            f2Default = wizardColIdx.idx
+
             if factor_1$ = factor_2$
                 # D93: a correctable selection mistake must not end the wizard.
                 @emlErrorDialog: "Factor 1 and Factor 2 must be different columns.", "", "wizard"
@@ -865,6 +893,17 @@ if goal = 1
             goto A1_OBS_TYPE
         endif
 
+        # D117: BEFORE the guard, not after it. This page is re-entered by
+        # `goto A3_NORM_PAGE` from the guard below and from two sites on the
+        # test page, and the preserve step used to sit under the guard — so
+        # on the one return the user is most likely to take, the page came
+        # back showing @wizardPrepareTable's guess.
+        @wizardColIdx: column_1$
+        col1Default = wizardColIdx.idx
+        @wizardColIdx: column_2$
+        col2Default = wizardColIdx.idx
+        prevCheckNorm = check_normality
+
         if column_1$ = column_2$
             # D93: a correctable selection mistake must not end the wizard.
             @emlErrorDialog: "Please select two different columns.", "", "wizard"
@@ -874,17 +913,6 @@ if goal = 1
             exitScript: ""
         endif
 
-        # Preserve column indices for Back navigation
-        for iCol from 1 to nCols
-            if emlTableColumnNames.name$[iCol] = column_1$
-                col1Default = iCol
-            endif
-            if emlTableColumnNames.name$[iCol] = column_2$
-                col2Default = iCol
-            endif
-        endfor
-
-        prevCheckNorm = check_normality
         if check_normality
             @wizardNormCheck: "paired", tableId, column_1$,
             ... column_2$
@@ -1282,6 +1310,12 @@ elsif goal = 2
             goto B1_RELATIONSHIP
         endif
 
+        # D117: no preserve step here either, and Run is on this page.
+        @wizardColIdx: predictor_column$
+        col1Default = wizardColIdx.idx
+        @wizardColIdx: response_column$
+        col2Default = wizardColIdx.idx
+
         if predictor_column$ = response_column$
             # D93: a correctable selection mistake must not end the wizard.
             @emlErrorDialog: "Please select two different columns.", "", "wizard"
@@ -1370,6 +1404,18 @@ elsif goal = 2
         goto B1_RELATIONSHIP
     endif
 
+    corrCol1$ = column_1$
+    corrCol2$ = column_2$
+
+    # D117: BEFORE the guard, not after it — as at A3_NORM_PAGE. The guard's
+    # own `goto B_NORM_PAGE` skipped straight past the preserve step, so the
+    # page came back holding the guess rather than the user's two columns.
+    @wizardColIdx: corrCol1$
+    col1Default = wizardColIdx.idx
+    @wizardColIdx: corrCol2$
+    col2Default = wizardColIdx.idx
+    prevCheckNorm = check_normality
+
     if column_1$ = column_2$
         # D93: a correctable selection mistake must not end the wizard.
         @emlErrorDialog: "Please select two different columns.", "", "wizard"
@@ -1379,20 +1425,6 @@ elsif goal = 2
         exitScript: ""
     endif
 
-    corrCol1$ = column_1$
-    corrCol2$ = column_2$
-
-    # Preserve column indices for Back navigation
-    for iCol from 1 to nCols
-        if emlTableColumnNames.name$[iCol] = corrCol1$
-            col1Default = iCol
-        endif
-        if emlTableColumnNames.name$[iCol] = corrCol2$
-            col2Default = iCol
-        endif
-    endfor
-
-    prevCheckNorm = check_normality
     if check_normality
         @wizardNormCheck: "correlation", tableId, corrCol1$,
         ... corrCol2$
@@ -1538,6 +1570,10 @@ elsif goal = 3
             goto C1_DESCRIBE
         endif
 
+        # D117: no preserve step here either, and Run is on this page.
+        @wizardColIdx: data_column$
+        dataDefault = wizardColIdx.idx
+
         if clear_Info_window
             @emlClearInfo
         endif
@@ -1642,7 +1678,7 @@ elsif goal = 4
     #
     # Author ruling: table linear mixed models and take them away from end
     # users for now — "including the wizard". Nothing is deleted. The engine
-    # (stats/eml-lmm.praat, 31 procedures), the standalone wrapper
+    # (stats/eml-lmm.praat, 32 procedures), the standalone wrapper
     # (scripts/eml-lmm.praat) and the formula page below are all intact.
     #
     # WHAT WAS REMOVED IS THE ROUTE, and only the route. A "Predict — model
@@ -1719,6 +1755,12 @@ elsif goal = 4
     elsif clicked = 2
         goto Q1_GOAL
     endif
+
+    # D117: no preserve step here either, and Run is on this page.
+    @wizardColIdx: predictor_column$
+    col1Default = wizardColIdx.idx
+    @wizardColIdx: outcome_column$
+    col2Default = wizardColIdx.idx
 
     if predictor_column$ = outcome_column$
         # D93: a correctable selection mistake must not end the wizard.
@@ -2021,7 +2063,8 @@ elsif wizDrawSource$ = "twoway"
     # D32, wizard half: the two-way draw handed over factor 1 only, so the
     # default grouped violin dropped the second factor exactly as the menu
     # wrapper's did. Consumed by the Grouped Violin preset branch in
-    # graphs/eml-graphs-form.praat once its subgroup preset lands.
+    # graphs/eml-graphs-form.praat:5194-5258, which has landed: it matches
+    # the name against the column list and clears the preset afterwards.
     emlGraphsPresetType = 11
     emlGraphsPresetGroupCol$ = wizTwoWayFactor1$
     emlGraphsPresetDataCol$ = dataCol$
@@ -2118,45 +2161,87 @@ procedure wizardNormDiag: .data#, .label$
         appendInfoLine: "    Shapiro-Wilk: ", emlShapiroWilk.error$
     endif
 
-    # Rule-of-thumb + formal test combined
-    # Same thresholds as every other shape verdict in the plugin.
-    # These were hard-coded 1 and 3 while the constants said 1 and 1,
-    # so the wizard's normality check and the Check-normality wrapper
-    # could reach opposite conclusions on the same column. (D95)
-    .skKurtFail = abs (.sk) >= emlSkewThreshold
-    ... or abs (.ku) >= emlKurtosisThreshold
-    .swFail = 0
-    if emlShapiroWilk.error$ = ""
-        if emlShapiroWilk.p < 0.05
-            .swFail = 1
-        endif
+    # ── Decision hierarchy ────────────────────────────────────────────────
+    #
+    # The rule is NOT restated here. It lives in @emlNormalityRecommendation
+    # (stats/eml-analysis.praat), reached through eml-lib-lmm.praat, and this
+    # procedure calls it. Until 8 August the wizard carried a hand-maintained
+    # second copy — correct, but a copy, and the third copy (the per-group
+    # branch of eml-check-normality.praat) had already drifted to hard-coded
+    # thresholds and the retired `skKurtFail or swFail` gate. (D137, D134)
+    #
+    # This call site is the reason the shared procedure takes a bare
+    # (skewness, kurtosis, n, swP, swError$) rather than a Table and a column
+    # name: @wizardNormDiag is handed a vector — one group's values, or
+    # paired differences — and must not disturb wizard state.
+    # @emlNormalityRecommendation prints nothing and declares nothing, so it
+    # is safe to call from here.
+    #
+    # Everything below the call is PRESENTATION. The wizard picks its
+    # wording from the returned flags; it does not re-derive the answer.
+    # Thresholds print from the same shared constants the rule tests
+    # (emlSkewThreshold = 2, emlKurtosisThreshold = 7, in
+    # stats/eml-output.praat). They were once hard-coded 1 and 3 here. (D95)
+    @emlNormalityRecommendation: .sk, .ku, .n,
+    ... emlShapiroWilk.p, emlShapiroWilk.error$
+    .shapeSevere = emlNormalityRecommendation.shapeSevere
+    .swUsable = emlNormalityRecommendation.swUsable
+    .swFail = emlNormalityRecommendation.swFail
+    .largeNOverride = emlNormalityRecommendation.largeNOverride
+    .isParametric = 0
+    if emlNormalityRecommendation.recommendation$ = "parametric"
+        .isParametric = 1
     endif
 
-    if .skKurtFail or .swFail
-        # Large-n override: SW rejects trivial departures at large n
-        if .swFail and (not .skKurtFail) and .n > 50
-            .recommendation = 1
+    .shapeMsg$ = "    → Skewness/kurtosis outside typical limits"
+    ... + " (|skew| < " + fixed$ (emlSkewThreshold, 0)
+    ... + ", |excess kurt| < " + fixed$ (emlKurtosisThreshold, 0) + ")"
+
+    # The answer, converted to the wizard's 1/2 encoding. It is READ from the
+    # shared procedure, not recomputed — the branches below choose wording
+    # only, and none of them assigns .recommendation.
+    .recommendation = 2
+    if .isParametric
+        .recommendation = 1
+    endif
+
+    if .swUsable
+        if .largeNOverride
+            # Large-n override: Shapiro-Wilk rejects departures too small to
+            # matter for a parametric test once n is large.
             appendInfoLine: "    → Shapiro-Wilk rejects normality, but "
             ... + "departure is"
             appendInfoLine: "      practically negligible at n = ",
             ... .n, " (shape within limits)"
-        else
-            .recommendation = 2
-            if .swFail
-                appendInfoLine: "    → Shapiro-Wilk rejects normality "
-                ... + "(p < 0.05)"
+        elsif .swFail
+            appendInfoLine: "    → Shapiro-Wilk rejects normality "
+            ... + "(p < 0.05)"
+            if .shapeSevere
+                appendInfoLine: .shapeMsg$
             endif
-            if .skKurtFail
-                appendInfoLine: "    → Skewness/kurtosis outside typical "
-                ... + "limits (|skew| < "
-                ... + fixed$ (emlSkewThreshold, 0)
-                ... + ", |excess kurt| < "
-                ... + fixed$ (emlKurtosisThreshold, 0) + ")"
+        else
+            # The test did not reject. Severe shape is still REPORTED, but it
+            # does not overturn the test's finding.
+            if .shapeSevere
+                appendInfoLine: .shapeMsg$
+                appendInfoLine: "    → Shapiro-Wilk does not reject normality"
+                ... + " (p >= 0.05); shape is"
+                appendInfoLine: "      reported but does not overturn the test"
+            else
+                appendInfoLine: "    → Normality appears reasonable"
             endif
         endif
     else
-        .recommendation = 1
-        appendInfoLine: "    → Normality appears reasonable"
+        # Shapiro-Wilk unavailable (n outside its defined range, zero range,
+        # or an internal error). The backup case, and the only one in which
+        # shape decides anything.
+        if .shapeSevere
+            appendInfoLine: .shapeMsg$
+            appendInfoLine: "    → Shapiro-Wilk unavailable; shape decides"
+        else
+            appendInfoLine: "    → Shapiro-Wilk unavailable; shape within "
+            ... + "limits"
+        endif
     endif
     appendInfoLine: ""
 endproc
@@ -2383,6 +2468,37 @@ procedure wizardCondSlot: .name$
     for .i from 1 to a3kN
         if a3kName$ [.i] = .name$
             .idx = .i + 1
+        endif
+    endfor
+endproc
+
+
+# ============================================================================
+# @wizardColIdx — Column NAME back to its optionmenu POSITION
+# ============================================================================
+# The sibling of @wizardCondSlot above, for every OTHER column optionmenu in
+# the wizard. Those menus are seeded with a POSITION in emlTableColumnNames
+# and hand back a NAME; a page re-entered by `goto` re-renders from the seed,
+# so unless the name is converted back and written into the seed the page
+# shows @wizardPrepareTable's GUESS rather than what the user chose. (D117)
+#
+# Why a procedure and not the four-line loop it replaces: nine error-return
+# sites across six pages need this, the loop had been hand-copied to two of
+# them and omitted from the other four pages entirely, and a hand-copied
+# loop is exactly what stops propagating. One call per menu, everywhere.
+#
+# Arguments:
+#   .name$ - a column name as returned by an optionmenu
+#
+# Output:
+#   .idx   - position in emlTableColumnNames; 1 for a name not in the list
+#            (unreachable from a menu, whose options ARE that list)
+
+procedure wizardColIdx: .name$
+    .idx = 1
+    for .i from 1 to nCols
+        if emlTableColumnNames.name$ [.i] = .name$
+            .idx = .i
         endif
     endfor
 endproc

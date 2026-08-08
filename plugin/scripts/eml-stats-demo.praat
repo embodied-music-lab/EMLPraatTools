@@ -245,9 +245,11 @@ Axes: xMin1, xMax1, yMin1, yMax1
 # @emlDrawViolinPlot for one violin per integer x-position.
 violinHalfWidth = 0.35
 @emlDrawViolin: 1, groupA#, emlSetColorPalette.fill$[1],
-... emlSetColorPalette.line$[1], yMin1, yMax1, violinHalfWidth
+... emlSetColorPalette.line$[1], yMin1, yMax1, violinHalfWidth,
+... emlSetColorPalette.pattern[1]
 @emlDrawViolin: 2, groupB#, emlSetColorPalette.fill$[2],
-... emlSetColorPalette.line$[2], yMin1, yMax1, violinHalfWidth
+... emlSetColorPalette.line$[2], yMin1, yMax1, violinHalfWidth,
+... emlSetColorPalette.pattern[2]
 
 # Jittered points overlaid on violins
 jitterData# = groupA#
