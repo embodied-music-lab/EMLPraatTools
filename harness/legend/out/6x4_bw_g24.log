@@ -1,0 +1,8 @@
+LGCASE name=6x4_bw_g24 n=24 vpW=6.000 vpH=4.000 mode=bw labels=normal legend=1
+PLACEMENT requested=-1 actual=1
+THEME body=9.3600 annot=8.3200 mL=0.8400 mR=0.8400 mT=0.3900 mB=0.5000 innerL=0.8400 innerR=5.1600 innerT=0.3900 innerB=3.5000
+LAYOUT legendW=1.5846 legendH=2.0430
+EXTENT minX=0 maxX=6.0000 minY=0 maxY=4.0000
+LEGENDBOX x=294 y=159 w=475 h=613
+LEGENDLAYOUT cols=2 rows=12 shown=24 hidden=0
+SAVED /home/claude/EMLPraatTools/harness/legend/out/6x4_bw_g24.png

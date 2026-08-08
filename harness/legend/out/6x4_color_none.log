@@ -1,0 +1,8 @@
+LGCASE name=6x4_color_none n=24 vpW=6.000 vpH=4.000 mode=color labels=normal legend=0
+PLACEMENT requested=-1 actual=-1
+THEME body=9.3600 annot=8.3200 mL=0.8400 mR=0.8400 mT=0.3900 mB=0.5000 innerL=0.8400 innerR=5.1600 innerT=0.3900 innerB=3.5000
+LAYOUT legendW=1.5846 legendH=2.0430
+EXTENT minX=0 maxX=6.0000 minY=0 maxY=4.0000
+LEGENDBOX x=-1 y=-1 w=0 h=0
+LEGENDLAYOUT cols=0 rows=0 shown=0 hidden=0
+SAVED /home/claude/EMLPraatTools/harness/legend/out/6x4_color_none.png
