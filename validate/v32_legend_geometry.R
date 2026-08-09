@@ -21,18 +21,35 @@
 #     harness/legend/run.sh             regenerate the inputs to this script
 #     Rscript validate/v32_legend_geometry.R
 #
-# Input:  <legend>/RESULTS.tsv     61 fields per case; see harness/legend/run.sh
+# Input:  <legend>/RESULTS.tsv     72 fields per case; see harness/legend/run.sh
 #         <legend>/<case>.png      the rendered figure
 #         <legend>/<case>.log      the Info-window transcript
 #         plugin/graphs/eml-graph-procedures.praat   read here, statically
 #         harness/legend/case.praat                  read here, statically
+#         harness/legend/series_case.praat           read here, statically
 #
 #   <legend> is $EML_LEGEND_DIR, default harness/legend/out (IN-REPO, like
 #   harness/stress_out and harness/disclosure/out). A missing artefact is a
 #   HARD STOP, not a skip, for the reason v27 gives: "the driver never ran
 #   this" is precisely the failure a silently shrinking suite would hide.
 #
-# WHAT IS DRIVEN. 103 figures, in four blocks.
+# WHAT IS DRIVEN. 205 figures, in six blocks, from TWO fixtures.
+#
+# THE TWO FIXTURES, AND WHY THERE ARE TWO. harness/legend/case.praat is a
+# RULER: two violins under a legend of 0 to 24 entries, corner forced to
+# "top-left", so that the figure is bit-identical while the legend sweeps and
+# every rectangle it measures is attributable to the legend alone. That is the
+# right design for measuring a box and it is not a picture of a legend doing
+# its job -- the key names ten groups that are not in the figure, no part of
+# corner selection is exercised, and a grouped violin has its category labels
+# on the x-axis anyway. Blocks 1 to 4 are that fixture, and every geometry pin
+# in sections 1 to 9 is measured on it.
+#
+# harness/legend/series_case.praat is the DEMONSTRATION: a k-series line chart
+# and a k-group grouped scatter, drawn through @emlDrawTimeSeries and
+# @emlDrawScatterPlot, where the number of legend entries IS the number of
+# series, the corner is the one @emlPlaceElements scored, and the key is the
+# only way to tell one series from another. Blocks 5 and 6, section 10.
 #
 #   BLOCK 1, 42 figures: the legend matrix -- three figure sizes including a
 #   SQUARE one, entry counts 0 / 1 / 3 / 12 / 24, one label 480 characters
@@ -49,6 +66,17 @@
 #
 #   BLOCK 4, 10 figures: the red paths, named rp_*.
 #
+#   BLOCK 5, 72 figures, named sr_*: the multi-series coverage pairs. Two
+#   graph types x three sizes x three SERIES counts (3, 5, 12) x two headroom
+#   arms, each a treatment at placement 1 and its own legend-free control at
+#   placement 5 pinned to the treatment's own axis. The measurement is
+#   coverPx: pixels that are data-coloured in the control and changed in the
+#   treatment -- how much of the data the key sits on, read off the ink.
+#
+#   BLOCK 6, 30 figures, named sp_*: the five placements again, on the real
+#   path, with a real legend and a chosen corner. p5 doubles as the control
+#   for p1 and p4.
+#
 # WHY BLOCKS 3 AND 4 EXIST, which is a question the author asked in one
 # sentence: a graph carrying a post-hoc comparison matrix puts that matrix in
 # a band BELOW the plot, and placement 3 puts the legend below the plot too --
@@ -60,6 +88,18 @@
 # the rendering, and it settles the argument in the direction the reading
 # predicted: at every size, at both counts, in all five placements, the ink
 # inside the matrix band is EXACTLY the ink the matrix draws on its own.
+#
+# WHY BLOCKS 5 AND 6 EXIST, and it is the assertion this file did not have.
+# At placement 1 the legend is drawn INSIDE the plot, so it can cover the very
+# series it names. Blocks 1 to 4 could not measure that -- the figure under
+# their legend is two violins and the key describes twelve groups, so "the
+# data it names" is not on the page. Blocks 5 and 6 draw a figure where series
+# identity lives nowhere but the key, and count the covered pixels against a
+# control render. Both arms are recorded as NUMBERS in RESULTS.tsv rather than
+# reduced to a verdict, so a change to @emlComputeAnnotationHeadroom, to
+# @emlPlaceElements or to the legend's layout moves a visible figure here.
+# Measured 9 August 2026 on the 6 x 4 five-series line chart: 1348 data pixels
+# covered with no headroom pass, 0 with one.
 #
 # BLOCK 4 IS WHERE THE DEFECT WAS. totalCanvasHeight is a FORM local.
 # @emlInitDrawingDefaults -- the documented entry point for "standalone
@@ -252,10 +292,18 @@ res <- read.delim(res_p, header = FALSE, stringsAsFactors = FALSE,
                                 "mxGap", "mxPanelH", "mxTotal",
                                 "panelBot", "mxTop", "mxBot",
                                 "mxInk", "lgInk", "strayInk", "belowInk",
-                                "inkTop", "inkBot"))
+                                "inkTop", "inkBot",
+                                # The multi-series block. "-" / -1 / NA on
+                                # every case that is not one; see BLOCK 5 in
+                                # the head of harness/legend/run.sh.
+                                "graph", "k", "room", "roomApp", "corner",
+                                "axMin", "axMax", "ctl",
+                                "dataPx", "coverPx", "diffPx"))
 num <- c("mxK", "mxTch", "mxSupp", "mxGap", "mxPanelH", "mxTotal",
          "panelBot", "mxTop", "mxBot", "mxInk", "lgInk", "strayInk",
          "belowInk", "inkTop", "inkBot",
+         "k", "room", "roomApp", "axMin", "axMax",
+         "dataPx", "coverPx", "diffPx",
          "vpW", "vpH", "n", "legend", "pReq", "pAct",
          "imgW", "imgH", "frameL", "frameT",
          "frameR", "frameB", "inkLeft", "inkRight", "inkAbove", "inkBelow",
@@ -303,10 +351,23 @@ res$frameTin <- res$frameT / res$dpiY
 # different population. Block 3 is the matrix cases that name a placement;
 # block 4 is the red paths, which are named rather than counted because each
 # one is a different question.
-b1 <- res[!is.na(res$pReq) & res$pReq == -1 & res$mxK == 0, ]
-b2 <- res[!is.na(res$pReq) & res$pReq >= 1 & res$mxK == 0, ]
-b3 <- res[res$mxK > 0 & !startsWith(res$case, "rp_"), ]
-b4 <- res[startsWith(res$case, "rp_"), ]
+#
+# AND ALL FOUR ARE FILTERED ON graph == "-", which is the geometry rig. Blocks
+# 5 and 6 are the multi-series fixture (harness/legend/series_case.praat) and
+# every one of their cases names a placement, so without this filter they
+# would fall into block 2 and every "identical in all 15 renders" below would
+# be measuring a population three times its size and of two different shapes.
+rig <- res$graph == "-"
+b1 <- res[rig & !is.na(res$pReq) & res$pReq == -1 & res$mxK == 0, ]
+b2 <- res[rig & !is.na(res$pReq) & res$pReq >= 1 & res$mxK == 0, ]
+b3 <- res[rig & res$mxK > 0 & !startsWith(res$case, "rp_"), ]
+b4 <- res[rig & startsWith(res$case, "rp_"), ]
+# BLOCK 5, the coverage pairs, and BLOCK 6, the five placements on the real
+# path. Split on the case-name prefix and not on any measured field, so a case
+# that was renamed shows up as a count mismatch rather than as a silently
+# smaller population.
+b5 <- res[!rig & startsWith(res$case, "sr_"), ]
+b6 <- res[!rig & startsWith(res$case, "sp_"), ]
 
 # ---------------------------------------------------------------------------
 # THE MATRIX IS ITSELF AN ASSERTION.
@@ -399,6 +460,29 @@ MATRIX_CASES <- as.vector(t(outer(
 RP_CASES <- c("rp_notch_p3", "rp_notch_p2", "rp_notch_p4", "rp_notch_ctl",
               "rp_tall_p3", "rp_tall_p2", "rp_tallnotch_p3", "rp_tall_ctl",
               "rp_supp_p3", "rp_supp_ctl")
+# BLOCK 5, the multi-series coverage pairs. Two graph types x three sizes x
+# three series counts x two headroom arms, each a TREATMENT and its own
+# legend-free CONTROL. The control is not an extra: it is the other half of
+# every coverage number, so it is inventoried with the treatments and a
+# missing one is a missing measurement rather than a missing picture.
+SR_GRAPHS <- c("line", "scatter")
+SR_K      <- c(3, 5, 12)
+SR_ROOM   <- c(0, 1)
+SR_TREAT <- as.vector(t(outer(
+    as.vector(t(outer(paste("sr", SR_GRAPHS, sep = "_"), SIZES$size,
+                      paste, sep = "_"))),
+    as.vector(t(outer(paste0("k", SR_K), paste0("r", SR_ROOM),
+                      paste, sep = "_"))),
+    paste, sep = "_")))
+SR_CASES <- as.vector(rbind(SR_TREAT, paste0(SR_TREAT, "_ctl")))
+
+# BLOCK 6, the five placements on the real path. Two graph types x three
+# sizes x five placements, at five series.
+SP_CASES <- as.vector(t(outer(
+    as.vector(t(outer(paste("sp", SR_GRAPHS, sep = "_"), SIZES$size,
+                      paste, sep = "_"))),
+    paste0("p", 1:5), paste, sep = "_")))
+
 RP_CTL <- c(rp_notch_p3 = "rp_notch_ctl", rp_notch_p2 = "rp_notch_ctl",
             rp_notch_p4 = "rp_notch_ctl",
             rp_tall_p3 = "rp_tall_ctl", rp_tall_p2 = "rp_tall_ctl",
@@ -417,11 +501,20 @@ check_true("v32", "every matrix case in block 3 is present",
            all(MATRIX_CASES %in% b3$case))
 check_true("v32", "every red path in block 4 is present",
            all(RP_CASES %in% b4$case))
-# The four blocks partition the file. A case that fell out of all four -- a
+check("v32", "block 5 rendered in full (2 types x 3 sizes x 3 k x 2 arms, paired)",
+      nrow(b5), length(SR_CASES), tol = 0)
+check_true("v32", "every coverage pair in block 5 is present",
+           all(SR_CASES %in% b5$case))
+check("v32", "block 6 rendered in full (2 types x 3 sizes x 5 placements)",
+      nrow(b6), length(SP_CASES), tol = 0)
+check_true("v32", "every placement in block 6 is present",
+           all(SP_CASES %in% b6$case))
+# The six blocks partition the file. A case that fell out of all six -- a
 # new name, a mis-typed prefix -- would otherwise be rendered, measured and
 # never looked at.
-check("v32", "the four blocks account for every rendered case",
-      nrow(b1) + nrow(b2) + nrow(b3) + nrow(b4), nrow(res), tol = 0)
+check("v32", "the six blocks account for every rendered case",
+      nrow(b1) + nrow(b2) + nrow(b3) + nrow(b4) + nrow(b5) + nrow(b6),
+      nrow(res), tol = 0)
 check("v32", "no duplicate case name", length(unique(res$case)), nrow(res), tol = 0)
 check_true("v32", "every case in block 1 is present",
            all(expected_cases %in% b1$case))
@@ -1825,6 +1918,411 @@ if (!is.null(legend_body)) {
              any(grepl('variableExists \\("annotMatrixN"\\)', legend_body)))
   check_true("v32", "...and honours a suppressed panel",
              any(grepl("emlMatrixLayout_suppressed", legend_body)))
+}
+
+
+# ---------------------------------------------------------------------------
+# 10. THE LEGEND OVER THE SERIES IT NAMES.  Blocks 5 and 6.
+#
+# WHAT WAS WRONG WITH EVERYTHING ABOVE, STATED PLAINLY. Sections 1 to 9 are
+# measured on harness/legend/case.praat, which draws TWO VIOLINS and asks for
+# a legend of up to TWENTY-FOUR entries, with the corner hardcoded to
+# "top-left". Every rectangle they assert is correct. None of them can say
+# anything about a legend doing its job, for three reasons that are properties
+# of that fixture and not of the plugin:
+#
+#   (a) THE KEY DESCRIBED SERIES THAT WERE NOT IN THE FIGURE. Two violins,
+#       twelve entries. "Does the legend cover the data it names" was not
+#       merely untested — it was not expressible, because the data it named
+#       was not on the page.
+#   (b) THE CORNER WAS FORCED. The product does not force it: seven draw
+#       procedures set `.legendCorner$ = emlPlaceElements.corner1$` and pass
+#       that. A fixture that hardcodes "top-left" exercises no part of the
+#       scoring, so no claim about which corner the product picks could be
+#       supported by any figure above.
+#   (c) A VIOLIN DOES NOT NEED A LEGEND. On a grouped violin or box the
+#       x-axis already carries the category labels. The key is redundant
+#       furniture there, and a redundant key covering the data costs the
+#       reader nothing.
+#
+# harness/legend/series_case.praat is the fixture that can be wrong. A
+# k-series LINE CHART (@emlDrawTimeSeries, graph type 5) and a k-group
+# GROUPED SCATTER (@emlDrawScatterPlot, graph type 8), drawn through the
+# product's own graph-level procedures, where series identity has no home but
+# the key: the lines cross, so position does not name them, and the x-axis
+# carries time. The number of legend entries IS the number of series, and the
+# corner is whatever @emlPlaceElements scored.
+#
+# HOW COVERAGE IS MEASURED, and why it needs two renders. Each treatment has
+# its own CONTROL: the same figure, ON THE SAME AXIS, with
+# emlLegendPlacement = 5 so @emlDrawLegend draws nothing. Placement 5 is a
+# single `.draw = 0` inside that procedure — the axis, the quadrant scan, the
+# chosen corner and the drawn extent are all computed identically — so the two
+# files differ in legend ink and in nothing else. coverPx is the count of
+# pixels that are DATA-COLOURED in the control and CHANGED in the treatment.
+# See the head of harness/legend/measure_cover.py for why data ink is
+# identified by chroma and why the count is taken inside the plot frame.
+#
+# The reported rectangles are not consulted anywhere in this section. That is
+# the same discipline section 8 applies to the matrix band, and for the same
+# reason: v1.23 of @emlDrawLegend reported a box it did not draw.
+#
+# coverPx IS A LOWER BOUND, and it is worth knowing why. As of 9 August 2026
+# an on-figure box's background is drawn at alpha 0.702 — an alpha sprite
+# where the platform has one, a STIPPLE screen on Linux, which is what this
+# harness renders on. A legend sitting on data therefore changes roughly seven
+# pixels in ten and lets three show through as dots, and this measure counts
+# the seven. Every use it is put to below survives that: a count of zero still
+# means no overlap, because any real overlap changes the large majority of the
+# pixels under it, and the "no worse than" comparison between the two headroom
+# arms is between two figures drawn the same way. What would NOT survive is
+# reading a fall in coverPx as an improvement in readability — a translucent
+# key over the data is a key over the data — which is why nothing here rewards
+# a smaller number except against its own control.
+# ---------------------------------------------------------------------------
+
+# --- Every series case drew a REAL figure of the type it claimed, and the
+# fixture drove the product rather than a copy of it.
+series_p <- repo_path("harness", "legend", "series_case.praat")
+if (!file.exists(series_p))
+    stop(sprintf("v32: %s missing", series_p))
+series_src <- readLines(series_p, warn = FALSE)
+check_true("v32", "the series fixture drives @emlDrawTimeSeries itself",
+           any(grepl("@emlDrawTimeSeries:", series_src, fixed = TRUE)))
+check_true("v32", "the series fixture drives @emlDrawScatterPlot itself",
+           any(grepl("@emlDrawScatterPlot:", series_src, fixed = TRUE)))
+# THE CORNER IS NOT CHOSEN BY THE FIXTURE. Neither a corner name nor a call to
+# @emlDrawLegend appears in it: the legend is reached only from inside the
+# draw procedures, which is the only way @emlPlaceElements gets to decide.
+check_true("v32", "the series fixture never calls @emlDrawLegend itself",
+           !any(grepl("@emlDrawLegend:", series_src, fixed = TRUE)))
+# Comment lines are stripped first -- the file DISCUSSES corners at length,
+# and the claim is about the code, which must name none.
+series_code <- grep("^[[:space:]]*[#;]", series_src, value = TRUE,
+                    invert = TRUE)
+check_true("v32", "...and names no corner of its own",
+           !any(grepl('"(top|bottom)-(left|right)"', series_code)))
+# The headroom pass is the PRODUCT's, included rather than reimplemented.
+check_true("v32", "the series fixture drives the form's own headroom pass",
+           any(grepl("@emlLegendHeadroomAfterDraw:", series_src, fixed = TRUE)) &&
+           any(grepl("eml-graphs-form.praat", series_src, fixed = TRUE)))
+check_true("v32", "the series fixture saves through the plugin's pre-save idiom",
+           any(grepl("@stressSave:", series_src, fixed = TRUE)))
+
+# --- THE PROPERTY THE WHOLE BLOCK RESTS ON: entries = series. Asserted on
+# three numbers that are produced independently — the table the fixture built
+# (k), the group count the DRAW PROCEDURE resolved from that table (nGroups),
+# and the count @emlDrawLegend was handed (legendN) — so a legend that named
+# a different number of things than the figure drew could not pass by
+# agreeing with itself.
+sr_all <- rbind(b5, b6)
+for (i in seq_len(nrow(sr_all))) {
+  cs <- sr_all$case[i]
+  lg <- readLines(file.path(leg_dir, paste0(cs, ".log")), warn = FALSE)
+  sl <- grep("^SERIES ", lg, value = TRUE)
+  if (!check_true("v32", paste(cs, "reported its series count"),
+                  length(sl) == 1)) next
+  f <- function(key) as.numeric(sub(paste0("^.*[ ]", key, "=([^ ]*).*$"),
+                                    "\\1", sl[1]))
+  check("v32", paste(cs, "the draw procedure grouped every series in the table"),
+        f("nGroups"), sr_all$k[i], tol = 0)
+  check("v32", paste(cs, "the legend has exactly one entry per series"),
+        f("legendN"), sr_all$k[i], tol = 0)
+}
+
+# --- WHICH CORNER THE PRODUCT ACTUALLY CHOOSES. Recorded, not guessed. The
+# fixture prints @emlDrawLegend's own .position$ and, separately,
+# @emlPlaceElements.corner1$; these are the same string on every one of these
+# figures, which is the statement that the draw procedures pass the scored
+# corner through unmodified.
+for (i in seq_len(nrow(sr_all))) {
+  cs <- sr_all$case[i]
+  lg <- readLines(file.path(leg_dir, paste0(cs, ".log")), warn = FALSE)
+  cl <- grep("^CORNER ", lg, value = TRUE)
+  if (!check_true("v32", paste(cs, "reported a corner"), length(cl) == 1)) next
+  got   <- sub("^CORNER corner=([^ ]*).*$", "\\1", cl[1])
+  place <- sub("^.* placed=([^ ]*).*$", "\\1", cl[1])
+  check_true("v32", paste(cs, "the corner drawn is the corner @emlPlaceElements scored"),
+             got == place)
+  # ...and it is the emptiest quadrant, recomputed here from the four scores
+  # the draw procedure counted. Ties go to the earlier corner in the
+  # procedure's own order -- top-left, top-right, bottom-left, bottom-right --
+  # because every comparison in it is a strict `<`.
+  q <- sapply(c("qTL", "qTR", "qBL", "qBR"), function(k)
+      as.numeric(sub(paste0("^.*[ ]", k, "=([^ ]*).*$"), "\\1", cl[1])))
+  want <- c("top-left", "top-right", "bottom-left", "bottom-right")[which.min(q)]
+  check_true("v32", paste(cs, "the corner is the emptiest quadrant"),
+             got == want)
+}
+
+# THE CHOICE ITSELF, PINNED. Which corner each figure gets is a fact about the
+# product and about this data, and it is written down so that a change to the
+# scoring, to the quadrant scan, or to the headroom's effect on the y midpoint
+# moves a visible number here rather than passing unnoticed. Recorded 9 Aug
+# 2026 against the tree of that morning.
+CORNER_PIN <- c(
+  # THE LINE CHART TAKES TOP-LEFT, at every size and every entry count. Its
+  # series sweep the full height of the panel, so all four quadrant counts are
+  # within a handful of vertices of each other and the winner is decided by
+  # very little -- which is exactly the figure on which "choose the emptiest
+  # corner" buys the reader nothing, because the emptiest corner still has
+  # three lines through it.
+  sr_line_6x4_k5_r0 = "top-left", sr_line_5x5_k5_r0 = "top-left",
+  sr_line_10x3_k5_r0 = "top-left", sr_line_6x4_k12_r0 = "top-left",
+  # THE GROUPED SCATTER TAKES BOTTOM-RIGHT, at every size, with no headroom
+  # pass.
+  sp_scatter_6x4_p1 = "bottom-right", sp_scatter_5x5_p1 = "bottom-right",
+  sp_scatter_10x3_p1 = "bottom-right",
+  sr_scatter_6x4_k5_r0 = "bottom-right",
+  # ...AND MOVES TO BOTTOM-LEFT WHEN THE HEADROOM PASS RUNS. This is the
+  # behaviour @emlPlaceElements' own comment predicts and bounds: room is made
+  # by moving ONE axis bound, so the y midpoint the quadrants are split on
+  # moves with it, and "only left and right can trade places". They trade
+  # here. It is pinned because it is the observable consequence of the
+  # headroom work on corner selection, and because the comment's claim -- that
+  # nothing crosses between top and bottom -- is only worth anything if a
+  # figure that DID cross would be caught. Every scatter case in block 5 makes
+  # the same move; three of them are named.
+  sr_scatter_6x4_k5_r1 = "bottom-left",
+  sr_scatter_5x5_k5_r1 = "bottom-left",
+  sr_scatter_10x3_k5_r1 = "bottom-left")
+for (nm in names(CORNER_PIN)) {
+  r <- res[res$case == nm, ]
+  if (!check_true("v32", paste(nm, "is in the results"), nrow(r) == 1)) next
+  check_true("v32", paste(nm, "takes the", CORNER_PIN[[nm]], "corner"),
+             r$corner[1] == CORNER_PIN[[nm]])
+}
+# The claim in @emlPlaceElements' comment, over the whole block rather than
+# over three named cases: the headroom pass may move a legend from left to
+# right or back, and may NOT move it between the top of the figure and the
+# bottom. Half of a corner name is the half that is protected.
+for (g in SR_GRAPHS) for (sz in SIZES$size) for (kk in SR_K) {
+  r0 <- b5[b5$case == paste0("sr_", g, "_", sz, "_k", kk, "_r0"), ]
+  r1 <- b5[b5$case == paste0("sr_", g, "_", sz, "_k", kk, "_r1"), ]
+  if (nrow(r0) != 1 || nrow(r1) != 1) next
+  check_true("v32",
+             sprintf("sr_%s_%s k=%d: the headroom pass does not move the legend top<->bottom (%s / %s)",
+                     g, sz, kk, r0$corner[1], r1$corner[1]),
+             sub("-.*$", "", r0$corner[1]) == sub("-.*$", "", r1$corner[1]))
+}
+
+# --- THE CONTROL IS THE SAME FIGURE. Every coverage pair must agree on the
+# plot rectangle, the saved image and the drawn extent, or the pixel
+# comparison between them is comparing two different figures.
+b5t <- b5[b5$ctl != "-", ]
+check("v32", "every block 5 treatment names a control",
+      nrow(b5t), length(SR_TREAT), tol = 0)
+for (i in seq_len(nrow(b5t))) {
+  cs <- b5t$case[i]
+  c0 <- res[res$case == b5t$ctl[i], ]
+  if (!check_true("v32", paste(cs, "its control was rendered"), nrow(c0) == 1))
+      next
+  check_true("v32", paste(cs, "treatment and control are the same saved image"),
+             b5t$imgW[i] == c0$imgW[1] && b5t$imgH[i] == c0$imgH[1])
+  check_true("v32", paste(cs, "treatment and control share one plot rectangle"),
+             b5t$frameL[i] == c0$frameL[1] && b5t$frameT[i] == c0$frameT[1] &&
+             b5t$frameR[i] == c0$frameR[1] && b5t$frameB[i] == c0$frameB[1])
+  # THE AXIS. The whole coverage measurement is void if the two figures are
+  # not on one axis, so it is checked rather than arranged for: the driver
+  # pins the control to the number the treatment printed, and this is that
+  # pin read back off both transcripts.
+  check("v32", paste(cs, "treatment and control are on one y-axis (min)"),
+        c0$axMin[1], b5t$axMin[i], tol = 1e-9)
+  check("v32", paste(cs, "treatment and control are on one y-axis (max)"),
+        c0$axMax[1], b5t$axMax[i], tol = 1e-9)
+  # The control draws no legend at all: placement 5, nothing shown, no box.
+  check_true("v32", paste(cs, "the control drew no legend"),
+             c0$pAct[1] == 5 && c0$shown[1] == 0)
+}
+
+# --- THE MEASUREMENT IS SOUND BEFORE IT IS INTERESTING.
+for (i in seq_len(nrow(sr_all))) {
+  cs <- sr_all$case[i]
+  if (is.na(sr_all$coverPx[i])) next
+  check_true("v32", paste(cs, "there is data ink to cover"),
+             sr_all$dataPx[i] > 0)
+  # coverPx counts a subset of the pixels diffPx counts: an identity, checked
+  # rather than assumed, because a coverage number larger than the total
+  # number of changed pixels would mean the two counts were taken over
+  # different regions.
+  check_true("v32", paste(cs, "covered pixels are a subset of changed pixels"),
+             sr_all$coverPx[i] <= sr_all$diffPx[i])
+  check_true("v32", paste(cs, "covered pixels are a subset of the data ink"),
+             sr_all$coverPx[i] <= sr_all$dataPx[i])
+}
+# The legend leaves a mark SOMEWHERE. A coverage measurement that reported
+# zero because the two renders were identical would be indistinguishable from
+# a legend that covers nothing, and one of those is a broken fixture.
+for (i in seq_len(nrow(b5t))) {
+  check_true("v32", paste(b5t$case[i], "the treatment differs from its control at all"),
+             !is.na(b5t$diffPx[i]) && b5t$diffPx[i] > 0)
+}
+
+# ---------------------------------------------------------------------------
+# 10b. THE NUMBER. How much data the key sits on, at placement 1.
+#
+# PIN-THEN-CHANGE, v27's and v29's discipline. coverPx is RECORDED as a
+# number and not reduced to a boolean, so that a future change to
+# @emlComputeAnnotationHeadroom, to @emlPlaceElements, or to the legend's own
+# layout moves a visible figure in this file rather than flipping a check that
+# was already green.
+#
+# THE TWO ARMS, and both of them are real callers:
+#
+#   room = 0   The figure is drawn ONCE. This is every caller that is not the
+#              graphs form — every PraatGen companion file, every direct call
+#              into eml-draw-procedures.praat, every stress case in this repo.
+#              No headroom pass exists for them, so whatever the legend
+#              covers, it covers.
+#   room = 1   The form's two-pass path: draw, ask @emlLegendHeadroomAfterDraw
+#              whether the legend needs y-axis room, and if it says yes, draw
+#              again on the widened axis.
+#
+# WHAT WAS MEASURED, 9 August 2026, on the 6 x 4 line chart:
+#
+#     k    room 0        room 1
+#     3    0             0            the box is small and the corner it takes
+#                                     is genuinely empty; nothing to fix
+#     5    1348          0            the case the plugin's own defect note is
+#                                     written about
+#    12    20932         7385         twelve entries on a 4-inch panel: the
+#                                     band exceeds emlLegendHeadroomShare and
+#                                     the axis is widened as far as the cap
+#                                     allows, which is not far enough
+#
+# SO THE HEADROOM WORKS AND IT IS NOT A CURE. Where the legend can be
+# afforded, room = 1 drives the overlap to exactly zero. Where it cannot, the
+# cap holds the line at half the panel and the rest is REPORTED — the NOTE in
+# @emlLegendHeadroomAfterDraw names the shortfall and tells the reader to move
+# the legend out of the plot. The assertion below is written to that shape and
+# not to "coverPx is zero", because "zero everywhere" is a claim the product
+# does not make and should not be held to.
+# ---------------------------------------------------------------------------
+
+# (a) THE HEADROOM PASS NEVER MAKES IT WORSE. Over every pair of arms, at
+# every graph type, size and entry count. This is the one that holds whichever
+# way the headroom work lands: if it is reverted the two arms are equal and
+# this still passes; if it is improved the inequality only widens.
+sr_pairs <- 0L
+for (g in SR_GRAPHS) for (sz in SIZES$size) for (kk in SR_K) {
+  n0 <- paste0("sr_", g, "_", sz, "_k", kk, "_r0")
+  n1 <- paste0("sr_", g, "_", sz, "_k", kk, "_r1")
+  r0 <- b5[b5$case == n0, ]; r1 <- b5[b5$case == n1, ]
+  if (nrow(r0) != 1 || nrow(r1) != 1) next
+  sr_pairs <- sr_pairs + 1L
+  check_true("v32",
+             sprintf("%s %s k=%d: the headroom pass covers no more data than no pass (%d -> %d)",
+                     g, sz, kk, r0$coverPx[1], r1$coverPx[1]),
+             r1$coverPx[1] <= r0$coverPx[1])
+}
+check("v32", "every headroom pair was compared", sr_pairs,
+      length(SR_GRAPHS) * nrow(SIZES) * length(SR_K), tol = 0)
+
+# (b) WHERE THE LEGEND FITS, THE OVERLAP IS EXACTLY ZERO. "Fits" is not this
+# script's opinion: @emlComputeAnnotationHeadroom reports .legendOverflow when
+# the band it wanted exceeded emlLegendHeadroomShare of the panel, and
+# @emlLegendHeadroomAfterDraw prints a NOTE naming the shortfall. So the
+# figures that carry no such NOTE are the figures the product says it served,
+# and on those the count is required to be 0 — not small, zero.
+served <- 0L
+capped <- 0L
+for (i in seq_len(nrow(b5))) {
+  if (b5$room[i] != 1 || b5$ctl[i] == "-") next
+  lg <- readLines(file.path(leg_dir, paste0(b5$case[i], ".log")), warn = FALSE)
+  short <- any(grepl("^NOTE: The legend asked for", lg))
+  if (short) {
+    capped <- capped + 1L
+    # A capped legend is required to SAY SO, and to say what to do instead.
+    check_true("v32", paste(b5$case[i], "the shortfall names the way out"),
+               any(grepl("Right of plot or Below plot", lg)))
+  } else {
+    served <- served + 1L
+    check("v32", paste(b5$case[i],
+                       "the legend was afforded, and covers no data at all"),
+          b5$coverPx[i], 0, tol = 0)
+  }
+}
+# Both populations are non-empty, or one of the two branches above is never
+# exercised and the section is weaker than it reads.
+check_true("v32", "the headroom arm contains legends that fit", served > 0)
+check_true("v32", "...and legends that could not be afforded", capped > 0)
+
+# (c) THE NUMBERS THEMSELVES, on the default figure. Pinned so a change moves
+# a visible figure. Stated as an INEQUALITY on the no-pass arm rather than an
+# equality, because the exact count depends on where the palette puts each
+# series and a re-ordered palette is not a legend defect; the ordering between
+# the arms, and the zero, are the load-bearing halves and they are exact.
+COVER_PIN <- rbind(
+  data.frame(case = "sr_line_6x4_k3_r0",  atMost = 200,   stringsAsFactors = FALSE),
+  data.frame(case = "sr_line_6x4_k5_r0",  atMost = 4000,  stringsAsFactors = FALSE),
+  data.frame(case = "sr_line_6x4_k12_r0", atMost = 40000, stringsAsFactors = FALSE))
+for (i in seq_len(nrow(COVER_PIN))) {
+  r <- b5[b5$case == COVER_PIN$case[i], ]
+  if (!check_true("v32", paste(COVER_PIN$case[i], "is in the results"),
+                  nrow(r) == 1)) next
+  check_below("v32", paste(COVER_PIN$case[i], "data pixels under the legend"),
+              COVER_PIN$atMost[i], r$coverPx[1])
+}
+# A LEGEND THAT COVERS DATA IS ACTUALLY REACHED. If every case in the block
+# came out at zero without the headroom pass, the fixture would be measuring
+# nothing and every check above would be vacuously green.
+check_true("v32", "at least one no-pass figure does put the key on the data",
+           sum(b5$coverPx[b5$room == 0 & b5$ctl != "-"] > 0, na.rm = TRUE) > 0)
+
+# ---------------------------------------------------------------------------
+# 10c. THE FIVE PLACEMENTS, ON THE REAL PATH.  Block 6.
+#
+# Section 3b makes this statement on the geometry rig, where the corner is
+# forced and the key describes nothing. Here it is made where the legend is
+# real, the corner is chosen and the figure is one that needs a key: the PLOT
+# RECTANGLE is the same rectangle in all five placements, and what is allowed
+# to differ is the SAVED FILE.
+# ---------------------------------------------------------------------------
+for (g in SR_GRAPHS) for (sz in SIZES$size) {
+  fam <- b6[b6$case %in% paste0("sp_", g, "_", sz, "_p", 1:5), ]
+  if (!check_true("v32", sprintf("sp_%s_%s: all five placements rendered", g, sz),
+                  nrow(fam) == 5)) next
+  # Inches, not pixels: placements 2 and 3 grow the export, so a figure whose
+  # extent is not a whole number of inches is written at an effective
+  # resolution a hair off 300. Section 2's note has the arithmetic.
+  check_true("v32", sprintf("sp_%s_%s: one plot width across all five placements", g, sz),
+             max(fam$frameWin) - min(fam$frameWin) < 0.01)
+  check_true("v32", sprintf("sp_%s_%s: one plot height across all five placements", g, sz),
+             max(fam$frameHin) - min(fam$frameHin) < 0.01)
+  # ...and it is the rectangle the user asked for, once the margins are added
+  # back. The same composition statement section 3 makes, on the real path.
+  for (i in seq_len(nrow(fam))) {
+    check("v32", paste(fam$case[i], "frame + margins = requested width"),
+          fam$frameW[i] + (fam$mL[i] + fam$mR[i]) * fam$dpiX[i],
+          fam$vpW[i] * fam$dpiX[i], tol = PX_TOL)
+    check("v32", paste(fam$case[i], "frame + margins = requested height"),
+          fam$frameH[i] + (fam$mT[i] + fam$mB[i]) * fam$dpiY[i],
+          fam$vpH[i] * fam$dpiY[i], tol = PX_TOL)
+  }
+  # WHICH PLACEMENTS MAY GROW THE FILE. 2 across, 3 down, and 1/4/5 not at
+  # all -- the same rule section 3b states, restated on a figure whose legend
+  # has real content to lay out.
+  gp <- function(n) fam[fam$case == paste0("sp_", g, "_", sz, "_p", n), ]
+  p1 <- gp(1); p2 <- gp(2); p3 <- gp(3); p4 <- gp(4); p5 <- gp(5)
+  check_true("v32", sprintf("sp_%s_%s: placement 1 leaves the export alone", g, sz),
+             p1$imgW == p5$imgW && p1$imgH == p5$imgH)
+  check_true("v32", sprintf("sp_%s_%s: placement 4 leaves the export alone", g, sz),
+             p4$imgW == p5$imgW && p4$imgH == p5$imgH)
+  check_true("v32", sprintf("sp_%s_%s: placement 2 grows the export across only", g, sz),
+             p2$imgW > p5$imgW && p2$imgH == p5$imgH)
+  check_true("v32", sprintf("sp_%s_%s: placement 3 grows the export down only", g, sz),
+             p3$imgH > p5$imgH && p3$imgW == p5$imgW)
+  # THE PIXELS, for the two placements where the comparison is defined.
+  # Placement 4 parks the legend twelve inches past the page bottom and writes
+  # it to a second file, so the first file must carry no legend ink at all --
+  # which on this figure means it must cover no data. Placement 1 draws it
+  # inside the plot, so its count is whatever it is, recorded above.
+  check("v32", sprintf("sp_%s_%s: placement 4 covers no data in the main file", g, sz),
+        p4$coverPx, 0, tol = 0)
+  check_true("v32", sprintf("sp_%s_%s: placement 4 changes nothing in the main file", g, sz),
+             p4$diffPx == 0)
+  check_true("v32", sprintf("sp_%s_%s: placement 1 does change the figure", g, sz),
+             p1$diffPx > 0)
 }
 
 if (!exists("EML_SUITE")) { eml_report("v32 legend geometry: the plot is what the user asked for"); eml_exit() }

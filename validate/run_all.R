@@ -139,16 +139,25 @@ scripts <- c(
     # space out of the 6 x 4 someone asked for, "make my figure square" stops
     # being satisfiable. So the plot rectangle must be identical in all five
     # legend placements, and a legend that needs room outside it has to grow
-    # the SAVED IMAGE instead. 57 renders: the legend matrix at three figure
-    # sizes with no placement declared, which is what every existing caller
-    # supplies, plus the five placements driven one render each. Every number
-    # is measured on the rendered PIXELS, not read back from what the script
-    # believed it drew -- both sides of that comparison are computed by the
-    # same arithmetic and move together. Also pins the D135 over-wide label,
-    # both before and after it was closed, and the static rule that a legend
-    # renderer draws into the rectangle it was HANDED. Reads
-    # harness/legend/out/, so harness/legend/run.sh must run first -- same
-    # dependency shape as v27 on harness/stress_graphs.sh.
+    # the SAVED IMAGE instead. 205 renders from two fixtures. The GEOMETRY
+    # RIG (harness/legend/case.praat) holds the figure constant while the
+    # legend sweeps: the legend matrix at three figure sizes with no placement
+    # declared, which is what every existing caller supplies, the five
+    # placements driven one render each, a real four-group comparison matrix
+    # under the plot, and the red paths. The DEMONSTRATION
+    # (harness/legend/series_case.praat) drives @emlDrawTimeSeries and
+    # @emlDrawScatterPlot -- a multi-series line chart and a grouped scatter,
+    # where the number of legend entries IS the number of series and the
+    # corner is the one @emlPlaceElements scored rather than one the fixture
+    # chose -- and measures how much DATA the key sits on at placement 1,
+    # against a control render of the same figure on the same axis with the
+    # legend suppressed. Every number is measured on the rendered PIXELS, not
+    # read back from what the script believed it drew -- both sides of that
+    # comparison are computed by the same arithmetic and move together. Also
+    # pins the D135 over-wide label, both before and after it was closed, and
+    # the static rule that a legend renderer draws into the rectangle it was
+    # HANDED. Reads harness/legend/out/, so harness/legend/run.sh must run
+    # first -- same dependency shape as v27 on harness/stress_graphs.sh.
     "v32_legend_geometry.R"
 )
 
