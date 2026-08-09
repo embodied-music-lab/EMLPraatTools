@@ -5399,7 +5399,45 @@ procedure emlInitAlphaSprites
     # Paint circle and an Insert picture from file side by side in the
     # Picture window: the circle appeared, the image did not, for both an
     # RGBA sprite and a plain RGB PNG. Not an alpha problem, not a path
-    # problem — the platform has no implementation.
+    # problem — THAT ENTRY POINT has no implementation.
+    #
+    # It is only that entry point, and the distinction matters, because
+    # "Linux cannot draw images" is the wrong lesson and was drawn from
+    # this comment once already. Re-probed 9 Aug 2026 on the same build:
+    #
+    #   Read from file: on a PNG           -> a Photo object. Works.
+    #   Paint image: on an OPAQUE Photo    -> draws, in full colour.
+    #                                         FF0000 landed over blue.
+    #   Create Photo: + Paint image:       -> same, with no file at all.
+    #   Paint image: on an RGBA Photo      -> draws, but does NOT
+    #                                         composite: it renders flat
+    #                                         grey equal to the alpha
+    #                                         value (a=179 -> B3B3B3).
+    #   Extract red / Extract transparency -> Matrix objects. Work.
+    #   Matrix -> Photo recombine          -> no such command found.
+    #   Create Photo: with an alpha plane  -> impossible; the command
+    #                                         takes 14 arguments, being
+    #                                         a name, five x-params, five
+    #                                         y-params and THREE colour
+    #                                         formulas. There is no
+    #                                         transparency formula.
+    #
+    # So Praat rasterises images on Linux perfectly well through
+    # Graphics_image (the cell-array path); it is Graphics_imageFromFile
+    # that is missing its cairo branch. What is unreachable from script
+    # on ANY platform is alpha compositing: you cannot author a
+    # transparency plane, Paint image ignores the one a file carries, and
+    # the Photo -> Matrix -> Photo round trip that would let you blend by
+    # hand is broken at the recombine step.
+    #
+    # Which is why the Linux fallback is a screen door and not the Photo
+    # route. Routing the sprite through Paint image would draw the box
+    # OPAQUE GREY -- strictly worse than the opaque white it replaces.
+    # Cost is not the reason either; measured on this build, per box:
+    # Paint rectangle 0.009 ms, Paint image 0.027 ms, screen door
+    # 0.064 ms. Sixty-four microseconds is not a budget anyone is
+    # spending. The sprite is used on macOS and Windows because it is
+    # correct there, not because the alternatives are slow.
     #
     # Opaque dots on Linux are a real cosmetic loss in dense scatters.
     # A blank plot is not a cosmetic loss. If Praat ever gains a cairo
