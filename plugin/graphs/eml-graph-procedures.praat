@@ -4,8 +4,51 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # License: GPL-3.0-or-later
-# Version: 3.29
-# Date: 8 August 2026
+# Version: 3.30
+# Date: 9 August 2026
+#
+# v3.30: THE LEGEND BOX IS SEMI-TRANSPARENT ON EVERY PLATFORM, NOT JUST THE
+#        TWO THAT HAVE ALPHA.
+#
+#        The legend's background is sprites/bg_white_a70_40.png, whose pixels
+#        MEASURE RGBA (255, 255, 255, 179) — a 70.2% white wash. Praat can
+#        only draw it on macOS and Windows, and @emlInitAlphaSprites is
+#        correctly gated to those two: re-confirmed 9 Aug 2026 by rendering
+#        the same script with and without `Insert picture from file:` on this
+#        Linux build, where `compare -metric AE` scores the two PNGs
+#        BYTE-IDENTICAL. Everywhere else the fallback was
+#        `Paint rectangle: "White"` — an OPAQUE box. Same script, same figure,
+#        and the data under the legend was visible to a mac reader and DELETED
+#        for everyone else, with nothing anywhere saying so.
+#
+#        New section SCREEN-DOOR TRANSPARENCY, with @emlScreenSetup,
+#        @emlPaintScreenRect and @emlPaintAlphaBox. Where there is no alpha
+#        the box is now a white LATTICE at 0.027 inch pitch — 70% ink, 30%
+#        holes — through which the data survives instead of being erased.
+#        Measured on rendered pixels: ink 0.740 at 300 dpi and 0.672 at 600,
+#        against the sprite's 0.702. The section header carries the two
+#        rejected designs (a 45-degree hatch and a hex dot field), the
+#        measurements that rejected them, and the finding underneath all
+#        three: PRAAT DOES NOT ANTIALIAS AND ROUNDS RECTANGLES OUTWARD BY
+#        ABOUT ONE DEVICE PIXEL, which is why the geometry carries a kerf.
+#
+#        Nothing changes on macOS or Windows. @emlPaintAlphaBox's sprite
+#        branch issues the identical `Insert picture from file:` call with the
+#        identical arguments and returns .viewportDirty = 1, which is the
+#        viewport restore v3.28 added, moved verbatim behind a flag.
+#
+#        NOT SILENT, either way. @emlPaintAlphaBox publishes emlAlphaBgMode$
+#        ("sprite" | "screen" | "opaque") for every box it paints, and puts
+#        one NOTE in the Info window per session the first time a figure gets
+#        the screen. The sprite path stays quiet: on the platforms where the
+#        figure was already right, a note about it is noise.
+#
+#        NOT APPLIED to @emlDrawAnnotationBlock's background, which has the
+#        same gate and the same opaque fallback in
+#        eml-annotation-procedures.praat. @emlPaintAlphaBox is written to be
+#        called from there unchanged — it takes world coordinates and scales
+#        through emlPatWorldPerInchX/Y, which that procedure's callers set —
+#        but that file is not this one's to edit.
 #
 # v3.29: THE LEGEND BAND NO LONGER LANDS ON THE COMPARISON MATRIX WHEN THE
 #        CALLER IS NOT THE FORM.
@@ -586,6 +629,12 @@ procedure emlInitDrawingDefaults
     # The parked-legend handshake for placement 4, cleared here so a save
     # path can test it without variableExists.
     emlLegendSepActive = 0
+    # Which background an on-figure box last got — "sprite", "screen" or
+    # "opaque", written by @emlPaintAlphaBox. Seeded here for the same reason
+    # as the line above: so a caller can read it without variableExists. The
+    # companion flag is the once-per-session latch on the Info-window NOTE.
+    emlAlphaBgMode$ = ""
+    emlAlphaBgDisclosed = 0
     # Axis display
     emlShowInnerBox = 1
     emlShowAxisNameX = 1
@@ -1517,6 +1566,346 @@ procedure emlPaintDotRow: .xC, .d, .y, .row, .yFloor
                 ... .xC + .cx * emlPatternSetup.sx, .y,
                 ... emlPatternSetup.dotR * emlPatternSetup.sx
             endfor
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# SCREEN-DOOR TRANSPARENCY — THE ALPHA BACKGROUND WITHOUT ALPHA
+# ============================================================================
+# An on-figure box (the legend panel, the annotation block) is supposed to sit
+# on a SEMI-TRANSPARENT white ground, so that the box can be read without the
+# data under it being deleted. The plugin gets that from sprites/
+# bg_white_a70_40.png, a 40 x 40 PNG whose every pixel is RGBA
+# (255, 255, 255, 179). MEASURED, not read off the filename: 179/255 = 0.702,
+# so the sprite is a 70.2% white wash and the data under it survives at 29.8%
+# of its contrast.
+#
+# @emlInitAlphaSprites refuses to hand that sprite out anywhere except macOS
+# and Windows, and the refusal is correct: Praat's Graphics_imageFromFile has
+# a GDI+ branch and a Quartz branch and no cairo branch, so on Linux
+# `Insert picture from file:` computes its coordinates and draws NOTHING. No
+# error, no return code. Confirmed here 9 Aug 2026 by rendering the same
+# script with and without the call: `compare -metric AE` scores the two PNGs
+# BYTE-IDENTICAL.
+#
+# So until this file, the fallback was `Paint rectangle: "White"` — an OPAQUE
+# box. Same code, same figure, and a mac reader sees a violin through the
+# legend where a Linux reader sees a white hole. That is the gap this section
+# closes.
+#
+# WHAT IT DOES INSTEAD. Screen-door transparency: a fine white LATTICE, bars
+# in both axes at a fixed pitch on the page, with square holes between them.
+# Ink covers about 70% of the box and the holes leave the other 30% showing
+# the data untouched. At 300 dpi the cell is 8 pixels, which reads as a wash
+# rather than as a plaid, and no datum under the box is erased — it is
+# sampled.
+#
+# WHY A LATTICE AND NOT A 45-DEGREE HATCH OR A DOT FIELD. The first attempt
+# was @emlPaintHatchRow's construction with the roles reversed (white stripes
+# at 45 degrees, thin gaps), because that is the pattern engine this file
+# already has and a 45-degree screen is what a printer would use. It was
+# built and MEASURED, and it fails here for two independent reasons:
+#
+#   1. PRAAT DOES NOT ANTIALIAS AND IT ROUNDS OUTWARD. Measured 9 Aug 2026 by
+#      painting 25 rectangles of known sub-pixel width: every rendered pixel
+#      is pure black or pure white (zero intermediate values over the whole
+#      test), and the painted width is the asked-for width plus about one
+#      device pixel. A hatch decomposed into 0.004-inch scanlines is a stack
+#      of rectangles ~1.2 pixels tall, every one of them fattened by a pixel
+#      in BOTH axes, and the screen closes up: measured coverage 0.94 against
+#      an asked-for 0.70. A screen that collapses to solid is worse than no
+#      screen at all.
+#   2. It costs 140x more primitives for the same box (0.281 s against
+#      0.002 s on a 0.7 x 0.6 inch patch), because a diagonal has to be
+#      sliced and an axis-aligned lattice does not.
+#
+#      A hex DOT field fails on the same arithmetic from the other side. At
+#      70% coverage the holes are the minority, so a field of white dots has
+#      to nearly touch: the gap between neighbours is 0.12 of the pitch, which
+#      is under one pixel at any pitch fine enough to read as a wash.
+#
+# The lattice is the same idea as those two — a periodic pattern clipped to a
+# rectangle, phase-locked to the rectangle's own corner, scaled through
+# emlPatWorldPerInchX/Y so the geometry is stated in INCHES ON THE PAGE and is
+# the same at every figure size, exactly as @emlPatternSetup states the hatch
+# pitch in inches. It just does not need slicing, because both bar families
+# are axis-parallel and each is a single `Paint rectangle`.
+#
+# THE GEOMETRY, AND WHY THESE NUMBERS.
+#
+#   pitch  0.027 inch. @emlPatternSetup already carries this file's ruling on
+#          what a periodic pattern may measure: "below ~0.022 inch the stripes
+#          merge into a tint at 300 dpi, above ~0.075 inch a single wide mark
+#          shows only one or two". 0.027 is just inside the fine end of that
+#          band — 8.1 pixels at 300 dpi, 16.2 at 600.
+#   bar    the geometric answer, LESS A KERF. A lattice of bars covering
+#          fraction f of the pitch on each axis covers 1 - (1 - f)^2 of the
+#          area, so 0.702 coverage wants f = 0.454. Praat then paints every
+#          bar about one device pixel wider than asked (finding 1 above), so
+#          the bar is specified 0.0023 inch — 0.7 pixel at 300 dpi — thinner
+#          than that, and comes out right.
+#
+# MEASURED, on rendered pixels, three box phases x two resolutions:
+#
+#          asked   300 dpi   600 dpi        sprite, for comparison
+#   ink     0.702    0.740     0.672         0.702
+#   holes      —     0.260     0.328         0.298
+#
+# Both within 0.04 of the sprite, and the 0.34-0.40 bar-fraction plateau
+# either side of the chosen 0.37 renders the SAME two numbers, so the setting
+# is not balanced on a rounding edge. Vector output (PDF/EPS) has no pixel
+# grid and no kerf, so the screen there is the nominal 0.60 — lighter than the
+# sprite, which is the safe direction: more data survives, not less.
+#
+# WHAT IT DOES NOT DO. It does not touch the sprite path. On macOS and Windows
+# @emlPaintAlphaBox issues exactly the `Insert picture from file:` it always
+# issued, with the same arguments, and nothing below runs.
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# @emlScreenSetup
+# The screen's geometry for the CURRENTLY INSTALLED axes, in world units.
+#
+# Argument:
+#   .coverage   the ink fraction the screen has to read as, 0..1. Pass the
+#               sprite's own alpha (0.702) to stand in for the sprite.
+#
+# Outputs:
+#   .usable     0 when there is no world-per-inch to scale by, or the
+#               coverage is undefined or non-positive. A caller that gets 0
+#               must fall back to whatever it did before — an unscaled
+#               lattice is not a lattice, it is noise.
+#   .pitchX, .pitchY, .barX, .barY   world units
+#   .pitchIn, .barIn                 inches (what the geometry is stated in)
+#
+# Reads: emlPatWorldPerInchX / emlPatWorldPerInchY (@emlSetPatternScale), both
+# through variableExists, so a caller that never set them gets .usable = 0
+# rather than an aborted figure.
+# ----------------------------------------------------------------------------
+procedure emlScreenSetup: .coverage
+    .usable = 1
+
+    .sx = 0
+    .sy = 0
+    if variableExists ("emlPatWorldPerInchX")
+        .sx = emlPatWorldPerInchX
+    endif
+    if variableExists ("emlPatWorldPerInchY")
+        .sy = emlPatWorldPerInchY
+    endif
+    # Nested, never "or": Praat evaluates both operands of and/or, and every
+    # comparison against undefined is FALSE rather than an error, so undefined
+    # is tested for on its own line.
+    if .sx = undefined
+        .sx = 0
+    endif
+    if .sy = undefined
+        .sy = 0
+    endif
+    if .sx <= 0
+        .usable = 0
+    endif
+    if .sy <= 0
+        .usable = 0
+    endif
+
+    .cov = .coverage
+    if .cov = undefined
+        .cov = 0
+    endif
+    if .cov <= 0
+        .usable = 0
+        .cov = 0
+    endif
+    if .cov >= 1
+        .cov = 0.999
+    endif
+
+    # See the section header for the pitch, the kerf, and the measurements.
+    .pitchIn = 0.027
+    .kerfIn = 0.0023
+    .frac = 1 - sqrt (1 - .cov)
+    .barIn = .frac * .pitchIn - .kerfIn
+    # A bar thinner than a seventh of the pitch is a hairline the rasterizer
+    # decides the width of; one thicker than six sevenths leaves no hole. Both
+    # ends are clamped so an out-of-range .coverage degrades to a legible
+    # screen rather than to a solid block or to nothing.
+    if .barIn < 0.15 * .pitchIn
+        .barIn = 0.15 * .pitchIn
+    endif
+    if .barIn > 0.85 * .pitchIn
+        .barIn = 0.85 * .pitchIn
+    endif
+
+    .pitchX = 0
+    .pitchY = 0
+    .barX = 0
+    .barY = 0
+    if .usable = 1
+        .pitchX = .pitchIn * .sx
+        .pitchY = .pitchIn * .sy
+        .barX = .barIn * .sx
+        .barY = .barIn * .sy
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlPaintScreenRect
+# Paints the screen over one rectangle.
+#
+# Arguments: .x0, .x1, .y0, .y1 (world: left, right, bottom, top),
+#            .ink$ (the screen's colour — "White" for a background),
+#            .coverage (see @emlScreenSetup)
+#
+# Output: .done — 1 if a screen was painted, 0 if the geometry was unusable
+#         and the caller must fall back.
+#
+# PHASE IS LOCKED TO THE RECTANGLE'S OWN BOTTOM-LEFT CORNER, for the reason
+# @emlPaintHatchRow locks its stripes to the mark's centre: a screen phased to
+# the panel would shift under a box that moved by half a cell, and two boxes
+# on one figure would carry visibly different textures.
+#
+# The top and right edges are closed with a bar of their own. Without them the
+# lattice ends in whatever fraction of a cell the box height happened to
+# leave — up to a full 0.027 inch of unscreened data directly under the box's
+# own border, which reads as a leak rather than as a screen.
+# ----------------------------------------------------------------------------
+procedure emlPaintScreenRect: .x0, .x1, .y0, .y1, .ink$, .coverage
+    .done = 0
+    @emlScreenSetup: .coverage
+    .go = emlScreenSetup.usable
+    if .x1 - .x0 <= 0
+        .go = 0
+    endif
+    if .y1 - .y0 <= 0
+        .go = 0
+    endif
+    if emlScreenSetup.pitchX <= 0
+        .go = 0
+    endif
+    if emlScreenSetup.pitchY <= 0
+        .go = 0
+    endif
+
+    if .go = 1
+        .pX = emlScreenSetup.pitchX
+        .pY = emlScreenSetup.pitchY
+        .bX = emlScreenSetup.barX
+        .bY = emlScreenSetup.barY
+
+        .nY = floor ((.y1 - .y0) / .pY)
+        for .i from 0 to .nY
+            .a = .y0 + .i * .pY
+            .b = .a + .bY
+            if .b > .y1
+                .b = .y1
+            endif
+            if .b > .a
+                Paint rectangle: .ink$, .x0, .x1, .a, .b
+            endif
+        endfor
+        .a = .y1 - .bY
+        if .a > .y0
+            Paint rectangle: .ink$, .x0, .x1, .a, .y1
+        endif
+
+        .nX = floor ((.x1 - .x0) / .pX)
+        for .i from 0 to .nX
+            .a = .x0 + .i * .pX
+            .b = .a + .bX
+            if .b > .x1
+                .b = .x1
+            endif
+            if .b > .a
+                Paint rectangle: .ink$, .a, .b, .y0, .y1
+            endif
+        endfor
+        .a = .x1 - .bX
+        if .a > .x0
+            Paint rectangle: .ink$, .a, .x1, .y0, .y1
+        endif
+
+        .done = 1
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlPaintAlphaBox
+# THE background for an on-figure box, by whichever of the three means this
+# platform actually has. One call site's worth of decision, in one place, so
+# that the legend panel and the annotation block cannot drift apart on it.
+#
+# Arguments: .x0, .x1, .y0, .y1 (world: left, right, bottom, top)
+#
+# Outputs:
+#   .mode$          "sprite" | "screen" | "opaque"
+#   .viewportDirty  1 when the caller MUST re-select its own viewport and axes
+#                   before drawing anything else. `Insert picture from file:`
+#                   leaves the VIEWPORT set to the image's own bounding box,
+#                   so everything drawn after it lands in the wrong world.
+#                   Restoring it afterwards restores nothing; it only stops
+#                   the damage spreading. The sprite path is the only one that
+#                   sets this.
+#
+# Also sets the global emlAlphaBgMode$ to the same string, so that a caller,
+# a harness or a validator can find out WHICH background a figure got without
+# decoding the PNG — and, once per session and only on the screen path, puts
+# a NOTE in the Info window saying so. The sprite path says nothing, because
+# on macOS and Windows nothing has changed and a note about it would be noise
+# on the platform where the figure is already right.
+#
+# THE SPRITE PATH IS UNCHANGED, DELIBERATELY AND EXACTLY: the same
+# `Insert picture from file:` with the same four arguments, and nothing else
+# on the way past. The one behaviour that did change is the case where the
+# sprite directory was found but the FILE is unreadable — that used to be an
+# opaque white box and is now the screen, which is the same reasoning as the
+# platform case and cannot arise on an intact install.
+# ----------------------------------------------------------------------------
+procedure emlPaintAlphaBox: .x0, .x1, .y0, .y1
+    .mode$ = "opaque"
+    .viewportDirty = 0
+    .spriteUsed = 0
+
+    if variableExists ("emlAlphaSpritesInitialized")
+        if emlAlphaSpritesInitialized = 1 and emlInitAlphaSprites.available = 1
+            .bgFile$ = emlInitAlphaSprites.dir$ + "bg_white_a70_40.png"
+            if fileReadable (.bgFile$)
+                Insert picture from file: .bgFile$, .x0, .x1, .y0, .y1
+                .mode$ = "sprite"
+                .viewportDirty = 1
+                .spriteUsed = 1
+            endif
+        endif
+    endif
+
+    if .spriteUsed = 0
+        # 0.702 is the sprite's own measured alpha, 179/255. The screen is
+        # standing in for that file and for nothing else, so the number comes
+        # from the file rather than from its name.
+        @emlPaintScreenRect: .x0, .x1, .y0, .y1, "White", 0.702
+        if emlPaintScreenRect.done = 1
+            .mode$ = "screen"
+        else
+            Paint rectangle: "White", .x0, .x1, .y0, .y1
+            .mode$ = "opaque"
+        endif
+    endif
+
+    emlAlphaBgMode$ = .mode$
+
+    if .mode$ = "screen"
+        if variableExists ("emlAlphaBgDisclosed") = 0
+            emlAlphaBgDisclosed = 0
+        endif
+        if emlAlphaBgDisclosed = 0
+            emlAlphaBgDisclosed = 1
+            appendInfoLine: "NOTE: on-figure box backgrounds are drawn as a",
+            ... " stipple screen on this platform — Praat draws no image here,",
+            ... " so the 70% white sprite macOS and Windows use is replaced by",
+            ... " a white lattice of about the same coverage. Data under the",
+            ... " box shows through the gaps instead of being erased."
         endif
     endif
 endproc
@@ -4156,32 +4545,29 @@ procedure emlDrawLegendPanel: .x0, .x1, .y0, .y1, .fontSize
         .boxTop = .h - (.usedY0 - .y0)
         .boxBottom = .boxTop - .usedHeight
 
-        ; Background fill + border (semi-transparent if sprites available)
-        if variableExists ("emlAlphaSpritesInitialized")
-            if emlAlphaSpritesInitialized = 1 and emlInitAlphaSprites.available = 1
-                .bgFile$ = emlInitAlphaSprites.dir$ + "bg_white_a70_40.png"
-                if fileReadable (.bgFile$)
-                    Insert picture from file: .bgFile$, .boxLeft, .boxRight,
-                    ... .boxBottom, .boxTop
-                    ; `Insert picture from file:` leaves the VIEWPORT set to
-                    ; the image's own bounding box. Every coordinate below is
-                    ; in this panel's world, so the panel has to be selected
-                    ; again right here rather than at the end of the
-                    ; procedure — restoring it after the swatches are drawn
-                    ; restores nothing, it just stops the damage spreading.
-                    Font size: .fontSize
-                    Select inner viewport: .x0, .x1, .y0, .y1
-                    Axes: 0, .w, 0, .h
-                else
-                    Paint rectangle: "White", .boxLeft, .boxRight,
-                    ... .boxBottom, .boxTop
-                endif
-            else
-                Paint rectangle: "White", .boxLeft, .boxRight, .boxBottom,
-                ... .boxTop
-            endif
-        else
-            Paint rectangle: "White", .boxLeft, .boxRight, .boxBottom, .boxTop
+        ; Background fill + border. Semi-transparent by whichever means the
+        ; platform has: the alpha sprite on macOS and Windows, the stipple
+        ; screen everywhere else. See SCREEN-DOOR TRANSPARENCY above; the
+        ; sprite branch inside @emlPaintAlphaBox issues the same
+        ; `Insert picture from file:` this procedure used to issue here, so
+        ; the two platforms that have alpha draw exactly what they drew.
+        ;
+        ; The screen needs a world-per-inch to scale by and this viewport's
+        ; is already installed a few lines above: emlPatWorldPerInchX/Y are
+        ; both 1 here, because `Axes: 0, .w, 0, .h` makes one world unit one
+        ; inch. So the lattice is 0.027 inch on the page, as it is everywhere
+        ; else, without a correction.
+        @emlPaintAlphaBox: .boxLeft, .boxRight, .boxBottom, .boxTop
+        if emlPaintAlphaBox.viewportDirty = 1
+            ; `Insert picture from file:` left the VIEWPORT set to the
+            ; image's own bounding box. Every coordinate below is in this
+            ; panel's world, so the panel has to be selected again right here
+            ; rather than at the end of the procedure — restoring it after
+            ; the swatches are drawn restores nothing, it just stops the
+            ; damage spreading.
+            Font size: .fontSize
+            Select inner viewport: .x0, .x1, .y0, .y1
+            Axes: 0, .w, 0, .h
         endif
         Colour: "{0.7, 0.7, 0.7}"
         Line width: 0.5

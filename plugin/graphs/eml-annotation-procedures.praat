@@ -4,8 +4,37 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
-# Version: 3.19
-# Date: 8 August 2026
+# Version: 3.20
+# Date: 9 August 2026
+#
+# v3.20: THE LEGEND IS AN ANNOTATION, AND NOW PAYS FOR ITS OWN ROOM.
+#        eml-draw-procedures.praat has said since 5 Aug that "any extra room
+#        a figure needs is a property of what is drawn on it ... and is
+#        supplied by @emlComputeAnnotationHeadroom at the annotation stage".
+#        Only the significance bracket honoured it. A legend drawn inside the
+#        plot is an annotation box by the same definition and contributed
+#        NOTHING to the axis, so the figure was never given room for it and
+#        it landed on the data — 13145 data pixels covered on a five-group
+#        line chart at 6 x 4, measured on the rendered PNG, 9 Aug 2026, by
+#        differencing it against the same figure on the same axis with the
+#        legend suppressed. The worst of the six types measured 23702.
+#        [1] @emlComputeAnnotationHeadroom takes two more arguments — the
+#            laid-out legend height in inches (from @emlMeasureLegendPanel,
+#            the same measurement the renderer lays itself out with, so the
+#            two cannot disagree) and the corner it will occupy — and returns
+#            .footroom beside .headroom, because a legend in a bottom corner
+#            is not helped by room above the data. Both bands go into ONE
+#            algebraic solve: the expansion is not linear in the band, so
+#            solving twice and adding would be wrong. With no legend the
+#            outputs are bit-identical to v3.19, and .overflow still means
+#            "the brackets do not fit" and nothing else.
+#        [2] The legend band is capped at emlLegendHeadroomShare (default 0.5)
+#            of the panel, so a 24-entry key cannot leave a figure with no
+#            plot. A capped band is NOT silently swallowed: .legendOverflow
+#            goes up and the caller names the shortfall in the Info window.
+#        [3] @emlPlaceElements is UNCHANGED, deliberately — see the note in
+#            its header for why penalising quadrants by legend size does not
+#            make the corner choice and the headroom agree, and what does.
 #
 # v3.19: D124 — @emlDrawAnnotationBlock wraps.
 #        [1] The box was sized to its longest line exactly as handed in, so
@@ -295,7 +324,8 @@
 #   @emlDrawAnnotations          — umbrella: draw all annotations
 #   @emlDrawRegressionLine       — render regression line on scatter plot
 #   @emlPlaceElements            — pick best corners for legend + annotation block
-#   @emlComputeAnnotationHeadroom — compute extra y-space for brackets
+#   @emlComputeAnnotationHeadroom — compute extra y-space for brackets AND
+#                                  for a legend drawn inside the plot
 #   @emlOppositeCorner           — diagonally opposite corner name
 #   @emlSpaceCount               — spaces in a string (word counting helper)
 #   @emlDrawAnnotationBlock      — render the multi-line corner text box
@@ -824,6 +854,33 @@ endproc
 #   annotBracketJ[] to add occupation weight to top quadrants.
 #   Brackets always live at the top of the plot.
 #
+# THERE IS NO LEGEND PENALTY, AND THAT IS DELIBERATE (v3.20). The obvious
+# companion to legend headroom would be to weight the quadrants by how big
+# the legend box is, so that the corner chosen here and the room made by
+# @emlComputeAnnotationHeadroom agree instead of fighting. It would not help,
+# for two reasons.
+#
+# FIRST, the box is the same size in all four corners, so a size penalty adds
+# the same constant to every score and changes no ranking. What would help is
+# scoring the number of points inside the legend RECTANGLE rather than inside
+# the whole quadrant — a quadrant is a quarter of the panel and the box is a
+# fraction of that, so a corner can be "busy" in a region the box never
+# reaches. That needs the rectangle in world coordinates at every call site,
+# and the call sites are the seven draw procedures. Filed, not fixed here.
+#
+# SECOND, the fight the headroom could have picked with this procedure does
+# not happen, and the reason is a property of the scoring rather than luck.
+# The room is made by moving ONE axis bound, so the y midpoint this
+# procedure's callers split the quadrants on moves the same way. Give room
+# ABOVE and yMid rises: every point between the old and new midpoints moves
+# out of a top quadrant and into a bottom one, so both top counts fall and
+# both bottom counts rise, and a legend that was in a top corner stays in a
+# top corner. Give room BELOW and the mirror image holds. Only left and
+# right can trade places, and the expansion is identical for both, so the
+# room stays correct. Measured over the six legend-bearing types on 9 Aug
+# 2026: two figures moved bottom-left -> bottom-right, none crossed between
+# top and bottom.
+#
 # Output:
 #   .corner1$ — emptiest corner (for annotation block, or sole legend)
 #   .corner2$ — diagonal opposite of corner1 (for legend when 2 elements)
@@ -877,19 +934,87 @@ endproc
 
 # ----------------------------------------------------------------------------
 # @emlComputeAnnotationHeadroom
-# Compute how much extra y-axis space is needed for bracket annotations.
-# Call after @emlStackBrackets and after @emlSetAdaptiveTheme.
+# Compute how much extra y-axis space a figure needs for the boxes that are
+# drawn ON it. Call after @emlStackBrackets and after @emlSetAdaptiveTheme.
+#
+# THE CONTRACT THIS PROCEDURE IS THE OTHER HALF OF. graphs/eml-draw-
+# procedures.praat states it where the F0 minimum-span floors used to be —
+# grep for "is a property of what is drawn on it":
+#
+#     "Any extra room a figure needs is a property of what is drawn on it,
+#      not of the unit, and is supplied by @emlComputeAnnotationHeadroom at
+#      the annotation stage."
+#
+# Until v3.20 that was true of exactly one annotation, the significance
+# bracket. A LEGEND is an annotation box by the same definition — it is
+# drawn on the figure, it is not the data, and inside the plot (placement 1)
+# it lands in a data corner — and it contributed nothing. The figure was
+# therefore not given room for it, and it sat on the data: measured 9 Aug
+# 2026 on a five-group line chart at 6 x 4, **13145 data pixels covered**,
+# and 23702 on a grouped violin of the same data.
+# @emlPlaceElements chooses among four corners; choosing the emptiest corner
+# is not the same as making room, and on a figure whose data fills all four
+# there is no empty corner to choose.
 #
 # Arguments:
-#   .yDataRange  — yMax - yMin of the actual data
-#   .fontSize    — annotation font size (for wpiY geometry)
+#   .yDataRange   — yMax - yMin of the axis the figure would be drawn on
+#                   WITHOUT any annotation room (the base axis)
+#   .fontSize     — annotation font size (for bracket wpiY geometry)
+#   .legendHeightInches — height of the laid-out legend box, in inches, as
+#                   reported by @emlMeasureLegendPanel.height. Pass 0 when
+#                   there is no legend, or when the legend is NOT drawn
+#                   inside the plot (placements 2/3/4 grow the saved image
+#                   instead and take nothing from the data area, and 5 draws
+#                   nothing at all).
+#   .legendCorner$ — the corner the legend is going to occupy: "top-left",
+#                   "top-right", "bottom-left", "bottom-right", or "" for
+#                   none. The corner decides WHICH END of the axis the room
+#                   goes on. A legend in a bottom corner is not helped by
+#                   room above the data.
 #
 # Output:
-#   .headroom    — additional y-space needed above data max
-#   .maxTier     — highest tier assigned (0 if no brackets)
-#   .overflow    — 1 if brackets cannot fit in viewport, 0 otherwise
+#   .headroom     — additional y-space needed ABOVE the base axis max
+#   .footroom     — additional y-space needed BELOW the base axis min
+#   .maxTier      — highest bracket tier assigned (0 if no brackets)
+#   .overflow     — 1 if BRACKETS cannot fit in the viewport, 0 otherwise.
+#                   Unchanged in meaning: it is the bracket verdict only, and
+#                   its one caller suppresses brackets on it. A legend that
+#                   cannot be afforded is reported separately, because the
+#                   answer to it is different — see .legendOverflow.
+#   .legendNeeded — inches the legend band asked for (0 if none)
+#   .legendGranted— inches actually granted (< .legendNeeded when capped)
+#   .legendOverflow — 1 when the band was capped, 0 otherwise
+#
+# HONESTY. Everything here moves an AXIS BOUND. Nothing rescales the data or
+# changes what a plotted value means: a point at 88.2 dB is at 88.2 dB on the
+# expanded axis exactly as it was on the base one, it simply has more empty
+# axis above (or below) it. That is the whole permitted vocabulary.
+#
+# WHY THE SOLVE IS ALGEBRAIC. The boxes are drawn in INCHES on the panel but
+# the axis is expanded in DATA UNITS, and the drawing happens on the EXPANDED
+# axis — so the data-units-per-inch that converts the band is the post-
+# expansion one, not the base one. With a band of k inches on a panel of
+# innerH inches and a base range of R:
+#
+#     R + room = (R / (innerH - k)) * innerH      =>  room = k*R/(innerH - k)
+#
+# which is the identity the bracket term has always used. Both bands go into
+# one k so that a figure carrying brackets AND a top-corner legend solves
+# once rather than twice; solving twice and adding is wrong, because the
+# expansion is not linear in k. (No graph type does both today — brackets are
+# types 6/7/9, legends are 5/8/10/11/12/13 — but the arithmetic should not be
+# the reason it cannot.)
+#
+# THE CAP, and why a legend is not simply suppressed. emlLegendHeadroomShare
+# (default 0.5, read through variableExists) is the most of the panel the
+# legend band may claim. A legend allowed to take the whole panel would leave
+# a figure with a key and no plot. When the band exceeds the cap the room is
+# granted up to the cap and .legendOverflow goes up, and the CALLER names the
+# shortfall in the Info window: dropping a legend silently would tell the
+# reader nothing about which colour is which group, and the project's rule is
+# that anything dropped is named.
 # ----------------------------------------------------------------------------
-procedure emlComputeAnnotationHeadroom: .yDataRange, .fontSize
+procedure emlComputeAnnotationHeadroom: .yDataRange, .fontSize, .legendHeightInches, .legendCorner$
     .maxTier = 0
     if annotBracketN > 0
         for .b from 1 to annotBracketN
@@ -899,29 +1024,125 @@ procedure emlComputeAnnotationHeadroom: .yDataRange, .fontSize
         endfor
     endif
 
-    .overflow = 0
+    .innerH = emlSetAdaptiveTheme.innerBottom - emlSetAdaptiveTheme.innerTop
+    .fontInch = .fontSize / 72
+    .sf = emlSetAdaptiveTheme.spacingFactor
+
+    # --- The bracket band, in inches. Arithmetic unchanged.
+    .bracketInches = 0
     if .maxTier > 0
-        .innerH = emlSetAdaptiveTheme.innerBottom - emlSetAdaptiveTheme.innerTop
-        .fontInch = .fontSize / 72
-        .sf = emlSetAdaptiveTheme.spacingFactor
         # Must match bracket geometry: baseGap + tiers * tierHeight + topPad
         .baseGap = 0.5 + 0.5 * .sf
         .tierMult = 1.5 + 0.9 * .sf
         .kTotal = .baseGap + .maxTier * .tierMult + .baseGap
-        .fontK = .fontInch * .kTotal
-        if .fontK >= .innerH
-            # Brackets cannot physically fit — flag overflow
-            .headroom = .yDataRange * 0.5
-            .overflow = 1
-        else
-            # Solve for post-expansion headroom algebraically:
-            # headroom = fontK * yDataRange / (innerH - fontK)
-            # This accounts for the fact that brackets are drawn using
-            # the expanded y-range (including headroom), not the original.
-            .headroom = .fontK * .yDataRange / (.innerH - .fontK)
+        .bracketInches = .fontInch * .kTotal
+    endif
+
+    # --- The legend band, in inches.
+    #
+    # @emlDrawLegend's placement-1 branch insets the legend's budget by
+    # boxInsetInches on all four sides of the data area, so the box's outer
+    # edge sits one inset in from the frame. The band the DATA must be kept
+    # out of is that inset, plus the box, plus one more inset of clearance
+    # between the box and the nearest data — the same uniform physical inset
+    # every overlay box in this plugin uses, on both sides of the box.
+    # ANCHOR, not a line number:
+    #     grep -n 'INSIDE PLOT' plugin/graphs/eml-graph-procedures.praat
+    .legendTop = 0
+    .legendBottom = 0
+    if .legendCorner$ = "top-left"
+        .legendTop = 1
+    endif
+    if .legendCorner$ = "top-right"
+        .legendTop = 1
+    endif
+    if .legendCorner$ = "bottom-left"
+        .legendBottom = 1
+    endif
+    if .legendCorner$ = "bottom-right"
+        .legendBottom = 1
+    endif
+
+    .legendNeeded = 0
+    if .legendHeightInches > 0
+        if .legendTop + .legendBottom > 0
+            .legendNeeded = 2 * emlSetAdaptiveTheme.boxInsetInches
+            ... + .legendHeightInches
         endif
+    endif
+
+    # --- The cap. Brackets keep the whole of their own demand; the legend
+    # gets what is left under the share.
+    .legendShare = 0.5
+    if variableExists ("emlLegendHeadroomShare")
+        if emlLegendHeadroomShare <> undefined
+            if emlLegendHeadroomShare > 0
+                .legendShare = emlLegendHeadroomShare
+            endif
+        endif
+    endif
+    .legendAffordable = .innerH * .legendShare - .bracketInches
+    if .legendAffordable < 0
+        .legendAffordable = 0
+    endif
+    .legendOverflow = 0
+    .legendGranted = .legendNeeded
+    if .legendNeeded > .legendAffordable
+        .legendGranted = .legendAffordable
+        .legendOverflow = 1
+    endif
+
+    # --- Which end of the axis each band goes on.
+    .topInches = .bracketInches
+    .bottomInches = 0
+    if .legendTop = 1
+        .topInches = .topInches + .legendGranted
+    endif
+    if .legendBottom = 1
+        .bottomInches = .bottomInches + .legendGranted
+    endif
+
+    # --- The bracket overflow verdict. Bracket-only, exactly as before: its
+    # caller reads it as "suppress the brackets", and a legend must never be
+    # able to make that decision.
+    .overflow = 0
+    if .maxTier > 0
+        if .bracketInches >= .innerH
+            .overflow = 1
+        endif
+    endif
+
+    if .overflow = 1
+        # Brackets cannot physically fit. Same fallback value this branch has
+        # always returned; the caller suppresses the brackets and does not
+        # spend it.
+        .headroom = .yDataRange * 0.5
+        .footroom = 0
     else
-        .headroom = 0
+        .k = .topInches + .bottomInches
+        if .k <= 0
+            .headroom = 0
+            .footroom = 0
+        elsif .k >= .innerH
+            # Cannot happen with the cap above in force (brackets alone are
+            # short of innerH here, and the legend is held under a share of
+            # it), but a caller may set emlLegendHeadroomShare to something
+            # unreasonable. Refuse rather than divide by a non-positive
+            # number and hand back a negative axis.
+            .headroom = 0
+            .footroom = 0
+            .legendOverflow = 1
+            .legendGranted = 0
+        else
+            # Written band * range / (panel - band) rather than as a
+            # data-units-per-inch factor applied twice, because that is the
+            # association the bracket term has always evaluated in and
+            # floating-point multiplication does not reassociate: the two
+            # forms differ in the last bit at tier 4 on a 10 x 2.2 panel
+            # (measured 9 Aug 2026). Bit-identical is worth one comment.
+            .headroom = .topInches * .yDataRange / (.innerH - .k)
+            .footroom = .bottomInches * .yDataRange / (.innerH - .k)
+        endif
     endif
 endproc
 

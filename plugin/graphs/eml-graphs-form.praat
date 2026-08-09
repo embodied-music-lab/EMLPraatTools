@@ -3,7 +3,49 @@
 # ============================================================================
 # EML Graphs Plugin
 # License: GPL-3.0-or-later
-# Version: 2.5
+# Version: 2.6
+# v2.6: A LEGEND INSIDE THE PLOT NOW GETS Y-AXIS ROOM MADE FOR IT.
+#       eml-draw-procedures.praat has stated since 5 August that "any extra
+#       room a figure needs is a property of what is drawn on it ... and is
+#       supplied by @emlComputeAnnotationHeadroom at the annotation stage".
+#       This file honoured that for significance brackets and for nothing
+#       else. @emlComputeAnnotationHeadroom had ONE call site here, gated on
+#
+#           (graph_type = 6 or 7 or 9) and annotate = 1 and annotBracketN > 0
+#
+#       and the six types that draw a legend are 5, 8, 10, 11, 12 and 13 —
+#       so a figure with a legend and no brackets never computed headroom at
+#       all and the legend landed on the data. Measured on the rendered PNG,
+#       9 Aug 2026, a five-group line chart at 6 x 4: **13145 data pixels
+#       covered -> 0**. Same measurement on the other five legend types:
+#       scatter 15096 -> 0, grouped violin 23702 -> 0, grouped box 15430 ->
+#       0, histogram 320 -> 0, 5 x 5 square 17218 -> 0.
+#
+#       * TWO PASSES. The figure is drawn, the axis it resolved and the
+#         corner @emlPlaceElements sent the legend to are read back from the
+#         draw procedure, and if the legend needs room the figure is erased
+#         and drawn again on the widened axis. Both facts are decided inside
+#         the draw procedure and neither exists before it runs. The
+#         alternative — this file re-deriving every legend-bearing type's
+#         auto-range with its own copy of that type's arithmetic — would
+#         change the axis of every figure whether or not it had a legend the
+#         first time a copy drifted by one rounding step.
+#       * NEW: @emlGraphsDispatchDraw (the DISPATCH block, lifted out
+#         verbatim so it can be called twice) and @emlGraphsDrawWithLegendRoom
+#         (the loop), both at file scope so a probe can drive the real code
+#         rather than a transcription of it.
+#       * NEW: @emlLegendHeadroomAfterDraw — the decision. Only placement 1
+#         (Inside plot) earns an axis change: 2 and 3 grow the saved image
+#         around an unchanged plot, 4 writes a second file, 5 draws nothing,
+#         and none of them takes a square inch of the data area.
+#       * NOTHING THAT CANNOT BE AFFORDED IS SILENT. A legend band capped at
+#         emlLegendHeadroomShare of the panel, a bottom-corner legend on a
+#         histogram (whose frequency axis has a hard zero floor), a
+#         user-typed axis that had to be widened, and the discarded first
+#         pass itself are each named in the Info window.
+#       * VERIFIED UNCHANGED, byte-identical PNGs: every graph type that
+#         draws no legend (bar, violin, box), a one-group line chart, and
+#         legend placements 2 and 5.
 # v2.5: D136 — LEGEND PLACEMENT. The user's width and height describe the
 #       PLOT, and until now a legend could only be drawn inside it, so the
 #       only way to give a legend room was to take room from the data and
@@ -1728,6 +1770,436 @@ procedure emlComposeGraphTitle
     label COMPOSE_TITLE_DONE
     if objectId > 0
         selectObject: objectId
+    endif
+endproc
+
+
+# ============================================================================
+# @emlGraphsDispatchDraw
+# ============================================================================
+# The DISPATCH (DRAW) block of @emlGraphsWorkflow, lifted out verbatim so it
+# can be called more than once. Reads main-body scope: graph_type, objectId,
+# every column name, the axis bounds, figure_width / figure_height,
+# totalCanvasHeight, config_legendPlacement. Draws; returns nothing.
+#
+# It is a procedure for exactly one reason — a figure whose legend needs
+# y-axis room has to be drawn, measured and drawn again, and the second draw
+# must be the SAME draw, not a transcription of it that can drift. See the
+# two-pass loop in @emlGraphsWorkflow.
+# ============================================================================
+procedure emlGraphsDispatchDraw
+    Erase all
+    @emlResetDrawnExtent
+
+    # D136. Hand the drawing layer the placement the user chose. This is the
+    # ONLY write to emlLegendPlacement in the plugin, and it is the boundary
+    # between the persisted encoding (config_legendPlacement, canonical, one
+    # meaning for every type) and the drawing layer, which reads the global
+    # through variableExists and defaults to 1. Every caller that predates
+    # this — the seven @emlDrawLegend sites in eml-draw-procedures.praat,
+    # every stress case, every PraatGen companion — sets nothing and draws
+    # the inside-plot corner box it has always drawn.
+    #
+    # The user's figure_width and figure_height are NOT adjusted here, and
+    # must not be: they describe the PLOT, and a legend that took a share of
+    # them would make "6 x 4" and "square" mean whatever the legend happened
+    # to need. Placements 2 and 3 grow the SAVED IMAGE instead, by reporting
+    # the legend rectangle to @emlExpandDrawnExtent from inside
+    # @emlDrawLegend. See EXPORT GEOMETRY above @emlDrawLegendPanel.
+    emlLegendPlacement = config_legendPlacement
+    # Cleared before the draw as well as inside @emlDrawLegend, because a
+    # figure whose type has no legend at all never reaches that procedure and
+    # would otherwise leave the previous figure's parked rectangle armed.
+    emlLegendSepActive = 0
+
+    # The legend-corner handshake. @emlDrawLegend's .position$ parameter IS
+    # the corner it drew in, and Praat parameters are globals, so blanking it
+    # before the draw makes "" mean "no legend was drawn on THIS figure" —
+    # which a stale legendN from the previous figure cannot fake. If that
+    # parameter is ever renamed, this stays "" and the legend simply gets no
+    # headroom: the failure is a figure that looks like it did yesterday, not
+    # an error.
+    emlDrawLegend.position$ = ""
+
+    Select outer viewport: 0, figure_width, 0, totalCanvasHeight
+
+    if graph_type = 1
+        @emlDrawF0Contour: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, timeMin, timeMax, freqMin, freqMax, f0YUnit
+
+    elsif graph_type = 2
+        @emlDrawWaveform: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, timeMin, timeMax, ampMin, ampMax
+
+    elsif graph_type = 3
+        @emlDrawSpectrum: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, freqMin, freqMax, powerMin, powerMax
+
+    elsif graph_type = 4
+        @emlDrawLTAS: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, freqMin, freqMax, powerMin, powerMax, ltasShowCurve, ltasShowBars, ltasShowPoles, ltasShowSpeckles
+
+    elsif graph_type = 5
+        if tsShowCI = 1
+            @emlDrawTimeSeriesCI: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, timeColName$, valueColName$, groupColName$, timeMin, timeMax, valueMin, valueMax
+        else
+            @emlDrawTimeSeries: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, timeColName$, valueColName$, groupColName$, timeMin, timeMax, valueMin, valueMax
+        endif
+
+    elsif graph_type = 6
+        @emlDrawBarChart: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, groupColName$, valueColName$, errorBarMode, errorColName$, valueMin, valueMax
+
+    elsif graph_type = 7
+        @emlDrawViolinPlot: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, groupColName$, valueColName$, valueMin, valueMax
+
+    elsif graph_type = 8
+        @emlDrawScatterPlot: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, scatterXCol$, scatterYCol$, scatterGroupCol$, scatterXMin, scatterXMax, valueMin, valueMax, annotate
+
+    elsif graph_type = 9
+        @emlDrawBoxPlot: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, groupColName$, valueColName$, valueMin, valueMax
+
+    elsif graph_type = 10
+        @emlDrawHistogram: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, histValueCol$, histGroupCol$, histBinCount, histDisplayMode, valueMin, valueMax, histFreqMax
+
+    elsif graph_type = 11
+        @emlDrawGroupedViolin: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, gvCatCol$, gvSubCol$, gvValueCol$, valueMin, valueMax
+
+    elsif graph_type = 12
+        @emlDrawGroupedBoxPlot: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, gbCatCol$, gbSubCol$, gbValueCol$, valueMin, valueMax
+
+    elsif graph_type = 13
+        @emlDrawSpaghettiPlot: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, spCondCol$, spValueCol$, spSubjectCol$, spGroupCol$, spShowMean, valueMin, valueMax
+    endif
+endproc
+
+
+# ============================================================================
+# @emlGraphsDrawWithLegendRoom
+# ============================================================================
+# The DISPATCH (DRAW) stage of @emlGraphsWorkflow. Draws the figure once, and
+# a second time on a widened axis when the legend would otherwise sit on the
+# data. Reads and writes main-body scope (graph_type, valueMin, valueMax,
+# histFreqMax, config_legendPlacement, objectId, tsShowCI).
+# ============================================================================
+procedure emlGraphsDrawWithLegendRoom
+    #
+    # WHY THIS IS A LOOP. Headroom has to be in the axis BEFORE the data is
+    # drawn on it, and the two facts it needs — the axis the figure resolves
+    # for itself, and the corner @emlPlaceElements sends the legend to — do
+    # not exist until the figure has been drawn once. Both are decided inside
+    # the draw procedure, from the data, on the axis it just built.
+    #
+    # So the figure is drawn, measured and, ONLY IF the legend needs room,
+    # erased and drawn again on the expanded axis. The first pass is thrown
+    # away entirely. This is not a cheap trick around a missing accessor: the
+    # alternative is for this file to re-derive every legend-bearing type's
+    # auto-range with its own copy of that type's arithmetic — the value
+    # column's extent for the violin family, the mean±CI band for the CI line
+    # chart, the bin counts for the histogram — and a copy that drifts by one
+    # rounding step changes the axis of every figure whether or not it has a
+    # legend. Asking the draw procedure what it did cannot drift.
+    #
+    # The second pass costs one more render, and only for a figure that has a
+    # legend inside the plot AND is a type that draws one (5, 8, 10, 11, 12,
+    # 13). Every other figure draws exactly once, as it always has.
+    #
+    # WHAT IS RESET BETWEEN THE PASSES, and why each one:
+    #   · annotBlockN. @emlDiscloseEnd already hands it back to its entry
+    #     value, so this is belt and braces rather than the mechanism.
+    #   · the drawn extent and the parked-legend flag, both reset per pass
+    #     inside @emlGraphsDispatchDraw.
+    #   · the object selection, because a draw procedure leaves whatever it
+    #     was last looking at selected.
+    # Nothing else survives a pass: the draw procedures write globals, and
+    # pass 2 writes the same ones again from the same table.
+    #
+    # THE INFO WINDOW IS NOT REWOUND, AND THAT IS A DECISION. Pass 1 prints
+    # its notes — row-skip counts, the mean-collapse disclosure, the legend's
+    # own "+N more" — and pass 2 prints the same ones again. The obvious fix,
+    # snapshotting info$() and putting it back with writeInfo:, is worse than
+    # the problem it solves. Measured 9 Aug 2026 under `praat --run`: an
+    # Info window holding "AAA" then "BBB", restored to the "AAA" snapshot,
+    # produces the transcript AAA BBB AAA. Batch output is append-only —
+    # Praat cannot un-print a line it has already flushed — so the restore
+    # deletes nothing and re-emits the ENTIRE saved buffer, which on a figure
+    # drawn after an analysis is the whole report a second time. A repeated
+    # NOTE is noise; a repeated report is a different document.
+    #
+    # So the duplication is LABELLED instead. The line printed before pass 2
+    # says the notes above it belong to a pass that was thrown away, which is
+    # the same rule the rest of this plugin follows: say what happened rather
+    # than hide it.
+    legendRoomBlockN = 0
+    if variableExists ("annotBlockN")
+        legendRoomBlockN = annotBlockN
+    endif
+    legendRoomPass = 1
+    legendRoomAgain = 1
+
+    while legendRoomAgain = 1
+        legendRoomAgain = 0
+
+        @emlGraphsDispatchDraw
+
+        if legendRoomPass = 1
+            # --- What did the figure decide? Read the axis back from the
+            # procedure that just drew it. Praat procedure "locals" are
+            # globals named procedure.variable, so this is the resolved axis
+            # itself and not a second opinion about it.
+            legendRoomBaseMin = valueMin
+            legendRoomBaseMax = valueMax
+            legendRoomAxis = 0
+            if graph_type = 5
+                if tsShowCI = 1
+                    legendRoomBaseMin = emlDrawTimeSeriesCI.yMin
+                    legendRoomBaseMax = emlDrawTimeSeriesCI.yMax
+                else
+                    legendRoomBaseMin = emlDrawTimeSeries.yMin
+                    legendRoomBaseMax = emlDrawTimeSeries.yMax
+                endif
+                legendRoomAxis = 1
+            elsif graph_type = 8
+                legendRoomBaseMin = emlDrawScatterPlot.axisYMin
+                legendRoomBaseMax = emlDrawScatterPlot.axisYMax
+                legendRoomAxis = 1
+            elsif graph_type = 10
+                # The histogram's y-axis is the FREQUENCY axis and its bound
+                # is histFreqMax, not valueMax — valueMin/valueMax are its
+                # x-axis. Its floor is a hard 0 inside the draw procedure, so
+                # this axis can be given room above and none below; a legend
+                # that lands in a bottom corner is reported rather than
+                # silently unserved. See @emlLegendHeadroomAfterDraw.
+                legendRoomBaseMin = emlDrawHistogram.yMin
+                legendRoomBaseMax = emlDrawHistogram.yMax
+                legendRoomAxis = 2
+            elsif graph_type = 11
+                legendRoomBaseMin = emlDrawGroupedViolin.axisYMin
+                legendRoomBaseMax = emlDrawGroupedViolin.axisYMax
+                legendRoomAxis = 1
+            elsif graph_type = 12
+                legendRoomBaseMin = emlDrawGroupedBoxPlot.axisYMin
+                legendRoomBaseMax = emlDrawGroupedBoxPlot.axisYMax
+                legendRoomAxis = 1
+            elsif graph_type = 13
+                legendRoomBaseMin = emlDrawSpaghettiPlot.yMin
+                legendRoomBaseMax = emlDrawSpaghettiPlot.yMax
+                legendRoomAxis = 1
+            endif
+
+            if legendRoomAxis > 0
+                @emlLegendHeadroomAfterDraw: config_legendPlacement,
+                ... emlDrawLegend.position$, legendRoomBaseMin,
+                ... legendRoomBaseMax, emlSetAdaptiveTheme.annotSize,
+                ... legendRoomAxis
+            else
+                emlLegendHeadroomAfterDraw.apply = 0
+            endif
+
+            if emlLegendHeadroomAfterDraw.apply = 1
+                # The user's own axis, if the user typed one, is being widened
+                # — say so. The bracket path has always done this silently and
+                # that is the wrong precedent to copy: someone who asked for
+                # 0–100 and got 0–118 should be told which box took the rest.
+                if not (valueMin = 0 and valueMax = 0)
+                    if legendRoomAxis = 1
+                        if emlLegendHeadroomAfterDraw.yMax > legendRoomBaseMax
+                            appendInfoLine: "NOTE: y-axis maximum widened ",
+                            ... "from ", fixed$ (legendRoomBaseMax, 3),
+                            ... " to ",
+                            ... fixed$ (emlLegendHeadroomAfterDraw.yMax, 3),
+                            ... " to make room for the legend."
+                        endif
+                        if emlLegendHeadroomAfterDraw.yMin < legendRoomBaseMin
+                            appendInfoLine: "NOTE: y-axis minimum widened ",
+                            ... "from ", fixed$ (legendRoomBaseMin, 3),
+                            ... " to ",
+                            ... fixed$ (emlLegendHeadroomAfterDraw.yMin, 3),
+                            ... " to make room for the legend."
+                        endif
+                    endif
+                endif
+                if legendRoomAxis = 1
+                    valueMin = emlLegendHeadroomAfterDraw.yMin
+                    valueMax = emlLegendHeadroomAfterDraw.yMax
+                else
+                    histFreqMax = emlLegendHeadroomAfterDraw.yMax
+                endif
+                appendInfoLine: "NOTE: The legend needs y-axis room, so the ",
+                ... "figure is drawn again on the widened axis. Any notes ",
+                ... "above this line describe the first, discarded pass and ",
+                ... "are repeated below."
+                annotBlockN = legendRoomBlockN
+                if objectId > 0
+                    selectObject: objectId
+                endif
+                legendRoomPass = 2
+                legendRoomAgain = 1
+            endif
+        endif
+    endwhile
+endproc
+
+
+# ============================================================================
+# @emlLegendHeadroomAfterDraw
+# ============================================================================
+# Decide, after a figure has been drawn once, whether its legend needs the
+# y-axis widened and by how much. Draws nothing; measures.
+#
+# THE DEFECT THIS CLOSES. eml-draw-procedures.praat has said since 5 August
+# that "any extra room a figure needs is a property of what is drawn on it,
+# not of the unit, and is supplied by @emlComputeAnnotationHeadroom at the
+# annotation stage". Only the significance bracket honoured it, and its one
+# call site was gated on `(graph_type = 6 or 7 or 9) and annotate = 1 and
+# annotBracketN > 0` — a gate that no legend-bearing type can pass, since the
+# six types that draw a legend are 5, 8, 10, 11, 12 and 13. A figure with a
+# legend and no brackets never computed headroom at all, and the legend
+# landed on the data: 13145 data pixels covered on a five-group line chart at
+# 6 x 4, measured on the PNG.
+#
+# @emlPlaceElements is not a substitute and never was. It scores the four
+# corners and takes the emptiest; on a figure whose data reaches all four
+# corners the emptiest corner still has data under it. Choosing is not the
+# same as making room.
+#
+# Arguments:
+#   .placement     — config_legendPlacement, canonical. Only 1 (Inside plot)
+#                    can collide with data. 2 and 3 grow the saved image
+#                    around an unchanged plot, 4 writes a second file, 5
+#                    draws nothing — none of them take a square inch of the
+#                    data area, so none of them earns an axis change.
+#   .legendCorner$ — emlDrawLegend.position$ as of the draw that just ran,
+#                    blanked before it, so "" means no legend was drawn.
+#   .baseYMin/.baseYMax — the axis the figure resolved for ITSELF, read back
+#                    from the draw procedure. Not a re-derivation.
+#   .fontSize      — the size the legend is drawn at (annotSize), which is
+#                    also the size it must be MEASURED at. Measuring at
+#                    bodySize is D136's bug and costs a factor of seven.
+#   .axisKind      — 1 both bounds movable; 2 the histogram's frequency axis,
+#                    whose floor is a hard 0 inside the draw procedure.
+#
+# Output:
+#   .apply   — 1 if the caller should redraw on (.yMin, .yMax)
+#   .yMin, .yMax — the expanded axis
+#   .corner$ — the corner the room was made for
+#   .heightInches — the laid-out legend box height that was measured
+#
+# HONESTY. .yMin only ever falls and .yMax only ever rises. The mapping from
+# a value to a position on the panel is recomputed from the new bounds by the
+# same code that computed it from the old ones; no datum moves relative to
+# the axis it is read against. A figure of positive values whose legend sits
+# in a bottom corner can end up with a negative axis floor, and that is the
+# honest outcome — it is empty axis, exactly as the empty axis above a
+# bracket stack is, and the alternative is a key printed over the data.
+# ============================================================================
+procedure emlLegendHeadroomAfterDraw: .placement, .legendCorner$, .baseYMin, .baseYMax, .fontSize, .axisKind
+    .apply = 0
+    .yMin = .baseYMin
+    .yMax = .baseYMax
+    .corner$ = .legendCorner$
+    .heightInches = 0
+
+    # --- Three refusals, each its own test. `and` does not short-circuit in
+    # Praat, so a chain would evaluate every term anyway and would read as
+    # though it did not.
+    .go = 1
+    if .placement <> 1
+        .go = 0
+    endif
+    if .legendCorner$ = ""
+        .go = 0
+    endif
+    if .baseYMax <= .baseYMin
+        .go = 0
+    endif
+    .n = 0
+    if variableExists ("legendN")
+        .n = legendN
+    endif
+    if .n = undefined
+        .n = 0
+    endif
+    if .n < 1
+        .go = 0
+    endif
+
+    # --- The one case where the bracket band and the legend band would both
+    # be live. No graph type reaches it today (brackets are 6/7/9, legends
+    # are 5/8/10/11/12/13) and the arithmetic in
+    # @emlComputeAnnotationHeadroom would handle it correctly if one ever
+    # did — but the base axis handed in here has ALREADY been widened for the
+    # brackets by the pre-dispatch block, so asking for the bracket band a
+    # second time would double it. Refuse, and say so, rather than quietly
+    # spend it twice.
+    if .go = 1
+        if variableExists ("annotBracketN")
+            if annotBracketN > 0
+                appendInfoLine: "NOTE: Legend headroom not applied — this ",
+                ... "figure also carries significance brackets, whose room ",
+                ... "is already in the axis. The legend may overlap the ",
+                ... "data. Set Legend placement to Right of plot or Below ",
+                ... "plot to keep the plot clear."
+                .go = 0
+            endif
+        endif
+    endif
+
+    if .go = 1
+        # --- Measure the legend in the budget @emlDrawLegend's placement-1
+        # branch gives it: the data area inset by boxInsetInches on all four
+        # sides. @emlMeasureLegendPanel is the procedure the RENDERER lays
+        # itself out with, so this is not a second opinion about the legend's
+        # size — it is the same layout, run without drawing.
+        .inset = emlSetAdaptiveTheme.boxInsetInches
+        .innerW = emlSetAdaptiveTheme.innerRight - emlSetAdaptiveTheme.innerLeft
+        .innerH = emlSetAdaptiveTheme.innerBottom - emlSetAdaptiveTheme.innerTop
+        @emlMeasureLegendPanel: .innerW - 2 * .inset, .innerH - 2 * .inset,
+        ... .fontSize
+        .heightInches = emlMeasureLegendPanel.height
+
+        @emlComputeAnnotationHeadroom: .baseYMax - .baseYMin, .fontSize,
+        ... .heightInches, .legendCorner$
+        .head = emlComputeAnnotationHeadroom.headroom
+        .foot = emlComputeAnnotationHeadroom.footroom
+
+        # --- The histogram's frequency axis has a hard 0 floor inside
+        # @emlDrawHistogram, so there is no footroom to give. Name it instead
+        # of pretending the legend was served.
+        if .axisKind = 2
+            if .foot > 0
+                appendInfoLine: "NOTE: The legend sits in the ",
+                ... .legendCorner$, " corner and a frequency axis cannot be ",
+                ... "taken below zero, so no room could be made for it — it ",
+                ... "may overlap the bars. Set Legend placement to Right of ",
+                ... "plot or Below plot to keep the plot clear."
+                .foot = 0
+            endif
+            # A count axis is whole numbers (emlYAxisMinStep = 1 in
+            # @emlDrawHistogram). Round the widened bound UP to a whole count
+            # so the ticks and the bound still agree; up, never down, so the
+            # room granted is never less than the room computed.
+            if .head > 0
+                .yMax = ceiling (.baseYMax + .head)
+                .apply = 1
+            endif
+        else
+            if .head > 0 or .foot > 0
+                .yMax = .baseYMax + .head
+                .yMin = .baseYMin - .foot
+                .apply = 1
+            endif
+        endif
+
+        # --- Anything that could not be afforded is NAMED. A legend that was
+        # quietly given less room than it asked for, or none, would leave the
+        # reader with a key over the data and no account of why.
+        if emlComputeAnnotationHeadroom.legendOverflow = 1
+            appendInfoLine: "NOTE: The legend asked for ",
+            ... fixed$ (emlComputeAnnotationHeadroom.legendNeeded, 2),
+            ... " in of y-axis room on a ", fixed$ (.innerH, 2),
+            ... " in panel and was granted ",
+            ... fixed$ (emlComputeAnnotationHeadroom.legendGranted, 2),
+            ... " in; the rest of the panel is kept for the data, so the ",
+            ... "legend may still overlap it. Set Legend placement to Right ",
+            ... "of plot or Below plot to keep the plot clear, or reduce the ",
+            ... "number of legend entries."
+        endif
     endif
 endproc
 
@@ -6725,7 +7197,14 @@ repeat
         endif
 
         annotDataRange = valueMax - valueMin
-        @emlComputeAnnotationHeadroom: annotDataRange, emlSetAdaptiveTheme.annotSize
+        # 0 and "" for the legend band: types 6, 7 and 9 draw no legend at
+        # all, so there is nothing for it to contribute here. The legend's
+        # own contribution is made after the first draw pass, from
+        # @emlLegendHeadroomAfterDraw, because the corner it will occupy is
+        # not decided until the figure has been laid out once. This gate is
+        # no longer the only door into @emlComputeAnnotationHeadroom.
+        @emlComputeAnnotationHeadroom: annotDataRange,
+        ... emlSetAdaptiveTheme.annotSize, 0, ""
         if emlComputeAnnotationHeadroom.overflow = 1
             appendInfoLine: "NOTE: Viewport too small for bracket annotations — suppressing brackets."
             annotBracketN = 0
@@ -6822,76 +7301,10 @@ repeat
     # =================================================================
     # DISPATCH (DRAW)
     # =================================================================
-
-    Erase all
-    @emlResetDrawnExtent
-
-    # D136. Hand the drawing layer the placement the user chose. This is the
-    # ONLY write to emlLegendPlacement in the plugin, and it is the boundary
-    # between the persisted encoding (config_legendPlacement, canonical, one
-    # meaning for every type) and the drawing layer, which reads the global
-    # through variableExists and defaults to 1. Every caller that predates
-    # this — the seven @emlDrawLegend sites in eml-draw-procedures.praat,
-    # every stress case, every PraatGen companion — sets nothing and draws
-    # the inside-plot corner box it has always drawn.
-    #
-    # The user's figure_width and figure_height are NOT adjusted here, and
-    # must not be: they describe the PLOT, and a legend that took a share of
-    # them would make "6 x 4" and "square" mean whatever the legend happened
-    # to need. Placements 2 and 3 grow the SAVED IMAGE instead, by reporting
-    # the legend rectangle to @emlExpandDrawnExtent from inside
-    # @emlDrawLegend. See EXPORT GEOMETRY above @emlDrawLegendPanel.
-    emlLegendPlacement = config_legendPlacement
-    # Cleared before the draw as well as inside @emlDrawLegend, because a
-    # figure whose type has no legend at all never reaches that procedure and
-    # would otherwise leave the previous figure's parked rectangle armed.
-    emlLegendSepActive = 0
-
-    Select outer viewport: 0, figure_width, 0, totalCanvasHeight
-
-    if graph_type = 1
-        @emlDrawF0Contour: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, timeMin, timeMax, freqMin, freqMax, f0YUnit
-
-    elsif graph_type = 2
-        @emlDrawWaveform: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, timeMin, timeMax, ampMin, ampMax
-
-    elsif graph_type = 3
-        @emlDrawSpectrum: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, freqMin, freqMax, powerMin, powerMax
-
-    elsif graph_type = 4
-        @emlDrawLTAS: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, freqMin, freqMax, powerMin, powerMax, ltasShowCurve, ltasShowBars, ltasShowPoles, ltasShowSpeckles
-
-    elsif graph_type = 5
-        if tsShowCI = 1
-            @emlDrawTimeSeriesCI: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, timeColName$, valueColName$, groupColName$, timeMin, timeMax, valueMin, valueMax
-        else
-            @emlDrawTimeSeries: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, timeColName$, valueColName$, groupColName$, timeMin, timeMax, valueMin, valueMax
-        endif
-
-    elsif graph_type = 6
-        @emlDrawBarChart: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, groupColName$, valueColName$, errorBarMode, errorColName$, valueMin, valueMax
-
-    elsif graph_type = 7
-        @emlDrawViolinPlot: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, groupColName$, valueColName$, valueMin, valueMax
-
-    elsif graph_type = 8
-        @emlDrawScatterPlot: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, scatterXCol$, scatterYCol$, scatterGroupCol$, scatterXMin, scatterXMax, valueMin, valueMax, annotate
-
-    elsif graph_type = 9
-        @emlDrawBoxPlot: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, groupColName$, valueColName$, valueMin, valueMax
-
-    elsif graph_type = 10
-        @emlDrawHistogram: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, histValueCol$, histGroupCol$, histBinCount, histDisplayMode, valueMin, valueMax, histFreqMax
-
-    elsif graph_type = 11
-        @emlDrawGroupedViolin: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, gvCatCol$, gvSubCol$, gvValueCol$, valueMin, valueMax
-
-    elsif graph_type = 12
-        @emlDrawGroupedBoxPlot: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, gbCatCol$, gbSubCol$, gbValueCol$, valueMin, valueMax
-
-    elsif graph_type = 13
-        @emlDrawSpaghettiPlot: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, spCondCol$, spValueCol$, spSubjectCol$, spGroupCol$, spShowMean, valueMin, valueMax
-    endif
+    # Two passes when a legend needs y-axis room, one otherwise. The whole
+    # of it is in @emlGraphsDrawWithLegendRoom, at file scope, so that the
+    # loop and the draw inside it can be driven by a probe without a dialog.
+    @emlGraphsDrawWithLegendRoom
 
     # =================================================================
     # POST-DISPATCH: draw annotations
