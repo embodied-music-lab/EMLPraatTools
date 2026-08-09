@@ -1,3 +1,4 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 LEGENDCASE n=24 vpW=6.00 vpH=4.00 cols=2 rows=12 shown=24 hidden=0
 FRAMEPX x=252 y=117 w=1296 h=933
 BOXPX x=294 y=159 w=303 h=613

@@ -1,7 +1,8 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 
 ══════════════════════════════════════════════
   EML Stats : Spaghetti Plot Summary
-  Sat Aug  8 22:03:29 2026
+  Sun Aug  9 12:14:48 2026
 ══════════════════════════════════════════════
 
   Table               d
@@ -14,20 +15,20 @@
 
   ── Cat1 ────────────────────────────────────
   N                   12
-  Mean                28.496
-  SD                  2.716
+  Mean                28.187
+  SD                  2.828
 
 
   ── Cat2 ────────────────────────────────────
   N                   12
-  Mean                32.874
-  SD                  2.192
+  Mean                32.472
+  SD                  1.518
 
 
   ── Cat3 ────────────────────────────────────
   N                   12
-  Mean                36.794
-  SD                  1.995
+  Mean                35.425
+  SD                  2.744
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
