@@ -1,0 +1,15 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+SRCASE name=sp_line_5x5_p1 graph=line k=5 vpW=5.000 vpH=5.000 mode=color room=0 pinMin=0 pinMax=0
+SERIES k=5 nGroups=5 legendN=5 shown=5 hidden=0
+CORNER corner=top-left qTL=14 qTR=20 qBL=16 qBR=15 placed=top-left
+ROOM used=0 applied=0 needed=0 granted=0 overflow=0 heightIn=0 baseMin=0 baseMax=0
+AXIS yMin=20.0000000000 yMax=100.0000000000
+PLACEMENT requested=1 actual=1
+THEME body=9.0000 annot=8.0000 mL=0.7000 mR=0.7000 mT=0.3750 mB=0.5000 innerL=0.7000 innerR=4.3000 innerT=0.3750 innerB=4.5000
+LAYOUT legendW=-1 legendH=-1
+EXTENT minX=0 maxX=5.0000 minY=0 maxY=5.0000
+LEGENDBOX x=251 y=154 w=276 h=263
+LEGENDLAYOUT cols=1 rows=5 shown=5 hidden=0
+MATRIX k=0 tch=0 suppressed=1 gap=0.0000 panelH=0.0000 total=5.0000 top=5.0000 bot=5.0000
+BANDS panelBot=1500 mxTop=-1 mxBot=-1
+SAVED /home/claude/EMLPraatTools/harness/legend/out/sp_line_5x5_p1.png

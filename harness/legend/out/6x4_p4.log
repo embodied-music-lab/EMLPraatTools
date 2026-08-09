@@ -1,3 +1,4 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 LGCASE name=6x4_p4 n=12 vpW=6.000 vpH=4.000 mode=color labels=normal legend=1
 PLACEMENT requested=4 actual=4
 THEME body=9.3600 annot=8.3200 mL=0.8400 mR=0.8400 mT=0.3900 mB=0.5000 innerL=0.8400 innerR=5.1600 innerT=0.3900 innerB=3.5000

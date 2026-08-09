@@ -1,0 +1,15 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+SRCASE name=sp_scatter_10x3_p3 graph=scatter k=5 vpW=10.000 vpH=3.000 mode=color room=0 pinMin=0 pinMax=0
+SERIES k=5 nGroups=5 legendN=5 shown=5 hidden=0
+CORNER corner=bottom-right qTL=31 qTR=31 qBL=41 qBR=22 placed=bottom-right
+ROOM used=0 applied=0 needed=0 granted=0 overflow=0 heightIn=0 baseMin=0 baseMax=0
+AXIS yMin=20.0000000000 yMax=100.0000000000
+PLACEMENT requested=3 actual=3
+THEME body=11.0000 annot=9.7778 mL=0.8500 mR=0.8500 mT=0.4583 mB=0.4200 innerL=0.8500 innerR=9.1500 innerT=0.4583 innerB=2.5800
+LAYOUT legendW=-1 legendH=-1
+EXTENT minX=0 maxX=10.0000 minY=0 maxY=3.6396
+LEGENDBOX x=255 y=950 w=1595 h=92
+LEGENDLAYOUT cols=5 rows=1 shown=5 hidden=0
+MATRIX k=0 tch=0 suppressed=1 gap=0.0000 panelH=0.0000 total=3.0000 top=3.0000 bot=3.0000
+BANDS panelBot=900 mxTop=-1 mxBot=-1
+SAVED /home/claude/EMLPraatTools/harness/legend/out/sp_scatter_10x3_p3.png
