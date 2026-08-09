@@ -1,4 +1,5 @@
 BRIDGE error=[] n=4
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 LGCASE name=5x5_n12_mx_p3 n=12 vpW=5.000 vpH=5.000 mode=color labels=normal legend=1
 PLACEMENT requested=3 actual=3
 THEME body=9.0000 annot=8.0000 mL=0.7000 mR=0.7000 mT=0.3750 mB=0.5000 innerL=0.7000 innerR=4.3000 innerT=0.3750 innerB=4.5000

@@ -1,3 +1,4 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 NOTE: legend labels were shortened with an ellipsis — the widest one does not fit a 4.04 inch panel at 8.3 pt. Widen the figure, shorten the labels, or set Legend placement to Right of plot or Separate figure.
 LGCASE name=6x4_color_wide n=3 vpW=6.000 vpH=4.000 mode=color labels=wide legend=1
 PLACEMENT requested=-1 actual=1
