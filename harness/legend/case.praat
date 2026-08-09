@@ -1,6 +1,31 @@
-include ../stress_cases/_prelude.praat
+include _prelude.praat
 # ---------------------------------------------------------------------------
-# LEGEND GEOMETRY — one figure, one legend, the plot rectangle pinned.
+# LEGEND GEOMETRY — the RULER. Not the demonstration.
+#
+# READ THIS FIRST, BECAUSE THIS FILE USED TO CLAIM MORE THAN IT MEASURES.
+# What is below is a GEOMETRY RIG. It draws two violins and asks for a legend
+# of 0, 1, 3, 12 or 24 entries, and those two numbers are DELIBERATELY
+# unrelated: the entry count is swept as an independent variable so that the
+# legend BOX can be measured against everything it can be asked to contain
+# while the figure under it is held bit-identical. That is the right design
+# for measuring a rectangle and it is the wrong picture of a legend — a
+# twelve-entry key over a two-series figure names series that are not there,
+# and on a grouped violin the x-axis already carries the category labels, so
+# the legend is redundant furniture rather than the only way to read the
+# figure. It also hands @emlDrawLegend a HARDCODED "top-left" instead of the
+# corner @emlPlaceElements scores, so nothing here exercises corner choice.
+#
+# The demonstration is harness/legend/series_case.praat: a multi-series line
+# chart and a grouped scatter, drawn through the real graph-level draw
+# procedures, where the number of legend entries IS the number of series, the
+# corner is chosen by @emlPlaceElements exactly as the product chooses it, and
+# the legend is the only way to tell one series from another. The assertion
+# that legend ink does not land on data ink is made there, on the pixels.
+#
+# This file keeps every case it had, unchanged to the pixel, because the plot
+# rectangle, the matrix-band disjointness and the export-extent relationships
+# are measured here and were hard-won. Nothing below is the primary
+# demonstration of the legend any more.
 #
 # THE CONSTRAINT THIS FIXTURE EXISTS TO MEASURE. The dimensions a user types
 # into the graphs form describe the PLOT, not the plot plus its furniture. If
@@ -46,6 +71,14 @@ include ../stress_cases/_prelude.praat
 # measured frame is attributable to the legend and to nothing else. The
 # legend is set up and called exactly as @emlDrawGroupedViolin sets it up and
 # calls it — patterned swatches at emlSetAdaptiveTheme.annotSize.
+#
+# AND IT IS TWO VIOLINS UNDER A LEGEND OF UP TO TWENTY-FOUR ENTRIES, which is
+# not a figure anybody would publish. Say it plainly: the entry count is an
+# INPUT TO THE BOX, not a description of the data, and this file measures the
+# box. Nothing here should be read as a statement about whether a legend
+# covers the series it names — see the head of this file, and
+# harness/legend/series_case.praat, where entry count and series count are
+# the same number by construction.
 #
 # Env, all optional; the defaults are the plugin's default figure with the
 # 24-entry legend that motivated D123.
@@ -343,6 +376,14 @@ shown = 0
 hidden = 0
 
 if drawLegend = 1
+    # THE CORNER IS FORCED HERE, AND THAT IS A LIMITATION OF THIS FILE.
+    # Every real caller sets `.legendCorner$ = emlPlaceElements.corner1$` and
+    # passes that — grep -n 'legendCorner\$ = emlPlaceElements' in
+    # plugin/graphs/eml-draw-procedures.praat for the seven of them. A fixed
+    # corner is what makes the plot rectangle comparable across 103 renders
+    # here, and it is exactly why no claim about WHICH corner the product
+    # picks can be supported by this file. Corner selection is driven, on the
+    # real path, in harness/legend/series_case.praat.
     @emlDrawLegend: xMin, xMax, yMin, yMax, "top-left",
     ... emlSetAdaptiveTheme.annotSize
 endif
