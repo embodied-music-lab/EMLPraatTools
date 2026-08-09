@@ -1,0 +1,6 @@
+key,template
+anova.intent,"{1} of {2} by {3}, {4} groups."
+posthoc.intent,"{1} requested. Alpha {2} ({3})."
+read.intent,"Loaded {1} as supplied. Nothing below modifies it."
+refusal.intent,"Refused: {1}."
+alpha.source.default,"default, not specified by the user"
