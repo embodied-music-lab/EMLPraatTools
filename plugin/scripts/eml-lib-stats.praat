@@ -47,3 +47,8 @@ include ../stats/eml-extract.praat
 include ../stats/eml-output.praat
 include ../stats/eml-inferential.praat
 include ../stats/eml-result-writer.praat
+; The recorder defines procedures and touches nothing at include time --
+; @emlRecordInit is idempotent and every entry point returns immediately
+; while emlRecordActive is 0. So loading it here costs a parse and no
+; behaviour, and a wrapper that never records is unaffected.
+include ../stats/eml-record.praat
