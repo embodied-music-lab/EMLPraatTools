@@ -690,7 +690,15 @@ endproc
 #   .xRange   — x-axis range (for text box width estimation)
 #   .yRange   — y-axis range (for text box height estimation)
 # ----------------------------------------------------------------------------
-procedure emlDrawAnnotation: .x, .y, .anchor$, .label$, .fontSize, .hasBg, .xRange, .yRange
+; .axXMin/.axXMax/.axYMin/.axYMax are the axes CURRENTLY INSTALLED by the
+; caller, carried in purely so this procedure can put the world back after
+; @emlPaintAlphaBox takes the sprite path -- `Insert picture from file:`
+; leaves the viewport on the image's own bounding box. They are deliberately
+; NOT used for any arithmetic: .xRange and .yRange stay the source of truth
+; for .wpiX/.wpiY, because the form derives annotYRange from valueMax-valueMin
+; while annotYMin/annotYMax can be overridden per graph type, so the two can
+; legitimately disagree and substituting one for the other would move text.
+procedure emlDrawAnnotation: .x, .y, .anchor$, .label$, .fontSize, .hasBg, .xRange, .yRange, .axXMin, .axXMax, .axYMin, .axYMax
     if .hasBg = 1
         # Measure actual rendered width (exact, font-aware)
         Font size: .fontSize
@@ -721,27 +729,19 @@ procedure emlDrawAnnotation: .x, .y, .anchor$, .label$, .fontSize, .hasBg, .xRan
         .boxBottom = .y - .padY
         .boxTop = .y + .padY
 
-        ; FOUND, NOT FIXED. This box has NO alpha path at all -- not a Linux
-        ; gap, an every-platform gap. @emlDrawAnnotation draws the user's own
-        ; on-graph note, the one thing on a figure they placed deliberately,
-        ; and it is the last labelled box still painting solid white over
-        ; whatever it lands on, on macOS and Windows as much as here.
-        ;
-        ; It is not wired to @emlPaintAlphaBox yet for a concrete reason.
-        ; That painter reports .viewportDirty when the sprite path runs,
-        ; because `Insert picture from file:` leaves the viewport on the
-        ; image's bounding box, and the caller must then re-install its own
-        ; viewport AND ITS AXES before drawing the border and the text. This
-        ; procedure is handed .xRange and .yRange -- the SPANS -- and never
-        ; the bounds, so it cannot re-install the axes it was drawing in.
-        ;
-        ; The fix is to thread the bounds in. @emlDrawAnnotations, the only
-        ; caller, has .xMin and .xMax already and passes their difference.
-        ; That is a signature change on a one-call-site procedure, done with
-        ; a Mac or Windows render in hand to confirm the restore, because the
-        ; branch that needs it cannot execute on Linux -- measured: the call
-        ; is a no-op here and the viewport provably does not move.
-        Paint rectangle: "White", .boxLeft, .boxRight, .boxBottom, .boxTop
+        ; The user's own on-graph note. This was the last labelled box still
+        ; painting solid white over whatever it landed on -- and unlike the
+        ; legend and the disclosure block, it was solid on EVERY platform,
+        ; because it had no sprite path at all rather than a sprite path with
+        ; a bad fallback. Same painter as the other two now, so it is one of
+        ; the translucent white PNGs on macOS and Windows and the screen door
+        ; here.
+        @emlPaintAlphaBox: .boxLeft, .boxRight, .boxBottom, .boxTop
+        if emlPaintAlphaBox.viewportDirty = 1
+            @emlSetPanelViewport
+            Axes: .axXMin, .axXMax, .axYMin, .axYMax
+            Font size: .fontSize
+        endif
         Colour: "{0.7, 0.7, 0.7}"
         Line width: 0.5
         Draw rectangle: .boxLeft, .boxRight, .boxBottom, .boxTop
@@ -768,7 +768,10 @@ endproc
 #   .bracketColor$ — RGB colour string for bracket lines
 #   .fontSize      — text size for annotation labels
 # ----------------------------------------------------------------------------
-procedure emlDrawAnnotations: .xMin, .xMax, .yDataMax, .yRange, .bracketColor$, .fontSize
+; .axYMin/.axYMax are the installed y axis, carried through to
+; @emlDrawAnnotation for its post-sprite restore only. The x axis it restores
+; is .xMin/.xMax, which this procedure already has.
+procedure emlDrawAnnotations: .xMin, .xMax, .yDataMax, .yRange, .bracketColor$, .fontSize, .axYMin, .axYMax
     # --- Brackets ---
     if annotBracketN > 0
         # Physically grounded tier geometry via world-per-inch
@@ -792,7 +795,8 @@ procedure emlDrawAnnotations: .xMin, .xMax, .yDataMax, .yRange, .bracketColor$, 
             @emlDrawAnnotation: annotTextX[.t], annotTextY[.t],
             ... annotTextAnchor$[.t], annotTextLabel$[.t],
             ... .fontSize, 1,
-            ... .xMax - .xMin, .yRange
+            ... .xMax - .xMin, .yRange,
+            ... .xMin, .xMax, .axYMin, .axYMax
         endfor
     endif
 endproc

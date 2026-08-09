@@ -7356,7 +7356,7 @@ repeat
 
             # Draw brackets
             if annotBracketN > 0
-                @emlDrawAnnotations: annotXMin, annotXMax, dataYMax_forAnnotation, annotYRange, "{0.3, 0.3, 0.3}", emlSetAdaptiveTheme.annotSize
+                @emlDrawAnnotations: annotXMin, annotXMax, dataYMax_forAnnotation, annotYRange, "{0.3, 0.3, 0.3}", emlSetAdaptiveTheme.annotSize, annotYMin, annotYMax
             endif
 
             # Draw omnibus in bottom-right (clear of bracket headroom)
