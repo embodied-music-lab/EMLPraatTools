@@ -59,7 +59,8 @@ annotBlockDraw$[annotBlockN] = "Kruskal-Wallis: %H(3) = 7.81, %p = .050"
 @emlDrawAnnotations: emlDrawViolinPlot.axisXMin, emlDrawViolinPlot.axisXMax,
 ... emlDrawViolinPlot.axisYMax, emlDrawViolinPlot.axisYMax
 ... - emlDrawViolinPlot.axisYMin, "{0.3, 0.3, 0.3}",
-... emlSetAdaptiveTheme.annotSize
+... emlSetAdaptiveTheme.annotSize,
+... emlDrawViolinPlot.axisYMin, emlDrawViolinPlot.axisYMax
 @emlDrawAnnotationBlock: "bottom-right", emlDrawViolinPlot.axisXMin,
 ... emlDrawViolinPlot.axisXMax, emlDrawViolinPlot.axisYMin,
 ... emlDrawViolinPlot.axisYMax, emlSetAdaptiveTheme.annotSize
