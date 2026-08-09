@@ -9,6 +9,35 @@
 # what comes out is what the wrapper draws and not a demo that resembles it.
 #
 # Run: praat --run placement_matrix_case.praat <placement 1..5>
+#
+# ---------------------------------------------------------------------------
+# THE MATRIX PANEL ONLY EVER MATCHES THE WIDTH OF THE GRAPH ITSELF. Author
+# ruling, 9 Aug 2026, and the reason this file carries a correction rather
+# than a finding.
+#
+# The commit that first added these renders (2b93fe9) called placement 2 an
+# open defect on the strength of one measurement: on out_p2.png the canvas
+# centre is 1096 px and the matrix ink is centred at 862 px, so the panel
+# "sits 234 px left of centre". That measured the panel against the CANVAS,
+# which is not the reference. Measured against the graph, which is:
+#
+#     plot inner box   251..1548 px   in BOTH placement 1 and placement 2
+#     matrix ink       322..1401 px   in BOTH placement 1 and placement 2
+#
+# Identical. Widening the canvas for a right-hand legend does not move the
+# panel relative to the plot by a single pixel, because
+# eml-graphs-form.praat:7376 hands @emlDrawMatrixPanel `0, figure_width` —
+# the graph's own width — and the legend band is added outside it. That is
+# the specified behaviour, not an oversight, and it is why the panel must
+# NOT be re-centred on the widened midpoint or stretched to span it: either
+# change would break the alignment between the matrix columns and the
+# categories they describe, which is the whole point of putting the panel
+# under the plot.
+#
+# The residual 38 px between the plot-box centre (899.5) and the matrix ink
+# centre (861.5) is internal to the panel — the row-label column reaches
+# further left than the last cell column reaches right — and is present at
+# every placement including 1. It is not a placement effect.
 # ---------------------------------------------------------------------------
 include _prelude.praat
 
