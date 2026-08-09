@@ -42,6 +42,7 @@ Scatter plot: Per-group stats (21 groups): Info window only. 21 line(s) do not f
   Group20: OLS: y = 1.5357x + 100.9643  (R² = 0.954)
   Group21: OLS: y = 1.5357x + 105.9643  (R² = 0.954)
 Scatter plot: 3 row(s) skipped (missing or non-numeric value).
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 SCATSTAT nGroups=21 buffered=21 room=18 annotBlockN=0
 LEDGER case=scatter21 chart=Scatter plot annotate=0 info=2 fig=0
 SUBTITLE [SENTINEL-SUBTITLE]

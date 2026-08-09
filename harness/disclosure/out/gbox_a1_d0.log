@@ -1,3 +1,4 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 LEDGER chart=Grouped box plot annotate=1 dirty=0 info=0 fig=0
 SUBTITLE [SENTINEL-SUBTITLE]
 SAVED /home/claude/EMLPraatTools/harness/disclosure/out/gbox_a1_d0.png

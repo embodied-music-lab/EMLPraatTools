@@ -1,3 +1,4 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 Grouped box plot: 1 sub-group(s) not drawn (palette holds 24). Not drawn: P25 (16 row(s)). The palette defines 24 distinguishable styles — 8 hues x 3 fill patterns (solid, diagonal hatch, dots) — so a further sub-group would repeat a style already in the legend. Reduce the sub-group column to 24 levels, or draw the rest as a second figure.
 SUBSTAT nSubs=25 drawn=24 dropped=1 droppedRows=16 legendN=24 names=[P25]
 LEDGER case=gbox25 chart=Grouped box plot annotate=1 info=1 fig=1

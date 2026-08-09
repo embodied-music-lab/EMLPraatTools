@@ -7,6 +7,7 @@
   Group7: OLS fitted line: y = 1.4891x + 36.3370  (R² = 0.962)
   Group8: OLS fitted line: y = 1.5357x + 40.9643  (R² = 0.954)
 Scatter plot: 3 row(s) skipped (missing or non-numeric value).
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 SCATSTAT nGroups=8 buffered=8 room=18 annotBlockN=8
 LEDGER case=scatter8 chart=Scatter plot annotate=0 info=1 fig=0
 SUBTITLE [SENTINEL-SUBTITLE]

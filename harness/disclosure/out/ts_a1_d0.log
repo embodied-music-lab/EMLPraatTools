@@ -1,4 +1,5 @@
 Time series: Line shows the mean per time point. 15 repeated observation(s) were averaged. Use Spaghetti Plot to show individual series, or Time Series (with CI) to show the spread around each mean.
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 LEDGER chart=Time series annotate=1 dirty=0 info=1 fig=1
 FIGLINE 1: Line shows the mean per time point.
 SUBTITLE [SENTINEL-SUBTITLE]
