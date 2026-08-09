@@ -153,3 +153,65 @@ asserted by `validate/v32_legend_geometry.R` (4117 checks), but the four
 non-categorical types were verified 9 Aug by direct pixel measurement in this
 session and those measurements are **not** yet in v32. That is the first
 item of the push.
+
+---
+
+## 8. OPEN — the emitted workflow cannot re-run headless
+
+Added 9 August 2026, from the first wrapper wiring of the record-workflow
+feature.
+
+`TREATMENT_record_workflow.md` §6 settles the emission level on wrapper-level
+`runScript:` calls and reports that form "verified headless, two sequential
+calls, arguments passed positionally and the form bypassed". **That
+verification used a probe script with a `form: ... endform` block. No EML
+wrapper has one** — every wrapper uses `beginPause:`, and the two do not
+behave alike.
+
+Measured against a real copy of the plugin tree:
+
+| call | result |
+|---|---|
+| `runScript: ".../eml-compare-k-groups.praat", "SPL_dB", "voice_type", 1` | `Error: Found 3 arguments but expected only 0.` |
+| `runScript: ".../eml-compare-k-groups.praat"` (no Table selected) | clean refusal, as designed |
+| `runScript: ".../eml-compare-k-groups.praat"` (Table selected) | `Gtk-ERROR: Can't create a GtkStyleContext without a display` |
+
+Two consequences:
+
+1. **§9's round trip is not achievable at wrapper level** while wrappers use
+   `beginPause:`. Drive the GUI, emit, run the emitted script headless, diff
+   the two Info outputs — the third step cannot happen. This matters because
+   §9 is the part of the proposal that is a contribution rather than a
+   feature note.
+2. **Making it achievable is a change to the wrappers, not to the recorder** —
+   giving each a `form:` path taken when arguments are supplied. Sixteen
+   wrappers, and it wants its own decision.
+
+The recorder now emits the no-argument call with the resolved values as a
+comment directly above it, plus the limitation in the code block itself.
+Emitting the argument form would put a line in the user's file that cannot
+run anywhere, which is worse than one that runs in the GUI only. Asserted by
+`test-record-anova.praat` so a later edit cannot quietly restore it.
+
+## 9. OPEN — a stats orchestrator reaches into the graphs tree
+
+`@emlRunAnovaAnalysis` (in `plugin/stats/eml-analysis.praat`) calls
+`@emlReportAnovaComparison`, which is defined in
+`plugin/graphs/eml-annotation-procedures.praat`. So the stats stack cannot be
+loaded and exercised on its own: `plugin/dev/tests/phase1/test-record-anova.praat`
+has to include two graphs files to test an ANOVA.
+
+Found while writing that test. Not fixed — moving the reporter is a question
+about where reporting lives, not a defect with an obvious repair.
+
+## 10. OPEN — the recorded workflow has no input file
+
+The orchestrators are handed a `tableId`, never a path, so nothing in the
+chain registers the input. The emitted script therefore carries a correct
+analysis, correct numbers, a correct call line, and **no statement of what
+data any of it ran on**.
+
+The renderer names the gap rather than omitting it — the emitted file opens
+with `INCOMPLETE -- NO INPUT FILE WAS RECORDED` — and the test asserts that
+notice is present. Closing it means registering the path at the layer that
+opens the file, which is the next increment of the feature.
