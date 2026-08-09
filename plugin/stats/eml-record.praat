@@ -577,6 +577,49 @@ procedure emlRecordRender
     selectObject: emlRecordPathsId
     .nPaths = Get number of rows
 
+    ; ------------------------------------------------------------------
+    ; SILENCE IS A DEFECT, and this is the position where it would happen.
+    ;
+    ; A workflow whose analyses all took a Table object they were HANDED
+    ; registers no input path, because no procedure in the chain ever saw a
+    ; file. The paths block then comes out with a plugin folder and nothing
+    ; else, and the emitted script runs its wrappers against whatever Table
+    ; happens to be selected — which is to say it does not reproduce the
+    ; session, while looking exactly as though it does.
+    ;
+    ; Observed the first time the ANOVA orchestrator was wired: the emitted
+    ; file carried a correct F, correct group means, a correct runScript:
+    ; line, and no statement anywhere of what data any of it ran on.
+    ;
+    ; Registering the input belongs at the layer that opens the file, which
+    ; is not this one. Until that layer exists the gap is NAMED, at the
+    ; position where the reader would otherwise assume completeness.
+    ; ------------------------------------------------------------------
+    .nInputs = 0
+    for .i from 1 to .nPaths
+        selectObject: emlRecordPathsId
+        .r$ = Get value: .i, "role"
+        if .r$ = "input"
+            .nInputs = .nInputs + 1
+        endif
+    endfor
+    if .nInputs = 0
+        .text$ = .text$
+        ... + "# INCOMPLETE -- NO INPUT FILE WAS RECORDED." + newline$
+        .text$ = .text$
+        ... + "# Every step below ran on a Table this session already held,"
+        ... + newline$
+        .text$ = .text$
+        ... + "# so nothing here states where that Table came from and this"
+        ... + newline$
+        .text$ = .text$
+        ... + "# file will NOT reproduce the session on its own. Add the read"
+        ... + newline$
+        .text$ = .text$
+        ... + "# step by hand, or re-record starting from the file." + newline$
+        .text$ = .text$ + newline$
+    endif
+
     .text$ = .text$ + "form: ""Recorded workflow - confirm paths""" + newline$
     for .i from 1 to .nPaths
         selectObject: emlRecordPathsId

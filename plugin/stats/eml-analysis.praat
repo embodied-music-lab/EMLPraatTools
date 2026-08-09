@@ -399,7 +399,155 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     ... .tableId, .doTukey
 
     label END_ANOVA
+
+    ; ---------------------------------------------------------------------
+    ; RECORD WORKFLOW. Inert unless a recording is running: every entry point
+    ; in eml-record.praat returns immediately while emlRecordActive is 0, so
+    ; this costs one procedure call per analysis and changes nothing else.
+    ;
+    ; PLACED AFTER `label END_ANOVA`, WHICH IS THE WHOLE POINT. Every guard
+    ; above jumps here, so a run that refused -- fewer than two groups, a
+    ; non-numeric data column, an @emlOneWayAnova failure -- is recorded as a
+    ; step with its refusal, rather than vanishing. A log that only shows the
+    ; analyses that succeeded is a log that lies by omission, and the failure
+    ; it hides is usually the one worth reading.
+    ;
+    ; THE NUMBERS COME FROM THE SAME VARIABLES THE REPORTER PRINTED, not from
+    ; a re-read of the Info window. @emlReportAnovaComparison re-runs
+    ; @emlOneWayAnova itself, so emlOneWayAnova.* here holds exactly what was
+    ; printed. Scraping info$() instead would reintroduce the label-matching
+    ; hazard validate/REGISTRY.md already records -- "Soprano" matches five
+    ; lines in the v09 capture and seven in v10.
+    ; ---------------------------------------------------------------------
+    @emlRecordAnova: .tableId, .dataCol$, .groupCol$, .doTukey, .error$
+
     selectObject: .tableId
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordAnova
+# The recording half of @emlRunAnovaAnalysis, kept as its own procedure so the
+# orchestrator gains one line rather than thirty, and so the mapping from
+# analysis to log line can be read and reviewed on its own.
+#
+# Arguments: .tableId, .dataCol$, .groupCol$, .doTukey, .error$
+# ----------------------------------------------------------------------------
+procedure emlRecordAnova: .tableId, .dataCol$, .groupCol$, .doTukey, .error$
+    @emlRecordInit
+    if emlRecordActive = 0
+        goto END_RECORD_ANOVA
+    endif
+
+    selectObject: .tableId
+    .tName$ = selected$ ("Table")
+
+    ; The wrapper is reached by path, so the path is a token from the
+    ; registry and never a literal in the code slot.
+    @emlRecordPath: preferencesDirectory$ + "/plugin_EMLPraatTools", "plugin"
+    .pluginTok$ = emlRecordPath.token$
+
+    if .error$ <> ""
+        @emlPhrase: "refusal.intent", .error$, "", "", "", "", ""
+        @emlRecordStep: "refusal", emlPhrase.result$, "", "", ""
+        goto END_RECORD_ANOVA
+    endif
+
+    ; --- intent. Composed from two keys, and the FIRST is captured before
+    ; the second call: emlPhrase.result$ is one namespace per procedure, not
+    ; per call, so reading it after two calls yields only the second.
+    @emlPhrase: "anova.intent", "One-way ANOVA", .dataCol$, .groupCol$,
+    ... string$ (emlOneWayAnova.nGroups), "", ""
+    .intent$ = emlPhrase.result$
+    if .doTukey
+        @emlPhrase: "alpha.source.default", "", "", "", "", "", ""
+        .alphaSrc$ = emlPhrase.result$
+        @emlPhrase: "posthoc.intent", "Tukey HSD", "0.05", .alphaSrc$,
+        ... "", "", ""
+        .intent$ = .intent$ + newline$ + emlPhrase.result$
+    endif
+
+    ; --- caveat. Stream C: one static string per wrapper, defined beside the
+    ; wrapper it describes, because that is where it goes stale if the
+    ; wrapper changes. This path runs Brown-Forsythe but never tests
+    ; normality, and a reader has no way to know that from the output.
+    .caveat$ = "Normality was NOT tested on this path."
+    if emlOneWayAnova.warning$ <> ""
+        .caveat$ = .caveat$ + newline$ + emlOneWayAnova.warning$
+    endif
+
+    ; --- code. Resolved values only. A record saying a field was left at its
+    ; default is not reproducible once the default changes; a record saying
+    ; 0.05 is.
+    if .doTukey
+        .tukey$ = "1"
+    else
+        .tukey$ = "0"
+    endif
+    ; ------------------------------------------------------------------
+    ; THE CALL IS EMITTED WITH NO ARGUMENTS, AND THAT IS FORCED.
+    ;
+    ; TREATMENT_record_workflow.md §6 concluded that `runScript:` with a path
+    ; built from preferencesDirectory$ is the portable call form, "verified
+    ; headless, two sequential calls, arguments passed positionally and the
+    ; form bypassed". That verification used a probe script with a
+    ; `form: ... endform` block. NO EML WRAPPER HAS ONE — every wrapper uses
+    ; `beginPause:`, and the two are not interchangeable here.
+    ;
+    ; Measured 9 Aug 2026 against a real copy of the plugin tree:
+    ;
+    ;   runScript: ".../eml-compare-k-groups.praat", "SPL_dB", "voice_type", 1
+    ;     -> Error: Found 3 arguments but expected only 0.
+    ;
+    ;   runScript: ".../eml-compare-k-groups.praat"     (no Table selected)
+    ;     -> clean refusal, as designed
+    ;
+    ;   runScript: ".../eml-compare-k-groups.praat"     (Table selected)
+    ;     -> Gtk-ERROR: Can't create a GtkStyleContext without a display
+    ;
+    ; So an argument-bearing call errors immediately, and a bare call reaches
+    ; beginPause: and needs a display. Emitting the argument form would put a
+    ; line in the user's file that cannot run anywhere, which is worse than a
+    ; line that runs in the GUI only. The resolved values go directly above
+    ; it as a comment, so the dialog can be filled from the record.
+    ;
+    ; TWO CONSEQUENCES, BOTH REAL AND NEITHER CLOSED HERE.
+    ;   1. §9's round trip -- drive the GUI, emit, run the emitted script
+    ;      headless, diff the two Info outputs -- is not achievable at
+    ;      wrapper level while wrappers use beginPause:.
+    ;   2. Making it achievable means giving the wrappers a form: path that
+    ;      is taken when arguments are supplied. That is a change to sixteen
+    ;      wrappers, not to the recorder, and it wants its own decision.
+    ; ------------------------------------------------------------------
+    .code$ = "; Re-run in the GUI: select the Table, then run the wrapper and"
+    ... + newline$
+    ... + "; enter the values recorded above. Under --run this reaches"
+    ... + newline$
+    ... + "; beginPause: and needs a display; passing the values as arguments"
+    ... + newline$
+    ... + "; is refused (""Found 3 arguments but expected only 0"")."
+    ... + newline$
+    ... + "runScript: " + .pluginTok$
+    ... + " + ""/scripts/eml-compare-k-groups.praat"""
+
+    .api$ = "@emlRunAnovaAnalysis: table, """ + .dataCol$ + """, """
+    ... + .groupCol$ + """, " + .tukey$
+
+    @emlRecordStep: "analysis", .intent$, .caveat$, .code$, .api$
+
+    ; --- results, Stream A. Same variables the reporter printed.
+    @emlRecordResult: "F(" + string$ (emlOneWayAnova.dfBetween) + ", "
+    ... + string$ (emlOneWayAnova.dfWithin) + ") = "
+    ... + fixed$ (emlOneWayAnova.fValue, 4) + ", p = "
+    ... + fixed$ (emlOneWayAnova.p, 4) + ", eta-squared = "
+    ... + fixed$ (emlOneWayAnova.etaSquared, 4)
+    for .g from 1 to emlOneWayAnova.nGroups
+        @emlRecordResult: "  " + emlOneWayAnova.groupLabel$[.g] + ": n = "
+        ... + string$ (emlOneWayAnova.groupN[.g]) + ", mean = "
+        ... + fixed$ (emlOneWayAnova.groupMean[.g], 4)
+    endfor
+
+    label END_RECORD_ANOVA
 endproc
 
 
