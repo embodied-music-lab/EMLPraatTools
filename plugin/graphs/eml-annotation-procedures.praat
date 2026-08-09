@@ -721,6 +721,26 @@ procedure emlDrawAnnotation: .x, .y, .anchor$, .label$, .fontSize, .hasBg, .xRan
         .boxBottom = .y - .padY
         .boxTop = .y + .padY
 
+        ; FOUND, NOT FIXED. This box has NO alpha path at all -- not a Linux
+        ; gap, an every-platform gap. @emlDrawAnnotation draws the user's own
+        ; on-graph note, the one thing on a figure they placed deliberately,
+        ; and it is the last labelled box still painting solid white over
+        ; whatever it lands on, on macOS and Windows as much as here.
+        ;
+        ; It is not wired to @emlPaintAlphaBox yet for a concrete reason.
+        ; That painter reports .viewportDirty when the sprite path runs,
+        ; because `Insert picture from file:` leaves the viewport on the
+        ; image's bounding box, and the caller must then re-install its own
+        ; viewport AND ITS AXES before drawing the border and the text. This
+        ; procedure is handed .xRange and .yRange -- the SPANS -- and never
+        ; the bounds, so it cannot re-install the axes it was drawing in.
+        ;
+        ; The fix is to thread the bounds in. @emlDrawAnnotations, the only
+        ; caller, has .xMin and .xMax already and passes their difference.
+        ; That is a signature change on a one-call-site procedure, done with
+        ; a Mac or Windows render in hand to confirm the restore, because the
+        ; branch that needs it cannot execute on Linux -- measured: the call
+        ; is a no-op here and the viewport provably does not move.
         Paint rectangle: "White", .boxLeft, .boxRight, .boxBottom, .boxTop
         Colour: "{0.7, 0.7, 0.7}"
         Line width: 0.5
@@ -1461,20 +1481,33 @@ procedure emlDrawAnnotationBlock: .corner$, .xMin, .xMax, .yMin, .yMax, .fontSiz
             .textX = .boxLeft + .padX
         endif
 
-        # Background fill (semi-transparent if sprites available)
-        if variableExists ("emlAlphaSpritesInitialized")
-            if emlAlphaSpritesInitialized = 1 and emlInitAlphaSprites.available = 1
-                .bgFile$ = emlInitAlphaSprites.dir$ + "bg_white_a70_40.png"
-                if fileReadable (.bgFile$)
-                    Insert picture from file: .bgFile$, .boxLeft, .boxRight, .boxBottom, .boxTop
-                else
-                    Paint rectangle: "White", .boxLeft, .boxRight, .boxBottom, .boxTop
-                endif
-            else
-                Paint rectangle: "White", .boxLeft, .boxRight, .boxBottom, .boxTop
-            endif
-        else
-            Paint rectangle: "White", .boxLeft, .boxRight, .boxBottom, .boxTop
+        ; Background fill. Routed through @emlPaintAlphaBox so this box gets
+        ; the same three-way treatment the legend does: the sprite where the
+        ; platform composites it, a screen door where it does not, opaque
+        ; only as a last resort. The inline copy this replaces fell back to
+        ; an OPAQUE white rectangle on Linux, which erased whatever the box
+        ; was sitting on -- the defect that was fixed for the legend and
+        ; left standing here.
+        ;
+        ; @emlPaintAlphaBox reports .viewportDirty when the sprite path ran,
+        ; because `Insert picture from file:` leaves the viewport on the
+        ; image's own bounding box. Every coordinate below -- the border and
+        ; all the text -- is in the caller's world, so the caller's viewport
+        ; has to be put back before any of it is drawn. The inline copy did
+        ; not do this. See the RESTORE note in the header: on Linux the call
+        ; is a no-op and the viewport provably does not move, which is why
+        ; no Linux render could ever have shown the difference.
+        ; The restore goes through @emlSetPanelViewport rather than four
+        ; literals, because this procedure is handed the AXIS RANGE and not
+        ; the viewport -- its signature is (corner$, xMin, xMax, yMin, yMax,
+        ; fontSize). The panel viewport is the one the figure is drawn into
+        ; and the one that was in force on entry, so re-selecting it and
+        ; re-installing the caller's axes puts the world back exactly.
+        @emlPaintAlphaBox: .boxLeft, .boxRight, .boxBottom, .boxTop
+        if emlPaintAlphaBox.viewportDirty = 1
+            @emlSetPanelViewport
+            Axes: .xMin, .xMax, .yMin, .yMax
+            Font size: .fontSize
         endif
         Colour: "{0.7, 0.7, 0.7}"
         Line width: 0.5
