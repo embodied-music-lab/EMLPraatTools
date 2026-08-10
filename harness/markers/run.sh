@@ -46,12 +46,17 @@
 # validate/v29_figure_disclosure.R reads MARKERS.tsv and LOOKS.tsv.
 # ---------------------------------------------------------------------------
 set -u
-ROOT=/home/claude/EMLPraatTools
+# Resolved from this script's own location, never hardcoded. harness/_env.sh
+# also supplies PRAAT and PRAAT_TRUST, and REFUSES a Praat below the plugin's
+# 6.6.30 floor. See its header for why an absolute ROOT was a real defect and
+# not a cosmetic one.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../_env.sh" || exit 1
+ROOT="$EML_ROOT"
 CASE=$ROOT/harness/markers/marker_case.praat
 LOOK=$ROOT/harness/markers/look_case.praat
 OUT=$ROOT/harness/markers/out
-PRAAT=/home/claude/praat
-PREFS=/home/claude/stress/prefs
+# PRAAT and PRAAT_TRUST come from _env.sh.
+PREFS=$ROOT/harness/markers/prefs
 FILTER="${1:-}"
 
 mkdir -p "$OUT" "$PREFS"
@@ -80,7 +85,7 @@ for mode in color bw; do
             # DISPLAY deliberately unset: proves the case needs no X server.
             env -u DISPLAY EML_OUT="$OUT/$name.png" EML_MODE="$mode" \
                 EML_SHAPE="$shape" EML_STYLE="$style" \
-                "$PRAAT" --pref-dir="$PREFS" --run "$CASE" \
+                "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$CASE" \
                 > "$OUT/$name.log" 2>&1
 
             hue=$(sed -n 's/^STYLE .* hue=\([0-9]*\) .*$/\1/p' \
@@ -168,7 +173,7 @@ if [ -z "$FILTER" ]; then
             rm -f "$OUT/$name.png"
             env -u DISPLAY EML_OUT="$OUT/$name.png" EML_MODE=color \
                 EML_SHAPE=floor EML_STYLE="$style" EML_HALFIN="$half" \
-                "$PRAAT" --pref-dir="$PREFS" --run "$CASE" \
+                "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$CASE" \
                 > "$OUT/$name.log" 2>&1
             mk=$(sed -n 's/^STYLE .* marker=\([0-9]*\) .*$/\1/p' \
                  "$OUT/$name.log" | head -1)
@@ -213,7 +218,7 @@ if [ -z "$FILTER" ]; then
                 rm -f "$OUT/$name.png"
                 env -u DISPLAY EML_OUT="$OUT/$name.png" EML_MODE="$mode" \
                     EML_CHART="$chart" EML_NGROUPS="$n" \
-                    "$PRAAT" --pref-dir="$PREFS" --run "$LOOK" \
+                    "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$LOOK" \
                     > "$OUT/$name.log" 2>&1
                 verdict=OK
                 if [ ! -s "$OUT/$name.png" ]; then
