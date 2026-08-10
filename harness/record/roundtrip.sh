@@ -104,9 +104,28 @@ fi
 # Only the timestamp is normalised, by an anchored pattern, so every other
 # byte still has to match. If the pattern ever stops matching, the line stays
 # as it is and the diff fails loudly rather than quietly comparing less.
+# PRAAT CHOOSES THE ENCODING, AND THE CHOICE IS NOT STABLE ACROSS MACHINES.
+# prefs5 carries "TextEncoding.outputEncoding: try ASCII, then UTF-16", so a
+# report containing box rules is written UTF-16BE on any installation that has
+# ever written a preferences file — and UTF-8 on one that has not. This
+# harness saw both: five green runs on a sandbox with no prefs5, then a hard
+# FAIL the moment one existed, because sed and grep are byte-oriented and the
+# ASCII timestamp pattern cannot match UTF-16.
+#
+# That is Praat behaving correctly (it reads back what it writes) and the
+# harness being wrong to assume bytes. Both captures are folded to UTF-8
+# first, so the diff compares CONTENT and the encoding is Praat's business.
+for leg in leg1 leg2; do
+    if file "$OUT/${leg}_info.txt" | grep -q "UTF-16"; then
+        iconv -f UTF-16 -t UTF-8 "$OUT/${leg}_info.txt" > "$OUT/${leg}_utf8.txt"
+    else
+        cp "$OUT/${leg}_info.txt" "$OUT/${leg}_utf8.txt"
+    fi
+done
+
 DATE_RE='[A-Z][a-z][a-z] [A-Z][a-z][a-z] [ 0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9] [0-9][0-9][0-9][0-9]'
 for leg in leg1 leg2; do
-    sed -E "s/$DATE_RE/<TIMESTAMP>/" "$OUT/${leg}_info.txt" > "$OUT/${leg}_norm.txt"
+    sed -E "s/$DATE_RE/<TIMESTAMP>/" "$OUT/${leg}_utf8.txt" > "$OUT/${leg}_norm.txt"
 done
 if ! grep -q "<TIMESTAMP>" "$OUT/leg1_norm.txt"; then
     echo "roundtrip: FAIL — the timestamp pattern no longer matches."
