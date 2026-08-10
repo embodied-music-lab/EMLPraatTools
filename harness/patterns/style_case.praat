@@ -25,7 +25,12 @@
 #           median line -- computed here from world coordinates rather than
 #           guessed by the shell, because only this script knows the axes.
 # ---------------------------------------------------------------------------
-include /home/claude/EMLPraatTools/harness/stress_cases/_prelude.praat
+; Relative, and it resolves against the TOP-LEVEL script's folder -- this
+; file's own folder, which is two levels below the repository root, the same
+; depth as harness/stress_cases/. So the prelude's own "../../plugin/..."
+; lines resolve correctly too. Absolute paths here meant a copy of the repo
+; silently tested the ORIGINAL tree. See harness/_env.sh.
+include ../stress_cases/_prelude.praat
 
 mode$ = environment$ ("EML_MODE")
 if mode$ = ""

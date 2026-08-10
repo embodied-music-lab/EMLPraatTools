@@ -50,11 +50,16 @@
 # validate/v29_figure_disclosure.R reads STYLES.tsv.
 # ---------------------------------------------------------------------------
 set -u
-ROOT=/home/claude/EMLPraatTools
+# Resolved from this script's own location, never hardcoded. harness/_env.sh
+# also supplies PRAAT and PRAAT_TRUST, and REFUSES a Praat below the plugin's
+# 6.6.30 floor. See its header for why an absolute ROOT was a real defect and
+# not a cosmetic one.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../_env.sh" || exit 1
+ROOT="$EML_ROOT"
 CASE=$ROOT/harness/patterns/style_case.praat
 OUT=$ROOT/harness/patterns/out
-PRAAT=/home/claude/praat
-PREFS=/home/claude/stress/prefs
+# PRAAT and PRAAT_TRUST come from _env.sh.
+PREFS=$ROOT/harness/patterns/prefs
 FILTER="${1:-}"
 
 mkdir -p "$OUT" "$PREFS"
@@ -75,7 +80,7 @@ for mode in color bw; do
             # DISPLAY deliberately unset: proves the case needs no X server.
             env -u DISPLAY EML_OUT="$OUT/$name.png" EML_MODE="$mode" \
                 EML_SHAPE="$shape" EML_STYLE="$style" \
-                "$PRAAT" --pref-dir="$PREFS" --run "$CASE" \
+                "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$CASE" \
                 > "$OUT/$name.log" 2>&1
 
             hue=$(sed -n 's/^STYLE .* hue=\([0-9]*\) .*$/\1/p' \
