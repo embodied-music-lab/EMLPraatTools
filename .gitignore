@@ -11,3 +11,10 @@ praat_prefs/
 # prefs5 decides the output encoding, and an inherited one made that harness
 # pass five times and then fail.
 harness/*/prefs/
+harness/stress_cases/prefs/
+
+# Probe output written beside a probe when it is run BY HAND. The drivers
+# set EML_OUT; the fallback is the current folder, deliberately, so that a
+# hand-run can never write into another tree -- but it must not be committed.
+harness/disclosure/formpath_*.png
+harness/disclosure/worst_*.png
