@@ -3,7 +3,7 @@
 #
 # WHY THIS EXISTS RATHER THAN harness/stress_cases/_prelude.praat, which is
 # what these cases used to include. That file names the plugin by ABSOLUTE
-# path — /home/claude/EMLPraatTools/plugin/... — so a copy of this repo
+# path — an absolute one into one machine's tree — so a copy of this repo
 # rendered anywhere else silently loads the ORIGINAL tree's plugin instead of
 # the one under test, and every measurement in the copy describes a build
 # nobody asked about. It is not a hypothetical: it was hit trying to render a
@@ -50,7 +50,7 @@ include ../../plugin/graphs/eml-draw-procedures.praat
 
 stressOut$ = environment$ ("EML_OUT")
 if stressOut$ = ""
-    stressOut$ = "/home/claude/stress/out/unnamed.png"
+    stressOut$ = "unnamed.png"
 endif
 
 # @stressSave: .vpW, .vpH

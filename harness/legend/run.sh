@@ -42,7 +42,7 @@
 #
 #   Before this existed the cases included harness/stress_cases/_prelude.praat,
 #   which names the plugin by absolute path, so a copy of this repo rendered
-#   anywhere else loaded /home/claude/EMLPraatTools/plugin regardless of which
+#   anywhere else loaded $ROOT/plugin regardless of which
 #   tree it was run from — SILENTLY, because the figures still came out.
 #   harness/stress_cases/_prelude.praat is deliberately NOT changed: other
 #   harnesses depend on its current form.
@@ -229,17 +229,22 @@
 # validate/v32_legend_geometry.R reads RESULTS.tsv and the logs.
 # ---------------------------------------------------------------------------
 set -u
-ROOT=/home/claude/EMLPraatTools
+# Resolved from this script's own location, never hardcoded. harness/_env.sh
+# also supplies PRAAT and PRAAT_TRUST, and REFUSES a Praat below the plugin's
+# 6.6.30 floor. See its header for why an absolute ROOT was a real defect and
+# not a cosmetic one.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../_env.sh" || exit 1
+ROOT="$EML_ROOT"
 SRC=$ROOT/harness/legend
 MEASURE=$SRC/measure.py
 BANDS=$SRC/measure_bands.py
 COVER=$SRC/measure_cover.py
 OUT=${EML_LEGEND_DIR:-$SRC/out}
-PRAAT=/home/claude/praat
+# PRAAT and PRAAT_TRUST come from _env.sh.
 # Scratch only, never read by a check. Its own directory rather than the
 # shared harness one, so a concurrent run of another driver cannot collide
 # with this one over Praat's preferences file.
-PREFS=${EML_LEGEND_PREFS:-/home/claude/stress/prefs-legend}
+PREFS=${EML_LEGEND_PREFS:-$ROOT/harness/legend/prefs}
 FILTER="${1:-}"
 
 mkdir -p "$OUT" "$PREFS"
@@ -451,7 +456,7 @@ render () {
         EML_VPW="$w" EML_VPH="$h" EML_N="$n" EML_MODE="$mode" \
         EML_LABELS="$labels" EML_LEGEND="$legend" EML_PLACEMENT="$pEnv" \
         EML_MATRIX="$matrix" EML_TCH="$tch" \
-        "$PRAAT" --pref-dir="$PREFS" --run "$CASE" \
+        "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$CASE" \
         > "$OUT/$name.log" 2>&1
 
     emit_row "$name" "$w" "$h" "$n" "$mode" "$labels" "$legend" \
@@ -470,7 +475,7 @@ series_run () {
         EML_VPW="$w" EML_VPH="$h" EML_K="$k" EML_GRAPH="$graph" \
         EML_MODE="$mode" EML_PLACEMENT="$placement" EML_ROOM="$room" \
         EML_YMIN="$ymin" EML_YMAX="$ymax" \
-        "$PRAAT" --pref-dir="$PREFS" --run "$SERIES" \
+        "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$SERIES" \
         > "$OUT/$name.log" 2>&1
 }
 
