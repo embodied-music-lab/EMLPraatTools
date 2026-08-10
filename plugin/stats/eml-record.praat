@@ -25,27 +25,40 @@
 # rather than ASCII, and that the recorder would therefore silently change
 # the encoding of the emitted script.
 #
-# None of that survived test on 9 Aug 2026 in Praat 6.6.30.
+# The premise is TRUE. The conclusion is still wrong, and the difference
+# matters, so both are recorded rather than the tidier half.
 #
-#   1. Praat wrote UTF-8, not UTF-16BE. A generated script containing an
-#      emoji and two box-drawing characters came out as UTF-8 and RAN:
-#          file: Unicode text, UTF-8 text
-#          run:  EMOJI SCRIPT RAN
+#   1. PRAAT REALLY DOES WRITE UTF-16BE. prefs5 carries
+#          TextEncoding.outputEncoding: try ASCII, then UTF-16
+#      so any report containing a box rule is written UTF-16 big-endian on
+#      every installation that has ever saved preferences. An early test here
+#      found UTF-8 and I reported the premise as false; that test ran in a
+#      sandbox with no prefs5, where a compiled-in default applied. It was
+#      measuring a machine no user has. Corrected 10 Aug 2026, after the
+#      round-trip harness went from five green runs to a hard failure the
+#      moment a prefs file existed.
 #
-#   2. Even when Praat does choose UTF-16, that is Praat's business. It reads
-#      back what it writes. A UTF-16 script is a perfectly good Praat script,
-#      so there was never a defect to defend against — only an encoding
-#      choice made by the layer that owns encoding.
+#   2. IT DOES NOT MATTER, WHICH IS THE AUTHOR'S POINT AND THE REAL REASON.
+#      Praat reads back what it writes. A UTF-16 script is a perfectly good
+#      Praat script, verified by running one. The encoding belongs to the
+#      layer that owns encoding, and a recorder that forced ASCII would be
+#      overriding a correct decision to protect against a consequence that
+#      does not exist.
 #
-#   3. unicodeToBackslashTrigraphs$() is NOT the exhaustive one-call fix it
-#      was briefly claimed to be. It converts characters Praat has trigraphs
-#      for and passes everything else through untouched. Measured:
+#   3. AND THE PROPOSED FIX WAS NOT ONE ANYWAY.
+#      unicodeToBackslashTrigraphs$() is not exhaustive. It converts the
+#      characters Praat has trigraphs for and passes the rest through
+#      untouched. Measured:
 #          \o:  3 -> 1  converted      \em  3 -> 3  no such trigraph
 #          \-m  3 -> 1  converted      \>=  3 -> 3  no such trigraph
-#          \xx  3 -> 1  converted
 #      A round-trip test on an unrecognised trigraph reports "lossless" while
-#      converting nothing, which is how the claim passed review the first
+#      converting nothing, which is how that claim passed review the first
 #      time. It did not survive being asked whether conversion had HAPPENED.
+#
+# WHAT THIS DOES COST, and it is not the emitted script. Byte-oriented tools
+# downstream -- sed, grep, diff -- cannot read a UTF-16 capture with an ASCII
+# pattern. harness/record/roundtrip.sh folds both captures to UTF-8 before
+# comparing, so it tests content and leaves encoding to Praat.
 #
 # So there is no @emlLogAscii here, no mapping table, no "?" fallback, and no
 # pure-ASCII assertion in the validator. Forcing ASCII would be strictly
@@ -132,6 +145,12 @@ procedure emlRecordInit
     if not variableExists ("emlRecordSourceChanged")
         emlRecordSourceChanged = 0
     endif
+    if not variableExists ("emlRecordPraatVersion$")
+        emlRecordPraatVersion$ = praatVersion$
+    endif
+    if not variableExists ("emlRecordPraatVersion")
+        emlRecordPraatVersion = praatVersion
+    endif
 endproc
 
 
@@ -169,10 +188,22 @@ procedure emlRecordBegin: .tempFolder$
     ... "n kind intent caveat code result api paths"
     emlRecordBufferId = selected ("Table")
 
-    ; The include block's example path. Resolved at run time from
-    ; preferencesDirectory$, so on the recording machine it is correct and on
-    ; any other it is a working example of the shape to edit to.
-    emlRecordPluginRoot$ = preferencesDirectory$ + "/plugin_EMLPraatTools"
+    ; The include block's path. Resolved at run time from
+    ; preferencesDirectory$, then rewritten HOME-RELATIVE, because Praat's
+    ; `include` accepts a leading ~ -- tested 10 Aug 2026, including a path
+    ; with spaces in it (macOS's "Praat Prefs") and under both 6.4.06 and
+    ; 7.0. That one substitution takes the emitted file from
+    ; one-machine to any-user-on-this-platform, for free.
+    .abs$ = preferencesDirectory$ + "/plugin_EMLPraatTools"
+    emlRecordPluginRoot$ = .abs$
+    if homeDirectory$ <> ""
+        if index (.abs$, homeDirectory$) = 1
+            emlRecordPluginRoot$ = "~"
+            ... + mid$ (.abs$, length (homeDirectory$) + 1, 100000)
+        endif
+    endif
+    emlRecordPraatVersion$ = praatVersion$
+    emlRecordPraatVersion = praatVersion
 
     emlRecordN = 0
     emlRecordActive = 1
@@ -531,7 +562,8 @@ procedure emlRecordRender
 
     .text$ = .text$ + .bar$ + newline$
     .text$ = .text$ + "# EML Praat Tools -- recorded workflow" + newline$
-    .text$ = .text$ + "# " + emlRecordStamp$ + newline$
+    .text$ = .text$ + "# " + emlRecordStamp$
+    ... + "  --  recorded on Praat " + emlRecordPraatVersion$ + newline$
     if emlRecordHeaderInput$ <> ""
         .text$ = .text$ + "# Input: " + emlRecordHeaderInput$ + " -- "
         ... + string$ (emlRecordHeaderRows) + " rows, "
@@ -540,44 +572,73 @@ procedure emlRecordRender
     .text$ = .text$ + .bar$ + newline$ + newline$
 
     ; ---- LIBRARY ---------------------------------------------------------
-    ; ONE EDITABLE BLOCK, WITH HARD PATHS, AND THAT IS DELIBERATE.
+    ; ONE EDITABLE BLOCK. HOME-RELATIVE, NOT MACHINE-ABSOLUTE.
     ;
-    ; `include` is a preprocessor directive taking a LITERAL path. It admits
-    ; no variable, so it cannot be fed from a form, and there is no portable
-    ; spelling of it. Rather than build machinery to avoid saying so, the file
-    ; says so: the block below is the plugin as it stood on the machine that
-    ; recorded the session, and on another machine it is one block to edit.
+    ; `include` takes a LITERAL path -- no variable, no form field. But it
+    ; DOES accept a leading `~`, tested 10 Aug 2026 on a path containing
+    ; spaces (macOS's "Praat Prefs") under both 6.4.06 and 7.0. So the block
+    ; below is portable across every user on this platform, and only the
+    ; middle segment is platform- and version-specific.
     ;
-    ; THE BARREL CANNOT BE USED HERE, and this is the part that surprises.
-    ; `include <plugin>/scripts/eml-lib-stats.praat` fails, because Praat
-    ; resolves a relative include INSIDE an included file against the
-    ; TOP-LEVEL script's folder -- this file's folder, not the barrel's. So
-    ; the barrel's own "../stats/..." lines go looking for the library beside
-    ; the recorded workflow. Measured 9 Aug 2026:
+    ; A CONDITIONAL INCLUDE WOULD SOLVE THE REST, AND DOES NOT WORK.
+    ; Wrapping the two spellings in `if praatVersion >= 7000 ... else ...`
+    ; looks like it works: a FALSE branch's include is skipped and the script
+    ; runs to the end. That is a false positive -- nothing ran. Put the
+    ; include in the TRUE branch and Praat refuses it:
     ;
-    ;     Include file "/tmp/emit/../stats/eml-record.praat" not read.
+    ;     Script line 4 not performed or completed:
+    ;     « include ~/... »
     ;
-    ; Hence the explicit list. It is longer by nine lines and it works.
+    ; So the file carries the spelling for the version that recorded it and
+    ; NAMES the others, because a failed parse cannot be caught by a guard --
+    ; the guard would never run.
+    ;
+    ; THE FOLDER MOVED IN PRAAT 7. Measured on this machine:
+    ;     6.6.30  ->  ~/.praat-dir
+    ;     7.0     ->  ~/.config/praat
+    ; which is why the version that recorded the session is stated above and
+    ; the known locations are listed below.
     .text$ = .text$ + .rule$ + newline$
     .text$ = .text$ + "# THE EML LIBRARY" + newline$
     .text$ = .text$
-    ... + "# These paths are the ones on the machine that recorded this"
+    ... + "# Recorded under Praat " + emlRecordPraatVersion$
+    ... + ". Paths are home-relative, so they work" + newline$
+    .text$ = .text$
+    ... + "# for any user on this platform. If this file fails to parse, the"
     ... + newline$
     .text$ = .text$
-    ... + "# session. On another machine, edit this block and nothing else."
+    ... + "# plugin is somewhere else -- edit this block and nothing else."
+    ... + newline$
+    .text$ = .text$ + "#" + newline$
+    .text$ = .text$
+    ... + "#   Praat 6.x  Linux    ~/.praat-dir/plugin_EMLPraatTools"
     ... + newline$
     .text$ = .text$
-    ... + "# `include` takes a literal path -- it cannot read a variable, so"
+    ... + "#   Praat 7.x  Linux    ~/.config/praat/plugin_EMLPraatTools"
     ... + newline$
     .text$ = .text$
-    ... + "# there is no portable spelling and no form field can supply it."
+    ... + "#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EMLPraatTools"
     ... + newline$
     .text$ = .text$
-    ... + "# The barrel eml-lib-stats.praat will NOT work in its place: its"
+    ... + "#   Windows    ~/Praat/plugin_EMLPraatTools"
     ... + newline$
     .text$ = .text$
-    ... + "# own relative includes resolve against THIS file's folder."
+    ... + "#   Not sure?  Run  writeInfoLine: preferencesDirectory$"
     ... + newline$
+    .text$ = .text$ + "#" + newline$
+    .text$ = .text$
+    ... + "# A version guard cannot help here: `include` is refused inside an"
+    ... + newline$
+    .text$ = .text$
+    ... + "# if-block, so the file cannot choose its own path at run time."
+    ... + newline$
+    .text$ = .text$
+    ... + "# The barrel eml-lib-stats.praat will NOT work in place of this"
+    ... + newline$
+    .text$ = .text$
+    ... + "# list: its own relative includes resolve against THIS file's"
+    ... + newline$
+    .text$ = .text$ + "# folder, not its own." + newline$
     .text$ = .text$ + .rule$ + newline$ + newline$
 
     .p$ = emlRecordPluginRoot$
