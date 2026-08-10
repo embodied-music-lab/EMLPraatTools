@@ -283,3 +283,76 @@ Two things fixed rather than noted:
   it looked like a 6.6.30-versus-6.4.06 regression until
   `preferencesDirectory$` was printed under both. Both branches are now
   checked.
+
+---
+
+## 13. RESOLVED — the rig is no longer pinned to one machine
+
+10 August 2026. **30 executable files** hardcoded `/home/claude`. Now 2, both
+of which quote the old form deliberately in explanatory prose
+(`harness/_env.sh`, `validate/v17_broom_parity.R`), plus two `.md` files
+still to sweep.
+
+The defect was never "a copy of the repo fails elsewhere". It is that
+`harness/stress_cases/_prelude.praat` included the plugin by absolute path,
+so a copy rendered anywhere else **silently loaded the original tree's
+plugin** and produced 39 figures that looked entirely correct while
+describing a build nobody asked about. Hit for real earlier in this audit:
+the only symptom was that a revert appeared not to take effect. It also meant
+the audit could not be reproduced by the person it is being handed to, which
+is the point of handing it over.
+
+**New: `harness/_env.sh`**, sourced by every driver. Resolves `EML_ROOT` from
+its own location, resolves `PRAAT` (`$PRAAT` → repo-adjacent → PATH),
+**refuses a binary below 6.6.30**, and sets `PRAAT_TRUST=--FULL-TRUST` on
+Praat 7.x. Every scratch preferences directory moved in-tree and gitignored,
+or under `$TMPDIR`.
+
+**Verified the way the original defect would have been caught.** A copy of
+the repo at `/tmp/eml_copy` had a sentinel line added to *its* copy of
+`@emlInitDrawingDefaults`, and only its copy:
+
+| run | sentinel in the log |
+|---|---|
+| the copy's harness | present |
+| the original's harness | absent |
+
+Then the full suite from the copy: **39/39 stress, 52/52 disclosure,
+roundtrip PASS**, and the copy's emitted workflow cites
+`/tmp/eml_copy/plugin/...`. The original is unaffected: 39/39, 52/52,
+roundtrip PASS, phase1 357/357, 8221/8221 R checks.
+
+## 14. OPEN — the stress figures are not deterministic
+
+Found while checking whether the de-absolutising had changed anything. It had
+not; the numbers move on their own.
+
+**22 of the 39 stress cases call `randomGauss` with no seed.** Two
+consecutive runs of `violin_baseline` with no code change between them:
+
+```
+violin_baseline    OK   11.348%   230063
+violin_baseline    OK   14.106%   289575
+```
+
+So the ink percentages and chromatic-pixel counts committed in
+`harness/stress_out/RESULTS.tsv` are **not a baseline** — they churn on every
+run, and every "re-render" commit in this audit has churned them. A reader
+diffing two commits could easily read that as a regression.
+
+`validate/v27_empty_frames.R` is unaffected, and deliberately so: it asserts
+*inequalities* — verdict in {OK, BLANK_FRAME_ABS}, chromatic px > 0, ink > 0,
+and every populated case scoring above its empty sibling — never exact
+values. That was the right design and it is what keeps the suite meaningful.
+
+Two residual risks worth a decision:
+
+1. The empty-versus-sibling assertion depends on random draws. Its own
+   comment names the tightest margin as `violin_n1` at about +15% over
+   `empty_violin`. With unseeded data that margin is a random variable, so
+   the check could flake. Not observed flaking, not proven not to.
+2. `RESULTS.tsv` invites being read as a baseline when it is not.
+
+The cheap fix for both is an in-script LCG in place of `randomGauss`, as
+`harness/legend/placement_sweep_case.praat` already uses. It would change
+every committed figure once, then never again.
