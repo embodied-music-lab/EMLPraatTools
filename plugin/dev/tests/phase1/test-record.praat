@@ -169,6 +169,26 @@ body$ = emlRecordRender.text$
 ... index (body$, "edit this block and nothing else") > 0
 @ok: "the barrel trap is stated, not left to be discovered",
 ... index (body$, "barrel eml-lib-stats.praat will NOT work") > 0
+
+; Home-relative, not machine-absolute. Praat's `include` accepts a leading ~
+; -- tested 10 Aug 2026 on a path with spaces, under 6.4.06 and 7.0 -- which
+; makes the block portable across every user on this platform for free.
+@ok: "include paths are home-relative",
+... index (body$, "include ~/") > 0
+@ok: "the recording Praat version is stated",
+... index (body$, "recorded on Praat ") > 0
+; The folder moved in Praat 7: 6.6.30 -> ~/.praat-dir, 7.0 -> ~/.config/praat.
+@ok: "the v6 and v7 locations are both named",
+... index (body$, ".praat-dir/plugin_EMLPraatTools") > 0
+... and index (body$, ".config/praat/plugin_EMLPraatTools") > 0
+@ok: "macOS and Windows locations are named",
+... index (body$, "Praat Prefs/plugin_EMLPraatTools") > 0
+... and index (body$, "Windows") > 0
+; A conditional include LOOKS like it works -- a false branch is skipped and
+; the script runs to the end -- but that is nothing running. In a TRUE branch
+; Praat refuses it outright. So the file says so rather than pretending.
+@ok: "the file explains why it cannot guard its own version",
+... index (body$, "cannot choose its own path at run time") > 0
 @ok: "no form block is emitted any more",
 ... index (body$, "form: ""Recorded workflow") = 0
 @ok: "the file takes whatever Table is selected",
