@@ -4,7 +4,10 @@
 # so the other instances keep their walk state.
 set -u
 i=$1; S=$2
-RIG=${RIG:-/home/claude/rig}
+# Scratch GUI rig. Outside the repo on purpose -- it holds a running
+# Praat's preferences and Xvfb state, none of which belongs in version
+# control. Overridable with RIG=.
+RIG=${RIG:-${TMPDIR:-/tmp}/eml-rig}
 P="$RIG/prefs_$i"; D=":9$i"
 if [ -f "$RIG/log/drivepid_$i" ]; then
     kill "$(cat "$RIG/log/drivepid_$i")" 2>/dev/null
@@ -17,7 +20,7 @@ for pid in $(pgrep -x praat); do
 done
 sleep 1
 rm -f "$P/pid" "$P/message"
-DISPLAY=$D HOME=$P setsid nohup /home/claude/praat --new-send \
+DISPLAY=$D HOME=$P setsid nohup "${PRAAT:-$(command -v praat_barren || command -v praat)}" --new-send \
     --pref-dir="$P" --utf8 "$S" > "$RIG/log/drive_$i.log" 2>&1 &
 echo $! > "$RIG/log/drivepid_$i"
 sleep 6

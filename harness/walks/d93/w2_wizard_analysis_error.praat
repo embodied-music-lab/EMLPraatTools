@@ -12,7 +12,7 @@
 # ============================================================================
 
 tid = Read Table from comma-separated file:
-... "/home/claude/EMLPraatTools/validate/redpath/r4_singleton_group.csv"
+... "../../../validate/redpath/r4_singleton_group.csv"
 selectObject: tid
 runScript: preferencesDirectory$
 ... + "/plugin_EML_Praat_Tools/scripts/eml-wizard.praat"
