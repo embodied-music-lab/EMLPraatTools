@@ -1,12 +1,12 @@
 # ============================================================
 # EML Praat Tools -- recorded workflow
-# roundtrip  --  recorded on Praat 7.0
+# roundtrip  --  recorded on Praat 6.6.30
 # Input: demo_3groups_input.csv -- 45 rows, 4 columns
 # ============================================================
 
 # ------------------------------------------------------------
 # THE EML LIBRARY
-# Recorded under Praat 7.0. Paths are home-relative, so they work
+# Recorded under Praat 6.6.30. Paths are home-relative, so they work
 # for any user on this platform. If this file fails to parse, the
 # plugin is somewhere else -- edit this block and nothing else.
 #
@@ -32,7 +32,10 @@ include /home/claude/EMLPraatTools/plugin/stats/eml-result-writer.praat
 include /home/claude/EMLPraatTools/plugin/stats/eml-record.praat
 include /home/claude/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
 include /home/claude/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
+include /home/claude/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
 include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
+
+@emlInitDrawingDefaults
 
 # ------------------------------------------------------------
 # THE OBJECT
