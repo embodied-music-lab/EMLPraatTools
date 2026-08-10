@@ -15,14 +15,19 @@
 #         harness/stress_out/RESULTS.tsv     case, verdict, first error line
 # ---------------------------------------------------------------------------
 set -u
-ROOT=/home/claude/EMLPraatTools
+# Resolved from this script's own location, never hardcoded. See
+# harness/_env.sh for why -- an absolute ROOT is how a copy of this repo came
+# to silently test the ORIGINAL tree.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_env.sh" || exit 1
+ROOT="$EML_ROOT"
 CASES=$ROOT/harness/stress_cases
 # In-repo, like harness/qq_out which v23 reads. v27 reads these, and a fresh
 # clone has to be able to run the suite -- an out-of-tree default would make
 # v27 hard-stop on a machine that has never run this driver.
 OUT=$ROOT/harness/stress_out
-PRAAT=/home/claude/praat
-PREFS=/home/claude/stress/prefs   # scratch only, never read by a check
+# PRAAT and PRAAT_TRUST come from _env.sh, which also REFUSES a binary below
+# the plugin's 6.6.30 floor.
+PREFS=$ROOT/harness/stress_cases/prefs   # scratch only, never read by a check
 FILTER="${1:-}"
 
 # Pixels that are clearly chromatic: saturation high AND lightness not near
@@ -50,7 +55,7 @@ for f in $(ls "$CASES"/empty_*.praat 2>/dev/null; ls "$CASES"/*.praat | grep -v 
     # DISPLAY deliberately unset: proves the case needs no X server, and stops
     # a stray connection to the interactive :99 instance.
     env -u DISPLAY EML_OUT="$OUT/$name.png" \
-        "$PRAAT" --pref-dir="$PREFS" --run "$f" \
+        "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$f" \
         > "$OUT/$name.log" 2>&1
     if [ -s "$OUT/$name.png" ]; then
         if grep -qi "^Error\|not completed" "$OUT/$name.log"; then

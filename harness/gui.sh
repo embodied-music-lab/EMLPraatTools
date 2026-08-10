@@ -1,11 +1,15 @@
 #!/bin/bash
 # GUI driving helpers for EML Praat Tools menu exercise.
-# Source this: . /home/claude/drive/gui.sh
+# Source this: . harness/gui.sh
 # Defaults, not mandates: the parallel rig (harness/walks/rig.sh) puts each
 # instance on its own display, so a caller that has already set DISPLAY/SHOTS
 # keeps them. Bare `. harness/gui.sh` is unchanged — :99 and drive/out/shots.
 export DISPLAY=${DISPLAY:-:99}
-SHOTS=${SHOTS:-/home/claude/drive/out/shots}
+EML_ROOT_GUI="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Scratch drive area, outside the repo: it holds a live Praat's preferences,
+# Xvfb state and hundreds of screenshots. Overridable with DRIVE=.
+DRIVE=${DRIVE:-${TMPDIR:-/tmp}/eml-drive}
+SHOTS=${SHOTS:-$DRIVE/out/shots}
 mkdir -p "$SHOTS"
 
 # shot <name>  -> full-screen screenshot
@@ -159,9 +163,9 @@ click () { xdotool mousemove "$1" "$2" click 1; sleep 2; }
 # 2026-08-05 additions: text-first capture. Screenshots are ~1900 tokens and
 # vision-transcribed (error-prone for digits); these are exact and ~30-120.
 # ---------------------------------------------------------------------------
-PRAAT=/home/claude/praat
-PREFS=--pref-dir=/home/claude/drive/prefs
-OUT=/home/claude/drive/out
+PRAAT=${PRAAT:-$(command -v praat_barren || command -v praat)}
+PREFS=--pref-dir=$DRIVE/prefs
+OUT=$DRIVE/out
 
 # sendp <script-file>  -> execute a script in the RUNNING GUI instance.
 #   "An instance of Praat that is not me is already running." on stderr is
@@ -184,7 +188,7 @@ infotext () {
     echo "infotext takes no argument; use a shell redirect: infotext > $1" >&2
     return 2
   fi
-  sendp /home/claude/drive/scripts/_dumpinfo.praat
+  sendp $DRIVE/scripts/_dumpinfo.praat
   # Praat writes UTF-16 on Linux even under --utf8; normalise before reading.
   if file -b "$OUT/info.txt" | grep -q "UTF-16"; then
     iconv -f UTF-16 -t UTF-8 "$OUT/info.txt"
@@ -414,11 +418,11 @@ for i from 1 to n
     endif
 endfor
 selectObject: tid
-Save as comma-separated file: "/home/claude/EMLPraatTools/evidence/csv/${lab}_input.csv"
-writeFile: "/home/claude/EMLPraatTools/evidence/info/${lab}_info.txt", info\$ ()
+Save as comma-separated file: "$EML_ROOT_GUI/evidence/csv/${lab}_input.csv"
+writeFile: "$EML_ROOT_GUI/evidence/info/${lab}_info.txt", info\$ ()
 CEOF
   sendp "$OUT/_cap.praat"
-  local f=/home/claude/EMLPraatTools/evidence/info/"$lab"_info.txt
+  local f=$EML_ROOT_GUI/evidence/info/"$lab"_info.txt
   [ -f "$f" ] || { echo "CAPTURE FAILED: $lab"; return 1; }
   if file "$f" | grep -q UTF-16; then
     iconv -f UTF-16 -t UTF-8 "$f" -o "$f".u8 && mv "$f".u8 "$f"
