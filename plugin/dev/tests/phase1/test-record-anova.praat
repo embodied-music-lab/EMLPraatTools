@@ -96,21 +96,19 @@ api$ = Get value: 1, "api"
 ... index (intent$, "Alpha 0.05") > 0
 @ok: "Stream C caveat is present",
 ... index (caveat$, "Normality was NOT tested") > 0
-@ok: "code carries a path TOKEN, never a literal",
-... index (code$, "<<path") > 0
-@ok: "code names the wrapper", index (code$, "eml-compare-k-groups") > 0
-
-; Measured 9 Aug 2026: an argument-bearing runScript: on this wrapper fails
-; with "Found 3 arguments but expected only 0", because the wrapper uses
-; beginPause: and not form:...endform. Emitting the argument form would put
-; a line in the user's file that cannot run anywhere. Asserted so a later
-; edit cannot quietly put it back.
-@ok: "the emitted call carries NO arguments",
-... index (code$, """SPL_dB""") = 0
-@ok: "the headless limitation is stated beside the call",
-... index (code$, "needs a display") > 0
-@ok: "API equivalent is recorded",
-... index (api$, "@emlRunAnovaAnalysis:") > 0
+; Emitted at the API level. A wrapper-level runScript: cannot re-run at all
+; -- with arguments it fails "Found 3 arguments but expected only 0", and
+; without them it reaches beginPause: and needs a display. The orchestrator
+; has no dialogs, so calling it is the whole answer. Asserted so a later
+; edit cannot quietly return to the wrapper form.
+@ok: "code calls the orchestrator directly",
+... index (code$, "@emlRunAnovaAnalysis: table") > 0
+@ok: "code carries the resolved column names",
+... index (code$, """SPL_dB""") > 0 and index (code$, """voice_type""") > 0
+@ok: "no wrapper runScript: is emitted",
+... index (code$, "runScript:") = 0
+@ok: "the GUI route is recorded, since the file cannot show it by running",
+... index (api$, "New > EML Tools") > 0
 
 # The numbers must be the analysis's own, to the digit.
 wantF$ = fixed$ (emlOneWayAnova.fValue, 4)
@@ -155,23 +153,21 @@ outPath$ = tmp$ + "/anova_recorded.praat"
 @emlRecordFlush: outPath$
 @ok: "flush wrote the file", emlRecordFlush.written
 emitted$ = readFile$ (outPath$)
-@ok: "no token survived into the emitted file",
-... index (emitted$, "<<path") = 0
-@ok: "the plugin folder became a form variable",
-... index (emitted$, "plugin_folder$") > 0
+@ok: "the emitted file carries an include block",
+... index (emitted$, "include ") > 0
+@ok: "the emitted file takes the selected Table",
+... index (emitted$, "table = selected (""Table"")") > 0
+@ok: "the object it was recorded against is named",
+... index (emitted$, "Recorded against:") > 0
 @ok: "both steps are in the file",
 ... index (emitted$, "Step 1 (analysis)") > 0
 ... and index (emitted$, "Step 2 (refusal)") > 0
 @ok: "refusal message is not double-punctuated",
 ... index (emitted$, "groups..") = 0
 
-; The gap this increment does NOT close, asserted so it cannot close itself
-; by accident and so the artifact never claims completeness it lacks. The
-; orchestrator is handed a tableId, never a path, so no input is registered
-; and the emitted file cannot reproduce the session on its own. When the read
-; layer is wired this assertion flips and the NOTE disappears.
-@ok: "an unrecorded input file is NAMED, not omitted",
-... index (emitted$, "INCOMPLETE -- NO INPUT FILE WAS RECORDED") > 0
+; The gap that used to be here is closed by construction: there is no input
+; file to record, because the emitted script takes whatever object is
+; selected, exactly as the session did.
 
 @emlRecordDiscard
 
