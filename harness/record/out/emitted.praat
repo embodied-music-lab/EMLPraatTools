@@ -1,12 +1,12 @@
 # ============================================================
 # EML Praat Tools -- recorded workflow
-# roundtrip  --  recorded on Praat 6.4.06
+# roundtrip  --  recorded on Praat 7.0
 # Input: demo_3groups_input.csv -- 45 rows, 4 columns
 # ============================================================
 
 # ------------------------------------------------------------
 # THE EML LIBRARY
-# Recorded under Praat 6.4.06. Paths are home-relative, so they work
+# Recorded under Praat 7.0. Paths are home-relative, so they work
 # for any user on this platform. If this file fails to parse, the
 # plugin is somewhere else -- edit this block and nothing else.
 #
