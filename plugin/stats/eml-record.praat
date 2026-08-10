@@ -657,9 +657,30 @@ procedure emlRecordRender
     ... + newline$
     .text$ = .text$ + "include " + .p$
     ... + "/graphs/eml-annotation-procedures.praat" + newline$
+    ; The DRAW layer. Omitted from the first cut of this list, which meant a
+    ; recorded FIGURE emitted a script that could not run --
+    ; "Procedure emlDrawViolinPlot not found" -- while a recorded ANALYSIS
+    ; emitted one that could. Caught by harness/record/roundtrip_graph.sh on
+    ; its first run, which is the entire reason that check exists: the list
+    ; is hand-maintained, so nothing but a replay can prove it complete.
+    .text$ = .text$ + "include " + .p$ + "/graphs/eml-draw-procedures.praat"
+    ... + newline$
     .text$ = .text$ + "include " + .p$ + "/stats/eml-analysis.praat"
     ... + newline$
     .text$ = .text$ + newline$
+
+    ; INITIALISE THE DRAWING DEFAULTS. Every real caller does this before it
+    ; draws, and the emitted file is a real caller. Omitting it made a
+    ; recorded FIGURE emit a script that died on "Unknown variable:
+    ; emlSubtitle$" -- a global the draw layer reads and this procedure sets.
+    ; Caught by harness/record/roundtrip_graph.sh, one failure after it caught
+    ; the missing draw-layer include.
+    ;
+    ; Called unconditionally rather than only for sessions that drew: it is
+    ; idempotent, it costs nothing in an analysis-only file, and a condition
+    ; here would be one more thing that can be wrong in a file whose whole
+    ; purpose is to run somewhere else.
+    .text$ = .text$ + "@emlInitDrawingDefaults" + newline$ + newline$
 
     ; ---- THE OBJECT ------------------------------------------------------
     ; No form, no infile. The session's analyses ran on an object the user
