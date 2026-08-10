@@ -24,30 +24,17 @@ set -uo pipefail
 
 # Resolved from this script's own location, never from the working directory.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 OUT="$SCRIPT_DIR/out"
 
-# THE PINNED BINARY AND AN ISOLATED PREFERENCES DIRECTORY, both of which this
-# script lacked in its first cut and both of which harness/stress_graphs.sh
-# and harness/disclosure/run.sh have had all along.
-#
-# 1. VERSION. A bare `praat` resolves to whatever is first on PATH, which in
-#    this container is /usr/bin/praat -- 6.4.06, dated April 2024. That is
-#    BELOW the plugin's own declared floor (emlMinPraatVersion = 6630 in
-#    setup.praat) and is not the build evidence/info/ was captured on. The
-#    first runs of this harness were therefore made on a Praat the plugin
-#    refuses to load under. /home/claude/praat is the 6.6.30 symlink the
-#    other harnesses use.
-#
-# 2. PREFERENCES. Without --pref-dir, Praat reads the user's prefs5, and
-#    prefs5 decides the output encoding. That is exactly how this harness
-#    came to pass five times and then fail: installing the plugin caused a
-#    prefs5 to be written, "try ASCII, then UTF-16" took effect, and the
-#    byte-oriented diff stopped matching. Isolating the preferences makes the
-#    run reproducible; folding to UTF-8 below makes it correct either way.
-#    Both are wanted -- the isolation is not a substitute for the fold,
-#    because a real user's Praat WILL write UTF-16.
-PRAAT="${PRAAT:-/home/claude/praat}"
+# PRAAT, PRAAT_TRUST and the 6.6.30 floor all come from harness/_env.sh.
+# This script had none of that in its first cut: it invoked a bare `praat`
+# (which on PATH is 6.4.06, BELOW the plugin's own floor) and it did not
+# isolate the preferences directory. The second omission is exactly why it
+# passed five times and then failed -- installing the plugin wrote a prefs5,
+# "TextEncoding.outputEncoding: try ASCII, then UTF-16" took effect, and the
+# byte-oriented diff stopped matching.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/_env.sh" || exit 1
+ROOT="$EML_ROOT"
 PREFS="$SCRIPT_DIR/prefs"
 
 # PRAAT 7 REFUSES FILE WRITES FROM A SCRIPT UNLESS TRUSTED, and both legs of
@@ -59,15 +46,6 @@ PREFS="$SCRIPT_DIR/prefs"
 #
 # 6.6.30 does not know the flag, so it cannot simply be passed always. It is
 # added only for a 7.x binary, detected from --version.
-TRUST=""
-if "$PRAAT" --version 2>&1 | grep -qE "Praat 7"; then
-    TRUST="--FULL-TRUST"
-fi
-if [[ ! -x "$PRAAT" ]]; then
-    echo "FAIL: pinned Praat not found at $PRAAT"
-    echo "      Set PRAAT=... to override."
-    exit 1
-fi
 
 mkdir -p "$OUT" "$PREFS"
 rm -f "$OUT"/*.txt "$OUT"/*.praat 2>/dev/null
@@ -113,7 +91,7 @@ writeFileLine: "$OUT/leg1_info.txt", info\$ ()
 @emlRecordDiscard
 PRAAT
 
-( cd "$ROOT" && timeout 300 "$PRAAT" $TRUST --pref-dir="$PREFS" --run "$OUT/record_leg.praat" >"$OUT/leg1_stderr.txt" 2>&1 )
+( cd "$ROOT" && timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$OUT/record_leg.praat" >"$OUT/leg1_stderr.txt" 2>&1 )
 if [[ ! -f "$OUT/emitted.praat" ]]; then
     echo "FAIL: leg 1 produced no emitted script"
     tail -20 "$OUT/leg1_stderr.txt"
@@ -131,7 +109,7 @@ runScript: "$OUT/emitted.praat"
 writeFileLine: "$OUT/leg2_info.txt", info\$ ()
 PRAAT
 
-( cd "$ROOT" && timeout 300 "$PRAAT" $TRUST --pref-dir="$PREFS" --run "$OUT/replay_leg.praat" >"$OUT/leg2_stderr.txt" 2>&1 )
+( cd "$ROOT" && timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$OUT/replay_leg.praat" >"$OUT/leg2_stderr.txt" 2>&1 )
 if [[ ! -f "$OUT/leg2_info.txt" ]]; then
     echo "FAIL: the emitted script did not run"
     tail -20 "$OUT/leg2_stderr.txt"
