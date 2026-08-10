@@ -4,16 +4,21 @@
 # This is the reference implementation of the declaration contract. When the
 # wrapper is converted, this is the block that moves into it.
 
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-utilities.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-extract.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-output.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-inferential.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-result-writer.praat
+include ../../plugin/stats/eml-core-utilities.praat
+include ../../plugin/stats/eml-core-descriptive.praat
+include ../../plugin/stats/eml-extract.praat
+include ../../plugin/stats/eml-output.praat
+include ../../plugin/stats/eml-inferential.praat
+include ../../plugin/stats/eml-result-writer.praat
 
 outDir$ = environment$ ("EML_OUT_DIR")
 if outDir$ = ""
-    outDir$ = "/home/claude/stress/broom"
+    ; EML_OUT is set by the driver. The fallback is only reached by a case
+    ; run by hand, and it is relative so that cannot write into another tree.
+    outDir$ = environment$ ("EML_OUT")
+    if outDir$ = ""
+        outDir$ = "."
+    endif
 endif
 createDirectory: outDir$
 
