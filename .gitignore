@@ -4,3 +4,10 @@ __pycache__/
 .DS_Store
 *.swp
 praat_prefs/
+
+# Scratch preference directories written by the harnesses. Never read by a
+# check -- they exist only so a run cannot inherit, or disturb, the user's
+# own Praat preferences. harness/record/roundtrip.sh needs this because
+# prefs5 decides the output encoding, and an inherited one made that harness
+# pass five times and then fail.
+harness/*/prefs/
