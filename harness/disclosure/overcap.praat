@@ -51,7 +51,12 @@
 # one case-specific record per family so the validator can read the counts and
 # the names out of a real render rather than out of the source.
 # ---------------------------------------------------------------------------
-include /home/claude/EMLPraatTools/harness/stress_cases/_prelude.praat
+; Relative, and it resolves against the TOP-LEVEL script's folder -- this
+; file's own folder, which is two levels below the repository root, the same
+; depth as harness/stress_cases/. So the prelude's own "../../plugin/..."
+; lines resolve correctly too. Absolute paths here meant a copy of the repo
+; silently tested the ORIGINAL tree. See harness/_env.sh.
+include ../stress_cases/_prelude.praat
 
 case$ = environment$ ("EML_CASE")
 annotate = number (environment$ ("EML_ANNOTATE"))

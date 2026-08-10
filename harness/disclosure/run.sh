@@ -25,12 +25,17 @@
 # validate/v29_figure_disclosure.R reads the logs and both TSVs.
 # ---------------------------------------------------------------------------
 set -u
-ROOT=/home/claude/EMLPraatTools
+# Resolved from this script's own location, never hardcoded. harness/_env.sh
+# also supplies PRAAT and PRAAT_TRUST, and REFUSES a Praat below the plugin's
+# 6.6.30 floor. See its header for why an absolute ROOT was a real defect and
+# not a cosmetic one.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../_env.sh" || exit 1
+ROOT="$EML_ROOT"
 CASE=$ROOT/harness/disclosure/case.praat
 OVERCAP=$ROOT/harness/disclosure/overcap.praat
 OUT=$ROOT/harness/disclosure/out
-PRAAT=/home/claude/praat
-PREFS=/home/claude/stress/prefs
+# PRAAT and PRAAT_TRUST come from _env.sh.
+PREFS=$ROOT/harness/disclosure/prefs
 FILTER="${1:-}"
 
 mkdir -p "$OUT" "$PREFS"
@@ -59,7 +64,7 @@ for chart in ts tsci spaghetti bar violin scatter box hist gviolin gbox; do
             # DISPLAY deliberately unset: proves the case needs no X server.
             env -u DISPLAY EML_OUT="$OUT/$name.png" EML_CHART="$chart" \
                 EML_ANNOTATE="$ann" EML_DIRTY="$dirty" \
-                "$PRAAT" --pref-dir="$PREFS" --run "$CASE" \
+                "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$CASE" \
                 > "$OUT/$name.log" 2>&1
             if [ -s "$OUT/$name.png" ]; then
                 if grep -qiE "^Error|not completed|Unknown variable" \
@@ -91,7 +96,7 @@ for oc in scatter8 scatter21 barmix barzero gviolin25 gbox25; do
         rm -f "$OUT/$name.png"
         env -u DISPLAY EML_OUT="$OUT/$name.png" EML_CASE="$oc" \
             EML_ANNOTATE="$ann" \
-            "$PRAAT" --pref-dir="$PREFS" --run "$OVERCAP" \
+            "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$OVERCAP" \
             > "$OUT/$name.log" 2>&1
         if [ -s "$OUT/$name.png" ]; then
             if grep -qiE "^Error|not completed|Unknown variable" \
@@ -120,7 +125,7 @@ done
 # coincide -- they did, on 7 Aug 2026, and the omnibus was painted over the
 # disclosure.
 if [ -z "$FILTER" ]; then
-    env -u DISPLAY "$PRAAT" --pref-dir="$PREFS" \
+    env -u DISPLAY "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" \
         --run "$ROOT/harness/disclosure/probe_formpath.praat" \
         > "$OUT/formpath.log" 2>&1
 fi

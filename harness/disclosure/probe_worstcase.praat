@@ -10,10 +10,22 @@
 #                    none of those three is capped: they are pre-existing
 #                    @emlDrawScatterPlot code, added straight to annotBlockN.
 #
-# Writes /home/claude/disc_out/worst_bar.png and worst_scatter.png and prints
+# Writes <EML_OUT>/worst_bar.png and worst_scatter.png and prints
 # the line counts.
 # ---------------------------------------------------------------------------
-include /home/claude/EMLPraatTools/harness/stress_cases/_prelude.praat
+; Relative, and it resolves against the TOP-LEVEL script's folder -- this
+; file's own folder, which is two levels below the repository root, the same
+; depth as harness/stress_cases/. So the prelude's own "../../plugin/..."
+; lines resolve correctly too. Absolute paths here meant a copy of the repo
+; silently tested the ORIGINAL tree. See harness/_env.sh.
+include ../stress_cases/_prelude.praat
+
+; Where this probe writes. EML_OUT is set by harness/disclosure/run.sh; the
+; fallback is the current folder, never another tree.
+probeOut$ = environment$ ("EML_OUT")
+if probeOut$ = ""
+    probeOut$ = "."
+endif
 
 annotate = 1
 emlSubtitle$ = "SENTINEL-SUBTITLE"
@@ -48,7 +60,7 @@ if nSel > 0
     Remove
 endif
 @emlAssertFullViewport
-Save as 300-dpi PNG file: "/home/claude/disc_out/worst_bar.png"
+Save as 300-dpi PNG file: probeOut$ + "/worst_bar.png"
 
 # --- worst case 2: grouped scatter, eight groups ---------------------------
 annotCorrType$ = "both"
@@ -84,4 +96,4 @@ if nSel > 0
     Remove
 endif
 @emlAssertFullViewport
-Save as 300-dpi PNG file: "/home/claude/disc_out/worst_scatter.png"
+Save as 300-dpi PNG file: probeOut$ + "/worst_scatter.png"

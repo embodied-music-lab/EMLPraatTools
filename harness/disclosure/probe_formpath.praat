@@ -10,10 +10,22 @@
 #
 # This reproduces the form's sequence around a real @emlDrawViolinPlot call:
 # brackets, omnibus line, both corners. Look at the PNGs.
-#   /home/claude/disc_out/formpath_brackets.png     (omnibus bottom-right)
-#   /home/claude/disc_out/formpath_nobrackets.png   (omnibus top-right)
+#   <EML_OUT>/formpath_brackets.png     (omnibus bottom-right)
+#   <EML_OUT>/formpath_nobrackets.png   (omnibus top-right)
 # ---------------------------------------------------------------------------
-include /home/claude/EMLPraatTools/harness/stress_cases/_prelude.praat
+; Relative, and it resolves against the TOP-LEVEL script's folder -- this
+; file's own folder, which is two levels below the repository root, the same
+; depth as harness/stress_cases/. So the prelude's own "../../plugin/..."
+; lines resolve correctly too. Absolute paths here meant a copy of the repo
+; silently tested the ORIGINAL tree. See harness/_env.sh.
+include ../stress_cases/_prelude.praat
+
+; Where this probe writes. EML_OUT is set by harness/disclosure/run.sh; the
+; fallback is the current folder, never another tree.
+probeOut$ = environment$ ("EML_OUT")
+if probeOut$ = ""
+    probeOut$ = "."
+endif
 
 annotate = 1
 emlSubtitle$ = "SENTINEL-SUBTITLE"
@@ -70,7 +82,7 @@ if n > 0
     Remove
 endif
 @emlAssertFullViewport
-Save as 300-dpi PNG file: "/home/claude/disc_out/formpath_brackets.png"
+Save as 300-dpi PNG file: probeOut$ + "/formpath_brackets.png"
 
 # ---- no brackets: the form sends its omnibus to top-right -----------------
 @emlClearAnnotations
@@ -93,4 +105,4 @@ if n > 0
     Remove
 endif
 @emlAssertFullViewport
-Save as 300-dpi PNG file: "/home/claude/disc_out/formpath_nobrackets.png"
+Save as 300-dpi PNG file: probeOut$ + "/formpath_nobrackets.png"
