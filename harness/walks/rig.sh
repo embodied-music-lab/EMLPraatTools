@@ -49,8 +49,13 @@
 
 set -u
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PRAAT=${PRAAT:-/home/claude/praat}
-RIG=${RIG:-/home/claude/rig}
+# PRAAT falls back to the repo-adjacent symlink, then PATH. See
+# harness/_env.sh, which this rig predates.
+PRAAT=${PRAAT:-$(command -v praat_barren || command -v praat)}
+# Scratch GUI rig. Outside the repo on purpose -- it holds a running
+# Praat's preferences and Xvfb state, none of which belongs in version
+# control. Overridable with RIG=.
+RIG=${RIG:-${TMPDIR:-/tmp}/eml-rig}
 GEOM=${GEOM:-1280x900x24}
 
 inst_up () {
