@@ -439,13 +439,9 @@ procedure emlRecordAnova: .tableId, .dataCol$, .groupCol$, .doTukey, .error$
         goto END_RECORD_ANOVA
     endif
 
-    selectObject: .tableId
-    .tName$ = selected$ ("Table")
-
-    ; The wrapper is reached by path, so the path is a token from the
-    ; registry and never a literal in the code slot.
-    @emlRecordPath: preferencesDirectory$ + "/plugin_EMLPraatTools", "plugin"
-    .pluginTok$ = emlRecordPath.token$
+    ; Provenance: WHICH object this record describes. "Whatever is selected"
+    ; gives a reader no way to check they selected the right thing.
+    @emlRecordSource: .tableId
 
     if .error$ <> ""
         @emlPhrase: "refusal.intent", .error$, "", "", "", "", ""
@@ -485,53 +481,44 @@ procedure emlRecordAnova: .tableId, .dataCol$, .groupCol$, .doTukey, .error$
         .tukey$ = "0"
     endif
     ; ------------------------------------------------------------------
-    ; THE CALL IS EMITTED WITH NO ARGUMENTS, AND THAT IS FORCED.
+    ; EMITTED AT THE API LEVEL, WHICH IS WHY THIS FILE RE-RUNS AT ALL.
     ;
-    ; TREATMENT_record_workflow.md §6 concluded that `runScript:` with a path
-    ; built from preferencesDirectory$ is the portable call form, "verified
-    ; headless, two sequential calls, arguments passed positionally and the
-    ; form bypassed". That verification used a probe script with a
-    ; `form: ... endform` block. NO EML WRAPPER HAS ONE — every wrapper uses
-    ; `beginPause:`, and the two are not interchangeable here.
-    ;
-    ; Measured 9 Aug 2026 against a real copy of the plugin tree:
+    ; The first cut emitted a wrapper-level `runScript:` call, following
+    ; TREATMENT_record_workflow.md §6. That does not work, and §6's own
+    ; verification does not transfer: it used a probe script with a
+    ; `form: ... endform` block, and NO EML WRAPPER HAS ONE. Every wrapper
+    ; uses `beginPause:`. Measured 9 Aug 2026 against a real plugin tree:
     ;
     ;   runScript: ".../eml-compare-k-groups.praat", "SPL_dB", "voice_type", 1
     ;     -> Error: Found 3 arguments but expected only 0.
-    ;
-    ;   runScript: ".../eml-compare-k-groups.praat"     (no Table selected)
-    ;     -> clean refusal, as designed
-    ;
-    ;   runScript: ".../eml-compare-k-groups.praat"     (Table selected)
+    ;   runScript: ".../eml-compare-k-groups.praat"   (Table selected)
     ;     -> Gtk-ERROR: Can't create a GtkStyleContext without a display
     ;
-    ; So an argument-bearing call errors immediately, and a bare call reaches
-    ; beginPause: and needs a display. Emitting the argument form would put a
-    ; line in the user's file that cannot run anywhere, which is worse than a
-    ; line that runs in the GUI only. The resolved values go directly above
-    ; it as a comment, so the dialog can be filled from the record.
+    ; And `beginPause:` cannot be converted to `form:` either, because a
+    ; form is parsed once and cannot hold the loop that builds the column
+    ; menus from the table:
     ;
-    ; TWO CONSEQUENCES, BOTH REAL AND NEITHER CLOSED HERE.
-    ;   1. §9's round trip -- drive the GUI, emit, run the emitted script
-    ;      headless, diff the two Info outputs -- is not achievable at
-    ;      wrapper level while wrappers use beginPause:.
-    ;   2. Making it achievable means giving the wrappers a form: path that
-    ;      is taken when arguments are supplied. That is a change to sixteen
-    ;      wrappers, not to the recorder, and it wants its own decision.
+    ;   Error: Unknown parameter type inside form: "for i from 1 to n".
+    ;
+    ; The orchestrator has no dialogs at all, so calling IT is the whole
+    ; answer. Measured, same session, headless:
+    ;
+    ;   include <plugin>/stats/... ; @emlRunAnovaAnalysis: table, ...
+    ;     -> exit 0, F = 18.0603 — the number the recorder captured.
+    ;
+    ; This is also what makes §9's round trip achievable without touching a
+    ; single wrapper: the emitted file calls the same procedure the GUI
+    ; called, so diffing the two Info outputs tests exactly the claim that
+    ; the log and the analysis agree.
     ; ------------------------------------------------------------------
-    .code$ = "; Re-run in the GUI: select the Table, then run the wrapper and"
-    ... + newline$
-    ... + "; enter the values recorded above. Under --run this reaches"
-    ... + newline$
-    ... + "; beginPause: and needs a display; passing the values as arguments"
-    ... + newline$
-    ... + "; is refused (""Found 3 arguments but expected only 0"")."
-    ... + newline$
-    ... + "runScript: " + .pluginTok$
-    ... + " + ""/scripts/eml-compare-k-groups.praat"""
-
-    .api$ = "@emlRunAnovaAnalysis: table, """ + .dataCol$ + """, """
+    .code$ = "@emlRunAnovaAnalysis: table, """ + .dataCol$ + """, """
     ... + .groupCol$ + """, " + .tukey$
+
+    ; The API line IS the code now, so the api slot names the GUI route
+    ; instead — the one thing the emitted file cannot show by running.
+    .api$ = "In the GUI: New > EML Tools > Compare k groups (ANOVA)...,"
+    ... + newline$ + "with Data column """ + .dataCol$
+    ... + """ and Group column """ + .groupCol$ + """."
 
     @emlRecordStep: "analysis", .intent$, .caveat$, .code$, .api$
 

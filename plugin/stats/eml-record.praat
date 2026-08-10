@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Record workflow: buffer, paths, phrases, renderer
+# EML Praat Tools — Record workflow: buffer, phrases, renderer
 # ============================================================================
 # Purpose: accumulate every analysis and drawing step of a session and write
 #          it out as a single annotated Praat script — one artifact that both
@@ -8,8 +8,8 @@
 # Date: 9 August 2026
 # Version: 1.0
 #
-# THIS FILE IS THE FOUNDATION ONLY. It is the buffer, the path registry, the
-# phrase table, the renderer and the flush. It deliberately does NOT touch a
+# THIS FILE IS THE FOUNDATION ONLY. It is the buffer, the phrase table, the
+# renderer and the flush. It deliberately does NOT touch a
 # single wrapper: nothing here calls an orchestrator and no orchestrator yet
 # calls anything here. That is the next increment, and it is separated on
 # purpose, because everything in this file is testable headless and nothing
@@ -85,7 +85,7 @@
 # ============================================================================
 # emlRecordActive     0 = off, 1 = recording
 # emlRecordBufferId   Table: one row per step
-# emlRecordPathsId    Table: one row per distinct path
+# emlRecordPluginRoot$ absolute plugin root, for the include block
 # emlRecordPhraseId   Table: the shipped phrase registry
 # emlRecordN          steps recorded so far
 # emlRecordTempPath$  crash mirror, appended per row
@@ -105,8 +105,8 @@ procedure emlRecordInit
     if not variableExists ("emlRecordBufferId")
         emlRecordBufferId = 0
     endif
-    if not variableExists ("emlRecordPathsId")
-        emlRecordPathsId = 0
+    if not variableExists ("emlRecordPluginRoot$")
+        emlRecordPluginRoot$ = preferencesDirectory$ + "/plugin_EMLPraatTools"
     endif
     if not variableExists ("emlRecordPhraseId")
         emlRecordPhraseId = 0
@@ -128,6 +128,9 @@ procedure emlRecordInit
     endif
     if not variableExists ("emlRecordStamp$")
         emlRecordStamp$ = ""
+    endif
+    if not variableExists ("emlRecordSourceChanged")
+        emlRecordSourceChanged = 0
     endif
 endproc
 
@@ -166,12 +169,15 @@ procedure emlRecordBegin: .tempFolder$
     ... "n kind intent caveat code result api paths"
     emlRecordBufferId = selected ("Table")
 
-    Create Table with column names: "emlRecordPaths", 0,
-    ... "token literal role varName"
-    emlRecordPathsId = selected ("Table")
+    ; The include block's example path. Resolved at run time from
+    ; preferencesDirectory$, so on the recording machine it is correct and on
+    ; any other it is a working example of the shape to edit to.
+    emlRecordPluginRoot$ = preferencesDirectory$ + "/plugin_EMLPraatTools"
 
     emlRecordN = 0
     emlRecordActive = 1
+    emlRecordHeaderInput$ = ""
+    emlRecordSourceChanged = 0
     emlRecordTempPath$ = ""
     if .tempFolder$ <> ""
         emlRecordTempPath$ = .tempFolder$ + "/eml_record_mirror.txt"
@@ -197,11 +203,7 @@ procedure emlRecordDiscard
     if emlRecordBufferId > 0
         nocheck removeObject: emlRecordBufferId
     endif
-    if emlRecordPathsId > 0
-        nocheck removeObject: emlRecordPathsId
-    endif
     emlRecordBufferId = 0
-    emlRecordPathsId = 0
     emlRecordN = 0
     emlRecordActive = 0
 endproc
@@ -225,85 +227,62 @@ endproc
 
 
 # ----------------------------------------------------------------------------
-# @emlRecordPath: .literal$, .role$
-# Register a path and get back the TOKEN that stands for it in a step's code
-# slot. Called every time a path is seen; the registry de-duplicates.
+# @emlRecordSource: .tableId
+# Record WHICH object the session worked on, as provenance.
 #
-# WHY A TOKEN AND NOT THE LITERAL. The paths block at the top of the emitted
-# file cannot be written while recording, because the full set of inputs and
-# outputs is not known until the session ends. So the body stores tokens and
-# flush resolves them. This is the difference between a paths block that is
-# complete and one that is a best effort.
+# THE PATH REGISTRY THAT USED TO LIVE HERE IS GONE. It registered every path
+# the session touched, assigned form-variable names by role, and resolved
+# tokens into a `form:` block at flush so the emitted file could be re-run on
+# any machine by pressing OK.
 #
-# Arguments:
-#   .literal$ — the path as it was actually used
-#   .role$    — "plugin", "input", or "output"
-# Outputs:
-#   .token$   — e.g. "<<path2>>", to be embedded in a code line
-#   .varName$ — the form variable that will carry it, e.g. "data_file$"
+# It was solving a problem the emission level created. Emitting wrapper-level
+# `runScript:` calls meant the file had to bootstrap itself -- find the
+# plugin, read the input, name the outputs -- and every one of those needed a
+# path. Emitting at the API level instead, with an `include` block and
+# whatever object the user has selected, removes the requirement rather than
+# meeting it. Author's call, 9 Aug 2026, and it deleted more machinery than
+# it added: the registry, the tokens, the roles, the form block, the
+# `folder:`-resolves-to-cwd trap, and the thirteen batch wrapper siblings the
+# other route would have needed.
+#
+# WHAT IS KEPT IS THE PART A READER ACTUALLY NEEDS. "Whatever is selected"
+# gives no way to know whether the right thing was selected. So the object's
+# name and shape go in the header as provenance -- not as a field to fill in,
+# as a statement of what this record describes.
 # ----------------------------------------------------------------------------
-procedure emlRecordPath: .literal$, .role$
+procedure emlRecordSource: .tableId
     @emlRecordInit
-    .token$ = ""
-    .varName$ = ""
     if emlRecordActive = 0
-        goto RECORD_PATH_DONE
+        goto END_RECORD_SOURCE
+    endif
+    selectObject: .tableId
+    .name$ = selected$ ("Table")
+    .rows = Get number of rows
+    .cols = Get number of columns
+
+    ; FIRST WINS, AND THE REST IS NAMED.
+    ;
+    ; This overwrote on every call in its first cut, so the header described
+    ; the LAST object any step touched. Observed immediately: a fixture that
+    ; ran an ANOVA on the real table and then a refusal on a one-group copy
+    ; emitted "Recorded against: oneGroup" -- naming, as the subject of the
+    ; record, a table the reported analysis never saw. A header that is
+    ; confidently wrong is worse than one that is missing.
+    ;
+    ; The header therefore describes the object the session STARTED on. A
+    ; session that moves to another object is not silently flattened into
+    ; that claim: .changed is raised, and the renderer says so.
+    .changed = 0
+    if emlRecordHeaderInput$ = ""
+        emlRecordHeaderInput$ = .name$
+        emlRecordHeaderRows = .rows
+        emlRecordHeaderCols = .cols
+    elsif emlRecordHeaderInput$ <> .name$
+        .changed = 1
+        emlRecordSourceChanged = 1
     endif
 
-    selectObject: emlRecordPathsId
-    .n = Get number of rows
-    .found = 0
-    for .i from 1 to .n
-        selectObject: emlRecordPathsId
-        .lit$ = Get value: .i, "literal"
-        if .lit$ = .literal$
-            .found = .i
-        endif
-    endfor
-
-    if .found > 0
-        selectObject: emlRecordPathsId
-        .token$ = Get value: .found, "token"
-        .varName$ = Get value: .found, "varName"
-        goto RECORD_PATH_DONE
-    endif
-
-    ; New path. The variable name comes from the role and the ordinal WITHIN
-    ; that role, not from the global order, so a file that reads two inputs
-    ; and writes one output gets data_file$ / data_file_2$ / output_folder$
-    ; rather than three numbers a reader has to trace.
-    .inRole = 0
-    for .i from 1 to .n
-        selectObject: emlRecordPathsId
-        .r$ = Get value: .i, "role"
-        if .r$ = .role$
-            .inRole = .inRole + 1
-        endif
-    endfor
-    .inRole = .inRole + 1
-
-    if .role$ = "plugin"
-        .varName$ = "plugin_folder$"
-    elsif .role$ = "output"
-        .varName$ = "output_folder$"
-    else
-        .varName$ = "data_file$"
-    endif
-    if .inRole > 1
-        .varName$ = replace$ (.varName$, "$", "", 0)
-        ... + "_" + string$ (.inRole) + "$"
-    endif
-
-    .token$ = "<<path" + string$ (.n + 1) + ">>"
-    selectObject: emlRecordPathsId
-    Append row
-    .row = Get number of rows
-    Set string value: .row, "token", .token$
-    Set string value: .row, "literal", .literal$
-    Set string value: .row, "role", .role$
-    Set string value: .row, "varName", .varName$
-
-    label RECORD_PATH_DONE
+    label END_RECORD_SOURCE
 endproc
 
 
@@ -560,93 +539,101 @@ procedure emlRecordRender
     endif
     .text$ = .text$ + .bar$ + newline$ + newline$
 
-    ; ---- PATHS -----------------------------------------------------------
+    ; ---- LIBRARY ---------------------------------------------------------
+    ; ONE EDITABLE BLOCK, WITH HARD PATHS, AND THAT IS DELIBERATE.
+    ;
+    ; `include` is a preprocessor directive taking a LITERAL path. It admits
+    ; no variable, so it cannot be fed from a form, and there is no portable
+    ; spelling of it. Rather than build machinery to avoid saying so, the file
+    ; says so: the block below is the plugin as it stood on the machine that
+    ; recorded the session, and on another machine it is one block to edit.
+    ;
+    ; THE BARREL CANNOT BE USED HERE, and this is the part that surprises.
+    ; `include <plugin>/scripts/eml-lib-stats.praat` fails, because Praat
+    ; resolves a relative include INSIDE an included file against the
+    ; TOP-LEVEL script's folder -- this file's folder, not the barrel's. So
+    ; the barrel's own "../stats/..." lines go looking for the library beside
+    ; the recorded workflow. Measured 9 Aug 2026:
+    ;
+    ;     Include file "/tmp/emit/../stats/eml-record.praat" not read.
+    ;
+    ; Hence the explicit list. It is longer by nine lines and it works.
     .text$ = .text$ + .rule$ + newline$
-    .text$ = .text$ + "# PATHS" + newline$
+    .text$ = .text$ + "# THE EML LIBRARY" + newline$
     .text$ = .text$
-    ... + "# Every path this file uses is asked for here and nowhere else."
+    ... + "# These paths are the ones on the machine that recorded this"
     ... + newline$
     .text$ = .text$
-    ... + "# The values shown are the ones recorded when the workflow ran."
+    ... + "# session. On another machine, edit this block and nothing else."
     ... + newline$
     .text$ = .text$
-    ... + "# On this machine, press OK. On another, browse to the equivalents."
+    ... + "# `include` takes a literal path -- it cannot read a variable, so"
+    ... + newline$
+    .text$ = .text$
+    ... + "# there is no portable spelling and no form field can supply it."
+    ... + newline$
+    .text$ = .text$
+    ... + "# The barrel eml-lib-stats.praat will NOT work in its place: its"
+    ... + newline$
+    .text$ = .text$
+    ... + "# own relative includes resolve against THIS file's folder."
     ... + newline$
     .text$ = .text$ + .rule$ + newline$ + newline$
 
-    selectObject: emlRecordPathsId
-    .nPaths = Get number of rows
+    .p$ = emlRecordPluginRoot$
+    .text$ = .text$ + "include " + .p$ + "/stats/eml-core-utilities.praat"
+    ... + newline$
+    .text$ = .text$ + "include " + .p$ + "/stats/eml-core-descriptive.praat"
+    ... + newline$
+    .text$ = .text$ + "include " + .p$ + "/stats/eml-extract.praat" + newline$
+    .text$ = .text$ + "include " + .p$ + "/stats/eml-output.praat" + newline$
+    .text$ = .text$ + "include " + .p$ + "/stats/eml-inferential.praat"
+    ... + newline$
+    .text$ = .text$ + "include " + .p$ + "/stats/eml-result-writer.praat"
+    ... + newline$
+    .text$ = .text$ + "include " + .p$ + "/stats/eml-record.praat" + newline$
+    .text$ = .text$ + "include " + .p$ + "/graphs/eml-graph-procedures.praat"
+    ... + newline$
+    .text$ = .text$ + "include " + .p$
+    ... + "/graphs/eml-annotation-procedures.praat" + newline$
+    .text$ = .text$ + "include " + .p$ + "/stats/eml-analysis.praat"
+    ... + newline$
+    .text$ = .text$ + newline$
 
-    ; ------------------------------------------------------------------
-    ; SILENCE IS A DEFECT, and this is the position where it would happen.
-    ;
-    ; A workflow whose analyses all took a Table object they were HANDED
-    ; registers no input path, because no procedure in the chain ever saw a
-    ; file. The paths block then comes out with a plugin folder and nothing
-    ; else, and the emitted script runs its wrappers against whatever Table
-    ; happens to be selected — which is to say it does not reproduce the
-    ; session, while looking exactly as though it does.
-    ;
-    ; Observed the first time the ANOVA orchestrator was wired: the emitted
-    ; file carried a correct F, correct group means, a correct runScript:
-    ; line, and no statement anywhere of what data any of it ran on.
-    ;
-    ; Registering the input belongs at the layer that opens the file, which
-    ; is not this one. Until that layer exists the gap is NAMED, at the
-    ; position where the reader would otherwise assume completeness.
-    ; ------------------------------------------------------------------
-    .nInputs = 0
-    for .i from 1 to .nPaths
-        selectObject: emlRecordPathsId
-        .r$ = Get value: .i, "role"
-        if .r$ = "input"
-            .nInputs = .nInputs + 1
-        endif
-    endfor
-    if .nInputs = 0
+    ; ---- THE OBJECT ------------------------------------------------------
+    ; No form, no infile. The session's analyses ran on an object the user
+    ; had selected, and so does this file. What the header states is WHICH
+    ; object that was, by name and shape, because "whatever is selected"
+    ; gives a reader no way to check they selected the right thing.
+    .text$ = .text$ + .rule$ + newline$
+    .text$ = .text$ + "# THE OBJECT" + newline$
+    if emlRecordHeaderInput$ <> ""
+        .text$ = .text$ + "# Recorded against: " + emlRecordHeaderInput$
+        ... + " -- " + string$ (emlRecordHeaderRows) + " rows, "
+        ... + string$ (emlRecordHeaderCols) + " columns." + newline$
+    else
         .text$ = .text$
-        ... + "# INCOMPLETE -- NO INPUT FILE WAS RECORDED." + newline$
-        .text$ = .text$
-        ... + "# Every step below ran on a Table this session already held,"
+        ... + "# NOT RECORDED. Nothing in this session named the object it"
         ... + newline$
         .text$ = .text$
-        ... + "# so nothing here states where that Table came from and this"
+        ... + "# ran on, so a reader cannot check that the right Table is"
         ... + newline$
         .text$ = .text$
-        ... + "# file will NOT reproduce the session on its own. Add the read"
-        ... + newline$
-        .text$ = .text$
-        ... + "# step by hand, or re-record starting from the file." + newline$
-        .text$ = .text$ + newline$
+        ... + "# selected before running this file." + newline$
     endif
-
-    .text$ = .text$ + "form: ""Recorded workflow - confirm paths""" + newline$
-    for .i from 1 to .nPaths
-        selectObject: emlRecordPathsId
-        .role$ = Get value: .i, "role"
-        .lit$ = Get value: .i, "literal"
-        .var$ = Get value: .i, "varName"
-        ; Path fields are folder:/infile:/outfile:, NEVER sentence:, because
-        ; a path field needs a browse button. The empty-folder trap that
-        ; argues the other way -- a folder: left blank resolves to the
-        ; current working directory rather than to nothing -- is closed by
-        ; pre-populating every field, so none is ever empty.
-        if .role$ = "input"
-            .kw$ = "infile"
-        else
-            .kw$ = "folder"
-        endif
-        ; The label generates the variable name, and only the FIRST character
-        ; is lowercased: "EML plugin folder" would give eML_plugin_folder$.
-        ; So the label is derived from the variable we want, not chosen for
-        ; prose.
-        .label$ = replace$ (.var$, "$", "", 0)
-        .label$ = replace$ (.label$, "_", " ", 0)
-        .label$ = replace_regex$ (.label$, "^(.)", "\u\1", 1)
-        .text$ = .text$ + "    " + .kw$ + ": """ + .label$ + """, """
-        ... + .lit$ + """" + newline$
-    endfor
-    .text$ = .text$ + "endform" + newline$ + newline$
+    .text$ = .text$
+    ... + "# Select that Table in the Objects window, then run this script."
+    ... + newline$
+    if emlRecordSourceChanged = 1
+        .text$ = .text$
+        ... + "# NOTE: later steps in this session ran on a DIFFERENT object."
+        ... + newline$
+        .text$ = .text$
+        ... + "# Running this file against one Table will not reproduce them."
+        ... + newline$
+    endif
+    .text$ = .text$ + .rule$ + newline$ + newline$
+    .text$ = .text$ + "table = selected (""Table"")" + newline$ + newline$
 
     ; ---- BODY ------------------------------------------------------------
     selectObject: emlRecordBufferId
@@ -675,15 +662,7 @@ procedure emlRecordRender
 
         .text$ = .text$ + newline$
 
-        ; Tokens become variable references here and only here.
-        .codeOut$ = .code$
-        for .i from 1 to .nPaths
-            selectObject: emlRecordPathsId
-            .tok$ = Get value: .i, "token"
-            .var$ = Get value: .i, "varName"
-            .codeOut$ = replace$ (.codeOut$, .tok$, .var$, 0)
-        endfor
-        .text$ = .text$ + .codeOut$ + newline$
+        .text$ = .text$ + .code$ + newline$
 
         .text$ = .text$ + newline$
 
@@ -693,8 +672,7 @@ procedure emlRecordRender
         endif
         if .api$ <> ""
             .text$ = .text$
-            ... + "# API equivalent, if you are writing your own script:"
-            ... + newline$
+            ... + "# The same step through the menu:" + newline$
             @emlRecordCommentBlock: .api$
             .text$ = .text$ + emlRecordCommentBlock.out$
         endif
