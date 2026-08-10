@@ -2,7 +2,7 @@ NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform �
 
 ══════════════════════════════════════════════
   EML Stats : Spaghetti Plot Summary
-  Mon Aug 10 12:11:43 2026
+  Mon Aug 10 12:24:56 2026
 ══════════════════════════════════════════════
 
   Table               d
@@ -15,20 +15,20 @@ NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform �
 
   ── Cat1 ────────────────────────────────────
   N                   12
-  Mean                28.981
-  SD                  2.778
+  Mean                27.160
+  SD                  2.824
 
 
   ── Cat2 ────────────────────────────────────
   N                   12
-  Mean                32.749
-  SD                  1.891
+  Mean                32.579
+  SD                  2.363
 
 
   ── Cat3 ────────────────────────────────────
   N                   12
-  Mean                36.695
-  SD                  1.658
+  Mean                36.598
+  SD                  2.832
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
