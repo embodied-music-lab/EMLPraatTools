@@ -40,6 +40,15 @@
 
 include ../../../stats/eml-record.praat
 
+; For @emlTestRequirePraat only. These tests carry their own tiny
+; assertion helpers rather than the shared framework, but the version floor
+; must not be duplicated.
+include ../eml-test-helpers.praat
+
+; Refuse on an unsupported Praat before anything else. See the header of
+; eml-test-floor.praat -- a full session was verified on 6.4.06 by accident.
+@emlTestRequirePraat
+
 nPass = 0
 nFail = 0
 
