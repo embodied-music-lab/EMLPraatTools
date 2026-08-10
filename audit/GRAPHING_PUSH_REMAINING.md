@@ -215,3 +215,71 @@ The renderer names the gap rather than omitting it — the emitted file opens
 with `INCOMPLETE -- NO INPUT FILE WAS RECORDED` — and the test asserts that
 notice is present. Closing it means registering the path at the layer that
 opens the file, which is the next increment of the feature.
+
+---
+
+## 11. OPEN — Praat 7 refuses file writes from a script without `--FULL-TRUST`
+
+Found 10 August 2026, after the author asked why the session was running
+Praat 6.4.x.
+
+Measured on 7.0:
+
+```
+Error: The following potentially dangerous action was requested by the
+script "..." but is not allowed without --FULL-TRUST:
+save a line of text to the file "..."
+```
+
+This is not a recorder problem, it is a **plugin-wide** one. Everything the
+plugin writes goes through the same wall: `@emlSaveConfig`, CSV export
+(`@emlWrapperExportCSV`), every `Save as 300-dpi PNG file:`, the broom
+three-file result writer, and the record-workflow crash mirror. Under 7.x a
+user driving the GUI will be prompted or refused rather than silently served.
+
+Not investigated further here, and deliberately not "fixed" by sprinkling a
+flag: whether the right answer is documentation, a startup check that warns
+once, or something else is an author decision. What is established is that
+it happens, and that `--FULL-TRUST` clears it — phase1 is 357/357 on 7.0 with
+the flag and dies without it.
+
+`harness/record/roundtrip.sh` detects a 7.x binary from `--version` and adds
+the flag only then, because 6.6.30 does not know it. Verified green on both:
+
+```
+PRAAT=/home/claude/praat      -> PASS (Praat 6.6.30)
+PRAAT=/home/claude/praat7000  -> PASS (Praat 7.0)
+```
+
+## 12. RESOLVED — the session was testing on the wrong Praat
+
+`/usr/bin/praat` is **6.4.06, April 2024** — below the plugin's own floor
+(`emlMinPraatVersion = 6630`). A bare `praat` on PATH resolves to it.
+`/home/claude/praat` is the 6.6.30 symlink, and it is what
+`harness/stress_graphs.sh` and `harness/disclosure/run.sh` have always used
+via `PRAAT=/home/claude/praat`.
+
+So: the 39 stress cases and the 52 disclosure runs were always on 6.6.30, and
+`validate/run_all.R` runs no Praat at all (it compares committed captures
+against R, so its 8221 checks are unaffected). What *was* wrong is
+**phase1 and the record round trip**, which invoked a bare `praat`.
+
+Re-run on the pinned 6.6.30: **357/357, no differences**. Nothing reported
+earlier was wrong, but nothing reported earlier had been established on the
+supported build either.
+
+Two things fixed rather than noted:
+
+- `harness/record/roundtrip.sh` now pins `PRAAT=/home/claude/praat` and
+  isolates `--pref-dir`, matching the other harnesses. The missing
+  `--pref-dir` is precisely why that harness passed five times and then
+  failed: installing the plugin caused a `prefs5` to be written,
+  `TextEncoding.outputEncoding: try ASCII, then UTF-16` took effect, and a
+  byte-oriented diff stopped matching.
+- `test-record.praat` asserted the tilde substitution unconditionally. It is
+  conditional on `preferencesDirectory$` sitting under `homeDirectory$`,
+  which is true normally and false under `--pref-dir`. The unconditional
+  assertion failed under exactly the invocation the rest of the rig uses, and
+  it looked like a 6.6.30-versus-6.4.06 regression until
+  `preferencesDirectory$` was printed under both. Both branches are now
+  checked.
