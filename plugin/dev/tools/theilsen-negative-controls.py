@@ -32,6 +32,7 @@
 
 import hashlib
 import os
+from pathlib import Path
 import re
 import shutil
 import subprocess
@@ -51,7 +52,9 @@ def _find_praat():
         w = shutil.which(name)
         if w:
             return w
-        for d in (os.path.expanduser("~"), "/home/claude", "/usr/local/bin"):
+        for d in (os.path.expanduser("~"),
+                  str(Path(__file__).resolve().parents[3]),
+                  "/usr/local/bin"):
             p = os.path.join(d, name)
             if os.path.exists(p):
                 return p

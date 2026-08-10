@@ -22,7 +22,15 @@ import os, re, subprocess, sys, tempfile
 PLUGIN = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if not os.path.isdir(os.path.join(PLUGIN, "stats")):
     sys.exit("cannot locate <plugin>/stats from %s" % PLUGIN)
-PRAAT = "/home/claude/praat_barren"
+# $PRAAT wins; then the build beside the repository; then PATH. Never one
+# machine's absolute path as the only answer.
+import shutil as _shutil
+from pathlib import Path as _Path
+_adjacent = _Path(__file__).resolve().parents[3]
+PRAAT = (os.environ.get("PRAAT")
+         or next((str(p) for p in (_adjacent / "praat_barren",
+                                   _adjacent / "praat") if p.exists()), None)
+         or _shutil.which("praat_barren") or _shutil.which("praat"))
 TIMEOUT = 25
 
 INCLUDES = """include {p}/stats/eml-core-utilities.praat

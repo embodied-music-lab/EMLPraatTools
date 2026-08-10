@@ -162,8 +162,11 @@ def resolve_praat(explicit: str | None) -> Path:
     candidates = [
         Path.home() / "praat_barren",
         Path.home() / "praat",
-        Path("/home/claude/praat_barren"),
-        Path("/home/claude/praat"),
+        # Repo-adjacent first: on a development checkout the supported build
+        # sits beside the repository, and hardcoding one machine's absolute
+        # path is how a whole session came to be verified on Praat 6.4.06.
+        Path(__file__).resolve().parents[3] / "praat_barren",
+        Path(__file__).resolve().parents[3] / "praat",
         Path("/usr/local/bin/praat_barren"),
         Path("/usr/local/bin/praat"),
         Path("/Applications/Praat.app/Contents/MacOS/Praat"),
