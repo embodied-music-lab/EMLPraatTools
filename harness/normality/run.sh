@@ -38,7 +38,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 OUT=${EML_NORMALITY_OUT:-$HERE/out}
 PRAAT=${PRAAT:-praat}
-PREFS=${EML_NORMALITY_PREFS:-/home/claude/stress/prefs}
+PREFS=${EML_NORMALITY_PREFS:-"$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/prefs"}
 FILTER="${1:-}"
 
 # The cases, in the order the harness header documents them.
