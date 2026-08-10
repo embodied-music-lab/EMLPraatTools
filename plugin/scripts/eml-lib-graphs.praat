@@ -32,5 +32,9 @@
 
 include ../graphs/eml-graph-procedures.praat
 include ../graphs/eml-annotation-procedures.praat
+; The draw layer records itself (@emlDrawViolinPlot calls
+; @emlRecordViolin), so it depends on the record layer. Inert unless a
+; recording is running, but the procedures must EXIST.
+include ../stats/eml-record.praat
 include ../graphs/eml-draw-procedures.praat
 include ../graphs/eml-graphs-form.praat
