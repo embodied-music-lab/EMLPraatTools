@@ -130,6 +130,65 @@
 
 
 # ============================================================================
+# VERSION FLOOR
+# ============================================================================
+# Defined HERE rather than in its own file, and that is not a style choice.
+# A separate eml-test-floor.praat had to be reached by a relative include
+# from inside these helpers, and Praat resolves a relative include inside an
+# included file against the TOP-LEVEL script's folder. The tests live at two
+# depths -- phase1/ and dev/tests/ -- so no single spelling of "../" works
+# for both. Measured: the phase1 tests loaded it and dev/tests/
+# test-helpers-selftest.praat did not.
+#
+# WHY THERE IS A FLOOR CHECK AT ALL. On 10 August 2026 a full session of
+# verification ran on Praat 6.4.06, because a bare `praat` resolved to
+# /usr/bin/praat (April 2024) rather than the 6.6.30 build the evidence was
+# captured on. 6.4.06 is BELOW emlMinPraatVersion (6630) -- setup.praat
+# refuses to load the plugin on it at all.
+#
+# Everything passed, and the re-run on 6.6.30 passed identically, so nothing
+# was wrong. That is what makes it worth guarding. A green suite on an
+# unsupported build is not evidence; it only looks like evidence, and the
+# only reason this was caught is that the author asked why the version string
+# said 6.4.
+#
+# It exits rather than warning. A warning above two hundred PASS lines is not
+# read, and the failure mode being guarded against is a result that is
+# believed.
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# @emlTestRequirePraat
+# Refuse to run below the plugin's supported floor.
+#
+# The floor is the same constant setup.praat enforces at load time. It is
+# repeated here rather than read from there because a test must not have to
+# load the plugin's menu registration to know whether it may run.
+# ----------------------------------------------------------------------------
+procedure emlTestRequirePraat
+    .floor = 6630
+    if praatVersion < .floor
+        writeInfoLine: "TEST SUITE REFUSED — unsupported Praat."
+        appendInfoLine: ""
+        appendInfoLine: "  This is Praat ", praatVersion$,
+        ... " (", praatVersion, ")."
+        appendInfoLine: "  The plugin requires 6.6.30 (", .floor,
+        ... ") or later, and setup.praat"
+        appendInfoLine: "  refuses to load it below that, so a result from"
+        appendInfoLine: "  this build would describe a plugin no user can run."
+        appendInfoLine: ""
+        appendInfoLine: "  A bare `praat` may not be the right one. On the"
+        appendInfoLine: "  development machine the supported build is"
+        appendInfoLine: "  /home/claude/praat; harness/stress_graphs.sh and"
+        appendInfoLine: "  harness/disclosure/run.sh pin it as PRAAT=."
+        appendInfoLine: ""
+        appendInfoLine: "  No tests were run."
+        exitScript ()
+    endif
+endproc
+
+
+# ============================================================================
 # @emlTestInit
 # ============================================================================
 # Initialize test counters and print suite header.
@@ -144,6 +203,9 @@
 # ============================================================================
 
 procedure emlTestInit
+    ; Refuse before printing a banner, so an unsupported build cannot produce
+    ; output that looks like a suite that ran.
+    @emlTestRequirePraat
     .passed = 0
     .failed = 0
     .skipped = 0
