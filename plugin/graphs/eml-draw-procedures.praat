@@ -3282,6 +3282,111 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     Colour: "Black"
     Line width: 1.0
     Font size: emlSetAdaptiveTheme.bodySize
+
+    ; ---------------------------------------------------------------------
+    ; RECORD WORKFLOW. Inert unless a recording is running.
+    ;
+    ; PLACED IN THE DRAW PROCEDURE, NOT IN THE FORM, and that is the whole
+    ; reason the graph round trip can run at all. The form is GUI-only --
+    ; every wrapper uses beginPause:, which needs a display -- so a recorder
+    ; hooked there could be exercised interactively and never headlessly, and
+    ; the check that the emitted script reproduces the figure could never be
+    ; automated. The draw procedure has no dialogs, so recording here means
+    ; the SAME seam serves the GUI session and the replay.
+    ;
+    ; It also matches what is emitted: the code line names this procedure,
+    ; so the record and the artifact describe one thing.
+    ;
+    ; This is the FIRST of thirteen draw procedures to be wired, kept
+    ; deliberately to one until the round trip proves the pattern -- the same
+    ; way @emlRunAnovaAnalysis was the first of thirteen orchestrators.
+    ; GUARDED ON EXISTENCE, NOT JUST ON STATE, and that distinction is the
+    ; difference between a recordable draw layer and one that REQUIRES the
+    ; recorder.
+    ;
+    ; The first cut called @emlRecordViolin unconditionally, which made
+    ; eml-draw-procedures.praat depend on eml-record.praat: seven include
+    ; sets had to be amended and the stress suite went 39/39 -> 26/39 with
+    ; "Procedure emlRecordInit not found". That is a shipped API break --
+    ; every hand-written user script and every PraatGen-generated script that
+    ; loads the draw layer would have had to learn a new include, for a
+    ; feature it does not use.
+    ;
+    ; Praat only errors on an undefined procedure when it EXECUTES the call,
+    ; so a call inside a false branch costs nothing and raises nothing.
+    ; Measured 10 Aug 2026: a guarded @thisProcedureDoesNotExist runs to the
+    ; end of the script cleanly.
+    ;
+    ; emlRecordActive exists only once @emlRecordInit has run, and that
+    ; happens when something loaded the recorder and started it. So this
+    ; reads: record if a recorder is present AND recording. With no recorder
+    ; loaded -- the default, and what every existing caller does -- the draw
+    ; layer is exactly what it was before.
+    if variableExists ("emlRecordActive")
+        if emlRecordActive = 1
+            @emlRecordViolin: .objectId, .title$, .xLabel$, .yLabel$,
+            ... .vpW, .vpH, .colorMode$, .gridMode, .groupCol$, .valueCol$,
+            ... .vMin, .vMax, .nGroups
+        endif
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordViolin
+# The recording half of @emlDrawViolinPlot, kept separate so the draw
+# procedure gains one line rather than thirty.
+#
+# Every argument is passed through at its RESOLVED value. A record saying a
+# viewport was "the default" is not reproducible once the default changes; a
+# record saying 6 by 4 is.
+# ----------------------------------------------------------------------------
+procedure emlRecordViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
+... .colorMode$, .gridMode, .groupCol$, .valueCol$, .vMin, .vMax, .nGroups
+    ; NO `goto` AND NO `label` IN THIS FILE. v27 asserts that as a property of
+    ; the whole draw library and it caught this procedure's first draft, which
+    ; used the same early-exit shape the recorder uses everywhere else.
+    ;
+    ; The rule is not stylistic. Praat's goto is unconditional and forward
+    ; jumps are unrestricted, so a guard written as `goto <end>` silently
+    ; skips every drawing command between it and the label -- which is
+    ; precisely how the histogram came to write a blank page. The invariant
+    ; is cheap to keep and the alternative was a class of blank-figure bug
+    ; that is invisible until someone opens the PNG.
+    ; Reached only through the existence-guarded call site above, so the
+    ; recorder is loaded and running by the time this runs.
+    @emlRecordSource: .objectId
+
+    @emlPhrase: "draw.intent", "Violin plot", .valueCol$, .groupCol$,
+    ... string$ (.nGroups), "", ""
+    .intent$ = emlPhrase.result$
+
+    ; Stream C: what the figure does not say about itself. A violin is a
+    ; kernel density estimate, and the bandwidth is a choice -- a reader
+    ; comparing two figures drawn at different bandwidths is comparing
+    ; the smoothing as much as the data.
+    .caveat$ = "Violin width is a kernel density estimate, not a count."
+
+    ; The axis is recorded as RESOLVED numbers, never as "auto". Auto is
+    ; a function of the data, so a re-run on edited data would silently
+    ; draw a different axis and the record would not say so.
+    .code$ = "@emlDrawViolinPlot: table, """ + .title$ + """, """
+    ... + .xLabel$ + """, """ + .yLabel$ + """, " + string$ (.vpW) + ", "
+    ... + string$ (.vpH) + ", """ + .colorMode$ + """, "
+    ... + string$ (.gridMode) + ", """ + .groupCol$ + """, """
+    ... + .valueCol$ + """, " + fixed$ (emlDrawViolinPlot.yMin, 6) + ", "
+    ... + fixed$ (emlDrawViolinPlot.yMax, 6)
+
+    .api$ = "In the GUI: EML Graphs..., type Violin Plot,"
+    ... + newline$ + "Group column """ + .groupCol$
+    ... + """, Value column """ + .valueCol$ + """."
+
+    @emlRecordStep: "draw", .intent$, .caveat$, .code$, .api$
+
+    @emlRecordResult: "Axis resolved to "
+    ... + fixed$ (emlDrawViolinPlot.yMin, 4) + " .. "
+    ... + fixed$ (emlDrawViolinPlot.yMax, 4) + " over "
+    ... + string$ (.nGroups) + " groups."
 endproc
 
 
