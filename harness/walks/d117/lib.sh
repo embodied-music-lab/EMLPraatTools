@@ -23,10 +23,13 @@ export DISPLAY=":9$I"
 # looks exactly like a hung walk. A UTF-8 locale is not cosmetic here.
 export LC_ALL=${LC_ALL:-C.UTF-8}
 export LANG=${LANG:-C.UTF-8}
-RIG=${RIG:-/home/claude/rig}
+# Scratch GUI rig. Outside the repo on purpose -- it holds a running
+# Praat's preferences and Xvfb state, none of which belongs in version
+# control. Overridable with RIG=.
+RIG=${RIG:-${TMPDIR:-/tmp}/eml-rig}
 PREFS="$RIG/prefs_$I"
-PRAAT=${PRAAT:-/home/claude/praat}
-REPO=${REPO:-/home/claude/EMLPraatTools}
+PRAAT=${PRAAT:-$(command -v praat_barren || command -v praat)}
+REPO=${REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)}
 # PLUGIN_SRC lets one instance run a DIFFERENT plugin tree — used to drive the
 # pre-fix wizard alongside the fixed one and capture the differential.
 PLUGIN_SRC=${PLUGIN_SRC:-$REPO/plugin}
