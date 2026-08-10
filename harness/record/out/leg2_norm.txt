@@ -1,0 +1,62 @@
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  <TIMESTAMP>
+══════════════════════════════════════════════
+
+  Table               demo 3groups input
+  Data column         SPL dB
+  Group column        voice type
+  Groups              3
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests whether group means differ when normality and equal variances hold.
+
+Source              SS              df    MS              F           p
+Between             601.78          2     300.89          18.0603     < .001
+Within              699.74          42    16.66           
+Total               1301.52         44    
+
+  F                   18.0603		Ratio of between-group to within-group variance: groups differ 18.1x more than expected by chance
+  p                   < .001  (2.1885613623027198e-06)		Statistically significant: <0.1% probability due to chance
+  Effect size         eta-squared = 0.4624		Effect size: large (>0.14 = large). 46% of variance explained by group membership
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(2, 42) = 2.8218
+  Equal-spread p      p = .071
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  Soprano       15    93.89     2.89      93.32     
+  Mezzo         15    87.82     3.85      89.12     
+  Alto          15    85.15     5.18      84.52     
+
+
+  ── Tukey HSD Pairwise Comparisons (p-values) ───
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         < .001      < .001      
+Mezzo         < .001      ---         .184        
+Alto          < .001      .184        ---         
+
+
+  ── Tukey HSD Mean Differences (95% family-wise CI) ───
+
+Comparison                Difference    95% CI
+Soprano − Mezzo           6.0670        [2.4460, 9.6880]
+Soprano − Alto            8.7407        [5.1197, 12.3617]
+Mezzo − Alto              2.6737        [-0.9473, 6.2947]
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         1.784       2.084       
+Mezzo         -1.784      ---         0.586       
+Alto          -2.084      -0.586      ---         
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+
