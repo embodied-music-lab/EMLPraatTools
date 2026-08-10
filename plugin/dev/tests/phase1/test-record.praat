@@ -171,10 +171,26 @@ body$ = emlRecordRender.text$
 ... index (body$, "barrel eml-lib-stats.praat will NOT work") > 0
 
 ; Home-relative, not machine-absolute. Praat's `include` accepts a leading ~
-; -- tested 10 Aug 2026 on a path with spaces, under 6.4.06 and 7.0 -- which
-; makes the block portable across every user on this platform for free.
-@ok: "include paths are home-relative",
-... index (body$, "include ~/") > 0
+; -- tested 10 Aug 2026 on a path with spaces, under 6.4.06, 6.6.30 and 7.0
+; -- which makes the block portable across every user on this platform.
+;
+; CONDITIONAL, AND THE CONDITION IS THE POINT. The substitution only applies
+; when preferencesDirectory$ actually sits under homeDirectory$. It normally
+; does; it does NOT under `--pref-dir=/tmp/...`, which is how every other
+; harness in this repo isolates its preferences. Asserting the tilde
+; unconditionally made this test fail under exactly the invocation the rest
+; of the rig uses -- and it looked like a 6.6.30-versus-6.4.06 regression
+; until preferencesDirectory$ was printed under both.
+;
+; So both branches are checked, and neither is a free pass: outside home the
+; path must still be absolute and must still name the plugin.
+if index (preferencesDirectory$, homeDirectory$) = 1
+    @ok: "include paths are home-relative when prefs sit under home",
+    ... index (body$, "include ~/") > 0
+else
+    @ok: "include paths are absolute when prefs sit outside home",
+    ... index (body$, "include " + preferencesDirectory$) > 0
+endif
 @ok: "the recording Praat version is stated",
 ... index (body$, "recorded on Praat ") > 0
 ; The folder moved in Praat 7: 6.6.30 -> ~/.praat-dir, 7.0 -> ~/.config/praat.
