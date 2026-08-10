@@ -1,17 +1,26 @@
 # ============================================================
 # EML Praat Tools -- recorded workflow
-# roundtrip
+# roundtrip  --  recorded on Praat 6.4.06
 # Input: demo_3groups_input.csv -- 45 rows, 4 columns
 # ============================================================
 
 # ------------------------------------------------------------
 # THE EML LIBRARY
-# These paths are the ones on the machine that recorded this
-# session. On another machine, edit this block and nothing else.
-# `include` takes a literal path -- it cannot read a variable, so
-# there is no portable spelling and no form field can supply it.
-# The barrel eml-lib-stats.praat will NOT work in its place: its
-# own relative includes resolve against THIS file's folder.
+# Recorded under Praat 6.4.06. Paths are home-relative, so they work
+# for any user on this platform. If this file fails to parse, the
+# plugin is somewhere else -- edit this block and nothing else.
+#
+#   Praat 6.x  Linux    ~/.praat-dir/plugin_EMLPraatTools
+#   Praat 7.x  Linux    ~/.config/praat/plugin_EMLPraatTools
+#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EMLPraatTools
+#   Windows    ~/Praat/plugin_EMLPraatTools
+#   Not sure?  Run  writeInfoLine: preferencesDirectory$
+#
+# A version guard cannot help here: `include` is refused inside an
+# if-block, so the file cannot choose its own path at run time.
+# The barrel eml-lib-stats.praat will NOT work in place of this
+# list: its own relative includes resolve against THIS file's
+# folder, not its own.
 # ------------------------------------------------------------
 
 include /home/claude/EMLPraatTools/plugin/stats/eml-core-utilities.praat
