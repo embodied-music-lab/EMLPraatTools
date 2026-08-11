@@ -128,6 +128,15 @@ if [ -z "$FILTER" ]; then
     env -u DISPLAY "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" \
         --run "$ROOT/harness/disclosure/probe_formpath.praat" \
         > "$OUT/formpath.log" 2>&1
+
+    # @emlSanitizeLabel was not idempotent, and the auto-composed title of
+    # every figure was escaped twice -- "Jitter (%)" rendered as "Jitter (  )"
+    # in the title while the y-axis label on the same figure was correct.
+    # Found by reading a figure the plugin's own menu produced. v34 asserts
+    # on this log; see §2i of audit/GRAPHING_PUSH_REMAINING.md.
+    EML_OUT="$OUT" env -u DISPLAY "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" \
+        --run "$ROOT/harness/disclosure/probe_label_escape.praat" \
+        > "$OUT/labelescape.log" 2>&1
 fi
 
 awk -F"\t" '{printf "%-10s a=%s d=%s  %-16s info=%-3s fig=%s\n", \
@@ -135,3 +144,5 @@ awk -F"\t" '{printf "%-10s a=%s d=%s  %-16s info=%-3s fig=%s\n", \
 awk -F"\t" '{printf "%-10s a=%s      %-16s info=%-3s fig=%-3s sig=%s\n", \
              $1, $2, $3, $4, $5, substr($6, 1, 12)}' "$OUT/OVERCAP.tsv"
 grep -h "^FORMCORNER" "$OUT/formpath.log" 2>/dev/null
+grep -hcE "^LABELESC .* stable" "$OUT/labelescape.log" 2>/dev/null \
+    | sed 's/^/LABELESC stable cases: /'
