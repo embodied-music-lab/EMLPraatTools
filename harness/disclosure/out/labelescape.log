@@ -1,0 +1,9 @@
+LABELESC rawcol stable
+LABELESC percent stable
+LABELESC preescaped stable
+LABELESC hash stable
+LABELESC caret stable
+LABELESC allthree stable
+LABELESC plain stable
+LABELFIX capitalize_then_sanitize fixedpoint
+LABELINK title_figure_written /home/claude/EMLPraatTools/harness/disclosure/out/label_escape.png
