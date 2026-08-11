@@ -4490,6 +4490,20 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .valueCol$, .groupCol$, .binCount, .displayMode, .vMin, .vMax, .freqMax
+    # @emlInitAlphaSprites is idempotent and cheap, and this procedure NEEDS
+    # it: the overlay path calls @emlDrawAlphaRect, which reads
+    # emlInitAlphaSprites.available. Without this, a GROUPED histogram aborts
+    # with "Unknown variable: emlInitAlphaSprites.available" for every caller
+    # that is not eml-graphs-form.praat -- a user script, a PraatGen
+    # companion, or a recorded workflow replaying itself.
+    #
+    # This is the SAME defect that was fixed in @emlDrawScatterPlot and
+    # @emlDrawTimeSeriesCI on 6 Aug 2026; the histogram was missed because
+    # every stress case draws it UNGROUPED (hist_baseline passes "" as the
+    # group column), and the overlay branch is only reached with more than
+    # one group. Found 10 Aug 2026 by harness/determinism/run.sh, which draws
+    # every type grouped.
+    @emlInitAlphaSprites
 
     # Step 1: Theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
