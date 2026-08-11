@@ -318,6 +318,20 @@ procedure emlDrawQQPlot: .data#, .colLabel$, .vpW, .vpH, .colorMode$, .gridMode
         @emlDiscloseEnd: .axXMin, .axXMax, .axYMin, .axYMax,
         ... .qTL, .qTR, .qBL, .qBR, ""
 
+        ; The published resolved extent, so a caller of THIS procedure does
+        ; not have to know it wrapped a scatter. Same contract as every
+        ; emlDraw* procedure -- see @emlDrawTimeSeries.
+        ;
+        ; Published INSIDE the drew-a-figure branch, deliberately. On the
+        ; error path (fewer than three complete values, or a failed
+        ; Shapiro-Wilk) no axes exist, and a caller reading these would get
+        ; `Unknown variable:` rather than a stale extent from whatever was
+        ; drawn last. .drew is the flag to test first.
+        .axisXMin = .axXMin
+        .axisXMax = .axXMax
+        .axisYMin = .axYMin
+        .axisYMax = .axYMax
+
         scatterRegressionLine = .savedReg
         scatterShowDots = .savedDots
         scatterShowFormula = .savedFormula

@@ -641,6 +641,67 @@ endproc
 # ----------------------------------------------------------------------------
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
+# ============================================================================
+# @emlDrawColumnIsClean: .tableId, .colName$
+# ============================================================================
+# Can this column be read with the fast path? Returns .clean, 1 or 0.
+#
+# THIS EXISTS SO THE FIGURE AND THE ANALYSIS EXCLUDE THE SAME ROWS.
+#
+# Until 11 August 2026 every draw procedure's row filter called
+# `number (Get value: ...)` -- Praat's own numericiser. That is the LENIENT
+# test D96 removed from the stats path for being insufficient, and the two
+# layers therefore disagreed about which rows were usable. Measured, on a
+# fixture with one awkward cell per row
+# (harness/disclosure/probe_exclusion_parity.praat):
+#
+#     cell '1,5'   stats: dropped      figure: plotted as 1
+#     cell '30%'   stats: dropped      figure: plotted as 0.3
+#
+#     @eml_getGroupData group A   ->  n=2, excluded=5
+#     @emlDrawViolinPlot           ->  four points, "3 row(s) skipped"
+#
+# So the omnibus line the form paints onto the figure described a different
+# data set from the figure, and the disclosure line -- this plugin's own
+# promise that what was dropped is stated -- was true of the figure and
+# false of the analysis printed beside it.
+#
+# D96's argument was about a mean. It applies unchanged to a point on a page:
+# a European decimal comma silently becoming a different number is not more
+# defensible plotted than averaged. So the draw layer now reads cells with
+# @eml_readCell, the same reader @emlExtractColumn uses.
+#
+# WHY A COLUMN-LEVEL TEST AND NOT JUST @eml_readCell EVERYWHERE.
+# @eml_readCell's fast path is a plain `Get value:`, which is only safe on a
+# column already proven strictly numeric with no empty cells -- exactly the
+# gate @emlExtractColumn applies before its own row loop. Asking once per
+# column means a clean column costs one extra test for the whole figure, and
+# only a column that actually contains something ambiguous pays for per-cell
+# classification. @eml_strictNumericColumn copies the table to probe the
+# numericiser, so calling it per row would be indefensible; calling it once
+# is what the stats path already does.
+#
+# THE GRAPHS LAYER DEPENDING ON THE STATS LAYER IS NOT NEW. @emlDrawViolinPlot
+# already calls @emlCountGroups from plugin/stats/eml-extract.praat, which is
+# why harness/stress_cases/_prelude.praat loads the stats files to render a
+# figure. See §9 of audit/GRAPHING_PUSH_REMAINING.md for the direction that
+# IS worth questioning.
+# ============================================================================
+procedure emlDrawColumnIsClean: .tableId, .colName$
+    @eml_strictNumericColumn: .tableId, .colName$
+    .clean = 0
+    if eml_strictNumericColumn.strict = 1
+        if eml_strictNumericColumn.unreadable = 0
+            .clean = 1
+        endif
+    endif
+    # Leave the caller's table selected, for the reason spelled out in
+    # @eml_readCell: @eml_strictNumericColumn copies the table and
+    # removeObject:s the copy, and removeObject: leaves NOTHING selected.
+    selectObject: .tableId
+endproc
+
+
 procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .tMin, .tMax, .fMin, .fMax, .yUnit
 
     # Step 1: Set up theme and palette
@@ -1078,6 +1139,14 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .timeCol$, .valueCol$, .groupCol$, .tMin, .tMax, .vMin, .vMax
+    # The column test runs once, at procedure entry, because the flag is
+    # read by loops that a conditional does not always reach. Same reader
+    # as the analysis -- see @emlDrawColumnIsClean.
+    @emlDrawColumnIsClean: .objectId, .timeCol$
+    .cleanTimeObj = emlDrawColumnIsClean.clean
+    @emlDrawColumnIsClean: .objectId, .valueCol$
+    .cleanValObj = emlDrawColumnIsClean.clean
+
 
     # Step 1: Setup
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -1120,12 +1189,17 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # rewrites .nRows to the collapsed length. Same counter idiom as
     # @emlDrawViolinPlot; reported at the end of the procedure.
     .nSkippedRows = 0
+    # Same reader as the analysis. See @emlDrawColumnIsClean.
+    @emlDrawColumnIsClean: .tempTable, .timeCol$
+    .cleanTimeTmp = emlDrawColumnIsClean.clean
+    @emlDrawColumnIsClean: .tempTable, .valueCol$
+    .cleanValTmp = emlDrawColumnIsClean.clean
     for .i from 1 to .nRows
         selectObject: .tempTable
-        .val$ = Get value: .i, .timeCol$
-        .rowT'.i' = number (.val$)
-        .val$ = Get value: .i, .valueCol$
-        .rowY'.i' = number (.val$)
+        @eml_readCell: .tempTable, .i, .timeCol$, .cleanTimeTmp
+        .rowT'.i' = eml_readCell.value
+        @eml_readCell: .tempTable, .i, .valueCol$, .cleanValTmp
+        .rowY'.i' = eml_readCell.value
         if .hasGroup = 1
             .rowGrp'.i'$ = Get value: .i, .groupCol$
         endif
@@ -1344,6 +1418,31 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         .yMax = .vMax
     endif
 
+    # THE PUBLISHED RESOLVED EXTENT. Read this file's header note on the
+    # `axis*` contract before changing it.
+    #
+    # Every emlDraw* procedure publishes .axisXMin/.axisXMax/.axisYMin/
+    # .axisYMax, and they always mean THE RANGE THE AXES WERE ACTUALLY DRAWN
+    # AT -- after auto-detection, after nice-number rounding, after the
+    # categorical half-step padding. A caller that wants to place an
+    # annotation, size a legend, or overlay on a finished figure reads these
+    # four and needs to know nothing about which type it just drew.
+    #
+    # WHY THIS IS NOT AN ALIAS FOR .xMin. In this procedure they happen to be
+    # equal, and in @emlDrawScatterPlot they are NOT: there .xMin/.xMax are
+    # the procedure's PARAMETERS, carrying what the caller REQUESTED, with
+    # (0, 0) meaning auto. So `.xMin` means "resolved" in nine procedures and
+    # "requested" in one, and a caller reading it uniformly would silently get
+    # 0 for a scatter's auto range instead of a wrong-variable error. That is
+    # the failure this contract exists to prevent, and aliasing the two
+    # spellings together would have preserved it under a tidier name.
+    #
+    # The parameters are therefore left alone. Only `axis*` is canonical.
+    .axisXMin = .xMin
+    .axisXMax = .xMax
+    .axisYMin = .yMin
+    .axisYMax = .yMax
+
     # Step 5: Viewport and axes
     @emlSetPanelViewport
     Axes: .xMin, .xMax, .yMin, .yMax
@@ -1526,8 +1625,10 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         .qBR = 0
         for .qi from 1 to .nScanRows
             selectObject: .objectId
-            .rx = Get value: .qi, .timeCol$
-            .ry = Get value: .qi, .valueCol$
+            @eml_readCell: .objectId, .qi, .timeCol$, .cleanTimeObj
+            .rx = eml_readCell.value
+            @eml_readCell: .objectId, .qi, .valueCol$, .cleanValObj
+            .ry = eml_readCell.value
             if .rx <> undefined and .ry <> undefined
                 if .ry >= .yMidQ
                     if .rx < .xMidQ
@@ -1590,8 +1691,10 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     .dScanRows = Get number of rows
     for .di from 1 to .dScanRows
         selectObject: .objectId
-        .drx = Get value: .di, .timeCol$
-        .dry = Get value: .di, .valueCol$
+        @eml_readCell: .objectId, .di, .timeCol$, .cleanTimeObj
+        .drx = eml_readCell.value
+        @eml_readCell: .objectId, .di, .valueCol$, .cleanValObj
+        .dry = eml_readCell.value
         .dOk = 0
         if .drx <> undefined
             if .dry <> undefined
@@ -1671,12 +1774,17 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
     # Read all rows
     selectObject: .objectId
     .nRows = Get number of rows
+    # Same reader as the analysis. See @emlDrawColumnIsClean.
+    @emlDrawColumnIsClean: .objectId, .timeCol$
+    .cleanTimeObj = emlDrawColumnIsClean.clean
+    @emlDrawColumnIsClean: .objectId, .valueCol$
+    .cleanValObj = emlDrawColumnIsClean.clean
     for .i from 1 to .nRows
         selectObject: .objectId
-        .val$ = Get value: .i, .timeCol$
-        .rowT'.i' = number (.val$)
-        .val$ = Get value: .i, .valueCol$
-        .rowY'.i' = number (.val$)
+        @eml_readCell: .objectId, .i, .timeCol$, .cleanTimeObj
+        .rowT'.i' = eml_readCell.value
+        @eml_readCell: .objectId, .i, .valueCol$, .cleanValObj
+        .rowY'.i' = eml_readCell.value
         if .hasGroup = 1
             .rowGrp'.i'$ = Get value: .i, .groupCol$
         else
@@ -1858,6 +1966,13 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
         .yMax = .vMax
     endif
 
+    # The published resolved extent. See @emlDrawTimeSeries for the contract
+    # and for why this is not an alias.
+    .axisXMin = .xMin
+    .axisXMax = .xMax
+    .axisYMin = .yMin
+    .axisYMax = .yMax
+
     # Viewport
     @emlSetPanelViewport
     Axes: .xMin, .xMax, .yMin, .yMax
@@ -1982,8 +2097,10 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
         .qBR = 0
         for .qi from 1 to .nScanRows
             selectObject: .objectId
-            .rx = Get value: .qi, .timeCol$
-            .ry = Get value: .qi, .valueCol$
+            @eml_readCell: .objectId, .qi, .timeCol$, .cleanTimeObj
+            .rx = eml_readCell.value
+            @eml_readCell: .objectId, .qi, .valueCol$, .cleanValObj
+            .ry = eml_readCell.value
             if .rx <> undefined and .ry <> undefined
                 if .ry >= .yMidQ
                     if .rx < .xMidQ
@@ -2070,8 +2187,10 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
     .dScanRows = Get number of rows
     for .di from 1 to .dScanRows
         selectObject: .objectId
-        .drx = Get value: .di, .timeCol$
-        .dry = Get value: .di, .valueCol$
+        @eml_readCell: .objectId, .di, .timeCol$, .cleanTimeObj
+        .drx = eml_readCell.value
+        @eml_readCell: .objectId, .di, .valueCol$, .cleanValObj
+        .dry = eml_readCell.value
         .dOk = 0
         if .drx <> undefined
             if .dry <> undefined
@@ -2125,6 +2244,12 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .condCol$, .valueCol$, .idCol$, .groupCol$, .showMean, .vMin, .vMax
+    # The column test runs once, at procedure entry, because the flag is
+    # read by loops that a conditional does not always reach. Same reader
+    # as the analysis -- see @emlDrawColumnIsClean.
+    @emlDrawColumnIsClean: .objectId, .valueCol$
+    .cleanValObj = emlDrawColumnIsClean.clean
+
 
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
@@ -2189,8 +2314,8 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
                 .rowX[.i] = .c
             endif
         endfor
-        .val$ = Get value: .i, .valueCol$
-        .rowY[.i] = number (.val$)
+        @eml_readCell: .objectId, .i, .valueCol$, .cleanValObj
+        .rowY[.i] = eml_readCell.value
         .rowId$[.i] = Get value: .i, .idCol$
         if .hasGroup = 1
             .rowGrp$[.i] = Get value: .i, .groupCol$
@@ -2249,6 +2374,13 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     endif
     .xMin = 0.5
     .xMax = max (1, .nCond) + 0.5   ; clamp: a 0-row table would make left = right
+
+    # The published resolved extent. See @emlDrawTimeSeries for the contract
+    # and for why this is not an alias.
+    .axisXMin = .xMin
+    .axisXMax = .xMax
+    .axisYMin = .yMin
+    .axisYMax = .yMax
 
     # ----------------------------------------------------------------
     # Viewport
@@ -2485,7 +2617,8 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
         .qBR = 0
         for .qi from 1 to .nScanRows
             selectObject: .objectId
-            .ry = Get value: .qi, .valueCol$
+            @eml_readCell: .objectId, .qi, .valueCol$, .cleanValObj
+            .ry = eml_readCell.value
             .rc$ = Get value: .qi, .condCol$
             if .ry <> undefined
                 # Map condition to x position
@@ -2619,7 +2752,8 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
             selectObject: .objectId
             .rCond$ = Get value: .ri, .condCol$
             if .rCond$ = .condLabel$[.rc]
-                .rVal = Get value: .ri, .valueCol$
+                @eml_readCell: .objectId, .ri, .valueCol$, .cleanValObj
+                .rVal = eml_readCell.value
                 if .rVal <> undefined
                     .rcN = .rcN + 1
                     .rcData#[.rcN] = .rVal
@@ -3055,12 +3189,17 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # and then handed to @emlDrawViolin -> @emlPercentile -> sort#, which
     # aborts the whole figure. Store only defined values (the pattern already
     # used by @emlDrawGroupedViolin) and record how many rows were dropped.
+    # The same reader the analysis uses. See @emlDrawColumnIsClean for what
+    # the lenient one cost.
+    @emlDrawColumnIsClean: .objectId, .valueCol$
+    .cellsClean = emlDrawColumnIsClean.clean
+
     .nSkippedRows = 0
     for .i from 1 to .nRows
         selectObject: .objectId
         .thisGroup$ = Get value: .i, .groupCol$
-        .val$ = Get value: .i, .valueCol$
-        .thisVal = number (.val$)
+        @eml_readCell: .objectId, .i, .valueCol$, .cellsClean
+        .thisVal = eml_readCell.value
 
         if .thisVal = undefined
             .nSkippedRows = .nSkippedRows + 1
@@ -3444,10 +3583,17 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
     .yData# = zero# (.nRows)
     .nValid = 0
 
+    # Same reader as the analysis. See @emlDrawColumnIsClean.
+    @emlDrawColumnIsClean: .objectId, .colX$
+    .cleanXObj = emlDrawColumnIsClean.clean
+    @emlDrawColumnIsClean: .objectId, .colY$
+    .cleanYObj = emlDrawColumnIsClean.clean
     for .i from 1 to .nRows
         selectObject: .objectId
-        .xVal = Get value: .i, .colX$
-        .yVal = Get value: .i, .colY$
+        @eml_readCell: .objectId, .i, .colX$, .cleanXObj
+        .xVal = eml_readCell.value
+        @eml_readCell: .objectId, .i, .colY$, .cleanYObj
+        .yVal = eml_readCell.value
         if .xVal <> undefined and .yVal <> undefined
             .nValid = .nValid + 1
             .xData#[.nValid] = .xVal
@@ -3901,8 +4047,10 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
         if scatterShowDots = 1
             for .i from 1 to .nRows
                 selectObject: .objectId
-                .xVal = Get value: .i, .colX$
-                .yVal = Get value: .i, .colY$
+                @eml_readCell: .objectId, .i, .colX$, .cleanXObj
+                .xVal = eml_readCell.value
+                @eml_readCell: .objectId, .i, .colY$, .cleanYObj
+                .yVal = eml_readCell.value
                 if .xVal <> undefined and .yVal <> undefined
                     .grp$ = Get value: .i, .groupCol$
                     .gIdx = 1
@@ -3959,8 +4107,10 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                     selectObject: .objectId
                     .grp$ = Get value: .i, .groupCol$
                     if .grp$ = emlCountGroups.groupLabel$[.g]
-                        .xVal = Get value: .i, .colX$
-                        .yVal = Get value: .i, .colY$
+                        @eml_readCell: .objectId, .i, .colX$, .cleanXObj
+                        .xVal = eml_readCell.value
+                        @eml_readCell: .objectId, .i, .colY$, .cleanYObj
+                        .yVal = eml_readCell.value
                         if .xVal <> undefined and .yVal <> undefined
                             .gN = .gN + 1
                             .gXData#[.gN] = .xVal
@@ -4282,12 +4432,17 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
     # and then handed to @emlDrawBox -> @emlPercentile -> sort#, which aborts
     # the whole figure. Store only defined values (the pattern already used by
     # @emlDrawGroupedBoxPlot) and record how many rows were dropped.
+    # The same reader the analysis uses. See @emlDrawColumnIsClean for what
+    # the lenient one cost.
+    @emlDrawColumnIsClean: .objectId, .valueCol$
+    .cellsClean = emlDrawColumnIsClean.clean
+
     .nSkippedRows = 0
     for .i from 1 to .nRows
         selectObject: .objectId
         .thisGroup$ = Get value: .i, .groupCol$
-        .val$ = Get value: .i, .valueCol$
-        .thisVal = number (.val$)
+        @eml_readCell: .objectId, .i, .valueCol$, .cellsClean
+        .thisVal = eml_readCell.value
 
         if .thisVal = undefined
             .nSkippedRows = .nSkippedRows + 1
@@ -4527,9 +4682,13 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
     .allData# = zero# (.nRows)
     .nValid = 0
 
+    # Same reader as the analysis. See @emlDrawColumnIsClean.
+    @emlDrawColumnIsClean: .objectId, .valueCol$
+    .cleanValObj = emlDrawColumnIsClean.clean
     for .i from 1 to .nRows
         selectObject: .objectId
-        .val = Get value: .i, .valueCol$
+        @eml_readCell: .objectId, .i, .valueCol$, .cleanValObj
+        .val = eml_readCell.value
         if .val <> undefined
             .nValid = .nValid + 1
             .allData#[.nValid] = .val
@@ -4643,7 +4802,8 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
 
     for .i from 1 to .nRows
         selectObject: .objectId
-        .val = Get value: .i, .valueCol$
+        @eml_readCell: .objectId, .i, .valueCol$, .cleanValObj
+        .val = eml_readCell.value
         if .val <> undefined and .val >= .xMin and .val <= .xMax
             .b = floor ((.val - .xMin) / .binWidth) + 1
             if .b > .nBins
@@ -5117,12 +5277,17 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
 
     # v1.21: same counter idiom as @emlDrawViolinPlot.
     .nSkippedRows = 0
+    # The same reader the analysis uses. See @emlDrawColumnIsClean for what
+    # the lenient one cost.
+    @emlDrawColumnIsClean: .objectId, .valueCol$
+    .cellsClean = emlDrawColumnIsClean.clean
+
     for .i from 1 to .nRows
         selectObject: .objectId
         .thisCat$ = Get value: .i, .catCol$
         .thisSub$ = Get value: .i, .subCol$
-        .val$ = Get value: .i, .valueCol$
-        .thisVal = number (.val$)
+        @eml_readCell: .objectId, .i, .valueCol$, .cellsClean
+        .thisVal = eml_readCell.value
 
         if .thisVal = undefined
             .nSkippedRows = .nSkippedRows + 1
@@ -5458,12 +5623,17 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
     endfor
     # v1.21: same counter idiom as @emlDrawBoxPlot.
     .nSkippedRows = 0
+    # The same reader the analysis uses. See @emlDrawColumnIsClean for what
+    # the lenient one cost.
+    @emlDrawColumnIsClean: .objectId, .valueCol$
+    .cellsClean = emlDrawColumnIsClean.clean
+
     for .i from 1 to .nRows
         selectObject: .objectId
         .thisCat$ = Get value: .i, .catCol$
         .thisSub$ = Get value: .i, .subCol$
-        .val$ = Get value: .i, .valueCol$
-        .thisVal = number (.val$)
+        @eml_readCell: .objectId, .i, .valueCol$, .cellsClean
+        .thisVal = eml_readCell.value
         if .thisVal = undefined
             .nSkippedRows = .nSkippedRows + 1
         else

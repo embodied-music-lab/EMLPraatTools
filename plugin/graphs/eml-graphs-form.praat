@@ -1632,6 +1632,78 @@ endproc
 
 
 # ============================================================================
+# @emlGraphsColumnExtent: .tableId, .colName$
+# ============================================================================
+# The min and max of a numeric column, OVER THE DEFINED CELLS ONLY.
+#
+# WHY THIS EXISTS RATHER THAN `Get maximum:`. Praat's Table query does not
+# return undefined for a column containing a blank cell -- it ABORTS:
+#
+#     Error: Table "t": the cell in row 3 of column "v" is undefined.
+#     Table "t": cannot compute maximum of column 1.
+#
+# Measured on 6.6.30 with a single blank cell in a five-row column. The
+# bracket-headroom stage called `Get maximum:` on the user's raw table, so a
+# violin or box plot with Annotate ticked, at least one bracket, and one
+# missing value anywhere in the value column killed the whole workflow with
+# that error. The guard on the next line -- `if visibleDataMax <> undefined`
+# -- anticipated the missing-data case and guarded the wrong thing: the call
+# never returns to be tested.
+#
+# Missing values are the ordinary case, not the exotic one, and every draw
+# procedure already tolerates them: they skip the row and say so ("6 row(s)
+# skipped (missing or non-numeric value)"). This makes the headroom stage
+# agree with the figure it is buying room for -- the extent is taken over
+# exactly the rows that get drawn.
+#
+# Returns .min, .max, and .n (the number of defined cells). With .n = 0 both
+# bounds come back undefined, and the caller's existing undefined test then
+# does what it was written to do.
+#
+# THE READER HERE MUST BE THE DRAW LAYER'S READER, and on 11 August 2026 that
+# changed. This procedure was written with `Get value:`, which agreed with
+# the draw layer at the time because the draw layer was lenient too. When the
+# draw procedures moved to @eml_readCell (see @emlDrawColumnIsClean), this
+# one was left behind for about an hour, and the measured consequence was
+# exactly the failure the pairing exists to prevent: the extent still
+# included a `1,5` read as 1 and a `30%` read as 0.3, so the axis reserved
+# room for two points the figure no longer draws.
+#
+# An extent that DISAGREES IN THE OTHER DIRECTION is worse still -- excluding
+# a point the figure plots clips data off the page. Either way the rule is
+# the same: this reads cells the way the figure reads them, and if one
+# changes the other changes with it.
+# ============================================================================
+procedure emlGraphsColumnExtent: .tableId, .colName$
+    @emlDrawColumnIsClean: .tableId, .colName$
+    .cellsClean = emlDrawColumnIsClean.clean
+    selectObject: .tableId
+    .rows = Get number of rows
+    .n = 0
+    .min = undefined
+    .max = undefined
+    for .r from 1 to .rows
+        @eml_readCell: .tableId, .r, .colName$, .cellsClean
+        .v = eml_readCell.value
+        if .v <> undefined
+            .n = .n + 1
+            if .n = 1
+                .min = .v
+                .max = .v
+            else
+                if .v < .min
+                    .min = .v
+                endif
+                if .v > .max
+                    .max = .v
+                endif
+            endif
+        endif
+    endfor
+endproc
+
+
+# ============================================================================
 # DEFAULT FIGURE TITLE
 # ============================================================================
 # D43 / D89 (Rule 28A). The figure used to be drawn with no title at all
@@ -1945,13 +2017,21 @@ procedure emlGraphsDrawWithLegendRoom
             legendRoomBaseMin = valueMin
             legendRoomBaseMax = valueMax
             legendRoomAxis = 0
+            # EVERY BRANCH BELOW READS `axisY*`. It did not always: this
+            # block used `.yMin` on types 5, 10 and 13 and `.axisYMin` on
+            # 8, 11 and 12, because that is what each draw procedure happened
+            # to publish. Choosing wrong failed at RUN time with a bare
+            # `Unknown variable:`, never at parse time, and every new caller
+            # had to learn the table. All ten draw procedures now publish
+            # `axis*` as the resolved extent — see @emlDrawTimeSeries for why
+            # it is a new name rather than an alias for `.xMin`.
             if graph_type = 5
                 if tsShowCI = 1
-                    legendRoomBaseMin = emlDrawTimeSeriesCI.yMin
-                    legendRoomBaseMax = emlDrawTimeSeriesCI.yMax
+                    legendRoomBaseMin = emlDrawTimeSeriesCI.axisYMin
+                    legendRoomBaseMax = emlDrawTimeSeriesCI.axisYMax
                 else
-                    legendRoomBaseMin = emlDrawTimeSeries.yMin
-                    legendRoomBaseMax = emlDrawTimeSeries.yMax
+                    legendRoomBaseMin = emlDrawTimeSeries.axisYMin
+                    legendRoomBaseMax = emlDrawTimeSeries.axisYMax
                 endif
                 legendRoomAxis = 1
             elsif graph_type = 8
@@ -1965,8 +2045,8 @@ procedure emlGraphsDrawWithLegendRoom
                 # this axis can be given room above and none below; a legend
                 # that lands in a bottom corner is reported rather than
                 # silently unserved. See @emlLegendHeadroomAfterDraw.
-                legendRoomBaseMin = emlDrawHistogram.yMin
-                legendRoomBaseMax = emlDrawHistogram.yMax
+                legendRoomBaseMin = emlDrawHistogram.axisYMin
+                legendRoomBaseMax = emlDrawHistogram.axisYMax
                 legendRoomAxis = 2
             elsif graph_type = 11
                 legendRoomBaseMin = emlDrawGroupedViolin.axisYMin
@@ -1977,8 +2057,8 @@ procedure emlGraphsDrawWithLegendRoom
                 legendRoomBaseMax = emlDrawGroupedBoxPlot.axisYMax
                 legendRoomAxis = 1
             elsif graph_type = 13
-                legendRoomBaseMin = emlDrawSpaghettiPlot.yMin
-                legendRoomBaseMax = emlDrawSpaghettiPlot.yMax
+                legendRoomBaseMin = emlDrawSpaghettiPlot.axisYMin
+                legendRoomBaseMax = emlDrawSpaghettiPlot.axisYMax
                 legendRoomAxis = 1
             endif
 
@@ -2199,6 +2279,152 @@ procedure emlLegendHeadroomAfterDraw: .placement, .legendCorner$, .baseYMin, .ba
             ... "legend may still overlap it. Set Legend placement to Right ",
             ... "of plot or Below plot to keep the plot clear, or reduce the ",
             ... "number of legend entries."
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlGraphsPostDispatchAnnotations
+# ============================================================================
+# The POST-DISPATCH (ANNOTATE) stage of @emlGraphsWorkflow. Draws brackets,
+# the omnibus block, and the comparison matrix panel onto the figure
+# @emlGraphsDrawWithLegendRoom has just finished, in the coordinate system
+# that figure resolved for itself.
+#
+# AT FILE SCOPE, AND FOR A REASON THAT COST SOMETHING TO LEARN.
+# harness/disclosure/probe_formpath.praat called itself a reproduction of
+# "the form's sequence" around this block and transcribed it by hand. The
+# transcription passed emlDrawViolinPlot.axisYMin where the form passed
+# valueMin -- so it tested a CORRECTED copy of the block, and would have gone
+# on passing however wrong the shipped one became. It did: with an omnibus
+# line and no brackets the shipped block handed @emlDrawAnnotationBlock the
+# dialog's (0, 0) y-range and the statistics box was clipped off the figure
+# entirely. The probe that exists to catch that did not catch it; the defect
+# was found by reading the block while migrating something else. See §2b of
+# audit/GRAPHING_PUSH_REMAINING.md.
+#
+# The transcription was never necessary. eml-graphs-form.praat is a LIBRARY:
+# its top-level code is array initialisation only, there is no `form:` or
+# `beginPause:` at top level, and @emlGraphsWorkflow is never called from
+# within the file. So a probe can `include` it, get every procedure and no
+# dialog, and call this directly -- which is the whole point of the move.
+#
+# NO PARAMETERS, and reads and writes main-body scope, exactly as
+# @emlGraphsDrawWithLegendRoom does. That is not a compromise forced by
+# Praat: a bare name assigned inside a procedure IS the global of that name,
+# so every assignment below behaves precisely as it did when these lines sat
+# inline. Passing sixteen globals in and out would be a larger edit with more
+# ways to be wrong, and buys a probe nothing.
+#
+# WRITES: annotXMin, annotXMax, annotYMin, annotYMax, annotYRange,
+#         annotBlockN, annotBlockLabel$[], annotBlockDraw$[], annotTextN,
+#         omnibusCorner$
+# READS:  annotate, graph_type, valueMin, valueMax, annotBracketN,
+#         annotMatrixN, annotTextN, annotTextLabel$[], annotBlockN,
+#         dataYMax_forAnnotation, matrixPanelHeight, figure_width,
+#         figure_height, matrixGap, totalCanvasHeight, colorMode$, and the
+#         axis* accessors of the five categorical draw procedures.
+# ============================================================================
+procedure emlGraphsPostDispatchAnnotations
+    if annotate = 1
+        # --- Read axis ranges from the procedure that just ran ---
+        annotXMin = 0
+        annotXMax = 1
+        annotYMin = valueMin
+        annotYMax = valueMax
+        # TYPES 6, 7 AND 9 TAKE annotY* FROM THE FIGURE, NOT FROM THE DIALOG.
+        # They did not until 11 Aug 2026, and the consequence was that the
+        # statistics box VANISHED from the figure. The chain:
+        #
+        #   - valueMin/valueMax are the DIALOG's y-range, (0, 0) on auto.
+        #   - The pre-dispatch resolver that turns them into the real extent
+        #     is gated on `annotBracketN > 0`.
+        #   - The legend-headroom pass, the other thing that refreshes them,
+        #     runs for types 5, 8, 10, 11, 12, 13 — not 6, 7, 9.
+        #   - So with an omnibus line and NO brackets, both were still 0 when
+        #     @emlDrawAnnotationBlock was called, while the axis sat wherever
+        #     the data put it.
+        #
+        # The box was then placed at y = 0, outside the frame, and clipped
+        # away with no error and no note. Measured on f0-scale data: axis
+        # (192, 214), box handed (0, 0), "One-way ANOVA: F(3, 52) = 0.46,
+        # p = .709" absent from a figure the user had ticked Annotate on.
+        #
+        # NO BRACKETS IS NOT AN EDGE CASE. @emlBridgeGroupComparison sets
+        # annotTextN = 1 for the omnibus on every path, and leaves
+        # annotBracketN at 0 whenever no pair clears alpha — which includes
+        # every non-significant omnibus. Reproduced by
+        # harness/disclosure/probe_annot_omnibus_only.praat.
+        if graph_type = 6
+            annotXMin = emlDrawBarChart.axisXMin
+            annotXMax = emlDrawBarChart.axisXMax
+            annotYMin = emlDrawBarChart.axisYMin
+            annotYMax = emlDrawBarChart.axisYMax
+        elsif graph_type = 7
+            annotXMin = emlDrawViolinPlot.axisXMin
+            annotXMax = emlDrawViolinPlot.axisXMax
+            annotYMin = emlDrawViolinPlot.axisYMin
+            annotYMax = emlDrawViolinPlot.axisYMax
+        elsif graph_type = 9
+            annotXMin = emlDrawBoxPlot.axisXMin
+            annotXMax = emlDrawBoxPlot.axisXMax
+            annotYMin = emlDrawBoxPlot.axisYMin
+            annotYMax = emlDrawBoxPlot.axisYMax
+        elsif graph_type = 11
+            annotXMin = emlDrawGroupedViolin.axisXMin
+            annotXMax = emlDrawGroupedViolin.axisXMax
+            annotYMin = emlDrawGroupedViolin.axisYMin
+            annotYMax = emlDrawGroupedViolin.axisYMax
+        elsif graph_type = 12
+            annotXMin = emlDrawGroupedBoxPlot.axisXMin
+            annotXMax = emlDrawGroupedBoxPlot.axisXMax
+            annotYMin = emlDrawGroupedBoxPlot.axisYMin
+            annotYMax = emlDrawGroupedBoxPlot.axisYMax
+        endif
+
+        # --- BRACKET ANNOTATIONS (nGroups <= 3, no matrix) ---
+        if annotBracketN > 0 or (annotTextN > 0 and annotMatrixN = 0)
+            annotYRange = valueMax - valueMin
+
+            # Route omnibus to corner block (only when NO matrix panel —
+            # matrix panel renders its own omnibus as the title line)
+            if annotTextN > 0
+                annotBlockN = annotBlockN + 1
+                annotBlockLabel$[annotBlockN] = annotTextLabel$[1]
+                annotBlockDraw$[annotBlockN] = annotTextLabel$[1]
+                annotTextN = 0
+            endif
+
+            # Draw brackets
+            if annotBracketN > 0
+                @emlDrawAnnotations: annotXMin, annotXMax, dataYMax_forAnnotation, annotYRange, "{0.3, 0.3, 0.3}", emlSetAdaptiveTheme.annotSize, annotYMin, annotYMax
+            endif
+
+            # Draw omnibus in bottom-right (clear of bracket headroom)
+            if annotBlockN > 0
+                if annotBracketN > 0
+                    omnibusCorner$ = "bottom-right"
+                else
+                    omnibusCorner$ = "top-right"
+                endif
+                # annotYMin/annotYMax, not valueMin/valueMax. On types 5, 8,
+                # 10, 11, 12 and 13 these are the same number — annotY* falls
+                # through to valueMin/valueMax, or the legend-headroom pass
+                # has already written the resolved extent into both and
+                # re-drawn against it. On 6, 7 and 9 they are the same only
+                # when brackets exist; with an omnibus and no brackets
+                # valueMin/valueMax are still the dialog's (0, 0) and this
+                # box gets placed off the figure. See the note above the
+                # annotY* assignments.
+                @emlDrawAnnotationBlock: omnibusCorner$, annotXMin, annotXMax, annotYMin, annotYMax, emlSetAdaptiveTheme.annotSize
+            endif
+        endif
+
+        # --- MATRIX PANEL (nGroups >= 4, or type 11) ---
+        if annotMatrixN > 0 and matrixPanelHeight > 0
+            # Draw panel below the plot — match graph inner box width
+            @emlDrawMatrixPanel: 0, figure_width, figure_height + matrixGap, totalCanvasHeight, emlSetAdaptiveTheme.matrixSize, colorMode$
         endif
     endif
 endproc
@@ -2431,6 +2657,40 @@ scatterShowDots = 1
     @emlDetectContext
     @emlBuildFilteredMenu
     originalSourceId = contextOriginalSourceId
+
+    # =================================================================
+    # DATA CHECK — the same one every stats wrapper runs
+    # =================================================================
+    # @emlWrapperInit calls @emlCheckDataScheme on entry, so all ten stats
+    # wrappers tell the user, BEFORE anything is computed, which cells will
+    # be excluded and why -- naming the column, the first offending row and
+    # its literal contents, and what to do about it ("Replace the commas with
+    # points to use these values").
+    #
+    # THIS PATH NEVER CALLED IT. That is the asymmetry underneath §2d: the
+    # check-and-repair layer is not optional in general, it is MANDATORY ON
+    # ONE BRIDGE AND ABSENT FROM THE OTHER. A user who ran an ANOVA was told
+    # about their decimal commas; the same user drawing the same column got a
+    # figure with no mention of them.
+    #
+    # The strict reader (see @emlDrawColumnIsClean) stopped the graphs path
+    # silently coercing those cells. It did not make the graphs path SAY so,
+    # and a row that vanishes from a figure without explanation is only
+    # better than a wrong point on it, not good. This is the explanation, and
+    # it is the existing one rather than a second wording that could drift.
+    #
+    # Only for a Table. The Pitch/Sound/Spectrum/Ltas types are not read cell
+    # by cell and have no columns to audit.
+    if contextObjectType$ = "Table" or contextObjectType$ = "TableOfReal"
+    ... or contextObjectType$ = "Matrix"
+        if contextObjectId > 0
+            @emlCheckDataScheme: contextObjectId
+            if emlCheckDataScheme.report$ <> ""
+                appendInfoLine: ""
+                appendInfoLine: emlCheckDataScheme.report$
+            endif
+        endif
+    endif
 
     # =================================================================
     # PRESET READING
@@ -7147,9 +7407,16 @@ repeat
             visibleDataMax = emlBarData_visibleMax
             visibleDataMin = emlBarData_visibleMin
         else
-            # Violin/Box: visible extent = raw data extent
-            visibleDataMax = Get maximum: valueColName$
-            visibleDataMin = Get minimum: valueColName$
+            # Violin/Box: visible extent = raw data extent, OVER THE DEFINED
+            # CELLS ONLY. `Get maximum:` aborts the script on a column with
+            # any blank cell rather than returning undefined, so an annotated
+            # violin or box plot with one missing value anywhere in the value
+            # column used to die here with a raw Praat error. See
+            # @emlGraphsColumnExtent, and note that the undefined test below
+            # was guarding a return value that could never arrive.
+            @emlGraphsColumnExtent: objectId, valueColName$
+            visibleDataMax = emlGraphsColumnExtent.max
+            visibleDataMin = emlGraphsColumnExtent.min
         endif
 
         if visibleDataMax <> undefined and visibleDataMax > 0
@@ -7310,72 +7577,14 @@ repeat
     # POST-DISPATCH: draw annotations
     # =================================================================
     # The drawing procedure has drawn data, gridlines, and axes in a
-    # single coordinate system (including any headroom). We now draw
-    # brackets or text in that same coordinate system, then render
-    # the comparison matrix panel below the plot if needed.
-
-    if annotate = 1
-        # --- Read axis ranges from the procedure that just ran ---
-        annotXMin = 0
-        annotXMax = 1
-        annotYMin = valueMin
-        annotYMax = valueMax
-        if graph_type = 6
-            annotXMin = emlDrawBarChart.axisXMin
-            annotXMax = emlDrawBarChart.axisXMax
-        elsif graph_type = 7
-            annotXMin = emlDrawViolinPlot.axisXMin
-            annotXMax = emlDrawViolinPlot.axisXMax
-        elsif graph_type = 9
-            annotXMin = emlDrawBoxPlot.axisXMin
-            annotXMax = emlDrawBoxPlot.axisXMax
-        elsif graph_type = 11
-            annotXMin = emlDrawGroupedViolin.axisXMin
-            annotXMax = emlDrawGroupedViolin.axisXMax
-            annotYMin = emlDrawGroupedViolin.axisYMin
-            annotYMax = emlDrawGroupedViolin.axisYMax
-        elsif graph_type = 12
-            annotXMin = emlDrawGroupedBoxPlot.axisXMin
-            annotXMax = emlDrawGroupedBoxPlot.axisXMax
-            annotYMin = emlDrawGroupedBoxPlot.axisYMin
-            annotYMax = emlDrawGroupedBoxPlot.axisYMax
-        endif
-
-        # --- BRACKET ANNOTATIONS (nGroups <= 3, no matrix) ---
-        if annotBracketN > 0 or (annotTextN > 0 and annotMatrixN = 0)
-            annotYRange = valueMax - valueMin
-
-            # Route omnibus to corner block (only when NO matrix panel —
-            # matrix panel renders its own omnibus as the title line)
-            if annotTextN > 0
-                annotBlockN = annotBlockN + 1
-                annotBlockLabel$[annotBlockN] = annotTextLabel$[1]
-                annotBlockDraw$[annotBlockN] = annotTextLabel$[1]
-                annotTextN = 0
-            endif
-
-            # Draw brackets
-            if annotBracketN > 0
-                @emlDrawAnnotations: annotXMin, annotXMax, dataYMax_forAnnotation, annotYRange, "{0.3, 0.3, 0.3}", emlSetAdaptiveTheme.annotSize, annotYMin, annotYMax
-            endif
-
-            # Draw omnibus in bottom-right (clear of bracket headroom)
-            if annotBlockN > 0
-                if annotBracketN > 0
-                    omnibusCorner$ = "bottom-right"
-                else
-                    omnibusCorner$ = "top-right"
-                endif
-                @emlDrawAnnotationBlock: omnibusCorner$, annotXMin, annotXMax, valueMin, valueMax, emlSetAdaptiveTheme.annotSize
-            endif
-        endif
-
-        # --- MATRIX PANEL (nGroups >= 4, or type 11) ---
-        if annotMatrixN > 0 and matrixPanelHeight > 0
-            # Draw panel below the plot — match graph inner box width
-            @emlDrawMatrixPanel: 0, figure_width, figure_height + matrixGap, totalCanvasHeight, emlSetAdaptiveTheme.matrixSize, colorMode$
-        endif
-    endif
+    # single coordinate system (including any headroom). Brackets, the
+    # omnibus block and the comparison matrix panel go on in that same
+    # coordinate system, and the whole of it is in
+    # @emlGraphsPostDispatchAnnotations, at file scope, so the annotation
+    # stage can be driven by a probe without a dialog -- the same reason
+    # @emlGraphsDrawWithLegendRoom above is factored out. That procedure's own
+    # header records what a hand-transcription of these lines cost.
+    @emlGraphsPostDispatchAnnotations
 
     # Assert full viewport so save captures entire figure + panel
     @emlAssertFullViewport

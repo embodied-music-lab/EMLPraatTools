@@ -6263,15 +6263,29 @@ procedure emlMeasureBarData: .tableId, .groupCol$, .valueCol$, .errorMode, .erro
     endfor
 
     # Accumulate per-group sums, skipping undefined observations
+    # Same reader as the analysis. See @emlDrawColumnIsClean.
+    @emlDrawColumnIsClean: .tableId, .valueCol$
+    .cleanVal = emlDrawColumnIsClean.clean
+    # GUARDED, because .errorCol$ is "" on every bar chart that draws no error
+    # bars -- which is most of them. The unguarded version aborted the whole
+    # figure with `there is no column named ""`, caught by
+    # harness/determinism/run.sh on the first run after the conversion. The
+    # read it pairs with is gated on .errorMode = 3; the test has to be gated
+    # on the same thing or it is a different condition wearing the same name.
+    .cleanErr = 0
+    if .errorMode = 3
+        @emlDrawColumnIsClean: .tableId, .errorCol$
+        .cleanErr = emlDrawColumnIsClean.clean
+    endif
     for .i from 1 to .nRows
         selectObject: .tableId
         .thisGroup$ = Get value: .i, .groupCol$
-        .val$ = Get value: .i, .valueCol$
-        .thisVal = number (.val$)
+        @eml_readCell: .tableId, .i, .valueCol$, .cleanVal
+        .thisVal = eml_readCell.value
         .thisErr = undefined
         if .errorMode = 3
-            .errVal$ = Get value: .i, .errorCol$
-            .thisErr = number (.errVal$)
+            @eml_readCell: .tableId, .i, .errorCol$, .cleanErr
+            .thisErr = eml_readCell.value
         endif
 
         .gIdx = 0
