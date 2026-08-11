@@ -158,7 +158,16 @@ scripts <- c(
     # the static rule that a legend renderer draws into the rectangle it was
     # HANDED. Reads harness/legend/out/, so harness/legend/run.sh must run
     # first -- same dependency shape as v27 on harness/stress_graphs.sh.
-    "v32_legend_geometry.R"
+    "v32_legend_geometry.R",
+    # v33 pins EXCLUSION PARITY: the figure drops the rows the analysis drops.
+    # They did not agree until 11 Aug 2026 -- the stats path read cells with
+    # @eml_readCell and every draw procedure with Praat's own numericiser, so
+    # "1,5" was dropped by an ANOVA and plotted as 1. The omnibus line painted
+    # onto a figure then described a different data set from the figure. Both
+    # counts are produced in Praat by the plugin's own procedures; this script
+    # compares them and never classifies a cell itself.
+    #     bash harness/parity/run.sh
+    "v33_exclusion_parity.R"
 )
 
 cat("EML Praat Tools validation suite\n")
