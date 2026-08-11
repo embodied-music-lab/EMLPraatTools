@@ -1413,7 +1413,34 @@ procedure emlWrapperExportCSV: .tableName$, .analysis$
             if .nWritten > 0
                 beginPause: "Export Complete"
                     comment: "Wrote " + string$ (.nWritten) + " files:"
-                    comment: .fileList$
+                    ; ONE comment: PER LINE, not one comment: holding several.
+                    ;
+                    ; `comment:` reserves the height of ONE line when the
+                    ; dialog is laid out, but draws whatever string it is
+                    ; given -- so a string containing newline$ overflows its
+                    ; slot and the widgets below are painted over it. With
+                    ; three files written, the OK button was drawn ON TOP of
+                    ; the third path. Seen 11 Aug 2026 by exporting a CSV from
+                    ; the menu under Xvfb and looking at the dialog; /root is
+                    ; a short folder, and a real user path makes it worse.
+                    ;
+                    ; A loop is legal here. `form:` cannot contain one --
+                    ; "Unknown parameter type inside form" -- but the lines
+                    ; between beginPause: and endPause: are executed, which is
+                    ; why every wrapper in this plugin uses beginPause:.
+                    .listRest$ = .fileList$
+                    while index (.listRest$, newline$) > 0
+                        .nl = index (.listRest$, newline$)
+                        .oneFile$ = left$ (.listRest$, .nl - 1)
+                        if .oneFile$ <> ""
+                            comment: .oneFile$
+                        endif
+                        .listRest$ = right$ (.listRest$,
+                        ... length (.listRest$) - .nl)
+                    endwhile
+                    if .listRest$ <> ""
+                        comment: .listRest$
+                    endif
                 endPause: "OK", 1, 0
             else
                 beginPause: "Nothing to Export"
