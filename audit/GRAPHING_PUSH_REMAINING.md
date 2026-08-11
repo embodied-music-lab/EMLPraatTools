@@ -356,3 +356,58 @@ Two residual risks worth a decision:
 The cheap fix for both is an in-script LCG in place of `randomGauss`, as
 `harness/legend/placement_sweep_case.praat` already uses. It would change
 every committed figure once, then never again.
+
+---
+
+## 15. FIXED — a grouped histogram aborted for every caller but the form
+
+Found 10 August 2026 by `harness/determinism/run.sh` on its first run.
+
+`@emlDrawHistogram`'s overlay path calls `@emlDrawAlphaRect`, which reads
+`emlInitAlphaSprites.available` — and `@emlDrawHistogram` never called
+`@emlInitAlphaSprites`. So a histogram with **more than one group** died with
+
+```
+Error: Unknown variable: emlInitAlphaSprites.available
+```
+
+for any caller that is not `eml-graphs-form.praat`: a user script, a PraatGen
+companion file, or a recorded workflow replaying itself. The form happens to
+call `@emlInitAlphaSprites` itself, which is why the GUI path never saw it.
+
+**This is the same defect that was fixed in `@emlDrawScatterPlot` and
+`@emlDrawTimeSeriesCI` on 6 August**, with a comment on both explaining
+exactly this failure mode. The histogram was missed.
+
+**Why five months of stress runs never caught it:** every histogram case in
+`harness/stress_cases/` draws UNGROUPED — `hist_baseline` passes `""` as the
+group column — and the overlay branch is only reached with more than one
+group. The suite had a histogram case, three of them, and none of them
+entered the code path that was broken.
+
+A static sweep of all ten Table-consuming draw procedures now confirms this
+was the only one: no other procedure reaches `@emlDrawAlphaRect`,
+`@emlDrawAlphaDot` or `@emlPaintAlphaBox` without initialising the sprites.
+
+## 16. NEW — `harness/determinism/run.sh`
+
+Renders each of the ten Table-consuming draw procedures **twice, in two
+separate Praat processes, from one seeded fixture**, and compares the PNGs
+byte for byte.
+
+The question it answers is one the stress suite cannot: given the same data,
+does a draw procedure produce the same picture twice? 22 of the 39 stress
+cases use unseeded `randomGauss` (§14), so no two runs of one case are
+comparable and nothing in that suite would notice a procedure that began
+producing a different correct-looking figure. `v27` survives that by
+asserting inequalities and never values — right for what `v27` checks, and it
+leaves this unchecked.
+
+Two *processes* rather than two draws in one script, deliberately: a
+generator seeded once at the top would give the second draw different
+numbers, which would measure the fixture rather than the procedure.
+
+Result after the §15 fix: **10/10 STABLE.** So every Table-consuming draw
+procedure is reproducible, and a byte-for-byte baseline is achievable for
+all of them — which is what makes the §14 fix (seeding the stress cases)
+worth doing rather than merely tidy.
