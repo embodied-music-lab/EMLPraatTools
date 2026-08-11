@@ -2657,6 +2657,12 @@ scatterShowDots = 1
     @emlDetectContext
     @emlBuildFilteredMenu
     originalSourceId = contextOriginalSourceId
+    # Counts passes through the main-form loop, so the re-detect further down
+    # can tell "the user pressed Go Back" from "this workflow has only just
+    # started". Reset per workflow, not per session: a second Draw from the
+    # same wrapper is a fresh handoff and must not inherit the first one's
+    # count.
+    formPassN = 0
 
     # =================================================================
     # DATA CHECK — the same one every stats wrapper runs
@@ -2847,7 +2853,31 @@ repeat
 
     # Re-detect context and rebuild filtered menu on each pass
     # (handles Go Back after user changes selection in Objects window)
-    @emlDetectContext
+    #
+    # NOT ON THE FIRST PASS, AND THAT GUARD IS THE FIX FOR A DEFECT THE USER
+    # MEETS EVERY TIME THEY DRAW FROM AN ANALYSIS.
+    #
+    # @emlGraphsWorkflow takes .objectId, and its entry sequence selects it
+    # and detects context from it — which is how a wrapper hands the Table it
+    # just analysed over to the graphs form. This line then ran, read the
+    # CURRENT Objects-window selection, and threw that away, because by the
+    # time an analysis has finished the selection is no longer the source
+    # Table. So every wrapper's Draw branch opened the graphs form and then
+    # asked "No Table selected" — on the one path in the plugin that already
+    # knows exactly which Table the user means.
+    #
+    # Measured 11 Aug 2026 by driving Compare two groups -> Run -> Draw under
+    # Xvfb. It reproduces with and without a CSV export in between, so it is
+    # the re-detect and not something the exporter leaves behind.
+    #
+    # The stated purpose is Go Back, and on the FIRST pass there has been no
+    # Go Back to handle: re-detecting can only lose information the caller
+    # supplied deliberately. From the second pass on it does exactly what its
+    # comment says.
+    if formPassN > 0
+        @emlDetectContext
+    endif
+    formPassN = formPassN + 1
     @emlBuildFilteredMenu
 
     acquireDone = 0

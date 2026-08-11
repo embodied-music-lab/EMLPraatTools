@@ -3753,10 +3753,51 @@ endproc
 # Text bottom:, Text top:, or One mark: commands — unless you intentionally
 # want style formatting.
 # ----------------------------------------------------------------------------
+# IT IS IDEMPOTENT, AND IT WAS NOT. Escaping an already-escaped string used to
+# destroy the character it was protecting:
+#
+#     Jitter (\% )      escaped once   ->  renders  Jitter (%)      correct
+#     Jitter (\\%  )    escaped twice  ->  renders  Jitter (  )     gone
+#     Jitter (%)        never escaped  ->  renders  Jitter ()       eaten
+#
+# Measured 11 Aug 2026 by rendering all three. The middle line is what the
+# auto-composed TITLE of every figure looked like, while the y-axis label on
+# the same figure was correct -- because @emlComposeGraphTitle sanitizes each
+# part it assembles (the value column via @emlCapitalizeLabel, which already
+# returns "Jitter (\% )") and @emlDrawAxes then sanitizes the finished title
+# AGAIN. @emlDrawAxes says why it does that: axis labels are sanitized at
+# generation, titles are "passed raw". That was true when it was written.
+# @emlComposeGraphTitle made it false and the draw site was never told.
+#
+# THE FIX IS HERE RATHER THAN AT THE DRAW SITE. Removing the second call would
+# leave a user-TYPED title unescaped, which is the case that call exists to
+# protect -- and a user's title is the one string in the figure this procedure
+# cannot assume anything about. So the escaper is made safe to apply twice,
+# and both call sites stay.
+#
+# HOW: NORMALISE, then escape. Every escape already present is undone first,
+# so the string reaching the escaping pass is in exactly one state whatever
+# state it arrived in. A sentinel-and-restore scheme was tried first and
+# rejected: every sentinel that can be written in a Praat string literal is a
+# string a label could also contain, so it trades one collision for another.
+# Un-escaping has no such hole -- it is the exact inverse of the pass that
+# follows it.
+#
+# The one input this treats differently from before is a label containing the
+# literal characters backslash-percent-space and meaning them literally. It
+# now round-trips to backslash-percent-space, which is what it rendered as
+# anyway.
 procedure emlSanitizeLabel: .raw$
     # First convert underscores to spaces (display-friendly)
     .result$ = replace$ (.raw$, "_", " ", 0)
-    # Then escape any remaining special characters
+
+    # Normalise: undo any escaping already applied, so what follows sees one
+    # state. Without this, escaping ran a second time over its own output.
+    .result$ = replace$ (.result$, "\% ", "%", 0)
+    .result$ = replace$ (.result$, "\# ", "#", 0)
+    .result$ = replace$ (.result$, "\^ ", "^", 0)
+
+    # Then escape the special characters
     # Order matters: % first because \% contains no other specials
     .result$ = replace$ (.result$, "%", "\% ", 0)
     .result$ = replace$ (.result$, "#", "\# ", 0)
