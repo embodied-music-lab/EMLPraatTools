@@ -18,3 +18,4 @@ harness/stress_cases/prefs/
 # hand-run can never write into another tree -- but it must not be committed.
 harness/disclosure/formpath_*.png
 harness/disclosure/worst_*.png
+harness/determinism/prefs/
