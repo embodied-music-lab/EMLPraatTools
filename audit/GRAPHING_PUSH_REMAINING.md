@@ -627,6 +627,361 @@ phase1, **8259/8259 R** (8221 + v33's 38), both round trips PASS.
 
 ---
 
+## 2h. FIXED — fifteen menu entry points were dead, and no suite could see it
+
+Found 11 August 2026 by installing the plugin under Xvfb and clicking its own
+menu. The error was a dialog, not a log line:
+
+```
+Duplicate label "END_RECORD_SOURCE" on lines 29445 and 13332.
+Script ".../plugin_EMLPraatTools/scripts/eml-graphs.praat" not completed.
+Command "EML Graphs..." not executed.
+```
+
+**EML Graphs, the wizard, the LMM path and every analysis wrapper — 15 of
+them — did not run at all.** Not on one version: 6.6.30 and 7.0 alike. The
+plugin was unusable from its own menu while 8259 R checks, 39/39 stress,
+52/52 disclosure, 357/357 phase1 and both round trips were green.
+
+### The cause is one line
+
+`eml-lib.praat` loads `eml-lib-stats.praat`, which includes
+`eml-record.praat`; then it loads `eml-lib-graphs.praat`, which included it
+**again**. `include` is a textual paste and `eml-record.praat` contains
+`label` statements, so the second paste defined every label twice. Praat
+rejects that at PARSE time, before one line runs.
+
+`eml-lib-stats.praat` says, in a header comment, *"Including the same file
+twice is harmless. `include` is a textual paste."* **That is true only of a
+file with no labels in it.** The recorder acquired labels and the comment did
+not.
+
+The include was also no longer needed. It was there because
+`@emlDrawViolinPlot` calls `@emlRecordViolin`, but that call is now wrapped in
+`variableExists ("emlRecordActive")` and Praat only errors on an undefined
+procedure when it EXECUTES the call — so an absent recorder costs nothing.
+
+### The reason nothing caught it is the finding worth keeping
+
+Every harness in this tree includes the individual plugin files.
+`harness/stress_cases/_prelude.praat` names nine of them, one by one, and says
+so. **Nothing anywhere loaded `scripts/eml-lib.praat`** — which is what all 16
+shipped wrappers actually load.
+
+So the suites exercised a composition of the plugin that no user ever runs,
+and the composition every user runs had never been loaded once. Coverage of
+the parts is not coverage of the assembly.
+
+### The guard
+
+`harness/wrappers/run.sh` runs every `plugin/scripts/*.praat` headless and
+fails on a STRUCTURAL error — duplicate label, unknown symbol, unreadable
+include. It does not care that a wrapper then refuses for want of a selected
+Table, or dies for want of a display: those mean it parsed, which is all this
+asks. 26/26 parse. The wrapper count is asserted too, so a deleted entry
+point has to be dealt with on purpose rather than by silence.
+
+---
+
+## 2i. FIXED — the auto-composed title was escaped twice and lost the character
+
+Found in the same GUI pass, by looking at the figure the menu produced. The
+title read `Jitter (  ) by group` where the y-axis label, on the same figure,
+read `Jitter (%)`.
+
+Rendered side by side, the middle row is a pixel match for the title:
+
+| string | renders as |
+|---|---|
+| `Jitter (\% )` — escaped once | `Jitter (%)` |
+| `Jitter (\\%  )` — escaped twice | `Jitter (  )` |
+| `Jitter (%)` — never escaped | `Jitter ()`, percent eaten, paren italic |
+
+So this is a DOUBLE escape, not a missing one, and `@emlSanitizeLabel` is not
+idempotent.
+
+`@emlComposeGraphTitle` sanitizes every part it assembles —
+`@emlCapitalizeLabel` for the value column (which already returns `Jitter
+(\% )`), `@emlSanitizeLabel` for `.x$`, `.sub$` and `.source$`. Then
+`@emlDrawAxes` sanitizes the finished title again. Its own comment explains
+why it does that:
+
+```
+# Sanitize title only — axis labels are sanitized at generation
+# (auto labels via @emlCapitalizeLabel) or passed raw (user-typed...)
+```
+
+The premise was true when written: the title WAS raw.
+`@emlComposeGraphTitle` made it false, and the draw site was never told. The
+axis label rendered correctly for exactly the reason the comment gives — it
+is deliberately not re-sanitized.
+
+It is not confined to the value column. Every auto-composed part is escaped
+twice; only parts containing no special character survive, which is why the
+defect looks isolated.
+
+**The fix is idempotence, not removal.** Deleting the draw-site call would
+leave a user-typed title unescaped, which is what that call exists to
+prevent — and a user's title is the one string in the figure the escaper can
+assume nothing about. So the escaper is made safe to apply twice and both
+call sites stay.
+
+`@emlSanitizeLabel` now NORMALISES before it escapes: every escape already
+present is undone first, so the string reaching the escaping pass is in one
+state whatever state it arrived in. A sentinel-and-restore scheme was written
+first and rejected — every sentinel expressible in a Praat string literal is
+a string a label could also contain, which trades one collision for another.
+Un-escaping has no such hole; it is the exact inverse of the pass that
+follows.
+
+Rendered proof: the same already-escaped title that produced `Jitter (  )`
+now draws `Jitter (%) by Group` after passing through `@emlDrawAxes`.
+
+### v34, and it was verified to fail
+
+`harness/disclosure/probe_label_escape.praat` applies the escaper ONCE, TWICE
+AND THREE TIMES to seven shapes — three, not two, because a two-application
+check passes on an escaper that alternates. It also asserts the specific
+composition that broke (`@emlCapitalizeLabel`'s output must be a fixed point
+of `@emlSanitizeLabel`) and that a figure drawn with such a title exists and
+carries ink — because every intermediate STRING was correct here and only the
+pixels were wrong, which is how this survived.
+
+Removing the normalise block and re-running:
+
+```
+FAIL v34  escaping percent is stable under repetition
+FAIL v34  escaping preescaped is stable under repetition
+FAIL v34  escaping hash / caret / allthree ...
+FAIL v34  @emlCapitalizeLabel output is a fixed point of @emlSanitizeLabel
+```
+
+Restored, 15/15. Suite total 8274.
+
+---
+
+## 2j. MEASURED — Praat 7's trust wall does not touch the plugin's own menu
+
+Driven under Xvfb on 7.0, 11 August 2026, and it refines §11 rather than
+contradicting it.
+
+**A plugin menu command wrote a 300-dpi PNG with no dialog at all.** New →
++EML Tools → EML Graphs → Draw → Save produced `/root/_Violin_Plot.png`,
+70284 bytes, silently.
+
+**A script run from the command line or Script window is a different story**,
+and this is where the emitted record-workflow file lives:
+
+- Button 2, *"Yes, I allow this script to perform the action that it requests
+  (and ask me again next time)"* — grants exactly ONE write. The next write
+  raises a new dialog, named for the next file.
+- Button 3, *"...CONTROL MY COMPUTER from now on..."* — clears the rest of
+  that script.
+- **The grant does not carry to another script.** A second script sent to the
+  same live Praat session raised its own dialog.
+
+So the plugin is unaffected on 7.x. **The emitted workflow script is not**,
+and being re-run is that file's entire purpose. A user who opens it and
+presses Run answers a dialog per save unless they grant full computer control
+to it.
+
+### Two Praat 7 facts the harness assumed wrongly
+
+- The instance lock is `~/.config/praat/pid.txt` and `Message.txt`, NOT
+  `<pref-dir>/pid`. The 6.x stale-lock recipe does not clear it, and Praat
+  exits with *"An instance of Praat that is not me is already running."*
+- **`--pref-dir` does not relocate the plugins folder.** Plugins load from
+  `~/.config/praat/plugin_*` regardless. The plugin installed under a custom
+  `--pref-dir` produced no menu at all; moved to `~/.config/praat`, the
+  `+EML Tools` menu appeared.
+
+Both mean the harness's `--pref-dir` isolation is 6.x-only.
+
+---
+
+## 2k. VERIFIED — the full shipping path, and the three papercuts it found are fixed
+
+Driven end to end on 6.6.30 under Xvfb, 11 August 2026, from the plugin's own
+menu: Create Demo Table -> Compare two groups -> Run -> CSV -> Draw -> column
+mapping -> Draw -> Save. Every stage below had never been executed by anything
+in this repository.
+
+**What works.** The analysis runs; the CSV export writes three correctly
+shaped broom files (`_tidy`, `_glance`, `_effectsize_tidy`) with broom column
+names; the Draw branch hands off to the graphs form preloaded with the right
+graph type; the figure draws; the save produces a clean 1800x1200 PNG.
+
+**The §2i fix is verified through the real path.** The auto-composed title on
+the saved file reads
+
+```
+Jitter (%) by group (demo 2groups)
+```
+
+where before the fix the same path produced `Jitter (  ) by group`. That is
+the composed-title route, from the menu, not a probe.
+
+### Three papercuts, all visible only by looking
+
+1. **The Export Complete dialog draws its OK button ON TOP of the third
+   filename.** It reports "Wrote 3 files:" and lists three paths; the button
+   overlaps the last one. `/root` is a short folder — a real user path makes
+   it worse.
+
+2. **The Draw branch loses the Table selection.** Coming out of a completed
+   analysis, which had a Table, the graphs form opens on "No Table selected"
+   and asks the user to pick it again. This is the one path in the plugin that
+   already knows which Table the user means.
+
+3. **The default save filename is `_Violin_Plot`** — a leading underscore.
+   The builder composes `<title>_<GraphType>` from the USER-TYPED title field,
+   which is blank whenever the title was auto-composed. So the figure has a
+   title and the filename does not, and every auto-titled figure a user saves
+   is named with a leading underscore.
+
+None is a wrong number and none blocks anything. All three are what a
+reviewer meets in the first five minutes, and none was reachable from a
+headless harness.
+
+### Fixed, and 2 and 3 turned out to be ONE defect
+
+**The handoff loss (2) and the leading underscore (3) had the same cause.**
+`@emlGraphsWorkflow` selects its `.objectId` and detects context from it at
+entry — that is how a wrapper hands over the Table it just analysed. A second
+`@emlDetectContext`, at the top of the main-form loop, then read the CURRENT
+Objects-window selection and threw the caller's object away, because after an
+analysis the selection is no longer the source Table.
+
+Its comment says why it is there — *"handles Go Back after user changes
+selection in Objects window"* — and on the FIRST pass there has been no Go
+Back to handle, so re-detecting can only discard what the caller supplied
+deliberately. It is now gated on a pass counter and does exactly what its
+comment says from the second pass on.
+
+With the Table restored, the filename builder has a name to compose from, and
+the saved file came out `demo_2groups_Violin_Plot.png` instead of
+`_Violin_Plot.png`. **The underscore was a symptom, not a defect** — worth
+recording, because fixing it where it was visible would have papered over the
+handoff and left the user still picking their Table by hand.
+
+Reproduced with and without a CSV export in between, so it was the re-detect
+and not something the exporter left behind. Verified in the GUI: Compare two
+groups → Run → Draw now goes straight to the column-mapping dialog.
+
+**The dialog overlap (1)** was `comment:` given a string containing
+`newline$`. It reserves the height of ONE line at layout time but draws
+whatever it is handed, so the widgets below are painted over it. Now one
+`comment:` per path, emitted by a `while` loop — legal between `beginPause:`
+and `endPause:`, which is why every wrapper here uses `beginPause:` rather
+than `form:`. Verified: three readable paths with the OK button below them.
+
+---
+
+## 2l. NEW — `harness/gui_e2e/run.sh`, the first check that assembles the plugin
+
+Every harness in this tree exercises the plugin's PARTS. This one starts a
+display, starts a window manager, starts Praat, and drives the shipped
+workflow through its real dialogs. It exists because on 11 August 2026 four
+defects were found by installing the plugin and clicking it — fifteen dead
+entry points, a title that lost its special characters, a Draw branch that
+threw away the Table it was handed, a dialog that painted over its own output
+— and not one was visible to 8274 R checks, 39/39 stress, 52/52 disclosure,
+357/357 phase1 or two byte-exact round trips.
+
+`driver.praat` sets the presets `eml-compare-groups.praat` sets and calls
+`@emlGraphsWorkflow` with a Table id — its lines 155-160, not a paraphrase of
+them. Everything after that call is shipped code.
+
+### What it asserts
+
+The workflow must reach the column-mapping stage without ever raising
+"No Table selected". It was handed a Table; asking for it again is §2k.
+
+**Verified to fail.** With the first-pass guard removed:
+
+```
+  1. EML Graphs
+  2. No Table selected
+  3. No Table selected      ... and on, to the step bound
+gui_e2e: FAIL — the workflow asked for an object it was handed.
+gui_e2e: FAIL — never advanced to the column-mapping stage
+```
+
+Restored: `PASS — the workflow advanced to column mapping in 2 dialogs`.
+
+### No screen coordinates, and two measured facts that make that possible
+
+- **Return presses BUTTON 1, not the dialog's default.** The first version
+  assumed the default and sat on the main form pressing Undo fourteen times,
+  reporting a hang.
+- **Tab walks the row exactly**: Tab ×0 → button 1, ×1 → 2, ×2 → 3, ×3 wraps.
+  So Tab ×(N−1) then Return presses button N.
+
+A harness that clicked at pixel positions would break the first time a dialog
+gained a field and would then be "fixed" by moving numbers until it went
+green, which is how a check stops meaning anything.
+
+### Where it stops, and why it stops there
+
+At column mapping. Going deeper needs a specific button per dialog, and Tab
+visits every focusable widget — so the count differs with each dialog's field
+count. That is solvable and it is a separate piece of work. Guessing the
+counts until a run went green would produce a harness that clicks something
+plausible and reports success, which is precisely the failure this file
+exists to end.
+
+The figure is not left unchecked: `harness/determinism`, `harness/stress` and
+v34 all assert on rendered output. What only this harness can see is whether
+the shipped workflow ADVANCES when a wrapper hands it a Table.
+
+### The self-inflicted finding, kept because it will recur
+
+Its own first run launched `matchbox-window-manager` without `DISPLAY` in the
+environment — Xvfb takes the display as an argument, matchbox reads it from
+the environment. The window manager exited 1, `xdotool windowactivate` failed
+with *"Your windowmanager claims not to support _NET_ACTIVE_WINDOW"*, no
+dialog took focus, and every keypress went nowhere. That is the exact failure
+`harness/GUI_HARNESS_RECIPE.md` §1 warns about, met by not reading it
+carefully enough. The script now fails loudly if the window manager is not
+running rather than reporting the symptom.
+
+### v35 puts both under the validation standard
+
+`validate/v35_assembly.R` reads `harness/wrappers/out/WRAPPERS.tsv` and
+`harness/gui_e2e/out/DIALOGS.tsv` — two artefacts that exist only because
+something assembled the plugin and ran it. It asserts that every entry point
+parses, that the barrel and the graphs entry point are among those checked by
+name, that the workflow never asks for an object it was handed, and that
+column mapping comes AFTER the main form rather than merely appearing (a
+presence-only check cannot tell "advanced" from "fell back").
+
+**Verified to fail on BOTH defects it pins, separately.**
+
+Duplicate include restored:
+
+```
+FAIL v35  entry points that fail to parse   reported=0  computed=15
+FAIL v35  eml-compare-groups.praat parses (Duplicate label)
+          ... and thirteen more
+```
+
+First-pass guard removed:
+
+```
+FAIL v35  the workflow never asked for an object it was handed
+FAIL v35  the workflow advanced to the column-mapping stage
+FAIL v35  column mapping came after the main form
+11 checks, 8 passed, 3 FAILED
+```
+
+Both restored: 11/11, suite total **8285**.
+
+The per-wrapper logs and per-run PNGs stay out of the repository; the two
+TSVs are the evidence and are committed, so a missing artefact is a hard stop
+rather than a skip.
+
+---
+
 ## 3. CLOSED — the categorical x-axis labels have no off switch
 
 `Show axis values` (None / Both / X only / Y only) is in the Advanced block of
