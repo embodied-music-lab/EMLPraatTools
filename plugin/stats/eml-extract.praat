@@ -1113,6 +1113,26 @@ procedure eml_readCell: .tableId, .row, .columnName$, .clean
         else
             .value = undefined
         endif
+        # LEAVE THE CALLER'S TABLE SELECTED. The slow path goes through
+        # @eml_strictOneCell, which creates a probe Table and removeObject:s
+        # it -- and `removeObject:` leaves NOTHING selected. So on return the
+        # next bare Table command in the caller's loop failed with
+        #
+        #     Error: Command "Get value:" not available for current selection.
+        #
+        # This procedure's only caller used to be @emlExtractColumn, whose
+        # loop calls nothing else, so the omission never showed. It showed the
+        # moment the draw layer adopted this reader (11 Aug 2026): the
+        # spaghetti and scatter loops read a value and then an ID or group
+        # column, and six disclosure cases died -- all of them dirty-data
+        # cases, because a clean column takes the fast path and never gets
+        # here.
+        #
+        # Restored here rather than re-selected at each call site: the entry
+        # line already selects .tableId, so a caller is entitled to assume the
+        # selection it handed in is the one it gets back, and every future
+        # caller would otherwise have to learn this the same way.
+        selectObject: .tableId
     endif
 endproc
 
