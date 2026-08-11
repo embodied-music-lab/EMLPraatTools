@@ -32,9 +32,30 @@
 
 include ../graphs/eml-graph-procedures.praat
 include ../graphs/eml-annotation-procedures.praat
-; The draw layer records itself (@emlDrawViolinPlot calls
-; @emlRecordViolin), so it depends on the record layer. Inert unless a
-; recording is running, but the procedures must EXIST.
-include ../stats/eml-record.praat
+; THE RECORD LAYER IS NOT INCLUDED HERE, AND THAT IS THE FIX FOR A DEFECT
+; THAT KILLED FIFTEEN MENU ENTRY POINTS.
+;
+; It used to be, on the reasoning that @emlDrawViolinPlot calls
+; @emlRecordViolin so the procedures must exist. That reasoning is obsolete:
+; the draw layer's record hooks are guarded with variableExists ("emlRecordActive")
+; and Praat only errors on an undefined procedure when it EXECUTES the call,
+; so an absent recorder costs nothing.
+;
+; And the include was not merely redundant. eml-lib.praat loads
+; eml-lib-stats.praat -- which includes eml-record.praat -- and then this
+; file, so the recorder was pasted in TWICE. `include` is a textual paste,
+; and eml-record.praat contains `label` statements, so the second paste
+; produced:
+;
+;     Error: Duplicate label "END_RECORD_SOURCE" on lines 29445 and 13332.
+;     Script ".../scripts/eml-graphs.praat" not completed.
+;
+; Every wrapper that loads the barrel died at PARSE time -- 15 of them,
+; including EML Graphs, the wizard, and every analysis. Found 11 Aug 2026 by
+; driving the plugin's own menu under Xvfb, which is the first time anything
+; had loaded the barrel: every harness includes the individual files.
+;
+; eml-lib-stats.praat still says "Including the same file twice is harmless".
+; That is TRUE only for a file with no labels in it. See harness/wrappers/.
 include ../graphs/eml-draw-procedures.praat
 include ../graphs/eml-graphs-form.praat
