@@ -167,7 +167,21 @@ scripts <- c(
     # counts are produced in Praat by the plugin's own procedures; this script
     # compares them and never classifies a cell itself.
     #     bash harness/parity/run.sh
-    "v33_exclusion_parity.R"
+    "v33_exclusion_parity.R",
+    # v34 pins LABEL ESCAPING. @emlSanitizeLabel was not idempotent, so the
+    # auto-composed title of every figure was escaped twice and lost the
+    # character it was protecting: "Jitter (%)" rendered as "Jitter (  )" in
+    # the title while the y-axis label on the same figure was correct. Found
+    # by reading a figure the plugin's own menu produced.
+    #     bash harness/disclosure/run.sh
+    "v34_label_escape.R",
+    # v35 pins the plugin ASSEMBLED rather than its parts. Fifteen menu entry
+    # points were dead at parse time and the Draw branch of every analysis
+    # threw away the Table it was handed, while every other check in this
+    # suite was green -- because nothing here had ever loaded the barrel all
+    # sixteen wrappers load, or raised one of the plugin's dialogs.
+    #     bash harness/wrappers/run.sh && bash harness/gui_e2e/run.sh
+    "v35_assembly.R"
 )
 
 cat("EML Praat Tools validation suite\n")
