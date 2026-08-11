@@ -1,0 +1,53 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+
+══════════════════════════════════════════════
+  EML Stats : Spaghetti Plot Summary
+  Mon Aug 10 22:33:09 2026
+══════════════════════════════════════════════
+
+  Table               det
+  Condition column    t
+  Value column        val
+  ID column           id
+  Conditions          6
+  Groups              3
+
+
+  ── 1 ───────────────────────────────────────
+  N                   18
+  Mean                223.776
+  SD                  9.185
+
+
+  ── 2 ───────────────────────────────────────
+  N                   18
+  Mean                221.596
+  SD                  9.238
+
+
+  ── 3 ───────────────────────────────────────
+  N                   18
+  Mean                224.942
+  SD                  9.646
+
+
+  ── 4 ───────────────────────────────────────
+  N                   18
+  Mean                227.354
+  SD                  9.041
+
+
+  ── 5 ───────────────────────────────────────
+  N                   18
+  Mean                228.339
+  SD                  11.037
+
+
+  ── 6 ───────────────────────────────────────
+  N                   18
+  Mean                229.375
+  SD                  8.155
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
