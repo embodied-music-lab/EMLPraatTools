@@ -19,3 +19,5 @@ harness/stress_cases/prefs/
 harness/disclosure/formpath_*.png
 harness/disclosure/worst_*.png
 harness/determinism/prefs/
+# The parity harness writes a scratch pref dir, same as the others.
+harness/parity/prefs/
