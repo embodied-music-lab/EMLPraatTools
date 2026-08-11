@@ -54,25 +54,580 @@ leaves the sub-groups with no key.
 
 ---
 
-## 2. OPEN — draw procedures disagree on how they expose their resolved axes
+## 2. FIXED — draw procedures disagreed on how they expose their resolved axes
+
+As found:
 
 | types | convention |
 |---|---|
 | 8, 10, 11, 12 | `.axisXMin` / `.axisXMax` / `.axisYMin` / `.axisYMax` |
 | 5, 13 | `.xMin` / `.xMax` / `.yMin` / `.yMax` |
 
-Every caller outside the form has to know which convention its graph type
-follows, and choosing wrong fails at RUN time with a bare `Unknown variable:`
+Every caller outside the form had to know which convention its graph type
+follows, and choosing wrong failed at RUN time with a bare `Unknown variable:`
 rather than at parse time. Hit while writing the sweep fixture.
 
-The fix is to publish both names from every draw procedure — additive, so no
-existing caller breaks — and then migrate the annotation bridge and the form's
-post-dispatch block onto the `axis*` spelling. Cheap, but it touches all six
-procedures plus two consumers, so it belongs in the push and not before it.
+### The fix that was proposed was wrong, and reading the code said so
+
+The plan was to publish BOTH names from every procedure — additive, nothing
+breaks. That would have shipped a silent-wrong-number bug. `.xMin` does not
+mean the same thing in the two families:
+
+| procedure | `.xMin` is |
+|---|---|
+| ts, tsci, spaghetti, bar, violin, box, gviolin, gbox, histogram | a LOCAL holding the RESOLVED range |
+| **scatter** | a **PARAMETER** holding what the caller REQUESTED, `(0, 0)` meaning auto |
+
+Aliasing the two spellings together would have made `emlDrawScatterPlot.xMin`
+a name that resolves — and returns `0` for an auto-ranged scatter instead of
+the range the axes were drawn at. A caller would get a wrong number rather
+than an error, which is strictly worse than the problem being fixed. The
+`Unknown variable:` failure at least stops.
+
+### What was done instead
+
+`axis*` is now the single canonical spelling for THE RANGE THE AXES WERE
+ACTUALLY DRAWN AT — after auto-detection, after nice-number rounding, after
+the categorical half-step padding. All ten Table-consuming draw procedures
+publish it, plus `@emlDrawQQPlot`, which previously read the scatter's
+directly and exposed nothing of its own. The parameters are left alone.
+
+Consumers migrated: the form's legend-headroom block (types 5, 10, 13 read
+`.yMin`; now all six read `axisY*`) and its post-dispatch annotation block
+(already on `axis*`). `harness/legend/placement_sweep_case.praat` still reads
+`emlDrawTimeSeriesCI.xMin`, which remains correct — it is a fixture reading a
+local it knows the meaning of, not a caller guessing a convention.
+
+**Evidence that it is pixel-neutral.** The determinism harness renders all ten
+types twice per run and reports the PNG byte size; every one of the ten is
+byte-identical to the size committed before this change:
+
+```
+ts 106104   tsci 80315   spaghetti 218083   bar 40928   violin 81214
+box 50026   gviolin 119987   gbox 60849   scatter 134906   histogram 50194
+```
+
+Plus 39/39 stress, 52/52 disclosure, 357/357 phase1, 8221/8221 R, both round
+trips PASS.
 
 ---
 
-## 3. OPEN — the categorical x-axis labels have no off switch
+## 2b. FIXED — an annotated figure could lose its statistics box entirely
+
+Found 11 August 2026 while migrating §2's consumers. **The first version of
+this section was wrong and is corrected below**; the defect it half-described
+turned out to be real, more serious, and reachable by an ordinary input.
+
+### What was claimed first, and why it was wrong
+
+The claim was that types 6, 7 and 9 seed `annotYMin`/`annotYMax` from the
+dialog's `valueMin`/`valueMax` with no override, so an auto-ranged figure
+would annotate against `(0, 0)` and `annotYRange` would be 0. That was
+written from the POST-dispatch block alone. The form has a PRE-dispatch
+resolver, gated on
+
+```
+(graph_type = 6 or 7 or 9) and annotate = 1 and annotBracketN > 0
+```
+
+which resolves `valueMin`/`valueMax` from the visible data extent, adds
+bracket headroom, and passes the result INTO the draw procedure — so the
+drawn axis IS `valueMin`/`valueMax` and the two spellings agree exactly.
+**The bracket path was never broken.** Publishing a finding from half a
+control flow is how that happened.
+
+### What is actually wrong
+
+The resolver requires `annotBracketN > 0`. The post-dispatch block runs on
+
+```
+annotBracketN > 0  OR  (annotTextN > 0 and annotMatrixN = 0)
+```
+
+So with an omnibus line and NO brackets, nothing resolves the range: the
+legend-headroom pass, the only other thing that refreshes it, runs for types
+5, 8, 10, 11, 12 and 13 — not 6, 7, 9. `@emlDrawAnnotationBlock` was handed
+`(0, 0)` while the axis sat wherever the data put it.
+
+`@emlDrawAnnotations` is NOT the exposure — it is guarded by
+`if annotBracketN > 0` and is not called. The omnibus box is.
+
+**The box is not misplaced. It is gone.** Measured on f0-scale data:
+
+```
+OMNIBUSONLY brackets=0 text=1 matrix=0
+OMNIBUSONLY postDispatchRuns=1 preDispatchResolverRuns=0
+OMNIBUSONLY drew axis=192 214  box got=0 0
+OMNIBUSONLY label=One-way ANOVA: F(3, 52) = 0.46, p = .709
+```
+
+The figure renders cleanly, with no error and no note, and the ANOVA result
+the user ticked Annotate to get is absent from it.
+
+### It is not an edge case
+
+`@emlBridgeGroupComparison` sets `annotTextN = 1` for the omnibus on EVERY
+path, and leaves `annotBracketN` at 0 whenever no pair clears alpha. Two
+routes reach the state, and the second is the common one:
+
+1. Omnibus significant, no pairwise comparison surviving correction.
+2. **Omnibus not significant.** Every non-significant ANOVA or Kruskal-Wallis
+   on an auto-ranged bar, violin or box plot lands here.
+
+A non-significant result is not a rare input, and losing its box is the case
+where the reader most needs to see the number.
+
+### The fix
+
+`annotYMin`/`annotYMax` are now taken from the draw procedure for types 6, 7
+and 9 as well, and `@emlDrawAnnotationBlock` is called with `annotY*` rather
+than `valueMin`/`valueMax`. Possible only because §2 made every procedure
+publish `axis*` — the migration is what surfaced this.
+
+Pixel-neutral everywhere it was not broken, and shown to be: on types 5, 8,
+10, 11, 12 and 13 the two spellings hold the same number (either annotY*
+falls through to valueMin/valueMax, or the legend-headroom pass wrote the
+resolved extent into both and re-drew against it), and on 6, 7 and 9 with
+brackets the pre-dispatch resolver has already made them equal. 52/52
+disclosure, 10/10 determinism byte-identical, 39/39 stress, 357/357 phase1,
+8221/8221 R.
+
+Reproduced by `harness/disclosure/probe_annot_omnibus_only.praat` (defaults
+land in the state) and `harness/disclosure/probe_annot_yrange.praat` (the
+same call with and without the fix, two PNGs, they differ).
+
+### The reason it survived this long is worth more than the defect
+
+`harness/disclosure/probe_formpath.praat` says it reproduces "the form's
+sequence" and is titled as a transcription of the post-dispatch block. It
+passes `emlDrawViolinPlot.axisYMin`/`axisYMax` where the form passed
+`valueMin`/`valueMax`. So the probe tested a CORRECTED version of the code it
+claimed to be testing, and would have gone on passing however wrong the form
+became.
+
+**A hand-transcription of shipping code is not a test of it.** The block
+should be factored to file scope — the way `@emlGraphsDrawWithLegendRoom`
+already was, and for the same stated reason — so a probe drives the real
+code instead of a copy of it. Until that happens every check on this block
+has the same defect the block did. **OPEN, and the next thing to do here.**
+
+## 2c. FIXED — one missing value killed the annotated violin and box path
+
+Found 11 August 2026, within minutes of `probe_formpath.praat` being pointed
+at the shipped code instead of a hand-copy. **The rewrite is what found it**,
+and it found it by accident: the disclosure fixture blanks six of its twenty
+values on purpose, and the probe fell over building the pre-dispatch state.
+
+### The primitive
+
+`Get maximum:` on a Table column containing a blank cell does not return
+undefined. It ABORTS. Measured on 6.6.30, five rows, one blank:
+
+```
+clean max = 50
+about to Get maximum on a column with one blank cell
+Error: Table "t": the cell in row 3 of column "v" is undefined.
+Table "t": cannot compute maximum of column 1.
+```
+
+### Where the form called it
+
+The bracket-headroom stage, on the user's raw table:
+
+```
+else
+    # Violin/Box: visible extent = raw data extent
+    visibleDataMax = Get maximum: valueColName$
+    visibleDataMin = Get minimum: valueColName$
+endif
+
+if visibleDataMax <> undefined and visibleDataMax > 0
+```
+
+Gated on `(graph_type = 6 or 7 or 9) and annotate = 1 and annotBracketN > 0`.
+Type 6 goes through `@emlMeasureBarData` and is unaffected. **Types 7 and 9
+took the raw query.**
+
+So: a violin or box plot, Annotate ticked, at least one significant pair, and
+**one missing value anywhere in the value column** — and the whole workflow
+died with a raw Praat error before drawing anything.
+
+The `if visibleDataMax <> undefined` on the next line is the tell. Someone
+anticipated missing data and guarded the wrong thing: the call aborts, so the
+test it guards is never reached. A guard that cannot fire reads, in review,
+exactly like a guard that works.
+
+### Why nothing caught it
+
+- The **draw procedures tolerate missing values** — they skip the row and say
+  so ("6 row(s) skipped (missing or non-numeric value)"), which is what the
+  whole disclosure suite was built to check. So the dirty-data cases pass:
+  they call the draw procedures directly and never touch this stage.
+- The **form's stages had no caller but the form**, which needs a dialog.
+- `probe_formpath.praat` transcribed the post-dispatch block and never
+  reached the pre-dispatch one at all.
+
+Missing values are the ordinary case in this plugin's domain — an unusable
+token, a failed pitch extraction, an empty cell in an exported CSV. This was
+not a corner.
+
+### The fix
+
+`@emlGraphsColumnExtent: .tableId, .colName$` — min, max and a count over the
+DEFINED cells only, returning undefined bounds when there are none, so the
+caller's existing undefined test finally does what it was written to do. The
+headroom stage now measures the extent of exactly the rows that get drawn,
+which is what it should have been agreeing with all along.
+
+39/39 stress, 52/52 disclosure, 10/10 determinism byte-identical, 357/357
+phase1, 8221/8221 R, both round trips PASS.
+
+### What this says about the rest of the form
+
+Two of the form's stages have now been driven by a probe for the first time,
+and both had a defect in them — §2b in post-dispatch, this in pre-dispatch.
+That is not evidence the form is bad; it is evidence that **the stages nothing
+could call were the stages nothing had tested.** The remaining ones are worth
+the same treatment: `@emlGraphsWorkflow` is still one procedure containing
+context detection, preset reading, the dialog loop, CSV export and post-draw
+options, and none of them can be reached without a display.
+
+---
+
+## 2d. PART FIXED — the stats bridge and the graph bridge did not exclude the same rows
+
+Asked by the author 11 August 2026, after §2c: *does this mean the stats
+bridge and the graph bridge have different exclusion standards?* **Yes.**
+Measured, not argued — `harness/disclosure/probe_exclusion_parity.praat`.
+
+### The two readers
+
+| layer | reader | behaviour |
+|---|---|---|
+| stats | `@eml_readCell`, via `@emlExtractColumn` / `@eml_getGroupData` | **STRICT** — a cell is kept only if it is exactly the number it looks like |
+| graph | `number (Get value: .i, .valueCol$)`, in every draw procedure's row filter | **LENIENT** — Praat's own numericiser |
+
+The strict reader exists on purpose. D96 replaced the lenient filter in the
+stats path with this exact reasoning: Praat coerces `1,5` to `1`, so a
+European decimal comma did not drop a row — it put a DIFFERENT NUMBER into
+the mean, with nothing anywhere in the report to say so. **That argument
+applies word for word to a figure**, and was never applied to one.
+
+### Measured, one cell per row
+
+```
+cell  1 '10'    strict=10     lenient=10     same
+cell  3 '1,5'   strict=undef  lenient=1      DIFFER
+cell  4 '30%'   strict=undef  lenient=0.3    DIFFER
+cell  5 ''      strict=undef  lenient=undef  same
+cell  6 '.5'    strict=undef  lenient=undef  same
+cell  7 'abc'   strict=undef  lenient=undef  same
+```
+
+Two kinds diverge, and they are the two D96 was written about. Both are
+kept by the figure as a wrong number rather than dropped.
+
+### The consequence on one 10-row table
+
+```
+statsA  n=2  excluded=5          <- @eml_getGroupData on group A
+figure  skipped=3                <- @emlDrawViolinPlot's disclosure line
+```
+
+Group A has seven rows. The ANOVA analyses **two** of them. The violin draws
+**four** — 10, 20, and the coerced 1 and 0.3. So:
+
+1. **The omnibus line the form paints onto the figure describes a different
+   data set from the figure.** Neither layer is internally wrong, which is why
+   nothing catches it.
+2. **The disclosure line under-reports.** "3 row(s) skipped" is true of the
+   figure and false of the analysis beside it, and the disclosure line is the
+   plugin's own promise that what was dropped is stated.
+
+### A second axis, and it is not the one that was suspected
+
+Row 10 carries a value with a BLANK group label. `@emlCountGroups` returns
+**3** — a blank label is a category — so the figure draws an unlabelled third
+violin and the axis stretches to hold it (`-20..120` for data topping out at
+99). `@emlGraphsColumnExtent` reports `n=7 max=99`, which is CONSISTENT with
+what the figure draws.
+
+That is worth stating plainly because the obvious suspicion, on adding a new
+extent helper in §2c, is that it introduced a third standard. **It did not.**
+On all ten cells it agrees with the draw layer exactly, including the blank
+group, which is what an axis-extent helper must do — an extent that excluded
+a point the figure plots would clip data off the figure. The helper is right;
+the layer it agrees with is the one in question.
+
+### What this is NOT
+
+Not a proposal to make the draw layer strict on the author's behalf. That
+would change published figures: every point currently plotted from a `1,5` or
+a `30%` cell would disappear, which is the correct outcome by D96's own
+reasoning and is still a visible change to output that has been shipped.
+**It is an author ruling, and it is recorded here as one that is needed.**
+
+Three shapes it could take:
+
+1. **Strict everywhere.** The draw layer adopts `@eml_readCell`. Figure and
+   analysis agree by construction, and the disclosure line becomes true of
+   both. Changes figures.
+2. **Lenient everywhere.** The stats layer reverts. Rejected on sight — D96
+   exists because that silently changed a reported mean.
+3. **Leave the readers alone, make the DISAGREEMENT visible.** When the two
+   readers return different counts for the same column, say so on the figure
+   and in the report. Changes no numbers; adds a disclosure.
+
+1 and 3 are not exclusive. 3 is the smaller change and is worth doing whatever
+is decided about 1, because the current failure mode is silence.
+
+---
+
+## 2e. THE RULING, AND WHAT IS DONE UNDER IT
+
+**Author, 11 August 2026, on §2d: this has to meet a standard, not pick from
+a menu. Strict everywhere.**
+
+The standard is that a figure and the statistic printed on it describe the
+same rows. There is exactly one way to have that by construction, which is
+one reader; and which reader is not a free choice, because `1,5` plotted as
+`1` is a wrong point on a page. D96 settled this for a mean and the same cell
+plotted is no more defensible than the same cell averaged.
+
+The objection that held this up for a turn — *it changes figures people have
+already published* — is backwards. Those figures were already wrong. Changing
+them is the correction, and stating it is how the people holding them find
+out.
+
+### Done
+
+`@emlDrawColumnIsClean` tests the column once; every converted row filter then
+reads cells with `@eml_readCell`, the reader `@emlExtractColumn` uses. The
+column-level gate is not decoration: `@eml_readCell`'s fast path is a plain
+`Get value:` and is only safe on a column already proven strictly numeric
+with no empty cells, and `@eml_strictNumericColumn` copies the table to probe
+the numericiser, so asking per row would be indefensible. A clean column pays
+one test for the whole figure.
+
+Converted, and measured on the parity fixture:
+
+```
+before   statsA n=2 excluded=5 | figure skipped=3 | extent n=7 max=99
+after    statsA n=2 excluded=5 | figure skipped=5 | extent n=5 max=99
+```
+
+The axis moved with it, `-20..120` to `0..110`, because two points that were
+never real are no longer drawn or reserved for.
+
+| procedure | state |
+|---|---|
+| `@emlDrawViolinPlot` | converted |
+| `@emlDrawBoxPlot` | converted |
+| `@emlDrawGroupedViolin` | converted |
+| `@emlDrawGroupedBoxPlot` | converted |
+| `@emlGraphsColumnExtent` | converted — see below |
+
+`@emlGraphsColumnExtent` was written in §2c against the lenient reader,
+correctly, because the draw layer was lenient then. Converting the draw layer
+left it behind for about an hour and it immediately showed the failure the
+pairing exists to prevent: the extent still held the coerced 1 and 0.3, so the
+axis reserved room for points the figure no longer drew. **The pairing is the
+invariant, not either reader on its own**, and that is worth an assertion
+rather than a comment.
+
+### NOT yet done — and the standard is not met until it is
+
+The four converted procedures are the ones the stats bridge annotates, which
+is where figure-and-analysis parity is most visibly broken. They are not all
+of it. Still on the lenient reader:
+
+| procedure | reads |
+|---|---|
+| `@emlDrawTimeSeries` | time and value |
+| `@emlDrawTimeSeriesCI` | time and value |
+| `@emlDrawSpaghettiPlot` | value |
+| `@emlDrawScatterPlot` | x and y, in three separate loops |
+| `@emlDrawHistogram` | value, in two loops |
+| `@emlMeasureBarData` | value and error bar |
+
+**A partially strict draw layer is the §2d defect with a smaller blast
+radius, not a fixed one.** Six procedures, ten reads, the same three-line
+shape at each; the reason they are not in this commit is that the scatter and
+histogram reads sit inside secondary loops (quality checks, the regression
+fit) that need reading before they are touched, not that they are optional.
+
+### The assertion that has to exist (v33)
+
+Per §7 none of this counts as validated until an R script asserts it. The
+check is parity, not either half:
+
+> For each draw procedure and each fixture, the number of rows the figure
+> discloses as skipped equals the number `@emlExtractColumn` excludes from the
+> same column.
+
+That is one number against one number, it fails loudly if either reader moves
+without the other, and it would have caught §2d the day it was introduced.
+
+---
+
+## 2f. FIXED — the check-and-repair layer was mandatory on one bridge and absent from the other
+
+Author, 11 August 2026: *don't we have a data cleaning layer? Is the issue
+that it is optional rather than required?* Nearly — and the correction is
+the useful part.
+
+### It is not optional. It is mandatory on the stats path and absent from the graphs path
+
+`plugin/scripts/eml-check-data.praat` is in the menu (Objects → New → Check &
+repair data...). It repairs `1,5` → `1.5` per column via
+`@emlCommaColumnMode`, `.5` → `0.5`, `n/a` → empty, and OFFERS `30%` → 0.3
+with the switch off by default because the intent is ambiguous. Its own
+header already names `30%` as the most dangerous case: *"it is not excluded,
+it is accepted as a different number."*
+
+But the layer that matters here is not the manual repair tool, it is the
+CHECK. `@emlCheckDataScheme` audits every column and produces a printable
+report naming the column, the first offending row, its literal contents, and
+what to do about it. And:
+
+| path | runs `@emlCheckDataScheme` |
+|---|---|
+| all ten stats wrappers, via `@emlWrapperInit` | **yes, on entry, automatically** |
+| `@emlGraphsWorkflow` | **never** |
+
+So a user who ran an ANOVA on a column of decimal commas was told. The same
+user drawing the same column was told nothing. That asymmetry is the thing
+underneath §2d — the lenient reader and the missing check are two halves of
+one omission, which is that the graphs path skipped what the stats path does.
+
+### What the graphs user now sees
+
+`@emlGraphsWorkflow` calls `@emlCheckDataScheme` after context detection,
+for Table / TableOfReal / Matrix contexts, and prints the existing report
+verbatim — one wording, not a second that could drift from it:
+
+```
+DATA CHECK — some cells will be excluded:
+  Column "v": 1 cell(s) use a comma where a decimal point belongs (row 3:
+  1,5). Praat reads these as a different number, so they are excluded rather
+  than guessed at. Replace the commas with points to use these values. ...
+  Use Check & repair data to fix them, or re-export from your spreadsheet
+  with an English (United States) locale.
+```
+
+### Why this is the half that was actually missing
+
+The strict reader (§2e) stopped the graphs path silently coercing. It did not
+make the graphs path SAY anything, and **a row that vanishes from a figure
+with no explanation is only better than a wrong point on it, not good.**
+
+The two together are the whole answer:
+
+- **the strict reader** makes the cleaning layer non-optional IN EFFECT —
+  un-cleaned cells are dropped rather than quietly turned into different
+  numbers, so skipping the repair step costs you n rather than costing you
+  correctness;
+- **the check** makes it non-optional IN PRACTICE — the user is told, before
+  the figure is drawn, which cells and why and what to do.
+
+Neither alone is sufficient, which is why §2e on its own was not the answer.
+
+### One thing the check recovers that both readers currently drop
+
+`.5` is rejected by the strict reader AND by the lenient one — Praat reads a
+bare leading point as undefined. The repair tool turns it into `0.5`. So for
+that class the check does not merely explain a loss, it points at the only
+route to keeping the data.
+
+39/39 stress, 52/52 disclosure, 10/10 determinism byte-identical, 357/357
+phase1, 8221/8221 R, both round trips PASS.
+
+---
+
+## 2g. DONE — every draw procedure reads cells the way the analysis does, and v33 pins it
+
+Completes §2e. All 25 remaining lenient reads converted across six
+procedures: `@emlDrawTimeSeries`, `@emlDrawTimeSeriesCI`,
+`@emlDrawSpaghettiPlot`, `@emlDrawScatterPlot`, `@emlDrawHistogram`,
+`@emlMeasureBarData`. No `number (Get value: ...)` row filter remains in the
+graphs layer.
+
+### Two defects found doing it, both invisible to the suites that existed
+
+**1. `@eml_readCell` left NOTHING selected.** Its slow path goes through
+`@eml_strictOneCell`, which creates a probe Table and `removeObject:`s it —
+and `removeObject:` clears the selection. So on return the next bare Table
+command in a caller's loop died with
+
+```
+Error: Command "Get value:" not available for current selection.
+```
+
+Six disclosure cases fell over, all of them **dirty-data** cases: a clean
+column takes the fast path and never reaches the classifier. The procedure's
+only caller had been `@emlExtractColumn`, whose loop calls nothing else, so
+the omission had never shown. Fixed at the source rather than by re-selecting
+at each call site — the entry line already selects `.tableId`, so a caller is
+entitled to get back the selection it handed in, and every future caller would
+otherwise have learned this the same way. `@emlDrawColumnIsClean` restores for
+the same reason.
+
+**2. `@emlMeasureBarData` tested a column that is usually `""`.** The
+error-bar column is empty on every bar chart without error bars, and the
+unguarded test aborted the whole figure with `there is no column named ""`.
+Caught by `harness/determinism/run.sh` on the first run after the conversion.
+The test is now gated on `.errorMode = 3`, the same condition as the read it
+pairs with — a test on a different condition from its read is a different
+question wearing the same name.
+
+### v33, and the thing that makes it a check
+
+`harness/parity/run.sh` renders the seven procedures that publish
+`.nSkippedRows` over a clean and a dirty fixture, and writes one line per
+case: the figure's disclosed skipped count, and `@emlExtractColumn`'s (or
+`@emlExtractPairedColumns`' , for the two two-column procedures) excluded
+count on the same data.
+
+```
+name        dirty  figure  stats  verdict
+violin      0      0       0      MATCH
+...
+violin      1      5       5      MATCH
+scatter     1      6       6      MATCH
+parity: PASS — 14/14 agree, and the dirty half excludes rows
+```
+
+**Both numbers come out of Praat**, from the plugin's own procedures. R
+compares them and never classifies a cell — an R-side copy of the rules would
+be a second implementation that drifts, and a drifted copy agreeing with
+neither reader would read as a failure of the plugin.
+
+**The check was verified to fail.** The violin's read was reverted to
+`number (Get value: ...)`, alone, and:
+
+```
+FAIL  v33  violin [dirty] -- figure skipped == analysis excluded
+           reported=3  computed=5
+38 checks, 37 passed, 1 FAILED
+```
+
+Restored, 38/38. Given what §2b and the old `probe_formpath.praat` cost, a new
+check is not finished until it has been shown to fail on the defect it claims
+to pin.
+
+**Two guards keep it from passing vacuously.** Two readers that both drop
+everything, or both drop nothing, agree perfectly — so the dirty half must
+exclude at least one row, and the dirty half must EXIST. The second guard
+exists because the harness hit exactly that on its first run: the case script
+aborted before the dirty pass, the TSV held only clean rows, and everything
+"passed".
+
+39/39 stress, 52/52 disclosure, 10/10 determinism byte-identical, 357/357
+phase1, **8259/8259 R** (8221 + v33's 38), both round trips PASS.
+
+---
+
+## 3. CLOSED — the categorical x-axis labels have no off switch
 
 `Show axis values` (None / Both / X only / Y only) is in the Advanced block of
 every graph type and is honoured on continuous axes.
@@ -80,12 +635,23 @@ every graph type and is honoured on continuous axes.
 `emlCatLabel$[]` unconditionally. So on the six types with a categorical x axis
 the control is present in the dialog and silently does nothing.
 
-Author has seen this and said the current behaviour is fine, so it is recorded
-rather than scheduled. If it is ever wired up, the measurement has to be gated
-too — `@emlFitCategoricalLabels` sets rotation and overhang, and both
+**AUTHOR'S RULING, 11 August 2026: current behaviour is correct. Closed, not
+deferred.** A categorical axis without its category names is not a figure
+anyone can read, so there is nothing a user would want the control to do
+there, and the control is left present rather than hidden per-type because
+the Advanced block is one shared layout.
+
+**A REVIEWER WILL FIND THIS, so it is written down rather than dropped.** The
+symptom — a dialog control that has no effect on six of the graph types — is
+indistinguishable from an unfinished wiring job unless the reason is stated
+somewhere. This section is that statement.
+
+If it is ever wired up anyway, the MEASUREMENT has to be gated with it.
+`@emlFitCategoricalLabels` sets rotation and overhang, and both
 `@emlDrawCategoricalXAxis`'s extent report and the form's matrix-gap budget
 (`graphOverhangInches`) spend that reservation. Suppressing the labels without
-zeroing the measurement reserves space for text that is never drawn.
+zeroing the measurement reserves space for text that is never drawn — a gap
+under the plot with nothing in it, on every affected type.
 
 ---
 
@@ -204,26 +770,42 @@ has to include two graphs files to test an ANOVA.
 Found while writing that test. Not fixed — moving the reporter is a question
 about where reporting lives, not a defect with an obvious repair.
 
-## 10. OPEN — the recorded workflow has no input file
+## 10. SUPERSEDED — the recorded workflow has no input file
 
-The orchestrators are handed a `tableId`, never a path, so nothing in the
-chain registers the input. The emitted script therefore carries a correct
-analysis, correct numbers, a correct call line, and **no statement of what
-data any of it ran on**.
+**As first written:** the orchestrators are handed a `tableId`, never a path,
+so nothing in the chain registers the input. The emitted script therefore
+carries a correct analysis, correct numbers, a correct call line, and no
+statement of what data any of it ran on. The renderer named the gap rather
+than omitting it — the emitted file opened with
+`INCOMPLETE -- NO INPUT FILE WAS RECORDED`.
 
-The renderer names the gap rather than omitting it — the emitted file opens
-with `INCOMPLETE -- NO INPUT FILE WAS RECORDED` — and the test asserts that
-notice is present. Closing it means registering the path at the layer that
-opens the file, which is the next increment of the feature.
+**Superseded 9 August 2026 by the author's API-level ruling**, and the notice
+no longer exists. The emitted file no longer bootstraps itself: it carries an
+`include` block and operates on `selected ("Table")`, so there is no input
+path for it to need. What a reader needs is not the path the recording
+session read but a way to know the right object is selected now, so the
+object's NAME AND SHAPE go in the header as provenance:
+
+```
+# Input: vt -- 100 rows, 2 columns
+```
+
+`@emlRecordSource` is first-wins and sets `emlRecordSourceChanged` if a later
+step works on a different object, so a session that silently switched tables
+is visible in the emitted file rather than averaged into it.
+
+This section is kept rather than deleted because the original text is the
+argument the design decision answered, and a reviewer reading only the
+resolution would not see what was traded away: the emitted file is no longer
+runnable on a bare Praat with no object loaded. That is the cost, and it was
+taken deliberately.
 
 ---
 
-## 11. OPEN — Praat 7 refuses file writes from a script without `--FULL-TRUST`
+## 11. RULED — Praat 7's trust wall is a platform behaviour, not a plugin defect
 
 Found 10 August 2026, after the author asked why the session was running
-Praat 6.4.x.
-
-Measured on 7.0:
+Praat 6.4.x. Measured on 7.0:
 
 ```
 Error: The following potentially dangerous action was requested by the
@@ -231,25 +813,43 @@ script "..." but is not allowed without --FULL-TRUST:
 save a line of text to the file "..."
 ```
 
-This is not a recorder problem, it is a **plugin-wide** one. Everything the
-plugin writes goes through the same wall: `@emlSaveConfig`, CSV export
-(`@emlWrapperExportCSV`), every `Save as 300-dpi PNG file:`, the broom
-three-file result writer, and the record-workflow crash mirror. Under 7.x a
-user driving the GUI will be prompted or refused rather than silently served.
+Every write in the plugin goes through the same wall: `@emlSaveConfig`, CSV
+export (`@emlWrapperExportCSV`), every `Save as 300-dpi PNG file:`, the broom
+three-file result writer, the record-workflow crash mirror, and now the
+emitted workflow script.
 
-Not investigated further here, and deliberately not "fixed" by sprinkling a
-flag: whether the right answer is documentation, a startup check that warns
-once, or something else is an author decision. What is established is that
-it happens, and that `--FULL-TRUST` clears it — phase1 is 357/357 on 7.0 with
-the flag and dies without it.
+**AUTHOR'S RULING, 11 August 2026.** Three parts:
 
-`harness/record/roundtrip.sh` detects a 7.x binary from `--version` and adds
-the flag only then, because 6.6.30 does not know it. Verified green on both:
+1. **The supported target is 6.6.30. Test there.** 7.0.0 may relax the
+   standard before it matters, and a plugin-wide change made now against a
+   rule that moves is work spent twice.
+2. **Command-line invocation needs the trust tag.** That is the harness's
+   job, not the plugin's — `harness/_env.sh` adds `--FULL-TRUST` only when
+   `_v1 >= 7`, because 6.6.30 does not know the flag.
+3. **GUI invocation — standalone script or plugin — raises an approval
+   window with a third button, and the approval persists until the session
+   resets.** So the user's path through 7.x is a dialog they answer once, not
+   a refusal. There is nothing for the plugin to detect, warn about, or work
+   around.
+
+**Consequence: no shipping file changes.** The three postures that were on
+the table — refuse-with-a-message on `praatVersion >= 7000`, route writes
+through a trusted menu action, or do nothing — resolve to the third, and it
+is the third for a reason rather than by default: 1 and 2 would both suppress
+a dialog the user is meant to see and would have to be unwound when 7.x
+settles. This is recorded, not scheduled.
+
+The version-conditional trust flag stays in the harness, verified green on
+both builds:
 
 ```
-PRAAT=/home/claude/praat      -> PASS (Praat 6.6.30)
-PRAAT=/home/claude/praat7000  -> PASS (Praat 7.0)
+PRAAT=<repo>/../praat      -> PASS (Praat 6.6.30)
+PRAAT=<repo>/../praat7000  -> PASS (Praat 7.0)
 ```
+
+What is still true and worth a reader knowing: phase1 is 357/357 on 7.0 with
+the flag and dies without it. That is the evidence the wall exists, and it is
+why the harness carries the flag rather than the plugin.
 
 ## 12. RESOLVED — the session was testing on the wrong Praat
 
