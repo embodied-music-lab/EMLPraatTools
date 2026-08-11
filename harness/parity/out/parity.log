@@ -1,0 +1,113 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+
+══════════════════════════════════════════════
+  EML Stats : Spaghetti Plot Summary
+  Tue Aug 11 13:09:29 2026
+══════════════════════════════════════════════
+
+  Table               par
+  Condition column    cond
+  Value column        v
+  ID column           id
+  Conditions          6
+  Groups              3
+
+
+  ── C1 ──────────────────────────────────────
+  N                   3
+  Mean                209.000
+  SD                  4.000
+
+
+  ── C2 ──────────────────────────────────────
+  N                   3
+  Mean                210.000
+  SD                  4.000
+
+
+  ── C3 ──────────────────────────────────────
+  N                   3
+  Mean                211.000
+  SD                  4.000
+
+
+  ── C4 ──────────────────────────────────────
+  N                   3
+  Mean                212.000
+  SD                  4.000
+
+
+  ── C5 ──────────────────────────────────────
+  N                   3
+  Mean                213.000
+  SD                  4.000
+
+
+  ── C6 ──────────────────────────────────────
+  N                   3
+  Mean                214.000
+  SD                  4.000
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+Violin plot: 5 row(s) skipped (missing or non-numeric value).
+Box plot: 5 row(s) skipped (missing or non-numeric value).
+Grouped violin: 5 row(s) skipped (missing or non-numeric value).
+Grouped box plot: 5 row(s) skipped (missing or non-numeric value).
+Spaghetti plot: 5 row(s) skipped (missing or non-numeric value).
+
+══════════════════════════════════════════════
+  EML Stats : Spaghetti Plot Summary
+  Tue Aug 11 13:09:29 2026
+══════════════════════════════════════════════
+
+  Table               par
+  Condition column    cond
+  Value column        v
+  ID column           id
+  Conditions          6
+  Groups              3
+
+
+  ── C1 ──────────────────────────────────────
+  N                   2
+  Mean                209.000
+  SD                  5.657
+
+
+  ── C2 ──────────────────────────────────────
+  N                   2
+  Mean                208.000
+  SD                  2.828
+
+
+  ── C3 ──────────────────────────────────────
+  N                   2
+  Mean                213.000
+  SD                  2.828
+
+
+  ── C4 ──────────────────────────────────────
+  N                   3
+  Mean                212.000
+  SD                  4.000
+
+
+  ── C5 ──────────────────────────────────────
+  N                   1
+  Mean                209.000
+  SD                  0
+
+
+  ── C6 ──────────────────────────────────────
+  N                   3
+  Mean                214.000
+  SD                  4.000
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+Time series: 5 row(s) skipped (missing or non-numeric value).
+Scatter plot: 6 row(s) skipped (missing or non-numeric value).
+PARITY written to /home/claude/EMLPraatTools/harness/parity/out/PARITY.tsv
