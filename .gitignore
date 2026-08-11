@@ -21,3 +21,12 @@ harness/disclosure/worst_*.png
 harness/determinism/prefs/
 # The parity harness writes a scratch pref dir, same as the others.
 harness/parity/prefs/
+# The wrapper parse harness writes a scratch pref dir and per-wrapper logs.
+# WRAPPERS.tsv is the evidence validate/v35 reads and is NOT ignored.
+harness/wrappers/prefs/
+harness/wrappers/out/*.log
+# The GUI end-to-end harness writes a scratch pref dir and per-run logs.
+# DIALOGS.tsv is the evidence validate/v35 reads and is NOT ignored.
+harness/gui_e2e/prefs/
+harness/gui_e2e/out/*.log
+harness/gui_e2e/out/*.png
