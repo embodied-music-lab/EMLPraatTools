@@ -368,6 +368,9 @@ b4 <- res[rig & startsWith(res$case, "rp_"), ]
 # smaller population.
 b5 <- res[!rig & startsWith(res$case, "sr_"), ]
 b6 <- res[!rig & startsWith(res$case, "sp_"), ]
+# BLOCK 7, the four non-categorical types at all five placements
+# (harness/legend/placement_sweep_case.praat). Same rule: split on the name.
+b7 <- res[!rig & startsWith(res$case, "sw_t"), ]
 
 # ---------------------------------------------------------------------------
 # THE MATRIX IS ITSELF AN ASSERTION.
@@ -483,6 +486,15 @@ SP_CASES <- as.vector(t(outer(
                       paste, sep = "_"))),
     paste0("p", 1:5), paste, sep = "_")))
 
+# BLOCK 7, the four NON-CATEGORICAL types that offer the Legend placement
+# menu, at all five placements, one figure size. Section 11 is the check;
+# harness/legend/placement_sweep_case.praat is the fixture. Inventoried here
+# with the rest so that a type dropped from the sweep is a count mismatch
+# rather than a quietly smaller pass total.
+SW_TYPES <- c(5, 8, 10, 13)
+SW_CASES <- as.vector(t(outer(paste0("sw_t", SW_TYPES), paste0("p", 1:5),
+                              paste, sep = "_")))
+
 RP_CTL <- c(rp_notch_p3 = "rp_notch_ctl", rp_notch_p2 = "rp_notch_ctl",
             rp_notch_p4 = "rp_notch_ctl",
             rp_tall_p3 = "rp_tall_ctl", rp_tall_p2 = "rp_tall_ctl",
@@ -509,11 +521,19 @@ check("v32", "block 6 rendered in full (2 types x 3 sizes x 5 placements)",
       nrow(b6), length(SP_CASES), tol = 0)
 check_true("v32", "every placement in block 6 is present",
            all(SP_CASES %in% b6$case))
-# The six blocks partition the file. A case that fell out of all six -- a
+check("v32", "block 7 rendered in full (4 non-categorical types x 5 placements)",
+      nrow(b7), length(SW_CASES), tol = 0)
+check_true("v32", "every non-categorical sweep case in block 7 is present",
+           all(SW_CASES %in% b7$case))
+# The seven blocks partition the file. A case that fell out of all seven -- a
 # new name, a mis-typed prefix -- would otherwise be rendered, measured and
-# never looked at.
-check("v32", "the six blocks account for every rendered case",
-      nrow(b1) + nrow(b2) + nrow(b3) + nrow(b4) + nrow(b5) + nrow(b6),
+# never looked at. This check EARNED ITS KEEP on 11 August 2026: block 7 was
+# added to the driver, every one of its own assertions passed, and this line
+# was the only thing in the tree that noticed twenty figures had appeared in a
+# population nothing had been told about.
+check("v32", "the seven blocks account for every rendered case",
+      nrow(b1) + nrow(b2) + nrow(b3) + nrow(b4) + nrow(b5) + nrow(b6) +
+      nrow(b7),
       nrow(res), tol = 0)
 check("v32", "no duplicate case name", length(unique(res$case)), nrow(res), tol = 0)
 check_true("v32", "every case in block 1 is present",
@@ -2323,6 +2343,237 @@ for (g in SR_GRAPHS) for (sz in SIZES$size) {
              p4$diffPx == 0)
   check_true("v32", sprintf("sp_%s_%s: placement 1 does change the figure", g, sz),
              p1$diffPx > 0)
+}
+
+
+# ---------------------------------------------------------------------------
+# 11. THE FOUR NON-CATEGORICAL TYPES.  Block 7.
+#
+# WHAT WAS MISSING, AND IT IS A COVERAGE HOLE RATHER THAN A DEFECT. Six graph
+# types offer the Legend placement menu (legendPlacementStyle[t] = 5):
+#
+#      5 Line Chart (+/-CI)     8 Scatter Plot        10 Histogram
+#     11 Grouped Violin        12 Grouped Box         13 Spaghetti Plot
+#
+# Sections 1 to 9 are measured on the geometry rig, which draws a GROUPED
+# VIOLIN. Section 10 is measured on the series fixture, which draws a line
+# chart and a grouped scatter. Between them, three of the six. Types 5, 10 and
+# 13 had never been swept by anything an R script reads -- they were measured
+# BY HAND on 9 August 2026 and the numbers were written into section 1 of
+# audit/GRAPHING_PUSH_REMAINING.md. A table in a markdown file is a record of
+# what someone saw once; section 7's standard is that nothing counts as
+# validated until an authored R script tests the output. This section is that
+# script, and harness/legend/placement_sweep_case.praat -- rewritten to the
+# driver's own calling convention -- is what produces its input.
+#
+# The claim being pinned, in the author's words: the dimensions a user types
+# describe the DATA AREA. So across all five placements, on every one of these
+# four types, the PLOT RECTANGLE is one rectangle and the SAVED IMAGE is what
+# moves.
+#
+# INCHES, NOT PIXELS, for the cross-placement comparison. Placement 2 grows
+# the extent by one boxInsetInches, which is not a whole number of inches, so
+# the file is written at an effective resolution a hair off 300 and the same
+# plot measures one pixel narrower. Section 2's note has the arithmetic; this
+# section uses the frameWin/frameHin the loader already derives from each
+# file's own scale. The pixel numbers ARE pinned, further down, for the four
+# placements whose extent is a whole number of inches.
+#
+# WHAT ONLY THIS BLOCK CAN SAY. Placement 4 parks the legend some two feet
+# below the figure and writes it to a SECOND FILE. No other fixture in this
+# tree performs that select-and-save, so until now the second file was
+# asserted from the source and never from a file on disk. Here it is a file on
+# disk.
+# ---------------------------------------------------------------------------
+# SW_TYPES, SW_CASES and b7 are declared with the rest of the inventory, up
+# where the block census is, so that "which cases exist" is one list and not
+# two that can drift apart.
+SW_TYPE_NAME <- c("5" = "Line Chart (+/-CI)", "8" = "Scatter Plot",
+                  "10" = "Histogram", "13" = "Spaghetti Plot")
+
+for (tp in SW_TYPES) {
+  fam <- b7[b7$case %in% paste0("sw_t", tp, "_p", 1:5), ]
+  nm  <- SW_TYPE_NAME[[as.character(tp)]]
+  if (!check_true("v32", sprintf("type %d (%s): all five placements rendered",
+                                 tp, nm), nrow(fam) == 5)) next
+
+  # --- THE DESIGN GUARANTEE. One plot rectangle, five placements.
+  check_true("v32", sprintf("type %d: one plot width across all five placements", tp),
+             max(fam$frameWin) - min(fam$frameWin) < 0.01)
+  check_true("v32", sprintf("type %d: one plot height across all five placements", tp),
+             max(fam$frameHin) - min(fam$frameHin) < 0.01)
+  # ...and its ORIGIN does not move either. A rectangle of the right size in
+  # the wrong place would pass the two checks above.
+  check_true("v32", sprintf("type %d: the plot rectangle does not move", tp),
+             max(fam$frameLin) - min(fam$frameLin) < 0.01 &&
+             max(fam$frameTin) - min(fam$frameTin) < 0.01)
+
+  # --- ...AND IT IS THE RECTANGLE THE USER ASKED FOR, once the margins are
+  # added back. The composition statement section 3 makes on the rig, restated
+  # on four types it has never been made on.
+  for (i in seq_len(nrow(fam))) {
+    check("v32", paste(fam$case[i], "frame + margins = requested width"),
+          fam$frameW[i] + (fam$mL[i] + fam$mR[i]) * fam$dpiX[i],
+          fam$vpW[i] * fam$dpiX[i], tol = PX_TOL)
+    check("v32", paste(fam$case[i], "frame + margins = requested height"),
+          fam$frameH[i] + (fam$mT[i] + fam$mB[i]) * fam$dpiY[i],
+          fam$vpH[i] * fam$dpiY[i], tol = PX_TOL)
+  }
+
+  gp <- function(n) fam[fam$case == paste0("sw_t", tp, "_p", n), ]
+  p1 <- gp(1); p2 <- gp(2); p3 <- gp(3); p4 <- gp(4); p5 <- gp(5)
+
+  # --- WHICH PLACEMENTS MAY GROW THE FILE. 2 across, 3 down, 1/4/5 not at
+  # all. The same rule sections 3b and 10c state, on four more types.
+  check_true("v32", sprintf("type %d: placement 1 leaves the export alone", tp),
+             p1$imgW == p5$imgW && p1$imgH == p5$imgH)
+  check_true("v32", sprintf("type %d: placement 4 leaves the export alone", tp),
+             p4$imgW == p5$imgW && p4$imgH == p5$imgH)
+  check_true("v32", sprintf("type %d: placement 2 grows the export across only", tp),
+             p2$imgW > p5$imgW && p2$imgH == p5$imgH)
+  check_true("v32", sprintf("type %d: placement 3 grows the export down only", tp),
+             p3$imgH > p5$imgH && p3$imgW == p5$imgW)
+
+  # --- THE PIXEL PIN, on the four placements whose extent is a whole number
+  # of inches and whose scale is therefore exactly 300. 6 x 4.5 at 300 dpi is
+  # 1800 x 1350, and that is the number section 1 of the audit tracker
+  # records by hand. Placement 2 is excluded by the arithmetic above, not by
+  # convenience: its extent is 6 + boxInsetInches wide.
+  # Width: placement 3 grows DOWN, so all four of these are the requested
+  # width at exactly 300 dpi.
+  for (r in list(p1, p3, p4, p5)) {
+    check("v32", paste(r$case, "saved image width = requested inches x 300 dpi"),
+          r$imgW, r$vpW * DPI, tol = 0)
+  }
+  # Height: the three that grow in neither direction.
+  for (r in list(p1, p4, p5)) {
+    check("v32", paste(r$case, "saved image height = requested inches x 300 dpi"),
+          r$imgH, r$vpH * DPI, tol = 0)
+  }
+
+  # --- THE RESOLVED AXES ARE THE SAME IN ALL FIVE. This is the other half of
+  # "only the furniture moves", and it is the half a pixel measurement cannot
+  # see: a legend that quietly widened the y range to make room for itself
+  # would leave the plot rectangle exactly where it is and change the figure.
+  # The fixture's data is generated by an LCG rather than randomGauss for
+  # precisely this comparison to be defined.
+  check_true("v32", sprintf("type %d: one y-axis across all five placements", tp),
+             max(fam$axMin) - min(fam$axMin) < 1e-9 &&
+             max(fam$axMax) - min(fam$axMax) < 1e-9)
+
+  # --- THE LEGEND HAS THE ENTRIES THE FIGURE HAS SERIES, on four types that
+  # reach @emlDrawLegend by four different routes. Read out of the transcript
+  # from three independently produced numbers, as section 10 does.
+  for (i in seq_len(nrow(fam))) {
+    cs <- fam$case[i]
+    lg <- readLines(file.path(leg_dir, paste0(cs, ".log")), warn = FALSE)
+    sl <- grep("^SERIES ", lg, value = TRUE)
+    if (!check_true("v32", paste(cs, "reported its series count"),
+                    length(sl) == 1)) next
+    f <- function(key) as.numeric(sub(paste0("^.*[ ]", key, "=([^ ]*).*$"),
+                                      "\\1", sl[1]))
+    check("v32", paste(cs, "the draw procedure grouped every series in the table"),
+          f("nGroups"), 4, tol = 0)
+    check("v32", paste(cs, "the legend has exactly one entry per series"),
+          f("legendN"), 4, tol = 0)
+  }
+
+  # --- PLACEMENT 4 WROTE A SECOND FILE, AND NO OTHER PLACEMENT DID.
+  # emlLegendSepActive is the handshake the graphs form performs at its own
+  # save site; the fixture performs the same one. Both halves are asserted --
+  # a run that wrote a legend file for every placement would be as wrong as
+  # one that wrote none.
+  for (i in seq_len(nrow(fam))) {
+    cs   <- fam$case[i]
+    sep  <- file.path(leg_dir, paste0(cs, "_legend.png"))
+    lg   <- readLines(file.path(leg_dir, paste0(cs, ".log")), warn = FALSE)
+    sfl  <- grep("^SEPFILE ", lg, value = TRUE)
+    if (!check_true("v32", paste(cs, "reported the parked-legend handshake"),
+                    length(sfl) == 1)) next
+    act  <- as.numeric(sub("^SEPFILE active=([^ ]*).*$", "\\1", sfl[1]))
+    want <- if (fam$pReq[i] == 4) 1 else 0
+    check("v32", paste(cs, "emlLegendSepActive is what the placement implies"),
+          act, want, tol = 0)
+    if (want == 1) {
+      check_true("v32", paste(cs, "the parked legend was written to its own file"),
+                 file.exists(sep) && file.info(sep)$size > 0)
+    } else {
+      check_true("v32", paste(cs, "no stray legend file"), !file.exists(sep))
+    }
+  }
+}
+
+# --- WHICH CORNER EACH TYPE TAKES. Recorded rather than guessed, and it is
+# the corner @emlPlaceElements scored: the fixture names none of its own, so
+# a corner in the transcript can only have come from the scoring.
+#
+# Measured 11 August 2026. The line chart takes TOP-LEFT -- its series sweep
+# the full height of the panel and the winner is decided by very little, the
+# same observation section 10 makes about sr_line_*. The other three take
+# BOTTOM-RIGHT: the scatter's cloud rises to the right, the histogram's bars
+# are tallest at the left, and the spaghetti's trajectories climb.
+SW_CORNER_PIN <- c("5" = "top-left", "8" = "bottom-right",
+                   "10" = "bottom-right", "13" = "bottom-right")
+for (tp in SW_TYPES) {
+  fam <- b7[b7$case %in% paste0("sw_t", tp, "_p", 1:5), ]
+  if (nrow(fam) != 5) next
+  want <- SW_CORNER_PIN[[as.character(tp)]]
+  # ALL FIVE PLACEMENTS, not one: the corner is scored before the placement
+  # is consulted, so a figure that changed corner when the legend moved out
+  # of the plot would mean the scoring had started reading the placement.
+  check_true("v32", sprintf("type %d takes the %s corner in all five placements",
+                            tp, want),
+             all(fam$corner == want))
+}
+
+# ---------------------------------------------------------------------------
+# 11b. THE AXIS CONTRACT, MEASURED ON THE FOUR TYPES.
+#
+# Section 7 reads the contract out of the source. This reads it off four
+# running draw procedures, and it is worth having both because the two can
+# disagree: a procedure that publishes .axis* from the wrong local satisfies
+# every static check in section 7.
+#
+# `.axis*` ALWAYS MEANS THE RANGE THE AXES WERE ACTUALLY DRAWN AT. `.xMin` and
+# friends do NOT: in @emlDrawScatterPlot they are the procedure's PARAMETERS,
+# carrying what the caller REQUESTED, with (0, 0) meaning auto. That is the
+# whole reason the contract exists and the reason aliasing the two spellings
+# would have preserved the defect under a tidier name -- a caller reading
+# .xMin uniformly gets 0 for an auto-ranged scatter instead of an error.
+#
+# So the assertion is TWO-SIDED. On 5, 10 and 13 the two spellings agree. On
+# 8 they must NOT: the requested range is 0 and the drawn range is not.
+# ---------------------------------------------------------------------------
+for (tp in SW_TYPES) {
+  cs <- paste0("sw_t", tp, "_p1")
+  lp <- file.path(leg_dir, paste0(cs, ".log"))
+  if (!check_true("v32", paste(cs, "log written"), file.exists(lp))) next
+  lg <- readLines(lp, warn = FALSE)
+  al <- grep("^AXCONTRACT ", lg, value = TRUE)
+  if (!check_true("v32", paste(cs, "reported both axis spellings"),
+                  length(al) == 1)) next
+  f <- function(key) as.numeric(sub(paste0("^.*[ ]", key, "=([^ ]*).*$"),
+                                    "\\1", al[1]))
+  ax <- c(f("axisXMin"), f("axisXMax"), f("axisYMin"), f("axisYMax"))
+  pr <- c(f("paramXMin"), f("paramXMax"), f("paramYMin"), f("paramYMax"))
+
+  # The published range is a real range, whatever else is true of it.
+  check_true("v32", sprintf("type %d publishes a non-degenerate axis* range", tp),
+             all(is.finite(ax)) && ax[2] > ax[1] && ax[4] > ax[3])
+
+  if (tp == 8) {
+    # THE EXCEPTION, AND IT IS THE POINT. Called with 0, 0, 0, 0 -- auto on
+    # both axes -- the scatter's four parameters are still 0 after the draw,
+    # and its axis* is the range it drew. If these ever became equal, either
+    # the parameters started being overwritten (and a caller could no longer
+    # tell what it asked for) or axis* stopped being resolved.
+    check_true("v32",
+               "the scatter's .xMin.. are the caller's REQUEST, not the drawn range",
+               all(pr == 0) && !isTRUE(all.equal(ax, pr)))
+  } else {
+    check_true("v32", sprintf("type %d: axis* agrees with the resolved locals", tp),
+               isTRUE(all.equal(ax, pr, tolerance = 1e-9)))
+  }
 }
 
 if (!exists("EML_SUITE")) { eml_report("v32 legend geometry: the plot is what the user asked for"); eml_exit() }
