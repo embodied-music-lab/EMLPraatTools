@@ -76,7 +76,7 @@ To Spectrum: "yes"
 selectObject: "Sound tone"
 To Ltas: 100
 
-nOps = 35
+nOps = 36
 op$[1] = "anova"
 op$[2] = "twogroup"
 op$[3] = "kw"
@@ -123,3 +123,8 @@ op$[32] = "spectrum2sound"
 op$[33] = "spectrum2f0"
 op$[34] = "tor2table"
 op$[35] = "matrix2table"
+; THE GRAPHS -> STATS PATH. Reaching a group comparison by asking a figure
+; for its statistical annotation is the second half of a bidirectional design:
+; stats can lead to a graph and a graph can lead to stats. Both must record
+; the same analysis, and on 12 Aug 2026 only the stats-menu half did.
+op$[36] = "bridge"

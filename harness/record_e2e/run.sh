@@ -134,7 +134,7 @@ fail=0
 [[ "${started:-0}" == "1"  ]] || { echo "FAIL: the recording did not start"; fail=1; }
 [[ "${survived:-0}" == "1" ]] || { echo "FAIL: the buffer did not survive the invocations"; fail=1; }
 [[ "${written:-0}" == "1"  ]] || { echo "FAIL: no script was written"; fail=1; }
-[[ "$nOps" -eq 35 ]] || { echo "FAIL: expected 35 operations, drove $nOps"; fail=1; }
+[[ "$nOps" -eq 36 ]] || { echo "FAIL: expected 36 operations, drove $nOps"; fail=1; }
 # AN OPERATION THAT DID NOT RUN IS A HARNESS FAILURE, not a coverage figure.
 [[ "$nDead" -eq 0 ]] || { echo "FAIL: $nDead operation(s) never completed — see $LOG"; fail=1; }
 

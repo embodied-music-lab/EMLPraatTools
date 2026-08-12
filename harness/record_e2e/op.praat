@@ -190,6 +190,12 @@ elsif op$ = "matrix2table"
     selectObject: cid
     col$ = Get column label: 1
     @emlDrawHistogram: cid, "Histogram from Matrix", col$, "Count", 6, 4, "color", 1, col$, "", 0, 1, 0, 0, 0
+elsif op$ = "bridge"
+    ; The graphs -> stats direction: @emlBridgeGroupComparison runs the
+    ; omnibus test and the post-hoc that the figure's brackets are drawn
+    ; from. Same statistics as @emlRunAnovaAnalysis, reached the other way.
+    @emlPrepDraw
+    @emlBridgeGroupComparison: id, "spl", "grp3", 0.05, "stars", 0, 1, "parametric", 1
 endif
 
 appendInfoLine: "OPDONE ", op$
