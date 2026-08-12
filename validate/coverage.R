@@ -119,6 +119,12 @@ ARTEFACTS <- list(
                     "WRAPPERS.tsv"),
        read = .tsv_col1,
        rerun = "bash harness/wrappers/run.sh"),
+  list(key  = "record_out",
+       what = "recorded operation",
+       path = file.path(.dir("EML_RECORD_DIR", "harness", "record_e2e", "out"),
+                        "RECORD.tsv"),
+       read = .tsv_col1,
+       rerun = "bash harness/record_e2e/run.sh"),
   list(key  = "determinism_out",
        what = "draw procedure",
        path = file.path(.dir("EML_DETERMINISM_DIR", "harness", "determinism",
@@ -182,7 +188,7 @@ for (a in ARTEFACTS) {
 # quietly shortened, would otherwise reduce this file to nothing while it
 # still reported success.
 check("v38", "every declared artefact was examined",
-      length(ARTEFACTS), 5, tol = 0)
+      length(ARTEFACTS), 6, tol = 0)
 
 if (!exists("EML_SUITE")) {
     eml_report("v38 coverage: everything rendered is claimed by some validator")

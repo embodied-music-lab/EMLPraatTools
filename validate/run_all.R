@@ -211,7 +211,17 @@ scripts <- c(
     # claim downstream inherited that. The load-bearing check re-compares the
     # two PNGs off disk in R rather than reading the driver's verdict column.
     #     bash harness/determinism/run.sh
-    "v37_determinism.R"
+    "v37_determinism.R",
+    # v39 pins the RECORDER driven the way a user drives it: ten operations
+    # through separate script scopes in one Praat process, which is the menu
+    # model. Every test before harness/record_e2e started the recording in the
+    # same scope that added the steps, so none of them could have seen that the
+    # draw capture hook never fired from a menu or that the phrase registry was
+    # never loaded by the shipped plugin. Coverage is pinned as a FLOOR, and
+    # "did not run" is checked separately because a crashed operation and one
+    # with no capture hook look identical in the step count.
+    #     bash harness/record_e2e/run.sh
+    "v39_record_coverage.R"
 )
 
 cat("EML Praat Tools validation suite\n")
