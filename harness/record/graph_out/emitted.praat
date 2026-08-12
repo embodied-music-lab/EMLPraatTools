@@ -40,16 +40,22 @@ include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
 # ------------------------------------------------------------
 # THE OBJECT
 # Recorded against: vt -- 100 rows, 2 columns.
-# Select that Table in the Objects window, then run this script.
+# The objects this workflow ran on are named in the block below.
+# All of them must be open before you run this script.
 # ------------------------------------------------------------
 
-table = selected ("Table")
+# Name your data objects here for this recorded workflow.
+# Edit a name to run the same workflow on other data;
+# nothing below this block names an object.
+data1$ = "Table vt"   ; step 1 (draw)
 
 # --- Step 1 (draw) ---
+selectObject: data1$
+data = selected ()
 # Violin plot of val, grouped by grp, 4 groups.
 # Violin width is a kernel density estimate, not a count.
 
-@emlDrawViolinPlot: table, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, "grp", "val", 170.000000, 270.000000
+@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, "grp", "val", 170.000000, 270.000000
 
 # Axis resolved to 170.0000 .. 270.0000 over 4 groups.
 # The same step through the menu:
