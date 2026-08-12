@@ -105,6 +105,23 @@
 # ============================================================================
 
 
+; ---------------------------------------------------------------------------
+; PRESENT, WHICH IS NOT THE SAME AS RUNNING. Set at LOAD time, so any caller
+; can tell "the recorder is loaded" from "the recorder has been initialised".
+;
+; The draw layer used to test variableExists ("emlRecordActive") to mean both,
+; and that was true only while a recording lived inside one script scope. A
+; menu command runs in a FRESH scope: emlRecordActive does not exist yet even
+; though a recording is in progress, so the guard was false and every figure
+; drawn from the menu went unrecorded. Found 12 Aug 2026 by driving ten
+; operations through runScript: -- the assembly, not the parts. The ANOVA hook
+; escaped it only because it calls @emlRecordInit before testing anything.
+;
+; A caller with no recorder loaded -- a PraatGen companion file, a direct call
+; into the draw library -- has no such variable, and the guarded call is never
+; executed, which is what keeps the draw layer free of the recorder.
+emlRecordLoaded = 1
+
 # ----------------------------------------------------------------------------
 # @emlRecordInit
 # Idempotent. Establishes the globals with no side effects, so any procedure
@@ -147,16 +164,15 @@ procedure emlRecordInit
     ; @emlRecordBegin in this same run must not have its id replaced.
     ; ------------------------------------------------------------------
     if emlRecordBufferId = 0
-        .keepSel = 0
-        if numberOfSelected () > 0
-            .keepSel = 1
-        endif
         nocheck selectObject: "Table emlRecordBuffer"
         if numberOfSelected () = 1
             emlRecordBufferId = selected ("Table")
             emlRecordActive = 1
             .nSoFar = Get number of rows
             emlRecordN = .nSoFar
+        endif
+    endif
+
         endif
     endif
     if not variableExists ("emlRecordPluginRoot$")
@@ -191,6 +207,42 @@ procedure emlRecordInit
     endif
     if not variableExists ("emlRecordPraatVersion")
         emlRecordPraatVersion = praatVersion
+    endif
+    ; ------------------------------------------------------------------
+    ; THE PHRASE TABLE, WHICH IS AN OBJECT TOO, AND WAS NEVER LOADED.
+    ;
+    ; Until 12 Aug 2026 the ONLY callers of @emlRecordLoadPhrases anywhere
+    ; were two phase1 tests. Nothing in the shipped plugin loaded it, so
+    ; every recording a user could actually make emitted
+    ;
+    ;     # [MISSING PHRASE: anova.intent]
+    ;
+    ; on every step. The tests passed because they loaded it themselves.
+    ; Found by harness/record_e2e -- the assembly, not the parts.
+    ;
+    ; It re-attaches exactly like the buffer, and for the same reason: it is
+    ; a Table in the Objects window, so it outlives the scope that read it
+    ; and one read serves the whole session.
+    ;
+    ; `../data/...` resolves against the folder of the script that was RUN,
+    ; which is plugin/scripts for every wrapper -- true of an installed
+    ; plugin and of this repository alike, so one path serves both.
+    if emlRecordActive = 1 and emlRecordPhraseId = 0
+        nocheck selectObject: "Table eml-record-phrases"
+        if numberOfSelected () = 1
+            emlRecordPhraseId = selected ("Table")
+        else
+            .phrases$ = "../data/eml-record-phrases.csv"
+            if variableExists ("emlRecordPhrasePath$")
+                if emlRecordPhrasePath$ <> ""
+                    .phrases$ = emlRecordPhrasePath$
+                endif
+            endif
+            if fileReadable (.phrases$)
+                Read Table from comma-separated file: .phrases$
+                emlRecordPhraseId = selected ("Table")
+            endif
+        endif
     endif
 endproc
 
