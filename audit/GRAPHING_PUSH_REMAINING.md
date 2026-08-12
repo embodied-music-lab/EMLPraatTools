@@ -23,7 +23,9 @@ Six graph types offer the Legend placement menu (`legendPlacementStyle[t] = 5`):
 (`legendPlacementStyle[t] = 0`).
 
 **Verified 9 Aug 2026** across all six types at all five placements, with
-deterministic data so only the furniture moves:
+deterministic data so only the furniture moves — and, since **11 Aug 2026**,
+re-verified on every run by `validate/v32_legend_geometry.R` §11 rather than
+by the hand measurement this table records. See §7.
 
 | | plot box (px) | canvas | notes |
 |---|---|---|---|
@@ -39,6 +41,39 @@ rectangle is invariant, which is the design guarantee.
 Fixtures: `harness/legend/placement_sweep_case.praat` (types 5, 8, 10, 13),
 `harness/legend/placement_matrix_case.praat` (types 11, 12, with a comparison
 matrix panel).
+
+**NOW A CHECK, 11 Aug 2026.** `placement_sweep_case.praat` was rewritten to
+the legend driver's own calling convention — environment variables, the
+record lines `emit_row` reads, `@stressSave` — and wired in as **block 7** of
+`harness/legend/run.sh`: four types × five placements, 20 figures,
+`sw_t<type>_p<placement>`. §11 of `validate/v32_legend_geometry.R` asserts
+what the table above records by hand, and three things the table could not
+say:
+
+- the plot rectangle is one rectangle **in inches**, so placement 2's
+  one-pixel narrowing — the effective resolution being a hair off 300 on a
+  canvas that is not a whole number of inches — is accounted for rather than
+  tolerated;
+- placement 4's **second file exists on disk**. No other fixture in the tree
+  performs the `emlLegendSepActive` select-and-save, so until now the parked
+  legend was asserted from the source only. Both halves are checked: p4 writes
+  one, and 1/2/3/5 write none;
+- the **axis contract** (§2) measured on four running draw procedures rather
+  than read out of the source — `.axis*` agrees with the resolved locals on
+  5, 10 and 13, and on 8 it must NOT, because there `.xMin` is the caller's
+  request and is still 0 after an auto-ranged draw.
+
+Every one of those was verified to fail on the defect it pins before being
+trusted: the parked-legend file deleted, a stray one planted, the rectangle
+moved 10 px, placement 2's growth removed, the y-axis widened, and — for the
+last — the scatter's parameters actually aliased to the resolved range in
+`eml-draw-procedures.praat` and the figure re-rendered.
+
+The one that was not planted is the block census, which caught this work on
+its own: every §11 assertion passed on the first run and
+`"the seven blocks account for every rendered case"` was the only line in the
+tree that noticed twenty figures had appeared in a population nothing had
+been told about.
 
 **RULED — matrix panel width.** The comparison matrix panel only ever matches
 the width of the graph itself. Author ruling, 9 Aug 2026. Verified: the panel
@@ -1064,16 +1099,24 @@ D84. Stats Demo, Quick Start, tutorial, and Batch voice analysis are tabled.
 ## 7. Validation standard
 
 Nothing counts as validated until an authored R script tests the output,
-including the red-path input. Current baseline: **8221 checks, 0 failed**
-(`Rscript validate/run_all.R`), 39/39 stress cases
+including the red-path input. Current baseline, 11 Aug 2026:
+**8631 checks, 0 failed** (`Rscript validate/run_all.R`), 39/39 stress cases
 (`bash harness/stress_graphs.sh` — 29 OK, 10 expected `BLANK_FRAME_ABS`),
-disclosure harness clean across 28 combinations, phase1 294/294.
+52/52 disclosure, 10/10 determinism byte-identical, 14/14 parity, 26/26
+wrappers, `gui_e2e` PASS, phase1 357/357, both round trips PASS.
 
-Not yet covered by an R script: the legend placement geometry above is
-asserted by `validate/v32_legend_geometry.R` (4117 checks), but the four
-non-categorical types were verified 9 Aug by direct pixel measurement in this
-session and those measurements are **not** yet in v32. That is the first
-item of the push.
+**CLOSED — the four non-categorical types.** This section used to read: the
+legend placement geometry is asserted by `validate/v32_legend_geometry.R`,
+but the four non-categorical types were verified 9 Aug by direct pixel
+measurement and those measurements are not yet in v32. They are now. §1 has
+what was built; the number moved 4117 → 4463 in v32 and 8285 → 8631 across
+the suite. The hand measurement in §1's table stands as the record of what
+was seen that day, and is no longer the evidence.
+
+The general point is worth keeping, because it is the one that let the dead
+menu entry points ship (§2h): **a number in this file is a record of what
+someone saw once. It is not a check.** Anything measured by hand here belongs
+in an R script before it is relied on.
 
 ---
 
