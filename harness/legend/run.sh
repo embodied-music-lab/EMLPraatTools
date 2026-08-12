@@ -204,6 +204,18 @@
 # rather than flipping a boolean. Measured 9 August 2026 on the 6 x 4
 # five-group line chart: 1717 data pixels covered at room=0, 0 at room=1.
 #
+# BLOCK 7 — THE FOUR NON-CATEGORICAL TYPES. 20 figures, named sw_t*_p*.
+#
+# Six graph types offer the Legend placement menu. Blocks 2, 3 and 6 between
+# them sweep three of them. This block is the other three plus the scatter as
+# a bridge: 5 Line +/-CI, 8 Scatter, 10 Histogram, 13 Spaghetti, at all five
+# placements, on one figure size. Fixture: placement_sweep_case.praat.
+#
+# It also carries the one thing no other fixture does — placement 4's SECOND
+# FILE. The parked legend is written by selecting emlLegendSepX0..Y1 and
+# saving again, which is the graphs form's own save-site handshake, and it is
+# asserted in section 11 rather than argued from the source.
+#
 # BLOCK 6 — THE FIVE PLACEMENTS ON THE REAL PATH. 30 figures, named sp_*.
 # Two graph types x three sizes x five placements, five series, no headroom
 # pass. Block 2 makes this statement with the corner forced and the legend
@@ -286,6 +298,7 @@ if [ -n "${EML_PLUGIN_ROOT:-}" ]; then
 fi
 CASE=$CASEDIR/case.praat
 SERIES=$CASEDIR/series_case.praat
+SWEEP=$CASEDIR/placement_sweep_case.praat
 
 : > "$OUT/RESULTS.tsv"
 # Clear stale per-case artefacts, for the reason harness/disclosure/run.sh
@@ -630,6 +643,36 @@ for graph in line scatter; do
                      "$([ "$p" = 5 ] && echo 0 || echo 1)" \
                      "$ctlName" "$1" "$2" "$3"
         done
+    done
+done
+
+# --- Block 7: the four NON-CATEGORICAL types, all five placements. 20
+# figures, named sw_t<type>_p<placement>.
+#
+# Blocks 2, 3 and 6 sweep the placements too, but between them they exercise
+# exactly three of the six types that offer the menu: the grouped violin the
+# geometry rig draws, and the line chart and grouped scatter the series
+# fixture draws. Types 5 (Line +/-CI), 10 (Histogram) and 13 (Spaghetti) had
+# never been swept by anything an R script reads — they were measured by hand
+# on 9 August 2026 and the numbers went into the audit tracker, which is not
+# a check. Section 11 of validate/v32_legend_geometry.R is.
+#
+# ONE SIZE, not three. What varies here is the GRAPH TYPE, and the three-size
+# sweep is already carried by blocks 2, 3 and 6 on the types they draw; adding
+# it here would triple the render time to restate a claim those blocks already
+# make. 6 x 4.5 rather than 6 x 4 so this block does not sit on the same
+# figure as everything else, which is how a size-specific accident hides.
+for t in 5 8 10 13; do
+    for p in 1 2 3 4 5; do
+        name="sw_t${t}_p${p}"
+        want "$name" || continue
+        rm -f "$OUT/$name.png" "$OUT/${name}_legend.png"
+        env -u DISPLAY EML_OUT="$OUT/$name.png" EML_CASE="$name" \
+            EML_GTYPE="$t" EML_PLACEMENT="$p" \
+            EML_VPW=6 EML_VPH=4.5 EML_MODE=color \
+            "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$SWEEP" \
+            > "$OUT/$name.log" 2>&1
+        emit_row "$name" 6 4.5 4 color sweep 1 "-" NA NA NA
     done
 done
 
