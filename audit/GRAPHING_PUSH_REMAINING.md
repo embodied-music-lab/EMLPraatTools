@@ -1813,3 +1813,102 @@ defect. phase1 357/357 → **361/361**.
 Still open and untouched by this: §8. The emitted script cannot re-run
 headless, because the wrappers use `beginPause:`. The author has ruled that
 acceptable for now.
+
+---
+
+## 21. NEW — `harness/record_e2e/`, and the three things it found in an hour
+
+Added 12 August 2026, immediately after the recorder was wired to the menu,
+and before any attempt to extend its coverage. The reasoning was §2h's: if the
+wiring is wrong, replicating the pattern across the other twenty-seven
+operations would replicate a defect twenty-seven times before anyone noticed.
+
+### What it does that nothing else did
+
+Every earlier test of the recorder started a recording and added steps **in the
+same script scope**. A menu command does not work that way — it ends and takes
+every variable with it, and the next command starts with nothing. Re-attaching
+to the buffer across that boundary is the *entire design of the feature*, and
+nothing had ever crossed it.
+
+`runScript:` gives a script its own variable scope inside one Praat process
+and shares the Objects window. That is the menu model exactly, and it needs no
+display. The harness starts a recording, drives **ten operations** through it —
+seven analyses and three figures, each in its own scope — and records for each
+whether a step actually reached the buffer.
+
+The driver and its operation script are **staged into `plugin/scripts/`** for
+the run and removed by a trap. That is not a convenience: `include` resolves
+against the folder of the script that was RUN, and `eml-lib.praat`'s own line
+reads `include eml-lib-stats.praat`, so the barrel can only be loaded from
+that folder. It is also the more faithful test — a menu command *is* a script
+in `plugin/scripts` loading the barrel from there.
+
+### THE FINDINGS
+
+**1. A harness that lied, caught before it was trusted.** The first version
+wrapped each operation in `nocheck runScript:` and inferred "recorded nothing"
+from an unchanged step count. Three of the ten were *crashing*, and it reported
+them as three operations with no capture hook. A coverage number built on that
+is fiction. `op.praat` now prints `OPDONE` as its last line and the artefact
+carries a third verdict, `DIDNOTRUN`, which is a **harness failure and not a
+coverage figure**.
+
+**2. THE DRAW CAPTURE HOOK COULD NEVER FIRE FROM A MENU.** The guard read:
+
+```praat
+if variableExists ("emlRecordActive")
+```
+
+with a comment explaining that the variable exists once `@emlRecordInit` has
+run. True while a recording lived in one scope. In a **fresh** menu invocation
+nothing has called `@emlRecordInit`, so the variable does not exist, the guard
+is false, and **every figure drawn from the menu went unrecorded while the
+recording itself ran perfectly**. The ANOVA hook escaped only because
+`@emlRecordAnova` calls `@emlRecordInit` before testing anything.
+
+Fixed by separating three things the guard conflated — *present*, *initialised*
+and *recording*. `eml-record.praat` now sets `emlRecordLoaded = 1` at LOAD
+time, so a caller can tell "the recorder is loaded" from "the recorder has been
+initialised", and the draw hook initialises before testing. A caller that never
+loaded the recorder still executes nothing, which is the property the guard
+exists to keep.
+
+**3. THE PHRASE TABLE WAS NEVER LOADED BY THE SHIPPED PLUGIN.** The only
+callers of `@emlRecordLoadPhrases` anywhere were two phase1 tests, which load
+it themselves and therefore passed. Every recording a user could actually make
+emitted
+
+```
+# [MISSING PHRASE: anova.intent]
+```
+
+on every step. The phrase registry is a Table in the Objects window, so it
+re-attaches exactly like the buffer and one read serves the session;
+`../data/eml-record-phrases.csv` resolves against the wrapper's folder, which
+is `plugin/scripts` for an installed plugin and for this repository alike.
+
+### What it reports, and the number that matters
+
+```
+anova        recorded      twogroup     silent
+kw           silent        descriptive  silent
+normality    silent        correlation  silent
+regression   silent        violin       recorded
+scatter      silent        histogram    silent
+
+operations that record : 2 of 10
+operations that ran    : 10 of 10
+```
+
+**The pass condition is the mechanism, not the coverage.** The recording must
+start, survive every invocation and produce a file. Coverage is a number the
+harness reports and that is expected to rise deliberately — 13 analysis
+orchestrators and 16 draw procedures exist, and **two of them call the
+recorder**. A user who switches recording on and runs a correlation gets an
+empty script and no warning. That is the next piece of work, and it is now
+measured rather than remembered.
+
+**Not yet covered by an R script.** `validate/v39` should read
+`out/RECORD.tsv` and pin the coverage count so it cannot fall silently. Under
+§7 this harness does not count as validated until that exists.
