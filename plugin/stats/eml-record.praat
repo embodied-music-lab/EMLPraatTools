@@ -617,6 +617,90 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlRecordTableManifest
+# The block at the top of an emitted script that names every object the
+# session ran on, once each, with the steps that used it.
+#
+# WHY A BLOCK RATHER THAN A SELECT PER STEP. Both produce a script that runs.
+# Only one of them can be EDITED: re-pointing a recorded workflow at another
+# data set is the main thing anybody will want to do with the file, and that
+# has to be one visible place near the top rather than a hunt through the body
+# for every mention of an object.
+#
+# So each distinct source becomes `tableN$ = "name"` with an inline note of
+# the steps that used it, and the body refers to tableN$ and never to a name.
+# Change the string, run it again on other data.
+#
+# ONE SOURCE MEANS NO BLOCK. A session that never moved keeps the contract it
+# has always had -- select the Table, run the file -- and emits nothing here.
+# The block exists to answer a question a single-source session does not ask.
+#
+# Outputs: .out$   the block, empty when fewer than two sources were used
+#          .n      how many distinct sources the session used
+# ----------------------------------------------------------------------------
+procedure emlRecordTableManifest
+    @emlRecordInit
+    .out$ = ""
+    .n = 0
+
+    selectObject: emlRecordBufferId
+    .nSteps = Get number of rows
+
+    ; Distinct sources, in the order they were first used, so the numbering
+    ; follows the session rather than the alphabet.
+    for .s from 1 to .nSteps
+        selectObject: emlRecordBufferId
+        .src$ = Get value: .s, "source"
+        if .src$ <> ""
+            .seen = 0
+            for .k from 1 to .n
+                if .name$[.k] = .src$
+                    .seen = .k
+                endif
+            endfor
+            if .seen = 0
+                .n = .n + 1
+                .name$[.n] = .src$
+                .steps$[.n] = ""
+                .seen = .n
+            endif
+            ; The steps that used it, and what they were, so the note says
+            ; something a reader can act on rather than a bare number.
+            selectObject: emlRecordBufferId
+            .kind$ = Get value: .s, "kind"
+            .stepN = Get value: .s, "n"
+            if .steps$[.seen] <> ""
+                .steps$[.seen] = .steps$[.seen] + ", "
+            endif
+            .steps$[.seen] = .steps$[.seen] + string$ (.stepN)
+            ... + " (" + .kind$ + ")"
+        endif
+    endfor
+
+    if .n < 2
+        goto END_TABLE_MANIFEST
+    endif
+
+    .out$ = .out$ + "# Name your tables here for this recorded workflow."
+    ... + newline$
+    .out$ = .out$ + "# Edit a name to run the same workflow on other data;"
+    ... + newline$
+    .out$ = .out$ + "# nothing below this block names an object."
+    ... + newline$
+    for .k from 1 to .n
+        .word$ = "steps "
+        if not index (.steps$[.k], ",")
+            .word$ = "step "
+        endif
+        .out$ = .out$ + "table" + string$ (.k) + "$ = """ + .name$[.k]
+        ... + """   ; " + .word$ + .steps$[.k] + newline$
+    endfor
+    .out$ = .out$ + newline$
+
+    label END_TABLE_MANIFEST
+endproc
+
+# ----------------------------------------------------------------------------
 # @emlRecordRender
 # Walk the buffer in order and build the whole file as one string.
 #
@@ -783,18 +867,16 @@ procedure emlRecordRender
         .text$ = .text$
         ... + "# selected before running this file." + newline$
     endif
-    .text$ = .text$
-    ... + "# Select that Table in the Objects window, then run this script."
-    ... + newline$
-    if emlRecordSourceChanged = 1
+    if emlRecordSourceChanged = 0
         .text$ = .text$
-        ... + "# This session ran on more than one object. Each step below"
+        ... + "# Select that Table in the Objects window, then run this script."
+        ... + newline$
+    else
+        .text$ = .text$
+        ... + "# This session used more than one Table. They are named in the"
         ... + newline$
         .text$ = .text$
-        ... + "# selects the Table it ran on BY NAME, so they must all be"
-        ... + newline$
-        .text$ = .text$
-        ... + "# present in the Objects window before this file is run."
+        ... + "# block below, and all of them must be open before you run it."
         ... + newline$
     endif
     if emlRecordAmbiguousName = 1
@@ -809,12 +891,46 @@ procedure emlRecordRender
         ... + newline$
     endif
     .text$ = .text$ + .rule$ + newline$ + newline$
-    .text$ = .text$ + "table = selected (""Table"")" + newline$ + newline$
+
+    ; ---- THE TABLE MANIFEST ----------------------------------------------
+    ;
+    ; A session that stayed on ONE object emits nothing here and keeps the
+    ; contract it has always had: run it with that Table selected. A session
+    ; that MOVED gets a named block instead, and it is the reason this is a
+    ; block and not a select scattered through the body.
+    ;
+    ; The point is EDITING. Re-pointing a recorded workflow at next month's
+    ; data should be one visible place near the top, not a hunt through the
+    ; steps for every mention of an object. So the names are variables, each
+    ; carrying an inline note saying which steps used it, and nothing below
+    ; ever writes an object name again.
+    ;
+    ; INLINE COMMENTS USE `;` AND NOT `#`. Measured 12 Aug 2026 on 6.6.30:
+    ; a trailing `;` comment after code parses, a trailing `#` does not --
+    ; `table2$ = "voiceB"   # step 2` fails with
+    ;     Error: Unknown symbol: « "voiceB"   #
+    ; The manifest is the only place in an emitted file that puts a comment
+    ; on the same line as code, which is why this is written down here.
+    @emlRecordTableManifest
+    .text$ = .text$ + emlRecordTableManifest.out$
+
+    ; NO MANIFEST MEANS THE OLD CONTRACT, AND THE LINE THAT IMPLEMENTS IT.
+    ; Removing this when the manifest was added emitted a single-source
+    ; script whose every step used `table` and where nothing ever assigned
+    ; it -- caught by running one, not by reading the diff.
+    if emlRecordTableManifest.n < 2
+        .text$ = .text$ + "table = selected (""Table"")" + newline$ + newline$
+    endif
 
     ; ---- BODY ------------------------------------------------------------
     selectObject: emlRecordBufferId
     .nSteps = Get number of rows
+    ; Empty rather than the first source, so that step 1 of a multi-source
+    ; session emits its select too. With a manifest there is no "run it with
+    ; the right Table selected" contract left to lean on -- the block names
+    ; every object, and the body has to say which one each step wants.
     .prevSource$ = ""
+    .manifestN = emlRecordTableManifest.n
     for .s from 1 to .nSteps
         selectObject: emlRecordBufferId
         .n = Get value: .s, "n"
@@ -831,21 +947,29 @@ procedure emlRecordRender
         .text$ = .text$ + "# --- Step " + string$ (.n) + " ("
         ... + .kind$ + ") ---" + newline$
 
-        ; THE SELECT, EMITTED ONLY WHERE THE OBJECT CHANGES.
+        ; THE SELECT, EMITTED ONLY WHERE THE OBJECT CHANGES, AND ALWAYS
+        ; THROUGH THE MANIFEST.
         ;
-        ; A session that stayed on one Table emits nothing here and reads
-        ; exactly as it did before this existed: the `table = selected
-        ; ("Table")` line above is the whole of its object handling. A
-        ; session that moved emits one line at each move, which is what a
-        ; person writing the script by hand would do.
+        ; The body never writes an object name. It writes tableN$, which the
+        ; block at the top defines, so re-pointing this workflow at other
+        ; data is one edit in one visible place rather than a hunt through
+        ; the steps. That is the whole reason the manifest is a block.
         ;
-        ; The FIRST step is skipped even when it has a source, because the
-        ; header already tells the reader to select that Table and running
-        ; on the selected object is the documented contract.
-        if .source$ <> "" and .s > 1 and .source$ <> .prevSource$
-            .text$ = .text$ + "selectObject: ""Table " + .source$ + """"
-            ... + newline$
-            .text$ = .text$ + "table = selected (""Table"")" + newline$
+        ; A session that stayed on ONE object has no manifest and emits
+        ; nothing here: the `table = selected ("Table")` line above is the
+        ; whole of its object handling, exactly as before.
+        if .manifestN >= 2 and .source$ <> "" and .source$ <> .prevSource$
+            .slot = 0
+            for .k from 1 to .manifestN
+                if emlRecordTableManifest.name$[.k] = .source$
+                    .slot = .k
+                endif
+            endfor
+            if .slot > 0
+                .text$ = .text$ + "selectObject: ""Table "" + table"
+                ... + string$ (.slot) + "$" + newline$
+                .text$ = .text$ + "table = selected (""Table"")" + newline$
+            endif
         endif
         if .source$ <> ""
             .prevSource$ = .source$
