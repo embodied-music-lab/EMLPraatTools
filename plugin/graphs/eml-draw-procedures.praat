@@ -821,7 +821,7 @@ procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
             ... .title$,
             ... "",
             ... "@emlDrawF0Contour: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.fMin) + ", " + string$ (.fMax) + ", " + string$ (.yUnit),
-            ... "In the GUI: New > EML Tools > EML Graphs..."
+            ... "In the GUI: New > EML Tools > EML Graphs...", ""
         endif
     endif
 endproc
@@ -933,7 +933,7 @@ procedure emlDrawWaveform: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
             ... .title$,
             ... "",
             ... "@emlDrawWaveform: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.aMin) + ", " + string$ (.aMax),
-            ... "In the GUI: New > EML Tools > EML Graphs..."
+            ... "In the GUI: New > EML Tools > EML Graphs...", ""
         endif
     endif
 endproc
@@ -1008,7 +1008,7 @@ procedure emlDrawSpectrum: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
             ... .title$,
             ... "",
             ... "@emlDrawSpectrum: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.fMin) + ", " + string$ (.fMax) + ", " + string$ (.pMin) + ", " + string$ (.pMax),
-            ... "In the GUI: New > EML Tools > EML Graphs..."
+            ... "In the GUI: New > EML Tools > EML Graphs...", ""
         endif
     endif
 endproc
@@ -1165,7 +1165,7 @@ procedure emlDrawLTAS: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colo
             ... .title$,
             ... "",
             ... "@emlDrawLTAS: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.fMin) + ", " + string$ (.fMax) + ", " + string$ (.pMin) + ", " + string$ (.pMax) + ", " + string$ (.showCurve) + ", " + string$ (.showBars) + ", " + string$ (.showPoles) + ", " + string$ (.showSpeckles),
-            ... "In the GUI: New > EML Tools > EML Graphs..."
+            ... "In the GUI: New > EML Tools > EML Graphs...", ""
         endif
     endif
 endproc
@@ -1801,7 +1801,7 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
             ... .title$,
             ... "",
             ... "@emlDrawTimeSeries: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .timeCol$ + """" + ", """ + .valueCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.vMin) + ", " + string$ (.vMax),
-            ... "In the GUI: New > EML Tools > EML Graphs..."
+            ... "In the GUI: New > EML Tools > EML Graphs...", ""
         endif
     endif
 endproc
@@ -2309,7 +2309,7 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
             ... .title$,
             ... "",
             ... "@emlDrawTimeSeriesCI: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .timeCol$ + """" + ", """ + .valueCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.vMin) + ", " + string$ (.vMax),
-            ... "In the GUI: New > EML Tools > EML Graphs..."
+            ... "In the GUI: New > EML Tools > EML Graphs...", ""
         endif
     endif
 endproc
@@ -2887,7 +2887,7 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
             ... .title$,
             ... "",
             ... "@emlDrawSpaghettiPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .condCol$ + """" + ", """ + .valueCol$ + """" + ", """ + .idCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.showMean) + ", " + string$ (.vMin) + ", " + string$ (.vMax),
-            ... "In the GUI: New > EML Tools > EML Graphs..."
+            ... "In the GUI: New > EML Tools > EML Graphs...", ""
         endif
     endif
 endproc
@@ -3257,7 +3257,7 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
             ... .title$,
             ... "Bars show means. The spread, not the bar, is what tells you about the data.",
             ... "@emlDrawBarChart: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .groupCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.errorMode) + ", """ + .errorCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
-            ... "In the GUI: New > EML Tools > EML Graphs..."
+            ... "In the GUI: New > EML Tools > EML Graphs...", ""
         endif
     endif
 endproc
@@ -3695,6 +3695,10 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .colX$, .colY$, .groupCol$, .xMin, .xMax, .yMin, .yMax, .annotate
+    ; What the scatter's own statistics produced, for the record. Empty when
+    ; the figure carries no analysis, which the renderer then omits.
+    .recFit$ = ""
+    .recLine$ = ""
     # Step 1: Theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
@@ -3977,6 +3981,13 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
         endif
 
         # --- Rich Info window output via shared reporters (ungrouped) ---
+        # THE SCATTER IS A GRAPH -> STATS PATH, AND THE RECORD MUST SAY SO.
+        # scatterAnalysisType and annotCorrType$ decide whether a correlation
+        # and a regression are computed and REPORTED here, from the figure --
+        # the mirror of Correlate and Regress on the stats menu. Until
+        # 12 Aug 2026 the recorder captured the draw call and none of this,
+        # so a recorded scatter said a figure was drawn and never that a
+        # correlation had been run or what it found.
         # v1.19: .reportedOLS records whether the OLS regression report was
         # actually emitted, so the drawn line can be forced to the same
         # estimator (see the regression-line block below).
@@ -3988,11 +3999,22 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
             if (scatterAnalysisType = 1 or scatterAnalysisType = 3) and annotCorrType$ <> ""
                 @emlReportCorrelationAnalysis: .tableName$,
                 ... .colX$, .colY$, .nValid, annotCorrType$
+                .recFit$ = annotCorrType$ + " correlation reported on "
+                ... + string$ (.nValid) + " complete pairs"
             endif
             # Regression reporter (Analysis = Regression or Both)
             if scatterAnalysisType >= 2
                 @emlLinearRegression: .xData#, .yData#
                 if emlLinearRegression.error$ = ""
+                    ; CAPTURED BEFORE THE REPORTER, which re-invokes the fit.
+                    if .recFit$ <> ""
+                        .recFit$ = .recFit$ + newline$ + "  "
+                    endif
+                    .recFit$ = .recFit$ + .colY$ + " = "
+                    ... + fixed$ (emlLinearRegression.intercept, 4) + " + "
+                    ... + fixed$ (emlLinearRegression.slope, 4) + " x "
+                    ... + .colX$ + ", R-squared = "
+                    ... + fixed$ (emlLinearRegression.rSquared, 4)
                     @emlReportRegressionAnalysis: .tableName$,
                     ... .colY$, .colX$, .nValid, 0
                     .reportedOLS = 1
@@ -4021,6 +4043,13 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                     .slope = emlTheilSen.slope
                     .intercept = emlTheilSen.intercept
                     .lineMethod$ = "Theil-Sen"
+                    ; MONOTONIC, NOT LINEAR, and the record has to say which.
+                    ; Theil-Sen is the robust rank-coherent estimator chosen
+                    ; for Spearman contexts; a reader who sees only "a fitted
+                    ; line" cannot tell it from OLS.
+                    .recLine$ = "fit line: Theil-Sen (monotonic), slope = "
+                    ... + fixed$ (emlTheilSen.slope, 4) + ", intercept = "
+                    ... + fixed$ (emlTheilSen.intercept, 4)
                 else
                     .slope = undefined
                     .lineMethod$ = "error"
@@ -4043,6 +4072,13 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                     .slope = .pearsonR * (.sdY / .sdX)
                     .intercept = .meanY - .slope * .meanX
                     .lineMethod$ = "OLS"
+                    ; LINEAR, and the record says which -- the twin of the
+                    ; Theil-Sen note above. A reader who sees only "a fitted
+                    ; line" cannot tell the two estimators apart, and they
+                    ; answer different questions.
+                    .recLine$ = "fit line: OLS (linear), slope = "
+                    ... + fixed$ (.slope, 4) + ", intercept = "
+                    ... + fixed$ (.intercept, 4)
                 else
                     .slope = undefined
                     .lineMethod$ = "error"
@@ -4528,11 +4564,50 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
     if variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
+            ; THE SWITCHES ARE GLOBALS, AND THE RECORD HAS TO SET THEM.
+            ; scatterAnalysisType, annotCorrType$ and scatterRegressionLine
+            ; are set by the graphs form and READ here -- they are not
+            ; arguments. A recorded scatter that omitted them reproduced a
+            ; DIFFERENT figure and none of the statistics, because whatever
+            ; those globals happened to be when the emitted script ran is
+            ; what it drew. Emitted as assignments ahead of the call so the
+            ; recorded step is self-contained.
+            ; GUARDED, because these globals belong to the FORM. A direct
+            ; caller -- a user script, a PraatGen companion, this tree's own
+            ; harnesses -- never sets them, and the procedure only reads them
+            ; inside `if .annotate = 1`, so a standalone scatter runs happily
+            ; without them. Reading them unconditionally here killed the
+            ; harness's scatter case with "Unknown variable"; the same
+            ; variableExists discipline the recorder uses everywhere else
+            ; applies, and a step with no switches to restore emits none.
+            .recSetup$ = ""
+            if variableExists ("scatterAnalysisType")
+            ... and variableExists ("annotCorrType$")
+            ... and variableExists ("scatterRegressionLine")
+                .recSetup$ = "scatterAnalysisType = "
+                ... + string$ (scatterAnalysisType) + newline$
+                ... + "annotCorrType$ = """ + annotCorrType$ + """" + newline$
+                ... + "scatterRegressionLine = "
+                ... + string$ (scatterRegressionLine) + newline$
+            endif
+            .recNote$ = "A fitted line is descriptive and carries no test."
+            .recBoth$ = .recFit$
+            if .recLine$ <> ""
+                if .recBoth$ <> ""
+                    .recBoth$ = .recBoth$ + newline$ + "  "
+                endif
+                .recBoth$ = .recBoth$ + .recLine$
+            endif
+            if .recBoth$ <> ""
+                .recNote$ = .recNote$ + " The correlation and regression "
+                ... + "below were reported from this figure."
+            endif
             @emlRecordDrawStep: .objectId, "Scatter plot",
             ... .title$,
-            ... "A fitted line, where one is drawn, is descriptive and carries no test.",
-            ... "@emlDrawScatterPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .colX$ + """" + ", """ + .colY$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.xMin) + ", " + string$ (.xMax) + ", " + string$ (.yMin) + ", " + string$ (.yMax) + ", " + string$ (.annotate),
-            ... "In the GUI: New > EML Tools > EML Graphs..."
+            ... .recNote$,
+            ... .recSetup$ + "@emlDrawScatterPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .colX$ + """" + ", """ + .colY$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.xMin) + ", " + string$ (.xMax) + ", " + string$ (.yMin) + ", " + string$ (.yMax) + ", " + string$ (.annotate),
+            ... "In the GUI: New > EML Tools > EML Graphs...",
+            ... .recBoth$
         endif
     endif
 endproc
@@ -4792,7 +4867,7 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
             ... .title$,
             ... "Whisker convention and outlier rule are stated in the figure, not assumed.",
             ... "@emlDrawBoxPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .groupCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
-            ... "In the GUI: New > EML Tools > EML Graphs..."
+            ... "In the GUI: New > EML Tools > EML Graphs...", ""
         endif
     endif
 endproc
@@ -5354,7 +5429,7 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
             ... .title$,
             ... "Bin count changes the shape; it is a display choice, not a property of the data.",
             ... "@emlDrawHistogram: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .valueCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.binCount) + ", " + string$ (.displayMode) + ", " + string$ (.vMin) + ", " + string$ (.vMax) + ", " + string$ (.freqMax),
-            ... "In the GUI: New > EML Tools > EML Graphs..."
+            ... "In the GUI: New > EML Tools > EML Graphs...", ""
         endif
     endif
 endproc
@@ -5743,7 +5818,7 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
             ... .title$,
             ... "Violin width is a kernel density estimate, not a count.",
             ... "@emlDrawGroupedViolin: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .catCol$ + """" + ", """ + .subCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
-            ... "In the GUI: New > EML Tools > EML Graphs..."
+            ... "In the GUI: New > EML Tools > EML Graphs...", ""
         endif
     endif
 endproc
@@ -6056,7 +6131,7 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
             ... .title$,
             ... "Whisker convention and outlier rule are stated in the figure, not assumed.",
             ... "@emlDrawGroupedBoxPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .catCol$ + """" + ", """ + .subCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
-            ... "In the GUI: New > EML Tools > EML Graphs..."
+            ... "In the GUI: New > EML Tools > EML Graphs...", ""
         endif
     endif
 endproc

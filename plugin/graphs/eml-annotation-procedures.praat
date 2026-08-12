@@ -2891,6 +2891,16 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
             endif
         endif
     endif
+    ; THE OMNIBUS RESULT IS ALREADY BUILT. .omnibus$ is the string this
+    ; procedure puts on the figure -- "F(2, 21) = 4.31, p = .027" or the
+    ; Kruskal-Wallis equivalent -- so the record carries exactly what the
+    ; reader sees on the plot, with no second formatting path to drift.
+    .recResult$ = ""
+    if .error$ = "" and .omnibus$ <> ""
+        .recResult$ = .omnibus$ + newline$ + "  " + string$ (.nGroups)
+        ... + " groups, alpha = " + fixed$ (.alpha, 3)
+    endif
+
     ; ------------------------------------------------------------------
     ; RECORD WORKFLOW -- THE GRAPHS -> STATS PATH.
     ;
@@ -2922,7 +2932,7 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
             ... + """, " + string$ (.showNS) + ", " + string$ (.showEffect)
             ... + ", """ + .testType$ + """, " + string$ (.layoutMode),
             ... "In the GUI: New > EML Tools > EML Graphs..., with statistical annotation switched on.",
-            ... .error$
+            ... .recResult$, .error$
         endif
     endif
 endproc
