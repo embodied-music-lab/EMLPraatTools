@@ -3509,7 +3509,7 @@ procedure emlRecordViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     ; The axis is recorded as RESOLVED numbers, never as "auto". Auto is
     ; a function of the data, so a re-run on edited data would silently
     ; draw a different axis and the record would not say so.
-    .code$ = "@emlDrawViolinPlot: table, """ + .title$ + """, """
+    .code$ = "@emlDrawViolinPlot: data, """ + .title$ + """, """
     ... + .xLabel$ + """, """ + .yLabel$ + """, " + string$ (.vpW) + ", "
     ... + string$ (.vpH) + ", """ + .colorMode$ + """, "
     ... + string$ (.gridMode) + ", """ + .groupCol$ + """, """
