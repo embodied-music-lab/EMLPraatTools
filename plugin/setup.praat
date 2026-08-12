@@ -125,6 +125,23 @@ Add menu command: "Objects", "New", "EML Graphs...", "-- eml graphs --", 1, "scr
 Add menu command: "Objects", "New", "-- eml data --", "EML Graphs...", 1, ""
 Add menu command: "Objects", "New", "Check & repair data...", "-- eml data --", 1, "scripts/eml-check-data.praat"
 
+# ── RECORD A WORKFLOW AS A SCRIPT ─────────────────────────────────────────
+#
+# TWO COMMANDS, AND NO CHECKBOX ANYWHERE. The obvious alternative was a
+# "record this" boolean on every analysis dialog, and it is wrong twice
+# over. It models the wrong scope: the recorder accumulates a SEQUENCE --
+# begin, N steps across different operations, one file -- so a per-analysis
+# boolean cannot express "record these four analyses and this figure into
+# one script", which is the whole point. And it would cost a row on twenty
+# dialogs, several of which are already the tallest the plugin draws, with
+# no scrollbar under them.
+#
+# These two cost two lines here and nothing on any dialog. Recording is
+# discovered by @emlRecordInit, which every entry point already runs.
+Add menu command: "Objects", "New", "-- eml record --", "Check & repair data...", 1, ""
+Add menu command: "Objects", "New", "Start recording script", "-- eml record --", 1, "scripts/eml-record-start.praat"
+Add menu command: "Objects", "New", "Save recorded script...", "Start recording script", 1, "scripts/eml-record-save.praat"
+
 # ── TABLED, 6 August 2026, by author ruling ───────────────────────────────
 #
 # Batch voice analysis, EML Stats Quick Start and the interactive tutorial
