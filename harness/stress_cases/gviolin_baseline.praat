@@ -1,4 +1,16 @@
 include _prelude.praat
+; Deterministic noise -- tracker section 14. Praat's built-in Gaussian draw
+; gave every run a different data set, so this figure's ink and chroma numbers
+; churned and no run-to-run comparison of the case was possible. LCG, folded
+; to roughly +/-1, scaled at the use site. The seed is per-case so that two
+; cases drawing the same number of values do not get the same data.
+rngState = 20260817
+procedure rnd
+    rngState = (1103515245 * rngState + 12345) mod 2147483648
+    .v = rngState / 2147483648
+    .g = (.v - 0.5) * 3.4
+endproc
+
 # Repeated-measures fixture: 12 subjects x 3 conditions.
 #   cat   - condition (within-subject)
 #   sub   - between-subject grouping, constant within a subject
@@ -12,7 +24,8 @@ for i to 36
     Set string value: i, "cat", "Cat" + string$ (c)
     Set string value: i, "sub", "S" + string$ (s)
     Set string value: i, "id", "P" + string$ (subj)
-    Set numeric value: i, "val", 20 + 4 * c + 3 * s + randomGauss (0, 2)
+    @rnd
+    Set numeric value: i, "val", 20 + 4 * c + 3 * s + rnd.g * 2
     Set numeric value: i, "err", 1.5
     Set numeric value: i, "time", c
 endfor
