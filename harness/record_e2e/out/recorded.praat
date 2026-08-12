@@ -50,8 +50,10 @@ include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EMLPraatTools
 data1$ = "Table voiceA"   ; steps 1 (analysis), 2 (analysis), 3 (analysis), 4 (analysis), 5 (analysis), 6 (analysis), 7 (analysis), 8 (refusal), 9 (analysis), 10 (analysis), 11 (refusal), 12 (refusal), 13 (refusal), 14 (draw), 15 (draw), 16 (draw), 17 (draw), 18 (draw), 19 (draw), 20 (draw), 21 (draw), 22 (draw), 23 (draw)
 data2$ = "Sound tone"   ; steps 24 (draw), 28 (convert), 29 (draw), 30 (convert), 31 (draw), 32 (convert), 33 (draw)
 data3$ = "Pitch tone"   ; step 25 (draw)
-data4$ = "Spectrum tone"   ; step 26 (draw)
+data4$ = "Spectrum tone"   ; steps 26 (draw), 34 (convert), 35 (draw), 36 (convert), 37 (draw), 38 (convert), 39 (draw)
 data5$ = "Ltas tone"   ; step 27 (draw)
+data6$ = "TableOfReal tor"   ; steps 40 (convert), 41 (draw)
+data7$ = "Matrix mat"   ; steps 42 (convert), 43 (draw)
 
 # --- Step 1 (analysis) ---
 selectObject: data1$
@@ -390,6 +392,112 @@ data = To Ltas: 100
 # Long-term average spectrum: LTAS from Sound
 
 @emlDrawLTAS: data, "LTAS from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, 0, 0, 1, 0, 0, 0
+
+# The same step through the menu:
+# In the GUI: New > EML Tools > EML Graphs...
+
+# --- Step 34 (convert) ---
+selectObject: data4$
+data = selected ()
+# Converted Spectrum tone to Ltas tone.
+# One LTAS bin per spectral bin -- no rebinning, so the figure shows the spectrum's own resolution.
+
+data = To Ltas (1-to-1)
+
+# The same step through the menu:
+# In the GUI: this happens automatically when you ask for a figure that needs it.
+
+# --- Step 35 (draw) ---
+# Long-term average spectrum: LTAS from Spectrum
+
+@emlDrawLTAS: data, "LTAS from Spectrum", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, 0, 0, 1, 0, 0, 0
+
+# The same step through the menu:
+# In the GUI: New > EML Tools > EML Graphs...
+
+# --- Step 36 (convert) ---
+selectObject: data4$
+data = selected ()
+# Converted Spectrum tone to Sound tone.
+# Inverse transform back to a waveform.
+
+data = To Sound
+
+# The same step through the menu:
+# In the GUI: this happens automatically when you ask for a figure that needs it.
+
+# --- Step 37 (draw) ---
+# Waveform: Waveform from Spectrum
+
+@emlDrawWaveform: data, "Waveform from Spectrum", "Time (s)", "Amplitude", 6, 4, "color", 1, 0, 0, 0, 0
+
+# The same step through the menu:
+# In the GUI: New > EML Tools > EML Graphs...
+
+# --- Step 38 (convert) ---
+selectObject: data4$
+data = selected ()
+# Converted Spectrum tone to Pitch tone.
+# A Spectrum carries no pitch track, so the route is back through a Sound. The pitch floor and ceiling are the ones this session used. They change the contour, so they belong in a methods section.
+
+tmp = To Sound
+selectObject: tmp
+data = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "yes", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
+removeObject: tmp
+selectObject: data
+
+# The same step through the menu:
+# In the GUI: this happens automatically when you ask for a figure that needs it.
+
+# --- Step 39 (draw) ---
+# F0 contour: F0 from Spectrum
+
+@emlDrawF0Contour: data, "F0 from Spectrum", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, 0, 0, 1
+
+# The same step through the menu:
+# In the GUI: New > EML Tools > EML Graphs...
+
+# --- Step 40 (convert) ---
+selectObject: data6$
+data = selected ()
+# Converted TableOfReal tor to Table tor.
+# Kept as a working object rather than removed after drawing, so the session goes on using the Table.
+
+data = To Table: "row"
+@emlCleanConvertedTable: data
+
+# The same step through the menu:
+# In the GUI: this happens automatically when you ask for a figure that needs it.
+
+# --- Step 41 (draw) ---
+# Histogram: Histogram from TableOfReal
+# Bin count changes the shape; it is a display choice, not a property of the data.
+
+@emlDrawHistogram: data, "Histogram from TableOfReal", "row", "Count", 6, 4, "color", 1, "row", "", 0, 1, 0, 0, 0
+
+# The same step through the menu:
+# In the GUI: New > EML Tools > EML Graphs...
+
+# --- Step 42 (convert) ---
+selectObject: data7$
+data = selected ()
+# Converted Matrix mat to Table mat.
+# A Matrix reaches a Table through a TableOfReal. Kept as a working object rather than removed after drawing.
+
+tmp = To TableOfReal
+data = To Table: "row"
+removeObject: tmp
+selectObject: data
+@emlCleanConvertedTable: data
+
+# The same step through the menu:
+# In the GUI: this happens automatically when you ask for a figure that needs it.
+
+# --- Step 43 (draw) ---
+# Histogram: Histogram from Matrix
+# Bin count changes the shape; it is a display choice, not a property of the data.
+
+@emlDrawHistogram: data, "Histogram from Matrix", "row", "Count", 6, 4, "color", 1, "row", "", 0, 1, 0, 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...

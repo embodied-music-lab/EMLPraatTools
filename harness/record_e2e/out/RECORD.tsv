@@ -28,3 +28,8 @@ ltas	26	27	recorded
 sound2f0	27	29	recorded
 sound2spectrum	29	31	recorded
 sound2ltas	31	33	recorded
+spectrum2ltas	33	35	recorded
+spectrum2sound	35	37	recorded
+spectrum2f0	37	39	recorded
+tor2table	39	41	recorded
+matrix2table	41	43	recorded
