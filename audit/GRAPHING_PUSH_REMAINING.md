@@ -1103,7 +1103,7 @@ including the red-path input. Current baseline, 12 Aug 2026:
 **9356 checks, 0 failed** (`Rscript validate/run_all.R`), 39/39 stress cases
 (`bash harness/stress_graphs.sh` — 29 OK, 10 expected `BLANK_FRAME_ABS`, and
 now byte-identical run to run), 52/52 disclosure, 10/10 determinism
-byte-identical, 14/14 parity, 26/26 wrappers, `gui_e2e` PASS, phase1 357/357,
+byte-identical, 14/14 parity, 26/26 wrappers, `gui_e2e` PASS, phase1 **361/361**,
 both round trips PASS.
 
 **What moved, 11-12 Aug:** 8285 -> 9330. v32 gained §11 (the four
@@ -1760,6 +1760,55 @@ and the renderer warns.
   warning
 - phase1 **357/357**, stress 39/39 with **no figure and no number moved**,
   determinism 10/10, parity 14/14, suite **9356/9356**
+
+### Two rulings, 12 Aug 2026, after the first cut
+
+**ONE OBJECT TYPE WAS BAKED IN, AND THAT WAS A DEFECT IN WAITING.** The plugin
+accepts a **Table, a TableOfReal and a Matrix** — the graphs form's own
+`@emlDetectContext` branches on all three — and the recorder wrote
+`selected$ ("Table")` and emitted `selectObject: "Table " + name$`. A recorded
+Matrix workflow would have produced a script that could not select its own
+data.
+
+Fixed with a fact rather than a branch: **`selected$ ()` with no argument
+returns `"Type name"`** — measured on 6.6.30, `Table vt`, `Matrix spec`,
+`TableOfReal tor` — and that whole string is what `selectObject:` takes back.
+So the recorder never asks what type it is holding, and a fourth type needs no
+change. The manifest carries the type in the string:
+
+```praat
+data1$ = "Table voiceA"       ; step 1 (analysis)
+data2$ = "Matrix spectrum"    ; step 2 (analysis)
+data3$ = "TableOfReal means"  ; step 3 (analysis)
+```
+
+The emitted working variable is `data`, not `table`, for the same reason.
+`object` was the obvious name and **is reserved** — Praat's `object[]` syntax
+makes `object = selected ()` fail with *After "object" there should be "(" or
+"["*. Measured, not assumed.
+
+**STANDARDISED ON ONE FORMAT.** Author ruling: the manifest is emitted even
+when a session used a single object, so `data1$` and the usage note are always
+there. A reader who learns the format on one script then meets a second one
+with a different shape has been given two things to learn for no gain, and the
+single-object script gains the property that makes the block worth having —
+one visible place to re-point the workflow at other data.
+
+**Every step now selects**, not only where the object changes. Selecting on
+change is a bet that nothing between two steps disturbs the selection, and
+that bet has already lost once here: `removeObject:` leaves NOTHING selected,
+which is how six disclosure cases died on 11 Aug. Two idempotent lines per step
+buys immunity from the whole class.
+
+**Verified by replay across all three types.** One recording over a Table, a
+Matrix and a TableOfReal, then the emitted body run verbatim: the ANOVA
+reported groups x/y at 63.00 and 66.00 from the Table, and the final step left
+`n = 5`, the TableOfReal's column count. Each step reached its own object.
+
+Three phase1 assertions pinned the old contract and failed, correctly. They
+were rewritten to pin the new one — including `no step selects a hardcoded
+object type`, which is the assertion that would have caught the original
+defect. phase1 357/357 → **361/361**.
 
 Still open and untouched by this: §8. The emitted script cannot re-run
 headless, because the wrappers use `beginPause:`. The author has ruled that
