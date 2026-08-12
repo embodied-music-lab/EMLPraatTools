@@ -1620,3 +1620,115 @@ artefacts compared as one, reporting "covered" for precisely the case it
 exists to catch. Fixed by resolving every path through the same override the
 validator uses. A coverage check that silently compares two populations is
 worse than none.
+
+---
+
+## 20. DONE (12 Aug 2026) — the script recorder is wired to the menu
+
+The recorder has existed since 9 August: it buffers steps, renders a runnable
+file and flushes it, and `eml-analysis.praat` and `eml-draw-procedures.praat`
+both call into it. **Nothing switched it on.** `@emlRecordBegin` is what sets
+`emlRecordActive = 1` and its only callers anywhere were two test files, so
+the whole feature was capture hooks and no user could reach it.
+
+### Not a checkbox on every form, and the reason is not mainly space
+
+The obvious wiring is a "record this" boolean on each analysis dialog. It is
+wrong twice.
+
+It models the **wrong scope.** The recorder accumulates a SEQUENCE — begin, N
+steps across different operations, one file. A per-analysis boolean cannot
+express *record these four analyses and this figure into one script*, which is
+the entire point, and twenty booleans that all have to agree with each other
+is not a design.
+
+And it costs a **row on twenty dialogs.** Measured: 46 `beginPause` dialogs
+ship. Raw widget counts look alarming — the wizard at 338, graphs' "No Table
+selected" at 210, Scatter column mapping at 65 — but those are branch-inflated
+and the honest per-pass figures are much smaller (the wizard has 35
+unconditional rows; most column-mapping dialogs 3 to 6). Only 11 of the 46
+have no branching at all. Praat gives `beginPause` no scrollbar, and §2k's
+export dialog already showed what over-running looks like: the OK button
+painted over the output.
+
+### Two menu commands, and the state is an object
+
+`Start recording script` and `Save recorded script...`, registered in
+`setup.praat` under a new `-- eml record --` separator. Two lines there, and
+**no row on any dialog.**
+
+The mechanism is a fact about Praat rather than a trick. A script run from a
+menu ends and takes every variable with it — `emlRecordActive` and
+`emlRecordBufferId` are gone before the next analysis starts. The Objects
+window is not: it belongs to the running instance. So the buffer Table
+*is* the state, and `@emlRecordInit` re-attaches to it:
+
+```praat
+nocheck selectObject: "Table emlRecordBuffer"
+```
+
+Measured 12 Aug 2026 on 6.6.30: this re-attaches by name, and when the object
+is absent it leaves nothing selected and raises no error — exactly the test
+wanted. There is no flag file and no preference key, so **nothing can drift
+out of agreement with the data**: the switch and the buffer are one object.
+
+Consequences, stated rather than hidden. The buffer is visible in the user's
+Objects window and deleting it ends the recording — which is a reasonable
+meaning, and the start dialog says so. And it is **GUI-only**: `praat --run`
+starts a fresh process per script, so a recording cannot span headless
+invocations. Recording is a GUI feature; a harness must drive one session.
+
+### Table selection across menu commands — the question this raised
+
+Asked by the author before implementation, and it was the right question. The
+old behaviour: the FIRST source wins for the header, and a later step on a
+different object raised `emlRecordSourceChanged`, which put this in the file:
+
+> `# NOTE: later steps in this session ran on a DIFFERENT object.`
+> `# Running this file against one Table will not reproduce them.`
+
+Honest, and useless. That was designed when recording lived inside ONE wrapper
+invocation, where switching objects was exceptional. Under session recording
+it is ordinary — an ANOVA on one table, a correlation on another — so the
+warning would have fired on most real sessions and the emitted script would
+have been broken exactly when the feature was most useful.
+
+**The source is now carried per step** (a new `source` column on the buffer),
+and the renderer emits a select only where it CHANGES:
+
+```praat
+# --- Step 2 (analysis) ---
+selectObject: "Table voiceB"
+table = selected ("Table")
+```
+
+A single-table session emits **none** — verified: zero `selectObject` lines,
+byte-for-byte the shape it had before this existed. A session that moved emits
+one line at each move, which is what a person writing the script by hand would
+do. Step 1 never emits one, because the header already tells the reader to
+select that Table.
+
+**The one ambiguity, detected where it is knowable.** The emitted script
+selects by NAME, and two Tables sharing a name make that ambiguous: measured
+12 Aug 2026, `selectObject: "Table vt"` with two such Tables silently picks the
+MOST RECENT. At record time the id is known so the collision is visible; in the
+emitted file it is not. `@emlRecordSource` now counts Tables sharing the name
+and the renderer warns.
+
+### Verified
+
+- both new wrappers parse; the wrapper harness went 26/26 → **28/28**
+- **the census caught them by name before the inventory was updated** —
+  `orphaned entry point: eml-record-save.praat, eml-record-start.praat`. §16b's
+  guard firing on real new work rather than a planted defect.
+- a three-invocation, two-table session driven end to end: re-attach found the
+  buffer each time, and the emitted script selects `voiceB` at step 2 and
+  `voiceA` again at step 3
+- single-table session emits no selects; duplicate-name session carries the
+  warning
+- phase1 **357/357**, stress 39/39 with **no figure and no number moved**,
+  determinism 10/10, parity 14/14, suite **9356/9356**
+
+Still open and untouched by this: §8. The emitted script cannot re-run
+headless, because the wrappers use `beginPause:`. The author has ruled that
+acceptable for now.
