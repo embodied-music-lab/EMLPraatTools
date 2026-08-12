@@ -691,50 +691,15 @@ procedure emlPickFromMultiple: .type$
     .result = .id[object_choice]
 endproc
 
-# ----------------------------------------------------------------------------
-# @emlCleanConvertedTable
-# After converting TableOfReal or Matrix → Table, fix "?" placeholders.
-# Praat's To Table: "row" writes "?" for empty row/column labels.
-# Arguments: .tableId
-# Outputs: modifies .tableId in place
-# ----------------------------------------------------------------------------
-procedure emlCleanConvertedTable: .tableId
-    selectObject: .tableId
-    .nCols = Get number of columns
-    .nRows = Get number of rows
+# @emlCleanConvertedTable MOVED TO eml-graph-procedures.praat (12 Aug 2026).
+#
+# It lived here, in the FORM, and @emlConvertForGraph in the library calls it.
+# That is a layering inversion, and it is not theoretical: a recorded
+# Matrix-or-TableOfReal workflow emits `@emlCleanConvertedTable: data` into a
+# file whose include block carries the draw layer and NOT the form, so the
+# emitted script could not run. harness/norecord found it the same way -- two
+# of thirty-five operations died with the procedure not found.
 
-    # The row-label column is named "row" by To Table: "row".
-    # Check if another column is also named "row" — if so, rename the
-    # row-label column (always column 1) to avoid ambiguity.
-    .rowColName$ = "row"
-    .hasCollision = 0
-    for .iCol from 2 to .nCols
-        .checkLabel$ = Get column label: .iCol
-        if .checkLabel$ = "row"
-            .hasCollision = 1
-        endif
-    endfor
-    if .hasCollision
-        .rowColName$ = "OriginalRowLabel"
-        Rename column (by number): 1, .rowColName$
-    endif
-
-    # Fix "?" column headers → "Column_N"
-    for .iCol from 1 to .nCols
-        .colLabel$ = Get column label: .iCol
-        if .colLabel$ = "?"
-            Rename column (by number): .iCol, "Column_" + string$ (.iCol)
-        endif
-    endfor
-
-    # Fix "?" cells in the row-label column
-    for .iRow from 1 to .nRows
-        .cellVal$ = Get value: .iRow, .rowColName$
-        if .cellVal$ = "?"
-            Set string value: .iRow, .rowColName$, string$ (.iRow)
-        endif
-    endfor
-endproc
 
 # ============================================================================
 # PROCEDURES — Config persistence
@@ -3021,55 +2986,43 @@ repeat
         else
             # Nothing of the right type selected
             # U6: Try auto-creating from Sound if possible
+            ; ALL FIVE CONVERSIONS THROUGH ONE PROCEDURE (12 Aug 2026).
+            ;
+            ; Each of these used to be written out here, inside a beginPause:
+            ; loop, so the only way to reach one was a driven dialog on a real
+            ; display -- and none was ever driven. The recorder was wrong on
+            ; every one of them: the capture hook sits inside the DRAW
+            ; procedure, which is handed the INTERMEDIATE, so a recorded
+            ; acoustic figure named an object this code removes three lines
+            ; later. See @emlConvertForGraph.
+            ;
+            ; .temporary carries what used to be carried by whether the branch
+            ; happened to assign loadedObjectId: the acoustic conversions
+            ; produce something to remove after drawing, the Matrix and
+            ; TableOfReal ones produce a Table the session keeps working with.
+            convertSourceId = 0
             if numberOfSelected ("Sound") = 1
-                soundForConvert = selected ("Sound")
-                ; EXTRACTED TO A PROCEDURE so that something other than this
-                ; dialog can drive it. The conversion is the only path most
-                ; users take to three of the four acoustic figures -- select a
-                ; Sound, ask for an F0 contour -- and while it lived inline in
-                ; a beginPause: loop the only way to exercise it was through a
-                ; real X display. harness/record_e2e drives it directly now.
-                @emlConvertSoundForGraph: soundForConvert, targetType$,
+                convertSourceId = selected ("Sound")
+            elsif numberOfSelected ("Spectrum") = 1
+                convertSourceId = selected ("Spectrum")
+            elsif numberOfSelected ("TableOfReal") = 1
+                convertSourceId = selected ("TableOfReal")
+            elsif numberOfSelected ("Matrix") = 1
+                convertSourceId = selected ("Matrix")
+            endif
+
+            if convertSourceId > 0
+                @emlConvertForGraph: convertSourceId, targetType$,
                 ... prev_f0_pitchFloor, prev_f0_pitchCeiling * 2
-                objectId = emlConvertSoundForGraph.result
+                objectId = emlConvertForGraph.result
                 if objectId > 0
-                    loadedObjectId = objectId
+                    if emlConvertForGraph.temporary = 1
+                        loadedObjectId = objectId
+                    else
+                        appendInfoLine: "NOTE: converted to Table for graphing."
+                    endif
                     selectObject: objectId
                 endif
-            elsif numberOfSelected ("Spectrum") = 1
-                spectrumForConvert = selected ("Spectrum")
-                selectObject: spectrumForConvert
-                if targetType$ = "Ltas"
-                    objectId = To Ltas (1-to-1)
-                    loadedObjectId = objectId
-                elsif targetType$ = "Sound"
-                    objectId = To Sound
-                    loadedObjectId = objectId
-                elsif targetType$ = "Pitch"
-                    # Two-step: Spectrum → Sound → Pitch
-                    tempSoundId = To Sound
-                    selectObject: tempSoundId
-                    pitchTop = prev_f0_pitchCeiling * 2
-                    objectId = To Pitch (filtered autocorrelation): 0, prev_f0_pitchFloor, pitchTop, 15, "yes", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
-                    removeObject: tempSoundId
-                    loadedObjectId = objectId
-                endif
-            elsif numberOfSelected ("TableOfReal") = 1
-                # Auto-convert TableOfReal → Table (persists as working object)
-                torForConvert = selected ("TableOfReal")
-                selectObject: torForConvert
-                objectId = To Table: "row"
-                @emlCleanConvertedTable: objectId
-                appendInfoLine: "NOTE: TableOfReal converted to Table for graphing."
-            elsif numberOfSelected ("Matrix") = 1
-                # Auto-convert Matrix → TableOfReal → Table (persists as working object)
-                matForConvert = selected ("Matrix")
-                selectObject: matForConvert
-                tempTorId = To TableOfReal
-                objectId = To Table: "row"
-                removeObject: tempTorId
-                @emlCleanConvertedTable: objectId
-                appendInfoLine: "NOTE: Matrix converted to Table for graphing."
             endif
 
             if objectId = 0

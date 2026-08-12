@@ -6495,67 +6495,212 @@ endproc
 
 
 # ----------------------------------------------------------------------------
-# @emlConvertSoundForGraph: .soundId, .targetType$, .pitchFloor, .pitchTop
-# Turn a Sound into whatever an acoustic figure needs, and record having done
-# it. Outputs: .result -- the new object's id, or 0 when the target type is
-# not one this reaches.
+# @emlConvertForGraph: .sourceId, .targetType$, .pitchFloor, .pitchTop
+# Turn whatever the user selected into whatever the figure needs, and record
+# having done it.
 #
-# WHY THIS IS A PROCEDURE. Three of the four acoustic figures are drawn from
-# objects the user never makes: select a Sound and ask for an F0 contour, a
-# spectrum or an LTAS and the plugin converts, draws, and REMOVES the
-# intermediate at the end of the pass. That is the path most users take --
-# a Sound is what comes off a recorder -- and until 12 Aug 2026 it lived
-# inline inside @emlGraphsWorkflow's beginPause: loop, where the only way to
-# reach it was a real X display and a driven dialog.
+# Outputs
+#   .result      the new object's id, or 0 when this pair is not one it reaches
+#   .temporary   1 when the caller must remove .result after drawing, 0 when
+#                the conversion produces a working object the session keeps
 #
-# So it was never driven, and the recorder's behaviour on it was wrong in a
-# way nothing could see: the capture hook is inside the DRAW procedure, which
-# is handed the INTERMEDIATE, so every acoustic figure recorded from the menu
-# emitted `data1$ = "Pitch tone"` -- an object the plugin had just deleted and
-# the user never created. The emitted script could not run.
+# WHY THIS IS A PROCEDURE. Several of the plugin's figures are drawn from
+# objects the user never makes. Select a Sound and ask for an F0 contour, a
+# spectrum or an LTAS; select a Spectrum and ask for any of those; select a
+# Matrix or a TableOfReal and ask for anything table-shaped -- the plugin
+# converts, draws, and in the acoustic cases REMOVES the intermediate at the
+# end of the pass. A Sound is what comes off a recorder, so for three of the
+# four acoustic figures this is the path most users take.
 #
-# THE CONVERSION IS RECORDED AS A STEP, so the manifest names the Sound and
-# the emitted file carries the command that derives what the figure needs,
+# Until 12 Aug 2026 all five conversions lived inline inside
+# @emlGraphsWorkflow's beginPause: loop, where the only way to reach one was a
+# real X display and a driven dialog. So none was ever driven, and the
+# recorder's behaviour on all of them was wrong in a way nothing could see:
+# the capture hook is inside the DRAW procedure, which is handed the
+# INTERMEDIATE, so every figure recorded this way emitted
+#
+#     data1$ = "Pitch tone"   ; step 3 (draw)
+#
+# naming, as the object the reader must have open, something the plugin had
+# just deleted and the user never created. The emitted script could not run.
+#
+# THE CONVERSION IS RECORDED AS A STEP, so the manifest names what the USER
+# selected and the emitted file carries the command that derives the rest,
 # parameters included. The pitch floor and ceiling are a methods-section fact
 # and were previously nowhere in the record.
+#
+# .temporary IS NOT COSMETIC. The acoustic conversions produce an object the
+# form removes; the Matrix and TableOfReal ones produce a Table the session
+# goes on working with, and removing that would take the user's data view with
+# it. The distinction lived in whether the old inline code happened to assign
+# loadedObjectId; it is now stated.
 #
 # Guarded on the recorder's PRESENCE, not on recording state: this file must
 # stay loadable without eml-record.praat, which harness/norecord pins.
 # ----------------------------------------------------------------------------
-procedure emlConvertSoundForGraph: .soundId, .targetType$, .pitchFloor,
-    ... .pitchTop
+procedure emlConvertForGraph: .sourceId, .targetType$, .pitchFloor, .pitchTop
     .result = 0
+    .temporary = 0
     .code$ = ""
     .why$ = ""
 
-    selectObject: .soundId
-    if .targetType$ = "Pitch"
-        .result = To Pitch (filtered autocorrelation): 0, .pitchFloor,
-        ... .pitchTop, 15, "yes", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
-        .code$ = "data = To Pitch (filtered autocorrelation): 0, "
-        ... + string$ (.pitchFloor) + ", " + string$ (.pitchTop)
-        ... + ", 15, ""yes"", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14"
-        .why$ = "The pitch floor and ceiling are the ones this session used. "
-        ... + "They change the contour, so they belong in a methods section."
-    elsif .targetType$ = "Spectrum"
-        .result = To Spectrum: "yes"
-        .code$ = "data = To Spectrum: ""yes"""
-        .why$ = "Fast (FFT) transform, which is what the figure was drawn "
-        ... + "from."
-    elsif .targetType$ = "Ltas"
-        .result = To Ltas: 100
-        .code$ = "data = To Ltas: 100"
-        .why$ = "100 Hz bandwidth, the value this session used."
+    selectObject: .sourceId
+    .full$ = selected$ ()
+    .sp = index (.full$, " ")
+    if .sp > 0
+        .srcType$ = left$ (.full$, .sp - 1)
+    else
+        .srcType$ = .full$
+    endif
+
+    .pitchArgs$ = "0, " + string$ (.pitchFloor) + ", " + string$ (.pitchTop)
+    ... + ", 15, ""yes"", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14"
+    .pitchWhy$ = "The pitch floor and ceiling are the ones this session used. "
+    ... + "They change the contour, so they belong in a methods section."
+
+    if .srcType$ = "Sound"
+        if .targetType$ = "Pitch"
+            .result = To Pitch (filtered autocorrelation): 0, .pitchFloor,
+            ... .pitchTop, 15, "yes", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
+            .code$ = "data = To Pitch (filtered autocorrelation): "
+            ... + .pitchArgs$
+            .why$ = .pitchWhy$
+            .temporary = 1
+        elsif .targetType$ = "Spectrum"
+            .result = To Spectrum: "yes"
+            .code$ = "data = To Spectrum: ""yes"""
+            .why$ = "Fast (FFT) transform, which is what the figure was drawn "
+            ... + "from."
+            .temporary = 1
+        elsif .targetType$ = "Ltas"
+            .result = To Ltas: 100
+            .code$ = "data = To Ltas: 100"
+            .why$ = "100 Hz bandwidth, the value this session used."
+            .temporary = 1
+        endif
+
+    elsif .srcType$ = "Spectrum"
+        if .targetType$ = "Ltas"
+            .result = To Ltas (1-to-1)
+            .code$ = "data = To Ltas (1-to-1)"
+            .why$ = "One LTAS bin per spectral bin -- no rebinning, so the "
+            ... + "figure shows the spectrum's own resolution."
+            .temporary = 1
+        elsif .targetType$ = "Sound"
+            .result = To Sound
+            .code$ = "data = To Sound"
+            .why$ = "Inverse transform back to a waveform."
+            .temporary = 1
+        elsif .targetType$ = "Pitch"
+            ; TWO STEPS, and the emitted code says so. A Spectrum has no
+            ; pitch track; the route is back through a Sound, and the
+            ; intermediate is removed on both sides so neither the session
+            ; nor the emitted script leaves one behind.
+            .tmp = To Sound
+            selectObject: .tmp
+            .result = To Pitch (filtered autocorrelation): 0, .pitchFloor,
+            ... .pitchTop, 15, "yes", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
+            removeObject: .tmp
+            .code$ = "tmp = To Sound" + newline$
+            ... + "selectObject: tmp" + newline$
+            ... + "data = To Pitch (filtered autocorrelation): " + .pitchArgs$
+            ... + newline$
+            ... + "removeObject: tmp" + newline$
+            ... + "selectObject: data"
+            .why$ = "A Spectrum carries no pitch track, so the route is back "
+            ... + "through a Sound. " + .pitchWhy$
+            .temporary = 1
+        endif
+
+    elsif .srcType$ = "TableOfReal"
+        if .targetType$ = "Table"
+            .result = To Table: "row"
+            @emlCleanConvertedTable: .result
+            .code$ = "data = To Table: ""row""" + newline$
+            ... + "@emlCleanConvertedTable: data"
+            .why$ = "Kept as a working object rather than removed after "
+            ... + "drawing, so the session goes on using the Table."
+            .temporary = 0
+        endif
+
+    elsif .srcType$ = "Matrix"
+        if .targetType$ = "Table"
+            .tmpTor = To TableOfReal
+            .result = To Table: "row"
+            removeObject: .tmpTor
+            @emlCleanConvertedTable: .result
+            .code$ = "tmp = To TableOfReal" + newline$
+            ... + "data = To Table: ""row""" + newline$
+            ... + "removeObject: tmp" + newline$
+            ... + "selectObject: data" + newline$
+            ... + "@emlCleanConvertedTable: data"
+            .why$ = "A Matrix reaches a Table through a TableOfReal. Kept as "
+            ... + "a working object rather than removed after drawing."
+            .temporary = 0
+        endif
     endif
 
     if .result > 0 and variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
-            @emlRecordConvert: .soundId, .result, .code$, .why$
+            @emlRecordConvert: .sourceId, .result, .code$, .why$
         endif
     endif
 
     if .result > 0
         selectObject: .result
     endif
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlCleanConvertedTable
+# After converting TableOfReal or Matrix -> Table, fix "?" placeholders.
+# Praat's To Table: "row" writes "?" for empty row/column labels.
+#
+# MOVED HERE FROM eml-graphs-form.praat on 12 Aug 2026. @emlConvertForGraph
+# calls it, and a recorded conversion emits a call to it into a file that
+# includes the draw layer but not the form -- so while it lived in the form
+# the emitted script named a procedure it could not reach. It touches no
+# dialog and belongs in the library.
+#
+# Arguments: .tableId
+# Outputs: modifies .tableId in place
+# ----------------------------------------------------------------------------
+procedure emlCleanConvertedTable: .tableId
+    selectObject: .tableId
+    .nCols = Get number of columns
+    .nRows = Get number of rows
+
+    # The row-label column is named "row" by To Table: "row".
+    # Check if another column is also named "row" — if so, rename the
+    # row-label column (always column 1) to avoid ambiguity.
+    .rowColName$ = "row"
+    .hasCollision = 0
+    for .iCol from 2 to .nCols
+        .checkLabel$ = Get column label: .iCol
+        if .checkLabel$ = "row"
+            .hasCollision = 1
+        endif
+    endfor
+    if .hasCollision
+        .rowColName$ = "OriginalRowLabel"
+        Rename column (by number): 1, .rowColName$
+    endif
+
+    # Fix "?" column headers → "Column_N"
+    for .iCol from 1 to .nCols
+        .colLabel$ = Get column label: .iCol
+        if .colLabel$ = "?"
+            Rename column (by number): .iCol, "Column_" + string$ (.iCol)
+        endif
+    endfor
+
+    # Fix "?" cells in the row-label column
+    for .iRow from 1 to .nRows
+        .cellVal$ = Get value: .iRow, .rowColName$
+        if .cellVal$ = "?"
+            Set string value: .iRow, .rowColName$, string$ (.iRow)
+        endif
+    endfor
 endproc
