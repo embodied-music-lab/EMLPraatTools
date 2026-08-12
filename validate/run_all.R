@@ -181,7 +181,37 @@ scripts <- c(
     # suite was green -- because nothing here had ever loaded the barrel all
     # sixteen wrappers load, or raised one of the plugin's dialogs.
     #     bash harness/wrappers/run.sh && bash harness/gui_e2e/run.sh
-    "v35_assembly.R"
+    "v35_assembly.R",
+    # v36 closes §17: 39 stress figures were rendered and ten were judged.
+    # "29 OK" was the DRIVER's verdict -- praat did not error and a PNG
+    # appeared -- and it was the verdict on the cases named after the
+    # pathologies: violin_zerovar, violin_n1, violin_spanzero,
+    # violin_undefined, the two scale extremes, the two bin-count extremes,
+    # ts_duplicate_times, legend_cap. It could not be written earlier. §14:
+    # 22 of the 39 drew unseeded randomGauss, so their ink and chroma were a
+    # different number every run and nothing was pinnable. Seeded 12 Aug, so
+    # RESULTS.tsv is finally the baseline it always looked like: this pins all
+    # 39 measurements at the driver's own 5% margin, declares the population
+    # through eml_census, and asserts each pathology on what its log and its
+    # canvas ACTUALLY carry -- the skipped-row count derived from the fixture
+    # rather than transcribed, the bin count against the argument the case
+    # passed, legend containment recomputed from the two rectangles instead of
+    # read off the case's own verdict, and violin_longlabels' taller canvas,
+    # which is the only evidence anywhere that its labels are not clipped.
+    # Complements v27 over the same artefact: v27 owns the ten empty frames
+    # and asserts inequalities, this pins values and owns the other 29.
+    #     bash harness/stress_graphs.sh
+    "v36_stress_output.R",
+    # v37 pins DETERMINISM: each of the ten Table-consuming draw procedures,
+    # given one seeded fixture in two separate Praat processes, writes the same
+    # bytes twice. harness/determinism/run.sh was the only harness in the tree
+    # no R script read, so the 10/10 byte-identical figure the audit quotes was
+    # the harness reporting on itself -- and determinism is what licenses
+    # reading a diff of two renders as a regression, so every byte-for-byte
+    # claim downstream inherited that. The load-bearing check re-compares the
+    # two PNGs off disk in R rather than reading the driver's verdict column.
+    #     bash harness/determinism/run.sh
+    "v37_determinism.R"
 )
 
 cat("EML Praat Tools validation suite\n")
