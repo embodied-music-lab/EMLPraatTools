@@ -328,7 +328,24 @@ procedure emlRecordSource: .tableId
         goto END_RECORD_SOURCE
     endif
     selectObject: .tableId
-    .name$ = selected$ ("Table")
+
+    ; THE OBJECT'S FULL NAME, TYPE INCLUDED, AND NOT ASSUMED TO BE A TABLE.
+    ;
+    ; The plugin accepts a Table, a TableOfReal and a Matrix -- the graphs
+    ; form's own @emlDetectContext branches on all three -- so a recorder
+    ; that writes `selectObject: "Table " + name$` produces a script that
+    ; cannot select two of the three. It was written that way and this is
+    ; the fix.
+    ;
+    ; `selected$ ()` with NO argument returns "Type name" -- measured
+    ; 12 Aug 2026 on 6.6.30: "Table vt", "Matrix spec", "TableOfReal tor" --
+    ; and that whole string is what `selectObject:` takes back. So the
+    ; recorder never has to know which type it is holding, and adding a
+    ; fourth type needs no change here.
+    .name$ = selected$ ()
+
+    ; Rows and columns are for the header note only. Every accepted type
+    ; answers both, so this needs no branch either.
     .rows = Get number of rows
     .cols = Get number of columns
 
@@ -677,11 +694,21 @@ procedure emlRecordTableManifest
         endif
     endfor
 
-    if .n < 2
+    if .n = 0
         goto END_TABLE_MANIFEST
     endif
 
-    .out$ = .out$ + "# Name your tables here for this recorded workflow."
+    ; ONE FORMAT, WHETHER THE SESSION USED ONE OBJECT OR FIVE.
+    ;
+    ; The first cut emitted this block only when a session moved between
+    ; objects, and left a single-object session on the older "run it with
+    ; that Table selected" contract. Author ruling 12 Aug 2026: standardise.
+    ; A reader who learns the format on one recorded script then meets a
+    ; second one with a different shape has been given two things to learn
+    ; for no gain, and the single-object script loses the property that
+    ; makes this block worth having -- one visible place to re-point the
+    ; workflow at other data.
+    .out$ = .out$ + "# Name your data objects here for this recorded workflow."
     ... + newline$
     .out$ = .out$ + "# Edit a name to run the same workflow on other data;"
     ... + newline$
@@ -692,7 +719,7 @@ procedure emlRecordTableManifest
         if not index (.steps$[.k], ",")
             .word$ = "step "
         endif
-        .out$ = .out$ + "table" + string$ (.k) + "$ = """ + .name$[.k]
+        .out$ = .out$ + "data" + string$ (.k) + "$ = """ + .name$[.k]
         ... + """   ; " + .word$ + .steps$[.k] + newline$
     endfor
     .out$ = .out$ + newline$
@@ -867,18 +894,12 @@ procedure emlRecordRender
         .text$ = .text$
         ... + "# selected before running this file." + newline$
     endif
-    if emlRecordSourceChanged = 0
-        .text$ = .text$
-        ... + "# Select that Table in the Objects window, then run this script."
-        ... + newline$
-    else
-        .text$ = .text$
-        ... + "# This session used more than one Table. They are named in the"
-        ... + newline$
-        .text$ = .text$
-        ... + "# block below, and all of them must be open before you run it."
-        ... + newline$
-    endif
+    .text$ = .text$
+    ... + "# The objects this workflow ran on are named in the block below."
+    ... + newline$
+    .text$ = .text$
+    ... + "# All of them must be open before you run this script."
+    ... + newline$
     if emlRecordAmbiguousName = 1
         .text$ = .text$
         ... + "# WARNING: more than one Table shared a name during this"
@@ -914,22 +935,14 @@ procedure emlRecordRender
     @emlRecordTableManifest
     .text$ = .text$ + emlRecordTableManifest.out$
 
-    ; NO MANIFEST MEANS THE OLD CONTRACT, AND THE LINE THAT IMPLEMENTS IT.
-    ; Removing this when the manifest was added emitted a single-source
-    ; script whose every step used `table` and where nothing ever assigned
-    ; it -- caught by running one, not by reading the diff.
-    if emlRecordTableManifest.n < 2
-        .text$ = .text$ + "table = selected (""Table"")" + newline$ + newline$
-    endif
+    ; THERE IS NO LONGER A NO-MANIFEST PATH. Every session that recorded a
+    ; source gets the block, and every step selects through it. A session
+    ; that recorded NO source at all -- a refusal before anything was read --
+    ; emits neither, and its steps select nothing, which is correct.
 
     ; ---- BODY ------------------------------------------------------------
     selectObject: emlRecordBufferId
     .nSteps = Get number of rows
-    ; Empty rather than the first source, so that step 1 of a multi-source
-    ; session emits its select too. With a manifest there is no "run it with
-    ; the right Table selected" contract left to lean on -- the block names
-    ; every object, and the body has to say which one each step wants.
-    .prevSource$ = ""
     .manifestN = emlRecordTableManifest.n
     for .s from 1 to .nSteps
         selectObject: emlRecordBufferId
@@ -958,7 +971,19 @@ procedure emlRecordRender
         ; A session that stayed on ONE object has no manifest and emits
         ; nothing here: the `table = selected ("Table")` line above is the
         ; whole of its object handling, exactly as before.
-        if .manifestN >= 2 and .source$ <> "" and .source$ <> .prevSource$
+        ; EVERY STEP SELECTS, AND NOT ONLY WHERE THE OBJECT CHANGED.
+        ;
+        ; Selecting only on change is shorter and is a bet that nothing
+        ; between two steps disturbs the selection. That bet has already
+        ; lost once in this plugin: `removeObject:` leaves NOTHING selected,
+        ; which is how six disclosure cases died on 11 Aug when a helper
+        ; started using it. An analysis is free to select whatever it likes
+        ; while it works, and the emitted script has no way to know.
+        ;
+        ; Two idempotent lines per step buys immunity from that whole class,
+        ; and the variable is `data` rather than `table` because the object
+        ; may be a Matrix or a TableOfReal.
+        if .source$ <> ""
             .slot = 0
             for .k from 1 to .manifestN
                 if emlRecordTableManifest.name$[.k] = .source$
@@ -966,13 +991,10 @@ procedure emlRecordRender
                 endif
             endfor
             if .slot > 0
-                .text$ = .text$ + "selectObject: ""Table "" + table"
-                ... + string$ (.slot) + "$" + newline$
-                .text$ = .text$ + "table = selected (""Table"")" + newline$
+                .text$ = .text$ + "selectObject: data" + string$ (.slot)
+                ... + "$" + newline$
+                .text$ = .text$ + "data = selected ()" + newline$
             endif
-        endif
-        if .source$ <> ""
-            .prevSource$ = .source$
         endif
 
         @emlRecordCommentBlock: .intent$

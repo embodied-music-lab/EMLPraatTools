@@ -511,7 +511,7 @@ procedure emlRecordAnova: .tableId, .dataCol$, .groupCol$, .doTukey, .error$
     ; called, so diffing the two Info outputs tests exactly the claim that
     ; the log and the analysis agree.
     ; ------------------------------------------------------------------
-    .code$ = "@emlRunAnovaAnalysis: table, """ + .dataCol$ + """, """
+    .code$ = "@emlRunAnovaAnalysis: data, """ + .dataCol$ + """, """
     ... + .groupCol$ + """, " + .tukey$
 
     ; The API line IS the code now, so the api slot names the GUI route
