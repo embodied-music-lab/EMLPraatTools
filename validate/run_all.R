@@ -212,7 +212,7 @@ scripts <- c(
     # two PNGs off disk in R rather than reading the driver's verdict column.
     #     bash harness/determinism/run.sh
     "v37_determinism.R",
-    # v39 pins the RECORDER driven the way a user drives it: ten operations
+    # v39 pins the RECORDER driven the way a user drives it: 27 operations
     # through separate script scopes in one Praat process, which is the menu
     # model. Every test before harness/record_e2e started the recording in the
     # same scope that added the steps, so none of them could have seen that the
@@ -221,7 +221,16 @@ scripts <- c(
     # "did not run" is checked separately because a crashed operation and one
     # with no capture hook look identical in the step count.
     #     bash harness/record_e2e/run.sh
-    "v39_record_coverage.R"
+    "v39_record_coverage.R",
+    # v40 pins the OPPOSITE run: the same 27 operations with the recorder NOT
+    # LOADED. The recorder is optional -- a user script or a PraatGen
+    # companion includes the stats and graphs files directly -- and every
+    # capture hook is guarded on its PRESENCE for that reason. Every shipped
+    # barrel includes it, so no harness that loads a barrel can tell whether
+    # the guard is still there; on 12 Aug 2026 it was removed twice in one
+    # afternoon and reached a green suite both times.
+    #     bash harness/norecord/run.sh
+    "v40_norecord.R"
 )
 
 cat("EML Praat Tools validation suite\n")
