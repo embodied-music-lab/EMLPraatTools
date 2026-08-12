@@ -118,6 +118,47 @@ procedure emlRecordInit
     if not variableExists ("emlRecordBufferId")
         emlRecordBufferId = 0
     endif
+    if not variableExists ("emlRecordCurrentSource$")
+        emlRecordCurrentSource$ = ""
+    endif
+    if not variableExists ("emlRecordAmbiguousName")
+        emlRecordAmbiguousName = 0
+    endif
+
+    ; ------------------------------------------------------------------
+    ; RE-ATTACH TO A RECORDING LEFT BY AN EARLIER MENU INVOCATION.
+    ;
+    ; This is what makes a recording span more than one menu command, and
+    ; it works because of a fact about Praat rather than a trick: a script
+    ; run from a menu ends and takes ALL its variables with it, but the
+    ; OBJECTS it created stay in the Objects window, which belongs to the
+    ; running Praat instance. emlRecordActive and emlRecordBufferId are
+    ; gone by the time the next analysis starts. The buffer Table is not.
+    ;
+    ; So the buffer's EXISTENCE is the state. There is no flag file and no
+    ; config key, which means there is nothing that can disagree with the
+    ; data -- the switch and the buffer are the same object.
+    ;
+    ; `nocheck selectObject:` by name leaves nothing selected and raises no
+    ; error when the object is absent, which is exactly the test wanted.
+    ; Measured 12 Aug 2026 on 6.6.30.
+    ;
+    ; ONLY when this script has not already found it: a wrapper that called
+    ; @emlRecordBegin in this same run must not have its id replaced.
+    ; ------------------------------------------------------------------
+    if emlRecordBufferId = 0
+        .keepSel = 0
+        if numberOfSelected () > 0
+            .keepSel = 1
+        endif
+        nocheck selectObject: "Table emlRecordBuffer"
+        if numberOfSelected () = 1
+            emlRecordBufferId = selected ("Table")
+            emlRecordActive = 1
+            .nSoFar = Get number of rows
+            emlRecordN = .nSoFar
+        endif
+    endif
     if not variableExists ("emlRecordPluginRoot$")
         emlRecordPluginRoot$ = preferencesDirectory$ + "/plugin_EMLPraatTools"
     endif
@@ -185,7 +226,7 @@ procedure emlRecordBegin: .tempFolder$
         .keep = 1
     endif
     Create Table with column names: "emlRecordBuffer", 0,
-    ... "n kind intent caveat code result api paths"
+    ... "n kind intent caveat code result api paths source"
     emlRecordBufferId = selected ("Table")
 
     ; The include block's path. Resolved at run time from
@@ -313,6 +354,40 @@ procedure emlRecordSource: .tableId
         emlRecordSourceChanged = 1
     endif
 
+    ; THE SOURCE OF THE STEP ABOUT TO BE RECORDED.
+    ;
+    ; The header above describes the object the session STARTED on and that
+    ; is still right. What it cannot do is carry a session that MOVES, and
+    ; once recording spans several menu commands moving is ordinary rather
+    ; than exceptional -- an ANOVA on one table, a correlation on another.
+    ; The old behaviour raised emlRecordSourceChanged and the emitted file
+    ; said it would not reproduce; useful as a warning, useless as a script,
+    ; and it would have fired on most real sessions.
+    ;
+    ; So the source is now carried PER STEP, and the renderer emits a
+    ; select only where it changes. A single-table session is unchanged --
+    ; one select at the top and no noise.
+    emlRecordCurrentSource$ = .name$
+
+    ; AN AMBIGUOUS NAME, DETECTED WHERE IT IS KNOWABLE. The emitted script
+    ; selects by NAME, and two Tables sharing one name make that ambiguous:
+    ; measured 12 Aug 2026, `selectObject: "Table vt"` with two such Tables
+    ; silently picks the MOST RECENT. Here the id is known, so the collision
+    ; can be seen; in the emitted file it cannot. Counted now, reported by
+    ; the renderer.
+    .dupes = 0
+    select all
+    .total = numberOfSelected ()
+    for .o from 1 to .total
+        if selected$ (.o) = "Table " + .name$
+            .dupes = .dupes + 1
+        endif
+    endfor
+    if .dupes > 1
+        emlRecordAmbiguousName = 1
+    endif
+    selectObject: .tableId
+
     label END_RECORD_SOURCE
 endproc
 
@@ -356,6 +431,11 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     Set string value: .row, "result", ""
     Set string value: .row, "api", .api$
     Set string value: .row, "paths", ""
+    ; The object this step ran on, so the renderer can emit a select where
+    ; it changes. Empty when a caller recorded a step without a source --
+    ; a refusal before anything was read -- and the renderer leaves those
+    ; on whatever was selected, which is correct: they select nothing.
+    Set string value: .row, "source", emlRecordCurrentSource$
     .added = 1
 
     ; §8.3: mirror to a temp file as the row is added. A Table lost to a
@@ -708,10 +788,24 @@ procedure emlRecordRender
     ... + newline$
     if emlRecordSourceChanged = 1
         .text$ = .text$
-        ... + "# NOTE: later steps in this session ran on a DIFFERENT object."
+        ... + "# This session ran on more than one object. Each step below"
         ... + newline$
         .text$ = .text$
-        ... + "# Running this file against one Table will not reproduce them."
+        ... + "# selects the Table it ran on BY NAME, so they must all be"
+        ... + newline$
+        .text$ = .text$
+        ... + "# present in the Objects window before this file is run."
+        ... + newline$
+    endif
+    if emlRecordAmbiguousName = 1
+        .text$ = .text$
+        ... + "# WARNING: more than one Table shared a name during this"
+        ... + newline$
+        .text$ = .text$
+        ... + "# session. Selecting by name picks the most recently created"
+        ... + newline$
+        .text$ = .text$
+        ... + "# one, so a step below may not run on the object it recorded."
         ... + newline$
     endif
     .text$ = .text$ + .rule$ + newline$ + newline$
@@ -720,6 +814,7 @@ procedure emlRecordRender
     ; ---- BODY ------------------------------------------------------------
     selectObject: emlRecordBufferId
     .nSteps = Get number of rows
+    .prevSource$ = ""
     for .s from 1 to .nSteps
         selectObject: emlRecordBufferId
         .n = Get value: .s, "n"
@@ -729,11 +824,32 @@ procedure emlRecordRender
         .code$ = Get value: .s, "code"
         .result$ = Get value: .s, "result"
         .api$ = Get value: .s, "api"
+        .source$ = Get value: .s, "source"
 
         ; A refused step and a successful one must be distinguishable at a
         ; glance, so the separator carries the kind rather than only a number.
         .text$ = .text$ + "# --- Step " + string$ (.n) + " ("
         ... + .kind$ + ") ---" + newline$
+
+        ; THE SELECT, EMITTED ONLY WHERE THE OBJECT CHANGES.
+        ;
+        ; A session that stayed on one Table emits nothing here and reads
+        ; exactly as it did before this existed: the `table = selected
+        ; ("Table")` line above is the whole of its object handling. A
+        ; session that moved emits one line at each move, which is what a
+        ; person writing the script by hand would do.
+        ;
+        ; The FIRST step is skipped even when it has a source, because the
+        ; header already tells the reader to select that Table and running
+        ; on the selected object is the documented contract.
+        if .source$ <> "" and .s > 1 and .source$ <> .prevSource$
+            .text$ = .text$ + "selectObject: ""Table " + .source$ + """"
+            ... + newline$
+            .text$ = .text$ + "table = selected (""Table"")" + newline$
+        endif
+        if .source$ <> ""
+            .prevSource$ = .source$
+        endif
 
         @emlRecordCommentBlock: .intent$
         .text$ = .text$ + emlRecordCommentBlock.out$
