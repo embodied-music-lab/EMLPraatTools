@@ -1100,7 +1100,7 @@ D84. Stats Demo, Quick Start, tutorial, and Batch voice analysis are tabled.
 
 Nothing counts as validated until an authored R script tests the output,
 including the red-path input. Current baseline, 12 Aug 2026:
-**9330 checks, 0 failed** (`Rscript validate/run_all.R`), 39/39 stress cases
+**9356 checks, 0 failed** (`Rscript validate/run_all.R`), 39/39 stress cases
 (`bash harness/stress_graphs.sh` — 29 OK, 10 expected `BLANK_FRAME_ABS`, and
 now byte-identical run to run), 52/52 disclosure, 10/10 determinism
 byte-identical, 14/14 parity, 26/26 wrappers, `gui_e2e` PASS, phase1 357/357,
@@ -1109,7 +1109,9 @@ both round trips PASS.
 **What moved, 11-12 Aug:** 8285 -> 9330. v32 gained §11 (the four
 non-categorical legend types, +346); `eml_census` landed and was wired into
 v33 and v35 (+5); v36 covered the 29 unvalidated stress cases (+586); v37
-gave the determinism harness its first external check (+108). Two harnesses
+gave the determinism harness its first external check (+108); and coverage.R
+(v38) asked, for the first time, whether anything is looking at each artefact
+at all (+26). Two harnesses
 that reported only to themselves now report to an R script, and the stress
 artefact became a baseline instead of noise.
 
@@ -1563,7 +1565,7 @@ comparison could see it.
 
 ---
 
-## 19. OPEN — the coverage question is per-artefact, not per-validator
+## 19. FIXED (12 Aug 2026) — the coverage question is per-artefact, not per-validator
 
 §16b added `eml_census` and wired it into `v33` and `v35`, the two validators
 that read an artefact they claim entirely. It was deliberately NOT swept
@@ -1581,6 +1583,40 @@ that reads it: *for each thing a driver renders, is there some authored check
 that names it?* Answering it needs a registry of which validator claims which
 cases. `validate/REGISTRY.md` already exists and is the natural home.
 
-Until that exists, the finding stands as a known limit: `eml_census` proves
-coverage within a validator, and nothing yet proves coverage across them.
-§17 and §18 are the two gaps it has already found by hand.
+**DONE, 12 Aug 2026 — `validate/coverage.R`, reported as `v38`, 26 checks.**
+
+The map is **not written down**, and that is the design decision. A
+hand-maintained validator-to-cases table would be one more list capable of
+disagreeing with reality, which is the exact failure being guarded against.
+Instead each validator calls `eml_claim()` with the same vector its own checks
+loop over, as it runs, and `coverage.R` reads each artefact's population **off
+disk itself** and compares. Both sides come from somewhere other than
+`coverage.R`. A validator that stops asserting on a case stops claiming it in
+the same edit.
+
+Five artefacts are covered: `stress_out`, `legend_out`, `parity_out`,
+`wrappers_out`, `determinism_out`. Three failures are distinguished, because
+they are three different problems:
+
+- a case rendered that **no validator claims** — §17, named in the failure;
+- an artefact **no validator reads at all** — §18, the largest form of it,
+  reported separately rather than as "everything is orphaned";
+- a validator claiming a case that was **never rendered** — vacuous
+  assertions, invisible from inside the file making them.
+
+The failure message names the claimants, so "covered" reads as "covered BY
+WHAT" rather than being taken on trust.
+
+**Verified by reproducing the history.** Run the suite with `v36` absent —
+the state the tree was actually in that morning — and v38 fails, naming the
+unclaimed stress cases and reporting v27 as the sole claimant. Run it with
+`v37` absent and it reports that `determinism_out` has no reader.
+
+**And its own break test found a bug in it.** The third test — plant a
+rendered case nothing claims — did NOT fail. `coverage.R` was reading the
+repo default while the validators honoured their `EML_*` overrides, so the
+claims came from the copy and the population from the original: two different
+artefacts compared as one, reporting "covered" for precisely the case it
+exists to catch. Fixed by resolving every path through the same override the
+validator uses. A coverage check that silently compares two populations is
+worse than none.
