@@ -94,9 +94,9 @@ echo
 echo "operations that ran : $((nOps - nDead)) of $nOps"
 
 fail=0
-grep -q "^NORECORD DONE nOps=30\$" "$LOG" \
+grep -q "^NORECORD DONE nOps=35\$" "$LOG" \
     || { echo "FAIL: the driver did not finish — see $LOG"; fail=1; }
-[[ "$nOps" -eq 30 ]] || { echo "FAIL: expected 30 operations, drove $nOps"; fail=1; }
+[[ "$nOps" -eq 35 ]] || { echo "FAIL: expected 35 operations, drove $nOps"; fail=1; }
 [[ "$nDead" -eq 0 ]] || { echo "FAIL: $nDead operation(s) failed with the recorder absent — see $LOG"; fail=1; }
 # THE PROOF THAT THE RUN MEANT ANYTHING. A driver that somehow loaded the
 # recorder would pass every check above while testing nothing.
