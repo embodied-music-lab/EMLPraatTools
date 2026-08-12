@@ -94,9 +94,23 @@ for i in $(seq 1 10); do
 
     for pass in a b; do
         p="$OUT/${nm}_${pass}.png"
+        # A HEADER LINE, WRITTEN BEFORE THE RUN, AND IT IS NOT DECORATION.
+        # Two of the ten types -- box and violin -- print nothing at all, so
+        # their transcripts were ZERO BYTES, and an empty file cannot tell
+        # "this pass produced no output" apart from "this pass never ran".
+        # validate/v37 treats a missing log as a failure, which is right, and
+        # could not distinguish the two states without this. The header makes
+        # every transcript self-describing and non-empty.
+        #
+        # It also has to be here for a duller reason worth writing down: an
+        # empty file cannot be uploaded through GitHub's web upload form,
+        # which is how this repository is pushed, so a zero-byte artefact
+        # could never reach the remote that v37 needs it on.
+        printf '# determinism type=%s (%d) pass=%s -- Praat output follows\n' \
+            "$nm" "$i" "$pass" > "$OUT/${nm}_${pass}.log"
         ( cd "$SCRIPT_DIR" && EML_OUT="$p" timeout 300 "$PRAAT" $PRAAT_TRUST \
             --pref-dir="$PREFS" --run case.praat "$i" \
-            >"$OUT/${nm}_${pass}.log" 2>&1 )
+            >>"$OUT/${nm}_${pass}.log" 2>&1 )
     done
 
     if [[ ! -f "$a" || ! -f "$b" ]]; then
