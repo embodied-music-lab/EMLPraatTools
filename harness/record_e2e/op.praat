@@ -27,6 +27,18 @@ op$ = op$
 ; entry point for standalone callers; every harness prelude in this tree calls
 ; it, and so must anything driving a draw procedure directly.
 @emlInitDrawingDefaults
+
+; The preamble every draw procedure needs from a standalone caller. Factored
+; because it is identical for all fourteen and a caller that skips any of it
+; gets "Unknown variable: emlSubtitle$" from inside the draw rather than
+; anything that names the cause.
+procedure emlPrepDraw
+    @emlClearAnnotations
+    @emlSetAdaptiveTheme: 6, 4
+    @emlSetColorPalette: "color"
+    @emlInitAlphaSprites
+    selectObject: id
+endproc
 selectObject: "Table voiceA"
 id = selected ("Table")
 
@@ -45,26 +57,97 @@ elsif op$ = "correlation"
 elsif op$ = "regression"
     @emlRunRegressionAnalysis: id, "spl", "spl2"
 elsif op$ = "violin"
-    @emlClearAnnotations
-    @emlSetAdaptiveTheme: 6, 4
-    @emlSetColorPalette: "color"
-    @emlInitAlphaSprites
-    selectObject: id
+    @emlPrepDraw
     @emlDrawViolinPlot: id, "Violin", "grp", "spl", 6, 4, "color", 1, "grp", "spl", 0, 0
 elsif op$ = "scatter"
-    @emlClearAnnotations
-    @emlSetAdaptiveTheme: 6, 4
-    @emlSetColorPalette: "color"
-    @emlInitAlphaSprites
-    selectObject: id
+    @emlPrepDraw
     @emlDrawScatterPlot: id, "Scatter", "x", "y", 6, 4, "color", 1, "spl", "spl2", "", 0, 0, 0, 0, 0
 elsif op$ = "histogram"
-    @emlClearAnnotations
-    @emlSetAdaptiveTheme: 6, 4
-    @emlSetColorPalette: "color"
-    @emlInitAlphaSprites
-    selectObject: id
+    @emlPrepDraw
     @emlDrawHistogram: id, "Histogram", "spl", "Count", 6, 4, "color", 1, "spl", "", 0, 1, 0, 0, 0
+elsif op$ = "pairwise"
+    @emlRunPairwiseAnalysis: id, "spl", "grp3", "t", "holm"
+elsif op$ = "twoway"
+    @emlRunTwoWayAnalysis: id, "spl", "grp", "grp2"
+elsif op$ = "paired"
+    @emlRunPairedAnalysis: id, "spl", "spl2", "t"
+elsif op$ = "reliability"
+    @emlRunReliabilityAnalysis: id, "subj", "r1,r2,r3", "icc", "agreement"
+elsif op$ = "rm"
+    @emlRunRepeatedMeasuresAnalysis: id, "subj", "c1,c2,c3", 0, "holm"
+elsif op$ = "friedman"
+    @emlRunFriedmanAnalysis: id, "subj", "c1,c2,c3", 0, "holm"
+elsif op$ = "timeseries"
+    @emlPrepDraw
+    @emlDrawTimeSeries: id, "Line", "t", "spl", 6, 4, "color", 1, "t", "spl", "grp", 0, 0, 0, 0
+elsif op$ = "timeseriesci"
+    @emlPrepDraw
+    @emlDrawTimeSeriesCI: id, "Line CI", "t", "spl", 6, 4, "color", 1, "t", "spl", "grp", 0, 0, 0, 0
+elsif op$ = "spaghetti"
+    @emlPrepDraw
+    @emlDrawSpaghettiPlot: id, "Spaghetti", "t", "spl", 6, 4, "color", 1, "t", "spl", "subj", "grp", 1, 0, 0
+elsif op$ = "barchart"
+    @emlPrepDraw
+    @emlDrawBarChart: id, "Bar", "grp", "spl", 6, 4, "color", 1, "grp", "spl", 0, "", 0, 0
+elsif op$ = "boxplot"
+    @emlPrepDraw
+    @emlDrawBoxPlot: id, "Box", "grp", "spl", 6, 4, "color", 1, "grp", "spl", 0, 0
+elsif op$ = "gviolin"
+    @emlPrepDraw
+    @emlDrawGroupedViolin: id, "GViolin", "grp", "spl", 6, 4, "color", 1, "grp", "grp2", "spl", 0, 0
+elsif op$ = "gbox"
+    @emlPrepDraw
+    @emlDrawGroupedBoxPlot: id, "GBox", "grp", "spl", 6, 4, "color", 1, "grp", "grp2", "spl", 0, 0
+elsif op$ = "waveform"
+    @emlPrepDraw
+    selectObject: "Sound tone"
+    sid = selected ()
+    @emlDrawWaveform: sid, "Waveform", "Time (s)", "Amplitude", 6, 4, "color", 1, 0, 0, 0, 0
+elsif op$ = "f0contour"
+    @emlPrepDraw
+    selectObject: "Pitch tone"
+    pid = selected ()
+    ; .yUnit IS NUMERIC -- 1 Hertz, 2 semitones re 440 Hz -- and passing the
+    ; string "Hz" here got "Found a string expression instead of a numeric
+    ; expression" from inside the procedure, with no mention of which argument.
+    @emlDrawF0Contour: pid, "F0", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, 0, 0, 1
+elsif op$ = "spectrum"
+    @emlPrepDraw
+    selectObject: "Spectrum tone"
+    qid = selected ()
+    @emlDrawSpectrum: qid, "Spectrum", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, 0, 0
+elsif op$ = "ltas"
+    @emlPrepDraw
+    selectObject: "Ltas tone"
+    lid = selected ()
+    @emlDrawLTAS: lid, "LTAS", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, 0, 0, 1, 0, 0, 0
+elsif op$ = "sound2f0"
+    ; FROM A SOUND, converting the way the graphs form does. The intermediate
+    ; is removed afterwards exactly as @emlGraphsWorkflow removes it, so the
+    ; recorded step has to name the Sound or it names nothing that exists.
+    @emlPrepDraw
+    selectObject: "Sound tone"
+    sndid = selected ()
+    @emlConvertSoundForGraph: sndid, "Pitch", 75, 600
+    cid = emlConvertSoundForGraph.result
+    @emlDrawF0Contour: cid, "F0 from Sound", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, 0, 0, 1
+    removeObject: cid
+elsif op$ = "sound2spectrum"
+    @emlPrepDraw
+    selectObject: "Sound tone"
+    sndid = selected ()
+    @emlConvertSoundForGraph: sndid, "Spectrum", 75, 600
+    cid = emlConvertSoundForGraph.result
+    @emlDrawSpectrum: cid, "Spectrum from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, 0, 0
+    removeObject: cid
+elsif op$ = "sound2ltas"
+    @emlPrepDraw
+    selectObject: "Sound tone"
+    sndid = selected ()
+    @emlConvertSoundForGraph: sndid, "Ltas", 75, 600
+    cid = emlConvertSoundForGraph.result
+    @emlDrawLTAS: cid, "LTAS from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, 0, 0, 1, 0, 0, 0
+    removeObject: cid
 endif
 
 appendInfoLine: "OPDONE ", op$

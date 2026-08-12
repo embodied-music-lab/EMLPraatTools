@@ -25,34 +25,7 @@
 # ---------------------------------------------------------------------------
 include ../../plugin/scripts/eml-lib.praat
 
-# A fixture every operation below can consume: two numeric columns and a group.
-Create Table with column names: "voiceA", 0, "spl spl2 grp"
-rngState = 20260812
-procedure rnd
-    rngState = (1103515245 * rngState + 12345) mod 2147483648
-    .g = (rngState / 2147483648 - 0.5) * 3.4
-endproc
-for i from 1 to 24
-    Append row
-    r = Get number of rows
-    @rnd
-    Set numeric value: r, "spl", 60 + (i mod 4) * 3 + rnd.g
-    @rnd
-    Set numeric value: r, "spl2", 200 + (i mod 5) * 2 + rnd.g
-    Set string value: r, "grp", if i mod 2 = 0 then "x" else "y" fi
-endfor
-
-nOps = 10
-op$[1] = "anova"
-op$[2] = "twogroup"
-op$[3] = "kw"
-op$[4] = "descriptive"
-op$[5] = "normality"
-op$[6] = "correlation"
-op$[7] = "regression"
-op$[8] = "violin"
-op$[9] = "scatter"
-op$[10] = "histogram"
+include fixture.praat
 
 # --- click: Start recording script -----------------------------------------
 runScript: "../../plugin/scripts/eml-record-start.praat"
@@ -87,7 +60,7 @@ for k from 1 to nOps
     if numberOfSelected () = 1
         after = Get number of rows
     endif
-    appendInfoLine: "OP name=", op$[k], " before=", before, " after=", after
+    appendInfoLine: "OP name=", op$[k], " k=", k, " nOps=", nOps, " before=", before, " after=", after
 endfor
 
 # --- the buffer survived every one of them ---------------------------------

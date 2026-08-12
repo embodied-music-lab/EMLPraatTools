@@ -51,16 +51,40 @@ rm -f "$LOG" "$REC" "$OUT/RECORD.tsv"
 # plugin/scripts, loading the barrel from there.
 # ---------------------------------------------------------------------------
 STAGE="$EML_ROOT/plugin/scripts"
-cleanup () { rm -f "$STAGE/_record_e2e_driver.praat" "$STAGE/_record_e2e_op.praat"; }
+cleanup () {
+    rm -f "$STAGE/_record_e2e_driver.praat" "$STAGE/_record_e2e_op.praat" \
+          "$STAGE/fixture.praat"
+}
 trap cleanup EXIT
 sed 's|\.\./\.\./plugin/scripts/eml-lib\.praat|eml-lib.praat|; s|"op\.praat"|"_record_e2e_op.praat"|; s|"\.\./\.\./plugin/scripts/eml-record-start\.praat"|"eml-record-start.praat"|' \
     "$SCRIPT_DIR/driver.praat" > "$STAGE/_record_e2e_driver.praat"
 sed 's|\.\./\.\./plugin/scripts/eml-lib\.praat|eml-lib.praat|' \
     "$SCRIPT_DIR/op.praat" > "$STAGE/_record_e2e_op.praat"
+# THE FIXTURE IS A THIRD FILE, and forgetting it is exactly the failure this
+# harness exists to catch, one level up: the driver's `include fixture.praat`
+# resolves against plugin/scripts, so an unstaged fixture is an unopenable
+# include and the whole run dies before the first operation.
+# harness/norecord copies the same file for the same reason.
+cp "$SCRIPT_DIR/fixture.praat" "$STAGE/fixture.praat"
 
+# THE TIMESTAMP IS PINNED, or the artefact this commits differs on every run.
+# @emlRecordBegin stamps the session with date$() so that a user's recording
+# says when it was made; EML_RECORD_STAMP is the seam that makes the same code
+# path diffable. Same role as EML_RECORD_OUT on the next line.
 ( cd "$STAGE" && env -u DISPLAY EML_RECORD_OUT="$REC" \
+    EML_RECORD_STAMP="12 August 2026, 00:00:00" \
     timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run _record_e2e_driver.praat \
     > "$LOG" 2>&1 )
+
+# PRAAT WRITES UTF-16 THE MOMENT THE TEXT IS NOT PURE ASCII, and a recorded
+# workflow is a file a user opens, edits and commits. The plugin's own strings
+# are ASCII on purpose, but a column name or a table name is the user's, so
+# this cannot be assumed away -- normalise the same way harness/gui.sh and
+# harness/record/roundtrip.sh already do, so the artefact in git is readable
+# and validate/v39 can read it with plain readLines().
+if [[ -f "$REC" ]] && file "$REC" | grep -q UTF-16; then
+    iconv -f UTF-16 -t UTF-8 "$REC" -o "$REC.u8" && mv "$REC.u8" "$REC"
+fi
 
 TSV="$OUT/RECORD.tsv"
 : > "$TSV"
@@ -87,7 +111,7 @@ while read -r name before after; do
         verdict=silent
     fi
     printf '%s\t%s\t%s\t%s\n' "$name" "$before" "$after" "$verdict" >> "$TSV"
-done < <(sed -n 's/^OP name=\([^ ]*\) before=\([0-9-]*\) after=\([0-9-]*\).*/\1 \2 \3/p' "$LOG")
+done < <(sed -n 's/^OP name=\([^ ]*\) k=[0-9]* nOps=[0-9]* before=\([0-9-]*\) after=\([0-9-]*\).*/\1 \2 \3/p' "$LOG")
 
 nOps=$(wc -l < "$TSV")
 nRec=$(awk -F"\t" '$4=="recorded"' "$TSV" | wc -l)
@@ -110,7 +134,7 @@ fail=0
 [[ "${started:-0}" == "1"  ]] || { echo "FAIL: the recording did not start"; fail=1; }
 [[ "${survived:-0}" == "1" ]] || { echo "FAIL: the buffer did not survive the invocations"; fail=1; }
 [[ "${written:-0}" == "1"  ]] || { echo "FAIL: no script was written"; fail=1; }
-[[ "$nOps" -eq 10 ]] || { echo "FAIL: expected 10 operations, drove $nOps"; fail=1; }
+[[ "$nOps" -eq 30 ]] || { echo "FAIL: expected 30 operations, drove $nOps"; fail=1; }
 # AN OPERATION THAT DID NOT RUN IS A HARNESS FAILURE, not a coverage figure.
 [[ "$nDead" -eq 0 ]] || { echo "FAIL: $nDead operation(s) never completed — see $LOG"; fail=1; }
 
