@@ -10,7 +10,7 @@
 # nothing. Re-attaching to the buffer across that boundary is the entire
 # design of the feature, and nothing had ever crossed it.
 #
-# harness/record_e2e/run.sh crosses it -- 35 operations through `runScript:`,
+# harness/record_e2e/run.sh crosses it -- 36 operations through `runScript:`,
 # separate scopes in one process -- and every defect below was found by it and
 # by nothing else:
 #
@@ -92,6 +92,15 @@ rc$after  <- as.integer(rc$after)
 # 12 Aug 2026 and could only be reached through a driven dialog, so none had
 # ever been driven -- and the recorder was wrong on every one of them.
 #
+# `bridge` IS THE OTHER DIRECTION OF A BIDIRECTIONAL DESIGN. Stats can lead
+# to a graph and a graph can lead to stats -- @emlBridgeGroupComparison runs
+# the t-test, Mann-Whitney, ANOVA, Kruskal-Wallis, Tukey and Dunn that a
+# figure's brackets are drawn from, reached from four sites in the graphs
+# form. Capture hooks were added to all thirteen stats orchestrators on
+# 12 Aug 2026 and not to the bridge, so for a few hours the SAME analysis
+# recorded from the stats menu and vanished from the figure path. Before that
+# neither recorded; fixing one half is what created the asymmetry.
+#
 # The two Table conversions differ in one respect that is pinned separately:
 # they produce a working object the session KEEPS, where the acoustic ones
 # produce an intermediate the form removes. Both still have to name the
@@ -104,7 +113,8 @@ OPS <- c("anova", "twogroup", "kw", "descriptive", "normality",
          "waveform", "f0contour", "spectrum", "ltas",
          "sound2f0", "sound2spectrum", "sound2ltas",
          "spectrum2ltas", "spectrum2sound", "spectrum2f0",
-         "tor2table", "matrix2table")
+         "tor2table", "matrix2table",
+         "bridge")
 eml_census("v39", "recorded operation", rc$op, OPS)
 eml_claim("v39", "record_out", OPS)
 check("v39", "every declared operation was driven", nrow(rc), length(OPS),
@@ -133,9 +143,9 @@ if (nrow(dead) > 0) {
 # ---------------------------------------------------------------------------
 # The load-bearing claim of the whole feature. Praat objects outlive the scope
 # that made them, script variables do not, so the buffer IS the state -- and a
-# step count that never decreases across 35 separate invocations is that
+# step count that never decreases across 36 separate invocations is that
 # claim measured rather than argued.
-check_true("v39", "the step count never fell across the 35 invocations",
+check_true("v39", "the step count never fell across the 36 invocations",
            all(diff(c(rc$before, rc$after[nrow(rc)])) >= 0))
 check_true("v39", "each operation's own before/after is consistent",
            all(rc$after >= rc$before))
@@ -149,19 +159,19 @@ check_true("v39", "the buffer was live at the last invocation",
 # 13 analysis orchestrators and 16 draw procedures ship. TWO of them called the
 # recorder when this harness was written; a user who switched recording on and
 # ran a correlation got an empty script and no warning. Twenty-seven are hooked
-# and all thirty-five record, and the floor is stated so that losing one is an
+# and all thirty-six record, and the floor is stated so that losing one is an
 # edit to this line rather than a quieter run.
 #
 # The two draws not in this population are the ones with no standalone caller
 # to drive -- they are reached only through the graphs form's own composition
 # path, which harness/gui_e2e covers and v35 asserts on.
 nRec <- sum(rc$verdict == "recorded")
-COVERAGE_FLOOR <- 35L
+COVERAGE_FLOOR <- 36L
 check_true("v39",
            sprintf("at least %d of %d operations record (observed %d)",
                    COVERAGE_FLOOR, nrow(rc), nRec),
            nRec >= COVERAGE_FLOOR)
-# Named, so a future run cannot meet the floor with a different 35.
+# Named, so a future run cannot meet the floor with a different 36.
 for (op in OPS) {
     r <- rc[rc$op == op, ]
     if (nrow(r) != 1) next
@@ -297,6 +307,15 @@ check_true("v39", "the conversion carries its parameters",
 }, logical(1))
 check_true("v39", "each convert step selects its source through the manifest",
            length(.iconv) >= 8 && all(.next_sel))
+
+# BOTH DIRECTIONS OF THE BIDIRECTIONAL PATH ARE IN THE RECORD. Stats-to-graph
+# and graph-to-stats are one feature, and a recording that captures an ANOVA
+# from the menu but not the identical ANOVA behind a figure's brackets is
+# half a feature. Named rather than counted, so losing either is an edit here.
+check_true("v39", "the stats-menu path records its analyses",
+           any(grepl("^@emlRun[A-Za-z]+: data,", em)))
+check_true("v39", "the graph-to-stats path records its analyses too",
+           any(grepl("^@emlBridgeGroupComparison: data,", em)))
 
 # The emitted file calls the ORCHESTRATOR, not the wrapper: §8 -- a wrapper
 # uses beginPause: and cannot take arguments from runScript:, so a wrapper-level
