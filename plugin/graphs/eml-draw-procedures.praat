@@ -809,6 +809,21 @@ procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
     # Step 8: Reset state
     Colour: "Black"
     Line width: 1.0
+
+    ; RECORD WORKFLOW. Same three-part guard the violin path uses:
+    ; present, initialised, recording. emlRecordLoaded is set at LOAD
+    ; time by eml-record.praat, so a caller that never loaded the
+    ; recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordDrawStep: .objectId, "F0 contour",
+            ... .title$,
+            ... "",
+            ... "@emlDrawF0Contour: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.fMin) + ", " + string$ (.fMax) + ", " + string$ (.yUnit),
+            ... "In the GUI: New > EML Tools > EML Graphs..."
+        endif
+    endif
 endproc
 
 # ----------------------------------------------------------------------------
@@ -906,6 +921,21 @@ procedure emlDrawWaveform: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     # Step 9: Reset state
     Colour: "Black"
     Line width: 1.0
+
+    ; RECORD WORKFLOW. Same three-part guard the violin path uses:
+    ; present, initialised, recording. emlRecordLoaded is set at LOAD
+    ; time by eml-record.praat, so a caller that never loaded the
+    ; recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordDrawStep: .objectId, "Waveform",
+            ... .title$,
+            ... "",
+            ... "@emlDrawWaveform: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.aMin) + ", " + string$ (.aMax),
+            ... "In the GUI: New > EML Tools > EML Graphs..."
+        endif
+    endif
 endproc
 
 # ----------------------------------------------------------------------------
@@ -966,6 +996,21 @@ procedure emlDrawSpectrum: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     # Reset state
     Colour: "Black"
     Line width: 1.0
+
+    ; RECORD WORKFLOW. Same three-part guard the violin path uses:
+    ; present, initialised, recording. emlRecordLoaded is set at LOAD
+    ; time by eml-record.praat, so a caller that never loaded the
+    ; recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordDrawStep: .objectId, "Spectrum",
+            ... .title$,
+            ... "",
+            ... "@emlDrawSpectrum: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.fMin) + ", " + string$ (.fMax) + ", " + string$ (.pMin) + ", " + string$ (.pMax),
+            ... "In the GUI: New > EML Tools > EML Graphs..."
+        endif
+    endif
 endproc
 
 # ----------------------------------------------------------------------------
@@ -1108,6 +1153,21 @@ procedure emlDrawLTAS: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colo
     # Reset state
     Colour: "Black"
     Line width: 1.0
+
+    ; RECORD WORKFLOW. Same three-part guard the violin path uses:
+    ; present, initialised, recording. emlRecordLoaded is set at LOAD
+    ; time by eml-record.praat, so a caller that never loaded the
+    ; recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordDrawStep: .objectId, "Long-term average spectrum",
+            ... .title$,
+            ... "",
+            ... "@emlDrawLTAS: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.fMin) + ", " + string$ (.fMax) + ", " + string$ (.pMin) + ", " + string$ (.pMax) + ", " + string$ (.showCurve) + ", " + string$ (.showBars) + ", " + string$ (.showPoles) + ", " + string$ (.showSpeckles),
+            ... "In the GUI: New > EML Tools > EML Graphs..."
+        endif
+    endif
 endproc
 
 # ----------------------------------------------------------------------------
@@ -1729,6 +1789,21 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # Step 9: Reset
     Line width: 1.0
     Colour: "Black"
+
+    ; RECORD WORKFLOW. Same three-part guard the violin path uses:
+    ; present, initialised, recording. emlRecordLoaded is set at LOAD
+    ; time by eml-record.praat, so a caller that never loaded the
+    ; recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordDrawStep: .objectId, "Line chart",
+            ... .title$,
+            ... "",
+            ... "@emlDrawTimeSeries: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .timeCol$ + """" + ", """ + .valueCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.vMin) + ", " + string$ (.vMax),
+            ... "In the GUI: New > EML Tools > EML Graphs..."
+        endif
+    endif
 endproc
 
 
@@ -2222,6 +2297,21 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
 
     Line width: 1.0
     Colour: "Black"
+
+    ; RECORD WORKFLOW. Same three-part guard the violin path uses:
+    ; present, initialised, recording. emlRecordLoaded is set at LOAD
+    ; time by eml-record.praat, so a caller that never loaded the
+    ; recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordDrawStep: .objectId, "Line chart (+/-CI)",
+            ... .title$,
+            ... "",
+            ... "@emlDrawTimeSeriesCI: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .timeCol$ + """" + ", """ + .valueCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.vMin) + ", " + string$ (.vMax),
+            ... "In the GUI: New > EML Tools > EML Graphs..."
+        endif
+    endif
 endproc
 
 
@@ -2785,6 +2875,21 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     Colour: "Black"
     Line width: 1.0
     Font size: emlSetAdaptiveTheme.bodySize
+
+    ; RECORD WORKFLOW. Same three-part guard the violin path uses:
+    ; present, initialised, recording. emlRecordLoaded is set at LOAD
+    ; time by eml-record.praat, so a caller that never loaded the
+    ; recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordDrawStep: .objectId, "Spaghetti plot",
+            ... .title$,
+            ... "",
+            ... "@emlDrawSpaghettiPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .condCol$ + """" + ", """ + .valueCol$ + """" + ", """ + .idCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.showMean) + ", " + string$ (.vMin) + ", " + string$ (.vMax),
+            ... "In the GUI: New > EML Tools > EML Graphs..."
+        endif
+    endif
 endproc
 
 
@@ -3140,6 +3245,21 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     Colour: "Black"
     Line width: 1.0
     Font size: emlSetAdaptiveTheme.bodySize
+
+    ; RECORD WORKFLOW. Same three-part guard the violin path uses:
+    ; present, initialised, recording. emlRecordLoaded is set at LOAD
+    ; time by eml-record.praat, so a caller that never loaded the
+    ; recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordDrawStep: .objectId, "Bar chart",
+            ... .title$,
+            ... "Bars show means. The spread, not the bar, is what tells you about the data.",
+            ... "@emlDrawBarChart: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .groupCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.errorMode) + ", """ + .errorCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
+            ... "In the GUI: New > EML Tools > EML Graphs..."
+        endif
+    endif
 endproc
 
 # ----------------------------------------------------------------------------
@@ -4400,6 +4520,21 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
     Colour: "Black"
     Line width: 1.0
     Font size: emlSetAdaptiveTheme.bodySize
+
+    ; RECORD WORKFLOW. Same three-part guard the violin path uses:
+    ; present, initialised, recording. emlRecordLoaded is set at LOAD
+    ; time by eml-record.praat, so a caller that never loaded the
+    ; recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordDrawStep: .objectId, "Scatter plot",
+            ... .title$,
+            ... "A fitted line, where one is drawn, is descriptive and carries no test.",
+            ... "@emlDrawScatterPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .colX$ + """" + ", """ + .colY$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.xMin) + ", " + string$ (.xMax) + ", " + string$ (.yMin) + ", " + string$ (.yMax) + ", " + string$ (.annotate),
+            ... "In the GUI: New > EML Tools > EML Graphs..."
+        endif
+    endif
 endproc
 
 
@@ -4645,6 +4780,21 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
     Colour: "Black"
     Line width: 1.0
     Font size: emlSetAdaptiveTheme.bodySize
+
+    ; RECORD WORKFLOW. Same three-part guard the violin path uses:
+    ; present, initialised, recording. emlRecordLoaded is set at LOAD
+    ; time by eml-record.praat, so a caller that never loaded the
+    ; recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordDrawStep: .objectId, "Box plot",
+            ... .title$,
+            ... "Whisker convention and outlier rule are stated in the figure, not assumed.",
+            ... "@emlDrawBoxPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .groupCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
+            ... "In the GUI: New > EML Tools > EML Graphs..."
+        endif
+    endif
 endproc
 
 
@@ -5192,6 +5342,21 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
 
     # Release the integral-axis constraint: it is scoped to this figure.
     emlYAxisMinStep = 0
+
+    ; RECORD WORKFLOW. Same three-part guard the violin path uses:
+    ; present, initialised, recording. emlRecordLoaded is set at LOAD
+    ; time by eml-record.praat, so a caller that never loaded the
+    ; recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordDrawStep: .objectId, "Histogram",
+            ... .title$,
+            ... "Bin count changes the shape; it is a display choice, not a property of the data.",
+            ... "@emlDrawHistogram: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .valueCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.binCount) + ", " + string$ (.displayMode) + ", " + string$ (.vMin) + ", " + string$ (.vMax) + ", " + string$ (.freqMax),
+            ... "In the GUI: New > EML Tools > EML Graphs..."
+        endif
+    endif
 endproc
 
 
@@ -5566,6 +5731,21 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     Colour: "Black"
     Line width: 1.0
     Font size: emlSetAdaptiveTheme.bodySize
+
+    ; RECORD WORKFLOW. Same three-part guard the violin path uses:
+    ; present, initialised, recording. emlRecordLoaded is set at LOAD
+    ; time by eml-record.praat, so a caller that never loaded the
+    ; recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordDrawStep: .objectId, "Grouped violin",
+            ... .title$,
+            ... "Violin width is a kernel density estimate, not a count.",
+            ... "@emlDrawGroupedViolin: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .catCol$ + """" + ", """ + .subCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
+            ... "In the GUI: New > EML Tools > EML Graphs..."
+        endif
+    endif
 endproc
 
 
@@ -5864,6 +6044,21 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
     Colour: "Black"
     Line width: 1.0
     Font size: emlSetAdaptiveTheme.bodySize
+
+    ; RECORD WORKFLOW. Same three-part guard the violin path uses:
+    ; present, initialised, recording. emlRecordLoaded is set at LOAD
+    ; time by eml-record.praat, so a caller that never loaded the
+    ; recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordDrawStep: .objectId, "Grouped box plot",
+            ... .title$,
+            ... "Whisker convention and outlier rule are stated in the figure, not assumed.",
+            ... "@emlDrawGroupedBoxPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .catCol$ + """" + ", """ + .subCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
+            ... "In the GUI: New > EML Tools > EML Graphs..."
+        endif
+    endif
 endproc
 
 
