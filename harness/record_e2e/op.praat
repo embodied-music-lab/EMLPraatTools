@@ -72,11 +72,17 @@ elsif op$ = "twoway"
 elsif op$ = "paired"
     @emlRunPairedAnalysis: id, "spl", "spl2", "t"
 elsif op$ = "reliability"
-    @emlRunReliabilityAnalysis: id, "subj", "r1,r2,r3", "icc", "agreement"
+    ; Still a Phase 4 stub that refuses by design; the separator is corrected
+    ; anyway so the refusal is the stub's and not a mis-parsed argument list.
+    @emlRunReliabilityAnalysis: id, "subj", "r1|r2|r3", "icc", "agreement"
 elsif op$ = "rm"
-    @emlRunRepeatedMeasuresAnalysis: id, "subj", "c1,c2,c3", 0, "holm"
+    ; PIPE-SEPARATED, not comma. @emlExtractConditionMatrix splits on "|";
+    ; a comma-separated list parses as ONE column name and the path refuses
+    ; with "Need at least 2 condition columns" -- which is what this harness
+    ; recorded for weeks, so the repeated-measures test never actually ran.
+    @emlRunRepeatedMeasuresAnalysis: id, "subj", "c1|c2|c3", 0, "holm"
 elsif op$ = "friedman"
-    @emlRunFriedmanAnalysis: id, "subj", "c1,c2,c3", 0, "holm"
+    @emlRunFriedmanAnalysis: id, "subj", "c1|c2|c3", 0, "holm"
 elsif op$ = "timeseries"
     @emlPrepDraw
     @emlDrawTimeSeries: id, "Line", "t", "spl", 6, 4, "color", 1, "t", "spl", "grp", 0, 0, 0, 0
@@ -190,6 +196,28 @@ elsif op$ = "matrix2table"
     selectObject: cid
     col$ = Get column label: 1
     @emlDrawHistogram: cid, "Histogram from Matrix", col$, "Count", 6, 4, "color", 1, col$, "", 0, 1, 0, 0, 0
+elsif op$ = "scatterstats"
+    ; SET THE WAY @emlGraphsWorkflow SETS THEM. These three are globals the
+    ; form owns and the draw procedure reads; a direct caller has to supply
+    ; them or the analysis branch never runs.
+    ;   scatterAnalysisType  1 correlation, 2 regression, 3 both
+    ;   annotCorrType$       pearson | spearman -- also picks the estimator
+    ;                        for the fitted line (OLS vs Theil-Sen)
+    ;   scatterRegressionLine  draw the fit
+    @emlPrepDraw
+    scatterAnalysisType = 3
+    annotCorrType$ = "spearman"
+    scatterRegressionLine = 1
+    @emlDrawScatterPlot: id, "Scatter with stats", "x", "y", 6, 4, "color", 1, "spl", "spl2", "", 0, 0, 0, 0, 1
+elsif op$ = "scattermonotonic"
+    ; scatterAnalysisType = 1 (correlation only) leaves .reportedOLS = 0, so
+    ; the Spearman context selects Theil-Sen for the line -- the robust,
+    ; rank-coherent estimator. This is the branch the OLS case cannot reach.
+    @emlPrepDraw
+    scatterAnalysisType = 1
+    annotCorrType$ = "spearman"
+    scatterRegressionLine = 1
+    @emlDrawScatterPlot: id, "Scatter, monotonic fit", "x", "y", 6, 4, "color", 1, "spl", "spl2", "", 0, 0, 0, 0, 1
 elsif op$ = "bridge"
     ; The graphs -> stats direction: @emlBridgeGroupComparison runs the
     ; omnibus test and the post-hoc that the figure's brackets are drawn

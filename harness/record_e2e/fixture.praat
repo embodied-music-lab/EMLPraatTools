@@ -76,7 +76,7 @@ To Spectrum: "yes"
 selectObject: "Sound tone"
 To Ltas: 100
 
-nOps = 36
+nOps = 38
 op$[1] = "anova"
 op$[2] = "twogroup"
 op$[3] = "kw"
@@ -128,3 +128,14 @@ op$[35] = "matrix2table"
 ; stats can lead to a graph and a graph can lead to stats. Both must record
 ; the same analysis, and on 12 Aug 2026 only the stats-menu half did.
 op$[36] = "bridge"
+; THE OTHER GRAPH -> STATS PATH, and the one the author named: a scatter with
+; its analysis switched on reports a correlation AND a regression from the
+; figure -- the mirror of Correlate and Regress on the stats menu. The plain
+; `scatter` op above runs with annotate = 0 and the form's globals absent, so
+; it exercises none of that; this one sets them exactly as the form does.
+op$[37] = "scatterstats"
+; AND THE MONOTONIC ESTIMATOR. With a regression report requested the plugin
+; deliberately forces OLS so the drawn line matches the reported coefficients
+; (v1.19); Theil-Sen is reached with Spearman and correlation only. Both are
+; driven because "a fitted line" is not one thing.
+op$[38] = "scattermonotonic"
