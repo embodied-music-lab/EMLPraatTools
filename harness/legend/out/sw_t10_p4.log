@@ -1,0 +1,19 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+Histogram: 10 bins, bin width = 6.6448
+Groups: 4
+SWEEP name=sw_t10_p4 gtype=10 placement=4 vpW=6.000 vpH=4.500 mode=color
+AXCONTRACT axisXMin=194.4192988873 axisXMax=260.8668348789 axisYMin=0 axisYMax=30.0000000000 paramXMin=194.4192988873 paramXMax=260.8668348789 paramYMin=0 paramYMax=30.0000000000
+SRCASE name=sw_t10_p4 graph=t10 k=4 vpW=6.000 vpH=4.500 mode=color room=0 pinMin=0.0000000000 pinMax=0.0000000000
+SERIES k=4 nGroups=4 legendN=4 shown=4 hidden=0
+CORNER corner=bottom-right placed=bottom-right
+AXIS yMin=0 yMax=30.0000000000
+PLACEMENT requested=4 actual=4
+THEME body=9.7200 annot=8.6400 mL=0.8400 mR=0.8400 mT=0.4050 mB=0.5000 innerL=0.8400 innerR=5.1600 innerT=0.4050 innerB=4.0000
+LAYOUT legendW=-1 legendH=-1
+EXTENT minX=0 maxX=6.0000 minY=0 maxY=4.5000
+LEGENDBOX x=44 y=7244 w=289 h=233
+LEGENDLAYOUT cols=1 rows=4 shown=4 hidden=0
+MATRIX k=0 tch=0 suppressed=1 gap=0.0000 panelH=0.0000 total=4.5000 top=4.5000 bot=4.5000
+BANDS panelBot=1350 mxTop=-1 mxBot=-1
+SAVED /home/claude/EMLPraatTools/harness/legend/out/sw_t10_p4.png
+SEPFILE active=1 path=/home/claude/EMLPraatTools/harness/legend/out/sw_t10_p4_legend.png
