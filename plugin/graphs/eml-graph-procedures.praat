@@ -6492,3 +6492,70 @@ endproc
 # ============================================================================
 # END OF EML GRAPHS PROCEDURES
 # ============================================================================
+
+
+# ----------------------------------------------------------------------------
+# @emlConvertSoundForGraph: .soundId, .targetType$, .pitchFloor, .pitchTop
+# Turn a Sound into whatever an acoustic figure needs, and record having done
+# it. Outputs: .result -- the new object's id, or 0 when the target type is
+# not one this reaches.
+#
+# WHY THIS IS A PROCEDURE. Three of the four acoustic figures are drawn from
+# objects the user never makes: select a Sound and ask for an F0 contour, a
+# spectrum or an LTAS and the plugin converts, draws, and REMOVES the
+# intermediate at the end of the pass. That is the path most users take --
+# a Sound is what comes off a recorder -- and until 12 Aug 2026 it lived
+# inline inside @emlGraphsWorkflow's beginPause: loop, where the only way to
+# reach it was a real X display and a driven dialog.
+#
+# So it was never driven, and the recorder's behaviour on it was wrong in a
+# way nothing could see: the capture hook is inside the DRAW procedure, which
+# is handed the INTERMEDIATE, so every acoustic figure recorded from the menu
+# emitted `data1$ = "Pitch tone"` -- an object the plugin had just deleted and
+# the user never created. The emitted script could not run.
+#
+# THE CONVERSION IS RECORDED AS A STEP, so the manifest names the Sound and
+# the emitted file carries the command that derives what the figure needs,
+# parameters included. The pitch floor and ceiling are a methods-section fact
+# and were previously nowhere in the record.
+#
+# Guarded on the recorder's PRESENCE, not on recording state: this file must
+# stay loadable without eml-record.praat, which harness/norecord pins.
+# ----------------------------------------------------------------------------
+procedure emlConvertSoundForGraph: .soundId, .targetType$, .pitchFloor,
+    ... .pitchTop
+    .result = 0
+    .code$ = ""
+    .why$ = ""
+
+    selectObject: .soundId
+    if .targetType$ = "Pitch"
+        .result = To Pitch (filtered autocorrelation): 0, .pitchFloor,
+        ... .pitchTop, 15, "yes", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
+        .code$ = "data = To Pitch (filtered autocorrelation): 0, "
+        ... + string$ (.pitchFloor) + ", " + string$ (.pitchTop)
+        ... + ", 15, ""yes"", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14"
+        .why$ = "The pitch floor and ceiling are the ones this session used. "
+        ... + "They change the contour, so they belong in a methods section."
+    elsif .targetType$ = "Spectrum"
+        .result = To Spectrum: "yes"
+        .code$ = "data = To Spectrum: ""yes"""
+        .why$ = "Fast (FFT) transform, which is what the figure was drawn "
+        ... + "from."
+    elsif .targetType$ = "Ltas"
+        .result = To Ltas: 100
+        .code$ = "data = To Ltas: 100"
+        .why$ = "100 Hz bandwidth, the value this session used."
+    endif
+
+    if .result > 0 and variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordConvert: .soundId, .result, .code$, .why$
+        endif
+    endif
+
+    if .result > 0
+        selectObject: .result
+    endif
+endproc

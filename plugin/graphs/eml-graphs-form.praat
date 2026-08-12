@@ -3023,17 +3023,18 @@ repeat
             # U6: Try auto-creating from Sound if possible
             if numberOfSelected ("Sound") = 1
                 soundForConvert = selected ("Sound")
-                selectObject: soundForConvert
-                if targetType$ = "Pitch"
-                    pitchTop = prev_f0_pitchCeiling * 2
-                    objectId = To Pitch (filtered autocorrelation): 0, prev_f0_pitchFloor, pitchTop, 15, "yes", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
+                ; EXTRACTED TO A PROCEDURE so that something other than this
+                ; dialog can drive it. The conversion is the only path most
+                ; users take to three of the four acoustic figures -- select a
+                ; Sound, ask for an F0 contour -- and while it lived inline in
+                ; a beginPause: loop the only way to exercise it was through a
+                ; real X display. harness/record_e2e drives it directly now.
+                @emlConvertSoundForGraph: soundForConvert, targetType$,
+                ... prev_f0_pitchFloor, prev_f0_pitchCeiling * 2
+                objectId = emlConvertSoundForGraph.result
+                if objectId > 0
                     loadedObjectId = objectId
-                elsif targetType$ = "Spectrum"
-                    objectId = To Spectrum: "yes"
-                    loadedObjectId = objectId
-                elsif targetType$ = "Ltas"
-                    objectId = To Ltas: 100
-                    loadedObjectId = objectId
+                    selectObject: objectId
                 endif
             elsif numberOfSelected ("Spectrum") = 1
                 spectrumForConvert = selected ("Spectrum")
