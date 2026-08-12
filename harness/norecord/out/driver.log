@@ -1,0 +1,445 @@
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Wed Aug 12 18:26:39 2026
+══════════════════════════════════════════════
+
+  Table               voiceA
+  Data column         spl
+  Group column        grp
+  Groups              2
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests whether group means differ when normality and equal variances hold.
+
+Source              SS              df    MS              F           p
+Between             46.21           1     46.21           5.2251      .032
+Within              194.58          22    8.84            
+Total               240.79          23    
+
+  F                   5.2251		Ratio of between-group to within-group variance: groups differ 5.2x more than expected by chance
+  p                   .032		Statistically significant at the 5% level
+  Effect size         eta-squared = 0.1919		Effect size: large (>0.14 = large). 19% of variance explained by group membership
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(1, 22) = 0.7197
+  Equal-spread p      p = .405
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  y             12    66.19     3.17      66.09     
+  x             12    63.42     2.76      63.02     
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+
+              y           x           
+y             ---         0.933       
+x             -0.933      ---         
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+OPDONE anova
+OP name=anova k=1 nOps=30
+
+══════════════════════════════════════════════
+  EML Stats : Two-Group Comparison
+  Wed Aug 12 18:26:39 2026
+══════════════════════════════════════════════
+
+  Table               voiceA
+  Data column         spl
+  Group column        grp
+
+  Group         N     Mean      SD        Median    
+  y             12    66.19     3.17      66.09     
+  x             12    63.42     2.76      63.02     
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+OPDONE twogroup
+OP name=twogroup k=2 nOps=30
+
+══════════════════════════════════════════════
+  EML Stats : Kruskal-Wallis H Test
+  Wed Aug 12 18:26:39 2026
+══════════════════════════════════════════════
+
+  Table               voiceA
+  Data column         spl
+  Group column        grp
+  Groups              2
+  Total N             24
+
+
+  ── Omnibus Test ────────────────────────────
+  Why: Nonparametric comparison of three or more groups — no normality assumption needed.
+  H                   4.5633		Test statistic: measures rank dispersion across groups (chi-squared distributed)
+  df                  1		Number of groups (2) minus 1. Controls the chi-squared reference distribution.
+  p                   .033		Statistically significant at the 5% level
+  Epsilon-squared     0.1984		Effect size: large (>0.14 = large). 20% of variance explained by group membership
+  Effect magnitude    large effect
+
+
+  ── Group Mean Ranks ────────────────────────
+
+Group         N     Mean Rank
+y             12    15.58
+x             12    9.42
+
+
+  ── Pairwise Effect Sizes (rank-biserial r) ───
+
+              y           x           
+y             ---         0.514       
+x             -0.514      ---         
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+OPDONE kw
+OP name=kw k=3 nOps=30
+
+══════════════════════════════════════════════
+  EML Stats : Descriptive Statistics
+  Wed Aug 12 18:26:39 2026
+══════════════════════════════════════════════
+
+  Table               voiceA
+  Column              spl
+  N (valid)           24
+
+
+  ── Central Tendency ────────────────────────
+  Mean                64.8072
+  Median              64.5422
+  SEM                 0.6605
+
+
+  ── Dispersion ──────────────────────────────
+  SD                  3.2356
+  Variance            10.4693
+  Range               10.4211
+  Min                 59.8175
+  Max                 70.2386
+
+
+  ── Quartiles ───────────────────────────────
+  Q1                  61.8118
+  Q2 (Median)         64.5422
+  Q3                  67.2563
+  IQR                 5.4445
+
+
+  ── Distribution Shape ──────────────────────
+  Skewness            0.1775
+  Kurtosis (excess)   -1.0820
+
+
+  ── 95% Confidence Interval ─────────────────
+  Lower               63.4409
+  Upper               66.1735
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+OPDONE descriptive
+OP name=descriptive k=4 nOps=30
+
+══════════════════════════════════════════════
+  EML Stats : Normality Assessment
+  Wed Aug 12 18:26:39 2026
+══════════════════════════════════════════════
+
+  Table               voiceA
+  Column              spl
+  N                   24
+
+
+  ── Descriptive Statistics ──────────────────
+  Mean                64.8072
+  SD                  3.2356
+  Median              64.5422
+
+
+  ── Distribution Shape ──────────────────────
+  Why: Skewness and kurtosis indicate departures from a normal (bell-shaped) distribution.
+  Skewness            0.1775		Approximately symmetric (|skew| < 2 is typically acceptable)
+  Kurtosis (excess)   -1.0820		Near-normal peakedness (0 = normal; |excess| < 7 treated as typical)
+  → Skewness within typical limits (criterion: |skew| < 2)
+  → Kurtosis within typical limits (criterion: |excess kurt| < 7)
+
+
+  ── Shapiro-Wilk Test ───────────────────────
+  Why: Formal test of whether the data are drawn from a normal distribution.
+  W                   0.9502		Closer to 1 = more normal (range: 0 to 1)
+  p                   .274		Not statistically significant at the 5% level
+  → Does not reject normality (p >= 0.05)
+
+
+  ── Recommendation ──────────────────────────
+  Normality appears reasonable.
+  → Parametric tests (t-test, ANOVA, Pearson r) are appropriate.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+OPDONE normality
+OP name=normality k=5 nOps=30
+
+══════════════════════════════════════════════
+  EML Stats : Correlation Analysis
+  Wed Aug 12 18:26:39 2026
+══════════════════════════════════════════════
+
+  Table               voiceA
+  Column X            spl
+  Column Y            spl2
+  N                   24
+
+
+  ── Pearson Correlation ─────────────────────
+  Why: Measures linear association between two continuous variables.
+  r                   0.0678		Negligible positive relationship (range: -1 to 1)
+  R-squared           0.0046		0.5% of variance in Y is explained by X
+  t                   0.319		Signal-to-noise: 0.3x larger than expected from sampling noise
+  df                  22		Observations (24) minus 2. Two parameters (slope, intercept) estimated.
+  p                   .753		Not statistically significant at the 5% level
+  95% CI for r        [-0.3450, 0.4587]
+  Magnitude           negligible effect
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+OPDONE correlation
+OP name=correlation k=6 nOps=30
+
+══════════════════════════════════════════════
+  EML Stats : Simple Linear Regression
+  Wed Aug 12 18:26:39 2026
+══════════════════════════════════════════════
+
+  Table               voiceA
+  Response (Y)        spl
+  Predictor (X)       spl2
+  N                   24
+
+
+  ── Model ───────────────────────────────────
+  Why: Tests whether the predictor linearly predicts the response.
+  Equation            y = 0.0741x + 49.6803
+  spl = 0.0741 x spl2 + 49.6803
+  R                   0.0678		Negligible positive relationship (range: -1 to 1)
+  R-squared           0.0046		0.5% of variance in Y is explained by X
+  Adj. R-squared      -0.0406		R-squared adjusted for number of predictors — penalizes model complexity
+  Residual SE         3.3007		Typical prediction error — points deviate from the line by +/-3.30 units on average
+
+
+  ── Overall Model Test (F) ──────────────────
+  F(1,22)             0.1017		Overall model significance — ratio of explained to unexplained variance
+  p                   .753		Not statistically significant at the 5% level
+
+
+  ── Coefficients ────────────────────────────
+
+  Term                Estimate      SE            t           p           95% CI
+  (Intercept)         49.6803       47.4436       1.047       .306        [-48.7118, 148.0723]
+  spl2                0.0741        0.2325        0.319       .753        [-0.4081, 0.5564]
+
+  Direction: positive (spl increases as spl2 increases)
+  Variance explained: R-squared = 0.0046 (0.5% of the variance in spl), a negligible effect by Cohen's R-squared benchmarks
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+OPDONE regression
+OP name=regression k=7 nOps=30
+OPDONE pairwise
+OP name=pairwise k=8 nOps=30
+
+══════════════════════════════════════════════
+  EML Stats : Two-Way ANOVA
+  Wed Aug 12 18:26:40 2026
+══════════════════════════════════════════════
+
+  Table               voiceA
+  Data column         spl
+  Factor 1            grp
+  Factor 2            grp2
+  Total N             24
+  Cells               4
+  n per cell          4 to 8 (unbalanced)
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests main effects of two factors and their interaction.
+
+Source              SS              df    MS              F           p
+grp                 37.66           1     37.66           3.8873      .063
+grp2                0.13            1     0.13            0.0136      .908
+grp x grp2          0.67            1     0.67            0.0688      .796
+Error               193.78          20    9.69            
+Total               240.79          23    
+
+  Caution: The design is unbalanced (cell sizes 4 to 8); Type III sums
+  of squares do not add up to the total sum of squares.
+
+
+  ── Effect Sizes (partial eta-squared) ──────
+  grp                 0.1627  (large effect)		Effect size: large (>0.14 = large). 16% of variance explained by group membership
+  grp2                0.0007  (negligible effect)		Effect size: negligible (>0.14 = large). 0.07% of variance explained by group membership
+  grp x grp2          0.0034  (negligible effect)		Effect size: negligible (>0.14 = large). 0.3% of variance explained by group membership
+
+
+  ── Cell Means ──────────────────────────────
+
+grp               grp2              n       Mean
+y                 q                 8       66.2603
+y                 p                 4       66.0640
+x                 q                 8       63.2493
+x                 p                 4       63.7601
+
+
+  ── Marginal Means ──────────────────────────
+
+Level                         n       Mean
+grp: y                        12      66.1949
+grp: x                        12      63.4196
+grp2: q                       16      64.7548
+grp2: p                       8       64.9120
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+OPDONE twoway
+OP name=twoway k=9 nOps=30
+
+══════════════════════════════════════════════
+  EML Stats : Paired Comparison
+  Wed Aug 12 18:26:40 2026
+══════════════════════════════════════════════
+
+  Table               voiceA
+  Column 1            spl
+  Column 2            spl2
+  N (pairs)           24
+
+  spl: Mean = 64.807, SD = 3.236, Median = 64.542
+  spl2: Mean = 204.021, SD = 2.960, Median = 203.505
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+OPDONE paired
+OP name=paired k=10 nOps=30
+OPDONE reliability
+OP name=reliability k=11 nOps=30
+OPDONE rm
+OP name=rm k=12 nOps=30
+OPDONE friedman
+OP name=friedman k=13 nOps=30
+OPDONE violin
+OP name=violin k=14 nOps=30
+OPDONE scatter
+OP name=scatter k=15 nOps=30
+Histogram: 6 bins, bin width = 1.7369
+Groups: 1
+OPDONE histogram
+OP name=histogram k=16 nOps=30
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+Time series: Line shows the mean per time point. 18 repeated observation(s) were averaged. Use Spaghetti Plot to show individual series, or Time Series (with CI) to show the spread around each mean.
+OPDONE timeseries
+OP name=timeseries k=17 nOps=30
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+Time Series (with CI): 2 group(s)
+  Group: y — 3 time points
+  Observations per time point: up to 4
+  Group: x — 3 time points
+  Observations per time point: up to 4
+Time series (with CI): Line shows the mean; band shows the 95% CI. 18 repeated observation(s) were averaged into their time points. Use Spaghetti Plot to show the individual series behind the mean.
+OPDONE timeseriesci
+OP name=timeseriesci k=18 nOps=30
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+
+══════════════════════════════════════════════
+  EML Stats : Spaghetti Plot Summary
+  Wed Aug 12 18:26:40 2026
+══════════════════════════════════════════════
+
+  Table               voiceA
+  Condition column    t
+  Value column        spl
+  ID column           subj
+  Conditions          6
+  Groups              2
+
+
+  ── 2 ───────────────────────────────────────
+  N                   4
+  Mean                66.516
+  SD                  3.751
+
+
+  ── 3 ───────────────────────────────────────
+  N                   4
+  Mean                63.212
+  SD                  3.048
+
+
+  ── 4 ───────────────────────────────────────
+  N                   4
+  Mean                66.064
+  SD                  1.820
+
+
+  ── 5 ───────────────────────────────────────
+  N                   4
+  Mean                63.287
+  SD                  2.288
+
+
+  ── 6 ───────────────────────────────────────
+  N                   4
+  Mean                66.004
+  SD                  4.397
+
+
+  ── 1 ───────────────────────────────────────
+  N                   4
+  Mean                63.760
+  SD                  3.630
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+OPDONE spaghetti
+OP name=spaghetti k=19 nOps=30
+Bar chart: Bars show the group mean, not individual values. Use Violin Plot or Box Plot to show the distribution within each group.
+OPDONE barchart
+OP name=barchart k=20 nOps=30
+OPDONE boxplot
+OP name=boxplot k=21 nOps=30
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+OPDONE gviolin
+OP name=gviolin k=22 nOps=30
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+OPDONE gbox
+OP name=gbox k=23 nOps=30
+OPDONE waveform
+OP name=waveform k=24 nOps=30
+OPDONE f0contour
+OP name=f0contour k=25 nOps=30
+OPDONE spectrum
+OP name=spectrum k=26 nOps=30
+OPDONE ltas
+OP name=ltas k=27 nOps=30
+OPDONE sound2f0
+OP name=sound2f0 k=28 nOps=30
+OPDONE sound2spectrum
+OP name=sound2spectrum k=29 nOps=30
+OPDONE sound2ltas
+OP name=sound2ltas k=30 nOps=30
+NORECORD DONE nOps=30
