@@ -114,7 +114,11 @@ Create Table with column names: "probeTable", 0, "a b"
 Append row
 probeId = selected ("Table")
 @emlRecordSource: probeId
-@eq$: "source object name recorded", emlRecordHeaderInput$, "probeTable"
+; THE FULL NAME, TYPE INCLUDED. `selected$ ()` with no argument returns
+; "Type name", which is exactly what selectObject: takes back, so the recorder
+; never branches on type and a Matrix or TableOfReal records the same way.
+@eq$: "source object name recorded, with its type",
+... emlRecordHeaderInput$, "Table probeTable"
 @ok: "source shape recorded",
 ... emlRecordHeaderRows = 1 and emlRecordHeaderCols = 2
 removeObject: probeId

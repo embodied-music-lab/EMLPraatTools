@@ -111,7 +111,7 @@ api$ = Get value: 1, "api"
 ; has no dialogs, so calling it is the whole answer. Asserted so a later
 ; edit cannot quietly return to the wrapper form.
 @ok: "code calls the orchestrator directly",
-... index (code$, "@emlRunAnovaAnalysis: table") > 0
+... index (code$, "@emlRunAnovaAnalysis: data") > 0
 @ok: "code carries the resolved column names",
 ... index (code$, """SPL_dB""") > 0 and index (code$, """voice_type""") > 0
 @ok: "no wrapper runScript: is emitted",
@@ -164,8 +164,22 @@ outPath$ = tmp$ + "/anova_recorded.praat"
 emitted$ = readFile$ (outPath$)
 @ok: "the emitted file carries an include block",
 ... index (emitted$, "include ") > 0
-@ok: "the emitted file takes the selected Table",
-... index (emitted$, "table = selected (""Table"")") > 0
+; THE MANIFEST, NOT A BARE SELECTED-TABLE LINE. Author ruling 12 Aug 2026:
+; every recorded script names its objects in one editable block at the top and
+; every step selects through it, whether the session used one object or five.
+; `data` and not `table`, because the plugin accepts a Matrix and a
+; TableOfReal as well, and `selectObject: data1$` carries the type in the
+; string rather than assuming one.
+@ok: "the emitted file names its objects in a manifest",
+... index (emitted$, "data1$ = ""Table ") > 0
+@ok: "the manifest says what the object was used for",
+... index (emitted$, "; step") > 0
+@ok: "the step selects through the manifest",
+... index (emitted$, "selectObject: data1$") > 0
+@ok: "...and assigns a type-neutral working variable",
+... index (emitted$, "data = selected ()") > 0
+@ok: "no step selects a hardcoded object type",
+... index (emitted$, "selected (""Table"")") = 0
 @ok: "the object it was recorded against is named",
 ... index (emitted$, "Recorded against:") > 0
 @ok: "both steps are in the file",
