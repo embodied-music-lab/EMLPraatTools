@@ -84,6 +84,67 @@ check_true <- function(id, what, condition) {
     invisible(isTRUE(condition))
 }
 
+# ---------------------------------------------------------------------------
+# eml_census — EVERYTHING THE DRIVER RENDERED IS LOOKED AT BY SOMETHING.
+#
+# WHY THIS EXISTS, and it is not a hypothetical. On 11 August 2026 block 7 was
+# added to harness/legend/run.sh: twenty new figures, rendered, measured and
+# written to RESULTS.tsv. Every assertion written for them passed on the first
+# run, and every pre-existing assertion passed too. The suite would have gone
+# green with twenty figures that no INVENTORY had been told existed. One line
+# in v32 -- a sum of the block sizes against the row count of the file --
+# disagreed, and it was the only thing in the tree that could have.
+#
+# The failure it guards is SILENT NON-COVERAGE, and it is a different animal
+# from a wrong answer. Every other check in a validator asks "is this value
+# right"; each one is scoped to a subset the author named. Add a population
+# nothing named and all of them keep passing, correctly, because none of them
+# was ever making a claim about anything outside itself. No number of
+# per-subset checks adds up to a statement about the whole file.
+#
+# THE ARGUMENT IS SET-BASED, NOT A COUNT. Two counts can agree by coincidence
+# -- one case dropped and one added is a wash -- and a count cannot say WHICH
+# case fell through. So both sides are vectors of case identifiers, and the
+# failure names the orphans.
+#
+#   id         the validator id, as everywhere else
+#   what       what the population is, for the report line
+#   present    every case identifier the ARTEFACT contains. Read off the file
+#              the driver wrote -- never re-derived from the same list the
+#              checks were built from, or the two sides cannot disagree.
+#   accounted  every case identifier some check in this file asserts on
+#
+# A case may be accounted for more than once; overlap is fine and is not what
+# this is about. What is not fine is a case in `present` and in nothing else.
+#
+# The reverse direction is checked too: an identifier the validator asserts on
+# that the artefact does not contain means the checks are reading a case that
+# was never rendered, which passes vacuously today and is the other way a
+# suite quietly stops testing what it claims to.
+# ---------------------------------------------------------------------------
+eml_census <- function(id, what, present, accounted) {
+    present   <- unique(as.character(present))
+    accounted <- unique(as.character(accounted))
+    orphan    <- setdiff(present, accounted)
+    phantom   <- setdiff(accounted, present)
+
+    ok <- check_true(id, sprintf("every %s is accounted for by some check", what),
+                     length(orphan) == 0)
+    if (length(orphan) > 0) {
+        check_true(id, sprintf("  orphaned %s: %s", what,
+                               paste(utils::head(orphan, 8), collapse = ", ")),
+                   FALSE)
+    }
+    ok2 <- check_true(id, sprintf("every %s a check reads was actually rendered", what),
+                      length(phantom) == 0)
+    if (length(phantom) > 0) {
+        check_true(id, sprintf("  phantom %s: %s", what,
+                               paste(utils::head(phantom, 8), collapse = ", ")),
+                   FALSE)
+    }
+    invisible(ok && ok2)
+}
+
 # @attest — a claim backed by a screenshot or a recorded observation, not by
 # anything this script can evaluate.
 #

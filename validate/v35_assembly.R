@@ -61,6 +61,33 @@ check_true("v35", "wrapper artefact has rows", nrow(wr) > 0L)
 # 20 is a floor that a deletion has to be deliberate to cross.
 check_true("v35", "at least 20 entry points were checked", nrow(wr) >= 20L)
 
+# ...AND THE FLOOR IS NOT ENOUGH, which is worth saying because it read like
+# enough. 26 wrappers ship and the floor is 20, so SIX could be deleted and
+# this file would still pass while reporting that every entry point parses.
+# The population is therefore named. The list is the contents of
+# plugin/scripts/, which is what harness/wrappers/run.sh globs, so a wrapper
+# added or removed has to be dealt with here on purpose.
+WRAPPERS_EXPECTED <- c(
+  # The sixteen menu commands.
+  "eml-batch-process.praat", "eml-check-data.praat",
+  "eml-check-normality.praat", "eml-compare-groups.praat",
+  "eml-compare-k-groups.praat", "eml-compare-kw.praat",
+  "eml-compare-paired.praat", "eml-compare-twoway.praat",
+  "eml-correlate.praat", "eml-create-demo.praat",
+  "eml-describe-table.praat", "eml-graphs.praat", "eml-lmm.praat",
+  "eml-pairwise.praat", "eml-regress.praat", "eml-wizard.praat",
+  # The table editor, which is three files because the launcher and the
+  # editor are separate entry points.
+  "eml-edit-table-editor.praat", "eml-edit-table-launch.praat",
+  "eml-edit-table.praat",
+  # The library barrels. eml-lib.praat is the one no harness had ever loaded
+  # before 11 Aug 2026 and the one the duplicate include killed.
+  "eml-lib.praat", "eml-lib-graphs.praat", "eml-lib-lmm.praat",
+  "eml-lib-stats.praat",
+  # Tabled by the author, still shipped, still has to parse.
+  "eml-quick-start.praat", "eml-stats-demo.praat", "eml-tutorial.praat")
+eml_census("v35", "entry point", wr$wrapper, WRAPPERS_EXPECTED)
+
 bad <- wr[wr$verdict != "parses", , drop = FALSE]
 check("v35", "entry points that fail to parse",
       reported = 0, computed = nrow(bad), tol = 0)

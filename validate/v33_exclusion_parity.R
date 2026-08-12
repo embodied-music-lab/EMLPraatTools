@@ -72,6 +72,31 @@ pt$figure <- as.integer(pt$figure)
 pt$stats  <- as.integer(pt$stats)
 
 # ---------------------------------------------------------------------------
+# 1b. THE POPULATION IS DECLARED, NOT WHATEVER TURNED UP.
+#
+# Section 2 loops over every row the artefact contains, so no row can be
+# rendered and ignored. The failure that leaves is the opposite one: a
+# procedure DROPPED from harness/parity/run.sh renders nothing, the loop runs
+# over fewer rows, and every check still passes. The suite gets quieter and
+# says nothing about it.
+#
+# So the seven procedures are named. Both arms of each, because a procedure
+# that lost its dirty pass is the exact vacuous-parity failure section 3 was
+# written for -- 0 compared against 0 forever.
+#
+# eml_census argues both directions: a procedure rendered that this list does
+# not name (the harness grew and nothing was told), and a procedure named here
+# that did not render (the harness shrank and these checks pass on nothing).
+# ---------------------------------------------------------------------------
+PARITY_PROCS <- c("violin", "box", "gviolin", "gbox", "spaghetti", "ts",
+                  "scatter")
+PARITY_CASES <- paste(rep(PARITY_PROCS, times = 2),
+                      rep(c(0L, 1L), each = length(PARITY_PROCS)))
+eml_census("v33", "parity case", paste(pt$name, pt$dirty), PARITY_CASES)
+check("v33", "both arms of every procedure were rendered",
+      nrow(pt), length(PARITY_CASES), tol = 0)
+
+# ---------------------------------------------------------------------------
 # 2. Every draw procedure that discloses a skipped count agrees with the
 #    analysis layer on the same data
 # ---------------------------------------------------------------------------
