@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Wed Aug 12 19:18:07 2026
+  Wed Aug 12 22:45:42 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -42,11 +42,11 @@ x             -0.933      ---
   · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════
 OPDONE anova
-OP name=anova k=1 nOps=35
+OP name=anova k=1 nOps=36
 
 ══════════════════════════════════════════════
   EML Stats : Two-Group Comparison
-  Wed Aug 12 19:18:07 2026
+  Wed Aug 12 22:45:43 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -61,11 +61,11 @@ OP name=anova k=1 nOps=35
   · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════
 OPDONE twogroup
-OP name=twogroup k=2 nOps=35
+OP name=twogroup k=2 nOps=36
 
 ══════════════════════════════════════════════
   EML Stats : Kruskal-Wallis H Test
-  Wed Aug 12 19:18:07 2026
+  Wed Aug 12 22:45:43 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -101,11 +101,11 @@ x             -0.514      ---
   · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════
 OPDONE kw
-OP name=kw k=3 nOps=35
+OP name=kw k=3 nOps=36
 
 ══════════════════════════════════════════════
   EML Stats : Descriptive Statistics
-  Wed Aug 12 19:18:07 2026
+  Wed Aug 12 22:45:43 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -147,11 +147,11 @@ OP name=kw k=3 nOps=35
   · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════
 OPDONE descriptive
-OP name=descriptive k=4 nOps=35
+OP name=descriptive k=4 nOps=36
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Wed Aug 12 19:18:07 2026
+  Wed Aug 12 22:45:43 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -188,11 +188,11 @@ OP name=descriptive k=4 nOps=35
   · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════
 OPDONE normality
-OP name=normality k=5 nOps=35
+OP name=normality k=5 nOps=36
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Wed Aug 12 19:18:07 2026
+  Wed Aug 12 22:45:43 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -215,11 +215,11 @@ OP name=normality k=5 nOps=35
   · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════
 OPDONE correlation
-OP name=correlation k=6 nOps=35
+OP name=correlation k=6 nOps=36
 
 ══════════════════════════════════════════════
   EML Stats : Simple Linear Regression
-  Wed Aug 12 19:18:07 2026
+  Wed Aug 12 22:45:43 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -256,13 +256,13 @@ OP name=correlation k=6 nOps=35
   · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════
 OPDONE regression
-OP name=regression k=7 nOps=35
+OP name=regression k=7 nOps=36
 OPDONE pairwise
-OP name=pairwise k=8 nOps=35
+OP name=pairwise k=8 nOps=36
 
 ══════════════════════════════════════════════
   EML Stats : Two-Way ANOVA
-  Wed Aug 12 19:18:07 2026
+  Wed Aug 12 22:45:43 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -315,11 +315,11 @@ grp2: p                       8       64.9120
   · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════
 OPDONE twoway
-OP name=twoway k=9 nOps=35
+OP name=twoway k=9 nOps=36
 
 ══════════════════════════════════════════════
   EML Stats : Paired Comparison
-  Wed Aug 12 19:18:08 2026
+  Wed Aug 12 22:45:43 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -334,25 +334,25 @@ OP name=twoway k=9 nOps=35
   · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════
 OPDONE paired
-OP name=paired k=10 nOps=35
+OP name=paired k=10 nOps=36
 OPDONE reliability
-OP name=reliability k=11 nOps=35
+OP name=reliability k=11 nOps=36
 OPDONE rm
-OP name=rm k=12 nOps=35
+OP name=rm k=12 nOps=36
 OPDONE friedman
-OP name=friedman k=13 nOps=35
+OP name=friedman k=13 nOps=36
 OPDONE violin
-OP name=violin k=14 nOps=35
+OP name=violin k=14 nOps=36
 OPDONE scatter
-OP name=scatter k=15 nOps=35
+OP name=scatter k=15 nOps=36
 Histogram: 6 bins, bin width = 1.7369
 Groups: 1
 OPDONE histogram
-OP name=histogram k=16 nOps=35
+OP name=histogram k=16 nOps=36
 NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 Time series: Line shows the mean per time point. 18 repeated observation(s) were averaged. Use Spaghetti Plot to show individual series, or Time Series (with CI) to show the spread around each mean.
 OPDONE timeseries
-OP name=timeseries k=17 nOps=35
+OP name=timeseries k=17 nOps=36
 NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 Time Series (with CI): 2 group(s)
   Group: y — 3 time points
@@ -361,12 +361,12 @@ Time Series (with CI): 2 group(s)
   Observations per time point: up to 4
 Time series (with CI): Line shows the mean; band shows the 95% CI. 18 repeated observation(s) were averaged into their time points. Use Spaghetti Plot to show the individual series behind the mean.
 OPDONE timeseriesci
-OP name=timeseriesci k=18 nOps=35
+OP name=timeseriesci k=18 nOps=36
 NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 
 ══════════════════════════════════════════════
   EML Stats : Spaghetti Plot Summary
-  Wed Aug 12 19:18:08 2026
+  Wed Aug 12 22:45:44 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -416,44 +416,46 @@ NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform �
   · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════
 OPDONE spaghetti
-OP name=spaghetti k=19 nOps=35
+OP name=spaghetti k=19 nOps=36
 Bar chart: Bars show the group mean, not individual values. Use Violin Plot or Box Plot to show the distribution within each group.
 OPDONE barchart
-OP name=barchart k=20 nOps=35
+OP name=barchart k=20 nOps=36
 OPDONE boxplot
-OP name=boxplot k=21 nOps=35
+OP name=boxplot k=21 nOps=36
 NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 OPDONE gviolin
-OP name=gviolin k=22 nOps=35
+OP name=gviolin k=22 nOps=36
 NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 OPDONE gbox
-OP name=gbox k=23 nOps=35
+OP name=gbox k=23 nOps=36
 OPDONE waveform
-OP name=waveform k=24 nOps=35
+OP name=waveform k=24 nOps=36
 OPDONE f0contour
-OP name=f0contour k=25 nOps=35
+OP name=f0contour k=25 nOps=36
 OPDONE spectrum
-OP name=spectrum k=26 nOps=35
+OP name=spectrum k=26 nOps=36
 OPDONE ltas
-OP name=ltas k=27 nOps=35
+OP name=ltas k=27 nOps=36
 OPDONE sound2f0
-OP name=sound2f0 k=28 nOps=35
+OP name=sound2f0 k=28 nOps=36
 OPDONE sound2spectrum
-OP name=sound2spectrum k=29 nOps=35
+OP name=sound2spectrum k=29 nOps=36
 OPDONE sound2ltas
-OP name=sound2ltas k=30 nOps=35
+OP name=sound2ltas k=30 nOps=36
 OPDONE spectrum2ltas
-OP name=spectrum2ltas k=31 nOps=35
+OP name=spectrum2ltas k=31 nOps=36
 OPDONE spectrum2sound
-OP name=spectrum2sound k=32 nOps=35
+OP name=spectrum2sound k=32 nOps=36
 OPDONE spectrum2f0
-OP name=spectrum2f0 k=33 nOps=35
+OP name=spectrum2f0 k=33 nOps=36
 Histogram: 5 bins, bin width = 2.2000
 Groups: 1
 OPDONE tor2table
-OP name=tor2table k=34 nOps=35
+OP name=tor2table k=34 nOps=36
 Histogram: 5 bins, bin width = 2.2000
 Groups: 1
 OPDONE matrix2table
-OP name=matrix2table k=35 nOps=35
-NORECORD DONE nOps=35
+OP name=matrix2table k=35 nOps=36
+OPDONE bridge
+OP name=bridge k=36 nOps=36
+NORECORD DONE nOps=36
