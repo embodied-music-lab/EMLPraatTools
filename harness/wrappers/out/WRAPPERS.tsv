@@ -20,6 +20,8 @@ eml-lib.praat	parses
 eml-lmm.praat	parses	
 eml-pairwise.praat	parses	
 eml-quick-start.praat	parses	
+eml-record-save.praat	parses	
+eml-record-start.praat	parses	
 eml-regress.praat	parses	
 eml-stats-demo.praat	parses	
 eml-tutorial.praat	parses	
