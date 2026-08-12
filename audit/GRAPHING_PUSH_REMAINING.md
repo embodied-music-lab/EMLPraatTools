@@ -1100,7 +1100,7 @@ D84. Stats Demo, Quick Start, tutorial, and Batch voice analysis are tabled.
 
 Nothing counts as validated until an authored R script tests the output,
 including the red-path input. Current baseline, 12 Aug 2026:
-**9356 checks, 0 failed** (`Rscript validate/run_all.R`), 39/39 stress cases
+**9389 checks, 0 failed** (`Rscript validate/run_all.R`), 39/39 stress cases
 (`bash harness/stress_graphs.sh` — 29 OK, 10 expected `BLANK_FRAME_ABS`, and
 now byte-identical run to run), 52/52 disclosure, 10/10 determinism
 byte-identical, 14/14 parity, 26/26 wrappers, `gui_e2e` PASS, phase1 **361/361**,
@@ -1902,13 +1902,50 @@ operations that ran    : 10 of 10
 ```
 
 **The pass condition is the mechanism, not the coverage.** The recording must
-start, survive every invocation and produce a file. Coverage is a number the
-harness reports and that is expected to rise deliberately — 13 analysis
-orchestrators and 16 draw procedures exist, and **two of them call the
-recorder**. A user who switches recording on and runs a correlation gets an
-empty script and no warning. That is the next piece of work, and it is now
-measured rather than remembered.
+start, survive every invocation and produce a file.
 
-**Not yet covered by an R script.** `validate/v39` should read
-`out/RECORD.tsv` and pin the coverage count so it cannot fall silently. Under
-§7 this harness does not count as validated until that exists.
+### CLOSED the same day — 2 of 10 became 10 of 10
+
+Reporting the coverage gap was not the job; closing it was. **Twenty-five
+capture hooks added**, and not as twenty-five near-copies: two shared
+recorders, `@emlRecordAnalysisStep` and `@emlRecordDrawStep`, take the four
+strings that are genuinely per-operation and do the source, the refusal path
+and the phrase lookup once. Thirteen recorders differing only in which globals
+they read is how a recorder drifts away from the analyses it records.
+
+- **12 analysis orchestrators** wired, each placed AFTER its end label so a
+  refusal is recorded as a step rather than vanishing — the reason
+  `@emlRecordAnova` sits where it does.
+- **13 draw procedures** wired, each behind the same three-part guard the
+  violin path now uses: *present*, *initialised*, *recording*. The emitted
+  call for each is **generated from that procedure's own signature**, so a
+  parameter added to a draw procedure cannot silently drop out of the recorded
+  call.
+
+```
+anova recorded   twogroup recorded   kw recorded      descriptive recorded
+normality recorded  correlation recorded  regression recorded  violin recorded
+scatter recorded    histogram recorded
+
+operations that record : 10 of 10
+```
+
+**The emitted script was replayed, not read.** All ten steps — seven analyses
+and three figures — run verbatim against freshly built objects, and finish
+clean.
+
+### `validate/v39_record_coverage.R`, 28 checks
+
+Coverage is pinned as a **floor**, and every operation is named, so the floor
+cannot be met by a different ten. `DIDNOTRUN` is checked **separately** from
+coverage, because a crashed operation and one with no capture hook leave the
+step count identical and only one of them is a fact about the plugin — that
+distinction is the whole reason the first coverage number this harness produced
+was fiction.
+
+Verified to fail: a capture hook removed (names the operation), an operation
+crashing (`never completed: kw`), and the phrase registry silently ceasing to
+load. `record_out` is also registered in `coverage.R`, so the artefact is
+covered by the cross-validator census as well.
+
+  suite 9356 → **9389 checks, 0 failed**.
