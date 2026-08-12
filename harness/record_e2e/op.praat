@@ -128,26 +128,68 @@ elsif op$ = "sound2f0"
     @emlPrepDraw
     selectObject: "Sound tone"
     sndid = selected ()
-    @emlConvertSoundForGraph: sndid, "Pitch", 75, 600
-    cid = emlConvertSoundForGraph.result
+    @emlConvertForGraph: sndid, "Pitch", 75, 600
+    cid = emlConvertForGraph.result
     @emlDrawF0Contour: cid, "F0 from Sound", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, 0, 0, 1
     removeObject: cid
 elsif op$ = "sound2spectrum"
     @emlPrepDraw
     selectObject: "Sound tone"
     sndid = selected ()
-    @emlConvertSoundForGraph: sndid, "Spectrum", 75, 600
-    cid = emlConvertSoundForGraph.result
+    @emlConvertForGraph: sndid, "Spectrum", 75, 600
+    cid = emlConvertForGraph.result
     @emlDrawSpectrum: cid, "Spectrum from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, 0, 0
     removeObject: cid
 elsif op$ = "sound2ltas"
     @emlPrepDraw
     selectObject: "Sound tone"
     sndid = selected ()
-    @emlConvertSoundForGraph: sndid, "Ltas", 75, 600
-    cid = emlConvertSoundForGraph.result
+    @emlConvertForGraph: sndid, "Ltas", 75, 600
+    cid = emlConvertForGraph.result
     @emlDrawLTAS: cid, "LTAS from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, 0, 0, 1, 0, 0, 0
     removeObject: cid
+elsif op$ = "spectrum2ltas"
+    @emlPrepDraw
+    selectObject: "Spectrum tone"
+    @emlConvertForGraph: selected (), "Ltas", 75, 600
+    cid = emlConvertForGraph.result
+    @emlDrawLTAS: cid, "LTAS from Spectrum", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, 0, 0, 1, 0, 0, 0
+    removeObject: cid
+elsif op$ = "spectrum2sound"
+    @emlPrepDraw
+    selectObject: "Spectrum tone"
+    @emlConvertForGraph: selected (), "Sound", 75, 600
+    cid = emlConvertForGraph.result
+    @emlDrawWaveform: cid, "Waveform from Spectrum", "Time (s)", "Amplitude", 6, 4, "color", 1, 0, 0, 0, 0
+    removeObject: cid
+elsif op$ = "spectrum2f0"
+    ; TWO STEPS INSIDE ONE CONVERSION: Spectrum -> Sound -> Pitch. The
+    ; intermediate Sound is removed by the procedure on both sides, so the
+    ; emitted script leaves nothing behind either.
+    @emlPrepDraw
+    selectObject: "Spectrum tone"
+    @emlConvertForGraph: selected (), "Pitch", 75, 600
+    cid = emlConvertForGraph.result
+    @emlDrawF0Contour: cid, "F0 from Spectrum", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, 0, 0, 1
+    removeObject: cid
+elsif op$ = "tor2table"
+    ; NOT REMOVED AFTERWARDS -- .temporary is 0 for this pair, because the
+    ; form keeps the converted Table as the session's working object.
+    @emlPrepDraw
+    selectObject: "TableOfReal tor"
+    @emlConvertForGraph: selected (), "Table", 75, 600
+    cid = emlConvertForGraph.result
+    selectObject: cid
+    col$ = Get column label: 1
+    @emlDrawHistogram: cid, "Histogram from TableOfReal", col$, "Count", 6, 4, "color", 1, col$, "", 0, 1, 0, 0, 0
+elsif op$ = "matrix2table"
+    @emlPrepDraw
+    selectObject: "Matrix mat"
+    @emlConvertForGraph: selected (), "Table", 75, 600
+    cid = emlConvertForGraph.result
+    selectObject: cid
+    col$ = Get column label: 1
+    @emlDrawHistogram: cid, "Histogram from Matrix", col$, "Count", 6, 4, "color", 1, col$, "", 0, 1, 0, 0, 0
 endif
 
 appendInfoLine: "OPDONE ", op$

@@ -58,6 +58,16 @@ endfor
 ; Sound, a Pitch, a Spectrum and an Ltas rather than a Table -- which is the
 ; author's "do not lock into one object type" made concrete, and the only way
 ; to prove the recorder handles them is to record one.
+; A TableOfReal and a Matrix, the two non-acoustic sources the graphs form
+; converts to a Table. Two columns of numbers is all the table-shaped figures
+; need from them.
+Create TableOfReal: "tor", 12, 2
+for i from 1 to 12
+    Set value: i, 1, 60 + i
+    Set value: i, 2, 200 + i * 2
+endfor
+Create simple Matrix: "mat", 12, 2, "60 + row + col * 3"
+
 Create Sound as pure tone: "tone", 1, 0, 0.4, 44100, 220, 0.4, 0.01, 0.01
 selectObject: "Sound tone"
 To Pitch: 0, 75, 600
@@ -66,7 +76,7 @@ To Spectrum: "yes"
 selectObject: "Sound tone"
 To Ltas: 100
 
-nOps = 30
+nOps = 35
 op$[1] = "anova"
 op$[2] = "twogroup"
 op$[3] = "kw"
@@ -103,3 +113,13 @@ op$[27] = "ltas"
 op$[28] = "sound2f0"
 op$[29] = "sound2spectrum"
 op$[30] = "sound2ltas"
+; THE OTHER TWO SOURCE TYPES THE FORM CONVERTS FROM. A Spectrum reaches an
+; Ltas, a Sound and (through a Sound) a Pitch; a Matrix and a TableOfReal each
+; reach a Table. All five conversions carried the same defect and all five are
+; driven here, so a future one added to @emlConvertForGraph has an obvious
+; place to be driven from.
+op$[31] = "spectrum2ltas"
+op$[32] = "spectrum2sound"
+op$[33] = "spectrum2f0"
+op$[34] = "tor2table"
+op$[35] = "matrix2table"
