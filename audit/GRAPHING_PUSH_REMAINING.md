@@ -1694,19 +1694,51 @@ warning would have fired on most real sessions and the emitted script would
 have been broken exactly when the feature was most useful.
 
 **The source is now carried per step** (a new `source` column on the buffer),
-and the renderer emits a select only where it CHANGES:
+and a session that used more than one object gets a **table manifest** at the
+top — the author's design, and better than the inline select first built:
+
+```praat
+# Name your tables here for this recorded workflow.
+# Edit a name to run the same workflow on other data;
+# nothing below this block names an object.
+table1$ = "voiceA"   ; steps 1 (analysis), 3 (draw)
+table2$ = "voiceB"   ; step 2 (analysis)
+```
+
+and each step selects through it:
 
 ```praat
 # --- Step 2 (analysis) ---
-selectObject: "Table voiceB"
+selectObject: "Table " + table2$
 table = selected ("Table")
 ```
 
-A single-table session emits **none** — verified: zero `selectObject` lines,
-byte-for-byte the shape it had before this existed. A session that moved emits
-one line at each move, which is what a person writing the script by hand would
-do. Step 1 never emits one, because the header already tells the reader to
-select that Table.
+**Why a block and not a select per step.** Both produce a script that runs;
+only one can be EDITED. Re-pointing a recorded workflow at next month's data
+is the main thing anyone will want to do with the file, and that has to be one
+visible place near the top rather than a hunt through the body for every
+mention of an object. The body never writes an object name.
+
+Each line carries an inline note of the steps that used it, so the manifest
+also answers "what was this table for" without reading the whole file.
+
+**A single-table session emits no manifest and no selects** — the contract it
+has always had, run it with that Table selected, and verified byte-for-byte.
+
+**`;` INLINE, NEVER `#`.** Measured 12 Aug 2026 on 6.6.30: a trailing `;`
+comment after code parses, a trailing `#` does not —
+`table2$ = "voiceB"   # step 2` fails with `Error: Unknown symbol: « "voiceB"   #`.
+The manifest is the only place an emitted file puts a comment beside code.
+
+**The emitted script was replayed, not just read.** Two ANOVAs recorded across
+two invocations on two tables, then the emitted body run verbatim against
+freshly built objects: step 1 reported groups x/y at means 63.00 and 66.00
+(voiceA), step 2 reported p/q at 225.00 (voiceB). Each step landed on its own
+table.
+
+One defect found that way and not by reading the diff: removing the old
+unconditional `table = selected ("Table")` left a single-source script whose
+every step used `table` and where nothing assigned it. Caught by running one.
 
 **The one ambiguity, detected where it is knowable.** The emitted script
 selects by NAME, and two Tables sharing a name make that ambiguous: measured
