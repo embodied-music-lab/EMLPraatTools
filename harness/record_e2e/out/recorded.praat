@@ -47,7 +47,7 @@ include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EMLPraatTools
 # Name your data objects here for this recorded workflow.
 # Edit a name to run the same workflow on other data;
 # nothing below this block names an object.
-data1$ = "Table voiceA"   ; steps 1 (analysis), 2 (analysis), 3 (analysis), 4 (analysis), 5 (analysis), 6 (analysis), 7 (analysis), 8 (refusal), 9 (analysis), 10 (analysis), 11 (refusal), 12 (refusal), 13 (refusal), 14 (draw), 15 (draw), 16 (draw), 17 (draw), 18 (draw), 19 (draw), 20 (draw), 21 (draw), 22 (draw), 23 (draw)
+data1$ = "Table voiceA"   ; steps 1 (analysis), 2 (analysis), 3 (analysis), 4 (analysis), 5 (analysis), 6 (analysis), 7 (analysis), 8 (refusal), 9 (analysis), 10 (analysis), 11 (refusal), 12 (refusal), 13 (refusal), 14 (draw), 15 (draw), 16 (draw), 17 (draw), 18 (draw), 19 (draw), 20 (draw), 21 (draw), 22 (draw), 23 (draw), 44 (analysis)
 data2$ = "Sound tone"   ; steps 24 (draw), 28 (convert), 29 (draw), 30 (convert), 31 (draw), 32 (convert), 33 (draw)
 data3$ = "Pitch tone"   ; step 25 (draw)
 data4$ = "Spectrum tone"   ; steps 26 (draw), 34 (convert), 35 (draw), 36 (convert), 37 (draw), 38 (convert), 39 (draw)
@@ -501,5 +501,16 @@ selectObject: data
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
+
+# --- Step 44 (analysis) ---
+selectObject: data1$
+data = selected ()
+# Group comparison on a figure: spl by grp3, parametric, 3 groups
+# Reached through the figure's annotation rather than the stats menu; the test and the correction are the same.
+
+@emlBridgeGroupComparison: data, "spl", "grp3", 0.05, "stars", 0, 1, "parametric", 1
+
+# The same step through the menu:
+# In the GUI: New > EML Tools > EML Graphs..., with statistical annotation switched on.
 
 
