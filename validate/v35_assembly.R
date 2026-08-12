@@ -85,7 +85,12 @@ WRAPPERS_EXPECTED <- c(
   "eml-lib.praat", "eml-lib-graphs.praat", "eml-lib-lmm.praat",
   "eml-lib-stats.praat",
   # Tabled by the author, still shipped, still has to parse.
-  "eml-quick-start.praat", "eml-stats-demo.praat", "eml-tutorial.praat")
+  "eml-quick-start.praat", "eml-stats-demo.praat", "eml-tutorial.praat",
+  # The workflow recorder, wired to the menu 12 Aug 2026. Two commands and
+  # no checkbox on any dialog -- the recorder accumulates a SEQUENCE across
+  # menu invocations, which a per-analysis boolean cannot express, and a row
+  # on twenty dialogs is a row Praat gives no scrollbar for.
+  "eml-record-start.praat", "eml-record-save.praat")
 eml_census("v35", "entry point", wr$wrapper, WRAPPERS_EXPECTED)
 # Declared for validate/coverage.R (§19).
 eml_claim("v35", "wrappers_out", WRAPPERS_EXPECTED)
