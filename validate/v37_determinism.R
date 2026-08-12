@@ -95,6 +95,10 @@ check_true("v37", "determinism artefact has the five expected fields",
 DET_TYPES <- c("ts", "tsci", "spaghetti", "bar", "violin",
                "box", "gviolin", "gbox", "scatter", "histogram")
 eml_census("v37", "draw procedure", dt$name, DET_TYPES)
+# Declared for validate/coverage.R (§19). Until 12 Aug 2026 this artefact had
+# NO reader at all, which is the largest form of the gap coverage.R exists to
+# catch -- so it is the one artefact whose entry there matters most.
+eml_claim("v37", "determinism_out", DET_TYPES)
 check("v37", "all ten Table-consuming draw procedures were rendered",
       reported = nrow(dt), computed = length(DET_TYPES), tol = 0)
 check_true("v37", "each type appears exactly once", !any(duplicated(dt$name)))

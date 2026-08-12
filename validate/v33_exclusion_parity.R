@@ -93,6 +93,9 @@ PARITY_PROCS <- c("violin", "box", "gviolin", "gbox", "spaghetti", "ts",
 PARITY_CASES <- paste(rep(PARITY_PROCS, times = 2),
                       rep(c(0L, 1L), each = length(PARITY_PROCS)))
 eml_census("v33", "parity case", paste(pt$name, pt$dirty), PARITY_CASES)
+# Declared for validate/coverage.R (§19). v33 is the only reader of this
+# artefact, so its claim is the whole of the artefact's coverage.
+eml_claim("v33", "parity_out", PARITY_CASES)
 check("v33", "both arms of every procedure were rendered",
       nrow(pt), length(PARITY_CASES), tol = 0)
 

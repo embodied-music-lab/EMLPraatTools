@@ -108,6 +108,13 @@ ten <- rbind(
 
 ten$case <- paste0("empty_", ten$family)
 
+# WHAT THIS FILE COVERS, declared for validate/coverage.R (§19). The ten
+# empty frames and nothing else -- the other 29 stress cases are v36's, and
+# saying so here is what lets the coverage pass tell "deliberately scoped"
+# apart from "nobody is looking". Claimed from ten$case itself, so a case
+# dropped from the fixture above stops being claimed in the same edit.
+eml_claim("v27", "stress_out", ten$case)
+
 # The set itself is an assertion. Ten Table-consuming draw procedures, ten
 # empty cases; if a procedure is added or a case deleted, this is where it
 # surfaces rather than in a quietly smaller pass count.

@@ -223,6 +223,18 @@ for (s in scripts) {
     source(file.path(HERE, s), local = new.env(parent = globalenv()))
 }
 
+# THE COVERAGE PASS, LAST AND ONLY HERE. coverage.R compares what every
+# validator above CLAIMED, recorded through eml_claim() as each one ran,
+# against the population it reads off each artefact itself. It needs all the
+# claims, so it cannot run before them, and it does nothing when run alone.
+#
+# It is what asks the question no single validator can: for each thing a
+# driver renders, is there SOME authored check that names it? On 12 Aug 2026
+# the answer for 29 of the 39 stress cases was no, and every check in the
+# tree was green. See §19 of audit/GRAPHING_PUSH_REMAINING.md.
+cat("\n>> coverage.R\n")
+source(file.path(HERE, "coverage.R"), local = new.env(parent = globalenv()))
+
 df <- eml_report("SUMMARY — all scripts")
 
 if (!is.null(df)) {

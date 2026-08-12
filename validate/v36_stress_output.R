@@ -228,6 +228,11 @@ THE_29 <- c("bar_baseline", "bar_customerr", "bar_sd", "box_baseline",
 ALL_39 <- c(THE_TEN, THE_29)
 
 eml_census("v36", "stress case", res$case, ALL_39)
+# ...and declared for the cross-validator coverage pass (§19). v36 claims all
+# 39; v27 claims the ten it owns. Overlap is expected and fine -- what
+# coverage.R looks for is a case NO validator claims, which is what the 29
+# were until this file existed.
+eml_claim("v36", "stress_out", ALL_39)
 check("v36", "the driver rendered 39 cases", nrow(res), 39, tol = 0)
 check("v36", "no case appears twice in RESULTS.tsv",
       sum(duplicated(res$case)), 0, tol = 0)

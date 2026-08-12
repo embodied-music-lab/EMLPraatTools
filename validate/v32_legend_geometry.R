@@ -531,6 +531,12 @@ check_true("v32", "every non-categorical sweep case in block 7 is present",
 # added to the driver, every one of its own assertions passed, and this line
 # was the only thing in the tree that noticed twenty figures had appeared in a
 # population nothing had been told about.
+# Declared for validate/coverage.R (§19). v32 is the only reader of this
+# artefact and its seven blocks partition it, so the union of the blocks IS
+# the claim -- built from the block frames themselves rather than restated, so
+# a block that stopped being asserted on stops being claimed in the same edit.
+eml_claim("v32", "legend_out",
+          c(b1$case, b2$case, b3$case, b4$case, b5$case, b6$case, b7$case))
 check("v32", "the seven blocks account for every rendered case",
       nrow(b1) + nrow(b2) + nrow(b3) + nrow(b4) + nrow(b5) + nrow(b6) +
       nrow(b7),

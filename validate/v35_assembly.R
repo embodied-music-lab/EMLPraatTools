@@ -87,6 +87,8 @@ WRAPPERS_EXPECTED <- c(
   # Tabled by the author, still shipped, still has to parse.
   "eml-quick-start.praat", "eml-stats-demo.praat", "eml-tutorial.praat")
 eml_census("v35", "entry point", wr$wrapper, WRAPPERS_EXPECTED)
+# Declared for validate/coverage.R (§19).
+eml_claim("v35", "wrappers_out", WRAPPERS_EXPECTED)
 
 bad <- wr[wr$verdict != "parses", , drop = FALSE]
 check("v35", "entry points that fail to parse",

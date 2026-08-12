@@ -145,6 +145,66 @@ eml_census <- function(id, what, present, accounted) {
     invisible(ok && ok2)
 }
 
+# ---------------------------------------------------------------------------
+# eml_claim — WHICH VALIDATOR COVERS WHICH CASES, recorded as the suite runs.
+#
+# eml_census answers "does THIS file look at everything in the artefact". That
+# is the wrong unit for most of this tree, and §19 of the audit says why: most
+# validators are scoped to a subset ON PURPOSE. v27 reads the 39-row stress
+# artefact and asserts on the ten empty_* cases because empty frames are what
+# it is about. Demanding it account for all 39 would demand assertions it is
+# not for -- and would have hidden §17 behind a green check instead of
+# surfacing it. 29 cases were rendered, measured, committed, and looked at by
+# nothing, and no per-file check could say so.
+#
+# The coverage question is therefore per ARTEFACT, across every validator that
+# reads it: for each thing a driver renders, is there SOME authored check that
+# names it?
+#
+# Answering it needs a map, and a hand-maintained map drifts -- it would be
+# one more list that can disagree with reality, which is the failure this is
+# supposed to catch. So the map is not written down. Each validator records
+# what it claims WHILE IT RUNS, into this accumulator, and the coverage pass
+# at the end of run_all.R compares the union of the claims against the
+# population it reads off disk itself. A validator that stops asserting on a
+# case stops claiming it in the same edit, because the claim is made from the
+# same vector the checks loop over.
+#
+#   id        the validator id
+#   artefact  a stable key for the rendered population, e.g. "stress_out"
+#   cases     the case identifiers this validator asserts on
+#
+# Claims are additive and may overlap: two validators covering the same case
+# is fine and common (v27 and v36 share the ten empty frames). What is not
+# fine is a case no claim mentions.
+# ---------------------------------------------------------------------------
+EML_COVERAGE <- new.env(parent = emptyenv())
+EML_COVERAGE$claims <- list()
+
+eml_claim <- function(id, artefact, cases) {
+    cases <- unique(as.character(cases))
+    cases <- cases[!is.na(cases) & nzchar(cases)]
+    EML_COVERAGE$claims[[length(EML_COVERAGE$claims) + 1L]] <-
+        list(id = id, artefact = artefact, cases = cases)
+    invisible(length(cases))
+}
+
+# eml_claimed — every case some validator claimed for one artefact.
+eml_claimed <- function(artefact) {
+    cl <- Filter(function(x) identical(x$artefact, artefact),
+                 EML_COVERAGE$claims)
+    unique(unlist(lapply(cl, function(x) x$cases)))
+}
+
+# eml_claimants — which validators claimed anything for one artefact. Reported
+# so that "covered" can be read as "covered BY WHAT" rather than taken on
+# trust, and so an artefact that lost its only reader is visible.
+eml_claimants <- function(artefact) {
+    cl <- Filter(function(x) identical(x$artefact, artefact),
+                 EML_COVERAGE$claims)
+    unique(vapply(cl, function(x) x$id, character(1)))
+}
+
 # @attest — a claim backed by a screenshot or a recorded observation, not by
 # anything this script can evaluate.
 #
