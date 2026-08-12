@@ -113,6 +113,13 @@
 # ============================================================================
 
 procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .equalVar
+    .recResult$ = ""
+    ; DEFAULTED, NOT ASSUMED. .doPar = 1 says the parametric arm was
+    ; REQUESTED, not that it produced a p -- a test that errors leaves .p
+    ; unset, and reading it killed plugin/dev/tests/phase2 with "Unknown
+    ; variable". The record then reports only what was actually computed.
+    .p = undefined
+    .mwP = undefined
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -307,6 +314,20 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
         ... .doPar, .doNon, .group1$, .group2$
     endif
 
+    ; The numbers the reporter printed, from this procedure's OWN locals.
+    if .error$ = ""
+        .recResult$ = .group1$ + ": n = " + string$ (.n1) + ", mean = "
+        ... + fixed$ (.mean1, 4) + ", SD = " + fixed$ (.sd1, 4) + newline$
+        ... + "  " + .group2$ + ": n = " + string$ (.n2) + ", mean = "
+        ... + fixed$ (.mean2, 4) + ", SD = " + fixed$ (.sd2, 4)
+        if .doPar = 1 and .p <> undefined
+            .recResult$ = .recResult$ + newline$ + "  p = " + fixed$ (.p, 4)
+        endif
+        if .doNon = 1 and .mwP <> undefined
+            .recResult$ = .recResult$ + newline$ + "  Mann-Whitney p = "
+            ... + fixed$ (.mwP, 4)
+        endif
+    endif
     label END_TWO_GROUP
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
@@ -325,7 +346,7 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
         ... "Equal-variance assumption: " + if .equalVar then "pooled" else "Welch" fi + ".",
         ... "@emlRunTwoGroupAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, """ + .testType$ + """, " + string$ (.equalVar),
         ... "In the GUI: New > EML Tools > Compare two groups...",
-        ... .error$
+        ... .recResult$, .error$
     endif
 
     selectObject: .tableId
@@ -574,6 +595,7 @@ endproc
 # ============================================================================
 
 procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod$
+    .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -607,6 +629,14 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
     endif
 
     @emlKruskalWallis: .tableId, .dataCol$, .groupCol$
+    ; CAPTURED AT THE TEST, not at the end label: @emlReportKWComparison
+    ; and @emlDeclareKWResult both re-invoke @emlKruskalWallis, and a Praat
+    ; procedure's outputs live only until it runs again.
+    if emlKruskalWallis.error$ = ""
+        .recResult$ = "H(" + string$ (emlKruskalWallis.df) + ") = "
+        ... + fixed$ (emlKruskalWallis.h, 4) + ", p = "
+        ... + fixed$ (emlKruskalWallis.p, 4)
+    endif
     if emlKruskalWallis.error$ <> ""
         .error$ = emlKruskalWallis.error$
         goto END_KW
@@ -683,7 +713,7 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
         ... "Rank-based; it does not assume normality and does not test it.",
         ... "@emlRunKWAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, " + string$ (.doDunn) + ", """ + .adjMethod$ + """",
         ... "In the GUI: New > EML Tools > Compare k groups (Kruskal-Wallis)...",
-        ... .error$
+        ... .recResult$, .error$
     endif
 
     selectObject: .tableId
@@ -697,6 +727,7 @@ endproc
 # ============================================================================
 
 procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjMethod$
+    .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -716,6 +747,10 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
         .error$ = emlCountGroups.error$
         goto END_PAIRWISE
     endif
+    ; CAPTURED HERE. @emlCountGroups is re-invoked inside every post-hoc
+    ; procedure below -- the hazard @emlBridgeGroupComparison documents at
+    ; length -- so .nGroups must be taken now or not at all.
+    .recGroups = emlCountGroups.nGroups
     if emlCountGroups.nGroups < 2
         .error$ = "Group column """ + .groupCol$ + """ has fewer than 2 groups."
         goto END_PAIRWISE
@@ -791,6 +826,16 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
         @emlDeclarePairwiseResult: .tableName$, .groupCol$, .test$, .adjMethod$
     endif
 
+    ; A pairwise family has no single statistic; it has a shape. What a
+    ; reader needs from the record is which test, which correction, and over
+    ; how many comparisons -- the family size is what makes an adjusted p
+    ; interpretable, and the per-pair table is in the Info report.
+    if .error$ = ""
+        .recResult$ = .test$ + " with " + .adjMethod$ + " correction over "
+        ... + string$ (.recGroups * (.recGroups - 1) / 2) + " pairwise "
+        ... + "comparison(s), " + string$ (.recGroups) + " groups"
+    endif
+
     label END_PAIRWISE
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
@@ -809,7 +854,7 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
         ... "The adjustment named here was APPLIED, not only labelled.",
         ... "@emlRunPairwiseAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, """ + .test$ + """, """ + .adjMethod$ + """",
         ... "In the GUI: New > EML Tools > Pairwise comparisons...",
-        ... .error$
+        ... .recResult$, .error$
     endif
 
     selectObject: .tableId
@@ -1477,6 +1522,7 @@ endproc
 # ============================================================================
 
 procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
+    .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -1504,6 +1550,22 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
         .error$ = emlTwoWayAnova.error$
         goto END_TWOWAY
     endif
+
+    ; Same reason as the Kruskal-Wallis path: the reporter re-runs the test.
+    .recResult$ = .factor1$ + ": F(" + string$ (emlTwoWayAnova.dfA) + ", "
+    ... + string$ (emlTwoWayAnova.dfError) + ") = "
+    ... + fixed$ (emlTwoWayAnova.fA, 4) + ", p = "
+    ... + fixed$ (emlTwoWayAnova.pA, 4) + newline$
+    ... + "  " + .factor2$ + ": F(" + string$ (emlTwoWayAnova.dfB) + ", "
+    ... + string$ (emlTwoWayAnova.dfError) + ") = "
+    ... + fixed$ (emlTwoWayAnova.fB, 4) + ", p = "
+    ... + fixed$ (emlTwoWayAnova.pB, 4) + newline$
+    ... + "  interaction: F(" + string$ (emlTwoWayAnova.dfAB) + ", "
+    ... + string$ (emlTwoWayAnova.dfError) + ") = "
+    ... + fixed$ (emlTwoWayAnova.fAB, 4) + ", p = "
+    ... + fixed$ (emlTwoWayAnova.pAB, 4) + newline$
+    ... + "  n = " + string$ (emlTwoWayAnova.nObs) + ", cells = "
+    ... + string$ (emlTwoWayAnova.nCells)
 
     @emlCSVInit
     @emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
@@ -1534,7 +1596,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
         ... "Type of sums of squares and the balance of the design both matter here; see the report.",
         ... "@emlRunTwoWayAnalysis: data, """ + .dataCol$ + """, """ + .factor1$ + """, """ + .factor2$ + """",
         ... "In the GUI: New > EML Tools > Compare two-way (ANOVA)...",
-        ... .error$
+        ... .recResult$, .error$
     endif
 
     selectObject: .tableId
@@ -1548,6 +1610,7 @@ endproc
 # ============================================================================
 
 procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
+    .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -1647,6 +1710,20 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
         ... (.testType$ = "nonparametric" or .testType$ = "both")
     endif
 
+    ; This procedure's own locals. The test statistics live in the sub-
+    ; procedures and are not re-read here, so only what is provably fresh
+    ; goes into the record.
+    if .error$ = ""
+        .recResult$ = "n = " + string$ (.n) + " complete pairs" + newline$
+        ... + "  " + .col1$ + ": mean = " + fixed$ (.mean1, 4) + ", SD = "
+        ... + fixed$ (.sd1, 4) + newline$
+        ... + "  " + .col2$ + ": mean = " + fixed$ (.mean2, 4) + ", SD = "
+        ... + fixed$ (.sd2, 4)
+        if .nExcluded > 0
+            .recResult$ = .recResult$ + newline$ + "  " + string$ (.nExcluded)
+            ... + " row(s) excluded for missing data"
+        endif
+    endif
     label END_PAIRED
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
@@ -1665,7 +1742,7 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
         ... "Rows with a missing value in either column are dropped pairwise.",
         ... "@emlRunPairedAnalysis: data, """ + .col1$ + """, """ + .col2$ + """, """ + .testType$ + """",
         ... "In the GUI: New > EML Tools > Compare paired/repeated...",
-        ... .error$
+        ... .recResult$, .error$
     endif
 
     selectObject: .tableId
@@ -1806,6 +1883,28 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
         ... .spearRho, .spearT, .spearDf, .spearP
     endif
 
+    ; THE COEFFICIENT IS THE STEP. Built from the orchestrator's OWN locals,
+    ; which lines 1770-1782 above restore explicitly after the reporters run,
+    ; precisely so they cannot be stale here.
+    .recResult$ = ""
+    if .error$ = ""
+        if .testType$ = "pearson" or .testType$ = "both"
+            .recResult$ = "Pearson r = " + fixed$ (.pearR, 4)
+            ... + ", t(" + string$ (.pearDf) + ") = " + fixed$ (.pearT, 4)
+            ... + ", p = " + fixed$ (.pearP, 4)
+        endif
+        if .testType$ = "spearman" or .testType$ = "both"
+            if .recResult$ <> ""
+                .recResult$ = .recResult$ + newline$ + "  "
+            endif
+            .recResult$ = .recResult$ + "Spearman rho = " + fixed$ (.spearRho, 4)
+            ... + ", p = " + fixed$ (.spearP, 4)
+        endif
+        if .recResult$ <> ""
+            .recResult$ = .recResult$ + newline$ + "  n = " + string$ (.n)
+        endif
+    endif
+
     label END_CORR
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
@@ -1824,7 +1923,7 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
         ... "Correlation is not causation, and a single coefficient hides the shape of the cloud.",
         ... "@emlRunCorrelationAnalysis: data, """ + .colX$ + """, """ + .colY$ + """, """ + .testType$ + """",
         ... "In the GUI: New > EML Tools > Correlate two columns...",
-        ... .error$
+        ... .recResult$, .error$
     endif
 
     selectObject: .tableId
@@ -1838,6 +1937,7 @@ endproc
 # ============================================================================
 
 procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
+    .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -1884,6 +1984,16 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
     @emlReportDescriptiveAnalysis: .tableName$, .dataCol$, .nValid,
     ... .nUndefined, emlExtractColumn.note$
 
+    ; A descriptive pass has no single test statistic; what it has is how
+    ; much data it actually described, which is the number a reader needs in
+    ; order to judge the rest.
+    if .error$ = ""
+        .recResult$ = "n = " + string$ (.nValid) + " valid"
+        if .nUndefined > 0
+            .recResult$ = .recResult$ + ", " + string$ (.nUndefined)
+            ... + " undefined"
+        endif
+    endif
     label END_DESCRIBE
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
@@ -1902,7 +2012,7 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
         ... "Descriptives only; no test was run and no assumption was checked.",
         ... "@emlRunDescriptiveAnalysis: data, """ + .dataCol$ + """",
         ... "In the GUI: New > EML Tools > Describe Table column...",
-        ... .error$
+        ... .recResult$, .error$
     endif
 
     selectObject: .tableId
@@ -1918,6 +2028,9 @@ endproc
 # ============================================================================
 
 procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
+    ; The line the record carries. Empty until the fit succeeds, so a refusal
+    ; records its refusal and no coefficients.
+    .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -1998,6 +2111,19 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         @emlLinearRegression: .xClean#, .yClean#
         if emlLinearRegression.error$ <> ""
             .error$ = emlLinearRegression.error$
+        else
+            ; CAPTURED HERE, NOT AT THE HOOK. @emlReportRegressionAnalysis and
+            ; @emlDeclareRegressionResult both re-invoke @emlLinearRegression,
+            ; and a Praat procedure's outputs survive only until it runs
+            ; again -- the same hazard @emlBridgeGroupComparison documents for
+            ; @emlCountGroups. Reading emlLinearRegression.slope after those
+            ; calls would read whatever the LAST invocation left.
+            .recResult$ = .depCol$ + " = "
+            ... + fixed$ (emlLinearRegression.intercept, 4) + " + "
+            ... + fixed$ (emlLinearRegression.slope, 4) + " x " + .predCol$
+            ... + newline$ + "  R-squared = "
+            ... + fixed$ (emlLinearRegression.rSquared, 4)
+            ... + ", n = " + string$ (.nValid)
         endif
     endif
 
@@ -2031,7 +2157,7 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         ... "Residual diagnostics are not run on this path.",
         ... "@emlRunRegressionAnalysis: data, """ + .depCol$ + """, """ + .predCol$ + """",
         ... "In the GUI: New > EML Tools > Linear regression...",
-        ... .error$
+        ... .recResult$, .error$
     endif
 
     selectObject: .tableId
@@ -2153,6 +2279,7 @@ endproc
 # The parameter is retained because callers pass arguments positionally.
 # Do not remove it without updating every call site.
 procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
+    .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -2263,6 +2390,20 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         ... .recommendation$
     endif
 
+    ; .swW, .swP, .skewness and .kurtosis are this procedure's own locals --
+    ; @emlDeclareNormalityResult is PASSED them rather than reading them
+    ; back, which is exactly why they are safe to read here.
+    if .error$ = ""
+        .recResult$ = ""
+        if .swError$ = ""
+            .recResult$ = "Shapiro-Wilk W = " + fixed$ (.swW, 4) + ", p = "
+            ... + fixed$ (.swP, 4) + newline$ + "  "
+        endif
+        .recResult$ = .recResult$ + "skewness = " + fixed$ (.skewness, 4)
+        ... + ", kurtosis = " + fixed$ (.kurtosis, 4)
+        ... + ", n = " + string$ (.nValid) + newline$
+        ... + "  Recommendation: " + .recommendation$
+    endif
     label END_NORMALITY
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
@@ -2281,7 +2422,7 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         ... "A normality test answers a question about the sample, not a licence for a later test.",
         ... "@emlRunNormalityAnalysis: data, """ + .dataCol$ + """, """ + .testType$ + """",
         ... "In the GUI: New > EML Tools > Check normality (all columns)...",
-        ... .error$
+        ... .recResult$, .error$
     endif
 
     selectObject: .tableId
@@ -2292,6 +2433,7 @@ endproc
 # non-empty .error$ and computes nothing — callers must check .error$ before
 # reading any other output, because no other output is set.
 procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measure$, .scale$
+    .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -2325,7 +2467,7 @@ procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measu
         ... "The ICC form and the scale of interest are choices; both are stated in the report.",
         ... "@emlRunReliabilityAnalysis: data, """ + .subjectCol$ + """, """ + .raterCols$ + """, """ + .measure$ + """, """ + .scale$ + """",
         ... "In the GUI: New > EML Tools > Reliability...",
-        ... .error$
+        ... .recResult$, .error$
     endif
 
     selectObject: .tableId
@@ -2700,6 +2842,7 @@ endproc
 # .adjMethod$ at every call site. It is kept for a future long-format path.
 # ============================================================================
 procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$
+    .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -2724,6 +2867,21 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     .nExcluded = emlExtractConditionMatrix.nExcluded
 
     @emlRMAnovaTest: .data##, .n, .k
+    ; CAPTURED AT THE TEST. The reporter re-runs it, and a Praat procedure's
+    ; outputs live only until the next invocation. Greenhouse-Geisser is
+    ; carried too: the corrected p is the one a reader should quote when
+    ; sphericity is doubtful, and it was nowhere in the record.
+    if emlRMAnovaTest.degenerate = 0
+        .recResult$ = "F(" + string$ (emlRMAnovaTest.dfCond) + ", "
+        ... + string$ (emlRMAnovaTest.dfErr) + ") = "
+        ... + fixed$ (emlRMAnovaTest.fStat, 4) + ", p = "
+        ... + fixed$ (emlRMAnovaTest.p, 4) + newline$
+        ... + "  Greenhouse-Geisser epsilon = "
+        ... + fixed$ (emlRMAnovaTest.ggEpsilon, 4) + ", corrected p = "
+        ... + fixed$ (emlRMAnovaTest.pGG, 4) + newline$
+        ... + "  n = " + string$ (.n) + " subjects, k = " + string$ (.k)
+        ... + " conditions"
+    endif
 
     # D97. A zero error term is a property of the data, not a bad form
     # setting, so there is no other menu item that would work on it: the
@@ -2835,7 +2993,7 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
         ... "Sphericity is corrected, not assumed; the report names the correction.",
         ... "@emlRunRepeatedMeasuresAnalysis: data, """ + .subjectCol$ + """, """ + .conditionCols$ + """, " + string$ (.doPostHoc) + ", """ + .adjMethod$ + """",
         ... "In the GUI: New > EML Tools > Compare paired/repeated...",
-        ... .error$
+        ... .recResult$, .error$
     endif
 
     selectObject: .tableId
@@ -2849,6 +3007,7 @@ endproc
 # index identifies the subject. Retained because callers pass positionally.
 # ============================================================================
 procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$
+    .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -2873,6 +3032,12 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     .nExcluded = emlExtractConditionMatrix.nExcluded
 
     @emlFriedmanTest: .data##, .n, .k
+    ; Same rule as the repeated-measures path: captured where it is fresh.
+    .recResult$ = "chi-square(" + string$ (emlFriedmanTest.df) + ") = "
+    ... + fixed$ (emlFriedmanTest.chiSq, 4) + ", p = "
+    ... + fixed$ (emlFriedmanTest.p, 4) + newline$
+    ... + "  n = " + string$ (.n) + " subjects, k = " + string$ (.k)
+    ... + " conditions"
 
     @emlCSVInit
     .h$ = "Friedman test — " + .tableName$
@@ -2958,7 +3123,7 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
         ... "Rank-based repeated measures; it does not assume normality and does not test it.",
         ... "@emlRunFriedmanAnalysis: data, """ + .subjectCol$ + """, """ + .conditionCols$ + """, " + string$ (.doPostHoc) + ", """ + .adjMethod$ + """",
         ... "In the GUI: New > EML Tools > Compare paired/repeated (Friedman)...",
-        ... .error$
+        ... .recResult$, .error$
     endif
 
     selectObject: .tableId

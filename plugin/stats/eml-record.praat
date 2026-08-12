@@ -804,7 +804,7 @@ endproc
 # lies by omission, and the one it hides is usually the one worth reading.
 # ----------------------------------------------------------------------------
 procedure emlRecordAnalysisStep: .tableId, .label$, .detail$, .caveat$,
-    ... .code$, .api$, .error$
+    ... .code$, .api$, .result$, .error$
     @emlRecordInit
     if emlRecordActive = 0
         goto END_RECORD_ANALYSIS_STEP
@@ -820,6 +820,32 @@ procedure emlRecordAnalysisStep: .tableId, .label$, .detail$, .caveat$,
 
     @emlPhrase: "analysis.intent", .label$, .detail$, "", "", "", ""
     @emlRecordStep: "analysis", emlPhrase.result$, .caveat$, .code$, .api$
+
+    ; THE NUMBERS, NOT JUST THE CALL (12 Aug 2026).
+    ;
+    ; This procedure took no result when it was written, so the twelve
+    ; orchestrators wired to it recorded THAT an analysis ran and never WHAT
+    ; it produced. @emlRecordAnova -- the hand-written recorder that predates
+    ; it -- had always emitted
+    ;
+    ;     # F(1, 22) = 5.2251, p = 0.0323, eta-squared = 0.1919
+    ;
+    ; so a session's ANOVA carried its own answer and its correlation did not.
+    ; For a correlation or a regression the coefficient IS the step; a record
+    ; that omits it documents an intention rather than a result.
+    ;
+    ; THE NUMBERS COME FROM THE CALLER'S OWN VARIABLES, never from a re-read
+    ; of the Info window. That is the rule @emlRecordAnova already states and
+    ; the reason is in validate/REGISTRY.md: scraping info$() reintroduces the
+    ; label-matching hazard where "Soprano" matches five lines in one capture
+    ; and seven in the next. The caller has the values the reporter printed;
+    ; it passes them.
+    ;
+    ; Empty is legitimate -- a descriptive path has no single number worth
+    ; hoisting -- and the renderer simply omits the block.
+    if .result$ <> ""
+        @emlRecordResult: .result$
+    endif
 
     label END_RECORD_ANALYSIS_STEP
 endproc
@@ -839,7 +865,7 @@ endproc
 # refusal branch to catch.
 # ----------------------------------------------------------------------------
 procedure emlRecordDrawStep: .objectId, .label$, .detail$, .caveat$, .code$,
-    ... .api$
+    ... .api$, .result$
     @emlRecordInit
     if emlRecordActive = 0
         goto END_RECORD_DRAW_STEP
@@ -848,6 +874,14 @@ procedure emlRecordDrawStep: .objectId, .label$, .detail$, .caveat$, .code$,
     @emlRecordSource: .objectId
     @emlPhrase: "drawstep.intent", .label$, .detail$, "", "", "", ""
     @emlRecordStep: "draw", emlPhrase.result$, .caveat$, .code$, .api$
+
+    ; A FIGURE CAN PRODUCE STATISTICS, and the scatter does: correlation and
+    ; regression are reported FROM the plot when the form asks for them, the
+    ; mirror of Correlate and Regress on the stats menu. Most draws have
+    ; nothing to put here and pass "", which the renderer omits.
+    if .result$ <> ""
+        @emlRecordResult: .result$
+    endif
 
     label END_RECORD_DRAW_STEP
 endproc
