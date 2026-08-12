@@ -40,19 +40,23 @@ include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
 # ------------------------------------------------------------
 # THE OBJECT
 # Recorded against: demo_3groups_input.csv -- 45 rows, 4 columns.
-# Select that Table in the Objects window, then run this script.
-# NOTE: later steps in this session ran on a DIFFERENT object.
-# Running this file against one Table will not reproduce them.
+# The objects this workflow ran on are named in the block below.
+# All of them must be open before you run this script.
 # ------------------------------------------------------------
 
-table = selected ("Table")
+# Name your data objects here for this recorded workflow.
+# Edit a name to run the same workflow on other data;
+# nothing below this block names an object.
+data1$ = "Table demo_3groups_input"   ; step 1 (analysis)
 
 # --- Step 1 (analysis) ---
+selectObject: data1$
+data = selected ()
 # One-way ANOVA of SPL_dB by voice_type, 3 groups.
 # Tukey HSD requested. Alpha 0.05 (default, not specified by the user).
 # Normality was NOT tested on this path.
 
-@emlRunAnovaAnalysis: table, "SPL_dB", "voice_type", 1
+@emlRunAnovaAnalysis: data, "SPL_dB", "voice_type", 1
 
 # F(2, 42) = 18.0603, p = 0.000002, eta-squared = 0.4624
 #   Soprano: n = 15, mean = 93.8877

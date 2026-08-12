@@ -4,4 +4,4 @@
 One-way ANOVA of SPL_dB by voice_type, 3 groups.
 Tukey HSD requested. Alpha 0.05 (default, not specified by the user).
 Normality was NOT tested on this path.
-@emlRunAnovaAnalysis: table, "SPL_dB", "voice_type", 1
+@emlRunAnovaAnalysis: data, "SPL_dB", "voice_type", 1
