@@ -34,3 +34,5 @@ spectrum2f0	37	39	recorded
 tor2table	39	41	recorded
 matrix2table	41	43	recorded
 bridge	43	44	recorded
+scatterstats	44	45	recorded
+scattermonotonic	45	46	recorded

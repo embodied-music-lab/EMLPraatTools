@@ -47,7 +47,7 @@ include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EMLPraatTools
 # Name your data objects here for this recorded workflow.
 # Edit a name to run the same workflow on other data;
 # nothing below this block names an object.
-data1$ = "Table voiceA"   ; steps 1 (analysis), 2 (analysis), 3 (analysis), 4 (analysis), 5 (analysis), 6 (analysis), 7 (analysis), 8 (refusal), 9 (analysis), 10 (analysis), 11 (refusal), 12 (refusal), 13 (refusal), 14 (draw), 15 (draw), 16 (draw), 17 (draw), 18 (draw), 19 (draw), 20 (draw), 21 (draw), 22 (draw), 23 (draw), 44 (analysis)
+data1$ = "Table voiceA"   ; steps 1 (analysis), 2 (analysis), 3 (analysis), 4 (analysis), 5 (analysis), 6 (analysis), 7 (analysis), 8 (refusal), 9 (analysis), 10 (analysis), 11 (refusal), 12 (analysis), 13 (analysis), 14 (draw), 15 (draw), 16 (draw), 17 (draw), 18 (draw), 19 (draw), 20 (draw), 21 (draw), 22 (draw), 23 (draw), 44 (analysis), 45 (draw), 46 (draw)
 data2$ = "Sound tone"   ; steps 24 (draw), 28 (convert), 29 (draw), 30 (convert), 31 (draw), 32 (convert), 33 (draw)
 data3$ = "Pitch tone"   ; step 25 (draw)
 data4$ = "Spectrum tone"   ; steps 26 (draw), 34 (convert), 35 (draw), 36 (convert), 37 (draw), 38 (convert), 39 (draw)
@@ -78,6 +78,8 @@ data = selected ()
 
 @emlRunTwoGroupAnalysis: data, "spl", "grp", "welch", 0
 
+# y: n = 12, mean = 66.1949, SD = 3.1734
+#   x: n = 12, mean = 63.4196, SD = 2.7601
 # The same step through the menu:
 # In the GUI: New > EML Tools > Compare two groups...
 
@@ -89,6 +91,7 @@ data = selected ()
 
 @emlRunKWAnalysis: data, "spl", "grp", 0, "holm"
 
+# H(1) = 4.5633, p = 0.0327
 # The same step through the menu:
 # In the GUI: New > EML Tools > Compare k groups (Kruskal-Wallis)...
 
@@ -100,6 +103,7 @@ data = selected ()
 
 @emlRunDescriptiveAnalysis: data, "spl"
 
+# n = 24 valid
 # The same step through the menu:
 # In the GUI: New > EML Tools > Describe Table column...
 
@@ -111,6 +115,9 @@ data = selected ()
 
 @emlRunNormalityAnalysis: data, "spl", "both"
 
+# Shapiro-Wilk W = 0.9502, p = 0.2739
+#   skewness = 0.1775, kurtosis = -1.0820, n = 24
+#   Recommendation: parametric
 # The same step through the menu:
 # In the GUI: New > EML Tools > Check normality (all columns)...
 
@@ -122,6 +129,8 @@ data = selected ()
 
 @emlRunCorrelationAnalysis: data, "spl", "spl2", "pearson"
 
+# Pearson r = 0.0678, t(22) = 0.3189, p = 0.7528
+#   n = 24
 # The same step through the menu:
 # In the GUI: New > EML Tools > Correlate two columns...
 
@@ -133,6 +142,8 @@ data = selected ()
 
 @emlRunRegressionAnalysis: data, "spl", "spl2"
 
+# spl = 49.6803 + 0.0741 x spl2
+#   R-squared = 0.0046, n = 24
 # The same step through the menu:
 # In the GUI: New > EML Tools > Linear regression...
 
@@ -152,6 +163,10 @@ data = selected ()
 
 @emlRunTwoWayAnalysis: data, "spl", "grp", "grp2"
 
+# grp: F(1, 20) = 3.8873, p = 0.0626
+#   grp2: F(1, 20) = 0.0136, p = 0.9083
+#   interaction: F(1, 20) = 0.0688, p = 0.7958
+#   n = 24, cells = 4
 # The same step through the menu:
 # In the GUI: New > EML Tools > Compare two-way (ANOVA)...
 
@@ -163,6 +178,9 @@ data = selected ()
 
 @emlRunPairedAnalysis: data, "spl", "spl2", "t"
 
+# n = 24 complete pairs
+#   spl: mean = 64.8072, SD = 3.2356
+#   spl2: mean = 204.0210, SD = 2.9600
 # The same step through the menu:
 # In the GUI: New > EML Tools > Compare paired/repeated...
 
@@ -174,21 +192,32 @@ data = selected ()
 ; (nothing executed at this step -- see the note above)
 
 
-# --- Step 12 (refusal) ---
+# --- Step 12 (analysis) ---
 selectObject: data1$
 data = selected ()
-# Refused: Need at least 2 condition columns.
+# Repeated-measures ANOVA: c1|c2|c3, subject subj
+# Sphericity is corrected, not assumed; the report names the correction.
 
-; (nothing executed at this step -- see the note above)
+@emlRunRepeatedMeasuresAnalysis: data, "subj", "c1|c2|c3", 0, "holm"
 
+# F(2, 46) = 110.3303, p = 0.000000000000000003
+#   Greenhouse-Geisser epsilon = 0.9078, corrected p = 0.00000000000000008
+#   n = 24 subjects, k = 3 conditions
+# The same step through the menu:
+# In the GUI: New > EML Tools > Compare paired/repeated...
 
-# --- Step 13 (refusal) ---
+# --- Step 13 (analysis) ---
 selectObject: data1$
 data = selected ()
-# Refused: Need at least 2 condition columns.
+# Friedman: c1|c2|c3, subject subj
+# Rank-based repeated measures; it does not assume normality and does not test it.
 
-; (nothing executed at this step -- see the note above)
+@emlRunFriedmanAnalysis: data, "subj", "c1|c2|c3", 0, "holm"
 
+# chi-square(2) = 42.2500, p = 0.0000000007
+#   n = 24 subjects, k = 3 conditions
+# The same step through the menu:
+# In the GUI: New > EML Tools > Compare paired/repeated (Friedman)...
 
 # --- Step 14 (draw) ---
 selectObject: data1$
@@ -207,7 +236,7 @@ data = selected ()
 selectObject: data1$
 data = selected ()
 # Scatter plot: Scatter
-# A fitted line, where one is drawn, is descriptive and carries no test.
+# A fitted line is descriptive and carries no test.
 
 @emlDrawScatterPlot: data, "Scatter", "x", "y", 6, 4, "color", 1, "spl", "spl2", "", 0, 0, 0, 0, 0
 
@@ -510,7 +539,42 @@ data = selected ()
 
 @emlBridgeGroupComparison: data, "spl", "grp3", 0.05, "stars", 0, 1, "parametric", 1
 
+# One-way ANOVA: F(2, 21) = 0.02, p = .979
+#   3 groups, alpha = 0.050
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs..., with statistical annotation switched on.
+
+# --- Step 45 (draw) ---
+selectObject: data1$
+data = selected ()
+# Scatter plot: Scatter with stats
+# A fitted line is descriptive and carries no test. The correlation and regression below were reported from this figure.
+
+scatterAnalysisType = 3
+annotCorrType$ = "spearman"
+scatterRegressionLine = 1
+@emlDrawScatterPlot: data, "Scatter with stats", "x", "y", 6, 4, "color", 1, "spl", "spl2", "", 0, 0, 0, 0, 1
+
+# spearman correlation reported on 24 complete pairs
+#   spl2 = 199.9998 + 0.0620 x spl, R-squared = 0.0046
+#   fit line: OLS (linear), slope = 0.0620, intercept = 199.9998
+# The same step through the menu:
+# In the GUI: New > EML Tools > EML Graphs...
+
+# --- Step 46 (draw) ---
+selectObject: data1$
+data = selected ()
+# Scatter plot: Scatter, monotonic fit
+# A fitted line is descriptive and carries no test. The correlation and regression below were reported from this figure.
+
+scatterAnalysisType = 1
+annotCorrType$ = "spearman"
+scatterRegressionLine = 1
+@emlDrawScatterPlot: data, "Scatter, monotonic fit", "x", "y", 6, 4, "color", 1, "spl", "spl2", "", 0, 0, 0, 0, 1
+
+# spearman correlation reported on 24 complete pairs
+#   fit line: Theil-Sen (monotonic), slope = 0.0374, intercept = 201.0878
+# The same step through the menu:
+# In the GUI: New > EML Tools > EML Graphs...
 
 
