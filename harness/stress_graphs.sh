@@ -89,9 +89,17 @@ for f in $(ls "$CASES"/empty_*.praat 2>/dev/null; ls "$CASES"/*.praat | grep -v 
     #                                     "are there chromatic pixels beyond what
     #                                     the empty frame's antialiasing yields".
     #
-    # Measured 7 Aug 2026 at 1800x1200, chromatic pixels:
+    # Measured 7 Aug 2026 at 1800x1200, chromatic pixels, and RE-MEASURED
+    # 12 Aug 2026 after the cases were seeded (tracker §14):
     #   empty_violin 4609 (baseline)   violin_n1 5318 (+15%)
-    #   violin_zerovar 6046 (+31%)     violin_baseline 284121 (+6066%)
+    #   violin_zerovar 6046 (+31%)     violin_baseline 249669 (+5318%)
+    #
+    # Three of the four are unchanged to the pixel because those cases never
+    # used a generator. violin_baseline was 284121 before seeding and is
+    # 249669 after; it is the one number in this block that moved, and it
+    # moved ONCE. Before §14 it moved on every run, which is why the margin
+    # below was chosen to survive that and why validate/v36 could not be
+    # written until the churn stopped.
     # A 5% margin clears antialiasing jitter and still catches a true blank,
     # which scores +0%. Families with no empty_* counterpart fall back to the
     # absolute ink rule, and the verdict name says which rule was applied.
