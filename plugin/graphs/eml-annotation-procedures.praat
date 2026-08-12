@@ -2891,6 +2891,40 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
             endif
         endif
     endif
+    ; ------------------------------------------------------------------
+    ; RECORD WORKFLOW -- THE GRAPHS -> STATS PATH.
+    ;
+    ; THE TWO PATHS ARE ONE FEATURE AND MUST RECORD ALIKE. A user can reach
+    ; the same group comparison two ways, by design: from the stats menu, or
+    ; by asking a figure for its statistical annotation. This procedure IS
+    ; the second way -- it runs the t-test, Mann-Whitney, one-way ANOVA,
+    ; Kruskal-Wallis, Tukey and Dunn that the brackets are drawn from.
+    ;
+    ; On 12 Aug 2026 capture hooks were added to all thirteen orchestrators
+    ; in the stats tree and NOT here. That made the two paths disagree: the
+    ; stats menu recorded an ANOVA, and the identical ANOVA reached through
+    ; a violin plot's brackets recorded the figure and silently dropped the
+    ; statistics. Before that change neither path recorded, so the asymmetry
+    ; was introduced by fixing one half.
+    ;
+    ; Placed at the end, so a refusal is recorded as a step rather than
+    ; vanishing -- the same rule the analysis hooks follow.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordAnalysisStep: .tableId, "Group comparison on a figure",
+            ... .dataCol$ + " by " + .factorCol$ + ", " + .testType$
+            ... + ", " + string$ (.nGroups) + " groups",
+            ... "Reached through the figure's annotation rather than the "
+            ... + "stats menu; the test and the correction are the same.",
+            ... "@emlBridgeGroupComparison: data, """ + .dataCol$ + """, """
+            ... + .factorCol$ + """, " + string$ (.alpha) + ", """ + .style$
+            ... + """, " + string$ (.showNS) + ", " + string$ (.showEffect)
+            ... + ", """ + .testType$ + """, " + string$ (.layoutMode),
+            ... "In the GUI: New > EML Tools > EML Graphs..., with statistical annotation switched on.",
+            ... .error$
+        endif
+    endif
 endproc
 
 
