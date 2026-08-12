@@ -308,6 +308,18 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     endif
 
     label END_TWO_GROUP
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep.
+    @emlRecordAnalysisStep: .tableId, "Two-group comparison",
+    ... .dataCol$ + " by " + .groupCol$ + ", " + .testType$,
+    ... "Equal-variance assumption: " + if .equalVar then "pooled" else "Welch" fi + ".",
+    ... "@emlRunTwoGroupAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, """ + .testType$ + """, " + string$ (.equalVar),
+    ... "In the GUI: New > EML Tools > Compare two groups...",
+    ... .error$
+
+    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -637,6 +649,18 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
     endif
 
     label END_KW
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep.
+    @emlRecordAnalysisStep: .tableId, "Kruskal-Wallis",
+    ... .dataCol$ + " by " + .groupCol$,
+    ... "Rank-based; it does not assume normality and does not test it.",
+    ... "@emlRunKWAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, " + string$ (.doDunn) + ", """ + .adjMethod$ + """",
+    ... "In the GUI: New > EML Tools > Compare k groups (Kruskal-Wallis)...",
+    ... .error$
+
+    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -743,6 +767,18 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     endif
 
     label END_PAIRWISE
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep.
+    @emlRecordAnalysisStep: .tableId, "Pairwise comparisons",
+    ... .dataCol$ + " by " + .groupCol$ + ", " + .test$ + ", " + .adjMethod$,
+    ... "The adjustment named here was APPLIED, not only labelled.",
+    ... "@emlRunPairwiseAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, """ + .test$ + """, """ + .adjMethod$ + """",
+    ... "In the GUI: New > EML Tools > Pairwise comparisons...",
+    ... .error$
+
+    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -1452,6 +1488,18 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
     endif
 
     label END_TWOWAY
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep.
+    @emlRecordAnalysisStep: .tableId, "Two-way ANOVA",
+    ... .dataCol$ + " by " + .factor1$ + " and " + .factor2$,
+    ... "Type of sums of squares and the balance of the design both matter here; see the report.",
+    ... "@emlRunTwoWayAnalysis: data, """ + .dataCol$ + """, """ + .factor1$ + """, """ + .factor2$ + """",
+    ... "In the GUI: New > EML Tools > Compare two-way (ANOVA)...",
+    ... .error$
+
+    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -1563,6 +1611,18 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
     endif
 
     label END_PAIRED
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep.
+    @emlRecordAnalysisStep: .tableId, "Paired comparison",
+    ... .col1$ + " vs " + .col2$ + ", " + .testType$,
+    ... "Rows with a missing value in either column are dropped pairwise.",
+    ... "@emlRunPairedAnalysis: data, """ + .col1$ + """, """ + .col2$ + """, """ + .testType$ + """",
+    ... "In the GUI: New > EML Tools > Compare paired/repeated...",
+    ... .error$
+
+    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -1702,6 +1762,18 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
     endif
 
     label END_CORR
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep.
+    @emlRecordAnalysisStep: .tableId, "Correlation",
+    ... .colX$ + " with " + .colY$ + ", " + .testType$,
+    ... "Correlation is not causation, and a single coefficient hides the shape of the cloud.",
+    ... "@emlRunCorrelationAnalysis: data, """ + .colX$ + """, """ + .colY$ + """, """ + .testType$ + """",
+    ... "In the GUI: New > EML Tools > Correlate two columns...",
+    ... .error$
+
+    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -1760,6 +1832,18 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
     ... .nUndefined, emlExtractColumn.note$
 
     label END_DESCRIBE
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep.
+    @emlRecordAnalysisStep: .tableId, "Descriptive statistics",
+    ... .dataCol$,
+    ... "Descriptives only; no test was run and no assumption was checked.",
+    ... "@emlRunDescriptiveAnalysis: data, """ + .dataCol$ + """",
+    ... "In the GUI: New > EML Tools > Describe Table column...",
+    ... .error$
+
+    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -1867,6 +1951,18 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         @emlDeclareRegressionResult: .tableName$, .depCol$, .predCol$,
         ... .tableId, .nValid
     endif
+
+    selectObject: .tableId
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep.
+    @emlRecordAnalysisStep: .tableId, "Linear regression",
+    ... .depCol$ + " on " + .predCol$,
+    ... "Residual diagnostics are not run on this path.",
+    ... "@emlRunRegressionAnalysis: data, """ + .depCol$ + """, """ + .predCol$ + """",
+    ... "In the GUI: New > EML Tools > Linear regression...",
+    ... .error$
 
     selectObject: .tableId
 endproc
@@ -2098,6 +2194,18 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
     endif
 
     label END_NORMALITY
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep.
+    @emlRecordAnalysisStep: .tableId, "Normality",
+    ... .dataCol$ + ", " + .testType$,
+    ... "A normality test answers a question about the sample, not a licence for a later test.",
+    ... "@emlRunNormalityAnalysis: data, """ + .dataCol$ + """, """ + .testType$ + """",
+    ... "In the GUI: New > EML Tools > Check normality (all columns)...",
+    ... .error$
+
+    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -2116,6 +2224,18 @@ procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measu
     .error$ = "Not yet implemented — scheduled for Phase 4."
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep.
+    @emlRecordAnalysisStep: .tableId, "Reliability",
+    ... .measure$ + " over " + .raterCols$ + ", subject " + .subjectCol$,
+    ... "The ICC form and the scale of interest are choices; both are stated in the report.",
+    ... "@emlRunReliabilityAnalysis: data, """ + .subjectCol$ + """, """ + .raterCols$ + """, """ + .measure$ + """, """ + .scale$ + """",
+    ... "In the GUI: New > EML Tools > Reliability...",
+    ... .error$
+
+    selectObject: .tableId
 endproc
 
 # ============================================================================
@@ -2605,6 +2725,18 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     endif
 
     label END_RM
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep.
+    @emlRecordAnalysisStep: .tableId, "Repeated-measures ANOVA",
+    ... .conditionCols$ + ", subject " + .subjectCol$,
+    ... "Sphericity is corrected, not assumed; the report names the correction.",
+    ... "@emlRunRepeatedMeasuresAnalysis: data, """ + .subjectCol$ + """, """ + .conditionCols$ + """, " + string$ (.doPostHoc) + ", """ + .adjMethod$ + """",
+    ... "In the GUI: New > EML Tools > Compare paired/repeated...",
+    ... .error$
+
+    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -2708,6 +2840,18 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     endif
 
     label END_FRIED
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep.
+    @emlRecordAnalysisStep: .tableId, "Friedman",
+    ... .conditionCols$ + ", subject " + .subjectCol$,
+    ... "Rank-based repeated measures; it does not assume normality and does not test it.",
+    ... "@emlRunFriedmanAnalysis: data, """ + .subjectCol$ + """, """ + .conditionCols$ + """, " + string$ (.doPostHoc) + ", """ + .adjMethod$ + """",
+    ... "In the GUI: New > EML Tools > Compare paired/repeated (Friedman)...",
+    ... .error$
+
+    selectObject: .tableId
     selectObject: .tableId
 endproc
 

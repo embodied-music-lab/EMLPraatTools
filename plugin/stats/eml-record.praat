@@ -462,6 +462,79 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlRecordAnalysisStep: .tableId, .label$, .detail$, .caveat$, .code$,
+#                         .api$, .error$
+#
+# ONE RECORDER FOR EVERY ANALYSIS, rather than thirteen near-copies.
+#
+# @emlRecordAnova came first and is bespoke because it also emits the F, the
+# p, the eta-squared and a line per group from emlOneWayAnova.*. Every other
+# orchestrator exposes a different result surface, and writing twelve more
+# procedures that differ only in which globals they read is how a recorder
+# drifts out of agreement with the analyses it records.
+#
+# So this takes the four strings that are genuinely per-analysis and does
+# everything else once: the source, the refusal path, the phrase lookup.
+# Results are added by the caller afterwards with @emlRecordResult where the
+# orchestrator has numbers worth carrying.
+#
+# THE REFUSAL PATH IS THE REASON THIS IS CALLED AFTER THE END LABEL. Every
+# guard in an orchestrator jumps there, so an analysis that refused -- too few
+# groups, a non-numeric column -- is recorded as a step carrying its refusal
+# rather than vanishing. A log that shows only the analyses that succeeded
+# lies by omission, and the one it hides is usually the one worth reading.
+# ----------------------------------------------------------------------------
+procedure emlRecordAnalysisStep: .tableId, .label$, .detail$, .caveat$,
+    ... .code$, .api$, .error$
+    @emlRecordInit
+    if emlRecordActive = 0
+        goto END_RECORD_ANALYSIS_STEP
+    endif
+
+    @emlRecordSource: .tableId
+
+    if .error$ <> ""
+        @emlPhrase: "refusal.intent", .error$, "", "", "", "", ""
+        @emlRecordStep: "refusal", emlPhrase.result$, "", "", ""
+        goto END_RECORD_ANALYSIS_STEP
+    endif
+
+    @emlPhrase: "analysis.intent", .label$, .detail$, "", "", "", ""
+    @emlRecordStep: "analysis", emlPhrase.result$, .caveat$, .code$, .api$
+
+    label END_RECORD_ANALYSIS_STEP
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordDrawStep: .objectId, .label$, .detail$, .caveat$, .code$, .api$
+#
+# The draw-layer twin of @emlRecordAnalysisStep, and it exists for the same
+# reason: sixteen draw procedures, and writing sixteen recorders that differ
+# only in which locals they read is how a recorder drifts away from the
+# figures it records.
+#
+# NO REFUSAL PATH. A draw procedure that cannot draw does not return an error
+# string -- it draws the labelled empty frame and says so on the figure, which
+# is D111's whole design and is asserted by v27. There is nothing here for a
+# refusal branch to catch.
+# ----------------------------------------------------------------------------
+procedure emlRecordDrawStep: .objectId, .label$, .detail$, .caveat$, .code$,
+    ... .api$
+    @emlRecordInit
+    if emlRecordActive = 0
+        goto END_RECORD_DRAW_STEP
+    endif
+
+    @emlRecordSource: .objectId
+    @emlPhrase: "drawstep.intent", .label$, .detail$, "", "", "", ""
+    @emlRecordStep: "draw", emlPhrase.result$, .caveat$, .code$, .api$
+
+    label END_RECORD_DRAW_STEP
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
 # Add one step. Every argument is already-resolved text; this procedure
 # composes nothing and decides nothing.
