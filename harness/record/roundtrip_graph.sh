@@ -86,8 +86,15 @@ Save as 300-dpi PNG file: "$OUT/leg1.png"
 @emlRecordDiscard
 PRAAT
 
+# A HEADER LINE FIRST, so the transcript is never a zero-byte file. A leg
+# that produces no output is the normal case here -- the draw path is quiet
+# when nothing goes wrong -- and an empty file is indistinguishable from a
+# missing one to a reader, cannot be uploaded through GitHub's web form at
+# all, and reads in a diff as though the capture had been removed.
+echo "# roundtrip_graph leg 1 -- record: transcript follows" \
+    > "$OUT/leg1_stderr.txt"
 ( cd "$ROOT" && timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" \
-    --run "$OUT/record_leg.praat" >"$OUT/leg1_stderr.txt" 2>&1 )
+    --run "$OUT/record_leg.praat" >>"$OUT/leg1_stderr.txt" 2>&1 )
 if [[ ! -f "$OUT/leg1.png" || ! -f "$OUT/emitted.praat" ]]; then
     echo "FAIL: leg 1 produced no figure or no emitted script"
     tail -20 "$OUT/leg1_stderr.txt"
@@ -123,8 +130,10 @@ include $OUT/emitted.praat
 Save as 300-dpi PNG file: "$OUT/leg2.png"
 PRAAT
 
+echo "# roundtrip_graph leg 2 -- replay: transcript follows" \
+    > "$OUT/leg2_stderr.txt"
 ( cd "$ROOT" && timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" \
-    --run "$OUT/replay_leg.praat" >"$OUT/leg2_stderr.txt" 2>&1 )
+    --run "$OUT/replay_leg.praat" >>"$OUT/leg2_stderr.txt" 2>&1 )
 if [[ ! -f "$OUT/leg2.png" ]]; then
     echo "FAIL: the emitted script drew no figure"
     tail -20 "$OUT/leg2_stderr.txt"
