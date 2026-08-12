@@ -141,6 +141,24 @@ procedure emlRecordInit
     if not variableExists ("emlRecordAmbiguousName")
         emlRecordAmbiguousName = 0
     endif
+    if not variableExists ("emlRecordMetaId")
+        emlRecordMetaId = 0
+    endif
+    ; THE AUTO-CONVERTED INTERMEDIATE, and why this is script-scope state and
+    ; not a row in the meta object. @emlGraphsWorkflow converts and draws in
+    ; ONE menu invocation -- the Sound becomes a Pitch, the contour is drawn,
+    ; the Pitch is removed -- so the pairing never crosses a script boundary.
+    ; Persisting it would let a stale id from an earlier command silently
+    ; claim the next draw.
+    if not variableExists ("emlRecordDerivedId")
+        emlRecordDerivedId = 0
+    endif
+    if not variableExists ("emlRecordDerivedFrom$")
+        emlRecordDerivedFrom$ = ""
+    endif
+    if not variableExists ("emlRecordStepDerived$")
+        emlRecordStepDerived$ = ""
+    endif
 
     ; ------------------------------------------------------------------
     ; RE-ATTACH TO A RECORDING LEFT BY AN EARLIER MENU INVOCATION.
@@ -173,8 +191,34 @@ procedure emlRecordInit
         endif
     endif
 
+    ; ------------------------------------------------------------------
+    ; THE SESSION'S METADATA IS AN OBJECT TOO, FOR EXACTLY THE SAME REASON.
+    ;
+    ; The buffer re-attaches above and the steps survive. Everything ABOUT
+    ; the session did not: emlRecordStamp$, emlRecordHeaderInput$ and its
+    ; shape are ordinary script variables, so a recording made the way a
+    ; user makes one -- one menu command per operation -- reached flush with
+    ; every one of them at its default. Measured 12 Aug 2026: a 23-step
+    ; recording emitted an empty timestamp and the header block
+    ;
+    ;     # NOT RECORDED. Nothing in this session named the object it
+    ;     # ran on ...
+    ;
+    ; while the manifest three lines below it named "Table voiceA". The file
+    ; contradicted itself, and every test passed because every test recorded
+    ; in ONE scope.
+    ;
+    ; So the same fix as the buffer: a second Table, re-attached by name, and
+    ; the globals HYDRATED from it below once their defaults are in place. A
+    ; field added later needs no new plumbing -- it is a row.
+    ; ------------------------------------------------------------------
+    if emlRecordMetaId = 0
+        nocheck selectObject: "Table emlRecordMeta"
+        if numberOfSelected () = 1
+            emlRecordMetaId = selected ("Table")
         endif
     endif
+
     if not variableExists ("emlRecordPluginRoot$")
         emlRecordPluginRoot$ = preferencesDirectory$ + "/plugin_EMLPraatTools"
     endif
@@ -196,6 +240,14 @@ procedure emlRecordInit
     if not variableExists ("emlRecordHeaderCols")
         emlRecordHeaderCols = 0
     endif
+    ; The shape as a READY SENTENCE rather than two numbers, because not every
+    ; object the plugin draws has one -- a Sound, a Pitch, a Spectrum and an
+    ; Ltas do not answer "Get number of rows". Empty means "this object type
+    ; has no row/column shape to report", which the renderer prints as nothing
+    ; rather than as "0 rows, 0 columns". See @emlRecordSource.
+    if not variableExists ("emlRecordHeaderShape$")
+        emlRecordHeaderShape$ = ""
+    endif
     if not variableExists ("emlRecordStamp$")
         emlRecordStamp$ = ""
     endif
@@ -207,6 +259,42 @@ procedure emlRecordInit
     endif
     if not variableExists ("emlRecordPraatVersion")
         emlRecordPraatVersion = praatVersion
+    endif
+
+    ; ---- HYDRATE FROM THE META OBJECT --------------------------------
+    ; After the defaults, never before: a field the session never set stays
+    ; at its default rather than becoming an empty string that overwrote it.
+    ; A stored value always wins, because the object outlives every scope
+    ; and a fresh scope's default is by definition the thing that knows less.
+    if emlRecordMetaId > 0
+        @emlRecordMetaGet: "stamp"
+        if emlRecordMetaGet.found = 1
+            emlRecordStamp$ = emlRecordMetaGet.result$
+        endif
+        @emlRecordMetaGet: "input"
+        if emlRecordMetaGet.found = 1
+            emlRecordHeaderInput$ = emlRecordMetaGet.result$
+        endif
+        @emlRecordMetaGet: "shape"
+        if emlRecordMetaGet.found = 1
+            emlRecordHeaderShape$ = emlRecordMetaGet.result$
+        endif
+        @emlRecordMetaGet: "rows"
+        if emlRecordMetaGet.found = 1
+            emlRecordHeaderRows = number (emlRecordMetaGet.result$)
+        endif
+        @emlRecordMetaGet: "cols"
+        if emlRecordMetaGet.found = 1
+            emlRecordHeaderCols = number (emlRecordMetaGet.result$)
+        endif
+        @emlRecordMetaGet: "sourceChanged"
+        if emlRecordMetaGet.found = 1
+            emlRecordSourceChanged = number (emlRecordMetaGet.result$)
+        endif
+        @emlRecordMetaGet: "tempPath"
+        if emlRecordMetaGet.found = 1
+            emlRecordTempPath$ = emlRecordMetaGet.result$
+        endif
     endif
     ; ------------------------------------------------------------------
     ; THE PHRASE TABLE, WHICH IS AN OBJECT TOO, AND WAS NEVER LOADED.
@@ -262,6 +350,107 @@ endproc
 # Outputs:
 #   .started  — 1 if a recording began, 0 if one was already running
 # ----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+# @emlRecordMetaGet: .key$   ->  .result$, .found
+# @emlRecordMetaSet: .key$, .value$
+#
+# The session's key/value store, held in a Table so that it outlives the
+# script scope that wrote it -- see the note in @emlRecordInit. A key/value
+# TABLE rather than one column per field on the buffer: the buffer's schema is
+# per-STEP and these are per-SESSION, and putting them there would repeat
+# every value on every row and invite the two to disagree.
+#
+# NEITHER CALLS @emlRecordInit. Init calls Get to hydrate, so a call back into
+# it here is a loop; both work from emlRecordMetaId directly and do nothing at
+# all when there is no meta object, which is the state before a recording
+# starts and after one is discarded.
+#
+# .found IS SEPARATE FROM .result$ because an empty string is a legitimate
+# stored value -- "this session set no stamp" and "this session has never been
+# asked" are different facts, and only the second may be overwritten by a
+# default.
+# ----------------------------------------------------------------------------
+procedure emlRecordMetaGet: .key$
+    .result$ = ""
+    .found = 0
+    if not variableExists ("emlRecordMetaId")
+        emlRecordMetaId = 0
+    endif
+    ; THE AUTO-CONVERTED INTERMEDIATE, and why this is script-scope state and
+    ; not a row in the meta object. @emlGraphsWorkflow converts and draws in
+    ; ONE menu invocation -- the Sound becomes a Pitch, the contour is drawn,
+    ; the Pitch is removed -- so the pairing never crosses a script boundary.
+    ; Persisting it would let a stale id from an earlier command silently
+    ; claim the next draw.
+    if not variableExists ("emlRecordDerivedId")
+        emlRecordDerivedId = 0
+    endif
+    if not variableExists ("emlRecordDerivedFrom$")
+        emlRecordDerivedFrom$ = ""
+    endif
+    if not variableExists ("emlRecordStepDerived$")
+        emlRecordStepDerived$ = ""
+    endif
+    if emlRecordMetaId = 0
+        goto END_RECORD_META_GET
+    endif
+    selectObject: emlRecordMetaId
+    .n = Get number of rows
+    for .i from 1 to .n
+        selectObject: emlRecordMetaId
+        .k$ = Get value: .i, "key"
+        if .k$ = .key$
+            .result$ = Get value: .i, "value"
+            .found = 1
+        endif
+    endfor
+    label END_RECORD_META_GET
+endproc
+
+
+procedure emlRecordMetaSet: .key$, .value$
+    if not variableExists ("emlRecordMetaId")
+        emlRecordMetaId = 0
+    endif
+    ; THE AUTO-CONVERTED INTERMEDIATE, and why this is script-scope state and
+    ; not a row in the meta object. @emlGraphsWorkflow converts and draws in
+    ; ONE menu invocation -- the Sound becomes a Pitch, the contour is drawn,
+    ; the Pitch is removed -- so the pairing never crosses a script boundary.
+    ; Persisting it would let a stale id from an earlier command silently
+    ; claim the next draw.
+    if not variableExists ("emlRecordDerivedId")
+        emlRecordDerivedId = 0
+    endif
+    if not variableExists ("emlRecordDerivedFrom$")
+        emlRecordDerivedFrom$ = ""
+    endif
+    if not variableExists ("emlRecordStepDerived$")
+        emlRecordStepDerived$ = ""
+    endif
+    if emlRecordMetaId = 0
+        goto END_RECORD_META_SET
+    endif
+    selectObject: emlRecordMetaId
+    .n = Get number of rows
+    .row = 0
+    for .i from 1 to .n
+        selectObject: emlRecordMetaId
+        .k$ = Get value: .i, "key"
+        if .k$ = .key$
+            .row = .i
+        endif
+    endfor
+    selectObject: emlRecordMetaId
+    if .row = 0
+        Append row
+        .row = Get number of rows
+        Set string value: .row, "key", .key$
+    endif
+    Set string value: .row, "value", .value$
+    label END_RECORD_META_SET
+endproc
+
+
 procedure emlRecordBegin: .tempFolder$
     @emlRecordInit
     .started = 0
@@ -278,8 +467,13 @@ procedure emlRecordBegin: .tempFolder$
         .keep = 1
     endif
     Create Table with column names: "emlRecordBuffer", 0,
-    ... "n kind intent caveat code result api paths source"
+    ... "n kind intent caveat code result api derived source"
     emlRecordBufferId = selected ("Table")
+
+    ; The per-session store. Created with the buffer and removed with it, so
+    ; "a recording exists" stays a single fact about the Objects window.
+    Create Table with column names: "emlRecordMeta", 0, "key value"
+    emlRecordMetaId = selected ("Table")
 
     ; The include block's path. Resolved at run time from
     ; preferencesDirectory$, then rewritten HOME-RELATIVE, because Praat's
@@ -301,6 +495,7 @@ procedure emlRecordBegin: .tempFolder$
     emlRecordN = 0
     emlRecordActive = 1
     emlRecordHeaderInput$ = ""
+    emlRecordHeaderShape$ = ""
     emlRecordSourceChanged = 0
     emlRecordTempPath$ = ""
     if .tempFolder$ <> ""
@@ -310,6 +505,28 @@ procedure emlRecordBegin: .tempFolder$
         appendFileLine: emlRecordTempPath$,
         ... "# are recorded, so a session lost to a crash is still readable."
     endif
+    @emlRecordMetaSet: "tempPath", emlRecordTempPath$
+
+    ; WHEN THE SESSION HAPPENED, STAMPED HERE AND NOT AT FLUSH.
+    ;
+    ; Nothing in the shipped plugin called @emlRecordHeader -- its only
+    ; callers were two phase1 tests and two roundtrip harnesses -- so every
+    ; recording a user could actually make emitted a header line with an
+    ; empty date on it. The stamp belongs to the moment recording STARTED,
+    ; which is here, and it goes straight into the meta object so that the
+    ; menu command that eventually saves the file can still read it.
+    ;
+    ; THE ENVIRONMENT OVERRIDE IS A TEST SEAM, and the same one EML_RECORD_OUT
+    ; already is. A recorder whose output cannot be diffed byte for byte
+    ; cannot be regression-tested at all, and every artefact this repository
+    ; commits is compared that way. An unset variable gives a real date, which
+    ; is what a user gets.
+    .stamp$ = environment$ ("EML_RECORD_STAMP")
+    if .stamp$ = ""
+        .stamp$ = date$ ()
+    endif
+    emlRecordStamp$ = .stamp$
+    @emlRecordMetaSet: "stamp", .stamp$
     .started = 1
 
     label RECORD_BEGIN_DONE
@@ -327,9 +544,20 @@ procedure emlRecordDiscard
     if emlRecordBufferId > 0
         nocheck removeObject: emlRecordBufferId
     endif
+    ; The meta object goes with it. Leaving it behind would let the NEXT
+    ; recording inherit this one's timestamp and input name through the
+    ; re-attach in @emlRecordInit -- provenance from a session that was
+    ; deliberately thrown away.
+    if emlRecordMetaId > 0
+        nocheck removeObject: emlRecordMetaId
+    endif
+    emlRecordMetaId = 0
     emlRecordBufferId = 0
     emlRecordN = 0
     emlRecordActive = 0
+    emlRecordStamp$ = ""
+    emlRecordHeaderInput$ = ""
+    emlRecordHeaderShape$ = ""
 endproc
 
 
@@ -346,7 +574,14 @@ procedure emlRecordHeader: .inputName$, .nRows, .nCols, .stamp$
     emlRecordHeaderInput$ = .inputName$
     emlRecordHeaderRows = .nRows
     emlRecordHeaderCols = .nCols
+    emlRecordHeaderShape$ = string$ (.nRows) + " rows, "
+    ... + string$ (.nCols) + " columns"
     emlRecordStamp$ = .stamp$
+    @emlRecordMetaSet: "input", .inputName$
+    @emlRecordMetaSet: "rows", string$ (.nRows)
+    @emlRecordMetaSet: "cols", string$ (.nCols)
+    @emlRecordMetaSet: "shape", emlRecordHeaderShape$
+    @emlRecordMetaSet: "stamp", .stamp$
 endproc
 
 
@@ -396,10 +631,75 @@ procedure emlRecordSource: .tableId
     ; fourth type needs no change here.
     .name$ = selected$ ()
 
-    ; Rows and columns are for the header note only. Every accepted type
-    ; answers both, so this needs no branch either.
-    .rows = Get number of rows
-    .cols = Get number of columns
+    ; AN AUTO-CONVERTED OBJECT IS RECORDED AS ITS SOURCE, and this is the
+    ; whole point of the convert step (author, 12 Aug 2026: "fo, waveform,
+    ; spectrum, and LTAS will all also run from just a sound. They auto
+    ; convert").
+    ;
+    ; @emlGraphsWorkflow turns a selected Sound into a Pitch, a Spectrum or
+    ; an Ltas, hands THAT to the draw procedure, and REMOVES it at the end of
+    ; the pass. The capture hook lives inside the draw procedure, so without
+    ; this the recorder wrote "Pitch tone" into the manifest -- an object the
+    ; user never created and which does not exist by the time they re-run the
+    ; file. Every acoustic figure recorded from the menu emitted a script
+    ; that could not run, and instructed the reader to open an object that
+    ; had been deleted.
+    ;
+    ; So the step is attributed to the Sound, and flagged: the renderer emits
+    ; no select for it, because the convert step immediately above left the
+    ; derived object in `data`.
+    .fromConversion = 0
+    if emlRecordDerivedId > 0 and .tableId = emlRecordDerivedId
+        .fromConversion = 1
+        .name$ = emlRecordDerivedFrom$
+        emlRecordStepDerived$ = "1"
+    endif
+
+    ; ROWS AND COLUMNS ARE NOT UNIVERSAL, AND ASSUMING THEY WERE KILLED FOUR
+    ; OPERATIONS (12 Aug 2026).
+    ;
+    ; This block used to read `Get number of rows` unconditionally with a
+    ; comment saying every accepted type answers it. That is true of the three
+    ; TABULAR types -- Table, TableOfReal, Matrix -- and false of the objects
+    ; the acoustic draw procedures take. @emlDrawWaveform is handed a Sound;
+    ; @emlDrawF0Contour a Pitch; @emlDrawSpectrum a Spectrum; @emlDrawLTAS an
+    ; Ltas. None answers "Get number of rows", so with a recording running,
+    ; each of those four draws died inside the RECORDER: "Command Get number
+    ; of rows not available for current selection", from a procedure whose
+    ; whole contract is to be inert.
+    ;
+    ; It was invisible standalone. With no recording active @emlRecordSource
+    ; returns at the guard above, so every unit test of the draw path passed;
+    ; only harness/record_e2e, which switches recording ON and then draws,
+    ; reaches this line with a Sound selected.
+    ;
+    ; `nocheck` IS NOT THE FIX and was tried first: `nocheck .rows = Get
+    ; number of rows` suppresses the ASSIGNMENT as well as the error, so the
+    ; variable keeps its prior value and a Sound silently inherits the last
+    ; Table's dimensions. The type is therefore read from the name -- the
+    ; first word of `selected$ ()` -- and the shape is reported only for the
+    ; types that have one. An object with no row/column shape is not a
+    ; failure; it just has nothing to say here.
+    .space = index (.name$, " ")
+    if .space > 0
+        .type$ = left$ (.name$, .space - 1)
+    else
+        .type$ = .name$
+    endif
+
+    .rows = 0
+    .cols = 0
+    .shape$ = ""
+    if .fromConversion = 1
+        ; The selected object is the intermediate, not the source, so its
+        ; shape would describe something the record does not name.
+        .type$ = ""
+    endif
+    if .type$ = "Table" or .type$ = "TableOfReal" or .type$ = "Matrix"
+        .rows = Get number of rows
+        .cols = Get number of columns
+        .shape$ = string$ (.rows) + " rows, " + string$ (.cols) + " columns"
+    endif
 
     ; FIRST WINS, AND THE REST IS NAMED.
     ;
@@ -418,9 +718,17 @@ procedure emlRecordSource: .tableId
         emlRecordHeaderInput$ = .name$
         emlRecordHeaderRows = .rows
         emlRecordHeaderCols = .cols
+        emlRecordHeaderShape$ = .shape$
+        ; Into the object, not just the variable: the next menu command runs
+        ; in a scope where none of these exist.
+        @emlRecordMetaSet: "input", .name$
+        @emlRecordMetaSet: "rows", string$ (.rows)
+        @emlRecordMetaSet: "cols", string$ (.cols)
+        @emlRecordMetaSet: "shape", .shape$
     elsif emlRecordHeaderInput$ <> .name$
         .changed = 1
         emlRecordSourceChanged = 1
+        @emlRecordMetaSet: "sourceChanged", "1"
     endif
 
     ; THE SOURCE OF THE STEP ABOUT TO BE RECORDED.
@@ -444,17 +752,28 @@ procedure emlRecordSource: .tableId
     ; silently picks the MOST RECENT. Here the id is known, so the collision
     ; can be seen; in the emitted file it cannot. Counted now, reported by
     ; the renderer.
+    ;
+    ; COMPARED AGAINST .name$ WHOLE, and it used to read `"Table " + .name$`.
+    ; That was correct while .name$ came from `selected$ ("Table")` and held
+    ; the bare name; it stopped being correct the moment .name$ became
+    ; `selected$ ()`, which already carries the type. The comparison then
+    ; asked whether any object was called "Table Table voiceA" and the answer
+    ; was always no, so the duplicate-name warning could not fire at all.
     .dupes = 0
+    if .fromConversion = 1
+        goto END_RECORD_SOURCE_DUPES
+    endif
     select all
     .total = numberOfSelected ()
     for .o from 1 to .total
-        if selected$ (.o) = "Table " + .name$
+        if selected$ (.o) = .name$
             .dupes = .dupes + 1
         endif
     endfor
     if .dupes > 1
         emlRecordAmbiguousName = 1
     endif
+    label END_RECORD_SOURCE_DUPES
     selectObject: .tableId
 
     label END_RECORD_SOURCE
@@ -535,6 +854,68 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlRecordConvert: .sourceId, .targetId, .code$, .why$
+# The auto-conversion the graphs form performs, recorded as its own step.
+#
+# WHY THIS EXISTS. Four of the plugin's figures are drawn from objects the
+# user does not have to make. Select a Sound and ask for an F0 contour, a
+# spectrum or an LTAS and @emlGraphsWorkflow converts it, draws, and REMOVES
+# the intermediate at the end of the pass. That is the documented behaviour
+# and it is the behaviour most users will meet, since a Sound is what comes
+# off a recorder.
+#
+# The recorder's capture hook is inside the DRAW procedure, so what it saw
+# was the intermediate: every acoustic figure recorded from the menu wrote
+# `data1$ = "Pitch tone"` into the manifest and told the reader to have that
+# object open. It had been deleted by the plugin itself moments earlier, and
+# the user never made it. The emitted script could not run.
+#
+# Recording the conversion fixes both halves at once: the manifest names the
+# SOUND, which is the thing the user actually selected and still has, and the
+# emitted file carries the command that turns it into what the figure needs.
+# The reader can also SEE the conversion, with its parameters, which is worth
+# more than the figure line on its own -- the pitch floor and ceiling used
+# are a methods-section fact.
+#
+# Arguments:
+#   .sourceId   the object the user selected (the Sound)
+#   .targetId   the object the conversion produced (the Pitch/Spectrum/Ltas)
+#   .code$      the conversion, written so that it assigns to `data`
+#   .why$       one line for the reader: what this is for
+# ----------------------------------------------------------------------------
+procedure emlRecordConvert: .sourceId, .targetId, .code$, .why$
+    @emlRecordInit
+    if emlRecordActive = 0
+        goto END_RECORD_CONVERT
+    endif
+
+    ; Cleared FIRST, so a conversion recorded while a previous one is still
+    ; registered attributes itself to the right source. The pairing lasts one
+    ; menu invocation and must not outlive it.
+    emlRecordDerivedId = 0
+    emlRecordDerivedFrom$ = ""
+
+    @emlRecordSource: .sourceId
+    .from$ = emlRecordCurrentSource$
+
+    selectObject: .targetId
+    .to$ = selected$ ()
+
+    @emlRecordStep: "convert",
+    ... "Converted " + .from$ + " to " + .to$ + ".", .why$, .code$,
+    ... "In the GUI: this happens automatically when you ask for a figure "
+    ... + "that needs it."
+
+    ; Registered only AFTER the step is recorded: @emlRecordStep reads
+    ; emlRecordStepDerived$, and the conversion itself ran on the SOURCE.
+    emlRecordDerivedId = .targetId
+    emlRecordDerivedFrom$ = .from$
+
+    label END_RECORD_CONVERT
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
 # Add one step. Every argument is already-resolved text; this procedure
 # composes nothing and decides nothing.
@@ -572,7 +953,18 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     Set string value: .row, "code", .codeOut$
     Set string value: .row, "result", ""
     Set string value: .row, "api", .api$
-    Set string value: .row, "paths", ""
+    ; DERIVED: "1" when the object this step ran on was AUTO-CREATED from
+    ; something the user selected -- the graphs form converts a Sound to a
+    ; Pitch, a Spectrum or an Ltas, draws, and then REMOVES the intermediate.
+    ; The renderer must not emit a manifest select for such a step: the
+    ; object it names no longer exists by the time anyone re-runs the file,
+    ; and it never existed in the user's session as something they made. The
+    ; preceding convert step left it in `data`, which is what the step uses.
+    ;
+    ; (This column was "paths" -- written empty on every row since the path
+    ; registry was deleted on 9 Aug 2026, and read by nothing.)
+    Set string value: .row, "derived", emlRecordStepDerived$
+    emlRecordStepDerived$ = "" 
     ; The object this step ran on, so the renderer can emit a select where
     ; it changes. Empty when a caller recorded a step without a source --
     ; a refusal before anything was read -- and the renderer leaves those
@@ -881,9 +1273,11 @@ procedure emlRecordRender
     .text$ = .text$ + "# " + emlRecordStamp$
     ... + "  --  recorded on Praat " + emlRecordPraatVersion$ + newline$
     if emlRecordHeaderInput$ <> ""
-        .text$ = .text$ + "# Input: " + emlRecordHeaderInput$ + " -- "
-        ... + string$ (emlRecordHeaderRows) + " rows, "
-        ... + string$ (emlRecordHeaderCols) + " columns" + newline$
+        .text$ = .text$ + "# Input: " + emlRecordHeaderInput$
+        if emlRecordHeaderShape$ <> ""
+            .text$ = .text$ + " -- " + emlRecordHeaderShape$
+        endif
+        .text$ = .text$ + newline$
     endif
     .text$ = .text$ + .bar$ + newline$ + newline$
 
@@ -1007,8 +1401,10 @@ procedure emlRecordRender
     .text$ = .text$ + "# THE OBJECT" + newline$
     if emlRecordHeaderInput$ <> ""
         .text$ = .text$ + "# Recorded against: " + emlRecordHeaderInput$
-        ... + " -- " + string$ (emlRecordHeaderRows) + " rows, "
-        ... + string$ (emlRecordHeaderCols) + " columns." + newline$
+        if emlRecordHeaderShape$ <> ""
+            .text$ = .text$ + " -- " + emlRecordHeaderShape$
+        endif
+        .text$ = .text$ + "." + newline$
     else
         .text$ = .text$
         ... + "# NOT RECORDED. Nothing in this session named the object it"
@@ -1079,6 +1475,7 @@ procedure emlRecordRender
         .result$ = Get value: .s, "result"
         .api$ = Get value: .s, "api"
         .source$ = Get value: .s, "source"
+        .derived$ = Get value: .s, "derived"
 
         ; A refused step and a successful one must be distinguishable at a
         ; glance, so the separator carries the kind rather than only a number.
@@ -1108,7 +1505,10 @@ procedure emlRecordRender
         ; Two idempotent lines per step buys immunity from that whole class,
         ; and the variable is `data` rather than `table` because the object
         ; may be a Matrix or a TableOfReal.
-        if .source$ <> ""
+        ; A step on an auto-converted object selects NOTHING: the convert
+        ; step above it left that object in `data`, and the manifest names
+        ; the Sound it came from, not the intermediate that no longer exists.
+        if .source$ <> "" and .derived$ <> "1"
             .slot = 0
             for .k from 1 to .manifestN
                 if emlRecordTableManifest.name$[.k] = .source$

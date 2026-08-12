@@ -312,14 +312,22 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
     ; vanishing -- see @emlRecordAnalysisStep.
-    @emlRecordAnalysisStep: .tableId, "Two-group comparison",
-    ... .dataCol$ + " by " + .groupCol$ + ", " + .testType$,
-    ... "Equal-variance assumption: " + if .equalVar then "pooled" else "Welch" fi + ".",
-    ... "@emlRunTwoGroupAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, """ + .testType$ + """, " + string$ (.equalVar),
-    ... "In the GUI: New > EML Tools > Compare two groups...",
-    ... .error$
+    ; PRESENT, INITIALISED, RECORDING -- the same three-part guard every
+    ; draw hook uses, and it was missing here. eml-analysis.praat is
+    ; loadable WITHOUT the recorder: plugin/dev/tests/phase2 includes the
+    ; stats tree and not eml-record.praat, and an unguarded call killed
+    ; that suite outright with Procedure "emlRecordAnalysisStep" not
+    ; found. emlRecordLoaded is set at LOAD time, so a caller that never
+    ; loaded the recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordAnalysisStep: .tableId, "Two-group comparison",
+        ... .dataCol$ + " by " + .groupCol$ + ", " + .testType$,
+        ... "Equal-variance assumption: " + if .equalVar then "pooled" else "Welch" fi + ".",
+        ... "@emlRunTwoGroupAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, """ + .testType$ + """, " + string$ (.equalVar),
+        ... "In the GUI: New > EML Tools > Compare two groups...",
+        ... .error$
+    endif
 
-    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -431,7 +439,16 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     ; hazard validate/REGISTRY.md already records -- "Soprano" matches five
     ; lines in the v09 capture and seven in v10.
     ; ---------------------------------------------------------------------
-    @emlRecordAnova: .tableId, .dataCol$, .groupCol$, .doTukey, .error$
+    ; GUARDED ON EXISTENCE, not just on state. @emlRecordAnova opens with
+    ; @emlRecordInit, so calling it unconditionally made this whole file
+    ; require eml-record.praat -- the same shipped-API break the violin hook
+    ; documents, and the one that took plugin/dev/tests/phase2 down with
+    ; Procedure "emlRecordAnalysisStep" not found. Praat only errors on an
+    ; undefined procedure when it EXECUTES the call, so a call inside a false
+    ; branch costs nothing.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordAnova: .tableId, .dataCol$, .groupCol$, .doTukey, .error$
+    endif
 
     selectObject: .tableId
 endproc
@@ -653,14 +670,22 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
     ; vanishing -- see @emlRecordAnalysisStep.
-    @emlRecordAnalysisStep: .tableId, "Kruskal-Wallis",
-    ... .dataCol$ + " by " + .groupCol$,
-    ... "Rank-based; it does not assume normality and does not test it.",
-    ... "@emlRunKWAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, " + string$ (.doDunn) + ", """ + .adjMethod$ + """",
-    ... "In the GUI: New > EML Tools > Compare k groups (Kruskal-Wallis)...",
-    ... .error$
+    ; PRESENT, INITIALISED, RECORDING -- the same three-part guard every
+    ; draw hook uses, and it was missing here. eml-analysis.praat is
+    ; loadable WITHOUT the recorder: plugin/dev/tests/phase2 includes the
+    ; stats tree and not eml-record.praat, and an unguarded call killed
+    ; that suite outright with Procedure "emlRecordAnalysisStep" not
+    ; found. emlRecordLoaded is set at LOAD time, so a caller that never
+    ; loaded the recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordAnalysisStep: .tableId, "Kruskal-Wallis",
+        ... .dataCol$ + " by " + .groupCol$,
+        ... "Rank-based; it does not assume normality and does not test it.",
+        ... "@emlRunKWAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, " + string$ (.doDunn) + ", """ + .adjMethod$ + """",
+        ... "In the GUI: New > EML Tools > Compare k groups (Kruskal-Wallis)...",
+        ... .error$
+    endif
 
-    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -771,14 +796,22 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
     ; vanishing -- see @emlRecordAnalysisStep.
-    @emlRecordAnalysisStep: .tableId, "Pairwise comparisons",
-    ... .dataCol$ + " by " + .groupCol$ + ", " + .test$ + ", " + .adjMethod$,
-    ... "The adjustment named here was APPLIED, not only labelled.",
-    ... "@emlRunPairwiseAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, """ + .test$ + """, """ + .adjMethod$ + """",
-    ... "In the GUI: New > EML Tools > Pairwise comparisons...",
-    ... .error$
+    ; PRESENT, INITIALISED, RECORDING -- the same three-part guard every
+    ; draw hook uses, and it was missing here. eml-analysis.praat is
+    ; loadable WITHOUT the recorder: plugin/dev/tests/phase2 includes the
+    ; stats tree and not eml-record.praat, and an unguarded call killed
+    ; that suite outright with Procedure "emlRecordAnalysisStep" not
+    ; found. emlRecordLoaded is set at LOAD time, so a caller that never
+    ; loaded the recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordAnalysisStep: .tableId, "Pairwise comparisons",
+        ... .dataCol$ + " by " + .groupCol$ + ", " + .test$ + ", " + .adjMethod$,
+        ... "The adjustment named here was APPLIED, not only labelled.",
+        ... "@emlRunPairwiseAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, """ + .test$ + """, """ + .adjMethod$ + """",
+        ... "In the GUI: New > EML Tools > Pairwise comparisons...",
+        ... .error$
+    endif
 
-    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -1458,22 +1491,18 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
-    # Save current Info window content before Report two-way anova:
-    # clears it (Praat's built-in command uses MelderInfo_open)
-    .savedInfo$ = info$ ()
-
+    # NO INFO-WINDOW SAVE/RESTORE HERE ANY MORE (12 Aug 2026). This procedure
+    # used to snapshot info$ () before @emlTwoWayAnova and replay it with
+    # writeInfo: afterwards, because Praat's built-in `Report two-way anova`
+    # clears the Info window. Under `praat --run` that replay printed the
+    # whole preceding transcript a second time -- Info is streamed to stdout
+    # in batch and nothing can be un-printed. @emlTwoWayAnova now ASSIGNS the
+    # built-in's result instead of running it bare, which never touches the
+    # Info window, so there is nothing to put back. See the note there.
     @emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     if emlTwoWayAnova.error$ <> ""
         .error$ = emlTwoWayAnova.error$
         goto END_TWOWAY
-    endif
-
-    # Restore previous Info window content.
-    # Report two-way anova: cleared it; values have been parsed.
-    if .savedInfo$ <> "" and .savedInfo$ <> newline$
-        writeInfo: .savedInfo$
-    else
-        writeInfoLine: ""
     endif
 
     @emlCSVInit
@@ -1492,14 +1521,22 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
     ; vanishing -- see @emlRecordAnalysisStep.
-    @emlRecordAnalysisStep: .tableId, "Two-way ANOVA",
-    ... .dataCol$ + " by " + .factor1$ + " and " + .factor2$,
-    ... "Type of sums of squares and the balance of the design both matter here; see the report.",
-    ... "@emlRunTwoWayAnalysis: data, """ + .dataCol$ + """, """ + .factor1$ + """, """ + .factor2$ + """",
-    ... "In the GUI: New > EML Tools > Compare two-way (ANOVA)...",
-    ... .error$
+    ; PRESENT, INITIALISED, RECORDING -- the same three-part guard every
+    ; draw hook uses, and it was missing here. eml-analysis.praat is
+    ; loadable WITHOUT the recorder: plugin/dev/tests/phase2 includes the
+    ; stats tree and not eml-record.praat, and an unguarded call killed
+    ; that suite outright with Procedure "emlRecordAnalysisStep" not
+    ; found. emlRecordLoaded is set at LOAD time, so a caller that never
+    ; loaded the recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordAnalysisStep: .tableId, "Two-way ANOVA",
+        ... .dataCol$ + " by " + .factor1$ + " and " + .factor2$,
+        ... "Type of sums of squares and the balance of the design both matter here; see the report.",
+        ... "@emlRunTwoWayAnalysis: data, """ + .dataCol$ + """, """ + .factor1$ + """, """ + .factor2$ + """",
+        ... "In the GUI: New > EML Tools > Compare two-way (ANOVA)...",
+        ... .error$
+    endif
 
-    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -1615,14 +1652,22 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
     ; vanishing -- see @emlRecordAnalysisStep.
-    @emlRecordAnalysisStep: .tableId, "Paired comparison",
-    ... .col1$ + " vs " + .col2$ + ", " + .testType$,
-    ... "Rows with a missing value in either column are dropped pairwise.",
-    ... "@emlRunPairedAnalysis: data, """ + .col1$ + """, """ + .col2$ + """, """ + .testType$ + """",
-    ... "In the GUI: New > EML Tools > Compare paired/repeated...",
-    ... .error$
+    ; PRESENT, INITIALISED, RECORDING -- the same three-part guard every
+    ; draw hook uses, and it was missing here. eml-analysis.praat is
+    ; loadable WITHOUT the recorder: plugin/dev/tests/phase2 includes the
+    ; stats tree and not eml-record.praat, and an unguarded call killed
+    ; that suite outright with Procedure "emlRecordAnalysisStep" not
+    ; found. emlRecordLoaded is set at LOAD time, so a caller that never
+    ; loaded the recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordAnalysisStep: .tableId, "Paired comparison",
+        ... .col1$ + " vs " + .col2$ + ", " + .testType$,
+        ... "Rows with a missing value in either column are dropped pairwise.",
+        ... "@emlRunPairedAnalysis: data, """ + .col1$ + """, """ + .col2$ + """, """ + .testType$ + """",
+        ... "In the GUI: New > EML Tools > Compare paired/repeated...",
+        ... .error$
+    endif
 
-    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -1766,14 +1811,22 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
     ; vanishing -- see @emlRecordAnalysisStep.
-    @emlRecordAnalysisStep: .tableId, "Correlation",
-    ... .colX$ + " with " + .colY$ + ", " + .testType$,
-    ... "Correlation is not causation, and a single coefficient hides the shape of the cloud.",
-    ... "@emlRunCorrelationAnalysis: data, """ + .colX$ + """, """ + .colY$ + """, """ + .testType$ + """",
-    ... "In the GUI: New > EML Tools > Correlate two columns...",
-    ... .error$
+    ; PRESENT, INITIALISED, RECORDING -- the same three-part guard every
+    ; draw hook uses, and it was missing here. eml-analysis.praat is
+    ; loadable WITHOUT the recorder: plugin/dev/tests/phase2 includes the
+    ; stats tree and not eml-record.praat, and an unguarded call killed
+    ; that suite outright with Procedure "emlRecordAnalysisStep" not
+    ; found. emlRecordLoaded is set at LOAD time, so a caller that never
+    ; loaded the recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordAnalysisStep: .tableId, "Correlation",
+        ... .colX$ + " with " + .colY$ + ", " + .testType$,
+        ... "Correlation is not causation, and a single coefficient hides the shape of the cloud.",
+        ... "@emlRunCorrelationAnalysis: data, """ + .colX$ + """, """ + .colY$ + """, """ + .testType$ + """",
+        ... "In the GUI: New > EML Tools > Correlate two columns...",
+        ... .error$
+    endif
 
-    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -1836,14 +1889,22 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
     ; vanishing -- see @emlRecordAnalysisStep.
-    @emlRecordAnalysisStep: .tableId, "Descriptive statistics",
-    ... .dataCol$,
-    ... "Descriptives only; no test was run and no assumption was checked.",
-    ... "@emlRunDescriptiveAnalysis: data, """ + .dataCol$ + """",
-    ... "In the GUI: New > EML Tools > Describe Table column...",
-    ... .error$
+    ; PRESENT, INITIALISED, RECORDING -- the same three-part guard every
+    ; draw hook uses, and it was missing here. eml-analysis.praat is
+    ; loadable WITHOUT the recorder: plugin/dev/tests/phase2 includes the
+    ; stats tree and not eml-record.praat, and an unguarded call killed
+    ; that suite outright with Procedure "emlRecordAnalysisStep" not
+    ; found. emlRecordLoaded is set at LOAD time, so a caller that never
+    ; loaded the recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordAnalysisStep: .tableId, "Descriptive statistics",
+        ... .dataCol$,
+        ... "Descriptives only; no test was run and no assumption was checked.",
+        ... "@emlRunDescriptiveAnalysis: data, """ + .dataCol$ + """",
+        ... "In the GUI: New > EML Tools > Describe Table column...",
+        ... .error$
+    endif
 
-    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -1957,12 +2018,21 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
     ; vanishing -- see @emlRecordAnalysisStep.
-    @emlRecordAnalysisStep: .tableId, "Linear regression",
-    ... .depCol$ + " on " + .predCol$,
-    ... "Residual diagnostics are not run on this path.",
-    ... "@emlRunRegressionAnalysis: data, """ + .depCol$ + """, """ + .predCol$ + """",
-    ... "In the GUI: New > EML Tools > Linear regression...",
-    ... .error$
+    ; PRESENT, INITIALISED, RECORDING -- the same three-part guard every
+    ; draw hook uses, and it was missing here. eml-analysis.praat is
+    ; loadable WITHOUT the recorder: plugin/dev/tests/phase2 includes the
+    ; stats tree and not eml-record.praat, and an unguarded call killed
+    ; that suite outright with Procedure "emlRecordAnalysisStep" not
+    ; found. emlRecordLoaded is set at LOAD time, so a caller that never
+    ; loaded the recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordAnalysisStep: .tableId, "Linear regression",
+        ... .depCol$ + " on " + .predCol$,
+        ... "Residual diagnostics are not run on this path.",
+        ... "@emlRunRegressionAnalysis: data, """ + .depCol$ + """, """ + .predCol$ + """",
+        ... "In the GUI: New > EML Tools > Linear regression...",
+        ... .error$
+    endif
 
     selectObject: .tableId
 endproc
@@ -2198,14 +2268,22 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
     ; vanishing -- see @emlRecordAnalysisStep.
-    @emlRecordAnalysisStep: .tableId, "Normality",
-    ... .dataCol$ + ", " + .testType$,
-    ... "A normality test answers a question about the sample, not a licence for a later test.",
-    ... "@emlRunNormalityAnalysis: data, """ + .dataCol$ + """, """ + .testType$ + """",
-    ... "In the GUI: New > EML Tools > Check normality (all columns)...",
-    ... .error$
+    ; PRESENT, INITIALISED, RECORDING -- the same three-part guard every
+    ; draw hook uses, and it was missing here. eml-analysis.praat is
+    ; loadable WITHOUT the recorder: plugin/dev/tests/phase2 includes the
+    ; stats tree and not eml-record.praat, and an unguarded call killed
+    ; that suite outright with Procedure "emlRecordAnalysisStep" not
+    ; found. emlRecordLoaded is set at LOAD time, so a caller that never
+    ; loaded the recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordAnalysisStep: .tableId, "Normality",
+        ... .dataCol$ + ", " + .testType$,
+        ... "A normality test answers a question about the sample, not a licence for a later test.",
+        ... "@emlRunNormalityAnalysis: data, """ + .dataCol$ + """, """ + .testType$ + """",
+        ... "In the GUI: New > EML Tools > Check normality (all columns)...",
+        ... .error$
+    endif
 
-    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -2221,19 +2299,34 @@ procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measu
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
     emlResult_declared = 0
-    .error$ = "Not yet implemented — scheduled for Phase 4."
+    ; ASCII HYPHENS, NOT AN EM DASH, and the reason is Praat's file writer.
+    ; Praat writes a text file as UTF-16 the moment its content contains one
+    ; non-ASCII character. This string reaches a RECORDED SCRIPT verbatim as
+    ; the refusal note for the step, so a session that touched the LMM path
+    ; produced a UTF-16 .praat file -- runnable, but undiffable in git and
+    ; unreadable by anything that assumes bytes. One em dash, one encoding.
+    .error$ = "Not yet implemented -- scheduled for Phase 4."
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
     ; vanishing -- see @emlRecordAnalysisStep.
-    @emlRecordAnalysisStep: .tableId, "Reliability",
-    ... .measure$ + " over " + .raterCols$ + ", subject " + .subjectCol$,
-    ... "The ICC form and the scale of interest are choices; both are stated in the report.",
-    ... "@emlRunReliabilityAnalysis: data, """ + .subjectCol$ + """, """ + .raterCols$ + """, """ + .measure$ + """, """ + .scale$ + """",
-    ... "In the GUI: New > EML Tools > Reliability...",
-    ... .error$
+    ; PRESENT, INITIALISED, RECORDING -- the same three-part guard every
+    ; draw hook uses, and it was missing here. eml-analysis.praat is
+    ; loadable WITHOUT the recorder: plugin/dev/tests/phase2 includes the
+    ; stats tree and not eml-record.praat, and an unguarded call killed
+    ; that suite outright with Procedure "emlRecordAnalysisStep" not
+    ; found. emlRecordLoaded is set at LOAD time, so a caller that never
+    ; loaded the recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordAnalysisStep: .tableId, "Reliability",
+        ... .measure$ + " over " + .raterCols$ + ", subject " + .subjectCol$,
+        ... "The ICC form and the scale of interest are choices; both are stated in the report.",
+        ... "@emlRunReliabilityAnalysis: data, """ + .subjectCol$ + """, """ + .raterCols$ + """, """ + .measure$ + """, """ + .scale$ + """",
+        ... "In the GUI: New > EML Tools > Reliability...",
+        ... .error$
+    endif
 
     selectObject: .tableId
 endproc
@@ -2729,14 +2822,22 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
     ; vanishing -- see @emlRecordAnalysisStep.
-    @emlRecordAnalysisStep: .tableId, "Repeated-measures ANOVA",
-    ... .conditionCols$ + ", subject " + .subjectCol$,
-    ... "Sphericity is corrected, not assumed; the report names the correction.",
-    ... "@emlRunRepeatedMeasuresAnalysis: data, """ + .subjectCol$ + """, """ + .conditionCols$ + """, " + string$ (.doPostHoc) + ", """ + .adjMethod$ + """",
-    ... "In the GUI: New > EML Tools > Compare paired/repeated...",
-    ... .error$
+    ; PRESENT, INITIALISED, RECORDING -- the same three-part guard every
+    ; draw hook uses, and it was missing here. eml-analysis.praat is
+    ; loadable WITHOUT the recorder: plugin/dev/tests/phase2 includes the
+    ; stats tree and not eml-record.praat, and an unguarded call killed
+    ; that suite outright with Procedure "emlRecordAnalysisStep" not
+    ; found. emlRecordLoaded is set at LOAD time, so a caller that never
+    ; loaded the recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordAnalysisStep: .tableId, "Repeated-measures ANOVA",
+        ... .conditionCols$ + ", subject " + .subjectCol$,
+        ... "Sphericity is corrected, not assumed; the report names the correction.",
+        ... "@emlRunRepeatedMeasuresAnalysis: data, """ + .subjectCol$ + """, """ + .conditionCols$ + """, " + string$ (.doPostHoc) + ", """ + .adjMethod$ + """",
+        ... "In the GUI: New > EML Tools > Compare paired/repeated...",
+        ... .error$
+    endif
 
-    selectObject: .tableId
     selectObject: .tableId
 endproc
 
@@ -2844,14 +2945,22 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
     ; vanishing -- see @emlRecordAnalysisStep.
-    @emlRecordAnalysisStep: .tableId, "Friedman",
-    ... .conditionCols$ + ", subject " + .subjectCol$,
-    ... "Rank-based repeated measures; it does not assume normality and does not test it.",
-    ... "@emlRunFriedmanAnalysis: data, """ + .subjectCol$ + """, """ + .conditionCols$ + """, " + string$ (.doPostHoc) + ", """ + .adjMethod$ + """",
-    ... "In the GUI: New > EML Tools > Compare paired/repeated (Friedman)...",
-    ... .error$
+    ; PRESENT, INITIALISED, RECORDING -- the same three-part guard every
+    ; draw hook uses, and it was missing here. eml-analysis.praat is
+    ; loadable WITHOUT the recorder: plugin/dev/tests/phase2 includes the
+    ; stats tree and not eml-record.praat, and an unguarded call killed
+    ; that suite outright with Procedure "emlRecordAnalysisStep" not
+    ; found. emlRecordLoaded is set at LOAD time, so a caller that never
+    ; loaded the recorder executes nothing here.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordAnalysisStep: .tableId, "Friedman",
+        ... .conditionCols$ + ", subject " + .subjectCol$,
+        ... "Rank-based repeated measures; it does not assume normality and does not test it.",
+        ... "@emlRunFriedmanAnalysis: data, """ + .subjectCol$ + """, """ + .conditionCols$ + """, " + string$ (.doPostHoc) + ", """ + .adjMethod$ + """",
+        ... "In the GUI: New > EML Tools > Compare paired/repeated (Friedman)...",
+        ... .error$
+    endif
 
-    selectObject: .tableId
     selectObject: .tableId
 endproc
 

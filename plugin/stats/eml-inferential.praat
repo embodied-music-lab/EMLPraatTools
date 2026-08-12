@@ -2857,8 +2857,7 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     # the data column row by row and can drop an unusable cell; the built-in
     # below numericises the whole column in one go and silently substitutes
     # alphabetical ranks when any cell fails, so there is no partial answer
-    # to give. This guard runs BEFORE the built-in, which is also the last
-    # moment at which the Info window is still the caller's.
+    # to give.
 
     if .error$ = ""
         @emlRequireNumericColumn: .tableId, "Data column", .dataCol$, 1
@@ -2866,11 +2865,32 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     endif
 
     # --- Run Report two-way anova ---
+    #
+    # ASSIGNED, NOT RUN BARE, AND THE DIFFERENCE IS NOT COSMETIC (12 Aug 2026).
+    #
+    # `Report two-way anova: ...` on its own line CLEARS the Info window and
+    # writes the report into it, so the only way to read the report was
+    # info$ () -- and the caller then had to put the user's Info window back,
+    # which @emlRunTwoWayAnalysis did by snapshotting info$ () beforehand and
+    # replaying it with writeInfo:.
+    #
+    # That replay is correct in the GUI and WRONG IN BATCH. Under `praat
+    # --run`, Info output is streamed to stdout as it is produced; nothing can
+    # be un-printed, so writeInfo: does not restore anything -- it emits the
+    # entire preceding transcript a SECOND time. Measured on 6.6.30: a
+    # 27-operation driver whose ninth operation was a two-way ANOVA printed 35
+    # operation lines, the first eight twice. Anything reading a batch run's
+    # stdout -- a harness, a log parser, a user piping to a file -- saw
+    # duplicated history and no error.
+    #
+    # Assigning the command's result captures the report into a string and
+    # leaves the Info window untouched, so there is nothing to restore and the
+    # save/restore pair is gone from the orchestrator entirely.
 
     if .error$ = ""
         selectObject: .tableId
-        Report two-way anova: .dataCol$, .factor1$, .factor2$, "no"
-        .anovaInfo$ = info$ ()
+        .anovaInfo$ = Report two-way anova: .dataCol$, .factor1$, .factor2$,
+        ... "no"
     endif
 
     # --- Isolate data section (after "Source" header line) ---
