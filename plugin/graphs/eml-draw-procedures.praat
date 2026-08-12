@@ -3456,12 +3456,28 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     ; Measured 10 Aug 2026: a guarded @thisProcedureDoesNotExist runs to the
     ; end of the script cleanly.
     ;
-    ; emlRecordActive exists only once @emlRecordInit has run, and that
-    ; happens when something loaded the recorder and started it. So this
-    ; reads: record if a recorder is present AND recording. With no recorder
-    ; loaded -- the default, and what every existing caller does -- the draw
-    ; layer is exactly what it was before.
-    if variableExists ("emlRecordActive")
+    ; PRESENT, THEN INITIALISED, THEN RECORDING -- three things, and the first
+    ; version conflated the first two.
+    ;
+    ; It tested variableExists ("emlRecordActive"), which is set by
+    ; @emlRecordInit. That was sufficient while a recording lived inside one
+    ; script scope. A menu command runs in a FRESH scope where nothing has
+    ; called @emlRecordInit yet, so the variable did not exist, the guard was
+    ; false, and EVERY FIGURE DRAWN FROM THE MENU WENT UNRECORDED while the
+    ; recording itself was running perfectly. The ANOVA hook escaped it only
+    ; because @emlRecordAnova calls @emlRecordInit before testing anything.
+    ;
+    ; Found 12 Aug 2026 by harness/record_e2e, which drives ten operations
+    ; through runScript: -- separate scopes in one process, which is the menu
+    ; model. Every test before it started the recording in the same scope that
+    ; added the steps, so none of them could have seen this.
+    ;
+    ; emlRecordLoaded is set at LOAD time by eml-record.praat, so it means the
+    ; recorder is PRESENT. A caller that never loaded it -- a PraatGen
+    ; companion, a direct call into the draw library -- still executes nothing
+    ; here, which is the property the guard exists to keep.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
         if emlRecordActive = 1
             @emlRecordViolin: .objectId, .title$, .xLabel$, .yLabel$,
             ... .vpW, .vpH, .colorMode$, .gridMode, .groupCol$, .valueCol$,
