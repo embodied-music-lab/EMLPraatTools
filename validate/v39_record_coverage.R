@@ -10,7 +10,7 @@
 # nothing. Re-attaching to the buffer across that boundary is the entire
 # design of the feature, and nothing had ever crossed it.
 #
-# harness/record_e2e/run.sh crosses it -- 36 operations through `runScript:`,
+# harness/record_e2e/run.sh crosses it -- 38 operations through `runScript:`,
 # separate scopes in one process -- and every defect below was found by it and
 # by nothing else:
 #
@@ -101,6 +101,17 @@ rc$after  <- as.integer(rc$after)
 # recorded from the stats menu and vanished from the figure path. Before that
 # neither recorded; fixing one half is what created the asymmetry.
 #
+# `scatterstats` and `scattermonotonic` ARE THE OTHER GRAPH -> STATS PATH, and
+# the one the author named. A scatter with its analysis switched on reports a
+# correlation AND a regression FROM the figure -- the mirror of Correlate and
+# Regress on the stats menu -- and draws a fit line that is OLS in a Pearson
+# context and THEIL-SEN in a Spearman one. Linear and monotonic are different
+# estimators answering different questions, so both are driven: with a
+# regression report requested the plugin forces OLS so the drawn line matches
+# the reported coefficients (v1.19), and Theil-Sen is reached only with
+# correlation alone. The plain `scatter` op runs with annotate = 0 and none of
+# the form's globals, so it exercises none of this.
+#
 # The two Table conversions differ in one respect that is pinned separately:
 # they produce a working object the session KEEPS, where the acoustic ones
 # produce an intermediate the form removes. Both still have to name the
@@ -114,7 +125,8 @@ OPS <- c("anova", "twogroup", "kw", "descriptive", "normality",
          "sound2f0", "sound2spectrum", "sound2ltas",
          "spectrum2ltas", "spectrum2sound", "spectrum2f0",
          "tor2table", "matrix2table",
-         "bridge")
+         "bridge",
+         "scatterstats", "scattermonotonic")
 eml_census("v39", "recorded operation", rc$op, OPS)
 eml_claim("v39", "record_out", OPS)
 check("v39", "every declared operation was driven", nrow(rc), length(OPS),
@@ -143,9 +155,9 @@ if (nrow(dead) > 0) {
 # ---------------------------------------------------------------------------
 # The load-bearing claim of the whole feature. Praat objects outlive the scope
 # that made them, script variables do not, so the buffer IS the state -- and a
-# step count that never decreases across 36 separate invocations is that
+# step count that never decreases across 38 separate invocations is that
 # claim measured rather than argued.
-check_true("v39", "the step count never fell across the 36 invocations",
+check_true("v39", "the step count never fell across the 38 invocations",
            all(diff(c(rc$before, rc$after[nrow(rc)])) >= 0))
 check_true("v39", "each operation's own before/after is consistent",
            all(rc$after >= rc$before))
@@ -159,19 +171,19 @@ check_true("v39", "the buffer was live at the last invocation",
 # 13 analysis orchestrators and 16 draw procedures ship. TWO of them called the
 # recorder when this harness was written; a user who switched recording on and
 # ran a correlation got an empty script and no warning. Twenty-seven are hooked
-# and all thirty-six record, and the floor is stated so that losing one is an
+# and all thirty-eight record, and the floor is stated so that losing one is an
 # edit to this line rather than a quieter run.
 #
 # The two draws not in this population are the ones with no standalone caller
 # to drive -- they are reached only through the graphs form's own composition
 # path, which harness/gui_e2e covers and v35 asserts on.
 nRec <- sum(rc$verdict == "recorded")
-COVERAGE_FLOOR <- 36L
+COVERAGE_FLOOR <- 38L
 check_true("v39",
            sprintf("at least %d of %d operations record (observed %d)",
                    COVERAGE_FLOOR, nrow(rc), nRec),
            nRec >= COVERAGE_FLOOR)
-# Named, so a future run cannot meet the floor with a different 36.
+# Named, so a future run cannot meet the floor with a different 38.
 for (op in OPS) {
     r <- rc[rc$op == op, ]
     if (nrow(r) != 1) next
@@ -316,6 +328,46 @@ check_true("v39", "the stats-menu path records its analyses",
            any(grepl("^@emlRun[A-Za-z]+: data,", em)))
 check_true("v39", "the graph-to-stats path records its analyses too",
            any(grepl("^@emlBridgeGroupComparison: data,", em)))
+
+# ---------------------------------------------------------------------------
+# A STEP THAT PRODUCED NUMBERS CARRIES THEM
+# ---------------------------------------------------------------------------
+# @emlRecordAnova -- the hand-written recorder that predates the generic hooks
+# -- had always emitted "F(1, 22) = 5.2251, p = 0.0323, eta-squared = 0.1919".
+# The twelve hooks added on 12 Aug 2026 emitted none, so a recorded
+# correlation said one had been run and never what it found. For a
+# correlation or a regression the coefficient IS the step.
+check_true("v39", "the correlation records its coefficient and p",
+           any(grepl("^# Pearson r = -?[0-9.]+, t\\([0-9]+\\) = ", em)))
+check_true("v39", "the regression records its equation and R-squared",
+           any(grepl("^# [A-Za-z0-9_]+ = -?[0-9.]+ \\+ -?[0-9.]+ x ", em)) &&
+           any(grepl("R-squared = [0-9.]+", em)))
+check_true("v39", "the two-way ANOVA records all three F tests",
+           sum(grepl("F\\([0-9]+, [0-9]+\\) = ", em)) >= 3)
+check_true("v39", "the repeated-measures path records Greenhouse-Geisser",
+           any(grepl("Greenhouse-Geisser epsilon = ", em)))
+
+# ---------------------------------------------------------------------------
+# THE SCATTER IS A GRAPH -> STATS PATH, AND ITS SWITCHES ARE GLOBALS
+# ---------------------------------------------------------------------------
+# scatterAnalysisType, annotCorrType$ and scatterRegressionLine are set by the
+# graphs form and READ by the draw procedure -- they are not arguments. A
+# recorded scatter that omitted them reproduced a different figure and none of
+# the statistics, because whatever those globals happened to be when the
+# emitted script ran is what it drew.
+check_true("v39", "a recorded scatter restores the switches it was drawn with",
+           any(grepl("^scatterAnalysisType = [0-9]+$", em)) &&
+           any(grepl("^annotCorrType\\$ = \"", em)) &&
+           any(grepl("^scatterRegressionLine = [0-9]+$", em)))
+check_true("v39", "the scatter records the correlation it reported",
+           any(grepl("correlation reported on [0-9]+ complete pairs", em)))
+# LINEAR AND MONOTONIC ARE NOT THE SAME LINE. Both estimators are driven and
+# both must be named: "a fitted line" tells a reader nothing about which
+# question was answered.
+check_true("v39", "the scatter names OLS where it fitted a linear line",
+           any(grepl("fit line: OLS \\(linear\\), slope = ", em)))
+check_true("v39", "the scatter names Theil-Sen where it fitted a monotonic one",
+           any(grepl("fit line: Theil-Sen \\(monotonic\\), slope = ", em)))
 
 # The emitted file calls the ORCHESTRATOR, not the wrapper: §8 -- a wrapper
 # uses beginPause: and cannot take arguments from runScript:, so a wrapper-level

@@ -77,7 +77,8 @@ NORECORD_OPS <- c("anova", "twogroup", "kw", "descriptive", "normality",
                   "sound2f0", "sound2spectrum", "sound2ltas",
                   "spectrum2ltas", "spectrum2sound", "spectrum2f0",
                   "tor2table", "matrix2table",
-                  "bridge")
+                  "bridge",
+                  "scatterstats", "scattermonotonic")
 eml_census("v40", "operation without the recorder", nr$op, NORECORD_OPS)
 eml_claim("v40", "norecord_out", NORECORD_OPS)
 
