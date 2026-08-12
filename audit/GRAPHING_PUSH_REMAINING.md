@@ -1099,11 +1099,19 @@ D84. Stats Demo, Quick Start, tutorial, and Batch voice analysis are tabled.
 ## 7. Validation standard
 
 Nothing counts as validated until an authored R script tests the output,
-including the red-path input. Current baseline, 11 Aug 2026:
-**8631 checks, 0 failed** (`Rscript validate/run_all.R`), 39/39 stress cases
-(`bash harness/stress_graphs.sh` — 29 OK, 10 expected `BLANK_FRAME_ABS`),
-52/52 disclosure, 10/10 determinism byte-identical, 14/14 parity, 26/26
-wrappers, `gui_e2e` PASS, phase1 357/357, both round trips PASS.
+including the red-path input. Current baseline, 12 Aug 2026:
+**9330 checks, 0 failed** (`Rscript validate/run_all.R`), 39/39 stress cases
+(`bash harness/stress_graphs.sh` — 29 OK, 10 expected `BLANK_FRAME_ABS`, and
+now byte-identical run to run), 52/52 disclosure, 10/10 determinism
+byte-identical, 14/14 parity, 26/26 wrappers, `gui_e2e` PASS, phase1 357/357,
+both round trips PASS.
+
+**What moved, 11-12 Aug:** 8285 -> 9330. v32 gained §11 (the four
+non-categorical legend types, +346); `eml_census` landed and was wired into
+v33 and v35 (+5); v36 covered the 29 unvalidated stress cases (+586); v37
+gave the determinism harness its first external check (+108). Two harnesses
+that reported only to themselves now report to an R script, and the stress
+artefact became a baseline instead of noise.
 
 **CLOSED — the four non-categorical types.** This section used to read: the
 legend placement geometry is asserted by `validate/v32_legend_geometry.R`,
@@ -1320,7 +1328,7 @@ roundtrip PASS**, and the copy's emitted workflow cites
 `/tmp/eml_copy/plugin/...`. The original is unaffected: 39/39, 52/52,
 roundtrip PASS, phase1 357/357, 8221/8221 R checks.
 
-## 14. OPEN — the stress figures are not deterministic
+## 14. FIXED (12 Aug 2026) — the stress figures are not deterministic
 
 Found while checking whether the de-absolutising had changed anything. It had
 not; the numbers move on their own.
@@ -1354,6 +1362,28 @@ Two residual risks worth a decision:
 The cheap fix for both is an in-script LCG in place of `randomGauss`, as
 `harness/legend/placement_sweep_case.praat` already uses. It would change
 every committed figure once, then never again.
+
+**DONE, 12 Aug 2026.** All 22 converted to the LCG, each with its own seed
+(20260812 + a per-case offset) so that two cases of the same shape cannot
+produce the same data and make a future cross-case check pass by coincidence.
+Every call site was `randomGauss(0, sd)` and became `rnd.g * sd`; the
+generator was measured over 200 draws for all 22 seeds (|mean| <= 0.10,
+sd 0.91-1.05), so centre and spread are preserved. `violin_outlier` keeps its
+literal 5000; `violin_undefined` draws inside the `else` branch only, so its
+blank rows stay blank.
+
+**Proven, not asserted:** the harness was run twice and `RESULTS.tsv` and all
+39 PNGs are byte-identical between runs. All 39 verdicts are unchanged
+(29 OK, 10 BLANK_FRAME_ABS). The ink and chroma numbers moved once,
+permanently, and `harness/stress_graphs.sh`'s own comment block was corrected
+where it quoted the pre-seeding figure.
+
+One thing this did NOT make reproducible: three spaghetti logs carry a
+wall-clock line from Praat's stats banner, so the LOGS are not byte-identical
+even though the figures are. Data lines in them are identical.
+
+**This was the blocker on §17,** not a tidiness item. It is listed first for
+that reason.
 
 ---
 
@@ -1409,3 +1439,148 @@ Result after the §15 fix: **10/10 STABLE.** So every Table-consuming draw
 procedure is reproducible, and a byte-for-byte baseline is achievable for
 all of them — which is what makes the §14 fix (seeding the stress cases)
 worth doing rather than merely tidy.
+
+---
+
+## 17. FIXED (12 Aug 2026) — 29 of the 39 stress cases are exercised but not validated
+
+Found 12 Aug 2026 by asking the coverage question of the stress artefact,
+which is the question §16b's `eml_census` exists to ask.
+
+`harness/stress_graphs.sh` renders **39** cases. `validate/v27_empty_frames.R`
+asserts on the **ten** named `empty_*` cases — by design; that is what the
+file is about. Nothing asserts on the other **29**:
+
+```
+bar_baseline      bar_customerr      bar_sd            box_baseline
+gbox_baseline     gviolin_baseline   hist_1bin         hist_200bins
+hist_baseline     legend_cap         scatter_baseline  scatter_grouped
+spaghetti_baseline spaghetti_grouped ts_baseline       ts_duplicate_times
+tsci_baseline     violin_12groups    violin_baseline   violin_bw
+violin_hugevalues violin_longlabels  violin_n1         violin_onegroup
+violin_outlier    violin_spanzero    violin_tinyvalues violin_undefined
+violin_zerovar
+```
+
+**What "29 OK" currently means.** It is the DRIVER's verdict: the case ran,
+Praat did not error, a PNG appeared, and its ink and chromatic-pixel counts
+were measured. That is a smoke test. It is worth having and it is not what
+§7 asks for — *nothing counts as validated until an authored R script tests
+the output.* By that standard 29 of 39 stress cases are unvalidated, and they
+are the ones named after the pathologies: `violin_undefined`,
+`violin_zerovar`, `violin_spanzero`, `violin_n1`, `violin_hugevalues`,
+`hist_1bin`, `hist_200bins`, `ts_duplicate_times`.
+
+**Why it was never written, and this is the load-bearing part.** It could not
+be. §14: 22 of the 39 cases call `randomGauss` with no seed, so their ink and
+chroma churn on every run. An R script cannot pin a value that is a different
+number each time, which is exactly why `v27` was written as inequalities and
+why the other 29 were left alone. **§14 is not a tidiness item — it is the
+blocker on §17.** Seeding comes first; the assertions become possible after.
+
+**DONE, 12 Aug 2026 — `validate/v36_stress_output.R`, 586 checks.** All 39
+covered, declared inventory through `eml_census`. Ink and chroma are pinned
+now that §14 made them a baseline, at a stated tolerance (chroma +/-5%, the
+driver's own antialiasing margin; ink +/-max(5%, 0.10 pp), the floor because
+ink on a near-empty frame is mostly glyph coverage) rather than to six
+figures, which would buy a brittle suite.
+
+What each case is NAMED for is what is asserted, and the evidence is DERIVED
+rather than copied: `violin_undefined`'s skipped count computed from the
+fixture (24 rows / modulus 4 = 6) and matched against the disclosure line;
+the histogram bin count read off the case's own draw call; `violin_hugevalues`
+and `violin_tinyvalues` proven textually identical modulo the scale token and
+then required to render the same figure across twenty-one orders of
+magnitude; `legend_cap`'s four box slacks recomputed from the measured frame.
+
+**Two facts nothing in the tree had recorded**, found by writing it:
+
+- Eight violin pathologies disclose NOTHING — `violin_zerovar`, `n1`,
+  `spanzero`, `hugevalues`, `tinyvalues`, `outlier`, `longlabels`,
+  `12groups` have one-line logs saying only `SAVED`. Only `violin_undefined`
+  prints a count. The silence is now asserted as silence rather than a NOTE
+  being assumed.
+- `violin_longlabels.png` is **1800 x 1410**, the only case in the artefact
+  whose canvas exceeds 1200. Correct behaviour — `@emlAssertFullViewport`
+  saves the drawn extent, so long labels grow the image rather than being
+  clipped — and previously unrecorded anywhere.
+
+And one claim that turned out to be false and is worth keeping: "every
+populated case out-draws every empty frame" does NOT hold across the
+artefact. `violin_n1` (5318), `violin_bw` (6130) and `violin_zerovar` (6046)
+all score below `empty_ts` and `empty_tsci` (6969). That is exactly why v27
+compares within a family and not across the artefact.
+
+---
+
+## 18. FIXED (12 Aug 2026) — the determinism harness has no validator
+
+`harness/determinism/run.sh` (§16) is the only harness in the tree that no R
+script reads. It prints `STABLE` / `VARIES` to stdout, writes twenty PNGs and
+their logs, and exits non-zero on failure — and that is the whole of the
+evidence. The **10/10 byte-identical** figure quoted in §7's baseline is the
+harness reporting on itself.
+
+That is the same shape as the 29 above and it fails the same standard. It is
+also the weakest link in the chain the other harnesses hang off: determinism
+is what licenses reading a diff of two renders as a regression, so if it is
+the one result nobody independently checks, every byte-for-byte claim
+downstream inherits that.
+
+Two things are needed, in order:
+
+1. The driver must emit a machine-readable artefact —
+   `harness/determinism/out/DETERMINISM.tsv`, one row per type: name,
+   verdict, byte size of pass A, byte size of pass B, and the differing-pixel
+   count where the two disagree. Today the verdict exists only as a line of
+   printed text.
+2. `validate/v37_determinism.R` reads it: all ten types present by name
+   (`eml_census`), every one STABLE, both passes non-empty and equal in size,
+   and the two logs free of Praat errors. Plus the guard that matters —
+   **the two PNGs must be compared as files on disk by the validator itself,**
+   not taken from the driver's own verdict, or the check is the harness
+   grading its own homework a second time.
+
+**DONE, 12 Aug 2026 — 108 checks.** Both halves. The driver emits
+`DETERMINISM.tsv` (`name, verdict, bytesA, bytesB, diffPx`) through a single
+`emit_row`, and the ten byte sizes it reports match §2's recorded baseline
+exactly, so the artefact did not move when the driver learned to write it.
+
+**The guard was verified the only way that means anything.** One byte in
+`scatter_b.png` was XOR-flipped in a copied directory, leaving the file length
+unchanged. The verdict column still said STABLE, both recorded sizes still
+agreed, and every size check still passed — and v37 failed, because it reads
+both files with `readBin` and compares them itself:
+
+```
+FAIL  v37  scatter -- the two PNGs are byte-identical, compared here
+FAIL  v37  scatter -- driver verdict agrees with this file's own comparison
+FAIL  v37  every type the driver called STABLE really is
+```
+
+That is the whole of §18 in one test: nothing except the independent
+comparison could see it.
+
+---
+
+## 19. OPEN — the coverage question is per-artefact, not per-validator
+
+§16b added `eml_census` and wired it into `v33` and `v35`, the two validators
+that read an artefact they claim entirely. It was deliberately NOT swept
+across the rest, and the reason is worth writing down so nobody "finishes"
+the sweep mechanically.
+
+Most validators are scoped to a subset ON PURPOSE. `v27` reads the 39-row
+stress artefact and asserts on ten cases because the file is about empty
+frames. Demanding it account for all 39 would demand assertions it is not
+for — and would have hidden §17 behind a green check rather than surfacing
+it.
+
+So the unit of the coverage question is the ARTEFACT, across every validator
+that reads it: *for each thing a driver renders, is there some authored check
+that names it?* Answering it needs a registry of which validator claims which
+cases. `validate/REGISTRY.md` already exists and is the natural home.
+
+Until that exists, the finding stands as a known limit: `eml_census` proves
+coverage within a validator, and nothing yet proves coverage across them.
+§17 and §18 are the two gaps it has already found by hand.
