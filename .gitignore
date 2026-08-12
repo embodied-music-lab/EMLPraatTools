@@ -30,3 +30,7 @@ harness/wrappers/out/*.log
 harness/gui_e2e/prefs/
 harness/gui_e2e/out/*.log
 harness/gui_e2e/out/*.png
+# The record end-to-end harness writes a scratch pref dir and a driver log.
+# RECORD.tsv and the emitted script ARE the evidence and are NOT ignored.
+harness/record_e2e/prefs/
+harness/record_e2e/out/driver.log
