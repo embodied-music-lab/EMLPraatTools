@@ -37,7 +37,7 @@
 #        <dir> is $EML_NORECORD_DIR, default harness/norecord/out. A missing
 #        artefact is a HARD STOP, not a skip.
 #
-# THE POPULATION IS THE SAME 30 v39 PINS, and deliberately so: the two files
+# THE POPULATION IS THE SAME 35 v39 PINS, and deliberately so: the two files
 # ask different questions about one list -- v39 "does it record", v40 "does it
 # run at all when the recorder is not there" -- and a list that answered only
 # one of them would be the gap this file exists to close.
@@ -74,7 +74,9 @@ NORECORD_OPS <- c("anova", "twogroup", "kw", "descriptive", "normality",
                   "timeseriesci", "spaghetti", "barchart", "boxplot",
                   "gviolin", "gbox",
                   "waveform", "f0contour", "spectrum", "ltas",
-                  "sound2f0", "sound2spectrum", "sound2ltas")
+                  "sound2f0", "sound2spectrum", "sound2ltas",
+                  "spectrum2ltas", "spectrum2sound", "spectrum2f0",
+                  "tor2table", "matrix2table")
 eml_census("v40", "operation without the recorder", nr$op, NORECORD_OPS)
 eml_claim("v40", "norecord_out", NORECORD_OPS)
 
@@ -91,7 +93,7 @@ if (nrow(dead) > 0) {
     check_true("v40", sprintf("  failed without the recorder: %s",
                               paste(dead$op, collapse = ", ")), FALSE)
 }
-# Named, so a future run cannot pass by driving a different 27.
+# Named, so a future run cannot pass by driving a different 35.
 for (op in NORECORD_OPS) {
     r <- nr[nr$op == op, ]
     if (nrow(r) != 1) next

@@ -10,7 +10,7 @@
 # nothing. Re-attaching to the buffer across that boundary is the entire
 # design of the feature, and nothing had ever crossed it.
 #
-# harness/record_e2e/run.sh crosses it -- 30 operations through `runScript:`,
+# harness/record_e2e/run.sh crosses it -- 35 operations through `runScript:`,
 # separate scopes in one process -- and every defect below was found by it and
 # by nothing else:
 #
@@ -83,21 +83,28 @@ rc$after  <- as.integer(rc$after)
 # ltas an Ltas -- and they are in this list because they are the ones that
 # found the recorder asking a Sound for its number of rows.
 #
-# THE LAST THREE ARE THE SAME FIGURES REACHED THE WAY MOST USERS REACH THEM.
+# THE LAST EIGHT ARE THE FIVE AUTO-CONVERSIONS THE GRAPHS FORM PERFORMS.
 # Author, 12 Aug 2026: "fo, waveform, spectrum, and LTAS will all also run
 # from just a sound. They auto convert." The four above are handed a ready
-# made Pitch/Spectrum/Ltas, which is the API-level call; sound2* go through
-# @emlConvertSoundForGraph, which is what the menu does. Until that procedure
-# was extracted the conversion lived inline in a beginPause: loop and could
-# only be reached through a driven dialog, so nothing had ever driven it --
-# and the recorder was wrong on every one of those paths.
+# made Pitch/Spectrum/Ltas, which is the API-level call; sound2*, spectrum2*,
+# tor2table and matrix2table go through @emlConvertForGraph, which is what the
+# menu does. All five conversions lived inline in a beginPause: loop until
+# 12 Aug 2026 and could only be reached through a driven dialog, so none had
+# ever been driven -- and the recorder was wrong on every one of them.
+#
+# The two Table conversions differ in one respect that is pinned separately:
+# they produce a working object the session KEEPS, where the acoustic ones
+# produce an intermediate the form removes. Both still have to name the
+# object the user selected.
 OPS <- c("anova", "twogroup", "kw", "descriptive", "normality",
          "correlation", "regression", "pairwise", "twoway", "paired",
          "reliability", "rm", "friedman",
          "violin", "scatter", "histogram", "timeseries", "timeseriesci",
          "spaghetti", "barchart", "boxplot", "gviolin", "gbox",
          "waveform", "f0contour", "spectrum", "ltas",
-         "sound2f0", "sound2spectrum", "sound2ltas")
+         "sound2f0", "sound2spectrum", "sound2ltas",
+         "spectrum2ltas", "spectrum2sound", "spectrum2f0",
+         "tor2table", "matrix2table")
 eml_census("v39", "recorded operation", rc$op, OPS)
 eml_claim("v39", "record_out", OPS)
 check("v39", "every declared operation was driven", nrow(rc), length(OPS),
@@ -126,9 +133,9 @@ if (nrow(dead) > 0) {
 # ---------------------------------------------------------------------------
 # The load-bearing claim of the whole feature. Praat objects outlive the scope
 # that made them, script variables do not, so the buffer IS the state -- and a
-# step count that never decreases across 30 separate invocations is that
+# step count that never decreases across 35 separate invocations is that
 # claim measured rather than argued.
-check_true("v39", "the step count never fell across the 30 invocations",
+check_true("v39", "the step count never fell across the 35 invocations",
            all(diff(c(rc$before, rc$after[nrow(rc)])) >= 0))
 check_true("v39", "each operation's own before/after is consistent",
            all(rc$after >= rc$before))
@@ -142,19 +149,19 @@ check_true("v39", "the buffer was live at the last invocation",
 # 13 analysis orchestrators and 16 draw procedures ship. TWO of them called the
 # recorder when this harness was written; a user who switched recording on and
 # ran a correlation got an empty script and no warning. Twenty-seven are hooked
-# and all thirty record, and the floor is stated so that losing one is an
+# and all thirty-five record, and the floor is stated so that losing one is an
 # edit to this line rather than a quieter run.
 #
 # The two draws not in this population are the ones with no standalone caller
 # to drive -- they are reached only through the graphs form's own composition
 # path, which harness/gui_e2e covers and v35 asserts on.
 nRec <- sum(rc$verdict == "recorded")
-COVERAGE_FLOOR <- 30L
+COVERAGE_FLOOR <- 35L
 check_true("v39",
            sprintf("at least %d of %d operations record (observed %d)",
                    COVERAGE_FLOOR, nrow(rc), nRec),
            nRec >= COVERAGE_FLOOR)
-# Named, so a future run cannot meet the floor with a different 30.
+# Named, so a future run cannot meet the floor with a different 35.
 for (op in OPS) {
     r <- rc[rc$op == op, ]
     if (nrow(r) != 1) next
@@ -237,7 +244,7 @@ check("v39", "steps whose phrase was not found", 0,
 # deleted and the user never made. The emitted script could not run and told
 # its reader to open something that did not exist.
 check_true("v39", "the conversion from a Sound is recorded as its own step",
-           sum(grepl("^# --- Step [0-9]+ \\(convert\\) ---$", em)) >= 3)
+           sum(grepl("^# --- Step [0-9]+ \\(convert\\) ---$", em)) >= 8)
 check_true("v39", "the manifest names the Sound, not the intermediate",
            any(grepl('^data[0-9]+\\$ = "Sound ', em)))
 # THE PRECISE FORM, because the loose one above passes either way: the
@@ -258,13 +265,24 @@ check_true("v39", "the manifest names the Sound, not the intermediate",
         any(grepl("^selectObject: data[0-9]+\\$$", em[a:b]))
     }, logical(1))
 check_true("v39", "the figure after a conversion selects nothing of its own",
-           length(.after_convert_has_select) >= 3 &&
+           length(.after_convert_has_select) >= 8 &&
            !any(.after_convert_has_select, na.rm = TRUE))
+check_true("v39", "every converted-from type is named in the manifest",
+           all(vapply(c("Sound", "Spectrum", "TableOfReal", "Matrix"),
+                      function(t) any(grepl(sprintf('^data[0-9]+\\$ = "%s ', t),
+                                            em)), logical(1))))
+check_true("v39", "the two-step conversion emits both steps and cleans up",
+           any(grepl("^tmp = To Sound$", em)) &&
+           any(grepl("^removeObject: tmp$", em)))
 check_true("v39", "the conversion carries its parameters",
            any(grepl("^data = To Pitch \\(filtered autocorrelation\\): ", em)))
-check_true("v39", "the derived-object figures select nothing of their own",
-           !any(grepl('^data[0-9]+\\$ = "(Pitch|Spectrum|Ltas) tone"\\s*;\\s*steps? [0-9]+ \\(draw\\), ',
-                      em)))
+# REPLACED, because it fired on correct output (12 Aug 2026). It tried to spot
+# an intermediate in the manifest by matching a manifest line naming a Pitch,
+# Spectrum or Ltas whose steps include a draw -- but a session may legitimately
+# draw a Spectrum directly AND convert from that same Spectrum, and the fixture
+# does exactly that. The precise assertion is the one below it: the figure
+# AFTER a conversion selects nothing of its own. A check that fails on a
+# correct run teaches people to ignore it.
 # A convert step is followed immediately by the figure that needed it, with no
 # manifest select in between: the object it produced is in `data` and cannot
 # be named, because it does not survive the session.
@@ -278,7 +296,7 @@ check_true("v39", "the derived-object figures select nothing of their own",
     FALSE
 }, logical(1))
 check_true("v39", "each convert step selects its source through the manifest",
-           length(.iconv) >= 3 && all(.next_sel))
+           length(.iconv) >= 8 && all(.next_sel))
 
 # The emitted file calls the ORCHESTRATOR, not the wrapper: §8 -- a wrapper
 # uses beginPause: and cannot take arguments from runScript:, so a wrapper-level
