@@ -2,7 +2,18 @@
 # EML Stats : Output Formatting
 # ============================================================================
 # Module: eml-output.praat
-# Version: 1.9
+# Version: 2.0
+# v2.0: THE MIGRATION FORK IS NOW A PROCEDURE, @emlExportResultFiles, and the
+#       graphs form's Exp CSV button goes through it. The fork lived inline in
+#       @emlWrapperExportCSV, so the plugin's OTHER export -- the post-draw
+#       "Exp CSV" button in eml-graphs-form.praat -- could not reach it and
+#       called @emlExportStatsCSV directly. The same analysis therefore wrote
+#       three broom-shaped files from the stats menu and one legacy long-format
+#       file from the graphs form. v20/v21 enumerate the stats-menu
+#       orchestrators, so neither could see a second exporter, and no harness
+#       had pressed that button until 13 Aug 2026. Writing only -- the two
+#       callers report differently and a shared procedure cannot open a dialog
+#       from inside another one.
 # v1.9: COMMENTS ONLY — no executable line changed. Five statements that the
 #       code under them contradicts, corrected.
 #       (1) The Provides list named @emlCSVAddRow. No procedure of that name
@@ -1128,6 +1139,106 @@ procedure emlExportStatsCSV: .filePath$
     endif
 endproc
 
+
+# ────────────────────────────────────────────────────────────────────────────
+# @emlExportResultFiles: .folder$, .base$
+# ────────────────────────────────────────────────────────────────────────────
+# THE MIGRATION FORK, IN ONE PLACE. A path that has been converted to the
+# three-file broom shape declares into the tidy/glance/augment collectors and
+# @emlResultBegin sets emlResult_declared; a path that has not still fills the
+# single-file buffer. The fork is on the DECLARATION, not on a per-analysis
+# list, so a path converts by declaring and nothing here has to be edited for
+# each one.
+#
+# WHY IT IS A PROCEDURE. It used to live inline inside @emlWrapperExportCSV,
+# which meant the graphs form's "Exp CSV" button -- the only other export in
+# the plugin -- could not reach it, and called @emlExportStatsCSV directly.
+# The same analysis therefore produced three broom-shaped files from the
+# wrapper's CSV button and one legacy long-format file from the graphs button.
+# Nothing caught it: v20/v21 enumerate the stats-menu orchestrators, and this
+# is a second exporter that no harness had ever pressed. Extracted 13 Aug 2026
+# so both buttons write through one implementation.
+#
+# WRITING ONLY -- no dialogs. The two callers report differently (the wrapper
+# lists every file it wrote; the graphs form already has its own Export
+# Complete / Export Failed pair), and a shared procedure that opened a dialog
+# could not be called from inside another one.
+#
+# NO COLLISION PROTECTION ON THE DECLARED ARM, which is deliberate and is the
+# behaviour @emlWrapperExportCSV has always had: @emlGenerateUniquePath lives
+# in graphs/eml-graphs-form.praat and is included AFTER this file, so it
+# cannot be called from here. The legacy arm keeps the uniquing it had, via
+# @emlReportToFile. Making the three-file arm non-destructive is a real gap
+# and is recorded as one rather than being invented differently in two places.
+#
+# Arguments:
+#   .folder$ — destination folder, no trailing separator
+#   .base$   — file name stem, no extension
+# Outputs:
+#   .declared    1 if the analysis declared, 0 if it fell back to legacy
+#   .success     1 if at least one file was written
+#   .nWritten    how many files
+#   .fileList$   newline-separated absolute paths
+#   .skipped$    which frames the writer skipped, and why (declared arm)
+#   .actualPath$ the single file written (legacy arm)
+#   .reason$     "" | "empty" | "write"
+# ────────────────────────────────────────────────────────────────────────────
+procedure emlExportResultFiles: .folder$, .base$
+    .declared = 0
+    .success = 0
+    .nWritten = 0
+    .fileList$ = ""
+    .skipped$ = ""
+    .actualPath$ = ""
+    .reason$ = ""
+
+    if variableExists ("emlResult_declared") and emlResult_declared = 1
+        .declared = 1
+        @emlResultWrite: .folder$, .base$
+        .nWritten = emlResultWrite.written
+        .fileList$ = emlResultWrite.files$
+        .skipped$ = emlResultWrite.skipped$
+
+        # Post-hoc and effect sizes are separate model objects in R and are
+        # separate files here. Written only if the analysis declared them,
+        # which it signals by leaving a non-empty extras name.
+        if emlResult_extra1$ <> ""
+            .p1$ = .folder$ + "/" + .base$ + "_" + emlResult_extra1$
+            ... + "_tidy.csv"
+            writeFile: .p1$, emlResult_extra1Text$
+            .nWritten = .nWritten + 1
+            .fileList$ = .fileList$ + .p1$ + newline$
+        endif
+        if emlResult_extra2$ <> ""
+            .p2$ = .folder$ + "/" + .base$ + "_" + emlResult_extra2$
+            ... + "_tidy.csv"
+            writeFile: .p2$, emlResult_extra2Text$
+            .nWritten = .nWritten + 1
+            .fileList$ = .fileList$ + .p2$ + newline$
+        endif
+
+        if .nWritten > 0
+            .success = 1
+        else
+            # A half-converted path -- declaring but producing no rows --
+            # reports as an empty export rather than silently writing the
+            # legacy file, which is the failure mode that let the previous
+            # migration be recorded as done.
+            .reason$ = "empty"
+        endif
+    else
+        .actualPath$ = .folder$ + "/" + .base$ + ".csv"
+        @emlExportStatsCSV: .actualPath$
+        .success = emlExportStatsCSV.success
+        .actualPath$ = emlExportStatsCSV.actualPath$
+        .reason$ = emlExportStatsCSV.reason$
+        if .success
+            .nWritten = 1
+            .fileList$ = .actualPath$
+        endif
+    endif
+endproc
+
 # ────────────────────────────────────────────────────────────────────────────
 # @emlWrapperCommonFields
 # Injects shared fields into an open beginPause dialog. Called between
@@ -1386,30 +1497,16 @@ procedure emlWrapperExportCSV: .tableName$, .analysis$
         ; silently writing the legacy file, which is the failure mode that
         ; let the previous migration be recorded as done.
         ; ---------------------------------------------------------------
-        if variableExists ("emlResult_declared") and emlResult_declared = 1
-            @emlResultWrite: output_folder$, file_name$
-            .nWritten = emlResultWrite.written
-            .fileList$ = emlResultWrite.files$
-            .skipped$ = emlResultWrite.skipped$
+        ; THE WRITE ITSELF IS @emlExportResultFiles, shared with the graphs
+        ; form's Exp CSV button. It used to be inline here, which is why that
+        ; button could not reach it and wrote the legacy file for an analysis
+        ; this one wrote three broom-shaped files for.
+        @emlExportResultFiles: output_folder$, file_name$
+        .nWritten = emlExportResultFiles.nWritten
+        .fileList$ = emlExportResultFiles.fileList$
+        .skipped$ = emlExportResultFiles.skipped$
 
-            ; Post-hoc and effect sizes are separate model objects in R and
-            ; are separate files here. Written only if the analysis declared
-            ; them, which it signals by leaving a non-empty extras name.
-            if emlResult_extra1$ <> ""
-                .p1$ = output_folder$ + "/" + file_name$ + "_"
-                ... + emlResult_extra1$ + "_tidy.csv"
-                writeFile: .p1$, emlResult_extra1Text$
-                .nWritten = .nWritten + 1
-                .fileList$ = .fileList$ + .p1$ + newline$
-            endif
-            if emlResult_extra2$ <> ""
-                .p2$ = output_folder$ + "/" + file_name$ + "_"
-                ... + emlResult_extra2$ + "_tidy.csv"
-                writeFile: .p2$, emlResult_extra2Text$
-                .nWritten = .nWritten + 1
-                .fileList$ = .fileList$ + .p2$ + newline$
-            endif
-
+        if emlExportResultFiles.declared = 1
             if .nWritten > 0
                 beginPause: "Export Complete"
                     comment: "Wrote " + string$ (.nWritten) + " files:"
@@ -1460,13 +1557,13 @@ procedure emlWrapperExportCSV: .tableName$, .analysis$
             goto WRAPPER_EXPORT_DONE
         endif
 
-        .csvPath$ = output_folder$ + "/" + file_name$ + ".csv"
-        @emlExportStatsCSV: .csvPath$
-        if emlExportStatsCSV.success
+        ; LEGACY ARM. @emlExportResultFiles already wrote it; these are only
+        ; the dialogs, which differ between the two callers.
+        if emlExportResultFiles.success
             beginPause: "Export Complete"
-                comment: "Saved to: " + emlExportStatsCSV.actualPath$
+                comment: "Saved to: " + emlExportResultFiles.actualPath$
             endPause: "OK", 1, 0
-        elsif emlExportStatsCSV.reason$ = "empty"
+        elsif emlExportResultFiles.reason$ = "empty"
             # D66: this is not a disk failure and must not read as one.
             beginPause: "Nothing to Export"
                 comment: "This analysis produced no exportable rows."
