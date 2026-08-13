@@ -72,12 +72,39 @@ GUI + synthetic input is therefore the only route to end-to-end exercise.
 
 ---
 
+## 0. Two variables, because this file used to hardcode one machine
+
+Every path below was written as `/home/claude/...` — the home directory of the
+sandbox the recipe was first derived in. On any other machine every command in
+this document was wrong, silently: `cd /home/claude` fails, and the steps after
+it run in whatever directory the reader happened to be in.
+
+The rest of the tree already solved this. `harness/_env.sh` resolves `EML_ROOT`
+from its own location and `PRAAT` from `$PRAAT`, then `PATH`, then the common
+install locations, and REFUSES a Praat below the plugin's 6.6.30 floor. This
+file now uses the same two names, plus one of its own for scratch:
+
+```bash
+source harness/_env.sh            # sets EML_ROOT and PRAAT
+export EML_DRIVE="${EML_DRIVE:-$EML_ROOT/harness/drive}"
+mkdir -p "$EML_DRIVE"/{prefs,out,scripts}
+```
+
+`EML_DRIVE` is scratch only — preference directory, screenshots, transcripts.
+Nothing in `validate/` reads it. Give it its own directory rather than sharing
+one with another harness, so a concurrent run cannot collide over Praat's
+preferences file.
+
+Paste that block once per session and every command below works as written.
+
+---
+
 ## 1. Prerequisites present in the sandbox
 
 | Tool | Path / note |
 |---|---|
-| Praat full GUI | `/home/claude/praat` (6.6.30) |
-| Praat barren | `/home/claude/praat_barren` — **ABSENT on the current image** (8 Aug 2026: only `praat6630` and `praat7000` are present, with `praat` symlinked to `praat6630`). Used by the static-review and stress harnesses; install before following any step that names it |
+| Praat full GUI | `$PRAAT` (6.6.30 or later; `harness/_env.sh` resolves and version-checks it) |
+| Praat barren | `praat_barren` — **ABSENT on the current image** (8 Aug 2026: only `praat6630` and `praat7000` are present, with `praat` symlinked to `praat6630`). Used by the static-review and stress harnesses; install before following any step that names it |
 | Xvfb | present |
 | **matchbox-window-manager** | `/usr/bin/matchbox-window-manager` — **REQUIRED** |
 | xdotool | present |
@@ -115,13 +142,13 @@ pkill -9 -x matchbox-window 2>/dev/null; sleep 1
 rm -f /tmp/.X99-lock /tmp/.X11-unix/X99        # stale lock => Xvfb exits 1
 
 # 2.2 Display
-Xvfb :99 -screen 0 1400x1000x24 > /home/claude/drive/out/xvfb.log 2>&1 &
+Xvfb :99 -screen 0 1400x1000x24 > $EML_DRIVE/out/xvfb.log 2>&1 &
 sleep 3
 export DISPLAY=:99
 xdpyinfo | head -3                              # sanity check
 
 # 2.3 Window manager
-matchbox-window-manager -use_titlebar no > /home/claude/drive/out/wm.log 2>&1 &
+matchbox-window-manager -use_titlebar no > $EML_DRIVE/out/wm.log 2>&1 &
 sleep 2
 pgrep -x matchbox-window # 15-char comm; -f would also match this shell
 ```
@@ -132,20 +159,19 @@ pgrep -x matchbox-window # 15-char comm; -f would also match this shell
 cannot be used to leave Praat interactive. Launch with **no script argument**:
 
 ```bash
-rm -f /home/claude/drive/prefs/pid /home/claude/drive/prefs/message
+rm -f $EML_DRIVE/prefs/pid $EML_DRIVE/prefs/message
 #   ^ stale locks => "An instance of Praat that is not me is already running."
 #   Do NOT delete the whole pref dir — the plugin lives in it.
-cd /home/claude
-nohup ./praat --pref-dir=/home/claude/drive/prefs --utf8 \
-  > /home/claude/drive/out/idle.log 2>&1 &
+nohup "$PRAAT" --pref-dir="$EML_DRIVE/prefs" --utf8 \
+  > $EML_DRIVE/out/idle.log 2>&1 &
 sleep 8
 ```
 
 ### 2.4b Script-driven Praat — blocks on `beginPause`, stays alive
 
 ```bash
-nohup ./praat --new-send --pref-dir=/home/claude/drive/prefs --utf8 \
-  /home/claude/drive/scripts/X.praat > /home/claude/drive/out/X.log 2>&1 &
+nohup "$PRAAT" --new-send --pref-dir=$EML_DRIVE/prefs --utf8 \
+  $EML_DRIVE/scripts/X.praat > $EML_DRIVE/out/X.log 2>&1 &
 ```
 
 ---
@@ -177,7 +203,7 @@ xdotool key --clearmodifiers Down ; xdotool key --clearmodifiers Return
 xdotool key --clearmodifiers Right
 
 # Screenshot
-import -window root /home/claude/drive/out/shot.png
+import -window root $EML_DRIVE/out/shot.png
 ```
 
 ### Verification probe (`drive/scripts/probe2.praat`)
@@ -246,7 +272,7 @@ route instead.
 ### 9.1 Sending a script to the RUNNING GUI instance
 
 ```bash
-./praat --pref-dir=/home/claude/drive/prefs --utf8 --send script.praat
+"$PRAAT" --pref-dir="$EML_DRIVE/prefs" --utf8 --send script.praat
 ```
 
 `An instance of Praat that is not me is already running.` on stderr is
@@ -259,10 +285,10 @@ renders a real dialog that needs clicks), but it does replace clicking for
 
 ### 9.2 Info window as exact text
 
-`/home/claude/drive/scripts/_dumpinfo.praat`:
+`$EML_DRIVE/scripts/_dumpinfo.praat`:
 
 ```praat
-writeFileLine: "/home/claude/drive/out/info.txt", info$ ()
+writeFileLine: "$EML_DRIVE/out/info.txt", info$ ()
 ```
 
 `info$ ()` returns the full Info window contents. Dumping it does not clear or
@@ -434,7 +460,7 @@ false open-defect record costs the next reader a re-derivation.
 
 `import`/`convert` failed with "unable to open image `out/shots/x4_raw.png'"
 purely because a previous `cd` had not carried over. Either use absolute
-paths or prefix every call with `cd /home/claude/drive &&`. Do not assume the
+paths or prefix every call with `cd $EML_DRIVE &&`. Do not assume the
 directory you were in one call ago.
 
 ### Praat allows exactly one pause form at a time
