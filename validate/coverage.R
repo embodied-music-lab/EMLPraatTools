@@ -131,6 +131,18 @@ ARTEFACTS <- list(
                         "NORECORD.tsv"),
        read = .tsv_col1,
        rerun = "bash harness/norecord/run.sh"),
+  list(key  = "blankgroup_out",
+       what = "blank-group case",
+       path = file.path(.dir("EML_BLANKGROUP_DIR", "harness", "blankgroup",
+                             "out"), "BLANKGROUP.tsv"),
+       read = .tsv_col1,
+       rerun = "bash harness/blankgroup/run.sh"),
+  list(key  = "legendroom_out",
+       what = "legend-room case",
+       path = file.path(.dir("EML_LEGENDROOM_DIR", "harness", "legendroom",
+                             "out"), "LEGENDROOM.tsv"),
+       read = .tsv_col1,
+       rerun = "bash harness/legendroom/run.sh"),
   list(key  = "determinism_out",
        what = "draw procedure",
        path = file.path(.dir("EML_DETERMINISM_DIR", "harness", "determinism",
@@ -194,7 +206,7 @@ for (a in ARTEFACTS) {
 # quietly shortened, would otherwise reduce this file to nothing while it
 # still reported success.
 check("v38", "every declared artefact was examined",
-      length(ARTEFACTS), 7, tol = 0)
+      length(ARTEFACTS), 9, tol = 0)
 
 if (!exists("EML_SUITE")) {
     eml_report("v38 coverage: everything rendered is claimed by some validator")

@@ -230,7 +230,25 @@ scripts <- c(
     # the guard is still there; on 12 Aug 2026 it was removed twice in one
     # afternoon and reached a green suite both times.
     #     bash harness/norecord/run.sh
-    "v40_norecord.R"
+    "v40_norecord.R",
+    # v41 pins that a BLANK group cell is missing data, not a category.
+    # @emlCountGroups had no test for an empty normalised label, so a blank
+    # became a group -- and the count is k in every df, every post-hoc family
+    # size and every legend. One blank cell in a genuine two-group table made
+    # the t-test refuse and route the user to ANOVA. No fixture in the tree had
+    # a blank GROUP cell (every harness blank is in a value column), so nothing
+    # could catch it; harness/blankgroup supplies the one that was missing.
+    #     bash harness/blankgroup/run.sh
+    "v41_blank_group.R",
+    # v42 pins @emlGraphsDrawWithLegendRoom -- the form's two-pass headroom
+    # loop, which draws, measures, and if the legend needs y-axis room throws
+    # the first pass away and draws again. It was extracted to file scope so
+    # that a probe could drive it and no probe ever did, so the loop, its pass
+    # counter, its per-type axis read-back and @emlGraphsDispatchDraw had
+    # never run outside a live dialog. harness/legend covers the headroom
+    # arithmetic by reimplementing it; that is not this procedure.
+    #     bash harness/legendroom/run.sh
+    "v42_legend_room.R"
 )
 
 cat("EML Praat Tools validation suite\n")
