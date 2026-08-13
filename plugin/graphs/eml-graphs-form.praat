@@ -646,43 +646,15 @@ typeToMenu[13] = 16
 # PROCEDURES — Utilities
 # ============================================================================
 
-# ----------------------------------------------------------------------------
-# @emlGenerateUniquePath
-# Appends ascending integer to filename until path is available.
-# Arguments: .path$ (original desired path)
-# Outputs: .result$ (available path)
-# ----------------------------------------------------------------------------
-procedure emlGenerateUniquePath: .path$
-    if not fileReadable (.path$)
-        .result$ = .path$
-    else
-        # Split into directory, base, extension
-        .lastSlash = rindex (.path$, "/")
-        if .lastSlash > 0
-            .dir$ = left$ (.path$, .lastSlash)
-            .filename$ = mid$ (.path$, .lastSlash + 1, length (.path$) - .lastSlash)
-        else
-            .dir$ = ""
-            .filename$ = .path$
-        endif
-
-        .lastDot = rindex (.filename$, ".")
-        if .lastDot > 0
-            .base$ = left$ (.filename$, .lastDot - 1)
-            .ext$ = mid$ (.filename$, .lastDot, length (.filename$) - .lastDot + 1)
-        else
-            .base$ = .filename$
-            .ext$ = ""
-        endif
-
-        .counter = 1
-        .result$ = .dir$ + .base$ + "_" + string$ (.counter) + .ext$
-        while fileReadable (.result$)
-            .counter = .counter + 1
-            .result$ = .dir$ + .base$ + "_" + string$ (.counter) + .ext$
-        endwhile
-    endif
-endproc
+# @emlGenerateUniquePath MOVED to stats/eml-core-utilities.praat on 13 Aug
+# 2026. It is the non-destructive-save promise for EVERY save in the plugin --
+# figure, separate legend, CSV, recorded script -- and it had no business
+# living in a 7900-line dialog file. It was already called from outside the
+# graphs layer (scripts/eml-record-save.praat), and because core utilities is
+# the FIRST include in both barrels, the move also lets stats/eml-output.praat
+# reach it: @emlExportResultFiles could not collision-protect the three-file
+# export while this sat below it in include order. validate/v43 covers it and
+# is unchanged by the move.
 
 # ----------------------------------------------------------------------------
 # @emlPickFromMultiple
