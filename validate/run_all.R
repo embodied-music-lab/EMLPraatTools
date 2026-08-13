@@ -281,7 +281,19 @@ scripts <- c(
     # the driver skipped the analysis the wrapper runs first) and that the run
     # saved its figure into the home directory.
     #     bash harness/gui_e2e/run.sh
-    "v45_gui_teardown.R"
+    "v45_gui_teardown.R",
+    # v46 is STATIC, and that is the point. The plugin writes CSV in two
+    # formats and one `if` decides which; that `if` used to live inside the
+    # stats menu's export, so the graphs form's Exp CSV button could not reach
+    # it and wrote the legacy format for analyses the rest of the plugin
+    # exported as broom frames. Nothing could catch it: v20/v21 enumerate the
+    # stats-MENU orchestrators, and coverage.R compares rendered cases against
+    # claimed cases -- neither can see a path that produces no artefact at all,
+    # and that button had never been pressed. The population that needed
+    # checking was a set of CALL SITES, which is a property of the source.
+    # Needs no harness run, which is why it cannot be outrun by a button
+    # nobody presses.
+    "v46_export_surface.R"
 )
 
 cat("EML Praat Tools validation suite\n")

@@ -496,6 +496,20 @@ Two further tiers exist as harness rather than as committed evidence:
 ruling of 4 August) and the reliability orchestrator (a Phase 4 stub that
 returns "not yet implemented").
 
+**Deliberately NOT converted to the broom shape: `@emlRunDescriptiveAnalysis`.**
+Recorded here on 13 August 2026 because nothing said so and the omission reads
+like an oversight. Two reasons, either sufficient. First, broom has no `tidy`
+method for a summary of a vector, and eleven of the fifteen quantities the
+procedure produces -- mean, median, sd, variance, sem, q1, q3, iqr, min, max,
+range -- have no column in the vocabulary `eml-result-writer.praat` enforces;
+declaring it would mean inventing eleven non-broom names and then defending
+them in the parity check as broom-shaped. Second, and decisively:
+`harness/broom_cases/contamination_probe.praat` uses this procedure as the
+canonical UNCONVERTED path, to prove a converted analysis does not leak its
+declaration into the next one. Converting it breaks that probe. The legacy
+long format is the right container for a heterogeneous bag of named scalars,
+and its export is correctly gated off in the wizard (`wizCanExport` stays 0).
+
 ### What this folder is NOT the only validation of
 
 An earlier version of this section said a 2 August test inventory had found
