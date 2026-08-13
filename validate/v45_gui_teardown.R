@@ -18,9 +18,10 @@
 #
 #   * The driver was not doing what the wrapper does. eml-compare-groups runs
 #     @emlRunTwoGroupAnalysis and only then offers Draw; the driver jumped
-#     straight to @emlGraphsWorkflow. Nothing in plugin/graphs/ ever calls
-#     @eml_csvAppend, so emlCSV_n was 0 and "Graph Complete" came up with
-#     THREE buttons instead of four -- no "Exp CSV" at all. The harness was
+#     straight to @emlGraphsWorkflow. The graphs layer fills the CSV buffer
+#     only when the ANNOTATION BRIDGE runs, and this run is in beginner mode
+#     where annotate = 0 -- so emlCSV_n was 0 and "Graph Complete" came up
+#     with THREE buttons instead of four, no "Exp CSV" at all. The harness was
 #     arriving at a variant of that dialog no user reaches.
 #   * The driver's include set was three files short of the shipped barrel
 #     (eml-result-writer, eml-record, eml-analysis), which is only detectable
@@ -94,8 +95,9 @@ for (s in STAGES) {
 }
 # THE DIALOG THAT ONLY EXISTS WHEN THE ANALYSIS RAN FIRST. Export Results is
 # behind the "Exp CSV" button, which Graph Complete shows only when emlCSV_n
-# is above zero -- and the graphs layer never fills that buffer. Its presence
-# is the evidence that the driver came in by the wrapper's route.
+# is above zero. In beginner mode the annotation bridge never runs, so on this
+# path the buffer can only have been filled upstream. Its presence is the
+# evidence that the driver came in by the wrapper's route.
 check_true("v45", "the Exp CSV branch was available, so the buffer was filled",
            any(dl$button == "ExpCSV"))
 
@@ -182,8 +184,48 @@ check_true("v45", "the run exported a CSV", nrow(csv) >= 1)
 # wrote nothing leaves behind, and it satisfies file.exists().
 check_true("v45", "the figure is a real PNG, not an empty file",
            nrow(png) >= 1 && all(png$bytes > 1000))
-check_true("v45", "the CSV has more than a header row",
-           nrow(csv) >= 1 && all(csv$bytes > 100))
+# A HEADER-ONLY FRAME is about 40 bytes; a real one carries a data row too.
+# NOT a single threshold across all of them: the effect-size frame is two
+# short numeric rows and is legitimately smaller than the tidy frame, which
+# is what a flat "> 100 bytes" check called a failure when the graphs button
+# started writing broom's shape instead of one long file.
+check_true("v45", "every exported frame carries more than a header",
+           nrow(csv) >= 1 && all(csv$bytes > 45))
+
+# ---------------------------------------------------------------------------
+# 6b. THE EXPORT IS BROOM'S SHAPE, which is the whole point of the conversion
+# ---------------------------------------------------------------------------
+# The graphs form's Exp CSV button called @emlExportStatsCSV directly until
+# 13 August 2026 -- the LEGACY writer, one long file of
+# table,analysis,term,term_type,field,value -- while the stats wrappers' CSV
+# button wrote tidy/glance/augment for the very same analysis. v20 and v21
+# enumerate the stats-menu orchestrators, so neither could see it, and no
+# harness had ever pressed this button. Both now go through
+# @emlExportResultFiles.
+check_true("v45", "a tidy frame was written",
+           any(grepl("_tidy\\.csv$", csv$file)))
+check_true("v45", "a glance frame was written",
+           any(grepl("_glance\\.csv$", csv$file)))
+
+# THE EXTRAS ARE SEPARATE MODEL OBJECTS, as they are in R -- effect sizes and
+# post-hoc contrasts are their own frames, not extra rows on the model's tidy.
+check_true("v45", "effect sizes were written as their own frame",
+           any(grepl("_effectsize_tidy\\.csv$", csv$file)))
+
+# NO AUGMENT, AND THAT IS CORRECT. This run is a two-group t-test, an htest,
+# and broom has no augment for htests -- @emlResultWrite reports it skipped
+# rather than writing an empty file. v21 asserts the same for the wrapper
+# paths; asserting it here keeps the two exports honest about being the same
+# shape.
+check_true("v45", "no augment frame for an htest",
+           !any(grepl("_augment\\.csv$", csv$file)))
+
+# AND THE LEGACY FILE IS GONE. The defect's signature was a single CSV whose
+# name carried no broom suffix at all. Its absence is the assertion that the
+# fork actually fired rather than the run happening to write extra files.
+check_true("v45", "no legacy single long-format file was written",
+           !any(grepl("^[^.]*\\.csv$", csv$file) &
+                !grepl("_(tidy|glance|augment)\\.csv$", csv$file)))
 
 # THE NAMES CAME FROM THE PLUGIN'S OWN DEFAULTS, which is the only evidence
 # that saveAutoName$ and @emlGraphsCSVDefaultName ran on this path at all --
