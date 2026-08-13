@@ -28,17 +28,39 @@
 # the column-mapping stage. Asking for an object it was already given is the
 # defect this harness was built the day after -- see §2k.
 #
-# WHERE IT STOPS, AND WHY IT STOPS THERE. At the column-mapping dialog. Going
-# deeper means pressing a specific button in each dialog, and Praat's pause
-# dialogs are walked with Tab -- which visits every focusable widget, not just
-# the buttons, so the count differs with each dialog's field count. That is
-# solvable and it is a different piece of work; guessing the counts until a
-# run went green would produce a harness that clicks something plausible and
-# reports success, which is the failure mode this whole file exists to end.
+# IT USED TO STOP AT THE COLUMN-MAPPING DIALOG, and the reason given was that
+# Praat walks pause dialogs with Tab, which visits every focusable widget, so
+# the count differs with each dialog's field count. harness/tabwalk measured
+# that on 13 August 2026 and the premise is true -- and worse than stated:
 #
-# The figure itself is not left unchecked: harness/determinism, harness/stress
-# and v34 all assert on rendered output. What only this harness can see is
-# whether the shipped workflow ADVANCES when a wrapper hands it a Table.
+#   * Tab does visit every field before it reaches a button, so a forward
+#     count depends on the field list, on which fields the ADVANCED toggle is
+#     currently showing, and on Praat's prepended Undo button.
+#   * Return in a text entry or a checkbox presses the DEFAULT button, not the
+#     focused one, so a wrong count does not fail -- it silently presses
+#     something else.
+#   * `folder:` is not an entry. It renders as a multi-line GtkTextView with a
+#     Browse button, and GTK text views swallow Tab AS A LITERAL TAB
+#     CHARACTER. On the Save Figure dialog a forward walk never reaches a
+#     button at any count from 0 to 13, and every Tab it sends is appended to
+#     the output folder path. Photographed: harness/tabwalk.
+#   * Return on the folder Browse button opens a modal "Choose folder", which
+#     then eats every subsequent key.
+#
+# The forward-count table this file used to carry was therefore wrong in a way
+# that could not have shown up as a failure. Its "Column Mapping tabs=4" lands
+# on Go Back, and the harness would have looped the dialog forever.
+#
+# SO THE WALK RUNS BACKWARD. Focus starts at ring position 0, so ONE
+# shift+Tab wraps to the LAST widget -- which is the last button. Measured on
+# every button-row shape in the plugin: 1 button, 2, 3 and 4; with and without
+# editable fields; with entries, checkboxes, optionmenus and the folder text
+# view. shift+Tab xN presses the Nth button FROM THE END, always, and never
+# enters a field on the way. The count comes from the endPause: button list,
+# which is static per dialog and readable from the source.
+#
+# That is the whole reason this harness can now go past the mapping dialog to
+# Save, Export CSV, Redraw and teardown.
 #
 # Run from anywhere:  bash harness/gui_e2e/run.sh
 # Exit 0 = the workflow advanced without asking for what it was given.
@@ -104,7 +126,25 @@ fi
 rm -f "$PREFS/pid" "$PREFS/message" 2>/dev/null
 rm -f "$HOME/.config/praat/pid.txt" "$HOME/.config/praat/Message.txt" 2>/dev/null
 
-( cd "$SCRIPT_DIR" && DISPLAY="$DISP" EML_E2E_OUT="$OUT" \
+# THE SAVED CONFIG IS DELETED, AND THAT IS NOT TIDINESS. @emlSaveConfig
+# persists lastPNGFolder and lastCSVFolder, and the Save Figure and Export
+# Results dialogs seed their folder field from them. A run that inherited
+# yesterday's config would write its figure wherever yesterday's run happened
+# to be pointed -- which is exactly what happened on 13 Aug 2026: the config
+# in this harness's own pref dir said /root, so the run wrote its evidence
+# into the home directory and this file reported that no figure was saved.
+# Starting from the plugin's own defaults every time is what makes the
+# artefact reproducible.
+rm -f "$PREFS/eml-graphs-config.txt" 2>/dev/null
+
+# A HOME OF ITS OWN. With no saved config the folder default falls back to a
+# home-relative path, so HOME is pointed inside out/ -- the run cannot then
+# scatter files into the real home directory, and everything it writes is
+# somewhere this file can find it.
+E2EHOME="$OUT/home"
+rm -rf "$E2EHOME"; mkdir -p "$E2EHOME"
+
+( cd "$SCRIPT_DIR" && DISPLAY="$DISP" EML_E2E_OUT="$OUT" HOME="$E2EHOME" \
     "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --utf8 --new-send driver.praat \
     > "$OUT/driver.log" 2>&1 ) &
 PRAAT_PID=$!
@@ -113,66 +153,120 @@ sleep 10
 TSV="$OUT/DIALOGS.tsv"
 : > "$TSV"
 
-# Walk the dialogs. The bound is generous but finite: a workflow that starts
-# looping would otherwise hang the suite rather than fail it.
-# Bounded, and small: this harness walks two stages, not a whole session. A
-# workflow that started looping would otherwise hang the suite rather than
-# fail it.
-MAXSTEPS=6
+# WINDOW LOOKUP WALKS _NET_CLIENT_LIST, not `xdotool search`. search reads
+# WM_NAME, which GTK sets only for a Latin-1 title -- and the wizard pages
+# carry em dashes, so those windows have none. It also returns the unmapped
+# husk of every dismissed pause dialog forever. GUI_HARNESS_RECIPE §11.
+pauseinfo () {
+    local ids id name
+    ids=$(DISPLAY="$DISP" xprop -root _NET_CLIENT_LIST 2>/dev/null \
+          | sed -n 's/.*# //p' | tr -d ' ' | tr ',' '\n')
+    for id in $ids; do
+        [[ "$id" == 0x* ]] || continue
+        name=$(DISPLAY="$DISP" xdotool getwindowname "${id}" 2>/dev/null)
+        if [[ "$name" == Pause:* ]]; then
+            printf '%s\t%s\n' "$id" "${name#Pause: }"; return 0
+        fi
+    done
+    return 1
+}
+
+# THE BUTTON IS COUNTED FROM THE END, and the count comes from the dialog's
+# own endPause: list in eml-graphs-form.praat -- not from a screen position
+# and not from a field count. harness/tabwalk measured that shift+Tab xN
+# presses the Nth button from the end on every shape the plugin raises.
+#
+#   EML Graphs          Quit Continue                    -> Continue is 1
+#   ... Data Format     GoBack Quit Continue             -> Continue is 1
+#   ... Column Mapping  GoBack Quit <toggle> Draw        -> Draw     is 1
+#   ... Settings        GoBack Quit <toggle> Draw        -> Draw     is 1
+#   Save Figure         GoBack Save                      -> Save     is 1
+#   Export Results      GoBack Save                      -> Save     is 1
+#   Save/Export Complete, Column Error   OK              -> OK       is 1
+#   Graph Complete      Done Save ExpCSV Redraw          -> Redraw 1, ExpCSV 2,
+#                                                           Save 3, Done 4
+#
+# Graph Complete is the only dialog visited more than once, and the visit
+# number chooses the branch: Save, then Export CSV, then Redraw, then Done.
+# That order is deliberate -- Redraw is third so that the SECOND pass through
+# the whole workflow is what finally presses Done, which is the only path
+# that reaches teardown.
+gcVisit=0
+MAXSTEPS=24
 step=0
 reachedMapping=0
 while [[ $step -lt $MAXSTEPS ]]; do
-    title=$(DISPLAY="$DISP" xdotool search --onlyvisible --name "^Pause" \
-                getwindowname %@ 2>/dev/null | head -1)
-    [[ -z "$title" ]] && break
+    line=$(pauseinfo) || break
+    wid=${line%%$'\t'*}
+    title=${line#*$'\t'}
     step=$((step + 1))
-    printf '%d\t%s\n' "$step" "${title#Pause: }" >> "$TSV"
-    # Column mapping is the goal. Stop here rather than press a button whose
-    # index this harness does not reliably know.
-    if [[ "$title" == *"Column Mapping"* ]]; then
-        reachedMapping=1
-        break
-    fi
-    wid=$(DISPLAY="$DISP" xdotool search --onlyvisible --name "^Pause" | head -1)
+
+    rev=1
+    label="?"
+    case "$title" in
+        *"Column Mapping"*|*"Settings")  rev=1; label="Draw"; reachedMapping=1 ;;
+        *"Data Format"*)                 rev=1; label="Continue" ;;
+        *"EML Graphs"*)                  rev=1; label="Continue" ;;
+        *"Graph Complete"*)
+            gcVisit=$((gcVisit + 1))
+            case $gcVisit in
+                1) rev=3; label="Save" ;;
+                2) rev=2; label="ExpCSV" ;;
+                3) rev=1; label="Redraw" ;;
+                *) rev=4; label="Done" ;;
+            esac ;;
+        *"Save Figure"*)                 rev=1; label="Save" ;;
+        *"Export Results"*)              rev=1; label="Save" ;;
+        *"Save Complete"*)               rev=1; label="OK" ;;
+        *"Export Complete"*)             rev=1; label="OK" ;;
+        *"Export Failed"*)               rev=1; label="OK" ;;
+        *"Column Error"*)                rev=1; label="OK" ;;
+        *)                               rev=1; label="LAST" ;;
+    esac
+
+    printf '%d\t%s\t%s\t%d\n' "$step" "$title" "$label" "$rev" >> "$TSV"
+
     DISPLAY="$DISP" xdotool windowactivate --sync "$wid" 2>/dev/null
     sleep 1
-
-    # WHICH BUTTON, BY NAME, PRESSED WITH TAB AND Return.
-    #
-    # Two measured facts drive this. Return alone presses BUTTON 1, not the
-    # dialog's default button -- the first version of this harness assumed the
-    # default and sat on "EML Graphs" fourteen times pressing Undo. And Tab
-    # walks the button row exactly: Tab x0 -> button 1, x1 -> 2, x2 -> 3,
-    # x3 -> wraps to 1. So Tab x(N-1) then Return presses button N, with no
-    # screen coordinates anywhere.
-    #
-    # The index differs per dialog because Praat prepends an Undo button to
-    # any pause that has editable fields. The mapping is written out rather
-    # than computed: if a dialog gains a button, this harness clicks the wrong
-    # one and the SEQUENCE assertion below fails loudly, which is the outcome
-    # wanted. A computed guess would click something plausible and pass.
-    tabs=0
-    case "$title" in
-        *"Column Mapping"*)  tabs=4 ;;   # Undo GoBack Quit Advanced [Draw]
-        *"EML Graphs"*)      tabs=2 ;;   # Undo Quit [Continue]
-        *"Graph Complete"*)  tabs=1 ;;   # Done [Save] ExpCSV Redraw
-        *"Save Figure"*)     tabs=2 ;;   # Undo GoBack [Save]
-        *)                   tabs=0 ;;   # unknown: press button 1 and let the
-                                         # sequence assertion report it
-    esac
-    if [[ $tabs -gt 0 ]]; then
-        DISPLAY="$DISP" xdotool key --clearmodifiers --repeat "$tabs" Tab 2>/dev/null
-        sleep 1
-    fi
+    DISPLAY="$DISP" xdotool key --clearmodifiers --repeat "$rev" shift+Tab 2>/dev/null
+    sleep 1
     # XTEST, not XSendEvent: `xdotool key --window <id>` sends a synthetic
-    # event that GTK ignores. Without --window it drives the X test extension
-    # and the application cannot tell it from a real keypress.
+    # event GTK ignores. Without --window it drives the X test extension and
+    # the application cannot tell it from a real keypress.
     DISPLAY="$DISP" xdotool key --clearmodifiers Return 2>/dev/null
-    sleep 5
+    sleep 6
+
+    # THE ONE COUNT THAT CANNOT BE READ OFF THE SOURCE. Graph Complete shows
+    # four buttons only while there are stats on the CSV buffer; with none it
+    # shows three, and Done is then 3 from the end rather than 4. Which one is
+    # up cannot be seen from the title, so Done retries once at 3 -- and the
+    # retry is recorded rather than being silently absorbed.
+    if [[ "$label" == "Done" ]]; then
+        still=$(pauseinfo 2>/dev/null | cut -f2-)
+        if [[ "$still" == "$title" ]]; then
+            printf '%d\t%s\t%s\t%d\n' "$step" "$title" "Done-retry3" 3 >> "$TSV"
+            DISPLAY="$DISP" xdotool windowactivate --sync "$wid" 2>/dev/null
+            DISPLAY="$DISP" xdotool key --clearmodifiers --repeat 3 shift+Tab 2>/dev/null
+            DISPLAY="$DISP" xdotool key --clearmodifiers Return 2>/dev/null
+            sleep 6
+        fi
+    fi
 done
 
+# WHAT THE RUN LEFT ON DISK. The figure and the CSV are written by the Save
+# and Export branches through @emlGenerateUniquePath; nothing else in this
+# harness can show that those branches ran to completion rather than merely
+# opening their dialogs.
+ART="$OUT/ARTEFACTS.tsv"
+: > "$ART"
+while IFS= read -r f; do
+    [[ -e "$f" ]] || continue
+    printf '%s\t%s\n' "$(basename "$f")" "$(stat -c%s "$f")" >> "$ART"
+done < <(find "$SCRIPT_DIR" "$E2EHOME" -maxdepth 2 \
+              \( -name '*.png' -o -name '*.csv' \) 2>/dev/null | sort)
+
 echo "dialogs met:"
-awk -F'\t' '{printf "  %s. %s\n", $1, $2}' "$TSV"
+awk -F'\t' '{printf "  %s. %-34s -> %s (shift+Tab x%s)\n", $1, $2, $3, $4}' "$TSV"
 echo
 
 fail=0
@@ -203,9 +297,43 @@ if [[ $reachedMapping -eq 0 ]]; then
     fail=$((fail + 1))
 fi
 
+# THE STAGES THAT WERE UNREACHABLE UNTIL THE REVERSE WALK. Each is named
+# separately, because "the run got shorter" is exactly the failure a single
+# step-count check would hide.
+for stage in "Graph Complete" "Save Figure" "Save Complete" \
+             "Export Results" "Export Complete"; do
+    if ! grep -q "$stage" "$TSV"; then
+        echo "gui_e2e: FAIL — never reached the $stage dialog"
+        fail=$((fail + 1))
+    fi
+done
+
+# REDRAW RE-ENTERS THE WHOLE WORKFLOW, so the main form has to appear twice.
+# A Redraw that fell through to teardown instead would still show every
+# dialog above exactly once and would look like a pass.
+nMain=$(awk -F'\t' '$2 ~ /EML Graphs/' "$TSV" | wc -l)
+if [[ "$nMain" -lt 2 ]]; then
+    echo "gui_e2e: FAIL — Redraw did not re-enter the workflow (main form seen $nMain time(s))"
+    fail=$((fail + 1))
+fi
+
+# THE FILES. A Save branch that opened its dialog, took the press and wrote
+# nothing would satisfy every dialog check above.
+if [[ ! -s "$ART" ]]; then
+    echo "gui_e2e: FAIL — the run wrote no figure and no CSV"
+    fail=$((fail + 1))
+else
+    grep -q '\.png' "$ART" || { echo "gui_e2e: FAIL — no figure was saved"; fail=$((fail + 1)); }
+    grep -q '\.csv' "$ART" || { echo "gui_e2e: FAIL — no CSV was exported"; fail=$((fail + 1)); }
+fi
+
+echo "artefacts written:"
+awk -F'\t' '{printf "  %s (%s bytes)\n", $1, $2}' "$ART" 2>/dev/null
+echo
+
 echo
 if [[ $fail -eq 0 ]]; then
-    echo "gui_e2e: PASS — the workflow advanced to column mapping in $step dialogs"
+    echo "gui_e2e: PASS — the workflow ran to teardown in $step dialogs"
     echo "         (Praat $("$PRAAT" --version 2>&1 | head -1))"
     exit 0
 fi
