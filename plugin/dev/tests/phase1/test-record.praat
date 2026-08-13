@@ -208,10 +208,10 @@ endif
 ... index (body$, "recorded on Praat ") > 0
 ; The folder moved in Praat 7: 6.6.30 -> ~/.praat-dir, 7.0 -> ~/.config/praat.
 @ok: "the v6 and v7 locations are both named",
-... index (body$, ".praat-dir/plugin_EMLPraatTools") > 0
-... and index (body$, ".config/praat/plugin_EMLPraatTools") > 0
+... index (body$, ".praat-dir/plugin_EML_Praat_Tools") > 0
+... and index (body$, ".config/praat/plugin_EML_Praat_Tools") > 0
 @ok: "macOS and Windows locations are named",
-... index (body$, "Praat Prefs/plugin_EMLPraatTools") > 0
+... index (body$, "Praat Prefs/plugin_EML_Praat_Tools") > 0
 ... and index (body$, "Windows") > 0
 ; A conditional include LOOKS like it works -- a false branch is skipped and
 ; the script runs to the end -- but that is nothing running. In a TRUE branch
