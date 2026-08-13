@@ -1658,18 +1658,53 @@ emlGroupSortAlphabetical = 0
 #   .nMerged           - number of distinct literal spellings that were
 #                        folded into another group by normalisation
 #   .mergeWarning$     - description of what was merged, or ""
+#   .nBlankRows        - rows whose group cell is empty or whitespace only.
+#                        These are EXCLUDED from the count; see below.
 #   .error$            - error message if column not found
 #
 # Groups are matched on the NORMALISED label (trimmed, case-folded), so
 # "Male", "male" and " Male" are one group, not three. The same
 # normalisation is applied by @eml_getGroupData and
 # @eml_getGroupPairedData, so counting and extraction cannot disagree.
+#
+# A BLANK GROUP CELL IS MISSING DATA, NOT A CATEGORY (12 Aug 2026).
+#
+# Until this date a row whose group cell was empty -- or whitespace only,
+# which normalises to empty -- became a group of its own, indistinguishable
+# from a real level. Every consumer inherited it, and the count is not a
+# display detail: it is k in every df, every family size, and every legend.
+#
+#   - @emlOneWayAnova computes dfBetween = k - 1 and dfWithin = N - k
+#   - the post-hoc procedures compute k(k-1)/2 comparisons, so one phantom
+#     group at a real k = 3 gives SIX adjusted p-values instead of three,
+#     every one of them inflated
+#   - @emlRunTwoGroupAnalysis refuses at k > 2 and routes the user to ANOVA,
+#     so a single blank cell in a genuine two-group table made the t-test
+#     unavailable
+#   - the draw layer sizes its palette and legend from k, so the figure grew
+#     an unlabelled entry
+#
+# Under emlGroupSortAlphabetical = 1 the blank also sorted FIRST, taking
+# index 1 and shifting every real group's index by one.
+#
+# The row is now skipped and COUNTED, following the convention this tree
+# already uses for excluded rows -- @emlExtractGroupVectors.nExcluded,
+# @emlExtractPairedColumns.nExcludedRows, @emlExtractConditionMatrix
+# .nExcluded: count in the same pass as the keepers, publish as a named
+# output, never abort. What a caller does with it is the caller's business;
+# what this procedure must not do is quietly invent a group.
+#
+# harness/disclosure/probe_exclusion_parity.praat has demonstrated this
+# defect since it was written -- "a blank group label is counted as a
+# category" -- and nothing consumed the probe, so it stayed demonstrated and
+# unfixed.
 # ============================================================================
 procedure emlCountGroups: .tableId, .groupCol$
     .nGroups = 0
     .error$ = ""
     .nMerged = 0
     .mergeWarning$ = ""
+    .nBlankRows = 0
 
     selectObject: .tableId
     .nRows = Get number of rows
@@ -1708,6 +1743,16 @@ procedure emlCountGroups: .tableId, .groupCol$
             @eml_normalizeLabel: .grp$
             .grpNorm$ = eml_normalizeLabel.result$
 
+            ; MISSING, NOT A LEVEL. Counted here, in the same pass as the
+            ; keepers, and then skipped -- including the raw-spelling tally
+            ; below, so a blank is never reported as a merged spelling
+            ; either. @eml_normalizeLabel returns "" unchanged and folds
+            ; whitespace-only cells to "" as well, so one test catches both.
+            if .grpNorm$ = ""
+                .nBlankRows = .nBlankRows + 1
+                goto NEXT_COUNT_ROW
+            endif
+
             .found = 0
             for .g from 1 to .nGroups
                 if .groupNorm$[.g] = .grpNorm$
@@ -1731,6 +1776,8 @@ procedure emlCountGroups: .tableId, .groupCol$
                 .nRaw = .nRaw + 1
                 .rawLabel$[.nRaw] = .grp$
             endif
+
+            label NEXT_COUNT_ROW
         endfor
 
         if emlGroupSortAlphabetical = 1

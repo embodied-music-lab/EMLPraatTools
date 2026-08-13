@@ -135,6 +135,15 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     .tableName$ = selected$ ("Table")
 
     @emlCountGroups: .tableId, .groupCol$
+    ; BLANK GROUP CELLS ARE MISSING DATA and were counted as a category until
+    ; 12 Aug 2026 -- see @emlCountGroups. Captured immediately, because every
+    ; post-hoc procedure re-invokes @emlCountGroups and would clobber it, and
+    ; surfaced in the wording this tree already uses for excluded rows.
+    .nBlankGroup = emlCountGroups.nBlankRows
+    if .nBlankGroup > 0
+        appendInfoLine: "  Note: ", .nBlankGroup,
+        ... " row(s) excluded -- the group column is empty for them."
+    endif
     if emlCountGroups.error$ <> ""
         .error$ = emlCountGroups.error$
     elsif emlCountGroups.nGroups < 2
@@ -375,6 +384,15 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     .tableName$ = selected$ ("Table")
 
     @emlCountGroups: .tableId, .groupCol$
+    ; BLANK GROUP CELLS ARE MISSING DATA and were counted as a category until
+    ; 12 Aug 2026 -- see @emlCountGroups. Captured immediately, because every
+    ; post-hoc procedure re-invokes @emlCountGroups and would clobber it, and
+    ; surfaced in the wording this tree already uses for excluded rows.
+    .nBlankGroup = emlCountGroups.nBlankRows
+    if .nBlankGroup > 0
+        appendInfoLine: "  Note: ", .nBlankGroup,
+        ... " row(s) excluded -- the group column is empty for them."
+    endif
     if emlCountGroups.error$ <> ""
         .error$ = emlCountGroups.error$
         goto END_ANOVA
@@ -611,6 +629,15 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
     .tableName$ = selected$ ("Table")
 
     @emlCountGroups: .tableId, .groupCol$
+    ; BLANK GROUP CELLS ARE MISSING DATA and were counted as a category until
+    ; 12 Aug 2026 -- see @emlCountGroups. Captured immediately, because every
+    ; post-hoc procedure re-invokes @emlCountGroups and would clobber it, and
+    ; surfaced in the wording this tree already uses for excluded rows.
+    .nBlankGroup = emlCountGroups.nBlankRows
+    if .nBlankGroup > 0
+        appendInfoLine: "  Note: ", .nBlankGroup,
+        ... " row(s) excluded -- the group column is empty for them."
+    endif
     if emlCountGroups.error$ <> ""
         .error$ = emlCountGroups.error$
         goto END_KW
@@ -743,6 +770,15 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     .tableName$ = selected$ ("Table")
 
     @emlCountGroups: .tableId, .groupCol$
+    ; BLANK GROUP CELLS ARE MISSING DATA and were counted as a category until
+    ; 12 Aug 2026 -- see @emlCountGroups. Captured immediately, because every
+    ; post-hoc procedure re-invokes @emlCountGroups and would clobber it, and
+    ; surfaced in the wording this tree already uses for excluded rows.
+    .nBlankGroup = emlCountGroups.nBlankRows
+    if .nBlankGroup > 0
+        appendInfoLine: "  Note: ", .nBlankGroup,
+        ... " row(s) excluded -- the group column is empty for them."
+    endif
     if emlCountGroups.error$ <> ""
         .error$ = emlCountGroups.error$
         goto END_PAIRWISE
@@ -1017,6 +1053,15 @@ endproc
 # ============================================================================
 procedure emlReportPairwiseDescriptives: .tableId, .dataCol$, .groupCol$
     @emlCountGroups: .tableId, .groupCol$
+    ; BLANK GROUP CELLS ARE MISSING DATA and were counted as a category until
+    ; 12 Aug 2026 -- see @emlCountGroups. Captured immediately, because every
+    ; post-hoc procedure re-invokes @emlCountGroups and would clobber it, and
+    ; surfaced in the wording this tree already uses for excluded rows.
+    .nBlankGroup = emlCountGroups.nBlankRows
+    if .nBlankGroup > 0
+        appendInfoLine: "  Note: ", .nBlankGroup,
+        ... " row(s) excluded -- the group column is empty for them."
+    endif
     if emlCountGroups.error$ <> ""
         goto PAIR_DESCR_DONE
     endif
