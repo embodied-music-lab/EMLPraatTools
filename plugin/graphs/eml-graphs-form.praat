@@ -3,7 +3,21 @@
 # ============================================================================
 # EML Graphs Plugin
 # License: GPL-3.0-or-later
-# Version: 2.6
+# Version: 2.7
+# v2.7: A WRAPPER'S ANNOTATE PRESET NOW SURVIVES A BEGINNER DRAW. Beginner
+#       mode draws only what its own dialog offers, so the beginner commit
+#       setting annotate = 0 is correct and stays. What was wrong is what
+#       happened next: the preset is consumed once BEFORE the outer repeat,
+#       so Redraw does not re-apply it, and prev_adv_<type>_annotate is
+#       written in exactly one place -- the toggle to beginner -- which a
+#       preset never passes through. A user who asked a wrapper to annotate,
+#       drew in beginner mode, pressed Redraw and switched to Advanced found
+#       the box unticked, with nothing to say it had ever been set. All six
+#       annotate-capable restore branches now fall back to the live preset
+#       when there is no saved advanced state, and carry the preset's test
+#       type into the dialog index with it. Same shape as v1.6's Item 22,
+#       which preserved annotTestType$ and annotStyle$ across a beginner Draw
+#       and left `annotate` itself still being zeroed.
 # v2.6: A LEGEND INSIDE THE PLOT NOW GETS Y-AXIS ROOM MADE FOR IT.
 #       eml-draw-procedures.praat has stated since 5 August that "any extra
 #       room a figure needs is a property of what is drawn on it ... and is
@@ -4559,6 +4573,29 @@ repeat
                         tmpDPI = prev_adv_bar_DPI
                         tmpXLabel$ = prev_adv_bar_XLabel$
                         tmpYLabel$ = prev_adv_bar_YLabel$
+                elsif emlGraphsPresetAnnotate > 0
+                    # A WRAPPER PRESET NEVER PASSED THROUGH THE ADVANCED
+                    # DIALOG, so there is no prev_adv_ state to restore -- and
+                    # before 13 Aug 2026 that meant the request was simply
+                    # lost. The beginner Draw commit sets annotate = 0 (which
+                    # is correct: beginner mode draws only what its own dialog
+                    # offers), the preset is consumed once BEFORE the outer
+                    # repeat so Redraw does not re-apply it, and nothing ever
+                    # wrote it to the stash. A user who asked a wrapper to
+                    # annotate, drew in beginner mode, pressed Redraw and then
+                    # switched to Advanced found the box unticked with nothing
+                    # to say it had ever been set.
+                    #
+                    # RULING, 13 Aug 2026: if it was ever ticked in advanced
+                    # mode in a single session -- and a preset is the wrapper
+                    # ticking it -- it must be ticked again on the way back.
+                    # Same shape as v1.6's Item 22, which preserved
+                    # annotTestType$ and annotStyle$ across a beginner Draw and
+                    # left `annotate` itself still being zeroed.
+                    annotate = 1
+                    if annotTestType$ = "nonparametric"
+                        tmpBarTestType = 2
+                    endif
                     endif
                 endif
                 config_showAdvanced = 1 - config_showAdvanced
@@ -4912,6 +4949,29 @@ repeat
                         tmpDPI = prev_adv_vio_DPI
                         tmpXLabel$ = prev_adv_vio_XLabel$
                         tmpYLabel$ = prev_adv_vio_YLabel$
+                elsif emlGraphsPresetAnnotate > 0
+                    # A WRAPPER PRESET NEVER PASSED THROUGH THE ADVANCED
+                    # DIALOG, so there is no prev_adv_ state to restore -- and
+                    # before 13 Aug 2026 that meant the request was simply
+                    # lost. The beginner Draw commit sets annotate = 0 (which
+                    # is correct: beginner mode draws only what its own dialog
+                    # offers), the preset is consumed once BEFORE the outer
+                    # repeat so Redraw does not re-apply it, and nothing ever
+                    # wrote it to the stash. A user who asked a wrapper to
+                    # annotate, drew in beginner mode, pressed Redraw and then
+                    # switched to Advanced found the box unticked with nothing
+                    # to say it had ever been set.
+                    #
+                    # RULING, 13 Aug 2026: if it was ever ticked in advanced
+                    # mode in a single session -- and a preset is the wrapper
+                    # ticking it -- it must be ticked again on the way back.
+                    # Same shape as v1.6's Item 22, which preserved
+                    # annotTestType$ and annotStyle$ across a beginner Draw and
+                    # left `annotate` itself still being zeroed.
+                    annotate = 1
+                    if annotTestType$ = "nonparametric"
+                        tmpViolinTestType = 2
+                    endif
                     endif
                 endif
                 config_showAdvanced = 1 - config_showAdvanced
@@ -5737,6 +5797,29 @@ repeat
                         tmpDPI = prev_adv_box_DPI
                         tmpXLabel$ = prev_adv_box_XLabel$
                         tmpYLabel$ = prev_adv_box_YLabel$
+                elsif emlGraphsPresetAnnotate > 0
+                    # A WRAPPER PRESET NEVER PASSED THROUGH THE ADVANCED
+                    # DIALOG, so there is no prev_adv_ state to restore -- and
+                    # before 13 Aug 2026 that meant the request was simply
+                    # lost. The beginner Draw commit sets annotate = 0 (which
+                    # is correct: beginner mode draws only what its own dialog
+                    # offers), the preset is consumed once BEFORE the outer
+                    # repeat so Redraw does not re-apply it, and nothing ever
+                    # wrote it to the stash. A user who asked a wrapper to
+                    # annotate, drew in beginner mode, pressed Redraw and then
+                    # switched to Advanced found the box unticked with nothing
+                    # to say it had ever been set.
+                    #
+                    # RULING, 13 Aug 2026: if it was ever ticked in advanced
+                    # mode in a single session -- and a preset is the wrapper
+                    # ticking it -- it must be ticked again on the way back.
+                    # Same shape as v1.6's Item 22, which preserved
+                    # annotTestType$ and annotStyle$ across a beginner Draw and
+                    # left `annotate` itself still being zeroed.
+                    annotate = 1
+                    if annotTestType$ = "nonparametric"
+                        tmpBoxTestType = 2
+                    endif
                     endif
                 endif
                 config_showAdvanced = 1 - config_showAdvanced
@@ -6087,6 +6170,29 @@ repeat
                         tmpDPI = prev_adv_his_DPI
                         tmpXLabel$ = prev_adv_his_XLabel$
                         tmpYLabel$ = prev_adv_his_YLabel$
+                elsif emlGraphsPresetAnnotate > 0
+                    # A WRAPPER PRESET NEVER PASSED THROUGH THE ADVANCED
+                    # DIALOG, so there is no prev_adv_ state to restore -- and
+                    # before 13 Aug 2026 that meant the request was simply
+                    # lost. The beginner Draw commit sets annotate = 0 (which
+                    # is correct: beginner mode draws only what its own dialog
+                    # offers), the preset is consumed once BEFORE the outer
+                    # repeat so Redraw does not re-apply it, and nothing ever
+                    # wrote it to the stash. A user who asked a wrapper to
+                    # annotate, drew in beginner mode, pressed Redraw and then
+                    # switched to Advanced found the box unticked with nothing
+                    # to say it had ever been set.
+                    #
+                    # RULING, 13 Aug 2026: if it was ever ticked in advanced
+                    # mode in a single session -- and a preset is the wrapper
+                    # ticking it -- it must be ticked again on the way back.
+                    # Same shape as v1.6's Item 22, which preserved
+                    # annotTestType$ and annotStyle$ across a beginner Draw and
+                    # left `annotate` itself still being zeroed.
+                    annotate = 1
+                    if annotTestType$ = "nonparametric"
+                        prev_histAnnotTestType = 2
+                    endif
                     endif
                 endif
                 config_showAdvanced = 1 - config_showAdvanced
@@ -6502,6 +6608,29 @@ repeat
                         tmpDPI = prev_adv_gv_DPI
                         tmpXLabel$ = prev_adv_gv_XLabel$
                         tmpYLabel$ = prev_adv_gv_YLabel$
+                elsif emlGraphsPresetAnnotate > 0
+                    # A WRAPPER PRESET NEVER PASSED THROUGH THE ADVANCED
+                    # DIALOG, so there is no prev_adv_ state to restore -- and
+                    # before 13 Aug 2026 that meant the request was simply
+                    # lost. The beginner Draw commit sets annotate = 0 (which
+                    # is correct: beginner mode draws only what its own dialog
+                    # offers), the preset is consumed once BEFORE the outer
+                    # repeat so Redraw does not re-apply it, and nothing ever
+                    # wrote it to the stash. A user who asked a wrapper to
+                    # annotate, drew in beginner mode, pressed Redraw and then
+                    # switched to Advanced found the box unticked with nothing
+                    # to say it had ever been set.
+                    #
+                    # RULING, 13 Aug 2026: if it was ever ticked in advanced
+                    # mode in a single session -- and a preset is the wrapper
+                    # ticking it -- it must be ticked again on the way back.
+                    # Same shape as v1.6's Item 22, which preserved
+                    # annotTestType$ and annotStyle$ across a beginner Draw and
+                    # left `annotate` itself still being zeroed.
+                    annotate = 1
+                    if annotTestType$ = "nonparametric"
+                        prev_gvAnnotTestType = 2
+                    endif
                     endif
                 endif
                 config_showAdvanced = 1 - config_showAdvanced
@@ -6849,6 +6978,29 @@ repeat
                         tmpDPI = prev_adv_gb_DPI
                         tmpXLabel$ = prev_adv_gb_XLabel$
                         tmpYLabel$ = prev_adv_gb_YLabel$
+                elsif emlGraphsPresetAnnotate > 0
+                    # A WRAPPER PRESET NEVER PASSED THROUGH THE ADVANCED
+                    # DIALOG, so there is no prev_adv_ state to restore -- and
+                    # before 13 Aug 2026 that meant the request was simply
+                    # lost. The beginner Draw commit sets annotate = 0 (which
+                    # is correct: beginner mode draws only what its own dialog
+                    # offers), the preset is consumed once BEFORE the outer
+                    # repeat so Redraw does not re-apply it, and nothing ever
+                    # wrote it to the stash. A user who asked a wrapper to
+                    # annotate, drew in beginner mode, pressed Redraw and then
+                    # switched to Advanced found the box unticked with nothing
+                    # to say it had ever been set.
+                    #
+                    # RULING, 13 Aug 2026: if it was ever ticked in advanced
+                    # mode in a single session -- and a preset is the wrapper
+                    # ticking it -- it must be ticked again on the way back.
+                    # Same shape as v1.6's Item 22, which preserved
+                    # annotTestType$ and annotStyle$ across a beginner Draw and
+                    # left `annotate` itself still being zeroed.
+                    annotate = 1
+                    if annotTestType$ = "nonparametric"
+                        prev_gbAnnotTestType = 2
+                    endif
                     endif
                 endif
                 config_showAdvanced = 1 - config_showAdvanced
