@@ -41,3 +41,11 @@ harness/record_e2e/out/driver.log
 # every answer. FORMHELPERS.tsv and the driver log ARE the evidence and are
 # NOT ignored.
 harness/formhelpers/out/scratch/
+# The tab-walk probe's raw Praat transcript. TABWALK_JOINED.tsv is the
+# evidence validate/v44 reads and is NOT ignored.
+harness/tabwalk/out/*.log
+# The gui end-to-end run's own HOME. It is pointed inside out/ so a run cannot
+# write its figure into the real home directory -- which it did on 13 Aug 2026,
+# because @emlSaveConfig had persisted lastPNGFolder there. The figure and CSV
+# land in it; ARTEFACTS.tsv records their names and sizes and IS the evidence.
+harness/gui_e2e/out/home/
