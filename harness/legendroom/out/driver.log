@@ -1,0 +1,167 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+ROOM scatter_inside type=8 placement=1 passes=2 axisMode=1 baseMin=90.0000 baseMax=160.0000
+ROOM scatter_right type=8 placement=2 passes=1 axisMode=1 baseMin=90.0000 baseMax=203.4668
+Histogram: 7 bins, bin width = 16.2095
+Groups: 5
+NOTE: The legend sits in the bottom-right corner and a frequency axis cannot be taken below zero, so no room could be made for it — it may overlap the bars. Set Legend placement to Right of plot or Below plot to keep the plot clear.
+ROOM histogram_inside type=10 placement=1 passes=1 axisMode=2 baseMin=0 baseMax=14.0000
+NOTE: y-axis maximum widened from 203.467 to 273.925 to make room for the legend.
+NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+ROOM gviolin_inside type=11 placement=1 passes=2 axisMode=1 baseMin=90.0000 baseMax=203.4668
+
+══════════════════════════════════════════════
+  EML Stats : Spaghetti Plot Summary
+  Thu Aug 13 00:04:53 2026
+══════════════════════════════════════════════
+
+  Table               vt
+  Condition column    t
+  Value column        v
+  ID column           s
+  Conditions          10
+  Groups              5
+
+
+  ── 2 ───────────────────────────────────────
+  N                   6
+  Mean                111.939
+  SD                  1.523
+
+
+  ── 3 ───────────────────────────────────────
+  N                   6
+  Mean                124.926
+  SD                  1.900
+
+
+  ── 4 ───────────────────────────────────────
+  N                   6
+  Mean                135.269
+  SD                  1.655
+
+
+  ── 5 ───────────────────────────────────────
+  N                   6
+  Mean                148.660
+  SD                  1.864
+
+
+  ── 6 ───────────────────────────────────────
+  N                   6
+  Mean                99.362
+  SD                  1.466
+
+
+  ── 7 ───────────────────────────────────────
+  N                   6
+  Mean                111.941
+  SD                  2.125
+
+
+  ── 8 ───────────────────────────────────────
+  N                   6
+  Mean                123.453
+  SD                  2.344
+
+
+  ── 9 ───────────────────────────────────────
+  N                   6
+  Mean                136.745
+  SD                  1.967
+
+
+  ── 10 ──────────────────────────────────────
+  N                   6
+  Mean                147.298
+  SD                  1.726
+
+
+  ── 1 ───────────────────────────────────────
+  N                   6
+  Mean                101.920
+  SD                  0.840
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+NOTE: y-axis maximum widened from 273.925 to 388.134 to make room for the legend.
+NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+
+══════════════════════════════════════════════
+  EML Stats : Spaghetti Plot Summary
+  Thu Aug 13 00:04:53 2026
+══════════════════════════════════════════════
+
+  Table               vt
+  Condition column    t
+  Value column        v
+  ID column           s
+  Conditions          10
+  Groups              5
+
+
+  ── 2 ───────────────────────────────────────
+  N                   6
+  Mean                111.939
+  SD                  1.523
+
+
+  ── 3 ───────────────────────────────────────
+  N                   6
+  Mean                124.926
+  SD                  1.900
+
+
+  ── 4 ───────────────────────────────────────
+  N                   6
+  Mean                135.269
+  SD                  1.655
+
+
+  ── 5 ───────────────────────────────────────
+  N                   6
+  Mean                148.660
+  SD                  1.864
+
+
+  ── 6 ───────────────────────────────────────
+  N                   6
+  Mean                99.362
+  SD                  1.466
+
+
+  ── 7 ───────────────────────────────────────
+  N                   6
+  Mean                111.941
+  SD                  2.125
+
+
+  ── 8 ───────────────────────────────────────
+  N                   6
+  Mean                123.453
+  SD                  2.344
+
+
+  ── 9 ───────────────────────────────────────
+  N                   6
+  Mean                136.745
+  SD                  1.967
+
+
+  ── 10 ──────────────────────────────────────
+  N                   6
+  Mean                147.298
+  SD                  1.726
+
+
+  ── 1 ───────────────────────────────────────
+  N                   6
+  Mean                101.920
+  SD                  0.840
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+ROOM spaghetti_inside type=13 placement=1 passes=2 axisMode=1 baseMin=90.0000 baseMax=273.9246
+LEGENDROOM DONE
