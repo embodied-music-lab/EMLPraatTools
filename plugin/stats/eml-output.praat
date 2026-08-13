@@ -2,7 +2,13 @@
 # EML Stats : Output Formatting
 # ============================================================================
 # Module: eml-output.praat
-# Version: 2.0
+# Version: 2.1
+# v2.1: Both arms of @emlExportResultFiles are now non-destructive. The
+#       declared arm could not be until @emlGenerateUniquePath moved to
+#       eml-core-utilities.praat -- it lived in the graphs form, which is
+#       included after this file. The BASE is uniqued once against the tidy
+#       frame and every frame in the set carries the walked suffix, so a set
+#       never half-overwrites an older set.
 # v2.0: THE MIGRATION FORK IS NOW A PROCEDURE, @emlExportResultFiles, and the
 #       graphs form's Exp CSV button goes through it. The fork lived inline in
 #       @emlWrapperExportCSV, so the plugin's OTHER export -- the post-draw
@@ -1164,12 +1170,15 @@ endproc
 # Complete / Export Failed pair), and a shared procedure that opened a dialog
 # could not be called from inside another one.
 #
-# NO COLLISION PROTECTION ON THE DECLARED ARM, which is deliberate and is the
-# behaviour @emlWrapperExportCSV has always had: @emlGenerateUniquePath lives
-# in graphs/eml-graphs-form.praat and is included AFTER this file, so it
-# cannot be called from here. The legacy arm keeps the uniquing it had, via
-# @emlReportToFile. Making the three-file arm non-destructive is a real gap
-# and is recorded as one rather than being invented differently in two places.
+# BOTH ARMS ARE NON-DESTRUCTIVE. The declared arm could not be, until 13 Aug
+# 2026: @emlGenerateUniquePath lived in graphs/eml-graphs-form.praat, which is
+# included AFTER this file, so it was unreachable from here and the three-file
+# export would silently overwrite a previous one. Moving that procedure to
+# stats/eml-core-utilities.praat -- the first include in both barrels -- is
+# what closed it. The BASE is uniqued once, against the tidy frame, and every
+# frame in the set then shares the walked base, so a set never half-overwrites
+# an older set. The legacy arm keeps the uniquing it always had, inside
+# @emlReportToFile.
 #
 # Arguments:
 #   .folder$ — destination folder, no trailing separator
@@ -1194,6 +1203,21 @@ procedure emlExportResultFiles: .folder$, .base$
 
     if variableExists ("emlResult_declared") and emlResult_declared = 1
         .declared = 1
+        # UNIQUE THE BASE, NOT EACH FILE. A set is tidy + glance + augment +
+        # up to two extras, and they have to stay a set: uniquing them
+        # independently would put frame 1 of the new export beside frames 2
+        # and 3 of the old one under names that read as siblings. The tidy
+        # frame is the probe because @emlResultWrite always attempts it, and
+        # the walked suffix is then carried by every frame in the set.
+        .probe$ = .folder$ + "/" + .base$ + "_tidy.csv"
+        if fileReadable (.probe$)
+            .n = 1
+            while fileReadable (.folder$ + "/" + .base$ + "_" + string$ (.n)
+                ... + "_tidy.csv")
+                .n = .n + 1
+            endwhile
+            .base$ = .base$ + "_" + string$ (.n)
+        endif
         @emlResultWrite: .folder$, .base$
         .nWritten = emlResultWrite.written
         .fileList$ = emlResultWrite.files$

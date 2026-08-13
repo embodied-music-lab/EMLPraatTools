@@ -842,5 +842,62 @@ endproc
 
 
 # ============================================================================
+# @emlGenerateUniquePath -- THE NON-DESTRUCTIVE-SAVE PROMISE
+# ============================================================================
+# Every save in the plugin routes through this: the figure, the separately
+# saved legend, the CSV export, the recorded workflow script. Its whole job is
+# that an existing file is never silently overwritten.
+#
+# IT LIVED IN graphs/eml-graphs-form.praat UNTIL 13 AUGUST 2026, which was an
+# accident of where it was first needed rather than a decision. Two costs:
+# scripts/eml-record-save.praat already called it from outside the graphs
+# layer, and stats/eml-output.praat could NOT call it -- the graphs form is
+# included last, so @emlExportResultFiles had no way to collision-protect the
+# three-file export and had to document that as a gap. Core utilities is the
+# first include in both barrels, so everything can reach it from here.
+#
+# Arguments: .path$   the desired path
+# Outputs:   .result$ that path if it is free, else the first free
+#                     <base>_<n><ext> walking n upward from 1
+# ============================================================================
+# ----------------------------------------------------------------------------
+# @emlGenerateUniquePath
+# Appends ascending integer to filename until path is available.
+# Arguments: .path$ (original desired path)
+# Outputs: .result$ (available path)
+# ----------------------------------------------------------------------------
+procedure emlGenerateUniquePath: .path$
+    if not fileReadable (.path$)
+        .result$ = .path$
+    else
+        # Split into directory, base, extension
+        .lastSlash = rindex (.path$, "/")
+        if .lastSlash > 0
+            .dir$ = left$ (.path$, .lastSlash)
+            .filename$ = mid$ (.path$, .lastSlash + 1, length (.path$) - .lastSlash)
+        else
+            .dir$ = ""
+            .filename$ = .path$
+        endif
+
+        .lastDot = rindex (.filename$, ".")
+        if .lastDot > 0
+            .base$ = left$ (.filename$, .lastDot - 1)
+            .ext$ = mid$ (.filename$, .lastDot, length (.filename$) - .lastDot + 1)
+        else
+            .base$ = .filename$
+            .ext$ = ""
+        endif
+
+        .counter = 1
+        .result$ = .dir$ + .base$ + "_" + string$ (.counter) + .ext$
+        while fileReadable (.result$)
+            .counter = .counter + 1
+            .result$ = .dir$ + .base$ + "_" + string$ (.counter) + .ext$
+        endwhile
+    endif
+endproc
+
+# ============================================================================
 # END OF CORE UTILITY PROCEDURES
 # ============================================================================

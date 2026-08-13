@@ -220,7 +220,7 @@ procedure emlRecordInit
     endif
 
     if not variableExists ("emlRecordPluginRoot$")
-        emlRecordPluginRoot$ = preferencesDirectory$ + "/plugin_EMLPraatTools"
+        emlRecordPluginRoot$ = preferencesDirectory$ + "/plugin_EML_Praat_Tools"
     endif
     if not variableExists ("emlRecordPhraseId")
         emlRecordPhraseId = 0
@@ -481,7 +481,7 @@ procedure emlRecordBegin: .tempFolder$
     ; with spaces in it (macOS's "Praat Prefs") and under both 6.4.06 and
     ; 7.0. That one substitution takes the emitted file from
     ; one-machine to any-user-on-this-platform, for free.
-    .abs$ = preferencesDirectory$ + "/plugin_EMLPraatTools"
+    .abs$ = preferencesDirectory$ + "/plugin_EML_Praat_Tools"
     emlRecordPluginRoot$ = .abs$
     if homeDirectory$ <> ""
         if index (.abs$, homeDirectory$) = 1
@@ -1355,16 +1355,16 @@ procedure emlRecordRender
     ... + newline$
     .text$ = .text$ + "#" + newline$
     .text$ = .text$
-    ... + "#   Praat 6.x  Linux    ~/.praat-dir/plugin_EMLPraatTools"
+    ... + "#   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_Praat_Tools"
     ... + newline$
     .text$ = .text$
-    ... + "#   Praat 7.x  Linux    ~/.config/praat/plugin_EMLPraatTools"
+    ... + "#   Praat 7.x  Linux    ~/.config/praat/plugin_EML_Praat_Tools"
     ... + newline$
     .text$ = .text$
-    ... + "#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EMLPraatTools"
+    ... + "#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EML_Praat_Tools"
     ... + newline$
     .text$ = .text$
-    ... + "#   Windows    ~/Praat/plugin_EMLPraatTools"
+    ... + "#   Windows    ~/Praat/plugin_EML_Praat_Tools"
     ... + newline$
     .text$ = .text$
     ... + "#   Not sure?  Run  writeInfoLine: preferencesDirectory$"

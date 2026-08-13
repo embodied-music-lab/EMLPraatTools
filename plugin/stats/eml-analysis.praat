@@ -126,7 +126,7 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
-    emlResult_declared = 0
+    @emlCSVInit
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -375,7 +375,7 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
-    emlResult_declared = 0
+    @emlCSVInit
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -620,7 +620,7 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
     ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
-    emlResult_declared = 0
+    @emlCSVInit
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -761,7 +761,7 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
-    emlResult_declared = 0
+    @emlCSVInit
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -1574,7 +1574,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
     ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
-    emlResult_declared = 0
+    @emlCSVInit
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -1662,7 +1662,7 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
     ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
-    emlResult_declared = 0
+    @emlCSVInit
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -1807,7 +1807,7 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
     ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
-    emlResult_declared = 0
+    @emlCSVInit
 
     ; These per-test locals are read UNCONDITIONALLY by
     ; @emlDeclareCorrelationResult but assigned only inside their own branch.
@@ -1989,7 +1989,7 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
     ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
-    emlResult_declared = 0
+    @emlCSVInit
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -2082,7 +2082,7 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
     ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
-    emlResult_declared = 0
+    @emlCSVInit
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -2331,7 +2331,7 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
     ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
-    emlResult_declared = 0
+    @emlCSVInit
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -2485,7 +2485,7 @@ procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measu
     ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
-    emlResult_declared = 0
+    @emlCSVInit
     ; ASCII HYPHENS, NOT AN EM DASH, and the reason is Praat's file writer.
     ; Praat writes a text file as UTF-16 the moment its content contains one
     ; non-ASCII character. This string reaches a RECORDED SCRIPT verbatim as
@@ -2894,7 +2894,7 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
-    emlResult_declared = 0
+    @emlCSVInit
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -3059,7 +3059,7 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
-    emlResult_declared = 0
+    @emlCSVInit
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
