@@ -1,0 +1,4 @@
+clean	3	0	b,c,a
+oneblank	3	1	b,c,a
+whitespace	3	1	b,c,a
+twogroupblank	2	1	b,a

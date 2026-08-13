@@ -1,0 +1,5 @@
+CASE clean nGroups=3 nBlank=0 labels=b,c,a
+CASE oneblank nGroups=3 nBlank=1 labels=b,c,a
+CASE whitespace nGroups=3 nBlank=1 labels=b,c,a
+CASE twogroupblank nGroups=2 nBlank=1 labels=b,a
+BLANKGROUP DONE
