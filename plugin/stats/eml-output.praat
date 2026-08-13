@@ -890,7 +890,13 @@ procedure emlSaveInfoToFile: .filePath$
     # Output: .success (1/0), .actualPath$
     
     # Capture Info window contents using Praat's special variable
-    .content$ = info$
+    ; info$ () WITH PARENTHESES. Bare `info$` parses as a string VARIABLE of
+    ; that name, which nothing in the plugin ever assigns, so this line was a
+    ; hard stop -- proof the procedure has never executed. It was the only
+    ; bare info$ in the repository; every other capture site already wrote the
+    ; function form. Measured 13 Aug 2026: `nocheck x$ = info$` leaves x$
+    ; unset and the next reference of it aborts the script.
+    .content$ = info$ ()
     
     # Use the file writer with overwrite protection
     @emlReportToFile: .filePath$, .content$

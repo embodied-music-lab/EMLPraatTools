@@ -437,9 +437,10 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     @emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .nGroups, .doTukey
 
     ; Declare the same result in broom's three-file shape. Placed AFTER the
-    ; reporter, not inside it, for two reasons: @emlReportAnovaComparison
-    ; re-runs @emlOneWayAnova itself, so its outputs here are exactly the
-    ; numbers that were printed; and the lifecycle then sits beside
+    ; reporter, not inside it, for two reasons: the reporter is what prints
+    ; these numbers, so declaring after it means the frames and the report
+    ; describe one run of @emlOneWayAnova rather than two; and the lifecycle
+    ; then sits beside
     ; @emlCSVInit in the orchestrator rather than being split across
     ; graphs/eml-annotation-procedures.praat.
     ; ORDER MATTERS. The separate frames are staged FIRST, because staging
@@ -656,9 +657,13 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
     endif
 
     @emlKruskalWallis: .tableId, .dataCol$, .groupCol$
-    ; CAPTURED AT THE TEST, not at the end label: @emlReportKWComparison
-    ; and @emlDeclareKWResult both re-invoke @emlKruskalWallis, and a Praat
-    ; procedure's outputs live only until it runs again.
+    ; CAPTURED AT THE TEST, not at the end label. A Praat procedure's outputs
+    ; live only until it runs again, and everything downstream of here reads
+    ; emlKruskalWallis' namespace -- so the capture belongs where the values
+    ; are still unambiguously this comparison's. (Corrected 13 Aug 2026: this
+    ; used to claim @emlReportKWComparison and @emlDeclareKWResult re-invoke
+    ; the test. They do not. Right conclusion, wrong reason -- and the reason
+    ; is what someone would rely on when placing a declare call.)
     if emlKruskalWallis.error$ = ""
         .recResult$ = "H(" + string$ (emlKruskalWallis.df) + ") = "
         ... + fixed$ (emlKruskalWallis.h, 4) + ", p = "
@@ -2511,7 +2516,7 @@ procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measu
         ... .measure$ + " over " + .raterCols$ + ", subject " + .subjectCol$,
         ... "The ICC form and the scale of interest are choices; both are stated in the report.",
         ... "@emlRunReliabilityAnalysis: data, """ + .subjectCol$ + """, """ + .raterCols$ + """, """ + .measure$ + """, """ + .scale$ + """",
-        ... "In the GUI: New > EML Tools > Reliability...",
+        ... "Not in the GUI: there is no menu entry for this yet.",
         ... .recResult$, .error$
     endif
 
