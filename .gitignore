@@ -34,3 +34,10 @@ harness/gui_e2e/out/*.png
 # RECORD.tsv and the emitted script ARE the evidence and are NOT ignored.
 harness/record_e2e/prefs/
 harness/record_e2e/out/driver.log
+# The form-helper harness plants collision bait -- empty files whose only
+# purpose is to already exist when @emlGenerateUniquePath is asked for a
+# name. run.sh rebuilds the tree from nothing on every run, because a
+# leftover file would change what "already taken" means and quietly move
+# every answer. FORMHELPERS.tsv and the driver log ARE the evidence and are
+# NOT ignored.
+harness/formhelpers/out/scratch/
