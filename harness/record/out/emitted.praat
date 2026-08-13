@@ -1,3 +1,4 @@
+#!praat
 # ============================================================
 # EML Praat Tools -- recorded workflow
 # roundtrip  --  recorded on Praat 6.6.30
@@ -10,10 +11,10 @@
 # for any user on this platform. If this file fails to parse, the
 # plugin is somewhere else -- edit this block and nothing else.
 #
-#   Praat 6.x  Linux    ~/.praat-dir/plugin_EMLPraatTools
-#   Praat 7.x  Linux    ~/.config/praat/plugin_EMLPraatTools
-#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EMLPraatTools
-#   Windows    ~/Praat/plugin_EMLPraatTools
+#   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_Praat_Tools
+#   Praat 7.x  Linux    ~/.config/praat/plugin_EML_Praat_Tools
+#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EML_Praat_Tools
+#   Windows    ~/Praat/plugin_EML_Praat_Tools
 #   Not sure?  Run  writeInfoLine: preferencesDirectory$
 #
 # A version guard cannot help here: `include` is refused inside an
