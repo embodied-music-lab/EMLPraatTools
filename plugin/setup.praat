@@ -139,8 +139,13 @@ Add menu command: "Objects", "New", "Check & repair data...", "-- eml data --", 
 # These two cost two lines here and nothing on any dialog. Recording is
 # discovered by @emlRecordInit, which every entry point already runs.
 Add menu command: "Objects", "New", "-- eml record --", "Check & repair data...", 1, ""
-Add menu command: "Objects", "New", "Start recording script", "-- eml record --", 1, "scripts/eml-record-start.praat"
-Add menu command: "Objects", "New", "Save recorded script...", "Start recording script", 1, "scripts/eml-record-save.praat"
+# THREE COMMANDS, EACH NAMED FOR WHAT IT DOES. Author ruling, 13 Aug 2026.
+# 'Stop recording and open' writes a review copy into a folder the plugin owns
+# and raises it in a ScriptEditor; 'Stop recording and save' asks where to put
+# it. Both end the session, which is why neither carries a tickbox asking.
+Add menu command: "Objects", "New", "Record script", "-- eml record --", 1, "scripts/eml-record-start.praat"
+Add menu command: "Objects", "New", "Stop recording and open", "Record script", 1, "scripts/eml-record-open.praat"
+Add menu command: "Objects", "New", "Stop recording and save...", "Record script", 1, "scripts/eml-record-save.praat"
 
 # ── TABLED, 6 August 2026, by author ruling ───────────────────────────────
 #
