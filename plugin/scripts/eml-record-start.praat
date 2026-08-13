@@ -58,7 +58,8 @@ if emlRecordActive = 1
 
     if clicked = 1
         writeInfoLine: "EML: still recording — ", nSoFar, " step(s) so far."
-        appendInfoLine: "Run 'Save recorded script...' when you are done."
+        appendInfoLine: "Finish with 'Stop recording and open' or"
+        appendInfoLine: "'Stop recording and save'."
         goto END_RECORD_START
     endif
     @emlRecordDiscard
@@ -69,7 +70,8 @@ endif
 writeInfoLine: "EML: recording started."
 appendInfoLine: ""
 appendInfoLine: "Every EML analysis and figure from now on is added to one"
-appendInfoLine: "script. Run 'Save recorded script...' when you are done."
+appendInfoLine: "script. Finish with 'Stop recording and open' to read it in"
+appendInfoLine: "an editor, or 'Stop recording and save' to file it directly."
 appendInfoLine: ""
 appendInfoLine: "A Table called 'emlRecordBuffer' now sits in the Objects"
 appendInfoLine: "window. That IS the recording — removing it ends the session."

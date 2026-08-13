@@ -1,17 +1,22 @@
 # ============================================================================
-# EML Praat Tools — Save recorded script
+# EML Praat Tools — Stop recording and save
 # ============================================================================
-# Purpose: render the recording started by 'Start recording script' to a
-#          runnable Praat file, and end the session.
-# Date: 12 August 2026
-# Version: 1.0
+# Purpose: render the recording started by 'Record script' to a runnable Praat
+#          file at a place the user chooses, and end the session.
+# Date: 13 August 2026
+# Version: 2.0
 #
-# WHY SAVING AND ENDING ARE ONE COMMAND, AND WHY THERE IS STILL A CHOICE.
-# @emlRecordFlush deliberately does NOT end the recording — the proposal asks
-# for flush on demand as well as flush on stop, and a flush that silently
-# ended the session would make the on-demand case a trap. That decision lives
-# in the recorder and is not overridden here; instead the DIALOG asks, so the
-# user says which they meant rather than discovering it afterwards.
+# THE MENU ITEM NAME IS THE CONTRACT. Author ruling, 13 August 2026: three
+# commands — 'Record script', 'Stop recording and open', 'Stop recording and
+# save' — each saying in its own name what it does. So the "Stop recording
+# after saving" tickbox this file used to carry is gone: a user who picked a
+# command called 'Stop recording and save' has already answered that question,
+# and asking again is the dialog second-guessing the menu.
+#
+# @emlRecordFlush still does NOT end the recording on its own — flush on
+# demand is a separate capability that lives in the recorder and is not
+# overridden here. Ending the session is this FILE's decision, made once,
+# after the write succeeds.
 #
 # NOTHING RECORDED IS NOT AN ERROR. Starting a recording and saving without
 # running an analysis is a reasonable thing to do by accident, and the right
@@ -36,8 +41,8 @@ include eml-lib.praat
 if emlRecordActive = 0
     writeInfoLine: "EML: no recording is in progress."
     appendInfoLine: ""
-    appendInfoLine: "Run 'Start recording script' first, then the analyses"
-    appendInfoLine: "and figures you want captured."
+    appendInfoLine: "Run 'Record script' first, then the analyses and"
+    appendInfoLine: "figures you want captured."
     goto END_RECORD_SAVE
 endif
 
@@ -66,12 +71,11 @@ if variableExists ("config_lastPNGFolder$")
     endif
 endif
 
-beginPause: "Save recorded script"
+beginPause: "Stop recording and save"
     comment: "Recorded " + string$ (nSteps) + " step(s)."
+    comment: "The recording ends when this is saved."
     word: "File name", "eml_recorded_workflow.praat"
     folder: "Folder", defaultFolder$
-    comment: "Keep recording after saving, or stop the session?"
-    boolean: "Stop recording after saving", 1
 clicked = endPause: "Cancel", "Save", 2, 1
 
 if clicked = 1
@@ -107,11 +111,12 @@ appendInfoLine: outPath$
 appendInfoLine: ""
 appendInfoLine: string$ (nSteps), " step(s) written."
 
-if stop_recording_after_saving = 1
-    @emlRecordDiscard
-    appendInfoLine: "Recording stopped."
-else
-    appendInfoLine: "Still recording — later steps will be added to the next save."
-endif
+# THE RECORDING ENDS AFTER THE WRITE, never before it: a failed write must
+# leave the session intact, or a full disk costs the user the whole recording.
+@emlRecordDiscard
+appendInfoLine: "Recording stopped."
+appendInfoLine: ""
+appendInfoLine: "To read or edit it now, use 'Stop recording and open'"
+appendInfoLine: "next time — it puts the script straight into an editor."
 
 label END_RECORD_SAVE
