@@ -128,8 +128,13 @@ if (!file.exists(dl_p)) {
     stop("dialog artefact not found: ", dl_p,
          "\n  Run: bash harness/gui_e2e/run.sh")
 }
+# FOUR COLUMNS SINCE 13 AUG 2026. The harness used to press Return at every
+# dialog and record only the title; it now presses a NAMED button chosen by a
+# reverse shift+Tab count, and records which and how many. The extra columns
+# are v45's; the assertions below are unchanged and read the same two fields.
 dl <- read.delim(dl_p, header = FALSE, stringsAsFactors = FALSE,
-                 col.names = c("step", "title"))
+                 quote = "", comment.char = "",
+                 col.names = c("step", "title", "button", "rev"))
 
 check_true("v35", "dialog artefact has rows", nrow(dl) > 0L)
 check_true("v35", "the main form opened",
@@ -150,10 +155,14 @@ i_map  <- which(grepl("Column Mapping", dl$title, fixed = TRUE))[1]
 check_true("v35", "column mapping came after the main form",
            !is.na(i_form) && !is.na(i_map) && i_map > i_form)
 
-# The step column must be the 1..n it claims to be, or the ordering check
-# above is reading something other than the sequence it was walked in.
-check_true("v35", "dialog steps are consecutive from 1",
-           identical(as.integer(dl$step), seq_len(nrow(dl))))
+# The step column must be the sequence it claims to be, or the ordering check
+# above is reading something other than the order it was walked in. NOT
+# `identical(step, seq_len(n))` any more: a Done press that finds three
+# buttons instead of four retries at a different count and records a second
+# row under the SAME step number, which is deliberate -- the retry is evidence,
+# not noise, and a strictly-consecutive check would have forbidden recording it.
+check_true("v35", "dialog steps start at 1 and never go backwards",
+           dl$step[1] == 1L && !is.unsorted(dl$step))
 
 if (!exists("EML_SUITE")) {
     eml_report("v35 assembly: every entry point parses, and the workflow advances")

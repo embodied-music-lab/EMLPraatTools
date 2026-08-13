@@ -62,6 +62,18 @@ if (!exists("eml_report")) {
     as.character(d[[1]])
 }
 
+# The gui end-to-end artefact keys on the DIALOG TITLE in column 2, and the
+# same title legitimately appears more than once -- Graph Complete is visited
+# four times, once per branch. The population is therefore the distinct set of
+# titles the walk met, which is what v45 claims.
+.dialog_titles <- function(path) {
+    if (!file.exists(path)) return(NULL)
+    d <- read.delim(path, header = FALSE, stringsAsFactors = FALSE,
+                    quote = "", comment.char = "")
+    if (nrow(d) == 0L) return(character(0))
+    unique(as.character(d[[2]]))
+}
+
 # The parity artefact keys on procedure AND arm: `violin` appears twice and
 # they are two different measurements.
 .parity_cases <- function(path) {
@@ -149,6 +161,18 @@ ARTEFACTS <- list(
                              "out"), "FORMHELPERS.tsv"),
        read = .tsv_col1,
        rerun = "bash harness/formhelpers/run.sh"),
+  list(key  = "tabwalk_out",
+       what = "tab-walk case",
+       path = file.path(.dir("EML_TABWALK_DIR", "harness", "tabwalk", "out"),
+                        "TABWALK_JOINED.tsv"),
+       read = .tsv_col1,
+       rerun = "bash harness/tabwalk/run.sh"),
+  list(key  = "guie2e_out",
+       what = "workflow dialog",
+       path = file.path(.dir("EML_GUIE2E_DIR", "harness", "gui_e2e", "out"),
+                        "DIALOGS.tsv"),
+       read = .dialog_titles,
+       rerun = "bash harness/gui_e2e/run.sh"),
   list(key  = "determinism_out",
        what = "draw procedure",
        path = file.path(.dir("EML_DETERMINISM_DIR", "harness", "determinism",
@@ -212,7 +236,7 @@ for (a in ARTEFACTS) {
 # quietly shortened, would otherwise reduce this file to nothing while it
 # still reported success.
 check("v38", "every declared artefact was examined",
-      length(ARTEFACTS), 10, tol = 0)
+      length(ARTEFACTS), 12, tol = 0)
 
 if (!exists("EML_SUITE")) {
     eml_report("v38 coverage: everything rendered is claimed by some validator")

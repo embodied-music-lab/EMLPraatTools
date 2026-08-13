@@ -260,7 +260,28 @@ scripts <- c(
     # separator out of a filename, and @emlGraphsCSVRowAnalysis is the RFC
     # 4180 field reader underneath them.
     #     bash harness/formhelpers/run.sh
-    "v43_form_helpers.R"
+    "v43_form_helpers.R",
+    # v44 pins where Tab actually goes in a Praat pause dialog. harness/gui_e2e
+    # carried two incompatible laws for this and had measured neither, and the
+    # one written into its case table was wrong: Tab visits every FIELD before
+    # it reaches a button, Return in an entry presses the DEFAULT rather than
+    # the focused widget, and `folder:` is a GtkTextView that swallows Tab as
+    # literal whitespace -- so a forward walk on the Save Figure dialog reaches
+    # no button at any count and corrupts the output path on the way. The
+    # replacement runs backward: shift+Tab xN presses the Nth button from the
+    # end, on every shape, without ever entering a field.
+    #     bash harness/tabwalk/run.sh
+    "v44_tab_walk.R",
+    # v45 pins the workflow driven to TEARDOWN. v35 asserts that it advances;
+    # until 13 Aug 2026 nothing asserted that it finishes, because the harness
+    # stopped at the column-mapping dialog and the whole span past the draw
+    # commit -- Save Figure, Export Results, Redraw, teardown -- had never run
+    # outside a live dialog. Driving it found that the harness was arriving at
+    # a post-draw dialog no user reaches (three buttons, no Exp CSV, because
+    # the driver skipped the analysis the wrapper runs first) and that the run
+    # saved its figure into the home directory.
+    #     bash harness/gui_e2e/run.sh
+    "v45_gui_teardown.R"
 )
 
 cat("EML Praat Tools validation suite\n")
