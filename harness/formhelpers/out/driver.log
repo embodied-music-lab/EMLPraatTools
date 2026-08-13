@@ -1,0 +1,18 @@
+CASE free kind=uniq result=fig.png exists=0
+CASE collide1 kind=uniq result=taken_1.png exists=0
+CASE collide2 kind=uniq result=walk_2.png exists=0
+CASE collide3 kind=uniq result=deep_3.png exists=0
+CASE noext kind=uniq result=noext_1 exists=0
+CASE dotted kind=uniq result=my.data_1.csv exists=0
+CASE dotfile kind=uniq result=_1.hidden exists=0
+CASE csv_fallback kind=csv result=voiceA_results exists=NA
+CASE csv_clipboard kind=csv result=fromClipboard_results exists=NA
+CASE csv_analysis kind=csv result=fromClipboard_One-way_ANOVA exists=NA
+CASE csv_slug kind=csv result=fromClipboard_Cohens_d_-_one-way exists=NA
+CASE csv_shortrow kind=csv result=fromClipboard_results exists=NA
+CASE row_plain kind=row result=One-way ANOVA exists=NA
+CASE row_quotedtable kind=row result=Pearson r exists=NA
+CASE row_escaped kind=row result=say "ah" test exists=NA
+CASE row_tail kind=row result=Pearson r exists=NA
+CASE row_short kind=row result= exists=NA
+FORMHELPERS DONE

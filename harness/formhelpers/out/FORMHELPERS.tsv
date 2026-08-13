@@ -1,0 +1,17 @@
+free	uniq	fig.png	0
+collide1	uniq	taken_1.png	0
+collide2	uniq	walk_2.png	0
+collide3	uniq	deep_3.png	0
+noext	uniq	noext_1	0
+dotted	uniq	my.data_1.csv	0
+dotfile	uniq	_1.hidden	0
+csv_fallback	csv	voiceA_results	NA
+csv_clipboard	csv	fromClipboard_results	NA
+csv_analysis	csv	fromClipboard_One-way_ANOVA	NA
+csv_slug	csv	fromClipboard_Cohens_d_-_one-way	NA
+csv_shortrow	csv	fromClipboard_results	NA
+row_plain	row	One-way ANOVA	NA
+row_quotedtable	row	Pearson r	NA
+row_escaped	row	say "ah" test	NA
+row_tail	row	Pearson r	NA
+row_short	row		NA
