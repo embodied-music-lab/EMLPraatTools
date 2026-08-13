@@ -1,2 +1,12 @@
-1	EML Graphs
-2	Violin Plot -- Column Mapping
+1	EML Graphs	Continue	1
+2	Violin Plot -- Column Mapping	Draw	1
+3	Graph Complete	Save	3
+4	Save Figure	Save	1
+5	Save Complete	OK	1
+6	Graph Complete	ExpCSV	2
+7	Export Results	Save	1
+8	Export Complete	OK	1
+9	Graph Complete	Redraw	1
+10	EML Graphs	Continue	1
+11	Violin Plot -- Column Mapping	Draw	1
+12	Graph Complete	Done	4
