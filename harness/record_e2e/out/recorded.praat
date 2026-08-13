@@ -1,3 +1,4 @@
+#!praat
 # ============================================================
 # EML Praat Tools -- recorded workflow
 # 12 August 2026, 00:00:00  --  recorded on Praat 6.6.30
@@ -10,10 +11,10 @@
 # for any user on this platform. If this file fails to parse, the
 # plugin is somewhere else -- edit this block and nothing else.
 #
-#   Praat 6.x  Linux    ~/.praat-dir/plugin_EMLPraatTools
-#   Praat 7.x  Linux    ~/.config/praat/plugin_EMLPraatTools
-#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EMLPraatTools
-#   Windows    ~/Praat/plugin_EMLPraatTools
+#   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_Praat_Tools
+#   Praat 7.x  Linux    ~/.config/praat/plugin_EML_Praat_Tools
+#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EML_Praat_Tools
+#   Windows    ~/Praat/plugin_EML_Praat_Tools
 #   Not sure?  Run  writeInfoLine: preferencesDirectory$
 #
 # A version guard cannot help here: `include` is refused inside an
@@ -23,17 +24,17 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EMLPraatTools/stats/eml-core-utilities.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EMLPraatTools/stats/eml-core-descriptive.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EMLPraatTools/stats/eml-extract.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EMLPraatTools/stats/eml-output.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EMLPraatTools/stats/eml-inferential.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EMLPraatTools/stats/eml-result-writer.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EMLPraatTools/stats/eml-record.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EMLPraatTools/graphs/eml-graph-procedures.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EMLPraatTools/graphs/eml-annotation-procedures.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EMLPraatTools/graphs/eml-draw-procedures.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EMLPraatTools/stats/eml-analysis.praat
+include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
+include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
+include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-extract.praat
+include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-output.praat
+include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-inferential.praat
+include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-result-writer.praat
+include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-record.praat
+include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/graphs/eml-graph-procedures.praat
+include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/graphs/eml-annotation-procedures.praat
+include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/graphs/eml-draw-procedures.praat
+include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-analysis.praat
 
 @emlInitDrawingDefaults
 
