@@ -90,7 +90,13 @@ WRAPPERS_EXPECTED <- c(
   # no checkbox on any dialog -- the recorder accumulates a SEQUENCE across
   # menu invocations, which a per-analysis boolean cannot express, and a row
   # on twenty dialogs is a row Praat gives no scrollbar for.
-  "eml-record-start.praat", "eml-record-save.praat")
+  # Three record commands since 13 Aug 2026, each named for what it does:
+  # 'Record script', 'Stop recording and open', 'Stop recording and save...'.
+  # The open one raises the script in a ScriptEditor rather than printing it,
+  # because the Info window holds the analysis reports and is what Save Info
+  # writes -- a script in there destroys the deliverable.
+  "eml-record-start.praat", "eml-record-open.praat",
+  "eml-record-save.praat")
 eml_census("v35", "entry point", wr$wrapper, WRAPPERS_EXPECTED)
 # Declared for validate/coverage.R (§19).
 eml_claim("v35", "wrappers_out", WRAPPERS_EXPECTED)
