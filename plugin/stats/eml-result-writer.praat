@@ -538,11 +538,15 @@ endproc
 # ============================================================================
 # Create the extra-frame slots without disturbing anything already staged.
 procedure eml_ensureExtraSlots
-    if not variableExists ("emlResult_extra1$")
-        emlResult_extra1$ = ""
-        emlResult_extra2$ = ""
-        emlResult_extra1Text$ = ""
-        emlResult_extra2Text$ = ""
+    ; A LIST, NOT TWO NAMED SLOTS. Until 13 Aug 2026 this held exactly two,
+    ; and @emlResultStageExtra called exitScript: on a third -- a hard kill
+    ; mid-run, aimed at a developer, on a path a user can reach. A one-way
+    ; ANOVA already stages both (post-hoc and effect sizes); a two-way with
+    ; post-hoc plus two effect-size families needs three. The ceiling was one
+    ; requirement away from binding and the failure was a crash, so it is
+    ; gone: Praat arrays grow on assignment and emlResult_extraN counts them.
+    if not variableExists ("emlResult_extraN")
+        emlResult_extraN = 0
     endif
 endproc
 
@@ -550,10 +554,11 @@ endproc
 # Drop any staged extra frames. Call this ONCE at the start of a declaration
 # sequence, before the first @emlResultStageExtra.
 procedure emlResultClearExtras
-    emlResult_extra1$ = ""
-    emlResult_extra2$ = ""
-    emlResult_extra1Text$ = ""
-    emlResult_extra2Text$ = ""
+    @eml_ensureExtraSlots
+    ; The COUNT is the truth. Stale array entries above it are unreachable --
+    ; every reader loops 1..emlResult_extraN -- so zeroing the count is the
+    ; whole clear, and it cannot leave a half-cleared list behind.
+    emlResult_extraN = 0
 endproc
 
 
@@ -563,16 +568,9 @@ procedure emlResultStageExtra: .suffix$
     if eml_renderTidy.text$ = ""
         goto STAGE_EXTRA_DONE
     endif
-    if emlResult_extra1$ = ""
-        emlResult_extra1$ = .suffix$
-        emlResult_extra1Text$ = eml_renderTidy.text$
-    elsif emlResult_extra2$ = ""
-        emlResult_extra2$ = .suffix$
-        emlResult_extra2Text$ = eml_renderTidy.text$
-    else
-        exitScript: "emlResultStageExtra: more than two extra frames "
-        ... + "declared; add a slot in eml-result-writer.praat."
-    endif
+    emlResult_extraN = emlResult_extraN + 1
+    emlResult_extra$ [emlResult_extraN] = .suffix$
+    emlResult_extraText$ [emlResult_extraN] = eml_renderTidy.text$
     label STAGE_EXTRA_DONE
 endproc
 

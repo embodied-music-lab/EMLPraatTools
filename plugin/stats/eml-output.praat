@@ -1006,11 +1006,8 @@ procedure emlCSVInit
     ;
     ; The staged extra frames go with it, for the same reason.
     emlResult_declared = 0
-    if variableExists ("emlResult_extra1$")
-        emlResult_extra1$ = ""
-        emlResult_extra2$ = ""
-        emlResult_extra1Text$ = ""
-        emlResult_extra2Text$ = ""
+    if variableExists ("emlResult_extraN")
+        emlResult_extraN = 0
     endif
 
     emlCSV_n = 0
@@ -1232,20 +1229,15 @@ procedure emlExportResultFiles: .folder$, .base$
         # Post-hoc and effect sizes are separate model objects in R and are
         # separate files here. Written only if the analysis declared them,
         # which it signals by leaving a non-empty extras name.
-        if emlResult_extra1$ <> ""
-            .p1$ = .folder$ + "/" + .base$ + "_" + emlResult_extra1$
+        # ONE LOOP OVER THE LIST. This used to be two copy-pasted blocks,
+        # one per named slot, which is where the two-frame ceiling came from.
+        for .e to emlResult_extraN
+            .pe$ = .folder$ + "/" + .base$ + "_" + emlResult_extra$ [.e]
             ... + "_tidy.csv"
-            writeFile: .p1$, emlResult_extra1Text$
+            writeFile: .pe$, emlResult_extraText$ [.e]
             .nWritten = .nWritten + 1
-            .fileList$ = .fileList$ + .p1$ + newline$
-        endif
-        if emlResult_extra2$ <> ""
-            .p2$ = .folder$ + "/" + .base$ + "_" + emlResult_extra2$
-            ... + "_tidy.csv"
-            writeFile: .p2$, emlResult_extra2Text$
-            .nWritten = .nWritten + 1
-            .fileList$ = .fileList$ + .p2$ + newline$
-        endif
+            .fileList$ = .fileList$ + .pe$ + newline$
+        endfor
 
         if .nWritten > 0
             .success = 1
