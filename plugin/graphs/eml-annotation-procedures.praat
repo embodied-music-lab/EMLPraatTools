@@ -4,7 +4,18 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
-# Version: 3.20
+# Version: 3.21
+# v3.21: THE ANNOTATION BRIDGE NOW DECLARES. @emlReportBridgeStats ran the
+#        analysis, printed it and filled the legacy CSV buffer, but never
+#        called the @emlDeclare*Result family -- so an annotated graph's
+#        export could only ever be the old single long-format file, for an
+#        analysis the stats menu exported as tidy/glance/augment. Added the
+#        same declaration calls the orchestrators make, for all three families
+#        the bridge produces: two-group, one-way ANOVA with Tukey, and
+#        Kruskal-Wallis with Dunn. Extras staged FIRST in every case, because
+#        staging reuses the one tidy collector and the model's own tidy has to
+#        be what is left in it when @emlResultWrite runs. No new reporting
+#        code: these are calls to the procedures the stats path already uses.
 # Date: 9 August 2026
 #
 # v3.20: THE LEGEND IS AN ANNOTATION, AND NOW PAYS FOR ITS OWN ROOM.
@@ -3118,10 +3129,50 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
         ... .n1, .mean1, .sd1, .med1,
         ... .n2, .mean2, .sd2, .med2, .testType$
 
+        # THREE-FILE DECLARATION, exactly the calls @emlRunTwoGroupAnalysis
+        # makes after the same reporter. Until 13 Aug 2026 the graphs entry
+        # point ran the analysis, printed it and filled the legacy CSV buffer,
+        # but never declared -- so the Exp CSV button could only ever write the
+        # old single long-format file, for an analysis the stats menu exported
+        # as tidy/glance/augment. v20/v21 enumerate the stats-menu
+        # orchestrators; this path is reached from the graphs form and was
+        # outside that enumeration.
+        #
+        # EXTRAS FIRST. Staging reuses the one tidy collector, so the model's
+        # own tidy has to be what is left in it when @emlResultWrite runs.
+        #
+        # The graphs form offers a single Test type -- Parametric or
+        # Nonparametric -- on every annotate-capable column-mapping dialog, so
+        # annotTestType$ is never "both" here and the two flags are one branch.
+        .doPar = 1
+        .doNon = 0
+        if .testType$ = "nonparametric"
+            .doPar = 0
+            .doNon = 1
+        endif
+        @emlResultClearExtras
+        @emlDeclareTwoGroupEffects: .doPar, .doNon
+        @emlResultStageExtra: "effectsize"
+        @emlDeclareTwoGroupResult: .tableName$, .dataCol$, .groupCol$,
+        ... .doPar, .doNon, .g1$, .g2$
+
     elsif .testType$ = "parametric"
         # k-group parametric: ANOVA (bridge ran with doTukey=1)
         @emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$,
         ... .tableId, .nGroups, 1
+
+        # The declaration @emlRunAnovaAnalysis makes, extras staged first.
+        # The bridge always runs Tukey (the literal 1 above), so the post-hoc
+        # frame is always available on this path.
+        if emlOneWayAnova.error$ = ""
+            @emlResultClearExtras
+            @emlDeclareTukeyResult: .groupCol$
+            @emlResultStageExtra: "posthoc"
+            @emlDeclareAnovaEffectSizes: .groupCol$, 1
+            @emlResultStageExtra: "effectsize"
+        endif
+        @emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
+        ... .tableId, 1
 
     else
         # k-group nonparametric: Kruskal-Wallis
@@ -3133,6 +3184,23 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
         endif
         @emlReportKWComparison: .tableName$, .dataCol$, .groupCol$,
         ... .tableId, .nGroups, .doDunn
+
+        # The declaration @emlRunKWAnalysis makes. NESTED ifs, not `and`:
+        # Praat evaluates BOTH operands of `and`, so a single condition would
+        # read emlDunnTest's namespace on a run where Dunn never executed --
+        # and on this path Dunn runs only when the omnibus is significant.
+        if emlKruskalWallis.error$ = ""
+            @emlResultClearExtras
+            if .doDunn = 1
+                if variableExists ("emlDunnTest.error$")
+                    if emlDunnTest.error$ = ""
+                        @emlDeclareDunnResult: .groupCol$
+                        @emlResultStageExtra: "posthoc"
+                    endif
+                endif
+            endif
+            @emlDeclareKWResult: .tableName$, .dataCol$, .groupCol$
+        endif
     endif
 endproc
 

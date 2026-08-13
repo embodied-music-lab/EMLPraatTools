@@ -3,7 +3,15 @@
 # ============================================================================
 # EML Graphs Plugin
 # License: GPL-3.0-or-later
-# Version: 2.7
+# Version: 2.8
+# v2.8: The post-draw "Exp CSV" button writes through @emlExportResultFiles,
+#       the shared migration fork, instead of calling @emlExportStatsCSV
+#       directly. It was the only export in the plugin that could not reach
+#       the fork, so it wrote the legacy single long-format file for analyses
+#       the stats menu exported in broom's three-file shape. The explicit
+#       @emlGenerateUniquePath call goes with it: @emlReportToFile has always
+#       uniqued the legacy file itself, and the declared arm does not unique,
+#       which is the behaviour @emlWrapperExportCSV has always had.
 # v2.7: A WRAPPER'S ANNOTATE PRESET NOW SURVIVES A BEGINNER DRAW. Beginner
 #       mode draws only what its own dialog offers, so the beginner commit
 #       setting annotate = 0 is correct and stays. What was wrong is what
@@ -7879,16 +7887,53 @@ repeat
                 while endsWith (output_folder$, "/")
                     output_folder$ = left$ (output_folder$, length (output_folder$) - 1)
                 endwhile
-                csvPath$ = output_folder$ + "/" + file_name$ + ".csv"
-                if fileReadable (csvPath$)
-                    @emlGenerateUniquePath: csvPath$
-                    csvPath$ = emlGenerateUniquePath.result$
-                endif
-                @emlExportStatsCSV: csvPath$
+                # THE SAME WRITER THE STATS WRAPPERS' CSV BUTTON USES.
+                # This branch used to call @emlExportStatsCSV directly, which
+                # is the LEGACY single long-format file and has no migration
+                # fork -- so the same analysis produced three broom-shaped
+                # files from the wrapper's CSV button and one differently
+                # shaped file from this one. @emlExportResultFiles is that
+                # fork, extracted from @emlWrapperExportCSV on 13 Aug 2026 so
+                # both buttons write through one implementation.
+                #
+                # NO @emlGenerateUniquePath HERE ANY MORE. The legacy arm
+                # still uniques -- @emlReportToFile walks _1.._999 itself, and
+                # always did, so the explicit call was belt-and-braces. The
+                # declared arm does not unique, which is the behaviour the
+                # wrapper has always had; see @emlExportResultFiles' header.
+                @emlExportResultFiles: output_folder$, file_name$
                 config_lastCSVFolder$ = output_folder$
-                if emlExportStatsCSV.success
+                if emlExportResultFiles.success
                     beginPause: "Export Complete"
-                        comment: "Saved to: " + emlExportStatsCSV.actualPath$
+                        comment: "Wrote " + string$ (emlExportResultFiles.nWritten)
+                        ... + " file(s):"
+                        # ONE comment: PER LINE. `comment:` reserves the height
+                        # of one line at layout time but draws whatever string
+                        # it is given, so a string containing newline$ is
+                        # painted over by the widgets below it -- the OK button
+                        # landed on top of the third path when the wrapper's
+                        # version of this dialog was written as one comment.
+                        csvListRest$ = emlExportResultFiles.fileList$
+                        while index (csvListRest$, newline$) > 0
+                            csvNl = index (csvListRest$, newline$)
+                            csvOneFile$ = left$ (csvListRest$, csvNl - 1)
+                            if csvOneFile$ <> ""
+                                comment: csvOneFile$
+                            endif
+                            csvListRest$ = right$ (csvListRest$,
+                            ... length (csvListRest$) - csvNl)
+                        endwhile
+                        if csvListRest$ <> ""
+                            comment: csvListRest$
+                        endif
+                    endPause: "OK", 1, 0
+                elsif emlExportResultFiles.reason$ = "empty"
+                    # D66: not a disk failure and must not read as one.
+                    beginPause: "Nothing to Export"
+                        comment: "This analysis produced no exportable rows."
+                        comment: ""
+                        comment: "The results are in the Info window. Please"
+                        comment: "report this -- it is a defect, not a setting."
                     endPause: "OK", 1, 0
                 else
                     beginPause: "Export Failed"
