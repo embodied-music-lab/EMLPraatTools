@@ -1302,6 +1302,22 @@ procedure emlRecordRender
     .bar$ = "# ============================================================"
     .rule$ = "# ------------------------------------------------------------"
 
+    ; THE FIRST TWO CHARACTERS HAVE TO BE `#!`, and that is not decoration.
+    ; Praat's own documentation for `Read from file...` says it "recognizes
+    ; script files if they begin with #!" -- so with this line the emitted
+    ; file opens in a ScriptEditor, and without it Praat tries to read it as
+    ; a data object. Confirmed 13 Aug 2026 under Xvfb: `Read from file:` on a
+    ; file starting `#!` raises a window titled Script "<path>", with no file
+    ; chooser and no error.
+    ;
+    ; That is what lets "Stop recording" put the script in front of the user
+    ; in a real, editable, runnable editor -- author ruling 13 Aug 2026: the
+    ; script must NEVER be printed into the Info window, which holds the
+    ; analysis reports and is what Save Info writes.
+    ;
+    ; It is a legal Praat comment either way, so it costs nothing on the
+    ; paths that only ever write the file.
+    .text$ = .text$ + "#!praat" + newline$
     .text$ = .text$ + .bar$ + newline$
     .text$ = .text$ + "# EML Praat Tools -- recorded workflow" + newline$
     .text$ = .text$ + "# " + emlRecordStamp$
