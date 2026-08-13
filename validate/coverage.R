@@ -143,6 +143,12 @@ ARTEFACTS <- list(
                              "out"), "LEGENDROOM.tsv"),
        read = .tsv_col1,
        rerun = "bash harness/legendroom/run.sh"),
+  list(key  = "formhelpers_out",
+       what = "form-helper case",
+       path = file.path(.dir("EML_FORMHELPERS_DIR", "harness", "formhelpers",
+                             "out"), "FORMHELPERS.tsv"),
+       read = .tsv_col1,
+       rerun = "bash harness/formhelpers/run.sh"),
   list(key  = "determinism_out",
        what = "draw procedure",
        path = file.path(.dir("EML_DETERMINISM_DIR", "harness", "determinism",
@@ -206,7 +212,7 @@ for (a in ARTEFACTS) {
 # quietly shortened, would otherwise reduce this file to nothing while it
 # still reported success.
 check("v38", "every declared artefact was examined",
-      length(ARTEFACTS), 9, tol = 0)
+      length(ARTEFACTS), 10, tol = 0)
 
 if (!exists("EML_SUITE")) {
     eml_report("v38 coverage: everything rendered is claimed by some validator")

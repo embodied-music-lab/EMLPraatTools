@@ -248,7 +248,19 @@ scripts <- c(
     # never run outside a live dialog. harness/legend covers the headroom
     # arithmetic by reimplementing it; that is not this procedure.
     #     bash harness/legendroom/run.sh
-    "v42_legend_room.R"
+    "v42_legend_room.R",
+    # v43 pins the three helpers that live INSIDE eml-graphs-form.praat and
+    # are called only from inside it. @emlGenerateUniquePath is the
+    # non-destructive-save promise -- every figure, legend, CSV and recorded
+    # script routes through it and its whole job is that an existing file is
+    # never silently overwritten. Nothing asserted that, because nothing had
+    # ever loaded that file outside a live dialog, and a regression there
+    # produces no red test and no wrong number: it destroys a figure the user
+    # drew an hour ago. @emlGraphsCSVDefaultName's slug rules keep a path
+    # separator out of a filename, and @emlGraphsCSVRowAnalysis is the RFC
+    # 4180 field reader underneath them.
+    #     bash harness/formhelpers/run.sh
+    "v43_form_helpers.R"
 )
 
 cat("EML Praat Tools validation suite\n")
