@@ -209,17 +209,19 @@ while [[ $step -lt $MAXSTEPS ]]; do
         *"EML Graphs"*)                  rev=1; label="Continue" ;;
         *"Graph Complete"*)
             gcVisit=$((gcVisit + 1))
+            # THREE BUTTONS NOW, always: Done | Save | Redraw. The row used
+            # to be four or three depending on whether there were results to
+            # export, which is why this dialog needed a retry at a second
+            # count. "Save" opens a panel offering whichever outputs exist, so
+            # the row no longer changes shape and the counts are fixed.
             case $gcVisit in
-                1) rev=3; label="Save" ;;
-                2) rev=2; label="ExpCSV" ;;
-                3) rev=1; label="Redraw" ;;
-                *) rev=4; label="Done" ;;
+                1) rev=2; label="Save" ;;
+                2) rev=1; label="Redraw" ;;
+                *) rev=3; label="Done" ;;
             esac ;;
-        *"Save Figure"*)                 rev=1; label="Save" ;;
-        *"Export Results"*)              rev=1; label="Save" ;;
-        *"Save Complete"*)               rev=1; label="OK" ;;
-        *"Export Complete"*)             rev=1; label="OK" ;;
-        *"Export Failed"*)               rev=1; label="OK" ;;
+        "Save")                          rev=1; label="Save" ;;
+        *"Saved")                        rev=1; label="OK" ;;
+        *"Nothing saved"*)               rev=1; label="OK" ;;
         *"Column Error"*)                rev=1; label="OK" ;;
         *)                               rev=1; label="LAST" ;;
     esac
@@ -241,16 +243,10 @@ while [[ $step -lt $MAXSTEPS ]]; do
     # shows three, and Done is then 3 from the end rather than 4. Which one is
     # up cannot be seen from the title, so Done retries once at 3 -- and the
     # retry is recorded rather than being silently absorbed.
-    if [[ "$label" == "Done" ]]; then
-        still=$(pauseinfo 2>/dev/null | cut -f2-)
-        if [[ "$still" == "$title" ]]; then
-            printf '%d\t%s\t%s\t%d\n' "$step" "$title" "Done-retry3" 3 >> "$TSV"
-            DISPLAY="$DISP" xdotool windowactivate --sync "$wid" 2>/dev/null
-            DISPLAY="$DISP" xdotool key --clearmodifiers --repeat 3 shift+Tab 2>/dev/null
-            DISPLAY="$DISP" xdotool key --clearmodifiers Return 2>/dev/null
-            sleep 6
-        fi
-    fi
+    # NO DONE RETRY ANY MORE. It existed because Graph Complete's row was
+    # four or three buttons depending on the CSV buffer, so Done's distance
+    # from the end was not knowable from the title. The row is fixed at three
+    # now, so the count is exact and a retry would only hide a real failure.
 done
 
 # WHAT THE RUN LEFT ON DISK. The figure and the CSV are written by the Save
@@ -261,9 +257,14 @@ ART="$OUT/ARTEFACTS.tsv"
 : > "$ART"
 while IFS= read -r f; do
     [[ -e "$f" ]] || continue
+    # THE PLUGIN'S OWN CONFIG IS NOT AN OUTPUT. @emlSaveConfig writes
+    # eml-graphs-config.txt to remember dialog choices between sessions; it is
+    # state, not something the analysis produced, and counting it would make
+    # "the run wrote a file" true even when every save failed.
+    [[ "$(basename "$f")" == "eml-graphs-config.txt" ]] && continue
     printf '%s\t%s\n' "$(basename "$f")" "$(stat -c%s "$f")" >> "$ART"
 done < <(find "$SCRIPT_DIR" "$E2EHOME" -maxdepth 2 \
-              \( -name '*.png' -o -name '*.csv' \) 2>/dev/null | sort)
+              \( -name '*.png' -o -name '*.csv' -o -name '*.txt' \) 2>/dev/null | sort)
 
 echo "dialogs met:"
 awk -F'\t' '{printf "  %s. %-34s -> %s (shift+Tab x%s)\n", $1, $2, $3, $4}' "$TSV"
@@ -300,8 +301,7 @@ fi
 # THE STAGES THAT WERE UNREACHABLE UNTIL THE REVERSE WALK. Each is named
 # separately, because "the run got shorter" is exactly the failure a single
 # step-count check would hide.
-for stage in "Graph Complete" "Save Figure" "Save Complete" \
-             "Export Results" "Export Complete"; do
+for stage in "Graph Complete" "Save" "Saved"; do
     if ! grep -q "$stage" "$TSV"; then
         echo "gui_e2e: FAIL — never reached the $stage dialog"
         fail=$((fail + 1))
