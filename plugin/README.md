@@ -109,7 +109,7 @@ The graphs module is independent of the stats modules. Stats-only scripts can om
 | `scripts/eml-correlate.praat` | Menu wrapper: Pearson and/or Spearman correlation |
 | `scripts/eml-pairwise.praat` | Menu wrapper: pairwise t, pairwise Wilcoxon, or Scheffe post-hoc |
 | `scripts/eml-graphs.praat` | EML Graphs: publication-quality figures (F0 contour, waveform, spectrum, LTAS, time series, bar chart, violin plot) with context detection, smart column prefill, and progressive disclosure |
-| `scripts/eml-batch-process.praat` | Batch voice analysis: extract acoustic measures (F0, intensity, jitter, shimmer, HNR, CPPS) from a folder of Sound files to CSV |
+| `scripts/eml-batch-process.praat` | Batch voice analysis: extract acoustic measures (F0, intensity, jitter, shimmer, HNR, CPPS) from a folder of Sound files to a CSV in a user-designated output folder |
 | `scripts/eml-stats-demo.praat` | Visual showcase: three-panel figure with synthetic voice-science data |
 | `scripts/eml-quick-start.praat` | Prints a quick-start guide to the Info window |
 | `docs/procedure-reference.md` | All procedures organized by workflow, with signatures and examples |
