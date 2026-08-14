@@ -293,7 +293,33 @@ scripts <- c(
     # checking was a set of CALL SITES, which is a property of the source.
     # Needs no harness run, which is why it cannot be outrun by a button
     # nobody presses.
-    "v46_export_surface.R"
+    "v46_export_surface.R",
+    # v47 pins the plugin's INSTALL FOLDER NAME, which cannot be derived from
+    # anything in this tree -- Praat gives a script no way to learn its own
+    # plugin folder, so the name is a convention duplicated across a dozen
+    # literals. It was written `plugin_EMLPraatTools` for the real
+    # `plugin_EML_Praat_Tools` and pasted into eleven `include` lines of every
+    # script the recorder emitted, so every recorded script was unrunnable.
+    # Three things had to be true at once for that to survive: the phase1 test
+    # ASSERTED THE WRONG STRING, harness/record/roundtrip.sh -- the one
+    # harness that runs the emitted script -- overrides the root by design,
+    # and nothing read the name out of a rendered artefact. v47 reads
+    # harness/record_e2e's recording, which is rendered by the unmodified
+    # production path, and compares it against an EXECUTABLE oracle: the
+    # folder the walk rigs actually symlink.
+    "v47_plugin_folder_name.R",
+    # v48 is the journey check v46 cannot be. v46 is static: it proves each
+    # wrapper's call site exists and names the panel, and every claim it makes
+    # was true while all nine non-graphing Save buttons were dead -- they
+    # passed emlLastCSVFolder$, nothing seeded it, and Praat evaluates a
+    # procedure's arguments before entering it. A static check cannot see an
+    # unbound argument, and harness/wrappers asks only whether a script
+    # parses. v48 reads harness/savepaths, which presses the button on every
+    # caller and checks that the panel came up, that it wrote, and that what
+    # it wrote shares one folder and one base name -- the panel's whole
+    # contract. Its coverage check reads the callers out of the SOURCE, so a
+    # new wrapper with a Save button fails this file until somebody drives it.
+    "v48_save_paths.R"
 )
 
 cat("EML Praat Tools validation suite\n")
