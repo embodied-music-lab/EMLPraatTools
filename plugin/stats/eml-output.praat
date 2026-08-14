@@ -2,7 +2,13 @@
 # EML Stats : Output Formatting
 # ============================================================================
 # Module: eml-output.praat
-# Version: 2.2
+# Version: 2.3
+# v2.3: @emlWrapperExportCSV DELETED (author ruling, 14 Aug 2026: "We can
+#       retire the superseded csv wrapper code if we use it nowhere now").
+#       It had no callers in any tree. A tombstone stands where it was,
+#       because its folder-seed line is the reason every non-graphing Save
+#       button broke on 13 Aug; the seed now sits at file scope above
+#       @emlSavePanel.
 # v2.2: @emlSavePanel -- one save, one folder, one name. The figure, the
 #       result frames and the Info window report are written together under a
 #       shared stem. Before this the figure and the CSV were two journeys with
@@ -110,8 +116,10 @@
 #     @emlCSVAddStr each append ONE such row, i.e. one field of one term.
 #     There is no procedure that writes a whole analysis in one call, which
 #     is what the name @emlCSVAddRow implied.)
-#   Wrapper plumbing — @emlWrapperInit, @emlWrapperExportCSV,
-#     @emlWrapperCommonFields, @emlHandleCommonFields
+#   Wrapper plumbing — @emlWrapperInit, @emlWrapperCommonFields,
+#     @emlHandleCommonFields
+#   Saving — @emlSavePanel (the one save journey; @emlWrapperExportCSV was in
+#     this list until it was deleted on 14 Aug 2026 — see its tombstone)
 #   Wizard glosses — @emlResetExplanations plus the 17 @emlWizardExplain*
 #     helpers (grep -c "^procedure emlWizardExplain")
 #   Errors — @emlErrorDialog
@@ -1476,13 +1484,6 @@ endproc
 
 
 # ────────────────────────────────────────────────────────────────────────────
-# @emlWrapperExportCSV
-# Presents CSV export dialog and saves via @emlExportStatsCSV.
-# Call from the post-analysis loop when the user clicks "CSV".
-#
-# Parameters:
-#   .tableName$ — used for default filename
-# ────────────────────────────────────────────────────────────────────────────
 # THE PANEL'S REMEMBERED FOLDER, SEEDED AT LOAD.
 # ────────────────────────────────────────────────────────────────────────────
 # emlLastCSVFolder$ is the folder every non-graphing save proposes: the nine
@@ -1860,160 +1861,22 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     label SAVE_PANEL_DONE
 endproc
 
-# SUPERSEDED 13 AUG 2026 BY @emlSavePanel, and left in place rather than
-# deleted so the decision is yours rather than mine. It has NO CALLERS: the
-# nine wrapper CSV buttons and the wizard's now call the panel, which writes
-# the report as well as the numbers and shares one folder and one stem across
-# every output. Anything that called this again would get the old behaviour --
-# numbers only, its own folder memory, its own naming -- which is the divergence
-# the panel exists to end.
 # ────────────────────────────────────────────────────────────────────────────
-# @emlWrapperExportCSV: .tableName$, .analysis$
+# @emlWrapperExportCSV -- RETIRED 14 August 2026 by author ruling, and deleted
+# here. It was the shared CSV export dialog behind the stats wrappers' and the
+# wizard's "CSV" button: numbers only, its own folder memory, its own naming.
+# @emlSavePanel superseded it at every one of those call sites on 13 Aug 2026.
 #
-# D39: the folder defaulted to defaultDirectory$, which is the directory of
-# the running script — inside the plugin tree. Saving there puts a user's
-# results among the plugin's own files, where an update will overwrite or
-# lose them. It now remembers the last folder used, seeded from the user's
-# home directory, and remembers it across analyses within a session.
-#
-# D18/D65: the file name was .tableName$ + "_results" for every analysis, so
-# two different tests on one table proposed the same name and the second
-# silently overwrote the first. The analysis is now part of the proposal.
-#
-# D105. An earlier version of this comment claimed that "D18's other half —
-# the paired wrapper passing its reshaped intermediate, so the name came out
-# 'pairedLong_results' — is fixed at the call site." That was wrong twice
-# over, and it is corrected here rather than deleted so the same claim is not
-# made again:
-#   1. The paired wrapper never passed the intermediate. It passes
-#      tableName$, taken from @emlWrapperInit, which is the source table the
-#      user selected (scripts/eml-compare-paired.praat). The reshaped
-#      "pairedLong" Table it builds for the spaghetti plot is never given to
-#      this procedure. There was nothing at that call site to fix.
-#   2. The "pairedLong_results" default the auditor actually saw does not
-#      come from this procedure at all. It comes from the graphs form, which
-#      builds its own export default from selected$ ("Table") — whatever
-#      Table happens to be selected at that moment, which after the reshape
-#      is the intermediate. That is where D18 is live, and it is not fixed by
-#      anything in this file.
-# Nothing below handles that case. Do not read this procedure as covering it.
-procedure emlWrapperExportCSV: .tableName$, .analysis$
-    if not variableExists ("emlLastCSVFolder$")
-        emlLastCSVFolder$ = homeDirectory$
-    endif
-    if emlLastCSVFolder$ = ""
-        emlLastCSVFolder$ = homeDirectory$
-    endif
-    .slug$ = replace$ (.analysis$, " ", "_", 0)
-    .slug$ = replace$ (.slug$, "/", "-", 0)
-    .slug$ = replace$ (.slug$, "'", "", 0)
-    .defaultName$ = .tableName$ + "_" + .slug$
-    if .slug$ = ""
-        .defaultName$ = .tableName$ + "_results"
-    endif
-    beginPause: "Export Results"
-        folder: "Output folder", emlLastCSVFolder$
-        word: "File name", .defaultName$
-    .clicked = endPause: "Go Back", "Save", 2, 0
-    if .clicked = 2
-        emlLastCSVFolder$ = output_folder$
-
-        ; ---------------------------------------------------------------
-        ; MIGRATION FORK. A path that has been converted to the three-file
-        ; broom shape declares its results into the tidy/glance/augment
-        ; collectors; @emlResultBegin sets emlResult_declared. A path that
-        ; has not still fills the single-file buffer.
-        ;
-        ; The fork is on the DECLARATION, not on a per-analysis list, so a
-        ; path converts by declaring and nothing here has to be edited for
-        ; each one. It also means a half-converted path -- declaring but
-        ; producing no rows -- reports as an empty export rather than
-        ; silently writing the legacy file, which is the failure mode that
-        ; let the previous migration be recorded as done.
-        ; ---------------------------------------------------------------
-        ; THE WRITE ITSELF IS @emlExportResultFiles, shared with the graphs
-        ; form's Exp CSV button. It used to be inline here, which is why that
-        ; button could not reach it and wrote the legacy file for an analysis
-        ; this one wrote three broom-shaped files for.
-        @emlExportResultFiles: output_folder$, file_name$
-        .nWritten = emlExportResultFiles.nWritten
-        .fileList$ = emlExportResultFiles.fileList$
-        .skipped$ = emlExportResultFiles.skipped$
-
-        if emlExportResultFiles.declared = 1
-            if .nWritten > 0
-                beginPause: "Export Complete"
-                    comment: "Wrote " + string$ (.nWritten) + " files:"
-                    ; ONE comment: PER LINE, not one comment: holding several.
-                    ;
-                    ; `comment:` reserves the height of ONE line when the
-                    ; dialog is laid out, but draws whatever string it is
-                    ; given -- so a string containing newline$ overflows its
-                    ; slot and the widgets below are painted over it. With
-                    ; three files written, the OK button was drawn ON TOP of
-                    ; the third path. Seen 11 Aug 2026 by exporting a CSV from
-                    ; the menu under Xvfb and looking at the dialog; /root is
-                    ; a short folder, and a real user path makes it worse.
-                    ;
-                    ; A loop is legal here. `form:` cannot contain one --
-                    ; "Unknown parameter type inside form" -- but the lines
-                    ; between beginPause: and endPause: are executed, which is
-                    ; why every wrapper in this plugin uses beginPause:.
-                    .listRest$ = .fileList$
-                    while index (.listRest$, newline$) > 0
-                        .nl = index (.listRest$, newline$)
-                        .oneFile$ = left$ (.listRest$, .nl - 1)
-                        if .oneFile$ <> ""
-                            comment: .oneFile$
-                        endif
-                        .listRest$ = right$ (.listRest$,
-                        ... length (.listRest$) - .nl)
-                    endwhile
-                    if .listRest$ <> ""
-                        comment: .listRest$
-                    endif
-                endPause: "OK", 1, 0
-            else
-                beginPause: "Nothing to Export"
-                    comment: "This analysis declared a result but produced"
-                    comment: "no rows:"
-                    comment: .skipped$
-                    comment: "Please report this — it is a defect."
-                endPause: "OK", 1, 0
-            endif
-            ; NOT cleared here, deliberately. Clearing after a successful
-            ; export meant a SECOND press of CSV in the same analysis fell
-            ; through to the legacy single-file path and silently wrote a
-            ; different, older-format file. The declaration stays valid for as
-            ; long as the analysis it describes is the current one, and
-            ; @emlCSVInit -- which every orchestrator calls as its first
-            ; statement -- is what makes that true.
-            goto WRAPPER_EXPORT_DONE
-        endif
-
-        ; LEGACY ARM. @emlExportResultFiles already wrote it; these are only
-        ; the dialogs, which differ between the two callers.
-        if emlExportResultFiles.success
-            beginPause: "Export Complete"
-                comment: "Saved to: " + emlExportResultFiles.actualPath$
-            endPause: "OK", 1, 0
-        elsif emlExportResultFiles.reason$ = "empty"
-            # D66: this is not a disk failure and must not read as one.
-            beginPause: "Nothing to Export"
-                comment: "This analysis produced no exportable rows."
-                comment: ""
-                comment: "The results are in the Info window; the CSV"
-                comment: "buffer for this test is empty. Please report"
-                comment: "this — it is a defect, not a setting."
-            endPause: "OK", 1, 0
-        else
-            beginPause: "Export Failed"
-                comment: "Could not write CSV file."
-            endPause: "OK", 1, 0
-        endif
-    endif
-    label WRAPPER_EXPORT_DONE
-endproc
+# THE ONE FACT WORTH KEEPING. Its first lines were the only thing that ever
+# seeded emlLastCSVFolder$, and when the panel took the call sites the seed
+# went with it -- it lived INSIDE the procedure being superseded. Praat
+# evaluates a procedure's arguments before entering it, so every
+# `@emlSavePanel: ..., emlLastCSVFolder$` died on "Unknown variable" BEFORE
+# the panel ran: all nine non-graphing Save buttons of that day, on the first
+# press of Save in a session. The seed now lives at file scope above
+# @emlSavePanel ("THE PANEL'S REMEMBERED FOLDER, SEEDED AT LOAD"). Keep it at
+# file scope; folding it back inside a procedure reproduces the outage.
+# ────────────────────────────────────────────────────────────────────────────
 
 
 # ============================================================================
