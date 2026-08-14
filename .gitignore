@@ -64,3 +64,27 @@ harness/gui_adv/out/wm.log
 harness/gui_adv/out/report.utf8.txt
 harness/savepaths/out/xvfb.log
 harness/savepaths/out/wm.log
+
+# harness/batch: the EVIDENCE is BATCH.tsv, the seven CSVs the batch module
+# itself wrote, the seven Info-window transcripts and EXCISED.txt — all of them
+# committed, all of them read by validate/v53. out/work/ is not evidence: it is
+# the scratch tree the drive builds and destroys on every run — the synthetic
+# corpora, the derived headless twin, the per-case include files and the seven
+# output folders. It is rebuilt from nothing each time precisely so that a
+# leftover corpus or a leftover results CSV cannot change what a run means, and
+# committing it would bury the twelve files that do.
+harness/batch/prefs/
+harness/batch/out/work/
+
+# harness/batchcmd: the EVIDENCE is COMMANDS.tsv, and it is committed. What is
+# ignored below is the material the drive builds in order to have something to
+# measure -- a folder of synthesised wavs and their TextGrids, the four abort
+# probes with their scripts and logs, the scratch CSV, the folder-scaffolding
+# probe. All of it is regenerated from scratch by every run and none of it says
+# anything about the plugin; committing it would make each run a large diff
+# around the one file that matters.
+harness/batchcmd/out/fixture/
+harness/batchcmd/out/probe/
+harness/batchcmd/out/scaffold/
+harness/batchcmd/out/probe.csv
+harness/batchcmd/out/driver.log
