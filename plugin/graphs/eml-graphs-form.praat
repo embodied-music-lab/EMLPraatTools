@@ -3,7 +3,14 @@
 # ============================================================================
 # EML Graphs Plugin
 # License: GPL-3.0-or-later
-# Version: 2.8
+# Version: 2.9
+# v2.9: The post-draw dialog is three fixed buttons -- Done | Save | Redraw --
+#       and Save opens @emlSavePanel. The row used to be four or three
+#       depending on whether there were results to export, with the caller
+#       renumbering afterwards; a conditional button count means every
+#       keyboard walk has to know which variant is up, and harness/gui_e2e
+#       carried a retry for exactly that. The Exp CSV branch is gone: the
+#       panel offers whichever outputs exist.
 # v2.8: The post-draw "Exp CSV" button writes through @emlExportResultFiles,
 #       the shared migration fork, instead of calling @emlExportStatsCSV
 #       directly. It was the only export in the plugin that could not reach
@@ -7724,15 +7731,16 @@ repeat
         beginPause: "Graph Complete"
             comment: "📊 Graph has been drawn in the Picture window."
             comment: "What would you like to do?"
-        # --- Conditional button set ---
-        if emlCSV_n > 0
-            clicked = endPause: "Done", "Save", "Exp CSV", "Redraw", 4, 0
-        else
-            clicked = endPause: "Done", "Save", "Redraw", 3, 0
-            # Normalize: no Exp CSV, shift Redraw (3->4)
-            if clicked = 3
-                clicked = 4
-            endif
+        # THREE BUTTONS, ALWAYS. This row used to be four or three depending
+        # on whether there were results to export, with the caller renumbering
+        # afterwards -- and a conditional button count is a real cost: every
+        # keyboard walk of this dialog has to know which variant is up, and
+        # harness/gui_e2e carried a retry for exactly that. "Save" now opens a
+        # panel that offers whichever outputs exist, so the row no longer has
+        # to change shape to say what is available.
+        clicked = endPause: "Done", "Save", "Redraw", 3, 0
+        if clicked = 3
+            clicked = 4
         endif
 
         if clicked = 1
@@ -7741,209 +7749,39 @@ repeat
             postDrawDone = 1
 
         elsif clicked = 2
-            # Save to file
-            # Auto-generate filename from table name + graph type
+            # ONE PANEL, NOT ONE ARTEFACT. This branch used to save the
+            # figure and nothing else, and the CSV lived behind a separate
+            # button with its own folder memory and its own naming -- so one
+            # analysis scattered its outputs across two places under two
+            # conventions, and the Info window report could not be saved at
+            # all. @emlSavePanel writes whichever of the three the user ticks,
+            # to one folder under one stem.
             saveAutoName$ = contextObjectName$
             ... + "_" + graphTypeName$[graph_type]
-            # Strip parenthetical content
             saveParenIdx = index (saveAutoName$, "(")
             if saveParenIdx > 1
                 saveAutoName$ = left$ (saveAutoName$, saveParenIdx - 1)
             endif
-            # Replace spaces and trim trailing underscores
             saveAutoName$ = replace$ (saveAutoName$, " ", "_", 0)
             while endsWith (saveAutoName$, "_")
                 saveAutoName$ = left$ (saveAutoName$, length (saveAutoName$) - 1)
             endwhile
-            # Default folder from last save or home directory
             if config_lastPNGFolder$ <> ""
                 saveDefaultFolder$ = config_lastPNGFolder$
             else
                 saveDefaultFolder$ = defaultDirectory$
             endif
-            beginPause: "Save Figure"
-                folder: "Output folder", saveDefaultFolder$
-                word: "File name", saveAutoName$
-            saveClicked = endPause: "Go Back", "Save", 2, 1
-            if saveClicked = 2
-                # Strip trailing slash from folder path
-                while endsWith (output_folder$, "/")
-                    output_folder$ = left$ (output_folder$, length (output_folder$) - 1)
-                endwhile
-                outputPath$ = output_folder$ + "/" + file_name$ + ".png"
 
-                # Non-destructive check
-                if fileReadable (outputPath$)
-                    @emlGenerateUniquePath: outputPath$
-                    outputPath$ = emlGenerateUniquePath.result$
-                endif
+            @emlSavePanel: 1, saveAutoName$, saveDefaultFolder$
 
-                @emlAssertFullViewport
-                if output_DPI = 1
-                    Save as 300-dpi PNG file: outputPath$
-                else
-                    Save as 600-dpi PNG file: outputPath$
-                endif
-                config_lastPNGFolder$ = output_folder$
-
-                # RECORD THE SAVE. Until 13 Aug 2026 the recorder captured the
-                # source object, every analysis, every draw and every
-                # conversion -- and no save at all. So a recorded script
-                # re-run reproduced the analysis, painted the figure into the
-                # Picture window, and WROTE NOTHING: the user had to save by
-                # hand again, which makes it a demonstration rather than a
-                # reproduction.
-                #
-                # THE FOLDER IS A VARIABLE, not a literal, so the script
-                # survives being sent to a colleague. Same reasoning that made
-                # emlRecordPluginRoot$ home-relative.
-                if variableExists ("emlRecordLoaded")
-                    @emlRecordStep: "save",
-                    ... "Save the figure as a PNG",
-                    ... "The output folder is a variable at the top of this step -- change it once and the save follows.",
-                    ... "outputFolder$ = " + """" + output_folder$ + """" + newline$ + "Save as 300-dpi PNG file: outputFolder$ + " + """/" + file_name$ + ".png""",
-                    ... "In the GUI: the Save button on the Graph Complete dialog."
-                endif
-
-                appendInfoLine: ""
-                appendInfoLine: "Saved to: " + outputPath$
-
-                # ---------------------------------------------------------
-                # D136, LEGEND PLACEMENT 4 — THE SECOND FILE.
-                #
-                # The figure has just been saved at its own extent, because
-                # @emlDrawLegend deliberately did NOT report the parked
-                # legend to @emlExpandDrawnExtent. The legend is nonetheless
-                # already ON the picture, 24-odd inches below everything
-                # else, so writing it is a matter of selecting that rectangle
-                # and saving again — no Erase, no redraw, and the figure the
-                # user is looking at survives for a second Save.
-                #
-                # Same folder, same base name, same DPI, same non-destructive
-                # uniquing as the figure: <name>_legend.png beside
-                # <name>.png. No new output-path convention is invented here.
-                # ---------------------------------------------------------
-                legendSaved$ = ""
-                if emlLegendSepActive = 1
-                    legendPath$ = output_folder$ + "/" + file_name$
-                    ... + "_legend.png"
-                    if fileReadable (legendPath$)
-                        @emlGenerateUniquePath: legendPath$
-                        legendPath$ = emlGenerateUniquePath.result$
-                    endif
-                    Select outer viewport: emlLegendSepX0, emlLegendSepX1,
-                    ... emlLegendSepY0, emlLegendSepY1
-                    if output_DPI = 1
-                        Save as 300-dpi PNG file: legendPath$
-                    else
-                        Save as 600-dpi PNG file: legendPath$
-                    endif
-                    # Put the figure's extent back, so a second Save from
-                    # this same dialog writes the figure and not the legend.
-                    @emlAssertFullViewport
-                    legendSaved$ = legendPath$
-                    appendInfoLine: "Legend saved to: " + legendPath$
-                endif
-
-                beginPause: "Save Complete"
-                    comment: "Saved to: " + outputPath$
-                    if legendSaved$ <> ""
-                        comment: "Legend saved to: " + legendSaved$
-                    endif
-                endPause: "OK", 1, 0
+            if emlSavePanel.cancelled = 0
+                # BOTH folder memories follow the one choice, so the next
+                # save of either kind starts where the last one landed rather
+                # than where that KIND of save last landed.
+                config_lastPNGFolder$ = emlSavePanel.folder$
+                config_lastCSVFolder$ = emlSavePanel.folder$
             endif
-            # Go Back or save complete — loop continues to main dialog
-
-        elsif clicked = 3
-            # Exp CSV (only shown when emlCSV_n > 0, i.e. stats
-            # results exist in the buffer — from bridge or wrapper)
-            # Use originalSourceId — always the Table, even if user
-            # switched to an acoustic graph type during this workflow.
-            selectObject: originalSourceId
-            # D18 + D65 (filename half). originalSourceId is only the fallback
-            # now: for the paired workflow it is the `pairedLong` intermediate,
-            # not the table the user named. @emlGraphsCSVDefaultName prefers the
-            # source table the CSV rows themselves carry, and appends the
-            # analysis slug so two analyses on one table cannot propose one
-            # name. See the procedure header for what it deliberately does NOT
-            # fix (D65's test-family half).
-            @emlGraphsCSVDefaultName: selected$ ("Table")
-            csvDefaultName$ = emlGraphsCSVDefaultName.result$
-            beginPause: "Export Results"
-                folder: "Output folder", config_lastCSVFolder$
-                word: "File name", csvDefaultName$
-            csvClicked = endPause: "Go Back", "Save", 2, 1
-            if csvClicked = 2
-                # Strip trailing slash from folder path
-                while endsWith (output_folder$, "/")
-                    output_folder$ = left$ (output_folder$, length (output_folder$) - 1)
-                endwhile
-                # THE SAME WRITER THE STATS WRAPPERS' CSV BUTTON USES.
-                # This branch used to call @emlExportStatsCSV directly, which
-                # is the LEGACY single long-format file and has no migration
-                # fork -- so the same analysis produced three broom-shaped
-                # files from the wrapper's CSV button and one differently
-                # shaped file from this one. @emlExportResultFiles is that
-                # fork, extracted from @emlWrapperExportCSV on 13 Aug 2026 so
-                # both buttons write through one implementation.
-                #
-                # NO @emlGenerateUniquePath HERE ANY MORE. The legacy arm
-                # still uniques -- @emlReportToFile walks _1.._999 itself, and
-                # always did, so the explicit call was belt-and-braces. The
-                # declared arm does not unique, which is the behaviour the
-                # wrapper has always had; see @emlExportResultFiles' header.
-                @emlExportResultFiles: output_folder$, file_name$
-                config_lastCSVFolder$ = output_folder$
-
-                # RECORD THE EXPORT, for the same reason as the figure save: a
-                # reproducible workflow that writes no results reproduces a
-                # screen rather than a study.
-                if variableExists ("emlRecordLoaded")
-                    @emlRecordStep: "save",
-                    ... "Export the results as CSV",
-                    ... "Writes broom's tidy/glance/augment shape when the analysis declared, and the single long-format file when it did not.",
-                    ... "outputFolder$ = " + """" + output_folder$ + """" + newline$ + "@emlExportResultFiles: outputFolder$, " + """" + file_name$ + """",
-                    ... "In the GUI: the Exp CSV button on the Graph Complete dialog."
-                endif
-                if emlExportResultFiles.success
-                    beginPause: "Export Complete"
-                        comment: "Wrote " + string$ (emlExportResultFiles.nWritten)
-                        ... + " file(s):"
-                        # ONE comment: PER LINE. `comment:` reserves the height
-                        # of one line at layout time but draws whatever string
-                        # it is given, so a string containing newline$ is
-                        # painted over by the widgets below it -- the OK button
-                        # landed on top of the third path when the wrapper's
-                        # version of this dialog was written as one comment.
-                        csvListRest$ = emlExportResultFiles.fileList$
-                        while index (csvListRest$, newline$) > 0
-                            csvNl = index (csvListRest$, newline$)
-                            csvOneFile$ = left$ (csvListRest$, csvNl - 1)
-                            if csvOneFile$ <> ""
-                                comment: csvOneFile$
-                            endif
-                            csvListRest$ = right$ (csvListRest$,
-                            ... length (csvListRest$) - csvNl)
-                        endwhile
-                        if csvListRest$ <> ""
-                            comment: csvListRest$
-                        endif
-                    endPause: "OK", 1, 0
-                elsif emlExportResultFiles.reason$ = "empty"
-                    # D66: not a disk failure and must not read as one.
-                    beginPause: "Nothing to Export"
-                        comment: "This analysis produced no exportable rows."
-                        comment: ""
-                        comment: "The results are in the Info window. Please"
-                        comment: "report this -- it is a defect, not a setting."
-                    endPause: "OK", 1, 0
-                else
-                    beginPause: "Export Failed"
-                        comment: "Could not write CSV file."
-                    endPause: "OK", 1, 0
-                endif
-            endif
-            # Stay in post-draw loop (don't set postDrawDone)
+            # Stay in the post-draw loop.
 
         elsif clicked = 4
             # Redraw
