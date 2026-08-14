@@ -33,6 +33,12 @@
 # worse than no harness. v52 pins all seven parameter lists statically either
 # way; only the argument-ORDER evidence is version-gated.
 #
+# 14 Aug 2026: 6.6.30 was installed and all seven now run. The gate stays --
+# it costs nothing when the version is right, and it is the only thing standing
+# between an old sandbox and a green report over four calls that never
+# executed. MEASURES.tsv carries praat_version so the evidence can never be
+# read as stronger than the build that produced it.
+#
 #     praat --run harness/acoustic/drive.praat
 #
 # ATTRIBUTION
