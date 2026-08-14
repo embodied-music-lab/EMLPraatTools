@@ -56,6 +56,6 @@ harness/gui_e2e/out/home/
 # scratch pref dir, and the X server and window manager logs. Committing them
 # makes every run a diff and buries the four files that matter.
 harness/savepaths/prefs/
-harness/savepaths/out/*/home/.praat-dir/
+harness/savepaths/out/work/
 harness/savepaths/out/xvfb.log
 harness/savepaths/out/wm.log
