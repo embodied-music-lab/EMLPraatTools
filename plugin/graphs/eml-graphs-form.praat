@@ -7786,6 +7786,25 @@ repeat
                 endif
                 config_lastPNGFolder$ = output_folder$
 
+                # RECORD THE SAVE. Until 13 Aug 2026 the recorder captured the
+                # source object, every analysis, every draw and every
+                # conversion -- and no save at all. So a recorded script
+                # re-run reproduced the analysis, painted the figure into the
+                # Picture window, and WROTE NOTHING: the user had to save by
+                # hand again, which makes it a demonstration rather than a
+                # reproduction.
+                #
+                # THE FOLDER IS A VARIABLE, not a literal, so the script
+                # survives being sent to a colleague. Same reasoning that made
+                # emlRecordPluginRoot$ home-relative.
+                if variableExists ("emlRecordLoaded")
+                    @emlRecordStep: "save",
+                    ... "Save the figure as a PNG",
+                    ... "The output folder is a variable at the top of this step -- change it once and the save follows.",
+                    ... "outputFolder$ = " + """" + output_folder$ + """" + newline$ + "Save as 300-dpi PNG file: outputFolder$ + " + """/" + file_name$ + ".png""",
+                    ... "In the GUI: the Save button on the Graph Complete dialog."
+                endif
+
                 appendInfoLine: ""
                 appendInfoLine: "Saved to: " + outputPath$
 
@@ -7875,6 +7894,17 @@ repeat
                 # wrapper has always had; see @emlExportResultFiles' header.
                 @emlExportResultFiles: output_folder$, file_name$
                 config_lastCSVFolder$ = output_folder$
+
+                # RECORD THE EXPORT, for the same reason as the figure save: a
+                # reproducible workflow that writes no results reproduces a
+                # screen rather than a study.
+                if variableExists ("emlRecordLoaded")
+                    @emlRecordStep: "save",
+                    ... "Export the results as CSV",
+                    ... "Writes broom's tidy/glance/augment shape when the analysis declared, and the single long-format file when it did not.",
+                    ... "outputFolder$ = " + """" + output_folder$ + """" + newline$ + "@emlExportResultFiles: outputFolder$, " + """" + file_name$ + """",
+                    ... "In the GUI: the Exp CSV button on the Graph Complete dialog."
+                endif
                 if emlExportResultFiles.success
                     beginPause: "Export Complete"
                         comment: "Wrote " + string$ (emlExportResultFiles.nWritten)
