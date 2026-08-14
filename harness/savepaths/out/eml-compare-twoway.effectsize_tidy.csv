@@ -1,0 +1,4 @@
+term,effect.size,effect.size.type
+sex,0.7808333224929429,partial.eta.squared
+register,0.5377524143985954,partial.eta.squared
+sex:register,2.8678614954297252e-30,partial.eta.squared

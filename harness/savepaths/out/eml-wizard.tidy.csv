@@ -1,0 +1,2 @@
+estimate,estimate1,estimate2,statistic,p.value,parameter,method,alternative
+-1.2000000000000002,2.1214285714285714,3.3214285714285716,-15.049547796823957,2.3857017551073685e-14,26,Welch,two.sided
