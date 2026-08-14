@@ -211,7 +211,7 @@ run_leg_once () {
     local leg="$1" recipe="$2" wrapper="$3" maxsteps="$4"
     local driver="leg.praat"
     if [[ -n "$ONLY" && "$leg" != *"$ONLY"* ]]; then return 0; fi
-    local LOUT="$OUT/$leg"
+    local LOUT="$OUT/work/$leg"
     mkdir -p "$LOUT"
     # STALE EVIDENCE IS WORSE THAN NONE. With $EML_SAVEPATHS_ONLY set, out/ is
     # not wiped, so an ERROR.png left by a previous probe would sit next to a
@@ -371,6 +371,28 @@ run_leg_once () {
              \( -name '*.csv' -o -name '*.png' -o -name '*.txt' \) \
              -type f 2>/dev/null | sort)
 
+    # ── THE EVIDENCE, FLAT ────────────────────────────────────────────────
+    # out/ is ONE directory: <leg>.dialogs.tsv, <leg>.artefacts.tsv,
+    # <leg>.panel.png, <leg>.error.png, and every file the save wrote as
+    # <leg>.<name>. Everything above stays under out/work/, which is ignored.
+    #
+    # WHY FLAT. This repository is pushed one directory at a time through
+    # GitHub's web upload form -- there is no `git push` here. A per-leg tree
+    # is nineteen uploads for one artefact, every time it is regenerated,
+    # which is a standing tax on re-running the harness and therefore a reason
+    # not to re-run it. One directory is one upload, now and on every future
+    # run. The leg name prefixes every file, so nothing collides and the
+    # grouping is still readable at a glance.
+    cp "$TSV"  "$OUT/$leg.dialogs.tsv"   2>/dev/null
+    cp "$ATSV" "$OUT/$leg.artefacts.tsv" 2>/dev/null
+    [[ -f "$LOUT/PANEL.png" ]] && cp "$LOUT/PANEL.png" "$OUT/$leg.panel.png"
+    [[ -f "$LOUT/ERROR.png" ]] && cp "$LOUT/ERROR.png" "$OUT/$leg.error.png"
+    while IFS= read -r f; do
+        cp "$f" "$OUT/$leg.$(basename "$f")" 2>/dev/null
+    done < <(find "$LHOME" -maxdepth 1 \
+             \( -name '*.csv' -o -name '*.png' -o -name '*.txt' \) \
+             -type f 2>/dev/null | sort)
+
     echo "savepaths: $leg — $(wc -l < "$TSV") dialog(s), $(wc -l < "$ATSV") artefact(s)"
 }
 
@@ -398,10 +420,11 @@ run_leg_once () {
 run_leg () {
     local leg="$1"
     run_leg_once "$@"
-    if [[ -f "$OUT/$leg/ERROR.png" || ! -s "$OUT/$leg/ARTEFACTS.tsv" ]]; then
+    if [[ -f "$OUT/work/$leg/ERROR.png" || ! -s "$OUT/work/$leg/ARTEFACTS.tsv" ]]; then
         echo "savepaths: $leg — retrying once"
         printf '%s\tretried\n' "$leg" >> "$OUT/RETRIES.tsv"
         sleep 5
+        rm -f "$OUT/$leg."*
         run_leg_once "$@"
     fi
 }
