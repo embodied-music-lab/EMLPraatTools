@@ -2,7 +2,13 @@
 # EML Stats : Output Formatting
 # ============================================================================
 # Module: eml-output.praat
-# Version: 2.1
+# Version: 2.2
+# v2.2: @emlSavePanel -- one save, one folder, one name. The figure, the
+#       result frames and the Info window report are written together under a
+#       shared stem. Before this the figure and the CSV were two journeys with
+#       two folder memories and two naming rules, and the report could not be
+#       saved at all. @emlWrapperExportCSV is superseded and now has no
+#       callers.
 # v2.1: Both arms of @emlExportResultFiles are now non-destructive. The
 #       declared arm could not be until @emlGenerateUniquePath moved to
 #       eml-core-utilities.praat -- it lived in the graphs form, which is
@@ -1455,6 +1461,232 @@ endproc
 #
 # Parameters:
 #   .tableName$ — used for default filename
+# ────────────────────────────────────────────────────────────────────────────
+# @emlSavePanel: .offerFigure, .stem$, .folder$
+# ────────────────────────────────────────────────────────────────────────────
+# ONE SAVE, ONE FOLDER, ONE NAME. Everything an analysis produces — the
+# figure, the numbers, the report — written in a single action under a shared
+# stem, so a study's outputs arrive as a set instead of three files the user
+# has to keep together by hand.
+#
+# WHY A PANEL AND NOT THREE BUTTONS. Author ruling, 13 August 2026: the saves
+# must be on the dialog, not hidden in a menu. Three separate buttons would
+# satisfy that, and a panel does it better for a reason that is about the
+# files rather than the widgets: before this, the figure, the CSV and the
+# recorded script each remembered a DIFFERENT folder (config_lastPNGFolder$,
+# config_lastCSVFolder$, and the record-save default) and each derived its own
+# name. One analysis scattered its outputs across three places under three
+# naming conventions. A single folder and stem is the fix, and that is only
+# expressible if the three are chosen together.
+#
+# SAVING THE REPORT DID NOT EXIST AT ALL before this. The plugin tells users
+# their results are in the Info window -- "The results are in the Info window;
+# the CSV buffer for this test is empty" -- and gave them no way to keep it.
+# @emlSaveInfoToFile has been in the tree since before the repo's own history
+# and was called by nothing; it was also broken (a bare `info$`, fixed 13 Aug
+# 2026), which is the proof it had never run.
+#
+# THE FIGURE BRANCH IS REACHED ONLY WHEN THE CALLER SAYS THERE IS ONE.
+# .offerFigure = 1 comes from the graphs form, where a figure has just been
+# drawn and the graphs layer is loaded; the stats wrappers pass 0, because at
+# the end of an analysis there is nothing drawn yet. That gate is also what
+# makes it safe for this stats-layer procedure to call @emlAssertFullViewport:
+# the call sits inside the branch, and Praat only resolves a procedure name
+# when the call actually executes. A stats-only script -- eml-lib-stats.praat
+# without the graphs barrel -- can therefore still use this panel.
+#
+# Arguments:
+#   .offerFigure  1 to offer the figure, 0 when nothing is drawn
+#   .stem$        default file name, no extension
+#   .folder$      default folder
+# Outputs:
+#   .cancelled    1 if the user backed out
+#   .nWritten     how many files were written
+#   .fileList$    newline-separated absolute paths
+#   .folder$      the folder actually used (for the caller to remember)
+#   .stem$        the stem actually used
+# ────────────────────────────────────────────────────────────────────────────
+procedure emlSavePanel: .offerFigure, .stem$, .folder$
+    .cancelled = 0
+    .nWritten = 0
+    .fileList$ = ""
+
+    # IS THERE ANYTHING TO EXPORT? Both halves count: a converted analysis
+    # declares into the broom collectors, an unconverted one fills the legacy
+    # buffer, and @emlExportResultFiles forks between them. Offering a CSV
+    # tickbox with neither would lead only to "Nothing to Export".
+    .haveCSV = 0
+    if variableExists ("emlCSV_n")
+        if emlCSV_n > 0
+            .haveCSV = 1
+        endif
+    endif
+    if variableExists ("emlResult_declared")
+        if emlResult_declared = 1
+            .haveCSV = 1
+        endif
+    endif
+
+    # THE FIELD VARIABLE NAME LOWERCASES ONLY THE FIRST CHARACTER, and keeps
+    # every other character's case: `boolean: "Figure PNG"` is read back as
+    # figure_PNG, not figure_png. Got wrong on the first drive of this panel
+    # (13 Aug 2026) -- Praat answered "Unknown variable: figure_png" and the
+    # save silently did nothing, which is the failure a tickbox panel is most
+    # able to hide.
+    beginPause: "Save"
+        comment: "Everything ticked is written to one folder, under one name."
+        if .offerFigure = 1
+            boolean: "Figure PNG", 1
+        endif
+        if .haveCSV = 1
+            boolean: "Results CSV", 1
+        else
+            comment: "(No results to export — this analysis produced no rows.)"
+        endif
+        boolean: "Report from the Info window", 1
+        folder: "Folder", .folder$
+        word: "File name", .stem$
+    .clicked = endPause: "Cancel", "Save", 2, 1
+
+    if .clicked = 1
+        .cancelled = 1
+        goto SAVE_PANEL_DONE
+    endif
+
+    .folder$ = folder$
+    while endsWith (.folder$, "/")
+        .folder$ = left$ (.folder$, length (.folder$) - 1)
+    endwhile
+    .stem$ = file_name$
+    if .stem$ = ""
+        .stem$ = "eml_results"
+    endif
+
+    # --- the figure -------------------------------------------------------
+    if .offerFigure = 1
+        if figure_PNG = 1
+            .figPath$ = .folder$ + "/" + .stem$ + ".png"
+            if fileReadable (.figPath$)
+                @emlGenerateUniquePath: .figPath$
+                .figPath$ = emlGenerateUniquePath.result$
+            endif
+            @emlAssertFullViewport
+            if output_DPI = 1
+                Save as 300-dpi PNG file: .figPath$
+            else
+                Save as 600-dpi PNG file: .figPath$
+            endif
+            .nWritten = .nWritten + 1
+            .fileList$ = .fileList$ + .figPath$ + newline$
+
+            # THE LEGEND IS A SECOND FILE when it was placed outside the
+            # frame (D136) -- the figure is not complete without it, so it
+            # goes wherever the figure goes and shares its stem.
+            if variableExists ("emlLegendSepActive")
+                if emlLegendSepActive = 1
+                    .legPath$ = .folder$ + "/" + .stem$ + "_legend.png"
+                    if fileReadable (.legPath$)
+                        @emlGenerateUniquePath: .legPath$
+                        .legPath$ = emlGenerateUniquePath.result$
+                    endif
+                    # The legend is saved by narrowing the viewport to the
+                    # coordinates the draw stored, writing, and then putting
+                    # the figure's extent back -- otherwise a second Save from
+                    # this same dialog writes the legend again instead of the
+                    # figure.
+                    Select outer viewport: emlLegendSepX0, emlLegendSepX1,
+                    ... emlLegendSepY0, emlLegendSepY1
+                    if output_DPI = 1
+                        Save as 300-dpi PNG file: .legPath$
+                    else
+                        Save as 600-dpi PNG file: .legPath$
+                    endif
+                    @emlAssertFullViewport
+                    .nWritten = .nWritten + 1
+                    .fileList$ = .fileList$ + .legPath$ + newline$
+                endif
+            endif
+        endif
+    endif
+
+    # --- the numbers ------------------------------------------------------
+    if .haveCSV = 1
+        if results_CSV = 1
+            @emlExportResultFiles: .folder$, .stem$
+            .nWritten = .nWritten + emlExportResultFiles.nWritten
+            .fileList$ = .fileList$ + emlExportResultFiles.fileList$
+            if right$ (.fileList$, 1) <> newline$
+                .fileList$ = .fileList$ + newline$
+            endif
+        endif
+    endif
+
+    # --- the report -------------------------------------------------------
+    # info$ () is the WHOLE Info window, which is what the author asked for:
+    # the window is append-only by design, so what it holds is the session's
+    # transcript rather than one report, and that is the honest thing to keep.
+    if report_from_the_Info_window = 1
+        .txtPath$ = .folder$ + "/" + .stem$ + "_report.txt"
+        @emlSaveInfoToFile: .txtPath$
+        if emlSaveInfoToFile.success = 1
+            .nWritten = .nWritten + 1
+            .fileList$ = .fileList$ + emlSaveInfoToFile.actualPath$ + newline$
+        endif
+    endif
+
+    # --- record it --------------------------------------------------------
+    # THE SAVE IS PART OF THE WORKFLOW, so a recorded script that leaves it
+    # out reproduces a screen rather than a study. The folder is emitted as a
+    # VARIABLE so the script survives being sent to a colleague -- the same
+    # reasoning that made emlRecordPluginRoot$ home-relative.
+    if .nWritten > 0
+        if variableExists ("emlRecordLoaded")
+            @emlRecordStep: "save",
+            ... "Save the outputs of this analysis",
+            ... "Every output shares one folder and one name, so they stay a set.",
+            ... "outputFolder$ = " + """" + .folder$ + """" + newline$
+            ... + "@emlSavePanel: " + string$ (.offerFigure) + ", "
+            ... + """" + .stem$ + """, outputFolder$",
+            ... "In the GUI: the Save button on the post-analysis or post-draw dialog."
+        endif
+    endif
+
+    # --- say what happened ------------------------------------------------
+    if .nWritten > 0
+        beginPause: "Saved"
+            comment: "Wrote " + string$ (.nWritten) + " file(s):"
+            # ONE comment: PER LINE. `comment:` reserves the height of one
+            # line at layout time but draws whatever string it is given, so a
+            # string holding newline$ is painted over by the widgets below it.
+            .rest$ = .fileList$
+            while index (.rest$, newline$) > 0
+                .nl = index (.rest$, newline$)
+                .one$ = left$ (.rest$, .nl - 1)
+                if .one$ <> ""
+                    comment: .one$
+                endif
+                .rest$ = right$ (.rest$, length (.rest$) - .nl)
+            endwhile
+            if .rest$ <> ""
+                comment: .rest$
+            endif
+        endPause: "OK", 1, 0
+    else
+        beginPause: "Nothing saved"
+            comment: "Nothing was ticked, so nothing was written."
+        endPause: "OK", 1, 0
+    endif
+
+    label SAVE_PANEL_DONE
+endproc
+
+# SUPERSEDED 13 AUG 2026 BY @emlSavePanel, and left in place rather than
+# deleted so the decision is yours rather than mine. It has NO CALLERS: the
+# nine wrapper CSV buttons and the wizard's now call the panel, which writes
+# the report as well as the numbers and shares one folder and one stem across
+# every output. Anything that called this again would get the old behaviour --
+# numbers only, its own folder memory, its own naming -- which is the divergence
+# the panel exists to end.
 # ────────────────────────────────────────────────────────────────────────────
 # @emlWrapperExportCSV: .tableName$, .analysis$
 #
