@@ -353,7 +353,27 @@ scripts <- c(
     # case and by the caller's orchestrator in the other. What separates them
     # is the Info report: one "Two-Group Comparison" section if the preset was
     # lost, two if it survived and the bridge reported on top.
-    "v51_advanced_mode.R"
+    "v51_advanced_mode.R",
+    # v52 is the batch module's acoustic surface, under the author's ruling of
+    # 14 Aug 2026: Praat validates its own DSP, and we do not re-derive its
+    # pitch tracker or its cepstrum. What is OURS is the call -- the right
+    # command, the canonical PraatGen parameter set, applied to the right
+    # object for the right purpose.
+    #
+    # A parameter set does not announce its own corruption. Change 0.02 to 0.2
+    # in the jitter call and every file still yields a number, the CSV keeps
+    # its shape, the suite stays green, and the column is quietly a different
+    # measurement than its header names. Nothing downstream can notice. The
+    # only defence is a pin, argument by argument.
+    #
+    # The harness half is a different kind of evidence and cannot be folded in:
+    # static text cannot prove ARGUMENT ORDER, because Praat's positional forms
+    # accept a number wherever a number is expected. A ceiling landing in the
+    # max-candidates slot returns a plausible wrong number rather than an
+    # error. Only running the call settles it -- and only at the target
+    # version, which is why v52 reports the four 6.6-era calls as MISSING
+    # evidence on an older sandbox instead of passing over them.
+    "v52_acoustic_calls.R"
 )
 
 cat("EML Praat Tools validation suite\n")
