@@ -218,6 +218,12 @@ run_leg_once () {
     # clean run and read as a failure that did not happen -- the same class of
     # mistake v47 exists to catch in the recorder's artefacts.
     rm -f "$LOUT/ERROR.png" "$LOUT/PANEL.png"
+    # AND THE LEG'S FLAT FILES. With $EML_SAVEPATHS_ONLY set out/ is not
+    # wiped, so a previous probe's saved files -- which carry a different
+    # timestamp in their names and so do not overwrite -- would accumulate
+    # beside this run's and be read as one press writing two stamps. Exactly
+    # the property v48 checks, failed by the harness rather than the plugin.
+    rm -f "$OUT/$leg."*
 
     rm -rf "$PREFS"; mkdir -p "$PREFS"
     # Only the lock files, never the whole pref dir mid-run: 6.6.30 keeps its
@@ -272,11 +278,29 @@ run_leg_once () {
             # so a Save there would lead only to "Nothing to Export". Driven
             # to that page, the post-analysis row is Done | New -- no Save
             # button exists to press. Photographed 14 Aug 2026.
-            "EML Stats Wizard")              rev=1; label="Continue" ;;
+            # THE GOAL PAGE. Its optionmenu sits at focus ring position 0 and
+            # plain Down changes it without opening the dropdown, so $WIZ_PRE
+            # selects the branch this leg wants: unset for goal 1 (compare
+            # groups), "Down Down" for goal 3 (describe or summarize).
+            "EML Stats Wizard")
+                rev=1; label="Continue"; pre="${WIZ_PRE:-}" ;;
             "Compare"*"Observation type")    rev=1; label="Continue" ;;
             "Compare independent"*)          rev=1; label="Continue" ;;
             "Two groups"*"Select columns")   rev=1; label="Continue" ;;
             "Two independent groups"*)       rev=1; label="Run" ;;
+            # The Describe chain. Both pages default to item 1 -- summarize a
+            # single variable -- which is the path the author's ruling of
+            # 14 Aug 2026 made exportable, and the one that reaches the
+            # LEGACY arm of the fork. Nothing else in the plugin does.
+            "Describe"*"What to summarize")  rev=1; label="Continue" ;;
+            "Describe"*"Select column")      rev=1; label="Run" ;;
+            "Check Normality")               rev=1; label="Run" ;;
+            "Normality assessment complete")
+                acVisit=$((acVisit + 1))
+                case $acVisit in
+                    1) rev=3; label="Save" ;;
+                    *) rev=4; label="Done" ;;
+                esac ;;
             # ── the wrapper's entry form: Quit | Run ──────────────────────
             "Compare Two Groups")            rev=1; label="Run" ;;
 
@@ -419,6 +443,12 @@ run_leg_once () {
 # a clean run and a real regression would need two failures to show.
 run_leg () {
     local leg="$1"
+    # THE FILTER IS CHECKED HERE TOO. run_leg_once returns early for a leg
+    # $EML_SAVEPATHS_ONLY excludes, which leaves no ARTEFACTS.tsv -- and the
+    # retry test below reads a missing artefact list as a failure, so a
+    # skipped leg was being "retried" once, run for real, and reported. A
+    # filter that runs the thing it filters out is worse than no filter.
+    if [[ -n "$ONLY" && "$leg" != *"$ONLY"* ]]; then return 0; fi
     run_leg_once "$@"
     if [[ -f "$OUT/work/$leg/ERROR.png" || ! -s "$OUT/work/$leg/ARTEFACTS.tsv" ]]; then
         echo "savepaths: $leg — retrying once"
@@ -454,6 +484,7 @@ eml-compare-twoway           twoway
 eml-correlate                xy
 eml-pairwise                 kgroup
 eml-regress                  xy
+eml-check-normality          xy
 "
 
 while read -r name recipe; do
@@ -483,5 +514,26 @@ done <<< "$WRAPPERS"
 AC_SAVE=3
 AC_DONE=4
 run_leg "eml-wizard" "twogroup" "$REPO/plugin/scripts/eml-wizard.praat" 14
+
+# THE DESCRIBE BRANCH, which had no Save button at all until 14 August 2026.
+# It is a second leg through the SAME script rather than a different wrapper,
+# because the wizard's branches are separate journeys with separate export
+# behaviour and driving one says nothing about the others. This is also the
+# only leg that exercises the fork's UNDECLARED arm: describe fills the legacy
+# buffer and does not declare, so @emlExportResultFiles writes one long-format
+# file here and three broom frames everywhere else.
+# THREE BUTTONS, NOT FOUR. D87 made drawing and exporting independent
+# capabilities, so the post-analysis row is Done|Save|Draw|New when a figure
+# is possible and Done|Save|New when it is not. Describe has no figure yet, so
+# Save is 2 from the end here and 3 everywhere else. Counting from the end is
+# what lets one presser cover both shapes; the count itself still comes from
+# the endPause: list of the branch being driven.
+AC_SAVE=2
+AC_DONE=3
+WIZ_PRE="Down Down"
+run_leg "eml-wizard-describe" "twogroup" "$REPO/plugin/scripts/eml-wizard.praat" 14
+WIZ_PRE=""
+AC_SAVE=3
+AC_DONE=4
 
 echo "savepaths: done"
