@@ -40,6 +40,11 @@
 #      the non-destructive-save promise has to be reachable from every layer
 #      that saves, and while it sat in the graphs form the declared arm of the
 #      export could not use it.
+#   5. @emlWrapperExportCSV is neither called nor DEFINED. It was deleted on
+#      14 Aug 2026; the reasoning for pinning its absence rather than only its
+#      disuse is written out at the check itself.
+#   6. The panel's folder seed, emlLastCSVFolder$, is set at file scope and
+#      not from inside any procedure -- the fact that survives the deletion.
 #
 #     Rscript validate/v46_export_surface.R
 #
@@ -193,6 +198,71 @@ check_true("v46", "and the panel exports through the fork",
 wrappers <- code[grepl("^scripts/", code$file), , drop = FALSE]
 check_true("v46", "no shipping script calls the superseded CSV export",
            !any(grepl("@emlWrapperExportCSV", wrappers$txt)))
+
+# ---------------------------------------------------------------------------
+# THE SUPERSEDED EXPORT IS GONE, NOT MERELY UNCALLED
+# ---------------------------------------------------------------------------
+# @emlWrapperExportCSV was deleted from stats/eml-output.praat on 14 August
+# 2026 (author ruling: "We can retire the superseded csv wrapper code if we
+# use it nowhere now"). That raises a question about the call-site check
+# directly above, and the answer is that it STAYS AND IS JOINED, not replaced.
+#
+# WHY THE CALL-SITE CHECK STAYS. Two reasons, and neither is sentiment.
+#   * v48's header cites this file for exactly that claim -- "no longer names
+#     the superseded @emlWrapperExportCSV" -- and a check another validator
+#     describes in prose should not quietly stop existing.
+#   * The way a wrapper reverts is by someone pasting an old post-analysis
+#     block back in, and that paste brings the call whether or not the
+#     procedure survived. Deleting the check would move that catch onto
+#     harness/check_includes.py, which is a different tool run at a different
+#     time. Cheap check, real population, keep it.
+#
+# WHY IT IS NO LONGER THE LOAD-BEARING ONE, which is the honest part. The
+# defect this check was built for was SILENT DIVERGENCE: a wrapper reaching
+# the old procedure wrote numbers only, into its own remembered folder, under
+# its own naming, while every other path wrote a set. That failure needed the
+# procedure to EXIST. With the definition gone, a reintroduced call is a loud
+# "Procedure not found" the instant Run is clicked -- bad, but not silent, and
+# not this file's kind of bug. So the invariant worth pinning moved: it is now
+# the ABSENCE OF THE DEFINITION, because that is the thing whose return would
+# make a stray call dangerous again instead of merely broken.
+#
+# AND THERE IS PRECEDENT FOR A CALLERLESS DEFINITION BEING HARMFUL. Between
+# 13 and 14 August the procedure sat in the tree with no callers and looked
+# inert. It was not: the ONLY seed of emlLastCSVFolder$ was inside it, so the
+# panel that superseded it inherited a variable nothing set, and all nine
+# non-graphing Save buttons died on "Unknown variable" before the panel drew.
+# A dead procedure holding live shared state is the specific way this went
+# wrong once, which is why "it has no callers" is not accepted as safe here.
+defn <- .hits("^\\s*procedure\\s+emlWrapperExportCSV\\b")
+check("v46", "the superseded CSV export is defined nowhere in shipping code",
+      0L, nrow(defn), tol = 0)
+
+# THE FOLDER SEED IS AT FILE SCOPE. The corollary of the above, and the one
+# fact the deletion had to preserve. emlLastCSVFolder$ is the folder every
+# non-graphing save proposes; it is seeded once when the barrel loads, by a
+# top-level line in the file that defines the panel. Praat evaluates a
+# procedure's arguments BEFORE entering it, so a seed that lives inside any
+# procedure cannot be relied on by a caller that passes the variable in -- the
+# exact shape of the 13 August outage. Checked structurally rather than by
+# indentation: the seed line must fall outside every procedure/endproc pair.
+# This is the check that would have caught that outage without a display;
+# v48 catches it too, but only after someone runs harness/savepaths.
+panel_all <- code[code$file == "stats/eml-output.praat", , drop = FALSE]
+depth <- cumsum(grepl("^\\s*procedure\\s", panel_all$txt)) -
+         cumsum(grepl("^\\s*endproc\\s*$", panel_all$txt))
+check_true("v46", "procedure/endproc pairing in eml-output.praat is well formed",
+           max(depth) == 1 && min(depth) == 0 &&
+           depth[length(depth)] == 0)
+seed <- grepl("variableExists\\s*\\(\\s*\"emlLastCSVFolder\\$\"\\s*\\)",
+              panel_all$txt)
+check_true("v46", "the panel's folder seed exists", any(seed))
+check_true("v46",
+           sprintf("and it is seeded at file scope, not inside a procedure (%s)",
+                   paste(sprintf("stats/eml-output.praat:%d",
+                                 panel_all$n[seed]), collapse = ", ")),
+           any(seed) && all(depth[seed] == 0))
+
 savers <- unique(wrappers$file[grepl("@emlSavePanel", wrappers$txt)])
 check_true("v46", sprintf("the wrappers save through the panel (%d of them)",
                           length(savers)),
