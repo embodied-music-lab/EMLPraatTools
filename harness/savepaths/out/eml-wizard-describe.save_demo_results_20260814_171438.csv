@@ -1,0 +1,17 @@
+table,analysis,term,term_type,field,value
+save_demo,Descriptive statistics,jitter_pct,group,n,28
+save_demo,Descriptive statistics,jitter_pct,group,mean,2.7214285714285715
+save_demo,Descriptive statistics,jitter_pct,group,sd,0.645128263363555
+save_demo,Descriptive statistics,jitter_pct,group,se,0.121917782042782
+save_demo,Descriptive statistics,jitter_pct,group,median,2.7
+save_demo,Descriptive statistics,jitter_pct,group,q1,2.0999999999999996
+save_demo,Descriptive statistics,jitter_pct,group,q3,3.3
+save_demo,Descriptive statistics,jitter_pct,group,iqr,1.2000000000000002
+save_demo,Descriptive statistics,jitter_pct,group,min,1.7999999999999998
+save_demo,Descriptive statistics,jitter_pct,group,max,3.6
+save_demo,Descriptive statistics,jitter_pct,group,range,1.8000000000000003
+save_demo,Descriptive statistics,jitter_pct,group,variance,0.4161904761904764
+save_demo,Descriptive statistics,jitter_pct,group,skewness,-0.003069599137912422
+save_demo,Descriptive statistics,jitter_pct,group,kurtosis,-1.704808553301241
+save_demo,Descriptive statistics,jitter_pct,group,ci95.lower,2.4712739457315993
+save_demo,Descriptive statistics,jitter_pct,group,ci95.upper,2.9715831971255438

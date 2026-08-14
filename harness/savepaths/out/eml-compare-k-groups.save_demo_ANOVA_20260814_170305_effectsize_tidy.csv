@@ -1,0 +1,5 @@
+term,contrast,effect.size,effect.size.type
+group,,0.9146739533182221,eta.squared
+group,G1-G2,-3.839226131371241,cohens.d
+group,G1-G3,-7.678452262742485,cohens.d
+group,G2-G3,-3.839226131371243,cohens.d
