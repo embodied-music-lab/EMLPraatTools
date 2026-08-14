@@ -1,0 +1,35 @@
+Batch Voice Analysis
+Sound folder: <WORK>/B_in
+Output folder: <WORK>/B_out
+Results CSV: <WORK>/B_out/B_in_results_2026-08-14.csv
+
+Sentinel file: <WORK>/B_out/STOP.txt
+To stop: open that file, change first line to STOP, save.
+
+[1/6] b01_good
+  WARNING: HNR = 87.00 dB — outside range (-20 to 40).
+[2/6] b02_zero
+  FAILED: b02_zero.wav could not be read as a Sound — skipping this file.
+[3/6] b03_wrongtype
+  FAILED: b03_wrongtype.wav could not be read as a Sound — skipping this file.
+[4/6] b04_short
+  FAILED: segment 1 is 0.020 s; the selected measures need at least 0.100 s — not analysed.
+[5/6] b05_good
+  WARNING: HNR = 124.26 dB — outside range (-20 to 40).
+[6/6] b06_corrupt
+  FAILED: b06_corrupt.wav could not be read as a Sound — skipping this file.
+
+============================================
+COMPLETE
+============================================
+Files processed: 3
+Files skipped:   0
+Failed:          4
+Warnings:        6
+Data rows:       6
+Results CSV:     <WORK>/B_out/B_in_results_2026-08-14.csv
+Sentinel file:   <WORK>/B_out/STOP.txt
+============================================
+
+Results Table retained in Objects window.
+Run stats or draw graphs from the EML Tools menu.

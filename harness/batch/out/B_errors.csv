@@ -1,0 +1,7 @@
+file,status,mean_F0_Hz,mean_intensity_dB,jitter_local,shimmer_local,HNR_dB,CPPS_dB
+b01_good,ok,119.99992321012395,86.88350974136212,7.879960186560732e-08,3.752339259190781e-06,86.99915164458466,10.171910520288048
+b02_zero,FAILED: unreadable or not a Sound file,,,,,,
+b03_wrongtype,FAILED: unreadable or not a Sound file,,,,,,
+b04_short,FAILED: too short (0.020 s),,,,,,
+b05_good,ok,200.00015546301609,86.88068202191423,8.981030307539948e-08,2.1423291058970086e-06,124.25621423852529,19.5345772687569
+b06_corrupt,FAILED: unreadable or not a Sound file,,,,,,

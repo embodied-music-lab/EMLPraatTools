@@ -1,0 +1,33 @@
+Batch Voice Analysis
+Sound folder: <WORK>/A_in
+Output folder: <WORK>/A_out
+Results CSV: <WORK>/A_out/A_in_results_2026-08-14.csv
+
+Sentinel file: <WORK>/A_out/STOP.txt
+To stop: open that file, change first line to STOP, save.
+
+[1/5] alpha
+  WARNING: HNR = 113.97 dB — outside range (-20 to 40).
+[2/5] bravo
+  WARNING: HNR = 135.31 dB — outside range (-20 to 40).
+[3/5] charlie
+  WARNING: HNR = 134.66 dB — outside range (-20 to 40).
+[4/5] delta
+  WARNING: HNR = 88.98 dB — outside range (-20 to 40).
+[5/5] echo
+  WARNING: HNR = 90.30 dB — outside range (-20 to 40).
+
+============================================
+COMPLETE
+============================================
+Files processed: 5
+Files skipped:   0
+Failed:          0
+Warnings:        5
+Data rows:       5
+Results CSV:     <WORK>/A_out/A_in_results_2026-08-14.csv
+Sentinel file:   <WORK>/A_out/STOP.txt
+============================================
+
+Results Table retained in Objects window.
+Run stats or draw graphs from the EML Tools menu.

@@ -1,0 +1,37 @@
+Batch Voice Analysis
+Sound folder: <WORK>/F_in
+Output folder: <WORK>/F_out
+Results CSV: <WORK>/F_out/F_in_results_2026-08-14.csv
+
+Sentinel file: <WORK>/F_out/STOP.txt
+To stop: open that file, change first line to STOP, save.
+
+[1/6] f1_f0high
+  WARNING: Mean F0 = 1400.0 Hz — outside range (50-1000).
+  WARNING: HNR = 144.10 dB — outside range (-20 to 40).
+[2/6] f2_quiet
+  WARNING: Mean intensity = 10.86 dB — outside range (20 to 120).
+[3/6] f3_jitter
+  WARNING: Jitter = 0.0775 — unusually high (> 5%).
+[4/6] f4_shimmer
+  WARNING: Shimmer = 0.3762 — unusually high (> 15%).
+[5/6] f5_hnr
+  WARNING: HNR = 94.12 dB — outside range (-20 to 40).
+[6/6] f6_cpps
+  WARNING: HNR = 111.10 dB — outside range (-20 to 40).
+  WARNING: CPPS = 30.18 dB — outside range (0 to 25).
+
+============================================
+COMPLETE
+============================================
+Files processed: 6
+Files skipped:   0
+Failed:          0
+Warnings:        8
+Data rows:       6
+Results CSV:     <WORK>/F_out/F_in_results_2026-08-14.csv
+Sentinel file:   <WORK>/F_out/STOP.txt
+============================================
+
+Results Table retained in Objects window.
+Run stats or draw graphs from the EML Tools menu.

@@ -1,0 +1,4 @@
+file,status,interval_label,interval_start,interval_end,mean_F0_Hz,mean_intensity_dB
+c1_split,ok,V,1,2,259.99966176832606,85.9186830613099
+c2_three,ok,V,0.6,1.2,220.00009198666535,85.91775108685803
+c2_three,ok,V,1.2,1.8,329.9994807496513,85.91772803026585

@@ -1,0 +1,62 @@
+# Cut from eml-batch-process.praat to make the headless twin.
+# Region 1: lines 322-371 (settings dialog)
+repeat
+    beginPause: "Batch Voice Analysis"
+        comment: "--- Input ---"
+        folder: "Sound folder", sound_folder$
+        word: "File extension", file_extension$
+        optionmenu: "Channel handling", channel_handling
+            option: "Mix to mono"
+            option: "Left channel only"
+            option: "Right channel only"
+        comment: "--- Output ---"
+        # `folder:` to match "Sound folder" above — the same widget, with the
+        # same Browse button, for the same kind of thing.
+        #
+        # THE READBACK VARIABLE IS output_folder$. Praat derives it from the
+        # LABEL: the first character lowercases and every other character keeps
+        # its case, so `boolean: "Figure PNG"` reads back as figure_PNG. That
+        # rule cost this project a silent no-op save on 13 Aug 2026
+        # (eml-output.praat:1598). This label is two lowercase words, so the
+        # derived name is output_folder$ — verified by readback, not assumed.
+        folder: "Output folder", output_folder$
+        comment: "--- Measures ---"
+        boolean: "Mean F0", mean_F0
+        boolean: "Mean intensity", mean_intensity
+        boolean: "Jitter (local)", jitter
+        boolean: "Shimmer (local)", shimmer
+        boolean: "HNR", hNR
+        boolean: "CPPS", cPPS
+        comment: "--- Pitch range ---"
+        positive: "Highest expected F0 (Hz)", string$ (highest_expected_F0)
+        comment: "--- TextGrid options ---"
+        boolean: "Use TextGrids", use_TextGrids
+        folder: "TextGrid folder", textGrid_folder$
+        natural: "Tier number", string$ (tier_number)
+        word: "Target label", target_label$
+        comment: ""
+        boolean: "Clear Info window", 0
+    clicked = endPause: "Quit", "Standard", "Run", 3, 0
+    if clicked = 1
+        exitScript: ""
+    elsif clicked = 2
+        # Reset analysis parameters to canonical defaults
+        mean_F0 = 1
+        mean_intensity = 1
+        jitter = 0
+        shimmer = 0
+        hNR = 0
+        cPPS = 0
+        highest_expected_F0 = 500
+    endif
+until clicked <> 2
+# Region 2: lines 531-539 (batch range dialog)
+beginPause: "Batch range"
+    comment: "Found " + string$ (nFiles) + " ." + file_extension$ + " files."
+    natural: "Start from file", "1"
+    natural: "End at file", string$ (nFiles)
+clicked = endPause: "Quit", "Run", 2, 0
+if clicked = 1
+    removeObject: fileListId
+    exitScript: ""
+endif

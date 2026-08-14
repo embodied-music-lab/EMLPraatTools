@@ -1,0 +1,24 @@
+Batch Voice Analysis
+Sound folder: <WORK>/E_in
+Output folder: <WORK>/E out/Study A/run 1
+Results CSV: <WORK>/E out/Study A/run 1/E_in_results_2026-08-14.csv
+
+Sentinel file: <WORK>/E out/Study A/run 1/STOP.txt
+To stop: open that file, change first line to STOP, save.
+
+[1/1] e1
+
+============================================
+COMPLETE
+============================================
+Files processed: 1
+Files skipped:   0
+Failed:          0
+Warnings:        0
+Data rows:       1
+Results CSV:     <WORK>/E out/Study A/run 1/E_in_results_2026-08-14.csv
+Sentinel file:   <WORK>/E out/Study A/run 1/STOP.txt
+============================================
+
+Results Table retained in Objects window.
+Run stats or draw graphs from the EML Tools menu.
