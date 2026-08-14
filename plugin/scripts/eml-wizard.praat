@@ -1887,7 +1887,7 @@ label WIZ_WHAT_NEXT
 if wizCanDraw and wizCanExport
     beginPause: "Analysis complete"
         comment: "📊 Results are in the Info window."
-    clicked = endPause: "Done", "CSV", "Draw", "New", 3, 0
+    clicked = endPause: "Done", "Save", "Draw", "New", 3, 0
     if clicked = 1
         runAgain = 0
         goto WIZ_LOOP_END
@@ -1902,7 +1902,7 @@ if wizCanDraw and wizCanExport
 elsif wizCanExport
     beginPause: "Analysis complete"
         comment: "📊 Results are in the Info window."
-    clicked = endPause: "Done", "CSV", "New", 3, 0
+    clicked = endPause: "Done", "Save", "New", 3, 0
     if clicked = 1
         runAgain = 0
         goto WIZ_LOOP_END
@@ -1949,7 +1949,16 @@ endif
 
 label WIZ_EXPORT_CSV
 
-@emlWrapperExportCSV: tableName$, "results"
+# ONE PANEL FOR EVERY OUTPUT. This was @emlWrapperExportCSV,
+# which wrote only the numbers and remembered its own folder.
+# @emlSavePanel offers the results AND the Info window report
+# under one folder and one stem. 0 = there is no figure here;
+# nothing has been drawn at the end of an analysis.
+@emlSavePanel: 0, tableName$ + "_results",
+... emlLastCSVFolder$
+if emlSavePanel.cancelled = 0
+    emlLastCSVFolder$ = emlSavePanel.folder$
+endif
 goto WIZ_WHAT_NEXT
 
 

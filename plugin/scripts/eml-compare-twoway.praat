@@ -120,12 +120,21 @@ repeat
             repeat
                 beginPause: "Analysis complete"
                     comment: "📊 Results are in the Info window."
-                clicked = endPause: "Done", "CSV", "Draw", "New", 3, 0
+                clicked = endPause: "Done", "Save", "Draw", "New", 3, 0
 
                 if clicked = 1
                     allDone = 1
                 elsif clicked = 2
-                    @emlWrapperExportCSV: tableName$, "two-way ANOVA"
+                    # ONE PANEL FOR EVERY OUTPUT. This was @emlWrapperExportCSV,
+                    # which wrote only the numbers and remembered its own folder.
+                    # @emlSavePanel offers the results AND the Info window report
+                    # under one folder and one stem. 0 = there is no figure here;
+                    # nothing has been drawn at the end of an analysis.
+                    @emlSavePanel: 0, tableName$ + "_two-way_ANOVA",
+                    ... emlLastCSVFolder$
+                    if emlSavePanel.cancelled = 0
+                        emlLastCSVFolder$ = emlSavePanel.folder$
+                    endif
                 elsif clicked = 3
                     # Grouped violin: factor 1 is the category, factor 2 the
                     # subgroup.
