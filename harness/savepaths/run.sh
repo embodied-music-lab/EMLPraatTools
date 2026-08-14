@@ -411,8 +411,38 @@ run_leg_once () {
     cp "$ATSV" "$OUT/$leg.artefacts.tsv" 2>/dev/null
     [[ -f "$LOUT/PANEL.png" ]] && cp "$LOUT/PANEL.png" "$OUT/$leg.panel.png"
     [[ -f "$LOUT/ERROR.png" ]] && cp "$LOUT/ERROR.png" "$OUT/$leg.error.png"
+    # STABLE NAMES IN THE REPOSITORY, STAMPED NAMES IN THE MANIFEST.
+    #
+    # The saved files carry a timestamp, which is the point of them -- but it
+    # means a re-run writes files under NEW names beside the old ones instead
+    # of over them. In a working directory that is harmless. In a repository
+    # pushed through GitHub's web upload form it is not: the form can ADD a
+    # file and can never remove one, so every regeneration of this artefact
+    # orphaned a full set on the remote, and the folder came to show two
+    # timestamps per leg where there had been one press. That is the
+    # stale-evidence failure v47 exists to catch, arriving through the door
+    # marked "how we push".
+    #
+    # So the COPY is named by its role -- <leg>.tidy.csv, <leg>.report.txt --
+    # and a re-run overwrites it. Nothing is lost: the real stamped filename
+    # is in <leg>.artefacts.tsv, which is where v48 reads it from, so the
+    # one-stamp-per-press check is untouched by this and the diff of a re-run
+    # is now the CONTENT that changed rather than a new set of filenames.
+    #
+    # The role is the filename with the stem cut off the front. The stem is
+    # everything up to and including the timestamp, which is why the timestamp
+    # pattern is matched rather than the stem guessed: the stem contains
+    # underscores, hyphens and the analysis name, and no rule over those is
+    # safe. A legacy export has no role suffix at all -- it is <stem>.csv --
+    # and becomes <leg>.results.csv.
     while IFS= read -r f; do
-        cp "$f" "$OUT/$leg.$(basename "$f")" 2>/dev/null
+        local base role
+        base="$(basename "$f")"
+        role="$(printf '%s' "$base" | sed -E 's/^.*[0-9]{8}_[0-9]{6}_?//')"
+        [[ -z "$role" || "$role" == "$base" ]] && role="results.${base##*.}"
+        [[ "$role" == .* || "$role" == "csv" || "$role" == "txt" \
+           || "$role" == "png" ]] && role="results.${base##*.}"
+        cp "$f" "$OUT/$leg.$role" 2>/dev/null
     done < <(find "$LHOME" -maxdepth 1 \
              \( -name '*.csv' -o -name '*.png' -o -name '*.txt' \) \
              -type f 2>/dev/null | sort)
