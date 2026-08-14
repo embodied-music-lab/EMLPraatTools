@@ -4352,6 +4352,34 @@ endproc
 # Output: .error$           — non-empty on failure (nothing printed)
 # ============================================================================
 procedure emlRunLMMAnalysis: .tableId, .formula$, .contrastCoding$, .useREML, .doR2, .doCI
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
+    ; that bailed on "Need at least 2 condition columns" exported the previous
+    ; analysis's tidy and glance under the RM name.
+    ;
+    ; THIS ORCHESTRATOR DOES NOT DECLARE, AND THAT IS WHY IT NEEDS THIS MOST.
+    ; It is the one emlRun...Analysis orchestrator that declares nothing --
+    ; it calls no emlDeclare... procedure of any kind -- so without this line
+    ; it never touches emlResult_declared or the broom collectors at all, and
+    ; simply INHERITS whatever the previous analysis left in them. (Those two
+    ; name prefixes are written bare, without the usual call sigil, on
+    ; purpose: harness/check_includes.py strips # comments but not ; ones,
+    ; and would read a wildcard name here as a call to a procedure that does
+    ; not exist.)
+    ; Measured 14 Aug 2026 on the API path: ANOVA, then LMM, then
+    ; @emlExportResultFiles wrote five frames whose glance said
+    ; method = One-way ANOVA under the LMM's own base name. The clear turns
+    ; that into an honest empty export (declared = 0, reason = "empty").
+    ;
+    ; AN API-PATH DEFECT, NOT A MENU ONE. Mixed models are TABLED by author
+    ; ruling (setup.praat, 5 Aug 2026: no menu entry, no Objects-window
+    ; button) and the wizard's route was disconnected on 6 Aug (eml-wizard,
+    ; "elsif goal = 4"), so no dialog can reach this procedure. A user's own
+    ; Praat script can -- @emlRunLMMAnalysis and @emlExportResultFiles are
+    ; both callable directly -- and that is the path this closes.
+    @emlCSVInit
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""

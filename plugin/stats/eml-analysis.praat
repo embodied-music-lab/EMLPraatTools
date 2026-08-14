@@ -446,6 +446,18 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     ; ORDER MATTERS. The separate frames are staged FIRST, because staging
     ; reuses the one tidy collector and the model's own tidy has to be what
     ; is left in it when @emlResultWrite runs.
+    ;
+    ; ONE GUARD OVER THE WHOLE SEQUENCE, which is how every other declaring
+    ; orchestrator writes it (two-group, KW, pairwise, two-way, paired,
+    ; correlation, regression, normality, RM, Friedman). The model declaration
+    ; used to sit OUTSIDE this `if`, with only @emlResultClearExtras and the
+    ; extra frames inside it. Split that way, a run that reached here with
+    ; emlOneWayAnova.error$ non-empty would skip the clear and still declare:
+    ; the PREVIOUS analysis's staged post-hoc and effect-size frames would
+    ; survive in emlResult_extra*, and @emlExportResultFiles would write them
+    ; beside this analysis's tidy/glance/augment, under this analysis's base
+    ; name. The clear and the declaration are one decision and belong under
+    ; one condition.
     if emlOneWayAnova.error$ = ""
         @emlResultClearExtras
         if .doTukey
@@ -454,9 +466,9 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
         endif
         @emlDeclareAnovaEffectSizes: .groupCol$, .doTukey
         @emlResultStageExtra: "effectsize"
+        @emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
+        ... .tableId, .doTukey
     endif
-    @emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
-    ... .tableId, .doTukey
 
     label END_ANOVA
 
