@@ -835,7 +835,25 @@ procedure emlLoadConfig
                     elsif .key$ = "lastOutputFolder"
                         # Backward compat: old key stored full path,
                         # strip filename to get folder only
-                        .lastSlash = rindex (.value$, "/")
+                        #
+                        # BOTH SEPARATORS, for the reason written up at
+                        # scripts/eml-batch-process.praat's own path parse.
+                        # This value is not one the plugin composes: it is a
+                        # path a user typed or chose in an OLDER build, saved
+                        # verbatim into eml-graphs-config.txt and read back
+                        # here, and the file is plain text a user can edit.
+                        # On Windows it therefore arrives as
+                        # "C:\Users\ian\Desktop\figure.png", rindex for "/"
+                        # alone returns 0, the file name is never stripped,
+                        # and BOTH remembered folders become a FILE path --
+                        # so the next Save dialog opens on
+                        # "...\figure.png" and proposes
+                        # "...\figure.png/plot.png", which cannot be created.
+                        # Praat consumes "/" on Windows, so a mixed path
+                        # ("C:\Users\ian/Desktop") is legal too and max()
+                        # takes whichever separator came last.
+                        .lastSlash = max (rindex (.value$, "/"),
+                            ... rindex (.value$, "\"))
                         if .lastSlash > 0
                             .value$ = left$ (.value$, .lastSlash - 1)
                         endif

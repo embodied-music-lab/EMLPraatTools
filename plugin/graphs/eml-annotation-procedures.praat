@@ -3164,15 +3164,46 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
         # The declaration @emlRunAnovaAnalysis makes, extras staged first.
         # The bridge always runs Tukey (the literal 1 above), so the post-hoc
         # frame is always available on this path.
+        #
+        # ONE GUARD OVER THE WHOLE SEQUENCE, which is the shape every other
+        # declaring path uses -- the Kruskal branch below, and the ten
+        # orchestrators in stats/eml-analysis.praat. The model declaration used
+        # to sit OUTSIDE this `if`, with only @emlResultClearExtras and the two
+        # extra frames inside it; @emlRunAnovaAnalysis carried the identical
+        # split until 14 Aug 2026. The clear and the declaration are one
+        # decision about one run of @emlOneWayAnova and belong under one
+        # condition.
+        #
+        # WHAT THE SPLIT COST HERE, measured rather than assumed: nothing yet,
+        # on three independent counts, and none of the three is a property of
+        # this procedure. (1) The four call sites in eml-graphs-form.praat all
+        # skip this procedure when emlBridgeGroupComparison.error$ is non-empty,
+        # and the bridge copies emlOneWayAnova.error$ into that field, so the
+        # guard cannot currently be false on the menu path. (2) Reached anyway
+        # -- by a script calling the bridge and this reporter without that check
+        # -- @emlReportAnovaComparison above aborts on the degenerate group data
+        # first, indexing an empty group vector, so control never arrives here.
+        # (3) @emlDeclareOneWayAnovaResult opens with the same
+        # `emlOneWayAnova.error$ <> ""` test and returns before @emlResultBegin,
+        # so the call outside the guard declared nothing.
+        #
+        # None of that is a reason to leave it split. What the missing clear
+        # would have leaked -- the previous analysis's staged post-hoc and
+        # effect-size frames, written beside its tidy and glance under THIS
+        # analysis's base name -- is real and reproducible; it is held off only
+        # by the @emlCSVInit at the top of this procedure, which zeroes
+        # emlResult_declared and emlResult_extraN. Remove that one line and the
+        # leak lands. Three accidental guards in other people's files are not a
+        # guard.
         if emlOneWayAnova.error$ = ""
             @emlResultClearExtras
             @emlDeclareTukeyResult: .groupCol$
             @emlResultStageExtra: "posthoc"
             @emlDeclareAnovaEffectSizes: .groupCol$, 1
             @emlResultStageExtra: "effectsize"
+            @emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
+            ... .tableId, 1
         endif
-        @emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
-        ... .tableId, 1
 
     else
         # k-group nonparametric: Kruskal-Wallis
