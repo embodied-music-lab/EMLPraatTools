@@ -207,7 +207,7 @@ press () {   # press <window-id> <n-from-end> [pre-keys...]
 # A LEG
 # ---------------------------------------------------------------------------
 # $1 leg name   $2 driver script   $3 wrapper to hand to   $4 max dialogs
-run_leg () {
+run_leg_once () {
     local leg="$1" recipe="$2" wrapper="$3" maxsteps="$4"
     local driver="leg.praat"
     if [[ -n "$ONLY" && "$leg" != *"$ONLY"* ]]; then return 0; fi
@@ -372,6 +372,38 @@ run_leg () {
              -type f 2>/dev/null | sort)
 
     echo "savepaths: $leg — $(wc -l < "$TSV") dialog(s), $(wc -l < "$ATSV") artefact(s)"
+}
+
+# ---------------------------------------------------------------------------
+# ONE RETRY, RECORDED
+# ---------------------------------------------------------------------------
+# A leg fails here about one run in nine, and always in a MULTI-LEG run --
+# driven alone, any leg passes repeatedly. Chased on 14 Aug 2026 and not
+# explained. What IS established, and is why this is a retry rather than an
+# open defect:
+#
+#   * the folder and base name handed to the writer are correct on the failing
+#     run, instrumented and read back;
+#   * the folder exists and is writable at the moment of failure, dumped from
+#     the error handler while the error window was still up;
+#   * writing that exact path from a fresh Praat succeeds;
+#   * eight of nine legs pass on every run, and which leg fails moves.
+#
+# So the plugin writes correctly and something in this sandbox does not, once
+# in a while, for a Praat that has been driven through a GUI. Retrying hides
+# that if it is silent, so it is not silent: RETRIES.tsv records every leg
+# that needed a second attempt, the summary line says so, and the artefact
+# carries it into the repository. A harness that quietly retried would report
+# a clean run and a real regression would need two failures to show.
+run_leg () {
+    local leg="$1"
+    run_leg_once "$@"
+    if [[ -f "$OUT/$leg/ERROR.png" || ! -s "$OUT/$leg/ARTEFACTS.tsv" ]]; then
+        echo "savepaths: $leg — retrying once"
+        printf '%s\tretried\n' "$leg" >> "$OUT/RETRIES.tsv"
+        sleep 5
+        run_leg_once "$@"
+    fi
 }
 
 # ---------------------------------------------------------------------------
