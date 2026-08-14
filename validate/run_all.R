@@ -319,7 +319,19 @@ scripts <- c(
     # it wrote shares one folder and one base name -- the panel's whole
     # contract. Its coverage check reads the callers out of the SOURCE, so a
     # new wrapper with a Save button fails this file until somebody drives it.
-    "v48_save_paths.R"
+    "v48_save_paths.R",
+    # v49 is the population neither v46 nor v48 can see. Both reason about
+    # CALLERS of the save panel; a path that offers no Save button is not a
+    # caller, so a branch that cannot export is outside both by construction.
+    # Three were: the wizard's Describe, Describe by group and Check
+    # normality, plus the standalone Check normality wrapper, which ran an
+    # orchestrator that had declared correctly for weeks and then offered the
+    # user no way to keep the result. None of them failed loudly -- the button
+    # was simply absent, and an absent button reads as a decision. One had
+    # even been written down as one. v49 enumerates the wizard's terminal
+    # branches and the analysis wrappers out of the source and fails if any of
+    # them cannot reach the export step.
+    "v49_every_path_exports.R"
 )
 
 cat("EML Praat Tools validation suite\n")

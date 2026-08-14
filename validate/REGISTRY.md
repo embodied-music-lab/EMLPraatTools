@@ -496,7 +496,8 @@ Two further tiers exist as harness rather than as committed evidence:
 ruling of 4 August) and the reliability orchestrator (a Phase 4 stub that
 returns "not yet implemented").
 
-**Deliberately NOT converted to the broom shape: `@emlRunDescriptiveAnalysis`.**
+**Not converted to the broom shape, but EXPORTABLE since 14 August 2026:
+`@emlRunDescriptiveAnalysis`.**
 Recorded here on 13 August 2026 because nothing said so and the omission reads
 like an oversight. Two reasons, either sufficient. First, broom has no `tidy`
 method for a summary of a vector, and eleven of the fifteen quantities the
@@ -507,8 +508,30 @@ them in the parity check as broom-shaped. Second, and decisively:
 `harness/broom_cases/contamination_probe.praat` uses this procedure as the
 canonical UNCONVERTED path, to prove a converted analysis does not leak its
 declaration into the next one. Converting it breaks that probe. The legacy
-long format is the right container for a heterogeneous bag of named scalars,
-and its export is correctly gated off in the wizard (`wizCanExport` stays 0).
+long format is the right container for a heterogeneous bag of named scalars.
+
+**AUTHOR RULING, 14 August 2026, correcting the last clause of the above.**
+That paragraph used to end "and its export is correctly gated off in the
+wizard (`wizCanExport` stays 0)". Both reasons for not converting are still
+right; the conclusion drawn from them was not. Describe and normality must be
+able to save. `@emlRunDescriptiveAnalysis` now fills the LEGACY buffer through
+`@emlCSVAddDescriptiveRow` -- sixteen statistics, no invented broom column
+names -- and the wizard sets `wizCanExport = 1`. It still does not declare, so
+`contamination_probe.praat` keeps its canonical unconverted subject and the
+second reason above stands untouched.
+
+A first attempt DID declare into tidy, and would have shipped a file carrying
+`term` and `method` and nothing else: `@eml_orderedCols` walks `emlVocabTidy$`
+as a WHITELIST and drops what is not in it, without comment. The first reason
+recorded here on 13 August is what stopped that, which is the argument for
+writing reasons down rather than conclusions.
+
+`validate/v49_every_path_exports.R` now enumerates every terminal branch of
+the wizard and every analysis wrapper out of the source, and fails if any of
+them cannot reach the export step. It found a fourth gap nobody had named:
+`scripts/eml-check-normality.praat`, the standalone menu wrapper, ran an
+orchestrator that had declared correctly for weeks and then offered the user
+no way to keep the result.
 
 ### What this folder is NOT the only validation of
 

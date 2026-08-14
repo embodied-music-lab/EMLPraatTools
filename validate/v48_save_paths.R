@@ -180,6 +180,12 @@ for (leg in legs) {
     stems <- sub("_(tidy|glance|augment|report|legend)\\.(csv|txt|png)$", "",
                  stems)
     stems <- sub("\\.png$", "", stems)
+    # AND THE BARE LEGACY FILE, which is <stem>.csv with no role suffix at
+    # all. Left off the first time and eml-wizard-describe read as two stems
+    # -- the second regex bug of the same shape in this file, both of them a
+    # validator failing on correct output. The rules run longest-suffix-first
+    # so this one cannot swallow _tidy.csv.
+    stems <- sub("\\.csv$", "", stems)
     check_true("v48",
                sprintf("%s: every file shares one stem (%s)", leg,
                        paste(unique(stems), collapse = " | ")),
@@ -203,14 +209,33 @@ for (leg in legs) {
                        paste(unique(st), collapse = " | ")),
                length(unique(st)) == 1)
 
-    # TIDY AND GLANCE ARE THE FLOOR. Every declared analysis writes both; the
-    # extras (augment, posthoc, effectsize) differ by analysis and are not
-    # pinned here, because pinning them would make this file a second copy of
-    # v20/v21's per-analysis knowledge.
-    check_true("v48", sprintf("%s: the tidy frame was written", leg),
-               any(grepl("_tidy\\.csv$", names)))
-    check_true("v48", sprintf("%s: the glance frame was written", leg),
-               any(grepl("_glance\\.csv$", names)))
+    # ONE ARM OR THE OTHER, NEVER NEITHER AND NEVER BOTH.
+    # @emlExportResultFiles forks on whether the analysis declared:
+    #
+    #   DECLARED   -> <stem>_tidy.csv and <stem>_glance.csv, plus whichever
+    #                 extras the analysis staged.
+    #   UNDECLARED -> ONE legacy long-format <stem>.csv.
+    #
+    # Every leg but one takes the declared arm. eml-wizard-describe takes the
+    # other, and it is the only journey in the plugin that does: describe
+    # fills the legacy buffer and never declares, because the tidy vocabulary
+    # is a whitelist that would drop all sixteen of its statistics. Until
+    # 14 August 2026 that arm could not be reached from any dialog at all --
+    # describe had no Save button -- so half of the branch v46 exists to
+    # protect had never been pressed.
+    #
+    # Checked as an exclusive-or rather than as two separate expectations,
+    # because a leg producing BOTH shapes would mean the fork ran twice or the
+    # collectors leaked between analyses, and neither would fail a check that
+    # merely asked for one of them.
+    broomArm  <- any(grepl("_tidy\\.csv$", names)) &&
+                 any(grepl("_glance\\.csv$", names))
+    legacyArm <- any(grepl("^[^.]*\\.[^.]*[0-9]{8}_[0-9]{6}\\.csv$", names)) ||
+                 (any(grepl("\\.csv$", names)) && !broomArm)
+    check_true("v48",
+               sprintf("%s: the export took exactly one arm (broom=%s legacy=%s)",
+                       leg, broomArm, legacyArm),
+               xor(broomArm, legacyArm))
 
     # THE REPORT, which is the output that existed nowhere before the panel.
     # @emlSaveInfoToFile had been in the tree since before the repo's history,
