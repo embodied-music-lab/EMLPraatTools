@@ -37,9 +37,9 @@
 #     bash harness/savepaths/run.sh
 #     Rscript validate/v48_save_paths.R
 #
-# Input: harness/savepaths/out/<leg>/{DIALOGS.tsv,ARTEFACTS.tsv} plus the
-#        plugin source. $EML_SAVEPATHS_DIR and $EML_PLUGIN_DIR override, for
-#        break tests.
+# Input: harness/savepaths/out/<leg>.dialogs.tsv and <leg>.artefacts.tsv --
+#        one flat directory -- plus the plugin source. $EML_SAVEPATHS_DIR and
+#        $EML_PLUGIN_DIR override, for break tests.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -64,7 +64,14 @@ if (!dir.exists(sp)) {
     if (!exists("EML_SUITE")) { eml_report("v48 save paths"); eml_exit() }
 }
 
-legs <- sort(list.dirs(sp, recursive = FALSE, full.names = FALSE))
+# ONE FLAT DIRECTORY, keyed by leg name. The harness writes
+# <leg>.dialogs.tsv, <leg>.artefacts.tsv, <leg>.panel.png and every file the
+# save wrote as <leg>.<name>; its working state lives under out/work/ and is
+# ignored. Flat because this repository is pushed one directory at a time
+# through a web form, and a per-leg tree taxed every re-run of the harness at
+# nineteen uploads.
+legs <- sort(sub("\\.dialogs\\.tsv$", "",
+                 list.files(sp, pattern = "\\.dialogs\\.tsv$")))
 check_true("v48", sprintf("the run produced legs (%s)",
                           paste(legs, collapse = ", ")),
            length(legs) > 0)
@@ -109,7 +116,7 @@ if (file.exists(gf)) {
 # 2. EACH LEG REACHED THE PANEL AND CAME BACK
 # ---------------------------------------------------------------------------
 for (leg in legs) {
-    d <- file.path(sp, leg, "DIALOGS.tsv")
+    d <- file.path(sp, paste0(leg, ".dialogs.tsv"))
     if (!check_true("v48", sprintf("%s: the dialog chain was recorded", leg),
                     file.exists(d) && file.info(d)$size > 0)) next
     tsv <- read.delim(d, header = FALSE, sep = "\t", quote = "",
@@ -122,7 +129,7 @@ for (leg in legs) {
     # reports a short clean chain and no files, and a hard failure reads as a
     # mild one. This is the check that would have caught the unbound
     # emlLastCSVFolder$ without anyone screenshotting anything.
-    check_true("v48", sprintf("%s: Praat raised no error (see %s/ERROR.png)",
+    check_true("v48", sprintf("%s: Praat raised no error (see %s.error.png)",
                               leg, leg),
                !any(grepl("^ERROR", as.character(tsv[[1]]))))
 
@@ -148,7 +155,7 @@ for (leg in legs) {
 # outputs across three places. Checking that the files SHARE A STEM is the
 # only way to check that promise; counting them is not.
 for (leg in legs) {
-    a <- file.path(sp, leg, "ARTEFACTS.tsv")
+    a <- file.path(sp, paste0(leg, ".artefacts.tsv"))
     if (!check_true("v48", sprintf("%s: an artefact list was written", leg),
                     file.exists(a))) next
     if (file.info(a)$size == 0) {
