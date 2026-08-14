@@ -35,23 +35,27 @@
 #                 extra. Every leg here takes this arm.
 #   UNDECLARED -> one legacy long-format .csv, via @emlExportStatsCSV.
 #
-# THE UNDECLARED ARM IS NOT REACHED BY ANY LEG HERE, and the reason is an
-# UNFINISHED PATH rather than a settled design. Nothing in plugin/stats/ fills
-# the legacy buffer at all -- the calls that fill it are all in
-# plugin/graphs/eml-annotation-procedures.praat and eml-graphs-form.praat, and
-# every path that reaches them also declares. The wizard's describe and
-# normality branches run the one unconverted orchestrator, and they set
-# wizCanExport = 0, so their post-analysis row comes up Done | New with no
-# Save button to press -- photographed 14 Aug 2026.
+# THE UNDECLARED ARM IS REACHED BY EXACTLY ONE LEG, eml-wizard-describe, and
+# by nothing else in the plugin. Nothing in plugin/stats/ fills the legacy
+# buffer except @emlRunDescriptiveAnalysis (14 Aug 2026); every other path
+# that fills it also declares.
 #
-# eml-wizard.praat:183-186 explains that as deliberate ("they fill no result
-# buffer and the button would lead only to Nothing to Export"). AUTHOR RULING,
-# 14 Aug 2026: that is not the design. Describe and normality SHOULD be able
-# to save; the work simply has not been done yet. So the missing Save is an
-# open item, recorded in the session queue, and this harness gains a leg for
-# it the moment the wrapper gains the button. Until then the legacy arm is
-# reached only by the half-converted case the fork was written for (a bridge
-# that reports and then errors before declaring) and by the code/API path.
+# AUTHOR RULING, 14 Aug 2026: describe and normality must be able to save.
+# eml-wizard.praat used to carry a comment calling their missing Save button
+# deliberate -- "they fill no result buffer and the button would lead only to
+# Nothing to Export" -- which was TRUE about the code and FALSE about the
+# intent. The work had simply not been done. It is done now: describe and
+# describe-by-group fill the legacy buffer, both normality paths run the
+# shipped @emlRunNormalityAnalysis, and all four set wizCanExport.
+#
+# THIS PARAGRAPH WAS ITSELF STALE FOR THREE COMMITS. 9a10968's message claimed
+# the "settled design" text here "is replaced with the author's ruling"; the
+# replacement landed in the wizard section at the foot of this file and this
+# header was never touched, so it went on describing a Save button that had
+# existed since ce40a3f while a leg 200 lines below pressed it. Found on
+# 14 Aug 2026 by the agent writing the session record, checking the day's
+# commit messages against the file rather than against each other. A commit
+# message is a claim about a file; only the file settles it.
 #
 # NO LEG DRAWS A FIGURE. That is the point: every previous drive of the panel
 # came through the graphs form with offerFigure = 1, so the offerFigure = 0
@@ -272,12 +276,18 @@ run_leg_once () {
             # are the path a user is steered down, so driving them is driving
             # the journey the plugin recommends.
             #
-            # NOT THE DESCRIBE BRANCH, and the reason is a finding rather than
-            # a convenience. Describe and normality set wizCanExport = 0 on
-            # purpose (eml-wizard.praat:183-186): they fill no result buffer,
-            # so a Save there would lead only to "Nothing to Export". Driven
-            # to that page, the post-analysis row is Done | New -- no Save
-            # button exists to press. Photographed 14 Aug 2026.
+            # THE DESCRIBE BRANCH IS A SEPARATE LEG, eml-wizard-describe,
+            # because the wizard's branches are separate journeys with
+            # separate export behaviour and driving one says nothing about the
+            # others. It is also the only leg that reaches the fork's
+            # UNDECLARED arm.
+            #
+            # Until 14 Aug 2026 that page had no Save button at all and this
+            # comment said so, citing eml-wizard.praat:183-186 as calling it
+            # deliberate. Both that comment and the one it cited were stale
+            # from the moment the author ruled; this one outlived the ruling
+            # by three commits because the commit that claimed to replace it
+            # edited a different part of this file.
             # THE GOAL PAGE. Its optionmenu sits at focus ring position 0 and
             # plain Down changes it without opening the dropdown, so $WIZ_PRE
             # selects the branch this leg wants: unset for goal 1 (compare
