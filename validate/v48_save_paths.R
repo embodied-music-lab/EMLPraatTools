@@ -164,13 +164,37 @@ for (leg in legs) {
                length(names) > 0)
 
     # The stem is everything before the first role suffix the panel appends.
+    # THE EXTRAS COME OFF FIRST, and the order is the whole of it. An extra
+    # frame is named <stem>_<role>_tidy.csv, so a rule that strips _tidy.csv
+    # first leaves <stem>_effectsize behind and every leg reads as two stems.
+    # That is what the first version of this check did, and it failed six legs
+    # while the plugin was writing exactly one stem each.
+    stems <- sub("_[a-z]+_tidy\\.csv$", "", names)
     stems <- sub("_(tidy|glance|augment|report|legend)\\.(csv|txt|png)$", "",
-                 names)
-    stems <- sub("_[a-z]+_tidy\\.csv$", "", stems)
+                 stems)
+    stems <- sub("\\.png$", "", stems)
     check_true("v48",
                sprintf("%s: every file shares one stem (%s)", leg,
                        paste(unique(stems), collapse = " | ")),
                length(unique(stems)) == 1)
+
+    # THE STAMP IS IDENTICAL TO THE SECOND ACROSS THE WHOLE PRESS. Author
+    # ruling, 14 August 2026. It is what makes the outputs of one analysis a
+    # set: a stamp taken per file would put two different seconds on one
+    # analysis whenever a write straddled a tick, and a folder of results
+    # would no longer group by run.
+    #
+    # Checked separately from the stem even though one implies the other,
+    # because they can only both be true for one reason -- a single
+    # @emlFileStamp call before the dialog -- and a future edit that moved the
+    # call into the write loop would break this one first and by name.
+    st <- regmatches(names, regexpr("[0-9]{8}_[0-9]{6}", names))
+    check("v48", sprintf("%s: every file carries a timestamp", leg),
+          length(names), length(st), tol = 0)
+    check_true("v48",
+               sprintf("%s: and every timestamp is the same second (%s)", leg,
+                       paste(unique(st), collapse = " | ")),
+               length(unique(st)) == 1)
 
     # TIDY AND GLANCE ARE THE FLOOR. Every declared analysis writes both; the
     # extras (augment, posthoc, effectsize) differ by analysis and are not
