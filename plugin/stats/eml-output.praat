@@ -1608,12 +1608,19 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     # suffixes are, because the panel is the only place the naming scheme is
     # ever visible.
     #
-    # THE PROPOSED NAME CARRIES A TIMESTAMP. @emlGenerateUniquePath still sits
-    # behind every write as the backstop, but a backstop that produces
-    # results_1 and results_2 protects the files while losing which run is
-    # which. A stamped default cannot collide, sorts chronologically in a file
-    # browser, and is editable -- it arrives in the field, so a user who does
-    # not want it deletes it.
+    # THE PROPOSED NAME CARRIES A TIMESTAMP, and there is exactly ONE call to
+    # @emlFileStamp per press, here, before the dialog. Every file this save
+    # writes takes its name from the field this seeds, so they all carry the
+    # same stamp to the second -- which is the author's condition, 14 Aug 2026,
+    # and the whole point of stamping rather than numbering. A stamp taken
+    # per-file would put two different seconds on one analysis whenever a write
+    # straddled a tick.
+    #
+    # The uniquing backstop still exists but it now runs ONCE on the stem (see
+    # below), not once per file. A backstop that produces results_1 and
+    # results_2 protects the files while losing which run is which; a stamped
+    # default sorts chronologically in a file browser and is editable, because
+    # it arrives in the field where a user who does not want it deletes it.
     @emlFileStamp
     .proposed$ = .stem$ + "_" + emlFileStamp.result$
 
@@ -1678,14 +1685,75 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
         .stem$ = "eml_results_" + emlFileStamp.result$
     endif
 
+    # ── ONE COLLISION DECISION, MADE ONCE, BEFORE ANYTHING IS WRITTEN ──────
+    #
+    # AUTHOR RULING, 14 August 2026: every file saved in one press must carry
+    # exactly the same stamp -- and by extension exactly the same base name.
+    # That is not a preference, it is what makes the outputs of one analysis a
+    # set rather than a pile.
+    #
+    # Before this block the panel had THREE DIFFERENT COLLISION BEHAVIOURS
+    # inside one save, and they disagreed:
+    #
+    #   the figure   @emlGenerateUniquePath on the .png, giving <stem>_1.png
+    #   the legend   @emlGenerateUniquePath again, independently
+    #   the frames   @emlExportResultFiles uniques the BASE, <stem>_1_tidy.csv
+    #   the report   no check at all -- it overwrote
+    #
+    # So a second save under a name already used produced <stem>_1.png beside
+    # <stem>_1_tidy.csv beside a <stem>_report.txt that had just destroyed the
+    # first run's report. Three names and a silent loss, from one press.
+    #
+    # The stamp makes a collision very unlikely and does not make it
+    # impossible: two saves inside the same second collide, and so does any
+    # user who deletes the stamp and reuses a name -- which the field exists to
+    # let them do.
+    #
+    # SO THE STEM IS UNIQUED, NOT THE FILES. The candidate set is every name
+    # the panel COULD write under this stem, tested whether or not its box is
+    # ticked: a stem that is free only because the user happened to untick the
+    # figure would give two different base names for the same analysis
+    # depending on which boxes were pressed. Once a free stem is found nothing
+    # downstream needs to check again -- @emlExportResultFiles' own probe
+    # becomes a no-op because <stem>_tidy.csv is known not to exist.
+    .try$ = .stem$
+    .n = 0
+    label STEM_FREE
+    .taken = 0
+    if fileReadable (.folder$ + "/" + .try$ + ".png")
+        .taken = 1
+    endif
+    if fileReadable (.folder$ + "/" + .try$ + "_legend.png")
+        .taken = 1
+    endif
+    if fileReadable (.folder$ + "/" + .try$ + "_tidy.csv")
+        .taken = 1
+    endif
+    if fileReadable (.folder$ + "/" + .try$ + "_glance.csv")
+        .taken = 1
+    endif
+    if fileReadable (.folder$ + "/" + .try$ + ".csv")
+        .taken = 1
+    endif
+    if fileReadable (.folder$ + "/" + .try$ + "_report.txt")
+        .taken = 1
+    endif
+    if .taken = 1
+        .n = .n + 1
+        .try$ = .stem$ + "_" + string$ (.n)
+        goto STEM_FREE
+    endif
+    .stem$ = .try$
+
     # --- the figure -------------------------------------------------------
     if .offerFigure = 1
         if figure_PNG = 1
+            # NO PER-FILE UNIQUING. The stem was made free above, against
+            # every name this panel can write, so a check here could only
+            # ever disagree with the one the frames and the report use --
+            # which is how one press used to produce <stem>_1.png beside
+            # <stem>_1_tidy.csv beside an overwritten <stem>_report.txt.
             .figPath$ = .folder$ + "/" + .stem$ + ".png"
-            if fileReadable (.figPath$)
-                @emlGenerateUniquePath: .figPath$
-                .figPath$ = emlGenerateUniquePath.result$
-            endif
             @emlAssertFullViewport
             if output_DPI = 1
                 Save as 300-dpi PNG file: .figPath$
@@ -1701,10 +1769,6 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
             if variableExists ("emlLegendSepActive")
                 if emlLegendSepActive = 1
                     .legPath$ = .folder$ + "/" + .stem$ + "_legend.png"
-                    if fileReadable (.legPath$)
-                        @emlGenerateUniquePath: .legPath$
-                        .legPath$ = emlGenerateUniquePath.result$
-                    endif
                     # The legend is saved by narrowing the viewport to the
                     # coordinates the draw stored, writing, and then putting
                     # the figure's extent back -- otherwise a second Save from
