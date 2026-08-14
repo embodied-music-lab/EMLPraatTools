@@ -1210,8 +1210,29 @@ procedure emlExportResultFiles: .folder$, .base$
     .actualPath$ = ""
     .reason$ = ""
 
-    if variableExists ("emlResult_declared") and emlResult_declared = 1
-        .declared = 1
+    # NESTED, NOT `and`. PRAAT DOES NOT SHORT-CIRCUIT: it evaluates BOTH
+    # operands before applying the operator, so
+    #
+    #     if variableExists ("emlResult_declared") and emlResult_declared = 1
+    #
+    # aborts with "Unknown variable" on the very case the guard was written to
+    # survive. Measured 14 Aug 2026 on Praat 6.6.30 -- the same law that made
+    # the Kruskal bridge use nested ifs.
+    #
+    # WHY IT MATTERED HERE AND NOWHERE ELSE. Reached through @emlSavePanel the
+    # guard is dead code: the panel only calls this when emlCSV_n > 0 or
+    # emlResult_declared = 1, and both imply an orchestrator ran @emlCSVInit,
+    # which sets the variable. But this procedure is also the CODE/API export
+    # path -- dialog-free, callable from a user's own script -- and there the
+    # first call in a fresh session has nothing set. The guard existed because
+    # that case is real, and it was the one case the guard could not survive.
+    .declared = 0
+    if variableExists ("emlResult_declared")
+        if emlResult_declared = 1
+            .declared = 1
+        endif
+    endif
+    if .declared = 1
         # UNIQUE THE BASE, NOT EACH FILE. A set is tidy + glance + augment +
         # up to two extras, and they have to stay a set: uniquing them
         # independently would put frame 1 of the new export beside frames 2
@@ -1462,6 +1483,52 @@ endproc
 # Parameters:
 #   .tableName$ — used for default filename
 # ────────────────────────────────────────────────────────────────────────────
+# THE PANEL'S REMEMBERED FOLDER, SEEDED AT LOAD.
+# ────────────────────────────────────────────────────────────────────────────
+# emlLastCSVFolder$ is the folder every non-graphing save proposes: the nine
+# stats wrappers and the wizard all pass it to @emlSavePanel and all write the
+# panel's answer back into it, so it carries the user's choice from one
+# analysis to the next within a session.
+#
+# IT WAS SEEDED NOWHERE. Until 14 August 2026 the only thing that gave it a
+# value was @emlWrapperExportCSV, which did it on its own first line:
+#
+#     if not variableExists ("emlLastCSVFolder$")
+#         emlLastCSVFolder$ = homeDirectory$
+#     endif
+#
+# When the save panel replaced that procedure at all ten call sites, the seed
+# went with the procedure -- it lived INSIDE the thing being superseded. Praat
+# evaluates a procedure's arguments before entering it, so
+#
+#     @emlSavePanel: 0, tableName$ + "_two-group", emlLastCSVFolder$
+#
+# aborted with "Unknown variable: emlLastCSVFolder$" BEFORE the panel ran.
+# Every wrapper and the wizard died on the FIRST press of Save in a session,
+# and the analysis the user had just run died with them.
+#
+# WHY NOTHING CAUGHT IT, which is the part worth keeping. v46 is a static
+# call-site check and it passed: the call site is there, it names the panel,
+# the superseded procedure has no callers -- every claim v46 makes was true.
+# A static check can see that a call exists; it cannot see that an ARGUMENT is
+# unbound. harness/wrappers runs each wrapper headless and asks only whether
+# it parses, and this parses. Nothing had ever pressed the Save button on any
+# of the ten non-graphing paths, so the first line of the panel's contract was
+# never executed. harness/savepaths exists because of this, and found it on
+# its first press.
+#
+# SEEDED HERE, ONCE, rather than in ten wrappers: this file defines the panel,
+# so it owns the panel's state, and a top-level line in an included file runs
+# when the barrel loads (the same mechanism as emlCSV_n above). The
+# variableExists guard keeps a value a caller set deliberately.
+if not variableExists ("emlLastCSVFolder$")
+    emlLastCSVFolder$ = homeDirectory$
+endif
+if emlLastCSVFolder$ = ""
+    emlLastCSVFolder$ = homeDirectory$
+endif
+
+# ────────────────────────────────────────────────────────────────────────────
 # @emlSavePanel: .offerFigure, .stem$, .folder$
 # ────────────────────────────────────────────────────────────────────────────
 # ONE SAVE, ONE FOLDER, ONE NAME. Everything an analysis produces — the
@@ -1533,8 +1600,37 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     # (13 Aug 2026) -- Praat answered "Unknown variable: figure_png" and the
     # save silently did nothing, which is the failure a tickbox panel is most
     # able to hide.
+    # A BASE NAME, NOT A FILE NAME. One press writes several files and they
+    # are told apart by a suffix this procedure appends, so calling the field
+    # "File name" described what the user typed and not what they got --
+    # someone typing "results.csv" into it would have got results.csv_tidy.csv
+    # and had no way to know why. The comment lines below say what the
+    # suffixes are, because the panel is the only place the naming scheme is
+    # ever visible.
+    #
+    # THE PROPOSED NAME CARRIES A TIMESTAMP. @emlGenerateUniquePath still sits
+    # behind every write as the backstop, but a backstop that produces
+    # results_1 and results_2 protects the files while losing which run is
+    # which. A stamped default cannot collide, sorts chronologically in a file
+    # browser, and is editable -- it arrives in the field, so a user who does
+    # not want it deletes it.
+    @emlFileStamp
+    .proposed$ = .stem$ + "_" + emlFileStamp.result$
+
     beginPause: "Save"
-        comment: "Everything ticked is written to one folder, under one name."
+        comment: "Everything ticked is written to one folder, sharing one"
+        comment: "base name. Each output adds its own suffix:"
+        if .haveCSV = 1
+            comment: "    _tidy.csv, _glance.csv — and _augment.csv,"
+            comment: "    _posthoc_tidy.csv, _effectsize_tidy.csv when the"
+            comment: "    analysis produces them"
+        endif
+        comment: "    _report.txt — the Info window"
+        if .offerFigure = 1
+            comment: "    .png — the figure, and _legend.png beside it when"
+            comment: "    the legend was placed outside the frame"
+        endif
+        comment: ""
         if .offerFigure = 1
             boolean: "Figure PNG", 1
         endif
@@ -1545,7 +1641,7 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
         endif
         boolean: "Report from the Info window", 1
         folder: "Folder", .folder$
-        word: "File name", .stem$
+        word: "Base name", .proposed$
     .clicked = endPause: "Cancel", "Save", 2, 1
 
     if .clicked = 1
@@ -1557,9 +1653,29 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     while endsWith (.folder$, "/")
         .folder$ = left$ (.folder$, length (.folder$) - 1)
     endwhile
-    .stem$ = file_name$
+
+    # THE FOLDER IS MADE, NOT ASSUMED. `folder:` is a freely editable text
+    # view with a Browse button beside it, so the user can type a path that
+    # does not exist yet -- and typing one is the natural thing to do when you
+    # want this study's outputs in their own folder. Without this line the
+    # save dies on the first writeFile: with Praat's own error, which reads
+    # "Cannot create file <path>. Hint: this is a folder, not a file" and
+    # names neither the real cause nor the folder.
+    #
+    # It also removes a race that made harness/savepaths flaky on 14 Aug 2026:
+    # the folder and stem handed to the writer were correct on every run,
+    # instrumented and read back, yet one leg in five failed at the first
+    # write. createFolder: on an existing folder is a no-op, so this costs
+    # nothing and closes both.
+    createFolder: .folder$
+    # base_name$, not file_name$ -- the field was renamed and Praat derives
+    # the variable from the label, so the readback name moves with it. The
+    # label's first character lowercases and every other character keeps its
+    # case, which is the rule that made figure_PNG bite on 13 Aug 2026.
+    .stem$ = base_name$
     if .stem$ = ""
-        .stem$ = "eml_results"
+        @emlFileStamp
+        .stem$ = "eml_results_" + emlFileStamp.result$
     endif
 
     # --- the figure -------------------------------------------------------

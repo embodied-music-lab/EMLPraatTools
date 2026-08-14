@@ -860,6 +860,48 @@ endproc
 # Outputs:   .result$ that path if it is free, else the first free
 #                     <base>_<n><ext> walking n upward from 1
 # ============================================================================
+# ============================================================================
+# @emlFileStamp
+# ============================================================================
+# A timestamp for a FILE NAME: YYYYMMDD_HHMMSS, local time.
+#
+# Outputs: .result$
+#
+# WHY A STAMP AT ALL. A save that proposes the same name twice either
+# overwrites the first run or, with @emlGenerateUniquePath behind it, produces
+# results_1 and results_2 -- protected, but with nothing to say which run is
+# which. A stamped default gives the user a name that cannot collide and that
+# sorts chronologically in their file browser, which is what a study folder
+# needs.
+#
+# WHAT OTHER APPLICATIONS DO, since this is a convention and not a discovery.
+# Three patterns exist. Praat itself, R's ggsave and most plotting libraries
+# silently overwrite. SPSS, JASP and jamovi prompt "file exists -- replace?".
+# MATLAB, Audacity, OBS and most capture and lab-data tools put the stamp in
+# the DEFAULT NAME and let the user edit or delete it. The third is what this
+# is: no modal to dismiss, no collision, sortable, and entirely overridable
+# because it arrives in an editable field rather than being bolted on at
+# write time.
+#
+# WHY date_iso$ () AND NOT date$ (). date$ () returns "Fri Aug 14 15:06:15
+# 2026" -- a month NAME, and a day that is space-padded when it is a single
+# digit, so slicing it means a month table and a pad test. date_iso$ ()
+# returns "2026-08-14T15:06:15+00:00", fixed width, every field already
+# numeric and already zero-padded. Measured on 6.6.30, 14 Aug 2026.
+#
+# THIS IS NOT THE RECORDER'S STAMP, deliberately. eml-record.praat keeps
+# emlRecordStamp$ in date$ () form because it is READ BY A PERSON at the top
+# of an emitted script, where "Fri Aug 14" beats "20260814". Two purposes,
+# two formats, and the difference is written down here so the next person does
+# not unify them into whichever one they met first.
+# ----------------------------------------------------------------------------
+procedure emlFileStamp
+    .iso$ = date_iso$ ()
+    .result$ = left$ (.iso$, 4) + mid$ (.iso$, 6, 2) + mid$ (.iso$, 9, 2)
+    ... + "_" + mid$ (.iso$, 12, 2) + mid$ (.iso$, 15, 2)
+    ... + mid$ (.iso$, 18, 2)
+endproc
+
 # ----------------------------------------------------------------------------
 # @emlGenerateUniquePath
 # Appends ascending integer to filename until path is available.
