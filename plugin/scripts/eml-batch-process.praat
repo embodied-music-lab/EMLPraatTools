@@ -218,11 +218,36 @@ currentRow = 0
 # Auto-generate output filename (S9)
 # ============================================================================
 
-slashPos = rindex (sound_folder$, "/")
+# Last path component of the sound folder, used ONLY as a filename prefix.
+#
+# This is the one place in this script that PARSES a path instead of handing
+# one to Praat. Praat accepts "/" on Windows in every path it consumes, so
+# every "sound_folder$ + "/" + ..." elsewhere in this file is portable as
+# written — but a folder the user picked or typed on Windows arrives with
+# backslashes ("C:\Users\ian\Data"), and rindex for "/" alone then returns
+# 0. The old else-branch made folderName$ the WHOLE path, so csvPath$ became
+# "C:\Users\ian\Data/C:\Users\ian\Data_results_<date>.csv" — an invalid name
+# (embedded drive colon) that only fails at "Save as comma-separated file"
+# after the entire batch has run. Both separators must therefore be matched.
+#
+# A path that ends in a separator has no component of its own, so trailing
+# separators are dropped first; a bare root ("/" or "C:\") leaves nothing
+# usable and falls back to a fixed prefix.
+pathTail$ = sound_folder$
+while length (pathTail$) > 1 and (right$ (pathTail$, 1) = "/"
+    ... or right$ (pathTail$, 1) = "\")
+    pathTail$ = left$ (pathTail$, length (pathTail$) - 1)
+endwhile
+
+slashPos = max (rindex (pathTail$, "/"), rindex (pathTail$, "\"))
 if slashPos > 0
-    folderName$ = right$ (sound_folder$, length (sound_folder$) - slashPos)
+    folderName$ = right$ (pathTail$, length (pathTail$) - slashPos)
 else
-    folderName$ = sound_folder$
+    folderName$ = pathTail$
+endif
+
+if folderName$ = "" or right$ (folderName$, 1) = ":"
+    folderName$ = "batch"
 endif
 
 @emlBuildDateStamp
