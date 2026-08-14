@@ -373,7 +373,32 @@ scripts <- c(
     # error. Only running the call settles it -- and only at the target
     # version, which is why v52 reports the four 6.6-era calls as MISSING
     # evidence on an older sandbox instead of passing over them.
-    "v52_acoustic_calls.R"
+    "v52_acoustic_calls.R",
+    # v53 is the batch FLOW, as against v52's acoustic CALLS. The module had no
+    # error containment at all: an unguarded `Read from file:` on a 0-byte wav
+    # ended the script at exit 255, and because the CSV is written AFTER the
+    # loop, one clipped take in a 500-file corpus produced no output whatever --
+    # and nothing said which file did it. That is the shape of failure this
+    # file exists for. A file that cannot be analysed is now a ROW, not an
+    # absence, and v53 drives seven corpora to prove it.
+    #
+    # The TextGrid branch could not be settled by a file check either: a
+    # constrained run and an unconstrained one leave the same CSV with the same
+    # columns. What separates them is the NUMBER -- a sound that is 130 Hz then
+    # 260 Hz with only its second half labelled reads 194 unconstrained and 260
+    # constrained. The difference IS the evidence that the constraint applied.
+    "v53_batch_flow.R",
+    # v54 checks the module against the PraatGen corpus itself -- the framework
+    # repo, read rather than remembered: COMMANDS_*.txt for signatures,
+    # APPENDIX_C for dialogs, APPENDIX_D for ranges, APPENDIX_F for UX. Every
+    # pin cites file and section so a reader can check it.
+    #
+    # The find worth naming: three `Get mean` calls share a NAME across Pitch,
+    # Intensity and Harmonicity and do not share a SIGNATURE -- Harmonicity
+    # takes two arguments and no unit string. Nothing but the catalogue
+    # separates them, and passing the wrong arity is an abort mid-batch, not a
+    # wrong number. The module has all three right; now it stays right.
+    "v54_batch_praatgen.R"
 )
 
 cat("EML Praat Tools validation suite\n")

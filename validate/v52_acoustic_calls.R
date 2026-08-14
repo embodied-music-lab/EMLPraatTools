@@ -47,13 +47,28 @@
 #     praat --run harness/acoustic/drive.praat
 #     Rscript validate/v52_acoustic_calls.R
 #
-# VERSION HONESTY. The plugin targets Praat 6.6.30. Two commands do not exist
-# below it -- To Pitch (filtered autocorrelation) and To Pitch (raw
-# cross-correlation) are the 6.6-era names, and jitter and shimmer sit
-# downstream of the second. On a sandbox below target the harness records those
-# four as UNRUN and this file reports the argument-order evidence as MISSING
-# rather than passing it. A validator that goes green over four untested calls
-# would be worse than not having run at all.
+# VERSION HONESTY, and what it bought. The plugin targets Praat 6.6.30. Two
+# commands do not exist below it -- To Pitch (filtered autocorrelation) and To
+# Pitch (raw cross-correlation) -- and jitter and shimmer sit downstream of the
+# second. This file was first written on a sandbox carrying 6.4.06, where those
+# four could not run at all, and rather than pass over them it recorded them as
+# UNRUN and reported their argument-order evidence as MISSING. A validator that
+# goes green over four untested calls is worse than one that did not run.
+#
+# That report is what made the gap actionable: 6.6.30 was installed on 14 Aug
+# 2026 and the four now RUN. Mean F0 recovers 119.9999 Hz on the filtered
+# autocorrelation track and 120.0000 on raw cross-correlation against a
+# synthesised 120 Hz, and jitter and shimmer come back at 4e-9 and 3e-9 on an
+# unperturbed signal. The raw-cross-correlation result is the one that matters
+# most: it is the only evidence that the ceiling really does sit THIRD in that
+# signature rather than last, which no amount of reading the source could
+# settle. The gate is kept exactly as it was -- an older sandbox will again
+# report MISSING rather than lie.
+#
+# CPPS moved 14.1888 -> 17.1922 between the two versions on the same signal
+# with the same parameters. That is not drift in this plugin; it is the
+# tilt-line fit revision recorded in PraatGen's PRAAT_VERSION_FLOOR.txt, and it
+# is why that document sets the framework floor where it does.
 #
 # Input: harness/acoustic/out/MEASURES.tsv. $EML_ACOUSTIC_DIR overrides, and
 #        $EML_BATCH_FILE overrides the source under test, for break tests.
