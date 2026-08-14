@@ -316,12 +316,30 @@ repeat
             comment: "📊 Results are in the Info window."
             comment: ""
             comment: "Draw plots a normal Q-Q plot for one column."
-        clicked = endPause: "Done", "Draw", "New", 2, 0
+        clicked = endPause: "Done", "Save", "Draw", "New", 3, 0
 
         if clicked = 1
             allDone = 1
 
         elsif clicked = 2
+            # AUTHOR RULING, 14 August 2026: every path through every
+            # approach must reach the export step. This wrapper had no Save
+            # at all -- it ran @emlRunNormalityAnalysis, which has declared
+            # into the broom collectors since before the panel existed, and
+            # then offered the user no way to keep the result. Found by v49
+            # enumerating wrappers that run an orchestrator and asking which
+            # of them call the panel; it was one of two, and the other is the
+            # tabled LMM module.
+            #
+            # 0 = no figure. The Q-Q plot is drawn from the branch below,
+            # which has its own picker because this wrapper tests every
+            # numeric column in one pass and there is no "the" column.
+            @emlSavePanel: 0, tableName$ + "_normality", emlLastCSVFolder$
+            if emlSavePanel.cancelled = 0
+                emlLastCSVFolder$ = emlSavePanel.folder$
+            endif
+
+        elsif clicked = 3
 
             # ── Column picker ─────────────────────────────────────────────
             # NOT optional, and not inferred. This wrapper tests every
@@ -418,7 +436,7 @@ repeat
                 selectObject: tableId
             endif
 
-        elsif clicked = 3
+        elsif clicked = 4
             runAgain = 1
         endif
     until allDone or runAgain

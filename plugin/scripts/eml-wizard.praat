@@ -179,10 +179,23 @@ wizCanDraw = 0
 # D87: drawing and exporting are separate capabilities and were gated by one
 # flag. Repeated measures and Friedman set wizCanDraw = 0 because there is no
 # figure for them yet — which also removed the CSV button from two analyses
-# the CSV migration had already built exports for. Every branch that runs an
-# orchestrator declaring results sets wizCanExport; the describe/normality
-# branches deliberately do not, because they fill no result buffer and the
-# button would lead only to "Nothing to Export".
+# the CSV migration had already built exports for.
+#
+# EVERY BRANCH THAT RUNS AN ANALYSIS SETS wizCanExport, as of 14 August 2026.
+# This comment used to end "the describe/normality branches deliberately do
+# not, because they fill no result buffer and the button would lead only to
+# Nothing to Export" — and that was a description of the code mistaken for a
+# decision. AUTHOR RULING, 14 Aug 2026: describe and normality must be able to
+# save. The buffer was empty because nothing filled it: @emlRunDescriptiveAnalysis
+# was the plugin's last unconverted orchestrator and the wizard's Describe-by-
+# group ran its own summary, while the standalone normality page called the
+# wizard's pre-check diagnostic instead of @emlRunNormalityAnalysis, which had
+# declared correctly all along. All three declare now.
+#
+# The one branch that still does not set it is the LMM page, and that is a
+# standing author ruling of a different kind: mixed models are TABLED and the
+# route into them is disconnected, so there is no user-reachable path to it.
+# v49 knows that and checks it by name rather than by silence.
 wizCanExport = 0
 wizDrawSource$ = ""
 wizTestType$ = "parametric"
@@ -1579,6 +1592,11 @@ elsif goal = 3
         endif
 
         @emlRunDescriptiveAnalysis: tableId, data_column$
+        # AUTHOR RULING, 14 Aug 2026: describe must be able to save. The
+        # orchestrator declares as of the same date; before that it was the
+        # plugin's last unconverted one, and the missing declaration is the
+        # whole reason this page had no Save button.
+        wizCanExport = 1
         if emlRunDescriptiveAnalysis.error$ <> ""
             # D93: an analysis error must not tear down the wizard. Return
             # the user into the back-chain with every answer intact.
@@ -1629,6 +1647,9 @@ elsif goal = 3
         @wizardRunDescribeByGroup: tableId, data_column$,
         ... group_column$
 
+        # AUTHOR RULING, 14 Aug 2026: describe must be able to save.
+        wizCanExport = 1
+
         goto WIZ_WHAT_NEXT
 
     else
@@ -1661,7 +1682,31 @@ elsif goal = 3
             @emlClearInfo
         endif
 
-        @wizardNormCheck: "single", tableId, data_column$, ""
+        # THE SHIPPED ORCHESTRATOR, not the wizard's local diagnostic.
+        # @wizardNormCheck exists to feed a RECOMMENDATION into a test-choice
+        # page -- it runs in "group", "paired" and "correlation" modes ahead
+        # of a decision. Standing alone on the Describe menu it was doing a
+        # different job with the same code, and it declares nothing, which is
+        # why this page had no Save button.
+        #
+        # @emlRunNormalityAnalysis is the analysis a user asked for when they
+        # chose "Check normality": it reports Shapiro-Wilk with the shape
+        # statistics and calls @emlDeclareNormalityResult, which has existed
+        # and been correct since before this page did. Routing here rather
+        # than adding a declare to @wizardNormCheck is the DRY answer -- the
+        # menu path and the wizard path now run the same procedure.
+        @emlRunNormalityAnalysis: tableId, data_column$, "single"
+        if emlRunNormalityAnalysis.error$ <> ""
+            @emlErrorDialog: emlRunNormalityAnalysis.error$,
+            ... emlRunNormalityAnalysis.remedy$, "wizard"
+            if emlErrorDialog.back
+                goto C1_DESCRIBE
+            endif
+            exitScript: ""
+        endif
+
+        # AUTHOR RULING, 14 Aug 2026: normality must be able to save.
+        wizCanExport = 1
 
         goto WIZ_WHAT_NEXT
 
@@ -2586,19 +2631,33 @@ procedure wizardRunDescribeByGroup: .tableId, .dataCol$, .groupCol$
 
     @emlReportDescriptiveHeader
 
+    # EXPORTABLE, as of 14 August 2026 -- author ruling: describe must be
+    # able to save. The LEGACY buffer, not the broom collectors, for the
+    # reason set out above @emlCSVAddDescriptiveRow in stats/eml-analysis.praat:
+    # the tidy vocabulary is a whitelist and would drop every statistic here
+    # except the term. One legacy row per group per statistic, which is the
+    # long format's natural shape for exactly this.
+    @emlCSVInit
+    @emlCSVSetTable: displayTable$
+
     for .g from 1 to .nG
         @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
         ... .gLabel$[.g]
         .gDisplay$ = replace$ (.gLabel$[.g], "_", " ", 0)
         .gN = eml_getGroupData.n
-        @emlMean: eml_getGroupData.data#
-        .gMean = emlMean.result
-        @emlSD: eml_getGroupData.data#
-        .gSD = emlSD.result
-        @emlMedian: eml_getGroupData.data#
-        .gMed = emlMedian.result
+
+        # ONE PASS, NOT THREE. This called @emlMean, @emlSD and @emlMedian
+        # separately; @emlDescribe computes those and thirteen more from the
+        # same vector, so the reported row and the declared row are now the
+        # same numbers by construction rather than by both being right.
+        @emlDescribe: eml_getGroupData.data#
+        .gMean = emlDescribe.mean
+        .gSD = emlDescribe.sd
+        .gMed = emlDescribe.median
+
         @emlReportDescriptiveRow: .gDisplay$, .gN,
         ... .gMean, .gSD, .gMed
+        @emlCSVAddDescriptiveRow: .gDisplay$
     endfor
 
     @emlReportFooter
