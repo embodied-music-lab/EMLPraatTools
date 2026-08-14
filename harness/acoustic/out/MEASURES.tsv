@@ -1,8 +1,11 @@
-praat_version	6.4.06
-at_target_version	0
-pitch_chains_ran	0
-unrun_commands	To Pitch (filtered autocorrelation);To Pitch (raw cross-correlation);Get jitter (local);Get shimmer (local)
+praat_version	6.6.30
+at_target_version	1
+meanF0	119.9999
+meanF0_rcc	120.0000
+jitter_local	0.000000004
+shimmer_local	0.000000003
+pitch_chains_ran	1
 mean_intensity	86.8835
-hnr	100.4275
-cpps	14.1888
+hnr	100.4267
+cpps	17.1922
 completed	1
