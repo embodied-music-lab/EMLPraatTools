@@ -1,0 +1,17 @@
+table,analysis,term,term_type,field,value
+demo_3groups_input,Descriptive statistics,SPL_dB,group,n,45
+demo_3groups_input,Descriptive statistics,SPL_dB,group,mean,88.95182018331927
+demo_3groups_input,Descriptive statistics,SPL_dB,group,sd,5.4387513398193805
+demo_3groups_input,Descriptive statistics,SPL_dB,group,se,0.8107611805702796
+demo_3groups_input,Descriptive statistics,SPL_dB,group,median,90.09188647004873
+demo_3groups_input,Descriptive statistics,SPL_dB,group,q1,86.2329947278319
+demo_3groups_input,Descriptive statistics,SPL_dB,group,q3,92.23369751674821
+demo_3groups_input,Descriptive statistics,SPL_dB,group,iqr,6.000702788916314
+demo_3groups_input,Descriptive statistics,SPL_dB,group,min,77.73550825444009
+demo_3groups_input,Descriptive statistics,SPL_dB,group,max,99.7279365967753
+demo_3groups_input,Descriptive statistics,SPL_dB,group,range,21.992428342335202
+demo_3groups_input,Descriptive statistics,SPL_dB,group,variance,29.58001613638711
+demo_3groups_input,Descriptive statistics,SPL_dB,group,skewness,-0.4223081701411346
+demo_3groups_input,Descriptive statistics,SPL_dB,group,kurtosis,-0.2855629514765563
+demo_3groups_input,Descriptive statistics,SPL_dB,group,ci95.lower,87.31783838938019
+demo_3groups_input,Descriptive statistics,SPL_dB,group,ci95.upper,90.58580197725836

@@ -1,0 +1,12 @@
+leg	declared
+phase	first
+declared	1
+success	1
+nWritten	5
+reason	
+actualPath	
+file	anova_spl_tidy.csv
+file	anova_spl_glance.csv
+file	anova_spl_augment.csv
+file	anova_spl_posthoc_tidy.csv
+file	anova_spl_effectsize_tidy.csv

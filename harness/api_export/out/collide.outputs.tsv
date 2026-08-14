@@ -1,0 +1,24 @@
+leg	collide
+phase	first
+declared	1
+success	1
+nWritten	5
+reason	
+actualPath	
+file	twice_tidy.csv
+file	twice_glance.csv
+file	twice_augment.csv
+file	twice_posthoc_tidy.csv
+file	twice_effectsize_tidy.csv
+leg	collide
+phase	second
+declared	1
+success	1
+nWritten	5
+reason	
+actualPath	
+file	twice_1_tidy.csv
+file	twice_1_glance.csv
+file	twice_1_augment.csv
+file	twice_1_posthoc_tidy.csv
+file	twice_1_effectsize_tidy.csv

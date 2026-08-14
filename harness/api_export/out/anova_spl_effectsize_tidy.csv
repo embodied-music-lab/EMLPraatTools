@@ -1,0 +1,5 @@
+term,contrast,effect.size,effect.size.type
+voice_type,,0.46236968508324866,eta.squared
+voice_type,Soprano-Mezzo,1.7838798367260675,cohens.d
+voice_type,Soprano-Alto,2.0839749765563775,cohens.d
+voice_type,Mezzo-Alto,0.5859358150444196,cohens.d

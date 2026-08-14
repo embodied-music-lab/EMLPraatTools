@@ -1,0 +1,24 @@
+leg	loop
+phase	column1
+declared	1
+success	1
+nWritten	5
+reason	
+actualPath	
+file	loop_SPL_dB_tidy.csv
+file	loop_SPL_dB_glance.csv
+file	loop_SPL_dB_augment.csv
+file	loop_SPL_dB_posthoc_tidy.csv
+file	loop_SPL_dB_effectsize_tidy.csv
+leg	loop
+phase	column2
+declared	1
+success	1
+nWritten	5
+reason	
+actualPath	
+file	loop_vibrato_rate_Hz_tidy.csv
+file	loop_vibrato_rate_Hz_glance.csv
+file	loop_vibrato_rate_Hz_augment.csv
+file	loop_vibrato_rate_Hz_posthoc_tidy.csv
+file	loop_vibrato_rate_Hz_effectsize_tidy.csv

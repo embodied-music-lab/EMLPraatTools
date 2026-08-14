@@ -1,0 +1,10 @@
+leg	partial
+phase	first
+declared	1
+success	1
+nWritten	2
+reason	
+actualPath	
+file	normality_spl_tidy.csv
+file	normality_spl_glance.csv
+skipped	augment: this analysis has no per-observation quantities

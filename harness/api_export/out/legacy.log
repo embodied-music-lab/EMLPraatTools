@@ -1,0 +1,45 @@
+
+══════════════════════════════════════════════
+  EML Stats : Descriptive Statistics
+  Fri Aug 14 18:24:37 2026
+══════════════════════════════════════════════
+
+  Table               demo 3groups input
+  Column              SPL dB
+  N (valid)           45
+
+
+  ── Central Tendency ────────────────────────
+  Mean                88.9518
+  Median              90.0919
+  SEM                 0.8108
+
+
+  ── Dispersion ──────────────────────────────
+  SD                  5.4388
+  Variance            29.5800
+  Range               21.9924
+  Min                 77.7355
+  Max                 99.7279
+
+
+  ── Quartiles ───────────────────────────────
+  Q1                  86.2330
+  Q2 (Median)         90.0919
+  Q3                  92.2337
+  IQR                 6.0007
+
+
+  ── Distribution Shape ──────────────────────
+  Skewness            -0.4223
+  Kurtosis (excess)   -0.2856
+
+
+  ── 95% Confidence Interval ─────────────────
+  Lower               87.3178
+  Upper               90.5858
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+APIEXPORT DONE leg=legacy
