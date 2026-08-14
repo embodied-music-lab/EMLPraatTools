@@ -57,5 +57,10 @@ harness/gui_e2e/out/home/
 # makes every run a diff and buries the four files that matter.
 harness/savepaths/prefs/
 harness/savepaths/out/work/
+harness/gui_adv/prefs/
+harness/gui_adv/out/home/
+harness/gui_adv/out/xvfb.log
+harness/gui_adv/out/wm.log
+harness/gui_adv/out/report.utf8.txt
 harness/savepaths/out/xvfb.log
 harness/savepaths/out/wm.log
