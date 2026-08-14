@@ -331,7 +331,29 @@ scripts <- c(
     # even been written down as one. v49 enumerates the wizard's terminal
     # branches and the analysis wrappers out of the source and fails if any of
     # them cannot reach the export step.
-    "v49_every_path_exports.R"
+    "v49_every_path_exports.R",
+    # v50 is the CODE/API export path -- @emlExportResultFiles called from a
+    # user's own Praat script, with no dialog anywhere. It works, and until
+    # 14 Aug 2026 it was neither documented nor exercised: every check above
+    # it reaches the exporter through a BUTTON, so a caller who never presses
+    # one is outside all of them. Reads harness/api_export, which is headless
+    # -- no Xvfb, no window manager -- and covers both arms of the fork, the
+    # collision walk, and the fresh-session call with nothing declared, which
+    # is the case that used to abort on Praat's non-short-circuiting `and`.
+    "v50_api_export.R",
+    # v51 drives the graphs form in ADVANCED mode, which harness/gui_e2e never
+    # does -- it draws in beginner mode, where annotate is forced to 0, so the
+    # annotation bridge never runs and the preset-restore branch is never
+    # entered. Both fixes of 13 Aug 2026 lived outside every existing check BY
+    # CONSTRUCTION and rested on my having read the code.
+    #
+    # They fail as SILENCE: no error, no missing file, no warning. And the file
+    # set cannot separate them, because an annotated draw and an unannotated
+    # one both leave tidy and glance on disk -- written by the bridge in one
+    # case and by the caller's orchestrator in the other. What separates them
+    # is the Info report: one "Two-Group Comparison" section if the preset was
+    # lost, two if it survived and the bridge reported on top.
+    "v51_advanced_mode.R"
 )
 
 cat("EML Praat Tools validation suite\n")
