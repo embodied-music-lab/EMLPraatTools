@@ -77,9 +77,14 @@ ar <- read.delim(ar_p, header = FALSE, stringsAsFactors = FALSE,
                  col.names = c("file", "bytes"))
 ar$bytes <- as.numeric(ar$bytes)
 
+# ONE SAVE PANEL SINCE 13 AUG 2026. The four dialogs this list used to name
+# -- Save Figure, Save Complete, Export Results, Export Complete -- were two
+# separate save journeys, one per artefact, each with its own folder memory
+# and naming. They are now one "Save" panel and one "Saved" confirmation, and
+# a single press writes the figure, the result frames and the Info report
+# under one folder and one stem.
 STAGES <- c("EML Graphs", "Violin Plot -- Column Mapping", "Graph Complete",
-            "Save Figure", "Save Complete", "Export Results",
-            "Export Complete")
+            "Save", "Saved")
 eml_claim("v45", "guie2e_out", STAGES)
 
 .first <- function(pat) which(grepl(pat, dl$title, fixed = TRUE))[1]
@@ -98,8 +103,11 @@ for (s in STAGES) {
 # is above zero. In beginner mode the annotation bridge never runs, so on this
 # path the buffer can only have been filled upstream. Its presence is the
 # evidence that the driver came in by the wrapper's route.
-check_true("v45", "the Exp CSV branch was available, so the buffer was filled",
-           any(dl$button == "ExpCSV"))
+# THE PANEL IS REACHED, and it is the only save journey now. There is no
+# separate Exp CSV button to check for: the panel offers the results
+# alongside the figure and the report, and what it wrote is asserted below on
+# the files themselves rather than on which button was available.
+check_true("v45", "the save panel was opened", any(dl$button == "Save"))
 
 # ---------------------------------------------------------------------------
 # 2. THE SEQUENCE, not just the population
@@ -108,12 +116,10 @@ check_true("v45", "column mapping came after the main form",
            .first("Column Mapping") > .first("EML Graphs"))
 check_true("v45", "the post-draw dialog came after column mapping",
            .first("Graph Complete") > .first("Column Mapping"))
-check_true("v45", "Save Figure came after the post-draw dialog",
-           .first("Save Figure") > .first("Graph Complete"))
-check_true("v45", "the save was confirmed after the save dialog",
-           .first("Save Complete") > .first("Save Figure"))
-check_true("v45", "the export was confirmed after the export dialog",
-           .first("Export Complete") > .first("Export Results"))
+check_true("v45", "the save panel came after the post-draw dialog",
+           .first("Save") > .first("Graph Complete"))
+check_true("v45", "the save was confirmed after the panel",
+           .first("Saved") > .first("Save"))
 
 # THE WORKFLOW WAS NEVER ASKED FOR WHAT IT WAS HANDED. v35's assertion,
 # repeated here because this run is four times longer and a regression could
@@ -148,7 +154,10 @@ check_true("v45", "the second main form came after Redraw, not before",
 check_true("v45", "Done was pressed", any(dl$button == "Done"))
 check_true("v45", "Done was the last button pressed",
            tail(dl$button[dl$button != "Done-retry3"], 1) == "Done")
-check("v45", "the post-draw dialog was visited four times", 4L,
+# THREE VISITS, NOT FOUR. One save journey instead of two: Save, then
+# Redraw, then Done. The row is also a fixed three buttons now, which is what
+# retired the Done retry the harness used to carry.
+check("v45", "the post-draw dialog was visited three times", 3L,
       .n("Graph Complete"), tol = 0)
 
 # THE STEP COLUMN IS THE SEQUENCE IT CLAIMS TO BE, or every ordering check
@@ -166,10 +175,9 @@ check_true("v45", "dialog steps never go backwards",
 # of Graph Complete.
 check_true("v45", "every press used at least one reverse step", all(dl$rev >= 1))
 check_true("v45", "no press needed more steps than Graph Complete has buttons",
-           all(dl$rev <= 4))
-check_true("v45", "the single-button notices took exactly one step",
-           all(dl$rev[grepl("Complete$", dl$title) &
-                      dl$title != "Graph Complete"] == 1))
+           all(dl$rev <= 3))
+check_true("v45", "the single-button notice took exactly one step",
+           all(dl$rev[dl$title == "Saved"] == 1))
 
 # ---------------------------------------------------------------------------
 # 6. THE FILES. A Save branch that opened its dialog, took the press and wrote
@@ -211,6 +219,24 @@ check_true("v45", "a glance frame was written",
 # post-hoc contrasts are their own frames, not extra rows on the model's tidy.
 check_true("v45", "effect sizes were written as their own frame",
            any(grepl("_effectsize_tidy\\.csv$", csv$file)))
+
+# ---------------------------------------------------------------------------
+# 6c. ONE PRESS, ONE STEM -- the point of the panel
+# ---------------------------------------------------------------------------
+# Before this the figure and the numbers were two journeys with two folder
+# memories and two naming rules, and the Info report could not be saved at
+# all. One Save now writes all three, and they share a stem, which is what
+# makes them findable as a set six months later.
+txt <- ar[grepl("\\.txt$", ar$file), ]
+check_true("v45", "the Info window report was written", nrow(txt) >= 1)
+check_true("v45", "the report has real content, not just a header",
+           nrow(txt) >= 1 && all(txt$bytes > 200))
+stems <- sub("(_tidy|_glance|_augment|_effectsize_tidy|_report)?\\.[a-z]+$", "",
+             ar$file)
+check("v45", "every artefact shares one stem", 1L,
+      length(unique(stems)), tol = 0)
+check_true("v45", "and the stem is the table plus the graph type",
+           unique(stems)[1] == "e2e_demo_Violin_Plot")
 
 # NO AUGMENT, AND THAT IS CORRECT. This run is a two-group t-test, an htest,
 # and broom has no augment for htests -- @emlResultWrite reports it skipped

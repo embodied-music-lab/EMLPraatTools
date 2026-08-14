@@ -130,14 +130,27 @@ if (file.exists(out_p)) {
 # every orchestrator's entry guard clears it via @emlCSVInit. Those are state
 # changes. What must stay singular is the number of places that READ it to
 # choose a format, because two readers are two chances to disagree.
+# ONE FILE MAY BRANCH ON MIGRATION STATE, and it is the file that owns the
+# writers. The count of reads is deliberately NOT pinned: since the save panel
+# landed there are three, and two of them ask a different question -- "is
+# there anything to offer the user" rather than "which format do I write".
+# Pinning the count would have failed on a refactor that changed nothing about
+# the invariant, and the temptation would then be to relax it into uselessness.
+# What must stay true is that no OTHER file decides, because a second decider
+# is a second chance to disagree.
+# BRANCH-SHAPED READS ONLY. The bare name also matches the WRITES -- the set
+# in @emlResultBegin and the clears in @emlCSVInit -- and those are state
+# changes, not decisions. Broadening the pattern to catch the panel's reads
+# swept in eml-result-writer.praat:187 and failed on a line that is doing
+# exactly what it should.
 decide <- .hits("if\\s+.*emlResult_declared")
-check("v46", "exactly one place forks on the declaration", 1L, nrow(decide),
-      tol = 0)
-if (nrow(decide) > 0) {
-    check_true("v46", sprintf("and it is in eml-output.praat (%s)",
-                              .where(decide)),
-               all(decide$file == "stats/eml-output.praat"))
-}
+check_true("v46", "something still branches on the declaration",
+           nrow(decide) > 0)
+check_true("v46",
+           sprintf("only eml-output.praat branches on migration state (%s)",
+                   .where(decide[decide$file != "stats/eml-output.praat", ,
+                                 drop = FALSE])),
+           all(decide$file == "stats/eml-output.praat"))
 
 # ---------------------------------------------------------------------------
 # 3. NO EXPORT REACHES A WRITER AROUND THE FORK
@@ -162,8 +175,28 @@ if (nrow(broom) > 0) {
 gf <- code[code$file == "graphs/eml-graphs-form.praat", , drop = FALSE]
 check_true("v46", "the graphs form calls no writer directly",
            !any(grepl("@emlExportStatsCSV|@emlResultWrite", gf$txt)))
-check_true("v46", "the graphs form exports through the shared fork",
-           any(grepl("@emlExportResultFiles", gf$txt)))
+# THE GRAPHS FORM EXPORTS THROUGH THE PANEL, which exports through the fork.
+# It called @emlExportResultFiles directly until the save panel landed on
+# 13 Aug 2026; now one Save writes the figure, the result frames and the Info
+# report under one folder and one stem, and the panel is the only thing that
+# needs to know how each is written.
+check_true("v46", "the graphs form saves through the shared panel",
+           any(grepl("@emlSavePanel", gf$txt)))
+panel <- code[code$file == "stats/eml-output.praat", , drop = FALSE]
+check_true("v46", "and the panel exports through the fork",
+           any(grepl("@emlExportResultFiles", panel$txt)))
+
+# EVERY SAVE JOURNEY IN THE PLUGIN IS THE PANEL. Nine stats wrappers and the
+# wizard used to carry their own CSV button calling @emlWrapperExportCSV,
+# which wrote the numbers only and remembered its own folder. If any of them
+# reverts, the outputs of one analysis scatter again.
+wrappers <- code[grepl("^scripts/", code$file), , drop = FALSE]
+check_true("v46", "no shipping script calls the superseded CSV export",
+           !any(grepl("@emlWrapperExportCSV", wrappers$txt)))
+savers <- unique(wrappers$file[grepl("@emlSavePanel", wrappers$txt)])
+check_true("v46", sprintf("the wrappers save through the panel (%d of them)",
+                          length(savers)),
+           length(savers) >= 9)
 
 # ---------------------------------------------------------------------------
 # 4. THE SAVE-PATH UTILITY IS REACHABLE FROM EVERY LAYER
