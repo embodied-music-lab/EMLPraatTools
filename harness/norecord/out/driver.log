@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Thu Aug 13 00:00:10 2026
+  Fri Aug 14 02:22:24 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -46,7 +46,7 @@ OP name=anova k=1 nOps=38
 
 ══════════════════════════════════════════════
   EML Stats : Two-Group Comparison
-  Thu Aug 13 00:00:10 2026
+  Fri Aug 14 02:22:24 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -65,7 +65,7 @@ OP name=twogroup k=2 nOps=38
 
 ══════════════════════════════════════════════
   EML Stats : Kruskal-Wallis H Test
-  Thu Aug 13 00:00:10 2026
+  Fri Aug 14 02:22:24 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -105,7 +105,7 @@ OP name=kw k=3 nOps=38
 
 ══════════════════════════════════════════════
   EML Stats : Descriptive Statistics
-  Thu Aug 13 00:00:11 2026
+  Fri Aug 14 02:22:24 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -151,7 +151,7 @@ OP name=descriptive k=4 nOps=38
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Thu Aug 13 00:00:11 2026
+  Fri Aug 14 02:22:24 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -192,7 +192,7 @@ OP name=normality k=5 nOps=38
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Thu Aug 13 00:00:11 2026
+  Fri Aug 14 02:22:24 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -219,7 +219,7 @@ OP name=correlation k=6 nOps=38
 
 ══════════════════════════════════════════════
   EML Stats : Simple Linear Regression
-  Thu Aug 13 00:00:11 2026
+  Fri Aug 14 02:22:25 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -262,7 +262,7 @@ OP name=pairwise k=8 nOps=38
 
 ══════════════════════════════════════════════
   EML Stats : Two-Way ANOVA
-  Thu Aug 13 00:00:11 2026
+  Fri Aug 14 02:22:25 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -319,7 +319,7 @@ OP name=twoway k=9 nOps=38
 
 ══════════════════════════════════════════════
   EML Stats : Paired Comparison
-  Thu Aug 13 00:00:11 2026
+  Fri Aug 14 02:22:25 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -381,7 +381,7 @@ NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform �
 
 ══════════════════════════════════════════════
   EML Stats : Spaghetti Plot Summary
-  Thu Aug 13 00:00:11 2026
+  Fri Aug 14 02:22:25 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -476,7 +476,7 @@ OP name=bridge k=36 nOps=38
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Thu Aug 13 00:00:12 2026
+  Fri Aug 14 02:22:26 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -499,7 +499,7 @@ OP name=bridge k=36 nOps=38
 
 ══════════════════════════════════════════════
   EML Stats : Simple Linear Regression
-  Thu Aug 13 00:00:12 2026
+  Fri Aug 14 02:22:26 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
@@ -542,7 +542,7 @@ OP name=scatterstats k=37 nOps=38
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Thu Aug 13 00:00:12 2026
+  Fri Aug 14 02:22:26 2026
 ══════════════════════════════════════════════
 
   Table               voiceA
