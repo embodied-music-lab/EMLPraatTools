@@ -6,8 +6,8 @@
 #          CPPS), optionally constrained to labeled TextGrid intervals.
 #          Results are exported to a CSV file with one row per analysis
 #          segment.
-# Date: 3 April 2026
-# Version: 1.1
+# Date: 14 August 2026
+# Version: 1.2
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -166,6 +166,42 @@ procedure emlResolveSentinelPath: .folder$
             @emlSentinelIsOurs: .path$
         until emlSentinelIsOurs.ours = 1
     endif
+endproc
+
+# ────────────────────────────────────────────────────────────────────────────
+# @emlAppendFailureRow: .table, .row, .stem$, .why$
+# ────────────────────────────────────────────────────────────────────────────
+# A FILE THAT CANNOT BE ANALYSED IS A ROW, NOT AN ABSENCE. Until 14 August 2026
+# this script had no containment of any kind: `Read from file:` was unguarded,
+# so ONE zero-length recording — the thing a stopped or disconnected interface
+# leaves behind — aborted the entire batch with Praat's own "Data not read from
+# text file" and took every row already computed with it, because the CSV is
+# written after the loop and an abort never reaches it. An overnight run over
+# 500 files ended at file 372 with nothing on disk and no indication which file
+# had done it.
+#
+# THE ROW IS THE POINT. A file quietly missing from a results CSV is invisible
+# — the reader counts rows against a corpus they half remember, or does not
+# count at all. A row that says FAILED and why is the one form of this that a
+# person notices, and it keeps the CSV's row count equal to the number of files
+# the batch was asked for, which is the property that makes the count checkable
+# at all.
+#
+# NO COMMAS IN .why$. Praat's "Save as comma-separated file" does not quote the
+# fields it writes, so a comma in this string silently becomes a column break
+# and shifts every measure on that row one place to the right. Measured on
+# 6.6.30, 14 Aug 2026. Use a semicolon or a dash.
+#
+# The measure columns are left UNSET rather than filled with a sentinel number.
+# Praat writes an unset numeric cell as an empty field, which read.csv and every
+# other reader takes as NA — a missing value, which is exactly what it is. A
+# 0 or a -999 in that cell would be averaged by somebody.
+# ────────────────────────────────────────────────────────────────────────────
+procedure emlAppendFailureRow: .table, .row, .stem$, .why$
+    selectObject: .table
+    Append row
+    Set string value: .row, "file", .stem$
+    Set string value: .row, "status", .why$
 endproc
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -390,6 +426,61 @@ facPitchTop = max (2 * highest_expected_F0, 800)
 # RCC pitch ceiling: canonical 600 (APPENDIX_D S1B), raise only if needed
 rccPitchCeiling = max (highest_expected_F0 * 1.1, 600)
 
+# ────────────────────────────────────────────────────────────────────────────
+# THE SHORTEST SEGMENT THE SELECTED MEASURES CAN ACTUALLY BE ASKED FOR
+# ────────────────────────────────────────────────────────────────────────────
+# A SEGMENT TOO SHORT FOR ITS ANALYSIS WINDOW IS NOT A WARNING, IT IS AN ABORT.
+# Until 14 August 2026 this script warned — "measures may be undefined" — and
+# then ran the analysis anyway. Praat does not return undefined for a sound
+# shorter than the window. It refuses, and a refusal inside `To Pitch` ends the
+# script:
+#
+#     Error: To analyse this Sound, "pitch floor" must not be less than 300 Hz.
+#     Sound "b_tiny": pitch analysis (filtered AC) not performed.
+#
+# `Save as comma-separated file:` sits after the loop, so that abort discards
+# every row already computed. One truncated take — a clipped trigger, a
+# mis-trimmed interval, a 20 ms TextGrid label — and a whole night's batch
+# writes nothing. Same shape as the unguarded read; same fix, a failed row.
+#
+# THE THRESHOLDS ARE MEASURED, NOT DERIVED. Praat's requirement is a multiple
+# of the analysis window, and the multiple differs by command, so the only
+# honest source is the binary. Bisected on Praat 6.6.30 (linux), 14 August
+# 2026, with each command's canonical APPENDIX_D parameter set, on a 44.1 kHz
+# periodic complex — the shortest duration at which each command SUCCEEDS:
+#
+#     To Pitch (filtered autocorrelation)  floor 50    0.06  s   (= 3 / 50)
+#     To Pitch (raw cross-correlation)     floor 75    0.03  s
+#     To Intensity                         floor 100   0.064 s   (= 6.4 / 100)
+#     To Harmonicity (cc)                  floor 75    0.03  s
+#     To PowerCepstrogram                  floor 60    0.10  s   (= 6 / 60)
+#
+# CPPS is therefore the binding constraint whenever it is selected, at nearly
+# double the 0.064 s this script used to warn at — which is why the old
+# threshold could not have been used as a guard even if it had been one: a
+# 0.08 s segment passed it and then killed the run inside the cepstrogram.
+#
+# THE MAXIMUM OVER THE SELECTED MEASURES, not a fixed constant, because the
+# guard must refuse exactly the segments that would abort. A fixed 0.1 s would
+# refuse an 0.08 s segment that a mean-F0-only run measures perfectly well, and
+# a fixed 0.06 s would let that same segment through into a CPPS run.
+minAnalysisDuration = 0
+if mean_F0
+    minAnalysisDuration = max (minAnalysisDuration, 0.06)
+endif
+if mean_intensity
+    minAnalysisDuration = max (minAnalysisDuration, 0.064)
+endif
+if needsRccPitch
+    minAnalysisDuration = max (minAnalysisDuration, 0.03)
+endif
+if hNR
+    minAnalysisDuration = max (minAnalysisDuration, 0.03)
+endif
+if cPPS
+    minAnalysisDuration = max (minAnalysisDuration, 0.1)
+endif
+
 # ============================================================================
 # Create file list and validate
 # ============================================================================
@@ -447,11 +538,63 @@ if clicked = 1
     exitScript: ""
 endif
 
+# BOTH ENDS OF THE RANGE, NOT JUST THE FLOOR (APPENDIX_D §7, "GUARD BOTH ENDS
+# OF EVERY BOUNDED RANGE"). `natural:` guards the floor for us — it refuses 0
+# and negatives — and nothing guarded the top, which is the half the appendix
+# calls out by name.
+#
+# WHAT THAT COST, MEASURED ON PRAAT 6.6.30, 14 AUGUST 2026. `Get string:` past
+# the end of a Strings list does not fail: it returns the EMPTY STRING. The
+# loop then builds "<sound folder>/" and hands that to `Read from file:`, which
+# does fail — "Cannot open file … Hint: this is a folder, not a file" — and
+# takes the whole script down with it (exit 255). The results Table is still in
+# the Objects window but `Save as comma-separated file:` sits after the loop and
+# never runs, so an overnight batch of 400 files that reached file 399 writes no
+# CSV at all. One mistyped digit in "End at file" is the entire failure.
+#
+# A start index past the end is the quieter half of the same mistake: the for
+# loop simply never runs, and the user gets an empty CSV and a summary reading
+# "Files processed: 0" with no explanation. Both are refused here, before any
+# audio is read and before the results Table exists — the same exit shape, and
+# the same tidy-up, as the Quit button immediately above.
+if end_at_file > nFiles
+    removeObject: fileListId
+    exitScript: "End at file (" + string$ (end_at_file) + ") is past the last "
+        ... + "file. Only " + string$ (nFiles) + " ." + file_extension$
+        ... + " files were found. Please re-run and choose a value no greater "
+        ... + "than " + string$ (nFiles) + "."
+endif
+if start_from_file > nFiles
+    removeObject: fileListId
+    exitScript: "Start from file (" + string$ (start_from_file) + ") is past "
+        ... + "the last file. Only " + string$ (nFiles) + " ."
+        ... + file_extension$ + " files were found."
+endif
+if start_from_file > end_at_file
+    removeObject: fileListId
+    exitScript: "Start from file (" + string$ (start_from_file) + ") is after "
+        ... + "End at file (" + string$ (end_at_file) + "), so no files would "
+        ... + "be processed. Please re-run and swap them."
+endif
+
 # ============================================================================
 # Build table columns (dynamic based on selected measures)
 # ============================================================================
 
-colNames$ = "file"
+# `status` IS NOT OPTIONAL AND IS NOT LAST. Every row carries it, whichever
+# measures were ticked, because it is the column that says whether the rest of
+# the row means anything: "ok" for a file that was analysed, "FAILED: …" for one
+# that could not be (14 August 2026 — see @emlAppendFailureRow). A status column
+# only present in runs that happened to hit a failure would be a schema that
+# changes shape depending on the data, which is worse for a reader than a column
+# of "ok"s.
+#
+# SECOND, beside the file name, not appended after the measures. A run with all
+# six measures and TextGrids puts it ten columns to the right if it goes last,
+# which in a spreadsheet is off the screen — and a status nobody scrolls to is
+# not a status. Existing readers name their columns (read.csv, Get value:), so
+# the position costs them nothing.
+colNames$ = "file status"
 if use_TextGrids
     colNames$ = colNames$ + " interval_label interval_start interval_end"
 endif
@@ -590,6 +733,13 @@ appendInfoLine: ""
 nProcessed = 0
 nSkipped = 0
 nWarnings = 0
+# FAILED IS ITS OWN COUNT, separate from skipped. A skip is the user's own
+# selection criterion doing its job — no TextGrid, no interval with the target
+# label — and is expected in a normal run. A failure is data that could not be
+# analysed at all, and the two must not be summed into one number, because the
+# first is routine and the second is the line that should make someone go and
+# look at the recordings.
+nFailed = 0
 
 # ============================================================================
 # Main processing loop
@@ -611,9 +761,11 @@ for iFile from start_from_file to end_at_file
     selectObject: fileListId
     fileName$ = Get string: iFile
     filePath$ = sound_folder$ + "/" + fileName$
-    soundId = Read from file: filePath$
 
-    # Extract base name for display and TextGrid pairing
+    # Extract base name for display and TextGrid pairing.
+    #
+    # BEFORE THE READ, not after it as until 14 August 2026, because the row a
+    # failed read now writes has to be able to name the file it failed on.
     dotPos = rindex (fileName$, ".")
     if dotPos > 1
         baseName$ = left$ (fileName$, dotPos - 1)
@@ -622,9 +774,77 @@ for iFile from start_from_file to end_at_file
     endif
 
     # --- Progress (S7A) ---
+    #
+    # BEFORE THE READ, for the same reason the base name is: a file that cannot
+    # be read prints "FAILED: …" indented under its own progress line, so the
+    # Info window and the CSV agree about which file it was. Printed after the
+    # read, as until 14 August 2026, a failure appeared with no heading at all.
     line$ = "[" + string$ (iFile) + "/" + string$ (end_at_file) + "] "
         ... + baseName$
     appendInfoLine: line$
+
+    # ────────────────────────────────────────────────────────────────────
+    # THE READ IS GUARDED. ONE BAD FILE MUST NOT COST THE WHOLE BATCH.
+    # ────────────────────────────────────────────────────────────────────
+    # `Read from file:` was unguarded until 14 August 2026, and it is the one
+    # command in this loop that meets user data before any of ours has looked
+    # at it. Measured on Praat 6.6.30, 14 August 2026:
+    #
+    #   0-byte  .wav   Error: No lines. / Data not read from text file …
+    #   text in a .wav  same — Praat falls back to its text-object reader
+    #
+    # Either ends the script at exit 255. The CSV is written after the loop, so
+    # a corpus with one zero-length take — what a stopped interface or a full
+    # disk leaves behind — produces NO results at all, however many files were
+    # analysed before it. That is the failure this guard exists for, and the
+    # row is the other half of it: the run must also say WHICH file.
+    #
+    # WHY THE SELECTION IS EMPTIED FIRST. `nocheck` swallows the error but
+    # leaves no return value to test, so the outcome has to be read off the
+    # Objects window — and that is only unambiguous if nothing was selected
+    # going in. After `minusObject: fileListId` the three outcomes separate
+    # cleanly (all measured, same session):
+    #
+    #   read succeeded          1 object selected, and it is a Sound
+    #   read failed             0 objects selected
+    #   read gave a non-Sound   1 object selected, 0 of them Sounds
+    #
+    # The third is not hypothetical: a TextGrid saved with a .wav extension
+    # reads perfectly well and is not something this script can analyse. It is
+    # removed here rather than left in the Objects window to accumulate.
+    #
+    # `Remove` IS ONLY EVER REACHED WITH EXACTLY THE NEW OBJECT SELECTED, which
+    # is why the selection is emptied rather than merely noted. A bare `Remove`
+    # under the old selection would have deleted the file list itself and taken
+    # the rest of the batch with it.
+    #
+    # readOk IS SET BEFORE THE nocheck AND ONLY RAISED INSIDE AN if — the same
+    # rule @emlEnsureOutputFolder follows, and for the same reason (M4 in
+    # audit/static: an assignment on the line after a failing nocheck cannot be
+    # trusted). Measured, 6.6.30: `nocheck x = <command>` does not assign x even
+    # when the command SUCCEEDS, so the id is taken with selected () instead.
+    minusObject: fileListId
+    readOk = 0
+    nocheck Read from file: filePath$
+    if numberOfSelected () = 1 and numberOfSelected ("Sound") = 1
+        readOk = 1
+    endif
+    if readOk = 1
+        soundId = selected ("Sound")
+    else
+        if numberOfSelected () > 0
+            Remove
+        endif
+        line$ = "  FAILED: " + fileName$ + " could not be read as a Sound "
+            ... + "— skipping this file."
+        appendInfoLine: line$
+        nFailed = nFailed + 1
+        nWarnings = nWarnings + 1
+        currentRow = currentRow + 1
+        @emlAppendFailureRow: resultsId, currentRow, baseName$,
+            ... "FAILED: unreadable or not a Sound file"
+        goto NEXT_FILE
+    endif
 
     # --- Channel handling ---
     selectObject: soundId
@@ -655,6 +875,55 @@ for iFile from start_from_file to end_at_file
             goto NEXT_FILE
         endif
         gridId = Read from file: gridPath$
+
+        # THE TIER IS CHECKED BEFORE IT IS QUERIED, and this is a data-loss
+        # guard, not a tidiness one. `Tier number` is a `natural:` field, so
+        # Praat guarantees only that it is 1 or more; nothing ties it to the
+        # grids on disk. Measured on Praat 6.6.30, 14 August 2026, both of the
+        # ways it can be wrong ABORT THE SCRIPT rather than returning a value:
+        #
+        #   Get number of intervals: 5   on a 2-tier grid
+        #     -> "Your tier number (5) should not be greater than the number
+        #         of tiers (2)."
+        #   Get number of intervals: 2   where tier 2 is a POINT tier
+        #     -> "Your tier should be an interval tier."
+        #
+        # An abort here is not one bad file. `Save as comma-separated file:`
+        # runs after the loop, so every file already analysed is lost with it —
+        # one grid in a folder of five hundred, annotated with an extra tier or
+        # with the tier order transposed, and the run produces nothing.
+        #
+        # A MISMATCHED GRID IS THEREFORE A SKIP, exactly like a missing one.
+        # It is the same class of problem — this file cannot be segmented as
+        # asked — so it takes the same warn-count-skip path, and the batch
+        # carries on and still writes its CSV.
+        #
+        # `Get number of tiers` is checked FIRST because `Is interval tier:`
+        # aborts on an out-of-range tier too (measured, same session): the
+        # count has to be known before the type can be asked for.
+        selectObject: gridId
+        nTiers = Get number of tiers
+        if tier_number > nTiers
+            line$ = "  WARNING: " + baseName$ + " has " + string$ (nTiers)
+                ... + " tier(s); tier " + string$ (tier_number)
+                ... + " was requested — skipping."
+            appendInfoLine: line$
+            nSkipped = nSkipped + 1
+            nWarnings = nWarnings + 1
+            removeObject: gridId, soundId
+            goto NEXT_FILE
+        endif
+        isIntervalTier = Is interval tier: tier_number
+        if not isIntervalTier
+            line$ = "  WARNING: tier " + string$ (tier_number) + " of "
+                ... + baseName$ + " is a point tier, not an interval tier "
+                ... + "— skipping."
+            appendInfoLine: line$
+            nSkipped = nSkipped + 1
+            nWarnings = nWarnings + 1
+            removeObject: gridId, soundId
+            goto NEXT_FILE
+        endif
 
         # Find matching intervals
         selectObject: gridId
@@ -696,15 +965,44 @@ for iFile from start_from_file to end_at_file
             segId = soundId
         endif
 
-        # Check segment duration
+        # --- Segment duration: a GUARD now, not a warning ---
+        #
+        # See "THE SHORTEST SEGMENT …" above for the measured thresholds and
+        # for what the old warning-and-carry-on cost. In short: below the
+        # window the analysis commands do not return undefined, they refuse,
+        # and a refusal here ends the script and discards the whole batch. So
+        # this segment gets a failed row and the analysis is not attempted.
+        #
+        # THE ROW IS WRITTEN EVEN THOUGH NOTHING WAS MEASURED, because the
+        # alternative is a file that is simply not in the CSV. In a TextGrid
+        # run this is a per-SEGMENT verdict: the other labelled intervals of
+        # the same file are analysed normally and get their own rows.
         selectObject: segId
         segDuration = Get total duration
-        if segDuration < 0.064
-            line$ = "  WARNING: Segment duration "
-                ... + fixed$ (segDuration, 3)
-                ... + " s — measures may be undefined."
+        if segDuration < minAnalysisDuration
+            line$ = "  FAILED: segment " + string$ (iSeg) + " is "
+                ... + fixed$ (segDuration, 3) + " s; the selected measures "
+                ... + "need at least " + fixed$ (minAnalysisDuration, 3)
+                ... + " s — not analysed."
             appendInfoLine: line$
+            nFailed = nFailed + 1
             nWarnings = nWarnings + 1
+            currentRow = currentRow + 1
+            @emlAppendFailureRow: resultsId, currentRow, baseName$,
+                ... "FAILED: too short (" + fixed$ (segDuration, 3) + " s)"
+            # The interval columns are still the truth about WHICH segment
+            # this was, so a TextGrid run can say which interval was refused.
+            if use_TextGrids
+                selectObject: resultsId
+                Set string value: currentRow, "interval_label",
+                    ... segLabel$[iSeg]
+                Set numeric value: currentRow, "interval_start",
+                    ... segStart[iSeg]
+                Set numeric value: currentRow, "interval_end",
+                    ... segEnd[iSeg]
+                removeObject: segId
+            endif
+            goto NEXT_SEGMENT
         endif
 
         # ========================================================
@@ -779,8 +1077,27 @@ for iFile from start_from_file to end_at_file
         endif
 
         # ========================================================
-        # Plausibility warnings (APPENDIX_D S7)
+        # Plausibility warnings (APPENDIX_D S7, Rule 30)
         # ========================================================
+
+        # UNDEFINED IS REPORTED, NOT PASSED OVER. Rule 30 gives the pattern
+        # with an else branch — "WARNING: [measure] returned undefined." — and
+        # until 14 August 2026 every check here had the guard and none had the
+        # branch. An undefined measure fell through both ifs in silence.
+        #
+        # In a batch that silence is the whole problem. Praat returns undefined
+        # for an unvoiced or too-short segment and for a query that fails, which
+        # in a folder of field recordings is not the exception: a breath, a room
+        # tone, a mis-labelled interval. The Table takes it without complaint —
+        # `Set numeric value:` accepts undefined and the CSV writes the literal
+        # string --undefined-- (measured, 6.6.30, 14 Aug 2026) — so the run ends
+        # "Warnings: 0" while a column is a third empty, and the reader who
+        # opens the CSV a week later has nothing that says which files those
+        # were or that anything was wrong.
+        #
+        # These count toward nWarnings for the same reason: S7C's counter is
+        # what the summary reports, and a warning the summary does not count is
+        # a warning that scrolled past.
 
         if mean_F0
             if meanF0Val <> undefined
@@ -791,6 +1108,9 @@ for iFile from start_from_file to end_at_file
                     appendInfoLine: line$
                     nWarnings = nWarnings + 1
                 endif
+            else
+                appendInfoLine: "  WARNING: Mean F0 returned undefined."
+                nWarnings = nWarnings + 1
             endif
         endif
 
@@ -803,6 +1123,9 @@ for iFile from start_from_file to end_at_file
                     appendInfoLine: line$
                     nWarnings = nWarnings + 1
                 endif
+            else
+                appendInfoLine: "  WARNING: Jitter returned undefined."
+                nWarnings = nWarnings + 1
             endif
         endif
 
@@ -815,6 +1138,9 @@ for iFile from start_from_file to end_at_file
                     appendInfoLine: line$
                     nWarnings = nWarnings + 1
                 endif
+            else
+                appendInfoLine: "  WARNING: Shimmer returned undefined."
+                nWarnings = nWarnings + 1
             endif
         endif
 
@@ -827,6 +1153,9 @@ for iFile from start_from_file to end_at_file
                     appendInfoLine: line$
                     nWarnings = nWarnings + 1
                 endif
+            else
+                appendInfoLine: "  WARNING: HNR returned undefined."
+                nWarnings = nWarnings + 1
             endif
         endif
 
@@ -839,6 +1168,9 @@ for iFile from start_from_file to end_at_file
                     appendInfoLine: line$
                     nWarnings = nWarnings + 1
                 endif
+            else
+                appendInfoLine: "  WARNING: CPPS returned undefined."
+                nWarnings = nWarnings + 1
             endif
         endif
 
@@ -852,6 +1184,9 @@ for iFile from start_from_file to end_at_file
                     appendInfoLine: line$
                     nWarnings = nWarnings + 1
                 endif
+            else
+                appendInfoLine: "  WARNING: Mean intensity returned undefined."
+                nWarnings = nWarnings + 1
             endif
         endif
 
@@ -864,6 +1199,10 @@ for iFile from start_from_file to end_at_file
         currentRow = currentRow + 1
 
         Set string value: currentRow, "file", baseName$
+        # THE SUCCESS SIDE OF THE SAME COLUMN @emlAppendFailureRow writes. It
+        # is set here, on the row that carries real measures, so that "ok" can
+        # never be inherited: every row is stamped by the branch that made it.
+        Set string value: currentRow, "status", "ok"
 
         if use_TextGrids
             Set string value: currentRow, "interval_label",
@@ -919,6 +1258,9 @@ for iFile from start_from_file to end_at_file
             removeObject: segId
         endif
 
+        # The too-short guard above jumps here: the segment got its failed row
+        # and created no analysis objects, so there is nothing to clean up.
+        label NEXT_SEGMENT
     endfor
 
     # --- Clean up file-level objects ---
@@ -952,6 +1294,8 @@ appendInfoLine: sep$
 line$ = "Files processed: " + string$ (nProcessed)
 appendInfoLine: line$
 line$ = "Files skipped:   " + string$ (nSkipped)
+appendInfoLine: line$
+line$ = "Failed:          " + string$ (nFailed)
 appendInfoLine: line$
 line$ = "Warnings:        " + string$ (nWarnings)
 appendInfoLine: line$
