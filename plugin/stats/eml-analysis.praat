@@ -2034,6 +2034,20 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
     @emlReportDescriptiveAnalysis: .tableName$, .dataCol$, .nValid,
     ... .nUndefined, emlExtractColumn.note$
 
+    # EXPORTABLE, as of 14 August 2026. This orchestrator filled neither
+    # collector, which is why the wizard's Describe page had no Save button:
+    # the panel offers a CSV only when there is something to export.
+    #
+    # It fills the LEGACY buffer rather than declaring -- see the note above
+    # @emlCSVAddDescriptiveRow. It stays UNCONVERTED in the broom sense, so
+    # harness/broom_cases/contamination_probe.praat still has its canonical
+    # unconverted subject and validate/REGISTRY.md's reasoning still holds.
+    #
+    # Filled AFTER the report and from the same @emlDescribe pass, so the file
+    # and the screen cannot disagree.
+    @emlCSVSetTable: .tableName$
+    @emlCSVAddDescriptiveRow: .dataCol$
+
     ; A descriptive pass has no single test statistic; what it has is how
     ; much data it actually described, which is the number a reader needs in
     ; order to judge the rest.
@@ -4022,6 +4036,67 @@ procedure emlDeclareRegressionResult: .tableName$, .depCol$, .predCol$,
     endif
 endproc
 
+
+# --- 8b. Descriptives ------------------------------------------------------
+# AUTHOR RULING, 14 August 2026: describe and normality must be able to save.
+# Until then they were the only analyses in the plugin producing results a
+# user could read and not keep. eml-wizard.praat carried a comment calling
+# that deliberate -- "they fill no result buffer and the button would lead
+# only to Nothing to Export" -- which described the state of the code and was
+# taken for a decision. The buffer was empty because nothing filled it.
+#
+# THE LEGACY BUFFER, NOT THE BROOM COLLECTORS, and this is the interesting
+# part. The first attempt at this declared into tidy/glance like every other
+# converted analysis. It would have silently thrown the answer away:
+# eml-result-writer.praat's tidy vocabulary is a WHITELIST walked by
+# @eml_orderedCols, so a column not in emlVocabTidy$ is dropped without
+# comment -- and mean, sd, se, median, q1, q3, iqr, min, max, range,
+# variance, skewness and kurtosis are none of them broom column names,
+# because broom has no tidy method for a summary of a vector. The written
+# file would have carried `term` and `method` and nothing else.
+#
+# validate/REGISTRY.md said exactly this on 13 August and gave it as a reason
+# not to convert. The reason was right; the conclusion drawn from it -- that
+# describe therefore cannot export -- was not. The legacy long format
+# (table, analysis, term, term_type, field, value) is the container built for
+# a heterogeneous bag of named scalars, and it takes all sixteen without
+# inventing a single non-broom column name.
+#
+# It also makes the fork's UNDECLARED arm reachable from a dialog for the
+# first time. Before this, every path that filled the legacy buffer also
+# declared, so half of the branch v46 exists to protect could not be pressed.
+#
+# @emlCSVAddDescriptives already existed and is deliberately NOT used here:
+# it writes n, mean, sd and median only -- the four a post-hoc reporter needs
+# beside a contrast -- and is idempotent by (analysis, term) for that reason.
+# A describe is the analysis, not an aside to one, so it writes the full set.
+# ----------------------------------------------------------------------------
+# .term$ is the column (or the group) being described. The TABLE is not an
+# argument: it travels on emlCSV_table$ via @emlCSVSetTable, which every
+# analysis calls once, and `analysis` is the METHOD -- "Welch t-test",
+# "Descriptive statistics" -- not the table. Got this backwards on the first
+# write and the exported file came out with an empty `table` column and the
+# table name sitting in `analysis`; caught by reading the CSV the drive
+# produced rather than by any check, which is why v50 now reads it.
+procedure emlCSVAddDescriptiveRow: .term$
+    @emlCSVTermType: "group"
+    @emlCSVAdd: "Descriptive statistics", .term$, "n",         emlDescribe.n
+    @emlCSVAdd: "Descriptive statistics", .term$, "mean",      emlDescribe.mean
+    @emlCSVAdd: "Descriptive statistics", .term$, "sd",        emlDescribe.sd
+    @emlCSVAdd: "Descriptive statistics", .term$, "se",        emlDescribe.sem
+    @emlCSVAdd: "Descriptive statistics", .term$, "median",    emlDescribe.median
+    @emlCSVAdd: "Descriptive statistics", .term$, "q1",        emlDescribe.q1
+    @emlCSVAdd: "Descriptive statistics", .term$, "q3",        emlDescribe.q3
+    @emlCSVAdd: "Descriptive statistics", .term$, "iqr",       emlDescribe.iqr
+    @emlCSVAdd: "Descriptive statistics", .term$, "min",       emlDescribe.min
+    @emlCSVAdd: "Descriptive statistics", .term$, "max",       emlDescribe.max
+    @emlCSVAdd: "Descriptive statistics", .term$, "range",     emlDescribe.range
+    @emlCSVAdd: "Descriptive statistics", .term$, "variance",  emlDescribe.variance
+    @emlCSVAdd: "Descriptive statistics", .term$, "skewness",  emlDescribe.skewness
+    @emlCSVAdd: "Descriptive statistics", .term$, "kurtosis",  emlDescribe.kurtosis
+    @emlCSVAdd: "Descriptive statistics", .term$, "ci95.lower", emlDescribe.ci95Lower
+    @emlCSVAdd: "Descriptive statistics", .term$, "ci95.upper", emlDescribe.ci95Upper
+endproc
 
 # --- 9. Normality ----------------------------------------------------------
 # Reads emlRunNormalityAnalysis.* -- the one orchestrator that copies every
