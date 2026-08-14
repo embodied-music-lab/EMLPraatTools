@@ -49,3 +49,13 @@ harness/tabwalk/out/*.log
 # because @emlSaveConfig had persisted lastPNGFolder there. The figure and CSV
 # land in it; ARTEFACTS.tsv records their names and sizes and IS the evidence.
 harness/gui_e2e/out/home/
+
+# harness/savepaths: the EVIDENCE is DIALOGS.tsv, ARTEFACTS.tsv, PANEL.png and
+# the files each save wrote. Everything below is session state that changes on
+# every run and says nothing about the plugin: Praat's own instance lock, the
+# scratch pref dir, and the X server and window manager logs. Committing them
+# makes every run a diff and buries the four files that matter.
+harness/savepaths/prefs/
+harness/savepaths/out/*/home/.praat-dir/
+harness/savepaths/out/xvfb.log
+harness/savepaths/out/wm.log
