@@ -1,0 +1,17 @@
+table,analysis,term,term_type,field,value
+save_demo,Descriptive statistics,f0_hz,group,n,26
+save_demo,Descriptive statistics,f0_hz,group,mean,157.25
+save_demo,Descriptive statistics,f0_hz,group,sd,26.76985244636212
+save_demo,Descriptive statistics,f0_hz,group,se,5.25
+save_demo,Descriptive statistics,f0_hz,group,median,157.25
+save_demo,Descriptive statistics,f0_hz,group,q1,135.375
+save_demo,Descriptive statistics,f0_hz,group,q3,179.125
+save_demo,Descriptive statistics,f0_hz,group,iqr,43.75
+save_demo,Descriptive statistics,f0_hz,group,min,113.5
+save_demo,Descriptive statistics,f0_hz,group,max,201
+save_demo,Descriptive statistics,f0_hz,group,range,87.5
+save_demo,Descriptive statistics,f0_hz,group,variance,716.6249999999999
+save_demo,Descriptive statistics,f0_hz,group,skewness,0
+save_demo,Descriptive statistics,f0_hz,group,kurtosis,-1.1999999999999993
+save_demo,Descriptive statistics,f0_hz,group,ci95.lower,146.4374225980452
+save_demo,Descriptive statistics,f0_hz,group,ci95.upper,168.0625774019548
