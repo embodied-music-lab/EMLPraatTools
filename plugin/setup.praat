@@ -7,7 +7,15 @@
 #          in the Praat preferences directory.
 #
 # License: GPL-3.0-or-later
-# Version: 1.5
+# Version: 1.6
+# v1.6: No registration added, removed or re-chained. AUTHOR RULING, 14 August
+#       2026, on the eleven TableOfReal/Matrix buttons: MAKE THEM OPERABLE,
+#       do not unregister them. The v1.3 note below said those buttons were
+#       added for "Describe, Compare, Correlate, Regression, Wizard" and did
+#       not mention EML Graphs, which is registered on both types as well —
+#       corrected, and the whole population is now written down where it is
+#       registered, beside the block that registers it. See the note above
+#       the TableOfReal/Matrix section and validate/v59_entry_points.R.
 # v1.5: Corrected the eml-lmm.praat procedure count in the tabled-mixed-models
 #       note from 31 to 32, and recorded the grep that re-derives it (and the
 #       two counts beside it) so the next reader does not have to trust the
@@ -217,6 +225,46 @@ Add action command: "Spectrum", 1, "", 0, "", 0, "EML Graphs...", "", 0, "script
 Add action command: "Ltas", 1, "", 0, "", 0, "EML Graphs...", "", 0, "scripts/eml-graphs.praat"
 
 # ── Dynamic action buttons: TableOfReal and Matrix (auto-convert to Table) ──
+#
+# ELEVEN REGISTRATIONS — six on TableOfReal, five on Matrix. A registration is
+# a PROMISE: the button is there, so the dialog opens. On 14 August 2026 eight
+# of these eleven broke that promise before their dialog appeared, and the
+# author's ruling was to finish the coercion rather than take the buttons
+# away. Dead doors are worse than absent features; they teach users that the
+# plugin crashes.
+#
+# WHAT EACH ONE DOES WITH THE OBJECT IT IS REGISTERED ON, and this is the
+# whole reason the failure was uneven — there is no single coercion, there
+# are four:
+#
+#   scripts/eml-describe-table.praat  its own @emlDescribeCoerceSelection,
+#                                     then @emlWrapperInit. Defaults empty
+#                                     row labels to r1..rn (author ruling)
+#                                     and names the converted Table
+#                                     eml_converted_<source> before anything
+#                                     that can raise runs.
+#   scripts/eml-compare-groups.praat  @emlWrapperInit, stats/eml-output.praat
+#   scripts/eml-correlate.praat       :1405-1439. Converts, but leaves the
+#   scripts/eml-regress.praat         row-label column full of Praat's "?"
+#                                     placeholders, which the numeric probe
+#                                     in stats/eml-extract.praat:878 does not
+#                                     recognise as empty — so an UNLABELLED
+#                                     TableOfReal and every Matrix die
+#                                     natively before the dialog opens. A
+#                                     LABELLED TableOfReal has always worked,
+#                                     which is the qualifier that hid this.
+#   scripts/eml-graphs.praat          @emlConvertForGraph, which already calls
+#                                     @emlCleanConvertedTable — the reason
+#                                     these two never crashed.
+#   scripts/eml-wizard.praat          its own To Table: "Group" at :145, and
+#                                     it runs no numeric probe at entry.
+#
+# Four coercions for one conversion is the finding under the finding. Nothing
+# is re-chained here to paper over it: the enumeration that holds these
+# eleven honest is validate/v59_entry_points.R, which drives every one of
+# them against a real object of every type it is registered on — including a
+# TableOfReal both with and without row labels — and fails on any that does
+# not reach its dialog.
 
 Add action command: "TableOfReal", 1, "", 0, "", 0, "EML: Describe column...", "", 0, "scripts/eml-describe-table.praat"
 Add action command: "TableOfReal", 1, "", 0, "", 0, "EML: Compare groups...", "", 0, "scripts/eml-compare-groups.praat"
