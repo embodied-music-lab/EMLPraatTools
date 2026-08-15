@@ -16,11 +16,11 @@ emit_bracket_render	1
 emit_clear_annotations	2
 emit_savepanel	0
 emit_beginpause	0
-emit_include_root	/home/claude/EMLPraatTools/plugin
-emit_claims_home_relative	0
-emit_states_absolute	1
+emit_include_root	~/EMLPraatTools/plugin
+emit_claims_home_relative	1
+emit_states_absolute	0
 save_files	4
-save_names	vt_two-group_20260815_040049_effectsize_tidy.csv vt_two-group_20260815_040049_glance.csv vt_two-group_20260815_040049_report.txt vt_two-group_20260815_040049_tidy.csv 
+save_names	vt_two-group_20260815_073238_effectsize_tidy.csv vt_two-group_20260815_073238_glance.csv vt_two-group_20260815_073238_report.txt vt_two-group_20260815_073238_tidy.csv 
 save_max_stamps	1
 save_distinct_stems	1
 save_stat_lines	3
@@ -43,7 +43,7 @@ meta_emit_states_absolute	0
 meta2_has_dead_stamp	0
 meta2_names_dead_table	0
 meta2_stamp_recovered_note	1
-meta2_stamp_line	# Sat Aug 15 04:00:50 2026  --  recorded on Praat 6.6.30
+meta2_stamp_line	# Sat Aug 15 07:32:38 2026  --  recorded on Praat 6.6.30
 folder_files	4
 folder_created	1
 folder_praat_abort	0

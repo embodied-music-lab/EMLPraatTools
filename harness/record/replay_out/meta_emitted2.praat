@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Praat Tools -- recorded workflow
-# Sat Aug 15 04:00:50 2026  --  recorded on Praat 6.6.30
+# Sat Aug 15 07:32:38 2026  --  recorded on Praat 6.6.30
 # (The session's start time was lost -- its record table was
 # removed from the Objects window -- so the time above is when
 # the recorder noticed, not when recording began.)
@@ -10,12 +10,9 @@
 
 # ------------------------------------------------------------
 # THE EML LIBRARY
-# Recorded under Praat 6.6.30. These paths are ABSOLUTE to the machine
-# that recorded this session: the plugin does not sit under a
-# home folder here, so there is no ~ to write and this file is
-# NOT portable as it stands. To run it anywhere else you must
-# edit this block and nothing else -- the usual locations are
-# listed below.
+# Recorded under Praat 6.6.30. Paths are home-relative, so they work
+# for any user on this platform. If this file fails to parse, the
+# plugin is somewhere else -- edit this block and nothing else.
 #
 #   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_Praat_Tools
 #   Praat 7.x  Linux    ~/.config/praat/plugin_EML_Praat_Tools
@@ -30,17 +27,17 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include /root/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
-include /root/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
-include /root/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-extract.praat
-include /root/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-output.praat
-include /root/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-inferential.praat
-include /root/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-result-writer.praat
-include /root/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-record.praat
-include /root/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/graphs/eml-graph-procedures.praat
-include /root/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/graphs/eml-annotation-procedures.praat
-include /root/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/graphs/eml-draw-procedures.praat
-include /root/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-analysis.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-extract.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-output.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-inferential.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-result-writer.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-record.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/graphs/eml-graph-procedures.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/graphs/eml-annotation-procedures.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/graphs/eml-draw-procedures.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-analysis.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations

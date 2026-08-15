@@ -7,12 +7,9 @@
 
 # ------------------------------------------------------------
 # THE EML LIBRARY
-# Recorded under Praat 6.6.30. These paths are ABSOLUTE to the machine
-# that recorded this session: the plugin does not sit under a
-# home folder here, so there is no ~ to write and this file is
-# NOT portable as it stands. To run it anywhere else you must
-# edit this block and nothing else -- the usual locations are
-# listed below.
+# Recorded under Praat 6.6.30. Paths are home-relative, so they work
+# for any user on this platform. If this file fails to parse, the
+# plugin is somewhere else -- edit this block and nothing else.
 #
 #   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_Praat_Tools
 #   Praat 7.x  Linux    ~/.config/praat/plugin_EML_Praat_Tools
@@ -27,17 +24,17 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-utilities.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-extract.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-output.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-inferential.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-result-writer.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-record.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
+include ~/EMLPraatTools/plugin/stats/eml-core-utilities.praat
+include ~/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
+include ~/EMLPraatTools/plugin/stats/eml-extract.praat
+include ~/EMLPraatTools/plugin/stats/eml-output.praat
+include ~/EMLPraatTools/plugin/stats/eml-inferential.praat
+include ~/EMLPraatTools/plugin/stats/eml-result-writer.praat
+include ~/EMLPraatTools/plugin/stats/eml-record.praat
+include ~/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
+include ~/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
+include ~/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
+include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
