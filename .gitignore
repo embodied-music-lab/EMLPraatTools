@@ -88,3 +88,51 @@ harness/batchcmd/out/probe/
 harness/batchcmd/out/scaffold/
 harness/batchcmd/out/probe.csv
 harness/batchcmd/out/driver.log
+
+# harness/edittable: the EVIDENCE is EDIT.tsv, DIALOGS.tsv, EXCISED.txt and the
+# eleven CSVs the shipped editor itself wrote with their eleven Info-window
+# transcripts — all committed, all read by validate/v55. out/work/ is not
+# evidence: it is the derived headless twin, the generated dialog tapes, the
+# per-case fixtures and the tables each case left behind, rebuilt from nothing
+# on every run so that a leftover table cannot change what a case means.
+harness/edittable/prefs/
+harness/edittable/out/work/
+
+# Two guard harnesses added 15 Aug 2026 keep their evidence and drop their
+# scratch: savepaths/guards drives the unwritable-folder and hostile-base-name
+# legs (its point is that NO file lands, so it cannot live under out/ where
+# v48 asserts of every leg that files did), and newpath drives the
+# paired New-after-Draw rebind and the ragged-CSV reader battery.
+harness/savepaths/guards_out/work/
+harness/newpath/out/work/
+
+# harness/graphaxes (15 Aug 2026): the axis, clip, annotation-panel and stereo
+# harnesses behind validate/v62. The EVIDENCE is committed — AXES.tsv,
+# STEREO.tsv, BREAKS.tsv, the rendered figures and the screenshot of the
+# stereo dialog — because those are what the validator reads and what a
+# reviewer needs to see without an X server. What is ignored is scratch: two
+# Praat pref dirs (the stereo one is wiped and rebuilt per run so a stale lock
+# cannot read as a harness bug), the per-leg Praat logs, and the X server and
+# window-manager logs, which are pages of xkbcomp keysym warnings.
+harness/graphaxes/prefs/
+harness/graphaxes/prefs_stereo/
+harness/graphaxes/out/*.log
+harness/graphaxes/cases/prefs/
+
+# harness/graphseams (15 Aug 2026): the four legs behind validate/v61 — the
+# standalone annotated Kruskal-Wallis draw that used to crash, the wrapper's
+# beginner-mode handover, three scatter draws and one export, and a beginner
+# save carrying an old advanced session's "Separate figure" choice. The
+# EVIDENCE is committed — SEAMS.tsv, the DIALOGS and ARTEFACTS lists, the two
+# converted Info reports and the photograph of the advanced scatter dialog —
+# because those are what the validator reads and what a reviewer needs without
+# an X server. What is ignored is scratch: one Praat pref dir per leg (each is
+# wiped and rebuilt per run, so a stale instance lock cannot read as a harness
+# bug), the per-leg HOME the save panel writes its figures into, the per-leg
+# Praat logs, and the X server and window-manager logs, which are pages of
+# xkbcomp keysym warnings.
+harness/graphseams/prefs_*/
+harness/graphseams/out/home_*/
+harness/graphseams/out/*.log
+# The replay leg's own Praat pref dir. Scratch, not evidence.
+harness/record/replay_prefs/

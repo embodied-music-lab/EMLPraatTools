@@ -25,10 +25,26 @@ no packages, no network:
 Rscript validate/run_all.R
 ```
 
-Expect `6486 checks, 6486 passed, 0 FAILED`. Each check pairs a number the
-plugin *printed* (read out of a committed Info-window capture in
-`evidence/info/`) with a number R computes from the same committed input in
-`evidence/csv/`.
+Expect the last line to end `0 FAILED`, and expect exit status 0. That is the
+whole contract, and it is deliberately the only number stated here — the suite
+prints its own check count, which rises every time a validator is added, and a
+copy of that figure kept in prose is a number that was true once. If you want
+it on paper for a report, generate it from the run you just made rather than
+reading it off a document:
+
+```bash
+Rscript validate/run_all.R | tee /tmp/suite.log
+Rscript validate/tools/gen_counts.R /tmp/suite.log
+```
+
+That prints the totals, the per-script breakdown, and the date and commit they
+were measured at. `validate/tools/check_registry_counts.R` enforces the rule:
+it fails if any front-door document in this repository states a suite total,
+and it needs no run of the suite to say so.
+
+Each check pairs a number the plugin *printed* (read out of a committed
+Info-window capture in `evidence/info/`) with a number R computes from the same
+committed input in `evidence/csv/`.
 
 **[`validate/README.md`](validate/README.md)** is the one-page starting point,
 and it walks a single number from input file to printed output to R's answer
@@ -117,6 +133,14 @@ than the installing account. Git records only the executable bit, so that
 defect **cannot** be represented in this repository and will not appear in a
 `git diff`. It has to be fixed in the packaging step (`chmod 0644` across the
 tree before zipping) and verified on the built artefact, not here.
+
+The 14 August 2026 audit re-examined this and confirmed both halves. The clone
+it worked from was clean — the defect is not present in a checkout and cannot
+be — and it ruled that the check belongs to packaging. **Treat a green
+validation run as silent on P1 rather than as clearing it.** The same statement
+is on record in `validate/REGISTRY.md` under "What a clean clone structurally
+cannot show", which is where a reviewer reading the honest-coverage section
+will meet it; this paragraph is where whoever builds the release will.
 
 ## Reproducing the drive
 

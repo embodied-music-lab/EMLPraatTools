@@ -1,0 +1,2 @@
+agent	timestamp	what	cause	resolution
+graphs-axes-channels	2026-08-15T05:20Z	stereo.sh run 2	self-kill: my own `pkill -f "Xvfb :94"` matched the driving shell command line (exit 144)	re-ran without pkill; harness cleanup kills its own Xvfb by pid
