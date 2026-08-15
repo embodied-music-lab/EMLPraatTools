@@ -76,3 +76,11 @@ harness/savepaths/out/eml-wizard.save_demo_results_20260814_171232_effectsize_ti
 harness/savepaths/out/eml-wizard.save_demo_results_20260814_171232_glance.csv
 harness/savepaths/out/eml-wizard.save_demo_results_20260814_171232_report.txt
 harness/savepaths/out/eml-wizard.save_demo_results_20260814_171232_tidy.csv
+harness/record/replay_out/deep/level2/level3/vt_deep_20260815_040050_effectsize_tidy.csv
+harness/record/replay_out/deep/level2/level3/vt_deep_20260815_040050_glance.csv
+harness/record/replay_out/deep/level2/level3/vt_deep_20260815_040050_report.txt
+harness/record/replay_out/deep/level2/level3/vt_deep_20260815_040050_tidy.csv
+harness/record/replay_out/saved/vt_two-group_20260815_040049_effectsize_tidy.csv
+harness/record/replay_out/saved/vt_two-group_20260815_040049_glance.csv
+harness/record/replay_out/saved/vt_two-group_20260815_040049_report.txt
+harness/record/replay_out/saved/vt_two-group_20260815_040049_tidy.csv
