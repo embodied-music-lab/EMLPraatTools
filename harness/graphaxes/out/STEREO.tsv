@@ -1,0 +1,39 @@
+display	:180
+leg	gate_waveform
+source_channels	2
+gate_waveform_dialog_title	Stereo Sound — choose a channel
+was_converted	1
+choice	Mix to mono
+result_name	stereoTone_mono
+result_channels	1
+original_still_present	2
+completed	1
+gate_waveform_dialog_seen	1
+gate_waveform_exited_cleanly	1
+leg	gate_pitch
+gate_pitch_dialog_title	Stereo Sound — choose a channel
+pitch_created	1
+pitch_mean	220.0000
+completed	1
+gate_pitch_dialog_seen	1
+gate_pitch_exited_cleanly	1
+leg	mono_silent
+pitch_created	1
+pitch_mean	220.0000
+completed	1
+mono_silent_dialog_seen	0
+mono_silent_exited_cleanly	1
+leg	ungated
+ungated_mean_f0	110.0000
+completed	1
+leg	choices
+choice_1_label	Mix to mono
+choice_1_channels	1
+choice_1_mean_f0	110.0000
+choice_2_label	Left channel only
+choice_2_channels	1
+choice_2_mean_f0	220.0000
+choice_3_label	Right channel only
+choice_3_channels	1
+choice_3_mean_f0	330.0000
+completed	1
