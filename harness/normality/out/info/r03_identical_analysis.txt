@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Sat Aug  8 13:16:54 2026
+  Sat Aug 15 19:25:13 2026
 ══════════════════════════════════════════════
 
   Table               norm r03 identical
@@ -11,7 +11,7 @@
 
   ── Descriptive Statistics ──────────────────
   Mean                7.5000
-  SD                  0
+  SD                  0.0000
   Median              7.5000
 
 

@@ -1,7 +1,7 @@
   y (n = 60)
     Skewness:     1.623
     Kurtosis (excess): 4.183
-    Shapiro-Wilk: W = 0.8827, p = 0.00003
+    Shapiro-Wilk: W = 0.8827, p < .001
     → Shapiro-Wilk rejects normality, but departure is
       practically negligible at n = 60 (shape within limits)
 
