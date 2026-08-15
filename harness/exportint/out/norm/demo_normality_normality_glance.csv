@@ -1,0 +1,2 @@
+nobs,n.excluded,method,warning
+40,0,Shapiro-Wilk normality test,"3 columns were tested in this run (F0_Hz, shimmer_pct, jitter_pct). A glance frame is one row per model and cannot describe 3; the per-column W and p are in the tidy frame, and the skewness, kurtosis and recommendation for each column are in the report."

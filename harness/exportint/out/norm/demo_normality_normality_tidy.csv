@@ -1,0 +1,4 @@
+term,statistic,p.value,method
+F0_Hz,0.9882062222434022,0.9458700674851273,Shapiro-Wilk normality test
+shimmer_pct,0.8951955265660078,0.0013897488448132494,Shapiro-Wilk normality test
+jitter_pct,0.9741217400116039,0.48099074318990653,Shapiro-Wilk normality test

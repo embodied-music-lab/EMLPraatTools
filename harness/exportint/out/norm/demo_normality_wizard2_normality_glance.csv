@@ -1,0 +1,2 @@
+statistic,p.value,nobs,n.excluded,skewness,kurtosis,method,alternative
+0.9741217400116039,0.48099074318990653,40,0,-0.14840445107322922,-0.6090243945769025,Shapiro-Wilk normality test,parametric
