@@ -313,6 +313,13 @@ run_leg_once () {
                 esac ;;
             # ── the wrapper's entry form: Quit | Run ──────────────────────
             "Compare Two Groups")            rev=1; label="Run" ;;
+            # The MENU describe wrapper, as against the wizard's describe
+            # page above. Same orchestrator, same undeclared arm of the fork,
+            # different journey -- and it acquired a Save button on 15 August
+            # 2026, which is what put it in v48's caller population. Its
+            # entry form is one optionmenu plus the Clear Info tickbox, so
+            # Run is the last button and nothing has to be typed.
+            "Describe Table Column")         rev=1; label="Run" ;;
 
             # ── the post-analysis loop ────────────────────────────────────
             # Two shapes, and the shape is decided by what the analysis can
@@ -573,6 +580,34 @@ AC_DONE=3
 WIZ_PRE="Down Down"
 run_leg "eml-wizard-describe" "twogroup" "$REPO/plugin/scripts/eml-wizard.praat" 14
 WIZ_PRE=""
+AC_SAVE=3
+AC_DONE=4
+
+# ---------------------------------------------------------------------------
+# THE MENU DESCRIBE WRAPPER — the caller that arrived on 15 August 2026
+# ---------------------------------------------------------------------------
+# scripts/eml-describe-table.praat was the only wrapper in the plugin with no
+# Save button, no Clear-Info field and no completion dialog at all: its
+# results appeared in the Info window if that window happened to be open, and
+# stacked under whatever was already in it (D12). Giving it the export step
+# the author ruled every path must reach made it the eleventh caller of
+# @emlSavePanel, and v48 reads the caller list out of the source — so the
+# button and the leg that presses it arrive together, which is the whole
+# point of reading that list rather than keeping one.
+#
+# THREE BUTTONS, NOT FOUR, for the same reason the wizard's describe page has
+# three: a descriptive pass has no figure, so the row is Done|Save|New and
+# Save is 2 from the end. It also takes the fork's UNDECLARED arm — the same
+# orchestrator, @emlRunDescriptiveAnalysis, which fills the legacy buffer and
+# declares nothing — so this leg and eml-wizard-describe are now the two that
+# press it, by two different journeys.
+#
+# The "xy" recipe rather than "twogroup": describe needs numeric columns and
+# nothing else, and xy's are both numeric, so the entry form's column menu
+# comes up on a real measure with no press needed to correct it.
+AC_SAVE=2
+AC_DONE=3
+run_leg "eml-describe-table" "xy" "$REPO/plugin/scripts/eml-describe-table.praat" 10
 AC_SAVE=3
 AC_DONE=4
 
