@@ -1,6 +1,7 @@
 QQ drive: case=qq_skewed_annot col=value src=/home/claude/EMLPraatTools/harness/qq_cases/qq_skewed.csv annotate=1
 OLS fitted line: y = 20.3278x + 24.3056
 Normal Q-Q plot: n = 40, Blom plotting positions (a = 3/8). Theoretical quantiles are qnorm ((i - 0.375) / (n + 0.25)) - the same normal scores the reported Shapiro-Wilk W was computed from, so the figure and the test cannot disagree about which quantiles are expected. R's qqnorm() uses a = 1/2 above n = 10, so its tails sit slightly wider than this axis.
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 SAVED /home/claude/EMLPraatTools/harness/qq_out/qq_skewed_annot.png
 SAVED-CHROME /home/claude/EMLPraatTools/harness/qq_out/qq_skewed_annot_chrome.png
 OBJECTS-AFTER-DRAW 1
