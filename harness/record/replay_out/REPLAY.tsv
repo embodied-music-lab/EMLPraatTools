@@ -1,0 +1,51 @@
+praat_version	Praat 6.6.30 (June 30 2026)
+plugin_root	/home/claude/EMLPraatTools/plugin
+adv_orig_md5	91624be6ef4e49e6201e2e0132caa50f
+adv_orig_bytes	70512
+adv_bare_md5	ca6d4e60ee2f0160e38d201c522cef1f
+adv_bare_bytes	64828
+adv_replay_md5	b66427e67d0e41b2ffe94400d66460a6
+adv_replay_bytes	70513
+adv_orig_vs_bare_over32	2740
+adv_replay_vs_orig_over32	0
+adv_replay_vs_bare_over32	2740
+adv_replay_vs_orig_max	4
+emit_jitter_lines	2
+emit_annotate_lines	2
+emit_bracket_render	1
+emit_clear_annotations	2
+emit_savepanel	0
+emit_beginpause	0
+emit_include_root	/home/claude/EMLPraatTools/plugin
+emit_claims_home_relative	0
+emit_states_absolute	1
+save_files	4
+save_names	vt_two-group_20260815_040049_effectsize_tidy.csv vt_two-group_20260815_040049_glance.csv vt_two-group_20260815_040049_report.txt vt_two-group_20260815_040049_tidy.csv 
+save_max_stamps	1
+save_distinct_stems	1
+save_stat_lines	3
+save_stats_identical	1
+save_report_bytes	2758
+save_emit_savepanel	0
+save_emit_replaysave	1
+save_emit_beginpause	0
+meta_orphan_after_buffer_kill	1
+meta_tables_after_new_begin	1
+meta_flush_written	1
+meta_emitted_stamp_line	# SESSION_B  --  recorded on Praat 6.6.30
+meta_emitted_has_dead_stamp	0
+meta_emitted_has_live_stamp	1
+meta_emitted_names_dead_table	0
+meta_emit_include_root	~/.eml_replay_meta_prefs/plugin_EML_Praat_Tools
+meta_emit_root_is_home_relative	11
+meta_emit_claims_home_relative	1
+meta_emit_states_absolute	0
+meta2_has_dead_stamp	0
+meta2_names_dead_table	0
+meta2_stamp_recovered_note	1
+meta2_stamp_line	# Sat Aug 15 04:00:50 2026  --  recorded on Praat 6.6.30
+folder_files	4
+folder_created	1
+folder_praat_abort	0
+adv_praat_abort	0
+save_praat_abort	0

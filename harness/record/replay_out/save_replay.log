@@ -1,0 +1,37 @@
+# leg SAVE replay
+
+══════════════════════════════════════════════
+  EML Stats : Two-Group Comparison
+  Sat Aug 15 04:00:49 2026
+══════════════════════════════════════════════
+
+  Table               vt
+  Data column         val
+  Group column        grp
+
+  Group         N     Mean      SD        Median    
+  Cohort 1      20    2.21      0.32      2.20      
+  Cohort 2      20    3.31      0.48      3.40      
+
+
+  ── Welch ───────────────────────────────────
+  Why: Compares means of two independent groups (robust to unequal variances).
+  t                   -8.571		Signal-to-noise: 8.6x larger than expected from sampling noise
+  df                  33.0		Welch-adjusted for unequal variances. More df = more reliable.
+  p                   < .001  (6.62128924835128e-10)		Statistically significant: <0.1% probability due to chance
+  Mean diff (Cohort 1 − Cohort 2) -1.0979		Cohort 2 mean is 1.10 units higher
+  95% CI of diff      [-1.3584, -0.8373]
+
+
+  ── Effect Size ─────────────────────────────
+  Cohen's d           -2.710		Effect size: large (>0.8 = large). Groups differ by 2.7 pooled standard deviations
+  Hedges' g           -2.657		Bias-corrected d (better for small samples). large effect
+  Magnitude           large effect
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+
+EML: replayed save -- wrote 4 file(s) to
+/home/claude/EMLPraatTools/harness/record/replay_out/saved
+base name vt_two-group_20260815_040049
