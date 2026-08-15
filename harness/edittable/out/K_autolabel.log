@@ -1,0 +1,6 @@
+CASE handoff
+DLG|4|eml_table_editor#3|visit=1|clicked=1
+CASE returned
+CASE labels|Column_3
+CASE ncols|3
+CASE done

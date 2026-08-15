@@ -1,0 +1,20 @@
+1	122	124	8	8	clicked	EML Table Editor — 
+2	129	131	12	12	clicked2	Add Column
+3	146	149	8	8	clicked	EML Table Editor — 
+4	182	195	8	8	clicked	EML Table Editor — 
+5	265	276	8	8	.clicked	Find / Replace
+6	357	359	20	20	-	Find
+7	371	374	24	24	-	Rep Nxt
+8	378	381	24	24	-	Found
+9	415	417	16	16	-	Rep All
+10	433	445	4	4	.clicked	Table Structure
+11	459	462	12	12	.clicked2	Insert Row
+12	474	476	16	16	-	Cannot Delete
+13	478	481	16	16	.clicked2	Delete Row
+14	502	504	16	16	.clicked2	Add Column
+15	529	533	16	16	.clicked2	Insert Column
+16	572	577	16	16	.clicked2	Delete Column
+17	593	595	16	16	-	Cannot Rename
+18	611	617	20	20	.clicked2	Rename Column
+19	856	882	4	4	.clicked	Cannot Use That Column Name
+20	913	934	4	4	.clicked	Cannot Delete Column

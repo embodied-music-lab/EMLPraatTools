@@ -1,0 +1,11 @@
+CASE handoff
+DLG|4|eml_table_editor#3|visit=1|clicked=4
+DLG|5|find_replace#1|visit=1|clicked=2
+PROBE|found|col=3|row=2
+DLG|8|found#1|visit=1|clicked=1
+DLG|5|find_replace#1|visit=2|clicked=1
+DLG|4|eml_table_editor#3|visit=2|clicked=1
+CASE returned
+CASE labels|id
+CASE ncols|3
+CASE done

@@ -1,0 +1,9 @@
+CASE handoff
+DLG|4|eml_table_editor#3|visit=1|clicked=2
+PROBE|read|B2
+DLG|4|eml_table_editor#3|visit=2|clicked=3
+DLG|4|eml_table_editor#3|visit=3|clicked=1
+CASE returned
+CASE labels|id
+CASE ncols|3
+CASE done

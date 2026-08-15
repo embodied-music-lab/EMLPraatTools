@@ -1,0 +1,107 @@
+praat_version	Praat 6.6.30 (June 30 2026)
+file_under_test	eml-edit-table.praat
+file_sha	2a5e44ae5ff01adc37fc680bb7d745eb379944b708916e4306aaf2a48486db7d
+shipped_total_lines	939
+stanza_count	20
+stanza_1_key	eml_table_editor#1
+stanza_2_key	add_column#1
+stanza_3_key	eml_table_editor#2
+stanza_4_key	eml_table_editor#3
+stanza_5_key	find_replace#1
+stanza_6_key	find#1
+stanza_7_key	rep_nxt#1
+stanza_8_key	found#1
+stanza_9_key	rep_all#1
+stanza_10_key	table_structure#1
+stanza_11_key	insert_row#1
+stanza_12_key	cannot_delete#1
+stanza_13_key	delete_row#1
+stanza_14_key	add_column#2
+stanza_15_key	insert_column#1
+stanza_16_key	delete_column#1
+stanza_17_key	cannot_rename#1
+stanza_18_key	rename_column#1
+stanza_19_key	cannot_use_that_column_name#1
+stanza_20_key	cannot_delete_column#1
+twin_body_sha_shipped	faa8010be4af4c44360563e62d2ff064cf69d68b59f2117d8706b97f59b1f0d2
+twin_body_sha_twin	faa8010be4af4c44360563e62d2ff064cf69d68b59f2117d8706b97f59b1f0d2
+twin_body_identical	1
+twin_excised_lines	147
+A_rename_dup_exit	0
+A_rename_dup_after_header	id,colA,colB
+A_rename_dup_after_row1	S1,A1,B1
+A_rename_dup_after_ncols	3
+A_rename_dup_returned	1
+A_rename_dup_dlg_trace	eml_table_editor#3,table_structure#1,rename_column#1,cannot_use_that_column_name#1
+A_rename_dup_stderr_head	
+B_delete_dup_exit	0
+B_delete_dup_after_header	id,colA
+B_delete_dup_after_row1	S1,A1
+B_delete_dup_after_ncols	2
+B_delete_dup_returned	1
+B_delete_dup_dlg_trace	eml_table_editor#3,table_structure#1,delete_column#1,eml_table_editor#3
+B_delete_dup_stderr_head	
+C_cell_dup_exit	0
+C_cell_dup_after_header	id,colA,colA
+C_cell_dup_after_row1	S1,A1,B1
+C_cell_dup_after_ncols	3
+C_cell_dup_returned	1
+C_cell_dup_dlg_trace	eml_table_editor#3,eml_table_editor#3,eml_table_editor#3
+C_cell_dup_stderr_head	
+D_repall_dup_exit	0
+D_repall_dup_after_header	id,colA,colA
+D_repall_dup_after_row1	S1,A1,Z1
+D_repall_dup_after_ncols	3
+D_repall_dup_returned	1
+D_repall_dup_dlg_trace	eml_table_editor#3,find_replace#1,rep_all#1,find_replace#1,eml_table_editor#3
+D_repall_dup_stderr_head	
+E_onecol_exit	0
+E_onecol_after_header	only
+E_onecol_after_row1	V1
+E_onecol_after_ncols	1
+E_onecol_returned	1
+E_onecol_dlg_trace	eml_table_editor#3,table_structure#1,cannot_delete_column#1,eml_table_editor#3
+E_onecol_stderr_head	
+F_add_dup_exit	0
+F_add_dup_after_header	id,colA,colB
+F_add_dup_after_row1	S1,A1,B1
+F_add_dup_after_ncols	3
+F_add_dup_returned	1
+F_add_dup_dlg_trace	eml_table_editor#3,table_structure#1,add_column#2,cannot_use_that_column_name#1
+F_add_dup_stderr_head	
+G_insert_dup_exit	0
+G_insert_dup_after_header	id,colA,colB
+G_insert_dup_after_row1	S1,A1,B1
+G_insert_dup_after_ncols	3
+G_insert_dup_returned	1
+G_insert_dup_dlg_trace	eml_table_editor#3,table_structure#1,insert_column#1,cannot_use_that_column_name#1
+G_insert_dup_stderr_head	
+H_plain_exit	0
+H_plain_after_header	id,newB
+H_plain_after_row1	S1,B1x
+H_plain_after_ncols	2
+H_plain_returned	1
+H_plain_dlg_trace	eml_table_editor#3,eml_table_editor#3,table_structure#1,rename_column#1,eml_table_editor#3,table_structure#1,delete_column#1,eml_table_editor#3
+H_plain_stderr_head	
+I_findnav_exit	0
+I_findnav_after_header	id,colA,colA
+I_findnav_after_row1	S1,A1,B1
+I_findnav_after_ncols	3
+I_findnav_returned	1
+I_findnav_dlg_trace	eml_table_editor#3,find_replace#1,found#1,find_replace#1,eml_table_editor#3
+I_findnav_stderr_head	
+J_rename_back_exit	0
+J_rename_back_after_header	id,colA,colC
+J_rename_back_after_row1	S1,A1,B1
+J_rename_back_after_ncols	3
+J_rename_back_returned	1
+J_rename_back_dlg_trace	eml_table_editor#3,table_structure#1,rename_column#1,cannot_use_that_column_name#1,rename_column#1,eml_table_editor#3
+J_rename_back_stderr_head	
+K_autolabel_exit	0
+K_autolabel_after_header	Column_3,b,Column_3_2
+K_autolabel_after_row1	P1,Q1,R1
+K_autolabel_after_ncols	3
+K_autolabel_returned	1
+K_autolabel_dlg_trace	eml_table_editor#3
+K_autolabel_stderr_head	
+completed	1
