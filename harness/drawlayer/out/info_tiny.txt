@@ -1,0 +1,85 @@
+tiny
+
+══════════════════════════════════════════════
+  EML Stats : Two-Way ANOVA
+  Sat Aug 15 19:20:31 2026
+══════════════════════════════════════════════
+
+  Table               tw
+  Data column         val
+  Factor 1            f1
+  Factor 2            f2
+  Total N             20
+  Cells               4
+  n per cell          5
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests main effects of two factors and their interaction.
+
+Source              SS              df    MS              F           p
+f1                  0.00            1     0.00            2.0000      .176
+f2                  0.00            1     0.00            2.0000      .176
+f1 x f2             0.00            1     0.00            0.0000      1.000
+Error               0.00            16    0.00            
+Total               0.00            19    
+
+
+  ── Effect Sizes (partial eta-squared) ──────
+  f1                  0.1111  (medium effect)		Effect size: medium (>0.14 = large). 11% of variance explained by group membership
+  f2                  0.1111  (medium effect)		Effect size: medium (>0.14 = large). 11% of variance explained by group membership
+  f1 x f2             0.0000  (negligible effect)		Effect size: negligible (>0.14 = large). 0% of variance explained by group membership
+
+
+  ── Cell Means ──────────────────────────────
+
+f1                f2                n       Mean
+A1                B1                5       0.0000
+A1                B2                5       0.0000
+A2                B1                5       0.0000
+A2                B2                5       0.0000
+
+
+  ── Marginal Means ──────────────────────────
+
+Level                         n       Mean
+f1: A1                        10      0.0000
+f1: A2                        10      0.0000
+f2: B1                        10      0.0000
+f2: B2                        10      0.0000
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+
+══════════════════════════════════════════════
+  EML Stats : Paired Comparison
+  Sat Aug 15 19:20:31 2026
+══════════════════════════════════════════════
+
+  Table               pr
+  Column 1            a
+  Column 2            b
+  N (pairs)           10
+
+  a: Mean = 0.000, SD = 0.000, Median = 0.000
+  b: Mean = 0.000, SD = 0.000, Median = 0.000
+
+
+  ── Paired t-test ───────────────────────────
+  Why: Tests whether the mean difference between paired observations differs from zero.
+  t                   -5.745		Signal-to-noise: 5.7x larger than expected from sampling noise
+  df                  9		Number of pairs (10) minus 1. Independent difference scores.
+  p                   < .001  (0.00027819601104818567)		Statistically significant: <0.1% probability due to chance
+  Mean difference     0.0000
+  SD of differences   0.0000
+
+
+  ── Effect Size ─────────────────────────────
+  Cohen's dz          -1.817
+  r (from t)          -0.886
+  Magnitude           large effect
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════

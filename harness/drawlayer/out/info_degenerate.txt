@@ -1,0 +1,118 @@
+degenerate
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Sat Aug 15 19:20:31 2026
+══════════════════════════════════════════════
+
+  Table               ident
+  Data column         val
+  Group column        grp
+  Groups              3
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests whether group means differ when normality and equal variances hold.
+
+Source              SS              df    MS              F           p
+Between             0.00            2     0.00            0.0000      1.000
+Within              126.00          21    6.00            
+Total               126.00          23    
+
+  F                   0.0000		Ratio of between-group to within-group variance: groups differ 0.0x more than expected by chance
+  p                   1.000		Not statistically significant at the 5% level
+  Effect size         eta-squared = 0.0000		Effect size: negligible (>0.14 = large). 0% of variance explained by group membership
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(2, 21) = 0.0000
+  Equal-spread p      p = 1.000
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  G1            8     14.50     2.45      14.50     
+  G2            8     14.50     2.45      14.50     
+  G3            8     14.50     2.45      14.50     
+
+
+  ── Tukey HSD Pairwise Comparisons (p-values) ───
+
+              G1          G2          G3          
+G1            ---         1.000       1.000       
+G2            1.000       ---         1.000       
+G3            1.000       1.000       ---         
+
+
+  ── Tukey HSD Mean Differences (95% family-wise CI) ───
+
+Comparison                Difference    95% CI
+G1 − G2                   0.0000        [-3.0871, 3.0871]
+G1 − G3                   0.0000        [-3.0871, 3.0871]
+G2 − G3                   0.0000        [-3.0871, 3.0871]
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+
+              G1          G2          G3          
+G1            ---         0.000       0.000       
+G2            0.000       ---         0.000       
+G3            0.000       0.000       ---         
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+
+══════════════════════════════════════════════
+  EML Stats : Kruskal-Wallis H Test
+  Sat Aug 15 19:20:31 2026
+══════════════════════════════════════════════
+
+  Table               ident
+  Data column         val
+  Group column        grp
+  Groups              3
+  Total N             24
+
+
+  ── Omnibus Test ────────────────────────────
+  Why: Nonparametric comparison of three or more groups — no normality assumption needed.
+  H                   0.0000		Test statistic: measures rank dispersion across groups (chi-squared distributed)
+  df                  2		Number of groups (3) minus 1. Controls the chi-squared reference distribution.
+  p                   1.000		Not statistically significant at the 5% level
+  Epsilon-squared     0.0000		Effect size: negligible (>0.14 = large). 0% of variance explained by group membership
+  Effect magnitude    negligible effect
+
+
+  ── Group Mean Ranks ────────────────────────
+
+Group         N     Mean Rank
+G1            8     12.50
+G2            8     12.50
+G3            8     12.50
+
+
+  ── Dunn's Post-Hoc (adjusted p, holm) ──────
+
+              G1          G2          G3          
+G1            ---         1.000       1.000       
+G2            1.000       ---         1.000       
+G3            1.000       1.000       ---         
+
+
+  ── Dunn's z-statistics ─────────────────────
+
+              G1          G2          G3          
+G1            ---         0.000       0.000       
+G2            0.000       ---         0.000       
+G3            0.000       0.000       ---         
+
+
+  ── Pairwise Effect Sizes (rank-biserial r) ───
+
+              G1          G2          G3          
+G1            ---         0.000       0.000       
+G2            0.000       ---         0.000       
+G3            0.000       0.000       ---         
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════

@@ -1,0 +1,19 @@
+head_violin_recorder	7	the recorded violin call passes the axis arguments through as given
+head_seven_sites	18	all seven categorical draw paths place the y-axis name through it (0)
+head_info_fixed	10	no Info-window statement in the annotation reporters still calls fixed$ (26 found)
+head_posthoc_label	3	and states that it carries its own family-wise control ("Tukey HSD")
+six_of_seven	6	all seven categorical draw paths place the y-axis name through it (6)
+axis_name_zero_width	13	every call passes the measured tick-label width, not a constant
+recorder_drops_note	2	the resolved axis survives in the record's own result note
+one_cell_reverted	1	and so does a Cohen's d of no difference (G1            ---         0           0)
+formatter_passthrough	6	the tiny report prints nothing wider than four decimals (16 offending line(s))
+formatter_clamps_zero	13	the printed one-way F is the F the data has     reported=0
+csv_rounds_data	4	the CSV still carries eta_squared to full precision (0.9323)
+panel_label_swept	3	all seven categorical draw paths place the y-axis name through it (8)
+figure_text_swept	2	the figure-text procedures still format with fixed$ and were not swept (14 calls)
+posthoc_both_arms	3	while the Dunn arm still names the correction it was given, not a claim about it
+subtitle_overflows	2	the disclosure sub-line fits the canvas (235.54 mm of 152.40 mm)
+onebin_probe_wrong	1	the one-bin probe really does put one bin in range (bin width 0.336456 Hz)
+recorder_hardcodes_auto	2	the recorded violin call passes the axis arguments through as given
+shift_off_the_page	12	name_violin: and it was MOVED to get there, by a few millimetres (1.0480 inch of 0.2916 av
+head_normality	5	nor in the normality wrapper's per-group branch (2 found)

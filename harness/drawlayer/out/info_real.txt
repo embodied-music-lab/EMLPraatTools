@@ -1,0 +1,126 @@
+real
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Sat Aug 15 19:20:32 2026
+══════════════════════════════════════════════
+
+  Table               real
+  Data column         val
+  Group column        grp
+  Groups              3
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests whether group means differ when normality and equal variances hold.
+
+Source              SS              df    MS              F           p
+Between             405.00          2     202.50          185.9694    < .001
+Within              29.40           27    1.09            
+Total               434.40          29    
+
+  F                   185.9694		Ratio of between-group to within-group variance: groups differ 186.0x more than expected by chance
+  p                   < .001  (1.6262092862780552e-16)		Statistically significant: <0.1% probability due to chance
+  Effect size         eta-squared = 0.9323		Effect size: large (>0.14 = large). 93% of variance explained by group membership
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(2, 27) = 0.0000
+  Equal-spread p      p = 1.000
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  G1            10    15.90     1.04      15.90     
+  G2            10    20.40     1.04      20.40     
+  G3            10    24.90     1.04      24.90     
+
+
+  ── Tukey HSD Pairwise Comparisons (p-values) ───
+
+              G1          G2          G3          
+G1            ---         < .001      < .001      
+G2            < .001      ---         < .001      
+G3            < .001      < .001      ---         
+
+
+  ── Tukey HSD Mean Differences (95% family-wise CI) ───
+
+Comparison                Difference    95% CI
+G1 − G2                   -4.5000       [-5.6571, -3.3429]
+G1 − G3                   -9.0000       [-10.1571, -7.8429]
+G2 − G3                   -4.5000       [-5.6571, -3.3429]
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+
+              G1          G2          G3          
+G1            ---         -4.312      -8.625      
+G2            4.312       ---         -4.312      
+G3            8.625       4.312       ---         
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+
+══════════════════════════════════════════════
+  EML Stats : Simple Linear Regression
+  Sat Aug 15 19:20:32 2026
+══════════════════════════════════════════════
+
+  Table               real
+  Response (Y)        y
+  Predictor (X)       x
+  N                   30
+
+
+  ── Model ───────────────────────────────────
+  Why: Tests whether the predictor linearly predicts the response.
+  Equation            y = 1.6984x + 3.6748
+  y = 1.6984 x x + 3.6748
+  R                   0.9998		Very strong positive relationship (range: -1 to 1)
+  R-squared           0.9996		100% of variance in Y is explained by X
+  Adj. R-squared      0.9995		R-squared adjusted for number of predictors — penalizes model complexity
+  Residual SE         0.3204		Typical prediction error — points deviate from the line by +/-0.32 units on average
+
+
+  ── Overall Model Test (F) ──────────────────
+  F(1,28)             63156.0155		Overall model significance — ratio of explained to unexplained variance
+  p                   < .001  (1.683780151353408e-48)		Statistically significant: <0.1% probability due to chance
+
+
+  ── Coefficients ────────────────────────────
+
+  Term                Estimate      SE            t           p           95% CI
+  (Intercept)         3.6748        0.1200        30.629      < .001      [3.4291, 3.9206]
+  x                   1.6984        0.0068        251.309     < .001      [1.6846, 1.7122]
+
+  Direction: positive (y increases as x increases)
+  Variance explained: R-squared = 0.9996 (100.0% of the variance in y), a large effect by Cohen's R-squared benchmarks
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+
+══════════════════════════════════════════════
+  EML Stats : Correlation Analysis
+  Sat Aug 15 19:20:32 2026
+══════════════════════════════════════════════
+
+  Table               real
+  Column X            x
+  Column Y            y
+  N                   30
+
+
+  ── Pearson Correlation ─────────────────────
+  Why: Measures linear association between two continuous variables.
+  r                   0.9998		Very strong positive relationship (range: -1 to 1)
+  R-squared           0.9996		100% of variance in Y is explained by X
+  t                   251.309		Signal-to-noise: 251.3x larger than expected from sampling noise
+  df                  28		Observations (30) minus 2. Two parameters (slope, intercept) estimated.
+  p                   < .001  (1.6837801513528334e-48)		Statistically significant: <0.1% probability due to chance
+  95% CI for r        [0.9995, 0.9999]
+  Magnitude           large effect
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════

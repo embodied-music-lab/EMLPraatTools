@@ -1,0 +1,26 @@
+══════════════════════════════════════════════
+  Normality Assessment
+  Table: pergroup
+  Grouped by: grp
+══════════════════════════════════════════════
+
+── y ──
+
+  sym (n = 24):
+    W = 0.9589  p = .416
+    Skewness = 0.000  Kurtosis (excess) = -1.200
+    → Normality OK
+  skw (n = 24):
+    W = 0.6370  p < .001
+    Skewness = 2.274  Kurtosis (excess) = 4.921
+    → Nonparametric recommended
+
+  Summary: one or more groups fail → nonparametric
+
+══════════════════════════════════════════════
+  SUMMARY: 1 columns tested
+  Parametric OK:     0
+  Nonparametric rec: 1
+
+  All columns fail → consider nonparametric tests.
+══════════════════════════════════════════════
