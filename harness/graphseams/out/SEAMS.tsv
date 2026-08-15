@@ -1,0 +1,24 @@
+kwadv_rb_values	0.440 0.582 0.787 
+kwadv_rb_matrix_rows	5
+kwadv_report_bytes	2489
+kwadv_omnibus_p	0.0002454860263729046
+kwadv_artefacts	5
+kwadv_dialogs	6
+kwadv_unknown_variable	0
+kw_report_sections	2
+kw_report_bytes	5022
+kw_rb_matrix_rows	10
+kw_rb_values	0.440 0.582 0.787 
+kw_unknown_variable	0
+kw_omnibus_p	0.0002454860263729046
+kw_artefacts	5
+kw_tidy	2
+scatter_csv_name	demo_2groups_Scatter_Plot_20260815_063829.csv
+scatter_csv_rows	18
+scatter_max_dupe	1
+scatter_draws	2
+scatter_adv_dialog_height	976
+screen_height	1000
+legend_files	0
+legend_pngs	1
+legend_config_seed	showAdvanced: 0 legendPlacement: 4 

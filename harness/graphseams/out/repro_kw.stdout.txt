@@ -1,0 +1,60 @@
+repro_kw: bridge, nonparametric, k = 3, significant omnibus
+bridge returned, error$ = ''
+
+══════════════════════════════════════════════
+  EML Stats : Kruskal-Wallis H Test
+  Sat Aug 15 06:46:35 2026
+══════════════════════════════════════════════
+
+  Table               demo 3groups
+  Data column         SPL dB
+  Group column        voice type
+  Groups              3
+  Total N             45
+
+
+  ── Omnibus Test ────────────────────────────
+  Why: Nonparametric comparison of three or more groups — no normality assumption needed.
+  H                   16.6245		Test statistic: measures rank dispersion across groups (chi-squared distributed)
+  df                  2		Number of groups (3) minus 1. Controls the chi-squared reference distribution.
+  p                   < .001  (0.0002454860263729046)		Statistically significant: <0.1% probability due to chance
+  Epsilon-squared     0.3778		Effect size: large (>0.14 = large). 38% of variance explained by group membership
+  Effect magnitude    large effect
+
+
+  ── Group Mean Ranks ────────────────────────
+
+Group         N     Mean Rank
+Soprano       15    33.27
+Mezzo         15    21.93
+Alto          15    13.80
+
+
+  ── Dunn's Post-Hoc (adjusted p, holm) ──────
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         .036        < .001      
+Mezzo         .036        ---         .090        
+Alto          < .001      .090        ---         
+
+
+  ── Dunn's z-statistics ─────────────────────
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         2.363       4.059       
+Mezzo         -2.363      ---         1.696       
+Alto          -4.059      -1.696      ---         
+
+
+  ── Pairwise Effect Sizes (rank-biserial r) ───
+
+              Soprano     Mezzo       Alto        
+Soprano       ---         0.582       0.787       
+Mezzo         -0.582      ---         0.440       
+Alto          -0.787      -0.440      ---         
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+
+REPRO_REACHED_END
