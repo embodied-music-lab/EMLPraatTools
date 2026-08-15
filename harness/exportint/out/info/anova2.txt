@@ -1,0 +1,58 @@
+
+══════════════════════════════════════════════
+  EML Stats : Two-Way ANOVA
+  Sat Aug 15 03:47:55 2026
+══════════════════════════════════════════════
+
+  Table               demo twoway
+  Data column         SPL dB
+  Factor 1            voice type
+  Factor 2            task
+  Total N             48
+  Cells               4
+  n per cell          12
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests main effects of two factors and their interaction.
+
+Source              SS              df    MS              F           p
+voice type          492.26          1     492.26          77.6872     < .001
+task                1390.58         1     1390.58         219.4556    < .001
+voice type x task   13.86           1     13.86           2.1877      .146
+Error               278.81          44    6.34            
+Total               2175.51         47    
+
+
+  ── Exact p-values ──────────────────────────
+  voice type          p < .001  (2.8220604582387836e-11)
+  task                p < .001  (1.0374081878441865e-18)
+  voice type x task   p = .146
+
+
+  ── Effect Sizes (partial eta-squared) ──────
+  voice type          0.6384  (large effect)		Effect size: large (>0.14 = large). 64% of variance explained by group membership
+  task                0.8330  (large effect)		Effect size: large (>0.14 = large). 83% of variance explained by group membership
+  voice type x task   0.0474  (small effect)		Effect size: small (>0.14 = large). 5% of variance explained by group membership
+
+
+  ── Cell Means ──────────────────────────────
+
+voice type        task              n       Mean
+Soprano           Speech            12      89.5917
+Soprano           Singing           12      101.4313
+Alto              Speech            12      84.2616
+Alto              Singing           12      93.9517
+
+
+  ── Marginal Means ──────────────────────────
+
+Level                         n       Mean
+voice type: Soprano           24      95.5115
+voice type: Alto              24      89.1066
+task: Speech                  24      86.9267
+task: Singing                 24      97.6915
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════

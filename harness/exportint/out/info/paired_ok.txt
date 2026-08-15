@@ -1,0 +1,44 @@
+
+══════════════════════════════════════════════
+  EML Stats : Paired Comparison
+  Sat Aug 15 03:47:55 2026
+══════════════════════════════════════════════
+
+  Table               paired ok
+  Column 1            before pct
+  Column 2            after pct
+  N (pairs)           12
+
+  before pct: Mean = 2.383, SD = 0.276, Median = 2.400
+  after pct: Mean = 3.230, SD = 0.257, Median = 3.230
+
+
+  ── Paired t-test ───────────────────────────
+  Why: Tests whether the mean difference between paired observations differs from zero.
+  t                   -6.799		Signal-to-noise: 6.8x larger than expected from sampling noise
+  df                  11		Number of pairs (12) minus 1. Independent difference scores.
+  p                   < .001  (2.9558187232873947e-05)		Statistically significant: <0.1% probability due to chance
+  Mean difference     -0.8467
+  SD of differences   0.4313
+
+
+  ── Effect Size ─────────────────────────────
+  Cohen's dz          -1.963
+  r (from t)          -0.899
+  Magnitude           large effect
+
+
+  ── Wilcoxon Signed-Rank Test ───────────────
+  Why: Nonparametric test for paired observations — no normality assumption needed.
+  T+                  0		Sum of ranks for positive differences (subjects who increased)
+  T-                  78.0		Sum of ranks for negative differences (subjects who decreased)
+  p                   < .001  (0.00048828125)		Statistically significant: <0.1% probability due to chance
+
+
+  ── Nonparametric Effect Size ───────────────
+  Matched-pairs r     -1.000		Effect size: large (>0.5 = large). Rank-biserial correlation
+  Magnitude           large effect
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════

@@ -1,0 +1,16 @@
+Friedman test — r1_incomplete_fr
+  Subjects (complete cases) n = 4, conditions k = 3
+    SPL_soft rank sum = 4.0
+    SPL_medium rank sum = 8.0
+    SPL_loud rank sum = 12.0
+  chi-square(2) = 8.0000, p = .018
+  Kendall's W = 1.0000  (0 = no agreement, 1 = identical rankings)
+  Post-hoc pairwise (nonparametric, Holm-adjusted):
+    SPL_soft vs SPL_medium: raw p = .072, adj p = .216
+    SPL_soft vs SPL_loud: raw p = .072, adj p = .216
+    SPL_medium vs SPL_loud: raw p = .072, adj p = .216
+  Note: 4 row(s) excluded for missing data (analyzed n = 4 complete cases).
+  SPL_medium: 2 cell(s) are not numeric in any locale (row 3: NA).
+  This is a type error, not missing data. SPL_loud: 2 cell(s) are
+  not numeric in any locale (row 5: NA). This is a type error, not
+  missing data.
