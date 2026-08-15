@@ -739,12 +739,46 @@ procedure emlRecordBegin: .tempFolder$
     ; with spaces in it (macOS's "Praat Prefs") and under both 6.4.06 and
     ; 7.0. That one substitution takes the emitted file from
     ; one-machine to any-user-on-this-platform, for free.
+    ;
+    ; ALWAYS HOME-RELATIVE. AUTHOR RULING, 15 AUGUST 2026, and it settles a
+    ; question this procedure had been answering the wrong way round.
+    ;
+    ; The emitted script is a USER artefact. Where the plugin happens to sit on
+    ; the machine that recorded the session is an accident of that machine, and
+    ; an emitted file that hard-codes it is worth nothing to the person the file
+    ; is for. Praat's preferences directory lives under the user's home on every
+    ; supported platform, so a home-relative include is correct for every real
+    ; installation -- and `include` accepts a leading ~, tested 10 Aug 2026 on a
+    ; path containing spaces (macOS's "Praat Prefs") under both 6.4.06 and 7.0.
+    ;
+    ; The only way the substitution below can fail is a preferences directory
+    ; outside $HOME, which Praat produces only under an explicit --pref-dir. That
+    ; is a test rig, not a configuration: this repository's own harnesses use it.
+    ; Emitting an absolute path in that case wrote the RIG's geometry into a file
+    ; meant for a user. So when the substitution cannot be made we fall back to
+    ; the canonical location for the running platform and version -- the same
+    ; four paths the emitted header has always listed -- and the file stays
+    ; portable rather than becoming a record of a scratch directory.
     .abs$ = preferencesDirectory$ + "/plugin_EML_Praat_Tools"
-    emlRecordPluginRoot$ = .abs$
+    emlRecordPluginRoot$ = ""
     if homeDirectory$ <> ""
         if index (.abs$, homeDirectory$) = 1
             emlRecordPluginRoot$ = "~"
             ... + mid$ (.abs$, length (homeDirectory$) + 1, 100000)
+        endif
+    endif
+    if emlRecordPluginRoot$ = ""
+        ; Linux 6.x and 7.x are measured on this machine (see the emitted
+        ; header). Windows and macOS are Praat's own documented locations.
+        if windows
+            emlRecordPluginRoot$ = "~/Praat/plugin_EML_Praat_Tools"
+        elsif macintosh
+            emlRecordPluginRoot$ = "~/Library/Preferences/Praat Prefs"
+            ... + "/plugin_EML_Praat_Tools"
+        elsif praatVersion >= 7000
+            emlRecordPluginRoot$ = "~/.config/praat/plugin_EML_Praat_Tools"
+        else
+            emlRecordPluginRoot$ = "~/.praat-dir/plugin_EML_Praat_Tools"
         endif
     endif
     ; INTO THE META OBJECT, OR IT DIES WITH THIS SCOPE (NEW-G11-1). The
@@ -1882,59 +1916,37 @@ procedure emlRecordRender
     ; which is why the version that recorded the session is stated above and
     ; the known locations are listed below.
     ;
-    ; AND THE HEADER SAYS WHICH ONE IT GOT (NEW-G11-1, 14 Aug 2026).
+    ; AND THE CLAIM IS UNCONDITIONAL, BECAUSE IT IS TRUE BY CONSTRUCTION
+    ; (NEW-G11-1; author ruling, 15 Aug 2026).
     ;
     ; This block used to claim "Paths are home-relative, so they work for any
-    ; user on this platform" unconditionally, above eleven absolute
-    ; /home/<someone>/... include lines. Two separate things were wrong and
-    ; only one of them was the claim: the home-relative rewrite was computed
-    ; in @emlRecordBegin's scope and never survived to the flush, so in real
-    ; menu-driven use the paths were ALWAYS absolute and the sentence was
-    ; ALWAYS false. That half is fixed at the source -- the resolved root now
-    ; lives in the meta object.
+    ; user on this platform" above eleven absolute /home/<someone>/... include
+    ; lines. The rewrite was computed in @emlRecordBegin's scope and never
+    ; survived to the flush, so in real menu-driven use the paths were ALWAYS
+    ; absolute and the sentence was ALWAYS false. That is fixed at the source:
+    ; the resolved root now lives in the meta object.
     ;
-    ; The other half is that the claim cannot be true everywhere and must
-    ; therefore be conditional. A plugin installed outside the user's home --
-    ; a shared machine, a lab image, this repository's own harnesses running
-    ; under --pref-dir=/tmp -- has no tilde to write, and a file that promises
-    ; portability it does not have sends its reader looking for the wrong
-    ; fault. So the sentence is chosen from the path that was actually
-    ; emitted, which is the only way it can be checked by reading the file.
-    .homeRel = 0
-    if left$ (emlRecordPluginRoot$, 1) = "~"
-        .homeRel = 1
-    endif
+    ; The first repair also made the SENTENCE conditional -- absolute paths got
+    ; an honest "this is not portable" notice instead. That was the wrong half
+    ; to make conditional, and the ruling says so: the emitted file must be
+    ; home-relative, full stop. @emlRecordBegin now guarantees a tilde by
+    ; falling back to the platform's canonical location when the live
+    ; preferences directory is outside $HOME -- which happens only under an
+    ; explicit --pref-dir, i.e. in a test rig, never on a user's machine. So
+    ; there is no second arm to write, and the claim below can be read as a
+    ; fact rather than as a promise. v58 pins the tilde at the source AND in
+    ; every emitted file, so the two cannot drift apart again.
     .text$ = .text$ + .rule$ + newline$
     .text$ = .text$ + "# THE EML LIBRARY" + newline$
-    if .homeRel = 1
-        .text$ = .text$
-        ... + "# Recorded under Praat " + emlRecordPraatVersion$
-        ... + ". Paths are home-relative, so they work" + newline$
-        .text$ = .text$
-        ... + "# for any user on this platform. If this file fails to parse, the"
-        ... + newline$
-        .text$ = .text$
-        ... + "# plugin is somewhere else -- edit this block and nothing else."
-        ... + newline$
-    else
-        .text$ = .text$
-        ... + "# Recorded under Praat " + emlRecordPraatVersion$
-        ... + ". These paths are ABSOLUTE to the machine" + newline$
-        .text$ = .text$
-        ... + "# that recorded this session: the plugin does not sit under a"
-        ... + newline$
-        .text$ = .text$
-        ... + "# home folder here, so there is no ~ to write and this file is"
-        ... + newline$
-        .text$ = .text$
-        ... + "# NOT portable as it stands. To run it anywhere else you must"
-        ... + newline$
-        .text$ = .text$
-        ... + "# edit this block and nothing else -- the usual locations are"
-        ... + newline$
-        .text$ = .text$
-        ... + "# listed below." + newline$
-    endif
+    .text$ = .text$
+    ... + "# Recorded under Praat " + emlRecordPraatVersion$
+    ... + ". Paths are home-relative, so they work" + newline$
+    .text$ = .text$
+    ... + "# for any user on this platform. If this file fails to parse, the"
+    ... + newline$
+    .text$ = .text$
+    ... + "# plugin is somewhere else -- edit this block and nothing else."
+    ... + newline$
     .text$ = .text$ + "#" + newline$
     .text$ = .text$
     ... + "#   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_Praat_Tools"
@@ -1967,7 +1979,28 @@ procedure emlRecordRender
     .text$ = .text$ + "# folder, not its own." + newline$
     .text$ = .text$ + .rule$ + newline$ + newline$
 
+    ; THE TILDE IS ENFORCED HERE, NOT ONLY WHERE THE ROOT WAS RESOLVED.
+    ;
+    ; @emlRecordBegin already guarantees a home-relative root, but it is not the
+    ; last writer: emlRecordPluginRoot$ is a plain global, and this repository's
+    ; own harnesses set it AFTER Begin so their emitted scripts point at the
+    ; working tree. Any caller can do the same. Resolving well and rendering
+    ; blindly is exactly how the original defect worked -- a correct value
+    ; computed in one scope and an absolute one written in another, under a
+    ; header that promised otherwise.
+    ;
+    ; So the substitution runs again on the value actually about to be written.
+    ; It is idempotent (a path already starting with ~ is left alone), it costs
+    ; one index() per flush, and it makes the header's claim a property of the
+    ; emitted text rather than a property of who assigned a variable last.
     .p$ = emlRecordPluginRoot$
+    if left$ (.p$, 1) <> "~"
+        if homeDirectory$ <> ""
+            if index (.p$, homeDirectory$) = 1
+                .p$ = "~" + mid$ (.p$, length (homeDirectory$) + 1, 100000)
+            endif
+        endif
+    endif
     .text$ = .text$ + "include " + .p$ + "/stats/eml-core-utilities.praat"
     ... + newline$
     .text$ = .text$ + "include " + .p$ + "/stats/eml-core-descriptive.praat"
