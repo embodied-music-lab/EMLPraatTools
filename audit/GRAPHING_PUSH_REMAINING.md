@@ -1659,12 +1659,15 @@ painted over the output.
 
 The mechanism is a fact about Praat rather than a trick. A script run from a
 menu ends and takes every variable with it — `emlRecordActive` and
-`emlRecordBufferId` are gone before the next analysis starts. The Objects
+`emlRecordBufferId` are gone before the next analysis starts. (The buffer was
+renamed `emlRecording_DO_NOT_REMOVE` on 15 Aug 2026 -- deleting it silently ends
+the recording, and the author ruled the name should say so rather than adding a
+per-step signal.) The Objects
 window is not: it belongs to the running instance. So the buffer Table
 *is* the state, and `@emlRecordInit` re-attaches to it:
 
 ```praat
-nocheck selectObject: "Table emlRecordBuffer"
+nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
 ```
 
 Measured 12 Aug 2026 on 6.6.30: this re-attaches by name, and when the object
