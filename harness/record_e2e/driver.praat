@@ -30,7 +30,7 @@ include fixture.praat
 # --- click: Start recording script -----------------------------------------
 runScript: "../../plugin/scripts/eml-record-start.praat"
 
-nocheck selectObject: "Table emlRecordBuffer"
+nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
 started = numberOfSelected ()
 appendInfoLine: "RECSTART buffer=", started
 
@@ -38,7 +38,7 @@ before = 0
 for k from 1 to nOps
     # THE STEP COUNT BEFORE AND AFTER, so "did this operation record" is
     # measured rather than inferred from the operation's name.
-    nocheck selectObject: "Table emlRecordBuffer"
+    nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
     if numberOfSelected () = 1
         before = Get number of rows
     else
@@ -56,7 +56,7 @@ for k from 1 to nOps
     nocheck runScript: "op.praat", op$[k]
 
     after = -1
-    nocheck selectObject: "Table emlRecordBuffer"
+    nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
     if numberOfSelected () = 1
         after = Get number of rows
     endif
@@ -64,7 +64,7 @@ for k from 1 to nOps
 endfor
 
 # --- the buffer survived every one of them ---------------------------------
-nocheck selectObject: "Table emlRecordBuffer"
+nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
 survived = numberOfSelected ()
 total = -1
 if survived = 1
