@@ -1,0 +1,8 @@
+Converted Matrix "guardmat" to Table. A Matrix carries no row labels, so column "row" is empty.
+
+Converted TableOfReal "guardtor" to Table. It had no row labels, so column "row" is empty.
+
+Converted TableOfReal "guardpart" to Table. Row labels are in column "row"; 2 of 4 row(s) had none and are empty.
+
+Converted TableOfReal "guardfull" to Table. Row labels are in column "row".
+
