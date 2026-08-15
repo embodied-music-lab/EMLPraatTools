@@ -1,0 +1,5 @@
+# axischoice leg1: transcript follows
+AXISLO=180.000000
+AXISHI=270.000000
+DATALO=194.529251
+DATAHI=248.504194

@@ -1,0 +1,3 @@
+# axischoice leg6: transcript follows
+AXISLO=180.000000
+AXISHI=260.000000
