@@ -1,33 +1,33 @@
 case	mode	went_red	n_failed	damage
-sources_missing	static	1	20	rm -f plugin/graphs/*.praat
+sources_missing	static	1	32	rm -f plugin/graphs/*.praat
 stereo_evidence_gone	static	1	1	rm -f harness/graphaxes/out/STEREO.tsv
 axes_evidence_gone	static	1	1	rm -f harness/graphaxes/out/AXES.tsv
 wrong_praat_version	static	1	1	sed -i 's/^praat_version\t.*/praat_version\tPraat 6.4.06 (January 2024)/' harness/graphaxes/out/AXES.tsv
 gate_form_removed	gui	1	2	sed -i 's|^    @emlGraphsChannelGate: objectId, "waveform"|    # gate removed|' plugin/graphs/eml-graphs-form.praat
 gate_form_comment_only	gui	1	2	sed -i 's|^    @emlGraphsChannelGate: objectId, "waveform"|    # @emlGraphsChannelGate: objectId, "waveform"|' plugin/graphs/eml-graphs-form.praat
 gate_pitch_removed	gui	1	5	sed -i 's|^            @emlGraphsChannelGate: .sourceId, "pitch track"|            # gate removed|' plugin/graphs/eml-graph-procedures.praat
-original_deleted	gui	1	2	sed -i 's|^    emlChannelKeepOriginal = 1$|    emlChannelKeepOriginal = 0|' plugin/graphs/eml-graph-procedures.praat
+original_deleted	gui	1	6	sed -i 's|^    emlChannelKeepOriginal = 1$|    emlChannelKeepOriginal = 0|' plugin/graphs/eml-graph-procedures.praat
 core_bypassed	static	1	1	sed -i 's|^    @emlApplyChannelChoice: .soundId, channel_handling$|    .resultId = .soundId|' plugin/graphs/eml-graph-procedures.praat
 choice_labels_changed	gui	1	1	sed -i 's|.choice$ = "Left channel only"|.choice$ = "Channel A"|' plugin/graphs/eml-graph-procedures.praat
 keepmode_not_asked	static	1	1	sed -i '/^procedure emlGraphsChannelGate:/,/^endproc$/ s|^    emlChannelKeepOriginal = 1$|    emlChannelKeepOriginal = 0|' plugin/graphs/eml-graph-procedures.praat
 dialog_option_renamed	static	1	1	sed -i '/^procedure emlGraphsChannelGate:/,/^endproc$/ s|option: "Right channel only"|option: "Channel B"|' plugin/graphs/eml-graph-procedures.praat
-dialog_suppressed	gui	1	4	sed -i 's|^    beginPause: "Stereo Sound|    if 0 = 1\n    beginPause: "Stereo Sound|' plugin/graphs/eml-graph-procedures.praat; sed -i 's|^    .clicked = endPause: "Quit", "Continue", 2, 0$|    .clicked = endPause: "Quit", "Continue", 2, 0\n    endif\n    channel_handling = 1|' plugin/graphs/eml-graph-procedures.praat
+dialog_suppressed	gui	1	8	sed -i 's|^    beginPause: "Stereo Sound|    if 0 = 1\n    beginPause: "Stereo Sound|' plugin/graphs/eml-graph-procedures.praat; sed -i 's|^    .clicked = endPause: "Quit", "Continue", 2, 0$|    .clicked = endPause: "Quit", "Continue", 2, 0\n    endif\n    channel_handling = 1|' plugin/graphs/eml-graph-procedures.praat
 channels_swapped	gui	1	2	sed -i 's|^            .resultId = Extract one channel: 1$|            .resultId = Extract one channel: 2|' plugin/graphs/eml-graph-procedures.praat; sed -i 's|^            .resultId = Extract one channel: 2$|            .resultId = Extract one channel: 1|2' plugin/graphs/eml-graph-procedures.praat
 mix_is_actually_left	gui	1	1	sed -i '0,/^            .resultId = Convert to mono$/s//            .resultId = Extract one channel: 1/' plugin/graphs/eml-graph-procedures.praat
 right_is_actually_left	gui	1	1	sed -i 's|^            .resultId = Extract one channel: 2$|            .resultId = Extract one channel: 1|' plugin/graphs/eml-graph-procedures.praat
-conversion_noop	gui	1	2	sed -i 's|^            .resultId = Convert to mono$|            .resultId = Copy: "same"|' plugin/graphs/eml-graph-procedures.praat
+conversion_noop	gui	1	3	sed -i 's|^            .resultId = Convert to mono$|            .resultId = Copy: "same"|' plugin/graphs/eml-graph-procedures.praat
 ungated_number_faked	static	1	2	sed -i 's/^ungated_mean_f0\t.*/ungated_mean_f0\t220.0000/' harness/graphaxes/out/STEREO.tsv
-span_floor_removed	axes	1	1	sed -i 's|^        .spanFloorSemitones = 0.1$|        .spanFloorSemitones = 0|' plugin/graphs/eml-draw-procedures.praat
-span_floor_too_wide	axes	1	3	sed -i 's|^        .spanFloorSemitones = 0.1$|        .spanFloorSemitones = 6|' plugin/graphs/eml-draw-procedures.praat
+span_floor_removed	axes	1	3	sed -i 's|^        .spanFloorSemitones = 0.1$|        .spanFloorSemitones = 0|' plugin/graphs/eml-draw-procedures.praat
+span_floor_too_wide	axes	1	5	sed -i 's|^        .spanFloorSemitones = 0.1$|        .spanFloorSemitones = 6|' plugin/graphs/eml-draw-procedures.praat
 span_floor_renamed	static	1	1	sed -i 's|.spanFloorSemitones|.floorSt|g' plugin/graphs/eml-draw-procedures.praat
-tick_precision_off	axes	1	1	sed -i 's|^                if .intDigits + .decimals > 4$|                if .intDigits + .decimals > 99|' plugin/graphs/eml-graph-procedures.praat
-tick_precision_always	axes	1	3	sed -i 's|^        if .decimals > 0$|        if .decimals > -1|' plugin/graphs/eml-graph-procedures.praat; sed -i 's|^                if .intDigits + .decimals > 4$|                if .intDigits + .decimals > 0|' plugin/graphs/eml-graph-procedures.praat
-tick_decimals_flat	axes	1	2	sed -i 's|^        .decimals = -.stepMag$|        .decimals = 0|' plugin/graphs/eml-graph-procedures.praat
+tick_precision_off	axes	1	5	sed -i 's|^                if .intDigits + .decimals > 4$|                if .intDigits + .decimals > 99|' plugin/graphs/eml-graph-procedures.praat
+tick_precision_always	axes	1	4	sed -i 's|^        if .decimals > 0$|        if .decimals > -1|' plugin/graphs/eml-graph-procedures.praat; sed -i 's|^                if .intDigits + .decimals > 4$|                if .intDigits + .decimals > 0|' plugin/graphs/eml-graph-procedures.praat
+tick_decimals_flat	axes	1	6	sed -i 's|^        .decimals = -.stepMag$|        .decimals = 0|' plugin/graphs/eml-graph-procedures.praat
 tick_proc_renamed	static	1	2	sed -i 's|emlTickPrecision|emlTickPrec2|g' plugin/graphs/eml-graph-procedures.praat
 tick_callers_removed	static	1	1	sed -i 's|^    @emlTickPrecision: |    # @emlTickPrecision: |' plugin/graphs/eml-graph-procedures.praat
 clip_removed	axes	1	3	sed -i 's|^    emlFrameKnown = 1$|    emlFrameKnown = 0|' plugin/graphs/eml-graph-procedures.praat
 clip_clamps_data	axes	1	2	sed -i 's|^        .axisXMin = .xMin$|        .axisXMin = .xMin\n        for .ci from 1 to .nValid\n            if .xData#[.ci] < .xMin\n                .xData#[.ci] = .xMin\n            endif\n        endfor|' plugin/graphs/eml-draw-procedures.praat
-clip_filters_stats	axes	1	5	sed -i 's|^        if .xVal <> undefined and .yVal <> undefined$|        if .xVal <> undefined and .yVal <> undefined and .xVal >= 100 and .xVal <= 300|' plugin/graphs/eml-draw-procedures.praat
+clip_filters_stats	axes	1	8	sed -i 's|^        if .xVal <> undefined and .yVal <> undefined$|        if .xVal <> undefined and .yVal <> undefined and .xVal >= 100 and .xVal <= 300|' plugin/graphs/eml-draw-procedures.praat
 clip_always_on	axes	1	5	sed -i 's|^    emlFrameXMin = min (.xMin, .xMax)$|    emlFrameXMin = min (.xMin, .xMax) + (.xMax - .xMin) * 0.3|' plugin/graphs/eml-graph-procedures.praat
 user_range_widened	axes	1	2	sed -i 's|^        .axisXMin = .xMin$|        .axisXMin = .xMin - 5|' plugin/graphs/eml-draw-procedures.praat
 clip_frame_calls_gone	static	1	1	sed -i 's|^    @emlPointInFrame: |    # @emlPointInFrame: |' plugin/graphs/eml-graph-procedures.praat
@@ -43,3 +43,23 @@ mwu_gloss_reverted	static	1	2	sed -i 's|emlWizardExplain$ = "U: how often.*|emlW
 mwu_gloss_vague	static	1	1	sed -i 's|, out of n1 x n2 possible pairs||' plugin/graphs/eml-annotation-procedures.praat
 wilcoxon_plus_damaged	static	1	1	sed -i 's|Sum of ranks for positive differences|U for positive differences|g' plugin/graphs/eml-annotation-procedures.praat
 wilcoxon_minus_damaged	static	1	1	sed -i 's|Sum of ranks for negative differences|U for negative differences|g' plugin/graphs/eml-annotation-procedures.praat
+axisname_never_shifts	axes	1	5	sed -i 's|^        if .needMM > .allowMM$|        if .needMM > 99999|' plugin/graphs/eml-graph-procedures.praat
+axisname_trigger_wide	axes	1	1	sed -i 's|^    .wideChars = 6$|    .wideChars = 0|' plugin/graphs/eml-graph-procedures.praat
+axisname_shifts_all	axes	1	3	sed -i '/^procedure emlDrawAxisNameLeft:/,/^endproc$/ s|^    .shiftInch = 0$|    .shiftInch = 0.1|' plugin/graphs/eml-graph-procedures.praat
+axisname_bare_textleft	axes	1	16	sed -i 's|^        @emlDrawAxisNameLeft: .yLabel$, .yWideLabelMM,$|        Text left: "yes", .yLabel$\n        # was:|' plugin/graphs/eml-graph-procedures.praat
+axisname_allowance_big	axes	1	5	sed -i 's|^        .allowMM = 0.982 \* emlSetAdaptiveTheme.bodySize$|        .allowMM = 9.82 * emlSetAdaptiveTheme.bodySize|' plugin/graphs/eml-graph-procedures.praat
+axisname_no_clearance	axes	1	1	sed -i 's|^        .needMM = .wideLabelMM + .clearMM$|        .needMM = .wideLabelMM|' plugin/graphs/eml-graph-procedures.praat
+clamp_removed	axes	1	3	sed -i 's|^            if .shiftInch > .roomInch$|            if 0 = 1|' plugin/graphs/eml-graph-procedures.praat
+marks_measure_removed	axes	1	33	sed -i 's|^                @emlTickLabelWidth: .yPos, .tickExplicit, .tickDecimals$|                # measurement removed|' plugin/graphs/eml-graph-procedures.praat
+maxwide_seed_removed	axes	1	33	sed -i 's|^    .maxWideLabelMM = 0$|    # seed removed|' plugin/graphs/eml-graph-procedures.praat
+ticklabel_models_expo	axes	1	1	sed -i 's|^        elsif .mag >= 0.001 and .mag < 10000$|        elsif .mag >= 0|' plugin/graphs/eml-graph-procedures.praat
+ticklabel_explicit_off	axes	1	5	sed -i 's|^        .text$ = fixed$ (.value, .decimals)$|        .text$ = ""|' plugin/graphs/eml-graph-procedures.praat
+colnum_by_position	axes	1	4	sed -i 's|^    for .iCol from .insertedCols + 1 to .nCols$|    for .iCol from 1 to .nCols|' plugin/graphs/eml-graph-procedures.praat; sed -i 's|^            ... "Column_" + string$ (.iCol - .insertedCols)$|            ... "Column_" + string$ (.iCol)|' plugin/graphs/eml-graph-procedures.praat
+colnum_offset_zero	axes	1	2	sed -i 's|^    .insertedCols = 1$|    .insertedCols = 0|' plugin/graphs/eml-graph-procedures.praat
+rowlabel_bare_integers	axes	1	1	sed -i 's|^            Set string value: .iRow, .rowColName$, "r" + string$ (.iRow)$|            Set string value: .iRow, .rowColName$, string$ (.iRow)|' plugin/graphs/eml-graph-procedures.praat
+describe_bypasses_shared	static	1	1	sed -i 's|^        @emlCleanConvertedTable: .tableId$|        # shared repair bypassed|' plugin/scripts/eml-describe-table.praat
+describe_names_its_own	static	1	1	sed -i 's|^        .nDefaulted = 0$|        .nDefaulted = 0\n        Rename column (by number): 2, "Column_" + string\$ (2)|' plugin/scripts/eml-describe-table.praat
+stale_drop_removed	gui	1	2	sed -i 's|^    @emlDropStaleChannelSounds: .name$$|    # drop removed|' plugin/graphs/eml-graph-procedures.praat; sed -i 's|^    .nStale = emlDropStaleChannelSounds.nDropped$|    .nStale = 0|' plugin/graphs/eml-graph-procedures.praat
+derived_not_renamed	gui	1	4	sed -i 's|^        Rename: "eml_" + selected$ ("Sound")$|        # rename removed|' plugin/graphs/eml-graph-procedures.praat
+drop_matches_user_name	static	1	1	sed -i 's|\.cand\$ = "eml_" + .sourceName\$|.cand\$ = .sourceName\$|g' plugin/graphs/eml-graph-procedures.praat
+spectrum_draw_removed	axes	1	1	sed -i 's|^    Draw: .freqMin, .freqMax, .powerMin, .powerMax, "no"$|    # draw removed|' plugin/graphs/eml-draw-procedures.praat

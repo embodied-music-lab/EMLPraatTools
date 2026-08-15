@@ -4,11 +4,12 @@ source_channels	2
 gate_waveform_dialog_title	Stereo Sound — choose a channel
 was_converted	1
 choice	Mix to mono
-result_name	stereoTone_mono
+result_name	eml_stereoTone_mono
 result_channels	1
 original_still_present	2
 completed	1
 gate_waveform_dialog_seen	1
+gate_waveform_dialogs_answered	1
 gate_waveform_exited_cleanly	1
 leg	gate_pitch
 gate_pitch_dialog_title	Stereo Sound — choose a channel
@@ -16,13 +17,31 @@ pitch_created	1
 pitch_mean	220.0000
 completed	1
 gate_pitch_dialog_seen	1
+gate_pitch_dialogs_answered	1
 gate_pitch_exited_cleanly	1
 leg	mono_silent
 pitch_created	1
 pitch_mean	220.0000
 completed	1
 mono_silent_dialog_seen	0
+mono_silent_dialogs_answered	0
 mono_silent_exited_cleanly	1
+leg	gate_repeat
+repeat_source_name	stereoTone
+gate_repeat_dialog_title	Stereo Sound — choose a channel
+repeat_press1_result_name	eml_stereoTone_mono
+repeat_press1_derived	1
+repeat_press1_source_present	1
+repeat_press2_result_name	eml_stereoTone_mono
+repeat_press2_derived	1
+repeat_press2_source_present	1
+repeat_press3_result_name	eml_stereoTone_mono
+repeat_press3_derived	1
+repeat_press3_source_present	1
+completed	1
+gate_repeat_dialog_seen	1
+gate_repeat_dialogs_answered	3
+gate_repeat_exited_cleanly	1
 leg	ungated
 ungated_mean_f0	110.0000
 completed	1
