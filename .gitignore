@@ -136,3 +136,13 @@ harness/graphseams/out/home_*/
 harness/graphseams/out/*.log
 # The replay leg's own Praat pref dir. Scratch, not evidence.
 harness/record/replay_prefs/
+
+# The 15 Aug ruling harnesses. Evidence is tracked; Praat pref dirs, the
+# recorder's mid-flight mirror and the per-break-case logs are not -- a break
+# log is the transcript of a deliberately broken tree, useful while running and
+# noise once the case is recorded in the validator's own count.
+harness/drawlayer/out/prefs/
+harness/drawlayer/out/*.log
+harness/graphseams/*_out/prefs/
+harness/graphseams/axis_out/*.log
+harness/graphseams/adjust_out/*.log
