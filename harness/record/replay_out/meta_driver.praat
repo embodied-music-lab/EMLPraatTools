@@ -18,7 +18,7 @@ runScript: "/home/claude/EMLPraatTools/harness/record/replay_out/meta_op.praat",
 
 # The user removes the BUFFER from the Objects window. Measured behaviour: the
 # recording silently ends, and the meta table is left behind.
-nocheck selectObject: "Table emlRecordBuffer"
+nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
 if numberOfSelected () = 1
     Remove
 endif

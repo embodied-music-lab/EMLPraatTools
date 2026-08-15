@@ -46,10 +46,14 @@ include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 # All of them must be open before you run this script.
 # ------------------------------------------------------------
 
-# Name your data objects here for this recorded workflow.
-# Edit a name to run the same workflow on other data;
-# nothing below this block names an object.
+# Name your data objects and columns here for this recorded
+# workflow. Edit a name to run the same workflow on other data;
+# nothing below this block names an object or a column.
 data1$ = "Table vt"   ; steps 1 (analysis), 2 (save)
+valueCol$ = "val"   ; the measured column -- step 1 (analysis)
+groupCol$ = "grp"   ; the grouping column -- step 1 (analysis)
+# (Titles and axis labels are text, not column names, so they
+#  stay as they were typed -- edit those in the step itself.)
 
 # --- Step 1 (analysis) ---
 selectObject: data1$
@@ -57,7 +61,7 @@ data = selected ()
 # Two-group comparison: val by grp, parametric
 # Equal-variance assumption: Welch.
 
-@emlRunTwoGroupAnalysis: data, "val", "grp", "parametric", 0
+@emlRunTwoGroupAnalysis: data, valueCol$, groupCol$, "parametric", 0
 
 # Cohort 1: n = 20, mean = 2.2104, SD = 0.3165
 #   Cohort 2: n = 20, mean = 3.3083, SD = 0.4774

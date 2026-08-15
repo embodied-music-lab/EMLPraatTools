@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Praat Tools -- recorded workflow
-# Sat Aug 15 07:32:38 2026  --  recorded on Praat 6.6.30
+# Sat Aug 15 15:22:10 2026  --  recorded on Praat 6.6.30
 # (The session's start time was lost -- its record table was
 # removed from the Objects window -- so the time above is when
 # the recorder noticed, not when recording began.)
@@ -49,9 +49,9 @@ include ~/.eml_replay_meta_prefs/plugin_EML_Praat_Tools/stats/eml-analysis.praat
 # All of them must be open before you run this script.
 # ------------------------------------------------------------
 
-# Name your data objects here for this recorded workflow.
-# Edit a name to run the same workflow on other data;
-# nothing below this block names an object.
+# Name your data objects and columns here for this recorded
+# workflow. Edit a name to run the same workflow on other data;
+# nothing below this block names an object or a column.
 data1$ = "Table vt"   ; steps 1 (analysis), 2 (analysis)
 
 # --- Step 1 (analysis) ---

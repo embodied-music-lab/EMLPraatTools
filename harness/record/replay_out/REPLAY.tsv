@@ -20,7 +20,7 @@ emit_include_root	~/EMLPraatTools/plugin
 emit_claims_home_relative	1
 emit_states_absolute	0
 save_files	4
-save_names	vt_two-group_20260815_073238_effectsize_tidy.csv vt_two-group_20260815_073238_glance.csv vt_two-group_20260815_073238_report.txt vt_two-group_20260815_073238_tidy.csv 
+save_names	vt_two-group_20260815_152210_effectsize_tidy.csv vt_two-group_20260815_152210_glance.csv vt_two-group_20260815_152210_report.txt vt_two-group_20260815_152210_tidy.csv 
 save_max_stamps	1
 save_distinct_stems	1
 save_stat_lines	3
@@ -43,9 +43,30 @@ meta_emit_states_absolute	0
 meta2_has_dead_stamp	0
 meta2_names_dead_table	0
 meta2_stamp_recovered_note	1
-meta2_stamp_line	# Sat Aug 15 07:32:38 2026  --  recorded on Praat 6.6.30
+meta2_stamp_line	# Sat Aug 15 15:22:10 2026  --  recorded on Praat 6.6.30
 folder_files	4
 folder_created	1
 folder_praat_abort	0
 adv_praat_abort	0
 save_praat_abort	0
+retarget_lines_changed	5
+retarget_edits_below_block	0
+retarget_praat_abort	0
+retarget_report_new_cols	3
+retarget_report_old_cols	0
+retarget_matches_reference	1
+retarget_report_lines	57
+retarget_anova_rows	6
+retarget_numbers_unchanged	1
+ret_orig_bytes	65267
+ret_replay_bytes	65242
+retarget_fig_vs_orig_over32	0
+retarget_fig_vs_orig_max	4
+retarget_block_value	1
+retarget_block_factorA	1
+retarget_block_factorB	1
+retarget_block_group	1
+retarget_block_data	1
+retarget_call_twoway	1
+retarget_call_violin	1
+retarget_literal_slots	0
