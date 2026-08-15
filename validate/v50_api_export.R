@@ -489,8 +489,21 @@ if (readable("v50", "the export source is readable", op)) {
     if (check_true("v50", "@emlSavePanel exists exactly once", length(sp) == 1)) {
         pbody <- ol[sp:(en[en > sp][1])]
         pbody <- pbody[!grepl("^\\s*[#;]", pbody)]
+        # THE PANEL STILL CREATES IT; IT NO LONGER DOES SO WITH A BARE LINE.
+        # 15 August 2026, NEW-G12-5: `createFolder:` sitting bare in the panel
+        # was the EARLIEST place a save could kill the session -- under an
+        # unwritable parent it raises "Cannot create folder" inside
+        # @emlSavePanel, before a single tickbox is honoured, so the receipt
+        # never draws and the caller's post-analysis loop never runs again.
+        # The creation moved into @eml_saveFolderWritable, which does it with
+        # `nocheck` and then proves the result with a probe write. The
+        # document's claim -- the panel creates the folder, the exporter does
+        # not -- is unchanged and still what the plugin does; only the line it
+        # is written on moved. Checked as "the panel is responsible", which is
+        # what the paragraph actually asserts.
         check_true("v50", "@emlSavePanel does create it, which is the asymmetry",
-                   any(grepl("createFolder:", pbody, fixed = TRUE)))
+                   any(grepl("createFolder:", pbody, fixed = TRUE)) ||
+                   any(grepl("@eml_saveFolderWritable:", pbody, fixed = TRUE)))
     }
 }
 

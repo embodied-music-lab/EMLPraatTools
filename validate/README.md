@@ -9,10 +9,27 @@ cd EMLPraatTools
 Rscript validate/run_all.R
 ```
 
-**Expect: `4058 checks, 4058 passed, 0 FAILED`, and exit status 0.**
+**Expect the summary line to end `0 FAILED`, and expect exit status 0.**
 
 That is the whole thing. If it prints that, every number the plugin printed in
 a committed run agrees with what R computes from the same input file.
+
+Nothing on this page tells you how many checks that is, and the omission is
+deliberate. The suite prints its own count, and that count rises every time a
+validator is added — so a figure copied into a paragraph is a measurement of a
+moving thing, and it begins going stale the moment it is typed. On 14 August
+2026 an audit found four documents in this repository quoting four different
+totals for this one suite, every one of them correct on the day it was written.
+Zero failures is different in kind: it is a contract rather than a measurement,
+so it cannot come apart with time. It is the only number here.
+
+When you do need the figure — for a report, a release note, a reviewer who
+asked — generate it from the run rather than quoting a document:
+
+```bash
+Rscript validate/run_all.R | tee /tmp/suite.log
+Rscript validate/tools/gen_counts.R /tmp/suite.log
+```
 
 ---
 
@@ -38,8 +55,8 @@ nothing is fetched.
 
 ## Check one by hand, in two minutes
 
-Do this once and the rest of the suite is just the same move repeated 4058
-times.
+Do this once and the rest of the suite is just the same move, repeated for
+every printed number in every committed capture.
 
 **1. The input the plugin was given** — `evidence/csv/v09_anova_tukey_input.csv`
 
@@ -201,11 +218,13 @@ same numbers. Still uncovered: the annotation layer — everything
 
 ## The one thing that is not a check
 
-Eight lines print as `ATST` rather than `PASS`. Those are **attestations** —
+Some lines print as `ATST` rather than `PASS`. Those are **attestations** —
 claims backed by a screenshot or a recorded observation rather than by
-anything the script can evaluate. They are excluded from the 4058 and from the
-exit status, and reported separately, so that "4058 checks passed" means 4058
-things were tested. Seven are in `v07`; the eighth is in `v20`.
+anything the script can evaluate. They are excluded from the check count and
+from the exit status, and reported on their own line, so that a report of *n*
+checks passed means *n* things were tested and nothing was quietly counted
+that could not fail. Most of them are in `v07`; `v20` carries one, recording
+that its files came from the shipping orchestrator rather than a harness.
 
 ---
 
@@ -215,13 +234,19 @@ things were tested. Seven are in `v07`; the eighth is in `v20`.
   conventions chosen where statisticians disagree, tolerance reasoning, the
   red-path cases, and an honest coverage statement including what is *not*
   covered. It is long because it is a reference, not a front door.
-- **`validate/tools/check_registry_counts.R`** — verifies that every count
-  claimed in `REGISTRY.md` matches a live run, plus the headline in the
-  repository-root `README.md`. It does **not** yet read this file, so the
-  three totals above (`4058`, in the expect-line, the walkthrough and the
-  attestation paragraph) are hand-maintained. Anyone bumping the headline has
-  four documents to change, not two: `README.md`, `validate/REGISTRY.md`,
-  this file, and whatever new validator moved the number.
+- **`validate/tools/check_registry_counts.R`** — the enforcement behind the
+  rule stated at the top of this page. It reads `README.md`, `START_HERE.md`,
+  `REGISTRY.md` and this file, and fails if any of them states a suite total
+  other than zero. It does that from the documents alone, in about a second,
+  without running the suite and without knowing what the true total is —
+  which is the property that matters, because an enforcement that has to know
+  the right answer is one more thing that can be out of date. Handed a run's
+  log it also checks the run against itself: that the headline agrees with the
+  `PASS`/`FAIL` lines it summarises and with the by-script table, and that the
+  failure count is zero.
+- **`validate/tools/gen_counts.R`** — the other half. Turns a run's log into
+  the totals block, stamped with the date, the commit and the R version it was
+  measured at. Nothing in this repository stores its output.
 - **`validate/oracle/`** and **`validate/mutation/`** — two optional tiers:
   one checks `helpers.R` against scipy/pingouin/scikit-posthocs, the other
   corrupts committed captures to prove the suite notices. Neither is needed

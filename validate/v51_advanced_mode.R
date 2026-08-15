@@ -131,10 +131,28 @@ if (check_true("v51", "the dialog chain was recorded",
 # One number carries both, for the reason set out in the header: the second
 # report section can only exist if annotate was 1 at the draw, and annotate can
 # only be 1 after a beginner draw if the restore arm put it back.
+# EXPECTATION RAISED 2 -> 3 ON 15 AUGUST 2026, and the reason is the whole
+# point of the file rather than an inconvenience to it.
+#
+# When this check was written the journey was: beginner Draw (annotate forced
+# to 0, so no bridge, no section) -> Redraw -> toggle -> advanced Draw (preset
+# restored, bridge reports). Two sections: the driver's own orchestrator, and
+# the bridge once. The D7 fix of 15 Aug changed the FIRST draw, not the second.
+# A wrapper's annotate preset is no longer thrown away by the beginner commit,
+# so the beginner draw now annotates too and the bridge reports on BOTH draws.
+# Three sections: orchestrator, bridge, bridge.
+#
+# The number moved because the defect this file was written to catch got
+# smaller, not because the file got weaker. Both fixes are still separable by
+# it: lose the restore arm and the advanced draw stops reporting (3 -> 2); lose
+# the D7 fix and the beginner draw stops reporting (3 -> 2 by the other route).
+# Either regression lands on the same red line, which is why the expectation is
+# exact and not a floor. Measured after the fix: 3 sections / 5421 bytes,
+# against 2 / 3627 before it.
 sections <- suppressWarnings(as.integer(b[["report_sections"]]))
 check("v51",
-      "the Info report carries TWO analysis sections, not one (the bridge ran)",
-      2L, if (length(sections) && !is.na(sections)) sections else -1L, tol = 0)
+      "the Info report carries THREE analysis sections (both draws annotated)",
+      3L, if (length(sections) && !is.na(sections)) sections else -1L, tol = 0)
 
 # THE SIZE IS A SECOND WITNESS, deliberately independent of the string match.
 # A change that renamed the report header would break the count above while

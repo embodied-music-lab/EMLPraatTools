@@ -14,6 +14,33 @@
 # calls, driven end to end by `harness/broom_cases/anova_shipping_drive.praat`.
 # A path is not converted until it has a check at this level.
 #
+# THIS FILE PINNED A DEFECT AS IF IT WERE A CONTRACT, AND THAT IS WORSE THAN
+# NO VALIDATOR AT ALL. (15 August 2026.) The augment check below asserted
+#
+#     au$.std.resid - residuals(fit) / sl$sigma
+#
+# and it was green every day it ran. It is not broom's .std.resid.
+# broom::augment(aov) returns rstandard(), which is e_i / (s * sqrt(1 - h_i)),
+# and the leverage term is not a refinement -- it is the whole difference
+# between a standardised residual and a scaled one. So the plugin published a
+# quantity under R's name that was not R's quantity, and the file whose job
+# was to notice had written the wrong quantity down as the requirement.
+#
+# THE PART THAT SHOULD CHANGE HOW THE NEXT ONE OF THESE IS READ: v21:213 and
+# v24 assert the CORRECT identity for the regression arm. Two files, one
+# suite, the same statistic, opposite claims -- and the suite was green,
+# because each file agreed with the arm it was pointed at. A validator that
+# is written from the code it validates does not check the code; it
+# photographs it, and a green run then certifies the photograph. The
+# defence is what the corrected check below does: assert against R's own
+# rstandard() rather than against a formula retyped here, so the check has a
+# source of truth the implementation cannot influence.
+#
+# The evidence under evidence/csv_export/broom/ was regenerated in the same
+# change, because it was written by the old code and would otherwise have
+# kept this file green against a corrected plugin -- the same failure one
+# layer down.
+#
 # BROOM ITSELF IS NOT INSTALLABLE ON R 4.3.3 HERE, so the contract is asserted
 # from broom's documentation rather than by diffing against a live broom call,
 # and every VALUE is checked against base R. The distinction is stated on each
@@ -104,8 +131,33 @@ check("v20", "augment .fitted total deviation",
       sum(abs(au$.fitted - fitted(fit))), 0, tol = 1e-9)
 check("v20", "augment .resid total deviation",
       sum(abs(au$.resid - residuals(fit))), 0, tol = 1e-9)
-check("v20", "augment .std.resid total deviation",
-      sum(abs(au$.std.resid - residuals(fit) / sl$sigma)), 0, tol = 1e-9)
+# .std.resid IS rstandard(), AND THIS LINE USED TO SAY OTHERWISE. See the
+# note at the head of this file: until 15 August 2026 the assertion here was
+#
+#     sum(abs(au$.std.resid - residuals(fit) / sl$sigma))
+#
+# which is not broom's .std.resid and is not any quantity R publishes under
+# that name. It is checked against rstandard() -- R's own function, the one
+# broom::augment(aov) calls -- rather than against a re-derivation of the
+# formula here, because a re-derivation could be wrong in the same direction
+# as the code it checks. The leverage that does the correcting is asserted
+# beside it, against hatvalues(), so a .std.resid that came out right from a
+# wrong h_i cannot pass.
+check("v20", "augment .std.resid is rstandard(), total deviation",
+      sum(abs(au$.std.resid - rstandard(fit))), 0, tol = 1e-9)
+check_true("v20", "augment publishes the leverage the standardisation used",
+           ".hat" %in% names(au))
+if (".hat" %in% names(au))
+    check("v20", "augment .hat is hatvalues(), total deviation",
+          sum(abs(au$.hat - hatvalues(fit))), 0, tol = 1e-9)
+# AND IT IS NOT THE OLD QUANTITY. Stated as its own check rather than left
+# implied: the two differ by 1 / sqrt(1 - h_i), which on this balanced
+# fixture is a uniform 3.4% and is well inside no tolerance at all, so a
+# revert would be caught by the check above -- but a reader of a green run
+# should be able to see that the wrong identity was tested for and refused.
+check_true("v20",
+           "and .std.resid is NOT resid/sigma, the identity this file used to assert",
+           sum(abs(au$.std.resid - residuals(fit) / sl$sigma)) > 1e-6)
 
 # --- post-hoc: a SECOND model object, therefore a second file --------------
 # tidy(TukeyHSD(fit)) is documented as term, contrast, null.value, estimate,

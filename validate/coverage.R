@@ -29,9 +29,22 @@
 # Both sides therefore come from somewhere other than this file. That is what
 # makes the comparison worth making.
 #
-# RUN AS PART OF THE SUITE, NOT ALONE. It needs the claims every validator
-# registered while running, so it is sourced last by run_all.R and does
-# nothing on its own.
+# RUN AS PART OF THE SUITE, NOT ALONE, AND THIS IS NOW ENFORCED. It needs the
+# claims every validator registered while running. Those claims live in
+# EML_COVERAGE$claims, an in-memory accumulator that is filled by eml_claim()
+# calls made BY THE VALIDATORS IN THIS SAME R PROCESS -- run_all.R sources all
+# of them before it sources this file, and that is the entire state a
+# standalone run is missing. Nothing is written to disk, on purpose: a
+# persisted claim map is a hand-maintained list that can disagree with reality,
+# which is the failure this file exists to catch.
+#
+# The header used to say this file "does nothing on its own". It did not do
+# nothing. With an empty accumulator every artefact looked orphaned, so the
+# "some validator reads it" check went red once per artefact and a standalone
+# run printed twelve FAILs against v38 and exited 1 -- twelve findings about
+# nothing, in a suite whose value is that a red line means something. An audit
+# on 14 August 2026 hit exactly that. It now refuses to run instead, with exit
+# status 2 to distinguish "this is not a result" from "this is a failure".
 #
 # ADDING AN ARTEFACT. Put it in ARTEFACTS below with a reader that returns the
 # case identifiers a driver rendered. If no validator claims it, this file
@@ -48,6 +61,27 @@
 if (!exists("eml_report")) {
     .a <- commandArgs(FALSE); .f <- sub("^--file=", "", .a[grep("^--file=", .a)])
     source(file.path(if (length(.f)) dirname(normalizePath(.f)) else ".", "helpers.R"))
+}
+
+# --- the guard ---------------------------------------------------------------
+# EML_SUITE is set by run_all.R and by nothing else, so it is the honest test
+# of "am I running inside the suite". The claim count is reported alongside it
+# because that, not the flag, is the state actually missing: a reader who sees
+# "0 claims" understands immediately why every artefact would look orphaned.
+if (!exists("EML_SUITE")) {
+    n_claims <- if (exists("EML_COVERAGE")) length(EML_COVERAGE$claims) else 0L
+    cat(paste0(
+"\ncoverage.R does not produce a result on its own, and is refusing rather\n",
+"than producing a wrong one.\n\n",
+"It compares the cases each artefact contains against the cases the\n",
+"validators claimed while they ran. Those claims are held in memory and are\n",
+"made by the validators themselves, in this same R process. This process\n",
+"holds ", n_claims, " claim(s), because no validator has run in it -- so every artefact\n",
+"would look orphaned, and each would report a failure that is about this\n",
+"invocation rather than about the repository.\n\n",
+"Run the suite, which sources every validator and then this file:\n\n",
+"    Rscript validate/run_all.R\n\n"))
+    quit(status = 2L)
 }
 
 # --- readers -----------------------------------------------------------------
@@ -238,7 +272,7 @@ for (a in ARTEFACTS) {
 check("v38", "every declared artefact was examined",
       length(ARTEFACTS), 12, tol = 0)
 
-if (!exists("EML_SUITE")) {
-    eml_report("v38 coverage: everything rendered is claimed by some validator")
-    eml_exit()
-}
+# The standalone report that used to sit here is gone: the guard at the top of
+# this file makes it unreachable, and a self-report block that can never run is
+# an invitation to believe a standalone run means something. run_all.R prints
+# these checks in its own SUMMARY along with everything else.

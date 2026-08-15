@@ -398,7 +398,80 @@ scripts <- c(
     # takes two arguments and no unit string. Nothing but the catalogue
     # separates them, and passing the wrong arity is an abort mid-batch, not a
     # wrong number. The module has all three right; now it stays right.
-    "v54_batch_praatgen.R"
+    "v54_batch_praatgen.R",
+    # ------------------------------------------------------------------
+    # v55-v63: the 15 August 2026 audit response.
+    #
+    # An external stress-test session drove roughly 350 dialogs, recomputed
+    # 150+ printed statistics independently, and put every finding past a
+    # verifier instructed to refute it. Its verdict on the arithmetic was
+    # zero mismatches at printed precision. Every defect it found lived at
+    # an edge: an editor that addresses columns by name, entry points that
+    # die before their dialog, saves that abort on a slash, exports that
+    # drop all but the last column. These nine files are that response.
+    # ------------------------------------------------------------------
+    # The editor could silently destroy the WRONG column's data -- the
+    # audit's only severity 1. Delete honoured the menu selection in the UI
+    # and deleted the first label match; with duplicates present the second
+    # column was unreachable by every editor operation. Praat 6.6.30 has no
+    # positional Table addressing at all (measured: six candidate command
+    # names, none available), so the fix is a rename-to-sentinel shim.
+    "v55_editor_addressing.R",
+    # Two saves killed the session on legitimate input: a slash in the base
+    # name, and an unwritable folder. Measured at 6.6.30, this filesystem
+    # refuses exactly one character; the sanitiser takes the cross-platform
+    # union anyway. The sanitise happens ABOVE the stem-uniquing walk, and
+    # v56 checks the ORDER -- one stamp per press is the panel's contract.
+    "v56_save_guards.R",
+    # Multi-column normality Save exported ONE column: the collectors were
+    # re-initialised per column instead of per press. The one exported row
+    # was numerically perfect, which is what made it hard to see. The rule
+    # that falls out, and that v57 pins: init once per press, accumulate
+    # per loop. The ANOVA augment fix is here too -- it had been exporting
+    # resid/sigma under broom's .std.resid name, a uniform 4.4% understatement.
+    "v57_export_integrity.R",
+    # A recorded advanced figure replayed without its annotation bracket or
+    # its jittered points. Ian's ruling of 14 Aug made replay NON-INTERACTIVE
+    # -- the SPSS model, dialogs author syntax and syntax runs headless -- so
+    # a recorded save now embeds folder and base name as literals and takes a
+    # fresh stamp at replay. A faithful replay is not byte-identical (the
+    # recorder emits axes at 6 dp), so v58 identifies rather than compares:
+    # zero pixels differing from the original, 2740 from a bare draw.
+    "v58_recorder_replay.R",
+    # Eleven registered entry points crashed before their dialog opened.
+    # Ian ruled MAKE OPERABLE, not unregister -- "dead doors are worse than
+    # absent features". v59's enumeration unit is the REGISTRATION, which is
+    # the population every other validator here excludes by construction:
+    # v46 checks call sites, savepaths checks callers, v49 needs an artefact.
+    # v49 could not see the one wrapper with no Save because its population
+    # filter required a procedure that wrapper did not call.
+    "v59_entry_points.R",
+    # The paired wrapper's New-after-Draw rebound to the deleted internal
+    # reshape table and dead-ended; Check & repair told users a ragged CSV
+    # was clean and Praat's own reader then refused it. The reader's rule was
+    # measured over a 35-file battery, not guessed.
+    "v60_wrapper_paths.R",
+    # The graphs seams. The Kruskal-Wallis annotated draw crashed exactly
+    # when the omnibus was SIGNIFICANT -- the only crash reachable from a
+    # default journey, and it fired precisely when a user had a result worth
+    # annotating. Note the shape of the near-miss: driving the KW wrapper
+    # first made the break test PASS, because the wrapper had already
+    # declared the matrix. Only the standalone journey shows it.
+    "v61_graphs_seams.R",
+    # Stereo channel handling had three procedures and zero callers, so a
+    # stereo Sound converted to Pitch silently: 220 Hz left and 330 Hz right
+    # gave 110 Hz, an F0 in neither channel. Ian ruled it ABSOLUTELY
+    # NECESSARY. Also here: a sustained tone that drew as chaos over a
+    # collapsed axis, which the audit's own probe had already localised to
+    # tick precision rather than to the pitch analysis -- the values were
+    # exact to 1e-6 Hz.
+    "v62_graphs_axes_channels.R",
+    # Six doors coerce a Matrix or TableOfReal into a Table, and after the
+    # audit response three of them disagreed about the row-label column.
+    # v63 asserts r1..rn PER DOOR rather than comparing doors to each other:
+    # three doors agreeing on the wrong thing would satisfy a parity check,
+    # which is exactly how the two .std.resid arms diverged for a week.
+    "v63_coercion_parity.R"
 )
 
 cat("EML Praat Tools validation suite\n")
