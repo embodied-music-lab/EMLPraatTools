@@ -672,6 +672,17 @@ procedure emlInitDrawingDefaults
     scatterRegressionLine = 0
     scatterShowFormula = 0
     scatterShowDots = 1
+    ; scatterAnalysisType was the one member of this set that was NOT seeded
+    ; here, and @emlDrawScatterPlot reads it unconditionally on the annotate
+    ; path. So every non-form caller -- a PraatGen script, a harness case,
+    ; this repository's own axis probes -- aborted the whole figure at
+    ; "Unknown variable: (scatterAnalysisType" the moment annotate was 1,
+    ; while annotate = 0 sailed through. Found 15 Aug 2026 building the
+    ; clipping reproduction. Same reasoning as the categorical-label seeds
+    ; above: seed the neutral value, let any caller that knows better
+    ; overwrite it. 0 = neither correlation nor regression requested, which
+    ; is the value the form itself initialises to.
+    scatterAnalysisType = 0
     # Annotation
     annotCorrType$ = "pearson"
     annotStyle$ = "stars"
@@ -1248,8 +1259,25 @@ endproc
 # geometry when it has never been called, so an API caller that forgets gets
 # a slightly-off hatch angle, not a wrong figure.
 #
+# IT ALSO PUBLISHES THE FRAME ITSELF (15 Aug 2026, NEW-G8-1). The four
+# numbers handed in here ARE the plotting frame -- they are what was just
+# passed to `Axes:` -- and until now nothing recorded them, so no primitive
+# could tell a point inside the box from a point beyond it. Praat does not
+# clip: `Paint circle` at x = 322 on an axis that stops at 300 draws a dot in
+# the MARGIN, on top of the tick labels, at a horizontal position that
+# corresponds to no value on the axis. A reader has no way to know it is not
+# data. Publishing the frame here is what lets @emlDrawMarker and
+# @emlDrawAlphaDot refuse it; see @emlPointInFrame.
+#
+# Every procedure that draws point markers already calls this immediately
+# after its own `Axes:`, which is why the frame is always the current one at
+# the moment a marker is placed. A caller that never calls it leaves
+# emlFrameKnown at 0 and nothing clips -- the old behaviour, unchanged.
+#
 # Arguments: .xMin, .xMax, .yMin, .yMax (the axes just installed)
-# Sets globals: emlPatWorldPerInchX, emlPatWorldPerInchY
+# Sets globals: emlPatWorldPerInchX, emlPatWorldPerInchY,
+#               emlFrameXMin, emlFrameXMax, emlFrameYMin, emlFrameYMax,
+#               emlFrameKnown
 # ----------------------------------------------------------------------------
 procedure emlSetPatternScale: .xMin, .xMax, .yMin, .yMax
     .innerW = emlSetAdaptiveTheme.innerRight - emlSetAdaptiveTheme.innerLeft
@@ -1262,6 +1290,116 @@ procedure emlSetPatternScale: .xMin, .xMax, .yMin, .yMax
     if .innerH > 0
         emlPatWorldPerInchY = (.yMax - .yMin) / .innerH
     endif
+    emlFrameXMin = min (.xMin, .xMax)
+    emlFrameXMax = max (.xMin, .xMax)
+    emlFrameYMin = min (.yMin, .yMax)
+    emlFrameYMax = max (.yMin, .yMax)
+    emlFrameKnown = 1
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlPointInFrame: .x, .y
+# Is this data point inside the plotting frame the current axes describe?
+#
+# Outputs
+#   .inside  1 = draw it, 0 = it is outside the frame the user asked for
+#
+# WHY (NEW-G8-1, severity 3, 15 Aug 2026). A user who types an axis range is
+# choosing what the figure is about. Praat's drawing primitives take that as
+# a coordinate transform and nothing more: a point beyond the range is
+# converted to a page position beyond the box and painted there. Measured on
+# a 30-row scatter with x typed as 100-300 against data running 90-322
+# (harness/graphaxes/cases/repro_scatter_clip.praat): one dot sat on the "100"
+# tick label and three sat in the right margin outside the box entirely, each
+# at a page position that decodes to a value the axis does not contain.
+#
+# THIS DOES NOT CHANGE A SINGLE COMPUTED NUMBER, and that distinction is the
+# whole of the design. The correlation, the regression, the n and the CSV are
+# computed from every valid row and go on being computed from every valid
+# row; a range is a VIEWPORT, not a filter, and a figure that quietly
+# recomputed its statistics over the visible subset would be a far worse
+# defect than the one being fixed. What changes is only whether ink is put
+# down outside the box. The count of points withheld is tracked in
+# emlClippedN so the caller can say so on the figure rather than let a reader
+# assume the frame holds everything.
+#
+# UNSET FRAME MEANS NO CLIPPING. emlFrameKnown is 0 until @emlSetPatternScale
+# has run for the current axes, and an API caller that never calls it gets
+# exactly the behaviour this library has always had.
+# ----------------------------------------------------------------------------
+procedure emlPointInFrame: .x, .y
+    .inside = 1
+    if variableExists ("emlFrameKnown") = 0
+        goto POINT_IN_FRAME_END
+    endif
+    if emlFrameKnown <> 1
+        goto POINT_IN_FRAME_END
+    endif
+    ; Nested, never "or": Praat evaluates both operands and every comparison
+    ; against undefined is FALSE, so an undefined coordinate would slip past
+    ; a combined test. An undefined point is not inside anything.
+    if .x = undefined
+        .inside = 0
+        goto POINT_IN_FRAME_END
+    endif
+    if .y = undefined
+        .inside = 0
+        goto POINT_IN_FRAME_END
+    endif
+    if .x < emlFrameXMin
+        .inside = 0
+    endif
+    if .x > emlFrameXMax
+        .inside = 0
+    endif
+    if .y < emlFrameYMin
+        .inside = 0
+    endif
+    if .y > emlFrameYMax
+        .inside = 0
+    endif
+    label POINT_IN_FRAME_END
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlResetClipCount
+# Zero the running count of points withheld for falling outside the frame.
+# Call immediately before a plotting loop; read emlClippedN after it.
+# ----------------------------------------------------------------------------
+procedure emlResetClipCount
+    emlClippedN = 0
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlRegisterCollisionPoints: .x#, .y#, .n
+# Publish the points that are actually ON THE PAGE, for @emlPlaceAnnotationBox
+# to place the annotation panel around.
+#
+# ONLY THE POINTS INSIDE THE FRAME are registered, and that is not a detail:
+# a point withheld by NEW-G8-1's clip was never drawn, so a box sitting where
+# it would have been hides nothing. Counting it would push the panel away
+# from a corner that is genuinely empty and into one that is not.
+#
+# Sets globals: emlCollideN, emlCollideX#, emlCollideY#
+# ----------------------------------------------------------------------------
+procedure emlRegisterCollisionPoints: .x#, .y#, .n
+    emlCollideN = 0
+    if .n < 1
+        emlCollideX# = zero# (1)
+        emlCollideY# = zero# (1)
+        goto REGISTER_COLLIDE_END
+    endif
+    emlCollideX# = zero# (.n)
+    emlCollideY# = zero# (.n)
+    for .i from 1 to .n
+        @emlPointInFrame: .x#[.i], .y#[.i]
+        if emlPointInFrame.inside = 1
+            emlCollideN = emlCollideN + 1
+            emlCollideX#[emlCollideN] = .x#[.i]
+            emlCollideY#[emlCollideN] = .y#[.i]
+        endif
+    endfor
+    label REGISTER_COLLIDE_END
 endproc
 
 # ----------------------------------------------------------------------------
@@ -2035,6 +2173,125 @@ procedure emlComputeNiceStep: .range, .targetTicks
 endproc
 
 # ----------------------------------------------------------------------------
+# @emlTickPrecision: .axisMin, .axisMax, .step
+# Decide whether Praat may format this axis's tick numbers itself, and if not,
+# how many decimals the plugin has to write instead.
+#
+# Outputs
+#   .explicit  1 = the caller must pass its own text to `One mark`
+#              0 = Praat's own formatting is correct, pass "" as before
+#   .decimals  digits after the point for fixed$() when .explicit = 1
+#
+# WHY THIS EXISTS. `One mark left: 200.05, "yes", ...` does not print 200.05.
+# It prints "200.1". `One mark left: 200.01` prints "200". Praat's automatic
+# mark number carries FOUR SIGNIFICANT DIGITS and rounds -- sometimes
+# mis-rounds -- everything past them away. Measured on 6.6.30, 15 Aug 2026,
+# harness/graphaxes/out/markprobe.png: six marks at 200.1, 200.05, 200.01,
+# 200.005, 199.95 and 199.4 came out as "200.1", "200.1", "200", "200",
+# "199.9", "199.4". Two pairs of distinct heights carry one label between
+# them, and 199.95 is labelled 199.9, which is not a rounding a reader can
+# undo.
+#
+# It is invisible at ordinary scales because four significant digits is
+# plenty for an axis running 0 to 100, or 75 to 500. It bites when the axis
+# is NARROW AND FAR FROM ZERO -- which is exactly a sustained note: a singer
+# holding 200 Hz produces a pitch track spanning a hundredth of a hertz, and
+# every tick on it reads "200". The figure then shows a wildly fluctuating
+# contour against six identical numbers, and there is nothing on the page to
+# tell a reader that the whole vertical extent is one part in ten thousand.
+# That was NEW-G7-1 (severity 3), and this is one of its two halves; the
+# other is the minimum span in @emlDrawF0Contour.
+#
+# THE RULE. Digits needed = digits left of the point at the far end of the
+# axis, plus the decimals the STEP needs to distinguish one tick from the
+# next. When that total is within Praat's four, nothing changes and the
+# figures this plugin has always drawn are drawn identically -- this
+# procedure returns .explicit = 0 and the caller passes "" exactly as it did
+# before. Only when the total exceeds four does the plugin take over the
+# formatting, and then it writes the decimals the step actually needs.
+#
+# .decimals IS CAPPED AT 6. Past that the label is longer than the tick
+# spacing can carry and the axis is unreadable for a different reason; a
+# figure needing more than six decimals of tick label is a figure whose axis
+# range is wrong, and @emlDrawF0Contour's minimum span is what prevents it.
+# ----------------------------------------------------------------------------
+procedure emlTickPrecision: .axisMin, .axisMax, .step
+    .explicit = 0
+    .decimals = 0
+    .bad = 0
+    if .step = undefined
+        .bad = 1
+    endif
+    if .axisMin = undefined or .axisMax = undefined
+        .bad = 1
+    endif
+    if .bad = 0
+        if .step <= 0
+            .bad = 1
+        endif
+    endif
+    if .bad = 1
+        goto TICK_PRECISION_END
+    endif
+
+    # Decimals the step needs. A step of 0.2 needs one, 0.05 needs two, 5
+    # needs none. floor(log10(step)) is the step's own magnitude; a negative
+    # magnitude is the count of decimals, a non-negative one needs none.
+    .stepMag = floor (log10 (.step))
+    if .stepMag < 0
+        .decimals = -.stepMag
+    else
+        .decimals = 0
+    endif
+
+    # Digits left of the point, taken at whichever end of the axis is
+    # further from zero -- that is the tick with the most of them, and the
+    # one whose label runs out of significant digits first.
+    .far = max (abs (.axisMin), abs (.axisMax))
+    if .far >= 1
+        .intDigits = floor (log10 (.far)) + 1
+    else
+        .intDigits = 1
+    endif
+
+    ; THREE CONDITIONS, AND EACH ONE WAS PAID FOR. The bare
+    ; "more than four significant digits" test was the first version and it
+    ; made two figures WORSE than it found them, both caught by re-rendering
+    ; harness/stress_graphs.sh against this change:
+    ;
+    ;   .far >= 1 -- BELOW ONE, PRAAT SWITCHES TO SCIENTIFIC NOTATION AND IS
+    ;   RIGHT TO. An axis running 8e-10 to 2.2e-9 (violin_tinyvalues) labels
+    ;   as "8·10^-10" and "2.2·10^-9": four significant digits is ample there,
+    ;   because the exponent carries the magnitude and the mantissa is short.
+    ;   Writing those out with fixed$ gives "0.000000001", which is not a
+    ;   correction, it is a worse label.
+    ;
+    ;   .decimals > 0 -- A STEP OF A WHOLE UNIT OR MORE CANNOT COLLIDE. On
+    ;   violin_hugevalues the axis runs to 1e9 and the step is 2e8; adjacent
+    ;   ticks differ in the FIRST significant digit, so Praat's "1·10^9" is
+    ;   both distinct and readable and the fixed$ form is ten digits of noise.
+    ;
+    ;   .decimals <= 6 -- past six the label is longer than the tick spacing
+    ;   can carry and the axis is unreadable for a different reason. That axis
+    ;   should not have been drawn; @emlDrawF0Contour's minimum span is what
+    ;   stops it, and taking Praat's answer here is the lesser evil.
+    ;
+    ; What is left is exactly the shape that breaks: MANY INTEGER DIGITS AND A
+    ; FRACTIONAL STEP. A sustained note at 200 Hz on a hundredth-of-a-hertz
+    ; axis, and nothing else.
+    if .far >= 1
+        if .decimals > 0
+            if .decimals <= 6
+                if .intDigits + .decimals > 4
+                    .explicit = 1
+                endif
+            endif
+        endif
+    endif
+    label TICK_PRECISION_END
+endproc
+
+# ----------------------------------------------------------------------------
 # @emlDrawGridlines
 # Draws gridlines aligned with nice-number tick positions
 # Arguments: xMin, xMax, yMin, yMax, targetTicksX, targetTicksY, useMinor
@@ -2276,6 +2533,14 @@ procedure emlDrawAlignedMarksLeft: .yMin, .yMax, .targetTicks, .useMinor
     endif
     .yTol = .yStep * 0.01
 
+    ; Four significant digits is all Praat's own mark number carries, so a
+    ; narrow axis far from zero labels every tick the same. See
+    ; @emlTickPrecision. .explicit = 0 on every ordinary axis and the ""
+    ; below is the call this procedure has always made.
+    @emlTickPrecision: .yMin, .yMax, .yStep
+    .tickExplicit = emlTickPrecision.explicit
+    .tickDecimals = emlTickPrecision.decimals
+
     # Major ticks with numbers
     .yPos = ceiling (.yMin / .yStep) * .yStep
     while .yPos <= .yMax + .yTol
@@ -2283,7 +2548,12 @@ procedure emlDrawAlignedMarksLeft: .yMin, .yMax, .targetTicks, .useMinor
             if abs (.yPos) < .yTol
                 .yPos = 0
             endif
-            One mark left: .yPos, .writeNum$, .drawTick$, "no", ""
+            if .tickExplicit = 1 and emlShowAxisValuesY
+                One mark left: .yPos, "no", .drawTick$, "no",
+                ... fixed$ (.yPos, .tickDecimals)
+            else
+                One mark left: .yPos, .writeNum$, .drawTick$, "no", ""
+            endif
         endif
         .yPos = .yPos + .yStep
     endwhile
@@ -2343,6 +2613,12 @@ procedure emlDrawAlignedMarksRight: .yMin, .yMax, .targetTicks, .useMinor
     endif
     .yTol = .yStep * 0.01
 
+    ; Same four-significant-digit ceiling as the left margin. See
+    ; @emlTickPrecision.
+    @emlTickPrecision: .yMin, .yMax, .yStep
+    .tickExplicit = emlTickPrecision.explicit
+    .tickDecimals = emlTickPrecision.decimals
+
     # Major ticks with numbers
     .yPos = ceiling (.yMin / .yStep) * .yStep
     while .yPos <= .yMax + .yTol
@@ -2350,7 +2626,12 @@ procedure emlDrawAlignedMarksRight: .yMin, .yMax, .targetTicks, .useMinor
             if abs (.yPos) < .yTol
                 .yPos = 0
             endif
-            One mark right: .yPos, .writeNum$, .drawTick$, "no", ""
+            if .tickExplicit = 1 and emlShowAxisValuesY
+                One mark right: .yPos, "no", .drawTick$, "no",
+                ... fixed$ (.yPos, .tickDecimals)
+            else
+                One mark right: .yPos, .writeNum$, .drawTick$, "no", ""
+            endif
         endif
         .yPos = .yPos + .yStep
     endwhile
@@ -2407,6 +2688,13 @@ procedure emlDrawAlignedMarksBottom: .xMin, .xMax, .targetTicks, .useMinor
     .xStep = emlComputeNiceStep.step
     .xTol = .xStep * 0.01
 
+    ; Same four-significant-digit ceiling as the y margins. See
+    ; @emlTickPrecision. A time axis running 12.000 to 12.002 seconds is the
+    ; x-axis version of the sustained-note figure.
+    @emlTickPrecision: .xMin, .xMax, .xStep
+    .tickExplicit = emlTickPrecision.explicit
+    .tickDecimals = emlTickPrecision.decimals
+
     # Major ticks with numbers
     .xPos = ceiling (.xMin / .xStep) * .xStep
     while .xPos <= .xMax + .xTol
@@ -2414,7 +2702,12 @@ procedure emlDrawAlignedMarksBottom: .xMin, .xMax, .targetTicks, .useMinor
             if abs (.xPos) < .xTol
                 .xPos = 0
             endif
-            One mark bottom: .xPos, .writeNum$, .drawTick$, "no", ""
+            if .tickExplicit = 1 and emlShowAxisValuesX
+                One mark bottom: .xPos, "no", .drawTick$, "no",
+                ... fixed$ (.xPos, .tickDecimals)
+            else
+                One mark bottom: .xPos, .writeNum$, .drawTick$, "no", ""
+            endif
         endif
         .xPos = .xPos + .xStep
     endwhile
@@ -3659,6 +3952,18 @@ procedure emlDrawMarker: .x, .y, .halfIn, .shape, .color$
         goto MARKER_END
     endif
 
+    ; NEW-G8-1: a point outside the frame is not drawn in the margin. See
+    ; @emlPointInFrame -- no frame published means no clipping, so this is a
+    ; no-op for any caller that has not installed one.
+    @emlPointInFrame: .x, .y
+    if emlPointInFrame.inside = 0
+        if variableExists ("emlClippedN") = 0
+            emlClippedN = 0
+        endif
+        emlClippedN = emlClippedN + 1
+        goto MARKER_END
+    endif
+
     .scaled = 1
     if .sx <= 0
         .scaled = 0
@@ -3871,23 +4176,51 @@ endproc
 #                              3 = Right channel)
 # Outputs: .resultId (the resulting Sound ID — may be same or new)
 #          .wasConverted (1 if conversion happened, 0 if already mono)
-# Note: Removes the original stereo Sound if conversion occurs.
+#          .choice$ (human-readable name of what was applied, "" if mono)
+# Note: Removes the original stereo Sound if conversion occurs, UNLESS the
+#       caller sets emlChannelKeepOriginal = 1 first.
+#
+# THE KEEP SWITCH, AND WHY IT IS OPT-IN (15 Aug 2026). Removing the original
+# is right for a batch: the file was read to be measured and the stereo copy
+# is scaffolding. It is wrong for an interactive session, where the Sound is
+# the object the USER selected in the Objects window, has probably just
+# recorded, and will want again for the next figure. Deleting it out from
+# under them to draw a graph is not a trade the graphs flow may make on their
+# behalf, and it would also strand every "Draw Another" that re-selects the
+# source. So @emlGraphsChannelGate sets the switch and the batch path, which
+# has no caller here yet, keeps the documented behaviour byte for byte.
+#
+# The switch is read through variableExists so a caller that has never heard
+# of it gets the original semantics.
 # ----------------------------------------------------------------------------
 procedure emlApplyChannelChoice: .soundId, .channelHandling
     selectObject: .soundId
     .nChannels = Get number of channels
+    .choice$ = ""
     if .nChannels > 1
+        .keep = 0
+        if variableExists ("emlChannelKeepOriginal")
+            if emlChannelKeepOriginal = 1
+                .keep = 1
+            endif
+        endif
         if .channelHandling = 1
             .resultId = Convert to mono
+            .choice$ = "Mix to mono"
         elsif .channelHandling = 2
             .resultId = Extract one channel: 1
+            .choice$ = "Left channel only"
         elsif .channelHandling = 3
             .resultId = Extract one channel: 2
+            .choice$ = "Right channel only"
         else
             # Fallback — treat unknown value as mix to mono
             .resultId = Convert to mono
+            .choice$ = "Mix to mono"
         endif
-        removeObject: .soundId
+        if .keep = 0
+            removeObject: .soundId
+        endif
         .wasConverted = 1
     else
         .resultId = .soundId
@@ -3925,9 +4258,11 @@ procedure emlHandleStereo: .soundId, .fileName$
         @emlApplyChannelChoice: .soundId, channel_handling
         .resultId = emlApplyChannelChoice.resultId
         .wasConverted = emlApplyChannelChoice.wasConverted
+        .choice$ = emlApplyChannelChoice.choice$
     else
         .resultId = .soundId
         .wasConverted = 0
+        .choice$ = ""
     endif
 endproc
 
@@ -3945,6 +4280,152 @@ procedure emlCheckChannels: .soundId
     @emlHandleStereo: .soundId, .name$
     .resultId = emlHandleStereo.resultId
     .wasConverted = emlHandleStereo.wasConverted
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlGraphsChannelGate: .soundId, .purpose$
+# The EML Graphs entry to the stereo choice. Ask, once, before a stereo Sound
+# becomes a figure or the object a figure is derived from.
+#
+# Arguments
+#   .soundId   an object id. Anything that is not a multi-channel Sound
+#              passes straight through, so callers do not have to check.
+#   .purpose$  what the Sound is about to be used for, named in the dialog
+#              ("waveform", "pitch track", "spectrum", "long-term average
+#              spectrum"). A user answering this question deserves to know
+#              which figure they are answering it for.
+#
+# Outputs
+#   .resultId      the Sound to use from here on (may equal .soundId)
+#   .wasConverted  1 if a channel choice was applied
+#   .choice$       what was applied, for the record
+#
+# THE RULING THIS IMPLEMENTS (author, 14 Aug 2026, verbatim): "Stereo channel
+# handling: ABSOLUTELY NECESSARY -- wire it. The Mix-to-mono / Left / Right
+# choice must be reachable when an audio object is stereo. @emlHandleStereo /
+# @emlCheckChannels / @emlApplyChannelChoice exist with zero callers ... Wire
+# the existing procedures into the EML Graphs flow for Sound (and any
+# derived-object path where channel choice matters, e.g. before To Pitch)."
+#
+# WHAT WAS WRONG. Those three procedures had been in the library since v3.18
+# and NOTHING CALLED THEM. Not one caller, in either direction. A stereo
+# recording -- and an EGG-plus-microphone recording is stereo by
+# construction, which in this lab is most of them -- went to a figure with no
+# question asked, and the two figures it went to were wrong in two different
+# ways.
+#
+#   THE WAVEFORM WAS WRONG ON ITS OWN AXIS. Praat stacks the channels in two
+#   half-height panels, but the plugin has already installed a single
+#   amplitude axis across the whole frame. Measured, aud57 pic_g7_stereo_wave
+#   .png: the axis reads -0.6 to 0.6 Pa, channel 1 is drawn centred on +0.3
+#   and channel 2 on -0.3, and NEITHER trace sits where its amplitude says.
+#   A reader taking channel 1's peak off that axis reads 0.55 Pa for a signal
+#   whose peak is 0.25. There is no "draw them both" option here for that
+#   reason: it is not a view of the data, it is a mislabelled one.
+#
+#   THE PITCH TRACK WAS WRONG AS A NUMBER, WHICH IS WORSE. Praat converts to
+#   mono silently on the way into To Pitch. On the verifier's 220 Hz-left /
+#   330 Hz-right test the resulting contour sat at about 110 Hz -- the F0 of
+#   the mixture, a frequency present in NEITHER channel and in nothing the
+#   singer did. A figure that looks entirely normal and reports a pitch
+#   nobody sang. That is why the ruling's parenthesis matters as much as its
+#   main clause.
+#
+# THE ORIGINAL IS KEPT. emlChannelKeepOriginal is set for the call, so the
+# user's stereo Sound stays in the Objects window and the derived mono Sound
+# joins it. Nothing the user selected is deleted to draw a graph, and the
+# derived object's own name records the choice, so a session that is saved
+# and reopened still says which channel the figure came from.
+#
+# THE STALE-ID REPAIR is the part that would be a defect if it were left out.
+# The graphs form remembers the object it is working from in three globals,
+# and after this procedure the figure is drawn from a DIFFERENT object. If
+# they were not repointed, the pitch floor/ceiling re-conversion would go
+# back to originalSourceId -- the stereo Sound -- and silently re-create the
+# 110 Hz contour the user had just chosen their way out of. Each is repointed
+# only when it names the very Sound that was replaced, and only when it
+# exists at all, so the library stays loadable outside the form.
+# ----------------------------------------------------------------------------
+procedure emlGraphsChannelGate: .soundId, .purpose$
+    .resultId = .soundId
+    .wasConverted = 0
+    .choice$ = ""
+    if .soundId <= 0
+        goto CHANNEL_GATE_END
+    endif
+    selectObject: .soundId
+    .full$ = selected$ ()
+    .sp = index (.full$, " ")
+    if .sp > 0
+        .srcType$ = left$ (.full$, .sp - 1)
+    else
+        .srcType$ = .full$
+    endif
+    if .srcType$ <> "Sound"
+        goto CHANNEL_GATE_END
+    endif
+    .nChannels = Get number of channels
+    if .nChannels < 2
+        goto CHANNEL_GATE_END
+    endif
+
+    .name$ = selected$ ("Sound")
+    beginPause: "Stereo Sound — choose a channel"
+        comment: """" + .name$ + """ has " + string$ (.nChannels)
+        ... + " channels."
+        comment: "This figure is a " + .purpose$
+        ... + ", which needs one channel."
+        optionmenu: "Channel handling", 1
+            option: "Mix to mono"
+            option: "Left channel only"
+            option: "Right channel only"
+        comment: "Mixing two different signals — a microphone and an EGG,"
+        comment: "or two singers — gives an F0 that is in neither of them."
+        comment: "Your original recording is kept either way."
+    .clicked = endPause: "Quit", "Continue", 2, 0
+    if .clicked = 1
+        exitScript: ""
+    endif
+
+    ; The mechanical core, non-destructively. The switch is set immediately
+    ; before and cleared immediately after so that nothing else in the
+    ; session inherits it.
+    emlChannelKeepOriginal = 1
+    @emlApplyChannelChoice: .soundId, channel_handling
+    emlChannelKeepOriginal = 0
+    .resultId = emlApplyChannelChoice.resultId
+    .wasConverted = emlApplyChannelChoice.wasConverted
+    .choice$ = emlApplyChannelChoice.choice$
+
+    if .wasConverted = 1
+        ; Name the derived object for what it is. Praat's own names --
+        ; "<name>_mono", "<name>_ch1" -- are already distinct, but a user
+        ; scanning the Objects list a week later should not have to remember
+        ; which of two similar names came from which menu.
+        selectObject: .resultId
+        appendInfoLine: "Channel choice: ", .choice$, " applied to """,
+        ... .name$, """ for this ", .purpose$, ". The stereo original is",
+        ... " still in the Objects window; the figure is drawn from """,
+        ... selected$ ("Sound"), """."
+        ; --- stale-id repair, see the header ---
+        if variableExists ("originalSourceId")
+            if originalSourceId = .soundId
+                originalSourceId = .resultId
+            endif
+        endif
+        if variableExists ("contextObjectId")
+            if contextObjectId = .soundId
+                contextObjectId = .resultId
+            endif
+        endif
+        if variableExists ("contextOriginalSourceId")
+            if contextOriginalSourceId = .soundId
+                contextOriginalSourceId = .resultId
+            endif
+        endif
+        selectObject: .resultId
+    endif
+    label CHANNEL_GATE_END
 endproc
 
 # ----------------------------------------------------------------------------
@@ -4578,6 +5059,26 @@ procedure emlDrawLegendPanel: .x0, .x1, .y0, .y1, .fontSize
         emlPatWorldPerInchX = 1
         emlPatWorldPerInchY = 1
 
+        ; AND THE DATA FRAME IS SUSPENDED FOR THE SAME REASON, one line of
+        ; reasoning further on (15 Aug 2026). @emlSetPatternScale publishes
+        ; the plot's frame so @emlDrawMarker can decline to paint a datum
+        ; outside it (NEW-G8-1). This panel installs its OWN axes two lines
+        ; above, in which one world unit is one inch — so a swatch at y = 0.9
+        ; is compared against a data frame running 22 to 41 and refused, and
+        ; every key vanishes from the legend while the figure still looks
+        ; plausible. Measured on harness/stress_out/scatter_grouped.png: three
+        ; coloured dots gone, three labels left behind.
+        ;
+        ; The frame belongs to the plot's world and means nothing in this one,
+        ; so it is turned off here and restored on the way out beside the
+        ; scale it travels with. A clip is only meaningful against the axes it
+        ; was measured on.
+        .savedFrame = 0
+        if variableExists ("emlFrameKnown")
+            .savedFrame = emlFrameKnown
+        endif
+        emlFrameKnown = 0
+
         ; y is measured UPWARD from the rectangle's bottom in this world,
         ; while the arguments are picture inches measured DOWNWARD from the
         ; top, so the anchored top edge flips as it comes in.
@@ -4728,6 +5229,7 @@ procedure emlDrawLegendPanel: .x0, .x1, .y0, .y1, .fontSize
             emlPatWorldPerInchX = .savedSX
             emlPatWorldPerInchY = .savedSY
         endif
+        emlFrameKnown = .savedFrame
     endif
 
     ; NOTHING IS DROPPED OR SHORTENED IN SILENCE. Both notices come from
@@ -5605,6 +6107,18 @@ endproc
 #   .fallbackColor$ — Praat colour string for native fallback
 # ----------------------------------------------------------------------------
 procedure emlDrawAlphaDot: .x, .y, .groupIndex, .colorMode$, .alphaLevel$, .fallbackColor$
+    ; NEW-G8-1: the same frame test @emlDrawMarker applies. The two paths draw
+    ; the same scatter -- alpha sprites on macOS and Windows, native markers
+    ; on Linux -- so a clip in one and not the other would make the defect
+    ; platform-dependent, which is the hardest kind to find.
+    @emlPointInFrame: .x, .y
+    if emlPointInFrame.inside = 0
+        if variableExists ("emlClippedN") = 0
+            emlClippedN = 0
+        endif
+        emlClippedN = emlClippedN + 1
+        goto ALPHA_DOT_END
+    endif
     if emlInitAlphaSprites.available = 0
         # Fallback: native opaque dot
         Paint circle: .fallbackColor$, .x, .y, emlSetAlphaDotGeometry.stampHalfX
@@ -5633,6 +6147,7 @@ procedure emlDrawAlphaDot: .x, .y, .groupIndex, .colorMode$, .alphaLevel$, .fall
             Insert picture from file: .file$, .x - .hx, .x + .hx, .y - .hy, .y + .hy
         endif
     endif
+    label ALPHA_DOT_END
 endproc
 
 # ----------------------------------------------------------------------------
@@ -6559,6 +7074,36 @@ procedure emlConvertForGraph: .sourceId, .targetType$, .pitchFloor, .pitchTop
     ... + "They change the contour, so they belong in a methods section."
 
     if .srcType$ = "Sound"
+        ; THE RULING'S PARENTHESIS, WIRED (15 Aug 2026). "...and any
+        ; derived-object path where channel choice matters, e.g. before To
+        ; Pitch." All three acoustic conversions below hand a Sound to a
+        ; Praat command that will mix it down for itself if it is stereo,
+        ; and say nothing. To Pitch is the one that turns that into a wrong
+        ; NUMBER rather than a wrong picture -- 220 Hz left and 330 Hz right
+        ; come back as a contour near 110 Hz, an F0 in neither channel --
+        ; so the question is asked HERE, before the conversion, and not
+        ; after, when there is no longer a stereo object to ask about.
+        ;
+        ; @emlGraphsChannelGate passes anything mono straight through, so
+        ; the ordinary single-channel recording sees no dialog at all and
+        ; this is a no-op for it.
+        .gated = 0
+        if .targetType$ = "Pitch"
+            .gated = 1
+            @emlGraphsChannelGate: .sourceId, "pitch track"
+        elsif .targetType$ = "Spectrum"
+            .gated = 1
+            @emlGraphsChannelGate: .sourceId, "spectrum"
+        elsif .targetType$ = "Ltas"
+            .gated = 1
+            @emlGraphsChannelGate: .sourceId, "long-term average spectrum"
+        endif
+        if .gated = 1
+            if emlGraphsChannelGate.wasConverted = 1
+                .sourceId = emlGraphsChannelGate.resultId
+            endif
+        endif
+        selectObject: .sourceId
         if .targetType$ = "Pitch"
             .result = To Pitch (filtered autocorrelation): 0, .pitchFloor,
             ... .pitchTop, 15, "yes", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
@@ -6696,11 +7241,32 @@ procedure emlCleanConvertedTable: .tableId
         endif
     endfor
 
-    # Fix "?" cells in the row-label column
+    # FILL THE ROW-LABEL COLUMN WITH r1..rn -- THE ONE CONVENTION.
+    #
+    # Six doors coerce a Matrix or a TableOfReal into a Table, and on 15 Aug
+    # 2026 three of them disagreed about this column: describe filled r1..rn,
+    # @emlWrapperInit left it empty, and this one filled bare integers. A user
+    # got a different `row` column depending on which door they came in.
+    #
+    # r1..rn wins on one property: a column of bare integers reads as DATA. It
+    # is offered as a numeric variable in every picker, it will be correlated
+    # against, and nothing about "1, 2, 3" says "these are the row names of an
+    # object that never had any". The prefix costs one character and removes
+    # the ambiguity entirely.
+    #
+    # The empty test is not redundant. This procedure is also called AFTER a
+    # caller has already normalised -- @emlDescribeCoerceSelection fills first
+    # and then calls here for the header repair, and @eml_auditLabelColumn
+    # rewrites "?" to "" before this can run. Matching only "?" would leave
+    # those rows blank, which is the third convention arriving by the back
+    # door. v63 asserts r1..rn at each door separately, on purpose: three doors
+    # agreeing on the wrong thing would satisfy a parity check, and that is
+    # exactly how the two .std.resid arms disagreed for a week without a red
+    # line anywhere.
     for .iRow from 1 to .nRows
         .cellVal$ = Get value: .iRow, .rowColName$
-        if .cellVal$ = "?"
-            Set string value: .iRow, .rowColName$, string$ (.iRow)
+        if .cellVal$ = "?" or .cellVal$ = ""
+            Set string value: .iRow, .rowColName$, "r" + string$ (.iRow)
         endif
     endfor
 endproc

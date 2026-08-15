@@ -303,23 +303,28 @@ emlGraphsPresetYCol$ = ""
 emlGraphsPresetRegressionLine = 0
 emlGraphsPresetCorrType$ = ""
 emlGraphsPresetCorrection$ = ""
-# Scatter dot presets. 0 / -1 mean "not supplied" — a wrapper that wants the
-# figure drawn with a particular dot size or with points hidden sets these,
-# and the D103 sentinels below make that choice beat the remembered previous
-# dialog value on the second and later scatter of a session.
+# D4 / audit 14 Aug 2026 — THE SCATTER DOT-SIZE PRESET CHANNEL IS GONE.
 #
-# NOTE (7 Aug 2026): these two are the only preset slots no shipping caller
-# writes. Every other emlGraphsPreset* is set by at least one of the stats
-# wrappers; these are set ONLY here and in the clear block at the end of
-# @emlGraphsWorkflow, so the two reads in PRESET READING never fire in
-# practice. That is not a defect and the reads are not dead: the sentinels
-# below are exactly what make "unset" safe, so both branches are correctly
-# skipped rather than acting on an undefined value. The slot is left wired
-# end to end because it is the bridge's only channel for dot appearance —
-# the wrapper side is the half that is missing, not this one. Anything that
-# changes here must change in the clear block too.
-emlGraphsPresetDotSize = 0
-emlGraphsPresetShowDots = -1
+# emlGraphsPresetDotSize and emlGraphsPresetShowDots used to sit here, with a
+# read block in PRESET READING, a D103 sentinel each, a consumption arm on the
+# scatter page and a line each in the clear block: ten live lines, end to end,
+# for a channel NO SHIPPING CALLER EVER WROTE. The note that stood here said
+# so plainly and defended it — "the slot is left wired end to end because it is
+# the bridge's only channel for dot appearance; the wrapper side is the half
+# that is missing, not this one" — and the 14 August audit filed the same
+# observation as a finding (D4, severity 4).
+#
+# THE ARGUMENT FOR DELETING IT IS D7, three findings up the same page. D7 is a
+# preset channel whose CONSUMER contract was never exercised on the journey
+# users actually take, and it stayed wrong for a month because nothing on any
+# journey could tell the working case from the broken one. A channel with no
+# producer is that same shape with the evidence removed entirely: it cannot be
+# driven, so it cannot be shown to work, so what is carried is not a feature
+# but the appearance of one. Whoever adds a wrapper that wants to hand this
+# form a dot size adds the read with it, and the pair gets driven together in
+# the same commit. Nothing else in the file changes behaviour: both sentinels
+# were permanently 0, so both arms they guarded were dead branches and the
+# `elsif prev_scatter*` fallbacks they preceded are what actually ran.
 
 # D103 — "a preset arrived for this call" sentinels.
 #
@@ -332,8 +337,6 @@ emlGraphsPresetShowDots = -1
 # consumes it, so a preset wins when present and the remembered value still
 # applies when it is absent. Same shape as scatterPresetHasGroup.
 scatterPresetHasRegression = 0
-scatterPresetHasDotSize = 0
-scatterPresetHasDots = 0
 scatterPresetHasGroup = 0
 histPresetHasGroup = 0
 spPresetHasGroup = 0
@@ -1199,6 +1202,68 @@ procedure emlCommitLegendPlacement: .chosen
 endproc
 
 # ============================================================================
+# PROCEDURES — Custom axis labels: one store, keyed by graph type
+# ============================================================================
+#
+# D1/D2, audit 14 Aug 2026. A user typed "G8 custom time axis (s)" into the
+# Pitch page's X axis label, drew, pressed Redraw and found the box EMPTY --
+# in the same session, on the same graph type, with the font and the DPI they
+# had set on the same dialog still in place. Every column-mapping page opened
+# with an unconditional
+#
+#     tmpXLabel$ = ""
+#     tmpYLabel$ = ""
+#
+# and the only restore in the file lived inside the Advanced/Beginner TOGGLE
+# handler, so the value came back if you toggled twice and never otherwise.
+# The same absence is what made the advanced stash appear to "die on a type
+# switch" (audit §6): the stash was never dead, the page just overwrote it on
+# entry. One store, read on entry, fixes both.
+#
+# WHY A TYPE-KEYED ARRAY AND NOT THE CONFIG FILE. `config_xLabel$` and
+# `config_yLabel$` are written by @emlSaveConfig and parsed by @emlLoadConfig
+# and are read by NOTHING -- and they cannot honestly be wired up as they
+# stand, because they are ONE pair of keys for THIRTEEN graph types. "Time
+# (s)" restored onto a bar chart's group axis is not persistence, it is a
+# wrong label with a user's own words in it. They stay in the file as the
+# format is on disk already and an unknown key is not the config parser's
+# problem to have; what they are not is this fix. Within a session the label
+# belongs to the type it was typed for, which is what this array says.
+#
+# BEGINNER MODE READS NOTHING. The beginner page has no axis-label field, and
+# the author's ruling of 13 Aug 2026 is that beginner mode draws only what its
+# own dialog offers. Seeding a stored label into a page that cannot show it
+# would put a label on a figure with nothing on screen to explain it.
+# ----------------------------------------------------------------------------
+# @emlSeedAxisLabels
+# Reads the globals `graph_type` and `config_showAdvanced`; writes the globals
+# `tmpXLabel$` and `tmpYLabel$`. Called at the top of every page.
+# ----------------------------------------------------------------------------
+procedure emlSeedAxisLabels
+    tmpXLabel$ = ""
+    tmpYLabel$ = ""
+    if config_showAdvanced = 1
+        if graph_type >= 1 and graph_type <= nGraphTypes
+            tmpXLabel$ = prevAxisXLabel$ [graph_type]
+            tmpYLabel$ = prevAxisYLabel$ [graph_type]
+        endif
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlCommitAxisLabels: .x$, .y$
+# Records what the advanced dialog returned, against the type it was typed on.
+# Called from both places the advanced block hands its values back: the Draw
+# commit and the toggle-to-beginner stash.
+# ----------------------------------------------------------------------------
+procedure emlCommitAxisLabels: .x$, .y$
+    if graph_type >= 1 and graph_type <= nGraphTypes
+        prevAxisXLabel$ [graph_type] = .x$
+        prevAxisYLabel$ [graph_type] = .y$
+    endif
+endproc
+
+# ============================================================================
 # PROCEDURES — Context detection
 # ============================================================================
 
@@ -1863,6 +1928,29 @@ procedure emlGraphsDispatchDraw
     # the legend rectangle to @emlExpandDrawnExtent from inside
     # @emlDrawLegend. See EXPORT GEOMETRY above @emlDrawLegendPanel.
     emlLegendPlacement = config_legendPlacement
+    # D8, audit 14 Aug 2026 — BEGINNER MODE DRAWS THE IN-PLOT LEGEND, WHATEVER
+    # AN EARLIER ADVANCED SESSION LEFT ON DISK.
+    #
+    # config_legendPlacement is written ONLY by @emlCommitLegendPlacement, and
+    # every one of its call sites sits inside the `if config_showAdvanced` arm
+    # of a column-mapping commit -- because the "Legend placement" field only
+    # exists on the advanced page. That is correct as far as it goes: a
+    # beginner page has no field, so it has nothing to commit. What it left
+    # behind is a persisted value with no way to change it and no way to see
+    # it. A user who once chose "Separate figure" in advanced mode, quit, and
+    # came back in beginner mode got an unrequested <stem>_legend.png out of
+    # the Save panel, from a dialog that had never mentioned legends -- driven
+    # and photographed, audit leg G8 step 16.
+    #
+    # THE VALUE IS NOT UNWRITTEN, IT IS OVERRIDDEN FOR THE DRAW. Same rule as
+    # the beginner display-element block further down: write the RENDERING
+    # global, never config_*, so the advanced preference is still there the
+    # moment the user switches back. 1 is "Inside plot", which is the corner
+    # box every caller predating D136 draws and the only placement the
+    # beginner page has ever produced.
+    if config_showAdvanced = 0
+        emlLegendPlacement = 1
+    endif
     # Cleared before the draw as well as inside @emlDrawLegend, because a
     # figure whose type has no legend at all never reaches that procedure and
     # would otherwise leave the previous figure's parked rectangle armed.
@@ -1988,8 +2076,30 @@ procedure emlGraphsDrawWithLegendRoom
     legendRoomPass = 1
     legendRoomAgain = 1
 
+    # NEW-G8-3, THE HALF THE PRESS-LEVEL RESET DOES NOT REACH — and it is not
+    # hypothetical, it was measured on 15 Aug 2026 by driving three scatter
+    # draws through harness/graphseams and reading the exported CSV: every
+    # (table, analysis, term, field) key appeared TWICE per press.
+    #
+    # The scatter's reporters run from inside @emlDrawScatterPlot, so they run
+    # once per PASS, and this loop dispatches twice whenever a legend inside
+    # the plot needs y-axis room. The comment above says pass 1 "is thrown away
+    # entirely"; its CSV rows were the part that was not. The Info window's
+    # duplication is deliberate and LABELLED (see above) because Praat cannot
+    # un-print a flushed line. A file it has not written yet is a different
+    # matter: the rows can simply be rewound, and a figure that was never on
+    # the page has no business in the export.
+    #
+    # THE MARK IS TAKEN HERE, not zeroed, because the annotation bridge has
+    # already run and its rows belong to this press. Rewinding to the mark
+    # discards exactly what a pass added and nothing that preceded it. The pair
+    # lives in stats/eml-output.praat with the collector it counts.
+    @emlCSVMark
+
     while legendRoomAgain = 1
         legendRoomAgain = 0
+
+        @emlCSVRewind
 
         @emlGraphsDispatchDraw
 
@@ -2047,7 +2157,12 @@ procedure emlGraphsDrawWithLegendRoom
             endif
 
             if legendRoomAxis > 0
-                @emlLegendHeadroomAfterDraw: config_legendPlacement,
+                # emlLegendPlacement, NOT config_legendPlacement. This runs
+                # after @emlGraphsDispatchDraw, which resolves the persisted
+                # value into the one the figure was actually drawn with --
+                # including the D8 beginner-mode override. Reading config here
+                # would ask for headroom for a legend that is not on the page.
+                @emlLegendHeadroomAfterDraw: emlLegendPlacement,
                 ... emlDrawLegend.position$, legendRoomBaseMin,
                 ... legendRoomBaseMax, emlSetAdaptiveTheme.annotSize,
                 ... legendRoomAxis
@@ -2554,7 +2669,34 @@ prev_title$ = ""
 # to tell an accepted auto-title (recompose from the new mapping) from a
 # deliberate one (leave it alone).
 prev_autoTitle$ = ""
-prev_subtitle$ = ""
+# §6 (audit 14 Aug 2026). Which graph type prev_autoTitle$ was composed FOR.
+# 0 = none composed yet. See the block after the main form.
+prev_autoTitleType = 0
+# D1/D2 SUBTITLE HALF, audit 14 Aug 2026. This used to be "". @emlSaveConfig
+# writes `subtitle:` on every exit and @emlLoadConfig parses it back into
+# config_subtitle$ -- which was then read into emlSubtitle$ before the main
+# form and IMMEDIATELY overwritten by the form's own blank field, because the
+# field is seeded from prev_subtitle$ and prev_subtitle$ started empty. So the
+# value survived to disk, survived the reload, and died two lines before it
+# could be shown: reopen the form and the Subtitle box is blank, press
+# Continue once and the saved value is gone (audit leg G8 step 8). Seeding
+# from the config is the whole fix, and it belongs HERE, in the sentinel block
+# that runs once per session -- not per workflow call, or a wrapper's second
+# Draw would resurrect a subtitle the user had just cleared.
+prev_subtitle$ = config_subtitle$
+
+# D1/D2. The per-type custom axis-label store; see @emlSeedAxisLabels. EVERY
+# TYPE IS INITIALISED, not left to the first write: Praat has no empty default
+# for an indexed variable, and a read of one that was never assigned is not ""
+# but "Undefined indexed variable «prevAxisXLabel$[7]». Formula not run." --
+# which is what the advanced leg of harness/graphseams met on 15 Aug 2026 when
+# this loop was left out. The seed procedure reads only in advanced mode, so
+# every beginner journey was clean and the omission surfaced on exactly one
+# page of one leg.
+for iAxisLbl from 1 to nGraphTypes
+    prevAxisXLabel$ [iAxisLbl] = ""
+    prevAxisYLabel$ [iAxisLbl] = ""
+endfor
 prev_f0_timeMin = 0
 prev_f0_timeMax = 0
 prev_f0_freqMin = 0
@@ -2726,17 +2868,8 @@ scatterShowDots = 1
         emlGraphsPresetRegressionLine = 0
     endif
 
-    if emlGraphsPresetDotSize > 0
-        scatterDotSize = emlGraphsPresetDotSize
-        scatterPresetHasDotSize = 1
-        emlGraphsPresetDotSize = 0
-    endif
-
-    if emlGraphsPresetShowDots >= 0
-        scatterShowDots = emlGraphsPresetShowDots
-        scatterPresetHasDots = 1
-        emlGraphsPresetShowDots = -1
-    endif
+    # D4. The dot-size and show-dots reads stood here. See the note at file
+    # scope: no caller ever wrote either global, so neither branch ever ran.
 
     if emlGraphsPresetCorrType$ <> ""
         annotCorrType$ = emlGraphsPresetCorrType$
@@ -2948,6 +3081,28 @@ repeat
 
     # Capture form values
     graphTypeDefault = graph_type
+    # §6, audit 14 Aug 2026 — THE PRE-FILLED TITLE BELONGS TO A GRAPH TYPE.
+    #
+    # After a Draw, prev_title$ holds the composed title so that Redraw shows
+    # it as editable text rather than an empty box (D43/D89). It is offered
+    # again on the SAME dialog that chooses the graph type, so a user who
+    # pressed Redraw and switched from Bar to Violin was reading "F0 (Hz) by
+    # group (demo 2groups)" in the Title field with Violin selected. The
+    # DRAWN title was never wrong -- the composer runs again before dispatch
+    # and `title$ = prev_autoTitle$` recognises an untouched auto-title and
+    # recomposes it -- but the field said otherwise for the whole of the
+    # column-mapping stage, and one keystroke in that box would have made the
+    # stale text deliberate and permanent.
+    #
+    # So an auto-title is dropped the moment it stops describing the type it
+    # was composed for. A title the USER typed is not touched: it fails the
+    # equality test, which is the same test the pre-dispatch block uses, on
+    # purpose -- two rules for "did the user mean this text" would drift.
+    if title$ = prev_autoTitle$ and graph_type <> prev_autoTitleType
+        title$ = ""
+        prev_autoTitle$ = ""
+        prev_autoTitleType = 0
+    endif
     prev_title$ = title$
     prev_subtitle$ = subtitle$
     emlSubtitle$ = subtitle$
@@ -3079,6 +3234,44 @@ repeat
 
     until acquireDone = 1
 
+    # =================================================================
+    # STEREO CHANNEL CHOICE — the author's ruling of 14 Aug 2026
+    # =================================================================
+    # "Stereo channel handling: ABSOLUTELY NECESSARY -- wire it. The
+    # Mix-to-mono / Left / Right choice must be reachable when an audio
+    # object is stereo."
+    #
+    # @emlHandleStereo, @emlCheckChannels and @emlApplyChannelChoice have
+    # existed in graphs/eml-graph-procedures.praat since v3.18 with ZERO
+    # callers anywhere in the plugin, so a stereo recording -- which in a
+    # lab that records EGG alongside the microphone is most of them --
+    # reached a figure with no question asked. This is the call site that
+    # makes the choice reachable for a figure drawn from the Sound ITSELF:
+    # the waveform, where Praat stacks the two channels in half-height
+    # panels underneath a single amplitude axis that then describes neither
+    # of them.
+    #
+    # THE DERIVED PATHS ARE GATED ELSEWHERE, and deliberately so. Pitch,
+    # Spectrum and LTAS are converted inside the acquire block above, before
+    # this line is reached, so a gate here would be asking after the answer
+    # had already been used. @emlConvertForGraph calls the same gate
+    # immediately before its own To Pitch / To Spectrum / To Ltas -- which
+    # is the ruling's "e.g. before To Pitch" -- and by the time control
+    # arrives here objectId is a Pitch or a Spectrum, which this gate passes
+    # through untouched. One question per figure, asked at the last moment
+    # it can still change the answer.
+    #
+    # It passes mono Sounds through in silence, so nothing changes for a
+    # single-channel recording, and it keeps the user's original object.
+    @emlGraphsChannelGate: objectId, "waveform"
+    if emlGraphsChannelGate.wasConverted = 1
+        objectId = emlGraphsChannelGate.resultId
+        if loadedObjectId > 0
+            loadedObjectId = objectId
+        endif
+        selectObject: objectId
+    endif
+
     # For Table types, snapshot column names
     if isTableType[graph_type]
         selectObject: objectId
@@ -3177,8 +3370,7 @@ repeat
             tmpFMax$ = "0"
             tmpYUnit = 1
         endif
-        tmpXLabel$ = ""
-        tmpYLabel$ = ""
+        @emlSeedAxisLabels
         tmpPitchFloor$ = string$ (prev_f0_pitchFloor)
         tmpPitchCeiling$ = string$ (prev_f0_pitchCeiling)
 
@@ -3236,8 +3428,7 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels"
-                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
+                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -3270,6 +3461,10 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    # D1/D2. Record what the advanced page returned before the beginner
+                    # reset below blanks it, so re-entering advanced -- on this type or
+                    # after a detour through another one -- gets it back.
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     # Toggling TO beginner: reset advanced-only fields
                     @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
@@ -3318,6 +3513,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
@@ -3387,8 +3583,7 @@ repeat
             tmpAMin$ = "0"
             tmpAMax$ = "0"
         endif
-        tmpXLabel$ = ""
-        tmpYLabel$ = ""
+        @emlSeedAxisLabels
 
         wavFormDone = 0
         repeat
@@ -3435,8 +3630,7 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels"
-                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
+                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -3462,6 +3656,10 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    # D1/D2. Record what the advanced page returned before the beginner
+                    # reset below blanks it, so re-entering advanced -- on this type or
+                    # after a detour through another one -- gets it back.
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     # Toggling TO beginner: reset advanced-only fields
                     @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
@@ -3497,6 +3695,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
@@ -3538,8 +3737,7 @@ repeat
             tmpPMin$ = "0"
             tmpPMax$ = "0"
         endif
-        tmpXLabel$ = ""
-        tmpYLabel$ = ""
+        @emlSeedAxisLabels
 
         specFormDone = 0
         repeat
@@ -3586,8 +3784,7 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels"
-                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
+                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -3613,6 +3810,10 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    # D1/D2. Record what the advanced page returned before the beginner
+                    # reset below blanks it, so re-entering advanced -- on this type or
+                    # after a detour through another one -- gets it back.
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     # Toggling TO beginner: reset advanced-only fields
                     @emlSeedGridMode
                     tmpShowInnerBox = config_showInnerBox
@@ -3648,6 +3849,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
@@ -3697,8 +3899,7 @@ repeat
             tmpShowPoles = 0
             tmpShowSpeckles = 0
         endif
-        tmpXLabel$ = ""
-        tmpYLabel$ = ""
+        @emlSeedAxisLabels
 
         ltasFormDone = 0
         repeat
@@ -3750,8 +3951,7 @@ repeat
                     boolean: "Show bars", tmpShowBars
                     boolean: "Show poles", tmpShowPoles
                     boolean: "Show speckles", tmpShowSpeckles
-                    comment: "🏷️ Axis labels"
-                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
+                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -3777,6 +3977,10 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    # D1/D2. Record what the advanced page returned before the beginner
+                    # reset below blanks it, so re-entering advanced -- on this type or
+                    # after a detour through another one -- gets it back.
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     tmpShowCurve = show_curve
                     tmpShowBars = show_bars
                     tmpShowPoles = show_poles
@@ -3820,6 +4024,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     tmpShowCurve = show_curve
                     tmpShowBars = show_bars
                     tmpShowPoles = show_poles
@@ -3971,8 +4176,7 @@ repeat
             tmpVMin$ = "0"
             tmpVMax$ = "0"
         endif
-        tmpXLabel$ = ""
-        tmpYLabel$ = ""
+        @emlSeedAxisLabels
 
         # Default format from previous pass or 1 (wide)
         if prev_tsDataFormat > 0
@@ -3986,10 +4190,17 @@ repeat
         repeat
             # --- Format selection ---
             beginPause: "Line Chart -- Data Format"
+                # §6, audit 14 Aug 2026: "Line Chart's data-format explainer is
+                # overlapped by its own optionmenu". Four comment rows, one of
+                # them empty and two of them long enough to be the widest thing
+                # in the dialog, sat immediately above the menu they describe.
+                # Praat sizes a pause dialog from its field list and a `comment:`
+                # is not measured the way a labelled field is, so the widest
+                # comment decides the WIDTH and the menu below it is laid out
+                # against a row pitch that the long labels overrun. Two short
+                # rows, no blank spacer, and the same two facts.
                 comment: "How is your data organized?"
-                comment: ""
-                comment: "Wide: each series is a separate column (e.g., time, F1, F2)"
-                comment: "Long: one value column with a group identifier"
+                comment: "Wide: one column per series · Long: value + group"
                 optionmenu: "Data format", tsDataFormat
                     option: "Wide (multiple columns)"
                     option: "Long (value + group)"
@@ -4102,8 +4313,7 @@ repeat
                                 option: "Times"
                                 option: "Palatino"
                                 option: "Courier"
-                            comment: "🏷️ Axis labels (blank = auto from column)"
-                            comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
+                            comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
                             sentence: "X axis label", tmpXLabel$
                             sentence: "Y axis label", tmpYLabel$
                         endif
@@ -4147,6 +4357,10 @@ repeat
                             tmpDPI = output_DPI
                             tmpXLabel$ = x_axis_label$
                             tmpYLabel$ = y_axis_label$
+                            # D1/D2. Record what the advanced page returned before the beginner
+                            # reset below blanks it, so re-entering advanced -- on this type or
+                            # after a detour through another one -- gets it back.
+                            @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                             # Toggling TO beginner: reset advanced-only fields
                             tmpTMin$ = "0"
                             tmpTMax$ = "0"
@@ -4186,6 +4400,7 @@ repeat
                             tmpDPI = output_DPI
                             tmpXLabel$ = x_axis_label$
                             tmpYLabel$ = y_axis_label$
+                            @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                             @emlCommitGridMode: gridline_mode
                             @emlCommitLegendPlacement: legend_placement
                             emlShowInnerBox = show_inner_box
@@ -4409,8 +4624,7 @@ repeat
             tmpVMax$ = "0"
         endif
         tmpDPI = config_outputDPI
-        tmpXLabel$ = ""
-        tmpYLabel$ = ""
+        @emlSeedAxisLabels
         tmpBarTestType = 1
         if annotTestType$ = "nonparametric"
             tmpBarTestType = 2
@@ -4500,10 +4714,35 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
+                elsif emlGraphsPresetAnnotate > 0
+                    # D7, audit 14 Aug 2026 — THE ONE CONTROL A WRAPPER'S
+                    # REQUEST NEEDS, ON THE PAGE THE REQUEST ARRIVES AT.
+                    #
+                    # A stats wrapper that found something sets
+                    # emlGraphsPresetAnnotate = 1 and hands the user to this
+                    # form. The beginner commit below then set annotate = 0 --
+                    # correctly, by the author's ruling of 13 Aug 2026:
+                    # BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG OFFERS. The
+                    # consequence was that the DEFAULT journey -- run a test,
+                    # press Draw, press Draw again -- drew a significant result
+                    # with nothing on it, and the request came back only if the
+                    # user happened to toggle to Advanced (the restore arm in
+                    # the toggle handler, which validate/v51 pins).
+                    #
+                    # Neither half of that was wrong. What was missing is the
+                    # third option: if the setting is to survive a beginner
+                    # draw, the beginner dialog has to OFFER it. So it does --
+                    # only on the pass where a caller actually asked, pre-ticked
+                    # because asking is what the wrapper did, and untickable,
+                    # which is the part a hidden carried-over flag could never
+                    # have been. The ruling stands unedited: this page now
+                    # offers annotation, so drawing it is drawing what the
+                    # dialog offers.
+                    comment: "📈 Your analysis found a result to put on this figure."
+                    boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", barToggleLabel$, "Draw", 4, 1
 
@@ -4541,6 +4780,14 @@ repeat
                     prev_adv_bar_YLabel$ = y_axis_label$
                     # Reset to beginner defaults
                     annotate = 0
+                    # D7. The wrapper's request, honoured on the page that
+                    # now offers it. `annotate_results_on_graph` exists here for
+                    # exactly the reason the field above exists -- the same
+                    # condition put it on the dialog -- and it carries the
+                    # user's tick, which may well be a DE-tick.
+                    if emlGraphsPresetAnnotate > 0
+                        annotate = annotate_results_on_graph
+                    endif
                     annotShowNS = 0
                     annotShowEffect = 0
                     annotLayoutMode = 1
@@ -4555,6 +4802,10 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
+                    # D1/D2. Record what the advanced page returned before the
+                    # beginner reset blanks it, so re-entering advanced -- on this
+                    # type or after a detour through another one -- gets it back.
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     tmpXLabel$ = ""
                     tmpYLabel$ = ""
                 else
@@ -4620,6 +4871,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
@@ -4654,6 +4906,14 @@ repeat
                 else
                     # Beginner defaults: reset all advanced-only fields
                     annotate = 0
+                    # D7. The wrapper's request, honoured on the page that
+                    # now offers it. `annotate_results_on_graph` exists here for
+                    # exactly the reason the field above exists -- the same
+                    # condition put it on the dialog -- and it carries the
+                    # user's tick, which may well be a DE-tick.
+                    if emlGraphsPresetAnnotate > 0
+                        annotate = annotate_results_on_graph
+                    endif
                     annotShowNS = 0
                     annotShowEffect = 0
                     annotLayoutMode = 1
@@ -4789,8 +5049,7 @@ repeat
             tmpVMax$ = "0"
         endif
         tmpDPI = config_outputDPI
-        tmpXLabel$ = ""
-        tmpYLabel$ = ""
+        @emlSeedAxisLabels
         tmpViolinTestType = 1
         if annotTestType$ = "nonparametric"
             tmpViolinTestType = 2
@@ -4874,10 +5133,35 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
+                elsif emlGraphsPresetAnnotate > 0
+                    # D7, audit 14 Aug 2026 — THE ONE CONTROL A WRAPPER'S
+                    # REQUEST NEEDS, ON THE PAGE THE REQUEST ARRIVES AT.
+                    #
+                    # A stats wrapper that found something sets
+                    # emlGraphsPresetAnnotate = 1 and hands the user to this
+                    # form. The beginner commit below then set annotate = 0 --
+                    # correctly, by the author's ruling of 13 Aug 2026:
+                    # BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG OFFERS. The
+                    # consequence was that the DEFAULT journey -- run a test,
+                    # press Draw, press Draw again -- drew a significant result
+                    # with nothing on it, and the request came back only if the
+                    # user happened to toggle to Advanced (the restore arm in
+                    # the toggle handler, which validate/v51 pins).
+                    #
+                    # Neither half of that was wrong. What was missing is the
+                    # third option: if the setting is to survive a beginner
+                    # draw, the beginner dialog has to OFFER it. So it does --
+                    # only on the pass where a caller actually asked, pre-ticked
+                    # because asking is what the wrapper did, and untickable,
+                    # which is the part a hidden carried-over flag could never
+                    # have been. The ruling stands unedited: this page now
+                    # offers annotation, so drawing it is drawing what the
+                    # dialog offers.
+                    comment: "📈 Your analysis found a result to put on this figure."
+                    boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", violinToggleLabel$, "Draw", 4, 1
 
@@ -4915,6 +5199,14 @@ repeat
                     prev_adv_vio_YLabel$ = y_axis_label$
                     # Reset to beginner defaults
                     annotate = 0
+                    # D7. The wrapper's request, honoured on the page that
+                    # now offers it. `annotate_results_on_graph` exists here for
+                    # exactly the reason the field above exists -- the same
+                    # condition put it on the dialog -- and it carries the
+                    # user's tick, which may well be a DE-tick.
+                    if emlGraphsPresetAnnotate > 0
+                        annotate = annotate_results_on_graph
+                    endif
                     annotShowNS = 0
                     annotShowEffect = 0
                     annotLayoutMode = 1
@@ -4930,6 +5222,10 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
+                    # D1/D2. Record what the advanced page returned before the
+                    # beginner reset blanks it, so re-entering advanced -- on this
+                    # type or after a detour through another one -- gets it back.
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     tmpXLabel$ = ""
                     tmpYLabel$ = ""
                 else
@@ -4996,6 +5292,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
@@ -5031,6 +5328,14 @@ repeat
                 else
                     # Beginner defaults: reset all advanced-only fields
                     annotate = 0
+                    # D7. The wrapper's request, honoured on the page that
+                    # now offers it. `annotate_results_on_graph` exists here for
+                    # exactly the reason the field above exists -- the same
+                    # condition put it on the dialog -- and it carries the
+                    # user's tick, which may well be a DE-tick.
+                    if emlGraphsPresetAnnotate > 0
+                        annotate = annotate_results_on_graph
+                    endif
                     annotShowNS = 0
                     annotShowEffect = 0
                     annotLayoutMode = 1
@@ -5175,8 +5480,7 @@ repeat
             tmpYMin$ = "0"
             tmpYMax$ = "0"
         endif
-        tmpXLabel$ = ""
-        tmpYLabel$ = ""
+        @emlSeedAxisLabels
 
         # Correlation method defaults (1=None, 2=Pearson, 3=Spearman, 4=Both)
         if annotCorrType$ = "both"
@@ -5224,16 +5528,15 @@ repeat
             tmpRegression = 1
         endif
 
-        # Scatter-specific controls — same preset-beats-remembered rule (D103)
-        if scatterPresetHasDotSize
-            scatterPresetHasDotSize = 0
-        elsif prev_scatterDotSize > 0
+        # Scatter-specific controls. These two used to carry a D103
+        # preset-beats-remembered arm each; the preset half was deleted with
+        # the channel (D4, see file scope), and what is left is what always
+        # ran — the value the user last chose in this dialog.
+        if prev_scatterDotSize > 0
             scatterDotSize = prev_scatterDotSize
         endif
         tmpDotSize = scatterDotSize
-        if scatterPresetHasDots
-            scatterPresetHasDots = 0
-        elsif prev_scatterShowDots >= 0
+        if prev_scatterShowDots >= 0
             scatterShowDots = prev_scatterShowDots
         endif
         tmpShowDots = scatterShowDots
@@ -5265,16 +5568,69 @@ repeat
                     for iCol from 1 to nCols
                         option: colName$[iCol]
                     endfor
+                # D11, audit 14 Aug 2026 — A FIELD THAT CANNOT BE
+                # DISCARDED, BECAUSE IT IS NOT THERE TO DISCARD.
+                #
+                # "Group column" and "Group order" used to sit active and
+                # editable while "Use group column" was clear, and the commit
+                # then threw the chosen column away without a word: driven on
+                # demo_2groups with the box clear and "group" selected, the
+                # figure came back overall-only, N = 40, one r (audit leg G9g).
+                # A control the user can set, that does nothing, and says
+                # nothing, is the worst of the three states.
+                #
+                # Praat pause dialogs have no callbacks, so a field cannot grey
+                # itself out when a box above it changes. What a form CAN do is
+                # be built differently on the next pass, which is what this is:
+                # the group fields exist only when the box is ticked, and
+                # ticking the box re-raises the page WITH them (see the commit
+                # branch). The flag is read again in both commit branches --
+                # a form variable Praat never created cannot be referenced, and
+                # asking for one is a run-time abort, not a blank.
+                scatterGroupShown = tmpUseGroup
                 boolean: "Use group column", tmpUseGroup
-                optionmenu: "Group column", scatterGroupIdx
-                    for iCol from 1 to nCols
-                        option: colName$[iCol]
-                    endfor
-                optionmenu: "Group order", prev_groupSort
-                    option: "Table order"
-                    option: "Alphabetical"
+                if scatterGroupShown = 1
+                    optionmenu: "Group column", scatterGroupIdx
+                        for iCol from 1 to nCols
+                            option: colName$[iCol]
+                        endfor
+                    optionmenu: "Group order", prev_groupSort
+                        option: "Table order"
+                        option: "Alphabetical"
+                endif
                 if config_showAdvanced
-                    comment: "─────────────────────────────────────"
+                    # §6, audit 14 Aug 2026 — THE TALLEST DIALOG IN THE PLUGIN.
+                    #
+                    # MEASURED, 15 Aug 2026, on a screen tall enough not to
+                    # clamp it (Xvfb 1400x1900, no title bar): this page asked
+                    # for 1065 PIXELS. On the 1000px display the audit drove,
+                    # the window manager hands it 976 and the rest -- the Go
+                    # Back/Quit/Beginner/Draw row -- is off the bottom of the
+                    # screen. The audit reached Draw by keyboard. A control you
+                    # cannot click is a broken path, not a cosmetic complaint.
+                    #
+                    # THREE ROWS CAME OFF HERE: two decorative rules, and the
+                    # "Formatting:" help line, which is now the tail of the
+                    # axis-labels heading it belonged to -- on all thirteen
+                    # pages, since every one of them carried the same pair.
+                    # Re-measured the same way: 999px. Sixty-six pixels, and
+                    # the honest reading of that number is that it is not
+                    # enough -- 999 still does not fit in 976, and a 768px
+                    # laptop was never in question.
+                    #
+                    # WHAT THAT DOES NOT DO IS FIX IT. Trimming rows buys
+                    # headroom; it does not change the fact that one dialog
+                    # carries a column mapping, an analysis specification and a
+                    # complete figure-layout panel. The structural answer is the
+                    # one the audit names -- split the advanced page in two, as
+                    # the Line Chart already splits Data Format from Column
+                    # Mapping -- and it is not a layout change: the
+                    # Advanced/Beginner toggle STASHES the layout fields at the
+                    # moment it is pressed (`prev_adv_sca_*` below), so those
+                    # fields have to exist on whichever page the toggle lives
+                    # on. Splitting the page means moving the mode-stash
+                    # contract with it, which wants its own pass and its own
+                    # drive rather than being folded into a defect batch.
                     comment: "📊 Analysis"
                     optionmenu: "Correlation method", tmpCorrType
                         option: "None"
@@ -5300,7 +5656,6 @@ repeat
                     real: "X minimum", tmpXMin$
                     real: "Y maximum", tmpYMax$
                     real: "Y minimum", tmpYMin$
-                    comment: "─────────────────────────────────────"
                     comment: "🎨 Layout"
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Both"
@@ -5337,8 +5692,7 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -5352,9 +5706,11 @@ repeat
             elsif clicked = 3
                 scatterXIdx = x_column
                 scatterYIdx = y_column
-                scatterGroupIdx = group_column
-                prev_groupSort = group_order
-                config_groupSort = group_order
+                if scatterGroupShown = 1
+                    scatterGroupIdx = group_column
+                    prev_groupSort = group_order
+                    config_groupSort = group_order
+                endif
                 tmpUseGroup = use_group_column
                 if config_showAdvanced
                     # Toggling TO beginner: save advanced state
@@ -5394,6 +5750,10 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
+                    # D1/D2. Record what the advanced page returned before the
+                    # beginner reset blanks it, so re-entering advanced -- on this
+                    # type or after a detour through another one -- gets it back.
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     tmpXLabel$ = ""
                     tmpYLabel$ = ""
                 else
@@ -5439,6 +5799,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     @emlCommitGridMode: gridline_mode
                     @emlCommitLegendPlacement: legend_placement
                     emlShowInnerBox = show_inner_box
@@ -5520,17 +5881,36 @@ repeat
 
                 scatterXCol$ = x_column$
                 scatterYCol$ = y_column$
+                # D11. The group fields were on the dialog only if the box was
+                # already ticked when it was built, so their values are read
+                # only then; otherwise the remembered index stands, clamped
+                # because a table can have changed shape under it.
+                if scatterGroupShown = 1
+                    scatterGroupIdx = group_column
+                    prev_groupSort = group_order
+                    config_groupSort = group_order
+                endif
+                if scatterGroupIdx < 1 or scatterGroupIdx > nCols
+                    scatterGroupIdx = 1
+                endif
                 if use_group_column = 1
-                    scatterGroupCol$ = group_column$
+                    scatterGroupCol$ = colName$ [scatterGroupIdx]
                 else
                     scatterGroupCol$ = ""
+                endif
+                # THE BOX WAS JUST TICKED. Nothing on the dialog said which
+                # column would be used, so nothing is drawn from a column the
+                # user has not seen: the page comes back with the two fields
+                # on it, seeded with the guess, and Draw means Draw next time.
+                if use_group_column = 1 and scatterGroupShown = 0
+                    tmpUseGroup = 1
+                    scatterFormDone = 0
+                    allFormsDone = 0
                 endif
 
                 prev_scatterXIdx = x_column
                 prev_scatterYIdx = y_column
-                prev_scatterGroupIdx = group_column
-                prev_groupSort = group_order
-                config_groupSort = group_order
+                prev_scatterGroupIdx = scatterGroupIdx
 
                 valueMin = number (tmpYMin$)
                 valueMax = number (tmpYMax$)
@@ -5637,8 +6017,7 @@ repeat
             tmpVMax$ = "0"
         endif
         tmpDPI = config_outputDPI
-        tmpXLabel$ = ""
-        tmpYLabel$ = ""
+        @emlSeedAxisLabels
         tmpBoxTestType = 1
         if annotTestType$ = "nonparametric"
             tmpBoxTestType = 2
@@ -5722,10 +6101,35 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
+                elsif emlGraphsPresetAnnotate > 0
+                    # D7, audit 14 Aug 2026 — THE ONE CONTROL A WRAPPER'S
+                    # REQUEST NEEDS, ON THE PAGE THE REQUEST ARRIVES AT.
+                    #
+                    # A stats wrapper that found something sets
+                    # emlGraphsPresetAnnotate = 1 and hands the user to this
+                    # form. The beginner commit below then set annotate = 0 --
+                    # correctly, by the author's ruling of 13 Aug 2026:
+                    # BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG OFFERS. The
+                    # consequence was that the DEFAULT journey -- run a test,
+                    # press Draw, press Draw again -- drew a significant result
+                    # with nothing on it, and the request came back only if the
+                    # user happened to toggle to Advanced (the restore arm in
+                    # the toggle handler, which validate/v51 pins).
+                    #
+                    # Neither half of that was wrong. What was missing is the
+                    # third option: if the setting is to survive a beginner
+                    # draw, the beginner dialog has to OFFER it. So it does --
+                    # only on the pass where a caller actually asked, pre-ticked
+                    # because asking is what the wrapper did, and untickable,
+                    # which is the part a hidden carried-over flag could never
+                    # have been. The ruling stands unedited: this page now
+                    # offers annotation, so drawing it is drawing what the
+                    # dialog offers.
+                    comment: "📈 Your analysis found a result to put on this figure."
+                    boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", boxToggleLabel$, "Draw", 4, 1
 
@@ -5763,6 +6167,14 @@ repeat
                     prev_adv_box_YLabel$ = y_axis_label$
                     # Reset to beginner defaults
                     annotate = 0
+                    # D7. The wrapper's request, honoured on the page that
+                    # now offers it. `annotate_results_on_graph` exists here for
+                    # exactly the reason the field above exists -- the same
+                    # condition put it on the dialog -- and it carries the
+                    # user's tick, which may well be a DE-tick.
+                    if emlGraphsPresetAnnotate > 0
+                        annotate = annotate_results_on_graph
+                    endif
                     annotShowNS = 0
                     annotShowEffect = 0
                     annotLayoutMode = 1
@@ -5778,6 +6190,10 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
+                    # D1/D2. Record what the advanced page returned before the
+                    # beginner reset blanks it, so re-entering advanced -- on this
+                    # type or after a detour through another one -- gets it back.
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     tmpXLabel$ = ""
                     tmpYLabel$ = ""
                 else
@@ -5844,6 +6260,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     @emlCommitGridMode: gridline_mode
                     emlShowInnerBox = show_inner_box
                     emlFont$ = font$
@@ -5878,6 +6295,14 @@ repeat
                     endif
                 else
                     annotate = 0
+                    # D7. The wrapper's request, honoured on the page that
+                    # now offers it. `annotate_results_on_graph` exists here for
+                    # exactly the reason the field above exists -- the same
+                    # condition put it on the dialog -- and it carries the
+                    # user's tick, which may well be a DE-tick.
+                    if emlGraphsPresetAnnotate > 0
+                        annotate = annotate_results_on_graph
+                    endif
                     annotShowNS = 0
                     annotShowEffect = 0
                     annotLayoutMode = 1
@@ -5993,8 +6418,7 @@ repeat
             tmpVMax$ = "0"
             tmpFreqMax$ = "0"
         endif
-        tmpXLabel$ = ""
-        tmpYLabel$ = ""
+        @emlSeedAxisLabels
         tmpBinCount = prev_histBinCount
         tmpDisplayMode = prev_histDisplayMode
         if tmpDisplayMode < 1
@@ -6022,14 +6446,18 @@ repeat
                     for iCol from 1 to nCols
                         option: colName$[iCol]
                     endfor
+                # D11. See the note on the scatter page.
+                histGroupShown = tmpUseGroup
                 boolean: "Use group column", tmpUseGroup
-                optionmenu: "Group column", histGroupIdx
-                    for iCol from 1 to nCols
-                        option: colName$[iCol]
-                    endfor
-                optionmenu: "Group order", prev_groupSort
-                    option: "Table order"
-                    option: "Alphabetical"
+                if histGroupShown = 1
+                    optionmenu: "Group column", histGroupIdx
+                        for iCol from 1 to nCols
+                            option: colName$[iCol]
+                        endfor
+                    optionmenu: "Group order", prev_groupSort
+                        option: "Table order"
+                        option: "Alphabetical"
+                endif
                 if config_showAdvanced
                     comment: "📊 Binning"
                     integer: "Bin count (0 = auto)", string$ (tmpBinCount)
@@ -6051,6 +6479,15 @@ repeat
                         option: "both"
                     boolean: "Show nonsignificant", annotShowNS
                     boolean: "Show effect sizes", annotShowEffect
+                        # D6, audit 14 Aug 2026. Violin, Bar and Box offer an
+                        # "Annotation layout" menu here; this type does not,
+                        # and the draw path forces annotLayoutMode = 3 (Matrix)
+                        # for it because significance BRACKETS have no place to
+                        # land on a histogram or on a two-factor panel -- there
+                        # is no single pair of x positions to span. A menu whose
+                        # only honest entry is the one already in force is not a
+                        # choice, so what is offered instead is the fact.
+                        comment: "Comparisons appear as a matrix panel below the plot."
                     real: "Alpha", string$ (annotAlpha)
                     comment: "📐 Axis ranges (both 0 = auto)"
                     real: "Value maximum", tmpVMax$
@@ -6089,10 +6526,35 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
+                elsif emlGraphsPresetAnnotate > 0
+                    # D7, audit 14 Aug 2026 — THE ONE CONTROL A WRAPPER'S
+                    # REQUEST NEEDS, ON THE PAGE THE REQUEST ARRIVES AT.
+                    #
+                    # A stats wrapper that found something sets
+                    # emlGraphsPresetAnnotate = 1 and hands the user to this
+                    # form. The beginner commit below then set annotate = 0 --
+                    # correctly, by the author's ruling of 13 Aug 2026:
+                    # BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG OFFERS. The
+                    # consequence was that the DEFAULT journey -- run a test,
+                    # press Draw, press Draw again -- drew a significant result
+                    # with nothing on it, and the request came back only if the
+                    # user happened to toggle to Advanced (the restore arm in
+                    # the toggle handler, which validate/v51 pins).
+                    #
+                    # Neither half of that was wrong. What was missing is the
+                    # third option: if the setting is to survive a beginner
+                    # draw, the beginner dialog has to OFFER it. So it does --
+                    # only on the pass where a caller actually asked, pre-ticked
+                    # because asking is what the wrapper did, and untickable,
+                    # which is the part a hidden carried-over flag could never
+                    # have been. The ruling stands unedited: this page now
+                    # offers annotation, so drawing it is drawing what the
+                    # dialog offers.
+                    comment: "📈 Your analysis found a result to put on this figure."
+                    boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", histToggleLabel$, "Draw", 4, 1
 
@@ -6103,9 +6565,11 @@ repeat
                 exitScript: ""
             elsif clicked = 3
                 histValueIdx = value_column
-                histGroupIdx = group_column
-                prev_groupSort = group_order
-                config_groupSort = group_order
+                if histGroupShown = 1
+                    histGroupIdx = group_column
+                    prev_groupSort = group_order
+                    config_groupSort = group_order
+                endif
                 tmpUseGroup = use_group_column
                 if config_showAdvanced
                     # Toggling TO beginner: save advanced state
@@ -6144,9 +6608,21 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
+                    # D1/D2. Record what the advanced page returned before the
+                    # beginner reset blanks it, so re-entering advanced -- on this
+                    # type or after a detour through another one -- gets it back.
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     tmpXLabel$ = ""
                     tmpYLabel$ = ""
                     annotate = 0
+                    # D7. The wrapper's request, honoured on the page that
+                    # now offers it. `annotate_results_on_graph` exists here for
+                    # exactly the reason the field above exists -- the same
+                    # condition put it on the dialog -- and it carries the
+                    # user's tick, which may well be a DE-tick.
+                    if emlGraphsPresetAnnotate > 0
+                        annotate = annotate_results_on_graph
+                    endif
                     annotShowNS = 0
                     annotShowEffect = 0
                     annotLayoutMode = 3
@@ -6206,10 +6682,24 @@ repeat
                 allFormsDone = 1
 
                 histValueCol$ = value_column$
+                # D11. See the note on the scatter page.
+                if histGroupShown = 1
+                    histGroupIdx = group_column
+                    prev_groupSort = group_order
+                    config_groupSort = group_order
+                endif
+                if histGroupIdx < 1 or histGroupIdx > nCols
+                    histGroupIdx = 1
+                endif
                 if use_group_column = 1
-                    histGroupCol$ = group_column$
+                    histGroupCol$ = colName$ [histGroupIdx]
                 else
                     histGroupCol$ = ""
+                endif
+                if use_group_column = 1 and histGroupShown = 0
+                    tmpUseGroup = 1
+                    histFormDone = 0
+                    allFormsDone = 0
                 endif
 
                 if config_showAdvanced
@@ -6228,6 +6718,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     @emlCommitGridMode: gridline_mode
                     @emlCommitLegendPlacement: legend_placement
                     emlShowInnerBox = show_inner_box
@@ -6266,6 +6757,14 @@ repeat
                     histBinCount = 0
                     histDisplayMode = 1
                     annotate = 0
+                    # D7. The wrapper's request, honoured on the page that
+                    # now offers it. `annotate_results_on_graph` exists here for
+                    # exactly the reason the field above exists -- the same
+                    # condition put it on the dialog -- and it carries the
+                    # user's tick, which may well be a DE-tick.
+                    if emlGraphsPresetAnnotate > 0
+                        annotate = annotate_results_on_graph
+                    endif
                     annotShowNS = 0
                     annotShowEffect = 0
                     annotLayoutMode = 3
@@ -6279,9 +6778,7 @@ repeat
                 endif
 
                 prev_histValueIdx = value_column
-                prev_histGroupIdx = group_column
-                prev_groupSort = group_order
-                config_groupSort = group_order
+                prev_histGroupIdx = histGroupIdx
                 prev_histUseGroup = use_group_column
                 prev_histBinCount = histBinCount
                 prev_histDisplayMode = histDisplayMode
@@ -6452,8 +6949,7 @@ repeat
             tmpVMin$ = "0"
             tmpVMax$ = "0"
         endif
-        tmpXLabel$ = ""
-        tmpYLabel$ = ""
+        @emlSeedAxisLabels
 
         gvFormDone = 0
         repeat
@@ -6495,6 +6991,15 @@ repeat
                         option: "both"
                     boolean: "Show nonsignificant", annotShowNS
                     boolean: "Show effect sizes", annotShowEffect
+                        # D6, audit 14 Aug 2026. Violin, Bar and Box offer an
+                        # "Annotation layout" menu here; this type does not,
+                        # and the draw path forces annotLayoutMode = 3 (Matrix)
+                        # for it because significance BRACKETS have no place to
+                        # land on a histogram or on a two-factor panel -- there
+                        # is no single pair of x positions to span. A menu whose
+                        # only honest entry is the one already in force is not a
+                        # choice, so what is offered instead is the fact.
+                        comment: "Comparisons appear as a matrix panel below the plot."
                     real: "Alpha", string$ (annotAlpha)
                     boolean: "Show jittered points", prev_gvShowJitter
                     comment: "📐 Y-axis range (both 0 = auto)"
@@ -6533,10 +7038,35 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
+                elsif emlGraphsPresetAnnotate > 0
+                    # D7, audit 14 Aug 2026 — THE ONE CONTROL A WRAPPER'S
+                    # REQUEST NEEDS, ON THE PAGE THE REQUEST ARRIVES AT.
+                    #
+                    # A stats wrapper that found something sets
+                    # emlGraphsPresetAnnotate = 1 and hands the user to this
+                    # form. The beginner commit below then set annotate = 0 --
+                    # correctly, by the author's ruling of 13 Aug 2026:
+                    # BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG OFFERS. The
+                    # consequence was that the DEFAULT journey -- run a test,
+                    # press Draw, press Draw again -- drew a significant result
+                    # with nothing on it, and the request came back only if the
+                    # user happened to toggle to Advanced (the restore arm in
+                    # the toggle handler, which validate/v51 pins).
+                    #
+                    # Neither half of that was wrong. What was missing is the
+                    # third option: if the setting is to survive a beginner
+                    # draw, the beginner dialog has to OFFER it. So it does --
+                    # only on the pass where a caller actually asked, pre-ticked
+                    # because asking is what the wrapper did, and untickable,
+                    # which is the part a hidden carried-over flag could never
+                    # have been. The ruling stands unedited: this page now
+                    # offers annotation, so drawing it is drawing what the
+                    # dialog offers.
+                    comment: "📈 Your analysis found a result to put on this figure."
+                    boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", gvToggleLabel$, "Draw", 4, 1
 
@@ -6575,6 +7105,14 @@ repeat
                     # Reset to beginner defaults
                     prev_gvShowJitter = 0
                     annotate = 0
+                    # D7. The wrapper's request, honoured on the page that
+                    # now offers it. `annotate_results_on_graph` exists here for
+                    # exactly the reason the field above exists -- the same
+                    # condition put it on the dialog -- and it carries the
+                    # user's tick, which may well be a DE-tick.
+                    if emlGraphsPresetAnnotate > 0
+                        annotate = annotate_results_on_graph
+                    endif
                     annotShowNS = 0
                     annotShowEffect = 0
                     annotLayoutMode = 3
@@ -6590,6 +7128,10 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
+                    # D1/D2. Record what the advanced page returned before the
+                    # beginner reset blanks it, so re-entering advanced -- on this
+                    # type or after a detour through another one -- gets it back.
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     tmpXLabel$ = ""
                     tmpYLabel$ = ""
                 else
@@ -6660,6 +7202,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     @emlCommitGridMode: gridline_mode
                     @emlCommitLegendPlacement: legend_placement
                     emlShowInnerBox = show_inner_box
@@ -6698,6 +7241,14 @@ repeat
                 else
                     prev_gvShowJitter = 0
                     annotate = 0
+                    # D7. The wrapper's request, honoured on the page that
+                    # now offers it. `annotate_results_on_graph` exists here for
+                    # exactly the reason the field above exists -- the same
+                    # condition put it on the dialog -- and it carries the
+                    # user's tick, which may well be a DE-tick.
+                    if emlGraphsPresetAnnotate > 0
+                        annotate = annotate_results_on_graph
+                    endif
                     annotShowNS = 0
                     annotShowEffect = 0
                     annotLayoutMode = 3
@@ -6822,8 +7373,7 @@ repeat
             tmpVMin$ = "0"
             tmpVMax$ = "0"
         endif
-        tmpXLabel$ = ""
-        tmpYLabel$ = ""
+        @emlSeedAxisLabels
 
         gbFormDone = 0
         repeat
@@ -6865,6 +7415,15 @@ repeat
                         option: "both"
                     boolean: "Show nonsignificant", annotShowNS
                     boolean: "Show effect sizes", annotShowEffect
+                        # D6, audit 14 Aug 2026. Violin, Bar and Box offer an
+                        # "Annotation layout" menu here; this type does not,
+                        # and the draw path forces annotLayoutMode = 3 (Matrix)
+                        # for it because significance BRACKETS have no place to
+                        # land on a histogram or on a two-factor panel -- there
+                        # is no single pair of x positions to span. A menu whose
+                        # only honest entry is the one already in force is not a
+                        # choice, so what is offered instead is the fact.
+                        comment: "Comparisons appear as a matrix panel below the plot."
                     real: "Alpha", string$ (annotAlpha)
                     boolean: "Show jittered points", prev_gbShowJitter
                     comment: "📐 Y-axis range (both 0 = auto)"
@@ -6903,10 +7462,35 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
+                elsif emlGraphsPresetAnnotate > 0
+                    # D7, audit 14 Aug 2026 — THE ONE CONTROL A WRAPPER'S
+                    # REQUEST NEEDS, ON THE PAGE THE REQUEST ARRIVES AT.
+                    #
+                    # A stats wrapper that found something sets
+                    # emlGraphsPresetAnnotate = 1 and hands the user to this
+                    # form. The beginner commit below then set annotate = 0 --
+                    # correctly, by the author's ruling of 13 Aug 2026:
+                    # BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG OFFERS. The
+                    # consequence was that the DEFAULT journey -- run a test,
+                    # press Draw, press Draw again -- drew a significant result
+                    # with nothing on it, and the request came back only if the
+                    # user happened to toggle to Advanced (the restore arm in
+                    # the toggle handler, which validate/v51 pins).
+                    #
+                    # Neither half of that was wrong. What was missing is the
+                    # third option: if the setting is to survive a beginner
+                    # draw, the beginner dialog has to OFFER it. So it does --
+                    # only on the pass where a caller actually asked, pre-ticked
+                    # because asking is what the wrapper did, and untickable,
+                    # which is the part a hidden carried-over flag could never
+                    # have been. The ruling stands unedited: this page now
+                    # offers annotation, so drawing it is drawing what the
+                    # dialog offers.
+                    comment: "📈 Your analysis found a result to put on this figure."
+                    boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", gbToggleLabel$, "Draw", 4, 1
 
@@ -6945,6 +7529,14 @@ repeat
                     # Reset to beginner defaults
                     prev_gbShowJitter = 0
                     annotate = 0
+                    # D7. The wrapper's request, honoured on the page that
+                    # now offers it. `annotate_results_on_graph` exists here for
+                    # exactly the reason the field above exists -- the same
+                    # condition put it on the dialog -- and it carries the
+                    # user's tick, which may well be a DE-tick.
+                    if emlGraphsPresetAnnotate > 0
+                        annotate = annotate_results_on_graph
+                    endif
                     annotShowNS = 0
                     annotShowEffect = 0
                     annotLayoutMode = 3
@@ -6960,6 +7552,10 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
+                    # D1/D2. Record what the advanced page returned before the
+                    # beginner reset blanks it, so re-entering advanced -- on this
+                    # type or after a detour through another one -- gets it back.
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     tmpXLabel$ = ""
                     tmpYLabel$ = ""
                 else
@@ -7028,6 +7624,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     @emlCommitGridMode: gridline_mode
                     @emlCommitLegendPlacement: legend_placement
                     emlShowInnerBox = show_inner_box
@@ -7066,6 +7663,14 @@ repeat
                 else
                     prev_gbShowJitter = 0
                     annotate = 0
+                    # D7. The wrapper's request, honoured on the page that
+                    # now offers it. `annotate_results_on_graph` exists here for
+                    # exactly the reason the field above exists -- the same
+                    # condition put it on the dialog -- and it carries the
+                    # user's tick, which may well be a DE-tick.
+                    if emlGraphsPresetAnnotate > 0
+                        annotate = annotate_results_on_graph
+                    endif
                     annotShowNS = 0
                     annotShowEffect = 0
                     annotLayoutMode = 3
@@ -7195,8 +7800,7 @@ repeat
             tmpVMin$ = "0"
             tmpVMax$ = "0"
         endif
-        tmpXLabel$ = ""
-        tmpYLabel$ = ""
+        @emlSeedAxisLabels
         if prev_spShowMean < 0
             tmpShowMean = 1
         else
@@ -7225,14 +7829,18 @@ repeat
                     for iCol from 1 to nCols
                         option: colName$[iCol]
                     endfor
+                # D11. See the note on the scatter page.
+                spGroupShown = tmpUseGroup
                 boolean: "Use group column", tmpUseGroup
-                optionmenu: "Group column (colors lines)", spGroupIdx
-                    for iCol from 1 to nCols
-                        option: colName$[iCol]
-                    endfor
-                optionmenu: "Group order", prev_spGroupSort
-                    option: "Table order"
-                    option: "Alphabetical"
+                if spGroupShown = 1
+                    optionmenu: "Group column (colors lines)", spGroupIdx
+                        for iCol from 1 to nCols
+                            option: colName$[iCol]
+                        endfor
+                    optionmenu: "Group order", prev_spGroupSort
+                        option: "Table order"
+                        option: "Alphabetical"
+                endif
                 boolean: "Show mean overlay", tmpShowMean
                 if config_showAdvanced
                     comment: "📐 Y-axis range (both 0 = auto)"
@@ -7271,8 +7879,7 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto from column)"
-                    comment: "Formatting: %italic · #bold · ^super · underscore = subscript · \% plus a space prints %"
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 endif
@@ -7287,10 +7894,12 @@ repeat
                 spCondIdx = condition_column
                 spValueIdx = value_column
                 spSubjectIdx = subject_column
-                spGroupIdx = group_column
+                if spGroupShown = 1
+                    spGroupIdx = group_column
+                    prev_spGroupSort = group_order
+                    config_groupSort = group_order
+                endif
                 tmpUseGroup = use_group_column
-                prev_spGroupSort = group_order
-                config_groupSort = group_order
                 tmpShowMean = show_mean_overlay
                 if config_showAdvanced
                     tmpVMin$ = "0"
@@ -7303,6 +7912,10 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
+                    # D1/D2. Record what the advanced page returned before the
+                    # beginner reset blanks it, so re-entering advanced -- on this
+                    # type or after a detour through another one -- gets it back.
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     tmpXLabel$ = ""
                     tmpYLabel$ = ""
                 endif
@@ -7323,6 +7936,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
+                    @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     @emlCommitGridMode: gridline_mode
                     @emlCommitLegendPlacement: legend_placement
                     emlShowInnerBox = show_inner_box
@@ -7341,18 +7955,30 @@ repeat
                 spCondCol$ = condition_column$
                 spValueCol$ = value_column$
                 spSubjectCol$ = subject_column$
+                # D11. See the note on the scatter page.
+                if spGroupShown = 1
+                    spGroupIdx = group_column
+                    prev_spGroupSort = group_order
+                    config_groupSort = group_order
+                endif
+                if spGroupIdx < 1 or spGroupIdx > nCols
+                    spGroupIdx = 1
+                endif
                 if use_group_column = 0
                     spGroupCol$ = ""
                 else
-                    spGroupCol$ = group_column$
+                    spGroupCol$ = colName$ [spGroupIdx]
+                endif
+                if use_group_column = 1 and spGroupShown = 0
+                    tmpUseGroup = 1
+                    spFormDone = 0
+                    allFormsDone = 0
                 endif
                 spShowMean = show_mean_overlay
                 prev_spCondIdx = condition_column
                 prev_spValueIdx = value_column
-                prev_spGroupSort = group_order
-                config_groupSort = group_order
                 prev_spSubjectIdx = subject_column
-                prev_spGroupIdx = group_column
+                prev_spGroupIdx = spGroupIdx
                 prev_spUseGroup = use_group_column
                 prev_spShowMean = show_mean_overlay
                 valueMin = number (tmpVMin$)
@@ -7524,6 +8150,61 @@ repeat
     endif
     # Scatter annotation is handled entirely within @emlDrawScatterPlot
     # to support "Both" correlation type and per-group regression.
+    #
+    # NEW-G8-3, audit 14 Aug 2026 — INIT ONCE PER PRESS, ACCUMULATE PER LOOP.
+    #
+    # Nine Draws in one graphs session put NINE value-identical blocks in the
+    # exported CSV: 18 rows on the first save, 162 on the ninth, with no draw
+    # index to tell them apart. One analysis, presented as nine results. This
+    # is the same init-discipline defect v57 records for the multi-column
+    # normality Save (NEW-G1-1) with the loop the other way round: there, an
+    # init inside the loop threw away every pass but the last; here, no init at
+    # all kept every press for ever.
+    #
+    # Every other annotated arm was already right, and by accident of layering:
+    # @emlReportBridgeStats opens with @emlCSVInit, so the five bridge calls
+    # above reset the collector as they report. The scatter does not go through
+    # the bridge -- @emlDrawScatterPlot calls @emlReportCorrelationAnalysis and
+    # @emlReportRegressionAnalysis directly, once for the whole table and again
+    # per group -- and nothing on that path had ever reset anything.
+    #
+    # THE PRESS IS HERE, which is why the init is here and not in the draw
+    # layer: the draw procedure is called once per PASS, and a figure whose
+    # legend needs y-axis room is dispatched twice for one press
+    # (@emlGraphsDrawWithLegendRoom). An init in the drawing procedure would
+    # therefore also be an init per pass -- correct by accident today, wrong
+    # the moment a second pass reports anything.
+    #
+    # THE CONDITION IS NOT `annotate = 1` ALONE, and the difference matters.
+    # A Draw that reports nothing must leave the buffer ALONE: on the
+    # wrapper -> Draw journey it holds the analysis the user just ran and the
+    # Save panel offers it. The scatter reports only when it has been asked for
+    # a correlation or a regression, which is exactly scatterAnalysisType > 0 --
+    # the same value the draw procedure branches on.
+    #
+    # @emlCSVInitRows AND NOT @emlCSVInit, AND THAT IS NOT A HEDGE. @emlCSVInit
+    # also zeroes emlResult_declared, deliberately: it is the one place that can
+    # guarantee the three-file flag describes the analysis about to run rather
+    # than a previous one. Every path that clears it goes on to DECLARE, which
+    # is what @emlReportBridgeStats does on the five bridge arms above. The
+    # scatter's reporters do not declare -- @emlReportCorrelationAnalysis and
+    # @emlReportRegressionAnalysis emit rows and nothing else -- so clearing
+    # the flag here would not correct a stale declaration, it would delete a
+    # live one: the wrapper -> annotated-scatter journey would stop writing
+    # tidy and glance and fall back to the legacy single file, which is a
+    # second export defect traded for the first. What this press owns is its
+    # ROWS, and its rows are what it resets. Which of the two results should
+    # win when a wrapper's analysis and a figure's annotation disagree is D65's
+    # open design question and is not decided here.
+    #
+    # THE PROCEDURE LIVES IN stats/eml-output.praat, which owns the collector.
+    # The first version of this fix saved and restored emlResult_declared here
+    # instead, and validate/v46 went red on it: ONE FILE MAY BRANCH ON
+    # MIGRATION STATE, and this is not that file. v46 was right and the red
+    # line is what produced @emlCSVInitRows.
+    if graph_type = 8 and annotate = 1 and scatterAnalysisType > 0
+        @emlCSVInitRows
+    endif
 
     # =================================================================
     # PRE-DISPATCH: compute headroom for bar/violin annotations
@@ -7697,6 +8378,7 @@ repeat
         title$ = emlComposeGraphTitle.result$
     endif
     prev_autoTitle$ = emlComposeGraphTitle.result$
+    prev_autoTitleType = graph_type
     # Pre-fill the Title field for the next pass through the form, so a Redraw
     # shows the composed title as editable text rather than an empty box.
     prev_title$ = title$
@@ -7850,16 +8532,12 @@ until keepGoing = 0
     emlGraphsPresetAnalysisType = 0
     emlGraphsPresetCorrType$ = ""
     emlGraphsPresetCorrection$ = ""
-    emlGraphsPresetDotSize = 0
-    emlGraphsPresetShowDots = -1
 
     # --- D103: clear the scatter preset sentinels ---
     # These say "a wrapper supplied this setting for THIS call". Leaving one
     # set would make the next call's dialog defaults ignore the user's own
     # remembered choice, which is the mirror image of the bug they fix.
     scatterPresetHasRegression = 0
-    scatterPresetHasDotSize = 0
-    scatterPresetHasDots = 0
     scatterPresetHasGroup = 0
 
     # --- D102: restore the explanation gate ---

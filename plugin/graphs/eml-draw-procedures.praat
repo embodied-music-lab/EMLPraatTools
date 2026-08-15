@@ -530,6 +530,74 @@ procedure emlDisclose: .short$, .advice$
 endproc
 
 # ----------------------------------------------------------------------------
+# @emlDiscloseClipped: .nOutside, .nTotal, .xSetMin, .xSetMax, .ySetMin,
+#                      .ySetMax, .xLo, .xHi, .yLo, .yHi
+# Say, on the figure and in the Info window, that a typed axis range withheld
+# points -- and say which range did it.
+#
+# WHY IT IS ONE PROCEDURE AND NOT TWO INLINE COPIES. The two scatter paths
+# (grouped and ungrouped) both need this, and a disclosure that is worded one
+# way for one path and another way for the other is a disclosure a reader
+# cannot compare across two figures of the same data.
+#
+# THE SECOND FINDING THIS ANSWERS. NEW-G8-2: a user who fills in a MINIMUM
+# and leaves the maximum on automatic has that pair silently reordered into
+# (0, minimum) before it reaches any draw procedure -- so "show me everything
+# above 300" becomes "show me everything below 300", which is the exact
+# opposite, and nothing anywhere said so. The reordering happens in the
+# form's range-validation block and cannot be undone from here: by the time
+# this library is called the pair is (0, 300) and is indistinguishable from a
+# (0, 300) a user typed on purpose.
+#
+# What CAN be done from here, and is, is to refuse to let the consequence
+# pass unremarked. A range that silently inverted the user's intent will
+# nearly always leave data outside itself, and this line names the count AND
+# prints the range that produced it, so a user who typed 300 as a floor reads
+# "axis range 0-300" back and sees immediately that it was taken as a
+# ceiling. That is the warning the audit asked for, issued from the only
+# layer that is allowed to issue it.
+#
+# .xSetMin/.xSetMax and .ySetMin/.ySetMax are the pairs AS PASSED IN -- 0/0
+# meaning automatic -- so the advice can name only the axis the user actually
+# constrained. .xLo/.xHi/.yLo/.yHi are the frame that was drawn.
+# ----------------------------------------------------------------------------
+# NO `goto` AND NO `label`, AND THAT IS A RULE RATHER THAN A STYLE. v27 reads
+# this whole file and asserts there is neither, because Praat's goto is
+# unconditional and a forward jump can skip past an `Axes:` and every drawing
+# command after it -- which is how the histogram once wrote a blank page. The
+# early return this procedure obviously wants is therefore written as an
+# ordinary `if`, and v27 is what said so: the first version used a goto, did
+# no drawing at all, and was caught anyway. A rule that only applies to the
+# procedures you think could be harmed is not a rule.
+procedure emlDiscloseClipped: .nOutside, .nTotal, .xSetMin, .xSetMax, .ySetMin, .ySetMax, .xLo, .xHi, .yLo, .yHi
+    if .nOutside > 0
+        .short$ = string$ (.nOutside) + " of " + string$ (.nTotal)
+        ... + " point(s) outside the axis range; not drawn."
+        .which$ = ""
+        if not (.xSetMin = 0 and .xSetMax = 0)
+            .which$ = "x " + fixed$ (.xLo, 3) + " to " + fixed$ (.xHi, 3)
+        endif
+        if not (.ySetMin = 0 and .ySetMax = 0)
+            if .which$ <> ""
+                .which$ = .which$ + ", "
+            endif
+            .which$ = .which$ + "y " + fixed$ (.yLo, 3) + " to "
+            ... + fixed$ (.yHi, 3)
+        endif
+        if .which$ = ""
+            .which$ = "x " + fixed$ (.xLo, 3) + " to " + fixed$ (.xHi, 3)
+            ... + ", y " + fixed$ (.yLo, 3) + " to " + fixed$ (.yHi, 3)
+        endif
+        .advice$ = "Range in force: " + .which$
+        ... + ". Every point is still in the statistics — a range chooses what"
+        ... + " the figure SHOWS, never what it COMPUTES. If you meant that"
+        ... + " number as a floor and not a ceiling, set the other end too:"
+        ... + " a minimum on its own is read as a maximum."
+        @emlDisclose: .short$, .advice$
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
 # @emlDiscloseEnd: .xMin, .xMax, .yMin, .yMax, .qTL, .qTR, .qBL, .qBR,
 #                  .legendCorner$
 # Renders whatever @emlDisclose put on the figure, then hands the annotation
@@ -758,15 +826,85 @@ procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
             .autoFreqMax = 500
         endif
     else
-        # The axis follows the data. There is no minimum span: a sustained
-        # note held within two hertz should read as a flat line on a two-hertz
-        # axis, not be hidden inside a fifty-hertz window that makes it look
-        # steady when the point is how steady it is. Any extra room a figure
-        # needs is a property of what is drawn on it, not of the unit, and is
-        # supplied by @emlComputeAnnotationHeadroom at the annotation stage.
-        @emlComputeNiceStep: .pitchMax - (.pitchMin), emlSetAdaptiveTheme.targetTicksY
+        # The axis follows the data, down to a floor of twenty cents. A
+        # sustained note held within two hertz should read as a flat line on
+        # a two-hertz axis, not be hidden inside a fifty-hertz window that
+        # makes it look steady when the point is how steady it is. Any extra
+        # room a figure needs is a property of what is drawn on it, not of
+        # the unit, and is supplied by @emlComputeAnnotationHeadroom at the
+        # annotation stage.
+        #
+        # WHY THERE IS A FLOOR AT ALL, AND WHY IT IS TWENTY CENTS (15 Aug
+        # 2026, NEW-G7-1, severity 3). "No minimum span" was the design and
+        # it was right for two hertz and wrong for two millionths of one. A
+        # synthesised 200 Hz tone yields a pitch track spanning 9.7e-06 Hz --
+        # measured, harness/graphaxes/cases/repro_steady_pitch.praat -- and
+        # an axis that follows the data to 1.4e-05 Hz wide draws that
+        # rounding noise at full frame height. The published figure is a
+        # sustained note rendered as chaos, over six y-ticks all reading
+        # "200". A singing teacher would put it in a handout.
+        #
+        # A floor in HERTZ would be wrong: two hertz is a semitone and a half
+        # at a bass's 100 Hz and a fifth of one at a high soprano's 1000, so
+        # a fixed floor over-magnifies one voice and flattens another. The
+        # floor is therefore stated in the unit the ear works in. Ten cents
+        # is a tenth of a semitone, at the bottom of what a trained listener
+        # can resolve at all, so nothing the figure declines to magnify is
+        # anything a singer could hear or a teacher could act on -- and
+        # everything above it survives untouched.
+        #
+        # TEN CENTS AND NOT TWENTY, and the difference was measured, not
+        # chosen. The verifier's own 199->201 Hz ramp spans 1.84 Hz, which is
+        # 16 cents at that register: a twenty-cent floor would have caught a
+        # figure the verifier had already established draws CORRECTLY, and
+        # announced a correction it did not need. Ten cents leaves that ramp
+        # alone (1.84 Hz against a 1.16 Hz floor) and still opens the
+        # sustained tone's 0.0000097 Hz by five orders of magnitude.
+        #
+        # IT ONLY EVER WIDENS, AND ONLY ON THE AUTO PATH. A user's typed
+        # range is taken literally further down; the data are never moved,
+        # scaled or clipped by this -- a value at 200.0000043 sits at
+        # 200.0000043 on the widened axis exactly as it did on the narrow
+        # one, with more empty axis around it. That is the whole change, and
+        # it is the same vocabulary @emlComputeAnnotationHeadroom is held to.
+        #
+        # Verifier's probe (aud65_out_verify65.log.md, reconfirmed here on
+        # 6.6.30) established the OTHER half: a 2 Hz span already drew
+        # correctly, so the collapse was never the pitch analysis. Tick
+        # labels are handled by @emlTickPrecision; this floor is what stops a
+        # figure needing eleven decimals of them.
+        .spanFloorSemitones = 0.1
+        .dataFreqMin = .pitchMin
+        .dataFreqMax = .pitchMax
+        if .yUnit = 2
+            # Already semitones: the floor is the floor.
+            .minSpan = .spanFloorSemitones
+        else
+            # Hertz: twenty cents around the centre of the data, so the floor
+            # tracks the register the singer is actually in.
+            .fCenter = (.pitchMin + .pitchMax) / 2
+            if .fCenter <= 0
+                .fCenter = 1
+            endif
+            .minSpan = .fCenter * (2 ^ (.spanFloorSemitones / 24)
+            ... - 2 ^ (-.spanFloorSemitones / 24))
+        endif
+        .dataSpan = .dataFreqMax - .dataFreqMin
+        if .dataSpan < .minSpan
+            .midPoint = (.dataFreqMin + .dataFreqMax) / 2
+            .dataFreqMin = .midPoint - .minSpan / 2
+            .dataFreqMax = .midPoint + .minSpan / 2
+            appendInfoLine: "NOTE: measured F0 spans ",
+            ... fixed$ (.dataSpan, 6), " ", .unitStr$,
+            ... " — under a tenth of a semitone, which is at or below what",
+            ... " the ear can resolve. The y-axis is drawn 0.1 semitones wide",
+            ... " rather than following the data, so the contour reads flat",
+            ... " instead of magnifying rounding noise to full frame height.",
+            ... " No measured value was changed."
+        endif
+        @emlComputeNiceStep: .dataFreqMax - (.dataFreqMin), emlSetAdaptiveTheme.targetTicksY
         .axisRoundTo = emlComputeNiceStep.step
-        @emlComputeAxisRange: .pitchMin, .pitchMax, .axisRoundTo, 0
+        @emlComputeAxisRange: .dataFreqMin, .dataFreqMax, .axisRoundTo, 0
         .autoFreqMin = emlComputeAxisRange.axisMin
         .autoFreqMax = emlComputeAxisRange.axisMax
     endif
@@ -3917,6 +4055,12 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
         # ==============================================================
 
         # Plot points
+        ; NEW-G8-1. The markers clip themselves against the frame published
+        ; by @emlSetPatternScale; this counts what they withheld so the
+        ; figure can say so. Reset immediately before the loop, read
+        ; immediately after: emlClippedN is a running total and two draws in
+        ; one session would otherwise accumulate.
+        @emlResetClipCount
         if scatterShowDots = 1
             for .i from 1 to .nValid
                 if .useAlpha = 1 and emlInitAlphaSprites.available = 1
@@ -3930,6 +4074,7 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                 endif
             endfor
         endif
+        .nOutside = emlClippedN
 
         # Compute correlations and build annotation block
         .havePearson = 0
@@ -4123,6 +4268,8 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
             @emlDisclose: string$ (.nSkippedRows)
             ... + " row(s) skipped (missing or non-numeric value).", ""
         endif
+        @emlDiscloseClipped: .nOutside, .nValid, .xMin, .xMax, .yMin, .yMax,
+        ... .axisXMin, .axisXMax, .axisYMin, .axisYMax
 
         # Draw annotation block
         if annotBlockN > 0
@@ -4147,8 +4294,25 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                     endif
                 endif
             endfor
-            @emlPlaceElements: .qTL, .qTR, .qBL, .qBR, .xMidQ, 1
-            @emlDrawAnnotationBlock: emlPlaceElements.corner1$, .axisXMin, .axisXMax, .axisYMin, .axisYMax, emlSetAdaptiveTheme.annotSize
+            ; NEW-G8-4. The corner is chosen against the box's own rectangle
+            ; and the points actually drawn, not against quadrant counts.
+            ; See @emlPlaceAnnotationBox.
+            @emlRegisterCollisionPoints: .xData#, .yData#, .nValid
+            @emlPlaceAnnotationBox: .axisXMin, .axisXMax, .axisYMin,
+            ... .axisYMax, emlSetAdaptiveTheme.annotSize,
+            ... .qTL, .qTR, .qBL, .qBR, .xMidQ, 1
+            @emlDrawAnnotationBlock: emlPlaceAnnotationBox.corner1$, .axisXMin, .axisXMax, .axisYMin, .axisYMax, emlSetAdaptiveTheme.annotSize
+            ; Nowhere left to put it. Say so rather than let a reader assume
+            ; the panel is sitting on empty page. The line goes to the Info
+            ; window only -- adding it to the block would grow the box and
+            ; cover more of what it is apologising for.
+            if emlPlaceAnnotationBox.collisions > 0
+                appendInfoLine: "Scatter plot: the annotation panel covers ",
+                ... emlPlaceAnnotationBox.collisions,
+                ... " data point(s) — no corner of this figure is clear."
+                ... + " Widen the figure, shorten the annotation, or read the"
+                ... + " covered values from the table."
+            endif
         endif
 
     else
@@ -4216,6 +4380,8 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
         endfor
 
         # Plot all points (color by group)
+        ; NEW-G8-1, grouped path. See the ungrouped one above.
+        @emlResetClipCount
         if scatterShowDots = 1
             for .i from 1 to .nRows
                 selectObject: .objectId
@@ -4242,6 +4408,7 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                 endif
             endfor
         endif
+        .nOutside = emlClippedN
 
         # Per-group correlations and regression lines
         # Per-group statistics and regression lines
@@ -4514,6 +4681,8 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
             @emlDisclose: string$ (.nSkippedRows)
             ... + " row(s) skipped (missing or non-numeric value).", ""
         endif
+        @emlDiscloseClipped: .nOutside, .nValid, .xMin, .xMax, .yMin, .yMax,
+        ... .axisXMin, .axisXMax, .axisYMin, .axisYMax
 
         # Place annotation block and legend — adaptive corner selection
         .xMidQ = (.axisXMin + .axisXMax) / 2
@@ -4539,9 +4708,22 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
         endfor
 
         if annotBlockN > 0
-            @emlPlaceElements: .qTL, .qTR, .qBL, .qBR, .xMidQ, 2
-            @emlDrawAnnotationBlock: emlPlaceElements.corner1$, .axisXMin, .axisXMax, .axisYMin, .axisYMax, emlSetAdaptiveTheme.annotSize
-            .legendCorner$ = emlPlaceElements.corner2$
+            ; NEW-G8-4, grouped path. The legend keeps following the block to
+            ; the diagonal opposite; only the block's own corner is now
+            ; chosen by what is under it.
+            @emlRegisterCollisionPoints: .xData#, .yData#, .nValid
+            @emlPlaceAnnotationBox: .axisXMin, .axisXMax, .axisYMin,
+            ... .axisYMax, emlSetAdaptiveTheme.annotSize,
+            ... .qTL, .qTR, .qBL, .qBR, .xMidQ, 2
+            @emlDrawAnnotationBlock: emlPlaceAnnotationBox.corner1$, .axisXMin, .axisXMax, .axisYMin, .axisYMax, emlSetAdaptiveTheme.annotSize
+            .legendCorner$ = emlPlaceAnnotationBox.corner2$
+            if emlPlaceAnnotationBox.collisions > 0
+                appendInfoLine: "Scatter plot: the annotation panel covers ",
+                ... emlPlaceAnnotationBox.collisions,
+                ... " data point(s) — no corner of this figure is clear."
+                ... + " Widen the figure, shorten the annotation, or read the"
+                ... + " covered values from the table."
+            endif
         else
             @emlPlaceElements: .qTL, .qTR, .qBL, .qBR, .xMidQ, 1
             .legendCorner$ = emlPlaceElements.corner1$

@@ -1468,6 +1468,29 @@ procedure emlDrawAnnotationBlock: .corner$, .xMin, .xMax, .yMin, .yMax, .fontSiz
         .insetX = emlSetAdaptiveTheme.boxInsetInches * .wpiX
         .insetY = emlSetAdaptiveTheme.boxInsetInches * .wpiY
 
+        ; ---- MEASURE-ONLY MODE (15 Aug 2026, NEW-G8-4) ------------------
+        ; Everything above computes the box's SIZE; everything below puts it
+        ; somewhere and paints it. A caller that wants to choose the corner
+        ; by what is actually underneath each candidate rectangle needs the
+        ; size first, and the size is not knowable without the wrap-and-fit
+        ; loop that has just run.
+        ;
+        ; Rather than reimplement that loop in a second procedure -- where it
+        ; would drift out of step with this one within a release, and the box
+        ; the placement reasoned about would stop being the box that gets
+        ; drawn -- the loop is run once in measure mode and once for real.
+        ; It is text measurement and arithmetic, no drawing, so the cost is
+        ; a repeat of a few Text-width queries.
+        ;
+        ; @emlPlaceAnnotationBox drives this. The flag is cleared by the
+        ; caller, never here, because a procedure that resets a global it did
+        ; not set is how the SECOND call ends up in measure mode too.
+        if variableExists ("emlAnnotBlockMeasureOnly")
+            if emlAnnotBlockMeasureOnly = 1
+                goto ANNOT_BLOCK_END
+            endif
+        endif
+
         # Position based on corner
         if .corner$ = "top-left"
             .boxLeft = .xMin + .insetX
@@ -1540,6 +1563,180 @@ procedure emlDrawAnnotationBlock: .corner$, .xMin, .xMax, .yMin, .yMax, .fontSiz
         Colour: "Black"
         Line width: 1.0
     endif
+    label ANNOT_BLOCK_END
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlPlaceAnnotationBox: .xMin, .xMax, .yMin, .yMax, .fontSize,
+#                         .qTL, .qTR, .qBL, .qBR, .xMid, .nElements
+# Choose the annotation block's corner by what is UNDER each candidate box,
+# not by how busy the quadrant around it is.
+#
+# Outputs
+#   .corner1$    corner for the annotation block
+#   .corner2$    diagonal opposite, for a legend when .nElements >= 2
+#   .collisions  data points still underneath .corner1$ (0 when clear)
+#   .boxW,.boxH  the measured box, in world units
+#
+# THE DEFECT (NEW-G8-4, severity 3, 14 Aug 2026). On an advanced scatter the
+# annotation panel landed on top of a datum: the point at jitter 3.594, F0
+# 79.49 was visible in the beginner figure and gone in the advanced one, and
+# because the box background is a stipple screen on Linux rather than an
+# opaque fill, the dot bled back THROUGH the panel as a dotted pattern across
+# the text "-0.340". One figure, two failures -- a datum a reader cannot see
+# and a number a reader cannot read -- from a single cause.
+#
+# WHY THE OLD CHOICE COULD NOT AVOID IT, and this is the part worth keeping.
+# @emlPlaceElements scores QUADRANTS: a quarter of the panel each. The
+# annotation box is a small fraction of a quadrant. So the emptiest quadrant
+# is routinely not the emptiest place to put the box, and on a cloud that
+# runs diagonally -- which every correlated scatter does -- the one or two
+# points nearest a sparse corner are exactly the ones the box lands on.
+# @emlPlaceElements' own header names this: "What would help is scoring the
+# number of points inside the legend RECTANGLE rather than inside the whole
+# quadrant ... Filed, not fixed here." This is that fix, for the annotation
+# block; the legend still follows the block to the opposite corner.
+#
+# THE POINT CLOUD is registered by the caller in emlCollideN /
+# emlCollideX# / emlCollideY# immediately before this call, because only the
+# caller knows which points were actually DRAWN -- a point withheld by
+# NEW-G8-1's frame clip is not on the page and cannot be hidden by a box.
+# With no cloud registered this degrades to @emlPlaceElements' answer
+# exactly, which is what every caller that has not been converted gets.
+#
+# WHEN NO CORNER IS CLEAR the emptiest is still chosen and .collisions says
+# how many points remain under it. It is left to the caller to disclose that,
+# because the honest response to "there is nowhere on this figure to put this
+# box" is to tell the reader, not to drop the box and not to paint over the
+# data in silence. Making room by moving an axis bound -- what
+# @emlComputeAnnotationHeadroom does for legends and brackets -- is not
+# available here: the block's text is not known until after the data have
+# been plotted, and by then the axis is on the page.
+# ----------------------------------------------------------------------------
+procedure emlPlaceAnnotationBox: .xMin, .xMax, .yMin, .yMax, .fontSize, .qTL, .qTR, .qBL, .qBR, .xMid, .nElements
+    ; Fall back to the quadrant answer whenever there is nothing to measure
+    ; against or nothing to measure.
+    @emlPlaceElements: .qTL, .qTR, .qBL, .qBR, .xMid, .nElements
+    .corner1$ = emlPlaceElements.corner1$
+    .corner2$ = emlPlaceElements.corner2$
+    .collisions = 0
+    .boxW = 0
+    .boxH = 0
+    if annotBlockN = 0
+        goto PLACE_ANNOT_END
+    endif
+    if variableExists ("emlCollideN") = 0
+        goto PLACE_ANNOT_END
+    endif
+    if emlCollideN < 1
+        goto PLACE_ANNOT_END
+    endif
+
+    ; ---- Measure the box the caller is about to draw --------------------
+    emlAnnotBlockMeasureOnly = 1
+    @emlDrawAnnotationBlock: "top-left", .xMin, .xMax, .yMin, .yMax, .fontSize
+    emlAnnotBlockMeasureOnly = 0
+    .boxW = emlDrawAnnotationBlock.boxW
+    .boxH = emlDrawAnnotationBlock.boxH
+    .insetX = emlDrawAnnotationBlock.insetX
+    .insetY = emlDrawAnnotationBlock.insetY
+    if .boxW = undefined or .boxH = undefined
+        goto PLACE_ANNOT_END
+    endif
+    if .boxW <= 0 or .boxH <= 0
+        goto PLACE_ANNOT_END
+    endif
+
+    ; ---- The four candidate rectangles ----------------------------------
+    .cName$[1] = "top-left"
+    .cLeft[1] = .xMin + .insetX
+    .cTop[1] = .yMax - .insetY
+    .cName$[2] = "top-right"
+    .cLeft[2] = .xMax - .insetX - .boxW
+    .cTop[2] = .yMax - .insetY
+    .cName$[3] = "bottom-left"
+    .cLeft[3] = .xMin + .insetX
+    .cTop[3] = .yMin + .insetY + .boxH
+    .cName$[4] = "bottom-right"
+    .cLeft[4] = .xMax - .insetX - .boxW
+    .cTop[4] = .yMin + .insetY + .boxH
+
+    .qScore[1] = .qTL
+    .qScore[2] = .qTR
+    .qScore[3] = .qBL
+    .qScore[4] = .qBR
+
+    for .c from 1 to 4
+        .hit[.c] = 0
+        .right = .cLeft[.c] + .boxW
+        .bottom = .cTop[.c] - .boxH
+        for .p from 1 to emlCollideN
+            .px = emlCollideX#[.p]
+            .py = emlCollideY#[.p]
+            ; Nested tests, never a chained `and`: Praat evaluates both
+            ; operands and an undefined coordinate compares FALSE, so a
+            ; combined test would silently count nothing.
+            .in = 1
+            if .px = undefined
+                .in = 0
+            endif
+            if .py = undefined
+                .in = 0
+            endif
+            if .in = 1
+                if .px < .cLeft[.c]
+                    .in = 0
+                endif
+            endif
+            if .in = 1
+                if .px > .right
+                    .in = 0
+                endif
+            endif
+            if .in = 1
+                if .py < .bottom
+                    .in = 0
+                endif
+            endif
+            if .in = 1
+                if .py > .cTop[.c]
+                    .in = 0
+                endif
+            endif
+            if .in = 1
+                .hit[.c] = .hit[.c] + 1
+            endif
+        endfor
+    endfor
+
+    ; ---- Fewest points under the box wins; ties go to the emptiest
+    ; quadrant, which is the answer this plugin has always given and is a
+    ; better tie-break than declaration order.
+    .best = 1
+    for .c from 2 to 4
+        .take = 0
+        if .hit[.c] < .hit[.best]
+            .take = 1
+        elsif .hit[.c] = .hit[.best]
+            if .qScore[.c] < .qScore[.best]
+                .take = 1
+            endif
+        endif
+        if .take = 1
+            .best = .c
+        endif
+    endfor
+
+    .corner1$ = .cName$[.best]
+    .collisions = .hit[.best]
+    if .nElements >= 2
+        @emlOppositeCorner: .corner1$
+        .corner2$ = emlOppositeCorner.result$
+    else
+        .corner2$ = .corner1$
+    endif
+    label PLACE_ANNOT_END
 endproc
 
 
@@ -2575,6 +2772,33 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                     .dunnError$ = emlDunnTest.error$
                     if .dunnError$ = ""
                         .pMat## = emlDunnTest.pMatrix##
+                        # NEW-G9-1. THE PAIRWISE MATRIX IS DECLARED HERE, on the
+                        # significant branch, because this is the branch that
+                        # takes it away. @emlReportKWComparison prints the
+                        # rank-biserial matrix UNCONDITIONALLY and computes it
+                        # itself only when .doDunn = 0; with .doDunn = 1 it
+                        # reads emlKruskalWallis.rMatrix## and its header says
+                        # that value is "guaranteed by orchestrator". The
+                        # orchestrator in stats/eml-analysis.praat does
+                        # guarantee it -- it makes exactly this copy after
+                        # exactly this call. THIS PROCEDURE IS THE SECOND
+                        # ORCHESTRATOR and never made it, so a graphs-side
+                        # annotated Kruskal-Wallis draw died with "Unknown
+                        # variable: emlKruskalWallis.rMatrix##" -- and only
+                        # when the omnibus was SIGNIFICANT, since a
+                        # non-significant one leaves .doDunn = 0 and the
+                        # reporter computes the matrix for itself. The crash
+                        # therefore fired precisely when the user had a result
+                        # worth annotating (audit S6, 14 Aug 2026).
+                        #
+                        # THE COPY, NOT A RECOMPUTE. @emlDunnTest has already
+                        # built this matrix from the same ranks its z-scores
+                        # came from; recomputing here would be a second engine
+                        # for one number and the two could drift. It is also
+                        # what makes the graphs figure agree with the wrapper
+                        # report to the last digit, which is the property this
+                        # whole layer is being held to.
+                        emlKruskalWallis.rMatrix## = emlDunnTest.rMatrix##
                     endif
                     if .dunnError$ = ""
                         annotMatrixPosthoc$ = "Dunn's test ("
@@ -3379,7 +3603,27 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
             ... + "independent groups without assuming normality."
         endif
         if emlShowExplanations
-            emlWizardExplain$ = "Sum of ranks: measures how much one group's values tend to exceed the other's"
+            ; NEW-G2-2, corrected 15 Aug 2026. This gloss opened "Sum of
+            ; ranks:", and U is not a sum of ranks. The rank sum is R1;
+            ; @emlMannWhitneyU computes U1 = R1 - n1(n1+1)/2, which SUBTRACTS
+            ; the smallest rank total group 1 could possibly have had. On the
+            ; audit's verification table R1 = 274 and the printed U1 = 64 --
+            ; the printed number was right and the sentence next to it named
+            ; a different statistic. Ian's readers are voice teachers who
+            ; quote these lines to students, so a wrong name here becomes a
+            ; wrong definition in a studio.
+            ;
+            ; What U actually counts is pairs: take every value in group 1
+            ; against every value in group 2, n1 x n2 comparisons in all, and
+            ; U1 is how many group 1 wins (ties count a half each). That is
+            ; the interpretation the rest of the old sentence was already
+            ; reaching for, which is why only the opening two words were
+            ; wrong -- and why the replacement keeps the same shape.
+            ;
+            ; ASCII "x" and not the multiplication sign, deliberately: this
+            ; string is also written to the plain-text report file, and the
+            ; two neighbouring Wilcoxon glosses are ASCII throughout.
+            emlWizardExplain$ = "U: how often a value from one group exceeds a value from the other, out of n1 x n2 possible pairs"
         endif
         @emlReportLine: "U1", emlMannWhitneyU.u1, 1
         @emlReportLine: "U2", emlMannWhitneyU.u2, 1
@@ -4871,6 +5115,17 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
                 appendInfoLine: "  Why: Nonparametric test for paired "
                 ... + "observations — no normality assumption needed."
             endif
+            ; VERIFIED CORRECT AND LEFT ALONE, 15 Aug 2026. The audit flagged
+            ; the Mann-Whitney gloss above and asked whether these two share
+            ; its defect. They do not, and the difference is not cosmetic:
+            ; @emlWilcoxonSignedRank (stats/eml-inferential.praat) ranks the
+            ; ABSOLUTE differences and then adds up the ranks belonging to
+            ; the positive ones for T+ and the negative ones for T-. The
+            ; signed-rank statistic IS a rank sum -- no n(n+1)/2 is
+            ; subtracted, as it is for U -- so "Sum of ranks for positive
+            ; differences" is the correct name for this number. Rewriting it
+            ; to match the Mann-Whitney correction would have introduced a
+            ; second defect while fixing the first.
             if emlShowExplanations
                 emlWizardExplain$ = "Sum of ranks for positive differences (subjects who increased)"
             endif
