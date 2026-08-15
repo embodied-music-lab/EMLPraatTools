@@ -96,16 +96,31 @@
 # installed here, so the 6.4.39 question cannot be settled by execution either.
 # Recorded as a gap rather than assumed clear.
 #
-# The plugin nevertheless declares 6.6.30 and REFUSES below it
-# (plugin/setup.praat:45-59), on the stated ground that every capture under
-# evidence/info/ was produced on that build. That is two departures from the
-# corpus -- a floor 20 releases above the measured one, and a refusal where
-# PRAAT_VERSION_FLOOR.txt's "WHAT TO DO" and APPENDIX_F §S15A require a check
-# that "WARNS and offers to continue. It never refuses." Both are Ian's call,
-# so nothing here changes either number. What is pinned is setup.praat's
-# declared floor, so that if it is ever moved to match PraatGen the move is
-# forced through this header and the S15 per-command warning list it would then
-# need.
+# THE PLUGIN DECLARES 6.6.30 AND REFUSES BELOW IT, AND THAT IS CORRECT --
+# AUTHOR RULING, 15 AUGUST 2026. This paragraph previously filed the difference
+# as "two departures from the corpus", which was a category error, and the
+# ruling names it:
+#
+#     "The plugin's floor is 6.6.30 and it is FINE for setup.praat to refuse
+#      below it -- the validation evidence exists only at 6.6.30, and a
+#      warn-and-continue plugin would print unvalidated numbers under a
+#      validated banner. PraatGen has its own, lower measured floor (6.4.39)
+#      governed by its own §S15A warn-don't-refuse rule for generated scripts.
+#      These are different artifacts with different contracts."
+#
+# The distinction is worth stating precisely, because the two rules look like
+# they contradict and do not. A PraatGen-generated script is handed to a user
+# who owns the result and whose Praat is whatever it is; refusing to run would
+# be the tool substituting its judgement for theirs, so it warns. This plugin
+# ships a validation suite that says its numbers are right, and every capture
+# under evidence/info/ was produced on 6.6.30. Running below that floor would
+# not produce slightly-less-validated output -- it would produce output whose
+# banner claims a validation that does not exist for that build. A refusal is
+# the honest response to a claim the artefact cannot honour.
+#
+# So both numbers stand, and neither is a defect against the other. What is
+# pinned below is setup.praat's declared floor, so that moving it is a
+# deliberate act that has to argue with this header.
 #
 # Input: harness/batchcmd/out/COMMANDS.tsv. $EML_BATCHCMD_DIR overrides it, and
 #        $EML_BATCH_FILE overrides the source under test, for break tests.

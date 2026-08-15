@@ -60,9 +60,17 @@
 #
 #     Rscript validate/v63_coercion_parity.R
 #
-# NOT A MEMBER OF validate/run_all.R's list, for v59's reason: it LAUNCHES
-# PRAAT, where every file in that list is arithmetic over committed evidence
-# and needs no binary at all. Run it on any change to a coercion.
+# A MEMBER OF validate/run_all.R's list, and this paragraph used to say the
+# opposite -- "NOT A MEMBER ... for v59's reason: it LAUNCHES PRAAT, where
+# every file in that list is arithmetic over committed evidence and needs no
+# binary at all". That was true of the list when this file was written and is
+# not true of the list now: run_all.R names v63 last, after v62, and v59 and
+# v61 are in it as well. Corrected 15 August 2026 rather than deleted, because
+# a stale claim about WHERE A CHECK RUNS is the kind that costs somebody an
+# afternoon -- the reasoning stands, the membership moved underneath it.
+# Consequence worth knowing before editing anything below: a change here moves
+# the SUITE's count, and a Praat that cannot launch takes the suite red rather
+# than this file alone. Run it on any change to a coercion.
 #
 # Input: the plugin source, driven live. $EML_PLUGIN_DIR overrides the tree
 #        under test, for break tests. $PRAAT overrides the binary.
@@ -207,6 +215,16 @@ if (!canDrive) {
         '        .lab$ = Get column label: .i',
         '        appendInfoLine: .tag$, "|COL|", .lab$',
         '    endfor',
+        '    # AND THE DATA UNDER EACH HEADER, addressed BY NAME -- the way a',
+        '    # wrapper addresses it, and the only way the off-by-one is',
+        '    # visible. A census of headers alone cannot tell Column_k from',
+        '    # Column_{k+1}: both are a full set of distinct names.',
+        '    for .i from 1 to .nc',
+        '        selectObject: .t',
+        '        .lab$ = Get column label: .i',
+        '        .cell$ = Get value: 1, .lab$',
+        '        appendInfoLine: .tag$, "|CELL|", .lab$, "=", .cell$',
+        '    endfor',
         '    for .r from 1 to .nr',
         '        selectObject: .t',
         '        .lab$ = Get column label: 1',
@@ -215,11 +233,16 @@ if (!canDrive) {
         '    endfor',
         'endproc',
         '',
+        '# THE CELL SAYS WHICH COLUMN IT CAME FROM. col * 100 + row makes',
+        '# source column k row r read 100k + r, so `value div 100` recovers',
+        '# the SOURCE column index from any cell, with no bookkeeping in',
+        '# between. The previous formula, row * 10 + col, would have done as',
+        '# well; this one survives a table with ten columns.',
         'procedure mkMatrix: .name$',
-        '    Create simple Matrix: .name$, 4, 3, "row * 10 + col"',
+        '    Create simple Matrix: .name$, 4, 3, "col * 100 + row"',
         'endproc',
         'procedure mkToR: .name$, .labelled',
-        '    Create simple Matrix: .name$, 4, 3, "row * 10 + col"',
+        '    Create simple Matrix: .name$, 4, 3, "col * 100 + row"',
         '    To TableOfReal',
         '    removeObject: "Matrix " + .name$',
         '    if .labelled',
@@ -227,6 +250,18 @@ if (!canDrive) {
         '            Set row label (index): .i, "s" + string$ (.i)',
         '        endfor',
         '    endif',
+        'endproc',
+        '# A SOURCE THAT LABELLED SOME OF ITS COLUMNS AND NOT OTHERS. This is',
+        '# the case that separates "numbered by source index" from "numbered',
+        '# by counting the gaps": here the gaps are source columns 1 and 3,',
+        '# so source numbering gives Column_1 and Column_3 and gap-counting',
+        '# gives Column_1 and Column_2. Both are duplicate-free, both open',
+        '# the dialog, and only one of them addresses the right data.',
+        'procedure mkToRPartialCols: .name$',
+        '    Create simple Matrix: .name$, 4, 3, "col * 100 + row"',
+        '    To TableOfReal',
+        '    removeObject: "Matrix " + .name$',
+        '    Set column label (index): 2, "middle"',
         'endproc',
         '',
         'writeInfoLine: "v63 probe"',
@@ -249,6 +284,38 @@ if (!canDrive) {
         '@shape: "init_labelled", emlWrapperInit.tableId',
         'removeObject: emlWrapperInit.tableId',
         'removeObject: "TableOfReal v63c"',
+        '',
+        '@mkToRPartialCols: "v63f"',
+        '@emlWrapperInit: 1',
+        '@shape: "init_partialcols", emlWrapperInit.tableId',
+        'removeObject: emlWrapperInit.tableId',
+        'removeObject: "TableOfReal v63f"',
+        '',
+        '# --- ruling 8a: one source object, one converted Table --------------',
+        '# Four presses of the same door on the same Matrix. Counted by',
+        '# walking the object list, because the whole defect is that the name',
+        '# stops identifying one object.',
+        'procedure countNamed: .want$',
+        '    .n = 0',
+        '    for .i from 1 to 400',
+        '        nocheck selectObject: .i',
+        '        if numberOfSelected ("Table") = 1',
+        '            if selected$ ("Table") = .want$',
+        '                .n = .n + 1',
+        '            endif',
+        '        endif',
+        '    endfor',
+        'endproc',
+        '@mkMatrix: "v63g"',
+        'v63gId = selected ("Matrix")',
+        'for v63press from 1 to 4',
+        '    selectObject: v63gId',
+        '    @emlWrapperInit: 1',
+        '    @countNamed: "eml_converted_v63g"',
+        '    appendInfoLine: "accumulate|PRESS|", v63press, "=", countNamed.n',
+        'endfor',
+        'removeObject: emlWrapperInit.tableId',
+        'removeObject: v63gId',
         '',
         '# --- door 2: @emlDescribeCoerceSelection, the describe wrapper ------',
         '@mkMatrix: "v63d"',
@@ -310,7 +377,7 @@ if (!canDrive) {
         # first column of that name, so a duplicate is not a cosmetic defect,
         # it is a silent wrong-column read with no symptom.
         for (tag in c("init_matrix", "init_tor", "init_labelled",
-                      "desc_matrix", "clean_matrix")) {
+                      "init_partialcols", "desc_matrix", "clean_matrix")) {
             cols <- got(tag, "COL")
             check_true("v63",
                        sprintf("%s: no duplicate or unnamed column (%s)",
@@ -324,13 +391,112 @@ if (!canDrive) {
         # skipped by exactly the event it is written for. Checked on both
         # arms of @emlWrapperInit, which is where the six unfixed
         # registrations were.
-        for (tag in c("init_matrix", "init_tor", "init_labelled", "desc_matrix")) {
+        for (tag in c("init_matrix", "init_tor", "init_labelled",
+                      "init_partialcols", "desc_matrix")) {
             nm <- got(tag, "NAME")
             check_true("v63",
                        sprintf("%s: the converted Table is renamed at creation (%s)",
                                tag, paste(nm, collapse = ",")),
                        length(nm) == 1 && grepl("^eml_converted_", nm))
         }
+
+        # -- 3f. THE NUMBER IN Column_<n> IS THE SOURCE COLUMN'S NUMBER -----
+        #
+        # AUTHOR RULING, 15 August 2026. The duplicate-header repair of §3c
+        # invented names by TABLE POSITION, and `To Table: "row"` has already
+        # put the manufactured label column in position 1 by then -- so source
+        # column k became "Column_{k+1}", and no column was called Column_1 at
+        # all. A user who asks for "column 2 of my matrix" picks Column_2 out
+        # of the menu and is handed column 1's data. Auditor's evidence:
+        # leg2_converted_mx.csv.
+        #
+        # WHY §3c COULD NOT HAVE CAUGHT IT, and this is the whole reason this
+        # section exists as well as that one. §3c reads HEADERS and asserts
+        # they are distinct and non-empty. "Column_2, Column_3, Column_4" is a
+        # perfect set of distinct non-empty headers. So is "Column_1,
+        # Column_2, Column_3". A check over names alone cannot tell an
+        # off-by-one from a correct mapping, because the off-by-one does not
+        # damage the names -- it damages what the names POINT AT, and that is
+        # only visible by reading a cell through the name and asking which
+        # source column the value came from. Nothing else in this file, and
+        # nothing in the plugin's own output, names a column index at all.
+        #
+        # NOR COULD ANY RED PATH. There is no failure. Every value is a real
+        # value, from a real column of the user's object, of the right length,
+        # correctly computed. Only the heading over it is wrong, and the
+        # arithmetic downstream is perfect. That is why the assertion has to
+        # be about the MAPPING and not about a symptom.
+        #
+        # The probe writes `tag|CELL|<header>=<row 1 value>` and the source
+        # matrix is col * 100 + row, so `value div 100` is the source column
+        # index and the check reduces to: does Column_k hold column k?
+        srcIdx <- function(tag) {
+            raw <- got(tag, "CELL")
+            kv <- regmatches(raw, regexpr("^.*?=", raw))
+            nm <- sub("=$", "", kv)
+            vl <- suppressWarnings(as.numeric(sub("^.*?=", "", raw)))
+            keep <- grepl("^Column_[0-9]+$", nm)
+            if (!any(keep)) return(data.frame(k = integer(0), src = integer(0)))
+            data.frame(k = as.integer(sub("^Column_", "", nm[keep])),
+                       src = vl[keep] %/% 100)
+        }
+        for (tag in c("init_matrix", "init_tor", "init_partialcols")) {
+            m <- srcIdx(tag)
+            check_true("v63",
+                       sprintf("%s: every manufactured header was found and read (%d)",
+                               tag, nrow(m)),
+                       nrow(m) > 0)
+            check_true("v63",
+                       sprintf("%s: Column_k holds SOURCE column k (%s)", tag,
+                               if (nrow(m)) paste(sprintf("Column_%d->src%d",
+                                                          m$k, m$src),
+                                                  collapse = ", ") else "none"),
+                       nrow(m) > 0 && all(m$k == m$src))
+            # AND THE NUMBERING STARTS AT 1. Stated separately because it is
+            # the half a "consecutive and distinct" check would pass: 2,3,4
+            # is consecutive and distinct and is exactly the defect.
+            check_true("v63",
+                       sprintf("%s: the numbering starts at 1, not at the label column (%s)",
+                               tag, paste(sort(m$k), collapse = ",")),
+                       nrow(m) > 0 && min(m$k) == 1)
+        }
+        # THE PARTIALLY LABELLED CASE, SAID OUT LOUD. Source columns 1 and 3
+        # were unlabelled and column 2 was called "middle", so the answer is
+        # Column_1 and Column_3 -- NOT Column_1 and Column_2, which is what
+        # numbering the gaps in order would give. Both are duplicate-free.
+        mp <- srcIdx("init_partialcols")
+        check_true("v63",
+                   sprintf("init_partialcols: the gaps keep the source's numbering, 1 and 3 (%s)",
+                           paste(sort(mp$k), collapse = ",")),
+                   identical(sort(mp$k), c(1L, 3L)))
+        check_true("v63",
+                   "init_partialcols: the label the user supplied is untouched",
+                   any(got("init_partialcols", "COL") == "middle"))
+
+        # -- 3g. RULING 8a: ONE SOURCE OBJECT, ONE CONVERTED TABLE ----------
+        #
+        # Each press manufactured a fresh Table and named it
+        # eml_converted_<source>, and nothing removed the last one, so four
+        # presses left four objects sharing one name. The consequence is §3c's
+        # mechanism one level up: a name that no longer identifies one thing,
+        # this time in the Objects window rather than in a column menu.
+        #
+        # WHAT COULD NOT HAVE CAUGHT IT. Every check above drives a door ONCE
+        # and looks at the table it returns, which is correct on every press
+        # -- the defect is invisible to any check whose population is one
+        # press. It leaves no error, no warning and no wrong number; it is
+        # only ever seen by a user scrolling their own Objects window, which
+        # is why it sat at severity 4 for as long as it did.
+        presses <- got("accumulate", "PRESS")
+        pv <- suppressWarnings(as.integer(sub("^.*=", "", presses)))
+        check_true("v63",
+                   sprintf("four presses on one Matrix were driven (%d)",
+                           length(pv)),
+                   length(pv) == 4)
+        check_true("v63",
+                   sprintf("after each press exactly one eml_converted_ Table exists (%s)",
+                           paste(pv, collapse = ",")),
+                   length(pv) == 4 && all(pv == 1))
 
         # -- 3e. THE GRAPHS DOOR, MEASURED AND REPORTED ---------------------
         # plugin/graphs/ is outside this change's scope and belongs to another
@@ -367,6 +533,60 @@ if (!canDrive) {
                    sprintf("clean_matrix: whatever the graphs door writes, it is written for every row (%s)",
                            paste(clab, collapse = ",")),
                    length(clab) == 4 && !any(clab == "?") && !any(clab == ""))
+
+        # -- 3h. THE OTHER TWO DOORS' COLUMN NUMBERING, MEASURED ------------
+        # Same treatment, and for the same reason, as §3e gives the graphs
+        # door's row labels: plugin/graphs/ and plugin/scripts/ belong to
+        # another hand on this change, so their numbering is DRIVEN, PRINTED
+        # and deliberately not asserted. Asserting it green would pin the
+        # off-by-one as a contract; asserting it red would fail a run over a
+        # file this change is not allowed to touch; saying nothing is how
+        # three conventions grew in the first place.
+        #
+        # There is one repair, not two. @emlDescribeCoerceSelection does not
+        # rename headers itself -- it calls @emlCleanConvertedTable for that
+        # (plugin/scripts/eml-describe-table.praat:335), so both doors read
+        # off the same line and both move together when it is fixed.
+        for (tag in c("desc_matrix", "clean_matrix")) {
+            m <- srcIdx(tag)
+            ok <- nrow(m) > 0 && all(m$k == m$src)
+            if (!ok) {
+                cat(sprintf(paste0(
+                    "      NOTE v63: %s STILL NUMBERS BY TABLE POSITION.\n",
+                    "            %s\n",
+                    "            Column_k holds source column k-1, so a user who\n",
+                    "            picks \"column 2\" out of the menu is given column 1.\n",
+                    "            REPAIR: plugin/graphs/eml-graph-procedures.praat,\n",
+                    "            @emlCleanConvertedTable, the \"?\"-header pass writes\n",
+                    "            `\"Column_\" + string$ (.iCol)`; it must write the\n",
+                    "            SOURCE index, `string$ (.iCol - 1)`, and the loop must\n",
+                    "            then start at column 2 so position 1 can never be\n",
+                    "            numbered Column_0. @emlWrapperInit takes the offset as\n",
+                    "            an argument (@eml_nameUnlabelledColumns: .tableId, 1)\n",
+                    "            rather than hard-coding it; the same shape works here.\n",
+                    "            Reached by BOTH remaining doors: the describe wrapper\n",
+                    "            calls this procedure for its headers\n",
+                    "            (plugin/scripts/eml-describe-table.praat:335).\n"),
+                    tag,
+                    if (nrow(m)) paste(sprintf("Column_%d -> source column %d",
+                                               m$k, m$src), collapse = "; ")
+                    else "no manufactured header was found at all"))
+            }
+            attest("v63",
+                   sprintf("%s: the column numbering was measured: %s", tag,
+                           if (nrow(m)) paste(sprintf("Column_%d->src%d",
+                                                      m$k, m$src),
+                                              collapse = ", ") else "none"),
+                   "driven live; not asserted -- plugin/graphs/ and plugin/scripts/ are out of scope for this change")
+            # WHAT IS ASSERTED EITHER WAY: the numbering is a bijection onto
+            # the source's columns. Whichever end it starts from, no source
+            # column may be unreachable and no two headers may point at one.
+            check_true("v63",
+                       sprintf("%s: whatever the numbering starts at, it addresses each source column exactly once (%s)",
+                               tag, paste(m$src, collapse = ",")),
+                       nrow(m) > 0 && !any(duplicated(m$src)) &&
+                       all(m$src >= 1))
+        }
     }
 }
 

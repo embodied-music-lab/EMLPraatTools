@@ -18,6 +18,21 @@
 #   NEW-G8-4  the annotation panel sitting on top of a datum
 #   NEW-G2-2  the Mann-Whitney gloss naming the wrong statistic
 #
+# FOUR MORE FROM THE AUTHOR'S RULINGS OF 15 AUGUST, and they are the same
+# species again -- three of them leave every number correct and one of them
+# leaves the page blank:
+#
+#   ruling 7   the y-axis NAME and its tick labels drawn into each other, so
+#              that "Power (dB)" and "100.10" read as "Powe100.10"
+#   ruling 5   Column_k holding SOURCE column k-1, at the two coercion doors
+#              that reach @emlCleanConvertedTable
+#   ruling 8b  one extracted channel Sound left behind per press of the
+#              stereo gate, all of them sharing one name
+#   ruling 8c  a Spectrum over a one-bin range drawn as an empty frame --
+#              CHASED AND MEASURED HERE, and deliberately not repaired; see
+#              the section at the end for what the measurement says and what
+#              it is waiting on
+#
 # ---------------------------------------------------------------------------
 # THE STEREO RULING, AND WHY EXISTENCE IS NOT THE CHECK
 # ---------------------------------------------------------------------------
@@ -80,6 +95,36 @@
 #    tiered it severity 2; the verifier re-tiered it to 3 after measuring the
 #    span.
 #
+# 7. FOR RULING 7, EVERY CHECK IN THIS FILE THAT ALREADY EXISTED. The
+#    collision is not a number, not a range, not a call site and not a string.
+#    @emlTickPrecision was doing exactly what it was built to do -- writing
+#    "100.10" where Praat would have written "100.1" -- and the figure got
+#    worse, because the sixth character is the one that runs into the axis
+#    name. Nothing that reads source, and nothing that reads a measurement
+#    emitted by a Praat script, can see two pieces of ink touching. That is
+#    why the evidence for ruling 7 is A COLUMN PROFILE OF THE RENDERED PNG:
+#    the gap between the axis name's ink and the tick numbers' ink, in pixels,
+#    off the page as it will be printed.
+#
+# 8. FOR RULING 5, A CENSUS OF COLUMN HEADERS -- which is what the plugin's
+#    own duplicate-name repair already had, and it was green throughout.
+#    "Column_2, Column_3, Column_4" is a perfectly good set of distinct
+#    non-empty headers, and so is "Column_1, Column_2, Column_3". A check over
+#    names alone cannot tell an off-by-one from a correct mapping, because the
+#    off-by-one does not damage the names -- it damages what they POINT AT.
+#    The probe's Matrix is therefore filled with col * 100 + row, so that any
+#    cell says which source column it came from, and the assertion is about
+#    the mapping and not about the headers. Borrowed, deliberately, from
+#    validate/v63's §3f: the same defect, the same evidence, at a different
+#    door.
+#
+# 9. FOR RULING 8b, ANY CHECK WHOSE POPULATION IS ONE PRESS -- which is every
+#    other stereo check in this file. The first press is flawless. So is the
+#    second. What is wrong is what the first left behind for the second, and
+#    it is only visible to a leg that presses the gate three times and then
+#    WALKS THE OBJECT LIST -- because asking for the object by name is exactly
+#    what the defect makes meaningless.
+#
 # ---------------------------------------------------------------------------
 # EVIDENCE, AND THE OVERRIDES THAT LET IT BE BROKEN ON PURPOSE
 # ---------------------------------------------------------------------------
@@ -90,6 +135,11 @@
 #   $EML_GRAPHS_SRC    directory holding the graphs .praat files under test.
 #                      Default plugin/graphs. Point it at a deliberately
 #                      damaged copy and every static check here goes RED.
+#   $EML_SCRIPTS_SRC   directory holding the wrapper scripts. Default
+#                      plugin/scripts. Only one check reads it -- that the
+#                      describe wrapper still routes its header repair through
+#                      the shared procedure -- and that check is the whole
+#                      reason ruling 5 is one repair and not two.
 #   $EML_AXES_DIR      directory holding AXES.tsv.   Default harness/graphaxes/out
 #   $EML_STEREO_DIR    directory holding STEREO.tsv. Default the same.
 #
@@ -98,13 +148,30 @@
 #     bash harness/graphaxes/break.sh   -> out/BREAKS.tsv
 #
 # builds a shadow tree in /tmp, damages ONE thing in it, re-drives whichever
-# harnesses that damage can reach, and runs this file against it. 44 cases,
-# 44 red. They include the gate call sites deleted and commented out, the
+# harnesses that damage can reach, and runs this file against it. 64 cases,
+# 64 red. They include the gate call sites deleted and commented out, the
 # dialog suppressed, the left and right channels swapped, the conversion made
 # a no-op, the span floor removed AND set too wide, the tick rule disabled AND
 # made unconditional, the frame clip removed AND made over-eager, the
 # statistics allowed to leak the clip, the collision scorer bypassed, the
 # corrected gloss put back, and each of the three evidence files taken away.
+#
+# THE TWENTY ADDED FOR THE 15 AUGUST RULINGS ARE PAIRED WHEREVER A FIX HAS
+# TWO WAYS TO BE WRONG, which for ruling 7 is the whole difficulty: the axis
+# name shift is damaged so that it NEVER fires, and again so that it ALWAYS
+# fires. `axisname_shifts_all` is the case that matters, because a shift
+# applied to every figure clears both collisions, satisfies any check written
+# against the crowded figures alone, and quietly moves all 39 stress figures.
+# The label predictor is damaged in the direction that looks like an
+# improvement -- modelling Praat's exponent forms instead of declining them --
+# which would move violin_hugevalues, a figure that is correct today. And the
+# stereo drop is damaged so that the gate KEEPS RUNNING and accumulates, which
+# is what the plugin did before the ruling; deleting the call alone kills the
+# leg and goes red for want of evidence rather than because three Sounds were
+# counted. `clamp_removed` is the one whose red line is not the gap at all:
+# the gap gets BIGGER as the name leaves the page, and what catches it is the
+# axis name's first ink column arriving at zero -- a name sliced down its
+# length by the export.
 #
 # TWO OF THOSE CASES ARE THE POINT OF THE EXERCISE.
 #   * `gate_form_comment_only` COMMENTS OUT the form's call rather than
@@ -153,11 +220,14 @@ axdir <- Sys.getenv("EML_AXES_DIR", unset = "")
 if (!nzchar(axdir)) axdir <- repo_path(file.path("harness", "graphaxes", "out"))
 stdir <- Sys.getenv("EML_STEREO_DIR", unset = "")
 if (!nzchar(stdir)) stdir <- repo_path(file.path("harness", "graphaxes", "out"))
+scdir <- Sys.getenv("EML_SCRIPTS_SRC", unset = "")
+if (!nzchar(scdir)) scdir <- repo_path(file.path("plugin", "scripts"))
 
 f_graph <- file.path(gdir, "eml-graph-procedures.praat")
 f_draw  <- file.path(gdir, "eml-draw-procedures.praat")
 f_annot <- file.path(gdir, "eml-annotation-procedures.praat")
 f_form  <- file.path(gdir, "eml-graphs-form.praat")
+f_desc  <- file.path(scdir, "eml-describe-table.praat")
 
 # ---------------------------------------------------------------------------
 # JOIN PRAAT CONTINUATIONS, AND STRIP COMMENTS BEFORE MATCHING.
@@ -529,8 +599,456 @@ check_true(ID, "the Wilcoxon T+ gloss is left as it was -- T+ genuinely IS a ran
 check_true(ID, "and so is the T- gloss",
            has(code_annot, "Sum of ranks for negative differences"))
 
+# ===========================================================================
+# 6. THE AXIS NAME AND ITS TICK LABELS -- AUTHOR RULING 7
+# ===========================================================================
+# "No collision between the y-axis name and its tick labels. The author
+# delegates the mechanism; the requirement is no collision."
+#
+# THE MECHANISM CHOSEN, AND WHY IT IS NOT THE ONE SUGGESTED. The ruling
+# proposed widening the plugin's own left margin by a character width. That
+# was measured and it does not work: `Text left` anchors the rotated name to
+# the INNER FRAME at a distance fixed by the font size, and the frame moves
+# with the margin, so the same figure drawn at marginLeft 0.84" and 1.10" has
+# the identical three pixels of gap. What is done instead is to declare the
+# frame momentarily to start further left, draw the name from Praat's own
+# anchor into that declared frame, and put the frame back -- so the name keeps
+# Praat's vertical centring, rotation and baseline, and the shift is the only
+# thing that changed. @emlDrawAxisNameLeft.
+#
+# THE THREE FIGURES BELOW ARE THE WHOLE ARGUMENT.
+#   margin_st     Praat's own label, six characters, no explicit precision
+#   margin_db     the plugin's label, six characters, explicit precision
+#   margin_plain  an ordinary axis, which must not move by one pixel
+#
+# THE THIRD IS THE CHECK. A fix that widened the margin unconditionally would
+# satisfy the first two and would change every figure this plugin has ever
+# drawn -- so margin_plain asserts a shift of EXACTLY zero and a gap that is
+# EXACTLY what it was at HEAD, and all 39 figures of
+# harness/stress_graphs.sh were re-rendered and compared byte for byte.
+if (have_axes) {
+    av <- function(k) if (is.null(ax[[k]])) NA_character_ else ax[[k]]
+    an <- function(k) suppressWarnings(as.numeric(av(k)))
+
+    # -- the two collisions, in pixels off the page ------------------------
+    # A quarter of a millimetre at 300 dpi is three pixels, and three pixels
+    # is what "reads as touching" measured as. The floor asserted here is one
+    # third of a character width, which at this figure's 9.36 pt body is
+    # about 7 px -- comfortably above the 3 and 4 px measured at HEAD, and
+    # comfortably below the 15 and 17 px the fix produces.
+    check_true(ID,
+        sprintf("a semitone axis reading %s to %s has six-character ticks",
+                av("margin_st_axis_min"), av("margin_st_axis_max")),
+        is.finite(an("margin_st_widest_label_mm")) &&
+        an("margin_st_widest_label_mm") > 0)
+    # AND PRAAT WROTE THEM, NOT THE PLUGIN. This is the half of the ruling
+    # that a guard hung off .explicit alone would miss entirely: two integer
+    # digits and two decimals is four significant digits, so @emlTickPrecision
+    # does not engage and Praat's own "-33.08" arrives at six characters by
+    # its own route.
+    check_true(ID,
+        "and Praat wrote them itself -- explicit precision never engaged there",
+        identical(av("margin_st_tick_explicit"), "0"))
+    check_true(ID,
+        sprintf("the semitone axis name clears its ticks (%s px, was 3 at HEAD)",
+                av("margin_st_gap_px")),
+        is.finite(an("margin_st_gap_px")) && an("margin_st_gap_px") >= 7)
+    check_true(ID,
+        "an explicit two-decimal dB axis is the other route to six characters",
+        identical(av("margin_db_tick_explicit"), "1") &&
+        identical(av("margin_db_tick_decimals"), "2"))
+    check_true(ID,
+        sprintf("and Power (dB) clears \"100.10\" (%s px, was 4 at HEAD)",
+                av("margin_db_gap_px")),
+        is.finite(an("margin_db_gap_px")) && an("margin_db_gap_px") >= 7)
+
+    # -- THE NARROW CASE, UNTOUCHED ---------------------------------------
+    check_true(ID,
+        sprintf("an ordinary figure's widest tick label is under six characters (%s mm measured)",
+                av("margin_plain_widest_label_mm")),
+        identical(av("margin_plain_widest_label_mm"), "0"))
+    check_true(ID,
+        "so its axis name is not moved at all -- the shift is exactly zero",
+        identical(av("margin_plain_shift_inch"), "0"))
+    check_true(ID,
+        sprintf("and it still has the gap it always had (%s px)",
+                av("margin_plain_gap_px")),
+        identical(av("margin_plain_gap_px"), "68"))
+    # THE TWO THAT DID MOVE, MOVED. Stated as a number rather than implied by
+    # the gaps above: a fix that computed a shift and drew nothing, or drew
+    # without computing, would leave one of these two disagreeing with the
+    # pixels.
+    check_true(ID,
+        sprintf("the two crowded figures were shifted and the plain one was not (%s / %s / %s inch)",
+                av("margin_st_shift_inch"), av("margin_db_shift_inch"),
+                av("margin_plain_shift_inch")),
+        is.finite(an("margin_st_shift_inch")) && an("margin_st_shift_inch") > 0 &&
+        is.finite(an("margin_db_shift_inch")) && an("margin_db_shift_inch") > 0 &&
+        an("margin_plain_shift_inch") == 0)
+    # AND THE SHIFT IS SMALL. A guard that solved the collision by moving the
+    # name an inch would pass every check above and would put the axis name
+    # off the figure. Both shifts are millimetres.
+    check_true(ID,
+        "and both shifts are a few millimetres, not a redesign of the margin",
+        an("margin_st_shift_inch") < 0.25 && an("margin_db_shift_inch") < 0.25)
+
+    # -- NOTHING WAS PUSHED OFF THE PAGE ----------------------------------
+    # Praat saves the outer viewport @emlAssertFullViewport selects and saves
+    # nothing outside it -- measured, by saving a figure from 0.5" whose axis
+    # name stood at 0.4" and watching a fifth of the ink disappear. So a shift
+    # bigger than the panel's own margin does not merely look odd, it SLICES
+    # THE NAME down its length, and the slice shows up as ink in column 0.
+    # Asserted on every margin figure, shifted or not.
+    for (leg in c("margin_st", "margin_db", "margin_plain", "margin_panel")) {
+        px <- an(paste0(leg, "_name_left_px"))
+        check_true(ID,
+            sprintf("%s: the axis name is complete, not cut at the image edge (first ink at %s px)",
+                    leg, av(paste0(leg, "_name_left_px"))),
+            is.finite(px) && px > 0)
+    }
+    # -- THE CLAMP, ON A PANEL TOO SMALL TO GIVE THE NAME ROOM -------------
+    # A 3 x 2 panel at 7 pt has a hundredth of an inch to give. The shift
+    # takes exactly that and stops, so the collision is relieved as far as the
+    # panel allows and the figure keeps its size. The alternative -- growing
+    # the saved box -- makes a 3 x 2 request into a file that is not 3 x 2,
+    # which validate/v32 keeps a pinned inventory of, and is the author's call
+    # rather than this procedure's.
+    check_true(ID,
+        sprintf("a 3 x 2 panel has less room than the labels need, and says so (room %s\", clamped %s)",
+                av("margin_panel_room_inch"), av("margin_panel_clamped")),
+        identical(av("margin_panel_clamped"), "1"))
+    check_true(ID,
+        sprintf("and the shift taken is exactly the room there was (%s\" of %s\")",
+                av("margin_panel_shift_inch"), av("margin_panel_room_inch")),
+        is.finite(an("margin_panel_shift_inch")) &&
+        abs(an("margin_panel_shift_inch") - an("margin_panel_room_inch")) < 1e-6)
+    # AND THE ORDINARY FIGURES ARE NOWHERE NEAR THE CLAMP, which is what says
+    # the trade above is paid only where it has to be.
+    check_true(ID,
+        sprintf("while a 6 x 4 figure is nowhere near its own limit (%s\" needed of %s\" available)",
+                av("margin_db_shift_inch"), av("margin_db_room_inch")),
+        identical(av("margin_st_clamped"), "0") &&
+        identical(av("margin_db_clamped"), "0") &&
+        an("margin_db_shift_inch") < an("margin_db_room_inch") / 2)
+
+    # -- THE PREDICTOR, AGAINST WHAT PRAAT ACTUALLY DRAWS ------------------
+    # @emlTickLabelWidth models Praat's automatic mark number where the guard
+    # cannot ask for it. The four modelled cases are pinned against the forms
+    # measured on 6.6.30, and the two UNMODELLED ones are pinned as empty --
+    # because an axis running to 1e9 is labelled "10^9" and a predictor that
+    # guessed "1000000000" would shift the axis name on violin_hugevalues,
+    # which is a figure that is drawn correctly today.
+    check_true(ID, "the label predictor reproduces Praat's own four-digit forms",
+        identical(av("ticklabel_auto_neg"), "-33.08") &&
+        identical(av("ticklabel_auto_100"), "100") &&
+        identical(av("ticklabel_auto_005"), "0.05"))
+    check_true(ID, "and takes the plugin's own string when precision is explicit",
+        identical(av("ticklabel_explicit"), "100.10") &&
+        identical(av("ticklabel_explicit_chars"), "6"))
+    check_true(ID,
+        "and declines the exponent forms rather than guessing at them",
+        identical(av("ticklabel_huge"), "<not modelled>") &&
+        identical(av("ticklabel_tiny"), "<not modelled>") &&
+        identical(av("ticklabel_huge_mm"), "0") &&
+        identical(av("ticklabel_tiny_mm"), "0"))
+
+    # -- THE SAME COLLISION AT A DOOR THIS CHANGE COULD NOT TOUCH ---------
+    # AND THE HANDOVER THAT CLOSED IT, which is why this is now an assertion.
+    #
+    # When this section was written the six categorical draw procedures did
+    # not go through @emlDrawAxes at all -- they placed the y-axis name with a
+    # bare `Text left` -- and eml-draw-procedures.praat belonged to another
+    # agent that turn. So the collision was MEASURED, PRINTED and NOT
+    # ASSERTED, on v63 §3e's doctrine: a passing check would have pinned the
+    # defect as a contract, and silence is how a finding gets lost between two
+    # hands. The printed NOTE named the seven sites and the one-line repair,
+    # and warned that the eighth (a panel label, not an axis name) wanted
+    # reading before it was changed.
+    #
+    # It was read, and all seven were repaired the same day. Measured on the
+    # same fixture -- a violin of dB values two tenths apart, ticks reading
+    # "100.10" against a 10.033 mm label -- the gap went 4 px to 17 px, which
+    # is exactly what @emlDrawAxes reaches on the same requirement. The eighth
+    # site stayed bare, correctly: it is a facet label in the panel's own
+    # margin with no ticks to collide with.
+    #
+    # The threshold is 7 rather than 17 on purpose. 17 is what this mechanism
+    # happens to yield today; the requirement the author gave is "no
+    # collision", and pinning the exact number would turn a font-metric change
+    # into a red line about nothing. 7 px is comfortably above the 3-4 px that
+    # reads as touching and comfortably below what any working fix produces.
+    check_true(ID,
+        sprintf("the categorical draw paths clear their tick labels too (%s px against a %s mm label)",
+                av("margin_cat_gap_px"), av("margin_cat_widest_label_mm")),
+        is.finite(an("margin_cat_gap_px")) && an("margin_cat_gap_px") >= 7)
+}
+
+check_true(ID, "@emlDrawAxisNameLeft exists and is where the name is placed",
+           has(code_graph, "^procedure emlDrawAxisNameLeft:"))
+check_true(ID, "both axis orchestrators place the y-axis name through it",
+           sum(grepl("@emlDrawAxisNameLeft:", code_graph)) >= 2L)
+# AND NO BARE `Text left` SURVIVES IN THEM. The guard is worth nothing if one
+# of the two orchestrators still draws the name the old way -- which is the
+# shape the first version of this change had, with @emlDrawAxesSelective left
+# behind. Scoped to the two procedure bodies, because @emlDrawAxisNameLeft
+# itself contains the bare call by construction.
+for (nm in c("emlDrawAxes", "emlDrawAxesSelective")) {
+    body <- proc_body(code_graph, nm)
+    check_true(ID,
+        sprintf("@%s draws no bare Text left of its own", nm),
+        length(body) > 0 && !any(grepl("^Text left:", body)))
+}
+check_true(ID, "the shared marks procedure measures what it drew",
+           has(code_graph, "@emlTickLabelWidth:"))
+check_true(ID, "and the measurement is seeded before the early exit, not after",
+           {
+               body <- proc_body(code_graph, "emlDrawAlignedMarksLeft")
+               i_seed <- grep("\\.maxWideLabelMM = 0", body)
+               i_exit <- grep("goto ALIGNED_LEFT_END", body)
+               length(i_seed) >= 1L && length(i_exit) >= 1L &&
+                   i_seed[1] < i_exit[1]
+           })
+
+# ===========================================================================
+# 7. Column_k HOLDS SOURCE COLUMN k -- AUTHOR RULING 5, DOORS 2 AND 3
+# ===========================================================================
+# `To Table: "row"` puts the manufactured label column in position 1, so a
+# header invented from the TABLE position named source column 1 "Column_2" and
+# nothing was ever called "Column_1". A user who picks "column 2" out of the
+# menu is handed column 1. Every value is real, correctly computed and the
+# right length; only the heading is off by one, and nothing in any output
+# names a column index.
+#
+# THE PROBE'S MATRIX IS col * 100 + row, so `value div 100` recovers the
+# source column from any cell. Same fixture as validate/v63's, on purpose:
+# the two files are checking one repair from two sides and a difference in
+# fixtures would be a difference nobody could interpret.
+if (have_axes) {
+    av <- function(k) if (is.null(ax[[k]])) NA_character_ else ax[[k]]
+    an <- function(k) suppressWarnings(as.numeric(av(k)))
+
+    check_true(ID,
+        sprintf("the graphs coercion produced a table of %s columns from a 3-column Matrix",
+                av("coerce_ncols")),
+        identical(av("coerce_ncols"), "4"))
+    check_true(ID,
+        "position 1 is still the manufactured row-label column, called \"row\"",
+        identical(av("coerce_pos1_header"), "row"))
+    check_true(ID,
+        sprintf("and it holds r1..rn, not bare integers (%s, %s, ...)",
+                av("coerce_rowlabel_1"), av("coerce_rowlabel_2")),
+        identical(av("coerce_rowlabel_1"), "r1") &&
+        identical(av("coerce_rowlabel_2"), "r2") &&
+        identical(av("coerce_rowlabel_4"), "r4"))
+
+    # THE MAPPING, WHICH IS THE FINDING. Read the header at each data
+    # position, read the cell under it, and ask whether the number in the
+    # name is the number of the source column the value came from.
+    kmap <- vapply(2:4, function(i) {
+        h <- av(sprintf("coerce_pos%d_header", i))
+        v <- suppressWarnings(as.numeric(av(sprintf("coerce_pos%d_row1", i))))
+        if (is.na(h) || !grepl("^Column_[0-9]+$", h) || !is.finite(v))
+            return(NA_integer_)
+        as.integer(as.integer(sub("^Column_", "", h)) - (v %/% 100))
+    }, integer(1))
+    check_true(ID,
+        sprintf("every data column got a manufactured header (%s, %s, %s)",
+                av("coerce_pos2_header"), av("coerce_pos3_header"),
+                av("coerce_pos4_header")),
+        !any(is.na(kmap)))
+    check_true(ID,
+        "Column_k holds SOURCE column k -- the number in the name is the user's, not the table's",
+        !any(is.na(kmap)) && all(kmap == 0L))
+    # AND IT STARTS AT 1. Said separately because it is the half that
+    # "consecutive and distinct" would pass: 2, 3, 4 is consecutive and
+    # distinct and is exactly the defect.
+    check_true(ID,
+        sprintf("the numbering starts at 1, not at the label column (%s)",
+                av("coerce_pos2_header")),
+        identical(av("coerce_pos2_header"), "Column_1"))
+}
+
+check_true(ID, "the header repair numbers by source index, not by table position",
+           has(code_graph, "\"Column_\" \\+ string\\$ \\(.iCol - .insertedCols\\)"))
+check_true(ID, "and the loop starts after the inserted block, so Column_0 cannot exist",
+           has(code_graph, "for .iCol from .insertedCols \\+ 1 to .nCols"))
+# ONE REPAIR, TWO DOORS. The describe wrapper does not rename headers itself;
+# it calls the shared procedure. If that ever stops being true this file's
+# live evidence covers one door and silently stops covering the other, which
+# is the failure mode of every check that tests a shared thing at one caller.
+check_true(ID, "the describe wrapper is present to be checked",
+           file.exists(f_desc))
+code_desc <- read_code(f_desc)
+check_true(ID,
+    "and it routes its header repair through the same procedure (one repair, two doors)",
+    has(code_desc, "@emlCleanConvertedTable:"))
+check_true(ID,
+    "and invents no Column_ name of its own",
+    !has(code_desc, "\"Column_\""))
+
+# ===========================================================================
+# 8. ONE PRESS, ONE DERIVED SOUND -- AUTHOR RULING 8b
+# ===========================================================================
+# The stereo gate keeps the extracted channel Sound on purpose: it is what the
+# figure is drawn from and what "Draw Another" needs. What it did NOT do was
+# collect the one the last press made, so three figures from one recording
+# left three Sounds sharing one name -- and `selectObject: "Sound take_ch1"`
+# then answers with one of the three with no way to say which. That is the
+# duplicate-name mechanism of S1 in the object list rather than in a column
+# menu, and ruling 8a fixed the same shape at the stats door.
+if (have_stereo) {
+    sv <- function(k) if (is.null(st[[k]])) NA_character_ else st[[k]]
+
+    check_true(ID,
+        sprintf("the gate was pressed three times on one stereo Sound (%s dialogs answered)",
+                sv("gate_repeat_dialogs_answered")),
+        identical(sv("gate_repeat_dialogs_answered"), "3"))
+    check_true(ID,
+        sprintf("after every press there is exactly ONE derived Sound (%s, %s, %s)",
+                sv("repeat_press1_derived"), sv("repeat_press2_derived"),
+                sv("repeat_press3_derived")),
+        identical(sv("repeat_press1_derived"), "1") &&
+        identical(sv("repeat_press2_derived"), "1") &&
+        identical(sv("repeat_press3_derived"), "1"))
+    # AND THE USER'S RECORDING SURVIVED ALL THREE. A cleanup that collected
+    # the source would pass the check above and be a far worse defect than
+    # the clutter it tidied.
+    check_true(ID,
+        "and the user's own stereo recording is still there after all three",
+        identical(sv("repeat_press1_source_present"), "1") &&
+        identical(sv("repeat_press3_source_present"), "1"))
+    # THE NAME IS THE PLUGIN'S OWN, and that is what makes the collection
+    # safe. A user who extracted the left channel by hand has "take_ch1"; the
+    # gate's object is "eml_take_ch1", and only the prefixed name is ever
+    # removed.
+    check_true(ID,
+        sprintf("the derived Sound carries the plugin's own prefix (%s)",
+                sv("repeat_press3_result_name")),
+        grepl("^eml_", sv("repeat_press3_result_name") %or% ""))
+}
+
+check_true(ID, "@emlDropStaleChannelSounds exists",
+           has(code_graph, "^procedure emlDropStaleChannelSounds:"))
+check_true(ID, "the gate calls it, and the gate is the only caller that needs to",
+           {
+               body <- proc_body(code_graph, "emlGraphsChannelGate")
+               length(body) > 0 &&
+                   any(grepl("@emlDropStaleChannelSounds:", body))
+           })
+check_true(ID, "and the gate names its derived Sound with the eml_ prefix",
+           {
+               body <- proc_body(code_graph, "emlGraphsChannelGate")
+               length(body) > 0 &&
+                   any(grepl("Rename: \"eml_\" \\+ selected\\$ \\(\"Sound\"\\)", body))
+           })
+# IT ONLY EVER REMOVES A PREFIXED NAME. A drop that matched Praat's own
+# "<name>_ch1" would delete a channel the user extracted by hand from the
+# Objects window -- their work, destroyed to tidy up after a figure.
+check_true(ID, "and the drop only ever names an eml_-prefixed object",
+           {
+               body <- proc_body(code_graph, "emlDropStaleChannelSounds")
+               length(body) > 0 &&
+                   sum(grepl("\\.cand\\$ = \"eml_\" \\+ .sourceName\\$", body)) == 3L
+           })
+
+# ===========================================================================
+# 9. THE ONE-BIN SPECTRUM -- AUTHOR RULING 8c, CHASED AND MEASURED
+# ===========================================================================
+# NOT ASSERTED AS FIXED, AND THE REASON IS ON PURPOSE. The author asked what
+# the right behaviour is -- draw the single bin, widen the range, or refuse
+# with a message -- and said that if the answer needs him, nothing is to be
+# implemented. It needs him. What this section does instead is what v63's §3e
+# does for a convention it is not allowed to change: MEASURE, PRINT, and carry
+# the routing note in the run itself, because the two things it must not be
+# are a passing check (which pins a defect as a contract) or silence (which is
+# how a finding gets lost between two hands).
+#
+# WHAT WAS MEASURED, on 6.6.30, 15 August 2026:
+#
+#   * The range the auditor filed, 999.4 to 1000.2 Hz over a Spectrum of a
+#     1 s tone, contains EXACTLY ONE bin -- bin width 0.6729 Hz.
+#   * Praat's `Draw:` needs two bins to draw a line. At one it draws nothing
+#     at all, and the plugin's own frame, ticks, gridlines and axis names are
+#     drawn regardless, so the page carries a complete and entirely empty
+#     figure.
+#   * The bin that is not drawn holds 81.9 dB. It is the peak of the tone --
+#     the loudest thing in the file. The empty frame is not "no energy here";
+#     it is the strongest signal in the recording, rendered as nothing.
+#   * The same figure with TWO bins in range draws normally, so the mode is
+#     the bin count and not the draw path.
+#
+# WHY THIS IS NOT A ONE-LINE FIX, which is the part that needs the author:
+#
+#   DRAW THE SINGLE BIN would need a new drawing vocabulary in a procedure
+#   that draws lines -- a stem or a marker -- and a figure whose appearance
+#   changes shape at a threshold the reader cannot see.
+#   WIDEN THE RANGE contradicts a ruling already implemented in this file:
+#   NEW-G8-1 established that a typed range is a VIEWPORT and section 3 above
+#   asserts that the drawn frame is the range the user typed and not a
+#   widened one. Silently widening here would make that check a lie.
+#   REFUSE WITH A MESSAGE is consistent with the disclosure doctrine
+#   (@emlDiscloseClipped names what was withheld rather than hiding it), but
+#   it means a press of Draw that produces no figure at all, and whether that
+#   is right for a singing teacher at a console is a UX call, not a
+#   correctness one.
+#
+# AND IT IS NOT IN THIS CHANGE'S FILES EITHER. @emlDrawSpectrum lives in
+# plugin/graphs/eml-draw-procedures.praat, which is not this hand's to edit;
+# adding a guard procedure to the library that nothing calls would reproduce
+# exactly the defect this file was written for -- see the stereo ruling at the
+# top, three correct procedures with zero callers for months.
+if (have_axes) {
+    av <- function(k) if (is.null(ax[[k]])) NA_character_ else ax[[k]]
+    an <- function(k) suppressWarnings(as.numeric(av(k)))
+
+    if (identical(av("onebin_interior_ink"), "0")) {
+        cat(paste0(
+            "      NOTE v62: THE ONE-BIN SPECTRUM IS STILL AN EMPTY FRAME.\n",
+            "            Ruling 8c, chased and measured, NOT repaired -- the\n",
+            "            author's own instruction if the answer needs him.\n",
+            sprintf("            999.4-1000.2 Hz holds %s bin of %s Hz; the bin\n",
+                    av("onebin_bins_in_range"), av("onebin_bin_width")),
+            sprintf("            that is not drawn holds %s dB, the peak of the\n",
+                    av("onebin_peak_db")),
+            "            tone. Two bins in the same range draw normally\n",
+            sprintf("            (%s ink pixels against %s).\n",
+                    av("twobin_interior_ink"), av("onebin_interior_ink")),
+            "            THE CHOICE IS THE AUTHOR'S: draw the bin as a stem,\n",
+            "            or refuse with a message naming the bin width. It\n",
+            "            cannot be \"widen the range\" -- NEW-G8-1 already ruled\n",
+            "            that a typed range is a viewport, and section 3 of\n",
+            "            this file asserts the frame is what the user typed.\n",
+            "            THE SITE: @emlDrawSpectrum, plugin/graphs/\n",
+            "            eml-draw-procedures.praat:1129 (the bare `Draw:`).\n"))
+    }
+    attest(ID,
+           sprintf("the one-bin spectrum was measured: %s bin in range, %s ink pixels inside the frame, %s dB not shown",
+                   av("onebin_bins_in_range"), av("onebin_interior_ink"),
+                   av("onebin_peak_db")),
+           "driven live through @emlDrawSpectrum; not asserted either way -- ruling 8c is with the author")
+
+    # WHAT IS ASSERTED EITHER WAY: that the probe is still a probe. If the
+    # range stopped holding one bin, or the two-bin control stopped drawing,
+    # the measurement above would be about something else and the note would
+    # be misinformation.
+    check_true(ID,
+        sprintf("the one-bin probe still holds exactly one bin (%s, width %s Hz)",
+                av("onebin_bins_in_range"), av("onebin_bin_width")),
+        identical(av("onebin_bins_in_range"), "1"))
+    check_true(ID,
+        sprintf("and the two-bin control still draws (%s ink pixels)",
+                av("twobin_interior_ink")),
+        identical(av("twobin_bins_in_range"), "2") &&
+        is.finite(an("twobin_interior_ink")) && an("twobin_interior_ink") > 100)
+    check_true(ID,
+        sprintf("and the bin the empty frame hides is the loudest in the file (%s dB)",
+                av("onebin_peak_db")),
+        is.finite(an("onebin_peak_db")) && an("onebin_peak_db") > 60)
+}
+
 if (!exists("EML_SUITE")) {
     eml_report(paste0("v62 graphs axes and channels: the stereo choice is reachable, ",
-                      "the axis is readable, the frame clips, the panel moves"))
+                      "the axis is readable, the frame clips, the panel moves, ",
+                      "the axis name clears its ticks and Column_k is column k"))
     eml_exit()
 }

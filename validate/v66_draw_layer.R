@@ -1,0 +1,986 @@
+# ============================================================================
+# v66_draw_layer.R -- four rulings that all land in the same three files
+#
+# Ian Howell -- Embodied Music Lab -- GPL-3.0-or-later
+#
+# WHY THIS FILE EXISTS. On 15 August 2026 four separate findings turned out to
+# live in plugin/graphs/eml-draw-procedures.praat,
+# plugin/graphs/eml-annotation-procedures.praat and
+# plugin/scripts/eml-check-normality.praat -- the layer that turns a table into
+# a picture and a picture into a paragraph. They have nothing in common except
+# their address, and every one of them is silent:
+#
+#   RULING 10(a)  A violin recorded with the dialog's "both 0 = auto" axis
+#                 replayed with the axis FROZEN at the numbers the first run
+#                 resolved. Re-run on retargeted data -- the whole point of a
+#                 recorded workflow -- every violin fell outside the window and
+#                 the replay drew a fully furnished, completely EMPTY frame.
+#                 Box, ticks, group names, title, both axis names, 43 KB of
+#                 PNG, no data. Nothing warned.
+#
+#   RULING 7      Seven categorical draw procedures place the y-axis name with
+#                 a bare `Text left`. Measured at FOUR PIXELS of white at
+#                 300 dpi between "Power (dB)" and a tick reading "100.10" --
+#                 the author's own second case, reproduced through six of the
+#                 seven before anything was changed.
+#
+#   RULING 1b     The graphs form no longer offers an adjustment menu on the
+#                 parametric arm, because Tukey's p is already family-wise.
+#                 The figure outlives the dialog and said nothing about it.
+#
+#   RULING 6      Sixty-nine raw `fixed$` calls reaching the Info window from
+#                 the annotation reporters, and four more from the normality
+#                 wrapper's per-group branch.
+#
+# WHAT THE FAILURES LOOK LIKE, because none of them raises.
+#
+#   The frozen axis produces a FILE. A large one -- 43 KB, because a figure
+#   with a frame, ticks, labels and a title is a large PNG whether or not
+#   anything was plotted inside it. Every check that asks "did it draw" says
+#   yes. §2 asks how much ink is inside the frame instead, and the size is
+#   recorded beside it as the trap it is.
+#
+#   The collision produces a FIGURE, and a correct one everywhere except a
+#   quarter of a millimetre of the left margin, where "Power (dB)" reads as
+#   "Powe100.10". No truncation, no overprint, no warning: the mode is gap
+#   exhaustion, and it is invisible to anything that does not count pixels.
+#
+#   The missing disclosure produces a CORRECT figure with a true subtitle that
+#   is one clause short.
+#
+#   The raw doubles produce CORRECT NUMBERS. A Tukey difference of two
+#   identical means IS zero; a two-way SS over values that cancel IS 1.6e-15.
+#   What was wrong was their width: a bare "0" against a column of
+#   "[-3.0871, 3.0871]", and
+#
+#       f1        0.000000000000001     0.000000000000002.0000      .176
+#
+#   -- seventeen decimals in a column padded for sixteen characters, so the SS
+#   cell ran into the MS cell and the MS cell into the F cell.
+#
+# WHAT COULD NOT HAVE CAUGHT ANY OF IT, AND WHY.
+#
+#   - THE NUMERIC VALIDATORS, v01 through v19 and the sweep. They recompute
+#     every statistic in R and compare against the printed value through
+#     as.numeric(). "0" and "0.0000" are the same number to every one of them,
+#     and so are "1.6e-15" and "0.00". A validator that PARSES before it
+#     compares cannot see a width -- that is not a gap in those files, it is
+#     what they are for, and they were green across this change in both
+#     directions. They are equally blind to ruling 10(a): the frozen replay
+#     computes nothing, so there is no number for them to disagree with.
+#
+#   - v27_empty_frames.R, WHICH IS THE CLOSEST THING TO A PREDECESSOR and is
+#     worth being precise about. It renders harness/stress_cases through
+#     harness/stress_graphs.sh and calls a figure blank when it has no
+#     CHROMATIC ink -- exactly the verdict ruling 10(a)'s frozen violin
+#     deserves. It never sees it, for two reasons that are both structural.
+#     The stress cases pass explicit axis bounds or ordinary data, so none of
+#     them is a REPLAY of a recorded call at all; and v27's blank verdict is
+#     scored against a same-family baseline case (empty_violin), which makes
+#     it a check on the DRAW path and not on the record path. A figure that is
+#     blank because its axis was frozen by a recorder is not in its universe.
+#
+#   - v58_recorder_replay.R AND harness/record. They prove that an emitted
+#     script RUNS and that a same-data replay reproduces the recorded figure.
+#     Both were green over the defect, and the second one is why: on the data
+#     it was recorded from, a frozen axis and an auto axis resolve to the same
+#     numbers and the two figures are byte-identical. The defect exists only
+#     under RETARGETING, which is the case a round-trip harness by definition
+#     does not run. §2 runs both arms on purpose, and the same-data arm is
+#     what stops this file being satisfied by a replay that ignores its
+#     arguments entirely.
+#
+#   - v62_graphs_axes_channels.R, which found the collision and could not
+#     repair it. It owns @emlDrawAxes' side of ruling 7 and it MEASURED the
+#     categorical side at 4 px, printed it as a NOTE, and asserted nothing --
+#     because plugin/graphs/eml-draw-procedures.praat was another hand's file
+#     that turn. Its note names all seven sites. This file is the other half,
+#     and it asserts what that note could only report.
+#
+#   - v65_display_standard.R AND v64. They own ruling 6 in
+#     scripts/eml-wizard.praat and stats/eml-analysis.praat, and v64 pins
+#     @eml_fixed itself and its case grid. Neither reads
+#     graphs/eml-annotation-procedures.praat, which holds the ANOVA, Tukey,
+#     Kruskal-Wallis, Dunn, two-way, paired, regression and correlation
+#     REPORTERS -- and therefore most of the plugin's printed tables. The
+#     formatter was closed and the largest set of its callers was not.
+#
+#   - A GOLDEN-FILE DIFF. It says "this changed"; it cannot say "this was
+#     always wrong". The leak was already sitting in committed evidence when
+#     this was written.
+#
+# THE FIGURE/INFO BOUNDARY RUNS THROUGH THE MIDDLE OF ONE FILE, and getting it
+# wrong in either direction is a defect. eml-annotation-procedures.praat builds
+# text that is DRAWN ON A PICTURE (an omnibus line, a bracket label, a matrix
+# cell, the star key) and text that is PRINTED IN THE INFO WINDOW, out of the
+# same fixed$ and in the same idiom. Ruling 6 names the second. The first is
+# laid out against its own measured width -- @emlMeasureMatrixLayout measures
+# the very strings @emlDrawMatrixPanel then draws -- so re-formatting it is a
+# LAYOUT change, and a sweep that "fixed" every fixed$ in the file would move
+# figures nobody asked to move. §1c asserts BOTH sides: the printed ones are
+# all routed, and the drawn ones all survive, counted.
+#
+# THE THREE TRAPS THIS FILE IS BUILT AROUND, each of which cost a sibling a
+# revision this round:
+#
+#   A CHECK THAT COULD ONLY PASS. Every assertion here is anchored to a
+#   measurement that was taken on BOTH trees. The 4 px and the 17 px, the
+#   frozen 160..340 and the resolved 900..1800, the empty frame's 0 ink and
+#   the drawn frame's 6794 -- all of them were read off a HEAD-equivalent copy
+#   before the repair and off the repaired tree after it. A check whose "fail"
+#   side was never observed is not in this file.
+#
+#   A CHECK THAT MATCHES THE COMMENT EXPLAINING THE FIX. Every static check
+#   reads code with comments STRIPPED. These three files carry long prose that
+#   names the very procedures being checked for -- "@emlDrawAxisNameLeft"
+#   appears in six comment paragraphs -- so an unstripped grep would find the
+#   repair in the paragraph describing it and call the wiring present after
+#   the call site was deleted.
+#
+#   A SIZE THRESHOLD. A 43 KB empty violin and a 53 KB empty spectrum both
+#   sail through "the file is bigger than nothing". §2 asserts INK INSIDE THE
+#   FRAME and records the byte counts beside it so the trap is on the record.
+#
+# NOTHING HERE IS VALIDATED UNTIL IT HAS BEEN BROKEN. Every check in this file
+# was shown RED against a deliberately broken COPY of the tree, driven through
+# $EML_DL_SRC and $EML_DRAW_SRC without touching the working tree. The breaks
+# and their results are listed in harness/drawlayer/break.sh.
+#
+# ATTRIBUTION
+# Framework: EML PraatGen by Ian Howell
+#            Embodied Music Lab -- www.embodiedmusiclab.com
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell -- created and verified by this individual
+# ============================================================================
+
+if (!exists("eml_report")) {
+    .a <- commandArgs(FALSE); .f <- sub("^--file=", "", .a[grep("^--file=", .a)])
+    source(file.path(if (length(.f)) dirname(normalizePath(.f)) else ".", "helpers.R"))
+}
+
+ID <- "v66"
+
+`%or%` <- function(a, b) if (is.null(a) || length(a) == 0L || is.na(a)) b else a
+
+gdir <- Sys.getenv("EML_DRAW_SRC", unset = "")
+if (!nzchar(gdir)) gdir <- repo_path(file.path("plugin", "graphs"))
+sdir <- Sys.getenv("EML_DRAWSCRIPTS_SRC", unset = "")
+if (!nzchar(sdir)) sdir <- repo_path(file.path("plugin", "scripts"))
+ddir <- Sys.getenv("EML_DRAWLAYER_DIR", unset = "")
+if (!nzchar(ddir)) ddir <- repo_path(file.path("harness", "drawlayer", "out"))
+
+f_draw   <- file.path(gdir, "eml-draw-procedures.praat")
+f_annot  <- file.path(gdir, "eml-annotation-procedures.praat")
+f_graph  <- file.path(gdir, "eml-graph-procedures.praat")
+f_norm   <- file.path(sdir, "eml-check-normality.praat")
+
+check_true(ID, "the three files this change touches are present",
+           all(file.exists(c(f_draw, f_annot, f_norm))))
+
+# ---------------------------------------------------------------------------
+# JOIN PRAAT CONTINUATIONS, AND STRIP COMMENTS BEFORE MATCHING.
+# ---------------------------------------------------------------------------
+# Both halves have bitten this repository. A call written across two lines with
+# "..." is invisible to a line-at-a-time regex, which is the shape of a check
+# that passes while proving nothing -- and every repair in this change is
+# written across two lines. Comments are stripped for the reason given at the
+# head of this file: these are heavily annotated sources and the annotation
+# names what it explains.
+read_code <- function(path) {
+    if (!file.exists(path)) return(character(0))
+    raw <- readLines(path, warn = FALSE)
+    joined <- character(0)
+    for (ln in raw) {
+        if (grepl("^\\s*\\.\\.\\.", ln) && length(joined)) {
+            joined[length(joined)] <- paste0(joined[length(joined)], " ",
+                                             sub("^\\s*\\.\\.\\.\\s*", "", ln))
+        } else {
+            joined <- c(joined, ln)
+        }
+    }
+    norm <- gsub("\\s+", " ", trimws(joined))
+    norm[!grepl("^#", norm) & !grepl("^;", norm)]
+}
+
+code_draw  <- read_code(f_draw)
+code_annot <- read_code(f_annot)
+code_graph <- read_code(f_graph)
+code_norm  <- read_code(f_norm)
+
+has <- function(code, pattern) any(grepl(pattern, code))
+cnt <- function(code, pattern) sum(grepl(pattern, code))
+
+# The body of one procedure, comments already stripped. Used where a check
+# would otherwise be satisfied by a line in a DIFFERENT procedure of the same
+# file -- which is most of them here, since these files hold dozens.
+proc_body_of <- function(code, name) {
+    i <- grep(sprintf("^procedure %s(:|$)", name), code)
+    if (!length(i)) return(character(0))
+    j <- grep("^endproc\\b", code)
+    j <- j[j > i[1]]
+    if (!length(j)) return(character(0))
+    code[(i[1] + 1L):(j[1] - 1L)]
+}
+
+# ---------------------------------------------------------------------------
+# The harness TSV, scoped by leg. Keys repeat across legs on purpose -- eight
+# legs each publish "shift_inch" -- so a flat name->value map would silently
+# answer every one of them with the first. Rows are filed under the last `leg`
+# marker seen; the shell writes `leg --shell--` before its own rows.
+# ---------------------------------------------------------------------------
+read_legged_tsv <- function(path) {
+    if (!file.exists(path)) return(list())
+    x <- readLines(path, warn = FALSE)
+    x <- x[nzchar(x)]
+    out <- list(); leg <- ""
+    for (ln in x) {
+        p <- strsplit(ln, "\t", fixed = TRUE)[[1]]
+        if (length(p) < 2L) next
+        k <- p[1]; v <- paste(p[-1], collapse = "\t")
+        if (identical(k, "leg")) { leg <- v; next }
+        key <- if (nzchar(leg) && !identical(leg, "--shell--"))
+                   paste0(leg, ".", k) else k
+        # A leg that publishes the same key twice is a harness fault, not a
+        # finding; keep the first and let the count checks notice.
+        if (is.null(out[[key]])) out[[key]] <- v
+        else out[[key]] <- c(out[[key]], v)
+    }
+    out
+}
+
+dl <- read_legged_tsv(file.path(ddir, "DRAWLAYER.tsv"))
+have_dl <- length(dl) > 0
+dv <- function(k) if (is.null(dl[[k]])) NA_character_ else dl[[k]][1]
+dn <- function(k) suppressWarnings(as.numeric(dv(k)))
+
+check_true(ID, "the draw-layer drive produced evidence (harness/drawlayer/drawlayer.sh)",
+           have_dl)
+if (have_dl) {
+    check_true(ID,
+        sprintf("and it ran on the supported binary (%s)", dv("praat_version")),
+        grepl("^Praat 6\\.6\\.3[0-9]|^Praat [7-9]", dv("praat_version") %or% ""))
+}
+
+# ===========================================================================
+# 1. THE CODE ITSELF
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# 1a. RULING 10(a) -- THE RECORDER PASSES THE SENTINEL, NOT THE RESOLUTION
+# ---------------------------------------------------------------------------
+# The signal for "the user chose auto" is the (0, 0) the dialog names on its
+# own face, and it arrives at every recorder as .vMin/.vMax. Bar, box, scatter
+# and histogram all build their recorded call from string$ (.vMin); the violin
+# alone substituted the resolved numbers. The static check is scoped to
+# @emlRecordViolin's own body, because `fixed$ (emlDrawViolinPlot.yMin` still
+# appears three lines further down -- in the RESULT NOTE, which is where the
+# resolved numbers belong and where this file requires them to stay.
+rv <- proc_body_of(code_draw, "emlRecordViolin")
+check_true(ID, "@emlRecordViolin exists and was found",
+           length(rv) > 0)
+# The recorded CALL. Split from the note by which statement it lands in:
+# .code$ is the call, @emlRecordResult is the note.
+rv_code <- rv[grepl("^\\.code\\$ =", rv)]
+check_true(ID,
+    "the recorded violin call passes the axis arguments through as given",
+    length(rv_code) == 1L &&
+    grepl("string\\$ \\(\\.vMin\\)", rv_code) &&
+    grepl("string\\$ \\(\\.vMax\\)", rv_code))
+check_true(ID,
+    "and does NOT substitute the resolved axis for them",
+    length(rv_code) == 1L &&
+    !grepl("emlDrawViolinPlot\\.yM(in|ax)", rv_code))
+# THE OTHER HALF, AND IT IS NOT DECORATION. A repair that dropped the resolved
+# numbers altogether would pass the two checks above and would lose the record
+# of what the axis actually was -- which is the thing the line it replaced was
+# right about.
+rv_note <- rv[grepl("emlRecordResult", rv)]
+check_true(ID,
+    "the resolved axis survives in the record's own result note",
+    length(rv_note) == 1L &&
+    grepl("emlDrawViolinPlot\\.yMin", rv_note) &&
+    grepl("emlDrawViolinPlot\\.yMax", rv_note))
+# AND THE SIBLING RECORDERS STILL AGREE WITH IT. If a later change "tidied"
+# them the other way, the violin would be right and alone.
+for (nm in c("emlRecordBar", "emlRecordBox", "emlRecordScatter")) {
+    b <- proc_body_of(code_draw, nm)
+    if (length(b)) {
+        cc <- b[grepl("^\\.code\\$ =", b)]
+        check_true(ID,
+            sprintf("@%s passes its axis arguments through the same way", nm),
+            length(cc) == 1L && grepl("string\\$ \\(\\.vMin\\)", cc))
+    }
+}
+
+# ---------------------------------------------------------------------------
+# 1b. RULING 7 -- SEVEN SITES, AND THE EIGHTH THAT MUST NOT MOVE
+# ---------------------------------------------------------------------------
+# @emlDrawAxisNameLeft belongs to eml-graph-procedures.praat, which is not this
+# change's file; its existence is asserted here because seven call sites that
+# point at nothing are worse than seven bare `Text left`s -- they are seven
+# dead figures.
+check_true(ID, "@emlDrawAxisNameLeft exists to be called",
+           has(code_graph, "^procedure emlDrawAxisNameLeft:"))
+check_true(ID,
+    sprintf("all seven categorical draw paths place the y-axis name through it (%d)",
+            cnt(code_draw, "@emlDrawAxisNameLeft:")),
+    cnt(code_draw, "@emlDrawAxisNameLeft:") == 7L)
+# AND NOT ONE BARE `Text left` OF AN AXIS NAME SURVIVES. This is the check
+# that a partial repair fails: six of seven leaves the file with a call count
+# that looks healthy and one procedure still colliding.
+check_true(ID,
+    "and no draw procedure still writes the axis name with a bare Text left",
+    cnt(code_draw, "^Text left: \"yes\", \\.yLabel\\$") == 0L)
+# THE EIGHTH SITE IS A PANEL LABEL AND IT IS NOT AN AXIS NAME. It names the
+# GROUP a facet holds, it is truncated by its own binary search against the
+# panel height, and it is drawn in the panel's margin rather than the figure's.
+# Routing it through a procedure that shifts the frame would move a label that
+# has no tick numbers to collide with. Pinned so a future sweep for "bare Text
+# left" does not take it as the last one it missed.
+check_true(ID,
+    "the faceted PANEL label is still drawn bare, which is correct",
+    cnt(code_draw, "^Text left: \"yes\", \\.panelLabel\\$") == 1L)
+# EVERY CALL CARRIES A MEASUREMENT AND A WINDOW. A call that passed 0 for the
+# label width would compile, run, shift nothing and pass the count above.
+check_true(ID,
+    "every call passes the measured tick-label width, not a constant",
+    cnt(code_draw,
+        "@emlDrawAxisNameLeft: .*emlDrawAlignedMarksLeft\\.maxWideLabelMM") == 7L)
+
+# ---------------------------------------------------------------------------
+# 1c. RULING 6 -- THE CENSUS, ON BOTH SIDES OF THE BOUNDARY
+# ---------------------------------------------------------------------------
+# A statement here is one logical Praat statement: continuations are already
+# joined, so a five-line appendInfoLine is one element.
+info_stmts <- function(code) {
+    code[grepl("^appendInfoLine\\b", code) |
+         grepl("^appendInfo\\b", code) |
+         grepl("^writeInfoLine\\b", code) |
+         grepl("^@emlReportLine", code) |
+         grepl("^emlWizardExplain\\$ =", code)]
+}
+raw_fixed <- function(x) grepl("fixed\\$ \\(", x)
+
+# THE PRINTED SIDE. Not one raw fixed$ left in anything that reaches the Info
+# window, in either file.
+check_true(ID,
+    sprintf("no Info-window statement in the annotation reporters still calls fixed$ (%d found)",
+            sum(raw_fixed(info_stmts(code_annot)))),
+    sum(raw_fixed(info_stmts(code_annot))) == 0L)
+check_true(ID,
+    sprintf("nor in the normality wrapper's per-group branch (%d found)",
+            sum(raw_fixed(info_stmts(code_norm)))),
+    sum(raw_fixed(info_stmts(code_norm))) == 0L)
+# AND THEY GO THROUGH THE SHARED FORMATTER RATHER THAN A LOCAL ONE. A second
+# implementation of the rounding would satisfy every width check in §5 and
+# would be a second thing to keep right.
+check_true(ID, "the annotation reporters call the shared formatter",
+           cnt(code_annot, "@eml_fixed:") >= 60L)
+check_true(ID, "the normality wrapper calls it too",
+           cnt(code_norm, "@eml_fixed:") == 3L)
+for (nm in c("eml_fixed", "emlFixed", "eml_fixed4")) {
+    check_true(ID,
+        sprintf("and neither file defines its own @%s", nm),
+        !has(code_annot, sprintf("^procedure %s(:|$)", nm)) &&
+        !has(code_norm,  sprintf("^procedure %s(:|$)", nm)))
+}
+# THE p IS THE OTHER CLAUSE OF THE SAME RULING. The per-group Shapiro-Wilk line
+# printed "p = 0.00000000001" from a call that asked for four decimals; it goes
+# through @emlFormatP now, like every other p in the plugin.
+check_true(ID, "the per-group Shapiro-Wilk p is rendered in APA style",
+           has(code_norm, "@emlFormatP: \\.swP") &&
+           has(code_norm, "emlFormatP\\.formatted\\$"))
+
+# THE DRAWN SIDE, WHICH MUST NOT HAVE BEEN SWEPT. This is the check that a
+# global search-and-replace fails. Figure text is laid out against its own
+# measured width, and @emlMeasureMatrixLayout measures the very strings
+# @emlDrawMatrixPanel draws -- so routing them through a formatter that widens
+# "0" to "0.0000" is a layout change to figures nobody asked to move.
+drawn_procs <- c("emlFormatStars", "emlFormatAnnotLabel", "emlMeasureMatrixLayout",
+                 "emlDrawMatrixPanel", "emlBridgeGroupComparison",
+                 "emlBridgeCorrelation")
+drawn_fixed <- sum(vapply(drawn_procs, function(nm)
+    sum(raw_fixed(proc_body_of(code_annot, nm))), 0L))
+check_true(ID,
+    sprintf("the figure-text procedures still format with fixed$ and were not swept (%d calls)",
+            drawn_fixed),
+    drawn_fixed >= 15L)
+for (nm in drawn_procs) {
+    b <- proc_body_of(code_annot, nm)
+    check_true(ID,
+        sprintf("@%s draws its own text and does not call the Info formatter", nm),
+        length(b) > 0 && !any(grepl("@eml_fixed:", b)))
+}
+
+# ---------------------------------------------------------------------------
+# 1d. RULING 1b -- TWO ARMS, TWO CLAIMS
+# ---------------------------------------------------------------------------
+# The parametric string must state the family-wise property; the nonparametric
+# one must still NAME the correction the user picked, because that arm still
+# has a menu and still honours it. One claim covering both would be false on
+# one of them whichever way it was written.
+tuk <- grep("^annotMatrixPosthoc\\$ = \"Tukey", code_annot, value = TRUE)
+dun <- grep("^annotMatrixPosthoc\\$ = \"Dunn", code_annot, value = TRUE)
+check_true(ID, "the figure's post-hoc disclosure names Tukey on the parametric arm",
+           length(tuk) == 1L)
+check_true(ID,
+    sprintf("and states that it carries its own family-wise control (%s)",
+            trimws(sub("^annotMatrixPosthoc\\$ = ", "", tuk[1] %or% ""))),
+    length(tuk) == 1L && grepl("family-wise", tuk[1]))
+check_true(ID,
+    "while the Dunn arm still names the correction it was given, not a claim about it",
+    length(dun) == 1L && grepl("\\.correction\\$", dun[1]) &&
+    !grepl("family-wise", dun[1]))
+
+# ===========================================================================
+# 2. RULING 10(a), DRIVEN: RECORD, THEN REPLAY TWICE
+# ===========================================================================
+# The two arms are the whole argument. RETARGETED, the replay must resolve the
+# new data's axis and match a native draw byte for byte. ON THE SAME DATA, it
+# must still reproduce the figure that was recorded -- which is what stops this
+# file being satisfied by a replay that ignores its axis arguments entirely.
+if (have_dl) {
+    check_true(ID,
+        sprintf("the recorded call carries the auto sentinel through, not the resolution (%s)",
+                dv("recorded_axis_args")),
+        identical(trimws(dv("recorded_axis_args") %or% ""), "0, 0"))
+    check_true(ID,
+        sprintf("and the resolved axis is in the note beside it (%s)",
+                dv("recorded_result_note")),
+        grepl("^Axis resolved to [0-9.]+ \\.\\. [0-9.]+ over [0-9]+ groups\\.$",
+              dv("recorded_result_note") %or% ""))
+
+    # THE MIRROR. A repair that hardcoded "0, 0" would satisfy every check on
+    # the auto arm above and would throw away every axis a user ever typed.
+    check_true(ID,
+        sprintf("an EXPLICIT axis is recorded as the numbers the user typed (%s)",
+                dv("recorded_axis_args_explicit")),
+        identical(trimws(dv("recorded_axis_args_explicit") %or% ""), "150, 400"))
+    check_true(ID,
+        "and the draw honoured it rather than resolving from the data",
+        identical(dv("axis_record_explicit.explicit_resolved_min"), "150.0000") &&
+        identical(dv("axis_record_explicit.explicit_resolved_max"), "400.0000"))
+
+    # THE RETARGETED ARM. At HEAD this replay resolved 160..340 over data
+    # running 900..1800 and drew a frame with nothing in it.
+    check_true(ID,
+        sprintf("a retargeted replay resolves the NEW data's axis (%s .. %s; native draw says %s .. %s)",
+                dv("replay_wide_min"), dv("replay_wide_max"),
+                dv("axis_native_wide.native_wide_min"),
+                dv("axis_native_wide.native_wide_max")),
+        is.finite(dn("replay_wide_min")) &&
+        abs(dn("replay_wide_min") - dn("axis_native_wide.native_wide_min")) < 1e-6 &&
+        abs(dn("replay_wide_max") - dn("axis_native_wide.native_wide_max")) < 1e-6)
+    check_true(ID,
+        "and the retargeted replay is the figure a native draw produces, byte for byte",
+        identical(dv("replay_wide_matches_native"), "yes"))
+    # THE SAME-DATA ARM.
+    check_true(ID,
+        sprintf("while a same-data replay still reproduces the recorded figure exactly (%s .. %s)",
+                dv("replay_same_min"), dv("replay_same_max")),
+        identical(dv("replay_same_matches_record"), "yes") &&
+        identical(dv("replay_same_min"), dv("axis_record.record_resolved_min")) &&
+        identical(dv("replay_same_max"), dv("axis_record.record_resolved_max")))
+
+    # INK INSIDE THE FRAME, WHICH IS THE MEASUREMENT THE FILE SIZE IS NOT.
+    # At HEAD the retargeted replay measured 0 with 43 KB of PNG.
+    check_true(ID,
+        sprintf("the retargeted replay has data inside its frame (%s ink; the frozen one measured 0 at %s bytes)",
+                dv("replay_wide_interior_ink"), dv("replay_wide_bytes")),
+        is.finite(dn("replay_wide_interior_ink")) &&
+        dn("replay_wide_interior_ink") > 100)
+    check_true(ID,
+        "and so does the same-data replay",
+        is.finite(dn("replay_same_interior_ink")) &&
+        dn("replay_same_interior_ink") > 100)
+    # THE TRAP, SAID AS A NUMBER. A threshold on file size passes an empty
+    # figure, because a frame with ticks, names and a title is a large PNG.
+    attest(ID,
+        sprintf("a fully furnished empty frame weighs %s bytes -- a size threshold would pass it",
+                dv("replay_wide_bytes")),
+        "measured on the frozen-axis replay at HEAD, 15 August 2026: 43,297 bytes, 0 ink inside the frame")
+}
+
+# ===========================================================================
+# 3. RULING 7, DRIVEN: SEVEN PROCEDURES, ONE NARROW dB AXIS
+# ===========================================================================
+# Six of the seven draw a y-axis whose tick labels reach six characters on this
+# fixture, and all six measured 4 px of gap at HEAD. The floor asserted is 7 px
+# -- one third of a character width at this figure's body size -- which is
+# comfortably above the 4 measured before and comfortably below the 17 measured
+# after, and is the SAME floor validate/v62 holds @emlDrawAxes to. Two rigs
+# measuring one requirement against two different floors would produce a pair
+# of numbers nobody could compare.
+six <- c("name_violin", "name_box", "name_bar",
+         "name_gviolin", "name_gbox", "name_spaghetti")
+if (have_dl) {
+    for (leg in six) {
+        check_true(ID,
+            sprintf("%s: the fixture really does put six-character labels on the axis (%s mm)",
+                    leg, dv(paste0(leg, ".widest_label_mm"))),
+            is.finite(dn(paste0(leg, ".widest_label_mm"))) &&
+            dn(paste0(leg, ".widest_label_mm")) > 0)
+        check_true(ID,
+            sprintf("%s: the axis name clears its ticks (%s px, was 4 at HEAD)",
+                    leg, dv(paste0(leg, "_gap_px"))),
+            is.finite(dn(paste0(leg, "_gap_px"))) &&
+            dn(paste0(leg, "_gap_px")) >= 7)
+        check_true(ID,
+            sprintf("%s: and it was MOVED to get there, by a few millimetres (%s inch of %s available)",
+                    leg, dv(paste0(leg, ".shift_inch")),
+                    dv(paste0(leg, ".room_inch"))),
+            is.finite(dn(paste0(leg, ".shift_inch"))) &&
+            dn(paste0(leg, ".shift_inch")) > 0 &&
+            dn(paste0(leg, ".shift_inch")) < 0.25 &&
+            identical(dv(paste0(leg, ".clamped")), "0"))
+        # NOTHING WAS PUSHED OFF THE PAGE, and the obvious form of this check
+        # is not enough. Praat saves the outer viewport @emlAssertFullViewport
+        # selects and nothing outside it, so a name shifted past the panel edge
+        # is cut -- but with the shift unclamped and ten times too big the name
+        # is not sliced down its length, it is clipped away almost entirely,
+        # and the fragment left behind starts FURTHER RIGHT than the intact
+        # name did (67 px -> 121). "First ink is not column 0" passes that.
+        # The name's own run is what notices: 37 px wide intact, 10 px clipped.
+        check_true(ID,
+            sprintf("%s: the axis name is complete, not clipped at the panel edge (%s px of ink, starting at %s)",
+                    leg, dv(paste0(leg, "_name_run_px")),
+                    dv(paste0(leg, "_first_ink_px"))),
+            is.finite(dn(paste0(leg, "_first_ink_px"))) &&
+            dn(paste0(leg, "_first_ink_px")) > 0 &&
+            is.finite(dn(paste0(leg, "_name_run_px"))) &&
+            dn(paste0(leg, "_name_run_px")) >= 20)
+    }
+
+    # THE SEVENTH SITE. A faceted histogram's y-axis is a COUNT, so its labels
+    # reach six characters only past a hundred thousand observations; driven
+    # here through the dialog's own y-max field instead. The verdict is that
+    # the site is WIRED and provably neutral: the shift keys exist at all only
+    # because @emlDrawAxisNameLeft ran (nothing else on the faceted path calls
+    # it, so on a tree with the bare `Text left` the leg aborts before
+    # publishing them), and the shift it took is zero because no label was
+    # wide. That pairing is what separates "the guard did nothing because
+    # nothing was needed" from "the guard is not there".
+    check_true(ID,
+        "the faceted histogram reaches @emlDrawAxisNameLeft at all",
+        !is.na(dv("name_hist.shift_inch")))
+    check_true(ID,
+        sprintf("and takes no shift there, because a count axis has no six-character label (%s mm)",
+                dv("name_hist.widest_label_mm")),
+        identical(dv("name_hist.widest_label_mm"), "0") &&
+        identical(dv("name_hist.shift_inch"), "0"))
+
+    # THE CONTROL, AND IT IS THE POINT OF THE WHOLE SECTION. An ordinary
+    # figure must not move by one pixel. A repair that widened the margin
+    # unconditionally would satisfy every check above and change every figure
+    # the plugin has ever drawn. 37 px is what this figure measured at HEAD,
+    # measured again after, on a HEAD-equivalent copy of the tree.
+    check_true(ID,
+        sprintf("an ordinary figure's widest label is under six characters (%s mm)",
+                dv("name_plain.widest_label_mm")),
+        identical(dv("name_plain.widest_label_mm"), "0"))
+    check_true(ID,
+        "so its axis name is not moved at all -- the shift is exactly zero",
+        identical(dv("name_plain.shift_inch"), "0"))
+    check_true(ID,
+        sprintf("and it still has the gap it always had (%s px, and 37 at HEAD)",
+                dv("name_plain_gap_px")),
+        identical(dv("name_plain_gap_px"), "37"))
+}
+# AND THE WHOLE STRESS INVENTORY IS UNMOVED. All 39 figures of
+# harness/stress_graphs.sh were re-rendered on a HEAD-equivalent copy and on
+# the repaired tree, 15 August 2026: 39 of 39 byte-identical, and the ten
+# BLANK_FRAME_ABS verdicts unchanged. None of them carries a six-character
+# tick label, which is exactly why they did not move.
+attest(ID,
+       "all 39 stress figures are byte-identical across this change",
+       "harness/stress_graphs.sh run on a HEAD-equivalent tree and on the repaired tree, 15 Aug 2026: 39/39 identical, verdicts 29 OK + 10 BLANK_FRAME_ABS on both")
+
+# ===========================================================================
+# 4. RULING 1b, DRIVEN: WHAT THE FIGURE ACTUALLY SAYS
+# ===========================================================================
+if (have_dl) {
+    check_true(ID,
+        sprintf("the parametric figure says Tukey carries its own control (%s)",
+                dv("posthoc_tukey.posthoc_label")),
+        grepl("^Tukey HSD\\b", dv("posthoc_tukey.posthoc_label") %or% "") &&
+        grepl("family-wise", dv("posthoc_tukey.posthoc_label") %or% ""))
+    check_true(ID,
+        sprintf("the nonparametric figure names its correction instead (%s)",
+                dv("posthoc_dunn.posthoc_label")),
+        grepl("^Dunn's test \\(holm\\)$", dv("posthoc_dunn.posthoc_label") %or% ""))
+    check_true(ID,
+        "and the two arms do not make the same claim",
+        !identical(dv("posthoc_tukey.posthoc_label"),
+                   dv("posthoc_dunn.posthoc_label")) &&
+        !grepl("family-wise", dv("posthoc_dunn.posthoc_label") %or% ""))
+    # THE SUB-LINE IS THE FIGURE'S ONLY DISCLOSURE OF THE CORRECTION, so it has
+    # to reach the reader as well as be true. A subtitle that is correct and
+    # wider than the canvas is not a disclosure.
+    check_true(ID,
+        sprintf("the disclosure sub-line fits the canvas (%s mm of %s mm)",
+                dv("posthoc_tukey.posthoc_subtitle_mm"),
+                dv("posthoc_tukey.posthoc_canvas_mm")),
+        is.finite(dn("posthoc_tukey.posthoc_subtitle_mm")) &&
+        dn("posthoc_tukey.posthoc_subtitle_mm") <
+            dn("posthoc_tukey.posthoc_canvas_mm"))
+    check_true(ID,
+        sprintf("and it is the whole sub-line, correction and legend together (%s)",
+                dv("posthoc_tukey.posthoc_subtitle")),
+        grepl("family-wise", dv("posthoc_tukey.posthoc_subtitle") %or% "") &&
+        grepl("Upper: adjusted p", dv("posthoc_tukey.posthoc_subtitle") %or% ""))
+    check_true(ID,
+        "and no ink was pushed off the left edge of either arm's figure",
+        is.finite(dn("posthoc_tukey_first_ink_px")) &&
+        dn("posthoc_tukey_first_ink_px") > 0 &&
+        is.finite(dn("posthoc_dunn_first_ink_px")) &&
+        dn("posthoc_dunn_first_ink_px") > 0)
+}
+
+# ===========================================================================
+# 5. RULING 6, DRIVEN: THE WIDTH OF WHAT WAS PRINTED
+# ===========================================================================
+# Three transcripts, each of which is a shape fixed$ answers wrongly in a
+# different way: exact zeros, values a few ulps from zero, and a p far past the
+# APA floor.
+tx <- function(name) {
+    p <- file.path(ddir, paste0("info_", name, ".txt"))
+    if (!file.exists(p)) return(character(0))
+    readLines(p, warn = FALSE, encoding = "UTF-8")
+}
+t_deg  <- tx("degenerate")
+t_tiny <- tx("tiny")
+t_real <- tx("real")
+t_norm <- tx("normality")
+
+check_true(ID, "the four Info transcripts were captured",
+           length(t_deg) > 0 && length(t_tiny) > 0 &&
+           length(t_real) > 0 && length(t_norm) > 0)
+
+# A REPORT LINE IS A LINE OF THE TRANSCRIPT THAT CARRIES A NUMBER, minus the
+# ones that are allowed to carry full precision by name: the exact p that
+# @emlReportPWithExact prints in parentheses beside the floored label, which
+# exists precisely so that flooring at .001 does not flatten nine orders of
+# magnitude. Excluding it is not a loophole -- §7 asserts that it is still
+# there and still unrounded.
+report_lines <- function(txt) {
+    keep <- grepl("[0-9]", txt) & !grepl("\\(\\s*[0-9.eE+-]+\\s*\\)", txt) &
+            !grepl("^\\s*(Sat|Sun|Mon|Tue|Wed|Thu|Fri)", txt)
+    txt[keep]
+}
+# THE ESCAPE, AS A PATTERN: more than four digits after a decimal point.
+too_wide <- function(txt) {
+    ll <- report_lines(txt)
+    ll[grepl("[0-9]\\.[0-9]{5,}", ll)]
+}
+tx_by_name <- list(degenerate = t_deg, tiny = t_tiny,
+                   real = t_real, normality = t_norm)
+for (nm in names(tx_by_name)) {
+    bad <- too_wide(tx_by_name[[nm]])
+    check_true(ID,
+        sprintf("the %s report prints nothing wider than four decimals (%d offending line(s))",
+                nm, length(bad)),
+        length(bad) == 0L)
+}
+
+# THE BARE ZERO, WHICH IS THE SAME DEFECT WITH THE OPPOSITE SIGN. An exact zero
+# printed "0" against a column of "[-3.0871, 3.0871]" -- the one number a
+# reader most wants to recognise at a glance was the one that did not line up.
+# Asserted on the two tables it was reported from rather than on the whole
+# transcript, because "N 10" and "Groups 3" are integers and belong bare.
+# THE BLOCK, NOT THE FILE. Every one of these transcripts holds several
+# matrices whose rows all begin "G1", so a grep over the whole capture answers
+# a question about the Tukey table with a row of the Cohen's d one -- which is
+# how the first draft of this section passed while reading the wrong cells.
+block_after <- function(txt, heading, n = 10L) {
+    i <- grep(heading, txt, fixed = TRUE)
+    if (!length(i)) return(character(0))
+    j <- seq(i[1] + 1L, min(i[1] + n, length(txt)))
+    txt[j]
+}
+dz <- block_after(t_deg, "Tukey HSD Mean Differences", 8L)
+dz <- dz[grepl("^G[0-9] . G[0-9]", dz)]
+check_true(ID,
+    sprintf("a Tukey difference of two identical means prints at full width, not as a bare 0 (%s)",
+            trimws(dz[1] %or% "<no rows>")),
+    length(dz) == 3L && all(grepl("\\s0\\.0000\\s", dz)))
+# AND THE COHEN'S d MATRIX BESIDE IT, which is a separate cell writer -- a
+# break test reverts each of them on its own to prove the two are independent.
+dmat <- block_after(t_deg, "Pairwise Effect Sizes (Cohen's d)", 8L)
+dmat <- dmat[grepl("^G[0-9]\\s+(---|[-0-9])", dmat)]
+check_true(ID,
+    sprintf("and so does a Cohen's d of no difference (%s)",
+            trimws(dmat[1] %or% "<no rows>")),
+    length(dmat) == 3L && all(grepl("\\s0\\.000\\s", dmat)) &&
+    !any(grepl("\\s0\\s{2,}", dmat)))
+
+# THE TWO-WAY TABLE, WHICH IS WHERE THE WIDTH BECAME AN ALIGNMENT FAULT. Every
+# column is padded to a fixed width, so a seventeen-decimal SS did not merely
+# look wrong -- it ran into the next column. The check is that the header's
+# column starts still line up with the data's.
+tw_head <- grep("^Source\\s+SS\\s+df\\s+MS\\s+F\\s+p", t_tiny)
+check_true(ID, "the two-way ANOVA table was printed", length(tw_head) == 1L)
+if (length(tw_head) == 1L) {
+    rows <- t_tiny[seq(tw_head + 1L, min(tw_head + 5L, length(t_tiny)))]
+    rows <- rows[nzchar(trimws(rows))]
+    # The SS column starts at character 21 in the header; every data row must
+    # put its second field there too. At HEAD the f1 row read
+    # "0.000000000000001     0.000000000000002.0000" -- one field where the
+    # table has three.
+    fields <- lapply(rows, function(r) strsplit(trimws(r), "\\s{2,}")[[1]])
+    check_true(ID,
+        sprintf("and its rows still have their columns (%s)",
+                paste(vapply(fields, length, 0L), collapse = "/")),
+        length(fields) >= 4L &&
+        all(vapply(fields[1:3], length, 0L) >= 6L))
+    check_true(ID,
+        "and no cell in it has run into its neighbour",
+        !any(grepl("[0-9]\\.[0-9]+\\.[0-9]", rows)))
+}
+
+# THE SHARED NORMALITY REPORTER, which lives in the annotation file and prints
+# the criterion thresholds as well as the statistics.
+sk <- grep("^  Skewness\\s+-?[0-9]", t_norm, value = TRUE)
+check_true(ID,
+    sprintf("a symmetric column's skewness prints at four decimals, not seventeen (%s)",
+            trimws(sk[1] %or% "<none>")),
+    length(sk) == 2L && !any(grepl("[0-9]\\.[0-9]{5,}", sk)) &&
+    grepl("\\s0\\.0000\\s*($|\\t)", sk[1]))
+cr <- grep("criterion:", t_norm, value = TRUE)
+check_true(ID,
+    sprintf("and the criterion it is judged against prints as a whole number (%s)",
+            trimws(cr[1] %or% "<none>")),
+    length(cr) >= 2L && all(grepl("< [0-9]+\\)$", cr)))
+
+# ---------------------------------------------------------------------------
+# 5b. THE PER-GROUP BRANCH OF THE NORMALITY WRAPPER -- THE GUI LEG
+# ---------------------------------------------------------------------------
+# Ruling 6's fourth site, and the only one in this change that cannot be
+# reached from `praat --run`: it is inline in a script whose first statement is
+# `beginPause:`. harness/drawlayer/pergroup_gui.sh drives it on rig instance 7
+# and captures the Info window verbatim. The section is SKIPPED, loudly, rather
+# than passed by default when no capture is present -- a validator that treats
+# a missing GUI capture as agreement is the failure mode harness/normality's
+# own header warns about.
+t_pg <- tx("pergroup")
+if (!length(t_pg)) {
+    cat(paste0(
+        "      SKIP v66: no per-group capture. Ruling 6's fourth site is the\n",
+        "            PER-GROUP branch of plugin/scripts/eml-check-normality.praat,\n",
+        "            which needs an X server. Run:\n",
+        "              bash harness/drawlayer/pergroup_gui.sh\n"))
+} else {
+    pg <- grep("^\\s+W = ", t_pg, value = TRUE)
+    check_true(ID,
+        sprintf("the per-group branch was driven and reported both groups (%d)",
+                length(pg)),
+        length(pg) == 2L)
+    check_true(ID,
+        sprintf("its Shapiro-Wilk W prints at four decimals and its p in APA style (%s)",
+                trimws(pg[1] %or% "<none>")),
+        length(pg) == 2L && all(grepl("W = [0-9]\\.[0-9]{4}\\s", pg)) &&
+        all(grepl("p [<>=] \\.[0-9]{3}$", trimws(pg))))
+    pgs <- grep("^\\s+Skewness = ", t_pg, value = TRUE)
+    check_true(ID,
+        sprintf("and a symmetric group's skewness is 0.000, not seventeen decimals of noise (%s)",
+                trimws(pgs[1] %or% "<none>")),
+        length(pgs) == 2L && !any(grepl("[0-9]\\.[0-9]{4,}", pgs)) &&
+        grepl("Skewness = 0\\.000\\s", pgs[1]))
+    # AND THE VERDICT UNDERNEATH IS UNCHANGED, which is what says a display
+    # repair did not become a decision repair. The rule reads the raw .skew,
+    # .kurt and Shapiro-Wilk p, never these strings.
+    check_true(ID,
+        "and the recommendation the rule reaches is untouched by the formatting",
+        any(grepl("Normality OK", t_pg)) &&
+        any(grepl("Nonparametric recommended", t_pg)))
+}
+
+# ===========================================================================
+# 6. THE FIX-SHAPED FIX: THE NUMBERS ARE STILL THE NUMBERS
+# ===========================================================================
+# The cheapest way to pass every width check in §5 is a formatter that returns
+# a zero of the right shape for everything. "0.0000" in every cell satisfies
+# "exactly four decimals", satisfies "no bare zero", and is catastrophically
+# wrong. So the same reports are driven over WELL SEPARATED groups and a real
+# linear relationship, and the printed numbers are compared against values
+# recomputed here in base R from the same fixture.
+#
+# THE FIXTURE IS RESTATED RATHER THAN READ. A validator that recomputed from a
+# file the harness wrote would agree with the harness about a fixture that was
+# wrong; this one builds the same rows from the same arithmetic the drive uses.
+g   <- rep(1:3, each = 10)
+k   <- rep(1:10, times = 3)
+val <- 10 + g * 4.5 + (k %% 5) * 0.7
+xx  <- seq_len(30)
+yy  <- 3.25 + 1.7 * xx + (k %% 3) * 0.4
+
+grand <- mean(val)
+gm    <- tapply(val, g, mean)
+ssb   <- sum(10 * (gm - grand)^2)
+ssw   <- sum((val - gm[as.character(g)])^2)
+fstat <- (ssb / 2) / (ssw / 27)
+eta2  <- ssb / (ssb + ssw)
+
+num_after <- function(txt, label, n = 1L) {
+    ln <- grep(label, txt, value = TRUE)
+    if (!length(ln)) return(NA_real_)
+    m <- regmatches(ln[1], gregexpr("-?[0-9]+\\.[0-9]+", ln[1]))[[1]]
+    if (length(m) < n) return(NA_real_)
+    as.numeric(m[n])
+}
+
+if (length(t_real)) {
+    check(ID, "the printed one-way F is the F the data has",
+          num_after(t_real, "^  F  "), fstat, tol = 5e-4)
+    check(ID, "and the printed eta-squared is the eta-squared",
+          num_after(t_real, "Effect size\\s+eta-squared"), eta2, tol = 5e-4)
+    check(ID, "and the between-groups SS in the table is the real SS",
+          num_after(t_real, "^Between"), ssb, tol = 5e-3)
+    check(ID, "and the within-groups SS too",
+          num_after(t_real, "^Within"), ssw, tol = 5e-3)
+    # THE GROUP DESCRIPTIVES, which a clamp-to-zero formatter would flatten
+    # into three identical rows of 0.00.
+    # The descriptives row is "G1  10  15.90  1.04  15.90": N first and bare,
+    # then the mean. The mean is the first field with a decimal point, which
+    # is what distinguishes it from the count beside it.
+    gd <- block_after(t_real, "Group Descriptives", 6L)
+    gd <- gd[grepl("^\\s*G[0-9]\\s+[0-9]", gd)]
+    for (i in 1:3) {
+        check(ID, sprintf("group G%d's printed mean is its mean", i),
+              if (length(gd) >= i)
+                  as.numeric(regmatches(gd[i],
+                      gregexpr("-?[0-9]+\\.[0-9]+", gd[i]))[[1]][1])
+              else NA_real_,
+              as.numeric(gm[i]), tol = 5e-3)
+    }
+    # THE TUKEY DIFFERENCES, signed, which is the column the bare zero came
+    # from -- so this is the same cell writer checked for value rather than
+    # for width.
+    check(ID, "the printed G1 - G2 mean difference is the real difference",
+          num_after(t_real, "^G1 . G2"), as.numeric(gm[1] - gm[2]), tol = 5e-4)
+    check(ID, "and G1 - G3",
+          num_after(t_real, "^G1 . G3"), as.numeric(gm[1] - gm[3]), tol = 5e-4)
+
+    # THE REGRESSION, a different reporter and a different table shape.
+    fit <- lm(yy ~ xx)
+    check(ID, "the printed intercept is the OLS intercept",
+          num_after(t_real, "^  \\(Intercept\\)"),
+          unname(coef(fit)[1]), tol = 5e-4)
+    check(ID, "the printed slope is the OLS slope",
+          num_after(t_real, "^  x\\s"), unname(coef(fit)[2]), tol = 5e-4)
+    check(ID, "and the printed R-squared is the real R-squared",
+          num_after(t_real, "Variance explained"),
+          summary(fit)$r.squared, tol = 5e-4)
+    # THE CORRELATION CI, the last of the reporters that had a raw fixed$.
+    check(ID, "the printed Pearson r is the real r",
+          num_after(t_real, "^  r\\s"), cor(xx, yy), tol = 5e-4)
+}
+
+# ===========================================================================
+# 7. THE OTHER FIX-SHAPED FIX: THE EXPORT STILL CARRIES FULL PRECISION
+# ===========================================================================
+# The ruling puts full precision in the CSV, which is the artefact a reader is
+# meant to compute from. A repair that satisfied §5 by rounding the DATA would
+# leave the report looking right and the export quietly ruined -- and §6 would
+# not catch it, because §6's tolerances are looser than four decimals. The rows
+# below come from the SAME run as the transcript, dumped after each
+# orchestrator because @emlCSVInit resets the buffer at every one.
+csv_all <- unlist(dl[grepl("(^|\\.)csv_", names(dl))], use.names = FALSE)
+check_true(ID, "the export rows were captured beside the report",
+           length(csv_all) > 20L)
+if (length(csv_all) > 20L) {
+    csv_val <- function(pat) {
+        r <- grep(pat, csv_all, value = TRUE)
+        if (!length(r)) return(NA_character_)
+        sub("^.*,", "", r[1])
+    }
+    long_enough <- function(s) {
+        d <- sub("^[^.]*\\.", "", s %or% "")
+        nchar(d) > 6L
+    }
+    # Field names read off the export, not guessed: a regression coefficient is
+    # written as `<term>,coefficient,estimate`, so "slope" is not a field name
+    # anywhere in this file.
+    for (field in c("eta_squared", "cohens_d", "r_squared",
+                    "x,coefficient,estimate")) {
+        v <- csv_val(paste0(",", field, ","))
+        check_true(ID,
+            sprintf("the CSV still carries %s to full precision (%s)", field,
+                    v %or% "<absent>"),
+            !is.na(v) && long_enough(v))
+    }
+    # AND THE REPORT DOES NOT. Both halves, or "full precision everywhere"
+    # would pass this section and fail the ruling.
+    check_true(ID,
+        "while the report's own eta-squared is four decimals",
+        grepl("eta-squared = [0-9]\\.[0-9]{4}(\\s|$)",
+              paste(grep("Effect size", t_real, value = TRUE), collapse = " ")))
+    # THE EXACT p BESIDE THE FLOORED LABEL, which §5 excluded by name and
+    # which has to still be there.
+    check_true(ID,
+        "and the exact p is still printed beside the floored one",
+        any(grepl("p\\s+< \\.001\\s+\\([0-9.eE+-]+\\)", t_real)))
+}
+
+# ===========================================================================
+# 8. RULING 8c -- THE ONE-BIN SPECTRUM. MEASURED, PRINTED, NOT REPAIRED.
+# ===========================================================================
+# The doctrine is validate/v63 §3e's, and it is the reason this section
+# asserts facts and no remedy: the two things this must not be are a PASSING
+# CHECK, which would pin a defect as a contract, or SILENCE, which is how a
+# finding gets lost between two hands.
+#
+# A Spectrum drawn over a frequency range containing ONE bin renders an empty
+# frame with axis furniture only. Praat's Spectrum `Draw:` joins bin points
+# with line segments, and one point is no segment -- so the bin holding the
+# peak of the tone is on the axis and not on the paper. Two bins in range draw
+# normally, which is the control that says the finding is about the count and
+# not about the range. Widening the range is ruled out by NEW-G8-1.
+#
+# THE CHOICE IS THE AUTHOR'S: draw a stem or a marker for the single bin, or
+# refuse with a message. Both are defensible and neither is this file's to
+# make. @emlDrawSpectrum, plugin/graphs/eml-draw-procedures.praat, at the
+# `Draw:` line.
+if (have_dl) {
+    check_true(ID,
+        sprintf("the one-bin probe really does put one bin in range (bin width %s Hz)",
+                dv("onebin.onebin_bin_width")),
+        identical(dv("onebin.onebin_bins_in_range"), "1"))
+    check_true(ID,
+        sprintf("and that bin is the peak of the tone (%s dB)",
+                dv("onebin.onebin_peak_db")),
+        is.finite(dn("onebin.onebin_peak_db")) &&
+        dn("onebin.onebin_peak_db") > 60)
+    check_true(ID,
+        sprintf("while the two-bin control draws normally (%s ink)",
+                dv("twobin_interior_ink")),
+        is.finite(dn("twobin_interior_ink")) &&
+        dn("twobin_interior_ink") > 100)
+    if (identical(dv("onebin_interior_ink"), "0")) {
+        cat(paste0(
+            "      NOTE v66: THE ONE-BIN SPECTRUM IS STILL AN EMPTY FRAME.\n",
+            sprintf("            %s bin in range at %s Hz per bin; the bin holds\n",
+                    dv("onebin.onebin_bins_in_range"), dv("onebin.onebin_bin_width")),
+            sprintf("            %s dB, the peak of the tone. Interior ink %s\n",
+                    dv("onebin.onebin_peak_db"), dv("onebin_interior_ink")),
+            sprintf("            against %s for the two-bin control, and the empty\n",
+                    dv("twobin_interior_ink")),
+            sprintf("            figure still weighs %s bytes -- so nothing that\n",
+                    dv("onebin_bytes")),
+            "            thresholds on file size can see it.\n",
+            "            SITE: @emlDrawSpectrum, plugin/graphs/\n",
+            "            eml-draw-procedures.praat, the `Draw:` line.\n",
+            "            AWAITING A RULING: draw a stem or marker for the\n",
+            "            single bin, or refuse with a message. Widening the\n",
+            "            range is ruled out by NEW-G8-1.\n"))
+    }
+    attest(ID,
+           sprintf("the one-bin spectrum was measured: %s bin, %s dB, %s ink inside the frame, %s bytes",
+                   dv("onebin.onebin_bins_in_range"), dv("onebin.onebin_peak_db"),
+                   dv("onebin_interior_ink"), dv("onebin_bytes")),
+           "driven live through @emlDrawSpectrum; not asserted either way -- the remedy is the author's call")
+}
+
+if (!exists("EML_SUITE")) {
+    eml_report("v66 draw layer: the recorded axis, the axis name, the disclosure and the width")
+    eml_exit()
+}

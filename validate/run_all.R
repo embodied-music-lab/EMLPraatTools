@@ -471,7 +471,42 @@ scripts <- c(
     # v63 asserts r1..rn PER DOOR rather than comparing doors to each other:
     # three doors agreeing on the wrong thing would satisfy a parity check,
     # which is exactly how the two .std.resid arms diverged for a week.
-    "v63_coercion_parity.R"
+    "v63_coercion_parity.R",
+    # ------------------------------------------------------------------
+    # v64-v66: the 15 August author rulings, which are mostly one finding.
+    #
+    # `fixed$` is not a fixed-precision formatter. Measured on 6.6.30 it
+    # uses max(precision, -floor(log10|v|)) and returns a bare "0" for
+    # exact zero, so fixed$(-1e-16, 4) prints -0.0000000000000001 and
+    # fixed$(0, 4) prints 0 in a column padded for six characters. Every
+    # rounded number in the plugin went through it. The visible symptoms
+    # were a skewness of -1e-16 in a Describe report and a two-way table
+    # whose SS ran into its MS -- seventeen decimals in a sixteen-wide
+    # column -- and they were one bug wearing three hats.
+    #
+    # The rule the author set: statistics print at fixed 4 decimals, p in
+    # APA style, and NO raw double reaches the Info window. Full precision
+    # belongs to the CSV export, which still uses string$ deliberately.
+    # ------------------------------------------------------------------
+    # v64 owns the formatter itself and the coercion naming. Ruling 5:
+    # source matrix column k is now Column_k. It had been Column_{k+1},
+    # because the header repair numbered by TABLE position where the row
+    # label occupies slot 1 -- so a user asking for "column 2 of my
+    # matrix" picked Column_2 and got column 1's data.
+    "v64_display_and_coercion.R",
+    # v65 owns the rule in the wizard and the analysis orchestrators. The
+    # break test worth knowing about: clamping every number to a zero of
+    # the right width is the FIX-SHAPED FIX -- it satisfies every width
+    # assertion, and it takes a value check to catch it.
+    "v65_display_standard.R",
+    # v66 owns the draw layer. Three things there, and the axis one is the
+    # reason a validator can be worth more than a figure: a violin
+    # recorded with the axis on AUTO emitted its resolved range as
+    # literals, so replaying it on other data produced a fully furnished,
+    # titled, gridded frame with zero ink inside it and nothing warning.
+    # Note what that defeats -- a size threshold. The empty frame weighs
+    # 53 KB. v66 asserts ink inside the frame instead.
+    "v66_draw_layer.R"
 )
 
 cat("EML Praat Tools validation suite\n")

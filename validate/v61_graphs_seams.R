@@ -256,27 +256,178 @@ for (g in c("scatterGroupShown", "histGroupShown", "spGroupShown")) {
                sum(grepl(paste0("\\b", g, "\\b"), fcode)) >= 4)
 }
 
-# D5 IS NOT FIXED HERE, AND THIS CHECK IS WHY IT IS SAFE TO LEAVE ALONE.
+# ---------------------------------------------------------------------------
+# 2a. D5 -- THE ADJUSTMENT MENU IS GONE FROM THE PARAMETRIC ARM (RULING 1a)
+# ---------------------------------------------------------------------------
+# WHAT THIS SECTION USED TO SAY, and why it does not say it any more.
 #
-# The audit measured that a Tukey draw is md5-identical under Holm and under
-# Bonferroni while the Dunn arm honours the same menu, and filed it as
-# severity 3. The plugin's own comment at the preset site says the parametric
-# branch never reads .correction$ and that changing it belongs to
-# eml-annotation-procedures.praat. The statistics agree with the code: Tukey's
-# p comes from the studentized range distribution and is already family-wise
-# controlled, so a Holm or Bonferroni step on top of it would DOUBLE-correct --
-# there is no honest thing for the menu to do on that arm. What there is, is
-# saying so, and every one of the six dialogs that offers the menu already
-# qualifies its label. That qualifier is what this pins: it is the entire
-# defence, it is one string, and a tidy-up that dropped it as clutter would
-# turn a documented limitation back into a silent one.
+# Until 15 August 2026 this file held ONE check here: that all six dialogs
+# offering the menu qualified its label with "(nonparametric post-hoc only)".
+# The reasoning was that the audit had measured a Tukey draw md5-identical
+# under Holm and under Bonferroni while the Dunn arm honoured the same menu;
+# that the statistics agree with the code, because Tukey's p comes from the
+# studentized range and is already family-wise, so a Holm or Bonferroni step
+# on top would DOUBLE-correct; and that with nothing honest for the menu to do
+# on that arm, the label was the entire defence -- one string, worth pinning
+# against a tidy-up that would have dropped it as clutter. That comment ended
+# by naming what would overturn it: "IF IAN RULES OTHERWISE -- disable the
+# field on the parametric arm ... this check is the first thing to revisit. It
+# asserts a disclosure, not a behaviour."
 #
-# IF IAN RULES OTHERWISE -- disable the field on the parametric arm, or make
-# Tukey report its own correction in the figure -- this check is the first
-# thing to revisit. It asserts a disclosure, not a behaviour.
-check("v61", "every adjustment menu says which arm reads it (D5 disclosure)",
+# RULING 1a, 15 August 2026, is that ruling. The statistics were accepted and
+# the remedy was not: a live-looking control that is silently ignored is the
+# same class of defect as D11's group-column fields, which stayed editable
+# while their tickbox was clear and were then thrown away at the commit. That
+# was fixed by GATING the fields, and this is fixed the same way. So the pin
+# changes with the behaviour: the label check stays, because the label is
+# still on the arm that still reads it and is now simply TRUE, but it is no
+# longer the defence. THE GATE IS.
+#
+# WHAT THE FAILURE LOOKS LIKE, in both directions, because this is a fix that
+# can fail two ways and only one of them is loud:
+#
+#   THE FIELD COMES BACK on a parametric page and is ignored again. Silent:
+#   the figure is correct, the number is correct, and the user has been shown
+#   a control that does nothing. That is the defect this closes.
+#
+#   THE READ COMES BACK WITHOUT THE FIELD. Praat does not delete a pause
+#   variable when the field goes away -- it keeps the value the last dialog
+#   that HAD the field left in it. So an ungated read does not abort; it
+#   silently commits a stale adjustment method from a different graph type,
+#   possibly from earlier in the same session. That failure is worse than the
+#   one being fixed and it is even quieter, which is why the checks below
+#   count the reads and the gates SEPARATELY.
+#
+# WHAT COULD NOT HAVE CAUGHT EITHER.
+#
+#   * A NUMERIC VALIDATOR, again, and more completely than usual: the whole
+#     finding is that the number does NOT move. v09's Tukey p is identical
+#     under every adjustment setting and that is the correct behaviour; the
+#     defect was entirely in what the dialog implied about it.
+#
+#   * harness/gui_adv AND v51. Their advanced journey is PARAMETRIC and
+#     two-group, so it never reaches a k >= 3 post-hoc at all, and a two-group
+#     comparison has no multiplicity to adjust. The page they drive shows the
+#     menu and neither of them looks at it.
+#
+#   * A SCREENSHOT ON ITS OWN. harness/graphseams/adjustarm.sh takes two, and
+#     they are in the artefact set because a person should be able to look --
+#     but a picture cannot say whether the value was READ, and reading a field
+#     that is not on the screen is the failure above.
+#
+# WHAT SEPARATES THEM: the gate variable, counted at both ends. `adjustOffered`
+# is set to 0 immediately before each of the six dialogs is built and to 1
+# inside the same branch that adds the field, so ONE value answers both "was
+# the field on the dialog" and "may adjustment_method be read back". The
+# checks below assert that the two ends agree in NUMBER, that the reads are
+# guarded by that variable and not by a re-test of the test type, and -- in
+# the drive -- that the two arms disagree on the screen as well as in the
+# variable.
+#
+# THE LABEL, STILL PINNED, AND NOW MERELY TRUE. Six menus, on the six
+# nonparametric arms. A seventh would be the field back where it was ruled
+# out; a fifth would be a graph type that lost it from the arm that reads it.
+check("v61", "the adjustment menu survives on six arms and no more (D5)",
       6L, sum(grepl('optionmenu: "Adjustment method \\(nonparametric post-hoc only\\)"',
                     fcode)), tol = 0)
+
+# SIX GATES OPENED, ONE PER MENU. `adjustOffered = 1` is written in the branch
+# that adds the field and nowhere else, so this is the count of dialogs that
+# can offer it.
+check("v61", "six dialogs open the gate, one per menu (RULING 1a)",
+      6L, sum(grepl("^\\s*adjustOffered = 1\\s*$", fcode)), tol = 0)
+# AND EVERY MENU IS INSIDE ONE. Proximity, for the reason section 1 already
+# gives: Praat has no block scope a static reader can lean on, so the anchor
+# is the line that must immediately precede it. `adjustOffered = 1` is the
+# first statement of the branch and the optionmenu is the second, so the
+# window is tight on purpose -- a wide window would pass on a file where the
+# gate opened somewhere else entirely.
+.gateAt <- grep("^\\s*adjustOffered = 1\\s*$", fcode)
+.menuAt <- grep('optionmenu: "Adjustment method \\(nonparametric post-hoc only\\)"',
+                fcode)
+check("v61",
+      "every adjustment menu is inside a gate that was just opened",
+      6L,
+      sum(vapply(.menuAt, function(i) any(.gateAt == i - 1), logical(1))),
+      tol = 0)
+# AND SIX PARAMETRIC ARMS SAY WHY THERE IS NOTHING TO CHOOSE. Five would be a
+# graph type whose parametric page simply lost a row with no account of it,
+# which is the shape of change a user reads as a bug.
+check("v61", "and six parametric arms say what replaced it",
+      6L,
+      sum(grepl('comment: "Adjustment method: none', fcode)), tol = 0)
+
+# THE READS. Eighteen statements -- six toggle stashes and six commits of
+# three lines each -- and TWELVE gates, one per commit site. The two numbers
+# are counted separately and neither implies the other: eighteen reads with
+# eleven gates is a page committing a field that was not on it, and twelve
+# gates with seventeen reads is a page that quietly stopped honouring the menu
+# on the arm that does read it.
+check("v61", "adjustment_method is read at eighteen sites",
+      18L, sum(grepl("\\badjustment_method\\b", fcode)), tol = 0)
+check("v61", "and twelve gates guard them, one per commit site",
+      12L, sum(grepl("^\\s*if adjustOffered = 1\\s*$", fcode)), tol = 0)
+.readAt <- grep("\\badjustment_method\\b", fcode)
+.guardAt <- grep("^\\s*if adjustOffered = 1\\s*$", fcode)
+check("v61",
+      "and no read stands outside one",
+      18L,
+      sum(vapply(.readAt,
+                 function(i) any(.guardAt < i & .guardAt > i - 5), logical(1))),
+      tol = 0)
+
+# THE GUARD IS THE GATE VARIABLE AND NOT A RE-TEST OF THE TEST TYPE, and this
+# is the check that records the subtlety rather than leaving it to be
+# rediscovered. Three of the six pages -- histogram, grouped violin, grouped
+# box -- write `prev_<x>AnnotTestType = test_type` ONE OR TWO LINES ABOVE the
+# adjustment commit. A guard written as `if prev_gvAnnotTestType = 2` would
+# therefore be testing the user's NEW choice, made after the dialog was built,
+# and a user who opened the page parametric and switched to Nonparametric
+# before pressing Draw would pass it and read a field that was never on the
+# screen. So: no test-type variable may appear in a guard position here.
+check("v61",
+      "no adjustment read is guarded by a test-type variable instead",
+      0L,
+      sum(grepl("^\\s*if (tmp\\w*TestType|prev_\\w*AnnotTestType|test_type) = 2\\s*$",
+                fcode[unlist(lapply(.readAt, function(i) max(1, i - 4):(i - 1)))])),
+      tol = 0)
+
+# ---------------------------------------------------------------------------
+# 2b. NO RAW fixed$ REACHES THE INFO WINDOW FROM THIS FILE
+# ---------------------------------------------------------------------------
+# HOUSE RULE, 15 August 2026: statistics print at fixed decimals, p in APA
+# style, and no raw double reaches the Info window; full precision belongs to
+# the CSV export. `fixed$` is not a fixed-precision formatter -- it prints
+# max (precision, -floor (log10 |v|)) decimals, so it ESCALATES silently on
+# small magnitudes, and it returns a bare "0" for exact zero. A sibling sweep
+# found seven call sites in this file. All seven were `appendInfoLine:`
+# arguments -- Info-window output, not figure text -- so all seven are in
+# scope, and all seven now go through @eml_fixed, which lives in
+# stats/eml-output.praat and is the one implementation.
+#
+# THE CHECK READS CODE, NOT COMMENTS, and that is not incidental. The fix left
+# two comment blocks that explain the rule and therefore contain the string
+# `fixed$` several times; a check written against the raw file would match the
+# COMMENT EXPLAINING THE FIX and pass on a file where the fix had been
+# reverted and the comment left behind. `.code()` strips comment lines before
+# any of this runs, which is why the expected count is exactly zero rather
+# than a threshold someone tuned until it passed.
+check("v61", "no raw fixed$ call survives in the graphs form",
+      0L, sum(grepl("(^|[^_[:alnum:]])fixed\\$", fcode)), tol = 0)
+check("v61", "and the seven sites go through @eml_fixed instead",
+      7L, sum(grepl("@eml_fixed:", fcode)), tol = 0)
+# AND THE PROCEDURE EXISTS WHERE IT IS CALLED FROM. A call to a procedure
+# Praat cannot find is a RUN-time abort, not a parse error, and these seven
+# sit on diagnostic branches that a happy-path drive never enters -- so a
+# rename would go unnoticed until a user with a crowded legend met it. The
+# file is read here rather than reusing section 3's copy because that one is
+# loaded further down, and a check that depends on the order of two unrelated
+# sections is a check waiting to be moved.
+.outp <- Sys.getenv("EML_OUTPUT_FILE", unset = "")
+if (!nzchar(.outp)) .outp <- repo_path(file.path("plugin", "stats",
+                                                 "eml-output.praat"))
+check_true("v61", "and @eml_fixed is defined in eml-output",
+           any(grepl("^procedure eml_fixed:", .code(.outp))))
 
 # D8. The single write to the drawing layer's placement global is overridden in
 # beginner mode -- and NOT by writing config, which would destroy the advanced
@@ -525,7 +676,287 @@ if (check_true("v61", "an artefact list was written for the KW leg",
 
 }
 
+# ---------------------------------------------------------------------------
+# 4. THE ADJUSTMENT MENU, DRIVEN ON BOTH ARMS (RULING 1a)
+# ---------------------------------------------------------------------------
+#     bash harness/graphseams/adjustarm.sh
+#
+# Two legs from one driver, differing in ONE seeded value -- the arm. Same
+# graph type, same table, same columns, same advanced mode, same presets. A
+# pair like that is the only arrangement in which a difference in the dialog
+# can be attributed to the arm; two separately written legs would leave every
+# difference arguable.
+ad <- Sys.getenv("EML_ADJUST_DIR", unset = "")
+if (!nzchar(ad)) ad <- repo_path(file.path("harness", "graphseams", "adjust_out"))
+haveAdj <- check_true("v61",
+                      "the adjustment-arm artefact exists (bash harness/graphseams/adjustarm.sh)",
+                      dir.exists(ad) && file.exists(file.path(ad, "ADJUSTARM.tsv")))
+if (haveAdj) {
+    aa <- .kv(file.path(ad, "ADJUSTARM.tsv"))
+    .a <- function(k) { v <- aa[[k]]; if (is.null(v)) "" else as.character(v) }
+    .ai <- function(k) suppressWarnings(as.integer(.a(k)))
+
+    # 4a. THE RUN WAS THE EXPERIMENT IT CLAIMS TO BE. Checked before anything
+    # is concluded from it, for the reason section 3a gives: if the preset
+    # failed to apply, both legs took the SAME arm, agreed with each other,
+    # and proved nothing. The arm each leg actually took is read back out of
+    # the form, not assumed from the leg's name.
+    check_true("v61", "the nonparametric leg really took the Dunn arm",
+               .a("nonparametric_testtype") == "nonparametric")
+    check_true("v61", "and the parametric leg really took the Tukey arm",
+               .a("parametric_testtype") == "parametric")
+    # AND BOTH WERE ANNOTATING. An unannotated draw never reaches a post-hoc
+    # at all, so the adjustment method would be moot on both arms and the two
+    # legs would agree for a reason that has nothing to do with the fix.
+    check("v61", "both legs were annotating", 2L,
+          sum(c(.ai("nonparametric_annotate"), .ai("parametric_annotate")) == 1L,
+              na.rm = TRUE), tol = 0)
+    # AND BOTH COMPLETED. The failure mode of an ungated read is not an abort
+    # -- Praat keeps a stale pause variable -- but the failure mode of a
+    # MIS-gated one is, so the run is asked whether it survived before it is
+    # asked what it decided.
+    check("v61", "neither leg died on an undefined variable", 0L,
+          sum(c(.ai("nonparametric_unknown_variable"),
+                .ai("parametric_unknown_variable")), na.rm = TRUE), tol = 0)
+    check("v61", "and each leg drew and saved exactly one figure", 2L,
+          sum(c(.ai("nonparametric_pngs"), .ai("parametric_pngs")) == 1L,
+              na.rm = TRUE), tol = 0)
+
+    # 4b. THE GATE. One integer per arm, read out of the form after the last
+    # commit, so it is the value that actually decided whether
+    # adjustment_method was read back.
+    check("v61", "the Dunn arm still offers the adjustment menu", 1L,
+          .ai("nonparametric_offered"), tol = 0)
+    check("v61", "and the Tukey arm does not (RULING 1a)", 0L,
+          .ai("parametric_offered"), tol = 0)
+
+    # 4c. THE SECOND WITNESS, AND IT KNOWS NOTHING ABOUT THE FIRST. The
+    # Column Mapping page's height in pixels, measured from the window
+    # manager. The hole this closes is specific: a "fix" that set the flag to
+    # 0 and left the optionmenu on the dialog would report 4b perfectly and
+    # still be showing the user a dead control. Two arms of the same page with
+    # the same height have the same rows on them, whatever the flag says.
+    #
+    # THE SCREEN IS 1400px TALL IN THAT RIG, NOT 1000. A window manager clamps
+    # a dialog to the screen, so on the 1000px display run.sh uses -- which is
+    # 1000px because the §6 clipping finding is about a 1000px display -- both
+    # arms would report the same clamped number and this witness would be dead
+    # while looking alive.
+    #
+    # MEASURED 15 Aug 2026: 918 px nonparametric, 923 px parametric. The
+    # parametric arm is the TALLER of the two by five pixels, which is not
+    # what one expects from removing a row and is worth writing down: a Praat
+    # `comment:` spans the full dialog width and is a slightly taller row than
+    # the optionmenu it replaced. Five pixels on a page that fits is a cost
+    # worth paying for a control that is not a lie; it is recorded rather than
+    # asserted at a particular value, because the number belongs to a GTK
+    # theme and would make this check a tripwire for the sandbox.
+    check_true("v61",
+               sprintf(paste0("the two arms are not the same dialog ",
+                              "(%s px nonparametric, %s px parametric)"),
+                       .a("nonparametric_dialog_height"),
+                       .a("parametric_dialog_height")),
+               !is.na(.ai("nonparametric_dialog_height")) &&
+               !is.na(.ai("parametric_dialog_height")) &&
+               .ai("nonparametric_dialog_height") > 0 &&
+               .ai("parametric_dialog_height") !=
+                   .ai("nonparametric_dialog_height"))
+
+    # 4d. THE CONSEQUENCE. On the parametric arm the page must not write
+    # annotCorrectionMethod$ AT ALL, so the bridge must still be handed the
+    # file-scope default. This is a different statement from 4b: a page could
+    # set the flag, drop the field, and still commit a value from some other
+    # source, and the bridge would be told a method the user never chose.
+    check_true("v61",
+               sprintf("the Tukey arm left the correction untouched (%s)",
+                       .a("parametric_correction")),
+               .a("parametric_correction") == "holm")
+    # AND THE DUNN ARM STILL DELIVERS ONE. Zero on both arms would pass the
+    # check above and would mean the menu had stopped working on the arm that
+    # reads it -- the opposite defect, and the one that changes a number.
+    check_true("v61",
+               sprintf("and the Dunn arm still delivers one (%s)",
+                       .a("nonparametric_correction")),
+               .a("nonparametric_correction") %in%
+                   c("holm", "bonferroni", "bh"))
+}
+
+# ---------------------------------------------------------------------------
+# 5. THE RECORDED AXIS: A CHOICE, OR ONE DATASET'S ANSWER? (RULING 10)
+# ---------------------------------------------------------------------------
+#     bash harness/graphseams/axischoice.sh
+#
+# RULING 10, 15 August 2026. A recorded draw step must carry the user's axis
+# CHOICE. If the user left the axis on auto, the emitted call must say auto
+# and let the draw resolve the range from the data at replay time; if the user
+# typed a range, it must come back as variables in the emitted script's
+# editable header block, referenced by the call, so that the one place a user
+# edits for new data is still the top block.
+#
+# WHY IT MATTERS. The recorded script is the plugin's retargeting surface --
+# the whole editable header block exists so that one edit re-points the
+# workflow at other data. A frozen frame means the statistics recompute
+# honestly on the new table while the FIGURE stays at the original table's
+# extent: clipped, or swimming.
+#
+# WHAT THE FAILURE LOOKS LIKE. Silent, and spectacularly so. Measured
+# 15 Aug 2026: a violin recorded on auto over data spanning 194.5 .. 248.5
+# emitted `..., 180.000000, 270.000000`; replayed against a table spanning
+# 1083.6 .. 1245.5 it drew a titled, labelled, tick-marked, gridded frame with
+# ALL ONE HUNDRED POINTS off the top of it and no warning anywhere. The PNG is
+# harness/graphseams/axis_out/leg3.png and it is worth opening.
+#
+# WHAT COULD NOT HAVE CAUGHT IT.
+#
+#   * harness/record/roundtrip_graph.sh, which is the closest thing that
+#     existed and is a good rig. It records a figure, replays the emitted
+#     script and compares the two PNGs byte for byte -- ON THE SAME DATA. A
+#     baked-in axis is exactly right on the same data. The comparison it makes
+#     is the one this defect cannot fail.
+#
+#   * EVERY VALIDATOR THAT READS A NUMBER. Nothing computed moves. The
+#     statistics in the replayed script recompute correctly on the new table;
+#     it is only the frame that does not follow them, and no report, no CSV
+#     and no tidy frame carries the frame.
+#
+#   * A ONE-LEGGED RETARGET TEST. This is the subtle one and it is why the rig
+#     has four legs and then four more. "The axis did not change" is not a
+#     finding on its own -- it is also what a correct emitter reports when the
+#     retargeted data happens to resolve to the same range. The ANSWER KEY is
+#     a NATIVE auto draw of the retargeted table: what the user would have got
+#     from the form. Leg 3 must equal that, not merely differ from leg 1.
+#
+# WHAT SEPARATES THEM: the axis the replay RESOLVED, read back out of the draw
+# procedure that drew it, against the axis the native draw resolved. And the
+# emitted call itself, counted for bare decimal literals in its numeric tail:
+# `0, 0` is the auto sentinel and is not a resolved literal.
+ax <- Sys.getenv("EML_AXIS_DIR", unset = "")
+if (!nzchar(ax)) ax <- repo_path(file.path("harness", "graphseams", "axis_out"))
+haveAx <- check_true("v61",
+                     "the axis-choice artefact exists (bash harness/graphseams/axischoice.sh)",
+                     dir.exists(ax) && file.exists(file.path(ax, "AXIS.tsv")))
+if (haveAx) {
+    x <- .kv(file.path(ax, "AXIS.tsv"))
+    .x <- function(k) { v <- x[[k]]; if (is.null(v)) "" else as.character(v) }
+    .xn <- function(k) suppressWarnings(as.numeric(.x(k)))
+    .xi <- function(k) suppressWarnings(as.integer(.x(k)))
+
+    # 5a. THE RUN WAS THE EXPERIMENT IT CLAIMS TO BE. The retargeted table has
+    # to be genuinely somewhere else, or "the frame did not follow" is a claim
+    # about two ranges that overlap and nobody could tell apart. DISJOINT is
+    # the requirement, and it is asserted rather than assumed: the fixtures
+    # are generated in the harness and a later edit could quietly move them
+    # together, at which point every check below would pass on a rig that had
+    # stopped testing anything.
+    check_true("v61",
+               sprintf(paste0("the retargeted table is disjoint from the ",
+                              "original (%s..%s vs %s..%s)"),
+                       .x("leg1_data_lo"), .x("leg1_data_hi"),
+                       .x("leg3_data_lo"), .x("leg3_data_hi")),
+               !is.na(.xn("leg1_data_hi")) && !is.na(.xn("leg3_data_lo")) &&
+               .xn("leg3_data_lo") > .xn("leg1_data_hi"))
+    # AND THE ANSWER KEY IS NOT THE ORIGINAL AXIS. If a native auto draw of
+    # the retargeted table resolved to the same range as the original, the
+    # frozen and the correct figure would be the same figure and the whole
+    # rig would be blind.
+    check_true("v61",
+               sprintf("and a native auto draw of it resolves elsewhere (%s..%s vs %s..%s)",
+                       .x("leg1_axis_lo"), .x("leg1_axis_hi"),
+                       .x("leg4_axis_lo"), .x("leg4_axis_hi")),
+               !is.na(.xn("leg4_axis_lo")) &&
+               (.xn("leg4_axis_lo") != .xn("leg1_axis_lo") ||
+                .xn("leg4_axis_hi") != .xn("leg1_axis_hi")))
+
+    # 5b. THE SAME-DATA LEG. The ruling names it, and it is the leg that
+    # protects the numbers: a change that makes the frame follow the data is
+    # worthless if it also makes the frame WANDER on data that did not change.
+    # Byte for byte, because the same procedure on the same data at the same
+    # viewport on the same build has no licence to differ at all.
+    check("v61",
+          sprintf("the emitted script reproduces its own figure exactly (%s bytes)",
+                  .x("leg1_png_bytes")),
+          1L, .xi("same_data_identical"), tol = 0)
+    # AND THE FIGURE IT REPRODUCES HAS ITS DATA ON IT. Byte-equality alone is
+    # the trivially-passing kind of check: two blank pages are byte-identical
+    # too, and an over-eager axis is exactly what produces one. The first
+    # draft of this pair guarded that with a FILE SIZE THRESHOLD, and the rig
+    # itself disproved it -- leg3.png is a completely empty frame and weighs
+    # 52 KB, comfortably over any threshold anyone would have picked. Size
+    # does not distinguish a figure from a frame. Containment does: the axis
+    # the recorded figure resolved must bracket the data it was resolved from,
+    # which is what having the violins on the page MEANS.
+    check_true("v61",
+               sprintf(paste0("and its axis holds its data, so it is a figure ",
+                              "and not a frame (%s..%s over %s..%s)"),
+                       .x("leg1_axis_lo"), .x("leg1_axis_hi"),
+                       .x("leg1_data_lo"), .x("leg1_data_hi")),
+               !is.na(.xn("leg1_axis_lo")) && !is.na(.xn("leg1_data_lo")) &&
+               .xn("leg1_axis_lo") <= .xn("leg1_data_lo") &&
+               .xn("leg1_axis_hi") >= .xn("leg1_data_hi"))
+
+    # 5c. THE RETARGETED LEG, ON A RECORDER THAT ALREADY HONOURS THE RULING.
+    # This is the POSITIVE CONTROL and it is the most useful thing the rig
+    # found. The box plot's recorder is a plain @emlRecordDrawStep and builds
+    # its call from `string$ (.vMin)` -- the REQUEST -- so a user's auto is
+    # emitted as `0, 0` and the replay resolves the range from whatever table
+    # it is pointed at. Measured 15 Aug 2026: recorded on data spanning
+    # 194.5..248.5 at an axis of 180..260, replayed on the retargeted table it
+    # resolved 1060..1280 and drew a figure BYTE-IDENTICAL to a native auto
+    # draw of that table.
+    #
+    # Without this leg, section 5d below would be a check that cannot go green
+    # for the right reason: it could not distinguish "the emitter cannot emit
+    # auto" from "the rig cannot detect a rescale".
+    check("v61",
+          "a box plot recorded on auto emits no resolved literals (RULING 10a)",
+          0L, .xi("box_call_literals"), tol = 0)
+    check("v61",
+          sprintf(paste0("and its replay rescales to the retargeted data ",
+                         "(%s..%s, native %s..%s)"),
+                  .x("leg7_axis_lo"), .x("leg7_axis_hi"),
+                  .x("leg8_axis_lo"), .x("leg8_axis_hi")),
+          1L, .xi("box_retarget_matches_native"), tol = 0)
+
+    # 5d. THE VIOLIN, WHICH IS THE ONE PROCEDURE THAT DOES NOT.
+    #
+    # ATTESTED, NOT CHECKED, and the distinction is the same one §6 makes
+    # about the clamped dialog: this file records a measured number without
+    # asserting a fix nobody has made. The emission lives in
+    # plugin/graphs/eml-draw-procedures.praat -- @emlRecordViolin, whose
+    # .code$ is built from `fixed$ (emlDrawViolinPlot.yMin, 6)` rather than
+    # from its own .vMin argument -- and that file was not this pass's to
+    # edit. Every other draw recorder in the plugin already builds its call
+    # from the request, which is what 5c measures, so this is ONE procedure
+    # that went its own way rather than a policy the plugin holds.
+    attest("v61",
+           sprintf(paste0("a violin recorded on AUTO emits %s resolved ",
+                          "literals: %s"),
+                   .x("auto_call_literals"), .x("auto_call_tail")),
+           "harness/graphseams/axis_out/AXIS.tsv, measured 15 Aug 2026")
+    attest("v61",
+           sprintf(paste0("so its replay on retargeted data stays frozen at ",
+                          "%s..%s while the data is %s..%s and a native draw ",
+                          "resolves %s..%s -- every point off the page"),
+                   .x("leg3_axis_lo"), .x("leg3_axis_hi"),
+                   .x("leg3_data_lo"), .x("leg3_data_hi"),
+                   .x("leg4_axis_lo"), .x("leg4_axis_hi")),
+           "harness/graphseams/axis_out/leg3.png vs leg4.png")
+
+    # 5e. THE EXPLICIT RANGE (RULING 10b), ALSO OPEN, AND OPEN EVERYWHERE.
+    # A user who TYPED a range should get it back as `axisYMin = 150` in the
+    # emitted script's editable header block, referenced by the call. No draw
+    # recorder does this today: the lift mechanism is
+    # @emlRecordColumnManifest / @emlRecordColumnSpec in
+    # plugin/stats/eml-record.praat, it is table-driven by argument position,
+    # and it lifts QUOTED literals only -- a numeric argument is not one. That
+    # file was not this pass's to edit either.
+    attest("v61",
+           sprintf(paste0("an explicit range is still emitted inline, not in ",
+                          "the header block: %s"), .x("expl_call_tail")),
+           "harness/graphseams/axis_out/AXIS.tsv, measured 15 Aug 2026")
+}
+
 if (!exists("EML_SUITE")) {
-    eml_report("v61 graphs seams: the crash, the preset, the duplicate block, the legend")
+    eml_report("v61 graphs seams: the crash, the preset, the duplicate block, the legend, the adjustment arm, the recorded axis")
     eml_exit()
 }
