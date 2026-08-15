@@ -16,18 +16,23 @@
 #   * neither of them records a SAVE step, because a save step can only be
 #     recorded from inside @emlSavePanel — which is a dialog.
 #
-# Four legs, one artefact directory, one TSV.
+# Five legs, one artefact directory, one TSV.
 #
-#   ADV     record an advanced-mode annotated, jittered violin; replay it;
-#           compare the replay against BOTH the original AND a deliberately
-#           un-advanced reference. Which of the two it matches is the whole
-#           result — see the note on the seed below.
-#   SAVE    replay a recorded save step and count the timestamps in the names
-#           it writes. One is correct; two is the accretion defect.
-#   META    drive several script scopes in ONE Praat process, remove the
-#           record tables the way a user can, and read the provenance the
-#           next session emits.
-#   FOLDER  replay a save onto a folder two levels deep that does not exist.
+#   ADV      record an advanced-mode annotated, jittered violin; replay it;
+#            compare the replay against BOTH the original AND a deliberately
+#            un-advanced reference. Which of the two it matches is the whole
+#            result — see the note on the seed below.
+#   SAVE     replay a recorded save step and count the timestamps in the names
+#            it writes. One is correct; two is the accretion defect.
+#   META     drive several script scopes in ONE Praat process, remove the
+#            record tables the way a user can, and read the provenance the
+#            next session emits.
+#   FOLDER   replay a save onto a folder two levels deep that does not exist.
+#   RETARGET edit the emitted script's header block -- and NOTHING else -- to
+#            point at a same-shape table whose columns are named differently,
+#            then run it. This is the only leg that can tell a block which
+#            GATHERS the column names from one the steps actually READ, and
+#            the difference between those two is author ruling 9 in full.
 #
 # THE SEED IS WHAT MAKES THE FIGURE COMPARABLE AT ALL, and finding that out
 # changed the design of this file. @emlDrawJitteredPoints calls randomUniform
@@ -69,8 +74,8 @@ OUT="${EML_REPLAY_DIR:-$SCRIPT_DIR/replay_out}"
 PREFS="$SCRIPT_DIR/replay_prefs"
 
 mkdir -p "$OUT" "$PREFS"
-rm -rf "$OUT"/*.png "$OUT"/*.praat "$OUT"/*.log "$OUT"/*.tsv "$OUT"/saved \
-       "$OUT"/deep 2>/dev/null
+rm -rf "$OUT"/*.png "$OUT"/*.praat "$OUT"/*.log "$OUT"/*.tsv "$OUT"/*.txt \
+       "$OUT"/saved "$OUT"/deep 2>/dev/null
 mkdir -p "$OUT/saved"
 
 TSV="$OUT/REPLAY.tsv"
@@ -449,7 +454,7 @@ runScript: "$OUT/meta_op.praat", "step", ""
 
 # The user removes the BUFFER from the Objects window. Measured behaviour: the
 # recording silently ends, and the meta table is left behind.
-nocheck selectObject: "Table emlRecordBuffer"
+nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
 if numberOfSelected () = 1
     Remove
 endif
@@ -642,6 +647,243 @@ kv adv_praat_abort "$(grep -c 'not performed or completed' \
     "$OUT/adv_record.log" "$OUT/adv_replay.log" | awk -F: '{s+=$2} END {print s+0}')"
 kv save_praat_abort "$(grep -c 'not performed or completed' \
     "$OUT/save_record.log" "$OUT/save_replay.log" | awk -F: '{s+=$2} END {print s+0}')"
+
+# ===========================================================================
+# LEG RETARGET — the block is EDITED and the file is RUN
+# ===========================================================================
+# THE PROOF OF RULING 9 IS A DRIVE, NOT A DIFF, and the distinction is the
+# reason this leg exists. A renderer that gathers every column name into the
+# block at the top and leaves the steps below reading their own literals
+# passes any grep anybody would write: the variables are there, spelled
+# correctly, with the right values. It is also completely useless, because
+# editing them changes nothing. The only way to tell the two apart is to edit
+# the block and run the file.
+#
+# So: record a session, emit it, change the FIVE declaration lines and nothing
+# else, and run the result against a table with different column names. The
+# number of changed lines is measured (5 -- one object, four columns) so that
+# "only the header block was edited" is an integer in the artefact rather than
+# a claim in a commit message.
+#
+# THE SESSION IS CHOSEN TO EXERCISE THE ROLE RULE, not merely to be a session:
+#
+#   step 1  two-way ANOVA of val by grp and site
+#   step 2  violin of val by grp
+#
+# so "val" is a value column TWICE and gets ONE variable, while "grp" is a
+# two-way factor in one step and a plot's grouping column in the other and
+# gets TWO. That is the ruling's own distinction -- distinct ROLE, not distinct
+# LITERAL -- and it is visible in the emitted block rather than argued for.
+#
+# WHAT THE RETARGETED RUN HAS TO SHOW, all three of which are measured below:
+#   * it runs at all -- a script still naming "val" cannot, since the new
+#     table has no such column, so an abort here IS the defect;
+#   * its report names the NEW columns, which only reading the variables can
+#     produce;
+#   * its numbers are the ORIGINAL numbers, because the twin table holds the
+#     same values under different headers. Retargeting must change what is
+#     read, not what is computed.
+read -r -d '' FIXTURE_WT <<'PRAATWT'
+Create Table with column names: "wt", 0, "grp site val"
+rngState = 20260814
+row = 0
+for g from 1 to 2
+    for s from 1 to 2
+        for k from 1 to 10
+            rngState = (1103515245 * rngState + 12345) mod 2147483648
+            row = row + 1
+            Append row
+            Set string value: row, "grp", "Cohort " + string$ (g)
+            Set string value: row, "site", "Room " + string$ (s)
+            Set numeric value: row, "val",
+            ... 1 + g * 1.2 + s * 0.4 + (rngState / 2147483648 - 0.5) * 1.4
+        endfor
+    endfor
+endfor
+PRAATWT
+
+# THE TWIN. Same generator, same order, same numbers -- and three different
+# column names on a differently named Table. Everything that separates a
+# retargeted run from the original is a name.
+read -r -d '' FIXTURE_RT <<'PRAATRT'
+Create Table with column names: "rt", 0, "cohort room dB"
+rngState = 20260814
+row = 0
+for g from 1 to 2
+    for s from 1 to 2
+        for k from 1 to 10
+            rngState = (1103515245 * rngState + 12345) mod 2147483648
+            row = row + 1
+            Append row
+            Set string value: row, "cohort", "Cohort " + string$ (g)
+            Set string value: row, "room", "Room " + string$ (s)
+            Set numeric value: row, "dB",
+            ... 1 + g * 1.2 + s * 0.4 + (rngState / 2147483648 - 0.5) * 1.4
+        endfor
+    endfor
+endfor
+PRAATRT
+
+cat > "$OUT/retarget_record.praat" <<PRAAT
+$INCLUDES
+@emlInitDrawingDefaults
+@emlRecordInit
+@emlRecordBegin: ""
+emlRecordPluginRoot\$ = "$PLUG"
+@emlRecordLoadPhrases: "$PLUG/data/eml-record-phrases.csv"
+@emlRecordHeader: "Table wt", 40, 3, "14 August 2026, 00:00:00"
+
+$FIXTURE_WT
+table = selected ("Table")
+
+@emlRunTwoWayAnalysis: table, "val", "grp", "site"
+
+selectObject: table
+vMin = Get minimum: "val"
+vMax = Get maximum: "val"
+Erase all
+random_initializeWithSeedUnsafelyButPredictably (20260814)
+@emlDrawViolinPlot: table, "retarget violin", "Cohort", "val", 6, 4,
+... "color", 1, "grp", "val", vMin, vMax
+@emlAssertFullViewport
+Save as 300-dpi PNG file: "$OUT/RET_ORIG.png"
+
+@emlRecordFlush: "$OUT/retarget_emitted.praat"
+@emlRecordDiscard
+PRAAT
+echo "# leg RETARGET record" > "$OUT/retarget_record.log"
+run_praat "$OUT/retarget_record.praat" "$OUT/retarget_record.log"
+
+# THE REFERENCE. The same analysis run DIRECTLY on the twin, by hand, with the
+# new column names written out -- so the retargeted file is compared against
+# what the plugin does when it is simply told the new names, not against the
+# retargeted file's own idea of itself.
+cat > "$OUT/retarget_reference.praat" <<PRAAT
+$INCLUDES
+@emlInitDrawingDefaults
+$FIXTURE_RT
+table = selected ("Table")
+@emlRunTwoWayAnalysis: table, "dB", "cohort", "room"
+PRAAT
+echo "# leg RETARGET reference" > "$OUT/retarget_reference.log"
+run_praat "$OUT/retarget_reference.praat" "$OUT/retarget_reference.log"
+
+# ---- THE EDIT ------------------------------------------------------------
+# FIVE LINES, ALL OF THEM DECLARATIONS, ALL OF THEM INSIDE THE BLOCK. sed is
+# anchored on `^<name>` so it cannot touch a mention of the same text further
+# down the file, and the change is then counted rather than trusted.
+cp "$OUT/retarget_emitted.praat" "$OUT/retarget_edited.praat"
+sed -i \
+    -e 's|^data1\$ = "Table wt"|data1$ = "Table rt"|' \
+    -e 's|^\(valueCol\$ *\)= "val"|\1= "dB"|' \
+    -e 's|^\(factorACol\$ *\)= "grp"|\1= "cohort"|' \
+    -e 's|^\(factorBCol\$ *\)= "site"|\1= "room"|' \
+    -e 's|^\(groupCol\$ *\)= "grp"|\1= "cohort"|' \
+    "$OUT/retarget_edited.praat"
+# COUNTED LINE BY LINE AND NOT OUT OF `diff`, which was the first cut and was
+# wrong in the direction that matters: a multi-line hunk header reads
+# "52,56c52,56", the obvious sed for a leading line number does not match it,
+# and the count silently came back 0 -- a check that could only pass. The two
+# files have the same length by construction (sed -i replaces in place), so the
+# honest measurement is a paired walk.
+kv retarget_lines_changed "$(awk 'NR==FNR{a[FNR]=$0; next}
+    $0 != a[FNR] {c++} END {print c+0}' \
+    "$OUT/retarget_emitted.praat" "$OUT/retarget_edited.praat")"
+# AND THE BLOCK IS WHERE THE EDIT LANDED. Every changed line must sit above
+# the first step separator, or something below the block was named after all.
+kv retarget_edits_below_block "$(
+    first_step=$(grep -n -m1 '^# --- Step ' "$OUT/retarget_edited.praat" \
+                 | cut -d: -f1)
+    awk -v f="${first_step:-0}" 'NR==FNR{a[FNR]=$0; next}
+        $0 != a[FNR] && FNR >= f {c++} END {print c+0}' \
+        "$OUT/retarget_emitted.praat" "$OUT/retarget_edited.praat")"
+
+cat > "$OUT/retarget_replay.praat" <<PRAAT
+$FIXTURE_RT
+Erase all
+random_initializeWithSeedUnsafelyButPredictably (20260814)
+include $OUT/retarget_edited.praat
+@emlAssertFullViewport
+Save as 300-dpi PNG file: "$OUT/RET_REPLAY.png"
+PRAAT
+echo "# leg RETARGET replay" > "$OUT/retarget_replay.log"
+run_praat "$OUT/retarget_replay.praat" "$OUT/retarget_replay.log"
+
+kv retarget_praat_abort "$(grep -c 'not performed or completed' \
+    "$OUT/retarget_record.log" "$OUT/retarget_reference.log" \
+    "$OUT/retarget_replay.log" | awk -F: '{s+=$2} END {print s+0}')"
+
+# THE REPORT NAMES THE NEW COLUMNS AND NOT THE OLD ONES. The header block of
+# the plugin's own two-way report echoes what it was asked for, so this is the
+# variables being READ, one layer below the numbers.
+kv retarget_report_new_cols "$(grep -cE '^ +(Data column +dB|Factor 1 +cohort|Factor 2 +room)$' \
+    "$OUT/retarget_replay.log")"
+kv retarget_report_old_cols "$(grep -cE '^ +(Data column +val|Factor 1 +grp|Factor 2 +site)$' \
+    "$OUT/retarget_replay.log")"
+
+# THE TRANSCRIPTS. Against the reference: identical, label for label and digit
+# for digit, once the wall-clock line each report stamps itself with is out of
+# the way. That line is the only thing in a report that a second run may
+# legitimately change.
+notime () { grep -vE '^ +[A-Z][a-z][a-z] [A-Z][a-z][a-z] +[0-9]+ ' "$1"; }
+notime "$OUT/retarget_reference.log" > "$OUT/retarget_ref_norm.txt"
+notime "$OUT/retarget_replay.log"    > "$OUT/retarget_replay_norm.txt"
+# The two logs open with their own harness banner line, which is not report
+# text; dropped from both.
+sed -i '1d' "$OUT/retarget_ref_norm.txt" "$OUT/retarget_replay_norm.txt"
+kv retarget_matches_reference "$(cmp -s "$OUT/retarget_ref_norm.txt" \
+    "$OUT/retarget_replay_norm.txt" && echo 1 || echo 0)"
+kv retarget_report_lines "$(wc -l < "$OUT/retarget_replay_norm.txt")"
+
+# AND AGAINST THE ORIGINAL RECORDING: the NUMBERS only, because the labels are
+# exactly what changed. The report pads its label field to a fixed width, so
+# cutting at column 21 leaves the ANOVA table's arithmetic and nothing else.
+anovanum () {
+    sed -n '/ANOVA Table/,/Exact p-values/p' "$1" | grep -E '^[A-Za-z]' \
+        | cut -c21-
+}
+anovanum "$OUT/retarget_record.log" > "$OUT/retarget_num_orig.txt"
+anovanum "$OUT/retarget_replay.log" > "$OUT/retarget_num_new.txt"
+kv retarget_anova_rows "$(wc -l < "$OUT/retarget_num_orig.txt")"
+kv retarget_numbers_unchanged "$(cmp -s "$OUT/retarget_num_orig.txt" \
+    "$OUT/retarget_num_new.txt" && echo 1 || echo 0)"
+
+# THE FIGURE, on the same terms as the ADV leg: the retargeted violin against
+# the one the recording itself drew. Same numbers under different headers, so
+# a faithful retarget is the same picture -- and the residual is the recorder's
+# six-decimal axis, exactly as it is there.
+for f in RET_ORIG RET_REPLAY; do
+    if [[ -f "$OUT/$f.png" ]]; then
+        kv "${f,,}_bytes" "$(stat -c%s "$OUT/$f.png")"
+    else
+        kv "${f,,}_bytes" 0
+    fi
+done
+kv retarget_fig_vs_orig_over32 "$(pdiff "$OUT/RET_REPLAY.png" "$OUT/RET_ORIG.png" over)"
+kv retarget_fig_vs_orig_max    "$(pdiff "$OUT/RET_REPLAY.png" "$OUT/RET_ORIG.png" max)"
+
+# ---- THE BLOCK ITSELF, WHICH IS WHERE THE ROLE RULE IS VISIBLE -----------
+# Read from the EMITTED file, before the edit. Every one of these is an exact
+# line, because "a variable of about the right name exists somewhere" is the
+# assertion a renderer that gathered names and wired none of them would pass.
+rem="$OUT/retarget_emitted.praat"
+remc () { local n; n=$(grep -c -- "$1" "$rem" 2>/dev/null); echo "${n:-0}"; }
+kv retarget_block_value  "$(remc '^valueCol\$ *= "val"   ; the measured column -- steps 1 (analysis), 2 (draw)$')"
+kv retarget_block_factorA "$(remc '^factorACol\$ *= "grp"   ; the first factor -- step 1 (analysis)$')"
+kv retarget_block_factorB "$(remc '^factorBCol\$ *= "site"   ; the second factor -- step 1 (analysis)$')"
+kv retarget_block_group   "$(remc '^groupCol\$ *= "grp"   ; the grouping column -- step 2 (draw)$')"
+kv retarget_block_data    "$(remc '^data1\$ = "Table wt"   ; steps 1 (analysis), 2 (draw)$')"
+# THE STEPS BELOW READ THEM. Exact call lines: the two-way's three column
+# slots and the violin's two, all variables, and -- on the same line -- the
+# violin's y-axis LABEL still the literal "val", which is the role rule
+# stated as text: same string, one is a column and one is not.
+kv retarget_call_twoway "$(remc '^@emlRunTwoWayAnalysis: data, valueCol\$, factorACol\$, factorBCol\$$')"
+kv retarget_call_violin "$(remc '^@emlDrawViolinPlot: data, "retarget violin", "Cohort", "val", 6, 4, "color", 1, groupCol\$, valueCol\$,')"
+# NO COLUMN LITERAL SURVIVES IN A COLUMN SLOT. Counted as the complement of
+# the two lines above: any executable line that still passes a quoted name to
+# a slot the block declares. `"val"` as an axis label is not one of those and
+# must NOT be counted here -- which is why this counts SLOTS and not strings.
+kv retarget_literal_slots "$(grep -cE '^@(emlRunTwoWayAnalysis: data, "|emlDrawViolinPlot: .*, 1, ")' "$rem")"
 
 # ---------------------------------------------------------------------------
 printf '%-32s %s\n' "key" "value"

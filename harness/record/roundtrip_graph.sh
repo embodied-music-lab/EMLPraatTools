@@ -93,7 +93,16 @@ PRAAT
 # all, and reads in a diff as though the capture had been removed.
 echo "# roundtrip_graph leg 1 -- record: transcript follows" \
     > "$OUT/leg1_stderr.txt"
-( cd "$ROOT" && timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" \
+# HOME IS PINNED ABOVE THE REPOSITORY, for the reason replay.sh records at
+# length. Since the 15 August 2026 ruling the renderer rewrites the include
+# root home-relative and its header states that as a fact -- there is no
+# second arm any more. Under the ambient HOME (/root in the sandbox) the
+# working tree is not under home, the rewrite cannot fire, and this rig would
+# be the one place in the project emitting a file whose header and paths
+# disagree. Pointing HOME at the repository's parent makes the tree genuinely
+# home-relative, so the committed artefact is one a user could actually run.
+# The pref dir is pinned separately, so nothing else moves.
+( cd "$ROOT" && HOME="$(dirname "$ROOT")" timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" \
     --run "$OUT/record_leg.praat" >>"$OUT/leg1_stderr.txt" 2>&1 )
 if [[ ! -f "$OUT/leg1.png" || ! -f "$OUT/emitted.praat" ]]; then
     echo "FAIL: leg 1 produced no figure or no emitted script"
@@ -132,7 +141,7 @@ PRAAT
 
 echo "# roundtrip_graph leg 2 -- replay: transcript follows" \
     > "$OUT/leg2_stderr.txt"
-( cd "$ROOT" && timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" \
+( cd "$ROOT" && HOME="$(dirname "$ROOT")" timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" \
     --run "$OUT/replay_leg.praat" >>"$OUT/leg2_stderr.txt" 2>&1 )
 if [[ ! -f "$OUT/leg2.png" ]]; then
     echo "FAIL: the emitted script drew no figure"

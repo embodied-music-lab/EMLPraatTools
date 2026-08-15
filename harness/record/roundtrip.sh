@@ -91,7 +91,16 @@ writeFileLine: "$OUT/leg1_info.txt", info\$ ()
 @emlRecordDiscard
 PRAAT
 
-( cd "$ROOT" && timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$OUT/record_leg.praat" >"$OUT/leg1_stderr.txt" 2>&1 )
+# HOME IS PINNED ABOVE THE REPOSITORY, for the reason replay.sh records at
+# length. Since the 15 August 2026 ruling the renderer rewrites the include
+# root home-relative and its header states that as a fact -- there is no
+# second arm any more. Under the ambient HOME (/root in the sandbox) the
+# working tree is not under home, the rewrite cannot fire, and this rig would
+# be the one place in the project emitting a file whose header and paths
+# disagree. Pointing HOME at the repository's parent makes the tree genuinely
+# home-relative, so the committed artefact is one a user could actually run.
+# The pref dir is pinned separately, so nothing else moves.
+( cd "$ROOT" && HOME="$(dirname "$ROOT")" timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$OUT/record_leg.praat" >"$OUT/leg1_stderr.txt" 2>&1 )
 if [[ ! -f "$OUT/emitted.praat" ]]; then
     echo "FAIL: leg 1 produced no emitted script"
     tail -20 "$OUT/leg1_stderr.txt"
@@ -109,7 +118,7 @@ runScript: "$OUT/emitted.praat"
 writeFileLine: "$OUT/leg2_info.txt", info\$ ()
 PRAAT
 
-( cd "$ROOT" && timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$OUT/replay_leg.praat" >"$OUT/leg2_stderr.txt" 2>&1 )
+( cd "$ROOT" && HOME="$(dirname "$ROOT")" timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$OUT/replay_leg.praat" >"$OUT/leg2_stderr.txt" 2>&1 )
 if [[ ! -f "$OUT/leg2_info.txt" ]]; then
     echo "FAIL: the emitted script did not run"
     tail -20 "$OUT/leg2_stderr.txt"
