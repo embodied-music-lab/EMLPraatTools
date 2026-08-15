@@ -559,3 +559,28 @@ forever. `harness/walks/d117/lib.sh:pwin` is the same route; keep them in step.
 
 Evidence: `evidence/walks/gui_harness/` (`before_after.txt`, `walk_log.txt`,
 `walk_page1..3.png`, `manifest.csv`).
+
+### The `savepaths` flake did not reproduce — 14 August 2026
+
+`harness/savepaths/run.sh` carries a bounded one-retry mechanism and a
+`RETRIES.tsv` alongside it, put there because a leg failed roughly one run in
+nine and only ever in a multi-leg run. The comment above `run_leg` states what
+was established when it was chased: the folder and base name handed to the
+writer were correct on the failing run, the folder existed and was writable at
+the moment of failure, writing that exact path from a fresh Praat succeeded,
+and which leg failed moved between runs. It was never explained.
+
+**It did not reproduce under the 14 August 2026 audit.** Eleven legs out of
+eleven passed, `RETRIES.tsv` stayed empty, and no leg needed a second attempt,
+in that session's environment on Praat 6.6.30. That is not a fix and it is not
+a diagnosis — a one-in-nine event surviving eleven trials is unremarkable on
+its own, and nothing was changed that would explain a fix. It is recorded so
+the next person does not re-derive it, and so that the mechanism's continued
+presence is not mistaken for evidence that the flake is still live.
+
+**The retry stays.** The argument for it never depended on the flake being
+observable today: a harness that quietly retried would report a clean run, and
+a real regression would need two failures before anyone saw it. Removing the
+mechanism on the strength of one clean session would trade a visible,
+instrumented one-in-nine for a silent one. If `RETRIES.tsv` is non-empty after
+a run, that is a finding — read it before reading anything else in the output.

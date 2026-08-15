@@ -1,7 +1,8 @@
 # Verified render map — `Objects → New → ⁺EML Tools`
 
-Praat 6.6.30, Xvfb :99 1400x1000x24, matchbox window manager.
-Source: `evidence/shots/`.
+**Current table: §15 August 2026, measured on Praat 6.6.30 (June 30 2026).**
+Xvfb 1400x1000x24, matchbox window manager. Source: `evidence/shots/`, and the
+15 August drive's own shots.
 
 ## Which layout each part of this file is in — READ THIS FIRST
 
@@ -13,7 +14,12 @@ header and then used the 8 August table added the 20 px twice.
 | Part of this file | Layout | matchbox launched as | relation to `gui.sh` |
 |---|---|---|---|
 | §Objects window chrome · §Opening the submenu · §Entry coordinates (click x≈500) · §Loading an arbitrary table · §6 August 2026 | **titlebar ON** — menu bar at y=34, `⁺EML Tools` at y=467 | `matchbox-window-manager` (default) | the **base** values in `gui.sh`, *before* `EML_YOFF` is added |
-| §8 August 2026 — this table was itself one row short | **titlebar OFF** — menu bar at y=14, `⁺EML Tools` at y=447 | `matchbox-window-manager -use_titlebar no` | the values `gui.sh` **actually clicks**: base + `EML_YOFF` |
+| §8 August 2026 — this table was itself one row short | **titlebar OFF** — menu bar at y=14, `⁺EML Tools` at y=447 | `matchbox-window-manager -use_titlebar no` | superseded — see the 15 August table |
+| **§15 August 2026 — the current table** | **titlebar OFF** — menu bar at y=14, `⁺EML Tools` at y=447 | `matchbox-window-manager -use_titlebar no` | the values `gui.sh` **actually clicks**: base + `EML_YOFF` |
+
+**Go to the 15 August section for anything you intend to click.** Everything
+above it is kept as the record of how the numbers were arrived at, and two of
+those sections are now wrong about what their coordinates open.
 
 `EML_YOFF` in `gui.sh` is exactly this difference. Anchor —
 `grep -n 'EML_YOFF=' harness/gui.sh`:
@@ -248,3 +254,86 @@ image. Never infer them from a diff of setup.praat — the separators are menu
 entries too and they do not all take the same height. And when you do,
 recalibrate **`gui.sh` and this table together**: the two disagreeing is what
 this section is a record of.
+
+---
+
+## 15 August 2026 — the recorder group, and the row `EML_DEMO` was clicking
+
+**Measured 15 August 2026. Praat 6.6.30 (June 30 2026), Xvfb 1400x1000x24,
+`matchbox-window-manager -use_titlebar no`, Objects window 1400x1000 at 0,0.
+These are the offset-applied numbers — what `gui.sh` clicks with its default
+`EML_YOFF=-20`. Do not add the offset again.**
+
+The 13 August menu re-chain put a recorder group into `setup.praat` —
+`-- eml record --`, then *Record script*, *Stop recording and open*, *Stop
+recording and save...* — chained after *Check & repair data...*. That pushed
+**Create Demo Table down three rows**, from 778 to 854, and `EML_DEMO` was left
+at 779.
+
+**779 is now *Record script*.** The consequence is the one this file exists to
+prevent, in its purest form: nothing failed. `EML_DEMO` opened a real command,
+which started a recording and returned, and every subsequent drive ran inside a
+recording nobody had asked for. The 14 August audit lost a phantom recording to
+it before its fleet had launched, and only noticed because the recorder
+announced itself in the Info window.
+
+The submenu now has **seventeen** entries. Every y below was read off the
+screenshot as the text-band centre of its row, and then **proved by clicking
+it** and recording the window that appeared:
+
+| Entry | y | `gui.sh` constant | Proved by |
+|---|---:|---|---|
+| Stats Wizard... | 447 | `EML_WIZARD` | `Pause: EML Stats Wizard` |
+| Describe Table column... | 472 | `EML_DESCRIBE` | `Pause: Describe Table Column` |
+| Check normality (all columns)... | 498 | `EML_NORMALITY` | `Pause: Check Normality` |
+| Compare two groups... | 525 | `EML_TWOGROUP` | `Pause: Compare Two Groups` |
+| Compare paired/repeated... | 549 | `EML_PAIRED` | `Pause: Compare Paired Observations` |
+| Compare k groups (ANOVA)... | 574 | `EML_ANOVA` | `Pause: Compare k Groups (ANOVA)` |
+| Compare k groups (Kruskal-Wallis)... | 599 | `EML_KW` | `Pause: Compare K Groups (Kruskal-Wallis)` |
+| Compare two-way (ANOVA)... | 624 | `EML_TWOWAY` | `Pause: Two-Way ANOVA` |
+| Correlate two columns... | 649 | `EML_CORR` | `Pause: Correlate Two Columns` |
+| Linear regression... | 676 | `EML_REGRESS` | `Pause: Simple Linear Regression` |
+| Pairwise comparisons... | 702 | `EML_PAIRWISE` | `Pause: Pairwise Comparisons` |
+| EML Graphs... | 727 | `EML_GRAPHS` | `Pause: EML Graphs` |
+| Check & repair data... | 753 | `EML_CHECKDATA` | `Pause: EML — Check & repair data` |
+| **Record script** | **779** | `EML_RECORD` *(new)* | Info window: `EML: recording started.`; pressed again, `Pause: Already recording` — *"A recording is already in progress with 0 step(s)"* |
+| **Stop recording and open** | **804** | `EML_RECORD_OPEN` *(new)* | with a real analysis in the buffer, a script editor opened on `.../eml-recorded-scripts/eml-recorded-Sat_Aug_15_040533_2026.praat` |
+| **Stop recording and save...** | **829** | `EML_RECORD_SAVE` *(new)* | `Pause: Nothing recorded yet` — *"The recording is running but no analysis has been captured yet, so there is nothing to save."* |
+| **Create Demo Table...** | **854** | `EML_DEMO` *(was 779)* | `Pause: Create Demo Table` |
+
+The last four rows are the correction. The first thirteen were already right,
+twelve of them to within 1 px; `gui.sh` was rewritten to the proved values
+anyway, so that the map, the constants and the pixels are one number rather
+than three near ones. The rows that moved by a pixel are Describe Table column
+(493→492 base), Compare two groups (544→545), Correlate (670→669), Linear
+regression (695→696) and Pairwise (721→722) — glyph descenders move a measured
+text centre, and the button is ~24 px tall, so none of them was ever a
+mis-click. They are corrected because a map whose numbers are *nearly* the
+constants invites the reader to decide which one is authoritative.
+
+Evidence: `evidence/shots/menu_seventeen_entries_2026-08-15.png`, the submenu
+open with all seventeen entries visible. Re-running the ink profile on that
+committed file reproduces the y column above exactly, so the table can be
+checked without re-driving anything. The 8 August shot,
+`evidence/shots/menu_fourteen_entries_2026-08-08.png`, remains the record for
+the state before the recorder group.
+
+**Method notes for whoever re-measures next.**
+
+- Read the row centres off the screenshot arithmetically rather than by eye:
+  take the ink profile of the submenu column (x 380–670 in this layout) and
+  take each contiguous dark band of more than three rows as one entry. Doing it
+  by eye is how the 8 August table came out one entry short.
+- **Do not dismiss a pause form with `Escape`.** Escape *stops* the form, and
+  the wrapper then runs on past it and raises `Unknown variable ... This
+  happened after you stopped the pause form` in an **untitled** Praat error
+  box. That box is not in `_NET_CLIENT_LIST` — matchbox never manages it — so
+  `findwin`, `pausewin` and `livepause` cannot see it, while it is modal enough
+  that the next menu entry silently does nothing. Four entries read as "opens
+  nothing" during this measurement for exactly that reason before the box was
+  found on a screenshot. Dismiss it by clicking its OK, located from the
+  screenshot rather than assumed.
+- Two entries do not open a dialog at all on the happy path: *Record script*
+  reports into the **Info window**, and *Stop recording and open* opens a
+  **script editor**, whose window title is the script's path in curly quotes.
+  A proof loop that only watches for `^Pause` will call both of them dead.

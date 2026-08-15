@@ -336,12 +336,32 @@ raise () {
 # screenshot; see harness/MENU_MAP.md.
 EML_YOFF=${EML_YOFF:--20}
 
-EML_WIZARD=$((467 + EML_YOFF)); EML_DESCRIBE=$((493 + EML_YOFF))
-EML_NORMALITY=$((518 + EML_YOFF)); EML_TWOGROUP=$((544 + EML_YOFF))
+# ---------------------------------------------------------------------------
+# RE-MEASURED 15 AUGUST 2026 on Praat 6.6.30, Xvfb 1400x1000x24, matchbox
+# -use_titlebar no. Every base value below is (measured y) + 20, and every one
+# of them was then PROVED by clicking it and reading the window that appeared;
+# the evidence table is in harness/MENU_MAP.md under the 15 August heading.
+#
+# WHAT WAS WRONG. The 13 August menu re-chain added a recorder group --
+# "Record script", "Stop recording and open", "Stop recording and save..." --
+# after "Check & repair data...", which pushed Create Demo Table down three
+# rows. EML_DEMO was not moved, so it went on clicking base 799, which is now
+# **Record script**. It did not fail. It started a recording, and every drive
+# that called `demo` afterwards ran inside a recording nobody asked for. The
+# 14 August audit lost a phantom recording to it before its fleet launched.
+# That is the failure mode this whole file's comments keep warning about: a
+# stale menu constant does not error, it clicks whatever moved into its place.
+#
+# Twelve of the fourteen surviving constants were right to within 1 px. They
+# are rewritten anyway to the values that were actually proved, so that the
+# map, this file and the pixels are one number rather than three near ones.
+# ---------------------------------------------------------------------------
+EML_WIZARD=$((467 + EML_YOFF)); EML_DESCRIBE=$((492 + EML_YOFF))
+EML_NORMALITY=$((518 + EML_YOFF)); EML_TWOGROUP=$((545 + EML_YOFF))
 EML_PAIRED=$((569 + EML_YOFF)); EML_ANOVA=$((594 + EML_YOFF))
 EML_KW=$((619 + EML_YOFF)); EML_TWOWAY=$((644 + EML_YOFF))
-EML_CORR=$((670 + EML_YOFF)); EML_REGRESS=$((695 + EML_YOFF))
-EML_PAIRWISE=$((721 + EML_YOFF))
+EML_CORR=$((669 + EML_YOFF)); EML_REGRESS=$((696 + EML_YOFF))
+EML_PAIRWISE=$((722 + EML_YOFF))
 EML_GRAPHS=$((747 + EML_YOFF))
 # 6 Aug: Batch voice analysis, Run Stats Demo and EML Stats Quick Start were
 # tabled, so Create Demo Table moved up into the slot Batch used to hold.
@@ -352,10 +372,19 @@ EML_GRAPHS=$((747 + EML_YOFF))
 # 6 Aug (later): "Check & repair data..." was added after EML Graphs, with a
 # separator, so Create Demo Table moved down one visible row.
 EML_CHECKDATA=$((773 + EML_YOFF))
-EML_DEMO=$((799 + EML_YOFF))
-# EML_BATCH=$((773 + EML_YOFF))       # tabled 6 Aug
-# EML_STATSDEMO=$((824 + EML_YOFF))   # tabled 6 Aug
-# EML_QUICKSTART=$((850 + EML_YOFF))  # tabled 6 Aug
+# 13 Aug: the recorder group landed between Check & repair data and Create
+# Demo Table. These three are the rows EML_DEMO used to occupy.
+EML_RECORD=$((799 + EML_YOFF))         # Record script
+EML_RECORD_OPEN=$((824 + EML_YOFF))    # Stop recording and open
+EML_RECORD_SAVE=$((849 + EML_YOFF))    # Stop recording and save...
+EML_DEMO=$((874 + EML_YOFF))           # Create Demo Table — was 799, see above
+# Tabled 6 Aug. THE NUMBERS BELOW ARE HISTORY, NOT COORDINATES: they are where
+# those entries sat in the 6 August menu, and every one of them now addresses a
+# different row (773 is Check & repair data, 824 is Stop recording and open).
+# Restoring any of these entries means re-measuring, not un-commenting.
+# EML_BATCH=$((773 + EML_YOFF))       # tabled 6 Aug — 773 is now Check & repair data
+# EML_STATSDEMO=$((824 + EML_YOFF))   # tabled 6 Aug — 824 is now Stop recording and open
+# EML_QUICKSTART=$((850 + EML_YOFF))  # tabled 6 Aug — 850 is now within Stop recording and save
 EML_MENUBAR_Y=$((34 + EML_YOFF)); EML_TOOLS_Y=$((467 + EML_YOFF))
 
 # eml <y> -> open Objects>New>EML Tools and click the submenu entry at y
