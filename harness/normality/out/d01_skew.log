@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Sat Aug  8 13:16:54 2026
+  Sat Aug 15 19:25:12 2026
 ══════════════════════════════════════════════
 
   Table               norm d01 skew
@@ -40,7 +40,7 @@
   y (n = 18)
     Skewness:     1.205
     Kurtosis (excess): 1.917
-    Shapiro-Wilk: W = 0.9194, p = 0.1264
+    Shapiro-Wilk: W = 0.9194, p = .126
     → Normality appears reasonable
 
 CASE d01_skew rows=18 nValid=18

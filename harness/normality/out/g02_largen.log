@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Sat Aug  8 13:16:53 2026
+  Sat Aug 15 19:25:12 2026
 ══════════════════════════════════════════════
 
   Table               norm g02 largen
@@ -26,7 +26,7 @@
   ── Shapiro-Wilk Test ───────────────────────
   Why: Formal test of whether the data are drawn from a normal distribution.
   W                   0.8827		Closer to 1 = more normal (range: 0 to 1)
-  p                   < .001  (3.267402526926113e-05)		Statistically significant: <0.1% probability due to chance
+  p                   < .001  (3.267402526926051e-05)		Statistically significant: <0.1% probability due to chance
   → Rejects normality (p < 0.05)
 
 
@@ -42,7 +42,7 @@
   y (n = 60)
     Skewness:     1.623
     Kurtosis (excess): 4.183
-    Shapiro-Wilk: W = 0.8827, p = 0.00003
+    Shapiro-Wilk: W = 0.8827, p < .001
     → Shapiro-Wilk rejects normality, but departure is
       practically negligible at n = 60 (shape within limits)
 

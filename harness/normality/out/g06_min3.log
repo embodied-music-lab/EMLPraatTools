@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Sat Aug  8 13:16:54 2026
+  Sat Aug 15 19:25:12 2026
 ══════════════════════════════════════════════
 
   Table               norm g06 min3
@@ -40,7 +40,7 @@
   y (n = 3)
     Skewness:     0.866
     Kurtosis (excess): --undefined--
-    Shapiro-Wilk: W = 0.9698, p = 0.6665
+    Shapiro-Wilk: W = 0.9698, p = .667
     → Normality appears reasonable
 
 CASE g06_min3 rows=3 nValid=3

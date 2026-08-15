@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Sat Aug  8 13:16:53 2026
+  Sat Aug 15 19:25:12 2026
 ══════════════════════════════════════════════
 
   Table               norm g04 reject30
@@ -40,7 +40,7 @@
   y (n = 30)
     Skewness:     1.234
     Kurtosis (excess): 1.635
-    Shapiro-Wilk: W = 0.8982, p = 0.0076
+    Shapiro-Wilk: W = 0.8982, p = .008
     → Shapiro-Wilk rejects normality (p < 0.05)
 
 CASE g04_reject30 rows=30 nValid=30

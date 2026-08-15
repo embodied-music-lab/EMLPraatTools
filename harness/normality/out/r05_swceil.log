@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Sat Aug  8 13:16:55 2026
+  Sat Aug 15 19:25:14 2026
 ══════════════════════════════════════════════
 
   Table               norm r05 swceil
@@ -36,7 +36,7 @@
   · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════
   y (n = 5001)
-    Skewness:     0.0002
+    Skewness:     0.000
     Kurtosis (excess): -1.122
     Shapiro-Wilk: Shapiro-Wilk requires n <= 5000, got 5001
     → Shapiro-Wilk unavailable; shape within limits

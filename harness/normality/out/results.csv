@@ -15,7 +15,7 @@ d01_skew,wizard,n,18
 d01_skew,wizard,skewness,1.2049975268497233
 d01_skew,wizard,kurtosis,1.9172215141132423
 d01_skew,wizard,recommendation.code,1
-d01_skew,wizard,output.chars,143
+d01_skew,wizard,output.chars,141
 d02_kurt,analysis,n,10
 d02_kurt,analysis,n.excluded,0
 d02_kurt,analysis,mean,51.88
@@ -32,7 +32,7 @@ d02_kurt,wizard,n,10
 d02_kurt,wizard,skewness,-0.7428757710153339
 d02_kurt,wizard,kurtosis,3.51721105003271
 d02_kurt,wizard,recommendation.code,1
-d02_kurt,wizard,output.chars,144
+d02_kurt,wizard,output.chars,142
 g01_normal,analysis,n,24
 g01_normal,analysis,n.excluded,0
 g01_normal,analysis,mean,47.8875
@@ -49,7 +49,7 @@ g01_normal,wizard,n,24
 g01_normal,wizard,skewness,-0.019076554787003836
 g01_normal,wizard,kurtosis,-0.28111066693520836
 g01_normal,wizard,recommendation.code,1
-g01_normal,wizard,output.chars,145
+g01_normal,wizard,output.chars,143
 g02_largen,analysis,n,60
 g02_largen,analysis,n.excluded,0
 g02_largen,analysis,mean,22.003333333333334
@@ -57,8 +57,8 @@ g02_largen,analysis,sd,8.419226718118086
 g02_largen,analysis,median,19.75
 g02_largen,analysis,skewness,1.6226207908578327
 g02_largen,analysis,kurtosis,4.1826970798421215
-g02_largen,analysis,statistic,0.8827277652931932
-g02_largen,analysis,p.value,3.267402526926113e-05
+g02_largen,analysis,statistic,0.882727765293193
+g02_largen,analysis,p.value,3.267402526926051e-05
 g02_largen,analysis,sw.usable,1
 g02_largen,analysis,output.chars,1610
 g02_largen,wizard,n.available,60
@@ -66,7 +66,7 @@ g02_largen,wizard,n,60
 g02_largen,wizard,skewness,1.6226207908578327
 g02_largen,wizard,kurtosis,4.1826970798421215
 g02_largen,wizard,recommendation.code,1
-g02_largen,wizard,output.chars,225
+g02_largen,wizard,output.chars,222
 g03_severe,analysis,n,60
 g03_severe,analysis,n.excluded,0
 g03_severe,analysis,mean,26.528333333333332
@@ -83,7 +83,7 @@ g03_severe,wizard,n,60
 g03_severe,wizard,skewness,2.650264784721308
 g03_severe,wizard,kurtosis,9.260760345517875
 g03_severe,wizard,recommendation.code,2
-g03_severe,wizard,output.chars,240
+g03_severe,wizard,output.chars,233
 g04_reject30,analysis,n,30
 g04_reject30,analysis,n.excluded,0
 g04_reject30,analysis,mean,22.256666666666668
@@ -100,7 +100,7 @@ g04_reject30,wizard,n,30
 g04_reject30,wizard,skewness,1.233840282599117
 g04_reject30,wizard,kurtosis,1.6354857988948637
 g04_reject30,wizard,recommendation.code,2
-g04_reject30,wizard,output.chars,156
+g04_reject30,wizard,output.chars,154
 g05_severe12,analysis,n,12
 g05_severe12,analysis,n.excluded,0
 g05_severe12,analysis,mean,26.3
@@ -117,7 +117,7 @@ g05_severe12,wizard,n,12
 g05_severe12,wizard,skewness,2.3502678865146063
 g05_severe12,wizard,kurtosis,5.955621750460832
 g05_severe12,wizard,recommendation.code,2
-g05_severe12,wizard,output.chars,235
+g05_severe12,wizard,output.chars,233
 g06_min3,analysis,n,3
 g06_min3,analysis,n.excluded,0
 g06_min3,analysis,mean,13.433333333333332
@@ -134,7 +134,7 @@ g06_min3,wizard,n,3
 g06_min3,wizard,skewness,0.8663989629882096
 g06_min3,wizard,kurtosis,NA
 g06_min3,wizard,recommendation.code,1
-g06_min3,wizard,output.chars,150
+g06_min3,wizard,output.chars,148
 p01_groups,analysis,n,32
 p01_groups,analysis,n.excluded,0
 p01_groups,analysis,mean,35.90625
@@ -151,7 +151,7 @@ p01_groups,wizard,n,32
 p01_groups,wizard,skewness,0.3563062533939007
 p01_groups,wizard,kurtosis,-0.8721170284626591
 p01_groups,wizard,recommendation.code,1
-p01_groups,wizard,output.chars,144
+p01_groups,wizard,output.chars,142
 r01_blank,analysis,refused,1
 r01_blank,analysis,output.chars,0
 r01_blank,wizard,n.available,0
@@ -175,7 +175,7 @@ r03_identical,analysis,statistic,NA
 r03_identical,analysis,p.value,NA
 r03_identical,analysis,sw.usable,0
 r03_identical,analysis.shapiro,refused,1
-r03_identical,analysis,output.chars,1331
+r03_identical,analysis,output.chars,1336
 r03_identical,wizard,n.available,10
 r03_identical,wizard,n,10
 r03_identical,wizard,skewness,NA
@@ -207,7 +207,7 @@ r05_swceil,wizard,n,5001
 r05_swceil,wizard,skewness,0.00023183948139370847
 r05_swceil,wizard,kurtosis,-1.1216977278125586
 r05_swceil,wizard,recommendation.code,1
-r05_swceil,wizard,output.chars,183
+r05_swceil,wizard,output.chars,182
 r06_text,analysis,refused,1
 r06_text,analysis,output.chars,0
 r06_text,wizard,n.available,0
