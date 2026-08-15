@@ -1452,9 +1452,59 @@ endproc
 # A parametric k >= 3 comparison annotates with Tukey, which carries its own
 # correction, so the setting is inert there. Praat cannot grey a field out
 # conditionally inside a single form — the whole form is built before the user
-# touches anything — so the field NAME carries the condition instead. The
+# touches anything — so the field NAME carried the condition instead. The
 # parenthesised part is stripped by Praat when it derives the variable name,
 # so the value still arrives as adjustment_method and no call site changes.
+#
+# D5, RULING 1a, 15 AUGUST 2026 — AND THE NAME IS NO LONGER ENOUGH.
+#
+# The 14 August audit measured that a Tukey draw is md5-identical under Holm
+# and under Bonferroni while the Dunn arm honours the same menu, and the
+# statistics say the code is right to ignore it: Tukey's p comes from the
+# studentized range distribution and is ALREADY family-wise, so a Holm or a
+# Bonferroni step on top of it would double-correct. There is nothing honest
+# for the menu to do on that arm. The author's ruling is that a qualifier in
+# the label is the wrong remedy for that — a live-looking control that is
+# silently ignored is the same class of defect as D11's group-column fields,
+# which stayed live and editable while their tickbox was clear and were then
+# thrown away at the commit. That was fixed by GATING the fields, and this is
+# fixed the same way.
+#
+# So the menu is now OFFERED ONLY ON THE NONPARAMETRIC ARM, on all six
+# annotate-capable column-mapping dialogs, and the parametric arm gets a
+# `comment:` in its place saying why there is nothing to choose. The Dunn arm
+# keeps the menu unchanged, because it reads it: verified 15 Aug 2026 that
+# Holm and Bonferroni produce DIFFERENT annotated p-values there, both
+# matching scipy.
+#
+# WHAT DECIDES, AND WHY IT IS A VARIABLE RATHER THAN A RE-TEST.
+#
+# `adjustOffered` is set to 0 immediately before the dialog is built and to 1
+# in the same branch that adds the field, so ONE value answers both "was the
+# field on the dialog" and "may adjustment_method be read back". Re-testing
+# the test-type variable at the commit would not be the same question, and on
+# three of the six pages it would be the WRONG question: the histogram, the
+# grouped-violin and the grouped-box commits write
+# `prev_<x>AnnotTestType = test_type` a line or two ABOVE the adjustment read,
+# so by the time a re-test ran, the variable it would test had already been
+# overwritten with the user's NEW choice. A user who opened the page
+# parametric and switched to Nonparametric before pressing Draw would then
+# pass the gate and read an adjustment_method that was never on the screen —
+# which in Praat is not an error but the value left over from the last dialog
+# that did have the field, on a different graph type, possibly in a different
+# session state.
+#
+# Praat does not delete a pause variable when the field goes away, so
+# READING WITHOUT THE GATE CANNOT FAIL LOUDLY. It returns stale data. That is
+# the whole reason the gate is one variable set next to the field rather than
+# a condition re-derived at the commit.
+#
+# WHAT THE USER LOSES: nothing that was ever honoured. annotCorrectionMethod$
+# is initialised to "holm" at file scope and a wrapper preset writes it
+# through @emlAdjustMethodName before the form opens (D108), so a parametric
+# commit that no longer touches it leaves exactly the value the old commit
+# would have re-derived from a menu seeded from the same source. No annotated
+# figure and no reported number moves.
 #
 # Arguments:
 #   .idx — 1 = Bonferroni, 2 = Holm, 3 = Benjamini-Hochberg
@@ -2175,20 +2225,45 @@ procedure emlGraphsDrawWithLegendRoom
                 # — say so. The bracket path has always done this silently and
                 # that is the wrong precedent to copy: someone who asked for
                 # 0–100 and got 0–118 should be told which box took the rest.
+                # @eml_fixed, NOT fixed$. Sibling sweep, 15 Aug 2026: nothing
+                # in this plugin should reach the Info window through fixed$,
+                # because fixed$ is not a fixed-precision formatter. It prints
+                # max (precision, -floor (log10 |v|)) decimals, so it silently
+                # ESCALATES on small magnitudes -- an axis floor of 0.004 asked
+                # for three places and printed five -- and it returns a bare
+                # "0" for exact zero, which is the common case here: a bar
+                # chart's axis floor IS zero, and "widened from 0 to -1.180"
+                # reads as a different KIND of number than the value beside it.
+                # The four values below are axis bounds in the data's own unit,
+                # so they are the reader's only handle on how much room the
+                # legend took. @eml_fixed lives in stats/eml-output.praat and
+                # is the one implementation; a second one here would be a
+                # second thing to keep right.
+                #
+                # The calls are hoisted out of the appendInfoLine because Praat
+                # cannot nest a procedure call inside an expression -- the
+                # result comes back in eml_fixed.result$ and has to be read
+                # before the next call overwrites it.
                 if not (valueMin = 0 and valueMax = 0)
                     if legendRoomAxis = 1
                         if emlLegendHeadroomAfterDraw.yMax > legendRoomBaseMax
+                            @eml_fixed: legendRoomBaseMax, 3
+                            .wasMax$ = eml_fixed.result$
+                            @eml_fixed: emlLegendHeadroomAfterDraw.yMax, 3
+                            .nowMax$ = eml_fixed.result$
                             appendInfoLine: "NOTE: y-axis maximum widened ",
-                            ... "from ", fixed$ (legendRoomBaseMax, 3),
-                            ... " to ",
-                            ... fixed$ (emlLegendHeadroomAfterDraw.yMax, 3),
+                            ... "from ", .wasMax$,
+                            ... " to ", .nowMax$,
                             ... " to make room for the legend."
                         endif
                         if emlLegendHeadroomAfterDraw.yMin < legendRoomBaseMin
+                            @eml_fixed: legendRoomBaseMin, 3
+                            .wasMin$ = eml_fixed.result$
+                            @eml_fixed: emlLegendHeadroomAfterDraw.yMin, 3
+                            .nowMin$ = eml_fixed.result$
                             appendInfoLine: "NOTE: y-axis minimum widened ",
-                            ... "from ", fixed$ (legendRoomBaseMin, 3),
-                            ... " to ",
-                            ... fixed$ (emlLegendHeadroomAfterDraw.yMin, 3),
+                            ... "from ", .wasMin$,
+                            ... " to ", .nowMin$,
                             ... " to make room for the legend."
                         endif
                     endif
@@ -2368,12 +2443,25 @@ procedure emlLegendHeadroomAfterDraw: .placement, .legendCorner$, .baseYMin, .ba
         # --- Anything that could not be afforded is NAMED. A legend that was
         # quietly given less room than it asked for, or none, would leave the
         # reader with a key over the data and no account of why.
+        # @eml_fixed, NOT fixed$ -- same rule and same reason as the widening
+        # notes in @emlGraphsDrawWithLegendRoom. These three are INCHES, and
+        # the granted figure is the one that can legitimately be zero: a
+        # legend that was allowed no room at all is exactly the case this
+        # sentence exists to report, and fixed$ prints that as a bare "0"
+        # beside two neighbours carrying two decimals. v32 matches this line
+        # by its prefix only, so the numbers are free to be printed correctly.
         if emlComputeAnnotationHeadroom.legendOverflow = 1
+            @eml_fixed: emlComputeAnnotationHeadroom.legendNeeded, 2
+            .needStr$ = eml_fixed.result$
+            @eml_fixed: .innerH, 2
+            .panelStr$ = eml_fixed.result$
+            @eml_fixed: emlComputeAnnotationHeadroom.legendGranted, 2
+            .gotStr$ = eml_fixed.result$
             appendInfoLine: "NOTE: The legend asked for ",
-            ... fixed$ (emlComputeAnnotationHeadroom.legendNeeded, 2),
-            ... " in of y-axis room on a ", fixed$ (.innerH, 2),
+            ... .needStr$,
+            ... " in of y-axis room on a ", .panelStr$,
             ... " in panel and was granted ",
-            ... fixed$ (emlComputeAnnotationHeadroom.legendGranted, 2),
+            ... .gotStr$,
             ... " in; the rest of the panel is kept for the data, so the ",
             ... "legend may still overlap it. Set Legend placement to Right ",
             ... "of plot or Below plot to keep the plot clear, or reduce the ",
@@ -2655,6 +2743,13 @@ prev_histAnnotStyle = 1
 # Multiple-comparison adjustment persistence (shared by every
 # annotate-capable dialog). 1 = Bonferroni, 2 = Holm, 3 = Benjamini-Hochberg.
 prev_annotAdjustIdx = 2
+
+# D5 / RULING 1a. Was the Adjustment field actually put on the dialog that is
+# about to be read back? Set beside the field on all six annotate-capable
+# pages, read at all twelve commit sites. Declared here as well so that it is
+# defined before any page runs: Praat aborts on an unset variable, and a gate
+# that can abort is a worse control than the one it replaced.
+adjustOffered = 0
 
 # Violin jitter persistence
 prev_violinShowJitter = 0
@@ -4666,13 +4761,23 @@ repeat
                     option: "Alphabetical"
                 if config_showAdvanced
                     boolean: "Annotate results on graph", annotate
+                    # D5 / RULING 1a. The gate is set here, beside the
+                    # field, and read at this page's two commit sites.
+                    # See ADJUSTMENT-METHOD LOOKUP for why it is a
+                    # variable and not a re-test of tmpBarTestType.
+                    adjustOffered = 0
                     optionmenu: "Test type", tmpBarTestType
                         option: "Parametric"
                         option: "Nonparametric"
-                    optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
-                        option: "Bonferroni"
-                        option: "Holm"
-                        option: "Benjamini-Hochberg"
+                    if tmpBarTestType = 2
+                        adjustOffered = 1
+                        optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
+                            option: "Bonferroni"
+                            option: "Holm"
+                            option: "Benjamini-Hochberg"
+                    else
+                        comment: "Adjustment method: none — Tukey HSD is already family-wise."
+                    endif
                     optionmenu: "Significance style", tmpBarAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -4766,7 +4871,9 @@ repeat
                     prev_adv_bar_annotLayoutMode = annotation_layout
                     prev_adv_bar_testType = test_type
                     prev_adv_bar_annotStyle = significance_style
-                    prev_annotAdjustIdx = adjustment_method
+                    if adjustOffered = 1
+                        prev_annotAdjustIdx = adjustment_method
+                    endif
                     prev_adv_bar_VMin$ = string$ (value_minimum)
                     prev_adv_bar_VMax$ = string$ (value_maximum)
                     prev_adv_bar_gridMode = gridline_mode
@@ -4888,9 +4995,11 @@ repeat
                     annotShowEffect = show_effect_sizes
                     annotAlpha = alpha
                     annotLayoutMode = annotation_layout
-                    @emlAdjustMethodName: adjustment_method
-                    annotCorrectionMethod$ = emlAdjustMethodName.name$
-                    prev_annotAdjustIdx = adjustment_method
+                    if adjustOffered = 1
+                        @emlAdjustMethodName: adjustment_method
+                        annotCorrectionMethod$ = emlAdjustMethodName.name$
+                        prev_annotAdjustIdx = adjustment_method
+                    endif
                     if test_type = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -5084,13 +5193,23 @@ repeat
                     option: "Alphabetical"
                 if config_showAdvanced
                     boolean: "Annotate results on graph", annotate
+                    # D5 / RULING 1a. The gate is set here, beside the
+                    # field, and read at this page's two commit sites.
+                    # See ADJUSTMENT-METHOD LOOKUP for why it is a
+                    # variable and not a re-test of tmpViolinTestType.
+                    adjustOffered = 0
                     optionmenu: "Test type", tmpViolinTestType
                         option: "Parametric"
                         option: "Nonparametric"
-                    optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
-                        option: "Bonferroni"
-                        option: "Holm"
-                        option: "Benjamini-Hochberg"
+                    if tmpViolinTestType = 2
+                        adjustOffered = 1
+                        optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
+                            option: "Bonferroni"
+                            option: "Holm"
+                            option: "Benjamini-Hochberg"
+                    else
+                        comment: "Adjustment method: none — Tukey HSD is already family-wise."
+                    endif
                     optionmenu: "Significance style", tmpViolinAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -5184,7 +5303,9 @@ repeat
                     prev_adv_vio_annotLayoutMode = annotation_layout
                     prev_adv_vio_testType = test_type
                     prev_adv_vio_annotStyle = significance_style
-                    prev_annotAdjustIdx = adjustment_method
+                    if adjustOffered = 1
+                        prev_annotAdjustIdx = adjustment_method
+                    endif
                     prev_adv_vio_showJitter = show_jittered_points
                     prev_adv_vio_VMin$ = string$ (value_minimum)
                     prev_adv_vio_VMax$ = string$ (value_maximum)
@@ -5310,9 +5431,11 @@ repeat
                     annotAlpha = alpha
                     annotLayoutMode = annotation_layout
                     prev_violinShowJitter = show_jittered_points
-                    @emlAdjustMethodName: adjustment_method
-                    annotCorrectionMethod$ = emlAdjustMethodName.name$
-                    prev_annotAdjustIdx = adjustment_method
+                    if adjustOffered = 1
+                        @emlAdjustMethodName: adjustment_method
+                        annotCorrectionMethod$ = emlAdjustMethodName.name$
+                        prev_annotAdjustIdx = adjustment_method
+                    endif
                     if test_type = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -6052,13 +6175,23 @@ repeat
                     option: "Alphabetical"
                 if config_showAdvanced
                     boolean: "Annotate results on graph", annotate
+                    # D5 / RULING 1a. The gate is set here, beside the
+                    # field, and read at this page's two commit sites.
+                    # See ADJUSTMENT-METHOD LOOKUP for why it is a
+                    # variable and not a re-test of tmpBoxTestType.
+                    adjustOffered = 0
                     optionmenu: "Test type", tmpBoxTestType
                         option: "Parametric"
                         option: "Nonparametric"
-                    optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
-                        option: "Bonferroni"
-                        option: "Holm"
-                        option: "Benjamini-Hochberg"
+                    if tmpBoxTestType = 2
+                        adjustOffered = 1
+                        optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
+                            option: "Bonferroni"
+                            option: "Holm"
+                            option: "Benjamini-Hochberg"
+                    else
+                        comment: "Adjustment method: none — Tukey HSD is already family-wise."
+                    endif
                     optionmenu: "Significance style", tmpBoxAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -6152,7 +6285,9 @@ repeat
                     prev_adv_box_annotLayoutMode = annotation_layout
                     prev_adv_box_testType = test_type
                     prev_adv_box_annotStyle = significance_style
-                    prev_annotAdjustIdx = adjustment_method
+                    if adjustOffered = 1
+                        prev_annotAdjustIdx = adjustment_method
+                    endif
                     prev_adv_box_showJitter = show_jittered_points
                     prev_adv_box_VMin$ = string$ (value_minimum)
                     prev_adv_box_VMax$ = string$ (value_maximum)
@@ -6278,9 +6413,11 @@ repeat
                     annotAlpha = alpha
                     annotLayoutMode = annotation_layout
                     prev_boxShowJitter = show_jittered_points
-                    @emlAdjustMethodName: adjustment_method
-                    annotCorrectionMethod$ = emlAdjustMethodName.name$
-                    prev_annotAdjustIdx = adjustment_method
+                    if adjustOffered = 1
+                        @emlAdjustMethodName: adjustment_method
+                        annotCorrectionMethod$ = emlAdjustMethodName.name$
+                        prev_annotAdjustIdx = adjustment_method
+                    endif
                     if test_type = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -6466,13 +6603,23 @@ repeat
                         option: "Overlap (transparent)"
                         option: "Faceted (stacked panels)"
                     boolean: "Annotate results on graph", annotate
+                    # D5 / RULING 1a. The gate is set here, beside the
+                    # field, and read at this page's two commit sites.
+                    # See ADJUSTMENT-METHOD LOOKUP for why it is a
+                    # variable and not a re-test of prev_histAnnotTestType.
+                    adjustOffered = 0
                     optionmenu: "Test type", prev_histAnnotTestType
                         option: "Parametric"
                         option: "Nonparametric"
-                    optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
-                        option: "Bonferroni"
-                        option: "Holm"
-                        option: "Benjamini-Hochberg"
+                    if prev_histAnnotTestType = 2
+                        adjustOffered = 1
+                        optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
+                            option: "Bonferroni"
+                            option: "Holm"
+                            option: "Benjamini-Hochberg"
+                    else
+                        comment: "Adjustment method: none — Tukey HSD is already family-wise."
+                    endif
                     optionmenu: "Significance style", prev_histAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -6581,7 +6728,9 @@ repeat
                     prev_adv_his_annotAlpha = alpha
                     prev_adv_his_testType = test_type
                     prev_adv_his_annotStyle = significance_style
-                    prev_annotAdjustIdx = adjustment_method
+                    if adjustOffered = 1
+                        prev_annotAdjustIdx = adjustment_method
+                    endif
                     prev_adv_his_VMin$ = string$ (value_minimum)
                     prev_adv_his_VMax$ = string$ (value_maximum)
                     prev_adv_his_freqMax$ = string$ (frequency_maximum)
@@ -6738,9 +6887,11 @@ repeat
                     annotLayoutMode = 3
                     prev_histAnnotTestType = test_type
                     prev_histAnnotStyle = significance_style
-                    @emlAdjustMethodName: adjustment_method
-                    annotCorrectionMethod$ = emlAdjustMethodName.name$
-                    prev_annotAdjustIdx = adjustment_method
+                    if adjustOffered = 1
+                        @emlAdjustMethodName: adjustment_method
+                        annotCorrectionMethod$ = emlAdjustMethodName.name$
+                        prev_annotAdjustIdx = adjustment_method
+                    endif
                     if test_type = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -6978,13 +7129,23 @@ repeat
                     option: "Alphabetical"
                 if config_showAdvanced
                     boolean: "Annotate results on graph", annotate
+                    # D5 / RULING 1a. The gate is set here, beside the
+                    # field, and read at this page's two commit sites.
+                    # See ADJUSTMENT-METHOD LOOKUP for why it is a
+                    # variable and not a re-test of prev_gvAnnotTestType.
+                    adjustOffered = 0
                     optionmenu: "Test type", prev_gvAnnotTestType
                         option: "Parametric"
                         option: "Nonparametric"
-                    optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
-                        option: "Bonferroni"
-                        option: "Holm"
-                        option: "Benjamini-Hochberg"
+                    if prev_gvAnnotTestType = 2
+                        adjustOffered = 1
+                        optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
+                            option: "Bonferroni"
+                            option: "Holm"
+                            option: "Benjamini-Hochberg"
+                    else
+                        comment: "Adjustment method: none — Tukey HSD is already family-wise."
+                    endif
                     optionmenu: "Significance style", prev_gvAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -7089,7 +7250,9 @@ repeat
                     prev_adv_gv_annotAlpha = alpha
                     prev_adv_gv_testType = test_type
                     prev_adv_gv_annotStyle = significance_style
-                    prev_annotAdjustIdx = adjustment_method
+                    if adjustOffered = 1
+                        prev_annotAdjustIdx = adjustment_method
+                    endif
                     prev_adv_gv_showJitter = show_jittered_points
                     prev_adv_gv_VMin$ = string$ (value_minimum)
                     prev_adv_gv_VMax$ = string$ (value_maximum)
@@ -7223,9 +7386,11 @@ repeat
                     annotLayoutMode = 3
                     prev_gvAnnotTestType = test_type
                     prev_gvAnnotStyle = significance_style
-                    @emlAdjustMethodName: adjustment_method
-                    annotCorrectionMethod$ = emlAdjustMethodName.name$
-                    prev_annotAdjustIdx = adjustment_method
+                    if adjustOffered = 1
+                        @emlAdjustMethodName: adjustment_method
+                        annotCorrectionMethod$ = emlAdjustMethodName.name$
+                        prev_annotAdjustIdx = adjustment_method
+                    endif
                     if test_type = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -7402,13 +7567,23 @@ repeat
                     option: "Alphabetical"
                 if config_showAdvanced
                     boolean: "Annotate results on graph", annotate
+                    # D5 / RULING 1a. The gate is set here, beside the
+                    # field, and read at this page's two commit sites.
+                    # See ADJUSTMENT-METHOD LOOKUP for why it is a
+                    # variable and not a re-test of prev_gbAnnotTestType.
+                    adjustOffered = 0
                     optionmenu: "Test type", prev_gbAnnotTestType
                         option: "Parametric"
                         option: "Nonparametric"
-                    optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
-                        option: "Bonferroni"
-                        option: "Holm"
-                        option: "Benjamini-Hochberg"
+                    if prev_gbAnnotTestType = 2
+                        adjustOffered = 1
+                        optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
+                            option: "Bonferroni"
+                            option: "Holm"
+                            option: "Benjamini-Hochberg"
+                    else
+                        comment: "Adjustment method: none — Tukey HSD is already family-wise."
+                    endif
                     optionmenu: "Significance style", prev_gbAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -7513,7 +7688,9 @@ repeat
                     prev_adv_gb_annotAlpha = alpha
                     prev_adv_gbTestType = test_type
                     prev_adv_gbAnnotStyle = significance_style
-                    prev_annotAdjustIdx = adjustment_method
+                    if adjustOffered = 1
+                        prev_annotAdjustIdx = adjustment_method
+                    endif
                     prev_adv_gbShowJitter = show_jittered_points
                     prev_adv_gb_VMin$ = string$ (value_minimum)
                     prev_adv_gb_VMax$ = string$ (value_maximum)
@@ -7645,9 +7822,11 @@ repeat
                     annotLayoutMode = 3
                     prev_gbAnnotTestType = test_type
                     prev_gbAnnotStyle = significance_style
-                    @emlAdjustMethodName: adjustment_method
-                    annotCorrectionMethod$ = emlAdjustMethodName.name$
-                    prev_annotAdjustIdx = adjustment_method
+                    if adjustOffered = 1
+                        @emlAdjustMethodName: adjustment_method
+                        annotCorrectionMethod$ = emlAdjustMethodName.name$
+                        prev_annotAdjustIdx = adjustment_method
+                    endif
                     if test_type = 2
                         annotTestType$ = "nonparametric"
                     else

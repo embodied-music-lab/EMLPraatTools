@@ -4,8 +4,44 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # License: GPL-3.0-or-later
-# Version: 3.30
-# Date: 9 August 2026
+# Version: 3.31
+# Date: 15 August 2026
+#
+# v3.31: THREE RULINGS OF 15 AUGUST 2026, none of which moves a number.
+#
+#        RULING 7 — THE Y-AXIS NAME AND ITS TICK LABELS NO LONGER TOUCH.
+#        Praat's left-margin allocation is fixed: `Text left` anchors the
+#        rotated name to the inner frame at a distance set by the font size
+#        and by nothing else, tick numbers are right-aligned to that same
+#        frame, and about five characters fit between them. Six is the
+#        failure edge — a semitone axis reading "-33.08" left three pixels of
+#        gap at 300 dpi, and an explicit two-decimal dB axis put "100.10"
+#        into "Power (dB)" so that it read "Powe100.10". New
+#        @emlTickLabelWidth (what a tick will read as, and how wide) and
+#        @emlDrawAxisNameLeft (the name, moved only when the labels have
+#        taken the room). @emlDrawAlignedMarksLeft publishes the widest
+#        label it drew; @emlDrawAxes and @emlDrawAxesSelective place the
+#        name through the new procedure. WIDENING THE PLUGIN'S OWN MARGIN
+#        DOES NOT WORK and was measured not working — everything in the
+#        margin is anchored to the frame, and the frame moves with the
+#        margin. ORDINARY FIGURES ARE BYTE-IDENTICAL: all 39 of
+#        harness/stress_graphs.sh re-rendered and compared.
+#
+#        RULING 5 — Column_k NOW HOLDS SOURCE COLUMN k. @emlCleanConvertedTable
+#        numbered manufactured headers by TABLE position, and `To Table: "row"`
+#        has already put the label column in position 1 by then, so source
+#        column 1 was called "Column_2" and nothing was ever called
+#        "Column_1". Reached by both the graphs coercion and the describe
+#        wrapper, so one line repaired two doors.
+#
+#        RULING 8b — ONE PRESS, ONE DERIVED SOUND. The stereo gate keeps the
+#        extracted channel Sound on purpose, and kept one per press: three
+#        figures from one recording left three Sounds sharing one name. The
+#        derived object is now named with an "eml_" prefix — which the gate's
+#        header had promised since the gate was written — and new
+#        @emlDropStaleChannelSounds collects the previous press's at the top
+#        of the next one. Only ever a prefixed name: a channel the user
+#        extracted by hand is never touched.
 #
 # v3.30: THE LEGEND BOX IS SEMI-TRANSPARENT ON EVERY PLATFORM, NOT JUST THE
 #        TWO THAT HAVE ALPHA.
@@ -2292,6 +2328,219 @@ procedure emlTickPrecision: .axisMin, .axisMax, .step
 endproc
 
 # ----------------------------------------------------------------------------
+# @emlTickLabelWidth: .value, .explicit, .decimals
+# What one tick label will READ AS, and how wide it will be on the page.
+#
+# Outputs
+#   .text$   the label as it will be rendered, "" when Praat's own form is
+#            not modelled (see the window below)
+#   .chars   length (.text$), 0 when not modelled
+#   .mm      its width in millimetres at the CURRENT font and size, 0 when
+#            not modelled
+#
+# WHY A PREDICTOR AND NOT A MEASUREMENT. When @emlTickPrecision has engaged,
+# the plugin passes its own string to `One mark left` and there is nothing to
+# predict -- .text$ is that string. When it has NOT engaged, Praat writes the
+# number itself and no script can ask it what it wrote. So the automatic form
+# is reconstructed here: FOUR SIGNIFICANT DIGITS, trailing zeros stripped,
+# which is the rule @emlTickPrecision's header documents and which was
+# re-measured on 6.6.30 on 15 Aug 2026 -- 200.05 prints "200.1", 200.01 prints
+# "200", 100.10 prints "100.1", -32.98 prints "-32.98".
+#
+# THE WINDOW, AND WHY IT IS NARROW ON PURPOSE. Praat switches to exponent
+# notation outside roughly 0.001 <= |v| < 10000, and it was measured doing so:
+# at 300 dpi and 10 pt, 9999 renders 7.54 mm wide and 10000 renders 4.91 mm --
+# "10^4", not "10000". Modelling that switch is guesswork, and a wrong guess
+# would not be a harmless over-estimate: an axis running to 1e9 would be
+# predicted as ten digits, would trigger the axis-name shift below, and would
+# MOVE A FIGURE THAT IS DRAWN CORRECTLY TODAY (violin_hugevalues in
+# harness/stress_cases is exactly that figure). Outside the window this
+# procedure therefore returns nothing at all and the caller does nothing --
+# the conservative direction, because the failure it exists to prevent is a
+# collision and the failure it must not cause is a figure that moves.
+#
+# Requires: the ambient font and size are the ones the marks are drawn at.
+# `Text width (mm)` reads the current font state, which is the same state
+# BEST_PRACTICES_DRAWING's font invariant already requires be held constant
+# across the whole drawing sequence.
+# ----------------------------------------------------------------------------
+procedure emlTickLabelWidth: .value, .explicit, .decimals
+    .text$ = ""
+    .chars = 0
+    .mm = 0
+    if .value = undefined
+        goto TICK_LABEL_WIDTH_END
+    endif
+    if .explicit = 1
+        .text$ = fixed$ (.value, .decimals)
+    else
+        .mag = abs (.value)
+        if .mag = 0
+            .text$ = "0"
+        elsif .mag >= 0.001 and .mag < 10000
+            # Digits left of the point, as a signed count: 0.05 gives -1, so
+            # 4 - (-1) = 5 decimals, which is four significant digits after
+            # the leading zeros. fixed$ then writes them and the strip below
+            # removes what Praat does not print.
+            .intDigits = floor (log10 (.mag)) + 1
+            .d = 4 - .intDigits
+            if .d < 0
+                .d = 0
+            endif
+            .text$ = fixed$ (.value, .d)
+            if index (.text$, ".") > 0
+                while right$ (.text$, 1) = "0"
+                    .text$ = left$ (.text$, length (.text$) - 1)
+                endwhile
+                if right$ (.text$, 1) = "."
+                    .text$ = left$ (.text$, length (.text$) - 1)
+                endif
+            endif
+        endif
+    endif
+    if .text$ <> ""
+        .chars = length (.text$)
+        .mm = Text width (mm): .text$
+    endif
+    label TICK_LABEL_WIDTH_END
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlDrawAxisNameLeft: .label$, .wideLabelMM, .xMin, .xMax, .yMin, .yMax
+# Draw the y-axis NAME in the left margin without letting the tick numbers
+# run into it.
+#
+# AUTHOR RULING 7, 15 August 2026: "no collision between the y-axis name and
+# its tick labels. The author delegates the mechanism; the requirement is no
+# collision."
+#
+# WHAT IS WRONG. Praat's left-margin allocation is FIXED. `Text left` puts the
+# rotated axis name at a distance from the inner frame that depends on the
+# font SIZE and on nothing else -- measured at 300 dpi on 6.6.30, 15 Aug 2026:
+# the name's right edge sits 13.4 px per point of font size from the frame
+# (94 px at 7 pt, 134 at 10, 147 at 11), and it sits there whether the ticks
+# read "5" or "-32.98". Measured again in Helvetica, Times and Courier at two
+# sizes: 134 px at 10 pt in all three, so the allocation is a function of size
+# alone and not of the font's own metrics. Tick numbers are right-aligned to
+# the frame, their right edge 1.8 px per point inside it, and they grow
+# LEFTWARD into that fixed band as they get longer. About five characters fit.
+# Six is the failure edge, and both of the author's cases were reproduced here
+# before anything was changed:
+#
+#   a semitone axis with negatives, F0 (semitones re 440 Hz) against "-33.08"
+#     -- 3 px of gap at 300 dpi, a quarter of a millimetre
+#   an explicit two-decimal dB axis, Power (dB) against "100.10"
+#     -- 4 px, and it reads as "Powe100.10"
+#
+# There is no truncation and no overprint. The mode is gap exhaustion.
+#
+# WHY NOT THE OBVIOUS FIX. Widening the plugin's own left margin does NOT
+# work, and this was measured rather than reasoned: the same figure drawn at
+# marginLeft 0.84" and 1.10" puts the name, the ticks and the frame in exactly
+# the same relative positions, 3 px of gap in both, because everything in the
+# margin is anchored to the inner frame and the frame moves with the margin.
+# A wider margin buys white space on the far left and not one pixel of gap.
+#
+# THE MECHANISM. The name is drawn by Praat, from Praat's own anchor, into a
+# frame that is momentarily declared to start further left. `Select inner
+# viewport` with the left edge moved out by .shiftInch, `Axes` re-issued
+# unchanged, `Text left`, then both restored -- so the name lands exactly
+# where Praat would have put it for a figure whose plot began there, at the
+# same vertical centre, the same rotation, the same size, and nothing else in
+# the figure has been told anything. The alternative -- placing the name with
+# `Text special` at a computed inch coordinate, as @emlDrawTitle does -- was
+# rejected because it would replace Praat's vertical centring and baseline
+# rule with a reimplementation of them, and every figure in the plugin would
+# then depend on that reimplementation being right.
+#
+# THE SHIFT IS ZERO ON AN ORDINARY FIGURE, AND THAT IS THE POINT. A fix that
+# widened the margin unconditionally would also satisfy "no collision" while
+# moving every figure the plugin draws. .wideLabelMM is 0 unless some tick
+# label is SIX CHARACTERS OR MORE -- the author's own threshold -- so a
+# figure whose ticks read "45" or "200.2" takes the else branch below, which
+# is the bare `Text left` this procedure replaced, byte for byte. Verified by
+# re-rendering all 39 figures of harness/stress_graphs.sh.
+#
+# THE ARITHMETIC. .allowMM is the room between the tick numbers' right edge
+# and the name's right edge, from the two measured constants above:
+# (13.4 - 1.8) px/pt = 11.6 px/pt = 0.982 mm per point of font size. The
+# clearance restored is one character width of the current font, which is the
+# unit the ruling itself uses.
+#
+# THE SHIFT IS CLAMPED TO THE ROOM THE PANEL HAS, and the clamp is the reason
+# this procedure changes no figure's SIZE. Praat saves the outer viewport that
+# @emlAssertFullViewport selects, and it saves nothing outside it: measured on
+# 15 Aug 2026 by drawing an axis name at 0.4" and saving from 0.5", which cut
+# the name and dropped a fifth of the figure's ink. So a name pushed past the
+# panel's own left edge would be sliced down its length on export unless the
+# saved box grew -- and growing it is how a 6 x 4 request becomes a file that
+# is not 6 x 4, which validate/v32 keeps a pinned inventory of on purpose.
+# Layout is this procedure's business; the size of the user's file is not.
+#
+# WHAT THE CLAMP COSTS, SAID PLAINLY. On every figure this plugin's own form
+# draws -- 6 x 4 at 9.36 pt -- the room is 0.29" and the shift needed is a
+# tenth of that, so the clamp never engages and the collision is fully
+# relieved. It engages only on a panel small enough that the axis name has
+# less than its own thickness of room inside the panel: a 3 x 2 panel at 7 pt
+# has 0.01" to give. There the collision is relieved by 0.01" and no further,
+# and the figure keeps its size. Relieving it there as well means growing the
+# saved box, which is an argued entry in v32's inventory and the author's
+# call, not this procedure's.
+#
+# Arguments
+#   .label$        the axis name, already sanitized by the caller
+#   .wideLabelMM   width of the widest tick label of six characters or more,
+#                  0 if there is none (from @emlDrawAlignedMarksLeft)
+#   .xMin..yMax    the world window to restore, because `Select inner
+#                  viewport` resets it
+# Outputs
+#   .shiftInch     how far the name was moved, 0 when nothing was needed
+#   .roomInch      how far it COULD have moved inside the panel
+#   .clamped       1 if the panel had less room than the labels needed
+# ----------------------------------------------------------------------------
+procedure emlDrawAxisNameLeft: .label$, .wideLabelMM, .xMin, .xMax, .yMin, .yMax
+    .shiftInch = 0
+    .clamped = 0
+    # The room inside the panel: where the name's left edge already sits,
+    # measured from the panel's own left edge. 0.0447" per point is the third
+    # measured constant (13.4 px/pt at 300 dpi) and .bodyInch is one em, which
+    # is at least the rotated text's thickness.
+    .roomInch = emlSetAdaptiveTheme.innerLeft - emlSetAdaptiveTheme.outerLeft
+    ... - 0.0447 * emlSetAdaptiveTheme.bodySize
+    ... - emlSetAdaptiveTheme.bodyInch
+    if .roomInch < 0
+        .roomInch = 0
+    endif
+    if .wideLabelMM > 0
+        .allowMM = 0.982 * emlSetAdaptiveTheme.bodySize
+        .clearMM = Text width (mm): "0"
+        .needMM = .wideLabelMM + .clearMM
+        if .needMM > .allowMM
+            .shiftInch = (.needMM - .allowMM) / 25.4
+            if .shiftInch > .roomInch
+                .shiftInch = .roomInch
+                .clamped = 1
+            endif
+        endif
+    endif
+    if .shiftInch > 0
+        Select inner viewport: emlSetAdaptiveTheme.innerLeft - .shiftInch,
+        ... emlSetAdaptiveTheme.innerRight,
+        ... emlSetAdaptiveTheme.innerTop,
+        ... emlSetAdaptiveTheme.innerBottom
+        Axes: .xMin, .xMax, .yMin, .yMax
+        Text left: "yes", .label$
+        Select inner viewport: emlSetAdaptiveTheme.innerLeft,
+        ... emlSetAdaptiveTheme.innerRight,
+        ... emlSetAdaptiveTheme.innerTop,
+        ... emlSetAdaptiveTheme.innerBottom
+        Axes: .xMin, .xMax, .yMin, .yMax
+    else
+        Text left: "yes", .label$
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
 # @emlDrawGridlines
 # Draws gridlines aligned with nice-number tick positions
 # Arguments: xMin, xMax, yMin, yMax, targetTicksX, targetTicksY, useMinor
@@ -2507,6 +2756,14 @@ endproc
 # Call after Draw inner box, before axis labels
 # ----------------------------------------------------------------------------
 procedure emlDrawAlignedMarksLeft: .yMin, .yMax, .targetTicks, .useMinor
+    ; THE WIDEST TICK LABEL THIS AXIS WILL CARRY, for @emlDrawAxisNameLeft.
+    ; Six characters is the author's threshold and the measured failure edge;
+    ; anything shorter leaves this at 0 and the axis name is drawn by the
+    ; unchanged `Text left` call. Seeded BEFORE the early exit below, so a
+    ; caller that reads it after a suppressed axis reads 0 rather than
+    ; whatever the previous panel left behind.
+    .wideChars = 6
+    .maxWideLabelMM = 0
     if emlShowTicksY = 0 and emlShowAxisValuesY = 0
         goto ALIGNED_LEFT_END
     endif
@@ -2553,6 +2810,19 @@ procedure emlDrawAlignedMarksLeft: .yMin, .yMax, .targetTicks, .useMinor
                 ... fixed$ (.yPos, .tickDecimals)
             else
                 One mark left: .yPos, .writeNum$, .drawTick$, "no", ""
+            endif
+            ; MEASURE WHAT WAS JUST DRAWN. Only when a number was actually
+            ; written -- an axis with ticks and no values cannot collide with
+            ; anything. @emlTickLabelWidth returns 0 for a label whose form
+            ; Praat writes in exponent notation, and 0 keeps the name where
+            ; it has always been.
+            if emlShowAxisValuesY
+                @emlTickLabelWidth: .yPos, .tickExplicit, .tickDecimals
+                if emlTickLabelWidth.chars >= .wideChars
+                    if emlTickLabelWidth.mm > .maxWideLabelMM
+                        .maxWideLabelMM = emlTickLabelWidth.mm
+                    endif
+                endif
             endif
         endif
         .yPos = .yPos + .yStep
@@ -2838,6 +3108,7 @@ procedure emlDrawAxes: .xMin, .xMax, .yMin, .yMax, .xLabel$, .yLabel$, .title$, 
     # --- Y-axis (left) ticks ---
     @emlDrawAlignedMarksLeft: .yMin, .yMax,
     ... emlSetAdaptiveTheme.targetTicksY, emlSetAdaptiveTheme.useMinorTicks
+    .yWideLabelMM = emlDrawAlignedMarksLeft.maxWideLabelMM
 
     # --- X-axis (bottom) ticks ---
     @emlDrawAlignedMarksBottom: .xMin, .xMax,
@@ -2849,7 +3120,10 @@ procedure emlDrawAxes: .xMin, .xMax, .yMin, .yMax, .xLabel$, .yLabel$, .title$, 
         Text bottom: "yes", .xLabel$
     endif
     if emlShowAxisNameY and .yLabel$ <> ""
-        Text left: "yes", .yLabel$
+        # Ruling 7: the name goes where Praat puts it unless the tick labels
+        # have already taken the room. @emlDrawAxisNameLeft says how.
+        @emlDrawAxisNameLeft: .yLabel$, .yWideLabelMM,
+        ... .xMin, .xMax, .yMin, .yMax
     endif
 
     # Title and subtitle
@@ -2879,9 +3153,15 @@ procedure emlDrawAxesSelective: .xMin, .xMax, .yMin, .yMax, .xLabel$, .yLabel$, 
     @emlDrawInnerBoxIf
 
     # Conditional Y-axis ticks
+    # .yWideLabelMM is seeded to 0 for the panel whose ticks are suppressed:
+    # no numbers were drawn there, so nothing can crowd its axis name, and
+    # reading the neighbouring panel's measurement would move it for no
+    # reason.
+    .yWideLabelMM = 0
     if .showYTicks
         @emlDrawAlignedMarksLeft: .yMin, .yMax,
         ... emlSetAdaptiveTheme.targetTicksY, emlSetAdaptiveTheme.useMinorTicks
+        .yWideLabelMM = emlDrawAlignedMarksLeft.maxWideLabelMM
     endif
 
     # Conditional X-axis ticks
@@ -2896,7 +3176,8 @@ procedure emlDrawAxesSelective: .xMin, .xMax, .yMin, .yMax, .xLabel$, .yLabel$, 
         Text bottom: "yes", .xLabel$
     endif
     if .showYLabel
-        Text left: "yes", .yLabel$
+        @emlDrawAxisNameLeft: .yLabel$, .yWideLabelMM,
+        ... .xMin, .xMax, .yMin, .yMax
     endif
 
     # Title
@@ -4283,6 +4564,65 @@ procedure emlCheckChannels: .soundId
 endproc
 
 # ----------------------------------------------------------------------------
+# @emlDropStaleChannelSounds: .sourceName$
+# Remove the channel Sounds a previous press of the stereo gate left behind.
+#
+# AUTHOR RULING 8b, 15 August 2026, severity 4. See the header of
+# @emlGraphsChannelGate for what accumulated and why the fix is a name and a
+# drop rather than a variable: each menu invocation is a fresh script run, so
+# nothing a previous press computed survives to be read here except the
+# Objects window itself.
+#
+# IT ONLY EVER REMOVES A SOUND THIS PLUGIN NAMED. The three candidates are
+# "eml_" + the source's name + Praat's own conversion suffix, and the gate
+# writes exactly that name onto the object it creates. A user's own
+# "take_ch1", extracted by hand from the Objects window, does not match and
+# is never touched -- which is the whole reason the prefix exists.
+#
+# `nocheck` because "no such object" is the ordinary case: the first press of
+# a session has nothing to collect. It CLEARS THE SELECTION when it fails --
+# verified on 6.6.30, 15 Aug 2026, with a Sound selected beforehand and
+# numberOfSelected reading 0 afterwards -- which is the property the removal
+# below depends on. If a failed lookup left the previous selection standing,
+# `selected ("Sound")` would name the user's own stereo recording and this
+# procedure would delete it. The caller re-selects afterwards for the same
+# reason.
+#
+# THE LOOP, not a single removal, for the same reason ruling 8a's does: a tree
+# that has already shipped the accumulating version can have any number of
+# them, and the first press after this lands collects the lot. The bound is a
+# safety rail, not a limit anyone should reach.
+#
+# Arguments: .sourceName$ - the stereo Sound's own name
+# Outputs:   .nDropped    - how many were removed
+# ----------------------------------------------------------------------------
+procedure emlDropStaleChannelSounds: .sourceName$
+    .nDropped = 0
+    for .k from 1 to 3
+        if .k = 1
+            .cand$ = "eml_" + .sourceName$ + "_mono"
+        elsif .k = 2
+            .cand$ = "eml_" + .sourceName$ + "_ch1"
+        else
+            .cand$ = "eml_" + .sourceName$ + "_ch2"
+        endif
+        .safety = 0
+        .more = 1
+        while .more = 1 and .safety < 64
+            .safety = .safety + 1
+            nocheck selectObject: "Sound " + .cand$
+            if numberOfSelected ("Sound") = 1
+                .id = selected ("Sound")
+                removeObject: .id
+                .nDropped = .nDropped + 1
+            else
+                .more = 0
+            endif
+        endwhile
+    endfor
+endproc
+
+# ----------------------------------------------------------------------------
 # @emlGraphsChannelGate: .soundId, .purpose$
 # The EML Graphs entry to the stereo choice. Ask, once, before a stereo Sound
 # becomes a figure or the object a figure is derived from.
@@ -4337,6 +4677,37 @@ endproc
 # derived object's own name records the choice, so a session that is saved
 # and reopened still says which channel the figure came from.
 #
+# ONE PRESS, ONE DERIVED SOUND (author's ruling 8b, 15 Aug 2026, severity 4).
+# The derived Sound is kept on purpose -- see the paragraph above -- but it was
+# kept ONCE PER PRESS. Five figures drawn from the same stereo recording with
+# the same channel chosen left five Sounds called "<name>_ch1" in the Objects
+# window, and that is not only clutter: `selectObject: "Sound take_ch1"` then
+# answers with one of the five and the user cannot say which. It is the
+# duplicate-name mechanism of S1 one level up, in the object list rather than
+# in a column menu, and it arrives with no error at all. Reproduced here on
+# 15 Aug 2026: three presses through the gate, three extracted Sounds.
+#
+# TWO HALVES, AND THE FIRST IS WHAT MAKES THE SECOND SAFE.
+#
+#   THE DERIVED SOUND IS RENAMED to "eml_" + Praat's own derived name, so
+#   "take_ch1" becomes "eml_take_ch1". The paragraph above already promised
+#   this ("the derived object's own name records the choice") and the code
+#   never did it. The prefix is what makes the object identifiable as the
+#   plugin's: a user who extracted the left channel by hand from the Objects
+#   window has a Sound called "take_ch1", and a cleanup that matched THAT
+#   name would delete their work to tidy up after itself.
+#
+#   THE STALE ONES ARE DROPPED AT THE TOP OF THE NEXT PRESS, which is the
+#   placement @eml_dropStaleConverted uses for ruling 8a and for the same
+#   reason: a cleanup at the bottom of this procedure is skipped by exactly
+#   the errors it would exist to survive, and would then leak on precisely
+#   the runs that matter. All three candidate names are dropped -- _mono,
+#   _ch1 and _ch2 -- because the choice can differ from press to press and
+#   "one derived Sound per source" is the invariant, not "one per choice".
+#   A script variable cannot carry the id between presses: each menu
+#   invocation is a fresh script run with a fresh variable space, which is
+#   why the object's NAME has to be what identifies it.
+#
 # THE STALE-ID REPAIR is the part that would be a defect if it were left out.
 # The graphs form remembers the object it is working from in three globals,
 # and after this procedure the figure is drawn from a DIFFERENT object. If
@@ -4370,6 +4741,17 @@ procedure emlGraphsChannelGate: .soundId, .purpose$
     endif
 
     .name$ = selected$ ("Sound")
+
+    ; RULING 8b, first half: collect what the last press on this same Sound
+    ; left behind, before making another one. Before the dialog rather than
+    ; after it, so that a user who quits at the dialog has still had the
+    ; stray from the previous press cleared -- and because the drop clears
+    ; the selection, which must not happen between the choice and the
+    ; conversion.
+    @emlDropStaleChannelSounds: .name$
+    .nStale = emlDropStaleChannelSounds.nDropped
+    selectObject: .soundId
+
     beginPause: "Stereo Sound — choose a channel"
         comment: """" + .name$ + """ has " + string$ (.nChannels)
         ... + " channels."
@@ -4401,8 +4783,11 @@ procedure emlGraphsChannelGate: .soundId, .purpose$
         ; Name the derived object for what it is. Praat's own names --
         ; "<name>_mono", "<name>_ch1" -- are already distinct, but a user
         ; scanning the Objects list a week later should not have to remember
-        ; which of two similar names came from which menu.
+        ; which of two similar names came from which menu. The "eml_" prefix
+        ; is also what lets the drop above be safe: see ruling 8b in the
+        ; header.
         selectObject: .resultId
+        Rename: "eml_" + selected$ ("Sound")
         appendInfoLine: "Channel choice: ", .choice$, " applied to """,
         ... .name$, """ for this ", .purpose$, ". The stereo original is",
         ... " still in the Objects window; the figure is drawn from """,
@@ -7233,11 +7618,54 @@ procedure emlCleanConvertedTable: .tableId
         Rename column (by number): 1, .rowColName$
     endif
 
-    # Fix "?" column headers → "Column_N"
-    for .iCol from 1 to .nCols
+    # FIX "?" COLUMN HEADERS -> "Column_N", AND N IS THE SOURCE COLUMN'S
+    # NUMBER, NOT THE TABLE'S. AUTHOR RULING, 15 August 2026 (ruling 5,
+    # doors 2 and 3).
+    #
+    # `To Table: "row"` has already put the manufactured label column in
+    # position 1 by the time this runs, so numbering by table position gave
+    #
+    #     source column 1  ->  table position 2  ->  named "Column_2"
+    #     source column 2  ->  table position 3  ->  named "Column_3"
+    #
+    # and no column was ever called "Column_1" at all. A user who asks for
+    # "column 2 of my Matrix" reads the menu, picks Column_2, and is handed
+    # column 1's data. There is no symptom: every value is a real value, from
+    # a real column, of the right length, under a heading that is off by one.
+    # Auditor's evidence, leg2_converted_mx.csv, and reproduced here on
+    # 15 Aug 2026 through both of this procedure's callers.
+    #
+    # .insertedCols IS THE COLUMNS THE COERCION PUT IN FRONT of the source's
+    # first, and it is 1 at every call site because `To Table: "row"` is the
+    # only conversion that reaches here -- including the arm where the
+    # collision guard above has renamed that column to "OriginalRowLabel",
+    # which moves its NAME and not its position.
+    #
+    # WHY IT IS NOT A PARAMETER, WHERE @eml_nameUnlabelledColumns TAKES ONE.
+    # That procedure is private to eml-output.praat and has two call sites,
+    # both in the same file. This one is PUBLIC: @emlConvertForGraph emits
+    # `@emlCleanConvertedTable: data` into recorded scripts, and those
+    # scripts are on users' disks. Adding an argument would make every one of
+    # them fail with an arity error to buy generality no caller wants. The
+    # offset is stated as a named local instead, so the arithmetic is on the
+    # page and a future coercion that inserts two columns changes one line.
+    #
+    # THE LOOP STARTS AFTER THE INSERTED BLOCK, which is a guard and not an
+    # optimisation: position 1 has no source column to be numbered after, so
+    # scanning it could only write "Column_0" or a duplicate of the real
+    # column 1's name -- and a duplicate header is the S1 wrong-column read
+    # this repair exists to remove.
+    #
+    # The empty header is matched as well as "?", so this composes with a
+    # caller that has already normalised one -- the same reason the r1..rn
+    # pass below tests for both, and the shape @eml_nameUnlabelledColumns
+    # uses at the stats door.
+    .insertedCols = 1
+    for .iCol from .insertedCols + 1 to .nCols
         .colLabel$ = Get column label: .iCol
-        if .colLabel$ = "?"
-            Rename column (by number): .iCol, "Column_" + string$ (.iCol)
+        if .colLabel$ = "?" or .colLabel$ = ""
+            Rename column (by number): .iCol,
+            ... "Column_" + string$ (.iCol - .insertedCols)
         endif
     endfor
 

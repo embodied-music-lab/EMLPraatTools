@@ -2965,7 +2965,31 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                 ... + string$ (.dfW) + ") = "
                 ... + fixed$ (.fVal, 2)
                 ... + ", " + emlFormatP.formatted$
-                annotMatrixPosthoc$ = "Tukey HSD"
+                # AUTHOR RULING 1b, 15 August 2026: THE FIGURE SAYS WHERE ITS
+                # FAMILY-WISE CONTROL COMES FROM, and it says a different
+                # thing on each arm because the two arms do a different thing.
+                #
+                # The graphs form no longer offers an Adjustment menu when the
+                # test is parametric: Tukey's p comes from the studentized
+                # range distribution and is ALREADY family-wise over the set
+                # of pairwise comparisons, so stacking Holm or Bonferroni on
+                # top of it would correct the same family twice and hand back
+                # a p that is conservative for no stated reason. The dialog
+                # now reads "Adjustment method: none — Tukey HSD is already
+                # family-wise." A field disappearing from a dialog is not a
+                # disclosure, though: the FIGURE outlives the dialog, and this
+                # sub-line is the only place in it that says which correction
+                # produced the annotated p-values (see the note in
+                # @emlDrawMatrixPanel). So the figure states it too.
+                #
+                # THE DUNN ARM IS DELIBERATELY LEFT ALONE, and that asymmetry
+                # is the point rather than an oversight. Dunn's z-tests carry
+                # no family-wise control of their own, the form still offers
+                # the menu there, @emlDunnTest still honours it, and the
+                # string that arm writes still NAMES the method the user
+                # chose -- "Dunn's test (holm)". One claim covering both arms
+                # would be false on one of them whichever way it was written.
+                annotMatrixPosthoc$ = "Tukey HSD (already family-wise)"
 
                 # --------------------------------------------------------
                 # Index mapping: encounter order → ANOVA alphabetical order
@@ -3305,6 +3329,70 @@ endproc
 
 
 # ============================================================================
+# THE REPORTERS BELOW WRITE TO THE INFO WINDOW, AND RULING 6 GOVERNS THEM
+# ============================================================================
+# AUTHOR RULING 6, 15 August 2026: no raw double may reach the Info window.
+# Statistics print at fixed decimals, p prints in APA style, and full
+# precision belongs to the CSV export -- the artefact a reader is meant to
+# compute from. The report is for reading.
+#
+# THIS FILE STRADDLES THE BOUNDARY, which is the only interesting thing about
+# applying the ruling here. Above this line the procedures build text that is
+# DRAWN ON A PICTURE: the omnibus line over a comparison matrix, a bracket
+# label, the star legend, the "p < .05" key, a Cohen's d in a matrix cell.
+# Below it they build text that is PRINTED IN THE INFO WINDOW. Both kinds are
+# strings made with fixed$ and the two look identical in a grep; they are not
+# the same surface and the ruling names one of them.
+#
+# THE TEST APPLIED TO EVERY SITE WAS ITS DESTINATION, traced by hand, not its
+# spelling and not the procedure's name:
+#
+#   drawn      -> `Text`, `Text special`, `Text width` (a measurement of what
+#                 will be drawn), or one of the annot* globals that
+#                 @emlDrawAnnotations and @emlDrawMatrixPanel render.
+#                 17 calls in 14 statements. UNTOUCHED. A figure's own text
+#                 is laid out against its measured width -- @emlMeasureMatrixLayout
+#                 measures the very strings @emlDrawMatrixPanel then draws --
+#                 so re-formatting them is a layout change, and layout is not
+#                 what ruling 6 is about.
+#
+#   printed    -> `appendInfoLine`, `@emlReportLine*`, or emlWizardExplain$,
+#                 which @emlReportLine appends as the explanation column.
+#                 69 calls in 42 statements. ALL ROUTED THROUGH @eml_fixed.
+#
+#   recorded   -> @emlBridgeGroupComparison's .recResult$, which is neither.
+#                 It is the workflow record's note beside a recorded call, and
+#                 it is built from .omnibus$ ON PURPOSE so that the record
+#                 carries the string the reader saw on the plot, character for
+#                 character. One call. UNTOUCHED, for the same reason
+#                 @emlRecordViolin's resolved-axis note is untouched.
+#
+# WHY @eml_fixed AND NOT A LOCAL HELPER. Praat's fixed$ is not a
+# fixed-precision formatter -- it returns the larger of the precision asked
+# for and the decimals needed to show one significant digit, and a bare "0"
+# for an exact zero. @eml_fixed (stats/eml-output.praat) is the one place that
+# is closed, and a second implementation here would be a second thing to keep
+# right. Praat cannot nest a procedure call inside an expression, so every
+# site hoists into a temporary (.fx1$, .fx2$, ...) immediately above the
+# statement that prints it.
+#
+# WHAT IT LOOKED LIKE, MEASURED 15 AUGUST 2026 BEFORE THE CHANGE. Three
+# groups with identical means printed a Tukey difference column of bare "0"
+# against neighbours reading "[-3.0871, 3.0871]", and a Cohen's d matrix of
+# bare "0". A two-way ANOVA over values near zero printed
+#
+#     f1                  0.000000000000001     0.000000000000002.0000      .176
+#
+# -- seventeen decimals in a column padded for sixteen characters, so the SS
+# cell ran into the MS cell and the MS cell into the F cell. Every one of
+# those numbers was correct. Only their width was wrong.
+#
+# NOTHING COMPUTED MOVES. @eml_fixed formats; it never writes back, and the
+# CSV writers below (@emlCSVAdd and friends) do not call it. They still emit
+# full precision, which is where the ruling puts it.
+# ============================================================================
+
+# ============================================================================
 # @emlReportBridgeStats — thin dispatcher for graphs tool
 # ============================================================================
 # Called by eml-graphs.praat after @emlBridgeGroupComparison has run.
@@ -3531,9 +3619,13 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
         if emlShowExplanations
             .diff = .mean1 - .mean2
             if .diff > 0
-                emlWizardExplain$ = .displayG1$ + " mean is " + fixed$ (abs (.diff), 2) + " units higher"
+                @eml_fixed: abs (.diff), 2
+                .fx1$ = eml_fixed.result$
+                emlWizardExplain$ = .displayG1$ + " mean is " + .fx1$ + " units higher"
             else
-                emlWizardExplain$ = .displayG2$ + " mean is " + fixed$ (abs (.diff), 2) + " units higher"
+                @eml_fixed: abs (.diff), 2
+                .fx1$ = eml_fixed.result$
+                emlWizardExplain$ = .displayG2$ + " mean is " + .fx1$ + " units higher"
             endif
         endif
         ; D13: "Mean difference" alone never said which group was subtracted
@@ -3562,8 +3654,12 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
             .tCritDiff = invStudentQ (0.025, emlTTest.df)
             .diffLo = emlTTest.meanDiff - .tCritDiff * .seDiff
             .diffHi = emlTTest.meanDiff + .tCritDiff * .seDiff
+            @eml_fixed: .diffLo, 4
+            .fx1$ = eml_fixed.result$
+            @eml_fixed: .diffHi, 4
+            .fx2$ = eml_fixed.result$
             @emlReportLineString: "95% CI of diff",
-            ... "[" + fixed$ (.diffLo, 4) + ", " + fixed$ (.diffHi, 4) + "]"
+            ... "[" + .fx1$ + ", " + .fx2$ + "]"
         endif
         @emlReportBlank
         @emlReportSection: "Effect Size"
@@ -3738,25 +3834,39 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     @emlFormatP: emlOneWayAnova.p
     .pCell$ = emlFormatP.bare$
 
+    @eml_fixed: emlOneWayAnova.ssBetween, 2
+    .fx1$ = eml_fixed.result$
+    @eml_fixed: emlOneWayAnova.msBetween, 2
+    .fx2$ = eml_fixed.result$
+    @eml_fixed: emlOneWayAnova.fValue, 4
+    .fx3$ = eml_fixed.result$
     appendInfoLine: left$ ("Between" + "                    ", 20),
-    ... left$ (fixed$ (emlOneWayAnova.ssBetween, 2) + "                ", 16),
+    ... left$ (.fx1$ + "                ", 16),
     ... left$ (string$ (emlOneWayAnova.dfBetween) + "      ", 6),
-    ... left$ (fixed$ (emlOneWayAnova.msBetween, 2) + "                ", 16),
-    ... left$ (fixed$ (emlOneWayAnova.fValue, 4) + "            ", 12),
+    ... left$ (.fx2$ + "                ", 16),
+    ... left$ (.fx3$ + "            ", 12),
     ... .pCell$
+    @eml_fixed: emlOneWayAnova.ssWithin, 2
+    .fx1$ = eml_fixed.result$
+    @eml_fixed: emlOneWayAnova.msWithin, 2
+    .fx2$ = eml_fixed.result$
     appendInfoLine: left$ ("Within" + "                    ", 20),
-    ... left$ (fixed$ (emlOneWayAnova.ssWithin, 2) + "                ", 16),
+    ... left$ (.fx1$ + "                ", 16),
     ... left$ (string$ (emlOneWayAnova.dfWithin) + "      ", 6),
-    ... left$ (fixed$ (emlOneWayAnova.msWithin, 2) + "                ", 16)
+    ... left$ (.fx2$ + "                ", 16)
+    @eml_fixed: emlOneWayAnova.ssTotal, 2
+    .fx1$ = eml_fixed.result$
     appendInfoLine: left$ ("Total" + "                    ", 20),
-    ... left$ (fixed$ (emlOneWayAnova.ssTotal, 2) + "                ", 16),
+    ... left$ (.fx1$ + "                ", 16),
     ... left$ (string$ (emlOneWayAnova.dfTotal) + "      ", 6)
 
     @emlReportBlank
     if emlShowExplanations
         @emlWizardExplainF: emlOneWayAnova.fValue
     endif
-    @emlReportLineString: "F", fixed$ (emlOneWayAnova.fValue, 4)
+    @eml_fixed: emlOneWayAnova.fValue, 4
+    .fx1$ = eml_fixed.result$
+    @emlReportLineString: "F", .fx1$
     if emlShowExplanations
         @emlWizardExplainP: emlOneWayAnova.p
     endif
@@ -3766,7 +3876,9 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     if emlShowExplanations
         @emlWizardExplainEffectEta2: .etaSq
     endif
-    @emlReportLineString: "Effect size", "eta-squared = " + fixed$ (.etaSq, 4)
+    @eml_fixed: .etaSq, 4
+    .fx1$ = eml_fixed.result$
+    @emlReportLineString: "Effect size", "eta-squared = " + .fx1$
 
     ; --- Equal-spread check (Ruling 1: conditional show-both) ---------------
     ; Brown-Forsythe runs ALWAYS and prints ALWAYS. The test above is never
@@ -3795,10 +3907,12 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
             ... + "spread across all groups. This checks whether that is a "
             ... + "fair thing to do here."
         endif
+        @eml_fixed: emlBrownForsythe.f, 4
+        .fx1$ = eml_fixed.result$
         @emlReportLineString: "Equal spread",
         ... "Brown-Forsythe F(" + string$ (emlBrownForsythe.df1) + ", "
         ... + string$ (emlBrownForsythe.df2) + ") = "
-        ... + fixed$ (emlBrownForsythe.f, 4)
+        ... + .fx1$
         @emlReportPWithExact: "Equal-spread p", emlBrownForsythe.p
         if .bfFlags
             @emlReportNote: "Note: the groups differ in spread more than "
@@ -3925,11 +4039,17 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 if .tukeyHalf = undefined or .tukeyDiff = undefined
                     .ciText$ = "not available"
                 else
-                    .ciText$ = "[" + fixed$ (.tukeyDiff - .tukeyHalf, 4)
-                    ... + ", " + fixed$ (.tukeyDiff + .tukeyHalf, 4) + "]"
+                    @eml_fixed: .tukeyDiff - .tukeyHalf, 4
+                    .fx1$ = eml_fixed.result$
+                    @eml_fixed: .tukeyDiff + .tukeyHalf, 4
+                    .fx2$ = eml_fixed.result$
+                    .ciText$ = "[" + .fx1$
+                    ... + ", " + .fx2$ + "]"
                 endif
+                @eml_fixed: .tukeyDiff, 4
+                .fx1$ = eml_fixed.result$
                 appendInfoLine: left$ (.ciName$ + "                          ", 26),
-                ... left$ (fixed$ (.tukeyDiff, 4) + "              ", 14),
+                ... left$ (.fx1$ + "              ", 14),
                 ... .ciText$
             endfor
         endfor
@@ -4022,7 +4142,8 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 .cellText$ = "---"
             else
                 .dVal = emlOneWayAnova.dMatrix## [.iGroup, .jGroup]
-                .cellText$ = fixed$ (.dVal, 3)
+                @eml_fixed: .dVal, 3
+                .cellText$ = eml_fixed.result$
             endif
             .dRowLine$ = .dRowLine$ + left$ (.cellText$ + "            ", 12)
         endfor
@@ -4098,10 +4219,14 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
             ... "not available -- " + emlWelchAnova.error$
         else
             @emlReportBlank
+            @eml_fixed: emlWelchAnova.df2, 2
+            .fx1$ = eml_fixed.result$
+            @eml_fixed: emlWelchAnova.f, 4
+            .fx2$ = eml_fixed.result$
             @emlReportLineString: "Welch's F",
             ... "F(" + string$ (emlWelchAnova.df1) + ", "
-            ... + fixed$ (emlWelchAnova.df2, 2) + ") = "
-            ... + fixed$ (emlWelchAnova.f, 4)
+            ... + .fx1$ + ") = "
+            ... + .fx2$
             @emlReportPWithExact: "Welch p", emlWelchAnova.p
 
             @emlCSVSetTable: .tableName$
@@ -4274,9 +4399,11 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
         if length (.gName$) > 12
             .gName$ = left$ (.gName$, 12)
         endif
+        @eml_fixed: emlKruskalWallis.meanRank [.iGroup], 2
+        .fx1$ = eml_fixed.result$
         appendInfoLine: left$ (.gName$ + "                ", 14),
         ... left$ (string$ (emlKruskalWallis.groupN [.iGroup]) + "      ", 6),
-        ... fixed$ (emlKruskalWallis.meanRank [.iGroup], 2)
+        ... .fx1$
     endfor
 
     if .doDunn
@@ -4332,7 +4459,8 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                         .cellText$ = "---"
                     else
                         .zVal = emlDunnTest.zMatrix## [.iGroup, .jGroup]
-                        .cellText$ = fixed$ (.zVal, 3)
+                        @eml_fixed: .zVal, 3
+                        .cellText$ = eml_fixed.result$
                     endif
                     .rowLine$ = .rowLine$ + left$ (.cellText$ + "            ", 12)
                 endfor
@@ -4436,7 +4564,8 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                 .cellText$ = "---"
             else
                 .rVal = emlKruskalWallis.rMatrix## [.iGroup, .jGroup]
-                .cellText$ = fixed$ (.rVal, 3)
+                @eml_fixed: .rVal, 3
+                .cellText$ = eml_fixed.result$
             endif
             .rRowLine$ = .rRowLine$ + left$ (.cellText$ + "            ", 12)
         endfor
@@ -4559,8 +4688,12 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 .zHi = .fisherZ + 1.96 * .fisherSE
                 .rLo = (exp (2 * .zLo) - 1) / (exp (2 * .zLo) + 1)
                 .rHi = (exp (2 * .zHi) - 1) / (exp (2 * .zHi) + 1)
+                @eml_fixed: .rLo, 4
+                .fx1$ = eml_fixed.result$
+                @eml_fixed: .rHi, 4
+                .fx2$ = eml_fixed.result$
                 @emlReportLineString: "95% CI for r",
-                ... "[" + fixed$ (.rLo, 4) + ", " + fixed$ (.rHi, 4) + "]"
+                ... "[" + .fx1$ + ", " + .fx2$ + "]"
             endif
             # D17: the row carried r and r_squared but left effect_label
             # empty, so a consumer joining these exports got a column that is
@@ -4681,14 +4814,22 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
         appendInfoLine: "  Why: Tests whether the predictor linearly"
         ... + " predicts the response."
     endif
+    @eml_fixed: emlLinearRegression.slope, 4
+    .fx1$ = eml_fixed.result$
+    @eml_fixed: emlLinearRegression.intercept, 4
+    .fx2$ = eml_fixed.result$
     .eqn$ = "y = "
-    ... + fixed$ (emlLinearRegression.slope, 4) + "x"
-    ... + " + " + fixed$ (emlLinearRegression.intercept, 4)
+    ... + .fx1$ + "x"
+    ... + " + " + .fx2$
     @emlReportLineString: "Equation", .eqn$
     if emlShowExplanations
+        @eml_fixed: emlLinearRegression.slope, 4
+        .fx1$ = eml_fixed.result$
+        @eml_fixed: emlLinearRegression.intercept, 4
+        .fx2$ = eml_fixed.result$
         .proseEqn$ = .displayDep$ + " = "
-        ... + fixed$ (emlLinearRegression.slope, 4) + " x " + .displayPred$
-        ... + " + " + fixed$ (emlLinearRegression.intercept, 4)
+        ... + .fx1$ + " x " + .displayPred$
+        ... + " + " + .fx2$
         emlWizardExplain$ = .proseEqn$
         appendInfoLine: "  " + emlWizardExplain$
     endif
@@ -4706,8 +4847,10 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     endif
     @emlReportLine: "Adj. R-squared", .adjR2, 4
     if emlShowExplanations
+        @eml_fixed: emlLinearRegression.seResidual, 2
+        .fx1$ = eml_fixed.result$
         emlWizardExplain$ = "Typical prediction error — points deviate from the line by +/-"
-        ... + fixed$ (emlLinearRegression.seResidual, 2) + " units on average"
+        ... + .fx1$ + " units on average"
     endif
     @emlReportLine: "Residual SE", emlLinearRegression.seResidual, 4
 
@@ -4753,15 +4896,25 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     @emlFormatP: emlLinearRegression.pIntercept
     if .ciWidth > 0
         .intHalf = .ciWidth * emlLinearRegression.seIntercept
-        .intCI$ = "[" + fixed$ (emlLinearRegression.intercept - .intHalf, 4)
-        ... + ", " + fixed$ (emlLinearRegression.intercept + .intHalf, 4) + "]"
+        @eml_fixed: emlLinearRegression.intercept - .intHalf, 4
+        .fx1$ = eml_fixed.result$
+        @eml_fixed: emlLinearRegression.intercept + .intHalf, 4
+        .fx2$ = eml_fixed.result$
+        .intCI$ = "[" + .fx1$
+        ... + ", " + .fx2$ + "]"
     else
         .intCI$ = "not available"
     endif
+    @eml_fixed: emlLinearRegression.intercept, 4
+    .fx1$ = eml_fixed.result$
+    @eml_fixed: emlLinearRegression.seIntercept, 4
+    .fx2$ = eml_fixed.result$
+    @eml_fixed: emlLinearRegression.tIntercept, 3
+    .fx3$ = eml_fixed.result$
     .intRow$ = "  " + left$ ("(Intercept)" + "                    ", 20)
-    ... + left$ (fixed$ (emlLinearRegression.intercept, 4) + "              ", 14)
-    ... + left$ (fixed$ (emlLinearRegression.seIntercept, 4) + "              ", 14)
-    ... + left$ (fixed$ (emlLinearRegression.tIntercept, 3) + "              ", 12)
+    ... + left$ (.fx1$ + "              ", 14)
+    ... + left$ (.fx2$ + "              ", 14)
+    ... + left$ (.fx3$ + "              ", 12)
     ... + left$ (emlFormatP.bare$ + "            ", 12)
     ... + .intCI$
     appendInfoLine: .intRow$
@@ -4769,15 +4922,25 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     @emlFormatP: emlLinearRegression.pSlope
     if .ciWidth > 0
         .slopeHalf = .ciWidth * emlLinearRegression.seSlope
-        .slopeCI$ = "[" + fixed$ (emlLinearRegression.slope - .slopeHalf, 4)
-        ... + ", " + fixed$ (emlLinearRegression.slope + .slopeHalf, 4) + "]"
+        @eml_fixed: emlLinearRegression.slope - .slopeHalf, 4
+        .fx1$ = eml_fixed.result$
+        @eml_fixed: emlLinearRegression.slope + .slopeHalf, 4
+        .fx2$ = eml_fixed.result$
+        .slopeCI$ = "[" + .fx1$
+        ... + ", " + .fx2$ + "]"
     else
         .slopeCI$ = "not available"
     endif
+    @eml_fixed: emlLinearRegression.slope, 4
+    .fx1$ = eml_fixed.result$
+    @eml_fixed: emlLinearRegression.seSlope, 4
+    .fx2$ = eml_fixed.result$
+    @eml_fixed: emlLinearRegression.tSlope, 3
+    .fx3$ = eml_fixed.result$
     .slopeRow$ = "  " + left$ (.displayPred$ + "                    ", 20)
-    ... + left$ (fixed$ (emlLinearRegression.slope, 4) + "              ", 14)
-    ... + left$ (fixed$ (emlLinearRegression.seSlope, 4) + "              ", 14)
-    ... + left$ (fixed$ (emlLinearRegression.tSlope, 3) + "              ", 12)
+    ... + left$ (.fx1$ + "              ", 14)
+    ... + left$ (.fx2$ + "              ", 14)
+    ... + left$ (.fx3$ + "              ", 12)
     ... + left$ (emlFormatP.bare$ + "            ", 12)
     ... + .slopeCI$
     appendInfoLine: .slopeRow$
@@ -4800,10 +4963,14 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     # wore the visual authority of a second computed statistic — and read as a
     # different quantity from R-squared when it is R-squared, glossed. Stated
     # as prose naming the number it is a verdict about.
+    @eml_fixed: emlLinearRegression.rSquared, 4
+    .fx1$ = eml_fixed.result$
+    @eml_fixed: 100 * emlLinearRegression.rSquared, 1
+    .fx2$ = eml_fixed.result$
     appendInfoLine: "  Variance explained: R-squared = "
-    ... + fixed$ (emlLinearRegression.rSquared, 4)
+    ... + .fx1$
     ... + " ("
-    ... + fixed$ (100 * emlLinearRegression.rSquared, 1)
+    ... + .fx2$
     ... + "% of the variance in " + .displayDep$
     ... + "), a " + emlFormatEffectLabel.label$
     ... + " by Cohen's R-squared benchmarks"
@@ -4927,18 +5094,26 @@ procedure emlReportNormalityAnalysis: .tableName$, .dataCol$,
     # to read :2085, which is a "Data column:" padding line in the analysis
     # plan; grep for skKurtFail, the line numbers move on every insertion.)
     if abs (emlRunNormalityAnalysis.skewness) >= emlSkewThreshold
+        @eml_fixed: emlSkewThreshold, 0
+        .fx1$ = eml_fixed.result$
         appendInfoLine: "  → Skewness outside typical limits (criterion: |skew| < ",
-        ... fixed$ (emlSkewThreshold, 0), ")"
+        ... .fx1$, ")"
     else
+        @eml_fixed: emlSkewThreshold, 0
+        .fx1$ = eml_fixed.result$
         appendInfoLine: "  → Skewness within typical limits (criterion: |skew| < ",
-        ... fixed$ (emlSkewThreshold, 0), ")"
+        ... .fx1$, ")"
     endif
     if abs (emlRunNormalityAnalysis.kurtosis) >= emlKurtosisThreshold
+        @eml_fixed: emlKurtosisThreshold, 0
+        .fx1$ = eml_fixed.result$
         appendInfoLine: "  → Kurtosis outside typical limits (criterion: |excess kurt| < ",
-        ... fixed$ (emlKurtosisThreshold, 0), ")"
+        ... .fx1$, ")"
     else
+        @eml_fixed: emlKurtosisThreshold, 0
+        .fx1$ = eml_fixed.result$
         appendInfoLine: "  → Kurtosis within typical limits (criterion: |excess kurt| < ",
-        ... fixed$ (emlKurtosisThreshold, 0), ")"
+        ... .fx1$, ")"
     endif
 
     @emlReportBlank
@@ -5033,12 +5208,24 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
     @emlReportLine: "N (pairs)", .n, 0
     @emlReportBlank
 
-    appendInfoLine: "  ", .displayC1$, ": Mean = ", fixed$ (.mean1, 3),
-    ... ", SD = ", fixed$ (.sd1, 3),
-    ... ", Median = ", fixed$ (.median1, 3)
-    appendInfoLine: "  ", .displayC2$, ": Mean = ", fixed$ (.mean2, 3),
-    ... ", SD = ", fixed$ (.sd2, 3),
-    ... ", Median = ", fixed$ (.median2, 3)
+    @eml_fixed: .mean1, 3
+    .fx1$ = eml_fixed.result$
+    @eml_fixed: .sd1, 3
+    .fx2$ = eml_fixed.result$
+    @eml_fixed: .median1, 3
+    .fx3$ = eml_fixed.result$
+    appendInfoLine: "  ", .displayC1$, ": Mean = ", .fx1$,
+    ... ", SD = ", .fx2$,
+    ... ", Median = ", .fx3$
+    @eml_fixed: .mean2, 3
+    .fx1$ = eml_fixed.result$
+    @eml_fixed: .sd2, 3
+    .fx2$ = eml_fixed.result$
+    @eml_fixed: .median2, 3
+    .fx3$ = eml_fixed.result$
+    appendInfoLine: "  ", .displayC2$, ": Mean = ", .fx1$,
+    ... ", SD = ", .fx2$,
+    ... ", Median = ", .fx3$
 
     if .testType$ = "parametric" or .testType$ = "both"
         if emlTTestPaired.error$ = ""
@@ -5253,36 +5440,60 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     .pCellAB$ = emlFormatP.bare$
     .exactAB$ = emlFormatP.exact$
 
+    @eml_fixed: emlTwoWayAnova.ssA, 2
+    .fx1$ = eml_fixed.result$
+    @eml_fixed: emlTwoWayAnova.msA, 2
+    .fx2$ = eml_fixed.result$
+    @eml_fixed: emlTwoWayAnova.fA, 4
+    .fx3$ = eml_fixed.result$
     appendInfoLine: left$ (.displayF1$ + "                    ", 20),
-    ... left$ (fixed$ (emlTwoWayAnova.ssA, 2) + "                ", 16),
+    ... left$ (.fx1$ + "                ", 16),
     ... left$ (string$ (emlTwoWayAnova.dfA) + "      ", 6),
-    ... left$ (fixed$ (emlTwoWayAnova.msA, 2) + "                ", 16),
-    ... left$ (fixed$ (emlTwoWayAnova.fA, 4) + "            ", 12),
+    ... left$ (.fx2$ + "                ", 16),
+    ... left$ (.fx3$ + "            ", 12),
     ... .pCellA$
 
+    @eml_fixed: emlTwoWayAnova.ssB, 2
+    .fx1$ = eml_fixed.result$
+    @eml_fixed: emlTwoWayAnova.msB, 2
+    .fx2$ = eml_fixed.result$
+    @eml_fixed: emlTwoWayAnova.fB, 4
+    .fx3$ = eml_fixed.result$
     appendInfoLine: left$ (.displayF2$ + "                    ", 20),
-    ... left$ (fixed$ (emlTwoWayAnova.ssB, 2) + "                ", 16),
+    ... left$ (.fx1$ + "                ", 16),
     ... left$ (string$ (emlTwoWayAnova.dfB) + "      ", 6),
-    ... left$ (fixed$ (emlTwoWayAnova.msB, 2) + "                ", 16),
-    ... left$ (fixed$ (emlTwoWayAnova.fB, 4) + "            ", 12),
+    ... left$ (.fx2$ + "                ", 16),
+    ... left$ (.fx3$ + "            ", 12),
     ... .pCellB$
 
     .interLabel$ = .displayF1$ + " x " + .displayF2$
     .rawInterLabel$ = .factor1$ + "_x_" + .factor2$
+    @eml_fixed: emlTwoWayAnova.ssAB, 2
+    .fx1$ = eml_fixed.result$
+    @eml_fixed: emlTwoWayAnova.msAB, 2
+    .fx2$ = eml_fixed.result$
+    @eml_fixed: emlTwoWayAnova.fAB, 4
+    .fx3$ = eml_fixed.result$
     appendInfoLine: left$ (.interLabel$ + "                    ", 20),
-    ... left$ (fixed$ (emlTwoWayAnova.ssAB, 2) + "                ", 16),
+    ... left$ (.fx1$ + "                ", 16),
     ... left$ (string$ (emlTwoWayAnova.dfAB) + "      ", 6),
-    ... left$ (fixed$ (emlTwoWayAnova.msAB, 2) + "                ", 16),
-    ... left$ (fixed$ (emlTwoWayAnova.fAB, 4) + "            ", 12),
+    ... left$ (.fx2$ + "                ", 16),
+    ... left$ (.fx3$ + "            ", 12),
     ... .pCellAB$
 
+    @eml_fixed: emlTwoWayAnova.ssError, 2
+    .fx1$ = eml_fixed.result$
+    @eml_fixed: emlTwoWayAnova.msError, 2
+    .fx2$ = eml_fixed.result$
     appendInfoLine: left$ ("Error" + "                    ", 20),
-    ... left$ (fixed$ (emlTwoWayAnova.ssError, 2) + "                ", 16),
+    ... left$ (.fx1$ + "                ", 16),
     ... left$ (string$ (emlTwoWayAnova.dfError) + "      ", 6),
-    ... left$ (fixed$ (emlTwoWayAnova.msError, 2) + "                ", 16)
+    ... left$ (.fx2$ + "                ", 16)
 
+    @eml_fixed: emlTwoWayAnova.ssTotal, 2
+    .fx1$ = eml_fixed.result$
     appendInfoLine: left$ ("Total" + "                    ", 20),
-    ... left$ (fixed$ (emlTwoWayAnova.ssTotal, 2) + "                ", 16),
+    ... left$ (.fx1$ + "                ", 16),
     ... left$ (string$ (emlTwoWayAnova.dfTotal) + "      ", 6)
 
     # Only the floored rows need restating; at three decimals the table
@@ -5347,7 +5558,8 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     if emlShowExplanations
         @emlWizardExplainEffectEta2: emlTwoWayAnova.partialEtaSqA
     endif
-    .etaTextA$ = fixed$ (emlTwoWayAnova.partialEtaSqA, 4)
+    @eml_fixed: emlTwoWayAnova.partialEtaSqA, 4
+    .etaTextA$ = eml_fixed.result$
     if .etaLabelA$ <> ""
         .etaTextA$ = .etaTextA$ + "  (" + .etaLabelA$ + ")"
     endif
@@ -5355,7 +5567,8 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     if emlShowExplanations
         @emlWizardExplainEffectEta2: emlTwoWayAnova.partialEtaSqB
     endif
-    .etaTextB$ = fixed$ (emlTwoWayAnova.partialEtaSqB, 4)
+    @eml_fixed: emlTwoWayAnova.partialEtaSqB, 4
+    .etaTextB$ = eml_fixed.result$
     if .etaLabelB$ <> ""
         .etaTextB$ = .etaTextB$ + "  (" + .etaLabelB$ + ")"
     endif
@@ -5363,7 +5576,8 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     if emlShowExplanations
         @emlWizardExplainEffectEta2: emlTwoWayAnova.partialEtaSqAB
     endif
-    .etaTextAB$ = fixed$ (emlTwoWayAnova.partialEtaSqAB, 4)
+    @eml_fixed: emlTwoWayAnova.partialEtaSqAB, 4
+    .etaTextAB$ = eml_fixed.result$
     if .etaLabelAB$ <> ""
         .etaTextAB$ = .etaTextAB$ + "  (" + .etaLabelAB$ + ")"
     endif
@@ -5406,7 +5620,8 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
                     .cellMeanText$ = "empty cell"
                 else
                     .cellNText$ = string$ (emlTwoWayAnova.cellN[.hit])
-                    .cellMeanText$ = fixed$ (emlTwoWayAnova.cellMean[.hit], 4)
+                    @eml_fixed: emlTwoWayAnova.cellMean[.hit], 4
+                    .cellMeanText$ = eml_fixed.result$
                 endif
                 appendInfoLine: left$ (.rowA$ + "                    ", 18),
                 ... left$ (.rowB$ + "                    ", 18),
@@ -5444,7 +5659,8 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
                 .margLabel$ = left$ (.margLabel$, 28)
             endif
             if .margN > 0
-                .margText$ = fixed$ (.margSum / .margN, 4)
+                @eml_fixed: .margSum / .margN, 4
+                .margText$ = eml_fixed.result$
             else
                 .margText$ = "no data"
             endif
@@ -5471,7 +5687,8 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
                 .margLabel$ = left$ (.margLabel$, 28)
             endif
             if .margN > 0
-                .margText$ = fixed$ (.margSum / .margN, 4)
+                @eml_fixed: .margSum / .margN, 4
+                .margText$ = eml_fixed.result$
             else
                 .margText$ = "no data"
             endif

@@ -2940,8 +2940,35 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
 
     # Condition labels and x-axis label (pre-measured)
     @emlDrawCategoricalXAxis: .nCond, .xMin, .xMax, .yMin, .yMax, .xLabel$
+    # ----------------------------------------------------------------
+    # AUTHOR RULING 7, 15 August 2026 -- THE CATEGORICAL HALF.
+    #
+    # "No collision between the y-axis name and its tick labels." The
+    # mechanism is @emlDrawAxisNameLeft (graphs/eml-graph-procedures.praat),
+    # which reads that procedure's own long note; what matters here is why
+    # SEVEN more sites needed changing after it existed.
+    #
+    # The categorical draw paths -- spaghetti, bar, violin, box, faceted
+    # histogram, grouped violin, grouped box -- do not go through
+    # @emlDrawAxes. They lay their own axis out, because their x is a set of
+    # names rather than a number line, and each of them then drew the y-axis
+    # NAME with a bare `Text left`. So the repair that reached every figure
+    # @emlDrawAxes draws reached none of these, and the defect the ruling was
+    # written about survived in the seven procedures a user is most likely to
+    # be looking at. MEASURED, 15 August 2026: a violin of dB values two
+    # tenths apart, y-axis named "Power (dB)" against ticks reading "100.10",
+    # left FOUR PIXELS of white at 300 dpi between the name and the numbers
+    # -- the author's own second case, reproduced through this procedure
+    # before anything was changed.
+    #
+    # The shift is EXACTLY ZERO unless some tick label reaches six
+    # characters, so an ordinary figure is byte-for-byte what it was. The
+    # measurement is @emlDrawAlignedMarksLeft's, published by the call three
+    # lines above and read here before anything else can overwrite it.
+    # ----------------------------------------------------------------
     if emlShowAxisNameY
-        Text left: "yes", .yLabel$
+        @emlDrawAxisNameLeft: .yLabel$, emlDrawAlignedMarksLeft.maxWideLabelMM,
+        ... .xMin, .xMax, .yMin, .yMax
     endif
 
     @emlDrawTitle: .title$, .vpW, .vpH, .xMin, .xMax, .yMin, .yMax
@@ -3260,7 +3287,8 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     # Group labels and x-axis label (pre-measured)
     @emlDrawCategoricalXAxis: .nGroups, .axisXMin, .axisXMax, .yMin, .yMax, .xLabel$
     if emlShowAxisNameY
-        Text left: "yes", .yLabel$
+        @emlDrawAxisNameLeft: .yLabel$, emlDrawAlignedMarksLeft.maxWideLabelMM,
+        ... .xMin, .xMax, .yMin, .yMax
     endif
 
     # Title
@@ -3670,7 +3698,8 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # Group labels and x-axis label (pre-measured)
     @emlDrawCategoricalXAxis: .nGroups, .axisXMin, .axisXMax, .yMin, .yMax, .xLabel$
     if emlShowAxisNameY
-        Text left: "yes", .yLabel$
+        @emlDrawAxisNameLeft: .yLabel$, emlDrawAlignedMarksLeft.maxWideLabelMM,
+        ... .xMin, .xMax, .yMin, .yMax
     endif
 
     @emlDrawTitle: .title$, .vpW, .vpH, .xMin, .xMax, .yMin, .yMax
@@ -3780,15 +3809,37 @@ procedure emlRecordViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     ; the smoothing as much as the data.
     .caveat$ = "Violin width is a kernel density estimate, not a count."
 
-    ; The axis is recorded as RESOLVED numbers, never as "auto". Auto is
-    ; a function of the data, so a re-run on edited data would silently
-    ; draw a different axis and the record would not say so.
+    ; AUTHOR RULING 10(a), 15 August 2026: A RECORDED AUTO AXIS MUST REPLAY
+    ; AS AUTO. What is recorded here is the USER'S CHOICE, .vMin and .vMax as
+    ; the dialog took them -- and (0, 0) is not a range, it is the sentinel
+    ; the form names on its own face ("Y-axis range (both 0 = auto)") and the
+    ; value @emlDrawViolinPlot tests to decide whether to compute the axis
+    ; from the data. Recording the RESOLVED numbers in its place, which is
+    ; what this line did until today, is not a more faithful record: it is a
+    ; different instruction. Every other recorder in this library -- bar, box,
+    ; scatter, histogram -- already writes `string$ (.vMin)` and so already
+    ; emits a bare `0, 0`; the violin was the only one that did not.
+    ;
+    ; MEASURED, 15 August 2026, on a violin recorded over values of 180..260
+    ; and replayed against values of 1000..1300. The recorded call froze the
+    ; axis at 180..260, so every violin fell outside the window and the replay
+    ; drew a FULLY FURNISHED, COMPLETELY EMPTY FRAME: box, ticks, group names,
+    ; title, axis names, 43 KB of PNG and zero ink inside the frame. Nothing
+    ; warned -- not the draw, not the recorder, not the reader's eye until the
+    ; figure was opened. With the sentinel preserved the same replay resolves
+    ; 1000..1400 and is byte-for-byte the figure a native draw produces, and a
+    ; replay on the ORIGINAL data is byte-for-byte what it was before.
+    ;
+    ; THE RESOLVED NUMBERS ARE NOT LOST. They are one line down, in the
+    ; @emlRecordResult comment the emitted script carries beside the call --
+    ; "Axis resolved to 180.0000 .. 260.0000 over 3 groups." That is where a
+    ; record of what happened belongs. The CALL is what happens next.
     .code$ = "@emlDrawViolinPlot: data, """ + .title$ + """, """
     ... + .xLabel$ + """, """ + .yLabel$ + """, " + string$ (.vpW) + ", "
     ... + string$ (.vpH) + ", """ + .colorMode$ + """, "
     ... + string$ (.gridMode) + ", """ + .groupCol$ + """, """
-    ... + .valueCol$ + """, " + fixed$ (emlDrawViolinPlot.yMin, 6) + ", "
-    ... + fixed$ (emlDrawViolinPlot.yMax, 6)
+    ... + .valueCol$ + """, " + string$ (.vMin) + ", "
+    ... + string$ (.vMax)
 
     .api$ = "In the GUI: EML Graphs..., type Violin Plot,"
     ... + newline$ + "Group column """ + .groupCol$
@@ -5028,7 +5079,8 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
     # Group labels and x-axis label (pre-measured)
     @emlDrawCategoricalXAxis: .nGroups, .axisXMin, .axisXMax, .yMin, .yMax, .xLabel$
     if emlShowAxisNameY
-        Text left: "yes", .yLabel$
+        @emlDrawAxisNameLeft: .yLabel$, emlDrawAlignedMarksLeft.maxWideLabelMM,
+        ... .xMin, .xMax, .yMin, .yMax
     endif
 
     @emlDrawTitle: .title$, .vpW, .vpH, .xMin, .xMax, .yMin, .yMax
@@ -5566,7 +5618,25 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
         Colour: emlSetAdaptiveTheme.textColor$
         if .yLabel$ <> ""
             if emlShowAxisNameY
-                Text left: "yes", .yLabel$
+                # RULING 7, and the one of the seven sites that is worth a
+                # sentence of its own. This is the SHARED name of a faceted
+                # figure, drawn in the full viewport over a 0..1 window,
+                # while the ticks it must clear were drawn per panel inside
+                # the loop above -- so the measurement read here is the LAST
+                # panel's. That is the right number and not merely an
+                # available one: the panels are stacked vertically at one
+                # shared left edge over one shared 0 .. .sharedYMax range, so
+                # every panel carries identical tick labels.
+                #
+                # Reading the variable at all is safe because this branch is
+                # unreachable without the loop. It is entered on
+                # .displayMode = 2, and Step 2 forces .displayMode = 1
+                # whenever .nGroups = 1 -- an ungrouped or single-group table
+                # asked for facets is drawn as an overlap and leaves through
+                # @emlDrawAxes instead. Checked by probe rather than by
+                # reading: an instrumented copy of this line never printed.
+                @emlDrawAxisNameLeft: .yLabel$,
+                ... emlDrawAlignedMarksLeft.maxWideLabelMM, 0, 1, 0, 1
             endif
         endif
         if .xLabel$ <> ""
@@ -5973,7 +6043,8 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     # Category labels and x-axis label (pre-measured)
     @emlDrawCategoricalXAxis: .nCats, .xMin, .xMax, .yMin, .yMax, .xLabel$
     if emlShowAxisNameY
-        Text left: "yes", .yLabel$
+        @emlDrawAxisNameLeft: .yLabel$, emlDrawAlignedMarksLeft.maxWideLabelMM,
+        ... .xMin, .xMax, .yMin, .yMax
     endif
 
     @emlDrawTitle: .title$, .vpW, .vpH, .xMin, .xMax, .yMin, .yMax
@@ -6289,7 +6360,8 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
     # Category labels and x-axis label (pre-measured)
     @emlDrawCategoricalXAxis: .nCats, .xMin, .xMax, .yMin, .yMax, .xLabel$
     if emlShowAxisNameY
-        Text left: "yes", .yLabel$
+        @emlDrawAxisNameLeft: .yLabel$, emlDrawAlignedMarksLeft.maxWideLabelMM,
+        ... .xMin, .xMax, .yMin, .yMax
     endif
 
     @emlDrawTitle: .title$, .vpW, .vpH, .xMin, .xMax, .yMin, .yMax
