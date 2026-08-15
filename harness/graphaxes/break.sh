@@ -35,6 +35,11 @@
 # that fails to go red is a FINDING ABOUT THE CHECK, not about the damage: it
 # means the check was passing for a reason other than the one it claims.
 #
+# THE SHADOW COPIES plugin/scripts AS WELL AS plugin/graphs, since 15 Aug
+# 2026: ruling 5's repair lives in the graphs library and is REACHED by the
+# describe wrapper, so one of v62's checks reads that wrapper and one break
+# case damages it. A symlink would have put the damage in the real tree.
+#
 # Usage:  bash harness/graphaxes/break.sh [case-substring]
 # Output: harness/graphaxes/out/BREAKS.tsv   case, mode, went-red, n failed
 #         harness/graphaxes/out/break_<case>.v62.log   the red run itself
@@ -71,6 +76,10 @@ build_shadow () {
     ln -s "$REPO/plugin/stats"   "$BRK/plugin/stats"
     ln -s "$REPO/plugin/sprites" "$BRK/plugin/sprites"
     cp -r "$REPO/plugin/graphs"  "$BRK/plugin/graphs"
+    # plugin/scripts is COPIED rather than symlinked because one check reads
+    # it: that the describe wrapper still routes its header repair through
+    # @emlCleanConvertedTable. A symlink would put the damage in the real tree.
+    cp -r "$REPO/plugin/scripts" "$BRK/plugin/scripts"
     cp "$REPO/harness/graphaxes/axes_drive.praat"   "$BRK/harness/graphaxes/"
     cp "$REPO/harness/graphaxes/stereo_drive.praat" "$BRK/harness/graphaxes/"
     cp "$OUT/AXES.tsv"   "$BRK/harness/graphaxes/out/AXES.tsv"
@@ -99,6 +108,7 @@ run_case () {
 
     local log="$OUT/break_$name.v62.log"
     EML_GRAPHS_SRC="$BRK/plugin/graphs" \
+    EML_SCRIPTS_SRC="$BRK/plugin/scripts" \
     EML_AXES_DIR="$BRK/harness/graphaxes/out" \
     EML_STEREO_DIR="$BRK/harness/graphaxes/out" \
         Rscript "$REPO/validate/v62_graphs_axes_channels.R" > "$log" 2>&1
@@ -122,6 +132,7 @@ G="$S/eml-graph-procedures.praat"
 D="$S/eml-draw-procedures.praat"
 A="$S/eml-annotation-procedures.praat"
 F="$S/eml-graphs-form.praat"
+T="plugin/scripts/eml-describe-table.praat"
 
 # ===========================================================================
 # THE EVIDENCE ITSELF. A validator that cannot tell "green" from "no evidence"
@@ -238,6 +249,90 @@ run_case wilcoxon_plus_damaged  static \
   "sed -i 's|Sum of ranks for positive differences|U for positive differences|g' $A"
 run_case wilcoxon_minus_damaged static \
   "sed -i 's|Sum of ranks for negative differences|U for negative differences|g' $A"
+
+# ===========================================================================
+# THE AXIS NAME AND ITS TICK LABELS — AUTHOR RULING 7
+# ===========================================================================
+# BOTH DIRECTIONS, and the second is the one worth having. A guard that never
+# fires leaves the collision; a guard that always fires moves every figure in
+# the plugin, and would pass any check written only against the crowded ones.
+run_case axisname_never_shifts  axes \
+  "sed -i 's|^        if .needMM > .allowMM\$|        if .needMM > 99999|' $G"
+run_case axisname_trigger_wide  axes \
+  "sed -i 's|^    .wideChars = 6\$|    .wideChars = 0|' $G"
+# THE MOST IMPORTANT BREAK OF RULING 7, and it is the fix's own worst case: a
+# shift applied to EVERY figure. It clears the collision on both crowded
+# figures and satisfies any check written only against them, while moving the
+# axis name on all 39 stress figures. margin_plain is the check that sees it.
+run_case axisname_shifts_all    axes \
+  "sed -i '/^procedure emlDrawAxisNameLeft:/,/^endproc\$/ s|^    .shiftInch = 0\$|    .shiftInch = 0.1|' $G"
+run_case axisname_bare_textleft axes \
+  "sed -i 's|^        @emlDrawAxisNameLeft: .yLabel\$, .yWideLabelMM,\$|        Text left: \"yes\", .yLabel\$\n        # was:|' $G"
+run_case axisname_allowance_big axes \
+  "sed -i 's|^        .allowMM = 0.982 \* emlSetAdaptiveTheme.bodySize\$|        .allowMM = 9.82 * emlSetAdaptiveTheme.bodySize|' $G"
+run_case axisname_no_clearance  axes \
+  "sed -i 's|^        .needMM = .wideLabelMM + .clearMM\$|        .needMM = .wideLabelMM|' $G"
+# THE CLAMP REMOVED. Without it the small-panel figure's axis name is pushed
+# past the panel's own left edge, and Praat's save -- which covers the selected
+# outer viewport and nothing else -- returns it sliced. Caught by the first-ink
+# column, not by the gap: the gap gets BIGGER as the name goes off the page.
+run_case clamp_removed          axes \
+  "sed -i 's|^            if .shiftInch > .roomInch\$|            if 0 = 1|' $G"
+run_case marks_measure_removed  axes \
+  "sed -i 's|^                @emlTickLabelWidth: .yPos, .tickExplicit, .tickDecimals\$|                # measurement removed|' $G"
+run_case maxwide_seed_removed   axes \
+  "sed -i 's|^    .maxWideLabelMM = 0\$|    # seed removed|' $G"
+# THE PREDICTOR'S WINDOW. Modelling the exponent forms is the mistake that
+# looks like an improvement: it makes the guard "more complete" and moves
+# violin_hugevalues, a figure that is correct today.
+run_case ticklabel_models_expo  axes \
+  "sed -i 's|^        elsif .mag >= 0.001 and .mag < 10000\$|        elsif .mag >= 0|' $G"
+run_case ticklabel_explicit_off axes \
+  "sed -i 's|^        .text\$ = fixed\$ (.value, .decimals)\$|        .text\$ = \"\"|' $G"
+
+# ===========================================================================
+# Column_k HOLDS SOURCE COLUMN k — AUTHOR RULING 5
+# ===========================================================================
+run_case colnum_by_position     axes \
+  "sed -i 's|^    for .iCol from .insertedCols + 1 to .nCols\$|    for .iCol from 1 to .nCols|' $G; sed -i 's|^            ... \"Column_\" + string\$ (.iCol - .insertedCols)\$|            ... \"Column_\" + string\$ (.iCol)|' $G"
+run_case colnum_offset_zero     axes \
+  "sed -i 's|^    .insertedCols = 1\$|    .insertedCols = 0|' $G"
+run_case rowlabel_bare_integers axes \
+  "sed -i 's|^            Set string value: .iRow, .rowColName\$, \"r\" + string\$ (.iRow)\$|            Set string value: .iRow, .rowColName\$, string\$ (.iRow)|' $G"
+run_case describe_bypasses_shared static \
+  "sed -i 's|^        @emlCleanConvertedTable: .tableId\$|        # shared repair bypassed|' $T"
+# THE SECOND DOOR INVENTING ITS OWN NAME. One repair, two doors, is the whole
+# reason the live evidence at door 3 is allowed to stand for door 2 as well --
+# so a rename appearing in the wrapper is a change to that argument and not a
+# detail.
+run_case describe_names_its_own   static \
+  "sed -i 's|^        .nDefaulted = 0\$|        .nDefaulted = 0\n        Rename column (by number): 2, \"Column_\" + string\\$ (2)|' $T"
+
+# ===========================================================================
+# ONE PRESS, ONE DERIVED SOUND — AUTHOR RULING 8b
+# ===========================================================================
+# THE DAMAGE LEAVES THE GATE RUNNING ON PURPOSE. Deleting the call alone
+# strands the line that reads its result and the whole leg dies at "Unknown
+# variable" -- which is red, but red for want of evidence rather than because
+# the accumulation was seen. Neutralising the read as well makes the shadow
+# behave exactly as the plugin did before this ruling: three presses, three
+# Sounds, one name.
+run_case stale_drop_removed     gui \
+  "sed -i 's|^    @emlDropStaleChannelSounds: .name\$\$|    # drop removed|' $G; sed -i 's|^    .nStale = emlDropStaleChannelSounds.nDropped\$|    .nStale = 0|' $G"
+run_case derived_not_renamed    gui \
+  "sed -i 's|^        Rename: \"eml_\" + selected\$ (\"Sound\")\$|        # rename removed|' $G"
+run_case drop_matches_user_name static \
+  "sed -i 's|\\.cand\\$ = \"eml_\" + .sourceName\\$|.cand\\$ = .sourceName\\$|g' $G"
+
+# ===========================================================================
+# THE ONE-BIN SPECTRUM — RULING 8c's PROBE, WHICH MUST STAY A PROBE
+# ===========================================================================
+# Nothing here asserts the defect is fixed; what is asserted is that the
+# measurement still measures. Break the draw and the two-bin control stops
+# drawing, and the note about the empty frame would be about the draw path
+# instead of about the bin count.
+run_case spectrum_draw_removed  axes \
+  "sed -i 's|^    Draw: .freqMin, .freqMax, .powerMin, .powerMax, \"no\"\$|    # draw removed|' $D"
 
 echo
 echo "break: results in $RESULTS"

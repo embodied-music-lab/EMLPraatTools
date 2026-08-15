@@ -42,7 +42,9 @@ TSV="$OUT/AXES.tsv"
 : > "$TSV"
 printf 'praat_version\t%s\n' "$("$PRAAT" --version 2>&1 | head -1)" >> "$TSV"
 
-for leg in steady ramp2 ticks clip collide; do
+for leg in steady ramp2 ticks clip collide \
+           margin_st margin_db margin_plain margin_panel margin_cat ticklabel \
+           coerce onebin twobin; do
     rm -f "$PREFS/pid" "$PREFS/message" 2>/dev/null
     env -u DISPLAY \
         EML_AXES_LEG="$leg" EML_AXES_OUT="$TSV" \
@@ -50,6 +52,96 @@ for leg in steady ramp2 ticks clip collide; do
         "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" --run "$DRIVE" \
         > "$OUT/$leg.log" 2>&1
 done
+
+# ---------------------------------------------------------------------------
+# THE GAP, IN PIXELS, OFF THE PAGE ITSELF — RULING 7
+# ---------------------------------------------------------------------------
+# No Praat script can read back a pixel, and the ruling is about pixels: "no
+# collision between the y-axis name and its tick labels". So the verdict is
+# taken from the rendered PNG, and it is taken the same way for the figure
+# that is supposed to have moved and the figure that is supposed not to have.
+#
+# HOW IT WORKS, because a one-liner that measures the wrong thing is worse
+# than no measurement. `-resize x1!` collapses the image to a single row of
+# column MEANS after thresholding, so each output pixel is "how much ink is in
+# this column" — the frame's own left edge, being a full-height line, is the
+# darkest column in the left half of the picture and is found by taking the
+# minimum. Everything to the LEFT of it is margin: the rotated axis name
+# first, then the tick numbers. The gap asserted on is the white space between
+# the END of the first ink run and the START of the second.
+#
+# ImageMagick rather than Python: harness/stress_graphs.sh already depends on
+# `convert` for its blank-frame verdict, and a second image toolchain is a
+# second thing that can be missing on a reviewer's machine. Cross-checked on
+# the same six figures against an independent PIL/numpy reading, 15 Aug 2026 —
+# same frame column, same runs, same gap, to the pixel.
+margin_gap () {
+    convert "$1" -colorspace Gray -threshold 78% -resize x1! txt:- 2>/dev/null \
+    | awk -F'[,:( ]+' '/^[0-9]/ {print $1, $4}' \
+    | awk '
+        { col[NR-1] = $2; n = NR }
+        END {
+            best = 256; fl = -1
+            for (i = 0; i < n / 2; i++) if (col[i] < best) { best = col[i]; fl = i }
+            inrun = 0; nr = 0
+            for (i = 0; i < fl; i++) {
+                if (col[i] < 255) { if (!inrun) { s = i; inrun = 1 }; e = i }
+                else if (inrun)   { nr++; rs[nr] = s; re[nr] = e; inrun = 0 }
+            }
+            if (inrun) { nr++; rs[nr] = s; re[nr] = e }
+            if (nr >= 2) print rs[2] - re[1] - 1; else print -1
+        }'
+}
+
+# WHERE THE LEFTMOST INK OF THE MARGIN STARTS. Same column profile; the first
+# ink column of the whole picture. Zero means the axis name is touching the
+# edge of the saved image, which is what a cut name looks like.
+margin_name_left () {
+    convert "$1" -colorspace Gray -threshold 78% -resize x1! txt:- 2>/dev/null \
+    | awk -F'[,:( ]+' '/^[0-9]/ {print $1, $4}' \
+    | awk '{ if ($2 < 255 && !seen) { print $1; seen = 1 } }'
+}
+
+if command -v convert >/dev/null 2>&1; then
+    for leg in margin_st margin_db margin_plain margin_panel margin_cat; do
+        if [[ -s "$OUT/pic_$leg.png" ]]; then
+            printf '%s_gap_px\t%s\n' "$leg" "$(margin_gap "$OUT/pic_$leg.png")" \
+                >> "$TSV"
+            # AND WHERE THE NAME'S OWN INK STARTS. Praat saves the selected
+            # outer viewport and nothing outside it, so a name pushed past the
+            # panel edge comes back sliced -- and a slice shows up here as ink
+            # in column 0. Reported for every margin figure, shifted or not.
+            printf '%s_name_left_px\t%s\n' "$leg" \
+                "$(margin_name_left "$OUT/pic_$leg.png")" >> "$TSV"
+        fi
+    done
+    # RULING 8c, measured the same way: how much ink is inside the frame of
+    # the one-bin spectrum. The crop is the plot interior of a 6x4 figure at
+    # 300 dpi -- the theme's own margins, 0.84" left and right, 0.39" top and
+    # 0.5" bottom, taken in and rounded inwards so no frame line is counted as
+    # data. A non-zero count means something was drawn; zero means the frame
+    # is empty. The first version of this crop took the middle half of the
+    # picture and reported the CONTROL as empty too, because the two-bin trace
+    # runs along the top tenth of the frame -- a measurement that agrees with
+    # the finding for the wrong reason is how a harness stops being evidence.
+    if [[ -s "$OUT/pic_onebin.png" ]]; then
+        printf 'onebin_interior_ink\t%s\n' \
+            "$(convert "$OUT/pic_onebin.png" -crop 1280x920+260+125 +repage \
+               -colorspace Gray -threshold 78% \
+               -format '%[fx:int(w*h*(1-mean))]' info: 2>/dev/null)" >> "$TSV"
+    fi
+    # AND THE SAME FIGURE WITH TWO BINS IN RANGE, which is the control: if the
+    # two-bin draw were empty as well the finding would be about something
+    # else entirely, and the count below is what says it is not.
+    if [[ -s "$OUT/pic_twobin.png" ]]; then
+        printf 'twobin_interior_ink\t%s\n' \
+            "$(convert "$OUT/pic_twobin.png" -crop 1280x920+260+125 +repage \
+               -colorspace Gray -threshold 78% \
+               -format '%[fx:int(w*h*(1-mean))]' info: 2>/dev/null)" >> "$TSV"
+    fi
+else
+    printf 'margin_measurement\tno convert(1) on PATH\n' >> "$TSV"
+fi
 
 echo "axes: wrote $TSV"
 grep -c . "$TSV" | sed 's/^/axes: rows /'

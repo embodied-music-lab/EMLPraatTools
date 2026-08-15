@@ -52,6 +52,24 @@ procedure makeMono
     ... "0.4*sin(2*pi*220*x)"
 endproc
 
+# HOW MANY SOUNDS IN THE OBJECT LIST BEGIN WITH THIS NAME. Walked by id
+# rather than asked for by name, because ruling 8b's defect is precisely that
+# a name stops identifying one object: `selectObject: "Sound x_ch1"` answers
+# with one of however many there are and reports nothing about the rest.
+procedure countPrefix: .prefix$
+    .n = 0
+    .len = length (.prefix$)
+    for .i from 1 to 400
+        nocheck selectObject: .i
+        if numberOfSelected ("Sound") = 1
+            .nm$ = selected$ ("Sound")
+            if left$ (.nm$, .len) = .prefix$
+                .n = .n + 1
+            endif
+        endif
+    endfor
+endproc
+
 # Mean F0 of a Sound, through the plugin's own canonical pitch call.
 procedure meanF0: .soundId
     selectObject: .soundId
@@ -154,6 +172,45 @@ elsif leg$ = "choices"
         Remove
     endfor
 
+# ---------------------------------------------------------------------------
+# GATE_REPEAT — RULING 8b. Three presses of the gate on ONE stereo Sound, the
+# way a user draws three figures from one recording.
+#
+# THE DEFECT IS INVISIBLE TO A SINGLE PRESS, which is why it needs its own
+# leg: every press returns a correct Sound, with correct samples, correctly
+# named. What was wrong is what the press before it left behind — after three
+# presses there were three Sounds called "stereoTone_ch1" in the Objects
+# window, and `selectObject: "Sound stereoTone_ch1"` then answers with one of
+# the three with no way to say which. Counted by WALKING THE OBJECT LIST,
+# because a count of one taken by name is exactly what the defect makes
+# impossible.
+#
+# The original must still be there at the end of all three. A cleanup that
+# collected the user's own recording would be a far worse defect than the
+# clutter it tidied.
+# ---------------------------------------------------------------------------
+elsif leg$ = "gate_repeat"
+    @makeStereo
+    snd = makeStereo.id
+    selectObject: snd
+    srcName$ = selected$ ("Sound")
+    @emit: "repeat_source_name", srcName$
+
+    for press from 1 to 3
+        selectObject: snd
+        @emlGraphsChannelGate: snd, "waveform"
+        got = emlGraphsChannelGate.resultId
+        selectObject: got
+        @emit: "repeat_press" + string$ (press) + "_result_name",
+        ... selected$ ("Sound")
+        @countPrefix: "eml_" + srcName$
+        @emit: "repeat_press" + string$ (press) + "_derived",
+        ... string$ (countPrefix.n)
+        @countPrefix: srcName$
+        @emit: "repeat_press" + string$ (press) + "_source_present",
+        ... string$ (countPrefix.n)
+    endfor
+
 else
     @emit: "error", "unknown leg"
 endif
@@ -165,5 +222,6 @@ endif
 # what makes a leg terminate on its own rather than be killed on a timeout,
 # and a leg that had to be killed cannot be told from one that hung.
 if leg$ = "gate_waveform" or leg$ = "gate_pitch" or leg$ = "mono_silent"
+... or leg$ = "gate_repeat"
     Quit
 endif

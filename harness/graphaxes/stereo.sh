@@ -147,8 +147,13 @@ pausewin () {
 # mono recordings are left alone would pass on a slow machine for the wrong
 # reason. Both kinds of leg wait the same number of seconds.
 # ---------------------------------------------------------------------------
+# $4 = HOW MANY DIALOGS TO ANSWER, default one. The repeat leg for ruling 8b
+# raises three from one process, and a presser that answered only the first
+# would leave the other two on screen and the leg would be killed on the
+# timeout -- which reads as "the gate hung", not as "the cleanup is missing".
 runleg () {
     local leg="$1" wait="$2" waited=0 seen=0 info wid title
+    local presses="${4:-1}" answered=0
     # A STALE LOCK reads as a harness bug: Praat exits with "An instance of
     # Praat that is not me is already running". Only these two files are
     # removed, and only from this harness's own scratch pref dir.
@@ -168,14 +173,21 @@ runleg () {
     PRAAT_PID=$!
     sleep 6
 
-    while [[ $waited -lt $wait ]]; do
+    while [[ $waited -lt $wait && $answered -lt $presses ]]; do
         if info=$(pausewin); then
             wid=$(printf '%s' "$info" | cut -f1)
             title=$(printf '%s' "$info" | cut -f2)
             seen=1
-            printf '%s\t%s\n' "${leg}_dialog_title" "$title" >> "$TSV"
-            DISPLAY="$DISP" import -window "$wid" \
-                "$SHOTS/${leg}_dialog.png" 2>/dev/null
+            # The title is recorded once. A repeat leg raises the same dialog
+            # three times and three identical rows would only make the TSV
+            # ambiguous about which press each belonged to.
+            if [[ $answered -eq 0 ]]; then
+                printf '%s\t%s\n' "${leg}_dialog_title" "$title" >> "$TSV"
+            fi
+            if [[ $answered -eq 0 ]]; then
+                DISPLAY="$DISP" import -window "$wid" \
+                    "$SHOTS/${leg}_dialog.png" 2>/dev/null
+            fi
             # THE PRESS. XTEST through an ACTIVATED window, never
             # `xdotool key --window <id>`: that sends a synthetic event GTK
             # ignores, which is why the first two runs of this harness saw
@@ -199,7 +211,8 @@ runleg () {
             sleep 1
             DISPLAY="$DISP" xdotool key --clearmodifiers Return 2>/dev/null
             sleep 3
-            break
+            answered=$((answered + 1))
+            continue
         fi
         # The process finishing without a dialog is a legitimate outcome for
         # some legs and the defect for others. Either way, stop waiting.
@@ -209,6 +222,7 @@ runleg () {
     done
 
     printf '%s\t%s\n' "${leg}_dialog_seen" "$seen" >> "$TSV"
+    printf '%s\t%s\n' "${leg}_dialogs_answered" "$answered" >> "$TSV"
 
     # BOUNDED, THEN KILLED BY PID. The script ends with `Quit`, and when that
     # works the process is gone within a second or two. When it does not --
@@ -233,6 +247,12 @@ runleg () {
 runleg gate_waveform 25
 runleg gate_pitch    25 Down
 runleg mono_silent   25
+# RULING 8b: three presses of the gate on one stereo Sound, three dialogs
+# answered with the default (Mix to mono), and the object list counted after
+# each. No pre-key, so every press makes the same choice -- which is the
+# accumulating case, and the one a user hits by drawing three figures from one
+# recording.
+runleg gate_repeat   45 "" 3
 
 # The two legs that need no display at all: what the plugin used to do, and
 # what each of the three choices does. Run headless so they cannot be blamed
