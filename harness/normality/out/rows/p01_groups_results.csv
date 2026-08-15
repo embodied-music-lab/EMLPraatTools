@@ -14,5 +14,5 @@ p01_groups,wizard,n,32
 p01_groups,wizard,skewness,0.3563062533939007
 p01_groups,wizard,kurtosis,-0.8721170284626591
 p01_groups,wizard,recommendation.code,1
-p01_groups,wizard,output.chars,144
+p01_groups,wizard,output.chars,142
 

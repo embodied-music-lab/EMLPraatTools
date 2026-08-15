@@ -14,5 +14,5 @@ g03_severe,wizard,n,60
 g03_severe,wizard,skewness,2.650264784721308
 g03_severe,wizard,kurtosis,9.260760345517875
 g03_severe,wizard,recommendation.code,2
-g03_severe,wizard,output.chars,240
+g03_severe,wizard,output.chars,233
 

@@ -5,8 +5,8 @@ g02_largen,analysis,sd,8.419226718118086
 g02_largen,analysis,median,19.75
 g02_largen,analysis,skewness,1.6226207908578327
 g02_largen,analysis,kurtosis,4.1826970798421215
-g02_largen,analysis,statistic,0.8827277652931932
-g02_largen,analysis,p.value,3.267402526926113e-05
+g02_largen,analysis,statistic,0.882727765293193
+g02_largen,analysis,p.value,3.267402526926051e-05
 g02_largen,analysis,sw.usable,1
 g02_largen,analysis,output.chars,1610
 g02_largen,wizard,n.available,60
@@ -14,5 +14,5 @@ g02_largen,wizard,n,60
 g02_largen,wizard,skewness,1.6226207908578327
 g02_largen,wizard,kurtosis,4.1826970798421215
 g02_largen,wizard,recommendation.code,1
-g02_largen,wizard,output.chars,225
+g02_largen,wizard,output.chars,222
 
