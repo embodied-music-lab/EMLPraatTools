@@ -148,14 +148,45 @@ elsif nTables = 0 and nToR = 1
     displayTable$ = replace$ (torName$, "_", " ", 0)
     ... + " (converted)"
     hasTable = 1
-    appendInfoLine: "Converted TableOfReal """, torName$,
-    ... """ to Table. Row labels are in column ""Group""."
+    # THE SAME DEFAULT ROW LABELS AS EVERY OTHER DOOR, r1..rn. The wizard
+    # coerces on its own rather than through @emlWrapperInit — a fourth
+    # coercion site, and one that names its label column "Group" instead of
+    # "row" — so it had none of the conversion-side repair. On a TableOfReal
+    # the user never labelled, `To Table:` writes the literal "?" into every
+    # cell of that column, and the sentence below then claimed row labels
+    # were in it. Filling the gaps here makes the claim true and keeps the
+    # column classifying as labels rather than as a measurement.
+    #
+    # WHAT IS DELIBERATELY NOT DONE HERE. The column is still called "Group",
+    # not "row", and the converted Table is still not renamed
+    # eml_converted_<source> the way the other three doors now rename it.
+    # Both are visible to the user — one in every column menu on this path,
+    # one in the object list — so both are the author's call, not a repair.
+    @eml_defaultRowLabels: tableId, "Group"
+    if eml_defaultRowLabels.nDefaulted > 0
+        appendInfoLine: "Converted TableOfReal """, torName$,
+        ... """ to Table. Row labels are in column ""Group""; ",
+        ... eml_defaultRowLabels.nDefaulted, " row(s) had none and were "
+        ... + "given default labels r1..rn."
+    else
+        appendInfoLine: "Converted TableOfReal """, torName$,
+        ... """ to Table. Row labels are in column ""Group""."
+    endif
     appendInfoLine: ""
 elsif nTables = 0 and nToR = 0
     hasTable = 0
 else
-    exitScript: "Please select one Table, one TableOfReal, "
-    ... + "or nothing (for example data)."
+    # THE PLUGIN'S OWN SURFACE (NEW-G12-4). A raw `exitScript:` with a
+    # message is shown by Praat as its own error window with "Script exited.
+    # ... Command ... not executed." under it, which is the interpreter's
+    # stack in place of a refusal. "entry" mode is the one written for a
+    # refusal that happens before any form exists — it names what to select
+    # and offers no Back, because there is nothing behind it yet.
+    @emlErrorDialog: "The wizard works on one table at a time, and the "
+    ... + "Objects window currently has " + string$ (nTables + nToR)
+    ... + " suitable object(s) selected.",
+    ... "one Table|one TableOfReal|nothing at all, for example data", "entry"
+    exitScript: ""
 endif
 
 
@@ -215,7 +246,14 @@ if hasTable
     @emlTableColumnNames: tableId
     nCols = emlTableColumnNames.nCols
     if nCols < 2
-        exitScript: "Table needs at least two columns."
+        # Same routing as the selection refusal above. No remedy is offered:
+        # every wizard route needs two columns, so there is nothing else to
+        # send the user to, and naming a menu entry that would also refuse is
+        # worse than saying nothing.
+        @emlErrorDialog: "The wizard compares or relates two things, so it "
+        ... + "needs at least two columns, and """ + displayTable$
+        ... + """ has " + string$ (nCols) + ".", "", "entry"
+        exitScript: ""
     endif
 endif
 
@@ -2039,7 +2077,19 @@ elsif wizDrawSource$ = "paired"
     # convention only — Rule 5C). (L4)
     selectObject: tableId
     plNRows = Get number of rows
-    plLongId = Create Table with column names: "pairedLong",
+    # NAMED AFTER THE USER'S TABLE, NOT AFTER THE RESHAPE. This read
+    # "pairedLong", and the graph layer takes both its title and its save
+    # stem from the name of the object it is drawing — so the wizard's
+    # spaghetti plot was titled "... (pairedLong)" over a figure of the
+    # user's data and saved as pairedLong_Spaghetti_Plot_<stamp>: a
+    # deliverable named after a transient the user never created and never
+    # sees again. eml-compare-paired.praat carried the identical line and was
+    # fixed on 15 August 2026; this is the same fix, and the note above that
+    # one explains why the suffix is "_long" rather than the bare table name.
+    # The two Tables sit side by side in the object list for the length of
+    # the draw, and two Tables sharing a name is exactly the ambiguity
+    # @emlRecordSource counts and warns about.
+    plLongId = Create Table with column names: tableName$ + "_long",
     ... plNRows * 2, { "Subject", "Condition", "Value" }
     for plIRow from 1 to plNRows
         selectObject: tableId

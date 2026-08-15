@@ -82,7 +82,18 @@ for iCol from 1 to nCols
 endfor
 
 if nNumericCols = 0
-    exitScript: "No numeric columns found in the selected Table."
+    # ROUTED THROUGH THE PLUGIN'S ERROR SURFACE (NEW-G12-4). This was a raw
+    # `exitScript:` with a message, which Praat presents in its own error
+    # window under "Script exited. ... Command ... not executed." — the
+    # interpreter's stack where a refusal belongs. "entry" mode is the one
+    # written for a refusal that happens before the dialog exists: it names
+    # what was looked for, it does not offer a Back there is nothing behind,
+    # and it does not suggest another test, because no other EML tool reads a
+    # table with no numeric column either.
+    @emlErrorDialog: "Normality is a property of a numeric variable, and "
+    ... + "none of the " + string$ (nCols) + " column(s) in """
+    ... + displayTable$ + """ reads as numbers.", "", "entry"
+    exitScript: ""
 endif
 
 # ── Main loop ─────────────────────────────────────────────────────────────

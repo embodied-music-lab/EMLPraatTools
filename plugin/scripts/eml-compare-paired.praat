@@ -4,7 +4,20 @@
 # Purpose: Compare two paired columns using parametric (paired t-test)
 #          and/or nonparametric (Wilcoxon signed-rank) tests.
 # Date: 11 May 2026
-# Version: 3.1
+# Version: 3.2
+# v3.2: NEW-G3-1 — "New" after a Draw is a fresh analysis on the user's own
+#        table again. The spaghetti plot is drawn from a wide->long reshape,
+#        and a reshape is a Table like any other: drawing it re-pointed the
+#        shared column-name array at IT, and the entry form — which is
+#        rebuilt from that array every pass — came back offering
+#        Subject / Condition / Value, the reshape's ROLE names, on a reshape
+#        that had already been removed. Run then died with "Column not
+#        found: Condition" and Back returned to the same form. The form now
+#        re-reads the user's table on every pass, so what it offers is a
+#        property of the form rather than a hope about what the last callee
+#        left behind. The reshape is also named after the user's table
+#        instead of "pairedLong", so the figure's automatic title and its
+#        save stem name something the user can recognise.
 # v3.1: D90 — the spaghetti plot's axis labels no longer come from the
 #        wide->long reshape's role names ("Condition", "Value"). The measure
 #        and the contrast are derived from the two column names and
@@ -64,6 +77,32 @@ selGroupIdx = 1
 
 allDone = 0
 repeat
+    # THE FORM IS BOUND TO THE USER'S TABLE, ON EVERY PASS. (NEW-G3-1)
+    #
+    # The option lists below are built out of emlTableColumnNames.name$[],
+    # which is a SHARED array: @emlTableColumnNames overwrites it for whatever
+    # Table it is last handed, and every procedure that needs column names
+    # calls it. @emlWrapperInit filled it once, before this loop, and the loop
+    # then trusted it to still describe this table on the second pass.
+    #
+    # It does not. The Draw branch below reshapes to long format and hands the
+    # RESHAPE to @emlGraphsWorkflow, which reads its columns — so by the time
+    # "New" comes back here the array holds Subject / Condition / Value, the
+    # reshape's role names, and the reshape itself has been removed. The form
+    # offered three columns that no longer existed anywhere, the user's real
+    # columns were unreachable, and Run dead-ended in "Column not found:
+    # Condition" with Back returning to the same form. Only Quit recovered.
+    #
+    # Re-reading here, at the point of use, is what makes that unrepeatable.
+    # It costs one query per pass and it does not depend on any callee
+    # promising to leave the array as it found it — a promise no procedure in
+    # this plugin makes, and one that a future draw path would break again.
+    # nCols is refreshed with it: the array is only ever initialised out to
+    # the CURRENT table's column count, so a stale count would read names left
+    # over from a wider table beyond the end of the new one.
+    @emlTableColumnNames: tableId
+    nCols = emlTableColumnNames.nCols
+
     beginPause: "Compare Paired Observations"
         comment: "📋 Table: " + tableName$
         comment: "─────────────────────────────────────"
@@ -180,11 +219,33 @@ repeat
                     selectObject: tableId
                     nRows = Get number of rows
 
+                    # NAMED AFTER THE USER'S TABLE, NOT AFTER ITS OWN ROLE.
+                    #
+                    # The graph layer composes a figure's automatic title and
+                    # its save stem from the name of the object it is drawing,
+                    # and the object it is drawing here is this reshape. Called
+                    # "pairedLong" it produced "Jitter by Condition and Subject
+                    # (pairedLong)" over a figure of the user's data, and saved
+                    # it as pairedLong_Spaghetti_Plot_<stamp> — a deliverable
+                    # named after a transient the user never created, never
+                    # named and never sees again. That is D18's finding about
+                    # the CSV filename, arriving through the two doors D18 did
+                    # not cover.
+                    #
+                    # "_long" rather than the table's bare name: the two live
+                    # side by side in the object list for the length of the
+                    # draw, and two Tables sharing one name is exactly the
+                    # ambiguity @emlRecordSource counts and warns about
+                    # (stats/eml-record.praat) — a recorded session would have
+                    # paid for this title in a warning on its emitted script.
+                    # The suffix keeps the name unique, keeps it connected to
+                    # the table it came from, and says what it is.
+                    longName$ = tableName$ + "_long"
                     if hasGroupCol
-                        longTableId = Create Table with column names: "pairedLong",
+                        longTableId = Create Table with column names: longName$,
                         ... nRows * 2, { "Subject", "Condition", "Value", "Group" }
                     else
-                        longTableId = Create Table with column names: "pairedLong",
+                        longTableId = Create Table with column names: longName$,
                         ... nRows * 2, { "Subject", "Condition", "Value" }
                     endif
 

@@ -39,6 +39,23 @@ include eml-lib.praat
 @emlRecordInit
 
 if emlRecordActive = 0
+    # The same distinction 'Stop recording and open' makes, and for the same
+    # reason: a recording that ended because its buffer was removed from the
+    # Objects window leaves the meta table behind, and that is the only trace
+    # there is. Saying so is the difference between "you never started one"
+    # and "yours stopped at some point and nothing told you".
+    @emlRecordOrphanCheck
+    if emlRecordOrphanCheck.orphan = 1
+        writeInfoLine: "EML: the recording ended when its buffer was removed."
+        appendInfoLine: ""
+        appendInfoLine: "'Table emlRecordBuffer' is gone from the Objects"
+        appendInfoLine: "window — that table IS the recording, so removing it"
+        appendInfoLine: "stopped it. Anything run since was not captured and"
+        appendInfoLine: "cannot be recovered."
+        appendInfoLine: ""
+        appendInfoLine: "Run 'Record script' to start again."
+        goto END_RECORD_SAVE
+    endif
     writeInfoLine: "EML: no recording is in progress."
     appendInfoLine: ""
     appendInfoLine: "Run 'Record script' first, then the analyses and"
@@ -71,10 +88,29 @@ if variableExists ("config_lastPNGFolder$")
     endif
 endif
 
+# ONE PLUGIN, ONE NAMING SCHEME (audit §6, fixed 14 August 2026).
+#
+# This dialog used to propose the bare name "eml_recorded_workflow.praat" and
+# resolve a collision AFTER the press, silently, by appending _1. The Save
+# panel in stats/eml-output.praat resolves the same question the other way and
+# has done since the author's 14 August ruling: it proposes a STAMPED name in
+# the dialog, so the user sees the name they are about to get, one stamp per
+# press shared by every file that press writes, and the numeric suffix is only
+# a backstop for the case a stamp cannot separate. Two schemes in one plugin
+# is one scheme too many, and this is the junior of the two: the panel's rule
+# is the author's, it is the one v51 already pins, and it is the one that
+# sorts chronologically in a file browser.
+#
+# So the stamp is taken ONCE, here, before the dialog -- @emlFileStamp is
+# called exactly once per press for exactly that reason -- and it arrives in
+# an editable field, which is where a user who does not want it deletes it.
+@emlFileStamp
+proposed$ = "eml_recorded_workflow_" + emlFileStamp.result$ + ".praat"
+
 beginPause: "Stop recording and save"
     comment: "Recorded " + string$ (nSteps) + " step(s)."
     comment: "The recording ends when this is saved."
-    word: "File name", "eml_recorded_workflow.praat"
+    word: "File name", proposed$
     folder: "Folder", defaultFolder$
 clicked = endPause: "Cancel", "Save", 2, 1
 
@@ -84,15 +120,67 @@ endif
 
 name$ = file_name$
 if name$ = ""
-    name$ = "eml_recorded_workflow.praat"
+    name$ = proposed$
 endif
 if right$ (name$, 6) <> ".praat"
     name$ = name$ + ".praat"
 endif
-outPath$ = folder$ + "/" + name$
+
+# THE FOLDER IS MADE, AND MADE ALL THE WAY DOWN (NEW-G11-4, 14 August 2026).
+#
+# `folder:` is a freely editable text field with a Browse button beside it, so
+# a user can type a path that does not exist yet -- and typing one is the
+# natural thing to do when you want this session's script in its own place.
+# This file had no createFolder: at all, and the audit walked straight into
+# what that costs: Praat's own abort, quoting the plugin's internals
+#
+#     Script line 15215 not performed or completed:
+#     « writeFileLine: .outPath$, emlRecordRender.text$ »
+#     ... or click Cancel in that window.
+#
+# -- raw source at the user, and an instruction pointing at a pause window
+# that had already closed. The panel has done this correctly since 13 August;
+# this command diverged from it.
+#
+# AND createFolder: IS mkdir, NOT mkdir -p. Measured on 6.6.30, 14 Aug 2026:
+# handed a path whose parents are absent it creates nothing. So the ancestors
+# are walked explicitly -- @emlRecordMakeFolder in stats/eml-record.praat.
+outFolder$ = folder$
+while endsWith (outFolder$, "/") and length (outFolder$) > 1
+    outFolder$ = left$ (outFolder$, length (outFolder$) - 1)
+endwhile
+@emlRecordMakeFolder: outFolder$
+
+# ASKED, NOT ASSUMED. A folder can be unmakeable (a read-only mount, a
+# permission the user does not have, a path element that is really a file)
+# and the flush is the wrong place to find out: @emlRecordFlush's writeFileLine
+# aborts the script, and an abort here would end the session that the whole
+# command exists to preserve. So the target is probed with a real write first,
+# and a refusal is a sentence rather than a stack trace.
+probe$ = outFolder$ + "/.eml_record_write_probe"
+nocheck deleteFile: probe$
+nocheck writeFileLine: probe$, "eml"
+if not fileReadable (probe$)
+    writeInfoLine: "EML: that folder cannot be written to."
+    appendInfoLine: ""
+    appendInfoLine: outFolder$
+    appendInfoLine: ""
+    appendInfoLine: "Nothing was saved and the recording is STILL RUNNING —"
+    appendInfoLine: "no steps were lost. Run 'Stop recording and save' again"
+    appendInfoLine: "and choose a folder you can write to, or use"
+    appendInfoLine: "'Stop recording and open' to get the script into an"
+    appendInfoLine: "editor and save it from there."
+    goto END_RECORD_SAVE
+endif
+nocheck deleteFile: probe$
+
+outPath$ = outFolder$ + "/" + name$
 
 # Non-destructive, the same rule the figure save path follows: an existing
-# file is never overwritten silently.
+# file is never overwritten silently. A BACKSTOP, not the naming scheme --
+# the stamp above is what normally separates two saves, and this catches the
+# two cases a stamp cannot: two presses inside one second, and a user who
+# deleted the stamp out of the field and reused a name.
 if fileReadable (outPath$)
     @emlGenerateUniquePath: outPath$
     outPath$ = emlGenerateUniquePath.result$

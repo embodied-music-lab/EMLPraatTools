@@ -30,9 +30,39 @@
 # appropriate application of this code.
 # ============================================================================
 
+# NEW-G12-4, the launcher's half. The same refusal, in the same words, as
+# @refuseSelection in eml-edit-table.praat -- and written out here rather
+# than called, because this file's whole job is to open the editor window
+# before handing over, so it cannot include the editor to borrow one
+# procedure from it (`include` is a textual paste and would run the editor's
+# own entry block). Neither file may include eml-lib.praat to reach
+# @emlErrorDialog: a cell editor does not load 26,000 lines of statistics and
+# graphing for a dialog. If the author would rather these were one surface,
+# it is one include and two call changes, in both files.
+#
+# Comments are hand-broken under 60 characters: APPENDIX_F S0-WRAP.
 nTables = numberOfSelected ("Table")
 if nTables <> 1
-    exitScript: "Select exactly one Table object."
+    beginPause: "Cannot Open the Table Editor"
+        comment: "⚠  The editor did not open."
+        comment: "──────────────────────────────────────────────"
+        if nTables = 0
+            comment: "No Table object is selected."
+        else
+            comment: "There are " + string$ (nTables) + " Table objects"
+            comment: "selected, and the editor edits one at a time."
+        endif
+        comment: ""
+        comment: "The editor works on a single Table, because every"
+        comment: "cell it writes has to belong to a table it can"
+        comment: "name without ambiguity."
+        comment: "──────────────────────────────────────────────"
+        comment: "Nothing has been changed."
+        comment: ""
+        comment: "Click OK, select exactly one Table in the"
+        comment: "Objects window, then open the editor again."
+    clicked = endPause: "OK", 1, 0
+    exitScript: ""
 endif
 View & Edit
 runScript: "eml-edit-table.praat", "button"

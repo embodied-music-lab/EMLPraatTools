@@ -73,7 +73,26 @@ appendInfoLine: "Every EML analysis and figure from now on is added to one"
 appendInfoLine: "script. Finish with 'Stop recording and open' to read it in"
 appendInfoLine: "an editor, or 'Stop recording and save' to file it directly."
 appendInfoLine: ""
-appendInfoLine: "A Table called 'emlRecordBuffer' now sits in the Objects"
-appendInfoLine: "window. That IS the recording — removing it ends the session."
+# BOTH TABLES ARE NAMED, because both are visible (audit §6, 14 Aug 2026).
+#
+# This message used to name emlRecordBuffer and stop there, while the Objects
+# window filled with emlRecordMeta as well — and, after the first recorded
+# step, the shipped phrase table too. A user looking at three unexplained
+# objects with the plugin's prefix on them has been told about one of them,
+# which is worse than being told about none: it reads as though the other two
+# arrived from somewhere else.
+appendInfoLine: "Two Tables now sit in the Objects window:"
+appendInfoLine: ""
+appendInfoLine: "    emlRecordBuffer   the steps — this IS the recording,"
+appendInfoLine: "                      and removing it ends the session"
+appendInfoLine: "    emlRecordMeta     when it started and what it ran on"
+appendInfoLine: ""
+appendInfoLine: "A third, 'eml-record-phrases', appears after the first step;"
+appendInfoLine: "it is the shipped wording the script is written from. Leave"
+appendInfoLine: "all three alone and they are cleaned up when you stop."
+appendInfoLine: ""
+appendInfoLine: "'Stop recording and open' puts the script in an editor and"
+appendInfoLine: "keeps a review copy at:"
+appendInfoLine: preferencesDirectory$ + "/eml-recorded-scripts"
 
 label END_RECORD_START

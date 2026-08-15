@@ -6,7 +6,20 @@
 #          repair the cases where the intended value is unambiguous.
 #
 # Date: 6 August 2026
-# Version: 1.0
+# Version: 1.1
+# v1.1: NEW-G10-4 — file mode checked two things and reported on all of them.
+#        A CSV whose rows do not all carry the header's number of fields came
+#        back as "No import problems found", and Praat's own reader then
+#        refused the same file outright with "Row 3 incomplete" — the tool
+#        whose whole job is to say a file will not import said it would. Row
+#        lengths are now scanned (@emlCheckFileRowLengths), and the clean
+#        verdict enumerates the checks it is the verdict OF rather than
+#        speaking for the file as a whole.
+#        NEW-G12-4 — choosing Table mode with no Table selected refused
+#        through a raw exitScript, which Praat dresses in "Script exited.
+#        Script ... not completed. Command ... not executed." That refusal
+#        now comes through @emlErrorDialog like every other one, and Back
+#        returns to the mode choice instead of ending the session.
 #
 # WHY THIS EXISTS
 #
@@ -79,25 +92,57 @@ include eml-lib-stats.praat
 
 nTables = numberOfSelected ("Table")
 
-beginPause: "EML — Check & repair data"
-    comment: "What would you like to check?"
-    if nTables = 1
-        comment: "A Table is selected, so it can be audited and repaired."
-    else
-        comment: "No single Table is selected. File mode is still available."
+# THE MODE CHOICE IS A LOOP, because one of the two modes can be refused.
+# (NEW-G12-4)
+#
+# Table mode with no Table selected used to end in
+#
+#     exitScript: "Please select exactly one Table object, then run this again."
+#
+# which Praat presents as its own error window with "Script exited. Script
+# .../eml-check-data.praat not completed. Command "Check & repair data..." not
+# executed." underneath — three lines of interpreter stack for one sentence of
+# user-facing refusal, and the session over. @emlErrorDialog is the plugin's
+# one refusal surface and it offers Back; there is somewhere to go back TO
+# here, because file mode is still open, so the choice is re-asked rather than
+# thrown away. The seed carries the user's own answer forward on the way round,
+# the way every wrapper form does since D93.
+selCheck = if nTables = 1 then 1 else 2 fi
+mode = 0
+repeat
+    beginPause: "EML — Check & repair data"
+        comment: "What would you like to check?"
+        if nTables = 1
+            comment: "A Table is selected, so it can be audited and repaired."
+        else
+            comment: "No single Table is selected. File mode is still available."
+        endif
+        optionmenu: "Check", selCheck
+            option: "The selected Table (audit and repair cells)"
+            option: "A CSV file on disk (before Praat reads it)"
+        comment: "A file is checked for problems that cannot be detected"
+        comment: "afterwards — a double quote inside a field is removed by"
+        comment: "Praat's reader without warning, and a row of the wrong"
+        comment: "length stops the read before any Table exists."
+    clicked = endPause: "Quit", "Continue", 2, 1
+    if clicked = 1
+        exitScript: ""
     endif
-    optionmenu: "Check", if nTables = 1 then 1 else 2 fi
-        option: "The selected Table (audit and repair cells)"
-        option: "A CSV file on disk (before Praat reads it)"
-    comment: "A file is checked for problems that cannot be detected"
-    comment: "afterwards — a double quote inside a field is removed by"
-    comment: "Praat's reader without warning."
-clicked = endPause: "Quit", "Continue", 2, 1
-if clicked = 1
-    exitScript: ""
-endif
 
-if check = 2
+    selCheck = check
+    mode = check
+    if mode = 1 and nTables <> 1
+        @emlErrorDialog: "Table mode audits a Table in the object list, and "
+        ... + "no single Table is selected. A running script cannot change "
+        ... + "the selection for you.", "", "menu"
+        if not emlErrorDialog.back
+            exitScript: ""
+        endif
+        mode = 0
+    endif
+until mode > 0
+
+if mode = 2
     goto FILE_MODE
 endif
 
@@ -105,9 +150,6 @@ endif
 # TABLE MODE
 # ============================================================================
 
-if nTables <> 1
-    exitScript: "Please select exactly one Table object, then run this again."
-endif
 tableId = selected ("Table")
 tableName$ = selected$ ("Table")
 
@@ -351,6 +393,231 @@ selectObject: workId
 exitScript: ""
 
 # ============================================================================
+# ROW LENGTHS — what Praat's reader actually refuses a file for
+# ============================================================================
+# @emlCsvFieldCount, @emlCsvQuoteParity, @emlCheckFileRowLengths
+#
+# WHY THIS EXISTS. File mode checked doubled-quote escapes and the header's
+# delimiter, and then announced "No import problems found" — a verdict about
+# the FILE — on a CSV that Praat's own reader refuses to open. The gap was not
+# that the check was wrong; it was that the check was narrow and the sentence
+# was wide.
+#
+# WHAT THE READER DOES, MEASURED ON 6.6.30 rather than assumed. `Read Table
+# from comma-separated file` takes the header's field count as the column
+# count and then pulls exactly that many fields per row out of ONE CONTINUOUS
+# stream in which a newline terminates a field. Three consequences, each
+# observed on a purpose-built file:
+#
+#   TOO FEW FIELDS   The row meets the end of its line early and the read
+#                    stops: "Row 3 incomplete", or "Last row incomplete" when
+#                    it is the final row. NO Table is produced at all. A blank
+#                    or whitespace-only line in the middle of the file lands
+#                    here too — it is a row of one empty field.
+#
+#   TOO MANY FIELDS  The surplus is left in the stream, so the NEXT row starts
+#                    mid-line and runs out early: the file is refused, and the
+#                    reported row number is the row after the offending one.
+#                    On the FINAL row there is no next row, so the surplus is
+#                    silently discarded and the read succeeds — data lost with
+#                    no error, which is the worse of the two outcomes.
+#
+#   NO DATA ROWS     A header and nothing under it is refused with "No rows".
+#
+# Trailing blank lines are the one raggedness the reader forgives, so they are
+# not counted as rows here either.
+#
+# WHY IT LIVES BESIDE ITS CALLER rather than next to @emlCheckSourceFile in
+# stats/eml-extract.praat. The defect was a verdict that claimed more than the
+# scan behind it checked, and that is what a scan and a verdict in different
+# files invite. These two change together or the same finding comes back.
+#
+# Arguments:
+#   .path$ — path to the CSV file
+#
+# Output:
+#   .checked       — 1 if the file was read as text and had at least a header
+#   .headerFields  — fields on the header line
+#   .nDataRows     — data rows, trailing blank lines excluded
+#   .nShort/.nLong — rows carrying fewer / more fields than the header
+#   .longLastOnly  — 1 when every over-long row is the final one (the silent
+#                    arm), 0 when at least one is not (the refusing arm)
+#   .report$       — "" when every row matches; otherwise a printable block
+# ============================================================================
+
+# A comma inside a quoted field is not a separator. Quoted spans are removed
+# whole and the commas are counted in what is left, which also disposes of
+# RFC 4180 doubled-quote escapes: "Mezzo ""dram""" reduces to nothing in three
+# bites and leaves no comma behind either way.
+procedure emlCsvFieldCount: .line$
+    .bare$ = replace_regex$ (.line$, """[^""]*""", "", 0)
+    .n = length (.bare$) - length (replace$ (.bare$, ",", "", 0)) + 1
+endproc
+
+# An odd number of quotes on a line means a quoted field is still open, so the
+# next line is a continuation of this row rather than a row of its own. Praat's
+# reader handles that case — measured — and a row-length check that did not
+# would report a clean file as ragged.
+procedure emlCsvQuoteParity: .line$
+    .odd = (length (.line$) - length (replace$ (.line$, """", "", 0))) mod 2
+endproc
+
+procedure emlCheckFileRowLengths: .path$
+    .checked = 0
+    .headerFields = 0
+    .nDataRows = 0
+    .nShort = 0
+    .nLong = 0
+    .firstShortRow = 0
+    .firstShortN = 0
+    .firstLongRow = 0
+    .firstLongN = 0
+    .longLastOnly = 1
+    .report$ = ""
+
+    if not fileReadable (.path$)
+        goto ROW_LENGTHS_DONE
+    endif
+
+    # Read as TEXT, never as a Table: the whole point is to answer a question
+    # about a file the Table reader may refuse. `Read Strings from raw text
+    # file` strips a UTF-8 BOM and CRLF line endings, both measured, so the
+    # counts below are of fields and not of stray bytes.
+    .strId = Read Strings from raw text file: .path$
+    selectObject: .strId
+    .nLines = Get number of strings
+
+    .lastLine = .nLines
+    .trimming = 1
+    while .trimming = 1 and .lastLine > 0
+        selectObject: .strId
+        .probe$ = Get string: .lastLine
+        if replace_regex$ (.probe$, "^[ \t]+|[ \t]+$", "", 0) = ""
+            .lastLine = .lastLine - 1
+        else
+            .trimming = 0
+        endif
+    endwhile
+
+    if .lastLine < 1
+        removeObject: .strId
+        goto ROW_LENGTHS_DONE
+    endif
+
+    .checked = 1
+    .i = 1
+    .row = 0
+    while .i <= .lastLine
+        selectObject: .strId
+        .logical$ = Get string: .i
+        @emlCsvQuoteParity: .logical$
+        .guard = 0
+        while emlCsvQuoteParity.odd = 1 and .i < .lastLine and .guard < 100000
+            .guard = .guard + 1
+            .i = .i + 1
+            selectObject: .strId
+            .cont$ = Get string: .i
+            .logical$ = .logical$ + " " + .cont$
+            @emlCsvQuoteParity: .logical$
+        endwhile
+
+        @emlCsvFieldCount: .logical$
+        .fields = emlCsvFieldCount.n
+
+        if .row = 0 and .headerFields = 0
+            .headerFields = .fields
+        else
+            .nDataRows = .nDataRows + 1
+            if .fields < .headerFields
+                .nShort = .nShort + 1
+                if .firstShortRow = 0
+                    .firstShortRow = .nDataRows
+                    .firstShortN = .fields
+                endif
+            elsif .fields > .headerFields
+                .nLong = .nLong + 1
+                if .firstLongRow = 0
+                    .firstLongRow = .nDataRows
+                    .firstLongN = .fields
+                endif
+                if .i < .lastLine
+                    .longLastOnly = 0
+                endif
+            endif
+        endif
+        .row = .row + 1
+        .i = .i + 1
+    endwhile
+
+    removeObject: .strId
+
+    # EVERY ARM OPENS WITH "ROW LENGTHS", including the one that is not about
+    # a width at all. The banner is what the report is FILED under — by a
+    # reader scanning the Info window and by validate/v60_wrapper_paths.R
+    # reading the same text — so an arm that dropped it went out unlabelled
+    # and was classified as something the harness did not recognise.
+    if .nDataRows = 0
+        .report$ = "ROW LENGTHS — this file has a header line and nothing"
+        ... + " under it." + newline$
+        ... + "  Praat's reader refuses it with ""No rows"" and produces"
+        ... + " no Table at all." + newline$
+        goto ROW_LENGTHS_DONE
+    endif
+
+    if .nShort > 0
+        .report$ = .report$
+        ... + "  " + string$ (.nShort) + " data row(s) carry FEWER fields"
+        ... + " than the header's " + string$ (.headerFields) + "." + newline$
+        ... + "  The first is data row " + string$ (.firstShortRow)
+        ... + ", with " + string$ (.firstShortN) + " field(s)." + newline$
+        ... + "  Praat's reader takes exactly " + string$ (.headerFields)
+        ... + " fields per row and stops" + newline$
+        ... + "  the read when a row ends early: ""Row N incomplete"", or"
+        ... + " ""Last row" + newline$
+        ... + "  incomplete"" on the final row. NO Table is produced, so"
+        ... + " there is nothing" + newline$
+        ... + "  left to repair afterwards. A value that is genuinely"
+        ... + " missing must still" + newline$
+        ... + "  occupy its field — write a,,c, not a,c. A blank line"
+        ... + " inside the file" + newline$
+        ... + "  counts as a short row for the same reason." + newline$
+    endif
+
+    if .nLong > 0
+        .report$ = .report$
+        ... + "  " + string$ (.nLong) + " data row(s) carry MORE fields than"
+        ... + " the header's " + string$ (.headerFields) + "." + newline$
+        ... + "  The first is data row " + string$ (.firstLongRow) + ", with "
+        ... + string$ (.firstLongN) + " field(s). Usually an unquoted" + newline$
+        ... + "  comma inside a value, which splits one field into two."
+        ... + newline$
+        if .longLastOnly = 1
+            .report$ = .report$
+            ... + "  It is the LAST row, and there the surplus is discarded"
+            ... + " silently: the" + newline$
+            ... + "  read succeeds and the extra values are simply gone."
+            ... + newline$
+        else
+            .report$ = .report$
+            ... + "  The surplus is left in the stream, so the following row"
+            ... + " starts" + newline$
+            ... + "  mid-line and runs out early — the read is refused, and"
+            ... + " the row" + newline$
+            ... + "  number Praat names is the row AFTER the one at fault."
+            ... + newline$
+        endif
+    endif
+
+    if .report$ <> ""
+        .report$ = "ROW LENGTHS — the rows are not all the same width:"
+        ... + newline$ + .report$
+    endif
+
+    label ROW_LENGTHS_DONE
+endproc
+
+
+# ============================================================================
 # FILE MODE
 # ============================================================================
 
@@ -362,20 +629,57 @@ if path$ = ""
 endif
 
 @emlCheckSourceFile: path$
+@emlCheckFileRowLengths: path$
 
 writeInfoLine: "FILE CHECK — ", path$
 appendInfoLine: ""
-if emlCheckSourceFile.report$ = ""
-    appendInfoLine: "No import problems found. No doubled-quote escapes, "
-    ... + "and the header"
-    appendInfoLine: "is comma-delimited."
+if emlCheckFileRowLengths.checked = 0
+    # Not a clean verdict and not a dirty one: the file could not be read as
+    # text at all, so nothing below was established. Saying so is the only
+    # honest thing available.
+    appendInfoLine: "This file could not be read as text, so nothing was "
+    ... + "checked. It may have"
+    appendInfoLine: "been moved or renamed since it was chosen."
+elsif emlCheckSourceFile.report$ = "" and emlCheckFileRowLengths.report$ = ""
+    # THE VERDICT NAMES ITS OWN CHECKS. It used to read "No import problems
+    # found", which is a statement about the file; what had been established
+    # was a statement about two checks, and a third class of problem — rows of
+    # unequal width — went straight past it into a read Praat refused.
+    # (NEW-G10-4)
+    appendInfoLine: "Nothing found by the three checks this mode makes:"
+    appendInfoLine: "  - no doubled-quote escapes inside quoted fields;"
+    appendInfoLine: "  - the header is comma-delimited, not semicolon-"
+    ... + "delimited;"
+    appendInfoLine: "  - every one of the ", emlCheckFileRowLengths.nDataRows,
+    ... " data row(s) carries the header's ",
+    ... emlCheckFileRowLengths.headerFields, " field(s),"
+    appendInfoLine: "    which is what Praat's reader refuses a file for."
     appendInfoLine: ""
-    appendInfoLine: "This checks how the file will be READ. Once it is a "
-    ... + "Table, run this"
-    appendInfoLine: "again in Table mode to audit the cell contents."
+    appendInfoLine: "That is the whole of what was checked, and it is not a "
+    ... + "verdict on the"
+    appendInfoLine: "CONTENTS. This mode reads the file as text and answers "
+    ... + "one question: will"
+    appendInfoLine: "Praat's reader accept it. Once it is a Table, run this "
+    ... + "again in Table mode"
+    appendInfoLine: "to audit the cell contents."
 else
-    appendInfoLine: emlCheckSourceFile.report$
-    appendInfoLine: "Fix the file and re-import. These problems cannot be "
-    ... + "repaired after"
-    appendInfoLine: "the read — Praat leaves no trace of them in the Table."
+    if emlCheckSourceFile.report$ <> ""
+        appendInfoLine: emlCheckSourceFile.report$
+    endif
+    if emlCheckFileRowLengths.report$ <> ""
+        appendInfoLine: emlCheckFileRowLengths.report$
+    endif
+    appendInfoLine: "Fix the file and re-import."
+    if emlCheckSourceFile.nIssues > 0
+        appendInfoLine: "The quoting and delimiter problems above cannot be "
+        ... + "repaired after the read"
+        appendInfoLine: "— Praat leaves no trace of them in the Table."
+    endif
+    if emlCheckFileRowLengths.nShort > 0
+    ... or (emlCheckFileRowLengths.nLong > 0
+    ... and emlCheckFileRowLengths.longLastOnly = 0)
+    ... or emlCheckFileRowLengths.nDataRows = 0
+        appendInfoLine: "The row-length problem stops the read outright: "
+        ... + "there will be no Table to repair."
+    endif
 endif

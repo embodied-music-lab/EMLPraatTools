@@ -57,6 +57,27 @@ include eml-lib.praat
 @emlRecordInit
 
 if emlRecordActive = 0
+    # WHY THERE IS NOTHING, WHEN THAT IS KNOWABLE (audit §6, 14 Aug 2026).
+    #
+    # Removing the buffer from the Objects window ends the recording, and the
+    # audit measured what that felt like from the outside: analyses ran
+    # normally, nothing was captured, nothing said so, and this command
+    # answered "nothing is being recorded" — true, unhelpful, and identical
+    # to the message a user who never pressed Record gets. The meta table is
+    # left behind by that path and nothing else, so it is evidence, and it is
+    # the only evidence there is.
+    @emlRecordOrphanCheck
+    if emlRecordOrphanCheck.orphan = 1
+        writeInfoLine: "EML: the recording ended when its buffer was removed."
+        appendInfoLine: ""
+        appendInfoLine: "'Table emlRecordBuffer' is gone from the Objects"
+        appendInfoLine: "window — that table IS the recording, so removing it"
+        appendInfoLine: "stopped it. Anything run since was not captured and"
+        appendInfoLine: "cannot be recovered."
+        appendInfoLine: ""
+        appendInfoLine: "Run 'Record script' to start again."
+        goto END_RECORD_OPEN
+    endif
     writeInfoLine: "EML: nothing is being recorded."
     appendInfoLine: ""
     appendInfoLine: "Run 'Record script' first, then any EML analysis or"
