@@ -1,0 +1,11 @@
+anova1	error	
+anova2	error	
+rm_incomplete	error	The subject x condition residual is zero: every subject shows exactly the same pattern across conditions. The error term for the F test is therefore zero and F is undefined. Data that behaves this way is usually simulated, already averaged, or derived from one of its own columns. Assessed on 4 of 8 rows. N excluded 4 -- a row is used only when every column in the comparison has a value, which is what keeps the pairing intact. Treated as missing data. SPL_medium: 2 cell(s) are not numeric in any locale (row 3: NA). This is a type error, not missing data. SPL_loud: 2 cell(s) are not numeric in any locale (row 5: NA). This is a type error, not missing data.
+rm_incomplete	remedy	
+friedman_incomplete	error	
+rm_thin	error	Need at least 2 complete-case subjects (rows with all conditions present). Assessed on 1 of 4 rows. N excluded 3 -- a row is used only when every column in the comparison has a value, which is what keeps the pairing intact. Treated as missing data. b: 3 cell(s) are empty (row 2 first). Treated as missing data.
+rm_complete	error	Every value in every condition is identical, so there is no variance to partition.
+paired_zerovar	error	No paired test could be run on these two columns. "SPL_soft" and "SPL_medium" give n = 6 complete pairs, and every one of those pairs has the same difference, so there is no variation in the differences for a paired test to work on. Paired t-test: All differences are identical (zero variance). Wilcoxon signed-rank: All differences are zero; cannot perform test.
+paired_zerovar	remedy	
+paired_zerovar_param	error	No paired test could be run on these two columns. "SPL_soft" and "SPL_medium" give n = 6 complete pairs, and every one of those pairs has the same difference, so there is no variation in the differences for a paired test to work on. Paired t-test: All differences are identical (zero variance).
+paired_ok	error	

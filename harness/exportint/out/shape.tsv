@@ -1,0 +1,13 @@
+normsave	columns_tested	3
+normsave	columns_named	F0_Hz,shimmer_pct,jitter_pct
+normsave	declared	1
+normsave	files_written	2
+normsave	skipped	augment: this analysis has no per-observation quantities | 
+anova1	files_written	3
+anova2	files_written	3
+paired_zerovar	declared	0
+paired_ok	declared	1
+normsave_one	columns_tested	1
+normsave_one	files_written	2
+normsave_wizard2	columns_tested	1
+normsave_wizard2	files_written	2
