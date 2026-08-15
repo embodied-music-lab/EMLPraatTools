@@ -13,15 +13,21 @@
 # gone before the next analysis starts. What does NOT end is the Objects
 # window, which belongs to the running Praat instance.
 #
-# So the recording lives in an object: a Table named emlRecordBuffer, created
-# here and read by @emlRecordInit at the top of every later step. Its
-# EXISTENCE is the state. There is no flag file and no preference key, which
-# means there is nothing that can drift out of agreement with the data — the
-# switch and the buffer are the same object.
+# So the recording lives in an object: a Table named
+# emlRecording_DO_NOT_REMOVE, created here and read by @emlRecordInit at the
+# top of every later step. Its EXISTENCE is the state. There is no flag file
+# and no preference key, which means there is nothing that can drift out of
+# agreement with the data — the switch and the buffer are the same object.
 #
 # One consequence worth stating rather than hiding: the buffer is visible in
 # the user's Objects window, and removing it there ends the recording. That is
 # a reasonable thing for it to mean, and it is what the dialog says.
+#
+# WHICH IS WHY THE OBJECT IS CALLED WHAT IT IS CALLED (author ruling, 15 Aug
+# 2026). It was emlRecordBuffer, which reads as scratch — the one thing it is
+# not. The ruling refuses a per-step signal, so the message below and the name
+# in the Objects list are the entire warning, and the name is the half that is
+# in front of the user at the moment the mistake is available to them.
 #
 # NOT AVAILABLE HEADLESS. `praat --run` starts a fresh process per script, so
 # objects do not persist between invocations and a recording cannot span them.
@@ -75,7 +81,7 @@ appendInfoLine: "an editor, or 'Stop recording and save' to file it directly."
 appendInfoLine: ""
 # BOTH TABLES ARE NAMED, because both are visible (audit §6, 14 Aug 2026).
 #
-# This message used to name emlRecordBuffer and stop there, while the Objects
+# This message used to name the buffer and stop there, while the Objects
 # window filled with emlRecordMeta as well — and, after the first recorded
 # step, the shipped phrase table too. A user looking at three unexplained
 # objects with the plugin's prefix on them has been told about one of them,
@@ -83,9 +89,11 @@ appendInfoLine: ""
 # arrived from somewhere else.
 appendInfoLine: "Two Tables now sit in the Objects window:"
 appendInfoLine: ""
-appendInfoLine: "    emlRecordBuffer   the steps — this IS the recording,"
-appendInfoLine: "                      and removing it ends the session"
-appendInfoLine: "    emlRecordMeta     when it started and what it ran on"
+appendInfoLine: "    emlRecording_DO_NOT_REMOVE"
+appendInfoLine: "        the steps — this IS the recording, and removing it"
+appendInfoLine: "        ends the session, which is why it is named that way"
+appendInfoLine: "    emlRecordMeta"
+appendInfoLine: "        when it started and what it ran on"
 appendInfoLine: ""
 appendInfoLine: "A third, 'eml-record-phrases', appears after the first step;"
 appendInfoLine: "it is the shipped wording the script is written from. Leave"

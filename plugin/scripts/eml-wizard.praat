@@ -2250,17 +2250,55 @@ procedure wizardNormDiag: .data#, .label$
     .ku = emlKurtosis.result
     .n = size (.data#)
 
+    # ── RULING 6, 15 August 2026: the display standard ────────────────────
+    #
+    # These four numbers are the wizard's OWN report lines -- the preview it
+    # prints before it recommends parametric or nonparametric -- and every one
+    # of them was a bare fixed$ call. Praat's fixed$ is not a fixed-precision
+    # formatter: it returns the LARGER of the precision it is given and
+    # however many decimals are needed to show one significant digit, and a
+    # bare "0" for an exact zero. Measured on 6.6.30, and observed here:
+    #
+    #     Skewness:     0.00000000000000005      asked for 3 decimals
+    #     Shapiro-Wilk: W = 0.5899, p = 0.00000000001    asked for 4
+    #
+    # The first is a symmetric column whose skewness is zero and whose
+    # arithmetic landed a few ulps away from it. The second is an ordinary
+    # strongly-skewed column at n = 60. Neither is a rare input; a normality
+    # PREVIEW is precisely where a near-zero statistic and a floor-crossing p
+    # are the expected cases rather than the corner ones.
+    #
+    # The repair is the shared formatter @eml_fixed (stats/eml-output.praat),
+    # which keeps fixed$'s answer whenever fixed$ honoured the request -- so
+    # every line that already printed correctly still prints identically --
+    # and rounds properly when it did not. Nothing computed moves: the
+    # recommendation below reads .sk, .ku and emlShapiroWilk.p, not these
+    # strings, and @emlNormalityRecommendation is called with the raw values.
+    #
+    # THE p IS A SEPARATE CLAUSE OF THE SAME RULING: p prints in APA style.
+    # @emlFormatP is what the rest of the plugin's reports use, so this line
+    # now reads "p < .001" where it used to read "p = 0.00000000001", and
+    # ".551" where it used to read "0.5514". The unrounded value is NOT
+    # appended here as @emlInlineP would append it -- this is a two-line
+    # diagnostic whose only consequence is the binary recommendation printed
+    # underneath it, and the same p is reported to full precision by
+    # @emlRunNormalityAnalysis and exported by the CSV writers, which is
+    # where the ruling puts full precision.
     .displayLabel$ = replace$ (.label$, "_", " ", 0)
     appendInfoLine: "  ", .displayLabel$, " (n = ", .n, ")"
-    appendInfoLine: "    Skewness:     ", fixed$ (.sk, 3)
-    appendInfoLine: "    Kurtosis (excess): ", fixed$ (.ku, 3)
+    @eml_fixed: .sk, 3
+    appendInfoLine: "    Skewness:     ", eml_fixed.result$
+    @eml_fixed: .ku, 3
+    appendInfoLine: "    Kurtosis (excess): ", eml_fixed.result$
 
     # Shapiro-Wilk formal test
     @emlShapiroWilk: .data#
     if emlShapiroWilk.error$ = ""
-        appendInfoLine: "    Shapiro-Wilk: W = ",
-        ... fixed$ (emlShapiroWilk.w, 4),
-        ... ", p = ", fixed$ (emlShapiroWilk.p, 4)
+        @eml_fixed: emlShapiroWilk.w, 4
+        .wTxt$ = eml_fixed.result$
+        @emlFormatP: emlShapiroWilk.p
+        appendInfoLine: "    Shapiro-Wilk: W = ", .wTxt$,
+        ... ", ", emlFormatP.formatted$
     else
         appendInfoLine: "    Shapiro-Wilk: ", emlShapiroWilk.error$
     endif
@@ -2297,9 +2335,18 @@ procedure wizardNormDiag: .data#, .label$
         .isParametric = 1
     endif
 
+    ; RULING 6. These two are the shared THRESHOLDS rather than statistics,
+    ; and at their shipped values (2 and 7) fixed$ and @eml_fixed give the
+    ; same string. They are routed anyway, because the reason this file had
+    ; six unrouted fixed$ calls is that each of them looked like the safe one,
+    ; and a module with a single door to the formatter is a module whose
+    ; display standard can be checked by counting rather than by reading.
+    @eml_fixed: emlSkewThreshold, 0
+    .skThreshTxt$ = eml_fixed.result$
+    @eml_fixed: emlKurtosisThreshold, 0
     .shapeMsg$ = "    → Skewness/kurtosis outside typical limits"
-    ... + " (|skew| < " + fixed$ (emlSkewThreshold, 0)
-    ... + ", |excess kurt| < " + fixed$ (emlKurtosisThreshold, 0) + ")"
+    ... + " (|skew| < " + .skThreshTxt$
+    ... + ", |excess kurt| < " + eml_fixed.result$ + ")"
 
     # The answer, converted to the wizard's 1/2 encoding. It is READ from the
     # shared procedure, not recomputed — the branches below choose wording

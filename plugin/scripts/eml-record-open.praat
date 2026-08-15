@@ -70,10 +70,10 @@ if emlRecordActive = 0
     if emlRecordOrphanCheck.orphan = 1
         writeInfoLine: "EML: the recording ended when its buffer was removed."
         appendInfoLine: ""
-        appendInfoLine: "'Table emlRecordBuffer' is gone from the Objects"
-        appendInfoLine: "window — that table IS the recording, so removing it"
-        appendInfoLine: "stopped it. Anything run since was not captured and"
-        appendInfoLine: "cannot be recovered."
+        appendInfoLine: "'Table emlRecording_DO_NOT_REMOVE' is gone from the"
+        appendInfoLine: "Objects window — that table IS the recording, so"
+        appendInfoLine: "removing it stopped it. Anything run since was not"
+        appendInfoLine: "captured and cannot be recovered."
         appendInfoLine: ""
         appendInfoLine: "Run 'Record script' to start again."
         goto END_RECORD_OPEN

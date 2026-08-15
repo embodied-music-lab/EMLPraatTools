@@ -246,11 +246,49 @@ repeat
                         .groupNonparametric = 1
                     endif
 
+                    # AUTHOR RULING 6, 15 August 2026: no raw double reaches
+                    # the Info window. Statistics print at fixed decimals, p
+                    # prints in APA style, and full precision belongs to the
+                    # CSV export.
+                    #
+                    # These four numbers are the EXACT TWIN of the wizard's
+                    # normality preview, and the resemblance is not an
+                    # accident: this per-group branch is the third copy of
+                    # that report, the same third copy D137 caught carrying
+                    # its own decision rule. The wizard's copy was repaired
+                    # earlier today (scripts/eml-wizard.praat, "Skewness:"),
+                    # and repairing one twin and not the other is how the two
+                    # answers came to disagree in the first place.
+                    #
+                    # THE MECHANISM IS fixed$, NOT THESE LINES. Praat's fixed$
+                    # returns the LARGER of the precision asked for and the
+                    # decimals needed to show one significant digit, and a
+                    # bare "0" for an exact zero -- so `fixed$ (.skew, 3)` on
+                    # a symmetric group prints seventeen decimals of
+                    # arithmetic noise, and `fixed$ (.swP, 4)` on a strongly
+                    # skewed one printed "0.00000000001". @eml_fixed
+                    # (stats/eml-output.praat) is the one formatter that
+                    # closes it; there is no second implementation and this
+                    # file does not start one. Praat cannot nest a procedure
+                    # call inside an expression, so each value is hoisted into
+                    # a temporary first.
+                    #
+                    # NOTHING COMPUTED MOVES. @emlNormalityRecommendation is
+                    # called above with the raw .skew, .kurt and
+                    # emlShapiroWilk.p, and the per-group verdict printed
+                    # below reads that call and not these strings.
+                    @eml_fixed: .swW, 4
+                    .wTxt$ = eml_fixed.result$
+                    @eml_fixed: .skew, 3
+                    .skewTxt$ = eml_fixed.result$
+                    @eml_fixed: .kurt, 3
+                    .kurtTxt$ = eml_fixed.result$
+                    @emlFormatP: .swP
                     appendInfoLine: "  ", .gDisplay$, " (n = ", .n, "):"
-                    appendInfoLine: "    W = ", fixed$ (.swW, 4),
-                    ... "  p = ", fixed$ (.swP, 4)
-                    appendInfoLine: "    Skewness = ", fixed$ (.skew, 3),
-                    ... "  Kurtosis (excess) = ", fixed$ (.kurt, 3)
+                    appendInfoLine: "    W = ", .wTxt$,
+                    ... "  ", emlFormatP.formatted$
+                    appendInfoLine: "    Skewness = ", .skewTxt$,
+                    ... "  Kurtosis (excess) = ", .kurtTxt$
 
                     if .largeNOverride
                         appendInfoLine: "    → Parametric (large-n override:"
