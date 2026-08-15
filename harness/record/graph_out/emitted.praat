@@ -7,12 +7,9 @@
 
 # ------------------------------------------------------------
 # THE EML LIBRARY
-# Recorded under Praat 6.6.30. These paths are ABSOLUTE to the machine
-# that recorded this session: the plugin does not sit under a
-# home folder here, so there is no ~ to write and this file is
-# NOT portable as it stands. To run it anywhere else you must
-# edit this block and nothing else -- the usual locations are
-# listed below.
+# Recorded under Praat 6.6.30. Paths are home-relative, so they work
+# for any user on this platform. If this file fails to parse, the
+# plugin is somewhere else -- edit this block and nothing else.
 #
 #   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_Praat_Tools
 #   Praat 7.x  Linux    ~/.config/praat/plugin_EML_Praat_Tools
@@ -27,17 +24,17 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-utilities.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-extract.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-output.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-inferential.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-result-writer.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-record.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
+include ~/EMLPraatTools/plugin/stats/eml-core-utilities.praat
+include ~/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
+include ~/EMLPraatTools/plugin/stats/eml-extract.praat
+include ~/EMLPraatTools/plugin/stats/eml-output.praat
+include ~/EMLPraatTools/plugin/stats/eml-inferential.praat
+include ~/EMLPraatTools/plugin/stats/eml-result-writer.praat
+include ~/EMLPraatTools/plugin/stats/eml-record.praat
+include ~/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
+include ~/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
+include ~/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
+include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -49,10 +46,14 @@ include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
 # All of them must be open before you run this script.
 # ------------------------------------------------------------
 
-# Name your data objects here for this recorded workflow.
-# Edit a name to run the same workflow on other data;
-# nothing below this block names an object.
+# Name your data objects and columns here for this recorded
+# workflow. Edit a name to run the same workflow on other data;
+# nothing below this block names an object or a column.
 data1$ = "Table vt"   ; step 1 (draw)
+groupCol$ = "grp"   ; the grouping column -- step 1 (draw)
+valueCol$ = "val"   ; the measured column -- step 1 (draw)
+# (Titles and axis labels are text, not column names, so they
+#  stay as they were typed -- edit those in the step itself.)
 
 # --- Step 1 (draw) ---
 selectObject: data1$
@@ -60,7 +61,7 @@ data = selected ()
 # Violin plot of val, grouped by grp, 4 groups.
 # Violin width is a kernel density estimate, not a count.
 
-@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, "grp", "val", 170.000000, 270.000000
+@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol$, valueCol$, 170.000000, 270.000000
 
 # Axis resolved to 170.0000 .. 270.0000 over 4 groups.
 # The same step through the menu:
