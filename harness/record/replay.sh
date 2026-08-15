@@ -179,9 +179,23 @@ if annotBracketN > 0 or (annotTextN > 0 and annotMatrixN = 0)
 endif
 PRAATPOST
 
+# HOME IS PINNED ABOVE THE REPOSITORY, and that is not cosmetic.
+#
+# These legs override emlRecordPluginRoot$ to the working tree, so the emitted
+# script includes the code under test rather than an installed copy. Since the
+# 15 Aug 2026 ruling the renderer rewrites whatever root it is handed into a
+# home-relative one, and refuses to emit anything else -- the emitted file is a
+# user artefact and must be portable, full stop.
+#
+# With the ambient HOME (/root under the sandbox) the working tree is not under
+# home, the rewrite cannot fire, and this rig would be the one place in the
+# project producing an emission whose header and paths disagree. Pointing HOME
+# at the repository's parent makes $PLUG genuinely home-relative -- ~/<repo>/
+# plugin -- so the emitted script both RUNS here and carries the tilde the
+# ruling requires. The pref dir is pinned separately, so nothing else moves.
 run_praat () {   # run_praat <script> <log>
-    ( cd "$ROOT" && timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" \
-        --run "$1" >>"$2" 2>&1 )
+    ( cd "$ROOT" && HOME="$(dirname "$ROOT")" timeout 300 "$PRAAT" $PRAAT_TRUST \
+        --pref-dir="$PREFS" --run "$1" >>"$2" 2>&1 )
 }
 
 # ===========================================================================
