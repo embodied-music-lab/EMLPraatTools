@@ -7,11 +7,9 @@
 
 # ------------------------------------------------------------
 # THE EML LIBRARY
-# Recorded under Praat 6.6.30. These paths are ABSOLUTE to the machine
-# that recorded this session: the plugin does not sit under a
-# home folder here, so there is no ~ to write and this file is
-# NOT portable as it stands. To run it elsewhere, edit this
-# block and nothing else -- the locations are listed below.
+# Recorded under Praat 6.6.30. Paths are home-relative, so they work
+# for any user on this platform. If this file fails to parse, the
+# plugin is somewhere else -- edit this block and nothing else.
 #
 #   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_Praat_Tools
 #   Praat 7.x  Linux    ~/.config/praat/plugin_EML_Praat_Tools
@@ -26,17 +24,17 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-extract.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-output.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-inferential.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-result-writer.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-record.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/graphs/eml-graph-procedures.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/graphs/eml-annotation-procedures.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/graphs/eml-draw-procedures.praat
-include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-analysis.praat
+include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
+include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
+include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-extract.praat
+include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-output.praat
+include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-inferential.praat
+include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-result-writer.praat
+include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-record.praat
+include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-graph-procedures.praat
+include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-annotation-procedures.praat
+include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-draw-procedures.praat
+include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-analysis.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -48,9 +46,9 @@ include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Too
 # All of them must be open before you run this script.
 # ------------------------------------------------------------
 
-# Name your data objects here for this recorded workflow.
-# Edit a name to run the same workflow on other data;
-# nothing below this block names an object.
+# Name your data objects and columns here for this recorded
+# workflow. Edit a name to run the same workflow on other data;
+# nothing below this block names an object or a column.
 data1$ = "Table voiceA"   ; steps 1 (analysis), 2 (analysis), 3 (analysis), 4 (analysis), 5 (analysis), 6 (analysis), 7 (analysis), 8 (refusal), 9 (analysis), 10 (refusal), 11 (refusal), 12 (analysis), 13 (analysis), 14 (draw), 15 (draw), 16 (draw), 17 (draw), 18 (draw), 19 (draw), 20 (draw), 21 (draw), 22 (draw), 23 (draw), 44 (analysis), 45 (draw), 46 (draw)
 data2$ = "Sound tone"   ; steps 24 (draw), 28 (convert), 29 (draw), 30 (convert), 31 (draw), 32 (convert), 33 (draw)
 data3$ = "Pitch tone"   ; step 25 (draw)
@@ -58,6 +56,25 @@ data4$ = "Spectrum tone"   ; steps 26 (draw), 34 (convert), 35 (draw), 36 (conve
 data5$ = "Ltas tone"   ; step 27 (draw)
 data6$ = "TableOfReal tor"   ; steps 40 (convert), 41 (draw)
 data7$ = "Matrix mat"   ; steps 42 (convert), 43 (draw)
+valueCol$      = "spl"   ; the measured column -- steps 1 (analysis), 2 (analysis), 3 (analysis), 4 (analysis), 5 (analysis), 9 (analysis), 14 (draw), 16 (draw), 17 (draw), 18 (draw), 19 (draw), 20 (draw), 21 (draw), 22 (draw), 23 (draw), 44 (analysis)
+groupCol$      = "grp"   ; the grouping column -- steps 1 (analysis), 2 (analysis), 3 (analysis), 14 (draw), 17 (draw), 18 (draw), 19 (draw), 20 (draw), 21 (draw)
+xCol$          = "spl"   ; the x column -- steps 6 (analysis), 15 (draw), 45 (draw), 46 (draw)
+yCol$          = "spl2"   ; the y column -- steps 6 (analysis), 15 (draw), 45 (draw), 46 (draw)
+outcomeCol$    = "spl"   ; the outcome column -- step 7 (analysis)
+predictorCol$  = "spl2"   ; the predictor column -- step 7 (analysis)
+factorACol$    = "grp"   ; the first factor -- step 9 (analysis)
+factorBCol$    = "grp2"   ; the second factor -- step 9 (analysis)
+subjectCol$    = "subj"   ; the subject identifier -- steps 12 (analysis), 13 (analysis)
+conditionCols$ = "c1|c2|c3"   ; the condition columns -- steps 12 (analysis), 13 (analysis)
+timeCol$       = "t"   ; the time column -- steps 17 (draw), 18 (draw)
+conditionCol$  = "t"   ; the condition column -- step 19 (draw)
+idCol$         = "subj"   ; the case identifier -- step 19 (draw)
+categoryCol$   = "grp"   ; the category column -- steps 22 (draw), 23 (draw)
+subgroupCol$   = "grp2"   ; the sub-group column -- steps 22 (draw), 23 (draw)
+valueCol2$     = "row"   ; the measured column -- steps 41 (draw), 43 (draw)
+groupCol2$     = "grp3"   ; the grouping column -- step 44 (analysis)
+# (Titles and axis labels are text, not column names, so they
+#  stay as they were typed -- edit those in the step itself.)
 
 # --- Step 1 (analysis) ---
 selectObject: data1$
@@ -65,7 +82,7 @@ data = selected ()
 # One-way ANOVA of spl by grp, 2 groups.
 # Normality was NOT tested on this path.
 
-@emlRunAnovaAnalysis: data, "spl", "grp", 0
+@emlRunAnovaAnalysis: data, valueCol$, groupCol$, 0
 
 # F(1, 22) = 5.2251, p = 0.0323, eta-squared = 0.1919
 #   y: n = 12, mean = 66.1949
@@ -80,7 +97,7 @@ data = selected ()
 # Two-group comparison: spl by grp, welch
 # Equal-variance assumption: Welch.
 
-@emlRunTwoGroupAnalysis: data, "spl", "grp", "welch", 0
+@emlRunTwoGroupAnalysis: data, valueCol$, groupCol$, "welch", 0
 
 # y: n = 12, mean = 66.1949, SD = 3.1734
 #   x: n = 12, mean = 63.4196, SD = 2.7601
@@ -93,7 +110,7 @@ data = selected ()
 # Kruskal-Wallis: spl by grp
 # Rank-based; it does not assume normality and does not test it.
 
-@emlRunKWAnalysis: data, "spl", "grp", 0, "holm"
+@emlRunKWAnalysis: data, valueCol$, groupCol$, 0, "holm"
 
 # H(1) = 4.5633, p = 0.0327
 # The same step through the menu:
@@ -105,7 +122,7 @@ data = selected ()
 # Descriptive statistics: spl
 # Descriptives only; no test was run and no assumption was checked.
 
-@emlRunDescriptiveAnalysis: data, "spl"
+@emlRunDescriptiveAnalysis: data, valueCol$
 
 # n = 24 valid
 # The same step through the menu:
@@ -117,7 +134,7 @@ data = selected ()
 # Normality: spl, both
 # A normality test answers a question about the sample, not a licence for a later test.
 
-@emlRunNormalityAnalysis: data, "spl", "both"
+@emlRunNormalityAnalysis: data, valueCol$, "both"
 
 # Shapiro-Wilk W = 0.9502, p = 0.2739
 #   skewness = 0.1775, kurtosis = -1.0820, n = 24
@@ -131,7 +148,7 @@ data = selected ()
 # Correlation: spl with spl2, pearson
 # Correlation is not causation, and a single coefficient hides the shape of the cloud.
 
-@emlRunCorrelationAnalysis: data, "spl", "spl2", "pearson"
+@emlRunCorrelationAnalysis: data, xCol$, yCol$, "pearson"
 
 # Pearson r = 0.0678, t(22) = 0.3189, p = 0.7528
 #   n = 24
@@ -144,7 +161,7 @@ data = selected ()
 # Linear regression: spl on spl2
 # Residual diagnostics are not run on this path.
 
-@emlRunRegressionAnalysis: data, "spl", "spl2"
+@emlRunRegressionAnalysis: data, outcomeCol$, predictorCol$
 
 # spl = 49.6803 + 0.0741 x spl2
 #   R-squared = 0.0046, n = 24
@@ -165,7 +182,7 @@ data = selected ()
 # Two-way ANOVA: spl by grp and grp2
 # Type of sums of squares and the balance of the design both matter here; see the report.
 
-@emlRunTwoWayAnalysis: data, "spl", "grp", "grp2"
+@emlRunTwoWayAnalysis: data, valueCol$, factorACol$, factorBCol$
 
 # grp: F(1, 20) = 3.8873, p = 0.0626
 #   grp2: F(1, 20) = 0.0136, p = 0.9083
@@ -196,7 +213,7 @@ data = selected ()
 # Repeated-measures ANOVA: c1|c2|c3, subject subj
 # Sphericity is corrected, not assumed; the report names the correction.
 
-@emlRunRepeatedMeasuresAnalysis: data, "subj", "c1|c2|c3", 0, "holm"
+@emlRunRepeatedMeasuresAnalysis: data, subjectCol$, conditionCols$, 0, "holm"
 
 # F(2, 46) = 110.3303, p = 0.000000000000000003
 #   Greenhouse-Geisser epsilon = 0.9078, corrected p = 0.00000000000000008
@@ -210,7 +227,7 @@ data = selected ()
 # Friedman: c1|c2|c3, subject subj
 # Rank-based repeated measures; it does not assume normality and does not test it.
 
-@emlRunFriedmanAnalysis: data, "subj", "c1|c2|c3", 0, "holm"
+@emlRunFriedmanAnalysis: data, subjectCol$, conditionCols$, 0, "holm"
 
 # chi-square(2) = 42.2500, p = 0.0000000007
 #   n = 24 subjects, k = 3 conditions
@@ -223,7 +240,7 @@ data = selected ()
 # Violin plot of spl, grouped by grp, 2 groups.
 # Violin width is a kernel density estimate, not a count.
 
-@emlDrawViolinPlot: data, "Violin", "grp", "spl", 6, 4, "color", 1, "grp", "spl", 56.000000, 74.000000
+@emlDrawViolinPlot: data, "Violin", "grp", "spl", 6, 4, "color", 1, groupCol$, valueCol$, 0, 0
 
 # Axis resolved to 56.0000 .. 74.0000 over 2 groups.
 # The same step through the menu:
@@ -236,7 +253,10 @@ data = selected ()
 # Scatter plot: Scatter
 # A fitted line is descriptive and carries no test.
 
-@emlDrawScatterPlot: data, "Scatter", "x", "y", 6, 4, "color", 1, "spl", "spl2", "", 0, 0, 0, 0, 0
+scatterAnalysisType = 0
+annotCorrType$ = "pearson"
+scatterRegressionLine = 0
+@emlDrawScatterPlot: data, "Scatter", "x", "y", 6, 4, "color", 1, xCol$, yCol$, "", 0, 0, 0, 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -247,7 +267,7 @@ data = selected ()
 # Histogram: Histogram
 # Bin count changes the shape; it is a display choice, not a property of the data.
 
-@emlDrawHistogram: data, "Histogram", "spl", "Count", 6, 4, "color", 1, "spl", "", 0, 1, 0, 0, 0
+@emlDrawHistogram: data, "Histogram", "spl", "Count", 6, 4, "color", 1, valueCol$, "", 0, 1, 0, 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -257,7 +277,7 @@ selectObject: data1$
 data = selected ()
 # Line chart: Line
 
-@emlDrawTimeSeries: data, "Line", "t", "spl", 6, 4, "color", 1, "t", "spl", "grp", 0, 0, 0, 0
+@emlDrawTimeSeries: data, "Line", "t", "spl", 6, 4, "color", 1, timeCol$, valueCol$, groupCol$, 0, 0, 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -267,7 +287,7 @@ selectObject: data1$
 data = selected ()
 # Line chart (+/-CI): Line CI
 
-@emlDrawTimeSeriesCI: data, "Line CI", "t", "spl", 6, 4, "color", 1, "t", "spl", "grp", 0, 0, 0, 0
+@emlDrawTimeSeriesCI: data, "Line CI", "t", "spl", 6, 4, "color", 1, timeCol$, valueCol$, groupCol$, 0, 0, 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -277,7 +297,7 @@ selectObject: data1$
 data = selected ()
 # Spaghetti plot: Spaghetti
 
-@emlDrawSpaghettiPlot: data, "Spaghetti", "t", "spl", 6, 4, "color", 1, "t", "spl", "subj", "grp", 1, 0, 0
+@emlDrawSpaghettiPlot: data, "Spaghetti", "t", "spl", 6, 4, "color", 1, conditionCol$, valueCol$, idCol$, groupCol$, 1, 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -288,7 +308,7 @@ data = selected ()
 # Bar chart: Bar
 # Bars show means. The spread, not the bar, is what tells you about the data.
 
-@emlDrawBarChart: data, "Bar", "grp", "spl", 6, 4, "color", 1, "grp", "spl", 0, "", 0, 0
+@emlDrawBarChart: data, "Bar", "grp", "spl", 6, 4, "color", 1, groupCol$, valueCol$, 0, "", 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -299,7 +319,7 @@ data = selected ()
 # Box plot: Box
 # Whisker convention and outlier rule are stated in the figure, not assumed.
 
-@emlDrawBoxPlot: data, "Box", "grp", "spl", 6, 4, "color", 1, "grp", "spl", 0, 0
+@emlDrawBoxPlot: data, "Box", "grp", "spl", 6, 4, "color", 1, groupCol$, valueCol$, 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -310,7 +330,7 @@ data = selected ()
 # Grouped violin: GViolin
 # Violin width is a kernel density estimate, not a count.
 
-@emlDrawGroupedViolin: data, "GViolin", "grp", "spl", 6, 4, "color", 1, "grp", "grp2", "spl", 0, 0
+@emlDrawGroupedViolin: data, "GViolin", "grp", "spl", 6, 4, "color", 1, categoryCol$, subgroupCol$, valueCol$, 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -321,7 +341,7 @@ data = selected ()
 # Grouped box plot: GBox
 # Whisker convention and outlier rule are stated in the figure, not assumed.
 
-@emlDrawGroupedBoxPlot: data, "GBox", "grp", "spl", 6, 4, "color", 1, "grp", "grp2", "spl", 0, 0
+@emlDrawGroupedBoxPlot: data, "GBox", "grp", "spl", 6, 4, "color", 1, categoryCol$, subgroupCol$, valueCol$, 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -500,7 +520,7 @@ data = To Table: "row"
 # Histogram: Histogram from TableOfReal
 # Bin count changes the shape; it is a display choice, not a property of the data.
 
-@emlDrawHistogram: data, "Histogram from TableOfReal", "row", "Count", 6, 4, "color", 1, "row", "", 0, 1, 0, 0, 0
+@emlDrawHistogram: data, "Histogram from TableOfReal", "row", "Count", 6, 4, "color", 1, valueCol2$, "", 0, 1, 0, 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -524,7 +544,7 @@ selectObject: data
 # Histogram: Histogram from Matrix
 # Bin count changes the shape; it is a display choice, not a property of the data.
 
-@emlDrawHistogram: data, "Histogram from Matrix", "row", "Count", 6, 4, "color", 1, "row", "", 0, 1, 0, 0, 0
+@emlDrawHistogram: data, "Histogram from Matrix", "row", "Count", 6, 4, "color", 1, valueCol2$, "", 0, 1, 0, 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -535,7 +555,7 @@ data = selected ()
 # Group comparison on a figure: spl by grp3, parametric, 3 groups
 # Reached through the figure's annotation rather than the stats menu; the test and the correction are the same.
 
-@emlBridgeGroupComparison: data, "spl", "grp3", 0.05, "stars", 0, 1, "parametric", 1
+@emlBridgeGroupComparison: data, valueCol$, groupCol2$, 0.05, "stars", 0, 1, "parametric", 1
 
 # One-way ANOVA: F(2, 21) = 0.02, p = .979
 #   3 groups, alpha = 0.050
@@ -551,7 +571,7 @@ data = selected ()
 scatterAnalysisType = 3
 annotCorrType$ = "spearman"
 scatterRegressionLine = 1
-@emlDrawScatterPlot: data, "Scatter with stats", "x", "y", 6, 4, "color", 1, "spl", "spl2", "", 0, 0, 0, 0, 1
+@emlDrawScatterPlot: data, "Scatter with stats", "x", "y", 6, 4, "color", 1, xCol$, yCol$, "", 0, 0, 0, 0, 1
 
 # spearman correlation reported on 24 complete pairs
 #   spl2 = 199.9998 + 0.0620 x spl, R-squared = 0.0046
@@ -568,7 +588,7 @@ data = selected ()
 scatterAnalysisType = 1
 annotCorrType$ = "spearman"
 scatterRegressionLine = 1
-@emlDrawScatterPlot: data, "Scatter, monotonic fit", "x", "y", 6, 4, "color", 1, "spl", "spl2", "", 0, 0, 0, 0, 1
+@emlDrawScatterPlot: data, "Scatter, monotonic fit", "x", "y", 6, 4, "color", 1, xCol$, yCol$, "", 0, 0, 0, 0, 1
 
 # spearman correlation reported on 24 complete pairs
 #   fit line: Theil-Sen (monotonic), slope = 0.0374, intercept = 201.0878
