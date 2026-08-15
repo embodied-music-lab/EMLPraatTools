@@ -7,9 +7,11 @@
 
 # ------------------------------------------------------------
 # THE EML LIBRARY
-# Recorded under Praat 6.6.30. Paths are home-relative, so they work
-# for any user on this platform. If this file fails to parse, the
-# plugin is somewhere else -- edit this block and nothing else.
+# Recorded under Praat 6.6.30. These paths are ABSOLUTE to the machine
+# that recorded this session: the plugin does not sit under a
+# home folder here, so there is no ~ to write and this file is
+# NOT portable as it stands. To run it elsewhere, edit this
+# block and nothing else -- the locations are listed below.
 #
 #   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_Praat_Tools
 #   Praat 7.x  Linux    ~/.config/praat/plugin_EML_Praat_Tools
@@ -37,6 +39,7 @@ include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Too
 include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Tools/stats/eml-analysis.praat
 
 @emlInitDrawingDefaults
+@emlClearAnnotations
 
 # ------------------------------------------------------------
 # THE OBJECT
@@ -48,7 +51,7 @@ include /home/claude/EMLPraatTools/harness/record_e2e/prefs/plugin_EML_Praat_Too
 # Name your data objects here for this recorded workflow.
 # Edit a name to run the same workflow on other data;
 # nothing below this block names an object.
-data1$ = "Table voiceA"   ; steps 1 (analysis), 2 (analysis), 3 (analysis), 4 (analysis), 5 (analysis), 6 (analysis), 7 (analysis), 8 (refusal), 9 (analysis), 10 (analysis), 11 (refusal), 12 (analysis), 13 (analysis), 14 (draw), 15 (draw), 16 (draw), 17 (draw), 18 (draw), 19 (draw), 20 (draw), 21 (draw), 22 (draw), 23 (draw), 44 (analysis), 45 (draw), 46 (draw)
+data1$ = "Table voiceA"   ; steps 1 (analysis), 2 (analysis), 3 (analysis), 4 (analysis), 5 (analysis), 6 (analysis), 7 (analysis), 8 (refusal), 9 (analysis), 10 (refusal), 11 (refusal), 12 (analysis), 13 (analysis), 14 (draw), 15 (draw), 16 (draw), 17 (draw), 18 (draw), 19 (draw), 20 (draw), 21 (draw), 22 (draw), 23 (draw), 44 (analysis), 45 (draw), 46 (draw)
 data2$ = "Sound tone"   ; steps 24 (draw), 28 (convert), 29 (draw), 30 (convert), 31 (draw), 32 (convert), 33 (draw)
 data3$ = "Pitch tone"   ; step 25 (draw)
 data4$ = "Spectrum tone"   ; steps 26 (draw), 34 (convert), 35 (draw), 36 (convert), 37 (draw), 38 (convert), 39 (draw)
@@ -171,19 +174,13 @@ data = selected ()
 # The same step through the menu:
 # In the GUI: New > EML Tools > Compare two-way (ANOVA)...
 
-# --- Step 10 (analysis) ---
+# --- Step 10 (refusal) ---
 selectObject: data1$
 data = selected ()
-# Paired comparison: spl vs spl2, t
-# Rows with a missing value in either column are dropped pairwise.
+# Refused: No paired test could be run on these two columns. "spl" and "spl2" give n = 24 complete pairs, and every one of those pairs has the same difference, so there is no variation in the differences for a paired test to work on.
 
-@emlRunPairedAnalysis: data, "spl", "spl2", "t"
+; (nothing executed at this step -- see the note above)
 
-# n = 24 complete pairs
-#   spl: mean = 64.8072, SD = 3.2356
-#   spl2: mean = 204.0210, SD = 2.9600
-# The same step through the menu:
-# In the GUI: New > EML Tools > Compare paired/repeated...
 
 # --- Step 11 (refusal) ---
 selectObject: data1$
