@@ -272,12 +272,33 @@ check_true("v58", "the recovered header line still carries a real timestamp",
 # ---------------------------------------------------------------------------
 # 5. NEW-G11-1 -- THE INCLUDE BLOCK SAYS WHAT IT IS
 # ---------------------------------------------------------------------------
-# TWO PROPERTIES, AND THE SECOND IS THE ONE THAT WAS MISSING. The first is
-# that the home-relative rewrite SURVIVES the script boundary: the META leg is
-# the only one that flushes in a different scope from the one that began the
-# recording, which is the shape of every menu-driven session, and it runs under
-# a pref dir inside $HOME so the rewrite can fire at all. The second is that
-# the header's claim MATCHES the paths beneath it, whichever way they came out.
+# AUTHOR RULING, 15 AUGUST 2026: THE EMITTED SCRIPT IS HOME-RELATIVE, FULL
+# STOP. This section was first written to check something weaker -- that the
+# header's claim MATCHED the paths beneath it, whichever way they came out --
+# and it passed an emission that announced its own absolute paths as honestly
+# not portable. That is the wrong half to make conditional. Where the plugin
+# sits on the machine that recorded a session is an accident of that machine;
+# the emitted file is for a user, and a file carrying someone else's directory
+# layout is worth nothing to them.
+#
+# So the plugin now guarantees the tilde in TWO places, and this file checks
+# both, because one of them alone is what the original defect looked like:
+#
+#   * @emlRecordBegin resolves a home-relative root, falling back to the
+#     platform's canonical location when the live preferences directory sits
+#     outside $HOME -- which Praat produces only under an explicit --pref-dir,
+#     i.e. in a test rig, never on a user's machine.
+#   * @emlRecordRender rewrites the root AGAIN on the value it is about to
+#     write. emlRecordPluginRoot$ is a plain global and Begin is not the last
+#     writer: these harnesses set it after Begin so the emission points at the
+#     working tree. Resolving well and rendering blindly is precisely how the
+#     original defect worked -- a correct value computed in one scope and an
+#     absolute one written in another, under a header that promised otherwise.
+#
+# The META leg is the one that flushes in a different scope from the one that
+# began the recording, which is the shape of every menu-driven session. The
+# ADV leg is the one whose root is overridden after Begin. Between them they
+# cover both guarantees, and both must now show a tilde.
 check("v58", "the resolved plugin root survives to the flush as home-relative",
       11L, num("meta_emit_root_is_home_relative"), tol = 0)
 check_true("v58",
@@ -289,18 +310,24 @@ check("v58", "and the header claims home-relative, which is now true",
 check("v58", "with no contradicting absolute-path notice",
       0L, num("meta_emit_states_absolute"), tol = 0)
 
-# THE OTHER ARM, which is the honesty half. The ADV leg runs under the
-# harness's own --pref-dir outside $HOME, where there is no tilde to write, so
-# its emitted file MUST say so instead of repeating the portability claim. A
-# file that promises portability it does not have sends its reader looking for
-# the wrong fault.
+# THE OTHER ARM, and the one the ruling changed. The ADV leg overrides the
+# root AFTER @emlRecordBegin has resolved it -- the harness points the emission
+# at the working tree so the replayed script exercises the code under test. It
+# is therefore the only leg that can prove the RENDER-time rewrite, as distinct
+# from the resolution-time one, and until 15 Aug it was the leg that emitted
+# eleven absolute include lines.
 check_true("v58",
-           sprintf("the absolute-path emission does not claim to be portable (root %s)",
+           sprintf("a root overridden after Begin is still emitted with a tilde (%s)",
                    str_("emit_include_root")),
-           !grepl("^~", str_("emit_include_root")) &&
-           num("emit_claims_home_relative") == 0)
-check("v58", "it states plainly that its paths are machine-absolute",
-      1L, num("emit_states_absolute"), tol = 0)
+           grepl("^~/", str_("emit_include_root")))
+check("v58", "and this arm claims home-relative too, because it now is",
+      1L, num("emit_claims_home_relative"), tol = 0)
+# NO SECOND ARM EXISTS ANY MORE. The renderer has one branch, so a
+# machine-absolute notice appearing in ANY emission means the tilde was lost
+# and the conditional header came back with it -- the exact pair of defects
+# this section was rewritten to retire.
+check("v58", "no emission anywhere states that its paths are machine-absolute",
+      0L, num("emit_states_absolute") + num("meta_emit_states_absolute"), tol = 0)
 
 # ---------------------------------------------------------------------------
 # 6. NEW-G11-4 -- A SAVE ONTO A FOLDER THAT DOES NOT EXIST
@@ -321,6 +348,38 @@ check_true("v58",
 # Two things no headless driver can exercise, so they are read from the source
 # instead -- and read is the honest word: this is a weaker kind of evidence
 # than everything above and it is here because the alternative is nothing.
+# THE RESOLUTION-TIME GUARANTEE, which neither leg can reach. Both drives run
+# with a preferences directory inside $HOME, so the substitution in
+# @emlRecordBegin always fires and its fallback never does. The fallback is
+# what makes the ruling hold on the one configuration the harness cannot
+# occupy without becoming that configuration itself -- a --pref-dir outside
+# $HOME, which is what these very harnesses use. Measured 15 Aug 2026 with a
+# direct probe: with the fallback the root comes out
+# ~/.praat-dir/plugin_EML_Praat_Tools; with it removed, /tmp/outofhome/
+# plugin_EML_Praat_Tools. So the four canonical spellings are read from the
+# source, and every one of them must carry the tilde -- a fallback that
+# resolved to an absolute path would satisfy "a fallback exists" and defeat
+# the ruling, which is the shape of mistake this whole file is about.
+rsrc <- Sys.getenv("EML_RECORD_PROC_SRC", unset = "")
+if (!nzchar(rsrc)) rsrc <- repo_path("plugin", "stats", "eml-record.praat")
+if (check_true("v58", "the recorder core is present", file.exists(rsrc))) {
+    rl <- readLines(rsrc, warn = FALSE)
+    rc <- rl[!grepl("^\\s*[;#]", rl)]
+    fb <- grep('emlRecordPluginRoot\\$ = "', rc, value = TRUE)
+    fb <- sub('.*emlRecordPluginRoot\\$ = "([^"]*)".*', "\\1", fb)
+    fb <- fb[nzchar(fb)]
+    check_true("v58",
+               sprintf("every canonical plugin root the source can fall back to starts with ~ (%s)",
+                       paste(fb, collapse = " | ")),
+               length(fb) >= 4 && all(grepl("^~", fb)))
+    check_true("v58",
+               "the fallback covers Windows, macOS and both Praat-era Unix locations",
+               any(grepl("^~/Praat/", fb)) &&
+               any(grepl("^~/Library/Preferences/", fb)) &&
+               any(grepl("^~/\\.config/praat/", fb)) &&
+               any(grepl("^~/\\.praat-dir/", fb)))
+}
+
 src <- Sys.getenv("EML_RECORD_SRC", unset = "")
 if (!nzchar(src)) src <- repo_path("plugin", "scripts", "eml-record-save.praat")
 if (check_true("v58", "the stop-and-save command is present", file.exists(src))) {
