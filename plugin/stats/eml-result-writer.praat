@@ -513,6 +513,35 @@ procedure eml_renderTidy
 endproc
 
 
+# ----------------------------------------------------------------------------
+# THE FLUSH, AND THE CONTRACT THE PATH ARRIVES UNDER.
+# ----------------------------------------------------------------------------
+# The `writeFile:` below is where two session-killing defects of the 14 Aug
+# 2026 audit actually landed, and neither is fixed here. Both were fixed where
+# the path is BUILT, which is @emlSavePanel in stats/eml-output.praat:
+#
+#   NEW-G2-1   a "/" typed into the panel's Base name field arrived in .path$
+#              verbatim and Praat answered "Cannot create file ... Hint: one
+#              of the folders in this file path does not exist", stopping the
+#              script inside the panel and taking the caller's post-analysis
+#              loop with it. @eml_saveSafeBaseName now sanitises the stem.
+#   NEW-G12-5  an unwritable folder arrived the same way and answered
+#              "unexpected error 30". @eml_saveFolderWritable now proves the
+#              target with a `nocheck` probe write before any of this runs.
+#
+# WHY NOT HERE AS WELL. Praat has no try/catch, so a guard at this line could
+# only refuse or repair -- and repairing a path at the flush would give the
+# frames a different base name from the figure and the report written beside
+# them, which is precisely the one-stamp-one-name contract the panel exists to
+# hold. The panel is the sole caller of @emlResultWrite (through
+# @emlExportResultFiles, which nothing else calls), so it is the only place a
+# guard can be both complete and consistent.
+#
+# WHAT A FUTURE CALLER OWES. Any new route to this writer must sanitise its
+# base name and prove its folder BEFORE calling, or it re-opens both defects
+# on a path no harness watches. harness/savepaths presses the panel; nothing
+# presses a bypass.
+# ----------------------------------------------------------------------------
 procedure eml_writeTidyFile: .path$
     .wrote = 0
     @eml_renderTidy

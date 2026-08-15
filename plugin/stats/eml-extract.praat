@@ -886,10 +886,30 @@ procedure eml_strictNumericColumn: .tableId, .columnName$
     if .nRows > 0
         # Empty and undefined cells make the numericiser raise instead of
         # returning ranks, so they have to be found by string scan first.
+        #
+        # ALL THREE SPELLINGS OF "NOT A VALUE", not two. Praat renders an
+        # undefined Table cell as the single character "?" — which is what
+        # `To Table: "row"` writes into the row-label column of every
+        # converted Matrix — and this scan recognised only "" and
+        # "--undefined--". "?" therefore passed the scan, the un-nocheck'd
+        # `Get all numbers in column:` below ran on it, and the caller got a
+        # native Praat error from inside a probe whose entire job is to
+        # answer a question without raising:
+        #
+        #     Table "eml_numericProbe": the cell in row 1 of column "row"
+        #     is undefined.
+        #
+        # NEW-G12-1 was repaired at the manufacturing sites — the coercions
+        # now fill those cells with r1..rn before anything reads them — and
+        # that is the right place for it, because a row-label column ought to
+        # carry labels. This is the other half: a probe that is handed a cell
+        # it cannot read must report `.unreadable`, not raise, whatever
+        # produced the cell. Any future caller reaching here with a "?" gets
+        # the answer the contract above promises instead of a stack trace.
         for .row from 1 to .nRows
             selectObject: .tableId
             .cell$ = Get value: .row, .columnName$
-            if .cell$ = "" or .cell$ = "--undefined--"
+            if .cell$ = "" or .cell$ = "--undefined--" or .cell$ = "?"
                 if .unreadable = 0
                     .unreadable = 1
                     .firstBadRow = .row

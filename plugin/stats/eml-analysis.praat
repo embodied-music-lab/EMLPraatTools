@@ -1742,13 +1742,82 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
     # wide margin whenever changes are consistent in direction but variable
     # in size, and nothing on screen distinguished them. In "both" mode each
     # test reports its own, under its own heading.
+    .didParametric = 0
+    .didNonparametric = 0
+    .failParametric$ = ""
+    .failNonparametric$ = ""
     if .testType$ = "parametric" or .testType$ = "both"
         @emlTTestPaired: .v1#, .v2#, 2
         @emlCohenDz: .v1#, .v2#
+        .didParametric = 1
+        .failParametric$ = emlTTestPaired.error$
     endif
     if .testType$ = "nonparametric" or .testType$ = "both"
         @emlWilcoxonSignedRank: .v1#, .v2#, 2
         @emlMatchedPairsR: .v1#, .v2#, 2
+        .didNonparametric = 1
+        .failNonparametric$ = emlWilcoxonSignedRank.error$
+    endif
+
+    # ── A FAILED ANALYSIS IS A REFUSAL, NOT A RESULT ─────────────────────
+    #
+    # NEW-G12-3, 15 Aug 2026. On validate/redpath/r3_zero_variance.csv every
+    # value is 80, so every difference is zero: @emlTTestPaired sets "All
+    # differences are identical (zero variance)" and @emlWilcoxonSignedRank
+    # sets "All differences are zero; cannot perform test". Neither was read
+    # here. .error$ stayed empty, the orchestrator returned success, and
+    # scripts/eml-compare-paired.praat put up "Analysis complete" with Save,
+    # Draw and New under it -- while the only sentence saying nothing had run
+    # sat six lines up the Info window, prefixed "Paired t-test error:".
+    # Compare the audit's two screenshots: G12.07 is that dialog; G12.09 is
+    # the singleton-group refusal, which the audit names the plugin's gold
+    # standard because it names the groups, the n and the rule, and keeps the
+    # user's selections on Back. Both are this plugin refusing the same kind
+    # of thing. The inconsistency IS the finding.
+    #
+    # So the refusal is raised the way the gold standard raises it: through
+    # .error$, which scripts/eml-compare-paired.praat already routes into
+    # @emlErrorDialog, and it carries the same three things -- WHICH columns,
+    # WHAT n, and WHY, in each test's own words rather than a paraphrase that
+    # can drift from them.
+    #
+    # ONLY WHEN NOTHING RAN. In "both" mode a t-test that fails beside a
+    # Wilcoxon that succeeds is not a refusal: the report prints the one that
+    # worked and names the one that did not, which is the existing behaviour
+    # and is correct. The gate is that no requested family produced a test.
+    #
+    # .remedy$ stays empty, for D97's reason: zero variance is a property of
+    # the data, not a wrong menu choice, so there is no other EML entry to
+    # send the user to and the dialog should not invent one.
+    .ranSomething = 0
+    if .didParametric = 1
+        if .failParametric$ = ""
+            .ranSomething = 1
+        endif
+    endif
+    if .didNonparametric = 1
+        if .failNonparametric$ = ""
+            .ranSomething = 1
+        endif
+    endif
+    if .ranSomething = 0
+        .error$ = "No paired test could be run on these two columns. """
+        ... + .col1$ + """ and """ + .col2$ + """ give n = " + string$ (.n)
+        ... + " complete pairs, and every one of those pairs has the same "
+        ... + "difference, so there is no variation in the differences for "
+        ... + "a paired test to work on."
+        if .failParametric$ <> ""
+            .error$ = .error$ + " Paired t-test: " + .failParametric$ + "."
+        endif
+        if .failNonparametric$ <> ""
+            .error$ = .error$ + " Wilcoxon signed-rank: "
+            ... + .failNonparametric$ + "."
+        endif
+        if .nExcluded > 0
+            @eml_completeCaseDisclosure: .n + .nExcluded, .n, .nExcluded, ""
+            .error$ = .error$ + " " + eml_completeCaseDisclosure.note$
+        endif
+        goto END_PAIRED
     endif
 
     @emlCSVInit
@@ -2347,22 +2416,125 @@ procedure emlNormalityRecommendation: .skewness, .kurtosis, .n, .swP, .swError$
     endif
 endproc
 
-# v1.2 item 7: .testType$ is RESERVED and deliberately unread. This
-# orchestrator always computes both families of evidence — descriptive shape
-# (skewness/kurtosis) and the formal Shapiro-Wilk test — and combines them
-# into one recommendation; there is no branch to select. Existing call sites
-# already pass different values ("both", "auto") with identical results.
+# ============================================================================
+# @eml_normalityPress: .tableName$, .dataCol$, .testType$   ->  .accumulate
+#
+# INIT ONCE PER PRESS, ACCUMULATE PER LOOP. (NEW-G1-1, 15 Aug 2026.)
+#
+# scripts/eml-check-normality.praat tests EVERY numeric column in one press of
+# Run: one `for iSel from 1 to nNumericCols` loop, one call to
+# @emlRunNormalityAnalysis per column, then one Save. The orchestrator cleared
+# the collectors at its own entry, so each pass of that loop wiped the pass
+# before it and Save wrote the LAST column only. On the audit's fixture the
+# report carried all three columns and the tidy frame carried one row --
+# numerically perfect, which is exactly what made the loss invisible. Same
+# init-discipline family as D66.
+#
+# The fix cannot be "clear at the wrapper instead": the wrapper's per-press
+# hook would be a line in scripts/eml-check-normality.praat, and the wizard
+# reaches the same orchestrator with no loop at all. So the boundary is
+# detected here, from state that is already maintained, and every clause below
+# is a way for a call to be the FIRST of a press rather than the second:
+#
+#   .testType$ = "single"   the wizard's literal, at eml-wizard.praat:1698.
+#                           That page runs one column per press and offers
+#                           Save on each; two presses must not merge. This is
+#                           the one place the third argument is read, and the
+#                           comment below that used to call it deliberately
+#                           unread is corrected accordingly.
+#   no press open           emlNorm_n is this procedure's own record of the
+#                           press in flight. Zero or absent means there is no
+#                           press to join. NOT emlResult_declared: v46 pins
+#                           that only stats/eml-output.praat may branch on the
+#                           migration flag, one decision point for one
+#                           question, and this is a different question asked
+#                           in a different file. The press keeps its own
+#                           state rather than borrowing that one.
+#   a different analysis    an ANOVA ran in between; its frames are not ours.
+#   a different table       the user changed objects.
+#   emlReportAnalysis$ set  @emlHandleCommonFields sets it on EVERY Run, in
+#                           every wrapper, and @emlReportHeader consumes it on
+#                           the first report printed. So it is non-empty at
+#                           the top of column 1 and empty at the top of column
+#                           2 -- the once-per-Run signal, already in the tree
+#                           for D27, and the only one that survives Save/New.
+#   the column repeats      belt and braces: a second press over the same
+#                           column list starts with a column already held.
+#
+# Praat evaluates BOTH operands of `and`, so these are nested ifs, not one
+# conjunction: none of these globals exists until something has set it.
+# ============================================================================
+procedure eml_normalityPress: .tableName$, .dataCol$, .testType$
+    .accumulate = 0
+    if .testType$ <> "single"
+        if variableExists ("emlNorm_n")
+            if emlNorm_n > 0
+                if emlNorm_table$ = .tableName$
+                    .accumulate = 1
+                endif
+            endif
+        endif
+    endif
+    if .accumulate = 1
+        .stillOurs = 0
+        if variableExists ("emlResult_analysis$")
+            if emlResult_analysis$ = "Normality"
+                .stillOurs = 1
+            endif
+        endif
+        .accumulate = .stillOurs
+    endif
+    if .accumulate = 1
+        if variableExists ("emlReportAnalysis$")
+            if emlReportAnalysis$ <> ""
+                .accumulate = 0
+            endif
+        endif
+    endif
+    if .accumulate = 1
+        for .i from 1 to emlNorm_n
+            if emlNorm_col$ [.i] = .dataCol$
+                .accumulate = 0
+            endif
+        endfor
+    endif
+endproc
+
+# v1.2 item 7, AMENDED 15 Aug 2026: .testType$ was RESERVED and deliberately
+# unread, because this orchestrator always computes both families of evidence
+# — descriptive shape (skewness/kurtosis) and the formal Shapiro-Wilk test —
+# and combines them into one recommendation; there is no branch to select.
+# It is now read in exactly one place, @eml_normalityPress above, where the
+# wizard's "single" marks a press that tests one column and must not be
+# merged into a neighbouring one. Existing call sites pass "both", "auto" and
+# "single"; the first two behave identically, as they always did.
 # The parameter is retained because callers pass arguments positionally.
 # Do not remove it without updating every call site.
 procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
     .recResult$ = ""
+
+    ; The press boundary is decided BEFORE anything is cleared, because the
+    ; evidence it reads is what the clearing would destroy.
+    selectObject: .tableId
+    .pressTable$ = selected$ ("Table")
+    @eml_normalityPress: .pressTable$, .dataCol$, .testType$
+    .accumulate = eml_normalityPress.accumulate
+
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
     ; would then still be set. Demonstrated 6 Aug 2026: a repeated-measures run
     ; that bailed on "Need at least 2 condition columns" exported the previous
     ; analysis's tidy and glance under the RM name.
-    @emlCSVInit
+    ;
+    ; NOT on a continuation, and that is the whole of NEW-G1-1: mid-loop the
+    ; flag describes THIS press, which is still running, and clearing it would
+    ; throw away the columns already tested. Skipping it also means a column
+    ; that fails its guard at pass 3 leaves passes 1 and 2 exportable rather
+    ; than taking the press down with it.
+    if .accumulate = 0
+        @emlCSVInit
+    endif
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists (D93).
     .remedy$ = ""
@@ -2454,7 +2626,12 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         .largeNOverride = emlNormalityRecommendation.largeNOverride
         .recommendation$ = emlNormalityRecommendation.recommendation$
 
-        @emlCSVInit
+        ; Skipped mid-loop for the reason given at entry: on a continuation
+        ; this would clear the declaration flag that the columns already
+        ; tested are riding on.
+        if .accumulate = 0
+            @emlCSVInit
+        endif
         @emlReportNormalityAnalysis: .tableName$, .dataCol$,
         ... .nValid, .nUndefined
     endif
@@ -2463,7 +2640,7 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         @emlResultClearExtras
         @emlDeclareNormalityResult: .tableName$, .dataCol$, .swW, .swP,
         ... .swError$, .skewness, .kurtosis, .nValid, .nUndefined,
-        ... .recommendation$
+        ... .recommendation$, .accumulate
     endif
 
     ; .swW, .swP, .skewness and .kurtosis are this procedure's own locals --
@@ -2548,6 +2725,66 @@ procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measu
 
     selectObject: .tableId
 endproc
+
+# ============================================================================
+# @eml_completeCaseDisclosure: .nRows, .n, .nExcluded, .parseNote$  -> .note$
+#
+# WHAT A REFUSAL IS ALLOWED TO CLAIM. (NEW-G6-1, 15 Aug 2026.)
+#
+# The repeated-measures and Friedman paths drop a row unless every condition
+# cell in it is present -- listwise, because per-column deletion would break
+# the within-subject pairing. That exclusion was disclosed on the SUCCESS path
+# only, in the "row(s) excluded for missing data" note printed under the
+# results. On the REFUSAL path nothing said it at all, and the refusal text is
+# a claim about the very population that was quietly reduced:
+#
+#   "The subject x condition residual is zero: every subject shows exactly
+#    the same pattern across conditions."
+#
+# On validate/redpath/r1_incomplete_cases.csv that sentence is true of the
+# four subjects that survived listwise deletion and says nothing about the
+# four that did not. A reader is told a fact about "every subject" over half a
+# table, with no indication that the other half was ever there. The
+# arithmetic was right; the sentence was not.
+#
+# The wording follows the one the plugin already gets right -- describe's
+# "N excluded 3 · 3 cell(s) empty (row 3 first). Treated as missing data." --
+# because that phrasing was named in the audit as worth preserving and
+# because two disclosure styles for one condition is how a reader learns to
+# skip both. @emlAuditColumn's per-column note is carried through verbatim, so
+# the row numbers a user would go and look at are the ones they are given.
+#
+# ONE PARAGRAPH, NO NEWLINES. This string reaches @emlErrorDialog, which
+# hands it to @emlWrapText at 62 columns; an embedded newline would survive
+# into a `comment:` line and print as a control character rather than a break.
+#
+# ASCII ONLY, and this is the one place the wording departs from describe's.
+# The audit renders describe's disclosure with a middle dot -- "N excluded 3 ·
+# 3 cell(s) empty (row 3 first)." -- and that separator cannot be used here.
+# The string is appended to an orchestrator's .error$, and .error$ is passed
+# to @emlRecordAnalysisStep as the refusal note for the step, which is written
+# into a RECORDED SCRIPT. Praat writes a text file as UTF-16 the moment its
+# content contains one non-ASCII character, so a session that hit this refusal
+# while recording would produce a .praat file that runs and cannot be diffed.
+# The reliability path learned this in its own words; see the comment in
+# @emlRunReliabilityAnalysis. The substance is describe's -- the count, the
+# per-column note verbatim from @emlAuditColumn, and "Treated as missing
+# data." -- and only the punctuation is ASCII.
+# ============================================================================
+procedure eml_completeCaseDisclosure: .nRows, .n, .nExcluded, .parseNote$
+    .note$ = ""
+    if .nExcluded > 0
+        .note$ = "Assessed on " + string$ (.n) + " of " + string$ (.nRows)
+        ... + " rows. N excluded " + string$ (.nExcluded)
+        ... + " -- a row is used only when every column in the comparison "
+        ... + "has a value, which is what keeps the pairing intact. "
+        ... + "Treated as missing data."
+        if .parseNote$ <> ""
+            .note$ = .note$ + " " + .parseNote$
+        endif
+    endif
+endproc
+
 
 # ============================================================================
 # @emlExtractConditionMatrix
@@ -2642,6 +2879,13 @@ procedure emlExtractConditionMatrix: .tableId, .conditionCols$
     .nExcluded = .nRows - .nComplete
     if .n < 2
         .error$ = "Need at least 2 complete-case subjects (rows with all conditions present)."
+        ; NEW-G6-1. "Need at least 2" over a table of eight reads as a data
+        ; shortage the user does not have. What they have is an exclusion,
+        ; and the note names which column emptied which row.
+        @eml_completeCaseDisclosure: .nRows, .n, .nExcluded, .parseNote$
+        if eml_completeCaseDisclosure.note$ <> ""
+            .error$ = .error$ + " " + eml_completeCaseDisclosure.note$
+        endif
         goto END_EXTRACT_COND
     endif
     # Second pass: fill matrix
@@ -2962,8 +3206,20 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     # D97. A zero error term is a property of the data, not a bad form
     # setting, so there is no other menu item that would work on it: the
     # remedy stays empty and the dialog says only what is wrong.
+    #
+    # NEW-G6-1. What it says has to be true of the sample it was computed on.
+    # @emlRMAnovaTest sees the complete-case matrix, so "every subject shows
+    # exactly the same pattern" means every RETAINED subject; on
+    # validate/redpath/r1_incomplete_cases.csv that is four of eight, and
+    # until now nothing on the refusal path said so -- the exclusion note is
+    # printed further down, on the success path, which this jump skips.
     if emlRMAnovaTest.error$ <> ""
         .error$ = emlRMAnovaTest.error$
+        @eml_completeCaseDisclosure: .n + .nExcluded, .n, .nExcluded,
+        ... emlExtractConditionMatrix.parseNote$
+        if eml_completeCaseDisclosure.note$ <> ""
+            .error$ = .error$ + " " + eml_completeCaseDisclosure.note$
+        endif
         goto END_RM
     endif
 
@@ -3446,25 +3702,59 @@ procedure emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
     @emlGlanceStr: "method", "One-way ANOVA"
 
     ; ---- augment: the input table plus what the model says about each row ----
+    ;
+    ; LEVERAGE, AND WHY IT IS EXACT HERE. (NEW-G4-1, 15 Aug 2026.)
+    ; This emitted `.std.resid` as resid / sigma, with no leverage term. That
+    ; is not broom's .std.resid: augment(aov) returns rstandard(), which is
+    ; e_i / (s * sqrt(1 - h_i)). D58 corrected the regression arm through
+    ; @emlOLSInfluence and stopped there, so the two ANOVA arms went on
+    ; publishing a different quantity under R's name -- a uniform 4.4%
+    ; understatement on the audit's balanced two-way demo (1 / sqrt(1 - 1/12)
+    ; = 1.044466), and a per-observation one that grows with leverage as soon
+    ; as the design is unbalanced.
+    ;
+    ; No hat matrix has to be formed. A one-way ANOVA fits one mean per group,
+    ; so the fitted value of an observation is its own group's mean and the
+    ; leverage is exactly 1 / n_group -- the projection onto a group-indicator
+    ; basis, computed here from the count the glance frame already used. Same
+    ; identity, same arithmetic, no linear algebra.
+    ;
+    ; `.hat` was already reserved in emlVocabAugment$ and never emitted, so
+    ; the leverage that does the correcting is now in the file beside the
+    ; corrected value. Nothing had to be added to the vocabulary -- and had it
+    ; needed adding, @eml_orderedCols would have dropped the column in silence
+    ; rather than complaining, which is why this is stated rather than assumed.
+    ;
+    ; A group of one has leverage 1, so its standardised residual is 0/0.
+    ; @emlOneWayAnova refuses that case before reaching here (a group needs at
+    ; least 2 observations), but the guard is written anyway: an empty cell
+    ; reads back as NA, which is what R prints for the same row.
     @emlAugmentFrom: .tableId
     selectObject: .tableId
     .nRows = Get number of rows
+    .sigma = sqrt (emlOneWayAnova.msWithin)
     for .r from 1 to .nRows
         selectObject: .tableId
         .g$ = Get value: .r, .groupCol$
         .v$ = Get value: .r, .dataCol$
         .v = number (.v$)
         .fit = undefined
+        .hat = undefined
         for .g from 1 to emlOneWayAnova.nGroups
             if emlOneWayAnova.groupLabel$ [.g] = .g$
                 .fit = emlOneWayAnova.groupMean [.g]
+                .hat = 1 / emlOneWayAnova.groupN [.g]
             endif
         endfor
         if .fit <> undefined and .v <> undefined
             @emlAugmentNum: ".fitted", .r, .fit
             @emlAugmentNum: ".resid", .r, .v - .fit
-            @emlAugmentNum: ".std.resid", .r,
-            ... (.v - .fit) / sqrt (emlOneWayAnova.msWithin)
+            @emlAugmentNum: ".hat", .r, .hat
+            .std = undefined
+            if .hat < 1
+                .std = (.v - .fit) / (.sigma * sqrt (1 - .hat))
+            endif
+            @emlAugmentNum: ".std.resid", .r, .std
         endif
     endfor
 
@@ -3826,15 +4116,33 @@ procedure emlDeclareTwoWayResult: .tableName$, .dataCol$, .factor1$, .factor2$,
         @emlGlanceStr: "warning", emlTwoWayAnova.warning$
     endif
 
+    ; LEVERAGE, exactly as in @emlDeclareOneWayAnovaResult and for the same
+    ; reason -- read the note there first. (NEW-G4-1, 15 Aug 2026.)
+    ; This model is saturated: the fitted value of an observation is its
+    ; CELL's mean, so the leverage is 1 / n_cell and no hat matrix is formed.
+    ; On the audit's balanced demo every cell holds 12, so every observation's
+    ; correction was the same 1.044466 and the error read as a scale factor
+    ; rather than as a mistake. It is not a scale factor: on the unbalanced
+    ; probe the cells run 8 to 12 and the correction runs with them.
     @emlAugmentFrom: .tableId
+    .sigma = sqrt (emlTwoWayAnova.msError)
     for .r from 1 to emlTwoWayAnova.nRows
         .c = emlTwoWayAnova.cellOf [.r]
         if .c > 0
             .fit = emlTwoWayAnova.cellMean [.c]
+            .hat = 1 / emlTwoWayAnova.cellN [.c]
             @emlAugmentNum: ".fitted", .r, .fit
             @emlAugmentNum: ".resid", .r, emlTwoWayAnova.yValue [.r] - .fit
-            @emlAugmentNum: ".std.resid", .r,
-            ... (emlTwoWayAnova.yValue [.r] - .fit) / sqrt (emlTwoWayAnova.msError)
+            @emlAugmentNum: ".hat", .r, .hat
+            ; A cell of one has leverage 1 and no standardised residual.
+            ; @emlTwoWayAnova already declines that design; the cell stays
+            ; empty rather than infinite if it ever arrives.
+            .std = undefined
+            if .hat < 1
+                .std = (emlTwoWayAnova.yValue [.r] - .fit)
+                ... / (.sigma * sqrt (1 - .hat))
+            endif
+            @emlAugmentNum: ".std.resid", .r, .std
         endif
     endfor
 endproc
@@ -4113,31 +4421,125 @@ endproc
 # --- 9. Normality ----------------------------------------------------------
 # Reads emlRunNormalityAnalysis.* -- the one orchestrator that copies every
 # value onto itself, so nothing here depends on procedure-global survival.
+#
+# ACCUMULATION IS A REPLAY, NOT AN APPEND. (NEW-G1-1, 15 Aug 2026.)
+#
+# The obvious fix for the lost columns is to skip @emlResultBegin on a
+# continuation and let @emlTidyRow append. It does not work, and the reason is
+# the GLANCE frame: it holds exactly one row, it was already filled with
+# column 1's W, p, skewness and kurtosis, and the result writer offers a
+# tidy-only clear (@emlTidyClear) and no glance-only clear. Appending would
+# have fixed the tidy frame and left glance asserting one unnamed column's
+# statistics over a three-column run -- which is the misleading half of the
+# same finding.
+#
+# So the press keeps its own record, in emlNorm_*, and EVERY call re-declares
+# the whole press from it. @emlResultBegin then runs on every call as it
+# always did, the collectors are never half-written, and the glance decision
+# is taken knowing how many columns the press holds rather than guessing on
+# the first one.
+#
+# WHAT THE GLANCE ROW SAYS WHEN THERE IS MORE THAN ONE MODEL. broom has no
+# answer to this -- you would map glance() over the models and rbind -- and
+# emlVocabGlance$ has no `term`, so a per-column identifier cannot be added
+# from here (the vocabulary is a whitelist in eml-result-writer.praat, and a
+# column not in it is dropped by @eml_orderedCols without a word). The row
+# therefore carries only what is true OF THE RUN: the method, a `warning` that
+# names the columns and says where the per-column numbers are, and nobs /
+# n.excluded / alternative when every column agrees on them and nothing at all
+# when they do not. Per-column skewness and kurtosis have no tidy vocabulary
+# to move into and stay in the report, where they always were.
 procedure emlDeclareNormalityResult: .tableName$, .dataCol$, .swW, .swP,
-    ... .swError$, .skewness, .kurtosis, .nValid, .nUndefined, .recommendation$
+    ... .swError$, .skewness, .kurtosis, .nValid, .nUndefined,
+    ... .recommendation$, .accumulate
+    ; Nested, not `or`: Praat evaluates both operands, and emlNorm_n does not
+    ; exist on the first call of a session.
+    .reset = 1
+    if .accumulate = 1
+        if variableExists ("emlNorm_n")
+            .reset = 0
+        endif
+    endif
+    if .reset = 1
+        emlNorm_n = 0
+    endif
+    emlNorm_table$ = .tableName$
+    emlNorm_n = emlNorm_n + 1
+    emlNorm_col$ [emlNorm_n]    = .dataCol$
+    emlNorm_w [emlNorm_n]       = .swW
+    emlNorm_p [emlNorm_n]       = .swP
+    emlNorm_err$ [emlNorm_n]    = .swError$
+    emlNorm_skew [emlNorm_n]    = .skewness
+    emlNorm_kurt [emlNorm_n]    = .kurtosis
+    emlNorm_nValid [emlNorm_n]  = .nValid
+    emlNorm_nExcl [emlNorm_n]   = .nUndefined
+    emlNorm_rec$ [emlNorm_n]    = .recommendation$
+
     @emlResultBegin: .tableName$, "Normality"
 
-    if .swError$ = ""
-        @emlTidyRow: .dataCol$
-        @emlTidyNum: "statistic", .swW
-        @emlTidyNum: "p.value",   .swP
-        @emlTidyStr: "method",    "Shapiro-Wilk normality test"
-        @emlGlanceNum: "statistic", .swW
-        @emlGlanceNum: "p.value",   .swP
-        @emlGlanceStr: "method",    "Shapiro-Wilk normality test"
+    ; ---- tidy: one row per column tested, in the order they were tested ----
+    for .i from 1 to emlNorm_n
+        @emlTidyRow: emlNorm_col$ [.i]
+        if emlNorm_err$ [.i] = ""
+            @emlTidyNum: "statistic", emlNorm_w [.i]
+            @emlTidyNum: "p.value",   emlNorm_p [.i]
+            @emlTidyStr: "method",    "Shapiro-Wilk normality test"
+        else
+            ; Shapiro-Wilk out of range is not a failed export -- the shape
+            ; statistics are still the answer, and the reason is carried.
+            @emlTidyStr: "method", "Shape statistics only"
+        endif
+    endfor
+
+    ; ---- glance: one row for the model, when there is one model ----
+    if emlNorm_n = 1
+        if emlNorm_err$ [1] = ""
+            @emlGlanceNum: "statistic", emlNorm_w [1]
+            @emlGlanceNum: "p.value",   emlNorm_p [1]
+            @emlGlanceStr: "method",    "Shapiro-Wilk normality test"
+        else
+            @emlGlanceStr: "method",  "Shape statistics only"
+            @emlGlanceStr: "warning", emlNorm_err$ [1]
+        endif
+        @emlGlanceNum: "skewness",    emlNorm_skew [1]
+        @emlGlanceNum: "kurtosis",    emlNorm_kurt [1]
+        @emlGlanceNum: "nobs",        emlNorm_nValid [1]
+        @emlGlanceNum: "n.excluded",  emlNorm_nExcl [1]
+        @emlGlanceStr: "alternative", emlNorm_rec$ [1]
     else
-        ; Shapiro-Wilk out of range is not a failed export -- the shape
-        ; statistics are still the answer, and the reason is carried.
-        @emlTidyRow: .dataCol$
-        @emlTidyStr: "method", "Shape statistics only"
-        @emlGlanceStr: "method",  "Shape statistics only"
-        @emlGlanceStr: "warning", .swError$
+        .sameN = 1
+        .sameExcl = 1
+        .sameRec = 1
+        .list$ = emlNorm_col$ [1]
+        for .i from 2 to emlNorm_n
+            .list$ = .list$ + ", " + emlNorm_col$ [.i]
+            if emlNorm_nValid [.i] <> emlNorm_nValid [1]
+                .sameN = 0
+            endif
+            if emlNorm_nExcl [.i] <> emlNorm_nExcl [1]
+                .sameExcl = 0
+            endif
+            if emlNorm_rec$ [.i] <> emlNorm_rec$ [1]
+                .sameRec = 0
+            endif
+        endfor
+        @emlGlanceStr: "method", "Shapiro-Wilk normality test"
+        if .sameN
+            @emlGlanceNum: "nobs", emlNorm_nValid [1]
+        endif
+        if .sameExcl
+            @emlGlanceNum: "n.excluded", emlNorm_nExcl [1]
+        endif
+        if .sameRec
+            @emlGlanceStr: "alternative", emlNorm_rec$ [1]
+        endif
+        @emlGlanceStr: "warning", string$ (emlNorm_n)
+        ... + " columns were tested in this run (" + .list$ + "). A glance "
+        ... + "frame is one row per model and cannot describe "
+        ... + string$ (emlNorm_n) + "; the per-column W and p are in the "
+        ... + "tidy frame, and the skewness, kurtosis and recommendation "
+        ... + "for each column are in the report."
     endif
-    @emlGlanceNum: "skewness",    .skewness
-    @emlGlanceNum: "kurtosis",    .kurtosis
-    @emlGlanceNum: "nobs",        .nValid
-    @emlGlanceNum: "n.excluded",  .nUndefined
-    @emlGlanceStr: "alternative", .recommendation$
 endproc
 
 

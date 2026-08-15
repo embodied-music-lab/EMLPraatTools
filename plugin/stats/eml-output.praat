@@ -2,7 +2,42 @@
 # EML Stats : Output Formatting
 # ============================================================================
 # Module: eml-output.praat
-# Version: 2.3
+# Version: 2.4
+# v2.4: THE TWO GUARDS THAT KEEP A SAVE FROM KILLING THE SESSION, plus the
+#       receipt that could not draw what it was given, plus a probe that
+#       assumed instead of classifying. Four defects, all confirmed live at
+#       HEAD before a line was changed (audit of 14 Aug 2026, §3 S4 and §6).
+#
+#       NEW-G2-1, sev 2 -- a "/" in the Base name field reached writeFile:
+#         verbatim. Praat stopped the script inside @emlSavePanel, so the
+#         receipt never drew, the panel never returned, and the caller's
+#         Done | Save | Draw | New loop was gone with the analysis behind it.
+#         @eml_saveSafeBaseName now makes the typed name into a file name
+#         ONCE, before the collision walk, so every file of one press still
+#         shares one base name and one stamp.
+#       NEW-G12-5, sev 2 -- an unwritable target folder did the same thing
+#         one step later, with "unexpected error 30" for a message, and an
+#         unwritable PARENT did it one step earlier on the panel's own bare
+#         `createFolder:`. @eml_saveFolderWritable asks both questions once,
+#         with `nocheck` so the asking cannot itself abort, and the panel now
+#         RETURNS on a no instead of dying on one.
+#       SAVED-OVERPRINT, sev 4, five sightings -- the "Saved" receipt reserved
+#         one line per comment: and the toolkit drew several when a path was
+#         longer than the dialog, so each long path printed its tail over the
+#         path below. Every line now goes through @emlWrapText at 62
+#         characters, the width measured on 6.6.30 and the one
+#         @emlErrorDialog already uses.
+#       NEW-G12-1, sev 2 (this file's half) -- author ruling, 15 Aug 2026:
+#         "probe should classify column types, never assume numeric."
+#         @emlWrapperInit's coercion arms manufacture a "row" column out of
+#         row labels that a Matrix never has and a TableOfReal may not have.
+#         Praat renders those undefined cells as "?", which is neither of the
+#         two forms @eml_strictNumericColumn's scan recognises, so the
+#         numericiser behind it raised before the wrapper's dialog opened --
+#         on EVERY Matrix, every unlabelled TableOfReal and every partially
+#         labelled one. @eml_auditLabelColumn classifies the column and makes
+#         it readable; it does not invent default labels, so it composes with
+#         whatever the conversion side decides to put there.
 # v2.3: @emlWrapperExportCSV DELETED (author ruling, 14 Aug 2026: "We can
 #       retire the superseded csv wrapper code if we use it nowhere now").
 #       It had no callers in any tree. A tombstone stands where it was,
@@ -90,11 +125,19 @@
 # Part of the EML Stats library (EML Praat Tools).
 # License: GPL-3.0-or-later
 #
-# Provides: 55 procedures. THE COUNTING RULE, so the number can be checked
+# Provides: 60 procedures. THE COUNTING RULE, so the number can be checked
 # rather than believed:
 #     grep -c "^procedure " plugin/stats/eml-output.praat
-# Two of the 55 are private and are named with an underscore after the prefix
-# (@eml_csvQuote, @eml_csvAppend); the other 53 are public. By family:
+# Six of the 60 are private and are named with an underscore after the prefix
+# (@eml_csvQuote, @eml_csvAppend, @eml_auditLabelColumn,
+# @eml_saveSafeBaseName, @eml_saveFolderWritable, @eml_saveReceiptLines);
+# the other 54 are public.
+#
+# THE NUMBER READ 55 AGAINST A FILE OF 56 until 15 August 2026, and the
+# counting rule above is what settled it: @emlExportResultFiles had been
+# written in v2.0 and never added to the family list below, so the headline
+# and the families agreed with each other and neither agreed with the file.
+# It is in the CSV export family now. By family:
 #
 #   Report frame — @emlReportHeader, @emlReportFooter, @emlReportSection,
 #     @emlReportLine, @emlReportLineString, @emlReportBlank,
@@ -106,7 +149,8 @@
 #     @emlFormatEffectLabel, @emlPadRight, @emlUnderscoreToSpace,
 #     @emlWrapText
 #   CSV export — @emlCSVInit, @emlCSVSetTable, @emlCSVTermType, @emlCSVAdd,
-#     @emlCSVAddStr, @emlCSVAddDescriptives, @emlExportStatsCSV
+#     @emlCSVAddStr, @emlCSVAddDescriptives, @emlExportStatsCSV,
+#     @emlExportResultFiles
 #     (this list read "@emlCSVAddRow" until 8 Aug 2026. No such procedure has
 #     ever existed anywhere in the plugin —
 #     grep -rn "^procedure emlCSVAddRow" plugin/ returns nothing — although
@@ -117,9 +161,13 @@
 #     There is no procedure that writes a whole analysis in one call, which
 #     is what the name @emlCSVAddRow implied.)
 #   Wrapper plumbing — @emlWrapperInit, @emlWrapperCommonFields,
-#     @emlHandleCommonFields
+#     @emlHandleCommonFields, @eml_auditLabelColumn (private)
 #   Saving — @emlSavePanel (the one save journey; @emlWrapperExportCSV was in
-#     this list until it was deleted on 14 Aug 2026 — see its tombstone)
+#     this list until it was deleted on 14 Aug 2026 — see its tombstone),
+#     with its two entry guards @eml_saveSafeBaseName and
+#     @eml_saveFolderWritable and its receipt builder @eml_saveReceiptLines
+#     (all three private; the panel owns the naming contract, so the panel
+#     owns the characters, the target check and the receipt's line breaks)
 #   Wizard glosses — @emlResetExplanations plus the 17 @emlWizardExplain*
 #     helpers (grep -c "^procedure emlWizardExplain")
 #   Errors — @emlErrorDialog
@@ -1024,10 +1072,73 @@ procedure emlCSVInit
         emlResult_extraN = 0
     endif
 
+    @emlCSVInitRows
+endproc
+
+
+# @emlCSVInitRows
+# ────────────────────────────────────────────────────────────────────────────
+# THE ROW HALF OF @emlCSVInit, AND NOTHING ELSE. Empties the collector and
+# leaves emlResult_declared exactly as it was.
+#
+# WHO WANTS THIS. A caller that fills the collector but does NOT declare --
+# the graphs form's scatter arm is the one there is (NEW-G8-3, 15 Aug 2026:
+# nine draws in one session appended nine value-identical blocks to the export
+# because nothing on that path ever reset anything). Calling @emlCSVInit there
+# would clear the rows and ALSO clear a declaration the scatter cannot replace,
+# so a wrapper -> annotated-scatter journey would stop writing tidy and glance
+# and drop to the legacy single file: one export defect traded for another.
+#
+# WHY IT IS A PROCEDURE HERE RATHER THAN FOUR LINES THERE. Two reasons, and the
+# second is the load-bearing one. The field list belongs to the file that owns
+# the collector, so a fifth field added to it cannot be forgotten at a second
+# site. And validate/v46 holds an invariant worth keeping: ONE FILE MAY BRANCH
+# ON MIGRATION STATE, and it is this one. The first version of the graphs fix
+# saved and restored emlResult_declared across an @emlCSVInit from inside
+# eml-graphs-form.praat, which is a second file touching the migration flag --
+# v46 went red on it, correctly, and this procedure is what that red line
+# asked for.
+procedure emlCSVInitRows
     emlCSV_n = 0
     emlCSV_table$ = ""
     emlCSV_termType$ = ""
     emlCSV_nDesc = 0
+endproc
+
+
+# @emlCSVMark / @emlCSVRewind
+# ────────────────────────────────────────────────────────────────────────────
+# REMEMBER HOW MANY ROWS THERE WERE, AND GO BACK TO IT. For a caller that may
+# run a reporting pass it then throws away.
+#
+# The graphs form is again the one there is: a figure whose legend needs
+# y-axis room is drawn TWICE, and the second pass is drawn on an expanded axis
+# with the first discarded entirely. The Info window's duplication is
+# deliberate and labelled -- Praat cannot un-print a flushed line -- but rows
+# that have not been written to a file yet are a different matter, and a figure
+# that was never on the page has no business in the export. Measured 15 Aug
+# 2026: three presses of a grouped scatter, every key in the exported CSV
+# appearing twice, from a run whose presses were already deduped.
+#
+# NOT A STACK. One mark, because the one caller has one nesting level, and a
+# stack nobody pops is a leak with extra steps.
+procedure emlCSVMark
+    emlCSVMark_have = 0
+    if variableExists ("emlCSV_n")
+        emlCSVMark_n = emlCSV_n
+        emlCSVMark_nDesc = 0
+        if variableExists ("emlCSV_nDesc")
+            emlCSVMark_nDesc = emlCSV_nDesc
+        endif
+        emlCSVMark_have = 1
+    endif
+endproc
+
+procedure emlCSVRewind
+    if emlCSVMark_have = 1
+        emlCSV_n = emlCSVMark_n
+        emlCSV_nDesc = emlCSVMark_nDesc
+    endif
 endproc
 
 
@@ -1209,6 +1320,43 @@ endproc
 #   .actualPath$ the single file written (legacy arm)
 #   .reason$     "" | "empty" | "write"
 # ────────────────────────────────────────────────────────────────────────────
+
+# ────────────────────────────────────────────────────────────────────────────
+# @emlHaveExportableResult -- is there anything for the export step to write?
+#
+# WHY THIS EXISTS AS A PROCEDURE rather than as three lines at each call site.
+# The question "has an analysis produced something exportable" has exactly two
+# answers, and they live on two different sides of the broom migration: an
+# unconverted analysis fills the legacy buffer (emlCSV_n), a converted one
+# declares into the broom collectors (emlResult_declared). Anyone asking the
+# question has to know both, and to know that Praat does NOT short-circuit
+# `and`, so the read has to be nested or it aborts on the very session the
+# guard was written for.
+#
+# That knowledge belongs to this file and nowhere else. v46 pins exactly that:
+# only eml-output.praat may branch on the migration flag, because a second
+# reader is a second thing to update on the day the migration finishes -- and
+# the way this class of defect actually arrives is that the second reader is
+# updated late, or not at all, and disagrees silently. The recorder's replay
+# writer needs the answer (it writes the same set of files headlessly, with no
+# panel), so it asks rather than re-deriving.
+#
+# Returns .result = 1 when @emlExportResultFiles would write something.
+# ────────────────────────────────────────────────────────────────────────────
+procedure emlHaveExportableResult
+    .result = 0
+    if variableExists ("emlCSV_n")
+        if emlCSV_n > 0
+            .result = 1
+        endif
+    endif
+    if variableExists ("emlResult_declared")
+        if emlResult_declared = 1
+            .result = 1
+        endif
+    endif
+endproc
+
 procedure emlExportResultFiles: .folder$, .base$
     .declared = 0
     .success = 0
@@ -1391,6 +1539,184 @@ endproc
 #   tableId = emlWrapperInit.tableId
 #   tableName$ = emlWrapperInit.tableName$
 # ────────────────────────────────────────────────────────────────────────────
+
+# ────────────────────────────────────────────────────────────────────────────
+# @eml_auditLabelColumn: .tableId, .columnName$        (private)
+# ────────────────────────────────────────────────────────────────────────────
+# CLASSIFY THE LABEL COLUMN A COERCION MANUFACTURES. It does not assume the
+# column holds anything, and it does not invent anything to put in it.
+#
+# AUTHOR RULING, 15 August 2026: "probe should classify column types, never
+# assume numeric."
+#
+# WHAT IT IS FOR. `To Table: "row"` writes the source object's ROW LABELS into
+# a column called "row". A Matrix has none, and a TableOfReal may have none or
+# may have some. Praat stores a missing label as an UNDEFINED cell, and
+# `Get value:` renders an undefined cell as the one-character string "?" --
+# measured on 6.6.30, 15 Aug 2026. That string is not "" and it is not
+# "--undefined--", which are the two forms @eml_strictNumericColumn's scan
+# recognises, so the scan passed the column as readable and the numericiser
+# behind it raised:
+#
+#     Table "eml_numericProbe": the cell in row 1 of column "row" is
+#     undefined. ... cannot get all numbers in column 1.
+#
+# -- a native abort with an internal temp table's name in it, fired from
+# @emlGuessColumnRoles BEFORE the wrapper's dialog ever opened, on every
+# Matrix and on every TableOfReal whose row labels are missing or partial.
+# Reproduced at HEAD on all three shapes before this procedure was written.
+#
+# "?" ROUND-TRIPS BACK TO UNDEFINED. `Set string value: r, c$, "?"` stores an
+# undefined cell again, which is why the partial-label case died a second way:
+# @eml_strictOneCell copies the literal into a one-cell probe table named "v"
+# and the same raise came back with "v" in the message instead of "row".
+# So the repair cannot be "write the literal back"; it has to be to a string
+# Praat will actually keep.
+#
+# WHAT IT DOES, AND WHAT IT DELIBERATELY DOES NOT DO. Every unlabelled cell
+# becomes the EMPTY STRING -- a form every EML classifier already handles, and
+# the one @eml_strictNumericColumn was written to treat as unreadable. The
+# result is a classification (.strict = 0, .unreadable = 1) instead of an
+# abort, which is the whole of the ruling.
+#
+# It does NOT fill in default row labels, and it does not delete the column.
+# Default labels are a naming decision that belongs with the conversion side
+# of this work, not here, and this procedure is written so that it composes
+# with whatever that decision turns out to be: run against a column that is
+# already fully labelled it changes nothing and reports .nUnlabelled = 0, so
+# it is idempotent and order-independent. Whoever supplies labels first wins;
+# this only guarantees that whatever arrives is READABLE.
+#
+# Arguments:
+#   .tableId     - the converted Table
+#   .columnName$ - the label column's name ("row", or whatever the collision
+#                  rename left it as)
+# Outputs:
+#   .nRows, .nLabelled, .nUnlabelled
+#   .verdict$    - "labelled", "partial" or "empty"
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_auditLabelColumn: .tableId, .columnName$
+    .nRows = 0
+    .nLabelled = 0
+    .nUnlabelled = 0
+    .verdict$ = "empty"
+
+    selectObject: .tableId
+    .nRows = Get number of rows
+
+    for .r from 1 to .nRows
+        selectObject: .tableId
+        .cell$ = Get value: .r, .columnName$
+        if .cell$ = "" or .cell$ = "?" or .cell$ = "--undefined--"
+            .nUnlabelled = .nUnlabelled + 1
+            # Only when it is not ALREADY the empty string, so a table that
+            # needs nothing is not written to at all.
+            if .cell$ <> ""
+                Set string value: .r, .columnName$, ""
+            endif
+        else
+            .nLabelled = .nLabelled + 1
+        endif
+    endfor
+
+    if .nLabelled = 0
+        .verdict$ = "empty"
+    elsif .nUnlabelled > 0
+        .verdict$ = "partial"
+    else
+        .verdict$ = "labelled"
+    endif
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @eml_defaultRowLabels: .tableId, .columnName$        (private)
+# ────────────────────────────────────────────────────────────────────────────
+# ONE CONVENTION FOR THE MANUFACTURED ROW-LABEL COLUMN, AND THIS IS IT: r1..rn.
+#
+# The coercion had grown three of them, independently, and a Matrix reached a
+# different `row` column depending on which door the user came in by:
+#
+#     scripts/eml-describe-table.praat    r1 .. rn
+#     @emlWrapperInit (here)              empty -- readable, but blank
+#     @emlCleanConvertedTable (graphs)    1 .. n
+#
+# Three behaviours for one column is not three tastes; it is a table whose
+# shape depends on the menu item, and two of the three are wrong for the same
+# reason: 1..n is a column of bare integers, which every numeric filter in
+# this plugin classifies as a measurement and every column picker then offers
+# as one, and blank is a column with a name and no content that a user has to
+# guess the meaning of. "r1" cannot be mistaken for data in any locale, so the
+# label column stays a label column wherever it is read.
+#
+# COMPOSES WITH THE CLASSIFIER RATHER THAN REPLACING IT. @eml_auditLabelColumn
+# runs first and normalises Praat's "?" to the empty string; this fills what is
+# still empty. Splitting it that way keeps the classifier's verdict honest --
+# it reports what the SOURCE object carried, not what was written afterwards --
+# and it is why a partially labelled TableOfReal keeps every label the user
+# supplied and gets defaults only in the gaps.
+#
+# Arguments:
+#   .tableId, .columnName$ - the converted Table and its label column
+# Outputs:
+#   .nDefaulted - how many rows were given a default label
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_defaultRowLabels: .tableId, .columnName$
+    .nDefaulted = 0
+    selectObject: .tableId
+    .nRows = Get number of rows
+    for .r from 1 to .nRows
+        selectObject: .tableId
+        .cell$ = Get value: .r, .columnName$
+        if .cell$ = "" or .cell$ = "?" or .cell$ = "--undefined--"
+            Set string value: .r, .columnName$, "r" + string$ (.r)
+            .nDefaulted = .nDefaulted + 1
+        endif
+    endfor
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @eml_nameUnlabelledColumns: .tableId        (private)
+# ────────────────────────────────────────────────────────────────────────────
+# A MATRIX HAS NO COLUMN NAMES EITHER, and `To Table: "row"` writes the literal
+# "?" as the header of every one of them. So a three-column Matrix arrived at
+# Compare groups, Correlate and Regression with a column menu reading
+#
+#     row, ?, ?, ?
+#
+# -- three identically named columns, verified live on 15 August 2026. That is
+# the severity-1 duplicate-label mechanism (S1) arriving by the coercion route
+# rather than by the editor's: every name-addressed read in this plugin is
+# `Get value: row, name$`, Praat returns the FIRST column of that name, and the
+# second and third are unreachable. Picking "?" number 2 out of the menu does
+# not fail -- it silently analyses column 2's data under column 3's heading,
+# and the user has no way to see it. Nothing in an output names a column index.
+#
+# @emlCleanConvertedTable in the graphs layer has performed this rename since
+# 12 August; the stats coercion never did. Same rule here, and by column
+# INDEX, so the invented name says which column it is.
+#
+# Arguments:
+#   .tableId - the converted Table
+# Outputs:
+#   .nNamed - how many headers were invented
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_nameUnlabelledColumns: .tableId
+    .nNamed = 0
+    selectObject: .tableId
+    .nCols = Get number of columns
+    for .c from 1 to .nCols
+        selectObject: .tableId
+        .lab$ = Get column label: .c
+        if .lab$ = "?" or .lab$ = ""
+            Rename column (by number): .c, "Column_" + string$ (.c)
+            .nNamed = .nNamed + 1
+        endif
+    endfor
+endproc
+
+
 procedure emlWrapperInit: .minCols
     .nTables = numberOfSelected ("Table")
     .nToR = numberOfSelected ("TableOfReal")
@@ -1408,10 +1734,60 @@ procedure emlWrapperInit: .minCols
         .torName$ = selected$ ("TableOfReal")
         selectObject: .torId
         .tableId = To Table: "row"
+        # NAME IT ON THE LINE AFTER THE CONVERSION, NOT IN A CLEANUP HANDLER
+        # (NEW-G12-2). `To Table:` gives the new Table the source object's
+        # name, so until this line runs the object list holds "Table srcobj"
+        # beside "TableOfReal srcobj" and a native error anywhere below --
+        # and the whole reason this procedure has guards is that there are
+        # errors below -- strands the pair with no cleanup ever running. The
+        # user's next selection is then a coin flip between their data and a
+        # temporary. At creation is the only placement that survives the
+        # crash it exists for; a handler at the bottom is the placement that
+        # is skipped by exactly the event it is written for.
+        selectObject: .tableId
+        Rename: "eml_converted_" + .torName$
         .tableName$ = selected$ ("Table")
         .converted = 1
-        appendInfoLine: "Converted TableOfReal """, .torName$,
-        ... """ to Table. Row labels are in column ""row""."
+        # CLASSIFY THE LABEL COLUMN BEFORE ANY PROBE READS IT, and say what
+        # was found rather than claiming labels are there. The old line said
+        # "Row labels are in column ""row""" unconditionally, which was a
+        # false statement on an unlabelled TableOfReal and the crash that
+        # followed was the user's first hint.
+        @eml_auditLabelColumn: .tableId, "row"
+        # THEN GIVE THE GAPS A DEFAULT, r1..rn -- the one convention, shared
+        # with scripts/eml-describe-table.praat. The classifier's verdict is
+        # taken FIRST so it still reports what the source object carried.
+        @eml_defaultRowLabels: .tableId, "row"
+        # AND THE HEADERS, ON THIS ARM TOO. Measured on 6.6.30, 15 Aug 2026:
+        # a TableOfReal carries column labels only if something set them, and
+        # `To TableOfReal` from a Matrix sets none -- so an unlabelled
+        # TableOfReal converts to `row, ?, ?, ?` exactly as a Matrix does, and
+        # the duplicate-name hazard is not Matrix-only. The audit reported it
+        # against the Matrix route because that is the route that was driven.
+        @eml_nameUnlabelledColumns: .tableId
+        if eml_auditLabelColumn.verdict$ = "labelled"
+            appendInfoLine: "Converted TableOfReal """, .torName$,
+            ... """ to Table """, .tableName$, """. Row labels are in "
+            ... + "column ""row""."
+        elsif eml_auditLabelColumn.verdict$ = "partial"
+            appendInfoLine: "Converted TableOfReal """, .torName$,
+            ... """ to Table """, .tableName$, """. Row labels are in "
+            ... + "column ""row""; ",
+            ... eml_auditLabelColumn.nUnlabelled, " of ",
+            ... eml_auditLabelColumn.nRows, " row(s) had none and were "
+            ... + "given default labels r1..r", eml_auditLabelColumn.nRows,
+            ... "."
+        else
+            appendInfoLine: "Converted TableOfReal """, .torName$,
+            ... """ to Table """, .tableName$, """. It had no row labels, "
+            ... + "so column ""row"" holds default labels r1..r",
+            ... eml_auditLabelColumn.nRows, "."
+        endif
+        if eml_nameUnlabelledColumns.nNamed > 0
+            appendInfoLine: "It carried no column labels either, so ",
+            ... eml_nameUnlabelledColumns.nNamed, " column(s) were named "
+            ... + "Column_<n> by position."
+        endif
         appendInfoLine: ""
 
     elsif .nTables = 0 and .nToR = 0 and .nMatrix = 1
@@ -1422,25 +1798,60 @@ procedure emlWrapperInit: .minCols
         .tempTorId = To TableOfReal
         .tableId = To Table: "row"
         removeObject: .tempTorId
+        # NAMED AT CREATION, for the reason given in the TableOfReal arm
+        # above (NEW-G12-2). A Matrix reaches here through a TableOfReal that
+        # is removed on this side of the conversion, so between these two
+        # lines the object list holds "Table srcobj" beside "Matrix srcobj".
+        selectObject: .tableId
+        Rename: "eml_converted_" + .matName$
         .tableName$ = selected$ ("Table")
         .converted = 1
         # Check for column name collision with "row"
+        .labelCol$ = "row"
         selectObject: .tableId
         .checkNCols = Get number of columns
         for .iCheck from 2 to .checkNCols
             .checkLabel$ = Get column label: .iCheck
             if .checkLabel$ = "row"
                 Rename column (by number): 1, "OriginalRowLabel"
+                .labelCol$ = "OriginalRowLabel"
                 .iCheck = .checkNCols
             endif
         endfor
+        # A MATRIX HAS NO ROW LABELS AT ALL, so this column is always empty
+        # and always undefined -- which is the shape that aborted every
+        # Matrix-selected wrapper before its dialog opened. Classified, and
+        # made readable, by the column's REAL name: the collision rename above
+        # can have moved it, and auditing "row" after that rename would audit
+        # the user's own data column instead.
+        @eml_auditLabelColumn: .tableId, .labelCol$
+        # THEN THE DEFAULTS, r1..rn, on the type that never has any.
+        @eml_defaultRowLabels: .tableId, .labelCol$
+        # AND THE COLUMN HEADERS, which a Matrix has none of either: without
+        # this the dialog's column menu reads "row, ?, ?, ?" and the second
+        # and third "?" address the first one's data. See
+        # @eml_nameUnlabelledColumns.
+        @eml_nameUnlabelledColumns: .tableId
         appendInfoLine: "Converted Matrix """, .matName$,
-        ... """ to Table."
+        ... """ to Table """, .tableName$, """. A Matrix carries no row or "
+        ... + "column labels, so column """, .labelCol$,
+        ... """ holds default labels r1..r", eml_auditLabelColumn.nRows,
+        ... ", and ", eml_nameUnlabelledColumns.nNamed,
+        ... " unnamed column(s) were named Column_<n> by position."
         appendInfoLine: ""
 
     else
-        exitScript: "Please select exactly one Table, TableOfReal, "
-        ... + "or Matrix object, then run this script again."
+        # THE PLUGIN'S OWN SURFACE, not Praat's. This was a raw exitScript
+        # with a message, which Praat renders as its own error window with
+        # "Script exited. ... Command ... not executed." underneath — the
+        # interpreter's stack shown to a user whose only mistake was
+        # selecting two objects instead of one. The remedy names what to
+        # select, which is what "entry" mode is for.
+        @emlErrorDialog: "This tool works on one table at a time, and the "
+        ... + "Objects window currently has " + string$ (.nTables + .nToR
+        ... + .nMatrix) + " suitable object(s) selected.",
+        ... "one Table|one TableOfReal|one Matrix", "entry"
+        exitScript: ""
     endif
 
     ; Praat's CSV reader strips quotes from data cells but leaves them on
@@ -1462,7 +1873,16 @@ procedure emlWrapperInit: .minCols
     @emlTableColumnNames: .tableId
     .nCols = emlTableColumnNames.nCols
     if .nCols < .minCols
-        exitScript: "Table needs at least " + string$ (.minCols) + " columns."
+        # SAME SURFACE, AND NOW IT SAYS WHAT IT FOUND. The old line named the
+        # requirement and not the table, so a user with a one-column table
+        # read "Table needs at least 2 columns." and had no way to tell
+        # whether the plugin had misread their file or they had selected the
+        # wrong object. No remedy is offered: no other EML tool would help,
+        # and inviting a menu walk that also refuses is worse than silence.
+        @emlErrorDialog: "This tool needs at least " + string$ (.minCols)
+        ... + " column(s), and """ + .tableName$ + """ has " + string$ (.nCols)
+        ... + ".", "", "entry"
+        exitScript: ""
     endif
 
     @emlGuessColumnRoles: .tableId
@@ -1528,6 +1948,249 @@ endif
 if emlLastCSVFolder$ = ""
     emlLastCSVFolder$ = homeDirectory$
 endif
+
+# ────────────────────────────────────────────────────────────────────────────
+# @eml_saveSafeBaseName: .raw$        (private)
+# ────────────────────────────────────────────────────────────────────────────
+# THE PANEL OWNS THE NAMING CONTRACT, so it owns the characters too.
+#
+# WHAT IT COST TO LEARN. A user who types `pre/post` into the Base name field
+# after a completed analysis gets, at 6.6.30:
+#
+#     Error: Cannot create file "<folder>/pre/post_..._tidy.csv".
+#     Hint: one of the folders in this file path does not exist.
+#
+# and the script stops there. That is inside @emlSavePanel, so the "Saved"
+# receipt never draws, the panel never returns, and the caller's
+# Done | Save | Draw | New loop -- which is a `repeat ... until` around the
+# panel -- never runs again. The completed analysis and every way back to it
+# are gone, and Praat's recovery text names a window that no longer exists.
+# Reproduced at HEAD, 15 Aug 2026, before this procedure was written.
+#
+# WHICH CHARACTERS, MEASURED RATHER THAN GUESSED. On this Linux sandbox at
+# 6.6.30, writeFile: was driven once per candidate character across 33 of
+# them: only "/" is refused. That is the FILESYSTEM's answer, not the
+# plugin's, and it is the answer on exactly one of the three platforms this
+# plugin ships to. The set below is the union of what any supported platform
+# refuses, because a base name is a thing users carry between machines:
+#
+#     /   POSIX and macOS path separator; refused here, measured
+#     \   Windows path separator
+#     :   Windows reserved; the classic Mac OS separator, which Finder still
+#         renders as "/" -- so a name with ":" reads back as a different name
+#     * ? < > |   refused by every Windows filesystem
+#     "   refused by Windows AND unsafe here for a second reason: the panel
+#         emits `@emlSavePanel: 0, "<stem>", outputFolder$` into a RECORDED
+#         script, and a quote inside the stem closes that string early. A
+#         recorded workflow would replay into a parse error.
+#
+# Praat's `word:` field refuses a SPACE itself -- measured: it raises
+# "should be a single ink-word and cannot contain a space", keeps the dialog
+# up and lets the user correct it -- so spaces need no handling here.
+#
+# APPENDIX E DOES NOT APPLY. %, #, ^ and _ are Praat's style toggles in
+# PICTURE-window text. `comment:` in a pause form is a GTK label and renders
+# all four literally -- driven and screenshotted on 6.6.30, 15 Aug 2026 --
+# and the plugin's own suffixes (_tidy.csv, _glance.csv) are made of "_", so
+# escaping them here would corrupt every file name the panel writes.
+#
+# SANITISE SILENTLY, THEN DISCLOSE -- and the choice is made against this
+# panel's existing behaviour rather than in the abstract. The panel already
+# repairs quietly and shows the result: it CREATES a folder the user typed
+# but does not have, it SUBSTITUTES "eml_results_<stamp>" for an empty name,
+# and it WALKS the stem to _1 when the name is taken. None of the three asks
+# first, and all three are visible afterwards because the receipt lists the
+# full absolute path of every file written. A refusal, by contrast, would
+# have to re-open the dialog, and re-opening it is where the one-stamp rule
+# is easiest to break -- a second @emlFileStamp would put two seconds on one
+# analysis. It would also answer a user who has just finished an analysis
+# with a "no" at the last step, which is the shape of failure this whole fix
+# exists to remove. The receipt says what the name became when it changed, so
+# nothing is hidden.
+#
+# THE STAMP IS UNTOUCHED. Sanitising happens ONCE, on the stem, before the
+# collision walk and before any write, so every file of one press still
+# carries one base name and one stamp -- the author's condition of 14 Aug
+# 2026.
+#
+# Outputs: .result$ (the safe name), .changed (1 if anything was replaced)
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_saveSafeBaseName: .raw$
+    .result$ = .raw$
+    # One pass per character, replacing with "-". NOT "_": the panel tells
+    # files apart by underscore-led suffixes, so turning "pre/post" into
+    # "pre_post" would hand back a name that reads as if it already carried
+    # one of them.
+    .result$ = replace$ (.result$, "/", "-", 0)
+    .result$ = replace$ (.result$, "\", "-", 0)
+    .result$ = replace$ (.result$, ":", "-", 0)
+    .result$ = replace$ (.result$, "*", "-", 0)
+    .result$ = replace$ (.result$, "?", "-", 0)
+    .result$ = replace$ (.result$, "<", "-", 0)
+    .result$ = replace$ (.result$, ">", "-", 0)
+    .result$ = replace$ (.result$, "|", "-", 0)
+    .result$ = replace$ (.result$, """", "-", 0)
+
+    # LEADING AND TRAILING DOTS AND SPACES. A name that begins with "." is
+    # hidden on every POSIX desktop -- the user's results would be written
+    # correctly and be invisible in their file browser -- and Windows silently
+    # strips a trailing "." or " ", which would make the saved name differ
+    # from the one the receipt printed.
+    while startsWith (.result$, ".") or startsWith (.result$, " ")
+        .result$ = right$ (.result$, length (.result$) - 1)
+    endwhile
+    while endsWith (.result$, ".") or endsWith (.result$, " ")
+        .result$ = left$ (.result$, length (.result$) - 1)
+    endwhile
+
+    .changed = 0
+    if .result$ <> .raw$
+        .changed = 1
+    endif
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @eml_saveFolderWritable: .folder$        (private)
+# ────────────────────────────────────────────────────────────────────────────
+# CAN THIS FOLDER BE WRITTEN TO? Asked before the flush, not discovered
+# during it.
+#
+# WHAT IT COST TO LEARN. Point the panel at a folder that exists and cannot
+# be written -- a read-only network share, a locked-down departmental drive,
+# a mount that went read-only under you -- and 6.6.30 answers, mid-save:
+#
+#     Error: Cannot create file "<folder>/<stem>_tidy.csv".
+#     Not-so-useful hint: unexpected error 30.
+#
+# Praat's own words. The script stops inside @emlSavePanel exactly as the
+# slash case does, and takes the receipt, the panel's return, and the
+# caller's post-analysis loop with it. Reproduced at HEAD on a read-only
+# tmpfs, 15 Aug 2026. A folder that does not exist under an unwritable parent
+# fails one line EARLIER, on the panel's own `createFolder:` -- "Cannot create
+# folder" -- so the guard has to cover the creation too, not just the write.
+#
+# WHY A PROBE FILE AND NOT A PREDICATE. Praat has no try/catch, and
+# folderExists() answers about READING. The only honest question is whether a
+# write lands, so one is performed and then removed. `nocheck` is what makes
+# that safe: measured on 6.6.30, `nocheck writeFile:` on an unwritable path
+# leaves the script running, and fileReadable() afterwards is the answer.
+# The same prefix goes on createFolder:, which raises on its own.
+#
+# THE PROBE FILE CARRIES THE STAMP, so it cannot collide with a user's file
+# and cannot survive as litter under a name anyone would keep.
+#
+# Arguments: .folder$ the target, .stamp$ the press's timestamp
+# Outputs:   .ok (1 = a write landed and was cleaned up)
+#            .reason$ (empty when .ok = 1)
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_saveFolderWritable: .folder$, .stamp$
+    .ok = 0
+    .reason$ = ""
+
+    if .folder$ = ""
+        .reason$ = "No folder was given."
+        goto FOLDER_PROBE_DONE
+    endif
+
+    if not folderExists (.folder$)
+        nocheck createFolder: .folder$
+    endif
+    if not folderExists (.folder$)
+        .reason$ = "That folder does not exist and could not be created."
+        goto FOLDER_PROBE_DONE
+    endif
+
+    .probe$ = .folder$ + "/eml_write_test_" + .stamp$ + ".tmp"
+    nocheck deleteFile: .probe$
+    nocheck writeFile: .probe$, "eml"
+    if fileReadable (.probe$)
+        .ok = 1
+        nocheck deleteFile: .probe$
+    else
+        .reason$ = "That folder cannot be written to."
+    endif
+
+    label FOLDER_PROBE_DONE
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @eml_saveReceiptLines: .fileList$, .note$        (private)
+# ────────────────────────────────────────────────────────────────────────────
+# EVERY LINE THE "Saved" RECEIPT WILL DRAW, worked out before any of it is
+# drawn. Sets .nLines and .line$ [1 .. .nLines].
+#
+# THE DEFECT THIS EXISTS FOR. `comment:` RESERVES the height of one line at
+# layout time and DRAWS whatever string it is handed. The panel already knew
+# half of that -- it split .fileList$ on newline$ so a multi-line string could
+# not be painted over -- but a single line LONGER THAN THE DIALOG is wrapped
+# by the toolkit into two or three drawn lines inside that one line's height,
+# so each long path printed its tail over the path below it. Five independent
+# sightings in the audit of 14 August 2026, one cause; its receipt shows three
+# paths in five lines of overlapping ink.
+#
+# THE BUDGET IS 62 CHARACTERS, measured rather than chosen. A pause form was
+# driven on 6.6.30 under Xvfb on 15 Aug 2026 with comments of 55 to 68
+# characters and photographed: 65 draws on one line, 66 wraps. 62 is the width
+# @emlErrorDialog already wraps its dialog text to, so the panel and the error
+# surface break in the same place, and the three characters of margin cover a
+# different font on macOS or Windows.
+#
+# A PATH HAS NO SPACES, so @emlWrapText hard-breaks it at exactly 62
+# characters. That is deliberate: nothing is inserted and nothing is elided,
+# so the drawn lines still concatenate back to the path the user can paste.
+# §6 of the audit called the receipt's honest full-path listing worth
+# preserving, and it is preserved rather than shortened.
+#
+# SEPARATED FROM THE DRAWING so it can be checked without a screen.
+# Building the lines inside `beginPause` is what let this ship: the only way
+# to see the fault was to photograph a dialog. harness/savepaths' guards drive
+# calls this procedure directly and validate/v56_save_guards.R reads its
+# output, so the line lengths are now a number in a file.
+#
+# Arguments:
+#   .fileList$  newline-separated absolute paths, as @emlSavePanel builds it
+#   .note$      an extra note to append after a blank line, or "" for none
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_saveReceiptLines: .fileList$, .note$
+    .nLines = 0
+    .rest$ = .fileList$
+    while index (.rest$, newline$) > 0
+        .nl = index (.rest$, newline$)
+        .one$ = left$ (.rest$, .nl - 1)
+        if .one$ <> ""
+            @emlWrapText: .one$, 62
+            for .wl from 1 to emlWrapText.nLines
+                .nLines = .nLines + 1
+                .line$ [.nLines] = emlWrapText.line$ [.wl]
+            endfor
+        endif
+        .rest$ = right$ (.rest$, length (.rest$) - .nl)
+    endwhile
+    if .rest$ <> ""
+        @emlWrapText: .rest$, 62
+        for .wl from 1 to emlWrapText.nLines
+            .nLines = .nLines + 1
+            .line$ [.nLines] = emlWrapText.line$ [.wl]
+        endfor
+    endif
+
+    # WHAT THE NAME BECAME, when it is not what was typed. The sanitiser is
+    # silent by design -- see @eml_saveSafeBaseName -- but silent is not the
+    # same as hidden, and the receipt is the panel's disclosure surface for
+    # exactly this.
+    if .note$ <> ""
+        .nLines = .nLines + 1
+        .line$ [.nLines] = ""
+        @emlWrapText: .note$, 62
+        for .wl from 1 to emlWrapText.nLines
+            .nLines = .nLines + 1
+            .line$ [.nLines] = emlWrapText.line$ [.wl]
+        endfor
+    endif
+endproc
+
 
 # ────────────────────────────────────────────────────────────────────────────
 # @emlSavePanel: .offerFigure, .stem$, .folder$
@@ -1675,7 +2338,46 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     # instrumented and read back, yet one leg in five failed at the first
     # write. createFolder: on an existing folder is a no-op, so this costs
     # nothing and closes both.
-    createFolder: .folder$
+    # ── THE TARGET IS PROVED WRITABLE BEFORE ANYTHING IS WRITTEN ──────────
+    #
+    # `createFolder:` used to sit bare on this line, and it is the FIRST
+    # thing in the panel that can raise: under an unwritable parent it
+    # answers "Cannot create folder" and stops the script inside the
+    # procedure, so the receipt never draws and the caller's
+    # Done | Save | Draw | New loop never runs again. An existing folder that
+    # cannot be written survives this line and kills the save one step later,
+    # at the first writeFile:, with "unexpected error 30".
+    #
+    # Both are now one question asked once, with `nocheck` so the asking
+    # cannot itself abort, and the panel RETURNS on a no. Returning is what
+    # keeps the session: the caller's loop comes back round, the analysis is
+    # still there, and the user presses Save again with a different folder.
+    # .cancelled is the existing way to say "no files, no error" and it is
+    # reused rather than joined by a second flag.
+    @eml_saveFolderWritable: .folder$, emlFileStamp.result$
+    if eml_saveFolderWritable.ok = 0
+        beginPause: "Cannot save there"
+            @emlWrapText: eml_saveFolderWritable.reason$, 62
+            for .wl from 1 to emlWrapText.nLines
+                comment: emlWrapText.line$ [.wl]
+            endfor
+            comment: ""
+            @emlWrapText: .folder$, 62
+            for .wl from 1 to emlWrapText.nLines
+                comment: emlWrapText.line$ [.wl]
+            endfor
+            comment: ""
+            @emlWrapText: "Nothing has been written. Press Save again and "
+            ... + "choose a folder you can write to -- your analysis is "
+            ... + "still here.", 62
+            for .wl from 1 to emlWrapText.nLines
+                comment: emlWrapText.line$ [.wl]
+            endfor
+        endPause: "OK", 1, 0
+        .cancelled = 1
+        goto SAVE_PANEL_DONE
+    endif
+
     # base_name$, not file_name$ -- the field was renamed and Praat derives
     # the variable from the label, so the readback name moves with it. The
     # label's first character lowercases and every other character keeps its
@@ -1684,6 +2386,25 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     if .stem$ = ""
         @emlFileStamp
         .stem$ = "eml_results_" + emlFileStamp.result$
+    endif
+
+    # ── THE TYPED NAME IS MADE INTO A FILE NAME, ONCE ─────────────────────
+    #
+    # BEFORE the collision walk below and before every write, so all the
+    # names one press produces are derived from the same safe stem and the
+    # one-stamp-one-name contract is untouched. `pre/post` used to reach
+    # writeFile: verbatim and stop the session there.
+    #
+    # The empty-name substitution above runs FIRST and is not re-checked
+    # after: its own value contains nothing to sanitise, and a name that
+    # sanitises down to nothing (a user typing "///") is caught below.
+    .typed$ = .stem$
+    @eml_saveSafeBaseName: .typed$
+    .stem$ = eml_saveSafeBaseName.result$
+    .nameAdjusted = eml_saveSafeBaseName.changed
+    if .stem$ = ""
+        .stem$ = "eml_results_" + emlFileStamp.result$
+        .nameAdjusted = 1
     endif
 
     # ── ONE COLLISION DECISION, MADE ONCE, BEFORE ANYTHING IS WRITTEN ──────
@@ -1834,23 +2555,23 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
 
     # --- say what happened ------------------------------------------------
     if .nWritten > 0
+        # THE RECEIPT'S LINES ARE BUILT BEFORE THEY ARE DRAWN, by
+        # @eml_saveReceiptLines, so that the thing that decides how many lines
+        # there are can be driven without a screen. Building and drawing in
+        # one loop is what let the overprint ship: the only way to see it was
+        # to photograph a dialog, and nothing photographs dialogs on the way
+        # to a commit.
+        .adjustedNote$ = ""
+        if .nameAdjusted = 1
+            .adjustedNote$ = "The base name was adjusted to """ + .stem$
+            ... + """ -- a file name cannot contain / \ : * ? "" < > |."
+        endif
+        @eml_saveReceiptLines: .fileList$, .adjustedNote$
         beginPause: "Saved"
             comment: "Wrote " + string$ (.nWritten) + " file(s):"
-            # ONE comment: PER LINE. `comment:` reserves the height of one
-            # line at layout time but draws whatever string it is given, so a
-            # string holding newline$ is painted over by the widgets below it.
-            .rest$ = .fileList$
-            while index (.rest$, newline$) > 0
-                .nl = index (.rest$, newline$)
-                .one$ = left$ (.rest$, .nl - 1)
-                if .one$ <> ""
-                    comment: .one$
-                endif
-                .rest$ = right$ (.rest$, length (.rest$) - .nl)
-            endwhile
-            if .rest$ <> ""
-                comment: .rest$
-            endif
+            for .rl from 1 to eml_saveReceiptLines.nLines
+                comment: eml_saveReceiptLines.line$ [.rl]
+            endfor
         endPause: "OK", 1, 0
     else
         beginPause: "Nothing saved"
@@ -2188,7 +2909,8 @@ endproc
 # ────────────────────────────────────────────────────────────────────────────
 # @emlErrorDialog: .msg$, .remedy$, .mode$
 #
-# The single error surface for both entry paths.
+# The single error surface for both entry paths, and since 15 August 2026 for
+# the refusals that happen BEFORE either path has a form to return to.
 #
 # Parameters:
 #   .msg$    — the orchestrator's error string, shown verbatim and wrapped.
@@ -2200,16 +2922,50 @@ endproc
 #              Several items may be offered, separated by "|", for the case
 #              where the parametric and nonparametric routes are both open;
 #              naming only one of them would quietly steer the choice.
-#   .mode$   — "wizard" or "menu". Chooses the guidance and the button that
-#              is not Quit, because the two paths can offer genuinely
-#              different things.
+#   .mode$   — "wizard", "menu" or "entry". Chooses the guidance and the
+#              button that is not Quit, because the three cases can offer
+#              genuinely different things.
 #
 # Returns:
-#   .back — 1 if the user chose to continue, 0 if they chose Quit.
+#   .back — 1 if the user chose to continue, 0 if they chose Quit. Always 0
+#           in "entry" mode, which has nothing to go back to.
 #
 # Callers must honour .back = 0 by ending cleanly. The dialog itself never
 # calls @exitScript; deciding to stop is the caller's job, because only the
 # caller knows what needs tearing down.
+#
+# ────────────────────────────────────────────────────────────────────────────
+# "entry" MODE, AND THE SENTENCE THAT MADE IT NECESSARY (15 August 2026)
+# ────────────────────────────────────────────────────────────────────────────
+# The refusals a wrapper makes BEFORE its dialog opens — the wrong selection,
+# a table with too few columns, a table with no numeric column at all — were
+# raw `exitScript: "..."`, which Praat presents as its OWN error window with
+#
+#     Script exited. Script ... not completed.
+#     Command ... not executed.
+#
+# underneath: interpreter stack in place of a refusal this plugin has a
+# dialog for, and the one moment a new user is most likely to be wrong about
+# what to select is the moment they get the least help.
+#
+# THEY COULD NOT SIMPLY BE POINTED AT "menu" MODE. With an empty remedy that
+# branch ends
+#
+#     "If a different test is needed, click Quit, then pick it from the
+#      Objects window under New > EML Tools >"
+#
+# which is right for a test that ran and could not fit the data, and wrong
+# for a refusal about the SELECTION: no different test would help, because
+# no test has been reached. It also offers Back — and there is nothing behind
+# it. The mode exists so the remedy-aware wording can be added without
+# touching the two branches that are already correct for their own cases;
+# rewording the shared empty-remedy branch would have made it vaguer for the
+# path it was written for in order to serve a path it was never written for.
+#
+# It carries ONE button, because there is exactly one thing to do: read it,
+# close it, fix the selection, run the command again. A running Praat script
+# cannot change the object selection on the user's behalf, and offering a
+# Back that can only re-refuse is worse than offering nothing.
 # ────────────────────────────────────────────────────────────────────────────
 procedure emlErrorDialog: .msg$, .remedy$, .mode$
     # Split the remedy on "|" up front: it is needed in two places below and
@@ -2228,8 +2984,20 @@ procedure emlErrorDialog: .msg$, .remedy$, .mode$
         endif
     endwhile
 
-    beginPause: "Cannot run this analysis"
-        comment: "⚠  This analysis did not run."
+    # The title and the headline are computed rather than literal, because an
+    # entry refusal is not an analysis that did not run — nothing has been
+    # asked of the data yet, and a window headed "Cannot run this analysis"
+    # over the sentence "Please select exactly one Table" tells the user the
+    # analysis failed when what happened is that it never started.
+    .title$ = "Cannot run this analysis"
+    .headline$ = "⚠  This analysis did not run."
+    if .mode$ = "entry"
+        .title$ = "Cannot start this tool"
+        .headline$ = "⚠  This tool did not start."
+    endif
+
+    beginPause: .title$
+        comment: .headline$
         comment: "─────────────────────────────────────────────────"
         @emlWrapText: .msg$, 62
         for .i from 1 to emlWrapText.nLines
@@ -2238,7 +3006,32 @@ procedure emlErrorDialog: .msg$, .remedy$, .mode$
         comment: "─────────────────────────────────────────────────"
         comment: ""
 
-        if .mode$ = "wizard"
+        if .mode$ = "entry"
+            # REMEDY-AWARE, AND THE REMEDY HERE IS ABOUT THE OBJECT LIST, not
+            # about which test to run. The remedy string on this mode names
+            # what to select — not a menu entry — so the sentence that follows
+            # it says "select", not "pick another test".
+            comment: "Nothing has been changed."
+            if .nRemedy > 0
+                comment: ""
+                if .nRemedy = 1
+                    comment: "What this tool needs:"
+                else
+                    comment: "What this tool needs — either of:"
+                endif
+                for .i from 1 to .nRemedy
+                    comment: "        " + .remLine$ [.i]
+                endfor
+                comment: ""
+                comment: "Click OK, select that in the Objects window, then"
+                comment: "run this command again."
+            else
+                comment: ""
+                comment: "Click OK, adjust the selection in the Objects"
+                comment: "window, then run this command again."
+            endif
+
+        elsif .mode$ = "wizard"
             comment: "Nothing has been lost. Click Back to return to the"
             comment: "wizard and choose again."
             if .nRemedy > 0
@@ -2286,8 +3079,16 @@ procedure emlErrorDialog: .msg$, .remedy$, .mode$
                 comment: "             New  >  EML Tools  >"
             endif
         endif
-    .clicked = endPause: "Quit", "Back", 2, 0
-    .back = (.clicked = 2)
+    # ONE BUTTON ON THE ENTRY REFUSAL. There is nothing behind it to go back
+    # to — the wrapper has not built a form yet — and a Back that can only
+    # re-refuse is a loop with no exit that is not Quit.
+    if .mode$ = "entry"
+        .clicked = endPause: "OK", 1, 0
+        .back = 0
+    else
+        .clicked = endPause: "Quit", "Back", 2, 0
+        .back = (.clicked = 2)
+    endif
 endproc
 
 
