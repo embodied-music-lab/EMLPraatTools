@@ -97,7 +97,11 @@
 # STATE
 # ============================================================================
 # emlRecordActive     0 = off, 1 = recording
-# emlRecordBufferId   Table: one row per step. Columns:
+# emlRecordBufferId   Table "emlRecording_DO_NOT_REMOVE": one row per step.
+#                     THE NAME IS PART OF THE DESIGN, not a label on it --
+#                     the table's existence IS the recording, so the user
+#                     sees a warning at the moment they might remove it and
+#                     nowhere else. See @emlRecordBegin. Columns:
 #                       n kind intent caveat code env post result api
 #                       derived source
 #                     `env` and `post` are the settings a step was drawn
@@ -178,7 +182,9 @@ procedure emlRecordInit
     ;
     ; So the buffer's EXISTENCE is the state. There is no flag file and no
     ; config key, which means there is nothing that can disagree with the
-    ; data -- the switch and the buffer are the same object.
+    ; data -- the switch and the buffer are the same object. It is also why
+    ; the object is called emlRecording_DO_NOT_REMOVE: a name is the only
+    ; warning that can reach a user who is about to remove it.
     ;
     ; `nocheck selectObject:` by name leaves nothing selected and raises no
     ; error when the object is absent, which is exactly the test wanted.
@@ -188,7 +194,7 @@ procedure emlRecordInit
     ; @emlRecordBegin in this same run must not have its id replaced.
     ; ------------------------------------------------------------------
     if emlRecordBufferId = 0
-        nocheck selectObject: "Table emlRecordBuffer"
+        nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
         if numberOfSelected () = 1
             emlRecordBufferId = selected ("Table")
             emlRecordActive = 1
@@ -635,7 +641,7 @@ procedure emlRecordSweepOrphans
     ; callable on its own.
     .liveBuffer = 0
     for .o from 1 to .nAll
-        if .cand$[.o] = "Table emlRecordBuffer"
+        if .cand$[.o] = "Table emlRecording_DO_NOT_REMOVE"
             .liveBuffer = 1
         endif
     endfor
@@ -669,7 +675,7 @@ procedure emlRecordOrphanCheck
     .haveBuffer = 0
     .haveMeta = 0
     for .o from 1 to .nAll
-        if selected$ (.o) = "Table emlRecordBuffer"
+        if selected$ (.o) = "Table emlRecording_DO_NOT_REMOVE"
             .haveBuffer = 1
         endif
         if selected$ (.o) = "Table emlRecordMeta"
@@ -719,7 +725,26 @@ procedure emlRecordBegin: .tempFolder$
     ; Objects window accumulating a table per abandoned recording.
     @emlRecordSweepOrphans
 
-    Create Table with column names: "emlRecordBuffer", 0,
+    ; THE NAME IS THE WARNING, AND IT IS THE ONLY ONE THERE CAN BE.
+    ;
+    ; AUTHOR RULING, 15 AUGUST 2026 (RULING 4). This table used to be called
+    ; emlRecordBuffer, which reads as scratch -- and it is the opposite of
+    ; scratch: its EXISTENCE is the recording, so a user who tidies it out of
+    ; the Objects window silently ends their session and nothing anywhere says
+    ; so. The ruling is explicitly NO PER-STEP SIGNAL -- an analysis that
+    ; announced "you are still recording" every time would be noise in the one
+    ; window the user is reading results in -- so the whole of the warning has
+    ; to live in the one place the user sees at the moment they are deciding
+    ; whether to remove it: the name in the Objects list.
+    ;
+    ; DO_NOT_REMOVE and not DO_NOT_DELETE because Remove is the word on
+    ; Praat's own button. The name is what the user is about to act on, so it
+    ; speaks Praat's language rather than the plugin's.
+    ;
+    ; The two Stop commands still say what happened after the fact -- "the
+    ; recording ended when its buffer was removed" -- because a name can only
+    ; be read before the act and only the commands can explain it afterwards.
+    Create Table with column names: "emlRecording_DO_NOT_REMOVE", 0,
     ... "n kind intent caveat code env post result api derived source"
     emlRecordBufferId = selected ("Table")
 
@@ -1728,6 +1753,434 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlRecordColumnSpec: .proc$
+# WHICH ARGUMENTS OF WHICH PROCEDURE ARE COLUMN NAMES, AND WHAT EACH IS FOR.
+#
+# AUTHOR RULING, 15 AUGUST 2026 (RULING 9). The retarget block gathered object
+# names and stopped there, under the promise "edit a name to run the same
+# workflow on other data". Column names stayed hard-coded at every call site --
+#
+#     @emlBridgeGroupComparison: data, "val", "grp", 0.05, ...
+#
+# -- so re-pointing a recorded workflow at a same-shape table with different
+# headers meant hunting literals through the steps, which is the exact hunt the
+# block exists to abolish. The promise now extends: nothing below the block
+# names an object AND nothing below it names a column.
+#
+# WHY THE MAP LIVES HERE AND NOT AT THE CALL SITES. The obvious design is for
+# each orchestrator to hand the recorder its column names with their roles
+# attached. It is also the wrong one for this plugin: there are twenty-six
+# emitting call sites across three files, the recorder owns what the emitted
+# file SAYS (the save-step rewrite in @emlRecordRender is settled on the same
+# ground), and a per-site change would put the same decision in twenty-six
+# places for twenty-six people to get subtly different. One table, one place.
+#
+# WHAT IT COSTS, STATED PLAINLY: this table is hand-maintained against
+# signatures it does not own. An orchestrator that reorders its arguments
+# without editing here would have its columns lifted from the wrong slots. That
+# is not caught by reading -- it is caught by RUNNING, which is why v58's
+# retarget leg edits the block and drives the emitted file rather than grepping
+# it. A wrong index produces a script that either aborts or analyses the wrong
+# column, and both are red there.
+#
+# THE ARGUMENT INDEX COUNTS THE OBJECT. Every emitted call is
+# `@proc: data, ...`, so `data` is argument 1 and the first column of a stats
+# orchestrator is argument 2. The draw procedures all share the same preamble
+# -- data, title, xLabel, yLabel, width, height, colorMode, gridMode -- so
+# their columns begin at argument 9.
+#
+# LABELS ARE NOT COLUMNS, and the difference is the whole of the role rule. A
+# violin's yLabel is very often the same STRING as its value column, because
+# the form defaults it that way; it is still text drawn on a figure and not a
+# column reference, so it is left where the user typed it.
+#
+# Outputs: .spec$   "<argIndex>=<role> ..."  -- empty for a procedure that
+#                   takes no column name at all
+# ----------------------------------------------------------------------------
+procedure emlRecordColumnSpec: .proc$
+    .spec$ = ""
+
+    ; ---- the stats orchestrators (stats/eml-analysis.praat) ---------------
+    if .proc$ = "emlRunTwoGroupAnalysis"
+        .spec$ = "2=valueCol 3=groupCol"
+    elsif .proc$ = "emlRunAnovaAnalysis"
+        .spec$ = "2=valueCol 3=groupCol"
+    elsif .proc$ = "emlRunKWAnalysis"
+        .spec$ = "2=valueCol 3=groupCol"
+    elsif .proc$ = "emlRunPairwiseAnalysis"
+        .spec$ = "2=valueCol 3=groupCol"
+    elsif .proc$ = "emlRunTwoWayAnalysis"
+        .spec$ = "2=valueCol 3=factorACol 4=factorBCol"
+    elsif .proc$ = "emlRunPairedAnalysis"
+        .spec$ = "2=conditionACol 3=conditionBCol"
+    elsif .proc$ = "emlRunCorrelationAnalysis"
+        .spec$ = "2=xCol 3=yCol"
+    elsif .proc$ = "emlRunDescriptiveAnalysis"
+        .spec$ = "2=valueCol"
+    elsif .proc$ = "emlRunRegressionAnalysis"
+        .spec$ = "2=outcomeCol 3=predictorCol"
+    elsif .proc$ = "emlRunNormalityAnalysis"
+        .spec$ = "2=valueCol"
+    elsif .proc$ = "emlRunReliabilityAnalysis"
+        ; A LIST OF COLUMNS IS STILL A COLUMN REFERENCE. The rater and
+        ; condition arguments carry several names in one string, and a user
+        ; retargeting the workflow has to edit all of them; leaving the list
+        ; buried in the step would defeat the ruling for exactly the analyses
+        ; that name the most columns.
+        .spec$ = "2=subjectCol 3=raterCols"
+    elsif .proc$ = "emlRunRepeatedMeasuresAnalysis"
+        .spec$ = "2=subjectCol 3=conditionCols"
+    elsif .proc$ = "emlRunFriedmanAnalysis"
+        .spec$ = "2=subjectCol 3=conditionCols"
+
+    ; ---- the figure's own statistics (graphs/eml-annotation-procedures) ----
+    elsif .proc$ = "emlBridgeGroupComparison"
+        .spec$ = "2=valueCol 3=groupCol"
+
+    ; ---- the draw procedures (graphs/eml-draw-procedures.praat) -----------
+    ; data, title, xLabel, yLabel, width, height, colorMode, gridMode, then
+    ; whatever columns the figure takes.
+    elsif .proc$ = "emlDrawViolinPlot"
+        .spec$ = "9=groupCol 10=valueCol"
+    elsif .proc$ = "emlDrawBoxPlot"
+        .spec$ = "9=groupCol 10=valueCol"
+    elsif .proc$ = "emlDrawBarChart"
+        .spec$ = "9=groupCol 10=valueCol 12=errorCol"
+    elsif .proc$ = "emlDrawHistogram"
+        .spec$ = "9=valueCol 10=groupCol"
+    elsif .proc$ = "emlDrawScatterPlot"
+        .spec$ = "9=xCol 10=yCol 11=groupCol"
+    elsif .proc$ = "emlDrawTimeSeries"
+        .spec$ = "9=timeCol 10=valueCol 11=groupCol"
+    elsif .proc$ = "emlDrawTimeSeriesCI"
+        .spec$ = "9=timeCol 10=valueCol 11=groupCol"
+    elsif .proc$ = "emlDrawSpaghettiPlot"
+        .spec$ = "9=conditionCol 10=valueCol 11=idCol 12=groupCol"
+    elsif .proc$ = "emlDrawGroupedViolin"
+        .spec$ = "9=categoryCol 10=subgroupCol 11=valueCol"
+    elsif .proc$ = "emlDrawGroupedBoxPlot"
+        .spec$ = "9=categoryCol 10=subgroupCol 11=valueCol"
+    endif
+    ; Waveform, spectrum and LTAS take no column: they draw a Sound, a
+    ; Spectrum or an Ltas whole. They are absent on purpose, not by omission.
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordColumnGloss: .base$
+# One short phrase per role, for the inline note in the block. The variable
+# name already says what the role IS; this says what it MEANS, which is what a
+# user pointing the workflow at their own table needs.
+# ----------------------------------------------------------------------------
+procedure emlRecordColumnGloss: .base$
+    .gloss$ = "a column"
+    if .base$ = "valueCol"
+        .gloss$ = "the measured column"
+    elsif .base$ = "groupCol"
+        .gloss$ = "the grouping column"
+    elsif .base$ = "factorACol"
+        .gloss$ = "the first factor"
+    elsif .base$ = "factorBCol"
+        .gloss$ = "the second factor"
+    elsif .base$ = "conditionACol"
+        .gloss$ = "the first condition"
+    elsif .base$ = "conditionBCol"
+        .gloss$ = "the second condition"
+    elsif .base$ = "conditionCol"
+        .gloss$ = "the condition column"
+    elsif .base$ = "conditionCols"
+        .gloss$ = "the condition columns"
+    elsif .base$ = "raterCols"
+        .gloss$ = "the rater columns"
+    elsif .base$ = "subjectCol"
+        .gloss$ = "the subject identifier"
+    elsif .base$ = "idCol"
+        .gloss$ = "the case identifier"
+    elsif .base$ = "xCol"
+        .gloss$ = "the x column"
+    elsif .base$ = "yCol"
+        .gloss$ = "the y column"
+    elsif .base$ = "outcomeCol"
+        .gloss$ = "the outcome column"
+    elsif .base$ = "predictorCol"
+        .gloss$ = "the predictor column"
+    elsif .base$ = "timeCol"
+        .gloss$ = "the time column"
+    elsif .base$ = "categoryCol"
+        .gloss$ = "the category column"
+    elsif .base$ = "subgroupCol"
+        .gloss$ = "the sub-group column"
+    elsif .base$ = "errorCol"
+        .gloss$ = "the error-bar column"
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordSplitArgs: .text$
+# Split a recorded call's argument list on the commas that separate arguments,
+# and NOT on the commas inside them.
+#
+# `Cohort 1, 2` is a legal group label and a legal figure title, so splitting
+# on every comma would shift every argument after it by one and lift the wrong
+# slot. Quote depth is tracked instead. Praat has no regex and no split, so
+# this is a character walk, and the strings are one call long.
+#
+# Outputs: .n         how many arguments
+#          .arg$[k]   argument k, WITH its surrounding whitespace, so that
+#                     rejoining on "," reproduces the line byte for byte
+# ----------------------------------------------------------------------------
+procedure emlRecordSplitArgs: .text$
+    .n = 1
+    .arg$[1] = ""
+    .inQuote = 0
+    for .i from 1 to length (.text$)
+        .c$ = mid$ (.text$, .i, 1)
+        if .c$ = """"
+            .inQuote = 1 - .inQuote
+            .arg$[.n] = .arg$[.n] + .c$
+        elsif .c$ = "," and .inQuote = 0
+            .n = .n + 1
+            .arg$[.n] = ""
+        else
+            .arg$[.n] = .arg$[.n] + .c$
+        endif
+    endfor
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordQuotedLiteral: .arg$
+# Is this argument a plain string literal, and if so what does it say?
+#
+# THE GUARD IS THE POINT, not the extraction. An argument is only rewritten
+# when it is unambiguously one literal: exactly two quote characters, first and
+# last. A title carrying an escaped quote makes the quote-depth walk above
+# ambiguous, and the honest response to an ambiguous parse in a file that has
+# to RUN is to leave the line exactly as it was recorded. A literal left
+# un-lifted is a blemish; a mangled call is a broken script.
+#
+# Outputs: .ok       1 when the argument is one plain literal
+#          .value$   what it contains, without the quotes
+#          .lead$    the whitespace in front of it, kept so the rewritten call
+#                    lines up the way the recorder wrote it
+# ----------------------------------------------------------------------------
+procedure emlRecordQuotedLiteral: .arg$
+    .ok = 0
+    .value$ = ""
+    .lead$ = ""
+    .t$ = .arg$
+    while left$ (.t$, 1) = " "
+        .lead$ = .lead$ + " "
+        .t$ = mid$ (.t$, 2, 1000000)
+    endwhile
+    while .t$ <> "" and right$ (.t$, 1) = " "
+        .t$ = left$ (.t$, length (.t$) - 1)
+    endwhile
+    .quotes = 0
+    for .i from 1 to length (.t$)
+        if mid$ (.t$, .i, 1) = """"
+            .quotes = .quotes + 1
+        endif
+    endfor
+    if .quotes = 2 and length (.t$) >= 2
+        if left$ (.t$, 1) = """" and right$ (.t$, 1) = """"
+            .ok = 1
+            .value$ = mid$ (.t$, 2, length (.t$) - 2)
+        endif
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordColumnManifest
+# The column half of the retarget block, and the rewritten steps that read it.
+#
+# ONE VARIABLE PER DISTINCT ROLE, WHICH IS NOT ONE PER DISTINCT LITERAL. The
+# identity of a variable here is the PAIR (role, name):
+#
+#   * two steps that use the same column for the same purpose share one
+#     variable -- a value column analysed and then plotted is one decision the
+#     user makes once, and splitting it would hand them two edits that must
+#     agree or the figure stops describing the analysis;
+#   * the same string used as a value column in one step and a group column in
+#     another gets TWO, because they are two slots that happen to agree today.
+#     A user re-pointing the workflow may well move one and not the other, and
+#     a shared variable would silently move both;
+#   * two different columns in the same role are two variables of that role,
+#     numbered in first-use order -- valueCol$, valueCol2$ -- because a role is
+#     a kind of slot, not a promise that a session used it once.
+#
+# THE REWRITE IS POSITIONAL, NEVER textual. Replacing the string "val"
+# throughout a step would also replace the axis label that happens to read
+# "val", which is not a column and must not follow the data. Each call is
+# split into arguments, the arguments named by the spec are replaced, and the
+# line is rejoined. Everything else in the line is untouched by construction.
+#
+# Outputs: .n          how many column variables the session used
+#          .out$       the lines that declare them
+#          .code$[s]   step s's code with its column literals replaced by the
+#                      variable names -- what @emlRecordRender emits
+# ----------------------------------------------------------------------------
+procedure emlRecordColumnManifest
+    @emlRecordInit
+    .out$ = ""
+    .n = 0
+
+    selectObject: emlRecordBufferId
+    .nSteps = Get number of rows
+
+    for .s from 1 to .nSteps
+        selectObject: emlRecordBufferId
+        .stepCode$ = Get value: .s, "code"
+        .stepKind$ = Get value: .s, "kind"
+        .stepN = Get value: .s, "n"
+
+        ; A step's code may be several lines -- a scatter records its
+        ; annotation setup above the draw call -- so each line is considered
+        ; on its own and the step is reassembled.
+        .rebuilt$ = ""
+        .rest$ = .stepCode$
+        .more = 1
+        while .more = 1
+            .nl = index (.rest$, newline$)
+            if .nl = 0
+                .line$ = .rest$
+                .rest$ = ""
+                .more = 0
+            else
+                .line$ = left$ (.rest$, .nl - 1)
+                .rest$ = mid$ (.rest$, .nl + 1, 1000000)
+            endif
+
+            .lineOut$ = .line$
+            .colon = index (.line$, ":")
+            if left$ (.line$, 1) = "@" and .colon > 2
+                .proc$ = mid$ (.line$, 2, .colon - 2)
+                @emlRecordColumnSpec: .proc$
+                .spec$ = emlRecordColumnSpec.spec$
+                if .spec$ <> ""
+                    .head$ = left$ (.line$, .colon)
+                    @emlRecordSplitArgs: mid$ (.line$, .colon + 1, 1000000)
+                    .nArgs = emlRecordSplitArgs.n
+                    for .a from 1 to .nArgs
+                        .newArg$[.a] = emlRecordSplitArgs.arg$[.a]
+                    endfor
+
+                    while .spec$ <> ""
+                        .sp = index (.spec$, " ")
+                        if .sp = 0
+                            .tok$ = .spec$
+                            .spec$ = ""
+                        else
+                            .tok$ = left$ (.spec$, .sp - 1)
+                            .spec$ = mid$ (.spec$, .sp + 1, 1000)
+                        endif
+                        .eq = index (.tok$, "=")
+                        .pos = number (left$ (.tok$, .eq - 1))
+                        .b$ = mid$ (.tok$, .eq + 1, 100)
+
+                        if .pos <= .nArgs
+                            @emlRecordQuotedLiteral: .newArg$[.pos]
+                            .isLit = emlRecordQuotedLiteral.ok
+                            .lit$ = emlRecordQuotedLiteral.value$
+                            ; AN EMPTY COLUMN IS A ROLE THE SESSION DID NOT
+                            ; USE. A scatter with no grouping passes "" for
+                            ; groupCol; declaring groupCol$ = "" in the block
+                            ; would invite a user to fill it in and change what
+                            ; the figure means.
+                            if .isLit = 1 and .lit$ <> ""
+                                .slot = 0
+                                .sameBase = 0
+                                for .k from 1 to .n
+                                    if .varBase$[.k] = .b$
+                                        .sameBase = .sameBase + 1
+                                        if .varLit$[.k] = .lit$
+                                            .slot = .k
+                                        endif
+                                    endif
+                                endfor
+                                if .slot = 0
+                                    .n = .n + 1
+                                    .slot = .n
+                                    .varBase$[.n] = .b$
+                                    .varLit$[.n] = .lit$
+                                    if .sameBase = 0
+                                        .varName$[.n] = .b$ + "$"
+                                    else
+                                        .varName$[.n] = .b$
+                                        ... + string$ (.sameBase + 1) + "$"
+                                    endif
+                                    .varSteps$[.n] = ""
+                                    .varLast$[.n] = ""
+                                endif
+                                .note$ = string$ (.stepN) + " ("
+                                ... + .stepKind$ + ")"
+                                if .varLast$[.slot] <> .note$
+                                    if .varSteps$[.slot] <> ""
+                                        .varSteps$[.slot] = .varSteps$[.slot]
+                                        ... + ", "
+                                    endif
+                                    .varSteps$[.slot] = .varSteps$[.slot]
+                                    ... + .note$
+                                    .varLast$[.slot] = .note$
+                                endif
+                                .newArg$[.pos] = emlRecordQuotedLiteral.lead$
+                                ... + .varName$[.slot]
+                            endif
+                        endif
+                    endwhile
+
+                    .lineOut$ = .head$
+                    for .a from 1 to .nArgs
+                        if .a > 1
+                            .lineOut$ = .lineOut$ + ","
+                        endif
+                        .lineOut$ = .lineOut$ + .newArg$[.a]
+                    endfor
+                endif
+            endif
+
+            .rebuilt$ = .rebuilt$ + .lineOut$
+            if .more = 1
+                .rebuilt$ = .rebuilt$ + newline$
+            endif
+        endwhile
+        .code$[.s] = .rebuilt$
+    endfor
+
+    if .n = 0
+        goto END_COLUMN_MANIFEST
+    endif
+
+    ; The declarations, with the `=` aligned: the block is a form the user
+    ; fills in, and a form reads better as a column than as ragged prose.
+    .width = 0
+    for .k from 1 to .n
+        if length (.varName$[.k]) > .width
+            .width = length (.varName$[.k])
+        endif
+    endfor
+    for .k from 1 to .n
+        .pad$ = ""
+        for .p from 1 to .width - length (.varName$[.k])
+            .pad$ = .pad$ + " "
+        endfor
+        @emlRecordColumnGloss: .varBase$[.k]
+        .word$ = "steps "
+        if not index (.varSteps$[.k], ",")
+            .word$ = "step "
+        endif
+        .out$ = .out$ + .varName$[.k] + .pad$ + " = """ + .varLit$[.k]
+        ... + """   ; " + emlRecordColumnGloss.gloss$ + " -- " + .word$
+        ... + .varSteps$[.k] + newline$
+    endfor
+
+    label END_COLUMN_MANIFEST
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlRecordTableManifest
 # The block at the top of an emitted script that names every object the
 # session ran on, once each, with the steps that used it.
@@ -1788,7 +2241,15 @@ procedure emlRecordTableManifest
         endif
     endfor
 
-    if .n = 0
+    ; THE COLUMNS BELONG IN THE SAME BLOCK (RULING 9, 15 Aug 2026), and this
+    ; is where they are gathered, because a block with two governing comments
+    ; is two blocks. @emlRecordColumnManifest also rewrites the steps, so it
+    ; must run before @emlRecordRender walks them -- it does, because the
+    ; renderer calls this procedure before its body loop.
+    @emlRecordColumnManifest
+    .nCols = emlRecordColumnManifest.n
+
+    if .n = 0 and .nCols = 0
         goto END_TABLE_MANIFEST
     endif
 
@@ -1802,11 +2263,14 @@ procedure emlRecordTableManifest
     ; for no gain, and the single-object script loses the property that
     ; makes this block worth having -- one visible place to re-point the
     ; workflow at other data.
-    .out$ = .out$ + "# Name your data objects here for this recorded workflow."
+    .out$ = .out$
+    ... + "# Name your data objects and columns here for this recorded"
     ... + newline$
-    .out$ = .out$ + "# Edit a name to run the same workflow on other data;"
+    .out$ = .out$
+    ... + "# workflow. Edit a name to run the same workflow on other data;"
     ... + newline$
-    .out$ = .out$ + "# nothing below this block names an object."
+    .out$ = .out$
+    ... + "# nothing below this block names an object or a column."
     ... + newline$
     for .k from 1 to .n
         .word$ = "steps "
@@ -1816,6 +2280,20 @@ procedure emlRecordTableManifest
         .out$ = .out$ + "data" + string$ (.k) + "$ = """ + .name$[.k]
         ... + """   ; " + .word$ + .steps$[.k] + newline$
     endfor
+    if .nCols > 0
+        .out$ = .out$ + emlRecordColumnManifest.out$
+        ; SAID ONCE, HERE, RATHER THAN LEFT TO BE DISCOVERED. A figure's
+        ; title and axis labels are text the form was given -- often the same
+        ; words as a column, because that is what the form defaults them to --
+        ; and they stay where they were typed. A user who retargets the data
+        ; and wants the figure to say so edits the step, and now knows to.
+        .out$ = .out$
+        ... + "# (Titles and axis labels are text, not column names, so they"
+        ... + newline$
+        .out$ = .out$
+        ... + "#  stay as they were typed -- edit those in the step itself.)"
+        ... + newline$
+    endif
     .out$ = .out$ + newline$
 
     label END_TABLE_MANIFEST
@@ -2219,7 +2697,16 @@ procedure emlRecordRender
         ; which is the one place that legitimately knows about the panel. The
         ; recorder owns what the emitted file SAYS, and "what this step means
         ; when it is replayed" is exactly that. One substitution, one place.
-        .codeOut$ = .code$
+        ; THE CODE THE RENDERER EMITS IS THE REWRITTEN CODE, not the recorded
+        ; string: @emlRecordColumnManifest has replaced every column literal
+        ; with the variable the block above declares (RULING 9). The fallback
+        ; is the recorded line, so a step the rewrite declined to touch -- an
+        ; ambiguous parse, an unknown procedure -- is emitted exactly as it
+        ; was captured rather than lost.
+        .codeOut$ = emlRecordColumnManifest.code$[.s]
+        if .codeOut$ = ""
+            .codeOut$ = .code$
+        endif
         if .kind$ = "save"
             .codeOut$ = replace$ (.codeOut$, "@emlSavePanel:",
             ... "@emlRecordReplaySave:", 0)

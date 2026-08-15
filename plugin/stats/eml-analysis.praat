@@ -1110,15 +1110,31 @@ procedure emlReportPairwiseDescriptives: .tableId, .dataCol$, .groupCol$
             .nG = eml_getGroupData.n
             @emlMean: eml_getGroupData.data#
             @emlSD: eml_getGroupData.data#
+            ; RULING 6, 15 August 2026. Every rounded number the report prints
+            ; goes through @eml_fixed (stats/eml-output.praat) and not through
+            ; fixed$, because Praat's fixed$ is a MINIMUM-significance
+            ; formatter wearing a fixed-precision name: it returns the LARGER
+            ; of the precision asked for and however many decimals are needed
+            ; to show one significant digit, and a bare "0" for an exact zero.
+            ; Measured on 6.6.30 -- fixed$ (-1e-16, 4) is
+            ; "-0.0000000000000001" and fixed$ (0, 4) is "0". A group mean of
+            ; zero therefore printed as "0" in a column of "2.5000"s, and a
+            ; mean a few ulps off zero printed seventeen digits of arithmetic
+            ; noise. @eml_fixed keeps fixed$'s answer whenever fixed$ honoured
+            ; the request, so every value that already printed correctly still
+            ; prints identically. Nothing computed moves and the CSV export is
+            ; untouched -- it uses string$ and keeps full precision on purpose.
             if emlMean.result = undefined
                 .meanTxt$ = "n/a"
             else
-                .meanTxt$ = fixed$ (emlMean.result, 4)
+                @eml_fixed: emlMean.result, 4
+                .meanTxt$ = eml_fixed.result$
             endif
             if emlSD.result = undefined
                 .sdTxt$ = "n/a"
             else
-                .sdTxt$ = fixed$ (emlSD.result, 4)
+                @eml_fixed: emlSD.result, 4
+                .sdTxt$ = eml_fixed.result$
             endif
         endif
         @emlPadCell: .label$, 20
@@ -1227,8 +1243,14 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                 if .tVal = undefined or .dfVal = undefined
                     .statTxt$ = "not computed"
                 else
-                    .statTxt$ = fixed$ (.tVal, 3) + " (" + fixed$ (.dfVal, 2)
-                        ... + ")"
+                    ; RULING 6. Two identical groups give t = 0 exactly, and
+                    ; fixed$ (0, 3) is "0" -- the reported symptom, a bare
+                    ; zero in a three-decimal column. @eml_fixed prints
+                    ; "0.000". See @emlReportPairwiseDescriptives above.
+                    @eml_fixed: .tVal, 3
+                    .statTxt$ = eml_fixed.result$ + " ("
+                    @eml_fixed: .dfVal, 2
+                    .statTxt$ = .statTxt$ + eml_fixed.result$ + ")"
                 endif
                 @emlFormatP: emlPairwiseT.rawP# [.pair]
                 .rawTxt$ = emlFormatP.bare$
@@ -1239,7 +1261,10 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                 if .dVal = undefined
                     .dTxt$ = "n/a"
                 else
-                    .dTxt$ = fixed$ (.dVal, 3)
+                    ; RULING 6. A Cohen's d of no difference is zero, which
+                    ; fixed$ renders as a bare "0".
+                    @eml_fixed: .dVal, 3
+                    .dTxt$ = eml_fixed.result$
                 endif
                 @emlSigMark: .adjP, .alpha
                 @emlPadCell: .cmp$, 26
@@ -1303,7 +1328,11 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                     if .dVal = undefined
                         .cellText$ = "n/a"
                     else
-                        .cellText$ = fixed$ (.dVal, 3)
+                        ; RULING 6, as in the per-pair table above. A sweep
+                        ; matrix is read DOWN the column, so one cell of a
+                        ; different width is the worst place for this.
+                        @eml_fixed: .dVal, 3
+                        .cellText$ = eml_fixed.result$
                     endif
                 endif
                 @emlPadCell: .cellText$, 12
@@ -1359,7 +1388,11 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                 if .uVal = undefined
                     .statTxt$ = "not computed"
                 else
-                    .statTxt$ = fixed$ (.uVal, 2)
+                    ; RULING 6. U is zero when every value of one group
+                    ; outranks every value of the other -- the most extreme
+                    ; result the statistic has, printed as a bare "0".
+                    @eml_fixed: .uVal, 2
+                    .statTxt$ = eml_fixed.result$
                 endif
                 @emlFormatP: emlPairwiseWilcoxon.rawP# [.pair]
                 .rawTxt$ = emlFormatP.bare$
@@ -1370,7 +1403,10 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                 if .rVal = undefined
                     .rTxt$ = "n/a"
                 else
-                    .rTxt$ = fixed$ (.rVal, 3)
+                    ; RULING 6. Rank-biserial r is zero for two groups that
+                    ; interleave perfectly.
+                    @eml_fixed: .rVal, 3
+                    .rTxt$ = eml_fixed.result$
                 endif
                 @emlSigMark: .adjP, .alpha
                 @emlPadCell: .cmp$, 26
@@ -1434,7 +1470,9 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                     if .rVal = undefined
                         .cellText$ = "n/a"
                     else
-                        .cellText$ = fixed$ (.rVal, 3)
+                        ; RULING 6, as in the per-pair table above.
+                        @eml_fixed: .rVal, 3
+                        .cellText$ = eml_fixed.result$
                     endif
                 endif
                 @emlPadCell: .cellText$, 12
@@ -1486,7 +1524,10 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                 if .fVal = undefined
                     .statTxt$ = "not computed"
                 else
-                    .statTxt$ = fixed$ (.fVal, 3) + " ("
+                    ; RULING 6. Scheffe's F is zero for two groups with the
+                    ; same mean, which is the case the ruling was reported on.
+                    @eml_fixed: .fVal, 3
+                    .statTxt$ = eml_fixed.result$ + " ("
                         ... + string$ (.nGroups - 1) + ", "
                         ... + string$ (emlScheffe.dfWithin) + ")"
                 endif
@@ -1497,7 +1538,10 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                 if .diffVal = undefined
                     .diffTxt$ = "n/a"
                 else
-                    .diffTxt$ = fixed$ (.diffVal, 3)
+                    ; RULING 6. A mean difference of zero is the whole point
+                    ; of the row it sits in.
+                    @eml_fixed: .diffVal, 3
+                    .diffTxt$ = eml_fixed.result$
                 endif
                 @emlSigMark: .pVal, .alpha
                 @emlPadCell: .cmp$, 26
@@ -1559,7 +1603,9 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                     if .diffVal = undefined
                         .cellText$ = "n/a"
                     else
-                        .cellText$ = fixed$ (.diffVal, 3)
+                        ; RULING 6, as in the per-pair table above.
+                        @eml_fixed: .diffVal, 3
+                        .cellText$ = eml_fixed.result$
                     endif
                 endif
                 @emlPadCell: .cellText$, 12
@@ -3229,23 +3275,32 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     .subj$ = "  Subjects (complete cases) n = " + string$ (.n)
         ... + ", conditions k = " + string$ (.k)
     appendInfoLine: .subj$
+    ; RULING 6, as in @emlReportPairwiseDescriptives -- a condition mean of
+    ; zero is a mean like any other and prints at the column's width.
     for .j from 1 to .k
+        @eml_fixed: emlRMAnovaTest.condMean# [.j], 4
         .cm$ = "    " + emlExtractConditionMatrix.colLabel$ [.j] + " mean = "
-            ... + fixed$ (emlRMAnovaTest.condMean# [.j], 4)
+            ... + eml_fixed.result$
         appendInfoLine: .cm$
     endfor
     ; D85. This line used to end "p = " + fixed$ (p, 4), which for a real
     ; RM-ANOVA p of 3e-29 printed twenty-nine decimal places. @emlInlineP
     ; gives the APA rendering the rest of the plugin uses, and appends the
     ; unrounded value when that rendering has floored it.
+    ; RULING 6 finishes what D85 started on this line. D85 routed the p
+    ; through @emlInlineP; the F beside it was still a bare fixed$, and an F
+    ; of zero -- which is what identical condition means give -- printed as
+    ; "0" next to an APA p.
     @emlInlineP: emlRMAnovaTest.p
+    @eml_fixed: emlRMAnovaTest.fStat, 4
     .fLine$ = "  F(" + string$ (emlRMAnovaTest.dfCond) + ", "
         ... + string$ (emlRMAnovaTest.dfErr) + ") = "
-        ... + fixed$ (emlRMAnovaTest.fStat, 4) + ", " + emlInlineP.text$
+        ... + eml_fixed.result$ + ", " + emlInlineP.text$
     appendInfoLine: .fLine$
     @emlInlineP: emlRMAnovaTest.pGG
+    @eml_fixed: emlRMAnovaTest.ggEpsilon, 4
     .ggLine$ = "  Greenhouse-Geisser epsilon = "
-        ... + fixed$ (emlRMAnovaTest.ggEpsilon, 4) + ", GG-corrected "
+        ... + eml_fixed.result$ + ", GG-corrected "
         ... + emlInlineP.text$
     appendInfoLine: .ggLine$
 
@@ -3256,8 +3311,11 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     ; the same quantity the glance frame exports as partial.eta.squared.
     .denom = emlRMAnovaTest.ssCond + emlRMAnovaTest.ssErr
     if .denom > 0
+        ; RULING 6. An eta squared of nothing is the case this most often
+        ; lands on, and it is exactly where fixed$ gives a bare "0".
+        @eml_fixed: emlRMAnovaTest.ssCond / .denom, 4
         .petaLine$ = "  Partial eta squared = "
-            ... + fixed$ (emlRMAnovaTest.ssCond / .denom, 4)
+            ... + eml_fixed.result$
             ... + "  (condition SS / (condition SS + error SS))"
     else
         .petaLine$ = "  Partial eta squared = n/a (no variance to partition)"
@@ -3377,16 +3435,21 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     .subj$ = "  Subjects (complete cases) n = " + string$ (.n)
         ... + ", conditions k = " + string$ (.k)
     appendInfoLine: .subj$
+    ; RULING 6, as on the repeated-measures path above.
     for .j from 1 to .k
+        @eml_fixed: emlFriedmanTest.rankSum# [.j], 1
         .rs$ = "    " + emlExtractConditionMatrix.colLabel$ [.j] + " rank sum = "
-            ... + fixed$ (emlFriedmanTest.rankSum# [.j], 1)
+            ... + eml_fixed.result$
         appendInfoLine: .rs$
     endfor
     ; D85, as on the RM path: fixed$ (p, 4) here rendered a p of 2e-25 as a
     ; twenty-five place decimal string.
+    ; RULING 6 completes the same line D85 half-fixed on the RM path: the p
+    ; was routed, the chi-square beside it was not.
     @emlInlineP: emlFriedmanTest.p
+    @eml_fixed: emlFriedmanTest.chiSq, 4
     .chiLine$ = "  chi-square(" + string$ (emlFriedmanTest.df) + ") = "
-        ... + fixed$ (emlFriedmanTest.chiSq, 4) + ", " + emlInlineP.text$
+        ... + eml_fixed.result$ + ", " + emlInlineP.text$
     appendInfoLine: .chiLine$
 
     ; D86. Friedman reported chi-square and p and no effect size. Kendall's
@@ -3394,8 +3457,11 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     ; exports as kendalls.w — and runs 0 (no agreement across subjects) to
     ; 1 (every subject ranks the conditions identically).
     if .n > 0 and .k > 1
+        ; RULING 6. W = 0 is "no agreement", a stated endpoint of the scale
+        ; the sentence beside it describes, and it printed as a bare "0".
+        @eml_fixed: emlFriedmanTest.chiSq / (.n * (.k - 1)), 4
         .wLine$ = "  Kendall's W = "
-            ... + fixed$ (emlFriedmanTest.chiSq / (.n * (.k - 1)), 4)
+            ... + eml_fixed.result$
             ... + "  (0 = no agreement, 1 = identical rankings)"
     else
         .wLine$ = "  Kendall's W = n/a"

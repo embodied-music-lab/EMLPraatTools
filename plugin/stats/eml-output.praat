@@ -476,15 +476,125 @@ procedure emlReportSection: .title$
 endproc
 
 
+# ────────────────────────────────────────────────────────────────────────────
+# @eml_fixed: .value, .decimals  ->  .result$        (private)
+# ────────────────────────────────────────────────────────────────────────────
+# PRAAT'S fixed$ IS NOT A FIXED-PRECISION FORMATTER, and every rounded number
+# this plugin prints went through it.
+#
+# AUTHOR RULING, 15 August 2026: no raw double may reach the Info window.
+# Statistics print at fixed 4 decimals, p in APA style; full precision belongs
+# to the CSV export, which is the file a reader is supposed to compute from.
+# The reported leak was the Describe path on a converted Matrix printing
+#
+#     Skewness            -0.0000000000000001
+#
+# (leg2_mx_describe.info.txt) from a line that reads `fixed$ (.value, 4)`.
+#
+# THE MECHANISM, MEASURED ON 6.6.30 RATHER THAN ASSUMED. fixed$ does not
+# format to the precision it is given; it formats to the LARGER of that
+# precision and however many decimals are needed to show one significant
+# digit. Driven directly:
+#
+#     fixed$ (-1e-16, 4)  ->  "-0.0000000000000001"     17 decimals, not 4
+#     fixed$ (0.0004,  2)  ->  "0.0004"                  4 decimals, not 2
+#     fixed$ (0.6,     0)  ->  "0.6"                     1 decimal, not 0
+#     fixed$ (0,       4)  ->  "0"                       0 decimals, not 4
+#
+# So the escape is not a property of skewness, or of the Matrix route, or of
+# the Describe wrapper. It is a property of every `fixed$` in the tree, and it
+# fires on exactly the values a statistics tool produces most often near zero:
+# a skewness of a symmetric column, a t of two identical means, a Cohen's d of
+# no difference, a residual mean. Each of those is a genuine zero that
+# floating-point arithmetic has left a few ulps away from zero, and each of
+# them printed seventeen digits of arithmetic noise where the house standard
+# says four. Fixing the one reported line would have left the mechanism, and
+# the next symmetric column would have reported it again from somewhere else.
+#
+# The last row above is the same defect with the opposite sign: an exact zero
+# prints as a bare "0" against a column of "1.2910"-shaped neighbours, so the
+# one number a reader most wants to recognise at a glance is the one that does
+# not line up.
+#
+# WHAT IT DOES, AND WHAT IT REFUSES TO DO. It formats. It never touches a
+# computed value: the argument is not modified, nothing is written back, and
+# the CSV writers do not call it -- @emlCSVAdd and the three-file writers
+# still emit full precision, which is where the ruling puts it. The rounding
+# it performs is the rounding fixed$ was asked for and declined to do.
+#
+#   - fixed$ honoured the request  ->  its answer is returned unchanged, so
+#     every value that already printed correctly still prints identically.
+#   - fixed$ escalated             ->  the value is rounded to .decimals here
+#     and re-formatted. Rounding 0.6 to 0 decimals is 1, not 0: the repair is
+#     "round properly", not "call it zero", and a check that only looked at
+#     tiny values would have missed that.
+#   - the rounded value is zero    ->  a canonical zero of the right width is
+#     built, "0.0000" at four decimals and "0" at none, because fixed$ answers
+#     "0" at every width.
+#   - undefined                    ->  passed straight through to fixed$, so
+#     "--undefined--" is still what an undefined statistic prints. Praat also
+#     renders every infinity as undefined, so the non-finite cases arrive here
+#     already collapsed and need no branch of their own.
+#
+# THE MULTIPLICATION IS SAFE FOR EVERY VALUE THAT REACHES IT. .value * 10^.d
+# could overflow for a large .value, but the escalation branch is unreachable
+# for one: fixed$ escalates only when |.value| < 10 raised to (1 - .decimals),
+# so anything routed through the rounding is already small.
+#
+# Arguments:
+#   .value, .decimals - as fixed$
+# Outputs:
+#   .result$ - the value at exactly .decimals decimals, or "--undefined--"
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_fixed: .value, .decimals
+    .result$ = fixed$ (.value, .decimals)
+    if .value <> undefined
+        ; How many decimals did it actually give us? A shortfall means the
+        ; bare "0"; an excess means it escalated past what was asked for.
+        .dot = index (.result$, ".")
+        if .dot = 0
+            .shown = 0
+        else
+            .shown = length (.result$) - .dot
+        endif
+        if .shown <> .decimals
+            .pow = 10 ^ .decimals
+            .rounded = round (.value * .pow) / .pow
+            if .rounded = 0
+                ; Negative zero included: -1e-16 rounds to -0, which compares
+                ; equal to 0 here, and a printed "-0.0000" is a minus sign in
+                ; front of nothing.
+                .result$ = "0"
+                if .decimals > 0
+                    .result$ = .result$ + "."
+                    for .i from 1 to .decimals
+                        .result$ = .result$ + "0"
+                    endfor
+                endif
+            else
+                ; A non-zero multiple of 10^-.decimals needs exactly
+                ; .decimals decimals, so this call cannot escalate again.
+                .result$ = fixed$ (.rounded, .decimals)
+            endif
+        endif
+    endif
+endproc
+
+
 procedure emlReportLine: .label$, .value, .decimals
     # Print labeled numeric value with 2-space indent
     # Label padded to 20 characters
     # When emlShowExplanations = 1 and emlWizardExplain$ is set, appends
     # a third tab-separated column with the explanation.
+    #
+    # THE ONE NUMERIC ROW PRINTER, so this is the one place the fixed$ escape
+    # has to be closed for every statistic that comes through here. See
+    # @eml_fixed.
     .indent$ = "  "
     @emlPadRight: .label$, 20
     .paddedLabel$ = emlPadRight.result$
-    .formattedValue$ = fixed$(.value, .decimals)
+    @eml_fixed: .value, .decimals
+    .formattedValue$ = eml_fixed.result$
     if emlShowExplanations and emlWizardExplain$ <> ""
         .line$ = .indent$ + .paddedLabel$ + .formattedValue$ + tab$ + tab$ + emlWizardExplain$
         emlWizardExplain$ = ""
@@ -602,7 +712,15 @@ procedure emlFormatP: .pValue
         .formatted$ = "p > .999"
     else
         # Format with 3 decimals, remove leading zero
-        .rawFormatted$ = fixed$(.pValue, 3)
+        ; Through @eml_fixed like everything else, and here it is provably a
+        ; no-op rather than a repair: this branch is reached only when
+        ; .pValue >= 0.001, and fixed$ escalates only below that, so the
+        ; string is byte-identical either way. It is routed anyway so that
+        ; @eml_fixed is the ONLY caller of fixed$ left in this module -- a
+        ; mechanism with one door is a mechanism that can be checked, and a
+        ; single unrouted call site is how the next one gets added.
+        @eml_fixed: .pValue, 3
+        .rawFormatted$ = eml_fixed.result$
         # Check if starts with "0." and remove leading zero
         .firstChar$ = left$(.rawFormatted$, 1)
         .zeroChar$ = "0"
@@ -647,8 +765,15 @@ procedure emlFormatCI: .lower, .upper, .level
     .ciLabel$ = " CI ["
     .comma$ = ", "
     .bracket$ = "]"
-    .lowerStr$ = fixed$(.lower, 2)
-    .upperStr$ = fixed$(.upper, 2)
+    ; Routed through @eml_fixed like every other rounded number in this
+    ; module. A confidence bound that sits on zero is the ordinary shape of a
+    ; null result, and it is exactly the value fixed$ answers with seventeen
+    ; digits: "95% CI [-0.0000000000000002, 1.40]" is a real rendering of a
+    ; bound that is zero to the printed precision.
+    @eml_fixed: .lower, 2
+    .lowerStr$ = eml_fixed.result$
+    @eml_fixed: .upper, 2
+    .upperStr$ = eml_fixed.result$
     .formatted$ = .levelStr$ + .percent$ + .ciLabel$ + .lowerStr$ + .comma$ + .upperStr$ + .bracket$
 endproc
 
@@ -672,7 +797,8 @@ procedure emlFormatTestResult: .testName$, .statSymbol$, .statValue, .df1, .df2,
     .df1Floor = floor(.df1)
     .df1Diff = .df1 - .df1Floor
     if .df1Diff > 0.001
-        .df1Str$ = fixed$(.df1, 1)
+        @eml_fixed: .df1, 1
+        .df1Str$ = eml_fixed.result$
     else
         .df1Str$ = string$(.df1Floor)
     endif
@@ -686,7 +812,8 @@ procedure emlFormatTestResult: .testName$, .statSymbol$, .statValue, .df1, .df2,
         .df2Floor = floor(.df2)
         .df2Diff = .df2 - .df2Floor
         if .df2Diff > 0.001
-            .df2Str$ = fixed$(.df2, 1)
+            @eml_fixed: .df2, 1
+            .df2Str$ = eml_fixed.result$
         else
             .df2Str$ = string$(.df2Floor)
         endif
@@ -694,7 +821,11 @@ procedure emlFormatTestResult: .testName$, .statSymbol$, .statValue, .df1, .df2,
     endif
     
     # Format test statistic (2 decimals)
-    .statStr$ = fixed$(.statValue, 2)
+    ; @eml_fixed, because a test statistic of two identical means is the
+    ; canonical near-zero double: t = -1.4e-16 printed as -0.0000000000000001
+    ; inside an APA line that has room for two decimals.
+    @eml_fixed: .statValue, 2
+    .statStr$ = eml_fixed.result$
     
     # Format p-value
     @emlFormatP: .pValue
@@ -705,14 +836,17 @@ procedure emlFormatTestResult: .testName$, .statSymbol$, .statValue, .df1, .df2,
     
     # Add effect size if provided
     if .effectName$ <> ""
-        .effectStr$ = fixed$(.effectValue, 2)
+        @eml_fixed: .effectValue, 2
+        .effectStr$ = eml_fixed.result$
         .effectPart$ = .comma$ + .effectName$ + .equals$ + .effectStr$
         .summary$ = .summary$ + .effectPart$
         
         # Add CI if provided
         if .ciLower <> undefined and .ciUpper <> undefined
-            .ciLowerStr$ = fixed$(.ciLower, 2)
-            .ciUpperStr$ = fixed$(.ciUpper, 2)
+            @eml_fixed: .ciLower, 2
+            .ciLowerStr$ = eml_fixed.result$
+            @eml_fixed: .ciUpper, 2
+            .ciUpperStr$ = eml_fixed.result$
             .openBracket$ = " ["
             .closeBracket$ = "]"
             .ciPart$ = .openBracket$ + .ciLowerStr$ + .comma$ + .ciUpperStr$ + .closeBracket$
@@ -828,15 +962,18 @@ procedure emlReportDescriptiveRow: .label$, .n, .mean, .sd, .median
     @emlPadRight: .nStr$, 6
     .nCol$ = emlPadRight.result$
     
-    .meanStr$ = fixed$(.mean, 2)
+    @eml_fixed: .mean, 2
+    .meanStr$ = eml_fixed.result$
     @emlPadRight: .meanStr$, 10
     .meanCol$ = emlPadRight.result$
     
-    .sdStr$ = fixed$(.sd, 2)
+    @eml_fixed: .sd, 2
+    .sdStr$ = eml_fixed.result$
     @emlPadRight: .sdStr$, 10
     .sdCol$ = emlPadRight.result$
     
-    .medianStr$ = fixed$(.median, 2)
+    @eml_fixed: .median, 2
+    .medianStr$ = eml_fixed.result$
     @emlPadRight: .medianStr$, 10
     .medianCol$ = emlPadRight.result$
     
@@ -1677,7 +1814,7 @@ endproc
 
 
 # ────────────────────────────────────────────────────────────────────────────
-# @eml_nameUnlabelledColumns: .tableId        (private)
+# @eml_nameUnlabelledColumns: .tableId, .insertedCols        (private)
 # ────────────────────────────────────────────────────────────────────────────
 # A MATRIX HAS NO COLUMN NAMES EITHER, and `To Table: "row"` writes the literal
 # "?" as the header of every one of them. So a three-column Matrix arrived at
@@ -1694,26 +1831,139 @@ endproc
 # and the user has no way to see it. Nothing in an output names a column index.
 #
 # @emlCleanConvertedTable in the graphs layer has performed this rename since
-# 12 August; the stats coercion never did. Same rule here, and by column
-# INDEX, so the invented name says which column it is.
+# 12 August; the stats coercion never did. Same rule here.
+#
+# THE NUMBER IN THE NAME IS THE SOURCE COLUMN'S NUMBER, NOT THE TABLE'S.
+# AUTHOR RULING, 15 August 2026. Until this ruling both this procedure and
+# @emlCleanConvertedTable numbered by TABLE POSITION, and `To Table: "row"`
+# has already put the manufactured label column in position 1 by the time
+# either of them runs. So the arithmetic was
+#
+#     source Matrix column 1  ->  table position 2  ->  named "Column_2"
+#     source Matrix column 2  ->  table position 3  ->  named "Column_3"
+#
+# and no column was ever called "Column_1" at all. A user who asks for
+# "column 2 of my matrix" reads the menu, picks Column_2, and is given column
+# 1's data. That is the S1 wrong-column read again -- the duplicate names were
+# repaired and the mis-addressing survived them, because the invented name
+# still did not say which column of the user's object it is. It has no failure
+# symptom: every value is a real value, from a real column, of the right
+# length, under a heading that is off by one. The auditor's evidence is
+# leg2_converted_mx.csv, where Column_2 carries source column 1.
+#
+# .insertedCols is HOW MANY COLUMNS THE COERCION PUT IN FRONT of the source's
+# first column, and it is a parameter rather than a hard-coded 1 because the
+# offset is a property of the CALLER's conversion, not of this procedure. Both
+# call sites in @emlWrapperInit pass 1, for the one `row` column that
+# `To Table: "row"` manufactures -- including the arm where the collision
+# guard has renamed it to "OriginalRowLabel", which moves its NAME and not its
+# position. A caller with no manufactured column passes 0 and gets the
+# identity mapping back.
+#
+# COMPOSES WITH A PARTIALLY LABELLED SOURCE. The loop tests each header
+# separately, so a TableOfReal labelled "", "b", "" produces Column_1, b,
+# Column_3: the labels the user supplied are kept, and the gaps are numbered
+# with the source's own numbering rather than with a count of the gaps. A
+# count of the gaps would have named that third column "Column_2", which is
+# the same off-by-one wearing different clothes.
+#
+# THE LOOP STARTS AFTER THE INSERTED BLOCK, and that is a guard rather than an
+# optimisation. Positions inside the block have no source column to be numbered
+# after -- `.c - .insertedCols` is 0 or less there -- so scanning them could
+# only ever write a name that is either meaningless ("Column_0") or a duplicate
+# of the real column 1's name, and a duplicate is the exact S1 hazard this
+# procedure exists to remove. The block is the caller's own manufactured
+# column, which the caller has already named: `To Table: "row"` names it "row"
+# and the collision guard renames it "OriginalRowLabel". Neither is ever "?",
+# measured on 6.6.30 -- so at HEAD this skips nothing. If one ever did arrive
+# unnamed, v63's "no duplicate or unnamed column" assertion is what says so,
+# which is a red line rather than an invented name nobody can interpret.
 #
 # Arguments:
-#   .tableId - the converted Table
+#   .tableId      - the converted Table
+#   .insertedCols - columns the coercion prepended (1 for the "row" column)
 # Outputs:
 #   .nNamed - how many headers were invented
 # ────────────────────────────────────────────────────────────────────────────
-procedure eml_nameUnlabelledColumns: .tableId
+procedure eml_nameUnlabelledColumns: .tableId, .insertedCols
     .nNamed = 0
     selectObject: .tableId
     .nCols = Get number of columns
-    for .c from 1 to .nCols
+    for .c from .insertedCols + 1 to .nCols
         selectObject: .tableId
         .lab$ = Get column label: .c
         if .lab$ = "?" or .lab$ = ""
-            Rename column (by number): .c, "Column_" + string$ (.c)
+            Rename column (by number): .c,
+            ... "Column_" + string$ (.c - .insertedCols)
             .nNamed = .nNamed + 1
         endif
     endfor
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @eml_dropStaleConverted: .name$        (private)
+# ────────────────────────────────────────────────────────────────────────────
+# ONE SOURCE OBJECT, ONE CONVERTED TABLE, however many times a door is pressed.
+#
+# AUTHOR RULING 8a, 15 August 2026, severity 4. Every press of a stats wrapper
+# on the same Matrix or TableOfReal manufactured a fresh Table and named it
+# "eml_converted_<source>", and nothing ever removed the last one. Five presses
+# left five objects with the same name in the Objects window, and that is not
+# only clutter: `selectObject: "Table eml_converted_mx"` then answers with one
+# of the five and the user has no way to say which. It is the S1 duplicate-name
+# mechanism again, one level up -- names that address objects rather than
+# columns -- and it arrives without any error at all.
+#
+# CLEANED UP RATHER THAN REUSED, and the reason is staleness. Reusing the
+# existing Table would be cheaper and would be wrong the moment the user edits
+# the source object between presses: the second press would analyse the first
+# press's data under the second press's dialog, silently, which is the same
+# class of defect as the column mis-addressing above. Dropping and re-coercing
+# always describes the object as it is now.
+#
+# AT THE TOP OF THE NEXT PRESS, WHICH IS THE PLACEMENT THAT SURVIVES A CRASH.
+# This is the same argument that put the rename at creation (NEW-G12-2), and it
+# is why 8a does not complicate it: the rename is still on the line after the
+# conversion and is not touched. A cleanup handler at the BOTTOM of
+# @emlWrapperInit would be skipped by exactly the native error the rename
+# exists to survive, and would then leak on precisely the runs that matter. A
+# cleanup at the TOP runs before anything can fail, and it collects the stray
+# a crashed previous run left behind as well as the tidy one -- so the two
+# placements are complementary rather than alternatives. The steady state is
+# at most one stray, and only between a crash and the next press.
+#
+# THE LOOP, not a single removal, because a tree that has already shipped the
+# accumulating version can have any number of them; the first press after this
+# lands collects the lot. The bound is a safety rail, not a limit anyone should
+# reach.
+#
+# Arguments:
+#   .name$ - the converted Table's name, "eml_converted_" + the source's own.
+#            `selected$ ()` already returns Praat's underscored form, so the
+#            string built by the caller is the string `Rename:` produced.
+# Outputs:
+#   .nDropped - how many stale Tables were removed
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_dropStaleConverted: .name$
+    .nDropped = 0
+    .safety = 0
+    .more = 1
+    while .more = 1 and .safety < 64
+        .safety = .safety + 1
+        ; `nocheck` because "no such object" is the ordinary case -- the first
+        ; press of a session -- and not an error. It clears the selection when
+        ; it fails, which is why the caller reads the source object's id BEFORE
+        ; calling here and re-selects it afterwards.
+        nocheck selectObject: "Table " + .name$
+        if numberOfSelected ("Table") = 1
+            .id = selected ("Table")
+            removeObject: .id
+            .nDropped = .nDropped + 1
+        else
+            .more = 0
+        endif
+    endwhile
 endproc
 
 
@@ -1732,6 +1982,11 @@ procedure emlWrapperInit: .minCols
         # TableOfReal selected — auto-convert to Table
         .torId = selected ("TableOfReal")
         .torName$ = selected$ ("TableOfReal")
+        # RULING 8a. Collect what the last press on this same object left in
+        # the Objects window, before making another one with the same name.
+        # Read the id first: @eml_dropStaleConverted clears the selection.
+        @eml_dropStaleConverted: "eml_converted_" + .torName$
+        .nStale = eml_dropStaleConverted.nDropped
         selectObject: .torId
         .tableId = To Table: "row"
         # NAME IT ON THE LINE AFTER THE CONVERSION, NOT IN A CLEANUP HANDLER
@@ -1764,7 +2019,9 @@ procedure emlWrapperInit: .minCols
         # TableOfReal converts to `row, ?, ?, ?` exactly as a Matrix does, and
         # the duplicate-name hazard is not Matrix-only. The audit reported it
         # against the Matrix route because that is the route that was driven.
-        @eml_nameUnlabelledColumns: .tableId
+        # ONE inserted column -- the "row" that `To Table: "row"` manufactured
+        # on the line above -- so Column_k names source column k.
+        @eml_nameUnlabelledColumns: .tableId, 1
         if eml_auditLabelColumn.verdict$ = "labelled"
             appendInfoLine: "Converted TableOfReal """, .torName$,
             ... """ to Table """, .tableName$, """. Row labels are in "
@@ -1784,9 +2041,23 @@ procedure emlWrapperInit: .minCols
             ... eml_auditLabelColumn.nRows, "."
         endif
         if eml_nameUnlabelledColumns.nNamed > 0
+            # SAYS WHAT THE NUMBER MEANS. "by position" was true of the table
+            # and false of the source object, and the user is looking at the
+            # source object -- it is the one they selected and the one they
+            # count columns in. The sentence now names the only mapping that
+            # is any use from where they are standing.
             appendInfoLine: "It carried no column labels either, so ",
             ... eml_nameUnlabelledColumns.nNamed, " column(s) were named "
-            ... + "Column_<n> by position."
+            ... + "Column_<n>, where <n> is the column's number in the "
+            ... + "TableOfReal."
+        endif
+        # SAY THAT SOMETHING WAS REMOVED. The plugin is deleting an object
+        # from the user's Objects window, and an object that disappears
+        # without a line about it is indistinguishable from one that was
+        # never there. Only when it actually happened (ruling 8a).
+        if .nStale > 0
+            appendInfoLine: "Replaced ", .nStale, " Table(s) of the same "
+            ... + "name left by an earlier press on this object."
         endif
         appendInfoLine: ""
 
@@ -1794,6 +2065,9 @@ procedure emlWrapperInit: .minCols
         # Matrix selected — convert via TableOfReal → Table
         .matId = selected ("Matrix")
         .matName$ = selected$ ("Matrix")
+        # RULING 8a, as on the TableOfReal arm above.
+        @eml_dropStaleConverted: "eml_converted_" + .matName$
+        .nStale = eml_dropStaleConverted.nDropped
         selectObject: .matId
         .tempTorId = To TableOfReal
         .tableId = To Table: "row"
@@ -1831,13 +2105,23 @@ procedure emlWrapperInit: .minCols
         # this the dialog's column menu reads "row, ?, ?, ?" and the second
         # and third "?" address the first one's data. See
         # @eml_nameUnlabelledColumns.
-        @eml_nameUnlabelledColumns: .tableId
+        #
+        # ONE inserted column, on this arm too, and the collision guard above
+        # does not change that: it renames position 1, it does not move it. So
+        # Column_k is Matrix column k, which is the number the user counted.
+        @eml_nameUnlabelledColumns: .tableId, 1
         appendInfoLine: "Converted Matrix """, .matName$,
         ... """ to Table """, .tableName$, """. A Matrix carries no row or "
         ... + "column labels, so column """, .labelCol$,
         ... """ holds default labels r1..r", eml_auditLabelColumn.nRows,
         ... ", and ", eml_nameUnlabelledColumns.nNamed,
-        ... " unnamed column(s) were named Column_<n> by position."
+        ... " unnamed column(s) were named Column_<n>, where <n> is the "
+        ... + "column's number in the Matrix."
+        # As on the TableOfReal arm (ruling 8a).
+        if .nStale > 0
+            appendInfoLine: "Replaced ", .nStale, " Table(s) of the same "
+            ... + "name left by an earlier press on this object."
+        endif
         appendInfoLine: ""
 
     else
@@ -2635,8 +2919,9 @@ procedure emlWizardExplainEffectD: .d
     else
         .mag$ = "large"
     endif
+    @eml_fixed: .absD, 1
     emlWizardExplain$ = "Effect size: " + .mag$ + " (>0.8 = large). Groups differ by "
-    ... + fixed$ (.absD, 1) + " pooled standard deviations"
+    ... + eml_fixed.result$ + " pooled standard deviations"
 endproc
 
 procedure emlWizardExplainEffectG: .g
@@ -2682,8 +2967,9 @@ procedure emlWizardExplainEffectEta2: .eta2
         .mag$ = "large"
     endif
     .pct = .eta2 * 100
+    @eml_fixed: .pct, 0
     emlWizardExplain$ = "Effect size: " + .mag$ + " (>0.14 = large). "
-    ... + fixed$ (.pct, 0) + "% of variance explained by group membership"
+    ... + eml_fixed.result$ + "% of variance explained by group membership"
 endproc
 
 procedure emlWizardExplainCorrelation: .r
@@ -2711,20 +2997,24 @@ endproc
 procedure emlWizardExplainR2: .r2
     # R-squared interpretation
     .pct = .r2 * 100
-    emlWizardExplain$ = fixed$ (.pct, 0) + "% of variance in Y is explained by X"
+    @eml_fixed: .pct, 0
+    emlWizardExplain$ = eml_fixed.result$
+    ... + "% of variance in Y is explained by X"
 endproc
 
 procedure emlWizardExplainT: .t
     # t-statistic interpretation (signal-to-noise)
     .absT = abs (.t)
-    emlWizardExplain$ = "Signal-to-noise: " + fixed$ (.absT, 1)
+    @eml_fixed: .absT, 1
+    emlWizardExplain$ = "Signal-to-noise: " + eml_fixed.result$
     ... + "x larger than expected from sampling noise"
 endproc
 
 procedure emlWizardExplainF: .f
     # F-statistic interpretation
+    @eml_fixed: .f, 1
     emlWizardExplain$ = "Ratio of between-group to within-group variance: groups differ "
-    ... + fixed$ (.f, 1) + "x more than expected by chance"
+    ... + eml_fixed.result$ + "x more than expected by chance"
 endproc
 
 procedure emlWizardExplainDfBetween: .df, .nGroups
@@ -2783,8 +3073,11 @@ procedure emlWizardExplainSkewness: .skew
             .desc$ = "Substantial left skew"
         endif
     endif
+    ; A configured constant rather than a statistic, so there is nothing here
+    ; for fixed$ to escape with -- routed for the one-door rule above.
+    @eml_fixed: emlSkewThreshold, 0
     emlWizardExplain$ = .desc$ + " (|skew| < "
-    ... + fixed$ (emlSkewThreshold, 0) + " is typically acceptable)"
+    ... + eml_fixed.result$ + " is typically acceptable)"
 endproc
 
 procedure emlWizardExplainKurtosis: .kurt
@@ -2799,8 +3092,9 @@ procedure emlWizardExplainKurtosis: .kurt
     else
         .desc$ = "Light-tailed (platykurtic)"
     endif
+    @eml_fixed: emlKurtosisThreshold, 0
     emlWizardExplain$ = .desc$ + " (0 = normal; |excess| < "
-    ... + fixed$ (emlKurtosisThreshold, 0) + " treated as typical)"
+    ... + eml_fixed.result$ + " treated as typical)"
 endproc
 
 
