@@ -1,0 +1,125 @@
+
+══════════════════════════════════════════════
+  EML Stats : Paired Comparison
+  Sat Aug 15 03:57:04 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               np paired
+  Column 1            jitter pre
+  Column 2            jitter post
+  N (pairs)           12
+
+  jitter pre: Mean = 2.649, SD = 0.179, Median = 2.660
+  jitter post: Mean = 1.865, SD = 0.128, Median = 1.865
+
+
+  ── Paired t-test ───────────────────────────
+  Why: Tests whether the mean difference between paired observations differs from zero.
+  t                   10.828		Signal-to-noise: 10.8x larger than expected from sampling noise
+  df                  11		Number of pairs (12) minus 1. Independent difference scores.
+  p                   < .001  (3.320263310926776e-07)		Statistically significant: <0.1% probability due to chance
+  Mean difference     0.7842
+  SD of differences   0.2509
+
+
+  ── Effect Size ─────────────────────────────
+  Cohen's dz          3.126
+  r (from t)          0.956
+  Magnitude           large effect
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+
+══════════════════════════════════════════════
+  EML Stats : Spaghetti Plot Summary
+  Sat Aug 15 03:57:23 2026
+══════════════════════════════════════════════
+
+  Table               np paired long
+  Condition column    Condition
+  Value column        Value
+  ID column           Subject
+  Conditions          2
+  Groups              12
+
+
+  ── jitter pre ──────────────────────────────
+  N                   12
+  Mean                2.649
+  SD                  0.179
+
+
+  ── jitter post ─────────────────────────────
+  N                   12
+  Mean                1.865
+  SD                  0.128
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+NOTE: The legend asked for 2.32 in of y-axis room on a 3.11 in panel and was granted 1.55 in; the rest of the panel is kept for the data, so the legend may still overlap it. Set Legend placement to Right of plot or Below plot to keep the plot clear, or reduce the number of legend entries.
+NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+
+══════════════════════════════════════════════
+  EML Stats : Spaghetti Plot Summary
+  Sat Aug 15 03:57:23 2026
+══════════════════════════════════════════════
+
+  Table               np paired long
+  Condition column    Condition
+  Value column        Value
+  ID column           Subject
+  Conditions          2
+  Groups              12
+
+
+  ── jitter pre ──────────────────────────────
+  N                   12
+  Mean                2.649
+  SD                  0.179
+
+
+  ── jitter post ─────────────────────────────
+  N                   12
+  Mean                1.865
+  SD                  0.128
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+
+══════════════════════════════════════════════
+  EML Stats : Paired Comparison
+  Sat Aug 15 03:58:00 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               np paired
+  Column 1            jitter pre
+  Column 2            jitter post
+  N (pairs)           12
+
+  jitter pre: Mean = 2.649, SD = 0.179, Median = 2.660
+  jitter post: Mean = 1.865, SD = 0.128, Median = 1.865
+
+
+  ── Paired t-test ───────────────────────────
+  Why: Tests whether the mean difference between paired observations differs from zero.
+  t                   10.828		Signal-to-noise: 10.8x larger than expected from sampling noise
+  df                  11		Number of pairs (12) minus 1. Independent difference scores.
+  p                   < .001  (3.320263310926776e-07)		Statistically significant: <0.1% probability due to chance
+  Mean difference     0.7842
+  SD of differences   0.2509
+
+
+  ── Effect Size ─────────────────────────────
+  Cohen's dz          3.126
+  r (from t)          0.956
+  Magnitude           large effect
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════

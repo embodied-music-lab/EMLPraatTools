@@ -1,0 +1,8 @@
+01_clean.csv	CLEAN
+02_short_middle.csv	FLAGGED
+03_short_last.csv	FLAGGED
+04_long_middle.csv	FLAGGED
+05_long_last.csv	FLAGGED
+06_blank_middle.csv	FLAGGED
+07_quoted_ok.csv	CLEAN
+08_header_only.csv	FLAGGED

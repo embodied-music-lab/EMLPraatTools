@@ -1,0 +1,10 @@
+FILE CHECK — /home/claude/EMLPraatTools/harness/newpath/cases/05_long_last.csv
+
+ROW LENGTHS — the rows are not all the same width:
+  1 data row(s) carry MORE fields than the header's 3.
+  The first is data row 3, with 4 field(s). Usually an unquoted
+  comma inside a value, which splits one field into two.
+  It is the LAST row, and there the surplus is discarded silently: the
+  read succeeds and the extra values are simply gone.
+
+Fix the file and re-import.

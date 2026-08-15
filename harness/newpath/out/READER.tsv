@@ -1,0 +1,8 @@
+01_clean.csv	OK	OK rows=3 cols=3
+02_short_middle.csv	REFUSED	Error: Row 2 incomplete.
+03_short_last.csv	REFUSED	Error: Last row incomplete.
+04_long_middle.csv	REFUSED	Error: Row 2 incomplete.
+05_long_last.csv	OK	OK rows=3 cols=3
+06_blank_middle.csv	REFUSED	Error: Row 2 incomplete.
+07_quoted_ok.csv	OK	OK rows=2 cols=3
+08_header_only.csv	REFUSED	Error: No rows.

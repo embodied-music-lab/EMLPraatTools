@@ -1,0 +1,29 @@
+({] Table: np_paired
+
+Select two numeric columns with paired data (same N).
+
+Column 1:
+Column 2:
+
+Test:
+
+For spaghetti plot (optional):
+
+Subject column:
+
+Group column:
+
+Undo Quit
+
+jitter_pre
+jitter_post
+
+Paired t-test
+
+subject
+
+(none)
+
+Clear Info window
+
+Run

@@ -1,0 +1,14 @@
+FILE CHECK — /home/claude/EMLPraatTools/harness/newpath/cases/02_short_middle.csv
+
+ROW LENGTHS — the rows are not all the same width:
+  1 data row(s) carry FEWER fields than the header's 3.
+  The first is data row 2, with 2 field(s).
+  Praat's reader takes exactly 3 fields per row and stops
+  the read when a row ends early: "Row N incomplete", or "Last row
+  incomplete" on the final row. NO Table is produced, so there is nothing
+  left to repair afterwards. A value that is genuinely missing must still
+  occupy its field — write a,,c, not a,c. A blank line inside the file
+  counts as a short row for the same reason.
+
+Fix the file and re-import.
+The row-length problem stops the read outright: there will be no Table to repair.

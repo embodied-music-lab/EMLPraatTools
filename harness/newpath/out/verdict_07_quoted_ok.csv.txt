@@ -1,0 +1,12 @@
+FILE CHECK — /home/claude/EMLPraatTools/harness/newpath/cases/07_quoted_ok.csv
+
+Nothing found by the three checks this mode makes:
+  - no doubled-quote escapes inside quoted fields;
+  - the header is comma-delimited, not semicolon-delimited;
+  - every one of the 2 data row(s) carries the header's 3 field(s),
+    which is what Praat's reader refuses a file for.
+
+That is the whole of what was checked, and it is not a verdict on the
+CONTENTS. This mode reads the file as text and answers one question: will
+Praat's reader accept it. Once it is a Table, run this again in Table mode
+to audit the cell contents.

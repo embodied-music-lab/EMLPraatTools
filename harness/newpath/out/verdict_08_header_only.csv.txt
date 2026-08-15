@@ -1,0 +1,7 @@
+FILE CHECK — /home/claude/EMLPraatTools/harness/newpath/cases/08_header_only.csv
+
+ROW LENGTHS — this file has a header line and nothing under it.
+  Praat's reader refuses it with "No rows" and produces no Table at all.
+
+Fix the file and re-import.
+The row-length problem stops the read outright: there will be no Table to repair.
