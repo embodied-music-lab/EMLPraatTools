@@ -1,0 +1,17 @@
+praat_version	Praat 6.6.30 (June 30 2026)
+nonparametric_offered	1
+nonparametric_correction	holm
+nonparametric_testtype	nonparametric
+nonparametric_annotate	1
+nonparametric_dialog_height	918
+nonparametric_dialogs	6
+nonparametric_unknown_variable	0
+nonparametric_pngs	1
+parametric_offered	0
+parametric_correction	holm
+parametric_testtype	parametric
+parametric_annotate	1
+parametric_dialog_height	923
+parametric_dialogs	6
+parametric_unknown_variable	0
+parametric_pngs	1

@@ -1,0 +1,5 @@
+arm=nonparametric
+adjustOffered=1
+correction=holm
+testType=nonparametric
+annotate=1
