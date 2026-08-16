@@ -1,9 +1,20 @@
 #!/bin/bash
-# GUI driving helpers for EML Praat Tools menu exercise.
+# ============================================================================
+# harness/gui.sh — GUI driving helpers for EML Praat Tools menu exercise
+# ============================================================================
+# Ian Howell — Embodied Music Lab — GPL-3.0-or-later
+#
 # Source this: . harness/gui.sh
 # Defaults, not mandates: the parallel rig (harness/walks/rig.sh) puts each
 # instance on its own display, so a caller that has already set DISPLAY/SHOTS
 # keeps them. Bare `. harness/gui.sh` is unchanged — :99 and drive/out/shots.
+#
+# ATTRIBUTION
+# Framework: EML PraatGen by Ian Howell
+#            Embodied Music Lab — www.embodiedmusiclab.com
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
+# ============================================================================
 export DISPLAY=${DISPLAY:-:99}
 EML_ROOT_GUI="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Scratch drive area, outside the repo: it holds a live Praat's preferences,
@@ -337,10 +348,15 @@ raise () {
 EML_YOFF=${EML_YOFF:--20}
 
 # ---------------------------------------------------------------------------
-# RE-MEASURED 15 AUGUST 2026 on Praat 6.6.30, Xvfb 1400x1000x24, matchbox
-# -use_titlebar no. Every base value below is (measured y) + 20, and every one
-# of them was then PROVED by clicking it and reading the window that appeared;
-# the evidence table is in harness/MENU_MAP.md under the 15 August heading.
+# 15 AUGUST 2026 — HISTORY. Superseded by the 16 August block below, which is
+# where the live values are. Kept because it is the record of the same failure
+# happening one menu change earlier, and because the block below is shorter for
+# being able to point at it.
+#
+# Re-measured 15 August on Praat 6.6.30, Xvfb 1400x1000x24, matchbox
+# -use_titlebar no. Every base value was (measured y) + 20, and every one of
+# them was then PROVED by clicking it and reading the window that appeared;
+# that evidence table is in harness/MENU_MAP.md under the 15 August heading.
 #
 # WHAT WAS WRONG. The 13 August menu re-chain added a recorder group --
 # "Record script", "Stop recording and open", "Stop recording and save..." --
@@ -353,41 +369,117 @@ EML_YOFF=${EML_YOFF:--20}
 # stale menu constant does not error, it clicks whatever moved into its place.
 #
 # Twelve of the fourteen surviving constants were right to within 1 px. They
-# are rewritten anyway to the values that were actually proved, so that the
+# were rewritten anyway to the values that were actually proved, so that the
 # map, this file and the pixels are one number rather than three near ones.
 # ---------------------------------------------------------------------------
-EML_WIZARD=$((467 + EML_YOFF)); EML_DESCRIBE=$((492 + EML_YOFF))
-EML_NORMALITY=$((518 + EML_YOFF)); EML_TWOGROUP=$((545 + EML_YOFF))
-EML_PAIRED=$((569 + EML_YOFF)); EML_ANOVA=$((594 + EML_YOFF))
-EML_KW=$((619 + EML_YOFF)); EML_TWOWAY=$((644 + EML_YOFF))
-EML_CORR=$((669 + EML_YOFF)); EML_REGRESS=$((696 + EML_YOFF))
-EML_PAIRWISE=$((722 + EML_YOFF))
-EML_GRAPHS=$((747 + EML_YOFF))
-# 6 Aug: Batch voice analysis, Run Stats Demo and EML Stats Quick Start were
-# tabled, so Create Demo Table moved up into the slot Batch used to hold.
-# The three removed constants are kept, commented, next to the entries they
-# addressed — restoring a menu entry means restoring its coordinate too, and
-# a coordinate with no entry is worse than no coordinate: the click lands on
-# whatever moved into its place.
-# 6 Aug (later): "Check & repair data..." was added after EML Graphs, with a
-# separator, so Create Demo Table moved down one visible row.
-EML_CHECKDATA=$((773 + EML_YOFF))
-# 13 Aug: the recorder group landed between Check & repair data and Create
-# Demo Table. These three are the rows EML_DEMO used to occupy.
-EML_RECORD=$((799 + EML_YOFF))         # Record script
-EML_RECORD_OPEN=$((824 + EML_YOFF))    # Stop recording and open
-EML_RECORD_SAVE=$((849 + EML_YOFF))    # Stop recording and save...
-EML_DEMO=$((874 + EML_YOFF))           # Create Demo Table — was 799, see above
-# Tabled 6 Aug. THE NUMBERS BELOW ARE HISTORY, NOT COORDINATES: they are where
-# those entries sat in the 6 August menu, and every one of them now addresses a
-# different row (773 is Check & repair data, 824 is Stop recording and open).
-# Restoring any of these entries means re-measuring, not un-commenting.
-# EML_BATCH=$((773 + EML_YOFF))       # tabled 6 Aug — 773 is now Check & repair data
-# EML_STATSDEMO=$((824 + EML_YOFF))   # tabled 6 Aug — 824 is now Stop recording and open
-# EML_QUICKSTART=$((850 + EML_YOFF))  # tabled 6 Aug — 850 is now within Stop recording and save
+
+# ---------------------------------------------------------------------------
+# RE-MEASURED AGAIN 16 AUGUST 2026, same rig, after Batch voice analysis was
+# registered. Praat 6.6.30, Xvfb :150 1400x1000x24, matchbox
+# -use_titlebar no. Every entry below was read off the ink profile of a fresh
+# submenu screenshot AND THEN PROVED BY CLICKING IT; the readback table is in
+# harness/MENU_MAP.md under the 16 August heading, and every superseded value
+# was ALSO clicked, to show what it opens now. Nothing here is arithmetic on a
+# row pitch — the pitch on this menu is 24, 25 AND 26 px depending on whether a
+# separator sits between two rows, so "shift everything by 25" is a guess that
+# happens to be right eleven times out of seventeen.
+#
+# WHAT WAS WRONG. "Batch voice analysis..." was registered again on 16 August
+# (setup.praat lines 179-180, chained after "EML Graphs..."), and it renders
+# ABOVE "Check & repair data...". That inserted one row at position 13 and
+# pushed the five entries below it down one row each. The constants were not
+# moved, so every one of them addressed the row ABOVE its entry:
+#
+#   EML_CHECKDATA  clicked 753 -> Pause: Batch Voice Analysis
+#   EML_RECORD     clicked 779 -> Pause: EML — Check & repair data
+#   EML_RECORD_OPEN clicked 804 -> Info: "EML: recording started."
+#   EML_RECORD_SAVE clicked 829 -> Info: "EML: nothing has been recorded yet."
+#   EML_DEMO       clicked 854 -> Pause: Nothing recorded yet
+#
+# Not one of them failed. EML_RECORD_OPEN is the 15 August failure repeating
+# exactly: it silently STARTS A RECORDING and returns, and every drive after it
+# runs inside a recording nobody asked for.
+#
+# The first twelve entries are unchanged — the new row lands below EML Graphs,
+# so nothing above it moved. EML_GRAPHS was re-driven anyway (753's neighbour
+# above) and still opens `Pause: EML Graphs`.
+#
+# EACH LINE CARRIES BOTH ADDRESSES: the pixel y this file clicks, and the
+# entry's ORDINAL among the submenu's commands, which is what `emlitem` walks.
+# They are two encodings of one fact and they are on one line so that a menu
+# change updates them together. See `emlitem` below for why the ordinal is the
+# route to prefer.
+# ---------------------------------------------------------------------------
+EML_WIZARD=$((467 + EML_YOFF));      EML_N_WIZARD=1
+EML_DESCRIBE=$((492 + EML_YOFF));    EML_N_DESCRIBE=2
+EML_NORMALITY=$((518 + EML_YOFF));   EML_N_NORMALITY=3
+EML_TWOGROUP=$((545 + EML_YOFF));    EML_N_TWOGROUP=4
+EML_PAIRED=$((569 + EML_YOFF));      EML_N_PAIRED=5
+EML_ANOVA=$((594 + EML_YOFF));       EML_N_ANOVA=6
+EML_KW=$((619 + EML_YOFF));          EML_N_KW=7
+EML_TWOWAY=$((644 + EML_YOFF));      EML_N_TWOWAY=8
+EML_CORR=$((669 + EML_YOFF));        EML_N_CORR=9
+EML_REGRESS=$((696 + EML_YOFF));     EML_N_REGRESS=10
+EML_PAIRWISE=$((722 + EML_YOFF));    EML_N_PAIRWISE=11
+EML_GRAPHS=$((747 + EML_YOFF));      EML_N_GRAPHS=12
+# 16 Aug: Batch voice analysis registered again, ABOVE Check & repair data.
+# Its base value is 773, which is the number the 6 August tabling comment used
+# to carry as history — the entry has come back to the slot it was removed
+# from. It is a live constant now, measured, not un-commented.
+EML_BATCH=$((773 + EML_YOFF));       EML_N_BATCH=13
+EML_CHECKDATA=$((799 + EML_YOFF));   EML_N_CHECKDATA=14   # was 773
+EML_RECORD=$((825 + EML_YOFF));      EML_N_RECORD=15      # was 799
+EML_RECORD_OPEN=$((850 + EML_YOFF)); EML_N_RECORD_OPEN=16 # was 824
+EML_RECORD_SAVE=$((875 + EML_YOFF)); EML_N_RECORD_SAVE=17 # was 849
+EML_DEMO=$((900 + EML_YOFF));        EML_N_DEMO=18        # was 874
+# Tabled 6 Aug and still tabled. THE NUMBERS BELOW ARE HISTORY, NOT
+# COORDINATES: they are where those entries sat in the 6 August menu, and both
+# now address a different row — in the 16 August menu base 824 is Record script
+# and base 850 is Stop recording and open. Restoring either entry means
+# re-measuring and re-numbering the ordinals below it, not un-commenting.
+# EML_STATSDEMO=$((824 + EML_YOFF))   # tabled 6 Aug — 824 is now Record script
+# EML_QUICKSTART=$((850 + EML_YOFF))  # tabled 6 Aug — 850 is now Stop recording and open
 EML_MENUBAR_Y=$((34 + EML_YOFF)); EML_TOOLS_Y=$((467 + EML_YOFF))
 
-# eml <y> -> open Objects>New>EML Tools and click the submenu entry at y
+# emlitem <ordinal> -> open Objects>New>EML Tools and select the ordinal'th
+#   COMMAND of the submenu by keyboard. PREFER THIS OVER `eml <y>`.
+#
+# Click "New", then Up, then Right, then Down x (n-1), then Return.
+#
+# Up FIRST, and it is not decoration: it wraps to the LAST item of the New
+# menu, which is where Praat puts a plugin's cascade header, so the walk does
+# not depend on how many commands Praat's own New menu carries — a number that
+# moves between Praat versions and has nothing to do with this plugin. Right
+# opens the cascade and selects its first item, which is why the repeat count
+# is n-1 and not n. GTK skips separators during keyboard navigation, so n
+# counts COMMANDS and the nine "-- eml ... --" rules are invisible to it.
+#
+# WHAT THIS FIXES AND WHAT IT DOES NOT. Same route as harness/batchgui/run.sh,
+# adopted here on 16 August 2026 and proved by driving all eighteen ordinals on
+# this rig (readbacks in MENU_MAP.md, §16 August, ordinal column). It is immune
+# to the three things that have forced every recalibration of the pixel table:
+# the row pitch (24/25/26 px, separator-dependent), EML_YOFF (the 20 px the
+# whole table moved on 6 August when the titlebar went away), and where the
+# window manager puts the Objects window. It is NOT immune to the menu being
+# REORDERED: today's regression moved Check & repair data from ordinal 13 to
+# 14 exactly as it moved it from y 753 to 779, and a stale ordinal is just as
+# silent as a stale coordinate — it opens the neighbour. This route carries
+# less state, not less obligation to re-measure.
+emlitem () {
+  local n="$1"
+  raise "^Praat Objects$" >/dev/null || return 1
+  xdotool mousemove 76 $EML_MENUBAR_Y click 1; sleep 1.5
+  xdotool key --clearmodifiers Up;    sleep 1.0
+  xdotool key --clearmodifiers Right; sleep 1.5
+  [ "$n" -gt 1 ] && xdotool key --clearmodifiers --repeat $((n - 1)) --delay 120 Down
+  sleep 1
+  xdotool key --clearmodifiers Return; sleep 3
+}
+
+# eml <y> -> open Objects>New>EML Tools and click the submenu entry at y.
+#   Kept because callers outside this file pass the EML_* pixel constants, and
+#   because a pixel is what a screenshot can be checked against. For new code
+#   use `emlitem $EML_N_<entry>`, which does not depend on the layout at all.
 eml () {
   raise "^Praat Objects$" >/dev/null || return 1
   xdotool mousemove 76 $EML_MENUBAR_Y click 1; sleep 1.2
@@ -399,8 +491,13 @@ eml () {
 # demo <n>  -> Create Demo Table, pick option n (1..7), Create, then Quit
 #   1 Two groups(40)  2 Three groups(45)  3 Paired(20)  4 Correlation(30)
 #   5 Regression(25)  6 Two-way(48)       7 Normality(40)
+#
+# 16 Aug 2026: switched from `eml $EML_DEMO` to the keyboard walk. This is the
+# helper that the 15 August incident actually damaged — a stale EML_DEMO made
+# `demo` start a recording instead of creating a table — and it is the one call
+# site inside this file, so it is the one that stops depending on the pitch.
 demo () {
-  eml $EML_DEMO
+  emlitem $EML_N_DEMO
   xdotool mousemove 830 535 click 1; sleep 1.5
   xdotool mousemove 806 $((538 + 29 * ($1 - 1))) click 1; sleep 1.2
   xdotool mousemove 792 581 click 1; sleep 3

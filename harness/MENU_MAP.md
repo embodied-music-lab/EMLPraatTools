@@ -1,8 +1,12 @@
 # Verified render map — `Objects → New → ⁺EML Tools`
 
-**Current table: §15 August 2026, measured on Praat 6.6.30 (June 30 2026).**
+**Current table: §16 August 2026, measured on Praat 6.6.30 (June 30 2026).**
 Xvfb 1400x1000x24, matchbox window manager. Source: `evidence/shots/`, and the
-15 August drive's own shots.
+16 August drive's own shots.
+
+**ATTRIBUTION** — Framework: EML PraatGen by Ian Howell, Embodied Music Lab —
+www.embodiedmusiclab.com. Code generation: Claude (Anthropic). Script author:
+Ian Howell — created and verified by this individual.
 
 ## Which layout each part of this file is in — READ THIS FIRST
 
@@ -14,11 +18,12 @@ header and then used the 8 August table added the 20 px twice.
 | Part of this file | Layout | matchbox launched as | relation to `gui.sh` |
 |---|---|---|---|
 | §Objects window chrome · §Opening the submenu · §Entry coordinates (click x≈500) · §Loading an arbitrary table · §6 August 2026 | **titlebar ON** — menu bar at y=34, `⁺EML Tools` at y=467 | `matchbox-window-manager` (default) | the **base** values in `gui.sh`, *before* `EML_YOFF` is added |
-| §8 August 2026 — this table was itself one row short | **titlebar OFF** — menu bar at y=14, `⁺EML Tools` at y=447 | `matchbox-window-manager -use_titlebar no` | superseded — see the 15 August table |
-| **§15 August 2026 — the current table** | **titlebar OFF** — menu bar at y=14, `⁺EML Tools` at y=447 | `matchbox-window-manager -use_titlebar no` | the values `gui.sh` **actually clicks**: base + `EML_YOFF` |
+| §8 August 2026 — this table was itself one row short | **titlebar OFF** — menu bar at y=14, `⁺EML Tools` at y=447 | `matchbox-window-manager -use_titlebar no` | superseded — see the 16 August table |
+| §15 August 2026 — the recorder group | **titlebar OFF** — menu bar at y=14, `⁺EML Tools` at y=447 | `matchbox-window-manager -use_titlebar no` | superseded — see the 16 August table |
+| **§16 August 2026 — the current table** | **titlebar OFF** — menu bar at y=14, `⁺EML Tools` at y=447 | `matchbox-window-manager -use_titlebar no` | the values `gui.sh` **actually clicks**: base + `EML_YOFF` |
 
-**Go to the 15 August section for anything you intend to click.** Everything
-above it is kept as the record of how the numbers were arrived at, and two of
+**Go to the 16 August section for anything you intend to click.** Everything
+above it is kept as the record of how the numbers were arrived at, and three of
 those sections are now wrong about what their coordinates open.
 
 `EML_YOFF` in `gui.sh` is exactly this difference. Anchor —
@@ -28,10 +33,11 @@ those sections are now wrong about what their coordinates open.
 EML_YOFF=${EML_YOFF:--20}
 ```
 
-It defaults to **-20**, i.e. the no-titlebar layout, so the 8 August table is
+It defaults to **-20**, i.e. the no-titlebar layout, so the 16 August table is
 the one that matches what the harness clicks today and the earlier sections are
-the base values it adds the offset to. **Do not add 20 to the 8 August numbers,
-and do not subtract 20 from them.** The 5 August sections carry their own note
+the base values it adds the offset to. **Do not add 20 to the 8, 15 or 16
+August numbers, and do not subtract 20 from them.** The 5 August sections carry
+their own note
 that the 4 August values were ~20 px high; that was the same 20 px, discovered
 from the other side.
 
@@ -337,3 +343,154 @@ the state before the recorder group.
   reports into the **Info window**, and *Stop recording and open* opens a
   **script editor**, whose window title is the script's path in curly quotes.
   A proof loop that only watches for `^Pause` will call both of them dead.
+
+---
+
+## 16 August 2026 — Batch voice analysis registered, and the five rows below it
+
+**Measured 16 August 2026. Praat 6.6.30 (June 30 2026), Xvfb :150
+1400x1000x24, `matchbox-window-manager -use_titlebar no`, Objects window
+1400x1000 at 0,0. These are the offset-applied numbers — what `gui.sh` clicks
+with its default `EML_YOFF=-20`. Do not add the offset again.**
+
+`Batch voice analysis...` was registered again on 16 August (author ruling;
+`plugin/setup.praat` lines 179–180, chained after `EML Graphs...`) and it
+renders **ABOVE** `Check & repair data...`. The submenu now has **eighteen**
+entries. One row was inserted at position 13, so the five entries below it each
+moved down one row and **five `gui.sh` constants each addressed the row above
+their entry**.
+
+Nothing failed, again. This is the third time in nine days, and the shape is
+identical each time: a stale menu constant opens whatever moved into its place.
+
+### The five that were wrong, and what each one actually opened
+
+Each superseded value was clicked on this rig before it was replaced. A
+coordinate retired without a readback is a guess about what it used to do.
+
+| Constant | old y | **old y opened** | new y | **new y opened** |
+|---|---:|---|---:|---|
+| `EML_CHECKDATA` | 753 | `Pause: Batch Voice Analysis` | **779** | `Pause: EML — Check & repair data` |
+| `EML_RECORD` | 779 | `Pause: EML — Check & repair data` | **805** | Info: `EML: recording started.` |
+| `EML_RECORD_OPEN` | 804 | Info: `EML: recording started.` | **830** | Info: `EML: nothing has been recorded yet.` / `The recording is still running.` |
+| `EML_RECORD_SAVE` | 829 | Info: `EML: nothing has been recorded yet.` | **855** | `Pause: Nothing recorded yet` |
+| `EML_DEMO` | 854 | `Pause: Nothing recorded yet` | **880** | `Pause: Create Demo Table` |
+
+`EML_RECORD_OPEN` at 804 is the 15 August failure repeating exactly: it starts
+a recording and returns, so every drive after it runs inside a recording nobody
+asked for. `EML_DEMO` is the constant that was damaged the same way last time.
+
+**THE ROW PITCH IS NOT 25.** Shifting these five by 25 would have put
+`EML_CHECKDATA` on 778, `EML_RECORD` on 804 and `EML_DEMO` on 879. Two of those
+land in the right band and one does not: measured, the pitch on this menu is
+**26 px across a separator and 25 px within a group**, and `EML Graphs → Batch`
+and `Batch → Check & repair` are both separator gaps. Arithmetic on an assumed
+pitch is what this section exists to forbid.
+
+### The full table — every row proved by clicking it
+
+`EML_BATCH` is **new**. Its base value, 773, is the number the 6 August tabling
+comment in `gui.sh` carried as *history* — the entry has come back to the slot
+it was removed from. It is live and measured, not un-commented.
+
+The **Ordinal** column is the entry's position among the submenu's *commands*
+(GTK skips separators in keyboard navigation). It is what `gui.sh:emlitem` and
+`harness/batchgui/run.sh` walk, and every one of the eighteen was driven and
+read back independently of the pixel column.
+
+| Entry | y | Ordinal | `gui.sh` constant | Proved by |
+|---|---:|---:|---|---|
+| Stats Wizard... | 447 | 1 | `EML_WIZARD` | `Pause: EML Stats Wizard` |
+| Describe Table column... | 472 | 2 | `EML_DESCRIBE` | `Pause: Describe Table Column` |
+| Check normality (all columns)... | 498 | 3 | `EML_NORMALITY` | `Pause: Check Normality` |
+| Compare two groups... | 525 | 4 | `EML_TWOGROUP` | `Pause: Compare Two Groups` |
+| Compare paired/repeated... | 549 | 5 | `EML_PAIRED` | `Pause: Compare Paired Observations` |
+| Compare k groups (ANOVA)... | 574 | 6 | `EML_ANOVA` | `Pause: Compare k Groups (ANOVA)` |
+| Compare k groups (Kruskal-Wallis)... | 599 | 7 | `EML_KW` | `Pause: Compare K Groups (Kruskal-Wallis)` |
+| Compare two-way (ANOVA)... | 624 | 8 | `EML_TWOWAY` | `Pause: Two-Way ANOVA` |
+| Correlate two columns... | 649 | 9 | `EML_CORR` | `Pause: Correlate Two Columns` |
+| Linear regression... | 676 | 10 | `EML_REGRESS` | `Pause: Simple Linear Regression` |
+| Pairwise comparisons... | 702 | 11 | `EML_PAIRWISE` | `Pause: Pairwise Comparisons` |
+| EML Graphs... | 727 | 12 | `EML_GRAPHS` | `Pause: EML Graphs` |
+| **Batch voice analysis...** | **753** | **13** | `EML_BATCH` *(new)* | `Pause: Batch Voice Analysis` |
+| **Check & repair data...** | **779** | **14** | `EML_CHECKDATA` *(was 753)* | `Pause: EML — Check & repair data` |
+| **Record script** | **805** | **15** | `EML_RECORD` *(was 779)* | Info: `EML: recording started.` |
+| **Stop recording and open** | **830** | **16** | `EML_RECORD_OPEN` *(was 804)* | Info: `EML: nothing has been recorded yet.` with a recording live; `EML: nothing is being recorded.` without one |
+| **Stop recording and save...** | **855** | **17** | `EML_RECORD_SAVE` *(was 829)* | `Pause: Nothing recorded yet` with a recording live; Info: `EML: no recording is in progress.` without one |
+| **Create Demo Table...** | **880** | **18** | `EML_DEMO` *(was 854)* | `Pause: Create Demo Table` |
+
+The first twelve rows are unchanged from 15 August — the new entry lands below
+`EML Graphs...`, so nothing above it moved. `EML_GRAPHS` (753's neighbour
+above) was re-driven anyway rather than assumed, and still opens `Pause: EML
+Graphs`.
+
+Evidence: `evidence/shots/menu_eighteen_entries_2026-08-16.png`, the submenu
+open with all eighteen entries visible. Re-running the ink profile on that
+committed file reproduces the y column above exactly:
+
+```bash
+# contiguous dark row-bands of the submenu column, x 390..670
+python3 - "$PWD/evidence/shots/menu_eighteen_entries_2026-08-16.png" <<'PY'
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("L"); px = im.load(); w, h = im.size
+rows = [any(px[x, y] < 128 for x in range(390, 670)) for y in range(h)]
+start = None
+for y in range(h + 1):
+    if y < h and rows[y]:
+        if start is None: start = y
+    elif start is not None:
+        if y - start > 3: print((start + y - 1) // 2, end=" ")
+        start = None
+print()
+PY
+# -> 447 472 498 525 549 574 599 624 649 676 702 727 753 779 805 830 855 880
+```
+
+The 15 August shot, `menu_seventeen_entries_2026-08-15.png`, remains the record
+for the state before Batch voice analysis was registered.
+
+### The keyboard walk, and what it does and does not fix
+
+`gui.sh` gained `emlitem <ordinal>` on 16 August, and `demo` — the one helper
+in that file that drives a menu entry — now uses it. The route is
+`harness/batchgui/run.sh`'s, unchanged: click `New`, `Up` (wraps to the last
+item of the New menu, which is where Praat puts a plugin's cascade header, so
+the walk does not depend on how many commands Praat's own New menu carries),
+`Right` (opens the cascade and selects item 1), `Down` × (n−1), `Return`.
+
+**It is immune to** the row pitch (24/25/26 px, separator-dependent), to
+`EML_YOFF` — the 20 px the entire table moved on 6 August when the titlebar
+went away — and to where the window manager puts the Objects window. Those
+three between them account for every recalibration this file records that was
+*not* a menu change.
+
+**It is not immune to the menu being reordered.** Today's regression moved
+`Check & repair data` from ordinal 13 to 14 exactly as it moved it from y 753
+to y 779, and a stale ordinal opens the neighbour just as silently as a stale
+coordinate does. `harness/batchgui/run.sh` is the demonstration: its whole
+before/after pair exists because ordinal 13 means a different command depending
+on whether the batch entry is registered.
+
+So the walk carries **less state, not less obligation to re-measure**. Both
+addresses are on one line per entry in `gui.sh` for that reason — a menu change
+updates them together, or it has not been done.
+
+**Method notes for whoever re-measures next.** The 15 August notes above still
+apply in full — read the row centres off the ink profile rather than by eye,
+never dismiss a pause form with `Escape`, and remember that *Record script*,
+*Stop recording and open* and *Stop recording and save...* report into the
+**Info window** rather than opening a `Pause:` window on some paths. Two more
+from this pass:
+
+- **Drive each entry from a fresh Praat.** The recorder entries are stateful
+  and one probe changes what the next one reports. Every readback above came
+  from an instance started for it, except the three that deliberately share a
+  session because the recording had to be live to tell the two "Stop
+  recording" wrappers apart.
+- **The no-Table guard makes ordinals 2–11 indistinguishable.** Walked with an
+  empty Objects window, every one of them answers `Pause: Cannot start this
+  tool` — a real dialog, from the right wrapper, that identifies nothing. Load
+  a Table first. That readback is the "opens a real dialog belonging to
+  something else" failure wearing its most convincing disguise: it is not even
+  the wrong dialog, it is the right dialog saying nothing.
