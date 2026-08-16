@@ -228,10 +228,77 @@ Set numeric value: 1, "pre", undefined
 Set numeric value: 2, "mid", undefined
 Set numeric value: 3, "post", undefined
 
+# The fixture is four rows; the three lines above empty one condition cell in
+# each of rows 1, 2 and 3, leaving row 4 as the only complete case. So: one
+# retained of four, three excluded, and each of the three condition columns is
+# responsible for exactly one of the exclusions. Those counts are stated here
+# from the FIXTURE, not read back out of the procedure under test — a needle
+# built from @emlExtractConditionMatrix's own output would agree with itself
+# whatever the procedure did, and could only pass.
+#
+# WHY THIS IS NOT ONE STRING COMPARISON ANY MORE. It was, until 16 August, and
+# it failed the day NEW-G6-1 landed: "Need at least 2 complete-case subjects"
+# over a table of eight reads as a data shortage the user does not have — what
+# they have is an EXCLUSION — so @eml_completeCaseDisclosure now appends a note
+# naming which column emptied which rows. The message was right and the
+# expectation was stale, and an exact-equality expectation makes every
+# improvement to a user-facing sentence look like a regression. It also tests
+# the wrong thing: what has to hold is the DIAGNOSIS and the DISCLOSURE, not
+# the punctuation between them.
+#
+# So the invariant is asserted as a substring, and the disclosure is asserted
+# SEPARATELY, by the numbers it must name. Neither half is redundant, and
+# neither alone is sufficient:
+#
+#   - The substring alone passes with the disclosure deleted. That is the
+#     regression NEW-G6-1 was raised about, and it would be silent.
+#   - The disclosure alone passes with the diagnosis replaced by anything at
+#     all, including a bare "Error." — the user would be told how many rows
+#     went and never told why the analysis stopped.
+#
+# A LENGTH CHECK WAS WRITTEN HERE AND THEN DELETED, and the deletion is the
+# point. "The message is longer than the invariant" is satisfied by any
+# padding whatever — a disclosure replaced by forty spaces passes it — and it
+# is satisfied ANYWAY by the rest of the diagnosis sentence, so it did not go
+# red under a single one of the seven mutations it was tested against. A check
+# that cannot fail is worse than no check: it is a line of evidence that isn't.
+# What replaces it is the counts, asserted by VALUE — "N excluded 3" and
+# "1 of 4" have to be in there, so a disclosure that appended whitespace, or
+# the right sentence with the wrong arithmetic in it, fails.
+#
+# The leading-position check is what keeps the two halves in the right order.
+# A disclosure prepended to the diagnosis would satisfy every containment
+# assertion above and put the accounting in front of the reason.
 @emlExtractConditionMatrix: f5Id, "pre|mid|post"
-@emlTestAssertEqualStr: "F5 too-few-complete-cases error",
-... "Need at least 2 complete-case subjects (rows with all conditions present).",
-... emlExtractConditionMatrix.error$
+f5Err$ = emlExtractConditionMatrix.error$
+f5Invariant$ = "Need at least 2 complete-case subjects"
+
+@emlTestAssertContains: "F5 refusal states the too-few-complete-cases diagnosis",
+... f5Err$, f5Invariant$
+@emlTestAssertTrue: "F5 diagnosis leads the message, disclosure follows it",
+... index (f5Err$, f5Invariant$) = 1
+@emlTestAssertContains: "F5 disclosure names the excluded count (3 of the 4 rows)",
+... f5Err$, "N excluded 3"
+@emlTestAssertContains: "F5 disclosure names what was retained (1 of 4)",
+... f5Err$, "1 of 4"
+# THE COLON IS LOAD-BEARING AND WAS PUT THERE BY A BREAK TEST. The needle was
+# "pre" until the disclosure was deliberately deleted to check that this
+# assertion would notice — and it did not. "pre" is a substring of "present",
+# which the diagnosis sentence contains, so that check passed against a
+# message with no disclosure in it at all: a check matching the wording that
+# EXPLAINS the fix rather than the fix. Its two siblings, "mid" and "post",
+# went red as they should, which is exactly how a partly-blind assertion hides
+# — in company. The audit note's shape is "<column>: n cell(s) are empty
+# (row r first)", a convention @emlAuditColumn emits everywhere, so the colon
+# is a stable anchor and not a guess at one sentence's punctuation.
+@emlTestAssertContains: "F5 disclosure names the column that emptied row 1",
+... f5Err$, "pre:"
+@emlTestAssertContains: "F5 disclosure names the column that emptied row 2",
+... f5Err$, "mid:"
+@emlTestAssertContains: "F5 disclosure names the column that emptied row 3",
+... f5Err$, "post:"
+@emlTestAssertContains: "F5 disclosure names the row an exclusion came from",
+... f5Err$, "row 1"
 
 removeObject: f5Id
 
