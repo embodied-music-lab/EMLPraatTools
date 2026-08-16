@@ -146,3 +146,61 @@ harness/drawlayer/out/*.log
 harness/graphseams/*_out/prefs/
 harness/graphseams/axis_out/*.log
 harness/graphseams/adjust_out/*.log
+
+# harness/axisspec (16 Aug 2026): the one-bin spectrum and the recorded axis,
+# behind validate/v67. The EVIDENCE is committed — AXISSPEC.tsv, BREAKS.tsv,
+# the rendered figures and the emitted scripts each record leg produced —
+# because those are what the validator reads and what a reviewer needs without
+# rendering anything. What is ignored is scratch: this rig's Praat pref dir
+# (wiped of its lock files per leg, never anybody else's), the per-leg Praat
+# logs, the per-break-case v67 transcripts (useful while running and noise
+# once the case is in BREAKS.tsv), and the generated replay wrappers, which
+# are written fresh on every run and carry absolute paths.
+harness/axisspec/out/prefs/
+harness/axisspec/out/*.log
+harness/axisspec/out/replay_*.praat
+
+# ag2 scratch: form-axis break shadows and probe scratch (Ruling 10b form half, v68)
+/tmp/ag2/
+harness/formaxis/out/prefs/
+harness/formaxis/out/*.code
+
+# ag3 scratch: the bracket-caption work (16 Aug ruling, v69). The OCR
+# intermediates under harness/bracketcap/out are inputs to tesseract -- the
+# cropped caption band and the cropped figure above it, upscaled -- and are
+# rewritten by every run of harness/bracketcap/bracketcap.sh. The .ocr and
+# .fig.ocr files they PRODUCE are the evidence validate/v69 reads and are
+# deliberately not ignored, nor are the PNGs the ruling is proved on.
+/tmp/ag3/
+harness/bracketcap/prefs/
+harness/bracketcap/out/*.band.png
+harness/bracketcap/out/*.band.txt
+harness/bracketcap/out/*.band.err
+harness/bracketcap/out/*.fig.png
+
+# v71 scratch. The sandbox, the break-battery tree copies and the drive output
+# all live under /tmp, outside this repository, so nothing here is strictly
+# needed -- these two entries exist so that a run redirected into the tree by a
+# stray TMPDIR cannot be committed by accident.
+ag5_scratch/
+v71_work/
+
+# evidence/redrive scratch. run.sh lifts @wizardReportPlan out of
+# plugin/scripts/eml-wizard.praat into this file on every run and removes it
+# again at the end; a run interrupted between those two points would otherwise
+# leave a stale copy of the wizard's procedures in the tree, which is exactly
+# the drifting duplicate the extraction exists to avoid.
+evidence/redrive/wizard_procs.generated.praat
+
+# batchgui scratch. harness/batchgui/run.sh stages TWO complete plugin trees
+# under out/work -- one carrying the shipped setup.praat and one carrying the
+# derived copy with the batch registration cut out -- plus a pref dir, a HOME
+# and the three-file corpus for each leg. None of it is evidence: the evidence
+# is BATCHGUI.tsv, INFO.txt, RESULTS.csv and the five PNGs beside them, which
+# are NOT ignored. The trees are rebuilt from nothing on every run, so a
+# committed copy would be a second, drifting plugin inside the plugin's own
+# repository -- and the one under out/work/prefs_before is a setup.praat with a
+# live registration deliberately removed, which is the last file that should
+# ever be mistaken for the shipped one.
+harness/batchgui/out/work/
+/tmp/ag7/

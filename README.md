@@ -99,10 +99,16 @@ referencing the finding ID it closes.
 
 ## Audit status
 
-Eleven of sixteen in-scope menu wrappers have been driven end to end through
+Thirteen of sixteen in-scope menu wrappers have been driven end to end through
 the real GUI under Xvfb. `Linear mixed model` is out of scope by author ruling.
-Still to drive: EML Graphs, Batch voice analysis, Run Stats Demo, EML Stats
-Quick Start, Stats Wizard.
+Still to drive: Run Stats Demo, EML Stats Quick Start, Stats Wizard.
+
+`Batch voice analysis` joined the list on 16 August 2026, on the condition the
+stress-test session attached to registering it: the dialog was driven before
+the menu line went back, because a registered entry that has never been clicked
+is exactly the dead door the audit's severity-2 findings were about. `EML
+Graphs` is driven by `harness/gui_adv`, `harness/graphseams` and
+`harness/graphaxes`.
 
 `START_HERE.md` is the entry point for whoever picks the drive up next: it
 names the remaining targets in priority order and points at the rig rebuild.
