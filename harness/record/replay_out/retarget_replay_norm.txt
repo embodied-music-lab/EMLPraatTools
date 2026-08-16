@@ -18,7 +18,7 @@
 Source              SS              df    MS              F           p
 cohort              12.05           1     12.05           71.0945     < .001
 room                2.65            1     2.65            15.6125     < .001
-cohort x room       0.00002         1     0.00002         0.0001      .991
+cohort x room       0.00            1     0.00            0.0001      .991
 Error               6.10            36    0.17            
 Total               20.80           39    
 
@@ -32,7 +32,7 @@ Total               20.80           39
   ── Effect Sizes (partial eta-squared) ──────
   cohort              0.6638  (large effect)		Effect size: large (>0.14 = large). 66% of variance explained by group membership
   room                0.3025  (large effect)		Effect size: large (>0.14 = large). 30% of variance explained by group membership
-  cohort x room       0.000003  (negligible effect)		Effect size: negligible (>0.14 = large). 0% of variance explained by group membership
+  cohort x room       0.0000  (negligible effect)		Effect size: negligible (>0.14 = large). 0% of variance explained by group membership
 
 
   ── Cell Means ──────────────────────────────

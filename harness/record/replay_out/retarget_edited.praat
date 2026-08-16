@@ -48,12 +48,15 @@ include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
-# nothing below this block names an object or a column.
+# nothing below this block names an object, a column or an axis
+# range.
 data1$ = "Table rt"   ; steps 1 (analysis), 2 (draw)
 valueCol$   = "dB"   ; the measured column -- steps 1 (analysis), 2 (draw)
 factorACol$ = "cohort"   ; the first factor -- step 1 (analysis)
 factorBCol$ = "room"   ; the second factor -- step 1 (analysis)
 groupCol$   = "cohort"   ; the grouping column -- step 2 (draw)
+axisYMin    = 2.0769446372985843   ; the y-axis range -- as typed in the dialog -- step 2 (draw)
+axisYMax    = 4.75420343875885   ; the figure was drawn on 2.0769 .. 4.7542
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -78,7 +81,7 @@ data = selected ()
 # Violin plot of val, grouped by grp, 2 groups.
 # Violin width is a kernel density estimate, not a count.
 
-@emlDrawViolinPlot: data, "retarget violin", "Cohort", "val", 6, 4, "color", 1, groupCol$, valueCol$, 2.076945, 4.754203
+@emlDrawViolinPlot: data, "retarget violin", "Cohort", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # Axis resolved to 2.0769 .. 4.7542 over 2 groups.
 # The same step through the menu:
