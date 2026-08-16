@@ -6,8 +6,23 @@
 #          CPPS), optionally constrained to labeled TextGrid intervals.
 #          Results are exported to a CSV file with one row per analysis
 #          segment.
-# Date: 14 August 2026
-# Version: 1.2
+# Date: 16 August 2026
+# Version: 1.3
+#
+# v1.3: The two APPENDIX_D §7 (hard) rules this module had never implemented.
+#       GUARD BOTH ENDS OF EVERY BOUNDED RANGE — the filtered-autocorrelation
+#       range, the raw-cross-correlation range and the 60-330 Hz cepstral peak
+#       search now each warn when a measured F0 comes within 10% of either
+#       limit, which is the difference between a censored number and a
+#       measured one and is invisible in the value itself. CHECK THE USER'S
+#       STATED RANGE AGAINST THE MEASUREMENT — highest expected F0 derives
+#       both pitch ranges, so a measurement above it is reported with the two
+#       parameters it set. Info-window output and the warning count only: no
+#       Table cell, no column and no exported value changes, and
+#       harness/batch's seven result CSVs are byte-identical across the edit.
+#       This is the module's first version to carry a registered menu entry
+#       (plugin/setup.praat v1.7) and a GUI drive of its real dialog
+#       (harness/batchgui). validate/v72_batch_registration.R.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -165,6 +180,70 @@ procedure emlResolveSentinelPath: .folder$
             .suffix = .suffix + 1
             @emlSentinelIsOurs: .path$
         until emlSentinelIsOurs.ours = 1
+    endif
+endproc
+
+# ────────────────────────────────────────────────────────────────────────────
+# @emlWarnNearRangeEnd: .lo, .hi, .floor, .ceiling, .what$   →  .fired
+# ────────────────────────────────────────────────────────────────────────────
+# ONE PROCEDURE FOR ALL THREE BOUNDED RANGES, and the reason is arithmetic
+# rather than tidiness. APPENDIX_D §7's rule — "GUARD BOTH ENDS OF EVERY
+# BOUNDED RANGE (hard) … A floor-only guard is half a guard" — has to be
+# applied to three ranges in this module (filtered autocorrelation, raw cross-
+# correlation, the cepstral peak search), which is six comparisons. Written out
+# at each site that is six chances to drop a `<` or to write the ceiling test
+# against the floor, and the appendix's observed failure is precisely a missing
+# half. Written once it is one place to read and one place to break.
+#
+# THE MARGIN IS 10%, WHICH IS THE APPENDIX'S OWN. Its worked example calls a
+# maximum of 322.87 Hz against a 330 Hz ceiling — 97.8% of it — the failure to
+# report, and its sample code is `if maxF0 > 0.9 * ceiling`. The floor test is
+# the mirror: within 10% ABOVE the floor, so `.lo < .floor * 1.1`. Note that
+# these are not symmetric in ratio (0.9 × ceiling versus 1.1 × floor rather
+# than 1/0.9), and the appendix is followed rather than tidied.
+#
+# WHY IT COUNTS INSTEAD OF INCREMENTING. A procedure cannot touch the caller's
+# nWarnings without naming a global, and a procedure in this file that reached
+# out and changed a counter would be the one thing in it that did. So it
+# returns .fired — 0, 1 or 2 — and the caller adds it. That also makes the
+# arithmetic visible at the call site, which matters because S7C's counter is
+# what the closing summary reports.
+#
+# A RANGE END IS APPROACHED, NOT EXCEEDED, and the wording says so. The value
+# came back inside the range because it could not come back outside one: a
+# tracker asked for 50-800 Hz reports something in 50-800 Hz whatever the voice
+# did. That is why "censored" is the right word and why this warning cannot be
+# derived from the value alone — which is the whole reason the plausibility
+# bands above cannot cover this and a second kind of check is needed.
+#
+# UNDEFINED IS NOT A NEAR MISS. Measured on Praat 6.6.30, 16 August 2026, both
+# `undefined < 55` and `undefined > 297` are FALSE, so the guards below would
+# be silent even unwritten; they are written because an unvoiced segment is
+# already reported once by the plausibility block and must not be reported
+# twice, and because a build that changed that answer would otherwise turn
+# every silent segment into two warnings.
+# ────────────────────────────────────────────────────────────────────────────
+procedure emlWarnNearRangeEnd: .lo, .hi, .floor, .ceiling, .what$
+    .fired = 0
+    if .lo <> undefined
+        if .lo < .floor * 1.1
+            .line$ = "  WARNING: minimum F0 " + fixed$ (.lo, 2)
+                ... + " Hz is within 10% of the " + fixed$ (.floor, 0)
+                ... + " Hz floor of the " + .what$
+                ... + " — widen the range or treat the result as censored."
+            appendInfoLine: .line$
+            .fired = .fired + 1
+        endif
+    endif
+    if .hi <> undefined
+        if .hi > .ceiling * 0.9
+            .line$ = "  WARNING: maximum F0 " + fixed$ (.hi, 2)
+                ... + " Hz is within 10% of the " + fixed$ (.ceiling, 0)
+                ... + " Hz ceiling of the " + .what$
+                ... + " — widen the range or treat the result as censored."
+            appendInfoLine: .line$
+            .fired = .fired + 1
+        endif
     endif
 endproc
 
@@ -425,6 +504,29 @@ facPitchTop = max (2 * highest_expected_F0, 800)
 
 # RCC pitch ceiling: canonical 600 (APPENDIX_D S1B), raise only if needed
 rccPitchCeiling = max (highest_expected_F0 * 1.1, 600)
+
+# ────────────────────────────────────────────────────────────────────────────
+# THE CEPSTRAL PEAK SEARCH WINDOW, MIRRORED — NOT PASSED
+# ────────────────────────────────────────────────────────────────────────────
+# 60 and 330 Hz are the pitch floor and ceiling of the cepstral peak search in
+# `Get CPPS:` (APPENDIX_D §5B, Maryn et al.). They are a BOUNDED ANALYSIS
+# RANGE in the sense APPENDIX_D §7 means, and §7's worked example is this exact
+# pair: a measured maximum F0 of 322.87 Hz against a 330 Hz cepstral ceiling —
+# 98% of it — with nothing said. Guarding it needs the numbers here.
+#
+# THEY ARE MIRRORED RATHER THAN SUBSTITUTED INTO THE CALL, and that is a
+# deliberate choice against the obvious one. Passing these variables to
+# `Get CPPS:` would keep one copy of each number, which is normally the right
+# instinct; here it would replace two canonical LITERALS with two names, and
+# the literals are what validate/v52_acoustic_calls.R pins argument-by-argument
+# against the appendix. A parameter set that reads `cppsSearchFloor,
+# cppsSearchCeiling` cannot be compared to a printed canon by anything but a
+# human. So the call keeps its literals and the drift risk moves here, where
+# validate/v72_batch_registration.R closes it: v72 reads the fourth and fifth
+# arguments of the shipped `Get CPPS:` line and requires them to equal these
+# two assignments. Change either end alone and the suite goes red.
+cppsSearchFloor = 60
+cppsSearchCeiling = 330
 
 # ────────────────────────────────────────────────────────────────────────────
 # THE SHORTEST SEGMENT THE SELECTED MEASURES CAN ACTUALLY BE ASKED FOR
@@ -724,6 +826,31 @@ if sentinelDisplaced
     appendInfoLine: "uses the sentinel file named above instead — edit that"
     appendInfoLine: "one, not STOP.txt."
 endif
+
+# THE ONE SETTING THAT SWITCHES OFF A GUARD, SAID OUT LOUD AND SAID FIRST.
+#
+# The bounded-range guard in the segment loop (APPENDIX_D §7) needs a measured
+# F0 to compare against a search limit, and the only pitch tracks in a run are
+# the ones the ticked measures ask for. Tick CPPS alone and there is no track,
+# so the check against the 60-330 Hz cepstral peak search — the very case §7
+# works through — cannot run.
+#
+# IT IS ANNOUNCED RATHER THAN LEFT TO BE INFERRED, and that is the whole point
+# of these five lines. A guard that silently does not run is the failure the
+# guard was written against, moved one level up: the run finishes, the summary
+# says "Warnings: 0", and the zero means "nothing was checked" while reading
+# exactly like "nothing was wrong". Said here it costs the user one line and a
+# tickbox; unsaid it costs them the finding.
+#
+# BEFORE THE FIRST FILE IS READ, so acting on it costs nothing. Printed with
+# the summary it would arrive after the batch that could have been run
+# correctly.
+if cPPS and not mean_F0 and not needsRccPitch
+    appendInfoLine: "NOTE: CPPS is selected and no pitch measure is, so no"
+    appendInfoLine: "pitch track is created. The check that warns when a voice"
+    appendInfoLine: "approaches the 60-330 Hz CPPS search window cannot run on"
+    appendInfoLine: "this configuration. Tick Mean F0 to enable it."
+endif
 appendInfoLine: ""
 
 # ============================================================================
@@ -1017,6 +1144,27 @@ for iFile from start_from_file to end_at_file
                 ... 0.5, 0.055, 0.35, 0.14
             selectObject: facPitchId
             meanF0Val = Get mean: 0, 0, "Hertz"
+            # THE EXTREMES, READ FOR THE RANGE GUARD BELOW AND FOR NOTHING
+            # ELSE. They are not written to the Table and they add no column:
+            # the CSV this module exports is byte-for-byte what it exported
+            # before these two lines existed, which is the property that makes
+            # adding them safe on a corpus already analysed.
+            #
+            # READ OFF THE SAME OBJECT WHILE IT IS STILL SELECTED. No
+            # selectObject: comes between the mean read above and these two,
+            # which matters twice over: it is one fewer place to point at the
+            # wrong pitch track, and the ADJACENCY of a selectObject: to the
+            # mean-F0 read is exactly what validate/v52_acoustic_calls.R pins
+            # to prove the mean comes off the filtered-autocorrelation object.
+            # Inserting a selection here would not fail Praat and would not
+            # change a number; it would quietly dissolve that check.
+            #
+            # "parabolic" is the interpolation named for these two queries in
+            # PraatGen's COMMANDS_Pitch.txt, verified there against the live
+            # signature; the mean takes no interpolation argument at all,
+            # which is why these two carry an argument the line above does not.
+            facMinF0 = Get minimum: 0, 0, "Hertz", "parabolic"
+            facMaxF0 = Get maximum: 0, 0, "Hertz", "parabolic"
         endif
 
         # --- Pitch for voice quality (raw cross-correlation, APPENDIX_D S1B) ---
@@ -1025,6 +1173,17 @@ for iFile from start_from_file to end_at_file
             rccPitchId = noprogress To Pitch (raw cross-correlation):
                 ... 0.0, 75, rccPitchCeiling, 15, "no", 0.03,
                 ... 0.45, 0.01, 0.35, 0.14
+            # THE SECOND TRACK HAS A DIFFERENT FLOOR, AND THAT IS THE WHOLE
+            # REASON IT IS READ SEPARATELY. Filtered autocorrelation searches
+            # from 50 Hz; raw cross-correlation searches from 75. A bass at
+            # 80 Hz is comfortably inside the first and within 10% of the
+            # floor of the second — so his mean F0 is sound while the
+            # PointProcess his jitter and shimmer are measured from is built
+            # on a track that could not look below 75 Hz. Guarding only the
+            # FAC range would call that segment clean.
+            selectObject: rccPitchId
+            rccMinF0 = Get minimum: 0, 0, "Hertz", "parabolic"
+            rccMaxF0 = Get maximum: 0, 0, "Hertz", "parabolic"
         endif
 
         # --- PointProcess for jitter/shimmer (APPENDIX_D S3A) ---
@@ -1187,6 +1346,203 @@ for iFile from start_from_file to end_at_file
             else
                 appendInfoLine: "  WARNING: Mean intensity returned undefined."
                 nWarnings = nWarnings + 1
+            endif
+        endif
+
+        # ========================================================
+        # Bounded analysis ranges, both ends (APPENDIX_D S7, hard)
+        # ========================================================
+
+        # A PLAUSIBILITY BAND AND AN ANALYSIS RANGE ARE NOT THE SAME THING,
+        # and until this block existed only the first kind was guarded. The
+        # six checks above ask whether a RESULT is believable — is 1400 Hz a
+        # credible mean F0. This one asks something the result cannot answer:
+        # whether the SEARCH that produced it was wide enough to have found
+        # the answer at all. A pitch tracker asked to look between 50 and
+        # 1000 Hz does not report failure when the voice sits at 48; it
+        # reports 50-something, in band, in the CSV, indistinguishable from a
+        # measurement. The number is censored, not wrong, and nothing about
+        # its value says so.
+        #
+        # APPENDIX_D §7 states the rule as "GUARD BOTH ENDS OF EVERY BOUNDED
+        # RANGE (hard)" and gives the observed failure verbatim: a script
+        # warned when minimum F0 came within 10% of the pitch floor and had
+        # no equivalent at the top, and a real recording measured 322.87 Hz
+        # against a cepstral search ceiling of 330 — 98% of it — in silence.
+        # The 10% margin and the "widen the range or treat the result as
+        # censored" reading are the appendix's, not this file's.
+        #
+        # THREE BOUNDED RANGES LIVE IN THIS MODULE, and they do not coincide:
+        #
+        #   filtered autocorrelation   50 .. facPitchTop      mean F0
+        #   raw cross-correlation      75 .. rccPitchCeiling  jitter, shimmer
+        #   cepstral peak search       60 .. 330              CPPS
+        #
+        # The floors are 50, 75 and 60 Hz — three different numbers, so a
+        # single guard against the lowest of them would pass a segment that
+        # two of the three could not measure. The RCC floor is the one that
+        # bites in practice: an 80 Hz bass is 60% above the FAC floor and 7%
+        # above the RCC floor, so his mean F0 is trustworthy and the
+        # PointProcess underneath his jitter and shimmer is not.
+        #
+        # EVERY RANGE THAT EXISTS IS GUARDED AGAINST ITS OWN LIMITS, and the
+        # first draft of this block did not do that. It picked ONE track to
+        # speak for the segment — filtered autocorrelation when it existed —
+        # and guarded the 50 Hz FAC floor with it. On the very corpus written
+        # to test it, a 78 Hz take with all six measures ticked produced no
+        # warning at all: 78 clears the FAC floor by 56%, and the raw-cross-
+        # correlation track underneath its jitter and shimmer, which cannot
+        # look below 75, was never asked. A guard that inspects the widest of
+        # several ranges reports on the one least likely to bite.
+        #
+        # So each track answers for itself below, and the ONE PLACE a single
+        # representative F0 is genuinely needed — the CPPS search window and
+        # the stated-value comparison, neither of which has a track of its
+        # own — takes FAC when it exists, because F0 tracking is the purpose
+        # APPENDIX_D §1A appoints FAC to, and RCC when it is all there is.
+        # Neither existing is not a silent no-op: the header printed a NOTE
+        # before a single file was read, because a guard that quietly does not
+        # run is this block's own failure mode arriving one level up.
+        #
+        # NOTHING HERE TOUCHES A NUMBER. Every branch below appends to the
+        # Info window and increments nWarnings. No Table cell, no column, no
+        # exported value moves; a corpus re-analysed after this block was
+        # added yields the identical CSV, and that is checked rather than
+        # asserted (harness/batch, seven drives, CSVs byte-compared).
+        #
+        # THEY COUNT AS WARNINGS (S7C) for the same reason the plausibility
+        # checks do: the summary's "Warnings:" line is what a user reads, and
+        # a warning the summary does not count is a warning that scrolled
+        # past during a four-hour run.
+        #
+        # UNDEFINED IS GUARDED EXPLICITLY. Measured on Praat 6.6.30,
+        # 16 August 2026: on a fully unvoiced segment both queries return
+        # undefined, and BOTH `undefined < 55` and `undefined > 297` evaluate
+        # FALSE — so an unguarded comparison here would be silent rather than
+        # wrong. The `<> undefined` is kept anyway, because relying on that is
+        # relying on a detail of one build.
+        #
+        # THERE IS NO else BRANCH REPORTING THE UNDEFINED CASE, and that is
+        # the one deliberate departure from Rule 30 in this file. An unvoiced
+        # segment is ALREADY reported, once, by the mean-F0 check above; a
+        # second line saying the same thing in different words would double
+        # every unvoiced segment's contribution to the warning count and make
+        # the summary's number mean less, not more.
+        # THE WIDEST TRACK AVAILABLE IS THE ONE THAT ANSWERS, and this is the
+        # second correction this block needed. Filtered autocorrelation
+        # searches from 50 Hz, raw cross-correlation from 75; a track cannot
+        # report a value outside its own range, so the RCC track's minimum is
+        # PINNED AT 75 by construction and a guard reading it can only fire in
+        # the 75-82.5 Hz sliver.
+        #
+        # WHAT THAT COSTS, ON THIS PROJECT'S OWN FIXTURES. harness/batch's
+        # F_warn corpus carries a 60 Hz take with all six measures ticked.
+        # 60 Hz is comfortably below the raw-cross-correlation floor, so its
+        # jitter and shimmer come off a PointProcess built on a track that
+        # could not see the voice at all — and the RCC guard reading RCC's own
+        # clamped minimum said nothing, because RCC reported 75-plus like it
+        # always will. The guard was silent about exactly the file it was
+        # written for.
+        #
+        # So the representative estimate is established FIRST and the RCC
+        # range is guarded against IT. FAC is preferred because APPENDIX_D §1A
+        # appoints it to F0 tracking and because it is the wider window; RCC
+        # answers only when it is the only track there is, and in that case
+        # its own clamp is a limit this module cannot see past without
+        # creating a pitch object nobody asked for. The FAC range keeps its
+        # own extremes because 50 Hz is the lowest floor here, so nothing
+        # wider exists to check it with.
+        rangeF0Min = undefined
+        rangeF0Max = undefined
+        rangeSource$ = ""
+        if mean_F0
+            rangeF0Min = facMinF0
+            rangeF0Max = facMaxF0
+            rangeSource$ = "filtered autocorrelation"
+        elsif needsRccPitch
+            rangeF0Min = rccMinF0
+            rangeF0Max = rccMaxF0
+            rangeSource$ = "raw cross-correlation"
+        endif
+
+        if mean_F0
+            @emlWarnNearRangeEnd: facMinF0, facMaxF0, 50, facPitchTop,
+                ... "filtered-autocorrelation pitch range"
+            nWarnings = nWarnings + emlWarnNearRangeEnd.fired
+        endif
+        if needsRccPitch
+            @emlWarnNearRangeEnd: rangeF0Min, rangeF0Max, 75, rccPitchCeiling,
+                ... "raw-cross-correlation pitch range"
+            nWarnings = nWarnings + emlWarnNearRangeEnd.fired
+        endif
+
+        # THE CEPSTRAL PEAK SEARCH WINDOW, WHICH IS NOT THE PITCH RANGE. It
+        # is fixed at 60-330 Hz by the Maryn parameter set and does NOT widen
+        # with highest_expected_F0, so a soprano study whose pitch range the
+        # user correctly stated as 900 Hz still has its CPPS computed from a
+        # search that stops at 330. That is the §7 worked example exactly,
+        # and it is the case where the CPPS column can be quietly wrong while
+        # every other column on the row is right.
+        if cPPS and rangeSource$ <> ""
+            @emlWarnNearRangeEnd: rangeF0Min, rangeF0Max, cppsSearchFloor,
+                ... cppsSearchCeiling, "CPPS peak search window"
+            nWarnings = nWarnings + emlWarnNearRangeEnd.fired
+        endif
+
+        # ========================================================
+        # The stated range against the measurement (APPENDIX_D S7)
+        # ========================================================
+
+        # "CHECK THE USER'S STATED RANGE AGAINST THE MEASUREMENT (hard)".
+        # Highest expected F0 is the only acoustic parameter this dialog asks
+        # for, and it is not a label: it DERIVES both pitch ranges, twenty
+        # lines above —
+        #
+        #     facPitchTop     = max (2 * highest_expected_F0, 800)
+        #     rccPitchCeiling = max (1.1 * highest_expected_F0, 600)
+        #
+        # — so a wrong statement is not a wrong annotation, it propagates
+        # into every pitch, every PointProcess, and therefore into jitter and
+        # shimmer as well as F0. A user who types 300 for a corpus that
+        # reaches 450 gets the canonical 800/600 floors, which happen to
+        # cover it, and never learns the statement was wrong; the same user
+        # with a corpus reaching 1100 gets a ceiling of 800 and octave-halved
+        # F0 in an unknown share of rows, with nothing in the CSV to say
+        # which. The appendix's observed failure is the mild version of this:
+        # stated below 300, measured 322.87, nothing flagged.
+        #
+        # THE MESSAGE NAMES THE DERIVED PARAMETERS, because the appendix asks
+        # for exactly that — "state which parameters were derived from the
+        # stated value, and let the user decide whether to re-run". A warning
+        # that says only "your estimate was low" leaves the user to work out
+        # what it cost.
+        #
+        # ONE DIRECTION, NOT TWO, and this is a judgement rather than a
+        # reading of the appendix. Measured ABOVE stated is a defect: the
+        # search may have been too narrow. Measured far BELOW stated is
+        # ordinary — one quiet take in a corpus of sopranos — and warning on
+        # it would fire on most rows of most well-configured runs, which is
+        # how a warning column becomes something users filter out. An
+        # overstatement only ever WIDENS these two ranges, and a range too
+        # wide degrades pitch tracking gradually rather than censoring it. If
+        # the author wants the overstatement warned about too, the branch is
+        # one `elsif` and the threshold is the ruling that is missing here.
+        if rangeSource$ <> ""
+            if rangeF0Max <> undefined
+                if rangeF0Max > highest_expected_F0
+                    line$ = "  WARNING: measured F0 reached "
+                        ... + fixed$ (rangeF0Max, 2) + " Hz, above the stated "
+                        ... + "highest expected F0 of "
+                        ... + fixed$ (highest_expected_F0, 0) + " Hz."
+                    appendInfoLine: line$
+                    line$ = "           That value set the pitch top ("
+                        ... + fixed$ (facPitchTop, 0) + " Hz) and the pitch "
+                        ... + "ceiling (" + fixed$ (rccPitchCeiling, 0)
+                        ... + " Hz) — re-run with a higher estimate if this "
+                        ... + "corpus goes higher than stated."
+                    appendInfoLine: line$
+                    nWarnings = nWarnings + 1
+                endif
             endif
         endif
 
