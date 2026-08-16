@@ -1,0 +1,51 @@
+# leg LEGEND after-analysis record
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Sun Aug 16 15:41:16 2026
+══════════════════════════════════════════════
+
+  Table               lg
+  Data column         val
+  Group column        grp
+  Groups              4
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests whether group means differ when normality and equal variances hold.
+
+Source              SS              df    MS              F           p
+Between             2513.16         3     837.72          151.3899    < .001
+Within              287.74          52    5.53            
+Total               2800.90         55    
+
+  F                   151.3899		Ratio of between-group to within-group variance: groups differ 151.4x more than expected by chance
+  p                   < .001  (1.12e-25)		Statistically significant: <0.1% probability due to chance
+  Effect size         eta-squared = 0.8973		Effect size: large (>0.14 = large). 90% of variance explained by group membership
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(3, 52) = 0.3362
+  Equal-spread p      p = .799
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  Cohort 1      14    206.18    2.38      206.05    
+  Cohort 2      14    212.99    2.17      212.44    
+  Cohort 3      14    217.21    2.69      217.31    
+  Cohort 4      14    224.64    2.13      224.49    
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+
+              Cohort 1    Cohort 2    Cohort 3    Cohort 4    
+Cohort 1      ---         -2.988      -4.349      -8.180      
+Cohort 2      2.988       ---         -1.729      -5.418      
+Cohort 3      4.349       1.729       ---         -3.066      
+Cohort 4      8.180       5.418       3.066       ---         
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+NOTE: The legend asked for 2.65 in of y-axis room on a 3.11 in panel and was granted 1.55 in; the rest of the panel is kept for the data, so the legend may still overlap it. Set Legend placement to Right of plot or Below plot to keep the plot clear, or reduce the number of legend entries.
+NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
