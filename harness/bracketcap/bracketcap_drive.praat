@@ -205,6 +205,28 @@ procedure runLeg: .tbl, .title$, .w, .h, .test$, .layout, .correction$
     else
         @emit: "adjust", ""
     endif
+    ; THE CORNER-BOX LINE AS THE BRIDGE LEFT IT, AND IT HAS TO BE READ HERE
+    ; RATHER THAN AFTER THE DRAW. @emlGraphsPostDispatchAnnotations CONSUMES
+    ; annotTextN -- it moves the line into annotBlockLabel$[] and sets
+    ; annotTextN = 0 so the box is not drawn twice -- so a read taken after
+    ; the post-dispatch stage reports zero on every leg and cannot tell a
+    ; bridge that set nothing from a form that routed it correctly.
+    ;
+    ; AUTHOR RULING C, 16 August 2026, is what this pair is for: every arm of
+    ; @emlBridgeGroupComparison that can produce a bracket names its test, and
+    ; validate/v76 pins the string composed HERE against the words tesseract
+    ; reads off the figure. Two-group figures set neither of these before
+    ; ruling C, which is why the label is guarded on the count: the drive has
+    ; to survive being pointed at a tree that does not have the fix, or the
+    ; break rig cannot tell a defect from a crashed harness.
+    @emit: "text_n", string$ (annotTextN)
+    if annotTextN > 0
+        @emit: "text_label", annotTextLabel$[1]
+        @emit: "text_anchor", annotTextAnchor$[1]
+    else
+        @emit: "text_label", ""
+        @emit: "text_anchor", ""
+    endif
     ; The bridge runs FIRST, as the form runs it, so the pre-dispatch stage
     ; below can buy the brackets their headroom on the same pass that resolves
     ; the axis. Drawing first and bridging afterwards would put the brackets
@@ -280,9 +302,22 @@ endproc
 #                       the annotation size. Exercises the shrink and the
 #                       two-line break, and is the leg the clipping assertion
 #                       is for.
-# welch_two             two groups. NO caption is correct here and the leg
-#                       exists so that "correct" is asserted rather than
-#                       assumed.
+# welch_two / mw_two    two groups, the two arms of AUTHOR RULING C. Until
+#                       16 August 2026 welch_two existed to prove that NO
+#                       caption was correct on a two-group figure, and it was
+#                       the leg that measured the defect ruling C closes: the
+#                       whole-figure OCR in welch_two.fig.ocr carried a
+#                       bracket, "***" and a Cohen's d, and no test name
+#                       anywhere. Ruling C makes both arms name their test,
+#                       and mw_two is here because a repair applied to one
+#                       arm is the shape this file has caught before — see
+#                       the one_arm_only break in break.sh. Same data, same
+#                       layout, same size; the test is the only difference,
+#                       and the two captions must not be the same sentence.
+#                       mw_two passes a correction token the arm must NOT
+#                       report: one comparison was made, nothing was
+#                       adjusted, and "holm" must not appear on the figure
+#                       merely because the form's menu had a value in it.
 # ns_omnibus            four groups with no separation. The omnibus does not
 #                       reject, no post-hoc runs, no brackets are drawn, and
 #                       no caption may appear — a figure with no p-values on
@@ -315,6 +350,10 @@ elsif leg$ = "narrow"
 elsif leg$ = "welch_two"
     @fixture: "bc", 2, 6
     @runLeg: fixture.id, "Two groups", 6, 4, "parametric", 2, ""
+
+elsif leg$ = "mw_two"
+    @fixture: "bc", 2, 6
+    @runLeg: fixture.id, "Two groups", 6, 4, "nonparametric", 2, "holm"
 
 elsif leg$ = "ns_omnibus"
     @fixture: "bc", 4, 0

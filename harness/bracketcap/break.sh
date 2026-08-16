@@ -33,13 +33,22 @@
 #   fits, so the only thing left that can fail is the ink measured on the
 #   right-hand edge of the picture.
 #
-#   THE OVER-SWEEP — a caption on the two-group arms, where there is no
-#   post-hoc and no family and the sentence would be a claim about a
-#   correction that never happened.
+#   THE SWEEP THAT STOPS ONE ARM SHORT — both two-group arms returned to two
+#   empty strings. That break used to be its own opposite, two_group_caption,
+#   defending the silence as correct; author ruling C (16 August 2026) settled
+#   it the other way, and the note above the case says what survived of the
+#   old argument and what did not.
 #
 #   Run:  bash harness/bracketcap/break.sh [name-substring]
 #   Out:  harness/bracketcap/out/BREAKS.tsv        break, red-count, first fail
 #         harness/bracketcap/out/break_<name>.v69.log
+#
+# THIS RIG SCORES v69 ONLY. validate/v76, which owns the invariant that every
+# bracket-producing ARM names its test, has its own rig beside this one:
+# harness/bracketcap/break_v76.sh, writing BREAKS_V76.tsv. Two rigs rather
+# than one because a break is chosen for the validator it must turn red, and a
+# single list scored twice would report a break as red when the other file
+# caught it.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -280,43 +289,55 @@ PY
 fi
 
 # ---------------------------------------------------------------------------
-# 4. THE OVER-SWEEP
+# 4. THE SWEEP THAT STOPS ONE ARM SHORT
 # ---------------------------------------------------------------------------
-# A caption on the two-group arms. Two groups is one comparison: no post-hoc
-# ran, there is no family, and nothing was adjusted, so the sentence is a
-# claim about a correction that never happened. A repair that moves figures
-# nobody asked to move is a defect of its own.
-if want two_group_caption; then
-    shadow two_group_caption
-    python3 - "$WORK/two_group_caption/$ANNOT" <<'PY'
+# THIS BREAK WAS two_group_caption AND IT HAS BEEN TURNED AROUND, because
+# AUTHOR RULING C (16 August 2026) reversed the behaviour it was defending.
+# It used to ADD a caption to the two-group arms and call that an over-sweep:
+# two groups is one comparison, no post-hoc ran, there is no family, so a
+# caption would be a claim about a correction that never happened. Ruling C
+# keeps the half of that argument that held -- nothing was corrected, and the
+# caption says exactly that instead of borrowing Tukey's family-wise claim --
+# and drops the half that did not, because a figure with a bracket on it must
+# name the test that produced the bracket whatever k is.
+#
+# So the defect is now the SILENCE, and this break restores it: both
+# two-group arms back to two empty strings, every k >= 3 arm untouched. A
+# check that asked only "do the k >= 3 figures carry a caption" is satisfied
+# by this tree, which is the shape this ruling has arrived in twice.
+if want two_group_silent; then
+    shadow two_group_silent
+    python3 - "$WORK/two_group_silent/$ANNOT" <<'PY'
 import sys
 p = sys.argv[1]
 lines = open(p, encoding='utf-8').read().split('\n')
 
-# LINE-WISE AND ASSIGNMENT-ONLY. A plain string split matches the GUARD in
-# @emlDrawBracketCaption -- `if annotBracketPosthoc$ = "" or ...` -- as well
-# as the three assignments, which is one occurrence too many and silently
-# rewrites the wrong site. The three assignments, in file order, are
-# @emlClearAnnotations, the Mann-Whitney arm and the Welch arm; only the last
-# two are the two-group arms this break is about.
-def sites(var):
-    return [i for i, l in enumerate(lines)
-            if l.strip() == var + ' = ""']
+# LINE-WISE AND ASSIGNMENT-ONLY, anchored on the SENTENCES rather than on a
+# position. A plain string search for the variable name also matches the GUARD
+# in @emlDrawBracketCaption -- `if annotBracketPosthoc$ = "" or ...` -- and the
+# reset in @emlClearAnnotations, and rewriting either of those would break
+# something other than the arms this break is about.
+POSTHOC = ('annotBracketPosthoc$ = "Comparison: Mann-Whitney U test"',
+           'annotBracketPosthoc$ = "Comparison: Welch t-test"')
+ADJUST = 'annotBracketAdjust$ = "one comparison; no adjustment "'
+CONT = '... + "applied"'
 
-sp = sites('annotBracketPosthoc$')
-sa = sites('annotBracketAdjust$')
-assert len(sp) == 3, sp
-assert len(sa) == 3, sa
-for i, txt in ((sp[1], 'Pairwise comparisons: Mann-Whitney U'),
-               (sp[2], 'Pairwise comparisons: Welch t-test')):
+hits_p = [i for i, l in enumerate(lines) if l.strip() in POSTHOC]
+hits_a = [i for i, l in enumerate(lines) if l.strip() == ADJUST]
+assert len(hits_p) == 2, hits_p
+assert len(hits_a) == 2, hits_a
+for i in hits_p:
     ind = lines[i][:len(lines[i]) - len(lines[i].lstrip())]
-    lines[i] = ind + 'annotBracketPosthoc$ = "%s"' % txt
-for i in (sa[1], sa[2]):
+    lines[i] = ind + 'annotBracketPosthoc$ = ""'
+# The adjustment half is written across a continuation; both lines go, and the
+# continuation is asserted to be where it is expected rather than assumed.
+for i in reversed(hits_a):
+    assert lines[i + 1].strip() == CONT, lines[i + 1]
     ind = lines[i][:len(lines[i]) - len(lines[i].lstrip())]
-    lines[i] = ind + 'annotBracketAdjust$ = "no adjustment applied"'
+    lines[i:i + 2] = [ind + 'annotBracketAdjust$ = ""']
 open(p, 'w', encoding='utf-8').write('\n'.join(lines))
 PY
-    run_break two_group_caption
+    run_break two_group_silent
 fi
 
 echo

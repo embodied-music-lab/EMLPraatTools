@@ -5,8 +5,15 @@
 # ============================================================================
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #
-# Seven legs, one Praat process each, because a Praat script error aborts the
-# script: seven legs in one process report one failure and hide six.
+# Eight legs, one Praat process each, because a Praat script error aborts the
+# script: eight legs in one process report one failure and hide seven.
+#
+# AUTHOR RULING C, 16 August 2026, added mw_two and changed what welch_two is
+# for. Both two-group arms of @emlBridgeGroupComparison now name their test --
+# in the caption band AND in the corner box -- so welch_two is no longer the
+# leg that proves a caption correctly declines, and mw_two is its
+# nonparametric twin so that neither two-group arm can be repaired alone.
+# validate/v76 reads both.
 #
 # WHAT THIS ADDS THAT THE PRAAT DRIVE CANNOT. bracketcap_drive.praat emits
 # what the plugin BELIEVES about the caption — the strings it composed, the
@@ -79,7 +86,7 @@ kv () {  # kv <file> <key>  -> value, or empty
     awk -F'\t' -v k="$2" '$1 == k { print $2; exit }' "$1" 2>/dev/null
 }
 
-for leg in tukey dunn_holm dunn_bonferroni dunn_bh narrow welch_two ns_omnibus; do
+for leg in tukey dunn_holm dunn_bonferroni dunn_bh narrow welch_two mw_two ns_omnibus; do
     [ -n "$FILTER" ] && case "$leg" in *"$FILTER"*) ;; *) continue ;; esac
     KVF="$OUT/$leg.kv"
     PNG="$OUT/$leg.png"
