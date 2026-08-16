@@ -20,12 +20,12 @@ emit_include_root	~/EMLPraatTools/plugin
 emit_claims_home_relative	1
 emit_states_absolute	0
 save_files	4
-save_names	vt_two-group_20260816_005434_effectsize_tidy.csv vt_two-group_20260816_005434_glance.csv vt_two-group_20260816_005434_report.txt vt_two-group_20260816_005434_tidy.csv 
+save_names	vt_two-group_20260816_154053_effectsize_tidy.csv vt_two-group_20260816_154053_glance.csv vt_two-group_20260816_154053_report.txt vt_two-group_20260816_154053_tidy.csv 
 save_max_stamps	1
 save_distinct_stems	1
 save_stat_lines	3
 save_stats_identical	1
-save_report_bytes	2758
+save_report_bytes	2734
 save_emit_savepanel	0
 save_emit_replaysave	1
 save_emit_beginpause	0
@@ -43,7 +43,7 @@ meta_emit_states_absolute	0
 meta2_has_dead_stamp	0
 meta2_names_dead_table	0
 meta2_stamp_recovered_note	1
-meta2_stamp_line	# Sun Aug 16 00:54:34 2026  --  recorded on Praat 6.6.30
+meta2_stamp_line	# Sun Aug 16 15:40:54 2026  --  recorded on Praat 6.6.30
 folder_files	4
 folder_created	1
 folder_praat_abort	0
@@ -70,3 +70,41 @@ retarget_block_data	1
 retarget_call_twoway	1
 retarget_call_violin	1
 retarget_literal_slots	0
+legend_passes	2
+legend_final_min	195.000000
+legend_final_max	275.000000
+legend_step_headings	1
+legend_draw_calls	1
+legend_all_steps	1
+legend_block_steps	step 1 (draw)
+legend_block_min	0.0
+legend_block_max	0.0
+legend_note	195.0000 .. 275.0000
+legend_note_min	195.0000
+legend_note_max	275.0000
+legend_tuned_lines_changed	2
+legend_tuned_edits_below_block	0
+legend_praat_abort	0
+leg_orig_bytes	82678
+leg_orig_md5	04e0e6457ea60091222ee4c3e420ae5d
+leg_replay_bytes	83235
+leg_replay_md5	409d255fb96f5d60875a795e3643ed18
+leg_replay2_bytes	83235
+leg_replay2_md5	409d255fb96f5d60875a795e3643ed18
+leg_tuned_bytes	82678
+leg_tuned_md5	04e0e6457ea60091222ee4c3e420ae5d
+legend_replay_deterministic	1
+legend_tuned_is_orig_bytes	1
+legend_tuned_vs_orig_over32	0
+legend_tuned_vs_orig_max	0
+legend_plain_vs_orig_over32	15017
+legend_plain_vs_tuned_over32	15017
+legend_after_abort	0
+legend_after_all_steps	2
+legend_after_draw_steps	1
+legend_after_analysis_steps	1
+legend_after_anova_calls	1
+legend_after_draw_calls	1
+legend_after_block_steps	step 2 (draw)
+legend_after_note	195.0000 .. 275.0000
+legend_after_draw_heading	# --- Step 2 (draw) ---

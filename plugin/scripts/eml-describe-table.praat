@@ -8,12 +8,12 @@
 # Date: 15 August 2026
 # Version: 2.0
 #
-# v2.0 — three defects, one file. AUTHOR RULING, 14 August 2026: the
+# v2.0 — three changes, one file. The
 #        Matrix/TableOfReal pathways are to be MADE OPERABLE, not
 #        unregistered. "Dead doors are worse than absent features — they
 #        teach users the plugin crashes."
 #
-#   1. THE TABLE-ONLY REFUSAL IS GONE (NEW-G12-1, S2). setup.praat registers
+#   1. THE TABLE-ONLY REFUSAL IS GONE. setup.praat registers
 #      "EML: Describe column..." on Table, TableOfReal AND Matrix, and this
 #      file answered two of those three with
 #
@@ -28,7 +28,7 @@
 #      selection this plugin cannot use is refused ONCE, in the shared place,
 #      with the shared wording.
 #
-#   2. DEFAULT ROW LABELS AT CONVERSION TIME (NEW-G12-1, mechanism). Praat's
+#   2. DEFAULT ROW LABELS AT CONVERSION TIME (mechanism). Praat's
 #      `To Table: "row"` writes the literal "?" into the row-label column for
 #      every row whose label is empty — which is EVERY row of a Matrix, and
 #      every row of a TableOfReal the user never labelled. "?" is Praat's
@@ -47,7 +47,7 @@
 #      column is classified as a label column and stays out of this dialog's
 #      column menu, which is what it is.
 #
-#      SCOPE. This is the conversion side of the ruling and it is applied
+#      SCOPE. This is the conversion side, and it is applied
 #      HERE because this wrapper owns its own coercion step. The other six
 #      TableOfReal/Matrix registrations convert inside @emlWrapperInit
 #      (stats/eml-output.praat:1405-1439), which still writes "?" — the same
@@ -55,8 +55,8 @@
 #      the probe. validate/v59_entry_points.R enumerates all eleven and says
 #      which.
 #
-#   3. THE NAME IS UNAMBIGUOUS BEFORE ANYTHING CAN FAIL (NEW-G12-2). The
-#      converted Table used to inherit the source object's name, so a crash
+#   3. THE NAME IS UNAMBIGUOUS BEFORE ANYTHING CAN FAIL. The
+#      converted Table must not inherit the source object's name, or a crash
 #      that beat the cleanup left "Table coercetor" sitting beside
 #      "TableOfReal coercetor" and the user's next selection was a coin
 #      flip. Renaming cannot be done in a cleanup handler — the whole point
@@ -65,10 +65,10 @@
 #      so the object is unambiguous even when the session dies one line
 #      later.
 #
-#   4. THE MISSING EXPORT STEP (D12). This was the only wrapper with no Save
+#   4. THE MISSING EXPORT STEP. This was the only wrapper with no Save
 #      button, no Clear-Info field and no completion dialog: results appeared
 #      only if the Info window happened to be visible, and stacked under
-#      whatever was already there. AUTHOR RULING, 14 August 2026: every path
+#      whatever was already there. Every path
 #      through every approach must reach the export step. It now runs the
 #      shipped orchestrator @emlRunDescriptiveAnalysis — which fills the
 #      legacy CSV buffer, and which this file was already duplicating — and
@@ -147,7 +147,7 @@ for iCol from 1 to nCols
 endfor
 
 if nNumericCols = 0
-    # ROUTED THROUGH THE PLUGIN'S ERROR SURFACE (NEW-G12-4), for the reason
+    # ROUTED THROUGH THE PLUGIN'S ERROR SURFACE, for the reason
     # given at @emlErrorDialog's "entry" mode: a raw `exitScript:` with a
     # message is shown by Praat as an interpreter stack, and this refusal is
     # reachable by a user who has simply selected a table of labels.
@@ -160,7 +160,7 @@ endif
 # ── Main loop ──────────────────────────────────────────────────────────────
 
 # Carried across the loop so "New" reopens on the column just described
-# rather than resetting to the first one. (D93, the same reason every other
+# Rather than resetting to the first one. (the same reason every other
 # wrapper keeps its answers.)
 selCol = 1
 
@@ -200,7 +200,7 @@ repeat
     selectObject: tableId
     @emlRunDescriptiveAnalysis: tableId, dataColumn$
     if emlRunDescriptiveAnalysis.error$ <> ""
-        # D93: an error must not strand the user on a form the error has
+        # An error must not strand the user on a form the error has
         # just ruled out. Present it with guidance, and honour Quit.
         @emlErrorDialog: emlRunDescriptiveAnalysis.error$,
         ... emlRunDescriptiveAnalysis.remedy$, "menu"
@@ -297,7 +297,7 @@ procedure emlDescribeCoerceSelection
     endif
 
     if .converted
-        # NAME IT FIRST. NEW-G12-2: the converted Table used to carry the
+        # NAME IT FIRST. Unnamed, the converted Table carries the
         # source object's name, and a native error anywhere below this line
         # would leave two identically named objects in the list with no
         # cleanup handler ever running. Renaming at creation is the only

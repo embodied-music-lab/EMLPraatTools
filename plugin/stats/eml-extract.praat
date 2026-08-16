@@ -128,7 +128,7 @@ procedure emlExtractColumn: .tableId, .columnName$
         .data# = zero#(0)
         .n = 0
     else
-        # D96. The old body kept every cell for which "Get value:" returned
+        # The old body kept every cell for which "Get value:" returned
         # something other than undefined, which sounds like the right filter
         # and is not. Praat coerces "1,5" to 1, so a European decimal comma
         # did not drop a row — it put a DIFFERENT NUMBER into the mean, with
@@ -282,7 +282,7 @@ procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, 
         .count2 = 0
         .countExcluded = 0
         
-        # D96: one decision per column, then one read path per cell.
+        # One decision per column, then one read path per cell.
         @eml_openColumn: .tableId, .measureCol$
         .measureClean = eml_openColumn.clean
 
@@ -398,7 +398,7 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
         .countComplete = 0
         .countExcluded = 0
 
-        # D96: this is the ROW-wise path. It must agree cell for cell with
+        # This is the ROW-wise path. It must agree cell for cell with
         # the column-wise paths above, so it reads through the same helper.
         @eml_openColumn: .tableId, .col1$
         .clean1 = eml_openColumn.clean
@@ -899,8 +899,8 @@ procedure eml_strictNumericColumn: .tableId, .columnName$
         #     Table "eml_numericProbe": the cell in row 1 of column "row"
         #     is undefined.
         #
-        # NEW-G12-1 was repaired at the manufacturing sites — the coercions
-        # now fill those cells with r1..rn before anything reads them — and
+        # THE MANUFACTURING SITES FILL THOSE CELLS with r1..rn before
+        # anything reads them — and
         # that is the right place for it, because a row-label column ought to
         # carry labels. This is the other half: a probe that is handed a cell
         # it cannot read must report `.unreadable`, not raise, whatever
@@ -933,12 +933,12 @@ endproc
 
 
 # ============================================================================
-# @eml_classifyCell (internal helper)                                    D96
+# @eml_classifyCell (internal helper)
 # ============================================================================
 # Decide what ONE cell actually is. "Get value:" answers a narrower question
 # than a user asks: it returns `undefined` for an empty cell and for the
 # string "n/a" alike, and it returns a plausible WRONG NUMBER for "1,5". Three
-# different problems, one indistinguishable outcome, which is finding D96.
+# different problems, one indistinguishable outcome.
 #
 # The kinds, and why each is separate:
 #
@@ -954,8 +954,7 @@ endproc
 #                  to a European reader and 1234 to an American one, and this
 #                  procedure has no basis to choose.
 #   3  unreadable  text that is not a number in any locale. The column is not
-#                  a measure — this is the D82 family arriving by another
-#                  route, and it is not missing data.
+#                  a measure, and this is not missing data.
 #   4  coerced     reads as a number, but not the one written: "1/2" is 1,
 #                  "2 3" is 2, "30%" is 0.3. Silently wrong, like kind 2, but
 #                  with no locale story behind it.
@@ -1103,7 +1102,7 @@ endproc
 
 
 # ============================================================================
-# @eml_readCell (internal helper)                                        D96
+# @eml_readCell (internal helper)
 # ============================================================================
 # The single numeric read. Returns the cell's value when the cell is strictly
 # the number it looks like, and `undefined` otherwise — including for "1,5",
@@ -1140,12 +1139,12 @@ procedure eml_readCell: .tableId, .row, .columnName$, .clean
         #
         #     Error: Command "Get value:" not available for current selection.
         #
-        # This procedure's only caller used to be @emlExtractColumn, whose
-        # loop calls nothing else, so the omission never showed. It showed the
-        # moment the draw layer adopted this reader (11 Aug 2026): the
-        # spaghetti and scatter loops read a value and then an ID or group
-        # column, and six disclosure cases died -- all of them dirty-data
-        # cases, because a clean column takes the fast path and never gets
+        # @emlExtractColumn's loop calls nothing else, so an omission here
+        # would not show on that caller. It shows the moment a caller
+        # interleaves reads: the draw layer's spaghetti and scatter loops
+        # read a value and then an ID or group column, and six disclosure
+        # cases die -- all of them dirty-data cases, because a clean column
+        # takes the fast path and never gets
         # here.
         #
         # Restored here rather than re-selected at each call site: the entry
@@ -1170,7 +1169,7 @@ endproc
 
 
 # ============================================================================
-# @emlAuditColumn                                                        D96
+# @emlAuditColumn
 # ============================================================================
 # Classify EVERY cell of a column and report the conditions separately, with
 # the first offending row and its literal contents for each. This is the one
@@ -1620,7 +1619,7 @@ endproc
 # Position of a column name in the most recent @emlTableColumnNames result,
 # or 0 if it is not there.
 #
-# Exists for D93. A wrapper's optionmenu is seeded with an INDEX, but the
+# A wrapper's optionmenu is seeded with an INDEX, but the
 # form hands back a NAME. Without this, returning to a form after an error
 # reseeds it from the original guess and silently discards what the user
 # chose — which makes a Back button worth much less than it looks.
@@ -1927,11 +1926,11 @@ endproc
 # uses lenient coercion and keeps cells such as "1,5", "30%" and "1/2".
 # ============================================================================
 procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
-    # D96. This used to filter rows with "self [col] <> undefined", which is
-    # Praat's LENIENT test: it keeps "1,5" (as 1) and "30%" (as 0.3). The
-    # survivors were then handed to the strict numericiser, which of course
-    # rejected them, and the procedure called exitScript: — tearing the whole
-    # run down from inside a helper, with a message about ranks, because one
+    # NOT "self [col] <> undefined", which is Praat's LENIENT test: it keeps
+    # "1,5" (as 1) and "30%" (as 0.3). Survivors of that filter reach the
+    # strict numericiser, which rejects them, and the procedure would then
+    # call exitScript: — tearing the whole run down from inside a helper,
+    # with a message about ranks, because one
     # cell in one group was written in a European locale.
     #
     # @emlExtractColumn now applies exactly the same per-cell classification
@@ -1986,8 +1985,8 @@ endproc
 # the "<> undefined" filter is not sufficient protection.
 # ============================================================================
 procedure eml_getGroupPairedData: .tableId, .colX$, .colY$, .groupCol$, .groupLabel$
-    # D96, same rewrite as @eml_getGroupData: the lenient row filter and the
-    # exitScript: teardown are gone, replaced by @emlExtractPairedColumns,
+    # Same shape as @eml_getGroupData: no lenient row filter and no
+    # exitScript: teardown, but @emlExtractPairedColumns,
     # which reads both columns through @eml_readCell.
     .error$ = ""
     @eml_groupSubset: .tableId, .groupCol$, .groupLabel$
@@ -2257,9 +2256,9 @@ procedure emlGuessColumnRoles: .tableId
     # matches. E.g., "participant" scores group=6 (via "part") but
     # subject=10 — the subject match wins globally.
     #
-    # D77. The TIME role used to be the fourth competitor in this same
-    # loop, and that is what made it dangerous: it competes on its own
-    # keyword weight, not on how much anything needs the answer. A column
+    # THE TIME ROLE IS NOT A COMPETITOR IN THIS LOOP, and that is the point:
+    # in it, it competes on its own keyword weight rather than on how much
+    # anything needs the answer. A column
     # named `repetition_rate` scores time=8 ("repetition") against data=6
     # ("rate"), so the time role won it and the measure role — which every
     # comparison dialog reads — was left to whatever came next.
@@ -2312,7 +2311,7 @@ procedure emlGuessColumnRoles: .tableId
         endif
     endfor
 
-    # ── Time role, assigned last, and yielding (D77) ─────────────────
+    # ── Time role, assigned last, and yielding ─────────────────
     # Best remaining column with time evidence — subject to the column's
     # time evidence being at least as strong as its measurement evidence.
     #
@@ -2342,7 +2341,7 @@ procedure emlGuessColumnRoles: .tableId
     # Best unassigned column with a data score, for dialogs needing
     # two numeric columns (paired t-test, correlation).
     #
-    # D77, second half. On a pre/post table the token that identifies a
+    # On a pre/post table the token that identifies a
     # column as the second half of the pair (`post` in `jitter_post`) is
     # the same token that gives it a time score. Ordering alone does not
     # save it: with `jitter_pre` taken as the measure, `jitter_post` is
@@ -2365,8 +2364,8 @@ procedure emlGuessColumnRoles: .tableId
             .dataIdx2 = .timeIdx
         endif
     endif
-    ; D78. The secondary data column is one of the roles the audit found
-    ; invisible to the fallbacks below: without this, the group fallback
+    ; The secondary data column is one of the roles the fallbacks below
+    ; cannot see on their own: without this, the group fallback
     ; hands `Compare two groups` the same column that Compare paired is
     ; offering as its Column 2.
     if .dataIdx2 > 0
@@ -2404,12 +2403,12 @@ procedure emlGuessColumnRoles: .tableId
     elsif .groupIdx = 0
         # Data found but no group — first column no other role holds.
         #
-        # D78. The guard here used to be `.col <> .dataIdx` alone. Every
-        # other role — subject, time, secondary data — was invisible to
-        # it, so on a repeated-measures table column 1 came back as BOTH
-        # subjectIdx and groupIdx, and `Compare two groups` on demo_paired
-        # defaulted its grouping variable to the subject id: 20 groups of
-        # n = 1. Consult .taken[], and mark the column taken once it is
+        # NOT `.col <> .dataIdx` alone: that leaves every other role —
+        # subject, time, secondary data — invisible, so on a
+        # repeated-measures table column 1 comes back as BOTH subjectIdx and
+        # groupIdx, and `Compare two groups` on demo_paired defaults its
+        # grouping variable to the subject id: 20 groups of n = 1. Consult
+        # .taken[], and mark the column taken once it is
         # claimed so nothing downstream can claim it a second time.
         for .col from 1 to .nCols
             if .col <> .dataIdx and .taken[.col] = 0 and .groupIdx = 0
@@ -2429,7 +2428,7 @@ procedure emlGuessColumnRoles: .tableId
             endfor
         endif
     elsif .dataIdx = 0
-        # Group found but no data — same rule, same reason (D78).
+        # Group found but no data — same rule, same reason.
         for .col from 1 to .nCols
             if .col <> .groupIdx and .taken[.col] = 0 and .dataIdx = 0
                 .dataIdx = .col
@@ -2579,7 +2578,7 @@ procedure emlCheckSourceFile: .path$
     # it is an escape that will be eaten. Counting occurrences that are NOT a
     # bare empty field is enough to raise the flag, and the user is pointed at
     # the character rather than at a row number, because after the read the
-    # row number would refer to something that no longer contains it.
+    # row number would refer to something that no longer holds it.
     .rest$ = .text$
     .guard = 0
     while index (.rest$, """""") > 0 and .guard < 10000
@@ -2711,9 +2710,8 @@ procedure emlRepairClassify: .raw$
     # 1 — so every comma cell is broken, and the only question is what the
     # user meant. That is a COLUMN question, not a cell one, so this reports
     # the cell as comma-bearing and @emlCommaColumnMode decides the reading.
-    # (Corrected 6 Aug 2026: this used to leave "1,234" alone on the grounds
-    # that it was probably a thousands separator, which Praat does not
-    # implement in any form.)
+    # ("1,234" is not exempted as a thousands separator: Praat does not
+    # implement thousands separators in any form.)
     if index (.s$, ",") > 0
         .kind = 1
         .fixed$ = .s$

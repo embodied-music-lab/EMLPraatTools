@@ -1,5 +1,5 @@
-scatter_inside	8	1	2	1	90.0000	160.0000
-scatter_right	8	2	1	1	90.0000	203.4668
-histogram_inside	10	1	1	2	0	14.0000
-gviolin_inside	11	1	2	1	90.0000	203.4668
-spaghetti_inside	13	1	2	1	90.0000	273.9246
+scatter_inside	8	1	2	1	90.0000	160.0000	1
+scatter_right	8	2	1	1	90.0000	160.0000	2
+histogram_inside	10	1	1	2	0	14.0000	1
+gviolin_inside	11	1	2	1	90.0000	160.0000	1
+spaghetti_inside	13	1	2	1	90.0000	160.0000	1

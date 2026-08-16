@@ -697,14 +697,108 @@ if (have_axes) {
     # nothing outside it -- measured, by saving a figure from 0.5" whose axis
     # name stood at 0.4" and watching a fifth of the ink disappear. So a shift
     # bigger than the panel's own margin does not merely look odd, it SLICES
-    # THE NAME down its length, and the slice shows up as ink in column 0.
-    # Asserted on every margin figure, shifted or not.
-    for (leg in c("margin_st", "margin_db", "margin_plain", "margin_panel")) {
-        px <- an(paste0(leg, "_name_left_px"))
+    # THE NAME down its length. That is the requirement, and it is unchanged.
+    #
+    # WHAT STOOD HERE UNTIL 16 AUGUST 2026, AND WHY IT WENT. Four checks, one
+    # per leg, each reading the first inked COLUMN of the whole picture and
+    # asking for it to be greater than zero.
+    #
+    #   A POSITIONAL MEASUREMENT THAT ANY INK CAN SATISFY IS NOT A MEASUREMENT
+    #   OF THE ELEMENT IT IS WRITTEN ABOUT. "First ink is not column 0" is
+    #   answered by the tick numbers, by the frame, by the title -- by whatever
+    #   the scan reaches first -- so it passes with the axis name clipped away
+    #   entirely, and on that case it reads HEALTHIER than it does on a correct
+    #   figure, because what is left starts further RIGHT. It could not see the
+    #   element it named. On three of the four legs it was answered by ink that
+    #   no shift in this ruling can move at all.
+    #
+    # THIS IS THE SAME TRAP AND THE SAME REBUILD AS validate/v66 §3 (the seven
+    # categorical axis names) and validate/v69 §4 (the bracket caption), whose
+    # header states it in full under "A CHECK ANCHORED ON FIRST INK". The
+    # repository gets ONE answer to it, not three: what can only be answered by
+    # the element is the element's own EXTENT, its POSITION against a known
+    # anchor, or its VALUE. Both statements below are measured, neither is a
+    # constant chosen here, and no new fixture was needed -- v62 already had
+    # the anchor in its own legs.
+    #
+    # THE ANCHOR. margin_plain takes no shift -- asserted exactly zero above --
+    # so its axis name stands where the theme puts it with no repair in play,
+    # and its column is the theme's own margin. Its scale is taken from the
+    # picture rather than assumed: every 6 x 4 leg here is drawn 6 inches wide,
+    # so the width in pixels over 6 is the harness's own resolution, and it is
+    # asserted to be the 300 dpi the crop constants in this rig already assume.
+    # A rig re-driven at another resolution goes red here rather than quietly
+    # rescaling every displacement below it.
+    ppi        <- an("margin_plain_width_px") / 6
+    anchor_col <- an("margin_plain_name_left_px")
+    anchor_run <- an("margin_plain_name_run_px")
+    check_true(ID,
+        sprintf("the margin figures are the 300 dpi this rig's own crop constants assume (%s px / 6 in)",
+                av("margin_plain_width_px")),
+        is.finite(ppi) && abs(ppi - 300) < 0.5)
+    # AND THE ANCHOR IS THE THEME'S, NOT ONE FIGURE'S ACCIDENT. margin_db and
+    # margin_cat are separately driven 6 x 4 figures with the same
+    # six-character labels and the same shift, drawn by different procedures --
+    # a Spectrum and a categorical violin. If they ever disagree on the column
+    # their axis name lands in, the column is a property of one figure rather
+    # than of the theme, and every displacement measured from it is
+    # meaningless; this says so before the legs below do.
+    check_true(ID,
+        sprintf("two independently drawn 6 x 4 figures agree where a six-character axis puts its name (%s px and %s px)",
+                av("margin_db_name_left_px"), av("margin_cat_name_left_px")),
+        is.finite(anchor_col) && anchor_col > 0 &&
+        is.finite(an("margin_db_name_left_px")) &&
+        an("margin_db_name_left_px") == an("margin_cat_name_left_px"))
+
+    # POSITION, on the three legs the anchor reaches. margin_panel is a 3 x 2
+    # figure at a smaller body size, so the 6 x 4 anchor says nothing about it
+    # and is not stretched to pretend otherwise -- it is carried by the extent
+    # check below, which is what its own break needs.
+    #
+    # The name must stand exactly the published shift to the LEFT of where an
+    # unshifted name stands: 99 px anchor less a 0.1048 in shift at 300 dpi is
+    # 31.4 px, measured 32. A shift that never fires puts it back at 99, a
+    # shift applied to every figure moves the anchor itself, and a shift big
+    # enough to run off the page leaves a fragment further right than the
+    # intact name. None is within a pixel and a half of what the plugin says it
+    # did. This is also the picture's own answer to the published shift_inch
+    # checked above, which until here was only ever compared against itself.
+    for (leg in c("margin_st", "margin_db", "margin_plain")) {
+        moved_px <- anchor_col - an(paste0(leg, "_name_left_px"))
+        want_px  <- an(paste0(leg, "_shift_inch")) * ppi
         check_true(ID,
-            sprintf("%s: the axis name is complete, not cut at the image edge (first ink at %s px)",
-                    leg, av(paste0(leg, "_name_left_px"))),
-            is.finite(px) && px > 0)
+            sprintf("%s: the axis name stands where the published shift says it should, left of an unmoved name (%s px moved, %s in published = %s px)",
+                    leg, format(moved_px), av(paste0(leg, "_shift_inch")),
+                    format(round(want_px, 1))),
+            is.finite(moved_px) && is.finite(want_px) &&
+            moved_px >= 0 && abs(moved_px - want_px) <= 1.5)
+    }
+
+    # EXTENT, on all four. The name's own ink run is the width of the rotated
+    # glyphs and nothing else's, so a name sliced by the export is narrower
+    # than an intact one however far its surviving fragment has moved: on
+    # clamp_removed margin_panel ran 17 px against 29 intact, while its GAP
+    # grew from 7 px to 13 and its first-ink column was the only thing that
+    # noticed.
+    #
+    # THE FLOOR IS THE CONTROL'S RUN, MEASURED, NOT A NUMBER PICKED HERE, and
+    # it is a floor rather than an equality because these four legs do not draw
+    # the same axis name -- "Y", "F0 (semitones re 440 Hz)", "Power (dB)" at
+    # two body sizes -- and the run of a rotated name is the height of its own
+    # glyphs. The control's "Y" is a bare capital with no parenthesis, no
+    # ascender and no descender, so it is the NARROWEST intact name in the set
+    # and every other leg must clear it: 38, 37, 28 and 29 px against the 28 px
+    # floor. A cut name loses far more than that margin, which is what makes
+    # the floor worth having and what the break test below shows.
+    for (leg in c("margin_st", "margin_db", "margin_plain", "margin_panel")) {
+        run_px <- an(paste0(leg, "_name_run_px"))
+        left_px <- an(paste0(leg, "_name_left_px"))
+        check_true(ID,
+            sprintf("%s: the axis name is the whole name, not cut at the image edge (%s px of ink starting at column %s, floor %s px)",
+                    leg, av(paste0(leg, "_name_run_px")),
+                    av(paste0(leg, "_name_left_px")), av("margin_plain_name_run_px")),
+            is.finite(run_px) && is.finite(anchor_run) && anchor_run > 0 &&
+            is.finite(left_px) && left_px > 0 && run_px >= anchor_run)
     }
     # -- THE CLAMP, ON A PANEL TOO SMALL TO GIVE THE NAME ROOM -------------
     # A 3 x 2 panel at 7 pt has a hundredth of an inch to give. The shift

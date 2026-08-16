@@ -4,7 +4,8 @@
 Grouped violin: f0 by cohort
 Violin width is a kernel density estimate, not a count.
 @emlDrawGroupedViolin: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, "grp", "sub", "val", 100, 300
---- step 2 (draw)
+--- discarded 1 step(s): a pass that was measured and then thrown away. The steps above this line are NOT in the recording.
+--- step 1 (draw)
 Grouped violin: f0 by cohort
 Violin width is a kernel density estimate, not a count.
 @emlDrawGroupedViolin: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, "grp", "sub", "val", 100, 300

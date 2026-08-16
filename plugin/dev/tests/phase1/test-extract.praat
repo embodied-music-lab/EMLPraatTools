@@ -463,12 +463,12 @@ appendInfoLine: "Cleanup complete."
 appendInfoLine: ""
 
 # ============================================================================
-# D96 — the classifying parse helper
+# The classifying parse helper
 # ============================================================================
 # "Get value:" answers a narrower question than a user asks. These assert the
 # five kinds are told apart, and — the part that matters — that the row-wise
 # and column-wise readers give the SAME account of the same cell. Before the
-# D96 work they did not: "1,5" entered a column mean as 1 and was counted as
+# they did not: "1,5" would enter a column mean as 1 and be counted as
 # a present value by the paired reader.
 
 @emlTestSection: "D96 — cell classification"

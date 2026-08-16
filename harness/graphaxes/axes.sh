@@ -102,6 +102,39 @@ margin_name_left () {
     | awk '{ if ($2 < 255 && !seen) { print $1; seen = 1 } }'
 }
 
+# HOW WIDE THE LEFTMOST INK RUN IS — the rotated axis name's own thickness,
+# and the reading that says the name is ALL THERE.
+#
+# WHY THE COLUMN ABOVE IS NOT ENOUGH, MEASURED RATHER THAN ARGUED. A first-ink
+# column is answered by whatever the scan reaches first: the tick numbers, the
+# frame, the title. It is not a measurement of the axis name, and it moves the
+# WRONG WAY for the defect it is written about — with the clamp removed the
+# small panel's name is not merely sliced, part of it is gone, and a name that
+# is clipped away entirely leaves the tick numbers as the leftmost ink and a
+# reading that looks HEALTHIER than a correct figure's. The run is what
+# noticed: on clamp_removed, 16 August 2026, margin_panel's name ran 29 px
+# intact and 17 px cut, while its gap GREW from 7 px to 13.
+#
+# The same reader as harness/drawlayer/drawlayer.sh's name_run_width, and
+# deliberately the same: v66 §3 and v69 §4 measure the axis name and the
+# bracket caption this way, and one answer to this trap in the repository is
+# worth more than three that have to be compared.
+margin_name_run () {
+    convert "$1" -colorspace Gray -threshold 78% -resize x1! txt:- 2>/dev/null \
+    | awk -F'[,:( ]+' '/^[0-9]/ {print $1, $4}' \
+    | awk '
+        { col[NR-1] = $2; n = NR }
+        END {
+            best = 256; fl = -1
+            for (i = 0; i < n / 2; i++) if (col[i] < best) { best = col[i]; fl = i }
+            for (i = 0; i < fl; i++) {
+                if (col[i] < 255) { if (s == "") s = i; e = i }
+                else if (s != "") { print e - s + 1; exit }
+            }
+            if (s == "") print -1
+        }'
+}
+
 if command -v convert >/dev/null 2>&1; then
     for leg in margin_st margin_db margin_plain margin_panel margin_cat; do
         if [[ -s "$OUT/pic_$leg.png" ]]; then
@@ -113,6 +146,18 @@ if command -v convert >/dev/null 2>&1; then
             # in column 0. Reported for every margin figure, shifted or not.
             printf '%s_name_left_px\t%s\n' "$leg" \
                 "$(margin_name_left "$OUT/pic_$leg.png")" >> "$TSV"
+            # AND HOW WIDE THAT INK RUNS, which is the reading that can only be
+            # answered by the name itself. See margin_name_run above.
+            printf '%s_name_run_px\t%s\n' "$leg" \
+                "$(margin_name_run "$OUT/pic_$leg.png")" >> "$TSV"
+            # AND THE PICTURE'S OWN WIDTH, so the inch-to-pixel scale the
+            # displacement check needs is the harness's own resolution rather
+            # than a dpi assumed here. A rig re-driven at another resolution
+            # turns that check red instead of quietly rescaling every
+            # displacement measured under it.
+            printf '%s_width_px\t%s\n' "$leg" \
+                "$(convert "$OUT/pic_$leg.png" -format '%w' info: 2>/dev/null)" \
+                >> "$TSV"
         fi
     done
     # RULING 8c, measured the same way: how much ink is inside the frame of

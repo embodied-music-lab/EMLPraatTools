@@ -23,9 +23,9 @@
 # the user's Objects window, and removing it there ends the recording. That is
 # a reasonable thing for it to mean, and it is what the dialog says.
 #
-# WHICH IS WHY THE OBJECT IS CALLED WHAT IT IS CALLED (author ruling, 15 Aug
-# 2026). It was emlRecordBuffer, which reads as scratch — the one thing it is
-# not. The ruling refuses a per-step signal, so the message below and the name
+# WHICH IS WHY THE OBJECT IS CALLED WHAT IT IS CALLED. A name like
+# emlRecordBuffer reads as scratch — the one thing it is not. There is no
+# per-step signal, so the message below and the name
 # in the Objects list are the entire warning, and the name is the half that is
 # in front of the user at the moment the mistake is available to them.
 #
@@ -79,9 +79,9 @@ appendInfoLine: "Every EML analysis and figure from now on is added to one"
 appendInfoLine: "script. Finish with 'Stop recording and open' to read it in"
 appendInfoLine: "an editor, or 'Stop recording and save' to file it directly."
 appendInfoLine: ""
-# BOTH TABLES ARE NAMED, because both are visible (audit §6, 14 Aug 2026).
+# BOTH TABLES ARE NAMED, because both are visible.
 #
-# This message used to name the buffer and stop there, while the Objects
+# This message does not stop at naming the buffer, because the Objects
 # window filled with emlRecordMeta as well — and, after the first recorded
 # step, the shipped phrase table too. A user looking at three unexplained
 # objects with the plugin's prefix on them has been told about one of them,

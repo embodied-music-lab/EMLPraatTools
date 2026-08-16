@@ -610,7 +610,7 @@ endproc
 #         .ci95Lower, .ci95Upper
 # Calls all other pp procedures and assembles results.
 #
-# D7. This used to build a .summary$ as well — sixteen string concatenations
+# This does NOT build a .summary$ as well — sixteen string concatenations
 # rendering the same fifteen numbers as a pre-formatted multi-line block, on
 # every call. Nothing in the shipped plugin ever read it. The Info window is
 # written by @emlReportDescriptives (stats/eml-output.praat), which lays the
@@ -620,7 +620,7 @@ endproc
 # It was not merely unused, it was actively harmful: two renderings of one
 # set of numbers drift, and this pair had already drifted — .summary$ said
 # "Kurtosis (excess)" while the report path said "Kurtosis" for the same
-# excess-kurtosis value, which is D4. Deleting the copy nobody reads removes
+# excess-kurtosis value. Not carrying a copy nobody reads removes
 # the drift rather than re-synchronising it.
 #
 # If a caller ever needs a pre-formatted block, render it from these outputs

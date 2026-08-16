@@ -32,10 +32,78 @@
 #     bash harness/legendroom/run.sh      regenerate the input
 #     Rscript validate/v42_legend_room.R
 #
-# Input: <dir>/LEGENDROOM.tsv, seven fields, no header:
-#            case  type  placement  passes  axisMode  baseMin  baseMax
+# Input: <dir>/LEGENDROOM.tsv, eight fields, no header:
+#            case type placement passes axisMode baseMin baseMax resolved
 #        <dir> is $EML_LEGENDROOM_DIR, default harness/legendroom/out. A
 #        missing artefact is a HARD STOP, not a skip.
+#
+# ============================================================================
+# THE ARTEFACT DID NOT REPRODUCE FOR ONE DAY, AND THIS FILE PASSED ANYWAY.
+# Written up 16 August 2026, because the next reader deserves the whole of it.
+#
+# LEGENDROOM.tsv was committed on 12 Aug (99d2091). On 15 Aug commit 7f62e75
+# changed what the fixture measured, and nobody re-drove the artefact, so from
+# then until 16 Aug this validator was checking a file that the harness beside
+# it could no longer produce. It went green the entire time. Bisected by
+# re-driving the harness at each of the 32 commits between ec927da and
+# 7f62e75, in a scratch tree extracted with `git archive`: every one of the 31
+# ancestors reproduces the committed artefact byte for byte, and 7f62e75 does
+# not. One commit, named.
+#
+# WHAT 7f62e75 CHANGED, and it is not a defect -- it is the D8 beginner-mode
+# repair. @emlGraphsDispatchDraw gained
+#
+#     if config_showAdvanced = 0
+#         emlLegendPlacement = 1
+#     endif
+#
+# and the same commit repointed @emlLegendHeadroomAfterDraw's first argument
+# from config_legendPlacement to emlLegendPlacement, so that room is made for
+# the legend that is actually on the page. Both are correct. What they exposed
+# is that harness/legendroom's probe never set config_showAdvanced, which
+# @emlLoadConfig defaults to 0 -- so the "scatter_right" case asked for
+# placement 2, had it rewritten to 1 before the draw, took the second pass it
+# genuinely needed, and PRINTED placement=2 while drawing an inside-plot
+# legend. The probe was reporting a placement the plugin had discarded.
+#
+# THE SECOND PASS WAS NEVER WASTE, WHICH IS THE QUESTION THAT MATTERED.
+# Measured 16 Aug 2026 by drawing the same scatter twice, once through a bare
+# @emlGraphsDispatchDraw and once through the whole loop, and comparing the
+# 300-dpi PNGs:
+#
+#   config_showAdvanced = 0, placement 2   resolved to 1, TWO passes,
+#       axis 90..160 widened to 90..203.4668, and the two images DIFFER --
+#       byte-identical, both of them, to the corresponding images of a case
+#       that asks for placement 1 outright. Real work on a real inside legend.
+#   config_showAdvanced = 1, placement 2   resolved to 2, ONE pass,
+#       axis 90..160 untouched, and the loop's image is byte-identical to the
+#       single dispatch. No second render, nothing discarded.
+#
+# So the claim this file has always made -- a legend outside the frame needs
+# no room made inside it -- is TRUE OF THE PLUGIN, and the expectation below is
+# kept unchanged. It was the FIXTURE that had stopped producing an outside
+# placement. harness/legendroom/case.praat now sets config_showAdvanced = 1,
+# and resets valueMin/valueMax/histFreqMax per case the way @emlGraphsWorkflow
+# resets them per press.
+#
+# THE EIGHTH FIELD IS THE CHECK THAT WOULD HAVE CAUGHT IT. `placement` is what
+# the case asked for; `resolved` is emlLegendPlacement, what the figure was
+# drawn with. Nothing in the artefact recorded the second, so a case could
+# drive the opposite of its own name in silence for a day. They are now both
+# captured and asserted equal in section 2a.
+#
+# NOTE ON THE RECORD, because it bears on how a wasted pass could hide.
+# @emlRecordMark / @emlRecordRewind were added to that loop on 16 Aug (change
+# order 8) so a discarded pass no longer emits a recorded draw step -- which
+# is exactly the condition under which a wasted pass survives unnoticed. It
+# does not affect the finding above: this artefact counts legendRoomPass, the
+# loop's own counter, which the rewind does not touch, and the image evidence
+# was taken from the PNGs rather than from the record. Driving it did surface
+# a separate defect -- both calls were added UNGUARDED, breaking the
+# recorder-is-optional contract harness/norecord states, so this probe died
+# with `Procedure "emlRecordMark" not found` before drawing anything. Guarded
+# on variableExists ("emlRecordLoaded"), like every other call site.
+# ============================================================================
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -60,8 +128,8 @@ if (!file.exists(lr_p)) {
 
 lr <- read.delim(lr_p, header = FALSE, stringsAsFactors = FALSE,
                  col.names = c("case", "type", "placement", "passes",
-                               "axisMode", "baseMin", "baseMax"))
-for (col in c("type", "placement", "passes", "axisMode")) {
+                               "axisMode", "baseMin", "baseMax", "resolved"))
+for (col in c("type", "placement", "passes", "axisMode", "resolved")) {
     lr[[col]] <- as.integer(lr[[col]])
 }
 for (col in c("baseMin", "baseMax")) lr[[col]] <- as.numeric(lr[[col]])
@@ -100,6 +168,21 @@ check("v42", "the same figure with the legend outside needs only one", 1,
 check_true("v42", "the second pass is not a property of one graph type",
            .g("gviolin_inside", "passes") == 2 &&
            .g("spaghetti_inside", "passes") == 2)
+
+# ---------------------------------------------------------------------------
+# 2a. THE CASE DROVE THE PLACEMENT IT IS NAMED FOR
+# ---------------------------------------------------------------------------
+# `placement` is config_legendPlacement, what the case asked for. `resolved`
+# is emlLegendPlacement, what @emlGraphsDispatchDraw actually drew with after
+# the D8 beginner-mode override. Between 15 and 16 August 2026 those two
+# disagreed on scatter_right -- the case asked for 2, the figure was drawn
+# with 1 -- and every check above still passed, because nothing in the
+# artefact could see the difference. A pass count is only evidence about a
+# placement if the placement was the one on the page.
+check_true("v42", "every figure was drawn with the placement its case asked for",
+           all(lr$resolved == lr$placement))
+check("v42", "the outside case really was drawn outside the frame", 2,
+      .g("scatter_right", "resolved"), tol = 0)
 
 # ---------------------------------------------------------------------------
 # 3. BOTH AXIS MODES, which is why the histogram is here

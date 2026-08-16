@@ -21,7 +21,7 @@
 # Uses shared test helpers (eml-test-helpers.praat).
 #
 # WORKING vs KNOWN-BROKEN DATA
-# The audit requires both. Working: RM_A (clean, no ties), RM_B (sphericity
+# Both are covered. Working: RM_A (clean, no ties), RM_B (sphericity
 # violated, epsilon just above the 1/(k-1) clamp), RM_C (heavy within-row
 # ties, exercising the tie correction). Boundary / degenerate: RM_E (n = 2,
 # epsilon exactly ON the clamp), RM_D (every observation identical),
@@ -236,33 +236,30 @@ Set numeric value: 3, "post", undefined
 # built from @emlExtractConditionMatrix's own output would agree with itself
 # whatever the procedure did, and could only pass.
 #
-# WHY THIS IS NOT ONE STRING COMPARISON ANY MORE. It was, until 16 August, and
-# it failed the day NEW-G6-1 landed: "Need at least 2 complete-case subjects"
-# over a table of eight reads as a data shortage the user does not have — what
-# they have is an EXCLUSION — so @eml_completeCaseDisclosure now appends a note
-# naming which column emptied which rows. The message was right and the
-# expectation was stale, and an exact-equality expectation makes every
-# improvement to a user-facing sentence look like a regression. It also tests
-# the wrong thing: what has to hold is the DIAGNOSIS and the DISCLOSURE, not
-# the punctuation between them.
+# WHY THIS IS NOT ONE STRING COMPARISON. "Need at least 2 complete-case
+# subjects" over a table of eight reads as a data shortage the user does not
+# have — what they have is an EXCLUSION — so @eml_completeCaseDisclosure
+# appends a note naming which column emptied which rows. An exact-equality
+# expectation over the whole sentence makes every improvement to it look like
+# a regression, and it tests the wrong thing: what has to hold is the
+# DIAGNOSIS and the DISCLOSURE, not the punctuation between them.
 #
 # So the invariant is asserted as a substring, and the disclosure is asserted
 # SEPARATELY, by the numbers it must name. Neither half is redundant, and
 # neither alone is sufficient:
 #
-#   - The substring alone passes with the disclosure deleted. That is the
-#     regression NEW-G6-1 was raised about, and it would be silent.
+#   - The substring alone passes with the disclosure deleted, silently.
 #   - The disclosure alone passes with the diagnosis replaced by anything at
 #     all, including a bare "Error." — the user would be told how many rows
 #     went and never told why the analysis stopped.
 #
-# A LENGTH CHECK WAS WRITTEN HERE AND THEN DELETED, and the deletion is the
-# point. "The message is longer than the invariant" is satisfied by any
-# padding whatever — a disclosure replaced by forty spaces passes it — and it
-# is satisfied ANYWAY by the rest of the diagnosis sentence, so it did not go
-# red under a single one of the seven mutations it was tested against. A check
-# that cannot fail is worse than no check: it is a line of evidence that isn't.
-# What replaces it is the counts, asserted by VALUE — "N excluded 3" and
+# THERE IS NO LENGTH CHECK HERE, DELIBERATELY. "The message is longer than
+# the invariant" is satisfied by any padding whatever — a disclosure replaced
+# by forty spaces passes it — and it is satisfied ANYWAY by the rest of the
+# diagnosis sentence, so it goes red under none of the seven mutations these
+# assertions are tested against. A check that cannot fail is worse than no
+# check: it is a line of evidence that isn't. The counts do the work instead,
+# asserted by VALUE — "N excluded 3" and
 # "1 of 4" have to be in there, so a disclosure that appended whitespace, or
 # the right sentence with the wrong arithmetic in it, fails.
 #
@@ -288,7 +285,7 @@ f5Invariant$ = "Need at least 2 complete-case subjects"
 # message with no disclosure in it at all: a check matching the wording that
 # EXPLAINS the fix rather than the fix. Its two siblings, "mid" and "post",
 # went red as they should, which is exactly how a partly-blind assertion hides
-# — in company. The audit note's shape is "<column>: n cell(s) are empty
+# — in company. The note's shape is "<column>: n cell(s) are empty
 # (row r first)", a convention @emlAuditColumn emits everywhere, so the colon
 # is a stable anchor and not a guess at one sentence's punctuation.
 @emlTestAssertContains: "F5 disclosure names the column that emptied row 1",
@@ -479,7 +476,7 @@ removeObject: f5Id
 @emlTestAssertEqualNum: "RM_D RM-ANOVA dfErr", 6, emlRMAnovaTest.dfErr, 0
 @emlTestAssertVectorsEqual: "RM_D RM-ANOVA condition means",
 ... {7, 7, 7}, emlRMAnovaTest.condMean#, toleranceExact
-# The author's ruling, 5 August, is D97: refuse. statsmodels reports
+# The plugin refuses this case. statsmodels reports
 # F = 0, p = 1 and pingouin reports nan for this input; neither is a
 # result, and printing either invites a reader to interpret it. The
 # library now returns an error naming the condition and leaves F and p
@@ -500,7 +497,7 @@ removeObject: f5Id
 @emlTestAssertVectorsEqual: "RM_F RM-ANOVA condition means",
 ... {4.333333333333333, 9.333333333333334, 13.333333333333334},
 ... emlRMAnovaTest.condMean#, toleranceTight
-# D97. statsmodels reports 3.09e31 here and pingouin 8.59e15 for the same
+# Statsmodels reports 3.09e31 here and pingouin 8.59e15 for the same
 # input: the disagreement IS the evidence that neither is a number. The
 # floor that catches this is relative — ssErr is around 1e-16 of ssTot,
 # not zero — so an equality test against 0 would not fire.

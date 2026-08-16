@@ -13,39 +13,30 @@
 # Version: 2.6
 # Date: 8 August 2026
 #
-# v2.6: D137 — @wizardNormDiag no longer carries its own copy of the
-#        normality decision rule. v2.5 made the wizard's copy AGREE with
-#        stats/eml-analysis.praat; this removes the copy. The gate now calls
-#        the shared @emlNormalityRecommendation (stats/eml-analysis.praat,
-#        reached through eml-lib-lmm.praat) and reads .recommendation$ back;
+# v2.6: @wizardNormDiag does not carry its own copy of the normality
+#        decision rule. The gate calls the shared
+#        @emlNormalityRecommendation (stats/eml-analysis.praat, reached
+#        through eml-lib-lmm.praat) and reads .recommendation$ back;
 #        everything left in this procedure is presentation, chosen from the
 #        returned .swUsable / .swFail / .largeNOverride / .shapeSevere flags.
-#        No wording and no verdict changes.
-# v2.5: D134 — @wizardNormDiag's normality gate was still the pre-5-August
-#        `skKurtFail or swFail` rule that stats/eml-analysis.praat replaced
-#        for inverting the hierarchy, so on the Shapiro-Wilk-passes branch
-#        the wizard returned nonparametric where @emlRunNormalityAnalysis
-#        returned parametric. The gate now mirrors eml-analysis.praat's
+# v2.5: @wizardNormDiag's normality gate mirrors eml-analysis.praat's
 #        .swUsable block branch for branch: Shapiro-Wilk decides, shape is
 #        reported but does not overturn it, shape decides only when
-#        Shapiro-Wilk is unavailable, and the large-n override is unchanged.
-#        Also corrected three stale documentation claims: the shape
-#        thresholds are 2 and 7, not 1 and 1 (D95 note); eml-lmm.praat has
-#        32 procedures, not 31; and the Grouped Violin subgroup preset in
-#        graphs/eml-graphs-form.praat has landed, so the D32 note no longer
-#        describes it as pending.
-# v2.4: D90 — the spaghetti plot's axes no longer carry the wide->long
-#        reshape's role names; the measure and the contrast are derived from
-#        the two paired column names and registered against the role names
-#        with the graph layer's D90 label-override registry
-#        (@emlSetLabelOverride). D32 (wizard half) — the two-way draw passes
-#        its second factor as emlGraphsPresetSubgroupCol$.
+#        Shapiro-Wilk is unavailable, and the large-n override applies on
+#        top. A `skKurtFail or swFail` gate inverts that hierarchy and
+#        returns nonparametric on the Shapiro-Wilk-passes branch, where
+#        @emlRunNormalityAnalysis returns parametric.
+# v2.4: The spaghetti plot's axes do not carry the wide->long reshape's role
+#        names; the measure and the contrast are derived from the two paired
+#        column names and registered against the role names with the graph
+#        layer's label-override registry (@emlSetLabelOverride). The two-way
+#        draw passes its second factor as emlGraphsPresetSubgroupCol$.
 # v2.3: Item 5 — announced plan, dispatched test, and reported method now
 #        agree. Two-group parametric route derives wizEqualVar/wizTName$
 #        from the "Variance assumption" field and passes it to
 #        @emlRunTwoGroupAnalysis instead of hardcoding Welch. ANOVA and
 #        Kruskal-Wallis post-hoc plan strings now name the method actually
-#        dispatched, and no longer claim conditional ("if significant")
+#        dispatched, and do not claim conditional ("if significant")
 #        execution for Tukey/Dunn, which run unconditionally.
 # v2.2: Item 1 — replaced the call to the removed @emlExtractMultipleGroups
 #        and the 1-argument @eml_getGroupData call with the current
@@ -176,7 +167,7 @@ elsif nTables = 0 and nToR = 1
 elsif nTables = 0 and nToR = 0
     hasTable = 0
 else
-    # THE PLUGIN'S OWN SURFACE (NEW-G12-4). A raw `exitScript:` with a
+    # THE PLUGIN'S OWN SURFACE. A raw `exitScript:` with a
     # message is shown by Praat as its own error window with "Script exited.
     # ... Command ... not executed." under it, which is the interpreter's
     # stack in place of a refusal. "entry" mode is the one written for a
@@ -207,26 +198,20 @@ runAgain = 1
 while runAgain = 1
 
 wizCanDraw = 0
-# D87: drawing and exporting are separate capabilities and were gated by one
+# Drawing and exporting are separate capabilities and were gated by one
 # flag. Repeated measures and Friedman set wizCanDraw = 0 because there is no
 # figure for them yet — which also removed the CSV button from two analyses
 # the CSV migration had already built exports for.
 #
-# EVERY BRANCH THAT RUNS AN ANALYSIS SETS wizCanExport, as of 14 August 2026.
-# This comment used to end "the describe/normality branches deliberately do
-# not, because they fill no result buffer and the button would lead only to
-# Nothing to Export" — and that was a description of the code mistaken for a
-# decision. AUTHOR RULING, 14 Aug 2026: describe and normality must be able to
-# save. The buffer was empty because nothing filled it: @emlRunDescriptiveAnalysis
-# was the plugin's last unconverted orchestrator and the wizard's Describe-by-
-# group ran its own summary, while the standalone normality page called the
-# wizard's pre-check diagnostic instead of @emlRunNormalityAnalysis, which had
-# declared correctly all along. All three declare now.
+# EVERY BRANCH THAT RUNS AN ANALYSIS SETS wizCanExport. Describe and
+# normality included: @emlRunDescriptiveAnalysis declares, the wizard's
+# Describe-by-group goes through it rather than running its own summary, and
+# the standalone normality page calls @emlRunNormalityAnalysis rather than the
+# wizard's pre-check diagnostic. All three declare.
 #
-# The one branch that still does not set it is the LMM page, and that is a
-# standing author ruling of a different kind: mixed models are TABLED and the
-# route into them is disconnected, so there is no user-reachable path to it.
-# v49 knows that and checks it by name rather than by silence.
+# The one branch that does not set it is the LMM page: mixed models are TABLED
+# and the route into them is disconnected, so there is no user-reachable path
+# to it. validate/v49 checks that by name rather than by silence.
 wizCanExport = 0
 wizDrawSource$ = ""
 wizTestType$ = "parametric"
@@ -400,8 +385,8 @@ if goal = 1
             dataCol$ = data_column$
             groupCol$ = group_column$
 
-            # Preserve column indices for Back navigation (D117: through
-            # @wizardColIdx, the one idiom every page in the file now uses)
+            # Preserve column indices for Back navigation, through
+            # @wizardColIdx, the one idiom every page in the file uses.
             @wizardColIdx: dataCol$
             dataDefault = wizardColIdx.idx
             @wizardColIdx: groupCol$
@@ -411,7 +396,7 @@ if goal = 1
             selectObject: tableId
             @emlCountGroups: tableId, groupCol$
             if emlCountGroups.nGroups <> 2
-                # D93: this guard always returned to the column page, which was
+                # This guard always returned to the column page, which was
                 # right, but it said so through a bare @pauseScript whose only
                 # buttons are Stop and Continue — neither of which states what
                 # it does, and neither of which names the design that would
@@ -512,7 +497,7 @@ if goal = 1
                 @emlRunTwoGroupAnalysis: tableId, dataCol$,
                 ... groupCol$, "parametric", wizEqualVar
                 if emlRunTwoGroupAnalysis.error$ <> ""
-                    # D93: an analysis error must not tear down the wizard. Return
+                    # An analysis error must not tear down the wizard. Return
                     # the user into the back-chain with every answer intact.
                     @emlErrorDialog: emlRunTwoGroupAnalysis.error$, emlRunTwoGroupAnalysis.remedy$, "wizard"
                     if emlErrorDialog.back
@@ -529,7 +514,7 @@ if goal = 1
                 @emlRunTwoGroupAnalysis: tableId, dataCol$,
                 ... groupCol$, "nonparametric", wizEqualVar
                 if emlRunTwoGroupAnalysis.error$ <> ""
-                    # D93: an analysis error must not tear down the wizard. Return
+                    # An analysis error must not tear down the wizard. Return
                     # the user into the back-chain with every answer intact.
                     @emlErrorDialog: emlRunTwoGroupAnalysis.error$, emlRunTwoGroupAnalysis.remedy$, "wizard"
                     if emlErrorDialog.back
@@ -588,8 +573,8 @@ if goal = 1
             dataCol$ = data_column$
             groupCol$ = group_column$
 
-            # Preserve column indices for Back navigation (D117: through
-            # @wizardColIdx, the one idiom every page in the file now uses)
+            # Preserve column indices for Back navigation, through
+            # @wizardColIdx, the one idiom every page in the file uses.
             @wizardColIdx: dataCol$
             dataDefault = wizardColIdx.idx
             @wizardColIdx: groupCol$
@@ -599,7 +584,7 @@ if goal = 1
             selectObject: tableId
             @emlCountGroups: tableId, groupCol$
             if emlCountGroups.nGroups < 3
-                # D93: as above — same guard, same surface.
+                # As above — same guard, same surface.
                 if emlCountGroups.nGroups = 2
                     @emlErrorDialog: "Only 2 groups in """
                     ... + groupCol$
@@ -714,7 +699,7 @@ if goal = 1
 
                 @emlRunAnovaAnalysis: tableId, dataCol$, groupCol$, doTukey
                 if emlRunAnovaAnalysis.error$ <> ""
-                    # D93: an analysis error must not tear down the wizard. Return
+                    # An analysis error must not tear down the wizard. Return
                     # the user into the back-chain with every answer intact.
                     @emlErrorDialog: emlRunAnovaAnalysis.error$, emlRunAnovaAnalysis.remedy$, "wizard"
                     if emlErrorDialog.back
@@ -768,7 +753,7 @@ if goal = 1
                 @emlRunKWAnalysis: tableId, dataCol$, groupCol$, 1,
                 ... adjMethod$
                 if emlRunKWAnalysis.error$ <> ""
-                    # D93: an analysis error must not tear down the wizard. Return
+                    # An analysis error must not tear down the wizard. Return
                     # the user into the back-chain with every answer intact.
                     @emlErrorDialog: emlRunKWAnalysis.error$, emlRunKWAnalysis.remedy$, "wizard"
                     if emlErrorDialog.back
@@ -822,7 +807,7 @@ if goal = 1
                 goto A2_INDEP_DESIGN
             endif
 
-            # D117: this page had no preserve step at all — its three seeds
+            # This page had no preserve step at all — its three seeds
             # were written once at A2C entry and never again, so both
             # `goto A2C_TWOFACTOR` returns re-rendered the guess. Worse, the
             # Run button is on this page: a user who pressed Run without
@@ -836,7 +821,7 @@ if goal = 1
             f2Default = wizardColIdx.idx
 
             if factor_1$ = factor_2$
-                # D93: a correctable selection mistake must not end the wizard.
+                # A correctable selection mistake must not end the wizard.
                 @emlErrorDialog: "Factor 1 and Factor 2 must be different columns.", "", "wizard"
                 if emlErrorDialog.back
                     goto A2C_TWOFACTOR
@@ -859,7 +844,7 @@ if goal = 1
             @emlRunTwoWayAnalysis: tableId, data_column$,
             ... factor_1$, factor_2$
             if emlRunTwoWayAnalysis.error$ <> ""
-                # D93: an analysis error must not tear down the wizard. Return
+                # An analysis error must not tear down the wizard. Return
                 # the user into the back-chain with every answer intact.
                 @emlErrorDialog: emlRunTwoWayAnalysis.error$, emlRunTwoWayAnalysis.remedy$, "wizard"
                 if emlErrorDialog.back
@@ -944,11 +929,11 @@ if goal = 1
             goto A1_OBS_TYPE
         endif
 
-        # D117: BEFORE the guard, not after it. This page is re-entered by
+        # BEFORE the guard, not after it. This page is re-entered by
         # `goto A3_NORM_PAGE` from the guard below and from two sites on the
-        # test page, and the preserve step used to sit under the guard — so
-        # on the one return the user is most likely to take, the page came
-        # back showing @wizardPrepareTable's guess.
+        # test page, and a preserve step under the guard would be skipped on
+        # the one return the user is most likely to take, so the page would
+        # come back showing @wizardPrepareTable's guess.
         @wizardColIdx: column_1$
         col1Default = wizardColIdx.idx
         @wizardColIdx: column_2$
@@ -956,7 +941,7 @@ if goal = 1
         prevCheckNorm = check_normality
 
         if column_1$ = column_2$
-            # D93: a correctable selection mistake must not end the wizard.
+            # A correctable selection mistake must not end the wizard.
             @emlErrorDialog: "Please select two different columns.", "", "wizard"
             if emlErrorDialog.back
                 goto A3_NORM_PAGE
@@ -1039,7 +1024,7 @@ if goal = 1
             wizTestType$ = "nonparametric"
         endif
         if emlRunPairedAnalysis.error$ <> ""
-            # D93: an analysis error must not tear down the wizard. Return
+            # An analysis error must not tear down the wizard. Return
             # the user into the back-chain with every answer intact.
             @emlErrorDialog: emlRunPairedAnalysis.error$, emlRunPairedAnalysis.remedy$, "wizard"
             if emlErrorDialog.back
@@ -1059,14 +1044,14 @@ if goal = 1
 
         # ── A3K: THREE OR MORE REPEATED CONDITIONS (RM-ANOVA / Friedman) ──
         #
-        # D82: the six condition slots used to be seeded with fixed option
-        # indices 2/3/4 against a list whose first entry is "(none)" — i.e.
-        # table columns 1, 2 and 3 whatever they contained. On a wide RM
-        # table column 1 is normally the subject identifier, so the default
-        # selection made a string ID column into "Condition 1" and dropped
-        # the last real condition. Every row then read as missing on that
+        # The six condition slots are NOT seeded with fixed option indices
+        # 2/3/4 against a list whose first entry is "(none)" — i.e. table
+        # columns 1, 2 and 3 whatever they contain. On a wide RM table column
+        # 1 is normally the subject identifier, so that default selection
+        # makes a string ID column into "Condition 1" and drops the last real
+        # condition. Every row then reads as missing on that
         # condition and the analysis failed with "Need at least 2
-        # complete-case subjects" on complete data (D83).
+        # Complete-case subjects" on complete data.
         #
         # The list offered here is therefore built, not assumed: numeric
         # columns only, with the column @emlGuessColumnRoles identifies as
@@ -1093,8 +1078,8 @@ if goal = 1
 
         if a3kN < 3
             # Say which requirement is unmet, before the user picks anything.
-            # This is the D83 message the old code could not produce: the
-            # shortfall is in the TABLE's shape, and naming it here is not the
+            # The shortfall is in the TABLE's shape, and naming it here is
+            # not the
             # same as telling a user with complete data that it is incomplete.
             @emlErrorDialog: "Repeated measures needs at least 3 numeric"
             ... + " condition columns. This Table has " + string$ (a3kN) + ".",
@@ -1180,7 +1165,7 @@ if goal = 1
             goto A3_NCOND_PAGE
         endif
 
-        # D83: carry every answer back into the form. This page is re-entered
+        # Carry every answer back into the form. This page is re-entered
         # by goto on three separate error paths, and before this it re-rendered
         # from the seeds — so a user sent back by an error was shown the same
         # selection that had just failed, with no sign it had not been kept.
@@ -1234,7 +1219,7 @@ if goal = 1
         endif
 
         if nCond < 3
-            # D93: a correctable selection mistake must not end the wizard.
+            # A correctable selection mistake must not end the wizard.
             @emlErrorDialog: "Repeated measures needs at least 3 condition columns.", "", "wizard"
             if emlErrorDialog.back
                 goto A3K_SELECT_PAGE
@@ -1249,7 +1234,7 @@ if goal = 1
             @emlRunRepeatedMeasuresAnalysis: tableId, "", condList$,
             ... pairwise_post_hoc, adjustment$
             if emlRunRepeatedMeasuresAnalysis.error$ <> ""
-                # D93: an analysis error must not tear down the wizard. Return
+                # An analysis error must not tear down the wizard. Return
                 # the user into the back-chain with every answer intact.
                 @emlErrorDialog: emlRunRepeatedMeasuresAnalysis.error$, emlRunRepeatedMeasuresAnalysis.remedy$, "wizard"
                 if emlErrorDialog.back
@@ -1265,7 +1250,7 @@ if goal = 1
             @emlRunFriedmanAnalysis: tableId, "", condList$,
             ... pairwise_post_hoc, adjustment$
             if emlRunFriedmanAnalysis.error$ <> ""
-                # D93: an analysis error must not tear down the wizard. Return
+                # An analysis error must not tear down the wizard. Return
                 # the user into the back-chain with every answer intact.
                 @emlErrorDialog: emlRunFriedmanAnalysis.error$, emlRunFriedmanAnalysis.remedy$, "wizard"
                 if emlErrorDialog.back
@@ -1277,7 +1262,7 @@ if goal = 1
         endif
 
         # RM-ANOVA and Friedman have no figure yet, but they DO have a
-        # tidy/glance/augment export. (D87)
+        # Tidy/glance/augment export.
         wizCanDraw = 0
         wizCanExport = 1
         goto WIZ_WHAT_NEXT
@@ -1361,14 +1346,14 @@ elsif goal = 2
             goto B1_RELATIONSHIP
         endif
 
-        # D117: no preserve step here either, and Run is on this page.
+        # No preserve step here either, and Run is on this page.
         @wizardColIdx: predictor_column$
         col1Default = wizardColIdx.idx
         @wizardColIdx: response_column$
         col2Default = wizardColIdx.idx
 
         if predictor_column$ = response_column$
-            # D93: a correctable selection mistake must not end the wizard.
+            # A correctable selection mistake must not end the wizard.
             @emlErrorDialog: "Please select two different columns.", "", "wizard"
             if emlErrorDialog.back
                 goto B_REG_COLUMNS
@@ -1387,7 +1372,7 @@ elsif goal = 2
 
         @emlRunRegressionAnalysis: tableId, response_column$, predictor_column$
         if emlRunRegressionAnalysis.error$ <> ""
-            # D93: an analysis error must not tear down the wizard. Return
+            # An analysis error must not tear down the wizard. Return
             # the user into the back-chain with every answer intact.
             @emlErrorDialog: emlRunRegressionAnalysis.error$, emlRunRegressionAnalysis.remedy$, "wizard"
             if emlErrorDialog.back
@@ -1458,7 +1443,7 @@ elsif goal = 2
     corrCol1$ = column_1$
     corrCol2$ = column_2$
 
-    # D117: BEFORE the guard, not after it — as at A3_NORM_PAGE. The guard's
+    # BEFORE the guard, not after it — as at A3_NORM_PAGE. The guard's
     # own `goto B_NORM_PAGE` skipped straight past the preserve step, so the
     # page came back holding the guess rather than the user's two columns.
     @wizardColIdx: corrCol1$
@@ -1468,7 +1453,7 @@ elsif goal = 2
     prevCheckNorm = check_normality
 
     if column_1$ = column_2$
-        # D93: a correctable selection mistake must not end the wizard.
+        # A correctable selection mistake must not end the wizard.
         @emlErrorDialog: "Please select two different columns.", "", "wizard"
         if emlErrorDialog.back
             goto B_NORM_PAGE
@@ -1547,7 +1532,7 @@ elsif goal = 2
         ... corrCol2$, "spearman"
     endif
     if emlRunCorrelationAnalysis.error$ <> ""
-        # D93: an analysis error must not tear down the wizard. Return
+        # An analysis error must not tear down the wizard. Return
         # the user into the back-chain with every answer intact.
         @emlErrorDialog: emlRunCorrelationAnalysis.error$, emlRunCorrelationAnalysis.remedy$, "wizard"
         if emlErrorDialog.back
@@ -1621,7 +1606,7 @@ elsif goal = 3
             goto C1_DESCRIBE
         endif
 
-        # D117: no preserve step here either, and Run is on this page.
+        # No preserve step here either, and Run is on this page.
         @wizardColIdx: data_column$
         dataDefault = wizardColIdx.idx
 
@@ -1630,13 +1615,12 @@ elsif goal = 3
         endif
 
         @emlRunDescriptiveAnalysis: tableId, data_column$
-        # AUTHOR RULING, 14 Aug 2026: describe must be able to save. The
-        # orchestrator declares as of the same date; before that it was the
-        # plugin's last unconverted one, and the missing declaration is the
-        # whole reason this page had no Save button.
+        # Describe must be able to save, which needs the orchestrator to
+        # declare -- the Save button is offered only when there is something
+        # to export.
         wizCanExport = 1
         if emlRunDescriptiveAnalysis.error$ <> ""
-            # D93: an analysis error must not tear down the wizard. Return
+            # An analysis error must not tear down the wizard. Return
             # the user into the back-chain with every answer intact.
             @emlErrorDialog: emlRunDescriptiveAnalysis.error$, emlRunDescriptiveAnalysis.remedy$, "wizard"
             if emlErrorDialog.back
@@ -1685,7 +1669,7 @@ elsif goal = 3
         @wizardRunDescribeByGroup: tableId, data_column$,
         ... group_column$
 
-        # AUTHOR RULING, 14 Aug 2026: describe must be able to save.
+        # Describe must be able to save.
         wizCanExport = 1
 
         goto WIZ_WHAT_NEXT
@@ -1743,7 +1727,7 @@ elsif goal = 3
             exitScript: ""
         endif
 
-        # AUTHOR RULING, 14 Aug 2026: normality must be able to save.
+        # Normality must be able to save.
         wizCanExport = 1
 
         goto WIZ_WHAT_NEXT
@@ -1757,22 +1741,20 @@ elsif goal = 3
 
 elsif goal = 4
 
-    # ── Mixed models: DISCONNECTED from the wizard, 6 August 2026 ─────────
+    # ── Mixed models: DISCONNECTED from the wizard ────────────────────────
     #
-    # Author ruling: table linear mixed models and take them away from end
-    # users for now — "including the wizard". Nothing is deleted. The engine
+    # Linear mixed models are tabled for end users, the wizard included.
+    # Nothing is deleted. The engine
     # (stats/eml-lmm.praat, 32 procedures), the standalone wrapper
     # (scripts/eml-lmm.praat) and the formula page below are all intact.
     #
-    # WHAT WAS REMOVED IS THE ROUTE, and only the route. A "Predict — model
-    # type" page used to sit here offering "Simple linear regression" and
-    # "Mixed model", and its second option was the last user-reachable way
-    # into D_LMM_FORMULA. With mixed models gone the page had one live
-    # choice left, so asking the question was worse than not asking it:
-    # goal 4 now goes straight to the regression columns.
+    # WHAT IS DISCONNECTED IS THE ROUTE, and only the route. A "Predict —
+    # model type" page offering "Simple linear regression" and "Mixed model"
+    # would be a question with one live answer, so goal 4 goes straight to
+    # the regression columns and D_LMM_FORMULA has no user-reachable entry.
     #
-    # The other two routes were already closed on 5 August: setup.praat no
-    # longer registers the "Linear mixed model..." menu entry or the
+    # The other two routes are closed the same way: setup.praat does not
+    # register the "Linear mixed model..." menu entry or the
     # Objects-window button. With this page gone there is no surface left.
     #
     # TO RECONNECT: restore the block below, which is the page verbatim as
@@ -1800,9 +1782,8 @@ elsif goal = 4
     #         goto D_LMM_FORMULA
     #     endif
     #
-    # D_LMM_FORMULA's own Back button targeted D_MODEL_TYPE, which no longer
-    # exists, so it now targets Q1_GOAL — the page a user would have come
-    # from. That one line is the only edit inside the block itself.
+    # D_LMM_FORMULA's own Back button targets Q1_GOAL — the page a user would
+    # have come from — because there is no model-type page to go back to.
 
     # ── Predict an outcome (simple linear regression) ─────────────────────
 
@@ -1839,14 +1820,14 @@ elsif goal = 4
         goto Q1_GOAL
     endif
 
-    # D117: no preserve step here either, and Run is on this page.
+    # No preserve step here either, and Run is on this page.
     @wizardColIdx: predictor_column$
     col1Default = wizardColIdx.idx
     @wizardColIdx: outcome_column$
     col2Default = wizardColIdx.idx
 
     if predictor_column$ = outcome_column$
-        # D93: a correctable selection mistake must not end the wizard.
+        # A correctable selection mistake must not end the wizard.
         @emlErrorDialog: "Please select two different columns.", "", "wizard"
         if emlErrorDialog.back
             goto D_PREDICT_COLUMNS
@@ -1865,7 +1846,7 @@ elsif goal = 4
 
     @emlRunRegressionAnalysis: tableId, outcome_column$, predictor_column$
     if emlRunRegressionAnalysis.error$ <> ""
-        # D93: an analysis error must not tear down the wizard. Return
+        # An analysis error must not tear down the wizard. Return
         # the user into the back-chain with every answer intact.
         @emlErrorDialog: emlRunRegressionAnalysis.error$, emlRunRegressionAnalysis.remedy$, "wizard"
         if emlErrorDialog.back
@@ -1889,14 +1870,14 @@ elsif goal = 4
     # line block reinstated by uncommenting is a fresh chance to introduce a
     # bug, and while the code still parses, harness/check_includes.py keeps
     # verifying that its four calls into stats/eml-lmm.praat resolve. That
-    # is the check which caught D101, and it only works on code that is
-    # still there to check.
+    # is the check that can catch an unresolvable call, and it only works on
+    # code that is still there to check.
     #
     # The cost of that choice is that eml-lmm.praat is still included and so
     # still parsed on every wizard launch. It is dead weight, not a user
     # surface. If the load time is worth reclaiming, the include and this
-    # block come out together — never one without the other, which is
-    # precisely the mistake D101 was.
+    # block come out together — never one without the other, which is how an
+    # unresolvable call gets left behind.
     label D_LMM_FORMULA
     dColHint$ = ""
     for iCol from 1 to nCols
@@ -1938,7 +1919,7 @@ elsif goal = 4
     @emlRunLMMAnalysis: tableId, formula$, contrast_coding$, use_REML,
     ... report_R_squared, report_confidence_intervals
     if emlRunLMMAnalysis.error$ <> ""
-        # D93: an analysis error must not tear down the wizard. Return
+        # An analysis error must not tear down the wizard. Return
         # the user into the back-chain with every answer intact.
         @emlErrorDialog: emlRunLMMAnalysis.error$, emlRunLMMAnalysis.remedy$, "wizard"
         if emlErrorDialog.back
@@ -1965,7 +1946,7 @@ endif
 
 label WIZ_WHAT_NEXT
 
-# D87: four button sets, from two independent flags. Before this, one flag
+# Four button sets, from two independent flags. Before this, one flag
 # decided both, so an analysis with no figure also lost its export.
 if wizCanDraw and wizCanExport
     beginPause: "Analysis complete"
@@ -2022,11 +2003,10 @@ endif
 
 # ── CSV Export ────────────────────────────────────────────────────────────
 #
-# D39: this used to open on defaultDirectory$ — the PLUGIN's own script
-# folder — so a user's results landed inside the install tree, where an
-# upgrade can remove them and where nobody looks for data. Every other
-# wrapper exports through @emlWrapperExportCSV, which starts at
-# homeDirectory$ and remembers the last folder used. The wizard now does
+# NOT defaultDirectory$ — the PLUGIN's own script folder — which would land
+# a user's results inside the install tree, where an upgrade can remove them
+# and where nobody looks for data. Every other wrapper exports from
+# homeDirectory$ and remembers the last folder used. The wizard does
 # the same, which also picks up the tidy/glance/augment fork that
 # @emlExportStatsCSV alone does not have.
 
@@ -2105,7 +2085,7 @@ elsif wizDrawSource$ = "paired"
         Set string value: plR2, "Condition", wizPairedCol2$
         Set numeric value: plR2, "Value", plV2
     endfor
-    # ── D90: axis labels that name the measure ──────────────────────────
+    # ── axis labels that name the measure ──────────────────────────
     # "Subject", "Condition" and "Value" are the reshape's ROLE names, and
     # the graph layer derives its axis labels from column names — so the
     # y-axis, the only place the measured quantity could appear, read
@@ -2152,7 +2132,7 @@ elsif wizDrawSource$ = "paired"
     endif
 
     emlGraphsPresetType = 13
-    # The graph layer's D90 half is a registry keyed by column name
+    # The graph layer's half is a registry keyed by column name
     # (graphs/eml-graph-procedures.praat), consulted by the spaghetti page's
     # @emlCapitalizeLabel calls on spCondCol$ / spValueCol$. It is cleared
     # straight after the figure: the keys are role names as generic as
@@ -2164,11 +2144,11 @@ elsif wizDrawSource$ = "paired"
     removeObject: plLongId
     selectObject: tableId
 elsif wizDrawSource$ = "twoway"
-    # D32, wizard half: the two-way draw handed over factor 1 only, so the
-    # default grouped violin dropped the second factor exactly as the menu
-    # wrapper's did. Consumed by the Grouped Violin preset branch in
-    # graphs/eml-graphs-form.praat:5194-5258, which has landed: it matches
-    # the name against the column list and clears the preset afterwards.
+    # The two-way draw hands over BOTH factors: handing over factor 1 only
+    # makes the default grouped violin drop the second factor. Consumed by
+    # the Grouped Violin preset branch in graphs/eml-graphs-form.praat, which
+    # matches the name against the column list and clears the preset
+    # afterwards.
     emlGraphsPresetType = 11
     emlGraphsPresetGroupCol$ = wizTwoWayFactor1$
     emlGraphsPresetDataCol$ = dataCol$
@@ -2250,14 +2230,14 @@ procedure wizardNormDiag: .data#, .label$
     .ku = emlKurtosis.result
     .n = size (.data#)
 
-    # ── RULING 6, 15 August 2026: the display standard ────────────────────
+    # ── THE DISPLAY STANDARD ──────────────────────────────────────────────
     #
     # These four numbers are the wizard's OWN report lines -- the preview it
-    # prints before it recommends parametric or nonparametric -- and every one
-    # of them was a bare fixed$ call. Praat's fixed$ is not a fixed-precision
+    # prints before it recommends parametric or nonparametric -- and none of
+    # them is a bare fixed$ call. Praat's fixed$ is not a fixed-precision
     # formatter: it returns the LARGER of the precision it is given and
     # however many decimals are needed to show one significant digit, and a
-    # bare "0" for an exact zero. Measured on 6.6.30, and observed here:
+    # bare "0" for an exact zero. Measured on 6.6.30:
     #
     #     Skewness:     0.00000000000000005      asked for 3 decimals
     #     Shapiro-Wilk: W = 0.5899, p = 0.00000000001    asked for 4
@@ -2268,22 +2248,22 @@ procedure wizardNormDiag: .data#, .label$
     # PREVIEW is precisely where a near-zero statistic and a floor-crossing p
     # are the expected cases rather than the corner ones.
     #
-    # The repair is the shared formatter @eml_fixed (stats/eml-output.praat),
-    # which keeps fixed$'s answer whenever fixed$ honoured the request -- so
-    # every line that already printed correctly still prints identically --
-    # and rounds properly when it did not. Nothing computed moves: the
+    # The shared formatter @eml_fixed (stats/eml-output.praat) keeps fixed$'s
+    # answer whenever fixed$ honoured the request -- so every line fixed$ gets
+    # right prints identically -- and rounds properly when it did not.
+    # Nothing computed moves: the
     # recommendation below reads .sk, .ku and emlShapiroWilk.p, not these
     # strings, and @emlNormalityRecommendation is called with the raw values.
     #
-    # THE p IS A SEPARATE CLAUSE OF THE SAME RULING: p prints in APA style.
-    # @emlFormatP is what the rest of the plugin's reports use, so this line
-    # now reads "p < .001" where it used to read "p = 0.00000000001", and
-    # ".551" where it used to read "0.5514". The unrounded value is NOT
+    # AND p PRINTS IN APA STYLE. @emlFormatP is what the rest of the plugin's
+    # reports use, so this line reads "p < .001" rather than
+    # "p = 0.00000000001", and ".551" rather than "0.5514". The unrounded
+    # value is NOT
     # appended here as @emlInlineP would append it -- this is a two-line
     # diagnostic whose only consequence is the binary recommendation printed
     # underneath it, and the same p is reported to full precision by
     # @emlRunNormalityAnalysis and exported by the CSV writers, which is
-    # where the ruling puts full precision.
+    # where full precision belongs.
     .displayLabel$ = replace$ (.label$, "_", " ", 0)
     appendInfoLine: "  ", .displayLabel$, " (n = ", .n, ")"
     @eml_fixed: .sk, 3
@@ -2310,7 +2290,7 @@ procedure wizardNormDiag: .data#, .label$
     # procedure calls it. Until 8 August the wizard carried a hand-maintained
     # second copy — correct, but a copy, and the third copy (the per-group
     # branch of eml-check-normality.praat) had already drifted to hard-coded
-    # thresholds and the retired `skKurtFail or swFail` gate. (D137, D134)
+    # Thresholds and the retired `skKurtFail or swFail` gate.
     #
     # This call site is the reason the shared procedure takes a bare
     # (skewness, kurtosis, n, swP, swError$) rather than a Table and a column
@@ -2323,7 +2303,7 @@ procedure wizardNormDiag: .data#, .label$
     # wording from the returned flags; it does not re-derive the answer.
     # Thresholds print from the same shared constants the rule tests
     # (emlSkewThreshold = 2, emlKurtosisThreshold = 7, in
-    # stats/eml-output.praat). They were once hard-coded 1 and 3 here. (D95)
+    # Stats/eml-output.praat). They were once hard-coded 1 and 3 here.
     @emlNormalityRecommendation: .sk, .ku, .n,
     ... emlShapiroWilk.p, emlShapiroWilk.error$
     .shapeSevere = emlNormalityRecommendation.shapeSevere
@@ -2335,12 +2315,12 @@ procedure wizardNormDiag: .data#, .label$
         .isParametric = 1
     endif
 
-    ; RULING 6. These two are the shared THRESHOLDS rather than statistics,
-    ; and at their shipped values (2 and 7) fixed$ and @eml_fixed give the
-    ; same string. They are routed anyway, because the reason this file had
-    ; six unrouted fixed$ calls is that each of them looked like the safe one,
-    ; and a module with a single door to the formatter is a module whose
-    ; display standard can be checked by counting rather than by reading.
+    ; These two are the shared THRESHOLDS rather than statistics, and at
+    ; their shipped values (2 and 7) fixed$ and @eml_fixed give the same
+    ; string. They are routed anyway: every unrouted fixed$ call looks like
+    ; the safe one, and a module with a single door to the formatter is a
+    ; module whose display standard can be checked by counting rather than by
+    ; reading.
     @eml_fixed: emlSkewThreshold, 0
     .skThreshTxt$ = eml_fixed.result$
     @eml_fixed: emlKurtosisThreshold, 0
@@ -2606,7 +2586,7 @@ endproc
 # The repeated-measures form hands back NAMES; its optionmenus are seeded
 # with POSITIONS in the filtered numeric-column list built at A3K_PREP, whose
 # item 1 is "(none)". This converts one to the other so the form can be
-# re-rendered with what the user actually chose. (D83)
+# Re-rendered with what the user actually chose.
 #
 # Arguments:
 #   .name$ - a column name, or "(none)"
@@ -2631,7 +2611,7 @@ endproc
 # the wizard. Those menus are seeded with a POSITION in emlTableColumnNames
 # and hand back a NAME; a page re-entered by `goto` re-renders from the seed,
 # so unless the name is converted back and written into the seed the page
-# shows @wizardPrepareTable's GUESS rather than what the user chose. (D117)
+# Shows @wizardPrepareTable's GUESS rather than what the user chose.
 #
 # Why a procedure and not the four-line loop it replaces: nine error-return
 # sites across six pages need this, the loop had been hand-copied to two of
@@ -2728,8 +2708,8 @@ procedure wizardRunDescribeByGroup: .tableId, .dataCol$, .groupCol$
 
     @emlReportDescriptiveHeader
 
-    # EXPORTABLE, as of 14 August 2026 -- author ruling: describe must be
-    # able to save. The LEGACY buffer, not the broom collectors, for the
+    # EXPORTABLE -- describe must be able to save. The LEGACY buffer, not
+    # the broom collectors, for the
     # reason set out above @emlCSVAddDescriptiveRow in stats/eml-analysis.praat:
     # the tidy vocabulary is a whitelist and would drop every statistic here
     # except the term. One legacy row per group per statistic, which is the

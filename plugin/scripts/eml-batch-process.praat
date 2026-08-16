@@ -9,7 +9,7 @@
 # Date: 16 August 2026
 # Version: 1.3
 #
-# v1.3: The two APPENDIX_D §7 (hard) rules this module had never implemented.
+# v1.3: The two APPENDIX_D §7 (hard) rules for bounded ranges.
 #       GUARD BOTH ENDS OF EVERY BOUNDED RANGE — the filtered-autocorrelation
 #       range, the raw-cross-correlation range and the 60-330 Hz cepstral peak
 #       search now each warn when a measured F0 comes within 10% of either
@@ -83,7 +83,7 @@ endproc
 # hard-wired to <sound folder>/STOP.txt, so a user who kept their own STOP.txt
 # — a note to a collaborator, a stop-word list, a marker file — lost it the
 # moment they ran a batch: silently, with no prompt and no undo. The results
-# CSV has walked to a free name on collision since S9; the sentinel did not.
+# CSV has walked to a free name on collision as of that change; the sentinel did not.
 # This procedure is the missing half of that protection.
 #
 # A path that does NOT exist is ours to make. A path that exists is ours only
@@ -349,19 +349,19 @@ file_extension$ = "wav"
 
 # THE OUTPUT FOLDER, AND WHY ITS DEFAULT IS NOT THE SOUND FOLDER.
 #
-# AUTHOR RULING, 14 August 2026, verbatim: "re stop file, yes? To users output
-# folder. Output folder is user designated. Not the input folder."
+# THE STOP FILE AND THE CSV BOTH GO TO THE USER'S DESIGNATED OUTPUT FOLDER,
+# never to the input folder.
 #
-# Until that ruling this script wrote both of its files — STOP.txt and the
-# results CSV — into the folder of recordings it was reading, which is the
-# user's corpus and often someone else's shared data.
+# Writing them beside the AUDIO would put STOP.txt and the results CSV into
+# the folder of recordings this script is reading, which is the user's corpus
+# and often someone else's shared data.
 #
-# THE DEFAULT IS PART OF THE RULING, not decoration. An empty default that
+# THE DEFAULT IS PART OF IT, not decoration. An empty default that
 # falls back to the sound folder was considered and rejected: it would preserve
 # today's behaviour for existing users at the price of re-creating the exact
 # defect for every user who does not edit the field — and the users who do not
 # edit fields are precisely the ones the truncation would surprise. A default
-# is what most runs will actually use, so it has to be a folder the ruling
+# is what most runs will actually use, so it has to be a folder the rule
 # allows.
 #
 # HOME, IN A NAMED FOLDER. homeDirectory$ exists and is writable on every
@@ -558,7 +558,7 @@ cppsSearchCeiling = 330
 #     To PowerCepstrogram                  floor 60    0.10  s   (= 6 / 60)
 #
 # CPPS is therefore the binding constraint whenever it is selected, at nearly
-# double the 0.064 s this script used to warn at — which is why the old
+# double the 0.064 s a naive threshold would warn at — which is why a
 # threshold could not have been used as a guard even if it had been one: a
 # 0.08 s segment passed it and then killed the run inside the cepstrogram.
 #
@@ -597,7 +597,7 @@ if nFiles = 0
 endif
 
 # ============================================================================
-# Output folder and STOP sentinel (S5, author ruling 14 August 2026)
+# Output folder and STOP sentinel
 # ============================================================================
 
 # WHY HERE. After the file list, so a mistyped extension does not leave an
@@ -723,13 +723,13 @@ resultsId = Create Table with column names: "results", 0, colNames$
 currentRow = 0
 
 # ============================================================================
-# Auto-generate output filename (S9)
+# Auto-generate output filename
 # ============================================================================
 
 # Last path component of the sound folder, used ONLY as a filename prefix.
 #
-# THE PREFIX MATTERS MORE SINCE 14 August 2026, not less: the CSV no longer
-# lands beside the recordings it describes but in an output folder the user
+# THE PREFIX MATTERS: the CSV does not land beside the recordings it
+# describes, but in an output folder the user
 # designates, which one user will point at from several corpora in turn. The
 # corpus name in the file name is now the only thing that says which run of
 # which folder a CSV came from.
@@ -768,8 +768,8 @@ endif
 proposedCsv$ = folderName$ + "_results_" + emlBuildDateStamp.result$ + ".csv"
 
 # THE NAME IS BUILT FROM THE SOUND FOLDER, THE PATH FROM THE OUTPUT FOLDER.
-# Both files this script writes now go to output_folder$ (author ruling,
-# 14 August 2026) — the sentinel above, the results here.
+# Both files this script writes go to output_folder$ — the sentinel above,
+# the results here.
 csvPath$ = output_folder$ + "/" + proposedCsv$
 
 # Non-colliding path (Rule 27)
@@ -784,7 +784,7 @@ if fileReadable (csvPath$)
 endif
 
 # The STOP sentinel was resolved, created and armed above, before the batch
-# range dialog — see "Output folder and STOP sentinel (S5)".
+# Range dialog — see "Output folder and STOP sentinel".
 
 # ============================================================================
 # Info window header
@@ -803,9 +803,10 @@ if use_TextGrids
     line$ = "Tier: " + string$ (tier_number) + ", Label: " + target_label$
     appendInfoLine: line$
 endif
-# BOTH FOLDERS ARE NAMED, because they are no longer the same folder and the
+# BOTH FOLDERS ARE NAMED, because they are not the same folder and the
 # user chose them in two different fields. Printing only the CSV's full path
-# left "where did my results go" answerable only by reading a long line.
+# would leave "where did my results go" answerable only by reading a long
+# line.
 line$ = "Output folder: " + output_folder$
 appendInfoLine: line$
 line$ = "Results CSV: " + csvPath$
@@ -1524,9 +1525,9 @@ for iFile from start_from_file to end_at_file
         # it would fire on most rows of most well-configured runs, which is
         # how a warning column becomes something users filter out. An
         # overstatement only ever WIDENS these two ranges, and a range too
-        # wide degrades pitch tracking gradually rather than censoring it. If
-        # the author wants the overstatement warned about too, the branch is
-        # one `elsif` and the threshold is the ruling that is missing here.
+        # wide degrades pitch tracking gradually rather than censoring it.
+        # Warning on an overstatement too would be one `elsif`, and the
+        # threshold for it is a judgement this module does not make.
         if rangeSource$ <> ""
             if rangeF0Max <> undefined
                 if rangeF0Max > highest_expected_F0
@@ -1639,7 +1640,7 @@ selectObject: resultsId
 Save as comma-separated file: csvPath$
 
 # ============================================================================
-# Post-completion summary (S8)
+# Post-completion summary
 # ============================================================================
 
 sep$ = "============================================"

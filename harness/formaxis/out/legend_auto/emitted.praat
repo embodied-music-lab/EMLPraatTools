@@ -50,28 +50,16 @@ include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
 # workflow. Edit a name to run the same workflow on other data;
 # nothing below this block names an object, a column or an axis
 # range.
-data1$ = "Table fa"   ; steps 1 (draw), 2 (draw)
-categoryCol$ = "grp"   ; the category column -- steps 1 (draw), 2 (draw)
-subgroupCol$ = "sub"   ; the sub-group column -- steps 1 (draw), 2 (draw)
-valueCol$    = "val"   ; the measured column -- steps 1 (draw), 2 (draw)
-axisYMin     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- steps 1 (draw), 2 (draw)
-axisYMax     = 0.0   ; on the recorded data it resolved to 195.0000 .. 235.0000
+data1$ = "Table fa"   ; step 1 (draw)
+categoryCol$ = "grp"   ; the category column -- step 1 (draw)
+subgroupCol$ = "sub"   ; the sub-group column -- step 1 (draw)
+valueCol$    = "val"   ; the measured column -- step 1 (draw)
+axisYMin     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- step 1 (draw)
+axisYMax     = 0.0   ; on the recorded data it resolved to 195.0000 .. 275.0000
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
 # --- Step 1 (draw) ---
-selectObject: data1$
-data = selected ()
-# Grouped violin: f0 by cohort
-# Violin width is a kernel density estimate, not a count.
-
-annotate = 0
-@emlDrawGroupedViolin: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, categoryCol$, subgroupCol$, valueCol$, axisYMin, axisYMax
-
-# The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
-
-# --- Step 2 (draw) ---
 selectObject: data1$
 data = selected ()
 # Grouped violin: f0 by cohort

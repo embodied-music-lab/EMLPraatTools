@@ -13,8 +13,8 @@ outputDPI: 1
 xLabel: 
 yLabel: 
 lastInputFolder: 
-lastPNGFolder: /home/claude/rig/prefs_1
-lastCSVFolder: /home/claude/rig/prefs_1
+lastPNGFolder: /tmp/wf_g/rig/prefs_4
+lastCSVFolder: /tmp/wf_g/rig/prefs_4
 showAdvanced: 1
 subtitle: 
 groupSort: 1

@@ -365,6 +365,17 @@ elsif leg$ = "rec_form"
     table = selected ("Table")
     emlGraphsAxisYReqMin = 0
     emlGraphsAxisYReqMax = 0
+    ; THE STEP STAMP, added with ruling A (change order 7, 16 Aug 2026). The
+    ; pair alone is no longer accepted: Praat cannot unset a variable, so a
+    ; pair that merely EXISTS is a pair some earlier press left behind, and
+    ; @emlRecordAxisRequest now requires a stamp naming the step it is for.
+    ; @emlRecordStep increments emlRecordN and then appends, so the draw below
+    ; becomes step emlRecordN + 1 -- written that way rather than as a literal
+    ; 1, so this leg keeps standing in for the form if a step is ever recorded
+    ; ahead of it. The form's own stamp is taken in
+    ; @emlGraphsStampAxisRequest; this leg publishes by hand for the reason
+    ; the paragraph above gives.
+    emlGraphsAxisYReqStep = emlRecordN + 1
     Erase all
     @emlDrawViolinPlot: table, "f0 by group", "Group", "val", 6, 4, "color",
     ... 1, "grp", "val", 190, 290

@@ -7,12 +7,10 @@
 #
 # Generates the reference literals asserted by test-theilsen.praat.
 #
-# v1.3 (8 Aug 2026) — the printed E-3 expectation still quoted the pre-D99
-#   refusal text ("all x values are identical"). eml-inferential.praat emits
-#   "All <n> x values are identical, so no slope can be estimated." since the
-#   procedure-name leaks were removed (D99), so this crib was describing a
-#   message that no longer exists and would have sent the next reader to
-#   "fix" the library. Wording only; no numeric output changed. The scipy
+# v1.3 — the printed E-3 expectation matches the refusal text
+#   eml-inferential.praat emits: "All <n> x values are identical, so no slope
+#   can be estimated." User-facing text carries no procedure name, so a crib
+#   quoting one would send a reader to "fix" the library. The scipy
 #   behaviour it summarises was re-confirmed on scipy 1.17.1: theilslopes on
 #   x = [4,4,4] warns "All `x` coordinates are identical" and returns
 #   slope = nan, intercept = nan.
@@ -26,7 +24,7 @@
 #   artifact. The vectors are now declared once, in `SETS`, and both
 #   consumers iterate it. Per-set rationale moved from banner comments into
 #   a `why` field of the same tuple, so a set cannot be added without one.
-#   The comment above the DISCRIMINATION MAP no longer names the collinear
+#   The comment above the DISCRIMINATION MAP does not name the collinear
 #   sets either — that list is measured and printed.
 #   Numeric output is unchanged; verified byte-identical to the v1.1 run
 #   apart from the added WHY: lines.
@@ -61,11 +59,8 @@
 #     grep -n "@emlTheilSen:" graphs/eml-draw-procedures.praat   -> 2 hits
 #
 # Deliberately no line numbers: they drift faster than this comment is
-# revisited. It used to cite ":2410 and :2660", which the 7 August 2026
-# contradiction sweep found pointing at bar-chart gridline and bar-quadrant
-# code instead. The sweep's own replacement (":3253-3258" / ":3550-3557") was
-# stale by 8 August, and the two call sites moved again — by 68 lines — inside
-# the single session that wrote this paragraph. Grep the call strings.
+# revisited. A pointer here has gone stale inside a single working session,
+# by 68 lines, and landed on bar-chart gridline code. Grep the call strings.
 #
 # INTERCEPT CONVENTION — the thing this file is actually pinning down
 # There are two intercept conventions in circulation for Theil-Sen:

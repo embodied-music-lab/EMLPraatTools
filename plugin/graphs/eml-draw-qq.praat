@@ -48,22 +48,18 @@
 #
 # DISCLOSURE
 # ----------
-# v1.1, 7 Aug 2026. This procedure used to write "n = N, Blom plotting
-# positions" into emlSubtitle$, saving and restoring the global around the
-# call. The global survived; the DRAWN figure did not. emlSubtitle$ is the
-# user's own field — the graphs form asks for it ("Subtitle") and persists it
-# to config — so a user who had typed a subtitle got a machine-generated tail
-# bolted on after " | " that they never wrote and could not remove, ticked or
-# not. @emlDrawTimeSeries and @emlDrawBarChart carried the same defect and it
-# was removed from both on 7 Aug 2026 (D112); this file was written the day
-# before and repeated it (D119).
+# NOTHING HERE WRITES TO emlSubtitle$. That is the user's own field — the
+# graphs form asks for it ("Subtitle") and persists it to config — so a
+# machine-generated tail bolted on after " | " is text the user never wrote
+# and cannot remove, ticked or not. Saving and restoring the global around
+# the call does not help: the global survives and the DRAWN figure carries
+# the tail.
 #
 # The house mechanism is @emlDiscloseBegin / @emlDisclose / @emlDiscloseEnd in
 # eml-draw-procedures.praat, which both of this file's include chains already
 # pull in (plugin/scripts/eml-lib.praat -> eml-lib-graphs.praat, and
-# harness/qq_cases/qq_drive.praat directly). The rule it enforces, from the
-# author's ruling "draw the image as the image unless someone asks to
-# annotate":
+# harness/qq_cases/qq_drive.praat directly). The rule it enforces is "draw
+# the image as the image unless someone asks to annotate":
 #
 #   Info window   ALWAYS
 #   The figure    ONLY when the user ticked Annotate

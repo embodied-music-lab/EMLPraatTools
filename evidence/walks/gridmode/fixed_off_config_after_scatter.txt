@@ -4,6 +4,7 @@ colorMode: 1
 width: 6
 height: 4
 gridlineMode: 4
+legendPlacement: 1
 showInnerBox: 1
 showAxisNames: 2
 showTicks: 2
@@ -13,8 +14,8 @@ outputDPI: 1
 xLabel: 
 yLabel: 
 lastInputFolder: 
-lastPNGFolder: /home/claude/rig/prefs_2
-lastCSVFolder: /home/claude/rig/prefs_2
+lastPNGFolder: /tmp/wf_g/rig/prefs_4
+lastCSVFolder: /tmp/wf_g/rig/prefs_4
 showAdvanced: 1
 subtitle: 
 groupSort: 1

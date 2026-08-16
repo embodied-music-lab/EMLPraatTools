@@ -32,7 +32,7 @@
 # The [EXT] GG evidence is here, not there.
 #
 # DATASETS
-# Six, spanning working and known-degenerate input as the audit requires:
+# Six, spanning working and known-degenerate input:
 #   RM_A  clean balanced k=3 n=6, no ties            (nominal path)
 #   RM_B  k=4 n=5, sphericity-violating covariance   (epsilon well below 1)
 #   RM_C  heavy within-row ties                      (tie-correction path)

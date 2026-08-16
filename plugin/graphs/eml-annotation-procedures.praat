@@ -5,15 +5,13 @@
 # Development: Claude (Anthropic)
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
 # Version: 3.22
-# v3.22: THE BRACKET LAYOUT DISCLOSES ITS POST-HOC AND ITS CORRECTION.
-#        AUTHOR RULING, 16 August 2026. Ruling 1b gave the MATRIX layout a
-#        sub-line naming the post-hoc test and, on the parametric arm, saying
-#        where its family-wise control comes from. The BRACKET layout was left
-#        with nothing — and the brackets are the layout that puts the p-values
-#        and the stars directly ON the picture, so it is the one a reader is
-#        most likely to read a claim off. The figure carried three stars over
-#        a pair and did not say which test produced them or whether anything
-#        had been corrected.
+# v3.22: THE BRACKET LAYOUT DISCLOSES ITS POST-HOC AND ITS CORRECTION, as the
+#        MATRIX layout already does with its sub-line naming the post-hoc test
+#        and, on the parametric arm, where its family-wise control comes from.
+#        The brackets are the layout that puts the p-values and the stars
+#        directly ON the picture, so they are the one a reader is most likely
+#        to take a claim off: three stars over a pair have to say which test
+#        produced them and whether anything was corrected.
 #        WHAT THE AUTHOR ASKED, AND THE ANSWER THAT SET THE SHAPE. SPSS states
 #        "Adjustment for multiple comparisons: Bonferroni" beneath its
 #        pairwise-comparisons display. Base R states nothing, but every R
@@ -59,21 +57,25 @@
 #            failure mode a check anchored on where the FIRST ink falls cannot
 #            see: clipping takes ink off the RIGHT and leaves the left edge
 #            exactly where it was.
-#        [5] The two-group arms deliberately write empty strings. Two groups
-#            is one comparison: there is no post-hoc and no family to correct,
-#            so this ruling, which is about a post-hoc method and a
-#            correction, has nothing to say there, and a caption would be a
-#            claim about a correction that never happened.
-#        [6] AND ONE THING THIS CHANGE FOUND AND DID NOT CLOSE, because
-#            closing it is a ruling and not an implementation detail. Neither
-#            two-group arm sets annotTextN -- only the k >= 3 arms do -- so
-#            the form has no omnibus line to route into the corner box and a
-#            two-group BRACKET figure names no test anywhere on it at all.
-#            harness/bracketcap/out/welch_two.png shows a bracket, a star
-#            triple and a Cohen's d, and nothing that says a Welch t-test
-#            produced them. That is the same defect this ruling is about, one
-#            arm further down, and it is recorded as an attestation in
-#            validate/v69 rather than repaired on this pass.
+#        [5] THE TWO-GROUP ARMS DISCLOSE TOO, and the invariant has no special
+#            case in it: EVERY BRACKET-BEARING FIGURE NAMES ITS TEST. Two
+#            groups is ONE comparison and nothing is corrected, so those arms
+#            must not borrow the Tukey sentence — that is a claim about the
+#            studentized range distribution and a Welch t makes no such claim
+#            — but they must not fall silent either. A stated absence is a
+#            disclosure; an empty caption cannot be told apart from a build
+#            that lost its caption. So they name the comparison ("Comparison:
+#            Welch t-test", "Comparison: Mann-Whitney U test") and then say
+#            "one comparison; no adjustment applied", in the voice note [2]
+#            describes: what produced the p-value, then what was or was not
+#            done about multiplicity.
+#        [6] AND THE CORNER BOX WITH IT. Every arm that can produce a bracket
+#            sets annotTextN, the two-group arms included, so
+#            @emlGraphsPostDispatchAnnotations always has an omnibus line to
+#            route into the corner block and no bracket figure leaves the
+#            session without a test name on it somewhere. validate/v76
+#            enumerates the arms and asserts each one sets it, so an arm added
+#            later without a test name goes red.
 #
 # v3.21: THE ANNOTATION BRIDGE NOW DECLARES. @emlReportBridgeStats ran the
 #        analysis, printed it and filled the legacy CSV buffer, but never
@@ -117,7 +119,7 @@
 #            its header for why penalising quadrants by legend size does not
 #            make the corner choice and the headroom agree, and what does.
 #
-# v3.19: D124 — @emlDrawAnnotationBlock wraps.
+# v3.19: @emlDrawAnnotationBlock wraps.
 #        [1] The box was sized to its longest line exactly as handed in, so
 #            one long disclosure line made it wide enough to sit over the
 #            data and, on a narrow figure, to run off the canvas. Lines are
@@ -142,7 +144,7 @@
 #            italics on both halves. New helper @emlSpaceCount.
 #        [4] Comment corrections. The wizard pointer for the skew/kurtosis
 #            criterion was :2085 (a "Data column:" padding line) and is now
-#            :2170-2175. The D95 note claimed the gate's kurtosis threshold
+#            :2170-2175. The note there claimed the gate's kurtosis threshold
 #            was 1; it is 7 (emlSkewThreshold 2 / emlKurtosisThreshold 7 in
 #            stats/eml-output.praat), which reverses the direction of the
 #            contradiction it describes — rewritten to match the code, the
@@ -157,11 +159,11 @@
 #            annotBlockLabel$'s "max 20 lines" is @emlDisclose's disclosure
 #            cap, not the array's — the form appends a 21st.
 #
-# v3.18: Audit fixes (annotation/stats-bridge layer).
+# v3.18: Annotation / stats-bridge layer.
 #        [1] @emlClearAnnotations now clears annotMatrixLabel$[] over the
 #            previous figure's annotMatrixN range — stale group labels no
 #            longer survive into the next figure.
-#        [2] @emlBridgeGroupComparison no longer aborts when the global
+#        [2] @emlBridgeGroupComparison does not abort when the global
 #            annotCorrectionMethod$ is unset: it defaults to "holm" and
 #            validates the value against what @emlDunnTest accepts.
 #        [3] Stale procedure-output reads eliminated. @emlCountGroups
@@ -325,7 +327,7 @@
 #        legend and annotation block placement. All graph types
 #        now use adaptive placement.
 # v2.2: annotMatrixEffectLabel$ now stores full label ("Cohen's d" or
-#        "rank-biserial r") instead of bare letter. Subtitle no longer
+#        "rank-biserial r") instead of bare letter. The subtitle does not
 #        hardcodes "Cohen's" prefix — was producing "Cohen's r" for
 #        nonparametric tests.
 #
@@ -369,7 +371,7 @@
 #        colored line for visibility against dense data.
 #        Semi-transparent backgrounds via alpha sprite for annotation block
 #        (falls back to opaque white if sprites unavailable).
-# v1.2: charW estimation attempts (superseded by v1.3).
+# v1.2: charW estimation attempts.
 # v1.1: Spearman label split (Info window plain text vs Picture window
 #        markup). New @emlDrawAnnotationBlock for multi-line text boxes
 #        with background fill and corner positioning. New @emlOppositeCorner.
@@ -393,9 +395,9 @@
 #     populate the annotation arrays. The main script orchestrates:
 #     bridge -> stack -> draw data -> draw annotations -> draw axes.
 #
-# Procedures (all 27, in file order — this list used to name 15 and silently
-# omit @emlOppositeCorner, @emlDrawAnnotationBlock, @emlDrawMatrixPanel and
-# every shared reporter except the last two):
+# Procedures (all 27, in file order — the list is complete, including
+# @emlOppositeCorner, @emlDrawAnnotationBlock, @emlDrawMatrixPanel and every
+# shared reporter):
 #   @emlClearAnnotations         — reset all annotation arrays
 #   @emlFormatStars              — p-value to star notation
 #   @emlFormatAnnotLabel         — format bracket label from p, d, style
@@ -785,14 +787,12 @@ endproc
 # Render the post-hoc/correction caption for a bracket-layout figure, as a
 # band immediately under the frame.
 #
-# AUTHOR RULING, 16 August 2026 — see v3.22 in the file header for the full
-# statement. In short: the matrix layout has disclosed its post-hoc and its
-# correction since ruling 1b, and the bracket layout — the one that puts the
-# p-values and the stars ON the picture — disclosed nothing. The Info-window
-# report already says it ("-- Dunn's Post-Hoc (adjusted p, holm) --"), so
-# nothing was hidden from someone reading the report. The figure is the
-# artefact that leaves the session, into a slide or a paper or a supervision,
-# and the reader looking at it has no report beside them.
+# WHY THE FIGURE CARRIES THIS AT ALL — see v3.22 in the file header for the
+# full statement. The Info-window report says it too ("-- Dunn's Post-Hoc
+# (adjusted p, holm) --"), so nothing is hidden from someone reading the
+# report. But the figure is the artefact that leaves the session, into a slide
+# or a paper or a supervision, and the reader looking at it has no report
+# beside them.
 #
 # WHY A BAND UNDER THE FRAME AND NOT A BOX INSIDE IT. The inside of the frame
 # has one free-text slot, annotTextX/annotTextY, it already carries the
@@ -805,14 +805,14 @@ endproc
 # into the saved image: @emlAssertFullViewport unions everything reported and
 # the export grows to fit rather than cropping.
 #
-# WHAT THE FAILURE LOOKS LIKE IF THE FIT LOGIC IS WRONG, and it is not the
-# failure people reach for. A caption too wide for the canvas does not raise,
-# does not blank the figure and does not move the plot. It renders, and its
-# tail is simply not in the file — "adjustment for multiple comparisons: bonf"
-# with the rest outside the image. The words that survive are the ones at the
-# START of the line, so a check anchored on where the first ink falls sees a
-# caption in exactly the right place; the position it reads moves the WRONG
-# WAY for the defect it would be trying to catch. That is why this procedure
+# WHAT AN OVERRUN LOOKS LIKE, and it is not the failure people reach for. A
+# caption too wide for the canvas does not raise, does not blank the figure
+# and does not move the plot. It renders, and its tail is simply not in the
+# file — "adjustment for multiple comparisons: bonf" with the rest outside the
+# image. The words that survive are the ones at the START of the line, so a
+# check anchored on where the first ink falls sees a caption in exactly the
+# right place; the position it reads moves the WRONG WAY for the thing it
+# would be trying to catch. That is why this procedure
 # measures with Text width (mm) against the room it actually has, scales to a
 # 5 pt floor, and breaks onto two lines at the seam between the two stored
 # halves rather than trusting a character count — and why it leaves .widthMM
@@ -934,7 +934,7 @@ procedure emlDrawBracketCaption: .fontSize, .axXMin, .axXMax, .axYMin, .axYMax
     ; y grows downward, as in @emlDrawMatrixPanel, so line 1 is the smaller y.
     Axes: 0, .right - .left, .bandH, 0
 
-    ; D30 governs this colour and it governs it for the same reason it governs
+    ; The contrast rule governs this colour for the same reason it governs
     ; the matrix sub-line: this is the only place in a bracket figure that
     ; discloses the correction. {0.40, 0.40, 0.40} is 5.74:1 against white
     ; (WCAG 2.x relative luminance, sRGB), above the 4.5:1 minimum for normal
@@ -1266,7 +1266,7 @@ endproc
 # drawn ON it. Call after @emlStackBrackets and after @emlSetAdaptiveTheme.
 #
 # THE CONTRACT THIS PROCEDURE IS THE OTHER HALF OF. graphs/eml-draw-
-# procedures.praat states it where the F0 minimum-span floors used to be —
+# procedures.praat states it beside the F0 minimum-span floors —
 # grep for "is a property of what is drawn on it":
 #
 #     "Any extra room a figure needs is a property of what is drawn on it,
@@ -1523,7 +1523,7 @@ endproc
 # Uses annotBlockDraw$[] for Picture window text (may contain %% markup).
 # Caller is responsible for populating annotBlockN and annotBlockDraw$[].
 #
-# WRAPPING (D124). The box used to be exactly as wide as its longest line as
+# WRAPPING. A box exactly as wide as its longest line as
 # handed in. One long disclosure line therefore made the box wide enough to
 # sit on top of the data, and on a narrow figure wide enough to run off the
 # canvas: measured 8 Aug 2026, a 5-line block whose second line was 118
@@ -1551,7 +1551,7 @@ endproc
 #     50 chars             0.874        0.930        1.128
 #
 # So "under 50 characters" has always meant "up to seven eighths of the panel",
-# on every figure size — the advice could not have prevented D124. The budget
+# on every figure size — a character-count rule cannot bound it. The budget
 # has to be stated as the share itself, which is emlAnnotBlockWidthShare
 # (0.55): a corner box may take a little over half the frame, and the omnibus
 # line that every annotated categorical figure carries still fits on one line
@@ -1617,7 +1617,7 @@ procedure emlDrawAnnotationBlock: .corner$, .xMin, .xMax, .yMin, .yMax, .fontSiz
         ; 0.72. This is a fitting constraint and not a taste one, which is
         ; why the default is 0.95 and not something tidier: a tall narrow box
         ; is measurably the better shape. Measured 8 Aug 2026 on the
-        ; 4-bar / 5-line figure of D124 at 3.6 x 3 inches — kept narrow the
+        ; 4-bar / 5-line figure at 3.6 x 3 inches — kept narrow the
         ; box is 0.38 x 0.72 of the frame and TWO bar tops stay readable;
         ; forced out to 0.72 wide it is 0.59 x 0.51 and only ONE does.
         ; Widening is what you do to avoid running off the canvas, not by
@@ -1761,7 +1761,7 @@ procedure emlDrawAnnotationBlock: .corner$, .xMin, .xMax, .yMin, .yMax, .fontSiz
         .insetX = emlSetAdaptiveTheme.boxInsetInches * .wpiX
         .insetY = emlSetAdaptiveTheme.boxInsetInches * .wpiY
 
-        ; ---- MEASURE-ONLY MODE (15 Aug 2026, NEW-G8-4) ------------------
+        ; ---- MEASURE-ONLY MODE --------------------------------------
         ; Everything above computes the box's SIZE; everything below puts it
         ; somewhere and paints it. A caller that wants to choose the corner
         ; by what is actually underneath each candidate rectangle needs the
@@ -1872,7 +1872,7 @@ endproc
 #   .collisions  data points still underneath .corner1$ (0 when clear)
 #   .boxW,.boxH  the measured box, in world units
 #
-# THE DEFECT (NEW-G8-4, severity 3, 14 Aug 2026). On an advanced scatter the
+# THE DEFECT. On an advanced scatter the
 # annotation panel landed on top of a datum: the point at jitter 3.594, F0
 # 79.49 was visible in the beginner figure and gone in the advanced one, and
 # because the box background is a stipple screen on Linux rather than an
@@ -1894,7 +1894,8 @@ endproc
 # THE POINT CLOUD is registered by the caller in emlCollideN /
 # emlCollideX# / emlCollideY# immediately before this call, because only the
 # caller knows which points were actually DRAWN -- a point withheld by
-# NEW-G8-1's frame clip is not on the page and cannot be hidden by a box.
+# a point withheld by the frame clip is not on the page and cannot be hidden
+# by a box.
 # With no cloud registered this degrades to @emlPlaceElements' answer
 # exactly, which is what every caller that has not been converted gets.
 #
@@ -2512,14 +2513,14 @@ procedure emlDrawMatrixPanel: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSize, .
         .pSigBg$      = "{0.72, 0.72, 0.72}"
         .pSigText$    = "{0.08, 0.08, 0.08}"
         .pNsBg$       = "{0.92, 0.92, 0.92}"
-        ; D30: was {0.45} = 3.98:1 on this 0.92 ground. {0.40} = 4.80:1.
+        ; Was {0.45} = 3.98:1 on this 0.92 ground. {0.40} = 4.80:1.
         .pNsText$     = "{0.40, 0.40, 0.40}"
         .dLargeBg$    = "{0.12, 0.12, 0.12}"
         .dLargeText$  = "{1.0, 1.0, 1.0}"
         .dMediumBg$   = "{0.45, 0.45, 0.45}"
         .dMediumText$ = "{1.0, 1.0, 1.0}"
         .dSmallBg$    = "{0.92, 0.92, 0.92}"
-        ; D30: was {0.50} = 3.32:1 on this 0.92 ground. {0.40} = 4.80:1.
+        ; Was {0.50} = 3.32:1 on this 0.92 ground. {0.40} = 4.80:1.
         .dSmallText$  = "{0.40, 0.40, 0.40}"
     else
         .pSigBg$      = "{0.82, 0.90, 0.97}"
@@ -2531,7 +2532,7 @@ procedure emlDrawMatrixPanel: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSize, .
         .dMediumBg$   = "{1.0, 0.93, 0.76}"
         .dMediumText$ = "{0.40, 0.31, 0.01}"
         .dSmallBg$    = "{0.96, 0.96, 0.96}"
-        ; D30: was {0.50} = 3.64:1 on this 0.96 ground. {0.40} = 5.26:1.
+        ; Was {0.50} = 3.64:1 on this 0.96 ground. {0.40} = 5.26:1.
         ; (.pNsText$ {0.38} on 0.96 is 5.68:1 and needs no change.)
         .dSmallText$  = "{0.40, 0.40, 0.40}"
     endif
@@ -2549,7 +2550,7 @@ procedure emlDrawMatrixPanel: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSize, .
     # ----------------------------------------------------------------
     # Subtitle — centered on grid
     # ----------------------------------------------------------------
-    # D30: this sub-line is the ONLY place in the figure that discloses which
+    # This sub-line is the ONLY place in the figure that discloses which
     # correction produced the annotated p-values, and it was drawn in
     # {0.55, 0.55, 0.55} — 3.35:1 against white, below the WCAG AA 4.5:1
     # minimum for normal text, and it degrades badly in greyscale print and
@@ -2568,7 +2569,7 @@ procedure emlDrawMatrixPanel: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSize, .
         Text special: .gridCenter, "centre", .subtitleY, "half",
         ... emlFont$, .fontSize, "0", .sub$
     elsif annotMatrixPosthoc$ <> ""
-        ; D30: 5.74:1 against white — see the note on the branch above.
+        ; 5.74:1 against white — see the note on the branch above.
         Colour: "{0.40, 0.40, 0.40}"
         .sub$ = annotMatrixPosthoc$
         Text special: .gridCenter, "centre", .subtitleY, "half",
@@ -2618,17 +2619,17 @@ procedure emlDrawMatrixPanel: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSize, .
             .cellB = .dataTop + (.i - 1) * .rowH + .rowH - .cellPad
 
             if .i = .j
-                # D72: the diagonal used the same em-dash as a cell that was
+                # The diagonal used the same em-dash as a cell that was
                 # tested and came out non-significant with the p suppressed,
                 # so "self-comparison, not applicable" and "tested, not
                 # significant" rendered as the same glyph at the figure's
                 # delivered scale. The diagonal now carries a centre dot,
                 # which cannot be mistaken for a dash at any size, and the
                 # suppressed-p cells keep the dash.
-                # D30: the diagonal glyph is drawn as text on the white cell
+                # The diagonal glyph is drawn as text on the white cell
                 # ground and was {0.7} = 2.11:1 — below the 4.5:1 text
                 # minimum and below even the 3:1 floor for graphical marks,
-                # which is self-defeating for a glyph D72 introduced
+                # which is self-defeating for a glyph introduced
                 # precisely so it could not be confused with the dash.
                 # {0.40} = 5.74:1 on white, still lighter than the {0.08}
                 # used for the data cells.
@@ -2737,7 +2738,7 @@ procedure emlDrawMatrixPanel: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSize, .
         ... + .textW3 + .textW4 + 3 * .itemGap
 
         # Legend asserts its own minimum width from content;
-        # grid width is no longer the sole ceiling
+        # grid width is not the sole ceiling
         .legendCeiling = max (.gridW, emlMatrixLayout_legendMinWidthInches)
         if .totalLegendW > .legendCeiling
             .scale = .legendCeiling / .totalLegendW
@@ -2918,32 +2919,24 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                     ... + ", " + emlFormatP.formatted$
                     ... + ", r = " + fixed$ (.effectVal, 2)
                     annotMatrixPosthoc$ = "Mann-Whitney U"
-                    ; NO BRACKET CAPTION ON A TWO-GROUP FIGURE, and the empty
-                    ; strings are the statement rather than an omission. Two
-                    ; groups is ONE comparison: no post-hoc ran, there is no
-                    ; family, and nothing was adjusted, so the 16 August
-                    ; ruling -- which is about disclosing a POST-HOC METHOD
-                    ; and a CORRECTION -- has nothing to say here, and a
-                    ; caption would have to invent a claim about a correction
-                    ; that never happened.
-                    ;
-                    ; THAT LEAVES A SEPARATE GAP, MEASURED AND NOT CLOSED
-                    ; HERE. .omnibus$ is composed on this arm and handed back
-                    ; to the caller for the Info window, but annotTextN is
-                    ; NEVER set on either two-group arm -- only the k >= 3
-                    ; arms set it -- so the form's post-dispatch stage has no
-                    ; omnibus line to route into the corner box and a
-                    ; two-group bracket figure names no test ANYWHERE on it.
-                    ; Reproduced 16 Aug 2026: harness/bracketcap/out/
-                    ; welch_two.png carries "***, d = -6.08" over a bracket
-                    ; and nothing else, and the OCR of the whole figure in
-                    ; welch_two.fig.ocr contains no test name. That is a
-                    ; disclosure gap of the same shape as the one this ruling
-                    ; closes, on a path the ruling did not name, and closing
-                    ; it is the author's call rather than this change's. See
-                    ; validate/v69, which records it as an attestation.
-                    annotBracketPosthoc$ = ""
-                    annotBracketAdjust$ = ""
+                    ; THE BRACKET CAPTION, TWO-GROUP NONPARAMETRIC ARM. One
+                    ; invariant with no special case in it: EVERY
+                    ; BRACKET-BEARING FIGURE NAMES ITS TEST. A reader taking
+                    ; a claim off a bracket needs to know a Mann-Whitney U
+                    ; produced it as much on two groups as on four. Two
+                    ; groups is ONE comparison, so nothing is corrected here
+                    ; and the caption must not pretend otherwise -- but "no
+                    ; correction was applied" is itself a disclosure rather
+                    ; than a silence, and an empty caption cannot be told
+                    ; apart from a build that lost one. So the line NAMES the
+                    ; test and states the reason there is nothing to adjust,
+                    ; in the same voice as the k >= 3 arms: they say what
+                    ; produced the p-values and then what was or was not done
+                    ; about multiplicity, and this says the same two things
+                    ; about a family of one.
+                    annotBracketPosthoc$ = "Comparison: Mann-Whitney U test"
+                    annotBracketAdjust$ = "one comparison; no adjustment "
+                    ... + "applied"
 
                     if .useMatrix
                         @emlFormatAnnotLabel: .pVal, undefined, .style$, 0, ""
@@ -2983,6 +2976,27 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                             annotBracketN = 0
                         endif
                     endif
+
+                    # THE TEST, IN THE CORNER BOX (both modes). Written
+                    # exactly as the k >= 3 arms write it and for the same
+                    # reason: .omnibus$ is composed on this arm and handed
+                    # back for the Info window, and @emlGraphsPostDispatch-
+                    # Annotations routes it into the corner block. Without
+                    # this the figure would leave the session carrying a
+                    # bracket, stars and a rank-biserial r with nothing
+                    # saying what produced them.
+                    #
+                    # Set in BOTH modes, again as the k >= 3 arms do. The
+                    # matrix panel draws its own omnibus as its title line
+                    # and the form's post-dispatch stage skips the corner
+                    # block whenever annotMatrixN > 0, so the matrix path is
+                    # governed by the form's gate rather than by a second
+                    # rule here.
+                    annotTextN = 1
+                    annotTextX[1] = 0
+                    annotTextY[1] = 0
+                    annotTextLabel$[1] = .omnibus$
+                    annotTextAnchor$[1] = "right"
                 endif
             else
                 # Welch t-test + Cohen's d
@@ -3009,14 +3023,19 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                         ... + ", d = " + fixed$ (.effectVal, 2)
                     endif
                     annotMatrixPosthoc$ = "Welch t-test"
-                    ; Empty for the same reason as the Mann-Whitney arm above:
-                    ; one comparison, no post-hoc, no family, nothing to
-                    ; adjust. The same unclosed gap applies -- .omnibus$ is
-                    ; composed and annotTextN is not set, so "Welch t: t(...)
-                    ; = ..., p = ..." reaches the Info window and never the
-                    ; figure. See the note on that arm.
-                    annotBracketPosthoc$ = ""
-                    annotBracketAdjust$ = ""
+                    ; THE BRACKET CAPTION, TWO-GROUP PARAMETRIC ARM. It says
+                    ; the same two things as the Mann-Whitney arm above about
+                    ; a different test: the comparison is named, and the
+                    ; adjustment clause states that there was one comparison
+                    ; and nothing was applied. The adjustment clause is NOT
+                    ; the Tukey sentence and must not become it -- "already
+                    ; family-wise" is a claim about the studentized range
+                    ; distribution and a Welch t makes no such claim; here
+                    ; there is simply no family. See the note on the
+                    ; Mann-Whitney arm.
+                    annotBracketPosthoc$ = "Comparison: Welch t-test"
+                    annotBracketAdjust$ = "one comparison; no adjustment "
+                    ... + "applied"
 
                     if .useMatrix
                         @emlFormatAnnotLabel: .pVal, undefined, .style$, 0, ""
@@ -3056,6 +3075,14 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                             annotBracketN = 0
                         endif
                     endif
+
+                    # THE TEST, IN THE CORNER BOX (both modes). The twin of
+                    # the block on the Mann-Whitney arm; see the note there.
+                    annotTextN = 1
+                    annotTextX[1] = 0
+                    annotTextY[1] = 0
+                    annotTextLabel$[1] = .omnibus$
+                    annotTextAnchor$[1] = "right"
                 endif
             endif
         endif
@@ -3080,7 +3107,7 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                 .epsilonSq = .hVal / (.totalN - 1)
 
                 @emlFormatP: .pOmnibus
-                # D29: the caption read ", e2 = 0.272". "e2" is not notation
+                # The caption read ", e2 = 0.272". "e2" is not notation
                 # for epsilon-squared. This string is only ever drawn by
                 # Text special / Text in the Picture window — as the matrix
                 # panel title or as the corner annotation block — so Praat's
@@ -3099,7 +3126,7 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                     .dunnError$ = emlDunnTest.error$
                     if .dunnError$ = ""
                         .pMat## = emlDunnTest.pMatrix##
-                        # NEW-G9-1. THE PAIRWISE MATRIX IS DECLARED HERE, on the
+                        # THE PAIRWISE MATRIX IS DECLARED HERE, on the
                         # significant branch, because this is the branch that
                         # takes it away. @emlReportKWComparison prints the
                         # rank-biserial matrix UNCONDITIONALLY and computes it
@@ -3116,7 +3143,7 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                         # non-significant one leaves .doDunn = 0 and the
                         # reporter computes the matrix for itself. The crash
                         # therefore fired precisely when the user had a result
-                        # worth annotating (audit S6, 14 Aug 2026).
+                        # worth annotating.
                         #
                         # THE COPY, NOT A RECOMPUTE. @emlDunnTest has already
                         # built this matrix from the same ranks its z-scores
@@ -3307,11 +3334,11 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                 ... + string$ (.dfW) + ") = "
                 ... + fixed$ (.fVal, 2)
                 ... + ", " + emlFormatP.formatted$
-                # AUTHOR RULING 1b, 15 August 2026: THE FIGURE SAYS WHERE ITS
+                # THE FIGURE SAYS WHERE ITS
                 # FAMILY-WISE CONTROL COMES FROM, and it says a different
                 # thing on each arm because the two arms do a different thing.
                 #
-                # The graphs form no longer offers an Adjustment menu when the
+                # The graphs form does not offer an Adjustment menu when the
                 # test is parametric: Tukey's p comes from the studentized
                 # range distribution and is ALREADY family-wise over the set
                 # of pairwise comparisons, so stacking Holm or Bonferroni on
@@ -3332,14 +3359,13 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                 # chose -- "Dunn's test (holm)". One claim covering both arms
                 # would be false on one of them whichever way it was written.
                 annotMatrixPosthoc$ = "Tukey HSD (already family-wise)"
-                # THE BRACKET CAPTION, PARAMETRIC ARM, and the 16 August
-                # ruling that added it is ruling 1b carried to the other
-                # layout. The sub-line above only ever reaches a MATRIX
-                # figure; the bracket layout is the one that puts the
-                # p-values and the stars directly on the picture, and it said
-                # nothing at all — not the test, not the adjustment. What it
-                # says here is the parametric claim and only the parametric
-                # claim: Tukey's p comes from the studentized range
+                # THE BRACKET CAPTION, PARAMETRIC ARM — the same disclosure
+                # carried to the other layout. The sub-line above only ever
+                # reaches a MATRIX figure, and the bracket layout is the one
+                # that puts the p-values and the stars directly on the
+                # picture, so it names the test and the adjustment too. What
+                # it says here is the parametric claim and only the
+                # parametric claim: Tukey's p comes from the studentized range
                 # distribution and is already family-wise over the set of
                 # pairwise comparisons, so there is nothing further to apply
                 # and the figure says so outright. The Dunn arm's caption is
@@ -3526,7 +3552,7 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
     ; the second way -- it runs the t-test, Mann-Whitney, one-way ANOVA,
     ; Kruskal-Wallis, Tukey and Dunn that the brackets are drawn from.
     ;
-    ; On 12 Aug 2026 capture hooks were added to all thirteen orchestrators
+    ; Capture hooks run in all thirteen orchestrators
     ; in the stats tree and NOT here. That made the two paths disagree: the
     ; stats menu recorded an ANOVA, and the identical ANOVA reached through
     ; a violin plot's brackets recorded the figure and silently dropped the
@@ -3686,20 +3712,20 @@ endproc
 
 
 # ============================================================================
-# THE REPORTERS BELOW WRITE TO THE INFO WINDOW, AND RULING 6 GOVERNS THEM
+# THE REPORTERS BELOW WRITE TO THE INFO WINDOW, AND THE HOUSE RULE GOVERNS
 # ============================================================================
-# AUTHOR RULING 6, 15 August 2026: no raw double may reach the Info window.
+# THEM: no raw double may reach the Info window.
 # Statistics print at fixed decimals, p prints in APA style, and full
 # precision belongs to the CSV export -- the artefact a reader is meant to
 # compute from. The report is for reading.
 #
 # THIS FILE STRADDLES THE BOUNDARY, which is the only interesting thing about
-# applying the ruling here. Above this line the procedures build text that is
+# applying the rule here. Above this line the procedures build text that is
 # DRAWN ON A PICTURE: the omnibus line over a comparison matrix, a bracket
 # label, the star legend, the "p < .05" key, a Cohen's d in a matrix cell.
 # Below it they build text that is PRINTED IN THE INFO WINDOW. Both kinds are
 # strings made with fixed$ and the two look identical in a grep; they are not
-# the same surface and the ruling names one of them.
+# the same surface and the rule names one of them.
 #
 # THE TEST APPLIED TO EVERY SITE WAS ITS DESTINATION, traced by hand, not its
 # spelling and not the procedure's name:
@@ -3711,7 +3737,7 @@ endproc
 #                 is laid out against its measured width -- @emlMeasureMatrixLayout
 #                 measures the very strings @emlDrawMatrixPanel then draws --
 #                 so re-formatting them is a layout change, and layout is not
-#                 what ruling 6 is about.
+#                 what the rule is about.
 #
 #   printed    -> `appendInfoLine`, `@emlReportLine*`, or emlWizardExplain$,
 #                 which @emlReportLine appends as the explanation column.
@@ -3733,7 +3759,7 @@ endproc
 # site hoists into a temporary (.fx1$, .fx2$, ...) immediately above the
 # statement that prints it.
 #
-# WHAT IT LOOKED LIKE, MEASURED 15 AUGUST 2026 BEFORE THE CHANGE. Three
+# WHAT A BARE fixed$ PRODUCES HERE, MEASURED. Three
 # groups with identical means printed a Tukey difference column of bare "0"
 # against neighbours reading "[-3.0871, 3.0871]", and a Cohen's d matrix of
 # bare "0". A two-way ANOVA over values near zero printed
@@ -3746,7 +3772,7 @@ endproc
 #
 # NOTHING COMPUTED MOVES. @eml_fixed formats; it never writes back, and the
 # CSV writers below (@emlCSVAdd and friends) do not call it. They still emit
-# full precision, which is where the ruling puts it.
+# full precision, which is where full precision belongs.
 # ============================================================================
 
 # ============================================================================
@@ -3768,7 +3794,7 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
         # 2-group: extract descriptives, route to TwoGroupComparison
         # Read the labels the bridge captured, not emlCountGroups' outputs:
         # @emlCountGroups is re-invoked by the tests the bridge runs, so its
-        # outputs no longer belong to this comparison by the time we get here.
+        # outputs do not belong to this comparison by the time we get here.
         .g1$ = emlBridgeGroupComparison.gLabel$ [1]
         .g2$ = emlBridgeGroupComparison.gLabel$ [2]
 
@@ -3799,7 +3825,7 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
         ... .n2, .mean2, .sd2, .med2, .testType$
 
         # THREE-FILE DECLARATION, exactly the calls @emlRunTwoGroupAnalysis
-        # makes after the same reporter. Until 13 Aug 2026 the graphs entry
+        # makes after the same reporter. Without it the graphs entry
         # point ran the analysis, printed it and filled the legacy CSV buffer,
         # but never declared -- so the Exp CSV button could only ever write the
         # old single long-format file, for an analysis the stats menu exported
@@ -3839,7 +3865,7 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
         # orchestrators in stats/eml-analysis.praat. The model declaration used
         # to sit OUTSIDE this `if`, with only @emlResultClearExtras and the two
         # extra frames inside it; @emlRunAnovaAnalysis carried the identical
-        # split until 14 Aug 2026. The clear and the declaration are one
+        # split apart. The clear and the declaration are one
         # decision about one run of @emlOneWayAnova and belong under one
         # condition.
         #
@@ -3915,8 +3941,8 @@ endproc
 #
 # Each reporter also populates CSV rows via @emlCSVAdd / @emlCSVAddStr /
 # @emlCSVAddDescriptives (eml-output.praat) so @emlExportStatsCSV can write
-# results to file. (This used to name @emlCSVAddRow, which has never existed
-# in the plugin — nothing by that name is defined anywhere.)
+# results to file. (There is no procedure that writes a whole analysis in one
+# call; each of these appends one field of one term.)
 # ============================================================================
 
 
@@ -3968,10 +3994,10 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
         if emlShowExplanations
             @emlWizardExplainP: emlTTest.p
         endif
-        ; D9: the row label used to be "p" and the value "p = .032", so the
-        ; report said "p" twice. D28/D35: the < .001 floor also hid the real
-        ; value. @emlReportPWithExact prints the bare APA form and, when the
-        ; label is floored, the unrounded value beside it.
+        ; A row label of "p" beside a value of "p = .032" would say "p"
+        ; twice, and the < .001 floor hides the real value.
+        ; @emlReportPWithExact prints the bare APA form and, when the label
+        ; is floored, the unrounded value beside it.
         @emlReportPWithExact: "p", emlTTest.p
         if emlShowExplanations
             .diff = .mean1 - .mean2
@@ -3985,7 +4011,7 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
                 emlWizardExplain$ = .displayG2$ + " mean is " + .fx1$ + " units higher"
             endif
         endif
-        ; D13: "Mean difference" alone never said which group was subtracted
+        ; "Mean difference" alone never said which group was subtracted
         ; from which, so the sign was unreadable without inferring it from the
         ; descriptives table. The label now names the direction, using the same
         ; ordered group labels that table printed.
@@ -3996,7 +4022,7 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
             .diffLabel$ = .diffLabel$ + " "
         endif
         @emlReportLine: .diffLabel$, emlTTest.meanDiff, 4
-        ; D12: @emlTTest exposes no interval, so it is rebuilt here from the
+        ; @emlTTest exposes no interval, so it is rebuilt here from the
         ; three quantities it does expose. Both the Student and the Welch
         ; branch form t as meanDiff / SE, so SE = meanDiff / t recovers the
         ; standard error exactly, whichever branch ran.
@@ -4029,7 +4055,7 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
         endif
         @emlReportLine: "Hedges' g", emlCohenD.g, 3
         @emlReportLineString: "Magnitude", emlFormatEffectLabel.label$
-        # D24/D19: named fields, and an absent value writes no row.
+        # Named fields, and an absent value writes no row.
         @emlCSVSetTable: .tableName$
         @emlCSVTermType: "contrast"
         .contrast$ = .group1$ + " vs " + .group2$
@@ -4056,11 +4082,11 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
             ... + "independent groups without assuming normality."
         endif
         if emlShowExplanations
-            ; NEW-G2-2, corrected 15 Aug 2026. This gloss opened "Sum of
+            ; This gloss opened "Sum of
             ; ranks:", and U is not a sum of ranks. The rank sum is R1;
             ; @emlMannWhitneyU computes U1 = R1 - n1(n1+1)/2, which SUBTRACTS
             ; the smallest rank total group 1 could possibly have had. On the
-            ; audit's verification table R1 = 274 and the printed U1 = 64 --
+            ; verification table R1 = 274 against the printed U1 = 64 --
             ; the printed number was right and the sentence next to it named
             ; a different statistic. Ian's readers are voice teachers who
             ; quote these lines to students, so a wrong name here becomes a
@@ -4086,7 +4112,6 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
         if emlShowExplanations
             @emlWizardExplainP: emlMannWhitneyU.p
         endif
-        ; D9/D28
         @emlReportPWithExact: "p", emlMannWhitneyU.p
         # Report the method @emlMannWhitneyU actually used. Read it
         # defensively — a build of eml-inferential.praat that does not expose
@@ -4125,7 +4150,7 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
         else
             .mwuDf = 0
         endif
-        # D24: the Mann-Whitney has no df at all, so no df row is written
+        # The Mann-Whitney has no df at all, so no df row is written
         # rather than a zero standing in for one.
         @emlCSVSetTable: .tableName$
         @emlCSVTermType: "contrast"
@@ -4180,11 +4205,11 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     ... left$ ("F" + "            ", 12),
     ... "p"
 
-    # D110. This cell was fixed$ (p, 6): "0.000019" under a column headed "p",
+    # This cell was fixed$ (p, 6): "0.000019" under a column headed "p",
     # in the same report whose Games-Howell matrix prints the bare APA form
     # (".584") — one report, two spellings of the same quantity. It now takes
     # @emlFormatP's bare form, which is the shape the two-way source table
-    # already uses (D35) and the direction D9/D28 established: no leading
+    # already uses: no leading
     # zero, floored at .001. Nothing is lost by the floor here — the "p" row
     # printed a few lines below goes through @emlReportPWithExact, which
     # restates the unrounded value in parentheses whenever the floor bites.
@@ -4227,7 +4252,6 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     if emlShowExplanations
         @emlWizardExplainP: emlOneWayAnova.p
     endif
-    ; D9/D28
     @emlReportPWithExact: "p", emlOneWayAnova.p
     .etaSq = emlOneWayAnova.etaSquared
     if emlShowExplanations
@@ -4237,7 +4261,7 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     .fx1$ = eml_fixed.result$
     @emlReportLineString: "Effect size", "eta-squared = " + .fx1$
 
-    ; --- Equal-spread check (Ruling 1: conditional show-both) ---------------
+    ; --- Equal-spread check (conditional show-both) ------------------------
     ; Brown-Forsythe runs ALWAYS and prints ALWAYS. The test above is never
     ; replaced and never switched: what the plugin reports as Student's F it
     ; goes on calling Student's F, whatever this line says. When the check
@@ -4282,8 +4306,9 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
 
     @emlFormatEffectLabel: .etaSq, "eta_squared"
     .etaLabel$ = emlFormatEffectLabel.label$
-    # D24: this row used to end in eight zeros meaning "not applicable".
-    # D23/D76: both df now have their own field, so F(2,42) survives export.
+    # A wide schema would end this row in eight zeros meaning "not
+    # applicable".
+    # Both df now have their own field, so F(2,42) survives export.
     @emlCSVSetTable: .tableName$
     @emlCSVTermType: "omnibus"
     @emlCSVAddStr: "One-way ANOVA", "", "data_column", .dataCol$
@@ -4347,7 +4372,7 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 if .iGroup = .jGroup
                     .cellText$ = "---"
                 else
-                    ; D110. Was a hand-rolled floor plus fixed$ (p, 4), so
+                    ; Was a hand-rolled floor plus fixed$ (p, 4), so
                     ; this matrix printed "0.4918" while the Games-Howell
                     ; matrix 35 lines below printed ".584" — the same
                     ; quantity, two formats, visible together in one report.
@@ -4365,7 +4390,7 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
             appendInfoLine: .rowLine$
         endfor
 
-        # D22: the matrix above reports adjusted p and nothing else, so a
+        # The matrix above reports adjusted p and nothing else, so a
         # reader cannot state a result — the quantity a result is stated in is
         # the mean difference and its interval. No new numerics are needed:
         # @emlOneWayAnova already exposes the signed differences, the critical
@@ -4534,8 +4559,8 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 .md2 = emlMedian.result
                 @emlFormatEffectLabel: .pairD, "d"
                 .dLabel$ = emlFormatEffectLabel.label$
-                # D24 at its worst: this branch has no test statistic and
-                # no p, and used to write 0, 0, 0 — so the row read as the
+                # This branch has no test statistic and
+                # no p, so writing 0, 0, 0 would make the row read as the
                 # most significant result in the file. It now writes the
                 # effect size it actually has and nothing else.
                 @emlCSVSetTable: .tableName$
@@ -4554,7 +4579,7 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     endif
 
     ; --- The tolerant version, printed only when the check rejected --------
-    ; Ruling 1: never replace, never auto-switch, never make the reported
+    ; Never replace, never auto-switch, never make the reported
     ; primary test depend on the data. This block is ADDITIONAL. When
     ; Brown-Forsythe does not reject, a run looks exactly as it did before
     ; this feature existed, apart from the two equal-spread lines above --
@@ -4719,8 +4744,8 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
     if emlShowExplanations
         @emlWizardExplainP: emlKruskalWallis.p
     endif
-    ; D28: the omnibus p was floored to "p = .003" with the real value
-    ; reachable only from the CSV, and the label was printed twice (D9).
+    ; The omnibus p was floored to "p = .003" with the real value
+    ; Reachable only from the CSV, and the label was printed twice.
     @emlReportPWithExact: "p", emlKruskalWallis.p
     if emlShowExplanations
         @emlWizardExplainEffectEta2: emlKruskalWallis.epsilonSq
@@ -4788,7 +4813,7 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                     if .iGroup = .jGroup
                         .cellText$ = "---"
                     else
-                        ; D110, as in the Tukey matrix above: one spelling of
+                        ; As in the Tukey matrix above: one spelling of
                         ; a p-value per report. @emlFormatP also covers the
                         ; .999 ceiling and undefined, which the hand-rolled
                         ; floor did not.
@@ -4854,7 +4879,7 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                     .md2 = emlMedian.result
                     @emlFormatEffectLabel: .rVal, "r"
                     .rLabel$ = emlFormatEffectLabel.label$
-                    # D24: Dunn's z has no df; the zero is gone, not
+                    # Dunn's z has no df; the zero is gone, not
                     # replaced. The adjustment is its own field so a reader
                     # does not have to parse it out of the test name.
                     @emlCSVSetTable: .tableName$
@@ -5003,11 +5028,11 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 @emlWizardExplainCorrelation: emlPearsonCorrelation.r
             endif
             @emlReportLine: "r", emlPearsonCorrelation.r, 4
-            ; D44: R-squared used to sit inside the explanations gate, so the
-            ; Info window omitted the one number most correlation write-ups
-            ; quote while the scatter figure from the same run annotated it.
-            ; R-squared is a statistic, not an explanation — only the prose
-            ; gloss is gated now.
+            ; R-squared does NOT sit inside the explanations gate. Gated,
+            ; the Info window would omit the one number most correlation
+            ; write-ups quote, while the scatter figure from the same run
+            ; annotated it. R-squared is a statistic, not an explanation —
+            ; only the prose gloss is gated.
             .r2 = emlPearsonCorrelation.r * emlPearsonCorrelation.r
             if emlShowExplanations
                 @emlWizardExplainR2: .r2
@@ -5024,9 +5049,8 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
             if emlShowExplanations
                 @emlWizardExplainP: emlPearsonCorrelation.p
             endif
-            ; D9/D28
             @emlReportPWithExact: "p", emlPearsonCorrelation.p
-            # D50: r was reported as a point estimate with no interval. The
+            # R was reported as a point estimate with no interval. The
             # Fisher z transform gives one from numbers already in hand:
             # z = atanh(r), se = 1/sqrt(n-3), interval = tanh(z +/- 1.96 se).
             # Undefined for n <= 3 (se blows up) and for |r| = 1 (atanh is
@@ -5052,18 +5076,18 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 @emlReportLineString: "95% CI for r",
                 ... "[" + .fx1$ + ", " + .fx2$ + "]"
             endif
-            # D17: the row carried r and r_squared but left effect_label
+            # The row carried r and r_squared but left effect_label
             # empty, so a consumer joining these exports got a column that is
             # populated for the group comparisons and blank here.
             @emlFormatEffectLabel: abs (.rPearson), "r"
             .pearsonLabel$ = emlFormatEffectLabel.label$
             @emlReportLineString: "Magnitude", .pearsonLabel$
-            # D45: colY$ used to land in the group_col slot, so the file
-            # said the Y variable was a grouping column. Both variables now
-            # have their own named field. D46: the six descriptive slots
-            # were exported as 0 though both columns' descriptives exist —
-            # they are simply not written here, and the term names which
-            # pair the row is about.
+            # colY$ does not land in the group_col slot, which would say
+            # the Y variable was a grouping column. Both variables have
+            # their own named field. The six descriptive slots of a wide
+            # schema are not written here at all -- both columns'
+            # descriptives exist elsewhere, and the term names which pair
+            # the row is about.
             @emlCSVSetTable: .tableName$
             @emlCSVTermType: "variable"
             .term$ = .colX$ + " ~ " + .colY$
@@ -5110,9 +5134,8 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
             if emlShowExplanations
                 @emlWizardExplainP: emlSpearmanCorrelation.p
             endif
-            ; D9/D28
             @emlReportPWithExact: "p", emlSpearmanCorrelation.p
-            # D17: rho is an effect size and had no magnitude gloss in the
+            # Rho is an effect size and had no magnitude gloss in the
             # report and no effect_label in the export.
             @emlFormatEffectLabel: abs (emlSpearmanCorrelation.rho), "r"
             .spearmanLabel$ = emlFormatEffectLabel.label$
@@ -5222,18 +5245,17 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     if emlShowExplanations
         @emlWizardExplainP: emlLinearRegression.pF
     endif
-    ; D9/D28
     @emlReportPWithExact: "p", emlLinearRegression.pF
 
     @emlReportBlank
     @emlReportSection: "Coefficients"
     appendInfoLine: ""
-    # D56: the block was flush-left inside a report whose every other block is
+    # The block was flush-left inside a report whose every other block is
     # indented two spaces, the term column had no header at all, and the cells
     # under the numeric-aligned "p" header held the string "p < .001". The
     # block is now indented, the term column is headed, and the cells carry
     # @emlFormatP's bare form so the column contains values, not labels.
-    # D57: SE was printed without the interval it defines. dfRes and the two
+    # SE was printed without the interval it defines. dfRes and the two
     # standard errors are already on screen, so the 95% CI is one t quantile
     # away and is printed beside each coefficient.
     .ciWidth = 0
@@ -5315,7 +5337,7 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     appendInfoLine: "  Direction: " + .dir$
     ... + " (" + .displayDep$ + " " + .verb$
     ... + " as " + .displayPred$ + " increases)"
-    # D62: this printed as "Variance explained   large effect" in the same
+    # This printed as "Variance explained   large effect" in the same
     # label/value layout as "R-squared   0.8770", so a Cohen benchmark verdict
     # wore the visual authority of a second computed statistic — and read as a
     # different quantity from R-squared when it is R-squared, glossed. Stated
@@ -5332,10 +5354,10 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     ... + "), a " + emlFormatEffectLabel.label$
     ... + " by Cohen's R-squared benchmarks"
 
-    # D54 was the clearest case of slot reuse in the whole schema: the
+    # THE CLEAREST CASE OF SLOT REUSE a wide schema invites: the
     # slope went into mean1, the slope's SE into sd1, the intercept into
     # median1, its SE into mean2 and R into sd2. A reader taking a column
-    # mean over mean1 was averaging slopes with group means. D55: the
+    # mean over mean1 averages slopes with group means, and the
     # literal "regression" was written into both group-level slots.
     # Coefficients now have their own rows, one term each.
     @emlCSVSetTable: .tableName$
@@ -5361,7 +5383,7 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     ... emlLinearRegression.seIntercept
     @emlCSVAdd: .regLab$, "(Intercept)", "t", emlLinearRegression.tIntercept
     @emlCSVAdd: .regLab$, "(Intercept)", "p", emlLinearRegression.pIntercept
-    # D57: the interval the report now prints is exported alongside it.
+    # The interval the report now prints is exported alongside it.
     if .ciWidth > 0
         @emlCSVAdd: .regLab$, "(Intercept)", "ci_lower",
         ... emlLinearRegression.intercept - .intHalf
@@ -5428,7 +5450,7 @@ procedure emlReportNormalityAnalysis: .tableName$, .dataCol$,
     # (excess): @emlKurtosis returns Fisher's g2, so a normal distribution
     # reads 0, not 3. Bare "Kurtosis" invites the Pearson reading, under
     # which -0.69 would be violently platykurtic rather than unremarkable.
-    # D4 relabelled the other three print sites and missed this one.
+    # The other three print sites carry the same label.
     @emlReportLine: "Kurtosis (excess)", emlRunNormalityAnalysis.kurtosis, 4
 
     # These two verdicts must use the SAME thresholds as the recommendation
@@ -5439,12 +5461,12 @@ procedure emlReportNormalityAnalysis: .tableName$, .dataCol$,
     # a g2 of 4 printed "Kurtosis outside typical limits" here while the gate,
     # for which 4 is well inside 7, went on to recommend a parametric test —
     # two contradictory verdicts in one report. A skewness of 1.5 did the same
-    # against the old 1. (D95)
-    # D11: the parenthetical used to read "(|skew| < 1)" on the FAILING branch
-    # only — an assertion of the criterion at the moment it is announcing the
-    # opposite, and invisible to the reader who passes. The parenthetical is
-    # now worded as a stated criterion ("criterion: ...") and printed on BOTH
-    # branches, so a passing reader learns what threshold was cleared.
+    # Against the old 1.
+    # The parenthetical is worded as a stated criterion ("criterion: ...")
+    # and printed on BOTH branches, so a passing reader learns what threshold
+    # was cleared. Printed on the FAILING branch only it would assert the
+    # criterion at the moment it announces the opposite, and be invisible to
+    # the reader who passes.
     # The same two thresholds are announced in scripts/eml-wizard.praat, in
     # the .skKurtFail branch of its normality summary — currently :2170-2175.
     # Not fixed here because that file is owned elsewhere. (The pointer used
@@ -5487,8 +5509,8 @@ procedure emlReportNormalityAnalysis: .tableName$, .dataCol$,
         if emlShowExplanations
             @emlWizardExplainP: emlRunNormalityAnalysis.swP
         endif
-        ; D9/D28. Shapiro-Wilk has no effect size, so no magnitude row
-        ; belongs here and none is added (D17).
+        ; Shapiro-Wilk has no effect size, so no magnitude row
+        ; Belongs here and none is added.
         @emlReportPWithExact: "p", emlRunNormalityAnalysis.swP
         if emlRunNormalityAnalysis.swFail
             appendInfoLine: "  → Rejects normality (p < 0.05)"
@@ -5523,7 +5545,7 @@ procedure emlReportNormalityAnalysis: .tableName$, .dataCol$,
         ... + " Kruskal-Wallis, Spearman rho)."
     endif
 
-    # D24: skewness and kurtosis were being carried in the mean2/sd2 slots
+    # Skewness and kurtosis were being carried in the mean2/sd2 slots
     # while n2 and median2 were zero-as-NA. Each is now its own field.
     @emlCSVSetTable: .tableName$
     @emlCSVTermType: "variable"
@@ -5603,7 +5625,6 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
             if emlShowExplanations
                 @emlWizardExplainP: emlTTestPaired.p
             endif
-            ; D9/D28
             @emlReportPWithExact: "p", emlTTestPaired.p
             @emlReportLine: "Mean difference", emlTTestPaired.meanDiff, 4
             @emlReportLine: "SD of differences", emlTTestPaired.sdDiff, 4
@@ -5611,8 +5632,8 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
             # The effect size under the t-test is the one derived from the
             # same quantity the t is derived from. The matched-pairs rank
             # statistic belongs to the Wilcoxon and is reported in that
-            # section, not here (D15).
-            # D17: the magnitude was printed here but never reached the
+            # Section, not here.
+            # The magnitude was printed here but never reached the
             # export, so effect_label was blank on every paired row.
             .dzLabel$ = ""
             if emlCohenDz.error$ = ""
@@ -5625,8 +5646,8 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
                 @emlReportLineString: "Magnitude", .dzLabel$
             endif
 
-            # D19: the two column names used to be packed into all four
-            # level slots and n written twice, so a paired design was
+            # The two column names are not packed into four level slots
+            # with n written twice, which would make a paired design
             # indistinguishable from a two-group one in the file. A paired
             # design has ONE n, and it is written once.
             @emlCSVSetTable: .tableName$
@@ -5659,16 +5680,15 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
                 appendInfoLine: "  Why: Nonparametric test for paired "
                 ... + "observations — no normality assumption needed."
             endif
-            ; VERIFIED CORRECT AND LEFT ALONE, 15 Aug 2026. The audit flagged
-            ; the Mann-Whitney gloss above and asked whether these two share
-            ; its defect. They do not, and the difference is not cosmetic:
+            ; THIS IS NOT THE MANN-WHITNEY GLOSS ABOVE, and the difference
+            ; is not cosmetic:
             ; @emlWilcoxonSignedRank (stats/eml-inferential.praat) ranks the
             ; ABSOLUTE differences and then adds up the ranks belonging to
             ; the positive ones for T+ and the negative ones for T-. The
             ; signed-rank statistic IS a rank sum -- no n(n+1)/2 is
             ; subtracted, as it is for U -- so "Sum of ranks for positive
             ; differences" is the correct name for this number. Rewriting it
-            ; to match the Mann-Whitney correction would have introduced a
+            ; to match the Mann-Whitney correction would introduce a
             ; second defect while fixing the first.
             if emlShowExplanations
                 emlWizardExplain$ = "Sum of ranks for positive differences (subjects who increased)"
@@ -5684,10 +5704,9 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
             if emlShowExplanations
                 @emlWizardExplainP: emlWilcoxonSignedRank.p
             endif
-            ; D9/D28
             @emlReportPWithExact: "p", emlWilcoxonSignedRank.p
 
-            # D17: the matched-pairs magnitude was printed and then dropped on
+            # The matched-pairs magnitude was printed and then dropped on
             # the way to the export.
             .mprLabel$ = ""
             if emlMatchedPairsR.error$ = ""
@@ -5752,7 +5771,7 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     @emlReportLineString: "Data column", .displayData$
     @emlReportLineString: "Factor 1", .displayF1$
     @emlReportLineString: "Factor 2", .displayF2$
-    # D37: the Info block named the table, the column and the two factors and
+    # The Info block named the table, the column and the two factors and
     # reported no N of any kind — not total, not per level, not per cell —
     # while the two-group section appended to the same transcript reported
     # N 24 / 24. @emlTwoWayAnova already carries all of it.
@@ -5780,8 +5799,8 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     ... left$ ("F" + "            ", 12),
     ... "p"
 
-    # D35: all three rows printed @emlFormatP's "p = " form under a column
-    # already headed "p" (D9 in table form), and all three floored to
+    # All three rows printed @emlFormatP's "p = " form under a column
+    # already headed "p", and all three floored to
     # "p < .001" — 5.8e-07, 2.1e-13 and 3.0e-04 reported identically, nine
     # orders of magnitude flattened in the one table whose whole point is the
     # relative strength of the three effects. The cells now carry the bare
@@ -5868,13 +5887,12 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     ; about -- unbalanced cells, an empty cell, a design the Type of sums of
     ; squares assumption does not fit. It was written to the glance frame in
     ; @emlDeclareTwoWayResult (eml-analysis.praat, the @emlGlanceStr:
-    ; "warning" line, ~:3118) and printed NOWHERE, so a user reading the
-    ; report never saw it and only a user who exported the CSV ever did.
-    ; (The pointer used to read :2961, which is now inside
-    ; @emlDeclareKWResult; grep the anchor, the line numbers move.)
-    ; Placed immediately under the table it qualifies, following the D98
-    ; ruling on caveat placement: a caveat below the effect sizes reads as
-    ; being about the effect sizes.
+    ; "warning" line) and it is printed HERE too, or a user reading the
+    ; report never sees it and only a user who exported the CSV does. Grep
+    ; the anchor rather than trusting a line number; they move.
+    ;
+    ; Placed immediately under the table it qualifies: a caveat below the
+    ; effect sizes reads as being about the effect sizes.
     if emlTwoWayAnova.warning$ <> ""
         @emlReportBlank
         @emlReportNote: "Caution: " + emlTwoWayAnova.warning$
@@ -5885,9 +5903,8 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     ; main-effect F averaged across that dependence can be misleading on its
     ; own. Precedent for the wording and the placement is the RM-ANOVA
     ; caution in @emlRunRepeatedMeasuresAnalysis (eml-analysis.praat, the
-    ; `emlRMAnovaTest.warning$` block, ~:2354). (The pointer used to read
-    ; :2194, which is @emlRMAnovaTest's own .msErr arithmetic; grep the
-    ; anchor, the line numbers move.)
+    ; `emlRMAnovaTest.warning$` block). Grep the anchor rather than trusting
+    ; a line number; they move.
     if emlTwoWayAnova.pAB < 0.05
         @emlReportBlank
         @emlReportNote: "Caution: the interaction is significant, so the "
@@ -5899,7 +5916,7 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     endif
 
     # Effect sizes
-    # D41: the three partial eta-squareds were printed bare, with no
+    # The three partial eta-squareds were printed bare, with no
     # small/medium/large gloss, while the one-way and Kruskal-Wallis reports
     # both gloss theirs. The label is computed once per effect here and the
     # same string goes to the report and to the export.
@@ -5940,7 +5957,7 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     endif
     @emlReportLineString: .interLabel$, .etaTextAB$
 
-    # D36: the block went ANOVA table → partial eta-squared → CSV → footer
+    # The block went ANOVA table → partial eta-squared → CSV → footer
     # with no cell means and no marginal means, so a significant interaction
     # said the factors are not additive but never in which direction. The
     # values were already computed: @emlTwoWayAnova carries every cell's
@@ -6056,17 +6073,14 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     endif
 
     # CSV rows — one per effect
-    # D34: there was no denominator df, no SS and no MS, so F(1,28)
-    # exported as df=1.00 and the ANOVA table could not be reconstructed
-    # from the file. Every term now carries both df, its SS and its MS, and
-    # the error and total rows are exported too.
+    # EVERY TERM CARRIES BOTH df, ITS SS AND ITS MS, and the error and total
+    # rows are exported too. A single df column exports F(1,28) as df=1.00
+    # and the ANOVA table cannot be reconstructed from the file.
     #
-    # The two claims that used to stand here were both false when written.
-    # D37 was recorded as fixed by the n/n_cells fields below, but the Info
-    # window still reported no N at all — that is fixed above, where the
-    # header block now prints total N, cell count and per-cell n. D41 was
-    # recorded as fixed, but all three factor rows still emitted
-    # partial_eta_squared with no effect_label beside it — the labels are
+    # N is stated in both places: the n/n_cells fields below carry it into
+    # the export, and the header block above prints total N, cell count and
+    # per-cell n into the Info window. Every factor row's
+    # partial_eta_squared has an effect_label beside it -- the labels are
     # computed above and written below.
     @emlCSVSetTable: .tableName$
     @emlCSVTermType: "omnibus"

@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -55,6 +56,26 @@ PROSE_SUFFIXES = {".md"}
 # Listed separately at the foot of the manifest rather than in the body.
 RETIRED_DIR = "dev/retired"
 
+# FOLDED ASSET SETS — one row for the directory, not one row per file.
+#
+# sprites/ is 204 pre-rendered PNGs named shape_colour_alpha_size.png. The
+# code addresses them as a family (@emlSetColorPalette fills .sprite$[1..10]
+# and @emlDrawAlphaDot composes the stem with an alpha and a size), never one
+# by one, so there is nothing to say about dot_blue_a50_30.png that its name
+# does not already say. Listed individually they would be 204 of the
+# manifest's 225 rows, each carrying a curated description nobody will ever
+# write and a "lines" figure computed by splitting binary PNG data on
+# newlines — a meaningless number in a column headed "lines (code)".
+#
+# The folded row still fails the check on any real change: it carries the
+# file count and a content digest over every byte of the set, so adding,
+# deleting or re-rendering one sprite moves it. Reproduce the digest with:
+#
+#   find plugin/sprites -type f | LC_ALL=C sort | \
+#       while read f; do printf '%s\0' "${f#plugin/}"; cat "$f"; done | \
+#       sha256sum
+FOLDED_DIRS = ("sprites",)
+
 VERSION_RE = re.compile(r"^[#;]{0,2}\s*Version:\s*(\S+)\s*$")
 
 ROW_RE = re.compile(r"^(?P<path>[^|]+?)\s*\|\s*(?P<size>[^|]*?)\s*\|"
@@ -63,14 +84,28 @@ ROW_RE = re.compile(r"^(?P<path>[^|]+?)\s*\|\s*(?P<size>[^|]*?)\s*\|"
 HEADER_TEMPLATE = """\
 # ==========================================================================
 # MANIFEST — EML Praat Tools plugin
-# Generated: {date}  |  {n} files (excluding MANIFEST.txt)
+# Generated: {date}  |  {n} files in {rows} rows (retired included, MANIFEST.txt not)
 # Columns: path | lines (code) or word count (prose) | version | description
 #
 # Regenerate with: python3 dev/tools/build-manifest.py
+# Check without writing: python3 dev/tools/build-manifest.py --check
+#
 # The first three columns are derived from file contents and are rewritten
 # on every run. The description column is curated — it is inherited by path
 # and never overwritten. New files arrive with a `TODO:` description; edit
 # it here and it will be preserved from then on.
+#
+# THIS FILE IS GENERATED AND CHECKED IN, so it goes stale the moment any
+# listed file changes size or version — which is most commits. It stays
+# green because --check runs in CI on every push and pull request
+# (.github/workflows/validate.yml, through validate/run_all.R). That gate is
+# the only thing keeping a checked-in generated file honest; without it this
+# manifest drifts from the tree within a day.
+#
+# A row whose path ends in "/" is a FOLDED ASSET SET: one row for a directory
+# of uniform generated assets, carrying the file count and a sha256 over the
+# whole set in place of a line count and a version. See FOLDED_DIRS in
+# dev/tools/build-manifest.py for the digest recipe.
 # ==========================================================================
 """
 
@@ -192,9 +227,36 @@ def load_existing() -> dict[str, str]:
     return descriptions
 
 
-def collect() -> tuple[list[Path], list[Path]]:
+def folded_row(name: str) -> tuple[str, int]:
+    """(row text without the description, file count) for one asset set.
+
+    The digest covers the path and the bytes of every file in the set, so it
+    moves if a sprite is added, removed, renamed or re-rendered. Paths go in
+    NUL-separated and unhashed lengths are impossible to confuse, which is
+    what stops "a.png"+"b" hashing the same as "a.pngb"+"".
+    """
+    d = ROOT / name
+    files = sorted((p for p in d.rglob("*") if p.is_file()),
+                   key=lambda p: p.relative_to(ROOT).as_posix())
+    h = hashlib.sha256()
+    total = 0
+    for p in files:
+        h.update(p.relative_to(ROOT).as_posix().encode("utf-8"))
+        h.update(b"\0")
+        data = p.read_bytes()
+        total += len(data)
+        h.update(data)
+    return ("{}/ | {} files, {} bytes | sha256:{}".format(
+        name, len(files), total, h.hexdigest()[:16]), len(files))
+
+
+def collect() -> tuple[list[Path], list[Path], list[str]]:
     body: list[Path] = []
     retired: list[Path] = []
+    folded: list[str] = []
+    for name in FOLDED_DIRS:
+        if (ROOT / name).is_dir():
+            folded.append(name)
     for path in sorted(ROOT.rglob("*")):
         if not path.is_file():
             continue
@@ -205,19 +267,23 @@ def collect() -> tuple[list[Path], list[Path]]:
             continue
         if path.suffix.lower() in SKIP_SUFFIXES:
             continue
+        if rel.parts and rel.parts[0] in folded:
+            continue
         if rel.as_posix().startswith(RETIRED_DIR + "/"):
             retired.append(path)
         else:
             body.append(path)
-    return body, retired
+    return body, retired, folded
 
 
 def render(date: str) -> str:
     inherited = load_existing()
-    body, retired = collect()
+    body, retired, folded = collect()
 
-    lines = [HEADER_TEMPLATE.format(date=date, n=len(body)), ""]
     new_files: list[str] = []
+    # (sort key, row without description, description) so the folded rows
+    # land in path order beside the files rather than in a block at the end.
+    rows: list[tuple[str, str, str]] = []
 
     for path in body:
         rel = path.relative_to(ROOT).as_posix()
@@ -225,8 +291,28 @@ def render(date: str) -> str:
         if desc is None:
             desc = guess_description(path)
             new_files.append(rel)
-        lines.append("{} | {} | {} | {}".format(
-            rel, measure(path), extract_version(path), desc))
+        rows.append((rel, "{} | {} | {}".format(
+            rel, measure(path), extract_version(path)), desc))
+
+    n_files = len(body)
+    for name in folded:
+        row, count = folded_row(name)
+        n_files += count
+        key = name + "/"
+        desc = inherited.get(key)
+        if desc is None:
+            desc = "TODO: describe this asset set"
+            new_files.append(key)
+        rows.append((key, row, desc))
+
+    rows.sort(key=lambda r: r[0])
+    # The count is every file this manifest LISTS, retired rows included --
+    # a count over the body alone reads as a claim about the tree while being
+    # a claim about part of it.
+    n_files += len(retired)
+    lines = [HEADER_TEMPLATE.format(date=date, n=n_files,
+                                    rows=len(rows) + len(retired)), ""]
+    lines += ["{} | {}".format(r[1], r[2]) for r in rows]
 
     if retired:
         lines.append("")
@@ -249,8 +335,9 @@ def render(date: str) -> str:
         print("new file (description marked TODO): {}".format(rel),
               file=sys.stderr)
 
-    dropped = sorted(set(inherited) - {p.relative_to(ROOT).as_posix()
-                                       for p in body + retired})
+    present = {p.relative_to(ROOT).as_posix() for p in body + retired}
+    present |= {name + "/" for name in folded}
+    dropped = sorted(set(inherited) - present)
     for rel in dropped:
         print("no longer present, row dropped: {}".format(rel),
               file=sys.stderr)

@@ -115,18 +115,73 @@ totalCanvasHeight = figure_height
 annotMatrixN = 0
 annotBlockN = 0
 
+; ADVANCED MODE, AND THE PROBE IS WRONG WITHOUT IT -- 16 August 2026.
+;
+; @emlGraphsDispatchDraw carries the D8 beginner-mode override, added in
+; 7f62e75 (15 Aug 2026):
+;
+;     emlLegendPlacement = config_legendPlacement
+;     if config_showAdvanced = 0
+;         emlLegendPlacement = 1
+;     endif
+;
+; and the same commit repointed @emlLegendHeadroomAfterDraw's first argument
+; from config_legendPlacement to emlLegendPlacement, correctly, so that the
+; room asked for is room for the legend that is actually on the page.
+;
+; @emlLoadConfig defaults config_showAdvanced to 0. This probe never set it,
+; so from 7f62e75 onward the "scatter_right" case set config_legendPlacement
+; to 2, had it silently rewritten to 1 before the draw, and measured a second
+; inside-plot figure while still PRINTING placement=2. Driven 16 Aug 2026: the
+; figure that case produced was byte-identical to the scatter_inside figure.
+; The probe was reporting a placement the plugin had already discarded, which
+; is the same class of defect the plugin fixed by reading emlLegendPlacement
+; here -- committed one file over and not in this one.
+;
+; The beginner page has no "Legend placement" field, so a placement other than
+; 1 is only reachable from the advanced page. A probe that wants to drive one
+; must say it is on that page. The resolved placement is now REPORTED as well
+; (see `resolved=` below) so the two can never again disagree in silence.
+config_showAdvanced = 1
+
 procedure probe: .label$, .type, .placement
+    ; EVERY CASE STARTS FROM AUTO, exactly as a real press does.
+    ; @emlGraphsWorkflow zeroes valueMin/valueMax at the top of every press
+    ; ("Initialize range variables (0/0 = auto per pair)") and each column
+    ; page then assigns them from that press's own typed field. This probe
+    ; calls @emlGraphsDrawWithLegendRoom directly, with no workflow and no
+    ; dialog between cases, so without this reset it inherits whatever the
+    ; PREVIOUS case's headroom pass wrote back into valueMin/valueMax -- and
+    ; the loop does write them back, that is how the widened axis reaches the
+    ; second pass.
+    ;
+    ; That carry-over was live until 16 Aug 2026 and it is what made one
+    ; behaviour change look like four. When scatter_right began taking a
+    ; second pass, its widened 203.4668 became gviolin's TYPED axis, gviolin's
+    ; widened 273.9246 became spaghetti's, and the histogram -- whose x-axis
+    ; is valueMin/valueMax -- rebinned at width 26.2749 instead of 16.2095,
+    ; which moved its legend out of the bottom-right corner and gave it a
+    ; second pass too. Four rows moved; one thing changed. Cases that cannot
+    ; be read one at a time cannot be diagnosed one at a time.
+    valueMin = 0
+    valueMax = 0
+    histFreqMax = 0
     graph_type = .type
     config_legendPlacement = .placement
     @emlClearAnnotations
     Erase all
     @emlGraphsDrawWithLegendRoom
+    ; `resolved` is emlLegendPlacement -- the placement the figure was drawn
+    ; with, after the D8 override, not the one this case asked for. It is
+    ; reported so the artefact carries the evidence that the case drove the
+    ; placement it is named for. v42 checks the two agree.
     appendInfoLine: "ROOM ", .label$, " type=", .type,
     ... " placement=", .placement,
     ... " passes=", legendRoomPass,
     ... " axisMode=", legendRoomAxis,
     ... " baseMin=", fixed$ (legendRoomBaseMin, 4),
-    ... " baseMax=", fixed$ (legendRoomBaseMax, 4)
+    ... " baseMax=", fixed$ (legendRoomBaseMax, 4),
+    ... " resolved=", emlLegendPlacement
 endproc
 
 ; PLACEMENT 1 IS INSIDE THE PLOT, which is the only placement that can force

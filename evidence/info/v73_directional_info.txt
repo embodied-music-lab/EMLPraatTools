@@ -1,0 +1,166 @@
+V73 DIRECTIONAL CAPTURE
+praat_version  6.6.30
+n_welch_a  5
+n_welch_b  5
+n_paired  6
+n_corr  7
+n_perfect  5
+n_mwu_a  2
+n_mwu_b  2
+
+welch_fwd_t  -2.5298221281347035
+welch_fwd_df  5.882352941176471
+welch_fwd_pTwo  0.04546461897093047
+welch_fwd_alt2  two-sided
+welch_fwd_pGreater  0.9772676905145348
+welch_fwd_pLess  0.022732309485465237
+welch_fwd_err  []
+welch_fwd_pOne  0.9772676905145348
+welch_fwd_alt1  greater
+welch_fwd_pAltGreater  0.9772676905145348
+welch_fwd_altGname  greater
+welch_fwd_pAltLess  0.022732309485465237
+welch_fwd_altLname  less
+
+welch_rev_t  2.5298221281347035
+welch_rev_df  5.882352941176471
+welch_rev_pTwo  0.04546461897093047
+welch_rev_alt2  two-sided
+welch_rev_pGreater  0.022732309485465237
+welch_rev_pLess  0.9772676905145348
+welch_rev_err  []
+welch_rev_pOne  0.022732309485465237
+welch_rev_alt1  greater
+welch_rev_pAltGreater  0.022732309485465237
+welch_rev_altGname  greater
+welch_rev_pAltLess  0.9772676905145348
+welch_rev_altLname  less
+
+student_fwd_t  -2.5298221281347035
+student_fwd_df  8
+student_fwd_pTwo  0.035265203475080054
+student_fwd_alt2  two-sided
+student_fwd_pGreater  0.98236739826246
+student_fwd_pLess  0.017632601737540027
+student_fwd_err  []
+student_fwd_pOne  0.98236739826246
+student_fwd_alt1  greater
+student_fwd_pAltGreater  0.98236739826246
+student_fwd_altGname  greater
+student_fwd_pAltLess  0.017632601737540027
+student_fwd_altLname  less
+
+student_rev_t  2.5298221281347035
+student_rev_df  8
+student_rev_pTwo  0.035265203475080054
+student_rev_alt2  two-sided
+student_rev_pGreater  0.017632601737540027
+student_rev_pLess  0.98236739826246
+student_rev_err  []
+student_rev_pOne  0.017632601737540027
+student_rev_alt1  greater
+student_rev_pAltGreater  0.017632601737540027
+student_rev_altGname  greater
+student_rev_pAltLess  0.98236739826246
+student_rev_altLname  less
+
+paired_fwd_t  -7
+paired_fwd_df  5
+paired_fwd_pTwo  0.0009167475143984036
+paired_fwd_pGreater  0.9995416262428009
+paired_fwd_pLess  0.0004583737571992018
+paired_fwd_pOne  0.9995416262428009
+paired_fwd_alt1  greater
+paired_fwd_pAltLess  0.0004583737571992018
+
+paired_rev_t  7
+paired_rev_df  5
+paired_rev_pTwo  0.0009167475143984036
+paired_rev_pGreater  0.0004583737571992018
+paired_rev_pLess  0.9995416262428009
+paired_rev_pOne  0.0004583737571992018
+paired_rev_alt1  greater
+paired_rev_pAltLess  0.9995416262428009
+
+pearson_fwd_r  0.9590585192644941
+pearson_fwd_t  7.5722445664108875
+pearson_fwd_df  5
+pearson_fwd_pTwo  0.0006371918485024686
+pearson_fwd_pGreater  0.0003185959242512343
+pearson_fwd_pLess  0.9996814040757488
+pearson_fwd_perfect  0
+pearson_fwd_pOne  0.0003185959242512343
+pearson_fwd_pAltLess  0.9996814040757488
+
+pearson_rev_r  -0.9590585192644941
+pearson_rev_t  -7.5722445664108875
+pearson_rev_df  5
+pearson_rev_pTwo  0.0006371918485024686
+pearson_rev_pGreater  0.9996814040757488
+pearson_rev_pLess  0.0003185959242512343
+pearson_rev_perfect  0
+pearson_rev_pOne  0.9996814040757488
+pearson_rev_pAltLess  0.0003185959242512343
+
+spearman_fwd_rho  0.9285714285714286
+spearman_fwd_t  5.5943092778551575
+spearman_fwd_df  5
+spearman_fwd_pTwo  0.002519472403794706
+spearman_fwd_pGreater  0.001259736201897353
+spearman_fwd_pLess  0.9987402637981027
+spearman_fwd_pOne  0.001259736201897353
+spearman_fwd_pAltLess  0.9987402637981027
+
+spearman_rev_rho  -0.9285714285714286
+spearman_rev_t  -5.5943092778551575
+spearman_rev_df  5
+spearman_rev_pTwo  0.002519472403794706
+spearman_rev_pGreater  0.9987402637981027
+spearman_rev_pLess  0.001259736201897353
+spearman_rev_pOne  0.9987402637981027
+spearman_rev_pAltLess  0.001259736201897353
+
+perfectneg_r  -1
+perfectneg_t  --undefined--
+perfectneg_df  3
+perfectneg_pTwo  0
+perfectneg_pGreater  1
+perfectneg_pLess  0
+perfectneg_perfect  1
+perfectneg_pOne  1
+perfectneg_pAltLess  0
+
+perfectpos_r  1
+perfectpos_t  --undefined--
+perfectpos_df  3
+perfectpos_pTwo  0
+perfectpos_pGreater  0
+perfectpos_pLess  1
+perfectpos_perfect  1
+perfectpos_pOne  0
+perfectpos_pAltLess  1
+
+perfectnegrho_rho  -1
+perfectnegrho_t  --undefined--
+perfectnegrho_df  3
+perfectnegrho_pTwo  0
+perfectnegrho_pGreater  1
+perfectnegrho_pLess  0
+perfectnegrho_pOne  1
+perfectnegrho_pAltLess  0
+
+mwu_fwd_u1  2
+mwu_fwd_pTwo  1
+mwu_fwd_pGreater  0.6666666666666666
+mwu_fwd_pLess  0.6666666666666666
+mwu_fwd_method  exact
+mwu_fwd_pOne  0.6666666666666666
+
+mwu_rev_u1  2
+mwu_rev_pTwo  1
+mwu_rev_pGreater  0.6666666666666666
+mwu_rev_pLess  0.6666666666666666
+mwu_rev_method  exact
+mwu_rev_pOne  0.6666666666666666
+
+V73 DIRECTIONAL DONE

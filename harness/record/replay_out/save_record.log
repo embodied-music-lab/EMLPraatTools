@@ -2,7 +2,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Two-Group Comparison
-  Sun Aug 16 00:54:34 2026
+  Sun Aug 16 15:40:53 2026
 ══════════════════════════════════════════════
 
   Table               vt
@@ -18,7 +18,7 @@
   Why: Compares means of two independent groups (robust to unequal variances).
   t                   -8.571		Signal-to-noise: 8.6x larger than expected from sampling noise
   df                  33.0		Welch-adjusted for unequal variances. More df = more reliable.
-  p                   < .001  (6.62128924835128e-10)		Statistically significant: <0.1% probability due to chance
+  p                   < .001  (6.62e-10)		Statistically significant: <0.1% probability due to chance
   Mean diff (Cohort 1 − Cohort 2) -1.0979		Cohort 2 mean is 1.10 units higher
   95% CI of diff      [-1.3584, -0.8373]
 

@@ -133,6 +133,25 @@
 #   and discloses nothing; so does one clamped to a single space. Presence is
 #   asserted as VALUE -- the words, off the picture -- and not as fit.
 #
+# WHAT AUTHOR RULING C (16 AUGUST 2026) CHANGED IN THIS FILE. §8 recorded a
+# finding this ruling did not close: both two-group arms composed an omnibus
+# string and set annotTextN on NEITHER path, so a two-group BRACKET figure
+# named no test anywhere on it -- the whole-figure OCR of welch_two carried a
+# bracket, "***", a Cohen's d and no test name. Ruling C closes it with one
+# invariant and no two-group special case: every bracket-bearing figure names
+# its test. The arms now set annotTextN, so the corner box carries the test,
+# and they write a caption of their own. Three things in this file therefore
+# assert the OPPOSITE of what they asserted on 16 August, and each says so
+# where it stands: §2 (the source), §4 (which legs draw a band), §5 (where a
+# caption must not appear). What did NOT change is the reason the arms were
+# silent about adjustment: one comparison is no family, nothing was corrected,
+# and §3 asserts that neither two-group figure reports a correction -- mw_two
+# is driven with "holm" sitting in the form scope precisely so that a repair
+# reaching for .correction$ on that arm goes red rather than passing.
+# The general invariant -- every ARM that can produce a bracket sets
+# annotTextN -- belongs to validate/v76, which enumerates the arms out of the
+# bridge so that an arm added later without a test name goes red.
+#
 # Input: harness/bracketcap/out/. $EML_BRACKETCAP_DIR overrides it and
 #        $EML_ANNOT_SRC overrides the source under test, so a break test drives
 #        a COPY of the tree and the working tree is never touched.
@@ -278,8 +297,19 @@ norm_ocr <- function(s) {
     gsub("\\s+", " ", trimws(s))
 }
 
-DRAWN_LEGS <- c("tukey", "dunn_holm", "dunn_bonferroni", "dunn_bh", "narrow")
-QUIET_LEGS <- c("welch_two", "ns_omnibus")
+# AUTHOR RULING C, 16 August 2026, MOVED welch_two ACROSS THIS LINE and added
+# mw_two beside it. Until ruling C the two-group arms wrote empty captions and
+# welch_two was the leg that proved a caption correctly DECLINES; §5 asserted
+# the decline and §8 recorded, as an attestation and not as a test, that the
+# same figure named no test anywhere on it. Ruling C is one invariant with no
+# two-group special case: every bracket-bearing figure names its test. So both
+# two-group legs now draw, and the leg that proves a caption declines is
+# ns_omnibus, which draws no brackets at all. What each two-group caption may
+# NOT say is asserted as hard as what it must -- see §3.
+DRAWN_LEGS <- c("tukey", "dunn_holm", "dunn_bonferroni", "dunn_bh", "narrow",
+                "welch_two", "mw_two")
+TWO_GROUP  <- c("welch_two", "mw_two")
+QUIET_LEGS <- c("ns_omnibus")
 ALL_LEGS   <- c(DRAWN_LEGS, QUIET_LEGS)
 
 # ===========================================================================
@@ -290,7 +320,7 @@ ALL_LEGS   <- c(DRAWN_LEGS, QUIET_LEGS)
 # simply was not drawn. NO_FIGURE and "correctly drew nothing" are different
 # verdicts and only one of them is acceptable anywhere in this file.
 if (have_tsv) {
-    check_true(ID, "all seven legs are present in the driven artefact",
+    check_true(ID, "all eight legs are present in the driven artefact",
                setequal(legs$leg, ALL_LEGS))
     for (lg in ALL_LEGS) {
         check_true(ID, sprintf("leg %s rendered without error", lg),
@@ -352,19 +382,48 @@ if (have_src) {
                !has(grep("^annotBracketAdjust\\$ =", code, value = TRUE),
                     "holm|bonferroni|\"bh\""))
 
-    # THE TWO-GROUP ARMS WRITE EMPTY, AND THAT IS A DECISION RATHER THAN A
-    # GAP. Two groups is one comparison: no post-hoc ran, there is no family,
-    # nothing was adjusted, and the omnibus box already names the test the
-    # single bracket's p came from. Asserted so that a later hand adding a
-    # caption there has to argue with this line.
+    # THE TWO-GROUP ARMS NAME THEIR TEST TOO -- AUTHOR RULING C, and this
+    # block used to assert the opposite. It read "both two-group arms write an
+    # empty bracket caption" and counted two empty assignments to each half,
+    # on the argument that two groups is one comparison and a ruling about a
+    # post-hoc method and a correction had nothing to say. The half of that
+    # argument that held is the ADJUSTMENT: nothing was corrected and the
+    # caption must not pretend otherwise, which is why the sentences below are
+    # not the Tukey sentence and are checked for not being it. The half that
+    # did not is the TEST NAME, and §8 of this file measured the cost of the
+    # silence before the ruling closed it.
+    #
     # Counted INSIDE THE BRIDGE, not across the file: @emlClearAnnotations
-    # writes the same two empty assignments and a file-wide count would read
-    # three where it wanted two, and would go on reading two if one of the
-    # arms lost its line and the reset gained a duplicate.
+    # writes the empty assignments the reset needs, and a file-wide count
+    # would read them as arms.
     body_bridge <- proc_body_of(code, "emlBridgeGroupComparison")
-    check_true(ID, "both two-group arms write an empty bracket caption",
-               cnt(body_bridge, "^annotBracketPosthoc\\$ = \"\"$") == 2 &&
-               cnt(body_bridge, "^annotBracketAdjust\\$ = \"\"$") == 2)
+    # ADJACENT STRING LITERALS ARE ONE STRING, and the source splits these
+    # sentences across a continuation to stay inside the line budget, so the
+    # joined line reads  ... "one comparison; no adjustment " + "applied".
+    # Collapsing quote-plus-quote is exactly Praat's literal concatenation and
+    # nothing else: `+ .correction$` has no quote on its left and survives,
+    # which is what keeps the "interpolates a variable" check above honest.
+    unsplit <- function(x) gsub("\" \\+ \"", "", x)
+    body_bridge <- unsplit(body_bridge)
+    check_true(ID, "the two-group parametric arm names Welch's t-test",
+               cnt(body_bridge,
+                   "^annotBracketPosthoc\\$ = \"Comparison: Welch t-test\"$") == 1)
+    check_true(ID, "the two-group nonparametric arm names the Mann-Whitney U test",
+               cnt(body_bridge,
+                   "^annotBracketPosthoc\\$ = \"Comparison: Mann-Whitney U test\"$") == 1)
+    check_true(ID, "both two-group arms state that one comparison needs no adjustment",
+               cnt(body_bridge,
+                   "^annotBracketAdjust\\$ = \"one comparison; no adjustment applied\"$") == 2)
+    # AND NEITHER BORROWS THE k >= 3 SENTENCE. "already family-wise" is a
+    # claim about the studentized range distribution; a Welch t makes no such
+    # claim and there is no family here to be wise about. The over-sweep this
+    # guards is a repair that gave the two-group arms the Tukey caption
+    # because it was the nearest one to hand.
+    check_true(ID, "no two-group arm claims family-wise control",
+               cnt(body_bridge, "^annotBracketAdjust\\$ = \"already family-wise") == 1)
+    check_true(ID, "the bridge no longer writes an empty bracket caption anywhere",
+               cnt(body_bridge, "^annotBracketPosthoc\\$ = \"\"$") == 0 &&
+               cnt(body_bridge, "^annotBracketAdjust\\$ = \"\"$") == 0)
 
     check_true(ID, "@emlClearAnnotations resets both caption halves",
                has(body_clear, "^annotBracketPosthoc\\$ = \"\"$") &&
@@ -441,6 +500,33 @@ if (have_tsv) {
                grepl("Pairwise comparisons: Dunn's test", o_nar, fixed = TRUE) &&
                grepl("adjustment for multiple comparisons: bonferroni",
                      o_nar, fixed = TRUE))
+
+    # THE TWO-GROUP ARMS, READ OFF THEIR OWN PICTURES -- AUTHOR RULING C.
+    # Both must name the test; neither may claim an adjustment, and mw_two is
+    # the leg that makes the second half of that a real check rather than a
+    # tautology. It is driven with annotCorrectionMethod$ = "holm", so the
+    # token is sitting in the form scope where the k >= 3 nonparametric arm
+    # reads it from. A repair that reached for .correction$ on this arm too
+    # would put "holm" on a figure where one comparison was made and nothing
+    # was adjusted, and it would pass every other line in this file.
+    o_wt <- norm_ocr(lv("welch_two", "ocr"))
+    o_mw <- norm_ocr(lv("mw_two", "ocr"))
+    check_true(ID, "the two-group parametric figure names Welch's t-test",
+               grepl("Comparison: Welch t-test", o_wt, fixed = TRUE))
+    check_true(ID, "the two-group nonparametric figure names the Mann-Whitney U test",
+               grepl("Comparison: Mann-Whitney U test", o_mw, fixed = TRUE))
+    check_true(ID, "both two-group figures state one comparison and no adjustment",
+               grepl("one comparison; no adjustment applied", o_wt, fixed = TRUE) &&
+               grepl("one comparison; no adjustment applied", o_mw, fixed = TRUE))
+    check_true(ID, "neither two-group figure reports a correction it never applied",
+               !grepl("holm", o_mw, fixed = TRUE) &&
+               !grepl("holm", o_wt, fixed = TRUE) &&
+               !grepl("adjustment for multiple comparisons", o_mw, fixed = TRUE))
+    check_true(ID, "no two-group figure claims family-wise control",
+               !grepl("family-wise", o_wt, fixed = TRUE) &&
+               !grepl("family-wise", o_mw, fixed = TRUE))
+    check_true(ID, "the two two-group arms' captions are not the same sentence",
+               nzchar(o_wt) && nzchar(o_mw) && !identical(o_wt, o_mw))
 }
 
 # ===========================================================================
@@ -525,17 +611,24 @@ if (have_tsv) {
     check_true(ID, "the narrow figure wraps the caption onto two lines",
                identical(lv("narrow", "cap_lines"), "2"))
     check_true(ID, "the wide figures keep the caption on one line",
-               all(vapply(c("tukey", "dunn_holm", "dunn_bonferroni", "dunn_bh"),
+               all(vapply(setdiff(DRAWN_LEGS, "narrow"),
                           function(lg) identical(lv(lg, "cap_lines"), "1"),
                           logical(1))))
 
     # The band is taken OUTSIDE the plot, so the export grows. If it did not,
     # the caption would be drawn and cropped -- and every emitted measurement
-    # would be identical.
+    # would be identical. The control is ns_omnibus, which draws no brackets
+    # and reaches no caption; it was welch_two until ruling C gave the
+    # two-group arms a caption of their own. Both figures are 6 x 4 in, so
+    # the only thing the extra height can be is the band.
     check_true(ID, "the export grew to include the caption band",
                is.finite(ln_("tukey", "img_h")) &&
+               is.finite(ln_("ns_omnibus", "img_h")) &&
+               ln_("tukey", "img_h") > ln_("ns_omnibus", "img_h"))
+    check_true(ID, "the two-group export grew for the same reason",
                is.finite(ln_("welch_two", "img_h")) &&
-               ln_("tukey", "img_h") > ln_("welch_two", "img_h"))
+               is.finite(ln_("ns_omnibus", "img_h")) &&
+               ln_("welch_two", "img_h") > ln_("ns_omnibus", "img_h"))
 }
 
 # ===========================================================================
@@ -559,11 +652,16 @@ if (have_tsv) {
         if (!file.exists(p)) return("")
         norm_ocr(paste(readLines(p, warn = FALSE), collapse = " "))
     }
-    # welch_two is NOT in this list, and its absence is a finding rather than
-    # an oversight -- see the attestation at the foot of this file.
+    # welch_two and mw_two ARE in this list as of ruling C, and their absence
+    # from it was the finding §8 used to record: every other leg carried its
+    # omnibus in the corner box and the two-group legs carried nothing, so
+    # this loop -- which is about the caption not COSTING the figure a line it
+    # already had -- had no line of theirs to protect. It has one now, and it
+    # is the same evidence v76 asserts the ruling on.
     want_omni <- c(tukey = "One-way ANOVA", dunn_holm = "Kruskal-Wallis",
                    dunn_bonferroni = "Kruskal-Wallis", dunn_bh = "Kruskal-Wallis",
-                   narrow = "Kruskal-Wallis", ns_omnibus = "One-way ANOVA")
+                   narrow = "Kruskal-Wallis", ns_omnibus = "One-way ANOVA",
+                   welch_two = "Welch t", mw_two = "Mann-Whitney")
     for (lg in names(want_omni)) {
         check_true(ID, sprintf("leg %s: the omnibus line is still on the figure", lg),
                    grepl(want_omni[[lg]], fig_ocr(lg), fixed = TRUE))
@@ -572,9 +670,19 @@ if (have_tsv) {
     # be readable in the region above the band. This is the collision the
     # author named -- a second box inside the frame landing on the brackets it
     # describes -- asserted rather than assumed from the geometry.
+    #
+    # The sentence looked for is the leg's OWN opening clause, taken from the
+    # .kv the bridge wrote, not the literal "Pairwise comparisons": the
+    # two-group arms open with "Comparison:" and a fixed literal would have
+    # quietly stopped making a claim about them the moment they gained a
+    # caption. Reading it from the artefact is safe here because the strings
+    # themselves are asserted as literals in §3 -- this line is about WHERE
+    # the words are, and it borrows the words §3 already pinned.
     for (lg in DRAWN_LEGS) {
+        head_clause <- kvget(lg, "posthoc")
         check_true(ID, sprintf("leg %s: the caption is outside the frame, not in it", lg),
-                   !grepl("Pairwise comparisons", fig_ocr(lg), fixed = TRUE))
+                   !is.na(head_clause) && nzchar(head_clause) &&
+                   !grepl(norm_ocr(head_clause), fig_ocr(lg), fixed = TRUE))
     }
 }
 
@@ -584,17 +692,13 @@ if (have_tsv) {
 # A disclosure that turns up where nothing was disclosed is a false claim, and
 # it is the cost of getting §3 green by drawing a caption unconditionally.
 if (have_tsv) {
-    # Two groups: one comparison, no post-hoc, no family. The caption
-    # procedure RUNS -- there is a bracket -- and correctly decides there is
-    # nothing to say. cap_ran and cap_drawn are separate columns exactly so
-    # that "declined" can be told from "never reached".
-    check_true(ID, "two groups: the caption procedure runs and declines",
-               identical(lv("welch_two", "cap_ran"), "1") &&
-               identical(lv("welch_two", "cap_drawn"), "0"))
-    check_true(ID, "two groups: no ink is added below the frame",
-               identical(lv("welch_two", "ink_px"), "0"))
-    check_true(ID, "two groups: the caption band is not empty text, it is absent",
-               !nzchar(norm_ocr(lv("welch_two", "ocr"))))
+    # THE TWO-GROUP LEGS USED TO BE THIS SECTION'S SUBJECT and are now §3's.
+    # They asserted that the caption procedure ran, found two empty halves and
+    # correctly declined. Ruling C says a bracket-bearing figure names its
+    # test whatever k is, so what remains here is the case where there is no
+    # bracket at all -- and that case is unchanged by the ruling, which is the
+    # thing worth pinning: the sweep must not have widened past figures that
+    # HAVE brackets.
 
     # A non-significant omnibus runs no post-hoc and draws no brackets, so
     # @emlDrawAnnotations is never entered at all: cap_ran = 0. A figure with
@@ -646,46 +750,40 @@ if (have_tsv) {
 }
 
 # ===========================================================================
-# 8. WHAT THIS CHANGE FOUND AND DID NOT CLOSE
+# 8. WHAT THIS CHANGE FOUND AND DID NOT CLOSE -- CLOSED, 16 AUGUST 2026
 # ===========================================================================
-# A TWO-GROUP BRACKET FIGURE NAMES NO TEST ANYWHERE ON IT. Both two-group arms
-# of @emlBridgeGroupComparison compose .omnibus$ -- "Welch t: t(21.7) = 21.06,
-# p < .001, d = -6.08" -- and hand it back for the Info window, and NEITHER
-# sets annotTextN. Only the k >= 3 arms do. So the form's post-dispatch stage
-# has no omnibus line to route into the corner box, and the figure that leaves
-# the session carries a bracket, a star triple and a Cohen's d with nothing
-# that says what produced them.
+# THE FINDING. A two-group bracket figure named no test anywhere on it. Both
+# two-group arms of @emlBridgeGroupComparison composed .omnibus$ -- "Welch t:
+# t(22.0) = -14.90, p < .001, d = -6.08" -- and handed it back for the Info
+# window, and NEITHER set annotTextN. Only the k >= 3 arms did. So the form's
+# post-dispatch stage had no omnibus line to route into the corner box, and
+# the figure that left the session carried a bracket, a star triple and a
+# Cohen's d with nothing saying what produced them. This file recorded it as
+# an attestation, printed a NOTE beside it, and asserted nothing either way,
+# because the remedy named two possible rulings and choosing between them was
+# the author's call.
 #
-# That is the same defect the 16 August ruling is about, one arm further down,
-# and it is the reason the two-group arms' silence could not simply be
-# justified by "the omnibus box already names the test" -- it does not,
-# because there is no omnibus box. It is NOT asserted either way here. The
-# remedy is the author's call: set annotTextN on the two-group arms so the
-# corner box carries the test, or give those arms a caption of their own
-# stating one comparison and no adjustment. Either would move figures the
-# ruling did not name.
+# THE RULING. Author ruling C, 16 August 2026, took BOTH remedies and refused
+# the special case: every bracket-bearing figure names its test, k = 2
+# included. The arms set annotTextN, so the corner box carries the test, AND
+# they write a caption of their own stating one comparison and no adjustment.
+# What that leaves this file asserting is spread over three sections rather
+# than gathered here -- §2 for the source, §3 for the words, §4b for the
+# corner box -- and the invariant itself, "every arm that can produce a
+# bracket sets annotTextN", is validate/v76's, because it is a property of
+# the ARMS and not of these eight figures.
 #
-# Measured, printed, and recorded as evidence rather than as a test.
+# The attestation is gone rather than kept as history: an attestation is a
+# standing claim that something is still true and unasserted, and neither half
+# of that is true now. What replaces it is the check below, which is the
+# attestation's own measurement turned the right way up.
 if (have_tsv) {
     wt <- ""
     p_wt <- file.path(bdir, "welch_two.fig.ocr")
     if (file.exists(p_wt)) wt <- norm_ocr(paste(readLines(p_wt, warn = FALSE),
                                                 collapse = " "))
-    if (nzchar(wt) && !grepl("Welch", wt, fixed = TRUE)) {
-        cat(paste0(
-            "NOTE  v69  UNCLOSED, AWAITING A RULING: a two-group BRACKET figure\n",
-            "           names no test anywhere on it. Both two-group arms of\n",
-            "           @emlBridgeGroupComparison compose .omnibus$ and neither\n",
-            "           sets annotTextN, so the form has no omnibus line to place.\n",
-            "           harness/bracketcap/out/welch_two.png carries a bracket,\n",
-            "           '***, d = -6.08' and nothing else; the OCR of the whole\n",
-            "           figure contains no test name. SITE: the 2-GROUP COMPARISON\n",
-            "           section of @emlBridgeGroupComparison,\n",
-            "           plugin/graphs/eml-annotation-procedures.praat.\n"))
-    }
-    attest(ID,
-           "a two-group bracket figure was OCR'd whole and carries no test name",
-           "harness/bracketcap/out/welch_two.fig.ocr -- not asserted either way; the remedy is the author's call")
+    check_true(ID, "the finding of 16 Aug is closed: the whole two-group figure names its test",
+               nzchar(wt) && grepl("Welch t", wt, fixed = TRUE))
 }
 
 # NOTES, NOT CHECKS. The byte counts are here so the size trap stays on the

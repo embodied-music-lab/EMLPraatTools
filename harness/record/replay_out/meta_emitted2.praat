@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Praat Tools -- recorded workflow
-# Sun Aug 16 00:54:34 2026  --  recorded on Praat 6.6.30
+# Sun Aug 16 15:40:54 2026  --  recorded on Praat 6.6.30
 # (The session's start time was lost -- its record table was
 # removed from the Objects window -- so the time above is when
 # the recorder noticed, not when recording began.)

@@ -164,6 +164,9 @@ harness/axisspec/out/replay_*.praat
 /tmp/ag2/
 harness/formaxis/out/prefs/
 harness/formaxis/out/*.code
+# The per-break v68 transcripts, one per shadow tree. BREAKS.tsv is the record
+# and IS tracked; these are the logs it summarises, rewritten on every run.
+harness/formaxis/out/break_*.v68.log
 
 # ag3 scratch: the bracket-caption work (16 Aug ruling, v69). The OCR
 # intermediates under harness/bracketcap/out are inputs to tesseract -- the
@@ -204,3 +207,51 @@ evidence/redrive/wizard_procs.generated.praat
 # ever be mistaken for the shipped one.
 harness/batchgui/out/work/
 /tmp/ag7/
+
+# harness/consumeonce (16 Aug 2026): the consume-once axis publication,
+# behind validate/v74. The EVIDENCE is committed — CONSUMEONCE.tsv,
+# BREAKS.tsv and the emitted script each record leg produced — because those
+# are what the validator reads and what a reviewer needs without running
+# Praat. What is ignored is scratch: this rig's own Praat pref dir (only its
+# lock files are wiped, per leg, and never anybody else's), the per-leg Praat
+# logs, the recorder's crash mirror (a duplicate of the emitted script,
+# written row by row so a Table lost to a crash is not lost with it), and the
+# per-break-case v74 transcripts, which are useful while a break is being run
+# and noise once its line is in BREAKS.tsv.
+harness/consumeonce/out/prefs/
+harness/consumeonce/out/*.log
+harness/consumeonce/out/*/eml_record_mirror.txt
+harness/consumeonce/out/break_*.v74.log
+
+# harness/directional (16 Aug 2026): the sign-reversal matrix behind
+# validate/v73_directional_p.R. There is no evidence under out/ at all, and
+# that is deliberate -- this rig's single artefact is
+# evidence/info/v73_directional_info.txt, committed beside the fixture the
+# validator reads it against. out/work/ is the staging tree: a copy of the
+# driver and a symlink named `plugin` pointing at whichever tree the run was
+# asked to exercise, rebuilt from nothing every run so that a symlink left
+# behind by a break test cannot make a later run describe a plugin nobody
+# selected. Committing it would put a machine-specific symlink and a second
+# copy of the driver in the repository. out/driver.log is Praat's echo of the
+# capture plus one line; a second copy that can drift from the committed one
+# is the thing the capture exists to prevent.
+harness/directional/out/work/
+harness/directional/out/driver.log
+
+# harness/record's LEGEND leg and its break rig (16 Aug 2026): author ruling B,
+# change order 8. The emitted scripts, the figures and REPLAY.tsv are evidence
+# and stay tracked. BREAKS.tsv is evidence too -- it is the record of which
+# deliberate defect went red and by how much -- but the per-break v75
+# transcripts are not: a break log is the transcript of a tree that was broken
+# on purpose, useful while it is running and noise once the count is in
+# BREAKS.tsv. The shadow trees themselves live outside the repository.
+harness/record/replay_out/breaks/break_*.v75.log
+
+# harness/bracketcap's second break rig (16 Aug 2026): author ruling C, change
+# order 9, behind validate/v76. BREAKS_V76.tsv is evidence -- it is the record
+# of which deliberate defect went red and by how much -- and stays tracked, as
+# BREAKS.tsv does for v69. The per-break v76 transcripts are not: a break log
+# is the transcript of a tree that was broken on purpose, useful while it is
+# running and noise once its count is in the TSV. The shadow trees themselves
+# live outside the repository, under the scratch directory the rig names.
+harness/bracketcap/out/break_*.v76.log

@@ -89,7 +89,15 @@ The graphs module is independent of the stats modules. Stats-only scripts can om
 
 **Menu items (no scripting required):** Select a Table in the object list, then click one of the **EML:** action buttons. A dialog collects your choices (which column, which test). Results appear in the Info window.
 
-**In your own scripts:** Add the include chain at the top, then call procedures directly. See `docs/procedure-reference.md` for all procedure signatures and `docs/recipes.md` for complete copy-paste examples.
+**In your own scripts:** Add the include chain at the top, then call procedures directly.
+
+**Where the reference is.** There is no single procedure-reference page, and that is deliberate: `stats/` and `graphs/` define 492 procedures (`grep -c "^procedure " plugin/stats/*.praat plugin/graphs/*.praat`), and a hand-written signature list that long would be wrong in places by the end of the week it was written. What the plugin carries instead, and keeps true:
+
+- **Every procedure is documented at its definition.** The header block above each `procedure` in `stats/` and `graphs/` gives its arguments, its outputs, and — where it matters — why it works the way it does. That is the reference; it cannot drift from the code, because it sits on top of it.
+- **`MANIFEST.txt`** lists every file in the plugin with a one-line description of what it is for, so you know which module to open. It is generated from the tree by `dev/tools/build-manifest.py` and checked on every push.
+- **`../docs/API_EXPORT.md`** is the worked how-to for `@emlExportResultFiles` — running one analysis over a folder of files and writing the result CSVs from a loop, with no dialogs.
+- **`setup.praat`** is the authoritative list of menu items and action buttons, each with the script it runs.
+- **Record script** (Objects → New → EML Tools) is the fastest route from clicking to scripting: do the analysis in the GUI, then Stop recording and open, and you get a runnable, commented Praat script of *your* analysis. That is the recipe collection, generated for the data in front of you rather than for eight cases someone guessed at.
 
 ## Files in This Plugin
 
@@ -112,8 +120,9 @@ The graphs module is independent of the stats modules. Stats-only scripts can om
 | `scripts/eml-batch-process.praat` | Batch voice analysis: extract acoustic measures (F0, intensity, jitter, shimmer, HNR, CPPS) from a folder of Sound files to a CSV in a user-designated output folder |
 | `scripts/eml-stats-demo.praat` | Visual showcase: three-panel figure with synthetic voice-science data |
 | `scripts/eml-quick-start.praat` | Prints a quick-start guide to the Info window |
-| `docs/procedure-reference.md` | All procedures organized by workflow, with signatures and examples |
-| `docs/recipes.md` | Eight self-contained scripts for common analysis tasks |
+| `MANIFEST.txt` | Every file in the plugin, one line each, generated from the tree |
+
+This table is a hand-picked selection; `MANIFEST.txt` is the complete list.
 
 ## Available Statistical Tests
 
@@ -133,8 +142,9 @@ The graphs module is independent of the stats modules. Stats-only scripts can om
 
 ## Further Reading
 
-- `docs/procedure-reference.md` — all procedures by workflow, with signatures and examples
-- `docs/recipes.md` — copy-paste scripts for common analysis tasks
+- `MANIFEST.txt` — every file in the plugin with a one-line description, so you know which module to open
+- `../docs/API_EXPORT.md` — calling `@emlExportResultFiles` from your own script, for a folder of files in a loop
+- `FIX_NOTES.md` — what was wrong and what closed it, for anyone comparing against an older copy
 - `scripts/eml-stats-demo.praat` — run to see a three-panel publication figure with synthetic data
 
 ## Attribution

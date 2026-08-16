@@ -189,19 +189,34 @@ emit_kv "line_legendroom_call" \
 emit_kv "code_form_fixed" "$(grep -c 'fixed\$ *(' "$OUT/form.code")"
 emit_kv "code_graph_fixed" "$(grep -c 'fixed\$ *(' "$OUT/graph.code")"
 emit_kv "code_graph_eml_fixed" "$(grep -c '@eml_fixed:' "$OUT/graph.code")"
-# The two Info-window sites in eml-graph-procedures.praat, by destination:
-# the ellipsis NOTE (active) and @emlCheckPlausibility (no caller anywhere).
+# THE ONE REMAINING Info-window site in eml-graph-procedures.praat: the
+# ellipsis NOTE, which is active on every draw that carries a legend.
 emit_kv "code_clamp_fixed" \
     "$(awk '/^ *if \.clamped = 1$/,/^ *endif$/' "$OUT/graph.code" \
        | grep -c 'fixed\$ *(')"
 emit_kv "code_clamp_emlfixed" \
     "$(awk '/^ *if \.clamped = 1$/,/^ *endif$/' "$OUT/graph.code" \
        | grep -c '@eml_fixed:')"
+# THE SECOND Info-window site WAS @emlCheckPlausibility, RETIRED 16 AUGUST
+# 2026 with zero callers (see the tombstone in eml-graph-procedures.praat).
+# What was a caller COUNT is now an EXISTENCE count, in both directions,
+# because a pin that dies with the body it guarded cannot catch the body
+# coming back. Both are read across the whole plugin, not just this file, so
+# a re-introduction into any file is visible:
+#
+#   _defs     `procedure emlCheckPlausibility` declarations. Read off the
+#             SHIPPED SOURCES rather than $OUT/graph.code, which is only the
+#             one file, and off unstripped text with the anchor doing the
+#             comment filtering — a commented-out definition does not define.
+#   _callers  non-comment mentions of the name. The tombstone and the
+#             changelog entry mention it on comment lines, which the -v
+#             filter drops; the moment the name appears on a code line
+#             anywhere in the plugin this goes to 1 or more.
+emit_kv "code_plausibility_defs" \
+    "$(grep -rhE '^[[:space:]]*procedure emlCheckPlausibility' \
+       "$SRC/plugin" --include=*.praat | wc -l)"
 emit_kv "code_plausibility_callers" \
-    "$(grep -rh '@emlCheckPlausibility' "$SRC/plugin" --include=*.praat \
+    "$(grep -rh 'emlCheckPlausibility' "$SRC/plugin" --include=*.praat \
        | grep -cv '^ *[#;!]')"
-emit_kv "code_plausibility_fixed" \
-    "$(awk '/^procedure emlCheckPlausibility:/,/^endproc$/' "$OUT/graph.code" \
-       | grep -c 'fixed\$ *(')"
 
 echo "formaxis: wrote $TSV ($(wc -l < "$TSV") lines)"

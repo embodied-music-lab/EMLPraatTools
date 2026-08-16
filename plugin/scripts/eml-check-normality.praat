@@ -6,7 +6,7 @@
 #          and a parametric/nonparametric recommendation per column.
 # Version: 2.2
 # Date: 8 August 2026
-# v2.2: D137 — per-group mode no longer carries its own normality rule. It
+# v2.2: Per-group mode does not carry its own normality rule. It
 #        had hard-coded thresholds of 1 and 3 against the shared constants
 #        of 2 and 7, and the pre-5-August `skKurtFail or swFail` gate, while
 #        the SAME script's overall mode called @emlRunNormalityAnalysis,
@@ -82,7 +82,7 @@ for iCol from 1 to nCols
 endfor
 
 if nNumericCols = 0
-    # ROUTED THROUGH THE PLUGIN'S ERROR SURFACE (NEW-G12-4). This was a raw
+    # ROUTED THROUGH THE PLUGIN'S ERROR SURFACE. This was a raw
     # `exitScript:` with a message, which Praat presents in its own error
     # window under "Script exited. ... Command ... not executed." — the
     # interpreter's stack where a refusal belongs. "entry" mode is the one
@@ -207,7 +207,7 @@ repeat
 
                     # ── The decision ──────────────────────────────────────
                     #
-                    # This branch used to carry its OWN copy of the rule,
+                    # This branch does NOT carry its own copy of the rule,
                     # and it was the copy that had drifted furthest:
                     #
                     #   .skKurtFail = (abs(.skew) >= 1) or (abs(.kurt) >= 3)
@@ -228,7 +228,7 @@ repeat
                     # column: any group with |skew| >= 1 that Shapiro-Wilk
                     # did not reject was called nonparametric here and
                     # parametric there. Both branches now reach the same
-                    # rule, @emlNormalityRecommendation. (D137)
+                    # Rule, @emlNormalityRecommendation.
                     #
                     # emlShapiroWilk.p is undefined whenever .error$ is set,
                     # so it is passed straight through with the error string
@@ -246,7 +246,7 @@ repeat
                         .groupNonparametric = 1
                     endif
 
-                    # AUTHOR RULING 6, 15 August 2026: no raw double reaches
+                    # THE DISPLAY STANDARD: no raw double reaches
                     # the Info window. Statistics print at fixed decimals, p
                     # prints in APA style, and full precision belongs to the
                     # CSV export.
@@ -254,7 +254,7 @@ repeat
                     # These four numbers are the EXACT TWIN of the wizard's
                     # normality preview, and the resemblance is not an
                     # accident: this per-group branch is the third copy of
-                    # that report, the same third copy D137 caught carrying
+                    # that report, the same third copy that would otherwise carry
                     # its own decision rule. The wizard's copy was repaired
                     # earlier today (scripts/eml-wizard.praat, "Skewness:"),
                     # and repairing one twin and not the other is how the two
@@ -371,7 +371,7 @@ repeat
             allDone = 1
 
         elsif clicked = 2
-            # AUTHOR RULING, 14 August 2026: every path through every
+            # Every path through every
             # approach must reach the export step. This wrapper had no Save
             # at all -- it ran @emlRunNormalityAnalysis, which has declared
             # into the broom collectors since before the panel existed, and

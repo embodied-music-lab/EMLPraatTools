@@ -30,7 +30,7 @@
 # appropriate application of this code.
 # ============================================================================
 
-# NEW-G12-4, the launcher's half. The same refusal, in the same words, as
+# THE LAUNCHER'S HALF. The same refusal, in the same words, as
 # @refuseSelection in eml-edit-table.praat -- and written out here rather
 # than called, because this file's whole job is to open the editor window
 # before handing over, so it cannot include the editor to borrow one

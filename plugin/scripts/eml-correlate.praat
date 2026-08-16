@@ -5,19 +5,19 @@
 #          or both. Reports correlation coefficient, t, df, p, and n.
 # Date: 11 May 2026
 # Version: 3.5
-# v3.5: D48/D49 — the per-group block is announced with its own header and
-#       counts, so it no longer reads as loose output past the end of the
+# V3.5: the per-group block is announced with its own header and
+#       counts, so it does not read as loose output past the end of the
 #       overall report, and the groups too small to analyse are named on one
 #       summary line inside the block rather than two orphan lines each.
-#       D104 — a grouped run exports ONE tidy frame in which every row is
+#       A grouped run exports ONE tidy frame in which every row is
 #       labelled in `term` ("(overall)" / "<group column> = <level>"),
 #       instead of dropping the per-group results from the export and
 #       accumulating them in the legacy buffer under a fabricated table name.
-# v3.4: D47 — the "Group column" menu is filtered: it now offers only
+# V3.4: the "Group column" menu is filtered: it now offers only
 #       columns with 2..(n/3) distinct levels, and never the columns
-#       currently bound to X and Y. D51 — Draw sets
+#       currently bound to X and Y. Draw sets
 #       emlGraphsPresetRegressionLine so the scatter carries the line whose
-#       R-squared it annotates. D53 — the Test menu carries a one-line
+#       R-squared it annotates. The Test menu carries a one-line
 #       Pearson/Spearman assumption note.
 # v3.3: Missing-data fix (correctness). Per-group correlation now uses
 #       @eml_getGroupPairedData (row-wise complete-case within the group)
@@ -65,15 +65,15 @@ endif
 
 # Seeds for the entry form. Initialised from the column-role guess, then
 # overwritten with the user's own answers each time round the loop. Before
-# the D93 fix these were re-read from the guess on every iteration, so any
+# The fix these were re-read from the guess on every iteration, so any
 # return to the form — after an error or after "New" — silently discarded
-# what the user had set. (D93)
+# What the user had set.
 selTest = 1
 selGroupName$ = ""
 
 allDone = 0
 repeat
-    ; ── D47: candidate grouping columns ──────────────────────────────────
+    ; ── candidate grouping columns ──────────────────────────────────
     ; A grouping column has to be able to grade the correlation. That rules
     ; out the two columns currently bound to X and Y (a variable cannot
     ; group itself), single-valued columns (one group is not a grouping),
@@ -124,7 +124,7 @@ repeat
     endfor
 
     ; Seed the menu from the user's last choice by NAME: the filtered list
-    ; is rebuilt each time round and its indices are not stable. (D93)
+    ; Is rebuilt each time round and its indices are not stable.
     selGroupIdx = 1
     for iG from 1 to grpN
         if grpName$ [iG] = selGroupName$
@@ -173,7 +173,7 @@ repeat
     colX$ = column_X$
     colY$ = column_Y$
     testChoice = test
-    # Carry the answers forward so a return to this form shows them. (D93)
+    # Carry the answers forward so a return to this form shows them.
     @emlKeepChoice: colX$, guessXIdx
     guessXIdx = emlKeepChoice.idx
     @emlKeepChoice: colY$, guessYIdx
@@ -181,7 +181,7 @@ repeat
     selTest = testChoice
 
     # Leading "(none)" entry: this is a position in the FILTERED list, not
-    # a column index. (D47)
+    # A column index.
     hasGroupCol = 0
     groupCol$ = ""
     if group_column > 1
@@ -193,7 +193,7 @@ repeat
     @emlHandleCommonFields
 
     if colX$ = colY$
-        # D93: uniform error surface; Quit must actually quit.
+        # Uniform error surface; Quit must actually quit.
         @emlErrorDialog: "Please select two different columns.", "", "menu"
         if not emlErrorDialog.back
             allDone = 1
@@ -210,7 +210,7 @@ repeat
         selectObject: tableId
         @emlRunCorrelationAnalysis: tableId, colX$, colY$, testType$
         if emlRunCorrelationAnalysis.error$ <> ""
-            # D93: an error must not strand the user on a form the error has
+            # An error must not strand the user on a form the error has
             # just ruled out. Present it with guidance, and honour Quit.
             @emlErrorDialog: emlRunCorrelationAnalysis.error$, emlRunCorrelationAnalysis.remedy$, "menu"
             if not emlErrorDialog.back
@@ -223,17 +223,17 @@ repeat
             # only how many complete pairs each group has. That is what lets
             # the whole block be ANNOUNCED — its own header, its own counts —
             # before any group prints, instead of appearing as loose output
-            # past the closing rule of the overall report (D48); and it is
+            # Past the closing rule of the overall report; and it is
             # what lets the groups that cannot be analysed be named on ONE
             # summary line at the end instead of costing two orphan lines
-            # each (D49: 30 singleton groups used to cost 60 lines).
+            # each (30 singleton groups would otherwise cost 60 lines).
             #
             # Pass 1 screens on the same @eml_getGroupPairedData that pass 2
             # analyses with, so the n the header counts and the n the report
             # shows cannot disagree.
             #
             # Main-body code: undotted variable names (Rule 5C); the pg
-            # prefix keeps them clear of the D47 grouping scan's grp names.
+            # prefix keeps them clear of the grouping scan's grp names.
             if hasGroupCol
                 selectObject: tableId
                 @emlCountGroups: tableId, groupCol$
@@ -278,7 +278,7 @@ repeat
                 @emlReportLine: "Groups", pgTotal, 0
                 @emlReportLine: "Analysed", pgRun, 0
 
-                ; ── D104: ONE export, with the grouping in a real column ──
+                ; ── ONE export, with the grouping in a real column ──
                 ;
                 ; @emlRunCorrelationAnalysis has already declared the OVERALL
                 ; fit into the tidy/glance collectors (and cleared the legacy
@@ -369,7 +369,7 @@ repeat
                         endif
                         # The report title names the grouping column as well
                         # as the level, so a reader scrolling the Info window
-                        # can see WHAT the block is grouped by. (D48)
+                        # Can see WHAT the block is grouped by.
                         @emlReportCorrelationAnalysis: tableName$
                         ... + " -- " + pgColDisplay$ + " = " + pgDisplay$,
                         ... colX$, colY$, pgThisN, testType$
@@ -410,13 +410,13 @@ repeat
                 ; The legacy rows the per-group reporter calls appended carry
                 ; a fabricated table name and duplicate what tidy now holds
                 ; properly labelled, so the buffer is truncated back to the
-                ; overall analysis. (D104)
+                ; Overall analysis.
                 emlCSV_n = pgCsvN
                 @emlGlanceNum: "n.groups", pgRun
 
                 ; ONE line for every skipped group, naming them and the
                 ; reason, inside the block — followed by the closing rule that
-                ; terminates it. (D48/D49)
+                ; Terminates it.
                 if pgSkipped > 0
                     @emlReportBlank
                     @emlReportLineString: "Skipped (n < 3)",
@@ -466,7 +466,7 @@ repeat
                     emlGraphsPresetYCol$ = colY$
                     emlGraphsPresetAnnotate = 1
                     emlGraphsPresetAnalysisType = 1
-                    ; D51: the annotation carries R-squared, so the figure
+                    ; The annotation carries R-squared, so the figure
                     ; has to carry the line it describes. AnalysisType 1
                     ; does not imply a line (only >= 2 does), so the
                     ; regression preset is set explicitly here.
