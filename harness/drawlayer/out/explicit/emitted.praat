@@ -48,10 +48,13 @@ include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
-# nothing below this block names an object or a column.
+# nothing below this block names an object, a column or an axis
+# range.
 data1$ = "Table narrow"   ; step 1 (draw)
 groupCol$ = "grp"   ; the grouping column -- step 1 (draw)
 valueCol$ = "val"   ; the measured column -- step 1 (draw)
+axisYMin  = 150   ; the y-axis range -- as typed in the dialog -- step 1 (draw)
+axisYMax  = 400   ; the figure was drawn on 150.0000 .. 400.0000
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -61,7 +64,7 @@ data = selected ()
 # Violin plot of val, grouped by grp, 3 groups.
 # Violin width is a kernel density estimate, not a count.
 
-@emlDrawViolinPlot: data, "Explicit axis", "Group", "Power (dB)", 6, 4, "color", 1, groupCol$, valueCol$, 150, 400
+@emlDrawViolinPlot: data, "Explicit axis", "Group", "Power (dB)", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # Axis resolved to 150.0000 .. 400.0000 over 3 groups.
 # The same step through the menu:
