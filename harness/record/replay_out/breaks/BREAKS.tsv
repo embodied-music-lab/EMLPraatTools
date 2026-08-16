@@ -1,0 +1,6 @@
+no_wiring	22	04e0e6457ea60091222ee4c3e420ae5d	the emitted script carries exactly ONE draw step heading  reported=1
+no_rewind	21	04e0e6457ea60091222ee4c3e420ae5d	the emitted script carries exactly ONE draw step heading  reported=1
+rewind_after_draw	27	04e0e6457ea60091222ee4c3e420ae5d	the emitted script exists and is a real file  
+rows_only	4	04e0e6457ea60091222ee4c3e420ae5d	the block names ONE step in the singular ('step 2 (draw)')
+no_rebuild	11	04e0e6457ea60091222ee4c3e420ae5d	the emitted script carries exactly ONE draw step heading  reported=1
+mark_at_zero	4	04e0e6457ea60091222ee4c3e420ae5d	one analysis then one legend figure emits TWO steps in total  reported=2
