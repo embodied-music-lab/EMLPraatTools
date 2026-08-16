@@ -5,7 +5,7 @@
 #          post-hoc and rank-biserial r effect sizes.
 # Date: 11 May 2026
 # Version: 3.1
-# v3.1: D26 — the post-hoc is now under the user's control. "Run Dunn post
+# V3.1: the post-hoc is now under the user's control. "Run Dunn post
 #        hoc" and "Adjustment" fields replace the hardcoded 1, "holm"
 #        arguments to @emlRunKWAnalysis, matching the ANOVA sibling's
 #        "Tukey HSD post hoc" control. The chosen adjustment is also carried
@@ -46,9 +46,9 @@ guessGroupIdx = emlWrapperInit.guessGroupIdx
 
 # Seeds for the entry form. Initialised from the column-role guess, then
 # overwritten with the user's own answers each time round the loop. Before
-# the D93 fix these were re-read from the guess on every iteration, so any
+# The fix these were re-read from the guess on every iteration, so any
 # return to the form — after an error or after "New" — silently discarded
-# what the user had set. (D93)
+# What the user had set.
 selGroupOrder = 1
 selDunn = 1
 selAdj = 2
@@ -83,7 +83,7 @@ repeat
 
     dataCol$ = data_column$
     groupCol$ = group_column$
-    # Carry the answers forward so a return to this form shows them. (D93)
+    # Carry the answers forward so a return to this form shows them.
     @emlKeepChoice: dataCol$, guessDataIdx
     guessDataIdx = emlKeepChoice.idx
     @emlKeepChoice: groupCol$, guessGroupIdx
@@ -110,7 +110,7 @@ repeat
     selectObject: tableId
     @emlRunKWAnalysis: tableId, dataCol$, groupCol$, doDunn, adjMethod$
     if emlRunKWAnalysis.error$ <> ""
-        # D93: an error must not strand the user on a form the error has
+        # An error must not strand the user on a form the error has
         # just ruled out. Present it with guidance, and honour Quit.
         @emlErrorDialog: emlRunKWAnalysis.error$, emlRunKWAnalysis.remedy$, "menu"
         if not emlErrorDialog.back

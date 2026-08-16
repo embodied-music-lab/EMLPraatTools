@@ -6,7 +6,7 @@
 #     include eml-lib-lmm.praat
 #
 # Only the Stats Wizard and the LMM script need this. The mixed-model module
-# is tabled for end users by author ruling of 4 August 2026; the code is here
+# is tabled for end users; the code is here
 # and loadable, it is simply not reachable from the menu.
 #
 # Paths are relative to the CALLING script's directory — see the note in

@@ -5,7 +5,7 @@
 #          and/or nonparametric (Wilcoxon signed-rank) tests.
 # Date: 11 May 2026
 # Version: 3.2
-# v3.2: NEW-G3-1 — "New" after a Draw is a fresh analysis on the user's own
+# V3.2: "New" after a Draw is a fresh analysis on the user's own
 #        table again. The spaghetti plot is drawn from a wide->long reshape,
 #        and a reshape is a Table like any other: drawing it re-pointed the
 #        shared column-name array at IT, and the entry form — which is
@@ -18,10 +18,10 @@
 #        left behind. The reshape is also named after the user's table
 #        instead of "pairedLong", so the figure's automatic title and its
 #        save stem name something the user can recognise.
-# v3.1: D90 — the spaghetti plot's axis labels no longer come from the
+# v3.1: The spaghetti plot's axis labels do not come from the
 #        wide->long reshape's role names ("Condition", "Value"). The measure
 #        and the contrast are derived from the two column names and
-#        registered against the role names with the graph layer's D90
+#        registered against the role names with the graph layer's
 #        label-override registry (@emlSetLabelOverride).
 # v3.0: Wrapper infrastructure refactor. repeat/until replaces goto/label.
 # v2.0: Full convergence — orchestrator + @emlGuessColumnRoles.
@@ -60,9 +60,9 @@ endif
 
 # Seeds for the entry form. Initialised from the column-role guess, then
 # overwritten with the user's own answers each time round the loop. Before
-# the D93 fix these were re-read from the guess on every iteration, so any
+# The fix these were re-read from the guess on every iteration, so any
 # return to the form — after an error or after "New" — silently discarded
-# what the user had set. (D93)
+# What the user had set.
 # Hoisted out of the loop. @emlWrapperInit has already run
 # @emlGuessColumnRoles, so this is loop-invariant, and the seed below needs
 # it before the first iteration. It was assigned inside the loop until
@@ -77,7 +77,7 @@ selGroupIdx = 1
 
 allDone = 0
 repeat
-    # THE FORM IS BOUND TO THE USER'S TABLE, ON EVERY PASS. (NEW-G3-1)
+    # THE FORM IS BOUND TO THE USER'S TABLE, ON EVERY PASS.
     #
     # The option lists below are built out of emlTableColumnNames.name$[],
     # which is a SHARED array: @emlTableColumnNames overwrites it for whatever
@@ -89,7 +89,7 @@ repeat
     # RESHAPE to @emlGraphsWorkflow, which reads its columns — so by the time
     # "New" comes back here the array holds Subject / Condition / Value, the
     # reshape's role names, and the reshape itself has been removed. The form
-    # offered three columns that no longer existed anywhere, the user's real
+    # offered three columns that do not exist anywhere, the user's real
     # columns were unreachable, and Run dead-ended in "Column not found:
     # Condition" with Back returning to the same form. Only Quit recovered.
     #
@@ -142,7 +142,7 @@ repeat
     col1$ = column_1$
     col2$ = column_2$
     testChoice = test
-    # Carry the answers forward so a return to this form shows them. (D93)
+    # Carry the answers forward so a return to this form shows them.
     @emlKeepChoice: col1$, guessCol1Idx
     guessCol1Idx = emlKeepChoice.idx
     @emlKeepChoice: col2$, guessCol2Idx
@@ -171,7 +171,7 @@ repeat
     endif
 
     if col1$ = col2$
-        # D93: uniform error surface; Quit must actually quit.
+        # Uniform error surface; Quit must actually quit.
         @emlErrorDialog: "Please select two different columns.", "", "menu"
         if not emlErrorDialog.back
             allDone = 1
@@ -188,7 +188,7 @@ repeat
         selectObject: tableId
         @emlRunPairedAnalysis: tableId, col1$, col2$, testType$
         if emlRunPairedAnalysis.error$ <> ""
-            # D93: an error must not strand the user on a form the error has
+            # An error must not strand the user on a form the error has
             # just ruled out. Present it with guidance, and honour Quit.
             @emlErrorDialog: emlRunPairedAnalysis.error$, emlRunPairedAnalysis.remedy$, "menu"
             if not emlErrorDialog.back
@@ -228,8 +228,8 @@ repeat
                     # (pairedLong)" over a figure of the user's data, and saved
                     # it as pairedLong_Spaghetti_Plot_<stamp> — a deliverable
                     # named after a transient the user never created, never
-                    # named and never sees again. That is D18's finding about
-                    # the CSV filename, arriving through the two doors D18 did
+                    # named and never sees again. That is the same problem as
+                    # the CSV filename has, arriving through two doors it did
                     # not cover.
                     #
                     # "_long" rather than the table's bare name: the two live
@@ -277,7 +277,7 @@ repeat
                         endif
                     endfor
 
-                    # ── D90: axis labels that name the measure ──────────
+                    # ── axis labels that name the measure ──────────
                     # The long table's columns are ROLE names — Subject,
                     # Condition, Value — and the graph layer derives its axis
                     # labels from column names, so the figure's y-axis read
@@ -338,7 +338,7 @@ repeat
                     if hasGroupCol
                         emlGraphsPresetGroupCol$ = "Group"
                     endif
-                    # The graph layer's D90 half is a registry keyed by column
+                    # The graph layer's half is a registry keyed by column
                     # name (graphs/eml-graph-procedures.praat), which the
                     # spaghetti page's @emlCapitalizeLabel calls on
                     # spCondCol$ / spValueCol$ consult. Registering the role

@@ -6,7 +6,7 @@
 # v1.1: Item 8 — removed the "Interactive tutorial: New > EML Tools > EML
 #       Interactive Tutorial" documentation line. That menu entry was
 #       unregistered in setup.praat v1.4 (item 4), so the guide was
-#       advertising a menu item that no longer exists.
+#       advertising a menu item that does not exist.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell

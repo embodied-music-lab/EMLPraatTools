@@ -7,12 +7,12 @@
 # Date: 13 August 2026
 # Version: 1.0
 #
-# WHY THIS IS NOT PRINTED TO THE INFO WINDOW. Author ruling, 13 August 2026:
-# the recorded script must NEVER be written into the Info window. That window
+# WHY THIS IS NOT PRINTED TO THE INFO WINDOW.
+# The recorded script must NEVER be written into the Info window. That window
 # holds the analysis reports — it is the thing 'Save Info' writes and the
 # thing a user copies into a paper — and a script dumped into it destroys the
-# deliverable. The Info window is append-only by design (see the D27 note in
-# stats/eml-output.praat), so there is no undo for that.
+# deliverable. The Info window is append-only by design (see the REPORT
+# PROVENANCE note in stats/eml-output.praat), so there is no undo for that.
 #
 # HOW A SCRIPT GETS INTO AN EDITOR, which took three wrong guesses to find.
 # Praat's own documentation for `Read from file...` says:

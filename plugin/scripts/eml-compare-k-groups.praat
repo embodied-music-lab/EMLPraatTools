@@ -41,9 +41,9 @@ guessGroupIdx = emlWrapperInit.guessGroupIdx
 
 # Seeds for the entry form. Initialised from the column-role guess, then
 # overwritten with the user's own answers each time round the loop. Before
-# the D93 fix these were re-read from the guess on every iteration, so any
+# The fix these were re-read from the guess on every iteration, so any
 # return to the form — after an error or after "New" — silently discarded
-# what the user had set. (D93)
+# What the user had set.
 selTukey = 1
 selGroupOrder = 1
 
@@ -75,7 +75,7 @@ repeat
     dataCol$ = data_column$
     groupCol$ = group_column$
     doTukey = tukey_HSD_post_hoc
-    # Carry the answers forward so a return to this form shows them. (D93)
+    # Carry the answers forward so a return to this form shows them.
     @emlKeepChoice: dataCol$, guessDataIdx
     guessDataIdx = emlKeepChoice.idx
     @emlKeepChoice: groupCol$, guessGroupIdx
@@ -93,7 +93,7 @@ repeat
     selectObject: tableId
     @emlRunAnovaAnalysis: tableId, dataCol$, groupCol$, doTukey
     if emlRunAnovaAnalysis.error$ <> ""
-        # D93: an error must not strand the user on a form the error has
+        # An error must not strand the user on a form the error has
         # just ruled out. Present it with guidance, and honour Quit.
         @emlErrorDialog: emlRunAnovaAnalysis.error$, emlRunAnovaAnalysis.remedy$, "menu"
         if not emlErrorDialog.back

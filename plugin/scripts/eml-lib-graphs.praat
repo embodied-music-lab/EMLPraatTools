@@ -35,7 +35,7 @@ include ../graphs/eml-annotation-procedures.praat
 ; THE RECORD LAYER IS NOT INCLUDED HERE, AND THAT IS THE FIX FOR A DEFECT
 ; THAT KILLED FIFTEEN MENU ENTRY POINTS.
 ;
-; It used to be, on the reasoning that @emlDrawViolinPlot calls
+; It is not, though @emlDrawViolinPlot calls
 ; @emlRecordViolin so the procedures must exist. That reasoning is obsolete:
 ; the draw layer's record hooks are guarded with variableExists ("emlRecordActive")
 ; and Praat only errors on an undefined procedure when it EXECUTES the call,

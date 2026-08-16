@@ -8,9 +8,9 @@
 #          scatter — not from here.
 # Date: 11 May 2026
 # Version: 2.2
-# v2.2: D61 — header corrected. It previously advertised a "Theil-Sen
+# V2.2: header corrected. It previously advertised a "Theil-Sen
 #        robust alternative" that this wrapper has never called and has no
-#        control for. D59 — the dialog's model line no longer uses the
+#        control for. The dialog's model line does not use the
 #        letter "x" as a multiplication sign next to the variable X.
 # v2.1: Use emlGraphsPresetRegressionLine and emlGraphsPresetCorrType$
 #        globals instead of direct variable set (survive per-call reset).
@@ -51,9 +51,9 @@ endif
 
 # Seeds for the entry form. Initialised from the column-role guess, then
 # overwritten with the user's own answers each time round the loop. Before
-# the D93 fix these were re-read from the guess on every iteration, so any
+# The fix these were re-read from the guess on every iteration, so any
 # return to the form — after an error or after "New" — silently discarded
-# what the user had set. (D93)
+# What the user had set.
 selGroupIdx = 1
 
 allDone = 0
@@ -89,7 +89,7 @@ repeat
 
     predCol$ = predictor_column$
     respCol$ = response_column$
-    # Carry the answers forward so a return to this form shows them. (D93)
+    # Carry the answers forward so a return to this form shows them.
     @emlKeepChoice: predCol$, guessPredIdx
     guessPredIdx = emlKeepChoice.idx
     @emlKeepChoice: respCol$, guessRespIdx
@@ -106,7 +106,7 @@ repeat
     endif
 
     if predCol$ = respCol$
-        # D93: uniform error surface; Quit must actually quit.
+        # Uniform error surface; Quit must actually quit.
         @emlErrorDialog: "Please select two different columns.", "", "menu"
         if not emlErrorDialog.back
             allDone = 1
@@ -115,7 +115,7 @@ repeat
         selectObject: tableId
         @emlRunRegressionAnalysis: tableId, respCol$, predCol$
         if emlRunRegressionAnalysis.error$ <> ""
-            # D93: an error must not strand the user on a form the error has
+            # An error must not strand the user on a form the error has
             # just ruled out. Present it with guidance, and honour Quit.
             @emlErrorDialog: emlRunRegressionAnalysis.error$, emlRunRegressionAnalysis.remedy$, "menu"
             if not emlErrorDialog.back

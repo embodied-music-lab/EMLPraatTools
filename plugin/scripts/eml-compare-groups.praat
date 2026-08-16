@@ -45,9 +45,9 @@ guessGroupIdx = emlWrapperInit.guessGroupIdx
 
 # Seeds for the entry form. Initialised from the column-role guess, then
 # overwritten with the user's own answers each time round the loop. Before
-# the D93 fix these were re-read from the guess on every iteration, so any
+# The fix these were re-read from the guess on every iteration, so any
 # return to the form — after an error or after "New" — silently discarded
-# what the user had set. (D93)
+# What the user had set.
 selTest = 1
 selGroupOrder = 1
 
@@ -89,7 +89,7 @@ repeat
     groupCol$ = group_column$
     testChoice = test
 
-    # Carry the answers forward so a return to this form shows them. (D93)
+    # Carry the answers forward so a return to this form shows them.
     @emlKeepChoice: dataCol$, guessDataIdx
     guessDataIdx = emlKeepChoice.idx
     @emlKeepChoice: groupCol$, guessGroupIdx
@@ -126,7 +126,7 @@ repeat
     selectObject: tableId
     @emlRunTwoGroupAnalysis: tableId, dataCol$, groupCol$, testType$, equalVar
     if emlRunTwoGroupAnalysis.error$ <> ""
-        # D93: an error must not strand the user on a form the error has
+        # An error must not strand the user on a form the error has
         # just ruled out. Present it with guidance, and honour Quit.
         @emlErrorDialog: emlRunTwoGroupAnalysis.error$, emlRunTwoGroupAnalysis.remedy$, "menu"
         if not emlErrorDialog.back

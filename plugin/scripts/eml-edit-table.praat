@@ -91,7 +91,7 @@ nocheck endeditor
 
 nTables = numberOfSelected ("Table")
 if nTables <> 1
-    # NEW-G12-4, the editor's half. A raw `exitScript:` with a message is
+    # THE EDITOR'S HALF. A raw `exitScript:` with a message is
     # rendered by Praat as its own error window with "Script exited. ...
     # Command ... not executed." underneath — the interpreter's stack shown
     # to a user whose only mistake was selecting two objects. It goes through
@@ -568,7 +568,7 @@ procedure structureDialog
             # 0` is rejected as a non-positive count, and `Remove column` on a
             # one-column table raises "cannot remove my only column" and takes
             # the whole session down with it, leaving the read-only
-            # TableEditor open behind a dialog that no longer exists. `< 1`
+            # TableEditor open behind a dialog that is gone. `< 1`
             # therefore guarded a state that cannot occur and let the state
             # that can occur straight through.
             if .nCols <= 1

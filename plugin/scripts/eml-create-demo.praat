@@ -6,9 +6,9 @@
 #          One demo table per wizard analysis path.
 # Date: 11 May 2026
 # Version: 2.1
-# v2.1: D1 — every "Try:" line now quotes the Stats Wizard's own option
+# V2.1: every "Try:" line now quotes the Stats Wizard's own option
 #        labels rather than paraphrasing them, and names the direct
-#        EML Tools menu entry as a second route. D3 — types 1-5 gained a
+#        EML Tools menu entry as a second route. Types 1-5 carry a
 #        "Note:" line stating the effect the generator builds in, matching
 #        what types 6 and 7 already did.
 # v2.0: Added regression, two-way ANOVA, and normality demos.

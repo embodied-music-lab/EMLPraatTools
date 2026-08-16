@@ -7,7 +7,7 @@
 #
 # Date: 6 August 2026
 # Version: 1.1
-# v1.1: NEW-G10-4 — file mode checked two things and reported on all of them.
+# V1.1: file mode checked two things and reported on all of them.
 #        A CSV whose rows do not all carry the header's number of fields came
 #        back as "No import problems found", and Praat's own reader then
 #        refused the same file outright with "Row 3 incomplete" — the tool
@@ -15,7 +15,7 @@
 #        lengths are now scanned (@emlCheckFileRowLengths), and the clean
 #        verdict enumerates the checks it is the verdict OF rather than
 #        speaking for the file as a whole.
-#        NEW-G12-4 — choosing Table mode with no Table selected refused
+#        Choosing Table mode with no Table selected refuses
 #        through a raw exitScript, which Praat dresses in "Script exited.
 #        Script ... not completed. Command ... not executed." That refusal
 #        now comes through @emlErrorDialog like every other one, and Back
@@ -93,9 +93,9 @@ include eml-lib-stats.praat
 nTables = numberOfSelected ("Table")
 
 # THE MODE CHOICE IS A LOOP, because one of the two modes can be refused.
-# (NEW-G12-4)
 #
-# Table mode with no Table selected used to end in
+#
+# Table mode with no Table selected must not end in
 #
 #     exitScript: "Please select exactly one Table object, then run this again."
 #
@@ -106,7 +106,7 @@ nTables = numberOfSelected ("Table")
 # one refusal surface and it offers Back; there is somewhere to go back TO
 # here, because file mode is still open, so the choice is re-asked rather than
 # thrown away. The seed carries the user's own answer forward on the way round,
-# the way every wrapper form does since D93.
+# The way every wrapper form does as of that change.
 selCheck = if nTables = 1 then 1 else 2 fi
 mode = 0
 repeat
@@ -641,11 +641,11 @@ if emlCheckFileRowLengths.checked = 0
     ... + "checked. It may have"
     appendInfoLine: "been moved or renamed since it was chosen."
 elsif emlCheckSourceFile.report$ = "" and emlCheckFileRowLengths.report$ = ""
-    # THE VERDICT NAMES ITS OWN CHECKS. It used to read "No import problems
+    # THE VERDICT NAMES ITS OWN CHECKS. "No import problems
     # found", which is a statement about the file; what had been established
     # was a statement about two checks, and a third class of problem — rows of
     # unequal width — went straight past it into a read Praat refused.
-    # (NEW-G10-4)
+    #
     appendInfoLine: "Nothing found by the three checks this mode makes:"
     appendInfoLine: "  - no doubled-quote escapes inside quoted fields;"
     appendInfoLine: "  - the header is comma-delimited, not semicolon-"

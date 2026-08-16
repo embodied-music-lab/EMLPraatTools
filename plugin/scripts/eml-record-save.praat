@@ -6,10 +6,10 @@
 # Date: 13 August 2026
 # Version: 2.0
 #
-# THE MENU ITEM NAME IS THE CONTRACT. Author ruling, 13 August 2026: three
+# THE MENU ITEM NAME IS THE CONTRACT. Three
 # commands — 'Record script', 'Stop recording and open', 'Stop recording and
 # save' — each saying in its own name what it does. So the "Stop recording
-# after saving" tickbox this file used to carry is gone: a user who picked a
+# after saving" tickbox has no place here: a user who picked a
 # command called 'Stop recording and save' has already answered that question,
 # and asking again is the dialog second-guessing the menu.
 #
@@ -90,10 +90,10 @@ endif
 
 # ONE PLUGIN, ONE NAMING SCHEME (audit §6, fixed 14 August 2026).
 #
-# This dialog used to propose the bare name "eml_recorded_workflow.praat" and
+# This dialog does not propose a bare "eml_recorded_workflow.praat" and
 # resolve a collision AFTER the press, silently, by appending _1. The Save
 # panel in stats/eml-output.praat resolves the same question the other way and
-# has done since the author's 14 August ruling: it proposes a STAMPED name in
+# does: it proposes a STAMPED name in
 # the dialog, so the user sees the name they are about to get, one stamp per
 # press shared by every file that press writes, and the numeric suffix is only
 # a backstop for the case a stamp cannot separate. Two schemes in one plugin
@@ -126,12 +126,12 @@ if right$ (name$, 6) <> ".praat"
     name$ = name$ + ".praat"
 endif
 
-# THE FOLDER IS MADE, AND MADE ALL THE WAY DOWN (NEW-G11-4, 14 August 2026).
+# THE FOLDER IS MADE, AND MADE ALL THE WAY DOWN.
 #
 # `folder:` is a freely editable text field with a Browse button beside it, so
 # a user can type a path that does not exist yet -- and typing one is the
 # natural thing to do when you want this session's script in its own place.
-# This file had no createFolder: at all, and the audit walked straight into
+# Without a createFolder: here, an ordinary path walks straight into
 # what that costs: Praat's own abort, quoting the plugin's internals
 #
 #     Script line 15215 not performed or completed:
