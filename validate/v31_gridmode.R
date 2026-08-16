@@ -39,7 +39,11 @@
 #
 # Base R only. No packages.
 #
-# NOT wired into run_all.R — the four captures are GUI-driven.
+# It IS in run_all.R (the list around line 136). This header used to say it was
+# not; that stopped being true when it was added, and a validator that claims to
+# be out of the suite is one nobody thinks to re-drive. The four captures are
+# GUI-driven, so re-driving them is the manual step — running this file is not.
+# See evidence/walks/gridmode/README.md, "Reproducing", for the drive.
 
 if (!exists("eml_report")) {
     .a <- commandArgs(FALSE); .f <- sub("^--file=", "", .a[grep("^--file=", .a)])
@@ -141,9 +145,9 @@ check_true("v31", "fixed post-histogram config is on graph type 10",
            gm_cfg("fixed_off_config_after_histogram.txt", "graphType") == 10L)
 
 # Horizontal only: 2 is IN range on a two-option menu, so nothing refuses in
-# either tree — the difference is what the menu means, which is visible only
-# in the screenshots. What the logs can carry is that both runs completed and
-# that the key kept the value the scatter set.
+# either tree — the difference is what the menu MEANS. Until 16 August that
+# lived only in the screenshots; the walk now reads the closed control back by
+# OCR and writes it to the log, so it is asserted below rather than illustrated.
 for (tag in c("prefix_horiz", "fixed_horiz")) {
     check_true("v31", paste(tag, "scatter wrote Horizontal only as 2"),
                gm_cfg(paste0(tag, "_config_after_scatter.txt"), "gridlineMode") == 2L)
@@ -165,6 +169,81 @@ check_true("v31", "fixed: the page after Draw is Graph Complete",
 # the walk reached the page unless the same walk failed against the old code.
 check_true("v31", "the two runs disagree — the walk could catch the defect",
            any(grepl("REFUSED", po)) && !any(grepl("REFUSED", fo)))
+
+# ---------------------------------------------------------------------------
+# What the histogram's Gridline mode control ACTUALLY RENDERS, as text
+# ---------------------------------------------------------------------------
+# Added 16 August 2026. This is the README's four-row table — the primary claim
+# of this whole capture — and until now none of it was machine readable: the
+# rows lived in four PNGs and in a paragraph explaining that one of them looks
+# like the opposite of what it shows. `harness/walks/gridmode/walk.sh` now OCRs
+# the CLOSED control and logs `histogram Gridline mode renders: "..."`, which is
+# unambiguous in a way the dropped shot is not (an unset GTK menu top-aligns its
+# list, so the first entry takes the pointer's highlight and reads as selected).
+#
+# The blank is the pre-fix `off` run and nothing else. If a future change makes
+# the histogram menu blank on any other leg, or fills it in on that one, these
+# four lines fail and the screenshots stop being the only witness.
+gm_rendered <- function(tag) {
+    ln <- grep("histogram Gridline mode renders:", gm_read(paste0(tag, ".log")),
+               value = TRUE)
+    if (length(ln) != 1L) {
+        stop("expected one 'histogram Gridline mode renders:' line in ", tag, ".log")
+    }
+    sub('.*renders: "([^"]*)".*', "\\1", ln)
+}
+
+# Case is folded: tesseract returns "Off" as "off" on this font at this size
+# (a two-letter word gives the classifier no cap height to measure against),
+# and the walk's own matching folds case for the same measured reason.
+check_true("v31", "pre-fix off: the histogram control renders BLANK",
+           identical(gm_rendered("prefix_off"), ""))
+check_true("v31", "fixed off: the histogram control renders Off",
+           tolower(gm_rendered("fixed_off")) == "off")
+check_true("v31", "pre-fix horiz: Horizontal only arrives as Off — the inversion",
+           tolower(gm_rendered("prefix_horiz")) == "off")
+check_true("v31", "fixed horiz: Horizontal only arrives as Horizontal",
+           tolower(gm_rendered("fixed_horiz")) == "horizontal")
+
+# The walk proves its own addressing before it uses it, and says so. Without
+# this line the four above could have been read off whatever widget ordinal 13
+# happened to be — which is exactly what went wrong: from 14 August the Scatter
+# page's Gridline mode moved to ordinal 11 and ordinal 13 became Output DPI, so
+# the walk set the DPI, left the gridlines alone, and reported success.
+for (tag in c("prefix_off", "fixed_off", "prefix_horiz", "fixed_horiz")) {
+    check_true("v31", paste(tag, "set the scatter control by name and read it back"),
+               any(grepl("scatter Gridline mode set at widget ordinal [0-9]+, renders as intended",
+                         gm_read(paste0(tag, ".log")))))
+}
+
+# And the two trees really do lay the page out differently, which is why a
+# positional address could not have driven both: the pre-fix tree predates D11
+# (group fields conditional on the checkbox), so its Gridline mode sits two
+# widgets lower. Same walk, same run, two ordinals — that IS the argument for
+# addressing by rendered label.
+gm_ordinal <- function(tag) {
+    ln <- grep("scatter Gridline mode set at widget ordinal", gm_read(paste0(tag, ".log")),
+               value = TRUE)
+    as.integer(sub(".*ordinal ([0-9]+),.*", "\\1", ln[1]))
+}
+check_true("v31", "pre-fix scatter: Gridline mode is widget 13",
+           gm_ordinal("prefix_off") == 13L && gm_ordinal("prefix_horiz") == 13L)
+check_true("v31", "working-tree scatter: Gridline mode is widget 11, not 13",
+           gm_ordinal("fixed_off") == 11L && gm_ordinal("fixed_horiz") == 11L)
+
+# The collateral half. Setting Gridline mode must not move Output DPI, and the
+# committed config is where that showed: the 16 August run wrote outputDPI: 2.
+for (tag in c("prefix_off", "fixed_off", "prefix_horiz", "fixed_horiz")) {
+    check_true("v31", paste(tag, "scatter left Output DPI at 300 dpi (1)"),
+               gm_cfg(paste0(tag, "_config_after_scatter.txt"), "outputDPI") == 1L)
+}
+
+# The manifest is the index a reader uses to find any of this, and it was
+# rewritten with the captures on 16 August. A manifest naming a file that is not
+# there is worse than no manifest: it reads as evidence that was collected.
+mf <- read.csv(gm_path("manifest.csv"), stringsAsFactors = FALSE)
+check_true("v31", "every file the manifest names is present",
+           all(file.exists(gm_path(mf$file))))
 
 check_true("v31", "the refusal screenshot is committed",
            file.exists(gm_path("prefix_off_6_refusal.png")))

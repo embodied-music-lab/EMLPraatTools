@@ -568,7 +568,44 @@ if (have_dl) {
 # of numbers nobody could compare.
 six <- c("name_violin", "name_box", "name_bar",
          "name_gviolin", "name_gbox", "name_spaghetti")
+
+# THE ANCHOR THE CLIPPING CHECK IS MEASURED AGAINST, AND WHY THERE HAS TO BE
+# ONE. See the paragraph at the check itself: "first ink is not column 0"
+# cannot say anything about the axis name, because any ink at all answers it.
+# What can is the name's own extent and the name's own position, and both of
+# those are comparisons -- they need a name that is known not to have moved.
+#
+# THE UNSHIFTED LEGS SUPPLY IT. name_plain and name_hist both publish
+# shift_inch = 0 (asserted below, at the control and the seventh site), so
+# their axis name stands where the theme puts it with no repair in play. Both
+# put their leftmost ink in the same column, which is what says the column is
+# the theme's margin and not a property of one figure's data -- and it is the
+# guard on the anchor: if those two ever disagree, every displacement measured
+# from them is meaningless and this check says so before the six do.
+#
+# THE SCALE IS TAKEN FROM THE EVIDENCE, NOT ASSUMED. The published shift is in
+# inches and the measurement is in pixels, so one number has to bridge them.
+# The post-hoc leg is the only one whose pixel width is recorded (1800 px) and
+# every leg in this harness is drawn 6 inches wide -- the drive script passes
+# 6, 4 to all of them -- so the ratio is the harness's own resolution. It is
+# asserted to be the 300 dpi drawlayer.sh's crop constants already assume
+# (1280x920+260+125 out of a 6x4 is a 300 dpi crop and nothing else), so a
+# harness re-driven at another resolution turns this red rather than quietly
+# rescaling every displacement below it.
 if (have_dl) {
+    px_per_inch <- dn("posthoc_tukey_width_px") / 6
+    anchor_col  <- dn("name_plain_first_ink_px")
+    anchor_run  <- dn("name_plain_name_run_px")
+    check_true(ID,
+        sprintf("the two legs that take no shift agree on where an unmoved axis name stands (%s px and %s px)",
+                dv("name_plain_first_ink_px"), dv("name_hist_first_ink_px")),
+        is.finite(anchor_col) && anchor_col > 0 &&
+        is.finite(dn("name_hist_first_ink_px")) &&
+        anchor_col == dn("name_hist_first_ink_px"))
+    check_true(ID,
+        sprintf("and the pictures are the 300 dpi the harness's own crop constants assume (%s px / 6 in)",
+                dv("posthoc_tukey_width_px")),
+        is.finite(px_per_inch) && abs(px_per_inch - 300) < 0.5)
     for (leg in six) {
         check_true(ID,
             sprintf("%s: the fixture really does put six-character labels on the axis (%s mm)",
@@ -589,21 +626,54 @@ if (have_dl) {
             dn(paste0(leg, ".shift_inch")) < 0.25 &&
             identical(dv(paste0(leg, ".clamped")), "0"))
         # NOTHING WAS PUSHED OFF THE PAGE, and the obvious form of this check
-        # is not enough. Praat saves the outer viewport @emlAssertFullViewport
-        # selects and nothing outside it, so a name shifted past the panel edge
-        # is cut -- but with the shift unclamped and ten times too big the name
-        # is not sliced down its length, it is clipped away almost entirely,
-        # and the fragment left behind starts FURTHER RIGHT than the intact
-        # name did (67 px -> 121). "First ink is not column 0" passes that.
-        # The name's own run is what notices: 37 px wide intact, 10 px clipped.
+        # is worse than not enough -- it moves the WRONG WAY. Praat saves the
+        # outer viewport @emlAssertFullViewport selects and nothing outside it,
+        # so a name shifted past the panel edge is cut; but with the shift
+        # unclamped and ten times too big the name is not sliced down its
+        # length, it is clipped away almost entirely, and the fragment left
+        # behind starts FURTHER RIGHT than the intact name did (67 px -> 121).
+        #
+        # THE PRINCIPLE, SAID ONCE FOR BOTH SITES IN THIS FILE THAT HAD IT.
+        # A positional measurement that ANY ink can satisfy is not a
+        # measurement of the element it is written about. "First ink is not
+        # column 0" is answered by the tick labels, by the frame, by the
+        # title -- by whatever the scan reaches first -- so it passes with the
+        # axis name clipped away entirely, and on the defect it was written
+        # for it reads HEALTHIER than it does on a correct figure. What can
+        # only be answered by the element is the element's own extent, its
+        # position against a known anchor, or its value. This check is the
+        # first two, and validate/v69 §4 is the same rebuild on the bracket
+        # caption -- one answer to this in the repository, not two.
+        #
+        #   EXTENT. The name's own ink run, which is the width of the
+        #   rotated glyphs and nothing else's: 37 px intact, 10 px when the
+        #   over-shift clipped it. It is held to the unmoved control's run
+        #   rather than to a floor picked here, so the number is measured and
+        #   not invented.
+        #
+        #   POSITION. The name must stand exactly the published shift to the
+        #   LEFT of where an unshifted name stands -- 99 px anchor minus a
+        #   0.1048 in shift at 300 dpi is 31.4 px, measured 32. A shift that
+        #   never fires puts it at 99, a shift ten times too big puts the
+        #   fragment at 121, and neither is within a pixel and a half of what
+        #   the plugin says it did. This is also the picture's own answer to
+        #   the published shift_inch checked above, which until here was only
+        #   ever compared against itself.
+        run_px   <- dn(paste0(leg, "_name_run_px"))
+        moved_px <- anchor_col - dn(paste0(leg, "_first_ink_px"))
+        want_px  <- dn(paste0(leg, ".shift_inch")) * px_per_inch
         check_true(ID,
-            sprintf("%s: the axis name is complete, not clipped at the panel edge (%s px of ink, starting at %s)",
+            sprintf("%s: the axis name is the whole name -- its ink run is the unmoved control's, to the pixel (%s px vs %s px)",
                     leg, dv(paste0(leg, "_name_run_px")),
-                    dv(paste0(leg, "_first_ink_px"))),
-            is.finite(dn(paste0(leg, "_first_ink_px"))) &&
-            dn(paste0(leg, "_first_ink_px")) > 0 &&
-            is.finite(dn(paste0(leg, "_name_run_px"))) &&
-            dn(paste0(leg, "_name_run_px")) >= 20)
+                    dv("name_plain_name_run_px")),
+            is.finite(run_px) && is.finite(anchor_run) &&
+            abs(run_px - anchor_run) <= 1)
+        check_true(ID,
+            sprintf("%s: and it stands where the published shift says it should, left of an unmoved name (%s px moved, %s in published = %s px)",
+                    leg, format(moved_px), dv(paste0(leg, ".shift_inch")),
+                    format(round(want_px, 1))),
+            is.finite(moved_px) && is.finite(want_px) &&
+            moved_px > 0 && abs(moved_px - want_px) <= 1.5)
     }
 
     # THE SEVENTH SITE. A faceted histogram's y-axis is a COUNT, so its labels
@@ -670,25 +740,85 @@ if (have_dl) {
         !grepl("family-wise", dv("posthoc_dunn.posthoc_label") %or% ""))
     # THE SUB-LINE IS THE FIGURE'S ONLY DISCLOSURE OF THE CORRECTION, so it has
     # to reach the reader as well as be true. A subtitle that is correct and
-    # wider than the canvas is not a disclosure.
-    check_true(ID,
-        sprintf("the disclosure sub-line fits the canvas (%s mm of %s mm)",
-                dv("posthoc_tukey.posthoc_subtitle_mm"),
-                dv("posthoc_tukey.posthoc_canvas_mm")),
-        is.finite(dn("posthoc_tukey.posthoc_subtitle_mm")) &&
-        dn("posthoc_tukey.posthoc_subtitle_mm") <
-            dn("posthoc_tukey.posthoc_canvas_mm"))
+    # wider than the canvas is not a disclosure. Its VALUE is asserted here;
+    # that it fits, and that it fits on the page and not merely in the number
+    # the plugin reported, is asserted below on both arms.
     check_true(ID,
         sprintf("and it is the whole sub-line, correction and legend together (%s)",
                 dv("posthoc_tukey.posthoc_subtitle")),
         grepl("family-wise", dv("posthoc_tukey.posthoc_subtitle") %or% "") &&
         grepl("Upper: adjusted p", dv("posthoc_tukey.posthoc_subtitle") %or% ""))
-    check_true(ID,
-        "and no ink was pushed off the left edge of either arm's figure",
-        is.finite(dn("posthoc_tukey_first_ink_px")) &&
-        dn("posthoc_tukey_first_ink_px") > 0 &&
-        is.finite(dn("posthoc_dunn_first_ink_px")) &&
-        dn("posthoc_dunn_first_ink_px") > 0)
+    # AND IT REACHED THE PAGE, MEASURED ON THE SUB-LINE RATHER THAN ON
+    # WHATEVER INK THE SCAN MEETS FIRST.
+    #
+    # What stood here read the first inked COLUMN of the whole picture and
+    # asked for it to be greater than zero. That is the same defect as the
+    # axis-name site above, in its other form: a positional measurement that
+    # ANY ink can satisfy is not a measurement of the element it is written
+    # about. The leftmost ink in these figures is the violin's y-axis name at
+    # column 99, and it is there whatever the sub-line does -- so the check
+    # passed with the disclosure absent entirely, and a sub-line that grew
+    # until it overhung the plot furniture moved that column not at all,
+    # because the sub-line is CENTRED and grows from the middle outwards.
+    # Only the one case where it grew past the canvas edge and was clipped
+    # ever reached column 0, and that case was already red on the millimetre
+    # check above. The measurement was carrying no weight of its own.
+    #
+    # THE REPLACEMENT IS TWO STATEMENTS, NEITHER OF THEM ABOUT A FIRST PIXEL,
+    # and it is the shape validate/v69 §4 settled on for the bracket caption:
+    # measure both edges of the ink, and hold them to a clearance the figure
+    # itself supplies.
+    #
+    #   THE INK BOX, BOTH SIDES. The figure's ink must stop short of both
+    #   canvas edges by the margin an unshifted axis name stands in -- the 99
+    #   px anchor §3 measured on two independent unshifted legs, not a
+    #   constant chosen here. A bound on the EXTENT of all the ink is a
+    #   statement about every element inside it, the sub-line included, in a
+    #   way that the position of the first pixel is not: further ink can only
+    #   push the box outwards, never pull it in.
+    #
+    #   THE SUB-LINE'S OWN FOOTPRINT. @emlDrawMatrixPanel centres it, so its
+    #   measured width and the canvas width fix where its ends are: half the
+    #   difference on each side. Laid out that way it must fall inside the ink
+    #   the figure actually has. The scale is the picture's own width against
+    #   the canvas the plugin measured against (1800 px / 152.40 mm), so no
+    #   dpi is assumed. Tukey's 96.18 mm puts its ends at 332 and 1468 px
+    #   inside ink running 99 .. 1548; the 235.54 mm of the overflow break
+    #   puts them at -490 and 2290.
+    #
+    # Both arms, and both arms' published fit -- until here only the Tukey
+    # arm's sub-line was measured against the canvas at all.
+    ppm       <- dn("posthoc_tukey_width_px") / dn("posthoc_tukey.posthoc_canvas_mm")
+    margin_px <- dn("name_plain_first_ink_px")
+    for (leg in c("posthoc_tukey", "posthoc_dunn")) {
+        il <- dn(paste0(leg, "_first_ink_px"))
+        ir <- dn(paste0(leg, "_last_ink_px"))
+        iw <- dn(paste0(leg, "_width_px"))
+        sub_mm <- dn(paste0(leg, ".posthoc_subtitle_mm"))
+        can_mm <- dn(paste0(leg, ".posthoc_canvas_mm"))
+        check_true(ID,
+            sprintf("%s: the sub-line fits the canvas it was measured against (%s mm of %s mm)",
+                    leg, dv(paste0(leg, ".posthoc_subtitle_mm")),
+                    dv(paste0(leg, ".posthoc_canvas_mm"))),
+            is.finite(sub_mm) && is.finite(can_mm) && sub_mm < can_mm)
+        check_true(ID,
+            sprintf("%s: the figure's ink stops short of BOTH edges by the margin an unmoved axis name stands in (%s .. %s of %s px, margin %s)",
+                    leg, dv(paste0(leg, "_first_ink_px")),
+                    dv(paste0(leg, "_last_ink_px")),
+                    dv(paste0(leg, "_width_px")),
+                    dv("name_plain_first_ink_px")),
+            is.finite(il) && is.finite(ir) && is.finite(iw) &&
+            is.finite(margin_px) && margin_px > 0 &&
+            il >= margin_px && ir <= iw - margin_px)
+        sub_left  <- (can_mm - sub_mm) / 2 * ppm
+        sub_right <- iw - sub_left
+        check_true(ID,
+            sprintf("%s: and the sub-line's own footprint lies inside that ink, centred as it is drawn (%s .. %s px)",
+                    leg, format(round(sub_left)), format(round(sub_right))),
+            is.finite(sub_left) && is.finite(sub_right) &&
+            is.finite(ppm) && ppm > 0 &&
+            sub_left >= il && sub_right <= ir)
+    }
 }
 
 # ===========================================================================

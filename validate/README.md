@@ -1,13 +1,34 @@
 # Checking the statistics — start here
 
-You need **R and nothing else.** Tested on 4.3.3. No packages are installed,
-loaded, or required.
+You need **R, and a Praat at or above 6.6.30 on your PATH.** Tested on R 4.3.3
+and Praat 6.6.30. No R packages are installed, loaded, or required.
 
 ```bash
 git clone https://github.com/embodied-music-lab/EMLPraatTools
 cd EMLPraatTools
 Rscript validate/run_all.R
 ```
+
+This page said "R and nothing else" until 16 August 2026, and that was wrong.
+Seven validators — v59, v63, v64, v65, v70, v71, v77 — resolve a Praat binary
+and drive it, and each of them fails the check *a Praat at or above the
+plugin's floor is available* when there is none. Measured on `v59` alone, with
+no Praat on PATH, and the suite exits 1:
+
+42 checks all passing becomes 6 checks with 1 FAILED. <!-- count-scope: v59_entry_points.R alone, not this suite's total; reproduce with `PRAAT=/nonexistent Rscript validate/v59_entry_points.R` -->
+
+The **barren** edition is not enough either — it presents no dialogs, and
+v59's subject is that every registered menu and action command reaches its
+form:
+
+28 of v59's 42 checks fail against `praat6630_linux-x64v3-barren`, and none fail against the full Linux build. <!-- count-scope: v59_entry_points.R alone, not this suite's total -->
+
+`.github/workflows/validate.yml` installs exactly that, and is the shortest
+correct answer to "what does this need".
+
+The rest of the old claim holds: no R package outside base is used (v17 uses
+`broom` when it happens to be installed, falls back to base R when it is not,
+and prints which mode it ran in), and the suite itself makes no network call.
 
 **Expect the summary line to end `0 FAILED`, and expect exit status 0.**
 
@@ -211,8 +232,14 @@ silently contributing nothing.
 **`v23` is the first check of anything drawn.** It reads the Q-Q plot's own
 plotted point pairs and compares them with `qnorm(ppoints(n, a = 3/8))` and
 `sort(x)`, so the figure and the Shapiro-Wilk value beside it are bound to the
-same numbers. Still uncovered: the annotation layer — everything
-`@emlBridgeGroupComparison` renders onto a figure.
+same numbers. It is no longer the only one: the validators added since read
+rendered figures as pixels — a plot frame, a legend's coverage of the data it
+names, the ink inside an axis, a bracket caption — and `REGISTRY.md`'s script
+table says which does what. Still uncovered, and stated in the sharper form it
+needs: the graphs layer runs its own second copy of the statistics behind an
+annotated figure, and nothing here recomputes those. The 14 August 2026 audit
+did it by hand against scipy and found no disagreement, which is a record and
+not a check.
 
 ---
 

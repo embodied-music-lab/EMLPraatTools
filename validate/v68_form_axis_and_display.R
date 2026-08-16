@@ -134,8 +134,10 @@
 #   number observed on BOTH trees: the block reading 195.0000 and the block
 #   reading 0.0; the published pair at 150/400 while the draw ran to 612.0032;
 #   the two globals absent on the no-form leg and present on every form leg;
-#   the ellipsis note identical on both sides. break.sh drives ten deliberate
-#   defects and every check named below has been seen red.
+#   the ellipsis note identical on both sides. break.sh drives nineteen
+#   deliberate defects; which checks that reds, and which it no longer reds
+#   now that the repairs are committed, is accounted for below rather than
+#   summarised.
 #
 #   A CHECK THAT MATCHED THE COMMENT RATHER THAN THE FIX. Both the harness and
 #   this file strip whole-line Praat comments before matching anything, and
@@ -157,44 +159,71 @@
 # the interesting part -- a break that reds one check is as much a result as a
 # break that reds sixty, because it says which check is carrying it:
 #
-#   head_form          64   the form reverted to HEAD -- the defect itself
-#   head_graph          4   the graphs file reverted to HEAD
-#   prose_only          4   the fixed$ site restored, the paragraph left
-#   clamp_zero         24   the fix-shaped fix: both numbers clamped to 0
-#   partial_min        29   the minimum published and not the maximum
-#   pub_goto           33   a goto at the top of the publication
-#   publish_late        1   published after the pass that resolves the axis
-#   republish          10   republished inside the bracket pass
-#   republish_legend    7   republished inside the legend pass
-#   publish_at_load     7   published at file scope, so it escapes the form
-#   wrong_pair          2   the waveform publishes valueMin, not ampMin
-#   headroom_stub       5   the bracket pass emptied, sequence still runs
-#   legendroom_stub     3   the legend pass stops widening the axis
-#   legendroom_twice    1   a second call site under the ordering check
-#   precision_one       2   @eml_fixed at the right site, wrong precision
-#   form_fixed_back     1   one of the form's Info sites back on fixed$
-#   second_formatter    6   a duplicate eml_fixed local to the graphs file
-#   emlfixed_neutered   4   @eml_fixed reduced to a fixed$ pass-through
-#   plausibility_wired  1   the dead site given a caller
+# The counts below are the 16 AUGUST 2026 RE-RUN of all nineteen, against 99
+# checks. out/BREAKS.tsv IS THE RECORD; the out/break_<name>.v68.log
+# transcripts beside it are working files and are gitignored, because
+# formaxis.sh opens with `rm -f "$OUT"/*.log` -- so the next ordinary drive of
+# the rig deletes them, and a re-run of break.sh puts them back. Both runs on
+# 16 August produced this table to the number:
 #
-# 89 of this file's 98 checks have been observed red. The nine that have not
-# are named rather than glossed over, because a check nobody can break is a
-# check nobody should trust without knowing why:
+#   head_form            6   the form reverted to HEAD -- the defect itself
+#   head_graph           4   the graphs file reverted to HEAD
+#   prose_only           4   the fixed$ site restored, the paragraph left
+#   clamp_zero          24   the fix-shaped fix: both numbers clamped to 0
+#   partial_min         33   the minimum published and not the maximum
+#   pub_goto            37   a goto at the top of the publication
+#   publish_late         1   published after the pass that resolves the axis
+#   republish           10   republished inside the bracket pass
+#   republish_legend    11   republished inside the legend pass
+#   publish_at_load      4   published at file scope, so it escapes the form
+#   wrong_pair           2   the waveform publishes valueMin, not ampMin
+#   headroom_stub        5   the bracket pass emptied, sequence still runs
+#   precision_one        2   @eml_fixed at the right site, wrong precision
+#   form_fixed_back      1   one of the form's Info sites back on fixed$
+#   second_formatter     6   a duplicate eml_fixed local to the graphs file
+#   emlfixed_neutered    4   @eml_fixed reduced to a fixed$ pass-through
+#   plausibility_readded 4   the retired procedure pasted back at its tombstone
+#   legendroom_stub      3   the legend pass stops widening the axis
+#   legendroom_twice     1   a second call site under the ordering check
+#
+# 75 of the 99 went red in that run. The table above USED TO READ head_form 64
+# and the accounting used to read 89 of 98, and the drop is worth naming
+# because it looks like a regression and is not one: THE REPAIRS THIS FILE
+# CHECKS ARE NOW IN HEAD (@emlGraphsPublishAxisRequest is in HEAD's
+# eml-graphs-form.praat, which writes emlGraphsAxisYReqMin at all five sites;
+# HEAD's eml-graph-procedures.praat already routes the ellipsis note through
+# @eml_fixed twice). `revert to HEAD` therefore no longer removes them -- it
+# removes only what is still uncommitted -- so head_form, head_graph and
+# prose_only are weak shadows now and will stay weak. Their strong run is the
+# recorded one; a future revision that wants that reach back has to shadow the
+# repair itself, the way partial_min and pub_goto do, not the commit.
+#
+# WHAT THE 24 ARE. Fourteen of them are structural checks that only the
+# pre-commit head_form ever reached -- the publication exists, is called once,
+# is called before the legend pass, the emitted block declares two axes and
+# the draw step reads them. The other ten are the ones no source defect can
+# reach at all, and they are named rather than glossed over, because a check
+# nobody can break is a check nobody should trust without knowing why:
 #
 #   THREE ARE RIG GUARDS -- the files exist, the drive produced evidence, the
 #   binary is at or above 6.6.30. Their red side is a broken harness, which is
 #   what they are for; there is no source defect that reaches them.
 #
-#   FOUR ARE FIXTURE GUARDS -- the auto leg's dialog held 0, the typed leg's
-#   floor was 150, the narrow panel measured 0.052 in and did clamp. They
-#   assert that the drive set up what it claims to have set up, so that the
-#   value checks beside them are about the plugin and not about the fixture.
+#   SIX ARE FIXTURE GUARDS -- the auto leg's dialog held 0 and its bridge
+#   produced brackets, the legend leg drew twice, the typed leg's floor was
+#   150, the narrow panel measured 0.052 in and did clamp. They assert that
+#   the drive set up what it claims to have set up, so that the value checks
+#   beside them are about the plugin and not about the fixture.
 #
-#   TWO ARE POSITIVE CONTROLS. "at the magnitudes this note actually prints,
+#   ONE IS A POSITIVE CONTROL. "at the magnitudes this note actually prints,
 #   they agree" cannot go red under a formatter break precisely because it is
-#   the row that says nothing moved; and @emlCheckPlausibility's three fixed$
-#   calls are PINNED at three, so the red line there is somebody changing the
-#   dead site in either direction without updating this header.
+#   the row that says nothing moved.
+#
+# The second positive control this list used to carry is gone with its
+# subject: @emlCheckPlausibility's three fixed$ calls were PINNED at three
+# while the dead body existed, and on 16 August 2026 the author retired the
+# body. §5a-bis says what replaced that pin and why the replacement is not
+# also unbreakable -- plausibility_readded is the break that reds it.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -601,9 +630,10 @@ if (have) {
 # ---------------------------------------------------------------------------
 # 5a. CLASSIFICATION BY DESTINATION, NOT BY PROCEDURE NAME.
 #
-# eml-graph-procedures.praat carries fixed$ on eighteen code lines and exactly
-# two of them address the Info window. The rest are a different surface
-# entirely and the ruling does not reach them:
+# eml-graph-procedures.praat carries fixed$ on fifteen code lines and exactly
+# ONE of them addresses the Info window. It was eighteen and two until 16
+# August 2026; §5a-bis below is the three that went and why. The rest are a
+# different surface entirely and the ruling does not reach them:
 #
 #   COLOUR SPECIFICATIONS. "{" + fixed$ (r, 2) + ", " ... -- the greyscale
 #   ramp in @emlSetColorPalette and the blend in the lighten helper. These are
@@ -616,11 +646,9 @@ if (have) {
 #   `Text width (mm)`. Changing either would move a measurement and therefore
 #   a layout, which is not a printed format.
 #
-#   THE INFO WINDOW. @emlDrawLegendPanel's ellipsis NOTE (active: every draw
-#   with a legend reaches it through @emlDrawLegend, and EML Graphs... is
-#   registered on Objects > New and on seven action lists), and
-#   @emlCheckPlausibility (three calls into one appendInfoLine, and NO CALLER
-#   ANYWHERE IN THE PLUGIN).
+#   THE INFO WINDOW. @emlDrawLegendPanel's ellipsis NOTE, and nothing else:
+#   active, because every draw with a legend reaches it through @emlDrawLegend,
+#   and EML Graphs... is registered on Objects > New and on seven action lists.
 #
 # eml-graphs-form.praat has none left: its two Info-window sites went through
 # @eml_fixed in the 15 August sweep, and the count below is the guard that
@@ -629,21 +657,63 @@ if (have) {
 if (have) {
     check(ID, "the form reaches the Info window through fixed$ nowhere",
           an("code_form_fixed"), 0, tol = 0)
-    check(ID, "eml-graph-procedures.praat still carries 18 fixed$ code lines",
-          an("code_graph_fixed"), 18, tol = 0)
+    check(ID, "eml-graph-procedures.praat still carries 15 fixed$ code lines",
+          an("code_graph_fixed"), 15, tol = 0)
     check(ID, "the active ellipsis NOTE calls fixed$ zero times",
           an("code_clamp_fixed"), 0, tol = 0)
     check(ID, "and formats both of its numbers through @eml_fixed",
           an("code_clamp_emlfixed"), 2, tol = 0)
-    # THE DEAD SITE IS PINNED RATHER THAN FIXED, and pinned in the direction
-    # that matters: it is out of scope because it has no caller, so the check
-    # is on the CALLER COUNT. Wire @emlCheckPlausibility up to anything and
-    # this goes red, which is the moment its three fixed$ calls become active
-    # and the ruling reaches them.
-    check(ID, "@emlCheckPlausibility still has no caller anywhere in the plugin",
+}
+
+# ---------------------------------------------------------------------------
+# 5a-bis. THE THREE fixed$ CALLS THAT LEFT, AND THE PIN THAT DID NOT.
+#
+# Until 16 August 2026 the second Info-window site was @emlCheckPlausibility,
+# and this file pinned it in the only honest place: on the CALLER COUNT. It
+# was out of the ruling's scope because it had none -- a body with three raw
+# fixed$ calls that no line of the plugin could reach -- so the pin said "the
+# moment anything calls this, its three fixed$ calls are on an active path and
+# the ruling reaches them", and break.sh's `plausibility_wired` shadow drove
+# exactly that.
+#
+# THE AUTHOR RETIRED THE PROCEDURE INSTEAD OF WIRING IT (16 August 2026, and a
+# tombstone stands where the body was). That deletion RETIRES THE OLD PIN TOO,
+# and this is the part worth saying out loud: "no caller" is trivially true of
+# a procedure that does not exist, so leaving the old check here would have
+# left a line that reads like a guard and can no longer fail for any reason
+# anyone cares about. A pin that dies with the thing it guarded is not a pin.
+#
+# SO THE PIN IS TURNED AROUND ONTO THE RE-INTRODUCTION. What the deletion
+# actually risks is somebody finding the body in git history, reading it as a
+# feature that went missing, and pasting it back -- with its three raw fixed$
+# calls, which the 15 August ruling forbids on any active path. Both checks
+# below go red on that tree, and break.sh's `plausibility_readded` shadow is
+# that tree exactly: the v3.31 body restored verbatim at the tombstone, no
+# caller added, nothing else touched.
+#
+# TWO CHECKS, TWO REACHES, AND NEITHER SUBSUMES THE OTHER.
+#
+#   THE LIVE SOURCE, read straight off eml-graph-procedures.praat by this
+#   file, with comments already stripped by read_code -- so the tombstone that
+#   explains the retirement cannot answer a grep for the retirement. It is
+#   OUTSIDE the `have` gate on purpose: the absence of a procedure is a fact
+#   about the tree, not about whether the Praat rig ran, and this check is the
+#   one that still speaks when the harness has not.
+#
+#   THE HARNESS COUNTS, read across the WHOLE plugin rather than this one
+#   file, which is the reach this file cannot get on its own: code_..._defs
+#   is `procedure emlCheckPlausibility` declarations anywhere under plugin/,
+#   and code_..._callers is non-comment mentions of the name anywhere under
+#   plugin/. A re-introduction into some other graphs file is invisible to the
+#   check above and red here.
+# ---------------------------------------------------------------------------
+check_true(ID, "@emlCheckPlausibility is gone from eml-graph-procedures.praat (retired 16 Aug 2026, zero callers)",
+           cnt(code_graph, "^procedure emlCheckPlausibility(:|$)") == 0)
+if (have) {
+    check(ID, "no file in the plugin declares it either",
+          an("code_plausibility_defs"), 0, tol = 0)
+    check(ID, "and its name appears on no code line in the plugin, call or otherwise",
           an("code_plausibility_callers"), 0, tol = 0)
-    check(ID, "so its three fixed$ calls are recorded, not repaired",
-          an("code_plausibility_fixed"), 3, tol = 0)
 }
 # The formatter is the shared one, and there is not a second copy in either
 # owned file. A local re-implementation would satisfy every check above.
@@ -739,14 +809,14 @@ attest(ID,
     "validate/run_all.R does not yet source this file",
     "the suite's script list ends at v66_draw_layer.R (validate/run_all.R:509); v67 and v68 both need adding. Not this file's to edit.")
 attest(ID,
-    "a session that runs EML Graphs... and then any Q-Q draw records the graphs form's axis on the Q-Q figure",
-    "the two globals are session-scoped and nothing can unset a Praat variable, so the publication outlives @emlGraphsWorkflow. graphs/eml-draw-qq.praat:259 calls @emlDrawScatterPlot with 0, 0, 0, 0 and no form; after a form draw at 0..100 the recorded Q-Q step would read 0..100. Closing it needs a validity flag in @emlRecordAxisRequest (stats/eml-record.praat:1716), which is not this file's to edit. AUTHOR RULING NEEDED.")
+    "the Q-Q leak this file raised is CLOSED, and is pinned by validate/v74 rather than here",
+    "author ruling A, change order 7: the pair is published with a STEP STAMP (@emlGraphsStampAxisRequest), and @emlRecordAxisRequest accepts the pair only when the stamp equals the step being recorded and zeroes the stamp on the way out. The stamp carries the state because the PAIR cannot -- 0/0 is the auto sentinel, so a reset pair is indistinguishable from an auto request. The leg that drives it is a form draw at 0..100 followed by a formless Q-Q draw in the SAME process; nothing in this file's rig can reach it, because harness/formaxis has no Q-Q leg and its every draw is a form draw.")
 attest(ID,
     "validate/v32's source check on @emlExpandDrawnExtent callers is red, and not from here",
     "it names eml-annotation-procedures.praat @emlDrawBracketCaption and @emlDrawMatrixPanel; that file went from 2 @emlExpandDrawnExtent call sites at HEAD to 5 in the working tree, and neither owned file changed its count (16 both sides). Somebody else's pin to update.")
 attest(ID,
-    "a legend-bearing figure records TWO draw steps, so the emitted script draws it twice",
-    "@emlGraphsDrawWithLegendRoom rewinds the CSV collector between passes (@emlCSVMark / @emlCSVRewind) but the recorder has no equivalent primitive -- there is no emlRecordMark or emlRecordRewind in stats/eml-record.praat. Measured: harness/formaxis/out/legend_auto/emitted.praat declares 'steps 1 (draw), 2 (draw)' and its resolved-range note names the FIRST, discarded pass (195.0000 .. 235.0000) while the figure was drawn at 195 .. 275. AUTHOR RULING NEEDED.")
+    "the two-draw-steps defect this file raised is CLOSED, and is pinned by validate/v75 rather than here",
+    "author ruling B, change order 8: stats/eml-record.praat now has @emlRecordMark / @emlRecordRewind -- the twin of @emlCSVMark / @emlCSVRewind, and as ignorant of legends -- and @emlGraphsDrawWithLegendRoom takes the mark before its loop and rewinds at the top of each pass, above the dispatch so the axis stamp is re-armed. This file's own rig shows the result: harness/formaxis/out/legend_auto/emitted.praat declares 'step 1 (draw)' where it said 'steps 1 (draw), 2 (draw)', and its note reads 195.0000 .. 275.0000 where it said 235.0000. Nothing in this file's rig can prove the note in BYTES, because formaxis records but never replays; harness/record/replay.sh's LEGEND leg edits the block to the note's own two numbers and gets a figure byte-identical to the one the recording drew.")
 
 if (!exists("EML_SUITE")) {
     eml_report("v68 the form's axis request, and the Info window's formatter")

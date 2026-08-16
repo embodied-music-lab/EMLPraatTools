@@ -577,7 +577,140 @@ scripts <- c(
     # registering it was a GUI drive through the real dialog, because a
     # registered menu entry that has never been clicked is exactly the
     # dead door the audit's severity-2 findings were about.
-    "v72_batch_registration.R"
+    "v72_batch_registration.R",
+    # v73: the same subject as v77 further down, in the other evidentiary
+    # shape. v77 drives Praat live and keeps nothing; this one is the shape
+    # REGISTRY states as the suite's rule -- a
+    # number the plugin PRINTED, read out of a COMMITTED capture, against a
+    # number R computes from the same COMMITTED input -- so it is the half of
+    # the evidence that survives on a machine with no Praat and that a reviewer
+    # can diff between releases. evidence/info/v73_directional_info.txt is the
+    # first committed capture of a one-tailed p anywhere in this tree, which is
+    # also why no golden-file diff could ever have found the defect: there was
+    # nothing recorded to have changed from.
+    #
+    # THE POPULATION THE PREVIOUS 72 DID NOT COVER is not a procedure, a menu
+    # path or a data shape -- every one of these five families was already read
+    # by v08, v12 and v18. It is a RELATION BETWEEN TWO RUNS. Each of those
+    # files asserts one run against R; the defect made every single run
+    # correct-looking and only the PAIR wrong, so a suite built entirely out of
+    # per-run assertions was blind to it by construction and stayed green on 72
+    # validators. This file's unit of evidence is the reversed pair.
+    #
+    # It also carries the two boundary cases the parametric families cannot
+    # reach. The wrong-direction perfect effect (r = -1 against H1: r > 0) is
+    # the one place the tail is written out by an explicit `if` rather than
+    # taken from studentQ, and the answer there is p = 1 EXACTLY -- certainty
+    # in the other direction, not significance. And Mann-Whitney is driven as
+    # the CONTROL: its exact tails share the point mass at the observed U, so
+    # they sum to 4/3 rather than 1 and its two-sided p is a clamp rather than
+    # a doubling. Both invariants therefore have a driven counterexample in the
+    # same file that asserts them, which is what keeps ten sum-to-1 checks from
+    # being ten assertions of nothing.
+    #     bash harness/directional/run.sh
+    "v73_directional_p.R",
+    # v74: change order 7, ruling A. Praat cannot unset a variable, so the
+    # graphs form's axis publication -- the two globals ruling 10(b) added,
+    # which say what the user asked for before the form resolves it -- lived
+    # for the whole process. @emlRecordAxisRequest preferred them whenever
+    # they EXISTED, so "some form ran earlier this session" was
+    # indistinguishable from "this draw came from the form": after one press
+    # of Draw at 0 .. 100, a recorded Q-Q step declared axisYMax = 100.0 on a
+    # figure whose only axis argument is its own auto sentinel.
+    #
+    # The publication now carries a STEP STAMP, and the stamp is what carries
+    # the state because the PAIR cannot: 0/0 IS the auto sentinel, so a reset
+    # pair reads as a published AUTO request. Note what that class of defect
+    # defeats -- every existing rig, all green on a tree with the bug in it.
+    # The leak needs TWO DRAWS IN ONE PROCESS with only the first going
+    # through the form, and no harness in this tree performed that sequence;
+    # harness/consumeonce does. No pixel changed, either: the figure is drawn
+    # on the axis the draw procedure resolves whatever the recorder writes
+    # down, so no image comparison can see this one.
+    "v74_axis_consume_once.R",
+    # AUTHOR RULING B, CHANGE ORDER 8, 16 AUGUST 2026 -- ONE PRESS OF DRAW,
+    # ONE RECORDED STEP. @emlGraphsDrawWithLegendRoom draws a legend-bearing
+    # figure, measures where the legend landed, and draws it again on a
+    # widened axis with the first pass discarded. NEW-G8-3 rewound the CSV
+    # collector between those passes on 15 August and left the RECORDER
+    # running, so one press emitted the same figure twice -- and, worse than
+    # the duplication, the block's resolved-range note quotes the first step
+    # to use an axis pair, so it named the axis of the pass that was thrown
+    # away: 195.0000 .. 235.0000 beside a figure drawn at 195 .. 275. Under
+    # ruling 10(b) an auto axis is emitted as the 0.0 sentinel, which makes
+    # that note the file's ONLY record of where the figure sat.
+    #
+    # The repair is the twin of the CSV pair -- @emlRecordMark /
+    # @emlRecordRewind, which name no legend and no pass -- and v75 asserts it
+    # on the emitted script rather than on the source, because the obvious
+    # implementation passes a source check and fails: Praat refuses to remove
+    # a Table's only row and `nocheck` in front of that refusal is a skip, so
+    # a figure drawn as the first thing in a recording kept its discarded pass
+    # in silence. The note is then proved in BYTES: the block is edited to the
+    # two numbers the note itself quotes and the resulting figure is
+    # byte-identical to the one the recording drew.
+    "v75_legend_single_step.R",
+    # AUTHOR RULING C, CHANGE ORDER 9, 16 AUGUST 2026 -- EVERY BRACKET-BEARING
+    # FIGURE NAMES ITS TEST. Both two-group arms of @emlBridgeGroupComparison
+    # composed an omnibus string, handed it back for the Info window and set
+    # annotTextN on NEITHER path; only the k >= 3 arms did. So the form's
+    # post-dispatch stage had no line to route into the corner box and a Welch
+    # drive left the session carrying a bracket, "***, d = -6.08" and no test
+    # name anywhere on it -- v69 measured exactly that and recorded it as an
+    # attestation, because closing it was a ruling rather than an
+    # implementation detail.
+    #
+    # This is the THIRD time this shape has been repaired one arm at a time:
+    # ruling 1b gave the matrix layout a post-hoc sub-line and left the
+    # bracket layout silent, ruling 11 gave the bracket layout a caption on
+    # the k >= 3 arms and left k = 2 silent. So v76's subject is the
+    # INVARIANT, not the two arms that were fixed. It parses the bridge into a
+    # block tree, enumerates every site that writes a bracket label, and
+    # requires each one to be DOMINATED by an annotTextN = 1 -- a statement at
+    # an enclosing level, not merely one somewhere in the same arm. That
+    # distinction is measured rather than argued: the text_n_in_matrix break
+    # moves the Welch arm's line inside its own `if .useMatrix`, where an
+    # arm-scoped grep still finds it and the bracket path still names nothing.
+    # A fifth arm added without a test name goes red with no figure to drive.
+    #
+    # And the enumeration is only half. The new_arm_silent break is red on the
+    # source with every rendered figure unchanged; the no_route break leaves
+    # the bridge perfect, deletes the form's route into the corner block, and
+    # every source check passes while no figure says anything. Each half sees
+    # what the other cannot, so §3 and §4 read the test name back off driven
+    # figures with tesseract -- §4 for every leg that has a bracket, out of
+    # the leg's own emitted omnibus, so a leg driving a future arm is covered
+    # on its first run.
+    "v76_bracket_names_test.R",
+    # v77: the P0 of 16 August 2026, and the twin of v73 below -- the two
+    # were authored in parallel and numbered on landing, so read them as one
+    # subject in two evidentiary shapes. The parametric one-tailed p was
+    # studentQ(|t|, df) -- the smaller tail of the ABSOLUTE statistic, so
+    # swapping the two groups returned the same p both ways and the test
+    # could not see the direction it claimed to be testing. Now a fixed
+    # alternative, matching what .tails = 1 already meant in
+    # @emlMannWhitneyU and @emlWilcoxonSignedRank, with .pGreater, .pLess
+    # and .alternative$ exposed and four @...Alt entry points that name the
+    # alternative in words. Every registered menu path passes tails = 2, so
+    # nothing shipped ever printed the wrong number -- which makes the
+    # TWO-sided p the regression to guard, and this file pins all five of
+    # them against R at 1e-14 as well as the ten one-tailed ones at 1e-12.
+    # This file drives Praat LIVE out of R, which is what lets it sweep
+    # counterfactual kernels and measure studentQ on the binary; nothing it
+    # reads outlives the run. v73 is the committed-capture half.
+    "v77_one_tailed_direction.R",
+    # v78 is the only script here whose subject is the REPOSITORY rather than
+    # a number the plugin printed: MANIFEST.txt describing the tree it ships
+    # with, every @call resolving in its own include closure, the front-door
+    # documents linking no missing file, and a CI workflow that runs this
+    # suite without a secret. All four were red on 16 August 2026 and three of
+    # them had been red long enough that nobody was reading them -- the
+    # manifest for twelve days, the include checker with 21 false positives in
+    # 22 reports, and plugin/README.md pointing at two pages that have never
+    # existed. They are in the suite because a check that lives outside the
+    # thing CI runs is a check nobody runs; being here is what makes
+    # regenerating the manifest the only route to a green suite.
+    "v78_repo_hygiene.R"
 )
 
 cat("EML Praat Tools validation suite\n")
