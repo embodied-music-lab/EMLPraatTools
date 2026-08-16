@@ -106,12 +106,41 @@
 # puts conf.low, conf.high AFTER p.value. Putting adj.p.value last of the
 # five satisfies both, because adj.p.value only ever appears in a post-hoc
 # frame and p.value only ever in a model frame -- they never co-occur.
+#
+# OUR OWN ADDITIONS TRAIL THE BROOM BLOCK HERE TOO, on the same rule the
+# glance vocabulary below states in one line. gg.epsilon, hf.epsilon, df.gg,
+# p.value.gg, effect.size, effect.size.type, skewness and kurtosis are not
+# broom column names; term, statistic, p.value, method and alternative are.
+# broom has no vocabulary for shape at all -- tidy(shapiro.test(x)) returns
+# statistic, p.value and method and nothing else, because shapiro.test itself
+# reports nothing else -- so skewness and kurtosis cannot be broom parity in
+# either frame and are flagged as additions in both.
+#
+# AUTHOR RULING 3, 16 August 2026: skewness and kurtosis join this vocabulary,
+# and they sit immediately before `method` so that their position relative to
+# the broom tail is the SAME here as in emlVocabGlance$ below. A reader who has
+# seen the single-column glance file reads the multi-column tidy file in the
+# same order -- term, statistic, p.value, skewness, kurtosis, method -- and the
+# only difference between the two artefacts is the one that is real, which is
+# how many models were fitted. Putting them earlier would have been legal and
+# would have made the two files disagree about an order neither broom nor this
+# plugin has any reason to disagree about.
+#
+# THE VOCABULARY IS THE COLUMN ORDER AND ALSO THE WHITELIST, and the second
+# half is the one that bites: @eml_orderedCols walks these tokens and emits
+# only the columns it finds, so a column the analysis declares under a name
+# that is NOT here is dropped from the written file without a word. That is
+# not hypothetical -- the first attempt at exporting a describe declared into
+# this frame and shipped a file containing `term` and `method`, and adding the
+# names here is only half of ruling 3. The other half is in
+# stats/eml-analysis.praat, where @emlDeclareNormalityResult has to declare the
+# two columns per row for there to be anything for this line to order.
 emlVocabTidy$ = "term effect contrast null.value estimate estimate1"
 ... + " estimate2 std.error"
 ... + " df num.df den.df sumsq meansq"
 ... + " statistic p.value parameter conf.low conf.high adj.p.value"
 ... + " gg.epsilon hf.epsilon df.gg p.value.gg"
-... + " effect.size effect.size.type method alternative"
+... + " effect.size effect.size.type skewness kurtosis method alternative"
 
 # Glance order is broom::glance(lm)'s order exactly:
 #   r.squared adj.r.squared sigma statistic p.value df logLik AIC BIC

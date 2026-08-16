@@ -536,6 +536,33 @@ endproc
 #     renders every infinity as undefined, so the non-finite cases arrive here
 #     already collapsed and need no branch of their own.
 #
+# THE ONE NUMBER THAT MUST NOT COME THROUGH HERE IS ALPHA, and this is the
+# paragraph a future display sweep has to argue with before it "finishes the
+# job" by routing the last holdout in. @emlReportAlpha, in
+# stats/eml-analysis.praat, formats the significance CRITERION with a raw
+# fixed$ (.value, 3) and then trims trailing zeros back to two places, so an
+# ordinary alpha reads "0.05" and a stricter one reads "0.001". That looks
+# like an escape from this procedure and it is not one: it is the exemption,
+# and it is deliberate. Route it through @eml_fixed and @emlReportAlpha starts
+# printing an alpha of .0001 as "0.000" -- the threshold the report says it
+# marked significance against, rendered as zero, which is the one value no
+# threshold can have. The escalation this procedure exists to suppress is the
+# escalation @emlReportAlpha depends on.
+#
+# AUTHOR RULING, 16 August 2026: @emlReportAlpha stays as it is. The rule this
+# procedure enforces is a rule about STATISTICS -- a t, a skewness, a Cohen's
+# d, a mean difference, each of them a measurement of the data whose seventeen
+# trailing digits are arithmetic noise the reader is better off not seeing.
+# Alpha is not a measurement of anything. It is a criterion the reader chose
+# and the report is quoting back, and quoting a criterion at less precision
+# than it was set with is not tidying, it is misreporting -- a reader who set
+# .0001 and reads "0.000" has been told their own threshold is impossible. So
+# the two are not the same kind of number and they do not get the same rule:
+# a statistic is rounded to a house width, a criterion is shown exactly.
+# validate/v70_p_precision.R drives @emlReportAlpha at .05, .01, .001 and
+# .0001 and asserts all four, so a sweep that routes it here goes red rather
+# than quiet.
+#
 # THE MULTIPLICATION IS SAFE FOR EVERY VALUE THAT REACHES IT. .value * 10^.d
 # could overflow for a large .value, but the escalation branch is unreachable
 # for one: fixed$ escalates only when |.value| < 10 raised to (1 - .decimals),
@@ -577,6 +604,149 @@ procedure eml_fixed: .value, .decimals
                 .result$ = fixed$ (.rounded, .decimals)
             endif
         endif
+    endif
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @eml_sig3: .value  ->  .result$                    (private)
+# ────────────────────────────────────────────────────────────────────────────
+# THREE SIGNIFICANT FIGURES, IN SCIENTIFIC NOTATION, FOR A NUMBER THAT MAY BE
+# 1e-300. This exists for exactly one caller -- @emlFormatP's .exact$ tail --
+# and the reason it cannot be a call to fixed$ or to string$ is the whole of
+# the defect it repairs.
+#
+# AUTHOR RULING, 16 August 2026: the exact p tail is bounded to three
+# significant figures. The tail itself STAYS. Flooring at .001 flattens
+# 5.8e-07, 2.1e-13 and 3.0e-04 into one string nine orders of magnitude apart
+# (D28, D35), the tail is what un-flattens them, and v65_display_standard.R
+# asserts it is still there beside every floored label. What was wrong was
+# never that the tail was printed; it was how wide it was printed.
+#
+# THE DEFECT, AS IT READ. .exact$ was `string$ (.pValue)`, and string$ is
+# Praat's ROUND-TRIP renderer: it emits however many digits it takes to
+# reconstruct the double exactly, which for a p just under the floor is
+# seventeen. A repeated-measures line meant to say "about 3e-29" said
+#
+#     F(2, 38) = 583.1232, p < .001  (3.0359635874099574e-29)
+#
+# Seventeen significant digits nobody can read, in the Info window, which is
+# what ruling 6 forbids. The information D35 wanted out of that tail is the
+# ORDER OF MAGNITUDE -- 5.8e-07 and 2.1e-13 must stop reading alike -- and
+# three significant figures carry all of it and nothing else.
+#
+# WHY NOT fixed$, AND WHY THIS IS NOT ONE MORE @eml_fixed CALL. @eml_fixed
+# gives a fixed number of DECIMALS, and the answer to "3e-29 at four decimals"
+# is 0.0000 -- the tail collapsed to zero, which is worse than the seventeen
+# digits, because it is the D28/D35 defect wearing the repair's clothes. A
+# naive fixed$ does not merely fail on the small end of the range, it fails on
+# every value the tail was added for. Significant figures and decimal places
+# are different quantities and this is the range where the difference is the
+# entire point.
+#
+# HOW IT IS DONE, PRAAT HAVING NO printf. The exponent is floor (log10 |v|)
+# and the mantissa is |v| scaled by that power of ten, rounded to two decimals
+# -- one digit before the point and two after is three significant figures --
+# and re-emitted through @eml_fixed so the mantissa is exactly two decimals
+# wide even when it rounds to a whole number, "3.00e-29" rather than "3e-29".
+# Three things in that are load-bearing and each of them is a case a shorter
+# version gets wrong:
+#
+# THE SCALING IS DONE IN TWO STEPS BELOW 1e-150. Dividing by 10^.e is exact
+# and cheap while 10^.e is a normal double, and for .e below about -300 it is
+# not one: the divisor goes subnormal, loses bits, and the mantissa comes back
+# wrong in its second digit -- silently, on precisely the smallest p values,
+# which are the ones with the least chance of anyone checking. Multiplying by
+# 10^150 first and by 10^(-.e-150) second keeps both factors normal for every
+# exponent a double can hold.
+#
+# THE MANTISSA IS RE-NORMALISED AFTER ROUNDING, IN BOTH DIRECTIONS. Rounding
+# 9.999 to two decimals is 10.00, which is four significant figures and a
+# mantissa out of range, so it carries into the exponent and becomes 1.00e+1
+# larger. And log10 is not exact: a p of 1e-5 can return -4.999999999999999 or
+# -5.000000000000001 depending on the bits, which floors to -5 or to -6 and
+# leaves the mantissa at 1 or at 10. Both directions are corrected here, so
+# the renderer does not have a one-in-a-thousand answer that reads "10.0e-06".
+#
+# THE EXPONENT IS PADDED TO TWO DIGITS, "3.00e-04" and not "3.00e-4", because
+# that is the shape Praat's own string$ emits ("9.99e-05") and a tail that
+# matches the surrounding conventions is a tail nobody rewrites.
+#
+# THE UPPER FLOOR IS THE SAME PROBLEM MIRRORED, and it is why the caller does
+# not simply hand p to this procedure in both branches. @emlFormatP also
+# floors at the top -- "p > .999" for p >= 0.9995 -- and three significant
+# figures OF p up there is 1.00 for every value in the range, which flattens
+# 0.9996 and 0.99999999 into one string and is D35 again on the other side.
+# What carries the information near one is the DISTANCE from one, so the
+# caller passes 1 - p and labels it. The subtraction is exact in binary for
+# any p in [0.5, 2], so the printed tail is not an approximation of a
+# difference; it is the difference.
+#
+# IT FORMATS AND ONLY FORMATS. Nothing is written back, no computed p is
+# touched, and the CSV writers do not call it -- full precision stays in the
+# export, which is the artefact a reader is meant to compute from.
+#
+# Arguments:
+#   .value - any finite number; zero and negatives are handled rather than
+#            trusted, since a p that underflowed is a real thing to print
+# Output:
+#   .result$ - three significant figures, e.g. "3.04e-29", "1.00e-300",
+#              "3.00e-04"; "0" for an exact zero; "--undefined--" for undefined
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_sig3: .value
+    if .value = undefined
+        .result$ = "--undefined--"
+    elsif .value = 0
+        ; An underflowed p IS zero, and saying so is the honest tail. Printing
+        ; a mantissa here would invent digits the double does not have.
+        .result$ = "0"
+    else
+        .sign$ = ""
+        .mag = .value
+        if .mag < 0
+            .sign$ = "-"
+            .mag = -.mag
+        endif
+        .e = floor (log10 (.mag))
+        ; Two-step scaling below 1e-150 and above 1e150 so neither factor is
+        ; ever subnormal or infinite -- see the header.
+        if .e < -150
+            .m = .mag * 10 ^ 150
+            .m = .m * 10 ^ (-.e - 150)
+        elsif .e > 150
+            .m = .mag / 10 ^ 150
+            .m = .m / 10 ^ (.e - 150)
+        else
+            .m = .mag / 10 ^ .e
+        endif
+        .m = round (.m * 100) / 100
+        ; Re-normalise in both directions: rounding can carry 9.999 up to
+        ; 10.00, and an inexact log10 can leave the mantissa just under 1.
+        if .m >= 10
+            .m = .m / 10
+            .e = .e + 1
+        elsif .m < 1
+            .m = .m * 10
+            .e = .e - 1
+        endif
+        ; Through @eml_fixed like every other rounded number in this module,
+        ; and here it is doing real work: fixed$ answers a mantissa of exactly
+        ; 3 with "3", and "3e-29" is two significant figures short of what the
+        ; tail promises.
+        @eml_fixed: .m, 2
+        .mantissa$ = eml_fixed.result$
+        if .e < 0
+            .expSign$ = "-"
+            .expAbs = -.e
+        else
+            .expSign$ = "+"
+            .expAbs = .e
+        endif
+        .expDigits$ = string$ (.expAbs)
+        if length (.expDigits$) < 2
+            .expDigits$ = "0" + .expDigits$
+        endif
+        .result$ = .sign$ + .mantissa$ + "e" + .expSign$ + .expDigits$
     endif
 endproc
 
@@ -685,8 +855,9 @@ procedure emlFormatP: .pValue
     # Outputs:
     #   .formatted$ - the full label, e.g. "p = .032" / "p < .001"
     #   .bare$      - the SAME value with no "p " prefix, e.g. ".032" / "< .001"
-    #   .exact$     - the unrounded value in Praat's round-trip form, or "" when
-    #                 .formatted$ already shows the number exactly
+    #   .exact$     - the floored value at THREE SIGNIFICANT FIGURES, e.g.
+    #                 "3.04e-29" below the floor and "1 - 1.23e-04" above it,
+    #                 or "" when .formatted$ already shows the number exactly
     #
     # .bare$ exists because ten call sites printed the label twice: they pass
     # "p" as the row label and then print .formatted$, which carries its own
@@ -742,8 +913,25 @@ procedure emlFormatP: .pValue
         ; two drifting apart.
         .bare$ = replace_regex$ (.formatted$, "^p\s*=\s*", "", 1)
         .bare$ = replace_regex$ (.bare$, "^p\s*", "", 1)
-        if .pValue < 0.001 or (.pValue >= 0.9995 and .pValue < 1)
-            .exact$ = string$ (.pValue)
+        ; THREE SIGNIFICANT FIGURES, not string$ (.pValue). string$ is Praat's
+        ; ROUND-TRIP renderer -- it emits as many digits as it takes to
+        ; reconstruct the double -- so this line used to put
+        ; "3.0359635874099574e-29" in the Info window beside a floored label.
+        ; The tail's job is to say which order of magnitude got floored, and
+        ; three significant figures say that and stop. See @eml_sig3 for why
+        ; this cannot be a call to fixed$ at any width.
+        ;
+        ; The two floors are not symmetrical. Below, what carries the
+        ; information is p. Above, three significant figures of p is 1.00 for
+        ; everything in [0.9995, 1) -- D35 mirrored -- so what is bounded is
+        ; the DISTANCE from one, and the tail says so in as many words rather
+        ; than printing a number that looks like a p and is not.
+        if .pValue < 0.001
+            @eml_sig3: .pValue
+            .exact$ = eml_sig3.result$
+        elsif .pValue >= 0.9995 and .pValue < 1
+            @eml_sig3: 1 - .pValue
+            .exact$ = "1 - " + eml_sig3.result$
         else
             .exact$ = ""
         endif

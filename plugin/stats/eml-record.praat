@@ -744,8 +744,16 @@ procedure emlRecordBegin: .tempFolder$
     ; The two Stop commands still say what happened after the fact -- "the
     ; recording ended when its buffer was removed" -- because a name can only
     ; be read before the act and only the commands can explain it afterwards.
+    ; `axis` IS THE LAST COLUMN AND IT IS APPENDED RATHER THAN INSERTED.
+    ; It carries the RESOLVED axis of a draw step -- the numbers the figure
+    ; was actually drawn on -- so that @emlRecordColumnManifest can say, in
+    ; the editable block, what an AUTO axis came out as on the data it was
+    ; recorded from (RULING 10b). It has to be a column and not a global:
+    ; the recorder spans menu commands, each of which is its own script
+    ; scope, and the buffer Table is the only thing that survives between
+    ; them -- which is the same reason @emlRecordCaptureEnv exists.
     Create Table with column names: "emlRecording_DO_NOT_REMOVE", 0,
-    ... "n kind intent caveat code env post result api derived source"
+    ... "n kind intent caveat code env post result api derived source axis"
     emlRecordBufferId = selected ("Table")
 
     ; The per-session store. Created with the buffer and removed with it, so
@@ -1554,6 +1562,15 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     @emlRecordCaptureAnnotations: .kind$
     Set string value: .row, "post", emlRecordCaptureAnnotations.out$
     Set string value: .row, "result", ""
+    ; THE RESOLVED AXIS, EMPTY UNTIL A DRAW STEP FILLS IT IN. Written
+    ; through the guard because a session that was recording when the
+    ; plugin was upgraded re-attaches to a buffer created without this
+    ; column, and `Set string value:` on a column that is not there is an
+    ; abort in the middle of a user's work rather than a missing comment.
+    @emlRecordHasColumn: "axis"
+    if emlRecordHasColumn.yes = 1
+        Set string value: .row, "axis", ""
+    endif
     Set string value: .row, "api", .api$
     ; DERIVED: "1" when the object this step ran on was AUTO-CREATED from
     ; something the user selected -- the graphs form converts a Sound to a
@@ -1624,6 +1641,155 @@ procedure emlRecordResult: .text$
     endif
 
     label RECORD_RESULT_DONE
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordHasColumn: .name$
+# Does the recording buffer carry this column?
+#
+# WHY THIS IS NOT `Get column index:`. That command raises when the label is
+# absent, and the whole point here is to ASK without aborting. The buffer's
+# schema grows -- `axis` was added on 16 August 2026 -- and a recording that
+# was running when the plugin was updated re-attaches to a table created by
+# the older code. Reading a column that is not there would end a user's
+# session in the middle of an analysis, over a comment.
+#
+# Outputs: .yes  1 if present, 0 if not
+# ----------------------------------------------------------------------------
+procedure emlRecordHasColumn: .name$
+    .yes = 0
+    selectObject: emlRecordBufferId
+    .nCols = Get number of columns
+    for .c from 1 to .nCols
+        .label$ = Get column label: .c
+        if .label$ = .name$
+            .yes = 1
+        endif
+    endfor
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordAxisRequest: .fbMin, .fbMax
+# WHAT THE USER ASKED FOR, WHICH IS NOT ALWAYS WHAT THE DRAW WAS GIVEN.
+#
+# AUTHOR RULING 10(b), 16 AUGUST 2026: "the record process should note if it
+# was auto and offer 0.0 to 0.0 as the range in the editable top block of
+# variables." Ruling 10(a) settled that the recorded CALL must carry the
+# user's choice -- (0, 0) is the sentinel the dialog names on its own face,
+# not a range -- and this is the other half: the choice has to be recoverable
+# at the moment the recorder runs.
+#
+# ON TWO PATHS IT IS NOT, AND THAT IS THE WHOLE REASON THIS PROCEDURE EXISTS.
+# graphs/eml-graphs-form.praat converts auto into explicit BEFORE the draw
+# that gets recorded:
+#
+#   * the bracket-headroom pass, which widens the axis to fit an annotation
+#     bracket and writes the widened numbers back into valueMin/valueMax;
+#   * the legend-room second pass, which does the same for a legend and then
+#     DRAWS AGAIN on the widened axis -- so the recorder's .vMin/.vMax on an
+#     annotated or legend-bearing figure are the resolved numbers, and the
+#     user's "auto" is already gone by the time this file can see it.
+#
+# So the form publishes the untouched request as two globals, set where the
+# user's values are first read and not written by either pass:
+#
+#     emlGraphsAxisYReqMin , emlGraphsAxisYReqMax
+#
+# and every recorder prefers them. THE FALLBACK IS NOT A COURTESY. Nothing
+# outside the graphs form sets those globals -- the API-export path, the batch
+# module, harness drivers and any user script calling a draw procedure
+# directly all reach the recorder without a form ever having run -- and for
+# every one of them the argument the draw was given IS the user's request.
+# Preferring a global that does not exist would be an abort; requiring one
+# would make the recorder depend on a dialog it must work without.
+#
+# BOTH OR NEITHER. The pair is read as a pair: a caller that published only
+# one of the two would otherwise get a min from the form and a max from the
+# draw, which is a range nobody asked for and the (0, 0) auto sentinel cannot
+# survive. If either global is missing, both arguments are used.
+#
+# Outputs: .min, .max   the range to record
+#          .fromForm    1 if the globals supplied it, 0 if the arguments did
+# ----------------------------------------------------------------------------
+procedure emlRecordAxisRequest: .fbMin, .fbMax
+    .min = .fbMin
+    .max = .fbMax
+    .fromForm = 0
+    if variableExists ("emlGraphsAxisYReqMin")
+        if variableExists ("emlGraphsAxisYReqMax")
+            .min = emlGraphsAxisYReqMin
+            .max = emlGraphsAxisYReqMax
+            .fromForm = 1
+        endif
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordAxisNote: .min, .max
+# The RESOLVED axis of the draw step just recorded, kept for the block.
+#
+# RULING 10(b) asks the block to note "if it was auto" AND, for the reader's
+# benefit, what it resolved to on the original data. The first half is in the
+# recorded numbers themselves -- 0.0 and 0.0 -- and the second half is this.
+#
+# It is attached to the STEP rather than written into the block directly,
+# because the block is built at flush time, in a different menu command and a
+# different script scope, from the buffer and nothing else.
+#
+# Silently does nothing on a buffer created before this column existed; see
+# @emlRecordHasColumn for why that is a guard and not a bug.
+# ----------------------------------------------------------------------------
+procedure emlRecordAxisNote: .min, .max
+    @emlRecordInit
+    if emlRecordActive = 0
+        goto RECORD_AXIS_NOTE_DONE
+    endif
+    @emlRecordHasColumn: "axis"
+    if emlRecordHasColumn.yes = 0
+        goto RECORD_AXIS_NOTE_DONE
+    endif
+    selectObject: emlRecordBufferId
+    .row = Get number of rows
+    if .row < 1
+        goto RECORD_AXIS_NOTE_DONE
+    endif
+    @emlRecordAxisFixed: .min
+    .minText$ = emlRecordAxisFixed.text$
+    @emlRecordAxisFixed: .max
+    .maxText$ = emlRecordAxisFixed.text$
+    Set string value: .row, "axis", .minText$ + " " + .maxText$
+
+    label RECORD_AXIS_NOTE_DONE
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordAxisFixed: .value
+# Four decimals, INCLUDING for exact zero.
+#
+# `fixed$` is not a fixed-precision formatter -- that is ruling 6's finding and
+# validate/v64 pins the case grid -- and the case that shows here is the one it
+# names first: fixed$ (0, 4) returns a bare "0". A bar chart's axis floor IS
+# zero, so the note in the block came out reading
+#
+#     ; the figure was drawn on 0 .. 120.0000
+#
+# with the two ends of one range in two different notations. The shared
+# formatter @eml_fixed lives in stats/eml-output.praat and would be the right
+# call if this file could depend on it; it cannot -- eml-record.praat is
+# included on its own by scripts/eml-record-start.praat and by the recording
+# commands, and adding a cross-file dependency for one comment would be a load
+# order to get wrong later. The one case fixed$ gets wrong here is repaired
+# where it happens instead.
+# ----------------------------------------------------------------------------
+procedure emlRecordAxisFixed: .value
+    .text$ = fixed$ (.value, 4)
+    if index (.text$, ".") = 0
+        .text$ = .text$ + ".0000"
+    endif
 endproc
 
 
@@ -1794,11 +1960,57 @@ endproc
 # the form defaults it that way; it is still text drawn on a figure and not a
 # column reference, so it is left where the user typed it.
 #
-# Outputs: .spec$   "<argIndex>=<role> ..."  -- empty for a procedure that
-#                   takes no column name at all
+# ----------------------------------------------------------------------------
+# THE NUMERIC SLOTS (RULING 10b, 16 AUGUST 2026), WHICH ARE THE SECOND TABLE
+# IN THIS PROCEDURE.
+#
+# The author's ruling: "the record process should note if it was auto and
+# offer 0.0 to 0.0 as the range in the editable top block of variables." The
+# block's promise -- nothing below it names an object and nothing below it
+# names a column -- now extends to the axis: nothing below it holds an axis
+# range either. So the axis pair is lifted exactly the way a column is, into
+# `axisYMin` and `axisYMax`, and the step reads them.
+#
+# THE UNIT IS THE PAIR AND NOT THE NUMBER, and that is the one place this
+# differs from the column rule rather than copying it. The auto sentinel is
+# (0, 0): a lone 0 in the minimum slot is a perfectly ordinary axis FLOOR --
+# a bar chart's is zero -- and it means nothing on its own. Sharing one
+# `axisYMin = 0` variable between an auto figure and a figure the user gave a
+# floor of 0 would be ruling 9's "two slots that happen to agree today" in its
+# most damaging form: editing the floor would turn the other figure's auto
+# into a half-specified range and it would silently redraw. Two draws
+# therefore share a pair only when they used the SAME pair, and a second
+# distinct pair becomes axisYMin2/axisYMax2 in first-use order.
+#
+# THE ROLE NAME TELLS THE TRUTH ABOUT WHICH AXIS IT IS. Twelve of the thirteen
+# draw procedures take the dialog's range as their Y axis and get axisY*. The
+# HISTOGRAM does not: its dialog says "Value maximum / Value minimum" and
+# those bound the axis it draws HORIZONTALLY -- its vertical axis is a count,
+# bounded by a single frequency maximum over a hard floor of zero, which is
+# not a pair and has no (0, 0) sentinel. Calling that pair axisYMin would put
+# a variable named for one axis in charge of the other, which is the kind of
+# thing this block exists to abolish; it is axisValue* instead.
+#
+# WHY THE KEY IS `.axisProc$` AND NOT `.proc$`, WHICH IS NOT A STYLE CHOICE.
+# validate/v58 §8 censuses this file's column map by reading every line
+# spelled `if .proc$ = "..."` and requiring each name it finds to be a
+# procedure whose recorded call template interpolates a COLUMN variable. Four
+# of the draw procedures below -- waveform, spectrum, LTAS and F0 contour --
+# draw an object whole and name no column at all; they are correctly outside
+# that census and adding them to it would report them as dead entries. Two
+# tables, two keys, two censuses: v58 owns the column one and validate/v67
+# owns this one, in both directions, for the same reason v58 gives -- a
+# hand-maintained map that falls behind the signatures it does not own lifts
+# nothing and says nothing.
+#
+# Outputs: .spec$      "<argIndex>=<role> ..."  -- empty for a procedure that
+#                      takes no column name at all
+#          .axisSpec$  "<minArg> <maxArg> <roleBase>" -- empty for a procedure
+#                      that takes no axis range pair
 # ----------------------------------------------------------------------------
 procedure emlRecordColumnSpec: .proc$
     .spec$ = ""
+    .axisSpec$ = ""
 
     ; ---- the stats orchestrators (stats/eml-analysis.praat) ---------------
     if .proc$ = "emlRunTwoGroupAnalysis"
@@ -1863,6 +2075,59 @@ procedure emlRecordColumnSpec: .proc$
     endif
     ; Waveform, spectrum and LTAS take no column: they draw a Sound, a
     ; Spectrum or an Ltas whole. They are absent on purpose, not by omission.
+
+    ; ---- THE AXIS PAIR, ONE ENTRY PER DRAW PROCEDURE (RULING 10b) ---------
+    ; Argument indices count `data` as argument 1, exactly as above. All
+    ; thirteen are here, including the four that take no column, because an
+    ; axis range is something every figure has and something every dialog
+    ; offers on the same "(both 0 = auto)" terms.
+    .axisProc$ = .proc$
+    if .axisProc$ = "emlDrawF0Contour"
+        ; data,title,xLab,yLab,w,h,colour,grid,tMin,tMax,fMin,fMax,yUnit
+        .axisSpec$ = "11 12 axisY"
+    elsif .axisProc$ = "emlDrawWaveform"
+        ; ...,tMin,tMax,aMin,aMax
+        .axisSpec$ = "11 12 axisY"
+    elsif .axisProc$ = "emlDrawSpectrum"
+        ; ...,fMin,fMax,pMin,pMax
+        .axisSpec$ = "11 12 axisY"
+    elsif .axisProc$ = "emlDrawLTAS"
+        ; ...,fMin,fMax,pMin,pMax,showCurve,showBars,showPoles,showSpeckles
+        .axisSpec$ = "11 12 axisY"
+    elsif .axisProc$ = "emlDrawViolinPlot"
+        ; ...,groupCol,valueCol,vMin,vMax
+        .axisSpec$ = "11 12 axisY"
+    elsif .axisProc$ = "emlDrawBoxPlot"
+        .axisSpec$ = "11 12 axisY"
+    elsif .axisProc$ = "emlDrawGroupedViolin"
+        ; ...,catCol,subCol,valueCol,vMin,vMax
+        .axisSpec$ = "12 13 axisY"
+    elsif .axisProc$ = "emlDrawGroupedBoxPlot"
+        .axisSpec$ = "12 13 axisY"
+    elsif .axisProc$ = "emlDrawBarChart"
+        ; ...,groupCol,valueCol,errorMode,errorCol,vMin,vMax
+        .axisSpec$ = "13 14 axisY"
+    elsif .axisProc$ = "emlDrawTimeSeries"
+        ; ...,timeCol,valueCol,groupCol,tMin,tMax,vMin,vMax
+        .axisSpec$ = "14 15 axisY"
+    elsif .axisProc$ = "emlDrawTimeSeriesCI"
+        .axisSpec$ = "14 15 axisY"
+    elsif .axisProc$ = "emlDrawSpaghettiPlot"
+        ; ...,condCol,valueCol,idCol,groupCol,showMean,vMin,vMax
+        .axisSpec$ = "14 15 axisY"
+    elsif .axisProc$ = "emlDrawScatterPlot"
+        ; ...,colX,colY,groupCol,xMin,xMax,yMin,yMax,annotate. The X pair is
+        ; deliberately not lifted: ruling 10(b) is about the y-axis range, and
+        ; a scatter's x range is the only x pair in the library -- one variable
+        ; that appeared on one figure type would be a rule nobody could learn.
+        .axisSpec$ = "14 15 axisY"
+    elsif .axisProc$ = "emlDrawHistogram"
+        ; ...,valueCol,groupCol,binCount,displayMode,vMin,vMax,freqMax.
+        ; See the header: this pair is the histogram's HORIZONTAL axis, and
+        ; the vertical one is the lone freqMax at argument 15, which has no
+        ; minimum and therefore no (0, 0) sentinel to preserve.
+        .axisSpec$ = "13 14 axisValue"
+    endif
 endproc
 
 
@@ -1960,15 +2225,35 @@ endproc
 # to RUN is to leave the line exactly as it was recorded. A literal left
 # un-lifted is a blemish; a mangled call is a broken script.
 #
-# Outputs: .ok       1 when the argument is one plain literal
+# THE NUMERIC PATH (RULING 10b, 16 AUGUST 2026) IS THE SAME GUARD APPLIED TO
+# A DIFFERENT SHAPE. An axis argument is only lifted when it is unambiguously
+# one number: an optional sign, digits, at most one decimal point, nothing
+# else. Anything that is not -- a variable name, an arithmetic expression, a
+# procedure result, an already-lifted `axisYMin` from a re-recorded session --
+# is left exactly where it was recorded, for the reason above: a literal left
+# un-lifted is a blemish and a mangled call is a broken script. Praat has no
+# regex, so this is a character walk like everything else here.
+#
+# AND AN EMPTY-STRING TEST IS NOT A ZERO TEST, which is the trap this half has
+# to avoid. The column path skips a literal that is "" because a role the
+# session did not use has no business in the block. The axis path must NOT
+# skip a literal that is 0: (0, 0) is precisely the value the ruling exists to
+# preserve, and treating it as absent would put the resolved numbers back in
+# the step -- the defect ruling 10(a) was about, arriving from the other side.
+#
+# Outputs: .ok       1 when the argument is one plain string literal
 #          .value$   what it contains, without the quotes
 #          .lead$    the whitespace in front of it, kept so the rewritten call
 #                    lines up the way the recorder wrote it
+#          .isNum    1 when the argument is one plain numeric literal
+#          .num$     the number as it was written, trimmed
 # ----------------------------------------------------------------------------
 procedure emlRecordQuotedLiteral: .arg$
     .ok = 0
     .value$ = ""
     .lead$ = ""
+    .isNum = 0
+    .num$ = ""
     .t$ = .arg$
     while left$ (.t$, 1) = " "
         .lead$ = .lead$ + " "
@@ -1987,6 +2272,29 @@ procedure emlRecordQuotedLiteral: .arg$
         if left$ (.t$, 1) = """" and right$ (.t$, 1) = """"
             .ok = 1
             .value$ = mid$ (.t$, 2, length (.t$) - 2)
+        endif
+    endif
+
+    ; ---- the numeric path ------------------------------------------------
+    if .ok = 0 and .t$ <> ""
+        .digits = 0
+        .dots = 0
+        .bad = 0
+        for .i from 1 to length (.t$)
+            .ch$ = mid$ (.t$, .i, 1)
+            if .ch$ >= "0" and .ch$ <= "9"
+                .digits = .digits + 1
+            elsif .ch$ = "."
+                .dots = .dots + 1
+            elsif (.ch$ = "-" or .ch$ = "+") and .i = 1
+                ; a sign, and only in front
+            else
+                .bad = 1
+            endif
+        endfor
+        if .bad = 0 and .digits > 0 and .dots < 2
+            .isNum = 1
+            .num$ = .t$
         endif
     endif
 endproc
@@ -2017,15 +2325,31 @@ endproc
 # split into arguments, the arguments named by the spec are replaced, and the
 # line is rejoined. Everything else in the line is untouched by construction.
 #
+# THE AXIS RANGE IS LIFTED BY THE SAME MACHINERY (RULING 10b, 16 Aug 2026),
+# with one difference and it is the interesting one: THE UNIT OF IDENTITY IS
+# THE PAIR. See @emlRecordColumnSpec's header for why -- a lone 0 in a minimum
+# slot is an ordinary axis floor, the (0, 0) that means AUTO is a property of
+# the two together, and a variable shared between an auto figure and a figure
+# whose floor happens to be zero would let one edit silently redraw the other.
+# So two draws share axisYMin/axisYMax only when they used the same PAIR, and
+# a second distinct pair is axisYMin2/axisYMax2 in first-use order.
+#
+# AND ZERO IS NOT ABSENT. The column path skips a literal of "" because a role
+# the session did not use has no business in the block; the axis path lifts a
+# literal of 0 precisely because that is the value the ruling is about.
+#
 # Outputs: .n          how many column variables the session used
-#          .out$       the lines that declare them
-#          .code$[s]   step s's code with its column literals replaced by the
-#                      variable names -- what @emlRecordRender emits
+#          .out$       the lines that declare them -- columns then axes
+#          .nAxis      how many axis PAIRS the session used
+#          .code$[s]   step s's code with its column literals and its axis
+#                      range replaced by the variable names -- what
+#                      @emlRecordRender emits
 # ----------------------------------------------------------------------------
 procedure emlRecordColumnManifest
     @emlRecordInit
     .out$ = ""
     .n = 0
+    .nAxis = 0
 
     selectObject: emlRecordBufferId
     .nSteps = Get number of rows
@@ -2035,6 +2359,17 @@ procedure emlRecordColumnManifest
         .stepCode$ = Get value: .s, "code"
         .stepKind$ = Get value: .s, "kind"
         .stepN = Get value: .s, "n"
+        ; WHAT THE AXIS RESOLVED TO ON THE RECORDED DATA, for the note beside
+        ; an auto range. Guarded: a session that was running when the plugin
+        ; was updated re-attaches to a buffer with no such column, and the
+        ; block is then one clause shorter rather than the flush being an
+        ; abort. See @emlRecordHasColumn.
+        .stepAxis$ = ""
+        @emlRecordHasColumn: "axis"
+        if emlRecordHasColumn.yes = 1
+            selectObject: emlRecordBufferId
+            .stepAxis$ = Get value: .s, "axis"
+        endif
 
         ; A step's code may be several lines -- a scatter records its
         ; annotation setup above the draw call -- so each line is considered
@@ -2059,7 +2394,8 @@ procedure emlRecordColumnManifest
                 .proc$ = mid$ (.line$, 2, .colon - 2)
                 @emlRecordColumnSpec: .proc$
                 .spec$ = emlRecordColumnSpec.spec$
-                if .spec$ <> ""
+                .axisSpec$ = emlRecordColumnSpec.axisSpec$
+                if .spec$ <> "" or .axisSpec$ <> ""
                     .head$ = left$ (.line$, .colon)
                     @emlRecordSplitArgs: mid$ (.line$, .colon + 1, 1000000)
                     .nArgs = emlRecordSplitArgs.n
@@ -2131,6 +2467,115 @@ procedure emlRecordColumnManifest
                         endif
                     endwhile
 
+                    ; ---- THE AXIS PAIR (RULING 10b) ----------------------
+                    ; Read as a pair, matched as a pair, declared as a pair.
+                    ; Both slots must parse as plain numbers or NEITHER is
+                    ; lifted: a half-lifted range would leave the block able
+                    ; to move one end of an axis and not the other, which is
+                    ; worse than leaving both where they were recorded.
+                    if .axisSpec$ <> ""
+                        .sp1 = index (.axisSpec$, " ")
+                        .aMinPos = number (left$ (.axisSpec$, .sp1 - 1))
+                        .arest$ = mid$ (.axisSpec$, .sp1 + 1, 100)
+                        .sp2 = index (.arest$, " ")
+                        .aMaxPos = number (left$ (.arest$, .sp2 - 1))
+                        .aBase$ = mid$ (.arest$, .sp2 + 1, 100)
+
+                        if .aMinPos <= .nArgs and .aMaxPos <= .nArgs
+                            @emlRecordQuotedLiteral: .newArg$[.aMinPos]
+                            .aIsNum = emlRecordQuotedLiteral.isNum
+                            .aMinLit$ = emlRecordQuotedLiteral.num$
+                            .aMinLead$ = emlRecordQuotedLiteral.lead$
+                            @emlRecordQuotedLiteral: .newArg$[.aMaxPos]
+                            .aIsNum = .aIsNum * emlRecordQuotedLiteral.isNum
+                            .aMaxLit$ = emlRecordQuotedLiteral.num$
+                            .aMaxLead$ = emlRecordQuotedLiteral.lead$
+
+                            if .aIsNum = 1
+                                ; THE AUTO SENTINEL, AND IT IS A PROPERTY OF
+                                ; THE PAIR. The dialog says "both 0 = auto"
+                                ; and every draw procedure tests both, so one
+                                ; zero on its own is an ordinary bound.
+                                .aAuto = 0
+                                if number (.aMinLit$) = 0
+                                    if number (.aMaxLit$) = 0
+                                        .aAuto = 1
+                                    endif
+                                endif
+                                ; THE AUTHOR'S OWN SPELLING: "offer 0.0 to
+                                ; 0.0 as the range". An auto range is written
+                                ; 0.0 rather than 0 so that it reads as a
+                                ; NUMBER a user may replace and not as a flag
+                                ; -- and 0.0 is still the sentinel, because
+                                ; the draw procedures compare numerically.
+                                ; A range the user typed is written back
+                                ; exactly as it was recorded.
+                                .aMinOut$ = .aMinLit$
+                                .aMaxOut$ = .aMaxLit$
+                                if .aAuto = 1
+                                    .aMinOut$ = "0.0"
+                                    .aMaxOut$ = "0.0"
+                                endif
+
+                                .aSlot = 0
+                                .aSame = 0
+                                for .k from 1 to .nAxis
+                                    if .axBase$[.k] = .aBase$
+                                        .aSame = .aSame + 1
+                                        if .axMinLit$[.k] = .aMinOut$
+                                            if .axMaxLit$[.k] = .aMaxOut$
+                                                .aSlot = .k
+                                            endif
+                                        endif
+                                    endif
+                                endfor
+                                if .aSlot = 0
+                                    .nAxis = .nAxis + 1
+                                    .aSlot = .nAxis
+                                    .axBase$[.nAxis] = .aBase$
+                                    .axMinLit$[.nAxis] = .aMinOut$
+                                    .axMaxLit$[.nAxis] = .aMaxOut$
+                                    .axAuto[.nAxis] = .aAuto
+                                    .axResolved$[.nAxis] = .stepAxis$
+                                    .axSuffix$ = ""
+                                    if .aSame > 0
+                                        .axSuffix$ = string$ (.aSame + 1)
+                                    endif
+                                    .axMinName$[.nAxis] = .aBase$ + "Min"
+                                    ... + .axSuffix$
+                                    .axMaxName$[.nAxis] = .aBase$ + "Max"
+                                    ... + .axSuffix$
+                                    .axSteps$[.nAxis] = ""
+                                    .axLast$[.nAxis] = ""
+                                endif
+                                ; The FIRST step to use a pair is the one
+                                ; whose resolved numbers the note carries: a
+                                ; later step sharing the pair drew the same
+                                ; request, and on auto it may well have
+                                ; resolved somewhere else, so the note names
+                                ; the steps and quotes the first.
+                                if .axResolved$[.aSlot] = ""
+                                    .axResolved$[.aSlot] = .stepAxis$
+                                endif
+                                .aNote$ = string$ (.stepN) + " ("
+                                ... + .stepKind$ + ")"
+                                if .axLast$[.aSlot] <> .aNote$
+                                    if .axSteps$[.aSlot] <> ""
+                                        .axSteps$[.aSlot] = .axSteps$[.aSlot]
+                                        ... + ", "
+                                    endif
+                                    .axSteps$[.aSlot] = .axSteps$[.aSlot]
+                                    ... + .aNote$
+                                    .axLast$[.aSlot] = .aNote$
+                                endif
+                                .newArg$[.aMinPos] = .aMinLead$
+                                ... + .axMinName$[.aSlot]
+                                .newArg$[.aMaxPos] = .aMaxLead$
+                                ... + .axMaxName$[.aSlot]
+                            endif
+                        endif
+                    endif
+
                     .lineOut$ = .head$
                     for .a from 1 to .nArgs
                         if .a > 1
@@ -2149,16 +2594,27 @@ procedure emlRecordColumnManifest
         .code$[.s] = .rebuilt$
     endfor
 
-    if .n = 0
+    if .n = 0 and .nAxis = 0
         goto END_COLUMN_MANIFEST
     endif
 
     ; The declarations, with the `=` aligned: the block is a form the user
     ; fills in, and a form reads better as a column than as ragged prose.
+    ; ONE ALIGNMENT ACROSS BOTH KINDS -- the axis names are measured with the
+    ; column names, because two blocks of differently aligned `=` read as two
+    ; blocks and this is one form.
     .width = 0
     for .k from 1 to .n
         if length (.varName$[.k]) > .width
             .width = length (.varName$[.k])
+        endif
+    endfor
+    for .k from 1 to .nAxis
+        if length (.axMinName$[.k]) > .width
+            .width = length (.axMinName$[.k])
+        endif
+        if length (.axMaxName$[.k]) > .width
+            .width = length (.axMaxName$[.k])
         endif
     endfor
     for .k from 1 to .n
@@ -2176,7 +2632,90 @@ procedure emlRecordColumnManifest
         ... + .varSteps$[.k] + newline$
     endfor
 
+    ; ---- THE AXIS DECLARATIONS (RULING 10b) ------------------------------
+    ; TWO LINES PER PAIR, AND THE SECOND ONE IS NOT DECORATION. The author's
+    ; ruling asks the block to "note if it was auto" and, for the reader's
+    ; benefit, what it resolved to on the original data. A user who opens a
+    ; recorded script and finds `axisYMin = 0.0` needs to be told both that
+    ; the zeros are a request and not a range, and roughly where the figure
+    ; actually sat -- otherwise the only way to find out what to type instead
+    ; is to run the file and look.
+    for .k from 1 to .nAxis
+        .padA$ = ""
+        for .p from 1 to .width - length (.axMinName$[.k])
+            .padA$ = .padA$ + " "
+        endfor
+        .padB$ = ""
+        for .p from 1 to .width - length (.axMaxName$[.k])
+            .padB$ = .padB$ + " "
+        endfor
+        @emlRecordAxisGloss: .axBase$[.k]
+        .word$ = "steps "
+        if not index (.axSteps$[.k], ",")
+            .word$ = "step "
+        endif
+        ; The resolved pair, as @emlRecordAxisNote stored it: "min max".
+        .resMin$ = ""
+        .resMax$ = ""
+        if .axResolved$[.k] <> ""
+            .rsp = index (.axResolved$[.k], " ")
+            if .rsp > 0
+                .resMin$ = left$ (.axResolved$[.k], .rsp - 1)
+                .resMax$ = mid$ (.axResolved$[.k], .rsp + 1, 100)
+            endif
+        endif
+
+        if .axAuto[.k] = 1
+            .out$ = .out$ + .axMinName$[.k] + .padA$ + " = "
+            ... + .axMinLit$[.k] + "   ; " + emlRecordAxisGloss.gloss$
+            ... + " -- AUTO (both 0 = computed from the data) -- "
+            ... + .word$ + .axSteps$[.k] + newline$
+            if .resMin$ <> ""
+                .out$ = .out$ + .axMaxName$[.k] + .padB$ + " = "
+                ... + .axMaxLit$[.k] + "   ; on the recorded data it resolved"
+                ... + " to " + .resMin$ + " .. " + .resMax$ + newline$
+            else
+                .out$ = .out$ + .axMaxName$[.k] + .padB$ + " = "
+                ... + .axMaxLit$[.k] + "   ; set both to fix the axis instead"
+                ... + newline$
+            endif
+        else
+            .out$ = .out$ + .axMinName$[.k] + .padA$ + " = "
+            ... + .axMinLit$[.k] + "   ; " + emlRecordAxisGloss.gloss$
+            ... + " -- as typed in the dialog -- "
+            ... + .word$ + .axSteps$[.k] + newline$
+            if .resMin$ <> ""
+                .out$ = .out$ + .axMaxName$[.k] + .padB$ + " = "
+                ... + .axMaxLit$[.k] + "   ; the figure was drawn on "
+                ... + .resMin$ + " .. " + .resMax$ + newline$
+            else
+                .out$ = .out$ + .axMaxName$[.k] + .padB$ + " = "
+                ... + .axMaxLit$[.k] + "   ; set both to 0 for an automatic"
+                ... + " axis" + newline$
+            endif
+        endif
+    endfor
+
     label END_COLUMN_MANIFEST
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordAxisGloss: .base$
+# One short phrase per axis role, the twin of @emlRecordColumnGloss and here
+# for the same reason: the variable name says what the role IS, the gloss says
+# what it MEANS on the figure in front of the reader.
+# ----------------------------------------------------------------------------
+procedure emlRecordAxisGloss: .base$
+    .gloss$ = "an axis range"
+    if .base$ = "axisY"
+        .gloss$ = "the y-axis range"
+    elsif .base$ = "axisValue"
+        ; The histogram's value axis is drawn HORIZONTALLY -- its vertical
+        ; axis is a count. Naming it after the dialog's own words rather than
+        ; after an axis letter is the point; see @emlRecordColumnSpec.
+        .gloss$ = "the value-axis range (the histogram's horizontal axis)"
+    endif
 endproc
 
 
@@ -2246,10 +2785,16 @@ procedure emlRecordTableManifest
     ; is two blocks. @emlRecordColumnManifest also rewrites the steps, so it
     ; must run before @emlRecordRender walks them -- it does, because the
     ; renderer calls this procedure before its body loop.
+    ;
+    ; AND SO DOES THE AXIS RANGE (RULING 10b, 16 Aug 2026), for the same
+    ; reason and out of the same procedure. A figure whose axis is edited in
+    ; one visible place near the top is the same promise as a workflow whose
+    ; columns are.
     @emlRecordColumnManifest
     .nCols = emlRecordColumnManifest.n
+    .nAxes = emlRecordColumnManifest.nAxis
 
-    if .n = 0 and .nCols = 0
+    if .n = 0 and .nCols = 0 and .nAxes = 0
         goto END_TABLE_MANIFEST
     endif
 
@@ -2269,8 +2814,15 @@ procedure emlRecordTableManifest
     .out$ = .out$
     ... + "# workflow. Edit a name to run the same workflow on other data;"
     ... + newline$
+    ; THE PROMISE GREW ON 16 AUGUST 2026 (RULING 10b) and the sentence has to
+    ; grow with it, because the sentence is what a reader trusts. It said
+    ; "nothing below this block names an object or a column" while every draw
+    ; step below it carried its axis range as two bare literals.
     .out$ = .out$
-    ... + "# nothing below this block names an object or a column."
+    ... + "# nothing below this block names an object, a column or an axis"
+    ... + newline$
+    .out$ = .out$
+    ... + "# range."
     ... + newline$
     for .k from 1 to .n
         .word$ = "steps "
@@ -2280,7 +2832,7 @@ procedure emlRecordTableManifest
         .out$ = .out$ + "data" + string$ (.k) + "$ = """ + .name$[.k]
         ... + """   ; " + .word$ + .steps$[.k] + newline$
     endfor
-    if .nCols > 0
+    if .nCols > 0 or .nAxes > 0
         .out$ = .out$ + emlRecordColumnManifest.out$
         ; SAID ONCE, HERE, RATHER THAN LEFT TO BE DISCOVERED. A figure's
         ; title and axis labels are text the form was given -- often the same

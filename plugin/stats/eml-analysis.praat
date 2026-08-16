@@ -3144,7 +3144,12 @@ procedure emlRMAnovaTest: .data##, .n, .k
     # at around 1e-16 of .ssTot rather than at 0, so an absolute test for
     # equality with zero does not fire.
     .error$ = ""
+    ; .warning$ is the EXPORTED sentence and .warningPrinted$ the printed one;
+    ; both are cleared here rather than at the branch, because the degenerate
+    ; arm jumps to RM_TEST_DONE without reaching either and a Praat procedure's
+    ; locals survive from the previous invocation. See item 12b below.
     .warning$ = ""
+    .warningPrinted$ = ""
     .degenerate = 0
     if .ssTot <= 0
         .degenerate = 1
@@ -3180,6 +3185,47 @@ procedure emlRMAnovaTest: .data##, .n, .k
     # are. The result computes and prints; nothing about it is
     # interpretable. Epsilon pinned to the bound is the tell, and it is
     # already in hand at the moment of printing.
+    #
+    # ITEM 12b, 16 AUGUST 2026: ONE SENTENCE, TWO ARTEFACTS, TWO RULES. Until
+    # today .warning$ was a single string with two destinations that do not
+    # want the same thing from it. @emlReportRepeatedMeasures wraps it into the
+    # Info window, where author ruling 6 governs and every statistic is four
+    # decimals wide; @emlDeclareRMResult hands the same string to @emlGlanceStr
+    # as the glance frame's `warning` cell, where the file is the artefact a
+    # reader computes from and precision is owed rather than trimmed. An
+    # earlier agent reached this line, saw that reformatting it for the report
+    # would silently edit an exported value, and correctly refused. The refusal
+    # is recorded in validate/v65_display_standard.R's census as the EXPORT
+    # class -- one of three kinds of surviving raw fixed$ that file allows by
+    # name, and the only one that was a deferral rather than a judgement.
+    #
+    # So the string is split rather than reformatted. .warning$ keeps the exact
+    # bytes it has always had and is what @emlGlanceStr exports;
+    # .warningPrinted$ is the same sentence with the bound routed through
+    # @eml_fixed and is what the report prints. Neither destination now
+    # constrains the other, and a future edit to either one cannot reach across
+    # into the artefact it does not own.
+    #
+    # THE TWO STRINGS ARE IDENTICAL FOR EVERY k THIS PLUGIN CAN BE DRIVEN AT,
+    # and saying so plainly is more useful than implying a symptom that is not
+    # there. Measured on Praat 6.6.30, 16 Aug 2026: fixed$ (x, 4) escalates
+    # past four decimals once |x| < 1e-4, and the bound is 1 / (k - 1), so the
+    # first k at which the two renderings differ is 10002 -- fixed$ writes
+    # "0.00010" and @eml_fixed writes "0.0001". Above about k = 20002 the gap
+    # widens to "0.00005" against "0.0000". Neither is a repeated-measures
+    # design. validate/v71_tidy_vocab_and_warning.R re-measures the threshold
+    # on the binary under test rather than quoting this paragraph, so the day
+    # a future Praat changes fixed$ the file says so.
+    #
+    # What the split buys is therefore not a repair to today's output: it is
+    # that the report and the export stop sharing a formatter, which is the
+    # condition the earlier refusal was waiting on. A validator that only
+    # measured the printed width would pass on this file and on HEAD alike,
+    # and v71 says so in its own header rather than pretending otherwise.
+    #
+    # NOT A SECOND FORMATTER. @eml_fixed lives in stats/eml-output.praat and is
+    # the only rounding in the plugin; this builds a second STRING, not a
+    # second rule for how a number is written.
     if .n <= 2
         .warning$ = "n = " + string$ (.n) + " subjects. Greenhouse-Geisser "
         ... + "epsilon is forced to its lower bound "
@@ -3187,9 +3233,21 @@ procedure emlRMAnovaTest: .data##, .n, .k
         ... + "sphericity correction carries no information. Read F, p "
         ... + "and the corrected p as description of these two subjects, "
         ... + "not as a test."
+        @eml_fixed: 1 / (.k - 1), 4
+        .warningPrinted$ = "n = " + string$ (.n) + " subjects. "
+        ... + "Greenhouse-Geisser epsilon is forced to its lower bound "
+        ... + eml_fixed.result$ + " for any data at this n, so the "
+        ... + "sphericity correction carries no information. Read F, p "
+        ... + "and the corrected p as description of these two subjects, "
+        ... + "not as a test."
     elsif .ggEpsilon <= 1 / (.k - 1) + 1e-9
         .warning$ = "Greenhouse-Geisser epsilon is at its lower bound "
         ... + fixed$ (1 / (.k - 1), 4) + ", the maximum possible departure "
+        ... + "from sphericity. The corrected p is the most conservative "
+        ... + "value the correction can produce."
+        @eml_fixed: 1 / (.k - 1), 4
+        .warningPrinted$ = "Greenhouse-Geisser epsilon is at its lower bound "
+        ... + eml_fixed.result$ + ", the maximum possible departure "
         ... + "from sphericity. The corrected p is the most conservative "
         ... + "value the correction can produce."
     endif
@@ -3325,8 +3383,17 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     # D98. Printed immediately under the numbers it qualifies, not at the
     # foot of the report, because a caveat below the post-hoc table reads
     # as being about the post-hoc.
+    #
+    # ITEM 12b. The PRINTED half of the split pair. The test still decides
+    # WHETHER there is a caution from .warning$ -- the two are empty and
+    # non-empty together, and reading the condition off the exported string
+    # keeps that fact in one place -- but what reaches the Info window is
+    # .warningPrinted$, whose epsilon bound went through @eml_fixed. Swapping
+    # this back to .warning$ would put a raw fixed$ in front of a reader again
+    # without touching a number, which is why v71 asserts the reference here
+    # by name and not just the width of what came out.
     if emlRMAnovaTest.warning$ <> ""
-        @emlWrapText: "Caution: " + emlRMAnovaTest.warning$, 68
+        @emlWrapText: "Caution: " + emlRMAnovaTest.warningPrinted$, 68
         for .wl from 1 to emlWrapText.nLines
             appendInfoLine: "  ", emlWrapText.line$ [.wl]
         endfor
@@ -4441,6 +4508,15 @@ endproc
 # because broom has no tidy method for a summary of a vector. The written
 # file would have carried `term` and `method` and nothing else.
 #
+# TWO OF THE SIXTEEN ARE TIDY COLUMNS AS OF 16 AUGUST 2026 -- ruling 3 added
+# skewness and kurtosis to emlVocabTidy$ for the normality frame -- so the
+# arithmetic above is now `term`, `skewness`, `kurtosis` and `method`, and
+# eleven of the sixteen would still go over the side without a word. The
+# conclusion does not move an inch, and the reason it does not is the point of
+# recording the correction here: a whitelist that has grown by two is not a
+# whitelist that has stopped dropping things, and a describe declared into
+# tidy would still lose the mean.
+#
 # validate/REGISTRY.md said exactly this on 13 August and gave it as a reason
 # not to convert. The reason was right; the conclusion drawn from it -- that
 # describe therefore cannot export -- was not. The legacy long format
@@ -4513,8 +4589,17 @@ endproc
 # therefore carries only what is true OF THE RUN: the method, a `warning` that
 # names the columns and says where the per-column numbers are, and nobs /
 # n.excluded / alternative when every column agrees on them and nothing at all
-# when they do not. Per-column skewness and kurtosis have no tidy vocabulary
-# to move into and stay in the report, where they always were.
+# when they do not.
+#
+# THAT PARAGRAPH USED TO END "per-column skewness and kurtosis have no tidy
+# vocabulary to move into and stay in the report, where they always were," and
+# ruling 3 of 16 August 2026 overturned the second half of it. The observation
+# was accurate on the day it was written -- emlVocabTidy$ carried no such
+# tokens -- but "the vocabulary does not have it" is a description of a
+# whitelist, not a reason, and the whitelist is ours. skewness and kurtosis are
+# now tidy columns, one pair per row, declared in the loop below; the `warning`
+# still says the recommendation is in the report, because a recommendation is a
+# sentence and there is no column of any vocabulary it belongs in.
 procedure emlDeclareNormalityResult: .tableName$, .dataCol$, .swW, .swP,
     ... .swError$, .skewness, .kurtosis, .nValid, .nUndefined,
     ... .recommendation$, .accumulate
@@ -4544,15 +4629,50 @@ procedure emlDeclareNormalityResult: .tableName$, .dataCol$, .swW, .swP,
     @emlResultBegin: .tableName$, "Normality"
 
     ; ---- tidy: one row per column tested, in the order they were tested ----
+    ;
+    ; AUTHOR RULING 3, 16 August 2026: SKEWNESS AND KURTOSIS BELONG HERE. Until
+    ; today a one-column press exported them in the glance frame and a
+    ; two-column press exported them nowhere -- not in tidy, which had no such
+    ; columns, and not in glance, which on more than one model carries only what
+    ; is true OF THE RUN. So the shape statistics for column 2 existed in the
+    ; Info window and in no file, and the asymmetry got worse the more columns a
+    ; user tested, which is the wrong direction for an export to fail in.
+    ; validate/v64_display_and_coercion.R measured that asymmetry and asserted
+    ; the single-column half of it as the premise of this ruling.
+    ;
+    ; OUTSIDE THE ERROR BRANCH, DELIBERATELY, and the branch's own comment below
+    ; is the argument: a column whose n puts Shapiro-Wilk out of range still has
+    ; a skewness and a kurtosis, and those are the whole of what the analysis
+    ; found. Emitting them only on the branch that ALSO has a W would drop them
+    ; from exactly the rows that have nothing else in them.
+    ;
+    ; THEY ARE UNDEFINED BELOW n = 3 AND n = 4 RESPECTIVELY (@emlSkewness,
+    ; @emlKurtosis, stats/eml-core-descriptive.praat), and @emlTidyNum writes
+    ; nothing for an undefined value, so those cells stay empty and R reads NA.
+    ; That is broom's own behaviour for a statistic a model does not have, and
+    ; it is why no guard is written here.
+    ;
+    ; ADDING THE CALLS IS HALF THE CHANGE. emlVocabTidy$ in
+    ; stats/eml-result-writer.praat is a WHITELIST walked by @eml_orderedCols
+    ; and it decides both the order and whether a column is written at all; a
+    ; declaration under a name it does not carry is dropped in silence, and the
+    ; file that comes out looks like a successful export. The two names were
+    ; added there in the same change, and validate/v71_tidy_vocab_and_warning.R
+    ; drives a two-column press and reads the values back off the written CSV
+    ; rather than trusting either half on its own.
     for .i from 1 to emlNorm_n
         @emlTidyRow: emlNorm_col$ [.i]
         if emlNorm_err$ [.i] = ""
             @emlTidyNum: "statistic", emlNorm_w [.i]
             @emlTidyNum: "p.value",   emlNorm_p [.i]
+            @emlTidyNum: "skewness",  emlNorm_skew [.i]
+            @emlTidyNum: "kurtosis",  emlNorm_kurt [.i]
             @emlTidyStr: "method",    "Shapiro-Wilk normality test"
         else
             ; Shapiro-Wilk out of range is not a failed export -- the shape
             ; statistics are still the answer, and the reason is carried.
+            @emlTidyNum: "skewness",  emlNorm_skew [.i]
+            @emlTidyNum: "kurtosis",  emlNorm_kurt [.i]
             @emlTidyStr: "method", "Shape statistics only"
         endif
     endfor
@@ -4599,12 +4719,24 @@ procedure emlDeclareNormalityResult: .tableName$, .dataCol$, .swW, .swP,
         if .sameRec
             @emlGlanceStr: "alternative", emlNorm_rec$ [1]
         endif
+        ; THIS SENTENCE IS A DIRECTION, SO RULING 3 MOVED IT. It used to say
+        ; "the per-column W and p are in the tidy frame, and the skewness,
+        ; kurtosis and recommendation for each column are in the report", which
+        ; was true of the export until the shape statistics became tidy columns
+        ; in this same change and false the moment they did. It is the one
+        ; exported string in this procedure whose content is a claim about
+        ; where a reader should look, and a claim about the artefact has to
+        ; move when the artefact does -- leaving it would have sent a reader
+        ; to the Info window for two numbers now sitting in the file they
+        ; already have open. No number changes; the recommendation really does
+        ; stay in the report, because it is a sentence and no vocabulary has a
+        ; column for it.
         @emlGlanceStr: "warning", string$ (emlNorm_n)
         ... + " columns were tested in this run (" + .list$ + "). A glance "
         ... + "frame is one row per model and cannot describe "
-        ... + string$ (emlNorm_n) + "; the per-column W and p are in the "
-        ... + "tidy frame, and the skewness, kurtosis and recommendation "
-        ... + "for each column are in the report."
+        ... + string$ (emlNorm_n) + "; the per-column W, p, skewness and "
+        ... + "kurtosis are in the tidy frame, and the recommendation for "
+        ... + "each column is in the report."
     endif
 endproc
 
@@ -4637,6 +4769,9 @@ procedure emlDeclareRMResult: .tableName$, .n, .k
     @emlGlanceNum: "n.groups",    .k
     @emlGlanceNum: "nobs",        .n * .k
     @emlGlanceStr: "method",      "Repeated-measures ANOVA"
+    ; ITEM 12b. The EXPORTED half of the split pair, and the one that must not
+    ; move. .warning$ carries the bytes it carried before the split; the
+    ; formatted sibling is .warningPrinted$ and it goes nowhere near a file.
     if emlRMAnovaTest.warning$ <> ""
         @emlGlanceStr: "warning", emlRMAnovaTest.warning$
     endif
