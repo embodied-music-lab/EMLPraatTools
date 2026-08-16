@@ -371,6 +371,34 @@ PY
     run_break subtitle_overflows
 fi
 
+# THE SAME DEFECT, HALF AS FAR, AND IT IS THE ONE THE OLD CHECK COULD NOT SEE.
+#
+# subtitle_overflows above runs the sub-line past the CANVAS, so Praat clips it
+# and ink appears in column 0 -- which the check that used to stand at that
+# site ("first ink is not column 0") did notice, by luck rather than by
+# design. This break stops short of that: the sub-line grows past the figure's
+# own margins and overhangs the plot furniture, but stays inside the canvas, so
+# nothing is clipped, the first inked column is still the y-axis name's, and
+# the millimetre comparison against the canvas still passes. Every check v66
+# carried before 16 August 2026 is GREEN on this tree.
+#
+# It is red now on the two checks that measure the sub-line itself: the ink box
+# no longer clears both edges by the figure's own margin, and the sub-line's
+# centred footprint no longer lies inside the ink. That is the whole argument
+# for the rebuild, driven rather than asserted.
+if want subtitle_overhangs; then
+    shadow subtitle_overhangs
+    python3 - "$WORK/subtitle_overhangs/$ANNOT" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p, encoding='utf-8').read()
+old = 'annotMatrixPosthoc$ = "Tukey HSD (already family-wise)"'
+new = 'annotMatrixPosthoc$ = "Tukey HSD (already family-wise across the whole set of pairwise tests)"'
+assert old in s
+open(p, 'w', encoding='utf-8').write(s.replace(old, new))
+PY
+    run_break subtitle_overhangs
+fi
+
 # THE PROBE ITSELF. Ruling 8c's facts are only worth printing if the fixture
 # really is one bin, so the fixture claim is broken on purpose.
 if want onebin_probe_wrong; then

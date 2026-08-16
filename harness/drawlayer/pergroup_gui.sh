@@ -69,7 +69,11 @@ TSV="$OUTDIR/PERGROUP.tsv"
 
 if ! DISPLAY=":9$I" xdpyinfo >/dev/null 2>&1; then
     echo "pergroup_gui: bringing up rig instance $I"
-    REPO="$REPO" "$REPO/harness/walks/rig.sh" up "$I" >/dev/null 2>&1 || {
+    # Through `bash`: no .sh in this repository carries an execute bit, so a
+    # direct exec is "Permission denied" and this leg records NO_RIG for a
+    # reason that is not the rig's. Same repair as harness/normality/
+    # pergroup.sh, 16 Aug 2026.
+    REPO="$REPO" bash "$REPO/harness/walks/rig.sh" up "$I" >/dev/null 2>&1 || {
         printf 'verdict\tNO_RIG\n' >> "$TSV"
         echo "pergroup_gui: rig instance $I would not come up" >&2
         exit 0
