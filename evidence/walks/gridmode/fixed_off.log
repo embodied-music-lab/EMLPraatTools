@@ -1,10 +1,13 @@
 [fixed_off] config before:      showAdvanced: 1 
 [fixed_off] page: Pause: EML Graphs
 [fixed_off] page: Pause: Scatter Plot -- Column Mapping
+[fixed_off] scatter Gridline mode set at widget ordinal 11, renders as intended
 [fixed_off] page: Pause: Graph Complete
-[fixed_off] config after scatter: graphType: 8 source: 1 colorMode: 1 width: 6 height: 4 gridlineMode: 4 showInnerBox: 1 showAxisNames: 2 showTicks: 2 showAxisValues: 2 font: Helvetica outputDPI: 1 xLabel: yLabel: lastInputFolder: lastPNGFolder: /home/claude/rig/prefs_2 lastCSVFolder: /home/claude/rig/prefs_2 showAdvanced: 1 subtitle: groupSort: 1 
+[fixed_off] config after scatter: graphType: 8 source: 1 colorMode: 1 width: 6 height: 4 gridlineMode: 4 legendPlacement: 1 showInnerBox: 1 showAxisNames: 2 showTicks: 2 showAxisValues: 2 font: Helvetica outputDPI: 1 xLabel: yLabel: lastInputFolder: lastPNGFolder: /tmp/wf_g/rig/prefs_4 lastCSVFolder: /tmp/wf_g/rig/prefs_4 showAdvanced: 1 subtitle: groupSort: 1 
 [fixed_off] page: Pause: EML Graphs
 [fixed_off] page: Pause: Histogram -- Column Mapping
+[fixed_off] histogram Gridline mode renders: "off" (widget ordinal 10)
 [fixed_off] after Draw: Pause: Graph Complete
 [fixed_off] accepted: Draw proceeded, no error dialog
-[fixed_off] config after histogram: graphType: 10 source: 1 colorMode: 1 width: 6 height: 4 gridlineMode: 4 showInnerBox: 1 showAxisNames: 2 showTicks: 2 showAxisValues: 2 font: Helvetica outputDPI: 1 xLabel: yLabel: lastInputFolder: lastPNGFolder: /home/claude/rig/prefs_2 lastCSVFolder: /home/claude/rig/prefs_2 showAdvanced: 1 subtitle: groupSort: 1 
+[fixed_off] config after histogram: graphType: 10 source: 1 colorMode: 1 width: 6 height: 4 gridlineMode: 4 legendPlacement: 1 showInnerBox: 1 showAxisNames: 2 showTicks: 2 showAxisValues: 2 font: Helvetica outputDPI: 1 xLabel: yLabel: lastInputFolder: lastPNGFolder: /tmp/wf_g/rig/prefs_4 lastCSVFolder: /tmp/wf_g/rig/prefs_4 showAdvanced: 1 subtitle: groupSort: 1 
+[fixed_off] walk complete
