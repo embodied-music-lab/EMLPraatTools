@@ -1,0 +1,32 @@
+praat_version	Praat 6.6.30 (June 30 2026)
+setup_under_test	setup.praat
+module_under_test	eml-batch-process.praat
+setup_batch_lines	2
+setup_before_removed	2
+fixtures_wav	3
+menu_ordinal	13
+menu_before_title	EML — Check & repair data
+menu_after_title	Batch Voice Analysis
+drive_reached_dialog	1
+range_title	Batch range
+drive_wait_seconds	5
+info_window_present	1
+info_grab_seconds	0
+info_encoding	utf16
+csv_name	corpus_results_2026-08-16.csv
+csv_rows	3
+csv_header	file,status,mean_F0_Hz,mean_intensity_dB,jitter_local,shimmer_local,HNR_dB,CPPS_dB
+csv_folder	EML Batch Results
+corpus_extra_files	0
+info_lines	34
+info_warning_lines	7
+summary_warnings	7
+summary_processed	3
+summary_rows	3
+warn_rcc_floor	1
+warn_fac_floor	0
+warn_cpps_ceiling	1
+warn_cpps_floor	0
+warn_stated	1
+warn_stated_names_derived	1
+completed	1

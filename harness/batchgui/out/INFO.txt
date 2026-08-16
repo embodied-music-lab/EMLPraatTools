@@ -1,0 +1,34 @@
+Batch Voice Analysis
+Sound folder: /home/claude/EMLPraatTools/harness/batchgui/out/work/corpus
+Output folder: /home/claude/EMLPraatTools/harness/batchgui/out/work/home_after/EML Batch Results
+Results CSV: /home/claude/EMLPraatTools/harness/batchgui/out/work/home_after/EML Batch Results/corpus_results_2026-08-16.csv
+
+Sentinel file: /home/claude/EMLPraatTools/harness/batchgui/out/work/home_after/EML Batch Results/STOP.txt
+To stop: open that file, change first line to STOP, save.
+
+[1/3] g1_low
+  WARNING: HNR = 60.12 dB — outside range (-20 to 40).
+  WARNING: minimum F0 77.99 Hz is within 10% of the 75 Hz floor of the raw-cross-correlation pitch range — widen the range or treat the result as censored.
+[2/3] g2_mid
+  WARNING: HNR = 137.70 dB — outside range (-20 to 40).
+[3/3] g3_high
+  WARNING: HNR = 90.42 dB — outside range (-20 to 40).
+  WARNING: maximum F0 640.00 Hz is within 10% of the 600 Hz ceiling of the raw-cross-correlation pitch range — widen the range or treat the result as censored.
+  WARNING: maximum F0 640.00 Hz is within 10% of the 330 Hz ceiling of the CPPS peak search window — widen the range or treat the result as censored.
+  WARNING: measured F0 reached 640.00 Hz, above the stated highest expected F0 of 300 Hz.
+           That value set the pitch top (800 Hz) and the pitch ceiling (600 Hz) — re-run with a higher estimate if this corpus goes higher than stated.
+
+============================================
+COMPLETE
+============================================
+Files processed: 3
+Files skipped:   0
+Failed:          0
+Warnings:        7
+Data rows:       3
+Results CSV:     /home/claude/EMLPraatTools/harness/batchgui/out/work/home_after/EML Batch Results/corpus_results_2026-08-16.csv
+Sentinel file:   /home/claude/EMLPraatTools/harness/batchgui/out/work/home_after/EML Batch Results/STOP.txt
+============================================
+
+Results Table retained in Objects window.
+Run stats or draw graphs from the EML Tools menu.
