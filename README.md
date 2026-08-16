@@ -18,12 +18,17 @@ Plugin code generated with the EML PraatGen framework; audit driven by Claude
 
 ## Checking the statistics yourself
 
-The statistics layer can be verified with **R and nothing else** — no Praat,
-no packages, no network:
+The statistics layer can be verified with **R and a Praat at or above 6.6.30
+on your PATH** — no R packages, and the suite makes no network call:
 
 ```bash
 Rscript validate/run_all.R
 ```
+
+This paragraph said "no Praat" until 16 August 2026. It was wrong: seven
+validators drive a real Praat and fail without one, and the barren edition is
+not enough. `validate/README.md` gives the measurement, and
+`.github/workflows/validate.yml` installs what a clean machine needs.
 
 Expect the last line to end `0 FAILED`, and expect exit status 0. That is the
 whole contract, and it is deliberately the only number stated here — the suite
