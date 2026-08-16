@@ -480,6 +480,88 @@ elsif leg$ = "onebin" or leg$ = "twobin"
     ... 6, 4, "color", 1, lo, hi, 0, 100
     @savePic
 
+# ===========================================================================
+# RULING 8c AT THE SECOND SITE — THE ONE-BIN LTAS CURVE.
+# ===========================================================================
+# THE SAME DEFECT, MORE REACHABLE, AND WITH A CONTROL THE SPECTRUM DOES NOT
+# HAVE. A Spectrum's bin width is 1/duration and nothing can be done about it;
+# an Ltas bin width is the bandwidth the CALLER asked for, so 100 Hz -- the
+# form's own default -- puts one bin in any 100 Hz window at any recording
+# length. Three legs, and the third is what makes the finding an argument
+# rather than an observation:
+#
+#   ltas_onebin       one bin in the window, "Curve" only. Before the repair
+#                     this was a fully furnished frame with nothing in it.
+#   ltas_twobin       the same figure one bin wider, "Curve" only. It draws
+#                     normally, which says the finding is about the COUNT.
+#   ltas_onebin_bars  the SAME one bin, "Bars" only. It draws. Which says the
+#                     finding is about the STYLE and not about the bin, the
+#                     window, the data or the axis -- and that is the thing no
+#                     amount of staring at the empty figure could establish.
+#
+# THE WINDOWS ARE 1000..1100 AND 1000..1200, and the numbers are not arbitrary:
+# with `To Ltas: 100` the bin centres sit at 50, 150, ... 1050, 1150, so the
+# first window holds exactly bin #11 and the second holds #11 and #12. The
+# probe emits the count it measured rather than the count it assumed, and v66
+# asserts that count, because a fixture that quietly stopped being a one-bin
+# fixture would turn this whole section green for the wrong reason.
+elsif leg$ = "ltas_onebin" or leg$ = "ltas_twobin"
+... or leg$ = "ltas_onebin_bars"
+    snd = Create Sound from formula: "tone", 1, 0, 1.4861, 44100,
+    ... "0.9 * sin (2 * pi * 1000 * x)"
+    ltas = To Ltas: 100
+    df = Get bin width
+    lo = 1000
+    if leg$ = "ltas_twobin"
+        hi = 1200
+    else
+        hi = 1100
+    endif
+    n1 = Get bin number from frequency: lo
+    n2 = Get bin number from frequency: hi
+    lowb = ceiling (n1)
+    highb = floor (n2)
+    peak = -1000
+    for b from lowb to highb
+        v = Get value in bin: b
+        if v <> undefined
+            if v > peak
+                peak = v
+            endif
+        endif
+    endfor
+    @emit: leg$ + "_bin_width", fixed$ (df, 6)
+    @emit: leg$ + "_bins_in_range", string$ (highb - lowb + 1)
+    @emit: leg$ + "_peak_db", fixed$ (peak, 2)
+    # showCurve, showBars, showPoles, showSpeckles. The bars leg turns Curve
+    # OFF, so the ink it measures is Praat's own bar and nothing of this
+    # change's making.
+    curve = 1
+    bars = 0
+    if leg$ = "ltas_onebin_bars"
+        curve = 0
+        bars = 1
+    endif
+    # GRIDLINES OFF, AND THAT IS A MEASUREMENT DECISION, NOT A TASTE ONE.
+    # This leg's verdict is the HEIGHT of the mark, taken as the top row of
+    # ink inside the frame. A horizontal gridline runs the full width of the
+    # panel at 20, 40, 60, 80 and 100 dB, and every one of them is above a
+    # 66.95 dB mark -- so with the grid on, the top row of ink is a gridline
+    # on every figure and the measurement reports the theme rather than the
+    # data. gridMode 4 is "off"; nothing else about the figure changes.
+    selectObject: ltas
+    Erase all
+    @emlDrawLTAS: ltas, "1 kHz tone", "Frequency (Hz)", "Power (dB)",
+    ... 6, 4, "color", 4, lo, hi, 0, 100, curve, bars, 0, 0
+    @savePic
+    # WHAT THE PROCEDURE ITSELF DECIDED, so that "the stem was drawn" is read
+    # from the branch that draws it and not inferred from a pixel count. Ink
+    # alone cannot tell a stem from a bar; this can.
+    if curve = 1
+        @emit: leg$ + "_curve_bins", string$ (emlDrawLTAS.curveBins)
+        @emit: leg$ + "_curve_stem", string$ (emlDrawLTAS.curveStemDrawn)
+    endif
+
 else
     @emit: "unknown_leg", leg$
 endif

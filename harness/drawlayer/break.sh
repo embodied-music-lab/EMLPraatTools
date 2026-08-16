@@ -59,6 +59,11 @@ DRAW=plugin/graphs/eml-draw-procedures.praat
 ANNOT=plugin/graphs/eml-annotation-procedures.praat
 NORM=plugin/scripts/eml-check-normality.praat
 OUTP=plugin/stats/eml-output.praat
+# The recorder writes the editable header block ruling 10(b) put the axis in.
+# It is not this change's file; a break of somebody else's file belongs in a
+# SHADOW, which is what every break below builds.
+REC=plugin/stats/eml-record.praat
+DRIVE=harness/drawlayer/drawlayer_drive.praat
 
 # shadow <name> — a clean copy of the tree at $WORK/<name>, minus the heavy
 # output folders. .git is excluded: a break tree is not a repository.
@@ -72,9 +77,28 @@ shadow () {
     mkdir -p "$WORK/$n/harness/drawlayer/out"
 }
 
-# revert <tree> <path> — put one file back to HEAD inside a shadow tree.
+# revert <tree> <path> <ref> — put one file back to <ref> inside a shadow tree.
+#
+# THE REF IS NAMED AND IT IS NEVER "HEAD". This helper took no ref until 16
+# August 2026 and always reverted to HEAD, which was right on the day it was
+# written and stopped being right the moment the repairs were committed: from
+# 0e0c0fa onwards, "revert to HEAD" put the FIXED file back and the break went
+# silently green. break_head_info_fixed ran red=0 -- NOTHING WENT RED -- and
+# had been doing so since the commit that made this rig's whole subject true.
+#
+# That is the moving-reference trap in its purest form: a break test anchored
+# on a name that follows the repair can only stop working, and it stops
+# working by passing. So every revert now names the commit BEFORE the repair
+# it is undoing, which is a fact about history and cannot drift.
 revert () {
-    ( cd "$ROOT" && git show "HEAD:$2" ) > "$WORK/$1/$2"
+    local ref="${3:?revert needs an explicit commit; HEAD moves and the break goes vacuous}"
+    ( cd "$ROOT" && git show "$ref:$2" ) > "$WORK/$1/$2"
+    # A revert that changed nothing is not a break. Say so loudly here rather
+    # than letting the validator report a clean run.
+    if ( cd "$ROOT" && git show "$ref:$2" ) | cmp -s - "$ROOT/$2"; then
+        printf '  %-26s !! REVERT IS A NO-OP: %s at %s equals the working tree\n' \
+            "$1" "$2" "$ref"
+    fi
 }
 
 # run_break <name> — drive the shadow and score validate/v66 against it.
@@ -143,7 +167,10 @@ fi
 
 if want head_info_fixed; then
     shadow head_info_fixed
-    revert head_info_fixed "$ANNOT"
+    # 0e0c0fa is the commit that routed 69 raw fixed$ calls through
+    # @eml_fixed in this file; its parent is the last tree that still had the
+    # defect. Pinned by sha, not by HEAD -- see revert().
+    revert head_info_fixed "$ANNOT" 0e0c0fa~1
     run_break head_info_fixed
 fi
 
@@ -408,7 +435,9 @@ fi
 # section can go red at all.
 if want head_normality; then
     shadow head_normality
-    revert head_normality "$NORM"
+    # dfdb72f is the commit that swept the wrapper's per-group branch; its
+    # parent is the last tree that still printed raw doubles there.
+    revert head_normality "$NORM" dfdb72f~1
     o="$WORK/head_normality/harness/drawlayer/out"
     EML_DL_SRC="$WORK/head_normality" EML_DL_OUTDIR="$o" \
         timeout 900 bash "$WORK/head_normality/harness/drawlayer/drawlayer.sh" \
@@ -428,6 +457,197 @@ if want head_normality; then
             | sed 's/^FAIL  *v66  *//; s/  computed.*//' | cut -c1-90)
     printf '%s\t%s\t%s\n' head_normality "$red" "${first:-<none>}" >> "$TSV"
     printf '  %-26s red=%-4s %s\n' head_normality "$red" "${first:-NOTHING WENT RED}"
+fi
+
+
+# ---------------------------------------------------------------------------
+# 6. RULING 10(b) — THE AXIS THAT NOW LIVES IN THE HEADER BLOCK
+# ---------------------------------------------------------------------------
+# §2 of validate/v66 used to assert the LITERAL in the recorded call: "0, 0" on
+# the auto arm and "150, 400" on the explicit one. Ruling 10(b) moved the
+# number into the editable block at the top of the emitted script and left the
+# call REFERENCING it, so both assertions were superseded and were replaced by
+# a pair that follows the value through: the call must read the variables, and
+# the block must hold the number. Three breaks, one for each way that pair can
+# be defeated, and the first of them is the reason it is a pair at all.
+
+# THE COMMENT SAYS "AUTO", THE NUMBER SAYS 160. The block is seeded with the
+# RESOLUTION instead of the request, and the prose beside it -- "AUTO (both 0 =
+# computed from the data)" -- is left exactly as it was. A check that read the
+# gloss, or a harness that took the value with a greedy `sed 's/.*= //'` and
+# landed in the sentence, stays green through this. It is the comment trap in
+# its live form.
+if want axis_block_holds_resolution; then
+    shadow axis_block_holds_resolution
+    python3 - "$WORK/axis_block_holds_resolution/$REC" <<'PY2'
+import sys
+p = sys.argv[1]
+s = open(p, encoding='utf-8').read()
+old = ('            ... + .axMinLit$[.k] + "   ; " + emlRecordAxisGloss.gloss$\n'
+       '            ... + " -- AUTO (both 0 = computed from the data) -- "')
+new = ('            ... + .resMin$ + "   ; " + emlRecordAxisGloss.gloss$\n'
+       '            ... + " -- AUTO (both 0 = computed from the data) -- "')
+assert old in s
+s = s.replace(old, new)
+old2 = ('                ... + .axMaxLit$[.k] + "   ; on the recorded data it resolved"')
+new2 = ('                ... + .resMax$ + "   ; on the recorded data it resolved"')
+assert old2 in s
+open(p, 'w', encoding='utf-8').write(s.replace(old2, new2))
+PY2
+    run_break axis_block_holds_resolution
+fi
+
+# THE OTHER HALF. The block is written correctly and the STEP ignores it: the
+# lifting that rewrites the call's axis slots into the two variable names is
+# removed, so the call carries its own literal again exactly as it did before
+# ruling 10(b). Every value check on the block stays green; the reference
+# checks are the only thing standing between this and a header block that is
+# decoration.
+if want axis_step_ignores_block; then
+    shadow axis_step_ignores_block
+    python3 - "$WORK/axis_step_ignores_block/$REC" <<'PY2'
+import sys
+p = sys.argv[1]
+s = open(p, encoding='utf-8').read()
+old = ('                                .newArg$[.aMinPos] = .aMinLead$\n'
+       '                                ... + .axMinName$[.aSlot]\n'
+       '                                .newArg$[.aMaxPos] = .aMaxLead$\n'
+       '                                ... + .axMaxName$[.aSlot]\n')
+assert old in s
+open(p, 'w', encoding='utf-8').write(s.replace(old, ''))
+PY2
+    run_break axis_step_ignores_block
+fi
+
+# THE FIX-SHAPED FIX ON THIS SIDE. Every axis declared as a zero -- the exact
+# shape @eml_fixed's clamp takes in §3, moved from a WIDTH to a VALUE. It has
+# the right variable, in the right block, referenced by the right step, and it
+# throws away every range a user ever typed. The auto arm cannot see it,
+# because on the auto arm zero is the right answer; only a check on an arm
+# whose value is NOT zero can tell the two apart, which is what the explicit
+# arm is for.
+if want axis_block_clamped_zero; then
+    shadow axis_block_clamped_zero
+    python3 - "$WORK/axis_block_clamped_zero/$REC" <<'PY2'
+import sys
+p = sys.argv[1]
+s = open(p, encoding='utf-8').read()
+old = ('                                .aMinOut$ = .aMinLit$\n'
+       '                                .aMaxOut$ = .aMaxLit$\n'
+       '                                if .aAuto = 1\n'
+       '                                    .aMinOut$ = "0.0"\n'
+       '                                    .aMaxOut$ = "0.0"\n'
+       '                                endif\n')
+new = ('                                .aMinOut$ = "0.0"\n'
+       '                                .aMaxOut$ = "0.0"\n')
+assert old in s
+open(p, 'w', encoding='utf-8').write(s.replace(old, new))
+PY2
+    run_break axis_block_clamped_zero
+fi
+
+# ---------------------------------------------------------------------------
+# 7. RULING 8c AT THE SECOND SITE — THE ONE-BIN LTAS CURVE
+# ---------------------------------------------------------------------------
+# Five breaks, and between them they cover the defect, the fix that has the
+# right shape and the wrong value, the remedy that was ruled out, the repair
+# that reaches too far, and the fixture the whole section rests on.
+
+# THE DEFECT ITSELF, put back: the bare `Draw: ... "Curve"` with no bin count in
+# front of it. This is the figure the finding was made on -- 46,360 bytes of
+# fully furnished frame with zero ink in it.
+if want head_ltas_curve; then
+    shadow head_ltas_curve
+    python3 - "$WORK/head_ltas_curve/$DRAW" <<'PY2'
+import sys
+p = sys.argv[1]
+lines = open(p, encoding='utf-8').read().split('\n')
+i = lines.index('        .curveNBins = Get number of bins')
+j = next(k for k in range(i, len(lines)) if lines[k] == '    endif')
+lines[i:j] = ['        Draw: .freqMin, .freqMax, .powerMin, .powerMax, "no", "Curve"']
+open(p, 'w', encoding='utf-8').write('\n'.join(lines))
+PY2
+    run_break head_ltas_curve
+fi
+
+# THE FIX-SHAPED FIX. The stem is drawn, in the right branch, by the same
+# statement, from the frame floor -- to the TOP OF THE PANEL instead of to the
+# bin's value. The source still reads `Draw line: .curveFreq, .powerMin,
+# .curveFreq, .curveVal`, so every static check passes; the figure has more ink
+# than the correct one, so every ink count passes. Only the pixel row can tell,
+# and if this one does not go red the height measurement is decoration.
+if want ltas_stem_to_the_top; then
+    shadow ltas_stem_to_the_top
+    python3 - "$WORK/ltas_stem_to_the_top/$DRAW" <<'PY2'
+import sys
+p = sys.argv[1]
+s = open(p, encoding='utf-8').read()
+old = ('                if .curveVal > .powerMax\n'
+       '                    .curveVal = .powerMax\n'
+       '                endif\n')
+new = ('                .curveVal = .powerMax\n'
+       '                if .curveVal > .powerMax\n'
+       '                    .curveVal = .powerMax\n'
+       '                endif\n')
+assert old in s
+open(p, 'w', encoding='utf-8').write(s.replace(old, new, 1))
+PY2
+    run_break ltas_stem_to_the_top
+fi
+
+# THE REMEDY THAT WAS RULED OUT. The one-bin Curve falls back to Praat's own
+# "Bars" style. It draws -- more ink than the stem, in fact -- and it hands the
+# Bars layer to a user who switched Bars off and draws the bin twice for a user
+# who switched both on. The static check that exactly one `Draw:` in this
+# procedure may name "Bars" is what stands in its way.
+if want ltas_curve_becomes_bars; then
+    shadow ltas_curve_becomes_bars
+    python3 - "$WORK/ltas_curve_becomes_bars/$DRAW" <<'PY2'
+import sys
+p = sys.argv[1]
+s = open(p, encoding='utf-8').read()
+old = '                    Draw line: .curveFreq, .powerMin, .curveFreq, .curveVal'
+new = '                    Draw: .freqMin, .freqMax, .powerMin, .powerMax, "no", "Bars"'
+assert old in s
+open(p, 'w', encoding='utf-8').write(s.replace(old, new, 1))
+PY2
+    run_break ltas_curve_becomes_bars
+fi
+
+# THE OVER-SWEEP. The stem branch widened to take the two-bin case as well,
+# which is the shape "make the degenerate path the normal path" takes. Every
+# one-bin measurement stays green and a figure nobody asked to move has moved
+# -- and moved figures are what the byte-identical stress set exists to catch.
+if want ltas_stem_takes_two; then
+    shadow ltas_stem_takes_two
+    python3 - "$WORK/ltas_stem_takes_two/$DRAW" <<'PY2'
+import sys
+p = sys.argv[1]
+s = open(p, encoding='utf-8').read()
+old = ('        if .curveBins >= 2\n')
+new = ('        if .curveBins >= 3\n')
+assert old in s
+open(p, 'w', encoding='utf-8').write(s.replace(old, new, 1))
+PY2
+    run_break ltas_stem_takes_two
+fi
+
+# THE PROBE ITSELF, the way break_onebin_probe_wrong does it for the spectrum.
+# Everything in §8b rests on the claim that the window holds ONE bin; widen it
+# and the whole section would be measuring the ordinary path and calling it
+# green.
+if want ltas_probe_wrong; then
+    shadow ltas_probe_wrong
+    python3 - "$WORK/ltas_probe_wrong/$DRIVE" <<'PY2'
+import sys
+p = sys.argv[1]
+s = open(p, encoding='utf-8').read()
+old = '    else\n        hi = 1100\n    endif\n'
+new = '    else\n        hi = 1200\n    endif\n'
+assert old in s
+open(p, 'w', encoding='utf-8').write(s.replace(old, new, 1))
+PY2
+    run_break ltas_probe_wrong
 fi
 
 echo "breaks: wrote $TSV"
