@@ -1,0 +1,93 @@
+# ============================================================================
+# EML Praat Tools — validation suite
+#
+# Ian Howell — Embodied Music Lab — GPL-3.0-or-later
+#
+# Runs `Rscript validate/run_all.R` on every push and every pull request. The
+# suite exits 1 if any check fails and GitHub runs each `run:` block under
+# `bash -e`, so a nonzero exit fails the step and the job. Nothing here needs
+# a secret or a token.
+#
+# WHAT THE SUITE ACTUALLY NEEDS, AND WHY THIS IS NOT JUST `setup-r`
+#
+# README.md and validate/README.md both say the suite needs "R and nothing
+# else" — "no Praat, no packages, no network". The first half is true and the
+# second half is not, measured on 16 August 2026 against Praat 6.6.30 and
+# R 4.3.3:
+#
+#   * NO PACKAGES is true. Nothing outside base R is loaded. v17 uses broom
+#     when broom happens to be installed and falls back to base R when it is
+#     not, saying which mode it ran in; that is the only optional package.
+#
+#   * NO PRAAT IS FALSE. Seven validators — v59, v63, v64, v65, v70, v71,
+#     v77 — resolve a Praat binary and drive it, and each of them FAILS the
+#     check "a Praat at or above the plugin's floor is available" when there
+#     is none. With no Praat on PATH, v59 goes from 42 checks all passing to
+#     6 checks with 1 FAILED, and the suite exits 1. A job that installed
+#     only R would be red on its first run and stay red.
+#
+#   * THE BARREN EDITION IS NOT ENOUGH either. praat6630_linux-x64v3-barren
+#     runs the arithmetic but presents no dialogs, and v59's subject is that
+#     every registered menu and action command reaches its form: 28 of its 42
+#     checks fail against barren and none fail against the full build. So the
+#     full Linux build is what goes on PATH.
+#
+#   * NETWORK: the suite itself makes no network call. This job does, once,
+#     to fetch that Praat build — there is no other way to get 6.6.30 onto a
+#     runner.
+#
+# Ubuntu 24.04 ships praat 6.4.06, which is below the plugin's 6.6.30 floor
+# and is REFUSED by the validators rather than warned about (harness/_env.sh
+# explains why: a green suite on an unsupported build is not evidence). The
+# package is installed anyway, for its shared-library closure — libgtk-3-0t64,
+# libcairo2, libpango, libasound2t64, libpulse0 — which is exactly what the
+# downloaded binary links against, and installing it by name is shorter and
+# ages better than listing the libraries. The 6.6.30 binary then goes in
+# /usr/local/bin, which precedes /usr/bin on PATH, so it is the one that
+# resolves.
+#
+# r-base-core on 24.04 is 4.3.3 — the version validate/README.md names.
+# ============================================================================
+
+name: validate
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  suite:
+    name: Rscript validate/run_all.R
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install R, and Praat 6.4 for its library dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends r-base-core praat
+
+      - name: Install Praat 6.6.30, the plugin's supported floor
+        run: |
+          curl -fsSL -o praat.tar.gz \
+            https://github.com/praat/praat/releases/download/v6.6.30/praat6630_linux-x64v3.tar.gz
+          sudo tar xzf praat.tar.gz -C /usr/local/bin praat
+          rm praat.tar.gz
+
+      # Printed before the suite so a failing run says what it ran on. The
+      # validators refuse a Praat below 6.6.30; if this line ever reports
+      # 6.4.06, the download step above silently did nothing.
+      - name: What this ran on
+        run: |
+          command -v praat
+          praat --version
+          Rscript -e 'cat(R.version.string, "\n")'
+          python3 --version
+
+      - name: Run the validation suite
+        run: Rscript validate/run_all.R
