@@ -5,50 +5,30 @@
 # License: GPL-3.0-or-later
 # Version: 2.9
 # v2.9: The post-draw dialog is three fixed buttons -- Done | Save | Redraw --
-#       and Save opens @emlSavePanel. The row used to be four or three
-#       depending on whether there were results to export, with the caller
-#       renumbering afterwards; a conditional button count means every
-#       keyboard walk has to know which variant is up, and harness/gui_e2e
-#       carried a retry for exactly that. The Exp CSV branch is gone: the
-#       panel offers whichever outputs exist.
-# v2.8: The post-draw "Exp CSV" button writes through @emlExportResultFiles,
-#       the shared migration fork, instead of calling @emlExportStatsCSV
-#       directly. It was the only export in the plugin that could not reach
-#       the fork, so it wrote the legacy single long-format file for analyses
-#       the stats menu exported in broom's three-file shape. The explicit
-#       @emlGenerateUniquePath call goes with it: @emlReportToFile has always
-#       uniqued the legacy file itself, and the declared arm does not unique,
-#       which is the behaviour @emlWrapperExportCSV has always had.
-# v2.7: A WRAPPER'S ANNOTATE PRESET NOW SURVIVES A BEGINNER DRAW. Beginner
-#       mode draws only what its own dialog offers, so the beginner commit
-#       setting annotate = 0 is correct and stays. What was wrong is what
-#       happened next: the preset is consumed once BEFORE the outer repeat,
-#       so Redraw does not re-apply it, and prev_adv_<type>_annotate is
-#       written in exactly one place -- the toggle to beginner -- which a
-#       preset never passes through. A user who asked a wrapper to annotate,
-#       drew in beginner mode, pressed Redraw and switched to Advanced found
-#       the box unticked, with nothing to say it had ever been set. All six
-#       annotate-capable restore branches now fall back to the live preset
-#       when there is no saved advanced state, and carry the preset's test
-#       type into the dialog index with it. Same shape as v1.6's Item 22,
-#       which preserved annotTestType$ and annotStyle$ across a beginner Draw
-#       and left `annotate` itself still being zeroed.
-# v2.6: A LEGEND INSIDE THE PLOT NOW GETS Y-AXIS ROOM MADE FOR IT.
-#       eml-draw-procedures.praat has stated since 5 August that "any extra
-#       room a figure needs is a property of what is drawn on it ... and is
-#       supplied by @emlComputeAnnotationHeadroom at the annotation stage".
-#       This file honoured that for significance brackets and for nothing
-#       else. @emlComputeAnnotationHeadroom had ONE call site here, gated on
-#
-#           (graph_type = 6 or 7 or 9) and annotate = 1 and annotBracketN > 0
-#
-#       and the six types that draw a legend are 5, 8, 10, 11, 12 and 13 —
-#       so a figure with a legend and no brackets never computed headroom at
-#       all and the legend landed on the data. Measured on the rendered PNG,
-#       9 Aug 2026, a five-group line chart at 6 x 4: **13145 data pixels
-#       covered -> 0**. Same measurement on the other five legend types:
-#       scatter 15096 -> 0, grouped violin 23702 -> 0, grouped box 15430 ->
-#       0, histogram 320 -> 0, 5 x 5 square 17218 -> 0.
+#       and Save opens @emlSavePanel, which offers whichever outputs exist.
+#       The button count does not vary with what is available, so every
+#       keyboard walk of this dialog is the same walk.
+# v2.8: The post-draw Save path exports through @emlExportResultFiles, the
+#       shared migration fork, so an analysis saved from a figure lands in the
+#       same shape the stats menu writes it in. @emlReportToFile uniques the
+#       legacy file itself and the declared arm does not unique, which is the
+#       behaviour @emlWrapperExportCSV has.
+# v2.7: A WRAPPER'S ANNOTATE PRESET SURVIVES A BEGINNER DRAW. Beginner mode
+#       draws only what its own dialog offers, so the beginner commit sets
+#       annotate = 0. The preset is consumed once BEFORE the outer repeat, so
+#       Redraw does not re-apply it, and prev_adv_<type>_annotate is written
+#       in exactly one place -- the toggle to beginner -- which a preset never
+#       passes through. All six annotate-capable restore branches therefore
+#       fall back to the live preset when there is no saved advanced state,
+#       and carry the preset's test type into the dialog index with it. Same
+#       shape as v1.6's Item 22, which preserves annotTestType$ and
+#       annotStyle$ across a beginner Draw.
+# v2.6: A LEGEND INSIDE THE PLOT GETS Y-AXIS ROOM MADE FOR IT. Any extra room
+#       a figure needs is a property of what is drawn on it, not of the unit,
+#       and is supplied by @emlComputeAnnotationHeadroom at the annotation
+#       stage. A legend at placement 1 sits on the data area, so it earns the
+#       same treatment a significance bracket does. The six types that draw a
+#       legend are 5, 8, 10, 11, 12 and 13.
 #
 #       * TWO PASSES. The figure is drawn, the axis it resolved and the
 #         corner @emlPlaceElements sent the legend to are read back from the
@@ -59,11 +39,11 @@
 #         auto-range with its own copy of that type's arithmetic — would
 #         change the axis of every figure whether or not it had a legend the
 #         first time a copy drifted by one rounding step.
-#       * NEW: @emlGraphsDispatchDraw (the DISPATCH block, lifted out
-#         verbatim so it can be called twice) and @emlGraphsDrawWithLegendRoom
-#         (the loop), both at file scope so a probe can drive the real code
-#         rather than a transcription of it.
-#       * NEW: @emlLegendHeadroomAfterDraw — the decision. Only placement 1
+#       * @emlGraphsDispatchDraw (the DISPATCH block, at file scope so it can
+#         be called twice) and @emlGraphsDrawWithLegendRoom (the loop), both
+#         at file scope so a probe can drive the real code rather than a
+#         transcription of it.
+#       * @emlLegendHeadroomAfterDraw — the decision. Only placement 1
 #         (Inside plot) earns an axis change: 2 and 3 grow the saved image
 #         around an unchanged plot, 4 writes a second file, 5 draws nothing,
 #         and none of them takes a square inch of the data area.
@@ -72,17 +52,14 @@
 #         histogram (whose frequency axis has a hard zero floor), a
 #         user-typed axis that had to be widened, and the discarded first
 #         pass itself are each named in the Info window.
-#       * VERIFIED UNCHANGED, byte-identical PNGs: every graph type that
-#         draws no legend (bar, violin, box), a one-group line chart, and
-#         legend placements 2 and 5.
-# v2.5: D136 — LEGEND PLACEMENT. The user's width and height describe the
-#       PLOT, and until now a legend could only be drawn inside it, so the
-#       only way to give a legend room was to take room from the data and
-#       "make my figure square" could not be satisfied. New shared setting,
-#       one canonical encoding for every graph type:
+# v2.5: LEGEND PLACEMENT. The user's width and height describe the PLOT, and
+#       a legend has four places to go besides the inside of it, so giving a
+#       legend room does not mean taking room from the data and "make my
+#       figure square" is satisfiable. Shared setting, one canonical encoding
+#       for every graph type:
 #
 #           config_legendPlacement
-#             1 Inside plot (DEFAULT — today's behaviour, auto-corner)
+#             1 Inside plot (DEFAULT — auto-corner)
 #             2 Right of plot      3 Below plot
 #             4 Separate figure    5 None
 #
@@ -94,19 +71,20 @@
 #       eml-graph-procedures.praat v3.28; this file owns the encoding, the
 #       registry, the dialog and the second file.
 #
-#       * REGISTRY. New legendPlacementStyle[1..nGraphTypes], 5 = offers the
+#       * REGISTRY. legendPlacementStyle[1..nGraphTypes], 5 = offers the
 #         menu / 0 = this type has no legend, beside gridModeStyle[] and in
-#         the same shape for the same reason (see the C1 block there: two
-#         encodings on one persisted key once left a dropdown blank and
-#         unusable, on disk, surviving a restart). Six types draw a legend —
-#         5, 8, 10, 11, 12, 13, which is exactly the set whose draw
-#         procedures call @emlDrawLegend. A missing or out-of-range entry
-#         fails at INCLUDE time from a file-scope loop, and
-#         @emlLegendPlacementStyle refuses an unregistered type by name at
-#         runtime. Adding a graph type without a legend entry cannot ship.
+#         the same shape for the same reason (see the block there: two
+#         encodings sharing one persisted key seed an optionmenu with an
+#         out-of-range index, which Praat draws blank and then refuses to
+#         close, and the bad value is on disk so it survives a restart). Six
+#         types draw a legend — 5, 8, 10, 11, 12, 13, which is exactly the
+#         set whose draw procedures call @emlDrawLegend. A missing or
+#         out-of-range entry fails at INCLUDE time from a file-scope loop,
+#         and @emlLegendPlacementStyle refuses an unregistered type by name
+#         at runtime. Adding a graph type without a legend entry cannot ship.
 #       * ENCODING. @emlLegendPlacementToMenu / @emlLegendPlacementFromMenu /
 #         @emlSeedLegendPlacement / @emlCommitLegendPlacement, mirroring the
-#         gridline set. There is only ONE encoding today, so the translations
+#         gridline set. There is only ONE encoding, so the translations
 #         are identities; they exist so that a second one, if it is ever
 #         needed, has one place to go instead of fourteen. The clamp is at
 #         @emlLoadConfig, where the file is read, so an out-of-range value in
@@ -124,66 +102,52 @@
 #         It inherits the figure's annotSize rather than recomputing a size
 #         from the legend canvas, so the two files' text matches when they
 #         are placed side by side in a manuscript.
-# v2.4: D3b — the graph type registry drops from 14 entries to 13. Type 13,
-#       "Time Series (with CI)", lost its form page when CI became a toggle on
-#       type 5 (Line Chart); the registry row and its dispatch branches stayed
-#       behind, unreachable (typeToMenu[13] was 0) and reading three column
-#       variables — ciTimeCol$ / ciValueCol$ / ciGroupCol$ — that nothing ever
-#       wrote. Spaghetti Plot moves 14 -> 13; nGraphTypes and all six parallel
-#       registry arrays, menuToType[16] and typeToMenu shrink with it.
-#       @emlDrawTimeSeriesCI is untouched and still dispatched from type 5.
-#       CALLERS: any script setting emlGraphsPresetType = 14 for a spaghetti
-#       plot must now set 13.
-# v2.3: D18/D65/D32/D60/D108.
-#       * D18 + D65 (filename half) — the Draw path's Export Results dialog
-#         proposed selected$ ("Table") + "_results" on originalSourceId, which
-#         named the transient `pairedLong` reshape on the paired workflow and
-#         carried no analysis identity anywhere. New @emlGraphsCSVDefaultName /
-#         @emlGraphsCSVRowAnalysis read the source table and the analysis off
-#         the CSV buffer that is about to be written, giving the same
-#         <table>_<analysis-slug> shape as @emlWrapperExportCSV. D65's other
-#         half (Draw exporting a different test family than the analysis that
-#         launched it) is a bridge design decision and is untouched.
-#       * D32 (remaining half) — declared emlGraphsPresetSubgroupCol$ so a
-#         wrapper can name its actual second factor, and consumed it in the
-#         Grouped Violin and Grouped Box preset branches ahead of the role
-#         guesser. A preset that collides with Category or Value is demoted and
-#         the guesser runs as before.
-#       * D60 — new @emlGraphsIsPercentageColumn, and the two
-#         @emlComputeAxisRange calls here now pass it instead of a literal 0,
-#         which is the first time that procedure's .isPercentage branch has
-#         ever executed. Detection needs BOTH a percentage-looking name and
+# v2.4: The graph type registry declares 13 types, with Spaghetti Plot at 13.
+#       nGraphTypes, all six parallel registry arrays, menuToType[16] and
+#       typeToMenu agree on that count. Time series with a confidence interval
+#       is a "Show confidence interval" toggle on type 5 (Line Chart), and
+#       @emlDrawTimeSeriesCI is dispatched from there.
+#       CALLERS: a script setting emlGraphsPresetType for a spaghetti plot
+#       sets 13.
+# v2.3: * The Draw path's Export Results dialog proposes a name read off the
+#         CSV buffer that is about to be written -- @emlGraphsCSVDefaultName /
+#         @emlGraphsCSVRowAnalysis -- giving the same <table>_<analysis-slug>
+#         shape as @emlWrapperExportCSV, so the filename describes the bytes
+#         in the file rather than whatever object the figure was drawn from.
+#       * emlGraphsPresetSubgroupCol$ lets a wrapper name its actual second
+#         factor, consumed in the Grouped Violin and Grouped Box preset
+#         branches ahead of the role guesser. A preset that collides with
+#         Category or Value is demoted and the guesser runs instead.
+#       * @emlGraphsIsPercentageColumn, and the two @emlComputeAxisRange calls
+#         here pass it rather than a literal 0, so a percentage column gets a
+#         percentage axis. Detection needs BOTH a percentage-looking name and
 #         data inside 0-100.
-#       * D108 — the correction preset's string and its dialog index are now
-#         derived from one validated index via @emlAdjustMethodName, so they
-#         cannot disagree, and an unrecognised preset is reported where it was
-#         set. Consuming it on the parametric path is in
+#       * The correction preset's string and its dialog index are both derived
+#         from one validated index via @emlAdjustMethodName, so they cannot
+#         disagree, and an unrecognised preset is reported where it was set.
+#         Consuming it on the parametric path is in
 #         eml-annotation-procedures.praat, not here.
-# v2.2: Item 8 — two further preset-plumbing defects. (a) The spaghetti-plot
-#       column-mapping dialog never consumed emlGraphsPresetGroupCol$; it
-#       relied on a name heuristic that runs only on the first spaghetti draw
-#       of a session, so a later Draw from a stats wrapper silently dropped
-#       the requested grouping. Added the spPresetHasGroup / spPresetGroupIdx
-#       sentinel, mirroring scatter and histogram. (b) emlGraphsPresetXCol$
-#       and emlGraphsPresetYCol$ were cleared only inside the scatter page,
-#       so they leaked into the next workflow call whenever the user chose a
-#       non-scatter graph type; both are now cleared at workflow end.
-# v2.1: Item 8 — histogram column-mapping dialog now honours an incoming
-#       group-column preset. The preset seeded histGroupIdx but left
-#       "Use group column" unchecked, so histGroupCol$ committed as "" and
-#       the grouped-histogram annotation route at the dispatch was silently
-#       skipped even though the caller had asked to annotate. Added the
-#       histPresetHasGroup sentinel, mirroring scatterPresetHasGroup.
-# v2.0: Item 6 — multiple-comparison adjustment is now user-facing instead
-#       of a hardcoded "holm". Added an "Adjustment method" optionmenu
-#       (Bonferroni / Holm / Benjamini-Hochberg, default Holm) to all six
-#       annotate-capable column-mapping dialogs, backed by the shared
-#       prev_annotAdjustIdx persistence variable and the @emlAdjustMethodName
-#       index-to-string helper. Added the emlGraphsPresetCorrection$ preset
-#       global so stats wrappers can carry their own adjustment choice in.
+# v2.2: (a) The spaghetti-plot column-mapping dialog consumes
+#       emlGraphsPresetGroupCol$ through the spPresetHasGroup /
+#       spPresetGroupIdx sentinel, mirroring scatter and histogram, so a Draw
+#       from a stats wrapper carries the requested grouping. (b)
+#       emlGraphsPresetXCol$ and emlGraphsPresetYCol$ are cleared at workflow
+#       end rather than inside the scatter page, so they cannot leak into the
+#       next workflow call when the user chooses a non-scatter type.
+# v2.1: The histogram column-mapping dialog honours an incoming group-column
+#       preset: the histPresetHasGroup sentinel, mirroring scatterPresetHasGroup,
+#       ticks "Use group column" with the seeded index so histGroupCol$ commits
+#       and the grouped-histogram annotation route at the dispatch is reached.
+# v2.0: Multiple-comparison adjustment is user-facing rather than a hardcoded
+#       "holm". "Adjustment method" optionmenu (Bonferroni / Holm /
+#       Benjamini-Hochberg, default Holm) on the annotate-capable
+#       column-mapping dialogs, backed by the shared prev_annotAdjustIdx
+#       persistence variable and the @emlAdjustMethodName index-to-string
+#       helper. emlGraphsPresetCorrection$ carries a stats wrapper's own
+#       adjustment choice in.
 # v1.9: Bar-chart negative-mean support in the annotated (bracket) path —
-#       auto-range now floors on emlBarData_visibleMin so all-/mixed-negative
-#       means are not clipped at 0 (positive data unchanged via the axis
+#       auto-range floors on emlBarData_visibleMin so all-/mixed-negative
+#       means are not clipped at 0 (positive data is unaffected via the axis
 #       procedure's non-negative guard). Companion to eml-graph-procedures
 #       v3.21 / eml-draw-procedures v1.18.
 # v1.8: Post-draw dialog "Back" renamed to "Done".
@@ -191,47 +155,41 @@
 #
 # v1.7: emlShowExplanations = 1 set in @emlGraphsWorkflow entry point
 #        (explanations on wizard + graphs paths, not wrapper output).
-#        Added emlGraphsPresetRegressionLine and emlGraphsPresetCorrType$
+#        emlGraphsPresetRegressionLine and emlGraphsPresetCorrType$
 #        preset globals — consumed after per-call reset, survive workflow.
-# v1.6: Item 22 fix — beginner Draw path no longer resets
-#        annotTestType$/annotStyle$ to defaults. These fields are
-#        only meaningful when annotate=1 (advanced mode). Resetting
-#        them in beginner mode destroyed preset test type on Redraw.
-#        Fixed across all 5 form types (bar, violin, box, grouped
-#        violin, grouped box).
-# v1.5: Scatter group column preset (item 21). Added
-#        scatterPresetHasGroup sentinel. Scatter form now consumes
-#        emlGraphsPresetGroupCol$ alongside X/Y presets, auto-checks
-#        "Use group column" checkbox when a group preset is provided.
+# v1.6: The beginner Draw path leaves annotTestType$/annotStyle$ alone.
+#        These fields are only meaningful when annotate=1 (advanced mode),
+#        and a preset's test type has to survive a Redraw. Across all 5
+#        form types (bar, violin, box, grouped violin, grouped box).
+# v1.5: Scatter group column preset. The scatterPresetHasGroup sentinel;
+#        the scatter form consumes emlGraphsPresetGroupCol$ alongside X/Y
+#        presets and auto-checks "Use group column" when one is provided.
 #
 # v1.4: Scatter preset globals (emlGraphsPresetXCol$, emlGraphsPresetYCol$)
-#        added for stats wrapper wiring. Consumed in scatter form section
+#        for stats wrapper wiring. Consumed in scatter form section
 #        to auto-select X/Y columns from eml-correlate.praat presets.
 #
-# v1.3: Fix — group_order captures added to all 9 Draw branches (were
-#        only in toggle branches). Moved emlGroupSortAlphabetical set
-#        before annotation bridge (was after bridge, causing matrix to
-#        lag one draw behind graph ordering). Value column moved to
-#        first position in Grouped Violin, Grouped Box, and Spaghetti
+# v1.3: group_order captures in all 9 Draw branches as well as the toggle
+#        branches. emlGroupSortAlphabetical is set before the annotation
+#        bridge, so the matrix and the graph order agree on the same draw.
+#        Value column first in Grouped Violin, Grouped Box, and Spaghetti
 #        forms. Spaghetti: parenthetical field descriptions, boolean
-#        "Use group column" (replaces "(none)" option), spaghetti-
-#        specific prev_spGroupSort defaulting to table order. Legend
-#        labels sanitized in TimeSeries, TimeSeriesCI, Spaghetti.
+#        "Use group column", spaghetti-specific prev_spGroupSort defaulting
+#        to table order. Legend labels sanitized in TimeSeries,
+#        TimeSeriesCI, Spaghetti.
 #
-# v1.2: Fix — group_order captures were in toggle branch (clicked=3)
-#        only; Draw branch (else) never committed the user's selection.
-#        Added prev_groupSort + config_groupSort captures to all 9
-#        Draw branches. Group sort now takes effect and persists on
-#        redraw.
+# v1.2: prev_groupSort + config_groupSort captures in all 9 Draw branches
+#        as well as the toggle branch (clicked=3), so the user's group sort
+#        selection takes effect and persists on redraw.
 #
-# v1.1: Bug #14 — Save dialog replaced chooseWriteFile$ with folder +
-#        auto-generated filename (Appendix F §S9). Bug #15 — post-save
-#        dead end removed; save returns to main post-draw dialog so
-#        CSV export remains available after saving. Sub-dialog buttons
-#        use "Cancel" (returns to loop). PNG and CSV folder persistence
-#        tracked separately (config_lastPNGFolder$, config_lastCSVFolder$).
-#        Default folder is Desktop, not plugin directory. Backward-
-#        compatible config load (old lastOutputFolder key populates both).
+# v1.1: The Save dialog takes a folder plus an auto-generated filename
+#        rather than chooseWriteFile$, and returns to the main post-draw
+#        dialog so CSV export remains available after saving. Sub-dialog
+#        buttons use "Cancel" (returns to loop). PNG and CSV folder
+#        persistence tracked separately (config_lastPNGFolder$,
+#        config_lastCSVFolder$). Default folder is Desktop, not the plugin
+#        directory. Backward-compatible config load (old lastOutputFolder
+#        key populates both).
 #        Group sort order dropdown on all 9 group-having graph types
 #        (Table order / Alphabetical). Config-persisted via groupSort
 #        key. Controls @emlCountGroups via emlGroupSortAlphabetical.
@@ -289,11 +247,10 @@ emlGraphsInitDone = 0
 emlGraphsPresetType = 0
 emlGraphsPresetDataCol$ = ""
 emlGraphsPresetGroupCol$ = ""
-# D32. The bridge carried a category and a value column and had no slot at all
-# for a SECOND factor, so a two-way wrapper could not say which column its
-# `factor2$` was and the Grouped Violin / Grouped Box pages had to guess. The
-# guess is still there as a fallback, but a caller that KNOWS its second factor
-# now has somewhere to put it, and what it puts there wins.
+# The bridge carries a category column, a value column and a slot for a SECOND
+# factor, so a two-way wrapper can say which column its `factor2$` is rather
+# than leaving the Grouped Violin / Grouped Box pages to guess. The guess is
+# the fallback for a caller that does not say; a caller that does say wins.
 emlGraphsPresetSubgroupCol$ = ""
 emlGraphsPresetTestType$ = ""
 emlGraphsPresetAnnotate = 0
@@ -303,39 +260,17 @@ emlGraphsPresetYCol$ = ""
 emlGraphsPresetRegressionLine = 0
 emlGraphsPresetCorrType$ = ""
 emlGraphsPresetCorrection$ = ""
-# D4 / audit 14 Aug 2026 — THE SCATTER DOT-SIZE PRESET CHANNEL IS GONE.
-#
-# emlGraphsPresetDotSize and emlGraphsPresetShowDots used to sit here, with a
-# read block in PRESET READING, a D103 sentinel each, a consumption arm on the
-# scatter page and a line each in the clear block: ten live lines, end to end,
-# for a channel NO SHIPPING CALLER EVER WROTE. The note that stood here said
-# so plainly and defended it — "the slot is left wired end to end because it is
-# the bridge's only channel for dot appearance; the wrapper side is the half
-# that is missing, not this one" — and the 14 August audit filed the same
-# observation as a finding (D4, severity 4).
-#
-# THE ARGUMENT FOR DELETING IT IS D7, three findings up the same page. D7 is a
-# preset channel whose CONSUMER contract was never exercised on the journey
-# users actually take, and it stayed wrong for a month because nothing on any
-# journey could tell the working case from the broken one. A channel with no
-# producer is that same shape with the evidence removed entirely: it cannot be
-# driven, so it cannot be shown to work, so what is carried is not a feature
-# but the appearance of one. Whoever adds a wrapper that wants to hand this
-# form a dot size adds the read with it, and the pair gets driven together in
-# the same commit. Nothing else in the file changes behaviour: both sentinels
-# were permanently 0, so both arms they guarded were dead branches and the
-# `elsif prev_scatter*` fallbacks they preceded are what actually ran.
 
-# D103 — "a preset arrived for this call" sentinels.
+# "A preset arrived for this call" sentinels.
 #
-# The scatter column-mapping page rebuilds its dialog defaults on every pass.
-# It used to do that by copying prev_* over whatever the preset bridge had
-# just set, so the FIRST scatter in a session honoured the wrapper's preset
-# (prev_* was still at its "unset" initializer) and every later one silently
-# discarded it in favour of the last dialog's choice. Each sentinel is raised
-# only when a preset was actually supplied, and cleared as soon as the page
-# consumes it, so a preset wins when present and the remembered value still
-# applies when it is absent. Same shape as scatterPresetHasGroup.
+# The scatter column-mapping page rebuilds its dialog defaults on every pass,
+# from prev_* — the last dialog's choice. A plain copy of prev_* over whatever
+# the preset bridge has just set would honour a wrapper's preset only on the
+# FIRST scatter of a session, while prev_* is still at its "unset" initializer.
+# Each sentinel is raised only when a preset was actually supplied, and cleared
+# as soon as the page consumes it, so a preset wins when present and the
+# remembered value applies when it is absent. Same shape as
+# scatterPresetHasGroup.
 scatterPresetHasRegression = 0
 scatterPresetHasGroup = 0
 histPresetHasGroup = 0
@@ -346,13 +281,9 @@ spPresetGroupIdx = 0
 # GRAPH TYPE REGISTRY
 # ============================================================================
 
-# D3b. The registry used to declare 14 types. Type 13 was "Time Series (with
-# CI)", whose form page was folded into type 5 (Line Chart) as a "Show
-# confidence interval" toggle — the page went, the registry row stayed, and
-# typeToMenu[13] = 0 meant the row could not be reached from the menu at all.
-# A registry entry no user can select and no page can fill is a sign pointing
-# at a demolished room, so it is gone and Spaghetti Plot has moved up into 13.
-# @emlDrawTimeSeriesCI is unaffected: it is still dispatched from type 5.
+# Thirteen types. Time series with a confidence interval is a "Show confidence
+# interval" toggle on type 5 (Line Chart), and @emlDrawTimeSeriesCI is
+# dispatched from there; Spaghetti Plot is type 13.
 nGraphTypes = 13
 
 graphTypeName$[1] = "Pitch Contour"
@@ -509,7 +440,7 @@ endfor
 #       Separate figure / None
 #   0 = this graph type has no legend, and shows no menu at all
 #
-# D136. NOT EVERY GRAPH TYPE HAS A LEGEND. Seven of the thirteen never call
+# NOT EVERY GRAPH TYPE HAS A LEGEND. Seven of the thirteen never call
 # @emlDrawLegend — the four acoustic types (Pitch Contour, Waveform,
 # Spectrum, LTAS) draw one series, and Bar Chart, Violin Plot and Box Plot
 # put their group names on the x-axis where a key would be a second copy of
@@ -526,17 +457,17 @@ endfor
 # the draw procedure decides whether this particular figure has one.
 #
 # THIS IS THE SAME SHAPE AS gridModeStyle[] ABOVE, AND FOR THE SAME REASON.
-# Read that block for the defect the shape exists to prevent: two encodings
-# sharing one persisted key, a dropdown drawn blank because its default index
-# exceeded its option count, and a dialog with no way out that survived a
-# restart because the bad value was on disk. `config_legendPlacement` has
-# exactly ONE encoding — 1 Inside plot / 2 Right of plot / 3 Below plot /
-# 4 Separate figure / 5 None, on disk and in memory, for every type — so the
-# translation @emlSeedGridMode has to perform is an identity here. It is
-# still routed through @emlSeedLegendPlacement and @emlCommitLegendPlacement,
-# because the clamp, the registry check and the single-token seed site are
-# the parts that were load-bearing, and because a second encoding invented
-# later has one place to go rather than fourteen.
+# Read that block for what the shape prevents: two encodings sharing one
+# persisted key seed a dropdown with a default index past its option count,
+# which Praat draws blank and then refuses to close — a dialog with no way
+# out, and it survives a restart because the bad value is on disk.
+# `config_legendPlacement` has exactly ONE encoding — 1 Inside plot / 2 Right
+# of plot / 3 Below plot / 4 Separate figure / 5 None, on disk and in memory,
+# for every type — so the translation @emlSeedGridMode has to perform is an
+# identity here. It is still routed through @emlSeedLegendPlacement and
+# @emlCommitLegendPlacement, because the clamp, the registry check and the
+# single-token seed site are the load-bearing parts, and because a second
+# encoding invented later has one place to go rather than fourteen.
 #
 # ADDING A GRAPH TYPE: add its row here. You cannot forget —
 # @emlLegendPlacementStyle refuses an unregistered type by name, and the
@@ -695,14 +626,14 @@ procedure emlPickFromMultiple: .type$
     .result = .id[object_choice]
 endproc
 
-# @emlCleanConvertedTable MOVED TO eml-graph-procedures.praat (12 Aug 2026).
+# @emlCleanConvertedTable LIVES IN eml-graph-procedures.praat, NOT HERE.
 #
-# It lived here, in the FORM, and @emlConvertForGraph in the library calls it.
-# That is a layering inversion, and it is not theoretical: a recorded
+# @emlConvertForGraph, in the library, calls it, so putting it in the form
+# would be a layering inversion — and not a theoretical one: a recorded
 # Matrix-or-TableOfReal workflow emits `@emlCleanConvertedTable: data` into a
-# file whose include block carries the draw layer and NOT the form, so the
-# emitted script could not run. harness/norecord found it the same way -- two
-# of thirty-five operations died with the procedure not found.
+# file whose include block carries the draw layer and NOT the form, so an
+# emitted script can only run if the procedure is in the draw layer.
+# harness/norecord drives that.
 
 
 # ============================================================================
@@ -724,9 +655,9 @@ procedure emlLoadConfig
     config_width = 6
     config_height = 4
     config_gridlineMode = 1
-    ; D136. One canonical encoding for every graph type:
+    ; One canonical encoding for every graph type:
     ; 1 Inside plot / 2 Right of plot / 3 Below plot / 4 Separate
-    ; figure / 5 None. 1 is what the plugin has always drawn.
+    ; figure / 5 None. 1 is the default.
     config_legendPlacement = 1
     config_showInnerBox = 1
     config_showAxisNames = 2
@@ -889,13 +820,13 @@ procedure emlLoadConfig
         config_gridlineMode = 1
     endif
 
-    # D136. Same refusal, same reason. legendPlacement has only ever had
-    # one encoding, so an in-range value is always readable as itself; a
-    # value that is not an option at all, from a hand-edited or truncated
-    # file, would seed a blank optionmenu and Praat then refuses the form.
-    # That is the dead end C1 is about, and it survives a restart because
-    # the bad value is on disk. Clamped to the default here, once, where
-    # the file is read, rather than at fourteen dialogs.
+    # Same refusal, same reason. legendPlacement has one encoding, so an
+    # in-range value is always readable as itself; a value that is not an
+    # option at all, from a hand-edited or truncated file, seeds a blank
+    # optionmenu and Praat then refuses the form. That is a dead end with
+    # no way out, and it survives a restart because the bad value is on
+    # disk. Clamped to the default here, once, where the file is read,
+    # rather than at fourteen dialogs.
     if config_legendPlacement < 1
         config_legendPlacement = 1
     endif
@@ -940,9 +871,9 @@ endproc
 # PROCEDURES — Gridline mode: one canonical encoding, translated at the dialog
 # ============================================================================
 #
-# C1. See the gridModeStyle[] block in the GRAPH TYPE REGISTRY for the defect
-# these close. In short: `config_gridlineMode` is the ONE persisted gridline
-# key and it is ALWAYS in the four-option encoding —
+# See the gridModeStyle[] block in the GRAPH TYPE REGISTRY for what these
+# exist to prevent. In short: `config_gridlineMode` is the ONE persisted
+# gridline key and it is ALWAYS in the four-option encoding —
 #
 #     1 = Both   2 = Horizontal only   3 = Vertical only   4 = Off
 #
@@ -951,8 +882,7 @@ endproc
 # in both directions. Every seed of `tmpGridMode` goes through
 # @emlSeedGridMode and every write back to `config_gridlineMode` goes through
 # @emlCommitGridMode, so no per-type section has to know that two encodings
-# exist. That is what the shared-tmp comment in @emlGraphsWorkflow always
-# claimed and, until this change, was not true of this one variable.
+# exist — which is what the shared-tmp comment in @emlGraphsWorkflow says.
 #
 # Round trip, for the two values a user can actually express on a categorical
 # type: "Horizontal" -> canonical 2 -> "Horizontal" (stable), "Off" ->
@@ -960,7 +890,7 @@ endproc
 # it must be — a two-option menu cannot express "Both" or "Vertical only" —
 # but it is lossy by MEANING and not by index: "Both" and "Horizontal only"
 # both arrive as "Horizontal", "Vertical only" and "Off" both arrive as "Off".
-# Turning gridlines off on a scatter plot now turns them off on the next
+# Turning gridlines off on a scatter plot turns them off on the next
 # histogram, which is the whole user-visible point.
 
 # ----------------------------------------------------------------------------
@@ -1078,7 +1008,7 @@ endproc
 # PROCEDURES — Legend placement: one canonical encoding, one registry
 # ============================================================================
 #
-# D136. `config_legendPlacement` is the ONE persisted legend key and it is
+# `config_legendPlacement` is the ONE persisted legend key and it is
 # ALWAYS in this encoding, in memory and on disk, whichever type wrote it —
 #
 #     1 = Inside plot   2 = Right of plot   3 = Below plot
@@ -1087,7 +1017,7 @@ endproc
 # WHAT THE PLACEMENT MEANS, because it is the reason the setting exists: the
 # user's width and height describe the PLOT, and the plot is the same size in
 # all five. Placement 1 draws the legend inside the data area and the saved
-# image is the plot rectangle, exactly as before. Placements 2 and 3 put the
+# image is the plot rectangle. Placements 2 and 3 put the
 # legend in its own rectangle beside or below the plot and the SAVED IMAGE
 # GROWS to cover it — a 6 x 4 request still yields a 6 x 4 plot and simply
 # exports a bigger picture. Placement 4 writes the legend as a second file.
@@ -1096,16 +1026,16 @@ endproc
 # computes a rectangle.
 #
 # WHY THE GRIDLINE SHAPE, WHEN THERE IS ONLY ONE ENCODING. Read the
-# gridModeStyle[] block in the GRAPH TYPE REGISTRY: two encodings once shared
-# one persisted key and left a dropdown blank and unusable, on disk, surviving
-# a restart. The translation that fixed it is only half of what that pattern
-# provides. The other half — a registry every type must appear in, a named
-# refusal for one that does not, a clamp at the single point where the value
-# is read from disk, and ONE seed token and ONE commit token so a fifteenth
-# call site cannot be written differently — is what keeps a second encoding
-# from being invented here later. So the translation procedures exist and are
-# identities today. If a type ever needs a shorter menu, this is where it
-# goes, and no per-type section has to learn about it.
+# gridModeStyle[] block in the GRAPH TYPE REGISTRY: two encodings sharing one
+# persisted key leave a dropdown blank and unusable, on disk, surviving a
+# restart. The translation is only half of what that pattern provides. The
+# other half — a registry every type must appear in, a named refusal for one
+# that does not, a clamp at the single point where the value is read from
+# disk, and ONE seed token and ONE commit token so a fifteenth call site
+# cannot be written differently — is what keeps a second encoding from being
+# invented here later. So the translation procedures exist and are identities
+# today. If a type ever needs a shorter menu, this is where it goes, and no
+# per-type section has to learn about it.
 
 # ----------------------------------------------------------------------------
 # @emlLegendPlacementStyle
@@ -1205,35 +1135,28 @@ endproc
 # PROCEDURES — Custom axis labels: one store, keyed by graph type
 # ============================================================================
 #
-# D1/D2, audit 14 Aug 2026. A user typed "G8 custom time axis (s)" into the
-# Pitch page's X axis label, drew, pressed Redraw and found the box EMPTY --
-# in the same session, on the same graph type, with the font and the DPI they
-# had set on the same dialog still in place. Every column-mapping page opened
-# with an unconditional
-#
-#     tmpXLabel$ = ""
-#     tmpYLabel$ = ""
-#
-# and the only restore in the file lived inside the Advanced/Beginner TOGGLE
-# handler, so the value came back if you toggled twice and never otherwise.
-# The same absence is what made the advanced stash appear to "die on a type
-# switch" (audit §6): the stash was never dead, the page just overwrote it on
-# entry. One store, read on entry, fixes both.
+# A CUSTOM AXIS LABEL BELONGS TO THE PAGE IT WAS TYPED ON, FOR THE SESSION.
+# Every column-mapping page opens by clearing tmpXLabel$ and tmpYLabel$, so
+# without a store the label a user typed would be gone the moment the page was
+# re-entered -- in the same session, on the same graph type, with the font and
+# the DPI set on the same dialog still in place. @emlSeedAxisLabels reads this
+# store on entry to every page, which is also what keeps the advanced stash
+# alive across a graph-type switch.
 #
 # WHY A TYPE-KEYED ARRAY AND NOT THE CONFIG FILE. `config_xLabel$` and
 # `config_yLabel$` are written by @emlSaveConfig and parsed by @emlLoadConfig
 # and are read by NOTHING -- and they cannot honestly be wired up as they
 # stand, because they are ONE pair of keys for THIRTEEN graph types. "Time
 # (s)" restored onto a bar chart's group axis is not persistence, it is a
-# wrong label with a user's own words in it. They stay in the file as the
+# wrong label with a user's own words in it. They stay in the file because the
 # format is on disk already and an unknown key is not the config parser's
-# problem to have; what they are not is this fix. Within a session the label
-# belongs to the type it was typed for, which is what this array says.
+# problem to have. Within a session the label belongs to the type it was typed
+# for, which is what this array says.
 #
 # BEGINNER MODE READS NOTHING. The beginner page has no axis-label field, and
-# the author's ruling of 13 Aug 2026 is that beginner mode draws only what its
-# own dialog offers. Seeding a stored label into a page that cannot show it
-# would put a label on a figure with nothing on screen to explain it.
+# beginner mode draws only what its own dialog offers. Seeding a stored label
+# into a page that cannot show it would put a label on a figure with nothing
+# on screen to explain it.
 # ----------------------------------------------------------------------------
 # @emlSeedAxisLabels
 # Reads the globals `graph_type` and `config_showAdvanced`; writes the globals
@@ -1448,63 +1371,53 @@ endproc
 # @emlBridgeGroupComparison expects in annotCorrectionMethod$. Index 2 (Holm)
 # is the default everywhere.
 #
-# D25. The control is consumed ONLY on the nonparametric (Dunn) post-hoc path.
-# A parametric k >= 3 comparison annotates with Tukey, which carries its own
-# correction, so the setting is inert there. Praat cannot grey a field out
-# conditionally inside a single form — the whole form is built before the user
-# touches anything — so the field NAME carried the condition instead. The
-# parenthesised part is stripped by Praat when it derives the variable name,
-# so the value still arrives as adjustment_method and no call site changes.
-#
-# D5, RULING 1a, 15 AUGUST 2026 — AND THE NAME IS NO LONGER ENOUGH.
-#
-# The 14 August audit measured that a Tukey draw is md5-identical under Holm
-# and under Bonferroni while the Dunn arm honours the same menu, and the
-# statistics say the code is right to ignore it: Tukey's p comes from the
+# THE CONTROL IS CONSUMED ONLY ON THE NONPARAMETRIC (DUNN) POST-HOC PATH.
+# A parametric k >= 3 comparison annotates with Tukey, whose p comes from the
 # studentized range distribution and is ALREADY family-wise, so a Holm or a
-# Bonferroni step on top of it would double-correct. There is nothing honest
-# for the menu to do on that arm. The author's ruling is that a qualifier in
-# the label is the wrong remedy for that — a live-looking control that is
-# silently ignored is the same class of defect as D11's group-column fields,
-# which stayed live and editable while their tickbox was clear and were then
-# thrown away at the commit. That was fixed by GATING the fields, and this is
-# fixed the same way.
+# Bonferroni step on top of it would double-correct: a Tukey draw is
+# md5-identical under either, and it is right to be. There is nothing honest
+# for the menu to do on that arm.
 #
-# So the menu is now OFFERED ONLY ON THE NONPARAMETRIC ARM, on all six
+# SO THE MENU IS OFFERED ONLY ON THE NONPARAMETRIC ARM, on all six
 # annotate-capable column-mapping dialogs, and the parametric arm gets a
-# `comment:` in its place saying why there is nothing to choose. The Dunn arm
-# keeps the menu unchanged, because it reads it: verified 15 Aug 2026 that
-# Holm and Bonferroni produce DIFFERENT annotated p-values there, both
-# matching scipy.
+# `comment:` in its place saying why there is nothing to choose. A live-looking
+# control that is silently ignored is the same class of defect as an editable
+# field whose value is thrown away at the commit, and the remedy is the same:
+# gate the field, do not qualify its label. The Dunn arm keeps the menu,
+# because it reads it — Holm and Bonferroni produce DIFFERENT annotated
+# p-values there, both matching scipy.
+#
+# The field name still carries the condition in parentheses, because Praat
+# cannot grey a field out conditionally inside a single form — the whole form
+# is built before the user touches anything. Praat strips a trailing
+# parenthesised part when it derives the variable name, so the value arrives
+# as adjustment_method.
 #
 # WHAT DECIDES, AND WHY IT IS A VARIABLE RATHER THAN A RE-TEST.
 #
 # `adjustOffered` is set to 0 immediately before the dialog is built and to 1
 # in the same branch that adds the field, so ONE value answers both "was the
 # field on the dialog" and "may adjustment_method be read back". Re-testing
-# the test-type variable at the commit would not be the same question, and on
-# three of the six pages it would be the WRONG question: the histogram, the
-# grouped-violin and the grouped-box commits write
-# `prev_<x>AnnotTestType = test_type` a line or two ABOVE the adjustment read,
-# so by the time a re-test ran, the variable it would test had already been
-# overwritten with the user's NEW choice. A user who opened the page
-# parametric and switched to Nonparametric before pressing Draw would then
-# pass the gate and read an adjustment_method that was never on the screen —
-# which in Praat is not an error but the value left over from the last dialog
-# that did have the field, on a different graph type, possibly in a different
-# session state.
+# the test-type variable at the commit is not the same question, and on three
+# of the six pages it is the WRONG question: the histogram, the grouped-violin
+# and the grouped-box commits write `prev_<x>AnnotTestType = test_type` a line
+# or two ABOVE the adjustment read, so by the time a re-test ran the variable
+# it would test has already been overwritten with the user's NEW choice. A
+# user who opened the page parametric and switched to Nonparametric before
+# pressing Draw would then pass the gate and read an adjustment_method that
+# was never on the screen — which in Praat is not an error but the value left
+# over from the last dialog that did have the field, on a different graph
+# type, possibly in a different session state.
 #
 # Praat does not delete a pause variable when the field goes away, so
 # READING WITHOUT THE GATE CANNOT FAIL LOUDLY. It returns stale data. That is
 # the whole reason the gate is one variable set next to the field rather than
 # a condition re-derived at the commit.
 #
-# WHAT THE USER LOSES: nothing that was ever honoured. annotCorrectionMethod$
-# is initialised to "holm" at file scope and a wrapper preset writes it
-# through @emlAdjustMethodName before the form opens (D108), so a parametric
-# commit that no longer touches it leaves exactly the value the old commit
-# would have re-derived from a menu seeded from the same source. No annotated
-# figure and no reported number moves.
+# A PARAMETRIC COMMIT LEAVES annotCorrectionMethod$ ALONE, and loses nothing
+# by it: the global is initialised to "holm" at file scope and a wrapper preset
+# writes it through @emlAdjustMethodName before the form opens, so the value in
+# hand is already the one a menu seeded from the same source would produce.
 #
 # Arguments:
 #   .idx — 1 = Bonferroni, 2 = Holm, 3 = Benjamini-Hochberg
@@ -1525,37 +1438,33 @@ endproc
 # ============================================================================
 # CSV EXPORT FILENAME
 # ============================================================================
-# D18 + D65 (filename half). The Draw path proposed
-# selected$ ("Table") + "_results" on originalSourceId. Two things were wrong
-# with that.
+# BOTH HALVES OF THE PROPOSED NAME COME OFF THE CSV BUFFER THAT IS ABOUT TO BE
+# WRITTEN, not off the drawing state, so the filename describes the bytes in
+# the file whatever produced them.
 #
-# D18: originalSourceId is the object the graph was drawn from, which for the
-# paired workflow is the `pairedLong` wide-to-long reshape the wrapper builds
-# for the spaghetti plot. The user never created it, never named it and never
-# sees it again — so the deliverable was named after a transient the user
-# cannot connect to anything, while the rows INSIDE the file correctly said
-# `demo_paired`. The name now comes from the same place the body does.
+# THE TABLE. originalSourceId is the object the graph was drawn from, which on
+# the paired workflow is the `pairedLong` wide-to-long reshape the wrapper
+# builds for the spaghetti plot — a transient the user never created, never
+# named and never sees again. Naming the deliverable after it would disagree
+# with the rows INSIDE it, which say `demo_paired`. The name comes from the
+# same place the body does.
 #
-# D65 (filename half): "_results" carries no analysis identity, so three
-# different analyses on one table proposed one name and arrived as
-# `t_results.csv`, `_1.csv`, `_2.csv` — distinguishable only by opening them.
-# The wrapper side (@emlWrapperExportCSV, stats/eml-output.praat) was fixed to
-# <table>_<analysis-slug>; this is the same convention with the same slug
-# rules, so the two export routes cannot drift.
+# THE ANALYSIS. "_results" carries no analysis identity, so three different
+# analyses on one table would propose one name and arrive as `t_results.csv`,
+# `_1.csv`, `_2.csv` — distinguishable only by opening them. The shape here is
+# <table>_<analysis-slug>, the same convention and the same slug rules as
+# @emlWrapperExportCSV in stats/eml-output.praat, so the two export routes
+# cannot drift.
 #
-# Both halves are read off the CSV buffer rather than off the drawing state on
-# purpose: the filename then describes the bytes that are about to be written,
-# whatever produced them. When the buffer is empty or unparseable the old
-# <table>_results shape is still produced, from the caller's fallback name.
+# When the buffer is empty or unparseable the <table>_results shape is
+# produced instead, from the caller's fallback name.
 #
-# NOT FIXED HERE — D65's other half. D65 also reports that the Draw path can
-# export a DIFFERENT test family than the analysis the user launched (drawing
-# after "Pairwise comparisons" exported ANOVA/Tukey rows, because the draw
-# bridge re-runs its own test and overwrites the buffer). Naming the file after
-# the buffer makes that visible instead of hiding it behind the table name, but
-# it does not fix it. Which result should win — the wrapper's analysis or the
-# figure's annotation — is a design decision about the bridge, not a naming
-# question, and is deliberately left alone here.
+# WHAT THIS DOES NOT DECIDE: the Draw path can export a different test family
+# than the analysis the user launched, because the draw bridge re-runs its own
+# test and overwrites the buffer. Naming the file after the buffer makes that
+# visible rather than hiding it behind the table name. Which result should win
+# — the wrapper's analysis or the figure's annotation — is a design decision
+# about the bridge, not a naming question, and is left alone here.
 #
 # Arguments:
 #   .fallbackTable$ — table name to use when the buffer carries none
@@ -1657,20 +1566,18 @@ endproc
 # ============================================================================
 # PERCENTAGE-COLUMN DETECTION
 # ============================================================================
-# D60. @emlComputeAxisRange has taken an .isPercentage argument since it was
-# written, and clamps the axis to 0-100 (or 0-1 for proportions) when it is
-# raised — Rule 28E. Every call site in the repository passed a literal 0, so
-# the branch had never once executed and a `_pct` column with a ceiling of
-# exactly 100.0 was still given Rule 28F's generic +-10% buffer: an axis
-# running 40-110, ten points past a physically impossible value and cropping
-# the bottom 40 points of the actual scale.
+# @emlComputeAxisRange takes an .isPercentage argument and clamps the axis to
+# 0-100 (or 0-1 for proportions) when it is raised — Rule 28E. Without it a
+# `_pct` column with a ceiling of exactly 100.0 gets Rule 28F's generic +-10%
+# buffer: an axis running 40-110, ten points past a physically impossible
+# value and cropping the bottom 40 points of the actual scale.
 #
 # Detection deliberately requires BOTH tests to pass:
 #
 #   * the NAME suggests a percentage (`_pct`, `percent`, `%`) — necessary,
 #     because 0-100 data is extremely common in acoustics (SPL in dB, F0 in a
 #     narrow band, age, contact quotient x 100) and clamping all of it to a
-#     0-100 axis would wreck far more figures than D60 fixes; and
+#     0-100 axis would wreck far more figures than it would rescue; and
 #   * the DATA actually lies in 0-100 — necessary, because a name is only a
 #     hint. `pct_change` legitimately goes negative, and a column called
 #     `percent_of_baseline` can run past 200. Either would be silently
@@ -1681,17 +1588,14 @@ endproc
 # proportion and clamps to 0-1 instead.
 #
 # REACH. This is applied at the two @emlComputeAxisRange call sites in THIS
-# file — the annotated bar / violin / box auto-range. The other 15 sites are in
-# files this pass does not own and still pass a literal 0:
-# graphs/eml-draw-procedures.praat 233, 332, 822, 1175, 1451, 1853, 2197, 2412,
-# 2426, 3100, 3370, 3413, 3786, 4022 and scripts/eml-stats-demo.praat 309, 312,
-# 398. Note in particular 2426, the scatter Y axis — that is the site the D60
-# report was actually written from (a `_pct` column drawn 40-110), so D60's
-# observed figure is NOT fixed by this change; the mechanism it said was dead
-# is simply no longer dead. Those sites cannot call this procedure as it
-# stands: eml-draw-procedures.praat is included without this file by the stress
-# harness, so a shared detector has to live in eml-graph-procedures.praat
-# beside @emlComputeAxisRange itself.
+# file — the annotated bar / violin / box auto-range. The other 15 sites, in
+# graphs/eml-draw-procedures.praat and scripts/eml-stats-demo.praat, pass a
+# literal 0 and cannot call this procedure as it stands:
+# eml-draw-procedures.praat is included without this file by the stress
+# harness, so a detector those sites could share has to live in
+# eml-graph-procedures.praat beside @emlComputeAxisRange itself. The scatter Y
+# axis is the one worth knowing about — a `_pct` column drawn there still gets
+# the generic buffer.
 #
 # Arguments:
 #   .tableId  — Table to inspect
@@ -1741,13 +1645,12 @@ endproc
 #     Error: Table "t": the cell in row 3 of column "v" is undefined.
 #     Table "t": cannot compute maximum of column 1.
 #
-# Measured on 6.6.30 with a single blank cell in a five-row column. The
-# bracket-headroom stage called `Get maximum:` on the user's raw table, so a
-# violin or box plot with Annotate ticked, at least one bracket, and one
-# missing value anywhere in the value column killed the whole workflow with
-# that error. The guard on the next line -- `if visibleDataMax <> undefined`
-# -- anticipated the missing-data case and guarded the wrong thing: the call
-# never returns to be tested.
+# Measured on 6.6.30 with a single blank cell in a five-row column. So a
+# `Get maximum:` on the user's raw table would kill the whole workflow for a
+# violin or box plot with Annotate ticked, at least one bracket and one
+# missing value anywhere in the value column -- and an `if visibleDataMax <>
+# undefined` guard after it cannot help, because the call never returns to be
+# tested.
 #
 # Missing values are the ordinary case, not the exotic one, and every draw
 # procedure already tolerates them: they skip the row and say so ("6 row(s)
@@ -1759,14 +1662,10 @@ endproc
 # bounds come back undefined, and the caller's existing undefined test then
 # does what it was written to do.
 #
-# THE READER HERE MUST BE THE DRAW LAYER'S READER, and on 11 August 2026 that
-# changed. This procedure was written with `Get value:`, which agreed with
-# the draw layer at the time because the draw layer was lenient too. When the
-# draw procedures moved to @eml_readCell (see @emlDrawColumnIsClean), this
-# one was left behind for about an hour, and the measured consequence was
-# exactly the failure the pairing exists to prevent: the extent still
-# included a `1,5` read as 1 and a `30%` read as 0.3, so the axis reserved
-# room for two points the figure no longer draws.
+# THE READER HERE MUST BE THE DRAW LAYER'S READER, which is @eml_readCell
+# (see @emlDrawColumnIsClean) and not `Get value:`. A lenient reader here
+# would put a `1,5` read as 1 and a `30%` read as 0.3 into the extent, so the
+# axis would reserve room for two points the figure does not draw.
 #
 # An extent that DISAGREES IN THE OTHER DIRECTION is worse still -- excluding
 # a point the figure plots clips data off the page. Either way the rule is
@@ -1805,11 +1704,10 @@ endproc
 # ============================================================================
 # DEFAULT FIGURE TITLE
 # ============================================================================
-# D43 / D89 (Rule 28A). The figure used to be drawn with no title at all
-# whenever the Title field was left blank, which is the out-of-box case on
-# every path: the plugin knew the table name and every mapped column and put
-# none of it on the figure, so a reader given the PNG alone could not tell
-# what was measured or on what.
+# A BLANK TITLE FIELD GETS A COMPOSED TITLE, NOT NO TITLE (Rule 28A). Blank
+# is the out-of-box case on every path, and the plugin knows the table name
+# and every mapped column, so a reader given the PNG alone can tell what was
+# measured and on what.
 #
 # WHY IT IS COMPOSED HERE AND NOT IN THE FORM. The Title field lives on the
 # FIRST page of the dialog — above the graph-type menu and two pages above the
@@ -1951,30 +1849,15 @@ endproc
 # the dialog pair that belongs to the graph type about to be drawn, and does
 # nothing else. No arguments, no output beyond those two names, no drawing.
 #
-# AUTHOR RULING 10(b), 16 AUGUST 2026: "the record process should note if it
-# was auto and offer 0.0 to 0.0 as the range in the editable top block of
-# variables." Ruling 10(a) had already settled that the recorded CALL carries
-# the user's choice, and (0, 0) is the sentinel the dialog names on its own
-# face — "both 0 = auto" — not a range. This procedure is the half of 10(b)
-# that lives on the form's side: the choice has to still be recoverable at the
-# moment the recorder runs, and on two paths through this file it is not.
+# THE CONTRACT. The recorded script's editable top block shows what the user
+# ASKED FOR, not what the draw resolved: (0, 0) is the sentinel the dialog
+# names on its own face — "both 0 = auto" — and it reaches the block as 0.0 to
+# 0.0 rather than as the computed extent. The recorded CALL carries the same
+# choice. So the user's choice has to still be recoverable at the moment the
+# recorder runs.
 #
-# WHAT THE FAILURE LOOKS LIKE. A user ticks Annotate on a violin plot, leaves
-# the y-range on auto, presses Draw with a recording running, and stops the
-# recording. The emitted script's editable top block reads
-#
-#     axisYMin  = 192.0000
-#     axisYMax  = 214.0000
-#
-# and there is no longer anything in the file, or in the recorder, that knows
-# those two numbers were computed rather than typed. Edit the block to run the
-# same workflow on a second speaker — which is the entire purpose the block
-# exists for — and the figure is drawn on the FIRST speaker's axis, silently,
-# because a range that was never asked for has been frozen into the script.
-# Nothing errors. The figure looks like a figure.
-#
-# THE TWO PATHS THAT DESTROY THE EVIDENCE, both in this file and both running
-# before the draw the recorder sees:
+# WHY THE CAPTURE HAS TO HAPPEN HERE. Two paths through this file overwrite
+# the dialog pair, both of them before the draw the recorder sees:
 #
 #   * @emlGraphsPreDispatchHeadroom — the bracket path. On an annotated bar,
 #     violin or box plot with at least one bracket it computes the visible
@@ -1986,11 +1869,15 @@ endproc
 #   * @emlGraphsDrawWithLegendRoom — the legend path. It draws once, measures
 #     the legend, writes the widened extent back into valueMin and valueMax,
 #     and DRAWS AGAIN on it. The second draw is the one the recorder records,
-#     so on every legend-bearing type the recorded range is the resolved one.
+#     so on every legend-bearing type the range in scope is the resolved one.
 #
-# So the request is captured HERE, where the form's own range validation has
-# just finished with the user's numbers and neither pass has run yet, and it
-# is never written again for this press. @emlRecordAxisRequest in
+# A block carrying the resolved range would freeze one speaker's axis into a
+# script whose whole purpose is to be re-run on the next speaker, and nothing
+# would error on the way: "192.0000" is as well-formed a number as "0.0", and
+# the figure would look like a figure. So the request is captured HERE, where
+# the form's own range validation has just finished with the user's numbers
+# and neither pass has run yet, and it is never written again for this press.
+# @emlRecordAxisRequest in
 # stats/eml-record.praat states the reading half of the contract, including
 # why its fallback to the caller's own arguments is a requirement and not a
 # courtesy: nothing outside this file publishes these globals, and the API
@@ -2007,6 +1894,15 @@ endproc
 # the dialog values are read would have made the invariant a thing to audit
 # rather than a thing to read.
 #
+# AND THE PAIR IS NOT ENOUGH ON ITS OWN. Existence is permanent in Praat, so
+# a pair published by one press would otherwise be preferred by every recorded
+# draw after it for the life of the process — including draws from other menu
+# commands with no form behind them at all. The pair is therefore published
+# with a STEP STAMP, written by @emlGraphsStampAxisRequest below the type
+# chain so that it travels with all thirteen types, refreshed at each dispatch
+# and consumed by @emlRecordAxisRequest. That procedure's header says why the
+# stamp cannot be folded back into the pair.
+#
 # THE PAIR IS CHOSEN BY GRAPH TYPE, because "the y-axis range" is not one
 # variable in this form. @emlGraphsDispatchDraw hands the F0 contour freqMin
 # and freqMax, the waveform ampMin and ampMax, the spectrum and the LTAS
@@ -2015,25 +1911,18 @@ endproc
 # draw procedures reads whichever of those it was given. Publishing valueMin
 # for a waveform would replace an amplitude range with a range the amplitude
 # dialog never showed. Types 1 to 4 are not touched by either resolving pass,
-# so for them the published value always equals the argument and the recorded
-# artefact is unchanged; they are published anyway because one rule with no
-# exceptions is cheaper to keep true than four types carved out of it.
+# so for them the published value always equals the argument; they are
+# published anyway because one rule with no exceptions is cheaper to keep true
+# than four types carved out of it.
 #
-# WHAT COULD NOT HAVE CAUGHT THIS, AND WHY. Not the recorder's own tests: on
-# every path they can drive, the argument IS the request, so the fallback and
-# the publication agree and every assertion passes on a figure whose block is
-# right for the wrong reason. Not harness/record/roundtrip_graph.sh either,
-# which is the strongest evidence in the tree that a recorded figure replays —
-# it calls @emlDrawViolinPlot directly, so no form has run, no global exists,
-# the fallback fires and the round trip is byte-perfect while the defect sits
-# untouched one layer up. Not a PNG comparison of any kind: the figure the
-# user saw is correct on both sides of this fix, because the resolved range is
-# what the figure was legitimately drawn on. And not a check on the WIDTH or
-# the format of the block's numbers, which is the shape this defect invites —
-# "192.0000" and "0.0" are both four-decimal fixed strings of plausible size,
-# and a check that the block carries a well-formed number passes on the wrong
-# one. The only thing that catches it is reading the VALUE in the emitted
-# block on a draw whose axis was resolved, and knowing what the user typed.
+# WHAT A CHECK OF THIS CONTRACT HAS TO DO: read the VALUE in the emitted block
+# on a draw whose axis was RESOLVED, knowing what the user typed. Nothing
+# weaker reaches it. A probe that calls a draw procedure directly runs with no
+# form and no globals, so the fallback fires and the round trip is
+# byte-perfect whatever this procedure does. A PNG comparison sees nothing,
+# because the figure is legitimately drawn on the resolved range. And a check
+# on the WIDTH or the format of the block's numbers passes on the wrong one:
+# "192.0000" and "0.0" are both well-formed four-decimal strings.
 # ============================================================================
 procedure emlGraphsPublishAxisRequest
     if graph_type = 1
@@ -2048,6 +1937,88 @@ procedure emlGraphsPublishAxisRequest
     else
         emlGraphsAxisYReqMin = valueMin
         emlGraphsAxisYReqMax = valueMax
+    endif
+    # THE STAMP TRAVELS WITH ALL THIRTEEN TYPES, and it is written HERE --
+    # after the chain, not inside it -- for the reason the chain itself is a
+    # chain: the PAIR differs by type and the stamp does not. Four copies of
+    # one line is four chances to leave it out of a fifth branch, and a branch
+    # that published a pair with no stamp would be a type whose publication
+    # outlives its press while every other type's is consumed. One write
+    # below the endif covers types 1..13 by construction. See
+    # @emlGraphsStampAxisRequest for what the number means.
+    @emlGraphsStampAxisRequest
+endproc
+
+
+# ============================================================================
+# @emlGraphsStampAxisRequest
+# ============================================================================
+# STAMP THE PUBLISHED PAIR WITH THE STEP IT IS FOR. Sets one global --
+# emlGraphsAxisYReqStep -- and does nothing else. No arguments, no drawing.
+#
+# WHY A STAMP AND NOT JUST THE PAIR. PRAAT CANNOT UNSET A VARIABLE, so
+# @emlGraphsPublishAxisRequest's two globals live for the whole process once
+# any press has written them. A reader that preferred the pair whenever it
+# EXISTED could not tell "this draw came from the form" from "some form ran
+# earlier this session": existence is permanent, and both are the same two
+# doubles. graphs/eml-draw-qq.praat calls @emlDrawScatterPlot with 0, 0, 0, 0
+# and has no form of its own, so an EML Graphs draw at 0..100 earlier in the
+# session must not reach a recorded Q-Q step as axisYMax = 100.0.
+#
+# THE PAIR CANNOT CARRY THAT STATE AND THAT IS THE WHOLE POINT. Resetting the
+# pair after use would mean writing 0 and 0 into it, and 0/0 IS the auto
+# sentinel -- the range a user gets by leaving the dialog alone -- so "spent"
+# and "the user asked for auto" would be the same two doubles. The stamp has
+# no such collision: step numbers start at 1, so 0 means CONSUMED and nothing
+# else, and @emlRecordAxisRequest zeroes it the moment it has read it. That is
+# the trick; a reader who folds the stamp back into the pair loses the
+# distinction and cannot get it back.
+#
+# THE NUMBER IS THE RECORDER'S NEXT STEP. @emlRecordStep increments emlRecordN
+# and then appends, and @emlRecordAxisRequest runs before it, so the row the
+# draw is about to become is emlRecordN + 1. Zero when nothing is recording,
+# so a press made with the recorder off leaves no stamp armed for step 1 of a
+# recording started afterwards.
+#
+# WHY IT IS TAKEN AGAIN AT DISPATCH AND NOT ONLY AT PUBLICATION. The pair must
+# be published BEFORE anything in the form resolves it, which is why
+# @emlGraphsPublishAxisRequest sits where it does -- but the step number is
+# not knowable there. The annotation bridge runs between the publication and
+# the draw and RECORDS A STEP OF ITS OWN: on an annotated violin the group
+# comparison is step 1 and the figure is step 2, so a stamp taken at
+# publication time names a step the draw will never be. Driven, not reasoned:
+# harness/formaxis's bracket_auto leg emits exactly that pair of steps, and
+# harness/consumeonce's form_then_qq leg re-drives it beside a second press.
+#
+# So the pair is published once, where the user's numbers are still the user's
+# numbers, and the stamp is re-taken at each dispatch, where "the current step"
+# is a fact. @emlGraphsDispatchDraw is also called once per LEGEND PASS, which
+# is the second reason for the placement: the legend-room loop draws, measures
+# and draws again, both passes record, and both are entitled to the request
+# the user actually made.
+#
+# THE PAIR IS NEVER REWRITTEN HERE. Neither resolving pass may touch it --
+# validate/v68 asserts that over the bodies of both -- and this procedure is
+# not an exception to that rule but the reason it can stay absolute: what
+# dispatch refreshes is the stamp, which is bookkeeping, and never the range,
+# which by dispatch time holds the resolution.
+#
+# THE SELECTION IS PUT BACK. @emlRecordInit re-attaches to a recording left by
+# an earlier menu invocation with `nocheck selectObject:` BY NAME, which either
+# selects the buffer Table or leaves nothing selected. This procedure runs
+# before a draw, so it restores objectId exactly as @emlGraphsComposeTitle
+# does after its own object queries.
+# ============================================================================
+procedure emlGraphsStampAxisRequest
+    emlGraphsAxisYReqStep = 0
+    if variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            emlGraphsAxisYReqStep = emlRecordN + 1
+        endif
+        if objectId > 0
+            selectObject: objectId
+        endif
     endif
 endproc
 
@@ -2077,8 +2048,9 @@ endproc
 # block — it would have gone on passing however wrong the shipped one became,
 # and it did, while an omnibus box was being clipped off the figure entirely.
 # The bracket headroom is one of the two places in this file that turns the
-# user's AUTO range into explicit numbers, so any check of Ruling 10(b) has to
-# run it. A check that ran a hand-written copy of these ninety lines instead
+# user's AUTO range into explicit numbers, so any check of the published axis
+# request has to run it. A check that ran a hand-written copy of these ninety
+# lines instead
 # would be measuring its own copy, which is the same failure with a different
 # variable name in it. There is nothing to transcribe now.
 #
@@ -2116,11 +2088,12 @@ procedure emlGraphsPreDispatchHeadroom
         else
             # Violin/Box: visible extent = raw data extent, OVER THE DEFINED
             # CELLS ONLY. `Get maximum:` aborts the script on a column with
-            # any blank cell rather than returning undefined, so an annotated
-            # violin or box plot with one missing value anywhere in the value
-            # column used to die here with a raw Praat error. See
-            # @emlGraphsColumnExtent, and note that the undefined test below
-            # was guarding a return value that could never arrive.
+            # any blank cell rather than returning undefined, which would take
+            # an annotated violin or box plot with one missing value anywhere
+            # in the value column down with a raw Praat error. So the extent
+            # is walked cell by cell instead — see @emlGraphsColumnExtent,
+            # which returns undefined only when the column holds no defined
+            # cell at all, the case the test below is for.
             @emlGraphsColumnExtent: objectId, valueColName$
             visibleDataMax = emlGraphsColumnExtent.max
             visibleDataMin = emlGraphsColumnExtent.min
@@ -2137,11 +2110,10 @@ procedure emlGraphsPreDispatchHeadroom
         # keeps the floor at 0 for non-negative data, so positive bars are
         # unchanged.
         if valueMin = 0 and valueMax = 0
-            # D60. Ask once, here, whether this is a percentage scale, and hand
-            # the answer to @emlComputeAxisRange instead of the literal 0 both
-            # call sites used to pass. @emlGraphsIsPercentageColumn reselects
-            # objectId, so it must run before the range calls rather than
-            # inside them.
+            # Ask once, here, whether this is a percentage scale, and hand
+            # the answer to @emlComputeAxisRange rather than a literal 0 at
+            # each call site. @emlGraphsIsPercentageColumn reselects objectId,
+            # so it must run before the range calls rather than inside them.
             @emlGraphsIsPercentageColumn: objectId, valueColName$
             .axisIsPct = emlGraphsIsPercentageColumn.result
             selectObject: objectId
@@ -2176,7 +2148,7 @@ procedure emlGraphsPreDispatchHeadroom
         # own contribution is made after the first draw pass, from
         # @emlLegendHeadroomAfterDraw, because the corner it will occupy is
         # not decided until the figure has been laid out once. This gate is
-        # no longer the only door into @emlComputeAnnotationHeadroom.
+        # not the only door into @emlComputeAnnotationHeadroom.
         @emlComputeAnnotationHeadroom: annotDataRange,
         ... emlSetAdaptiveTheme.annotSize, 0, ""
         if emlComputeAnnotationHeadroom.overflow = 1
@@ -2205,17 +2177,29 @@ endproc
 # two-pass loop in @emlGraphsWorkflow.
 # ============================================================================
 procedure emlGraphsDispatchDraw
+    # RE-STAMP THE PUBLISHED AXIS REQUEST FOR THE STEP THIS DRAW IS ABOUT TO
+    # BECOME. The pair itself is NOT republished and must not be: by the time
+    # dispatch runs, the bracket-headroom and legend-room passes may already
+    # have written their resolution into valueMin/valueMax, and the recorded
+    # block is meant to carry the user's request rather than that resolution.
+    # Only the stamp is taken here, and it has to be taken here — the
+    # annotation bridge
+    # records a step between the publication and this draw, so the step number
+    # is not knowable at publication time. @emlGraphsStampAxisRequest's header
+    # is the contract; @emlRecordAxisRequest in stats/eml-record.praat is the
+    # reader that consumes it.
+    @emlGraphsStampAxisRequest
     Erase all
     @emlResetDrawnExtent
 
-    # D136. Hand the drawing layer the placement the user chose. This is the
+    # Hand the drawing layer the placement the user chose. This is the
     # ONLY write to emlLegendPlacement in the plugin, and it is the boundary
     # between the persisted encoding (config_legendPlacement, canonical, one
     # meaning for every type) and the drawing layer, which reads the global
-    # through variableExists and defaults to 1. Every caller that predates
-    # this — the seven @emlDrawLegend sites in eml-draw-procedures.praat,
-    # every stress case, every PraatGen companion — sets nothing and draws
-    # the inside-plot corner box it has always drawn.
+    # through variableExists and defaults to 1. A caller that sets nothing —
+    # a stress case, a PraatGen companion, a direct call to one of the seven
+    # @emlDrawLegend sites in eml-draw-procedures.praat — draws the
+    # inside-plot corner box.
     #
     # The user's figure_width and figure_height are NOT adjusted here, and
     # must not be: they describe the PLOT, and a legend that took a share of
@@ -2224,26 +2208,24 @@ procedure emlGraphsDispatchDraw
     # the legend rectangle to @emlExpandDrawnExtent from inside
     # @emlDrawLegend. See EXPORT GEOMETRY above @emlDrawLegendPanel.
     emlLegendPlacement = config_legendPlacement
-    # D8, audit 14 Aug 2026 — BEGINNER MODE DRAWS THE IN-PLOT LEGEND, WHATEVER
-    # AN EARLIER ADVANCED SESSION LEFT ON DISK.
+    # BEGINNER MODE DRAWS THE IN-PLOT LEGEND, WHATEVER AN EARLIER ADVANCED
+    # SESSION LEFT ON DISK.
     #
     # config_legendPlacement is written ONLY by @emlCommitLegendPlacement, and
     # every one of its call sites sits inside the `if config_showAdvanced` arm
     # of a column-mapping commit -- because the "Legend placement" field only
-    # exists on the advanced page. That is correct as far as it goes: a
-    # beginner page has no field, so it has nothing to commit. What it left
-    # behind is a persisted value with no way to change it and no way to see
-    # it. A user who once chose "Separate figure" in advanced mode, quit, and
-    # came back in beginner mode got an unrequested <stem>_legend.png out of
-    # the Save panel, from a dialog that had never mentioned legends -- driven
-    # and photographed, audit leg G8 step 16.
+    # exists on the advanced page. A beginner page has no field, so it has
+    # nothing to commit, and without this override the persisted value would
+    # act on a dialog that cannot show it or change it: a user who chose
+    # "Separate figure" in advanced mode, quit, and came back in beginner mode
+    # would get an unrequested <stem>_legend.png out of the Save panel.
     #
     # THE VALUE IS NOT UNWRITTEN, IT IS OVERRIDDEN FOR THE DRAW. Same rule as
     # the beginner display-element block further down: write the RENDERING
     # global, never config_*, so the advanced preference is still there the
-    # moment the user switches back. 1 is "Inside plot", which is the corner
-    # box every caller predating D136 draws and the only placement the
-    # beginner page has ever produced.
+    # moment the user switches back. 1 is "Inside plot", the corner box a
+    # caller that sets nothing draws and the only placement the beginner page
+    # produces.
     if config_showAdvanced = 0
         emlLegendPlacement = 1
     endif
@@ -2372,19 +2354,17 @@ procedure emlGraphsDrawWithLegendRoom
     legendRoomPass = 1
     legendRoomAgain = 1
 
-    # NEW-G8-3, THE HALF THE PRESS-LEVEL RESET DOES NOT REACH — and it is not
-    # hypothetical, it was measured on 15 Aug 2026 by driving three scatter
-    # draws through harness/graphseams and reading the exported CSV: every
-    # (table, analysis, term, field) key appeared TWICE per press.
+    # THE HALF THE PRESS-LEVEL RESET DOES NOT REACH.
     #
     # The scatter's reporters run from inside @emlDrawScatterPlot, so they run
     # once per PASS, and this loop dispatches twice whenever a legend inside
     # the plot needs y-axis room. The comment above says pass 1 "is thrown away
-    # entirely"; its CSV rows were the part that was not. The Info window's
-    # duplication is deliberate and LABELLED (see above) because Praat cannot
-    # un-print a flushed line. A file it has not written yet is a different
-    # matter: the rows can simply be rewound, and a figure that was never on
-    # the page has no business in the export.
+    # entirely"; its CSV rows have to go with it, or every (table, analysis,
+    # term, field) key appears TWICE per press in the exported file. The Info
+    # window's duplication is deliberate and LABELLED (see above) because Praat
+    # cannot un-print a flushed line. A file it has not written yet is a
+    # different matter: the rows can simply be rewound, and a figure that was
+    # never on the page has no business in the export.
     #
     # THE MARK IS TAKEN HERE, not zeroed, because the annotation bridge has
     # already run and its rows belong to this press. Rewinding to the mark
@@ -2392,10 +2372,66 @@ procedure emlGraphsDrawWithLegendRoom
     # lives in stats/eml-output.praat with the collector it counts.
     @emlCSVMark
 
+    # THE RECORDER'S HALF OF THE SAME RESET, and it is the same sentence one
+    # file over: ONE PRESS OF DRAW IS ONE DRAW STEP, on a legend-bearing
+    # figure as much as on any other. Both passes of this loop reach the
+    # recorder, so without a mark and a rewind one press emits
+    #
+    #     # --- Step 1 (draw) ---     @emlDrawGroupedViolin: ... axisYMin, axisYMax
+    #     # --- Step 2 (draw) ---     @emlDrawGroupedViolin: ... axisYMin, axisYMax
+    #
+    # — the same figure twice. Worse than the duplication: the block's
+    # resolved-range note quotes the FIRST step to use a pair, so it would
+    # name the axis of the pass that was thrown away rather than the one on
+    # the user's screen. harness/formaxis's legend_auto leg is the drive.
+    #
+    # SAME PLACEMENT AS THE CSV MARK, AND FOR THE SAME REASON. The annotation
+    # bridge records a step of its own before this procedure is entered, and
+    # that step belongs to this press; the mark is taken here so a rewind
+    # discards exactly what a pass added and nothing that preceded it.
+    #
+    # THE REWIND MUST PRECEDE @emlGraphsDispatchDraw, not follow the pass that
+    # is being discarded, because dispatch re-stamps the axis request with
+    # emlRecordN + 1. Rewinding first is what makes the second pass stamp the
+    # step it will actually be recorded as, so the figure keeps the user's own
+    # axis request. The pair lives in stats/eml-record.praat with the buffer
+    # it trims, and knows nothing about legends.
+    #
+    # GUARDED ON variableExists ("emlRecordLoaded"), and the guard is not
+    # decoration. The recorder is OPTIONAL BY DESIGN -- a hand-written user
+    # script or a PraatGen companion that includes the stats and graphs files
+    # directly gets the figures without it -- and Praat only errors on an
+    # undefined procedure when it EXECUTES the call, so an unguarded hook is a
+    # shipped API break that no barrel-loading caller can see and no static
+    # reader can see either:
+    #
+    #     Error: Procedure "emlRecordMark" not found.
+    #
+    # arrives at the user's first press, before a single figure is drawn. That
+    # contract is stated in harness/norecord, which cannot reach this call
+    # site because it does not include eml-graphs-form.praat;
+    # harness/legendroom does, with a probe that includes the individual files
+    # exactly as a user script would. Every recorder call site in the graphs
+    # and draw files carries this same guard.
+    #
+    # THE FLAG, NOT emlRecordActive. A recorder that is loaded but not
+    # recording still has to be marked and rewound -- @emlRecordMark makes its
+    # own state check inside. Absent is the only condition this guard is about.
+    legendRoomRecorder = 0
+    if variableExists ("emlRecordLoaded")
+        legendRoomRecorder = 1
+    endif
+    if legendRoomRecorder = 1
+        @emlRecordMark
+    endif
+
     while legendRoomAgain = 1
         legendRoomAgain = 0
 
         @emlCSVRewind
+        if legendRoomRecorder = 1
+            @emlRecordRewind
+        endif
 
         @emlGraphsDispatchDraw
 
@@ -2456,7 +2492,7 @@ procedure emlGraphsDrawWithLegendRoom
                 # emlLegendPlacement, NOT config_legendPlacement. This runs
                 # after @emlGraphsDispatchDraw, which resolves the persisted
                 # value into the one the figure was actually drawn with --
-                # including the D8 beginner-mode override. Reading config here
+                # including the beginner-mode override. Reading config here
                 # would ask for headroom for a legend that is not on the page.
                 @emlLegendHeadroomAfterDraw: emlLegendPlacement,
                 ... emlDrawLegend.position$, legendRoomBaseMin,
@@ -2468,15 +2504,15 @@ procedure emlGraphsDrawWithLegendRoom
 
             if emlLegendHeadroomAfterDraw.apply = 1
                 # The user's own axis, if the user typed one, is being widened
-                # — say so. The bracket path has always done this silently and
-                # that is the wrong precedent to copy: someone who asked for
-                # 0–100 and got 0–118 should be told which box took the rest.
-                # @eml_fixed, NOT fixed$. Sibling sweep, 15 Aug 2026: nothing
-                # in this plugin should reach the Info window through fixed$,
-                # because fixed$ is not a fixed-precision formatter. It prints
+                # — say so. The bracket path does this silently; someone who
+                # asked for 0–100 and got 0–118 should be told which box took
+                # the rest.
+                # @eml_fixed, NOT fixed$. Nothing in this plugin reaches the
+                # Info window through fixed$, because fixed$ is not a
+                # fixed-precision formatter. It prints
                 # max (precision, -floor (log10 |v|)) decimals, so it silently
-                # ESCALATES on small magnitudes -- an axis floor of 0.004 asked
-                # for three places and printed five -- and it returns a bare
+                # ESCALATES on small magnitudes -- an axis floor of 0.004 asks
+                # for three places and prints five -- and it returns a bare
                 # "0" for exact zero, which is the common case here: a bar
                 # chart's axis floor IS zero, and "widened from 0 to -1.180"
                 # reads as a different KIND of number than the value beside it.
@@ -2542,21 +2578,18 @@ endproc
 # Decide, after a figure has been drawn once, whether its legend needs the
 # y-axis widened and by how much. Draws nothing; measures.
 #
-# THE DEFECT THIS CLOSES. eml-draw-procedures.praat has said since 5 August
-# that "any extra room a figure needs is a property of what is drawn on it,
-# not of the unit, and is supplied by @emlComputeAnnotationHeadroom at the
-# annotation stage". Only the significance bracket honoured it, and its one
-# call site was gated on `(graph_type = 6 or 7 or 9) and annotate = 1 and
-# annotBracketN > 0` — a gate that no legend-bearing type can pass, since the
-# six types that draw a legend are 5, 8, 10, 11, 12 and 13. A figure with a
-# legend and no brackets never computed headroom at all, and the legend
-# landed on the data: 13145 data pixels covered on a five-group line chart at
-# 6 x 4, measured on the PNG.
+# WHY THIS EXISTS. Any extra room a figure needs is a property of what is
+# drawn on it, not of the unit, and is supplied by
+# @emlComputeAnnotationHeadroom at the annotation stage. That procedure's
+# significance-bracket call site is gated on `(graph_type = 6 or 7 or 9) and
+# annotate = 1 and annotBracketN > 0`, which no legend-bearing type can pass:
+# the six types that draw a legend are 5, 8, 10, 11, 12 and 13. So the legend
+# needs its own measurement, or it lands on the data — on a five-group line
+# chart at 6 x 4 that is 13145 data pixels covered, measured on the PNG.
 #
-# @emlPlaceElements is not a substitute and never was. It scores the four
-# corners and takes the emptiest; on a figure whose data reaches all four
-# corners the emptiest corner still has data under it. Choosing is not the
-# same as making room.
+# @emlPlaceElements is not a substitute. It scores the four corners and takes
+# the emptiest; on a figure whose data reaches all four corners the emptiest
+# corner still has data under it. Choosing is not the same as making room.
 #
 # Arguments:
 #   .placement     — config_legendPlacement, canonical. Only 1 (Inside plot)
@@ -2570,7 +2603,7 @@ endproc
 #                    from the draw procedure. Not a re-derivation.
 #   .fontSize      — the size the legend is drawn at (annotSize), which is
 #                    also the size it must be MEASURED at. Measuring at
-#                    bodySize is D136's bug and costs a factor of seven.
+#                    bodySize costs a factor of seven.
 #   .axisKind      — 1 both bounds movable; 2 the histogram's frequency axis,
 #                    whose floor is a hard 0 inside the draw procedure.
 #
@@ -2725,23 +2758,13 @@ endproc
 # @emlGraphsDrawWithLegendRoom has just finished, in the coordinate system
 # that figure resolved for itself.
 #
-# AT FILE SCOPE, AND FOR A REASON THAT COST SOMETHING TO LEARN.
-# harness/disclosure/probe_formpath.praat called itself a reproduction of
-# "the form's sequence" around this block and transcribed it by hand. The
-# transcription passed emlDrawViolinPlot.axisYMin where the form passed
-# valueMin -- so it tested a CORRECTED copy of the block, and would have gone
-# on passing however wrong the shipped one became. It did: with an omnibus
-# line and no brackets the shipped block handed @emlDrawAnnotationBlock the
-# dialog's (0, 0) y-range and the statistics box was clipped off the figure
-# entirely. The probe that exists to catch that did not catch it; the defect
-# was found by reading the block while migrating something else. See §2b of
-# audit/GRAPHING_PUSH_REMAINING.md.
-#
-# The transcription was never necessary. eml-graphs-form.praat is a LIBRARY:
-# its top-level code is array initialisation only, there is no `form:` or
-# `beginPause:` at top level, and @emlGraphsWorkflow is never called from
-# within the file. So a probe can `include` it, get every procedure and no
-# dialog, and call this directly -- which is the whole point of the move.
+# AT FILE SCOPE, SO THAT A PROBE CAN DRIVE IT RATHER THAN TRANSCRIBE IT.
+# eml-graphs-form.praat is a LIBRARY: its top-level code is array
+# initialisation only, there is no `form:` or `beginPause:` at top level, and
+# @emlGraphsWorkflow is never called from within the file. So a probe can
+# `include` it, get every procedure and no dialog, and call this directly. A
+# hand-transcribed copy of this sequence is worth nothing: it tests the copy,
+# and passes however far the shipped block drifts from it.
 #
 # NO PARAMETERS, and reads and writes main-body scope, exactly as
 # @emlGraphsDrawWithLegendRoom does. That is not a compromise forced by
@@ -2767,27 +2790,24 @@ procedure emlGraphsPostDispatchAnnotations
         annotYMin = valueMin
         annotYMax = valueMax
         # TYPES 6, 7 AND 9 TAKE annotY* FROM THE FIGURE, NOT FROM THE DIALOG.
-        # They did not until 11 Aug 2026, and the consequence was that the
-        # statistics box VANISHED from the figure. The chain:
+        # Taking them from the dialog places the statistics box off the
+        # figure. The chain:
         #
         #   - valueMin/valueMax are the DIALOG's y-range, (0, 0) on auto.
         #   - The pre-dispatch resolver that turns them into the real extent
         #     is gated on `annotBracketN > 0`.
         #   - The legend-headroom pass, the other thing that refreshes them,
         #     runs for types 5, 8, 10, 11, 12, 13 — not 6, 7, 9.
-        #   - So with an omnibus line and NO brackets, both were still 0 when
-        #     @emlDrawAnnotationBlock was called, while the axis sat wherever
-        #     the data put it.
-        #
-        # The box was then placed at y = 0, outside the frame, and clipped
-        # away with no error and no note. Measured on f0-scale data: axis
-        # (192, 214), box handed (0, 0), "One-way ANOVA: F(3, 52) = 0.46,
-        # p = .709" absent from a figure the user had ticked Annotate on.
+        #   - So with an omnibus line and NO brackets, both are still 0 when
+        #     @emlDrawAnnotationBlock is called, while the axis sits wherever
+        #     the data puts it. On f0-scale data that is an axis of
+        #     (192, 214) and a box handed (0, 0): placed at y = 0, outside
+        #     the frame, and clipped away with no error and no note.
         #
         # NO BRACKETS IS NOT AN EDGE CASE. @emlBridgeGroupComparison sets
         # annotTextN = 1 for the omnibus on every path, and leaves
         # annotBracketN at 0 whenever no pair clears alpha — which includes
-        # every non-significant omnibus. Reproduced by
+        # every non-significant omnibus. Driven by
         # harness/disclosure/probe_annot_omnibus_only.praat.
         if graph_type = 6
             annotXMin = emlDrawBarChart.axisXMin
@@ -2879,17 +2899,17 @@ procedure emlGraphsWorkflow: .objectId
 
     # Enable explanations in the graphs/drawing path.
     #
-    # D102. This gate is global. Raising it here and walking away made every
-    # LATER analysis report in the same session verbose, so report content was
-    # order-dependent: the same test printed different text depending on
-    # whether a figure had been drawn first. The bottom of this procedure now
-    # calls @emlResetExplanations, which puts the gate back to the default
-    # declared in stats/eml-output.praat — deliberately the declared default
-    # and not a literal 0, so this file cannot drift from that declaration the
-    # way the original hardcoded pair did. Whatever the calling wrapper does
-    # after Draw returns, it sees the same gate it would have seen without the
-    # Draw. The "Quit" buttons inside the form call exitScript, which ends the
-    # script and its entire variable scope, so they need no reset of their own.
+    # THIS GATE IS GLOBAL, so raising it here and walking away would make
+    # every LATER analysis report in the same session verbose, and report
+    # content would depend on draw order: the same test printing different
+    # text depending on whether a figure had been drawn first. The bottom of
+    # this procedure calls @emlResetExplanations, which puts the gate back to
+    # the default declared in stats/eml-output.praat — the declared default
+    # and not a literal 0, so this file cannot drift from that declaration.
+    # Whatever the calling wrapper does after Draw returns, it sees the same
+    # gate it would have seen without the Draw. The "Quit" buttons inside the
+    # form call exitScript, which ends the script and its entire variable
+    # scope, so they need no reset of their own.
     emlShowExplanations = 1
 
     # =================================================================
@@ -2990,11 +3010,11 @@ prev_histAnnotStyle = 1
 # annotate-capable dialog). 1 = Bonferroni, 2 = Holm, 3 = Benjamini-Hochberg.
 prev_annotAdjustIdx = 2
 
-# D5 / RULING 1a. Was the Adjustment field actually put on the dialog that is
-# about to be read back? Set beside the field on all six annotate-capable
-# pages, read at all twelve commit sites. Declared here as well so that it is
-# defined before any page runs: Praat aborts on an unset variable, and a gate
-# that can abort is a worse control than the one it replaced.
+# Was the Adjustment field actually put on the dialog that is about to be read
+# back? Set beside the field on all six annotate-capable pages, read at all
+# twelve commit sites. Declared here as well so that it is defined before any
+# page runs: Praat aborts on an unset variable, and a gate that can abort is
+# worse than no gate at all.
 adjustOffered = 0
 
 # Violin jitter persistence
@@ -3004,36 +3024,31 @@ prev_violinShowJitter = 0
 # Range persistence (per graph type, retained across "Draw Another")
 lastDrawnGraphType = 0
 prev_title$ = ""
-# D43 / D89. The last title @emlComposeGraphTitle produced. prev_title$ holds
+# The last title @emlComposeGraphTitle produced. prev_title$ holds
 # what the Title field will show next time; prev_autoTitle$ records whether
 # that text was composed for the user or typed by them, which is the only way
 # to tell an accepted auto-title (recompose from the new mapping) from a
 # deliberate one (leave it alone).
 prev_autoTitle$ = ""
-# §6 (audit 14 Aug 2026). Which graph type prev_autoTitle$ was composed FOR.
+# Which graph type prev_autoTitle$ was composed FOR.
 # 0 = none composed yet. See the block after the main form.
 prev_autoTitleType = 0
-# D1/D2 SUBTITLE HALF, audit 14 Aug 2026. This used to be "". @emlSaveConfig
-# writes `subtitle:` on every exit and @emlLoadConfig parses it back into
-# config_subtitle$ -- which was then read into emlSubtitle$ before the main
-# form and IMMEDIATELY overwritten by the form's own blank field, because the
-# field is seeded from prev_subtitle$ and prev_subtitle$ started empty. So the
-# value survived to disk, survived the reload, and died two lines before it
-# could be shown: reopen the form and the Subtitle box is blank, press
-# Continue once and the saved value is gone (audit leg G8 step 8). Seeding
-# from the config is the whole fix, and it belongs HERE, in the sentinel block
-# that runs once per session -- not per workflow call, or a wrapper's second
-# Draw would resurrect a subtitle the user had just cleared.
+# SEEDED FROM THE CONFIG, NOT FROM "". @emlSaveConfig writes `subtitle:` on
+# every exit and @emlLoadConfig parses it back into config_subtitle$; the main
+# form's Subtitle field is seeded from prev_subtitle$, so unless prev_subtitle$
+# starts from the config the saved value is overwritten by a blank field two
+# lines before it could be shown, and one Continue erases it from disk. The
+# seed belongs HERE, in the sentinel block that runs once per session -- not
+# per workflow call, or a wrapper's second Draw would resurrect a subtitle the
+# user had just cleared.
 prev_subtitle$ = config_subtitle$
 
-# D1/D2. The per-type custom axis-label store; see @emlSeedAxisLabels. EVERY
-# TYPE IS INITIALISED, not left to the first write: Praat has no empty default
-# for an indexed variable, and a read of one that was never assigned is not ""
-# but "Undefined indexed variable «prevAxisXLabel$[7]». Formula not run." --
-# which is what the advanced leg of harness/graphseams met on 15 Aug 2026 when
-# this loop was left out. The seed procedure reads only in advanced mode, so
-# every beginner journey was clean and the omission surfaced on exactly one
-# page of one leg.
+# The per-type custom axis-label store; see @emlSeedAxisLabels. EVERY TYPE IS
+# INITIALISED, not left to the first write: Praat has no empty default for an
+# indexed variable, and a read of one that was never assigned is not "" but the
+# error "Undefined indexed variable «prevAxisXLabel$[7]». Formula not run."
+# The seed procedure reads only in advanced mode, so a missing entry would
+# surface on one page of one journey rather than everywhere at once.
 for iAxisLbl from 1 to nGraphTypes
     prevAxisXLabel$ [iAxisLbl] = ""
     prevAxisYLabel$ [iAxisLbl] = ""
@@ -3140,17 +3155,16 @@ scatterShowDots = 1
     # its literal contents, and what to do about it ("Replace the commas with
     # points to use these values").
     #
-    # THIS PATH NEVER CALLED IT. That is the asymmetry underneath §2d: the
-    # check-and-repair layer is not optional in general, it is MANDATORY ON
-    # ONE BRIDGE AND ABSENT FROM THE OTHER. A user who ran an ANOVA was told
-    # about their decimal commas; the same user drawing the same column got a
-    # figure with no mention of them.
+    # THE GRAPHS PATH RUNS IT TOO, for the same reason: the check is not
+    # optional on one bridge and absent from the other. A user who runs an
+    # ANOVA is told about their decimal commas, and the same user drawing the
+    # same column is told the same thing in the same words.
     #
-    # The strict reader (see @emlDrawColumnIsClean) stopped the graphs path
-    # silently coercing those cells. It did not make the graphs path SAY so,
-    # and a row that vanishes from a figure without explanation is only
-    # better than a wrong point on it, not good. This is the explanation, and
-    # it is the existing one rather than a second wording that could drift.
+    # The strict reader (see @emlDrawColumnIsClean) keeps the graphs path from
+    # silently coercing those cells; a row that vanishes from a figure without
+    # explanation is only better than a wrong point on it, not good. This is
+    # the explanation, and it is the existing one rather than a second wording
+    # that could drift.
     #
     # Only for a Table. The Pitch/Sound/Spectrum/Ltas types are not read cell
     # by cell and have no columns to audit.
@@ -3187,10 +3201,10 @@ scatterShowDots = 1
         endif
     endif
 
-    # D103. Every preset that lands in a scatter dialog default also raises its
-    # sentinel. Without it the scatter page overwrote these three lines from
-    # prev_* further down and the wrapper's request was lost on every call
-    # after the first.
+    # Every preset that lands in a scatter dialog default also raises its
+    # sentinel. Without it the scatter page would overwrite these three lines
+    # from prev_* further down, and the wrapper's request would be lost on
+    # every call after the first.
     if emlGraphsPresetAnalysisType > 0
         scatterAnalysisType = emlGraphsPresetAnalysisType
         annotate = 1
@@ -3209,8 +3223,6 @@ scatterShowDots = 1
         emlGraphsPresetRegressionLine = 0
     endif
 
-    # D4. The dot-size and show-dots reads stood here. See the note at file
-    # scope: no caller ever wrote either global, so neither branch ever ran.
 
     if emlGraphsPresetCorrType$ <> ""
         annotCorrType$ = emlGraphsPresetCorrType$
@@ -3221,44 +3233,34 @@ scatterShowDots = 1
     # Also seeds the dialog default so the Advanced form shows the method
     # the calling test actually used.
     #
-    # D108. annotCorrectionMethod$ is the ONLY channel this value has:
+    # annotCorrectionMethod$ is the ONLY channel this value has:
     # @emlBridgeGroupComparison does not take it as an argument, it reads the
     # global — the `.correction$ = "holm"` resolution block inside
-    # @emlBridgeGroupComparison, eml-annotation-procedures.praat, currently
-    # :1821-1837. (C5. This used to say `:1808`, which is
-    # `.nGroups = emlCountGroups.nGroups`. Search for the assignment, not the
-    # number: this reference has already drifted once.) So the job here is to make
-    # sure the global is well defined by the time the bridge runs, on BOTH test
-    # paths — the bridge resolves .correction$ before it branches on test type,
-    # so a parametric run has the wrapper's method in hand exactly as a
-    # nonparametric one does.
+    # @emlBridgeGroupComparison, eml-annotation-procedures.praat. (Search for
+    # the assignment, not for a line number: a line number in a comment
+    # drifts.) So the job here is to make sure the global is well defined by
+    # the time the bridge runs, on BOTH test paths — the bridge resolves
+    # .correction$ before it branches on test type, so a parametric run has
+    # the wrapper's method in hand exactly as a nonparametric one does.
     #
-    # Two things used to make that only accidentally true:
+    # Two things keep that from being accidental:
     #
-    #   * the string and the dialog index were derived separately, so an
-    #     unrecognised preset set annotCorrectionMethod$ to the unrecognised
-    #     string but prev_annotAdjustIdx to Holm. In Advanced mode the form
-    #     then committed Holm over it silently; in Beginner mode the bad string
-    #     survived to the bridge, which warned and fell back. Same preset, two
-    #     behaviours, neither announced at the point the caller made the
-    #     mistake. Both now come from one validated index via
-    #     @emlAdjustMethodName, which is the same lookup the six column-mapping
-    #     pages commit through — they cannot disagree any more.
-    #   * an unrecognised value was never reported to the caller. It is now,
-    #     here, where the preset was set, rather than later from inside the
-    #     annotation layer.
+    #   * the string and the dialog index both come from one validated index
+    #     via @emlAdjustMethodName, which is the same lookup the six
+    #     column-mapping pages commit through, so they cannot disagree. Derived
+    #     separately, an unrecognised preset would set annotCorrectionMethod$
+    #     to the unrecognised string and prev_annotAdjustIdx to Holm — and the
+    #     same preset would then behave one way in Advanced mode and another in
+    #     Beginner mode.
+    #   * an unrecognised value is reported here, where the preset was set,
+    #     rather than later from inside the annotation layer.
     #
-    # What is NOT fixed here, because it is not in this file: on the parametric
-    # k >= 3 path the consuming side still ignores the value. The Tukey branch
-    # of @emlBridgeGroupComparison — the branch opening
-    # `# --- One-way ANOVA + Tukey HSD ---`, eml-annotation-procedures.praat,
-    # currently :2183 — never reads .correction$; only the Dunn branch does.
-    # (C4. This used to say `:2151+`, which is inside the DUNN branch — the
-    # one line the sentence says DOES read .correction$. The claim was right
-    # and the pointer landed on its counterexample.) Delivering the
-    # method is this file's half of D108; using it, or saying in the figure
-    # that Tukey carries its own correction instead, is a change to
-    # eml-annotation-procedures.praat, which this pass does not own.
+    # WHAT THIS DOES NOT DECIDE: on the parametric k >= 3 path the consuming
+    # side ignores the value. The Tukey branch of @emlBridgeGroupComparison —
+    # the branch opening `# --- One-way ANOVA + Tukey HSD ---` in
+    # eml-annotation-procedures.praat — does not read .correction$; only the
+    # Dunn branch does, because Tukey's p is already family-wise. Delivering
+    # the method is this file's half of the contract.
     if emlGraphsPresetCorrection$ <> ""
         .presetAdjustIdx = 0
         if emlGraphsPresetCorrection$ = "bonferroni"
@@ -3312,26 +3314,21 @@ repeat
     # Re-detect context and rebuild filtered menu on each pass
     # (handles Go Back after user changes selection in Objects window)
     #
-    # NOT ON THE FIRST PASS, AND THAT GUARD IS THE FIX FOR A DEFECT THE USER
-    # MEETS EVERY TIME THEY DRAW FROM AN ANALYSIS.
+    # NOT ON THE FIRST PASS.
     #
     # @emlGraphsWorkflow takes .objectId, and its entry sequence selects it
     # and detects context from it — which is how a wrapper hands the Table it
-    # just analysed over to the graphs form. This line then ran, read the
-    # CURRENT Objects-window selection, and threw that away, because by the
-    # time an analysis has finished the selection is no longer the source
-    # Table. So every wrapper's Draw branch opened the graphs form and then
-    # asked "No Table selected" — on the one path in the plugin that already
-    # knows exactly which Table the user means.
+    # just analysed over to the graphs form. Re-detecting on the first pass
+    # would read the CURRENT Objects-window selection and throw that away,
+    # because by the time an analysis has finished the selection is no longer
+    # the source Table: every wrapper's Draw branch would open the graphs form
+    # and then ask "No Table selected", on the one path in the plugin that
+    # already knows exactly which Table the user means.
     #
-    # Measured 11 Aug 2026 by driving Compare two groups -> Run -> Draw under
-    # Xvfb. It reproduces with and without a CSV export in between, so it is
-    # the re-detect and not something the exporter leaves behind.
-    #
-    # The stated purpose is Go Back, and on the FIRST pass there has been no
-    # Go Back to handle: re-detecting can only lose information the caller
-    # supplied deliberately. From the second pass on it does exactly what its
-    # comment says.
+    # The purpose of the re-detect is Go Back, and on the FIRST pass there has
+    # been no Go Back to handle: re-detecting there can only lose information
+    # the caller supplied deliberately. From the second pass on it does exactly
+    # what its comment says.
     if formPassN > 0
         @emlDetectContext
     endif
@@ -3422,18 +3419,18 @@ repeat
 
     # Capture form values
     graphTypeDefault = graph_type
-    # §6, audit 14 Aug 2026 — THE PRE-FILLED TITLE BELONGS TO A GRAPH TYPE.
+    # THE PRE-FILLED TITLE BELONGS TO A GRAPH TYPE.
     #
     # After a Draw, prev_title$ holds the composed title so that Redraw shows
-    # it as editable text rather than an empty box (D43/D89). It is offered
-    # again on the SAME dialog that chooses the graph type, so a user who
-    # pressed Redraw and switched from Bar to Violin was reading "F0 (Hz) by
-    # group (demo 2groups)" in the Title field with Violin selected. The
-    # DRAWN title was never wrong -- the composer runs again before dispatch
-    # and `title$ = prev_autoTitle$` recognises an untouched auto-title and
-    # recomposes it -- but the field said otherwise for the whole of the
-    # column-mapping stage, and one keystroke in that box would have made the
-    # stale text deliberate and permanent.
+    # it as editable text rather than an empty box. It is offered again on the
+    # SAME dialog that chooses the graph type, so without this a user who
+    # pressed Redraw and switched from Bar to Violin would read "F0 (Hz) by
+    # group (demo 2groups)" in the Title field with Violin selected. The DRAWN
+    # title would still be right -- the composer runs again before dispatch and
+    # `title$ = prev_autoTitle$` recognises an untouched auto-title and
+    # recomposes it -- but the field would say otherwise for the whole of the
+    # column-mapping stage, and one keystroke in that box would make the stale
+    # text deliberate and permanent.
     #
     # So an auto-title is dropped the moment it stops describing the type it
     # was composed for. A title the USER typed is not touched: it fails the
@@ -3501,20 +3498,20 @@ repeat
         else
             # Nothing of the right type selected
             # U6: Try auto-creating from Sound if possible
-            ; ALL FIVE CONVERSIONS THROUGH ONE PROCEDURE (12 Aug 2026).
+            ; ALL FIVE CONVERSIONS THROUGH ONE PROCEDURE.
             ;
-            ; Each of these used to be written out here, inside a beginPause:
-            ; loop, so the only way to reach one was a driven dialog on a real
-            ; display -- and none was ever driven. The recorder was wrong on
-            ; every one of them: the capture hook sits inside the DRAW
-            ; procedure, which is handed the INTERMEDIATE, so a recorded
-            ; acoustic figure named an object this code removes three lines
-            ; later. See @emlConvertForGraph.
+            ; Written out here instead, they would sit inside a beginPause:
+            ; loop, reachable only by a driven dialog on a real display. They
+            ; also have to agree with the recorder, whose capture hook sits
+            ; inside the DRAW procedure and is handed the INTERMEDIATE: a
+            ; recorded acoustic figure must not name an object this code
+            ; removes three lines later. See @emlConvertForGraph.
             ;
-            ; .temporary carries what used to be carried by whether the branch
-            ; happened to assign loadedObjectId: the acoustic conversions
-            ; produce something to remove after drawing, the Matrix and
-            ; TableOfReal ones produce a Table the session keeps working with.
+            ; .temporary says which kind of conversion this was, rather than
+            ; leaving it to whether the branch happened to assign
+            ; loadedObjectId: the acoustic conversions produce something to
+            ; remove after drawing, the Matrix and TableOfReal ones produce a
+            ; Table the session keeps working with.
             convertSourceId = 0
             if numberOfSelected ("Sound") = 1
                 convertSourceId = selected ("Sound")
@@ -3576,31 +3573,25 @@ repeat
     until acquireDone = 1
 
     # =================================================================
-    # STEREO CHANNEL CHOICE — the author's ruling of 14 Aug 2026
+    # STEREO CHANNEL CHOICE
     # =================================================================
-    # "Stereo channel handling: ABSOLUTELY NECESSARY -- wire it. The
-    # Mix-to-mono / Left / Right choice must be reachable when an audio
-    # object is stereo."
-    #
-    # @emlHandleStereo, @emlCheckChannels and @emlApplyChannelChoice have
-    # existed in graphs/eml-graph-procedures.praat since v3.18 with ZERO
-    # callers anywhere in the plugin, so a stereo recording -- which in a
-    # lab that records EGG alongside the microphone is most of them --
-    # reached a figure with no question asked. This is the call site that
-    # makes the choice reachable for a figure drawn from the Sound ITSELF:
-    # the waveform, where Praat stacks the two channels in half-height
-    # panels underneath a single amplitude axis that then describes neither
-    # of them.
+    # The Mix-to-mono / Left / Right choice is reachable whenever an audio
+    # object is stereo. @emlHandleStereo, @emlCheckChannels and
+    # @emlApplyChannelChoice live in graphs/eml-graph-procedures.praat; this
+    # is the call site for a figure drawn from the Sound ITSELF -- the
+    # waveform, where Praat stacks the two channels in half-height panels
+    # underneath a single amplitude axis that then describes neither of them.
+    # In a lab that records EGG alongside the microphone, most recordings are
+    # stereo.
     #
     # THE DERIVED PATHS ARE GATED ELSEWHERE, and deliberately so. Pitch,
     # Spectrum and LTAS are converted inside the acquire block above, before
     # this line is reached, so a gate here would be asking after the answer
     # had already been used. @emlConvertForGraph calls the same gate
-    # immediately before its own To Pitch / To Spectrum / To Ltas -- which
-    # is the ruling's "e.g. before To Pitch" -- and by the time control
-    # arrives here objectId is a Pitch or a Spectrum, which this gate passes
-    # through untouched. One question per figure, asked at the last moment
-    # it can still change the answer.
+    # immediately before its own To Pitch / To Spectrum / To Ltas, and by
+    # the time control arrives here objectId is a Pitch or a Spectrum, which
+    # this gate passes through untouched. One question per figure, asked at
+    # the last moment it can still change the answer.
     #
     # It passes mono Sounds through in silence, so nothing changes for a
     # single-channel recording, and it keeps the user's original object.
@@ -3659,10 +3650,8 @@ repeat
     gbCatCol$ = ""
     gbSubCol$ = ""
     gbValueCol$ = ""
-    ; D3b: ciTimeCol$ / ciValueCol$ / ciGroupCol$ went with the old type 13.
-    ; They were only ever cleared here and read by that type's dispatch, never
-    ; written, so the CI draw call they fed was passing three empty strings.
-    ; Type 5's toggle uses timeColName$ / valueColName$ / groupColName$.
+    ; The CI draw takes timeColName$ / valueColName$ / groupColName$ from
+    ; type 5's toggle; there is no separate CI column set.
     spCondCol$ = ""
     spValueCol$ = ""
     spSubjectCol$ = ""
@@ -3674,15 +3663,12 @@ repeat
     # of which graph type is selected. Per-type sections may override
     # graph-specific tmp vars but inherit these shared ones.
     #
-    # C1. "Valid defaults regardless of which graph type is selected" was the
-    # claim, and for tmpGridMode it was false: a plain copy of
-    # config_gridlineMode put a four-option index into a two-option menu,
-    # which Praat draws blank and then refuses. Bar, violin and box carried a
-    # hand-copied clamp; histogram, grouped violin, grouped box and spaghetti
-    # did not, so those four could be opened into a dialog with no way out.
-    # @emlSeedGridMode makes the claim true for every registered type at once,
-    # and the three clamps that used to sit in the per-type blocks are gone —
-    # per-type sections do not have to know, which is what this comment says.
+    # tmpGridMode is seeded through @emlSeedGridMode rather than copied from
+    # config_gridlineMode, because a plain copy puts a four-option index into
+    # a two-option menu, which Praat draws blank and then refuses — a dialog
+    # with no way out. The seed procedure makes "valid defaults regardless of
+    # which graph type is selected" true for every registered type at once,
+    # so no per-type section carries a clamp of its own.
     @emlSeedGridMode
     @emlSeedLegendPlacement
     tmpShowInnerBox = config_showInnerBox
@@ -3802,7 +3788,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    # D1/D2. Record what the advanced page returned before the beginner
+                    # Record what the advanced page returned before the beginner
                     # reset below blanks it, so re-entering advanced -- on this type or
                     # after a detour through another one -- gets it back.
                     @emlCommitAxisLabels: x_axis_label$, y_axis_label$
@@ -3997,7 +3983,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    # D1/D2. Record what the advanced page returned before the beginner
+                    # Record what the advanced page returned before the beginner
                     # reset below blanks it, so re-entering advanced -- on this type or
                     # after a detour through another one -- gets it back.
                     @emlCommitAxisLabels: x_axis_label$, y_axis_label$
@@ -4151,7 +4137,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    # D1/D2. Record what the advanced page returned before the beginner
+                    # Record what the advanced page returned before the beginner
                     # reset below blanks it, so re-entering advanced -- on this type or
                     # after a detour through another one -- gets it back.
                     @emlCommitAxisLabels: x_axis_label$, y_axis_label$
@@ -4318,7 +4304,7 @@ repeat
                     tmpDPI = output_DPI
                     tmpXLabel$ = x_axis_label$
                     tmpYLabel$ = y_axis_label$
-                    # D1/D2. Record what the advanced page returned before the beginner
+                    # Record what the advanced page returned before the beginner
                     # reset below blanks it, so re-entering advanced -- on this type or
                     # after a detour through another one -- gets it back.
                     @emlCommitAxisLabels: x_axis_label$, y_axis_label$
@@ -4410,10 +4396,10 @@ repeat
         # Time Series — Page 2 (format selection + column mapping)
         # =============================================================
         #
-        # D3b. This page absorbed the old type 13, "Time Series (with CI)",
-        # whose registry row has now gone. The only trace a user could follow
-        # to it is the toggle below, so the toggle's label carries the retired
-        # type's name: "Show confidence interval (Time Series with CI)".
+        # This page covers the time series with a confidence interval as
+        # well, so the toggle's label names it: "Show confidence interval
+        # (Time Series with CI)" — a user looking for that figure by name
+        # finds it on the toggle.
         # Praat drops a TRAILING parenthesised part when it derives the form
         # variable name (same trick as "Adjustment method (nonparametric
         # post-hoc only)" further down), so the value still arrives as
@@ -4452,11 +4438,9 @@ repeat
         else
             # Pass 1: keyword matching
             # Column-role defaults come from @emlGuessColumnRoles, the same
-            # weighted guesser the wizard and every stats wrapper already use.
-            # This site used to carry its own three-keyword copy of it; see the
-            # note at the top of this file. Only non-zero guesses overwrite the
-            # positional defaults set above, so an undetected role still falls
-            # back exactly as before.
+            # weighted guesser the wizard and every stats wrapper use. Only
+            # non-zero guesses overwrite the positional defaults set above, so
+            # an undetected role falls back to its positional default.
             @emlGuessColumnRoles: objectId
             if emlGuessColumnRoles.timeIdx > 0
                 tsTimeIdx = emlGuessColumnRoles.timeIdx
@@ -4531,15 +4515,14 @@ repeat
         repeat
             # --- Format selection ---
             beginPause: "Line Chart -- Data Format"
-                # §6, audit 14 Aug 2026: "Line Chart's data-format explainer is
-                # overlapped by its own optionmenu". Four comment rows, one of
-                # them empty and two of them long enough to be the widest thing
-                # in the dialog, sat immediately above the menu they describe.
-                # Praat sizes a pause dialog from its field list and a `comment:`
-                # is not measured the way a labelled field is, so the widest
-                # comment decides the WIDTH and the menu below it is laid out
-                # against a row pitch that the long labels overrun. Two short
-                # rows, no blank spacer, and the same two facts.
+                # TWO SHORT COMMENT ROWS, NO BLANK SPACER. Praat sizes a
+                # pause dialog from its field list, and a `comment:` is not
+                # measured the way a labelled field is: the widest comment
+                # decides the dialog WIDTH, and a menu laid out below long
+                # comment rows is drawn against a row pitch those rows
+                # overrun, so the explainer and its own optionmenu overlap.
+                # These two rows carry the same two facts in a width the
+                # layout survives.
                 comment: "How is your data organized?"
                 comment: "Wide: one column per series · Long: value + group"
                 optionmenu: "Data format", tsDataFormat
@@ -4698,7 +4681,7 @@ repeat
                             tmpDPI = output_DPI
                             tmpXLabel$ = x_axis_label$
                             tmpYLabel$ = y_axis_label$
-                            # D1/D2. Record what the advanced page returned before the beginner
+                            # Record what the advanced page returned before the beginner
                             # reset below blanks it, so re-entering advanced -- on this type or
                             # after a detour through another one -- gets it back.
                             @emlCommitAxisLabels: x_axis_label$, y_axis_label$
@@ -4920,11 +4903,9 @@ repeat
         else
             # Pass 1: keyword matching
             # Column-role defaults come from @emlGuessColumnRoles, the same
-            # weighted guesser the wizard and every stats wrapper already use.
-            # This site used to carry its own three-keyword copy of it; see the
-            # note at the top of this file. Only non-zero guesses overwrite the
-            # positional defaults set above, so an undetected role still falls
-            # back exactly as before.
+            # weighted guesser the wizard and every stats wrapper use. Only
+            # non-zero guesses overwrite the positional defaults set above, so
+            # an undetected role falls back to its positional default.
             @emlGuessColumnRoles: objectId
             if emlGuessColumnRoles.groupIdx > 0
                 barGroupIdx = emlGuessColumnRoles.groupIdx
@@ -5007,7 +4988,7 @@ repeat
                     option: "Alphabetical"
                 if config_showAdvanced
                     boolean: "Annotate results on graph", annotate
-                    # D5 / RULING 1a. The gate is set here, beside the
+                    # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
                     # See ADJUSTMENT-METHOD LOOKUP for why it is a
                     # variable and not a re-test of tmpBarTestType.
@@ -5069,29 +5050,25 @@ repeat
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 elsif emlGraphsPresetAnnotate > 0
-                    # D7, audit 14 Aug 2026 — THE ONE CONTROL A WRAPPER'S
-                    # REQUEST NEEDS, ON THE PAGE THE REQUEST ARRIVES AT.
+                    # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
+                    # THE REQUEST ARRIVES AT.
                     #
                     # A stats wrapper that found something sets
                     # emlGraphsPresetAnnotate = 1 and hands the user to this
-                    # form. The beginner commit below then set annotate = 0 --
-                    # correctly, by the author's ruling of 13 Aug 2026:
-                    # BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG OFFERS. The
-                    # consequence was that the DEFAULT journey -- run a test,
-                    # press Draw, press Draw again -- drew a significant result
-                    # with nothing on it, and the request came back only if the
-                    # user happened to toggle to Advanced (the restore arm in
-                    # the toggle handler, which validate/v51 pins).
+                    # form. The beginner commit below then sets annotate = 0,
+                    # because BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG
+                    # OFFERS. For the request to survive the DEFAULT journey --
+                    # run a test, press Draw, press Draw again -- the beginner
+                    # dialog therefore has to OFFER it, rather than the setting
+                    # coming back only when the user toggles to Advanced (the
+                    # restore arm in the toggle handler, which validate/v51
+                    # pins).
                     #
-                    # Neither half of that was wrong. What was missing is the
-                    # third option: if the setting is to survive a beginner
-                    # draw, the beginner dialog has to OFFER it. So it does --
-                    # only on the pass where a caller actually asked, pre-ticked
-                    # because asking is what the wrapper did, and untickable,
-                    # which is the part a hidden carried-over flag could never
-                    # have been. The ruling stands unedited: this page now
-                    # offers annotation, so drawing it is drawing what the
-                    # dialog offers.
+                    # So it does -- only on the pass where a caller actually
+                    # asked, pre-ticked because asking is what the wrapper did,
+                    # and untickable, which is the part a hidden carried-over
+                    # flag cannot be. The page offers annotation, so drawing it
+                    # is drawing what the dialog offers.
                     comment: "📈 Your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
@@ -5133,8 +5110,8 @@ repeat
                     prev_adv_bar_YLabel$ = y_axis_label$
                     # Reset to beginner defaults
                     annotate = 0
-                    # D7. The wrapper's request, honoured on the page that
-                    # now offers it. `annotate_results_on_graph` exists here for
+                    # The wrapper's request, honoured on the page that
+                    # offers it. `annotate_results_on_graph` exists here for
                     # exactly the reason the field above exists -- the same
                     # condition put it on the dialog -- and it carries the
                     # user's tick, which may well be a DE-tick.
@@ -5155,7 +5132,7 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
-                    # D1/D2. Record what the advanced page returned before the
+                    # Record what the advanced page returned before the
                     # beginner reset blanks it, so re-entering advanced -- on this
                     # type or after a detour through another one -- gets it back.
                     @emlCommitAxisLabels: x_axis_label$, y_axis_label$
@@ -5183,24 +5160,22 @@ repeat
                         tmpXLabel$ = prev_adv_bar_XLabel$
                         tmpYLabel$ = prev_adv_bar_YLabel$
                 elsif emlGraphsPresetAnnotate > 0
-                    # A WRAPPER PRESET NEVER PASSED THROUGH THE ADVANCED
-                    # DIALOG, so there is no prev_adv_ state to restore -- and
-                    # before 13 Aug 2026 that meant the request was simply
-                    # lost. The beginner Draw commit sets annotate = 0 (which
-                    # is correct: beginner mode draws only what its own dialog
+                    # A WRAPPER PRESET NEVER PASSES THROUGH THE ADVANCED
+                    # DIALOG, so there is no prev_adv_ state to restore. The
+                    # beginner Draw commit sets annotate = 0 (which is
+                    # correct: beginner mode draws only what its own dialog
                     # offers), the preset is consumed once BEFORE the outer
-                    # repeat so Redraw does not re-apply it, and nothing ever
-                    # wrote it to the stash. A user who asked a wrapper to
-                    # annotate, drew in beginner mode, pressed Redraw and then
-                    # switched to Advanced found the box unticked with nothing
-                    # to say it had ever been set.
+                    # repeat so Redraw does not re-apply it, and nothing
+                    # writes it to the stash -- so without the fallback below
+                    # a user who asked a wrapper to annotate, drew in beginner
+                    # mode, pressed Redraw and then switched to Advanced would
+                    # find the box unticked with nothing to say it had been set.
                     #
-                    # RULING, 13 Aug 2026: if it was ever ticked in advanced
-                    # mode in a single session -- and a preset is the wrapper
-                    # ticking it -- it must be ticked again on the way back.
-                    # Same shape as v1.6's Item 22, which preserved
-                    # annotTestType$ and annotStyle$ across a beginner Draw and
-                    # left `annotate` itself still being zeroed.
+                    # THE RULE: if it was ticked in advanced mode in a single
+                    # session -- and a preset is the wrapper ticking it -- it
+                    # is ticked again on the way back. Same shape as v1.6's
+                    # Item 22, which preserves annotTestType$ and annotStyle$
+                    # across a beginner Draw.
                     annotate = 1
                     if annotTestType$ = "nonparametric"
                         tmpBarTestType = 2
@@ -5261,8 +5236,8 @@ repeat
                 else
                     # Beginner defaults: reset all advanced-only fields
                     annotate = 0
-                    # D7. The wrapper's request, honoured on the page that
-                    # now offers it. `annotate_results_on_graph` exists here for
+                    # The wrapper's request, honoured on the page that
+                    # offers it. `annotate_results_on_graph` exists here for
                     # exactly the reason the field above exists -- the same
                     # condition put it on the dialog -- and it carries the
                     # user's tick, which may well be a DE-tick.
@@ -5365,11 +5340,9 @@ repeat
         else
             # Pass 1: keyword matching
             # Column-role defaults come from @emlGuessColumnRoles, the same
-            # weighted guesser the wizard and every stats wrapper already use.
-            # This site used to carry its own three-keyword copy of it; see the
-            # note at the top of this file. Only non-zero guesses overwrite the
-            # positional defaults set above, so an undetected role still falls
-            # back exactly as before.
+            # weighted guesser the wizard and every stats wrapper use. Only
+            # non-zero guesses overwrite the positional defaults set above, so
+            # an undetected role falls back to its positional default.
             @emlGuessColumnRoles: objectId
             if emlGuessColumnRoles.groupIdx > 0
                 violinGroupIdx = emlGuessColumnRoles.groupIdx
@@ -5439,7 +5412,7 @@ repeat
                     option: "Alphabetical"
                 if config_showAdvanced
                     boolean: "Annotate results on graph", annotate
-                    # D5 / RULING 1a. The gate is set here, beside the
+                    # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
                     # See ADJUSTMENT-METHOD LOOKUP for why it is a
                     # variable and not a re-test of tmpViolinTestType.
@@ -5502,29 +5475,25 @@ repeat
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 elsif emlGraphsPresetAnnotate > 0
-                    # D7, audit 14 Aug 2026 — THE ONE CONTROL A WRAPPER'S
-                    # REQUEST NEEDS, ON THE PAGE THE REQUEST ARRIVES AT.
+                    # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
+                    # THE REQUEST ARRIVES AT.
                     #
                     # A stats wrapper that found something sets
                     # emlGraphsPresetAnnotate = 1 and hands the user to this
-                    # form. The beginner commit below then set annotate = 0 --
-                    # correctly, by the author's ruling of 13 Aug 2026:
-                    # BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG OFFERS. The
-                    # consequence was that the DEFAULT journey -- run a test,
-                    # press Draw, press Draw again -- drew a significant result
-                    # with nothing on it, and the request came back only if the
-                    # user happened to toggle to Advanced (the restore arm in
-                    # the toggle handler, which validate/v51 pins).
+                    # form. The beginner commit below then sets annotate = 0,
+                    # because BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG
+                    # OFFERS. For the request to survive the DEFAULT journey --
+                    # run a test, press Draw, press Draw again -- the beginner
+                    # dialog therefore has to OFFER it, rather than the setting
+                    # coming back only when the user toggles to Advanced (the
+                    # restore arm in the toggle handler, which validate/v51
+                    # pins).
                     #
-                    # Neither half of that was wrong. What was missing is the
-                    # third option: if the setting is to survive a beginner
-                    # draw, the beginner dialog has to OFFER it. So it does --
-                    # only on the pass where a caller actually asked, pre-ticked
-                    # because asking is what the wrapper did, and untickable,
-                    # which is the part a hidden carried-over flag could never
-                    # have been. The ruling stands unedited: this page now
-                    # offers annotation, so drawing it is drawing what the
-                    # dialog offers.
+                    # So it does -- only on the pass where a caller actually
+                    # asked, pre-ticked because asking is what the wrapper did,
+                    # and untickable, which is the part a hidden carried-over
+                    # flag cannot be. The page offers annotation, so drawing it
+                    # is drawing what the dialog offers.
                     comment: "📈 Your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
@@ -5566,8 +5535,8 @@ repeat
                     prev_adv_vio_YLabel$ = y_axis_label$
                     # Reset to beginner defaults
                     annotate = 0
-                    # D7. The wrapper's request, honoured on the page that
-                    # now offers it. `annotate_results_on_graph` exists here for
+                    # The wrapper's request, honoured on the page that
+                    # offers it. `annotate_results_on_graph` exists here for
                     # exactly the reason the field above exists -- the same
                     # condition put it on the dialog -- and it carries the
                     # user's tick, which may well be a DE-tick.
@@ -5589,7 +5558,7 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
-                    # D1/D2. Record what the advanced page returned before the
+                    # Record what the advanced page returned before the
                     # beginner reset blanks it, so re-entering advanced -- on this
                     # type or after a detour through another one -- gets it back.
                     @emlCommitAxisLabels: x_axis_label$, y_axis_label$
@@ -5618,24 +5587,22 @@ repeat
                         tmpXLabel$ = prev_adv_vio_XLabel$
                         tmpYLabel$ = prev_adv_vio_YLabel$
                 elsif emlGraphsPresetAnnotate > 0
-                    # A WRAPPER PRESET NEVER PASSED THROUGH THE ADVANCED
-                    # DIALOG, so there is no prev_adv_ state to restore -- and
-                    # before 13 Aug 2026 that meant the request was simply
-                    # lost. The beginner Draw commit sets annotate = 0 (which
-                    # is correct: beginner mode draws only what its own dialog
+                    # A WRAPPER PRESET NEVER PASSES THROUGH THE ADVANCED
+                    # DIALOG, so there is no prev_adv_ state to restore. The
+                    # beginner Draw commit sets annotate = 0 (which is
+                    # correct: beginner mode draws only what its own dialog
                     # offers), the preset is consumed once BEFORE the outer
-                    # repeat so Redraw does not re-apply it, and nothing ever
-                    # wrote it to the stash. A user who asked a wrapper to
-                    # annotate, drew in beginner mode, pressed Redraw and then
-                    # switched to Advanced found the box unticked with nothing
-                    # to say it had ever been set.
+                    # repeat so Redraw does not re-apply it, and nothing
+                    # writes it to the stash -- so without the fallback below
+                    # a user who asked a wrapper to annotate, drew in beginner
+                    # mode, pressed Redraw and then switched to Advanced would
+                    # find the box unticked with nothing to say it had been set.
                     #
-                    # RULING, 13 Aug 2026: if it was ever ticked in advanced
-                    # mode in a single session -- and a preset is the wrapper
-                    # ticking it -- it must be ticked again on the way back.
-                    # Same shape as v1.6's Item 22, which preserved
-                    # annotTestType$ and annotStyle$ across a beginner Draw and
-                    # left `annotate` itself still being zeroed.
+                    # THE RULE: if it was ticked in advanced mode in a single
+                    # session -- and a preset is the wrapper ticking it -- it
+                    # is ticked again on the way back. Same shape as v1.6's
+                    # Item 22, which preserves annotTestType$ and annotStyle$
+                    # across a beginner Draw.
                     annotate = 1
                     if annotTestType$ = "nonparametric"
                         tmpViolinTestType = 2
@@ -5697,8 +5664,8 @@ repeat
                 else
                     # Beginner defaults: reset all advanced-only fields
                     annotate = 0
-                    # D7. The wrapper's request, honoured on the page that
-                    # now offers it. `annotate_results_on_graph` exists here for
+                    # The wrapper's request, honoured on the page that
+                    # offers it. `annotate_results_on_graph` exists here for
                     # exactly the reason the field above exists -- the same
                     # condition put it on the dialog -- and it carries the
                     # user's tick, which may well be a DE-tick.
@@ -5788,11 +5755,9 @@ repeat
         else
             # Pass 1: keyword matching
             # Column-role defaults come from @emlGuessColumnRoles, the same
-            # weighted guesser the wizard and every stats wrapper already use.
-            # This site used to carry its own three-keyword copy of it; see the
-            # note at the top of this file. Only non-zero guesses overwrite the
-            # positional defaults set above, so an undetected role still falls
-            # back exactly as before.
+            # weighted guesser the wizard and every stats wrapper use. Only
+            # non-zero guesses overwrite the positional defaults set above, so
+            # an undetected role falls back to its positional default.
             @emlGuessColumnRoles: objectId
             if emlGuessColumnRoles.dataIdx > 0
                 scatterXIdx = emlGuessColumnRoles.dataIdx
@@ -5870,13 +5835,13 @@ repeat
 
         # Regression defaults (1=None, 2=Line, 3=Formula, 4=Both)
         #
-        # D103. Preset first, remembered value second. The restore below used
-        # to run unconditionally and therefore ran AFTER the preset bridge had
-        # already set scatterRegressionLine / scatterShowFormula, so the second
-        # and every later scatter of a session threw the calling wrapper's
-        # preset away and re-used the last dialog's choice instead. The
-        # sentinel is consumed here, so a Redraw goes back to the remembered
-        # value — which is what the user last chose in this very dialog.
+        # Preset first, remembered value second. The restore below runs AFTER
+        # the preset bridge has set scatterRegressionLine / scatterShowFormula,
+        # so running it unconditionally would throw the calling wrapper's
+        # preset away on the second and every later scatter of a session and
+        # re-use the last dialog's choice instead. The sentinel is consumed
+        # here, so a Redraw goes back to the remembered value — which is what
+        # the user last chose in this very dialog.
         if scatterPresetHasRegression
             scatterPresetHasRegression = 0
         else
@@ -5897,10 +5862,8 @@ repeat
             tmpRegression = 1
         endif
 
-        # Scatter-specific controls. These two used to carry a D103
-        # preset-beats-remembered arm each; the preset half was deleted with
-        # the channel (D4, see file scope), and what is left is what always
-        # ran — the value the user last chose in this dialog.
+        # Scatter-specific controls: the value the user last chose in this
+        # dialog.
         if prev_scatterDotSize > 0
             scatterDotSize = prev_scatterDotSize
         endif
@@ -5937,16 +5900,15 @@ repeat
                     for iCol from 1 to nCols
                         option: colName$[iCol]
                     endfor
-                # D11, audit 14 Aug 2026 — A FIELD THAT CANNOT BE
-                # DISCARDED, BECAUSE IT IS NOT THERE TO DISCARD.
+                # A FIELD THAT CANNOT BE DISCARDED, BECAUSE IT IS NOT THERE
+                # TO DISCARD.
                 #
-                # "Group column" and "Group order" used to sit active and
-                # editable while "Use group column" was clear, and the commit
-                # then threw the chosen column away without a word: driven on
-                # demo_2groups with the box clear and "group" selected, the
-                # figure came back overall-only, N = 40, one r (audit leg G9g).
-                # A control the user can set, that does nothing, and says
-                # nothing, is the worst of the three states.
+                # "Group column" and "Group order" active and editable while
+                # "Use group column" is clear would be a control the user can
+                # set, that does nothing, and says nothing: the commit throws
+                # the chosen column away, and the figure comes back
+                # overall-only with no mention of it. That is the worst of the
+                # three states.
                 #
                 # Praat pause dialogs have no callbacks, so a field cannot grey
                 # itself out when a box above it changes. What a form CAN do is
@@ -5968,38 +5930,29 @@ repeat
                         option: "Alphabetical"
                 endif
                 if config_showAdvanced
-                    # §6, audit 14 Aug 2026 — THE TALLEST DIALOG IN THE PLUGIN.
+                    # THE TALLEST DIALOG IN THE PLUGIN, AND IT IS TALLER
+                    # THAN A SHORT SCREEN.
                     #
-                    # MEASURED, 15 Aug 2026, on a screen tall enough not to
-                    # clamp it (Xvfb 1400x1900, no title bar): this page asked
-                    # for 1065 PIXELS. On the 1000px display the audit drove,
-                    # the window manager hands it 976 and the rest -- the Go
-                    # Back/Quit/Beginner/Draw row -- is off the bottom of the
-                    # screen. The audit reached Draw by keyboard. A control you
-                    # cannot click is a broken path, not a cosmetic complaint.
+                    # MEASURED on a screen tall enough not to clamp it (Xvfb
+                    # 1400x1900, no title bar): this page asks for 999 PIXELS.
+                    # On a 1000px display the window manager hands it 976 and
+                    # the rest -- the Go Back/Quit/Beginner/Draw row -- is off
+                    # the bottom of the screen, reachable only by keyboard. It
+                    # carries no decorative rules and no separate
+                    # "Formatting:" help row for that reason (nor do the other
+                    # twelve pages), but trimming rows only buys headroom: one
+                    # dialog carrying a column mapping, an analysis
+                    # specification and a complete figure-layout panel does
+                    # not fit a 768px laptop at any row count.
                     #
-                    # THREE ROWS CAME OFF HERE: two decorative rules, and the
-                    # "Formatting:" help line, which is now the tail of the
-                    # axis-labels heading it belonged to -- on all thirteen
-                    # pages, since every one of them carried the same pair.
-                    # Re-measured the same way: 999px. Sixty-six pixels, and
-                    # the honest reading of that number is that it is not
-                    # enough -- 999 still does not fit in 976, and a 768px
-                    # laptop was never in question.
-                    #
-                    # WHAT THAT DOES NOT DO IS FIX IT. Trimming rows buys
-                    # headroom; it does not change the fact that one dialog
-                    # carries a column mapping, an analysis specification and a
-                    # complete figure-layout panel. The structural answer is the
-                    # one the audit names -- split the advanced page in two, as
-                    # the Line Chart already splits Data Format from Column
-                    # Mapping -- and it is not a layout change: the
+                    # THE STRUCTURAL ANSWER is to split the advanced page in
+                    # two, as the Line Chart splits Data Format from Column
+                    # Mapping, and it is not a layout change: the
                     # Advanced/Beginner toggle STASHES the layout fields at the
                     # moment it is pressed (`prev_adv_sca_*` below), so those
                     # fields have to exist on whichever page the toggle lives
                     # on. Splitting the page means moving the mode-stash
-                    # contract with it, which wants its own pass and its own
-                    # drive rather than being folded into a defect batch.
+                    # contract with it.
                     comment: "📊 Analysis"
                     optionmenu: "Correlation method", tmpCorrType
                         option: "None"
@@ -6119,7 +6072,7 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
-                    # D1/D2. Record what the advanced page returned before the
+                    # Record what the advanced page returned before the
                     # beginner reset blanks it, so re-entering advanced -- on this
                     # type or after a detour through another one -- gets it back.
                     @emlCommitAxisLabels: x_axis_label$, y_axis_label$
@@ -6250,7 +6203,7 @@ repeat
 
                 scatterXCol$ = x_column$
                 scatterYCol$ = y_column$
-                # D11. The group fields were on the dialog only if the box was
+                # The group fields are on the dialog only if the box was
                 # already ticked when it was built, so their values are read
                 # only then; otherwise the remembered index stands, clamped
                 # because a table can have changed shape under it.
@@ -6349,11 +6302,9 @@ repeat
             boxValueIdx = prev_boxValueIdx
         else
             # Column-role defaults come from @emlGuessColumnRoles, the same
-            # weighted guesser the wizard and every stats wrapper already use.
-            # This site used to carry its own three-keyword copy of it; see the
-            # note at the top of this file. Only non-zero guesses overwrite the
-            # positional defaults set above, so an undetected role still falls
-            # back exactly as before.
+            # weighted guesser the wizard and every stats wrapper use. Only
+            # non-zero guesses overwrite the positional defaults set above, so
+            # an undetected role falls back to its positional default.
             @emlGuessColumnRoles: objectId
             if emlGuessColumnRoles.groupIdx > 0
                 boxGroupIdx = emlGuessColumnRoles.groupIdx
@@ -6421,7 +6372,7 @@ repeat
                     option: "Alphabetical"
                 if config_showAdvanced
                     boolean: "Annotate results on graph", annotate
-                    # D5 / RULING 1a. The gate is set here, beside the
+                    # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
                     # See ADJUSTMENT-METHOD LOOKUP for why it is a
                     # variable and not a re-test of tmpBoxTestType.
@@ -6484,29 +6435,25 @@ repeat
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 elsif emlGraphsPresetAnnotate > 0
-                    # D7, audit 14 Aug 2026 — THE ONE CONTROL A WRAPPER'S
-                    # REQUEST NEEDS, ON THE PAGE THE REQUEST ARRIVES AT.
+                    # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
+                    # THE REQUEST ARRIVES AT.
                     #
                     # A stats wrapper that found something sets
                     # emlGraphsPresetAnnotate = 1 and hands the user to this
-                    # form. The beginner commit below then set annotate = 0 --
-                    # correctly, by the author's ruling of 13 Aug 2026:
-                    # BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG OFFERS. The
-                    # consequence was that the DEFAULT journey -- run a test,
-                    # press Draw, press Draw again -- drew a significant result
-                    # with nothing on it, and the request came back only if the
-                    # user happened to toggle to Advanced (the restore arm in
-                    # the toggle handler, which validate/v51 pins).
+                    # form. The beginner commit below then sets annotate = 0,
+                    # because BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG
+                    # OFFERS. For the request to survive the DEFAULT journey --
+                    # run a test, press Draw, press Draw again -- the beginner
+                    # dialog therefore has to OFFER it, rather than the setting
+                    # coming back only when the user toggles to Advanced (the
+                    # restore arm in the toggle handler, which validate/v51
+                    # pins).
                     #
-                    # Neither half of that was wrong. What was missing is the
-                    # third option: if the setting is to survive a beginner
-                    # draw, the beginner dialog has to OFFER it. So it does --
-                    # only on the pass where a caller actually asked, pre-ticked
-                    # because asking is what the wrapper did, and untickable,
-                    # which is the part a hidden carried-over flag could never
-                    # have been. The ruling stands unedited: this page now
-                    # offers annotation, so drawing it is drawing what the
-                    # dialog offers.
+                    # So it does -- only on the pass where a caller actually
+                    # asked, pre-ticked because asking is what the wrapper did,
+                    # and untickable, which is the part a hidden carried-over
+                    # flag cannot be. The page offers annotation, so drawing it
+                    # is drawing what the dialog offers.
                     comment: "📈 Your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
@@ -6548,8 +6495,8 @@ repeat
                     prev_adv_box_YLabel$ = y_axis_label$
                     # Reset to beginner defaults
                     annotate = 0
-                    # D7. The wrapper's request, honoured on the page that
-                    # now offers it. `annotate_results_on_graph` exists here for
+                    # The wrapper's request, honoured on the page that
+                    # offers it. `annotate_results_on_graph` exists here for
                     # exactly the reason the field above exists -- the same
                     # condition put it on the dialog -- and it carries the
                     # user's tick, which may well be a DE-tick.
@@ -6571,7 +6518,7 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
-                    # D1/D2. Record what the advanced page returned before the
+                    # Record what the advanced page returned before the
                     # beginner reset blanks it, so re-entering advanced -- on this
                     # type or after a detour through another one -- gets it back.
                     @emlCommitAxisLabels: x_axis_label$, y_axis_label$
@@ -6600,24 +6547,22 @@ repeat
                         tmpXLabel$ = prev_adv_box_XLabel$
                         tmpYLabel$ = prev_adv_box_YLabel$
                 elsif emlGraphsPresetAnnotate > 0
-                    # A WRAPPER PRESET NEVER PASSED THROUGH THE ADVANCED
-                    # DIALOG, so there is no prev_adv_ state to restore -- and
-                    # before 13 Aug 2026 that meant the request was simply
-                    # lost. The beginner Draw commit sets annotate = 0 (which
-                    # is correct: beginner mode draws only what its own dialog
+                    # A WRAPPER PRESET NEVER PASSES THROUGH THE ADVANCED
+                    # DIALOG, so there is no prev_adv_ state to restore. The
+                    # beginner Draw commit sets annotate = 0 (which is
+                    # correct: beginner mode draws only what its own dialog
                     # offers), the preset is consumed once BEFORE the outer
-                    # repeat so Redraw does not re-apply it, and nothing ever
-                    # wrote it to the stash. A user who asked a wrapper to
-                    # annotate, drew in beginner mode, pressed Redraw and then
-                    # switched to Advanced found the box unticked with nothing
-                    # to say it had ever been set.
+                    # repeat so Redraw does not re-apply it, and nothing
+                    # writes it to the stash -- so without the fallback below
+                    # a user who asked a wrapper to annotate, drew in beginner
+                    # mode, pressed Redraw and then switched to Advanced would
+                    # find the box unticked with nothing to say it had been set.
                     #
-                    # RULING, 13 Aug 2026: if it was ever ticked in advanced
-                    # mode in a single session -- and a preset is the wrapper
-                    # ticking it -- it must be ticked again on the way back.
-                    # Same shape as v1.6's Item 22, which preserved
-                    # annotTestType$ and annotStyle$ across a beginner Draw and
-                    # left `annotate` itself still being zeroed.
+                    # THE RULE: if it was ticked in advanced mode in a single
+                    # session -- and a preset is the wrapper ticking it -- it
+                    # is ticked again on the way back. Same shape as v1.6's
+                    # Item 22, which preserves annotTestType$ and annotStyle$
+                    # across a beginner Draw.
                     annotate = 1
                     if annotTestType$ = "nonparametric"
                         tmpBoxTestType = 2
@@ -6678,8 +6623,8 @@ repeat
                     endif
                 else
                     annotate = 0
-                    # D7. The wrapper's request, honoured on the page that
-                    # now offers it. `annotate_results_on_graph` exists here for
+                    # The wrapper's request, honoured on the page that
+                    # offers it. `annotate_results_on_graph` exists here for
                     # exactly the reason the field above exists -- the same
                     # condition put it on the dialog -- and it carries the
                     # user's tick, which may well be a DE-tick.
@@ -6763,11 +6708,9 @@ repeat
             histGroupIdx = prev_histGroupIdx
         else
             # Column-role defaults come from @emlGuessColumnRoles, the same
-            # weighted guesser the wizard and every stats wrapper already use.
-            # This site used to carry its own three-keyword copy of it; see the
-            # note at the top of this file. Only non-zero guesses overwrite the
-            # positional defaults set above, so an undetected role still falls
-            # back exactly as before.
+            # weighted guesser the wizard and every stats wrapper use. Only
+            # non-zero guesses overwrite the positional defaults set above, so
+            # an undetected role falls back to its positional default.
             @emlGuessColumnRoles: objectId
             if emlGuessColumnRoles.dataIdx > 0
                 histValueIdx = emlGuessColumnRoles.dataIdx
@@ -6829,7 +6772,7 @@ repeat
                     for iCol from 1 to nCols
                         option: colName$[iCol]
                     endfor
-                # D11. See the note on the scatter page.
+                # See the note on the scatter page.
                 histGroupShown = tmpUseGroup
                 boolean: "Use group column", tmpUseGroup
                 if histGroupShown = 1
@@ -6849,7 +6792,7 @@ repeat
                         option: "Overlap (transparent)"
                         option: "Faceted (stacked panels)"
                     boolean: "Annotate results on graph", annotate
-                    # D5 / RULING 1a. The gate is set here, beside the
+                    # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
                     # See ADJUSTMENT-METHOD LOOKUP for why it is a
                     # variable and not a re-test of prev_histAnnotTestType.
@@ -6872,7 +6815,7 @@ repeat
                         option: "both"
                     boolean: "Show nonsignificant", annotShowNS
                     boolean: "Show effect sizes", annotShowEffect
-                        # D6, audit 14 Aug 2026. Violin, Bar and Box offer an
+                        # Violin, Bar and Box offer an
                         # "Annotation layout" menu here; this type does not,
                         # and the draw path forces annotLayoutMode = 3 (Matrix)
                         # for it because significance BRACKETS have no place to
@@ -6923,29 +6866,25 @@ repeat
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 elsif emlGraphsPresetAnnotate > 0
-                    # D7, audit 14 Aug 2026 — THE ONE CONTROL A WRAPPER'S
-                    # REQUEST NEEDS, ON THE PAGE THE REQUEST ARRIVES AT.
+                    # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
+                    # THE REQUEST ARRIVES AT.
                     #
                     # A stats wrapper that found something sets
                     # emlGraphsPresetAnnotate = 1 and hands the user to this
-                    # form. The beginner commit below then set annotate = 0 --
-                    # correctly, by the author's ruling of 13 Aug 2026:
-                    # BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG OFFERS. The
-                    # consequence was that the DEFAULT journey -- run a test,
-                    # press Draw, press Draw again -- drew a significant result
-                    # with nothing on it, and the request came back only if the
-                    # user happened to toggle to Advanced (the restore arm in
-                    # the toggle handler, which validate/v51 pins).
+                    # form. The beginner commit below then sets annotate = 0,
+                    # because BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG
+                    # OFFERS. For the request to survive the DEFAULT journey --
+                    # run a test, press Draw, press Draw again -- the beginner
+                    # dialog therefore has to OFFER it, rather than the setting
+                    # coming back only when the user toggles to Advanced (the
+                    # restore arm in the toggle handler, which validate/v51
+                    # pins).
                     #
-                    # Neither half of that was wrong. What was missing is the
-                    # third option: if the setting is to survive a beginner
-                    # draw, the beginner dialog has to OFFER it. So it does --
-                    # only on the pass where a caller actually asked, pre-ticked
-                    # because asking is what the wrapper did, and untickable,
-                    # which is the part a hidden carried-over flag could never
-                    # have been. The ruling stands unedited: this page now
-                    # offers annotation, so drawing it is drawing what the
-                    # dialog offers.
+                    # So it does -- only on the pass where a caller actually
+                    # asked, pre-ticked because asking is what the wrapper did,
+                    # and untickable, which is the part a hidden carried-over
+                    # flag cannot be. The page offers annotation, so drawing it
+                    # is drawing what the dialog offers.
                     comment: "📈 Your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
@@ -7003,15 +6942,15 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
-                    # D1/D2. Record what the advanced page returned before the
+                    # Record what the advanced page returned before the
                     # beginner reset blanks it, so re-entering advanced -- on this
                     # type or after a detour through another one -- gets it back.
                     @emlCommitAxisLabels: x_axis_label$, y_axis_label$
                     tmpXLabel$ = ""
                     tmpYLabel$ = ""
                     annotate = 0
-                    # D7. The wrapper's request, honoured on the page that
-                    # now offers it. `annotate_results_on_graph` exists here for
+                    # The wrapper's request, honoured on the page that
+                    # offers it. `annotate_results_on_graph` exists here for
                     # exactly the reason the field above exists -- the same
                     # condition put it on the dialog -- and it carries the
                     # user's tick, which may well be a DE-tick.
@@ -7047,24 +6986,22 @@ repeat
                         tmpXLabel$ = prev_adv_his_XLabel$
                         tmpYLabel$ = prev_adv_his_YLabel$
                 elsif emlGraphsPresetAnnotate > 0
-                    # A WRAPPER PRESET NEVER PASSED THROUGH THE ADVANCED
-                    # DIALOG, so there is no prev_adv_ state to restore -- and
-                    # before 13 Aug 2026 that meant the request was simply
-                    # lost. The beginner Draw commit sets annotate = 0 (which
-                    # is correct: beginner mode draws only what its own dialog
+                    # A WRAPPER PRESET NEVER PASSES THROUGH THE ADVANCED
+                    # DIALOG, so there is no prev_adv_ state to restore. The
+                    # beginner Draw commit sets annotate = 0 (which is
+                    # correct: beginner mode draws only what its own dialog
                     # offers), the preset is consumed once BEFORE the outer
-                    # repeat so Redraw does not re-apply it, and nothing ever
-                    # wrote it to the stash. A user who asked a wrapper to
-                    # annotate, drew in beginner mode, pressed Redraw and then
-                    # switched to Advanced found the box unticked with nothing
-                    # to say it had ever been set.
+                    # repeat so Redraw does not re-apply it, and nothing
+                    # writes it to the stash -- so without the fallback below
+                    # a user who asked a wrapper to annotate, drew in beginner
+                    # mode, pressed Redraw and then switched to Advanced would
+                    # find the box unticked with nothing to say it had been set.
                     #
-                    # RULING, 13 Aug 2026: if it was ever ticked in advanced
-                    # mode in a single session -- and a preset is the wrapper
-                    # ticking it -- it must be ticked again on the way back.
-                    # Same shape as v1.6's Item 22, which preserved
-                    # annotTestType$ and annotStyle$ across a beginner Draw and
-                    # left `annotate` itself still being zeroed.
+                    # THE RULE: if it was ticked in advanced mode in a single
+                    # session -- and a preset is the wrapper ticking it -- it
+                    # is ticked again on the way back. Same shape as v1.6's
+                    # Item 22, which preserves annotTestType$ and annotStyle$
+                    # across a beginner Draw.
                     annotate = 1
                     if annotTestType$ = "nonparametric"
                         prev_histAnnotTestType = 2
@@ -7077,7 +7014,7 @@ repeat
                 allFormsDone = 1
 
                 histValueCol$ = value_column$
-                # D11. See the note on the scatter page.
+                # See the note on the scatter page.
                 if histGroupShown = 1
                     histGroupIdx = group_column
                     prev_groupSort = group_order
@@ -7154,8 +7091,8 @@ repeat
                     histBinCount = 0
                     histDisplayMode = 1
                     annotate = 0
-                    # D7. The wrapper's request, honoured on the page that
-                    # now offers it. `annotate_results_on_graph` exists here for
+                    # The wrapper's request, honoured on the page that
+                    # offers it. `annotate_results_on_graph` exists here for
                     # exactly the reason the field above exists -- the same
                     # condition put it on the dialog -- and it carries the
                     # user's tick, which may well be a DE-tick.
@@ -7231,7 +7168,7 @@ repeat
                 if colName$[.iPreset] = emlGraphsPresetDataCol$
                     gvValueIdx = .iPreset
                 endif
-                # D32 (remaining half). A caller that knows its second factor
+                # A caller that knows its second factor
                 # says so here. The guesser below is a fallback for callers
                 # that do not, and must not be allowed to overrule a caller
                 # that does — a wrapper reading its own form knows the answer
@@ -7245,27 +7182,24 @@ repeat
             endfor
 
             # A preset subgroup that lands on the Category or the Value column
-            # is not usable — it would reproduce the very collision D32
-            # describes — so it is demoted back to "no preset" and the guesser
-            # below gets its turn after all.
+            # is not usable — it would name one column as two roles — so it is
+            # demoted back to "no preset" and the guesser below gets its turn
+            # after all.
             if .gvSubFromPreset = 1
                 if gvSubIdx = gvCatIdx or gvSubIdx = gvValueIdx
                     .gvSubFromPreset = 0
                 endif
             endif
 
-            # D107 (D32 in this branch). The preset bridge carries a category
-            # and a value column and had no slot for the SECOND factor, so
-            # gvSubIdx used to keep the positional initializer min (2, nCols)
-            # here. On demo_twoway (subject, voice_type, task, SPL_dB) that is
-            # voice_type — the column the preset had just assigned to Category
-            # — so the two-way wrapper's out-of-box figure opened with Category
-            # and Subgroup pointing at the same column and drew a single-factor
-            # plot with `task` absent entirely. The D32 role-guessing fix went
-            # into the else-branch below and NOT into this one, which is the
-            # branch the two-way wrapper actually takes. Same guesser, run here
-            # too, with a collision guard so it cannot re-suggest a column the
-            # preset already claimed.
+            # THE ROLE GUESSER RUNS ON THE PRESET BRANCH TOO, which is the
+            # branch the two-way wrapper takes. Left with the positional
+            # initializer min (2, nCols), gvSubIdx on demo_twoway (subject,
+            # voice_type, task, SPL_dB) is voice_type — the column the preset
+            # has just assigned to Category — so Category and Subgroup would
+            # point at the same column and the figure would be a single-factor
+            # plot with `task` absent entirely. Same guesser as the else-branch
+            # below, with a collision guard so it cannot re-suggest a column
+            # the preset already claimed.
             #
             # Skipped entirely when emlGraphsPresetSubgroupCol$ named a usable
             # column: guessing is what you do when nobody told you.
@@ -7307,11 +7241,9 @@ repeat
             gvValueIdx = prev_gvValueIdx
         else
             # Column-role defaults come from @emlGuessColumnRoles, the same
-            # weighted guesser the wizard and every stats wrapper already use.
-            # This site used to carry its own three-keyword copy of it; see the
-            # note at the top of this file. Only non-zero guesses overwrite the
-            # positional defaults set above, so an undetected role still falls
-            # back exactly as before.
+            # weighted guesser the wizard and every stats wrapper use. Only
+            # non-zero guesses overwrite the positional defaults set above, so
+            # an undetected role falls back to its positional default.
             @emlGuessColumnRoles: objectId
             if emlGuessColumnRoles.factor1Idx > 0
                 gvCatIdx = emlGuessColumnRoles.factor1Idx
@@ -7375,7 +7307,7 @@ repeat
                     option: "Alphabetical"
                 if config_showAdvanced
                     boolean: "Annotate results on graph", annotate
-                    # D5 / RULING 1a. The gate is set here, beside the
+                    # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
                     # See ADJUSTMENT-METHOD LOOKUP for why it is a
                     # variable and not a re-test of prev_gvAnnotTestType.
@@ -7398,7 +7330,7 @@ repeat
                         option: "both"
                     boolean: "Show nonsignificant", annotShowNS
                     boolean: "Show effect sizes", annotShowEffect
-                        # D6, audit 14 Aug 2026. Violin, Bar and Box offer an
+                        # Violin, Bar and Box offer an
                         # "Annotation layout" menu here; this type does not,
                         # and the draw path forces annotLayoutMode = 3 (Matrix)
                         # for it because significance BRACKETS have no place to
@@ -7449,29 +7381,25 @@ repeat
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 elsif emlGraphsPresetAnnotate > 0
-                    # D7, audit 14 Aug 2026 — THE ONE CONTROL A WRAPPER'S
-                    # REQUEST NEEDS, ON THE PAGE THE REQUEST ARRIVES AT.
+                    # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
+                    # THE REQUEST ARRIVES AT.
                     #
                     # A stats wrapper that found something sets
                     # emlGraphsPresetAnnotate = 1 and hands the user to this
-                    # form. The beginner commit below then set annotate = 0 --
-                    # correctly, by the author's ruling of 13 Aug 2026:
-                    # BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG OFFERS. The
-                    # consequence was that the DEFAULT journey -- run a test,
-                    # press Draw, press Draw again -- drew a significant result
-                    # with nothing on it, and the request came back only if the
-                    # user happened to toggle to Advanced (the restore arm in
-                    # the toggle handler, which validate/v51 pins).
+                    # form. The beginner commit below then sets annotate = 0,
+                    # because BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG
+                    # OFFERS. For the request to survive the DEFAULT journey --
+                    # run a test, press Draw, press Draw again -- the beginner
+                    # dialog therefore has to OFFER it, rather than the setting
+                    # coming back only when the user toggles to Advanced (the
+                    # restore arm in the toggle handler, which validate/v51
+                    # pins).
                     #
-                    # Neither half of that was wrong. What was missing is the
-                    # third option: if the setting is to survive a beginner
-                    # draw, the beginner dialog has to OFFER it. So it does --
-                    # only on the pass where a caller actually asked, pre-ticked
-                    # because asking is what the wrapper did, and untickable,
-                    # which is the part a hidden carried-over flag could never
-                    # have been. The ruling stands unedited: this page now
-                    # offers annotation, so drawing it is drawing what the
-                    # dialog offers.
+                    # So it does -- only on the pass where a caller actually
+                    # asked, pre-ticked because asking is what the wrapper did,
+                    # and untickable, which is the part a hidden carried-over
+                    # flag cannot be. The page offers annotation, so drawing it
+                    # is drawing what the dialog offers.
                     comment: "📈 Your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
@@ -7514,8 +7442,8 @@ repeat
                     # Reset to beginner defaults
                     prev_gvShowJitter = 0
                     annotate = 0
-                    # D7. The wrapper's request, honoured on the page that
-                    # now offers it. `annotate_results_on_graph` exists here for
+                    # The wrapper's request, honoured on the page that
+                    # offers it. `annotate_results_on_graph` exists here for
                     # exactly the reason the field above exists -- the same
                     # condition put it on the dialog -- and it carries the
                     # user's tick, which may well be a DE-tick.
@@ -7537,7 +7465,7 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
-                    # D1/D2. Record what the advanced page returned before the
+                    # Record what the advanced page returned before the
                     # beginner reset blanks it, so re-entering advanced -- on this
                     # type or after a detour through another one -- gets it back.
                     @emlCommitAxisLabels: x_axis_label$, y_axis_label$
@@ -7565,24 +7493,22 @@ repeat
                         tmpXLabel$ = prev_adv_gv_XLabel$
                         tmpYLabel$ = prev_adv_gv_YLabel$
                 elsif emlGraphsPresetAnnotate > 0
-                    # A WRAPPER PRESET NEVER PASSED THROUGH THE ADVANCED
-                    # DIALOG, so there is no prev_adv_ state to restore -- and
-                    # before 13 Aug 2026 that meant the request was simply
-                    # lost. The beginner Draw commit sets annotate = 0 (which
-                    # is correct: beginner mode draws only what its own dialog
+                    # A WRAPPER PRESET NEVER PASSES THROUGH THE ADVANCED
+                    # DIALOG, so there is no prev_adv_ state to restore. The
+                    # beginner Draw commit sets annotate = 0 (which is
+                    # correct: beginner mode draws only what its own dialog
                     # offers), the preset is consumed once BEFORE the outer
-                    # repeat so Redraw does not re-apply it, and nothing ever
-                    # wrote it to the stash. A user who asked a wrapper to
-                    # annotate, drew in beginner mode, pressed Redraw and then
-                    # switched to Advanced found the box unticked with nothing
-                    # to say it had ever been set.
+                    # repeat so Redraw does not re-apply it, and nothing
+                    # writes it to the stash -- so without the fallback below
+                    # a user who asked a wrapper to annotate, drew in beginner
+                    # mode, pressed Redraw and then switched to Advanced would
+                    # find the box unticked with nothing to say it had been set.
                     #
-                    # RULING, 13 Aug 2026: if it was ever ticked in advanced
-                    # mode in a single session -- and a preset is the wrapper
-                    # ticking it -- it must be ticked again on the way back.
-                    # Same shape as v1.6's Item 22, which preserved
-                    # annotTestType$ and annotStyle$ across a beginner Draw and
-                    # left `annotate` itself still being zeroed.
+                    # THE RULE: if it was ticked in advanced mode in a single
+                    # session -- and a preset is the wrapper ticking it -- it
+                    # is ticked again on the way back. Same shape as v1.6's
+                    # Item 22, which preserves annotTestType$ and annotStyle$
+                    # across a beginner Draw.
                     annotate = 1
                     if annotTestType$ = "nonparametric"
                         prev_gvAnnotTestType = 2
@@ -7652,8 +7578,8 @@ repeat
                 else
                     prev_gvShowJitter = 0
                     annotate = 0
-                    # D7. The wrapper's request, honoured on the page that
-                    # now offers it. `annotate_results_on_graph` exists here for
+                    # The wrapper's request, honoured on the page that
+                    # offers it. `annotate_results_on_graph` exists here for
                     # exactly the reason the field above exists -- the same
                     # condition put it on the dialog -- and it carries the
                     # user's tick, which may well be a DE-tick.
@@ -7721,11 +7647,10 @@ repeat
                 if colName$[.iPreset] = emlGraphsPresetDataCol$
                     gbValueIdx = .iPreset
                 endif
-                # D32. Grouped Box takes a second factor for exactly the same
-                # reason Grouped Violin does, and had the same silent
-                # min (2, nCols) positional default. A caller that names its
-                # second factor is honoured here too; anything that collides
-                # with Category or Value is ignored rather than drawn.
+                # Grouped Box takes a second factor for exactly the same
+                # reason Grouped Violin does. A caller that names its second
+                # factor is honoured here too; anything that collides with
+                # Category or Value is ignored rather than drawn.
                 if emlGraphsPresetSubgroupCol$ <> ""
                     if colName$[.iPreset] = emlGraphsPresetSubgroupCol$
                         .gbSubPreset = .iPreset
@@ -7745,11 +7670,9 @@ repeat
             gbValueIdx = prev_gbValueIdx
         else
             # Column-role defaults come from @emlGuessColumnRoles, the same
-            # weighted guesser the wizard and every stats wrapper already use.
-            # This site used to carry its own three-keyword copy of it; see the
-            # note at the top of this file. Only non-zero guesses overwrite the
-            # positional defaults set above, so an undetected role still falls
-            # back exactly as before.
+            # weighted guesser the wizard and every stats wrapper use. Only
+            # non-zero guesses overwrite the positional defaults set above, so
+            # an undetected role falls back to its positional default.
             @emlGuessColumnRoles: objectId
             if emlGuessColumnRoles.factor1Idx > 0
                 gbCatIdx = emlGuessColumnRoles.factor1Idx
@@ -7813,7 +7736,7 @@ repeat
                     option: "Alphabetical"
                 if config_showAdvanced
                     boolean: "Annotate results on graph", annotate
-                    # D5 / RULING 1a. The gate is set here, beside the
+                    # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
                     # See ADJUSTMENT-METHOD LOOKUP for why it is a
                     # variable and not a re-test of prev_gbAnnotTestType.
@@ -7836,7 +7759,7 @@ repeat
                         option: "both"
                     boolean: "Show nonsignificant", annotShowNS
                     boolean: "Show effect sizes", annotShowEffect
-                        # D6, audit 14 Aug 2026. Violin, Bar and Box offer an
+                        # Violin, Bar and Box offer an
                         # "Annotation layout" menu here; this type does not,
                         # and the draw path forces annotLayoutMode = 3 (Matrix)
                         # for it because significance BRACKETS have no place to
@@ -7887,29 +7810,25 @@ repeat
                     sentence: "X axis label", tmpXLabel$
                     sentence: "Y axis label", tmpYLabel$
                 elsif emlGraphsPresetAnnotate > 0
-                    # D7, audit 14 Aug 2026 — THE ONE CONTROL A WRAPPER'S
-                    # REQUEST NEEDS, ON THE PAGE THE REQUEST ARRIVES AT.
+                    # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
+                    # THE REQUEST ARRIVES AT.
                     #
                     # A stats wrapper that found something sets
                     # emlGraphsPresetAnnotate = 1 and hands the user to this
-                    # form. The beginner commit below then set annotate = 0 --
-                    # correctly, by the author's ruling of 13 Aug 2026:
-                    # BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG OFFERS. The
-                    # consequence was that the DEFAULT journey -- run a test,
-                    # press Draw, press Draw again -- drew a significant result
-                    # with nothing on it, and the request came back only if the
-                    # user happened to toggle to Advanced (the restore arm in
-                    # the toggle handler, which validate/v51 pins).
+                    # form. The beginner commit below then sets annotate = 0,
+                    # because BEGINNER MODE DRAWS ONLY WHAT ITS OWN DIALOG
+                    # OFFERS. For the request to survive the DEFAULT journey --
+                    # run a test, press Draw, press Draw again -- the beginner
+                    # dialog therefore has to OFFER it, rather than the setting
+                    # coming back only when the user toggles to Advanced (the
+                    # restore arm in the toggle handler, which validate/v51
+                    # pins).
                     #
-                    # Neither half of that was wrong. What was missing is the
-                    # third option: if the setting is to survive a beginner
-                    # draw, the beginner dialog has to OFFER it. So it does --
-                    # only on the pass where a caller actually asked, pre-ticked
-                    # because asking is what the wrapper did, and untickable,
-                    # which is the part a hidden carried-over flag could never
-                    # have been. The ruling stands unedited: this page now
-                    # offers annotation, so drawing it is drawing what the
-                    # dialog offers.
+                    # So it does -- only on the pass where a caller actually
+                    # asked, pre-ticked because asking is what the wrapper did,
+                    # and untickable, which is the part a hidden carried-over
+                    # flag cannot be. The page offers annotation, so drawing it
+                    # is drawing what the dialog offers.
                     comment: "📈 Your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
@@ -7952,8 +7871,8 @@ repeat
                     # Reset to beginner defaults
                     prev_gbShowJitter = 0
                     annotate = 0
-                    # D7. The wrapper's request, honoured on the page that
-                    # now offers it. `annotate_results_on_graph` exists here for
+                    # The wrapper's request, honoured on the page that
+                    # offers it. `annotate_results_on_graph` exists here for
                     # exactly the reason the field above exists -- the same
                     # condition put it on the dialog -- and it carries the
                     # user's tick, which may well be a DE-tick.
@@ -7975,7 +7894,7 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
-                    # D1/D2. Record what the advanced page returned before the
+                    # Record what the advanced page returned before the
                     # beginner reset blanks it, so re-entering advanced -- on this
                     # type or after a detour through another one -- gets it back.
                     @emlCommitAxisLabels: x_axis_label$, y_axis_label$
@@ -8003,24 +7922,22 @@ repeat
                         tmpXLabel$ = prev_adv_gb_XLabel$
                         tmpYLabel$ = prev_adv_gb_YLabel$
                 elsif emlGraphsPresetAnnotate > 0
-                    # A WRAPPER PRESET NEVER PASSED THROUGH THE ADVANCED
-                    # DIALOG, so there is no prev_adv_ state to restore -- and
-                    # before 13 Aug 2026 that meant the request was simply
-                    # lost. The beginner Draw commit sets annotate = 0 (which
-                    # is correct: beginner mode draws only what its own dialog
+                    # A WRAPPER PRESET NEVER PASSES THROUGH THE ADVANCED
+                    # DIALOG, so there is no prev_adv_ state to restore. The
+                    # beginner Draw commit sets annotate = 0 (which is
+                    # correct: beginner mode draws only what its own dialog
                     # offers), the preset is consumed once BEFORE the outer
-                    # repeat so Redraw does not re-apply it, and nothing ever
-                    # wrote it to the stash. A user who asked a wrapper to
-                    # annotate, drew in beginner mode, pressed Redraw and then
-                    # switched to Advanced found the box unticked with nothing
-                    # to say it had ever been set.
+                    # repeat so Redraw does not re-apply it, and nothing
+                    # writes it to the stash -- so without the fallback below
+                    # a user who asked a wrapper to annotate, drew in beginner
+                    # mode, pressed Redraw and then switched to Advanced would
+                    # find the box unticked with nothing to say it had been set.
                     #
-                    # RULING, 13 Aug 2026: if it was ever ticked in advanced
-                    # mode in a single session -- and a preset is the wrapper
-                    # ticking it -- it must be ticked again on the way back.
-                    # Same shape as v1.6's Item 22, which preserved
-                    # annotTestType$ and annotStyle$ across a beginner Draw and
-                    # left `annotate` itself still being zeroed.
+                    # THE RULE: if it was ticked in advanced mode in a single
+                    # session -- and a preset is the wrapper ticking it -- it
+                    # is ticked again on the way back. Same shape as v1.6's
+                    # Item 22, which preserves annotTestType$ and annotStyle$
+                    # across a beginner Draw.
                     annotate = 1
                     if annotTestType$ = "nonparametric"
                         prev_gbAnnotTestType = 2
@@ -8088,8 +8005,8 @@ repeat
                 else
                     prev_gbShowJitter = 0
                     annotate = 0
-                    # D7. The wrapper's request, honoured on the page that
-                    # now offers it. `annotate_results_on_graph` exists here for
+                    # The wrapper's request, honoured on the page that
+                    # offers it. `annotate_results_on_graph` exists here for
                     # exactly the reason the field above exists -- the same
                     # condition put it on the dialog -- and it carries the
                     # user's tick, which may well be a DE-tick.
@@ -8173,11 +8090,9 @@ repeat
             endif
         else
             # Column-role defaults come from @emlGuessColumnRoles, the same
-            # weighted guesser the wizard and every stats wrapper already use.
-            # This site used to carry its own three-keyword copy of it; see the
-            # note at the top of this file. Only non-zero guesses overwrite the
-            # positional defaults set above, so an undetected role still falls
-            # back exactly as before.
+            # weighted guesser the wizard and every stats wrapper use. Only
+            # non-zero guesses overwrite the positional defaults set above, so
+            # an undetected role falls back to its positional default.
             @emlGuessColumnRoles: objectId
             if emlGuessColumnRoles.groupIdx > 0
                 spCondIdx = emlGuessColumnRoles.groupIdx
@@ -8254,7 +8169,7 @@ repeat
                     for iCol from 1 to nCols
                         option: colName$[iCol]
                     endfor
-                # D11. See the note on the scatter page.
+                # See the note on the scatter page.
                 spGroupShown = tmpUseGroup
                 boolean: "Use group column", tmpUseGroup
                 if spGroupShown = 1
@@ -8337,7 +8252,7 @@ repeat
                     tmpShowAxisValues = config_showAxisValues
                     tmpFont = config_font
                     tmpDPI = config_outputDPI
-                    # D1/D2. Record what the advanced page returned before the
+                    # Record what the advanced page returned before the
                     # beginner reset blanks it, so re-entering advanced -- on this
                     # type or after a detour through another one -- gets it back.
                     @emlCommitAxisLabels: x_axis_label$, y_axis_label$
@@ -8380,7 +8295,7 @@ repeat
                 spCondCol$ = condition_column$
                 spValueCol$ = value_column$
                 spSubjectCol$ = subject_column$
-                # D11. See the note on the scatter page.
+                # See the note on the scatter page.
                 if spGroupShown = 1
                     spGroupIdx = group_column
                     prev_spGroupSort = group_order
@@ -8486,7 +8401,7 @@ repeat
     endif
 
     # =================================================================
-    # PUBLISH THE UNTOUCHED AXIS REQUEST (Ruling 10(b), form half)
+    # PUBLISH THE UNTOUCHED AXIS REQUEST
     # =================================================================
     # HERE, AND NOWHERE LATER. The range validation above is the last thing
     # that touches the user's numbers as the user's numbers — it only swaps a
@@ -8545,7 +8460,7 @@ repeat
         annotLayoutMode = 3
     endif
 
-    # D108. Every @emlBridgeGroupComparison call below delivers the
+    # Every @emlBridgeGroupComparison call below delivers the
     # multiple-comparison method through the annotCorrectionMethod$ global, not
     # through the argument list — the bridge has no parameter for it. That
     # global is live here for both values of annotTestType$: it is seeded from
@@ -8594,22 +8509,21 @@ repeat
     # Scatter annotation is handled entirely within @emlDrawScatterPlot
     # to support "Both" correlation type and per-group regression.
     #
-    # NEW-G8-3, audit 14 Aug 2026 — INIT ONCE PER PRESS, ACCUMULATE PER LOOP.
+    # INIT ONCE PER PRESS, ACCUMULATE PER LOOP.
     #
-    # Nine Draws in one graphs session put NINE value-identical blocks in the
-    # exported CSV: 18 rows on the first save, 162 on the ninth, with no draw
-    # index to tell them apart. One analysis, presented as nine results. This
-    # is the same init-discipline defect v57 records for the multi-column
-    # normality Save (NEW-G1-1) with the loop the other way round: there, an
-    # init inside the loop threw away every pass but the last; here, no init at
-    # all kept every press for ever.
+    # Without an init here, nine Draws in one graphs session put NINE
+    # value-identical blocks in the exported CSV: 18 rows on the first save,
+    # 162 on the ninth, with no draw index to tell them apart -- one analysis,
+    # presented as nine results. The mirror image, an init inside the loop,
+    # throws away every pass but the last; validate/v57 pins that case for the
+    # multi-column normality Save.
     #
-    # Every other annotated arm was already right, and by accident of layering:
-    # @emlReportBridgeStats opens with @emlCSVInit, so the five bridge calls
-    # above reset the collector as they report. The scatter does not go through
-    # the bridge -- @emlDrawScatterPlot calls @emlReportCorrelationAnalysis and
+    # The other annotated arms get theirs from layering: @emlReportBridgeStats
+    # opens with @emlCSVInit, so the five bridge calls above reset the
+    # collector as they report. The scatter does not go through the bridge --
+    # @emlDrawScatterPlot calls @emlReportCorrelationAnalysis and
     # @emlReportRegressionAnalysis directly, once for the whole table and again
-    # per group -- and nothing on that path had ever reset anything.
+    # per group -- so its init is here.
     #
     # THE PRESS IS HERE, which is why the init is here and not in the draw
     # layer: the draw procedure is called once per PASS, and a figure whose
@@ -8637,14 +8551,13 @@ repeat
     # tidy and glance and fall back to the legacy single file, which is a
     # second export defect traded for the first. What this press owns is its
     # ROWS, and its rows are what it resets. Which of the two results should
-    # win when a wrapper's analysis and a figure's annotation disagree is D65's
-    # open design question and is not decided here.
+    # win when a wrapper's analysis and a figure's annotation disagree is an
+    # open design question about the bridge and is not decided here.
     #
     # THE PROCEDURE LIVES IN stats/eml-output.praat, which owns the collector.
-    # The first version of this fix saved and restored emlResult_declared here
-    # instead, and validate/v46 went red on it: ONE FILE MAY BRANCH ON
-    # MIGRATION STATE, and this is not that file. v46 was right and the red
-    # line is what produced @emlCSVInitRows.
+    # Saving and restoring emlResult_declared here instead would put migration
+    # state in this file: ONE FILE MAY BRANCH ON MIGRATION STATE, and this is
+    # not that file. validate/v46 pins it.
     if graph_type = 8 and annotate = 1 and scatterAnalysisType > 0
         @emlCSVInitRows
     endif
@@ -8719,7 +8632,7 @@ repeat
     totalCanvasHeight = figure_height + matrixGap + matrixPanelHeight
 
     # =================================================================
-    # PRE-DISPATCH: default title (D43 / D89)
+    # PRE-DISPATCH: default title
     # =================================================================
     # Last possible moment before the title is measured and drawn, and the
     # first moment at which the column mapping exists. See the header on
@@ -8783,13 +8696,12 @@ repeat
         beginPause: "Graph Complete"
             comment: "📊 Graph has been drawn in the Picture window."
             comment: "What would you like to do?"
-        # THREE BUTTONS, ALWAYS. This row used to be four or three depending
-        # on whether there were results to export, with the caller renumbering
-        # afterwards -- and a conditional button count is a real cost: every
-        # keyboard walk of this dialog has to know which variant is up, and
-        # harness/gui_e2e carried a retry for exactly that. "Save" now opens a
-        # panel that offers whichever outputs exist, so the row no longer has
-        # to change shape to say what is available.
+        # THREE BUTTONS, ALWAYS. A row that was four or three depending on
+        # whether there were results to export would make every keyboard walk
+        # of this dialog work out which variant is up, and would make the
+        # caller renumber afterwards. "Save" opens a panel that offers
+        # whichever outputs exist, so the row does not change shape to say
+        # what is available.
         clicked = endPause: "Done", "Save", "Redraw", 3, 0
         if clicked = 3
             clicked = 4
@@ -8801,13 +8713,11 @@ repeat
             postDrawDone = 1
 
         elsif clicked = 2
-            # ONE PANEL, NOT ONE ARTEFACT. This branch used to save the
-            # figure and nothing else, and the CSV lived behind a separate
-            # button with its own folder memory and its own naming -- so one
-            # analysis scattered its outputs across two places under two
-            # conventions, and the Info window report could not be saved at
-            # all. @emlSavePanel writes whichever of the three the user ticks,
-            # to one folder under one stem.
+            # ONE PANEL, NOT ONE ARTEFACT. @emlSavePanel writes whichever of
+            # the three outputs the user ticks -- figure, results CSV, Info
+            # window report -- to one folder under one stem, rather than
+            # scattering one analysis across two buttons with two folder
+            # memories and two naming conventions.
             saveAutoName$ = contextObjectName$
             ... + "_" + graphTypeName$[graph_type]
             saveParenIdx = index (saveAutoName$, "(")
@@ -8885,18 +8795,18 @@ until keepGoing = 0
     emlGraphsPresetCorrType$ = ""
     emlGraphsPresetCorrection$ = ""
 
-    # --- D103: clear the scatter preset sentinels ---
+    # --- clear the scatter preset sentinels ---
     # These say "a wrapper supplied this setting for THIS call". Leaving one
     # set would make the next call's dialog defaults ignore the user's own
-    # remembered choice, which is the mirror image of the bug they fix.
+    # remembered choice.
     scatterPresetHasRegression = 0
     scatterPresetHasGroup = 0
 
-    # --- D102: restore the explanation gate ---
+    # --- restore the explanation gate ---
     # Raised at the top of this procedure for the graphs path only. It is a
-    # global, so leaving it raised made every later analysis report in the
-    # session verbose and made report content depend on draw order. The gate
-    # goes back to the default declared in stats/eml-output.praat, not to a
-    # literal written out here.
+    # global, so leaving it raised would make every later analysis report in
+    # the session verbose and make report content depend on draw order. The
+    # gate goes back to the default declared in stats/eml-output.praat, not to
+    # a literal written out here.
     @emlResetExplanations
 endproc
