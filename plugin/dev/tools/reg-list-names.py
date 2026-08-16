@@ -3,7 +3,7 @@
 # from procs.json (run reg-extract-procedures.py first).
 #
 # Counts alone cannot catch the Wizard-style drift where the documented count
-# is right by accident while the names are a superseded architecture. Names are
+# is right by accident while the names describe an older architecture. Names are
 # the only level at which registry rows reconcile against the source tree.
 
 import json, os
