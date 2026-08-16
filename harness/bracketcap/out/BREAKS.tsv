@@ -1,10 +1,10 @@
-head_revert	62	@emlDrawBracketCaption exists                 
-no_call_site	52	@emlDrawAnnotations calls @emlDrawBracketCaption
-no_extent	39	the caption band is reported to @emlExpandDrawnExtent
-no_restore	6	the caption restores the caller's viewport and axes
-one_arm_only	44	the nonparametric arm names Dunn's test       
-caption_blank	20	the parametric arm names Tukey HSD as the pairwise test
+head_revert	29	the two-group parametric arm names Welch's t-test
+no_call_site	70	@emlDrawAnnotations calls @emlDrawBracketCaption
+no_extent	54	the caption band is reported to @emlExpandDrawnExtent
+no_restore	9	the caption restores the caller's viewport and axes
+one_arm_only	48	the nonparametric arm names Dunn's test       
+caption_blank	26	the parametric arm names Tukey HSD as the pairwise test
 hardcode_holm	7	the Dunn clause interpolates .correction$ rather than a literal
-one_sentence	15	the parametric arm names Tukey HSD as the pairwise test
-clip_and_lie	9	leg tukey: the measured ink width agrees with the reported one (ratio 1.509)
-two_group_caption	5	both two-group arms write an empty bracket caption
+one_sentence	16	the parametric arm names Tukey HSD as the pairwise test
+clip_and_lie	11	leg tukey: the measured ink width agrees with the reported one (ratio 1.509)
+two_group_silent	26	the two-group parametric arm names Welch's t-test
