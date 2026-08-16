@@ -164,7 +164,7 @@ outPath$ = tmp$ + "/anova_recorded.praat"
 emitted$ = readFile$ (outPath$)
 @ok: "the emitted file carries an include block",
 ... index (emitted$, "include ") > 0
-; THE MANIFEST, NOT A BARE SELECTED-TABLE LINE. Author ruling 12 Aug 2026:
+; THE MANIFEST, NOT A BARE SELECTED-TABLE LINE:
 ; every recorded script names its objects in one editable block at the top and
 ; every step selects through it, whether the session used one object or five.
 ; `data` and not `table`, because the plugin accepts a Matrix and a
@@ -188,7 +188,7 @@ emitted$ = readFile$ (outPath$)
 @ok: "refusal message is not double-punctuated",
 ... index (emitted$, "groups..") = 0
 
-; The gap that used to be here is closed by construction: there is no input
+; The gap is closed by construction: there is no input
 ; file to record, because the emitted script takes whatever object is
 ; selected, exactly as the session did.
 

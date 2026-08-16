@@ -543,10 +543,10 @@ procedure test_emlDescribe
     @assertApprox: "describe kurtosis = -1.2", emlDescribe.kurtosis, -1.2, tolStat
     @assertApprox: "describe ci95Lower", emlDescribe.ci95Lower, 1.036417, tolCI
     @assertApprox: "describe ci95Upper", emlDescribe.ci95Upper, 4.963583, tolCI
-    # emlDescribe.summary$ was deleted on 6 Aug 2026 (D7): it was a second
+    # EmlDescribe.summary$ was deleted on 6 Aug 2026: it was a second
     # renderer of the same values that no shipping code read, and it had
     # already drifted from the one users see -- it said "Kurtosis (excess)"
-    # where the report path said "Kurtosis", which is D4. The report path
+    # where the report path says "Kurtosis". The report path
     # @emlReportDescriptives is what is tested now, in the wrapper tests.
     appendInfoLine: ""
 endproc
