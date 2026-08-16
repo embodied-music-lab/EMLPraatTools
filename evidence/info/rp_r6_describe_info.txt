@@ -1,134 +1,14 @@
-
-══════════════════════════════════════════════
-  Normality Assessment
-  Table: demo normality
-══════════════════════════════════════════════
-
-
-══════════════════════════════════════════════
-  EML Stats : Normality Assessment
-  Wed Aug  5 22:53:42 2026
-══════════════════════════════════════════════
-
-  Table               demo normality
-  Column              F0 Hz
-  N                   40
-
-
-  ── Descriptive Statistics ──────────────────
-  Mean                185.6705
-  SD                  26.7146
-  Median              188.2082
-
-
-  ── Distribution Shape ──────────────────────
-  Skewness            -0.1724
-  Kurtosis (excess)   -0.6949
-  → Skewness within typical limits
-  → Kurtosis within typical limits
-
-
-  ── Shapiro-Wilk Test ───────────────────────
-  W                   0.9719
-  p                   p = .412
-  → Does not reject normality (p >= 0.05)
-
-
-  ── Recommendation ──────────────────────────
-  Normality appears reasonable.
-  → Parametric tests (t-test, ANOVA, Pearson r) are appropriate.
-
-══════════════════════════════════════════════
-
-
-══════════════════════════════════════════════
-  EML Stats : Normality Assessment
-  Wed Aug  5 22:53:42 2026
-══════════════════════════════════════════════
-
-  Table               demo normality
-  Column              shimmer pct
-  N                   40
-
-
-  ── Descriptive Statistics ──────────────────
-  Mean                2.2135
-  SD                  1.0984
-  Median              2.0150
-
-
-  ── Distribution Shape ──────────────────────
-  Skewness            0.9125
-  Kurtosis (excess)   0.4513
-  → Skewness within typical limits
-  → Kurtosis within typical limits
-
-
-  ── Shapiro-Wilk Test ───────────────────────
-  W                   0.9279
-  p                   p = .014
-  → Rejects normality (p < 0.05)
-
-
-  ── Recommendation ──────────────────────────
-  Evidence against normality.
-  → Consider nonparametric tests (Mann-Whitney, Kruskal-Wallis, Spearman rho).
-
-══════════════════════════════════════════════
-
-
-══════════════════════════════════════════════
-  EML Stats : Normality Assessment
-  Wed Aug  5 22:53:42 2026
-══════════════════════════════════════════════
-
-  Table               demo normality
-  Column              jitter pct
-  N                   40
-
-
-  ── Descriptive Statistics ──────────────────
-  Mean                1.1894
-  SD                  0.5220
-  Median              1.2134
-
-
-  ── Distribution Shape ──────────────────────
-  Skewness            0.3330
-  Kurtosis (excess)   0.3056
-  → Skewness within typical limits
-  → Kurtosis within typical limits
-
-
-  ── Shapiro-Wilk Test ───────────────────────
-  W                   0.9774
-  p                   p = .593
-  → Does not reject normality (p >= 0.05)
-
-
-  ── Recommendation ──────────────────────────
-  Normality appears reasonable.
-  → Parametric tests (t-test, ANOVA, Pearson r) are appropriate.
-
-══════════════════════════════════════════════
-
-══════════════════════════════════════════════
-  SUMMARY: 3 columns tested
-  Parametric OK:     2
-  Nonparametric rec: 1
-
-  Mixed results — consider variable-by-variable.
-══════════════════════════════════════════════
-
 ══════════════════════════════════════════════
   EML Stats : Descriptive Statistics
-  Wed Aug  5 23:04:41 2026
+  Sun Aug 16 03:06:17 2026
 ══════════════════════════════════════════════
 
   Table               r6 nonnumeric in measure
   Column              SPL soft
   N (valid)           4
-  N (undefined)       1
+  N (excluded)        1
+  1 cell(s) are not numeric in any locale (row 3: n/a). This is
+  a type error, not missing data.
 
 
   ── Central Tendency ────────────────────────
@@ -153,7 +33,7 @@
 
 
   ── Distribution Shape ──────────────────────
-  Skewness            0.000000000000004
+  Skewness            0.0000
   Kurtosis (excess)   -3.3000
 
 
@@ -161,4 +41,6 @@
   Lower               69.1043
   Upper               75.4957
 
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════
