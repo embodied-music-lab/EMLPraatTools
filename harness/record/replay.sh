@@ -16,7 +16,7 @@
 #   * neither of them records a SAVE step, because a save step can only be
 #     recorded from inside @emlSavePanel — which is a dialog.
 #
-# Five legs, one artefact directory, one TSV.
+# Six legs, one artefact directory, one TSV.
 #
 #   ADV      record an advanced-mode annotated, jittered violin; replay it;
 #            compare the replay against BOTH the original AND a deliberately
@@ -33,6 +33,18 @@
 #            then run it. This is the only leg that can tell a block which
 #            GATHERS the column names from one the steps actually READ, and
 #            the difference between those two is author ruling 9 in full.
+#   LEGEND   record a figure whose legend needs y-axis room -- one press of
+#            Draw through the shipped @emlGraphsDrawWithLegendRoom, which
+#            draws it, measures the legend, and draws it again on a widened
+#            axis with the first pass discarded. One emitted step, and the
+#            block's resolved-range note has to name the axis the figure was
+#            FINALLY drawn on: the leg edits the block to the two numbers the
+#            note itself quotes and the resulting figure is byte-identical to
+#            the one the recording drew. Author ruling B, change order 8;
+#            read by validate/v75. It is also the only leg that INCLUDES
+#            eml-graphs-form.praat rather than writing the form's state out
+#            by hand -- see the note above the leg for why that is now
+#            possible and why the ADV leg's remark to the contrary is stale.
 #
 # THE SEED IS WHAT MAKES THE FIGURE COMPARABLE AT ALL, and finding that out
 # changed the design of this file. @emlDrawJitteredPoints calls randomUniform
@@ -121,9 +133,18 @@ for g from 1 to 2
 endfor
 PRAATFIX
 
-# THE ADVANCED STATE, WRITTEN OUT AS THE FORM WRITES IT. eml-graphs-form.praat
-# is not includable — including it runs the form — so the globals it sets
-# around a draw are set here by hand. Every one of them is copied from the
+# THE ADVANCED STATE, WRITTEN OUT AS THE FORM WRITES IT. This leg drives
+# @emlDrawViolinPlot directly rather than any form procedure, so the globals a
+# form sets around a draw are set here by hand.
+#
+# (This note used to say eml-graphs-form.praat "is not includable — including
+# it runs the form". That is false and was corrected on 16 August 2026: the
+# file's top-level code is array initialisation only, there is no `form:` or
+# `beginPause:` at top level, and @emlGraphsWorkflow is never called from
+# inside it, so an include gets every procedure and no dialog. harness/formaxis
+# has stood on that since 16 August and the LEGEND leg below does too. What is
+# true of an EMITTED file is different and unchanged: a recorded script must
+# not include the form, because the form's procedures are not what it replays.) Every one of them is copied from the
 # form's own dispatch block, and the point of the leg is precisely that these
 # are NOT arguments to the draw procedure: they are the thing the recorder was
 # failing to carry.
@@ -884,6 +905,304 @@ kv retarget_call_violin "$(remc '^@emlDrawViolinPlot: data, "retarget violin", "
 # a slot the block declares. `"val"` as an axis label is not one of those and
 # must NOT be counted here -- which is why this counts SLOTS and not strings.
 kv retarget_literal_slots "$(grep -cE '^@(emlRunTwoWayAnalysis: data, "|emlDrawViolinPlot: .*, 1, ")' "$rem")"
+
+# ===========================================================================
+# LEG LEGEND — ONE PRESS OF DRAW, ONE EMITTED STEP, AND THE FRAME RECOVERABLE
+#              FROM THE BLOCK
+# ===========================================================================
+# AUTHOR RULING B, CHANGE ORDER 8, 16 AUGUST 2026: "one user action emits one
+# draw step" carrying "the FINAL resolved range".
+#
+# THE DEFECT. @emlGraphsDrawWithLegendRoom draws a legend-bearing figure,
+# MEASURES the legend, and draws it again on a widened axis, discarding the
+# first pass. NEW-G8-3 rewound the CSV collector between the passes on 15 Aug
+# 2026 and left the recorder running, so one press emitted
+#
+#     # --- Step 1 (draw) ---   @emlDrawGroupedViolin: ... axisYMin, axisYMax
+#     # --- Step 2 (draw) ---   @emlDrawGroupedViolin: ... axisYMin, axisYMax
+#
+# and the block read `steps 1 (draw), 2 (draw)`. The second half is the one
+# that costs a reader something: the resolved-range note quotes the FIRST step
+# to use a pair (@emlRecordColumnManifest), so it named the axis of the pass
+# that was thrown away -- 195.0000 .. 235.0000 beside a figure drawn at
+# 195 .. 275.
+#
+# WHY THIS LEG INCLUDES THE FORM. Every other leg here writes the form's state
+# out by hand, and could, because it drives a draw procedure directly. This one
+# cannot: the two-pass loop IS the thing under test, it lives in
+# eml-graphs-form.praat, and a transcription of it would test the copy. The
+# file is a LIBRARY -- top-level array initialisation only, no `form:`, no
+# `beginPause:`, @emlGraphsWorkflow never called from inside it -- so an
+# include gets every procedure and no dialog. harness/formaxis has stood on
+# that fact since 16 August; the note above the ADV leg saying the form cannot
+# be included predates it and is true only of RUNNING the workflow.
+#
+# THE Y-RANGE IS LEFT ON AUTO, which is what makes the second half testable.
+# On auto the block declares 0.0 / 0.0 -- the sentinel, per ruling 10(b) -- so
+# the resolved-range NOTE is the reader's only record of where the figure sat.
+# If the note names the discarded pass, a user who types its numbers into the
+# block to recover their frame gets the wrong frame, and that is exactly what
+# LEG_TUNED measures: the block is edited to the two numbers the note quotes,
+# nothing else is touched, and the result is compared with the figure the user
+# actually got. On a tree with the defect the note says 235 and the tuned
+# replay is a different picture.
+#
+# THE PLAIN REPLAY IS MEASURED TOO, AND IT IS NOT EXPECTED TO MATCH. An
+# emitted script draws once; the legend-room loop is the form's, not the
+# recording's, so an unedited auto replay resolves to the axis the figure had
+# BEFORE room was made for the legend. That is ruling 10(b) working as ruled
+# -- the request is emitted, not the resolution -- and the gap is written into
+# the TSV rather than left for someone to discover.
+read -r -d '' FIXTURE_LG <<'PRAATLG'
+Create Table with column names: "lg", 0, "grp sub val"
+rngState = 20260816
+row = 0
+for g from 1 to 4
+    for k from 1 to 14
+        rngState = (1103515245 * rngState + 12345) mod 2147483648
+        row = row + 1
+        Append row
+        Set string value: row, "grp", "Cohort " + string$ (g)
+        Set string value: row, "sub", "S" + string$ (k)
+        Set numeric value: row, "val",
+        ... 200 + g * 6.0 + (rngState / 2147483648 - 0.5) * 9.0
+    endfor
+endfor
+PRAATLG
+
+# The dialog's own state at the point the range-validation block has just
+# finished, copied from the form's dispatch block. Values, not logic.
+read -r -d '' LGFORM <<'PRAATLGF'
+graph_type = 11
+objectId = table
+title$ = "f0 by cohort"
+x_axis_label$ = "Cohort"
+y_axis_label$ = "f0 (Hz)"
+figure_width = 6
+figure_height = 4
+colorMode$ = "color"
+gridline_mode = 1
+gvCatCol$ = "grp"
+gvSubCol$ = "sub"
+gvValueCol$ = "val"
+groupColName$ = "grp"
+valueColName$ = "val"
+valueMin = 0
+valueMax = 0
+histFreqMax = 0
+tsShowCI = 0
+matrixGap = 0
+matrixPanelHeight = 0
+totalCanvasHeight = figure_height
+config_legendPlacement = 1
+config_showAdvanced = 1
+config_groupSort = 1
+emlGroupSortAlphabetical = 0
+annotate = 0
+dataYMax_forAnnotation = 0
+@emlClearAnnotations
+PRAATLGF
+
+cat > "$OUT/legend_record.praat" <<PRAAT
+$INCLUDES
+include $PLUG/graphs/eml-graphs-form.praat
+@emlInitDrawingDefaults
+@emlRecordInit
+@emlRecordBegin: ""
+emlRecordPluginRoot\$ = "$PLUG"
+@emlRecordLoadPhrases: "$PLUG/data/eml-record-phrases.csv"
+@emlRecordHeader: "Table lg", 56, 3, "16 August 2026, 00:00:00"
+
+$FIXTURE_LG
+table = selected ("Table")
+
+$LGFORM
+
+@emlGraphsPublishAxisRequest
+random_initializeWithSeedUnsafelyButPredictably (20260816)
+@emlGraphsDrawWithLegendRoom
+@emlAssertFullViewport
+Save as 300-dpi PNG file: "$OUT/LEG_ORIG.png"
+
+writeInfoLine: "legend_passes=", legendRoomPass
+appendInfoLine: "legend_final_min=", fixed\$ (valueMin, 6)
+appendInfoLine: "legend_final_max=", fixed\$ (valueMax, 6)
+
+@emlRecordFlush: "$OUT/legend_emitted.praat"
+@emlRecordDiscard
+PRAAT
+echo "# leg LEGEND record" > "$OUT/legend_record.log"
+run_praat "$OUT/legend_record.praat" "$OUT/legend_record.log"
+
+for k in legend_passes legend_final_min legend_final_max; do
+    kv "$k" "$(sed -n "s/^$k=//p" "$OUT/legend_record.log" | head -1)"
+done
+
+# ---- WHAT THE EMITTED FILE SAYS -------------------------------------------
+lem="$OUT/legend_emitted.praat"
+lemc () { local n; n=$(grep -c -- "$1" "$lem" 2>/dev/null); echo "${n:-0}"; }
+# THE HEADLINE INTEGER. One press of Draw, one step separator of kind (draw),
+# one call to the draw procedure. All three, because a renderer that emitted
+# one heading over two calls would satisfy the first alone.
+kv legend_step_headings "$(grep -cE '^# --- Step [0-9]+ \(draw\) ---$' "$lem" 2>/dev/null || echo 0)"
+kv legend_draw_calls    "$(lemc '^@emlDrawGroupedViolin: data')"
+kv legend_all_steps     "$(grep -cE '^# --- Step [0-9]+ ' "$lem" 2>/dev/null || echo 0)"
+# THE BLOCK'S OWN WORDS. "step 1 (draw)" singular is the fixed shape; "steps
+# 1 (draw), 2 (draw)" is the defect, and it is read as text because that is
+# what a user sees.
+kv legend_block_steps "$(sed -n 's/^axisYMin  *= .*-- \(steps\? .*\)$/\1/p' "$lem" | head -1)"
+kv legend_block_min   "$(sed -n 's/^axisYMin  *= \([^ ]*\)  *;.*$/\1/p' "$lem" | head -1)"
+kv legend_block_max   "$(sed -n 's/^axisYMax  *= \([^ ]*\)  *;.*$/\1/p' "$lem" | head -1)"
+# THE NOTE, and the two numbers out of it. Parsed rather than assumed, because
+# the edit below is made FROM the note: the leg has to be unable to tune the
+# replay to anything the file did not say.
+kv legend_note "$(sed -n 's/^axisYMax  *= .*; on the recorded data it resolved to //p' "$lem" | head -1)"
+LG_NOTE_MIN="$(sed -n 's/^axisYMax  *= .*; on the recorded data it resolved to \([^ ]*\) \.\. \([^ ]*\)$/\1/p' "$lem" | head -1)"
+LG_NOTE_MAX="$(sed -n 's/^axisYMax  *= .*; on the recorded data it resolved to \([^ ]*\) \.\. \([^ ]*\)$/\2/p' "$lem" | head -1)"
+kv legend_note_min "${LG_NOTE_MIN:-<none>}"
+kv legend_note_max "${LG_NOTE_MAX:-<none>}"
+
+# ---- THE PLAIN REPLAY -----------------------------------------------------
+cat > "$OUT/legend_replay.praat" <<PRAAT
+$FIXTURE_LG
+table = selected ("Table")
+Erase all
+random_initializeWithSeedUnsafelyButPredictably (20260816)
+include $lem
+@emlAssertFullViewport
+Save as 300-dpi PNG file: "$OUT/LEG_REPLAY.png"
+PRAAT
+echo "# leg LEGEND replay" > "$OUT/legend_replay.log"
+run_praat "$OUT/legend_replay.praat" "$OUT/legend_replay.log"
+
+# AND AGAIN, INTO A SECOND FILE. Byte equality between two runs of the same
+# emitted script on the same data is the determinism half of the ruling's test
+# requirement, and it is `cmp` rather than a pixel count: there is nothing here
+# for anti-aliasing to differ about, because both runs draw the same call from
+# the same seed.
+cat > "$OUT/legend_replay2.praat" <<PRAAT
+$FIXTURE_LG
+table = selected ("Table")
+Erase all
+random_initializeWithSeedUnsafelyButPredictably (20260816)
+include $lem
+@emlAssertFullViewport
+Save as 300-dpi PNG file: "$OUT/LEG_REPLAY2.png"
+PRAAT
+echo "# leg LEGEND replay 2" > "$OUT/legend_replay2.log"
+run_praat "$OUT/legend_replay2.praat" "$OUT/legend_replay2.log"
+
+# ---- THE TUNED REPLAY: THE BLOCK EDITED TO THE NOTE'S OWN NUMBERS ---------
+# Two lines, both declarations, both inside the block, and the values come out
+# of the note rather than out of this script. sed is anchored on ^axisY so it
+# cannot reach a mention of the same text further down the file, and the number
+# of changed lines is counted afterwards rather than trusted.
+cp "$lem" "$OUT/legend_tuned.praat"
+if [[ -n "${LG_NOTE_MIN:-}" && -n "${LG_NOTE_MAX:-}" ]]; then
+    sed -i \
+        -e "s|^\(axisYMin *\)= [^ ]*|\1= $LG_NOTE_MIN|" \
+        -e "s|^\(axisYMax *\)= [^ ]*|\1= $LG_NOTE_MAX|" \
+        "$OUT/legend_tuned.praat"
+fi
+kv legend_tuned_lines_changed "$(awk 'NR==FNR{a[FNR]=$0; next}
+    $0 != a[FNR] {c++} END {print c+0}' "$lem" "$OUT/legend_tuned.praat")"
+kv legend_tuned_edits_below_block "$(
+    first_step=$(grep -n -m1 '^# --- Step ' "$OUT/legend_tuned.praat" | cut -d: -f1)
+    awk -v f="${first_step:-0}" 'NR==FNR{a[FNR]=$0; next}
+        $0 != a[FNR] && FNR >= f {c++} END {print c+0}' \
+        "$lem" "$OUT/legend_tuned.praat")"
+
+cat > "$OUT/legend_tuned_replay.praat" <<PRAAT
+$FIXTURE_LG
+table = selected ("Table")
+Erase all
+random_initializeWithSeedUnsafelyButPredictably (20260816)
+include $OUT/legend_tuned.praat
+@emlAssertFullViewport
+Save as 300-dpi PNG file: "$OUT/LEG_TUNED.png"
+PRAAT
+echo "# leg LEGEND tuned replay" > "$OUT/legend_tuned.log"
+run_praat "$OUT/legend_tuned_replay.praat" "$OUT/legend_tuned.log"
+
+kv legend_praat_abort "$(grep -c 'not performed or completed' \
+    "$OUT/legend_record.log" "$OUT/legend_replay.log" \
+    "$OUT/legend_replay2.log" "$OUT/legend_tuned.log" \
+    | awk -F: '{s+=$2} END {print s+0}')"
+
+for f in LEG_ORIG LEG_REPLAY LEG_REPLAY2 LEG_TUNED; do
+    if [[ -f "$OUT/$f.png" ]]; then
+        kv "${f,,}_bytes" "$(stat -c%s "$OUT/$f.png")"
+        kv "${f,,}_md5"   "$(md5sum "$OUT/$f.png" | cut -d' ' -f1)"
+    else
+        kv "${f,,}_bytes" 0
+        kv "${f,,}_md5" MISSING
+    fi
+done
+
+cmpq () { if [[ -f "$1" && -f "$2" ]] && cmp -s "$1" "$2"; then echo 1; else echo 0; fi; }
+kv legend_replay_deterministic "$(cmpq "$OUT/LEG_REPLAY.png" "$OUT/LEG_REPLAY2.png")"
+kv legend_tuned_is_orig_bytes  "$(cmpq "$OUT/LEG_TUNED.png"  "$OUT/LEG_ORIG.png")"
+kv legend_tuned_vs_orig_over32   "$(pdiff "$OUT/LEG_TUNED.png"  "$OUT/LEG_ORIG.png" over)"
+kv legend_tuned_vs_orig_max      "$(pdiff "$OUT/LEG_TUNED.png"  "$OUT/LEG_ORIG.png" max)"
+# THE VACUITY GUARD. If making room for the legend changed nothing, the tuned
+# replay would match the original however wrong the note was, and every check
+# above would be satisfied by a rig that never engaged the two-pass loop.
+kv legend_plain_vs_orig_over32   "$(pdiff "$OUT/LEG_REPLAY.png" "$OUT/LEG_ORIG.png" over)"
+kv legend_plain_vs_tuned_over32  "$(pdiff "$OUT/LEG_REPLAY.png" "$OUT/LEG_TUNED.png" over)"
+
+# ---- THE SAME PRESS WITH A STEP IN FRONT OF IT ---------------------------
+# A rewind that emptied the buffer would pass every check above, because the
+# leg above marks at ZERO rows -- a figure drawn as the first thing in a
+# recording. That is the common case and it is also the one that hides a
+# rewind which discards everything rather than the pass. So: one ANOVA, then
+# the same legend figure. Two steps must survive, the analysis must be the
+# one that did, and the block must name the DRAW as step 2 and no other.
+#
+# It is also the branch that removes rows rather than replacing the buffer:
+# Praat will not remove a Table's only row, so a mark at zero rows and a mark
+# at one row take different paths through @emlRecordRewind, and only this
+# sub-leg reaches the first of them.
+cat > "$OUT/legend_after_record.praat" <<PRAAT
+$INCLUDES
+include $PLUG/graphs/eml-graphs-form.praat
+@emlInitDrawingDefaults
+@emlRecordInit
+@emlRecordBegin: ""
+emlRecordPluginRoot\$ = "$PLUG"
+@emlRecordLoadPhrases: "$PLUG/data/eml-record-phrases.csv"
+@emlRecordHeader: "Table lg", 56, 3, "16 August 2026, 00:00:00"
+
+$FIXTURE_LG
+table = selected ("Table")
+
+@emlRunAnovaAnalysis: table, "val", "grp", 0
+
+$LGFORM
+
+@emlGraphsPublishAxisRequest
+random_initializeWithSeedUnsafelyButPredictably (20260816)
+@emlGraphsDrawWithLegendRoom
+@emlAssertFullViewport
+Save as 300-dpi PNG file: "$OUT/LEG_AFTER.png"
+
+@emlRecordFlush: "$OUT/legend_after_emitted.praat"
+@emlRecordDiscard
+PRAAT
+echo "# leg LEGEND after-analysis record" > "$OUT/legend_after.log"
+run_praat "$OUT/legend_after_record.praat" "$OUT/legend_after.log"
+
+lea="$OUT/legend_after_emitted.praat"
+kv legend_after_abort "$(grep -c 'not performed or completed' "$OUT/legend_after.log")"
+kv legend_after_all_steps  "$(grep -cE '^# --- Step [0-9]+ ' "$lea" 2>/dev/null || echo 0)"
+kv legend_after_draw_steps "$(grep -cE '^# --- Step [0-9]+ \(draw\) ---$' "$lea" 2>/dev/null || echo 0)"
+kv legend_after_analysis_steps "$(grep -cE '^# --- Step [0-9]+ \(analysis\) ---$' "$lea" 2>/dev/null || echo 0)"
+kv legend_after_anova_calls "$(grep -c '^@emlRunAnovaAnalysis: data' "$lea" 2>/dev/null || echo 0)"
+kv legend_after_draw_calls  "$(grep -c '^@emlDrawGroupedViolin: data' "$lea" 2>/dev/null || echo 0)"
+kv legend_after_block_steps "$(sed -n 's/^axisYMin  *= .*-- \(steps\? .*\)$/\1/p' "$lea" | head -1)"
+kv legend_after_note "$(sed -n 's/^axisYMax  *= .*; on the recorded data it resolved to //p' "$lea" | head -1)"
+# The draw's own heading number, so "step 2 (draw)" in the block is checked
+# against the file rather than against itself.
+kv legend_after_draw_heading "$(grep -oE '^# --- Step [0-9]+ \(draw\) ---$' "$lea" | head -1)"
 
 # ---------------------------------------------------------------------------
 printf '%-32s %s\n' "key" "value"
