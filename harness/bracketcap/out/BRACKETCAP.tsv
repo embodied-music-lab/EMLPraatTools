@@ -1,0 +1,7 @@
+tukey	OK	6	1	1	1	112.776	147.234	1800	1277	9777	244	1556	Pairwise comparisons: Tukey HSD — already family-wise; no further adjustment applied
+dunn_holm	OK	3	1	1	1	103.082	147.234	1800	1277	8723	300	1499	Pairwise comparisons: Dunn's test — adjustment for multiple comparisons: holm
+dunn_bonferroni	OK	3	1	1	1	109.813	147.234	1800	1277	9339	261	1538	Pairwise comparisons: Dunn's test — adjustment for multiple comparisons: bonferroni
+dunn_bh	OK	6	1	1	1	100.034	147.234	1800	1277	8483	318	1481	Pairwise comparisons: Dunn's test — adjustment for multiple comparisons: bh
+narrow	OK	3	1	1	2	44.958	77.417	960	875	4945	215	742	Pairwise comparisons: Dunn’s test — adjustment for multiple comparisons: bonferroni
+welch_two	OK	1	1	0	0	0	0	1800	1200	0	-1	-1	
+ns_omnibus	OK	0	0	0	0	0.000	0.000	1800	1200	0	-1	-1	
