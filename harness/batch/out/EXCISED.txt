@@ -1,5 +1,5 @@
 # Cut from eml-batch-process.praat to make the headless twin.
-# Region 1: lines 322-371 (settings dialog)
+# Region 1: lines 401-450 (settings dialog)
 repeat
     beginPause: "Batch Voice Analysis"
         comment: "--- Input ---"
@@ -50,7 +50,7 @@ repeat
         highest_expected_F0 = 500
     endif
 until clicked <> 2
-# Region 2: lines 531-539 (batch range dialog)
+# Region 2: lines 633-641 (batch range dialog)
 beginPause: "Batch range"
     comment: "Found " + string$ (nFiles) + " ." + file_extension$ + " files."
     natural: "Start from file", "1"

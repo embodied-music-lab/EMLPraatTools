@@ -1,7 +1,7 @@
 Batch Voice Analysis
 Sound folder: <WORK>/F_in
 Output folder: <WORK>/F_out
-Results CSV: <WORK>/F_out/F_in_results_2026-08-14.csv
+Results CSV: <WORK>/F_out/F_in_results_2026-08-16.csv
 
 Sentinel file: <WORK>/F_out/STOP.txt
 To stop: open that file, change first line to STOP, save.
@@ -9,12 +9,20 @@ To stop: open that file, change first line to STOP, save.
 [1/6] f1_f0high
   WARNING: Mean F0 = 1400.0 Hz — outside range (50-1000).
   WARNING: HNR = 144.10 dB — outside range (-20 to 40).
+  WARNING: maximum F0 1400.00 Hz is within 10% of the 990 Hz ceiling of the raw-cross-correlation pitch range — widen the range or treat the result as censored.
+  WARNING: maximum F0 1400.00 Hz is within 10% of the 330 Hz ceiling of the CPPS peak search window — widen the range or treat the result as censored.
+  WARNING: measured F0 reached 1400.00 Hz, above the stated highest expected F0 of 900 Hz.
+           That value set the pitch top (1800 Hz) and the pitch ceiling (990 Hz) — re-run with a higher estimate if this corpus goes higher than stated.
 [2/6] f2_quiet
   WARNING: Mean intensity = 10.86 dB — outside range (20 to 120).
 [3/6] f3_jitter
   WARNING: Jitter = 0.0775 — unusually high (> 5%).
+  WARNING: minimum F0 60.00 Hz is within 10% of the 75 Hz floor of the raw-cross-correlation pitch range — widen the range or treat the result as censored.
+  WARNING: minimum F0 60.00 Hz is within 10% of the 60 Hz floor of the CPPS peak search window — widen the range or treat the result as censored.
 [4/6] f4_shimmer
   WARNING: Shimmer = 0.3762 — unusually high (> 15%).
+  WARNING: minimum F0 60.00 Hz is within 10% of the 75 Hz floor of the raw-cross-correlation pitch range — widen the range or treat the result as censored.
+  WARNING: minimum F0 60.00 Hz is within 10% of the 60 Hz floor of the CPPS peak search window — widen the range or treat the result as censored.
 [5/6] f5_hnr
   WARNING: HNR = 94.12 dB — outside range (-20 to 40).
 [6/6] f6_cpps
@@ -27,9 +35,9 @@ COMPLETE
 Files processed: 6
 Files skipped:   0
 Failed:          0
-Warnings:        8
+Warnings:        15
 Data rows:       6
-Results CSV:     <WORK>/F_out/F_in_results_2026-08-14.csv
+Results CSV:     <WORK>/F_out/F_in_results_2026-08-16.csv
 Sentinel file:   <WORK>/F_out/STOP.txt
 ============================================
 

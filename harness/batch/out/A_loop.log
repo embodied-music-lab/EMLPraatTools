@@ -1,7 +1,7 @@
 Batch Voice Analysis
 Sound folder: <WORK>/A_in
 Output folder: <WORK>/A_out
-Results CSV: <WORK>/A_out/A_in_results_2026-08-14.csv
+Results CSV: <WORK>/A_out/A_in_results_2026-08-16.csv
 
 Sentinel file: <WORK>/A_out/STOP.txt
 To stop: open that file, change first line to STOP, save.
@@ -25,7 +25,7 @@ Files skipped:   0
 Failed:          0
 Warnings:        5
 Data rows:       5
-Results CSV:     <WORK>/A_out/A_in_results_2026-08-14.csv
+Results CSV:     <WORK>/A_out/A_in_results_2026-08-16.csv
 Sentinel file:   <WORK>/A_out/STOP.txt
 ============================================
 
