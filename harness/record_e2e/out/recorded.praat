@@ -48,7 +48,8 @@ include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-analysis.praat
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
-# nothing below this block names an object or a column.
+# nothing below this block names an object, a column or an axis
+# range.
 data1$ = "Table voiceA"   ; steps 1 (analysis), 2 (analysis), 3 (analysis), 4 (analysis), 5 (analysis), 6 (analysis), 7 (analysis), 8 (refusal), 9 (analysis), 10 (refusal), 11 (refusal), 12 (analysis), 13 (analysis), 14 (draw), 15 (draw), 16 (draw), 17 (draw), 18 (draw), 19 (draw), 20 (draw), 21 (draw), 22 (draw), 23 (draw), 44 (analysis), 45 (draw), 46 (draw)
 data2$ = "Sound tone"   ; steps 24 (draw), 28 (convert), 29 (draw), 30 (convert), 31 (draw), 32 (convert), 33 (draw)
 data3$ = "Pitch tone"   ; step 25 (draw)
@@ -73,6 +74,10 @@ categoryCol$   = "grp"   ; the category column -- steps 22 (draw), 23 (draw)
 subgroupCol$   = "grp2"   ; the sub-group column -- steps 22 (draw), 23 (draw)
 valueCol2$     = "row"   ; the measured column -- steps 41 (draw), 43 (draw)
 groupCol2$     = "grp3"   ; the grouping column -- step 44 (analysis)
+axisYMin       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- steps 14 (draw), 15 (draw), 17 (draw), 18 (draw), 19 (draw), 20 (draw), 21 (draw), 22 (draw), 23 (draw), 24 (draw), 25 (draw), 26 (draw), 27 (draw), 29 (draw), 31 (draw), 33 (draw), 35 (draw), 37 (draw), 39 (draw), 45 (draw), 46 (draw)
+axisYMax       = 0.0   ; on the recorded data it resolved to 56.0000 .. 74.0000
+axisValueMin   = 0.0   ; the value-axis range (the histogram's horizontal axis) -- AUTO (both 0 = computed from the data) -- steps 16 (draw), 41 (draw), 43 (draw)
+axisValueMax   = 0.0   ; on the recorded data it resolved to 59.8175 .. 70.2386
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -240,7 +245,7 @@ data = selected ()
 # Violin plot of spl, grouped by grp, 2 groups.
 # Violin width is a kernel density estimate, not a count.
 
-@emlDrawViolinPlot: data, "Violin", "grp", "spl", 6, 4, "color", 1, groupCol$, valueCol$, 0, 0
+@emlDrawViolinPlot: data, "Violin", "grp", "spl", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # Axis resolved to 56.0000 .. 74.0000 over 2 groups.
 # The same step through the menu:
@@ -256,7 +261,7 @@ data = selected ()
 scatterAnalysisType = 0
 annotCorrType$ = "pearson"
 scatterRegressionLine = 0
-@emlDrawScatterPlot: data, "Scatter", "x", "y", 6, 4, "color", 1, xCol$, yCol$, "", 0, 0, 0, 0, 0
+@emlDrawScatterPlot: data, "Scatter", "x", "y", 6, 4, "color", 1, xCol$, yCol$, "", 0, 0, axisYMin, axisYMax, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -267,7 +272,7 @@ data = selected ()
 # Histogram: Histogram
 # Bin count changes the shape; it is a display choice, not a property of the data.
 
-@emlDrawHistogram: data, "Histogram", "spl", "Count", 6, 4, "color", 1, valueCol$, "", 0, 1, 0, 0, 0
+@emlDrawHistogram: data, "Histogram", "spl", "Count", 6, 4, "color", 1, valueCol$, "", 0, 1, axisValueMin, axisValueMax, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -277,7 +282,7 @@ selectObject: data1$
 data = selected ()
 # Line chart: Line
 
-@emlDrawTimeSeries: data, "Line", "t", "spl", 6, 4, "color", 1, timeCol$, valueCol$, groupCol$, 0, 0, 0, 0
+@emlDrawTimeSeries: data, "Line", "t", "spl", 6, 4, "color", 1, timeCol$, valueCol$, groupCol$, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -287,7 +292,7 @@ selectObject: data1$
 data = selected ()
 # Line chart (+/-CI): Line CI
 
-@emlDrawTimeSeriesCI: data, "Line CI", "t", "spl", 6, 4, "color", 1, timeCol$, valueCol$, groupCol$, 0, 0, 0, 0
+@emlDrawTimeSeriesCI: data, "Line CI", "t", "spl", 6, 4, "color", 1, timeCol$, valueCol$, groupCol$, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -297,7 +302,7 @@ selectObject: data1$
 data = selected ()
 # Spaghetti plot: Spaghetti
 
-@emlDrawSpaghettiPlot: data, "Spaghetti", "t", "spl", 6, 4, "color", 1, conditionCol$, valueCol$, idCol$, groupCol$, 1, 0, 0
+@emlDrawSpaghettiPlot: data, "Spaghetti", "t", "spl", 6, 4, "color", 1, conditionCol$, valueCol$, idCol$, groupCol$, 1, axisYMin, axisYMax
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -308,7 +313,7 @@ data = selected ()
 # Bar chart: Bar
 # Bars show means. The spread, not the bar, is what tells you about the data.
 
-@emlDrawBarChart: data, "Bar", "grp", "spl", 6, 4, "color", 1, groupCol$, valueCol$, 0, "", 0, 0
+@emlDrawBarChart: data, "Bar", "grp", "spl", 6, 4, "color", 1, groupCol$, valueCol$, 0, "", axisYMin, axisYMax
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -319,7 +324,7 @@ data = selected ()
 # Box plot: Box
 # Whisker convention and outlier rule are stated in the figure, not assumed.
 
-@emlDrawBoxPlot: data, "Box", "grp", "spl", 6, 4, "color", 1, groupCol$, valueCol$, 0, 0
+@emlDrawBoxPlot: data, "Box", "grp", "spl", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -330,7 +335,7 @@ data = selected ()
 # Grouped violin: GViolin
 # Violin width is a kernel density estimate, not a count.
 
-@emlDrawGroupedViolin: data, "GViolin", "grp", "spl", 6, 4, "color", 1, categoryCol$, subgroupCol$, valueCol$, 0, 0
+@emlDrawGroupedViolin: data, "GViolin", "grp", "spl", 6, 4, "color", 1, categoryCol$, subgroupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -341,7 +346,7 @@ data = selected ()
 # Grouped box plot: GBox
 # Whisker convention and outlier rule are stated in the figure, not assumed.
 
-@emlDrawGroupedBoxPlot: data, "GBox", "grp", "spl", 6, 4, "color", 1, categoryCol$, subgroupCol$, valueCol$, 0, 0
+@emlDrawGroupedBoxPlot: data, "GBox", "grp", "spl", 6, 4, "color", 1, categoryCol$, subgroupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -351,7 +356,7 @@ selectObject: data2$
 data = selected ()
 # Waveform: Waveform
 
-@emlDrawWaveform: data, "Waveform", "Time (s)", "Amplitude", 6, 4, "color", 1, 0, 0, 0, 0
+@emlDrawWaveform: data, "Waveform", "Time (s)", "Amplitude", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -361,7 +366,7 @@ selectObject: data3$
 data = selected ()
 # F0 contour: F0
 
-@emlDrawF0Contour: data, "F0", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, 0, 0, 1
+@emlDrawF0Contour: data, "F0", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax, 1
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -371,7 +376,7 @@ selectObject: data4$
 data = selected ()
 # Spectrum: Spectrum
 
-@emlDrawSpectrum: data, "Spectrum", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, 0, 0
+@emlDrawSpectrum: data, "Spectrum", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -381,7 +386,7 @@ selectObject: data5$
 data = selected ()
 # Long-term average spectrum: LTAS
 
-@emlDrawLTAS: data, "LTAS", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, 0, 0, 1, 0, 0, 0
+@emlDrawLTAS: data, "LTAS", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax, 1, 0, 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -400,7 +405,7 @@ data = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "yes", 0.03, 0.09, 0
 # --- Step 29 (draw) ---
 # F0 contour: F0 from Sound
 
-@emlDrawF0Contour: data, "F0 from Sound", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, 0, 0, 1
+@emlDrawF0Contour: data, "F0 from Sound", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax, 1
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -419,7 +424,7 @@ data = To Spectrum: "yes"
 # --- Step 31 (draw) ---
 # Spectrum: Spectrum from Sound
 
-@emlDrawSpectrum: data, "Spectrum from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, 0, 0
+@emlDrawSpectrum: data, "Spectrum from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -438,7 +443,7 @@ data = To Ltas: 100
 # --- Step 33 (draw) ---
 # Long-term average spectrum: LTAS from Sound
 
-@emlDrawLTAS: data, "LTAS from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, 0, 0, 1, 0, 0, 0
+@emlDrawLTAS: data, "LTAS from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax, 1, 0, 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -457,7 +462,7 @@ data = To Ltas (1-to-1)
 # --- Step 35 (draw) ---
 # Long-term average spectrum: LTAS from Spectrum
 
-@emlDrawLTAS: data, "LTAS from Spectrum", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, 0, 0, 1, 0, 0, 0
+@emlDrawLTAS: data, "LTAS from Spectrum", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax, 1, 0, 0, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -476,7 +481,7 @@ data = To Sound
 # --- Step 37 (draw) ---
 # Waveform: Waveform from Spectrum
 
-@emlDrawWaveform: data, "Waveform from Spectrum", "Time (s)", "Amplitude", 6, 4, "color", 1, 0, 0, 0, 0
+@emlDrawWaveform: data, "Waveform from Spectrum", "Time (s)", "Amplitude", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -499,7 +504,7 @@ selectObject: data
 # --- Step 39 (draw) ---
 # F0 contour: F0 from Spectrum
 
-@emlDrawF0Contour: data, "F0 from Spectrum", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, 0, 0, 1
+@emlDrawF0Contour: data, "F0 from Spectrum", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax, 1
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -520,7 +525,7 @@ data = To Table: "row"
 # Histogram: Histogram from TableOfReal
 # Bin count changes the shape; it is a display choice, not a property of the data.
 
-@emlDrawHistogram: data, "Histogram from TableOfReal", "row", "Count", 6, 4, "color", 1, valueCol2$, "", 0, 1, 0, 0, 0
+@emlDrawHistogram: data, "Histogram from TableOfReal", "row", "Count", 6, 4, "color", 1, valueCol2$, "", 0, 1, axisValueMin, axisValueMax, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -544,7 +549,7 @@ selectObject: data
 # Histogram: Histogram from Matrix
 # Bin count changes the shape; it is a display choice, not a property of the data.
 
-@emlDrawHistogram: data, "Histogram from Matrix", "row", "Count", 6, 4, "color", 1, valueCol2$, "", 0, 1, 0, 0, 0
+@emlDrawHistogram: data, "Histogram from Matrix", "row", "Count", 6, 4, "color", 1, valueCol2$, "", 0, 1, axisValueMin, axisValueMax, 0
 
 # The same step through the menu:
 # In the GUI: New > EML Tools > EML Graphs...
@@ -571,7 +576,7 @@ data = selected ()
 scatterAnalysisType = 3
 annotCorrType$ = "spearman"
 scatterRegressionLine = 1
-@emlDrawScatterPlot: data, "Scatter with stats", "x", "y", 6, 4, "color", 1, xCol$, yCol$, "", 0, 0, 0, 0, 1
+@emlDrawScatterPlot: data, "Scatter with stats", "x", "y", 6, 4, "color", 1, xCol$, yCol$, "", 0, 0, axisYMin, axisYMax, 1
 
 # spearman correlation reported on 24 complete pairs
 #   spl2 = 199.9998 + 0.0620 x spl, R-squared = 0.0046
@@ -588,7 +593,7 @@ data = selected ()
 scatterAnalysisType = 1
 annotCorrType$ = "spearman"
 scatterRegressionLine = 1
-@emlDrawScatterPlot: data, "Scatter, monotonic fit", "x", "y", 6, 4, "color", 1, xCol$, yCol$, "", 0, 0, 0, 0, 1
+@emlDrawScatterPlot: data, "Scatter, monotonic fit", "x", "y", 6, 4, "color", 1, xCol$, yCol$, "", 0, 0, axisYMin, axisYMax, 1
 
 # spearman correlation reported on 24 complete pairs
 #   fit line: Theil-Sen (monotonic), slope = 0.0374, intercept = 201.0878
