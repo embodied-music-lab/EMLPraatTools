@@ -1,0 +1,193 @@
+praat_version	Praat 6.6.30 (June 30 2026)
+source_tree	/home/claude/EMLPraatTools
+leg	onebin
+onebin_bin_width	5.383301
+onebin_bins_in_range	1
+onebin_peak_db	80.3356
+onebin_peak_freq	1001.2939
+onebin_window_lo	998.0000
+onebin_window_hi	1002.0000
+onebin_drawn_one_bin	1
+onebin_proc_bins_in_range	1
+leg	twobin
+twobin_bin_width	5.383301
+twobin_bins_in_range	2
+twobin_peak_db	80.3356
+twobin_peak_freq	1001.2939
+twobin_window_lo	995.0000
+twobin_window_hi	1005.0000
+twobin_drawn_one_bin	0
+twobin_proc_bins_in_range	2
+leg	zerobin
+zerobin_bin_width	5.383301
+zerobin_bins_in_range	0
+zerobin_peak_db	-1000.0000
+zerobin_peak_freq	0
+zerobin_window_lo	1002.0000
+zerobin_window_hi	1006.0000
+zerobin_drawn_one_bin	0
+zerobin_proc_bins_in_range	0
+leg	onebin_long
+long_bin_width	0.336456
+long_bins_in_range	1
+long_peak_db	88.6788
+long_drawn_one_bin	1
+leg	onebin_below
+below_bins_in_range	1
+below_peak_db	24.8545
+below_floor	60.0000
+below_drawn_one_bin	0
+leg	dbcheck
+db_binwidth	10.766602
+db_naive	64.945717
+db_mine	78.276803
+db_praat	78.276803
+db_delta	0
+db_naive_gap	13.331086
+db_binwidth	5.383301
+db_naive	68.908317
+db_mine	79.229103
+db_praat	79.229103
+db_delta	0
+db_naive_gap	10.320786
+db_binwidth	5.383301
+db_naive	71.353620
+db_mine	81.674407
+db_praat	81.674407
+db_delta	0
+db_naive_gap	10.320786
+db_binwidth	2.691650
+db_naive	72.967587
+db_mine	80.278073
+db_praat	80.278073
+db_delta	0
+db_naive_gap	7.310486
+db_binwidth	2.691650
+db_naive	74.016872
+db_mine	81.327358
+db_praat	81.327358
+db_delta	0
+db_naive_gap	7.310486
+leg	ltas_curve
+ltas_curve_bin_width	100.0000
+ltas_curve_bins_in_range	1
+ltas_curve_bin_db	67.5269
+leg	ltas_bars
+ltas_bars_bin_width	100.0000
+ltas_bars_bins_in_range	1
+ltas_bars_bin_db	67.5269
+leg	rec_auto
+rec_auto_resolved_min	140.0000
+rec_auto_resolved_max	320.0000
+rec_auto_flushed	1
+leg	rec_two
+rec_two_spec_resolved_min	20.0000
+rec_two_spec_resolved_max	95.0000
+rec_two_flushed	1
+leg	rec_form
+rec_form_flushed	1
+leg	rec_noform
+rec_noform_resolved_min	150.0000
+rec_noform_resolved_max	400.0000
+rec_noform_flushed	1
+leg	rec_pairs
+rec_pairs_flushed	1
+leg	native_edited
+native_edited_min	120.0000
+native_edited_max	500.0000
+leg	native_recorded
+native_recorded_min	140.0000
+native_recorded_max	320.0000
+leg	--shell--
+rec_auto_emitted	yes
+rec_auto_blockline	axisYMin  = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- step 1 (draw)
+rec_auto_blockline	axisYMax  = 0.0   ; on the recorded data it resolved to 140.0000 .. 320.0000
+rec_auto_violin_call	axisYMin, axisYMax
+rec_auto_box_call	
+rec_auto_bar_call	
+rec_auto_spectrum_call	
+rec_auto_block_promise	1
+rec_two_emitted	yes
+rec_two_blockline	axisYMin  = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- step 1 (draw)
+rec_two_blockline	axisYMax  = 0.0   ; on the recorded data it resolved to 140.0000 .. 320.0000
+rec_two_blockline	axisYMin2 = 20   ; the y-axis range -- as typed in the dialog -- step 2 (draw)
+rec_two_blockline	axisYMax2 = 95   ; the figure was drawn on 20.0000 .. 95.0000
+rec_two_violin_call	axisYMin, axisYMax
+rec_two_box_call	
+rec_two_bar_call	
+rec_two_spectrum_call	6, 4, "color", 1, 995, 1005, axisYMin2, axisYMax2
+rec_two_block_promise	1
+rec_form_emitted	yes
+rec_form_blockline	axisYMin  = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- step 1 (draw)
+rec_form_blockline	axisYMax  = 0.0   ; on the recorded data it resolved to 190.0000 .. 290.0000
+rec_form_violin_call	axisYMin, axisYMax
+rec_form_box_call	
+rec_form_bar_call	
+rec_form_spectrum_call	
+rec_form_block_promise	1
+rec_noform_emitted	yes
+rec_noform_blockline	axisYMin  = 150   ; the y-axis range -- as typed in the dialog -- step 1 (draw)
+rec_noform_blockline	axisYMax  = 400   ; the figure was drawn on 150.0000 .. 400.0000
+rec_noform_violin_call	axisYMin, axisYMax
+rec_noform_box_call	
+rec_noform_bar_call	
+rec_noform_spectrum_call	
+rec_noform_block_promise	1
+rec_pairs_emitted	yes
+rec_pairs_blockline	axisYMin  = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- step 1 (draw)
+rec_pairs_blockline	axisYMax  = 0.0   ; on the recorded data it resolved to 140.0000 .. 320.0000
+rec_pairs_blockline	axisYMin2 = 0   ; the y-axis range -- as typed in the dialog -- step 2 (draw)
+rec_pairs_blockline	axisYMax2 = 120   ; the figure was drawn on 0.0000 .. 120.0000
+rec_pairs_blockline	axisYMin3 = 0   ; the y-axis range -- as typed in the dialog -- step 3 (draw)
+rec_pairs_blockline	axisYMax3 = 300   ; the figure was drawn on 0.0000 .. 300.0000
+rec_pairs_violin_call	axisYMin, axisYMax
+rec_pairs_box_call	axisYMin2, axisYMax2
+rec_pairs_bar_call	axisYMin3, axisYMax3
+rec_pairs_spectrum_call	
+rec_pairs_block_promise	1
+edit_lines_changed	2
+edit_below_block	0
+replay_same_min	140.0000
+replay_same_max	320.0000
+replay_edited_min	120.0000
+replay_edited_max	500.0000
+onebin_interior_ink	1490
+onebin_bytes	48531
+twobin_interior_ink	1628
+twobin_bytes	53248
+zerobin_interior_ink	0
+zerobin_bytes	49003
+onebin_long_interior_ink	1645
+onebin_long_bytes	50892
+onebin_below_interior_ink	0
+onebin_below_bytes	54911
+ltas_curve_interior_ink	0
+ltas_curve_bytes	53693
+ltas_bars_interior_ink	3412
+ltas_bars_bytes	54163
+rec_auto_interior_ink	6544
+rec_auto_bytes	88763
+native_edited_interior_ink	4428
+native_edited_bytes	69639
+native_recorded_interior_ink	6544
+native_recorded_bytes	88763
+replay_same_interior_ink	6544
+replay_same_bytes	88763
+replay_edited_interior_ink	4428
+replay_edited_bytes	69639
+onebin_top_row	175
+onebin_bottom_row	919
+onebin_col_first	1058
+onebin_col_last	1060
+twobin_top_row	174
+twobin_bottom_row	228
+twobin_col_first	110
+twobin_col_last	807
+onebin_long_top_row	97
+onebin_long_bottom_row	919
+onebin_long_col_first	302
+onebin_long_col_last	304
+edited_matches_native	yes
+edited_matches_recorded	no
+same_matches_recorded	yes
+native_auto_matches_recorded	yes

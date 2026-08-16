@@ -1,0 +1,18 @@
+head_spectrum	21	the draw asks the Spectrum how many bins are in the window
+head_recorder	46	every recorded draw call has an axis-map entry (0 mapped)
+stem_branch_unreachable	8	two or more bins in range still go through Praat's own Draw:
+request_answer_discarded	3	and none of them throws the answer away (0 read .min, 0 read .max)
+naive_db	2	the stem's height uses the bin-width factor Praat's own Draw: uses
+stem_full_height	2	exactly one bin is drawn as a mark that needs no second point
+stem_at_window_centre	2	and it stands at the bin's own frequency      
+zerobin_invents_a_mark	4	exactly one bin is drawn as a mark that needs no second point
+below_floor_drawn	2	and refused when the bin falls below the axis floor
+block_is_decoration	7	and the draw step reads them rather than its own literals (0, 0)
+hardcode_auto	8	an explicit range is carried as the numbers the user typed (axisYMin  = 0.0   ; the y-axis r
+pair_split	4	a pair is matched on BOTH its ends before it is shared between steps
+zero_is_absent	21	the axis lift is guarded on 'is a number' and not on 'is non-empty'
+note_dropped	2	and what it resolved to on the recorded data (axisYMax  = 0.0   ; set both to fix the axis i
+map_typo	7	every recorded draw call has an axis-map entry (14 mapped)
+wrong_slot	22	and every one of them points at an adjacent Min/Max pair in that procedure's own signature (
+no_fallback	30	it prefers the form's untouched request when the form published one
+globals_ignored	4	it prefers the form's untouched request when the form published one
