@@ -1,0 +1,18 @@
+praat_version	Praat 6.6.30 (June 30 2026)
+build_rc	0
+name	plugin_EML_Praat_Tools
+artefact_sha256	7e92d045a382b771f6e1e4c7262f2502e5a89b7187dfd4257bbc32703dd3db88
+zip_sha256	4c71a4710b0e22e7fce2fefdff73c545d381aae32e3075961e77425365d774c9
+setup_under_test	shipped
+setup_sha256	cd6eb388d4f3feea8566491655df5c229b8f482bb8a8ed7dc0a36fad65c9f7d4
+unpacked_folder	plugin_EML_Praat_Tools
+unpacked_files	322
+unpacked_modes_other_than_0644_0755	0
+broken_damage	syntax
+broken_setup_lines_cut	-1
+broken_setup_first_line	Add menu command: "Objects"
+quickstart_rc	0
+quickstart_line	t(13.6) = 7.89, p < .001
+installed_objects_window	1
+installed_dialog_title	Create Demo Table
+installed_windows	Praat Objects|Praat Picture|Pause: Create Demo Table
