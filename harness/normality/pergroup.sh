@@ -86,9 +86,18 @@ MENU_NONE=1
 MENU_GRP=2
 
 # rig up if this instance is not already serving
+#
+# THROUGH `bash`, NOT AS A COMMAND. Not one of the sixty shell scripts in this
+# repository carries an execute bit -- every driver is documented and invoked
+# as `bash harness/.../x.sh` -- so exec'ing rig.sh directly is
+# "Permission denied" on a fresh clone, and this script then reports the rig
+# "would not come up" and exits 1 for a reason that has nothing to do with the
+# rig. Found 16 Aug 2026 by validate/tools/redrive_census.sh, which scored the
+# whole normality harness DRIVER-FAILED on it and so never drove run.sh, the
+# headless half that writes 127 of its 128 artefacts.
 if ! DISPLAY=":9$I" xdpyinfo >/dev/null 2>&1; then
     echo "bringing up rig instance $I"
-    REPO="$REPO" "$REPO/harness/walks/rig.sh" up "$I" >/dev/null || {
+    REPO="$REPO" bash "$REPO/harness/walks/rig.sh" up "$I" >/dev/null || {
         echo "pergroup.sh: rig instance $I would not come up" >&2; exit 1; }
 fi
 
