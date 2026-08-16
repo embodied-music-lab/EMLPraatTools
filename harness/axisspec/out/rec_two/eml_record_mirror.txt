@@ -1,0 +1,9 @@
+# EML record workflow -- crash mirror. Rows are appended as they
+# are recorded, so a session lost to a crash is still readable.
+--- step 1 (draw)
+Violin plot of val, grouped by grp, 3 groups.
+Violin width is a kernel density estimate, not a count.
+@emlDrawViolinPlot: data, "f0 by group", "Group", "val", 6, 4, "color", 1, "grp", "val", 0, 0
+--- step 2 (draw)
+Spectrum: 1 kHz tone, 0.15 s
+@emlDrawSpectrum: data, "1 kHz tone, 0.15 s", "Frequency (Hz)", "Power (dB)", 6, 4, "color", 1, 995, 1005, 20, 95
