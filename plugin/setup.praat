@@ -8,31 +8,29 @@
 #
 # License: GPL-3.0-or-later
 # Version: 1.7
-# v1.7: AUTHOR RULING, 16 August 2026: REGISTER BATCH VOICE ANALYSIS. Two menu
-#       lines added — the "-- eml batch --" separator and "Batch voice
-#       analysis..." — in the position the tabling note's own restore lines
-#       named, after "EML Graphs...". No action button on any object type: the
-#       module reads a folder off disk and ignores the selection entirely, so a
-#       button that appeared because a Sound was selected would be telling the
-#       user something untrue. Nothing else is added, removed or re-chained.
-#       Two things about this file turned out to be wrong and are corrected in
-#       comment: after$ does NOT decide the rendered order once an anchor has
-#       been used (source order does), and a "-- label --" separator renders as
-#       a rule with no text, so none of the nine labels is ever seen by a user.
-#       Both were photographed under Xvfb, not reasoned: harness/batchgui.
+# v1.7: BATCH VOICE ANALYSIS IS REGISTERED. Two menu lines — the
+#       "-- eml batch --" separator and "Batch voice analysis..." — after
+#       "EML Graphs...". No action button on any object type: the module reads
+#       a folder off disk and ignores the selection entirely, so a button that
+#       appeared because a Sound was selected would be telling the user
+#       something untrue. Nothing else is added, removed or re-chained. Two
+#       facts about Praat's menu rendering are written down with it, both
+#       photographed under Xvfb rather than reasoned (harness/batchgui):
+#       after$ does NOT decide the rendered order once an anchor has been used
+#       — source order does — and a "-- label --" separator renders as a rule
+#       with no text, so none of the nine labels is ever seen by a user.
 #       Coverage: validate/v72_batch_registration.R.
-# v1.6: No registration added, removed or re-chained. AUTHOR RULING, 14 August
-#       2026, on the eleven TableOfReal/Matrix buttons: MAKE THEM OPERABLE,
-#       do not unregister them. The v1.3 note below said those buttons were
+# v1.6: No registration added, removed or re-chained. The eleven
+#       TableOfReal/Matrix buttons are OPERABLE rather than unregistered.
+#       The v1.3 note below said those buttons were
 #       added for "Describe, Compare, Correlate, Regression, Wizard" and did
 #       not mention EML Graphs, which is registered on both types as well —
 #       corrected, and the whole population is now written down where it is
 #       registered, beside the block that registers it. See the note above
 #       the TableOfReal/Matrix section and validate/v59_entry_points.R.
-# v1.5: Corrected the eml-lmm.praat procedure count in the tabled-mixed-models
-#       note from 31 to 32, and recorded the grep that re-derives it (and the
-#       two counts beside it) so the next reader does not have to trust the
-#       number. Comment only; no menu registration changed.
+# v1.5: Comment only; no menu registration changed. The counts quoted in
+#       the tabled-mixed-models note carry the grep that re-derives them, so
+#       the next reader does not have to trust a number.
 # v1.4: Item 4 — unregistered the "EML Interactive Tutorial" menu entry.
 #       scripts/eml-tutorial.praat includes tutorial/eml-demo-procedures.praat,
 #       a directory that does not exist in the plugin, so the menu item was
@@ -108,7 +106,7 @@ Add menu command: "Objects", "New", "-- eml correlate --", "Compare two-way (ANO
 Add menu command: "Objects", "New", "Correlate two columns...", "-- eml correlate --", 1, "scripts/eml-correlate.praat"
 Add menu command: "Objects", "New", "Linear regression...", "Correlate two columns...", 1, "scripts/eml-regress.praat"
 
-# Mixed models — TABLED, 5 August 2026, by author ruling.
+# Mixed models — NOT REGISTERED. Tabled for end users.
 #
 # The "Linear mixed model..." menu entry and its "-- eml mixed --" separator
 # are removed, and the Post-Hoc separator below is rechained to follow
@@ -137,11 +135,11 @@ Add menu command: "Objects", "New", "Pairwise comparisons...", "-- eml posthoc -
 Add menu command: "Objects", "New", "-- eml graphs --", "Pairwise comparisons...", 1, ""
 Add menu command: "Objects", "New", "EML Graphs...", "-- eml graphs --", 1, "scripts/eml-graphs.praat"
 
-# Batch voice analysis — REGISTERED AGAIN, 16 August 2026, by author ruling.
+# Batch voice analysis.
 #
-# Tabled on 6 August 2026 because it had no validation of any kind, and it is
-# the one part of this plugin that calls Praat's OWN acoustic extraction rather
-# than doing its own arithmetic. That reason is now spent: 255 checks across
+# THE VALIDATION BEHIND THE REGISTRATION. This is the one part of the plugin
+# that calls Praat's OWN acoustic extraction rather than doing its own
+# arithmetic, so the entry rests on 255 checks:
 # validate/v52_acoustic_calls.R (nine call sites, canonical parameter sets,
 # algorithm-to-purpose routing, live argument order at 6.6.30),
 # validate/v53_batch_flow.R (seven driven corpora — the file loop, the failure
@@ -156,14 +154,11 @@ Add menu command: "Objects", "New", "EML Graphs...", "-- eml graphs --", 1, "scr
 # nothing whatever about the FORM. So harness/batchgui presses this entry
 # through the real menu, under Xvfb, and drives the real Batch Voice Analysis
 # dialog to a written CSV. That is the difference between registering a door
-# and registering a door somebody has walked through, and it is the severity-2
-# finding the audit made about dead doors.
+# and registering a door somebody has walked through.
 #
-# THE POSITION IS THE AUTHOR'S OWN, from the tabling note below: after
-# "EML Graphs...", before the data group. It is written HERE, in source order,
-# rather than uncommented where the tabling note keeps it — see the note under
-# the demos block for why source order is what decides this and the after$
-# argument is not.
+# THE POSITION: after "EML Graphs...", before the data group. It is written
+# HERE, in source order — see the note under the demos block for why source
+# order is what decides this and the after$ argument is not.
 #
 # NO ACTION BUTTON, ON ANY OBJECT TYPE, and that is a decision rather than an
 # omission. Every other EML entry point is registered on the class it consumes
@@ -174,8 +169,8 @@ Add menu command: "Objects", "New", "EML Graphs...", "-- eml graphs --", 1, "scr
 # shape for exactly this idea, `Add action command: "Sound", 0, …` for a
 # "Batch process..." button, and a button on Sound here would honour that shape
 # while telling the user a lie: it would appear because they had selected a
-# Sound and would then ignore it. A button that appears for the wrong reason is
-# the same class of defect as a button that does nothing.
+# Sound and would then ignore it. A button that appears for the wrong reason
+# misleads a user exactly as much as a button that does nothing.
 Add menu command: "Objects", "New", "-- eml batch --", "EML Graphs...", 1, ""
 Add menu command: "Objects", "New", "Batch voice analysis...", "-- eml batch --", 1, "scripts/eml-batch-process.praat"
 
@@ -202,7 +197,7 @@ Add menu command: "Objects", "New", "Check & repair data...", "-- eml data --", 
 # These two cost two lines here and nothing on any dialog. Recording is
 # discovered by @emlRecordInit, which every entry point already runs.
 Add menu command: "Objects", "New", "-- eml record --", "Check & repair data...", 1, ""
-# THREE COMMANDS, EACH NAMED FOR WHAT IT DOES. Author ruling, 13 Aug 2026.
+# THREE COMMANDS, EACH NAMED FOR WHAT IT DOES.
 # 'Stop recording and open' writes a review copy into a folder the plugin owns
 # and raises it in a ScriptEditor; 'Stop recording and save' asks where to put
 # it. Both end the session, which is why neither carries a tickbox asking.
@@ -210,19 +205,16 @@ Add menu command: "Objects", "New", "Record script", "-- eml record --", 1, "scr
 Add menu command: "Objects", "New", "Stop recording and open", "Record script", 1, "scripts/eml-record-open.praat"
 Add menu command: "Objects", "New", "Stop recording and save...", "Record script", 1, "scripts/eml-record-save.praat"
 
-# ── TABLED, 6 August 2026, by author ruling ───────────────────────────────
+# ── TABLED — not registered ───────────────────────────────────────────────
 #
 # EML Stats Quick Start and the interactive tutorial are disconnected from end
-# users for now. Same treatment as linear mixed models on 5 August: NOTHING IS
-# DELETED. scripts/eml-quick-start.praat and scripts/eml-tutorial.praat are
+# users for now. Same treatment as linear mixed models: NOTHING IS DELETED. scripts/eml-quick-start.praat and scripts/eml-tutorial.praat are
 # both intact and untouched; only their menu registrations are removed.
 #
-# BATCH VOICE ANALYSIS IS NO LONGER ON THIS LIST. It was tabled here on
-# 6 August with the words "To be covered", and it has been: the registration
-# is live again above, under its own note. The condition the tabling set is
-# the condition that lifted it.
+# Batch voice analysis is NOT on this list: it is registered above, under its
+# own note, with the validation that entry rests on.
 #
-# Why each of the rest:
+# Why each of these:
 #
 #   EML Stats Quick Start  Never driven; content not reviewed.
 #
@@ -236,28 +228,26 @@ Add menu command: "Objects", "New", "Stop recording and save...", "Record script
 # Run Stats Demo is ALSO removed: the author has said it needs a complete
 # redo, and a demo that misrepresents the tools is worse than no demo.
 # Create Demo Table stays — it builds the tables the rest of the plugin is
-# exercised with, and it is the most-driven wrapper in the audit.
+# exercised with, and it is the most-driven wrapper in the tree.
 #
 # TO RESTORE any of these: uncomment its line below and PUT THE LINE WHERE THE
 # ENTRY IS TO APPEAR.
 #
-# WHAT DECIDES THE ORDER, MEASURED RATHER THAN REASONED. This note used to say
-# "the chain is positional — each entry names the one before it — so restoring
-# out of order silently reorders the menu", and that is not what Praat 6.6.30
-# does when the same after$ anchor is named twice. Both "-- eml data --" and
-# "-- eml demos --" are registered after "EML Graphs...", and if the anchor
-# decided, the demos group would render between EML Graphs and Check & repair
-# data. It does not: photographed under Xvfb on 16 August 2026
+# WHAT DECIDES THE ORDER, MEASURED RATHER THAN REASONED. It is the SOURCE
+# ORDER of the lines in this file, not the after$ anchor: on Praat 6.6.30 an
+# anchor resolves the first time it is used and is inert afterwards. Both
+# "-- eml data --" and "-- eml demos --" name "EML Graphs...", and if the
+# anchor decided, the demos group would render between EML Graphs and Check &
+# repair data. It does not — photographed under Xvfb
 # (harness/batchgui/out/menu_before.png), Create Demo Table renders LAST, at
 # the foot of the submenu, which is where its line sits in this file.
 #
-# SO THE SOURCE ORDER IS THE MENU ORDER, and after$ resolves the first time it
-# is used and is inert afterwards. That matters for restoring an entry: moving
-# a commented line back to life WHERE IT SITS IN THIS BLOCK would put it at the
-# end of the submenu whatever its after$ says. The batch entry was restored on
-# 16 August by writing its two lines up beside "EML Graphs...", the position
-# its after$ named, and the result was photographed
-# (harness/batchgui/out/menu_after.png) rather than assumed.
+# THAT MATTERS FOR RESTORING AN ENTRY: bringing a commented line back to life
+# WHERE IT SITS IN THIS BLOCK would put it at the end of the submenu whatever
+# its after$ says. Write it where the entry is to appear — the batch entry's
+# two lines sit up beside "EML Graphs...", the position its after$ names, and
+# the result is photographed (harness/batchgui/out/menu_after.png) rather than
+# assumed.
 #
 # AND THE SEPARATOR TEXT IS NEVER SEEN BY A USER. "-- eml batch --" reads like
 # a heading in this file and renders as a plain horizontal rule with no text at
@@ -270,11 +260,10 @@ Add menu command: "Objects", "New", "Stop recording and save...", "Record script
 # Add menu command: "Objects", "New", "-- eml help --", "Run Stats Demo", 1, ""
 # Add menu command: "Objects", "New", "EML Stats Quick Start", "-- eml help --", 1, "scripts/eml-quick-start.praat"
 
-# Demos — Create Demo Table only. Its after$ still names "EML Graphs...", which
-# is where the batch separator sat when the batch entry was tabled; the batch
-# entry is registered there again as of 16 August 2026, and this group did not
-# move, because it never rendered there. It renders last, where these two lines
-# sit. See the measured note above.
+# Demos — Create Demo Table only. Its after$ names "EML Graphs...", which is
+# also where the batch separator sits, and this group does not render there
+# regardless: it renders last, where these two lines sit. See the measured
+# note above.
 Add menu command: "Objects", "New", "-- eml demos --", "EML Graphs...", 1, ""
 Add menu command: "Objects", "New", "Create Demo Table...", "-- eml demos --", 1, "scripts/eml-create-demo.praat"
 
@@ -304,11 +293,10 @@ Add action command: "Ltas", 1, "", 0, "", 0, "EML Graphs...", "", 0, "scripts/em
 # ── Dynamic action buttons: TableOfReal and Matrix (auto-convert to Table) ──
 #
 # ELEVEN REGISTRATIONS — six on TableOfReal, five on Matrix. A registration is
-# a PROMISE: the button is there, so the dialog opens. On 14 August 2026 eight
-# of these eleven broke that promise before their dialog appeared, and the
-# author's ruling was to finish the coercion rather than take the buttons
-# away. Dead doors are worse than absent features; they teach users that the
-# plugin crashes.
+# a PROMISE: the button is there, so the dialog opens. Eight of these eleven
+# depend on a coercion that has to be finished before the dialog appears, and
+# finishing it is the answer rather than taking the buttons away. Dead doors
+# are worse than absent features; they teach users that the plugin crashes.
 #
 # WHAT EACH ONE DOES WITH THE OBJECT IT IS REGISTERED ON, and this is the
 # whole reason the failure was uneven — there is no single coercion, there
@@ -316,7 +304,7 @@ Add action command: "Ltas", 1, "", 0, "", 0, "EML Graphs...", "", 0, "scripts/em
 #
 #   scripts/eml-describe-table.praat  its own @emlDescribeCoerceSelection,
 #                                     then @emlWrapperInit. Defaults empty
-#                                     row labels to r1..rn (author ruling)
+#                                     row labels to r1..rn
 #                                     and names the converted Table
 #                                     eml_converted_<source> before anything
 #                                     that can raise runs.
