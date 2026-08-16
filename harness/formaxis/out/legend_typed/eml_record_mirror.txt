@@ -1,0 +1,10 @@
+# EML record workflow -- crash mirror. Rows are appended as they
+# are recorded, so a session lost to a crash is still readable.
+--- step 1 (draw)
+Grouped violin: f0 by cohort
+Violin width is a kernel density estimate, not a count.
+@emlDrawGroupedViolin: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, "grp", "sub", "val", 100, 300
+--- step 2 (draw)
+Grouped violin: f0 by cohort
+Violin width is a kernel density estimate, not a count.
+@emlDrawGroupedViolin: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, "grp", "sub", "val", 100, 300
