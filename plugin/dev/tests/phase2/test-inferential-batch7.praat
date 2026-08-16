@@ -12,7 +12,7 @@
 # Revised: 2 August 2026 (v1.1)
 # v1.1 — Audit item 9 (fabricated results on a degenerate input).
 # When every observation is identical the rank-sum variance is zero, so
-# Dunn's z is 0/0. The library used to emit z = 0 and p = 1, which reads as
+# Dunn's z is 0/0. Emitting z = 0 and p = 1 there reads as
 # "tested, no difference" when in fact no test was possible. It now
 # propagates undefined for both, and callers must guard. The two assertions
 # below were revised to check for undefined rather than the fabricated

@@ -54,7 +54,7 @@
 #
 #     All literals are now written to 10 decimal places and checked at
 #     tightTolerance = 1e-9 — three orders of magnitude tighter than the
-#     rounding of the literal itself, so a wrong literal can no longer
+#     rounding of the literal itself, so a wrong literal cannot
 #     hide inside the tolerance. looseTolerance is removed (dead after
 #     this change; Rule 35).
 # 1.0 (26 Feb 2026) — Initial.
@@ -119,7 +119,12 @@ tightTolerance = 0.000000001
 @emlTestAssertEqualNum: "Welch n2", 5, emlTTest.n2, 0
 
 # --- Test 1.2: Welch one-tailed ---
-# One-tailed p should be half of two-tailed
+# .tails = 1 is the fixed alternative H1: mean1 > mean2, so the literal below
+# is R's t.test(.g1#, .g2#, alternative = "greater"). Do NOT read it as "half
+# of two-tailed": that reading matches here only because .g1# is the LARGER
+# group, so the observed direction and the fixed alternative agree. Swap the
+# two vectors and the p becomes 0.9772676905, not 0.0227323095.
+# See validate/v73_directional_p.R for the reversal matrix.
 @emlTTest: .g1#, .g2#, 1, 0
 @emlTestAssertEqualNum: "Welch p one-tailed", 0.0227323095, emlTTest.p, tightTolerance
 

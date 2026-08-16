@@ -14,7 +14,7 @@
 #       no way to tell "5 checks passed" from "the file died at include
 #       time". The five checks are now @emlTestAssertTrue calls and
 #       @emlTestSummary emits the machine-readable sentinel. The ANOVA
-#       error path no longer calls exitScript: — a failed ANOVA is now a
+#       error path does not call exitScript: — a failed ANOVA is a
 #       reported FAIL plus SKIPs for the checks it makes unanswerable,
 #       which is INCOMPLETE rather than a vanished suite.
 #

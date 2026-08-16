@@ -52,13 +52,12 @@
 # Uses shared test helpers (eml-test-helpers.praat).
 #
 # CHANGELOG
-# 1.1 (8 Aug 2026) — E-3's expected refusal text updated for D99. The needle
-#     was "all x values are identical", which matched the pre-D99 message
-#     "emlTheilSen: all x values are identical". D99 (audit/FINDINGS_INDEX.md,
-#     CLARITY) required the internal procedure name out of user-facing text,
-#     and eml-inferential.praat now emits "All <n> x values are identical, so
-#     no slope can be estimated. The predictor must vary." — capital A, so the
-#     old needle no longer occurs. The needle now reads "All 3 x values are
+# 1.1 — E-3's expected refusal text. The needle is not "all x values are
+#     identical", which would match a message prefixed with the procedure
+#     name ("emlTheilSen: ..."). User-facing text carries no internal
+#     procedure name, and eml-inferential.praat emits "All <n> x values are
+#     identical, so no slope can be estimated. The predictor must vary." —
+#     capital A. The needle reads "All 3 x values are
 #     identical", which also asserts the count is the real n rather than a
 #     hard-coded word. The NUMERIC contract was never in question and is
 #     unchanged: scipy.stats.theilslopes on x = {4,4,4} warns "All `x`
@@ -253,7 +252,7 @@ e2Y# = { 7 }
 e3X# = { 4, 4, 4 }
 e3Y# = { 1, 2, 3 }
 @emlTheilSen: e3X#, e3Y#
-; Post-D99 wording: no procedure name, and the count is the real n.
+; Wording: no procedure name, and the count is the real n.
 @emlTestAssertContains: "E-3 error message", emlTheilSen.error$,
 ... "All 3 x values are identical"
 @emlTestAssertUndefined: "E-3 slope undefined", emlTheilSen.slope

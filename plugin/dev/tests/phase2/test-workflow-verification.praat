@@ -14,7 +14,7 @@
 # CHANGELOG
 # 1.1 (8 Aug 2026) — Two pre-existing failures, both in this file.
 #     (a) Section A asserted the default emlShowExplanations = 0. The default
-#         is now 1 and that is deliberate (D42/D102 — see the comment at the
+#         is 1 and that is deliberate (see the comment at the
 #         assertion and the block above `emlShowExplanationsDefault = 1` in
 #         stats/eml-output.praat). Stale test, not a regression; expectation
 #         moved to 1 with the reason written beside it so it is not moved
@@ -77,7 +77,7 @@ include ../eml-test-helpers.praat
 # It was 0 and no wrapper ever raised it, so glosses were missing from every
 # wrapper report while the graph path (which sets the gate to 1) had them —
 # the same analysis narrated two different ways depending on whether a figure
-# had been drawn earlier in the session. Findings D42/D102; the rationale is
+# had been drawn earlier in the session. The rationale is
 # written out above `emlShowExplanationsDefault = 1` in stats/eml-output.praat.
 # That variable is the single declaration: @emlResetExplanations restores it
 # rather than a literal, so the initial and restored values cannot drift.
