@@ -5,10 +5,10 @@
 # Version: 1.4
 # Date: 2 August 2026
 #
-# v1.4: D125 — @emlPairwiseT and @emlPairwiseWilcoxon now call
+# V1.4: @emlPairwiseT and @emlPairwiseWilcoxon now call
 #        @emlRequireNumericColumn (.strict = 0) straight after the
-#        @emlRequireColumnPresent check D116 gave them. An all-blank data
-#        column used to leave both with an empty error$ and a matrix of
+#        @emlRequireColumnPresent check. An all-blank data column would
+#        otherwise leave both with an empty error$ and a matrix of
 #        undefined: no number was produced, so nothing could be misread as
 #        a result, but a direct caller could not tell a refusal from a
 #        computation and was told nothing about why. They now refuse in
@@ -19,7 +19,7 @@
 #        No change on any column that holds numbers.
 #
 # v1.3: Statistical-correctness fixes (audit items 1-13).
-#   item 1  - @emlSpearmanCorrelation no longer clobbers
+#   item 1  - @emlSpearmanCorrelation does not clobber
 #             @emlPearsonCorrelation's outputs: the shared computation
 #             moved into the internal @eml_pearsonCore, and both public
 #             procedures are now thin wrappers over it.
@@ -28,8 +28,8 @@
 #             report layer rendered as "p < .001". .p is now 0 with new
 #             .perfect and .warning$ outputs disclosing it; n < 3 and
 #             zero-variance inputs are also guarded.
-#   item 3  - @emlTukeyHSD no longer fails open: an undefined q (zero SE
-#             or undefined MS-within) used to report p = 1.000 for every
+#   item 3  - @emlTukeyHSD does not fail open: an undefined q (zero SE
+#             or undefined MS-within) would report p = 1.000 for every
 #             comparison. Per-comparison p is now undefined, counted in
 #             .nUndefined and disclosed in .warning$.
 #   item 4  - @emlOneWayAnova guards the eta-squared denominator
@@ -86,6 +86,8 @@
 #
 # Provides: @emlTTest, @emlTTestPaired, @emlCohenD,
 #   @emlPearsonCorrelation, @emlSpearmanCorrelation,
+#   @emlTTestAlt, @emlTTestPairedAlt,
+#   @emlPearsonCorrelationAlt, @emlSpearmanCorrelationAlt,
 #   @emlMannWhitneyU, @emlWilcoxonSignedRank,
 #   @emlRankBiserialR, @emlMatchedPairsR,
 #   @emlBonferroni, @emlHolm, @emlBenjaminiHochberg,
@@ -150,7 +152,10 @@
 # Output:
 #   .t          - t statistic (positive when mean1 > mean2)
 #   .df         - degrees of freedom (fractional for Welch)
-#   .p          - p-value
+#   .p          - p-value for the requested alternative
+#   .pGreater   - one-tailed p for H1: mean1 > mean2
+#   .pLess      - one-tailed p for H1: mean1 < mean2
+#   .alternative$ - "two-sided" or "greater" (the alternative .p refers to)
 #   .mean1      - mean of group 1
 #   .mean2      - mean of group 2
 #   .sd1        - SD of group 1
@@ -161,9 +166,17 @@
 #   .method$    - "Welch" or "Student"
 #   .error$     - error message, or "" if valid
 #
-# One-tailed p: Tests significance in the direction of the observed
-#   effect (i.e., p = studentQ(|t|, df)). The caller must check the
-#   sign of .t to determine effect direction.
+# One-tailed p (.tails = 1): the alternative is FIXED as H1: mean1 >
+#   mean2, matching R's t.test(v1, v2, alternative = "greater") and
+#   matching what .tails = 1 means in @emlMannWhitneyU and
+#   @emlWilcoxonSignedRank. A one-tailed test run in the wrong
+#   direction therefore returns a p-value near 1, not near 0. For the
+#   opposite alternative, read .pLess (or swap the arguments).
+#
+#   .tails counts tails and nothing else: it cannot say WHICH one-sided
+#   alternative is meant, and (v1, v2) and (v2, v1) return p and 1 - p.
+#   @emlTTestAlt names the alternative in words ("two-sided",
+#   "greater", "less") and cannot be misread; prefer it in new code.
 # ============================================================================
 
 procedure emlTTest: .v1#, .v2#, .tails, .equalVariances
@@ -171,6 +184,9 @@ procedure emlTTest: .v1#, .v2#, .tails, .equalVariances
     .t = undefined
     .df = undefined
     .p = undefined
+    .pGreater = undefined
+    .pLess = undefined
+    .alternative$ = ""
     .mean1 = undefined
     .mean2 = undefined
     .sd1 = undefined
@@ -224,11 +240,105 @@ procedure emlTTest: .v1#, .v2#, .tails, .equalVariances
             endif
 
             # --- p-value ---
-            .absT = abs (.t)
+            # studentQ is the SIGNED upper tail P(T >= t) on 6.6.30:
+            # studentQ(2.5298, 7.6) = 0.01836, studentQ(-2.5298, 7.6) =
+            # 0.98164, studentQ(0, df) = 0.5. So the "greater" tail is
+            # studentQ of the SIGNED t, and the "less" tail is studentQ
+            # of its negation. pLess is NOT computed as 1 - pGreater:
+            # that subtraction loses every significant digit of a small
+            # right tail (1 - 1e-17 is exactly 1 in a double).
+            .pGreater = studentQ (.t, .df)
+            .pLess = studentQ (- .t, .df)
             if .tails = 2
+                .alternative$ = "two-sided"
+                .absT = abs (.t)
                 .p = 2 * studentQ (.absT, .df)
             else
-                .p = studentQ (.absT, .df)
+                # One-tailed: fixed alternative H1 mean1 > mean2
+                .alternative$ = "greater"
+                .p = .pGreater
+            endif
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlTTestAlt
+# ============================================================================
+# @emlTTest with the alternative named in words rather than counted in
+# tails. Praat cannot overload a procedure and cannot add an argument
+# to @emlTTest without breaking every existing call site at once, so
+# the explicit form is a separate entry point onto the same kernel.
+#
+# Arguments:
+#   .v1#            - numeric vector, group 1
+#   .v2#            - numeric vector, group 2
+#   .alternative$   - "two-sided", "greater" (H1: mean1 > mean2) or
+#                     "less" (H1: mean1 < mean2). Nothing else.
+#   .equalVariances - 0 = Welch (default), 1 = Student (pooled)
+#
+# Output: the same fields as @emlTTest. .p is the p for the named
+#   alternative; .alternative$ echoes the name it was given. An
+#   unrecognised alternative sets .error$ and leaves every numeric
+#   output undefined — it is not silently treated as two-sided.
+# ============================================================================
+
+procedure emlTTestAlt: .v1#, .v2#, .alternative$, .equalVariances
+    .requested$ = .alternative$
+
+    # Initialize outputs
+    .t = undefined
+    .df = undefined
+    .p = undefined
+    .pGreater = undefined
+    .pLess = undefined
+    .alternative$ = ""
+    .mean1 = undefined
+    .mean2 = undefined
+    .sd1 = undefined
+    .sd2 = undefined
+    .meanDiff = undefined
+    .n1 = undefined
+    .n2 = undefined
+    .method$ = ""
+    .error$ = ""
+
+    .tails = 0
+    if .requested$ = "two-sided"
+        .tails = 2
+    elsif .requested$ = "greater"
+        .tails = 1
+    elsif .requested$ = "less"
+        .tails = 1
+    endif
+
+    if .tails = 0
+        .error$ = "alternative$ must be ""two-sided"", ""greater"" or ""less"""
+    else
+        @emlTTest: .v1#, .v2#, .tails, .equalVariances
+        .t = emlTTest.t
+        .df = emlTTest.df
+        .pGreater = emlTTest.pGreater
+        .pLess = emlTTest.pLess
+        .mean1 = emlTTest.mean1
+        .mean2 = emlTTest.mean2
+        .sd1 = emlTTest.sd1
+        .sd2 = emlTTest.sd2
+        .meanDiff = emlTTest.meanDiff
+        .n1 = emlTTest.n1
+        .n2 = emlTTest.n2
+        .method$ = emlTTest.method$
+        .error$ = emlTTest.error$
+
+        if .error$ = ""
+            .alternative$ = .requested$
+            if .requested$ = "less"
+                .p = .pLess
+            else
+                # "two-sided" and "greater" are what the kernel already
+                # selected for .tails = 2 and .tails = 1 respectively.
+                .p = emlTTest.p
             endif
         endif
     endif
@@ -251,15 +361,27 @@ endproc
 # Output:
 #   .t        - t statistic
 #   .df       - degrees of freedom (n - 1)
-#   .p        - p-value
+#   .p        - p-value for the requested alternative
+#   .pGreater - one-tailed p for H1: v1 > v2
+#   .pLess    - one-tailed p for H1: v1 < v2
+#   .alternative$ - "two-sided" or "greater" (the alternative .p refers to)
 #   .meanDiff - mean of differences (v1 - v2)
 #   .sdDiff   - SD of differences
 #   .seDiff   - standard error of the mean difference
 #   .n        - number of pairs
 #   .error$   - error message, or "" if valid
 #
-# One-tailed p: Tests significance in the direction of the observed
-#   effect. Check sign of .t for direction.
+# One-tailed p (.tails = 1): the alternative is FIXED as H1: v1 > v2,
+#   matching R's t.test(v1, v2, paired = TRUE, alternative =
+#   "greater") and matching what .tails = 1 means in
+#   @emlWilcoxonSignedRank. A one-tailed test run in the wrong
+#   direction therefore returns a p-value near 1, not near 0. For the
+#   opposite alternative, read .pLess (or swap the arguments).
+#
+#   .tails counts tails and nothing else: it cannot say WHICH one-sided
+#   alternative is meant, and (v1, v2) and (v2, v1) return p and 1 - p.
+#   @emlTTestPairedAlt names the alternative in words; prefer it in new
+#   code.
 # ============================================================================
 
 procedure emlTTestPaired: .v1#, .v2#, .tails
@@ -267,6 +389,9 @@ procedure emlTTestPaired: .v1#, .v2#, .tails
     .t = undefined
     .df = undefined
     .p = undefined
+    .pGreater = undefined
+    .pLess = undefined
+    .alternative$ = ""
     .meanDiff = undefined
     .sdDiff = undefined
     .seDiff = undefined
@@ -302,11 +427,88 @@ procedure emlTTestPaired: .v1#, .v2#, .tails
             .t = .meanDiff / .seDiff
 
             # --- p-value ---
-            .absT = abs (.t)
+            # studentQ is the SIGNED upper tail P(T >= t), so the
+            # "greater" tail takes the signed t. .pLess is studentQ of
+            # the negated t and NOT 1 - .pGreater: the subtraction
+            # destroys a small right tail entirely.
+            .pGreater = studentQ (.t, .df)
+            .pLess = studentQ (- .t, .df)
             if .tails = 2
+                .alternative$ = "two-sided"
+                .absT = abs (.t)
                 .p = 2 * studentQ (.absT, .df)
             else
-                .p = studentQ (.absT, .df)
+                # One-tailed: fixed alternative H1 v1 > v2
+                .alternative$ = "greater"
+                .p = .pGreater
+            endif
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlTTestPairedAlt
+# ============================================================================
+# @emlTTestPaired with the alternative named in words. See the note on
+# @emlTTestAlt for why this is a separate entry point rather than an
+# extra argument.
+#
+# Arguments:
+#   .v1#          - numeric vector, condition 1
+#   .v2#          - numeric vector, condition 2 (same length as v1#)
+#   .alternative$ - "two-sided", "greater" (H1: v1 > v2) or "less"
+#                   (H1: v1 < v2). Nothing else.
+#
+# Output: the same fields as @emlTTestPaired. An unrecognised
+#   alternative sets .error$ and leaves every numeric output undefined.
+# ============================================================================
+
+procedure emlTTestPairedAlt: .v1#, .v2#, .alternative$
+    .requested$ = .alternative$
+
+    # Initialize outputs
+    .t = undefined
+    .df = undefined
+    .p = undefined
+    .pGreater = undefined
+    .pLess = undefined
+    .alternative$ = ""
+    .meanDiff = undefined
+    .sdDiff = undefined
+    .seDiff = undefined
+    .n = undefined
+    .error$ = ""
+
+    .tails = 0
+    if .requested$ = "two-sided"
+        .tails = 2
+    elsif .requested$ = "greater"
+        .tails = 1
+    elsif .requested$ = "less"
+        .tails = 1
+    endif
+
+    if .tails = 0
+        .error$ = "alternative$ must be ""two-sided"", ""greater"" or ""less"""
+    else
+        @emlTTestPaired: .v1#, .v2#, .tails
+        .t = emlTTestPaired.t
+        .df = emlTTestPaired.df
+        .pGreater = emlTTestPaired.pGreater
+        .pLess = emlTTestPaired.pLess
+        .meanDiff = emlTTestPaired.meanDiff
+        .sdDiff = emlTTestPaired.sdDiff
+        .seDiff = emlTTestPaired.seDiff
+        .n = emlTTestPaired.n
+        .error$ = emlTTestPaired.error$
+
+        if .error$ = ""
+            .alternative$ = .requested$
+            if .requested$ = "less"
+                .p = .pLess
+            else
+                .p = emlTTestPaired.p
             endif
         endif
     endif
@@ -418,11 +620,26 @@ endproc
 #   .r      - Pearson correlation coefficient
 #   .t      - t statistic
 #   .df     - degrees of freedom (n - 2)
-#   .p      - p-value
+#   .p      - p-value for the requested alternative
+#   .pGreater - one-tailed p for H1: r > 0 (positive association)
+#   .pLess    - one-tailed p for H1: r < 0 (negative association)
+#   .alternative$ - "two-sided" or "greater" (the alternative .p refers to)
 #   .n      - number of pairs
 #   .error$ - error message, or "" if valid
 #   .warning$ - non-fatal disclosure, or "" if none
 #   .perfect  - 1 if |r| = 1 (t undefined), 0 otherwise
+#
+# One-tailed p (.tails = 1): the alternative is FIXED as H1: r > 0,
+#   matching R's cor.test(x, y, alternative = "greater"). The SIGN of
+#   the correlation drives the tail, not its magnitude, so a one-tailed
+#   test run in the wrong direction returns a p-value near 1, not near
+#   0. For the opposite alternative, read .pLess (or negate one
+#   variable).
+#
+#   .tails counts tails and nothing else: it cannot say WHICH one-sided
+#   alternative is meant, and r = +0.96 and r = -0.96 return p and
+#   1 - p. @emlPearsonCorrelationAlt / @emlSpearmanCorrelationAlt name
+#   the alternative in words; prefer them in new code.
 # ============================================================================
 
 # ----------------------------------------------------------------------------
@@ -433,7 +650,13 @@ endproc
 # does NOT call @emlPearsonCorrelation and therefore cannot overwrite
 # the caller-visible emlPearsonCorrelation.* output namespace.
 #
-# Output: .r .t .df .p .n .error$ .warning$ .perfect
+# Spearman reaches this kernel with the RANKS substituted for the raw
+# values, so the sign of rho is the sign of the rank correlation and
+# the directional tails below are the directional tails of rho. No
+# separate direction handling is needed on that path.
+#
+# Output: .r .t .df .p .pGreater .pLess .alternative$ .n .error$
+#         .warning$ .perfect
 # ----------------------------------------------------------------------------
 
 procedure eml_pearsonCore: .x#, .y#, .tails
@@ -441,6 +664,9 @@ procedure eml_pearsonCore: .x#, .y#, .tails
     .t = undefined
     .df = undefined
     .p = undefined
+    .pGreater = undefined
+    .pLess = undefined
+    .alternative$ = ""
     .error$ = ""
     .warning$ = ""
     .perfect = 0
@@ -486,17 +712,47 @@ procedure eml_pearsonCore: .x#, .y#, .tails
                 # Perfect correlation — t is infinite (not a number).
                 # p is 0 in the limit; the undefined t must be
                 # disclosed by the report layer, not printed.
+                #
+                # The directional tails cannot be taken from studentQ
+                # here because t is not a number, so they are written
+                # out at their limits, and which limit is which is
+                # decided by the SIGN of r. r = +1 puts all the mass in
+                # the upper tail (pGreater 0, pLess 1); r = -1 is the
+                # mirror. The wrong-direction perfect effect is
+                # therefore p = 1 exactly — not 0, and not undefined.
                 .t = undefined
                 .p = 0
                 .perfect = 1
+                if .r > 0
+                    .pGreater = 0
+                    .pLess = 1
+                else
+                    .pGreater = 1
+                    .pLess = 0
+                endif
+                if .tails = 2
+                    .alternative$ = "two-sided"
+                else
+                    .alternative$ = "greater"
+                    .p = .pGreater
+                endif
                 .warning$ = "Perfect correlation (|r| = 1): t is infinite and is reported as undefined; p is 0 in the limit"
             else
                 .t = .r * sqrt (.df / (1 - .rSquared))
-                .absT = abs (.t)
+                # studentQ is the SIGNED upper tail P(T >= t), and t
+                # carries the sign of r, so the sign of the correlation
+                # — not its magnitude — drives the tail. .pLess is
+                # studentQ of the negated t, never 1 - .pGreater.
+                .pGreater = studentQ (.t, .df)
+                .pLess = studentQ (- .t, .df)
                 if .tails = 2
+                    .alternative$ = "two-sided"
+                    .absT = abs (.t)
                     .p = 2 * studentQ (.absT, .df)
                 else
-                    .p = studentQ (.absT, .df)
+                    # One-tailed: fixed alternative H1 r > 0
+                    .alternative$ = "greater"
+                    .p = .pGreater
                 endif
             endif
         endif
@@ -510,10 +766,79 @@ procedure emlPearsonCorrelation: .x#, .y#, .tails
     .t = eml_pearsonCore.t
     .df = eml_pearsonCore.df
     .p = eml_pearsonCore.p
+    .pGreater = eml_pearsonCore.pGreater
+    .pLess = eml_pearsonCore.pLess
+    .alternative$ = eml_pearsonCore.alternative$
     .n = eml_pearsonCore.n
     .error$ = eml_pearsonCore.error$
     .warning$ = eml_pearsonCore.warning$
     .perfect = eml_pearsonCore.perfect
+endproc
+
+
+# ============================================================================
+# @emlPearsonCorrelationAlt
+# ============================================================================
+# @emlPearsonCorrelation with the alternative named in words. See the
+# note on @emlTTestAlt for why this is a separate entry point.
+#
+# Arguments:
+#   .x#           - numeric vector, variable 1
+#   .y#           - numeric vector, variable 2 (same length as x#)
+#   .alternative$ - "two-sided", "greater" (H1: r > 0) or "less"
+#                   (H1: r < 0). Nothing else.
+#
+# Output: the same fields as @emlPearsonCorrelation. An unrecognised
+#   alternative sets .error$ and leaves every numeric output undefined.
+# ============================================================================
+
+procedure emlPearsonCorrelationAlt: .x#, .y#, .alternative$
+    .requested$ = .alternative$
+
+    .r = undefined
+    .t = undefined
+    .df = undefined
+    .p = undefined
+    .pGreater = undefined
+    .pLess = undefined
+    .alternative$ = ""
+    .n = undefined
+    .error$ = ""
+    .warning$ = ""
+    .perfect = 0
+
+    .tails = 0
+    if .requested$ = "two-sided"
+        .tails = 2
+    elsif .requested$ = "greater"
+        .tails = 1
+    elsif .requested$ = "less"
+        .tails = 1
+    endif
+
+    if .tails = 0
+        .error$ = "alternative$ must be ""two-sided"", ""greater"" or ""less"""
+    else
+        @eml_pearsonCore: .x#, .y#, .tails
+        .r = eml_pearsonCore.r
+        .t = eml_pearsonCore.t
+        .df = eml_pearsonCore.df
+        .pGreater = eml_pearsonCore.pGreater
+        .pLess = eml_pearsonCore.pLess
+        .n = eml_pearsonCore.n
+        .error$ = eml_pearsonCore.error$
+        .warning$ = eml_pearsonCore.warning$
+        .perfect = eml_pearsonCore.perfect
+
+        if .error$ = ""
+            .alternative$ = .requested$
+            if .requested$ = "less"
+                .p = .pLess
+            else
+                .p = eml_pearsonCore.p
+            endif
+        endif
+    endif
 endproc
 
 
@@ -540,11 +865,25 @@ endproc
 #   .rho    - Spearman correlation coefficient
 #   .t      - t statistic (same conversion as Pearson)
 #   .df     - degrees of freedom (n - 2)
-#   .p      - p-value
+#   .p      - p-value for the requested alternative
+#   .pGreater - one-tailed p for H1: rho > 0
+#   .pLess    - one-tailed p for H1: rho < 0
+#   .alternative$ - "two-sided" or "greater" (the alternative .p refers to)
 #   .n      - number of pairs
 #   .error$ - error message, or "" if valid
 #   .warning$ - non-fatal disclosure, or "" if none
 #   .perfect  - 1 if |rho| = 1 (t undefined), 0 otherwise
+#
+# One-tailed p (.tails = 1): the alternative is FIXED as H1: rho > 0.
+#   The SIGN of the rank correlation drives the tail, not its
+#   magnitude, so a one-tailed test run in the wrong direction returns
+#   a p-value near 1, not near 0. For the opposite alternative, read
+#   .pLess (or negate one variable).
+#
+#   .tails counts tails and nothing else and cannot say WHICH one-sided
+#   alternative is meant — see the note in @emlPearsonCorrelation's
+#   header, which shares this kernel. @emlSpearmanCorrelationAlt names
+#   the alternative in words; prefer it in new code.
 # ============================================================================
 
 procedure emlSpearmanCorrelation: .x#, .y#, .tails
@@ -553,6 +892,9 @@ procedure emlSpearmanCorrelation: .x#, .y#, .tails
     .t = undefined
     .df = undefined
     .p = undefined
+    .pGreater = undefined
+    .pLess = undefined
+    .alternative$ = ""
     .error$ = ""
     .warning$ = ""
     .perfect = 0
@@ -588,8 +930,77 @@ procedure emlSpearmanCorrelation: .x#, .y#, .tails
             .t = eml_pearsonCore.t
             .df = eml_pearsonCore.df
             .p = eml_pearsonCore.p
+            .pGreater = eml_pearsonCore.pGreater
+            .pLess = eml_pearsonCore.pLess
+            .alternative$ = eml_pearsonCore.alternative$
             .warning$ = eml_pearsonCore.warning$
             .perfect = eml_pearsonCore.perfect
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlSpearmanCorrelationAlt
+# ============================================================================
+# @emlSpearmanCorrelation with the alternative named in words. See the
+# note on @emlTTestAlt for why this is a separate entry point.
+#
+# Arguments:
+#   .x#           - numeric vector, variable 1
+#   .y#           - numeric vector, variable 2 (same length as x#)
+#   .alternative$ - "two-sided", "greater" (H1: rho > 0) or "less"
+#                   (H1: rho < 0). Nothing else.
+#
+# Output: the same fields as @emlSpearmanCorrelation. An unrecognised
+#   alternative sets .error$ and leaves every numeric output undefined.
+# ============================================================================
+
+procedure emlSpearmanCorrelationAlt: .x#, .y#, .alternative$
+    .requested$ = .alternative$
+
+    .rho = undefined
+    .t = undefined
+    .df = undefined
+    .p = undefined
+    .pGreater = undefined
+    .pLess = undefined
+    .alternative$ = ""
+    .n = undefined
+    .error$ = ""
+    .warning$ = ""
+    .perfect = 0
+
+    .tails = 0
+    if .requested$ = "two-sided"
+        .tails = 2
+    elsif .requested$ = "greater"
+        .tails = 1
+    elsif .requested$ = "less"
+        .tails = 1
+    endif
+
+    if .tails = 0
+        .error$ = "alternative$ must be ""two-sided"", ""greater"" or ""less"""
+    else
+        @emlSpearmanCorrelation: .x#, .y#, .tails
+        .rho = emlSpearmanCorrelation.rho
+        .t = emlSpearmanCorrelation.t
+        .df = emlSpearmanCorrelation.df
+        .pGreater = emlSpearmanCorrelation.pGreater
+        .pLess = emlSpearmanCorrelation.pLess
+        .n = emlSpearmanCorrelation.n
+        .error$ = emlSpearmanCorrelation.error$
+        .warning$ = emlSpearmanCorrelation.warning$
+        .perfect = emlSpearmanCorrelation.perfect
+
+        if .error$ = ""
+            .alternative$ = .requested$
+            if .requested$ = "less"
+                .p = .pLess
+            else
+                .p = emlSpearmanCorrelation.p
+            endif
         endif
     endif
 endproc
@@ -2326,7 +2737,7 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
     endif
 
     # --- Group sizes: state the diagnosis, not the first offender ---
-    # D99. The old form raised on the first group it found with fewer than
+    # The old form raised on the first group it found with fewer than
     # two observations, so a factor column that is unique per row took one
     # attempt per row to diagnose. Both numbers needed to say what is
     # actually wrong are already in hand from @emlCountGroups, so say it:
@@ -2524,7 +2935,7 @@ endproc
 
 
 # ============================================================================
-# @emlRequireColumnPresent                                               D116
+# @emlRequireColumnPresent
 # ============================================================================
 # THE ONE column-presence guard, and the sentence before @emlRequireNumeric-
 # Column's. Presence, then type: a column that is not in the table has no
@@ -2543,7 +2954,8 @@ endproc
 #                            within-groups degrees of freedom. ...
 #
 # Every one of those is TRUE and every one of them sends the reader to
-# inspect their grouping variable, which is fine. The mirror image of D113:
+# inspect their grouping variable, which is fine. The mirror image of the
+# numeric-column guard:
 # there, a type error was reported as missing data; here, a missing column
 # is reported as a group shortage. Two more entry points -- @emlPairwiseT
 # and @emlPairwiseWilcoxon -- did not refuse at all, returning an empty
@@ -2555,7 +2967,7 @@ endproc
 # the column that is not in the table. A column that WAS in the table and
 # held nothing usable went on returning an empty error$ and a matrix of
 # undefined for another day, because presence and type are two guards and
-# D116 added one of them (D125). Both tests now ask
+# Both tests ask
 # @emlRequireNumericColumn as well, immediately after asking here, and the
 # order matters in the way described below: a column that is not there has
 # no type to diagnose. v28 pins both refusals, separately, at this layer.
@@ -2601,7 +3013,8 @@ endproc
 #
 # Output:
 #   .error$ - refusal message, or "" if the column is in the table
-#   .index  - the column's index, or 0. Callers that used to keep this in a
+#   .index  - the column's index, or 0. A caller that would otherwise keep
+#             this in a
 #             local .colIdx are welcome to it; none currently reads it.
 #
 # Leaves .tableId selected, which every caller already required.
@@ -2617,7 +3030,7 @@ endproc
 
 
 # ============================================================================
-# @emlRequireNumericColumn                                               D113
+# @emlRequireNumericColumn
 # ============================================================================
 # THE ONE column-type guard. Every analysis entry point that takes a column
 # of measurements asks here before it computes anything, so that "you gave me
@@ -2650,7 +3063,7 @@ endproc
 # NO NEW CLASSIFIER. The verdict and every user-facing sentence come from
 # @emlAuditColumn, which is already "the one place that decision is made".
 # This procedure adds a sentence naming the column and its role and otherwise
-# quotes the audit verbatim, so the type diagnosis cannot drift away from the
+# quotes @emlAuditColumn verbatim, so the type diagnosis cannot drift from the
 # missing-data diagnosis printed by the extraction paths.
 #
 # Arguments:
@@ -2662,7 +3075,7 @@ endproc
 #   .strict      - 0 = refuse only when the column holds no numbers at all.
 #                      A column with SOME unusable cells is not refused: the
 #                      complete-case convention settled 21 July (C1/C2, and
-#                      restated for D96) drops those rows and discloses the
+#                      ) drops those rows and discloses the
 #                      count, and that convention is not reopened here.
 #                  1 = refuse when ANY cell is unusable. For callers that
 #                      read the column through Praat's whole-column
@@ -2851,7 +3264,7 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
         .error$ = emlRequireColumnPresent.error$
     endif
 
-    # --- The data column must be a column of numbers (D113) ---
+    # --- The data column must be a column of numbers ---
     #
     # STRICT, uniquely among the tests in this file. Every other path reads
     # the data column row by row and can drop an unusable cell; the built-in
@@ -3299,7 +3712,7 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
     .tieCorrection = undefined
     .error$ = ""
 
-    # --- The data column must be in the table (D116) ---
+    # --- The data column must be in the table ---
     #
     # Ahead of @emlCountGroups, because a column that is not there makes
     # every group look empty and the per-group guard below then reports the
@@ -3523,7 +3936,7 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
         ... + "holm, or bh; got: " + .method$
     endif
 
-    # --- The data column must be in the table (D116) ---
+    # --- The data column must be in the table ---
     #
     # Ahead of the group work, because a column that is not there
     # makes every group look empty and the diagnosis then lands on
@@ -3809,7 +4222,7 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
     endif
 
     # --- Name the test, and keep the adjustment separate ---
-    # .method$ used to echo back the ADJUSTMENT argument, so a report
+    # .method$ must not echo back the ADJUSTMENT argument, or a report
     # layer reading it printed "Pairwise holm". .method$ now names the
     # test actually run; the adjustment stays available in
     # .adjustMethod$ (captured above, before .method$ is overwritten).
@@ -3822,7 +4235,7 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
         endif
     endif
 
-    # --- The data column must be in the table (D116) ---
+    # --- The data column must be in the table ---
     #
     # Ahead of the group work, because a column that is not there
     # makes every group look empty and the diagnosis then lands on
@@ -3836,14 +4249,14 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
         .error$ = emlRequireColumnPresent.error$
     endif
 
-    # --- ...and it must hold numbers (D125) ---
+    # --- ...and it must hold numbers ---
     #
     # NOT strict. This test reads the column row by row through
     # @eml_getGroupData, so the complete-case convention applies: a
     # column with SOME unusable cells is analysed on the rows that
     # parse. Only a column holding no numbers at all is refused.
     #
-    # D116 gave this test a presence guard and stopped there, so an
+    # A presence guard alone is not enough here: an
     # all-blank column still ended in an empty error$ and a matrix of
     # undefined. No number was produced and none could be misread as a
     # result -- what was missing was the sentence saying why, and the
@@ -3851,7 +4264,7 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
     # path never reached it, because @emlRunPairwiseAnalysis asks the
     # same two questions first; a script calling this test straight,
     # which eml-lib-stats.praat exists to support, is entitled to the
-    # same answer. Same reasoning as D116's, one guard further on.
+    # same answer. Same reasoning as the presence guard's, one step on.
 
     if .error$ = ""
         @emlRequireNumericColumn: .tableId, "Data column", .dataCol$, 0
@@ -4054,7 +4467,7 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
         ... + "holm, or bh; got: " + .method$
     endif
 
-    # --- The data column must be in the table (D116) ---
+    # --- The data column must be in the table ---
     #
     # Ahead of the group work, because a column that is not there
     # makes every group look empty and the diagnosis then lands on
@@ -4068,13 +4481,13 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
         .error$ = emlRequireColumnPresent.error$
     endif
 
-    # --- ...and it must hold numbers (D125) ---
+    # --- ...and it must hold numbers ---
     #
     # NOT strict, for the same reason as @emlPairwiseT above: this test
     # reads the column row by row through @eml_getGroupData, so a column
     # with SOME unusable cells is analysed on the rows that parse and
     # only a column holding no numbers at all is refused. The full note
-    # is at @emlPairwiseT; these two were the pair D116 left with a
+    # is at @emlPairwiseT; without this these two are left with a
     # presence guard and no type guard, and they are closed together
     # because a caller cannot be expected to know which of the two
     # pairwise tests answers.
@@ -4252,7 +4665,7 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
     .dfWithin = undefined
     .error$ = ""
 
-    # --- The data column must be in the table (D116) ---
+    # --- The data column must be in the table ---
     #
     # Ahead of the group work, because a column that is not there
     # makes every group look empty and the diagnosis then lands on
@@ -4268,7 +4681,7 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
     # --- Discover groups ---
     #
     # NESTED in `if .error$ = ""`, unlike the version this replaces. The
-    # block used to run unconditionally and assign emlCountGroups.error$
+    # block must not run unconditionally and assign emlCountGroups.error$
     # over whatever was already in .error$, which would have thrown away
     # the missing-column refusal above whenever the FACTOR column happened
     # to be fine -- the exact case the guard exists for.
@@ -4480,7 +4893,7 @@ procedure emlBrownForsythe: .tableId, .dataCol$, .factorCol$
     endif
 
     # --- Group sizes: state the diagnosis, not the first offender ---
-    # Same rule, and the same message, as @emlOneWayAnova (D99): as many
+    # Same rule, and the same message, as @emlOneWayAnova: as many
     # groups as rows means the column is an identifier; otherwise name the
     # offenders together rather than raising on the first one found.
 
@@ -5008,7 +5421,7 @@ procedure emlGamesHowell: .tableId, .dataCol$, .factorCol$, .alpha
     # --- Group sizes, means and variances ---
     # Unlike @emlTukeyHSD there is no pooled dfWithin to fall back on:
     # every group needs a variance of its own, so a group of one is
-    # refused here and the offenders are named together (D99).
+    # Refused here and the offenders are named together.
 
     if .error$ = ""
         .totalN = 0
@@ -5509,7 +5922,7 @@ endproc
 # procedure returns undefined. A guard whose answer depends on the last bit
 # of the input is not a guard.
 #
-# Provenance: written 7 Aug 2026 for ruling 4(d). Checked against base R's
+# Provenance: checked against base R's
 # hatvalues(), rstandard() and cooks.distance() by validate/v24_influence.R,
 # driven by harness/influence/ols_influence_drive.praat. Not verified against
 # anything else, and in particular not against its own author's arithmetic.

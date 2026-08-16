@@ -3,105 +3,63 @@
 # ============================================================================
 # Module: eml-output.praat
 # Version: 2.4
-# v2.4: THE TWO GUARDS THAT KEEP A SAVE FROM KILLING THE SESSION, plus the
-#       receipt that could not draw what it was given, plus a probe that
-#       assumed instead of classifying. Four defects, all confirmed live at
-#       HEAD before a line was changed (audit of 14 Aug 2026, §3 S4 and §6).
+# v2.4: TWO ENTRY GUARDS ON @emlSavePanel, a receipt that wraps, and a probe
+#       that classifies rather than assumes.
 #
-#       NEW-G2-1, sev 2 -- a "/" in the Base name field reached writeFile:
-#         verbatim. Praat stopped the script inside @emlSavePanel, so the
-#         receipt never drew, the panel never returned, and the caller's
-#         Done | Save | Draw | New loop was gone with the analysis behind it.
-#         @eml_saveSafeBaseName now makes the typed name into a file name
-#         ONCE, before the collision walk, so every file of one press still
-#         shares one base name and one stamp.
-#       NEW-G12-5, sev 2 -- an unwritable target folder did the same thing
-#         one step later, with "unexpected error 30" for a message, and an
-#         unwritable PARENT did it one step earlier on the panel's own bare
-#         `createFolder:`. @eml_saveFolderWritable asks both questions once,
-#         with `nocheck` so the asking cannot itself abort, and the panel now
-#         RETURNS on a no instead of dying on one.
-#       SAVED-OVERPRINT, sev 4, five sightings -- the "Saved" receipt reserved
-#         one line per comment: and the toolkit drew several when a path was
-#         longer than the dialog, so each long path printed its tail over the
-#         path below. Every line now goes through @emlWrapText at 62
-#         characters, the width measured on 6.6.30 and the one
-#         @emlErrorDialog already uses.
-#       NEW-G12-1, sev 2 (this file's half) -- author ruling, 15 Aug 2026:
-#         "probe should classify column types, never assume numeric."
+#       @eml_saveSafeBaseName makes the typed Base name into a file name
+#         ONCE, before the collision walk, so a "/" cannot reach writeFile:
+#         verbatim -- which stops the script inside @emlSavePanel, so that the
+#         receipt never draws, the panel never returns, and the caller's
+#         Done | Save | Draw | New loop goes with the analysis behind it. One
+#         pass, before the walk, so every file of one press still shares one
+#         base name and one stamp.
+#       @eml_saveFolderWritable asks, once and with `nocheck` so the asking
+#         cannot itself abort, whether the target folder and its PARENT can
+#         be written. An unwritable target reports "unexpected error 30" and
+#         kills the session the same way; the panel RETURNS on a no.
+#       THE "Saved" RECEIPT WRAPS. It reserves one line per comment:, and the
+#         toolkit draws several when a path is longer than the dialog, so an
+#         unwrapped long path prints its tail over the path below. Every line
+#         goes through @emlWrapText at 62 characters, the width measured on
+#         6.6.30 and the one @emlErrorDialog uses.
+#       @eml_auditLabelColumn CLASSIFIES THE COLUMN, never assumes numeric.
 #         @emlWrapperInit's coercion arms manufacture a "row" column out of
 #         row labels that a Matrix never has and a TableOfReal may not have.
 #         Praat renders those undefined cells as "?", which is neither of the
 #         two forms @eml_strictNumericColumn's scan recognises, so the
-#         numericiser behind it raised before the wrapper's dialog opened --
-#         on EVERY Matrix, every unlabelled TableOfReal and every partially
-#         labelled one. @eml_auditLabelColumn classifies the column and makes
-#         it readable; it does not invent default labels, so it composes with
+#         numericiser behind it would raise before the wrapper's dialog opened
+#         -- on EVERY Matrix, every unlabelled TableOfReal and every partially
+#         labelled one. It does not invent default labels, so it composes with
 #         whatever the conversion side decides to put there.
-# v2.3: @emlWrapperExportCSV DELETED (author ruling, 14 Aug 2026: "We can
-#       retire the superseded csv wrapper code if we use it nowhere now").
-#       It had no callers in any tree. A tombstone stands where it was,
-#       because its folder-seed line is the reason every non-graphing Save
-#       button broke on 13 Aug; the seed now sits at file scope above
-#       @emlSavePanel.
+# v2.3: The one CSV export journey is @emlSavePanel plus
+#       @emlExportResultFiles. The folder seed a Save button needs sits at
+#       file scope above @emlSavePanel, where every caller reaches it.
 # v2.2: @emlSavePanel -- one save, one folder, one name. The figure, the
 #       result frames and the Info window report are written together under a
-#       shared stem. Before this the figure and the CSV were two journeys with
-#       two folder memories and two naming rules, and the report could not be
-#       saved at all. @emlWrapperExportCSV is superseded and now has no
-#       callers.
-# v2.1: Both arms of @emlExportResultFiles are now non-destructive. The
-#       declared arm could not be until @emlGenerateUniquePath moved to
-#       eml-core-utilities.praat -- it lived in the graphs form, which is
-#       included after this file. The BASE is uniqued once against the tidy
-#       frame and every frame in the set carries the walked suffix, so a set
-#       never half-overwrites an older set.
-# v2.0: THE MIGRATION FORK IS NOW A PROCEDURE, @emlExportResultFiles, and the
-#       graphs form's Exp CSV button goes through it. The fork lived inline in
-#       @emlWrapperExportCSV, so the plugin's OTHER export -- the post-draw
-#       "Exp CSV" button in eml-graphs-form.praat -- could not reach it and
-#       called @emlExportStatsCSV directly. The same analysis therefore wrote
-#       three broom-shaped files from the stats menu and one legacy long-format
-#       file from the graphs form. v20/v21 enumerate the stats-menu
-#       orchestrators, so neither could see a second exporter, and no harness
-#       had pressed that button until 13 Aug 2026. Writing only -- the two
-#       callers report differently and a shared procedure cannot open a dialog
-#       from inside another one.
-# v1.9: COMMENTS ONLY — no executable line changed. Five statements that the
-#       code under them contradicts, corrected.
-#       (1) The Provides list named @emlCSVAddRow. No procedure of that name
-#         has ever existed anywhere in the plugin. The list is now the real
-#         CSV primitives (@emlCSVInit / @emlCSVSetTable / @emlCSVTermType /
-#         @emlCSVAdd / @emlCSVAddStr / @emlCSVAddDescriptives /
-#         @emlExportStatsCSV), the rest of the public surface by family, and
-#         a counting rule so the whole thing can be checked rather than
-#         believed.
-#       (2) @emlWrapText's header cited "@comment:", which reads as a
-#         procedure call in this file's notation and is not one — `comment:`
-#         is a Praat dialog command. It also described @emlErrorDialog as the
-#         only consumer; @emlReportNote and, since D124,
-#         @emlDrawAnnotationBlock also wrap through it.
-#       (3) The D27 provenance note said the CSV self-documents the
-#         adjustment "in its `test` column". The long-format schema
-#         (emlCSV_header$) has no `test` column; the adjustment is a row
-#         whose `field` is "adjustment".
-#       (4) An "END OF MODULE" banner sat above @emlReportDescriptiveAnalysis
-#         rather than at the end of the module.
-#       (5) That procedure's note cited a bare "line 9434" for a
-#         "Procedure not found" error. Praat counts that line in the
-#         FLATTENED script, after include expansion, so it names no line of
-#         any file on disk. Replaced with the anchor and the reason.
-# v1.8: Audit fixes (items 8, 9).
-#       Item 8 — @emlFormatEffectLabel labelled R-squared values with
-#         Cohen's d thresholds. It now recognises "r_squared" (and the
-#         aliases "R2" and "r2") and applies Cohen's R-squared benchmarks
-#         0.01 / 0.09 / 0.25. The token string "r_squared" is unchanged and
-#         still accepted. An unrecognised effect type no longer silently
-#         falls back to d thresholds: .label$ is now "" and the new
+#       shared stem, rather than the figure and the CSV being two journeys
+#       with two folder memories and two naming rules and the report not being
+#       savable at all.
+# v2.1: Both arms of @emlExportResultFiles are non-destructive.
+#       @emlGenerateUniquePath lives in eml-core-utilities.praat, which is
+#       included before this file, so the declared arm can reach it. The BASE
+#       is uniqued once against the tidy frame and every frame in the set
+#       carries the walked suffix, so a set never half-overwrites an older
+#       set.
+# v2.0: THE MIGRATION FORK IS A PROCEDURE, @emlExportResultFiles, and the
+#       graphs form's export goes through it, so one analysis cannot write
+#       three broom-shaped files from the stats menu and one legacy
+#       long-format file from the graphs form. Writing only -- the two
+#       callers report differently, and a shared procedure cannot open a
+#       dialog from inside another one.
+# v1.9: Comments only — no executable line changed.
+# v1.8: @emlFormatEffectLabel recognises "r_squared" (and the aliases "R2"
+#         and "r2") and applies Cohen's R-squared benchmarks 0.01 / 0.09 /
+#         0.25 rather than Cohen's d thresholds. An unrecognised effect type
+#         does not fall back to d thresholds: .label$ is "" and the
 #         .recognized flag is 0, so callers can detect the condition.
-#       Item 9 — @emlFormatP reported "p = 1.000" for any p in
-#         [0.9995, 1), overstating the result as an exact 1. Such values now
-#         format as "p > .999". p = 1 exactly still formats as "p = 1.000".
+#       @emlFormatP reports "p > .999" for p in [0.9995, 1) rather than
+#         "p = 1.000", which would overstate the result as an exact 1.
+#         p = 1 exactly still formats as "p = 1.000".
 # v1.7: @emlWrapperInit accepts Table, TableOfReal, and Matrix objects.
 #       Auto-converts TableOfReal/Matrix to Table with Info window notification.
 #       Outputs .converted flag for caller awareness.
@@ -133,11 +91,7 @@
 # @eml_saveSafeBaseName, @eml_saveFolderWritable, @eml_saveReceiptLines);
 # the other 54 are public.
 #
-# THE NUMBER READ 55 AGAINST A FILE OF 56 until 15 August 2026, and the
-# counting rule above is what settled it: @emlExportResultFiles had been
-# written in v2.0 and never added to the family list below, so the headline
-# and the families agreed with each other and neither agreed with the file.
-# It is in the CSV export family now. By family:
+# By family:
 #
 #   Report frame — @emlReportHeader, @emlReportFooter, @emlReportSection,
 #     @emlReportLine, @emlReportLineString, @emlReportBlank,
@@ -151,19 +105,13 @@
 #   CSV export — @emlCSVInit, @emlCSVSetTable, @emlCSVTermType, @emlCSVAdd,
 #     @emlCSVAddStr, @emlCSVAddDescriptives, @emlExportStatsCSV,
 #     @emlExportResultFiles
-#     (this list read "@emlCSVAddRow" until 8 Aug 2026. No such procedure has
-#     ever existed anywhere in the plugin —
-#     grep -rn "^procedure emlCSVAddRow" plugin/ returns nothing — although
-#     the notes under audit/ name it fourteen times, having taken it from
-#     here. The export is LONG format: emlCSV_header$ is
+#     (The export is LONG format: emlCSV_header$ is
 #     "table,analysis,term,term_type,field,value", and @emlCSVAdd /
 #     @emlCSVAddStr each append ONE such row, i.e. one field of one term.
-#     There is no procedure that writes a whole analysis in one call, which
-#     is what the name @emlCSVAddRow implied.)
+#     There is no procedure that writes a whole analysis in one call.)
 #   Wrapper plumbing — @emlWrapperInit, @emlWrapperCommonFields,
 #     @emlHandleCommonFields, @eml_auditLabelColumn (private)
-#   Saving — @emlSavePanel (the one save journey; @emlWrapperExportCSV was in
-#     this list until it was deleted on 14 Aug 2026 — see its tombstone),
+#   Saving — @emlSavePanel (the one save journey),
 #     with its two entry guards @eml_saveSafeBaseName and
 #     @eml_saveFolderWritable and its receipt builder @eml_saveReceiptLines
 #     (all three private; the panel owns the naming contract, so the panel
@@ -203,17 +151,15 @@
 # emlWizardExplain$ is set before each @emlReportLine/@emlReportLineString
 # call and consumed (cleared) by the procedure.
 #
-# D42/D102. The default was 0 and no wrapper ever raised it, so glosses were
-# absent from every wrapper report while the graph path (which sets the gate
-# to 1) had them — the same analysis narrated two different ways depending on
-# whether a figure had been drawn earlier in the session. The default is now
-# 1: a wrapper report explains itself without the user having to know that a
-# gate exists.
+# THE DEFAULT IS 1: a wrapper report explains itself without the user having
+# to know that a gate exists. At a default of 0 the glosses would be absent
+# from every wrapper report while the graph path (which sets the gate to 1)
+# had them — the same analysis narrated two different ways depending on
+# whether a figure had been drawn earlier in the session.
 #
 # THE DEFAULT IS DECLARED ONCE, HERE. @emlResetExplanations restores this
 # variable rather than a literal, so the initial value and the restored value
-# cannot drift apart — which is exactly how D102 survived: the reset put the
-# gate back to a number that was written out a second time by hand.
+# cannot drift apart.
 # ============================================================================
 emlShowExplanationsDefault = 1
 emlShowExplanations = emlShowExplanationsDefault
@@ -223,11 +169,11 @@ emlShowExplanations = emlShowExplanationsDefault
 # ----------------------------------------------------------------------------
 # Put the explanation gate back to its default (emlShowExplanationsDefault).
 #
-# D102. @emlGraphsWorkflow sets emlShowExplanations = 1 and never resets it, so
-# after any Draw every later analysis report in the same session silently
-# becomes verbose. Report content was therefore ORDER-DEPENDENT: the same
-# analysis produced different text depending on whether a figure had been drawn
-# earlier. That also made D42 and D44 intermittent and hard to reproduce.
+# @emlGraphsWorkflow raises emlShowExplanations for the drawing path. Left
+# raised, it would make every later analysis report in the same session
+# verbose, so report content would be ORDER-DEPENDENT: the same analysis
+# producing different text depending on whether a figure had been drawn
+# earlier.
 #
 # Any code that raises the gate for its own scope must lower it again through
 # this procedure when that scope ends.
@@ -245,9 +191,7 @@ endproc
 # @emlKurtosis and @emlSkewness both return the EXCESS / sample-corrected
 # form: a normal distribution gives 0, not 3. These two constants are the
 # flags applied to them, declared here so the shape verdict, the wizard's
-# classifier and the sentence the classifier prints cannot drift apart —
-# which they had. Before 5 August the gate used 3, the classifier used 1,
-# and the printed sentence claimed 3 while the code beside it enforced 1.
+# classifier and the sentence the classifier prints cannot drift apart.
 #
 # THE VALUES ARE 2 AND 7, from West, Finch & Curran (1995), who give
 # |skewness| > 2 and |kurtosis| > 7 as indicative of moderate-to-serious
@@ -256,9 +200,8 @@ endproc
 # Shapiro-Wilk decides, and these flag severity. See the interpretation
 # block in @emlRunNormalityAnalysis.
 #
-# They were 1 and 1 earlier on 5 August. That pair had no published source —
-# it was carried in from the code it replaced. A threshold that changes what
-# the plugin recommends has to be attributable.
+# A threshold that changes what the plugin recommends has to be attributable,
+# which is why the citation is here and not a bare pair of numbers.
 #
 # To change the house convention, change it here; every consumer reads these.
 # Kline's stricter pair for SEM work is 3 and 10.
@@ -312,28 +255,25 @@ endproc
 
 
 # ────────────────────────────────────────────────────────────────────────────
-# REPORT PROVENANCE (D27)
+# REPORT PROVENANCE
 #
-# The Info window appends. That is deliberate (see @emlClearInfo, and the
-# "Clear Info window" toggle, which now persists), but it means one session
-# holds several report blocks at once, and until now the only thing telling
-# two blocks apart was the timestamp. An audited session produced three
-# Kruskal-Wallis blocks whose headers were byte-identical while two of them
-# reported different post-hoc p-values, because the adjustment had been
-# changed between them. Nothing in the header said so.
+# The Info window appends. That is deliberate (see @emlClearInfo and the
+# "Clear Info window" toggle, which persists), but it means one session holds
+# several report blocks at once, and a timestamp is not enough to tell two of
+# them apart: three Kruskal-Wallis blocks with byte-identical headers can
+# report different post-hoc p-values, because the adjustment was changed
+# between them.
 #
-# Two facts fix that, and both belong in the header rather than buried in the
-# body, because the header is what a user scrolling back sees:
+# Two facts settle that, and both belong in the header rather than buried in
+# the body, because the header is what a user scrolling back sees:
 #
 #   emlReportAnalysis$  WHERE this block came from — the analysis dialog, a
 #                       graph Draw, the wizard. Titles do not carry this: the
 #                       Run and the Draw of one test print the same title.
 #   emlReportAdjust$    the correction or adjustment in force for this block
 #                       (holm, bonferroni, bh, Tukey HSD, ...). The CSV
-#                       already self-documents this; the Info window did not.
-#                       Not in a column of its own, though — this used to say
-#                       "its `test` column", and the export has had no such
-#                       column since the long-format rewrite. The schema is
+#                       already self-documents this, though not in a column
+#                       of its own. The schema is
 #                       emlCSV_header$ further down this file,
 #                       "table,analysis,term,term_type,field,value": the
 #                       `analysis` cell names the test, and the adjustment
@@ -369,7 +309,7 @@ endproc
 procedure emlReportHeader: .title$
     # Print report header with double-line borders, timestamp, and — when the
     # caller declared them via @emlReportContext — the originating analysis
-    # and the correction in force (D27).
+    # and the correction in force.
     # Always appends — never clears. Use @emlClearInfo for explicit clearing.
     .border$ = "══════════════════════════════════════════════"
     .indent$ = "  "
@@ -410,8 +350,8 @@ procedure emlReportHeader: .title$
     appendInfoLine: .sep2$
 
     ; Consumed. A context declared for this report must not leak onto the
-    ; next one — that is how the stale-adjustment version of D27 would come
-    ; back, in a subtler form.
+    ; next one, or a stale adjustment appears on a report that has no
+    ; post-hoc at all.
     emlReportAnalysis$ = ""
     emlReportAdjust$ = ""
 endproc
@@ -420,12 +360,11 @@ endproc
 procedure emlReportFooter
     # Print the estimator conventions, then the closing double-line border.
     #
-    # D5. Nothing in the report said which estimators produced the numbers,
-    # and these are the exact quantities that differ visibly between packages
-    # — a quartile is not one number, and a variance divided by n is not the
-    # one divided by n-1. A user pasting Q1 or SD into a paper had no way to
-    # say what they had computed. Two lines, on every report, make the output
-    # citable.
+    # WHICH ESTIMATORS PRODUCED THE NUMBERS. These are the exact quantities
+    # that differ visibly between packages — a quartile is not one number,
+    # and a variance divided by n is not the one divided by n-1 — so a user
+    # pasting Q1 or SD into a paper needs to be able to say what they
+    # computed. Two lines, on every report, make the output citable.
     #
     # WHAT THESE CLAIM, AND WHERE IT IS ENFORCED. Change the line only when
     # the code below changes:
@@ -482,14 +421,12 @@ endproc
 # PRAAT'S fixed$ IS NOT A FIXED-PRECISION FORMATTER, and every rounded number
 # this plugin prints went through it.
 #
-# AUTHOR RULING, 15 August 2026: no raw double may reach the Info window.
-# Statistics print at fixed 4 decimals, p in APA style; full precision belongs
-# to the CSV export, which is the file a reader is supposed to compute from.
-# The reported leak was the Describe path on a converted Matrix printing
+# THE HOUSE RULE: no raw double reaches the Info window. Statistics print at
+# fixed 4 decimals, p in APA style; full precision belongs to the CSV export,
+# which is the file a reader is supposed to compute from. A bare
+# `fixed$ (.value, 4)` does not deliver that — it prints
 #
 #     Skewness            -0.0000000000000001
-#
-# (leg2_mx_describe.info.txt) from a line that reads `fixed$ (.value, 4)`.
 #
 # THE MECHANISM, MEASURED ON 6.6.30 RATHER THAN ASSUMED. fixed$ does not
 # format to the precision it is given; it formats to the LARGER of that
@@ -519,7 +456,8 @@ endproc
 # WHAT IT DOES, AND WHAT IT REFUSES TO DO. It formats. It never touches a
 # computed value: the argument is not modified, nothing is written back, and
 # the CSV writers do not call it -- @emlCSVAdd and the three-file writers
-# still emit full precision, which is where the ruling puts it. The rounding
+# still emit full precision, which is where full precision belongs. The
+# rounding
 # it performs is the rounding fixed$ was asked for and declined to do.
 #
 #   - fixed$ honoured the request  ->  its answer is returned unchanged, so
@@ -549,8 +487,8 @@ endproc
 # threshold can have. The escalation this procedure exists to suppress is the
 # escalation @emlReportAlpha depends on.
 #
-# AUTHOR RULING, 16 August 2026: @emlReportAlpha stays as it is. The rule this
-# procedure enforces is a rule about STATISTICS -- a t, a skewness, a Cohen's
+# WHY THE EXEMPTION IS RIGHT. The rule this procedure enforces is a rule about
+# STATISTICS -- a t, a skewness, a Cohen's
 # d, a mean difference, each of them a measurement of the data whose seventeen
 # trailing digits are arithmetic noise the reader is better off not seeing.
 # Alpha is not a measurement of anything. It is a criterion the reader chose
@@ -613,35 +551,32 @@ endproc
 # ────────────────────────────────────────────────────────────────────────────
 # THREE SIGNIFICANT FIGURES, IN SCIENTIFIC NOTATION, FOR A NUMBER THAT MAY BE
 # 1e-300. This exists for exactly one caller -- @emlFormatP's .exact$ tail --
-# and the reason it cannot be a call to fixed$ or to string$ is the whole of
-# the defect it repairs.
+# and neither fixed$ nor string$ can do its job.
 #
-# AUTHOR RULING, 16 August 2026: the exact p tail is bounded to three
-# significant figures. The tail itself STAYS. Flooring at .001 flattens
-# 5.8e-07, 2.1e-13 and 3.0e-04 into one string nine orders of magnitude apart
-# (D28, D35), the tail is what un-flattens them, and v65_display_standard.R
-# asserts it is still there beside every floored label. What was wrong was
-# never that the tail was printed; it was how wide it was printed.
+# WHY THE TAIL EXISTS AT ALL. Flooring at .001 flattens 5.8e-07, 2.1e-13 and
+# 3.0e-04 into one string nine orders of magnitude apart; the tail
+# is what un-flattens them, and v65_display_standard.R asserts it is there
+# beside every floored label. What the tail owes the reader is the ORDER OF
+# MAGNITUDE -- 5.8e-07 and 2.1e-13 must not read alike -- and three
+# significant figures carry all of that and nothing else.
 #
-# THE DEFECT, AS IT READ. .exact$ was `string$ (.pValue)`, and string$ is
-# Praat's ROUND-TRIP renderer: it emits however many digits it takes to
-# reconstruct the double exactly, which for a p just under the floor is
-# seventeen. A repeated-measures line meant to say "about 3e-29" said
+# WHY NOT string$. string$ is Praat's ROUND-TRIP renderer: it emits however
+# many digits it takes to reconstruct the double exactly, which for a p just
+# under the floor is seventeen. A repeated-measures line meaning "about 3e-29"
+# comes out as
 #
 #     F(2, 38) = 583.1232, p < .001  (3.0359635874099574e-29)
 #
-# Seventeen significant digits nobody can read, in the Info window, which is
-# what ruling 6 forbids. The information D35 wanted out of that tail is the
-# ORDER OF MAGNITUDE -- 5.8e-07 and 2.1e-13 must stop reading alike -- and
-# three significant figures carry all of it and nothing else.
+# -- seventeen significant digits nobody can read, in the Info window, where
+# no raw double belongs.
 #
 # WHY NOT fixed$, AND WHY THIS IS NOT ONE MORE @eml_fixed CALL. @eml_fixed
 # gives a fixed number of DECIMALS, and the answer to "3e-29 at four decimals"
-# is 0.0000 -- the tail collapsed to zero, which is worse than the seventeen
-# digits, because it is the D28/D35 defect wearing the repair's clothes. A
+# is 0.0000 -- the tail collapsed to zero, which is worse than seventeen
+# digits, because it is the same flattening wearing a tidier face. A
 # naive fixed$ does not merely fail on the small end of the range, it fails on
-# every value the tail was added for. Significant figures and decimal places
-# are different quantities and this is the range where the difference is the
+# every value the tail exists for. Significant figures and decimal places are
+# different quantities and this is the range where the difference is the
 # entire point.
 #
 # HOW IT IS DONE, PRAAT HAVING NO printf. The exponent is floor (log10 |v|)
@@ -676,7 +611,8 @@ endproc
 # not simply hand p to this procedure in both branches. @emlFormatP also
 # floors at the top -- "p > .999" for p >= 0.9995 -- and three significant
 # figures OF p up there is 1.00 for every value in the range, which flattens
-# 0.9996 and 0.99999999 into one string and is D35 again on the other side.
+# 0.9996 and 0.99999999 into one string -- the same flattening on the other
+# side.
 # What carries the information near one is the DISTANCE from one, so the
 # caller passes 1 - p and labels it. The subtraction is exact in binary for
 # any p in [0.5, 2], so the printed tail is not an approximation of a
@@ -803,7 +739,7 @@ endproc
 # ----------------------------------------------------------------------------
 # Print one p-value row that is BOTH reportable and exact.
 #
-# D28/D35. The APA rendering floors at .001, so 5.8e-07, 2.1e-13 and 3.0e-04
+# The APA rendering floors at .001, so 5.8e-07, 2.1e-13 and 3.0e-04
 # all print as "p < .001" — nine orders of magnitude flattened into one
 # string, with the real value reachable only from the CSV. The floor is
 # correct for a manuscript and useless for reading a result, and the report
@@ -816,7 +752,7 @@ endproc
 # (.exact$ non-empty), i.e. on the < .001 and > .999 floors. A p of .032 is
 # already exact to the printed precision and gets nothing appended.
 #
-# D9. When the row label already reads "p", the bare form is used so the row
+# When the row label already reads "p", the bare form is used so the row
 # does not say "p" twice ("p    p < .001"). Any other label — a test name, a
 # contrast, "p (adjusted)" — takes the full "p = " form, which is what makes
 # the row self-describing away from a column header.
@@ -859,14 +795,14 @@ procedure emlFormatP: .pValue
     #                 "3.04e-29" below the floor and "1 - 1.23e-04" above it,
     #                 or "" when .formatted$ already shows the number exactly
     #
-    # .bare$ exists because ten call sites printed the label twice: they pass
-    # "p" as the row label and then print .formatted$, which carries its own
-    # "p = " (D9). A column header of "p" over a cell reading "p = .032" is the
-    # same defect in table form (D56).
+    # .bare$ exists because a call site that passes "p" as the row label and
+    # then prints .formatted$, which carries its own "p = ", prints the label
+    # twice. A column header of "p" over a cell reading "p = .032" is the
+    # same thing in table form.
     #
     # .exact$ exists because flooring at .001 flattens real distinctions:
     # 5.8e-07, 2.1e-13 and 3.0e-04 all render "p < .001", nine orders of
-    # magnitude reported identically (D35, D28). A caller that has room can
+    # magnitude reported identically. A caller that has room can
     # print .exact$ beside the floored label instead of choosing between them.
     # Output: .formatted$
     # p < 0.001 -> "p < .001"
@@ -915,7 +851,7 @@ procedure emlFormatP: .pValue
         .bare$ = replace_regex$ (.bare$, "^p\s*", "", 1)
         ; THREE SIGNIFICANT FIGURES, not string$ (.pValue). string$ is Praat's
         ; ROUND-TRIP renderer -- it emits as many digits as it takes to
-        ; reconstruct the double -- so this line used to put
+        ; reconstruct the double -- so it would put
         ; "3.0359635874099574e-29" in the Info window beside a floored label.
         ; The tail's job is to say which order of magnitude got floored, and
         ; three significant figures say that and stop. See @eml_sig3 for why
@@ -923,7 +859,8 @@ procedure emlFormatP: .pValue
         ;
         ; The two floors are not symmetrical. Below, what carries the
         ; information is p. Above, three significant figures of p is 1.00 for
-        ; everything in [0.9995, 1) -- D35 mirrored -- so what is bounded is
+        ; everything in [0.9995, 1) -- the floor mirrored -- so what is
+        ; bounded is
         ; the DISTANCE from one, and the tail says so in as many words rather
         ; than printing a number that looks like a p and is not.
         if .pValue < 0.001
@@ -1062,12 +999,10 @@ procedure emlFormatEffectLabel: .effectValue, .effectType$
     #    0.1 / 0.3 / 0.5, so d thresholds mislabel them badly — R-squared = 0.3
     #    is a large effect, not a small one.)
     #
-    # D21: an "omega_squared" token was accepted here. Nothing in the plugin
-    # computes omega-squared — the token appeared at no call site, in no test
-    # and in no validation script — so the branch could not be reached and
-    # advertised a capability the library does not have. Removed. If omega²
-    # is ever added as an estimator, add the token back beside .eta$: it takes
-    # the same 0.01 / 0.06 / 0.14 benchmarks.
+    # NO "omega_squared" TOKEN. Nothing in the plugin computes omega-squared,
+    # and a token for an estimator that does not exist advertises a capability
+    # the library does not have. If omega² is ever added, its token goes
+    # beside .eta$: it takes the same 0.01 / 0.06 / 0.14 benchmarks.
 
     .d$ = "d"
     .r$ = "r"
@@ -1278,11 +1213,9 @@ procedure emlSaveInfoToFile: .filePath$
     
     # Capture Info window contents using Praat's special variable
     ; info$ () WITH PARENTHESES. Bare `info$` parses as a string VARIABLE of
-    ; that name, which nothing in the plugin ever assigns, so this line was a
-    ; hard stop -- proof the procedure has never executed. It was the only
-    ; bare info$ in the repository; every other capture site already wrote the
-    ; function form. Measured 13 Aug 2026: `nocheck x$ = info$` leaves x$
-    ; unset and the next reference of it aborts the script.
+    ; that name, which nothing in the plugin assigns, so it is a hard stop.
+    ; Measured on 6.6.30: `nocheck x$ = info$` leaves x$ unset and the next
+    ; reference of it aborts the script.
     .content$ = info$ ()
     
     # Use the file writer with overwrite protection
@@ -1300,37 +1233,36 @@ endproc
 
 emlCSV_n = 0
 # ============================================================================
-# CSV EXPORT — tidy long format                              D24 and 13 others
+# CSV EXPORT — tidy long format
 # ============================================================================
-# This replaced a fixed 20-column wide schema on 6 August 2026. That schema
-# was one header --
+# LONG, NOT WIDE. A fixed wide schema for the output of every test in the
+# plugin -- one header of the shape
 #
 #   table,data_col,group_col,group1,group2,test,statistic,df,p,effect_size,
 #   effect_type,effect_label,n1,n2,mean1,sd1,median1,mean2,sd2,median2
 #
-# -- made to carry the output of every test in the plugin, and it failed in
-# fourteen separate findings for three structural reasons:
+# -- fails structurally in three ways, and widening it fixes none of them:
 #
-#   1. NO WAY TO SAY "NOT APPLICABLE". Every argument went through fixed$ or
-#      string$, so a caller with nothing to report had to pass a number, and
-#      every caller passed 0. The one-way omnibus row ended in eight zeros
+#   1. NO WAY TO SAY "NOT APPLICABLE". Every argument goes through fixed$ or
+#      string$, so a caller with nothing to report has to pass a number, and
+#      what it passes is 0. A one-way omnibus row then ends in eight zeros
 #      meaning "not applicable", indistinguishable from eight measurements
-#      of zero; the doTukey = 0 fallback wrote p = 0.000000, which reads as
-#      the most significant result in the file. (D24, and D23/D37/D46/D76.)
+#      of zero, and a no-Tukey fallback writes p = 0.000000, which reads as
+#      the most significant result in the file.
 #
-#   2. SLOTS REUSED FOR UNRELATED QUANTITIES. Regression wrote its slope
-#      into mean1, the slope's SE into sd1, the intercept into median1 and R
-#      into sd2. Correlation wrote the Y variable into group_col. Paired
-#      tests packed two column names into all four level slots. The header
-#      said one thing and the file contained another. (D45/D54/D55/D19.)
+#   2. SLOTS REUSED FOR UNRELATED QUANTITIES. There is nowhere for a
+#      regression's slope but mean1, its SE but sd1, its intercept but
+#      median1, and R but sd2; nowhere for correlation's Y variable but
+#      group_col; nowhere for a paired test's two column names but the four
+#      level slots. The header then says one thing and the file contains
+#      another.
 #
-#   3. NOTHING COULD BE ADDED. One df column cannot hold a numerator and a
-#      denominator, so F(1,28) exported as df=1.00 and could not be
-#      reconstructed; there was nowhere to put SS, MS, a confidence interval
-#      or a per-cell n. (D34/D57/D23/D76.)
+#   3. NOTHING CAN BE ADDED. One df column cannot hold a numerator and a
+#      denominator, so F(1,28) exports as df=1.00 and cannot be
+#      reconstructed; there is nowhere to put SS, MS, a confidence interval
+#      or a per-cell n.
 #
-# The long format cannot have any of these problems, which is the point of
-# choosing it over widening the wide one. Every value is named where it is
+# The long format has none of these problems. Every value is named where it is
 # written, so no slot can be reused; a value you do not have is a row you do
 # not write, so no sentinel is needed and none exists; and a new quantity is
 # a new field name, not a schema change.
@@ -1375,8 +1307,8 @@ emlCSV_n = 0
 #
 # Numbers are written with string$, which is Praat's shortest round-trip
 # form: 0.002246 stays 0.002246 and 1.06e-14 stays 1.06e-14 rather than
-# becoming 0.00000000000001. That also ends the p-value flooring in exports
-# (D14's residual) without a separate decision about decimal places.
+# becoming 0.00000000000001. That also keeps the report's p-value flooring
+# out of the export, without a separate decision about decimal places.
 # ============================================================================
 
 emlCSV_header$ = "table,analysis,term,term_type,field,value"
@@ -1389,7 +1321,7 @@ procedure emlCSVInit
     ; Without it: run ANOVA (declares), then run an unconverted analysis
     ; (does not declare), then export -- emlResult_declared is still 1 and the
     ; export writes the ANOVA's stale tidy/glance/augment under the new
-    ; analysis's name. Demonstrated 6 Aug 2026 before this line existed.
+    ; analysis's name.
     ;
     ; The staged extra frames go with it, for the same reason.
     emlResult_declared = 0
@@ -1407,10 +1339,10 @@ endproc
 # leaves emlResult_declared exactly as it was.
 #
 # WHO WANTS THIS. A caller that fills the collector but does NOT declare --
-# the graphs form's scatter arm is the one there is (NEW-G8-3, 15 Aug 2026:
-# nine draws in one session appended nine value-identical blocks to the export
-# because nothing on that path ever reset anything). Calling @emlCSVInit there
-# would clear the rows and ALSO clear a declaration the scatter cannot replace,
+# the graphs form's scatter arm is the one there is, and without a per-press
+# reset nine draws in one session append nine value-identical blocks to the
+# export. Calling @emlCSVInit there would clear the rows and ALSO clear a
+# declaration the scatter cannot replace,
 # so a wrapper -> annotated-scatter journey would stop writing tidy and glance
 # and drop to the legacy single file: one export defect traded for another.
 #
@@ -1572,12 +1504,11 @@ procedure emlExportStatsCSV: .filePath$
     # Write accumulated CSV rows with overwrite protection.
     # Output: .success (1/0), .actualPath$, .reason$
     #
-    # D66: an empty buffer used to return .success = 0, and the only caller
-    # rendered that as "Could not write CSV file." — a disk-failure message
-    # for a file the plugin never attempted to write. Three orchestrators
-    # called @emlCSVInit and then never added a row, so their CSV button
-    # could not succeed and reported the wrong reason for it. .reason$ now
-    # distinguishes the two cases so a caller can say which happened.
+    # AN EMPTY BUFFER IS NOT A DISK FAILURE. Both return .success = 0, and a
+    # caller that cannot tell them apart renders "Could not write CSV file."
+    # for a file the plugin never attempted to write — which is what an
+    # orchestrator that calls @emlCSVInit and then adds no row produces.
+    # .reason$ distinguishes the two so a caller can say which happened.
     .reason$ = ""
     if emlCSV_n = 0
         .success = 0
@@ -1609,22 +1540,21 @@ endproc
 # list, so a path converts by declaring and nothing here has to be edited for
 # each one.
 #
-# WHY IT IS A PROCEDURE. It used to live inline inside @emlWrapperExportCSV,
-# which meant the graphs form's "Exp CSV" button -- the only other export in
-# the plugin -- could not reach it, and called @emlExportStatsCSV directly.
-# The same analysis therefore produced three broom-shaped files from the
-# wrapper's CSV button and one legacy long-format file from the graphs button.
-# Nothing caught it: v20/v21 enumerate the stats-menu orchestrators, and this
-# is a second exporter that no harness had ever pressed. Extracted 13 Aug 2026
-# so both buttons write through one implementation.
+# WHY IT IS A PROCEDURE. Inline inside one export path, the fork cannot be
+# reached by the other, and the same analysis then produces three
+# broom-shaped files from one button and one legacy long-format file from the
+# other. v20/v21 enumerate the stats-menu orchestrators, so a second exporter
+# is not something they can see; one implementation both buttons write
+# through is.
 #
 # WRITING ONLY -- no dialogs. The two callers report differently (the wrapper
 # lists every file it wrote; the graphs form already has its own Export
 # Complete / Export Failed pair), and a shared procedure that opened a dialog
 # could not be called from inside another one.
 #
-# BOTH ARMS ARE NON-DESTRUCTIVE. The declared arm could not be, until 13 Aug
-# 2026: @emlGenerateUniquePath lived in graphs/eml-graphs-form.praat, which is
+# BOTH ARMS ARE NON-DESTRUCTIVE, which needs @emlGenerateUniquePath to be
+# reachable from here: it lives in eml-core-utilities.praat and not in
+# graphs/eml-graphs-form.praat, which is
 # included AFTER this file, so it was unreachable from here and the three-file
 # export would silently overwrite a previous one. Moving that procedure to
 # stats/eml-core-utilities.praat -- the first include in both barrels -- is
@@ -1697,16 +1627,15 @@ procedure emlExportResultFiles: .folder$, .base$
     #     if variableExists ("emlResult_declared") and emlResult_declared = 1
     #
     # aborts with "Unknown variable" on the very case the guard was written to
-    # survive. Measured 14 Aug 2026 on Praat 6.6.30 -- the same law that made
-    # the Kruskal bridge use nested ifs.
+    # survive. Measured on Praat 6.6.30 -- the same law that makes the
+    # Kruskal bridge use nested ifs.
     #
-    # WHY IT MATTERED HERE AND NOWHERE ELSE. Reached through @emlSavePanel the
-    # guard is dead code: the panel only calls this when emlCSV_n > 0 or
+    # WHY THE GUARD IS LOAD-BEARING HERE. Reached through @emlSavePanel it is
+    # dead code: the panel only calls this when emlCSV_n > 0 or
     # emlResult_declared = 1, and both imply an orchestrator ran @emlCSVInit,
     # which sets the variable. But this procedure is also the CODE/API export
     # path -- dialog-free, callable from a user's own script -- and there the
-    # first call in a fresh session has nothing set. The guard existed because
-    # that case is real, and it was the one case the guard could not survive.
+    # first call in a fresh session has nothing set.
     .declared = 0
     if variableExists ("emlResult_declared")
         if emlResult_declared = 1
@@ -1737,8 +1666,8 @@ procedure emlExportResultFiles: .folder$, .base$
         # Post-hoc and effect sizes are separate model objects in R and are
         # separate files here. Written only if the analysis declared them,
         # which it signals by leaving a non-empty extras name.
-        # ONE LOOP OVER THE LIST. This used to be two copy-pasted blocks,
-        # one per named slot, which is where the two-frame ceiling came from.
+        # ONE LOOP OVER THE LIST, so there is no ceiling on the number of
+        # extra frames an analysis may declare.
         for .e to emlResult_extraN
             .pe$ = .folder$ + "/" + .base$ + "_" + emlResult_extra$ [.e]
             ... + "_tidy.csv"
@@ -1782,18 +1711,17 @@ endproc
 # Variable derivation (available after endPause):
 #   clear_Info_window (numeric, 0 or 1)
 #
-# D74: the section marker was `comment: "--- Options ---"`, the only ASCII
-# rule in the plugin and the only labelled one. Every dialog separates its
-# zones with the heavy box-drawing rule (see dev/DESIGN_DIALOG_SYSTEM.md,
-# "Separator"), and this procedure appears in every wrapper, so the outlier
-# was visible everywhere. It now emits that rule.
+# THE SECTION MARKER IS THE HEAVY BOX-DRAWING RULE every dialog separates its
+# zones with (see dev/DESIGN_DIALOG_SYSTEM.md, "Separator"). This procedure
+# appears in every wrapper, so an ASCII or labelled rule here would be an
+# outlier visible everywhere.
 #
-# D52: the toggle was the literal 0, so it reset to unchecked on every
-# `New` — the user re-checked "Clear Info window" once per iteration of a
-# loop whose whole purpose is iteration. The choice now persists in
-# emlLastClearInfo for the rest of the session, the same way
-# emlLastCSVFolder$ persists the export folder. @emlHandleCommonFields
-# records it, because that is the procedure that already reads the answer.
+# THE TOGGLE PERSISTS in emlLastClearInfo for the rest of the session, the
+# same way emlLastCSVFolder$ persists the export folder. Seeded from the
+# literal 0 it would reset to unchecked on every `New`, so the user would
+# re-check "Clear Info window" once per iteration of a loop whose whole
+# purpose is iteration. @emlHandleCommonFields records it, because that is
+# the procedure that already reads the answer.
 #
 # Usage:
 #   beginPause: "My Analysis"
@@ -1823,14 +1751,14 @@ endproc
 # return value and variable derivation, before the orchestrator call.
 # ────────────────────────────────────────────────────────────────────────────
 procedure emlHandleCommonFields
-    ; D52: remember the answer so the next trip round the wrapper's repeat
+    ; Remember the answer so the next trip round the wrapper's repeat
     ; loop (and the next wrapper this session) reopens with it still set.
     emlLastClearInfo = clear_Info_window
     if clear_Info_window
         @emlClearInfo
     endif
 
-    ; D27: this runs once per Run, inside the wrapper's repeat loop, and it
+    ; This runs once per Run, inside the wrapper's repeat loop, and it
     ; runs before the orchestrator prints anything — so it is the one place
     ; that can stamp the analysis path's origin on the report about to be
     ; written, for every wrapper at once and with no wrapper edited.
@@ -1871,38 +1799,36 @@ endproc
 # CLASSIFY THE LABEL COLUMN A COERCION MANUFACTURES. It does not assume the
 # column holds anything, and it does not invent anything to put in it.
 #
-# AUTHOR RULING, 15 August 2026: "probe should classify column types, never
-# assume numeric."
+# THE RULE IS THAT A PROBE CLASSIFIES COLUMN TYPES AND NEVER ASSUMES NUMERIC.
 #
 # WHAT IT IS FOR. `To Table: "row"` writes the source object's ROW LABELS into
 # a column called "row". A Matrix has none, and a TableOfReal may have none or
 # may have some. Praat stores a missing label as an UNDEFINED cell, and
 # `Get value:` renders an undefined cell as the one-character string "?" --
-# measured on 6.6.30, 15 Aug 2026. That string is not "" and it is not
-# "--undefined--", which are the two forms @eml_strictNumericColumn's scan
-# recognises, so the scan passed the column as readable and the numericiser
-# behind it raised:
+# measured on 6.6.30. That string is not "" and it is not "--undefined--",
+# which are the two forms @eml_strictNumericColumn's scan recognises, so an
+# unclassified column passes the scan as readable and the numericiser behind
+# it raises:
 #
 #     Table "eml_numericProbe": the cell in row 1 of column "row" is
 #     undefined. ... cannot get all numbers in column 1.
 #
 # -- a native abort with an internal temp table's name in it, fired from
-# @emlGuessColumnRoles BEFORE the wrapper's dialog ever opened, on every
-# Matrix and on every TableOfReal whose row labels are missing or partial.
-# Reproduced at HEAD on all three shapes before this procedure was written.
+# @emlGuessColumnRoles BEFORE the wrapper's dialog opens, on every Matrix and
+# on every TableOfReal whose row labels are missing or partial.
 #
 # "?" ROUND-TRIPS BACK TO UNDEFINED. `Set string value: r, c$, "?"` stores an
-# undefined cell again, which is why the partial-label case died a second way:
-# @eml_strictOneCell copies the literal into a one-cell probe table named "v"
-# and the same raise came back with "v" in the message instead of "row".
-# So the repair cannot be "write the literal back"; it has to be to a string
-# Praat will actually keep.
+# undefined cell again, so writing the literal back does not help: the
+# partial-label case then fails a second way, because @eml_strictOneCell
+# copies the literal into a one-cell probe table named "v" and the same raise
+# returns with "v" in the message instead of "row". The cell has to be set to
+# a string Praat will actually keep.
 #
 # WHAT IT DOES, AND WHAT IT DELIBERATELY DOES NOT DO. Every unlabelled cell
 # becomes the EMPTY STRING -- a form every EML classifier already handles, and
 # the one @eml_strictNumericColumn was written to treat as unreadable. The
 # result is a classification (.strict = 0, .unreadable = 1) instead of an
-# abort, which is the whole of the ruling.
+# abort.
 #
 # It does NOT fill in default row labels, and it does not delete the column.
 # Default labels are a naming decision that belongs with the conversion side
@@ -2010,34 +1936,30 @@ endproc
 #
 #     row, ?, ?, ?
 #
-# -- three identically named columns, verified live on 15 August 2026. That is
-# the severity-1 duplicate-label mechanism (S1) arriving by the coercion route
-# rather than by the editor's: every name-addressed read in this plugin is
+# -- three identically named columns. That is the duplicate-label hazard
+# arriving by the coercion route rather than by the editor's: every
+# name-addressed read in this plugin is
 # `Get value: row, name$`, Praat returns the FIRST column of that name, and the
 # second and third are unreachable. Picking "?" number 2 out of the menu does
 # not fail -- it silently analyses column 2's data under column 3's heading,
 # and the user has no way to see it. Nothing in an output names a column index.
 #
-# @emlCleanConvertedTable in the graphs layer has performed this rename since
-# 12 August; the stats coercion never did. Same rule here.
+# @emlCleanConvertedTable performs the same rename in the graphs layer, by
+# the same rule.
 #
 # THE NUMBER IN THE NAME IS THE SOURCE COLUMN'S NUMBER, NOT THE TABLE'S.
-# AUTHOR RULING, 15 August 2026. Until this ruling both this procedure and
-# @emlCleanConvertedTable numbered by TABLE POSITION, and `To Table: "row"`
-# has already put the manufactured label column in position 1 by the time
-# either of them runs. So the arithmetic was
+# `To Table: "row"` has already put the manufactured label column in position
+# 1 by the time this runs, so numbering by TABLE POSITION gives
 #
 #     source Matrix column 1  ->  table position 2  ->  named "Column_2"
 #     source Matrix column 2  ->  table position 3  ->  named "Column_3"
 #
-# and no column was ever called "Column_1" at all. A user who asks for
-# "column 2 of my matrix" reads the menu, picks Column_2, and is given column
-# 1's data. That is the S1 wrong-column read again -- the duplicate names were
-# repaired and the mis-addressing survived them, because the invented name
-# still did not say which column of the user's object it is. It has no failure
-# symptom: every value is a real value, from a real column, of the right
-# length, under a heading that is off by one. The auditor's evidence is
-# leg2_converted_mx.csv, where Column_2 carries source column 1.
+# and nothing is called "Column_1" at all. A user who asks for "column 2 of my
+# matrix" then reads the menu, picks Column_2, and is given column 1's data --
+# a wrong-column read that survives the duplicate-name repair, because an
+# invented name that does not say which column of the user's object it is has
+# no failure symptom: every value is a real value, from a real column, of the
+# right length, under a heading that is off by one.
 #
 # .insertedCols is HOW MANY COLUMNS THE COERCION PUT IN FRONT of the source's
 # first column, and it is a parameter rather than a hard-coded 1 because the
@@ -2059,12 +1981,12 @@ endproc
 # optimisation. Positions inside the block have no source column to be numbered
 # after -- `.c - .insertedCols` is 0 or less there -- so scanning them could
 # only ever write a name that is either meaningless ("Column_0") or a duplicate
-# of the real column 1's name, and a duplicate is the exact S1 hazard this
+# of the real column 1's name, and a duplicate is the exact hazard this
 # procedure exists to remove. The block is the caller's own manufactured
 # column, which the caller has already named: `To Table: "row"` names it "row"
 # and the collision guard renames it "OriginalRowLabel". Neither is ever "?",
-# measured on 6.6.30 -- so at HEAD this skips nothing. If one ever did arrive
-# unnamed, v63's "no duplicate or unnamed column" assertion is what says so,
+# measured on 6.6.30 -- so this skips nothing. If one ever did arrive
+# unnamed, validate/v63's "no duplicate or unnamed column" assertion says so,
 # which is a red line rather than an invented name nobody can interpret.
 #
 # Arguments:
@@ -2094,14 +2016,13 @@ endproc
 # ────────────────────────────────────────────────────────────────────────────
 # ONE SOURCE OBJECT, ONE CONVERTED TABLE, however many times a door is pressed.
 #
-# AUTHOR RULING 8a, 15 August 2026, severity 4. Every press of a stats wrapper
-# on the same Matrix or TableOfReal manufactured a fresh Table and named it
-# "eml_converted_<source>", and nothing ever removed the last one. Five presses
-# left five objects with the same name in the Objects window, and that is not
-# only clutter: `selectObject: "Table eml_converted_mx"` then answers with one
-# of the five and the user has no way to say which. It is the S1 duplicate-name
-# mechanism again, one level up -- names that address objects rather than
-# columns -- and it arrives without any error at all.
+# Every press of a stats wrapper on the same Matrix or TableOfReal
+# manufactures a fresh Table named "eml_converted_<source>". Without this,
+# five presses leave five objects with the same name in the Objects window,
+# and that is not only clutter: `selectObject: "Table eml_converted_mx"` then
+# answers with one of the five and the user has no way to say which. It is
+# the duplicate-name hazard one level up -- names that address objects rather
+# than columns -- and it arrives without any error at all.
 #
 # CLEANED UP RATHER THAN REUSED, and the reason is staleness. Reusing the
 # existing Table would be cheaper and would be wrong the moment the user edits
@@ -2111,9 +2032,8 @@ endproc
 # always describes the object as it is now.
 #
 # AT THE TOP OF THE NEXT PRESS, WHICH IS THE PLACEMENT THAT SURVIVES A CRASH.
-# This is the same argument that put the rename at creation (NEW-G12-2), and it
-# is why 8a does not complicate it: the rename is still on the line after the
-# conversion and is not touched. A cleanup handler at the BOTTOM of
+# This is the same argument that puts the rename at creation, on the line
+# after the conversion. A cleanup handler at the BOTTOM of
 # @emlWrapperInit would be skipped by exactly the native error the rename
 # exists to survive, and would then leak on precisely the runs that matter. A
 # cleanup at the TOP runs before anything can fail, and it collects the stray
@@ -2121,10 +2041,9 @@ endproc
 # placements are complementary rather than alternatives. The steady state is
 # at most one stray, and only between a crash and the next press.
 #
-# THE LOOP, not a single removal, because a tree that has already shipped the
-# accumulating version can have any number of them; the first press after this
-# lands collects the lot. The bound is a safety rail, not a limit anyone should
-# reach.
+# THE LOOP, not a single removal, because an Objects window can hold any
+# number of them; one press collects the lot. The bound is a safety rail, not
+# a limit anyone should reach.
 #
 # Arguments:
 #   .name$ - the converted Table's name, "eml_converted_" + the source's own.
@@ -2170,15 +2089,15 @@ procedure emlWrapperInit: .minCols
         # TableOfReal selected — auto-convert to Table
         .torId = selected ("TableOfReal")
         .torName$ = selected$ ("TableOfReal")
-        # RULING 8a. Collect what the last press on this same object left in
-        # the Objects window, before making another one with the same name.
+        # Collect what the last press on this same object left in the
+        # Objects window, before making another one with the same name.
         # Read the id first: @eml_dropStaleConverted clears the selection.
         @eml_dropStaleConverted: "eml_converted_" + .torName$
         .nStale = eml_dropStaleConverted.nDropped
         selectObject: .torId
         .tableId = To Table: "row"
-        # NAME IT ON THE LINE AFTER THE CONVERSION, NOT IN A CLEANUP HANDLER
-        # (NEW-G12-2). `To Table:` gives the new Table the source object's
+        # NAME IT ON THE LINE AFTER THE CONVERSION, NOT IN A CLEANUP
+        # HANDLER. `To Table:` gives the new Table the source object's
         # name, so until this line runs the object list holds "Table srcobj"
         # beside "TableOfReal srcobj" and a native error anywhere below --
         # and the whole reason this procedure has guards is that there are
@@ -2201,12 +2120,11 @@ procedure emlWrapperInit: .minCols
         # with scripts/eml-describe-table.praat. The classifier's verdict is
         # taken FIRST so it still reports what the source object carried.
         @eml_defaultRowLabels: .tableId, "row"
-        # AND THE HEADERS, ON THIS ARM TOO. Measured on 6.6.30, 15 Aug 2026:
-        # a TableOfReal carries column labels only if something set them, and
+        # AND THE HEADERS, ON THIS ARM TOO. Measured on 6.6.30: a
+        # TableOfReal carries column labels only if something set them, and
         # `To TableOfReal` from a Matrix sets none -- so an unlabelled
-        # TableOfReal converts to `row, ?, ?, ?` exactly as a Matrix does, and
-        # the duplicate-name hazard is not Matrix-only. The audit reported it
-        # against the Matrix route because that is the route that was driven.
+        # TableOfReal converts to `row, ?, ?, ?` exactly as a Matrix does,
+        # and the duplicate-name hazard is not Matrix-only.
         # ONE inserted column -- the "row" that `To Table: "row"` manufactured
         # on the line above -- so Column_k names source column k.
         @eml_nameUnlabelledColumns: .tableId, 1
@@ -2242,7 +2160,7 @@ procedure emlWrapperInit: .minCols
         # SAY THAT SOMETHING WAS REMOVED. The plugin is deleting an object
         # from the user's Objects window, and an object that disappears
         # without a line about it is indistinguishable from one that was
-        # never there. Only when it actually happened (ruling 8a).
+        # never there. Only when something was actually removed.
         if .nStale > 0
             appendInfoLine: "Replaced ", .nStale, " Table(s) of the same "
             ... + "name left by an earlier press on this object."
@@ -2253,7 +2171,7 @@ procedure emlWrapperInit: .minCols
         # Matrix selected — convert via TableOfReal → Table
         .matId = selected ("Matrix")
         .matName$ = selected$ ("Matrix")
-        # RULING 8a, as on the TableOfReal arm above.
+        # As on the TableOfReal arm above.
         @eml_dropStaleConverted: "eml_converted_" + .matName$
         .nStale = eml_dropStaleConverted.nDropped
         selectObject: .matId
@@ -2261,7 +2179,7 @@ procedure emlWrapperInit: .minCols
         .tableId = To Table: "row"
         removeObject: .tempTorId
         # NAMED AT CREATION, for the reason given in the TableOfReal arm
-        # above (NEW-G12-2). A Matrix reaches here through a TableOfReal that
+        # above. A Matrix reaches here through a TableOfReal that
         # is removed on this side of the conversion, so between these two
         # lines the object list holds "Table srcobj" beside "Matrix srcobj".
         selectObject: .tableId
@@ -2305,7 +2223,7 @@ procedure emlWrapperInit: .minCols
         ... ", and ", eml_nameUnlabelledColumns.nNamed,
         ... " unnamed column(s) were named Column_<n>, where <n> is the "
         ... + "column's number in the Matrix."
-        # As on the TableOfReal arm (ruling 8a).
+        # As on the TableOfReal arm.
         if .nStale > 0
             appendInfoLine: "Replaced ", .nStale, " Table(s) of the same "
             ... + "name left by an earlier press on this object."
@@ -2313,8 +2231,8 @@ procedure emlWrapperInit: .minCols
         appendInfoLine: ""
 
     else
-        # THE PLUGIN'S OWN SURFACE, not Praat's. This was a raw exitScript
-        # with a message, which Praat renders as its own error window with
+        # THE PLUGIN'S OWN SURFACE, not Praat's. A raw exitScript with a
+        # message is rendered by Praat as its own error window with
         # "Script exited. ... Command ... not executed." underneath — the
         # interpreter's stack shown to a user whose only mistake was
         # selecting two objects instead of one. The remedy names what to
@@ -2362,10 +2280,10 @@ procedure emlWrapperInit: .minCols
     .guessGroupIdx = emlGuessColumnRoles.groupIdx
     .guessDataIdx2 = emlGuessColumnRoles.dataIdx2
 
-    # Say up front which cells will be excluded and why. @emlAuditColumn has
-    # classified them correctly since the C96 work, but its note reached the
-    # user on one path only, so on every other wrapper a column of "1,5" was
-    # quietly dropped and the only symptom was a smaller n than expected.
+    # Say up front which cells will be excluded and why. @emlAuditColumn
+    # classifies them, and this is what carries its note to the user on EVERY
+    # wrapper -- otherwise a column of "1,5" is quietly dropped and the only
+    # symptom is a smaller n than expected.
     @emlCheckDataScheme: .tableId
     .dataCheck$ = emlCheckDataScheme.report$
     if .dataCheck$ <> ""
@@ -2383,32 +2301,21 @@ endproc
 # panel's answer back into it, so it carries the user's choice from one
 # analysis to the next within a session.
 #
-# IT WAS SEEDED NOWHERE. Until 14 August 2026 the only thing that gave it a
-# value was @emlWrapperExportCSV, which did it on its own first line:
-#
-#     if not variableExists ("emlLastCSVFolder$")
-#         emlLastCSVFolder$ = homeDirectory$
-#     endif
-#
-# When the save panel replaced that procedure at all ten call sites, the seed
-# went with the procedure -- it lived INSIDE the thing being superseded. Praat
-# evaluates a procedure's arguments before entering it, so
+# THE SEED CANNOT LIVE INSIDE THE PANEL. Praat evaluates a procedure's
+# arguments before entering it, so
 #
 #     @emlSavePanel: 0, tableName$ + "_two-group", emlLastCSVFolder$
 #
-# aborted with "Unknown variable: emlLastCSVFolder$" BEFORE the panel ran.
-# Every wrapper and the wizard died on the FIRST press of Save in a session,
-# and the analysis the user had just run died with them.
+# aborts with "Unknown variable: emlLastCSVFolder$" BEFORE the panel runs, on
+# the FIRST press of Save in a session -- taking the analysis the user had
+# just run with it.
 #
-# WHY NOTHING CAUGHT IT, which is the part worth keeping. v46 is a static
-# call-site check and it passed: the call site is there, it names the panel,
-# the superseded procedure has no callers -- every claim v46 makes was true.
-# A static check can see that a call exists; it cannot see that an ARGUMENT is
+# A STATIC CHECK CANNOT SEE THIS, which is worth knowing before moving the
+# line. validate/v46 asks whether the call site exists and names the panel,
+# and both are true of the failing form; it cannot see that an ARGUMENT is
 # unbound. harness/wrappers runs each wrapper headless and asks only whether
-# it parses, and this parses. Nothing had ever pressed the Save button on any
-# of the ten non-graphing paths, so the first line of the panel's contract was
-# never executed. harness/savepaths exists because of this, and found it on
-# its first press.
+# it parses, and the failing form parses. harness/savepaths is the check that
+# presses Save.
 #
 # SEEDED HERE, ONCE, rather than in ten wrappers: this file defines the panel,
 # so it owns the panel's state, and a top-level line in an included file runs
@@ -2436,11 +2343,11 @@ endif
 # receipt never draws, the panel never returns, and the caller's
 # Done | Save | Draw | New loop -- which is a `repeat ... until` around the
 # panel -- never runs again. The completed analysis and every way back to it
-# are gone, and Praat's recovery text names a window that no longer exists.
-# Reproduced at HEAD, 15 Aug 2026, before this procedure was written.
+# are gone, and Praat's recovery text names a window that is no longer on
+# the screen.
 #
 # WHICH CHARACTERS, MEASURED RATHER THAN GUESSED. On this Linux sandbox at
-# 6.6.30, writeFile: was driven once per candidate character across 33 of
+# On 6.6.30, writeFile: was driven once per candidate character across 33 of
 # them: only "/" is refused. That is the FILESYSTEM's answer, not the
 # plugin's, and it is the answer on exactly one of the three platforms this
 # plugin ships to. The set below is the union of what any supported platform
@@ -2462,8 +2369,8 @@ endif
 #
 # APPENDIX E DOES NOT APPLY. %, #, ^ and _ are Praat's style toggles in
 # PICTURE-window text. `comment:` in a pause form is a GTK label and renders
-# all four literally -- driven and screenshotted on 6.6.30, 15 Aug 2026 --
-# and the plugin's own suffixes (_tidy.csv, _glance.csv) are made of "_", so
+# all four literally -- driven and screenshotted on 6.6.30 -- and the
+# plugin's own suffixes (_tidy.csv, _glance.csv) are made of "_", so
 # escaping them here would corrupt every file name the panel writes.
 #
 # SANITISE SILENTLY, THEN DISCLOSE -- and the choice is made against this
@@ -2537,8 +2444,8 @@ endproc
 #
 # Praat's own words. The script stops inside @emlSavePanel exactly as the
 # slash case does, and takes the receipt, the panel's return, and the
-# caller's post-analysis loop with it. Reproduced at HEAD on a read-only
-# tmpfs, 15 Aug 2026. A folder that does not exist under an unwritable parent
+# caller's post-analysis loop with it. Reproduced on a read-only tmpfs.
+# A folder that does not exist under an unwritable parent
 # fails one line EARLIER, on the panel's own `createFolder:` -- "Cannot create
 # folder" -- so the guard has to cover the creation too, not just the write.
 #
@@ -2593,18 +2500,16 @@ endproc
 # EVERY LINE THE "Saved" RECEIPT WILL DRAW, worked out before any of it is
 # drawn. Sets .nLines and .line$ [1 .. .nLines].
 #
-# THE DEFECT THIS EXISTS FOR. `comment:` RESERVES the height of one line at
-# layout time and DRAWS whatever string it is handed. The panel already knew
-# half of that -- it split .fileList$ on newline$ so a multi-line string could
-# not be painted over -- but a single line LONGER THAN THE DIALOG is wrapped
-# by the toolkit into two or three drawn lines inside that one line's height,
-# so each long path printed its tail over the path below it. Five independent
-# sightings in the audit of 14 August 2026, one cause; its receipt shows three
-# paths in five lines of overlapping ink.
+# WHY IT EXISTS. `comment:` RESERVES the height of one line at layout time
+# and DRAWS whatever string it is handed. Splitting .fileList$ on newline$ is
+# only half the answer: a single line LONGER THAN THE DIALOG is wrapped by the
+# toolkit into two or three drawn lines inside that one line's height, so a
+# long path prints its tail over the path below it -- three paths in five
+# lines of overlapping ink.
 #
 # THE BUDGET IS 62 CHARACTERS, measured rather than chosen. A pause form was
-# driven on 6.6.30 under Xvfb on 15 Aug 2026 with comments of 55 to 68
-# characters and photographed: 65 draws on one line, 66 wraps. 62 is the width
+# driven on 6.6.30 under Xvfb with comments of 55 to 68 characters and
+# photographed: 65 draws on one line, 66 wraps. 62 is the width
 # @emlErrorDialog already wraps its dialog text to, so the panel and the error
 # surface break in the same place, and the three characters of margin cover a
 # different font on macOS or Windows.
@@ -2612,14 +2517,13 @@ endproc
 # A PATH HAS NO SPACES, so @emlWrapText hard-breaks it at exactly 62
 # characters. That is deliberate: nothing is inserted and nothing is elided,
 # so the drawn lines still concatenate back to the path the user can paste.
-# §6 of the audit called the receipt's honest full-path listing worth
-# preserving, and it is preserved rather than shortened.
+# The receipt lists full absolute paths rather than shortened ones.
 #
-# SEPARATED FROM THE DRAWING so it can be checked without a screen.
-# Building the lines inside `beginPause` is what let this ship: the only way
-# to see the fault was to photograph a dialog. harness/savepaths' guards drive
-# calls this procedure directly and validate/v56_save_guards.R reads its
-# output, so the line lengths are now a number in a file.
+# SEPARATED FROM THE DRAWING so it can be checked without a screen. Lines
+# built inside `beginPause` can only be inspected by photographing a dialog.
+# harness/savepaths' guards drive calls this procedure directly and
+# validate/v56_save_guards.R reads its output, so the line lengths are a
+# number in a file.
 #
 # Arguments:
 #   .fileList$  newline-separated absolute paths, as @emlSavePanel builds it
@@ -2672,31 +2576,37 @@ endproc
 # stem, so a study's outputs arrive as a set instead of three files the user
 # has to keep together by hand.
 #
-# WHY A PANEL AND NOT THREE BUTTONS. Author ruling, 13 August 2026: the saves
-# must be on the dialog, not hidden in a menu. Three separate buttons would
-# satisfy that, and a panel does it better for a reason that is about the
-# files rather than the widgets: before this, the figure, the CSV and the
-# recorded script each remembered a DIFFERENT folder (config_lastPNGFolder$,
-# config_lastCSVFolder$, and the record-save default) and each derived its own
-# name. One analysis scattered its outputs across three places under three
-# naming conventions. A single folder and stem is the fix, and that is only
-# expressible if the three are chosen together.
+# WHY A PANEL AND NOT THREE BUTTONS. The saves belong on the dialog rather
+# than hidden in a menu, and three separate buttons would satisfy that. A
+# panel does better for a reason that is about the files rather than the
+# widgets: separate buttons each remember a DIFFERENT folder
+# (config_lastPNGFolder$, config_lastCSVFolder$, the record-save default) and
+# each derive their own name, so one analysis scatters its outputs across
+# three places under three naming conventions. A single folder and stem is
+# only expressible if the three are chosen together.
 #
-# SAVING THE REPORT DID NOT EXIST AT ALL before this. The plugin tells users
-# their results are in the Info window -- "The results are in the Info window;
-# the CSV buffer for this test is empty" -- and gave them no way to keep it.
-# @emlSaveInfoToFile has been in the tree since before the repo's own history
-# and was called by nothing; it was also broken (a bare `info$`, fixed 13 Aug
-# 2026), which is the proof it had never run.
+# THE REPORT IS SAVABLE FROM HERE. The plugin tells users their results are in
+# the Info window -- "The results are in the Info window; the CSV buffer for
+# this test is empty" -- so there has to be a way to keep it.
+# @emlSaveInfoToFile is what writes it.
 #
 # THE FIGURE BRANCH IS REACHED ONLY WHEN THE CALLER SAYS THERE IS ONE.
 # .offerFigure = 1 comes from the graphs form, where a figure has just been
 # drawn and the graphs layer is loaded; the stats wrappers pass 0, because at
-# the end of an analysis there is nothing drawn yet. That gate is also what
-# makes it safe for this stats-layer procedure to call @emlAssertFullViewport:
-# the call sits inside the branch, and Praat only resolves a procedure name
-# when the call actually executes. A stats-only script -- eml-lib-stats.praat
+# the end of an analysis there is nothing drawn yet. That gate is what makes
+# it safe for this stats-layer procedure to call @emlAssertFullViewport: the
+# call sits inside the branch, and Praat only resolves a procedure name when
+# the call actually executes. A stats-only script -- eml-lib-stats.praat
 # without the graphs barrel -- can therefore still use this panel.
+#
+# AND THE ARGUMENT IS NOT THE ONLY GATE. The paragraph above is a claim about
+# thirteen call sites, and no reader can check it -- one wrapper passing 1
+# would raise "Procedure emlAssertFullViewport not found" at the Save press,
+# which is the class of break harness/check_includes.py exists for and the one
+# it cannot see, because it cannot read arguments. So the two calls also sit
+# behind `if variableExists ("emlDrawnMinX")`, which is true exactly when the
+# layer that defines the procedure is loaded: reachability is what the
+# argument says it is, and a static reader can now confirm it.
 #
 # Arguments:
 #   .offerFigure  1 to offer the figure, 0 when nothing is drawn
@@ -2732,25 +2642,23 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
 
     # THE FIELD VARIABLE NAME LOWERCASES ONLY THE FIRST CHARACTER, and keeps
     # every other character's case: `boolean: "Figure PNG"` is read back as
-    # figure_PNG, not figure_png. Got wrong on the first drive of this panel
-    # (13 Aug 2026) -- Praat answered "Unknown variable: figure_png" and the
-    # save silently did nothing, which is the failure a tickbox panel is most
-    # able to hide.
+    # figure_PNG, not figure_png. Reading figure_png raises "Unknown variable"
+    # and the save silently does nothing, which is the failure a tickbox panel
+    # is most able to hide.
     # A BASE NAME, NOT A FILE NAME. One press writes several files and they
-    # are told apart by a suffix this procedure appends, so calling the field
-    # "File name" described what the user typed and not what they got --
-    # someone typing "results.csv" into it would have got results.csv_tidy.csv
-    # and had no way to know why. The comment lines below say what the
+    # are told apart by a suffix this procedure appends, so a field called
+    # "File name" would describe what the user typed and not what they got --
+    # someone typing "results.csv" into it gets results.csv_tidy.csv with no
+    # way to know why. The comment lines below say what the
     # suffixes are, because the panel is the only place the naming scheme is
     # ever visible.
     #
     # THE PROPOSED NAME CARRIES A TIMESTAMP, and there is exactly ONE call to
     # @emlFileStamp per press, here, before the dialog. Every file this save
     # writes takes its name from the field this seeds, so they all carry the
-    # same stamp to the second -- which is the author's condition, 14 Aug 2026,
-    # and the whole point of stamping rather than numbering. A stamp taken
-    # per-file would put two different seconds on one analysis whenever a write
-    # straddled a tick.
+    # same stamp to the second, which is the whole point of stamping rather
+    # than numbering. A stamp taken per-file would put two different seconds
+    # on one analysis whenever a write straddled a tick.
     #
     # The uniquing backstop still exists but it now runs ONCE on the stem (see
     # below), not once per file. A backstop that produces results_1 and
@@ -2805,23 +2713,21 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     # "Cannot create file <path>. Hint: this is a folder, not a file" and
     # names neither the real cause nor the folder.
     #
-    # It also removes a race that made harness/savepaths flaky on 14 Aug 2026:
-    # the folder and stem handed to the writer were correct on every run,
-    # instrumented and read back, yet one leg in five failed at the first
-    # write. createFolder: on an existing folder is a no-op, so this costs
-    # nothing and closes both.
+    # It also removes a race that makes a first write fail intermittently
+    # even when the folder and stem handed to the writer are correct.
+    # createFolder: on an existing folder is a no-op, so this costs nothing
+    # and closes both.
     # ── THE TARGET IS PROVED WRITABLE BEFORE ANYTHING IS WRITTEN ──────────
     #
-    # `createFolder:` used to sit bare on this line, and it is the FIRST
-    # thing in the panel that can raise: under an unwritable parent it
-    # answers "Cannot create folder" and stops the script inside the
-    # procedure, so the receipt never draws and the caller's
-    # Done | Save | Draw | New loop never runs again. An existing folder that
-    # cannot be written survives this line and kills the save one step later,
-    # at the first writeFile:, with "unexpected error 30".
+    # A bare `createFolder:` here is the FIRST thing in the panel that can
+    # raise: under an unwritable parent it answers "Cannot create folder" and
+    # stops the script inside the procedure, so the receipt never draws and
+    # the caller's Done | Save | Draw | New loop never runs again. An existing
+    # folder that cannot be written survives that line and kills the save one
+    # step later, at the first writeFile:, with "unexpected error 30".
     #
-    # Both are now one question asked once, with `nocheck` so the asking
-    # cannot itself abort, and the panel RETURNS on a no. Returning is what
+    # Both are one question asked once, with `nocheck` so the asking cannot
+    # itself abort, and the panel RETURNS on a no. Returning is what
     # keeps the session: the caller's loop comes back round, the analysis is
     # still there, and the user presses Save again with a different folder.
     # .cancelled is the existing way to say "no files, no error" and it is
@@ -2853,7 +2759,7 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     # base_name$, not file_name$ -- the field was renamed and Praat derives
     # the variable from the label, so the readback name moves with it. The
     # label's first character lowercases and every other character keeps its
-    # case, which is the rule that made figure_PNG bite on 13 Aug 2026.
+    # case -- the same rule as figure_PNG above.
     .stem$ = base_name$
     if .stem$ = ""
         @emlFileStamp
@@ -2864,8 +2770,8 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     #
     # BEFORE the collision walk below and before every write, so all the
     # names one press produces are derived from the same safe stem and the
-    # one-stamp-one-name contract is untouched. `pre/post` used to reach
-    # writeFile: verbatim and stop the session there.
+    # one-stamp-one-name contract is untouched. Unsanitised, a stem like
+    # `pre/post` reaches writeFile: verbatim and stops the session there.
     #
     # The empty-name substitution above runs FIRST and is not re-checked
     # after: its own value contains nothing to sanitise, and a name that
@@ -2881,22 +2787,21 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
 
     # ── ONE COLLISION DECISION, MADE ONCE, BEFORE ANYTHING IS WRITTEN ──────
     #
-    # AUTHOR RULING, 14 August 2026: every file saved in one press must carry
-    # exactly the same stamp -- and by extension exactly the same base name.
-    # That is not a preference, it is what makes the outputs of one analysis a
-    # set rather than a pile.
+    # EVERY FILE SAVED IN ONE PRESS CARRIES EXACTLY THE SAME STAMP -- and by
+    # extension exactly the same base name. That is what makes the outputs of
+    # one analysis a set rather than a pile.
     #
-    # Before this block the panel had THREE DIFFERENT COLLISION BEHAVIOURS
-    # inside one save, and they disagreed:
+    # Per-file collision decisions cannot deliver it, because they disagree:
     #
     #   the figure   @emlGenerateUniquePath on the .png, giving <stem>_1.png
     #   the legend   @emlGenerateUniquePath again, independently
     #   the frames   @emlExportResultFiles uniques the BASE, <stem>_1_tidy.csv
-    #   the report   no check at all -- it overwrote
+    #   the report   no check at all -- it would overwrite
     #
-    # So a second save under a name already used produced <stem>_1.png beside
-    # <stem>_1_tidy.csv beside a <stem>_report.txt that had just destroyed the
-    # first run's report. Three names and a silent loss, from one press.
+    # A second save under a name already used would then produce <stem>_1.png
+    # beside <stem>_1_tidy.csv beside a <stem>_report.txt that had just
+    # destroyed the first run's report: three names and a silent loss, from
+    # one press.
     #
     # The stamp makes a collision very unlikely and does not make it
     # impossible: two saves inside the same second collide, and so does any
@@ -2945,10 +2850,29 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
             # NO PER-FILE UNIQUING. The stem was made free above, against
             # every name this panel can write, so a check here could only
             # ever disagree with the one the frames and the report use --
-            # which is how one press used to produce <stem>_1.png beside
+            # which would let one press produce <stem>_1.png beside
             # <stem>_1_tidy.csv beside an overwritten <stem>_report.txt.
             .figPath$ = .folder$ + "/" + .stem$ + ".png"
-            @emlAssertFullViewport
+            # GUARDED ON EXISTENCE, like the draw layer's recorder hooks.
+            # @emlAssertFullViewport lives in graphs/eml-graph-procedures.praat
+            # and this file is in the STATS barrel: eml-lib-stats.praat pulls
+            # eml-output.praat in without the graphs layer, so the thirteen
+            # stats wrappers hold this call with no definition behind it. It
+            # is unreached there only because every one of them passes
+            # .offerFigure = 0 -- an argument, checked at no point, in
+            # thirteen places. `@emlSavePanel: 1` is written once, in
+            # graphs/eml-graphs-form.praat, where the graphs layer is loaded.
+            #
+            # emlDrawnMinX is assigned at FILE SCOPE in
+            # eml-graph-procedures.praat, so it exists exactly when the layer
+            # that defines this procedure is loaded, and it is also the
+            # variable the procedure reads. Where the graphs layer is loaded
+            # the call runs; where it is not, the figure branch cannot have
+            # been entered anyway. See harness/check_includes.py, which can
+            # see this guard and cannot see the argument.
+            if variableExists ("emlDrawnMinX")
+                @emlAssertFullViewport
+            endif
             if output_DPI = 1
                 Save as 300-dpi PNG file: .figPath$
             else
@@ -2958,8 +2882,8 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
             .fileList$ = .fileList$ + .figPath$ + newline$
 
             # THE LEGEND IS A SECOND FILE when it was placed outside the
-            # frame (D136) -- the figure is not complete without it, so it
-            # goes wherever the figure goes and shares its stem.
+            # frame -- the figure is not complete without it, so it goes
+            # wherever the figure goes and shares its stem.
             if variableExists ("emlLegendSepActive")
                 if emlLegendSepActive = 1
                     .legPath$ = .folder$ + "/" + .stem$ + "_legend.png"
@@ -3053,23 +2977,6 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
 
     label SAVE_PANEL_DONE
 endproc
-
-# ────────────────────────────────────────────────────────────────────────────
-# @emlWrapperExportCSV -- RETIRED 14 August 2026 by author ruling, and deleted
-# here. It was the shared CSV export dialog behind the stats wrappers' and the
-# wizard's "CSV" button: numbers only, its own folder memory, its own naming.
-# @emlSavePanel superseded it at every one of those call sites on 13 Aug 2026.
-#
-# THE ONE FACT WORTH KEEPING. Its first lines were the only thing that ever
-# seeded emlLastCSVFolder$, and when the panel took the call sites the seed
-# went with it -- it lived INSIDE the procedure being superseded. Praat
-# evaluates a procedure's arguments before entering it, so every
-# `@emlSavePanel: ..., emlLastCSVFolder$` died on "Unknown variable" BEFORE
-# the panel ran: all nine non-graphing Save buttons of that day, on the first
-# press of Save in a session. The seed now lives at file scope above
-# @emlSavePanel ("THE PANEL'S REMEMBERED FOLDER, SEEDED AT LOAD"). Keep it at
-# file scope; folding it back inside a procedure reproduces the outage.
-# ────────────────────────────────────────────────────────────────────────────
 
 
 # ============================================================================
@@ -3271,7 +3178,7 @@ endproc
 procedure emlWizardExplainKurtosis: .kurt
     # @emlKurtosis already returns EXCESS kurtosis (normal = 0, verified vs
     # scipy bias=False). Do NOT subtract 3 again — that double-correction
-    # labelled normal data (excess ~ 0) as excess ~ -3 => "platykurtic". (M1)
+    # labels normal data (excess ~ 0) as excess ~ -3 => "platykurtic".
     .excess = .kurt
     if abs (.excess) < emlKurtosisThreshold
         .desc$ = "Near-normal peakedness"
@@ -3287,22 +3194,22 @@ endproc
 
 
 # ============================================================================
-# ERROR PRESENTATION  (finding D93)
+# ERROR PRESENTATION
 # ============================================================================
 # An analysis that cannot run is not a crash and must not be presented as
-# one. Two things were wrong before 5 August 2026.
+# one. Two shapes to avoid:
 #
-#   1. The twelve menu wrappers showed the raw error string in a bare
-#      @pauseScript, whose only button is Continue. The user was returned to
-#      the entry form for a test the error had just told them was the wrong
-#      test — and that form's only other button is Quit.
+#   1. A raw error string in a bare @pauseScript, whose only button is
+#      Continue, returns the user to the entry form for a test the error has
+#      just told them is the wrong test — and that form's only other button
+#      is Quit.
 #
-#   2. The Stats Wizard was worse: every analysis error called @exitScript,
-#      which tore down the whole wizard including every answer the user had
-#      given on the way in.
+#   2. An analysis error that calls @exitScript from inside the Stats Wizard
+#      tears down the whole wizard, including every answer the user gave on
+#      the way in.
 #
-# The author's ruling of 5 August 2026 fixes each path in the way that suits
-# it, and explicitly does NOT restructure how a test is chosen from the menu:
+# Each path is handled in the way that suits it, and none of this restructures
+# how a test is chosen from the menu:
 #
 #   * Wizard path — the wizard owns a full goto/label back-chain, so an
 #     error returns the user into that chain rather than ending the script.
@@ -3318,12 +3225,11 @@ endproc
 #
 # Greedy word wrap. Written for @emlErrorDialog: Praat's `comment:` field in a
 # pause dialog does not wrap, and orchestrator error strings run well past any
-# sensible dialog width, so they are broken up here. (This used to be written
-# "@comment:", which reads as a procedure call in this file's own notation and
-# is not one — `comment:` is a Praat dialog command, not an EML procedure.)
+# sensible dialog width, so they are broken up here. (`comment:` is a Praat
+# dialog command, not an EML procedure — it takes no "@".)
 #
-# It is no longer only the dialog's. @emlReportNote wraps to the report's
-# 68-column body through this, and since D124 @emlDrawAnnotationBlock
+# IT IS NOT ONLY THE DIALOG'S. @emlReportNote wraps to the report's 68-column
+# body through this, and @emlDrawAnnotationBlock
 # (graphs/eml-annotation-procedures.praat) wraps annotation lines through it
 # to a character budget converted from the plotting frame. So .width is a
 # CHARACTER count and every caller owns the conversion from whatever units it
@@ -3391,8 +3297,8 @@ endproc
 # ────────────────────────────────────────────────────────────────────────────
 # @emlErrorDialog: .msg$, .remedy$, .mode$
 #
-# The single error surface for both entry paths, and since 15 August 2026 for
-# the refusals that happen BEFORE either path has a form to return to.
+# The single error surface for both entry paths, and for the refusals that
+# happen BEFORE either path has a form to return to.
 #
 # Parameters:
 #   .msg$    — the orchestrator's error string, shown verbatim and wrapped.
@@ -3417,11 +3323,12 @@ endproc
 # caller knows what needs tearing down.
 #
 # ────────────────────────────────────────────────────────────────────────────
-# "entry" MODE, AND THE SENTENCE THAT MADE IT NECESSARY (15 August 2026)
+# "entry" MODE, AND WHY IT IS NOT ONE OF THE OTHER TWO
 # ────────────────────────────────────────────────────────────────────────────
 # The refusals a wrapper makes BEFORE its dialog opens — the wrong selection,
-# a table with too few columns, a table with no numeric column at all — were
-# raw `exitScript: "..."`, which Praat presents as its OWN error window with
+# a table with too few columns, a table with no numeric column at all — must
+# not be a raw `exitScript: "..."`, which Praat presents as its OWN error
+# window with
 #
 #     Script exited. Script ... not completed.
 #     Command ... not executed.
@@ -3430,7 +3337,7 @@ endproc
 # dialog for, and the one moment a new user is most likely to be wrong about
 # what to select is the moment they get the least help.
 #
-# THEY COULD NOT SIMPLY BE POINTED AT "menu" MODE. With an empty remedy that
+# THEY CANNOT SIMPLY BE POINTED AT "menu" MODE. With an empty remedy that
 # branch ends
 #
 #     "If a different test is needed, click Quit, then pick it from the
@@ -3439,10 +3346,10 @@ endproc
 # which is right for a test that ran and could not fit the data, and wrong
 # for a refusal about the SELECTION: no different test would help, because
 # no test has been reached. It also offers Back — and there is nothing behind
-# it. The mode exists so the remedy-aware wording can be added without
-# touching the two branches that are already correct for their own cases;
-# rewording the shared empty-remedy branch would have made it vaguer for the
-# path it was written for in order to serve a path it was never written for.
+# it. The mode exists so that the remedy-aware wording can be carried without
+# touching the two branches that are correct for their own cases; rewording
+# the shared empty-remedy branch would make it vaguer for the path it serves
+# in order to serve a path it was never written for.
 #
 # It carries ONE button, because there is exactly one thing to do: read it,
 # close it, fix the selection, run the command again. A running Praat script

@@ -15,57 +15,41 @@
 # purpose, because everything in this file is testable headless and nothing
 # about wiring a wrapper is.
 #
-# WHAT THE PROPOSAL SAID THAT TURNED OUT NOT TO BE TRUE
+# THERE IS NO ASCII SANITIZER HERE, AND THAT IS DELIBERATE.
 #
-# The proposal (TREATMENT_record_workflow.md, 8 Aug 2026) devoted §8.6 to an
-# ASCII sanitizer: every string folded on entry, a mapping table of known
-# offenders, a final scan for bytes above 127 substituting "?", and a warning
-# line written into the log at that position. The stated reason was that a
-# single non-ASCII character makes Praat write a file as UTF-16 big-endian
-# rather than ASCII, and that the recorder would therefore silently change
-# the encoding of the emitted script.
-#
-# The premise is TRUE. The conclusion is still wrong, and the difference
-# matters, so both are recorded rather than the tidier half.
-#
-#   1. PRAAT REALLY DOES WRITE UTF-16BE. prefs5 carries
+#   1. PRAAT WRITES UTF-16BE WHEN IT HAS TO. prefs5 carries
 #          TextEncoding.outputEncoding: try ASCII, then UTF-16
 #      so any report containing a box rule is written UTF-16 big-endian on
-#      every installation that has ever saved preferences. An early test here
-#      found UTF-8 and I reported the premise as false; that test ran in a
-#      sandbox with no prefs5, where a compiled-in default applied. It was
-#      measuring a machine no user has. Corrected 10 Aug 2026, after the
-#      round-trip harness went from five green runs to a hard failure the
-#      moment a prefs file existed.
+#      every installation that has ever saved preferences. (A sandbox with no
+#      prefs5 applies a compiled-in default and writes UTF-8, which is a
+#      machine no user has -- do not measure this without a prefs file.)
 #
-#   2. IT DOES NOT MATTER, WHICH IS THE AUTHOR'S POINT AND THE REAL REASON.
-#      Praat reads back what it writes. A UTF-16 script is a perfectly good
-#      Praat script, verified by running one. The encoding belongs to the
-#      layer that owns encoding, and a recorder that forced ASCII would be
-#      overriding a correct decision to protect against a consequence that
-#      does not exist.
+#   2. IT DOES NOT MATTER. Praat reads back what it writes: a UTF-16 script
+#      is a perfectly good Praat script, verified by running one. Encoding
+#      belongs to the layer that owns encoding, and a recorder that forced
+#      ASCII would override a correct decision to protect against a
+#      consequence that does not exist.
 #
-#   3. AND THE PROPOSED FIX WAS NOT ONE ANYWAY.
-#      unicodeToBackslashTrigraphs$() is not exhaustive. It converts the
-#      characters Praat has trigraphs for and passes the rest through
-#      untouched. Measured:
+#   3. AND unicodeToBackslashTrigraphs$() WOULD NOT DO IT ANYWAY. It is not
+#      exhaustive: it converts the characters Praat has trigraphs for and
+#      passes the rest through untouched. Measured:
 #          \o:  3 -> 1  converted      \em  3 -> 3  no such trigraph
 #          \-m  3 -> 1  converted      \>=  3 -> 3  no such trigraph
 #      A round-trip test on an unrecognised trigraph reports "lossless" while
-#      converting nothing, which is how that claim passed review the first
-#      time. It did not survive being asked whether conversion had HAPPENED.
+#      converting nothing, so a round trip is not evidence unless it asks
+#      whether conversion HAPPENED.
 #
 # WHAT THIS DOES COST, and it is not the emitted script. Byte-oriented tools
 # downstream -- sed, grep, diff -- cannot read a UTF-16 capture with an ASCII
 # pattern. harness/record/roundtrip.sh folds both captures to UTF-8 before
 # comparing, so it tests content and leaves encoding to Praat.
 #
-# So there is no @emlLogAscii here, no mapping table, no "?" fallback, and no
+# So there is no @emlLogAscii, no mapping table, no "?" fallback, and no
 # pure-ASCII assertion in the validator. Forcing ASCII would be strictly
 # worse than not: it would hand the user their own group labels back mangled,
 # in a file whose whole purpose is to be publishable.
 #
-# WHAT IS KEPT FROM §8.6, AND WHY. Stream A carries Info-formatted strings
+# WHAT DOES MATTER. Stream A carries Info-formatted strings
 # into a file that is read as a script rather than as a report. The box rules
 # and arrows in that text are decoration and belong in comments. The renderer
 # below guarantees they land there — see @emlRecordRender — so that no reader
@@ -119,13 +103,13 @@
 ; PRESENT, WHICH IS NOT THE SAME AS RUNNING. Set at LOAD time, so any caller
 ; can tell "the recorder is loaded" from "the recorder has been initialised".
 ;
-; The draw layer used to test variableExists ("emlRecordActive") to mean both,
-; and that was true only while a recording lived inside one script scope. A
-; menu command runs in a FRESH scope: emlRecordActive does not exist yet even
-; though a recording is in progress, so the guard was false and every figure
-; drawn from the menu went unrecorded. Found 12 Aug 2026 by driving ten
-; operations through runScript: -- the assembly, not the parts. The ANOVA hook
-; escaped it only because it calls @emlRecordInit before testing anything.
+; variableExists ("emlRecordActive") CANNOT MEAN BOTH. It is true only while
+; a recording lives inside one script scope, and a menu command runs in a
+; FRESH scope: emlRecordActive does not exist yet even though a recording is
+; in progress, so a draw-layer guard on that name is false and every figure
+; drawn from the menu goes unrecorded. (A hook that calls @emlRecordInit
+; before testing anything escapes it, which is why the difference has to be
+; driven through runScript: rather than reasoned about part by part.)
 ;
 ; A caller with no recorder loaded -- a PraatGen companion file, a direct call
 ; into the draw library -- has no such variable, and the guarded call is never
@@ -188,7 +172,7 @@ procedure emlRecordInit
     ;
     ; `nocheck selectObject:` by name leaves nothing selected and raises no
     ; error when the object is absent, which is exactly the test wanted.
-    ; Measured 12 Aug 2026 on 6.6.30.
+    ; Measured on 6.6.30.
     ;
     ; ONLY when this script has not already found it: a wrapper that called
     ; @emlRecordBegin in this same run must not have its id replaced.
@@ -207,38 +191,36 @@ procedure emlRecordInit
     ; THE SESSION'S METADATA IS AN OBJECT TOO, FOR EXACTLY THE SAME REASON.
     ;
     ; The buffer re-attaches above and the steps survive. Everything ABOUT
-    ; the session did not: emlRecordStamp$, emlRecordHeaderInput$ and its
-    ; shape are ordinary script variables, so a recording made the way a
-    ; user makes one -- one menu command per operation -- reached flush with
-    ; every one of them at its default. Measured 12 Aug 2026: a 23-step
-    ; recording emitted an empty timestamp and the header block
+    ; the session would not: emlRecordStamp$, emlRecordHeaderInput$ and its
+    ; shape are ordinary script variables, so a recording made the way a user
+    ; makes one -- one menu command per operation -- reaches flush with every
+    ; one of them at its default. A 23-step recording then emits an empty
+    ; timestamp and the header block
     ;
     ;     # NOT RECORDED. Nothing in this session named the object it
     ;     # ran on ...
     ;
-    ; while the manifest three lines below it named "Table voiceA". The file
-    ; contradicted itself, and every test passed because every test recorded
-    ; in ONE scope.
+    ; while the manifest three lines below it names "Table voiceA": the file
+    ; contradicts itself, and a test that records in ONE scope cannot see it.
     ;
-    ; So the same fix as the buffer: a second Table, re-attached by name, and
-    ; the globals HYDRATED from it below once their defaults are in place. A
-    ; field added later needs no new plumbing -- it is a row.
+    ; So the same mechanism as the buffer: a second Table, re-attached by
+    ; name, and the globals HYDRATED from it below once their defaults are in
+    ; place. A field added later needs no new plumbing -- it is a row.
     ; ------------------------------------------------------------------
-    ; PAIRED TO THE BUFFER BY ID, NOT FOUND BY NAME (NEW-G11-3, 14 Aug 2026).
+    ; PAIRED TO THE BUFFER BY ID, NOT FOUND BY NAME.
     ;
-    ; The re-attach used to be `nocheck selectObject: "Table emlRecordMeta"`
-    ; and take whatever came back. That is sound while exactly one meta table
-    ; exists, and the audit found the state where two do: a user deletes the
-    ; BUFFER from the Objects window mid-recording -- which silently ends the
+    ; `nocheck selectObject: "Table emlRecordMeta"` is sound only while
+    ; exactly one meta table exists, and two can: a user deletes the BUFFER
+    ; from the Objects window mid-recording -- which silently ends the
     ; recording -- and the meta table is left behind, orphaned. The next
-    ; recording creates its own pair, and now two objects answer to the same
-    ; name. Praat resolves that ambiguity on its own terms and the audit
-    ; measured it resolving to the DEAD one: a live session emitted a script
-    ; stamped with a session that had been thrown away three minutes earlier.
-    ; Every step emitted correctly, so nothing looked wrong; only the
-    ; provenance lied, which is the half of the file a reader trusts most.
+    ; recording creates its own pair, and two objects answer to the same
+    ; name. Praat resolves that ambiguity on its own terms, and it can resolve
+    ; to the DEAD one: a live session then emits a script stamped with a
+    ; session thrown away minutes earlier. Every step emits correctly, so
+    ; nothing looks wrong; only the provenance lies, which is the half of the
+    ; file a reader trusts most.
     ;
-    ; The fix is to stop asking by name at all. @emlRecordBegin writes the
+    ; So the meta is not asked for by name at all. @emlRecordBegin writes the
     ; buffer's own id into the meta under "buffer", so the pair is stated
     ; rather than inferred, and the search below accepts only the meta whose
     ; stated buffer IS the live buffer. A meta that names no buffer, or names
@@ -253,7 +235,7 @@ procedure emlRecordInit
     ; THE SELECTION IS PUT BACK. `select all` is how a name is enumerated in
     ; Praat, and this procedure is called at the top of thirteen orchestrators
     ; and sixteen draw procedures, several of which have a live selection at
-    ; that moment. The old one-line re-attach also disturbed it -- and the
+    ; that moment. A one-line re-attach disturbs it too -- and the
     ; wider sweep here would disturb it differently, which is the kind of
     ; change that shows up two files away.
     if emlRecordMetaId = 0 and emlRecordBufferId > 0
@@ -299,8 +281,8 @@ procedure emlRecordInit
         ; session with no store at all is not, because @emlRecordMetaSet is a
         ; no-op without one and every later step would silently fail to
         ; record its provenance. This is the state a user reaches by deleting
-        ; the meta table out of the Objects window -- which the audit did,
-        ; picking the wrong of two identically named rows.
+        ; the meta table out of the Objects window -- easily done by picking
+        ; the wrong of two identically named rows.
         ;
         ; So a replacement is made, paired, and STAMPED HONESTLY: the time is
         ; now, not the session's start, because the session's start is the
@@ -327,19 +309,17 @@ procedure emlRecordInit
         endif
     endif
 
-    ; THE PLUGIN ROOT COMES FROM THE META OBJECT, AND BEFORE THE DEFAULT
-    ; (NEW-G11-1, 14 Aug 2026).
+    ; THE PLUGIN ROOT COMES FROM THE META OBJECT, AND BEFORE THE DEFAULT.
     ;
     ; @emlRecordBegin resolves this once and rewrites it home-relative where
-    ; it can. That resolution then died with the scope that made it: a menu
-    ; command runs in a fresh scope, this line re-defaulted to the ABSOLUTE
-    ; preferencesDirectory$ path, and the flush that eventually wrote the file
-    ; wrote absolute includes under a header claiming they were home-relative.
-    ; The file said one thing and did another, and it could never have said
-    ; otherwise in real menu-driven use -- only the single-scope tests saw the
-    ; tilde. So the resolved value goes into the meta object with everything
-    ; else that has to outlive a scope, and is read back HERE, ahead of the
-    ; default, rather than in the hydrate block below.
+    ; it can. That resolution dies with the scope that made it: a menu command
+    ; runs in a fresh scope, so a bare default here would take the ABSOLUTE
+    ; preferencesDirectory$ path and the flush would write absolute includes
+    ; under a header claiming they were home-relative -- and only a
+    ; single-scope test would ever see the tilde. So the resolved value goes
+    ; into the meta object with everything else that has to outlive a scope,
+    ; and is read back HERE, ahead of the default, rather than in the hydrate
+    ; block below.
     ;
     ; AHEAD OF THE DEFAULT AND NOT AFTER IT, deliberately. The hydrate block
     ; overwrites unconditionally, which is right for provenance -- the object
@@ -444,16 +424,15 @@ procedure emlRecordInit
         emlRecordStampRecovered = 0
     endif
     ; ------------------------------------------------------------------
-    ; THE PHRASE TABLE, WHICH IS AN OBJECT TOO, AND WAS NEVER LOADED.
+    ; THE PHRASE TABLE, WHICH IS AN OBJECT TOO, AND IS LOADED HERE.
     ;
-    ; Until 12 Aug 2026 the ONLY callers of @emlRecordLoadPhrases anywhere
-    ; were two phase1 tests. Nothing in the shipped plugin loaded it, so
-    ; every recording a user could actually make emitted
+    ; If nothing on a user's path calls @emlRecordLoadPhrases, every recording
+    ; a user can make emits
     ;
     ;     # [MISSING PHRASE: anova.intent]
     ;
-    ; on every step. The tests passed because they loaded it themselves.
-    ; Found by harness/record_e2e -- the assembly, not the parts.
+    ; on every step -- which a test that loads the table itself cannot see.
+    ; harness/record_e2e drives the assembly rather than the parts.
     ;
     ; It re-attaches exactly like the buffer, and for the same reason: it is
     ; a Table in the Objects window, so it outlives the scope that read it
@@ -602,9 +581,9 @@ endproc
 # @emlRecordSweepOrphans   ->  .removed
 # @emlRecordOrphanCheck    ->  .orphan
 #
-# THE TWO HALVES OF ONE MEASURED FACT (audit §6, 14 Aug 2026): removing the
-# buffer from the Objects window silently stops the recording. Later analyses
-# simply never appear in the script, with no signal anywhere.
+# THE TWO HALVES OF ONE MEASURED FACT: removing the buffer from the Objects
+# window silently stops the recording, and later analyses simply never appear
+# in the script, with no signal anywhere.
 #
 # That is not a defect this file can fix on its own -- the buffer's EXISTENCE
 # is deliberately the state, and nothing in Praat notifies a script that an
@@ -617,11 +596,10 @@ endproc
 #
 #   OrphanCheck answers "did a recording end this way?" without changing
 #   anything, so the two Stop commands can say WHY there is nothing to save
-#   instead of the bare "nothing is being recorded" the audit met.
+#   instead of a bare "nothing is being recorded".
 #
-# WHERE ELSE THE SIGNAL SHOULD GO -- at the moment of deletion, or at the next
-# analysis -- is a design question, and it is in the report rather than
-# implemented here.
+# Where else such a signal might go -- at the moment of deletion, or at the
+# next analysis -- is an open design question and is not implemented here.
 # ----------------------------------------------------------------------------
 procedure emlRecordSweepOrphans
     .removed = 0
@@ -712,12 +690,11 @@ procedure emlRecordBegin: .tempFolder$
         .keep = 1
     endif
 
-    ; ---- SWEEP THE ORPHANS FIRST (NEW-G11-3) -------------------------------
+    ; ---- SWEEP THE ORPHANS FIRST ------------------------------------------
     ; Reached only when no recording is running, so any meta table in the
     ; Objects window belongs to a session that has ended -- and the only way
-    ; one survives is the one the audit found: the user removed the BUFFER by
-    ; hand, which ends the recording, and the meta was left behind because
-    ; nothing was watching. Two objects then answer to "Table emlRecordMeta"
+    ; one survives is a user removing the BUFFER by hand, which ends the
+    ; recording and leaves the meta behind because nothing is watching. Two objects then answer to "Table emlRecordMeta"
     ; and the next session's provenance is a coin toss.
     ;
     ; Cleared here rather than defended against later. The pairing check in
@@ -727,15 +704,14 @@ procedure emlRecordBegin: .tempFolder$
 
     ; THE NAME IS THE WARNING, AND IT IS THE ONLY ONE THERE CAN BE.
     ;
-    ; AUTHOR RULING, 15 AUGUST 2026 (RULING 4). This table used to be called
-    ; emlRecordBuffer, which reads as scratch -- and it is the opposite of
-    ; scratch: its EXISTENCE is the recording, so a user who tidies it out of
-    ; the Objects window silently ends their session and nothing anywhere says
-    ; so. The ruling is explicitly NO PER-STEP SIGNAL -- an analysis that
-    ; announced "you are still recording" every time would be noise in the one
-    ; window the user is reading results in -- so the whole of the warning has
-    ; to live in the one place the user sees at the moment they are deciding
-    ; whether to remove it: the name in the Objects list.
+    ; A name like emlRecordBuffer reads as scratch, and this is the opposite
+    ; of scratch: its EXISTENCE is the recording, so a user who tidies it out
+    ; of the Objects window silently ends their session. There is NO PER-STEP
+    ; SIGNAL -- an analysis that announced "you are still recording" every
+    ; time would be noise in the one window the user is reading results in --
+    ; so the whole of the warning lives in the one place the user sees at the
+    ; moment they are deciding whether to remove it: the name in the Objects
+    ; list.
     ;
     ; DO_NOT_REMOVE and not DO_NOT_DELETE because Remove is the word on
     ; Praat's own button. The name is what the user is about to act on, so it
@@ -748,7 +724,7 @@ procedure emlRecordBegin: .tempFolder$
     ; It carries the RESOLVED axis of a draw step -- the numbers the figure
     ; was actually drawn on -- so that @emlRecordColumnManifest can say, in
     ; the editable block, what an AUTO axis came out as on the data it was
-    ; recorded from (RULING 10b). It has to be a column and not a global:
+    ; recorded from. It has to be a column and not a global:
     ; the recorder spans menu commands, each of which is its own script
     ; scope, and the buffer Table is the only thing that survives between
     ; them -- which is the same reason @emlRecordCaptureEnv exists.
@@ -768,27 +744,26 @@ procedure emlRecordBegin: .tempFolder$
 
     ; The include block's path. Resolved at run time from
     ; preferencesDirectory$, then rewritten HOME-RELATIVE, because Praat's
-    ; `include` accepts a leading ~ -- tested 10 Aug 2026, including a path
-    ; with spaces in it (macOS's "Praat Prefs") and under both 6.4.06 and
-    ; 7.0. That one substitution takes the emitted file from
+    ; `include` accepts a leading ~ -- tested on a path with spaces in it
+    ; (macOS's "Praat Prefs") and under both 6.4.06 and 7.0. That one substitution takes the emitted file from
     ; one-machine to any-user-on-this-platform, for free.
     ;
-    ; ALWAYS HOME-RELATIVE. AUTHOR RULING, 15 AUGUST 2026, and it settles a
-    ; question this procedure had been answering the wrong way round.
+    ; ALWAYS HOME-RELATIVE.
     ;
     ; The emitted script is a USER artefact. Where the plugin happens to sit on
     ; the machine that recorded the session is an accident of that machine, and
     ; an emitted file that hard-codes it is worth nothing to the person the file
     ; is for. Praat's preferences directory lives under the user's home on every
     ; supported platform, so a home-relative include is correct for every real
-    ; installation -- and `include` accepts a leading ~, tested 10 Aug 2026 on a
-    ; path containing spaces (macOS's "Praat Prefs") under both 6.4.06 and 7.0.
+    ; installation -- and `include` accepts a leading ~, tested on a path
+    ; containing spaces (macOS's "Praat Prefs") under both 6.4.06 and 7.0.
     ;
     ; The only way the substitution below can fail is a preferences directory
     ; outside $HOME, which Praat produces only under an explicit --pref-dir. That
     ; is a test rig, not a configuration: this repository's own harnesses use it.
-    ; Emitting an absolute path in that case wrote the RIG's geometry into a file
-    ; meant for a user. So when the substitution cannot be made we fall back to
+    ; Emitting an absolute path in that case would write the RIG's geometry
+    ; into a file meant for a user. So when the substitution cannot be made we
+    ; fall back to
     ; the canonical location for the running platform and version -- the same
     ; four paths the emitted header has always listed -- and the file stays
     ; portable rather than becoming a record of a scratch directory.
@@ -814,13 +789,12 @@ procedure emlRecordBegin: .tempFolder$
             emlRecordPluginRoot$ = "~/.praat-dir/plugin_EML_Praat_Tools"
         endif
     endif
-    ; INTO THE META OBJECT, OR IT DIES WITH THIS SCOPE (NEW-G11-1). The
-    ; substitution above is the only thing that makes the emitted include
-    ; block portable, and until 14 Aug 2026 it never survived to the flush:
-    ; the menu command that saves the file runs in a fresh scope where
-    ; @emlRecordInit re-defaulted the root to the absolute path. Every
-    ; recording a user could actually make emitted absolute includes under a
-    ; header promising home-relative ones. See the matching read in
+    ; INTO THE META OBJECT, OR IT DIES WITH THIS SCOPE. The substitution
+    ; above is the only thing that makes the emitted include block portable,
+    ; and it has to survive to the flush: the menu command that saves the file
+    ; runs in a fresh scope, where @emlRecordInit would otherwise re-default
+    ; the root to the absolute path and emit absolute includes under a header
+    ; promising home-relative ones. See the matching read in
     ; @emlRecordInit and the honesty branch in @emlRecordRender.
     @emlRecordMetaSet: "pluginRoot", emlRecordPluginRoot$
     emlRecordPraatVersion$ = praatVersion$
@@ -843,11 +817,11 @@ procedure emlRecordBegin: .tempFolder$
 
     ; WHEN THE SESSION HAPPENED, STAMPED HERE AND NOT AT FLUSH.
     ;
-    ; Nothing in the shipped plugin called @emlRecordHeader -- its only
-    ; callers were two phase1 tests and two roundtrip harnesses -- so every
-    ; recording a user could actually make emitted a header line with an
-    ; empty date on it. The stamp belongs to the moment recording STARTED,
-    ; which is here, and it goes straight into the meta object so that the
+    ; @emlRecordHeader is not on the path a user's recording takes -- its
+    ; callers are tests and roundtrip harnesses -- so a stamp taken there
+    ; would leave a real recording with an empty date on its header line. The
+    ; stamp belongs to the moment recording STARTED, which is here, and it
+    ; goes straight into the meta object so that the
     ; menu command that eventually saves the file can still read it.
     ;
     ; THE ENVIRONMENT OVERRIDE IS A TEST SEAM, and the same one EML_RECORD_OUT
@@ -923,22 +897,16 @@ endproc
 # @emlRecordSource: .tableId
 # Record WHICH object the session worked on, as provenance.
 #
-# THE PATH REGISTRY THAT USED TO LIVE HERE IS GONE. It registered every path
-# the session touched, assigned form-variable names by role, and resolved
-# tokens into a `form:` block at flush so the emitted file could be re-run on
-# any machine by pressing OK.
-#
-# It was solving a problem the emission level created. Emitting wrapper-level
-# `runScript:` calls meant the file had to bootstrap itself -- find the
-# plugin, read the input, name the outputs -- and every one of those needed a
-# path. Emitting at the API level instead, with an `include` block and
+# THERE IS NO PATH REGISTRY HERE, and that follows from the emission level.
+# Emitting wrapper-level `runScript:` calls would make the emitted file
+# bootstrap itself -- find the plugin, read the input, name the outputs -- and
+# every one of those needs a path, hence a registry, tokens, roles, a `form:`
+# block, the `folder:`-resolves-to-cwd trap and a batch wrapper sibling per
+# wrapper. Emitting at the API level instead, with an `include` block and
 # whatever object the user has selected, removes the requirement rather than
-# meeting it. Author's call, 9 Aug 2026, and it deleted more machinery than
-# it added: the registry, the tokens, the roles, the form block, the
-# `folder:`-resolves-to-cwd trap, and the thirteen batch wrapper siblings the
-# other route would have needed.
+# meeting it.
 #
-# WHAT IS KEPT IS THE PART A READER ACTUALLY NEEDS. "Whatever is selected"
+# WHAT A READER STILL NEEDS. "Whatever is selected"
 # gives no way to know whether the right thing was selected. So the object's
 # name and shape go in the header as provenance -- not as a field to fill in,
 # as a statement of what this record describes.
@@ -955,29 +923,26 @@ procedure emlRecordSource: .tableId
     ; The plugin accepts a Table, a TableOfReal and a Matrix -- the graphs
     ; form's own @emlDetectContext branches on all three -- so a recorder
     ; that writes `selectObject: "Table " + name$` produces a script that
-    ; cannot select two of the three. It was written that way and this is
-    ; the fix.
+    ; cannot select two of the three.
     ;
-    ; `selected$ ()` with NO argument returns "Type name" -- measured
-    ; 12 Aug 2026 on 6.6.30: "Table vt", "Matrix spec", "TableOfReal tor" --
+    ; `selected$ ()` with NO argument returns "Type name" -- measured on
+    ; 6.6.30: "Table vt", "Matrix spec", "TableOfReal tor" --
     ; and that whole string is what `selectObject:` takes back. So the
     ; recorder never has to know which type it is holding, and adding a
     ; fourth type needs no change here.
     .name$ = selected$ ()
 
     ; AN AUTO-CONVERTED OBJECT IS RECORDED AS ITS SOURCE, and this is the
-    ; whole point of the convert step (author, 12 Aug 2026: "fo, waveform,
-    ; spectrum, and LTAS will all also run from just a sound. They auto
-    ; convert").
+    ; whole point of the convert step: F0, waveform, spectrum and LTAS all
+    ; run from just a Sound, converting on the way.
     ;
     ; @emlGraphsWorkflow turns a selected Sound into a Pitch, a Spectrum or
     ; an Ltas, hands THAT to the draw procedure, and REMOVES it at the end of
     ; the pass. The capture hook lives inside the draw procedure, so without
-    ; this the recorder wrote "Pitch tone" into the manifest -- an object the
+    ; this the recorder writes "Pitch tone" into the manifest -- an object the
     ; user never created and which does not exist by the time they re-run the
-    ; file. Every acoustic figure recorded from the menu emitted a script
-    ; that could not run, and instructed the reader to open an object that
-    ; had been deleted.
+    ; file. Every acoustic figure recorded from the menu would emit a script
+    ; that cannot run, instructing the reader to open a deleted object.
     ;
     ; So the step is attributed to the Sound, and flagged: the renderer emits
     ; no select for it, because the convert step immediately above left the
@@ -989,25 +954,22 @@ procedure emlRecordSource: .tableId
         emlRecordStepDerived$ = "1"
     endif
 
-    ; ROWS AND COLUMNS ARE NOT UNIVERSAL, AND ASSUMING THEY WERE KILLED FOUR
-    ; OPERATIONS (12 Aug 2026).
+    ; ROWS AND COLUMNS ARE NOT UNIVERSAL.
     ;
-    ; This block used to read `Get number of rows` unconditionally with a
-    ; comment saying every accepted type answers it. That is true of the three
-    ; TABULAR types -- Table, TableOfReal, Matrix -- and false of the objects
-    ; the acoustic draw procedures take. @emlDrawWaveform is handed a Sound;
-    ; @emlDrawF0Contour a Pitch; @emlDrawSpectrum a Spectrum; @emlDrawLTAS an
-    ; Ltas. None answers "Get number of rows", so with a recording running,
-    ; each of those four draws died inside the RECORDER: "Command Get number
-    ; of rows not available for current selection", from a procedure whose
-    ; whole contract is to be inert.
+    ; `Get number of rows` is answered by the three TABULAR types -- Table,
+    ; TableOfReal, Matrix -- and by none of the objects the acoustic draw
+    ; procedures take. @emlDrawWaveform is handed a Sound; @emlDrawF0Contour
+    ; a Pitch; @emlDrawSpectrum a Spectrum; @emlDrawLTAS an Ltas. An
+    ; unconditional read therefore kills each of those four draws from inside
+    ; the RECORDER -- "Command Get number of rows not available for current
+    ; selection", from a procedure whose whole contract is to be inert.
     ;
-    ; It was invisible standalone. With no recording active @emlRecordSource
-    ; returns at the guard above, so every unit test of the draw path passed;
-    ; only harness/record_e2e, which switches recording ON and then draws,
+    ; It is invisible standalone: with no recording active @emlRecordSource
+    ; returns at the guard above, so every unit test of the draw path passes.
+    ; Only harness/record_e2e, which switches recording ON and then draws,
     ; reaches this line with a Sound selected.
     ;
-    ; `nocheck` IS NOT THE FIX and was tried first: `nocheck .rows = Get
+    ; `nocheck` IS NOT THE ANSWER: `nocheck .rows = Get
     ; number of rows` suppresses the ASSIGNMENT as well as the error, so the
     ; variable keeps its prior value and a Sound silently inherits the last
     ; Table's dimensions. The type is therefore read from the name -- the
@@ -1082,17 +1044,16 @@ procedure emlRecordSource: .tableId
 
     ; AN AMBIGUOUS NAME, DETECTED WHERE IT IS KNOWABLE. The emitted script
     ; selects by NAME, and two Tables sharing one name make that ambiguous:
-    ; measured 12 Aug 2026, `selectObject: "Table vt"` with two such Tables
+    ; measured on 6.6.30, `selectObject: "Table vt"` with two such Tables
     ; silently picks the MOST RECENT. Here the id is known, so the collision
     ; can be seen; in the emitted file it cannot. Counted now, reported by
     ; the renderer.
     ;
-    ; COMPARED AGAINST .name$ WHOLE, and it used to read `"Table " + .name$`.
-    ; That was correct while .name$ came from `selected$ ("Table")` and held
-    ; the bare name; it stopped being correct the moment .name$ became
-    ; `selected$ ()`, which already carries the type. The comparison then
-    ; asked whether any object was called "Table Table voiceA" and the answer
-    ; was always no, so the duplicate-name warning could not fire at all.
+    ; COMPARED AGAINST .name$ WHOLE, and NOT against `"Table " + .name$`:
+    ; .name$ comes from `selected$ ()`, which already carries the type, so
+    ; prefixing it again asks whether any object is called "Table Table
+    ; voiceA" -- always no, and the duplicate-name warning could never
+    ; fire.
     .dupes = 0
     if .fromConversion = 1
         goto END_RECORD_SOURCE_DUPES
@@ -1155,12 +1116,11 @@ procedure emlRecordAnalysisStep: .tableId, .label$, .detail$, .caveat$,
     @emlPhrase: "analysis.intent", .label$, .detail$, "", "", "", ""
     @emlRecordStep: "analysis", emlPhrase.result$, .caveat$, .code$, .api$
 
-    ; THE NUMBERS, NOT JUST THE CALL (12 Aug 2026).
+    ; THE NUMBERS, NOT JUST THE CALL.
     ;
-    ; This procedure took no result when it was written, so the twelve
-    ; orchestrators wired to it recorded THAT an analysis ran and never WHAT
-    ; it produced. @emlRecordAnova -- the hand-written recorder that predates
-    ; it -- had always emitted
+    ; Without a result argument the twelve orchestrators wired to this record
+    ; THAT an analysis ran and never WHAT it produced. @emlRecordAnova, the
+    ; hand-written recorder beside it, emits
     ;
     ;     # F(1, 22) = 5.2251, p = 0.0323, eta-squared = 0.1919
     ;
@@ -1195,8 +1155,8 @@ endproc
 #
 # NO REFUSAL PATH. A draw procedure that cannot draw does not return an error
 # string -- it draws the labelled empty frame and says so on the figure, which
-# is D111's whole design and is asserted by v27. There is nothing here for a
-# refusal branch to catch.
+# is the labelled-empty-frame design, asserted by validate/v27. There is
+# nothing here for a refusal branch to catch.
 # ----------------------------------------------------------------------------
 procedure emlRecordDrawStep: .objectId, .label$, .detail$, .caveat$, .code$,
     ... .api$, .result$
@@ -1232,11 +1192,11 @@ endproc
 # and it is the behaviour most users will meet, since a Sound is what comes
 # off a recorder.
 #
-# The recorder's capture hook is inside the DRAW procedure, so what it saw
-# was the intermediate: every acoustic figure recorded from the menu wrote
-# `data1$ = "Pitch tone"` into the manifest and told the reader to have that
-# object open. It had been deleted by the plugin itself moments earlier, and
-# the user never made it. The emitted script could not run.
+# The recorder's capture hook is inside the DRAW procedure, so what it sees
+# is the intermediate: without this step, an acoustic figure recorded from
+# the menu writes `data1$ = "Pitch tone"` into the manifest and tells the
+# reader to have that object open -- an object the plugin deleted moments
+# earlier and the user never made. Such a script cannot run.
 #
 # Recording the conversion fixes both halves at once: the manifest names the
 # SOUND, which is the thing the user actually selected and still has, and the
@@ -1301,27 +1261,23 @@ endproc
 # ----------------------------------------------------------------------------
 # @emlRecordCaptureEnv   ->  .out$
 #
-# THE SETTINGS THAT ARE NOT ARGUMENTS (NEW-G11-2, 14 August 2026).
+# THE SETTINGS THAT ARE NOT ARGUMENTS.
 #
-# WHAT WENT WRONG. Record an advanced-mode violin with "Show jittered points"
-# ticked, stop, save, replay: the violin comes back and the points do not.
-# The reason is that `Show jittered points` is not a parameter of
-# @emlDrawViolinPlot. It is a GLOBAL -- prev_violinShowJitter -- set by the
-# graphs form and read by the draw procedure through variableExists. The
-# recorded call carries every argument faithfully and the emitted script still
-# draws a different figure, because the thing that made it advanced was never
-# an argument to record. Reproduced 14 Aug 2026 against a 2-group violin: the
-# original and the replay differ by ~2400 dark pixels and the jitter is all of
-# them.
+# `Show jittered points` is not a parameter of @emlDrawViolinPlot. It is a
+# GLOBAL -- prev_violinShowJitter -- set by the graphs form and read by the
+# draw procedure through variableExists. A recorded call that carries every
+# argument faithfully therefore still replays a different figure: record an
+# advanced-mode violin with jitter ticked, stop, save, replay, and the violin
+# comes back while the points do not, a difference of ~2400 dark pixels on a
+# 2-group violin.
 #
-# THE PRECEDENT IS ALREADY IN THE TREE and this is its generalisation. The
-# scatter recorder in eml-draw-procedures.praat prepends
-# `scatterAnalysisType = ...` and two siblings to its own code line, for
-# exactly this reason, and v39 pins that it does. Four more draw procedures
-# have the same shape and none of them prepend anything. Writing the block
-# five more times in the draw layer is how a recorder drifts away from the
-# figures it records -- the argument @emlRecordDrawStep's own header makes --
-# so it is done ONCE, here, for every step.
+# THE SAME SHAPE IS IN THE DRAW LAYER: the scatter recorder in
+# eml-draw-procedures.praat prepends `scatterAnalysisType = ...` and two
+# siblings to its own code line, and validate/v39 pins that it does. Four more
+# draw procedures have the same shape. Writing the block five more times in
+# the draw layer is how a recorder drifts away from the figures it records --
+# the argument @emlRecordDrawStep's own header makes -- so it is done ONCE,
+# here, for every step.
 #
 # WHY IT CAN ONLY BE DONE HERE. These globals belong to the FORM's scope. The
 # flush is a different menu command in a different scope, where none of them
@@ -1337,7 +1293,7 @@ endproc
 #
 # READ THROUGH variableExists, ALWAYS. A direct caller -- a user script, a
 # PraatGen companion, this tree's own harnesses -- sets none of these, and
-# reading one unconditionally is how the scatter's first cut killed the
+# reading one unconditionally is what kills the
 # harness with "Unknown variable".
 # ----------------------------------------------------------------------------
 procedure emlRecordCaptureEnv
@@ -1373,21 +1329,17 @@ endproc
 # ----------------------------------------------------------------------------
 # @emlRecordCaptureAnnotations: .kind$   ->  .out$
 #
-# THE OTHER HALF OF NEW-G11-2: THE BRACKET.
+# THE OTHER HALF OF THE SAME PROBLEM: THE BRACKET.
 #
-# WHAT WENT WRONG, AND IT IS NOT WHAT IT LOOKS LIKE. The recorded script for
-# an annotated violin contains both halves of the annotation already: the
-# bridge step that runs the test and fills annotBracketN, annotBracketLabel$[]
-# and the rest, and the draw step that draws the violin. Replay it and there
-# is no bracket. Nothing is missing from the emission and nothing is in the
-# wrong order.
-#
-# The bracket is drawn by neither of them. It is drawn by
+# The recorded script for an annotated violin already contains both halves of
+# the annotation: the bridge step that runs the test and fills annotBracketN,
+# annotBracketLabel$[] and the rest, and the draw step that draws the violin.
+# Neither of them draws the bracket. It is drawn by
 # @emlGraphsPostDispatchAnnotations in eml-graphs-form.praat, AFTER the draw
 # procedure returns, and the emitted file cannot call it: including
-# eml-graphs-form.praat would run the graphs form. So a recorded annotated
-# figure was structurally incapable of coming back annotated -- the recorder
-# was carrying the inputs to a step it never carried.
+# eml-graphs-form.praat would run the graphs form. So without this, a recorded
+# annotated figure is structurally incapable of coming back annotated -- the
+# recorder carries the inputs to a step it never carries.
 #
 # So the render is emitted, from here, as the step's own tail. The values it
 # needs that belong to the form -- the data maximum the brackets sit above,
@@ -1402,8 +1354,7 @@ endproc
 # enlarges around the draw. The recorded step carries the draw, not the
 # canvas, so emitting the panel call would place it outside the picture that
 # gets saved. An honest comment is worth more than a silently misplaced
-# panel: the emitted file names what it did not reproduce, and the gap is in
-# the audit reply rather than papered over.
+# panel: the emitted file names what it did not reproduce.
 #
 # WHY .kind$ IS TAKEN AND CHECKED. Only a draw step has a figure to annotate.
 # The bridge step that computed the statistics is an "analysis" step and must
@@ -1555,8 +1506,7 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     ; runs inside the same script scope as the operation that recorded it, so
     ; the graphs form's globals are still live. By flush time they are gone --
     ; the flush is its own menu command. See @emlRecordCaptureEnv and
-    ; @emlRecordCaptureAnnotations, which are one fix (NEW-G11-2) in two
-    ; halves.
+    ; @emlRecordCaptureAnnotations, which are two halves of one job.
     @emlRecordCaptureEnv
     Set string value: .row, "env", emlRecordCaptureEnv.out$
     @emlRecordCaptureAnnotations: .kind$
@@ -1580,8 +1530,6 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     ; and it never existed in the user's session as something they made. The
     ; preceding convert step left it in `data`, which is what the step uses.
     ;
-    ; (This column was "paths" -- written empty on every row since the path
-    ; registry was deleted on 9 Aug 2026, and read by nothing.)
     Set string value: .row, "derived", emlRecordStepDerived$
     emlRecordStepDerived$ = "" 
     ; The object this step ran on, so the renderer can emit a select where
@@ -1606,6 +1554,254 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     label RECORD_STEP_DONE
 endproc
 
+
+# ----------------------------------------------------------------------------
+# @emlRecordMark / @emlRecordRewind
+# REMEMBER HOW MANY STEPS THERE WERE, AND GO BACK TO IT. For a caller that
+# performs an operation it then throws away.
+#
+# ONE USER ACTION EMITS ONE DRAW STEP. The pair below is the recorder's half
+# of that; the caller's half is two lines in @emlGraphsDrawWithLegendRoom,
+# which draws a figure whose legend would sit on the data, MEASURES it, and
+# draws it again on a widened axis, throwing the first pass away. Both passes
+# reach the recorder, so without a mark and a rewind one press of Draw emits
+#
+#     # --- Step 1 (draw) ---   ... @emlDrawGroupedViolin: ... axisYMin, axisYMax
+#     # --- Step 2 (draw) ---   ... @emlDrawGroupedViolin: ... axisYMin, axisYMax
+#
+# -- the same figure twice, with the block reading `steps 1 (draw), 2 (draw)`.
+# Worse than the duplication: the block's resolved-range note quotes the FIRST
+# step to use a pair (see @emlRecordColumnManifest), so it would name the axis
+# of the pass that was discarded rather than the figure on the user's screen
+# -- the one number the block gives a reader who wants their frame back,
+# naming a picture nobody ever saw. harness/formaxis's legend_auto leg is the
+# drive.
+#
+# THE SAME SHAPE AS @emlCSVMark / @emlCSVRewind IN stats/eml-output.praat,
+# deliberately, and for the same reason: rows that have not been written out
+# yet can simply be rewound, and an operation that was never on the page has
+# no business in the record.
+#
+# WHAT IT IS NOT. This is not an undo, and it is not addressed to legends. It
+# knows nothing about graphs, passes or axes: it remembers a row count and a
+# step counter and puts them back, so the NEXT two-pass caller -- a bracket
+# stack that has to be measured before it is drawn, a matrix panel that lays
+# itself out twice -- can use it without this file learning what it is for.
+#
+# NOT A STACK, for @emlCSVMark's reason: one mark, because the one caller has
+# one nesting level, and a stack nobody pops is a leak with extra steps.
+#
+# WHAT IS RESTORED, and why each one:
+#   · the buffer's rows. Removed from the END backwards, because Praat
+#     renumbers rows on removal and walking forwards would skip every second
+#     one -- and down to ZERO rows by replacing the object, because Praat
+#     refuses to remove a Table's only row and `nocheck` in front of that
+#     refusal is a skip, not a suppression. See the block itself; a mark of
+#     zero rows is the ORDINARY case, since most figures are drawn without an
+#     analysis before them.
+#   · emlRecordN, which is what the renderer NUMBERS STEPS FROM -- it goes
+#     into the row's `n` column, and both the step headings and the block's
+#     step list are printed from it. Without the restore the counter keeps
+#     climbing across a discarded pass, and a recording whose only step is a
+#     legend figure emits "# --- Step 2 (draw) ---" with a block reading
+#     "step 2 (draw)"; put an analysis in front of it and the figure becomes
+#     step 3 of two. Measured by breaking exactly this line --
+#     harness/record/replay_break.sh's rows_only leg.
+#
+#     WHAT THE COUNTER DOES *NOT* BREAK, because it was checked rather than
+#     assumed: the axis stamp. @emlGraphsStampAxisRequest writes emlRecordN + 1
+#     and @emlRecordAxisRequest compares against emlRecordN + 1, so both sides
+#     read the same counter and a counter left one too high is still
+#     self-consistent -- the rows_only tree still emits the user's own 0.0 /
+#     0.0. The axis request survives a broken restore here; the numbering does
+#     not.
+#   · emlRecordCurrentSource$ and emlRecordStepDerived$, the two script-scope
+#     variables @emlRecordSource writes and @emlRecordStep reads. The renderer
+#     emits a select where the source CHANGES, so leaving a discarded pass's
+#     value behind would suppress the select on the step that replaces it.
+#
+# WHAT IS NOT REWOUND, AND THAT IS A DECISION. The crash mirror
+# (emlRecordTempPath$) is append-only -- it exists so that a session lost to a
+# crash survives as a file, which is precisely the property that makes it
+# unwritable backwards. So the discard is LABELLED there instead, the same rule
+# @emlGraphsDrawWithLegendRoom follows for the Info window: say what happened
+# rather than hide it. Nothing reads the mirror to rebuild a recording; it is
+# read by a human after a crash, and a human is better served by "these two
+# steps were thrown away" than by a file that quietly disagrees with the
+# buffer.
+#
+# THE SELECTION IS PUT BACK, BOTH TIMES. @emlRecordInit re-attaches by name
+# with `nocheck selectObject:`, which leaves NOTHING selected when no recording
+# exists, and both procedures below then select the buffer to count or trim it.
+# They are called from the middle of a draw flow, between one draw and the
+# next, where the caller's object selection is live -- @emlGraphsStampAxisRequest
+# restores objectId for exactly this reason. Snapshot is taken before
+# @emlRecordInit, not after, because the re-attach is the first thing that
+# disturbs it.
+#
+# Outputs: emlRecordMark_have  1 if a mark is live, 0 if there is nothing to
+#                              go back to (no recording, or Rewind before Mark)
+#          emlRecordRewind.removed  steps discarded by the last rewind
+# ----------------------------------------------------------------------------
+procedure emlRecordMark
+    .nSel0 = numberOfSelected ()
+    for .i from 1 to .nSel0
+        .sel0[.i] = selected (.i)
+    endfor
+
+    emlRecordMark_have = 0
+    emlRecordMark_rows = 0
+    emlRecordMark_n = 0
+    emlRecordMark_source$ = ""
+    emlRecordMark_derived$ = ""
+
+    @emlRecordInit
+    if emlRecordActive = 1
+        if emlRecordBufferId > 0
+            selectObject: emlRecordBufferId
+            emlRecordMark_rows = Get number of rows
+            emlRecordMark_n = emlRecordN
+            emlRecordMark_source$ = emlRecordCurrentSource$
+            emlRecordMark_derived$ = emlRecordStepDerived$
+            emlRecordMark_have = 1
+        endif
+    endif
+
+    ; THE SELECTION, PUT BACK. Written out here and again in @emlRecordRewind
+    ; rather than factored into a helper, because Praat has no way to hand an
+    ; array to a procedure: a shared helper would have to read ONE procedure's
+    ; .sel0 by name and would silently restore the wrong caller's selection.
+    ; `nocheck selectObject:` on a name no object has is the documented way to
+    ; deselect everything -- measured on 6.6.30, and the re-attach in
+    ; @emlRecordInit relies on the same fact.
+    if .nSel0 > 0
+        selectObject: .sel0[1]
+        for .i from 2 to .nSel0
+            plusObject: .sel0[.i]
+        endfor
+    else
+        nocheck selectObject: "Table emlRecordNothingSelected"
+    endif
+endproc
+
+procedure emlRecordRewind
+    .removed = 0
+    if not variableExists ("emlRecordMark_have")
+        emlRecordMark_have = 0
+    endif
+    if emlRecordMark_have = 0
+        goto RECORD_REWIND_DONE
+    endif
+
+    .nSel0 = numberOfSelected ()
+    for .i from 1 to .nSel0
+        .sel0[.i] = selected (.i)
+    endfor
+
+    @emlRecordInit
+    ; The recording can END between the mark and the rewind -- a user removes
+    ; the buffer from the Objects window, which is the documented way to stop
+    ; one. Nested rather than `and`-ed: Praat does not short-circuit.
+    if emlRecordActive = 1
+        if emlRecordBufferId > 0
+            selectObject: emlRecordBufferId
+            .rows = Get number of rows
+            ; PRAAT WILL NOT REMOVE A TABLE'S ONLY ROW. Measured on 6.6.30:
+            ; `Remove row: 1` on a one-row Table raises "cannot
+            ; remove my only row", and `nocheck` in front of it is a SKIP --
+            ; the row stays and nothing is reported. So the loop stops at one
+            ; row and the empty case is handled below, by rebuilding.
+            .floor = emlRecordMark_rows
+            if .floor < 1
+                .floor = 1
+            endif
+            while .rows > .floor
+                Remove row: .rows
+                .removed = .removed + 1
+                .rows = .rows - 1
+            endwhile
+
+            ; THE EMPTY MARK IS THE COMMON CASE, NOT THE EDGE ONE. A legend
+            ; figure drawn as the FIRST thing in a recording marks at zero
+            ; rows, so "rewind to nothing" is what an ordinary press of Draw
+            ; asks for. The buffer is replaced by an empty one of the same
+            ; name and the same columns, read off the object itself rather
+            ; than written out again here -- the schema grows, and a second
+            ; copy of the column list is a second thing to keep right.
+            ;
+            ; THE META MUST FOLLOW THE ID. @emlRecordInit accepts a meta table
+            ; only when its stated `buffer` IS the live buffer, so
+            ; a rebuild that left the old id in the meta would orphan the
+            ; session's provenance at the next menu command -- the steps would
+            ; all survive and the header would come back blank.
+            if emlRecordMark_rows = 0
+                if .rows > 0
+                    .bufName$ = selected$ ("Table")
+                    .nCol = Get number of columns
+                    .cols$ = ""
+                    for .c from 1 to .nCol
+                        .lab$ = Get column label: .c
+                        if .c > 1
+                            .cols$ = .cols$ + " "
+                        endif
+                        .cols$ = .cols$ + .lab$
+                    endfor
+                    .oldBuf = emlRecordBufferId
+                    Create Table with column names: .bufName$, 0, .cols$
+                    emlRecordBufferId = selected ("Table")
+                    removeObject: .oldBuf
+                    .removed = .removed + .rows
+                    @emlRecordMetaSet: "buffer",
+                    ... string$ (emlRecordBufferId)
+                    ; AND THE SNAPSHOT FOLLOWS IT. The selection taken at the
+                    ; top of this procedure can name the buffer -- @emlRecordStep
+                    ; leaves it selected -- and the restore below would then
+                    ; ask for an object this block has just removed, which is
+                    ; "No object with number N" in the middle of a user's
+                    ; draw. Driven by moving the rewind below the dispatch
+                    ; (harness/record/replay_break.sh's rewind_after_draw
+                    ; leg), where that IS the live selection. The id is the
+                    ; only one this procedure can invalidate, so remapping it
+                    ; covers the case entirely.
+                    for .i from 1 to .nSel0
+                        if .sel0[.i] = .oldBuf
+                            .sel0[.i] = emlRecordBufferId
+                        endif
+                    endfor
+                endif
+            endif
+
+            emlRecordN = emlRecordMark_n
+            emlRecordCurrentSource$ = emlRecordMark_source$
+            emlRecordStepDerived$ = emlRecordMark_derived$
+        endif
+    endif
+
+    ; The selection, put back. See the twin block in @emlRecordMark for why
+    ; this is written twice rather than shared.
+    if .nSel0 > 0
+        selectObject: .sel0[1]
+        for .i from 2 to .nSel0
+            plusObject: .sel0[.i]
+        endfor
+    else
+        nocheck selectObject: "Table emlRecordNothingSelected"
+    endif
+
+    ; The mirror, labelled rather than rewound. See the header.
+    if .removed > 0
+        if variableExists ("emlRecordTempPath$")
+            if emlRecordTempPath$ <> ""
+                appendFileLine: emlRecordTempPath$, "--- discarded ",
+                ... .removed, " step(s): a pass that was measured and then",
+                ... " thrown away. The steps above this line are NOT in the",
+                ... " recording."
+            endif
+        endif
+    endif
+
+    label RECORD_REWIND_DONE
+endproc
 
 # ----------------------------------------------------------------------------
 # @emlRecordResult: .text$
@@ -1650,8 +1846,8 @@ endproc
 #
 # WHY THIS IS NOT `Get column index:`. That command raises when the label is
 # absent, and the whole point here is to ASK without aborting. The buffer's
-# schema grows -- `axis` was added on 16 August 2026 -- and a recording that
-# was running when the plugin was updated re-attaches to a table created by
+# schema grows -- `axis` is a recent addition -- and a recording that was
+# running when the plugin was updated re-attaches to a table created by
 # the older code. Reading a column that is not there would end a user's
 # session in the middle of an analysis, over a comment.
 #
@@ -1674,12 +1870,11 @@ endproc
 # @emlRecordAxisRequest: .fbMin, .fbMax
 # WHAT THE USER ASKED FOR, WHICH IS NOT ALWAYS WHAT THE DRAW WAS GIVEN.
 #
-# AUTHOR RULING 10(b), 16 AUGUST 2026: "the record process should note if it
-# was auto and offer 0.0 to 0.0 as the range in the editable top block of
-# variables." Ruling 10(a) settled that the recorded CALL must carry the
-# user's choice -- (0, 0) is the sentinel the dialog names on its own face,
-# not a range -- and this is the other half: the choice has to be recoverable
-# at the moment the recorder runs.
+# THE CONTRACT. The editable top block notes whether the range was AUTO and
+# offers 0.0 to 0.0 for it, and the recorded CALL carries the same choice --
+# (0, 0) is the sentinel the dialog names on its own face, not a range. This
+# procedure is the half of that which makes the choice recoverable at the
+# moment the recorder runs.
 #
 # ON TWO PATHS IT IS NOT, AND THAT IS THE WHOLE REASON THIS PROCEDURE EXISTS.
 # graphs/eml-graphs-form.praat converts auto into explicit BEFORE the draw
@@ -1710,18 +1905,93 @@ endproc
 # draw, which is a range nobody asked for and the (0, 0) auto sentinel cannot
 # survive. If either global is missing, both arguments are used.
 #
+# ---------------------------------------------------------------------------
+# THE STEP STAMP, AND WHY EXISTENCE IS NOT ENOUGH.
+#
+# PRAAT CANNOT UNSET A VARIABLE. So a version of this procedure that preferred
+# the pair whenever it EXISTED would prefer it for the whole life of the
+# process: one press of Draw on the graphs form publishes a range, and every
+# recorded draw after it -- in any other menu command, from any other file --
+# would inherit that range as though the user had just typed it. "Some form
+# ran earlier this session" and "this draw came from the form" are the same
+# two doubles, so nothing would raise.
+#
+# WHAT THAT WOULD LOOK LIKE. graphs/eml-draw-qq.praat calls
+# @emlDrawScatterPlot with 0, 0, 0, 0 -- its own auto sentinel, and it has no
+# form and no dialog of its own. Draw a violin on 0..100 from EML Graphs, then
+# ask the Q-Q plot for a figure in the same session with a recording running,
+# and the Q-Q step would come out declaring axisYMin = 0.0 / axisYMax = 100.0.
+# The fallback below is right for that call; what is needed is for it to be
+# REACHED.
+#
+# THE MECHANISM: a third global, published with the pair and reset here.
+#
+#     emlGraphsAxisYReqStep
+#
+# It holds the STEP NUMBER the publication was made for. This procedure runs
+# before @emlRecordStep, which increments emlRecordN and then appends, so the
+# row about to be written is emlRecordN + 1; the pair is preferred only when
+# the stamp equals that number, and the stamp is reassigned to 0 immediately
+# afterwards.
+#
+# THE STAMP IS WHAT MAKES THIS WORK, AND IT IS WORTH SAYING WHY IT CANNOT BE
+# SIMPLIFIED AWAY INTO THE PAIR. The pair cannot be reset: 0 and 0 IS the auto
+# sentinel, the value a user gets by leaving the dialog alone, so "clear the
+# published range after use" and "publish an auto range" are the same two
+# doubles and the reader cannot tell them apart. The stamp has no such
+# collision -- step numbers start at 1, so 0 means CONSUMED and nothing else --
+# which is why the consume-once state lives in a variable Praat can overwrite
+# with a value that means nothing rather than in one it cannot unset.
+#
+# THE STAMP IS RESET WHETHER OR NOT IT MATCHED. A stamp that did not match is
+# a publication that has outlived its press; leaving it armed would let it
+# match some later step by arithmetic coincidence. There is no reading under
+# which a stale stamp becomes valid again.
+#
+# BOTH OR NEITHER APPLIES TO THE STAMP TOO. A pair published with no stamp is
+# treated as ABSENT -- the arguments win -- because an unstamped pair is
+# exactly the publication that outlives its press. That is asserted, not
+# assumed: validate/v74 drives a leg that publishes the pair and no stamp and
+# requires the draw's own range to survive.
+#
 # Outputs: .min, .max   the range to record
 #          .fromForm    1 if the globals supplied it, 0 if the arguments did
+#          .step        the step number this draw will be recorded as, -1 when
+#                       there is no recorder counter to read
+#          .stampSeen   1 if a stamp global existed at all
 # ----------------------------------------------------------------------------
 procedure emlRecordAxisRequest: .fbMin, .fbMax
     .min = .fbMin
     .max = .fbMax
     .fromForm = 0
-    if variableExists ("emlGraphsAxisYReqMin")
-        if variableExists ("emlGraphsAxisYReqMax")
-            .min = emlGraphsAxisYReqMin
-            .max = emlGraphsAxisYReqMax
-            .fromForm = 1
+
+    ; -1 rather than 0 when there is no counter to read: 0 is the CONSUMED
+    ; stamp, so a step of 0 would make a spent publication match.
+    .step = -1
+    if variableExists ("emlRecordN")
+        .step = emlRecordN + 1
+    endif
+
+    .stampSeen = 0
+    .stampMatched = 0
+    if variableExists ("emlGraphsAxisYReqStep")
+        .stampSeen = 1
+        if emlGraphsAxisYReqStep = .step
+            .stampMatched = 1
+        endif
+        emlGraphsAxisYReqStep = 0
+    endif
+
+    ; Nested rather than `and`-ed: Praat does not short-circuit `and`, so a
+    ; single condition would read emlGraphsAxisYReqMin on a caller that never
+    ; published it and abort the user's draw with "Unknown variable".
+    if .stampMatched = 1
+        if variableExists ("emlGraphsAxisYReqMin")
+            if variableExists ("emlGraphsAxisYReqMax")
+                .min = emlGraphsAxisYReqMin
+                .max = emlGraphsAxisYReqMax
+                .fromForm = 1
+            endif
         endif
     endif
 endproc
@@ -1731,8 +2001,8 @@ endproc
 # @emlRecordAxisNote: .min, .max
 # The RESOLVED axis of the draw step just recorded, kept for the block.
 #
-# RULING 10(b) asks the block to note "if it was auto" AND, for the reader's
-# benefit, what it resolved to on the original data. The first half is in the
+# The block notes "if it was auto" AND, for the reader's benefit, what it
+# resolved to on the original data. The first half is in the
 # recorded numbers themselves -- 0.0 and 0.0 -- and the second half is this.
 #
 # It is attached to the STEP rather than written into the block directly,
@@ -1770,10 +2040,10 @@ endproc
 # @emlRecordAxisFixed: .value
 # Four decimals, INCLUDING for exact zero.
 #
-# `fixed$` is not a fixed-precision formatter -- that is ruling 6's finding and
-# validate/v64 pins the case grid -- and the case that shows here is the one it
-# names first: fixed$ (0, 4) returns a bare "0". A bar chart's axis floor IS
-# zero, so the note in the block came out reading
+# `fixed$` is not a fixed-precision formatter -- validate/v64 pins the case
+# grid -- and the case that shows here is the first of them: fixed$ (0, 4)
+# returns a bare "0". A bar chart's axis floor IS zero, so a note built on
+# fixed$ would read
 #
 #     ; the figure was drawn on 0 .. 120.0000
 #
@@ -1922,16 +2192,16 @@ endproc
 # @emlRecordColumnSpec: .proc$
 # WHICH ARGUMENTS OF WHICH PROCEDURE ARE COLUMN NAMES, AND WHAT EACH IS FOR.
 #
-# AUTHOR RULING, 15 AUGUST 2026 (RULING 9). The retarget block gathered object
-# names and stopped there, under the promise "edit a name to run the same
-# workflow on other data". Column names stayed hard-coded at every call site --
+# THE RETARGET BLOCK GATHERS COLUMN NAMES AS WELL AS OBJECT NAMES, because
+# the block's promise is "edit a name to run the same workflow on other data".
+# Column names hard-coded at the call sites --
 #
 #     @emlBridgeGroupComparison: data, "val", "grp", 0.05, ...
 #
-# -- so re-pointing a recorded workflow at a same-shape table with different
-# headers meant hunting literals through the steps, which is the exact hunt the
-# block exists to abolish. The promise now extends: nothing below the block
-# names an object AND nothing below it names a column.
+# -- would mean hunting literals through the steps to re-point a recorded
+# workflow at a same-shape table with different headers, which is the exact
+# hunt the block exists to abolish. Nothing below the block names an object
+# AND nothing below it names a column.
 #
 # WHY THE MAP LIVES HERE AND NOT AT THE CALL SITES. The obvious design is for
 # each orchestrator to hand the recorder its column names with their roles
@@ -1961,14 +2231,11 @@ endproc
 # column reference, so it is left where the user typed it.
 #
 # ----------------------------------------------------------------------------
-# THE NUMERIC SLOTS (RULING 10b, 16 AUGUST 2026), WHICH ARE THE SECOND TABLE
-# IN THIS PROCEDURE.
+# THE NUMERIC SLOTS, WHICH ARE THE SECOND TABLE IN THIS PROCEDURE.
 #
-# The author's ruling: "the record process should note if it was auto and
-# offer 0.0 to 0.0 as the range in the editable top block of variables." The
-# block's promise -- nothing below it names an object and nothing below it
-# names a column -- now extends to the axis: nothing below it holds an axis
-# range either. So the axis pair is lifted exactly the way a column is, into
+# The block's promise -- nothing below it names an object and nothing below it
+# names a column -- extends to the axis: nothing below it holds an axis range
+# either. So the axis pair is lifted exactly the way a column is, into
 # `axisYMin` and `axisYMax`, and the step reads them.
 #
 # THE UNIT IS THE PAIR AND NOT THE NUMBER, and that is the one place this
@@ -1976,8 +2243,8 @@ endproc
 # (0, 0): a lone 0 in the minimum slot is a perfectly ordinary axis FLOOR --
 # a bar chart's is zero -- and it means nothing on its own. Sharing one
 # `axisYMin = 0` variable between an auto figure and a figure the user gave a
-# floor of 0 would be ruling 9's "two slots that happen to agree today" in its
-# most damaging form: editing the floor would turn the other figure's auto
+# floor of 0 would be two slots that happen to agree today, in the most
+# damaging form of that: editing the floor would turn the other figure's auto
 # into a half-specified range and it would silently redraw. Two draws
 # therefore share a pair only when they used the SAME pair, and a second
 # distinct pair becomes axisYMin2/axisYMax2 in first-use order.
@@ -2037,7 +2304,7 @@ procedure emlRecordColumnSpec: .proc$
         ; A LIST OF COLUMNS IS STILL A COLUMN REFERENCE. The rater and
         ; condition arguments carry several names in one string, and a user
         ; retargeting the workflow has to edit all of them; leaving the list
-        ; buried in the step would defeat the ruling for exactly the analyses
+        ; buried in the step would defeat the block for exactly the analyses
         ; that name the most columns.
         .spec$ = "2=subjectCol 3=raterCols"
     elsif .proc$ = "emlRunRepeatedMeasuresAnalysis"
@@ -2076,7 +2343,7 @@ procedure emlRecordColumnSpec: .proc$
     ; Waveform, spectrum and LTAS take no column: they draw a Sound, a
     ; Spectrum or an Ltas whole. They are absent on purpose, not by omission.
 
-    ; ---- THE AXIS PAIR, ONE ENTRY PER DRAW PROCEDURE (RULING 10b) ---------
+    ; ---- THE AXIS PAIR, ONE ENTRY PER DRAW PROCEDURE ----------------------
     ; Argument indices count `data` as argument 1, exactly as above. All
     ; thirteen are here, including the four that take no column, because an
     ; axis range is something every figure has and something every dialog
@@ -2117,8 +2384,9 @@ procedure emlRecordColumnSpec: .proc$
         .axisSpec$ = "14 15 axisY"
     elsif .axisProc$ = "emlDrawScatterPlot"
         ; ...,colX,colY,groupCol,xMin,xMax,yMin,yMax,annotate. The X pair is
-        ; deliberately not lifted: ruling 10(b) is about the y-axis range, and
-        ; a scatter's x range is the only x pair in the library -- one variable
+        ; deliberately not lifted: what the block holds is the y-axis range,
+        ; and a scatter's x range is the only x pair in the library -- one
+        ; variable
         ; that appeared on one figure type would be a rule nobody could learn.
         .axisSpec$ = "14 15 axisY"
     elsif .axisProc$ = "emlDrawHistogram"
@@ -2225,8 +2493,7 @@ endproc
 # to RUN is to leave the line exactly as it was recorded. A literal left
 # un-lifted is a blemish; a mangled call is a broken script.
 #
-# THE NUMERIC PATH (RULING 10b, 16 AUGUST 2026) IS THE SAME GUARD APPLIED TO
-# A DIFFERENT SHAPE. An axis argument is only lifted when it is unambiguously
+# THE NUMERIC PATH IS THE SAME GUARD APPLIED TO A DIFFERENT SHAPE. An axis argument is only lifted when it is unambiguously
 # one number: an optional sign, digits, at most one decimal point, nothing
 # else. Anything that is not -- a variable name, an arithmetic expression, a
 # procedure result, an already-lifted `axisYMin` from a re-recorded session --
@@ -2237,9 +2504,9 @@ endproc
 # AND AN EMPTY-STRING TEST IS NOT A ZERO TEST, which is the trap this half has
 # to avoid. The column path skips a literal that is "" because a role the
 # session did not use has no business in the block. The axis path must NOT
-# skip a literal that is 0: (0, 0) is precisely the value the ruling exists to
-# preserve, and treating it as absent would put the resolved numbers back in
-# the step -- the defect ruling 10(a) was about, arriving from the other side.
+# skip a literal that is 0: (0, 0) is precisely the value the block exists to
+# preserve, and treating it as absent would put the resolved numbers back into
+# the step, which is the auto sentinel lost from the other side.
 #
 # Outputs: .ok       1 when the argument is one plain string literal
 #          .value$   what it contains, without the quotes
@@ -2325,8 +2592,7 @@ endproc
 # split into arguments, the arguments named by the spec are replaced, and the
 # line is rejoined. Everything else in the line is untouched by construction.
 #
-# THE AXIS RANGE IS LIFTED BY THE SAME MACHINERY (RULING 10b, 16 Aug 2026),
-# with one difference and it is the interesting one: THE UNIT OF IDENTITY IS
+# THE AXIS RANGE IS LIFTED BY THE SAME MACHINERY, with one difference and it is the interesting one: THE UNIT OF IDENTITY IS
 # THE PAIR. See @emlRecordColumnSpec's header for why -- a lone 0 in a minimum
 # slot is an ordinary axis floor, the (0, 0) that means AUTO is a property of
 # the two together, and a variable shared between an auto figure and a figure
@@ -2336,7 +2602,7 @@ endproc
 #
 # AND ZERO IS NOT ABSENT. The column path skips a literal of "" because a role
 # the session did not use has no business in the block; the axis path lifts a
-# literal of 0 precisely because that is the value the ruling is about.
+# literal of 0 precisely because that is the auto sentinel it must preserve.
 #
 # Outputs: .n          how many column variables the session used
 #          .out$       the lines that declare them -- columns then axes
@@ -2467,7 +2733,7 @@ procedure emlRecordColumnManifest
                         endif
                     endwhile
 
-                    ; ---- THE AXIS PAIR (RULING 10b) ----------------------
+                    ; ---- THE AXIS PAIR -----------------------------------
                     ; Read as a pair, matched as a pair, declared as a pair.
                     ; Both slots must parse as plain numbers or NEITHER is
                     ; lifted: a half-lifted range would leave the block able
@@ -2632,10 +2898,10 @@ procedure emlRecordColumnManifest
         ... + .varSteps$[.k] + newline$
     endfor
 
-    ; ---- THE AXIS DECLARATIONS (RULING 10b) ------------------------------
-    ; TWO LINES PER PAIR, AND THE SECOND ONE IS NOT DECORATION. The author's
-    ; ruling asks the block to "note if it was auto" and, for the reader's
-    ; benefit, what it resolved to on the original data. A user who opens a
+    ; ---- THE AXIS DECLARATIONS -------------------------------------------
+    ; TWO LINES PER PAIR, AND THE SECOND ONE IS NOT DECORATION. The block
+    ; notes "if it was auto" and, for the reader's benefit, what it resolved
+    ; to on the original data. A user who opens a
     ; recorded script and finds `axisYMin = 0.0` needs to be told both that
     ; the zeros are a request and not a range, and roughly where the figure
     ; actually sat -- otherwise the only way to find out what to type instead
@@ -2780,13 +3046,13 @@ procedure emlRecordTableManifest
         endif
     endfor
 
-    ; THE COLUMNS BELONG IN THE SAME BLOCK (RULING 9, 15 Aug 2026), and this
+    ; THE COLUMNS BELONG IN THE SAME BLOCK, and this
     ; is where they are gathered, because a block with two governing comments
     ; is two blocks. @emlRecordColumnManifest also rewrites the steps, so it
     ; must run before @emlRecordRender walks them -- it does, because the
     ; renderer calls this procedure before its body loop.
     ;
-    ; AND SO DOES THE AXIS RANGE (RULING 10b, 16 Aug 2026), for the same
+    ; AND SO DOES THE AXIS RANGE, for the same
     ; reason and out of the same procedure. A figure whose axis is edited in
     ; one visible place near the top is the same promise as a workflow whose
     ; columns are.
@@ -2800,9 +3066,9 @@ procedure emlRecordTableManifest
 
     ; ONE FORMAT, WHETHER THE SESSION USED ONE OBJECT OR FIVE.
     ;
-    ; The first cut emitted this block only when a session moved between
-    ; objects, and left a single-object session on the older "run it with
-    ; that Table selected" contract. Author ruling 12 Aug 2026: standardise.
+    ; Emitting this block only when a session moves between objects would
+    ; leave a single-object session on a "run it with that Table selected"
+    ; contract instead.
     ; A reader who learns the format on one recorded script then meets a
     ; second one with a different shape has been given two things to learn
     ; for no gain, and the single-object script loses the property that
@@ -2814,10 +3080,10 @@ procedure emlRecordTableManifest
     .out$ = .out$
     ... + "# workflow. Edit a name to run the same workflow on other data;"
     ... + newline$
-    ; THE PROMISE GREW ON 16 AUGUST 2026 (RULING 10b) and the sentence has to
-    ; grow with it, because the sentence is what a reader trusts. It said
-    ; "nothing below this block names an object or a column" while every draw
-    ; step below it carried its axis range as two bare literals.
+    ; THE SENTENCE NAMES ALL THREE, because the sentence is what a reader
+    ; trusts: an object, a column AND an axis range. A promise that stopped at
+    ; columns would be read over draw steps that carry their axis range as two
+    ; bare literals.
     .out$ = .out$
     ... + "# nothing below this block names an object, a column or an axis"
     ... + newline$
@@ -2879,14 +3145,14 @@ procedure emlRecordRender
     ; Praat's own documentation for `Read from file...` says it "recognizes
     ; script files if they begin with #!" -- so with this line the emitted
     ; file opens in a ScriptEditor, and without it Praat tries to read it as
-    ; a data object. Confirmed 13 Aug 2026 under Xvfb: `Read from file:` on a
+    ; a data object. Confirmed under Xvfb: `Read from file:` on a
     ; file starting `#!` raises a window titled Script "<path>", with no file
     ; chooser and no error.
     ;
     ; That is what lets "Stop recording" put the script in front of the user
-    ; in a real, editable, runnable editor -- author ruling 13 Aug 2026: the
-    ; script must NEVER be printed into the Info window, which holds the
-    ; analysis reports and is what Save Info writes.
+    ; in a real, editable, runnable editor. The script is NEVER printed into
+    ; the Info window, which holds the analysis reports and is what Save Info
+    ; writes.
     ;
     ; It is a legal Praat comment either way, so it costs nothing on the
     ; paths that only ever write the file.
@@ -2922,7 +3188,7 @@ procedure emlRecordRender
     ; ONE EDITABLE BLOCK. HOME-RELATIVE, NOT MACHINE-ABSOLUTE.
     ;
     ; `include` takes a LITERAL path -- no variable, no form field. But it
-    ; DOES accept a leading `~`, tested 10 Aug 2026 on a path containing
+    ; DOES accept a leading `~`, tested on a path containing
     ; spaces (macOS's "Praat Prefs") under both 6.4.06 and 7.0. So the block
     ; below is portable across every user on this platform, and only the
     ; middle segment is platform- and version-specific.
@@ -2946,26 +3212,18 @@ procedure emlRecordRender
     ; which is why the version that recorded the session is stated above and
     ; the known locations are listed below.
     ;
-    ; AND THE CLAIM IS UNCONDITIONAL, BECAUSE IT IS TRUE BY CONSTRUCTION
-    ; (NEW-G11-1; author ruling, 15 Aug 2026).
+    ; AND THE CLAIM IS UNCONDITIONAL, BECAUSE IT IS TRUE BY CONSTRUCTION.
     ;
-    ; This block used to claim "Paths are home-relative, so they work for any
-    ; user on this platform" above eleven absolute /home/<someone>/... include
-    ; lines. The rewrite was computed in @emlRecordBegin's scope and never
-    ; survived to the flush, so in real menu-driven use the paths were ALWAYS
-    ; absolute and the sentence was ALWAYS false. That is fixed at the source:
-    ; the resolved root now lives in the meta object.
-    ;
-    ; The first repair also made the SENTENCE conditional -- absolute paths got
-    ; an honest "this is not portable" notice instead. That was the wrong half
-    ; to make conditional, and the ruling says so: the emitted file must be
-    ; home-relative, full stop. @emlRecordBegin now guarantees a tilde by
-    ; falling back to the platform's canonical location when the live
-    ; preferences directory is outside $HOME -- which happens only under an
-    ; explicit --pref-dir, i.e. in a test rig, never on a user's machine. So
-    ; there is no second arm to write, and the claim below can be read as a
-    ; fact rather than as a promise. v58 pins the tilde at the source AND in
-    ; every emitted file, so the two cannot drift apart again.
+    ; The sentence below says "Paths are home-relative, so they work for any
+    ; user on this platform", and it is not conditional on anything.
+    ; @emlRecordBegin guarantees a tilde: it rewrites the resolved root
+    ; home-relative and falls back to the platform's canonical location when
+    ; the live preferences directory is outside $HOME -- which happens only
+    ; under an explicit --pref-dir, i.e. in a test rig, never on a user's
+    ; machine -- and stores the result in the meta object so it survives to
+    ; the flush, which runs in a different scope. So there is no second arm to
+    ; write. validate/v58 pins the tilde at the source AND in every emitted
+    ; file, so the two cannot drift apart.
     .text$ = .text$ + .rule$ + newline$
     .text$ = .text$ + "# THE EML LIBRARY" + newline$
     .text$ = .text$
@@ -3132,7 +3390,7 @@ procedure emlRecordRender
     ; carrying an inline note saying which steps used it, and nothing below
     ; ever writes an object name again.
     ;
-    ; INLINE COMMENTS USE `;` AND NOT `#`. Measured 12 Aug 2026 on 6.6.30:
+    ; INLINE COMMENTS USE `;` AND NOT `#`. Measured on 6.6.30:
     ; a trailing `;` comment after code parses, a trailing `#` does not --
     ; `table2$ = "voiceB"   # step 2` fails with
     ;     Error: Unknown symbol: « "voiceB"   #
@@ -3141,7 +3399,7 @@ procedure emlRecordRender
     @emlRecordTableManifest
     .text$ = .text$ + emlRecordTableManifest.out$
 
-    ; THERE IS NO LONGER A NO-MANIFEST PATH. Every session that recorded a
+    ; THERE IS NO NO-MANIFEST PATH. Every session that recorded a
     ; source gets the block, and every step selects through it. A session
     ; that recorded NO source at all -- a refusal before anything was read --
     ; emits neither, and its steps select nothing, which is correct.
@@ -3194,7 +3452,7 @@ procedure emlRecordRender
         ; may be a Matrix or a TableOfReal.
         ; A step on an auto-converted object selects NOTHING: the convert
         ; step above it left that object in `data`, and the manifest names
-        ; the Sound it came from, not the intermediate that no longer exists.
+        ; the Sound it came from, not the intermediate, which is gone.
         if .source$ <> "" and .derived$ <> "1"
             .slot = 0
             for .k from 1 to .manifestN
@@ -3228,19 +3486,18 @@ procedure emlRecordRender
 
         ; ---- THE SAVE STEP IS REWRITTEN TO ITS NON-INTERACTIVE TWIN --------
         ;
-        ; AUTHOR RULING, 14 August 2026: a replayed recording must not reopen
+        ; A REPLAYED RECORDING MUST NOT REOPEN
         ; any dialog. "Just output the output." This is the SPSS model, and
         ; Stata's, and R's, and Praat's own: a dialog AUTHORS syntax, and
         ; running the syntax is headless. A user who wants different settings
         ; runs the workflow fresh; they do not run the recording.
         ;
         ; The save step is recorded by @emlSavePanel's own caller as a call
-        ; back into @emlSavePanel -- which is the panel, so replaying a
-        ; recorded workflow stopped dead at a dialog. It also re-proposed a
+        ; back into @emlSavePanel -- which is the panel, so replaying it
+        ; unrewritten would stop dead at a dialog, and would re-propose a
         ; base name of "old stem + new stamp", so each replay generation grew
         ; another timestamp: demo_two-group_20260815_013159_20260815_014836_*
-        ; and so on. That defect (NEW-G11-5) is not patched here, it is
-        ; DISSOLVED: the twin below strips the recorded stamp and takes a
+        ; and so on. The twin below strips the recorded stamp and takes a
         ; fresh one, so a replay names its outputs after the replay and the
         ; name cannot accrete.
         ;
@@ -3251,7 +3508,7 @@ procedure emlRecordRender
         ; when it is replayed" is exactly that. One substitution, one place.
         ; THE CODE THE RENDERER EMITS IS THE REWRITTEN CODE, not the recorded
         ; string: @emlRecordColumnManifest has replaced every column literal
-        ; with the variable the block above declares (RULING 9). The fallback
+        ; with the variable the block above declares. The fallback
         ; is the recorded line, so a step the rewrite declined to touch -- an
         ; ambiguous parse, an unknown procedure -- is emitted exactly as it
         ; was captured rather than lost.
@@ -3315,7 +3572,7 @@ endproc
 #
 # createFolder: IS mkdir, NOT mkdir -p, and the difference cost a session.
 #
-# Measured on 6.6.30, 14 Aug 2026: `createFolder: "/tmp/x/a/b/c"` with none of
+# Measured on 6.6.30: `createFolder: "/tmp/x/a/b/c"` with none of
 # a, b, c present creates NOTHING and raises an error -- it does not walk the
 # path. Every caller in this plugin that types a folder into a dialog can be
 # handed a path two levels deep that does not exist yet, because typing one is
@@ -3330,13 +3587,12 @@ endproc
 # question that actually matters, which is not "does this folder exist" but
 # "can this folder be written to".
 #
-# AND `nocheck` CANNOT BE USED ON THE CALL. Measured on 6.6.30, 14 Aug 2026:
+# AND `nocheck` CANNOT BE USED ON THE CALL. Measured on 6.6.30:
 # `nocheck @someProcedure: arg` does not run the procedure at ALL -- it is not
-# an error suppressor there, it is a skip. The first cut of the two callers
-# wrapped this procedure that way to keep a bad path from aborting them, and
-# the effect was that no folder was ever created and the write probe below
-# refused every save. So the suppression lives INSIDE, per command, and the
-# callers call it plainly.
+# an error suppressor there, it is a SKIP. Wrapping this procedure that way to
+# keep a bad path from aborting a caller means no folder is ever created and
+# the write probe below refuses every save. So the suppression lives INSIDE,
+# per command, and the callers call it plainly.
 # ----------------------------------------------------------------------------
 procedure emlRecordMakeFolder: .path$
     .p$ = .path$
@@ -3378,35 +3634,31 @@ endproc
 # ----------------------------------------------------------------------------
 # @emlRecordReplaySave: .offerFigure, .stem$, .folder$
 #
-# THE NON-INTERACTIVE TWIN OF @emlSavePanel, and the whole of the author's
-# 14 August 2026 ruling in one procedure.
+# THE NON-INTERACTIVE TWIN OF @emlSavePanel. A replayed recording must not
+# reopen any dialog: it just outputs the output. That is the SPSS model
+# (dialogs author syntax; running syntax is headless), and Stata do-files,
+# R scripts and Praat's own paradigm.
 #
-#   "Recorder replay: NON-INTERACTIVE -- just output the output. A replayed
-#    recording must not reopen any dialog. This is the SPSS model (dialogs
-#    author syntax; running syntax is headless), same as Stata do-files /
-#    R scripts / Praat's own paradigm."
-#
-# WHAT IT COSTS, stated because it is a real cost and the ruling accepts it:
-# a replayed save writes wherever the recording was made. The folder and the
+# WHAT IT COSTS, stated because it is a real cost: a replayed save writes
+# wherever the recording was made. The folder and the
 # base name are literals in the emitted file, on their own line, editable --
 # and a user who wants somewhere else edits that line or runs the workflow
 # fresh. The alternative is the panel reopening, which is what made a recorded
 # workflow unrunnable unattended.
 #
-# THE TIMESTAMP IS REGENERATED, NOT REPLAYED, and that is the ruling's second
-# bullet. A recorded stem carries the stamp of the session that recorded it;
-# replaying it would either overwrite that session's outputs or -- what the
-# panel actually did -- append a second stamp to the first, so names grew by
-# sixteen characters per replay generation. Stripping the recorded stamp and
-# taking a fresh one makes a replay's outputs the replay's, dated when they
-# were made, and removes the accretion (NEW-G11-5) rather than bounding it.
+# THE TIMESTAMP IS REGENERATED, NOT REPLAYED. A recorded stem carries the
+# stamp of the session that recorded it; replaying it would either overwrite
+# that session's outputs or append a second stamp to the first, growing the
+# name by sixteen characters per replay generation. Stripping the recorded
+# stamp and taking a fresh one makes a replay's outputs the replay's, dated
+# when they were made, and the name cannot accrete at all.
 #
 # THE COLLISION RULE IS THE PANEL'S, NOT THE RECORDER'S. One stamp per press,
 # shared by every file the press writes, and the STEM is uniqued -- never the
-# individual files -- against every name this call could write. That is the
-# author's 14 August condition and the reason is in @emlSavePanel: three
-# independent collision behaviours in one save produced <stem>_1.png beside
-# <stem>_1_tidy.csv beside an overwritten <stem>_report.txt.
+# individual files -- against every name this call could write. The reason is
+# in @emlSavePanel: three independent collision behaviours in one save give
+# <stem>_1.png beside <stem>_1_tidy.csv beside an overwritten
+# <stem>_report.txt.
 #
 # 300 dpi, because the panel's DPI switch is a dialog field and there is no
 # dialog. It is the panel's own default and the figure is redrawable at any
@@ -3428,7 +3680,7 @@ procedure emlRecordReplaySave: .offerFigure, .stem$, .folder$
     ; that can be written to are different questions and only the second one
     ; matters here. A replay that cannot write says so in one sentence and
     ; returns; it does not abort the script with the plugin's own source
-    ; quoted back at the reader (NEW-G11-4).
+    ; quoted back at the reader.
     @emlRecordMakeFolder: .folder$
     .probe$ = .folder$ + "/.eml_record_write_probe"
     nocheck deleteFile: .probe$
@@ -3488,7 +3740,15 @@ procedure emlRecordReplaySave: .offerFigure, .stem$, .folder$
     ; --- the figure -------------------------------------------------------
     if .offerFigure = 1
         .figPath$ = .folder$ + "/" + .stem$ + ".png"
-        @emlAssertFullViewport
+        ; GUARDED ON EXISTENCE, for the reason set out at @emlSavePanel in
+        ; stats/eml-output.praat: @emlAssertFullViewport is defined in
+        ; graphs/eml-graph-procedures.praat, this file is loaded by the STATS
+        ; barrel, and .offerFigure is an argument no static reader can check.
+        ; emlDrawnMinX is assigned at file scope by the layer that defines the
+        ; procedure, so the guard is true exactly when the call can resolve.
+        if variableExists ("emlDrawnMinX")
+            @emlAssertFullViewport
+        endif
         Save as 300-dpi PNG file: .figPath$
         .nWritten = .nWritten + 1
         .fileList$ = .fileList$ + .figPath$ + newline$

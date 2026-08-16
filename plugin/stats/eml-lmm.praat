@@ -2715,7 +2715,7 @@ procedure emlProfileCI: .level
     #                         + n*log(2*pi*sigma^2)
     # NOTE (empirical, 2026-07-22): forcing ML profiling here — even when the
     # model was fit by REML — reproduces R's confint(method="profile") on the
-    # REML fit to <=1e-6 on the random-slope reference (D3). Because sigma is
+    # REML fit to <=1e-6 on the random-slope reference. Because sigma is
     # profiled free in both criteria, the variance-component profile shape is
     # effectively criterion-independent, so this is NOT the anticonservative
     # divergence the static review anticipated. Do not "restore" a REML
@@ -4373,15 +4373,15 @@ procedure emlRunLMMAnalysis: .tableId, .formula$, .contrastCoding$, .useREML, .d
     ; method = One-way ANOVA under the LMM's own base name. The clear turns
     ; that into an honest empty export (declared = 0, reason = "empty").
     ;
-    ; AN API-PATH DEFECT, NOT A MENU ONE. Mixed models are TABLED by author
-    ; ruling (setup.praat, 5 Aug 2026: no menu entry, no Objects-window
-    ; button) and the wizard's route was disconnected on 6 Aug (eml-wizard,
-    ; "elsif goal = 4"), so no dialog can reach this procedure. A user's own
+    ; THIS IS ON THE API PATH, NOT A MENU ONE. Mixed models are TABLED for
+    ; end users -- setup.praat registers no menu entry and no Objects-window
+    ; button, and the wizard has no route into them (eml-wizard,
+    ; "elsif goal = 4") -- so no dialog can reach this procedure. A user's own
     ; Praat script can -- @emlRunLMMAnalysis and @emlExportResultFiles are
     ; both callable directly -- and that is the path this closes.
     @emlCSVInit
     .error$ = ""
-    # Menu item that WOULD work on this table, when one exists (D93).
+    # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
 
     selectObject: .tableId

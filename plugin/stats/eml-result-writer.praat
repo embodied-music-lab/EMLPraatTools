@@ -116,9 +116,9 @@
 # reports nothing else -- so skewness and kurtosis cannot be broom parity in
 # either frame and are flagged as additions in both.
 #
-# AUTHOR RULING 3, 16 August 2026: skewness and kurtosis join this vocabulary,
-# and they sit immediately before `method` so that their position relative to
-# the broom tail is the SAME here as in emlVocabGlance$ below. A reader who has
+# SKEWNESS AND KURTOSIS SIT IMMEDIATELY BEFORE `method`, so that their
+# position relative to the broom tail is the SAME here as in emlVocabGlance$
+# below. A reader who has
 # seen the single-column glance file reads the multi-column tidy file in the
 # same order -- term, statistic, p.value, skewness, kurtosis, method -- and the
 # only difference between the two artefacts is the one that is real, which is
@@ -130,11 +130,11 @@
 # half is the one that bites: @eml_orderedCols walks these tokens and emits
 # only the columns it finds, so a column the analysis declares under a name
 # that is NOT here is dropped from the written file without a word. That is
-# not hypothetical -- the first attempt at exporting a describe declared into
-# this frame and shipped a file containing `term` and `method`, and adding the
-# names here is only half of ruling 3. The other half is in
-# stats/eml-analysis.praat, where @emlDeclareNormalityResult has to declare the
-# two columns per row for there to be anything for this line to order.
+# not hypothetical -- a describe declared into this frame writes a file
+# containing `term` and `method` and nothing else. Naming a column here is
+# also only half of what it takes: the other half is in
+# stats/eml-analysis.praat, where @emlDeclareNormalityResult declares the two
+# columns per row for there to be anything for this line to order.
 emlVocabTidy$ = "term effect contrast null.value estimate estimate1"
 ... + " estimate2 std.error"
 ... + " df num.df den.df sumsq meansq"
@@ -545,17 +545,17 @@ endproc
 # ----------------------------------------------------------------------------
 # THE FLUSH, AND THE CONTRACT THE PATH ARRIVES UNDER.
 # ----------------------------------------------------------------------------
-# The `writeFile:` below is where two session-killing defects of the 14 Aug
-# 2026 audit actually landed, and neither is fixed here. Both were fixed where
-# the path is BUILT, which is @emlSavePanel in stats/eml-output.praat:
+# The `writeFile:` below is where two session-killing failures would land,
+# and neither is guarded here. Both are guarded where the path is BUILT,
+# which is @emlSavePanel in stats/eml-output.praat:
 #
-#   NEW-G2-1   a "/" typed into the panel's Base name field arrived in .path$
-#              verbatim and Praat answered "Cannot create file ... Hint: one
+#   a "/" typed into the panel's Base name field would arrive in .path$
+#              verbatim and Praat answers "Cannot create file ... Hint: one
 #              of the folders in this file path does not exist", stopping the
 #              script inside the panel and taking the caller's post-analysis
-#              loop with it. @eml_saveSafeBaseName now sanitises the stem.
-#   NEW-G12-5  an unwritable folder arrived the same way and answered
-#              "unexpected error 30". @eml_saveFolderWritable now proves the
+#              loop with it. @eml_saveSafeBaseName sanitises the stem.
+#   an unwritable folder would arrive the same way and answer
+#              "unexpected error 30". @eml_saveFolderWritable proves the
 #              target with a `nocheck` probe write before any of this runs.
 #
 # WHY NOT HERE AS WELL. Praat has no try/catch, so a guard at this line could
