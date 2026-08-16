@@ -506,7 +506,78 @@ scripts <- c(
     # titled, gridded frame with zero ink inside it and nothing warning.
     # Note what that defeats -- a size threshold. The empty frame weighs
     # 53 KB. v66 asserts ink inside the frame instead.
-    "v66_draw_layer.R"
+    "v66_draw_layer.R",
+    # ------------------------------------------------------------------
+    # v67-v72: the second batch of 15 August rulings.
+    #
+    # The one worth reading twice is the axis. A figure recorded with the
+    # y-axis left on AUTO baked its RESOLVED range into the emitted call,
+    # so replaying it on other data produced a titled, labelled, gridded,
+    # tick-marked frame with zero ink inside it and nothing warning. The
+    # author's ruling: the emitted script's editable block always carries
+    # axisYMin/axisYMax, reading 0.0 and 0.0 when the user chose auto --
+    # the same sentinel the dialog states -- with the resolved range kept
+    # as a note for the reader.
+    #
+    # Note what that class of defect defeats: a size threshold. The empty
+    # frame weighs MORE than the repaired one (48,870 bytes against
+    # 48,531), so "the file is big enough to be a real figure" cannot even
+    # be pointed the right way at it. v67 asserts ink inside the frame.
+    # ------------------------------------------------------------------
+    # The Spectrum drew nothing when its range held exactly one bin,
+    # because Praat's Draw: joins bin points with segments and one point
+    # is no segment -- the peak of the tone landed on the axis rather than
+    # on the paper. Ruled "draw what you can": a stem to the frame floor.
+    # The dB conversion was the trap. The obvious
+    # 10*log10((re^2+im^2)/4e-10) is 10.32 dB LOW, because Draw: plots
+    # spectral DENSITY; verified against To Ltas (1-to-1) at five bin
+    # widths and then pinned in pixels against Praat's own two-bin figure.
+    # Reachability scales with 1/duration, so a 0.15 s token has 5.4 Hz
+    # bins and any zoom under ~11 Hz emptied the frame.
+    "v67_axis_and_spectrum.R",
+    # The form destroyed the evidence before the recorder could see it:
+    # it converts auto into explicit ahead of the draw on two paths, the
+    # legend-room second pass and the bracket headroom. It now publishes
+    # the untouched request, type-dispatched -- because the pair is NOT one
+    # variable. A waveform is handed ampMin/ampMax and a spectrum
+    # powerMin/powerMax, so publishing valueMin for a waveform would have
+    # put an amplitude range in a slot the amplitude dialog never showed.
+    "v68_form_axis_and_display.R",
+    # A bracket-layout figure disclosed neither its post-hoc test nor its
+    # correction, while matrix layout disclosed both -- and bracket layout
+    # is the one that puts p-values directly ON the picture. The report
+    # always named them, so nothing was hidden from a reader who had the
+    # report; the figure is what leaves the session. Precedent taken from
+    # ggstatsplot, which captions every figure with the pairwise test and
+    # the adjustment, and from SPSS, which states the adjustment beneath
+    # its pairwise display.
+    "v69_bracket_disclosure.R",
+    # p printed APA style and then appended the exact value through
+    # string$, Praat's round-trip renderer -- seventeen significant digits
+    # of a number the sentence beside it had already rounded. The tail
+    # itself is deliberate and stays: flooring at .001 flattens 5.8e-07,
+    # 2.1e-13 and 3.0e-04 into one string nine orders of magnitude apart.
+    # Bounded to 3 significant figures. @emlReportAlpha keeps its
+    # escalation, and now says why: alpha is a CRITERION, not a statistic,
+    # and capping it at 4 decimals would print a threshold of .0001 as
+    # zero.
+    "v70_p_precision.R",
+    # Skewness and kurtosis join the tidy vocabulary, closing the
+    # asymmetry where single-column normality exported them and
+    # multi-column lost them. The hazard on the way in is that the tidy
+    # vocabulary is a WHITELIST walked by @eml_orderedCols, so a column
+    # not in it is silently dropped -- an earlier attempt shipped a file
+    # containing only term and method. Also here: the RM-ANOVA warning
+    # string was printed AND exported from one variable, two destinations
+    # with opposite rules, so formatting it would have silently edited an
+    # exported value. Split.
+    "v71_tidy_vocab_and_warning.R",
+    # Batch voice analysis is registered. It had been unregistered for
+    # want of coverage, which it now has -- and the condition on
+    # registering it was a GUI drive through the real dialog, because a
+    # registered menu entry that has never been clicked is exactly the
+    # dead door the audit's severity-2 findings were about.
+    "v72_batch_registration.R"
 )
 
 cat("EML Praat Tools validation suite\n")

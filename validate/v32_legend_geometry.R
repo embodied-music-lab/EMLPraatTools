@@ -429,7 +429,36 @@ EXPANDERS_ALLOWED <- c(
   # EXPORT. A legend placed outside the plot that did NOT appear here would be
   # drawn where the save cannot see it -- which is exactly what D135's
   # overhang did, and why it was clipped rather than visible.
-  "eml-graph-procedures.praat @emlDrawLegend")
+  "eml-graph-procedures.praat @emlDrawLegend",
+  # FIFTH ENTRY, ADDED 16 AUGUST 2026, and this is the argument the pin
+  # exists to demand.
+  #
+  # Author ruling of 15 Aug: a bracket-layout figure must disclose its
+  # post-hoc test and its correction. Matrix layout already did -- its panel
+  # carries "Tukey HSD (already family-wise)" or "Dunn's test (holm)" -- but
+  # bracket layout said nothing, and bracket layout is the one that puts
+  # p-values directly ON the picture. The report has always named them, so
+  # nothing was hidden from a reader holding the report; the figure is the
+  # artefact that leaves the session into a slide or a paper, where no report
+  # is beside it. Precedent: ggstatsplot captions every figure with the
+  # pairwise test and the adjustment, and SPSS states the adjustment beneath
+  # its pairwise display.
+  #
+  # WHY IT BELONGS IN THIS LIST rather than being a reason to loosen it. The
+  # caption is a band drawn BELOW the frame -- .top is
+  # emlSetAdaptiveTheme.outerBottom and .bottom is one band-height under it --
+  # so it is the same shape as @emlDrawMatrixPanel two entries up: text
+  # outside the plot rectangle whose height has to reach the export or be
+  # clipped. It grows the file rather than shrinking the plot, which is the
+  # design this whole file rests on. A caption that did NOT appear here would
+  # be drawn where @emlAssertFullViewport cannot see it, which is precisely
+  # D135's overhang.
+  #
+  # What the pin bought: this check went red the moment the caption landed,
+  # in a turn where six other agents were editing six other files, and it
+  # named the new caller rather than reporting a count. That is the whole
+  # point of attributing to the enclosing procedure.
+  "eml-annotation-procedures.praat @emlDrawBracketCaption")
 
 # LAYOUT_READERS_EXPECTED — how many places read emlLayout_legendWidthInches
 # or emlLayout_legendHeightInches. @emlMeasureGraphLayout computes them and

@@ -439,23 +439,78 @@ check_true(ID,
 # new data's axis and match a native draw byte for byte. ON THE SAME DATA, it
 # must still reproduce the figure that was recorded -- which is what stops this
 # file being satisfied by a replay that ignores its axis arguments entirely.
+#
+# SUPERSEDED, 16 AUGUST 2026 — RULING 10(b) MOVED THE NUMBER, NOT THE CLAIM.
+# This section was written when the axis lived in the draw call, and it asked
+# the call for the literal "0, 0" on the auto arm and "150, 400" on the
+# explicit one. Ruling 10(b) put axisYMin and axisYMax in the editable header
+# block at the top of the emitted script -- beside the object and column names,
+# where somebody retargeting a recorded workflow will look for them -- and left
+# the call REFERENCING them. Both literal assertions therefore went red against
+# a file that is more correct than the one they were written for, which is a
+# superseded check and not a regression.
+#
+# WHAT REPLACES THEM IS STRICTLY STRONGER, and the reason is worth stating
+# because "we moved the check to where the number went" is the shape a weakened
+# check also takes. The value is followed THROUGH the block in two steps: the
+# call's axis slots must be the two variable names, and the block those names
+# resolve to must hold the right number. The old single assertion could not
+# distinguish a block that declares the sentinel from a step that ignores it --
+# it never saw the block at all. This pair catches both halves separately: a
+# block seeded with the RESOLUTION (160 .. 340) instead of the request fails
+# the value check while the reference check still passes, and a step that
+# reverted to carrying its own literal fails the reference check while the
+# block stays correct.
+#
+# WHAT COULD NOT HAVE CAUGHT IT, and did not. Every static check in §1a reads
+# @emlRecordViolin's `.code$ =` line and is satisfied by string$ (.vMin) being
+# in it -- which it still is, because the recorder writes the BLOCK from those
+# arguments now instead of the call. Nothing in the source says which of the
+# two spellings reaches the emitted file. Only reading the emitted script does,
+# and only reading BOTH of its halves says the two spellings agree.
 if (have_dl) {
+    # THE COMMENT TRAP, NAMED. The block's declaration carries its own prose --
+    # "; the y-axis range -- AUTO (both 0 = computed from the data)" -- and that
+    # sentence contains an equals sign and a zero. The harness cuts at the
+    # semicolon before it takes the value (harness/drawlayer/drawlayer.sh,
+    # block_value), so what is asserted below is the declaration and never the
+    # sentence explaining it.
     check_true(ID,
-        sprintf("the recorded call carries the auto sentinel through, not the resolution (%s)",
+        sprintf("the recorded call READS the block's axis variables rather than a literal (%s)",
                 dv("recorded_axis_args")),
-        identical(trimws(dv("recorded_axis_args") %or% ""), "0, 0"))
+        identical(trimws(dv("recorded_axis_args") %or% ""), "axisYMin, axisYMax"))
+    check_true(ID,
+        sprintf("and the block declares the auto sentinel, not the resolution (%s, %s)",
+                dv("recorded_axis_block_min"), dv("recorded_axis_block_max")),
+        is.finite(dn("recorded_axis_block_min")) &&
+        is.finite(dn("recorded_axis_block_max")) &&
+        dn("recorded_axis_block_min") == 0 &&
+        dn("recorded_axis_block_max") == 0)
     check_true(ID,
         sprintf("and the resolved axis is in the note beside it (%s)",
                 dv("recorded_result_note")),
         grepl("^Axis resolved to [0-9.]+ \\.\\. [0-9.]+ over [0-9]+ groups\\.$",
               dv("recorded_result_note") %or% ""))
 
-    # THE MIRROR. A repair that hardcoded "0, 0" would satisfy every check on
-    # the auto arm above and would throw away every axis a user ever typed.
+    # THE MIRROR. A repair that hardcoded the sentinel would satisfy every
+    # check on the auto arm above and would throw away every axis a user ever
+    # typed. It is also the mirror of the fix-shaped fix on this side: a block
+    # that always declares 0 has the right SHAPE at every site and is wrong at
+    # every site where the user typed something, and only a value check on an
+    # arm whose value is not zero can tell the two apart.
     check_true(ID,
-        sprintf("an EXPLICIT axis is recorded as the numbers the user typed (%s)",
+        sprintf("an EXPLICIT axis is carried the same way, through the block (%s)",
                 dv("recorded_axis_args_explicit")),
-        identical(trimws(dv("recorded_axis_args_explicit") %or% ""), "150, 400"))
+        identical(trimws(dv("recorded_axis_args_explicit") %or% ""),
+                  "axisYMin, axisYMax"))
+    check_true(ID,
+        sprintf("and the block holds the numbers the user typed (%s, %s)",
+                dv("recorded_axis_block_min_explicit"),
+                dv("recorded_axis_block_max_explicit")),
+        is.finite(dn("recorded_axis_block_min_explicit")) &&
+        is.finite(dn("recorded_axis_block_max_explicit")) &&
+        dn("recorded_axis_block_min_explicit") == 150 &&
+        dn("recorded_axis_block_max_explicit") == 400)
     check_true(ID,
         "and the draw honoured it rather than resolving from the data",
         identical(dv("axis_record_explicit.explicit_resolved_min"), "150.0000") &&
@@ -922,24 +977,22 @@ if (length(csv_all) > 20L) {
 }
 
 # ===========================================================================
-# 8. RULING 8c -- THE ONE-BIN SPECTRUM. MEASURED, PRINTED, NOT REPAIRED.
+# 8. RULING 8c -- THE ONE-BIN SPECTRUM, WHICH THIS FILE FOUND AND MEASURED
 # ===========================================================================
-# The doctrine is validate/v63 §3e's, and it is the reason this section
-# asserts facts and no remedy: the two things this must not be are a PASSING
-# CHECK, which would pin a defect as a contract, or SILENCE, which is how a
-# finding gets lost between two hands.
-#
-# A Spectrum drawn over a frequency range containing ONE bin renders an empty
+# A Spectrum drawn over a frequency range containing ONE bin rendered an empty
 # frame with axis furniture only. Praat's Spectrum `Draw:` joins bin points
 # with line segments, and one point is no segment -- so the bin holding the
-# peak of the tone is on the axis and not on the paper. Two bins in range draw
+# peak of the tone was on the axis and not on the paper. Two bins in range draw
 # normally, which is the control that says the finding is about the count and
 # not about the range. Widening the range is ruled out by NEW-G8-1.
 #
-# THE CHOICE IS THE AUTHOR'S: draw a stem or a marker for the single bin, or
-# refuse with a message. Both are defensible and neither is this file's to
-# make. @emlDrawSpectrum, plugin/graphs/eml-draw-procedures.praat, at the
-# `Draw:` line.
+# THE AUTHOR RULED ON 16 AUGUST 2026: draw what you can, as a stem to the frame
+# floor, and refuse a bin that falls below the axis floor rather than drawing
+# it off the paper. The REPAIR is pinned in validate/v67, which owns the
+# spectrum's axis surface and measures the stem's height in pixels against
+# Praat's own vertex. What stays here is what this file found -- the fixture,
+# the count and the control -- because a finding that moves to another file
+# leaves nothing behind saying how it was reached.
 if (have_dl) {
     check_true(ID,
         sprintf("the one-bin probe really does put one bin in range (bin width %s Hz)",
@@ -955,29 +1008,188 @@ if (have_dl) {
                 dv("twobin_interior_ink")),
         is.finite(dn("twobin_interior_ink")) &&
         dn("twobin_interior_ink") > 100)
-    if (identical(dv("onebin_interior_ink"), "0")) {
-        cat(paste0(
-            "      NOTE v66: THE ONE-BIN SPECTRUM IS STILL AN EMPTY FRAME.\n",
-            sprintf("            %s bin in range at %s Hz per bin; the bin holds\n",
-                    dv("onebin.onebin_bins_in_range"), dv("onebin.onebin_bin_width")),
-            sprintf("            %s dB, the peak of the tone. Interior ink %s\n",
-                    dv("onebin.onebin_peak_db"), dv("onebin_interior_ink")),
-            sprintf("            against %s for the two-bin control, and the empty\n",
-                    dv("twobin_interior_ink")),
-            sprintf("            figure still weighs %s bytes -- so nothing that\n",
-                    dv("onebin_bytes")),
-            "            thresholds on file size can see it.\n",
-            "            SITE: @emlDrawSpectrum, plugin/graphs/\n",
-            "            eml-draw-procedures.praat, the `Draw:` line.\n",
-            "            AWAITING A RULING: draw a stem or marker for the\n",
-            "            single bin, or refuse with a message. Widening the\n",
-            "            range is ruled out by NEW-G8-1.\n"))
-    }
+    check_true(ID,
+        sprintf("and the one-bin spectrum now has ink inside its frame too (%s)",
+                dv("onebin_interior_ink")),
+        is.finite(dn("onebin_interior_ink")) &&
+        dn("onebin_interior_ink") > 100)
     attest(ID,
            sprintf("the one-bin spectrum was measured: %s bin, %s dB, %s ink inside the frame, %s bytes",
                    dv("onebin.onebin_bins_in_range"), dv("onebin.onebin_peak_db"),
                    dv("onebin_interior_ink"), dv("onebin_bytes")),
-           "driven live through @emlDrawSpectrum; not asserted either way -- the remedy is the author's call")
+           "driven live through @emlDrawSpectrum; the stem's HEIGHT is pinned in validate/v67")
+}
+
+# ===========================================================================
+# 8b. THE SAME DEFECT AT THE SECOND SITE -- THE ONE-BIN LTAS CURVE
+# ===========================================================================
+# WHY THIS SECTION EXISTS. §8's finding was not one procedure's accident. The
+# Ltas "Curve" style draws with the same idiom -- join the bins whose centres
+# fall inside the window with line segments -- and one point is no segment
+# there either. On 16 August 2026 it was measured: one bin at 100 Hz per bin
+# holding 66.95 dB, ZERO ink inside a fully furnished frame, while the SAME bin
+# drawn in "Bars" style put 3,839 pixels on the page.
+#
+# AND IT IS MORE REACHABLE THAN THE SPECTRUM'S, which is the part that made it
+# worth chasing rather than filing. A Spectrum's bin width is 1/duration, so
+# the window that triggers §8 shrinks as the recording lengthens and a long
+# recording is safe. An Ltas bin width is the bandwidth the CALLER chose -- 100
+# Hz, the form's own default -- so a 100 Hz window does it at any recording
+# length whatever. And "Curve" is the style @emlDrawLTAS installs when the
+# caller enables none of the four, so it is what a user gets without asking
+# for it.
+#
+# WHAT THE FAILURE LOOKS LIKE. A FILE, and a large one -- 46 KB with the grid
+# off and more with it on -- carrying a box, ticks, both axis names and a
+# title, and nothing else. There is no error, no warning and no empty-looking
+# output; the figure looks like a figure of a quiet band. The only thing wrong
+# with it is that the band was not quiet.
+#
+# WHAT COULD NOT HAVE CAUGHT IT, and why, because this is a family of checks
+# that all say yes:
+#
+#   ANYTHING THRESHOLDING ON FILE SIZE. 46,360 bytes for the empty frame here
+#   and 46,129 for the bar figure that is CORRECT -- the empty one is the
+#   LARGER file of the two. A 20 KB floor waves both through and would have
+#   waved through §2's 52 KB empty violin as well.
+#
+#   ANYTHING COUNTING DRAW CALLS. The procedure issued its `Draw:` exactly as
+#   it always had. Praat executed it and returned success. There is no missing
+#   call, no exception and no degenerate argument -- the call is right and the
+#   renderer has nothing to join.
+#
+#   ANY INK COUNT ON ITS OWN, which is the trap this section is built around.
+#   "There is ink inside the frame" is satisfied by a stem run to the top of
+#   the panel, which is the fix-shaped fix for an empty-figure finding: the
+#   right mark at a value nobody chose. So the height is measured too, and it
+#   is measured RELATIVELY -- the top row of the stem against the top row of
+#   Praat's own bar for the same bin -- so that it needs no theme constant, no
+#   axis arithmetic and no assumption about where the panel starts.
+#
+#   AND NOT FIRST-INK POSITION, which is §3's ruler and is the wrong one here.
+#   First ink moves the wrong way when the thing being caught is a mark that
+#   was clipped away: §3 records that an axis name shifted ten times too far
+#   came back starting FURTHER RIGHT than the intact one. A bounding box taken
+#   inside the frame has no such reversal.
+if (have_dl) {
+    # --- THE SOURCE. The comments are stripped by read_code before any of this
+    # matches, so what is asserted below is the branch and never the paragraph
+    # explaining the branch.
+    lt <- proc_body_of(code_draw, "emlDrawLTAS")
+    check_true(ID, "@emlDrawLTAS exists and was found",
+               length(lt) > 0)
+    check_true(ID,
+        "the Ltas Curve style counts the bins in the window before it draws",
+        any(grepl("^\\.curveBins = \\.curveHi - \\.curveLo \\+ 1$", lt)))
+    check_true(ID,
+        "and Praat's own Curve is reached only with at least two of them",
+        any(grepl("^if \\.curveBins >= 2$", lt)) &&
+        sum(grepl('^Draw: .*"Curve"$', lt)) == 1L)
+    check_true(ID,
+        "while a single bin is drawn as a stem the renderer cannot refuse",
+        any(grepl("^elsif \\.curveBins = 1$", lt)) &&
+        any(grepl("^Draw line: \\.curveFreq, \\.powerMin, \\.curveFreq, \\.curveVal$",
+                  lt)))
+    # THE ALTERNATIVE REMEDY, RULED OUT AND PINNED SO IT STAYS RULED OUT.
+    # Falling the one-bin Curve back to Praat's "Bars" style would also put ink
+    # on the page and would be wrong here for a reason peculiar to this
+    # procedure: Bars is one of FOUR independent checkboxes on the form, drawn
+    # from the same palette sequence in a different colour. A Curve that turned
+    # into Bars would hand a user who switched Bars off the layer they switched
+    # off, and would hand a user who switched both on the same bin twice, in
+    # two colours, one filled rectangle over another. Exactly one `Draw:` in
+    # this procedure may name "Bars", and it is the Bars layer's own.
+    check_true(ID,
+        "and the Curve style does not quietly become the Bars style, which is a separate setting here",
+        sum(grepl('^Draw: .*"Bars"$', lt)) == 1L)
+
+    # --- THE FIXTURE. Asserted rather than assumed: a probe that stopped being
+    # a one-bin probe would turn every measurement below green for the wrong
+    # reason, which is what break_onebin_probe_wrong exists to demonstrate on
+    # §8's side of the same argument.
+    check_true(ID,
+        sprintf("the Ltas probe puts one bin in the window at the caller's own bandwidth (%s Hz per bin)",
+                dv("ltas_onebin.ltas_onebin_bin_width")),
+        identical(dv("ltas_onebin.ltas_onebin_bins_in_range"), "1") &&
+        is.finite(dn("ltas_onebin.ltas_onebin_bin_width")) &&
+        dn("ltas_onebin.ltas_onebin_bin_width") == 100)
+    check_true(ID,
+        sprintf("and that bin holds the tone, not silence (%s dB)",
+                dv("ltas_onebin.ltas_onebin_peak_db")),
+        is.finite(dn("ltas_onebin.ltas_onebin_peak_db")) &&
+        dn("ltas_onebin.ltas_onebin_peak_db") > 60)
+
+    # --- WHICH BRANCH RAN, taken from the procedure and not inferred from the
+    # picture. An ink count cannot tell a stem from a bar from a curve.
+    check_true(ID,
+        sprintf("the one-bin figure went through the stem branch (%s bin, stem %s)",
+                dv("ltas_onebin.ltas_onebin_curve_bins"),
+                dv("ltas_onebin.ltas_onebin_curve_stem")),
+        identical(dv("ltas_onebin.ltas_onebin_curve_bins"), "1") &&
+        identical(dv("ltas_onebin.ltas_onebin_curve_stem"), "1"))
+    check_true(ID,
+        sprintf("and the two-bin control did NOT -- it is Praat's own Curve (%s bins, stem %s)",
+                dv("ltas_twobin.ltas_twobin_curve_bins"),
+                dv("ltas_twobin.ltas_twobin_curve_stem")),
+        identical(dv("ltas_twobin.ltas_twobin_curve_bins"), "2") &&
+        identical(dv("ltas_twobin.ltas_twobin_curve_stem"), "0"))
+
+    # --- THE PICTURES.
+    check_true(ID,
+        sprintf("the one-bin Ltas Curve has data inside its frame (%s ink; at HEAD it measured 0)",
+                dv("ltas_onebin_interior_ink")),
+        is.finite(dn("ltas_onebin_interior_ink")) &&
+        dn("ltas_onebin_interior_ink") > 100)
+    check_true(ID,
+        sprintf("the two-bin control still draws, unchanged (%s ink)",
+                dv("ltas_twobin_interior_ink")),
+        is.finite(dn("ltas_twobin_interior_ink")) &&
+        dn("ltas_twobin_interior_ink") > 100)
+    check_true(ID,
+        sprintf("and the SAME bin in Bars style always could, which is what makes it a defect and not a limit (%s ink)",
+                dv("ltas_onebin_bars_interior_ink")),
+        is.finite(dn("ltas_onebin_bars_interior_ink")) &&
+        dn("ltas_onebin_bars_interior_ink") > 100)
+
+    # --- THE VALUE, WHICH IS THE CHECK THE INK COUNT IS NOT.
+    # Both boxes are WxH+X+Y against the same interior crop of two figures of
+    # the same bin on the same axis with the grid off. Praat's bar is a
+    # horizontal segment a few rows thick at the bin's value; the stem is a
+    # vertical line from the frame floor to it. The stem's TOP ROW must fall
+    # inside the rows the bar occupies -- not near them, inside them. A stem
+    # clamped to the top of the panel, or to the floor, or drawn at a hard-
+    # coded height fails this while passing every ink count above.
+    parse_box <- function(s) {
+        m <- regmatches(s, regexec("^([0-9]+)x([0-9]+)\\+([0-9-]+)\\+([0-9-]+)$",
+                                   s %or% ""))[[1]]
+        if (length(m) != 5L) return(NULL)
+        as.integer(m[-1])
+    }
+    b_stem <- parse_box(dv("ltas_onebin_interior_box"))
+    b_bar  <- parse_box(dv("ltas_onebin_bars_interior_box"))
+    check_true(ID,
+        sprintf("both figures of the bin produced a measurable box (stem %s, bar %s)",
+                dv("ltas_onebin_interior_box"), dv("ltas_onebin_bars_interior_box")),
+        !is.null(b_stem) && !is.null(b_bar) &&
+        b_stem[2] > 0 && b_bar[2] > 0)
+    check_true(ID,
+        sprintf("and the stem tops out on a row Praat's own bar for the same bin occupies (stem row %s; bar rows %s..%s)",
+                if (is.null(b_stem)) NA else b_stem[4],
+                if (is.null(b_bar)) NA else b_bar[4],
+                if (is.null(b_bar)) NA else b_bar[4] + b_bar[2] - 1L),
+        !is.null(b_stem) && !is.null(b_bar) &&
+        b_stem[4] >= b_bar[4] && b_stem[4] <= b_bar[4] + b_bar[2] - 1L)
+    check_true(ID,
+        sprintf("and it runs DOWN to the frame floor rather than being a mark of its own (%s px tall in a %s px interior)",
+                if (is.null(b_stem)) NA else b_stem[2], 920L),
+        !is.null(b_stem) && !is.null(b_bar) &&
+        b_stem[4] + b_stem[2] >= 918L)
+
+    # THE TRAP, SAID AS A NUMBER, the same way §2 says it.
+    attest(ID,
+        sprintf("the empty one-bin Ltas weighed 46,360 bytes and the CORRECT bar figure %s -- the empty file was the bigger one",
+                dv("ltas_onebin_bars_bytes")),
+        "measured 16 Aug 2026 on Praat 6.6.30; a size threshold cannot separate them in either direction")
 }
 
 if (!exists("EML_SUITE")) {

@@ -76,12 +76,23 @@
 #   counts as a pass.
 #
 #   The GUI harnesses (gui_e2e, savepaths, gui_adv) drive real dialogs under
-#   Xvfb, and they could in principle have driven this one -- except that
-#   "Batch voice analysis..." has been unregistered in plugin/setup.praat since
+#   Xvfb, and they could not in principle have driven this one -- because
+#   "Batch voice analysis..." was unregistered in plugin/setup.praat from
 #   6 August 2026, tabled by the author for exactly the reason this file
-#   exists. It has no menu entry, so a harness that drives menus cannot reach
-#   it. The coverage gap and the tabling have the same cause, and neither could
-#   fix the other.
+#   exists. It had no menu entry, so a harness that drives menus could not
+#   reach it. The coverage gap and the tabling had the same cause, and neither
+#   could fix the other.
+#
+#   THAT CIRCLE CLOSED ON 16 AUGUST 2026. The author ruled the module
+#   registered, on the condition the stress-test session set: one GUI drive
+#   through the real dialog first, because a registered menu entry that has
+#   never been clicked is precisely the dead door the audit's severity-2
+#   findings were about. It is now menu entry 56, and validate/v72 owns the
+#   driven leg. The paragraph above is kept in the past tense rather than
+#   deleted, because the reasoning is why this file's coverage is shaped the
+#   way it is -- every leg here drives a headless twin hashed against the
+#   shipped source, and that design exists because for ten days there was no
+#   other way in.
 #
 #   validate/v35's census knows the file only as a name in a list of entry
 #   points that parse. No validator in this tree has ever read a CSV this
