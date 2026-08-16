@@ -710,7 +710,36 @@ scripts <- c(
     # existed. They are in the suite because a check that lives outside the
     # thing CI runs is a check nobody runs; being here is what makes
     # regenerating the manifest the only route to a green suite.
-    "v78_repo_hygiene.R"
+    "v78_repo_hygiene.R",
+    # v79 is the only script here whose subject is a file that is NOT IN THE
+    # REPOSITORY: plugin_EML_Praat_Tools, the folder Praat installs, which
+    # plugin/dev/tools/build-release.py makes out of plugin/. It cannot be
+    # committed, and the reason is the defect it exists to catch -- git records
+    # the executable bit and nothing else, so a checked-in copy of the artefact
+    # would be a copy with the mode evidence stripped off it. So v79 BUILDS the
+    # artefact while the suite runs (0.5 s) and asserts against that: the folder
+    # name against the recorder, both digests reproduced by a second build, the
+    # whole include closure, and -- the strongest thing in the file -- the zip
+    # unpacked under `umask 077` with every mode measured on what unzip
+    # produced rather than on what the builder chmodded. That is the only
+    # reading in this tree taken on a tree nobody chmodded, and the only one
+    # that can see a zip carrying no entry for its own top-level folder, which
+    # leaves the whole plugin at 0700 and unreadable to every other account
+    # with all 322 files inside it recorded perfectly.
+    #
+    # The three facts that need an X server -- the menu walk, the falsifier
+    # walk, and the label read off the photograph -- come from a committed
+    # record, and the header says at length how that record is kept from
+    # rotting: bound by digest to setup.praat and to the script the walk
+    # reaches, required to carry the key set of a FINISHED run (the evidence at
+    # the previous commit was an aborted one, 18 lines of 25, stopping before
+    # the falsifier), and censused so that every scalar in it is read by
+    # something. That census is the one that matters: the harness's mode
+    # counter and its quickstart exit status were both being written and
+    # neither was being read, so a run under a restrictive umask and a run
+    # whose headless leg died at exit 255 both left it exiting 0.
+    #     bash harness/release/run.sh
+    "v79_release_artefact.R"
 )
 
 cat("EML Praat Tools validation suite\n")

@@ -84,6 +84,22 @@ in path order. The build prints a sha256 over (path, mode, bytes) of every
 entry, which is the digest that survives being copied about, and the sha256
 of the zip itself.
 
+What --verify asserts
+---------------------
+Four things, on the artefact folder it is handed -- which may be a freshly
+built one, or a tree somebody has unzipped somewhere:
+
+  1. THE FOLDER NAME, against the recorder INSIDE that folder, so an unpacked
+     artefact with no repository beside it still answers the question.
+  2. EVERY MODE, file by file and directory by directory, named rather than
+     counted, plus every mode recorded in the zip if the zip is beside it.
+  3. THE ZIP'S ROOT ENTRY. A zip with no entry for its own top level leaves
+     `unzip` to create that folder under the user's umask.
+  4. THE NAME EVERYWHERE ELSE IN THE ARTEFACT: no shipped file may name a
+     `plugin_<Other>` folder. Check 1 covers the recorder and the folder; the
+     name is also written into a sprite loader, a tutorial and the README's
+     install instructions, and those do not follow a rename by themselves.
+
 Usage
 -----
     python3 dev/tools/build-release.py                 # build into $TMPDIR
@@ -281,6 +297,69 @@ def sha256_file(path: Path) -> str:
 
 
 # ---------------------------------------------------------------------------
+# THE NAME, EVERYWHERE
+# ---------------------------------------------------------------------------
+# TWO `plugin_` TOKENS IN THE TREE ARE NOT FOLDER NAMES, and each is named
+# with the file it lives in rather than allowed everywhere, so the same word
+# appearing in a path expression somewhere else still fails.
+#
+#   dev/tools/run-tests.py        `plugin_root`, a Python function.
+#   dev/tools/reg-apply-edits.py  `plugin_EMLTools`, the pre-release product
+#                                 name inside the OLD document header that
+#                                 tool searches for and replaces. It is the
+#                                 needle of a replace_once, not a path.
+#
+# The third and fourth entries are this file: the scan reads the artefact,
+# this script ships in the artefact, and the two tokens above appear here as
+# the text of the table that excuses them. Naming them per-file keeps that
+# self-reference to the one file that has to contain them.
+NOT_A_FOLDER = {
+    ("dev/tools/run-tests.py", "plugin_root"),
+    ("dev/tools/reg-apply-edits.py", "plugin_EMLTools"),
+    ("dev/tools/build-release.py", "plugin_root"),
+    ("dev/tools/build-release.py", "plugin_EMLTools"),
+}
+
+
+def name_disagreements(artefact: Path) -> list[str]:
+    """Every `plugin_<Name>` literal in the artefact that is not its own name.
+
+    Section 1 of verify() compares the FOLDER against the recorder, and those
+    two agreeing is the whole of what makes a recorded script runnable. It is
+    not the whole of what makes an artefact coherent: the name is written into
+    graphs/eml-graph-procedures.praat's sprite loader, into
+    scripts/eml-tutorial.praat, and into fifteen lines of README.md that tell
+    a user which folder to copy. Change the recorder's ten literals and
+    rebuild and all of those keep the old name, the folder is renamed, the
+    build verifies, the install verifies, the menu walk passes -- and EML
+    Graphs silently loads no sprites while the README names a folder that is
+    not in the download.
+    """
+    bad: list[str] = []
+    want = artefact.name.encode("ascii")
+    rx = re.compile(rb"plugin_[A-Za-z0-9_]+")
+    for path in sorted(artefact.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(artefact).as_posix()
+        try:
+            blob = path.read_bytes()
+        except OSError as exc:               # unreadable is section 2's job
+            bad.append("{} could not be read for the name scan ({})"
+                       .format(rel, exc))
+            continue
+        for tok in sorted(set(rx.findall(blob))):
+            if tok == want:
+                continue
+            name = tok.decode("ascii")
+            if (rel, name) in NOT_A_FOLDER:
+                continue
+            bad.append("{} names {!r}; this artefact is {!r}"
+                       .format(rel, name, artefact.name))
+    return bad
+
+
+# ---------------------------------------------------------------------------
 # VERIFY -- the half that closes P1
 # ---------------------------------------------------------------------------
 def verify(artefact: Path, execs: set[str] | None, source: str) -> list[str]:
@@ -341,6 +420,8 @@ def verify(artefact: Path, execs: set[str] | None, source: str) -> list[str]:
     #    same defect one step earlier.
     zp = artefact.parent / (artefact.name + ".zip")
     if zp.is_file():
+        root_entry = artefact.name + "/"
+        seen_root = False
         with zipfile.ZipFile(zp) as zf:
             for info in zf.infolist():
                 mode = info.external_attr >> 16
@@ -349,6 +430,8 @@ def verify(artefact: Path, execs: set[str] | None, source: str) -> list[str]:
                     problems.append("zip entry {!r} is outside {}/"
                                     .format(nm, artefact.name))
                     continue
+                if nm == root_entry:
+                    seen_root = True
                 rel = nm[len(artefact.name) + 1:].rstrip("/")
                 if info.is_dir():
                     if stat.S_IMODE(mode) != DIR_MODE:
@@ -361,6 +444,24 @@ def verify(artefact: Path, execs: set[str] | None, source: str) -> list[str]:
                                         "{:04o}".format(rel,
                                                         stat.S_IMODE(mode),
                                                         want))
+        if not seen_root:
+            problems.append(
+                "the zip carries no entry for {!r}, so unzip creates the "
+                "plugin folder under the user's umask; on umask 077 it "
+                "installs 0700 and every file in it is unreadable by any "
+                "other account"
+                .format(root_entry))
+
+    # 4. THE NAME, EVERYWHERE IT IS WRITTEN, not only on the folder. Section 1
+    #    settles the folder against the recorder; those two agreeing is what
+    #    makes a RECORDED script runnable, and nothing more. The name is also
+    #    written into a sprite loader, a tutorial, and fifteen lines of
+    #    README.md telling a user which folder to copy -- so a rename that
+    #    satisfies section 1 can still ship an artefact whose sprite loader
+    #    points at a folder that does not exist and whose install
+    #    instructions name a folder that is not in the download.
+    problems += name_disagreements(artefact)
+
     print("verified against: {}".format(source))
     return problems
 
@@ -418,6 +519,21 @@ def build(out_dir: Path, make_zip: bool) -> int:
     if make_zip:
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED,
                              compresslevel=9) as zf:
+            # THE ROOT ENTRY, FIRST AND EXPLICIT. `dirs` is relative to the
+            # artefact, so the artefact's own folder never appears in it. A
+            # zip with no entry for its top level makes `unzip` create that
+            # folder IMPLICITLY, under the unpacking account's umask -- and on
+            # `umask 077`, routine on managed and shared machines, the plugin
+            # lands as a 0700 folder that no other account can traverse. Every
+            # file inside it is then unreadable at once, and that is
+            # invisible to a walk of the built
+            # tree (whose root this script chmods) and to a walk of the zip's
+            # entries (where the root does not appear). So the entry is
+            # written, and verify() below requires it.
+            root_info = zipfile.ZipInfo("{}/".format(name),
+                                        date_time=ZIP_EPOCH)
+            root_info.external_attr = (DIR_MODE << 16) | 0x10
+            zf.writestr(root_info, b"")
             for rel in sorted(dirs):
                 info = zipfile.ZipInfo(
                     "{}/{}/".format(name, rel), date_time=ZIP_EPOCH)

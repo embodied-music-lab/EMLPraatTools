@@ -16,34 +16,61 @@
 # repository — unpacks it into a scratch preferences directory exactly as a
 # user would, and starts Praat against it under Xvfb.
 #
-# THREE LEGS, and the third is the one that makes the first two mean
-# anything:
+# FIVE LEGS, and the last is the one that makes the others mean anything:
+#
+#   unpacked    Static, on the tree the zip produced. Four numbers, all
+#               asserted: the folder count against the build record, every
+#               mode 0644 or 0755 (the walk starts AT the plugin folder, so
+#               the folder's own mode is in the count -- a zip with no entry
+#               for its own root leaves that folder at the user's umask),
+#               every `include` in every installed .praat resolving to a
+#               file that is there, and the builder's own `--verify` re-run
+#               against the UNPACKED tree rather than the build directory.
+#               The include closure is what makes this leg worth its cost:
+#               ONE library file dropped from the artefact leaves the menu
+#               present, the walk green and five of the nineteen commands
+#               dead on their first line, and no GUI leg can see that.
 #
 #   quickstart  Headless. plugin/README.md's own 30-second example, run by
 #               `praat --run` from a script OUTSIDE the plugin, against the
 #               unpacked folder. It reads five files out of the installed
-#               tree and prints a t-test. This is the leg that would go red
-#               on finding P1 read from another account: a file at 0600 is
-#               not "the menu looks wrong", it is `include` failing to open
-#               a file. It also needs no window manager, so it fails loudly
-#               on a machine where the GUI legs cannot run at all.
+#               tree and prints a t-test. A file at 0600 read from another
+#               account is not "the menu looks wrong", it is `include`
+#               failing to open a file, and this is the leg that says so. It
+#               also needs no window manager, so it fails loudly on a
+#               machine where the GUI legs cannot run at all. Its exit
+#               status AND its printed line are both asserted: `praat --run`
+#               exits 255 on a dead include while still writing nothing, so
+#               an unread rc is an unread failure.
 #
 #   installed   The real thing. Praat --pref-dir=<unpacked>, the Objects
 #               window's New menu opened, the EML Tools cascade entered, and
 #               a fixed keyboard walk to the eighteenth command. It must
 #               reach `Pause: Create Demo Table`. A photograph of the open
-#               submenu is taken on the way past, for a human.
+#               submenu is taken on the way past.
 #
-#   broken      THE FALSIFIER. The same zip, unpacked again, with ONE LINE
-#               inserted at the top of setup.praat that Praat cannot parse.
-#               The plugin folder is present and correctly named, every file
-#               is readable, and the registration never runs — so the walk
-#               must NOT reach Create Demo Table. Without this leg, "we
-#               reached the dialog" is a sentence that could hold with the
-#               plugin uninstalled, and the install proof would be
-#               decorative. Praat is required to be UP in this leg
-#               (objects_window=1), so a red here cannot be "Praat did not
-#               start" wearing the falsifier's clothes.
+#   menu name   THE PHOTOGRAPH IS READ. The walk is Up-then-Right, which is
+#               POSITIONAL: it enters whatever cascade sits last in the New
+#               menu, whatever that cascade is called. Register the plugin's
+#               commands under "NOT THE EML MENU" and the walk still arrives
+#               at Create Demo Table, and the only evidence that the user is
+#               looking at the EML menu is the picture. So the picture goes
+#               through tesseract and the cascade's label is required in it
+#               -- the same instrument v76 uses to read a test name off a
+#               rendered figure. Two anchors, because one of them is inside
+#               the file under test: the OCR of the photograph, and the
+#               cascade name registered in the INSTALLED setup.praat. Both
+#               are compared against $EML_RELEASE_MENU, which lives here.
+#
+#   broken      THE FALSIFIER. The same zip, unpacked again, with the
+#               registration removed from setup.praat. The plugin folder is
+#               present and correctly named, every file is readable, and the
+#               registration never runs — so the walk must NOT reach Create
+#               Demo Table. Without this leg, "we reached the dialog" is a
+#               sentence that could hold with the plugin uninstalled, and
+#               the install proof would be decorative. Praat is required to
+#               be UP in this leg (objects_window=1), so a red here cannot
+#               be "Praat did not start" wearing the falsifier's clothes.
 #
 # WHY A KEYBOARD WALK RATHER THAN READING THE MENU. GTK menu items have no X
 # window of their own and no queryable property, so nothing can read the text
@@ -59,8 +86,18 @@
 #
 # Evidence, all under out/: RELEASE_INSTALL.tsv (the scalar facts),
 # menu_installed.png (the submenu, open), dialog_installed.png (the dialog it
-# reached), menu_broken.png (the same walk with the registration dead) and
-# QUICKSTART.txt (the Info window from the headless leg).
+# reached), menu_broken.png (the same walk with the registration dead),
+# MENU_OCR.txt (what tesseract read off menu_installed.png) and QUICKSTART.txt
+# (the Info window from the headless leg).
+#
+# EVERY NUMBER IN THE TSV IS EITHER ASSERTED HERE OR READ BY v79. A scalar
+# written by `say` and compared to nothing is decoration, and decoration next
+# to a green tick reads as evidence: the mode counter and the quickstart exit
+# status were both written and neither was ever looked at, so a run under a
+# restrictive umask and a run whose headless leg died at exit 255 both left
+# this harness exiting 0. The verdict block at the foot of this file is the
+# list; if a `say` is added above and no line down there mentions it, it is
+# not a measurement.
 #
 # Scratch — the unpacked trees, the build, Xvfb and Praat's logs — lives
 # outside the repository under $TMPDIR, as in harness/walks/rig.sh and
@@ -90,8 +127,14 @@ DISP="${EML_RELEASE_DISPLAY:-:90}"
 ORDINAL="${EML_RELEASE_ORDINAL:-18}"
 WANT_TITLE="${EML_RELEASE_TITLE:-Create Demo Table}"
 
+# THE CASCADE'S LABEL. Held here rather than read out of setup.praat, because
+# setup.praat is the file under test: a harness that took the expected name
+# from the thing it is checking would agree with any rename, which is the
+# whole of what the positional walk cannot see.
+WANT_MENU="${EML_RELEASE_MENU:-EML Tools}"
+
 for t in Xvfb xdotool xprop xwininfo import matchbox-window-manager unzip \
-         python3 iconv; do
+         python3 iconv tesseract; do
     command -v "$t" >/dev/null || { echo "release: FAIL — no $t" >&2; exit 1; }
 done
 [[ -x "$PRAAT"   ]] || { echo "release: FAIL — no praat at $PRAAT" >&2; exit 1; }
@@ -181,9 +224,93 @@ say setup_under_test "${EML_SETUP_FILE:-shipped}"
 # demand a GUI re-drive.
 say setup_sha256 "$(sha256sum "$PREFS_OK/$NAME/setup.praat" | cut -d' ' -f1)"
 say unpacked_folder "$(basename "$PREFS_OK/$NAME")"
-say unpacked_files "$(find "$PREFS_OK/$NAME" -type f | wc -l)"
-say unpacked_modes_other_than_0644_0755 \
-   "$(find "$PREFS_OK/$NAME" \! -perm 0644 \! -perm 0755 | wc -l)"
+UNPACKED_FILES="$(find "$PREFS_OK/$NAME" -type f | wc -l)"
+RECORD_FILES="$(awk -F'\t' '$1=="files"{print $2}' "$REC")"
+say unpacked_files "$UNPACKED_FILES"
+say record_files "$RECORD_FILES"
+
+# THE MODE COUNT STARTS AT THE PLUGIN FOLDER, not inside it. `find <dir>`
+# tests <dir> itself, and the plugin folder is the one entry in an installed
+# tree whose mode is decided by the UNPACKING account rather than by the zip
+# — a zip carrying no entry for its own top level leaves unzip to create that
+# folder under the user's umask, so on `umask 077` the plugin installs 0700
+# and all of its files become unreadable to every other account at once.
+MODES_BAD="$(find "$PREFS_OK/$NAME" \! -perm 0644 \! -perm 0755 | wc -l)"
+say unpacked_modes_other_than_0644_0755 "$MODES_BAD"
+
+# THE BUILDER'S OWN --verify, RE-RUN ON THE UNPACKED TREE. The build verifies
+# what it built; this verifies what came out of the zip, which is a different
+# tree produced by a different program (unzip) on a different day. It is also
+# the only leg that can see a folder name the artefact's own recorder
+# disagrees with, because everything else here takes the name from the build
+# record and installs under it, so build and check cannot disagree.
+python3 "$BUILDER" --verify "$PREFS_OK/$NAME" > "$WORK/verify_installed.log" 2>&1
+VERIFY_RC=$?
+say installed_verify_rc "$VERIFY_RC"
+say installed_verify_line \
+   "$(grep -m1 -E '^\s+\S' "$WORK/verify_installed.log" | sed 's/^ *//' | cut -c1-120)"
+
+# EVERY `include` IN THE INSTALLED TREE RESOLVES. This is the leg no GUI walk
+# can stand in for. The walk enters ONE command of nineteen, and the command
+# it enters — Create Demo Table — is the only script in scripts/ with no
+# include lines at all, so it is precisely the item a missing library file
+# cannot break. Drop stats/eml-lib-stats.praat from the artefact and the menu
+# is still there, the cascade still opens, the walk still reaches its dialog,
+# and five of the nineteen commands die on their first line with "Cannot open
+# file". Praat resolves `include` against the INCLUDING script's own folder,
+# which is what makes this checkable without running anything.
+DANGLING="$(python3 - "$PREFS_OK/$NAME" 2>"$WORK/includes.log" <<'PYEOF'
+import os, re, sys
+root = sys.argv[1]
+inc = re.compile(r'^\s*include\s+(\S.*?)\s*$')
+seen = bad = 0
+for dirpath, _dirs, files in os.walk(root):
+    for fn in files:
+        if not fn.endswith('.praat'):
+            continue
+        src = os.path.join(dirpath, fn)
+        with open(src, 'rb') as fh:
+            text = fh.read().decode('utf-8', 'replace')
+        for line in text.splitlines():
+            m = inc.match(line)
+            if not m:
+                continue
+            seen += 1
+            target = os.path.normpath(os.path.join(dirpath, m.group(1)))
+            if not os.path.isfile(target):
+                bad += 1
+                print("{}: include {}".format(
+                    os.path.relpath(src, root), m.group(1)), file=sys.stderr)
+print("{} {}".format(seen, bad))
+PYEOF
+)"
+say installed_include_lines "${DANGLING% *}"
+say installed_includes_dangling "${DANGLING#* }"
+say installed_includes_first_dangling \
+   "$(head -1 "$WORK/includes.log" 2>/dev/null)"
+
+# THE SECOND STALENESS HANDLE. setup_sha256 above covers the registration —
+# whether a menu appears at all. It does not cover the DIALOG the walk
+# arrives at, which is drawn by whichever script that registration points
+# the wanted command at. The two files together are exactly what the GUI
+# legs' claim rests on, and they are what v79 re-derives from the shipped
+# tree before it reads a word of the GUI evidence. Digesting the whole
+# artefact instead would make every edit anywhere in the plugin demand a GUI
+# re-drive.
+SETUP_OK="$PREFS_OK/$NAME/setup.praat"
+TARGET_REL="$(grep -E "^Add menu command: \"Objects\", \"New\", \"$WANT_TITLE" \
+              "$SETUP_OK" | head -1 | sed 's/.*"\([^"]*\)"[^"]*$/\1/')"
+say installed_target_script "$TARGET_REL"
+say installed_target_sha256 \
+   "$(sha256sum "$PREFS_OK/$NAME/$TARGET_REL" 2>/dev/null | cut -d' ' -f1)"
+
+# THE CASCADE'S NAME AS THE INSTALLED TREE REGISTERS IT. One of the two
+# anchors on the menu's identity; the other is the OCR of the photograph,
+# below. This one is a read of the file under test and cannot stand alone —
+# it says what setup.praat asked for, not what Praat rendered.
+say installed_menu_registrations \
+   "$(grep -cE "^Add menu command: .*\"$WANT_MENU\"" "$SETUP_OK")"
+say want_menu "$WANT_MENU"
 
 # THE DAMAGE. Two shapes, because they fail differently and a check that
 # only survives one of them is only half a check. $EML_RELEASE_DAMAGE picks.
@@ -201,8 +328,13 @@ say unpacked_modes_other_than_0644_0755 \
 #               falsifier: it proves the walk discriminates rather than
 #               merely being blocked by a modal, which is all the syntax
 #               variant can show.
+#
+# `unregister` IS THE DEFAULT because it is the sharper of the two: syntax
+# only shows that a modal error dialog blocks a keyboard walk, which any
+# modal would do. unregister leaves Praat perfectly healthy and asks whether
+# the walk can tell an EML-less New menu from an EML one.
 BROKEN_SETUP="$PREFS_BAD/$NAME/setup.praat"
-DAMAGE="${EML_RELEASE_DAMAGE:-syntax}"
+DAMAGE="${EML_RELEASE_DAMAGE:-unregister}"
 case "$DAMAGE" in
   syntax)
     printf '%s\n' 'Add menu command: "Objects"' > "$WORK/_hdr"
@@ -247,18 +379,28 @@ QEOF
 
 HOME="$PREFS_OK" "$PRAAT" --pref-dir="$WORK/prefs_qs" --run \
     "$WORK/quickstart.praat" > "$WORK/quickstart.log" 2>&1
-say quickstart_rc "$?"
+QS_RC=$?
+say quickstart_rc "$QS_RC"
 if [[ -f "$WORK/quickstart.out" ]]; then
     if file -b "$WORK/quickstart.out" | grep -q UTF-16; then
         iconv -f UTF-16 -t UTF-8 "$WORK/quickstart.out" > "$OUT/QUICKSTART.txt"
     else
         cp "$WORK/quickstart.out" "$OUT/QUICKSTART.txt"
     fi
-    say quickstart_line "$(tr -d '\r' < "$OUT/QUICKSTART.txt" | head -1)"
+    QS_LINE="$(tr -d '\r' < "$OUT/QUICKSTART.txt" | head -1)"
 else
     cp "$WORK/quickstart.log" "$OUT/QUICKSTART.txt"
-    say quickstart_line ""
+    QS_LINE=""
 fi
+say quickstart_line "$QS_LINE"
+# THE SHAPE OF THE LINE, not only its presence. A t-test that printed
+# "t(undefined) = --" would satisfy a non-empty test, and an rc of 0 with an
+# empty Info window would satisfy the rc test; the two together are what say
+# the installed tree computed something.
+QS_OK=0
+[[ "$QS_RC" -eq 0 ]] && \
+    grep -qE '^t\(-?[0-9.]+\) = -?[0-9.]+, p' <<< "$QS_LINE" && QS_OK=1
+say quickstart_ok "$QS_OK"
 
 # ---------------------------------------------------------------------------
 # 4. THE DISPLAY
@@ -371,6 +513,34 @@ say installed_windows "$(winlist | cut -f2 | paste -sd'|' -)"
 stop_praat
 
 # ---------------------------------------------------------------------------
+# LEG menu name — THE PHOTOGRAPH, READ
+# ---------------------------------------------------------------------------
+# GTK menu items have no X window and no queryable property, so the walk can
+# only report which DIALOG it arrived at, and Up-then-Right arrives at
+# whatever cascade is last in the New menu whatever it is called. The label
+# exists in exactly one machine-readable place: the pixels. tesseract, as in
+# v76.
+#
+# MEASURED, 16 August 2026, Praat 6.6.30 under Xvfb at 1400x1100: tesseract
+# renders the open cascade's own row as "+EML Tool" — the trailing "s" is
+# lost where the submenu arrow abuts it. So the comparison drops
+# non-alphanumerics, folds case, and accepts the wanted label MINUS its last
+# character. That tolerance is one character wide and is not what decides the
+# check: "NOT THE EML MENU" normalises to NOTTHEEMLMENU, which contains
+# neither EMLTOOLS nor EMLTOOL.
+tesseract "$OUT/menu_installed.png" - 2>/dev/null > "$OUT/MENU_OCR.txt"
+MENU_SEEN=$(python3 - "$OUT/MENU_OCR.txt" "$WANT_MENU" <<'PYEOF'
+import re, sys
+norm = lambda s: re.sub(r'[^A-Za-z0-9]', '', s).upper()
+seen = norm(open(sys.argv[1], encoding='utf-8', errors='replace').read())
+want = norm(sys.argv[2])
+print(1 if want and (want in seen or want[:-1] in seen) else 0)
+PYEOF
+)
+say installed_menu_ocr_lines "$(grep -c . "$OUT/MENU_OCR.txt")"
+say installed_menu_label_seen "$MENU_SEEN"
+
+# ---------------------------------------------------------------------------
 # LEG broken
 # ---------------------------------------------------------------------------
 start_praat "$PREFS_BAD"
@@ -398,9 +568,37 @@ say completed 1
 echo "--- $TSV ---"
 cat "$TSV"
 
+# EVERY SCALAR ABOVE IS ASSERTED HERE. Ten lines, and the four that were
+# added on 16 August 2026 are the four that were being written and not read.
 rc=0
-[[ "$OBJ_OK" -eq 1 ]] || { echo "release: FAIL — Praat did not come up on the installed tree" >&2; rc=1; }
-[[ "$OBJ_BAD" -eq 1 ]] || { echo "release: FAIL — Praat did not come up on the broken tree, so the falsifier proves nothing" >&2; rc=1; }
-[[ "$MENU_PRESENT" -eq 1 ]] || { echo "release: FAIL — the walk reached '$TITLE_OK', wanted '$WANT_TITLE'" >&2; rc=1; }
-[[ "$FALSIFIED" -eq 1 ]] || { echo "release: FAIL — the walk reached '$WANT_TITLE' with the registration dead; the install proof is decorative" >&2; rc=1; }
+fail () { echo "release: FAIL — $1" >&2; rc=1; }
+
+# --- the unpacked tree ---
+[[ "$UNPACKED_FILES" -eq "$RECORD_FILES" ]] || \
+    fail "the zip unpacked $UNPACKED_FILES files; the build recorded $RECORD_FILES"
+[[ "$MODES_BAD" -eq 0 ]] || \
+    fail "$MODES_BAD entries in the installed tree are neither 0644 nor 0755 — $(find "$PREFS_OK/$NAME" \! -perm 0644 \! -perm 0755 | head -1)"
+[[ "$VERIFY_RC" -eq 0 ]] || \
+    fail "the builder refuses the tree the zip produced: $(sed -n '2p' "$WORK/verify_installed.log")"
+[[ "${DANGLING#* }" -eq 0 ]] || \
+    fail "${DANGLING#* } include line(s) in the installed tree name a file that is not there — $(head -1 "$WORK/includes.log")"
+[[ -n "$TARGET_REL" && -f "$PREFS_OK/$NAME/$TARGET_REL" ]] || \
+    fail "the installed setup.praat points '$WANT_TITLE' at '$TARGET_REL', which is not in the artefact"
+
+# --- headless ---
+[[ "$QS_OK" -eq 1 ]] || \
+    fail "the headless quickstart exited $QS_RC and printed '$QS_LINE'"
+
+# --- the GUI legs ---
+[[ "$OBJ_OK" -eq 1 ]] || fail "Praat did not come up on the installed tree"
+[[ "$OBJ_BAD" -eq 1 ]] || fail "Praat did not come up on the broken tree, so the falsifier proves nothing"
+[[ "$MENU_PRESENT" -eq 1 ]] || fail "the walk reached '$TITLE_OK', wanted '$WANT_TITLE'"
+[[ "$FALSIFIED" -eq 1 ]] || fail "the walk reached '$WANT_TITLE' with the registration dead; the install proof is decorative"
+
+# --- the menu's identity, which the walk is positional about ---
+[[ "$MENU_SEEN" -eq 1 ]] || \
+    fail "'$WANT_MENU' is not in the open submenu photograph; the walk entered the last cascade in the New menu and that cascade is called something else"
+grep -qE "^Add menu command: .*\"$WANT_MENU\"" "$SETUP_OK" || \
+    fail "the installed setup.praat registers nothing under '$WANT_MENU'"
+
 exit $rc

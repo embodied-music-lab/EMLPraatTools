@@ -1,18 +1,39 @@
 praat_version	Praat 6.6.30 (June 30 2026)
 build_rc	0
 name	plugin_EML_Praat_Tools
-artefact_sha256	7e92d045a382b771f6e1e4c7262f2502e5a89b7187dfd4257bbc32703dd3db88
-zip_sha256	4c71a4710b0e22e7fce2fefdff73c545d381aae32e3075961e77425365d774c9
+artefact_sha256	cefecb692303ce4034e1de0cd276b09721b14e64a5f4b1875abdded0334bbe3c
+zip_sha256	d21faa6599ae916add86f0e8365301815854fb4082c22ff36b7492d73f71e505
 setup_under_test	shipped
 setup_sha256	cd6eb388d4f3feea8566491655df5c229b8f482bb8a8ed7dc0a36fad65c9f7d4
 unpacked_folder	plugin_EML_Praat_Tools
 unpacked_files	322
+record_files	322
 unpacked_modes_other_than_0644_0755	0
-broken_damage	syntax
-broken_setup_lines_cut	-1
-broken_setup_first_line	Add menu command: "Objects"
+installed_verify_rc	0
+installed_verify_line	
+installed_include_lines	140
+installed_includes_dangling	0
+installed_includes_first_dangling	
+installed_target_script	scripts/eml-create-demo.praat
+installed_target_sha256	aad855ecca451f7edfcfc811d1957838a7a025563b88a11053c20435922864bc
+installed_menu_registrations	3
+want_menu	EML Tools
+broken_damage	unregister
+broken_setup_lines_cut	28
+broken_setup_first_line	# ============================================================================
 quickstart_rc	0
 quickstart_line	t(13.6) = 7.89, p < .001
+quickstart_ok	1
 installed_objects_window	1
 installed_dialog_title	Create Demo Table
 installed_windows	Praat Objects|Praat Picture|Pause: Create Demo Table
+installed_menu_ocr_lines	41
+installed_menu_label_seen	1
+broken_objects_window	1
+broken_dialog_title	
+broken_windows	Praat Objects|Praat Picture
+want_dialog_title	Create Demo Table
+menu_ordinal	18
+menu_present	1
+falsifier_ok	1
+completed	1

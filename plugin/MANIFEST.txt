@@ -26,7 +26,7 @@
 
 
 FIX_NOTES.md | ~1904 words | - | EML Praat Tools — Correctness Fix Bundle
-README.md | ~1153 words | - | EML Praat Tools
+README.md | ~1347 words | - | EML Praat Tools
 data/eml-record-phrases.csv | 9 | - | Sentence templates the recorder writes into a generated script — key,template, one row per phrase, so the prose a recording produces is edited here rather than inside the renderer.
 dev/DESIGN_DIALOG_SYSTEM.md | ~1370 words | - | EML Praat Tools — Dialog Design System
 dev/SCAFFOLD_STATS_TUTORIAL.md | ~6371 words | - | EML Stats Interactive Tutorial — Pedagogical Architecture
@@ -77,7 +77,7 @@ dev/tests/phase2/verify-shapiro-wilk.R | 307 | 2.0 | R Verification Script for @
 dev/tests/test-helpers-selftest-negative.praat | 45 | - | Negative control for the assertion helpers — four deliberate failures. Expected status FAIL; the runner scores it XFAIL.
 dev/tests/test-helpers-selftest.praat | 40 | - | Positive control for the assertion helpers — each helper exercised on a passing case.
 dev/tools/build-manifest.py | 381 | - | Regenerate MANIFEST.txt: recompute the derived columns, inherit curated descriptions by path. --check exits 1 on drift.
-dev/tools/build-release.py | 523 | - | Builds the installable artefact — the plugin_EML_Praat_Tools folder and its zip — taking the install name from the recorder's own literals, normalising modes to 0644/0755, and verifying every mode in the built tree (finding P1)
+dev/tools/build-release.py | 639 | - | Builds the installable artefact — the plugin_EML_Praat_Tools folder and its zip — taking the install name from the recorder's own literals, normalising modes to 0644/0755, and verifying every mode in the built tree (finding P1)
 dev/tools/procs.json | 1672 | - | Machine-generated index of every `procedure` definition in the tree (written by reg-extract-procedures.py).
 dev/tools/reg-apply-edits.py | 424 | - | Apply the EML_PROCEDURE_REGISTRY.md corrections as guarded passes.
 dev/tools/reg-extract-procedures.py | 44 | - | Enumerate every `procedure` definition in the plugin tree and write dev/tools/procs.json.

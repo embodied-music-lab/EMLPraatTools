@@ -4,32 +4,69 @@ Statistical analysis and publication-quality graphing for Praat. Run t-tests, co
 
 ## Installation
 
-### macOS
+Installing takes about two minutes. You download one file, unzip it, drag the
+folder that comes out into Praat's preferences folder, and restart Praat.
+There is nothing to compile and no other software to install.
 
-The Praat preferences folder is inside your user Library, which is hidden by default in Finder.
+### Step 1 — Download the plugin
+
+Go to the Releases page:
+
+https://github.com/embodied-music-lab/EMLPraatTools/releases
+
+Download the file named **plugin_EML_Praat_Tools.zip** from the most recent
+release.
+
+### Step 2 — Unzip it
+
+Double-click the downloaded file.
+
+- **macOS** unzips it as soon as you double-click.
+- **Windows**: right-click the file, choose **Extract All**, then **Extract**.
+- **Linux**: right-click and choose **Extract Here**, or run
+  `unzip plugin_EML_Praat_Tools.zip` in a terminal.
+
+You now have a folder called **plugin_EML_Praat_Tools**. That folder *is* the
+plugin. Please do not rename it: Praat recognises the plugin by that exact
+name, and a renamed folder is simply ignored.
+
+### Step 3 — Move the folder into Praat's preferences folder
+
+Praat keeps its preferences somewhere different on each system. Find the right
+folder below, and drag `plugin_EML_Praat_Tools` into it whole — the folder
+itself, not the files inside it.
+
+#### macOS
+
+The Praat preferences folder lives inside your user Library, which Finder hides
+by default.
 
 1. Open Finder.
-2. In the menu bar, click **Go** while holding the **Option (⌥)** key. This reveals the hidden **Library** item.
-3. Click **Library**, then navigate to: `Preferences/Praat Prefs/`
-4. Copy the entire `plugin_EML_Praat_Tools` folder into `Praat Prefs/`.
-5. Restart Praat.
+2. In the menu bar, click **Go** while holding the **Option (⌥)** key. This
+   reveals the hidden **Library** item.
+3. Click **Library**, then open `Preferences/Praat Prefs/`.
+4. Drag the `plugin_EML_Praat_Tools` folder into `Praat Prefs/`.
 
-Full path: `/Users/[you]/Library/Preferences/Praat Prefs/plugin_EML_Praat_Tools/`
+Full path when you are done:
+`/Users/[you]/Library/Preferences/Praat Prefs/plugin_EML_Praat_Tools/`
 
-Alternatively, in Finder you can press **Cmd+Shift+G** and paste the path directly:
+If you prefer, press **Cmd+Shift+G** in Finder and paste this path instead:
 `~/Library/Preferences/Praat Prefs/`
 
-### Windows
+#### Windows
 
-1. Navigate to `C:\Users\[you]\Praat\`
-2. Copy the entire `plugin_EML_Praat_Tools` folder there.
-3. Restart Praat.
+1. Open `C:\Users\[you]\Praat\`
+2. Drag the `plugin_EML_Praat_Tools` folder into it.
 
-### Linux
+#### Linux
 
-1. Navigate to `~/.praat-dir/`
-2. Copy the entire `plugin_EML_Praat_Tools` folder there.
-3. Restart Praat.
+1. Open `~/.praat-dir/`
+2. Drag the `plugin_EML_Praat_Tools` folder into it.
+
+### Step 4 — Restart Praat
+
+Quit Praat completely and open it again. Praat reads its plugins only at
+startup, so the new menu will not appear until you have done this.
 
 ### Verify Installation
 
