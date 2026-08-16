@@ -2,7 +2,7 @@ normality
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Sat Aug 15 19:20:32 2026
+  Sun Aug 16 04:27:35 2026
 ══════════════════════════════════════════════
 
   Table               nm
@@ -41,7 +41,7 @@ normality
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Sat Aug 15 19:20:32 2026
+  Sun Aug 16 04:27:36 2026
 ══════════════════════════════════════════════
 
   Table               nm
@@ -66,7 +66,7 @@ normality
   ── Shapiro-Wilk Test ───────────────────────
   Why: Formal test of whether the data are drawn from a normal distribution.
   W                   0.6370		Closer to 1 = more normal (range: 0 to 1)
-  p                   < .001  (1.645400197821547e-06)		Statistically significant: <0.1% probability due to chance
+  p                   < .001  (1.65e-06)		Statistically significant: <0.1% probability due to chance
   → Rejects normality (p < 0.05)
 
 

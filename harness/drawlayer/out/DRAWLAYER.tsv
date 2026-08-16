@@ -4,7 +4,9 @@ leg	axis_record
 record_resolved_min	160.0000
 record_resolved_max	340.0000
 leg	--shell--
-recorded_axis_args	0, 0
+recorded_axis_args	axisYMin, axisYMax
+recorded_axis_block_min	0.0
+recorded_axis_block_max	0.0
 recorded_result_note	Axis resolved to 160.0000 .. 340.0000 over 3 groups.
 replay_same_min	160.0000
 replay_same_max	340.0000
@@ -14,7 +16,9 @@ leg	axis_record_explicit
 explicit_resolved_min	150.0000
 explicit_resolved_max	400.0000
 leg	--shell--
-recorded_axis_args_explicit	150, 400
+recorded_axis_args_explicit	axisYMin, axisYMax
+recorded_axis_block_min_explicit	150
+recorded_axis_block_max_explicit	400
 leg	axis_native_wide
 native_wide_min	900.0000
 native_wide_max	1800.0000
@@ -153,6 +157,22 @@ leg	twobin
 twobin_bin_width	0.336456
 twobin_bins_in_range	4
 twobin_peak_db	90.40
+leg	ltas_onebin
+ltas_onebin_bin_width	100.000000
+ltas_onebin_bins_in_range	1
+ltas_onebin_peak_db	66.95
+ltas_onebin_curve_bins	1
+ltas_onebin_curve_stem	1
+leg	ltas_twobin
+ltas_twobin_bin_width	100.000000
+ltas_twobin_bins_in_range	2
+ltas_twobin_peak_db	66.95
+ltas_twobin_curve_bins	2
+ltas_twobin_curve_stem	0
+leg	ltas_onebin_bars
+ltas_onebin_bars_bin_width	100.000000
+ltas_onebin_bars_bins_in_range	1
+ltas_onebin_bars_peak_db	66.95
 leg	--shell--
 name_violin_gap_px	17
 name_violin_first_ink_px	67
@@ -184,10 +204,19 @@ replay_wide_interior_ink	6794
 replay_wide_bytes	88532
 axis_native_wide_interior_ink	6794
 axis_native_wide_bytes	88532
-onebin_interior_ink	0
-onebin_bytes	47500
+onebin_interior_ink	1645
+onebin_bytes	47609
 twobin_interior_ink	2129
 twobin_bytes	55032
+ltas_onebin_interior_ink	1240
+ltas_onebin_bytes	46360
+ltas_twobin_interior_ink	1645
+ltas_twobin_bytes	50368
+ltas_onebin_bars_interior_ink	3839
+ltas_onebin_bars_bytes	46129
+ltas_onebin_interior_box	2x620+639+300
+ltas_twobin_interior_box	648x328+316+299
+ltas_onebin_bars_interior_box	1280x3+0+299
 replay_wide_matches_native	yes
 replay_same_matches_record	yes
 posthoc_tukey_first_ink_px	99

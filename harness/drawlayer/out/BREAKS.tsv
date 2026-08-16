@@ -1,4 +1,4 @@
-head_violin_recorder	7	the recorded violin call passes the axis arguments through as given
+head_violin_recorder	6	the recorded violin call passes the axis arguments through as given
 head_seven_sites	18	all seven categorical draw paths place the y-axis name through it (0)
 head_info_fixed	10	no Info-window statement in the annotation reporters still calls fixed$ (26 found)
 head_posthoc_label	3	and states that it carries its own family-wise control ("Tukey HSD")
@@ -16,4 +16,12 @@ subtitle_overflows	2	the disclosure sub-line fits the canvas (235.54 mm of 152.4
 onebin_probe_wrong	1	the one-bin probe really does put one bin in range (bin width 0.336456 Hz)
 recorder_hardcodes_auto	2	the recorded violin call passes the axis arguments through as given
 shift_off_the_page	12	name_violin: and it was MOVED to get there, by a few millimetres (1.0480 inch of 0.2916 av
-head_normality	5	nor in the normality wrapper's per-group branch (2 found)
+head_normality	3	nor in the normality wrapper's per-group branch (2 found)
+axis_block_holds_resolution	4	and the block declares the auto sentinel, not the resolution (160.0000, 340.0000)
+axis_step_ignores_block	2	the recorded call READS the block's axis variables rather than a literal (0, 0)
+axis_block_clamped_zero	1	and the block holds the numbers the user typed (0.0, 0.0)
+head_ltas_curve	8	the Ltas Curve style counts the bins in the window before it draws
+ltas_stem_to_the_top	1	and the stem tops out on a row Praat's own bar for the same bin occupies (stem row 0; bar 
+ltas_curve_becomes_bars	3	while a single bin is drawn as a stem the renderer cannot refuse
+ltas_stem_takes_two	2	and Praat's own Curve is reached only with at least two of them
+ltas_probe_wrong	3	the Ltas probe puts one bin in the window at the caller's own bandwidth (100.000000 Hz per

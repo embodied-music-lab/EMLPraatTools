@@ -2,7 +2,7 @@ tiny
 
 ══════════════════════════════════════════════
   EML Stats : Two-Way ANOVA
-  Sat Aug 15 19:20:31 2026
+  Sun Aug 16 04:27:35 2026
 ══════════════════════════════════════════════
 
   Table               tw
@@ -54,7 +54,7 @@ f2: B2                        10      0.0000
 
 ══════════════════════════════════════════════
   EML Stats : Paired Comparison
-  Sat Aug 15 19:20:31 2026
+  Sun Aug 16 04:27:35 2026
 ══════════════════════════════════════════════
 
   Table               pr
@@ -70,7 +70,7 @@ f2: B2                        10      0.0000
   Why: Tests whether the mean difference between paired observations differs from zero.
   t                   -5.745		Signal-to-noise: 5.7x larger than expected from sampling noise
   df                  9		Number of pairs (10) minus 1. Independent difference scores.
-  p                   < .001  (0.00027819601104818567)		Statistically significant: <0.1% probability due to chance
+  p                   < .001  (2.78e-04)		Statistically significant: <0.1% probability due to chance
   Mean difference     0.0000
   SD of differences   0.0000
 
