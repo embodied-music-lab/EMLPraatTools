@@ -440,25 +440,57 @@ PYX
 fi
 
 # ---------------------------------------------------------------------------
-# 11. THE DEAD SITE WIRED UP
+# 11. THE RETIRED SITE PUT BACK
 #
-# @emlCheckPlausibility is out of the ruling's scope because it has NO CALLER
-# anywhere in the plugin — so the check on it is a check on the caller count,
-# and this is the edit that has to turn it red. The moment anything calls it,
-# its three fixed$ calls are on an active path and the ruling reaches them.
+# @emlCheckPlausibility was DELETED on 16 August 2026 with zero callers, and
+# its three raw fixed$ calls went with it. Until then this slot wired the dead
+# procedure up, because while the body existed the honest pin was on the
+# CALLER COUNT. The body is gone, so that edit would now call a procedure that
+# does not exist — a Praat run-time error, which is a broken rig rather than a
+# measured red.
+#
+# TURNED AROUND, and turned around onto the failure the deletion actually
+# risks: someone finds the procedure in git history, reads it as a feature
+# that went missing, and pastes it back. That is what this shadow does — the
+# v3.31 body, verbatim, at the tombstone, and NOTHING ELSE CHANGED. No caller
+# is added, so a pin that had stayed on the caller count would be green on
+# this tree with three raw fixed$ calls sitting back in the file.
+#
+# The body is taken from git rather than retyped: `git show HEAD:<graph>` is
+# the file as it stood before the deletion, and awk lifts the procedure out of
+# it. If this deletion is ever committed, HEAD moves past it and the awk range
+# comes back empty — hence the `[ -s ]` guard, which fails the break loudly
+# instead of running an unmodified shadow and reporting zero red as success.
+# The replacement for that day is a stored copy of the body beside this file.
 # ---------------------------------------------------------------------------
-if want plausibility_wired; then
-    shadow plausibility_wired
-    python3 - "$WORK/plausibility_wired/$GRAPH" <<'PYX'
+if want plausibility_readded; then
+    shadow plausibility_readded
+    BODY="$WORK/plausibility_readded/.plausibility_body.praat"
+    ( cd "$ROOT" && git show "HEAD:$GRAPH" ) \
+        | awk '/^procedure emlCheckPlausibility:/,/^endproc$/' > "$BODY"
+    if [ ! -s "$BODY" ]; then
+        echo "  plausibility_readded: SKIPPED — HEAD no longer carries the" \
+             "procedure; store the body beside break.sh and read it from there"
+    else
+        python3 - "$WORK/plausibility_readded/$GRAPH" "$BODY" <<'PYX'
 import sys
-p = sys.argv[1]
-s = open(p, encoding="utf-8").read()
-old = "procedure emlDrawLegendPanel: .x0, .x1, .y0, .y1, .fontSize\n"
-assert old in s
-new = old + '    @emlCheckPlausibility: .fontSize, 1, 100, "legend font", "pt"\n'
-open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+p, b = sys.argv[1], sys.argv[2]
+lines = open(p, encoding="utf-8").read().splitlines(True)
+body = open(b, encoding="utf-8").read()
+anchor = [i for i, ln in enumerate(lines)
+          if ln.startswith("# @emlCheckPlausibility WAS HERE")]
+assert len(anchor) == 1, "tombstone not found once — was the site rewritten?"
+# past the tombstone's closing rule, so the body lands as code and not inside
+# the comment block that explains why it is not there
+rule = [i for i, ln in enumerate(lines)
+        if i > anchor[0] and ln.startswith("# ----")]
+assert rule, "tombstone has no closing rule"
+at = rule[0] + 1
+open(p, "w", encoding="utf-8").writelines(lines[:at] + [body] + lines[at:])
 PYX
-    run_break plausibility_wired
+        rm -f "$BODY"
+        run_break plausibility_readded
+    fi
 fi
 
 
