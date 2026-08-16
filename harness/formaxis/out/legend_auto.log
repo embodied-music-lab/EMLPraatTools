@@ -1,0 +1,17 @@
+legend_auto_dialog_min	0
+legend_auto_dialog_max	0
+legend_auto_afterpublish_pub_hasmin	1
+legend_auto_afterpublish_pub_hasmax	1
+legend_auto_afterpublish_pub_min	0
+legend_auto_afterpublish_pub_max	0
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+NOTE: The legend asked for 2.65 in of y-axis room on a 3.11 in panel and was granted 1.55 in; the rest of the panel is kept for the data, so the legend may still overlap it. Set Legend placement to Right of plot or Below plot to keep the plot clear, or reduce the number of legend entries.
+NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+legend_auto_resolved_min	195.0000
+legend_auto_resolved_max	275.0000
+legend_auto_passes	2
+legend_auto_afterlegend_pub_hasmin	1
+legend_auto_afterlegend_pub_hasmax	1
+legend_auto_afterlegend_pub_min	0
+legend_auto_afterlegend_pub_max	0
+legend_auto_flushed	1

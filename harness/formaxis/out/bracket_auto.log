@@ -1,0 +1,25 @@
+bracket_auto_dialog_min	0
+bracket_auto_dialog_max	0
+bracket_auto_afterpublish_pub_hasmin	1
+bracket_auto_afterpublish_pub_hasmax	1
+bracket_auto_afterpublish_pub_min	0
+bracket_auto_afterpublish_pub_max	0
+bracket_auto_brackets	6
+bracket_auto_afterbridge_pub_hasmin	1
+bracket_auto_afterbridge_pub_hasmax	1
+bracket_auto_afterbridge_pub_min	0
+bracket_auto_afterbridge_pub_max	0
+bracket_auto_resolved_min	195.0000
+bracket_auto_resolved_max	268.9205
+bracket_auto_afterheadroom_pub_hasmin	1
+bracket_auto_afterheadroom_pub_hasmax	1
+bracket_auto_afterheadroom_pub_min	0
+bracket_auto_afterheadroom_pub_max	0
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+bracket_auto_afterannot_pub_hasmin	1
+bracket_auto_afterannot_pub_hasmax	1
+bracket_auto_afterannot_pub_min	0
+bracket_auto_afterannot_pub_max	0
+bracket_auto_axis_min	195.0000
+bracket_auto_axis_max	268.9205
+bracket_auto_flushed	1

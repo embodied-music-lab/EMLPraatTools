@@ -1,0 +1,19 @@
+head_form	64	@emlGraphsPublishAxisRequest exists and was found
+head_graph	4	eml-graph-procedures.praat still carries 18 fixed$ code lines  reported=19
+prose_only	4	eml-graph-procedures.praat still carries 18 fixed$ code lines  reported=19
+clamp_zero	24	the map reads the pair each graph type's draw is actually given
+partial_min	29	and the same four write the maximum             reported=0
+pub_goto	33	the procedure has no goto and no early exit that could skip one
+publish_late	1	the publication is written before the bracket-headroom pass
+republish	10	every write to emlGraphsAxisYReqMin is inside it  reported=5
+wrong_pair	2	the map reads the pair each graph type's draw is actually given
+headroom_stub	5	and it still resolves auto into the data's extent
+precision_one	2	the ellipsis note at the 6 x 4 panel is unchanged, to the digit
+publish_at_load	7	every write to emlGraphsAxisYReqMin is inside it  reported=5
+republish_legend	7	every write to emlGraphsAxisYReqMin is inside it  reported=5
+form_fixed_back	1	the form reaches the Info window through fixed$ nowhere  reported=1
+second_formatter	6	eml-graph-procedures.praat still carries 18 fixed$ code lines  reported=19
+emlfixed_neutered	4	fixed$ returns a bare "0" for exact zero; @eml_fixed returns 0.00
+plausibility_wired	1	@emlCheckPlausibility still has no caller anywhere in the plugin  reported=1
+legendroom_stub	3	the legend-room pass still writes the widened axis back
+legendroom_twice	1	the legend-room pass has exactly one call site  reported=2
