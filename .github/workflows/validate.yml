@@ -51,9 +51,20 @@
 
 name: validate
 
+# TRIGGERS. Manual only for the moment, and the reason is worth stating rather
+# than leaving as an oddity. This repository is transferred to GitHub through
+# the web upload form one directory at a time, because a direct push is not
+# available from the environment the work is done in. A `push:` trigger
+# therefore fires once per directory against a HALF-TRANSFERRED tree, where the
+# suite cannot pass and its failure means nothing except that the transfer is
+# still in progress. Fourteen red notifications that carry no information are
+# worse than no notification at all.
+#
+# `push:` and `pull_request:` go back the moment the repository can be pushed
+# to in one operation, or the moment a transfer is verified complete — whichever
+# comes first. Until then, run it from the Actions tab.
 on:
-  push:
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
