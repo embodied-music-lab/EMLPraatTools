@@ -955,11 +955,31 @@ procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
     if variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
+            ; RULING 10(b), 16 AUGUST 2026 -- THE AXIS THE USER ASKED FOR.
+            ; On the annotated and legend-bearing paths the graphs form has
+            ; already turned an AUTO range into explicit numbers before this
+            ; draw ran, so the arguments below are the resolution and not the
+            ; request. @emlRecordAxisRequest prefers the untouched request the
+            ; form publishes and falls back to these arguments when no form is
+            ; in the picture -- headless callers, the API export, the batch
+            ; module and every harness. Its header states the whole contract.
+            ;
+            ; THE ARGUMENTS THEMSELVES ARE REASSIGNED, and that is safe here
+            ; for one reason worth stating once: this record block is the LAST
+            ; thing every draw procedure in this file does. Nothing reads
+            ; .aMin or .vMin or .pMin after it, the figure is already on the
+            ; page, and writing the request back into the slot the recorded
+            ; call reads from is what keeps ONE spelling of the axis in the
+            ; template instead of two that can drift apart.
+            @emlRecordAxisRequest: .fMin, .fMax
+            .fMin = emlRecordAxisRequest.min
+            .fMax = emlRecordAxisRequest.max
             @emlRecordDrawStep: .objectId, "F0 contour",
             ... .title$,
             ... "",
             ... "@emlDrawF0Contour: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.fMin) + ", " + string$ (.fMax) + ", " + string$ (.yUnit),
             ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            @emlRecordAxisNote: .freqMin, .freqMax
         endif
     endif
 endproc
@@ -1067,11 +1087,19 @@ procedure emlDrawWaveform: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     if variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
+            ; RULING 10(b): the axis the user asked for, which the form may
+            ; already have resolved. See @emlRecordAxisRequest, and the note
+            ; at @emlDrawF0Contour's recorder on why the arguments are
+            ; reassigned in place.
+            @emlRecordAxisRequest: .aMin, .aMax
+            .aMin = emlRecordAxisRequest.min
+            .aMax = emlRecordAxisRequest.max
             @emlRecordDrawStep: .objectId, "Waveform",
             ... .title$,
             ... "",
             ... "@emlDrawWaveform: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.aMin) + ", " + string$ (.aMax),
             ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            @emlRecordAxisNote: .ampBottom, .ampTop
         endif
     endif
 endproc
@@ -1126,7 +1154,100 @@ procedure emlDrawSpectrum: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     selectObject: .objectId
     Colour: emlSetColorPalette.line$[1]
     Line width: emlSetAdaptiveTheme.dataLineWidth
-    Draw: .freqMin, .freqMax, .powerMin, .powerMax, "no"
+
+    ; ------------------------------------------------------------------
+    ; RULING 8c / AUTHOR RULING 16 AUGUST 2026 -- "DRAW WHAT YOU CAN".
+    ;
+    ; THE DEFECT. Praat's Spectrum `Draw:` joins bin points with line
+    ; SEGMENTS, and one point is no segment. A frequency window holding
+    ; exactly one bin therefore produced a titled, labelled, gridded,
+    ; tick-marked frame with ZERO ink inside it, and the bin that was not
+    ; drawn held the peak of the tone. Two bins draw normally, which is
+    ; the control that says the finding is about the COUNT and not about
+    ; the range. Nothing raised, nothing warned, and the file was a large
+    ; PNG either way -- 48,870 bytes on the fixture below -- so nothing
+    ; that thresholds on size can see it.
+    ;
+    ; HOW REACHABLE IT IS, which is the part the first measurement
+    ; understated. Praat's bin width is 1/duration (after the zero-pad to
+    ; a power of two), so the window that triggers this scales with how
+    ; SHORT the recording is. A 3 s vowel needs a sub-hertz window --
+    ; absurd. A 0.15 s token pads to 0.1858 s and gets 5.3833 Hz bins, so
+    ; ANY zoom narrower than about 10.7 Hz draws nothing at all. Measured
+    ; 16 Aug 2026 on 6.6.30: a 1 kHz tone in a 0.15 s token, drawn over
+    ; 998..1002 Hz, one bin in range (#187) holding 80.34 dB, zero ink.
+    ; Short tokens are what phonetics is made of.
+    ;
+    ; THE RULING IS DRAW WHAT YOU CAN, so a single in-range bin is drawn
+    ; as a STEM to the frame floor -- a mark that needs no second point.
+    ; A stem rather than a dot, for three reasons: a spectrum's meaning is
+    ; height above the floor, so a mark that carries that height reads as
+    ; the same quantity the curve carries; a lone dot in an otherwise
+    ; empty panel gives the eye no reference to judge it against; and a
+    ; stem cannot be misread as a data series that happens to have one
+    ; point in it. It is Praat's own idiom for a single spectral line --
+    ; the "Bars" style an Ltas draws with.
+    ;
+    ; ZERO BINS IN RANGE STAYS EMPTY. There is genuinely nothing to draw:
+    ; no bin of this Spectrum lies in the window the caller asked for, and
+    ; inventing a mark for it would be a claim about data that is not
+    ; there. The frame, its ticks and its labels still state the window,
+    ; which is the honest report of "you are looking somewhere there is
+    ; nothing".
+    ;
+    ; THE dB CONVERSION IS PRAAT'S OWN, MEASURED RATHER THAN DERIVED. The
+    ; obvious formula, 10*log10 ((re^2+im^2) / 4e-10), is NOT what `Draw:`
+    ; plots -- it is 10.32 dB low on the fixture above. What `Draw:` plots
+    ; is the spectral density, which is the same quantity `To Ltas
+    ; (1-to-1)` returns, and that is the bin width factor below. Verified
+    ; 16 Aug 2026 against Praat's own `To Ltas (1-to-1)` at five different
+    ; bin widths (delta = 0 at every one), and pinned in validate/v67 by a
+    ; pixel measurement: the stem's tip must sit on the SAME image row as
+    ; the vertex Praat's own `Draw:` puts there for the same bin.
+    ; ------------------------------------------------------------------
+    .nBins = Get number of bins
+    .binWidth = Get bin width
+    .binLoReal = Get bin number from frequency: .freqMin
+    .binHiReal = Get bin number from frequency: .freqMax
+    .binLo = ceiling (.binLoReal)
+    .binHi = floor (.binHiReal)
+    if .binLo < 1
+        .binLo = 1
+    endif
+    if .binHi > .nBins
+        .binHi = .nBins
+    endif
+    .binsInRange = .binHi - .binLo + 1
+    if .binsInRange < 0
+        .binsInRange = 0
+    endif
+    .oneBinDrawn = 0
+
+    if .binsInRange >= 2
+        Draw: .freqMin, .freqMax, .powerMin, .powerMax, "no"
+    elsif .binsInRange = 1
+        .binRe = Get real value in bin: .binLo
+        .binIm = Get imaginary value in bin: .binLo
+        .binPower = .binRe * .binRe + .binIm * .binIm
+        .binFreq = Get frequency from bin number: .binLo
+        ; Praat's own floor for an empty bin is -300 dB, which is below
+        ; any axis a user can ask for, so it draws nothing -- same as
+        ; this branch does with a stem of no height.
+        .binDb = -300
+        if .binPower > 0
+            .binDb = 10 * log10 (2 * .binWidth * .binPower / 4e-10)
+        endif
+        ; CLIPPED AT THE TOP THE WAY THE CURVE IS, and refused at the
+        ; bottom for the same reason: a bin below the axis floor is a
+        ; point off the paper, and `Draw:` does not draw it either.
+        if .binDb > .powerMax
+            .binDb = .powerMax
+        endif
+        if .binDb > .powerMin
+            Draw line: .binFreq, .powerMin, .binFreq, .binDb
+            .oneBinDrawn = 1
+        endif
+    endif
 
     # Draw axes
     @emlDrawAxes: .freqMin, .freqMax, .powerMin, .powerMax, .xLabel$, .yLabel$, .title$, .vpW, .vpH
@@ -1142,11 +1263,19 @@ procedure emlDrawSpectrum: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     if variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
+            ; RULING 10(b): the axis the user asked for, which the form may
+            ; already have resolved. See @emlRecordAxisRequest, and the note
+            ; at @emlDrawF0Contour's recorder on why the arguments are
+            ; reassigned in place.
+            @emlRecordAxisRequest: .pMin, .pMax
+            .pMin = emlRecordAxisRequest.min
+            .pMax = emlRecordAxisRequest.max
             @emlRecordDrawStep: .objectId, "Spectrum",
             ... .title$,
             ... "",
             ... "@emlDrawSpectrum: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.fMin) + ", " + string$ (.fMax) + ", " + string$ (.pMin) + ", " + string$ (.pMax),
             ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            @emlRecordAxisNote: .powerMin, .powerMax
         endif
     endif
 endproc
@@ -1260,7 +1389,107 @@ procedure emlDrawLTAS: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colo
         selectObject: .objectId
         Colour: emlSetColorPalette.line$[.colorIdx]
         Line width: emlSetAdaptiveTheme.dataLineWidth
-        Draw: .freqMin, .freqMax, .powerMin, .powerMax, "no", "Curve"
+
+        ; ------------------------------------------------------------------
+        ; RULING 8c / AUTHOR RULING 16 AUGUST 2026 -- "DRAW WHAT YOU CAN",
+        ; THE SAME DEFECT AT THE SECOND SITE.
+        ;
+        ; THE DEFECT. Praat's Ltas `Draw:` in "Curve" style joins the bins
+        ; whose CENTRES fall inside the window with line segments, and one
+        ; point is no segment. A window holding exactly one bin therefore
+        ; produced a titled, labelled, gridded, tick-marked frame with ZERO
+        ; ink inside it, and the bin that was not drawn was the one the user
+        ; had zoomed in on. "Bars" draws the same bin perfectly well, which is
+        ; the control that says the finding is about the COUNT and about this
+        ; STYLE, not about the range or the data. Nothing raised and nothing
+        ; warned; the file was a large PNG either way.
+        ;
+        ; MEASURED 16 AUGUST 2026 ON 6.6.30. A 1 kHz tone, `To Ltas: 100`,
+        ; window 1000 .. 1100 Hz: one bin in range (#11, centre 1050 Hz,
+        ; 66.95 dB), Curve 0 ink, Bars 5486 ink on the same bin. Widen the
+        ; window by one bin -- 1000 .. 1150 -- and Curve draws normally. The
+        ; centre-in-window count below predicts Praat's own behaviour exactly:
+        ; 1000 .. 1149, with bin 12's centre one hertz outside, still draws
+        ; nothing, so no segment is being clipped in from beyond the edge.
+        ;
+        ; WHY IT IS MORE REACHABLE THAN THE SPECTRUM'S. A Spectrum's bin width
+        ; is 1/duration, so the window that triggers the Spectrum's version of
+        ; this scales with how short the recording is and a long recording is
+        ; safe. An Ltas bin width is the BANDWIDTH THE CALLER CHOSE -- 100 Hz
+        ; from the form's own default -- so a 100 Hz window does it at any
+        ; recording length whatever. And Curve is the FALLBACK this procedure
+        ; installs a dozen lines above when the caller enables none of the
+        ; four styles, so it is the style a user reaches without choosing it.
+        ;
+        ; A STEM, NOT A FALL BACK TO "BARS", AND THE REASON IS THAT BARS IS A
+        ; USER-VISIBLE SETTING HERE. In this procedure Curve and Bars are two
+        ; independent checkboxes on the form, drawn in two different palette
+        ; colours from the same sequence. Rendering Curve as Bars whenever the
+        ; window narrows to one bin would hand a user who turned Bars OFF the
+        ; display they turned off, and would hand a user who turned BOTH on
+        ; the same bin twice -- once in the Bars colour and once, on top of it,
+        ; in the Curve colour, a filled rectangle over a filled rectangle
+        ; where the second is meant to be a line. The stem is drawn in the
+        ; Curve layer's own colour and its own line width, it cannot be
+        ; mistaken for the Bars layer, and it is the same mark the Spectrum
+        ; path draws for the same reason -- one procedure's degenerate case
+        ; should not look like a different procedure's normal one.
+        ;
+        ; TO THE FRAME FLOOR, like the Spectrum's stem: a Curve has no origin
+        ; of its own -- it is a height, and the only reference on the page for
+        ; that height is the axis. "Poles" above deliberately uses 0 dB
+        ; instead, because a pole IS a statement about the 0 dB reference;
+        ; that difference is intended and the two must not be merged.
+        ;
+        ; NO dB CONVERSION HERE, AND THAT IS THE ONE PLACE THIS DIFFERS FROM
+        ; THE SPECTRUM. A Spectrum stores re/im and `Draw:` plots the spectral
+        ; density, so that path has to reconstruct a quantity Praat never
+        ; hands it. `Get value in bin` on an Ltas returns the dB value `Draw:`
+        ; itself plots, so the stem takes it unchanged. VERIFIED IN PIXELS
+        ; rather than assumed: on the two-bin window above, a hand-drawn stem
+        ; at bin 11 tops out on image row 436 at column 537, and the vertex
+        ; Praat's own "Curve" puts at that bin is at row 436, column 537.
+        ;
+        ; ZERO BINS IN RANGE STAYS EMPTY, and a bin below the axis floor is
+        ; refused rather than drawn off the paper -- both exactly as the
+        ; Spectrum path settled them. There is nothing in the window; the
+        ; frame, its ticks and its labels are the honest report of that.
+        ; ------------------------------------------------------------------
+        .curveNBins = Get number of bins
+        .curveLoReal = Get bin number from frequency: .freqMin
+        .curveHiReal = Get bin number from frequency: .freqMax
+        .curveLo = ceiling (.curveLoReal)
+        .curveHi = floor (.curveHiReal)
+        if .curveLo < 1
+            .curveLo = 1
+        endif
+        if .curveHi > .curveNBins
+            .curveHi = .curveNBins
+        endif
+        .curveBins = .curveHi - .curveLo + 1
+        if .curveBins < 0
+            .curveBins = 0
+        endif
+        .curveStemDrawn = 0
+
+        if .curveBins >= 2
+            Draw: .freqMin, .freqMax, .powerMin, .powerMax, "no", "Curve"
+        elsif .curveBins = 1
+            .curveFreq = Get frequency from bin number: .curveLo
+            .curveVal = Get value in bin: .curveLo
+            if .curveVal <> undefined
+                ; Clipped at the top the way the curve is, and refused at the
+                ; bottom for the same reason: a bin below the axis floor is a
+                ; point off the paper, and `Draw:` does not draw it either.
+                if .curveVal > .powerMax
+                    .curveVal = .powerMax
+                endif
+                if .curveVal > .powerMin
+                    Draw line: .curveFreq, .powerMin, .curveFreq, .curveVal
+                    .curveStemDrawn = 1
+                endif
+            endif
+        endif
     endif
 
     # --- Speckles (custom — dots at data values, drawn last to cap poles) ---
@@ -1299,11 +1528,19 @@ procedure emlDrawLTAS: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colo
     if variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
+            ; RULING 10(b): the axis the user asked for, which the form may
+            ; already have resolved. See @emlRecordAxisRequest, and the note
+            ; at @emlDrawF0Contour's recorder on why the arguments are
+            ; reassigned in place.
+            @emlRecordAxisRequest: .pMin, .pMax
+            .pMin = emlRecordAxisRequest.min
+            .pMax = emlRecordAxisRequest.max
             @emlRecordDrawStep: .objectId, "Long-term average spectrum",
             ... .title$,
             ... "",
             ... "@emlDrawLTAS: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.fMin) + ", " + string$ (.fMax) + ", " + string$ (.pMin) + ", " + string$ (.pMax) + ", " + string$ (.showCurve) + ", " + string$ (.showBars) + ", " + string$ (.showPoles) + ", " + string$ (.showSpeckles),
             ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            @emlRecordAxisNote: .powerMin, .powerMax
         endif
     endif
 endproc
@@ -1935,11 +2172,19 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     if variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
+            ; RULING 10(b): the axis the user asked for, which the form may
+            ; already have resolved. See @emlRecordAxisRequest, and the note
+            ; at @emlDrawF0Contour's recorder on why the arguments are
+            ; reassigned in place.
+            @emlRecordAxisRequest: .vMin, .vMax
+            .vMin = emlRecordAxisRequest.min
+            .vMax = emlRecordAxisRequest.max
             @emlRecordDrawStep: .objectId, "Line chart",
             ... .title$,
             ... "",
             ... "@emlDrawTimeSeries: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .timeCol$ + """" + ", """ + .valueCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.vMin) + ", " + string$ (.vMax),
             ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
 endproc
@@ -2443,11 +2688,19 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
     if variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
+            ; RULING 10(b): the axis the user asked for, which the form may
+            ; already have resolved. See @emlRecordAxisRequest, and the note
+            ; at @emlDrawF0Contour's recorder on why the arguments are
+            ; reassigned in place.
+            @emlRecordAxisRequest: .vMin, .vMax
+            .vMin = emlRecordAxisRequest.min
+            .vMax = emlRecordAxisRequest.max
             @emlRecordDrawStep: .objectId, "Line chart (+/-CI)",
             ... .title$,
             ... "",
             ... "@emlDrawTimeSeriesCI: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .timeCol$ + """" + ", """ + .valueCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.vMin) + ", " + string$ (.vMax),
             ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
 endproc
@@ -3048,11 +3301,19 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     if variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
+            ; RULING 10(b): the axis the user asked for, which the form may
+            ; already have resolved. See @emlRecordAxisRequest, and the note
+            ; at @emlDrawF0Contour's recorder on why the arguments are
+            ; reassigned in place.
+            @emlRecordAxisRequest: .vMin, .vMax
+            .vMin = emlRecordAxisRequest.min
+            .vMax = emlRecordAxisRequest.max
             @emlRecordDrawStep: .objectId, "Spaghetti plot",
             ... .title$,
             ... "",
             ... "@emlDrawSpaghettiPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .condCol$ + """" + ", """ + .valueCol$ + """" + ", """ + .idCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.showMean) + ", " + string$ (.vMin) + ", " + string$ (.vMax),
             ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
 endproc
@@ -3419,11 +3680,19 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     if variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
+            ; RULING 10(b): the axis the user asked for, which the form may
+            ; already have resolved. See @emlRecordAxisRequest, and the note
+            ; at @emlDrawF0Contour's recorder on why the arguments are
+            ; reassigned in place.
+            @emlRecordAxisRequest: .vMin, .vMax
+            .vMin = emlRecordAxisRequest.min
+            .vMax = emlRecordAxisRequest.max
             @emlRecordDrawStep: .objectId, "Bar chart",
             ... .title$,
             ... "Bars show means. The spread, not the bar, is what tells you about the data.",
             ... "@emlDrawBarChart: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .groupCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.errorMode) + ", """ + .errorCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
             ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
 endproc
@@ -3799,6 +4068,20 @@ procedure emlRecordViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     ; recorder is loaded and running by the time this runs.
     @emlRecordSource: .objectId
 
+    ; RULING 10(b), 16 AUGUST 2026 -- THE AXIS THE USER ASKED FOR. Ruling
+    ; 10(a) below settled that the recorded CALL carries .vMin and .vMax as
+    ; the dialog took them. On the annotated and legend-bearing paths the
+    ; graphs form has already replaced them with the numbers it resolved, so
+    ; "as the dialog took them" needs one more step: prefer the untouched
+    ; request the form publishes, and fall back to these arguments when no
+    ; form ran. @emlRecordAxisRequest states the whole contract, including
+    ; why the fallback is not a courtesy. Reassigned into .vMin/.vMax so that
+    ; the template below keeps ONE spelling of the axis; nothing in this
+    ; procedure has drawn anything, so there is nothing to disturb.
+    @emlRecordAxisRequest: .vMin, .vMax
+    .vMin = emlRecordAxisRequest.min
+    .vMax = emlRecordAxisRequest.max
+
     @emlPhrase: "draw.intent", "Violin plot", .valueCol$, .groupCol$,
     ... string$ (.nGroups), "", ""
     .intent$ = emlPhrase.result$
@@ -3851,6 +4134,15 @@ procedure emlRecordViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     ... + fixed$ (emlDrawViolinPlot.yMin, 4) + " .. "
     ... + fixed$ (emlDrawViolinPlot.yMax, 4) + " over "
     ... + string$ (.nGroups) + " groups."
+
+    ; THE SAME NUMBERS, IN A FORM THE BLOCK CAN READ (RULING 10b). The note
+    ; above is prose for the reader beside the step; this is the machine-
+    ; readable twin @emlRecordColumnManifest quotes when it declares an AUTO
+    ; range at the top of the file, so that "0.0 to 0.0" comes with what it
+    ; came out as. Both, rather than one parsed out of the other: a comment
+    ; is written for a person and re-parsing it later is how a note and a
+    ; number drift apart.
+    @emlRecordAxisNote: emlDrawViolinPlot.yMin, emlDrawViolinPlot.yMax
 endproc
 
 
@@ -4835,12 +5127,20 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                 .recNote$ = .recNote$ + " The correlation and regression "
                 ... + "below were reported from this figure."
             endif
+            ; RULING 10(b): the axis the user asked for, which the form may
+            ; already have resolved. See @emlRecordAxisRequest, and the note
+            ; at @emlDrawF0Contour's recorder on why the arguments are
+            ; reassigned in place.
+            @emlRecordAxisRequest: .yMin, .yMax
+            .yMin = emlRecordAxisRequest.min
+            .yMax = emlRecordAxisRequest.max
             @emlRecordDrawStep: .objectId, "Scatter plot",
             ... .title$,
             ... .recNote$,
             ... .recSetup$ + "@emlDrawScatterPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .colX$ + """" + ", """ + .colY$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.xMin) + ", " + string$ (.xMax) + ", " + string$ (.yMin) + ", " + string$ (.yMax) + ", " + string$ (.annotate),
             ... "In the GUI: New > EML Tools > EML Graphs...",
             ... .recBoth$
+            @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
 endproc
@@ -5097,11 +5397,19 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
     if variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
+            ; RULING 10(b): the axis the user asked for, which the form may
+            ; already have resolved. See @emlRecordAxisRequest, and the note
+            ; at @emlDrawF0Contour's recorder on why the arguments are
+            ; reassigned in place.
+            @emlRecordAxisRequest: .vMin, .vMax
+            .vMin = emlRecordAxisRequest.min
+            .vMax = emlRecordAxisRequest.max
             @emlRecordDrawStep: .objectId, "Box plot",
             ... .title$,
             ... "Whisker convention and outlier rule are stated in the figure, not assumed.",
             ... "@emlDrawBoxPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .groupCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
             ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
 endproc
@@ -5677,11 +5985,19 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
     if variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
+            ; RULING 10(b): the axis the user asked for, which the form may
+            ; already have resolved. See @emlRecordAxisRequest, and the note
+            ; at @emlDrawF0Contour's recorder on why the arguments are
+            ; reassigned in place.
+            @emlRecordAxisRequest: .vMin, .vMax
+            .vMin = emlRecordAxisRequest.min
+            .vMax = emlRecordAxisRequest.max
             @emlRecordDrawStep: .objectId, "Histogram",
             ... .title$,
             ... "Bin count changes the shape; it is a display choice, not a property of the data.",
             ... "@emlDrawHistogram: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .valueCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.binCount) + ", " + string$ (.displayMode) + ", " + string$ (.vMin) + ", " + string$ (.vMax) + ", " + string$ (.freqMax),
             ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            @emlRecordAxisNote: .axisXMin, .axisXMax
         endif
     endif
 endproc
@@ -6067,11 +6383,19 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     if variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
+            ; RULING 10(b): the axis the user asked for, which the form may
+            ; already have resolved. See @emlRecordAxisRequest, and the note
+            ; at @emlDrawF0Contour's recorder on why the arguments are
+            ; reassigned in place.
+            @emlRecordAxisRequest: .vMin, .vMax
+            .vMin = emlRecordAxisRequest.min
+            .vMax = emlRecordAxisRequest.max
             @emlRecordDrawStep: .objectId, "Grouped violin",
             ... .title$,
             ... "Violin width is a kernel density estimate, not a count.",
             ... "@emlDrawGroupedViolin: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .catCol$ + """" + ", """ + .subCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
             ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
 endproc
@@ -6381,11 +6705,19 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
     if variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
+            ; RULING 10(b): the axis the user asked for, which the form may
+            ; already have resolved. See @emlRecordAxisRequest, and the note
+            ; at @emlDrawF0Contour's recorder on why the arguments are
+            ; reassigned in place.
+            @emlRecordAxisRequest: .vMin, .vMax
+            .vMin = emlRecordAxisRequest.min
+            .vMax = emlRecordAxisRequest.max
             @emlRecordDrawStep: .objectId, "Grouped box plot",
             ... .title$,
             ... "Whisker convention and outlier rule are stated in the figure, not assumed.",
             ... "@emlDrawGroupedBoxPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .catCol$ + """" + ", """ + .subCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
             ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
 endproc

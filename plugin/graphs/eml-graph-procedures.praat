@@ -5628,9 +5628,54 @@ procedure emlDrawLegendPanel: .x0, .x1, .y0, .y1, .fontSize
         ... emlMeasureLegendPanel.moreLabel$, " on the figure."
     endif
     if .clamped = 1
+        ; @eml_fixed, NOT fixed$. AUTHOR RULING, 16 AUGUST 2026: "anything in
+        ; an active process needs fixed", and this line is as active as the
+        ; file gets -- @emlDrawLegendPanel is what @emlDrawLegend dispatches
+        ; to, every draw procedure that has a legend calls @emlDrawLegend, and
+        ; EML Graphs... is registered on Objects > New and on the Table,
+        ; Sound, Pitch, Spectrum, Ltas, TableOfReal and Matrix action lists.
+        ;
+        ; fixed$ IS NOT A FIXED-PRECISION FORMATTER. It prints
+        ; max (precision, -floor (log10 |v|)) decimals, so it ESCALATES below
+        ; 10^-precision and returns a bare "0" for exact zero.
+        ;
+        ; AND NO REACHABLE INPUT TO THIS SENTENCE IS DOWN THERE, WHICH IS
+        ; MEASURED RATHER THAN ASSUMED AND IS SAID HERE SO THAT NOBODY LATER
+        ; READS THIS PARAGRAPH AS A BUG REPORT. Swept 16 August 2026 on
+        ; 6.6.30 -- three entries, one over-wide label, the panel budget
+        ; stepped from 4.04 in down to 0.002 in -- `.clamped` is 1 from 4.04
+        ; down to 0.052 and 0 at 0.048 and below, where @emlMeasureLegendPanel
+        ; reports capacity 0, shows nothing and prints no note at all. So the
+        ; narrowest panel that can reach this line is about 0.05 in, at which
+        ; fixed$ and @eml_fixed agree to the last digit, as they do at every
+        ; width above it; and .fontSize is the adaptive theme's, which never
+        ; approaches 0.1 pt. Every case in harness/legend prints 3.32, 4.04 or
+        ; 7.97 at 8.0, 8.3 or 9.8, and those logs and validate/v32's
+        ; exact-wording assertion on them are byte-identical across this
+        ; change.
+        ;
+        ; SO WHY CHANGE IT. Because the ruling is about the ESCAPE HATCH and
+        ; not about today's arithmetic: an active Info-window line formatted
+        ; through fixed$ is one edit away from lying -- change the precision
+        ; to 3, or start printing a fraction of an inch, and the sentence
+        ; silently grows a digit -- and the plugin now has exactly one number
+        ; formatter so that no reader has to work out which sites are safe.
+        ; The measurement above is the honest size of the win: nothing moves.
+        ; Where the two formatters do part company is recorded in
+        ; harness/formaxis's `formatter` leg.
+        ;
+        ; HOISTED INTO TEMPORARIES because Praat cannot nest a procedure call
+        ; inside an expression: the result comes back in eml_fixed.result$ and
+        ; has to be read before the next call overwrites it. @eml_fixed lives
+        ; in stats/eml-output.praat and is the one implementation in the
+        ; plugin; a second one here would be a second thing to keep right.
+        @eml_fixed: .w, 2
+        .panelStr$ = eml_fixed.result$
+        @eml_fixed: .fontSize, 1
+        .fontStr$ = eml_fixed.result$
         appendInfoLine: "NOTE: legend labels were shortened with an ellipsis",
         ... " — the widest one does not fit a ",
-        ... fixed$ (.w, 2), " inch panel at ", fixed$ (.fontSize, 1),
+        ... .panelStr$, " inch panel at ", .fontStr$,
         ... " pt. Widen the figure, shorten the labels, or set Legend",
         ... " placement to Right of plot or Separate figure."
     endif

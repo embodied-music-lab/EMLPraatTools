@@ -4,7 +4,77 @@
 # Author: Ian Howell, Embodied Music Lab, www.embodiedmusiclab.com
 # Development: Claude (Anthropic)
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
-# Version: 3.21
+# Version: 3.22
+# v3.22: THE BRACKET LAYOUT DISCLOSES ITS POST-HOC AND ITS CORRECTION.
+#        AUTHOR RULING, 16 August 2026. Ruling 1b gave the MATRIX layout a
+#        sub-line naming the post-hoc test and, on the parametric arm, saying
+#        where its family-wise control comes from. The BRACKET layout was left
+#        with nothing — and the brackets are the layout that puts the p-values
+#        and the stars directly ON the picture, so it is the one a reader is
+#        most likely to read a claim off. The figure carried three stars over
+#        a pair and did not say which test produced them or whether anything
+#        had been corrected.
+#        WHAT THE AUTHOR ASKED, AND THE ANSWER THAT SET THE SHAPE. SPSS states
+#        "Adjustment for multiple comparisons: Bonferroni" beneath its
+#        pairwise-comparisons display. Base R states nothing, but every R
+#        package that DRAWS significance brackets discloses:
+#        ggpubr::stat_compare_means prints the method on the plot by default,
+#        and ggstatsplot carries the pairwise test AND the adjustment method
+#        in a caption on every figure. The caption is the closest precedent
+#        and it is what this is.
+#        [1] Two new globals, @emlBridgeGroupComparison writes both:
+#            annotBracketPosthoc$ names the pairwise test, annotBracketAdjust$
+#            says what was done about multiplicity. THEY ARE STORED AS TWO
+#            HALVES, not as one sentence, and that is not tidiness — it is
+#            what lets @emlDrawBracketCaption break the caption at its seam on
+#            a narrow figure without doing string surgery on a sentence, and
+#            it is what makes "the two arms say different things" a property
+#            a validator can read rather than infer.
+#        [2] THE TWO ARMS SAY DIFFERENT THINGS, and the asymmetry is the
+#            content. Tukey's p comes from the studentized range distribution
+#            and is already family-wise over the set of pairwise comparisons,
+#            so the parametric arm STATES that and claims no further
+#            adjustment. Dunn's z-tests carry no family-wise control of their
+#            own, the form still offers the menu there and @emlDunnTest still
+#            honours it, so the nonparametric arm NAMES the method the user
+#            chose — the same token the Info-window report prints — and
+#            claims nothing about what it achieves. One sentence covering both
+#            would be false on one of them whichever way it was written.
+#        [3] PLACEMENT IS A CAPTION UNDER THE FRAME, not a second box inside
+#            it. annotTextX/annotTextY is a single slot with an alpha
+#            background already carrying the omnibus line, and a second box
+#            inside the frame would collide with the very brackets it
+#            describes — the brackets occupy the top of the plot by
+#            construction and @emlPlaceElements penalises the top quadrants
+#            for exactly that reason. The caption takes its own band below
+#            emlSetAdaptiveTheme.outerBottom and reports that band to
+#            @emlExpandDrawnExtent, the mechanism @emlDrawMatrixPanel already
+#            uses, so @emlAssertFullViewport widens the saved image to include
+#            it instead of cropping it off.
+#        [4] IT FITS OR IT SHRINKS, AND IF IT STILL DOES NOT FIT IT WRAPS. The
+#            caption is measured with Text width (mm) against the band it has,
+#            scaled down to a 5 pt floor, and split onto two lines at the seam
+#            between the two halves if one line still overruns. A disclosure
+#            that runs off the canvas is not a disclosure, and it is the
+#            failure mode a check anchored on where the FIRST ink falls cannot
+#            see: clipping takes ink off the RIGHT and leaves the left edge
+#            exactly where it was.
+#        [5] The two-group arms deliberately write empty strings. Two groups
+#            is one comparison: there is no post-hoc and no family to correct,
+#            so this ruling, which is about a post-hoc method and a
+#            correction, has nothing to say there, and a caption would be a
+#            claim about a correction that never happened.
+#        [6] AND ONE THING THIS CHANGE FOUND AND DID NOT CLOSE, because
+#            closing it is a ruling and not an implementation detail. Neither
+#            two-group arm sets annotTextN -- only the k >= 3 arms do -- so
+#            the form has no omnibus line to route into the corner box and a
+#            two-group BRACKET figure names no test anywhere on it at all.
+#            harness/bracketcap/out/welch_two.png shows a bracket, a star
+#            triple and a Cohen's d, and nothing that says a Welch t-test
+#            produced them. That is the same defect this ruling is about, one
+#            arm further down, and it is recorded as an attestation in
+#            validate/v69 rather than repaired on this pass.
+#
 # v3.21: THE ANNOTATION BRIDGE NOW DECLARES. @emlReportBridgeStats ran the
 #        analysis, printed it and filled the legacy CSV buffer, but never
 #        called the @emlDeclare*Result family -- so an annotated graph's
@@ -323,7 +393,7 @@
 #     populate the annotation arrays. The main script orchestrates:
 #     bridge -> stack -> draw data -> draw annotations -> draw axes.
 #
-# Procedures (all 26, in file order — this list used to name 15 and silently
+# Procedures (all 27, in file order — this list used to name 15 and silently
 # omit @emlOppositeCorner, @emlDrawAnnotationBlock, @emlDrawMatrixPanel and
 # every shared reporter except the last two):
 #   @emlClearAnnotations         — reset all annotation arrays
@@ -331,6 +401,8 @@
 #   @emlFormatAnnotLabel         — format bracket label from p, d, style
 #   @emlStackBrackets            — assign vertical tiers to brackets
 #   @emlDrawBracket              — render one significance bracket
+#   @emlDrawBracketCaption       — render the post-hoc/correction caption
+#                                  under the frame (bracket layout only)
 #   @emlDrawAnnotation           — render positioned text box
 #   @emlDrawAnnotations          — umbrella: draw all annotations
 #   @emlDrawRegressionLine       — render regression line on scatter plot
@@ -372,6 +444,22 @@
 #   annotBracketD[1..N]          — effect size (Cohen's d, r, or epsilon2)
 #   annotBracketLabel$[1..N]     — display text
 #   annotBracketTier[1..N]       — y-tier assigned by @emlStackBrackets
+#   annotBracketPosthoc$         — pairwise test that produced the bracket
+#                                  p-values ("Pairwise comparisons: Tukey
+#                                  HSD", "Pairwise comparisons: Dunn's test").
+#                                  "" on the two-group arms and whenever no
+#                                  post-hoc ran.
+#   annotBracketAdjust$          — what was done about multiplicity, in the
+#                                  same two-arm split the matrix sub-line
+#                                  carries: "already family-wise; no further
+#                                  adjustment applied" on the Tukey arm,
+#                                  "adjustment for multiple comparisons:
+#                                  holm" on the Dunn arm, with the token the
+#                                  user actually chose. Drawn as one caption
+#                                  under the frame by @emlDrawBracketCaption,
+#                                  which joins the two halves with an em-dash
+#                                  and breaks them onto two lines at that seam
+#                                  when one line will not fit.
 #
 # Free-text annotations (omnibus stats, correlation):
 #   annotTextN                   — number of text boxes
@@ -420,6 +508,12 @@
 # ----------------------------------------------------------------------------
 procedure emlClearAnnotations
     annotBracketN = 0
+    # The bracket caption. Cleared here beside the count it travels with, so a
+    # figure whose bridge never reached a post-hoc cannot inherit the previous
+    # figure's sentence — the failure the matrix labels above are cleared for,
+    # in a string that would be read as a claim about the statistics.
+    annotBracketPosthoc$ = ""
+    annotBracketAdjust$ = ""
     annotTextN = 0
     annotBlockN = 0
     annotRegressionN = 0
@@ -687,6 +781,193 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlDrawBracketCaption
+# Render the post-hoc/correction caption for a bracket-layout figure, as a
+# band immediately under the frame.
+#
+# AUTHOR RULING, 16 August 2026 — see v3.22 in the file header for the full
+# statement. In short: the matrix layout has disclosed its post-hoc and its
+# correction since ruling 1b, and the bracket layout — the one that puts the
+# p-values and the stars ON the picture — disclosed nothing. The Info-window
+# report already says it ("-- Dunn's Post-Hoc (adjusted p, holm) --"), so
+# nothing was hidden from someone reading the report. The figure is the
+# artefact that leaves the session, into a slide or a paper or a supervision,
+# and the reader looking at it has no report beside them.
+#
+# WHY A BAND UNDER THE FRAME AND NOT A BOX INSIDE IT. The inside of the frame
+# has one free-text slot, annotTextX/annotTextY, it already carries the
+# omnibus line, and it is drawn with an alpha background — so a second box
+# would have to be placed by @emlPlaceElements, which scores the top quadrants
+# DOWN precisely because brackets live there. A caption describing the
+# brackets that lands on the brackets is worse than no caption. The band takes
+# its own strip below emlSetAdaptiveTheme.outerBottom and reports the strip to
+# @emlExpandDrawnExtent, which is how @emlDrawMatrixPanel already gets a panel
+# into the saved image: @emlAssertFullViewport unions everything reported and
+# the export grows to fit rather than cropping.
+#
+# WHAT THE FAILURE LOOKS LIKE IF THE FIT LOGIC IS WRONG, and it is not the
+# failure people reach for. A caption too wide for the canvas does not raise,
+# does not blank the figure and does not move the plot. It renders, and its
+# tail is simply not in the file — "adjustment for multiple comparisons: bonf"
+# with the rest outside the image. The words that survive are the ones at the
+# START of the line, so a check anchored on where the first ink falls sees a
+# caption in exactly the right place; the position it reads moves the WRONG
+# WAY for the defect it would be trying to catch. That is why this procedure
+# measures with Text width (mm) against the room it actually has, scales to a
+# 5 pt floor, and breaks onto two lines at the seam between the two stored
+# halves rather than trusting a character count — and why it leaves .widthMM
+# and .availMM behind for a harness to read.
+#
+# THE HALVES ARE NOT JOINED BY THIS PROCEDURE BY ACCIDENT. @emlBridgeGroupComparison
+# stores the test and the adjustment clause separately. Joining them here
+# means the wrap point is a seam that already exists in the data, so the
+# two-line form never splits a word or a clause, and it means the two arms'
+# claims can be compared as values rather than as substrings of one sentence.
+#
+# Arguments:
+#   .fontSize   — the annotation type size to start from (shrunk to fit)
+#   .axXMin, .axXMax, .axYMin, .axYMax
+#               — the axes the CALLER has installed, carried in only so this
+#                 procedure can put the world back. It changes the viewport,
+#                 so it must restore it exactly as @emlDrawAnnotation does
+#                 after the sprite path.
+#
+# Outputs (read by harness/bracketcap, asserted by validate/v69):
+#   .drawn      — 1 if a caption was rendered, 0 if there was nothing to say
+#   .lines      — 1 or 2
+#   .size       — the point size finally used
+#   .widthMM    — the widest rendered line, in mm
+#   .availMM    — the room it had, in mm. .widthMM <= .availMM is the fit.
+#   .text1$, .text2$ — exactly what was drawn, line by line
+#   .top, .bottom    — the band, in inches, as reported to the extent tracker
+# ----------------------------------------------------------------------------
+procedure emlDrawBracketCaption: .fontSize, .axXMin, .axXMax, .axYMin, .axYMax
+    .drawn = 0
+    .lines = 0
+    .size = .fontSize
+    .widthMM = 0
+    .availMM = 0
+    .text1$ = ""
+    .text2$ = ""
+    .top = 0
+    .bottom = 0
+
+    ; variableExists, not a bare read: this procedure is reachable from an
+    ; emitted replay script and from a PraatGen companion file, neither of
+    ; which is obliged to have run @emlClearAnnotations first, and an
+    ; undefined global aborts the figure at the comparison rather than
+    ; skipping a caption.
+    if variableExists ("annotBracketPosthoc$") = 0
+        goto END_CAPTION
+    endif
+    if variableExists ("annotBracketAdjust$") = 0
+        goto END_CAPTION
+    endif
+    if annotBracketPosthoc$ = "" or annotBracketAdjust$ = ""
+        goto END_CAPTION
+    endif
+
+    .left = emlSetAdaptiveTheme.outerLeft
+    .right = emlSetAdaptiveTheme.outerRight
+    .top = emlSetAdaptiveTheme.outerBottom
+    .sf = emlSetAdaptiveTheme.spacingFactor
+    .padInch = (.fontSize / 72) * (0.6 + 0.4 * .sf)
+    .availMM = (.right - .left - 2 * .padInch) * 25.4
+
+    .joined$ = annotBracketPosthoc$ + " — " + annotBracketAdjust$
+
+    ; A provisional band, so the measurement happens with a viewport selected
+    ; and a font installed. Text width (mm) is a physical measure and does not
+    ; depend on the axes, but it does depend on the font size that is actually
+    ; set, so every measurement below is preceded by its own Font size.
+    .bottom = .top + (.fontSize / 72) * 3
+    Select outer viewport: .left, .right, .top, .bottom
+    Select inner viewport: .left, .right, .top, .bottom
+
+    .lines = 1
+    .text1$ = .joined$
+    Font size: .fontSize
+    .widthMM = Text width (mm): .text1$
+    if .widthMM > .availMM
+        ; Proportional first guess, then re-measured. Praat's metrics are not
+        ; exactly linear in point size, so the scale factor is a starting
+        ; point and the second measurement is the one that decides.
+        .size = .fontSize * .availMM / .widthMM
+        if .size < 5
+            .size = 5
+        endif
+        Font size: .size
+        .widthMM = Text width (mm): .text1$
+    endif
+
+    if .widthMM > .availMM
+        ; Still over at the legibility floor. Break at the seam between the
+        ; two halves the bridge stored — the em-dash stays with the test name
+        ; so the second line opens on the adjustment clause.
+        .lines = 2
+        .text1$ = annotBracketPosthoc$ + " —"
+        .text2$ = annotBracketAdjust$
+        .size = .fontSize
+        Font size: .size
+        .w1 = Text width (mm): .text1$
+        .w2 = Text width (mm): .text2$
+        .widthMM = max (.w1, .w2)
+        if .widthMM > .availMM
+            .size = .fontSize * .availMM / .widthMM
+            if .size < 5
+                .size = 5
+            endif
+            Font size: .size
+            .w1 = Text width (mm): .text1$
+            .w2 = Text width (mm): .text2$
+            .widthMM = max (.w1, .w2)
+        endif
+    endif
+
+    .lineInch = (.size / 72) * 1.45
+    .gapInch = (.size / 72) * (0.35 + 0.25 * .sf)
+    .bandH = .gapInch * 1.5 + .lines * .lineInch
+    .bottom = .top + .bandH
+
+    Select outer viewport: .left, .right, .top, .bottom
+    Select inner viewport: .left, .right, .top, .bottom
+    ; y grows downward, as in @emlDrawMatrixPanel, so line 1 is the smaller y.
+    Axes: 0, .right - .left, .bandH, 0
+
+    ; D30 governs this colour and it governs it for the same reason it governs
+    ; the matrix sub-line: this is the only place in a bracket figure that
+    ; discloses the correction. {0.40, 0.40, 0.40} is 5.74:1 against white
+    ; (WCAG 2.x relative luminance, sRGB), above the 4.5:1 minimum for normal
+    ; text and still clearly subordinate to the figure. Do not lighten past
+    ; 0.46 (= 4.5:1) on a white ground.
+    Colour: "{0.40, 0.40, 0.40}"
+    .cx = (.right - .left) / 2
+    .y1 = .gapInch + .lineInch * 0.5
+    Text special: .cx, "centre", .y1, "half", emlFont$, .size, "0", .text1$
+    if .lines = 2
+        Text special: .cx, "centre", .y1 + .lineInch, "half",
+        ... emlFont$, .size, "0", .text2$
+    endif
+
+    ; Without this the caption is drawn and then cropped off the export, which
+    ; is indistinguishable from never having drawn it.
+    @emlExpandDrawnExtent: .left, .right, .top, .bottom
+    .drawn = 1
+
+    ; Put the world back exactly as @emlDrawAnnotation does after the sprite
+    ; path. Everything the caller draws after this — the axes, the omnibus
+    ; block — is drawn in the axes it installed, not in this band's.
+    @emlSetPanelViewport
+    Axes: .axXMin, .axXMax, .axYMin, .axYMax
+    Font size: emlSetAdaptiveTheme.bodySize
+    Colour: "Black"
+    Line width: 1.0
+
+    label END_CAPTION
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlDrawAnnotation
 # Render a free-positioned text box with optional background fill.
 # For omnibus stats, correlation results, etc.
@@ -809,6 +1090,18 @@ procedure emlDrawAnnotations: .xMin, .xMax, .yDataMax, .yRange, .bracketColor$, 
             ... .xMax - .xMin, .yRange,
             ... .xMin, .xMax, .axYMin, .axYMax
         endfor
+    endif
+
+    # --- Post-hoc caption (bracket layout only) ---
+    # Gated on annotBracketN, not on the caption strings, and the order is
+    # deliberate. The caption is a statement about the brackets: with no
+    # brackets on the figure there are no drawn p-values for it to describe,
+    # and the omnibus box above already names the test that produced the one
+    # number the figure carries. It is drawn LAST because it is the only
+    # thing here that changes the viewport for a band outside the panel, so
+    # its restore is the last word on the world the caller gets back.
+    if annotBracketN > 0
+        @emlDrawBracketCaption: .fontSize, .xMin, .xMax, .axYMin, .axYMax
     endif
 endproc
 
@@ -2625,6 +2918,32 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                     ... + ", " + emlFormatP.formatted$
                     ... + ", r = " + fixed$ (.effectVal, 2)
                     annotMatrixPosthoc$ = "Mann-Whitney U"
+                    ; NO BRACKET CAPTION ON A TWO-GROUP FIGURE, and the empty
+                    ; strings are the statement rather than an omission. Two
+                    ; groups is ONE comparison: no post-hoc ran, there is no
+                    ; family, and nothing was adjusted, so the 16 August
+                    ; ruling -- which is about disclosing a POST-HOC METHOD
+                    ; and a CORRECTION -- has nothing to say here, and a
+                    ; caption would have to invent a claim about a correction
+                    ; that never happened.
+                    ;
+                    ; THAT LEAVES A SEPARATE GAP, MEASURED AND NOT CLOSED
+                    ; HERE. .omnibus$ is composed on this arm and handed back
+                    ; to the caller for the Info window, but annotTextN is
+                    ; NEVER set on either two-group arm -- only the k >= 3
+                    ; arms set it -- so the form's post-dispatch stage has no
+                    ; omnibus line to route into the corner box and a
+                    ; two-group bracket figure names no test ANYWHERE on it.
+                    ; Reproduced 16 Aug 2026: harness/bracketcap/out/
+                    ; welch_two.png carries "***, d = -6.08" over a bracket
+                    ; and nothing else, and the OCR of the whole figure in
+                    ; welch_two.fig.ocr contains no test name. That is a
+                    ; disclosure gap of the same shape as the one this ruling
+                    ; closes, on a path the ruling did not name, and closing
+                    ; it is the author's call rather than this change's. See
+                    ; validate/v69, which records it as an attestation.
+                    annotBracketPosthoc$ = ""
+                    annotBracketAdjust$ = ""
 
                     if .useMatrix
                         @emlFormatAnnotLabel: .pVal, undefined, .style$, 0, ""
@@ -2690,6 +3009,14 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                         ... + ", d = " + fixed$ (.effectVal, 2)
                     endif
                     annotMatrixPosthoc$ = "Welch t-test"
+                    ; Empty for the same reason as the Mann-Whitney arm above:
+                    ; one comparison, no post-hoc, no family, nothing to
+                    ; adjust. The same unclosed gap applies -- .omnibus$ is
+                    ; composed and annotTextN is not set, so "Welch t: t(...)
+                    ; = ..., p = ..." reaches the Info window and never the
+                    ; figure. See the note on that arm.
+                    annotBracketPosthoc$ = ""
+                    annotBracketAdjust$ = ""
 
                     if .useMatrix
                         @emlFormatAnnotLabel: .pVal, undefined, .style$, 0, ""
@@ -2803,6 +3130,21 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                     if .dunnError$ = ""
                         annotMatrixPosthoc$ = "Dunn's test ("
                         ... + .correction$ + ")"
+                        ; THE BRACKET CAPTION, NONPARAMETRIC ARM. It NAMES the
+                        ; method and claims nothing about what the method
+                        ; achieves, because Dunn's z-tests carry no family-wise
+                        ; control of their own — the correction is whatever the
+                        ; user asked for and this sentence is a record of that
+                        ; choice, not an endorsement of it. .correction$ is the
+                        ; resolved token, so a figure drawn after an
+                        ; unrecognised annotCorrectionMethod$ says "holm" and
+                        ; means it. It is the same token the Info-window report
+                        ; prints in "-- Dunn's Post-Hoc (adjusted p, holm) --",
+                        ; and printing anything else here would put the figure
+                        ; and the report into disagreement about the same run.
+                        annotBracketPosthoc$ = "Pairwise comparisons: Dunn's test"
+                        annotBracketAdjust$ = "adjustment for multiple "
+                        ... + "comparisons: " + .correction$
                         # Group order from @emlCountGroups (no remapping needed)
                         if .useMatrix
                             # --- MATRIX OUTPUT (split triangle) ---
@@ -2990,6 +3332,21 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                 # chose -- "Dunn's test (holm)". One claim covering both arms
                 # would be false on one of them whichever way it was written.
                 annotMatrixPosthoc$ = "Tukey HSD (already family-wise)"
+                # THE BRACKET CAPTION, PARAMETRIC ARM, and the 16 August
+                # ruling that added it is ruling 1b carried to the other
+                # layout. The sub-line above only ever reaches a MATRIX
+                # figure; the bracket layout is the one that puts the
+                # p-values and the stars directly on the picture, and it said
+                # nothing at all — not the test, not the adjustment. What it
+                # says here is the parametric claim and only the parametric
+                # claim: Tukey's p comes from the studentized range
+                # distribution and is already family-wise over the set of
+                # pairwise comparisons, so there is nothing further to apply
+                # and the figure says so outright. The Dunn arm's caption is
+                # a different sentence for a different reason; see its note.
+                annotBracketPosthoc$ = "Pairwise comparisons: Tukey HSD"
+                annotBracketAdjust$ = "already family-wise; no further "
+                ... + "adjustment applied"
 
                 # --------------------------------------------------------
                 # Index mapping: encounter order → ANOVA alphabetical order

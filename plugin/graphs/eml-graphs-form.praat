@@ -1943,6 +1943,252 @@ procedure emlComposeGraphTitle
         selectObject: objectId
     endif
 endproc
+# ============================================================================
+# @emlGraphsPublishAxisRequest
+# ============================================================================
+# PUBLISH THE AXIS THE USER ASKED FOR, BEFORE ANYTHING IN THIS FILE RESOLVES
+# IT. Sets two globals — emlGraphsAxisYReqMin and emlGraphsAxisYReqMax — from
+# the dialog pair that belongs to the graph type about to be drawn, and does
+# nothing else. No arguments, no output beyond those two names, no drawing.
+#
+# AUTHOR RULING 10(b), 16 AUGUST 2026: "the record process should note if it
+# was auto and offer 0.0 to 0.0 as the range in the editable top block of
+# variables." Ruling 10(a) had already settled that the recorded CALL carries
+# the user's choice, and (0, 0) is the sentinel the dialog names on its own
+# face — "both 0 = auto" — not a range. This procedure is the half of 10(b)
+# that lives on the form's side: the choice has to still be recoverable at the
+# moment the recorder runs, and on two paths through this file it is not.
+#
+# WHAT THE FAILURE LOOKS LIKE. A user ticks Annotate on a violin plot, leaves
+# the y-range on auto, presses Draw with a recording running, and stops the
+# recording. The emitted script's editable top block reads
+#
+#     axisYMin  = 192.0000
+#     axisYMax  = 214.0000
+#
+# and there is no longer anything in the file, or in the recorder, that knows
+# those two numbers were computed rather than typed. Edit the block to run the
+# same workflow on a second speaker — which is the entire purpose the block
+# exists for — and the figure is drawn on the FIRST speaker's axis, silently,
+# because a range that was never asked for has been frozen into the script.
+# Nothing errors. The figure looks like a figure.
+#
+# THE TWO PATHS THAT DESTROY THE EVIDENCE, both in this file and both running
+# before the draw the recorder sees:
+#
+#   * @emlGraphsPreDispatchHeadroom — the bracket path. On an annotated bar,
+#     violin or box plot with at least one bracket it computes the visible
+#     extent, calls @emlComputeAxisRange, and writes the result back into
+#     valueMin and valueMax; then it widens valueMax again by the bracket
+#     headroom. By the time @emlGraphsDispatchDraw runs, the (0, 0) the user
+#     chose is gone from every variable the draw procedure can see.
+#
+#   * @emlGraphsDrawWithLegendRoom — the legend path. It draws once, measures
+#     the legend, writes the widened extent back into valueMin and valueMax,
+#     and DRAWS AGAIN on it. The second draw is the one the recorder records,
+#     so on every legend-bearing type the recorded range is the resolved one.
+#
+# So the request is captured HERE, where the form's own range validation has
+# just finished with the user's numbers and neither pass has run yet, and it
+# is never written again for this press. @emlRecordAxisRequest in
+# stats/eml-record.praat states the reading half of the contract, including
+# why its fallback to the caller's own arguments is a requirement and not a
+# courtesy: nothing outside this file publishes these globals, and the API
+# export, the batch module, the Q-Q path and every harness reach a recorder
+# with no form in the picture at all.
+#
+# BOTH OR NEITHER, AND THAT IS WHY THIS IS A PROCEDURE. The reader takes the
+# pair as a pair — it requires variableExists on both names before it prefers
+# either — so a path that published a minimum and not a maximum would hand the
+# recorder a floor from the dialog and a ceiling from the resolved draw, which
+# is a range nobody asked for and which the (0, 0) sentinel cannot survive.
+# Every branch below assigns both names, there is no goto and no early return,
+# and there is exactly one call site. Publishing from the four or five places
+# the dialog values are read would have made the invariant a thing to audit
+# rather than a thing to read.
+#
+# THE PAIR IS CHOSEN BY GRAPH TYPE, because "the y-axis range" is not one
+# variable in this form. @emlGraphsDispatchDraw hands the F0 contour freqMin
+# and freqMax, the waveform ampMin and ampMax, the spectrum and the LTAS
+# powerMin and powerMax, and everything from the time series down to the
+# spaghetti plot valueMin and valueMax — and the recorder in each of those
+# draw procedures reads whichever of those it was given. Publishing valueMin
+# for a waveform would replace an amplitude range with a range the amplitude
+# dialog never showed. Types 1 to 4 are not touched by either resolving pass,
+# so for them the published value always equals the argument and the recorded
+# artefact is unchanged; they are published anyway because one rule with no
+# exceptions is cheaper to keep true than four types carved out of it.
+#
+# WHAT COULD NOT HAVE CAUGHT THIS, AND WHY. Not the recorder's own tests: on
+# every path they can drive, the argument IS the request, so the fallback and
+# the publication agree and every assertion passes on a figure whose block is
+# right for the wrong reason. Not harness/record/roundtrip_graph.sh either,
+# which is the strongest evidence in the tree that a recorded figure replays —
+# it calls @emlDrawViolinPlot directly, so no form has run, no global exists,
+# the fallback fires and the round trip is byte-perfect while the defect sits
+# untouched one layer up. Not a PNG comparison of any kind: the figure the
+# user saw is correct on both sides of this fix, because the resolved range is
+# what the figure was legitimately drawn on. And not a check on the WIDTH or
+# the format of the block's numbers, which is the shape this defect invites —
+# "192.0000" and "0.0" are both four-decimal fixed strings of plausible size,
+# and a check that the block carries a well-formed number passes on the wrong
+# one. The only thing that catches it is reading the VALUE in the emitted
+# block on a draw whose axis was resolved, and knowing what the user typed.
+# ============================================================================
+procedure emlGraphsPublishAxisRequest
+    if graph_type = 1
+        emlGraphsAxisYReqMin = freqMin
+        emlGraphsAxisYReqMax = freqMax
+    elsif graph_type = 2
+        emlGraphsAxisYReqMin = ampMin
+        emlGraphsAxisYReqMax = ampMax
+    elsif graph_type = 3 or graph_type = 4
+        emlGraphsAxisYReqMin = powerMin
+        emlGraphsAxisYReqMax = powerMax
+    else
+        emlGraphsAxisYReqMin = valueMin
+        emlGraphsAxisYReqMax = valueMax
+    endif
+endproc
+
+
+# ============================================================================
+# @emlGraphsPreDispatchHeadroom
+# ============================================================================
+# The PRE-DISPATCH (HEADROOM) stage of @emlGraphsWorkflow. Aggregates the bar
+# chart's data, records the visible data maximum the brackets are hung from,
+# and — on an annotated bar, violin or box plot that has at least one bracket
+# — resolves an auto y-range into the real extent and widens its ceiling to
+# make room for the brackets. Draws nothing.
+#
+# LIFTED OUT VERBATIM, FOR THE REASON THE NEXT PARAGRAPH GIVES AND FOR NO
+# OTHER. Not one statement changed in the move; the section had its own banner
+# in @emlGraphsWorkflow and the banner is still at the call site, now with a
+# single call under it. `.axisIsPct` and `.axisRoundTo` were locals of
+# @emlGraphsWorkflow and are locals of this procedure now — nothing outside
+# the moved block ever read either name.
+#
+# WHY IT IS A PROCEDURE. Because the alternative is a probe that transcribes
+# it, and this file already carries the bill for that experiment. Read the
+# header of @emlGraphsPostDispatchAnnotations: harness/disclosure/
+# probe_formpath.praat called itself a reproduction of "the form's sequence"
+# around the annotation block, transcribed it by hand, passed the wrong
+# variable in the transcription, and therefore tested a CORRECTED copy of the
+# block — it would have gone on passing however wrong the shipped one became,
+# and it did, while an omnibus box was being clipped off the figure entirely.
+# The bracket headroom is one of the two places in this file that turns the
+# user's AUTO range into explicit numbers, so any check of Ruling 10(b) has to
+# run it. A check that ran a hand-written copy of these ninety lines instead
+# would be measuring its own copy, which is the same failure with a different
+# variable name in it. There is nothing to transcribe now.
+#
+# NO PARAMETERS, and reads and writes main-body scope, exactly as
+# @emlGraphsDispatchDraw and @emlGraphsPostDispatchAnnotations do. A bare name
+# assigned inside a Praat procedure IS the global of that name, so every
+# assignment below behaves precisely as it did when these lines sat inline.
+#
+# WRITES: dataYMax_forAnnotation, valueMin, valueMax, visibleDataMin,
+#         visibleDataMax, annotDataRange, annotBracketN (cleared on overflow),
+#         and the emlBarData_* family via @emlMeasureBarData
+# READS:  graph_type, objectId, groupColName$, valueColName$, errorBarMode,
+#         errorColName$, annotate, annotBracketN, valueMin, valueMax
+# ============================================================================
+procedure emlGraphsPreDispatchHeadroom
+
+    # Bar chart: pre-compute aggregated data (used by both headroom
+    # and draw procedure). Must run unconditionally for bar charts.
+    if graph_type = 6
+        @emlMeasureBarData: objectId, groupColName$, valueColName$, errorBarMode, errorColName$
+    endif
+
+    # Save actual data maximum for bracket positioning (brackets should
+    # start just above the tallest data element, not at the axis ceiling)
+    dataYMax_forAnnotation = valueMax
+
+    if (graph_type = 6 or graph_type = 7 or graph_type = 9) and annotate = 1 and annotBracketN > 0
+
+        # Compute visible data maximum for bracket positioning.
+        # Bar chart: max(groupMean + groupError). Violin/Box: raw data max.
+        selectObject: objectId
+        if graph_type = 6
+            visibleDataMax = emlBarData_visibleMax
+            visibleDataMin = emlBarData_visibleMin
+        else
+            # Violin/Box: visible extent = raw data extent, OVER THE DEFINED
+            # CELLS ONLY. `Get maximum:` aborts the script on a column with
+            # any blank cell rather than returning undefined, so an annotated
+            # violin or box plot with one missing value anywhere in the value
+            # column used to die here with a raw Praat error. See
+            # @emlGraphsColumnExtent, and note that the undefined test below
+            # was guarding a return value that could never arrive.
+            @emlGraphsColumnExtent: objectId, valueColName$
+            visibleDataMax = emlGraphsColumnExtent.max
+            visibleDataMin = emlGraphsColumnExtent.min
+        endif
+
+        if visibleDataMax <> undefined and visibleDataMax > 0
+            dataYMax_forAnnotation = visibleDataMax
+        endif
+
+        # When auto-range (both 0), compute axis range from the visible extent.
+        # For bar charts use the tracked data minimum so all-/mixed-negative
+        # means get a negative floor instead of being clipped at 0 in the
+        # annotated (bracket) path; emlComputeAxisRange's own non-negative guard
+        # keeps the floor at 0 for non-negative data, so positive bars are
+        # unchanged.
+        if valueMin = 0 and valueMax = 0
+            # D60. Ask once, here, whether this is a percentage scale, and hand
+            # the answer to @emlComputeAxisRange instead of the literal 0 both
+            # call sites used to pass. @emlGraphsIsPercentageColumn reselects
+            # objectId, so it must run before the range calls rather than
+            # inside them.
+            @emlGraphsIsPercentageColumn: objectId, valueColName$
+            .axisIsPct = emlGraphsIsPercentageColumn.result
+            selectObject: objectId
+            if graph_type = 6
+                # Adaptive rounding grid: derive roundTo from a nice step over the data
+                # range (the same nice-number logic the gridlines use) so fractional data
+                # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
+                @emlComputeNiceStep: emlBarData_visibleMax - (emlBarData_visibleMin), emlSetAdaptiveTheme.targetTicksY
+                .axisRoundTo = emlComputeNiceStep.step
+                @emlComputeAxisRange: emlBarData_visibleMin, emlBarData_visibleMax, .axisRoundTo, .axisIsPct
+                valueMin = emlComputeAxisRange.axisMin
+                valueMax = emlComputeAxisRange.axisMax
+            elsif visibleDataMax <> undefined
+                # Violin and box marks do not emanate from zero, so the floor
+                # comes from the data like every other continuous axis. Passing
+                # a literal 0 here pinned the axis to the origin whenever
+                # brackets were drawn, so the same figure had a data-derived
+                # range without annotation and a zero-floored one with it.
+                # emlComputeAxisRange's own non-negative guard still keeps the
+                # floor at 0 for data that does not go below it.
+                @emlComputeNiceStep: visibleDataMax - (visibleDataMin), emlSetAdaptiveTheme.targetTicksY
+                .axisRoundTo = emlComputeNiceStep.step
+                @emlComputeAxisRange: visibleDataMin, visibleDataMax, .axisRoundTo, .axisIsPct
+                valueMin = emlComputeAxisRange.axisMin
+                valueMax = emlComputeAxisRange.axisMax
+            endif
+        endif
+
+        annotDataRange = valueMax - valueMin
+        # 0 and "" for the legend band: types 6, 7 and 9 draw no legend at
+        # all, so there is nothing for it to contribute here. The legend's
+        # own contribution is made after the first draw pass, from
+        # @emlLegendHeadroomAfterDraw, because the corner it will occupy is
+        # not decided until the figure has been laid out once. This gate is
+        # no longer the only door into @emlComputeAnnotationHeadroom.
+        @emlComputeAnnotationHeadroom: annotDataRange,
+        ... emlSetAdaptiveTheme.annotSize, 0, ""
+        if emlComputeAnnotationHeadroom.overflow = 1
+            appendInfoLine: "NOTE: Viewport too small for bracket annotations — suppressing brackets."
+            annotBracketN = 0
+        else
+            valueMax = valueMax + emlComputeAnnotationHeadroom.headroom
+        endif
+    endif
+endproc
+
+
 
 
 # ============================================================================
@@ -8240,6 +8486,24 @@ repeat
     endif
 
     # =================================================================
+    # PUBLISH THE UNTOUCHED AXIS REQUEST (Ruling 10(b), form half)
+    # =================================================================
+    # HERE, AND NOWHERE LATER. The range validation above is the last thing
+    # that touches the user's numbers as the user's numbers — it only swaps a
+    # reversed pair, and it leaves the (0, 0) auto sentinel alone by
+    # construction. Everything after this line is resolution: the annotation
+    # bridge, @emlGraphsPreDispatchHeadroom's bracket path and
+    # @emlGraphsDrawWithLegendRoom's second pass all write the axis they
+    # computed back into the same variables, so a capture taken any later is a
+    # capture of the answer rather than the question. @emlRecordAxisRequest is
+    # the reader; @emlGraphsPublishAxisRequest's header is the contract.
+    #
+    # Inside the Redraw loop, so a user who presses Redraw and types a range
+    # over the auto one republishes it rather than recording the previous
+    # press's choice.
+    @emlGraphsPublishAxisRequest
+
+    # =================================================================
     # Set group sort order before any procedure calls @emlCountGroups.
     # Must precede annotation bridge, measurement, and draw dispatch.
     # =================================================================
@@ -8388,98 +8652,7 @@ repeat
     # =================================================================
     # PRE-DISPATCH: compute headroom for bar/violin annotations
     # =================================================================
-
-    # Bar chart: pre-compute aggregated data (used by both headroom
-    # and draw procedure). Must run unconditionally for bar charts.
-    if graph_type = 6
-        @emlMeasureBarData: objectId, groupColName$, valueColName$, errorBarMode, errorColName$
-    endif
-
-    # Save actual data maximum for bracket positioning (brackets should
-    # start just above the tallest data element, not at the axis ceiling)
-    dataYMax_forAnnotation = valueMax
-
-    if (graph_type = 6 or graph_type = 7 or graph_type = 9) and annotate = 1 and annotBracketN > 0
-
-        # Compute visible data maximum for bracket positioning.
-        # Bar chart: max(groupMean + groupError). Violin/Box: raw data max.
-        selectObject: objectId
-        if graph_type = 6
-            visibleDataMax = emlBarData_visibleMax
-            visibleDataMin = emlBarData_visibleMin
-        else
-            # Violin/Box: visible extent = raw data extent, OVER THE DEFINED
-            # CELLS ONLY. `Get maximum:` aborts the script on a column with
-            # any blank cell rather than returning undefined, so an annotated
-            # violin or box plot with one missing value anywhere in the value
-            # column used to die here with a raw Praat error. See
-            # @emlGraphsColumnExtent, and note that the undefined test below
-            # was guarding a return value that could never arrive.
-            @emlGraphsColumnExtent: objectId, valueColName$
-            visibleDataMax = emlGraphsColumnExtent.max
-            visibleDataMin = emlGraphsColumnExtent.min
-        endif
-
-        if visibleDataMax <> undefined and visibleDataMax > 0
-            dataYMax_forAnnotation = visibleDataMax
-        endif
-
-        # When auto-range (both 0), compute axis range from the visible extent.
-        # For bar charts use the tracked data minimum so all-/mixed-negative
-        # means get a negative floor instead of being clipped at 0 in the
-        # annotated (bracket) path; emlComputeAxisRange's own non-negative guard
-        # keeps the floor at 0 for non-negative data, so positive bars are
-        # unchanged.
-        if valueMin = 0 and valueMax = 0
-            # D60. Ask once, here, whether this is a percentage scale, and hand
-            # the answer to @emlComputeAxisRange instead of the literal 0 both
-            # call sites used to pass. @emlGraphsIsPercentageColumn reselects
-            # objectId, so it must run before the range calls rather than
-            # inside them.
-            @emlGraphsIsPercentageColumn: objectId, valueColName$
-            .axisIsPct = emlGraphsIsPercentageColumn.result
-            selectObject: objectId
-            if graph_type = 6
-                # Adaptive rounding grid: derive roundTo from a nice step over the data
-                # range (the same nice-number logic the gridlines use) so fractional data
-                # (proportions, contact quotient, jitter %) is not snapped to a 10-unit grid.
-                @emlComputeNiceStep: emlBarData_visibleMax - (emlBarData_visibleMin), emlSetAdaptiveTheme.targetTicksY
-                .axisRoundTo = emlComputeNiceStep.step
-                @emlComputeAxisRange: emlBarData_visibleMin, emlBarData_visibleMax, .axisRoundTo, .axisIsPct
-                valueMin = emlComputeAxisRange.axisMin
-                valueMax = emlComputeAxisRange.axisMax
-            elsif visibleDataMax <> undefined
-                # Violin and box marks do not emanate from zero, so the floor
-                # comes from the data like every other continuous axis. Passing
-                # a literal 0 here pinned the axis to the origin whenever
-                # brackets were drawn, so the same figure had a data-derived
-                # range without annotation and a zero-floored one with it.
-                # emlComputeAxisRange's own non-negative guard still keeps the
-                # floor at 0 for data that does not go below it.
-                @emlComputeNiceStep: visibleDataMax - (visibleDataMin), emlSetAdaptiveTheme.targetTicksY
-                .axisRoundTo = emlComputeNiceStep.step
-                @emlComputeAxisRange: visibleDataMin, visibleDataMax, .axisRoundTo, .axisIsPct
-                valueMin = emlComputeAxisRange.axisMin
-                valueMax = emlComputeAxisRange.axisMax
-            endif
-        endif
-
-        annotDataRange = valueMax - valueMin
-        # 0 and "" for the legend band: types 6, 7 and 9 draw no legend at
-        # all, so there is nothing for it to contribute here. The legend's
-        # own contribution is made after the first draw pass, from
-        # @emlLegendHeadroomAfterDraw, because the corner it will occupy is
-        # not decided until the figure has been laid out once. This gate is
-        # no longer the only door into @emlComputeAnnotationHeadroom.
-        @emlComputeAnnotationHeadroom: annotDataRange,
-        ... emlSetAdaptiveTheme.annotSize, 0, ""
-        if emlComputeAnnotationHeadroom.overflow = 1
-            appendInfoLine: "NOTE: Viewport too small for bracket annotations — suppressing brackets."
-            annotBracketN = 0
-        else
-            valueMax = valueMax + emlComputeAnnotationHeadroom.headroom
-        endif
-    endif
+    @emlGraphsPreDispatchHeadroom
 
     # =================================================================
     # PRE-DISPATCH: categorical label measurement (Phase 1)
