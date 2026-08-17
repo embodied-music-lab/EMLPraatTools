@@ -1,14 +1,18 @@
+      v90 oracle mode: base R + psych cross-check
       EML_LANE_RED: running the standard agreement check against
       the defective build — the next check is EXPECTED to FAIL.
 
 ==============================================================================
 v90 Cronbach's alpha oracle
 ==============================================================================
-PASS  v90     psych is installed (the oracle the brief names)  computed=NA  expected TRUE
 PASS  v90     the clean-fixture probe ran                     computed=NA  expected TRUE
-PASS  v90     [clean] alpha vs psych::alpha                   reported=0.8493397359  computed=0.8493397359  (match, tol 1e-10)
-PASS  v90     [clean] Feldt CI lower vs psych                 reported=0.7271721303  computed=0.7271721303  (match, tol 1e-08)
-PASS  v90     [clean] Feldt CI upper vs psych                 reported=0.9269696146  computed=0.9269696146  (match, tol 1e-08)
+PASS  v90     [clean] base-R oracle vs psych::alpha (cross-check)  reported=0.8493397359  computed=0.8493397359  (match, tol 1e-12)
+PASS  v90     [clean] base-R Feldt lower vs psych (cross-check)  reported=0.7271721303  computed=0.7271721303  (match, tol 1e-12)
+PASS  v90     [clean] base-R Feldt upper vs psych (cross-check)  reported=0.9269696146  computed=0.9269696146  (match, tol 1e-12)
+PASS  v90     [clean] base-R alpha-if-deleted vs psych (cross-check, max)  reported=0  computed=0  (match, tol 1e-12)
+PASS  v90     [clean] alpha vs base-R oracle                  reported=0.8493397359  computed=0.8493397359  (match, tol 1e-10)
+PASS  v90     [clean] Feldt CI lower vs base-R oracle         reported=0.7271721303  computed=0.7271721303  (match, tol 1e-08)
+PASS  v90     [clean] Feldt CI upper vs base-R oracle         reported=0.9269696146  computed=0.9269696146  (match, tol 1e-08)
 PASS  v90     [clean] k                                       reported=5  computed=5  (match, tol 0)
 PASS  v90     [clean] n after listwise deletion               reported=24  computed=24  (match, tol 0)
 PASS  v90     [clean] nExcluded disclosure                    reported=0  computed=0  (match, tol 0)
@@ -18,9 +22,13 @@ PASS  v90     [clean] alpha-if-deleted, item 3                reported=0.7639026
 PASS  v90     [clean] alpha-if-deleted, item 4                reported=0.8281634663  computed=0.8281634663  (match, tol 1e-10)
 PASS  v90     [clean] alpha-if-deleted, item 5                reported=0.8148834337  computed=0.8148834337  (match, tol 1e-10)
 PASS  v90     the revnot-fixture probe ran                    computed=NA  expected TRUE
-PASS  v90     [revnot] alpha vs psych::alpha                  reported=-0.1410113921  computed=-0.1410113921  (match, tol 1e-10)
-PASS  v90     [revnot] Feldt CI lower vs psych                reported=-1.066236305  computed=-1.066236305  (match, tol 1e-08)
-PASS  v90     [revnot] Feldt CI upper vs psych                reported=0.4469112198  computed=0.4469112198  (match, tol 1e-08)
+PASS  v90     [revnot] base-R oracle vs psych::alpha (cross-check)  reported=-0.1410113921  computed=-0.1410113921  (match, tol 1e-12)
+PASS  v90     [revnot] base-R Feldt lower vs psych (cross-check)  reported=-1.066236305  computed=-1.066236305  (match, tol 1e-12)
+PASS  v90     [revnot] base-R Feldt upper vs psych (cross-check)  reported=0.4469112198  computed=0.4469112198  (match, tol 1e-12)
+PASS  v90     [revnot] base-R alpha-if-deleted vs psych (cross-check, max)  reported=0  computed=0  (match, tol 1e-12)
+PASS  v90     [revnot] alpha vs base-R oracle                 reported=-0.1410113921  computed=-0.1410113921  (match, tol 1e-10)
+PASS  v90     [revnot] Feldt CI lower vs base-R oracle        reported=-1.066236305  computed=-1.066236305  (match, tol 1e-08)
+PASS  v90     [revnot] Feldt CI upper vs base-R oracle        reported=0.4469112198  computed=0.4469112198  (match, tol 1e-08)
 PASS  v90     [revnot] k                                      reported=5  computed=5  (match, tol 0)
 PASS  v90     [revnot] n after listwise deletion              reported=24  computed=24  (match, tol 0)
 PASS  v90     [revnot] nExcluded disclosure                   reported=0  computed=0  (match, tol 0)
@@ -30,17 +38,24 @@ PASS  v90     [revnot] alpha-if-deleted, item 3               reported=0.7639026
 PASS  v90     [revnot] alpha-if-deleted, item 4               reported=-1.729353234  computed=-1.729353234  (match, tol 1e-10)
 PASS  v90     [revnot] alpha-if-deleted, item 5               reported=-1.043170559  computed=-1.043170559  (match, tol 1e-10)
 PASS  v90     the two-fixture probe ran                       computed=NA  expected TRUE
-PASS  v90     [two] alpha vs psych::alpha                     reported=0.2868525896  computed=0.2868525896  (match, tol 1e-10)
-PASS  v90     [two] Feldt CI lower vs psych                   reported=-1.477259483  computed=-1.477259483  (match, tol 1e-08)
-PASS  v90     [two] Feldt CI upper vs psych                   reported=0.794700865  computed=0.794700865  (match, tol 1e-08)
+PASS  v90     [two] base-R oracle vs psych::alpha (cross-check)  reported=0.2868525896  computed=0.2868525896  (match, tol 1e-12)
+PASS  v90     [two] base-R Feldt lower vs psych (cross-check)  reported=-1.477259483  computed=-1.477259483  (match, tol 1e-12)
+PASS  v90     [two] base-R Feldt upper vs psych (cross-check)  reported=0.794700865  computed=0.794700865  (match, tol 1e-12)
+PASS  v90     [two] alpha vs base-R oracle                    reported=0.2868525896  computed=0.2868525896  (match, tol 1e-10)
+PASS  v90     [two] Feldt CI lower vs base-R oracle           reported=-1.477259483  computed=-1.477259483  (match, tol 1e-08)
+PASS  v90     [two] Feldt CI upper vs base-R oracle           reported=0.794700865  computed=0.794700865  (match, tol 1e-08)
 PASS  v90     [two] k                                         reported=2  computed=2  (match, tol 0)
 PASS  v90     [two] n after listwise deletion                 reported=12  computed=12  (match, tol 0)
 PASS  v90     [two] nExcluded disclosure                      reported=0  computed=0  (match, tol 0)
 PASS  v90     [two] alpha-if-deleted undefined at k = 2       computed=NA  expected TRUE
 PASS  v90     the miss-fixture probe ran                      computed=NA  expected TRUE
-PASS  v90     [miss] alpha vs psych::alpha                    reported=0.8434293822  computed=0.8434293822  (match, tol 1e-10)
-PASS  v90     [miss] Feldt CI lower vs psych                  reported=0.704979123  computed=0.704979123  (match, tol 1e-08)
-PASS  v90     [miss] Feldt CI upper vs psych                  reported=0.9285140545  computed=0.9285140545  (match, tol 1e-08)
+PASS  v90     [miss] base-R oracle vs psych::alpha (cross-check)  reported=0.8434293822  computed=0.8434293822  (match, tol 1e-12)
+PASS  v90     [miss] base-R Feldt lower vs psych (cross-check)  reported=0.704979123  computed=0.704979123  (match, tol 1e-12)
+PASS  v90     [miss] base-R Feldt upper vs psych (cross-check)  reported=0.9285140545  computed=0.9285140545  (match, tol 1e-12)
+PASS  v90     [miss] base-R alpha-if-deleted vs psych (cross-check, max)  reported=0  computed=0  (match, tol 1e-12)
+PASS  v90     [miss] alpha vs base-R oracle                   reported=0.8434293822  computed=0.8434293822  (match, tol 1e-10)
+PASS  v90     [miss] Feldt CI lower vs base-R oracle          reported=0.704979123  computed=0.704979123  (match, tol 1e-08)
+PASS  v90     [miss] Feldt CI upper vs base-R oracle          reported=0.9285140545  computed=0.9285140545  (match, tol 1e-08)
 PASS  v90     [miss] k                                        reported=5  computed=5  (match, tol 0)
 PASS  v90     [miss] n after listwise deletion                reported=21  computed=21  (match, tol 0)
 PASS  v90     [miss] nExcluded disclosure                     reported=3  computed=3  (match, tol 0)
@@ -51,6 +66,6 @@ PASS  v90     [miss] alpha-if-deleted, item 4                 reported=0.8134661
 PASS  v90     [miss] alpha-if-deleted, item 5                 reported=0.8049414824  computed=0.8049414824  (match, tol 1e-10)
 PASS  v90     alpha drops when a reverse-scored item is left unreversed  computed=NA  expected TRUE
 PASS  v90     the negative-control seed site exists in source  computed=NA  expected TRUE
-FAIL  v90     [RED] seeded-defect alpha vs psych::alpha (must go red)  reported=0.8660339136  computed=0.8493397359  (match, tol 1e-10)
+FAIL  v90     [RED] seeded-defect alpha vs base-R oracle (must go red)  reported=0.8660339136  computed=0.8493397359  (match, tol 1e-10)
 ------------------------------------------------------------------------------ 
-48 checks, 47 passed, 1 FAILED
+62 checks, 61 passed, 1 FAILED
