@@ -49,6 +49,38 @@ if (!requireNamespace("psych", quietly = TRUE)) {
     expect("2-item alpha", 0.8823529412, a2$total$raw_alpha)
 }
 
+# --- test-psychometrics.praat: @emlAlphaInfluence (base R, no packages) --
+
+base_alpha <- function(cc) {
+    k <- ncol(cc)
+    C <- stats::cov(cc)
+    (k / (k - 1)) * (1 - sum(diag(C)) / sum(C))
+}
+d <- matrix(c(2,3,3,3,2, 4,4,3,4,4, 3,4,4,3,3, 5,5,4,5,5, 1,2,2,1,2,
+              4,3,3,4,4, 2,2,3,2,2, 5,4,5,5,4, 3,3,3,3,4, 4,5,4,4,5),
+            ncol = 5, byrow = TRUE)
+full <- base_alpha(d)
+aw <- vapply(1:10, function(i) base_alpha(d[-i, , drop = FALSE]), numeric(1))
+dl <- aw - full
+expect("influence alphaFull", 0.9491763761, full)
+expect("alpha without respondent 1", 0.9519787645, aw[1])
+expect("delta for respondent 1", 0.0028023884, dl[1])
+expect("alpha without respondent 10", 0.9487500000, aw[10])
+expect("largest absolute delta", 0.0214143364, max(abs(dl)))
+expect("its respondent", 5, which.max(abs(dl)), tol = 0)
+
+di <- d; di[2, 2] <- NA; di[4, 3] <- NA
+keep <- complete.cases(di)
+cc <- di[keep, , drop = FALSE]
+fulli <- base_alpha(cc)
+awi <- vapply(seq_len(nrow(cc)), function(i)
+    base_alpha(cc[-i, , drop = FALSE]), numeric(1))
+expect("influence alphaFull after deletion", 0.9458111702, fulli)
+expect("survivor 3 maps to original row 5", 5, which(keep)[3], tol = 0)
+expect("survivor 8 maps to original row 10", 10, which(keep)[8], tol = 0)
+expect("dominant delta at original row 5", 5,
+       which(keep)[which.max(abs(awi - fulli))], tol = 0)
+
 # --- test-categorical.praat: chi-square ---------------------------------
 
 t1 <- matrix(c(20, 10, 15, 25), 2, 2)

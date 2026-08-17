@@ -113,4 +113,67 @@ flat## = {{3, 3}, {2, 4}, {4, 2}}
 @emlTestAssertContains: "zero total variance is refused", emlCronbachAlpha.error$,
 ... "zero variance"
 
+@emlTestSection: "@emlAlphaInfluence — leave-one-out over respondents"
+
+# R: base-R LOO over the 10 x 5 clean matrix (leave each row out,
+#    covariance-matrix alpha on the remainder; deltas vs full alpha)
+#    full = 0.9491763761, without row 1 = 0.9519787645
+#    (delta 0.0028023884), without row 10 = 0.9487500000,
+#    max |delta| = 0.0214143364 at row 5
+@emlAlphaInfluence: d##
+@emlTestAssertEqualStr: "influence run has no error", "",
+... emlAlphaInfluence.error$
+@emlTestAssertEqualNum: "alphaFull", 0.9491763761,
+... emlAlphaInfluence.alphaFull, tolerance
+@emlCronbachAlpha: d##
+@emlTestAssertEqualNum: "alphaFull equals the alpha kernel's alpha",
+... emlCronbachAlpha.alpha, emlAlphaInfluence.alphaFull, tolerance
+@emlTestAssertEqualNum: "alpha without respondent 1", 0.9519787645,
+... emlAlphaInfluence.alphaWithout# [1], tolerance
+@emlTestAssertEqualNum: "delta for respondent 1", 0.0028023884,
+... emlAlphaInfluence.delta# [1], tolerance
+@emlTestAssertEqualNum: "alpha without respondent 10", 0.9487500000,
+... emlAlphaInfluence.alphaWithout# [10], tolerance
+@emlTestAssertEqualNum: "largest absolute delta", 0.0214143364,
+... emlAlphaInfluence.deltaMax, tolerance
+@emlTestAssertEqualNum: "its respondent (original row)", 5,
+... emlAlphaInfluence.deltaMaxRow, 0
+
+@emlTestSection: "@emlAlphaInfluence — original-row mapping after deletion"
+
+# Same matrix with cells missing in rows 2 and 4: those rows drop, and
+# every indexed output must still speak in ORIGINAL row numbers.
+# R: n = 8, full = 0.9458111702, dominant respondent = original row 5
+#    (surviving index 3); rowIndex maps survivor 3 -> 5, survivor 8 -> 10.
+di## = {{2, 3, 3, 3, 2}, {4, undefined, 3, 4, 4}, {3, 4, 4, 3, 3},
+... {5, 5, undefined, 5, 5}, {1, 2, 2, 1, 2}, {4, 3, 3, 4, 4},
+... {2, 2, 3, 2, 2}, {5, 4, 5, 5, 4}, {3, 3, 3, 3, 4}, {4, 5, 4, 4, 5}}
+@emlAlphaInfluence: di##
+@emlTestAssertEqualNum: "n counts complete rows only", 8,
+... emlAlphaInfluence.n, 0
+@emlTestAssertEqualNum: "nExcluded discloses the dropped rows", 2,
+... emlAlphaInfluence.nExcluded, 0
+@emlTestAssertEqualNum: "alphaFull after deletion", 0.9458111702,
+... emlAlphaInfluence.alphaFull, tolerance
+@emlTestAssertEqualNum: "survivor 3 maps to original row 5", 5,
+... emlAlphaInfluence.rowIndex# [3], 0
+@emlTestAssertEqualNum: "survivor 8 maps to original row 10", 10,
+... emlAlphaInfluence.rowIndex# [8], 0
+@emlTestAssertEqualNum: "dominant delta reported by original row", 5,
+... emlAlphaInfluence.deltaMaxRow, 0
+
+@emlTestSection: "@emlAlphaInfluence — refusals"
+
+two## = {{1, 2}, {3, 4}}
+@emlAlphaInfluence: two##
+@emlTestAssertContains: "two respondents are refused",
+... emlAlphaInfluence.error$, "at least 3 complete respondents"
+@emlTestAssertUndefined: "deltaMax undefined on refusal",
+... emlAlphaInfluence.deltaMax
+
+oneItem## = {{1}, {2}, {3}}
+@emlAlphaInfluence: oneItem##
+@emlTestAssertContains: "one item is refused (influence)",
+... emlAlphaInfluence.error$, "at least 2 items"
+
 @emlTestSummary
