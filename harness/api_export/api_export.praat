@@ -26,7 +26,7 @@
 # script outside the plugin folder can have.
 #
 # The paths below are written from THIS file's folder because this file is the
-# one Praat runs. docs/API_EXPORT.md shows the same list home-relative, which
+# one Praat runs. plugin/docs/API_EXPORT.md shows the same list home-relative, which
 # is what a user's own script wants; harness/api_export/doc_example.praat
 # carries that spelling verbatim and run.sh drives it.
 #
@@ -145,7 +145,7 @@ elsif leg$ = "collide"
     @legReport: "second"
 
 elsif leg$ = "loop"
-    ; THE BATCH PATTERN docs/API_EXPORT.md ends on. Two columns, one analysis
+    ; THE BATCH PATTERN plugin/docs/API_EXPORT.md ends on. Two columns, one analysis
     ; and one export each. The claim being checked is that the collectors are
     ; REFILLED by each analysis rather than accumulated: the second export must
     ; describe vibrato_rate_Hz and not both columns, and each must land under
