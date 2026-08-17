@@ -81,6 +81,18 @@ expect("survivor 8 maps to original row 10", 10, which(keep)[8], tol = 0)
 expect("dominant delta at original row 5", 5,
        which(keep)[which.max(abs(awi - fulli))], tol = 0)
 
+# --- conditioning: the same literals must hold under a large offset -----
+
+doff <- d + 1e8
+fullo <- base_alpha(doff)
+awo <- vapply(1:10, function(i) base_alpha(doff[-i, , drop = FALSE]),
+              numeric(1))
+expect("offset alpha equals the clean literal", 0.9491763761, fullo)
+expect("offset largest absolute delta unchanged", 0.0214143364,
+       max(abs(awo - fullo)))
+expect("offset dominant respondent unchanged", 5,
+       which.max(abs(awo - fullo)), tol = 0)
+
 # --- test-categorical.praat: chi-square ---------------------------------
 
 t1 <- matrix(c(20, 10, 15, 25), 2, 2)

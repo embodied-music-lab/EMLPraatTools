@@ -162,6 +162,29 @@ di## = {{2, 3, 3, 3, 2}, {4, undefined, 3, 4, 4}, {3, 4, 4, 3, 3},
 @emlTestAssertEqualNum: "dominant delta reported by original row", 5,
 ... emlAlphaInfluence.deltaMaxRow, 0
 
+@emlTestSection: "conditioning — a large common offset changes nothing"
+
+# Alpha is translation-invariant: the clean 10 x 5 matrix shifted by
+# 100 000 000 must reproduce every value bit-for-bit against the same
+# R-verified literals. This is the stress case that a sum-of-squares
+# implementation fails by cancellation (values at 1e8 square to 1e16,
+# past double precision), pinned so it cannot come back.
+dOff## = d## + 100000000
+@emlCronbachAlpha: dOff##
+@emlTestAssertEqualStr: "offset alpha run has no error", "",
+... emlCronbachAlpha.error$
+@emlTestAssertEqualNum: "offset alpha equals the clean literal",
+... 0.9491763761, emlCronbachAlpha.alpha, tolerance
+@emlTestAssertEqualNum: "offset Feldt CI lower unchanged", 0.8733351023,
+... emlCronbachAlpha.ci95low, tolerance
+@emlAlphaInfluence: dOff##
+@emlTestAssertEqualNum: "offset influence alphaFull unchanged",
+... 0.9491763761, emlAlphaInfluence.alphaFull, tolerance
+@emlTestAssertEqualNum: "offset largest absolute delta unchanged",
+... 0.0214143364, emlAlphaInfluence.deltaMax, tolerance
+@emlTestAssertEqualNum: "offset dominant respondent unchanged", 5,
+... emlAlphaInfluence.deltaMaxRow, 0
+
 @emlTestSection: "@emlAlphaInfluence — refusals"
 
 two## = {{1, 2}, {3, 4}}

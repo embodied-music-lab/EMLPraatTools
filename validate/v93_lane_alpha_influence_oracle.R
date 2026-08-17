@@ -154,6 +154,12 @@ if (!canDrive) {
         deviant = as.matrix(read_input("lane_survey_influence_deviant.csv")),
         missdev = as.matrix(read_input("lane_survey_influence_missdev.csv")),
         n3      = as.matrix(read_input("lane_survey_influence_n3.csv")))
+    # Conditioning case (18 Aug stress round): the deviant fixture riding
+    # a large common offset. Every leave-one-out alpha is translation-
+    # invariant, so the oracle is unchanged — the leg pins the downdate
+    # formulas against cancellation at this scale. Derived from the
+    # committed fixture, so it is re-runnable.
+    fixtures$offset <- fixtures$deviant + 1e8
 
     for (name in names(fixtures)) {
         m <- fixtures[[name]]

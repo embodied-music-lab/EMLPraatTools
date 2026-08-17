@@ -183,6 +183,12 @@ if (!canDrive) {
         revnot = as.matrix(read_input("lane_survey_alpha_revnotrev.csv")),
         two    = as.matrix(read_input("lane_survey_alpha_2item.csv")),
         miss   = as.matrix(read_input("lane_survey_alpha_missing.csv")))
+    # Conditioning case (18 Aug stress round): the clean fixture riding a
+    # large common offset. Alpha is translation-invariant, so the oracle
+    # values are unchanged — but a sum-of-squares implementation loses
+    # them to cancellation at this scale, which is exactly what this leg
+    # pins. Derived from the committed fixture, so it is re-runnable.
+    fixtures$offset <- fixtures$clean + 1e8
 
     for (name in names(fixtures)) {
         m <- fixtures[[name]]
