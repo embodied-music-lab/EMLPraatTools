@@ -197,6 +197,43 @@ extended companion; the oracle dump now records 101 values. Kernel
 agreement with the oracle: 1e-10 on every leave-one-out alpha and
 delta across all fixtures.
 
+## Stress round, 18 Aug (Ian's merge gate) — one real defect found and fixed
+
+Ian asked whether the kernels had passed stress tests before merge. They
+had not — validated is not stress-tested — so a stress battery ran:
+degenerate matrices (every row incomplete, 1 x 1, constant item, a
+leave-one-out subset with zero total variance), numerical conditioning
+(a large common offset on every value), scale (2000 x 8 influence,
+counts at 2e9 in chi-square, n = 1e9 in Wilson), all against R.
+
+FOUND: catastrophic cancellation in both alpha kernels. With Likert-like
+spread riding a common offset near 1e8 (instrument readings, epoch
+times), the sum-of-squares variance formulas subtract two ~1e16 numbers
+and destroy the answer: alpha reported 1.1667 where R computes 0.8906,
+and the influence kernel corrupted every leave-one-out value. The
+validation fixtures (values 1-5) could never expose this.
+
+FIXED by centering each column on its full-sample mean before any
+variance is computed — variance is translation-invariant, so results
+are unchanged everywhere; only the conditioning improves. One
+vectorized line per kernel (outer## of a ones vector with the column
+means). After the fix the offset case matches R to 12 decimals.
+
+FOLDED IN so it cannot regress: v90 and v93 each gained a conditioning
+leg (the committed clean/deviant fixture + 1e8, derived in-run so it
+stays re-runnable; oracle values are unchanged by translation, which is
+the pin); the dev tests gained a conditioning section asserting the
+offset matrix reproduces the same R-verified literals, with the
+companion extended to prove the invariance in R. Lane totals now: 90
+dev checks, 252 validator checks, four reds red.
+
+Everything else in the battery passed with no change: all degenerate
+inputs refuse or disclose exactly as documented (including zero
+surviving rows, which exercises the empty-matrix path), chi-square at
+counts of 2e9 and Wilson at n = 1e9 match R at 12 decimals, and the
+2000 x 8 influence run completes in under 0.1 s. Chi-square and Wilson
+kernels were not modified.
+
 ## What was NOT done, per the brief
 
 No menu registration, no orchestrator or export wiring, no run_all.R

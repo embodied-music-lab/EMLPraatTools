@@ -18,6 +18,9 @@ PASS  influence alphaFull after deletion                          literal=0.9458
 PASS  survivor 3 maps to original row 5                           literal=5.0000000000  R=5.0000000000
 PASS  survivor 8 maps to original row 10                          literal=10.0000000000  R=10.0000000000
 PASS  dominant delta at original row 5                            literal=5.0000000000  R=5.0000000000
+PASS  offset alpha equals the clean literal                       literal=0.9491763761  R=0.9491763761
+PASS  offset largest absolute delta unchanged                     literal=0.0214143364  R=0.0214143364
+PASS  offset dominant respondent unchanged                        literal=5.0000000000  R=5.0000000000
 PASS  2x2 corrected chi-square                                    literal=4.7250000000  R=4.7250000000
 PASS  2x2 corrected p                                             literal=0.0297271833  R=0.0297271833
 PASS  2x2 uncorrected chi-square                                  literal=5.8333333333  R=5.8333333333

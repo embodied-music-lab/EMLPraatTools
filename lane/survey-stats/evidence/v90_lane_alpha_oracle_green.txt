@@ -62,8 +62,24 @@ PASS  v90     [miss] alpha-if-deleted, item 2                 reported=0.8106435
 PASS  v90     [miss] alpha-if-deleted, item 3                 reported=0.75  computed=0.75  (match, tol 1e-10)
 PASS  v90     [miss] alpha-if-deleted, item 4                 reported=0.8134661628  computed=0.8134661628  (match, tol 1e-10)
 PASS  v90     [miss] alpha-if-deleted, item 5                 reported=0.8049414824  computed=0.8049414824  (match, tol 1e-10)
+PASS  v90     the offset-fixture probe ran                    computed=NA  expected TRUE
+PASS  v90     [offset] base-R oracle vs psych::alpha (cross-check)  reported=0.8493397359  computed=0.8493397359  (match, tol 1e-12)
+PASS  v90     [offset] base-R Feldt lower vs psych (cross-check)  reported=0.7271721303  computed=0.7271721303  (match, tol 1e-12)
+PASS  v90     [offset] base-R Feldt upper vs psych (cross-check)  reported=0.9269696146  computed=0.9269696146  (match, tol 1e-12)
+PASS  v90     [offset] base-R alpha-if-deleted vs psych (cross-check, max)  reported=0  computed=0  (match, tol 1e-12)
+PASS  v90     [offset] alpha vs base-R oracle                 reported=0.8493397359  computed=0.8493397359  (match, tol 1e-10)
+PASS  v90     [offset] Feldt CI lower vs base-R oracle        reported=0.7271721303  computed=0.7271721303  (match, tol 1e-08)
+PASS  v90     [offset] Feldt CI upper vs base-R oracle        reported=0.9269696146  computed=0.9269696146  (match, tol 1e-08)
+PASS  v90     [offset] k                                      reported=5  computed=5  (match, tol 0)
+PASS  v90     [offset] n after listwise deletion              reported=24  computed=24  (match, tol 0)
+PASS  v90     [offset] nExcluded disclosure                   reported=0  computed=0  (match, tol 0)
+PASS  v90     [offset] alpha-if-deleted, item 1               reported=0.8649845064  computed=0.8649845064  (match, tol 1e-10)
+PASS  v90     [offset] alpha-if-deleted, item 2               reported=0.8090442567  computed=0.8090442567  (match, tol 1e-10)
+PASS  v90     [offset] alpha-if-deleted, item 3               reported=0.7639026695  computed=0.7639026695  (match, tol 1e-10)
+PASS  v90     [offset] alpha-if-deleted, item 4               reported=0.8281634663  computed=0.8281634663  (match, tol 1e-10)
+PASS  v90     [offset] alpha-if-deleted, item 5               reported=0.8148834337  computed=0.8148834337  (match, tol 1e-10)
 PASS  v90     alpha drops when a reverse-scored item is left unreversed  computed=NA  expected TRUE
 PASS  v90     the negative-control seed site exists in source  computed=NA  expected TRUE
 PASS  v90     seeded wrong-denominator alpha DIFFERS from the oracle  reported=0.8660339136  computed=0.8493397359  (differ, tol 1e-10)
 ------------------------------------------------------------------------------ 
-62 checks, 62 passed, 0 FAILED
+78 checks, 78 passed, 0 FAILED
