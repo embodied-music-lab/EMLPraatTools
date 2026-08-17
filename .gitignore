@@ -255,3 +255,14 @@ harness/record/replay_out/breaks/break_*.v75.log
 # running and noise once its count is in the TSV. The shadow trees themselves
 # live outside the repository, under the scratch directory the rig names.
 harness/bracketcap/out/break_*.v76.log
+
+# The one-line library barrel is GENERATED, at every Praat launch, by
+# plugin/setup.praat, into whichever folder the plugin is installed in. On a
+# development machine that folder can be this working tree -- harness/walks
+# symlinks the repository into a preferences directory -- and the file it
+# writes there carries THAT machine geometry in eleven absolute include
+# lines. Committing it would put a fourth barrel in scripts/ whose paths are
+# right on one machine and wrong everywhere else, beside three shipped ones
+# whose paths are relative on purpose. validate/v82 asserts this entry is
+# here and that nothing tracked matches it.
+plugin/scripts/eml-lib-user.praat
