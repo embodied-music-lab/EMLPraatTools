@@ -149,6 +149,16 @@ procedure emlCronbachAlpha: .data##
         ... + string$ (.nRowsIn) + " arrived and " + string$ (.n)
         ... + " remained after listwise deletion."
     else
+        # --- Center per column before any variance ---
+        # Variance is translation-invariant, and the sum-of-squares
+        # formula below loses its signal to cancellation when a large
+        # common offset rides on every value (data at 1e8 squares to
+        # 1e16, past double precision's reach). Centering first keeps
+        # the sums at the scale of the spread.
+        .rawColSum# = columnSums# (.work##)
+        .ones# = zero# (.n) + 1
+        .work## = .work## - outer## (.ones#, .rawColSum# * (1 / .n))
+
         # --- Item variances (vectorized: per-column sum and sum of
         #     squares, sample variance with n - 1 denominator) ---
         .colSum# = columnSums# (.work##)
@@ -299,6 +309,16 @@ procedure emlAlphaInfluence: .data##
                 .rowIndex# [.j] = .i
             endif
         endfor
+
+        # --- Center per column before any variance ---
+        # Same conditioning guard as @emlCronbachAlpha: the downdate
+        # formulas below run on sums of squares, which cancel
+        # catastrophically under a large common offset. Centering by
+        # the full-sample column means leaves every variance — full
+        # and leave-one-out — unchanged.
+        .rawColSum# = columnSums# (.work##)
+        .ones# = zero# (.n) + 1
+        .work## = .work## - outer## (.ones#, .rawColSum# * (1 / .n))
 
         # --- Full-sample sums (vectorized) ---
         .colSum# = columnSums# (.work##)
