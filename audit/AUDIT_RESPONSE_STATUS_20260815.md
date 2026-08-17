@@ -326,3 +326,500 @@ exist for that build.
 had a Praat leg exit with a zero-byte log, no leg marker and no PNG, producing
 spurious reds; identical re-runs were clean. Load contention on a two-core box, not
 a defect. The *intended* reds were stable in every run.
+
+---
+
+## The findings ledger schema — 17 August 2026
+
+Author's history-migration change order of 16 August, part 1. Every row of the
+findings ledger carries three fields, and the schema applies to all future
+findings as well as the existing ones:
+
+- **`fixedBy`** — full git commit hash of the fix. `""` until fixed.
+- **`pinnedBy`** — validator ID(s) pinning the corrected behaviour (e.g.
+  `"v66"`), or a dev-test ID where the pin lives in `plugin/dev/tests/`. `""`
+  means UNPINNED.
+- **`status`** — `open` | `fixed-unpinned` | `closed`. **`closed` requires BOTH
+  `fixedBy` and `pinnedBy` non-empty. No other path to closed.**
+
+`status` is mechanical from the other two rather than editorial, so the mapping
+is total and a row's status is never a matter of opinion:
+
+| `fixedBy` | `pinnedBy` | `status` |
+|---|---|---|
+| empty | (anything) | `open` |
+| set | empty | `fixed-unpinned` |
+| set | set | `closed` |
+
+The distinction the schema exists to force is the one this document has spent
+two rounds on: a defect that was repaired, and a defect that was repaired *and*
+whose repair something would notice the loss of. `v61` attested a repaired
+defect as open for a week; `v29` asserted renders the tree has never been able
+to produce; `v68`'s pin asserted a caller count, which a nonexistent procedure
+satisfies trivially. In every one of those the ledger would have said "closed"
+and been wrong in the same direction. A **fixed-unpinned** row is not an
+embarrassment — it is the honest state for most repairs, and the list of them is
+the deliverable.
+
+### Commit convention, on the record
+
+From now on the subject line of any fix commit **begins with the finding ID it
+closes**:
+
+```
+NEW-G5-2: the axis publication is spent when it is read
+```
+
+A commit closing more than one finding **lists every ID**:
+
+```
+NEW-G5-2, NEW-G8-3: ...
+```
+
+This is what makes `fixedBy` recoverable by search rather than by memory. The
+41-row backfill below is blocked precisely because no commit in this repository
+carries a finding ID in its subject line, and the archaeology has to be done by
+behaviour instead.
+
+### Enforcement
+
+`validate/tools/check_findings_schema.py` — stock Python 3, no packages, exit 0
+iff clean. It asserts that every row carries all three fields as strings, that
+`status` is one of the three literals exactly (spelling included — a consumer
+switching on `fixed_unpinned` silently drops the row into its default branch),
+that no row is `closed` without both fields, and that every row's `status`
+agrees with what its two evidence fields entail. `fixedBy`, when set, must be a
+full 40-character hash **and must name a commit that actually exists in this
+repository** — the check that catches a plausible-looking hash carried in from
+somewhere else.
+
+Two vacuity guards, because a checker that passes when it has nothing to check
+is the failure this repository has now hit twice — the manifest whose `--check`
+was correct for twelve days while nothing ran it, and every pin satisfied by the
+absence of the thing it named. **A missing ledger is a FAILURE, not a skip**, and
+**an empty ledger is a FAILURE**: zero rows satisfy every per-row rule vacuously.
+
+Break-tested 17 August, four deliberate corruptions, each red and each restored:
+a row with `pinnedBy` deleted; `status` spelled `fixed_unpinned`; a `closed` row
+with `pinnedBy` emptied (reds twice — the explicit rule and the entailment); and
+a zero-row ledger.
+
+---
+
+## CLEARED — the ledger was never committed here, and was landed on 17 August
+
+**The 41-row backfill was blocked from 15 to 17 August because
+`FINDINGS_MACHINE.json` was not in this repository, and never had been.** That
+blocker is now cleared and the section is kept rather than deleted, because the
+next reader will otherwise find three days of status entries that talk about a
+checklist of record the repository did not hold, and no explanation of why.
+
+What was established on 17 August, before the file arrived, and all of it still
+stands:
+
+- the ledger was absent from the working tree (`audit/` and repository-wide);
+- and absent from **every commit on every ref** — `git log --all
+  --diff-filter=A` and a full `--name-only` sweep of all 247 commits. The only
+  JSON ever committed to this repository up to that point was
+  `plugin/dev/tools/procs.json` and `plugin/dev/tools/theilsen_margin_rows.json`;
+- and absent from both git bundles (`EMLPraatTools-2026-08-05-audit.bundle`,
+  `EMLPraatTools-orchestrator-validation.bundle`) and the `push2`–`push38`
+  output staging directories, all of which predate 14 August;
+- and absent from the scratch and handoff trees under the working account.
+
+The ledger was not lost. **The 14 August delivery had never been landed in this
+repository at all.** `handoffs/HANDOFF_FOR_OPUS_2026-08-16.md` §"Reference Files
+for Implementation" names seven files as "included in this delivery"; three were
+present and four were not.
+
+**Landed 17 August 2026,** from that delivery, as untracked files in `audit/`:
+
+| File | What it is |
+|---|---|
+| `FINDINGS_MACHINE.json` | the 41-row checklist of record — the file the backfill needed |
+| `EML_AUDIT_REPORT_2026-08-14.md` | the full stress-test report, §1–§10 |
+| `AUTHOR_RULINGS_ADDENDUM_2026-08-14.md` | the three rulings of 14 August |
+| `handoffs/LETTER_TO_OPUS_2026-08-15.md` | the five rulings and ten change orders of 15 August |
+
+The three siblings matter as much as the ledger for reading it: the ledger rows
+carry an `id`, a `severity` and a one-line `mechanism` and nothing else, so
+`NEW-G8-2` is a title until §4.5 of the report says what a one-sided range does,
+and `D5` is a letter until §5 and ruling 1 of the letter say which menu is being
+ignored on which arm. The backfill below was done against all four together.
+
+The 41 rows carry `fixedBy`, `pinnedBy` and `status` as of 17 August. The
+archaeology, its method, and what it could not establish are in
+§"The 41-row backfill" at the end of this file.
+
+Worth keeping, because it was the sharpest half of the blocker: while
+the ledger was missing, `NEW-G5-2` and `NEW-G8-3` were the only two finding IDs
+that appeared anywhere in the tree, both as illustrative examples in the handoffs
+and once in `validate/REGISTRY.md`. The other thirty-nine row *keys* did not
+exist in this repository in any form. No amount of care would have recovered them
+from prose, and the ledger is the only artefact that carries them.
+
+### The pin claims in this document
+
+The change order's instruction was to treat this file's "closed by vNN" entries
+as claims and check that the named validator actually contains an assertion that
+would go **red if the fix were reverted**, rather than merely mentioning the
+area. That check was independent of the missing ledger, and every entry in it
+transferred into a row's `pinnedBy` once the rows arrived. Sampled by reading,
+and **confirmed genuine**:
+
+| Claim | Verified assertion |
+|---|---|
+| 1a → `v61` | counts the adjustment optionmenu on six arms and no more, asserts every menu sits inside an `adjustOffered = 1` just opened, and pins the eighteen read sites against twelve guards |
+| 1b → `v66`, `v69` | `v66` requires `annotMatrixPosthoc$` to name Tukey *and* state family-wise control, and requires the Dunn arm **not** to; `v69` asserts the asymmetry on the drawn figure and that no two-group arm borrows the sentence |
+| P0 → `v73`, `v77` | `v77` asserts the defect's own line `.p = studentQ (.absT, .df)` is **absent** while the two-sided `2 * studentQ (.absT, .df)` survives; `v73` pins against the R oracle at `1e-14` and documents that direction-inversion reds **only** against the oracle |
+| A → `v74` | asserts the stamp is written once, re-taken at dispatch, and zeroed the moment it is read — the both-or-neither shape a values-only check cannot see |
+| B → `v75` | asserts on the **emitted script**: exactly one draw step heading, and the figure drawn at 195..275 rather than the discarded pass's 235 |
+| C → `v76` | parses the bridge into a block tree and requires every bracket-label site to be **dominated** by `annotTextN = 1` — not an arm-scoped grep |
+| D → `v68` | pin turned around: asserts `@emlCheckPlausibility` is **absent**, so re-introduction reds |
+
+Every claim sampled by reading stands up. The seven that had not been sampled —
+rulings 2, 4, 5, 6, 7, 8a, 8b, 9 and 10a, backed by `v54`, `v58`, `v62`, `v63`,
+`v64`, `v65`, `v67` — were then **driven** rather than read, by the method in the
+next section. Six of the seven go red: `v58`, `v62`, `v63`, `v64`, `v65` and
+`v67` all fail on a plugin reverted to `30bc163`, between four and thirty checks
+each. `v54` does **not**, and it was never going to: ruling 2 is that the two
+version floors are two contracts, and what closes it is a paragraph in `v54`'s
+header. A header is documentation. It is the right place for that ruling and it
+is not a pin, and this table should stop implying otherwise.
+
+**One correction to the table above, found by driving it.** `P0 → v73, v77` is
+half right. `v77` reds hard on a reverted plugin — fifteen checks, because it
+drives a real Praat out of R and nothing it reads outlives the run. `v73` stays
+**green**, all 181 checks, because its input is
+`evidence/csv/v73_directional_input.csv`, a committed capture that a source
+revert does not touch. `v73`'s oracle comparison is exactly as good as the claim
+in the table says it is, and it is a claim about a **file**, not about the tree.
+The pair is still the right pair; what pins P0 against a revert is `v77` alone.
+That distinction is the entire subject of the section below.
+
+---
+
+## The 41-row backfill — 17 August 2026
+
+`audit/FINDINGS_MACHINE.json` now carries `fixedBy`, `pinnedBy` and `status` on
+every row. `python3 validate/tools/check_findings_schema.py` exits 0.
+
+| status | rows |
+|---|---|
+| `closed` — repaired, and something reds if the repair is undone | 26 |
+| `fixed-unpinned` — repaired, and nothing in the suite would notice | 8 |
+| `open` — no repair identified in this repository | 7 |
+
+### How `fixedBy` was established
+
+No commit in this repository carries a finding ID in its subject line — that is
+the gap the convention above closes — so every hash below was read out of a
+**diff**, not out of a message. For each row: locate the corrected behaviour in
+the shipped source, `git log -S` the string that carries it against the file the
+row's `mechanism` names, and confirm the identified commit's body describes that
+behaviour. Where more than one commit touched the area, the one named is the one
+that made the behaviour correct, not the first to touch it — `NEW-G11-1` is the
+example worth keeping: `a4de0ee` repaired the half that was plainly broken and
+made the header's portability claim *conditional*, and `d5a434b` is the commit
+that made the claim true by construction. `d5a434b` is what the row carries.
+
+Five commits carry all thirty-four repairs:
+
+| Commit | Subject | Rows |
+|---|---|---|
+| `a4de0ee` | stats: export integrity, save guards, coercion, non-interactive replay | 11 |
+| `7f62e75` | graphs: stereo is reachable, the KW crash is gone, and a steady tone draws flat | 13 |
+| `c112b7c` | scripts: the editor stops deleting the wrong column, and describe gets a Save | 8 |
+| `0e0c0fa` | graphs: the axis name clears its ticks, and a recorded auto axis replays as auto | 1 |
+| `d5a434b` | recorder: the emitted include block is home-relative, full stop | 1 |
+
+### How `pinnedBy` was established
+
+Not by reading which validator mentions the area. **The plugin was reverted and
+the validators were run.** `plugin/` at `30bc163` — the last tree before the
+audit response began — was dropped into a scratch copy of this repository with
+`validate/`, `harness/` and `evidence/` left at HEAD, and thirty-six validators
+were run against it one at a time. Every check that turned red is a check that
+would notice the loss of the repair it belongs to. Where a whole-file revert
+could not attribute a red to one row, the mutation was narrowed to the single
+behaviour — `NEW-G12-2` was settled by deleting the two `Rename: "eml_converted_"`
+lines and nothing else, and `v63` reds on five checks.
+
+The standard is deliberately literal: **a source revert, with no harness
+re-driven.** That is what a reviewer who reverts a commit and runs the suite
+actually gets, and it separates two things this repository has twice confused.
+A validator that reads plugin source, or that drives a live Praat against the
+tree, reds. A validator whose only input is a committed harness artefact stays
+green, because the artefact still says what it said — which is precisely the
+failure recorded above in `v61`'s week of attesting a repaired defect as open,
+in `v45`'s pinned naming contract, and in the fifteen harnesses that no longer
+reproduce. `v57` is the cleanest illustration: it names four findings in its own
+header, and exactly one of them (`NEW-G1-1`) has a source-reading check behind
+it. The other three are read off `harness/exportint/out`, and on a reverted tree
+`v57` reports 71 of 73 passing.
+
+### The backfill queue — eight repairs this project cannot prove
+
+These are `fixed-unpinned`: the fix is in the tree and identified by hash, and
+nothing in `validate/` would go red if it were undone. Each line is what a pin
+would have to assert. None of them needs a new harness; five of them need one
+static assertion against a source file a validator already reads.
+
+| Row | Sev | Fixed by | What a pin has to assert |
+|---|---|---|---|
+| `NEW-G4-1` | 3 | `a4de0ee` | that the ANOVA augment's `.std.resid` is computed **with** the leverage term — `@emlOLSInfluence`, or `.hat`, reached from both ANOVA arms in `eml-analysis.praat` and not only from the regression arm. `v57` compares `.std.resid` against `rstandard()` today, but off `harness/exportint/out`, so the comparison survives the arithmetic being put back. |
+| `NEW-G6-1` | 3 | `a4de0ee` | that the RM/Friedman **refusal** path reaches the exclusion note, not just the success path — the note existed before the fix and printed below results the refusal never reaches, so the assertion is a dominance one: every refusal exit in the RM branch is preceded by the disclosure, not merely that the disclosure exists. |
+| `NEW-G12-3` | 3 | `a4de0ee` | that the zero-variance paired branch takes the refusal exit rather than the "Analysis complete" modal — the two are distinguishable in source, and `v57`'s check that the paired *wrapper* forks on a refusal passes on the pre-fix wrapper, so the wrapper is the wrong half to assert on. The orchestrator is the half that changed. |
+| `NEW-G11-2` | 2 | `a4de0ee` | that the emitted recording restores the advanced globals it drew with (`prev_*ShowJitter`) and emits the annotation render — `v58` asserts both, off `harness/record/replay_out`. The same four counts read out of `eml-record.praat` would hold the same claim against the tree. |
+| `NEW-G11-3` | 3 | `a4de0ee` | that a recording sweeps an orphaned meta table rather than hydrating from it, and that a session whose store was deleted takes no stamp from a survivor — `@emlRecordSweepOrphans` and the buffer pairing exist and are asserted only through the drive's KV file. |
+| `NEW-G12-4` | 4 | `c112b7c` | **half-pinned, and the half that is missing is the one the finding names.** `v60` reds on the check-&-repair arm ("no raw `exitScript` refusal remains"). The describe wrapper's entry refusals are not asserted anywhere: putting `exitScript: "No numeric columns found in the selected Table."` back into `eml-describe-table.praat` leaves `v35`, `v49`, `v59`, `v60` and `v63` all green. The pin is the same grep `v60` already runs, pointed at the second file. |
+| `D12` | 3 | `c112b7c` | that Describe Table Column offers Save, clears the Info field, and ends in a completion dialog. `v49`'s population excludes this wrapper by construction (its filter is `@emlRun[A-Za-z]+Analysis:`, and describe calls `@emlReportDescriptiveAnalysis`); `v48` counts eleven Save callers off a committed TSV. Either widen `v49`'s filter or assert the `@emlSavePanel` call site in the wrapper source. |
+| `D6` | 4 | `7f62e75` | that the three graph types with no Annotation-layout menu **say so** — the fix replaced an absent field with the sentence "Comparisons appear as a matrix panel below the plot.", and no validator reads that string. One `grepl` in `v61`'s static half, beside the D4 and D11 checks it already makes on the same file. |
+
+### The seven `open` rows, and why each is open
+
+Three different things land on `open`, because the schema's mapping is total and
+has one literal for "no `fixedBy`". They should not be read as one list.
+
+**Not repaired, and the tree says so.** `NEW-G8-2` — a one-sided range (minimum
+typed, maximum left on automatic) is still swapped into `(0, minimum)` by the
+form's range-validation block, which is intact at `eml-graphs-form.praat`. What
+`7f62e75` added is `@emlDiscloseClipped`, and that procedure's own header states
+the position exactly: "The reordering happens in the form's range-validation
+block and cannot be undone from here … What CAN be done from here, and is, is to
+refuse to let the consequence pass unremarked." `v62` pins the disclosure and
+says the same thing in its own comment. The disclosure fires only when
+`.nOutside > 0`, so a user who types 300 as a floor on data that all sits below
+300 gets the inverted range **and** silence. The row is `open`, and the mitigation
+is real and is not the repair. This is the one row where reading the status
+tables alone could leave a reader thinking a defect had been closed.
+
+**Never repaired, and known not to be.** `D38` (simple effects after a
+significant two-way interaction) and `D40` (no interaction plot among the graph
+types). `grep -ri "simple effect"` and `"interaction plot"` return nothing in
+`plugin/`. `FINDINGS_INDEX.md` already carries both as live; `D38`'s caution half
+was closed on 7 August and its simple-effects half never was.
+
+**Repaired before this repository existed.** `D66-b/c` and `D98/D99` were
+resolved on 6 August 2026 and re-verified by the 14 August session. This
+repository's root commit is `9b7d5aa`, 12 August 2026, which imported 2,818
+files in one go. **There is no commit here for any repair made before 12
+August.** Naming the root import as `fixedBy` would be false in the way the
+change order warns about — by that logic the root import fixed all forty-one —
+so the field is empty and the reason is this paragraph. `D98/D99` is in any case
+an *evidence* closure rather than a code change: what the 14 August session
+closed was the gap that the fix had never been driven on the exact committed
+`r2`/`r5` datasets.
+
+**Not defects.** `D15` and `RULE-28I` are the audit's two REFUTED rows — the
+paired wrapper's literal `"Group"` preset is correct, and a second save after a
+separate-legend save is byte-identical. The schema has no literal for "examined
+and found not to be a defect", so both land on `open` mechanically. They are not
+work. If a fourth literal is ever wanted, `refuted` is the one the ledger needs;
+until then their `verdict` field carries the truth and `status` should be read
+with it.
+
+### What could not be established
+
+Nothing in the 34 repaired rows has an unidentified commit. Every `fixedBy` in
+the ledger resolves in this repository — the schema checker verifies each one
+against `git cat-file` on every run, so a hash carried in from elsewhere cannot
+survive a green check. The only rows with an empty `fixedBy` are the seven above,
+and for each of them the emptiness is a statement rather than a gap in the
+archaeology.
+
+### Mutation testing the pins — 17 August 2026
+
+The section above established `pinnedBy` by reverting `plugin/` wholesale to
+`30bc163` and seeing which validators went red. That answers a coarser question
+than the ledger asks. **Thirty-four repaired rows are carried by five commits**
+— `7f62e75` (13 rows), `a4de0ee` (11), `c112b7c` (8), `d5a434b` (1), `0e0c0fa`
+(1) — so no severity-1 or severity-2 row can be isolated by reverting its own
+`fixedBy`: every one of the eleven sits in a bundle of eight to thirteen. A red
+on a reverted `a4de0ee` proves that *something* in eleven repairs is pinned. It
+does not name which.
+
+So each row was mutated **by hand, one behaviour at a time**, in a scratch copy
+of `plugin/` at `/tmp/mutation`, and only the validator(s) the row names in
+`pinnedBy` were run against it. The repository's own tree was never edited:
+every validator takes `EML_*_FILE` / `EML_*_DIR` / `EML_PLUGIN_DIR` overrides,
+the same doors `harness/formaxis/break.sh` and `harness/bracketcap/break_v76.sh`
+drive their shadow trees through, and the mutated copy is passed on those.
+
+**The standard is the one the backfill declared and is unchanged: the source is
+mutated and no harness is re-driven.** That is what a reviewer who reverts and
+runs `validate/run_all.R` actually gets, because nothing in that list re-renders
+a figure. Where a mutation left the validator green, the harness was then
+re-driven as a separate, clearly-labelled measurement, so that "no pin" and "no
+pin under the suite's own conditions" are not confused.
+
+Two rules were kept throughout. A mutation must be a **defect a person could
+write** — not a syntax error, not a call to a procedure that does not exist —
+and it must **run**: three first attempts aborted the Praat drive mid-way and
+were rewritten, because a validator red caused by a broken rig measures the rig.
+
+To re-run any single row: copy `plugin/` somewhere outside the repository, make
+the one edit the row's Mutation column names, and run the row's validator with
+the override that validator documents in its own header — `EML_EDITTABLE_FILE`
+for `v55`, `EML_PLUGIN_DIR` for `v57`/`v59`/`v63`, `EML_OUTPUT_FILE` plus
+`EML_WRITER_FILE` for `v56`, `EML_PAIRED_FILE` plus `EML_CHECKDATA_FILE` for
+`v60`, `EML_GRAPHSFORM_FILE` plus `EML_ANNOTPROC_FILE` for `v61`,
+`EML_GRAPHS_SRC` plus `EML_SCRIPTS_SRC` for `v62`, `EML_RECORD_PROC_SRC` plus
+`EML_RECORD_SRC` plus `EML_OUTPUT_SRC` for `v58`. Every row below was measured
+against a baseline run of the same validator over an unmutated copy through the
+same overrides, so an override that silently failed to take would have shown as
+a green mutation and a green baseline of different sizes rather than as a
+result.
+
+#### The eleven severity-1 and severity-2 rows
+
+| Row | Sev | Pin | Mutation (one behaviour, nothing else) | Result |
+|---|---|---|---|---|
+| `NEW-G10-2` | 1 | `v55` | `eml-edit-table.praat`: `@columnRemove: column_to_delete` → `selectObject: tableId` + `Remove column: column_to_delete$` — the menu label back in place of the menu index | **RED 4/95.** "no menu path calls Get value:/Set string value:/Remove column: by name"; "stray name-addressed calls at line(s) 593"; "Delete Column passes the menu INDEX to @columnRemove"; "Delete Column does not pass the menu LABEL anywhere" |
+| `NEW-G10-1` | 2 | `v55` | `eml-edit-table.praat`: the `@labelInUse: new_name$, column_to_rename` call and its `elsif labelInUse.found` refusal arm deleted from the rename branch, leaving the empty-name guard | **RED 1/94.** "the rename is gated on @labelInUse" |
+| `NEW-G10-3` | 2 | `v55` | `eml-edit-table.praat`: `if .nCols <= 1` → `if .nCols < 1` | **RED 1/94.** "Delete Column refuses at <= 1 column, not < 1" |
+| `NEW-G1-1` | 2 | `v57` | `eml-analysis.praat`: both `if .accumulate = 0` wrappers round `@emlCSVInit` removed inside `@emlRunNormalityAnalysis`, so the collectors are cleared per column again | **RED 1/74.** "every @emlCSVInit in it is guarded by the press test (0 of 2)" |
+| `NEW-G12-1` | 2 | `v56`, `v59` | Three edits, all needed for the crash: `eml-output.praat` — `Set string value: .r, .columnName$, ""` removed from `@eml_auditLabelColumn`, both `@eml_defaultRowLabels:` calls removed from `@emlWrapperInit`; `eml-extract.praat` — `or .cell$ = "?"` removed from `@eml_strictNumericColumn`'s scan | **RED 2/107 on `v56`** ("an unlabelled cell is rewritten to the empty string"; "a cell that is already empty is not written to again") and **RED 6/42 on `v59`**, in the audit's own words: `Error: Table "eml_numericProbe": the cell in row 1 of column "row" is undefined.` on Compare groups / Correlate / Regression, over Matrix and TableOfReal both |
+| `NEW-G12-5` | 2 | `v56` | `eml-output.praat`: the `@eml_saveFolderWritable` call and its whole refusal-and-return block replaced by a bare `createFolder: .folder$` | **RED 5/107.** the probe's stamp; "no longer calls createFolder: unguarded"; "asks the writability question"; "a failed writability check leaves the panel by its normal exit"; "the check happens before any write" |
+| `NEW-G2-1` | 2 | `v56` | `eml-output.praat`: `.result$ = replace$ (.result$, "/", "-", 0)` deleted from `@eml_saveSafeBaseName`, the other eight characters left | **RED 1/107.** "the base name sanitiser replaces / (POSIX and macOS path separator)" — the per-character form of the check earns its keep here. A coarser variant, deleting the `@eml_saveSafeBaseName:` call from the panel, reds 3/107 |
+| `NEW-G3-1` | 2 | `v60` | `eml-compare-paired.praat`: `@emlTableColumnNames: tableId` and `nCols = emlTableColumnNames.nCols` moved from inside the `repeat` to immediately above it — filled once and then trusted, which is the mechanism verbatim | **RED 2/49.** "the paired form re-reads the user's table's column names on every pass"; "and refreshes nCols from the same read" |
+| `NEW-G7-2` | 2 | `v62` | `eml-graphs-form.praat`: the `@emlGraphsChannelGate: objectId, "waveform"` call and its `wasConverted` block deleted, making the channel choice unreachable from EML Graphs again | **RED 2/114.** "the graphs form gates the acquired object"; "and the call sits AFTER the acquire loop closes, on the path every figure takes" |
+| `NEW-G9-1` | 2 | `v61` | `eml-annotation-procedures.praat`: `emlKruskalWallis.rMatrix## = emlDunnTest.rMatrix##` deleted from the significant branch | **RED 2/84.** "the graphs bridge copies Dunn's rank-biserial matrix into emlKruskalWallis"; "the copy follows the bridge's own @emlDunnTest call" |
+| `NEW-G11-2` | 2 | *(none)* | `eml-record.praat`: all four `prev_*ShowJitter` emission blocks deleted from `@emlRecordCaptureEnv`. Then, harder: `@emlRecordCaptureEnv` **and** `@emlRecordCaptureAnnotations` both stubbed to `.out$ = ""` | **GREEN 91/91 both times.** The row already carries `pinnedBy: ""`; this confirms it. `v58`'s three witnesses (`emit_jitter_lines`, `emit_annotate_lines`, `emit_bracket_render`) are read out of `harness/record/replay_out`, and the committed artefact still says what it said |
+
+Ten of the ten pinned rows go red. The eleventh was already recorded as
+unpinned and is now measured as unpinned rather than inferred to be.
+
+#### Every severity-3 and severity-4 row that carries a pin
+
+Not a sample in the end: **all sixteen** of them, because each mutation is a
+single edit and each validator runs in under a second (`v59` and `v63` launch
+Praat and take six). Selection therefore needed no rule. One `fixed-unpinned`
+row was mutated as a negative control, chosen because the backfill queue makes
+an explicit prediction about it.
+
+| Row | Sev | Pin | Mutation | Result |
+|---|---|---|---|---|
+| `D1/D2` | 3 | `v61` | `eml-graphs-form.praat`: the first of thirteen `@emlSeedAxisLabels` calls deleted — one column-mapping page left behind | **RED 1/84** (13 expected, 12 found) |
+| `D11` | 3 | `v61` | form: `scatterGroupShown = tmpUseGroup` deleted and `if scatterGroupShown = 1` → `if 1 = 1`, so the group fields are built whatever the tickbox says | **RED 1/84.** "the group fields are gated on the tickbox (scatterGroupShown)" |
+| `D5` | 3 | `v61` | form: one of the six `adjustOffered = 1` gate-openings deleted | **RED 2/84** (6 expected, 5 found, twice — the count and the adjacency) |
+| `D7` | 3 | `v61` | form: the second of twelve `boolean: "Annotate results on graph"` deleted — one beginner arm back to hard-resetting the preset | **RED 1/84** (12 expected, 11 found) |
+| `D8` | 3 | `v61` | form: `if config_showAdvanced = 0 / emlLegendPlacement = 1 / endif` deleted | **RED 1/84.** "beginner mode overrides the legend placement for the draw" |
+| `D4` | 4 | `v61` | form: a read of the dead channel put back — `if emlGraphsPresetShowDots > 0 / prev_scatterShowDots = emlGraphsPresetShowDots / endif` | **RED 1/84** (0 expected, 2 found) |
+| `NEW-G8-3` | 3 | `v61` | form: `if graph_type = 8 and annotate = 1 and scatterAnalysisType > 0` → `if 0`, so the scatter arm never resets its collector | **RED 1/84.** "the scatter arm resets the collector once per press" |
+| `NEW-G2-2` | 3 | `v62` | `eml-annotation-procedures.praat`: the U gloss put back to `"U: Sum of ranks for the first group"` | **RED 2/114.** "no longer opens \"Sum of ranks\""; "says what U counts: pairs, out of n1 x n2" |
+| `NEW-G8-4` | 3 | `v62` | `eml-draw-procedures.praat`: the first scatter path's `@emlPlaceAnnotationBox` call replaced by `emlPlaceAnnotationBox.corner1$ = "TL"` and `.collisions = 0` — the corner taken without measuring | **RED 1/114.** "both scatter paths place the panel through it" |
+| `NEW-G10-4` | 3 | `v60` | `eml-check-data.praat`: `@emlCheckFileRowLengths: path$` deleted from the file-mode path | **RED 1/49.** "file mode scans row lengths" |
+| `NEW-G11-4` | 3 | `v58` | `eml-record-save.praat`: `@emlRecordMakeFolder: outFolder$` deleted | **RED 1/91.** "the target folder is created before the flush" |
+| `NEW-G12-2` | 3 | `v59`, `v63` | `eml-output.praat`: both `Rename: "eml_converted_" + …` lines deleted from `@emlWrapperInit` | **RED 5/41 on `v63`** — "the converted Table is renamed at creation" on `init_matrix`, `init_tor`, `init_labelled`, `init_partialcols`. **GREEN on `v59`**, and correctly: `v59`'s probe drives `@emlDescribeCoerceSelection`, a different coercion. Deleting the rename in `eml-describe-table.praat` instead reds `v59` 1/42 — the two named validators cover two different doors, and both doors are covered |
+| `SAVED-OVERPRINT` | 4 | `v56` | `eml-output.praat`: `@emlWrapText: .one$, 62` in `@eml_saveReceiptLines` replaced by a one-line assignment of the raw string | **RED 1/107.** "the receipt wraps .one$ through @emlWrapText" |
+| `NEW-G11-1` | 3 | `v58` | **Two mutations of the same defect, and they disagree.** (a) the render-time tilde rewrite deleted from `@emlRecordRender`, leaving `.p$ = emlRecordPluginRoot$` — the machine-absolute include block under a header claiming home-relative, which is the finding verbatim. (b) the Linux 6.x canonical fallback in `@emlPluginRoot` changed from `~/.praat-dir/…` to `/root/.praat-dir/…` | (a) **GREEN 91/91.** (b) **RED 2/91.** Pin kept — undoing `d5a434b` reds — but recorded as **half a pin**: the render-time rewrite, which is the half the audit measured, has no source assertion behind it. Everything `v58` says about the emitted include block is read off `harness/record/replay_out` |
+| `NEW-G7-1` | 3 | ~~`v62`~~ | `eml-draw-procedures.praat`: `.spanFloorSemitones = 0.1` → `= 0`, so a sustained tone collapses onto its 1e-05 Hz frame again | **GREEN 114/114. PIN WITHDRAWN.** `v62`'s only source check here is `has(code_draw, "\\.spanFloorSemitones =")` — the presence of the assignment, not its value, and a zero satisfies it |
+| `NEW-G8-1` | 3 | ~~`v62`~~ | `eml-graph-procedures.praat`: inside `@emlDrawMarker` only, `if emlPointInFrame.inside = 0` → `if 0` — the primitive still asks and then draws the point anyway | **GREEN 114/114. PIN WITHDRAWN.** `v62` counts `@emlPointInFrame:` call sites at `>= 2`; there are three (`@emlRegisterCollisionPoints`, `@emlDrawMarker`, `@emlDrawAlphaDot`), so one point primitive can stop clipping and the count still passes |
+| `NEW-G4-1` | 3 | *(none)* | negative control. `eml-analysis.praat`: both ANOVA arms' `.std = (.v - .fit) / (.sigma * sqrt (1 - .hat))` → `/ .sigma`, the leverage term dropped | **GREEN 74/74**, as the backfill queue predicted: `v57` compares `.std.resid` against `rstandard()` off `harness/exportint/out` |
+
+#### The two pins withdrawn, and what a real pin would cost
+
+`audit/FINDINGS_MACHINE.json` now carries `pinnedBy: ""` and
+`status: "fixed-unpinned"` on `NEW-G7-1` and `NEW-G8-1`.
+`python3 validate/tools/check_findings_schema.py` **exits 0**; the census moves
+from 26/8/7 to **24 closed, 10 fixed-unpinned, 7 open**.
+
+Neither repair is in doubt — both are in the tree and both were re-measured
+here. What is withdrawn is the claim that the suite would notice their loss.
+And the cost of a real pin is one line each, because in both cases the check
+that exists asserts the wrong quantity:
+
+* `NEW-G7-1` — assert the **value**, `.spanFloorSemitones = 0.1`, not the
+  presence of an assignment to it. A floor of zero is not a floor.
+* `NEW-G8-1` — assert the clip **per primitive**: `@emlPointInFrame:` inside
+  the body of `@emlDrawMarker` and inside the body of `@emlDrawAlphaDot`
+  separately, rather than counting the file's occurrences at `>= 2`. That is
+  the same correction `v62`'s own `core_bypassed` break case forced on the
+  channel gate, where a file-wide grep was green on a tree with the call
+  deleted from the gate.
+
+Both are the shape this repository keeps finding: a check that a **plausible
+edit satisfies while the behaviour it names is gone**. Neither was found by
+reading. Both were found by mutating.
+
+#### The evidence-type hypothesis, tested
+
+The prediction under test was that the unpinned rows cluster in an early-August
+stratum, when repairs landed faster than pins. **That is false here**, and the
+dates settle it without argument: all thirty-four repaired rows landed on
+**15 August**, in the five commits above. There is no early stratum to cluster
+in.
+
+The competing hypothesis — the backfill's own — was that the split is by
+**evidence type**. Thirty-two distinct mutations were made and run through
+thirty-four validator runs (two rows name two validators each), and every run
+is classified below by what the check that decided it actually reads:
+
+| Evidence the deciding check reads | Runs | Red | Green |
+|---|---|---|---|
+| plugin **SOURCE** — the file, read as text | 24 | 24 | 0 |
+| **LIVE PRAAT**, driven out of the validator against the mutated tree | 3 | 3 | 0 |
+| a **COMMITTED ARTEFACT** and nothing else | 6 | 0 | 6 |
+| *(out of population — see below)* | 1 | 0 | 1 |
+
+The variable is total across the thirty-three in-population runs: **every red
+came from a check reading source or driving Praat, and not one red came from a
+committed artefact.**
+
+The thirty-fourth run is `NEW-G12-2` against `v59`, and it is green for a
+reason that is not about evidence type: `v59` does drive live Praat, but its
+probe enters through `@emlDescribeCoerceSelection` while the mutation was made
+in `@emlWrapperInit`. Deleting the rename in the door `v59` actually drives
+reds it, 1 of 42. It is kept in its own row rather than folded into either
+column, because "the check reads a kind of evidence that cannot move" and "the
+check drives the right kind of evidence through a different door" are different
+defects with different repairs.
+
+No other variable comes close. Severity does not predict it — the six greens
+are two runs of one sev-2 row, three sev-3 rows and a sev-3 negative control.
+The fixing commit does not: of the seven rows `a4de0ee` repaired that were
+mutated here, five red and two do not. The validator does not: `v58`
+produces both a red and a green **on the same row**, `NEW-G11-1`, from two
+mutations of the same defect.
+
+`NEW-G11-1` is the cleanest single demonstration in the set, because it holds
+everything else constant: one row, one validator, one commit, one defect,
+mutated two ways. The way that touches a string `v58` reads out of
+`eml-record.praat` reds. The way that removes the behaviour `v58` only ever
+sees through `harness/record/replay_out` does not.
+
+**Written down as a rule, because it is a property of the whole suite and not
+of these rows.** A validator's inputs divide into three kinds, and only two of
+them can hold a repair in place against an edit:
+
+> A check whose only input is a committed harness artefact cannot fail on a
+> change to `plugin/`. The artefact was rendered by a tree that no longer
+> exists and it will say what it said until something re-renders it. Such a
+> check is evidence **about a run**, and it is often the only evidence
+> available — no source assertion can see a clipped statistics box or a
+> collapsed axis. But it is not a **pin**, and a row whose `pinnedBy` names
+> only artefact-backed checks is `fixed-unpinned` however green the validator
+> is.
+
+The practical consequence, and it is not "re-drive everything": a pin needs
+**one** assertion that reads the tree. `NEW-G7-1` and `NEW-G8-1` each need one
+line. `NEW-G11-2`, `NEW-G4-1` and the render half of `NEW-G11-1` each need one.
+The artefact half stays where it is and keeps doing the thing only it can do.
+
+For completeness, and because it separates "not pinned" from "not testable":
+both withdrawn rows **do** go red when the harness is re-driven against the
+mutated tree. Driven through a self-contained shadow of `harness/graphaxes`
+(`axes.sh` with `EML_AXES_OUTDIR` pointed away from the repository), on the
+same two mutations:
+
+* `NEW-G7-1` — **RED 3/114**, and the first line is the finding itself: *"the
+  drawn axis is opened to a readable width (0.000014 Hz, from 0.000009702)"*.
+* `NEW-G8-1` — **RED 2/114**: *"a typed range of 100-300 over data running
+  90-322 withholds 0 point(s)"*, against the five the committed artefact
+  records.
+
+A control re-drive of the unmutated tree through the same shadow is 114/114, so
+the reds are the mutations and not the rig. That is the measurement that makes
+the withdrawal precise rather than pessimistic: these two repairs are provable
+in about six seconds each, and they are not proved by the suite as it runs.
