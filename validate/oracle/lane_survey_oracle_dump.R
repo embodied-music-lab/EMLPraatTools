@@ -48,6 +48,29 @@ for (fx in c("clean", "revnotrev", "2item", "missing")) {
     }
 }
 
+# --- Respondent influence on alpha (base R, no packages) -----------------
+
+base_alpha <- function(cc) {
+    k <- ncol(cc)
+    C <- stats::cov(cc)
+    (k / (k - 1)) * (1 - sum(diag(C)) / sum(C))
+}
+for (fx in c("alpha_clean", "influence_deviant", "influence_missdev",
+             "influence_n3")) {
+    m <- as.matrix(read.csv(file.path(csvdir,
+                                      paste0("lane_survey_", fx, ".csv"))))
+    keep <- complete.cases(m)
+    cc <- m[keep, , drop = FALSE]
+    full <- base_alpha(cc)
+    aw <- vapply(seq_len(nrow(cc)), function(i)
+        base_alpha(cc[-i, , drop = FALSE]), numeric(1))
+    dl <- aw - full
+    put(paste0("influence_", fx, "_alphaFull"), full, 1e-10)
+    put(paste0("influence_", fx, "_deltaMax"), max(abs(dl)), 1e-10)
+    put(paste0("influence_", fx, "_deltaMaxRow"),
+        which(keep)[which.max(abs(dl))], 0)
+}
+
 # --- Chi-square + Cramér's V --------------------------------------------
 
 for (fx in c("2x2_balanced", "2x2_sparse", "3x4", "zerocell")) {
