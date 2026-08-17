@@ -1,0 +1,269 @@
+
+==============================================================================
+v86 vector figure export
+==============================================================================
+PASS  v86     the driven transcript exists (VECFIG.tsv)       computed=NA  expected TRUE
+PASS  v86     a Praat was found to drive                      computed=NA  expected TRUE
+PASS  v86     the transcript names the Praat it drove (6.6.30)  computed=NA  expected TRUE
+PASS  v86     the transcript was driven on THIS panel's code (c2fa062f7fe2)  computed=NA  expected TRUE
+PASS  v86     an UNGUARDED absent command runs its script up to that line  computed=NA  expected TRUE
+PASS  v86     ... and stops there: the line after it never ran  computed=NA  expected TRUE
+PASS  v86     ... and Praat's words are "not available for current selection"  computed=NA  expected TRUE
+PASS  v86     under `nocheck` the same absent command lets the script continue  computed=NA  expected TRUE
+PASS  v86     ... and leaves no file behind, which is the whole signal  computed=NA  expected TRUE
+PASS  v86     all: the leg ran to the end                     computed=NA  expected TRUE
+PASS  v86     all: it was driven with EPS=1 PDF=1             computed=NA  expected TRUE
+PASS  v86     all: the tree it drove has 1 PDF attempt and 1 EPS attempt  computed=NA  expected TRUE
+PASS  v86     all: the plugin reports landed = "PNG, EPS, PDF"  computed=NA  expected TRUE
+PASS  v86     all: the plugin reports missing = ""            computed=NA  expected TRUE
+PASS  v86     all: it counted 3 file(s) written               computed=NA  expected TRUE
+PASS  v86     all: fig.png is on disk                         computed=NA  expected TRUE
+PASS  v86     all: fig.png is not empty (30447 bytes)         computed=NA  expected TRUE
+PASS  v86     all: fig.png begins with its own marker         computed=NA  expected TRUE
+PASS  v86     all: fig.eps is on disk                         computed=NA  expected TRUE
+PASS  v86     all: fig.eps is not empty (4929 bytes)          computed=NA  expected TRUE
+PASS  v86     all: fig.eps begins with its own marker         computed=NA  expected TRUE
+PASS  v86     all: fig.pdf is on disk                         computed=NA  expected TRUE
+PASS  v86     all: fig.pdf is not empty (8383 bytes)          computed=NA  expected TRUE
+PASS  v86     all: fig.pdf begins with its own marker         computed=NA  expected TRUE
+PASS  v86     all: the legend landed the same formats (PNG, EPS, PDF)  computed=NA  expected TRUE
+PASS  v86     all: and lost the same ones ("")                computed=NA  expected TRUE
+PASS  v86     all: fig_legend.png is on disk with its marker  computed=NA  expected TRUE
+PASS  v86     all: fig_legend.eps is on disk with its marker  computed=NA  expected TRUE
+PASS  v86     all: fig_legend.pdf is on disk with its marker  computed=NA  expected TRUE
+PASS  v86     all: the caller's selection survived the save (ab)  computed=NA  expected TRUE
+PASS  v86     pngonly: the leg ran to the end                 computed=NA  expected TRUE
+PASS  v86     pngonly: it was driven with EPS=0 PDF=0         computed=NA  expected TRUE
+PASS  v86     pngonly: the tree it drove has 1 PDF attempt and 1 EPS attempt  computed=NA  expected TRUE
+PASS  v86     pngonly: the plugin reports landed = "PNG"      computed=NA  expected TRUE
+PASS  v86     pngonly: the plugin reports missing = ""        computed=NA  expected TRUE
+PASS  v86     pngonly: it counted 1 file(s) written           computed=NA  expected TRUE
+PASS  v86     pngonly: fig.png is on disk                     computed=NA  expected TRUE
+PASS  v86     pngonly: fig.png is not empty (30447 bytes)     computed=NA  expected TRUE
+PASS  v86     pngonly: fig.png begins with its own marker     computed=NA  expected TRUE
+PASS  v86     pngonly: no fig.eps was written                 computed=NA  expected TRUE
+PASS  v86     pngonly: no fig.pdf was written                 computed=NA  expected TRUE
+PASS  v86     pngonly: the legend landed the same formats (PNG)  computed=NA  expected TRUE
+PASS  v86     pngonly: and lost the same ones ("")            computed=NA  expected TRUE
+PASS  v86     pngonly: fig_legend.png is on disk with its marker  computed=NA  expected TRUE
+PASS  v86     pngonly: the caller's selection survived the save (ab)  computed=NA  expected TRUE
+PASS  v86     epsonly: the leg ran to the end                 computed=NA  expected TRUE
+PASS  v86     epsonly: it was driven with EPS=1 PDF=0         computed=NA  expected TRUE
+PASS  v86     epsonly: the tree it drove has 1 PDF attempt and 1 EPS attempt  computed=NA  expected TRUE
+PASS  v86     epsonly: the plugin reports landed = "PNG, EPS"  computed=NA  expected TRUE
+PASS  v86     epsonly: the plugin reports missing = ""        computed=NA  expected TRUE
+PASS  v86     epsonly: it counted 2 file(s) written           computed=NA  expected TRUE
+PASS  v86     epsonly: fig.png is on disk                     computed=NA  expected TRUE
+PASS  v86     epsonly: fig.png is not empty (30447 bytes)     computed=NA  expected TRUE
+PASS  v86     epsonly: fig.png begins with its own marker     computed=NA  expected TRUE
+PASS  v86     epsonly: fig.eps is on disk                     computed=NA  expected TRUE
+PASS  v86     epsonly: fig.eps is not empty (4929 bytes)      computed=NA  expected TRUE
+PASS  v86     epsonly: fig.eps begins with its own marker     computed=NA  expected TRUE
+PASS  v86     epsonly: no fig.pdf was written                 computed=NA  expected TRUE
+PASS  v86     epsonly: the legend landed the same formats (PNG, EPS)  computed=NA  expected TRUE
+PASS  v86     epsonly: and lost the same ones ("")            computed=NA  expected TRUE
+PASS  v86     epsonly: fig_legend.png is on disk with its marker  computed=NA  expected TRUE
+PASS  v86     epsonly: fig_legend.eps is on disk with its marker  computed=NA  expected TRUE
+PASS  v86     epsonly: the caller's selection survived the save (ab)  computed=NA  expected TRUE
+PASS  v86     pdfonly: the leg ran to the end                 computed=NA  expected TRUE
+PASS  v86     pdfonly: it was driven with EPS=0 PDF=1         computed=NA  expected TRUE
+PASS  v86     pdfonly: the tree it drove has 1 PDF attempt and 1 EPS attempt  computed=NA  expected TRUE
+PASS  v86     pdfonly: the plugin reports landed = "PNG, PDF"  computed=NA  expected TRUE
+PASS  v86     pdfonly: the plugin reports missing = ""        computed=NA  expected TRUE
+PASS  v86     pdfonly: it counted 2 file(s) written           computed=NA  expected TRUE
+PASS  v86     pdfonly: fig.png is on disk                     computed=NA  expected TRUE
+PASS  v86     pdfonly: fig.png is not empty (30447 bytes)     computed=NA  expected TRUE
+PASS  v86     pdfonly: fig.png begins with its own marker     computed=NA  expected TRUE
+PASS  v86     pdfonly: fig.pdf is on disk                     computed=NA  expected TRUE
+PASS  v86     pdfonly: fig.pdf is not empty (8383 bytes)      computed=NA  expected TRUE
+PASS  v86     pdfonly: fig.pdf begins with its own marker     computed=NA  expected TRUE
+PASS  v86     pdfonly: no fig.eps was written                 computed=NA  expected TRUE
+PASS  v86     pdfonly: the legend landed the same formats (PNG, PDF)  computed=NA  expected TRUE
+PASS  v86     pdfonly: and lost the same ones ("")            computed=NA  expected TRUE
+PASS  v86     pdfonly: fig_legend.png is on disk with its marker  computed=NA  expected TRUE
+PASS  v86     pdfonly: fig_legend.pdf is on disk with its marker  computed=NA  expected TRUE
+PASS  v86     pdfonly: the caller's selection survived the save (ab)  computed=NA  expected TRUE
+PASS  v86     nopdf: the leg ran to the end                   computed=NA  expected TRUE
+PASS  v86     nopdf: it was driven with EPS=1 PDF=1           computed=NA  expected TRUE
+PASS  v86     nopdf: the tree it drove has 0 PDF attempt and 1 EPS attempt  computed=NA  expected TRUE
+FAIL  v86     nopdf: the plugin reports landed = "PNG, EPS, PDF"  computed=NA  expected TRUE
+FAIL  v86     nopdf: the plugin reports missing = ""          computed=NA  expected TRUE
+FAIL  v86     nopdf: it counted 2 file(s) written             computed=NA  expected TRUE
+PASS  v86     nopdf: fig.png is on disk                       computed=NA  expected TRUE
+PASS  v86     nopdf: fig.png is not empty (30447 bytes)       computed=NA  expected TRUE
+PASS  v86     nopdf: fig.png begins with its own marker       computed=NA  expected TRUE
+PASS  v86     nopdf: fig.eps is on disk                       computed=NA  expected TRUE
+PASS  v86     nopdf: fig.eps is not empty (4929 bytes)        computed=NA  expected TRUE
+PASS  v86     nopdf: fig.eps begins with its own marker       computed=NA  expected TRUE
+PASS  v86     nopdf: no fig.pdf was written                   computed=NA  expected TRUE
+FAIL  v86     nopdf: the legend landed the same formats (PNG, EPS, PDF)  computed=NA  expected TRUE
+FAIL  v86     nopdf: and lost the same ones ("")              computed=NA  expected TRUE
+PASS  v86     nopdf: fig_legend.png is on disk with its marker  computed=NA  expected TRUE
+PASS  v86     nopdf: fig_legend.eps is on disk with its marker  computed=NA  expected TRUE
+PASS  v86     nopdf: the caller's selection survived the save (ab)  computed=NA  expected TRUE
+PASS  v86     novector: the leg ran to the end                computed=NA  expected TRUE
+PASS  v86     novector: it was driven with EPS=1 PDF=1        computed=NA  expected TRUE
+PASS  v86     novector: the tree it drove has 0 PDF attempt and 0 EPS attempt  computed=NA  expected TRUE
+FAIL  v86     novector: the plugin reports landed = "PNG, EPS, PDF"  computed=NA  expected TRUE
+FAIL  v86     novector: the plugin reports missing = ""       computed=NA  expected TRUE
+FAIL  v86     novector: it counted 1 file(s) written          computed=NA  expected TRUE
+PASS  v86     novector: fig.png is on disk                    computed=NA  expected TRUE
+PASS  v86     novector: fig.png is not empty (30447 bytes)    computed=NA  expected TRUE
+PASS  v86     novector: fig.png begins with its own marker    computed=NA  expected TRUE
+PASS  v86     novector: no fig.eps was written                computed=NA  expected TRUE
+PASS  v86     novector: no fig.pdf was written                computed=NA  expected TRUE
+FAIL  v86     novector: the legend landed the same formats (PNG, EPS, PDF)  computed=NA  expected TRUE
+FAIL  v86     novector: and lost the same ones ("")           computed=NA  expected TRUE
+PASS  v86     novector: fig_legend.png is on disk with its marker  computed=NA  expected TRUE
+PASS  v86     novector: the caller's selection survived the save (ab)  computed=NA  expected TRUE
+PASS  v86     every driven leg is asserted on (all epsonly nopdf novector pdfonly pngonly)  computed=NA  expected TRUE
+PASS  v86     the landed check answers 1 to a real PNG against the PNG marker  computed=NA  expected TRUE
+PASS  v86     the landed check answers 1 to a real EPS against the EPS marker  computed=NA  expected TRUE
+PASS  v86     the landed check answers 1 to a real PDF against the PDF marker  computed=NA  expected TRUE
+PASS  v86     the landed check answers 0 to a real PNG against the PDF marker  computed=NA  expected TRUE
+PASS  v86     the landed check answers 0 to a real EPS against the PDF marker  computed=NA  expected TRUE
+PASS  v86     the landed check answers 0 to a real PDF against the EPS marker  computed=NA  expected TRUE
+PASS  v86     the landed check answers 0 to a file of nothing  computed=NA  expected TRUE
+PASS  v86     the landed check answers 0 to a file of the wrong content  computed=NA  expected TRUE
+PASS  v86     the landed check answers 0 to a path with no file at it  computed=NA  expected TRUE
+PASS  v86     and it leaves no object behind (9 reads, 0 objects)  computed=NA  expected TRUE
+PASS  v86     all: nothing went missing, so no redirect was built  computed=NA  expected TRUE
+PASS  v86     pngonly: nothing went missing, so no redirect was built  computed=NA  expected TRUE
+PASS  v86     epsonly: nothing went missing, so no redirect was built  computed=NA  expected TRUE
+PASS  v86     pdfonly: nothing went missing, so no redirect was built  computed=NA  expected TRUE
+FAIL  v86     nopdf: a redirect was built                     computed=NA  expected TRUE
+FAIL  v86     nopdf: it says "Praat on this system did not write the PDF file, so no PDF was saved."  computed=NA  expected TRUE
+PASS  v86     nopdf: it does not claim PNG failed             computed=NA  expected TRUE
+PASS  v86     nopdf: it does not claim EPS failed             computed=NA  expected TRUE
+FAIL  v86     nopdf: it names the alternatives ("Praat's figure formats are PNG, EPS and PDF ...")  computed=NA  expected TRUE
+FAIL  v86     nopdf: the alternatives paragraph names PNG     computed=NA  expected TRUE
+FAIL  v86     nopdf: the alternatives paragraph names EPS     computed=NA  expected TRUE
+FAIL  v86     nopdf: the alternatives paragraph names PDF     computed=NA  expected TRUE
+FAIL  v86     nopdf: EPS landed, so it says the user has a vector file  computed=NA  expected TRUE
+PASS  v86     nopdf: it does not offer the PNG as the thing that survived  computed=NA  expected TRUE
+PASS  v86     nopdf: and does not pretend to know which system this is  computed=NA  expected TRUE
+FAIL  v86     nopdf: it says "This save did write: PNG, EPS."  computed=NA  expected TRUE
+FAIL  v86     nopdf: it lists the files that did arrive       computed=NA  expected TRUE
+FAIL  v86     nopdf: and the paths it quotes are the ones that landed (6)  computed=NA  expected TRUE
+FAIL  v86     nopdf: and every file it names is on disk with its marker  computed=NA  expected TRUE
+PASS  v86     nopdf: the figure's PNG is one of them          computed=NA  expected TRUE
+FAIL  v86     nopdf: it closes with "Nothing else about this save changed."  computed=NA  expected TRUE
+FAIL  v86     nopdf: no line exceeds the panel's 62 characters (NA)  computed=NA  expected TRUE
+FAIL  v86     novector: a redirect was built                  computed=NA  expected TRUE
+FAIL  v86     novector: it says "Praat on this system did not write the EPS file, so no EPS was saved."  computed=NA  expected TRUE
+FAIL  v86     novector: it says "Praat on this system did not write the PDF file, so no PDF was saved."  computed=NA  expected TRUE
+PASS  v86     novector: it does not claim PNG failed          computed=NA  expected TRUE
+FAIL  v86     novector: it names the alternatives ("Praat's figure formats are PNG, EPS and PDF ...")  computed=NA  expected TRUE
+FAIL  v86     novector: the alternatives paragraph names PNG  computed=NA  expected TRUE
+FAIL  v86     novector: the alternatives paragraph names EPS  computed=NA  expected TRUE
+FAIL  v86     novector: the alternatives paragraph names PDF  computed=NA  expected TRUE
+FAIL  v86     novector: EPS did not land, so it says no vector copy arrived  computed=NA  expected TRUE
+FAIL  v86     novector: ... and still calls EPS the vector format Praat writes everywhere  computed=NA  expected TRUE
+PASS  v86     novector: it does not offer the PNG as the thing that survived  computed=NA  expected TRUE
+PASS  v86     novector: and does not pretend to know which system this is  computed=NA  expected TRUE
+FAIL  v86     novector: it says "This save did write: PNG."   computed=NA  expected TRUE
+FAIL  v86     novector: it lists the files that did arrive    computed=NA  expected TRUE
+FAIL  v86     novector: and the paths it quotes are the ones that landed (6)  computed=NA  expected TRUE
+FAIL  v86     novector: and every file it names is on disk with its marker  computed=NA  expected TRUE
+PASS  v86     novector: the figure's PNG is one of them       computed=NA  expected TRUE
+FAIL  v86     novector: it closes with "Nothing else about this save changed."  computed=NA  expected TRUE
+FAIL  v86     novector: no line exceeds the panel's 62 characters (NA)  computed=NA  expected TRUE
+PASS  v86     nopdf: the PNG was written even though a format failed  computed=NA  expected TRUE
+PASS  v86     nopdf: and the legend PNG with it               computed=NA  expected TRUE
+PASS  v86     novector: the PNG was written even though a format failed  computed=NA  expected TRUE
+PASS  v86     novector: and the legend PNG with it            computed=NA  expected TRUE
+PASS  v86     all: a PNG was written whatever else was asked for  computed=NA  expected TRUE
+PASS  v86     pngonly: a PNG was written whatever else was asked for  computed=NA  expected TRUE
+PASS  v86     epsonly: a PNG was written whatever else was asked for  computed=NA  expected TRUE
+PASS  v86     pdfonly: a PNG was written whatever else was asked for  computed=NA  expected TRUE
+PASS  v86     nopdf: a PNG was written whatever else was asked for  computed=NA  expected TRUE
+PASS  v86     novector: a PNG was written whatever else was asked for  computed=NA  expected TRUE
+PASS  v86     the panel's module is present                   computed=NA  expected TRUE
+PASS  v86     @eml_saveFigureFormats exists                   computed=NA  expected TRUE
+PASS  v86     @eml_saveFileLanded exists                      computed=NA  expected TRUE
+PASS  v86     Praat reads the panel's own three labels back as figure_PNG, also_EPS, also_PDF  computed=NA  expected TRUE
+PASS  v86     the panel offers an EPS tickbox                 computed=NA  expected TRUE
+PASS  v86     the panel offers a PDF tickbox                  computed=NA  expected TRUE
+PASS  v86     and both sit with the figure's own tickbox, not with the numbers  computed=NA  expected TRUE
+PASS  v86     this box is not Windows (windows=0 macintosh=0 unix=1)  computed=NA  expected TRUE
+PASS  v86     the PDF tickbox is built only where Praat has the command  computed=NA  expected TRUE
+PASS  v86     and where it is not, one line says why          computed=NA  expected TRUE
+PASS  v86     the suffix list names .pdf on exactly one of its two arms (2)  computed=NA  expected TRUE
+PASS  v86     a form that omits a field leaves its variable unbound  computed=NA  expected TRUE
+PASS  v86     ... and reading the unbound one ends the script there  computed=NA  expected TRUE
+PASS  v86     so the panel resolves .alsoPDF under the same guard, defaulting to 0  computed=NA  expected TRUE
+PASS  v86     the figure write is handed also_EPS and the resolved .alsoPDF  computed=NA  expected TRUE
+PASS  v86     and so is the separate legend, under the legend's own name  computed=NA  expected TRUE
+PASS  v86     the EPS attempt is nocheck-prefixed             computed=NA  expected TRUE
+PASS  v86     the PDF attempt is nocheck-prefixed             computed=NA  expected TRUE
+PASS  v86     the writer asks the disk, not the operating system  computed=NA  expected TRUE
+FAIL  v86     the writer checks all three formats onto the disk (1)  computed=NA  expected TRUE
+PASS  v86     ... one of them against "PNG"                   computed=NA  expected TRUE
+FAIL  v86     ... one of them against "%!PS"                  computed=NA  expected TRUE
+FAIL  v86     ... one of them against "%PDF"                  computed=NA  expected TRUE
+FAIL  v86     nothing is counted as written unless it was found (3 counts, 1 guards)  computed=NA  expected TRUE
+FAIL  v86     and each count sits directly inside its own guard  computed=NA  expected TRUE
+PASS  v86     the PNG is written before either vector format is considered  computed=NA  expected TRUE
+PASS  v86     the stem-uniquing walk carries .eps             computed=NA  expected TRUE
+PASS  v86     the stem-uniquing walk carries _legend.eps      computed=NA  expected TRUE
+PASS  v86     the stem-uniquing walk carries .pdf             computed=NA  expected TRUE
+PASS  v86     the stem-uniquing walk carries _legend.pdf      computed=NA  expected TRUE
+PASS  v86     the panel shows the redirect when a format went missing  computed=NA  expected TRUE
+PASS  v86     and the dialog is inside that condition         computed=NA  expected TRUE
+PASS  v86     the message names PNG, EPS and PDF              computed=NA  expected TRUE
+PASS  v86     the message carries the arm "The EPS above is a vector file ..."  computed=NA  expected TRUE
+PASS  v86     the message carries the arm "No vector copy arrived this time ..."  computed=NA  expected TRUE
+PASS  v86     the message carries the arm "tick Also EPS in the Save panel ..."  computed=NA  expected TRUE
+PASS  v86     and no arm of it offers the PNG as the format that survived  computed=NA  expected TRUE
+PASS  v86     the panel hands the message the figure's whole landed list  computed=NA  expected TRUE
+PASS  v86     the source says in words why the landed check stays on every format  computed=NA  expected TRUE
+PASS  v86     the recorder module is present                  computed=NA  expected TRUE
+PASS  v86     the record leg was driven on THIS recorder's code (7bd854ad18fe)  computed=NA  expected TRUE
+PASS  v86     @emlRecordReplaySave takes the format choice as an argument  computed=NA  expected TRUE
+PASS  v86     and writes the figure through the panel's own writer  computed=NA  expected TRUE
+PASS  v86     ... and the separate legend through it too      computed=NA  expected TRUE
+PASS  v86     and carries no figure save command of its own   computed=NA  expected TRUE
+PASS  v86     the recorded choice is read as EPS and PDF flags  computed=NA  expected TRUE
+PASS  v86     a replay that loses a format says so, in the panel's words  computed=NA  expected TRUE
+PASS  v86     the replay's stem walk carries .eps             computed=NA  expected TRUE
+PASS  v86     the replay's stem walk carries _legend.eps      computed=NA  expected TRUE
+PASS  v86     the replay's stem walk carries .pdf             computed=NA  expected TRUE
+PASS  v86     the replay's stem walk carries _legend.pdf      computed=NA  expected TRUE
+PASS  v86     the format lift is a table entry of its own     computed=NA  expected TRUE
+PASS  v86     and it is not keyed on .proc$, which v58 censuses  computed=NA  expected TRUE
+PASS  v86     a second distinct choice is numbered, not shared  computed=NA  expected TRUE
+PASS  v86     the panel still emits the save step as an @emlSavePanel: call  computed=NA  expected TRUE
+PASS  v86     and now emits the format choice as its fourth argument  computed=NA  expected TRUE
+PASS  v86     which is the request, PNG plus whatever was ticked  computed=NA  expected TRUE
+PASS  v86     the recording leg ran and flushed a script      computed=NA  expected TRUE
+PASS  v86     the emitted script opens no dialog              computed=NA  expected TRUE
+PASS  v86     and replays both saves through the headless writer  computed=NA  expected TRUE
+PASS  v86     the block still promises to hold every name below it  computed=NA  expected TRUE
+PASS  v86     the block declares one format variable per save (2)  computed=NA  expected TRUE
+PASS  v86     the first is the first save's choice (figureFormat$  = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- step 2 (save))  computed=NA  expected TRUE
+PASS  v86     ... and its comment names the step it belongs to  computed=NA  expected TRUE
+PASS  v86     the second is the second save's, under its own name (figureFormat2$ = "PNG, PDF"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- step 4 (save))  computed=NA  expected TRUE
+PASS  v86     ... and its comment names its own step          computed=NA  expected TRUE
+PASS  v86     the two saves do not share one variable         computed=NA  expected TRUE
+PASS  v86     the first save reads figureFormat$ (@emlRecordReplaySave: 1, "figA_20260817_120000", outputFolder$, figureFormat$)  computed=NA  expected TRUE
+PASS  v86     the second reads figureFormat2$ (@emlRecordReplaySave: 1, "figB_20260817_120000", outputFolder$, figureFormat2$)  computed=NA  expected TRUE
+PASS  v86     the same replay ran without aborting            computed=NA  expected TRUE
+PASS  v86     same replay: figA came back with its png        computed=NA  expected TRUE
+PASS  v86     same replay: figA came back with its eps        computed=NA  expected TRUE
+PASS  v86     same replay: figA came back with no pdf         computed=NA  expected TRUE
+PASS  v86     same replay: figB came back with its png        computed=NA  expected TRUE
+PASS  v86     same replay: figB came back with no eps         computed=NA  expected TRUE
+PASS  v86     same replay: figB came back with its pdf        computed=NA  expected TRUE
+PASS  v86     same replay: every figure it wrote carries its own marker (4)  computed=NA  expected TRUE
+PASS  v86     the edited replay ran without aborting          computed=NA  expected TRUE
+PASS  v86     edited replay: figA came back with its png      computed=NA  expected TRUE
+PASS  v86     edited replay: figA came back with its eps      computed=NA  expected TRUE
+PASS  v86     edited replay: figA came back with no pdf       computed=NA  expected TRUE
+PASS  v86     edited replay: figB came back with its png      computed=NA  expected TRUE
+PASS  v86     edited replay: figB came back with its eps      computed=NA  expected TRUE
+PASS  v86     edited replay: figB came back with no pdf       computed=NA  expected TRUE
+PASS  v86     edited replay: every figure it wrote carries its own marker (4)  computed=NA  expected TRUE
+PASS  v86     the edit changed exactly one line of the block  computed=NA  expected TRUE
+PASS  v86     and nothing at all below it                     computed=NA  expected TRUE
+------------------------------------------------------------------------------ 
+263 checks, 220 passed, 43 FAILED

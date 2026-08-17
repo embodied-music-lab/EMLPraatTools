@@ -277,3 +277,9 @@ harness/bracketcap/out/break_*.v76.log
 # whose paths are relative on purpose. validate/v82 asserts this entry is
 # here and that nothing tracked matches it.
 plugin/scripts/eml-lib-user.praat
+# The vector-export rig's per-sabotage FIGURES. break.sh re-drives the whole
+# rig inside each break directory, so each one carries its own 1.7 MB of PNG,
+# EPS and PDF -- 9.9 MB of pictures whose only job was to make v86 go red once
+# and which regenerate from `bash harness/vecfig/break.sh`. BREAKS.tsv and the
+# two logs per sabotage, which are the red-watch evidence, stay tracked.
+harness/vecfig/out/breaks/*/out/
