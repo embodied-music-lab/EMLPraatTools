@@ -6,7 +6,7 @@
 #   1. the two dev-test suites (Praat, via the same resolver the rest of
 #      the repo uses: $PRAAT, then ../praat, then praat_barren / praat)
 #   2. verify-survey-lane.R (every dev-test literal against R)
-#   3. the three lane validators v90 / v91 / v92 (live Praat vs R oracle,
+#   3. the four lane validators v90-v93 (live Praat vs R oracle,
 #      each with its expect-differ negative-control leg)
 #   4. the RED demonstration: each validator re-run with EML_LANE_RED=1,
 #      which pits the named agreement check against a scratch copy of the
@@ -77,7 +77,7 @@ else
 fi
 
 # --- 3. Validators, green mode ------------------------------------------
-for v in v90_lane_alpha_oracle v91_lane_chisq_oracle v92_lane_wilson_oracle; do
+for v in v90_lane_alpha_oracle v91_lane_chisq_oracle v92_lane_wilson_oracle v93_lane_alpha_influence_oracle; do
     step "validator: $v (green)"
     if ! (cd "$ROOT/validate" && Rscript "$v.R" \
           > "$EVID/${v}_green.txt" 2>&1); then
@@ -93,7 +93,7 @@ done
 # Each validator re-runs against a seeded-defect scratch copy with the
 # STANDARD agreement check; the run must go red (exit 1). A red leg that
 # comes back green means the check cannot fail, and the lane fails.
-for v in v90_lane_alpha_oracle v91_lane_chisq_oracle v92_lane_wilson_oracle; do
+for v in v90_lane_alpha_oracle v91_lane_chisq_oracle v92_lane_wilson_oracle v93_lane_alpha_influence_oracle; do
     step "validator: $v (RED demonstration, must fail)"
     if (cd "$ROOT/validate" && EML_LANE_RED=1 Rscript "$v.R" \
         > "$EVID/${v}_red.txt" 2>&1); then
@@ -107,7 +107,7 @@ done
 
 echo
 if [[ $fail -eq 0 ]]; then
-    echo "LANE GREEN: dev tests, literals, three oracles, and all three"
+    echo "LANE GREEN: dev tests, literals, four oracles, and all four"
     echo "seeded-defect red demonstrations behaved as required."
 else
     echo "LANE FAILED — see above." >&2

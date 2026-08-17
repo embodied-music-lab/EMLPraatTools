@@ -8,6 +8,16 @@ PASS  alpha-if-deleted, item 4                                    literal=0.9237
 PASS  alpha-if-deleted, item 5                                    literal=0.9393183707  R=0.9393183707
 PASS  alpha after listwise deletion                               literal=0.9528130672  R=0.9528130672
 PASS  2-item alpha                                                literal=0.8823529412  R=0.8823529412
+PASS  influence alphaFull                                         literal=0.9491763761  R=0.9491763761
+PASS  alpha without respondent 1                                  literal=0.9519787645  R=0.9519787645
+PASS  delta for respondent 1                                      literal=0.0028023884  R=0.0028023884
+PASS  alpha without respondent 10                                 literal=0.9487500000  R=0.9487500000
+PASS  largest absolute delta                                      literal=0.0214143364  R=0.0214143364
+PASS  its respondent                                              literal=5.0000000000  R=5.0000000000
+PASS  influence alphaFull after deletion                          literal=0.9458111702  R=0.9458111702
+PASS  survivor 3 maps to original row 5                           literal=5.0000000000  R=5.0000000000
+PASS  survivor 8 maps to original row 10                          literal=10.0000000000  R=10.0000000000
+PASS  dominant delta at original row 5                            literal=5.0000000000  R=5.0000000000
 PASS  2x2 corrected chi-square                                    literal=4.7250000000  R=4.7250000000
 PASS  2x2 corrected p                                             literal=0.0297271833  R=0.0297271833
 PASS  2x2 uncorrected chi-square                                  literal=5.8333333333  R=5.8333333333

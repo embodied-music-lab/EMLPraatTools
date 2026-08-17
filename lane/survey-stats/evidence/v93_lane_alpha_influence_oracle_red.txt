@@ -1,0 +1,55 @@
+      EML_LANE_RED: running the standard agreement check against
+      the defective build — the next check is EXPECTED to FAIL.
+
+==============================================================================
+v93 alpha respondent-influence oracle
+==============================================================================
+PASS  v93     the clean-fixture probe ran                     computed=NA  expected TRUE
+PASS  v93     [clean] alphaFull vs base-R oracle              reported=0.8493397359  computed=0.8493397359  (match, tol 1e-10)
+PASS  v93     [clean] alphaFull equals @emlCronbachAlpha.alpha  reported=0.8493397359  computed=0.8493397359  (match, tol 1e-12)
+PASS  v93     [clean] n after listwise deletion               reported=24  computed=24  (match, tol 0)
+PASS  v93     [clean] nExcluded disclosure                    reported=0  computed=0  (match, tol 0)
+PASS  v93     [clean] rowIndex# maps every survivor to its original row  computed=NA  expected TRUE
+PASS  v93     [clean] every leave-one-out alpha matches the oracle at 1e-10  computed=NA  expected TRUE
+PASS  v93     [clean] every delta matches the oracle at 1e-10  computed=NA  expected TRUE
+PASS  v93     [clean] deltaMax vs oracle                      reported=0.02377448401  computed=0.02377448401  (match, tol 1e-10)
+PASS  v93     [clean] deltaMaxRow is the ORIGINAL row number  reported=16  computed=16  (match, tol 0)
+PASS  v93     the deviant-fixture probe ran                   computed=NA  expected TRUE
+PASS  v93     [deviant] alphaFull vs base-R oracle            reported=0.8098266962  computed=0.8098266962  (match, tol 1e-10)
+PASS  v93     [deviant] alphaFull equals @emlCronbachAlpha.alpha  reported=0.8098266962  computed=0.8098266962  (match, tol 1e-12)
+PASS  v93     [deviant] n after listwise deletion             reported=20  computed=20  (match, tol 0)
+PASS  v93     [deviant] nExcluded disclosure                  reported=0  computed=0  (match, tol 0)
+PASS  v93     [deviant] rowIndex# maps every survivor to its original row  computed=NA  expected TRUE
+PASS  v93     [deviant] every leave-one-out alpha matches the oracle at 1e-10  computed=NA  expected TRUE
+PASS  v93     [deviant] every delta matches the oracle at 1e-10  computed=NA  expected TRUE
+PASS  v93     [deviant] deltaMax vs oracle                    reported=0.08448619203  computed=0.08448619203  (match, tol 1e-10)
+PASS  v93     [deviant] deltaMaxRow is the ORIGINAL row number  reported=14  computed=14  (match, tol 0)
+PASS  v93     the missdev-fixture probe ran                   computed=NA  expected TRUE
+PASS  v93     [missdev] alphaFull vs base-R oracle            reported=0.8809464405  computed=0.8809464405  (match, tol 1e-10)
+PASS  v93     [missdev] alphaFull equals @emlCronbachAlpha.alpha  reported=0.8809464405  computed=0.8809464405  (match, tol 1e-12)
+PASS  v93     [missdev] n after listwise deletion             reported=18  computed=18  (match, tol 0)
+PASS  v93     [missdev] nExcluded disclosure                  reported=2  computed=2  (match, tol 0)
+PASS  v93     [missdev] rowIndex# maps every survivor to its original row  computed=NA  expected TRUE
+PASS  v93     [missdev] every leave-one-out alpha matches the oracle at 1e-10  computed=NA  expected TRUE
+PASS  v93     [missdev] every delta matches the oracle at 1e-10  computed=NA  expected TRUE
+PASS  v93     [missdev] deltaMax vs oracle                    reported=0.03273665065  computed=0.03273665065  (match, tol 1e-10)
+PASS  v93     [missdev] deltaMaxRow is the ORIGINAL row number  reported=17  computed=17  (match, tol 0)
+PASS  v93     the n3-fixture probe ran                        computed=NA  expected TRUE
+PASS  v93     [n3] alphaFull vs base-R oracle                 reported=0.8992248062  computed=0.8992248062  (match, tol 1e-10)
+PASS  v93     [n3] alphaFull equals @emlCronbachAlpha.alpha   reported=0.8992248062  computed=0.8992248062  (match, tol 1e-12)
+PASS  v93     [n3] n after listwise deletion                  reported=3  computed=3  (match, tol 0)
+PASS  v93     [n3] nExcluded disclosure                       reported=0  computed=0  (match, tol 0)
+PASS  v93     [n3] rowIndex# maps every survivor to its original row  computed=NA  expected TRUE
+PASS  v93     [n3] every leave-one-out alpha matches the oracle at 1e-10  computed=NA  expected TRUE
+PASS  v93     [n3] every delta matches the oracle at 1e-10    computed=NA  expected TRUE
+PASS  v93     [n3] deltaMax vs oracle                         reported=3.565891473  computed=3.565891473  (match, tol 1e-10)
+PASS  v93     [n3] deltaMaxRow is the ORIGINAL row number     reported=1  computed=1  (match, tol 0)
+PASS  v93     planted deviant dominates: deltaMaxRow = 14 on the deviant fixture  reported=14  computed=14  (match, tol 0)
+PASS  v93     planted deviant dominates by margin (runner-up below 2/3 of max)  computed=NA  expected TRUE
+PASS  v93     mapping pin: dominant delta reported as original row 17, exclusions sit before it  reported=17  computed=17  (match, tol 0)
+PASS  v93     mapping pin is non-trivial: surviving index differs from original row  computed=NA  expected TRUE
+PASS  v93     n below the floor is refused with a message     computed=NA  expected TRUE
+PASS  v93     the negative-control seed site exists in source  computed=NA  expected TRUE
+FAIL  v93     [RED] seeded wrong-baseline delta vs oracle (must go red)  reported=0.007646570796  computed=-0.0004516961652  (match, tol 1e-10)
+------------------------------------------------------------------------------ 
+47 checks, 46 passed, 1 FAILED

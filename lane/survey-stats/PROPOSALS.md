@@ -15,7 +15,7 @@ nothing, so position only needs to precede any future caller):
 
 ## 2. MANIFEST.txt rows
 
-    stats/eml-psychometrics.praat | 203 | 1.0 | EML Stats : Psychometrics
+    stats/eml-psychometrics.praat | 355 | 1.0 | EML Stats : Psychometrics
     stats/eml-categorical.praat | 275 | 1.0 | EML Stats : Categorical Data
 
 (Line counts as delivered; recount at merge if the files change.)
@@ -39,6 +39,16 @@ Append to the ordered scripts vector, with comments in the house voice:
                                  # incl. x=0 / x=n endpoint pins and two
                                  # Newcombe 1998 print pins; drives Praat
                                  # live; negative control inside.
+    "v93_lane_alpha_influence_oracle.R",
+                                 # respondent-influence jackknife vs a
+                                 # base-R LOO oracle: every leave-one-out
+                                 # alpha and delta, the alphaFull =
+                                 # @emlCronbachAlpha.alpha equality pin,
+                                 # and the original-row mapping pin
+                                 # (dominant delta reported as original
+                                 # row 17 with exclusions before it);
+                                 # base R only by nature; drives Praat
+                                 # live; negative control inside.
 
 The base-R-only charter holds for all three: no package outside base is
 required (psych is an opportunistic cross-check of the oracle itself,
@@ -56,9 +66,12 @@ Explicitly out of scope for this lane and for the release round; recorded
 so the wizard/menu phase does not have to rediscover the surface:
 
 - Menu candidates: "Cronbach's alpha (matrix)...",
+  "Alpha: respondent influence...",
   "Chi-square test of independence...", "Wilson CI on a proportion...".
 - Tidy-export vocabulary candidates: alpha, alpha_ci95_low,
   alpha_ci95_high, alpha_if_deleted_<item>, n_excluded_listwise;
+  alpha_without_<row>, alpha_delta_<row>, alpha_delta_max,
+  alpha_delta_max_row (rows exported under ORIGINAL row numbers);
   chi_square, df, p, cramers_v, min_expected, n_cells_expected_below_5,
   continuity_correction (0/1); wilson_prop, wilson_ci_low, wilson_ci_high,
   confidence_level.
