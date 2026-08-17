@@ -222,7 +222,19 @@ say setup_under_test "${EML_SETUP_FILE:-shipped}"
 # since anybody last installed the artefact and looked. Tying the staleness
 # to the WHOLE artefact digest would make every edit anywhere in the plugin
 # demand a GUI re-drive.
-say setup_sha256 "$(sha256sum "$PREFS_OK/$NAME/setup.praat" | cut -d' ' -f1)"
+#
+# IT IS A DIGEST OF THE CODE, NOT OF THE FILE. Whole-line comments -- a line
+# whose first non-blank character is "#", ";" or "!", which is Praat's comment
+# set -- are stripped before the digest is taken. The argument is the one in
+# the paragraph above, applied one level down: an alarm that fires on every
+# comment fix to setup.praat is an alarm that demands a GUI re-drive for a
+# typo, and an alarm that expensive gets silenced. Nothing a comment says can
+# change which menu appears or where a command points, so nothing a comment
+# says can invalidate the walk. A trailing ";" comment after a statement is
+# NOT stripped: that leaves the statement line in the digest, which is the
+# conservative direction. v79 restates this recipe and must stay in step.
+eml_code_sha256 () { sed -E '/^[[:space:]]*[#;!]/d' "$1" | sha256sum | cut -d' ' -f1; }
+say setup_sha256 "$(eml_code_sha256 "$PREFS_OK/$NAME/setup.praat")"
 say unpacked_folder "$(basename "$PREFS_OK/$NAME")"
 UNPACKED_FILES="$(find "$PREFS_OK/$NAME" -type f | wc -l)"
 RECORD_FILES="$(awk -F'\t' '$1=="files"{print $2}' "$REC")"
@@ -302,7 +314,7 @@ TARGET_REL="$(grep -E "^Add menu command: \"Objects\", \"New\", \"$WANT_TITLE" \
               "$SETUP_OK" | head -1 | sed 's/.*"\([^"]*\)"[^"]*$/\1/')"
 say installed_target_script "$TARGET_REL"
 say installed_target_sha256 \
-   "$(sha256sum "$PREFS_OK/$NAME/$TARGET_REL" 2>/dev/null | cut -d' ' -f1)"
+   "$(eml_code_sha256 "$PREFS_OK/$NAME/$TARGET_REL" 2>/dev/null)"
 
 # THE CASCADE'S NAME AS THE INSTALLED TREE REGISTERS IT. One of the two
 # anchors on the menu's identity; the other is the OCR of the photograph,

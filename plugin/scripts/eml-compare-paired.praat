@@ -18,13 +18,6 @@
 #        left behind. The reshape is also named after the user's table
 #        instead of "pairedLong", so the figure's automatic title and its
 #        save stem name something the user can recognise.
-# v3.1: The spaghetti plot's axis labels do not come from the
-#        wide->long reshape's role names ("Condition", "Value"). The measure
-#        and the contrast are derived from the two column names and
-#        registered against the role names with the graph layer's
-#        label-override registry (@emlSetLabelOverride).
-# v3.0: Wrapper infrastructure refactor. repeat/until replaces goto/label.
-# v2.0: Full convergence — orchestrator + @emlGuessColumnRoles.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell

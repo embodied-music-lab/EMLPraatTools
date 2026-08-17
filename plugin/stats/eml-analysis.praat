@@ -5,60 +5,6 @@
 # Version: 1.3
 # Date: 8 August 2026
 #
-# v1.3: The normality decision rule lives in @emlNormalityRecommendation and
-#        is written down in exactly ONE place. This file, @wizardNormDiag
-#        (scripts/eml-wizard.praat) and the per-group branch of
-#        scripts/eml-check-normality.praat all call the one procedure, so
-#        three hand-maintained copies cannot disagree about thresholds or
-#        about the gate.
-#
-# v1.2: Correctness + robustness in the orchestrator layer.
-#   item 1 — emlRMPostHoc does not render a failed pairwise test as an
-#            adjusted p of 0. A test that fails (or returns an undefined p)
-#            propagates "undefined" into the raw p-vector, so the adjustment
-#            procedures exclude it from k the way R's p.adjust excludes NA.
-#            Undefined p-values print as "n/a" in both the raw and adjusted
-#            columns, and a note names each skipped pair with the reason.
-#   item 2 — emlRMPostHoc validates .adjMethod$, so an unrecognised string
-#            cannot fall through to Holm while the header prints the
-#            requested name. The header prints the method that ran and the
-#            substitution is disclosed.
-#   item 3 — emlRunCorrelationAnalysis captures each test's outputs into
-#            locals immediately after its own call and restores them before
-#            reporting, so a nested/re-entrant call cannot overwrite them.
-#            Previously "both" reported Spearman's rank-based r, t, df and p
-#            under the Pearson heading, in the Info report AND the CSV.
-#            The same capture/restore is applied to the Mann-Whitney outputs
-#            in emlRunTwoGroupAnalysis, which @emlRankBiserialR re-enters.
-#   item 4 — emlRunTwoGroupAnalysis checks the error$ of every test it runs.
-#            The reporter performs no error checks, so a failed test used to
-#            be printed as undefined results and written to the CSV. Failed
-#            branches are now dropped from the reported test type and the
-#            reason is surfaced. emlRunCorrelationAnalysis likewise surfaces
-#            a failed Spearman test, which the reporter swallowed silently.
-#   item 5 — emlReportPairwiseComparison header said "Pairwise holm (holm
-#            adjustment)": it used emlPairwiseT.method$, which is the
-#            ADJUSTMENT method, as the test name. Now derived from .test$.
-#   item 6 — emlRunRegressionAnalysis and emlRunNormalityAnalysis guard
-#            their column names with "Get column index:" instead of aborting
-#            the whole script with a raw Praat error.
-#   item 7 — Documented the reserved-but-unread parameters
-#            (emlRunNormalityAnalysis.testType$,
-#            emlRunRepeatedMeasuresAnalysis.subjectCol$,
-#            emlRunFriedmanAnalysis.subjectCol$) and the unimplemented
-#            emlRunReliabilityAnalysis stub. Parameter lists are unchanged
-#            because callers pass arguments positionally.
-#   item 8 — Friedman tie correction verified against R's friedman.test on
-#            tied data; formula and clamp are correct. No change.
-#
-# v1.1: Missing-data fix (correctness). emlRunPairedAnalysis and
-#        emlRunCorrelationAnalysis now extract their two columns with
-#        row-wise complete-case deletion (@emlExtractPairedColumns)
-#        instead of two independent per-column @emlExtractColumn calls,
-#        which misaligned the pairs when cells were missing in different
-#        rows. Analyzed n is now the complete-pair count and a
-#        "rows excluded for missing data" note is emitted when any row
-#        is dropped.
 #
 # Purpose: Centralizes computation + reporting for all analysis types.
 #          Each orchestrator: validate → compute → report.
@@ -3569,10 +3515,10 @@ endproc
 # p-values adjusted by .adjMethod$ (bonferroni / holm / bh).
 # ============================================================================
 procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
-    # v1.2 item 2: validate the requested adjustment method. An unrecognised
-    # string previously fell through to Holm silently while the header still
-    # printed the requested name. Now the fallback is disclosed and the
-    # header prints the method that actually ran (.adjUsed$).
+    # THE REQUESTED ADJUSTMENT METHOD IS VALIDATED. An unrecognised string
+    # falls back to Holm, and the fallback is disclosed: the header prints
+    # the method that actually ran (.adjUsed$), never the one that was asked
+    # for, because a header naming a method that did not run is a false claim.
     .adjUsed$ = .adjMethod$
     .adjWarn$ = ""
     if .adjMethod$ <> "bonferroni" and .adjMethod$ <> "bh" and .adjMethod$ <> "holm"
@@ -4428,10 +4374,10 @@ procedure emlDeclareRegressionResult: .tableName$, .depCol$, .predCol$,
 
     ; Leverage, Cook's distance and the LEVERAGE-CORRECTED standardised
     ; residual come from @emlOLSInfluence (stats/eml-inferential.praat).
-    ; .std.resid was previously resid / sigma with no leverage term, which is
-    ; not broom's rstandard(); the correction is largest exactly where
-    ; leverage is largest. .hat and .cooksd were already reserved in
-    ; emlVocabAugment$ but never emitted.
+    ; .std.resid is NOT resid / sigma: that form omits the leverage term, is
+    ; not broom's rstandard(), and the correction it leaves out is largest
+    ; exactly where leverage is largest. .hat and .cooksd are reserved in
+    ; emlVocabAugment$ and are emitted here.
     ;
     ; Every returned vector is indexed by TABLE ROW, not by fitted
     ; observation, so listwise-dropped rows carry undefined and

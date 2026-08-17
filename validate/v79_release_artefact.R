@@ -182,6 +182,29 @@ sha256 <- function(path) {
     NA_character_
 }
 
+# THE STALENESS BINDING DIGESTS CODE, NOT FILE BYTES. Praat's comment set is a
+# line whose first non-blank character is "#", ";" or "!"; those lines are
+# dropped before the digest is taken, and the remainder is joined with "\n"
+# exactly as `sed | sha256sum` sees it in harness/release/run.sh, which writes
+# the recorded value the same way. THE REASON, which is this file's own reason
+# one level down: the binding is deliberately not the whole artefact, because
+# an alarm that fires on every edit anywhere in the plugin demands a GUI
+# re-drive for a typo and gets silenced. A whole-FILE digest of setup.praat is
+# that same alarm, narrowed to one file: it fires when a comment in it is
+# rewrapped, and a comment cannot change which menu appears or where a command
+# points. On 17 August 2026 a comment-only sweep of the shipped headers turned
+# both of these red with the code byte-identical, which is the shape this
+# recipe removes. A trailing ";" comment after a statement is NOT stripped:
+# that keeps the statement line in the digest, the conservative direction.
+code_sha256 <- function(path) {
+    if (!file.exists(path)) return(NA_character_)
+    src <- readLines(path, warn = FALSE)
+    src <- src[!grepl("^[[:space:]]*[#;!]", src)]
+    tmp <- tempfile(); on.exit(unlink(tmp))
+    writeLines(src, tmp)
+    sha256(tmp)
+}
+
 run <- function(cmd, args) {
     out <- suppressWarnings(system2(cmd, args, stdout = TRUE, stderr = TRUE))
     st <- attr(out, "status")
@@ -581,15 +604,25 @@ check_true("v79",
            !identical(tsv("zip_sha256"), tsv("artefact_sha256")))
 
 # --- THE STALENESS BINDING ------------------------------------------------
-setup_now <- sha256(file.path(plug, "setup.praat"))
+setup_now <- code_sha256(file.path(plug, "setup.praat"))
 check_true("v79",
            sprintf("the registration driven in that run is the registration shipping today (%s)",
                    substr(setup_now, 1, 12)),
            !is.na(setup_now) && identical(tsv("setup_sha256"), setup_now))
+# AND THE RECIPE IS NOT A NO-OP. A code digest that had quietly become a
+# digest of nothing -- an empty strip, a regex that matched every line --
+# would agree with the record forever. setup.praat is majority comment and
+# must still hold executable lines after the strip.
+setup_src <- readLines(file.path(plug, "setup.praat"), warn = FALSE)
+setup_code <- setup_src[!grepl("^[[:space:]]*[#;!]", setup_src)]
+check_true("v79",
+           sprintf("the code digest is taken over code (%d of %d lines survive the comment strip)",
+                   length(setup_code), length(setup_src)),
+           length(setup_code) >= 20 && length(setup_code) < length(setup_src))
 
 TARGET <- tsv("installed_target_script")
 tgt_now <- if (!is.na(TARGET) && nzchar(TARGET))
-    sha256(file.path(plug, TARGET)) else NA_character_
+    code_sha256(file.path(plug, TARGET)) else NA_character_
 check_true("v79",
            sprintf("the script behind the dialog that walk reached is the one shipping today (%s, %s)",
                    TARGET, substr(tgt_now, 1, 12)),

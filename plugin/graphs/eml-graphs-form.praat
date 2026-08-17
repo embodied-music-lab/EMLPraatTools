@@ -4,195 +4,8 @@
 # EML Graphs Plugin
 # License: GPL-3.0-or-later
 # Version: 2.9
-# v2.9: The post-draw dialog is three fixed buttons -- Done | Save | Redraw --
-#       and Save opens @emlSavePanel, which offers whichever outputs exist.
-#       The button count does not vary with what is available, so every
-#       keyboard walk of this dialog is the same walk.
-# v2.8: The post-draw Save path exports through @emlExportResultFiles, the
-#       shared migration fork, so an analysis saved from a figure lands in the
-#       same shape the stats menu writes it in. @emlReportToFile uniques the
-#       legacy file itself and the declared arm does not unique, which is the
-#       behaviour @emlWrapperExportCSV has.
-# v2.7: A WRAPPER'S ANNOTATE PRESET SURVIVES A BEGINNER DRAW. Beginner mode
-#       draws only what its own dialog offers, so the beginner commit sets
-#       annotate = 0. The preset is consumed once BEFORE the outer repeat, so
-#       Redraw does not re-apply it, and prev_adv_<type>_annotate is written
-#       in exactly one place -- the toggle to beginner -- which a preset never
-#       passes through. All six annotate-capable restore branches therefore
-#       fall back to the live preset when there is no saved advanced state,
-#       and carry the preset's test type into the dialog index with it. Same
-#       shape as v1.6's Item 22, which preserves annotTestType$ and
-#       annotStyle$ across a beginner Draw.
-# v2.6: A LEGEND INSIDE THE PLOT GETS Y-AXIS ROOM MADE FOR IT. Any extra room
-#       a figure needs is a property of what is drawn on it, not of the unit,
-#       and is supplied by @emlComputeAnnotationHeadroom at the annotation
-#       stage. A legend at placement 1 sits on the data area, so it earns the
-#       same treatment a significance bracket does. The six types that draw a
-#       legend are 5, 8, 10, 11, 12 and 13.
-#
-#       * TWO PASSES. The figure is drawn, the axis it resolved and the
-#         corner @emlPlaceElements sent the legend to are read back from the
-#         draw procedure, and if the legend needs room the figure is erased
-#         and drawn again on the widened axis. Both facts are decided inside
-#         the draw procedure and neither exists before it runs. The
-#         alternative — this file re-deriving every legend-bearing type's
-#         auto-range with its own copy of that type's arithmetic — would
-#         change the axis of every figure whether or not it had a legend the
-#         first time a copy drifted by one rounding step.
-#       * @emlGraphsDispatchDraw (the DISPATCH block, at file scope so it can
-#         be called twice) and @emlGraphsDrawWithLegendRoom (the loop), both
-#         at file scope so a probe can drive the real code rather than a
-#         transcription of it.
-#       * @emlLegendHeadroomAfterDraw — the decision. Only placement 1
-#         (Inside plot) earns an axis change: 2 and 3 grow the saved image
-#         around an unchanged plot, 4 writes a second file, 5 draws nothing,
-#         and none of them takes a square inch of the data area.
-#       * NOTHING THAT CANNOT BE AFFORDED IS SILENT. A legend band capped at
-#         emlLegendHeadroomShare of the panel, a bottom-corner legend on a
-#         histogram (whose frequency axis has a hard zero floor), a
-#         user-typed axis that had to be widened, and the discarded first
-#         pass itself are each named in the Info window.
-# v2.5: LEGEND PLACEMENT. The user's width and height describe the PLOT, and
-#       a legend has four places to go besides the inside of it, so giving a
-#       legend room does not mean taking room from the data and "make my
-#       figure square" is satisfiable. Shared setting, one canonical encoding
-#       for every graph type:
-#
-#           config_legendPlacement
-#             1 Inside plot (DEFAULT — auto-corner)
-#             2 Right of plot      3 Below plot
-#             4 Separate figure    5 None
-#
-#       THE PLOT IS THE SAME SIZE IN ALL FIVE. Placements 2 and 3 grow the
-#       SAVED IMAGE around an unchanged plot rectangle; placement 4 writes
-#       the legend as a second file. figure_width and figure_height are not
-#       adjusted anywhere for a legend, which is the whole point. The
-#       geometry lives in @emlDrawLegend / @emlDrawLegendPanel in
-#       eml-graph-procedures.praat v3.28; this file owns the encoding, the
-#       registry, the dialog and the second file.
-#
-#       * REGISTRY. legendPlacementStyle[1..nGraphTypes], 5 = offers the
-#         menu / 0 = this type has no legend, beside gridModeStyle[] and in
-#         the same shape for the same reason (see the block there: two
-#         encodings sharing one persisted key seed an optionmenu with an
-#         out-of-range index, which Praat draws blank and then refuses to
-#         close, and the bad value is on disk so it survives a restart). Six
-#         types draw a legend — 5, 8, 10, 11, 12, 13, which is exactly the
-#         set whose draw procedures call @emlDrawLegend. A missing or
-#         out-of-range entry fails at INCLUDE time from a file-scope loop,
-#         and @emlLegendPlacementStyle refuses an unregistered type by name
-#         at runtime. Adding a graph type without a legend entry cannot ship.
-#       * ENCODING. @emlLegendPlacementToMenu / @emlLegendPlacementFromMenu /
-#         @emlSeedLegendPlacement / @emlCommitLegendPlacement, mirroring the
-#         gridline set. There is only ONE encoding, so the translations
-#         are identities; they exist so that a second one, if it is ever
-#         needed, has one place to go instead of fourteen. The clamp is at
-#         @emlLoadConfig, where the file is read, so an out-of-range value in
-#         a hand-edited config becomes the default rather than a blank
-#         dropdown and a form that refuses to close.
-#       * DIALOG. "Legend placement" optionmenu in the Advanced block of the
-#         six legend-capable pages only, seeded and committed through the two
-#         single-token procedures.
-#       * SECOND FILE. Placement 4's legend is drawn on a parked patch of the
-#         picture and deliberately not reported to @emlExpandDrawnExtent, so
-#         the figure still saves at its own extent; the Save branch then
-#         selects the parked rectangle and writes <name>_legend.png beside
-#         <name>.png — same folder, same base name, same DPI, same
-#         non-destructive @emlGenerateUniquePath. No new path convention.
-#         It inherits the figure's annotSize rather than recomputing a size
-#         from the legend canvas, so the two files' text matches when they
-#         are placed side by side in a manuscript.
-# v2.4: The graph type registry declares 13 types, with Spaghetti Plot at 13.
-#       nGraphTypes, all six parallel registry arrays, menuToType[16] and
-#       typeToMenu agree on that count. Time series with a confidence interval
-#       is a "Show confidence interval" toggle on type 5 (Line Chart), and
-#       @emlDrawTimeSeriesCI is dispatched from there.
-#       CALLERS: a script setting emlGraphsPresetType for a spaghetti plot
-#       sets 13.
-# v2.3: * The Draw path's Export Results dialog proposes a name read off the
-#         CSV buffer that is about to be written -- @emlGraphsCSVDefaultName /
-#         @emlGraphsCSVRowAnalysis -- giving the same <table>_<analysis-slug>
-#         shape as @emlWrapperExportCSV, so the filename describes the bytes
-#         in the file rather than whatever object the figure was drawn from.
-#       * emlGraphsPresetSubgroupCol$ lets a wrapper name its actual second
-#         factor, consumed in the Grouped Violin and Grouped Box preset
-#         branches ahead of the role guesser. A preset that collides with
-#         Category or Value is demoted and the guesser runs instead.
-#       * @emlGraphsIsPercentageColumn, and the two @emlComputeAxisRange calls
-#         here pass it rather than a literal 0, so a percentage column gets a
-#         percentage axis. Detection needs BOTH a percentage-looking name and
-#         data inside 0-100.
-#       * The correction preset's string and its dialog index are both derived
-#         from one validated index via @emlAdjustMethodName, so they cannot
-#         disagree, and an unrecognised preset is reported where it was set.
-#         Consuming it on the parametric path is in
-#         eml-annotation-procedures.praat, not here.
-# v2.2: (a) The spaghetti-plot column-mapping dialog consumes
-#       emlGraphsPresetGroupCol$ through the spPresetHasGroup /
-#       spPresetGroupIdx sentinel, mirroring scatter and histogram, so a Draw
-#       from a stats wrapper carries the requested grouping. (b)
-#       emlGraphsPresetXCol$ and emlGraphsPresetYCol$ are cleared at workflow
-#       end rather than inside the scatter page, so they cannot leak into the
-#       next workflow call when the user chooses a non-scatter type.
-# v2.1: The histogram column-mapping dialog honours an incoming group-column
-#       preset: the histPresetHasGroup sentinel, mirroring scatterPresetHasGroup,
-#       ticks "Use group column" with the seeded index so histGroupCol$ commits
-#       and the grouped-histogram annotation route at the dispatch is reached.
-# v2.0: Multiple-comparison adjustment is user-facing rather than a hardcoded
-#       "holm". "Adjustment method" optionmenu (Bonferroni / Holm /
-#       Benjamini-Hochberg, default Holm) on the annotate-capable
-#       column-mapping dialogs, backed by the shared prev_annotAdjustIdx
-#       persistence variable and the @emlAdjustMethodName index-to-string
-#       helper. emlGraphsPresetCorrection$ carries a stats wrapper's own
-#       adjustment choice in.
-# v1.9: Bar-chart negative-mean support in the annotated (bracket) path —
-#       auto-range floors on emlBarData_visibleMin so all-/mixed-negative
-#       means are not clipped at 0 (positive data is unaffected via the axis
-#       procedure's non-negative guard). Companion to eml-graph-procedures
-#       v3.21 / eml-draw-procedures v1.18.
-# v1.8: Post-draw dialog "Back" renamed to "Done".
 # Date: 11 May 2026
 #
-# v1.7: emlShowExplanations = 1 set in @emlGraphsWorkflow entry point
-#        (explanations on wizard + graphs paths, not wrapper output).
-#        emlGraphsPresetRegressionLine and emlGraphsPresetCorrType$
-#        preset globals — consumed after per-call reset, survive workflow.
-# v1.6: The beginner Draw path leaves annotTestType$/annotStyle$ alone.
-#        These fields are only meaningful when annotate=1 (advanced mode),
-#        and a preset's test type has to survive a Redraw. Across all 5
-#        form types (bar, violin, box, grouped violin, grouped box).
-# v1.5: Scatter group column preset. The scatterPresetHasGroup sentinel;
-#        the scatter form consumes emlGraphsPresetGroupCol$ alongside X/Y
-#        presets and auto-checks "Use group column" when one is provided.
-#
-# v1.4: Scatter preset globals (emlGraphsPresetXCol$, emlGraphsPresetYCol$)
-#        for stats wrapper wiring. Consumed in scatter form section
-#        to auto-select X/Y columns from eml-correlate.praat presets.
-#
-# v1.3: group_order captures in all 9 Draw branches as well as the toggle
-#        branches. emlGroupSortAlphabetical is set before the annotation
-#        bridge, so the matrix and the graph order agree on the same draw.
-#        Value column first in Grouped Violin, Grouped Box, and Spaghetti
-#        forms. Spaghetti: parenthetical field descriptions, boolean
-#        "Use group column", spaghetti-specific prev_spGroupSort defaulting
-#        to table order. Legend labels sanitized in TimeSeries,
-#        TimeSeriesCI, Spaghetti.
-#
-# v1.2: prev_groupSort + config_groupSort captures in all 9 Draw branches
-#        as well as the toggle branch (clicked=3), so the user's group sort
-#        selection takes effect and persists on redraw.
-#
-# v1.1: The Save dialog takes a folder plus an auto-generated filename
-#        rather than chooseWriteFile$, and returns to the main post-draw
-#        dialog so CSV export remains available after saving. Sub-dialog
-#        buttons use "Cancel" (returns to loop). PNG and CSV folder
-#        persistence tracked separately (config_lastPNGFolder$,
-#        config_lastCSVFolder$). Default folder is Desktop, not the plugin
-#        directory. Backward-compatible config load (old lastOutputFolder
-#        key populates both).
-#        Group sort order dropdown on all 9 group-having graph types
-#        (Table order / Alphabetical). Config-persisted via groupSort
-#        key. Controls @emlCountGroups via emlGroupSortAlphabetical.
 #
 # Purpose: Interactive form workflow for EML Graphs. Contains the graph type
 #          registry, config persistence, context detection, type-specific
@@ -365,10 +178,10 @@ hasGridlines[13] = 1
 # C1. These two menus are NOT two spellings of one control; they are two
 # different encodings of `.gridMode`, and the draw layer documents both
 # (eml-draw-procedures.praat :560 :656 :721 :789 :1180 :1607 :2970 for the
-# four-option form, :1947 :2409 :2831 for the two-option form). They used to
-# share ONE persisted key, `config_gridlineMode`, written from whichever type
-# was drawn last and seeded straight back into whichever type was opened next.
-# Two consequences, both shipped:
+# four-option form, :1947 :2409 :2831 for the two-option form). Sharing ONE
+# persisted key, `config_gridlineMode`, written from whichever type is drawn
+# last and seeded straight back into whichever type is opened next, has two
+# consequences:
 #
 #   1. A four-option type could put 3 or 4 into a two-option menu. Praat draws
 #      an optionmenu whose default index exceeds its option count BLANK and
@@ -3320,8 +3133,8 @@ repeat
     # and detects context from it — which is how a wrapper hands the Table it
     # just analysed over to the graphs form. Re-detecting on the first pass
     # would read the CURRENT Objects-window selection and throw that away,
-    # because by the time an analysis has finished the selection is no longer
-    # the source Table: every wrapper's Draw branch would open the graphs form
+    # because by the time an analysis has finished the selection has moved
+    # off the source Table: every wrapper's Draw branch would open the form
     # and then ask "No Table selected", on the one path in the plugin that
     # already knows exactly which Table the user means.
     #

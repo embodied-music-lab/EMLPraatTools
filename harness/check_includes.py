@@ -174,7 +174,7 @@ def closure(path, seen=None):
 KNOWN = {
     'eml-tutorial.praat':
         'include of tutorial/eml-demo-procedures.praat deliberately '
-        'neutralised (v0.19 item 4); restoring the include restores '
+        'neutralised; restoring the include restores '
         'the calls',
 }
 

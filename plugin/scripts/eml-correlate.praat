@@ -19,17 +19,6 @@
 #       emlGraphsPresetRegressionLine so the scatter carries the line whose
 #       R-squared it annotates. The Test menu carries a one-line
 #       Pearson/Spearman assumption note.
-# v3.3: Missing-data fix (correctness). Per-group correlation now uses
-#       @eml_getGroupPairedData (row-wise complete-case within the group)
-#       instead of two independent @eml_getGroupData calls, which
-#       misaligned X and Y when cells were missing; excluded-row note added.
-# v3.2: Per-group correlation output replaced with shared reporter
-#       (@emlReportCorrelationAnalysis) for rich Info window output.
-# v3.1: Use emlGraphsPresetCorrType$ global instead of direct annotCorrType$
-#        set (survives per-call reset in graphs form).
-# v3.0: Wrapper infrastructure refactor. Shared @emlWrapperInit,
-#        @emlWrapperExportCSV. repeat/until replaces goto/label.
-# v2.0: Full convergence — orchestrator + @emlGuessColumnRoles.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell

@@ -4,11 +4,6 @@
 # Purpose: One-way ANOVA with optional Tukey HSD post-hoc comparisons.
 # Date: 11 May 2026
 # Version: 3.0
-# v3.0: Full convergence — @emlRunAnovaAnalysis orchestrator,
-#        @emlWrapperInit, @emlWrapperExportCSV, @emlWrapperCommonFields,
-#        @emlGuessColumnRoles. repeat/until replaces goto/label.
-# v1.7: Step 6 wiring — inline draw replaced with @emlGraphsWorkflow.
-# v1.6: Two-loop architecture. Shared @emlReportAnovaComparison. CSV.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell

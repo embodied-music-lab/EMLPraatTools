@@ -5,45 +5,10 @@
 # Version: 1.5
 # Date: 2 August 2026
 #
-# v1.5: Numeric-column integrity and group-label normalisation.
-#        (1) @eml_getGroupData / @eml_getGroupPairedData now verify that
-#        "Get all numbers in column:" will return VALUES and not Praat's
-#        alphabetical RANK substitution, and abort with a clear message
-#        when it would not. (2) @emlValidateNumericColumn hardened:
-#        per-cell check across every row, strict-numeric verdict, first
-#        offending row and its literal contents, and a coercion-hazard
-#        warning. It is now actually called (previously zero call sites).
-#        (3) number() coercion hazards are detected and reported; the
-#        European decimal comma is listed first because it is the only
-#        one that yields a plausible wrong number rather than a dropped
-#        row. (4) @emlCountGroups normalises group labels (case and
-#        leading/trailing whitespace) and warns when normalisation
-#        merged distinct spellings; the same normalisation is applied
-#        by the group extractors so counting and extraction agree.
-#        New helpers: @eml_normalizeLabel, @eml_strictNumericColumn.
-#
-# v1.4: @eml_getGroupPairedData — row-wise complete-case extraction of
-#        two numeric columns within one group, for grouped correlation
-#        (keeps X and Y aligned; per-column extraction misaligned pairs
-#        on missing data).
-# v1.3: @emlGuessColumnRoles — infers column roles (group, data,
-#        subject, time, factor) from column names via weighted keyword
-#        matching + type detection. Replaces positional guessing in
-#        wizard and graph form dialogs. Helper: @eml_kwScan.
-# v1.2: Group sort order — @emlCountGroups optionally sorts labels
-#        alphabetically when emlGroupSortAlphabetical = 1. Default 0
-#        (table/discovery order). Global initialized in this file.
 #
 # Part of the EML Stats library (EML Praat Tools).
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
 #
-# v1.1: Deleted @emlExtractMultipleGroups (10-group limit, vector
-#        index overflow bug). Replaced with on-demand extraction:
-#        @emlCountGroups rewritten (no group limit, no .groupSize
-#        outputs), @eml_getGroupData added (4-arg, self-contained,
-#        filters undefined values, auto-sized vector via C-level
-#        Table extraction). Moved @eml_getGroupData here from
-#        eml-inferential.praat (extraction, not inference).
 #
 # Provides: @emlExtractColumn, @emlExtractColumnAsStrings,
 #   @emlExtractGroupVectors, @eml_getGroupData,
@@ -944,8 +909,8 @@ endproc
 #
 #   0  numeric     the cell reads as the number it looks like
 #   1  empty       nothing is there; this is missing data, and the
-#                  complete-case convention of 21 July (FIX_NOTES.md,
-#                  audit item C1/C2) is the right treatment for it
+#                  complete-case convention this plugin applies throughout
+#                  is the right treatment for it
 #   2  locale      a comma stands where a decimal point belongs. Praat reads
 #                  "1,5" as 1 — not a dropped row, a DIFFERENT NUMBER. The
 #                  user has the value; it is being discarded or corrupted by
@@ -2578,7 +2543,7 @@ procedure emlCheckSourceFile: .path$
     # it is an escape that will be eaten. Counting occurrences that are NOT a
     # bare empty field is enough to raise the flag, and the user is pointed at
     # the character rather than at a row number, because after the read the
-    # row number would refer to something that no longer holds it.
+    # row numbering has shifted and the number would name the wrong row.
     .rest$ = .text$
     .guard = 0
     while index (.rest$, """""") > 0 and .guard < 10000

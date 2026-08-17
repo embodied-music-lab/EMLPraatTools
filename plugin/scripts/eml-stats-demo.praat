@@ -16,9 +16,6 @@
 #
 # Date: 2 August 2026
 # Version: 1.4
-# v1.4: Item 3 — @emlDrawViolin calls supplied 6 of 7 arguments; the
-#        missing .width argument is now passed, so every subsequent
-#        argument binds to its intended parameter.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell

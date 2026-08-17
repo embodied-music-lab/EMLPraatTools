@@ -8,35 +8,6 @@
 #
 # License: GPL-3.0-or-later
 # Version: 1.7
-# v1.7: BATCH VOICE ANALYSIS IS REGISTERED. Two menu lines — the
-#       "-- eml batch --" separator and "Batch voice analysis..." — after
-#       "EML Graphs...". No action button on any object type: the module reads
-#       a folder off disk and ignores the selection entirely, so a button that
-#       appeared because a Sound was selected would be telling the user
-#       something untrue. Nothing else is added, removed or re-chained. Two
-#       facts about Praat's menu rendering are written down with it, both
-#       photographed under Xvfb rather than reasoned (harness/batchgui):
-#       after$ does NOT decide the rendered order once an anchor has been used
-#       — source order does — and a "-- label --" separator renders as a rule
-#       with no text, so none of the nine labels is ever seen by a user.
-#       Coverage: validate/v72_batch_registration.R.
-# v1.6: No registration added, removed or re-chained. The eleven
-#       TableOfReal/Matrix buttons are OPERABLE rather than unregistered.
-#       The v1.3 note below said those buttons were
-#       added for "Describe, Compare, Correlate, Regression, Wizard" and did
-#       not mention EML Graphs, which is registered on both types as well —
-#       corrected, and the whole population is now written down where it is
-#       registered, beside the block that registers it. See the note above
-#       the TableOfReal/Matrix section and validate/v59_entry_points.R.
-# v1.5: Comment only; no menu registration changed. The counts quoted in
-#       the tabled-mixed-models note carry the grep that re-derives them, so
-#       the next reader does not have to trust a number.
-# v1.4: Item 4 — unregistered the "EML Interactive Tutorial" menu entry.
-#       scripts/eml-tutorial.praat includes tutorial/eml-demo-procedures.praat,
-#       a directory that does not exist in the plugin, so the menu item was
-#       live but dead. No tutorial content invented.
-# v1.3: Added TableOfReal and Matrix action buttons for stats tools
-#       (Describe, Compare, Correlate, Regression, Wizard).
 # Date: 8 August 2026
 #
 # ATTRIBUTION

@@ -5,27 +5,6 @@
 # Version: 1.2
 # Date: 2 August 2026
 #
-# v1.2: Audit fixes (items 5, 6, 7).
-#        Item 5 — @emlShapiroWilk: the second pair-weight coefficient is
-#          now applied from n >= 6, not n >= 7, matching Royston AS R94 and
-#          R's swilk.c (which branches on n > 5). n = 6 was the only sample
-#          size in 3..12 that disagreed with R; it now agrees to 1e-6.
-#        Item 6 — @emlKurtosis returned a spurious finite value (e.g. -13.5
-#          at n = 4) when the standard deviation is zero; the standardised
-#          moment is 0/0 there. It now returns undefined with .error$ set.
-#          @emlSkewness had the analogous defect (returned 0) and is fixed
-#          the same way. Both procedures now expose .error$.
-#        Item 7 — Guards for undefined elements and out-of-range arguments.
-#          sort# raises a hard error on a vector containing undefined, which
-#          aborted the whole calling script from @emlPercentile,
-#          @emlTrimmedMean, @emlWinsorizedMean and @emlMAD. New helper
-#          @eml_hasUndefined lets those procedures return undefined instead.
-#          @emlCI now rejects confidenceLevel outside (0, 1): a level of 1
-#          made invStudentQ(0, df) loop forever.
-#
-# v1.1: Added @emlShapiroWilk (Royston 1995, AS R94) and helper
-#        @eml_swPoly. Shapiro-Wilk W test for normality, n = 3–5000.
-#        Verified against scipy.stats.shapiro and R shapiro.test.
 #
 # Part of the EML Stats library (EML Praat Tools).
 # License: GPL-3.0-or-later

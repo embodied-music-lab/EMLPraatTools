@@ -181,7 +181,7 @@ This table is a hand-picked selection; `MANIFEST.txt` is the complete list.
 
 - `MANIFEST.txt` — every file in the plugin with a one-line description, so you know which module to open
 - `../docs/API_EXPORT.md` — calling `@emlExportResultFiles` from your own script, for a folder of files in a loop
-- `FIX_NOTES.md` — what was wrong and what closed it, for anyone comparing against an older copy
+- `dev/FIX_NOTES.md` — the July correctness bundle, with the reference values each fix was verified against
 - `scripts/eml-stats-demo.praat` — run to see a three-panel publication figure with synthetic data
 
 ## Attribution

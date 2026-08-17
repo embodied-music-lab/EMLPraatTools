@@ -739,7 +739,45 @@ scripts <- c(
     # neither was being read, so a run under a restrictive umask and a run
     # whose headless leg died at exit 255 both left it exiting 0.
     #     bash harness/release/run.sh
-    "v79_release_artefact.R"
+    "v79_release_artefact.R",
+    # v80 is a LINT, and it is the only one here. Every other script reads a
+    # number the plugin printed or a claim the repository makes; this one
+    # reads the shipped source and rejects a sentence in it. AUTHOR RULING,
+    # pre-release: a shipped file describes what the code does, never what it
+    # used to do wrong. Defect and change history belongs in git and in
+    # plugin/dev/HISTORY_LEDGER.md, and the reason is not tidiness -- a header
+    # entry reading "the guard was on .nGroups, which was always true" makes a
+    # claim about a version nobody has, standing beside claims about the code
+    # in front of the reader, in a file where nothing can tell them apart.
+    # That sentence is also the one part of the file this suite cannot
+    # exercise, so it is the part that can be wrong indefinitely and stay
+    # green.
+    #
+    # IT IS IN THE RUNNER BECAUSE THE SWEEP'S COMPLETENESS CANNOT BE READ. The
+    # sweep it closes removed 1,623 lines of header narration across 27 files
+    # and rephrased 78 more, and the failure mode of proving that by reading
+    # is a missed line, which looks exactly like a line that was considered
+    # and kept. A predicate cannot miss one. So the sweep was DONE when this
+    # went green, and it stays done because this now stands guard: the next
+    # fix that writes its own history into a shipped header turns the suite
+    # red in the commit that wrote it, naming the file and the line.
+    #
+    # ITS TEN PATTERNS ARE THE CAPTURE TOOL'S. plugin/dev/tools/
+    # extract-history.py copied every block into the ledger BEFORE any of it
+    # was deleted, using the same list, so "everything this lint would reject
+    # was first written down verbatim" is a property of the two files rather
+    # than of anyone's memory. R cannot import a Python list, so v80 re-derives
+    # the list out of the tool's source and asserts the two are identical;
+    # edit one and the suite goes red.
+    #
+    # EXCEPTIONS ARE A FILE. validate/v80_history_allowlist.tsv carries path,
+    # line-pattern and a one-line justification, for the prose that collides
+    # with a pattern by naming a developer file whose NAME contains one. An
+    # entry that matches nothing is reported as a FAILURE, not skipped: a
+    # stale exception tells its reader the tree still holds a line it does
+    # not, and waits to excuse some future line on a justification written
+    # about another one.
+    "v80_shipped_history.R"
 )
 
 cat("EML Praat Tools validation suite\n")

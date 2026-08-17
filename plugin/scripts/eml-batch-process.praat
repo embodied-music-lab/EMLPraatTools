@@ -9,20 +9,6 @@
 # Date: 16 August 2026
 # Version: 1.3
 #
-# v1.3: The two APPENDIX_D §7 (hard) rules for bounded ranges.
-#       GUARD BOTH ENDS OF EVERY BOUNDED RANGE — the filtered-autocorrelation
-#       range, the raw-cross-correlation range and the 60-330 Hz cepstral peak
-#       search now each warn when a measured F0 comes within 10% of either
-#       limit, which is the difference between a censored number and a
-#       measured one and is invisible in the value itself. CHECK THE USER'S
-#       STATED RANGE AGAINST THE MEASUREMENT — highest expected F0 derives
-#       both pitch ranges, so a measurement above it is reported with the two
-#       parameters it set. Info-window output and the warning count only: no
-#       Table cell, no column and no exported value changes, and
-#       harness/batch's seven result CSVs are byte-identical across the edit.
-#       This is the module's first version to carry a registered menu entry
-#       (plugin/setup.praat v1.7) and a GUI drive of its real dialog
-#       (harness/batchgui). validate/v72_batch_registration.R.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell

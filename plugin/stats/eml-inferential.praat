@@ -18,68 +18,6 @@
 #        eml-lib-stats.praat, which is the supported direct-call path.
 #        No change on any column that holds numbers.
 #
-# v1.3: Statistical-correctness fixes (audit items 1-13).
-#   item 1  - @emlSpearmanCorrelation does not clobber
-#             @emlPearsonCorrelation's outputs: the shared computation
-#             moved into the internal @eml_pearsonCore, and both public
-#             procedures are now thin wrappers over it.
-#   item 2  - @emlPearsonCorrelation: a perfect correlation
-#             (.rSquared >= 1) gave an undefined t with p = 0, which the
-#             report layer rendered as "p < .001". .p is now 0 with new
-#             .perfect and .warning$ outputs disclosing it; n < 3 and
-#             zero-variance inputs are also guarded.
-#   item 3  - @emlTukeyHSD does not fail open: an undefined q (zero SE
-#             or undefined MS-within) would report p = 1.000 for every
-#             comparison. Per-comparison p is now undefined, counted in
-#             .nUndefined and disclosed in .warning$.
-#   item 4  - @emlOneWayAnova guards the eta-squared denominator
-#             (zero/undefined SS-total) instead of reporting eta^2 = 1.
-#   item 5  - @emlTwoWayAnova: SS_Error and SS_Total are now computed
-#             from within-cell deviations rather than parsed from
-#             Praat's Type I report, F and p re-derived from the
-#             corrected MS_Error, design balance checked, negative SS
-#             clamped, and the SS type stated in the output header.
-#             (Type III effect SS were already correct; untouched.)
-#   item 6  - @eml_parseAnovaLine matched row labels by first substring
-#             occurrence, so it returned factor1's row when factor2's
-#             name was a substring of it (and Error/Total collided the
-#             same way). Now matches the label field exactly.
-#   item 7  - @emlMannWhitneyU used a combined-N exact/approximate
-#             threshold and ignored ties; it now uses R's rule
-#             (n1 < 50 AND n2 < 50 AND no ties).
-#             @emlWilcoxonSignedRank keeps its n < 50 threshold (which
-#             already matched R) and adds the ties/zeroes conditions.
-#             One-tailed p-values in both returned the smaller tail
-#             regardless of direction; the alternative is now fixed as
-#             H1: group1 > group2 (matching R), with .pGreater/.pLess
-#             exposed. .tails is validated in both, and in
-#             @emlRankBiserialR / @emlMatchedPairsR.
-#   item 8  - @emlBonferroni, @emlHolm and @emlBenjaminiHochberg counted
-#             undefined elements in the comparison count. All three are
-#             now NA-safe (undefined in, undefined out; k excludes
-#             undefined), matching R's p.adjust.
-#   item 9  - @emlPairwiseT, @emlDunnTest and @emlPairwiseWilcoxon
-#             substituted rawP = 1 for a failed comparison, which reads
-#             as a computed non-significant result. All three now
-#             propagate undefined and report .nSkipped / .skipReason$.
-#   item 10 - @emlPairwiseT.method$ echoed the ADJUSTMENT argument, so
-#             report headers read "Pairwise holm". It now names the test
-#             ("Welch t-test" / "Student t-test"); the adjustment moved
-#             to .adjustMethod$.
-#   item 11 - @emlEpsilonSquared capped at 1 with .capped / .warning$,
-#             and guarded for .n <= 1.
-#   item 12 - @emlCohenD Hedges' J documentation corrected (worst-case
-#             error is 1.28% at df = 2, not 0.27%). Formula unchanged.
-#   item 13 - @emlOneWayAnova sums of squares computed by a two-pass
-#             centred algorithm instead of the raw-score Hays formulas,
-#             removing catastrophic cancellation on large-offset data.
-#
-# v1.2: @emlTukeyHSD internal sort removed — group order now controlled
-#        by @emlCountGroups via emlGroupSortAlphabetical global.
-#        .sortMap set to identity. No computation change.
-# v1.1: 10-group limit removal: deleted @eml_getGroupData dispatcher,
-#        all 7 consumers rewritten to use @emlCountGroups + on-demand
-#        @eml_getGroupData from eml-extract.praat.
 #
 # Part of the EML Stats library (EML Praat Tools).
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
@@ -3639,7 +3577,7 @@ procedure emlEpsilonSquared: .h, .n
         .result = .h / (.n - 1)
         # epsilon-squared is a proportion of variance and cannot exceed
         # 1. H can slightly overshoot N - 1 with heavy tie correction,
-        # which previously produced values above 1.
+        # which pushes the raw ratio above 1; hence the cap below.
         if .result > 1
             .capped = 1
             .warning$ = "Epsilon-squared came out as H / (N - 1) = "
@@ -5700,10 +5638,10 @@ endproc
 #
 # NOT the joint convention b = median(y_i - slope * x_i). The two agree on
 # symmetric data and diverge otherwise, so the distinction is invisible in
-# casual testing and must be stated. This docstring previously described the
-# joint form while the code implemented separate; the mismatch was inert
-# because no caller read the docstring, but it is exactly the kind of drift
-# that makes a later "correction" break working code.
+# casual testing and must be stated. A docstring naming the joint form over
+# code implementing the separate one is an inert mismatch — no caller reads a
+# docstring — and exactly the kind of drift that makes a later "correction"
+# break working code.
 #
 # scipy.stats.theilslopes offers both via method=; its default, "separate",
 # is what this procedure matches.

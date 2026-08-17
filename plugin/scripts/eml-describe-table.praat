@@ -77,7 +77,6 @@
 #      the wizard's describe page does not offer one either, and inventing a
 #      figure type for it is a design decision, not a defect fix.
 #
-# v1.0: Initial version.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell

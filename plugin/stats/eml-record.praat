@@ -1526,7 +1526,7 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     ; something the user selected -- the graphs form converts a Sound to a
     ; Pitch, a Spectrum or an Ltas, draws, and then REMOVES the intermediate.
     ; The renderer must not emit a manifest select for such a step: the
-    ; object it names no longer exists by the time anyone re-runs the file,
+    ; object it names has been removed by the time anyone re-runs the file,
     ; and it never existed in the user's session as something they made. The
     ; preceding convert step left it in `data`, which is what the step uses.
     ;

@@ -8,14 +8,6 @@
 #          scatter — not from here.
 # Date: 11 May 2026
 # Version: 2.2
-# V2.2: header corrected. It previously advertised a "Theil-Sen
-#        robust alternative" that this wrapper has never called and has no
-#        control for. The dialog's model line does not use the
-#        letter "x" as a multiplication sign next to the variable X.
-# v2.1: Use emlGraphsPresetRegressionLine and emlGraphsPresetCorrType$
-#        globals instead of direct variable set (survive per-call reset).
-# v2.0: Wrapper infrastructure refactor. repeat/until replaces goto/label.
-# v1.0: Initial release with orchestrator.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell

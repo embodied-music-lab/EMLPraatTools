@@ -6,11 +6,6 @@
 #          with corresponding effect sizes (Cohen's d / rank-biserial r).
 # Date: 11 May 2026
 # Version: 3.0
-# v3.0: Wrapper infrastructure refactor. Shared @emlWrapperInit,
-#        @emlWrapperExportCSV. repeat/until replaces goto/label.
-# v2.0: Full convergence — analysis via @emlRunTwoGroupAnalysis orchestrator.
-# v1.6: Step 6 wiring — inline draw replaced with @emlGraphsWorkflow.
-# v1.5: Two-loop architecture. Shared @emlReportTwoGroupComparison. CSV.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell

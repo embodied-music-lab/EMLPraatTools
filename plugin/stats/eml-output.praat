@@ -3,82 +3,7 @@
 # ============================================================================
 # Module: eml-output.praat
 # Version: 2.4
-# v2.4: TWO ENTRY GUARDS ON @emlSavePanel, a receipt that wraps, and a probe
-#       that classifies rather than assumes.
-#
-#       @eml_saveSafeBaseName makes the typed Base name into a file name
-#         ONCE, before the collision walk, so a "/" cannot reach writeFile:
-#         verbatim -- which stops the script inside @emlSavePanel, so that the
-#         receipt never draws, the panel never returns, and the caller's
-#         Done | Save | Draw | New loop goes with the analysis behind it. One
-#         pass, before the walk, so every file of one press still shares one
-#         base name and one stamp.
-#       @eml_saveFolderWritable asks, once and with `nocheck` so the asking
-#         cannot itself abort, whether the target folder and its PARENT can
-#         be written. An unwritable target reports "unexpected error 30" and
-#         kills the session the same way; the panel RETURNS on a no.
-#       THE "Saved" RECEIPT WRAPS. It reserves one line per comment:, and the
-#         toolkit draws several when a path is longer than the dialog, so an
-#         unwrapped long path prints its tail over the path below. Every line
-#         goes through @emlWrapText at 62 characters, the width measured on
-#         6.6.30 and the one @emlErrorDialog uses.
-#       @eml_auditLabelColumn CLASSIFIES THE COLUMN, never assumes numeric.
-#         @emlWrapperInit's coercion arms manufacture a "row" column out of
-#         row labels that a Matrix never has and a TableOfReal may not have.
-#         Praat renders those undefined cells as "?", which is neither of the
-#         two forms @eml_strictNumericColumn's scan recognises, so the
-#         numericiser behind it would raise before the wrapper's dialog opened
-#         -- on EVERY Matrix, every unlabelled TableOfReal and every partially
-#         labelled one. It does not invent default labels, so it composes with
-#         whatever the conversion side decides to put there.
-# v2.3: The one CSV export journey is @emlSavePanel plus
-#       @emlExportResultFiles. The folder seed a Save button needs sits at
-#       file scope above @emlSavePanel, where every caller reaches it.
-# v2.2: @emlSavePanel -- one save, one folder, one name. The figure, the
-#       result frames and the Info window report are written together under a
-#       shared stem, rather than the figure and the CSV being two journeys
-#       with two folder memories and two naming rules and the report not being
-#       savable at all.
-# v2.1: Both arms of @emlExportResultFiles are non-destructive.
-#       @emlGenerateUniquePath lives in eml-core-utilities.praat, which is
-#       included before this file, so the declared arm can reach it. The BASE
-#       is uniqued once against the tidy frame and every frame in the set
-#       carries the walked suffix, so a set never half-overwrites an older
-#       set.
-# v2.0: THE MIGRATION FORK IS A PROCEDURE, @emlExportResultFiles, and the
-#       graphs form's export goes through it, so one analysis cannot write
-#       three broom-shaped files from the stats menu and one legacy
-#       long-format file from the graphs form. Writing only -- the two
-#       callers report differently, and a shared procedure cannot open a
-#       dialog from inside another one.
-# v1.9: Comments only — no executable line changed.
-# v1.8: @emlFormatEffectLabel recognises "r_squared" (and the aliases "R2"
-#         and "r2") and applies Cohen's R-squared benchmarks 0.01 / 0.09 /
-#         0.25 rather than Cohen's d thresholds. An unrecognised effect type
-#         does not fall back to d thresholds: .label$ is "" and the
-#         .recognized flag is 0, so callers can detect the condition.
-#       @emlFormatP reports "p > .999" for p in [0.9995, 1) rather than
-#         "p = 1.000", which would overstate the result as an exact 1.
-#         p = 1 exactly still formats as "p = 1.000".
-# v1.7: @emlWrapperInit accepts Table, TableOfReal, and Matrix objects.
-#       Auto-converts TableOfReal/Matrix to Table with Info window notification.
-#       Outputs .converted flag for caller awareness.
 # Date: 11 May 2026
-# v1.6: Renamed emlWizardMode → emlShowExplanations (clearer semantics).
-#        Double-tab spacing between value and explanation columns.
-# v1.5: Wrapper infrastructure. @emlWrapperInit (Table check + column
-#        loading + guess), @emlWrapperExportCSV (shared CSV export dialog).
-#        6 wrappers refactored to use shared procedures + repeat/until.
-# v1.4: Wizard mode third-column explanations. Global emlShowExplanations flag
-#        controls whether @emlReportLine/@emlReportLineString append a
-#        tab-separated explanation column. 15 helper procedures for
-#        value-anchored interpretations (effect sizes, p-values,
-#        correlation strength, df, skewness, kurtosis, etc.).
-# v1.3: Info window is now append-only. Removed emlReportFirstRun sentinel.
-#        @emlReportHeader never clears — always appends. New @emlClearInfo
-#        procedure for explicit clearing via dialog toggle. Timestamp kept.
-# v1.2: Accumulating Info window output — sentinel (removed in v1.3).
-#        Timestamp added to every report.
 #
 # Part of the EML Stats library (EML Praat Tools).
 # License: GPL-3.0-or-later
@@ -2343,8 +2268,8 @@ endif
 # receipt never draws, the panel never returns, and the caller's
 # Done | Save | Draw | New loop -- which is a `repeat ... until` around the
 # panel -- never runs again. The completed analysis and every way back to it
-# are gone, and Praat's recovery text names a window that is no longer on
-# the screen.
+# are gone, and Praat's recovery text names a window that has been taken
+# off the screen.
 #
 # WHICH CHARACTERS, MEASURED RATHER THAN GUESSED. On this Linux sandbox at
 # On 6.6.30, writeFile: was driven once per candidate character across 33 of

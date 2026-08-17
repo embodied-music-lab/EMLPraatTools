@@ -326,3 +326,304 @@ exist for that build.
 had a Praat leg exit with a zero-byte log, no leg marker and no PNG, producing
 spurious reds; identical re-runs were clean. Load contention on a two-core box, not
 a defect. The *intended* reds were stable in every run.
+
+---
+
+## The findings ledger schema — 17 August 2026
+
+Author's history-migration change order of 16 August, part 1. Every row of the
+findings ledger carries three fields, and the schema applies to all future
+findings as well as the existing ones:
+
+- **`fixedBy`** — full git commit hash of the fix. `""` until fixed.
+- **`pinnedBy`** — validator ID(s) pinning the corrected behaviour (e.g.
+  `"v66"`), or a dev-test ID where the pin lives in `plugin/dev/tests/`. `""`
+  means UNPINNED.
+- **`status`** — `open` | `fixed-unpinned` | `closed`. **`closed` requires BOTH
+  `fixedBy` and `pinnedBy` non-empty. No other path to closed.**
+
+`status` is mechanical from the other two rather than editorial, so the mapping
+is total and a row's status is never a matter of opinion:
+
+| `fixedBy` | `pinnedBy` | `status` |
+|---|---|---|
+| empty | (anything) | `open` |
+| set | empty | `fixed-unpinned` |
+| set | set | `closed` |
+
+The distinction the schema exists to force is the one this document has spent
+two rounds on: a defect that was repaired, and a defect that was repaired *and*
+whose repair something would notice the loss of. `v61` attested a repaired
+defect as open for a week; `v29` asserted renders the tree has never been able
+to produce; `v68`'s pin asserted a caller count, which a nonexistent procedure
+satisfies trivially. In every one of those the ledger would have said "closed"
+and been wrong in the same direction. A **fixed-unpinned** row is not an
+embarrassment — it is the honest state for most repairs, and the list of them is
+the deliverable.
+
+### Commit convention, on the record
+
+From now on the subject line of any fix commit **begins with the finding ID it
+closes**:
+
+```
+NEW-G5-2: the axis publication is spent when it is read
+```
+
+A commit closing more than one finding **lists every ID**:
+
+```
+NEW-G5-2, NEW-G8-3: ...
+```
+
+This is what makes `fixedBy` recoverable by search rather than by memory. The
+41-row backfill below is blocked precisely because no commit in this repository
+carries a finding ID in its subject line, and the archaeology has to be done by
+behaviour instead.
+
+### Enforcement
+
+`validate/tools/check_findings_schema.py` — stock Python 3, no packages, exit 0
+iff clean. It asserts that every row carries all three fields as strings, that
+`status` is one of the three literals exactly (spelling included — a consumer
+switching on `fixed_unpinned` silently drops the row into its default branch),
+that no row is `closed` without both fields, and that every row's `status`
+agrees with what its two evidence fields entail. `fixedBy`, when set, must be a
+full 40-character hash **and must name a commit that actually exists in this
+repository** — the check that catches a plausible-looking hash carried in from
+somewhere else.
+
+Two vacuity guards, because a checker that passes when it has nothing to check
+is the failure this repository has now hit twice — the manifest whose `--check`
+was correct for twelve days while nothing ran it, and every pin satisfied by the
+absence of the thing it named. **A missing ledger is a FAILURE, not a skip**, and
+**an empty ledger is a FAILURE**: zero rows satisfy every per-row rule vacuously.
+
+Break-tested 17 August, four deliberate corruptions, each red and each restored:
+a row with `pinnedBy` deleted; `status` spelled `fixed_unpinned`; a `closed` row
+with `pinnedBy` emptied (reds twice — the explicit rule and the entailment); and
+a zero-row ledger.
+
+---
+
+## CLEARED — the ledger was never committed here, and was landed on 17 August
+
+**The 41-row backfill was blocked from 15 to 17 August because
+`FINDINGS_MACHINE.json` was not in this repository, and never had been.** That
+blocker is now cleared and the section is kept rather than deleted, because the
+next reader will otherwise find three days of status entries that talk about a
+checklist of record the repository did not hold, and no explanation of why.
+
+What was established on 17 August, before the file arrived, and all of it still
+stands:
+
+- the ledger was absent from the working tree (`audit/` and repository-wide);
+- and absent from **every commit on every ref** — `git log --all
+  --diff-filter=A` and a full `--name-only` sweep of all 247 commits. The only
+  JSON ever committed to this repository up to that point was
+  `plugin/dev/tools/procs.json` and `plugin/dev/tools/theilsen_margin_rows.json`;
+- and absent from both git bundles (`EMLPraatTools-2026-08-05-audit.bundle`,
+  `EMLPraatTools-orchestrator-validation.bundle`) and the `push2`–`push38`
+  output staging directories, all of which predate 14 August;
+- and absent from the scratch and handoff trees under the working account.
+
+The ledger was not lost. **The 14 August delivery had never been landed in this
+repository at all.** `handoffs/HANDOFF_FOR_OPUS_2026-08-16.md` §"Reference Files
+for Implementation" names seven files as "included in this delivery"; three were
+present and four were not.
+
+**Landed 17 August 2026,** from that delivery, as untracked files in `audit/`:
+
+| File | What it is |
+|---|---|
+| `FINDINGS_MACHINE.json` | the 41-row checklist of record — the file the backfill needed |
+| `EML_AUDIT_REPORT_2026-08-14.md` | the full stress-test report, §1–§10 |
+| `AUTHOR_RULINGS_ADDENDUM_2026-08-14.md` | the three rulings of 14 August |
+| `handoffs/LETTER_TO_OPUS_2026-08-15.md` | the five rulings and ten change orders of 15 August |
+
+The three siblings matter as much as the ledger for reading it: the ledger rows
+carry an `id`, a `severity` and a one-line `mechanism` and nothing else, so
+`NEW-G8-2` is a title until §4.5 of the report says what a one-sided range does,
+and `D5` is a letter until §5 and ruling 1 of the letter say which menu is being
+ignored on which arm. The backfill below was done against all four together.
+
+The 41 rows carry `fixedBy`, `pinnedBy` and `status` as of 17 August. The
+archaeology, its method, and what it could not establish are in
+§"The 41-row backfill" at the end of this file.
+
+Worth keeping, because it was the sharpest half of the blocker: while
+the ledger was missing, `NEW-G5-2` and `NEW-G8-3` were the only two finding IDs
+that appeared anywhere in the tree, both as illustrative examples in the handoffs
+and once in `validate/REGISTRY.md`. The other thirty-nine row *keys* did not
+exist in this repository in any form. No amount of care would have recovered them
+from prose, and the ledger is the only artefact that carries them.
+
+### The pin claims in this document
+
+The change order's instruction was to treat this file's "closed by vNN" entries
+as claims and check that the named validator actually contains an assertion that
+would go **red if the fix were reverted**, rather than merely mentioning the
+area. That check was independent of the missing ledger, and every entry in it
+transferred into a row's `pinnedBy` once the rows arrived. Sampled by reading,
+and **confirmed genuine**:
+
+| Claim | Verified assertion |
+|---|---|
+| 1a → `v61` | counts the adjustment optionmenu on six arms and no more, asserts every menu sits inside an `adjustOffered = 1` just opened, and pins the eighteen read sites against twelve guards |
+| 1b → `v66`, `v69` | `v66` requires `annotMatrixPosthoc$` to name Tukey *and* state family-wise control, and requires the Dunn arm **not** to; `v69` asserts the asymmetry on the drawn figure and that no two-group arm borrows the sentence |
+| P0 → `v73`, `v77` | `v77` asserts the defect's own line `.p = studentQ (.absT, .df)` is **absent** while the two-sided `2 * studentQ (.absT, .df)` survives; `v73` pins against the R oracle at `1e-14` and documents that direction-inversion reds **only** against the oracle |
+| A → `v74` | asserts the stamp is written once, re-taken at dispatch, and zeroed the moment it is read — the both-or-neither shape a values-only check cannot see |
+| B → `v75` | asserts on the **emitted script**: exactly one draw step heading, and the figure drawn at 195..275 rather than the discarded pass's 235 |
+| C → `v76` | parses the bridge into a block tree and requires every bracket-label site to be **dominated** by `annotTextN = 1` — not an arm-scoped grep |
+| D → `v68` | pin turned around: asserts `@emlCheckPlausibility` is **absent**, so re-introduction reds |
+
+Every claim sampled by reading stands up. The seven that had not been sampled —
+rulings 2, 4, 5, 6, 7, 8a, 8b, 9 and 10a, backed by `v54`, `v58`, `v62`, `v63`,
+`v64`, `v65`, `v67` — were then **driven** rather than read, by the method in the
+next section. Six of the seven go red: `v58`, `v62`, `v63`, `v64`, `v65` and
+`v67` all fail on a plugin reverted to `30bc163`, between four and thirty checks
+each. `v54` does **not**, and it was never going to: ruling 2 is that the two
+version floors are two contracts, and what closes it is a paragraph in `v54`'s
+header. A header is documentation. It is the right place for that ruling and it
+is not a pin, and this table should stop implying otherwise.
+
+**One correction to the table above, found by driving it.** `P0 → v73, v77` is
+half right. `v77` reds hard on a reverted plugin — fifteen checks, because it
+drives a real Praat out of R and nothing it reads outlives the run. `v73` stays
+**green**, all 181 checks, because its input is
+`evidence/csv/v73_directional_input.csv`, a committed capture that a source
+revert does not touch. `v73`'s oracle comparison is exactly as good as the claim
+in the table says it is, and it is a claim about a **file**, not about the tree.
+The pair is still the right pair; what pins P0 against a revert is `v77` alone.
+That distinction is the entire subject of the section below.
+
+---
+
+## The 41-row backfill — 17 August 2026
+
+`audit/FINDINGS_MACHINE.json` now carries `fixedBy`, `pinnedBy` and `status` on
+every row. `python3 validate/tools/check_findings_schema.py` exits 0.
+
+| status | rows |
+|---|---|
+| `closed` — repaired, and something reds if the repair is undone | 26 |
+| `fixed-unpinned` — repaired, and nothing in the suite would notice | 8 |
+| `open` — no repair identified in this repository | 7 |
+
+### How `fixedBy` was established
+
+No commit in this repository carries a finding ID in its subject line — that is
+the gap the convention above closes — so every hash below was read out of a
+**diff**, not out of a message. For each row: locate the corrected behaviour in
+the shipped source, `git log -S` the string that carries it against the file the
+row's `mechanism` names, and confirm the identified commit's body describes that
+behaviour. Where more than one commit touched the area, the one named is the one
+that made the behaviour correct, not the first to touch it — `NEW-G11-1` is the
+example worth keeping: `a4de0ee` repaired the half that was plainly broken and
+made the header's portability claim *conditional*, and `d5a434b` is the commit
+that made the claim true by construction. `d5a434b` is what the row carries.
+
+Five commits carry all thirty-four repairs:
+
+| Commit | Subject | Rows |
+|---|---|---|
+| `a4de0ee` | stats: export integrity, save guards, coercion, non-interactive replay | 11 |
+| `7f62e75` | graphs: stereo is reachable, the KW crash is gone, and a steady tone draws flat | 13 |
+| `c112b7c` | scripts: the editor stops deleting the wrong column, and describe gets a Save | 8 |
+| `0e0c0fa` | graphs: the axis name clears its ticks, and a recorded auto axis replays as auto | 1 |
+| `d5a434b` | recorder: the emitted include block is home-relative, full stop | 1 |
+
+### How `pinnedBy` was established
+
+Not by reading which validator mentions the area. **The plugin was reverted and
+the validators were run.** `plugin/` at `30bc163` — the last tree before the
+audit response began — was dropped into a scratch copy of this repository with
+`validate/`, `harness/` and `evidence/` left at HEAD, and thirty-six validators
+were run against it one at a time. Every check that turned red is a check that
+would notice the loss of the repair it belongs to. Where a whole-file revert
+could not attribute a red to one row, the mutation was narrowed to the single
+behaviour — `NEW-G12-2` was settled by deleting the two `Rename: "eml_converted_"`
+lines and nothing else, and `v63` reds on five checks.
+
+The standard is deliberately literal: **a source revert, with no harness
+re-driven.** That is what a reviewer who reverts a commit and runs the suite
+actually gets, and it separates two things this repository has twice confused.
+A validator that reads plugin source, or that drives a live Praat against the
+tree, reds. A validator whose only input is a committed harness artefact stays
+green, because the artefact still says what it said — which is precisely the
+failure recorded above in `v61`'s week of attesting a repaired defect as open,
+in `v45`'s pinned naming contract, and in the fifteen harnesses that no longer
+reproduce. `v57` is the cleanest illustration: it names four findings in its own
+header, and exactly one of them (`NEW-G1-1`) has a source-reading check behind
+it. The other three are read off `harness/exportint/out`, and on a reverted tree
+`v57` reports 71 of 73 passing.
+
+### The backfill queue — eight repairs this project cannot prove
+
+These are `fixed-unpinned`: the fix is in the tree and identified by hash, and
+nothing in `validate/` would go red if it were undone. Each line is what a pin
+would have to assert. None of them needs a new harness; five of them need one
+static assertion against a source file a validator already reads.
+
+| Row | Sev | Fixed by | What a pin has to assert |
+|---|---|---|---|
+| `NEW-G4-1` | 3 | `a4de0ee` | that the ANOVA augment's `.std.resid` is computed **with** the leverage term — `@emlOLSInfluence`, or `.hat`, reached from both ANOVA arms in `eml-analysis.praat` and not only from the regression arm. `v57` compares `.std.resid` against `rstandard()` today, but off `harness/exportint/out`, so the comparison survives the arithmetic being put back. |
+| `NEW-G6-1` | 3 | `a4de0ee` | that the RM/Friedman **refusal** path reaches the exclusion note, not just the success path — the note existed before the fix and printed below results the refusal never reaches, so the assertion is a dominance one: every refusal exit in the RM branch is preceded by the disclosure, not merely that the disclosure exists. |
+| `NEW-G12-3` | 3 | `a4de0ee` | that the zero-variance paired branch takes the refusal exit rather than the "Analysis complete" modal — the two are distinguishable in source, and `v57`'s check that the paired *wrapper* forks on a refusal passes on the pre-fix wrapper, so the wrapper is the wrong half to assert on. The orchestrator is the half that changed. |
+| `NEW-G11-2` | 2 | `a4de0ee` | that the emitted recording restores the advanced globals it drew with (`prev_*ShowJitter`) and emits the annotation render — `v58` asserts both, off `harness/record/replay_out`. The same four counts read out of `eml-record.praat` would hold the same claim against the tree. |
+| `NEW-G11-3` | 3 | `a4de0ee` | that a recording sweeps an orphaned meta table rather than hydrating from it, and that a session whose store was deleted takes no stamp from a survivor — `@emlRecordSweepOrphans` and the buffer pairing exist and are asserted only through the drive's KV file. |
+| `NEW-G12-4` | 4 | `c112b7c` | **half-pinned, and the half that is missing is the one the finding names.** `v60` reds on the check-&-repair arm ("no raw `exitScript` refusal remains"). The describe wrapper's entry refusals are not asserted anywhere: putting `exitScript: "No numeric columns found in the selected Table."` back into `eml-describe-table.praat` leaves `v35`, `v49`, `v59`, `v60` and `v63` all green. The pin is the same grep `v60` already runs, pointed at the second file. |
+| `D12` | 3 | `c112b7c` | that Describe Table Column offers Save, clears the Info field, and ends in a completion dialog. `v49`'s population excludes this wrapper by construction (its filter is `@emlRun[A-Za-z]+Analysis:`, and describe calls `@emlReportDescriptiveAnalysis`); `v48` counts eleven Save callers off a committed TSV. Either widen `v49`'s filter or assert the `@emlSavePanel` call site in the wrapper source. |
+| `D6` | 4 | `7f62e75` | that the three graph types with no Annotation-layout menu **say so** — the fix replaced an absent field with the sentence "Comparisons appear as a matrix panel below the plot.", and no validator reads that string. One `grepl` in `v61`'s static half, beside the D4 and D11 checks it already makes on the same file. |
+
+### The seven `open` rows, and why each is open
+
+Three different things land on `open`, because the schema's mapping is total and
+has one literal for "no `fixedBy`". They should not be read as one list.
+
+**Not repaired, and the tree says so.** `NEW-G8-2` — a one-sided range (minimum
+typed, maximum left on automatic) is still swapped into `(0, minimum)` by the
+form's range-validation block, which is intact at `eml-graphs-form.praat`. What
+`7f62e75` added is `@emlDiscloseClipped`, and that procedure's own header states
+the position exactly: "The reordering happens in the form's range-validation
+block and cannot be undone from here … What CAN be done from here, and is, is to
+refuse to let the consequence pass unremarked." `v62` pins the disclosure and
+says the same thing in its own comment. The disclosure fires only when
+`.nOutside > 0`, so a user who types 300 as a floor on data that all sits below
+300 gets the inverted range **and** silence. The row is `open`, and the mitigation
+is real and is not the repair. This is the one row where reading the status
+tables alone could leave a reader thinking a defect had been closed.
+
+**Never repaired, and known not to be.** `D38` (simple effects after a
+significant two-way interaction) and `D40` (no interaction plot among the graph
+types). `grep -ri "simple effect"` and `"interaction plot"` return nothing in
+`plugin/`. `FINDINGS_INDEX.md` already carries both as live; `D38`'s caution half
+was closed on 7 August and its simple-effects half never was.
+
+**Repaired before this repository existed.** `D66-b/c` and `D98/D99` were
+resolved on 6 August 2026 and re-verified by the 14 August session. This
+repository's root commit is `9b7d5aa`, 12 August 2026, which imported 2,818
+files in one go. **There is no commit here for any repair made before 12
+August.** Naming the root import as `fixedBy` would be false in the way the
+change order warns about — by that logic the root import fixed all forty-one —
+so the field is empty and the reason is this paragraph. `D98/D99` is in any case
+an *evidence* closure rather than a code change: what the 14 August session
+closed was the gap that the fix had never been driven on the exact committed
+`r2`/`r5` datasets.
+
+**Not defects.** `D15` and `RULE-28I` are the audit's two REFUTED rows — the
+paired wrapper's literal `"Group"` preset is correct, and a second save after a
+separate-legend save is byte-identical. The schema has no literal for "examined
+and found not to be a defect", so both land on `open` mechanically. They are not
+work. If a fourth literal is ever wanted, `refuted` is the one the ledger needs;
+until then their `verdict` field carries the truth and `status` should be read
+with it.
+
+### What could not be established
+
+Nothing in the 34 repaired rows has an unidentified commit. Every `fixedBy` in
+the ledger resolves in this repository — the schema checker verifies each one
+against `git cat-file` on every run, so a hash carried in from elsewhere cannot
+survive a green check. The only rows with an empty `fixedBy` are the seven above,
+and for each of them the emptiness is a statement rather than a gap in the
+archaeology.
