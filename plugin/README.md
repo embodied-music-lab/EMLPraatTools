@@ -4,32 +4,69 @@ Statistical analysis and publication-quality graphing for Praat. Run t-tests, co
 
 ## Installation
 
-### macOS
+Installing takes about two minutes. You download one file, unzip it, drag the
+folder that comes out into Praat's preferences folder, and restart Praat.
+There is nothing to compile and no other software to install.
 
-The Praat preferences folder is inside your user Library, which is hidden by default in Finder.
+### Step 1 — Download the plugin
+
+Go to the Releases page:
+
+https://github.com/embodied-music-lab/EMLPraatTools/releases
+
+Download the file named **plugin_EML_Praat_Tools.zip** from the most recent
+release.
+
+### Step 2 — Unzip it
+
+Double-click the downloaded file.
+
+- **macOS** unzips it as soon as you double-click.
+- **Windows**: right-click the file, choose **Extract All**, then **Extract**.
+- **Linux**: right-click and choose **Extract Here**, or run
+  `unzip plugin_EML_Praat_Tools.zip` in a terminal.
+
+You now have a folder called **plugin_EML_Praat_Tools**. That folder *is* the
+plugin. Please do not rename it: Praat recognises the plugin by that exact
+name, and a renamed folder is simply ignored.
+
+### Step 3 — Move the folder into Praat's preferences folder
+
+Praat keeps its preferences somewhere different on each system. Find the right
+folder below, and drag `plugin_EML_Praat_Tools` into it whole — the folder
+itself, not the files inside it.
+
+#### macOS
+
+The Praat preferences folder lives inside your user Library, which Finder hides
+by default.
 
 1. Open Finder.
-2. In the menu bar, click **Go** while holding the **Option (⌥)** key. This reveals the hidden **Library** item.
-3. Click **Library**, then navigate to: `Preferences/Praat Prefs/`
-4. Copy the entire `plugin_EML_Praat_Tools` folder into `Praat Prefs/`.
-5. Restart Praat.
+2. In the menu bar, click **Go** while holding the **Option (⌥)** key. This
+   reveals the hidden **Library** item.
+3. Click **Library**, then open `Preferences/Praat Prefs/`.
+4. Drag the `plugin_EML_Praat_Tools` folder into `Praat Prefs/`.
 
-Full path: `/Users/[you]/Library/Preferences/Praat Prefs/plugin_EML_Praat_Tools/`
+Full path when you are done:
+`/Users/[you]/Library/Preferences/Praat Prefs/plugin_EML_Praat_Tools/`
 
-Alternatively, in Finder you can press **Cmd+Shift+G** and paste the path directly:
+If you prefer, press **Cmd+Shift+G** in Finder and paste this path instead:
 `~/Library/Preferences/Praat Prefs/`
 
-### Windows
+#### Windows
 
-1. Navigate to `C:\Users\[you]\Praat\`
-2. Copy the entire `plugin_EML_Praat_Tools` folder there.
-3. Restart Praat.
+1. Open `C:\Users\[you]\Praat\`
+2. Drag the `plugin_EML_Praat_Tools` folder into it.
 
-### Linux
+#### Linux
 
-1. Navigate to `~/.praat-dir/`
-2. Copy the entire `plugin_EML_Praat_Tools` folder there.
-3. Restart Praat.
+1. Open `~/.praat-dir/`
+2. Drag the `plugin_EML_Praat_Tools` folder into it.
+
+### Step 4 — Restart Praat
+
+Quit Praat completely and open it again. Praat reads its plugins only at
+startup, so the new menu will not appear until you have done this.
 
 ### Verify Installation
 
@@ -65,6 +102,19 @@ appendInfoLine: "t(", fixed$(emlTTest.df, 1), ") = ",
 
 ## Include Chain
 
+**One line, if your script lives outside the plugin folder.** Every Praat
+launch, `setup.praat` writes `eml-lib-user.praat` into the installed plugin's
+own `scripts/` folder, with the paths for your machine filled in, so a script
+anywhere on that machine loads the whole stack with:
+
+```praat
+include ~/.praat-dir/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat
+```
+
+That is the Praat 6.x Linux path; `docs/API_EXPORT.md` gives the line for
+Praat 7.x, macOS and Windows, and explains why this file has to be generated
+rather than shipped. The lists below remain correct and are the fallback.
+
 Add these lines at the top of any script that uses EML Stats:
 
 ```praat
@@ -89,15 +139,16 @@ The graphs module is independent of the stats modules. Stats-only scripts can om
 
 **Menu items (no scripting required):** Select a Table in the object list, then click one of the **EML:** action buttons. A dialog collects your choices (which column, which test). Results appear in the Info window.
 
-**In your own scripts:** Add the include chain at the top, then call procedures directly.
+**In your own scripts:** Add the include chain at the top, then call procedures directly. `docs/RECIPES.md` is the place to start — five worked scripts, each one run verbatim by the test suite before it ships.
 
-**Where the reference is.** There is no single procedure-reference page, and that is deliberate: `stats/` and `graphs/` define 492 procedures (`grep -c "^procedure " plugin/stats/*.praat plugin/graphs/*.praat`), and a hand-written signature list that long would be wrong in places by the end of the week it was written. What the plugin carries instead, and keeps true:
+**Where the reference is.** There is no single procedure-reference page, and that is deliberate: `stats/` and `graphs/` define 493 procedures (`grep -c "^procedure " plugin/stats/*.praat plugin/graphs/*.praat`), and a hand-written signature list that long would be wrong in places by the end of the week it was written. What the plugin carries instead, and keeps true:
 
 - **Every procedure is documented at its definition.** The header block above each `procedure` in `stats/` and `graphs/` gives its arguments, its outputs, and — where it matters — why it works the way it does. That is the reference; it cannot drift from the code, because it sits on top of it.
 - **`MANIFEST.txt`** lists every file in the plugin with a one-line description of what it is for, so you know which module to open. It is generated from the tree by `dev/tools/build-manifest.py` and checked on every push.
-- **`../docs/API_EXPORT.md`** is the worked how-to for `@emlExportResultFiles` — running one analysis over a folder of files and writing the result CSVs from a loop, with no dialogs.
+- **`docs/RECIPES.md`** is five worked scripts for the workflows the plugin is actually used for: two groups from a table, paired columns and correlation, a full analysis with CSV export, a batch loop, and a Sound through Pitch into the descriptive kernels. Each one names the procedures it calls, what their arguments mean and what they hand back — and each is run verbatim by `harness/recipes/`, with its printed numbers pinned by `validate/v81_recipes.R`, so the page cannot document an API that has moved.
+- **`docs/API_EXPORT.md`** is the worked how-to for `@emlExportResultFiles` — running one analysis over a folder of files and writing the result CSVs from a loop, with no dialogs.
 - **`setup.praat`** is the authoritative list of menu items and action buttons, each with the script it runs.
-- **Record script** (Objects → New → EML Tools) is the fastest route from clicking to scripting: do the analysis in the GUI, then Stop recording and open, and you get a runnable, commented Praat script of *your* analysis. That is the recipe collection, generated for the data in front of you rather than for eight cases someone guessed at.
+- **Record script** (Objects → New → EML Tools) is the fastest route from clicking to scripting: do the analysis in the GUI, then Stop recording and open, and you get a runnable, commented Praat script of *your* analysis — the recipes generalised, generated for the data in front of you.
 
 ## Files in This Plugin
 
@@ -120,6 +171,8 @@ The graphs module is independent of the stats modules. Stats-only scripts can om
 | `scripts/eml-batch-process.praat` | Batch voice analysis: extract acoustic measures (F0, intensity, jitter, shimmer, HNR, CPPS) from a folder of Sound files to a CSV in a user-designated output folder |
 | `scripts/eml-stats-demo.praat` | Visual showcase: three-panel figure with synthetic voice-science data |
 | `scripts/eml-quick-start.praat` | Prints a quick-start guide to the Info window |
+| `docs/RECIPES.md` | Five worked scripts for calling the statistics from your own Praat script, each run verbatim by the test suite |
+| `docs/API_EXPORT.md` | Worked how-to for `@emlExportResultFiles`: one analysis over a folder of files, result CSVs written from a loop, no dialogs |
 | `MANIFEST.txt` | Every file in the plugin, one line each, generated from the tree |
 
 This table is a hand-picked selection; `MANIFEST.txt` is the complete list.
@@ -143,8 +196,9 @@ This table is a hand-picked selection; `MANIFEST.txt` is the complete list.
 ## Further Reading
 
 - `MANIFEST.txt` — every file in the plugin with a one-line description, so you know which module to open
-- `../docs/API_EXPORT.md` — calling `@emlExportResultFiles` from your own script, for a folder of files in a loop
-- `FIX_NOTES.md` — what was wrong and what closed it, for anyone comparing against an older copy
+- `docs/RECIPES.md` — five worked scripts for the direct-kernel API: Table to vectors, vectors to a test, and the orchestrator and exporter on top
+- `docs/API_EXPORT.md` — calling `@emlExportResultFiles` from your own script, for a folder of files in a loop
+- `dev/FIX_NOTES.md` — the July correctness bundle, with the reference values each fix was verified against
 - `scripts/eml-stats-demo.praat` — run to see a three-panel publication figure with synthetic data
 
 ## Attribution
