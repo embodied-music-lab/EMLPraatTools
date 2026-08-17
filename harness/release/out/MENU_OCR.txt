@@ -1,0 +1,64 @@
+Praat New Open Save Help
+
+objects
+
+Record mono Sound... ctrl+R
+Record stereo Sound...
+
+Sound »
+Create Textrid...
+
+Tiers »
+Create Corpus...
+
+Tables
+
+stats
+
+Generics
+
+Acoustic synthesis (Klatt)
+Articulatory synthesis
+Text-to-speech synthesis
+Speech-to-text recognition
+Constraint grammars
+symmetric neural networks
+
+Feedforward neural networks
+
++EML Tool
+
+Rename.
+Inspect
+
+Remove
+
+*Describe Table columi
+
+*Check normality (all columns)...
+*Compare two groups...
+
+*Compare paired/repeated...
+*Compare k groups (ANOVA)...
+*Compare k groups (Kruskal-Wallis)...
+*Compare two-way (ANOVA)...
+
+*Correlate two columns...
+
+“Linear regressior
+*Pairwise comparisons
+*EML Graphs...
+
+Batch voice analysis
+
+*Check & repair data...
+*Record script
+
++Stop recording and open
+*Stop recording and save...
+
+*Create Demo Tabl
+
+Copy.
+
+Info

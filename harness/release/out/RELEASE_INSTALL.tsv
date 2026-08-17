@@ -1,0 +1,39 @@
+praat_version	Praat 6.6.30 (June 30 2026)
+build_rc	0
+name	plugin_EML_Praat_Tools
+artefact_sha256	f41f13f2e1437b3ff6542be576f25a4463d71c63c388564e4c9611166a075fb1
+zip_sha256	256028a04399c14c6dd9f8df8fa3edcdc282f5527ee2190f217e347e515d3180
+setup_under_test	shipped
+setup_sha256	cc5873946c46e801e4a82877eedbff7562e283450f13eca3cd6cfed75550d65b
+unpacked_folder	plugin_EML_Praat_Tools
+unpacked_files	325
+record_files	325
+unpacked_modes_other_than_0644_0755	0
+installed_verify_rc	0
+installed_verify_line	
+installed_include_lines	141
+installed_includes_dangling	0
+installed_includes_first_dangling	
+installed_target_script	scripts/eml-create-demo.praat
+installed_target_sha256	30698396c532ad8012341bf8ee1a63257522ba3a0f23d6b4008f3df9de1acca8
+installed_menu_registrations	3
+want_menu	EML Tools
+broken_damage	unregister
+broken_setup_lines_cut	28
+broken_setup_first_line	# ============================================================================
+quickstart_rc	0
+quickstart_line	t(13.6) = 7.89, p < .001
+quickstart_ok	1
+installed_objects_window	1
+installed_dialog_title	Create Demo Table
+installed_windows	Praat Objects|Praat Picture|Pause: Create Demo Table
+installed_menu_ocr_lines	41
+installed_menu_label_seen	1
+broken_objects_window	1
+broken_dialog_title	
+broken_windows	Praat Objects|Praat Picture
+want_dialog_title	Create Demo Table
+menu_ordinal	18
+menu_present	1
+falsifier_ok	1
+completed	1
