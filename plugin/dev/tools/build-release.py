@@ -1,0 +1,787 @@
+#!/usr/bin/env python3
+"""Build the installable release artefact for the EML Praat Tools plugin.
+
+Why this exists
+---------------
+Praat installs a plugin as a folder named `plugin_<Name>` under
+preferencesDirectory$. THIS REPOSITORY HAS NEVER PRODUCED THAT FOLDER.
+The source folder is called `plugin/`; the install name is
+`plugin_EML_Praat_Tools`; and until this script existed the only line in
+the tree that made the real name was a symlink in a test rig
+(harness/walks/rig.sh, `ln -sfn "$REPO/plugin" "$P/plugin_EML_Praat_Tools"`).
+So `plugin/README.md` told a user to copy a folder that was not in what
+they downloaded, and nothing renamed, copied or zipped anything.
+
+Two defects were parked on "the packaging step" while there was no
+packaging step, which is not a deferral, it is a drop:
+
+  * THE NAME. It is a CONVENTION, not derivable from the tree, and it is
+    written in 40-odd places. See "Where the name comes from" below.
+  * FINDING P1 (file modes). Thirteen of the twenty-one files in
+    plugin/scripts/ were mode 0600 in the built tree of 4 August 2026,
+    which makes the plugin unreadable for any account but the one that
+    installed it. Git records only the executable bit, so that defect
+    cannot be represented in a checkout and will never appear in a
+    `git diff` -- validate/REGISTRY.md, "What a clean clone structurally
+    cannot show". It is answerable ONLY on a built artefact, and this is
+    the first thing in the tree that builds one. `--verify` is therefore
+    not a nicety attached to the build; it is the half of this file that
+    closes P1, and it runs automatically at the end of every build.
+
+Where the name comes from
+-------------------------
+IT IS NOT REPEATED HERE, and that is the point. This script reads it out of
+`stats/eml-record.praat` -- the file whose per-platform fallbacks decide the
+`include` lines of every script the recorder emits for a user:
+
+    emlRecordPluginRoot$ = "~/Praat/plugin_EML_Praat_Tools"          (Windows)
+    emlRecordPluginRoot$ = "~/Library/Preferences/Praat Prefs"
+    ... + "/plugin_EML_Praat_Tools"                                  (macOS)
+    emlRecordPluginRoot$ = "~/.config/praat/plugin_EML_Praat_Tools"  (7.x)
+    emlRecordPluginRoot$ = "~/.praat-dir/plugin_EML_Praat_Tools"     (6.x)
+
+A recorded script runs only if the folder it names is the folder the user
+actually has, so the artefact and the recorder cannot be allowed to
+disagree. Reading the recorder means they cannot: change the recorder and
+the next build changes with it.
+
+THE NAME IS NOT DECLARED ONCE. It is TEN literals in that one file and
+about forty across the repository -- Praat gives a script no way to learn
+its own plugin folder, so the copies are duplicated rather than derived,
+and the only defence is that they all agree (validate/v47 is that defence).
+So this script does not add a forty-first copy. It reads every
+`plugin_<Name>` literal in the recorder, REQUIRES THEM TO BE UNANIMOUS, and
+refuses to build if they are not: a tree whose recorder cannot say what the
+folder is called is a tree with nothing to package.
+
+What ships
+----------
+THE TREE AS IT STANDS. What to leave out of a release is the author's call,
+not this script's, so nothing is dropped for being "internal" -- `dev/`
+ships, tests and all. The only files skipped are the mechanical droppings
+that dev/tools/build-manifest.py already defines as not part of the tree
+(__pycache__, *.pyc, editor backups, dotfiles), so the manifest and the
+artefact list the same population. Two questions this script deliberately
+does NOT answer are printed as notices on every build; see NOTICES below.
+
+Modes
+-----
+0755 for directories, 0644 for files -- EXCEPT the files git records as
+executable, which stay 0755. Git DOES record the executable bit (and only
+that bit), so `git ls-files -s` is an authoritative, reviewable statement of
+which files are meant to be runnable, and a blanket chmod would silently
+demote them. Today that set is exactly one file,
+dev/tools/vacuity-negative-controls.py, 0755 since 12 August 2026. The
+allowlist is written into RELEASE.tsv beside the artefact so that `--verify`
+can be run later against an unpacked artefact with no repository present.
+
+Determinism
+-----------
+Same tree, same artefact, byte for byte: entries are walked in sorted order,
+every mtime in the staged tree and every timestamp in the zip is pinned to
+the 1980 epoch (the earliest a zip can express), and the zip stores entries
+in path order. The build prints a sha256 over (path, mode, bytes) of every
+entry, which is the digest that survives being copied about, and the sha256
+of the zip itself.
+
+What --verify asserts
+---------------------
+Five things, on the artefact folder it is handed -- which may be a freshly
+built one, or a tree somebody has unzipped somewhere:
+
+  1. THE FOLDER NAME, against the recorder INSIDE that folder, so an unpacked
+     artefact with no repository beside it still answers the question.
+  2. EVERY MODE, file by file and directory by directory, named rather than
+     counted, plus every mode recorded in the zip if the zip is beside it.
+  3. THE ZIP'S ROOT ENTRY. A zip with no entry for its own top level leaves
+     `unzip` to create that folder under the user's umask.
+  4. THE NAME EVERYWHERE ELSE IN THE ARTEFACT: no shipped file may name a
+     `plugin_<Other>` folder. Check 1 covers the recorder and the folder; the
+     name is also written into a sprite loader, a tutorial and the README's
+     install instructions, and those do not follow a rename by themselves.
+  5. EVERY PATH A SHIPPED .md OFFERS THE READER IS IN THE ARTEFACT. The whole
+     install instruction is "copy this folder", so a document inside it that
+     points at a path the folder does not contain points at nothing the reader
+     has. See "Links out of the artefact" below.
+
+Links out of the artefact
+-------------------------
+WHAT COUNTS AS A LINK is the definition validate/v78 already uses on the
+repository's front-door documents, so the two scanners agree about what a
+reference is: backticked or bracketed, containing a "/" (a bare `run.sh`
+named in a sentence is not a claim about a path), no whitespace (a shell
+fragment like `praat x > out/y.txt` is not a file name), carrying a suffix
+this tree actually uses, and not a URL.
+
+TWO VERDICTS, and each is decidable without asking a human what a sentence
+meant:
+
+  ESCAPE. The reference, normalised lexically against the folder of the
+  document it sits in, leaves the artefact -- a leading `../` from the root,
+  or an absolute path. Nothing outside the folder travels with it, so this is
+  a pointer at a file the reader does not have, whatever the reference meant.
+  Lexical rather than by resolution: the answer must not depend on what
+  happens to exist beside the artefact on the machine doing the verifying.
+
+  DANGLING. The reference ADDRESSES the artefact -- its first segment is a
+  directory that exists beside the document or at the artefact root -- and
+  nothing is there. `dev/tools/gone.py` in a document shipping beside a real
+  `dev/` is a broken pointer, which is a rename nobody followed through.
+
+AND ONE THING THIS DELIBERATELY DOES NOT CALL A LINK. The dev documents cite
+where a measurement was taken: `evidence/figures/...`, `harness/api_export/
+run.sh`, `validate/v50_api_export.R`. Those name paths in the SOURCE
+REPOSITORY, which is not shipped and cannot be, and they are provenance rather
+than an invitation to open anything. The first-segment rule separates them
+without a judgement call and without an exception list: there is no
+`evidence/`, `harness/` or `validate/` in the artefact, so those references
+address something else and are left alone, while `stats/`, `graphs/`,
+`scripts/`, `docs/`, `dev/` and `phase2/` do exist and are held to it. An
+exception list would have to grow with every new citation, and a list that
+gets edited on every failure is not a check.
+
+Usage
+-----
+    python3 dev/tools/build-release.py                 # build into $TMPDIR
+    python3 dev/tools/build-release.py --out DIR       # build into DIR
+    python3 dev/tools/build-release.py --no-zip
+    python3 dev/tools/build-release.py --verify DIR/plugin_EML_Praat_Tools
+
+Exit status: 0 = built and verified (or --verify passed), 1 = verification
+failed, 2 = usage/IO error or an unbuildable tree.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import os
+import re
+import shutil
+import stat
+import subprocess
+import sys
+import zipfile
+from pathlib import Path
+
+# Plugin root, relative to this file (dev/tools/build-release.py). Same
+# derivation as build-manifest.py, deliberately -- the two tools must agree
+# about what "the plugin" is.
+ROOT = Path(__file__).resolve().parent.parent.parent
+REPO = ROOT.parent
+
+# THE ONE FILE THIS SCRIPT TAKES THE INSTALL NAME FROM.
+NAME_SOURCE = ROOT / "stats" / "eml-record.praat"
+NAME_RE = re.compile(r"plugin_[A-Za-z0-9_]+")
+
+# Skips, character for character the ones in build-manifest.py. A file the
+# manifest does not list must not appear in the artefact, or the artefact
+# ships a manifest that does not describe it.
+SKIP_DIRS = {"__pycache__", ".git", ".idea", ".vscode"}
+SKIP_NAMES = {".DS_Store"}
+SKIP_SUFFIXES = {".bak", ".pyc", ".orig", ".rej", ".swp", ".tmp"}
+
+FILE_MODE = 0o644
+EXEC_MODE = 0o755
+DIR_MODE = 0o755
+
+# The earliest timestamp a zip entry can carry. Pinned rather than "now" so
+# two builds of one tree are byte-identical.
+ZIP_EPOCH = (1980, 1, 1, 0, 0, 0)
+EPOCH_SECONDS = 315532800  # 1980-01-01T00:00:00Z, for the staged tree
+
+RECORD = "RELEASE.tsv"
+
+# QUESTIONS FOR THE AUTHOR, PRINTED ON EVERY BUILD AND ANSWERED BY NOBODY
+# HERE. Each is a decision about what a release contains, which is not a
+# packaging detail; silently acting on either would be this script deciding
+# it. They are printed rather than filed in a document because the moment to
+# read them is the moment somebody builds a release.
+NOTICES = (
+    "dev/ SHIPS. 300-odd of the plugin's files are dev/tests, dev/tools and "
+    "four design documents. Nothing in the repository says they should not "
+    "ship, so they do. If a release is meant to carry only what a voice "
+    "teacher runs, that is an author ruling and this script needs one line.",
+    "dev/retired/ SHIPS, AND THE MANIFEST IT SHIPS BESIDE SAYS IT DOES NOT. "
+    "MANIFEST.txt lists the two retired files under a heading reading 'Not "
+    "shipped, not discovered by the test runner'. Dropping files is a "
+    "decision, so they are included and the contradiction is reported "
+    "instead of being resolved here.",
+)
+
+
+def fail(msg: str, code: int = 2) -> None:
+    print("build-release: {}".format(msg), file=sys.stderr)
+    sys.exit(code)
+
+
+# ---------------------------------------------------------------------------
+# THE NAME
+# ---------------------------------------------------------------------------
+def declared_name(source: Path) -> tuple[str, int]:
+    """(install folder name, how many literals said so) from the recorder.
+
+    Unanimity is required, not majority: a half-applied rename leaves a
+    recorder emitting some include lines against a folder that exists and
+    some against one that does not, and Praat stops at the first include it
+    cannot read. That is the defect v47 was written for, found on 13 August
+    2026 with every recorded script in the world unrunnable.
+    """
+    if not source.is_file():
+        fail("no {} -- nothing in this tree declares the install name"
+             .format(source))
+    text = source.read_bytes().decode("utf-8-sig", errors="replace")
+    hits = NAME_RE.findall(text)
+    if not hits:
+        fail("{} names no plugin_ folder; the install name cannot be read"
+             .format(source.name))
+    names = sorted(set(hits))
+    if len(names) > 1:
+        fail("{} names {} different plugin folders ({}). The recorder cannot "
+             "say what this plugin installs as, so there is nothing to "
+             "package."
+             .format(source.name, len(names), ", ".join(names)))
+    return names[0], len(hits)
+
+
+# ---------------------------------------------------------------------------
+# THE EXECUTABLE ALLOWLIST
+# ---------------------------------------------------------------------------
+def git_exec_set() -> tuple[set[str], str]:
+    """Plugin-relative paths git records as 100755, and how we know.
+
+    Git records the executable bit and nothing else, so this is the only
+    permission statement in the tree that a clone is guaranteed to
+    reproduce. If git is unavailable the working tree's own u+x is used and
+    the fallback is announced, because a build that quietly invents its own
+    idea of "executable" is how a mode defect gets into an artefact in the
+    first place.
+    """
+    try:
+        out = subprocess.run(["git", "-C", str(REPO), "ls-files", "-s", "--",
+                              str(ROOT)],
+                             capture_output=True, text=True, check=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        found = set()
+        for p in ROOT.rglob("*"):
+            if p.is_file() and os.access(p, os.X_OK):
+                found.add(p.relative_to(ROOT).as_posix())
+        return found, "working tree u+x (git unavailable)"
+    found = set()
+    for line in out.splitlines():
+        if not line.startswith("100755"):
+            continue
+        path = line.split("\t", 1)[-1]
+        rel = Path(REPO / path).resolve().relative_to(ROOT).as_posix()
+        found.add(rel)
+    return found, "git ls-files -s (mode 100755)"
+
+
+def read_record_exec(record: Path) -> set[str] | None:
+    """The exec allowlist out of a RELEASE.tsv beside an artefact, or None."""
+    if not record.is_file():
+        return None
+    found = set()
+    for line in record.read_text(encoding="utf-8").splitlines():
+        if line.startswith("exec\t"):
+            found.add(line.split("\t", 1)[1])
+    return found
+
+
+# ---------------------------------------------------------------------------
+# WALKING THE TREE
+# ---------------------------------------------------------------------------
+def shipped_files() -> list[Path]:
+    """Every file that goes into the artefact, in sorted order."""
+    out = []
+    for path in sorted(ROOT.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(ROOT)
+        if any(part in SKIP_DIRS for part in rel.parts):
+            continue
+        if rel.name in SKIP_NAMES or rel.name.startswith("."):
+            continue
+        if path.suffix.lower() in SKIP_SUFFIXES:
+            continue
+        out.append(path)
+    return out
+
+
+def tree_digest(base: Path, rels: list[str]) -> str:
+    """sha256 over (path, mode, bytes) of every entry, path-sorted.
+
+    Paths go in NUL-separated so "a.praat" + "b" cannot hash the same as
+    "a.praatb" + "" -- the same argument build-manifest.py makes for its
+    folded sprite digest. The MODE is in the digest because two artefacts
+    that differ only in permissions are two different artefacts, which is
+    the whole of finding P1.
+    """
+    h = hashlib.sha256()
+    for rel in sorted(rels):
+        p = base / rel
+        h.update(rel.encode("utf-8"))
+        h.update(b"\0")
+        h.update("{:o}".format(stat.S_IMODE(p.stat().st_mode)).encode("ascii"))
+        h.update(b"\0")
+        h.update(p.read_bytes())
+    return h.hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+# ---------------------------------------------------------------------------
+# THE NAME, EVERYWHERE
+# ---------------------------------------------------------------------------
+# TWO `plugin_` TOKENS IN THE TREE ARE NOT FOLDER NAMES, and each is named
+# with the file it lives in rather than allowed everywhere, so the same word
+# appearing in a path expression somewhere else still fails.
+#
+#   dev/tools/run-tests.py        `plugin_root`, a Python function.
+#   dev/tools/reg-apply-edits.py  `plugin_EMLTools`, the pre-release product
+#                                 name inside the OLD document header that
+#                                 tool searches for and replaces. It is the
+#                                 needle of a replace_once, not a path.
+#
+# The third and fourth entries are this file: the scan reads the artefact,
+# this script ships in the artefact, and the two tokens above appear here as
+# the text of the table that excuses them. Naming them per-file keeps that
+# self-reference to the one file that has to contain them.
+NOT_A_FOLDER = {
+    ("dev/tools/run-tests.py", "plugin_root"),
+    ("dev/tools/reg-apply-edits.py", "plugin_EMLTools"),
+    ("dev/tools/build-release.py", "plugin_root"),
+    ("dev/tools/build-release.py", "plugin_EMLTools"),
+}
+
+
+def name_disagreements(artefact: Path) -> list[str]:
+    """Every `plugin_<Name>` literal in the artefact that is not its own name.
+
+    Section 1 of verify() compares the FOLDER against the recorder, and those
+    two agreeing is the whole of what makes a recorded script runnable. It is
+    not the whole of what makes an artefact coherent: the name is written into
+    graphs/eml-graph-procedures.praat's sprite loader, into
+    scripts/eml-tutorial.praat, and into fifteen lines of README.md that tell
+    a user which folder to copy. Change the recorder's ten literals and
+    rebuild and all of those keep the old name, the folder is renamed, the
+    build verifies, the install verifies, the menu walk passes -- and EML
+    Graphs silently loads no sprites while the README names a folder that is
+    not in the download.
+    """
+    bad: list[str] = []
+    want = artefact.name.encode("ascii")
+    rx = re.compile(rb"plugin_[A-Za-z0-9_]+")
+    for path in sorted(artefact.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(artefact).as_posix()
+        try:
+            blob = path.read_bytes()
+        except OSError as exc:               # unreadable is section 2's job
+            bad.append("{} could not be read for the name scan ({})"
+                       .format(rel, exc))
+            continue
+        for tok in sorted(set(rx.findall(blob))):
+            if tok == want:
+                continue
+            name = tok.decode("ascii")
+            if (rel, name) in NOT_A_FOLDER:
+                continue
+            bad.append("{} names {!r}; this artefact is {!r}"
+                       .format(rel, name, artefact.name))
+    return bad
+
+
+# ---------------------------------------------------------------------------
+# LINKS OUT OF THE ARTEFACT
+# ---------------------------------------------------------------------------
+# The reference grammar of validate/v78, so the artefact scanner and the
+# repository scanner cannot disagree about what a reference is. Read the
+# module docstring, "Links out of the artefact", for what the two verdicts are
+# and why the repository-provenance citations are not among them.
+LINK_SUFFIX = re.compile(r"\.(md|praat|py|R|csv|txt|sh|json|ya?ml|tsv)$")
+LINK_SCHEME = re.compile(r"^(?:[a-z][a-z0-9+.-]*:|//|#)")
+LINK_TOKEN = re.compile(r"`([^`\n]+)`|\]\(([^)\n]+)\)")
+
+
+def md_references(text: str) -> list[str]:
+    """Every path-shaped reference in one markdown document, deduplicated."""
+    out: set[str] = set()
+    for backticked, bracketed in LINK_TOKEN.findall(text):
+        ref = (backticked or bracketed).split("#", 1)[0].strip()
+        if not ref or re.search(r"\s", ref):
+            continue
+        if "/" not in ref:
+            continue
+        if LINK_SCHEME.match(ref) or not LINK_SUFFIX.search(ref):
+            continue
+        out.add(ref)
+    return sorted(out)
+
+
+def leaves_artefact(doc_rel: Path, ref: str) -> bool:
+    """Does `ref`, read from a document at `doc_rel`, climb out of the root?
+
+    LEXICAL. `(artefact / doc.parent / ref).resolve()` would answer a
+    different question -- it follows symlinks and consults the filesystem
+    around the artefact -- and whether a shipped document points outside the
+    folder a user copied cannot depend on what else is on the verifying
+    machine's disk.
+    """
+    if ref.startswith("/"):
+        return True
+    stack = [p for p in doc_rel.parent.as_posix().split("/") if p and p != "."]
+    for seg in ref.split("/"):
+        if seg in ("", "."):
+            continue
+        if seg == "..":
+            if not stack:
+                return True
+            stack.pop()
+        else:
+            stack.append(seg)
+    return False
+
+
+def outward_links(artefact: Path) -> tuple[list[str], int, int]:
+    """(problems, references scanned, documents scanned) for shipped .md.
+
+    Section 4 asks whether the artefact agrees with itself about its own NAME.
+    This asks whether it agrees with itself about its own CONTENTS. The entire
+    install instruction in README.md is "copy this folder into Praat's
+    preferences folder", so the folder is everything the reader ends up
+    holding, and a document inside it offering `../docs/something.md` offers a
+    file that was never in the download -- with no error, no missing menu and
+    nothing for the build, the install walk or the mode scan to notice.
+    """
+    bad: list[str] = []
+    n_refs = 0
+    n_docs = 0
+    for path in sorted(artefact.rglob("*.md")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(artefact)
+        n_docs += 1
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:               # unreadable is section 2's job
+            bad.append("{} could not be read for the link scan ({})"
+                       .format(rel.as_posix(), exc))
+            continue
+        for ref in md_references(text):
+            n_refs += 1
+            if leaves_artefact(rel, ref):
+                bad.append("{} links {!r}, which is outside the artefact; "
+                           "the reader copied {!r} and has nothing else"
+                           .format(rel.as_posix(), ref, artefact.name))
+                continue
+            head = ref.split("/", 1)[0]
+            addressed = (path.parent / head).is_dir() or (artefact / head).is_dir()
+            if not addressed:
+                continue                     # a repository path, not a link
+            if (path.parent / ref).exists() or (artefact / ref).exists():
+                continue
+            bad.append("{} links {!r}, and {!r} is in the artefact but that "
+                       "path is not".format(rel.as_posix(), ref, head + "/"))
+    return bad, n_refs, n_docs
+
+
+# ---------------------------------------------------------------------------
+# VERIFY -- the half that closes P1
+# ---------------------------------------------------------------------------
+def verify(artefact: Path, execs: set[str] | None, source: str) -> list[str]:
+    """Return a list of problems. Empty means the artefact is sound.
+
+    EVERY FILE IS ASSERTED, not sampled and not counted. A count passes on a
+    tree where one file is 0600 and another has been added; naming the
+    offender is what the 4 August finding needed and did not have.
+    """
+    problems: list[str] = []
+
+    if not artefact.is_dir():
+        return ["{} is not a directory".format(artefact)]
+
+    # 1. THE NAME. Read out of the artefact's OWN recorder, so an unpacked
+    #    artefact with no repository beside it still answers the question.
+    inner = artefact / "stats" / "eml-record.praat"
+    if not inner.is_file():
+        problems.append("the artefact carries no stats/eml-record.praat, so "
+                        "it cannot state its own install name")
+    else:
+        want, _ = declared_name(inner)
+        if artefact.name != want:
+            problems.append(
+                "folder is named {!r}; its own recorder emits include lines "
+                "against {!r}. Praat would load the folder and every recorded "
+                "script would name a folder that does not exist."
+                .format(artefact.name, want))
+
+    # 2. THE MODES.
+    if execs is None:
+        problems.append("no executable allowlist available (no {} beside the "
+                        "artefact and no git); any file not 0644 is reported "
+                        "below".format(RECORD))
+        execs = set()
+
+    for path in sorted(artefact.rglob("*")):
+        rel = path.relative_to(artefact).as_posix()
+        mode = stat.S_IMODE(path.lstat().st_mode)
+        if path.is_dir():
+            if mode != DIR_MODE:
+                problems.append("dir  {} is {:04o}, want {:04o}"
+                                .format(rel, mode, DIR_MODE))
+        elif path.is_file():
+            want = EXEC_MODE if rel in execs else FILE_MODE
+            if mode != want:
+                extra = ""
+                if not mode & stat.S_IROTH or not mode & stat.S_IRGRP:
+                    extra = ("  <- unreadable by any account but the "
+                             "installing one (finding P1)")
+                problems.append("file {} is {:04o}, want {:04o}{}"
+                                .format(rel, mode, want, extra))
+        else:
+            problems.append("{} is neither a file nor a directory".format(rel))
+
+    # 3. THE ZIP, IF IT IS BESIDE THE ARTEFACT. What a user unzips is what
+    #    lands on their disk, so modes recorded wrongly in the zip are the
+    #    same defect one step earlier.
+    zp = artefact.parent / (artefact.name + ".zip")
+    if zp.is_file():
+        root_entry = artefact.name + "/"
+        seen_root = False
+        with zipfile.ZipFile(zp) as zf:
+            for info in zf.infolist():
+                mode = info.external_attr >> 16
+                nm = info.filename
+                if not nm.startswith(artefact.name + "/"):
+                    problems.append("zip entry {!r} is outside {}/"
+                                    .format(nm, artefact.name))
+                    continue
+                if nm == root_entry:
+                    seen_root = True
+                rel = nm[len(artefact.name) + 1:].rstrip("/")
+                if info.is_dir():
+                    if stat.S_IMODE(mode) != DIR_MODE:
+                        problems.append("zip dir  {} records {:04o}"
+                                        .format(rel, stat.S_IMODE(mode)))
+                else:
+                    want = EXEC_MODE if rel in execs else FILE_MODE
+                    if stat.S_IMODE(mode) != want:
+                        problems.append("zip file {} records {:04o}, want "
+                                        "{:04o}".format(rel,
+                                                        stat.S_IMODE(mode),
+                                                        want))
+        if not seen_root:
+            problems.append(
+                "the zip carries no entry for {!r}, so unzip creates the "
+                "plugin folder under the user's umask; on umask 077 it "
+                "installs 0700 and every file in it is unreadable by any "
+                "other account"
+                .format(root_entry))
+
+    # 4. THE NAME, EVERYWHERE IT IS WRITTEN, not only on the folder. Section 1
+    #    settles the folder against the recorder; those two agreeing is what
+    #    makes a RECORDED script runnable, and nothing more. The name is also
+    #    written into a sprite loader, a tutorial, and fifteen lines of
+    #    README.md telling a user which folder to copy -- so a rename that
+    #    satisfies section 1 can still ship an artefact whose sprite loader
+    #    points at a folder that does not exist and whose install
+    #    instructions name a folder that is not in the download.
+    problems += name_disagreements(artefact)
+
+    # 5. EVERY PATH A SHIPPED DOCUMENT OFFERS IS IN THE ARTEFACT. Section 4
+    #    settles the folder's NAME wherever it is written; this settles what
+    #    the documents inside it point AT. The install instruction is "copy
+    #    this folder", so the folder is the whole of what the reader gets, and
+    #    a `../docs/...` in README.md is a reference to a file that was never
+    #    in the download -- silent, and invisible to every other check here.
+    links, n_refs, n_docs = outward_links(artefact)
+    problems += links
+    # THE SCAN'S OWN POPULATION, PRINTED. A grammar that had stopped matching
+    # would report no bad links forever, and zero problems out of zero
+    # references reads exactly like zero problems out of sixty-seven.
+    print("shipped .md links: {} reference(s) in {} document(s)"
+          .format(n_refs, n_docs))
+
+    print("verified against: {}".format(source))
+    return problems
+
+
+# ---------------------------------------------------------------------------
+# BUILD
+# ---------------------------------------------------------------------------
+def build(out_dir: Path, make_zip: bool) -> int:
+    name, n_literals = declared_name(NAME_SOURCE)
+    execs, exec_source = git_exec_set()
+    files = shipped_files()
+
+    print("install name : {}  (read from {}, {} literals, unanimous)"
+          .format(name, NAME_SOURCE.relative_to(REPO), n_literals))
+    print("executable   : {} file(s) from {}".format(len(execs), exec_source))
+    for rel in sorted(execs):
+        print("               {}".format(rel))
+
+    artefact = out_dir / name
+    out_dir.mkdir(parents=True, exist_ok=True)
+    # RE-RUNNABLE. A build that merged into a previous one would carry files
+    # deleted from the tree since, which is the stale-artefact failure v47
+    # section 3 is about.
+    if artefact.exists():
+        shutil.rmtree(artefact)
+    zip_path = out_dir / (name + ".zip")
+    if zip_path.exists():
+        zip_path.unlink()
+
+    rels = []
+    for src in files:
+        rel = src.relative_to(ROOT).as_posix()
+        rels.append(rel)
+        dst = artefact / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(src, dst)          # copyfile, NOT copy2: no mode, no
+        os.chmod(dst, EXEC_MODE if rel in execs else FILE_MODE)  # mtime carried
+
+    dirs = []
+    for d in sorted(artefact.rglob("*")):
+        if d.is_dir():
+            dirs.append(d.relative_to(artefact).as_posix())
+            os.chmod(d, DIR_MODE)
+    os.chmod(artefact, DIR_MODE)
+
+    # Timestamps last, deepest first, or setting a directory's mtime would be
+    # undone by writing the files inside it.
+    for p in sorted(artefact.rglob("*"), key=lambda q: -len(q.parts)):
+        os.utime(p, (EPOCH_SECONDS, EPOCH_SECONDS))
+    os.utime(artefact, (EPOCH_SECONDS, EPOCH_SECONDS))
+
+    digest = tree_digest(artefact, rels)
+
+    zip_sha = "-"
+    if make_zip:
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED,
+                             compresslevel=9) as zf:
+            # THE ROOT ENTRY, FIRST AND EXPLICIT. `dirs` is relative to the
+            # artefact, so the artefact's own folder never appears in it. A
+            # zip with no entry for its top level makes `unzip` create that
+            # folder IMPLICITLY, under the unpacking account's umask -- and on
+            # `umask 077`, routine on managed and shared machines, the plugin
+            # lands as a 0700 folder that no other account can traverse. Every
+            # file inside it is then unreadable at once, and that is
+            # invisible to a walk of the built
+            # tree (whose root this script chmods) and to a walk of the zip's
+            # entries (where the root does not appear). So the entry is
+            # written, and verify() below requires it.
+            root_info = zipfile.ZipInfo("{}/".format(name),
+                                        date_time=ZIP_EPOCH)
+            root_info.external_attr = (DIR_MODE << 16) | 0x10
+            zf.writestr(root_info, b"")
+            for rel in sorted(dirs):
+                info = zipfile.ZipInfo(
+                    "{}/{}/".format(name, rel), date_time=ZIP_EPOCH)
+                info.external_attr = (DIR_MODE << 16) | 0x10
+                zf.writestr(info, b"")
+            for rel in sorted(rels):
+                mode = EXEC_MODE if rel in execs else FILE_MODE
+                info = zipfile.ZipInfo("{}/{}".format(name, rel),
+                                       date_time=ZIP_EPOCH)
+                info.external_attr = mode << 16
+                info.compress_type = zipfile.ZIP_DEFLATED
+                zf.writestr(info, (artefact / rel).read_bytes())
+        zip_sha = sha256_file(zip_path)
+
+    # THE RECORD, beside the artefact and not inside it. Inside, it would be
+    # a file the digest has to describe and cannot.
+    rec = out_dir / RECORD
+    lines = [
+        "name\t{}".format(name),
+        "name_source\t{}".format(NAME_SOURCE.relative_to(REPO).as_posix()),
+        "name_literals\t{}".format(n_literals),
+        "files\t{}".format(len(rels)),
+        "dirs\t{}".format(len(dirs) + 1),
+        "exec_source\t{}".format(exec_source),
+        "artefact_sha256\t{}".format(digest),
+        "zip\t{}".format(zip_path.name if make_zip else "-"),
+        "zip_sha256\t{}".format(zip_sha),
+        "setup_sha256\t{}".format(sha256_file(artefact / "setup.praat")),
+    ]
+    lines += ["exec\t{}".format(r) for r in sorted(execs)]
+    rec.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    print("")
+    print("artefact     : {}".format(artefact))
+    print("  {} files, {} directories".format(len(rels), len(dirs) + 1))
+    print("  sha256(path,mode,bytes) {}".format(digest))
+    if make_zip:
+        print("zip          : {}  sha256 {}".format(zip_path, zip_sha))
+    print("record       : {}".format(rec))
+
+    # THE BUILD VERIFIES ITSELF. P1 is a defect of the built tree, so the
+    # only moment it can be caught is here, and a build that produced an
+    # unreadable artefact and exited 0 would be the 4 August failure again.
+    print("")
+    problems = verify(artefact, execs, exec_source)
+    if problems:
+        print("FAILED: {} problem(s) in the artefact just built"
+              .format(len(problems)), file=sys.stderr)
+        for p in problems:
+            print("  {}".format(p), file=sys.stderr)
+        return 1
+    print("OK: every file 0644 (or 0755 where git says so), every directory "
+          "0755, folder named {}".format(name))
+
+    print("")
+    for i, n in enumerate(NOTICES, 1):
+        print("NOTICE {}. {}".format(i, n))
+    return 0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--out", default=None,
+                    help="directory to build into (default: "
+                         "$TMPDIR/eml-release). Outside the repository on "
+                         "purpose -- a release artefact is not repository "
+                         "content.")
+    ap.add_argument("--no-zip", action="store_true",
+                    help="build the folder only")
+    ap.add_argument("--verify", default=None, metavar="DIR",
+                    help="verify an already-built artefact folder and exit")
+    args = ap.parse_args()
+
+    if args.verify:
+        artefact = Path(args.verify).resolve()
+        execs = read_record_exec(artefact.parent / RECORD)
+        source = "{} beside the artefact".format(RECORD)
+        if execs is None:
+            execs, source = git_exec_set()
+            if not execs and not (REPO / ".git").exists():
+                execs, source = None, "nothing"
+        problems = verify(artefact, execs, source)
+        if problems:
+            print("FAILED: {} problem(s) in {}".format(len(problems),
+                                                       artefact),
+                  file=sys.stderr)
+            for p in problems:
+                print("  {}".format(p), file=sys.stderr)
+            return 1
+        print("OK: {} verifies".format(artefact))
+        return 0
+
+    out = Path(args.out) if args.out else \
+        Path(os.environ.get("TMPDIR", "/tmp")) / "eml-release"
+    return build(out.resolve(), not args.no_zip)
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except OSError as exc:
+        print("error: {}".format(exc), file=sys.stderr)
+        sys.exit(2)
