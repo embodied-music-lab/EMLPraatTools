@@ -404,6 +404,11 @@ a row with `pinnedBy` deleted; `status` spelled `fixed_unpinned`; a `closed` row
 with `pinnedBy` emptied (reds twice — the explicit rule and the entailment); and
 a zero-row ledger.
 
+> This paragraph describes the checker as it stood on 17 August morning. It was
+> extended the same day with a fourth status literal, a `pre-repo` literal for
+> `fixedBy`, and a conditional `pointer` field — see *Four rows of bookkeeping,
+> and the schema extension they needed* at the foot of this file.
+
 ---
 
 ## CLEARED — the ledger was never committed here, and was landed on 17 August
@@ -577,6 +582,12 @@ static assertion against a source file a validator already reads.
 | `D6` | 4 | `7f62e75` | that the three graph types with no Annotation-layout menu **say so** — the fix replaced an absent field with the sentence "Comparisons appear as a matrix panel below the plot.", and no validator reads that string. One `grepl` in `v61`'s static half, beside the D4 and D11 checks it already makes on the same file. |
 
 ### The seven `open` rows, and why each is open
+
+> As measured on 17 August morning. Four of these seven were reclassified that
+> afternoon — `D38` and `D40` to `superseded`, `D66-b/c` and `D98/D99` to
+> `fixed-unpinned` on a `pre-repo` fix — and the reasoning below is what the
+> reclassification was built on rather than something it overturned. Three rows
+> remain `open`. See the foot of this file.
 
 Three different things land on `open`, because the schema's mapping is total and
 has one literal for "no `fixedBy`". They should not be read as one list.
@@ -823,3 +834,202 @@ A control re-drive of the unmutated tree through the same shadow is 114/114, so
 the reds are the mutations and not the rig. That is the measurement that makes
 the withdrawal precise rather than pessimistic: these two repairs are provable
 in about six seconds each, and they are not proved by the suite as it runs.
+
+---
+
+## Four rows of bookkeeping, and the schema extension they needed — 17 August 2026
+
+Closing instructions from the verification session, items A2 and A3. Neither is
+an investigation: both are rows whose `status` was wrong because the schema had
+no literal for what they actually are, and both were sitting in `open` — the
+literal that means *a repair is owed here* — while owing nothing.
+
+### A2. `D38` and `D40` are not open defects. They are Phase 2
+
+They were never fixes. The features do not exist and never did, so
+`grep -ri "simple effect"` and `"interaction plot"` returning nothing in
+`plugin/` is the **expected** result rather than a failed search; there is
+nothing to have been repaired and nothing to have regressed. The work is
+specified — with an oracle — in the feature roadmap:
+
+| Row | now reads | pointer |
+|---|---|---|
+| `D38` | `superseded`, `fixedBy` and `pinnedBy` empty | `roadmap: audit/handoffs/20260816_evening/FEATURE_ROADMAP_TO_LMM_2026-08-16.md:54-56` — the Phase 2 bullet: simple effects as the two-way follow-up, effect of A within each level of B, with the existing Holm/Bonferroni vocabulary and the existing disclosure rules |
+| `D40` | `superseded`, `fixedBy` and `pinnedBy` empty | the same file `:57-59` — the interaction plot as cell means with CI bars through the existing graph machinery and recorder semantics, *a graph family, not new drawing infrastructure* |
+
+Both pointers land inside the Phase 2 section that opens at `:45`, and both are
+governed by its last bullet at `:60`: **Oracles: R emmeans package for every
+number.** That line is why this is a reclassification and not a deferral. A row
+in `open` says the next reader should go and repair something; these two say the
+next reader should go and *build* something, against a named oracle, in a phase
+that is gated behind Phase 0 and Phase 1. `D38`'s caution half was closed on
+7 August and is not what this row carries; the simple-effects half is.
+
+### A3. `pre-repo`, and the convention so this class never blocks again
+
+`D66-b/c` and `D98/D99` were repaired on 6 August 2026. This repository's root
+commit is `9b7d5aa`, 12 August, a 2,818-file import. There is no commit here to
+name and naming the import would be false in the way the change order warns
+about — by that logic the import fixed all forty-one. Until now the field was
+empty and the reason lived in a paragraph of this file, which is exactly the
+shape of thing that blocks again the next time it comes up.
+
+The convention, and it is now enforced rather than described:
+
+> `fixedBy` may read the literal **`pre-repo`**. A row that does must carry a
+> **pointer** at the earliest evidence *in this tree* that the fix is present.
+
+| Row | now reads | pointer |
+|---|---|---|
+| `D66-b/c` | `fixedBy: "pre-repo"`, `pinnedBy: ""`, `status: fixed-unpinned` | `evidence: validate/v21_shipping_paths_broom.R:231-266` — the two BUILD paths that exported nothing before the repair, checked populated: RM tidy exists at all (`:238`) and the Friedman tidy/glance numbers against R (`:257-266`). Covers the populated-export half of the row's title |
+| `D98/D99` | `fixedBy: "pre-repo"`, `pinnedBy: ""`, `status: fixed-unpinned` | `evidence: validate/v07_redpath_degenerate_inputs.R:306-354` — `R2` checks D98's caution in the committed `r2` capture (`:306`, placement and wording on the lines below it); `R5` attests D99's groups-vs-rows refusal (`:354`) against `evidence/shots/d99_r5_refusal_names_diagnosis.png` |
+
+Both validators arrived in the root import, which is the earliest in-repo
+evidence there can be for a repair made before the repository existed.
+
+**`pinnedBy` is untouched, and the two rows moved to `fixed-unpinned` rather
+than to `closed`.** This is the point on which the convention could quietly go
+wrong, so it is stated plainly: a pointer is a **witness statement** about the
+past and a pin is a **live check that would go red if the repair were undone**.
+Neither pointer above is a pin — `v21` reads committed CSVs under
+`evidence/csv_export/broom`, and `v07`'s two checks read a capture and a
+screenshot. A revert of `plugin/` leaves all three artefacts saying what they
+said, which is the failure v83's header is entirely about. A pre-repo repair
+with no live pin is `fixed-unpinned` exactly like every other unpinned repair,
+and these two join the backfill queue on the same terms as the rest of it.
+
+### Where the pointer lives, and why there
+
+**A fourth field on the row, `pointer`, conditional rather than universal**,
+with one grammar and two kinds:
+
+```
+"pointer": "<kind>: <path>[:<line>|:<from>-<to>] <note>"
+            kind ∈ { evidence, roadmap }
+```
+
+Three alternatives were considered and rejected. *Two fields* (`supersededBy`
+and `evidenceFor`) — rejected because a consumer would then need to know which
+of two places to look when `fixedBy` is not a hash, and because both fields
+answer the same question: **the hash cannot speak here, so what do I read
+instead?** *A convention inside `mechanism`* — rejected because `mechanism` is
+prose describing the defect, and a checker that greps prose for a path is a
+checker that goes green on a sentence that merely mentions a filename. *A field
+on every row* — rejected because a hash-fixed row needs no pointer: the hash
+**is** the pointer, and forty rows carrying `"pointer": ""` would be noise that
+teaches a reader the field is optional decoration.
+
+So the field appears **exactly where the hash cannot speak**, and its absence
+elsewhere is itself information. It is validated wherever it appears — a stray
+pointer on a hash-fixed row still has to open the file it names — and required
+on precisely two conditions: `fixedBy == "pre-repo"` demands kind `evidence`,
+`status == "superseded"` demands kind `roadmap`.
+
+`superseded` is entailed, not typed. The checker's status table — the rule that
+`status` is mechanical from the row's evidence and may not be an editorial
+choice — now reads:
+
+```
+fixedBy "", roadmap pointer   ->  superseded
+fixedBy ""                    ->  open              (whatever pinnedBy says)
+fixedBy set, pinnedBy ""      ->  fixed-unpinned
+both set                      ->  closed
+```
+
+Writing `superseded` into a row therefore requires a pointer whose file the
+checker opens, and a roadmap pointer may not sit beside a `fixedBy` or a
+`pinnedBy` — nothing was built, so there is nothing to have fixed and nothing
+to hold in place. The literal says **where the work lives**. It deliberately
+does not say *whether the finding was a real defect*, which is the next section.
+
+### Enforcement, extended — `validate/tools/check_findings_schema.py`
+
+Four checks added to the six already there:
+
+1. `fixedBy` is a 40-character resolvable hash **or the literal `pre-repo`**,
+   spelled exactly. `pre_repo` and `PRE-REPO` are failures, and the failure
+   message says so: a convention that accepts near-misses is three conventions,
+   and a consumer switching on the literal drops the near-misses into its
+   default branch in the same silence that made `status` spelling load-bearing.
+   `pre-repo` is skipped by the git lookup — it is asserted by its pointer.
+2. Every `pointer` parses, and its path **opens**. A line span is checked
+   against the file's real length: a pointer at line 900 of a 300-line file
+   rots exactly as silently as one at a deleted file, and the row goes on
+   reading as settled either way. Absolute paths and `..` are refused. The
+   note's *presence* is required; its usefulness cannot be enforced and the
+   file says so rather than imposing a minimum length that invites padding.
+3. `pre-repo` and `superseded` rows carry the pointer that supports them, of
+   the right kind. **This is the check that makes the convention worth having**
+   — the instruction it implements is that a row which says `pre-repo` and
+   points at nothing is worse than the empty field it replaced, because it
+   looks settled.
+4. No roadmap-superseded row also claims a fix or a pin.
+
+**Break-tested 17 August, on fixture copies in a scratch directory — the real
+ledger was never edited to make a check go red.** Each corruption below was
+watched red and then discarded; a control run of the unmodified copy is green.
+
+| Corruption (fixture) | Result |
+|---|---|
+| `D66-b/c` `pre-repo`, `pointer` deleted | **RED 1** — "fixedBy \"pre-repo\" with no valid `evidence:` pointer — name the earliest thing in this tree that shows the fix present" |
+| `D38` `superseded`, `pointer` deleted | **RED 2** — the missing pointer, **and** the entailment: "status 'superseded', but fixedBy empty and pinnedBy empty entail 'open'". The literal cannot survive the loss of the thing that earns it |
+| `D98/D99` `fixedBy: "pre_repo"` | **RED 1** — "neither a 40-char hex hash nor 'pre-repo' — the pre-repo literal is spelled exactly 'pre-repo'" |
+| `D98/D99` `fixedBy: "PRE-REPO"` | **RED 1** — same check, same message |
+| `D66-b/c` pointer path `v21_shipping_paths_brooom.R` | **RED 2** — "pointer names validate/v21_shipping_paths_brooom.R, which does not exist", and the row falls back to unsupported |
+
+Four more were run for the same reason the four above were: `:306-9999` past
+`v07`'s last line (**RED**, "past its last line (453)"); a pointer stripped to
+a bare path with no note (**RED 3**); a roadmap pointer with `fixedBy` set
+(**RED 3**, including "roadmap pointer, but fixedBy set — nothing was built");
+and an `evidence:` pointer relabelled `roadmap:` on a `pre-repo` row (**RED 2**).
+
+`python3 validate/tools/check_findings_schema.py` **exits 0** on the ledger as
+it now stands, thirteen checks, all green.
+
+### The census
+
+| status | rows | change |
+|---|---|---|
+| `closed` | 24 | — |
+| `fixed-unpinned` | 12 | +2 (`D66-b/c`, `D98/D99`) |
+| `open` | 3 | −4 |
+| `superseded` | 2 | +2 (`D38`, `D40`) |
+
+Forty-one rows. The three that remain `open` are `NEW-G8-2` — the one true
+unrepaired defect in the list, the one-sided range still swapped by the form's
+range-validation block — and `D15` and `RULE-28I`, which are next.
+
+### BLOCKED ON THE AUTHOR: one sentence would move `D15` and `RULE-28I`
+
+Both are `open` and neither is work. `D15` — the paired wrapper's literal
+`"Group"` preset targets its own reshaped table, which always has that column.
+`RULE-28I` — a second save after a separate-legend save is byte-identical to
+the full figure; the viewport restore is correct. The audit examined both and
+**refuted** both. Their `verdict` field says `REFUTED` today and their `status`
+says `open`, because the schema's mapping is total and has one literal for "no
+`fixedBy`".
+
+The closing instructions propose a fourth status literal, `refuted`, for exactly
+these two rows, and mark the proposal **AWAITING IAN**. It has not been ruled
+on, so **nothing was done to these two rows**: they are where they were, with
+the statuses they had, and no near-synonym was invented to route around the
+ruling. `superseded` was not stretched over them either — it says where work
+moved, and there is no work here to move.
+
+**Recommendation: add it.** The reason is the one this file has been making
+about `closed` from the start. A status literal is what a consumer switches on,
+and `open` currently carries three different meanings — *not repaired*
+(`NEW-G8-2`), *never a fix, now roadmap work* (settled above), and *examined and
+found not to be a defect at all*. The first two are now separated. The third is
+not, and it is the one that misleads in the expensive direction: a reader
+counting `open` rows to size the remaining work counts two rows of nothing, and
+a reader who trusts `status` over `verdict` believes this project has two more
+defects than it has. The cost is one literal, one line in `STATUSES`, and the
+same requirement the other new literal carries — a `refuted` row must have
+empty `fixedBy` and empty `pinnedBy`, because there was nothing to fix.
+
+**The sentence needed, in a line:** *"Add `refuted` as a fourth status literal;
+`D15` and `RULE-28I` take it."* Or a refusal, which is equally actionable — in
+which case the recommendation is that `verdict` be documented as the field that
+carries this distinction and the census be read as `open − 2` wherever it is
+quoted.

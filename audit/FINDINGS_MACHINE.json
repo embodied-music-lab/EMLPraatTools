@@ -398,7 +398,8 @@
       "verdict": "CONFIRMED-LIVE",
       "fixedBy": "",
       "pinnedBy": "",
-      "status": "open"
+      "status": "superseded",
+      "pointer": "roadmap: audit/handoffs/20260816_evening/FEATURE_ROADMAP_TO_LMM_2026-08-16.md:54-56 simple effects are specified in Phase 2 (heading at :45) as the two-way follow-up, effect of A within each level of B, with the existing Holm/Bonferroni vocabulary and the existing disclosure rules; oracle R emmeans (:60). Never built, so grep finds nothing in plugin/ and that is the expected result, not a gap. The caution half of D38 was closed 7 Aug and is not this row's remainder."
     },
     {
       "id": "D40",
@@ -409,7 +410,8 @@
       "verdict": "CONFIRMED-LIVE",
       "fixedBy": "",
       "pinnedBy": "",
-      "status": "open"
+      "status": "superseded",
+      "pointer": "roadmap: audit/handoffs/20260816_evening/FEATURE_ROADMAP_TO_LMM_2026-08-16.md:57-59 the interaction plot is specified in Phase 2 (heading at :45) as cell means with CI bars through the existing graph machinery and recorder semantics, a graph family rather than new drawing infrastructure; oracle R emmeans (:60). Never built, so grep finds nothing in plugin/ and that is the expected result, not a gap."
     },
     {
       "id": "D66-b/c",
@@ -418,9 +420,10 @@
       "title": "Wizard RM + Friedman CSVs export populated, one stem one stamp — CLOSED",
       "mechanism": "",
       "verdict": "CLOSED",
-      "fixedBy": "",
+      "fixedBy": "pre-repo",
       "pinnedBy": "",
-      "status": "open"
+      "status": "fixed-unpinned",
+      "pointer": "evidence: validate/v21_shipping_paths_broom.R:231-266 the two BUILD paths that exported nothing before the repair are checked populated here — RM tidy exists at all (:238) and the Friedman tidy/glance numbers against R (:257-266). Present in this tree at the root import 9b7d5aa, 12 Aug 2026, which is the earliest in-repo evidence there can be; the repair itself was made 6 Aug, before the repository existed. This is a witness statement over the committed exports under evidence/csv_export/broom, covering the populated-export half of the title, and it is NOT a pin: a revert of plugin/ leaves those CSVs saying what they said."
     },
     {
       "id": "D98/D99",
@@ -429,9 +432,10 @@
       "title": "Post-fix evidence captured on exact r2/r5 datasets — evidence gap CLOSED",
       "mechanism": "",
       "verdict": "CLOSED",
-      "fixedBy": "",
+      "fixedBy": "pre-repo",
       "pinnedBy": "",
-      "status": "open"
+      "status": "fixed-unpinned",
+      "pointer": "evidence: validate/v07_redpath_degenerate_inputs.R:306-354 R2 checks D98's caution in the committed r2 capture (:306, with its placement and wording asserted on the lines below it) and R5 attests D99's groups-vs-rows refusal (:354) against evidence/shots/d99_r5_refusal_names_diagnosis.png. Present in this tree at the root import 9b7d5aa, 12 Aug 2026; both repairs were made 6 Aug and re-driven, and what the 14 Aug session closed was the evidence gap rather than code. A witness statement, not a pin: neither line executes plugin/ source."
     },
     {
       "id": "D15",
