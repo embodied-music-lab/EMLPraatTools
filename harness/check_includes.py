@@ -194,6 +194,20 @@ KNOWN = {
         'wrappers that do include those modules',
         {'emlExportResultFiles', 'emlFileStamp',
          'emlHaveExportableResult', 'emlSaveInfoToFile'}),
+    'eml-quick-start.praat': (
+        'the quick start prints the install folder name to the user, and it '
+        'asks @emlPluginFolder for it rather than spelling it, so an '
+        'instruction and an installation cannot name different folders. That '
+        'procedure lives in stats/eml-record.praat for the same reason '
+        'setup.praat includes that module: it is the only one that can be '
+        'included from three different top-level folders, because it carries '
+        'no relative include of its own. It brings its whole surface with it, '
+        'and @emlRecordReplaySave calls four procedures from modules a script '
+        'that only prints text has no reason to parse. The quick start never '
+        'calls @emlRecordReplaySave; the wrappers that do include those '
+        'modules',
+        {'emlExportResultFiles', 'emlFileStamp',
+         'emlHaveExportableResult', 'emlSaveInfoToFile'}),
 }
 
 

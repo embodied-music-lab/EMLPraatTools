@@ -443,12 +443,16 @@ if (!nzchar(rsrc)) rsrc <- repo_path("plugin", "stats", "eml-record.praat")
 if (check_true("v58", "the recorder core is present", file.exists(rsrc))) {
     rl <- readLines(rsrc, warn = FALSE)
     rc <- rl[!grepl("^\\s*[;#]", rl)]
-    # READ OFF @emlPluginRoot, which is where the four spellings are written.
-    # setup.praat's barrel generator calls the same procedure, so these four
-    # literals are the fallback for a generated barrel as well as for a
+    # READ OFF @emlPluginFolder, the table of canonical locations. Each entry
+    # is a leading directory joined to the one folder name the plugin carries,
+    # so what is read here is the directory part; the name itself is v47's
+    # subject. @emlPluginRoot chooses one entry of this table for the running
+    # platform and a recorded script's header prints all of them, and
+    # setup.praat's barrel generator calls the same resolver -- so these four
+    # entries are the fallback for a generated barrel as well as for a
     # recorded script, and one reading covers both.
-    fb <- grep('\\.root\\$ = "', rc, value = TRUE)
-    fb <- sub('.*\\.root\\$ = "([^"]*)".*', "\\1", fb)
+    fb <- grep('^\\s*\\.root\\$\\s*\\[[^]]*\\]\\s*=\\s*"', rc, value = TRUE)
+    fb <- sub('^[^"]*"([^"]*)".*$', "\\1", fb)
     fb <- fb[nzchar(fb)]
     check_true("v58",
                sprintf("every canonical plugin root the source can fall back to starts with ~ (%s)",
@@ -460,6 +464,15 @@ if (check_true("v58", "the recorder core is present", file.exists(rsrc))) {
                any(grepl("^~/Library/Preferences/", fb)) &&
                any(grepl("^~/\\.config/praat/", fb)) &&
                any(grepl("^~/\\.praat-dir/", fb)))
+    # AND THE RESOLVER SPELLS NONE OF ITS OWN. A branch that wrote a root out
+    # rather than picking one from the table would be a fifth location, read
+    # by nothing above and printed to no user, free to disagree with the four
+    # a recorded script's header tells them to look in. The bare "~" that
+    # opens the home-relative substitution is a prefix and not a location, so
+    # a location is a tilde with a path after it.
+    check_true("v58",
+               "@emlPluginRoot selects from that table and spells no root itself",
+               !any(grepl('\\.root\\$\\s*=\\s*"~[^"]', rc)))
 }
 
 src <- Sys.getenv("EML_RECORD_SRC", unset = "")

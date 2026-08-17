@@ -352,10 +352,16 @@ Add action command: "Matrix", 1, "", 0, "", 0, "EML Graphs...", "", 0, "scripts/
 # folder alike.
 include stats/eml-record.praat
 
+# BOTH ANSWERS COME OUT OF THE ONE CALL. emlPluginRoot.root$ is the portable
+# spelling that goes INTO the generated file; emlPluginRoot.abs$ is the
+# install directory this launch is reading from, which is where the file has
+# to be WRITTEN. A path computed here instead would be a second opinion about
+# where the plugin is, and the failure it produces is silent: the write lands
+# in a folder that does not exist, Praat carries on, and the user has no
+# barrel and no diagnostic.
 @emlPluginRoot
 emlSetupRoot$ = emlPluginRoot.root$
-emlSetupPath$ = preferencesDirectory$
-... + "/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat"
+emlSetupPath$ = emlPluginRoot.abs$ + "/scripts/eml-lib-user.praat"
 
 # THE MODULE ORDER IS THE DEPENDENCY ORDER, and it is the same list, in the
 # same sequence, that @emlRecordRender writes into a recorded script. The two

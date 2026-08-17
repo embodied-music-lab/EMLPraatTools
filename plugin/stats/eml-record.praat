@@ -337,8 +337,11 @@ procedure emlRecordInit
             endif
         endif
         if emlRecordPluginRoot$ = ""
-            emlRecordPluginRoot$ = preferencesDirectory$
-            ... + "/plugin_EML_StatsGraphs"
+            ; The install directory, from the one procedure that joins
+            ; preferencesDirectory$ to the folder name. Praat cannot nest a
+            ; procedure call inside an expression, so the call stands alone.
+            @emlPluginRoot
+            emlRecordPluginRoot$ = emlPluginRoot.abs$
         endif
     endif
     if not variableExists ("emlRecordPhraseId")
@@ -675,9 +678,66 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlPluginFolder
+# The install folder's NAME, and the four canonical places Praat keeps it.
+# Outputs:
+#   .name$            the folder Praat installs this plugin into
+#   .n                how many canonical locations there are
+#   .root$ [1..n]     each location, home-relative, ending in .name$
+#   .head$ [1..n]     the column that labels that location in printed text
+#   .linux6 .linux7 .mac .windows   the index of each, for a caller choosing
+#
+# THIS IS THE ONLY PLACE THE FOLDER NAME IS WRITTEN. Praat gives a script no
+# way to ask what plugin folder it was loaded from, so the name is a constant
+# the plugin has to carry; it is a constant in ONE place. A name spelled here
+# and again somewhere else is two names that agree until one of them is
+# edited, and the half that was missed fails silently -- a barrel written to a
+# folder that does not exist, an include block naming a folder Praat will not
+# find, a help table sending a user somewhere empty. Everything that needs the
+# name, the install directory or the printed table asks this procedure.
+#
+# THE FOUR LOCATIONS ARE A TABLE, NOT FOUR BRANCHES. @emlPluginRoot picks one
+# of them for the running platform; a recorded script's header prints all four
+# for the user whose machine is not this one. Both read this table, so the
+# location a script is told to look in is the location the resolver would have
+# chosen there.
+#
+# .head$ CARRIES ITS OWN COLUMN. The label and the padding that follows it are
+# one string because the padding is part of the text a user reads, not a
+# derived quantity: the platform column is not a fixed width in that table.
+# ----------------------------------------------------------------------------
+procedure emlPluginFolder
+    .name$ = "plugin_EML_StatsGraphs"
+
+    .linux6 = 1
+    .linux7 = 2
+    .mac = 3
+    .windows = 4
+    .n = 4
+
+    ; Linux 6.x and 7.x are measured on this machine. Windows and macOS are
+    ; Praat's own documented locations.
+    .root$ [.linux6] = "~/.praat-dir/" + .name$
+    .head$ [.linux6] = "Praat 6.x  Linux    "
+    .root$ [.linux7] = "~/.config/praat/" + .name$
+    .head$ [.linux7] = "Praat 7.x  Linux    "
+    .root$ [.mac] = "~/Library/Preferences/Praat Prefs/" + .name$
+    .head$ [.mac] = "macOS      "
+    .root$ [.windows] = "~/Praat/" + .name$
+    .head$ [.windows] = "Windows    "
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlPluginRoot
 # Where this plugin is installed, written the way an `include` line in a file
 # meant for somebody else has to be written. Result in emlPluginRoot.root$.
+#
+# THE INSTALL DIRECTORY ITSELF is emlPluginRoot.abs$ -- preferencesDirectory$
+# joined to the folder name, which is the path to read a shipped file out of
+# on THIS machine. Everything in the plugin that opens one of its own files
+# takes that answer from here, so the join happens once and a caller cannot
+# spell the folder differently from the resolver.
 #
 # TWO CALLERS, ONE PROCEDURE, AND THAT IS THE POINT. @emlRecordBegin resolves
 # the root for the include block it emits into a recorded script; setup.praat
@@ -715,7 +775,10 @@ endproc
 # header lists -- and the answer stays portable.
 # ----------------------------------------------------------------------------
 procedure emlPluginRoot
-    .abs$ = preferencesDirectory$ + "/plugin_EML_StatsGraphs"
+    ; Praat cannot nest a procedure call inside an expression, so the table is
+    ; fetched first and read out of its own scope below.
+    @emlPluginFolder
+    .abs$ = preferencesDirectory$ + "/" + emlPluginFolder.name$
     .root$ = ""
     if homeDirectory$ <> ""
         if index (.abs$, homeDirectory$) = 1
@@ -724,17 +787,14 @@ procedure emlPluginRoot
         endif
     endif
     if .root$ = ""
-        ; Linux 6.x and 7.x are measured on this machine. Windows and macOS
-        ; are Praat's own documented locations.
         if windows
-            .root$ = "~/Praat/plugin_EML_StatsGraphs"
+            .root$ = emlPluginFolder.root$ [emlPluginFolder.windows]
         elsif macintosh
-            .root$ = "~/Library/Preferences/Praat Prefs"
-            ... + "/plugin_EML_StatsGraphs"
+            .root$ = emlPluginFolder.root$ [emlPluginFolder.mac]
         elsif praatVersion >= 7000
-            .root$ = "~/.config/praat/plugin_EML_StatsGraphs"
+            .root$ = emlPluginFolder.root$ [emlPluginFolder.linux7]
         else
-            .root$ = "~/.praat-dir/plugin_EML_StatsGraphs"
+            .root$ = emlPluginFolder.root$ [emlPluginFolder.linux6]
         endif
     endif
 endproc
@@ -3264,18 +3324,20 @@ procedure emlRecordRender
     ... + "# plugin is somewhere else -- edit this block and nothing else."
     ... + newline$
     .text$ = .text$ + "#" + newline$
-    .text$ = .text$
-    ... + "#   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_StatsGraphs"
-    ... + newline$
-    .text$ = .text$
-    ... + "#   Praat 7.x  Linux    ~/.config/praat/plugin_EML_StatsGraphs"
-    ... + newline$
-    .text$ = .text$
-    ... + "#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs"
-    ... + newline$
-    .text$ = .text$
-    ... + "#   Windows    ~/Praat/plugin_EML_StatsGraphs"
-    ... + newline$
+    ; THE FOUR LOCATIONS COME FROM THE TABLE @emlPluginRoot CHOOSES FROM.
+    ; This block is what a user reads when the include above does not parse,
+    ; so it has to name the folder the resolver would have picked on THEIR
+    ; machine. Printing the same table the resolution uses is the only way
+    ; those two can be the same sentence rather than two sentences that agree
+    ; today. Praat cannot nest a procedure call inside an expression, so the
+    ; table is fetched first and read out of its own scope.
+    @emlPluginFolder
+    for .plat to emlPluginFolder.n
+        .text$ = .text$
+        ... + "#   " + emlPluginFolder.head$ [.plat]
+        ... + emlPluginFolder.root$ [.plat]
+        ... + newline$
+    endfor
     .text$ = .text$
     ... + "#   Not sure?  Run  writeInfoLine: preferencesDirectory$"
     ... + newline$

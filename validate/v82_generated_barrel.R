@@ -450,13 +450,33 @@ check_true("v82", "@emlRecordBegin takes its root from that procedure",
            any(grepl("^\\s*@emlPluginRoot\\s*$", code_r)) &&
            any(grepl("emlRecordPluginRoot\\$\\s*=\\s*emlPluginRoot\\.root\\$",
                      code_r)))
-# THE ARITHMETIC APPEARS ONCE. preferencesDirectory$ joined to the plugin
-# folder name is the first step of the resolution; a second occurrence in
-# either file is a second implementation, whatever it currently computes.
-pd <- function(x) sum(grepl('preferencesDirectory\\$', x))
+# THE ARITHMETIC APPEARS ONCE, AND IT IS THE WHOLE MENTION THAT IS COUNTED.
+# preferencesDirectory$ joined to the plugin folder name is the first step of
+# the resolution; a second occurrence in either file is a second
+# implementation, whatever it currently computes. Counting only the lines that
+# put a "+" and a quote immediately after preferencesDirectory$ counts a
+# spelling rather than a use: Praat continues an expression with "...", so
+#
+#     emlRecordPluginRoot$ = preferencesDirectory$
+#     ... + "/plugin_EML_StatsGraphs"
+#
+# is a second join that no such pattern sees. Every mention is counted
+# instead, in BOTH files, and the answer for setup.praat is none at all --
+# it has a resolver to ask.
+#
+# STRING LITERALS ARE NOT CODE. A recorded script's header tells the reader to
+# run `writeInfoLine: preferencesDirectory$` when they cannot find the plugin;
+# that is text the recorder PRINTS, and counting it as a resolution would make
+# this check fail on a helpful sentence.
+nostr <- function(x) gsub('"[^"]*"', '""', x)
+pd <- function(x) sum(grepl('preferencesDirectory\\$', nostr(x)))
 check_true("v82",
-           "the recorder derives the plugin folder from preferencesDirectory$ in one place",
-           sum(grepl('preferencesDirectory\\$\\s*\\+\\s*$|preferencesDirectory\\$\\s*\\+\\s*"',
+           sprintf("the recorder mentions preferencesDirectory$ once, where the join happens (%d)",
+                   pd(code_r)),
+           pd(code_r) == 1L)
+check_true("v82",
+           "and that one mention is the join, inside @emlPluginRoot",
+           sum(grepl('^\\s*\\.abs\\$\\s*=\\s*preferencesDirectory\\$\\s*\\+',
                      code_r)) == 1L)
 check_true("v82", "and eml-record.praat carries no relative include of its own",
            !any(grepl("^\\s*include\\s", code_r)))
@@ -466,6 +486,17 @@ check_true("v82", "setup.praat includes the module that defines the resolver",
 check_true("v82", "setup.praat calls @emlPluginRoot rather than resolving again",
            any(grepl("^\\s*@emlPluginRoot\\s*$", code_s)) &&
            any(grepl("emlSetupRoot\\$\\s*=\\s*emlPluginRoot\\.root\\$", code_s)))
+# THE WRITE TARGET COMES FROM THE SAME ANSWER. This is the one that decides
+# whether a launch produces a barrel at all: setup.praat computing its own
+# path lands the write in a folder that need not exist, and a failed write is
+# unchecked here on purpose, so the whole feature disappears with Praat
+# exiting 0 and nothing said.
+check_true("v82",
+           sprintf("setup.praat mentions preferencesDirectory$ nowhere (%d)",
+                   pd(code_s)),
+           pd(code_s) == 0L)
+check_true("v82", "and takes the file it writes from emlPluginRoot.abs$",
+           any(grepl("emlSetupPath\\$\\s*=\\s*emlPluginRoot\\.abs\\$", code_s)))
 check_true("v82", "setup.praat names the generated barrel",
            any(grepl("scripts/eml-lib-user\\.praat", code_s)))
 # THE COMPARISON BEFORE THE WRITE, IN THE SOURCE. Section 3 drives it; this

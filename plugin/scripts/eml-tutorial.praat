@@ -35,6 +35,15 @@
 # INCLUDES
 # ============================================================================
 # include ../tutorial/eml-demo-procedures.praat
+#
+# @emlPluginRoot, which resolves the folder this plugin is installed in, comes
+# from stats/eml-record.praat. It is that module and not a smaller one because
+# eml-record.praat carries no relative include of its own, which is what lets
+# it be included from the plugin root, from scripts/, and from a user's own
+# folder alike. `include` is a parse-time text paste and cannot take a
+# variable, so the path below is written out; it resolves against this
+# top-level script's own folder.
+include ../stats/eml-record.praat
 exitScript: "EML Interactive Tutorial is not available in this build: its layout engine (tutorial/eml-demo-procedures.praat) is not shipped with the plugin."
 
 showGrid = 1
@@ -122,7 +131,8 @@ arrowColor$ = "{0.5, 0.5, 0.5}"
 # Strategy 1: installed plugin in preferences directory
 # Strategy 2: development layout (running from scripts/)
 tutorialImgDir$ = ""
-tryPath$ = preferencesDirectory$ + "/plugin_EML_StatsGraphs/tutorial/images/"
+@emlPluginRoot
+tryPath$ = emlPluginRoot.abs$ + "/tutorial/images/"
 if fileReadable (tryPath$ + "placeholder.txt")
     tutorialImgDir$ = tryPath$
 else
@@ -201,7 +211,8 @@ endproc
 # ============================================================================
 # Resolve path to content file, then load it.
 contentPath$ = ""
-tryPath$ = preferencesDirectory$ + "/plugin_EML_StatsGraphs/tutorial/module1-content.txt"
+@emlPluginRoot
+tryPath$ = emlPluginRoot.abs$ + "/tutorial/module1-content.txt"
 if fileReadable (tryPath$)
     contentPath$ = tryPath$
 else

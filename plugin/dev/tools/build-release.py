@@ -56,13 +56,54 @@ folder is called is a tree with nothing to package.
 
 What ships
 ----------
-THE TREE AS IT STANDS. What to leave out of a release is the author's call,
-not this script's, so nothing is dropped for being "internal" -- `dev/`
-ships, tests and all. The only files skipped are the mechanical droppings
-that dev/tools/build-manifest.py already defines as not part of the tree
-(__pycache__, *.pyc, editor backups, dotfiles), so the manifest and the
-artefact list the same population. Two questions this script deliberately
-does NOT answer are printed as notices on every build; see NOTICES below.
+plugin/, MINUS THE PATHS NAMED IN A COMMITTED LIST. The list is
+RELEASE_EXCLUDE.tsv at the top of the repository -- a file, deliberately, and
+not a set of flags in here: someone asking what a user receives should be able
+to read the answer without following control flow through a build tool. Its
+one entry today is `dev/`, the developer tree.
+
+Beyond that list the only files skipped are the mechanical droppings that
+dev/tools/build-manifest.py already defines as not part of the tree
+(__pycache__, *.pyc, editor backups, dotfiles).
+
+THE REPOSITORY'S OWN DIRECTORIES ARE NOT IN THE LIST. audit/, evidence/,
+harness/ and validate/ sit BESIDE plugin/, and this script stages plugin/
+alone, so they are outside the artefact by the shape of the tree rather than
+by a rule anybody has to maintain. An entry naming one of them could never
+match, and an entry that matches nothing is rejected below.
+
+Questions this script does NOT answer are printed as notices on every build;
+see NOTICES below.
+
+What the finished zip is checked for
+------------------------------------
+THE ZIP, OPENED AND READ BACK -- not the staging directory. The user receives
+the zip, and every step between the walk that chooses files and the archive
+that leaves the machine (a copy, a chmod, a second writer appending an entry,
+a hand-edited archive) is somewhere the property can be lost while every
+earlier check still reads green. So the last thing a build does is open its
+own output and look inside it, for three things:
+
+  EXCLUDED PATHS. Any entry matching RELEASE_EXCLUDE.tsv, named individually
+  with the row that excludes it. An empty or missing list is a FAILURE and not
+  a permissive default: a gate with nothing to check would pass every artefact
+  ever built, silently, and read exactly like a gate that checked.
+
+  HISTORY NARRATION. Any line matching validate/v80's patterns, in the file
+  types v80 examines and by v80's rule about which lines count (comment lines
+  in .praat, every line in .md/.txt/.csv). The patterns are read out of
+  dev/tools/extract-history.py -- THE SAME LIST v80 reads and pins -- rather
+  than copied here, so a fourth copy cannot drift. The exceptions are
+  validate/v80_history_allowlist.tsv, unchanged and unextended: v80 guards the
+  repository and this guards the artefact, and the artefact is the last place
+  the rule can still be enforced before a user is holding the file.
+
+  THE SHIPPED MANIFEST'S OWN CLAIM. plugin/MANIFEST.txt travels inside the
+  artefact and carries a section headed "Not shipped". Every path under that
+  heading must be absent from the zip. This gate is not a restatement of the
+  exclusion list -- it reads what the artefact SAYS about itself and compares
+  it to what the artefact IS, so it still fires if the exclusion list and the
+  manifest are edited into disagreement.
 
 Modes
 -----
@@ -70,10 +111,14 @@ Modes
 executable, which stay 0755. Git DOES record the executable bit (and only
 that bit), so `git ls-files -s` is an authoritative, reviewable statement of
 which files are meant to be runnable, and a blanket chmod would silently
-demote them. Today that set is exactly one file,
-dev/tools/vacuity-negative-controls.py, 0755 since 12 August 2026. The
-allowlist is written into RELEASE.tsv beside the artefact so that `--verify`
-can be run later against an unpacked artefact with no repository present.
+demote them. THE ALLOWLIST IS INTERSECTED WITH WHAT SHIPS, so a file git
+records as executable but the exclusion list drops does not appear in it; a
+record naming a file the artefact does not carry is a permission statement
+about nothing. Today that leaves the allowlist EMPTY -- the one 0755 file in
+the tree, dev/tools/vacuity-negative-controls.py, is under dev/ -- so every
+file in the artefact is 0644. The allowlist is written into RELEASE.tsv beside
+the artefact so that `--verify` can be run later against an unpacked artefact
+with no repository present.
 
 Determinism
 -----------
@@ -86,7 +131,7 @@ of the zip itself.
 
 What --verify asserts
 ---------------------
-Five things, on the artefact folder it is handed -- which may be a freshly
+Six things, on the artefact folder it is handed -- which may be a freshly
 built one, or a tree somebody has unzipped somewhere:
 
   1. THE FOLDER NAME, against the recorder INSIDE that folder, so an unpacked
@@ -103,6 +148,13 @@ built one, or a tree somebody has unzipped somewhere:
      install instruction is "copy this folder", so a document inside it that
      points at a path the folder does not contain points at nothing the reader
      has. See "Links out of the artefact" below.
+  6. WHAT IS INSIDE THE ZIP: no excluded path, no history narration, nothing
+     the shipped manifest calls not-shipped. See "What the finished zip is
+     checked for" above. When there is no zip beside the artefact -- an
+     unpacked tree somebody is verifying by hand -- the same three gates run
+     over the FOLDER instead, and the report says which was read, because a
+     gate that quietly checked nothing is the failure this section exists to
+     prevent.
 
 Links out of the artefact
 -------------------------
@@ -125,20 +177,27 @@ meant:
 
   DANGLING. The reference ADDRESSES the artefact -- its first segment is a
   directory that exists beside the document or at the artefact root -- and
-  nothing is there. `dev/tools/gone.py` in a document shipping beside a real
-  `dev/` is a broken pointer, which is a rename nobody followed through.
+  nothing is there. `docs/gone.md` in a document shipping beside a real
+  `docs/` is a broken pointer, which is a rename nobody followed through.
 
-AND ONE THING THIS DELIBERATELY DOES NOT CALL A LINK. The dev documents cite
-where a measurement was taken: `evidence/figures/...`, `harness/api_export/
-run.sh`, `validate/v50_api_export.R`. Those name paths in the SOURCE
-REPOSITORY, which is not shipped and cannot be, and they are provenance rather
-than an invitation to open anything. The first-segment rule separates them
-without a judgement call and without an exception list: there is no
-`evidence/`, `harness/` or `validate/` in the artefact, so those references
-address something else and are left alone, while `stats/`, `graphs/`,
-`scripts/`, `docs/`, `dev/` and `phase2/` do exist and are held to it. An
-exception list would have to grow with every new citation, and a list that
-gets edited on every failure is not a check.
+AND ONE THING THIS DELIBERATELY DOES NOT CALL A LINK. The shipped documents
+cite where a measurement was taken, and where the developer material lives:
+`evidence/figures/...`, `harness/api_export/run.sh`,
+`validate/v50_api_export.R`, `dev/tools/build-manifest.py`. Those name paths
+in the SOURCE REPOSITORY, which is not shipped and cannot be, and they are
+provenance rather than an invitation to open anything. The first-segment rule
+separates them without a judgement call and without an exception list: there
+is no `evidence/`, `harness/`, `validate/` or `dev/` in the artefact, so those
+references address something else and are left alone, while `stats/`,
+`graphs/`, `scripts/`, `docs/`, `data/` and `sprites/` do exist and are held
+to it. An exception list would have to grow with every new citation, and a
+list that gets edited on every failure is not a check.
+
+THE COST OF THAT RULE IS REAL AND IS NOT HIDDEN HERE. `dev/` moved from the
+second group to the first when the exclusion list dropped it, so
+plugin/README.md's two `dev/...` references stopped being checked links and
+became citations -- correct as statements about the repository, and pointing
+at nothing the reader downloaded. Notice 2 on every build says so.
 
 Usage
 -----
@@ -147,8 +206,14 @@ Usage
     python3 dev/tools/build-release.py --no-zip
     python3 dev/tools/build-release.py --verify DIR/plugin_EML_StatsGraphs
 
+$EML_RELEASE_EXCLUDE and $EML_V80_ALLOWLIST point the two rule files
+elsewhere. They exist so that validate/v79 can drive this script against a
+deliberately damaged rule file -- an emptied exclusion list, say -- and watch
+it refuse, without editing a committed document to do it.
+
 Exit status: 0 = built and verified (or --verify passed), 1 = verification
-failed, 2 = usage/IO error or an unbuildable tree.
+failed, 2 = usage/IO error, an unbuildable tree, or a rule file this script
+cannot act on.
 """
 
 from __future__ import annotations
@@ -192,21 +257,56 @@ EPOCH_SECONDS = 315532800  # 1980-01-01T00:00:00Z, for the staged tree
 
 RECORD = "RELEASE.tsv"
 
+# ---------------------------------------------------------------------------
+# THE THREE RULE FILES. None of them lives in here, and that is the point:
+# what a release leaves out, and what a shipped line may not say, are rulings
+# about the product rather than details of packaging, so they are read from
+# files a person can open. Each has an environment override, for break tests
+# that must not edit a committed file.
+# ---------------------------------------------------------------------------
+EXCLUDE_DEFAULT = REPO / "RELEASE_EXCLUDE.tsv"        # $EML_RELEASE_EXCLUDE
+ALLOW_DEFAULT = REPO / "validate" / "v80_history_allowlist.tsv"  # $EML_V80_ALLOWLIST
+HISTORY_SOURCE = ROOT / "dev" / "tools" / "extract-history.py"
+
+# WHAT THE HISTORY SCAN READS, character for character validate/v80's rule.
+# In a .praat file only comment lines are examined -- a string literal holding
+# "used to" is text the plugin prints, and rewriting a user-facing message to
+# satisfy a lint would be the lint damaging the product. The prose files have
+# no comment syntax and no code, so every line of them is a statement to a
+# reader and every line is examined.
+HISTORY_PROSE = {".md", ".txt", ".csv"}
+HISTORY_CODE = {".praat"}
+COMMENT_LINE = re.compile(r"^\s*[#;]")
+
+# ONE CONTROL LINE, fired through the parsed pattern list on every run. The
+# patterns are PARSED out of another file, so the way this gate dies is the
+# parse returning a list that matches nothing -- and a scan with no live
+# pattern reports a clean artefact forever. The control is a line that must
+# match; if it does not, the list is not the list.
+HISTORY_CONTROL = "# v1.19: the guard moved, and previously it did not"
+
 # QUESTIONS FOR THE AUTHOR, PRINTED ON EVERY BUILD AND ANSWERED BY NOBODY
 # HERE. Each is a decision about what a release contains, which is not a
 # packaging detail; silently acting on either would be this script deciding
 # it. They are printed rather than filed in a document because the moment to
 # read them is the moment somebody builds a release.
 NOTICES = (
-    "dev/ SHIPS. 300-odd of the plugin's files are dev/tests, dev/tools and "
-    "four design documents. Nothing in the repository says they should not "
-    "ship, so they do. If a release is meant to carry only what a voice "
-    "teacher runs, that is an author ruling and this script needs one line.",
-    "dev/retired/ SHIPS, AND THE MANIFEST IT SHIPS BESIDE SAYS IT DOES NOT. "
-    "MANIFEST.txt lists the two retired files under a heading reading 'Not "
-    "shipped, not discovered by the test runner'. Dropping files is a "
-    "decision, so they are included and the contradiction is reported "
-    "instead of being resolved here.",
+    "MANIFEST.txt DESCRIBES THE REPOSITORY'S PLUGIN TREE, AND SHIPS INSIDE AN "
+    "ARTEFACT THAT IS SMALLER THAN IT. It is generated by "
+    "dev/tools/build-manifest.py over plugin/ entire, so it lists the "
+    "developer files this build drops, and a user reading it finds rows for "
+    "files they do not have. Whether the shipped index should describe the "
+    "download or the source tree is a decision about the product; the two "
+    "gates that CAN be settled mechanically are, and are: no not-shipped row "
+    "is contradicted by the zip, and every path a shipped .md offers is in "
+    "the artefact.",
+    "plugin/README.md STILL NAMES TWO dev/ FILES the reader no longer "
+    "receives -- dev/tools/build-manifest.py and dev/FIX_NOTES.md. They are "
+    "true statements about this repository, and the artefact's link scan "
+    "reads them as repository citations rather than broken links, because "
+    "there is no dev/ in the artefact for them to address. Whether the "
+    "README should say so is the author's call; nothing here rewrites a "
+    "shipped document to make a check quieter.",
 )
 
 
@@ -247,7 +347,8 @@ def declared_name(source: Path) -> tuple[str, int]:
 # ---------------------------------------------------------------------------
 # THE EXECUTABLE ALLOWLIST
 # ---------------------------------------------------------------------------
-def git_exec_set() -> tuple[set[str], str]:
+def git_exec_set(exclusions: list[tuple[str, str]] | None = None
+                 ) -> tuple[set[str], str]:
     """Plugin-relative paths git records as 100755, and how we know.
 
     Git records the executable bit and nothing else, so this is the only
@@ -256,7 +357,16 @@ def git_exec_set() -> tuple[set[str], str]:
     the fallback is announced, because a build that quietly invents its own
     idea of "executable" is how a mode defect gets into an artefact in the
     first place.
+
+    INTERSECTED WITH WHAT SHIPS when an exclusion list is given. A record
+    stating that a file is executable in an artefact that does not carry that
+    file is a permission statement about nothing, and verify() would then hold
+    an allowlist entry that can never be reached -- which is exactly the shape
+    of check that cannot fail.
     """
+    def keep(rel: str) -> bool:
+        return exclusions is None or excluded_by(rel, exclusions) is None
+
     try:
         out = subprocess.run(["git", "-C", str(REPO), "ls-files", "-s", "--",
                               str(ROOT)],
@@ -265,7 +375,9 @@ def git_exec_set() -> tuple[set[str], str]:
         found = set()
         for p in ROOT.rglob("*"):
             if p.is_file() and os.access(p, os.X_OK):
-                found.add(p.relative_to(ROOT).as_posix())
+                rel = p.relative_to(ROOT).as_posix()
+                if keep(rel):
+                    found.add(rel)
         return found, "working tree u+x (git unavailable)"
     found = set()
     for line in out.splitlines():
@@ -273,8 +385,9 @@ def git_exec_set() -> tuple[set[str], str]:
             continue
         path = line.split("\t", 1)[-1]
         rel = Path(REPO / path).resolve().relative_to(ROOT).as_posix()
-        found.add(rel)
-    return found, "git ls-files -s (mode 100755)"
+        if keep(rel):
+            found.add(rel)
+    return found, "git ls-files -s (mode 100755), intersected with what ships"
 
 
 def read_record_exec(record: Path) -> set[str] | None:
@@ -289,11 +402,141 @@ def read_record_exec(record: Path) -> set[str] | None:
 
 
 # ---------------------------------------------------------------------------
+# THE EXCLUSION LIST
+# ---------------------------------------------------------------------------
+def env_path(var: str, default: Path) -> Path:
+    raw = os.environ.get(var, "")
+    return Path(raw) if raw else default
+
+
+def read_exclusions(path: Path) -> list[tuple[str, str]]:
+    """[(plugin-relative path, why)] out of RELEASE_EXCLUDE.tsv.
+
+    AN ABSENT OR EMPTY LIST IS A REFUSAL TO BUILD, not "ship everything". The
+    zip gate below tests the artefact against this list, so a list with no
+    rows makes that gate pass every artefact ever produced, in silence and
+    indistinguishably from a gate that looked. There is no reading of an empty
+    file that is safe to act on: either the exclusion was deleted by accident,
+    in which case building is wrong, or it was deleted on purpose, in which
+    case the gate should be deleted too and this script should say so.
+    """
+    if not path.is_file():
+        fail("no {} -- nothing in this tree says what a release leaves out, "
+             "and the zip gate has nothing to test against".format(path))
+    rows: list[tuple[str, str]] = []
+    text = path.read_bytes().decode("utf-8-sig", errors="replace")
+    for n, line in enumerate(text.splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        parts = line.split("\t")
+        if len(parts) < 2 or not parts[0].strip() or not parts[1].strip():
+            fail("{}:{}: every row is <path> TAB <why>; got {!r}"
+                 .format(path.name, n, line))
+        rel = parts[0].strip()
+        if rel.startswith("/") or ".." in rel.split("/"):
+            fail("{}:{}: {!r} is not plugin-relative. The list names paths "
+                 "inside plugin/, because that is the only tree this script "
+                 "stages.".format(path.name, n, rel))
+        if any(ch in rel for ch in "*?["):
+            fail("{}:{}: {!r} is a glob. NO GLOBS -- a pattern that can match "
+                 "a file nobody has written yet is not a list of what is "
+                 "excluded, it is a rule about what might be, and it cannot "
+                 "be audited by reading.".format(path.name, n, rel))
+        rows.append((rel, parts[1].strip()))
+    if not rows:
+        fail("{} lists nothing. An empty exclusion list is not a permissive "
+             "default: the zip gate would then pass every artefact ever built "
+             "while reading exactly like a gate that checked. Name what is "
+             "excluded, or remove the gate deliberately.".format(path))
+    return rows
+
+
+def excluded_by(rel: str, rows: list[tuple[str, str]]) -> str | None:
+    """The exclusion row covering `rel`, or None. Directory rows end in "/"."""
+    for pat, _why in rows:
+        if pat.endswith("/"):
+            if rel == pat[:-1] or rel.startswith(pat):
+                return pat
+        elif rel == pat:
+            return pat
+    return None
+
+
+# ---------------------------------------------------------------------------
+# THE HISTORY RULE, READ FROM THE FILES THAT ALREADY OWN IT
+# ---------------------------------------------------------------------------
+def read_history_patterns(source: Path) -> list[str]:
+    """validate/v80's ten patterns, out of dev/tools/extract-history.py.
+
+    NOT COPIED HERE. The list already exists twice by necessity -- once in
+    Python for the capture tool and once in R for the lint -- and v80 asserts
+    those two are identical, character for character. A third hand-written
+    copy would be a third thing to keep in step, and the first divergence
+    would be invisible: this scan would quietly stop rejecting whatever the
+    copy had lost.
+    """
+    if not source.is_file():
+        fail("no {} -- the history patterns live there and are not written "
+             "here; the artefact cannot be checked against a rule this tree "
+             "does not state".format(source))
+    lines = source.read_text(encoding="utf-8").splitlines()
+    try:
+        start = next(i for i, ln in enumerate(lines)
+                     if ln.startswith("PATTERNS = ["))
+        end = next(i for i in range(start + 1, len(lines))
+                   if lines[i].startswith("]"))
+    except StopIteration:
+        fail("{} carries no `PATTERNS = [...]` block; the history rule cannot "
+             "be read".format(source.name))
+    body = [ln.strip() for ln in lines[start + 1:end] if ln.strip().startswith('r"')]
+    pats = [re.sub(r'^r"(.*)",?$', r"\1", ln) for ln in body]
+    pats = [p for p in pats if p]
+    if not pats:
+        fail("{}'s PATTERNS block parsed to nothing".format(source.name))
+    rx = re.compile("|".join(pats))
+    if not rx.search(HISTORY_CONTROL):
+        fail("the history patterns read out of {} do not match their own "
+             "control line {!r}. A scan with no live pattern reports a clean "
+             "artefact forever."
+             .format(source.name, HISTORY_CONTROL))
+    return pats
+
+
+def read_history_allow(path: Path) -> list[tuple[str, str]]:
+    """[(repository-relative path, line pattern)] from v80's allowlist.
+
+    v80's file, unchanged and unextended. The exceptions are written once,
+    with a justification, for the repository; the artefact is the same tree
+    with paths one level shorter, so it is the same set of exceptions or the
+    two gates disagree about the same line.
+    """
+    if not path.is_file():
+        return []
+    out: list[tuple[str, str]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        parts = line.split("\t")
+        if len(parts) >= 2 and parts[0].strip() and parts[1]:
+            out.append((parts[0].strip(), parts[1]))
+    return out
+
+
+# ---------------------------------------------------------------------------
 # WALKING THE TREE
 # ---------------------------------------------------------------------------
-def shipped_files() -> list[Path]:
-    """Every file that goes into the artefact, in sorted order."""
+def shipped_files(exclusions: list[tuple[str, str]]) -> tuple[list[Path],
+                                                              dict[str, int]]:
+    """(files that go into the artefact, how many paths each row excluded).
+
+    The second half is returned rather than discarded because A ROW THAT
+    EXCLUDES NOTHING IS A FAILURE, on the same argument v80 makes about its
+    allowlist: a row naming a path the tree no longer holds tells its reader
+    the artefact is smaller than it is, and sits ready to be read as covering
+    some later file it was never written about.
+    """
     out = []
+    hits = {pat: 0 for pat, _ in exclusions}
     for path in sorted(ROOT.rglob("*")):
         if not path.is_file():
             continue
@@ -304,8 +547,12 @@ def shipped_files() -> list[Path]:
             continue
         if path.suffix.lower() in SKIP_SUFFIXES:
             continue
+        hit = excluded_by(rel.as_posix(), exclusions)
+        if hit is not None:
+            hits[hit] += 1
+            continue
         out.append(path)
-    return out
+    return out, hits
 
 
 def tree_digest(base: Path, rels: list[str]) -> str:
@@ -339,26 +586,16 @@ def sha256_file(path: Path) -> str:
 # ---------------------------------------------------------------------------
 # THE NAME, EVERYWHERE
 # ---------------------------------------------------------------------------
-# TWO `plugin_` TOKENS IN THE TREE ARE NOT FOLDER NAMES, and each is named
-# with the file it lives in rather than allowed everywhere, so the same word
-# appearing in a path expression somewhere else still fails.
-#
-#   dev/tools/run-tests.py        `plugin_root`, a Python function.
-#   dev/tools/reg-apply-edits.py  `plugin_EMLTools`, the pre-release product
-#                                 name inside the OLD document header that
-#                                 tool searches for and replaces. It is the
-#                                 needle of a replace_once, not a path.
-#
-# The third and fourth entries are this file: the scan reads the artefact,
-# this script ships in the artefact, and the two tokens above appear here as
-# the text of the table that excuses them. Naming them per-file keeps that
-# self-reference to the one file that has to contain them.
-NOT_A_FOLDER = {
-    ("dev/tools/run-tests.py", "plugin_root"),
-    ("dev/tools/reg-apply-edits.py", "plugin_EMLTools"),
-    ("dev/tools/build-release.py", "plugin_root"),
-    ("dev/tools/build-release.py", "plugin_EMLTools"),
-}
+# THE SCAN CARRIES NO EXCEPTION LIST. Every `plugin_<Name>` token in the
+# artefact is required to be the artefact's own name, with nothing excused.
+# That is possible because the tokens in this tree that are NOT folder names
+# -- a Python identifier, and a superseded product name that is the needle of
+# a search-and-replace -- all live under dev/, which the exclusion list drops,
+# so none of them reaches an artefact. If one ever appears in a shipped file
+# the build refuses and names it, which is the right way round: an exception
+# is added deliberately by whoever needs it, rather than found already sitting
+# in the file, matching nothing, ready to excuse the next thing that looks
+# like it.
 
 
 def name_disagreements(artefact: Path) -> list[str]:
@@ -392,8 +629,6 @@ def name_disagreements(artefact: Path) -> list[str]:
             if tok == want:
                 continue
             name = tok.decode("ascii")
-            if (rel, name) in NOT_A_FOLDER:
-                continue
             bad.append("{} names {!r}; this artefact is {!r}"
                        .format(rel, name, artefact.name))
     return bad
@@ -491,6 +726,211 @@ def outward_links(artefact: Path) -> tuple[list[str], int, int]:
             bad.append("{} links {!r}, and {!r} is in the artefact but that "
                        "path is not".format(rel.as_posix(), ref, head + "/"))
     return bad, n_refs, n_docs
+
+
+# ---------------------------------------------------------------------------
+# WHAT IS INSIDE THE ZIP
+# ---------------------------------------------------------------------------
+# THE ZIP IS THE SUBJECT, not the staging directory. The staging directory is
+# what this script wrote a moment ago and can only tell us that the walk and
+# the copy agreed with each other; the zip is what leaves the machine, and
+# between the two there is a copy, a chmod pass, an mtime pass, a second
+# writer and every opportunity a human has to add one file to an archive. A
+# property that is only ever asserted upstream of the artefact is a property
+# the artefact does not have to have.
+def population_from_zip(zp: Path, name: str) -> tuple[list[tuple[str, bool]],
+                                                      dict[str, bytes]]:
+    """(every entry as (artefact-relative path, is_dir), text blobs read).
+
+    An entry that is not under the artefact's own folder keeps its full name,
+    so a stray `../` or top-level entry is reported rather than silently
+    reduced to something that looks in-tree.
+    """
+    items: list[tuple[str, bool]] = []
+    blobs: dict[str, bytes] = {}
+    prefix = name + "/"
+    with zipfile.ZipFile(zp) as zf:
+        for info in zf.infolist():
+            nm = info.filename
+            rel = nm[len(prefix):] if nm.startswith(prefix) else nm
+            rel = rel.rstrip("/")
+            if not rel:
+                continue
+            items.append((rel, info.is_dir()))
+            if not info.is_dir() and \
+                    Path(rel).suffix.lower() in (HISTORY_PROSE | HISTORY_CODE):
+                blobs[rel] = zf.read(info)
+    return items, blobs
+
+
+def population_from_dir(artefact: Path) -> tuple[list[tuple[str, bool]],
+                                                 dict[str, bytes]]:
+    items: list[tuple[str, bool]] = []
+    blobs: dict[str, bytes] = {}
+    for p in sorted(artefact.rglob("*")):
+        rel = p.relative_to(artefact).as_posix()
+        items.append((rel, p.is_dir()))
+        if p.is_file() and p.suffix.lower() in (HISTORY_PROSE | HISTORY_CODE):
+            try:
+                blobs[rel] = p.read_bytes()
+            except OSError:
+                pass
+    return items, blobs
+
+
+def excluded_inside(items: list[tuple[str, bool]],
+                    exclusions: list[tuple[str, str]]) -> list[str]:
+    """Every entry the exclusion list forbids, NAMED, one line each."""
+    bad = []
+    for rel, is_dir in sorted(items):
+        hit = excluded_by(rel, exclusions)
+        if hit is not None:
+            bad.append("{} {} is in the artefact, and {!r} excludes it"
+                       .format("dir " if is_dir else "file", rel, hit))
+    return bad
+
+
+def history_inside(blobs: dict[str, bytes], patterns: list[str],
+                   allow: list[tuple[str, str]]
+                   ) -> tuple[list[str], int, int, int]:
+    """(problems, lines examined, files examined, lines excused).
+
+    THE POPULATION IS RETURNED WITH THE VERDICT. Zero violations out of zero
+    lines and zero violations out of nine thousand read identically in a build
+    log, and the way a line scanner dies is by examining nothing -- a suffix
+    set that stopped matching, a decode that started throwing. So the count is
+    printed on every build and can be floored by a check outside this file.
+    """
+    rx = [re.compile(p) for p in patterns]
+    rules = [(path, re.compile(pat)) for path, pat in allow]
+    bad: list[str] = []
+    n_lines = 0
+    n_files = 0
+    n_excused = 0
+    for rel in sorted(blobs):
+        suffix = Path(rel).suffix.lower()
+        text = blobs[rel].decode("utf-8", errors="replace")
+        lines = text.splitlines()
+        n_files += 1
+        for i, line in enumerate(lines, 1):
+            if suffix in HISTORY_CODE and not COMMENT_LINE.match(line):
+                continue
+            n_lines += 1
+            if not any(r.search(line) for r in rx):
+                continue
+            # v80's allowlist names paths in the REPOSITORY, where this file
+            # is one level deeper. Same file, same line, same exception.
+            repo_rel = "plugin/" + rel
+            if any(p == repo_rel and r.search(line) for p, r in rules):
+                n_excused += 1
+                continue
+            bad.append("{}:{}: {} -- a shipped file narrating the project's "
+                       "history; the artefact is the last gate this rule has"
+                       .format(rel, i, line.strip()[:90]))
+    return bad, n_lines, n_files, n_excused
+
+
+def manifest_contradictions(items: list[tuple[str, bool]],
+                            blobs: dict[str, bytes]) -> tuple[list[str], int]:
+    """(problems, how many paths the shipped manifest calls not-shipped).
+
+    NOT A RESTATEMENT OF THE EXCLUSION LIST. This reads what the artefact SAYS
+    about itself -- MANIFEST.txt travels inside it and carries a section headed
+    "Not shipped" -- and compares that to what the artefact IS. The exclusion
+    list and the manifest are two files that can be edited apart, and when they
+    are, the artefact contradicts a document it is carrying.
+    """
+    blob = blobs.get("MANIFEST.txt")
+    if blob is None:
+        return (["the artefact carries no MANIFEST.txt, so its own statement "
+                 "about what it does not ship cannot be read back"], 0)
+    present = {rel for rel, is_dir in items if not is_dir}
+    claimed: list[str] = []
+    started = False
+    for line in blob.decode("utf-8", errors="replace").splitlines():
+        if line.lstrip().startswith("#"):
+            if "Not shipped" in line:
+                started = True
+            continue
+        if not started or "|" not in line:
+            continue
+        claimed.append(line.split("|", 1)[0].strip())
+    bad = ["MANIFEST.txt says {} is not shipped, and the artefact ships it"
+           .format(rel) for rel in claimed if rel in present]
+    return bad, len(claimed)
+
+
+def zip_gates(artefact: Path, exclusions: list[tuple[str, str]],
+              patterns: list[str], allow: list[tuple[str, str]],
+              rule_source: str) -> list[str]:
+    """The three gates, run on the finished zip if there is one."""
+    zp = artefact.parent / (artefact.name + ".zip")
+    if zp.is_file():
+        items, blobs = population_from_zip(zp, artefact.name)
+        read = "the zip ({} entries)".format(len(items))
+    else:
+        items, blobs = population_from_dir(artefact)
+        read = ("the artefact FOLDER ({} entries) -- no zip beside it"
+                .format(len(items)))
+
+    problems = excluded_inside(items, exclusions)
+    hist, n_lines, n_files, n_excused = history_inside(blobs, patterns, allow)
+    problems += hist
+    contra, n_claimed = manifest_contradictions(items, blobs)
+    problems += contra
+
+    print("artefact contents read from: {}".format(read))
+    print("  exclusion rows {}, history patterns {}, allowlist rows {} [{}]"
+          .format(len(exclusions), len(patterns), len(allow), rule_source))
+    print("  history scan: {} line(s) in {} file(s), {} excused"
+          .format(n_lines, n_files, n_excused))
+    print("  manifest not-shipped rows checked: {}".format(n_claimed))
+    return problems
+
+
+def rules_for(artefact: Path) -> tuple[list[tuple[str, str]], list[str],
+                                       list[tuple[str, str]], str]:
+    """The three rule inputs, from the repository or from RELEASE.tsv.
+
+    THE REPOSITORY WINS when it is there, because it is the current statement
+    of the rule and the artefact's record is a photograph of the rule as it
+    stood at build time. RELEASE.tsv is the fallback for the case the mode
+    allowlist already has to serve: an artefact somebody has unzipped
+    somewhere with no clone beside it. Either way the source is printed, so a
+    reader of the output knows which document the verdict rests on.
+    """
+    excl_path = env_path("EML_RELEASE_EXCLUDE", EXCLUDE_DEFAULT)
+    if excl_path.is_file():
+        return (read_exclusions(excl_path),
+                read_history_patterns(HISTORY_SOURCE),
+                read_history_allow(env_path("EML_V80_ALLOWLIST", ALLOW_DEFAULT)),
+                "{} + {} + {}".format(excl_path.name, HISTORY_SOURCE.name,
+                                      ALLOW_DEFAULT.name))
+    rec = artefact.parent / RECORD
+    if not rec.is_file():
+        fail("no {} and no {} beside the artefact -- there is no statement of "
+             "what a release excludes, and a gate with nothing to test against "
+             "would pass anything at all"
+             .format(excl_path, RECORD))
+    excl: list[tuple[str, str]] = []
+    pats: list[str] = []
+    allow: list[tuple[str, str]] = []
+    for line in rec.read_text(encoding="utf-8").splitlines():
+        parts = line.split("\t")
+        if parts[0] == "exclude" and len(parts) >= 3:
+            excl.append((parts[1], parts[2]))
+        elif parts[0] == "history_pattern" and len(parts) >= 2:
+            pats.append(parts[1])
+        elif parts[0] == "history_allow" and len(parts) >= 3:
+            allow.append((parts[1], parts[2]))
+    if not excl:
+        fail("{} records no `exclude` row: the artefact beside it was built "
+             "without a statement of what a release leaves out".format(rec))
+    if not pats or not re.compile("|".join(pats)).search(HISTORY_CONTROL):
+        fail("{}'s recorded history patterns do not match their own control "
+             "line; the history gate would examine every line and reject "
+             "nothing".format(rec))
+    return excl, pats, allow, "{} beside the artefact".format(RECORD)
 
 
 # ---------------------------------------------------------------------------
@@ -610,6 +1050,17 @@ def verify(artefact: Path, execs: set[str] | None, source: str) -> list[str]:
     print("shipped .md links: {} reference(s) in {} document(s)"
           .format(n_refs, n_docs))
 
+    # 6. WHAT IS INSIDE THE ZIP. Sections 1-5 read the artefact FOLDER, which
+    #    is what this script wrote; the user receives the ZIP. Every step
+    #    between them -- the copy, the chmods, the archive writer, and anybody
+    #    with a shell -- can put a file back that the walk left out, with all
+    #    five sections above still green. So the finished archive is opened
+    #    and read for the three things a release must not carry: an excluded
+    #    path, a line narrating the project's history, and anything the
+    #    manifest travelling inside it calls not-shipped.
+    excl, pats, allow, rule_source = rules_for(artefact)
+    problems += zip_gates(artefact, excl, pats, allow, rule_source)
+
     print("verified against: {}".format(source))
     return problems
 
@@ -619,11 +1070,34 @@ def verify(artefact: Path, execs: set[str] | None, source: str) -> list[str]:
 # ---------------------------------------------------------------------------
 def build(out_dir: Path, make_zip: bool) -> int:
     name, n_literals = declared_name(NAME_SOURCE)
-    execs, exec_source = git_exec_set()
-    files = shipped_files()
+    excl_path = env_path("EML_RELEASE_EXCLUDE", EXCLUDE_DEFAULT)
+    exclusions = read_exclusions(excl_path)
+    patterns = read_history_patterns(HISTORY_SOURCE)
+    allow = read_history_allow(env_path("EML_V80_ALLOWLIST", ALLOW_DEFAULT))
+    execs, exec_source = git_exec_set(exclusions)
+    files, excl_hits = shipped_files(exclusions)
+
+    # A ROW THAT EXCLUDED NOTHING STOPS THE BUILD. It is the same failure v80
+    # reports on a stale allowlist entry, one document over: a reader of the
+    # exclusion list believes the artefact is smaller than it is, and the row
+    # stands ready to be read as covering a later file it was never written
+    # about. Reported before anything is written, because there is nothing to
+    # package until the tree and the list agree.
+    dead = [pat for pat, n in excl_hits.items() if n == 0]
+    if dead:
+        fail("{} excludes {} that the tree does not hold: {}. An exclusion "
+             "that matches nothing is not a no-op -- it misdescribes the "
+             "artefact to whoever reads the list."
+             .format(excl_path.name,
+                     "a path" if len(dead) == 1 else "paths",
+                     ", ".join(sorted(dead))))
 
     print("install name : {}  (read from {}, {} literals, unanimous)"
           .format(name, NAME_SOURCE.relative_to(REPO), n_literals))
+    print("excluded     : {} row(s) from {}, {} file(s) dropped"
+          .format(len(exclusions), excl_path.name, sum(excl_hits.values())))
+    for pat, _why in exclusions:
+        print("               {}  ({} file(s))".format(pat, excl_hits[pat]))
     print("executable   : {} file(s) from {}".format(len(execs), exec_source))
     for rel in sorted(execs):
         print("               {}".format(rel))
@@ -712,6 +1186,13 @@ def build(out_dir: Path, make_zip: bool) -> int:
         "setup_sha256\t{}".format(sha256_file(artefact / "setup.praat")),
     ]
     lines += ["exec\t{}".format(r) for r in sorted(execs)]
+    # THE RULES THIS ARTEFACT WAS BUILT UNDER, written down beside it for the
+    # same reason the exec allowlist is: --verify may be run months later on a
+    # tree somebody unzipped, with no clone of this repository present, and a
+    # gate that cannot read its rule is a gate that passes everything.
+    lines += ["exclude\t{}\t{}".format(p, w) for p, w in exclusions]
+    lines += ["history_pattern\t{}".format(p) for p in patterns]
+    lines += ["history_allow\t{}\t{}".format(p, r) for p, r in allow]
     rec.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     print("")
@@ -734,7 +1215,9 @@ def build(out_dir: Path, make_zip: bool) -> int:
             print("  {}".format(p), file=sys.stderr)
         return 1
     print("OK: every file 0644 (or 0755 where git says so), every directory "
-          "0755, folder named {}".format(name))
+          "0755, folder named {}; the zip carries no excluded path, no line "
+          "narrating this project's history, and nothing MANIFEST.txt calls "
+          "not-shipped".format(name))
 
     print("")
     for i, n in enumerate(NOTICES, 1):
@@ -760,7 +1243,9 @@ def main() -> int:
         execs = read_record_exec(artefact.parent / RECORD)
         source = "{} beside the artefact".format(RECORD)
         if execs is None:
-            execs, source = git_exec_set()
+            excl_path = env_path("EML_RELEASE_EXCLUDE", EXCLUDE_DEFAULT)
+            execs, source = git_exec_set(
+                read_exclusions(excl_path) if excl_path.is_file() else None)
             if not execs and not (REPO / ".git").exists():
                 execs, source = None, "nothing"
         problems = verify(artefact, execs, source)

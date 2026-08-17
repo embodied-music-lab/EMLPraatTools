@@ -1655,6 +1655,112 @@ procedure emlComposeGraphTitle
     endif
 endproc
 # ============================================================================
+# @emlGraphsAxisPairRefusal
+# ============================================================================
+# THE ONE PLACE AN AXIS PAIR IS JUDGED. Takes an axis name and the pair the
+# dialog returned for it, and decides one thing: whether the form may proceed.
+# It draws nothing, shows nothing and changes neither number.
+#
+#   .refused    1 when the pair cannot be used, 0 otherwise
+#   .headline$  the one-line statement of the conflict, with both numbers
+#   .message$   the whole refusal as a single sentence-run
+#
+# A PAIR IS REFUSED WHEN ITS MAXIMUM IS BELOW ITS MINIMUM, AND ONLY THEN.
+# (0, 0) is the auto sentinel every axis dialog names on its own face, and it
+# is not a conflict: the maximum is not below the minimum. (0, 100) is the
+# ordinary full range from 0 to 100 and is not a conflict either. Nothing
+# here treats 0 as absent.
+#
+# WHY IT REFUSES RATHER THAN REPAIRS. `maximum < minimum` has two readings and
+# no evidence that separates them: the numbers may have been entered in the
+# wrong order, or the user may have set one side and left the other at its
+# default. A form field cannot be left empty, so "minimum 300, maximum 0"
+# is exactly what a user asking for a floor of 300 submits — and it is also
+# exactly what a user who typed 0 and 300 backwards submits. Choosing either
+# reading silently gives one of them a figure drawn on an axis they did not
+# ask for, with no mark on the page to say so. So the form asks.
+#
+# WHY THE MESSAGE NAMES BOTH READINGS. The user who reversed the pair needs to
+# know the order; the user who wanted one side needs to know that a one-sided
+# limit is not available on this axis, and why — 0 is simultaneously a
+# legitimate bound and the auto sentinel, so a blank other side cannot be
+# distinguished from a bound of zero.
+#
+# THE ACCUMULATOR. A page can carry more than one pair, so a refusal appends
+# to emlGraphsAxisRefusalN / emlGraphsAxisRefusalLine$[] and the caller clears
+# both before its sweep. Every pair on the page is judged, so a page with two
+# reversed pairs names both at once rather than one per round trip.
+# ============================================================================
+procedure emlGraphsAxisPairRefusal: .axis$, .min, .max
+    emlGraphsAxisRefusalRemedy1$ = "To set a full range, enter both values."
+    ... + " For automatic scaling leave both at 0."
+    emlGraphsAxisRefusalRemedy2$ = "(A one-sided limit isn't possible: 0 means"
+    ... + " auto, so the other side can't be left blank.)"
+    .refused = 0
+    .headline$ = ""
+    .message$ = ""
+    if .max < .min
+        .refused = 1
+        .headline$ = .axis$ + " maximum (" + string$ (.max) + ") is below "
+        ... + .axis$ + " minimum (" + string$ (.min) + ")."
+        .message$ = .headline$ + " " + emlGraphsAxisRefusalRemedy1$ + " "
+        ... + emlGraphsAxisRefusalRemedy2$
+        emlGraphsAxisRefusalN = emlGraphsAxisRefusalN + 1
+        emlGraphsAxisRefusalLine$ [emlGraphsAxisRefusalN] = .headline$
+    endif
+endproc
+
+
+# ============================================================================
+# @emlGraphsShowAxisRefusal
+# ============================================================================
+# PUT THE ACCUMULATED REFUSAL ON SCREEN, one headline per refused pair
+# followed by the two remedy sentences the whole set shares. The dialog has a
+# single button: there is nothing to choose here, only something to read
+# before the form comes back.
+# ============================================================================
+procedure emlGraphsShowAxisRefusal
+    beginPause: "Axis range"
+        for .i from 1 to emlGraphsAxisRefusalN
+            comment: emlGraphsAxisRefusalLine$ [.i]
+        endfor
+        comment: emlGraphsAxisRefusalRemedy1$
+        comment: emlGraphsAxisRefusalRemedy2$
+    endPause: "OK", 1, 0
+endproc
+
+
+# ============================================================================
+# @emlGraphsCheckAxisRanges
+# ============================================================================
+# SWEEP EVERY AXIS PAIR THE DIALOGS CAN RETURN THROUGH THE ONE JUDGE ABOVE,
+# and report how many were refused in emlGraphsAxisRefusalN.
+#
+# ONE CALL PER PAIR AND ONE JUDGE FOR ALL OF THEM. Six pairs judged by six
+# copies of the same test is five pairs repaired and a sixth found later; the
+# pairs differ only in their name and their two variables, so that is all a
+# call site carries.
+#
+# THE VALUE PAIR IS NAMED FOR THE FIELD THAT FILLED IT. Every page but the
+# scatter labels it "Value maximum" / "Value minimum"; the scatter labels the
+# same pair "Y maximum" / "Y minimum", because it has an X pair of its own to
+# tell it apart from. The message quotes the label the user read.
+# ============================================================================
+procedure emlGraphsCheckAxisRanges
+    emlGraphsAxisRefusalN = 0
+    .valueName$ = "Value"
+    if graph_type = 8
+        .valueName$ = "Y"
+    endif
+    @emlGraphsAxisPairRefusal: "Time", timeMin, timeMax
+    @emlGraphsAxisPairRefusal: "Frequency", freqMin, freqMax
+    @emlGraphsAxisPairRefusal: "Power", powerMin, powerMax
+    @emlGraphsAxisPairRefusal: "Amplitude", ampMin, ampMax
+    @emlGraphsAxisPairRefusal: .valueName$, valueMin, valueMax
+    @emlGraphsAxisPairRefusal: "X", scatterXMin, scatterXMax
+    .refused = emlGraphsAxisRefusalN
+endproc
+# ============================================================================
 # @emlGraphsPublishAxisRequest
 # ============================================================================
 # PUBLISH THE AXIS THE USER ASKED FOR, BEFORE ANYTHING IN THIS FILE RESOLVES
@@ -8161,65 +8267,40 @@ repeat
         until spFormDone = 1
     endif
 
+    # =================================================================
+    # RANGE VALIDATION — REFUSE A PAIR WHOSE MAXIMUM IS BELOW ITS MINIMUM
+    # =================================================================
+    # INSIDE THE FORM LOOP, and that is the whole mechanism. A refused pair
+    # clears allFormsDone, so the form comes back with the error on screen and
+    # nothing is drawn. @emlGraphsAxisPairRefusal states why a pair is refused
+    # rather than repaired; @emlGraphsCheckAxisRanges sweeps every pair
+    # through it.
+    #
+    # ONLY WHEN A PAGE COMMITTED. Go Back and the toggle both leave
+    # allFormsDone at 0 with the pairs holding whatever the last committed
+    # page left there, and neither is a submission to judge.
+    #
+    # THE PAIRS COME BACK WITH THE PAGE. The page seeds its range fields from
+    # prev_* when those belong to the type on screen, so the numbers the user
+    # is being asked about are the numbers the re-presented page shows.
+    if allFormsDone = 1
+        @emlGraphsCheckAxisRanges
+        if emlGraphsCheckAxisRanges.refused > 0
+            @emlGraphsShowAxisRefusal
+            allFormsDone = 0
+            lastDrawnGraphType = graph_type
+        endif
+    endif
+
     until allFormsDone = 1
-
-    # =================================================================
-    # RANGE VALIDATION (swap if user entered max < min)
-    # =================================================================
-    # Both-zero = auto, skip validation. Otherwise swap and warn.
-
-    if not (timeMin = 0 and timeMax = 0)
-        if timeMax < timeMin
-            tmpSwap = timeMin
-            timeMin = timeMax
-            timeMax = tmpSwap
-        endif
-    endif
-    if not (freqMin = 0 and freqMax = 0)
-        if freqMax < freqMin
-            tmpSwap = freqMin
-            freqMin = freqMax
-            freqMax = tmpSwap
-        endif
-    endif
-    if not (powerMin = 0 and powerMax = 0)
-        if powerMax < powerMin
-            tmpSwap = powerMin
-            powerMin = powerMax
-            powerMax = tmpSwap
-        endif
-    endif
-    if not (ampMin = 0 and ampMax = 0)
-        if ampMax < ampMin
-            tmpSwap = ampMin
-            ampMin = ampMax
-            ampMax = tmpSwap
-        endif
-    endif
-    if not (valueMin = 0 and valueMax = 0)
-        if valueMax < valueMin
-            tmpSwap = valueMin
-            valueMin = valueMax
-            valueMax = tmpSwap
-        endif
-    endif
-    if variableExists ("scatterXMin")
-        if not (scatterXMin = 0 and scatterXMax = 0)
-            if scatterXMax < scatterXMin
-                tmpSwap = scatterXMin
-                scatterXMin = scatterXMax
-                scatterXMax = tmpSwap
-            endif
-        endif
-    endif
 
     # =================================================================
     # PUBLISH THE UNTOUCHED AXIS REQUEST
     # =================================================================
-    # HERE, AND NOWHERE LATER. The range validation above is the last thing
-    # that touches the user's numbers as the user's numbers — it only swaps a
-    # reversed pair, and it leaves the (0, 0) auto sentinel alone by
-    # construction. Everything after this line is resolution: the annotation
+    # HERE, AND NOWHERE LATER. Nothing between the dialog and this line
+    # changes a number the user typed: the range validation inside the loop
+    # above either lets the pair through untouched or sends the form back
+    # without drawing. Everything after this line is resolution: the annotation
     # bridge, @emlGraphsPreDispatchHeadroom's bracket path and
     # @emlGraphsDrawWithLegendRoom's second pass all write the axis they
     # computed back into the same variables, so a capture taken any later is a

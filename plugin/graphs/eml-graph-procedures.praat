@@ -5875,7 +5875,13 @@ procedure emlInitAlphaSprites
     endif
 
     # Strategy 1: installed plugin in preferences directory
-    .tryPath$ = preferencesDirectory$ + "/plugin_EML_StatsGraphs/sprites/"
+    #
+    # The install directory comes from @emlPluginRoot, in stats/eml-record.praat
+    # -- the one procedure that knows the folder Praat installs this plugin
+    # into. Praat cannot nest a procedure call inside an expression, so the
+    # call stands alone and its result is read out of its own scope.
+    @emlPluginRoot
+    .tryPath$ = emlPluginRoot.abs$ + "/sprites/"
     .testFile$ = .tryPath$ + "dot_blue_a50_40.png"
     if fileReadable (.testFile$)
         .dir$ = .tryPath$

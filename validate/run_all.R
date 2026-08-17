@@ -893,7 +893,42 @@ scripts <- c(
     # and a ledger in which no row claims a pin at all are each a FAILURE.
     # It is READ-ONLY on the ledger. It names the row, the validator and the
     # class, and leaves the editing to a human.
-    "v83_pin_definition.R"
+    "v83_pin_definition.R",
+    # v84 is a check on an ABSENCE: the figure that must not be drawn. Six axis
+    # pairs reach the graphs form from its dialogs, and a pair whose maximum is
+    # below its minimum has two readings that nothing in the pair separates --
+    # the numbers were reversed, or one side was set and the other left at its
+    # default. A Praat field cannot be blank, so a floor of 300 with no ceiling
+    # arrives as (300, 0), which is byte-identical to 0 and 300 typed
+    # backwards. The form used to choose the first reading and rewrite the
+    # pair; a user asking for a floor of 300 got a ceiling of 300, and nothing
+    # said so, because the only disclosure on that path speaks when a DATA
+    # POINT falls outside the range and after the rewrite the data sits inside
+    # it. It refuses now, and refusing means no figure.
+    #
+    # SO THE SUBJECT IS THE "INSTEAD OF", WHICH NO READ OF THE SOURCE REACHES.
+    # The file could hold a perfect refusal, called from the right place, and
+    # still draw. harness/axisrefuse/run.sh therefore brings up Xvfb, a window
+    # manager and a COMPOSITOR, launches the shipped form seven times, types
+    # the reversed pair into the dialog field whose label the message quotes,
+    # and records the sequence of dialog titles, the refusal's text read back
+    # off its own pixels with tesseract, and the ink in the Picture window at
+    # the moment of the refusal against that leg's own empty reading. The
+    # compositor is instrument rather than decoration: without one the region a
+    # modal dialog covers comes back from XGetImage as a black rectangle, which
+    # reads as a very large figure.
+    #
+    # THE CONTROL LEG POINTS THE OTHER WAY. 0 is both the auto sentinel and an
+    # ordinary bound, so (0, 0) and (0, 400) must both DRAW. A repair that read
+    # 0 as "left blank" would satisfy every refusal leg and take the range away
+    # from everyone who typed a zero bound.
+    #
+    # AND TWO SOURCE RULES THAT EXTEND THEMSELVES, because a seventh pair added
+    # next year is on no transcript: three consecutive statements of the shape
+    # `a = b`, `b = c`, `c = a` are a swap whatever the names are and there
+    # must be none -- HEAD has six -- and every axis for which the dialogs
+    # offer BOTH a minimum and a maximum field must be named to the refusal.
+    "v84_axis_refusal.R"
 )
 
 cat("EML Stats & Graphs validation suite\n")

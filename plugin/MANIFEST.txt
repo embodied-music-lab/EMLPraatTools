@@ -79,7 +79,7 @@ dev/tests/phase2/verify-shapiro-wilk.R | 307 | 2.0 | R Verification Script for @
 dev/tests/test-helpers-selftest-negative.praat | 45 | - | Negative control for the assertion helpers — four deliberate failures. Expected status FAIL; the runner scores it XFAIL.
 dev/tests/test-helpers-selftest.praat | 40 | - | Positive control for the assertion helpers — each helper exercised on a passing case.
 dev/tools/build-manifest.py | 381 | - | Regenerate MANIFEST.txt: recompute the derived columns, inherit curated descriptions by path. --check exits 1 on drift.
-dev/tools/build-release.py | 787 | - | Builds the installable artefact — the plugin_EML_StatsGraphs folder and its zip — taking the install name from the recorder's own literals, normalising modes to 0644/0755, and verifying every mode in the built tree (finding P1) and every relative link in a shipped .md against the artefact's own contents
+dev/tools/build-release.py | 1272 | - | Builds the installable artefact — the plugin_EML_StatsGraphs folder and its zip — taking the install name from the recorder's own literals, normalising modes to 0644/0755, and verifying every mode in the built tree (finding P1) and every relative link in a shipped .md against the artefact's own contents
 dev/tools/extract-history.py | 330 | - | Walks the shipped .praat files at a named git revision and copies each header-history block verbatim into dev/HISTORY_LEDGER.md. Shares its ten patterns with validate/v80, which asserts the two lists are identical.
 dev/tools/procs.json | 1672 | - | Machine-generated index of every `procedure` definition in the tree (written by reg-extract-procedures.py).
 dev/tools/reg-apply-edits.py | 424 | - | Apply the EML_PROCEDURE_REGISTRY.md corrections as guarded passes.
@@ -101,8 +101,8 @@ docs/RECIPES.md | ~3043 words | - | Five worked scripts for calling the statisti
 graphs/eml-annotation-procedures.praat | 5771 | 3.22 | EML GRAPHS — ANNOTATION + STATS BRIDGE PROCEDURES
 graphs/eml-draw-procedures.praat | 6562 | 1.26 | EML GRAPHS — DRAWING PROCEDURES
 graphs/eml-draw-qq.praat | 345 | - | EML Stats & Graphs — Normal Q-Q plot. @emlDrawQQPlot; an ADAPTER, not a draw procedure — it computes the theoretical quantiles and hands them to the shared scatter machinery.
-graphs/eml-graph-procedures.praat | 7183 | 3.32 | EML GRAPHS — STANDARD DRAWING PROCEDURES
-graphs/eml-graphs-form.praat | 8625 | 2.9 | EML Graphs — Form System and Workflow
+graphs/eml-graph-procedures.praat | 7189 | 3.32 | EML GRAPHS — STANDARD DRAWING PROCEDURES
+graphs/eml-graphs-form.praat | 8706 | 2.9 | EML Graphs — Form System and Workflow
 scripts/eml-batch-process.praat | 1665 | 1.3 | Batch process a folder of Sound files to extract user-selected
 scripts/eml-check-data.praat | 685 | 1.1 | EML Stats & Graphs — Check & repair data. Names, in advance, which cells an analysis will exclude and why, and offers to repair the unambiguous ones.
 scripts/eml-check-normality.praat | 470 | 2.2 | Test normality for one or more numeric columns, optionally
@@ -124,15 +124,15 @@ scripts/eml-lib-stats.praat | 54 | - | Include list: the statistics stack in dep
 scripts/eml-lib.praat | 38 | - | Include list: the whole stack, stats then graphs, in the order the layers require. Comments and `include` lines only — no procedure, no statement.
 scripts/eml-lmm.praat | 105 | 1.0 | Fit a linear mixed-effects model (lme4-style formula) to a Table
 scripts/eml-pairwise.praat | 154 | 3.1 | All-pairs comparisons from a Table using pairwise t-test,
-scripts/eml-quick-start.praat | 87 | 1.1 | EML Stats & Graphs — Quick Start Guide
+scripts/eml-quick-start.praat | 103 | 1.1 | EML Stats & Graphs — Quick Start Guide
 scripts/eml-record-open.praat | 145 | 1.0 | EML Stats & Graphs — Stop recording and open. Ends the session started by 'Record script' and puts the generated script in a Praat ScriptEditor.
 scripts/eml-record-save.praat | 210 | 2.0 | EML Stats & Graphs — Stop recording and save. Renders the session to a runnable Praat file at a place the user chooses, and ends it.
 scripts/eml-record-start.praat | 106 | 1.0 | EML Stats & Graphs — Start recording a script. Begins the session every later analysis and figure is captured into.
 scripts/eml-regress.praat | 155 | 2.2 | OLS simple linear regression (slope, intercept, R², SE, F, p)
 scripts/eml-stats-demo.praat | 490 | 1.4 | Demonstrates three core inferential statistics workflows
-scripts/eml-tutorial.praat | 743 | 0.19 | EML Stats Tutorial — Interactive Statistics Guide
+scripts/eml-tutorial.praat | 754 | 0.19 | EML Stats Tutorial — Interactive Statistics Guide
 scripts/eml-wizard.praat | 2920 | 2.6 | Question-driven statistical analysis wizard. Routes research
-setup.praat | 466 | 1.7 | Register menu entries and dynamic action buttons for the
+setup.praat | 472 | 1.7 | Register menu entries and dynamic action buttons for the
 sprites/ | 204 files, 45803 bytes | sha256:48d0a2cc3f22c34c | Pre-rendered PNG stamps for alpha compositing — shape_colour_alpha_size, addressed as a family by @emlSetColorPalette and @emlDrawAlphaDot, never by name. Praat has no alpha channel, so a translucent dot or box is a stretched stamp; @emlInitAlphaSprites falls back to opaque Paint when the folder is absent.
 stats/eml-analysis.praat | 4733 | 1.3 | EML Stats : Analysis Orchestrators
 stats/eml-core-descriptive.praat | 864 | 1.2 | EML Stats : Core Descriptive Statistics
@@ -143,7 +143,7 @@ stats/eml-linalg.praat | 347 | 1.0 | EML Stats & Graphs — Numerical Linear Alg
 stats/eml-lmm.praat | 4436 | - | EML Stats & Graphs — Linear Mixed Models
 stats/eml-optimizer.praat | 2402 | 2.0 | EML Stats & Graphs — Derivative-Free Optimizers
 stats/eml-output.praat | 3487 | 2.4 | EML Stats : Output Formatting
-stats/eml-record.praat | 3835 | 1.0 | EML Stats & Graphs — Record workflow: buffer, phrases, renderer. Accumulates a session's analyses and figures and writes one annotated Praat script that both re-runs and reads like a lab notebook.
+stats/eml-record.praat | 3897 | 1.0 | EML Stats & Graphs — Record workflow: buffer, phrases, renderer. Accumulates a session's analyses and figures and writes one annotated Praat script that both re-runs and reads like a lab notebook.
 stats/eml-result-writer.praat | 735 | 1.0 | EML Stats & Graphs — broom-style result writer. Collects one analysis as tidy/glance/augment tables and writes the three CSVs with the shapes and names R's broom package uses.
 
 # --------------------------------------------------------------------------

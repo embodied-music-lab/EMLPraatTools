@@ -1,0 +1,191 @@
+praat_version	Praat 6.6.30 (June 30 2026)
+source_tree	/home/claude/EMLPraatTools
+form_code_sha256	32fccb71a0290011c029cfb959b916c7bbca7247dd4c1d0fde2c08ac938c32cb
+compositor	running
+leg	pitch_time
+leg_object	1
+pitch_time_ink_empty	0.000704286
+pitch_time_s1_title	EML Graphs
+pitch_time_s1_want	EML Graphs
+pitch_time_s2_title	Pitch Contour Settings
+pitch_time_s2_want	Pitch Contour Settings
+pitch_time_s3_title	Axis range
+pitch_time_s3_want	Axis range
+pitch_time_s3_shown	Time maximum (0) is below Time minimum (0.3).
+pitch_time_s3_shown	To set a full range, enter both values. For automatic scaling leave both at 0.
+pitch_time_s3_shown	(A one-sided limit isn't possible: 0 means auto, so the other side can't be
+pitch_time_s3_shown	left blank.)
+pitch_time_s3_shown	OK
+pitch_time_s3_ink	0.000704286
+pitch_time_s4_title	EML Graphs
+pitch_time_s4_want	EML Graphs
+pitch_time_s5_title	Pitch Contour Settings
+pitch_time_s5_want	Pitch Contour Settings
+pitch_time_s6_title	Graph Complete
+pitch_time_s6_want	Graph Complete
+pitch_time_s6_ink	0.00424643
+leg_returned	pitch_time
+leg_axis	0..0
+pitch_time_steps	6
+pitch_time_exited	no
+pitch_time_display_clear	yes
+leg	pitch_freq
+leg_object	1
+pitch_freq_ink_empty	0.000704286
+pitch_freq_s1_title	EML Graphs
+pitch_freq_s1_want	EML Graphs
+pitch_freq_s2_title	Pitch Contour Settings
+pitch_freq_s2_want	Pitch Contour Settings
+pitch_freq_s3_title	Axis range
+pitch_freq_s3_want	Axis range
+pitch_freq_s3_shown	Frequency maximum (0) is below Frequency minimum (300).
+pitch_freq_s3_shown	To set a full range, enter both values. For automatic scaling leave both at 0.
+pitch_freq_s3_shown	(A one-sided limit isn't possible: 0 means auto, so the other side can't be
+pitch_freq_s3_shown	left blank.)
+pitch_freq_s3_shown	OK
+pitch_freq_s3_ink	0.000704286
+pitch_freq_s4_title	EML Graphs
+pitch_freq_s4_want	EML Graphs
+pitch_freq_s5_title	Pitch Contour Settings
+pitch_freq_s5_want	Pitch Contour Settings
+pitch_freq_s6_title	Graph Complete
+pitch_freq_s6_want	Graph Complete
+pitch_freq_s6_ink	0.00404857
+leg_returned	pitch_freq
+leg_axis	300..500
+pitch_freq_steps	6
+pitch_freq_exited	no
+pitch_freq_display_clear	yes
+leg	wave_amp
+leg_object	1
+wave_amp_ink_empty	0.000704286
+wave_amp_s1_title	EML Graphs
+wave_amp_s1_want	EML Graphs
+wave_amp_s2_title	Waveform Settings
+wave_amp_s2_want	Waveform Settings
+wave_amp_s3_title	Axis range
+wave_amp_s3_want	Axis range
+wave_amp_s3_shown	Amplitude maximum (0) is below Amplitude minimum (0.2).
+wave_amp_s3_shown	To set a full range, enter both values. For automatic scaling leave both at 0.
+wave_amp_s3_shown	(A one-sided limit isn't possible: 0 means auto, so the other side can't be
+wave_amp_s3_shown	left blank.)
+wave_amp_s3_shown	OK
+wave_amp_s3_ink	0.000704286
+wave_amp_s4_title	EML Graphs
+wave_amp_s4_want	EML Graphs
+wave_amp_s5_title	Waveform Settings
+wave_amp_s5_want	Waveform Settings
+wave_amp_s6_title	Graph Complete
+wave_amp_s6_want	Graph Complete
+wave_amp_s6_ink	0.0364093
+leg_returned	wave_amp
+leg_axis	0.2..0.9
+wave_amp_steps	6
+wave_amp_exited	no
+wave_amp_display_clear	yes
+leg	spec_power
+leg_object	1
+spec_power_ink_empty	0.000704286
+spec_power_s1_title	EML Graphs
+spec_power_s1_want	EML Graphs
+spec_power_s2_title	Spectrum Settings
+spec_power_s2_want	Spectrum Settings
+spec_power_s3_title	Axis range
+spec_power_s3_want	Axis range
+spec_power_s3_shown	Power maximum (0) is below Power minimum (20).
+spec_power_s3_shown	To set a full range, enter both values. For automatic scaling leave both at 0.
+spec_power_s3_shown	(A one-sided limit isn't possible: 0 means auto, so the other side can't be
+spec_power_s3_shown	left blank.)
+spec_power_s3_shown	OK
+spec_power_s3_ink	0.000704286
+spec_power_s4_title	EML Graphs
+spec_power_s4_want	EML Graphs
+spec_power_s5_title	Spectrum Settings
+spec_power_s5_want	Spectrum Settings
+spec_power_s6_title	Graph Complete
+spec_power_s6_want	Graph Complete
+spec_power_s6_ink	0.00813357
+leg_returned	spec_power
+leg_axis	20..60
+spec_power_steps	6
+spec_power_exited	no
+spec_power_display_clear	yes
+leg	box_value
+leg_object	1
+box_value_ink_empty	0.000704286
+box_value_s1_title	EML Graphs
+box_value_s1_want	EML Graphs
+box_value_s2_title	Box Plot -- Column Mapping
+box_value_s2_want	Box Plot -- Column Mapping
+box_value_s3_title	Axis range
+box_value_s3_want	Axis range
+box_value_s3_shown	Value maximum (0) is below Value minimum (300).
+box_value_s3_shown	To set a full range, enter both values. For automatic scaling leave both at 0.
+box_value_s3_shown	(A one-sided limit isn't possible: 0 means auto, so the other side can't be
+box_value_s3_shown	left blank.)
+box_value_s3_shown	OK
+box_value_s3_ink	0.000704286
+box_value_s4_title	EML Graphs
+box_value_s4_want	EML Graphs
+box_value_s5_title	Box Plot -- Column Mapping
+box_value_s5_want	Box Plot -- Column Mapping
+box_value_s6_title	Graph Complete
+box_value_s6_want	Graph Complete
+box_value_s6_ink	0.00356643
+leg_returned	box_value
+leg_axis	300..400
+box_value_steps	6
+box_value_exited	no
+box_value_display_clear	yes
+leg	scatter_xy
+leg_object	1
+scatter_xy_ink_empty	0.000704286
+scatter_xy_s1_title	EML Graphs
+scatter_xy_s1_want	EML Graphs
+scatter_xy_s2_title	Scatter Plot -- Column Mapping
+scatter_xy_s2_want	Scatter Plot -- Column Mapping
+scatter_xy_s3_title	Axis range
+scatter_xy_s3_want	Axis range
+scatter_xy_s3_shown	Y maximum (0) is below Y minimum (5).
+scatter_xy_s3_shown	X maximum (0) is below X minimum (300).
+scatter_xy_s3_shown	To set a full range, enter both values. For automatic scaling leave both at 0.
+scatter_xy_s3_shown	(A one-sided limit isn't possible: 0 means auto, so the other side can't be
+scatter_xy_s3_shown	left blank.)
+scatter_xy_s3_shown	OK
+scatter_xy_s3_ink	0.000704286
+scatter_xy_s4_title	EML Graphs
+scatter_xy_s4_want	EML Graphs
+scatter_xy_s5_title	Scatter Plot -- Column Mapping
+scatter_xy_s5_want	Scatter Plot -- Column Mapping
+scatter_xy_s6_title	Graph Complete
+scatter_xy_s6_want	Graph Complete
+scatter_xy_s6_ink	0.00448643
+leg_returned	scatter_xy
+leg_axis	5..400
+scatter_xy_steps	6
+scatter_xy_exited	no
+scatter_xy_display_clear	yes
+leg	box_bound
+leg_object	1
+box_bound_ink_empty	0.000704286
+box_bound_s1_title	EML Graphs
+box_bound_s1_want	EML Graphs
+box_bound_s2_title	Box Plot -- Column Mapping
+box_bound_s2_want	Box Plot -- Column Mapping
+box_bound_s3_title	Graph Complete
+box_bound_s3_want	Graph Complete
+box_bound_s3_ink	0.00377929
+box_bound_s4_title	EML Graphs
+box_bound_s4_want	EML Graphs
+box_bound_s5_title	Box Plot -- Column Mapping
+box_bound_s5_want	Box Plot -- Column Mapping
+box_bound_s6_title	Graph Complete
+box_bound_s6_want	Graph Complete
+box_bound_s6_ink	0.00388571
+leg_returned	box_bound
+leg_axis	0..400
+box_bound_steps	6
+box_bound_exited	no
+box_bound_display_clear	yes
+leg	--shell--
+legs_driven	7

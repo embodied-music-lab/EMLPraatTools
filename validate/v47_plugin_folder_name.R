@@ -10,13 +10,15 @@
 # name is a CONVENTION -- it cannot be derived from anything in this tree,
 # because the source folder is called `plugin/`.
 #
-# The installed folder is `plugin_EML_StatsGraphs`, and the name is written
-# out as a literal in a dozen places rather than derived once, because Praat
-# gives a script no way to learn its own plugin folder. A recorder that
-# spelled it differently from the folder Praat installed would emit eleven
-# `include` lines naming a folder that does not exist, and EVERY RECORDED
-# SCRIPT WOULD BE UNRUNNABLE -- the recorder's whole output, worthless, on
-# every platform. That failure has happened here, from a single misspelling.
+# The installed folder is `plugin_EML_StatsGraphs`. Praat gives a script no
+# way to learn its own plugin folder, so the name is a constant the plugin
+# carries -- and it carries it in ONE place, @emlPluginFolder in
+# stats/eml-record.praat, which everything that builds a path or prints an
+# instruction asks. A recorder that spelled it differently from the folder
+# Praat installed would emit eleven `include` lines naming a folder that does
+# not exist, and EVERY RECORDED SCRIPT WOULD BE UNRUNNABLE -- the recorder's
+# whole output, worthless, on every platform. A single misspelling is all it
+# takes, which is why there is a single place to misspell.
 #
 # NOTHING CAUGHT IT, and there were three separate reasons, each of which this
 # file closes:
@@ -162,10 +164,10 @@ check_true("v47", sprintf("no rendered artefact carries a stale folder name (%s)
 # ---------------------------------------------------------------------------
 # 4. THE SHIPPING SOURCE AGREES WITH THE RIGS
 # ---------------------------------------------------------------------------
-# Six literals in eml-record.praat plus the ones in the tutorial, quick start,
-# setup and graph procedures. They are duplicated rather than derived -- Praat
-# gives a script no way to learn its own plugin folder -- so the only defence
-# is that they all say the same thing.
+# Praat gives a script no way to learn its own plugin folder, so the name is a
+# constant the plugin carries. Every mention of it anywhere in the shipped
+# tree -- prose and code alike, .praat and .md -- has to be the name the rigs
+# install.
 src <- list.files(plug, pattern = "\\.(praat|md)$", recursive = TRUE,
                   full.names = TRUE)
 src <- src[!grepl("/dev/", src, fixed = TRUE)]
@@ -184,17 +186,87 @@ check_true("v47", sprintf("every shipping literal agrees with the rigs (%s)",
                           paste(src_bad, collapse = "; ")),
            length(src_bad) == 0)
 
-# THE RECORDER SPECIFICALLY, named on its own because it is the file that was
-# wrong and the only one whose literal reaches a user's disk.
+# ---------------------------------------------------------------------------
+# 4b. THE NAME IS WRITTEN ONCE, AND THE REST ASK FOR IT
+# ---------------------------------------------------------------------------
+# Section 4 requires the shipped mentions to AGREE. That is the weaker half of
+# the guarantee, and on its own it is a promise kept by hand: every mention
+# has to be found and edited together, and a rename that reaches all but one
+# of them leaves a plugin that agrees with itself everywhere the editor
+# looked. The failure is silent in the worst way -- setup.praat writing its
+# barrel to a folder computed from a stale copy of the name produces no file,
+# no error and no clue, because that write is deliberately unchecked so a
+# read-only install still gets its menus.
+#
+# So the executable name is written in exactly ONE place, @emlPluginFolder in
+# stats/eml-record.praat, and every consumer asks. That is what this section
+# pins: not "the copies agree today" but "there are no copies".
+#
+# WHAT IS COUNTED IS EXECUTABLE TEXT. Praat comments open with "#", ";" or
+# "!"; a header line saying which folder a file belongs to is a note to a
+# reader, is evaluated by nothing, and cannot send a write anywhere. Those are
+# left to section 4, which requires them to be right. What can misdirect the
+# plugin is a name the interpreter reads, and there is one of those.
+praat_src <- list.files(plug, pattern = "\\.praat$", recursive = TRUE,
+                        full.names = TRUE)
+praat_src <- praat_src[!grepl("/dev/", praat_src, fixed = TRUE)]
+code_hits <- list()
+for (p in praat_src) {
+    x <- readLines(p, warn = FALSE)
+    x <- x[!grepl("^\\s*[#;!]", x)]
+    n <- length(unlist(regmatches(x, gregexpr("plugin_[A-Za-z0-9_]+", x))))
+    if (n) code_hits[[sub(paste0("^", plug, "/"), "", p)]] <- n
+}
+total_code <- sum(unlist(code_hits))
+check_true("v47",
+           sprintf("the folder name is executable text in exactly one place (%s)",
+                   if (length(code_hits))
+                       paste(sprintf("%s x%d", names(code_hits),
+                                     unlist(code_hits)), collapse = ", ")
+                   else "nowhere"),
+           total_code == 1L)
+check_true("v47", "and that place is stats/eml-record.praat",
+           identical(names(code_hits), "stats/eml-record.praat"))
+
+# THE ONE PLACE IS THE DEFINITION, not some incidental line that happens to be
+# the last survivor. It has to be the assignment inside @emlPluginFolder, and
+# @emlPluginFolder has to exist to be asked.
 recsrc <- file.path(plug, "stats", "eml-record.praat")
 if (file.exists(recsrc)) {
     x <- readLines(recsrc, warn = FALSE)
     hits <- unlist(regmatches(x, gregexpr("plugin_[A-Za-z0-9_]+", x)))
     check_true("v47", sprintf("eml-record.praat names the folder (%d time(s))",
                               length(hits)),
-               length(hits) >= 6)
+               length(hits) >= 1)
     check_true("v47", "and every one of them is the installed name",
                length(hits) > 0 && all(hits == FOLDER))
+    check_true("v47", "eml-record.praat defines @emlPluginFolder exactly once",
+               sum(grepl("^procedure emlPluginFolder\\s*$", x)) == 1L)
+    check_true("v47",
+               sprintf("and the single executable name is that procedure's .name$ (= %s)",
+                       FOLDER),
+               sum(grepl(sprintf('^\\s*\\.name\\$\\s*=\\s*"%s"\\s*$', FOLDER),
+                         x)) == 1L)
+}
+
+# EVERY SHIPPED FILE THAT NEEDS THE NAME ASKS FOR IT. Named
+# one by one, because "no file spells it" is satisfied by a consumer that
+# stopped using the name altogether -- a sprite loader that lost its plugin
+# strategy, a quick start that stopped telling the user where the README is.
+# Each of these has to reach the shared answer, and the way it reaches it is
+# the check.
+asks <- list(
+    "setup.praat" = "emlPluginRoot\\.abs\\$",
+    "graphs/eml-graph-procedures.praat" = "emlPluginRoot\\.abs\\$",
+    "scripts/eml-tutorial.praat" = "emlPluginRoot\\.abs\\$",
+    "scripts/eml-quick-start.praat" = "emlPluginFolder\\.name\\$")
+for (rel in names(asks)) {
+    p <- file.path(plug, rel)
+    x <- if (file.exists(p)) readLines(p, warn = FALSE) else character(0)
+    x <- x[!grepl("^\\s*[#;!]", x)]
+    check_true("v47",
+               sprintf("%s asks the shared procedure for the folder", rel),
+               any(grepl(asks[[rel]], x)))
 }
 
 # ---------------------------------------------------------------------------

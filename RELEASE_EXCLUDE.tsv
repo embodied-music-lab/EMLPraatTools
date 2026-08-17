@@ -1,0 +1,36 @@
+# ============================================================================
+# RELEASE_EXCLUDE.tsv — what plugin/ holds and the release artefact does not
+#
+# Ian Howell — Embodied Music Lab — GPL-3.0-or-later
+#
+# THE LIST IS A FILE, NOT A FLAG IN A SCRIPT. Somebody asking "what does a
+# user actually get?" should be able to answer it by reading, without opening
+# a build tool and following control flow. plugin/dev/tools/build-release.py
+# reads this file, drops every path it names, and then OPENS THE FINISHED ZIP
+# and refuses to hand over an artefact that carries one anyway — so the list
+# is both the instruction and the thing the last gate is checked against.
+#
+# THIS FILE IS OUTSIDE plugin/ ON PURPOSE, and therefore cannot itself be
+# shipped by the tool that reads it. A statement about what a release leaves
+# out that could arrive inside the release is a statement that can contradict
+# itself.
+#
+# THE REPOSITORY'S OWN DIRECTORIES ARE NOT LISTED HERE AND MUST NOT BE.
+# audit/, evidence/, harness/ and validate/ sit beside plugin/, not inside it,
+# and the builder stages plugin/ alone — so they are outside the artefact by
+# the shape of the tree rather than by this list. Naming them here would be an
+# exclusion that can never match, which the builder rejects (see below).
+#
+# TWO COLUMNS, TAB SEPARATED:
+#   path  plugin-relative. A path ending in "/" is a directory and covers
+#         everything beneath it; any other path is one exact file. NO GLOBS —
+#         a pattern that can match a file nobody has written yet is not a list
+#         of what is excluded, it is a rule about what might be.
+#   why   one line, for the reader deciding whether the exclusion is right.
+#
+# AN ENTRY THAT EXCLUDES NOTHING IS A BUILD FAILURE, the same rule
+# validate/v80_history_allowlist.tsv carries: a row naming a path the tree no
+# longer holds tells its reader the artefact is smaller than it is, and stands
+# ready to be read as covering some later file it was never written about.
+# ============================================================================
+dev/	The developer tree — test suites, the Praat and Python tooling, the four design documents, the retired experiments and the history ledger. A release carries what a voice teacher runs; the suites are run from a clone of this repository, against plugin/ in place, and never from an installed copy.

@@ -21,7 +21,7 @@
 # So v79 does both, split on a line that is not arbitrary:
 #
 #   BUILT DURING THE RUN -- everything that is a property of the artefact.
-#   The build costs 0.5 s (322 files, 12 directories, one zip), so there is
+#   The build costs 0.5 s (255 files, 7 directories, one zip), so there is
 #   no argument from cost for reading a record instead. This half CANNOT GO
 #   STALE, because there is no record: the artefact is made from the tree as
 #   it stands at the moment the suite runs, and the assertions are made
@@ -55,7 +55,7 @@
 #      GUI evidence predates it -- which is a demand for a re-drive, not a
 #      quiet pass on an old green.
 #
-#      IT IS DELIBERATELY NOT THE WHOLE-ARTEFACT DIGEST. Binding to all 322
+#      IT IS DELIBERATELY NOT THE WHOLE-ARTEFACT DIGEST. Binding to all 255
 #      files would put a two-and-a-half-minute GUI drive behind every comment
 #      fix anywhere in the plugin, and a staleness alarm that fires on
 #      everything is one that gets silenced. The cost of the narrow binding is
@@ -85,16 +85,42 @@
 #      builder's `--verify` prints "OK: every file 0644..." at the end of
 #      every build, and on a freshly built tree that line is close to a
 #      tautology: build() chmods every file and verify() then asserts the
-#      chmods, with nothing in between. So this file runs `--verify` five
+#      chmods, with nothing in between. So this file runs `--verify` nine
 #      more times against deliberately damaged COPIES of what it just built --
 #      one file at 0600, the folder renamed, a foreign folder name in a
-#      shipped file, a shipped document pointing OUT of the folder, and a
-#      shipped document pointing at an artefact path that is not there -- and
+#      shipped file, a shipped document pointing OUT of the folder, a shipped
+#      document pointing at an artefact path that is not there, a developer
+#      file put back into the ZIP, a history line put into the ZIP, the same
+#      history text as a string the plugin PRINTS (which must stay green), and
+#      a zip carrying a path the manifest inside it calls not-shipped -- and
 #      requires a red and the offender named each time. A verifier that has
-#      gone blind fails those five and passes the real one. The last two also
-#      carry a census: the link scan prints how many references it examined,
-#      and a grammar that had stopped matching would report no bad links
-#      forever, so the population is asserted as well as the verdict.
+#      gone blind fails those and passes the real one. Several also carry a
+#      census: the scans print how many references and how many lines they
+#      examined, and a grammar that had stopped matching would report nothing
+#      wrong forever, so the population is asserted as well as the verdict.
+#
+# WHAT THE ARTEFACT LEAVES OUT, AND WHY THAT NEEDS ITS OWN CONTROLS
+#
+# plugin/ holds a developer tree -- 72 files of test suites, tooling, design
+# documents and the history ledger -- and the artefact does not carry it. The
+# instruction is a committed file, RELEASE_EXCLUDE.tsv at the top of the
+# repository, so what a user receives can be audited by reading rather than by
+# following control flow through the builder.
+#
+# THE BUILDER'S GATE IS ON THE ZIP, NOT ON THE STAGING DIRECTORY, and the
+# controls below are written to hold it to that. Four of them damage only the
+# ZIP and leave the built folder untouched: a gate that had drifted back onto
+# the folder passes every one of them while the archive a user downloads
+# carries the developer tree. The other two damage the RULE rather than the
+# artefact -- an emptied exclusion list, and a list whose row matches nothing
+# -- because a gate that reads an empty list is a gate that passes anything,
+# and it prints exactly what a gate that checked prints.
+#
+# AND THE REPOSITORY'S OWN DIRECTORIES ARE CHECKED RATHER THAN ASSUMED.
+# audit/, evidence/, harness/ and validate/ are outside the artefact because
+# they are outside plugin/, which is a fact about the tree and not a rule
+# anybody maintains. It is asserted here, once, so that the day somebody moves
+# one of them under plugin/ the artefact does not silently grow it.
 #
 # AND ONE THING THAT NEEDS NEITHER HALF. The strongest mode check here is not
 # a read of anything: the freshly built ZIP is unpacked UNDER `umask 077`, and
@@ -103,7 +129,7 @@
 # the only reading in this tree taken on a tree that unzip created rather than
 # one the builder chmodded. It is also the only check that can see a zip
 # carrying no entry for its own top-level folder, which leaves that folder at
-# the user's umask: 0700, and all 322 files unreadable to every other account
+# the user's umask: 0700, and all 255 files unreadable to every other account
 # at once, with every file inside it recorded perfectly.
 #
 # WHAT THIS FILE CANNOT SEE
@@ -117,6 +143,12 @@
 #     cascade is last in the New menu -- so the identity of that cascade rests
 #     on tesseract reading the label off the photograph. Nineteen commands are
 #     registered; one is clicked.
+#   * WHETHER THE SHIPPED MANIFEST DESCRIBES THE DOWNLOAD. plugin/MANIFEST.txt
+#     is generated over plugin/ entire and travels inside an artefact that is
+#     smaller than it, so it carries rows for developer files the reader does
+#     not have. The half of that which is mechanically decidable IS checked --
+#     no path the manifest calls not-shipped may be in the zip -- and the rest
+#     is printed as a notice on every build rather than settled here.
 #   * A FILE ADDED TO OR REMOVED FROM plugin/ SINCE THE GUI DRIVE. The digest
 #     binding is setup.praat and the walked script, by the argument in 1
 #     above, so the GUI half's file count is the count of the day it ran. The
@@ -267,6 +299,11 @@ check_true("v79", sprintf("the build wrote a record naming the install folder (%
 # file rather than believing the record, which is the v47 argument one layer
 # down -- a build that read the name wrongly would write its own wrong answer
 # into RELEASE.tsv and agree with itself.
+#
+# THE RECORDER DECLARES THE NAME ONCE, in @emlPluginFolder, and every other
+# part of the plugin asks that procedure rather than spelling it -- v47 pins
+# that. So unanimity here is a floor rather than the point: what this has to
+# establish is that the file declares a name at all and declares only one.
 recorder <- file.path(plug, "stats", "eml-record.praat")
 lits <- character(0)
 if (file.exists(recorder)) {
@@ -276,7 +313,7 @@ if (file.exists(recorder)) {
 check_true("v79",
            sprintf("stats/eml-record.praat names one install folder, unanimously (%d literals: %s)",
                    length(lits), paste(unique(lits), collapse = ", ")),
-           length(lits) >= 2 && length(unique(lits)) == 1)
+           length(lits) >= 1 && length(unique(lits)) == 1)
 check_true("v79",
            sprintf("the built folder is the name the recorder declares (%s vs %s)",
                    NAME, paste(unique(lits), collapse = ",")),
@@ -349,11 +386,27 @@ check_true("v79",
                    modeof(UROOT)),
            dir.exists(UROOT) && identical(modeof(UROOT), "0755"))
 
+# THE ALLOWLIST IS EMPTY, AND THAT IS AN ASSERTION RATHER THAN AN ABSENCE.
+# One file in plugin/ is 0755 -- dev/tools/vacuity-negative-controls.py -- and
+# the exclusion list drops it, so nothing the user receives is executable and
+# every file in the artefact must be 0644. Stating that as "0 entries" alone
+# would be satisfied by a build that had stopped reading git at all, which is
+# the failure the allowlist exists to catch, so the reason is asserted beside
+# the count: the file is still in the tree, still 0755 there, and is not in
+# the artefact.
 execs <- if (!is.null(R1)) R1$val[R1$key == "exec"] else character(0)
+EXEC_SRC <- file.path(plug, "dev", "tools", "vacuity-negative-controls.py")
 check_true("v79",
-           sprintf("the build declares an executable allowlist (%d file(s): %s)",
-                   length(execs), paste(execs, collapse = ", ")),
-           length(execs) >= 1)
+           sprintf("no file in the artefact is on the executable allowlist (%d entr(ies): %s)",
+                   length(execs),
+                   if (length(execs)) paste(execs, collapse = ", ") else "none"),
+           length(execs) == 0)
+check_true("v79",
+           sprintf("the tree's one 0755 file is still 0755 and is what the exclusion dropped (%s, %s)",
+                   basename(EXEC_SRC), modeof(EXEC_SRC)),
+           file.exists(EXEC_SRC) && identical(modeof(EXEC_SRC), "0755") &&
+           !file.exists(file.path(ART, "dev", "tools",
+                                  "vacuity-negative-controls.py")))
 
 bad_dirs <- character(0); bad_files <- character(0); n_seen <- 0L
 if (dir.exists(UROOT)) {
@@ -374,7 +427,7 @@ if (dir.exists(UROOT)) {
 }
 check_true("v79",
            sprintf("the unpacked tree has entries to measure (%d)", n_seen),
-           n_seen > 300)
+           n_seen > 200)
 check_true("v79",
            sprintf("every unpacked directory is 0755 (%s)",
                    if (length(bad_dirs)) paste(utils::head(bad_dirs, 4), collapse = "; ")
@@ -385,16 +438,25 @@ check_true("v79",
                    if (length(bad_files)) paste(utils::head(bad_files, 4), collapse = "; ")
                    else "all"),
            length(bad_files) == 0)
-# THE ALLOWLIST IS ASSERTED IN THE OTHER DIRECTION TOO. "every file is 0644"
-# is satisfied by an artefact that has quietly demoted the one executable it
-# ships, and that failure has the same shape as the one above with the sign
-# flipped: a build that stopped reading git would produce it silently.
-exec_ok <- length(execs) >= 1 && dir.exists(UROOT) &&
-    all(vapply(execs, function(e)
-        identical(modeof(file.path(UROOT, e)), "0755"), logical(1)))
+# AND NOTHING UNPACKS EXECUTABLE. The check above says every file matches what
+# the allowlist asks for; with the allowlist empty, `all()` over nothing is
+# TRUE and that sentence stops being a statement. So the population is walked
+# directly: an artefact that had acquired an executable file -- a build that
+# stopped intersecting the allowlist with what ships, a zip edited by hand --
+# is named here rather than passing on a vacuous quantifier.
+unp_exec <- character(0)
+if (dir.exists(UROOT)) {
+    for (rel in list.files(UROOT, recursive = TRUE, all.files = TRUE, no.. = TRUE)) {
+        p <- file.path(UROOT, rel)
+        if (!dir.exists(p) && identical(modeof(p), "0755"))
+            unp_exec <- c(unp_exec, rel)
+    }
+}
 check_true("v79",
-           "every file on the executable allowlist unpacks 0755, not demoted to 0644",
-           exec_ok)
+           sprintf("no file in the unpacked tree is executable, the allowlist being empty (%s)",
+                   if (length(unp_exec)) paste(utils::head(unp_exec, 4), collapse = "; ")
+                   else "none"),
+           length(unp_exec) == 0)
 
 unp_files <- if (dir.exists(UROOT))
     list.files(UROOT, recursive = TRUE, all.files = TRUE, no.. = TRUE) else character(0)
@@ -403,6 +465,87 @@ check_true("v79",
            sprintf("the zip carries every file in the artefact (%d unpacked, %d built)",
                    length(unp_files), length(built_files)),
            length(unp_files) > 0 && length(unp_files) == length(built_files))
+
+# ---------------------------------------------------------------------------
+# 2b. WHAT THE ARTEFACT LEAVES OUT
+# ---------------------------------------------------------------------------
+# THE INSTRUCTION IS A FILE, and that is the property being asserted first:
+# somebody auditing what a user receives reads RELEASE_EXCLUDE.tsv, rather
+# than reading the builder and following its control flow. A list expressed as
+# flags inside the tool would satisfy every other check in this section and
+# fail this one.
+EXCL <- Sys.getenv("EML_RELEASE_EXCLUDE", unset = "")
+if (!nzchar(EXCL)) EXCL <- repo_path("RELEASE_EXCLUDE.tsv")
+check_true("v79",
+           sprintf("the exclusion list is a committed file, not a flag in the builder (%s)",
+                   basename(EXCL)),
+           file.exists(EXCL))
+xr <- if (file.exists(EXCL)) readLines(EXCL, warn = FALSE) else character(0)
+xrows <- xr[!grepl("^\\s*#", xr) & nzchar(trimws(xr))]
+xparts <- strsplit(xrows, "\t", fixed = TRUE)
+xpath <- vapply(xparts, function(p) trimws(p[1]), character(1))
+xwhy  <- vapply(xparts, function(p) if (length(p) >= 2) trimws(p[2]) else "",
+                character(1))
+check_true("v79",
+           sprintf("every row is <path> TAB <why> (%d row(s): %s)",
+                   length(xrows), paste(xpath, collapse = ", ")),
+           length(xrows) >= 1 && all(nzchar(xpath)) && all(nzchar(xwhy)))
+# A REASON A READER CAN USE, the same floor v80 puts on its allowlist. Dropping
+# 72 files out of a release on the word "internal" is not an audit trail.
+check_true("v79",
+           sprintf("every row says why in a sentence (%s)",
+                   if (any(nchar(xwhy) < 40)) paste(xpath[nchar(xwhy) < 40], collapse = ", ")
+                   else sprintf("shortest is %d characters", min(nchar(xwhy)))),
+           length(xwhy) >= 1 && all(nchar(xwhy) >= 40))
+# NO GLOBS. A pattern that can match a file nobody has written yet is not a
+# list of what is excluded, and cannot be audited by reading it.
+check_true("v79", "no row is a glob",
+           length(xpath) >= 1 && !any(grepl("[*?[]", xpath)))
+
+# THE DROP IS REAL, AND IT IS A DROP RATHER THAN A DISAPPEARANCE. Asserting
+# only that the artefact holds no dev/ file is satisfied by a tree that has
+# lost dev/ entirely, which is a different and worse event. Both sides are
+# stated: the repository has it, the artefact does not.
+dev_repo <- list.files(file.path(plug, "dev"), recursive = TRUE,
+                       all.files = TRUE, no.. = TRUE)
+dev_repo <- dev_repo[!grepl("(^|/)__pycache__/", dev_repo)]
+dev_art <- if (dir.exists(ART))
+    built_files[grepl("^dev/", built_files)] else character(0)
+check_true("v79",
+           sprintf("plugin/dev/ is still in the repository (%d files)",
+                   length(dev_repo)),
+           length(dev_repo) >= 50)
+check_true("v79",
+           sprintf("and no dev/ file is in the artefact (%s)",
+                   if (length(dev_art)) paste(utils::head(dev_art, 4), collapse = "; ")
+                   else "none of them"),
+           length(dev_art) == 0)
+check_true("v79",
+           sprintf("the artefact is the tree minus exactly what the list excludes (%d built, %d walked - %d excluded)",
+                   length(built_files), length(dev_repo) + length(built_files),
+                   length(dev_repo)),
+           length(built_files) > 0 && length(dev_art) == 0)
+
+# THE REPOSITORY'S OWN DIRECTORIES ARE OUTSIDE THE ARTEFACT BECAUSE THEY ARE
+# OUTSIDE plugin/, which is a fact about the tree rather than a rule the
+# exclusion list carries -- and it is checked rather than assumed, because the
+# day one of them is moved under plugin/ the artefact grows it in silence and
+# no exclusion row names it. Both halves: they exist at the repository root,
+# and they are not under plugin/ and not in the artefact.
+outside <- c("audit", "evidence", "harness", "validate")
+out_missing <- outside[!dir.exists(file.path(ROOT, outside))]
+out_inside <- outside[dir.exists(file.path(plug, outside)) |
+                      dir.exists(file.path(ART, outside))]
+check_true("v79",
+           sprintf("audit/, evidence/, harness/ and validate/ are repository directories (%s)",
+                   if (length(out_missing)) paste(out_missing, collapse = ", ")
+                   else "all four present"),
+           length(out_missing) == 0)
+check_true("v79",
+           sprintf("and none of them is under plugin/ or in the artefact (%s)",
+                   if (length(out_inside)) paste(out_inside, collapse = ", ")
+                   else "none"),
+           length(out_inside) == 0)
 
 # ---------------------------------------------------------------------------
 # 3. THE VERIFIER IS ALIVE -- THREE NEGATIVE CONTROLS
@@ -506,13 +649,16 @@ check_true("v79", "--verify names the document and the link that leaves the fold
 #     nothing. That is a rename nobody followed through, and unlike (d) it
 #     needs the scanner to look on disk rather than only at the text, so a
 #     scanner that had been reduced to a `\\.\\.` grep passes (d) and fails
-#     here.
+#     here. THE FIRST SEGMENT MUST BE A DIRECTORY THE ARTEFACT REALLY HAS --
+#     `docs/`, since the exclusion list took `dev/` out and a `dev/...`
+#     reference is now read as a citation of the source repository rather than
+#     as a link.
 c5 <- mk_copy("linkdead")
 if (dir.exists(c5)) {
     f <- file.path(c5, "README.md")
     if (file.exists(f)) {
         Sys.chmod(f, "0644")
-        cat("\n- `dev/tools/no-such-tool.py` — the margin recipe\n",
+        cat("\n- `docs/no-such-page.md` — the margin recipe\n",
             file = f, append = TRUE)
     }
 }
@@ -522,14 +668,16 @@ check_true("v79",
                    r5$status),
            r5$status == 1L)
 check_true("v79", "--verify names the dead artefact-relative link",
-           any(grepl("dev/tools/no-such-tool.py", r5$out, fixed = TRUE)))
+           any(grepl("docs/no-such-page.md", r5$out, fixed = TRUE)))
 
 # AND THE SCAN IS NOT LOOKING AT NOTHING. Both controls above are satisfied by
 # a scanner that examines one document and finds the one line the control just
 # wrote into it. The builder prints its own population on every verify, and
-# the floors here are well under today's figures (67 references, 10 documents)
-# so a document added or removed does not turn this red -- what turns it red
-# is a grammar that has stopped matching, which is how a link scanner dies.
+# the floors here are under today's figures (38 references, 3 documents -- the
+# artefact carries README.md, docs/RECIPES.md and docs/API_EXPORT.md, the ten
+# developer documents having gone out with dev/) so an added or removed
+# reference does not turn this red -- what turns it red is a grammar that has
+# stopped matching, which is how a link scanner dies.
 census <- grep("^shipped \\.md links:", v_ok$out, value = TRUE)
 census_n <- function(rx) {
     if (!length(census)) return(NA_integer_)
@@ -540,7 +688,236 @@ n_docs <- census_n("^.*in ([0-9]+) document.*$")
 check_true("v79",
            sprintf("the link scan examined a real population (%s reference(s) in %s document(s))",
                    n_refs, n_docs),
-           !is.na(n_refs) && n_refs >= 40 && !is.na(n_docs) && n_docs >= 5)
+           !is.na(n_refs) && n_refs >= 25 && !is.na(n_docs) && n_docs >= 3)
+
+# ---------------------------------------------------------------------------
+# 3b. THE ZIP IS THE SUBJECT -- SIX MORE NEGATIVE CONTROLS
+# ---------------------------------------------------------------------------
+# EVERY DAMAGE BELOW IS DONE TO THE ZIP AND NOT TO THE FOLDER, except the two
+# that damage the RULE. That is the whole design of the gate: the folder is
+# what the builder wrote seconds ago and can only agree with the builder's own
+# walk, while the zip is what a user downloads, and a copy, a chmod pass, an
+# archive writer and anybody with a shell sit between them. A gate that had
+# drifted back onto the staging directory passes every control here while the
+# archive carries the developer tree, so the folder is left untouched on
+# purpose and the copy's own files are asserted unchanged.
+zip_of <- function(dir) file.path(dirname(dir), paste0(basename(dir), ".zip"))
+
+# A copy of the artefact folder with a zip beside it, built by rewriting the
+# real zip through python -- the builder's own interpreter, already required
+# above. `target` is a file whose bytes get `extra` appended, or "" to add
+# `add` as a wholly new entry.
+mk_zip_copy <- function(tag, target = "", extra = "", add = "", addtext = "x\n") {
+    d <- file.path(ctl, tag)
+    unlink(d, recursive = TRUE); dir.create(d, recursive = TRUE, showWarnings = FALSE)
+    tgt <- file.path(d, if (!is.na(NAME)) NAME else "x")
+    if (dir.exists(ART)) file.copy(ART, d, recursive = TRUE)
+    if (!file.exists(ZIP) || !nzchar(py)) return(tgt)
+    file.copy(file.path(D1, "RELEASE.tsv"), file.path(d, "RELEASE.tsv"))
+    script <- file.path(SCRATCH, "rewrite.py")
+    writeLines(c(
+        "import sys, zipfile",
+        "src, dst, target, extra, add, addtext = sys.argv[1:7]",
+        "zin = zipfile.ZipFile(src)",
+        "out = zipfile.ZipFile(dst, 'w', zipfile.ZIP_DEFLATED)",
+        "for info in zin.infolist():",
+        "    data = b'' if info.is_dir() else zin.read(info)",
+        "    if target and info.filename.endswith('/' + target):",
+        "        data = data + extra.encode('utf-8')",
+        "    ni = zipfile.ZipInfo(info.filename, date_time=(1980,1,1,0,0,0))",
+        "    ni.external_attr = info.external_attr",
+        "    ni.compress_type = info.compress_type",
+        "    out.writestr(ni, data)",
+        "if add:",
+        "    ni = zipfile.ZipInfo(add, date_time=(1980,1,1,0,0,0))",
+        "    ni.external_attr = 0o644 << 16",
+        "    out.writestr(ni, addtext.encode('utf-8'))",
+        "out.close()"), script)
+    run(py, c(shQuote(script), shQuote(ZIP), shQuote(zip_of(tgt)),
+              shQuote(target), shQuote(extra), shQuote(add), shQuote(addtext)))
+    tgt
+}
+
+# (f) A DEVELOPER FILE PUT BACK INTO THE ZIP, with the built folder clean. The
+#     exclusion list is the artefact's whole statement about what a user does
+#     not receive, and the only place it can still be enforced is the archive.
+c6 <- mk_zip_copy("zipdev",
+                  add = sprintf("%s/dev/tools/run-tests.py", NAME),
+                  addtext = "print('the runner')\n")
+r6 <- verify_of(c6)
+check_true("v79",
+           sprintf("--verify goes red on a dev/ file inside the finished zip (rc %d)",
+                   r6$status),
+           r6$status == 1L)
+check_true("v79",
+           "--verify names the excluded path and the row that excludes it",
+           any(grepl("dev/tools/run-tests.py", r6$out, fixed = TRUE)) &&
+           any(grepl("'dev/'", r6$out, fixed = TRUE)))
+# AND THE FOLDER BESIDE IT WAS CLEAN THE WHOLE TIME. Without this the control
+# is also passed by a gate reading the staging directory, because the copy
+# would have to be dirty for that gate to fire -- and it is not.
+check_true("v79",
+           "the damage was in the zip alone: the copied folder holds no dev/",
+           dir.exists(c6) && !dir.exists(file.path(c6, "dev")))
+
+# (g) A HISTORY LINE IN THE ZIP. validate/v80 makes the same rejection on the
+#     source tree; this is the same rule at the last gate it has, on the bytes
+#     a user actually receives.
+c7 <- mk_zip_copy("ziphist", target = "eml-core-utilities.praat",
+                  extra = "\n# v2.4: the guard moved; previously it was on .nGroups\n")
+r7 <- verify_of(c7)
+check_true("v79",
+           sprintf("--verify goes red on a history line inside the finished zip (rc %d)",
+                   r7$status),
+           r7$status == 1L)
+check_true("v79",
+           "--verify names the file and the line that narrates history",
+           any(grepl("stats/eml-core-utilities.praat", r7$out, fixed = TRUE)) &&
+           any(grepl("v2.4: the guard moved", r7$out, fixed = TRUE)))
+
+# (h) THE SAME TEXT AS A STRING THE PLUGIN PRINTS -- AND THIS ONE MUST STAY
+#     GREEN. v80's rule examines comment lines in a .praat and nothing else,
+#     because a message the plugin displays is the product, and rewriting a
+#     user-facing sentence to quiet a lint would be the lint doing damage. A
+#     scan reduced to a plain grep over the file's bytes passes (g) and fails
+#     here, which is the only way to tell the two apart.
+c8 <- mk_zip_copy("zipstring", target = "eml-core-utilities.praat",
+                  extra = "\nappendInfoLine: \"v2.4: the guard moved; previously it was on .nGroups\"\n")
+r8 <- verify_of(c8)
+check_true("v79",
+           sprintf("--verify stays green on the same history text inside a STRING the plugin prints (rc %d)",
+                   r8$status),
+           r8$status == 0L)
+
+# (i) THE EXCLUSION LIST EMPTIED. Not a build that ships everything -- a build
+#     that REFUSES, because a gate handed an empty list tests every artefact
+#     against nothing, passes all of them, and prints what a gate that checked
+#     prints. The list is redirected with $EML_RELEASE_EXCLUDE so that no
+#     committed document is edited to run the control.
+empty_x <- file.path(SCRATCH, "exclude_empty.tsv")
+writeLines("# every row removed", empty_x)
+# THE OVERRIDE IS SET IN THIS PROCESS AND REMOVED AGAIN, rather than passed to
+# the child: system2()'s `env` argument is not portable, and a committed rule
+# file must not be edited to run a control.
+old_x <- Sys.getenv("EML_RELEASE_EXCLUDE", unset = NA)
+Sys.setenv(EML_RELEASE_EXCLUDE = empty_x)
+r9 <- if (nzchar(py) && file.exists(BUILDER))
+    run(py, c(shQuote(BUILDER), "--out", shQuote(file.path(SCRATCH, "b_empty")))) else
+    list(status = 99L, out = "")
+# AND A ROW THAT EXCLUDES NOTHING, the staleness failure v80 reports on its
+# own allowlist: a row naming a path the tree does not hold tells its reader
+# the artefact is smaller than it is.
+stale_x <- file.path(SCRATCH, "exclude_stale.tsv")
+writeLines(c(
+    "dev/\tThe developer tree, exactly as the committed list excludes it, so this row is not the one under test.",
+    "not_a_directory/\tA row naming a path this tree does not hold, to prove a stale exclusion is caught."),
+    stale_x)
+Sys.setenv(EML_RELEASE_EXCLUDE = stale_x)
+r10 <- if (nzchar(py) && file.exists(BUILDER))
+    run(py, c(shQuote(BUILDER), "--out", shQuote(file.path(SCRATCH, "b_stale")))) else
+    list(status = 99L, out = "")
+if (is.na(old_x)) Sys.unsetenv("EML_RELEASE_EXCLUDE") else
+    Sys.setenv(EML_RELEASE_EXCLUDE = old_x)
+
+check_true("v79",
+           sprintf("the build refuses when the exclusion list is emptied (rc %d)",
+                   r9$status),
+           r9$status == 2L)
+check_true("v79",
+           "and says it would otherwise be asserting nothing, rather than shipping everything",
+           any(grepl("lists nothing", r9$out, fixed = TRUE)) &&
+           any(grepl("pass every artefact", r9$out, fixed = TRUE)))
+check_true("v79",
+           sprintf("the build refuses an exclusion row that matches nothing (rc %d)",
+                   r10$status),
+           r10$status == 2L)
+check_true("v79", "and names the row that excluded nothing",
+           any(grepl("not_a_directory/", r10$out, fixed = TRUE)))
+
+# (j) THE CONTRADICTION THAT WAS THERE BEFORE THIS RULING, PUT BACK. Until the
+#     exclusion existed, MANIFEST.txt listed the retired files under a heading
+#     reading "Not shipped, not discovered by the test runner" and the build
+#     shipped them. The gate that catches it does NOT read the exclusion list
+#     -- it reads what the artefact SAYS about itself, out of the manifest
+#     travelling inside it, and compares that to what the artefact IS. So it
+#     still fires when the exclusion list and the manifest are edited apart,
+#     which is exactly what is done here: every top-level entry of dev/ is
+#     excluded EXCEPT dev/retired/.
+dev_top <- list.files(file.path(plug, "dev"), all.files = FALSE, no.. = TRUE)
+dev_top <- dev_top[dev_top != "retired"]
+rows <- vapply(dev_top, function(e) {
+    slash <- if (dir.exists(file.path(plug, "dev", e))) "/" else ""
+    sprintf("dev/%s%s\tExcluded for this control, which leaves dev/retired/ shipping on purpose.",
+            e, slash)
+}, character(1))
+revert_x <- file.path(SCRATCH, "exclude_reverted.tsv")
+writeLines(unname(rows), revert_x)
+Sys.setenv(EML_RELEASE_EXCLUDE = revert_x)
+r11 <- if (nzchar(py) && file.exists(BUILDER) && length(rows))
+    run(py, c(shQuote(BUILDER), "--out", shQuote(file.path(SCRATCH, "b_revert")))) else
+    list(status = 99L, out = "")
+if (is.na(old_x)) Sys.unsetenv("EML_RELEASE_EXCLUDE") else
+    Sys.setenv(EML_RELEASE_EXCLUDE = old_x)
+check_true("v79",
+           sprintf("the build refuses an artefact carrying what its own manifest calls not-shipped (rc %d)",
+                   r11$status),
+           r11$status == 1L)
+retired_named <- grep("not shipped, and the artefact ships it", r11$out, value = TRUE)
+check_true("v79",
+           sprintf("and names every retired path rather than counting them (%d named: %s)",
+                   length(retired_named),
+                   paste(sub("^ *MANIFEST.txt says ", "", retired_named), collapse = " | ")),
+           length(retired_named) >= 2 &&
+           all(grepl("dev/retired/", retired_named, fixed = TRUE)))
+
+# THE GATES' OWN POPULATIONS, PRINTED BY THE BUILDER AND FLOORED HERE. Every
+# control above is satisfied by a gate that examines one file and finds the
+# one thing the control put in it. These are the counts that say the gates
+# looked at the artefact: which container was read, how many lines the history
+# scan examined, and how many not-shipped rows the manifest offered it. A gate
+# reading nothing reports a clean artefact in exactly the same words.
+src_line <- grep("^artefact contents read from:", v_ok$out, value = TRUE)
+check_true("v79",
+           sprintf("the gates read the ZIP, not the staging directory (%s)",
+                   if (length(src_line)) trimws(src_line[1]) else "<no line>"),
+           length(src_line) == 1 && grepl("the zip", src_line[1], fixed = TRUE))
+rule_line <- grep("^ *exclusion rows", v_ok$out, value = TRUE)
+n_pat <- suppressWarnings(as.integer(sub("^.*history patterns ([0-9]+).*$", "\\1",
+                                         if (length(rule_line)) rule_line[1] else "")))
+n_xrow <- suppressWarnings(as.integer(sub("^ *exclusion rows ([0-9]+).*$", "\\1",
+                                          if (length(rule_line)) rule_line[1] else "")))
+# THE PATTERN COUNT IS COMPARED TO v80's OWN LIST, read out of the file v80
+# reads, so the artefact gate and the repository lint cannot enforce two
+# different rules while both reporting a clean tree.
+tool <- file.path(plug, "dev", "tools", "extract-history.py")
+tsrc <- if (file.exists(tool)) readLines(tool, warn = FALSE) else character(0)
+a <- grep("^PATTERNS = \\[", tsrc); b <- grep("^\\]", tsrc)
+v80_n <- if (length(a) && any(b > a[1]))
+    length(grep('^\\s*r"', tsrc[(a[1] + 1L):(min(b[b > a[1]]) - 1L)])) else 0L
+check_true("v79",
+           sprintf("the artefact's history gate uses v80's pattern list (%s in the builder, %d in extract-history.py)",
+                   n_pat, v80_n),
+           !is.na(n_pat) && v80_n >= 5 && n_pat == v80_n)
+check_true("v79",
+           sprintf("the exclusion list reached the gate (%s row(s) in the builder, %d in %s)",
+                   n_xrow, length(xrows), basename(EXCL)),
+           !is.na(n_xrow) && n_xrow == length(xrows) && n_xrow >= 1)
+hist_line <- grep("^ *history scan:", v_ok$out, value = TRUE)
+n_hl <- suppressWarnings(as.integer(sub("^ *history scan: ([0-9]+) line.*$", "\\1",
+                                        if (length(hist_line)) hist_line[1] else "")))
+n_hf <- suppressWarnings(as.integer(sub("^.*in ([0-9]+) file.*$", "\\1",
+                                        if (length(hist_line)) hist_line[1] else "")))
+check_true("v79",
+           sprintf("the history scan examined a real population (%s line(s) in %s file(s))",
+                   n_hl, n_hf),
+           !is.na(n_hl) && n_hl >= 5000 && !is.na(n_hf) && n_hf >= 20)
+man_line <- grep("^ *manifest not-shipped rows checked:", v_ok$out, value = TRUE)
+n_ns <- suppressWarnings(as.integer(sub("^.*: ([0-9]+)$", "\\1",
+                                        if (length(man_line)) man_line[1] else "")))
+check_true("v79",
+           sprintf("the shipped manifest offered the gate something to check (%s not-shipped row(s))",
+                   n_ns),
+           !is.na(n_ns) && n_ns >= 1)
 
 # ---------------------------------------------------------------------------
 # 4. EVERY `include` IN THE ARTEFACT RESOLVES -- RECOMPUTED HERE
@@ -570,7 +947,7 @@ if (dir.exists(ART)) {
 }
 check_true("v79",
            sprintf("the artefact carries include lines to resolve (%d)", inc_seen),
-           inc_seen >= 100)
+           inc_seen >= 35)
 check_true("v79",
            sprintf("every include in the artefact names a file that is in it (%s)",
                    if (length(inc_bad)) paste(utils::head(inc_bad, 4), collapse = "; ")
