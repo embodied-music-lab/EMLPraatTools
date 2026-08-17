@@ -1,0 +1,123 @@
+# ============================================================================
+# .gitattributes — what GitHub's automatic "Source code" archive carries
+#
+# Ian Howell — Embodied Music Lab — GPL-3.0-or-later
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE IS FOR
+#
+# GitHub attaches a "Source code (zip)" asset to every release automatically.
+# Nobody chooses its contents at release time; it is a `git archive` of the
+# tag, and `git archive` honours `export-ignore` here. On 17 August 2026 that
+# asset was 84 MB across 3,945 entries. The plugin was 327 of them. The other
+# 3,435 were the GUI driving rig, its screenshots, and the audit record — a
+# voice teacher who clicked the obvious link on the releases page downloaded
+# 74 MB of harness and 24 MB of PNGs to get a 4.5 MB plugin.
+#
+# The lines at the bottom of this file cut that. Each one is justified there.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS FILE CANNOT DO — READ THIS BEFORE POINTING ANYONE AT THE ASSET
+#
+# `export-ignore` removes paths. That is the whole of its power. It CANNOT:
+#
+#   * rename the top-level folder. The archive's root is named from the tag
+#     (EMLPraatTools-<tag>/) and the plugin sits inside it as `plugin/`.
+#     Praat installs a plugin by the folder's name, so nothing here produces
+#     a folder called `plugin_EML_StatsGraphs`.
+#   * set the install name. Same reason.
+#   * fix file modes. Finding P1 records that 13 of the 21 files in
+#     plugin/scripts/ are mode 0600 in the built tree. Git stores only the
+#     executable bit, so that defect cannot be represented in this repository
+#     and cannot be corrected by anything written in it. It is fixed in
+#     packaging (`chmod 0644` before zipping) and verified on the finished
+#     zip.
+#
+# So: THE AUTOMATIC ASSET IS NOT INSTALLABLE, AND THIS FILE DOES NOT MAKE IT
+# INSTALLABLE. The zip built by plugin/dev/tools/build-release.py remains the
+# only artefact anyone should install, and the only one the documentation
+# points at. What follows reduces the confusion of a user who downloads the
+# automatic asset anyway; it does not open a second release channel. If you
+# ever find yourself writing "or just grab the source zip" in an install
+# instruction, this paragraph is the reason not to.
+#
+# ---------------------------------------------------------------------------
+# THE RELATIONSHIP TO RELEASE_EXCLUDE.tsv — ONE SOURCE OF TRUTH
+#
+# There are now two files in this repository that leave things out, and the
+# repository has already been burned once this week by two hand-maintained
+# lists drifting apart. They do not drift here, because THEY ARE FORBIDDEN
+# FROM SPEAKING ABOUT THE SAME PATHS. The division is exact:
+#
+#   RELEASE_EXCLUDE.tsv  owns everything INSIDE plugin/. It says what the
+#                        installable artefact drops. Its paths are
+#                        plugin-relative because the builder stages plugin/
+#                        alone.
+#   this file            owns everything OUTSIDE plugin/. Those directories
+#                        sit beside plugin/, so they are already outside the
+#                        artefact by the shape of the tree — which is exactly
+#                        why RELEASE_EXCLUDE.tsv's header forbids naming them
+#                        there ("an exclusion that can never match").
+#
+# The two lists therefore cannot be equal, and making them equal would be a
+# lie about both. What IS derived, and what validate/v85 recomputes from
+# RELEASE_EXCLUDE.tsv on every suite run rather than restating:
+#
+#   (1) NO export-ignore LINE IN THIS FILE MAY NAME ANY PATH UNDER plugin/.
+#       Not one. If it did, this file would be a second authority over the
+#       region RELEASE_EXCLUDE.tsv governs, and the drift could start.
+#   (2) EVERY PATH RELEASE_EXCLUDE.tsv NAMES MUST SURVIVE INTO THE SOURCE
+#       ARCHIVE. The artefact list names what a *user of the plugin* does not
+#       need. A *source* archive is for someone reading the source, and
+#       plugin/dev/ — the suites, the tooling, the design documents — is the
+#       first thing such a reader wants. So the source archive is a strict
+#       superset of the artefact inside plugin/, and the relationship between
+#       the lists is complementary, not shared.
+#
+# (1) and (2) together mean v85 goes red the moment anyone gives this file an
+# opinion about plugin/-space, in either direction, and neither rule needs
+# this file to be edited when RELEASE_EXCLUDE.tsv gains a row.
+#
+# ---------------------------------------------------------------------------
+# WHY validate/ IS NOT IN THE LIST BELOW
+#
+# It is the largest thing that stays after the plugin — 2.7 MB, roughly a
+# quarter of the slimmed archive — and its absence would be the easy further
+# saving. Author ruling, 17 August 2026: an archive calling itself
+# "source" carries the tests that make the source credible, and for this
+# project the validation suite is the product's main claim. validate/ ships.
+# v85 pins it — excluding it turns the suite red rather than making it
+# smaller.
+# ============================================================================
+
+# The audit record: findings logs, the D-numbered index, the static
+# pre-GUI audits, the derived reports. 1.1 MB / 46 files. It is a record of
+# work done ON the source, not source, and every path in it is readable on
+# github.com by anyone who wants it.
+audit/ export-ignore
+
+# The GUI driving rig: Xvfb/xdotool harnesses, probes, per-harness fixtures
+# and their committed output. 74.4 MB / 2,644 files — the single largest
+# thing in the repository, and 88% of the old archive. It only functions
+# inside a Linux sandbox with Praat, Xvfb, matchbox and ImageMagick standing;
+# unzipped on a voice teacher's laptop it is inert weight.
+harness/ export-ignore
+
+# Raw artefacts the drive produced: 109 screenshots, 104 exported figures,
+# the CSV and Info-window captures. 23.6 MB / 625 files. The validators read
+# these from a CLONE, which is how the suite is meant to be run
+# (`Rscript validate/run_all.R` from a checkout) — see validate/README.md.
+# Consequence, stated plainly rather than discovered: the suite that ships in
+# this archive CANNOT be run from this archive alone. Clone the repository to
+# run it. Shipping 23.6 MB of PNGs to make a download self-executing is the
+# wrong trade for an asset nobody should be installing from anyway.
+evidence/ export-ignore
+
+# A single-row incident log from an agent session (a harness that killed its
+# own driving shell). Session bookkeeping about a rig that is itself excluded
+# above.
+RETRIES.tsv export-ignore
+
+# NOTHING BELOW THIS LINE. Any new entry must be justified in place, must be
+# outside plugin/ (rule 1 above), and must not be validate/ (the ruling
+# above). v85 enforces all three against the archive it builds.

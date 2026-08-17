@@ -928,7 +928,18 @@ scripts <- c(
     # `a = b`, `b = c`, `c = a` are a swap whatever the names are and there
     # must be none -- HEAD has six -- and every axis for which the dialogs
     # offer BOTH a minimum and a maximum field must be named to the refusal.
-    "v84_axis_refusal.R"
+    "v84_axis_refusal.R",
+    # v85's subject is not the plugin, and not this suite -- it is the ZIP
+    # GITHUB ATTACHES TO A RELEASE WITHOUT BEING ASKED. It builds that archive
+    # with `git archive` and opens it, because .gitattributes is a set of
+    # patterns and reading patterns is not knowing what a user received. On
+    # 17 August 2026 that asset was 84 MB across 3,945 entries to deliver a
+    # 4.5 MB plugin. v85 also holds the relationship between the two exclusion
+    # lists this repository now has: RELEASE_EXCLUDE.tsv is the sole authority
+    # inside plugin/ and .gitattributes the sole authority outside it, and v85
+    # recomputes both halves of that partition from RELEASE_EXCLUDE.tsv on
+    # every run rather than keeping a second copy of it.
+    "v85_source_archive_shape.R"
 )
 
 cat("EML Stats & Graphs validation suite\n")

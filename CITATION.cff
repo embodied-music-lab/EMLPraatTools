@@ -1,0 +1,92 @@
+# ============================================================================
+# CITATION.cff — how to cite EML Stats & Graphs
+#
+# Ian Howell — Embodied Music Lab — GPL-3.0-or-later
+#
+# Citation File Format 1.2.0. GitHub reads this file AT THE REPOSITORY ROOT
+# and nowhere else, and puts a "Cite this repository" button on the front
+# page from it. Zenodo reads it when it archives a published release, which
+# is how a release becomes a DOI that a journal will accept.
+#
+# WHY THIS FILE EXISTS NOW. Publishing a release with a Zenodo integration
+# switched on mints a DOI for that release automatically, and the PraatGen
+# paper can then cite the archived software directly instead of waiting for
+# a journal to publish something to cite. .github/workflows/release.yml
+# publishes the release; ENABLING THE ZENODO INTEGRATION IS A BROWSER STEP
+# IAN TAKES HIMSELF (Zenodo -> GitHub -> toggle this repository on) and is
+# deliberately not automated here: it authorises an outside service against
+# the account, which is not a thing a workflow file should be able to do.
+# The toggle must be on BEFORE the release is published — Zenodo acts on the
+# release event and does not go back for releases made earlier.
+#
+# WHAT ZENODO ARCHIVES is the repository snapshot for the tag — git's own
+# source archive — not the release assets. So this file must be in the
+# repository at the tag, and must NOT be excluded from source archives by
+# `.gitattributes` `export-ignore`. If the export-ignore list ever grows to
+# name it, the DOI landing page loses its author and title metadata.
+#
+# THREE FIELDS ARE LEFT FOR IAN, and are marked FOR IAN below. They are left
+# blank rather than guessed because each of them is a claim that would be
+# wrong if invented: an ORCID belongs to a person and cannot be inferred; a
+# DOI does not exist until Zenodo mints one; and a version number and its
+# release date are the author's decision about what the tag means. NOTHING
+# HERE IS A PLACEHOLDER PRETENDING TO BE A VALUE — the lines are commented
+# out, so the file validates as it stands and says only what is true.
+#
+# THIS FILE DOES NOT TRAVEL INSIDE THE RELEASE ZIP, and that is correct
+# rather than an oversight. plugin/dev/tools/build-release.py stages plugin/
+# alone; everything beside plugin/ is outside the artefact by the shape of
+# the tree, exactly as RELEASE_EXCLUDE.tsv's header describes for itself. A
+# second copy inside plugin/ would be a second statement of the version and
+# the DOI that could disagree with this one, and the version in a download
+# is the version most likely to go stale. Cite the repository or the DOI,
+# not the copy in your Praat preferences folder.
+#
+# Checked with cffconvert 2.0.0 (`cffconvert --validate`) and parsed with
+# PyYAML; both were watched failing on a deliberately broken copy.
+# ============================================================================
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata in this file."
+title: "EML Stats & Graphs"
+abstract: >-
+  A Praat plugin for statistical analysis and publication-quality graphing.
+  It runs descriptive statistics, t-tests, correlations, ANOVA, regression
+  and nonparametric tests inside Praat, without exporting to R or Python,
+  and draws figures with auto-scaling typography and accessible colour
+  palettes. It includes a statistics wizard that proposes an appropriate
+  test for the data at hand, a demonstration window, and a scripting API for
+  use from a user's own Praat scripts.
+type: software
+authors:
+  - family-names: Howell
+    given-names: Ian
+    affiliation: "Embodied Music Lab"
+    # FOR IAN — your ORCID, if you would like it on the citation and the
+    # Zenodo record. Uncomment and replace the digits with your own iD.
+    # orcid: "https://orcid.org/0000-0000-0000-0000"
+license: GPL-3.0-or-later
+repository-code: "https://github.com/embodied-music-lab/EMLPraatTools"
+url: "https://www.embodiedmusiclab.com"
+keywords:
+  - Praat
+  - voice science
+  - phonetics
+  - speech analysis
+  - statistics
+  - data visualization
+  - research software
+# FOR IAN — the released version and the date it was released. These are
+# claims about a specific release, so they are yours to set at the moment
+# you tag one; they should match the tag that release.yml published.
+# version: "1.0.0"
+# date-released: "2026-08-17"
+#
+# FOR IAN — the DOI, after Zenodo has minted one. Zenodo issues two: a
+# version DOI for that single release and a CONCEPT DOI that always resolves
+# to the newest version. The concept DOI is the one to put here if this file
+# is to age well; the version DOI belongs in a paper that cites the exact
+# release it used.
+# identifiers:
+#   - type: doi
+#     value: "10.5281/zenodo.0000000"
+#     description: "Concept DOI — always resolves to the latest release"

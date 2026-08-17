@@ -1,0 +1,455 @@
+# ============================================================================
+# EML Stats & Graphs — build, test and publish a release
+#
+# Ian Howell — Embodied Music Lab — GPL-3.0-or-later
+#
+# Pushing a tag that starts with `v` builds the installable artefact ON A
+# GITHUB RUNNER, drives it through the install test, and publishes it as a
+# GitHub release with its sha256 in the notes. NO LAPTOP IS IN THE LOOP: the
+# thing a user downloads is built by this file from the tagged commit, and
+# nobody has to remember to run the builder, remember to run the install
+# harness, or remember which of the two zips on their desk was the good one.
+#
+# THE SUITE IS THE GATE, AND THE GATE IS STRUCTURAL. `Rscript
+# validate/run_all.R` runs BEFORE anything is built and the publish step is
+# LAST. GitHub runs each `run:` block under `bash -e` and stops the job at
+# the first nonzero exit, so a red suite does not produce an artefact, does
+# not reach the install test, and does not create a release — not by anyone's
+# discipline, but because the steps below it never execute. That ordering is
+# the entire reason this file exists; do not move the publish step above the
+# suite to "get the release out" on a red day.
+#
+# `workflow_dispatch` runs everything EXCEPT the publish, which is guarded on
+# the ref being a tag. A manual run is therefore a full rehearsal — suite,
+# build, install test — that cannot accidentally publish a release named
+# after a branch.
+#
+# THE ENVIRONMENT BLOCK IS DELIBERATELY THE SAME AS validate.yml's
+# ----------------------------------------------------------------------
+# The five environment steps below — enable universe, install R and the
+# Ubuntu praat for its shared-library closure, check the CPU for AVX2,
+# download Praat 6.6.30, print and assert what is on PATH — are validate.yml's
+# steps, copied verbatim and on purpose. That file's header carries the
+# measurements behind every one of them and is the place to read them: seven
+# validators drive a real Praat and go red without one; the barren build
+# fails 28 of v59's 42 checks because it presents no dialogs; both
+# r-base-core and praat live in `universe`, whose absence is what killed the
+# only run in this repository's CI history at package resolution in 27
+# seconds; and x64v3 is the only Linux build Praat publishes, so a runner
+# without AVX2 would install a binary that dies of SIGILL and be reported by
+# seven validators as "no Praat at or above the floor".
+#
+# It is copied rather than shared because the alternative — a composite
+# action, or a reusable workflow — would mean editing validate.yml, and the
+# validation workflow is not something a release change should be able to
+# break. THE MAINTENANCE RULE THAT COMES WITH THAT: if the environment
+# changes in one file it must change in the other, and the two blocks are
+# meant to stay diffable line for line. Keep them so.
+#
+# ONE STEP IS NOT IN validate.yml, and needs to be here: the install harness
+# opens Praat's menus on a virtual display and READS A PHOTOGRAPH of them, so
+# it needs xvfb, xdotool, x11-utils (xprop, xwininfo), imagemagick (import),
+# matchbox-window-manager and tesseract-ocr. The suite does not — its Praat
+# work is all `praat --run`. Those packages are looked up with `apt-cache
+# policy` before the install, the same way and for the same reason as the
+# two in validate.yml.
+#
+# AND ONE TRAP THAT THIS FILE HAS TO STEP OVER. harness/release/run.sh
+# defaults to `PRAAT=/usr/bin/praat`. On this runner that path is Ubuntu's
+# praat 6.4.06 — installed above for its libraries — and the harness asserts
+# the 6.6.30 floor, so the default would fail the install test with a version
+# refusal that has nothing to do with the artefact. The step therefore hands
+# it `command -v praat`, which is the 6.6.30 in /usr/local/bin that the step
+# above asserted is first on PATH.
+#
+# NO FOLDER NAME AND NO VERSION STRING LIVES IN THIS FILE
+# -------------------------------------------------------
+# The install name is a convention written in forty-odd places and derivable
+# from none of them; build-release.py reads it out of the plugin's own
+# recorder (plugin/stats/eml-record.praat), refuses to build if those
+# literals disagree, and writes what it used into RELEASE.tsv beside the
+# artefact. This workflow takes the artefact's file name, the folder name it
+# unpacks to, and the sha256 out of THAT RECORD — the same three `awk` reads
+# harness/release/run.sh already does, for the same reason: a file carrying
+# its own copy of the name could publish an artefact built under a different
+# one and call it correct. The builder needed no change to make this
+# possible; the record was already the interface.
+#
+# The version string is the tag. `GITHUB_REF_NAME` is the only place it
+# appears, and it is not written down here either.
+#
+# WHAT THE NOTES TELL A USER, AND WHY THEY NAME THE WRONG DOWNLOAD
+# ----------------------------------------------------------------
+# GitHub attaches "Source code (zip)" and "Source code (tar.gz)" to every
+# release, and a reader who has just been told to download the plugin will
+# reach for the one that says zip. Those two are `git archive` output with no
+# build behind them, and the two reasons the notes give are the two that no
+# repository setting can change: the folder inside is named after the
+# repository and the tag, not the folder Praat looks for by name, so Praat
+# finds no plugin at all; and the modes this project sets deliberately (0644
+# everywhere, 0755 on directories, and a root entry written explicitly so
+# that `unzip` under `umask 077` cannot leave the plugin unreadable) are not
+# in them. WHAT ELSE a source archive carries depends on `.gitattributes`
+# `export-ignore`, which is being settled separately, so the notes do not
+# make a claim about its contents that a later commit could falsify. That
+# paragraph is not decoration — it is the difference between an install that
+# works and a support email.
+#
+# WHAT WAS ACTUALLY RUN BEFORE THIS FILE WAS COMMITTED, on Linux, 17 August
+# 2026, against the same Praat 6.6.30 and R 4.3.3 this job installs:
+#
+#   * `python3 plugin/dev/tools/build-release.py --out DIR` — exit 0, 255
+#     files, 7 directories, self-verified. Run twice into two different
+#     directories and once from a different working directory: THE ZIP'S
+#     sha256 WAS IDENTICAL ALL THREE TIMES (18411425…5aefb3 for the tree at
+#     dc15b97). That determinism is what makes the identity check in the
+#     install-test step below meaningful.
+#   * `bash harness/release/run.sh` — exit 0 in 88 seconds. All five legs:
+#     255 files unpacked against 255 recorded, 0 modes outside 0644/0755, 0
+#     dangling includes, headless quickstart printing `t(13.6) = 7.89,
+#     p < .001`, the walk reaching `Pause: Create Demo Table`, the cascade
+#     label read off the photograph, and the falsifier NOT reaching the
+#     dialog with the registration cut.
+#   * `Rscript validate/run_all.R` — started from the repository root and
+#     watched through v83, 12,578 checks passed and 0 failed at that point,
+#     then stopped by hand at 150 seconds. THE FULL SUITE WAS NOT RUN HERE;
+#     it takes about twenty minutes and is run whole by validate.yml.
+#
+# WHAT REMAINS UNVERIFIED UNTIL THIS RUNS ON A REAL RUNNER. GitHub Actions
+# does not exist in the sandbox this file was written in, so everything below
+# is YAML that lints and shell that was rehearsed BESIDE the runner, not on
+# it. Specifically, none of these has been observed:
+#
+#   1. THE ENVIRONMENT BLOCK HAS NEVER BEEN SEEN GREEN. validate.yml's only
+#      run failed at apt resolution, before the fix that is copied here.
+#      Whether `add-apt-repository -y universe` makes r-base-core and praat
+#      resolvable on the ubuntu-24.04 image, and whether the runner's CPU
+#      reports avx2, are both still open. Each fails by name if it is wrong.
+#   2. Whether `gh` is on the image, whether GITHUB_TOKEN with
+#      `contents: write` may create a release in this repository (the
+#      repository's Actions setting and any organisation policy decide that,
+#      not this file), and whether the upload of a ~1 MB asset succeeds.
+#   3. THE GUI LEGS OF THE INSTALL HARNESS ARE THE LIKELIEST FIRST RED. Its
+#      keyboard walk waits fixed intervals (two seconds after opening the
+#      cascade, four after Return) that were measured under Xvfb on a fast
+#      sandbox. A slower or more contended runner can miss a dialog that
+#      would have appeared; the harness retries the positive leg once and
+#      then reports it, so the failure is legible, but the timings themselves
+#      are unproven on GitHub hardware.
+#   4. tesseract reading a Praat menu rendered by the runner's font stack.
+#      The label match tolerates one lost trailing glyph and nothing more.
+#   5. The total wall time against `timeout-minutes` below. The suite is ~20
+#      minutes here and the runner's speed is unknown.
+#   6. That a tag push presents `GITHUB_REF_NAME` as the bare tag, and that
+#      the publish guard skips cleanly on `workflow_dispatch`.
+#   7. Zenodo minting a DOI from the published release. That integration is
+#      toggled on by hand in a browser and is not this file's business; see
+#      CITATION.cff.
+#
+# The YAML itself was checked with actionlint 1.7.7 (which runs shellcheck
+# over every `run:` block) and yamllint. That is a statement about syntax,
+# not about any of the seven items above.
+# ============================================================================
+
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: build, install-test and publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------
+      # ENVIRONMENT — validate.yml's block, deliberately identical.
+      # Read that file's header for the measurements behind each step.
+      # ---------------------------------------------------------------
+      - name: Enable universe, where both r-base-core and praat live
+        run: |
+          sudo add-apt-repository -y universe
+          sudo apt-get update
+          for pkg in r-base-core praat; do
+            if ! apt-cache policy "$pkg" | grep -q 'Candidate: [^(]'; then
+              echo "SETUP FAILED: apt has no candidate for '$pkg'." >&2
+              echo "The universe component is not reachable on this runner." >&2
+              apt-cache policy "$pkg" >&2
+              exit 1
+            fi
+          done
+
+      - name: Install R, and Praat 6.4 for its library dependencies
+        run: |
+          sudo apt-get install -y --no-install-recommends r-base-core praat
+          for tool in Rscript praat python3 unzip; do
+            if ! command -v "$tool" > /dev/null; then
+              echo "SETUP FAILED: '$tool' is not on PATH after the install." >&2
+              exit 1
+            fi
+            echo "found $tool at $(command -v "$tool")"
+          done
+          Rscript -e 'cat("R is runnable:", R.version.string, "\n")'
+
+      # The only Linux x64 build Praat publishes is x86-64-v3, whose marker
+      # instruction set is AVX2. A runner without it would install a binary
+      # that dies of SIGILL, and the seven validators that drive Praat would
+      # report "no Praat at or above the floor" — true, and nothing like the
+      # actual cause.
+      - name: Check this runner can run an x86-64-v3 binary
+        run: |
+          echo "CPU: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2-)"
+          if ! grep -qm1 ' avx2 ' /proc/cpuinfo; then
+            echo "SETUP FAILED: this runner's CPU reports no avx2 flag." >&2
+            echo "praat6630_linux-x64v3 is the only Linux x64 build Praat" >&2
+            echo "publishes and it requires x86-64-v3. Nothing here can run it." >&2
+            exit 1
+          fi
+
+      - name: Install Praat 6.6.30, the plugin's supported floor
+        run: |
+          curl -fsSL -o praat.tar.gz \
+            https://github.com/praat/praat/releases/download/v6.6.30/praat6630_linux-x64v3.tar.gz
+          sudo tar xzf praat.tar.gz -C /usr/local/bin praat
+          rm praat.tar.gz
+          if [ ! -x /usr/local/bin/praat ]; then
+            echo "SETUP FAILED: the tarball produced no /usr/local/bin/praat." >&2
+            exit 1
+          fi
+
+      # Printed before the suite so a failing run says what it ran on, and
+      # ASSERTED as well as printed: the validators refuse a Praat below
+      # 6.6.30, so a 6.4.06 here would mean the download step silently did
+      # nothing, and 12,400 checks is a long way to walk to find that out.
+      - name: What this ran on
+        run: |
+          command -v praat
+          if ! praat --version; then
+            echo "SETUP FAILED: the downloaded praat did not run." >&2
+            echo "An illegal-instruction exit here means the runner's CPU is" >&2
+            echo "below x86-64-v3; anything else, read the line above." >&2
+            exit 1
+          fi
+          if ! praat --version | grep -q '6\.6\.30'; then
+            echo "SETUP FAILED: praat on PATH is $(praat --version)," >&2
+            echo "not the 6.6.30 this job installed. /usr/local/bin is not" >&2
+            echo "ahead of /usr/bin on this image." >&2
+            exit 1
+          fi
+          Rscript -e 'cat(R.version.string, "\n")'
+          python3 --version
+          unzip -v | head -1
+
+      # ---------------------------------------------------------------
+      # The one environment step validate.yml does not need. The install
+      # harness opens Praat's menus on a virtual display and reads a
+      # photograph of them; the suite never opens a window.
+      # ---------------------------------------------------------------
+      - name: Install the tools the install harness drives Praat with
+        run: |
+          for pkg in xvfb xdotool x11-utils imagemagick \
+                     matchbox-window-manager tesseract-ocr; do
+            if ! apt-cache policy "$pkg" | grep -q 'Candidate: [^(]'; then
+              echo "SETUP FAILED: apt has no candidate for '$pkg'." >&2
+              apt-cache policy "$pkg" >&2
+              exit 1
+            fi
+          done
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xdotool x11-utils imagemagick matchbox-window-manager \
+            tesseract-ocr
+          # tesseract-ocr depends on tesseract-ocr-eng, and `import` arrives
+          # through imagemagick's alternatives rather than under its own
+          # package name — so both are checked as COMMANDS, which is what
+          # harness/release/run.sh requires of them.
+          for tool in Xvfb xdotool xprop xwininfo import \
+                      matchbox-window-manager tesseract iconv; do
+            if ! command -v "$tool" > /dev/null; then
+              echo "SETUP FAILED: '$tool' is not on PATH after the install." >&2
+              exit 1
+            fi
+            echo "found $tool at $(command -v "$tool")"
+          done
+          tesseract --list-langs
+
+      # ---------------------------------------------------------------
+      # THE GATE. Everything after this line runs only if the suite is
+      # green, because bash -e and step ordering say so.
+      # ---------------------------------------------------------------
+      - name: Run the validation suite — a red suite aborts the release
+        run: |
+          set -o pipefail
+          Rscript validate/run_all.R 2>&1 | tee "$RUNNER_TEMP/suite.log"
+
+      - name: Build the release artefact
+        run: |
+          python3 plugin/dev/tools/build-release.py --out "$RUNNER_TEMP/dist"
+
+          # THE NAME IS READ, NOT WRITTEN. RELEASE.tsv is the builder's
+          # record of what it just made, and these are the same three reads
+          # harness/release/run.sh does.
+          rec="$RUNNER_TEMP/dist/RELEASE.tsv"
+          name=$(awk -F'\t' '$1=="name"{print $2}'       "$rec")
+          zipname=$(awk -F'\t' '$1=="zip"{print $2}'     "$rec")
+          zipsha=$(awk -F'\t' '$1=="zip_sha256"{print $2}' "$rec")
+          zip="$RUNNER_TEMP/dist/$zipname"
+
+          if [ -z "$name" ] || [ -z "$zipname" ] || [ ! -f "$zip" ]; then
+            echo "BUILD FAILED: the record does not describe an artefact" >&2
+            cat "$rec" >&2
+            exit 1
+          fi
+
+          # THE FILE THAT WILL BE PUBLISHED IS THE FILE THE RECORD
+          # DESCRIBES. Cheap, and it is the only moment the two can still be
+          # compared before the asset leaves the runner.
+          actual=$(sha256sum "$zip" | cut -d' ' -f1)
+          if [ "$actual" != "$zipsha" ]; then
+            echo "BUILD FAILED: $zipname hashes $actual on disk; the build" >&2
+            echo "record says $zipsha. Something wrote to the artefact" >&2
+            echo "between the build and this step." >&2
+            exit 1
+          fi
+
+          suite=$(grep -E '[0-9]+ checks, [0-9]+ passed, [0-9]+ FAILED' \
+                  "$RUNNER_TEMP/suite.log" | tail -1)
+          {
+            echo "EML_NAME=$name"
+            echo "EML_ZIP_NAME=$zipname"
+            echo "EML_ZIP=$zip"
+            echo "EML_ZIP_SHA=$zipsha"
+            echo "EML_SUITE_LINE=${suite:-the validation suite passed}"
+          } >> "$GITHUB_ENV"
+
+          echo "built $zipname  sha256 $zipsha"
+
+      # ---------------------------------------------------------------
+      # THE INSTALL SMOKE TEST — unzip, open Praat, walk the menu, and a
+      # falsifier that must NOT reach the dialog.
+      #
+      # The harness builds its own copy rather than taking a path, so
+      # "against the artefact just built" is established by IDENTITY: the
+      # build is deterministic (fixed 1980 timestamps, sorted entries) and
+      # the sha256 the harness records is compared to the sha256 of the
+      # file this job is about to publish. If they ever differ, the
+      # artefact tested and the artefact published are not the same file
+      # and nothing here may be released. Measured on the sandbox: the
+      # same zip sha256 from three separate builds of one tree.
+      # ---------------------------------------------------------------
+      - name: Install smoke test on the artefact just built
+        env:
+          EML_RELEASE_OUT: ${{ runner.temp }}/release-evidence
+          EML_RELEASE_WORK: ${{ runner.temp }}/release-harness
+        run: |
+          # /usr/bin/praat on this runner is Ubuntu's 6.4.06, which the
+          # harness refuses; the 6.6.30 installed above is first on PATH.
+          PRAAT=$(command -v praat); export PRAAT
+          bash harness/release/run.sh
+
+          tested=$(awk -F'\t' '$1=="zip_sha256"{print $2}' \
+                   "$EML_RELEASE_OUT/RELEASE_INSTALL.tsv")
+          if [ "$tested" != "$EML_ZIP_SHA" ]; then
+            echo "RELEASE ABORTED: the install test ran against $tested" >&2
+            echo "and this job is holding $EML_ZIP_SHA. The build is not" >&2
+            echo "reproducing, so the artefact that was tested is not the" >&2
+            echo "artefact that would be published." >&2
+            exit 1
+          fi
+          echo "install test ran against the published sha256 $tested"
+
+      # The photographs and the TSV are the only account of a GUI leg that
+      # nobody can watch. Kept whether the step above passed or failed —
+      # a failed walk is exactly when the pictures are wanted.
+      - name: Keep the install evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-install-evidence
+          path: ${{ runner.temp }}/release-evidence
+          if-no-files-found: ignore
+
+      # ---------------------------------------------------------------
+      # PUBLISH — tags only. A workflow_dispatch run stops here, having
+      # proved the suite, the build and the install without creating a
+      # release named after a branch.
+      # ---------------------------------------------------------------
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="$RUNNER_TEMP/notes.md"
+          cat > "$notes" <<EOF
+          ## Download this one file
+
+          **$EML_ZIP_NAME** — in the Assets list below.
+
+          Download it, unzip it, and move the folder that comes out — it is called
+          **$EML_NAME** — into Praat's preferences folder, then restart Praat. The
+          step-by-step instructions, with the folder for each operating system, are in
+          README.md inside the download.
+
+          ## Do not download "Source code (zip)" or "Source code (tar.gz)"
+
+          GitHub adds those two files to every release by itself. They are copies of
+          this project's source repository, made by git, with no build behind them —
+          and they will not work as a plugin:
+
+          * The folder inside them is not called **$EML_NAME**. Praat finds a plugin by
+            that exact folder name, so it would simply see nothing and no menu would
+            appear.
+          * They do not carry the file permissions the plugin is built with, so on
+            macOS and Linux Praat can be left unable to read the scripts.
+          * They are a snapshot of this project's source code, which is a different
+            thing from the plugin. Nobody has unzipped one into Praat and checked
+            that it works, because it is not what this project builds.
+
+          **$EML_ZIP_NAME** is the only file on this page that was built, unpacked,
+          installed into Praat and opened before it was published.
+
+          ## Checking the file you downloaded
+
+          sha256 of **$EML_ZIP_NAME**:
+
+              $EML_ZIP_SHA
+
+          To check it: macOS or Linux, run *shasum -a 256* on the downloaded file;
+          Windows, run *certutil -hashfile* on it. The line it prints should match the
+          one above. This is optional — it tells you the download is complete and
+          unaltered.
+
+          ## How this release was checked before it was published
+
+          Every release on this page is built by GitHub from the tagged commit, and
+          only after two things pass on that same commit:
+
+          * The validation suite — $EML_SUITE_LINE
+          * The install test — this exact zip was unpacked into a scratch Praat
+            preferences folder, Praat was started against it, the plugin's menu was
+            opened and photographed, and a command was run from it. The same test is
+            also run with the plugin's registration removed and is required NOT to
+            reach that command, so "the menu is there" is a measurement rather than
+            a hope.
+
+          Ian Howell — Embodied Music Lab — GPL-3.0-or-later
+          EOF
+
+          gh release create "$GITHUB_REF_NAME" "$EML_ZIP" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file "$notes" \
+            --verify-tag
+
+      - name: Not a tag, so nothing was published
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          echo "This run was not started by a tag push, so no release was"
+          echo "created. The suite, the build and the install test above all"
+          echo "ran: this was a full rehearsal of a release of ${GITHUB_SHA}."
