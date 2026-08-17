@@ -10,11 +10,6 @@
 #        (emlGraphsPresetSubgroupCol$ = factor2$). Without it the default
 #        grouped violin dropped factor 2 entirely and the Column Mapping
 #        dialog opened with Category and Subgroup pointing at the same column.
-# v2.0: Full convergence — @emlRunTwoWayAnalysis orchestrator,
-#        @emlWrapperInit, @emlWrapperExportCSV, @emlWrapperCommonFields,
-#        @emlGuessColumnRoles. Inline draw replaced with @emlGraphsWorkflow
-#        (grouped violin preset). repeat/until replaces goto/label.
-# v1.0: Initial release with inline draw and direct procedure calls.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell

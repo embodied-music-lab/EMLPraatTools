@@ -11,9 +11,6 @@
 #        "Tukey HSD post hoc" control. The chosen adjustment is also carried
 #        into the graph annotation so Draw cannot silently disagree with the
 #        report.
-# v3.0: Wrapper infrastructure refactor. Shared @emlWrapperInit,
-#        @emlWrapperExportCSV. repeat/until replaces goto/label.
-# v2.0: Full convergence — orchestrator + @emlGuessColumnRoles.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell

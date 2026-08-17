@@ -5,11 +5,6 @@
 #          pairwise Wilcoxon, or Scheffe, with p-value adjustment.
 # Date: 2 August 2026
 # Version: 3.1
-# v3.1: Item 6 — carry the dialog's p-value adjustment choice into the
-#       graph annotation via emlGraphsPresetCorrection$ instead of letting
-#       the graphs form silently fall back to Holm.
-# v3.0: Wrapper infrastructure refactor. repeat/until replaces goto/label.
-# v2.0: Full convergence — orchestrator + @emlGuessColumnRoles.
 # ============================================================================
 
 include eml-lib.praat

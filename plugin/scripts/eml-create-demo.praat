@@ -11,9 +11,6 @@
 #        EML Tools menu entry as a second route. Types 1-5 carry a
 #        "Note:" line stating the effect the generator builds in, matching
 #        what types 6 and 7 already did.
-# v2.0: Added regression, two-way ANOVA, and normality demos.
-#        All 7 wizard analysis paths now have a matching demo table.
-# v1.0: Initial release with 4 demo types.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell

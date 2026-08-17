@@ -6,28 +6,6 @@
 #          and a parametric/nonparametric recommendation per column.
 # Version: 2.2
 # Date: 8 August 2026
-# v2.2: Per-group mode does not carry its own normality rule. It
-#        had hard-coded thresholds of 1 and 3 against the shared constants
-#        of 2 and 7, and the pre-5-August `skKurtFail or swFail` gate, while
-#        the SAME script's overall mode called @emlRunNormalityAnalysis,
-#        which had neither. One wrapper, two answers for the same data
-#        depending on whether a grouping column was picked: a group with
-#        |skew| >= 1 that Shapiro-Wilk did not reject came out nonparametric
-#        grouped and parametric ungrouped. Both modes now reach the one
-#        shared rule, @emlNormalityRecommendation (stats/eml-analysis.praat).
-#        This CHANGES per-group verdicts, which is the point.
-# v2.1: Draw button on the completion dialog — a normal Q-Q plot for ONE
-#        column at a time, behind an explicit column picker. The picker is
-#        not optional: this checker tests every numeric column in one run,
-#        so a figure drawn from an assumed column would be a silently wrong
-#        figure. In grouped mode the picker asks for the group as well,
-#        because in that mode a column is not what was tested — a column
-#        within a group is.
-# v2.0: Full convergence — @emlWrapperInit for Table check,
-#        @emlRunNormalityAnalysis orchestrator for overall mode (fixes
-#        double-report bug and wrong-type 4th parameter in v1.0).
-#        repeat/until replaces goto/label.
-# v1.0: Initial release.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
