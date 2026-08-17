@@ -32,6 +32,13 @@
 #     checks fail against barren and none fail against the full build. So the
 #     full Linux build is what goes on PATH.
 #
+#   * python3 AND unzip ARE NEEDED TOO. v78 runs the two static checkers,
+#     which are python; v79 builds the release artefact with the python
+#     builder and unpacks the zip it produces under `umask 077` to measure
+#     the modes that land on disk. Both are on the runner image; both are
+#     checked below rather than assumed, because a missing interpreter is
+#     exactly the state in which a check quietly stops being a check.
+#
 #   * NETWORK: the suite itself makes no network call. This job does, once,
 #     to fetch that Praat build — there is no other way to get 6.6.30 onto a
 #     runner.
@@ -47,23 +54,49 @@
 # resolves.
 #
 # r-base-core on 24.04 is 4.3.3 — the version validate/README.md names.
+#
+# WHY EVERY STEP BELOW CHECKS ITSELF
+#
+# The first and only run of this workflow FAILED IN 27 SECONDS. That number
+# is the diagnosis. Checkout of this tree is a handful of seconds,
+# `apt-get update` on a runner is ten to twenty, and an apt install of
+# r-base-core plus praat is sixty seconds at the very least — forty-odd
+# packages fetched, unpacked and configured. Twenty-seven seconds is not
+# enough for that install to have SUCCEEDED, and it is far too early for the
+# 62 MB Praat download, the version prints, or the suite (12,400 checks) to
+# have been reached at all. So the job died inside the apt step, at
+# RESOLUTION: `E: Unable to locate package` is printed within a second or two
+# of the install starting, and checkout + update + a fast refusal is 27
+# seconds almost exactly.
+#
+# BOTH `r-base-core` AND `praat` LIVE IN THE `universe` COMPONENT, so a runner
+# image without universe enabled cannot resolve either of them, and one line
+# of apt output would have named both. Universe is therefore enabled
+# EXPLICITLY below rather than hoped for, and each package is looked up with
+# `apt-cache policy` before the install, so "this package is in no enabled
+# repository" is reported by name instead of arriving as apt's generic error.
+#
+# THE OTHER OPEN QUESTION WAS NOT WHAT FAILED, AND STILL HAS TO BE ANSWERED.
+# The only Linux x64 build Praat publishes is `x64v3` — the x86-64-v3
+# microarchitecture level, which requires AVX2 — and whether the runner's CPU
+# provides it could not be verified when this file was written. It cannot
+# have caused a 27-second failure, because the download step runs after the
+# apt step and the apt step never finished. But if that CPU lacked AVX2 the
+# binary would die of an illegal instruction, and the failure would surface
+# much later and wearing the wrong clothes: seven validators reporting "no
+# Praat at or above the plugin's floor". So the flag is checked before the
+# download, and the downloaded binary is required to PRINT ITS VERSION before
+# the suite is allowed to start.
+#
+# Every step below therefore fails loudly and by name. Nothing is allowed to
+# be absent quietly.
 # ============================================================================
 
 name: validate
 
-# TRIGGERS. Manual only for the moment, and the reason is worth stating rather
-# than leaving as an oddity. This repository is transferred to GitHub through
-# the web upload form one directory at a time, because a direct push is not
-# available from the environment the work is done in. A `push:` trigger
-# therefore fires once per directory against a HALF-TRANSFERRED tree, where the
-# suite cannot pass and its failure means nothing except that the transfer is
-# still in progress. Fourteen red notifications that carry no information are
-# worse than no notification at all.
-#
-# `push:` and `pull_request:` go back the moment the repository can be pushed
-# to in one operation, or the moment a transfer is verified complete — whichever
-# comes first. Until then, run it from the Actions tab.
 on:
+  push:
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -78,10 +111,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Enable universe, where both r-base-core and praat live
+        run: |
+          sudo add-apt-repository -y universe
+          sudo apt-get update
+          for pkg in r-base-core praat; do
+            if ! apt-cache policy "$pkg" | grep -q 'Candidate: [^(]'; then
+              echo "SETUP FAILED: apt has no candidate for '$pkg'." >&2
+              echo "The universe component is not reachable on this runner." >&2
+              apt-cache policy "$pkg" >&2
+              exit 1
+            fi
+          done
+
       - name: Install R, and Praat 6.4 for its library dependencies
         run: |
-          sudo apt-get update
           sudo apt-get install -y --no-install-recommends r-base-core praat
+          for tool in Rscript praat python3 unzip; do
+            if ! command -v "$tool" > /dev/null; then
+              echo "SETUP FAILED: '$tool' is not on PATH after the install." >&2
+              exit 1
+            fi
+            echo "found $tool at $(command -v "$tool")"
+          done
+          Rscript -e 'cat("R is runnable:", R.version.string, "\n")'
+
+      # The only Linux x64 build Praat publishes is x86-64-v3, whose marker
+      # instruction set is AVX2. A runner without it would install a binary
+      # that dies of SIGILL, and the seven validators that drive Praat would
+      # report "no Praat at or above the floor" — true, and nothing like the
+      # actual cause.
+      - name: Check this runner can run an x86-64-v3 binary
+        run: |
+          echo "CPU: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2-)"
+          if ! grep -qm1 ' avx2 ' /proc/cpuinfo; then
+            echo "SETUP FAILED: this runner's CPU reports no avx2 flag." >&2
+            echo "praat6630_linux-x64v3 is the only Linux x64 build Praat" >&2
+            echo "publishes and it requires x86-64-v3. Nothing here can run it." >&2
+            exit 1
+          fi
 
       - name: Install Praat 6.6.30, the plugin's supported floor
         run: |
@@ -89,16 +157,33 @@ jobs:
             https://github.com/praat/praat/releases/download/v6.6.30/praat6630_linux-x64v3.tar.gz
           sudo tar xzf praat.tar.gz -C /usr/local/bin praat
           rm praat.tar.gz
+          if [ ! -x /usr/local/bin/praat ]; then
+            echo "SETUP FAILED: the tarball produced no /usr/local/bin/praat." >&2
+            exit 1
+          fi
 
-      # Printed before the suite so a failing run says what it ran on. The
-      # validators refuse a Praat below 6.6.30; if this line ever reports
-      # 6.4.06, the download step above silently did nothing.
+      # Printed before the suite so a failing run says what it ran on, and
+      # ASSERTED as well as printed: the validators refuse a Praat below
+      # 6.6.30, so a 6.4.06 here would mean the download step silently did
+      # nothing, and 12,400 checks is a long way to walk to find that out.
       - name: What this ran on
         run: |
           command -v praat
-          praat --version
+          if ! praat --version; then
+            echo "SETUP FAILED: the downloaded praat did not run." >&2
+            echo "An illegal-instruction exit here means the runner's CPU is" >&2
+            echo "below x86-64-v3; anything else, read the line above." >&2
+            exit 1
+          fi
+          if ! praat --version | grep -q '6\.6\.30'; then
+            echo "SETUP FAILED: praat on PATH is $(praat --version)," >&2
+            echo "not the 6.6.30 this job installed. /usr/local/bin is not" >&2
+            echo "ahead of /usr/bin on this image." >&2
+            exit 1
+          fi
           Rscript -e 'cat(R.version.string, "\n")'
           python3 --version
+          unzip -v | head -1
 
       - name: Run the validation suite
         run: Rscript validate/run_all.R
