@@ -710,7 +710,190 @@ scripts <- c(
     # existed. They are in the suite because a check that lives outside the
     # thing CI runs is a check nobody runs; being here is what makes
     # regenerating the manifest the only route to a green suite.
-    "v78_repo_hygiene.R"
+    "v78_repo_hygiene.R",
+    # v79 is the only script here whose subject is a file that is NOT IN THE
+    # REPOSITORY: plugin_EML_Praat_Tools, the folder Praat installs, which
+    # plugin/dev/tools/build-release.py makes out of plugin/. It cannot be
+    # committed, and the reason is the defect it exists to catch -- git records
+    # the executable bit and nothing else, so a checked-in copy of the artefact
+    # would be a copy with the mode evidence stripped off it. So v79 BUILDS the
+    # artefact while the suite runs (0.5 s) and asserts against that: the folder
+    # name against the recorder, both digests reproduced by a second build, the
+    # whole include closure, and -- the strongest thing in the file -- the zip
+    # unpacked under `umask 077` with every mode measured on what unzip
+    # produced rather than on what the builder chmodded. That is the only
+    # reading in this tree taken on a tree nobody chmodded, and the only one
+    # that can see a zip carrying no entry for its own top-level folder, which
+    # leaves the whole plugin at 0700 and unreadable to every other account
+    # with all 322 files inside it recorded perfectly.
+    #
+    # The three facts that need an X server -- the menu walk, the falsifier
+    # walk, and the label read off the photograph -- come from a committed
+    # record, and the header says at length how that record is kept from
+    # rotting: bound by digest to setup.praat and to the script the walk
+    # reaches, required to carry the key set of a FINISHED run (the evidence at
+    # the previous commit was an aborted one, 18 lines of 25, stopping before
+    # the falsifier), and censused so that every scalar in it is read by
+    # something. That census is the one that matters: the harness's mode
+    # counter and its quickstart exit status were both being written and
+    # neither was being read, so a run under a restrictive umask and a run
+    # whose headless leg died at exit 255 both left it exiting 0.
+    #     bash harness/release/run.sh
+    "v79_release_artefact.R",
+    # v80 is a LINT, and it is the only one here. Every other script reads a
+    # number the plugin printed or a claim the repository makes; this one
+    # reads the shipped source and rejects a sentence in it. AUTHOR RULING,
+    # pre-release: a shipped file describes what the code does, never what it
+    # used to do wrong. Defect and change history belongs in git and in
+    # plugin/dev/HISTORY_LEDGER.md, and the reason is not tidiness -- a header
+    # entry reading "the guard was on .nGroups, which was always true" makes a
+    # claim about a version nobody has, standing beside claims about the code
+    # in front of the reader, in a file where nothing can tell them apart.
+    # That sentence is also the one part of the file this suite cannot
+    # exercise, so it is the part that can be wrong indefinitely and stay
+    # green.
+    #
+    # IT IS IN THE RUNNER BECAUSE THE SWEEP'S COMPLETENESS CANNOT BE READ. The
+    # sweep it closes removed 1,623 lines of header narration across 27 files
+    # and rephrased 78 more, and the failure mode of proving that by reading
+    # is a missed line, which looks exactly like a line that was considered
+    # and kept. A predicate cannot miss one. So the sweep was DONE when this
+    # went green, and it stays done because this now stands guard: the next
+    # fix that writes its own history into a shipped header turns the suite
+    # red in the commit that wrote it, naming the file and the line.
+    #
+    # ITS TEN PATTERNS ARE THE CAPTURE TOOL'S. plugin/dev/tools/
+    # extract-history.py copied every block into the ledger BEFORE any of it
+    # was deleted, using the same list, so "everything this lint would reject
+    # was first written down verbatim" is a property of the two files rather
+    # than of anyone's memory. R cannot import a Python list, so v80 re-derives
+    # the list out of the tool's source and asserts the two are identical;
+    # edit one and the suite goes red.
+    #
+    # EXCEPTIONS ARE A FILE. validate/v80_history_allowlist.tsv carries path,
+    # line-pattern and a one-line justification, for the prose that collides
+    # with a pattern by naming a developer file whose NAME contains one. An
+    # entry that matches nothing is reported as a FAILURE, not skipped: a
+    # stale exception tells its reader the tree still holds a line it does
+    # not, and waits to excuse some future line on a justification written
+    # about another one.
+    "v80_shipped_history.R",
+    # v81 is a page of documentation, EXECUTED. plugin/docs/RECIPES.md
+    # documents the direct-kernel API -- a Table becomes two vectors, the
+    # vectors go into @emlTTest and its relatives -- and that surface has the
+    # least protection in the plugin, because nothing inside the plugin calls
+    # it: every menu command goes through an orchestrator.
+    #
+    # THE BYTES THAT SHIP ARE THE BYTES THAT RUN. harness/recipes/extract.py
+    # lifts each script out of the .md and Praat runs that file; run.sh
+    # substitutes exactly two path prefixes -- the install folder and the data
+    # folder, the only two things in a pasted script that belong to the
+    # reader's machine -- then substitutes them back and demands the original
+    # returns byte for byte. Nothing in this tree holds a second copy of a
+    # recipe, and v81 re-implements the fence grammar in R and compares
+    # out/scripts/R<n>.praat with the page, so a harness that quietly ran its
+    # own copy is caught from the other side.
+    #
+    # A CAPTURE CANNOT PIN ITSELF, so there are three anchors and none of them
+    # is the capture. THE PAGE: each "What it printed" block must appear as a
+    # contiguous run of lines in that recipe's output, so moving a number makes
+    # the page wrong and v81 names the recipe and the line. BASE R: t, Welch
+    # df, both p's, Cohen's d, Hedges' g, the paired t, Pearson r and the
+    # one-way ANOVA's SS / F / eta-squared are recomputed from the committed
+    # fixtures, because the page and the plugin agreeing with each other is not
+    # either of them being right. THE PROCEDURE HEADERS: every @call must
+    # exist, every procedure.field a recipe READS must be one that procedure
+    # assigns, and every argument list the page prints must be the real
+    # signature. That last one is what the page is most exposed to -- the
+    # extractors return .group1# and .data1#, not the names anyone would guess,
+    # and a plausible wrong name reads as correct prose while returning a stale
+    # value from the previous call.
+    "v81_recipes.R",
+    # v82 is the one include line a user writes, and the file setup.praat has
+    # to generate for that line to exist. The problem it closes is a property
+    # of Praat rather than of this plugin, and v82 re-measures it on the live
+    # binary before asserting anything else: `include` is a parse-time text
+    # paste, and a relative path inside an included file resolves against the
+    # TOP-LEVEL script's folder. So scripts/eml-lib.praat, whose lines read
+    # "../stats/...", resolves them against the USER's folder and finds
+    # nothing -- and no static file can compute where it was installed to.
+    # setup.praat can, because Praat runs it from the plugin's own folder at
+    # every launch, and it writes scripts/eml-lib-user.praat with full paths.
+    #
+    # FOUR THINGS CAN GO WRONG AND ALL FOUR ARE DRIVEN, in sandboxes this file
+    # builds from plugin/ into tempdir(): a barrel left stale on disk (seeded,
+    # then required to be repaired, and the repair compared byte for byte
+    # against a regeneration from nothing); an include list that drifts from
+    # the one @emlRecordRender writes into recorded scripts (compared against
+    # a real recording made on the same installation, never against a list
+    # retyped in the validator); an unchanged launch that writes anyway, read
+    # to the nanosecond, which is a REQUIREMENT and not an optimisation
+    # because Praat 7 challenges a script that touches disk; and a second copy
+    # of the root arithmetic, which is read off the source because no drive
+    # can see a duplicate that happens to agree today.
+    #
+    # AND THE SELF-HEALING IS DRIVEN RATHER THAN ARGUED. Two sandboxes move an
+    # installed plugin -- carrying its now-wrong barrel with it -- and launch
+    # Praat at the new location; the second move is the one Praat itself makes
+    # between 6.x and 7.x, ~/.praat-dir to ~/.config/praat. Both then RUN a
+    # user script whose only library line is the generated barrel, because
+    # plausible-looking paths are not evidence that paths resolve.
+    "v82_generated_barrel.R",
+    # v83 is the only script here whose subject is THIS SUITE'S OWN CLAIM TO
+    # BE PINNING ANYTHING. Every other file asks whether the plugin is right;
+    # this one asks whether the file that says so would notice if it stopped
+    # being right.
+    #
+    # THE FACT IT ENFORCES, and it was measured three times before it was
+    # written down. A COMMITTED ARTEFACT IS A WITNESS STATEMENT, NOT A LIVE
+    # WITNESS. harness/legend/out/RESULTS.tsv records what the plugin did on
+    # the afternoon somebody drove it, and it goes on recording that, in
+    # perfect confidence, after the code it describes has been rewritten or
+    # reverted. A check that reads only the artefact therefore pins THE
+    # ARTEFACT: it proves the file still says what it said, never that the code
+    # still does what the file says. The two are indistinguishable in a green
+    # run and they are not the same claim.
+    #
+    # The three sightings: validate/tools/redrive_census.sh re-drove 34
+    # harnesses and only 9 reproduced their committed artefacts, 15 differed,
+    # and several of the stale ones were what the suite was quoting to state
+    # things about the plugin that had stopped being true; v29 asserts 144
+    # renders no commit in this repository's history has ever been able to
+    # produce; and the findings-ledger backfill reverted plugin/ WHOLESALE, ran
+    # 36 validators against it, and eight rows' pinning validators stayed
+    # GREEN -- every one of the eight pinned by a validator whose only input is
+    # a committed harness artefact. The first and the third are one decoupling
+    # seen from opposite ends.
+    #
+    # So the repair is a DEFINITION rather than eight one-off fixes: a ledger
+    # row's pinnedBy may only name a validator that REGENERATES ITS EVIDENCE
+    # FROM SOURCE OR DRIVES PRAAT LIVE WITHIN THE RUN. Artefact-only checks are
+    # untouched and lose nothing -- v03 settling a printed p against R at half
+    # a display ULP is an ORACLE AGREEMENT and is the reason a reviewer with no
+    # Praat can still check the statistics. They simply are not PINS, because a
+    # pin's whole claim is "something would notice", and the backfill measured
+    # what these notice.
+    #
+    # IT CARRIES NO LIST. A hand-kept table of which validator is which class
+    # would be one more thing that can quietly disagree with the tree, which is
+    # the disease and not the cure, so v83 sources validate/tools/
+    # evidence_census.R and classifies every validator from its own parse tree
+    # on every run -- and additionally asserts that the committed census record
+    # reproduces from that live classification, so the census's artefact is
+    # held to the standard this file exists to state rather than being its one
+    # exception.
+    #
+    # AND IT IS VACUITY-GUARDED IN BOTH DIRECTIONS, because there are exactly
+    # two ways it could be green and mean nothing. A classifier that matched
+    # nothing would find no artefact-only pins: so v77 and v70 must come back
+    # LIVE, v80 SOURCE, v01 and v37 ARTEFACT-ONLY, each named, and the outcome
+    # must be a partition rather than a constant -- a broken classifier cannot
+    # satisfy assertions pointing in opposite directions. An empty ledger would
+    # satisfy the rule vacuously: so an unreadable ledger, a zero-row ledger,
+    # and a ledger in which no row claims a pin at all are each a FAILURE.
+    # It is READ-ONLY on the ledger. It names the row, the validator and the
+    # class, and leaves the editing to a human.
+    "v83_pin_definition.R"
 )
 
 cat("EML Praat Tools validation suite\n")

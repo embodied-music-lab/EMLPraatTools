@@ -1,0 +1,29 @@
+# ============================================================================
+# v80 ALLOWLIST — the lines in the shipped tree that match a history pattern
+# and are allowed to.
+#
+# Ian Howell — Embodied Music Lab — GPL-3.0-or-later
+#
+# v80 fails on any comment line in a shipped file that narrates the history of
+# the code instead of describing it. Some legitimate prose collides with those
+# patterns anyway — most often by naming a developer file whose NAME contains
+# one of them. Such a line is excused HERE, in writing, with a reason, and
+# never by loosening the pattern: a pattern loosened once excuses everything
+# shaped like the one line it was loosened for, silently and forever.
+#
+# THREE COLUMNS, TAB SEPARATED:
+#   path     repository-relative path, exact. No globs — an allowlist that can
+#            match a file that does not exist yet is not an allowlist.
+#   pattern  R regular expression (perl) matched against the whole line. Make
+#            it specific enough to fail if the line is rewritten, because the
+#            justification is about THAT line and not about the file.
+#   why      one line. If it cannot be said in one line it is not an exception,
+#            it is a disagreement with the rule.
+#
+# AN ENTRY THAT MATCHES NOTHING IS A FAILURE, not a no-op. A stale exception is
+# worse than a missing one: a reader who finds it here believes the tree still
+# holds the line it excuses, and a future line that happens to match it is
+# excused by a justification written about something else.
+# ============================================================================
+plugin/README.md	FIX_NOTES\.md	The README's file map names the files in the folder; naming dev/FIX_NOTES.md is a statement about where a file is, not a history note in a shipped header.
+plugin/MANIFEST.txt	^dev/FIX_NOTES\.md \|	Generated index row. build-manifest.py lists every file in the tree by path, and the path is the file's name; the manifest narrates nothing.

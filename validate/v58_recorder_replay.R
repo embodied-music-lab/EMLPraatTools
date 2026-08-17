@@ -426,7 +426,9 @@ check_true("v58",
 # than everything above and it is here because the alternative is nothing.
 # THE RESOLUTION-TIME GUARANTEE, which neither leg can reach. Both drives run
 # with a preferences directory inside $HOME, so the substitution in
-# @emlRecordBegin always fires and its fallback never does. The fallback is
+# @emlPluginRoot -- the resolver @emlRecordBegin and setup.praat's barrel
+# generator both call -- always fires and its fallback never does. The
+# fallback is
 # what makes the ruling hold on the one configuration the harness cannot
 # occupy without becoming that configuration itself -- a --pref-dir outside
 # $HOME, which is what these very harnesses use. Measured 15 Aug 2026 with a
@@ -441,8 +443,12 @@ if (!nzchar(rsrc)) rsrc <- repo_path("plugin", "stats", "eml-record.praat")
 if (check_true("v58", "the recorder core is present", file.exists(rsrc))) {
     rl <- readLines(rsrc, warn = FALSE)
     rc <- rl[!grepl("^\\s*[;#]", rl)]
-    fb <- grep('emlRecordPluginRoot\\$ = "', rc, value = TRUE)
-    fb <- sub('.*emlRecordPluginRoot\\$ = "([^"]*)".*', "\\1", fb)
+    # READ OFF @emlPluginRoot, which is where the four spellings are written.
+    # setup.praat's barrel generator calls the same procedure, so these four
+    # literals are the fallback for a generated barrel as well as for a
+    # recorded script, and one reading covers both.
+    fb <- grep('\\.root\\$ = "', rc, value = TRUE)
+    fb <- sub('.*\\.root\\$ = "([^"]*)".*', "\\1", fb)
     fb <- fb[nzchar(fb)]
     check_true("v58",
                sprintf("every canonical plugin root the source can fall back to starts with ~ (%s)",
