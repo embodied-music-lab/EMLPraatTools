@@ -1,0 +1,106 @@
+# validate/tools/EVIDENCE_CENSUS.tsv -- GENERATED, do not hand-edit.
+# Rscript validate/tools/evidence_census.R   regenerates this file.
+# class is the SET of evidence a validator READS, from its own source:
+#   SOURCE   reads plugin/ at run time      -- speaks for the code
+#   LIVE     drives a Praat binary in-run   -- speaks for the binary
+#   ARTEFACT reads harness/ or evidence/    -- speaks for a FILE
+#   NONE     reads none of the three         -- a check on the suite
+#   UNKNOWN  did not parse
+# executes is the separate question -- DID ANYTHING UNDER TEST RUN:
+#   NO       nothing under test was started in this run
+#   PRAAT    a Praat binary was resolved and driven
+#   TOOL     a program out of plugin/ or harness/ was run
+#   UNKNOWN  did not parse
+# runs names the evidence for that verdict -- the program, by name.
+#
+# ARTEFACT + executes NO is ARTEFACT AS SUBJECT and does not qualify
+# as a ledger pin: the measured value came out of a committed file and
+# nothing ran. ARTEFACT with executes PRAAT or TOOL is ARTEFACT AS
+# ORACLE -- the subject was regenerated in the run and the committed
+# file is the EXPECTATION it was compared against -- and that is one of
+# the strongest shapes in this suite, not a weakness. v79 is the worked
+# example. See the header of evidence_census.R for the argument, and
+# validate/v83_pin_definition.R for the check that enforces it.
+id	file	class	executes	runs	reads	unrooted	note
+v01	v01_pairwise_welch_bonferroni.R	ARTEFACT	NO		evidence		
+v02	v02_pairwise_holm_differential.R	ARTEFACT	NO		evidence		
+v03	v03_rm_anova_greenhouse_geisser.R	ARTEFACT	NO		evidence		
+v04	v04_friedman.R	ARTEFACT	NO		evidence		
+v05	v05_paired_t.R	ARTEFACT	NO		evidence		
+v06	v06_D15_effect_size_defect.R	ARTEFACT	NO		evidence		
+v07	v07_redpath_degenerate_inputs.R	ARTEFACT	NO		evidence		
+v08	v08_twogroup_orchestrator.R	ARTEFACT	NO		evidence		
+v09	v09_anova_tukey_orchestrator.R	ARTEFACT	NO		evidence		
+v10	v10_kruskal_dunn_orchestrator.R	ARTEFACT	NO		evidence		
+v11	v11_twoway_orchestrator.R	ARTEFACT	NO		evidence		
+v12	v12_correlation_orchestrator.R	ARTEFACT	NO		evidence		
+v13	v13_regression_orchestrator.R	ARTEFACT	NO		evidence		
+v14	v14_descriptive_orchestrator.R	ARTEFACT	NO		evidence		
+v15	v15_normality_orchestrator.R	ARTEFACT	NO		evidence		
+v16	v16_csv_export.R	ARTEFACT	NO		evidence		
+v17	v17_broom_parity.R	ARTEFACT	NO		evidence		
+v18	v18_sweep_parity.R	ARTEFACT	NO		evidence		
+v19	v19_nist_strd.R	ARTEFACT	NO		evidence		
+v20	v20_shipping_anova_broom.R	ARTEFACT	NO		evidence		
+v21	v21_shipping_paths_broom.R	ARTEFACT	NO		evidence		
+v22	v22_homogeneity.R	ARTEFACT	NO		harness		
+v23	v23_qq_points.R	SOURCE+ARTEFACT	NO		evidence,harness,plugin		
+v24	v24_influence.R	ARTEFACT	NO		evidence		
+v25	v25_anova_showboth.R	ARTEFACT	NO		evidence		
+v26	v26_twoway_caveat.R	ARTEFACT	NO		evidence		
+v27	v27_empty_frames.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v28	v28_column_type_guard.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v29	v29_figure_disclosure.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v30	v30_wizard_state.R	SOURCE+ARTEFACT	NO		evidence,plugin		
+v31	v31_gridmode.R	SOURCE+ARTEFACT	NO		evidence,plugin		
+v32	v32_legend_geometry.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v33	v33_exclusion_parity.R	ARTEFACT	NO		harness		
+v34	v34_label_escape.R	ARTEFACT	NO		harness		
+v35	v35_assembly.R	ARTEFACT	NO		harness		
+v36	v36_stress_output.R	ARTEFACT	NO		harness		
+v37	v37_determinism.R	ARTEFACT	NO		harness		
+v39	v39_record_coverage.R	ARTEFACT	NO		harness		
+v40	v40_norecord.R	ARTEFACT	NO		harness		
+v41	v41_blank_group.R	ARTEFACT	NO		harness		
+v42	v42_legend_room.R	ARTEFACT	NO		harness		
+v43	v43_form_helpers.R	ARTEFACT	NO		harness		
+v44	v44_tab_walk.R	ARTEFACT	NO		harness		
+v45	v45_gui_teardown.R	ARTEFACT	NO		harness		
+v46	v46_export_surface.R	SOURCE	NO		plugin		
+v47	v47_plugin_folder_name.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v48	v48_save_paths.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v49	v49_every_path_exports.R	SOURCE	NO		plugin		
+v50	v50_api_export.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v51	v51_advanced_mode.R	ARTEFACT	NO		harness		
+v52	v52_acoustic_calls.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v53	v53_batch_flow.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v54	v54_batch_praatgen.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v55	v55_editor_addressing.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v56	v56_save_guards.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v57	v57_export_integrity.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v58	v58_recorder_replay.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v59	v59_entry_points.R	SOURCE+LIVE	PRAAT	praat	plugin		
+v60	v60_wrapper_paths.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v61	v61_graphs_seams.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v62	v62_graphs_axes_channels.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v63	v63_coercion_parity.R	SOURCE+LIVE	PRAAT	praat	plugin		
+v64	v64_display_and_coercion.R	SOURCE+LIVE	PRAAT	praat	plugin		
+v65	v65_display_standard.R	SOURCE+LIVE	PRAAT	praat	plugin		
+v66	v66_draw_layer.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v67	v67_axis_and_spectrum.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v68	v68_form_axis_and_display.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v69	v69_bracket_disclosure.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v70	v70_p_precision.R	SOURCE+LIVE	PRAAT	praat	plugin		
+v71	v71_tidy_vocab_and_warning.R	SOURCE+LIVE	PRAAT	praat	plugin		
+v72	v72_batch_registration.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v73	v73_directional_p.R	ARTEFACT	NO		evidence		
+v74	v74_axis_consume_once.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v75	v75_legend_single_step.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v76	v76_bracket_names_test.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v77	v77_one_tailed_direction.R	SOURCE+LIVE	PRAAT	praat	plugin		
+v78	v78_repo_hygiene.R	SOURCE+ARTEFACT	TOOL	build-manifest.py,check_includes.py	harness,plugin	WORKFLOW	
+v79	v79_release_artefact.R	SOURCE+ARTEFACT	TOOL	build-release.py	harness,plugin		
+v80	v80_shipped_history.R	SOURCE	NO		plugin	ALLOW	
+v81	v81_recipes.R	SOURCE+ARTEFACT	NO		evidence,harness,plugin		
+v82	v82_generated_barrel.R	SOURCE+LIVE	PRAAT	praat	plugin	work	
+v83	v83_pin_definition.R	NONE	NO			census_script,ledger_p,rec_p,vdir,vfiles	
