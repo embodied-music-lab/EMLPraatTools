@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — broom-style result writer
+# EML Stats & Graphs — broom-style result writer
 # ============================================================================
 # Purpose: Collect one analysis's results as three tables and write them as
 #          three CSV files, shaped and named the way R's broom package shapes

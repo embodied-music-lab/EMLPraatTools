@@ -1,4 +1,4 @@
-# Verified render map — `Objects → New → ⁺EML Tools`
+# Verified render map — `Objects → New → ⁺EML Stats & Graphs`
 
 **Current table: §16 August 2026, measured on Praat 6.6.30 (June 30 2026).**
 Xvfb 1400x1000x24, matchbox window manager. Source: `evidence/shots/`, and the
@@ -17,10 +17,10 @@ header and then used the 8 August table added the 20 px twice.
 
 | Part of this file | Layout | matchbox launched as | relation to `gui.sh` |
 |---|---|---|---|
-| §Objects window chrome · §Opening the submenu · §Entry coordinates (click x≈500) · §Loading an arbitrary table · §6 August 2026 | **titlebar ON** — menu bar at y=34, `⁺EML Tools` at y=467 | `matchbox-window-manager` (default) | the **base** values in `gui.sh`, *before* `EML_YOFF` is added |
-| §8 August 2026 — this table was itself one row short | **titlebar OFF** — menu bar at y=14, `⁺EML Tools` at y=447 | `matchbox-window-manager -use_titlebar no` | superseded — see the 16 August table |
-| §15 August 2026 — the recorder group | **titlebar OFF** — menu bar at y=14, `⁺EML Tools` at y=447 | `matchbox-window-manager -use_titlebar no` | superseded — see the 16 August table |
-| **§16 August 2026 — the current table** | **titlebar OFF** — menu bar at y=14, `⁺EML Tools` at y=447 | `matchbox-window-manager -use_titlebar no` | the values `gui.sh` **actually clicks**: base + `EML_YOFF` |
+| §Objects window chrome · §Opening the submenu · §Entry coordinates (click x≈500) · §Loading an arbitrary table · §6 August 2026 | **titlebar ON** — menu bar at y=34, `⁺EML Stats & Graphs` at y=467 | `matchbox-window-manager` (default) | the **base** values in `gui.sh`, *before* `EML_YOFF` is added |
+| §8 August 2026 — this table was itself one row short | **titlebar OFF** — menu bar at y=14, `⁺EML Stats & Graphs` at y=447 | `matchbox-window-manager -use_titlebar no` | superseded — see the 16 August table |
+| §15 August 2026 — the recorder group | **titlebar OFF** — menu bar at y=14, `⁺EML Stats & Graphs` at y=447 | `matchbox-window-manager -use_titlebar no` | superseded — see the 16 August table |
+| **§16 August 2026 — the current table** | **titlebar OFF** — menu bar at y=14, `⁺EML Stats & Graphs` at y=447 | `matchbox-window-manager -use_titlebar no` | the values `gui.sh` **actually clicks**: base + `EML_YOFF` |
 
 **Go to the 16 August section for anything you intend to click.** Everything
 above it is kept as the record of how the numbers were arrived at, and three of
@@ -92,14 +92,14 @@ defaults to.
   by re-driving on 5 August 2026.
 - Menu bar: `Praat  New  Open  Save(greyed)  Help`. `New` is at **(76,34)**.
 - Bottom-left buttons `Rename… / Copy… / Inspect / Info / Remove` all greyed.
-- Plugin-added items render with a superscript "+" prefix: `⁺EML Tools`,
+- Plugin-added items render with a superscript "+" prefix: `⁺EML Stats & Graphs`,
   `⁺Stats Wizard...` etc.
 - With one Table loaded, the first object row is at y=87 and the second at
   y=110.
 
 ## Opening the submenu — **titlebar ON layout**
 
-`⁺EML Tools` is the LAST item in the `New` menu, at **y=467**.
+`⁺EML Stats & Graphs` is the LAST item in the `New` menu, at **y=467**.
 Hover does not open it; click only highlights. Press `Right`.
 The submenu spans x≈380–680; click at x≈500.
 
@@ -223,7 +223,7 @@ the paragraph above says, the mis-click does not fail: it opens a real dialog
 belonging to something else.
 
 Re-measured 8 August by opening the submenu on `Xvfb :99` +
-`matchbox-window-manager -use_titlebar no` (menubar at y=14, `⁺EML Tools` at
+`matchbox-window-manager -use_titlebar no` (menubar at y=14, `⁺EML Stats & Graphs` at
 y=447 — the `EML_YOFF = -20` layout) and reading entry positions off the
 screenshot. **These are the offset-applied numbers, not base values: they are
 what `gui.sh` clicks with its default `EML_YOFF=-20`. Do not add the offset

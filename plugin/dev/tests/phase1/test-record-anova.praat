@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — test: the ANOVA orchestrator records itself
+# EML Stats & Graphs — test: the ANOVA orchestrator records itself
 # ============================================================================
 # The first wrapper wiring. Drives @emlRunAnovaAnalysis with a recording
 # running and asserts that what lands in the buffer is what the analysis
@@ -117,7 +117,7 @@ api$ = Get value: 1, "api"
 @ok: "no wrapper runScript: is emitted",
 ... index (code$, "runScript:") = 0
 @ok: "the GUI route is recorded, since the file cannot show it by running",
-... index (api$, "New > EML Tools") > 0
+... index (api$, "New > EML Stats & Graphs") > 0
 
 # The numbers must be the analysis's own, to the digit.
 wantF$ = fixed$ (emlOneWayAnova.fValue, 4)

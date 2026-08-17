@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Check Normality (Multi-Column)
+# EML Stats & Graphs — Check Normality (Multi-Column)
 # ============================================================================
 # Purpose: Test normality for one or more numeric columns, optionally
 #          broken out by group. Reports Shapiro-Wilk, skewness, kurtosis,

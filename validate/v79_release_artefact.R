@@ -31,7 +31,7 @@
 #   READ FROM A COMMITTED RECORD -- and ONLY the three facts that need a
 #   window manager, a display and a human-time keyboard walk:
 #   harness/release/run.sh unpacks the zip into a scratch preferences folder,
-#   starts Praat on it under Xvfb, walks the New menu into the EML Tools
+#   starts Praat on it under Xvfb, walks the New menu into the EML Stats & Graphs
 #   cascade, and does the same walk again with the registration removed.
 #   Two and a half minutes and an X server. That cannot be in a suite people
 #   run on a laptop, so its result is committed as
@@ -622,7 +622,8 @@ WANT_KEYS <- c("praat_version", "build_rc", "name", "artefact_sha256",
                "quickstart_rc", "quickstart_line", "quickstart_ok",
                "installed_objects_window", "installed_dialog_title",
                "installed_windows", "installed_menu_ocr_lines",
-               "installed_menu_label_seen", "broken_objects_window",
+               "installed_menu_label_seen", "broken_menu_label_row",
+               "broken_objects_window",
                "broken_dialog_title", "broken_windows", "want_dialog_title",
                "menu_ordinal", "menu_present", "falsifier_ok", "completed")
 missing_keys <- setdiff(WANT_KEYS, rec_keys)
@@ -842,38 +843,58 @@ check_true("v79",
            any(grepl(sprintf("^Add menu command: .*\"%s\"", WANT_MENU), setup_src)) &&
            !is.na(n_reg) && n_reg >= 1)
 check_true("v79",
-           sprintf("the harness read that label off the open submenu (%s lines of OCR)",
+           sprintf("the harness read that label off the HIGHLIGHTED row (%s lines of OCR)",
                    tsv("installed_menu_ocr_lines")),
            identical(tsv("installed_menu_label_seen"), "1"))
+# THE SAME READING ON THE FALSIFIER'S PHOTOGRAPH MUST COME OUT THE OTHER WAY.
+# With the registrations cut, Up-then-Right still enters the last cascade in
+# the New menu -- one of Praat's own -- so the highlighted row is a real menu
+# row with a real label, and it is not this one. A reading that said yes to
+# both screens would not be reading the row.
+check_true("v79",
+           sprintf("and NOT off the highlighted row with the registration cut ('%s' on both screens would mean the reading is not reading the row)",
+                   WANT_MENU),
+           identical(tsv("broken_menu_label_row"), "0"))
 
-# RE-READ HERE. tesseract if the machine has one -- then the assertion is on
-# the committed PNG and nothing between it and this line is trusted -- and
-# otherwise on the OCR text the harness committed beside it, which is one step
-# weaker and says so.
+# RE-READ HERE. The reading is two passes: the page whole, and every band
+# painted in the GTK selection colour cropped out and read on its own --
+# tesseract's layout analysis DROPS the selected row, which is the only row
+# whose identity this leg is claiming. validate/tools/menu_label_ocr.py is
+# the one implementation of that, shared with the harness so the drive and
+# this file cannot read the photograph two different ways.
+#
+# Re-run here when the machine has tesseract and PIL, in which case the
+# assertion is on the committed PNG and nothing between it and this line is
+# trusted; otherwise on the two readings the harness committed beside it,
+# which is one step weaker and says so.
 norm <- function(s) toupper(gsub("[^A-Za-z0-9]", "", paste(s, collapse = " ")))
+MARKER <- "---- highlighted rows, cropped and read separately ----"
 PNG <- file.path(OUTDIR, "menu_installed.png")
-tess <- Sys.which("tesseract")
-ocr_mode <- "MENU_OCR.txt (no tesseract here)"
+OCRPY <- repo_path("validate", "tools", "menu_label_ocr.py")
+ocr_mode <- "MENU_OCR.txt (the reading committed by the drive)"
 ocr_txt <- ""
-if (nzchar(tess) && file.exists(PNG)) {
-    o <- run(tess, c(shQuote(PNG), "-"))
+if (nzchar(Sys.which("python3")) && file.exists(PNG) && file.exists(OCRPY)) {
+    o <- run("python3", c(shQuote(OCRPY), shQuote(PNG)))
     if (o$status == 0L) { ocr_txt <- paste(o$out, collapse = "\n")
-                          ocr_mode <- "tesseract, re-run on the committed PNG" }
+                          ocr_mode <- "re-read here off the committed PNG" }
 }
 if (!nzchar(ocr_txt) && file.exists(file.path(OUTDIR, "MENU_OCR.txt")))
     ocr_txt <- paste(readLines(file.path(OUTDIR, "MENU_OCR.txt"), warn = FALSE),
                      collapse = "\n")
+# THE HIGHLIGHTED-ROW HALF ONLY. The whole-page half is the transcript a
+# human reads; it cannot distinguish the cascade the walk ENTERED from any
+# other row on the screen, and the row it entered is the claim.
+row_txt <- if (grepl(MARKER, ocr_txt, fixed = TRUE))
+    sub(paste0("^.*", MARKER), "", ocr_txt) else ""
 wn <- norm(WANT_MENU)
-seen <- nzchar(wn) &&
-    (grepl(wn, norm(ocr_txt), fixed = TRUE) ||
-     grepl(substr(wn, 1, nchar(wn) - 1L), norm(ocr_txt), fixed = TRUE))
-# The one-character tolerance is measured, not defensive: at 1400x1100 under
-# Xvfb tesseract renders the open cascade's own row as "+EML Tool", the
-# trailing "s" lost where the submenu arrow abuts it. It is not what decides
+# The one-character tolerance is measured, not defensive: a trailing glyph
+# can be lost where the submenu arrow abuts the label. It is not what decides
 # the check -- "NOT THE EML MENU" normalises to NOTTHEEMLMENU, which contains
-# neither EMLTOOLS nor EMLTOOL.
+# no prefix of the wanted label.
+seen <- nzchar(wn) &&
+    grepl(substr(wn, 1, nchar(wn) - 1L), norm(row_txt), fixed = TRUE)
 check_true("v79",
-           sprintf("'%s' is legible in the submenu photograph [%s]",
+           sprintf("'%s' is legible on the highlighted row of the submenu photograph [%s]",
                    WANT_MENU, ocr_mode),
            seen)
 

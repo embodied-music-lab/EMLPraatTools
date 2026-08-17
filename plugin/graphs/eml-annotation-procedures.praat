@@ -3204,7 +3204,7 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
             ... + .factorCol$ + """, " + string$ (.alpha) + ", """ + .style$
             ... + """, " + string$ (.showNS) + ", " + string$ (.showEffect)
             ... + ", """ + .testType$ + """, " + string$ (.layoutMode),
-            ... "In the GUI: New > EML Tools > EML Graphs..., with statistical annotation switched on.",
+            ... "In the GUI: New > EML Stats & Graphs > EML Graphs..., with statistical annotation switched on.",
             ... .recResult$, .error$
         endif
     endif

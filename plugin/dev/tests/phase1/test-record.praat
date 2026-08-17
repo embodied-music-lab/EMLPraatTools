@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — test: record workflow foundation
+# EML Stats & Graphs — test: record workflow foundation
 # ============================================================================
 # Covers @emlRecordBegin/Step/Result/Source/Flush, @emlPhrase, and the
 # renderer. No wrapper is touched and no GUI is needed.
@@ -146,7 +146,7 @@ step2Intent$ = step2Intent$ + newline$ + emlPhrase.result$
 ... step2Intent$,
 ... "Normality was NOT tested on this path.",
 ... "@emlRunAnovaAnalysis: table, ""SPL_dB"", ""voice_type"", 1",
-... "In the GUI: New > EML Tools > Compare k groups (ANOVA)..."
+... "In the GUI: New > EML Stats & Graphs > Compare k groups (ANOVA)..."
 @emlRecordResult: "F(2, 42) = 14.2687, p < .001, eta-squared = 0.4046"
 @emlRecordResult: "Brown-Forsythe F(2, 42) = 0.3927, p = .678 — not rejected."
 
@@ -208,10 +208,10 @@ endif
 ... index (body$, "recorded on Praat ") > 0
 ; The folder moved in Praat 7: 6.6.30 -> ~/.praat-dir, 7.0 -> ~/.config/praat.
 @ok: "the v6 and v7 locations are both named",
-... index (body$, ".praat-dir/plugin_EML_Praat_Tools") > 0
-... and index (body$, ".config/praat/plugin_EML_Praat_Tools") > 0
+... index (body$, ".praat-dir/plugin_EML_StatsGraphs") > 0
+... and index (body$, ".config/praat/plugin_EML_StatsGraphs") > 0
 @ok: "macOS and Windows locations are named",
-... index (body$, "Praat Prefs/plugin_EML_Praat_Tools") > 0
+... index (body$, "Praat Prefs/plugin_EML_StatsGraphs") > 0
 ... and index (body$, "Windows") > 0
 ; A conditional include LOOKS like it works -- a false branch is skipped and
 ; the script runs to the end -- but that is nothing running. In a TRUE branch
@@ -241,7 +241,7 @@ endif
 @ok: "Stream A text landed in a comment, not in code",
 ... index (body$, "# F(2, 42) = 14.2687") > 0
 @ok: "the GUI route is recorded as a comment",
-... index (body$, "# In the GUI: New > EML Tools") > 0
+... index (body$, "# In the GUI: New > EML Stats & Graphs") > 0
 
 ; The blank-line discipline: the line before an executable call must be
 ; empty, and so must the line after it.

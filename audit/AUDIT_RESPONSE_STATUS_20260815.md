@@ -999,6 +999,12 @@ Forty-one rows. The three that remain `open` are `NEW-G8-2` — the one true
 unrepaired defect in the list, the one-sided range still swapped by the form's
 range-validation block — and `D15` and `RULE-28I`, which are next.
 
+> **Superseded 17 August.** The ruling below was given, `refuted` exists, and
+> `D15` has taken it. `RULE-28I` has NOT, and the reason is worth reading: see
+> *THE RULING, AND WHAT IT COULD AND COULD NOT REACH* at the end of this file.
+> The census in the table above is the 16 August one and is now `open` 2,
+> `refuted` 1.
+
 ### BLOCKED ON THE AUTHOR: one sentence would move `D15` and `RULE-28I`
 
 Both are `open` and neither is work. `D15` — the paired wrapper's literal
@@ -1033,3 +1039,169 @@ empty `fixedBy` and empty `pinnedBy`, because there was nothing to fix.
 which case the recommendation is that `verdict` be documented as the field that
 carries this distinction and the census be read as `open − 2` wherever it is
 quoted.
+
+---
+
+## THE RULING, AND WHAT IT COULD AND COULD NOT REACH — 17 August 2026
+
+**Ruled: "Yes, add refuted."** The literal is in `STATUSES`. One of the two rows
+took it. The other did not, and that half of this section is the more useful
+half.
+
+### The literal
+
+`status` now reads `open | fixed-unpinned | closed | superseded | refuted`.
+`refuted` means SOMEBODY WENT AND LOOKED AND THERE WAS NO DEFECT. It is not a
+closure — nothing was repaired — and it is not a queue — nothing is owed. It is
+the third meaning `open` had been carrying, now separated from the other two.
+
+### The rule it carries, so it cannot become a dumping ground
+
+A `refuted` row **must** carry a `refutation:` pointer, exactly as a
+`superseded` row must carry a `roadmap:` pointer and a `pre-repo` row an
+`evidence:` one. Same grammar, same parser, same filesystem check: the path is
+opened, the line span is checked against the file's real length, the note's
+presence is enforced. And `refuted` **entails empty `fixedBy` and empty
+`pinnedBy`** — nothing was built, so there is nothing to have fixed and nothing
+to hold in place — enforced in the same check that has always enforced it for
+`superseded`, now written over both kinds from one table rather than twice.
+
+The literal is therefore not typeable. It is entailed by a pointer this checker
+opens:
+
+```
+fixedBy "", roadmap pointer     ->  superseded
+fixedBy "", refutation pointer  ->  refuted
+fixedBy ""                      ->  open
+```
+
+**Why `refutation:` is its own kind and does not reuse `evidence:` — one
+sentence, as asked.** An `evidence:` pointer says *a repair is present in this
+tree* and a `refutation:` pointer says *no repair was ever needed*, and reusing
+`evidence` would not merely blur those two sentences but make the blur
+MECHANICAL, because the entailment table switches on the kind — an empty
+`fixedBy` beside an `evidence:` pointer would silently become `refuted`, and the
+next `pre-repo` row to lose its hash would be reclassified from a repair this
+project cannot prove into a defect this project denies, in the flattering
+direction, without anybody typing it.
+
+### `D15` — evidence found, row moved
+
+> **`refutation: validate/v60_wrapper_paths.R:231-240`**
+
+The finding suspected a hardcoded column name aimed at the user's table. `v60`
+asserts **both halves** of the refutation against the paired wrapper's source,
+read off disk at run time with comments stripped:
+
+- the literal is there — `emlGraphsPresetGroupCol$ = "Group"`
+  (`plugin/scripts/eml-compare-paired.praat:332`);
+- and the table it addresses is the wrapper's **own reshape**, created four
+  lines above it with the column names `Subject, Condition, Value, Group`
+  (`:239`) — so the column it names always exists.
+
+This is a live check rather than a committed artefact: delete either line from
+the plugin and `v60` goes red. `v60`'s own header (`:87-93`) says why it is
+written that way — *"a later reader tidying up 'hardcoded strings' has to argue
+with a failing check rather than with a comment"* — and its section 3 is headed
+`THE REFUTED FINDING, PINNED`. That is as good as a refutation gets in this
+tree, and the row is now `refuted`.
+
+### `RULE-28I` — evidence NOT found, row left `open`
+
+**I could not substantiate `RULE-28I`, and it stays where it was.**
+
+The claim is that after a separate-legend save, a second Save press produces a
+byte-identical full figure. What exists in this tree:
+
+- **The mechanism is present in the shipped source.** `plugin/stats/eml-output.praat`
+  narrows the viewport to the parked legend's stored rectangle, writes
+  `<stem>_legend.png`, and then calls `@emlAssertFullViewport` to put the
+  figure's extent back — with a comment naming this exact scenario:
+  *"otherwise a second Save from this same dialog writes the legend again
+  instead of the figure."*
+- **`v32` pins what that restore restores** (`validate/v32_legend_geometry.R:1367-1389`):
+  `@emlAssertFullViewport`'s body is ONE statement, the tracked box unmodified,
+  and the legend save writes none of the four globals it reads.
+
+What does **not** exist: any check, capture or harness artefact that watches
+it. No validator reads `@emlSavePanel`'s legend branch — `v56` reads that
+procedure and checks the sanitiser's ordering, not the viewport; `v32` and
+`v61` drive placement 4 and assert the second FILE is written, never a second
+figure save after it; no harness in the tree saves the figure twice across a
+legend save; and the string `28I` occurs nowhere in `validate/` and nowhere in
+any harness driver, case or artefact — its only occurrences outside the audit
+prose are the rule's own comment in `plugin/graphs/eml-draw-procedures.praat`
+and the two verbatim copies of that file under
+`harness/batchgui/out/work/prefs_{before,after}/`.
+**Delete the `@emlAssertFullViewport` restore from the save panel today and this
+suite stays green.**
+
+And the refutation's original evidence is gone. The 14 August report records the
+finding as *"REFUTED by drive"*, and the same report's §9 says of all its
+evidence: *"sandbox-local and dies with this session"* — the drive lived in
+`/tmp/aud57–62`.
+
+So the only in-tree support is the source's own restore call plus the comment
+beside it, which is the code under test rather than evidence about it. Pointing
+`refutation:` at that would be circular — *the code is correct because the code
+says so* — and it is the precise failure `v83` was written against: a claim that
+looks settled and that nothing would notice the loss of. A refuted row with a
+pointer to nothing is worse than an open row, because an open row admits it is
+unexamined and a refuted row asserts it was examined. `RULE-28I` therefore keeps
+`status: open` and `verdict: REFUTED`, and the two fields disagreeing is the
+honest state: the audit did examine it, and this repository cannot show that it
+did.
+
+**What would move it,** and it is a small job: a leg that presses Save twice on
+a placement-4 figure and `cmp`s the two full-figure PNGs, with the second
+compared byte-for-byte off disk rather than by size. That is one harness case
+and one check, and it would also be the first thing in the tree that goes red if
+the restore is removed.
+
+### Break-tests, 17 August
+
+On **fixture copies in `/tmp/refuted`** — the real ledger was never edited to
+make a check go red, and it is green before and after.
+
+| Corruption (fixture) | Result |
+|---|---|
+| `D15` `refuted`, `pointer` deleted | **RED 2** — "status refuted with no valid `refutation:` pointer — name the thing in this tree that shows there is no defect here", **and** the entailment: "status 'refuted', but fixedBy empty and pinnedBy empty entail 'open'" |
+| `D15` `refuted` with a `fixedBy` hash | **RED 2** — the contradiction, named: "refutation pointer says refuted — nothing was built — but fixedBy set", plus the entailment mismatch |
+| `D15` pointer path `v60_wrapper_pathz.R` | **RED 2** — "pointer names validate/v60_wrapper_pathz.R, which does not exist", and the row falls back to unsupported |
+| `D15` `status: "REFUTED"` | **RED 1** — "status is one of open \| fixed-unpinned \| closed \| superseded \| refuted" |
+| `D15` `status: "refuted "` | **RED 1** — "and each is spelled exactly, with no surrounding whitespace: status 'refuted ' carries whitespace; the literal is 'refuted'" |
+
+The last one needed a **new check**. `norm()` strips before comparing, so a
+padded literal used to pass — harmlessly for this checker, which strips, and
+invisibly for any consumer that switches on the raw JSON string, for which
+`"refuted "` is exactly as unrecognised as `"REFUTED"`. The padding is now
+reported rather than absorbed, for every literal and not only the new one. A
+vocabulary that accepts near-misses is not a vocabulary.
+
+### The census
+
+`python3 validate/tools/check_findings_schema.py` **exits 0**, fourteen checks,
+all green.
+
+| status | rows | change |
+|---|---|---|
+| `closed` | 24 | — |
+| `fixed-unpinned` | 12 | — |
+| `open` | **2** | −1 (`D15` left) |
+| `superseded` | 2 | — |
+| `refuted` | **1** | +1 (`D15`) |
+
+Forty-one rows. **`open` is now `NEW-G8-2` and `RULE-28I`.** One of those two is
+a defect — the one-sided range still swapped by the form's range-validation
+block — and the other is a row whose refutation this repository cannot
+currently show. Sizing the remaining work off `open` still overcounts by one,
+and that one is now labelled rather than hidden.
+
+`Rscript validate/v83_pin_definition.R` — the ledger's other consumer — was
+re-run with the new literal present: **54 checks, 53 passed**, all 24 `pinnedBy`
+rows still qualifying. The one red is
+`validate/tools/EVIDENCE_CENSUS.tsv` needing regeneration, in the `v79` row's
+tool list only (`build-release.py` → `build-release.py,menu_label_ocr.py`). It
+is unrelated to the ledger — the same red appears when `v83` is run against the
+pre-change ledger via `EML_FINDINGS_LEDGER` — and the file is not this change's
+to regenerate.

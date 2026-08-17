@@ -6,7 +6,7 @@
 # Date: 2 August 2026
 #
 #
-# Part of the EML Stats library (EML Praat Tools).
+# Part of the EML Stats library (EML Stats & Graphs).
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
 #
 #

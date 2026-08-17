@@ -1,8 +1,8 @@
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-extract.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-output.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-inferential.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-inferential.praat
 
 data = Read Table from comma-separated file: "~/voice_study/spl_by_group.csv"
 

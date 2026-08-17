@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Stop recording and open
+# EML Stats & Graphs — Stop recording and open
 # ============================================================================
 # Purpose: end the recording started by 'Record script' and put the resulting
 #          script in front of the user in a Praat ScriptEditor, where it can

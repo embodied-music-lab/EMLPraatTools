@@ -101,7 +101,7 @@ done
 # already tell a user to edit, and the two paths a user types for themselves.
 USERDIR="$OUT/user_folder"
 mkdir -p "$USERDIR"
-sed -e "s|~/.praat-dir/plugin_EML_Praat_Tools|$EML_ROOT/plugin|g" \
+sed -e "s|~/.praat-dir/plugin_EML_StatsGraphs|$EML_ROOT/plugin|g" \
     -e "s|__EML_DATA__|$DATA|g" \
     -e "s|__EML_OUT__|$OUT/example|g" \
     "$SCRIPT_DIR/doc_example.praat" > "$USERDIR/my_analysis.praat"

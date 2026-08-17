@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ============================================================================
-# run-tests.py — EML Praat Tools test runner
+# run-tests.py — EML Stats & Graphs test runner
 # ============================================================================
 # Purpose: Discover and execute the Praat test suites under dev/tests/, one
 #          process per suite, and classify each result according to the TEST
@@ -355,7 +355,7 @@ def fmt_table(results: list[dict], test_root: Path) -> str:
 def main() -> int:
     root = plugin_root()
     ap = argparse.ArgumentParser(
-        description="Run the EML Praat Tools test suites and enforce the "
+        description="Run the EML Stats & Graphs test suites and enforce the "
                     "TEST RESULT REPORTING CONTRACT (v1.1)."
     )
     ap.add_argument("--praat", default=None)

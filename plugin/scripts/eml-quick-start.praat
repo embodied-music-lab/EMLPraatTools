@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Quick Start Guide
+# EML Stats & Graphs — Quick Start Guide
 # ============================================================================
 # Prints a quick-start guide to the Info window.
 # Version: 1.1
@@ -25,7 +25,7 @@
 # ============================================================================
 
 writeInfoLine: "============================================================"
-appendInfoLine: "  EML Praat Tools — Quick Start Guide"
+appendInfoLine: "  EML Stats & Graphs — Quick Start Guide"
 appendInfoLine: "============================================================"
 appendInfoLine: ""
 appendInfoLine: "TWO WAYS TO USE EML TOOLS"
@@ -38,11 +38,11 @@ appendInfoLine: ""
 appendInfoLine: "  2. IN YOUR OWN SCRIPTS"
 appendInfoLine: "     Add these includes at the top of your script:"
 appendInfoLine: ""
-appendInfoLine: "       include plugin_EML_Praat_Tools/stats/eml-core-utilities.praat"
-appendInfoLine: "       include plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat"
-appendInfoLine: "       include plugin_EML_Praat_Tools/stats/eml-extract.praat"
-appendInfoLine: "       include plugin_EML_Praat_Tools/stats/eml-output.praat"
-appendInfoLine: "       include plugin_EML_Praat_Tools/stats/eml-inferential.praat"
+appendInfoLine: "       include plugin_EML_StatsGraphs/stats/eml-core-utilities.praat"
+appendInfoLine: "       include plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat"
+appendInfoLine: "       include plugin_EML_StatsGraphs/stats/eml-extract.praat"
+appendInfoLine: "       include plugin_EML_StatsGraphs/stats/eml-output.praat"
+appendInfoLine: "       include plugin_EML_StatsGraphs/stats/eml-inferential.praat"
 appendInfoLine: ""
 appendInfoLine: "     Then call procedures directly. Example:"
 appendInfoLine: ""
@@ -76,9 +76,9 @@ appendInfoLine: "  DOCUMENTATION"
 appendInfoLine: "------------------------------------------------------------"
 appendInfoLine: ""
 appendInfoLine: "  Overview:             README.md (in the plugin folder)"
-appendInfoLine: "  Demo figure:          Run Stats Demo (in EML Tools menu)"
+appendInfoLine: "  Demo figure:          Run Stats Demo (in EML Stats & Graphs menu)"
 appendInfoLine: ""
-appendInfoLine: "  README.md is in the plugin_EML_Praat_Tools folder inside"
+appendInfoLine: "  README.md is in the plugin_EML_StatsGraphs folder inside"
 appendInfoLine: "  your Praat preferences directory."
 appendInfoLine: ""
 appendInfoLine: "============================================================"

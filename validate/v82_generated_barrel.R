@@ -155,7 +155,7 @@ dir.create(work, showWarnings = FALSE, recursive = TRUE)
 install <- function(home, prefs) {
     dir.create(home, showWarnings = FALSE, recursive = TRUE)
     dir.create(prefs, showWarnings = FALSE, recursive = TRUE)
-    tgt <- file.path(prefs, "plugin_EML_Praat_Tools")
+    tgt <- file.path(prefs, "plugin_EML_StatsGraphs")
     if (!dir.exists(tgt)) {
         dir.create(tgt, showWarnings = FALSE, recursive = TRUE)
         file.copy(list.files(plug, full.names = TRUE), tgt,
@@ -232,7 +232,7 @@ if (canDrive) {
     prefs1 <- file.path(home1, ".praat-dir")
     install(home1, prefs1)
     writeLines(c(sprintf("include %s",
-                         file.path(prefs1, "plugin_EML_Praat_Tools",
+                         file.path(prefs1, "plugin_EML_StatsGraphs",
                                    "scripts", "eml-lib.praat")),
                  'writeInfoLine: "parsed"'),
                file.path(u, "old.praat"))
@@ -272,7 +272,7 @@ if (canDrive) {
                    grepl("overwritten", hdr, fixed = TRUE))
         # AND IT SHOWS THE USER THE LINE. A barrel whose own include line is
         # not written down anywhere is a file nobody can be told how to use.
-        expect_line <- paste0("include ~/.praat-dir/plugin_EML_Praat_Tools/",
+        expect_line <- paste0("include ~/.praat-dir/plugin_EML_StatsGraphs/",
                               "scripts/eml-lib-user.praat")
         check_true("v82", "the header quotes the one line a user writes",
                    any(grepl(expect_line, barrel1, fixed = TRUE)))
@@ -286,20 +286,20 @@ if (canDrive) {
                    !is.null(rw) && all(as.integer(rw) < 128L))
     }
     check_true("v82", "the barrel names eleven modules", length(inc1) == 11L)
-    stripped <- sub("^.*/plugin_EML_Praat_Tools/", "", inc1)
+    stripped <- sub("^.*/plugin_EML_StatsGraphs/", "", inc1)
     check_true("v82",
                "its include list is the canonical module order",
                identical(stripped, CANON))
     check_true("v82",
                "every include line names the installed root, home-relative",
                length(inc1) > 0 &&
-               all(startsWith(inc1, "~/.praat-dir/plugin_EML_Praat_Tools/")))
+               all(startsWith(inc1, "~/.praat-dir/plugin_EML_StatsGraphs/")))
     # THE POINT OF THE WHOLE ORDER: one line, from a folder that is not the
     # plugin's, and the stack loads. Asserted by RUNNING it.
     if (file.exists(bp1)) {
         u <- file.path(work, "s1", "user"); dir.create(u, recursive = TRUE,
                                                        showWarnings = FALSE)
-        writeLines(c("include ~/.praat-dir/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat",
+        writeLines(c("include ~/.praat-dir/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat",
                      "@emlInitDrawingDefaults",
                      '@emlFormatP: 0.0123',
                      'writeInfoLine: "BARREL RAN ", emlFormatP.formatted$'),
@@ -321,7 +321,7 @@ if (canDrive) {
 if (canDrive && !is.null(barrel1)) {
     home1 <- file.path(work, "s1", "home")
     prefs1 <- file.path(home1, ".praat-dir")
-    bp1 <- file.path(prefs1, "plugin_EML_Praat_Tools", BARREL)
+    bp1 <- file.path(prefs1, "plugin_EML_StatsGraphs", BARREL)
     t1 <- mtime_ns(bp1)
     b1 <- read_raw(bp1)
     Sys.sleep(1.1)
@@ -357,7 +357,7 @@ if (canDrive) {
     root2 <- install(home2, prefs2)
     bp2 <- file.path(root2, BARREL)
     stale <- c("# a barrel left behind by an older location",
-               "include ~/somewhere-else/plugin_EML_Praat_Tools/stats/eml-analysis.praat")
+               "include ~/somewhere-else/plugin_EML_StatsGraphs/stats/eml-analysis.praat")
     writeLines(stale, bp2)
     L <- launch(home2, prefs2)
     repaired <- read_raw(bp2)
@@ -382,7 +382,7 @@ if (canDrive) {
 if (canDrive && length(inc1) == 11L) {
     home1 <- file.path(work, "s1", "home")
     prefs1 <- file.path(home1, ".praat-dir")
-    pr <- file.path(prefs1, "plugin_EML_Praat_Tools")
+    pr <- file.path(prefs1, "plugin_EML_StatsGraphs")
     rec <- file.path(work, "s1", "rec")
     dir.create(rec, recursive = TRUE, showWarnings = FALSE)
     drv <- file.path(rec, "record.praat")
@@ -413,7 +413,7 @@ if (canDrive && length(inc1) == 11L) {
                    "and both name the root @emlPluginRoot resolved for this install",
                    length(inc_rec) > 0 &&
                    all(startsWith(inc_rec,
-                                  "~/.praat-dir/plugin_EML_Praat_Tools/")))
+                                  "~/.praat-dir/plugin_EML_StatsGraphs/")))
     }
     # THE SHARED PROCEDURE ANSWERS FOR ITSELF, on the same installation, so
     # that "both agree" cannot be two writers agreeing on a wrong root.
@@ -425,7 +425,7 @@ if (canDrive && length(inc1) == 11L) {
     got <- sub(".*ROOT=", "", sub("\n.*", "", sub(".*?ROOT=", "ROOT=", rq$out)))
     check_true("v82",
                "@emlPluginRoot reports the folder the plugin is installed in",
-               grepl("ROOT=~/.praat-dir/plugin_EML_Praat_Tools", rq$out,
+               grepl("ROOT=~/.praat-dir/plugin_EML_StatsGraphs", rq$out,
                      fixed = TRUE))
     check_true("v82", "and the barrel's lines are built on that answer",
                length(inc1) > 0 && all(startsWith(inc1, trimws(got))))
@@ -498,9 +498,9 @@ if (canDrive) {
     launch(home3, old3)
     new3 <- file.path(home3, "moved-prefs")
     dir.create(new3, showWarnings = FALSE, recursive = TRUE)
-    file.copy(file.path(old3, "plugin_EML_Praat_Tools"), new3,
+    file.copy(file.path(old3, "plugin_EML_StatsGraphs"), new3,
               recursive = TRUE, copy.date = TRUE)
-    bp <- file.path(new3, "plugin_EML_Praat_Tools", BARREL)
+    bp <- file.path(new3, "plugin_EML_StatsGraphs", BARREL)
     check_true("v82", "the barrel that travelled names the old folder",
                file.exists(bp) &&
                any(grepl("^include ~/\\.praat-dir/", readLines(bp, warn = FALSE))))
@@ -509,10 +509,10 @@ if (canDrive) {
     check_true("v82",
                "a launch at the new location regenerates every line for it",
                length(inc3) == 11L &&
-               all(startsWith(inc3, "~/moved-prefs/plugin_EML_Praat_Tools/")))
+               all(startsWith(inc3, "~/moved-prefs/plugin_EML_StatsGraphs/")))
     u <- file.path(work, "s3", "user")
     dir.create(u, recursive = TRUE, showWarnings = FALSE)
-    writeLines(c("include ~/moved-prefs/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat",
+    writeLines(c("include ~/moved-prefs/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat",
                  "@emlInitDrawingDefaults",
                  'writeInfoLine: "MOVED BARREL RAN"'), file.path(u, "m.praat"))
     r <- launch(home3, new3, file.path(u, "m.praat"))
@@ -533,9 +533,9 @@ if (canDrive) {
     launch(home4, old4)
     new4 <- file.path(home4, ".config", "praat")
     dir.create(new4, showWarnings = FALSE, recursive = TRUE)
-    file.copy(file.path(old4, "plugin_EML_Praat_Tools"), new4,
+    file.copy(file.path(old4, "plugin_EML_StatsGraphs"), new4,
               recursive = TRUE, copy.date = TRUE)
-    bp <- file.path(new4, "plugin_EML_Praat_Tools", BARREL)
+    bp <- file.path(new4, "plugin_EML_StatsGraphs", BARREL)
     check_true("v82", "the barrel carried into the 7.x folder still names the 6.x one",
                file.exists(bp) &&
                any(grepl("^include ~/\\.praat-dir/", readLines(bp, warn = FALSE))))
@@ -544,10 +544,10 @@ if (canDrive) {
     check_true("v82",
                "a launch on the 7.x preferences folder regenerates for it",
                length(inc4) == 11L &&
-               all(startsWith(inc4, "~/.config/praat/plugin_EML_Praat_Tools/")))
+               all(startsWith(inc4, "~/.config/praat/plugin_EML_StatsGraphs/")))
     u <- file.path(work, "s4", "user")
     dir.create(u, recursive = TRUE, showWarnings = FALSE)
-    writeLines(c("include ~/.config/praat/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat",
+    writeLines(c("include ~/.config/praat/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat",
                  "@emlInitDrawingDefaults",
                  'writeInfoLine: "V7 BARREL RAN"'), file.path(u, "m.praat"))
     r <- launch(home4, new4, file.path(u, "m.praat"))

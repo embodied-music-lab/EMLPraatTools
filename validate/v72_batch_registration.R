@@ -247,11 +247,11 @@ if (length(cmd_line) == 1) {
     # that owns it.
     check_true("v72", "and that script exists on disk",
                file.exists(file.path(plug, f[5])))
-    # DEPTH 1 -- a child of the EML Tools cascade, not a sibling of it. Depth 0
+    # DEPTH 1 -- a child of the EML Stats & Graphs cascade, not a sibling of it. Depth 0
     # would put "Batch voice analysis..." in Praat's own New menu beside
     # "Create TextGrid...", which is a different claim about what this plugin
     # is.
-    check_true("v72", "at depth 1, inside the EML Tools cascade",
+    check_true("v72", "at depth 1, inside the EML Stats & Graphs cascade",
                grepl(",\\s*1\\s*,\\s*\"scripts/eml-batch-process\\.praat\"",
                      cmd_line[1]))
 }
@@ -325,7 +325,7 @@ if (ran) {
 
     # THE POSITIVE LEG.
     check_true("v72",
-               sprintf("a keyboard walk of %s commands into the EML Tools cascade reaches the batch dialog (\"%s\")",
+               sprintf("a keyboard walk of %s commands into the EML Stats & Graphs cascade reaches the batch dialog (\"%s\")",
                        bs("menu_ordinal"), bs("menu_after_title")),
                identical(bs("menu_after_title"), "Batch Voice Analysis"))
     check_true("v72", "and the dialog it reached is the one the drive then filled",
@@ -376,7 +376,7 @@ if (ran) {
     n_after <- length(with_script)
     n_before <- n_after - length(cmd_line)
     check_true("v72",
-               sprintf("the Objects>New>EML Tools cascade registers %d commands, one more than the %d it carried while batch was tabled",
+               sprintf("the Objects>New>EML Stats & Graphs cascade registers %d commands, one more than the %d it carried while batch was tabled",
                        n_after, n_before),
                n_after == n_before + 1 && n_after == 18)
 }

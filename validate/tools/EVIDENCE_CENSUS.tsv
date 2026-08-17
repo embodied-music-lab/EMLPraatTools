@@ -99,7 +99,7 @@ v75	v75_legend_single_step.R	SOURCE+ARTEFACT	NO		harness,plugin
 v76	v76_bracket_names_test.R	SOURCE+ARTEFACT	NO		harness,plugin		
 v77	v77_one_tailed_direction.R	SOURCE+LIVE	PRAAT	praat	plugin		
 v78	v78_repo_hygiene.R	SOURCE+ARTEFACT	TOOL	build-manifest.py,check_includes.py	harness,plugin	WORKFLOW	
-v79	v79_release_artefact.R	SOURCE+ARTEFACT	TOOL	build-release.py	harness,plugin		
+v79	v79_release_artefact.R	SOURCE+ARTEFACT	TOOL	build-release.py,menu_label_ocr.py	harness,plugin		
 v80	v80_shipped_history.R	SOURCE	NO		plugin	ALLOW	
 v81	v81_recipes.R	SOURCE+ARTEFACT	NO		evidence,harness,plugin		
 v82	v82_generated_barrel.R	SOURCE+LIVE	PRAAT	praat	plugin	work	

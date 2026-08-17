@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Record workflow: buffer, phrases, renderer
+# EML Stats & Graphs — Record workflow: buffer, phrases, renderer
 # ============================================================================
 # Purpose: accumulate every analysis and drawing step of a session and write
 #          it out as a single annotated Praat script — one artifact that both
@@ -338,7 +338,7 @@ procedure emlRecordInit
         endif
         if emlRecordPluginRoot$ = ""
             emlRecordPluginRoot$ = preferencesDirectory$
-            ... + "/plugin_EML_Praat_Tools"
+            ... + "/plugin_EML_StatsGraphs"
         endif
     endif
     if not variableExists ("emlRecordPhraseId")
@@ -715,7 +715,7 @@ endproc
 # header lists -- and the answer stays portable.
 # ----------------------------------------------------------------------------
 procedure emlPluginRoot
-    .abs$ = preferencesDirectory$ + "/plugin_EML_Praat_Tools"
+    .abs$ = preferencesDirectory$ + "/plugin_EML_StatsGraphs"
     .root$ = ""
     if homeDirectory$ <> ""
         if index (.abs$, homeDirectory$) = 1
@@ -727,14 +727,14 @@ procedure emlPluginRoot
         ; Linux 6.x and 7.x are measured on this machine. Windows and macOS
         ; are Praat's own documented locations.
         if windows
-            .root$ = "~/Praat/plugin_EML_Praat_Tools"
+            .root$ = "~/Praat/plugin_EML_StatsGraphs"
         elsif macintosh
             .root$ = "~/Library/Preferences/Praat Prefs"
-            ... + "/plugin_EML_Praat_Tools"
+            ... + "/plugin_EML_StatsGraphs"
         elsif praatVersion >= 7000
-            .root$ = "~/.config/praat/plugin_EML_Praat_Tools"
+            .root$ = "~/.config/praat/plugin_EML_StatsGraphs"
         else
-            .root$ = "~/.praat-dir/plugin_EML_Praat_Tools"
+            .root$ = "~/.praat-dir/plugin_EML_StatsGraphs"
         endif
     endif
 endproc
@@ -3186,7 +3186,7 @@ procedure emlRecordRender
     ; paths that only ever write the file.
     .text$ = .text$ + "#!praat" + newline$
     .text$ = .text$ + .bar$ + newline$
-    .text$ = .text$ + "# EML Praat Tools -- recorded workflow" + newline$
+    .text$ = .text$ + "# EML Stats & Graphs -- recorded workflow" + newline$
     .text$ = .text$ + "# " + emlRecordStamp$
     ... + "  --  recorded on Praat " + emlRecordPraatVersion$ + newline$
     ; A RECOVERED STAMP IS LABELLED AS ONE. The session's own start time is
@@ -3265,16 +3265,16 @@ procedure emlRecordRender
     ... + newline$
     .text$ = .text$ + "#" + newline$
     .text$ = .text$
-    ... + "#   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_Praat_Tools"
+    ... + "#   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_StatsGraphs"
     ... + newline$
     .text$ = .text$
-    ... + "#   Praat 7.x  Linux    ~/.config/praat/plugin_EML_Praat_Tools"
+    ... + "#   Praat 7.x  Linux    ~/.config/praat/plugin_EML_StatsGraphs"
     ... + newline$
     .text$ = .text$
-    ... + "#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EML_Praat_Tools"
+    ... + "#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs"
     ... + newline$
     .text$ = .text$
-    ... + "#   Windows    ~/Praat/plugin_EML_Praat_Tools"
+    ... + "#   Windows    ~/Praat/plugin_EML_StatsGraphs"
     ... + newline$
     .text$ = .text$
     ... + "#   Not sure?  Run  writeInfoLine: preferencesDirectory$"

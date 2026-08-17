@@ -5,7 +5,7 @@
 # Version: 1.0
 # Date: 20 February 2026
 #
-# Part of the EML Stats library (EML Praat Tools).
+# Part of the EML Stats library (EML Stats & Graphs).
 # License: GPL-3.0-or-later
 #
 # Provides: @emlRankVector, @emlCountIf, @emlSubset, @emlUniqueValues,

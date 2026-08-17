@@ -1,9 +1,9 @@
 # ============================================================================
-# EML Praat Tools — Plugin Setup
+# EML Stats & Graphs — Plugin Setup
 # ============================================================================
 # Purpose: Register menu entries and dynamic action buttons for the
-#          EML Praat Tools plugin. This file is executed automatically
-#          by Praat on startup when the plugin_EML_Praat_Tools folder is placed
+#          EML Stats & Graphs plugin. This file is executed automatically
+#          by Praat on startup when the plugin_EML_StatsGraphs folder is placed
 #          in the Praat preferences directory.
 #
 # License: GPL-3.0-or-later
@@ -45,7 +45,7 @@
 emlMinPraatVersion = 6630
 
 if praatVersion < emlMinPraatVersion
-    writeInfoLine: "EML Praat Tools requires Praat 6.6.30 or later."
+    writeInfoLine: "EML Stats & Graphs requires Praat 6.6.30 or later."
     appendInfoLine: "This is Praat ", praatVersion$, "."
     appendInfoLine: ""
     appendInfoLine: "The plugin has NOT been loaded. Update Praat from praat.org"
@@ -53,14 +53,14 @@ if praatVersion < emlMinPraatVersion
     exitScript ()
 endif
 
-# ── Fixed menu: Objects → New → EML Tools cascade ──────────────────────────
+# ── Fixed menu: Objects → New → EML Stats & Graphs cascade ─────────────────
 
 # Cascade header (no script = submenu title)
-Add menu command: "Objects", "New", "EML Tools", "", 0, ""
-Add menu command: "Objects", "New", "Stats Wizard...", "EML Tools", 1, "scripts/eml-wizard.praat"
+Add menu command: "Objects", "New", "EML Stats & Graphs", "", 0, ""
+Add menu command: "Objects", "New", "Stats Wizard...", "EML Stats & Graphs", 1, "scripts/eml-wizard.praat"
 
 # Describe
-Add menu command: "Objects", "New", "-- eml describe --", "EML Tools", 1, ""
+Add menu command: "Objects", "New", "-- eml describe --", "EML Stats & Graphs", 1, ""
 Add menu command: "Objects", "New", "Describe Table column...", "-- eml describe --", 1, "scripts/eml-describe-table.praat"
 Add menu command: "Objects", "New", "Check normality (all columns)...", "Describe Table column...", 1, "scripts/eml-check-normality.praat"
 
@@ -355,7 +355,7 @@ include stats/eml-record.praat
 @emlPluginRoot
 emlSetupRoot$ = emlPluginRoot.root$
 emlSetupPath$ = preferencesDirectory$
-... + "/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat"
+... + "/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat"
 
 # THE MODULE ORDER IS THE DEPENDENCY ORDER, and it is the same list, in the
 # same sequence, that @emlRecordRender writes into a recorded script. The two
@@ -385,7 +385,7 @@ emlSetupText$ = emlSetupText$
 ... + "# eml-lib-user.praat -- GENERATED. Do not edit." + newline$
 emlSetupText$ = emlSetupText$ + "#" + newline$
 emlSetupText$ = emlSetupText$
-... + "# EML Praat Tools -- Ian Howell -- Embodied Music Lab" + newline$
+... + "# EML Stats & Graphs -- Ian Howell -- Embodied Music Lab" + newline$
 emlSetupText$ = emlSetupText$
 ... + "# GPL-3.0-or-later" + newline$
 emlSetupText$ = emlSetupText$ + "#" + newline$

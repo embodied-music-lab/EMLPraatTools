@@ -1,4 +1,4 @@
-# START HERE — picking up the EML Praat Tools GUI drive
+# START HERE — picking up the EML Stats & Graphs GUI drive
 
 Last updated: 5 August 2026.
 

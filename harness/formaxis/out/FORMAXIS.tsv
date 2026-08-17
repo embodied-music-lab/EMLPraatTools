@@ -167,9 +167,9 @@ code_reqmin_writes	4
 code_reqmax_writes	4
 code_headroom_calls	1
 code_legendroom_calls	1
-line_publish_call	8665
-line_headroom_call	8816
-line_legendroom_call	8910
+line_publish_call	8232
+line_headroom_call	8381
+line_legendroom_call	8475
 code_form_fixed	0
 code_graph_fixed	15
 code_graph_eml_fixed	2

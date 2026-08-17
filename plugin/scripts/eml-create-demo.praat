@@ -1,14 +1,14 @@
 # ============================================================================
-# EML Praat Tools — Create Demo Tables
+# EML Stats & Graphs — Create Demo Tables
 # ============================================================================
-# Purpose: Generate synthetic voice-science Tables for testing EML Tools
+# Purpose: Generate synthetic voice-science Tables for testing EML Stats & Graphs
 #          and tutorials. Creates realistic data with known properties.
 #          One demo table per wizard analysis path.
 # Date: 11 May 2026
 # Version: 2.1
 # V2.1: every "Try:" line now quotes the Stats Wizard's own option
 #        labels rather than paraphrasing them, and names the direct
-#        EML Tools menu entry as a second route. Types 1-5 carry a
+#        EML Stats & Graphs menu entry as a second route. Types 1-5 carry a
 #        "Note:" line stating the effect the generator builds in, matching
 #        what types 6 and 7 already did.
 #
@@ -79,7 +79,7 @@ if demo_type = 1
         ... + newline$ + "  Try: Stats Wizard → Compare groups or conditions"
         ... + newline$ + "       → No — different groups (independent)"
         ... + newline$ + "       → Two groups"
-        ... + newline$ + "  Or go straight there: New → EML Tools →"
+        ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
         ... + newline$ + "       Compare two groups..."
 
 # ============================================================================
@@ -120,7 +120,7 @@ elsif demo_type = 2
         ... + newline$ + "  Try: Stats Wizard → Compare groups or conditions"
         ... + newline$ + "       → No — different groups (independent)"
         ... + newline$ + "       → Three or more groups"
-        ... + newline$ + "  Or go straight there: New → EML Tools →"
+        ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
         ... + newline$ + "       Compare k groups (ANOVA)... or"
         ... + newline$ + "       Compare k groups (Kruskal-Wallis)..."
 
@@ -151,7 +151,7 @@ elsif demo_type = 3
         ... + newline$ + "  Try: Stats Wizard → Compare groups or conditions"
         ... + newline$ + "       → Yes — same people, repeated (paired)"
         ... + newline$ + "       → Two (paired t-test / Wilcoxon)"
-        ... + newline$ + "  Or go straight there: New → EML Tools →"
+        ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
         ... + newline$ + "       Compare paired/repeated..."
 
 # ============================================================================
@@ -179,7 +179,7 @@ elsif demo_type = 4
         ... + newline$ + "        show no relationship — a useful contrast."
         ... + newline$ + "  Try: Stats Wizard → Examine a relationship"
         ... + newline$ + "       → Correlation (both continuous)"
-        ... + newline$ + "  Or go straight there: New → EML Tools →"
+        ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
         ... + newline$ + "       Correlate two columns..."
 
 # ============================================================================
@@ -211,7 +211,7 @@ elsif demo_type = 5
         ... + newline$ + "        the slope a little at the top of the range."
         ... + newline$ + "  Try: Stats Wizard → Predict an outcome"
         ... + newline$ + "       (or Examine a relationship → Regression)"
-        ... + newline$ + "  Or go straight there: New → EML Tools →"
+        ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
         ... + newline$ + "       Linear regression..."
 
 # ============================================================================
@@ -265,7 +265,7 @@ elsif demo_type = 6
         ... + newline$ + "  Try: Stats Wizard → Compare groups or conditions"
         ... + newline$ + "       → No — different groups (independent)"
         ... + newline$ + "       → Two-factor design (two grouping variables)"
-        ... + newline$ + "  Or go straight there: New → EML Tools →"
+        ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
         ... + newline$ + "       Compare two-way (ANOVA)..."
 
 # ============================================================================
@@ -293,7 +293,7 @@ elsif demo_type = 7
         ... + newline$ + "  jitter_pct: mildly skewed"
         ... + newline$ + "  Try: Stats Wizard → Describe or summarize"
         ... + newline$ + "       → Check normality"
-        ... + newline$ + "  Or go straight there: New → EML Tools →"
+        ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
         ... + newline$ + "       Check normality (all columns)..."
 
 endif
@@ -303,4 +303,4 @@ writeInfoLine: "Created demo Table: ", selected$ ("Table")
 appendInfoLine: ""
 appendInfoLine: description$
 appendInfoLine: ""
-appendInfoLine: "Select the Table and use the EML Tools menu or Wizard."
+appendInfoLine: "Select the Table and use the EML Stats & Graphs menu or Wizard."

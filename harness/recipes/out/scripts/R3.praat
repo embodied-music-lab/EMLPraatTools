@@ -1,14 +1,14 @@
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-extract.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-output.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-inferential.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-result-writer.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-record.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-graph-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-annotation-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-draw-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-analysis.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-record.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 
 outputFolder$ = "~/voice_study/results"
 createFolder: outputFolder$

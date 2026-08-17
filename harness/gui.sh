@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# harness/gui.sh — GUI driving helpers for EML Praat Tools menu exercise
+# harness/gui.sh — GUI driving helpers for EML Stats & Graphs menu exercise
 # ============================================================================
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #
@@ -118,7 +118,7 @@ pausewin () {
   for w in $(findwin "^Pause:"); do echo "$w $(winname "$w")"; done
 }
 
-# emlmenu <y> -> open Objects>New>EML Tools and click submenu entry at y
+# emlmenu <y> -> open Objects>New>EML Stats & Graphs and click submenu entry at y
 emlmenu () {
   local y="$1"
   local o
@@ -127,7 +127,7 @@ emlmenu () {
   xdotool windowfocus "$o" 2>/dev/null
   sleep 1.0
   xdotool mousemove 72 14 click 1; sleep 1.2      # New
-  xdotool mousemove 200 447 click 1; sleep 0.8    # highlight EML Tools
+  xdotool mousemove 200 447 click 1; sleep 0.8    # highlight EML Stats & Graphs
   xdotool key --clearmodifiers Right; sleep 1.2   # open submenu
   xdotool mousemove 500 "$y" click 1; sleep 2.5
 }
@@ -441,7 +441,7 @@ EML_DEMO=$((900 + EML_YOFF));        EML_N_DEMO=18        # was 874
 # EML_QUICKSTART=$((850 + EML_YOFF))  # tabled 6 Aug — 850 is now Stop recording and open
 EML_MENUBAR_Y=$((34 + EML_YOFF)); EML_TOOLS_Y=$((467 + EML_YOFF))
 
-# emlitem <ordinal> -> open Objects>New>EML Tools and select the ordinal'th
+# emlitem <ordinal> -> open Objects>New>EML Stats & Graphs and select the ordinal'th
 #   COMMAND of the submenu by keyboard. PREFER THIS OVER `eml <y>`.
 #
 # Click "New", then Up, then Right, then Down x (n-1), then Return.
@@ -476,7 +476,7 @@ emlitem () {
   xdotool key --clearmodifiers Return; sleep 3
 }
 
-# eml <y> -> open Objects>New>EML Tools and click the submenu entry at y.
+# eml <y> -> open Objects>New>EML Stats & Graphs and click the submenu entry at y.
 #   Kept because callers outside this file pass the EML_* pixel constants, and
 #   because a pixel is what a screenshot can be checked against. For new code
 #   use `emlitem $EML_N_<entry>`, which does not depend on the layout at all.

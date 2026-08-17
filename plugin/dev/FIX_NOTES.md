@@ -1,4 +1,4 @@
-# EML Praat Tools — Correctness Fix Bundle
+# EML Stats & Graphs — Correctness Fix Bundle
 Date: 2026-07-21 · Ian Howell — Embodied Music Lab
 All fixes verified with Praat 6.6.30 (barren) against numpy/scipy references; graph edits additionally
 reviewed by an independent adversarial pass (one regression caught and reverted — see L).

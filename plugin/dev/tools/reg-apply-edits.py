@@ -94,7 +94,7 @@ def main():
         "Generated: 8 April 2026 | Source: plugin_EMLTools v1.0 pre-release "
         "| 251 procedures (246 public, 5 internal)",
         "Generated: 8 April 2026 | Revised: 3 August 2026 against the "
-        "plugin_EML_Praat_Tools working tree\n"
+        "plugin_EML_StatsGraphs working tree\n"
         "241 procedures (228 public, 13 internal) across the 13 documented "
         "files present in the tree. Counts and version tags in this file are "
         "reconciled by procedure NAME against the source tree by "

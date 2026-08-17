@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Retired: column-type probe
+# EML Stats & Graphs — Retired: column-type probe
 # ============================================================================
 # Purpose: Retired scratch probe. Checks how Praat reports a numeric
 #          column versus a string column through Get value.

@@ -1,6 +1,6 @@
 #!praat
 # ============================================================
-# EML Praat Tools -- recorded workflow
+# EML Stats & Graphs -- recorded workflow
 # 16 August 2026, 00:00:00  --  recorded on Praat 6.6.30
 # Input: Table lg -- 56 rows, 3 columns
 # ============================================================
@@ -11,10 +11,10 @@
 # for any user on this platform. If this file fails to parse, the
 # plugin is somewhere else -- edit this block and nothing else.
 #
-#   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_Praat_Tools
-#   Praat 7.x  Linux    ~/.config/praat/plugin_EML_Praat_Tools
-#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EML_Praat_Tools
-#   Windows    ~/Praat/plugin_EML_Praat_Tools
+#   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_StatsGraphs
+#   Praat 7.x  Linux    ~/.config/praat/plugin_EML_StatsGraphs
+#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs
+#   Windows    ~/Praat/plugin_EML_StatsGraphs
 #   Not sure?  Run  writeInfoLine: preferencesDirectory$
 #
 # A version guard cannot help here: `include` is refused inside an
@@ -69,6 +69,6 @@ annotate = 0
 @emlDrawGroupedViolin: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, categoryCol$, subgroupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 

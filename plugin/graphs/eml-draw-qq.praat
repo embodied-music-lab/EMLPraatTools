@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Normal Q-Q plot
+# EML Stats & Graphs — Normal Q-Q plot
 # ============================================================================
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #

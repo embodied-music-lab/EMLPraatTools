@@ -5,7 +5,7 @@
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #
 # WHAT THIS IS FOR. plugin/dev/tools/build-release.py produces the folder
-# Praat installs — plugin_EML_Praat_Tools — and a zip of it, and verifies
+# Praat installs — plugin_EML_StatsGraphs — and a zip of it, and verifies
 # every mode in what it built. All of that is a statement about a directory.
 # It says nothing whatever about whether Praat, given that directory, comes
 # up with an EML menu on it, and a packaging step that has never been
@@ -44,7 +44,7 @@
 #               an unread rc is an unread failure.
 #
 #   installed   The real thing. Praat --pref-dir=<unpacked>, the Objects
-#               window's New menu opened, the EML Tools cascade entered, and
+#               window's New menu opened, the EML Stats & Graphs cascade entered, and
 #               a fixed keyboard walk to the eighteenth command. It must
 #               reach `Pause: Create Demo Table`. A photograph of the open
 #               submenu is taken on the way past.
@@ -55,12 +55,15 @@
 #               commands under "NOT THE EML MENU" and the walk still arrives
 #               at Create Demo Table, and the only evidence that the user is
 #               looking at the EML menu is the picture. So the picture goes
-#               through tesseract and the cascade's label is required in it
-#               -- the same instrument v76 uses to read a test name off a
-#               rendered figure. Two anchors, because one of them is inside
-#               the file under test: the OCR of the photograph, and the
-#               cascade name registered in the INSTALLED setup.praat. Both
-#               are compared against $EML_RELEASE_MENU, which lives here.
+#               through tesseract -- the same instrument v76 uses to read a
+#               test name off a rendered figure -- and the label is required
+#               on the row the walk HIGHLIGHTED, cropped out and read on its
+#               own, not merely somewhere on the screen. The falsifier's
+#               photograph is read the same way and must NOT carry it. Two
+#               anchors, because one of them is inside the file under test:
+#               the reading of the photograph, and the cascade name
+#               registered in the INSTALLED setup.praat. Both are compared
+#               against $EML_RELEASE_MENU, which lives here.
 #
 #   broken      THE FALSIFIER. The same zip, unpacked again, with the
 #               registration removed from setup.praat. The plugin folder is
@@ -87,8 +90,9 @@
 # Evidence, all under out/: RELEASE_INSTALL.tsv (the scalar facts),
 # menu_installed.png (the submenu, open), dialog_installed.png (the dialog it
 # reached), menu_broken.png (the same walk with the registration dead),
-# MENU_OCR.txt (what tesseract read off menu_installed.png) and QUICKSTART.txt
-# (the Info window from the headless leg).
+# MENU_OCR.txt (both readings of menu_installed.png -- the page whole, then
+# each highlighted row cropped and read on its own) and QUICKSTART.txt (the
+# Info window from the headless leg).
 #
 # EVERY NUMBER IN THE TSV IS EITHER ASSERTED HERE OR READ BY v79. A scalar
 # written by `say` and compared to nothing is decoration, and decoration next
@@ -131,7 +135,7 @@ WANT_TITLE="${EML_RELEASE_TITLE:-Create Demo Table}"
 # setup.praat is the file under test: a harness that took the expected name
 # from the thing it is checking would agree with any rename, which is the
 # whole of what the positional walk cannot see.
-WANT_MENU="${EML_RELEASE_MENU:-EML Tools}"
+WANT_MENU="${EML_RELEASE_MENU:-EML Stats & Graphs}"
 
 for t in Xvfb xdotool xprop xwininfo import matchbox-window-manager unzip \
          python3 iconv tesseract; do
@@ -166,7 +170,7 @@ say praat_version "$PV"
 # ---------------------------------------------------------------------------
 # 1. BUILD, AND TAKE THE NAME FROM THE BUILD RATHER THAN FROM HERE
 # ---------------------------------------------------------------------------
-# This file does not contain the string plugin_EML_Praat_Tools and must not.
+# This file does not contain the string plugin_EML_StatsGraphs and must not.
 # The builder reads the install name out of stats/eml-record.praat and writes
 # it into RELEASE.tsv; everything below uses that. A harness carrying its own
 # copy of the name could pass against an artefact built under a different one.
@@ -336,7 +340,7 @@ say want_menu "$WANT_MENU"
 #   unregister  Every `Add menu command: "Objects", "New", ...` line cut, and
 #               nothing else. setup.praat PARSES, Praat comes up clean with
 #               no error dialog at all, the New menu opens normally — and the
-#               EML Tools cascade is not in it. This is the sharper
+#               EML Stats & Graphs cascade is not in it. This is the sharper
 #               falsifier: it proves the walk discriminates rather than
 #               merely being blocked by a modal, which is all the syntax
 #               variant can show.
@@ -533,24 +537,52 @@ stop_praat
 # exists in exactly one machine-readable place: the pixels. tesseract, as in
 # v76.
 #
-# MEASURED, 16 August 2026, Praat 6.6.30 under Xvfb at 1400x1100: tesseract
-# renders the open cascade's own row as "+EML Tool" — the trailing "s" is
+# READ TWICE, AND THE SECOND READING IS THE ONE THAT ANSWERS THE QUESTION.
+# tesseract's page segmentation DROPS THE SELECTED ROW -- white text on the
+# GTK selection blue is a block its layout analyser treats as an image -- and
+# the selected row is the only one whose identity this leg is claiming. A
+# whole-page pass returns the twenty rows nobody asked about and a line of
+# noise where the answer is. So validate/tools/menu_label_ocr.py reads the
+# page whole, which is the transcript a human reads, and then crops every
+# band painted in the selection colour and reads each on its own, where the
+# row comes out clean. Both readings go into MENU_OCR.txt, so a reader with
+# no tesseract -- CI, for one -- has the same two the drive had.
+#
+# THE FALSIFIER IS READ THE SAME WAY, and that is what makes this more than a
+# spell-check. With the registration cut, the highlighted row on the same
+# screen at the same geometry is a DIFFERENT cascade; broken_menu_label_row
+# is that reading, and it must not carry the plugin's label.
+#
+# MEASURED, Praat 6.6.30 under Xvfb at 1400x1100: a trailing glyph can be
 # lost where the submenu arrow abuts it. So the comparison drops
 # non-alphanumerics, folds case, and accepts the wanted label MINUS its last
 # character. That tolerance is one character wide and is not what decides the
-# check: "NOT THE EML MENU" normalises to NOTTHEEMLMENU, which contains
-# neither EMLTOOLS nor EMLTOOL.
-tesseract "$OUT/menu_installed.png" - 2>/dev/null > "$OUT/MENU_OCR.txt"
-MENU_SEEN=$(python3 - "$OUT/MENU_OCR.txt" "$WANT_MENU" <<'PYEOF'
+# check: "NOT THE EML MENU" normalises to NOTTHEEMLMENU, which contains no
+# prefix of the wanted label.
+OCRPY="$REPO/validate/tools/menu_label_ocr.py"
+python3 "$OCRPY" "$OUT/menu_installed.png" > "$OUT/MENU_OCR.txt" 2>"$WORK/ocr.log" \
+    || { echo "release: FAIL — could not read the submenu photograph: $(cat "$WORK/ocr.log")" >&2; exit 1; }
+
+# ocr_seen <file> <label> <whole|row>
+ocr_seen () {
+    python3 - "$1" "$2" "$3" <<'PYEOF'
 import re, sys
+MARKER = "---- highlighted rows, cropped and read separately ----"
+txt = open(sys.argv[1], encoding='utf-8', errors='replace').read()
+whole, _, row = txt.partition(MARKER)
 norm = lambda s: re.sub(r'[^A-Za-z0-9]', '', s).upper()
-seen = norm(open(sys.argv[1], encoding='utf-8', errors='replace').read())
+hay = norm(whole if sys.argv[3] == 'whole' else row)
 want = norm(sys.argv[2])
-print(1 if want and (want in seen or want[:-1] in seen) else 0)
+print(1 if want and want[:-1] in hay else 0)
 PYEOF
-)
+}
+# installed_menu_label_seen is the HIGHLIGHTED-ROW reading. The whole-page
+# reading is in MENU_OCR.txt above the marker for a human to read; it cannot
+# tell the cascade the walk ENTERED from any other row on the screen, so it
+# is not what the record claims.
+MENU_ROW=$(ocr_seen "$OUT/MENU_OCR.txt" "$WANT_MENU" row)
 say installed_menu_ocr_lines "$(grep -c . "$OUT/MENU_OCR.txt")"
-say installed_menu_label_seen "$MENU_SEEN"
+say installed_menu_label_seen "$MENU_ROW"
 
 # ---------------------------------------------------------------------------
 # LEG broken
@@ -575,6 +607,16 @@ say menu_present "$MENU_PRESENT"
 FALSIFIED=0
 [[ "$TITLE_BAD" != "$WANT_TITLE" ]] && FALSIFIED=1
 say falsifier_ok "$FALSIFIED"
+
+# THE FALSIFIER'S OWN HIGHLIGHTED ROW, READ. The walk is POSITIONAL: Up then
+# Right enters whatever cascade is last in the New menu. With the plugin's
+# registrations cut, that is some cascade of Praat's own, and reading its
+# label is what separates "the walk found the EML menu" from "the walk found
+# a menu". Same reading, same screen geometry, opposite answer.
+python3 "$OCRPY" "$OUT/menu_broken.png" > "$WORK/BROKEN_OCR.txt" 2>>"$WORK/ocr.log" \
+    || { echo "release: FAIL — could not read the falsifier photograph" >&2; exit 1; }
+BROKEN_ROW=$(ocr_seen "$WORK/BROKEN_OCR.txt" "$WANT_MENU" row)
+say broken_menu_label_row "$BROKEN_ROW"
 say completed 1
 
 echo "--- $TSV ---"
@@ -608,8 +650,10 @@ fail () { echo "release: FAIL — $1" >&2; rc=1; }
 [[ "$FALSIFIED" -eq 1 ]] || fail "the walk reached '$WANT_TITLE' with the registration dead; the install proof is decorative"
 
 # --- the menu's identity, which the walk is positional about ---
-[[ "$MENU_SEEN" -eq 1 ]] || \
-    fail "'$WANT_MENU' is not in the open submenu photograph; the walk entered the last cascade in the New menu and that cascade is called something else"
+[[ "$MENU_ROW" -eq 1 ]] || \
+    fail "'$WANT_MENU' is not on the highlighted row of the open submenu photograph; the walk entered the last cascade in the New menu and that cascade is called something else"
+[[ "$BROKEN_ROW" -eq 0 ]] || \
+    fail "'$WANT_MENU' is on the highlighted row with the registration cut, so the reading is not reading the row"
 grep -qE "^Add menu command: .*\"$WANT_MENU\"" "$SETUP_OK" || \
     fail "the installed setup.praat registers nothing under '$WANT_MENU'"
 

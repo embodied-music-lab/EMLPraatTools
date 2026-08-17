@@ -627,7 +627,7 @@ docEx <- character(0)
 for (i in seq_len(max(0, length(fence) - 1))) {
     if (!grepl("^```praat", doc[fence[i]])) next
     blk <- doc[(fence[i] + 1):(fence[i + 1] - 1)]
-    if (any(grepl("include ~/.praat-dir/plugin_EML_Praat_Tools", blk,
+    if (any(grepl("include ~/.praat-dir/plugin_EML_StatsGraphs", blk,
                   fixed = TRUE))) { docEx <- blk; break }
 }
 if (check_true("v50", sprintf("the document carries a runnable example (%d lines)",

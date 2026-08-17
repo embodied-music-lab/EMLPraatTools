@@ -1,4 +1,4 @@
-# EML Praat Tools — Dialog Design System
+# EML Stats & Graphs — Dialog Design System
 # ============================================================
 # The wizard's purpose is PEDAGOGICAL. Every dialog teaches
 # the user what a test does, when to use it, and what the

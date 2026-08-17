@@ -3,7 +3,7 @@
 #
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #
-# Wrapper:  Objects > New > EML Tools > Pairwise comparisons...
+# Wrapper:  Objects > New > EML Stats & Graphs > Pairwise comparisons...
 # Settings: identical in both runs except Adjustment (Bonferroni, then Holm).
 # Input:    evidence/csv/demo_3groups_b_input.csv
 #

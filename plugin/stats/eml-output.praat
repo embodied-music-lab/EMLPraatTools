@@ -5,7 +5,7 @@
 # Version: 2.4
 # Date: 11 May 2026
 #
-# Part of the EML Stats library (EML Praat Tools).
+# Part of the EML Stats library (EML Stats & Graphs).
 # License: GPL-3.0-or-later
 #
 # Provides: 60 procedures. THE COUNTING RULE, so the number can be checked
@@ -3227,7 +3227,7 @@ endproc
 #
 # Parameters:
 #   .msg$    — the orchestrator's error string, shown verbatim and wrapped.
-#   .remedy$ — the exact "New > EML Tools >" item that WOULD work on this
+#   .remedy$ — the exact "New > EML Stats & Graphs >" item that WOULD work on this
 #              table, or "" when no other tool would help (a data problem
 #              rather than a wrong-test problem). The distinction matters:
 #              telling someone to re-navigate the menu when all they need is
@@ -3266,7 +3266,7 @@ endproc
 # branch ends
 #
 #     "If a different test is needed, click Quit, then pick it from the
-#      Objects window under New > EML Tools >"
+#      Objects window under New > EML Stats & Graphs >"
 #
 # which is right for a test that ran and could not fit the data, and wrong
 # for a refusal about the SELECTION: no different test would help, because
@@ -3379,7 +3379,7 @@ procedure emlErrorDialog: .msg$, .remedy$, .mode$
                 comment: ""
                 comment: "        1.  Click Quit below."
                 comment: "        2.  In the Objects window choose"
-                comment: "             New  >  EML Tools  >  and then the"
+                comment: "             New  >  EML Stats & Graphs  >  and then the"
                 comment: "             entry named above."
                 comment: ""
                 comment: "Or click Back to change your column choices and try"
@@ -3390,7 +3390,7 @@ procedure emlErrorDialog: .msg$, .remedy$, .mode$
                 comment: ""
                 comment: "If a different test is needed, click Quit, then pick"
                 comment: "it from the Objects window under"
-                comment: "             New  >  EML Tools  >"
+                comment: "             New  >  EML Stats & Graphs  >"
             endif
         endif
     # ONE BUTTON ON THE ENTRY REFUSAL. There is nothing behind it to go back

@@ -1,14 +1,14 @@
 praat_version	Praat 6.6.30 (June 30 2026)
 plugin_root	/home/claude/EMLPraatTools/plugin
-adv_orig_md5	91624be6ef4e49e6201e2e0132caa50f
-adv_orig_bytes	70512
-adv_bare_md5	ca6d4e60ee2f0160e38d201c522cef1f
-adv_bare_bytes	64828
-adv_replay_md5	91624be6ef4e49e6201e2e0132caa50f
-adv_replay_bytes	70512
-adv_orig_vs_bare_over32	2740
+adv_orig_md5	73028644eae0f5b54273e6093cbccc23
+adv_orig_bytes	93650
+adv_bare_md5	9459de22bfee48d2b9eae30c40637430
+adv_bare_bytes	65444
+adv_replay_md5	73028644eae0f5b54273e6093cbccc23
+adv_replay_bytes	93650
+adv_orig_vs_bare_over32	18054
 adv_replay_vs_orig_over32	0
-adv_replay_vs_bare_over32	2740
+adv_replay_vs_bare_over32	18054
 adv_replay_vs_orig_max	0
 emit_jitter_lines	2
 emit_annotate_lines	2
@@ -20,7 +20,7 @@ emit_include_root	~/EMLPraatTools/plugin
 emit_claims_home_relative	1
 emit_states_absolute	0
 save_files	4
-save_names	vt_two-group_20260816_154053_effectsize_tidy.csv vt_two-group_20260816_154053_glance.csv vt_two-group_20260816_154053_report.txt vt_two-group_20260816_154053_tidy.csv 
+save_names	vt_two-group_20260817_124022_effectsize_tidy.csv vt_two-group_20260817_124022_glance.csv vt_two-group_20260817_124022_report.txt vt_two-group_20260817_124022_tidy.csv 
 save_max_stamps	1
 save_distinct_stems	1
 save_stat_lines	3
@@ -36,14 +36,14 @@ meta_emitted_stamp_line	# SESSION_B  --  recorded on Praat 6.6.30
 meta_emitted_has_dead_stamp	0
 meta_emitted_has_live_stamp	1
 meta_emitted_names_dead_table	0
-meta_emit_include_root	~/.eml_replay_meta_prefs/plugin_EML_Praat_Tools
+meta_emit_include_root	~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs
 meta_emit_root_is_home_relative	11
 meta_emit_claims_home_relative	1
 meta_emit_states_absolute	0
 meta2_has_dead_stamp	0
 meta2_names_dead_table	0
 meta2_stamp_recovered_note	1
-meta2_stamp_line	# Sun Aug 16 15:40:54 2026  --  recorded on Praat 6.6.30
+meta2_stamp_line	# Mon Aug 17 12:40:23 2026  --  recorded on Praat 6.6.30
 folder_files	4
 folder_created	1
 folder_praat_abort	0

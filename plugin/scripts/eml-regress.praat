@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Simple Linear Regression
+# EML Stats & Graphs — Simple Linear Regression
 # ============================================================================
 # Purpose: OLS simple linear regression (slope, intercept, R², SE, F, p).
 #          OLS is the only estimator this wrapper offers. The plugin also

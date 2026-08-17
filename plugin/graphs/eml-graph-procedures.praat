@@ -5875,7 +5875,7 @@ procedure emlInitAlphaSprites
     endif
 
     # Strategy 1: installed plugin in preferences directory
-    .tryPath$ = preferencesDirectory$ + "/plugin_EML_Praat_Tools/sprites/"
+    .tryPath$ = preferencesDirectory$ + "/plugin_EML_StatsGraphs/sprites/"
     .testFile$ = .tryPath$ + "dot_blue_a50_40.png"
     if fileReadable (.testFile$)
         .dir$ = .tryPath$

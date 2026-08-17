@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Linear Mixed Model
+# EML Stats & Graphs — Linear Mixed Model
 # ============================================================================
 # Purpose: Fit a linear mixed-effects model (lme4-style formula) to a Table
 #          and report fixed effects (with Satterthwaite df), random-effect

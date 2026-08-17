@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Describe Table Column
+# EML Stats & Graphs — Describe Table Column
 # ============================================================================
 # Purpose: Descriptive statistics for one numeric column of a Table.
 #          Reports n, mean, SD, SEM, median, Q1/Q3/IQR, range,

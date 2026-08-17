@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Stats Wizard
+# EML Stats & Graphs — Stats Wizard
 # ============================================================================
 # Purpose: Question-driven statistical analysis wizard. Routes research
 #          questions to the appropriate test via chained dialogs, runs the
@@ -7,7 +7,7 @@
 #
 #          Three layers of access (this script = Layer 1):
 #            Layer 1 — Wizard: Question-driven entry for clinicians/students
-#            Layer 2 — Direct tools: Named tests from EML Tools menu
+#            Layer 2 — Direct tools: Named tests from EML Stats & Graphs menu
 #            Layer 3 — Scripting API: Include-file procedures for power users
 #
 # Version: 2.6
@@ -2915,6 +2915,6 @@ procedure wizardStub: .analysis$, .batch$
     appendInfoLine: "  ", .analysis$, " is planned for a future update."
     appendInfoLine: ""
     appendInfoLine: "  In the meantime, you can use the named tools"
-    appendInfoLine: "  in the EML Tools menu for available analyses."
+    appendInfoLine: "  in the EML Stats & Graphs menu for available analyses."
     appendInfoLine: ""
 endproc

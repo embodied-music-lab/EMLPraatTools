@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate MANIFEST.txt for the EML Praat Tools plugin.
+"""Regenerate MANIFEST.txt for the EML Stats & Graphs plugin.
 
 Why this exists
 ---------------
@@ -83,7 +83,7 @@ ROW_RE = re.compile(r"^(?P<path>[^|]+?)\s*\|\s*(?P<size>[^|]*?)\s*\|"
 
 HEADER_TEMPLATE = """\
 # ==========================================================================
-# MANIFEST — EML Praat Tools plugin
+# MANIFEST — EML Stats & Graphs plugin
 # Generated: {date}  |  {n} files in {rows} rows (retired included, MANIFEST.txt not)
 # Columns: path | lines (code) or word count (prose) | version | description
 #

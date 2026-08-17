@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Compare k Groups (ANOVA)
+# EML Stats & Graphs — Compare k Groups (ANOVA)
 # ============================================================================
 # Purpose: One-way ANOVA with optional Tukey HSD post-hoc comparisons.
 # Date: 11 May 2026

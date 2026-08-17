@@ -1,7 +1,7 @@
 Batch Voice Analysis
 Sound folder: <WORK>/C_in
 Output folder: <WORK>/C_free_out
-Results CSV: <WORK>/C_free_out/C_in_results_2026-08-16.csv
+Results CSV: <WORK>/C_free_out/C_in_results_2026-08-17.csv
 
 Sentinel file: <WORK>/C_free_out/STOP.txt
 To stop: open that file, change first line to STOP, save.
@@ -18,9 +18,9 @@ Files skipped:   0
 Failed:          0
 Warnings:        0
 Data rows:       3
-Results CSV:     <WORK>/C_free_out/C_in_results_2026-08-16.csv
+Results CSV:     <WORK>/C_free_out/C_in_results_2026-08-17.csv
 Sentinel file:   <WORK>/C_free_out/STOP.txt
 ============================================
 
 Results Table retained in Objects window.
-Run stats or draw graphs from the EML Tools menu.
+Run stats or draw graphs from the EML Stats & Graphs menu.

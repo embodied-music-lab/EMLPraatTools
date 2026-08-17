@@ -19,7 +19,7 @@
 #        No change on any column that holds numbers.
 #
 #
-# Part of the EML Stats library (EML Praat Tools).
+# Part of the EML Stats library (EML Stats & Graphs).
 # Part of EML PraatGen GPL-3.0-or-later — Ian Howell, Embodied Music Lab
 #
 # Provides: @emlTTest, @emlTTestPaired, @emlCohenD,

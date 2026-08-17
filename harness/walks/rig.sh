@@ -14,7 +14,10 @@
 #   harness/walks/rig.sh down        tear everything down
 #
 # VERIFIED in this sandbox 7 Aug 2026: 3 instances, plugin loaded in each,
-# "+EML Tools" present in the New menu, clicks landing on target.
+# its cascade present in the New menu, clicks landing on target. The cascade
+# is "+EML Stats & Graphs"; harness/release reads that label off a
+# photograph every time it runs, which is where the current spelling is
+# pinned rather than here.
 #
 # Deltas from the plan's recipe, found bringing it up here:
 #
@@ -63,7 +66,7 @@ inst_up () {
     rm -f "/tmp/.X9$i-lock" "/tmp/.X11-unix/X9$i"
     mkdir -p "$P" "$RIG/log"
     rm -f "$P/pid" "$P/message"
-    ln -sfn "$REPO/plugin" "$P/plugin_EML_Praat_Tools"
+    ln -sfn "$REPO/plugin" "$P/plugin_EML_StatsGraphs"
     setsid nohup Xvfb "$D" -screen 0 "$GEOM" > "$RIG/log/xvfb_$i.log" 2>&1 &
     sleep 2
     DISPLAY=$D setsid nohup openbox  > "$RIG/log/wm_$i.log" 2>&1 &

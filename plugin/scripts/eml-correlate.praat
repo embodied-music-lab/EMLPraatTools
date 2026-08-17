@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Correlate Two Columns
+# EML Stats & Graphs — Correlate Two Columns
 # ============================================================================
 # Purpose: Correlate two numeric columns using Pearson r, Spearman rho,
 #          or both. Reports correlation coefficient, t, df, p, and n.

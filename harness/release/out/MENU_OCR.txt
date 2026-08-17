@@ -26,7 +26,17 @@ symmetric neural networks
 
 Feedforward neural networks
 
-+EML Tool
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+»
 
 Rename.
 Inspect
@@ -62,3 +72,7 @@ Batch voice analysis
 Copy.
 
 Info
+
+---- highlighted rows, cropped and read separately ----
+[band 1  633x31+47+432]
++EML Stats & Graphs +Stats Wizard.

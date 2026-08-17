@@ -11,7 +11,7 @@
 #
 # THE TWO SUBSTITUTIONS run.sh MAKES, and nothing else:
 #
-#   ~/.praat-dir/plugin_EML_Praat_Tools  ->  the plugin folder in this repo
+#   ~/.praat-dir/plugin_EML_StatsGraphs  ->  the plugin folder in this repo
 #   __EML_DATA__                         ->  evidence/csv/demo_3groups_input.csv
 #   __EML_OUT__                          ->  the harness output folder
 #
@@ -27,17 +27,17 @@
 # Code generation: Claude (Anthropic)
 # Script author: Ian Howell -- created and verified by this individual
 # ---------------------------------------------------------------------------
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-extract.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-output.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-inferential.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-result-writer.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-record.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-graph-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-annotation-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-draw-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-analysis.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-record.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 
 # --- BEGIN DOCUMENTED BODY ---
 # Where the numbers come from, and where the files go.

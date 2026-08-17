@@ -1,4 +1,4 @@
-# GUI Harness Recipe — driving the EML Praat Tools plugin under Xvfb
+# GUI Harness Recipe — driving the EML Stats & Graphs plugin under Xvfb
 
 Date: 4 August 2026
 Purpose: reproducible procedure for launching Praat interactively in the sandbox

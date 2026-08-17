@@ -5,35 +5,35 @@ leg1_axis_hi	270.000000
 leg1_data_lo	194.529251
 leg1_data_hi	248.504194
 leg1_png_bytes	96572
-auto_call_line	@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol$, valueCol$, 180.000000, 270.000000
-auto_call_literals	2
-auto_call_tail	, 1, groupCol$, valueCol$, 180.000000, 270.000000
-auto_hdr_axis	0
+auto_call_line	@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
+auto_call_literals	0
+auto_call_tail	, 1, groupCol$, valueCol$, axisYMin, axisYMax
+auto_hdr_axis	2
 auto_resolved_comment	1
 leg2_png_bytes	96572
 same_data_identical	1
 leg2_axis_lo	180.000000
 leg2_axis_hi	270.000000
-leg3_axis_lo	180.000000
-leg3_axis_hi	270.000000
+leg3_axis_lo	1000.000000
+leg3_axis_hi	1300.000000
 leg3_data_lo	1083.587752
 leg3_data_hi	1245.512583
-leg3_png_bytes	52758
+leg3_png_bytes	83869
 leg4_axis_lo	1000.000000
 leg4_axis_hi	1300.000000
 leg4_png_bytes	83869
-retarget_matches_native	0
+retarget_matches_native	1
 leg5_axis_lo	150.000000
 leg5_axis_hi	300.000000
-expl_call_line	@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol$, valueCol$, 150.000000, 300.000000
-expl_call_tail	, 1, groupCol$, valueCol$, 150.000000, 300.000000
-expl_hdr_min	0
-expl_hdr_max	0
-expl_call_refs_vars	0
-expl_hdr_in_block	0
+expl_call_line	@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
+expl_call_tail	, 1, groupCol$, valueCol$, axisYMin, axisYMax
+expl_hdr_min	1
+expl_hdr_max	1
+expl_call_refs_vars	1
+expl_hdr_in_block	1
 leg6_axis_lo	180.000000
 leg6_axis_hi	260.000000
-box_call_line	@emlDrawBoxPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol$, valueCol$, 0, 0
+box_call_line	@emlDrawBoxPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 box_call_literals	0
 leg7_axis_lo	1060.000000
 leg7_axis_hi	1280.000000

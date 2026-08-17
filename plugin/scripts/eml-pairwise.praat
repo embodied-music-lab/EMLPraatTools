@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Pairwise Comparisons
+# EML Stats & Graphs — Pairwise Comparisons
 # ============================================================================
 # Purpose: All-pairs comparisons from a Table using pairwise t-test,
 #          pairwise Wilcoxon, or Scheffe, with p-value adjustment.

@@ -3,7 +3,7 @@
 # ============================================================================
 # Builds demo_3groups (deterministic, no randomGauss) and hands it to the
 # real menu wrapper scripts/eml-compare-groups.praat exactly as the
-# "New > EML Tools > Compare two groups..." menu entry does.
+# "New > EML Stats & Graphs > Compare two groups..." menu entry does.
 #
 # Claims under test: 2 (menu error names the tool and the menu route) and
 # 3 (form state survives the return).
@@ -32,4 +32,4 @@ endfor
 
 selectObject: tid
 runScript: preferencesDirectory$
-... + "/plugin_EML_Praat_Tools/scripts/eml-compare-groups.praat"
+... + "/plugin_EML_StatsGraphs/scripts/eml-compare-groups.praat"

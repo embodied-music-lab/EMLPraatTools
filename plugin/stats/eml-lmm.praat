@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Linear Mixed Models
+# EML Stats & Graphs — Linear Mixed Models
 # ============================================================================
 # File: eml-lmm.praat
 # Version: 0.8 (Satterthwaite/KR/R²/PhiA fixes — full lme4+pbkrtest parity)

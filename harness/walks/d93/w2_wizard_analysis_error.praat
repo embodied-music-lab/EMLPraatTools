@@ -15,4 +15,4 @@ tid = Read Table from comma-separated file:
 ... "../../../validate/redpath/r4_singleton_group.csv"
 selectObject: tid
 runScript: preferencesDirectory$
-... + "/plugin_EML_Praat_Tools/scripts/eml-wizard.praat"
+... + "/plugin_EML_StatsGraphs/scripts/eml-wizard.praat"

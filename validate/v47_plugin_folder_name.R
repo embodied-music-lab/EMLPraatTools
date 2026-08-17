@@ -10,11 +10,13 @@
 # name is a CONVENTION -- it cannot be derived from anything in this tree,
 # because the source folder is called `plugin/`.
 #
-# Until 13 August 2026 that name was written `plugin_EMLPraatTools` in six
-# places in stats/eml-record.praat, and the real folder is
-# `plugin_EML_Praat_Tools`. Every script the recorder emitted carried eleven
-# include lines naming a folder that does not exist, so EVERY RECORDED SCRIPT
-# WAS UNRUNNABLE -- the recorder's whole output, worthless, on every platform.
+# The installed folder is `plugin_EML_StatsGraphs`, and the name is written
+# out as a literal in a dozen places rather than derived once, because Praat
+# gives a script no way to learn its own plugin folder. A recorder that
+# spelled it differently from the folder Praat installed would emit eleven
+# `include` lines naming a folder that does not exist, and EVERY RECORDED
+# SCRIPT WOULD BE UNRUNNABLE -- the recorder's whole output, worthless, on
+# every platform. That failure has happened here, from a single misspelling.
 #
 # NOTHING CAUGHT IT, and there were three separate reasons, each of which this
 # file closes:

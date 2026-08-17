@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Start recording a script
+# EML Stats & Graphs — Start recording a script
 # ============================================================================
 # Purpose: begin a recording session. Every EML analysis and figure run after
 #          this, until the session is saved, is captured as one runnable

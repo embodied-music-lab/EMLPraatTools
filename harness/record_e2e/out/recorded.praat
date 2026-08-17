@@ -1,6 +1,6 @@
 #!praat
 # ============================================================
-# EML Praat Tools -- recorded workflow
+# EML Stats & Graphs -- recorded workflow
 # 12 August 2026, 00:00:00  --  recorded on Praat 6.6.30
 # Input: Table voiceA -- 24 rows, 13 columns
 # ============================================================
@@ -11,10 +11,10 @@
 # for any user on this platform. If this file fails to parse, the
 # plugin is somewhere else -- edit this block and nothing else.
 #
-#   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_Praat_Tools
-#   Praat 7.x  Linux    ~/.config/praat/plugin_EML_Praat_Tools
-#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EML_Praat_Tools
-#   Windows    ~/Praat/plugin_EML_Praat_Tools
+#   Praat 6.x  Linux    ~/.praat-dir/plugin_EML_StatsGraphs
+#   Praat 7.x  Linux    ~/.config/praat/plugin_EML_StatsGraphs
+#   macOS      ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs
+#   Windows    ~/Praat/plugin_EML_StatsGraphs
 #   Not sure?  Run  writeInfoLine: preferencesDirectory$
 #
 # A version guard cannot help here: `include` is refused inside an
@@ -24,17 +24,17 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-extract.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-output.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-inferential.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-result-writer.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-record.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-graph-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-annotation-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-draw-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-analysis.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-record.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -93,7 +93,7 @@ data = selected ()
 #   y: n = 12, mean = 66.1949
 #   x: n = 12, mean = 63.4196
 # The same step through the menu:
-# In the GUI: New > EML Tools > Compare k groups (ANOVA)...,
+# In the GUI: New > EML Stats & Graphs > Compare k groups (ANOVA)...,
 # with Data column "spl" and Group column "grp".
 
 # --- Step 2 (analysis) ---
@@ -107,7 +107,7 @@ data = selected ()
 # y: n = 12, mean = 66.1949, SD = 3.1734
 #   x: n = 12, mean = 63.4196, SD = 2.7601
 # The same step through the menu:
-# In the GUI: New > EML Tools > Compare two groups...
+# In the GUI: New > EML Stats & Graphs > Compare two groups...
 
 # --- Step 3 (analysis) ---
 selectObject: data1$
@@ -119,7 +119,7 @@ data = selected ()
 
 # H(1) = 4.5633, p = 0.0327
 # The same step through the menu:
-# In the GUI: New > EML Tools > Compare k groups (Kruskal-Wallis)...
+# In the GUI: New > EML Stats & Graphs > Compare k groups (Kruskal-Wallis)...
 
 # --- Step 4 (analysis) ---
 selectObject: data1$
@@ -131,7 +131,7 @@ data = selected ()
 
 # n = 24 valid
 # The same step through the menu:
-# In the GUI: New > EML Tools > Describe Table column...
+# In the GUI: New > EML Stats & Graphs > Describe Table column...
 
 # --- Step 5 (analysis) ---
 selectObject: data1$
@@ -145,7 +145,7 @@ data = selected ()
 #   skewness = 0.1775, kurtosis = -1.0820, n = 24
 #   Recommendation: parametric
 # The same step through the menu:
-# In the GUI: New > EML Tools > Check normality (all columns)...
+# In the GUI: New > EML Stats & Graphs > Check normality (all columns)...
 
 # --- Step 6 (analysis) ---
 selectObject: data1$
@@ -158,7 +158,7 @@ data = selected ()
 # Pearson r = 0.0678, t(22) = 0.3189, p = 0.7528
 #   n = 24
 # The same step through the menu:
-# In the GUI: New > EML Tools > Correlate two columns...
+# In the GUI: New > EML Stats & Graphs > Correlate two columns...
 
 # --- Step 7 (analysis) ---
 selectObject: data1$
@@ -171,7 +171,7 @@ data = selected ()
 # spl = 49.6803 + 0.0741 x spl2
 #   R-squared = 0.0046, n = 24
 # The same step through the menu:
-# In the GUI: New > EML Tools > Linear regression...
+# In the GUI: New > EML Stats & Graphs > Linear regression...
 
 # --- Step 8 (refusal) ---
 selectObject: data1$
@@ -194,7 +194,7 @@ data = selected ()
 #   interaction: F(1, 20) = 0.0688, p = 0.7958
 #   n = 24, cells = 4
 # The same step through the menu:
-# In the GUI: New > EML Tools > Compare two-way (ANOVA)...
+# In the GUI: New > EML Stats & Graphs > Compare two-way (ANOVA)...
 
 # --- Step 10 (refusal) ---
 selectObject: data1$
@@ -224,7 +224,7 @@ data = selected ()
 #   Greenhouse-Geisser epsilon = 0.9078, corrected p = 0.00000000000000008
 #   n = 24 subjects, k = 3 conditions
 # The same step through the menu:
-# In the GUI: New > EML Tools > Compare paired/repeated...
+# In the GUI: New > EML Stats & Graphs > Compare paired/repeated...
 
 # --- Step 13 (analysis) ---
 selectObject: data1$
@@ -237,7 +237,7 @@ data = selected ()
 # chi-square(2) = 42.2500, p = 0.0000000007
 #   n = 24 subjects, k = 3 conditions
 # The same step through the menu:
-# In the GUI: New > EML Tools > Compare paired/repeated (Friedman)...
+# In the GUI: New > EML Stats & Graphs > Compare paired/repeated (Friedman)...
 
 # --- Step 14 (draw) ---
 selectObject: data1$
@@ -264,7 +264,7 @@ scatterRegressionLine = 0
 @emlDrawScatterPlot: data, "Scatter", "x", "y", 6, 4, "color", 1, xCol$, yCol$, "", 0, 0, axisYMin, axisYMax, 0
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 16 (draw) ---
 selectObject: data1$
@@ -275,7 +275,7 @@ data = selected ()
 @emlDrawHistogram: data, "Histogram", "spl", "Count", 6, 4, "color", 1, valueCol$, "", 0, 1, axisValueMin, axisValueMax, 0
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 17 (draw) ---
 selectObject: data1$
@@ -285,7 +285,7 @@ data = selected ()
 @emlDrawTimeSeries: data, "Line", "t", "spl", 6, 4, "color", 1, timeCol$, valueCol$, groupCol$, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 18 (draw) ---
 selectObject: data1$
@@ -295,7 +295,7 @@ data = selected ()
 @emlDrawTimeSeriesCI: data, "Line CI", "t", "spl", 6, 4, "color", 1, timeCol$, valueCol$, groupCol$, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 19 (draw) ---
 selectObject: data1$
@@ -305,7 +305,7 @@ data = selected ()
 @emlDrawSpaghettiPlot: data, "Spaghetti", "t", "spl", 6, 4, "color", 1, conditionCol$, valueCol$, idCol$, groupCol$, 1, axisYMin, axisYMax
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 20 (draw) ---
 selectObject: data1$
@@ -316,7 +316,7 @@ data = selected ()
 @emlDrawBarChart: data, "Bar", "grp", "spl", 6, 4, "color", 1, groupCol$, valueCol$, 0, "", axisYMin, axisYMax
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 21 (draw) ---
 selectObject: data1$
@@ -327,7 +327,7 @@ data = selected ()
 @emlDrawBoxPlot: data, "Box", "grp", "spl", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 22 (draw) ---
 selectObject: data1$
@@ -338,7 +338,7 @@ data = selected ()
 @emlDrawGroupedViolin: data, "GViolin", "grp", "spl", 6, 4, "color", 1, categoryCol$, subgroupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 23 (draw) ---
 selectObject: data1$
@@ -349,7 +349,7 @@ data = selected ()
 @emlDrawGroupedBoxPlot: data, "GBox", "grp", "spl", 6, 4, "color", 1, categoryCol$, subgroupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 24 (draw) ---
 selectObject: data2$
@@ -359,7 +359,7 @@ data = selected ()
 @emlDrawWaveform: data, "Waveform", "Time (s)", "Amplitude", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 25 (draw) ---
 selectObject: data3$
@@ -369,7 +369,7 @@ data = selected ()
 @emlDrawF0Contour: data, "F0", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax, 1
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 26 (draw) ---
 selectObject: data4$
@@ -379,7 +379,7 @@ data = selected ()
 @emlDrawSpectrum: data, "Spectrum", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 27 (draw) ---
 selectObject: data5$
@@ -389,7 +389,7 @@ data = selected ()
 @emlDrawLTAS: data, "LTAS", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax, 1, 0, 0, 0
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 28 (convert) ---
 selectObject: data2$
@@ -408,7 +408,7 @@ data = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "yes", 0.03, 0.09, 0
 @emlDrawF0Contour: data, "F0 from Sound", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax, 1
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 30 (convert) ---
 selectObject: data2$
@@ -427,7 +427,7 @@ data = To Spectrum: "yes"
 @emlDrawSpectrum: data, "Spectrum from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 32 (convert) ---
 selectObject: data2$
@@ -446,7 +446,7 @@ data = To Ltas: 100
 @emlDrawLTAS: data, "LTAS from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax, 1, 0, 0, 0
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 34 (convert) ---
 selectObject: data4$
@@ -465,7 +465,7 @@ data = To Ltas (1-to-1)
 @emlDrawLTAS: data, "LTAS from Spectrum", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax, 1, 0, 0, 0
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 36 (convert) ---
 selectObject: data4$
@@ -484,7 +484,7 @@ data = To Sound
 @emlDrawWaveform: data, "Waveform from Spectrum", "Time (s)", "Amplitude", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 38 (convert) ---
 selectObject: data4$
@@ -507,7 +507,7 @@ selectObject: data
 @emlDrawF0Contour: data, "F0 from Spectrum", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax, 1
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 40 (convert) ---
 selectObject: data6$
@@ -528,7 +528,7 @@ data = To Table: "row"
 @emlDrawHistogram: data, "Histogram from TableOfReal", "row", "Count", 6, 4, "color", 1, valueCol2$, "", 0, 1, axisValueMin, axisValueMax, 0
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 42 (convert) ---
 selectObject: data7$
@@ -552,7 +552,7 @@ selectObject: data
 @emlDrawHistogram: data, "Histogram from Matrix", "row", "Count", 6, 4, "color", 1, valueCol2$, "", 0, 1, axisValueMin, axisValueMax, 0
 
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 44 (analysis) ---
 selectObject: data1$
@@ -565,7 +565,7 @@ data = selected ()
 # One-way ANOVA: F(2, 21) = 0.02, p = .979
 #   3 groups, alpha = 0.050
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs..., with statistical annotation switched on.
+# In the GUI: New > EML Stats & Graphs > EML Graphs..., with statistical annotation switched on.
 
 # --- Step 45 (draw) ---
 selectObject: data1$
@@ -582,7 +582,7 @@ scatterRegressionLine = 1
 #   spl2 = 199.9998 + 0.0620 x spl, R-squared = 0.0046
 #   fit line: OLS (linear), slope = 0.0620, intercept = 199.9998
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 46 (draw) ---
 selectObject: data1$
@@ -598,6 +598,6 @@ scatterRegressionLine = 1
 # spearman correlation reported on 24 complete pairs
 #   fit line: Theil-Sen (monotonic), slope = 0.0374, intercept = 201.0878
 # The same step through the menu:
-# In the GUI: New > EML Tools > EML Graphs...
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 

@@ -86,7 +86,7 @@ glaunch () {
     done
     sleep 1
     rm -f "$PREFS/pid" "$PREFS/message"
-    ln -sfn "$PLUGIN_SRC" "$PREFS/plugin_EML_Praat_Tools"
+    ln -sfn "$PLUGIN_SRC" "$PREFS/plugin_EML_StatsGraphs"
     DISPLAY=$DISPLAY HOME=$PREFS setsid nohup "$PRAAT" --new-send \
         --pref-dir="$PREFS" --utf8 "$s" > "$RIG/log/gridmode_$I.log" 2>&1 &
     for t in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do

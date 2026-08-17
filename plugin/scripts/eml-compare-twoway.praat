@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Compare Two Factors (Two-Way ANOVA)
+# EML Stats & Graphs — Compare Two Factors (Two-Way ANOVA)
 # ============================================================================
 # Purpose: Two-way ANOVA for a Table with two categorical factors and one
 #          numeric dependent variable. Reports main effects, interaction,

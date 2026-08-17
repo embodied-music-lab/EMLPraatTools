@@ -369,11 +369,11 @@ vs. noise, p-values, effect sizes — through the two-group comparison.
    computation as counting "how many times a value from Group A
    beats a value from Group B."]
 
-8. **What EML Tools does for you.**
+8. **What EML Stats & Graphs does for you.**
    [Side-by-side: violin plot with annotation brackets showing
    t-test result, p-value, and Cohen's d — the actual output
    the plugin produces.]
-   "EML Tools runs both the parametric and nonparametric test,
+   "EML Stats & Graphs runs both the parametric and nonparametric test,
    reports effect sizes, and draws the picture — all in one click."
 
 9. **Key ideas recap:**
@@ -841,7 +841,7 @@ context it pairs with.
 ### 3.1 File Structure
 
 ```
-plugin_EML_Praat_Tools/
+plugin_EML_StatsGraphs/
   tutorial/
     eml-stats-tutorial.praat        ← main launcher + module dispatch
     tutorial-common.praat           ← shared drawing/navigation procedures

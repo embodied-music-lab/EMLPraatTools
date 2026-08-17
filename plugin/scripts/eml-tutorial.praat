@@ -4,8 +4,8 @@
 # Demo window tutorial for learning statistics with voice science data.
 # Uses the EML Demo Window layout engine and EML Stats library.
 #
-# Part of plugin_EML_Praat_Tools.
-# Location: plugin_EML_Praat_Tools/scripts/eml-tutorial.praat
+# Part of plugin_EML_StatsGraphs.
+# Location: plugin_EML_StatsGraphs/scripts/eml-tutorial.praat
 #
 # Version: 0.19
 # Date: 2 August 2026
@@ -122,7 +122,7 @@ arrowColor$ = "{0.5, 0.5, 0.5}"
 # Strategy 1: installed plugin in preferences directory
 # Strategy 2: development layout (running from scripts/)
 tutorialImgDir$ = ""
-tryPath$ = preferencesDirectory$ + "/plugin_EML_Praat_Tools/tutorial/images/"
+tryPath$ = preferencesDirectory$ + "/plugin_EML_StatsGraphs/tutorial/images/"
 if fileReadable (tryPath$ + "placeholder.txt")
     tutorialImgDir$ = tryPath$
 else
@@ -201,7 +201,7 @@ endproc
 # ============================================================================
 # Resolve path to content file, then load it.
 contentPath$ = ""
-tryPath$ = preferencesDirectory$ + "/plugin_EML_Praat_Tools/tutorial/module1-content.txt"
+tryPath$ = preferencesDirectory$ + "/plugin_EML_StatsGraphs/tutorial/module1-content.txt"
 if fileReadable (tryPath$)
     contentPath$ = tryPath$
 else

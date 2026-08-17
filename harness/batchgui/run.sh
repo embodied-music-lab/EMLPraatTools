@@ -140,9 +140,9 @@ say module_under_test "$(basename "$MODULE")"
 stage () {   # stage <dir> <setup-file>
     local dir="$1" setupsrc="$2"
     rm -rf "$dir"; mkdir -p "$dir"
-    cp -r "$REPO/plugin" "$dir/plugin_EML_Praat_Tools"
-    cp "$setupsrc" "$dir/plugin_EML_Praat_Tools/setup.praat"
-    cp "$MODULE" "$dir/plugin_EML_Praat_Tools/scripts/eml-batch-process.praat"
+    cp -r "$REPO/plugin" "$dir/plugin_EML_StatsGraphs"
+    cp "$setupsrc" "$dir/plugin_EML_StatsGraphs/setup.praat"
+    cp "$MODULE" "$dir/plugin_EML_StatsGraphs/scripts/eml-batch-process.praat"
 }
 
 BATCH_RE='^Add menu command: "Objects", "New", ("-- eml batch --"|"Batch voice analysis\.\.\.")'

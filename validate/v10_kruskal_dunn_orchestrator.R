@@ -25,7 +25,7 @@
 # PROVENANCE — READ THIS BEFORE CITING THIS SCRIPT AS GUI EVIDENCE.
 #
 # ORIGINALLY DRIVEN 5 August 2026 through the real GUI:
-#   New > EML Tools > Compare k groups (Kruskal-Wallis)...
+#   New > EML Stats & Graphs > Compare k groups (Kruskal-Wallis)...
 #   Data column SPL_dB, Group column voice_type, Group order = Table order.
 #
 # RE-DRIVEN HEADLESSLY 7 August 2026 for D110, by

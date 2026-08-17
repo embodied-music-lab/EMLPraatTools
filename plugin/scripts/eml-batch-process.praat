@@ -1655,7 +1655,7 @@ appendInfoLine: line$
 appendInfoLine: sep$
 appendInfoLine: ""
 appendInfoLine: "Results Table retained in Objects window."
-appendInfoLine: "Run stats or draw graphs from the EML Tools menu."
+appendInfoLine: "Run stats or draw graphs from the EML Stats & Graphs menu."
 
 # Reset sentinel for next run
 @emlInitSentinel: sentinelPath$

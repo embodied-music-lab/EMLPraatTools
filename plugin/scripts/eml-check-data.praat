@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Check & repair data
+# EML Stats & Graphs — Check & repair data
 # ============================================================================
 # Purpose: Tell the user, in advance and in specific terms, which of their
 #          cells will be excluded from an analysis and why — and offer to

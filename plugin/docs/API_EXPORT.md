@@ -153,10 +153,10 @@ plugin lives somewhere other than the Linux/Praat 6 location below. The other
 locations are:
 
 ```
-Praat 6.x  Linux    ~/.praat-dir/plugin_EML_Praat_Tools
-Praat 7.x  Linux    ~/.config/praat/plugin_EML_Praat_Tools
-macOS               ~/Library/Preferences/Praat Prefs/plugin_EML_Praat_Tools
-Windows             ~/Praat/plugin_EML_Praat_Tools
+Praat 6.x  Linux    ~/.praat-dir/plugin_EML_StatsGraphs
+Praat 7.x  Linux    ~/.config/praat/plugin_EML_StatsGraphs
+macOS               ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs
+Windows             ~/Praat/plugin_EML_StatsGraphs
 ```
 
 Not sure? Run `writeInfoLine: preferencesDirectory$` in Praat and look.
@@ -171,10 +171,10 @@ to one line — pick the row for your platform and paste the line:
 
 | Praat / OS | the one line |
 | --- | --- |
-| Praat 6.x Linux | `include ~/.praat-dir/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat` |
-| Praat 7.x Linux | `include ~/.config/praat/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat` |
-| macOS | `include ~/Library/Preferences/Praat Prefs/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat` |
-| Windows | `include ~/Praat/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat` |
+| Praat 6.x Linux | `include ~/.praat-dir/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat` |
+| Praat 7.x Linux | `include ~/.config/praat/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat` |
+| macOS | `include ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat` |
+| Windows | `include ~/Praat/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat` |
 
 It loads exactly the eleven modules below, in the same order. Move the plugin,
 or upgrade to a Praat that keeps its preferences somewhere else, and the next
@@ -191,17 +191,17 @@ since the plugin was installed. It is also what the workflow recorder writes
 into every script it emits.
 
 ```praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-extract.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-output.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-inferential.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-result-writer.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-record.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-graph-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-annotation-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-draw-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-analysis.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-record.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 
 # Where the numbers come from, and where the files go.
 inputFile$  = "~/voice_study/demo_3groups_input.csv"

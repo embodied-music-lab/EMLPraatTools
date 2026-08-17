@@ -431,10 +431,10 @@ check_true("v58",
 # fallback is
 # what makes the ruling hold on the one configuration the harness cannot
 # occupy without becoming that configuration itself -- a --pref-dir outside
-# $HOME, which is what these very harnesses use. Measured 15 Aug 2026 with a
-# direct probe: with the fallback the root comes out
-# ~/.praat-dir/plugin_EML_Praat_Tools; with it removed, /tmp/outofhome/
-# plugin_EML_Praat_Tools. So the four canonical spellings are read from the
+# $HOME, which is what these very harnesses use. A direct probe settles what
+# each arm produces: with the fallback the root comes out
+# ~/.praat-dir/plugin_EML_StatsGraphs; with it removed, /tmp/outofhome/
+# plugin_EML_StatsGraphs. So the four canonical spellings are read from the
 # source, and every one of them must carry the tilde -- a fallback that
 # resolved to an absolute path would satisfy "a fallback exists" and defeat
 # the ruling, which is the shape of mistake this whole file is about.

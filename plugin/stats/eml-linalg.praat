@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Numerical Linear Algebra Layer
+# EML Stats & Graphs — Numerical Linear Algebra Layer
 # ============================================================================
 # File: eml-linalg.praat
 # Version: 1.0

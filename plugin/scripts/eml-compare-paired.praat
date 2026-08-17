@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Compare Paired Observations
+# EML Stats & Graphs — Compare Paired Observations
 # ============================================================================
 # Purpose: Compare two paired columns using parametric (paired t-test)
 #          and/or nonparametric (Wilcoxon signed-rank) tests.

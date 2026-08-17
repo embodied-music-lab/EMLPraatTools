@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Compare Two Groups
+# EML Stats & Graphs — Compare Two Groups
 # ============================================================================
 # Purpose: Compare two independent groups from a Table using parametric
 #          (Welch/Student t) and/or nonparametric (Mann-Whitney U) tests,

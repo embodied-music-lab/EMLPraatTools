@@ -296,7 +296,7 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
         ... .dataCol$ + " by " + .groupCol$ + ", " + .testType$,
         ... "Equal-variance assumption: " + if .equalVar then "pooled" else "Welch" fi + ".",
         ... "@emlRunTwoGroupAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, """ + .testType$ + """, " + string$ (.equalVar),
-        ... "In the GUI: New > EML Tools > Compare two groups...",
+        ... "In the GUI: New > EML Stats & Graphs > Compare two groups...",
         ... .recResult$, .error$
     endif
 
@@ -538,7 +538,7 @@ procedure emlRecordAnova: .tableId, .dataCol$, .groupCol$, .doTukey, .error$
 
     ; The API line IS the code now, so the api slot names the GUI route
     ; instead — the one thing the emitted file cannot show by running.
-    .api$ = "In the GUI: New > EML Tools > Compare k groups (ANOVA)...,"
+    .api$ = "In the GUI: New > EML Stats & Graphs > Compare k groups (ANOVA)...,"
     ... + newline$ + "with Data column """ + .dataCol$
     ... + """ and Group column """ + .groupCol$ + """."
 
@@ -697,7 +697,7 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
         ... .dataCol$ + " by " + .groupCol$,
         ... "Rank-based; it does not assume normality and does not test it.",
         ... "@emlRunKWAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, " + string$ (.doDunn) + ", """ + .adjMethod$ + """",
-        ... "In the GUI: New > EML Tools > Compare k groups (Kruskal-Wallis)...",
+        ... "In the GUI: New > EML Stats & Graphs > Compare k groups (Kruskal-Wallis)...",
         ... .recResult$, .error$
     endif
 
@@ -842,7 +842,7 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
         ... .dataCol$ + " by " + .groupCol$ + ", " + .test$ + ", " + .adjMethod$,
         ... "The adjustment named here was APPLIED, not only labelled.",
         ... "@emlRunPairwiseAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, """ + .test$ + """, """ + .adjMethod$ + """",
-        ... "In the GUI: New > EML Tools > Pairwise comparisons...",
+        ... "In the GUI: New > EML Stats & Graphs > Pairwise comparisons...",
         ... .recResult$, .error$
     endif
 
@@ -1636,7 +1636,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
         ... .dataCol$ + " by " + .factor1$ + " and " + .factor2$,
         ... "Type of sums of squares and the balance of the design both matter here; see the report.",
         ... "@emlRunTwoWayAnalysis: data, """ + .dataCol$ + """, """ + .factor1$ + """, """ + .factor2$ + """",
-        ... "In the GUI: New > EML Tools > Compare two-way (ANOVA)...",
+        ... "In the GUI: New > EML Stats & Graphs > Compare two-way (ANOVA)...",
         ... .recResult$, .error$
     endif
 
@@ -1848,7 +1848,7 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
         ... .col1$ + " vs " + .col2$ + ", " + .testType$,
         ... "Rows with a missing value in either column are dropped pairwise.",
         ... "@emlRunPairedAnalysis: data, """ + .col1$ + """, """ + .col2$ + """, """ + .testType$ + """",
-        ... "In the GUI: New > EML Tools > Compare paired/repeated...",
+        ... "In the GUI: New > EML Stats & Graphs > Compare paired/repeated...",
         ... .recResult$, .error$
     endif
 
@@ -2029,7 +2029,7 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
         ... .colX$ + " with " + .colY$ + ", " + .testType$,
         ... "Correlation is not causation, and a single coefficient hides the shape of the cloud.",
         ... "@emlRunCorrelationAnalysis: data, """ + .colX$ + """, """ + .colY$ + """, """ + .testType$ + """",
-        ... "In the GUI: New > EML Tools > Correlate two columns...",
+        ... "In the GUI: New > EML Stats & Graphs > Correlate two columns...",
         ... .recResult$, .error$
     endif
 
@@ -2132,7 +2132,7 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
         ... .dataCol$,
         ... "Descriptives only; no test was run and no assumption was checked.",
         ... "@emlRunDescriptiveAnalysis: data, """ + .dataCol$ + """",
-        ... "In the GUI: New > EML Tools > Describe Table column...",
+        ... "In the GUI: New > EML Stats & Graphs > Describe Table column...",
         ... .recResult$, .error$
     endif
 
@@ -2277,7 +2277,7 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         ... .depCol$ + " on " + .predCol$,
         ... "Residual diagnostics are not run on this path.",
         ... "@emlRunRegressionAnalysis: data, """ + .depCol$ + """, """ + .predCol$ + """",
-        ... "In the GUI: New > EML Tools > Linear regression...",
+        ... "In the GUI: New > EML Stats & Graphs > Linear regression...",
         ... .recResult$, .error$
     endif
 
@@ -2645,7 +2645,7 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         ... .dataCol$ + ", " + .testType$,
         ... "A normality test answers a question about the sample, not a licence for a later test.",
         ... "@emlRunNormalityAnalysis: data, """ + .dataCol$ + """, """ + .testType$ + """",
-        ... "In the GUI: New > EML Tools > Check normality (all columns)...",
+        ... "In the GUI: New > EML Stats & Graphs > Check normality (all columns)...",
         ... .recResult$, .error$
     endif
 
@@ -3364,7 +3364,7 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
         ... .conditionCols$ + ", subject " + .subjectCol$,
         ... "Sphericity is corrected, not assumed; the report names the correction.",
         ... "@emlRunRepeatedMeasuresAnalysis: data, """ + .subjectCol$ + """, """ + .conditionCols$ + """, " + string$ (.doPostHoc) + ", """ + .adjMethod$ + """",
-        ... "In the GUI: New > EML Tools > Compare paired/repeated...",
+        ... "In the GUI: New > EML Stats & Graphs > Compare paired/repeated...",
         ... .recResult$, .error$
     endif
 
@@ -3502,7 +3502,7 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
         ... .conditionCols$ + ", subject " + .subjectCol$,
         ... "Rank-based repeated measures; it does not assume normality and does not test it.",
         ... "@emlRunFriedmanAnalysis: data, """ + .subjectCol$ + """, """ + .conditionCols$ + """, " + string$ (.doPostHoc) + ", """ + .adjMethod$ + """",
-        ... "In the GUI: New > EML Tools > Compare paired/repeated (Friedman)...",
+        ... "In the GUI: New > EML Stats & Graphs > Compare paired/repeated (Friedman)...",
         ... .recResult$, .error$
     endif
 

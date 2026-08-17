@@ -21,4 +21,4 @@ endfor
 
 selectObject: tid
 runScript: preferencesDirectory$
-... + "/plugin_EML_Praat_Tools/scripts/eml-regress.praat"
+... + "/plugin_EML_StatsGraphs/scripts/eml-regress.praat"

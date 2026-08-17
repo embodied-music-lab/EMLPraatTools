@@ -17,4 +17,4 @@ for i from 1 to 24
 endfor
 selectObject: tid
 runScript: preferencesDirectory$
-... + "/plugin_EML_Praat_Tools/scripts/eml-wizard.praat"
+... + "/plugin_EML_StatsGraphs/scripts/eml-wizard.praat"

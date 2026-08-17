@@ -20,7 +20,7 @@
 # true when it was written, and @emlComposeGraphTitle made it false.
 #
 # HOW IT WAS FOUND, which is the part worth keeping: by installing the plugin
-# under Xvfb, clicking New -> +EML Tools -> EML Graphs, and READING THE TITLE
+# under Xvfb, clicking New -> +EML Stats & Graphs -> EML Graphs, and READING THE TITLE
 # on the figure that came out. Every intermediate string was correct. Only the
 # rendered pixels were wrong, and nothing in this repository had ever looked
 # at a figure the plugin's own menu produced.

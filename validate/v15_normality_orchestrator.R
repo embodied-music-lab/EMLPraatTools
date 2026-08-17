@@ -28,7 +28,7 @@
 #   * G1 and G2 are the sample-corrected forms. See helpers.R and v14.
 #
 # DRIVEN 5 August 2026, AFTER the D95 fix:
-#   New > EML Tools > Check normality (all columns)...
+#   New > EML Stats & Graphs > Check normality (all columns)...
 #   Group column (none), Clear Info window ON.
 #
 # Input:  evidence/csv/v15_normality_input.csv

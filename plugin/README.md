@@ -1,4 +1,4 @@
-# EML Praat Tools
+# EML Stats & Graphs
 
 Statistical analysis and publication-quality graphing for Praat. Run t-tests, correlations, ANOVAs, and nonparametric tests without leaving Praat — no R or Python export required. Format results for direct inclusion in manuscripts.
 
@@ -14,7 +14,7 @@ Go to the Releases page:
 
 https://github.com/embodied-music-lab/EMLPraatTools/releases
 
-Download the file named **plugin_EML_Praat_Tools.zip** from the most recent
+Download the file named **plugin_EML_StatsGraphs.zip** from the most recent
 release.
 
 ### Step 2 — Unzip it
@@ -24,16 +24,16 @@ Double-click the downloaded file.
 - **macOS** unzips it as soon as you double-click.
 - **Windows**: right-click the file, choose **Extract All**, then **Extract**.
 - **Linux**: right-click and choose **Extract Here**, or run
-  `unzip plugin_EML_Praat_Tools.zip` in a terminal.
+  `unzip plugin_EML_StatsGraphs.zip` in a terminal.
 
-You now have a folder called **plugin_EML_Praat_Tools**. That folder *is* the
+You now have a folder called **plugin_EML_StatsGraphs**. That folder *is* the
 plugin. Please do not rename it: Praat recognises the plugin by that exact
 name, and a renamed folder is simply ignored.
 
 ### Step 3 — Move the folder into Praat's preferences folder
 
 Praat keeps its preferences somewhere different on each system. Find the right
-folder below, and drag `plugin_EML_Praat_Tools` into it whole — the folder
+folder below, and drag `plugin_EML_StatsGraphs` into it whole — the folder
 itself, not the files inside it.
 
 #### macOS
@@ -45,10 +45,10 @@ by default.
 2. In the menu bar, click **Go** while holding the **Option (⌥)** key. This
    reveals the hidden **Library** item.
 3. Click **Library**, then open `Preferences/Praat Prefs/`.
-4. Drag the `plugin_EML_Praat_Tools` folder into `Praat Prefs/`.
+4. Drag the `plugin_EML_StatsGraphs` folder into `Praat Prefs/`.
 
 Full path when you are done:
-`/Users/[you]/Library/Preferences/Praat Prefs/plugin_EML_Praat_Tools/`
+`/Users/[you]/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/`
 
 If you prefer, press **Cmd+Shift+G** in Finder and paste this path instead:
 `~/Library/Preferences/Praat Prefs/`
@@ -56,12 +56,12 @@ If you prefer, press **Cmd+Shift+G** in Finder and paste this path instead:
 #### Windows
 
 1. Open `C:\Users\[you]\Praat\`
-2. Drag the `plugin_EML_Praat_Tools` folder into it.
+2. Drag the `plugin_EML_StatsGraphs` folder into it.
 
 #### Linux
 
 1. Open `~/.praat-dir/`
-2. Drag the `plugin_EML_Praat_Tools` folder into it.
+2. Drag the `plugin_EML_StatsGraphs` folder into it.
 
 ### Step 4 — Restart Praat
 
@@ -71,7 +71,7 @@ startup, so the new menu will not appear until you have done this.
 ### Verify Installation
 
 After restarting Praat:
-- The menu bar should show **New > EML Tools** with submenu items.
+- The menu bar should show **New > EML Stats & Graphs** with submenu items.
 - Selecting a Table in the object list should show **EML: Describe column...**, **EML: Compare groups...**, **EML: Correlate columns...**, and **EML Graphs...** in the action buttons.
 - Selecting a Sound, Pitch, Spectrum, or Ltas object should show **EML Graphs...** in the action buttons.
 
@@ -81,11 +81,11 @@ Paste this into a new Praat script window and run it:
 
 ```praat
 # Include the stats library
-include plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
-include plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
-include plugin_EML_Praat_Tools/stats/eml-extract.praat
-include plugin_EML_Praat_Tools/stats/eml-output.praat
-include plugin_EML_Praat_Tools/stats/eml-inferential.praat
+include plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include plugin_EML_StatsGraphs/stats/eml-extract.praat
+include plugin_EML_StatsGraphs/stats/eml-output.praat
+include plugin_EML_StatsGraphs/stats/eml-inferential.praat
 
 # Two groups of F0 measurements (Hz)
 trained# = {195, 210, 188, 203, 197, 215, 192, 208}
@@ -108,7 +108,7 @@ own `scripts/` folder, with the paths for your machine filled in, so a script
 anywhere on that machine loads the whole stack with:
 
 ```praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
 ```
 
 That is the Praat 6.x Linux path; `docs/API_EXPORT.md` gives the line for
@@ -118,11 +118,11 @@ rather than shipped. The lists below remain correct and are the fallback.
 Add these lines at the top of any script that uses EML Stats:
 
 ```praat
-include plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
-include plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
-include plugin_EML_Praat_Tools/stats/eml-extract.praat
-include plugin_EML_Praat_Tools/stats/eml-output.praat
-include plugin_EML_Praat_Tools/stats/eml-inferential.praat
+include plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include plugin_EML_StatsGraphs/stats/eml-extract.praat
+include plugin_EML_StatsGraphs/stats/eml-output.praat
+include plugin_EML_StatsGraphs/stats/eml-inferential.praat
 ```
 
 **Order matters.** Utilities must come before inferential because inferential procedures call `@emlRankVector` and `@emlSortWithIndex` from utilities. Extract must come before inferential because k-group procedures call `@emlExtractMultipleGroups`.
@@ -130,12 +130,12 @@ include plugin_EML_Praat_Tools/stats/eml-inferential.praat
 For scripts that also produce figures, add:
 
 ```praat
-include plugin_EML_Praat_Tools/graphs/eml-graph-procedures.praat
+include plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
 ```
 
 The graphs module is independent of the stats modules. Stats-only scripts can omit it; graphs-only scripts can omit the stats includes.
 
-## Two Ways to Use EML Tools
+## Two Ways to Use EML Stats & Graphs
 
 **Menu items (no scripting required):** Select a Table in the object list, then click one of the **EML:** action buttons. A dialog collects your choices (which column, which test). Results appear in the Info window.
 
@@ -148,7 +148,7 @@ The graphs module is independent of the stats modules. Stats-only scripts can om
 - **`docs/RECIPES.md`** is five worked scripts for the workflows the plugin is actually used for: two groups from a table, paired columns and correlation, a full analysis with CSV export, a batch loop, and a Sound through Pitch into the descriptive kernels. Each one names the procedures it calls, what their arguments mean and what they hand back — and each is run verbatim by `harness/recipes/`, with its printed numbers pinned by `validate/v81_recipes.R`, so the page cannot document an API that has moved.
 - **`docs/API_EXPORT.md`** is the worked how-to for `@emlExportResultFiles` — running one analysis over a folder of files and writing the result CSVs from a loop, with no dialogs.
 - **`setup.praat`** is the authoritative list of menu items and action buttons, each with the script it runs.
-- **Record script** (Objects → New → EML Tools) is the fastest route from clicking to scripting: do the analysis in the GUI, then Stop recording and open, and you get a runnable, commented Praat script of *your* analysis — the recipes generalised, generated for the data in front of you.
+- **Record script** (Objects → New → EML Stats & Graphs) is the fastest route from clicking to scripting: do the analysis in the GUI, then Stop recording and open, and you get a runnable, commented Praat script of *your* analysis — the recipes generalised, generated for the data in front of you.
 
 ## Files in This Plugin
 

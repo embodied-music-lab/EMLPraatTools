@@ -20,7 +20,7 @@
 # THE TWO SUBSTITUTIONS, AND NOTHING ELSE. A pasted script has exactly two
 # things in it that belong to the reader's machine, and the page says so:
 #
-#   ~/.praat-dir/plugin_EML_Praat_Tools  ->  the plugin folder in this repo
+#   ~/.praat-dir/plugin_EML_StatsGraphs  ->  the plugin folder in this repo
 #   ~/voice_study                        ->  the folder holding the data
 #
 # run.sh substitutes those two prefixes into a STAGING copy, drives that, and
@@ -78,7 +78,7 @@ PLUGIN="$EML_ROOT/plugin"
 FIX="$SCRIPT_DIR/fixtures"
 THREEGROUP="$EML_ROOT/evidence/csv/demo_3groups_input.csv"
 
-INSTALL_TOKEN='~/.praat-dir/plugin_EML_Praat_Tools'
+INSTALL_TOKEN='~/.praat-dir/plugin_EML_StatsGraphs'
 DATA_TOKEN='~/voice_study'
 
 [[ -r "$DOC" ]]        || { echo "FAIL: page missing: $DOC"; exit 1; }

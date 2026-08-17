@@ -17,7 +17,7 @@
 # EVERY REPORTED VALUE IS READ FROM THE COMMITTED CAPTURE; see v08.
 #
 # DRIVEN 5 August 2026:
-#   New > EML Tools > Correlate two columns...
+#   New > EML Stats & Graphs > Correlate two columns...
 #   Column X speaking_F0_Hz, Column Y singing_F0_Hz,
 #   Group column (none), Test = Both.
 #

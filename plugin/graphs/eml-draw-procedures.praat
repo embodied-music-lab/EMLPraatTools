@@ -705,7 +705,7 @@ procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
             ... .title$,
             ... "",
             ... "@emlDrawF0Contour: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.fMin) + ", " + string$ (.fMax) + ", " + string$ (.yUnit),
-            ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            ... "In the GUI: New > EML Stats & Graphs > EML Graphs...", ""
             @emlRecordAxisNote: .freqMin, .freqMax
         endif
     endif
@@ -825,7 +825,7 @@ procedure emlDrawWaveform: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
             ... .title$,
             ... "",
             ... "@emlDrawWaveform: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.aMin) + ", " + string$ (.aMax),
-            ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            ... "In the GUI: New > EML Stats & Graphs > EML Graphs...", ""
             @emlRecordAxisNote: .ampBottom, .ampTop
         endif
     endif
@@ -1001,7 +1001,7 @@ procedure emlDrawSpectrum: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
             ... .title$,
             ... "",
             ... "@emlDrawSpectrum: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.fMin) + ", " + string$ (.fMax) + ", " + string$ (.pMin) + ", " + string$ (.pMax),
-            ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            ... "In the GUI: New > EML Stats & Graphs > EML Graphs...", ""
             @emlRecordAxisNote: .powerMin, .powerMax
         endif
     endif
@@ -1266,7 +1266,7 @@ procedure emlDrawLTAS: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colo
             ... .title$,
             ... "",
             ... "@emlDrawLTAS: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", " + string$ (.fMin) + ", " + string$ (.fMax) + ", " + string$ (.pMin) + ", " + string$ (.pMax) + ", " + string$ (.showCurve) + ", " + string$ (.showBars) + ", " + string$ (.showPoles) + ", " + string$ (.showSpeckles),
-            ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            ... "In the GUI: New > EML Stats & Graphs > EML Graphs...", ""
             @emlRecordAxisNote: .powerMin, .powerMax
         endif
     endif
@@ -1909,7 +1909,7 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
             ... .title$,
             ... "",
             ... "@emlDrawTimeSeries: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .timeCol$ + """" + ", """ + .valueCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.vMin) + ", " + string$ (.vMax),
-            ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            ... "In the GUI: New > EML Stats & Graphs > EML Graphs...", ""
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
@@ -2425,7 +2425,7 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
             ... .title$,
             ... "",
             ... "@emlDrawTimeSeriesCI: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .timeCol$ + """" + ", """ + .valueCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.tMin) + ", " + string$ (.tMax) + ", " + string$ (.vMin) + ", " + string$ (.vMax),
-            ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            ... "In the GUI: New > EML Stats & Graphs > EML Graphs...", ""
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
@@ -3033,7 +3033,7 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
             ... .title$,
             ... "",
             ... "@emlDrawSpaghettiPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .condCol$ + """" + ", """ + .valueCol$ + """" + ", """ + .idCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.showMean) + ", " + string$ (.vMin) + ", " + string$ (.vMax),
-            ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            ... "In the GUI: New > EML Stats & Graphs > EML Graphs...", ""
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
@@ -3410,7 +3410,7 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
             ... .title$,
             ... "Bars show means. The spread, not the bar, is what tells you about the data.",
             ... "@emlDrawBarChart: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .groupCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.errorMode) + ", """ + .errorCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
-            ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            ... "In the GUI: New > EML Stats & Graphs > EML Graphs...", ""
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
@@ -4853,7 +4853,7 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
             ... .title$,
             ... .recNote$,
             ... .recSetup$ + "@emlDrawScatterPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .colX$ + """" + ", """ + .colY$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.xMin) + ", " + string$ (.xMax) + ", " + string$ (.yMin) + ", " + string$ (.yMax) + ", " + string$ (.annotate),
-            ... "In the GUI: New > EML Tools > EML Graphs...",
+            ... "In the GUI: New > EML Stats & Graphs > EML Graphs...",
             ... .recBoth$
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
@@ -5122,7 +5122,7 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
             ... .title$,
             ... "Whisker convention and outlier rule are stated in the figure, not assumed.",
             ... "@emlDrawBoxPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .groupCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
-            ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            ... "In the GUI: New > EML Stats & Graphs > EML Graphs...", ""
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
@@ -5711,7 +5711,7 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
             ... .title$,
             ... "Bin count changes the shape; it is a display choice, not a property of the data.",
             ... "@emlDrawHistogram: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .valueCol$ + """" + ", """ + .groupCol$ + """" + ", " + string$ (.binCount) + ", " + string$ (.displayMode) + ", " + string$ (.vMin) + ", " + string$ (.vMax) + ", " + string$ (.freqMax),
-            ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            ... "In the GUI: New > EML Stats & Graphs > EML Graphs...", ""
             @emlRecordAxisNote: .axisXMin, .axisXMax
         endif
     endif
@@ -6108,7 +6108,7 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
             ... .title$,
             ... "Violin width is a kernel density estimate, not a count.",
             ... "@emlDrawGroupedViolin: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .catCol$ + """" + ", """ + .subCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
-            ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            ... "In the GUI: New > EML Stats & Graphs > EML Graphs...", ""
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
@@ -6429,7 +6429,7 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
             ... .title$,
             ... "Whisker convention and outlier rule are stated in the figure, not assumed.",
             ... "@emlDrawGroupedBoxPlot: data" + ", """ + .title$ + """" + ", """ + .xLabel$ + """" + ", """ + .yLabel$ + """" + ", " + string$ (.vpW) + ", " + string$ (.vpH) + ", """ + .colorMode$ + """" + ", " + string$ (.gridMode) + ", """ + .catCol$ + """" + ", """ + .subCol$ + """" + ", """ + .valueCol$ + """" + ", " + string$ (.vMin) + ", " + string$ (.vMax),
-            ... "In the GUI: New > EML Tools > EML Graphs...", ""
+            ... "In the GUI: New > EML Stats & Graphs > EML Graphs...", ""
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif

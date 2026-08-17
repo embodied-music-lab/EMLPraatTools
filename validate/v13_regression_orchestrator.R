@@ -18,7 +18,7 @@
 # EVERY REPORTED VALUE IS READ FROM THE COMMITTED CAPTURE; see v08.
 #
 # DRIVEN 5 August 2026:
-#   New > EML Tools > Linear regression...
+#   New > EML Stats & Graphs > Linear regression...
 #   Predictor practice_hrs_wk, Response vibrato_regularity_pct,
 #   Group column (none).
 #

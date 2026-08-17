@@ -3,7 +3,7 @@
 #
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #
-# Wrapper:  Objects > New > EML Tools > Compare paired/repeated...
+# Wrapper:  Objects > New > EML Stats & Graphs > Compare paired/repeated...
 # Settings: Column 1 jitter_pre, Column 2 jitter_post, Test Paired t-test
 #           (NOTE: the dialog's own defaults were jitter_pre and HNR_pre —
 #           two different measures. See finding D77. The columns were set

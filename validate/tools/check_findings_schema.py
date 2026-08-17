@@ -13,7 +13,7 @@
 #     pinnedBy  validator ID(s) pinning the corrected behaviour ("v66"), or a
 #               dev-test ID where the pin lives in plugin/dev/tests/.
 #               "" means UNPINNED.
-#     status    open | fixed-unpinned | closed | superseded.
+#     status    open | fixed-unpinned | closed | superseded | refuted.
 #
 # and `closed` requires BOTH fixedBy and pinnedBy non-empty. No other path to
 # closed.
@@ -21,10 +21,11 @@
 # and a fourth field, CONDITIONAL rather than universal:
 #
 #     pointer   "<kind>: <path>[:<line>|:<from>-<to>] <note>", where <kind> is
-#               `evidence` or `roadmap`. Required on exactly the rows where the
-#               hash cannot speak; validated wherever it appears.
+#               `evidence`, `roadmap` or `refutation`. Required on exactly the
+#               rows where the hash cannot speak; validated wherever it
+#               appears.
 #
-# THE TWO ROWS THE HASH CANNOT SPEAK FOR, and why each gets a pointer instead
+# THE THREE ROWS THE HASH CANNOT SPEAK FOR, and why each gets a pointer instead
 # of an empty field.
 #
 #   PRE-REPO REPAIRS. This repository's root commit is 9b7d5aa, 12 August
@@ -50,11 +51,32 @@
 #   not carry a fix or a pin: nothing was built, so there is nothing to have
 #   fixed and nothing to hold in place.
 #
-# `superseded` is a statement about WHERE THE WORK LIVES. It is deliberately
-# not a statement about whether the finding was a real defect -- the ledger has
-# no literal for "examined and found not to be a defect", the two REFUTED rows
-# still land on `open` mechanically, and that gap is an open question for the
-# author, not something to be closed by stretching this literal over it.
+#   REFUTED ROWS. A row filed as a defect that somebody then went and LOOKED
+#   at, and there was no defect there, is not `open` either. `open` means a
+#   repair is owed here, and nothing is owed on a row where the suspicion did
+#   not survive contact with the tree. So `refuted` is the literal, and it
+#   must carry a `refutation:` pointer at the thing in this tree that shows
+#   the suspicion is unfounded -- the same discipline `superseded` carries,
+#   for the same reason. A refuted row with a pointer to nothing is WORSE than
+#   an open row: an open row admits it is unexamined, and a refuted row asserts
+#   it was examined. Like `superseded` it may carry no fix and no pin: nothing
+#   was built, so there is nothing to have fixed and nothing to hold in place.
+#
+# `superseded` is a statement about WHERE THE WORK LIVES. `refuted` is a
+# statement about WHETHER THERE WAS EVER WORK. They are different claims and
+# neither may be stretched over the other: `superseded` says the work moved to
+# a roadmap phase, `refuted` says there was no work, and a row that is one of
+# them is not the other.
+#
+# WHY `refutation:` IS ITS OWN KIND AND DOES NOT REUSE `evidence:`. An
+# `evidence:` pointer says A REPAIR IS PRESENT in this tree; a `refutation:`
+# pointer says NO REPAIR WAS EVER NEEDED. Reusing `evidence` would not merely
+# blur those two sentences, it would make the blur MECHANICAL, because the
+# entailment table below switches on the kind: an empty `fixedBy` beside an
+# `evidence:` pointer would silently become `refuted`, and the next pre-repo
+# row that loses its hash would be reclassified from a repair this project
+# cannot prove into a defect this project denies -- in the flattering
+# direction, without anybody typing it.
 #
 # WHY THE RULE IS WORTH A CHECKER. "Closed" in this repository has meant two
 # different things, and the difference is the whole subject of the 15 August
@@ -70,16 +92,17 @@
 # So `status` is not an editorial field. It is MECHANICAL from the other two,
 # and this file recomputes it rather than reading it:
 #
-#     fixedBy "", roadmap pointer  ->  superseded
+#     fixedBy "", roadmap pointer     ->  superseded
+#     fixedBy "", refutation pointer  ->  refuted
 #     fixedBy ""      ->  open                (whatever pinnedBy says)
 #     fixedBy set, pinnedBy ""  ->  fixed-unpinned
 #     both set        ->  closed
 #
-# The first line is what keeps `superseded` from being typeable: it is entailed
-# by a pointer that names a file this checker opens, not by an editorial
-# decision. Every literal in this schema has to be earned by a field something
-# else can check -- the hash against git, the validator ID against validate/,
-# the pointer against the filesystem.
+# The first two lines are what keep `superseded` and `refuted` from being
+# typeable: each is entailed by a pointer that names a file this checker opens,
+# not by an editorial decision. Every literal in this schema has to be earned
+# by a field something else can check -- the hash against git, the validator ID
+# against validate/, the pointer against the filesystem.
 #
 # A row may not disagree with that table. The point is that "closed" cannot be
 # typed; it has to be earned by fields that are each independently checkable.
@@ -115,7 +138,7 @@ VAL = os.path.dirname(HERE)                       # .../validate
 ROOT = os.path.dirname(VAL)
 DEFAULT_LEDGER = os.path.join(ROOT, "audit", "FINDINGS_MACHINE.json")
 
-STATUSES = ("open", "fixed-unpinned", "closed", "superseded")
+STATUSES = ("open", "fixed-unpinned", "closed", "superseded", "refuted")
 FIELDS = ("fixedBy", "pinnedBy", "status")
 
 # The one non-hash value `fixedBy` may take, spelled exactly. Case and
@@ -126,7 +149,12 @@ FIELDS = ("fixedBy", "pinnedBy", "status")
 PRE_REPO = "pre-repo"
 
 POINTER = "pointer"
-POINTER_KINDS = ("evidence", "roadmap")
+POINTER_KINDS = ("evidence", "roadmap", "refutation")
+
+# The two pointer kinds that assert NOTHING WAS BUILT, and therefore forbid
+# both evidence fields. Kept as one tuple so the entailment table, the
+# required-pointer check and the contradiction check cannot drift apart.
+NOTHING_BUILT = {"roadmap": "superseded", "refutation": "refuted"}
 
 fail_n = 0
 
@@ -145,7 +173,7 @@ def say(ok, what, detail=""):
 # ---------------------------------------------------------------------------
 def entailed_status(fixed_by, pinned_by, pointer_kind=""):
     if not fixed_by:
-        return "superseded" if pointer_kind == "roadmap" else "open"
+        return NOTHING_BUILT.get(pointer_kind, "open")
     if not pinned_by:
         return "fixed-unpinned"
     return "closed"
@@ -334,15 +362,34 @@ def main():
                if all(f in r and is_str(r[f]) for f in FIELDS)]
 
     # -----------------------------------------------------------------------
-    # 2. status is one of the three literals. Spelling is part of the schema:
+    # 2. status is one of the literals. Spelling is part of the schema:
     #    a consumer switching on "fixed_unpinned" or "Closed" silently drops
     #    the row into whatever its default branch is.
+    #
+    #    AND IT IS SPELLED EXACTLY, whitespace included. This checker can
+    #    afford to strip a stray space before comparing; a consumer reading
+    #    the JSON and switching on the raw string cannot, and "refuted " is
+    #    exactly as invisible to such a switch as "REFUTED" is. A vocabulary
+    #    that quietly accepts near-misses is not a vocabulary, so the padding
+    #    is reported here rather than absorbed -- the same argument the
+    #    `pre-repo` literal carries above, applied to the field whose spelling
+    #    the whole census is computed from.
     # -----------------------------------------------------------------------
-    bad_lit = ["%s: status %r" % (row_label(r, i), r["status"])
-               for i, r in ok_rows if norm(r["status"]) not in STATUSES]
+    bad_lit, padded = [], []
+    for i, r in ok_rows:
+        raw = r["status"]
+        if norm(raw) not in STATUSES:
+            bad_lit.append("%s: status %r" % (row_label(r, i), raw))
+        elif raw != norm(raw):
+            padded.append("%s: status %r carries whitespace; the literal is %r"
+                          % (row_label(r, i), raw, norm(raw)))
     say(not bad_lit, "status is one of " + " | ".join(STATUSES),
         "" if not bad_lit else "%d bad literal(s)" % len(bad_lit))
     for m in bad_lit:
+        print("        " + m)
+    say(not padded, "and each is spelled exactly, with no surrounding whitespace",
+        "" if not padded else "%d padded literal(s)" % len(padded))
+    for m in padded:
         print("        " + m)
 
     lit_rows = [(i, r) for i, r in ok_rows if norm(r["status"]) in STATUSES]
@@ -496,7 +543,10 @@ def main():
     # 8. And it is REQUIRED exactly where the hash cannot speak. A `pre-repo`
     #    with no pointer is worse than the empty field it replaced, because it
     #    looks settled; a `superseded` with no pointer says work moved and
-    #    declines to say where.
+    #    declines to say where; a `refuted` with no pointer asserts somebody
+    #    examined this and declines to say what they looked at, which is the
+    #    most expensive of the three, because it is the one that says a defect
+    #    is not there.
     # -----------------------------------------------------------------------
     unsupported = []
     for i, r in lit_rows:
@@ -511,26 +561,38 @@ def main():
             unsupported.append(
                 "%s: status superseded with no valid `roadmap:` pointer -- name "
                 "the phase the work moved to" % lbl)
+        if norm(r["status"]) == "refuted" and kind != "refutation":
+            unsupported.append(
+                "%s: status refuted with no valid `refutation:` pointer -- name "
+                "the thing in this tree that shows there is no defect here" % lbl)
     say(not unsupported,
-        "pre-repo and superseded rows carry the pointer that supports them",
+        "pre-repo, superseded and refuted rows carry the pointer that supports them",
         "" if not unsupported else "%d unsupported claim(s)" % len(unsupported))
     for m in unsupported:
         print("        " + m)
 
     # -----------------------------------------------------------------------
-    # 9. A roadmap pointer says the thing was never built. A fix hash or a pin
-    #    says it was built and is held in place. A row may not say both.
+    # 9. A roadmap pointer says the thing was never built; a refutation pointer
+    #    says there was nothing to build. A fix hash or a pin says it WAS built
+    #    and is held in place. A row may not say both, and the message names
+    #    which two sentences are in conflict rather than reporting a bare
+    #    mismatch -- section 4 already reports mismatches, and a reader looking
+    #    at "refuted, but fixedBy set" needs to be told that those are two
+    #    incompatible claims about the same row, not one field to retype.
     # -----------------------------------------------------------------------
     both = []
     for i, r in lit_rows:
         lbl = row_label(r, i)
-        if ptr_kind.get(i, "") != "roadmap":
+        kind = ptr_kind.get(i, "")
+        if kind not in NOTHING_BUILT:
             continue
         held = [f for f in ("fixedBy", "pinnedBy") if norm(r[f])]
         if held:
-            both.append("%s: roadmap pointer, but %s set -- nothing was built"
-                        % (lbl, " and ".join(held)))
-    say(not both, "no roadmap-superseded row also claims a fix or a pin",
+            both.append(
+                "%s: %s pointer says %s -- nothing was built -- but %s set"
+                % (lbl, kind, NOTHING_BUILT[kind], " and ".join(held)))
+    say(not both,
+        "no superseded or refuted row also claims a fix or a pin",
         "" if not both else "%d contradiction(s)" % len(both))
     for m in both:
         print("        " + m)
@@ -551,6 +613,9 @@ def main():
     if tally["superseded"]:
         print("   (superseded is not a queue and not a closure: the work moved"
               "\n    to a roadmap phase, and the row's pointer says which.)")
+    if tally["refuted"]:
+        print("   (refuted is not a queue either: somebody looked and there was"
+              "\n    no defect, and the row's pointer says what they looked at.)")
 
     print("\n%s" % ("all checks passed" if fail_n == 0
                     else "%d check(s) FAILED" % fail_n))

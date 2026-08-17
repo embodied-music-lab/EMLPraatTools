@@ -619,7 +619,7 @@ progressY = 98.5
 #      d. Save as 600-dpi PNG file: tutImgDir$ + "/figName.png"
 #      e. Erase all (Picture window)
 #
-#   2. Store PNGs in plugin_EML_Praat_Tools/tutorial/images/
+#   2. Store PNGs in plugin_EML_StatsGraphs/tutorial/images/
 #
 #   3. In Demo window, display with:
 #      demo Select inner viewport: vpL, vpR, vpT, vpB

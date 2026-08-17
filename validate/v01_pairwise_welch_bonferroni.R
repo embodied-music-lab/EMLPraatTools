@@ -3,7 +3,7 @@
 #
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #
-# Wrapper:  Objects > New > EML Tools > Pairwise comparisons...
+# Wrapper:  Objects > New > EML Stats & Graphs > Pairwise comparisons...
 # Settings: Data SPL_dB, Group voice_type, Test "Pairwise t-test",
 #           Adjustment Bonferroni, T test type Welch, Group order Table order
 # Input:    evidence/csv/demo_3groups_input.csv — the exact table driven,

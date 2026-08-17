@@ -48,7 +48,7 @@ launch () {
     done
     sleep 1
     rm -f "$PREFS/pid" "$PREFS/message"
-    ln -sfn "$PLUGIN_SRC" "$PREFS/plugin_EML_Praat_Tools"
+    ln -sfn "$PLUGIN_SRC" "$PREFS/plugin_EML_StatsGraphs"
     DISPLAY=$DISPLAY HOME=$PREFS setsid nohup "$PRAAT" --new-send \
         --pref-dir="$PREFS" --utf8 "$s" > "$RIG/log/d117_$I.log" 2>&1 &
     sleep 7

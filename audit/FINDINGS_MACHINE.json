@@ -446,7 +446,8 @@
       "verdict": "REFUTED",
       "fixedBy": "",
       "pinnedBy": "",
-      "status": "open"
+      "status": "refuted",
+      "pointer": "refutation: validate/v60_wrapper_paths.R:231-240 the finding suspected a hardcoded column name pointing at the user's table. The check asserts BOTH halves of the refutation against the paired wrapper's source, read off disk with comments stripped: the literal is there (emlGraphsPresetGroupCol$ = \"Group\", plugin/scripts/eml-compare-paired.praat:332) AND the table it addresses is the wrapper's own reshape, created four lines above it with the column names Subject, Condition, Value, Group (:239) — so the column it names always exists. Live rather than committed: delete either line from the plugin and this check goes red, which is why the section is headed THE REFUTED FINDING, PINNED (:232) and the header at :87-93 tells a later reader tidying up \"hardcoded strings\" to argue with a failing check. Nothing was repaired here and nothing needs pinning."
     },
     {
       "id": "RULE-28I",

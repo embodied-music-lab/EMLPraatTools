@@ -15,7 +15,7 @@
 # EVERY REPORTED VALUE IS READ FROM THE COMMITTED CAPTURE; see v08.
 #
 # DRIVEN 5 August 2026:
-#   New > EML Tools > Compare two-way (ANOVA)...
+#   New > EML Stats & Graphs > Compare two-way (ANOVA)...
 #   Data column SPL_dB, Factor 1 voice_type, Factor 2 task.
 #
 # Input:  evidence/csv/v11_twoway_input.csv

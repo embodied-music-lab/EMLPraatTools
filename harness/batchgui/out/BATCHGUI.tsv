@@ -11,9 +11,9 @@ drive_reached_dialog	1
 range_title	Batch range
 drive_wait_seconds	5
 info_window_present	1
-info_grab_seconds	0
+info_grab_seconds	2
 info_encoding	utf16
-csv_name	corpus_results_2026-08-16.csv
+csv_name	corpus_results_2026-08-17.csv
 csv_rows	3
 csv_header	file,status,mean_F0_Hz,mean_intensity_dB,jitter_local,shimmer_local,HNR_dB,CPPS_dB
 csv_folder	EML Batch Results

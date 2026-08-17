@@ -1,4 +1,4 @@
-# HISTORY LEDGER — EML Praat Tools
+# HISTORY LEDGER — EML Stats & Graphs
 
 Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 

@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Stop recording and save
+# EML Stats & Graphs — Stop recording and save
 # ============================================================================
 # Purpose: render the recording started by 'Record script' to a runnable Praat
 #          file at a place the user chooses, and end the session.

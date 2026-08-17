@@ -22,7 +22,7 @@
 # the script — the suite breaks rather than quietly testing nothing.
 #
 # DRIVEN 5 August 2026 through the real GUI under Xvfb:
-#   New > EML Tools > Compare two groups...
+#   New > EML Stats & Graphs > Compare two groups...
 #   Data column jitter_pct, Group column group,
 #   Test = "Both parametric and nonparametric", Group order = Table order.
 #

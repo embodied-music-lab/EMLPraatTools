@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Build the installable release artefact for the EML Praat Tools plugin.
+"""Build the installable release artefact for the EML Stats & Graphs plugin.
 
 Why this exists
 ---------------
 Praat installs a plugin as a folder named `plugin_<Name>` under
 preferencesDirectory$. THIS REPOSITORY HAS NEVER PRODUCED THAT FOLDER.
 The source folder is called `plugin/`; the install name is
-`plugin_EML_Praat_Tools`; and until this script existed the only line in
+`plugin_EML_StatsGraphs`; and until this script existed the only line in
 the tree that made the real name was a symlink in a test rig
-(harness/walks/rig.sh, `ln -sfn "$REPO/plugin" "$P/plugin_EML_Praat_Tools"`).
+(harness/walks/rig.sh, `ln -sfn "$REPO/plugin" "$P/plugin_EML_StatsGraphs"`).
 So `plugin/README.md` told a user to copy a folder that was not in what
 they downloaded, and nothing renamed, copied or zipped anything.
 
@@ -34,11 +34,11 @@ IT IS NOT REPEATED HERE, and that is the point. This script reads it out of
 `stats/eml-record.praat` -- the file whose per-platform fallbacks decide the
 `include` lines of every script the recorder emits for a user:
 
-    emlRecordPluginRoot$ = "~/Praat/plugin_EML_Praat_Tools"          (Windows)
+    emlRecordPluginRoot$ = "~/Praat/plugin_EML_StatsGraphs"          (Windows)
     emlRecordPluginRoot$ = "~/Library/Preferences/Praat Prefs"
-    ... + "/plugin_EML_Praat_Tools"                                  (macOS)
-    emlRecordPluginRoot$ = "~/.config/praat/plugin_EML_Praat_Tools"  (7.x)
-    emlRecordPluginRoot$ = "~/.praat-dir/plugin_EML_Praat_Tools"     (6.x)
+    ... + "/plugin_EML_StatsGraphs"                                  (macOS)
+    emlRecordPluginRoot$ = "~/.config/praat/plugin_EML_StatsGraphs"  (7.x)
+    emlRecordPluginRoot$ = "~/.praat-dir/plugin_EML_StatsGraphs"     (6.x)
 
 A recorded script runs only if the folder it names is the folder the user
 actually has, so the artefact and the recorder cannot be allowed to
@@ -145,7 +145,7 @@ Usage
     python3 dev/tools/build-release.py                 # build into $TMPDIR
     python3 dev/tools/build-release.py --out DIR       # build into DIR
     python3 dev/tools/build-release.py --no-zip
-    python3 dev/tools/build-release.py --verify DIR/plugin_EML_Praat_Tools
+    python3 dev/tools/build-release.py --verify DIR/plugin_EML_StatsGraphs
 
 Exit status: 0 = built and verified (or --verify passed), 1 = verification
 failed, 2 = usage/IO error or an unbuildable tree.

@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Compare K Groups (Kruskal-Wallis)
+# EML Stats & Graphs — Compare K Groups (Kruskal-Wallis)
 # ============================================================================
 # Purpose: Compare 3+ groups using Kruskal-Wallis H test with Dunn's
 #          post-hoc and rank-biserial r effect sizes.

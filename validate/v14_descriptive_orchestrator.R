@@ -32,7 +32,7 @@
 # capture makes every occurrence index a hostage to whatever ran before.
 #
 # DRIVEN 5 August 2026:
-#   New > EML Tools > Describe Table column...  Column SPL_dB.
+#   New > EML Stats & Graphs > Describe Table column...  Column SPL_dB.
 #
 # Input:  evidence/csv/v14_descriptive_input.csv
 # Output: evidence/info/v14_descriptive_info.txt

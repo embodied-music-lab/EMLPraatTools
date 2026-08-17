@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # ============================================================================
-# EML Praat Tools — validation suite runner
+# EML Stats & Graphs — validation suite runner
 #
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #
@@ -297,10 +297,10 @@ scripts <- c(
     # v47 pins the plugin's INSTALL FOLDER NAME, which cannot be derived from
     # anything in this tree -- Praat gives a script no way to learn its own
     # plugin folder, so the name is a convention duplicated across a dozen
-    # literals. It was written `plugin_EMLPraatTools` for the real
-    # `plugin_EML_Praat_Tools` and pasted into eleven `include` lines of every
-    # script the recorder emitted, so every recorded script was unrunnable.
-    # Three things had to be true at once for that to survive: the phase1 test
+    # literals. A recorder that misspells `plugin_EML_StatsGraphs` pastes the
+    # misspelling into eleven `include` lines of every script it emits, and
+    # every recorded script is unrunnable. Three things had to be true at once
+    # for exactly that to survive here undetected: the phase1 test
     # ASSERTED THE WRONG STRING, harness/record/roundtrip.sh -- the one
     # harness that runs the emitted script -- overrides the root by design,
     # and nothing read the name out of a rendered artefact. v47 reads
@@ -712,7 +712,7 @@ scripts <- c(
     # regenerating the manifest the only route to a green suite.
     "v78_repo_hygiene.R",
     # v79 is the only script here whose subject is a file that is NOT IN THE
-    # REPOSITORY: plugin_EML_Praat_Tools, the folder Praat installs, which
+    # REPOSITORY: plugin_EML_StatsGraphs, the folder Praat installs, which
     # plugin/dev/tools/build-release.py makes out of plugin/. It cannot be
     # committed, and the reason is the defect it exists to catch -- git records
     # the executable bit and nothing else, so a checked-in copy of the artefact
@@ -896,7 +896,7 @@ scripts <- c(
     "v83_pin_definition.R"
 )
 
-cat("EML Praat Tools validation suite\n")
+cat("EML Stats & Graphs validation suite\n")
 cat("R ", R.version$major, ".", R.version$minor, "  ",
     format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n", sep = "")
 

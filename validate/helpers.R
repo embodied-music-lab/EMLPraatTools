@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — validation helpers
+# EML Stats & Graphs — validation helpers
 #
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #

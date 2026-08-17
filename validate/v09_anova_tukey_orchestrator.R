@@ -20,7 +20,7 @@
 # PROVENANCE — READ THIS BEFORE CITING THIS SCRIPT AS GUI EVIDENCE.
 #
 # ORIGINALLY DRIVEN 5 August 2026 through the real GUI:
-#   New > EML Tools > Compare k groups (ANOVA)...
+#   New > EML Stats & Graphs > Compare k groups (ANOVA)...
 #   Data column SPL_dB, Group column voice_type, Tukey HSD post hoc ON,
 #   Group order = Table order.
 #

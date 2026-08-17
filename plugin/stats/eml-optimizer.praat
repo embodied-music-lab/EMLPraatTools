@@ -1,5 +1,5 @@
 # ============================================================================
-# EML Praat Tools — Derivative-Free Optimizers
+# EML Stats & Graphs — Derivative-Free Optimizers
 # ============================================================================
 # File: eml-optimizer.praat
 # Version: 2.0
@@ -48,7 +48,7 @@
 # ============================================================================
 
 # ============================================================================
-# EML Praat Tools — Derivative-Free Optimizers
+# EML Stats & Graphs — Derivative-Free Optimizers
 # ============================================================================
 # File: eml-optimizer.praat
 # Version: 1.0

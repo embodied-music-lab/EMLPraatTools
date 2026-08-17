@@ -124,11 +124,11 @@ direction in words, is the safer call.
 **The script.**
 
 ```praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-extract.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-output.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-inferential.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-inferential.praat
 
 data = Read Table from comma-separated file: "~/voice_study/spl_by_group.csv"
 
@@ -218,11 +218,11 @@ on exactly the data that fits best.
 **The script.**
 
 ```praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-extract.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-output.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-inferential.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-inferential.praat
 
 data = Read Table from comma-separated file: "~/voice_study/pre_post.csv"
 
@@ -302,17 +302,17 @@ one exporter call.
 their reporters live in further modules.
 
 ```praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-extract.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-output.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-inferential.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-result-writer.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-record.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-graph-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-annotation-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-draw-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-analysis.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-record.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 
 outputFolder$ = "~/voice_study/results"
 createFolder: outputFolder$
@@ -366,17 +366,17 @@ after the loop instead and you get only the last analysis, once.
 **The script.**
 
 ```praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-extract.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-output.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-inferential.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-result-writer.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-record.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-graph-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-annotation-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/graphs/eml-draw-procedures.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-analysis.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-record.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 
 outputFolder$ = "~/voice_study/results"
 createFolder: outputFolder$
@@ -487,11 +487,11 @@ return named parts instead:
 **The script.**
 
 ```praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-descriptive.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-extract.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-output.praat
-include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-inferential.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-inferential.praat
 
 sound = Read from file: "~/voice_study/sustained_a.wav"
 pitch = To Pitch: 0, 75, 600
