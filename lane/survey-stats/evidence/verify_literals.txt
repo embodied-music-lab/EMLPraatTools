@@ -1,0 +1,40 @@
+PASS  alpha (10x5 clean)                                          literal=0.9491763761  R=0.9491763761
+PASS  Feldt CI lower                                              literal=0.8733351023  R=0.8733351023
+PASS  Feldt CI upper                                              literal=0.9855775272  R=0.9855775272
+PASS  alpha-if-deleted, item 1                                    literal=0.9209039548  R=0.9209039548
+PASS  alpha-if-deleted, item 2                                    literal=0.9375000000  R=0.9375000000
+PASS  alpha-if-deleted, item 3                                    literal=0.9580922322  R=0.9580922322
+PASS  alpha-if-deleted, item 4                                    literal=0.9237002026  R=0.9237002026
+PASS  alpha-if-deleted, item 5                                    literal=0.9393183707  R=0.9393183707
+PASS  alpha after listwise deletion                               literal=0.9528130672  R=0.9528130672
+PASS  2-item alpha                                                literal=0.8823529412  R=0.8823529412
+PASS  2x2 corrected chi-square                                    literal=4.7250000000  R=4.7250000000
+PASS  2x2 corrected p                                             literal=0.0297271833  R=0.0297271833
+PASS  2x2 uncorrected chi-square                                  literal=5.8333333333  R=5.8333333333
+PASS  2x2 uncorrected p                                           literal=0.0157252998  R=0.0157252998
+PASS  2x2 Cramér's V (uncorrected)                               literal=0.2886751346  R=0.2886751346
+PASS  sparse corrected chi-square                                 literal=0.4166666667  R=0.4166666667
+PASS  sparse corrected p                                          literal=0.5186050164  R=0.5186050164
+PASS  sparse smallest expected                                    literal=2.0000000000  R=2.0000000000
+PASS  sparse cells below 5                                        literal=4.0000000000  R=4.0000000000
+PASS  3x4 chi-square                                              literal=10.6870232798  R=10.6870232798
+PASS  3x4 df                                                      literal=6.0000000000  R=6.0000000000
+PASS  3x4 p                                                       literal=0.0985445284  R=0.0985445284
+PASS  3x4 Cramér's V                                             literal=0.2110195812  R=0.2110195812
+PASS  zero-cell chi-square                                        literal=9.4358974359  R=9.4358974359
+PASS  zero-cell V                                                 literal=0.6405126152  R=0.6405126152
+PASS  Wilson central lower                                        literal=0.6395811353  R=0.6395811353
+PASS  Wilson central upper                                        literal=0.9476312541  R=0.9476312541
+Warning message:
+In prop.test(x, n, conf.level = cl, correct = FALSE) :
+  Chi-squared approximation may be incorrect
+PASS  Wilson n=5 lower                                            literal=0.2307242813  R=0.2307242813
+PASS  Wilson n=5 upper                                            literal=0.8823792258  R=0.8823792258
+PASS  Wilson n=1000 99% lower                                     literal=0.9290930273  R=0.9290930273
+PASS  Wilson n=1000 99% upper                                     literal=0.9649749243  R=0.9649749243
+PASS  Wilson x=0 lower is 0                                       literal=0.0000000000  R=0.0000000000
+PASS  Wilson x=0 upper                                            literal=0.2775327999  R=0.2775327999
+PASS  Wilson x=n lower                                            literal=0.7224672001  R=0.7224672001
+PASS  Wilson x=n upper is 1                                       literal=1.0000000000  R=1.0000000000
+
+ALL LITERALS VERIFIED: 0 literal(s) failed verification

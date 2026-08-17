@@ -1,0 +1,74 @@
+
+==============================================================================
+v91 chi-square + Cramér's V oracle
+==============================================================================
+PASS  v91     the balanced_c1 probe ran                       computed=NA  expected TRUE
+PASS  v91     [balanced_c1] chi-square statistic              reported=4.725  computed=4.725  (match, tol 1e-10)
+PASS  v91     [balanced_c1] df                                reported=1  computed=1  (match, tol 0)
+PASS  v91     [balanced_c1] p-value                           reported=0.02972718331  computed=0.02972718331  (match, tol 1e-10)
+PASS  v91     [balanced_c1] Cramér's V (uncorrected base)    reported=0.2886751346  computed=0.2886751346  (match, tol 1e-10)
+PASS  v91     [balanced_c1] smallest expected count           reported=15  computed=15  (match, tol 1e-10)
+PASS  v91     [balanced_c1] cells with expected below 5       reported=0  computed=0  (match, tol 0)
+PASS  v91     [balanced_c1] warning fires exactly when an expected count is below 5  computed=NA  expected TRUE
+PASS  v91     the balanced_c0 probe ran                       computed=NA  expected TRUE
+PASS  v91     [balanced_c0] chi-square statistic              reported=5.833333333  computed=5.833333333  (match, tol 1e-10)
+PASS  v91     [balanced_c0] df                                reported=1  computed=1  (match, tol 0)
+PASS  v91     [balanced_c0] p-value                           reported=0.01572529975  computed=0.01572529975  (match, tol 1e-10)
+PASS  v91     [balanced_c0] Cramér's V (uncorrected base)    reported=0.2886751346  computed=0.2886751346  (match, tol 1e-10)
+PASS  v91     [balanced_c0] smallest expected count           reported=15  computed=15  (match, tol 1e-10)
+PASS  v91     [balanced_c0] cells with expected below 5       reported=0  computed=0  (match, tol 0)
+PASS  v91     [balanced_c0] warning fires exactly when an expected count is below 5  computed=NA  expected TRUE
+PASS  v91     the sparse_c1 probe ran                         computed=NA  expected TRUE
+PASS  v91     [sparse_c1] chi-square statistic                reported=0.4166666667  computed=0.4166666667  (match, tol 1e-10)
+PASS  v91     [sparse_c1] df                                  reported=1  computed=1  (match, tol 0)
+PASS  v91     [sparse_c1] p-value                             reported=0.5186050164  computed=0.5186050164  (match, tol 1e-10)
+PASS  v91     [sparse_c1] Cramér's V (uncorrected base)      reported=0.4082482905  computed=0.4082482905  (match, tol 1e-10)
+PASS  v91     [sparse_c1] smallest expected count             reported=2  computed=2  (match, tol 1e-10)
+PASS  v91     [sparse_c1] cells with expected below 5         reported=4  computed=4  (match, tol 0)
+PASS  v91     [sparse_c1] warning fires exactly when an expected count is below 5  computed=NA  expected TRUE
+PASS  v91     the sparse_c0 probe ran                         computed=NA  expected TRUE
+PASS  v91     [sparse_c0] chi-square statistic                reported=1.666666667  computed=1.666666667  (match, tol 1e-10)
+PASS  v91     [sparse_c0] df                                  reported=1  computed=1  (match, tol 0)
+PASS  v91     [sparse_c0] p-value                             reported=0.1967056025  computed=0.1967056025  (match, tol 1e-10)
+PASS  v91     [sparse_c0] Cramér's V (uncorrected base)      reported=0.4082482905  computed=0.4082482905  (match, tol 1e-10)
+PASS  v91     [sparse_c0] smallest expected count             reported=2  computed=2  (match, tol 1e-10)
+PASS  v91     [sparse_c0] cells with expected below 5         reported=4  computed=4  (match, tol 0)
+PASS  v91     [sparse_c0] warning fires exactly when an expected count is below 5  computed=NA  expected TRUE
+PASS  v91     the t3x4_c1 probe ran                           computed=NA  expected TRUE
+PASS  v91     [t3x4_c1] chi-square statistic                  reported=10.68702328  computed=10.68702328  (match, tol 1e-10)
+PASS  v91     [t3x4_c1] df                                    reported=6  computed=6  (match, tol 0)
+PASS  v91     [t3x4_c1] p-value                               reported=0.09854452836  computed=0.09854452836  (match, tol 1e-10)
+PASS  v91     [t3x4_c1] Cramér's V (uncorrected base)        reported=0.2110195812  computed=0.2110195812  (match, tol 1e-10)
+PASS  v91     [t3x4_c1] smallest expected count               reported=9.333333333  computed=9.333333333  (match, tol 1e-10)
+PASS  v91     [t3x4_c1] cells with expected below 5           reported=0  computed=0  (match, tol 0)
+PASS  v91     [t3x4_c1] warning fires exactly when an expected count is below 5  computed=NA  expected TRUE
+PASS  v91     the t3x4_c0 probe ran                           computed=NA  expected TRUE
+PASS  v91     [t3x4_c0] chi-square statistic                  reported=10.68702328  computed=10.68702328  (match, tol 1e-10)
+PASS  v91     [t3x4_c0] df                                    reported=6  computed=6  (match, tol 0)
+PASS  v91     [t3x4_c0] p-value                               reported=0.09854452836  computed=0.09854452836  (match, tol 1e-10)
+PASS  v91     [t3x4_c0] Cramér's V (uncorrected base)        reported=0.2110195812  computed=0.2110195812  (match, tol 1e-10)
+PASS  v91     [t3x4_c0] smallest expected count               reported=9.333333333  computed=9.333333333  (match, tol 1e-10)
+PASS  v91     [t3x4_c0] cells with expected below 5           reported=0  computed=0  (match, tol 0)
+PASS  v91     [t3x4_c0] warning fires exactly when an expected count is below 5  computed=NA  expected TRUE
+PASS  v91     the zerocell_c1 probe ran                       computed=NA  expected TRUE
+PASS  v91     [zerocell_c1] chi-square statistic              reported=6.918060897  computed=6.918060897  (match, tol 1e-10)
+PASS  v91     [zerocell_c1] df                                reported=1  computed=1  (match, tol 0)
+PASS  v91     [zerocell_c1] p-value                           reported=0.008532945435  computed=0.008532945435  (match, tol 1e-10)
+PASS  v91     [zerocell_c1] Cramér's V (uncorrected base)    reported=0.6405126152  computed=0.6405126152  (match, tol 1e-10)
+PASS  v91     [zerocell_c1] smallest expected count           reported=3.47826087  computed=3.47826087  (match, tol 1e-10)
+PASS  v91     [zerocell_c1] cells with expected below 5       reported=2  computed=2  (match, tol 0)
+PASS  v91     [zerocell_c1] warning fires exactly when an expected count is below 5  computed=NA  expected TRUE
+PASS  v91     the zerocell_c0 probe ran                       computed=NA  expected TRUE
+PASS  v91     [zerocell_c0] chi-square statistic              reported=9.435897436  computed=9.435897436  (match, tol 1e-10)
+PASS  v91     [zerocell_c0] df                                reported=1  computed=1  (match, tol 0)
+PASS  v91     [zerocell_c0] p-value                           reported=0.002127789415  computed=0.002127789415  (match, tol 1e-10)
+PASS  v91     [zerocell_c0] Cramér's V (uncorrected base)    reported=0.6405126152  computed=0.6405126152  (match, tol 1e-10)
+PASS  v91     [zerocell_c0] smallest expected count           reported=3.47826087  computed=3.47826087  (match, tol 1e-10)
+PASS  v91     [zerocell_c0] cells with expected below 5       reported=2  computed=2  (match, tol 0)
+PASS  v91     [zerocell_c0] warning fires exactly when an expected count is below 5  computed=NA  expected TRUE
+PASS  v91     correction parameter changes the 2x2 statistic  reported=4.725  computed=5.833333333  (differ, tol 1e-10)
+PASS  v91     zero row/column margin is refused with a message  computed=NA  expected TRUE
+PASS  v91     the negative-control seed site exists in source  computed=NA  expected TRUE
+PASS  v91     seeded wrong-denominator Cramér's V DIFFERS from the oracle  reported=0.1722967666  computed=0.2110195812  (differ, tol 1e-10)
+------------------------------------------------------------------------------ 
+68 checks, 68 passed, 0 FAILED

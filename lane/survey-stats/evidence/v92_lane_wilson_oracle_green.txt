@@ -1,0 +1,62 @@
+Warning messages:
+1: In prop.test(cs$x, cs$n, conf.level = cs$conf, correct = FALSE) :
+  Chi-squared approximation may be incorrect
+2: In prop.test(cs$x, cs$n, conf.level = cs$conf, correct = FALSE) :
+  Chi-squared approximation may be incorrect
+3: In prop.test(cs$x, cs$n, conf.level = cs$conf, correct = FALSE) :
+  Chi-squared approximation may be incorrect
+
+==============================================================================
+v92 Wilson interval oracle
+==============================================================================
+PASS  v92     oracle vs Newcombe 1998 print, x=81 n=263, lower  reported=0.2553  computed=0.2553  (match, tol 5e-05)
+PASS  v92     oracle vs Newcombe 1998 print, x=81 n=263, upper  reported=0.3662  computed=0.3662  (match, tol 5e-05)
+PASS  v92     oracle vs Newcombe 1998 print, x=15 n=148, lower  reported=0.0624  computed=0.0624  (match, tol 5e-05)
+PASS  v92     oracle vs Newcombe 1998 print, x=15 n=148, upper  reported=0.1605  computed=0.1605  (match, tol 5e-05)
+PASS  v92     the central probe ran                           computed=NA  expected TRUE
+PASS  v92     [central] point estimate x/n                    reported=0.5  computed=0.5  (match, tol 0)
+PASS  v92     [central] Wilson lower bound                    reported=0.2992980082  computed=0.2992980082  (match, tol 1e-10)
+PASS  v92     [central] Wilson upper bound                    reported=0.7007019918  computed=0.7007019918  (match, tol 1e-10)
+PASS  v92     the near_zero probe ran                         computed=NA  expected TRUE
+PASS  v92     [near_zero] point estimate x/n                  reported=0.02  computed=0.02  (match, tol 0)
+PASS  v92     [near_zero] Wilson lower bound                  reported=0.003539259272  computed=0.003539259272  (match, tol 1e-10)
+PASS  v92     [near_zero] Wilson upper bound                  reported=0.1049544359  computed=0.1049544359  (match, tol 1e-10)
+PASS  v92     the near_one probe ran                          computed=NA  expected TRUE
+PASS  v92     [near_one] point estimate x/n                   reported=0.98  computed=0.98  (match, tol 0)
+PASS  v92     [near_one] Wilson lower bound                   reported=0.8950455641  computed=0.8950455641  (match, tol 1e-10)
+PASS  v92     [near_one] Wilson upper bound                   reported=0.9964607407  computed=0.9964607407  (match, tol 1e-10)
+PASS  v92     the n_small probe ran                           computed=NA  expected TRUE
+PASS  v92     [n_small] point estimate x/n                    reported=0.6  computed=0.6  (match, tol 0)
+PASS  v92     [n_small] Wilson lower bound                    reported=0.2307242813  computed=0.2307242813  (match, tol 1e-10)
+PASS  v92     [n_small] Wilson upper bound                    reported=0.8823792258  computed=0.8823792258  (match, tol 1e-10)
+PASS  v92     the n_large probe ran                           computed=NA  expected TRUE
+PASS  v92     [n_large] point estimate x/n                    reported=0.7  computed=0.7  (match, tol 0)
+PASS  v92     [n_large] Wilson lower bound                    reported=0.6708761391  computed=0.6708761391  (match, tol 1e-10)
+PASS  v92     [n_large] Wilson upper bound                    reported=0.7275931575  computed=0.7275931575  (match, tol 1e-10)
+PASS  v92     the x_zero probe ran                            computed=NA  expected TRUE
+PASS  v92     [x_zero] point estimate x/n                     reported=0  computed=0  (match, tol 0)
+PASS  v92     [x_zero] Wilson lower bound                     reported=0  computed=0  (match, tol 1e-10)
+PASS  v92     [x_zero] Wilson upper bound                     reported=0.2775327999  computed=0.2775327999  (match, tol 1e-10)
+PASS  v92     [x_zero] interval has positive width at the endpoint  computed=NA  expected TRUE
+PASS  v92     the x_equals_n probe ran                        computed=NA  expected TRUE
+PASS  v92     [x_equals_n] point estimate x/n                 reported=1  computed=1  (match, tol 0)
+PASS  v92     [x_equals_n] Wilson lower bound                 reported=0.7224672001  computed=0.7224672001  (match, tol 1e-10)
+PASS  v92     [x_equals_n] Wilson upper bound                 reported=1  computed=1  (match, tol 1e-10)
+PASS  v92     [x_equals_n] interval has positive width at the endpoint  computed=NA  expected TRUE
+PASS  v92     the x_zero_conf99 probe ran                     computed=NA  expected TRUE
+PASS  v92     [x_zero_conf99] point estimate x/n              reported=0  computed=0  (match, tol 0)
+PASS  v92     [x_zero_conf99] Wilson lower bound              reported=0  computed=0  (match, tol 1e-10)
+PASS  v92     [x_zero_conf99] Wilson upper bound              reported=0.570258321  computed=0.570258321  (match, tol 1e-10)
+PASS  v92     [x_zero_conf99] interval has positive width at the endpoint  computed=NA  expected TRUE
+PASS  v92     the x_n_conf90 probe ran                        computed=NA  expected TRUE
+PASS  v92     [x_n_conf90] point estimate x/n                 reported=1  computed=1  (match, tol 0)
+PASS  v92     [x_n_conf90] Wilson lower bound                 reported=0.6488834992  computed=0.6488834992  (match, tol 1e-10)
+PASS  v92     [x_n_conf90] Wilson upper bound                 reported=1  computed=1  (match, tol 1e-10)
+PASS  v92     [x_n_conf90] interval has positive width at the endpoint  computed=NA  expected TRUE
+PASS  v92     non-integer successes are refused               computed=NA  expected TRUE
+PASS  v92     successes above n are refused                   computed=NA  expected TRUE
+PASS  v92     a confidence level of 95 (not 0.95) is refused  computed=NA  expected TRUE
+PASS  v92     the negative-control seed site exists in source  computed=NA  expected TRUE
+PASS  v92     seeded one-sided-z lower bound DIFFERS from the oracle  reported=0.3274037679  computed=0.2992980082  (differ, tol 1e-10)
+------------------------------------------------------------------------------ 
+49 checks, 49 passed, 0 FAILED
