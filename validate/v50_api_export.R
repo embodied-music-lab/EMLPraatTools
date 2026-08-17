@@ -42,7 +42,7 @@
 #
 # So this file's population is the set of API CALLS: for each way a script can
 # call the procedure, did it return what its own header says it returns, did
-# the files named in .fileList$ actually arrive, and does docs/API_EXPORT.md
+# the files named in .fileList$ actually arrive, and does plugin/docs/API_EXPORT.md
 # still describe what happened.
 #
 # THE THREE CHECKS THAT MATTER MOST, because they are the ones no reading
@@ -54,7 +54,7 @@
 #      the tidy frame, so the second call must produce a COMPLETE second set
 #      under the walked base, not frame 1 of the new set beside frames 2 and 3
 #      of the old one.
-#   3. The example in docs/API_EXPORT.md is compared LINE BY LINE against the
+#   3. The example in plugin/docs/API_EXPORT.md is compared LINE BY LINE against the
 #      script the harness actually ran. Prose that drifts from the code it
 #      documents fails here rather than in somebody's project folder.
 #
@@ -63,7 +63,7 @@
 #
 # Input: harness/api_export/out/ -- ARTEFACTS.tsv (name<TAB>bytes), one
 #        <leg>.outputs.tsv per leg, and every file the legs wrote -- plus the
-#        plugin source and docs/API_EXPORT.md. $EML_API_EXPORT_DIR,
+#        plugin source and plugin/docs/API_EXPORT.md. $EML_API_EXPORT_DIR,
 #        $EML_PLUGIN_DIR and $EML_DOCS_DIR override, for break tests.
 #
 # ATTRIBUTION
@@ -83,7 +83,7 @@ if (!nzchar(ap)) ap <- repo_path(file.path("harness", "api_export", "out"))
 plug <- Sys.getenv("EML_PLUGIN_DIR", unset = "")
 if (!nzchar(plug)) plug <- repo_path("plugin")
 docs <- Sys.getenv("EML_DOCS_DIR", unset = "")
-if (!nzchar(docs)) docs <- repo_path("docs")
+if (!nzchar(docs)) docs <- repo_path("plugin", "docs")
 
 # readable -- a file that is there AND has bytes in it.
 #
@@ -429,7 +429,7 @@ if (check_true("v50", "fresh: the exporter reported once", length(fr) == 1)) {
     check_true("v50", "fresh: .fileList$ names nothing", length(r$files) == 0)
     # THE PINNED WART. .actualPath$ is set on the legacy arm even when nothing
     # was written, so after an empty export it names a file that does not
-    # exist. docs/API_EXPORT.md warns about it; it is asserted here so that a
+    # exist. plugin/docs/API_EXPORT.md warns about it; it is asserted here so that a
     # future fix is noticed and the warning removed, rather than the document
     # quietly becoming wrong in the safe direction.
     check_true("v50",
@@ -548,7 +548,7 @@ check_true("v50", sprintf("the source has orchestrators to classify (%d)",
 
 docp <- file.path(docs, "API_EXPORT.md")
 doc <- character(0)
-if (readable("v50", "docs/API_EXPORT.md exists and has content", docp)) {
+if (readable("v50", "plugin/docs/API_EXPORT.md exists and has content", docp)) {
     doc <- readLines(docp, warn = FALSE)
 }
 check_true("v50", sprintf("the document has content (%d lines)", length(doc)),
@@ -617,9 +617,15 @@ norm <- function(v) {
     v[!grepl("^(inputFile\\$|outputFolder\\$)\\s*=", v)]
 }
 
+# ONLY A FENCED ```praat BLOCK IS A CANDIDATE, and the reason is that a naive
+# walk over consecutive fence lines also walks the PROSE BETWEEN blocks -- the
+# region from one closing fence to the next opening one is a pair like any
+# other. Any sentence in that prose that quotes an include line inline then
+# reads as the example, and the comparison below is against a paragraph.
 fence <- grep("^```", doc)
 docEx <- character(0)
 for (i in seq_len(max(0, length(fence) - 1))) {
+    if (!grepl("^```praat", doc[fence[i]])) next
     blk <- doc[(fence[i] + 1):(fence[i + 1] - 1)]
     if (any(grepl("include ~/.praat-dir/plugin_EML_Praat_Tools", blk,
                   fixed = TRUE))) { docEx <- blk; break }

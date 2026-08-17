@@ -314,3 +314,153 @@ Add action command: "Matrix", 1, "", 0, "", 0, "EML: Compare groups...", "", 0, 
 Add action command: "Matrix", 1, "", 0, "", 0, "EML: Correlate columns...", "", 0, "scripts/eml-correlate.praat"
 Add action command: "Matrix", 1, "", 0, "", 0, "EML: Linear regression...", "", 0, "scripts/eml-regress.praat"
 Add action command: "Matrix", 1, "", 0, "", 0, "EML Graphs...", "", 0, "scripts/eml-graphs.praat"
+
+# ── THE ONE-LINE LIBRARY, GENERATED FOR THIS INSTALLATION ──────────────────
+#
+# A user writing their own script wants ONE include line, not eleven. The
+# shipped barrels in scripts/ cannot give them that, and the reason is a
+# property of Praat rather than of this plugin: `include` is a PARSE-TIME TEXT
+# PASTE, and a relative path inside an included file resolves against the
+# TOP-LEVEL script's folder. Measured on 6.6.30 — a file in lib/ that says
+# `include b.praat` makes Praat look for b.praat beside the script that
+# included it, and fail. So scripts/eml-lib.praat, whose lines read
+# "../stats/...", resolves those against the USER's folder. It works for the
+# plugin's own wrappers, which sit in scripts/, and it cannot work for anyone
+# else. A static file cannot compute where it is installed.
+#
+# This file can. setup.praat is executed by Praat from the plugin's own
+# folder at every launch, so it is the one part of the plugin that knows the
+# installed location — and it writes that location into a generated barrel
+# with full, machine-correct include paths. One line then loads the stack from
+# a script anywhere on the machine.
+#
+# IT IS WRITTEN LAST, AFTER EVERY REGISTRATION ABOVE. A plugin that failed to
+# register its menus because a file could not be written would lose the whole
+# feature set over a convenience; ordering it here means the worst case is a
+# missing barrel and the eleven-line block, which is documented, still works.
+# The write is unchecked for the same reason: an install on read-only media
+# leaves the menus registered rather than raising a dialog at every launch.
+#
+# THE INCLUDE IS PARSE-TIME, SO ITS POSITION HERE IS COSMETIC. It is written
+# beside the code that needs it rather than at the top of the file. What it
+# brings in is @emlPluginRoot, the single procedure that answers "where is
+# this plugin installed"; the recorder calls the same one to build the include
+# block of a recorded script, so a generated barrel and a recorded script
+# cannot disagree. The procedure lives in eml-record.praat because that file
+# carries no relative include of its own and is therefore the one module that
+# can be included from the plugin root, from scripts/, and from a user's
+# folder alike.
+include stats/eml-record.praat
+
+@emlPluginRoot
+emlSetupRoot$ = emlPluginRoot.root$
+emlSetupPath$ = preferencesDirectory$
+... + "/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat"
+
+# THE MODULE ORDER IS THE DEPENDENCY ORDER, and it is the same list, in the
+# same sequence, that @emlRecordRender writes into a recorded script. The two
+# are pinned against each other by validate/v82.
+emlSetupNModules = 11
+emlSetupModule$ [ 1] = "stats/eml-core-utilities.praat"
+emlSetupModule$ [ 2] = "stats/eml-core-descriptive.praat"
+emlSetupModule$ [ 3] = "stats/eml-extract.praat"
+emlSetupModule$ [ 4] = "stats/eml-output.praat"
+emlSetupModule$ [ 5] = "stats/eml-inferential.praat"
+emlSetupModule$ [ 6] = "stats/eml-result-writer.praat"
+emlSetupModule$ [ 7] = "stats/eml-record.praat"
+emlSetupModule$ [ 8] = "graphs/eml-graph-procedures.praat"
+emlSetupModule$ [ 9] = "graphs/eml-annotation-procedures.praat"
+emlSetupModule$ [10] = "graphs/eml-draw-procedures.praat"
+emlSetupModule$ [11] = "stats/eml-analysis.praat"
+
+# THE GENERATED TEXT IS PURE ASCII, ON PURPOSE. Praat picks an output encoding
+# from the text it is given — ASCII where it can, UTF-16 where it cannot — so
+# a single em dash in this header would decide the file's encoding, and the
+# byte comparison below would be comparing a re-encoded file against a string.
+# The plugin's own prose uses em dashes; this generated file does not.
+emlSetupBar$ = "# ==========================================================="
+... + "================="
+emlSetupText$ = emlSetupBar$ + newline$
+emlSetupText$ = emlSetupText$
+... + "# eml-lib-user.praat -- GENERATED. Do not edit." + newline$
+emlSetupText$ = emlSetupText$ + "#" + newline$
+emlSetupText$ = emlSetupText$
+... + "# EML Praat Tools -- Ian Howell -- Embodied Music Lab" + newline$
+emlSetupText$ = emlSetupText$
+... + "# GPL-3.0-or-later" + newline$
+emlSetupText$ = emlSetupText$ + "#" + newline$
+emlSetupText$ = emlSetupText$
+... + "# One line loads the whole stack, from a script anywhere on this"
+... + newline$
+emlSetupText$ = emlSetupText$ + "# machine:" + newline$
+emlSetupText$ = emlSetupText$ + "#" + newline$
+emlSetupText$ = emlSetupText$
+... + "#     include " + emlSetupRoot$ + "/scripts/eml-lib-user.praat"
+... + newline$
+emlSetupText$ = emlSetupText$ + "#" + newline$
+emlSetupText$ = emlSetupText$
+... + "# WHEN THIS FILE IS WRITTEN. setup.praat runs at every Praat launch"
+... + newline$
+emlSetupText$ = emlSetupText$
+... + "# and rewrites this file whenever its contents would differ from what"
+... + newline$
+emlSetupText$ = emlSetupText$
+... + "# is on disk -- when the plugin moves, or when a Praat version puts"
+... + newline$
+emlSetupText$ = emlSetupText$
+... + "# its preferences folder somewhere else. A launch that would change"
+... + newline$
+emlSetupText$ = emlSetupText$
+... + "# nothing writes nothing. Anything edited into this file by hand is"
+... + newline$
+emlSetupText$ = emlSetupText$
+... + "# overwritten the next time the paths change." + newline$
+emlSetupText$ = emlSetupText$ + "#" + newline$
+emlSetupText$ = emlSetupText$
+... + "# WHY IT IS GENERATED RATHER THAN SHIPPED. Praat's `include` is a"
+... + newline$
+emlSetupText$ = emlSetupText$
+... + "# parse-time text paste, and a relative path inside an included file"
+... + newline$
+emlSetupText$ = emlSetupText$
+... + "# resolves against the TOP-LEVEL script's folder -- the folder of"
+... + newline$
+emlSetupText$ = emlSetupText$
+... + "# whoever includes it, not this file's own. A barrel of relative"
+... + newline$
+emlSetupText$ = emlSetupText$
+... + "# lines therefore looks for the plugin inside the user's own folder."
+... + newline$
+emlSetupText$ = emlSetupText$
+... + "# Only a file written by something that knows the installed location"
+... + newline$
+emlSetupText$ = emlSetupText$
+... + "# can carry paths that resolve, and setup.praat runs from it."
+... + newline$
+emlSetupText$ = emlSetupText$ + "#" + newline$
+emlSetupText$ = emlSetupText$
+... + "# The paths are home-relative: `include` accepts a leading ~, so this"
+... + newline$
+emlSetupText$ = emlSetupText$
+... + "# file is correct for any account on this machine." + newline$
+emlSetupText$ = emlSetupText$ + emlSetupBar$ + newline$ + newline$
+for emlSetupI from 1 to emlSetupNModules
+    emlSetupText$ = emlSetupText$ + "include " + emlSetupRoot$ + "/"
+    ... + emlSetupModule$ [emlSetupI] + newline$
+endfor
+
+# ── WRITE ONLY WHEN THE CONTENT WOULD CHANGE ───────────────────────────────
+#
+# This is a requirement, not an optimisation. Praat 7 challenges a script that
+# touches disk, so a plugin that rewrote an identical file at every launch
+# would put a prompt in front of a user who changed nothing, every time they
+# opened Praat. The comparison is against the file's full text, so a barrel
+# that is already correct costs one read and no write, and its modification
+# time does not move.
+emlSetupOnDisk$ = ""
+if fileReadable (emlSetupPath$)
+    emlSetupOnDisk$ = readFile$ (emlSetupPath$)
+endif
+if emlSetupOnDisk$ <> emlSetupText$
+    nocheck writeFile: emlSetupPath$, emlSetupText$
+endif

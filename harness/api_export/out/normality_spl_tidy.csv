@@ -1,2 +1,2 @@
-term,statistic,p.value,method
-SPL_dB,0.9636682520764462,0.1684188065504949,Shapiro-Wilk normality test
+term,statistic,p.value,skewness,kurtosis,method
+SPL_dB,0.9636682520764462,0.1684188065504949,-0.4223081701411346,-0.2855629514765563,Shapiro-Wilk normality test

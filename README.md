@@ -10,6 +10,17 @@ My goal is to reorient Praat's GUI phisolophy. Rather than tie commands directly
 
 Check back, it is very close to a release and I'll upload the modules as they pass my tests. 
 
+**Calling it from your own scripts.**
+[`plugin/docs/RECIPES.md`](plugin/docs/RECIPES.md) is five worked examples of the
+scripting API — two groups from a table, paired columns and correlation, a full
+analysis with CSV export, a batch loop, and a Sound through Pitch into the
+descriptive kernels. Every script on that page is extracted from the page itself
+and run by `harness/recipes/run.sh`, and `validate/v81_recipes.R` holds its
+printed numbers to what base R computes from the same fixtures, so a documented
+example is a tested example rather than a claim about one.
+[`plugin/docs/API_EXPORT.md`](plugin/docs/API_EXPORT.md) goes deeper on the
+export.
+
 Ian Howell — Embodied Music Lab — www.embodiedmusiclab.com — GPL-3.0-or-later.
 Plugin code generated with the EML PraatGen framework; audit driven by Claude
 (Anthropic) in a Linux sandbox.

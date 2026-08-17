@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# doc_example.praat -- the example script in docs/API_EXPORT.md, verbatim.
+# doc_example.praat -- the example script in plugin/docs/API_EXPORT.md, verbatim.
 #
 # Ian Howell -- Embodied Music Lab -- GPL-3.0-or-later
 #

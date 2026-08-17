@@ -39,7 +39,7 @@
 #   legacy     @emlRunDescriptiveAnalysis -> one long-format file
 #   fresh      nothing ran at all -> declared=0 nWritten=0 reason=empty
 #   nofolder   the folder was never created -> Praat's own error, no output
-#   example    docs/API_EXPORT.md's script, run verbatim from a user folder
+#   example    plugin/docs/API_EXPORT.md's script, run verbatim from a user folder
 #
 # Run from anywhere:  bash harness/api_export/run.sh
 # Exit 0 = every leg behaved as recorded above.
@@ -127,7 +127,7 @@ if [[ -d "$OUT/example" ]]; then
     rmdir "$OUT/example" 2>/dev/null
 fi
 rm -rf "$USERDIR"
-# The example's include block is the one docs/API_EXPORT.md prints. Keep the
+# The example's include block is the one plugin/docs/API_EXPORT.md prints. Keep the
 # staged, path-substituted copy out of the artefact so ARTEFACTS.tsv lists
 # results rather than scaffolding.
 

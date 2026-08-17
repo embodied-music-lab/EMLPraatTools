@@ -627,3 +627,199 @@ against `git cat-file` on every run, so a hash carried in from elsewhere cannot
 survive a green check. The only rows with an empty `fixedBy` are the seven above,
 and for each of them the emptiness is a statement rather than a gap in the
 archaeology.
+
+### Mutation testing the pins — 17 August 2026
+
+The section above established `pinnedBy` by reverting `plugin/` wholesale to
+`30bc163` and seeing which validators went red. That answers a coarser question
+than the ledger asks. **Thirty-four repaired rows are carried by five commits**
+— `7f62e75` (13 rows), `a4de0ee` (11), `c112b7c` (8), `d5a434b` (1), `0e0c0fa`
+(1) — so no severity-1 or severity-2 row can be isolated by reverting its own
+`fixedBy`: every one of the eleven sits in a bundle of eight to thirteen. A red
+on a reverted `a4de0ee` proves that *something* in eleven repairs is pinned. It
+does not name which.
+
+So each row was mutated **by hand, one behaviour at a time**, in a scratch copy
+of `plugin/` at `/tmp/mutation`, and only the validator(s) the row names in
+`pinnedBy` were run against it. The repository's own tree was never edited:
+every validator takes `EML_*_FILE` / `EML_*_DIR` / `EML_PLUGIN_DIR` overrides,
+the same doors `harness/formaxis/break.sh` and `harness/bracketcap/break_v76.sh`
+drive their shadow trees through, and the mutated copy is passed on those.
+
+**The standard is the one the backfill declared and is unchanged: the source is
+mutated and no harness is re-driven.** That is what a reviewer who reverts and
+runs `validate/run_all.R` actually gets, because nothing in that list re-renders
+a figure. Where a mutation left the validator green, the harness was then
+re-driven as a separate, clearly-labelled measurement, so that "no pin" and "no
+pin under the suite's own conditions" are not confused.
+
+Two rules were kept throughout. A mutation must be a **defect a person could
+write** — not a syntax error, not a call to a procedure that does not exist —
+and it must **run**: three first attempts aborted the Praat drive mid-way and
+were rewritten, because a validator red caused by a broken rig measures the rig.
+
+To re-run any single row: copy `plugin/` somewhere outside the repository, make
+the one edit the row's Mutation column names, and run the row's validator with
+the override that validator documents in its own header — `EML_EDITTABLE_FILE`
+for `v55`, `EML_PLUGIN_DIR` for `v57`/`v59`/`v63`, `EML_OUTPUT_FILE` plus
+`EML_WRITER_FILE` for `v56`, `EML_PAIRED_FILE` plus `EML_CHECKDATA_FILE` for
+`v60`, `EML_GRAPHSFORM_FILE` plus `EML_ANNOTPROC_FILE` for `v61`,
+`EML_GRAPHS_SRC` plus `EML_SCRIPTS_SRC` for `v62`, `EML_RECORD_PROC_SRC` plus
+`EML_RECORD_SRC` plus `EML_OUTPUT_SRC` for `v58`. Every row below was measured
+against a baseline run of the same validator over an unmutated copy through the
+same overrides, so an override that silently failed to take would have shown as
+a green mutation and a green baseline of different sizes rather than as a
+result.
+
+#### The eleven severity-1 and severity-2 rows
+
+| Row | Sev | Pin | Mutation (one behaviour, nothing else) | Result |
+|---|---|---|---|---|
+| `NEW-G10-2` | 1 | `v55` | `eml-edit-table.praat`: `@columnRemove: column_to_delete` → `selectObject: tableId` + `Remove column: column_to_delete$` — the menu label back in place of the menu index | **RED 4/95.** "no menu path calls Get value:/Set string value:/Remove column: by name"; "stray name-addressed calls at line(s) 593"; "Delete Column passes the menu INDEX to @columnRemove"; "Delete Column does not pass the menu LABEL anywhere" |
+| `NEW-G10-1` | 2 | `v55` | `eml-edit-table.praat`: the `@labelInUse: new_name$, column_to_rename` call and its `elsif labelInUse.found` refusal arm deleted from the rename branch, leaving the empty-name guard | **RED 1/94.** "the rename is gated on @labelInUse" |
+| `NEW-G10-3` | 2 | `v55` | `eml-edit-table.praat`: `if .nCols <= 1` → `if .nCols < 1` | **RED 1/94.** "Delete Column refuses at <= 1 column, not < 1" |
+| `NEW-G1-1` | 2 | `v57` | `eml-analysis.praat`: both `if .accumulate = 0` wrappers round `@emlCSVInit` removed inside `@emlRunNormalityAnalysis`, so the collectors are cleared per column again | **RED 1/74.** "every @emlCSVInit in it is guarded by the press test (0 of 2)" |
+| `NEW-G12-1` | 2 | `v56`, `v59` | Three edits, all needed for the crash: `eml-output.praat` — `Set string value: .r, .columnName$, ""` removed from `@eml_auditLabelColumn`, both `@eml_defaultRowLabels:` calls removed from `@emlWrapperInit`; `eml-extract.praat` — `or .cell$ = "?"` removed from `@eml_strictNumericColumn`'s scan | **RED 2/107 on `v56`** ("an unlabelled cell is rewritten to the empty string"; "a cell that is already empty is not written to again") and **RED 6/42 on `v59`**, in the audit's own words: `Error: Table "eml_numericProbe": the cell in row 1 of column "row" is undefined.` on Compare groups / Correlate / Regression, over Matrix and TableOfReal both |
+| `NEW-G12-5` | 2 | `v56` | `eml-output.praat`: the `@eml_saveFolderWritable` call and its whole refusal-and-return block replaced by a bare `createFolder: .folder$` | **RED 5/107.** the probe's stamp; "no longer calls createFolder: unguarded"; "asks the writability question"; "a failed writability check leaves the panel by its normal exit"; "the check happens before any write" |
+| `NEW-G2-1` | 2 | `v56` | `eml-output.praat`: `.result$ = replace$ (.result$, "/", "-", 0)` deleted from `@eml_saveSafeBaseName`, the other eight characters left | **RED 1/107.** "the base name sanitiser replaces / (POSIX and macOS path separator)" — the per-character form of the check earns its keep here. A coarser variant, deleting the `@eml_saveSafeBaseName:` call from the panel, reds 3/107 |
+| `NEW-G3-1` | 2 | `v60` | `eml-compare-paired.praat`: `@emlTableColumnNames: tableId` and `nCols = emlTableColumnNames.nCols` moved from inside the `repeat` to immediately above it — filled once and then trusted, which is the mechanism verbatim | **RED 2/49.** "the paired form re-reads the user's table's column names on every pass"; "and refreshes nCols from the same read" |
+| `NEW-G7-2` | 2 | `v62` | `eml-graphs-form.praat`: the `@emlGraphsChannelGate: objectId, "waveform"` call and its `wasConverted` block deleted, making the channel choice unreachable from EML Graphs again | **RED 2/114.** "the graphs form gates the acquired object"; "and the call sits AFTER the acquire loop closes, on the path every figure takes" |
+| `NEW-G9-1` | 2 | `v61` | `eml-annotation-procedures.praat`: `emlKruskalWallis.rMatrix## = emlDunnTest.rMatrix##` deleted from the significant branch | **RED 2/84.** "the graphs bridge copies Dunn's rank-biserial matrix into emlKruskalWallis"; "the copy follows the bridge's own @emlDunnTest call" |
+| `NEW-G11-2` | 2 | *(none)* | `eml-record.praat`: all four `prev_*ShowJitter` emission blocks deleted from `@emlRecordCaptureEnv`. Then, harder: `@emlRecordCaptureEnv` **and** `@emlRecordCaptureAnnotations` both stubbed to `.out$ = ""` | **GREEN 91/91 both times.** The row already carries `pinnedBy: ""`; this confirms it. `v58`'s three witnesses (`emit_jitter_lines`, `emit_annotate_lines`, `emit_bracket_render`) are read out of `harness/record/replay_out`, and the committed artefact still says what it said |
+
+Ten of the ten pinned rows go red. The eleventh was already recorded as
+unpinned and is now measured as unpinned rather than inferred to be.
+
+#### Every severity-3 and severity-4 row that carries a pin
+
+Not a sample in the end: **all sixteen** of them, because each mutation is a
+single edit and each validator runs in under a second (`v59` and `v63` launch
+Praat and take six). Selection therefore needed no rule. One `fixed-unpinned`
+row was mutated as a negative control, chosen because the backfill queue makes
+an explicit prediction about it.
+
+| Row | Sev | Pin | Mutation | Result |
+|---|---|---|---|---|
+| `D1/D2` | 3 | `v61` | `eml-graphs-form.praat`: the first of thirteen `@emlSeedAxisLabels` calls deleted — one column-mapping page left behind | **RED 1/84** (13 expected, 12 found) |
+| `D11` | 3 | `v61` | form: `scatterGroupShown = tmpUseGroup` deleted and `if scatterGroupShown = 1` → `if 1 = 1`, so the group fields are built whatever the tickbox says | **RED 1/84.** "the group fields are gated on the tickbox (scatterGroupShown)" |
+| `D5` | 3 | `v61` | form: one of the six `adjustOffered = 1` gate-openings deleted | **RED 2/84** (6 expected, 5 found, twice — the count and the adjacency) |
+| `D7` | 3 | `v61` | form: the second of twelve `boolean: "Annotate results on graph"` deleted — one beginner arm back to hard-resetting the preset | **RED 1/84** (12 expected, 11 found) |
+| `D8` | 3 | `v61` | form: `if config_showAdvanced = 0 / emlLegendPlacement = 1 / endif` deleted | **RED 1/84.** "beginner mode overrides the legend placement for the draw" |
+| `D4` | 4 | `v61` | form: a read of the dead channel put back — `if emlGraphsPresetShowDots > 0 / prev_scatterShowDots = emlGraphsPresetShowDots / endif` | **RED 1/84** (0 expected, 2 found) |
+| `NEW-G8-3` | 3 | `v61` | form: `if graph_type = 8 and annotate = 1 and scatterAnalysisType > 0` → `if 0`, so the scatter arm never resets its collector | **RED 1/84.** "the scatter arm resets the collector once per press" |
+| `NEW-G2-2` | 3 | `v62` | `eml-annotation-procedures.praat`: the U gloss put back to `"U: Sum of ranks for the first group"` | **RED 2/114.** "no longer opens \"Sum of ranks\""; "says what U counts: pairs, out of n1 x n2" |
+| `NEW-G8-4` | 3 | `v62` | `eml-draw-procedures.praat`: the first scatter path's `@emlPlaceAnnotationBox` call replaced by `emlPlaceAnnotationBox.corner1$ = "TL"` and `.collisions = 0` — the corner taken without measuring | **RED 1/114.** "both scatter paths place the panel through it" |
+| `NEW-G10-4` | 3 | `v60` | `eml-check-data.praat`: `@emlCheckFileRowLengths: path$` deleted from the file-mode path | **RED 1/49.** "file mode scans row lengths" |
+| `NEW-G11-4` | 3 | `v58` | `eml-record-save.praat`: `@emlRecordMakeFolder: outFolder$` deleted | **RED 1/91.** "the target folder is created before the flush" |
+| `NEW-G12-2` | 3 | `v59`, `v63` | `eml-output.praat`: both `Rename: "eml_converted_" + …` lines deleted from `@emlWrapperInit` | **RED 5/41 on `v63`** — "the converted Table is renamed at creation" on `init_matrix`, `init_tor`, `init_labelled`, `init_partialcols`. **GREEN on `v59`**, and correctly: `v59`'s probe drives `@emlDescribeCoerceSelection`, a different coercion. Deleting the rename in `eml-describe-table.praat` instead reds `v59` 1/42 — the two named validators cover two different doors, and both doors are covered |
+| `SAVED-OVERPRINT` | 4 | `v56` | `eml-output.praat`: `@emlWrapText: .one$, 62` in `@eml_saveReceiptLines` replaced by a one-line assignment of the raw string | **RED 1/107.** "the receipt wraps .one$ through @emlWrapText" |
+| `NEW-G11-1` | 3 | `v58` | **Two mutations of the same defect, and they disagree.** (a) the render-time tilde rewrite deleted from `@emlRecordRender`, leaving `.p$ = emlRecordPluginRoot$` — the machine-absolute include block under a header claiming home-relative, which is the finding verbatim. (b) the Linux 6.x canonical fallback in `@emlPluginRoot` changed from `~/.praat-dir/…` to `/root/.praat-dir/…` | (a) **GREEN 91/91.** (b) **RED 2/91.** Pin kept — undoing `d5a434b` reds — but recorded as **half a pin**: the render-time rewrite, which is the half the audit measured, has no source assertion behind it. Everything `v58` says about the emitted include block is read off `harness/record/replay_out` |
+| `NEW-G7-1` | 3 | ~~`v62`~~ | `eml-draw-procedures.praat`: `.spanFloorSemitones = 0.1` → `= 0`, so a sustained tone collapses onto its 1e-05 Hz frame again | **GREEN 114/114. PIN WITHDRAWN.** `v62`'s only source check here is `has(code_draw, "\\.spanFloorSemitones =")` — the presence of the assignment, not its value, and a zero satisfies it |
+| `NEW-G8-1` | 3 | ~~`v62`~~ | `eml-graph-procedures.praat`: inside `@emlDrawMarker` only, `if emlPointInFrame.inside = 0` → `if 0` — the primitive still asks and then draws the point anyway | **GREEN 114/114. PIN WITHDRAWN.** `v62` counts `@emlPointInFrame:` call sites at `>= 2`; there are three (`@emlRegisterCollisionPoints`, `@emlDrawMarker`, `@emlDrawAlphaDot`), so one point primitive can stop clipping and the count still passes |
+| `NEW-G4-1` | 3 | *(none)* | negative control. `eml-analysis.praat`: both ANOVA arms' `.std = (.v - .fit) / (.sigma * sqrt (1 - .hat))` → `/ .sigma`, the leverage term dropped | **GREEN 74/74**, as the backfill queue predicted: `v57` compares `.std.resid` against `rstandard()` off `harness/exportint/out` |
+
+#### The two pins withdrawn, and what a real pin would cost
+
+`audit/FINDINGS_MACHINE.json` now carries `pinnedBy: ""` and
+`status: "fixed-unpinned"` on `NEW-G7-1` and `NEW-G8-1`.
+`python3 validate/tools/check_findings_schema.py` **exits 0**; the census moves
+from 26/8/7 to **24 closed, 10 fixed-unpinned, 7 open**.
+
+Neither repair is in doubt — both are in the tree and both were re-measured
+here. What is withdrawn is the claim that the suite would notice their loss.
+And the cost of a real pin is one line each, because in both cases the check
+that exists asserts the wrong quantity:
+
+* `NEW-G7-1` — assert the **value**, `.spanFloorSemitones = 0.1`, not the
+  presence of an assignment to it. A floor of zero is not a floor.
+* `NEW-G8-1` — assert the clip **per primitive**: `@emlPointInFrame:` inside
+  the body of `@emlDrawMarker` and inside the body of `@emlDrawAlphaDot`
+  separately, rather than counting the file's occurrences at `>= 2`. That is
+  the same correction `v62`'s own `core_bypassed` break case forced on the
+  channel gate, where a file-wide grep was green on a tree with the call
+  deleted from the gate.
+
+Both are the shape this repository keeps finding: a check that a **plausible
+edit satisfies while the behaviour it names is gone**. Neither was found by
+reading. Both were found by mutating.
+
+#### The evidence-type hypothesis, tested
+
+The prediction under test was that the unpinned rows cluster in an early-August
+stratum, when repairs landed faster than pins. **That is false here**, and the
+dates settle it without argument: all thirty-four repaired rows landed on
+**15 August**, in the five commits above. There is no early stratum to cluster
+in.
+
+The competing hypothesis — the backfill's own — was that the split is by
+**evidence type**. Thirty-two distinct mutations were made and run through
+thirty-four validator runs (two rows name two validators each), and every run
+is classified below by what the check that decided it actually reads:
+
+| Evidence the deciding check reads | Runs | Red | Green |
+|---|---|---|---|
+| plugin **SOURCE** — the file, read as text | 24 | 24 | 0 |
+| **LIVE PRAAT**, driven out of the validator against the mutated tree | 3 | 3 | 0 |
+| a **COMMITTED ARTEFACT** and nothing else | 6 | 0 | 6 |
+| *(out of population — see below)* | 1 | 0 | 1 |
+
+The variable is total across the thirty-three in-population runs: **every red
+came from a check reading source or driving Praat, and not one red came from a
+committed artefact.**
+
+The thirty-fourth run is `NEW-G12-2` against `v59`, and it is green for a
+reason that is not about evidence type: `v59` does drive live Praat, but its
+probe enters through `@emlDescribeCoerceSelection` while the mutation was made
+in `@emlWrapperInit`. Deleting the rename in the door `v59` actually drives
+reds it, 1 of 42. It is kept in its own row rather than folded into either
+column, because "the check reads a kind of evidence that cannot move" and "the
+check drives the right kind of evidence through a different door" are different
+defects with different repairs.
+
+No other variable comes close. Severity does not predict it — the six greens
+are two runs of one sev-2 row, three sev-3 rows and a sev-3 negative control.
+The fixing commit does not: of the seven rows `a4de0ee` repaired that were
+mutated here, five red and two do not. The validator does not: `v58`
+produces both a red and a green **on the same row**, `NEW-G11-1`, from two
+mutations of the same defect.
+
+`NEW-G11-1` is the cleanest single demonstration in the set, because it holds
+everything else constant: one row, one validator, one commit, one defect,
+mutated two ways. The way that touches a string `v58` reads out of
+`eml-record.praat` reds. The way that removes the behaviour `v58` only ever
+sees through `harness/record/replay_out` does not.
+
+**Written down as a rule, because it is a property of the whole suite and not
+of these rows.** A validator's inputs divide into three kinds, and only two of
+them can hold a repair in place against an edit:
+
+> A check whose only input is a committed harness artefact cannot fail on a
+> change to `plugin/`. The artefact was rendered by a tree that no longer
+> exists and it will say what it said until something re-renders it. Such a
+> check is evidence **about a run**, and it is often the only evidence
+> available — no source assertion can see a clipped statistics box or a
+> collapsed axis. But it is not a **pin**, and a row whose `pinnedBy` names
+> only artefact-backed checks is `fixed-unpinned` however green the validator
+> is.
+
+The practical consequence, and it is not "re-drive everything": a pin needs
+**one** assertion that reads the tree. `NEW-G7-1` and `NEW-G8-1` each need one
+line. `NEW-G11-2`, `NEW-G4-1` and the render half of `NEW-G11-1` each need one.
+The artefact half stays where it is and keeps doing the thing only it can do.
+
+For completeness, and because it separates "not pinned" from "not testable":
+both withdrawn rows **do** go red when the harness is re-driven against the
+mutated tree. Driven through a self-contained shadow of `harness/graphaxes`
+(`axes.sh` with `EML_AXES_OUTDIR` pointed away from the repository), on the
+same two mutations:
+
+* `NEW-G7-1` — **RED 3/114**, and the first line is the finding itself: *"the
+  drawn axis is opened to a readable width (0.000014 Hz, from 0.000009702)"*.
+* `NEW-G8-1` — **RED 2/114**: *"a typed range of 100-300 over data running
+  90-322 withholds 0 point(s)"*, against the five the committed artefact
+  records.
+
+A control re-drive of the unmutated tree through the same shadow is 114/114, so
+the reds are the mutations and not the rig. That is the measurement that makes
+the withdrawal precise rather than pessimistic: these two repairs are provable
+in about six seconds each, and they are not proved by the suite as it runs.

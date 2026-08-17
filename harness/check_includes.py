@@ -171,11 +171,29 @@ def closure(path, seen=None):
 # Entry points whose unresolved calls are a KNOWN, documented state rather
 # than a defect. Each needs a reason and a way back; an entry here is a
 # promise that the call is unreachable, not that it is harmless.
+#
+# A value may be a reason alone, which exempts the whole file, or a (reason,
+# names) pair, which exempts EXACTLY those names. The pair form is the one to
+# reach for: a blanket exemption also hides the next unresolved call somebody
+# adds to that file, and an entry script with a partial closure for one stated
+# reason is not an entry script that may call anything at all.
 KNOWN = {
     'eml-tutorial.praat':
         'include of tutorial/eml-demo-procedures.praat deliberately '
         'neutralised; restoring the include restores '
         'the calls',
+    'setup.praat': (
+        'setup.praat includes stats/eml-record.praat for @emlPluginRoot, the '
+        'procedure it and the recorder share so a generated barrel and a '
+        'recorded script cannot name different folders. That module is the '
+        'only one that can be included from three different top-level '
+        'folders, because it carries no relative include of its own -- but it '
+        'brings its whole surface with it, and @emlRecordReplaySave calls four '
+        'procedures from modules setup.praat has no reason to parse at every '
+        'Praat launch. setup.praat never calls @emlRecordReplaySave; the '
+        'wrappers that do include those modules',
+        {'emlExportResultFiles', 'emlFileStamp',
+         'emlHaveExportableResult', 'emlSaveInfoToFile'}),
 }
 
 
@@ -210,9 +228,22 @@ def main():
         if missing:
             base = os.path.basename(entry)
             if base in KNOWN:
-                print('KNOWN in %s: %d unresolved call(s) — %s'
-                      % (base, len(missing), KNOWN[base]))
-                continue
+                entry_known = KNOWN[base]
+                if isinstance(entry_known, tuple):
+                    reason, allowed = entry_known
+                else:
+                    reason, allowed = entry_known, None
+                # A named exemption covers what it names and nothing else, so
+                # a call that arrives later is still reported. An exemption
+                # that has stopped matching anything is reported too: it tells
+                # its reader the tree still holds a call it does not.
+                if allowed is None or set(missing) == allowed:
+                    print('KNOWN in %s: %d unresolved call(s) — %s'
+                          % (base, len(missing), reason))
+                    continue
+                print('KNOWN SET CHANGED in %s: exempted %s, found %s'
+                      % (base, ' '.join(sorted(allowed)),
+                         ' '.join(sorted(missing))))
             problems += 1
             print('UNRESOLVED in %s (%d file(s) in closure):'
                   % (os.path.relpath(entry, root), len(files)))

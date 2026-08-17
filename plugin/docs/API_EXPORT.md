@@ -103,7 +103,7 @@ nothing here changes. In one call you get the broom set or the legacy file, and
 
 Read this as the state of the migration on **14 August 2026**, not as a
 permanent property. `validate/v50_api_export.R` reads the list back out of
-`plugin/stats/eml-analysis.praat` and fails if this table drifts.
+`stats/eml-analysis.praat` and fails if this table drifts.
 
 **These DECLARE** — you get broom frames:
 
@@ -160,6 +160,35 @@ Windows             ~/Praat/plugin_EML_Praat_Tools
 ```
 
 Not sure? Run `writeInfoLine: preferencesDirectory$` in Praat and look.
+
+### One line, and it is written for your machine
+
+`setup.praat` runs every time Praat starts, from the folder the plugin is
+installed in, and writes `eml-lib-user.praat` into the plugin's own `scripts/`
+folder with the paths for **your** installation already filled in, so the whole
+include block collapses
+to one line — pick the row for your platform and paste the line:
+
+| Praat / OS | the one line |
+| --- | --- |
+| Praat 6.x Linux | `include ~/.praat-dir/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat` |
+| Praat 7.x Linux | `include ~/.config/praat/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat` |
+| macOS | `include ~/Library/Preferences/Praat Prefs/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat` |
+| Windows | `include ~/Praat/plugin_EML_Praat_Tools/scripts/eml-lib-user.praat` |
+
+It loads exactly the eleven modules below, in the same order. Move the plugin,
+or upgrade to a Praat that keeps its preferences somewhere else, and the next
+launch rewrites the file for the new location; a launch that would change
+nothing writes nothing. Do not edit it — it is generated, and your edit goes
+away the next time the paths change.
+
+### The eleven lines, which always work
+
+Written out, this is what that one line expands to, and it is the fallback if
+the generated file is not there — a plugin folder that cannot be written to,
+or a script that has to run on a machine where Praat has never been started
+since the plugin was installed. It is also what the workflow recorder writes
+into every script it emits.
 
 ```praat
 include ~/.praat-dir/plugin_EML_Praat_Tools/stats/eml-core-utilities.praat
@@ -249,8 +278,15 @@ in the barrel's own relative lines. Measured on Praat 6.6.30, 14 August 2026,
 and it is the same reason the workflow recorder writes out a full include list
 rather than a barrel.
 
-So: eleven lines, once, at the top. They are pasted verbatim from what the
-recorder emits, and the order matters — later files call into earlier ones.
+**`eml-lib-user.praat` is the one barrel that does work from your folder**, and
+the difference is that its lines are not relative. A shipped file cannot know
+where it will be installed; `setup.praat` runs from there, so it can, and it
+writes the paths out in full. That is why the one-line include above is a
+generated file and not a shipped one.
+
+So: one generated line, or eleven written out. The eleven are pasted verbatim
+from what the recorder emits, and the order matters — later files call into
+earlier ones.
 
 **`eml-lib-stats.praat` is not enough on its own** even when the paths do
 resolve. It stops at the statistics engine; the orchestrators live in
@@ -290,8 +326,8 @@ Afterwards, seven outputs:
 **`.reason$ = "empty"` is the one to check for.** It means the procedure ran
 correctly and had nothing to export — either nothing declared and the legacy
 buffer was empty, or an analysis declared but produced no rows. It is not a
-disk error, and treating it as one is the exact mistake the plugin used to make
-(it reported "Could not write CSV file" for a file it had never attempted).
+disk error, and a caller that reports it as one tells the user their disk
+refused a file the plugin never attempted to write.
 
 > **Careful with `.actualPath$`.** On the legacy arm it is set to the path the
 > procedure *would have used* **even when nothing was written** — after an
@@ -451,9 +487,9 @@ Two habits worth keeping:
 
 | | |
 |---|---|
-| the procedure | `plugin/stats/eml-output.praat`, `@emlExportResultFiles` |
-| the frame writer | `plugin/stats/eml-result-writer.praat` |
-| which analyses declare | `plugin/stats/eml-analysis.praat`, the `@emlDeclare*` procedures |
+| the procedure | `stats/eml-output.praat`, `@emlExportResultFiles` |
+| the frame writer | `stats/eml-result-writer.praat` |
+| which analyses declare | `stats/eml-analysis.praat`, the `@emlDeclare*` procedures |
 | the harness | `bash harness/api_export/run.sh` |
 | the checks | `Rscript validate/v50_api_export.R` |
 | the dialog path, for comparison | `harness/savepaths/`, `validate/v48_save_paths.R` |

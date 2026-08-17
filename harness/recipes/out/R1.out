@@ -1,0 +1,4 @@
+n soprano = 5  n mezzo = 5  excluded = 0
+t = -5.6921  df = 5.88  p = 0.0014
+H1 soprano < mezzo: p = 0.0007
+d = -3.6000  (Hedges' g = -3.2516)

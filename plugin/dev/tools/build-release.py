@@ -86,7 +86,7 @@ of the zip itself.
 
 What --verify asserts
 ---------------------
-Four things, on the artefact folder it is handed -- which may be a freshly
+Five things, on the artefact folder it is handed -- which may be a freshly
 built one, or a tree somebody has unzipped somewhere:
 
   1. THE FOLDER NAME, against the recorder INSIDE that folder, so an unpacked
@@ -99,6 +99,46 @@ built one, or a tree somebody has unzipped somewhere:
      `plugin_<Other>` folder. Check 1 covers the recorder and the folder; the
      name is also written into a sprite loader, a tutorial and the README's
      install instructions, and those do not follow a rename by themselves.
+  5. EVERY PATH A SHIPPED .md OFFERS THE READER IS IN THE ARTEFACT. The whole
+     install instruction is "copy this folder", so a document inside it that
+     points at a path the folder does not contain points at nothing the reader
+     has. See "Links out of the artefact" below.
+
+Links out of the artefact
+-------------------------
+WHAT COUNTS AS A LINK is the definition validate/v78 already uses on the
+repository's front-door documents, so the two scanners agree about what a
+reference is: backticked or bracketed, containing a "/" (a bare `run.sh`
+named in a sentence is not a claim about a path), no whitespace (a shell
+fragment like `praat x > out/y.txt` is not a file name), carrying a suffix
+this tree actually uses, and not a URL.
+
+TWO VERDICTS, and each is decidable without asking a human what a sentence
+meant:
+
+  ESCAPE. The reference, normalised lexically against the folder of the
+  document it sits in, leaves the artefact -- a leading `../` from the root,
+  or an absolute path. Nothing outside the folder travels with it, so this is
+  a pointer at a file the reader does not have, whatever the reference meant.
+  Lexical rather than by resolution: the answer must not depend on what
+  happens to exist beside the artefact on the machine doing the verifying.
+
+  DANGLING. The reference ADDRESSES the artefact -- its first segment is a
+  directory that exists beside the document or at the artefact root -- and
+  nothing is there. `dev/tools/gone.py` in a document shipping beside a real
+  `dev/` is a broken pointer, which is a rename nobody followed through.
+
+AND ONE THING THIS DELIBERATELY DOES NOT CALL A LINK. The dev documents cite
+where a measurement was taken: `evidence/figures/...`, `harness/api_export/
+run.sh`, `validate/v50_api_export.R`. Those name paths in the SOURCE
+REPOSITORY, which is not shipped and cannot be, and they are provenance rather
+than an invitation to open anything. The first-segment rule separates them
+without a judgement call and without an exception list: there is no
+`evidence/`, `harness/` or `validate/` in the artefact, so those references
+address something else and are left alone, while `stats/`, `graphs/`,
+`scripts/`, `docs/`, `dev/` and `phase2/` do exist and are held to it. An
+exception list would have to grow with every new citation, and a list that
+gets edited on every failure is not a check.
 
 Usage
 -----
@@ -360,6 +400,100 @@ def name_disagreements(artefact: Path) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# LINKS OUT OF THE ARTEFACT
+# ---------------------------------------------------------------------------
+# The reference grammar of validate/v78, so the artefact scanner and the
+# repository scanner cannot disagree about what a reference is. Read the
+# module docstring, "Links out of the artefact", for what the two verdicts are
+# and why the repository-provenance citations are not among them.
+LINK_SUFFIX = re.compile(r"\.(md|praat|py|R|csv|txt|sh|json|ya?ml|tsv)$")
+LINK_SCHEME = re.compile(r"^(?:[a-z][a-z0-9+.-]*:|//|#)")
+LINK_TOKEN = re.compile(r"`([^`\n]+)`|\]\(([^)\n]+)\)")
+
+
+def md_references(text: str) -> list[str]:
+    """Every path-shaped reference in one markdown document, deduplicated."""
+    out: set[str] = set()
+    for backticked, bracketed in LINK_TOKEN.findall(text):
+        ref = (backticked or bracketed).split("#", 1)[0].strip()
+        if not ref or re.search(r"\s", ref):
+            continue
+        if "/" not in ref:
+            continue
+        if LINK_SCHEME.match(ref) or not LINK_SUFFIX.search(ref):
+            continue
+        out.add(ref)
+    return sorted(out)
+
+
+def leaves_artefact(doc_rel: Path, ref: str) -> bool:
+    """Does `ref`, read from a document at `doc_rel`, climb out of the root?
+
+    LEXICAL. `(artefact / doc.parent / ref).resolve()` would answer a
+    different question -- it follows symlinks and consults the filesystem
+    around the artefact -- and whether a shipped document points outside the
+    folder a user copied cannot depend on what else is on the verifying
+    machine's disk.
+    """
+    if ref.startswith("/"):
+        return True
+    stack = [p for p in doc_rel.parent.as_posix().split("/") if p and p != "."]
+    for seg in ref.split("/"):
+        if seg in ("", "."):
+            continue
+        if seg == "..":
+            if not stack:
+                return True
+            stack.pop()
+        else:
+            stack.append(seg)
+    return False
+
+
+def outward_links(artefact: Path) -> tuple[list[str], int, int]:
+    """(problems, references scanned, documents scanned) for shipped .md.
+
+    Section 4 asks whether the artefact agrees with itself about its own NAME.
+    This asks whether it agrees with itself about its own CONTENTS. The entire
+    install instruction in README.md is "copy this folder into Praat's
+    preferences folder", so the folder is everything the reader ends up
+    holding, and a document inside it offering `../docs/something.md` offers a
+    file that was never in the download -- with no error, no missing menu and
+    nothing for the build, the install walk or the mode scan to notice.
+    """
+    bad: list[str] = []
+    n_refs = 0
+    n_docs = 0
+    for path in sorted(artefact.rglob("*.md")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(artefact)
+        n_docs += 1
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:               # unreadable is section 2's job
+            bad.append("{} could not be read for the link scan ({})"
+                       .format(rel.as_posix(), exc))
+            continue
+        for ref in md_references(text):
+            n_refs += 1
+            if leaves_artefact(rel, ref):
+                bad.append("{} links {!r}, which is outside the artefact; "
+                           "the reader copied {!r} and has nothing else"
+                           .format(rel.as_posix(), ref, artefact.name))
+                continue
+            head = ref.split("/", 1)[0]
+            addressed = (path.parent / head).is_dir() or (artefact / head).is_dir()
+            if not addressed:
+                continue                     # a repository path, not a link
+            if (path.parent / ref).exists() or (artefact / ref).exists():
+                continue
+            bad.append("{} links {!r}, and {!r} is in the artefact but that "
+                       "path is not".format(rel.as_posix(), ref, head + "/"))
+    return bad, n_refs, n_docs
+
+
+# ---------------------------------------------------------------------------
 # VERIFY -- the half that closes P1
 # ---------------------------------------------------------------------------
 def verify(artefact: Path, execs: set[str] | None, source: str) -> list[str]:
@@ -461,6 +595,20 @@ def verify(artefact: Path, execs: set[str] | None, source: str) -> list[str]:
     #    points at a folder that does not exist and whose install
     #    instructions name a folder that is not in the download.
     problems += name_disagreements(artefact)
+
+    # 5. EVERY PATH A SHIPPED DOCUMENT OFFERS IS IN THE ARTEFACT. Section 4
+    #    settles the folder's NAME wherever it is written; this settles what
+    #    the documents inside it point AT. The install instruction is "copy
+    #    this folder", so the folder is the whole of what the reader gets, and
+    #    a `../docs/...` in README.md is a reference to a file that was never
+    #    in the download -- silent, and invisible to every other check here.
+    links, n_refs, n_docs = outward_links(artefact)
+    problems += links
+    # THE SCAN'S OWN POPULATION, PRINTED. A grammar that had stopped matching
+    # would report no bad links forever, and zero problems out of zero
+    # references reads exactly like zero problems out of sixty-seven.
+    print("shipped .md links: {} reference(s) in {} document(s)"
+          .format(n_refs, n_docs))
 
     print("verified against: {}".format(source))
     return problems

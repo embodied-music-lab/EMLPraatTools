@@ -85,11 +85,16 @@
 #      builder's `--verify` prints "OK: every file 0644..." at the end of
 #      every build, and on a freshly built tree that line is close to a
 #      tautology: build() chmods every file and verify() then asserts the
-#      chmods, with nothing in between. So this file runs `--verify` three
+#      chmods, with nothing in between. So this file runs `--verify` five
 #      more times against deliberately damaged COPIES of what it just built --
 #      one file at 0600, the folder renamed, a foreign folder name in a
-#      shipped file -- and requires a red and the offender named each time. A
-#      verifier that has gone blind fails those three and passes the real one.
+#      shipped file, a shipped document pointing OUT of the folder, and a
+#      shipped document pointing at an artefact path that is not there -- and
+#      requires a red and the offender named each time. A verifier that has
+#      gone blind fails those five and passes the real one. The last two also
+#      carry a census: the link scan prints how many references it examined,
+#      and a grammar that had stopped matching would report no bad links
+#      forever, so the population is asserted as well as the verdict.
 #
 # AND ONE THING THAT NEEDS NEITHER HALF. The strongest mode check here is not
 # a read of anything: the freshly built ZIP is unpacked UNDER `umask 077`, and
@@ -471,6 +476,71 @@ check_true("v79",
            r3$status == 1L)
 check_true("v79", "--verify names the file carrying the foreign name",
            any(grepl("eml-graph-procedures.praat", r3$out, fixed = TRUE)))
+
+# (d) A SHIPPED DOCUMENT POINTING OUT OF THE FOLDER. The install instruction
+#     is "copy this folder", so the folder is the whole of what the reader
+#     ends up holding, and `../anything` in a document inside it names a file
+#     that was never in the download. It raises nothing, breaks no menu and
+#     changes no mode: README.md carried exactly this for `docs/API_EXPORT.md`
+#     while every other check in this file was green.
+c4 <- mk_copy("linkout")
+if (dir.exists(c4)) {
+    f <- file.path(c4, "README.md")
+    if (file.exists(f)) {
+        Sys.chmod(f, "0644")
+        cat("\n- `../docs/API_EXPORT.md` — the export how-to\n",
+            file = f, append = TRUE)
+    }
+}
+r4 <- verify_of(c4)
+check_true("v79",
+           sprintf("--verify goes red on a shipped document linking outside the artefact (rc %d)",
+                   r4$status),
+           r4$status == 1L)
+check_true("v79", "--verify names the document and the link that leaves the folder",
+           any(grepl("README.md", r4$out, fixed = TRUE)) &&
+           any(grepl("../docs/API_EXPORT.md", r4$out, fixed = TRUE)))
+
+# (e) THE OTHER ARM OF THE SAME SCAN: a reference that ADDRESSES the artefact
+#     -- its first segment is a directory the artefact really has -- and names
+#     nothing. That is a rename nobody followed through, and unlike (d) it
+#     needs the scanner to look on disk rather than only at the text, so a
+#     scanner that had been reduced to a `\\.\\.` grep passes (d) and fails
+#     here.
+c5 <- mk_copy("linkdead")
+if (dir.exists(c5)) {
+    f <- file.path(c5, "README.md")
+    if (file.exists(f)) {
+        Sys.chmod(f, "0644")
+        cat("\n- `dev/tools/no-such-tool.py` — the margin recipe\n",
+            file = f, append = TRUE)
+    }
+}
+r5 <- verify_of(c5)
+check_true("v79",
+           sprintf("--verify goes red on a shipped document linking a path the artefact does not hold (rc %d)",
+                   r5$status),
+           r5$status == 1L)
+check_true("v79", "--verify names the dead artefact-relative link",
+           any(grepl("dev/tools/no-such-tool.py", r5$out, fixed = TRUE)))
+
+# AND THE SCAN IS NOT LOOKING AT NOTHING. Both controls above are satisfied by
+# a scanner that examines one document and finds the one line the control just
+# wrote into it. The builder prints its own population on every verify, and
+# the floors here are well under today's figures (67 references, 10 documents)
+# so a document added or removed does not turn this red -- what turns it red
+# is a grammar that has stopped matching, which is how a link scanner dies.
+census <- grep("^shipped \\.md links:", v_ok$out, value = TRUE)
+census_n <- function(rx) {
+    if (!length(census)) return(NA_integer_)
+    suppressWarnings(as.integer(sub(rx, "\\1", census[1])))
+}
+n_refs <- census_n("^.*: ([0-9]+) reference.*$")
+n_docs <- census_n("^.*in ([0-9]+) document.*$")
+check_true("v79",
+           sprintf("the link scan examined a real population (%s reference(s) in %s document(s))",
+                   n_refs, n_docs),
+           !is.na(n_refs) && n_refs >= 40 && !is.na(n_docs) && n_docs >= 5)
 
 # ---------------------------------------------------------------------------
 # 4. EVERY `include` IN THE ARTEFACT RESOLVES -- RECOMPUTED HERE

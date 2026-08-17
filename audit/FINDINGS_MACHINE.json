@@ -133,8 +133,8 @@
       "mechanism": "axis floor + integer tick precision, not pitch analysis; needs min span + adaptive tick decimals",
       "verdict": "CONFIRMED",
       "fixedBy": "7f62e751783ecb52df2d9bab961bec39e000213a",
-      "pinnedBy": "v62",
-      "status": "closed"
+      "pinnedBy": "",
+      "status": "fixed-unpinned"
     },
     {
       "id": "NEW-G8-2",
@@ -155,8 +155,8 @@
       "mechanism": "no clip to user-set range",
       "verdict": "CONFIRMED",
       "fixedBy": "7f62e751783ecb52df2d9bab961bec39e000213a",
-      "pinnedBy": "v62",
-      "status": "closed"
+      "pinnedBy": "",
+      "status": "fixed-unpinned"
     },
     {
       "id": "NEW-G8-3",

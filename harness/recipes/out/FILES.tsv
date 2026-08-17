@@ -1,0 +1,16 @@
+recipe	file	bytes
+R3	anova_by_voice_type_augment.csv	5852
+R3	anova_by_voice_type_effectsize_tidy.csv	242
+R3	anova_by_voice_type_glance.csv	305
+R3	anova_by_voice_type_posthoc_tidy.csv	370
+R3	anova_by_voice_type_tidy.csv	180
+R4	anova_SPL_dB_augment.csv	5852
+R4	anova_SPL_dB_effectsize_tidy.csv	242
+R4	anova_SPL_dB_glance.csv	305
+R4	anova_SPL_dB_posthoc_tidy.csv	370
+R4	anova_SPL_dB_tidy.csv	180
+R4	anova_vibrato_rate_Hz_augment.csv	5891
+R4	anova_vibrato_rate_Hz_effectsize_tidy.csv	241
+R4	anova_vibrato_rate_Hz_glance.csv	306
+R4	anova_vibrato_rate_Hz_posthoc_tidy.csv	378
+R4	anova_vibrato_rate_Hz_tidy.csv	182
