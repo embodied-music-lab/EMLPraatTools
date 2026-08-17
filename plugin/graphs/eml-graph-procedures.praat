@@ -7,398 +7,6 @@
 # Version: 3.32
 # Date: 16 August 2026
 #
-# v3.32: Implausible-measurement warnings live with the batch analyser:
-#        scripts/eml-batch-process.praat carries a plausibility band per
-#        measure and is the code that ships that behaviour. No other line of
-#        code in this file changed.
-#
-# v3.31: Three changes, none of which moves a number.
-#
-#        THE Y-AXIS NAME AND ITS TICK LABELS DO NOT TOUCH.
-#        Praat's left-margin allocation is fixed: `Text left` anchors the
-#        rotated name to the inner frame at a distance set by the font size
-#        and by nothing else, tick numbers are right-aligned to that same
-#        frame, and about five characters fit between them. Six is the
-#        failure edge — a semitone axis reading "-33.08" leaves three pixels
-#        of gap at 300 dpi, and an explicit two-decimal dB axis puts "100.10"
-#        into "Power (dB)" so that it reads "Powe100.10".
-#        @emlTickLabelWidth (what a tick will read as, and how wide) and
-#        @emlDrawAxisNameLeft (the name, moved only when the labels have
-#        taken the room). @emlDrawAlignedMarksLeft publishes the widest
-#        label it drew; @emlDrawAxes and @emlDrawAxesSelective place the
-#        name through @emlDrawAxisNameLeft. WIDENING THE PLUGIN'S OWN MARGIN
-#        DOES NOT WORK and was measured not working — everything in the
-#        margin is anchored to the frame, and the frame moves with the
-#        margin. ORDINARY FIGURES ARE BYTE-IDENTICAL: all 39 of
-#        harness/stress_graphs.sh re-rendered and compared.
-#
-#        Column_k HOLDS SOURCE COLUMN k. @emlCleanConvertedTable numbers
-#        manufactured headers by SOURCE position rather than table position,
-#        because `To Table: "row"` has already put the label column in
-#        position 1 by then. Reached by both the graphs coercion and the
-#        describe wrapper.
-#
-#        ONE PRESS, ONE DERIVED SOUND. The stereo gate keeps the extracted
-#        channel Sound on purpose. The derived object is named with an "eml_"
-#        prefix, and @emlDropStaleChannelSounds collects the previous press's
-#        at the top of the next one, so three figures from one recording do
-#        not leave three Sounds sharing one name. Only ever a prefixed name:
-#        a channel the user extracted by hand is never touched.
-#
-# v3.30: THE LEGEND BOX IS SEMI-TRANSPARENT ON EVERY PLATFORM, NOT JUST THE
-#        TWO THAT HAVE ALPHA.
-#
-#        The legend's background is sprites/bg_white_a70_40.png, whose pixels
-#        MEASURE RGBA (255, 255, 255, 179) — a 70.2% white wash. Praat can
-#        only draw it on macOS and Windows, and @emlInitAlphaSprites is
-#        correctly gated to those two: re-confirmed 9 Aug 2026 by rendering
-#        the same script with and without `Insert picture from file:` on this
-#        Linux build, where `compare -metric AE` scores the two PNGs
-#        BYTE-IDENTICAL. The only other fallback available is
-#        `Paint rectangle: "White"` — an OPAQUE box, which deletes the data
-#        under the legend for every reader outside those two platforms.
-#
-#        SCREEN-DOOR TRANSPARENCY, with @emlScreenSetup, @emlPaintScreenRect
-#        and @emlPaintAlphaBox. Where there is no alpha the box is a white
-#        LATTICE at 0.027 inch pitch — 70% ink, 30% holes — through which the
-#        data survives instead of being erased. Measured on rendered pixels:
-#        ink 0.740 at 300 dpi and 0.672 at 600, against the sprite's 0.702.
-#        The section header carries the two rejected designs (a 45-degree
-#        hatch and a hex dot field), the measurements that rejected them, and
-#        the fact underneath all three: PRAAT DOES NOT ANTIALIAS AND ROUNDS
-#        RECTANGLES OUTWARD BY ABOUT ONE DEVICE PIXEL, which is why the
-#        geometry carries a kerf.
-#
-#        Nothing changes on macOS or Windows. @emlPaintAlphaBox's sprite
-#        branch issues the identical `Insert picture from file:` call with the
-#        identical arguments and returns .viewportDirty = 1, the viewport
-#        restore v3.28 added, moved verbatim behind a flag.
-#
-#        NOT SILENT, either way. @emlPaintAlphaBox publishes emlAlphaBgMode$
-#        ("sprite" | "screen" | "opaque") for every box it paints, and puts
-#        one NOTE in the Info window per session the first time a figure gets
-#        the screen. The sprite path stays quiet: on the platforms where the
-#        figure is already right, a note about it is noise.
-#
-#        NOT APPLIED to @emlDrawAnnotationBlock's background, which has the
-#        same gate and the same opaque fallback in
-#        eml-annotation-procedures.praat. @emlPaintAlphaBox is written to be
-#        called from there unchanged — it takes world coordinates and scales
-#        through emlPatWorldPerInchX/Y, which that procedure's callers set —
-#        but that file is not this one's to edit.
-#
-# v3.29: THE LEGEND BAND CLEARS THE COMPARISON MATRIX WHETHER OR NOT THE
-#        CALLER IS THE FORM.
-#
-#        Placement 3 (Below plot) has to know what is already occupying the
-#        page under the plot. Inside the graphs form the global
-#        totalCanvasHeight says so — the form sizes the comparison-matrix
-#        panel before it dispatches the draw and leaves
-#        figure_height + matrixGap + matrixPanelHeight there — and rendering
-#        the two together confirms it: on a 6 x 4 figure with a four-group
-#        Tukey matrix the panel occupies 4.130 to 6.204 inches and the legend
-#        band starts at 6.344, one boxInsetInches below it.
-#
-#        BUT totalCanvasHeight IS A FORM LOCAL. @emlInitDrawingDefaults, the
-#        documented entry point for "standalone scripts or PraatGen companion
-#        files", sets emlLegendPlacement and does NOT set totalCanvasHeight,
-#        so a caller outside the form that laid out its own matrix would get
-#        a band starting at the plot's own bottom edge and drawn straight
-#        THROUGH the panel — band 4.140 to 4.566 against a panel at 4.130 to
-#        6.204, 11636 dark pixels of legend ink inside the matrix band.
-#
-#        So the page bottom is settled ONCE, before the placement branch
-#        dispatches, from the larger of two sources: the form's
-#        totalCanvasHeight, and the matrix's own published measurement
-#        (annotMatrixN, emlMatrixLayout_suppressed, emlMatrixLayout_yMax,
-#        emlFitCategoricalLabels.overhangInches — all drawing-layer globals,
-#        and all necessarily already set, since @emlMeasureMatrixLayout is a
-#        precondition of @emlDrawMatrixPanel). Neither source can pull the
-#        band up, and a form-driven figure is unchanged because the two agree
-#        there. Placement 4's park reads the same page bottom, for the same
-#        reason.
-#
-#        Placements 1, 2 and 5 do not consult the page bottom, and a figure
-#        with no matrix publishes no measurement, so every render in
-#        harness/legend/ block 1 and block 2 is bit-identical to v3.28's.
-#        Driven and measured on the pixels in harness/legend/run.sh blocks 3
-#        and 4; asserted in validate/v32_legend_geometry.R sections 8 and 9.
-#
-# v3.28: THE LEGEND STOPS BILLING ITS RENT TO THE PLOT.
-#
-#        A user types 6 x 4 and means the DATA AREA. A legend that can only
-#        go inside the plot can only be given room by taking room from the
-#        data, and "make my figure square" is then unsatisfiable — a square
-#        canvas with a legend carved out of it is not a square plot. So the
-#        legend moves OUT and the EXPORT grows, rather than the plot
-#        shrinking IN. The plot rectangle is identical in all five
-#        placements; what changes is how much of the picture is saved.
-#
-#        NEW: @emlDrawLegendPanel and @emlMeasureLegendPanel, a renderer that
-#        is handed a rectangle in inches and a measurer that reports what
-#        would fit in one. Both work in a viewport whose world unit is one
-#        inch, both set the font size BEFORE selecting it, and the renderer
-#        lays itself out by calling the measurer, so the two cannot disagree.
-#        The renderer MUST NOT draw outside its rectangle and MUST NOT call
-#        @emlExpandDrawnExtent — the caller reports, which is what lets one
-#        procedure serve a corner box (must not grow the export) and a side
-#        panel (must). Also new: @emlEllipsizeToWidth.
-#
-#        @emlDrawLegend keeps its signature and every behaviour of an entry —
-#        multi-column layout, "+N more" truncation with its Info-window NOTE,
-#        the swatch drawn as the mark, the viewport re-selected at legend
-#        font size — and becomes a placement dispatcher over the new panel.
-#        Placement is the global emlLegendPlacement, read through
-#        variableExists and defaulting to 1, so a caller that sets nothing
-#        (the seven sites in eml-draw-procedures.praat, every stress case,
-#        every PraatGen companion) draws the corner box.
-#            1 Inside plot (DEFAULT) — export = plot rectangle
-#            2 Right of plot         — caller reports; export widens
-#            3 Below plot            — caller reports; export heightens
-#            4 Separate figure       — parked off-figure, saved as a 2nd file
-#            5 None
-#        The encoding, its registry and its dialog are in eml-graphs-form.
-#
-#        A LABEL WIDER THAN ONE COLUMN IS ELLIPSIZED, NOT OVERHUNG. A legend
-#        that computes its own box has nothing to clamp against; a legend
-#        that is GIVEN its bounds does. When one column of full-width labels
-#        will not fit the frame width, the column is clamped to the width
-#        that IS available and @emlEllipsizeToWidth shortens each label to
-#        it, so the label comes out as "Extremely long gro..." inside the box
-#        instead of running off the canvas — and a NOTE says so, because a
-#        silent ellipsis is the same defect as a silent truncation.
-#
-#        @emlMeasureGraphLayout's legend estimate delegates to
-#        @emlMeasureLegendPanel rather than carrying a single-column stack
-#        measured at bodySize. The legend is drawn at annotSize at all seven
-#        call sites, and measuring at the wrong size inflates every width —
-#        0.4967" vs 3.6229" for "Group label", measured 8 Aug 2026 on Praat
-#        6.6.30. New alongside the two existing globals:
-#        emlLayout_legendCols / Rows / Fits.
-#
-#        The alpha-sprite legend background calls `Insert picture from file:`,
-#        which leaves the viewport set to the image's bounding box, so the
-#        viewport is restored immediately rather than at the end of the
-#        procedure. Not observable on Linux, where @emlInitAlphaSprites is
-#        gated off.
-#
-# v3.27: Comments only — no executable line changed.
-#
-# v3.26: THE LEGEND IS LAID OUT TO FIT THE FRAME. The palette holds 24
-#        sub-group styles, so 24 entries is a figure the plugin is built to
-#        draw: at the annotation font on a 6 x 4 figure a row is 0.162", the
-#        panel is 3.11" tall, and 24 rows want 3.94". A stack of one row per
-#        entry, measured against nothing, overhangs the frame by 304 px at
-#        300 dpi and runs its last entries clean off the bottom of the PNG.
-#        This is a LAYOUT, not a cap: the frame is measured (rowsMax x
-#        colsMax = capacity) and the entries are poured down the fewest
-#        columns that fit the height, so 24 entries become two columns of 12
-#        on a 6 x 4 figure and three of 8 on a 10 x 3 one. Hue order runs
-#        top-to-bottom down each column. A legend that fits in one column
-#        gets the identical single-column geometry v3.25 drew, to the last
-#        decimal — verified by rendering: a 3-entry legend's pixels are
-#        unchanged. Only when capacity is still exceeded (a very short frame,
-#        or labels wide enough that one column is all that fits) is anything
-#        dropped, and then the last cell reads "+N more" ON THE FIGURE and a
-#        NOTE naming both counts goes to the Info window. Nothing is dropped
-#        in silence. Reports for callers and fixtures: .nCols, .rowsPerCol,
-#        .shown, .hidden, .capacity. A single label wider than the frame
-#        still overhangs to the right here; v3.28 closes that.
-#
-# v3.25: POINT MARKERS, and a greyscale ramp that uses the page.
-#        (1) MARKERS. The v3.24 fill pattern needs an AREA. Scatter, line
-#            chart, spaghetti and time series draw dots and lines, so their
-#            second dimension has to be the marker SHAPE. New @emlDrawMarker
-#            draws circle / square / triangle from NATIVE primitives (Paint
-#            circle, Paint rectangle, and a stack of horizontal slices for
-#            the triangle -- the same construction @emlDrawViolin uses for
-#            its body). New emlSetColorPalette.marker[] gives 8 hues x 3
-#            shapes = 24, the same arithmetic and the same cap as the fill
-#            patterns. @emlDrawLegend grew a marker key (legendMarkered,
-#            legendMarker[], legendMarkerLine) so the key shows the SHAPE and
-#            not merely the hue. Not sprites: plugin/sprites/ is real and has
-#            204 PNGs, but every one of them is a dot or a rectangle indexed
-#            by hue, and @emlInitAlphaSprites is disabled on anything that is
-#            not macOS or Windows because Praat has no cairo image branch.
-#            @emlDrawScatterPlot therefore drops the sprite path above eight
-#            groups, or on those two platforms the shape would never reach
-#            the page.
-#        (2) GREYSCALE. The v3.24 ramp ran 0.90 to 0.25, a span of 0.65, and
-#            what held it there was not the eye: the stroke was derived as
-#            fill - 0.30 and clamped at zero, so a fill below 0.30 collapses
-#            the stroke ramp -- at 0.25 the two darkest strokes are 0.043 and
-#            0.000 apart, which is a greyscale LINE chart with two
-#            indistinguishable series at eight groups. The fill and stroke
-#            ramps are independent: fills 0.94 to 0.10 (a span of 0.84) and
-#            strokes 0.63 to 0.00. New @emlMarkInk pays the cost -- a mark's
-#            outline, median, whiskers and pattern flip to white on a dark
-#            fill and black on a light one, per channel so that Okabe-Ito
-#            yellow (whose contrast is all in the blue channel) is not
-#            misjudged. New @emlParseRGB underneath it. Measured minimum
-#            greyscale separation on the rendered pixels: 0.1176, against
-#            0.090 for the derived ramp.
-#
-# v3.24: FILL PATTERNS — the palette has eight colours, not ten, and has a
-#        second dimension. Ten declared fill/line pairs whose slots 9 and 10
-#        are LITERAL DUPLICATES of 1 and 2 draw two pairs of sub-groups in
-#        indistinguishable colours, on the figure and in the legend, with no
-#        disclosure; the cycling rule above ten was `mod 8`, which says the
-#        palette was always eight. So the eight hues are declared once and a
-#        fill-pattern axis is added: 8 hues x 3 patterns (solid, diagonal
-#        hatch, dots) = 24 distinguishable styles, hue cycling first so
-#        adjacent sub-groups differ in the stronger cue. @emlDrawViolin and
-#        @emlDrawBox take a .pattern argument and clip the pattern to the
-#        mark using the scanline structure they already build; @emlDrawLegend
-#        draws the swatch as the mark rather than as a block of colour, so
-#        the key cannot say "solid" where the figure says "hatched". The B/W
-#        branch's ten fills, which sat between 0.82 and 0.96, are replaced by
-#        the eight-step 0.90-0.25 ramp @emlOptimizePaletteContrast was
-#        already computing, so greyscale reaches the same 24.
-#        @emlDrawLegend also re-selects the viewport at the legend's own font
-#        size before measuring and drawing. Praat maps world coordinates back
-#        through the font size in force at the time of the call, so a legend
-#        measured at one size inside a viewport selected at another is
-#        rendered into a rectangle that is not the .boxLeft/.boxTop it
-#        reports to its caller.
-#
-# v3.23: @emlMeasureBarData: zero is not "no data". emlBarData_mean[g] is
-#        UNDEFINED when the group has no usable observation, and
-#        emlBarData_error[g] UNDEFINED when there is no error to compute,
-#        rather than both being seeded to 0. Seeded at 0, @emlDrawBarChart's
-#        "<> undefined" guards for the bar and the whisker can never fire, so
-#        a group with nothing in it draws as a bar of height zero —
-#        indistinguishable from a measured zero — and an undefined error bar
-#        vanishes in silence. Both are suppressed by the existing guards and
-#        disclosed. The visible-range fold at the end of the procedure
-#        substitutes 0 for an undefined error so the axis range is
-#        unaffected. See the invariant block on @emlMeasureBarData.
-#
-# v3.22: Undefined/validation hardening.
-#        (1) @emlCheckNumericColumn scans the whole column (capped at
-#            .maxScanRows) rather than sampling the first 5 rows, and
-#            requires EVERY non-empty cell to be a strict numeric literal
-#            rather than passing a column on a single parseable cell. It
-#            treats empty/whitespace cells as missing rather than failures,
-#            and reports .nNumeric/.nMissing/.nCoerced/.nNonNumeric plus the
-#            first offending row and its literal text. Cells that only pass
-#            via number() coercion ("5,5", "30%", "1/2", "0x10", "2 3") are
-#            classified as coerced and REJECTED — a silent wrong number is
-#            worse than a rejected column. Parameter list and .isNumeric
-#            output name/meaning are unchanged.
-#        (2) @emlMeasureBarData handles undefined values. Undefined
-#            observations and undefined custom-error values are skipped and
-#            counted; means, SE/SD and the visible min/max fold are guarded
-#            with explicit "<> undefined" tests; single-observation groups are
-#            handled explicitly (no undefined error bar). New disclosure
-#            globals: emlBarData_valid[], emlBarData_errorDefined[],
-#            emlBarData_skipped[], emlBarData_errSkipped[],
-#            emlBarData_nSkipped, emlBarData_nErrSkipped,
-#            emlBarData_nInvalidGroups, emlBarData_nSingleObs,
-#            emlBarData_nUnmatchedRows. (v3.23 restores undefined as the "no
-#            measurement" sentinel and puts the burden of guarding back on
-#            the callers.)
-#        (3) The same two patterns swept through the file:
-#            @emlComputeAxisRange, @emlComputeNiceStep,
-#            @emlSetAlphaDotGeometry (relational "guards" that are FALSE for
-#            undefined and therefore let undefined through to Axes:/
-#            Paint circle:), and @emlDrawViolin, @emlDrawBox,
-#            @emlDrawJitteredPoints (undefined observations reaching
-#            Draw line:/Paint rectangle:, or silently suppressing the whole
-#            glyph).
-# v3.21: Graph correctness. (1) Box/violin quartiles use the shared R-7
-#        interpolated @emlQuartiles rather than nearest-rank floor(n*p),
-#        which biases the median low and collapses it onto the minimum at
-#        small n; the figure agrees with the describe table. (2) Bar
-#        auto-range tracks a data minimum (emlBarData_visibleMin) so
-#        all-negative means are not clipped at 0. (3) The B/W palette
-#        recomputes sprite$ greys so alpha dots/overlap match the fill/line.
-#        shared R-7 interpolated @emlQuartiles instead of nearest-rank
-#        floor(n*p), which biased the median low and collapsed it onto the
-#        minimum at small n (figure now agrees with the describe table).
-#        (2) Bar auto-range tracks a data minimum (emlBarData_visibleMin) so
-#        all-negative means are not clipped at 0. (3) The B/W palette
-#        recomputes sprite$ greys so alpha dots/overlap match the fill/line.
-# v3.20: Group sort unification — @emlExtractUniqueValues and
-#         @emlMeasureBarData now call @emlCountGroups instead of inline
-#         discovery. All group ordering flows through single source.
-#
-# v3.18: Stereo channel handling — @emlCheckChannels presents a user dialog
-#         via @emlHandleStereo rather than converting to mono silently. New @emlApplyChannelChoice for batch scripts
-#         (applies pre-selected channel handling without dialog).
-#         Three-procedure architecture: @emlApplyChannelChoice (mechanical
-#         core), @emlHandleStereo (single-file UI wrapper),
-#         @emlCheckChannels (backward-compat thin wrapper).
-# v3.17: New @emlExpandDrawnExtent procedure — single source of truth
-#         for extent tracker bounding box expansion. Replaces inline
-#         pattern in @emlSetAdaptiveTheme; also called by
-#         @emlDrawMatrixPanel (eml-annotation-procedures.praat) to
-#         register the matrix panel viewport with the extent tracker.
-# v3.16: New @emlMeasureBarData procedure — extracts and aggregates bar
-#         chart data (unique groups, per-group means, SE/SD/custom errors,
-#         visible max) into emlBarData_* globals. Called once from
-#         pre-dispatch; results read by both headroom computation and
-#         @emlDrawBarChart. Eliminates DRY violation between pre-dispatch
-#         aggregation and draw procedure aggregation.
-# v3.15: Independent per-axis control — emlShowTicks/emlShowAxisValues
-#         split to emlShowTicksX/Y and emlShowAxisValuesX/Y. New
-#         emlShowAxisNameX/Y globals gate axis label drawing. New
-#         @emlExpandAxisControls procedure: 3 dropdown indices → 6
-#         per-axis booleans. All 3 aligned mark procedures,
-#         @emlDrawCategoricalXAxis, @emlDrawAxes, and
-#         @emlDrawAxesSelective updated. Categorical group names
-#         always visible regardless of X tick/value settings.
-#         Sanitization moved to source: @emlCapitalizeLabel now calls
-#         @emlSanitizeLabel (auto-generated labels). @emlDrawAxes and
-#         @emlDrawAxesSelective do not sanitize axis labels — user-typed
-#         labels with Praat formatting codes (%italic, #bold, ^super,
-#         _sub) pass through raw.
-#         New .tickColor$ ("{0.35, 0.35, 0.35}") in @emlSetAdaptiveTheme
-#         — tick value numbers draw slightly muted vs axis name labels
-#         (textColor$). Applied in all 3 aligned mark procedures.
-# v3.14: New @emlDrawTitle procedure — centralizes title/subtitle drawing
-#         via Text special with 1:1 inch coordinate mapping. Title/subtitle
-#         anchored upward from inner box top, horizontally centered on inner
-#         box. Replaces 7 inline title blocks (1 in @emlDrawAxes, 6 in
-#         categorical procs via eml-draw-procedures). Clipping guard for
-#         small viewports.
-#         @emlSetAdaptiveTheme: symmetric margins (.marginRight = .marginLeft).
-#         New .bodyInch, .titleInch outputs (typography in inches). New
-#         .boxInsetInches output — unified physical inset for legend,
-#         annotation block, and comparison matrix boxes.
-#         @emlDrawLegend insetX/Y now use boxInsetInches for equal padding.
-# v3.13: @emlDrawLegend — colored line samples replaced with filled
-#         square swatches; legend text labels now use axis text color
-#         (textColor$) instead of group color. @emlDrawAxes title
-#         centering — asserts full outer viewport before title/subtitle
-#         so text centers on figure, not inner box. Subtitle support
-#         (global emlSubtitle$, drawn at bodySize in grey via Text top:
-#         "no"). Content-driven marginTop — computed from title/subtitle
-#         typography instead of viewport height cap.
-# v3.12: New @emlDrawAlignedMarksBottom procedure — mirrors Left/Right
-#         for bottom x-axis ticks. @emlDrawAxes and @emlDrawAxesSelective
-#         refactored to call aligned mark procedures (Left/Bottom) instead
-#         of inline loops — DRY, consistent guard logic. Show axis values
-#         toggle (emlShowAxisValues) added: all 3 aligned mark procedures
-#         now independently control writeNumber (emlShowAxisValues) and
-#         drawTick (emlShowTicks). @emlDrawAxesSelective per-axis params
-#         (.showXTicks/.showYTicks) remain as hard overrides wrapping the
-#         procedure calls.
-# v3.11: @emlSetAdaptiveTheme — bare Helvetica replaced with
-#         'emlFont$' global variable (set by main script font dropdown).
-#         Theme exposes .font$ output for documentation.
-# v3.10: @emlDrawLegend font restore moved before Select inner
-#         viewport (was after — caused margin mismatch). Show ticks
-#         toggle (emlShowTicks) guards added to @emlDrawAxes,
-#         @emlDrawAxesSelective, @emlDrawAlignedMarksLeft/Right.
-# v3.9: @emlDrawInnerBoxIf — wrapper for Draw inner box with boolean toggle
-#        and font size assertion (keeps ticks from being displaced).
-#        @emlDrawVerticalGridlines — vertical-only gridlines for continuous
-#        axes. @emlDrawLegend now restores Font size: bodySize at end
-#        (font state management layer 1).
-#
-# v3.7: New @emlFitCategoricalLabels procedure — space-aware x-axis labels
-#        with automatic truncation via Text width (world coordinates) when
-#        labels exceed available slot width. Used by all categorical draw procs.
 #
 # These procedures provide consistent, publication-quality figure styling.
 # Include this file at the top of any script that generates Picture window output.
@@ -1022,13 +630,13 @@ endproc
 # Arguments: .nGroups (number of groups that will be drawn)
 # Side effect: overwrites emlSetColorPalette arrays [1..nGroups]
 #
-# v1.23: this procedure permutes HUE ONLY. emlSetColorPalette.pattern[] is
+# This procedure permutes HUE ONLY. emlSetColorPalette.pattern[] is
 # indexed by slot, not by hue, so it is deliberately left alone: slots 1-8
 # stay solid, 9-16 hatched, 17-24 dotted whatever hues land in them, and each
 # band of eight still receives a permutation of the eight hues. That is what
 # keeps all 24 (hue, pattern) pairs distinct after optimisation.
 #
-# v1.24: emlSetColorPalette.marker[] is left alone for exactly the same
+# emlSetColorPalette.marker[] is left alone for exactly the same
 # reason -- slots 1-8 circles, 9-16 squares, 17-24 triangles, whatever hues
 # land in them -- so all 24 (hue, marker) pairs stay distinct too.
 # ----------------------------------------------------------------------------
@@ -1390,10 +998,10 @@ endproc
 # cannot be mistaken for a different sub-group -- except on fills dark enough
 # that a dark stroke would disappear into them, where it flips.
 #
-# v1.24: the rule moved to @emlMarkInk, which the mark's OUTLINE, median and
-# whiskers now use as well, so a mark is drawn in exactly one ink throughout
-# instead of a hatch that flips and an outline that does not. See there for
-# why the test is per-channel rather than on the red channel alone.
+# The rule lives in @emlMarkInk, which the mark's OUTLINE, median and
+# whiskers use as well, so a mark is drawn in exactly one ink throughout
+# rather than as a hatch that flips and an outline that does not. See there
+# for why the test is per-channel rather than on the red channel alone.
 # ----------------------------------------------------------------------------
 procedure emlPatternSetup: .fillColor$, .lineColor$, .halfWidth, .yMin, .yMax
     .usable = 1
@@ -2073,7 +1681,7 @@ procedure emlComputeAxisRange: .dataMin, .dataMax, .roundTo, .isPercentage
             .axisMin = 0
         endif
 
-        # v3.22: final safety net. If .roundTo is enormous relative to the
+        # Final safety net. If .roundTo is enormous relative to the
         # data the rounding can collapse the axis to zero width, which makes
         # every downstream tick/step computation degenerate.
         if .axisMax <= .axisMin
@@ -2090,12 +1698,12 @@ endproc
 # Arguments: range (axis max minus axis min), targetTicks (desired tick count)
 # Outputs: .step (the nice step size)
 #
-# v3.22: the guard below was "if .range <= 0 or .targetTicks < 1", which is
-# FALSE when .range is undefined (every relational comparison against
-# undefined is false in Praat). An undefined .range therefore took the else
-# branch and produced an undefined .step, which propagates into the
-# gridline/tick while-loops that follow every caller. Undefined inputs are
-# now tested explicitly and routed to the same fallback as an empty range.
+# THE GUARD BELOW TESTS `undefined` SEPARATELY, and must. Written as the one
+# relational test "if .range <= 0 or .targetTicks < 1" it is FALSE when
+# .range is undefined -- every relational comparison against undefined is
+# false in Praat -- so an undefined .range would take the else branch and
+# produce an undefined .step, which propagates into the gridline/tick
+# while-loops that follow every caller.
 # ----------------------------------------------------------------------------
 procedure emlComputeNiceStep: .range, .targetTicks
     .bad = 0
@@ -3494,10 +3102,10 @@ endproc
 # which aborts the entire figure with a hard error.
 # ----------------------------------------------------------------------------
 procedure emlDrawViolin: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, .axisYMax, .width, .pattern
-    # v1.24: ONE ink for the whole mark. The hatch already flipped to white on
-    # a dark fill and the outline, quartile box and median did not, so on the
-    # widened grey ramp a slot-8 violin (fill 0.10) drew its internal box in
-    # near-black on near-black and lost it. .lineColor$ is a procedure-local,
+    # ONE ink for the whole mark. The hatch flips to white on a dark fill; if
+    # the outline, quartile box and median do not flip with it, a slot-8
+    # violin on the widened grey ramp (fill 0.10) draws its internal box in
+    # near-black on near-black and loses it. .lineColor$ is a procedure-local,
     # so rewriting it here reaches every use below -- including the
     # @emlPatternSetup call, where @emlMarkInk is idempotent.
     @emlMarkInk: .fillColor$, .lineColor$
@@ -3524,7 +3132,7 @@ procedure emlDrawViolin: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, 
         goto VIOLIN_END
     endif
 
-    # v3.22: reject undefined observations before any statistic is computed.
+    # Reject undefined observations before any statistic is computed.
     # A single undefined element poisons .mean, .sd and .bandwidth, and every
     # subsequent comparison against those values evaluates FALSE, so no
     # existing guard catches it.
@@ -3553,7 +3161,7 @@ procedure emlDrawViolin: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, 
     endfor
     .sd = sqrt (.variance / (.n - 1))
 
-    # v3.22: belt-and-braces. Overflow in the sum-of-squares can still yield a
+    # Belt-and-braces. Overflow in the sum-of-squares can still yield a
     # non-finite .sd; bail out rather than feed it to the KDE.
     if .sd = undefined
         goto VIOLIN_END
@@ -3814,14 +3422,14 @@ endproc
 # Outputs:
 #   .q1Out, .medianOut, .q3Out — quartile values
 #   .whiskerLowOut, .whiskerHighOut — Tukey whisker endpoints
-#   .nSkipped — observations dropped because they were undefined (v3.22)
+#   .nSkipped — observations dropped because they were undefined
 #
-# v3.22: every existing "guard" in this procedure is a relational comparison
-# (.drawQ1 < .drawQ3, .median >= .axisYMin, ...). All of those are FALSE when
-# the operand is undefined, so an undefined element in .data# silently
-# suppressed the entire box with no disclosure — and on the .n = 1 path it
-# reached Draw line: with an undefined y and aborted the figure. Undefined
-# observations are now detected up front and reported through .nSkipped.
+# EVERY RELATIONAL "GUARD" IN THIS PROCEDURE (.drawQ1 < .drawQ3,
+# .median >= .axisYMin, ...) IS FALSE WHEN THE OPERAND IS UNDEFINED, which is
+# why undefined observations are detected up front and reported through
+# .nSkipped instead of being left to those tests. Left to them, an undefined
+# element in .data# suppresses the entire box with no disclosure, and on the
+# .n = 1 path reaches Draw line: with an undefined y and aborts the figure.
 # ----------------------------------------------------------------------------
 procedure emlDrawBox: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, .axisYMax, .width, .pattern
     # One ink for the whole mark -- see the same two lines in @emlDrawViolin.
@@ -3835,7 +3443,7 @@ procedure emlDrawBox: .xCenter, .data#, .fillColor$, .lineColor$, .axisYMin, .ax
         goto BOX_END
     endif
 
-    # v3.22: undefined observations poison the sort, the quartiles and the
+    # Undefined observations poison the sort, the quartiles and the
     # Tukey fences. Detect them before anything is drawn.
     for .i from 1 to .n
         if .data#[.i] = undefined
@@ -4308,11 +3916,11 @@ endproc
 #   lineColor$: RGB colour string for the points
 #   markerSize: point diameter in mm
 #   jitterWidth: half-width of jitter range (e.g., 0.12 for ±0.12)
-# Outputs: .nSkipped — points dropped because the y-value was undefined (v3.22)
+# Outputs: .nSkipped — points dropped because the y-value was undefined
 #
-# v3.22: this loop had no validity check at all — an undefined element in
-# jitterData# went straight into Draw line: and aborted the figure with a
-# hard error. Undefined points are now skipped and counted.
+# THE LOOP BELOW HAS NO RELATIONAL GUARD TO FALL BACK ON, so the validity
+# check is explicit: an undefined element in jitterData# goes straight into
+# Draw line: and aborts the figure with a hard error. Skipped and counted.
 # ----------------------------------------------------------------------------
 procedure emlDrawJitteredPoints: .xCenter, .lineColor$, .markerSize, .jitterWidth
     .n = size (jitterData#)
@@ -6039,11 +5647,11 @@ endproc
 # @emlCheckNumericColumn
 # Tests whether a Table column is safe to feed to number() for plotting.
 #
-# v3.22: was "sample the first 5 rows, pass if ANY one of them parses" —
-# a column whose first five cells happened to be numeric, or that held a
-# single numeric cell among text, was declared numeric and every downstream
-# draw procedure then aborted or drew garbage. Now: EVERY row is scanned and
-# EVERY non-empty cell must parse cleanly.
+# SAMPLING IS NOT ENOUGH. "Sample the first 5 rows, pass if ANY one of them
+# parses" declares a column numeric when its first five cells happen to be
+# numeric, or when it holds a single numeric cell among text, and every
+# downstream draw procedure then aborts or draws garbage. So: EVERY row is
+# scanned and EVERY non-empty cell must parse cleanly.
 #
 # Cell classification (one of four):
 #   missing      — empty or whitespace-only; not a failure, not evidence
@@ -6319,11 +5927,11 @@ procedure emlSetAlphaDotGeometry: .axisXMin, .axisXMax, .axisYMin, .axisYMax, .i
     .vpHeight = .innerBottom - .innerTop
 
     # Guard against zero ranges.
-    # v3.22: "= 0" is FALSE for undefined, so an undefined axis bound (the
-    # usual consequence of an all-undefined data column) previously took the
-    # else branch and produced an undefined .stampHalfY, which then reaches
-    # Paint circle: / Insert picture from file: in @emlDrawAlphaDot. Undefined
-    # ranges are now folded into the same degenerate fallback as zero ranges.
+    # "= 0" is FALSE for undefined, so an undefined axis bound (the usual
+    # consequence of an all-undefined data column) would take the else branch
+    # and produce an undefined .stampHalfY, which then reaches Paint circle: /
+    # Insert picture from file: in @emlDrawAlphaDot. Undefined ranges are
+    # therefore folded into the same degenerate fallback as zero ranges.
     .degenerate = 0
     if .xRange = undefined
         .degenerate = 1
@@ -7144,7 +6752,7 @@ procedure emlMeasureBarData: .tableId, .groupCol$, .valueCol$, .errorMode, .erro
     # guarded; the outputs are guaranteed defined so no undefined can reach a
     # drawing command downstream.
     for .g from 1 to emlBarData_nGroups
-        # v3.23: undefined, not 0. See the invariant at the head of this
+        # Undefined, not 0. See the invariant at the head of this
         # procedure — 0 is a measurement, and a group with no observation has
         # not made one.
         emlBarData_mean[.g] = undefined
@@ -7215,12 +6823,12 @@ procedure emlMeasureBarData: .tableId, .groupCol$, .valueCol$, .errorMode, .erro
     emlBarData_visibleMin = 0
     for .g from 1 to emlBarData_nGroups
         if emlBarData_valid[.g] = 1
-            # v3.23: an undefined error contributes no headroom. Before the
-            # sentinel change emlBarData_error[g] was 0 here whenever there
-            # was nothing to compute, so this sum was always defined; it is
-            # now undefined under errorMode = 0 (every group), n = 1, and a
-            # missing custom error, and an unguarded sum would have failed the
-            # "<> undefined" tests below and collapsed the axis to 0..0.
+            # An undefined error contributes no headroom, and the sum must be
+            # guarded for it: emlBarData_error[g] is undefined under
+            # errorMode = 0 (every group), under n = 1, and on a missing
+            # custom error, so an unguarded sum fails the "<> undefined"
+            # tests below and collapses the axis to 0..0. That is the price of
+            # the undefined sentinel, and it is paid here rather than by
             .errForRange = 0
             if emlBarData_errorDefined[.g] = 1
                 .errForRange = emlBarData_error[.g]
