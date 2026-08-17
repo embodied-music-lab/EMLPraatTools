@@ -146,10 +146,13 @@ procedure emlChiSquareIndependence: .observed##, .correction
             # --- Expected counts (outer product of margins / n) ---
             .expected## = outer## (.rowTotal#, .colTotal#) * (1 / .n)
 
-            # Expected-count diagnostics. Praat 6.6.30 has no min/max
-            # reduction and no elementwise comparison over a matrix
-            # (17 Aug idiom probe), so these two stay in a small loop;
-            # per-row minima reduce through row#, which min () supports.
+            # Expected-count diagnostics. Script-level operators offer
+            # no min/max reduction or comparison over a matrix variable
+            # (17 Aug idiom probe); the object route (Create simple
+            # Matrix from values: + Formula: ~ self < 5 + Get sum) can
+            # do both, but would create and remove an object inside a
+            # kernel that otherwise touches none, so these two stay in
+            # a small loop; per-row minima reduce through row#/min.
             .minExpected = .expected## [1, 1]
             .nCellsBelow5 = 0
             for .i from 1 to .nRows

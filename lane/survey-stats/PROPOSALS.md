@@ -102,9 +102,18 @@ elementwise `a## / b##` DO NOT exist, but elementwise multiplication
 (`a## * b##`), elementwise power (`m## ^ p`), abs## and sqrt## all do — so
 scalar division is `m## * (1/x)` and elementwise division is
 `a## * (b## ^ -1)` (verified numerically). Vectors have true elementwise
-division. min()/max() do not reduce over a matrix. The master prompt's
-vector-first rule should document these composed idioms. Per Ian's 17 Aug
-ruling the categorical kernel now demonstrates them itself: the chi-square
-statistic and the Yates correction are computed in the vectorized form,
-and a small row loop remains only for the two diagnostics Praat has no
-matrix reduction for (smallest expected count; the below-5 cell count).
+division. Two capabilities are absent as OPERATORS on ##/# variables but
+present through the object route: min/max reduction and elementwise
+comparison. The operators refuse ("Cannot compare (<) a numeric vector
+to a number"; "Cannot compute the minimum of a numeric matrix"), but
+`Create simple Matrix from values: m##` + `Formula: ~ self < 5` +
+`Get sum` / `Get minimum` do both, verified numerically on 6.6.30. The
+master prompt's vector-first rule should document the composed
+arithmetic idioms AND this operator-vs-object distinction, so absence
+of an operator is never again read as absence of the capability. Per
+Ian's 17 Aug ruling the categorical kernel demonstrates the arithmetic
+idioms itself: the chi-square statistic and the Yates correction are
+vectorized, and a small loop remains only for the two diagnostics —
+where the object route works but was declined deliberately, to keep
+object creation and removal out of a kernel that otherwise touches no
+objects.

@@ -131,8 +131,15 @@ artefact as its only input.
   division as a## * (b## ^ -1), abs## over a matrix, the non-negative
   clamp as (x + abs##(x)) * 0.5 — all confirmed numerically. My own
   follow-up probe added: row# (m##, i) works and min () reduces a
-  vector, but elementwise comparison (v# < 5, m## < 5) does not exist
-  either, which bounds how far the diagnostics can vectorize.
+  vector. On comparison I initially over-claimed the same way: the
+  comparison OPERATORS refuse vector/matrix variables in script
+  expressions ("Cannot compare (<) a numeric vector to a number",
+  Praat's own message), but the capability exists through the object
+  route — Create simple Matrix from values:, Formula: ~ self < 5,
+  Get sum / Get minimum — probed and confirmed numerically on 6.6.30.
+  The kernel keeps its minimal loop per Ian's ruling (the object route
+  would put object creation and removal inside a kernel that currently
+  touches none), but the record here states the idiom accurately.
 2. Chi-square kernel vectorized per Ian's ruling: the statistic is now
   sum (dev## * dev## * (expected## ^ -1)) and Yates is the abs##/clamp
   form; the only remaining loop covers the two diagnostics Praat has
