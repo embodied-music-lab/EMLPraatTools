@@ -674,6 +674,72 @@ procedure emlRecordOrphanCheck
 endproc
 
 
+# ----------------------------------------------------------------------------
+# @emlPluginRoot
+# Where this plugin is installed, written the way an `include` line in a file
+# meant for somebody else has to be written. Result in emlPluginRoot.root$.
+#
+# TWO CALLERS, ONE PROCEDURE, AND THAT IS THE POINT. @emlRecordBegin resolves
+# the root for the include block it emits into a recorded script; setup.praat
+# resolves it to generate scripts/eml-lib-user.praat. Two copies of this
+# arithmetic would be two things that can disagree about where the plugin is,
+# and a user whose generated barrel and whose recorded script disagree has no
+# way to tell which one is lying.
+#
+# IT LIVES IN THIS FILE BECAUSE OF HOW `include` RESOLVES A RELATIVE PATH.
+# Measured on 6.6.30: a relative include inside an included file resolves
+# against the TOP-LEVEL script's folder, not against the folder of the file
+# the line is written in. eml-record.praat is included from plugin/scripts/
+# wrappers, from setup.praat at the plugin root, and from emitted user scripts
+# in folders this project never sees, so it can carry no relative include of
+# its own -- a shared file it pointed at would resolve differently for each of
+# those three, and `include` takes a literal, so the path cannot be computed.
+# A procedure defined HERE reaches every one of them for free.
+#
+# ALWAYS HOME-RELATIVE.
+#
+# What it resolves is a USER artefact's path. Where the plugin happens to sit
+# on one machine is an accident of that machine, and a path that hard-codes it
+# is worth nothing to the person the file is for. Praat's preferences
+# directory lives under the user's home on every supported platform, and
+# `include` accepts a leading ~ -- tested on a path containing spaces
+# (macOS's "Praat Prefs") under both 6.4.06 and 7.0. That one substitution
+# takes an emitted file from one-machine to any-user-on-this-platform.
+#
+# The only way the substitution can fail is a preferences directory outside
+# $HOME, which Praat produces only under an explicit --pref-dir. That is a
+# test rig, not a configuration: this repository's own harnesses use it.
+# Returning an absolute path in that case would write the RIG's geometry into
+# a file meant for a user, so the fallback is the canonical location for the
+# running platform and version -- the same four paths a recorded script's
+# header lists -- and the answer stays portable.
+# ----------------------------------------------------------------------------
+procedure emlPluginRoot
+    .abs$ = preferencesDirectory$ + "/plugin_EML_Praat_Tools"
+    .root$ = ""
+    if homeDirectory$ <> ""
+        if index (.abs$, homeDirectory$) = 1
+            .root$ = "~"
+            ... + mid$ (.abs$, length (homeDirectory$) + 1, 100000)
+        endif
+    endif
+    if .root$ = ""
+        ; Linux 6.x and 7.x are measured on this machine. Windows and macOS
+        ; are Praat's own documented locations.
+        if windows
+            .root$ = "~/Praat/plugin_EML_Praat_Tools"
+        elsif macintosh
+            .root$ = "~/Library/Preferences/Praat Prefs"
+            ... + "/plugin_EML_Praat_Tools"
+        elsif praatVersion >= 7000
+            .root$ = "~/.config/praat/plugin_EML_Praat_Tools"
+        else
+            .root$ = "~/.praat-dir/plugin_EML_Praat_Tools"
+        endif
+    endif
+endproc
+
+
 procedure emlRecordBegin: .tempFolder$
     @emlRecordInit
     .started = 0
@@ -742,53 +808,15 @@ procedure emlRecordBegin: .tempFolder$
     ; meta left over from a dead session can never furnish a live one.
     @emlRecordMetaSet: "buffer", string$ (emlRecordBufferId)
 
-    ; The include block's path. Resolved at run time from
-    ; preferencesDirectory$, then rewritten HOME-RELATIVE, because Praat's
-    ; `include` accepts a leading ~ -- tested on a path with spaces in it
-    ; (macOS's "Praat Prefs") and under both 6.4.06 and 7.0. That one substitution takes the emitted file from
-    ; one-machine to any-user-on-this-platform, for free.
+    ; The include block's path, from the one procedure that resolves it. The
+    ; whole account of what it does and why it is home-relative lives with
+    ; @emlPluginRoot above; setup.praat's barrel generator calls the same
+    ; procedure, so the two cannot disagree about where the plugin is.
     ;
-    ; ALWAYS HOME-RELATIVE.
-    ;
-    ; The emitted script is a USER artefact. Where the plugin happens to sit on
-    ; the machine that recorded the session is an accident of that machine, and
-    ; an emitted file that hard-codes it is worth nothing to the person the file
-    ; is for. Praat's preferences directory lives under the user's home on every
-    ; supported platform, so a home-relative include is correct for every real
-    ; installation -- and `include` accepts a leading ~, tested on a path
-    ; containing spaces (macOS's "Praat Prefs") under both 6.4.06 and 7.0.
-    ;
-    ; The only way the substitution below can fail is a preferences directory
-    ; outside $HOME, which Praat produces only under an explicit --pref-dir. That
-    ; is a test rig, not a configuration: this repository's own harnesses use it.
-    ; Emitting an absolute path in that case would write the RIG's geometry
-    ; into a file meant for a user. So when the substitution cannot be made we
-    ; fall back to
-    ; the canonical location for the running platform and version -- the same
-    ; four paths the emitted header has always listed -- and the file stays
-    ; portable rather than becoming a record of a scratch directory.
-    .abs$ = preferencesDirectory$ + "/plugin_EML_Praat_Tools"
-    emlRecordPluginRoot$ = ""
-    if homeDirectory$ <> ""
-        if index (.abs$, homeDirectory$) = 1
-            emlRecordPluginRoot$ = "~"
-            ... + mid$ (.abs$, length (homeDirectory$) + 1, 100000)
-        endif
-    endif
-    if emlRecordPluginRoot$ = ""
-        ; Linux 6.x and 7.x are measured on this machine (see the emitted
-        ; header). Windows and macOS are Praat's own documented locations.
-        if windows
-            emlRecordPluginRoot$ = "~/Praat/plugin_EML_Praat_Tools"
-        elsif macintosh
-            emlRecordPluginRoot$ = "~/Library/Preferences/Praat Prefs"
-            ... + "/plugin_EML_Praat_Tools"
-        elsif praatVersion >= 7000
-            emlRecordPluginRoot$ = "~/.config/praat/plugin_EML_Praat_Tools"
-        else
-            emlRecordPluginRoot$ = "~/.praat-dir/plugin_EML_Praat_Tools"
-        endif
-    endif
+    ; Praat cannot nest a procedure call inside an expression, so the call
+    ; stands alone and its result is read out of the procedure's own scope.
+    @emlPluginRoot
+    emlRecordPluginRoot$ = emlPluginRoot.root$
     ; INTO THE META OBJECT, OR IT DIES WITH THIS SCOPE. The substitution
     ; above is the only thing that makes the emitted include block portable,
     ; and it has to survive to the flush: the menu command that saves the file
@@ -1526,7 +1554,7 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     ; something the user selected -- the graphs form converts a Sound to a
     ; Pitch, a Spectrum or an Ltas, draws, and then REMOVES the intermediate.
     ; The renderer must not emit a manifest select for such a step: the
-    ; object it names no longer exists by the time anyone re-runs the file,
+    ; object it names has been removed by the time anyone re-runs the file,
     ; and it never existed in the user's session as something they made. The
     ; preceding convert step left it in `data`, which is what the step uses.
     ;
