@@ -94,9 +94,19 @@
 
 name: validate
 
+# TRIGGERS — MANUAL ONLY WHILE THE TREE IS BEING TRANSFERRED, and the reason is
+# worth stating rather than leaving as an oddity. This repository is moved to
+# GitHub through the web interface one directory at a time, because a direct
+# push is not available from the environment the work is done in. A `push:`
+# trigger therefore fires once per directory against a HALF-TRANSFERRED tree,
+# where the suite cannot pass and its failure carries no information except
+# that the transfer is still in progress. Dozens of red notifications that say
+# nothing are worse than none.
+#
+# `push:` and `pull_request:` go back the moment a transfer is verified
+# complete — the whole tree present, `git diff main origin/main` empty — and
+# not before. Until then, run it from the Actions tab.
 on:
-  push:
-  pull_request:
   workflow_dispatch:
 
 permissions:
