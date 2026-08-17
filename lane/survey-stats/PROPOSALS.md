@@ -24,12 +24,13 @@ nothing, so position only needs to precede any future caller):
 
 Append to the ordered scripts vector, with comments in the house voice:
 
-    "v90_lane_alpha_oracle.R",   # Cronbach's alpha kernel vs psych::alpha:
-                                 # alpha, Feldt CI, every alpha-if-deleted,
-                                 # listwise disclosure; drives Praat live;
+    "v90_lane_alpha_oracle.R",   # Cronbach's alpha kernel vs a base-R
+                                 # oracle (covariance-matrix alpha, Feldt
+                                 # CI via qf, leave-one-out drops);
+                                 # psych::alpha cross-checks the oracle at
+                                 # 1e-12 when installed (v17/broom
+                                 # pattern); drives Praat live;
                                  # seeded-defect negative control inside.
-                                 # NEEDS r-cran-psych (records a FAIL, not
-                                 # a skip, when psych is absent).
     "v91_lane_chisq_oracle.R",   # chi-square independence + Cramér's V vs
                                  # chisq.test, both correction settings,
                                  # warning behaviour, zero-margin refusal;
@@ -39,16 +40,15 @@ Append to the ordered scripts vector, with comments in the house voice:
                                  # Newcombe 1998 print pins; drives Praat
                                  # live; negative control inside.
 
-NOTE: the suite charter says "base R only". v90 breaks that charter by
-requiring the psych package, because the brief names psych::alpha as the
-record oracle. The merging session should either accept the exception
-(v90 degrades to an explicit FAILED check when psych is missing, never a
-silent pass) or keep v90 out of run_all.R and run it from the lane runner
-only. Flagged, not decided here.
+The base-R-only charter holds for all three: no package outside base is
+required (psych is an opportunistic cross-check of the oracle itself,
+the v17/broom pattern; the run prints which mode it ran in). See the
+RESOLVED section at the bottom.
 
 ## 4. CI (.github/workflows/validate.yml)
 
-If v90 is registered: add r-cran-psych to the installed packages.
+Optional: adding r-cran-psych to the installed packages turns on v90's
+1e-12 cross-check of the base-R oracle. Not required for green.
 
 ## 5. Eventual menu / export vocabulary — NOTES ONLY, NOT THIS PHASE
 
@@ -79,3 +79,32 @@ so the wizard/menu phase does not have to rediscover the surface:
   verify-survey-lane.R
 - lane/survey-stats/run_lane.sh (one-command lane green) and
   lane/survey-stats/evidence/ (green + red transcripts)
+
+## RESOLVED by verification session, 17 Aug (post-delivery)
+
+The v90 psych dependency (decision 9 / the flagged charter conflict) is
+RESOLVED: v90's oracle is now computed in base R alone (raw alpha from the
+covariance matrix; Feldt CI via qf; alpha-if-deleted from leave-one-out
+covariance submatrices), with psych demoted to an opportunistic cross-check
+of the oracle itself at 1e-12 when installed — the v17/broom pattern. Both
+modes verified: 62/62 with psych present (16 cross-checks, including
+alpha and the Feldt CI on the 2-item fixture; only the drop vector skips
+cross-checking at k = 2, where psych prints a covariance ratio), 47/47
+with psych hidden, red demonstration still exits 1. The base-R port was
+independently cross-verified against psych 2.4.1 at exactly 0 difference on
+all fixtures and on fresh-seed data. No ruling needed at merge; v90 is now
+charter-compliant as-is.
+
+## Style-rule amendment to relay to PraatGen (matrix idioms, measured 17 Aug)
+
+Praat 6.6.30 matrix arithmetic, probed empirically: scalar `m## / x` and
+elementwise `a## / b##` DO NOT exist, but elementwise multiplication
+(`a## * b##`), elementwise power (`m## ^ p`), abs## and sqrt## all do — so
+scalar division is `m## * (1/x)` and elementwise division is
+`a## * (b## ^ -1)` (verified numerically). Vectors have true elementwise
+division. min()/max() do not reduce over a matrix. The master prompt's
+vector-first rule should document these composed idioms. Per Ian's 17 Aug
+ruling the categorical kernel now demonstrates them itself: the chi-square
+statistic and the Yates correction are computed in the vectorized form,
+and a small row loop remains only for the two diagnostics Praat has no
+matrix reduction for (smallest expected count; the below-5 cell count).

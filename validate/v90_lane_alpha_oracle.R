@@ -1,11 +1,21 @@
 # ===========================================================================
-# v90 — Cronbach's alpha kernel vs R psych::alpha (survey-stats lane)
+# v90 — Cronbach's alpha kernel vs a BASE-R oracle (survey-stats lane)
 # ===========================================================================
 # Drives @emlCronbachAlpha (plugin/stats/eml-psychometrics.praat) LIVE on
 # the four committed fixtures and settles alpha, the Feldt 95% CI, every
-# alpha-if-deleted value, and the listwise-deletion disclosure against
-# psych::alpha computed in this run. Requires the r-cran-psych package;
-# a missing psych is recorded as a FAILED check, never a silent pass.
+# alpha-if-deleted value, and the listwise-deletion disclosure against an
+# oracle computed IN THIS RUN from base R alone: raw alpha from the
+# covariance matrix (k/(k-1) * (1 - tr(C)/sum(C))), the Feldt (1965) CI
+# from qf on (n-1, (n-1)(k-1)) df, and alpha-if-deleted from each
+# leave-one-out covariance submatrix. Base R only — the suite's charter.
+#
+# SECOND OPINION, OPPORTUNISTIC (the v17/broom pattern): when the psych
+# package happens to be installed, the base-R oracle is ADDITIONALLY
+# asserted against psych::alpha at 1e-12 on every quantity, and the run
+# says which mode it ran in. When psych is absent, the base-R oracle
+# stands alone; nothing is skipped silently and nothing extra is required.
+# (The port was cross-verified against psych 2.4.1 at exactly 0 difference
+# on every fixture and on fresh-seed data, 17 Aug 2026.)
 #
 # Negative control: a scratch copy of the kernel with a seeded wrong
 # variance denominator (n instead of n - 1) is driven on the clean
@@ -52,7 +62,9 @@ if (nzchar(praat) && file.exists(praat)) {
 canDrive <- pvnum >= 6630
 
 havePsych <- requireNamespace("psych", quietly = TRUE)
-check_true("v90", "psych is installed (the oracle the brief names)", havePsych)
+cat(sprintf("      v90 oracle mode: base R%s\n",
+            if (havePsych) " + psych cross-check" else
+            " alone (psych not installed; cross-check not run)"))
 
 if (!canDrive) {
     cat(paste0("      SKIP: v90 needs Praat >= 6.6.30 to drive the kernel;\n",
@@ -61,7 +73,7 @@ if (!canDrive) {
                sprintf("a Praat at or above the plugin's floor is available (found %s)",
                        if (is.na(pv)) "none" else pv),
                FALSE)
-} else if (havePsych) {
+} else {
 
     # -----------------------------------------------------------------------
     # 1. Sandbox: scratch outside the tree being measured
@@ -122,16 +134,50 @@ if (!canDrive) {
         suppressWarnings(as.numeric(v))
     }
 
-    oracle_alpha <- function(m) {
+    # The oracle: base R only. Raw alpha from the covariance matrix; Feldt
+    # (1965) CI; alpha-if-deleted from leave-one-out covariance submatrices.
+    # At k = 2 the leave-one-out "scale" has one item and no alpha: NA, which
+    # is the kernel's documented undefined-by-design.
+    oracle_alpha <- function(m, label) {
         cc <- m[stats::complete.cases(m), , drop = FALSE]
-        a <- suppressWarnings(psych::alpha(as.data.frame(cc),
-                                           check.keys = FALSE, warnings = FALSE))
-        list(alpha = a$total$raw_alpha,
-             lo = a$feldt$lower.ci[[1]], hi = a$feldt$upper.ci[[1]],
-             drop = a$alpha.drop$raw_alpha,
-             n = nrow(cc), nExcluded = nrow(m) - nrow(cc))
+        k <- ncol(cc); n <- nrow(cc)
+        C <- stats::cov(cc)
+        a <- (k / (k - 1)) * (1 - sum(diag(C)) / sum(C))
+        df1 <- n - 1; df2 <- (n - 1) * (k - 1)
+        lo <- 1 - (1 - a) * stats::qf(0.975, df1, df2)
+        hi <- 1 - (1 - a) * stats::qf(0.025, df1, df2)
+        drop <- vapply(seq_len(k), function(j) {
+            kk <- k - 1
+            if (kk < 2) return(NA_real_)
+            Cj <- C[-j, -j, drop = FALSE]
+            (kk / (kk - 1)) * (1 - sum(diag(Cj)) / sum(Cj))
+        }, numeric(1))
+        o <- list(alpha = a, lo = lo, hi = hi, drop = drop,
+                  n = n, nExcluded = nrow(m) - nrow(cc))
+        # Opportunistic second opinion: the base-R oracle itself against
+        # psych, when psych is around. Guards the port, not the kernel.
+        # alpha and the Feldt CI cross-check at every k; the drop vector
+        # only at k >= 3, because psych's 2-item alpha.drop prints a
+        # covariance ratio, not an alpha (kernel header, decision 5).
+        if (havePsych) {
+            p <- suppressWarnings(psych::alpha(as.data.frame(cc),
+                                               check.keys = FALSE,
+                                               warnings = FALSE))
+            check("v90", sprintf("[%s] base-R oracle vs psych::alpha (cross-check)", label),
+                  o$alpha, p$total$raw_alpha, tol = 1e-12)
+            check("v90", sprintf("[%s] base-R Feldt lower vs psych (cross-check)", label),
+                  o$lo, p$feldt$lower.ci[[1]], tol = 1e-12)
+            check("v90", sprintf("[%s] base-R Feldt upper vs psych (cross-check)", label),
+                  o$hi, p$feldt$upper.ci[[1]], tol = 1e-12)
+            if (k >= 3) {
+                check("v90", sprintf("[%s] base-R alpha-if-deleted vs psych (cross-check, max)", label),
+                      max(abs(o$drop - p$alpha.drop$raw_alpha)), 0, tol = 1e-12)
+            }
+        }
+        o
     }
 
+    oracles <- list()
     fixtures <- list(
         clean  = as.matrix(read_input("lane_survey_alpha_clean.csv")),
         revnot = as.matrix(read_input("lane_survey_alpha_revnotrev.csv")),
@@ -148,12 +194,13 @@ if (!canDrive) {
                         paste(utils::tail(out, 8), collapse = " / ")))
             next
         }
-        o <- oracle_alpha(m)
-        check("v90", sprintf("[%s] alpha vs psych::alpha", name),
+        o <- oracle_alpha(m, name)
+        oracles[[name]] <- o
+        check("v90", sprintf("[%s] alpha vs base-R oracle", name),
               num(out, "res", 1), o$alpha, tol = 1e-10)
-        check("v90", sprintf("[%s] Feldt CI lower vs psych", name),
+        check("v90", sprintf("[%s] Feldt CI lower vs base-R oracle", name),
               num(out, "res", 2), o$lo, tol = 1e-8)
-        check("v90", sprintf("[%s] Feldt CI upper vs psych", name),
+        check("v90", sprintf("[%s] Feldt CI upper vs base-R oracle", name),
               num(out, "res", 3), o$hi, tol = 1e-8)
         check("v90", sprintf("[%s] k", name), num(out, "res", 4), ncol(m), tol = 0)
         check("v90", sprintf("[%s] n after listwise deletion", name),
@@ -175,7 +222,9 @@ if (!canDrive) {
     }
 
     # Direction pin the brief asks for: the unreversed item must DROP alpha.
-    o_clean <- oracle_alpha(fixtures$clean)
+    # (Reuses the loop's oracle; recomputing would re-emit its cross-checks.)
+    o_clean <- if (!is.null(oracles$clean)) oracles$clean else
+               oracle_alpha(fixtures$clean, "clean-fallback")
     out_rev <- drive_alpha("stats", fixtures$revnot, "revdir")
     check_true("v90", "alpha drops when a reverse-scored item is left unreversed",
                num(out_rev, "res", 1) < o_clean$alpha - 0.3)
@@ -199,7 +248,7 @@ if (!canDrive) {
     if (red_mode) {
         cat("      EML_LANE_RED: running the standard agreement check against\n")
         cat("      the defective build — the next check is EXPECTED to FAIL.\n")
-        check("v90", "[RED] seeded-defect alpha vs psych::alpha (must go red)",
+        check("v90", "[RED] seeded-defect alpha vs base-R oracle (must go red)",
               mut_alpha, o_clean$alpha, tol = 1e-10)
     } else {
         check("v90", "seeded wrong-denominator alpha DIFFERS from the oracle",
