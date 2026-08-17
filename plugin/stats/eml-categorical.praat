@@ -146,23 +146,21 @@ procedure emlChiSquareIndependence: .observed##, .correction
             # --- Expected counts (outer product of margins / n) ---
             .expected## = outer## (.rowTotal#, .colTotal#) * (1 / .n)
 
-            # One per-cell pass gathers the expected-count summary and
-            # the uncorrected statistic together (the accumulation
-            # branches on cell values, so a loop is the right tool).
+            # Expected-count diagnostics. Praat 6.6.30 has no min/max
+            # reduction and no elementwise comparison over a matrix
+            # (17 Aug idiom probe), so these two stay in a small loop;
+            # per-row minima reduce through row#, which min () supports.
             .minExpected = .expected## [1, 1]
             .nCellsBelow5 = 0
-            .rawChiSq = 0
             for .i from 1 to .nRows
+                .rowMin = min (row# (.expected##, .i))
+                if .rowMin < .minExpected
+                    .minExpected = .rowMin
+                endif
                 for .j from 1 to .nCols
-                    .e = .expected## [.i, .j]
-                    if .e < .minExpected
-                        .minExpected = .e
-                    endif
-                    if .e < 5
+                    if .expected## [.i, .j] < 5
                         .nCellsBelow5 = .nCellsBelow5 + 1
                     endif
-                    .d = .observed## [.i, .j] - .e
-                    .rawChiSq = .rawChiSq + .d * .d / .e
                 endfor
             endfor
             if .nCellsBelow5 > 0
@@ -173,24 +171,25 @@ procedure emlChiSquareIndependence: .observed##, .correction
                 ... + "approximation may be poor."
             endif
 
+            # --- Uncorrected statistic, vectorized ---
+            # Elementwise division is composed as * (e## ^ -1): the /
+            # operator does not take matrices on 6.6.30 (17 Aug idiom
+            # probe), but elementwise power and multiplication do.
+            .dev## = .observed## - .expected##
+            .rawChiSq = sum (.dev## * .dev## * (.expected## ^ -1))
+
             .df = (.nRows - 1) * (.nCols - 1)
             .minDim = min (.nRows, .nCols)
             .cramersV = sqrt (.rawChiSq / (.n * (.minDim - 1)))
 
-            # --- Continuity correction, 2 x 2 only ---
+            # --- Continuity correction, 2 x 2 only, vectorized ---
             if .correction = 1 and .nRows = 2 and .nCols = 2
-                # Reduce each |O - E| by min(0.5, |O - E|), as R does.
-                .chiSq = 0
-                for .i from 1 to 2
-                    for .j from 1 to 2
-                        .absDev = abs (.observed## [.i, .j]
-                        ... - .expected## [.i, .j])
-                        .shrink = min (0.5, .absDev)
-                        .corrDev = .absDev - .shrink
-                        .chiSq = .chiSq + .corrDev * .corrDev
-                        ... / .expected## [.i, .j]
-                    endfor
-                endfor
+                # Reduce each |O - E| by min(0.5, |O - E|), as R does:
+                # equivalently, shrink |O - E| by 0.5 and clamp at zero.
+                # The clamp is (x + abs##(x)) * 0.5 (17 Aug idiom probe).
+                .shrunk## = abs## (.dev##) - 0.5
+                .corrDev## = (.shrunk## + abs## (.shrunk##)) * 0.5
+                .chiSq = sum (.corrDev## * .corrDev## * (.expected## ^ -1))
             else
                 .chiSq = .rawChiSq
             endif
