@@ -42,52 +42,107 @@
 # instruction, this paragraph is the reason not to.
 #
 # ---------------------------------------------------------------------------
-# THE RELATIONSHIP TO RELEASE_EXCLUDE.tsv — ONE SOURCE OF TRUTH
+# WHO THE ARCHIVE IS FOR
 #
-# There are now two files in this repository that leave things out, and the
-# repository has already been burned once this week by two hand-maintained
-# lists drifting apart. They do not drift here, because THEY ARE FORBIDDEN
-# FROM SPEAKING ABOUT THE SAME PATHS. The division is exact:
+# Author ruling, 17 August 2026. Every remaining question about this file is
+# a question about audience, and the two answers below land on OPPOSITE sides
+# of it, so the audience is settled first and in one place rather than felt
+# out one directory at a time.
 #
-#   RELEASE_EXCLUDE.tsv  owns everything INSIDE plugin/. It says what the
-#                        installable artefact drops. Its paths are
-#                        plugin-relative because the builder stages plugin/
-#                        alone.
-#   this file            owns everything OUTSIDE plugin/. Those directories
-#                        sit beside plugin/, so they are already outside the
-#                        artefact by the shape of the tree — which is exactly
-#                        why RELEASE_EXCLUDE.tsv's header forbids naming them
-#                        there ("an exclusion that can never match").
+# THIS ASSET IS FOR THE PERSON WHO CLICKED THE OBVIOUS LINK ON THE RELEASES
+# PAGE BECAUSE THEY WANTED THE PLUGIN. It is not for a reader of the source.
+# That is not a preference; the repository has already decided it three times
+# over, and each of the three is measurable:
 #
-# The two lists therefore cannot be equal, and making them equal would be a
-# lie about both. What IS derived, and what validate/v85 recomputes from
-# RELEASE_EXCLUDE.tsv on every suite run rather than restating:
+#   * A source reader CANNOT USE THIS ASSET AS SOURCE. Most validators read
+#     evidence/ and several read audit/, and both are excluded below, so the
+#     suite that ships here cannot be run from here. README.md and
+#     validate/README.md already say "clone the repository" for that reason.
+#   * The same is true one level down. RELEASE_EXCLUDE.tsv's own row says the
+#     suites in plugin/dev/ "are run from a clone of this repository, against
+#     plugin/ in place, and never from an installed copy" — so shipping them
+#     inside the asset serves nobody who is actually running them either.
+#   * The 84 MB measurement above exists because of a download in the OTHER
+#     direction. Nobody has been observed fetching this asset to read the
+#     design documents; the traffic it gets is people trying to install.
 #
-#   (1) NO export-ignore LINE IN THIS FILE MAY NAME ANY PATH UNDER plugin/.
-#       Not one. If it did, this file would be a second authority over the
-#       region RELEASE_EXCLUDE.tsv governs, and the drift could start.
-#   (2) EVERY PATH RELEASE_EXCLUDE.tsv NAMES MUST SURVIVE INTO THE SOURCE
-#       ARCHIVE. The artefact list names what a *user of the plugin* does not
-#       need. A *source* archive is for someone reading the source, and
-#       plugin/dev/ — the suites, the tooling, the design documents — is the
-#       first thing such a reader wants. So the source archive is a strict
-#       superset of the artefact inside plugin/, and the relationship between
-#       the lists is complementary, not shared.
-#
-# (1) and (2) together mean v85 goes red the moment anyone gives this file an
-# opinion about plugin/-space, in either direction, and neither rule needs
-# this file to be edited when RELEASE_EXCLUDE.tsv gains a row.
+# So: where the two audiences pull against each other, the installer wins.
+# Where they do not pull against each other, the reader is not charged
+# anything. The next two sections are those two cases, and the difference
+# between them is not the size of the directory — it is where the directory
+# sits.
 #
 # ---------------------------------------------------------------------------
-# WHY validate/ IS NOT IN THE LIST BELOW
+# validate/ SHIPS, plugin/dev/ DOES NOT, AND THE DIFFERENCE IS "BESIDE" vs
+# "INSIDE"
 #
-# It is the largest thing that stays after the plugin — 2.7 MB, roughly a
-# quarter of the slimmed archive — and its absence would be the easy further
-# saving. Author ruling, 17 August 2026: an archive calling itself
-# "source" carries the tests that make the source credible, and for this
-# project the validation suite is the product's main claim. validate/ ships.
-# v85 pins it — excluding it turns the suite red rather than making it
-# smaller.
+# validate/ is the largest thing that stays after the plugin — 2.7 MB, roughly
+# a quarter of the slimmed archive — and its absence would be the easy further
+# saving. It stays: an archive calling itself "source" carries the tests that
+# make the source credible, and for this project the validation suite is the
+# product's main claim. v85 pins it — excluding it turns the suite red rather
+# than making it smaller.
+#
+# plugin/dev/ is the same KIND of material — suites, tooling, design documents
+# — and it goes. The two rulings are not in tension, because Praat installs a
+# plugin BY DROPPING A FOLDER into its preferences directory. A user who
+# unzips this asset and drags `plugin/` into Praat carries EVERYTHING UNDER
+# plugin/ with them and NOTHING BESIDE IT. plugin/dev/ is the only developer
+# material in the repository that rides into the install: 1.4 MB and 72 files
+# of test scaffolding, reference generators and release tooling, arriving
+# inside the folder the user just installed. validate/, harness/ and audit/
+# cannot do that, whatever they weigh.
+#
+# A reader loses nothing either way. plugin/dev/ is on github.com like the
+# rest, and its suites require a clone regardless.
+#
+# ---------------------------------------------------------------------------
+# THE RELATIONSHIP TO RELEASE_EXCLUDE.tsv — ONE SOURCE OF TRUTH
+#
+# There are two files in this repository that leave things out, and the
+# repository has already been burned once this week by two hand-maintained
+# lists drifting apart. The protection is not that they are kept apart — it is
+# that ONE OF THEM IS THE AUTHOR AND THE OTHER MAY ONLY REPEAT IT:
+#
+#   RELEASE_EXCLUDE.tsv  is the sole AUTHOR of what leaves plugin/. It says
+#                        what the installable artefact drops. Its paths are
+#                        plugin-relative because the builder stages plugin/
+#                        alone.
+#   this file            is the sole author of what leaves the repository
+#                        ROOT — those directories sit beside plugin/, which is
+#                        exactly why RELEASE_EXCLUDE.tsv's header forbids
+#                        naming them there ("an exclusion that can never
+#                        match"). Inside plugin/ this file has NO OPINION OF
+#                        ITS OWN. It may only restate a row that already
+#                        exists in RELEASE_EXCLUDE.tsv.
+#
+# THE RULE THIS REPLACED, AND WHY. Until the audience ruling above, this file
+# was forbidden to name any path under plugin/ at all, and the source archive
+# was required to be a strict SUPERSET of the artefact inside plugin/ — on the
+# reasoning that a source archive is for a source reader and plugin/dev/ is
+# the first thing such a reader wants. That was a coherent rule for an archive
+# aimed at a reader. It is the wrong rule for the asset this one turned out to
+# be, and it is now:
+#
+#   (1) AN export-ignore LINE MAY NAME A PATH UNDER plugin/ ONLY IF
+#       RELEASE_EXCLUDE.tsv ALREADY NAMES IT. This file may follow that list;
+#       it may not extend it. Still one authority, still one place to read the
+#       answer to "what does plugin/ drop".
+#   (2) INSIDE plugin/, THE SOURCE ARCHIVE AND THE RELEASE ARTEFACT HOLD THE
+#       SAME FILES. Not a superset — the same set. Every row of
+#       RELEASE_EXCLUDE.tsv must be ABSENT from the archive, and every tracked
+#       path under plugin/ that no row covers must be PRESENT.
+#
+# validate/v85 recomputes both of those from RELEASE_EXCLUDE.tsv as it is on
+# disk at run time, so neither is restated here and neither can drift quietly.
+#
+# THE COUPLING THIS BUYS IS NAMED RATHER THAN HIDDEN. `git archive` cannot
+# read a TSV, so a NEW row in RELEASE_EXCLUDE.tsv now needs a matching line
+# here. That is a real cost and it is not left to anyone's memory: v85 fails
+# on the next run and prints the path that is out of step. Loud is the
+# property being bought. The old rule bought silence instead, by forbidding
+# the overlap outright — and the price of that silence was 72 files of test
+# scaffolding inside the folder a user drags into Praat.
 # ============================================================================
 
 # The audit record: findings logs, the D-numbered index, the static
@@ -118,6 +173,21 @@ evidence/ export-ignore
 # above.
 RETRIES.tsv export-ignore
 
-# NOTHING BELOW THIS LINE. Any new entry must be justified in place, must be
-# outside plugin/ (rule 1 above), and must not be validate/ (the ruling
-# above). v85 enforces all three against the archive it builds.
+# The developer tree, and THE ONLY LINE IN THIS FILE THAT NAMES A PATH INSIDE
+# plugin/. 1.4 MB / 72 files: the phase-1 and phase-2 Praat test suites, the
+# Python and R reference generators, the release and manifest tooling, the
+# four design documents, the retired experiments and the history ledger.
+#
+# It is here because RELEASE_EXCLUDE.tsv already names it — this line does not
+# decide anything, it makes the source archive agree with the artefact (rule 2
+# above), and v85 fails if the two ever disagree in either direction. What
+# makes it worth the coupling is that plugin/ is the folder a user drags into
+# Praat's preferences directory: everything under plugin/ arrives in the
+# install, and this is the only developer material in the repository that
+# does. Readable on github.com; its own suites run from a clone.
+plugin/dev/ export-ignore
+
+# NOTHING BELOW THIS LINE. Any new entry must be justified in place, must
+# either be outside plugin/ or name a path RELEASE_EXCLUDE.tsv already names
+# (rule 1 above), and must not be validate/ (the ruling above). v85 enforces
+# all three against the archive it builds.

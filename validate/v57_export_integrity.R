@@ -401,6 +401,51 @@ if (file.exists(ana)) {
 .augcase("two-way ANOVA", "anova2_augment.csv", "demo_twoway.csv",
          "SPL_dB ~ voice_type * task")
 
+# THE ARITHMETIC ITSELF, READ OUT OF THE TREE -- NEW-G4-1's pin.
+#
+# Everything above this line is measured off harness/exportint/out, which was
+# written the afternoon somebody drove it and goes on saying what it said. Put
+# the defect back -- both arms' divisor from `.sigma * sqrt (1 - .hat)` to
+# `.sigma` -- and every comparison above stays green, because the committed
+# CSV still holds the corrected numbers. So the divisor is read out of
+# eml-analysis.praat, in each ANOVA arm's OWN body, and the wrong identity is
+# refused there as well as in the frame. The continuation lines are joined
+# first: the two-way arm writes its divisor on a `...` line and a
+# line-at-a-time grep cannot see it.
+.ana_join <- function(path) {
+    if (!file.exists(path)) return(character(0))
+    raw <- readLines(path, warn = FALSE)
+    j <- character(0)
+    for (ln in raw) {
+        if (grepl("^\\s*\\.\\.\\.", ln) && length(j)) {
+            j[length(j)] <- paste0(j[length(j)], " ",
+                                   sub("^\\s*\\.\\.\\.\\s*", "", ln))
+        } else j <- c(j, ln)
+    }
+    j <- gsub("\\s+", " ", trimws(j))
+    j[!grepl("^[#;]", j)]
+}
+.ana_body <- function(code, name) {
+    st <- grep(paste0("^procedure ", name, "\\b"), code)
+    if (!length(st)) return(character(0))
+    en <- grep("^endproc$", code)
+    en <- en[en > st[1]]
+    if (!length(en)) return(character(0))
+    code[st[1]:en[1]]
+}
+ana_code <- .ana_join(ana)
+for (arm in c("emlDeclareOneWayAnovaResult", "emlDeclareTwoWayResult")) {
+    b <- .ana_body(ana_code, arm)
+    std <- grep("^\\.std = ", b, value = TRUE)
+    lev <- grepl("sqrt \\(1 - \\.hat\\)", std)
+    bare <- grepl("/ \\.sigma", std)          # `/ (.sigma * sqrt ...` has a paren
+    check_true("v57",
+        sprintf("@%s standardises WITH the leverage term -- .sigma * sqrt (1 - .hat), not .sigma alone",
+                arm),
+        length(b) > 0 && length(std) >= 1 && any(lev) && !any(bare) &&
+        any(grepl("@emlAugmentNum: \"\\.hat\"", b)))
+}
+
 # THE WHITELIST. emlVocabAugment$ in eml-result-writer.praat is walked by
 # @eml_orderedCols, and a column not in it is dropped from the file with no
 # error anywhere. `.hat` was already reserved there and merely never emitted,
@@ -461,6 +506,56 @@ check_true("v57",
            !is.na(rmc) && !grepl("N excluded", rmc, fixed = TRUE) &&
            !grepl("Assessed on", rmc, fixed = TRUE))
 
+# 3b. THE DOMINANCE, READ OUT OF THE TREE -- NEW-G6-1's pin.
+#
+# Everything above reads harness/exportint/out/refusals.tsv, which records the
+# sentences the orchestrators produced on the afternoon they were driven. The
+# note EXISTED before this repair; what was missing was that the REFUSAL
+# reached it -- it printed under the results, on a path the `goto` skips. Delete
+# the disclosure out of the refusal arm today and the committed TSV still holds
+# yesterday's sentence, so the checks above cannot see it.
+#
+# The claim is therefore positional and is asserted as one: once the
+# complete-case count is known, EVERY refusal exit carries the disclosure.
+# Before it is known there is nothing to disclose -- "Need at least 2 condition
+# columns" is refused before a row has been read -- so the population is the
+# exits BELOW the line that computes .nExcluded, which is what makes this a
+# dominance check rather than a grep for a procedure name.
+.discl <- function(proc, lab, marker) {
+    b <- .ana_body(ana_code, proc)
+    if (!length(b)) {
+        check_true("v57", sprintf("@%s was read for its refusal exits", proc), FALSE)
+        return(invisible(NULL))
+    }
+    from <- grep(marker, b)
+    gotos <- grep(paste0("^goto ", lab, "$"), b)
+    gotos <- gotos[gotos > (if (length(from)) from[1] else Inf)]
+    ok <- vapply(gotos, function(i) {
+        w <- b[max(1, i - 14):i]
+        any(grepl("@eml_completeCaseDisclosure:", w, fixed = TRUE))
+    }, logical(1))
+    check_true("v57",
+        sprintf("@%s: every refusal exit taken AFTER the complete-case count is known discloses the exclusion (%d of %d)",
+                proc, sum(ok), length(gotos)),
+        length(gotos) >= 1 && all(ok))
+}
+.discl("emlExtractConditionMatrix", "END_EXTRACT_COND",
+       "^\\.nExcluded = \\.nRows - \\.nComplete$")
+.discl("emlRunRepeatedMeasuresAnalysis", "END_RM",
+       "^\\.nExcluded = emlExtractConditionMatrix\\.nExcluded$")
+# FRIEDMAN REFUSES ONLY BY HANDING THE EXTRACTOR'S SENTENCE ON, and that is
+# why it has no exit of its own in the population above. Asserted rather than
+# left to be inferred from an empty list: a Friedman arm that composed its own
+# refusal text would be disclosing nothing and would satisfy a check that only
+# counted exits.
+.fr <- .ana_body(ana_code, "emlRunFriedmanAnalysis")
+check_true("v57",
+    "@emlRunFriedmanAnalysis refuses by passing the extractor's disclosed sentence through, not by composing its own",
+    length(.fr) > 0 &&
+    any(grepl("^\\.error\\$ = emlExtractConditionMatrix\\.error\\$$", .fr)) &&
+    sum(grepl("^goto END_FRIED$", .fr)) ==
+        sum(grepl("^\\.error\\$ = emlExtractConditionMatrix\\.error\\$$", .fr)))
+
 # ---------------------------------------------------------------------------
 # 4. A FAILED ANALYSIS IS A REFUSAL, NOT A RESULT
 # ---------------------------------------------------------------------------
@@ -491,6 +586,38 @@ check_true("v57",
 # other EML menu entry to send the user to and the dialog must not invent one.
 check_true("v57", "and it offers no remedy, because no other test would fit",
            identical(rf("paired_zerovar", "remedy"), ""))
+
+# 4a. AND THE ORCHESTRATOR IS WHERE THAT COMES FROM -- NEW-G12-3's pin.
+#
+# The wrapper is the wrong half to assert on: eml-compare-paired.praat forked
+# on a non-empty .error$ BEFORE this repair too, and 4b below passes on the
+# pre-fix wrapper. What changed is the orchestrator. On zero-variance data
+# every requested test declined, no test ran, and .error$ was left empty --
+# so the wrapper's fork took the branch it was told to take and put "Analysis
+# complete", with Save, Draw and New, over a refusal buried in the report.
+# The gate that turns "no family produced a test" into a refusal exit is
+# therefore read out of @emlRunPairedAnalysis, and so is the guard that stops
+# a declaration being made on the way out.
+.pa <- .ana_body(ana_code, "emlRunPairedAnalysis")
+.gate <- grep("^if \\.ranSomething = 0$", .pa)
+.gexit <- if (length(.gate)) {
+    w <- .pa[.gate[1]:min(length(.pa), .gate[1] + 25)]
+    any(grepl("^\\.error\\$ = \"No paired test could be run", w)) &&
+    any(grepl("^goto END_PAIRED$", w))
+} else FALSE
+check_true("v57",
+    "zero-variance paired data takes the orchestrator's REFUSAL exit, not the completion modal",
+    length(.pa) > 0 && length(.gate) == 1 && isTRUE(.gexit) &&
+    any(grepl("^\\.ranSomething = 0$", .pa)) &&
+    any(grepl("^if \\.failParametric\\$ = \"\"$", .pa)) &&
+    any(grepl("^if \\.failNonparametric\\$ = \"\"$", .pa)))
+check_true("v57",
+    "and nothing is declared on that exit, so there is no half-analysis for a Save to export",
+    length(.pa) > 0 &&
+    any(grepl("^if \\.error\\$ = \"\"$", .pa)) &&
+    all(vapply(grep("^@emlDeclarePairedResult:", .pa), function(i)
+        any(grepl("^if \\.error\\$ = \"\"$", .pa[max(1, i - 12):i])), logical(1))) &&
+    length(grep("^@emlDeclarePairedResult:", .pa)) >= 1)
 
 # Single-family mode refuses too. "both" is what every driver used, which is
 # how the nested-if lesson of 6 August 2026 was learned in the first place.

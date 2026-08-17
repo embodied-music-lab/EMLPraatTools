@@ -188,12 +188,15 @@ KNOWN = {
         'recorded script cannot name different folders. That module is the '
         'only one that can be included from three different top-level '
         'folders, because it carries no relative include of its own -- but it '
-        'brings its whole surface with it, and @emlRecordReplaySave calls four '
+        'brings its whole surface with it, and @emlRecordReplaySave calls six '
         'procedures from modules setup.praat has no reason to parse at every '
-        'Praat launch. setup.praat never calls @emlRecordReplaySave; the '
-        'wrappers that do include those modules',
+        'Praat launch -- the figure writer and its message among them, because '
+        'a replayed save writes the figure through the panel\'s own writer '
+        'rather than a second copy of it. setup.praat never calls '
+        '@emlRecordReplaySave; the wrappers that do include those modules',
         {'emlExportResultFiles', 'emlFileStamp',
-         'emlHaveExportableResult', 'emlSaveInfoToFile'}),
+         'emlHaveExportableResult', 'emlSaveInfoToFile',
+         'eml_saveFigureFormats', 'eml_saveFormatRedirectLines'}),
     'eml-quick-start.praat': (
         'the quick start prints the install folder name to the user, and it '
         'asks @emlPluginFolder for it rather than spelling it, so an '
@@ -202,12 +205,15 @@ KNOWN = {
         'setup.praat includes that module: it is the only one that can be '
         'included from three different top-level folders, because it carries '
         'no relative include of its own. It brings its whole surface with it, '
-        'and @emlRecordReplaySave calls four procedures from modules a script '
-        'that only prints text has no reason to parse. The quick start never '
-        'calls @emlRecordReplaySave; the wrappers that do include those '
-        'modules',
+        'and @emlRecordReplaySave calls six procedures from modules a script '
+        'that only prints text has no reason to parse -- the figure writer and '
+        'its message among them, because a replayed save writes the figure '
+        'through the panel\'s own writer rather than a second copy of it. The '
+        'quick start never calls @emlRecordReplaySave; the wrappers that do '
+        'include those modules',
         {'emlExportResultFiles', 'emlFileStamp',
-         'emlHaveExportableResult', 'emlSaveInfoToFile'}),
+         'emlHaveExportableResult', 'emlSaveInfoToFile',
+         'eml_saveFigureFormats', 'eml_saveFormatRedirectLines'}),
 }
 
 

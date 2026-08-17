@@ -114,9 +114,19 @@ if (!nzchar(pairedSrc)) pairedSrc <- repo_path(file.path("plugin", "scripts",
 checkSrc <- Sys.getenv("EML_CHECKDATA_FILE", unset = "")
 if (!nzchar(checkSrc)) checkSrc <- repo_path(file.path("plugin", "scripts",
                                                        "eml-check-data.praat"))
+# THE THIRD FILE, AND THE HALF OF NEW-G12-4 THE FINDING ACTUALLY NAMES.
+# Section 5 below has always run its grep against check & repair. The finding
+# is about THREE exitScript sites, and the describe wrapper's entry refusal --
+# the one a user reaches by selecting a table of labels -- was not asserted
+# anywhere: put `exitScript: "No numeric columns found ..."` back and v35,
+# v49, v59, v60 and v63 all stay green.
+descSrc <- Sys.getenv("EML_DESCRIBE_FILE", unset = "")
+if (!nzchar(descSrc)) descSrc <- repo_path(file.path("plugin", "scripts",
+                                                     "eml-describe-table.praat"))
 
 check_true("v60", "the paired wrapper is present", file.exists(pairedSrc))
 check_true("v60", "the check & repair wrapper is present", file.exists(checkSrc))
+check_true("v60", "the describe wrapper is present", file.exists(descSrc))
 
 # A MISSING SOURCE IS REPORTED, NOT CRASHED ON. Everything below reads these
 # two files, so an absent one would abort R before the report printed -- and a
@@ -124,7 +134,7 @@ check_true("v60", "the check & repair wrapper is present", file.exists(checkSrc)
 # reading its output, from a validator that was never run. Found by the break
 # test that deletes the file: it took the whole run down instead of turning one
 # line red.
-if (!file.exists(pairedSrc) || !file.exists(checkSrc)) {
+if (!file.exists(pairedSrc) || !file.exists(checkSrc) || !file.exists(descSrc)) {
     if (!exists("EML_SUITE")) { eml_report("v60 wrapper paths"); eml_exit() }
 }
 
@@ -162,6 +172,7 @@ if (!file.exists(pairedSrc) || !file.exists(checkSrc)) {
 
 paired <- .read_code(pairedSrc)
 checkd <- .read_code(checkSrc)
+descr  <- .read_code(descSrc)
 
 # ===========================================================================
 # 1. THE PAIRED FORM IS REBOUND TO THE USER'S TABLE, INSIDE THE LOOP
@@ -296,6 +307,25 @@ check_true("v60",
            "the Table-mode-with-no-Table refusal goes through @emlErrorDialog",
            any(grepl("^@emlErrorDialog: ", checkd$code)) &&
            any(grepl("emlErrorDialog\\.back", checkd$code)))
+
+# THE SAME GREP, POINTED AT THE SECOND FILE. NEW-G12-4 names three
+# pre-dialog refusal sites, and the describe wrapper's is the one a user
+# reaches without doing anything unusual: select a table whose columns are all
+# labels and the plugin answered with Praat's own interpreter stack. Nothing
+# else in the suite reads for it, which is what made this row half-pinned --
+# so the ban is stated here against the describe wrapper's own source, and the
+# route it must take instead is stated beside it, because a file with no
+# refusal at all would satisfy a ban on its own.
+descExits <- grep('^exitScript: "[^"]', descr$code, value = TRUE)
+check_true("v60",
+           sprintf("no raw exitScript refusal remains in describe table (%d found)",
+                   length(descExits)),
+           length(descExits) == 0)
+if (length(descExits)) cat(sprintf("      raw exit: %s\n", descExits))
+check_true("v60",
+           "the no-numeric-column refusal goes through @emlErrorDialog in entry mode",
+           any(grepl("^@emlErrorDialog: ", descr$code)) &&
+           any(grepl('"entry"', descr$code)))
 
 # ===========================================================================
 # 6. THE LIVE DRIVE

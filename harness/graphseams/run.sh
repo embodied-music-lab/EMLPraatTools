@@ -362,6 +362,30 @@ printf 'scatter_adv_dialog_height\t%s\n' \
 printf 'screen_height\t%s\n' \
     "$(DISPLAY="$DISP" xdpyinfo | sed -n 's/.*dimensions: *[0-9]*x\([0-9]*\).*/\1/p' | head -1)" >> "$SEAMS"
 
+# --- leg D: the headless repro, WHICH THIS SCRIPT USED TO DELETE -------------
+# repro_kw.praat drives the annotation bridge's nonparametric arm directly, no
+# display, and writes out/repro_kw.info.txt beside the stdout and stderr
+# captures. All three are committed evidence: they are the crash site read
+# without an X server, which is what a reviewer on another machine has.
+#
+# It was driven BY HAND. Nothing in this file ran it -- while line 71 above
+# deletes "$OUT"/*.txt on every run, which includes all three. So the harness
+# wiped committed evidence it could not regenerate, and the copies in the tree
+# survived only because nobody re-ran the rig in the same checkout. Found
+# 17 Aug 2026 by validate/tools/redrive_census.sh, which scored them MISSING:
+# a re-drive in a fresh copy produced no such files at all.
+#
+# The leg is here rather than the deletion being narrowed, because evidence a
+# harness cannot rebuild is not evidence -- it is a file that used to be true.
+# Headless, so it needs no display and cannot collide with :94 above.
+(
+    cd "$SCRIPT_DIR" && EML_KW_OUT="$OUT" \
+        "$PRAAT" $PRAAT_TRUST --run repro_kw.praat
+) > "$OUT/repro_kw.stdout.txt" 2> "$OUT/repro_kw.stderr.txt"
+printf 'repro_kw_rc\t%s\n' "$?" >> "$SEAMS"
+printf 'repro_kw_reached_end\t%s\n' \
+    "$(grep -c 'REPRO_REACHED_END' "$OUT/repro_kw.stdout.txt" 2>/dev/null | head -1)" >> "$SEAMS"
+
 # --- leg C: the legend file --------------------------------------------------
 printf 'legend_files\t%s\n' \
     "$(grep -c '_legend\.png' "$OUT/ARTEFACTS_legend.tsv" 2>/dev/null | head -1)" >> "$SEAMS"

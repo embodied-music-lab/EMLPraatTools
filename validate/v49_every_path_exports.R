@@ -184,6 +184,41 @@ check_true("v49",
                    if (length(noSave)) paste(noSave, collapse = ", ") else "all do"),
            length(noSave) == 0)
 
+# ---------------------------------------------------------------------------
+# 5. DESCRIBE TABLE COLUMN, BY NAME (D12)
+# ---------------------------------------------------------------------------
+# THE POPULATION ABOVE CANNOT HOLD THIS ONE. Section 4's filter is
+# `@emlRun[A-Za-z]+Analysis:`, and the defect D12 records is precisely that
+# this wrapper ran no orchestrator: it called @emlReportDescriptiveAnalysis,
+# printed to the Info window and stopped. Put that back and the file leaves
+# the population -- section 4 goes green with the Save gone, because a wrapper
+# that runs nothing is not a wrapper section 4 is looking at. A defect that
+# empties its own population is invisible to a derived list, so this wrapper
+# is named, and the three things D12 says it lacked are asserted one at a
+# time: a Save button, the Clear-Info field, and a completion dialog to put
+# them on.
+desc <- file.path(plug, "scripts", "eml-describe-table.praat")
+check_true("v49", "the describe wrapper was read", file.exists(desc))
+if (file.exists(desc)) {
+    dx <- readLines(desc, warn = FALSE)
+    dc <- dx[!grepl("^\\s*[#;]", dx)]
+    missing <- character(0)
+    if (!any(grepl("@emlSavePanel:", dc)))
+        missing <- c(missing, "no @emlSavePanel call site")
+    if (!any(grepl("@emlWrapperCommonFields", dc)) ||
+        !any(grepl("@emlHandleCommonFields", dc)))
+        missing <- c(missing, "no Clear-Info common field")
+    if (!any(grepl('beginPause: "Analysis complete"', dc, fixed = TRUE)) ||
+        !any(grepl('endPause: "Done", "Save", "New"', dc, fixed = TRUE)))
+        missing <- c(missing, "no Done | Save | New completion dialog")
+    if (!any(grepl("@emlRunDescriptiveAnalysis", dc)))
+        missing <- c(missing, "does not run the shipped orchestrator, so has nothing to save")
+    check_true("v49",
+        sprintf("Describe Table Column offers Save, clears the Info field and ends in a completion dialog (%s)",
+                if (length(missing)) paste(missing, collapse = "; ") else "all three"),
+        length(missing) == 0)
+}
+
 if (!exists("EML_SUITE")) {
     eml_report("v49 every path exports: no analysis a user can run is unsaveable")
     eml_exit()

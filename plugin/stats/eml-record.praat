@@ -2362,10 +2362,13 @@ endproc
 #                      takes no column name at all
 #          .axisSpec$  "<minArg> <maxArg> <roleBase>" -- empty for a procedure
 #                      that takes no axis range pair
+#          .formatSpec$ "<argIndex> <roleBase>" -- empty for a procedure that
+#                      takes no figure format choice
 # ----------------------------------------------------------------------------
 procedure emlRecordColumnSpec: .proc$
     .spec$ = ""
     .axisSpec$ = ""
+    .formatSpec$ = ""
 
     ; ---- the stats orchestrators (stats/eml-analysis.praat) ---------------
     if .proc$ = "emlRunTwoGroupAnalysis"
@@ -2483,6 +2486,28 @@ procedure emlRecordColumnSpec: .proc$
         ; the vertical one is the lone freqMax at argument 15, which has no
         ; minimum and therefore no (0, 0) sentinel to preserve.
         .axisSpec$ = "13 14 axisValue"
+    endif
+
+    ; ---- THE FIGURE FORMAT, ONE ENTRY, AND A THIRD KEY --------------------
+    ; The save step's fourth argument is the format choice the user made at
+    ; the Save panel -- "PNG", "PNG, EPS", "PNG, EPS, PDF". It is lifted for
+    ; the reason the columns and the axis are: the block's promise is that
+    ; nothing below it holds a decision the user made, and a ticked EPS is
+    ; one. Without it a recording replays a vector figure as a raster and
+    ; says nothing about the difference.
+    ;
+    ; WHY THE KEY IS `.fmtProc$` AND NOT `.proc$`, which is the same reason
+    ; the axis table has a key of its own: validate/v58 §8 censuses this file
+    ; by reading every line spelled `if .proc$ = "..."` and requiring each
+    ; name it finds to be a procedure whose recorded call template
+    ; interpolates a COLUMN variable. @emlSavePanel names no column at all --
+    ; it saves whatever the analysis produced -- so it belongs outside that
+    ; census, and putting it inside would report it as a dead entry. Three
+    ; tables, three keys, three censuses.
+    .fmtProc$ = .proc$
+    if .fmtProc$ = "emlSavePanel"
+        ; offerFigure, stem, folder, formats
+        .formatSpec$ = "4 figureFormat"
     endif
 endproc
 
@@ -2692,18 +2717,29 @@ endproc
 # the session did not use has no business in the block; the axis path lifts a
 # literal of 0 precisely because that is the auto sentinel it must preserve.
 #
+# THE FIGURE FORMAT IS LIFTED BY THE COLUMN PATH'S RULE EXACTLY: one string
+# literal, one variable per distinct value, numbered in first-use order --
+# figureFormat$, then figureFormat2$ -- and an empty literal skipped, because
+# an empty format choice is a save that wrote no figure. Two saves share a
+# variable only when they made the same choice, so a session that wrote one
+# figure as EPS and another as PDF comes back with both, and an edit to one
+# does not move the other.
+#
 # Outputs: .n          how many column variables the session used
-#          .out$       the lines that declare them -- columns then axes
+#          .out$       the lines that declare them -- columns, then axes,
+#                      then figure formats
 #          .nAxis      how many axis PAIRS the session used
-#          .code$[s]   step s's code with its column literals and its axis
-#                      range replaced by the variable names -- what
-#                      @emlRecordRender emits
+#          .nFmt       how many distinct figure format choices it made
+#          .code$[s]   step s's code with its column literals, its axis range
+#                      and its format choice replaced by the variable names --
+#                      what @emlRecordRender emits
 # ----------------------------------------------------------------------------
 procedure emlRecordColumnManifest
     @emlRecordInit
     .out$ = ""
     .n = 0
     .nAxis = 0
+    .nFmt = 0
 
     selectObject: emlRecordBufferId
     .nSteps = Get number of rows
@@ -2749,7 +2785,8 @@ procedure emlRecordColumnManifest
                 @emlRecordColumnSpec: .proc$
                 .spec$ = emlRecordColumnSpec.spec$
                 .axisSpec$ = emlRecordColumnSpec.axisSpec$
-                if .spec$ <> "" or .axisSpec$ <> ""
+                .formatSpec$ = emlRecordColumnSpec.formatSpec$
+                if .spec$ <> "" or .axisSpec$ <> "" or .formatSpec$ <> ""
                     .head$ = left$ (.line$, .colon)
                     @emlRecordSplitArgs: mid$ (.line$, .colon + 1, 1000000)
                     .nArgs = emlRecordSplitArgs.n
@@ -2930,6 +2967,72 @@ procedure emlRecordColumnManifest
                         endif
                     endif
 
+                    ; ---- THE FIGURE FORMAT -------------------------------
+                    ; ONE VARIABLE PER DISTINCT CHOICE, NUMBERED IN FIRST-USE
+                    ; ORDER, exactly as the columns and the axis pairs are:
+                    ; figureFormat$ for the first, figureFormat2$ for the
+                    ; second, and two saves share one variable only when they
+                    ; made the SAME choice. A single shared variable would be
+                    ; wrong in the way that matters -- a session that saved
+                    ; one figure as EPS and a second as PDF would come back
+                    ; with both in whichever choice was recorded last, and
+                    ; editing the block to fix one would move the other.
+                    if .formatSpec$ <> ""
+                        .fsp = index (.formatSpec$, " ")
+                        .fPos = number (left$ (.formatSpec$, .fsp - 1))
+                        .fBase$ = mid$ (.formatSpec$, .fsp + 1, 100)
+
+                        if .fPos <= .nArgs
+                            @emlRecordQuotedLiteral: .newArg$[.fPos]
+                            .fIsLit = emlRecordQuotedLiteral.ok
+                            .fLit$ = emlRecordQuotedLiteral.value$
+                            .fLead$ = emlRecordQuotedLiteral.lead$
+                            ; AN EMPTY CHOICE IS A SAVE THAT WROTE NO FIGURE,
+                            ; and it is skipped for the column path's reason:
+                            ; a variable for a format nothing writes invites
+                            ; an edit that does nothing.
+                            if .fIsLit = 1 and .fLit$ <> ""
+                                .fSlot = 0
+                                .fSame = 0
+                                for .k from 1 to .nFmt
+                                    if .fmtBase$[.k] = .fBase$
+                                        .fSame = .fSame + 1
+                                        if .fmtLit$[.k] = .fLit$
+                                            .fSlot = .k
+                                        endif
+                                    endif
+                                endfor
+                                if .fSlot = 0
+                                    .nFmt = .nFmt + 1
+                                    .fSlot = .nFmt
+                                    .fmtBase$[.nFmt] = .fBase$
+                                    .fmtLit$[.nFmt] = .fLit$
+                                    .fSuffix$ = ""
+                                    if .fSame > 0
+                                        .fSuffix$ = string$ (.fSame + 1)
+                                    endif
+                                    .fmtName$[.nFmt] = .fBase$ + .fSuffix$
+                                    ... + "$"
+                                    .fmtSteps$[.nFmt] = ""
+                                    .fmtLast$[.nFmt] = ""
+                                endif
+                                .fNote$ = string$ (.stepN) + " ("
+                                ... + .stepKind$ + ")"
+                                if .fmtLast$[.fSlot] <> .fNote$
+                                    if .fmtSteps$[.fSlot] <> ""
+                                        .fmtSteps$[.fSlot] = .fmtSteps$[.fSlot]
+                                        ... + ", "
+                                    endif
+                                    .fmtSteps$[.fSlot] = .fmtSteps$[.fSlot]
+                                    ... + .fNote$
+                                    .fmtLast$[.fSlot] = .fNote$
+                                endif
+                                .newArg$[.fPos] = .fLead$
+                                ... + .fmtName$[.fSlot]
+                            endif
+                        endif
+                    endif
+
                     .lineOut$ = .head$
                     for .a from 1 to .nArgs
                         if .a > 1
@@ -2948,7 +3051,7 @@ procedure emlRecordColumnManifest
         .code$[.s] = .rebuilt$
     endfor
 
-    if .n = 0 and .nAxis = 0
+    if .n = 0 and .nAxis = 0 and .nFmt = 0
         goto END_COLUMN_MANIFEST
     endif
 
@@ -2969,6 +3072,11 @@ procedure emlRecordColumnManifest
         endif
         if length (.axMaxName$[.k]) > .width
             .width = length (.axMaxName$[.k])
+        endif
+    endfor
+    for .k from 1 to .nFmt
+        if length (.fmtName$[.k]) > .width
+            .width = length (.fmtName$[.k])
         endif
     endfor
     for .k from 1 to .n
@@ -3048,6 +3156,26 @@ procedure emlRecordColumnManifest
                 ... + " axis" + newline$
             endif
         endif
+    endfor
+
+    ; ---- THE FORMAT DECLARATIONS -----------------------------------------
+    ; ONE LINE PER CHOICE, and the trailing comment names the step it belongs
+    ; to, so a session with two saves shows which line governs which. The
+    ; gloss is written here rather than fetched from a table because there is
+    ; one format role, and a one-entry lookup is a table pretending to be a
+    ; rule.
+    for .k from 1 to .nFmt
+        .padF$ = ""
+        for .p from 1 to .width - length (.fmtName$[.k])
+            .padF$ = .padF$ + " "
+        endfor
+        .word$ = "steps "
+        if not index (.fmtSteps$[.k], ",")
+            .word$ = "step "
+        endif
+        .out$ = .out$ + .fmtName$[.k] + .padF$ + " = " + """" + .fmtLit$[.k]
+        ... + """" + "   ; the figure formats saved -- PNG always, EPS"
+        ... + " and PDF when ticked -- " + .word$ + .fmtSteps$[.k] + newline$
     endfor
 
     label END_COLUMN_MANIFEST
@@ -3144,11 +3272,16 @@ procedure emlRecordTableManifest
     ; reason and out of the same procedure. A figure whose axis is edited in
     ; one visible place near the top is the same promise as a workflow whose
     ; columns are.
+    ;
+    ; AND SO DOES THE FIGURE FORMAT A SAVE WROTE. It is the same promise once
+    ; more: a decision the user made in a dialog, visible and editable at the
+    ; top of the file instead of buried in the step that acts on it.
     @emlRecordColumnManifest
     .nCols = emlRecordColumnManifest.n
     .nAxes = emlRecordColumnManifest.nAxis
+    .nFmts = emlRecordColumnManifest.nFmt
 
-    if .n = 0 and .nCols = 0 and .nAxes = 0
+    if .n = 0 and .nCols = 0 and .nAxes = 0 and .nFmts = 0
         goto END_TABLE_MANIFEST
     endif
 
@@ -3168,15 +3301,21 @@ procedure emlRecordTableManifest
     .out$ = .out$
     ... + "# workflow. Edit a name to run the same workflow on other data;"
     ... + newline$
-    ; THE SENTENCE NAMES ALL THREE, because the sentence is what a reader
-    ; trusts: an object, a column AND an axis range. A promise that stopped at
-    ; columns would be read over draw steps that carry their axis range as two
-    ; bare literals.
+    ; THE SENTENCE NAMES ALL FOUR, because the sentence is what a reader
+    ; trusts: an object, a column, an axis range AND the figure format a save
+    ; wrote. A promise that stopped at columns would be read over draw steps
+    ; that carry their axis range as two bare literals, and over save steps
+    ; that carry the format choice as one.
+    ;
+    ; IT IS TWO EMITTED LINES because it is too long for one, and the break
+    ; falls inside "axis range" -- so a check that reads one source line can
+    ; be satisfied while the sentence a reader sees has lost half of it.
+    ; validate/v67 joins the two literals and reads the sentence.
     .out$ = .out$
     ... + "# nothing below this block names an object, a column or an axis"
     ... + newline$
     .out$ = .out$
-    ... + "# range."
+    ... + "# range or a figure format."
     ... + newline$
     for .k from 1 to .n
         .word$ = "steps "
@@ -3186,7 +3325,7 @@ procedure emlRecordTableManifest
         .out$ = .out$ + "data" + string$ (.k) + "$ = """ + .name$[.k]
         ... + """   ; " + .word$ + .steps$[.k] + newline$
     endfor
-    if .nCols > 0 or .nAxes > 0
+    if .nCols > 0 or .nAxes > 0 or .nFmts > 0
         .out$ = .out$ + emlRecordColumnManifest.out$
         ; SAID ONCE, HERE, RATHER THAN LEFT TO BE DISCOVERED. A figure's
         ; title and axis labels are text the form was given -- often the same
@@ -3722,7 +3861,7 @@ endproc
 
 
 # ----------------------------------------------------------------------------
-# @emlRecordReplaySave: .offerFigure, .stem$, .folder$
+# @emlRecordReplaySave: .offerFigure, .stem$, .folder$, .formats$
 #
 # THE NON-INTERACTIVE TWIN OF @emlSavePanel. A replayed recording must not
 # reopen any dialog: it just outputs the output. That is the SPSS model
@@ -3754,9 +3893,34 @@ endproc
 # dialog. It is the panel's own default and the figure is redrawable at any
 # resolution by re-running the step above.
 #
+# THE FIGURE IS WRITTEN BY THE PANEL'S OWN WRITER, @eml_saveFigureFormats,
+# and not by a `Save as ... file:` line of this procedure's own. Two
+# implementations of one job is the defect this project has repaired three
+# times: they agree on the day they are written and drift afterwards, and the
+# drift here would be silent -- a replay quietly producing a PNG where the
+# session produced a PNG and an EPS. Everything the writer does comes with
+# it, including the landed-file check, so a replay counts files it found
+# rather than commands it issued.
+#
+# THE FORMAT CHOICE IS AN ARGUMENT, because it is the user's and not this
+# procedure's. .formats$ is the comma-separated list the recorded session
+# asked for -- "PNG", "PNG, EPS", "PNG, EPS, PDF" -- and the emitted script
+# passes it from a variable declared in its own editable block, so a reader
+# who wants EPS next time edits one line at the top of the file. An empty
+# .formats$ means the recorded save had no figure in it.
+#
+# A FORMAT THAT DOES NOT ARRIVE IS STATED, NOT SWALLOWED. The panel shows the
+# redirect in a dialog; a replay must not open one, so the same lines --
+# built by the same procedure, so the two cannot say different things -- go
+# to the Info window instead.
+#
+# Arguments: .offerFigure  1 when the recorded save wrote a figure
+#            .stem$        the recorded base name, stamp and all
+#            .folder$      where the recording was made
+#            .formats$     the recorded format choice, comma-separated
 # Outputs: .nWritten, .fileList$
 # ----------------------------------------------------------------------------
-procedure emlRecordReplaySave: .offerFigure, .stem$, .folder$
+procedure emlRecordReplaySave: .offerFigure, .stem$, .folder$, .formats$
     .nWritten = 0
     .fileList$ = ""
 
@@ -3808,6 +3972,22 @@ procedure emlRecordReplaySave: .offerFigure, .stem$, .folder$
     if fileReadable (.folder$ + "/" + .try$ + "_legend.png")
         .taken = 1
     endif
+    ; THE VECTOR NAMES ARE IN THE CANDIDATE SET TOO, ticked or not, for the
+    ; panel's reason: the landed-file check reads "a file exists at this
+    ; path" as "this call wrote it", and that reading is only true because
+    ; the walk proved the path empty first.
+    if fileReadable (.folder$ + "/" + .try$ + ".eps")
+        .taken = 1
+    endif
+    if fileReadable (.folder$ + "/" + .try$ + "_legend.eps")
+        .taken = 1
+    endif
+    if fileReadable (.folder$ + "/" + .try$ + ".pdf")
+        .taken = 1
+    endif
+    if fileReadable (.folder$ + "/" + .try$ + "_legend.pdf")
+        .taken = 1
+    endif
     if fileReadable (.folder$ + "/" + .try$ + "_tidy.csv")
         .taken = 1
     endif
@@ -3829,7 +4009,22 @@ procedure emlRecordReplaySave: .offerFigure, .stem$, .folder$
 
     ; --- the figure -------------------------------------------------------
     if .offerFigure = 1
-        .figPath$ = .folder$ + "/" + .stem$ + ".png"
+        ; THE RECORDED CHOICE, READ BACK. The names are matched inside the
+        ; list rather than parsed off it, because the list is written by the
+        ; panel in one place and edited by the user in another: "PNG, EPS",
+        ; "EPS, PNG" and "PNG,EPS" are the same request and a reader who
+        ; retypes the line should not have to know which one this expects.
+        ; The PNG is not read at all -- the writer always writes it, which is
+        ; the panel's ruling and not a default this file may vary.
+        .wantEPS = 0
+        if index (.formats$, "EPS") > 0
+            .wantEPS = 1
+        endif
+        .wantPDF = 0
+        if index (.formats$, "PDF") > 0
+            .wantPDF = 1
+        endif
+
         ; GUARDED ON EXISTENCE, for the reason set out at @emlSavePanel in
         ; stats/eml-output.praat: @emlAssertFullViewport is defined in
         ; graphs/eml-graph-procedures.praat, this file is loaded by the STATS
@@ -3839,19 +4034,46 @@ procedure emlRecordReplaySave: .offerFigure, .stem$, .folder$
         if variableExists ("emlDrawnMinX")
             @emlAssertFullViewport
         endif
-        Save as 300-dpi PNG file: .figPath$
-        .nWritten = .nWritten + 1
-        .fileList$ = .fileList$ + .figPath$ + newline$
+        ; ONE WRITER, SHARED WITH THE PANEL. 300 dpi -- the panel's own
+        ; default -- and whatever vector formats the recording asked for.
+        @eml_saveFigureFormats: .folder$, .stem$, 1, .wantEPS, .wantPDF
+        .nWritten = .nWritten + eml_saveFigureFormats.nWritten
+        .fileList$ = .fileList$ + eml_saveFigureFormats.fileList$
+        .figLanded$ = eml_saveFigureFormats.landed$
+        .figMissing$ = eml_saveFigureFormats.missing$
+        .figFileList$ = eml_saveFigureFormats.fileList$
         if variableExists ("emlLegendSepActive")
             if emlLegendSepActive = 1
-                .legPath$ = .folder$ + "/" + .stem$ + "_legend.png"
                 Select outer viewport: emlLegendSepX0, emlLegendSepX1,
                 ... emlLegendSepY0, emlLegendSepY1
-                Save as 300-dpi PNG file: .legPath$
+                @eml_saveFigureFormats: .folder$, .stem$ + "_legend", 1,
+                ... .wantEPS, .wantPDF
                 @emlAssertFullViewport
-                .nWritten = .nWritten + 1
-                .fileList$ = .fileList$ + .legPath$ + newline$
+                .nWritten = .nWritten + eml_saveFigureFormats.nWritten
+                .fileList$ = .fileList$ + eml_saveFigureFormats.fileList$
+                .figFileList$ = .figFileList$
+                ... + eml_saveFigureFormats.fileList$
+                @eml_saveMergeFormats: .figLanded$,
+                ... eml_saveFigureFormats.landed$
+                .figLanded$ = eml_saveMergeFormats.result$
+                @eml_saveMergeFormats: .figMissing$,
+                ... eml_saveFigureFormats.missing$
+                .figMissing$ = eml_saveMergeFormats.result$
             endif
+        endif
+
+        ; WHAT DID NOT ARRIVE IS SAID, IN THE PANEL'S OWN WORDS. The panel
+        ; draws these lines in a dialog and a replay may not open one, so
+        ; they are printed. Building them here from a second string would be
+        ; the duplication this whole procedure was just rid of.
+        if .figMissing$ <> ""
+            @eml_saveFormatRedirectLines: .figMissing$, .figLanded$,
+            ... .figFileList$
+            appendInfoLine: ""
+            for .rl from 1 to eml_saveFormatRedirectLines.nLines
+                appendInfoLine: "EML: ",
+                ... eml_saveFormatRedirectLines.line$ [.rl]
+            endfor
         endif
     endif
 

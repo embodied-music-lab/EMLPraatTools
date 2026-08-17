@@ -1205,3 +1205,84 @@ tool list only (`build-release.py` → `build-release.py,menu_label_ocr.py`). It
 is unrelated to the ledger — the same red appears when `v83` is run against the
 pre-change ledger via `EML_FINDINGS_LEDGER` — and the file is not this change's
 to regenerate.
+
+---
+
+## The backfill queue, worked — 17 August 2026
+
+The ten `fixed-unpinned` rows the queue above names — its eight, plus
+`NEW-G7-1` and `NEW-G8-1`, whose pins were withdrawn the same day — now carry a
+pin. **Every one of them was unpinned for one reason**, and the reason is the
+rule this file states three sections up: their validator's only input on that
+subject was a committed harness artefact, and an artefact cannot fail on a
+change to `plugin/`. So no pin below reads an artefact harder. Each is a new
+assertion **against plugin source, read at run time**, added to a validator
+that was already reading the right file — five of them into a file the
+validator already opened, three into a file it had to be given a door to.
+
+**Nothing was closed on sight of the repair.** Each row's defect was
+reintroduced, one behaviour at a time, in a scratch copy of `plugin/` outside
+this repository, and only that row's validator was run against it through the
+override the validator documents. A row whose mutation did not go red would
+have stayed `fixed-unpinned`; none did.
+
+| Row | Sev | Pin | What the new assertion reads | Mutation (one behaviour) | Result |
+|---|---|---|---|---|---|
+| `NEW-G11-2` | 2 | `v58` | `eml-record.praat`: the four `prev_*ShowJitter` emissions and `annotate` inside `@emlRecordCaptureEnv`'s own body; `@emlDrawAnnotations` / `@emlDrawAnnotationBlock` / `@emlClearAnnotations` inside `@emlRecordCaptureAnnotations`; both reached from `@emlRecordStep` | the audit's own two, which were green: (a) all four jitter blocks deleted, (b) both procedures stubbed to `.out$ = ""` | (a) **RED 1/97** "emits all four advanced jitter globals (0 of 4)". (b) **RED 2/97**, the same plus "emits the render the graphs form does after the draw returns" |
+| `NEW-G6-1` | 3 | `v57` | a dominance rule over `eml-analysis.praat`: every `goto` refusal exit taken **below** the line that computes the complete-case count carries `@eml_completeCaseDisclosure`, in `@emlExtractConditionMatrix` and `@emlRunRepeatedMeasuresAnalysis`; and `@emlRunFriedmanAnalysis` refuses only by passing the extractor's disclosed sentence on | the disclosure block deleted from the RM zero-residual refusal arm, success-path note left in place; separately, from the extractor's `.n < 2` arm | **RED 1/81** each: "every refusal exit taken AFTER the complete-case count is known discloses the exclusion (0 of 1)", naming the procedure |
+| `NEW-G12-3` | 3 | `v57` | `@emlRunPairedAnalysis`: the `.ranSomething = 0` gate, its refusal text and its `goto END_PAIRED`; and that every `@emlDeclarePairedResult` sits under `if .error$ = ""` | the whole `if .ranSomething = 0 … goto END_PAIRED` block deleted — no family produced a test and the orchestrator says nothing, which is the finding | **RED 1/81** "zero-variance paired data takes the orchestrator's REFUSAL exit, not the completion modal". Deleting the declaration guard instead reds the second check |
+| `NEW-G4-1` | 3 | `v57` | both ANOVA arms' divisor in `eml-analysis.praat`, read in each arm's own body with continuations joined: `.sigma * sqrt (1 - .hat)` present, `/ .sigma` absent, `.hat` published | the queue's negative control: both arms' `.std` divisor to `/ .sigma`, the leverage term dropped | **RED 2/81**, one per arm. The artefact comparisons against `rstandard()` stayed green, as predicted |
+| `NEW-G11-3` | 3 | `v58` | `@emlRecordBegin` calls `@emlRecordSweepOrphans` and not under `nocheck`; `@emlRecordInit` pairs the meta by id and never resolves `"Table emlRecordMeta"` by name | the paired search replaced by `nocheck selectObject: "Table emlRecordMeta"` taking the first match; separately the sweep deleted, and separately `nocheck`-wrapped | **RED 1/97** each: "pairs the meta to the live buffer by id and never resolves it by name"; "sweeps orphaned meta tables, and not under nocheck (which would skip the call)" |
+| `NEW-G12-4` | 4 | `v60` | the ban `v60` already ran on check & repair, pointed at `eml-describe-table.praat` through a new `EML_DESCRIBE_FILE` door, plus the route the refusal must take instead | `exitScript: "No numeric columns found in the selected Table."` put back in place of the `@emlErrorDialog … "entry"` call | **RED 2/52** "no raw exitScript refusal remains in describe table (1 found)", with the line printed, and "goes through @emlErrorDialog in entry mode". The check & repair arm stayed green — the two halves are independent |
+| `D12` | 3 | `v49` | `eml-describe-table.praat` **by name**: `@emlSavePanel`, `@emlWrapperCommonFields` / `@emlHandleCommonFields`, the `Done \| Save \| New` completion page, and the orchestrator call that gives it something to save | the wrapper returned to `@emlReportDescriptiveAnalysis` with no completion page, no Save and no common fields | **RED 1/13**, naming all four missing pieces. Section 4's derived population stayed green, which is the point: the defect empties the population it would be found in |
+| `D6` | 4 | `v61` | the sentence "Comparisons appear as a matrix panel below the plot." counted at three, and each occurrence's enclosing `beginPause … endPause` required to offer no `optionmenu: "Annotation layout"` | one of the three sentences deleted; separately, a layout menu put back on a page that keeps the sentence | **RED 1/86** (3 expected, 2 found); **RED 1/86** "each states it on a page that offers NO Annotation layout menu (2 of 3 clean)" |
+| `NEW-G7-1` | 3 | `v62` | the **value** assigned to `.spanFloorSemitones`, parsed out of `eml-draw-procedures.praat` and required positive — every assignment, not the first | `= 0.1` → `= 0`, the mutation that withdrew the pin | **RED 1/117** "the floor is a POSITIVE number of semitones, not merely assigned (0)" |
+| `NEW-G8-1` | 3 | `v62` | `@emlPointInFrame` **and** the `inside = 0` refusal inside the body of `@emlDrawMarker` and of `@emlDrawAlphaDot`, separately, through the `proc_body` scoping `core_bypassed` already forced on the channel gate | `if emlPointInFrame.inside = 0` → `if 0` in `@emlDrawMarker` only; separately, the call deleted from `@emlDrawAlphaDot` only | **RED 1/117** each, naming the primitive. The file-wide `>= 2` count stayed green on both, which is why it was not a pin |
+
+Every mutation was run against a baseline of the same validator over an
+unmutated copy through the same overrides, and every baseline is green: `v49`
+13/13, `v57` 81/81, `v58` 97/97, `v60` 52/52, `v61` 86/86, `v62` 117/117.
+Three cross-runs were taken to show the pins are specific rather than
+coincident — `v49` on the `NEW-G12-4` mutation, `v60` on the `D12` mutation,
+`v57` on the `D6` mutation — and all three are green.
+
+`python3 validate/tools/check_findings_schema.py` **exits 0** after every
+change. `Rscript validate/v83_pin_definition.R` is **64 checks, 64 passed**:
+all ten new pins qualify, nine as `SOURCE+ARTEFACT` reading `plugin/` in the
+run and `D12` as `SOURCE`.
+
+| status | rows | change |
+|---|---|---|
+| `closed` | **34** | +10 |
+| `fixed-unpinned` | **2** | −10 |
+| `open` | 2 | — |
+| `superseded` | 2 | — |
+| `refuted` | 1 | — |
+
+### The two rows still in the queue, and why they are not a tenth of a job left
+
+`D66-b/c` and `D98/D99`. Both are `fixedBy: "pre-repo"` with an `evidence`
+pointer, and both pointers are witness statements over committed artefacts —
+`v21` over `evidence/csv_export/broom`, `v07` over a captured `r2` report and a
+screenshot. Neither is a pin and the rows say so. They were not in the queue
+this session worked: the queue names the repairs whose **code** is in this tree
+and whose loss the suite would not notice, and for these two the code arrived in
+the root import with no commit to point a mutation at. Pinning them would mean
+writing a new live check for a behaviour repaired on 6 August, which is work
+worth doing and is not backfill — it is a new check, and it should be proposed
+as one rather than smuggled in under a row that already reads `fixed-unpinned`
+honestly.
+
+### The half-pin, now whole, and what the half was
+
+`NEW-G12-4` is the row the queue recorded as **half-pinned**, and the shape is
+worth keeping because it is not visible from a validator's pass/fail line.
+`v60` held one claim — no raw `exitScript` refusal — and ran it against one
+file. Mutate the arm it reads and it goes red; mutate the arm it does not and
+it goes green, and both mutations are the same defect from the same finding.
+No validator-level record can express that: `v60` was neither pinning
+`NEW-G12-4` nor failing to, it was pinning one of its three sites. The
+measurement that settles it is blunt — `git show HEAD:validate/v60_wrapper_paths.R`
+contains the string `describe` **zero** times, so there was no door by which
+the file the finding names could even be handed to it. The repair was to give
+it one and run the same grep through it.

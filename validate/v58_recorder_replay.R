@@ -473,6 +473,82 @@ if (check_true("v58", "the recorder core is present", file.exists(rsrc))) {
     check_true("v58",
                "@emlPluginRoot selects from that table and spells no root itself",
                !any(grepl('\\.root\\$\\s*=\\s*"~[^"]', rc)))
+
+    # -----------------------------------------------------------------------
+    # THE EMISSION, READ OUT OF THE EMITTER (NEW-G11-2)
+    # -----------------------------------------------------------------------
+    # Section 1's three witnesses -- emit_jitter_lines, emit_annotate_lines,
+    # emit_bracket_render -- are counted off harness/record/replay_out, a file
+    # written the afternoon the recorder was driven. Stub
+    # @emlRecordCaptureEnv and @emlRecordCaptureAnnotations to `.out$ = ""`
+    # and all three stay green, because the committed script still has the
+    # lines in it. So the same four counts are read out of the emitter, in
+    # each procedure's own body.
+    .rbody <- function(code, name) {
+        st <- grep(paste0("^procedure ", name, "\\b"), code)
+        if (!length(st)) return(character(0))
+        en <- grep("^endproc\\s*$", code)
+        en <- en[en > st[1]]
+        if (!length(en)) return(character(0))
+        code[st[1]:en[1]]
+    }
+    envBody <- .rbody(rc, "emlRecordCaptureEnv")
+    jit <- c("prev_violinShowJitter", "prev_boxShowJitter",
+             "prev_gvShowJitter", "prev_gbShowJitter")
+    .emits <- function(body, name) {
+        any(grepl(paste0('\\.out\\$ = \\.out\\$ \\+ "', name, ' = "'), body))
+    }
+    nJit <- sum(vapply(jit, function(g) .emits(envBody, g), logical(1)))
+    check_true("v58",
+        sprintf("@emlRecordCaptureEnv emits all four advanced jitter globals (%d of 4) and the annotate switch",
+                nJit),
+        length(envBody) > 0 && nJit == 4L && .emits(envBody, "annotate"))
+
+    annBody <- .rbody(rc, "emlRecordCaptureAnnotations")
+    check_true("v58",
+        "@emlRecordCaptureAnnotations emits the render the graphs form does after the draw returns",
+        length(annBody) > 0 &&
+        any(grepl("@emlDrawAnnotations:", annBody, fixed = TRUE)) &&
+        any(grepl("@emlDrawAnnotationBlock:", annBody, fixed = TRUE)) &&
+        any(grepl("@emlClearAnnotations", annBody, fixed = TRUE)))
+
+    # AND BOTH ARE REACHED FROM THE STEP RECORDER. Two procedures that emit
+    # perfectly and are called by nothing is the same silence with more code
+    # in it, and it is a state a tidy-up reaches without noticing.
+    stepBody <- .rbody(rc, "emlRecordStep")
+    check_true("v58",
+        "and @emlRecordStep calls both and stores what they return on the step",
+        length(stepBody) > 0 &&
+        any(grepl("^\\s*@emlRecordCaptureEnv\\s*$", stepBody)) &&
+        any(grepl("emlRecordCaptureEnv\\.out\\$", stepBody)) &&
+        any(grepl("^\\s*@emlRecordCaptureAnnotations:", stepBody)) &&
+        any(grepl("emlRecordCaptureAnnotations\\.out\\$", stepBody)))
+
+    # -----------------------------------------------------------------------
+    # THE ORPHANED META (NEW-G11-3)
+    # -----------------------------------------------------------------------
+    # Two objects can answer to "Table emlRecordMeta", and Praat may resolve
+    # the name to the DEAD one -- a live session emitting a script stamped
+    # with a session thrown away minutes earlier. Every step still emits
+    # correctly, so the drive's KV file looks perfect either way; only the
+    # provenance lies. The repair is that the meta is never asked for BY NAME:
+    # @emlRecordBegin writes the buffer's id into the meta and the search
+    # accepts only the candidate whose stated buffer is the live one.
+    beginBody <- .rbody(rc, "emlRecordBegin")
+    check_true("v58",
+        "@emlRecordBegin sweeps orphaned meta tables, and not under nocheck (which would skip the call)",
+        length(beginBody) > 0 &&
+        any(grepl("^\\s*@emlRecordSweepOrphans\\s*$", beginBody)) &&
+        !any(grepl("nocheck\\s+@emlRecordSweepOrphans", beginBody)))
+
+    initBody <- .rbody(rc, "emlRecordInit")
+    check_true("v58",
+        "@emlRecordInit pairs the meta to the live buffer by id and never resolves it by name",
+        length(initBody) > 0 &&
+        !any(grepl('selectObject: "Table emlRecordMeta"', initBody, fixed = TRUE)) &&
+        any(grepl('@emlRecordMetaGet: "buffer"', initBody, fixed = TRUE)) &&
+        any(grepl("emlRecordMetaGet\\.result\\$ <> string\\$ \\(emlRecordBufferId\\)",
+                  initBody)))
 }
 
 src <- Sys.getenv("EML_RECORD_SRC", unset = "")

@@ -484,6 +484,22 @@ check_true(ID, "and all three aligned-mark procedures consult it",
 check_true(ID, "the F0 contour carries a minimum-span floor in semitones",
            has(code_draw, "\\.spanFloorSemitones ="))
 
+# THE VALUE, NOT THE ASSIGNMENT -- NEW-G7-1's pin.
+# The line above asks only that something is assigned to the floor, and a
+# floor of zero satisfies it while the collapse it prevents comes straight
+# back: a sustained tone whose pitch track spans a hundred-thousandth of a
+# hertz is drawn as a fluctuating contour over an axis opened to nothing. So
+# the NUMBER is read out of the source and required to be positive. Every
+# assignment in the file is taken, not the first, because a second one
+# further down would decide the draw.
+span_floor <- suppressWarnings(as.numeric(sub(
+    "^.*\\.spanFloorSemitones\\s*=\\s*([0-9.eE+-]+).*$", "\\1",
+    grep("\\.spanFloorSemitones\\s*=\\s*[0-9.eE+-]", code_draw, value = TRUE))))
+check_true(ID,
+    sprintf("and the floor is a POSITIVE number of semitones, not merely assigned (%s)",
+            if (length(span_floor)) paste(span_floor, collapse = ", ") else "no numeric assignment"),
+    length(span_floor) > 0 && all(is.finite(span_floor)) && all(span_floor > 0))
+
 # ===========================================================================
 # 3. CLIPPING AND THE ONE-SIDED RANGE -- NEW-G8-1, NEW-G8-2
 # ===========================================================================
@@ -523,6 +539,25 @@ check_true(ID, "the frame is published for the primitives to clip against",
            has(code_graph, "emlFrameKnown = 1"))
 check_true(ID, "both point primitives consult it",
            sum(grepl("@emlPointInFrame:", code_graph)) >= 2L)
+
+# PER PRIMITIVE, IN ITS OWN BODY -- NEW-G8-1's pin.
+# The count above is file-wide and there are THREE call sites
+# (@emlRegisterCollisionPoints, @emlDrawMarker, @emlDrawAlphaDot), so one
+# point primitive can stop clipping and `>= 2` still passes. That is the same
+# defect the `core_bypassed` break found on the channel gate, and the repair
+# is the same: scope the assertion to the body of the procedure that has to
+# do the work. Asking as well as ACTING is required -- a primitive that calls
+# @emlPointInFrame and then draws the point anyway is the finding verbatim --
+# so the refusal arm is asserted beside the call.
+for (prim in c("emlDrawMarker", "emlDrawAlphaDot")) {
+    pbody <- proc_body(code_graph, prim)
+    check_true(ID,
+        sprintf("@%s clips in its OWN body: it asks @emlPointInFrame and refuses on inside = 0",
+                prim),
+        length(pbody) > 0 &&
+        any(grepl("@emlPointInFrame:", pbody, fixed = TRUE)) &&
+        any(grepl("^if emlPointInFrame\\.inside = 0$", pbody)))
+}
 check_true(ID, "and the disclosure names the range in force AND the floor/ceiling trap",
            has(code_draw, "^procedure emlDiscloseClipped") &&
            has(code_draw, "Range in force") &&

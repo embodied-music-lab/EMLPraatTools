@@ -134,6 +134,17 @@ harness/graphaxes/cases/prefs/
 harness/graphseams/prefs_*/
 harness/graphseams/out/home_*/
 harness/graphseams/out/*.log
+# The adjustment-arm rig's per-arm HOME, ignored on the same rule as the line
+# above and for a reason that had to be measured before it was believed. It
+# was tracked, and its 13 files are named from the wall clock
+# (demo_3groups_Violin_Plot_20260815_175339.png), while adjustarm.sh wipes the
+# directory at the top of every run -- so no re-drive could ever reproduce a
+# single one of them. redrive_census.sh scored all 13 MISSING on 17 Aug 2026.
+# The TSVs, the receipts, the converted reports and the dialog photographs
+# beside them are the evidence validate/v61 reads; these were the save panel's
+# scratch, kept by accident when the rig was added after the ignore rule above
+# was written.
+harness/graphseams/adjust_out/home_*/
 # The replay leg's own Praat pref dir. Scratch, not evidence.
 harness/record/replay_prefs/
 

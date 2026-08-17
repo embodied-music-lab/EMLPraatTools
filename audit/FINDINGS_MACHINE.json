@@ -122,8 +122,8 @@
       "mechanism": "emission omits advanced settings; stats/eml-record.praat emit path",
       "verdict": "CONFIRMED",
       "fixedBy": "a4de0eecaa5b96e6d6113b69f041b99faaaadf62",
-      "pinnedBy": "",
-      "status": "fixed-unpinned"
+      "pinnedBy": "v58",
+      "status": "closed"
     },
     {
       "id": "NEW-G7-1",
@@ -133,8 +133,8 @@
       "mechanism": "axis floor + integer tick precision, not pitch analysis; needs min span + adaptive tick decimals",
       "verdict": "CONFIRMED",
       "fixedBy": "7f62e751783ecb52df2d9bab961bec39e000213a",
-      "pinnedBy": "",
-      "status": "fixed-unpinned"
+      "pinnedBy": "v62",
+      "status": "closed"
     },
     {
       "id": "NEW-G8-2",
@@ -155,8 +155,8 @@
       "mechanism": "no clip to user-set range",
       "verdict": "CONFIRMED",
       "fixedBy": "7f62e751783ecb52df2d9bab961bec39e000213a",
-      "pinnedBy": "",
-      "status": "fixed-unpinned"
+      "pinnedBy": "v62",
+      "status": "closed"
     },
     {
       "id": "NEW-G8-3",
@@ -188,8 +188,8 @@
       "mechanism": "meta lookup takes first match; steps emit correctly",
       "verdict": "CONFIRMED",
       "fixedBy": "a4de0eecaa5b96e6d6113b69f041b99faaaadf62",
-      "pinnedBy": "",
-      "status": "fixed-unpinned"
+      "pinnedBy": "v58",
+      "status": "closed"
     },
     {
       "id": "NEW-G11-1",
@@ -221,8 +221,8 @@
       "mechanism": "refusal not surfaced modally; contrast r4 gold-standard modal",
       "verdict": "CONFIRMED",
       "fixedBy": "a4de0eecaa5b96e6d6113b69f041b99faaaadf62",
-      "pinnedBy": "",
-      "status": "fixed-unpinned"
+      "pinnedBy": "v57",
+      "status": "closed"
     },
     {
       "id": "NEW-G6-1",
@@ -232,8 +232,8 @@
       "mechanism": "no exclusion disclosure in refusal path",
       "verdict": "CONFIRMED",
       "fixedBy": "a4de0eecaa5b96e6d6113b69f041b99faaaadf62",
-      "pinnedBy": "",
-      "status": "fixed-unpinned"
+      "pinnedBy": "v57",
+      "status": "closed"
     },
     {
       "id": "NEW-G2-2",
@@ -254,8 +254,8 @@
       "mechanism": "D58 fix covered regression only; uniform 4.4% understatement on balanced demo",
       "verdict": "CONFIRMED",
       "fixedBy": "a4de0eecaa5b96e6d6113b69f041b99faaaadf62",
-      "pinnedBy": "",
-      "status": "fixed-unpinned"
+      "pinnedBy": "v57",
+      "status": "closed"
     },
     {
       "id": "NEW-G10-4",
@@ -287,8 +287,8 @@
       "mechanism": "3 exitScript sites bypass @emlErrorDialog",
       "verdict": "CONFIRMED",
       "fixedBy": "c112b7cc0e21720fefa0e8882aaf8be78fab0936",
-      "pinnedBy": "",
-      "status": "fixed-unpinned"
+      "pinnedBy": "v60",
+      "status": "closed"
     },
     {
       "id": "SAVED-OVERPRINT",
@@ -364,8 +364,8 @@
       "mechanism": "annotLayoutMode=3 forced :7476-7478",
       "verdict": "CONFIRMED-LIVE",
       "fixedBy": "7f62e751783ecb52df2d9bab961bec39e000213a",
-      "pinnedBy": "",
-      "status": "fixed-unpinned"
+      "pinnedBy": "v61",
+      "status": "closed"
     },
     {
       "id": "D11",
@@ -386,8 +386,8 @@
       "mechanism": "only wrapper with neither; vs 14-Aug export ruling",
       "verdict": "CONFIRMED-LIVE",
       "fixedBy": "c112b7cc0e21720fefa0e8882aaf8be78fab0936",
-      "pinnedBy": "",
-      "status": "fixed-unpinned"
+      "pinnedBy": "v49",
+      "status": "closed"
     },
     {
       "id": "D38",

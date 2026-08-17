@@ -2494,6 +2494,388 @@ endproc
 
 
 # ────────────────────────────────────────────────────────────────────────────
+# @eml_saveFileLanded: .path$, .marker$        (private)
+# ────────────────────────────────────────────────────────────────────────────
+# DID THE FILE ARRIVE? Asked of the disk, not of the command.
+#
+# Praat's Save commands answer nothing on success and, under `nocheck`, answer
+# nothing on failure either. A save that quietly did nothing is therefore
+# indistinguishable from a save that worked, unless something looks. This is
+# the looking: the file must be READABLE, it must contain at least one line,
+# and that line must carry the format's own marker.
+#
+#     PNG   "PNG"     the signature's first printable bytes
+#     EPS   "%!PS"    PostScript
+#     PDF   "%PDF"    PDF
+#
+# WHY THE MARKER IS MATCHED INSIDE THE LINE RATHER THAN ANCHORED AT ITS START.
+# A PNG begins with byte 0x89 before the letters PNG, and Praat's text reader
+# drops it -- measured on 6.6.30, where the first line reads back as "PNG".
+# Anchoring with startsWith would then depend on how a given build handles one
+# invalid UTF-8 byte, and the failure would be a figure reported as missing
+# when it is on disk. `index` is stable across that. The byte-exact signature
+# is checked on the R side, by validate/v86, which can read bytes.
+#
+# WHY `Read Strings from raw text file:` AND NOT readFile$. readFile$ is a
+# function, so no prefix can be put in front of it, and on any file containing
+# a null byte -- every PNG, and most PDFs -- it raises Praat's "Ignored N null
+# bytes" WARNING, which in the GUI is a dialog the user has to dismiss in the
+# middle of their save. `nowarn` is a command prefix and this is a command, so
+# the warning is suppressed at source. Reading a 600-dpi PNG this way was
+# measured at under a millisecond.
+#
+# THE OBJECT LIST IS PUT BACK EXACTLY AS IT WAS. The read makes a Strings
+# object, which is removed again, and the caller's selection is restored --
+# including the case where nothing was selected, which `selectObject:` on an
+# empty vector restores correctly. The new object is identified by COUNTING
+# rather than by `selected ("Strings")`: if the read had failed while the user
+# happened to have a Strings of their own selected, that name would have found
+# THEIR object and this procedure would have removed it.
+#
+# Arguments: .path$ the file to look for, .marker$ the format's marker
+# Outputs:   .ok (1 = a file with that marker is on disk at that path)
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_saveFileLanded: .path$, .marker$
+    .ok = 0
+    if not fileReadable (.path$)
+        goto LANDED_DONE
+    endif
+
+    .keep# = selected# ()
+    select all
+    .nBefore = numberOfSelected ()
+    nocheck nowarn Read Strings from raw text file: .path$
+    select all
+    .nAfter = numberOfSelected ()
+    if .nAfter = .nBefore + 1
+        .all# = selected# ()
+        .newId = .all# [.nAfter]
+        selectObject: .newId
+        .nStrings = Get number of strings
+        if .nStrings > 0
+            .first$ = Get string: 1
+            if index (.first$, .marker$) > 0
+                .ok = 1
+            endif
+        endif
+        removeObject: .newId
+    endif
+    if size (.keep#) > 0
+        selectObject: .keep#
+    else
+        nocheck selectObject: .keep#
+    endif
+
+    label LANDED_DONE
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @eml_saveAddFormat: .list$, .fmt$        (private)
+# ────────────────────────────────────────────────────────────────────────────
+# One format name added to a comma-separated list, once. The figure and its
+# separate legend are two saves of the same three formats, so a format that
+# fails fails twice and must still be named once.
+# Outputs: .result$
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_saveAddFormat: .list$, .fmt$
+    .result$ = .list$
+    if index (.list$, .fmt$) = 0
+        if .result$ = ""
+            .result$ = .fmt$
+        else
+            .result$ = .result$ + ", " + .fmt$
+        endif
+    endif
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @eml_saveMergeFormats: .list$, .more$        (private)
+# ────────────────────────────────────────────────────────────────────────────
+# The union of two comma-separated format lists, in first-seen order. The
+# figure and the legend each report their own landed and missing sets and the
+# panel speaks about the save as a whole, so the two are merged rather than
+# concatenated -- a PDF that is unavailable is unavailable once, not twice.
+# Outputs: .result$
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_saveMergeFormats: .list$, .more$
+    .result$ = .list$
+    .rest$ = .more$ + ","
+    while index (.rest$, ",") > 0
+        .c = index (.rest$, ",")
+        .one$ = left$ (.rest$, .c - 1)
+        while startsWith (.one$, " ")
+            .one$ = right$ (.one$, length (.one$) - 1)
+        endwhile
+        if .one$ <> ""
+            @eml_saveAddFormat: .result$, .one$
+            .result$ = eml_saveAddFormat.result$
+        endif
+        .rest$ = right$ (.rest$, length (.rest$) - .c)
+    endwhile
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @eml_saveFigureFormats: .folder$, .name$, .dpi, .wantEPS, .wantPDF
+#                                                                (private)
+# ────────────────────────────────────────────────────────────────────────────
+# ONE FIGURE, WRITTEN IN EVERY FORMAT THAT WAS ASKED FOR, and each one checked
+# onto the disk before it is claimed.
+#
+# THIS WRITER NAMES NO OPERATING SYSTEM, and that is deliberate rather than
+# incidental. It is handed two numbers -- was EPS asked for, was PDF asked for
+# -- and its job is to attempt what it was asked for and then find out what
+# actually happened. @emlSavePanel is where the one documented platform fact
+# lives, at the tickbox that offers PDF; a second platform test down here
+# would be the same decision made twice, in a place where a later Praat could
+# make it wrong.
+#
+# A COMMAND THAT DOES NOT EXIST ABORTS THE SCRIPT: "Command ... not available
+# for current selection", and every line after it, including the receipt,
+# never runs. Measured on 6.6.30. So the vector attempts are made under
+# `nocheck`, which lets the script survive an absent command -- also measured:
+# the line after it ran -- and then the DISK is asked whether a file arrived.
+# A host that provides the format leaves a file; a host that does not leaves
+# nothing, and one piece of code reads both answers.
+#
+# THE PNG IS CHECKED THE SAME WAY, AND THE CHECK IS NOT REDUNDANT ANYWHERE.
+# The PNG save is not under `nocheck` -- that command exists everywhere and a
+# genuine write error should still be Praat's to report -- but a save that
+# silently does nothing raises nothing either, and an unverified save is a
+# promise nobody checked. A full disk, a folder that cannot be written to, a
+# path the user has no permission for: none of those is a platform question
+# and every one of them ends with a missing file. A file that did not land is
+# not counted, not listed on the receipt, and is named to the user.
+#
+# THE VECTOR FORMATS ARE ADDITIONS, NEVER REPLACEMENTS. The PNG is written
+# first and unconditionally; EPS and PDF are extra copies of the same figure
+# under the same stem.
+#
+# NO PER-FILE UNIQUING, for the reason @emlSavePanel gives at length: the stem
+# is proved free of every name this panel can write -- .png, .eps, .pdf and
+# their _legend twins -- before anything is written, so a file found here
+# afterwards was written by THIS press.
+#
+# Arguments:
+#   .folder$   the target folder, no trailing slash
+#   .name$     the file name without extension (the stem, or stem + "_legend")
+#   .dpi       1 for 300 dpi, anything else for 600 dpi -- the panel's caller
+#              passes output_DPI, which the graph's Advanced page sets
+#   .wantEPS   1 to also attempt EPS
+#   .wantPDF   1 to also attempt PDF
+# Outputs:
+#   .nWritten  how many files actually landed
+#   .fileList$ newline-separated absolute paths of the files that landed
+#   .landed$   comma-separated format names that landed
+#   .missing$  comma-separated format names that were asked for and did not
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_saveFigureFormats: .folder$, .name$, .dpi, .wantEPS, .wantPDF
+    .nWritten = 0
+    .fileList$ = ""
+    .landed$ = ""
+    .missing$ = ""
+
+    .pngPath$ = .folder$ + "/" + .name$ + ".png"
+    if .dpi = 1
+        Save as 300-dpi PNG file: .pngPath$
+    else
+        Save as 600-dpi PNG file: .pngPath$
+    endif
+    @eml_saveFileLanded: .pngPath$, "PNG"
+    if eml_saveFileLanded.ok = 1
+        .nWritten = .nWritten + 1
+        .fileList$ = .fileList$ + .pngPath$ + newline$
+        @eml_saveAddFormat: .landed$, "PNG"
+        .landed$ = eml_saveAddFormat.result$
+    else
+        @eml_saveAddFormat: .missing$, "PNG"
+        .missing$ = eml_saveAddFormat.result$
+    endif
+
+    if .wantEPS = 1
+        .epsPath$ = .folder$ + "/" + .name$ + ".eps"
+        nocheck Save as EPS file: .epsPath$
+        @eml_saveFileLanded: .epsPath$, "%!PS"
+        if eml_saveFileLanded.ok = 1
+            .nWritten = .nWritten + 1
+            .fileList$ = .fileList$ + .epsPath$ + newline$
+            @eml_saveAddFormat: .landed$, "EPS"
+            .landed$ = eml_saveAddFormat.result$
+        else
+            @eml_saveAddFormat: .missing$, "EPS"
+            .missing$ = eml_saveAddFormat.result$
+        endif
+    endif
+
+    if .wantPDF = 1
+        .pdfPath$ = .folder$ + "/" + .name$ + ".pdf"
+        nocheck Save as PDF file: .pdfPath$
+        @eml_saveFileLanded: .pdfPath$, "%PDF"
+        if eml_saveFileLanded.ok = 1
+            .nWritten = .nWritten + 1
+            .fileList$ = .fileList$ + .pdfPath$ + newline$
+            @eml_saveAddFormat: .landed$, "PDF"
+            .landed$ = eml_saveAddFormat.result$
+        else
+            @eml_saveAddFormat: .missing$, "PDF"
+            .missing$ = eml_saveAddFormat.result$
+        endif
+    endif
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @eml_saveFormatRedirectLines: .missing$, .landed$, .fileList$   (private)
+# ────────────────────────────────────────────────────────────────────────────
+# WHAT THE USER IS TOLD when a figure format they asked for did not arrive.
+# Sets .nLines and .line$ [1 .. .nLines], already wrapped to the panel's 62
+# characters.
+#
+# A REDIRECT, NOT AN ERROR. The user asked for a file, no file exists, and the
+# useful answer has three parts: which format did not arrive, what this same
+# press DID write, and where to go next. A dialog that only said "PDF failed"
+# would read as a lost save.
+#
+# NO FORMAT IS THE CONSOLATION PRIZE, and that is the shape of the whole
+# message. The PNG is written on every press, so it is the name most likely to
+# be in the "did write" list -- but it is a raster, and a user who ticked a
+# vector box because a journal asked them for vector is not served by being
+# told their PNG is safe. EPS is vector, and Praat writes EPS wherever Praat
+# runs. So the closing paragraph turns on EPS and not on PNG:
+#
+#   EPS is in the landed list    the user HAS a vector figure, and is told so
+#                                plainly rather than left to infer it
+#   EPS is in the missing list   the vector copy is what went, and the folder
+#                                rather than the format is what to look at
+#   EPS is in neither list       it was never ticked, so the message asks for
+#                                it -- and this is the redirect that matters,
+#                                because it is the case of a user who ticked
+#                                PDF alone on a host that has no PDF
+#
+# WHAT LANDED IS READ OFF THE DISK. .landed$ and .fileList$ are what
+# @eml_saveFigureFormats FOUND after writing, never what the panel asked for,
+# so nothing here can promise a file that is not on the disk.
+#
+# NO PLATFORM IS NAMED. Which formats a given Praat provides is a property of
+# that Praat. The one platform fact the plugin does state -- that Praat has no
+# PDF on Windows -- is stated at the tickbox, where a user can act on it, and
+# not in an apology afterwards. See @emlSavePanel.
+#
+# BUILT BEFORE IT IS DRAWN, like @eml_saveReceiptLines and for the same
+# reason: a message that can only be read off a photographed dialog is a
+# message nothing can test. validate/v86 reads these lines.
+#
+# Arguments: .missing$ / .landed$ comma-separated format names,
+#            .fileList$ newline-separated absolute paths of the figure files
+#                       that landed -- the figure and its separate legend, in
+#                       every format that arrived
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_saveFormatRedirectLines: .missing$, .landed$, .fileList$
+    .nLines = 0
+
+    # ONE SENTENCE PER FORMAT THAT DID NOT ARRIVE, naming it. A user who
+    # ticked both extras and got one of them needs to know which.
+    .rest$ = .missing$ + ", "
+    while index (.rest$, ",") > 0
+        .c = index (.rest$, ",")
+        .one$ = left$ (.rest$, .c - 1)
+        while startsWith (.one$, " ")
+            .one$ = right$ (.one$, length (.one$) - 1)
+        endwhile
+        if .one$ <> ""
+            @emlWrapText: "Praat on this system did not write the " + .one$
+            ... + " file, so no " + .one$ + " was saved.", 62
+            for .wl from 1 to emlWrapText.nLines
+                .nLines = .nLines + 1
+                .line$ [.nLines] = emlWrapText.line$ [.wl]
+            endfor
+        endif
+        .rest$ = right$ (.rest$, length (.rest$) - .c)
+    endwhile
+
+    # WHAT THIS PRESS DID WRITE -- read off the disk a moment ago rather than
+    # inferred from the tickboxes, and said before any advice, because it is
+    # the answer to the question the dialog's title raises.
+    if .landed$ <> ""
+        .nLines = .nLines + 1
+        .line$ [.nLines] = ""
+        @emlWrapText: "This save did write: " + .landed$ + ".", 62
+        for .wl from 1 to emlWrapText.nLines
+            .nLines = .nLines + 1
+            .line$ [.nLines] = emlWrapText.line$ [.wl]
+        endfor
+    endif
+
+    # AND THE FILES THEMSELVES, BY PATH. Every format that landed and not the
+    # PNG alone: the receipt lists them too, but the receipt comes after this
+    # dialog, and a user reading "did not write" needs to see what they DO
+    # have in the same breath.
+    if .fileList$ <> ""
+        .nLines = .nLines + 1
+        .line$ [.nLines] = ""
+        .nLines = .nLines + 1
+        .line$ [.nLines] = "These figure files are on disk:"
+        .prest$ = .fileList$
+        while index (.prest$, newline$) > 0
+            .nl = index (.prest$, newline$)
+            .p$ = left$ (.prest$, .nl - 1)
+            if .p$ <> ""
+                @emlWrapText: .p$, 62
+                for .wl from 1 to emlWrapText.nLines
+                    .nLines = .nLines + 1
+                    .line$ [.nLines] = emlWrapText.line$ [.wl]
+                endfor
+            endif
+            .prest$ = right$ (.prest$, length (.prest$) - .nl)
+        endwhile
+    endif
+
+    # ── WHERE TO GO NEXT, WHICH TURNS ON EPS ─────────────────────────────
+    # The three formats are named in every branch, so a user who does not
+    # know what EPS is can see what the choices are; what changes is what
+    # this particular press leaves them to do about it.
+    .haveEPS = 0
+    if index (.landed$, "EPS") > 0
+        .haveEPS = 1
+    endif
+    .lostEPS = 0
+    if index (.missing$, "EPS") > 0
+        .lostEPS = 1
+    endif
+
+    .nLines = .nLines + 1
+    .line$ [.nLines] = ""
+    if .haveEPS = 1
+        .advice$ = "Praat's figure formats are PNG, EPS and PDF. The EPS "
+        ... + "above is a vector file, so this figure is already in the "
+        ... + "form a journal asks for."
+    elsif .lostEPS = 1
+        .advice$ = "Praat's figure formats are PNG, EPS and PDF. No vector "
+        ... + "copy arrived this time. EPS is the vector format Praat "
+        ... + "writes wherever it runs, so it is worth pressing Save again, "
+        ... + "or saving to a folder with more room on it."
+    else
+        .advice$ = "Praat's figure formats are PNG, EPS and PDF. EPS is "
+        ... + "vector too and Praat writes it wherever it runs, so tick "
+        ... + "Also EPS in the Save panel and press Save again for a "
+        ... + "vector copy of this figure."
+    endif
+    @emlWrapText: .advice$, 62
+    for .wl from 1 to emlWrapText.nLines
+        .nLines = .nLines + 1
+        .line$ [.nLines] = emlWrapText.line$ [.wl]
+    endfor
+
+    .nLines = .nLines + 1
+    .line$ [.nLines] = ""
+    .nLines = .nLines + 1
+    .line$ [.nLines] = "Nothing else about this save changed."
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
 # @emlSavePanel: .offerFigure, .stem$, .folder$
 # ────────────────────────────────────────────────────────────────────────────
 # ONE SAVE, ONE FOLDER, ONE NAME. Everything an analysis produces — the
@@ -2549,6 +2931,19 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     .nWritten = 0
     .fileList$ = ""
 
+    # WHAT THE FIGURE WRITES ACTUALLY PRODUCED, accumulated across the figure
+    # and its separate legend and read by the redirect below. Set here rather
+    # than in the figure branch so the redirect's condition is a defined
+    # variable on every path through this panel, including the twelve that
+    # never draw one.
+    #
+    # .figFileList$ IS EVERY FIGURE FILE THAT LANDED, in every format, not the
+    # PNG alone. The redirect quotes it, and quoting the PNG alone was what
+    # made that message read as "at least your raster survived".
+    .figLanded$ = ""
+    .figMissing$ = ""
+    .figFileList$ = ""
+
     # IS THERE ANYTHING TO EXPORT? Both halves count: a converted analysis
     # declares into the broom collectors, an unconverted one fills the legacy
     # buffer, and @emlExportResultFiles forks between them. Offering a CSV
@@ -2593,6 +2988,23 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     @emlFileStamp
     .proposed$ = .stem$ + "_" + emlFileStamp.result$
 
+    # THE DPI IS READ BEFORE THE DIALOG IS BUILT, not inside it. Praat
+    # evaluates every line of a `beginPause` block as it draws the dialog, so
+    # an unbound variable there aborts the panel with the dialog half-drawn --
+    # the same shape of outage the emlLastCSVFolder$ note above describes,
+    # and this one would sit on the ONE path that has a figure. output_DPI is
+    # set by the graphs form and is therefore bound whenever .offerFigure is
+    # 1; the guard is here because a comment line is not worth a session.
+    .figureDPI = 1
+    if variableExists ("output_DPI")
+        .figureDPI = output_DPI
+    endif
+    if .figureDPI = 1
+        .dpiNote$ = "PNG is written at 300 dpi (set on the graph's Advanced page)."
+    else
+        .dpiNote$ = "PNG is written at 600 dpi (set on the graph's Advanced page)."
+    endif
+
     beginPause: "Save"
         comment: "Everything ticked is written to one folder, sharing one"
         comment: "base name. Each output adds its own suffix:"
@@ -2605,10 +3017,73 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
         if .offerFigure = 1
             comment: "    .png — the figure, and _legend.png beside it when"
             comment: "    the legend was placed outside the frame"
+            # THE SUFFIX LIST NAMES WHAT THIS DIALOG CAN ACTUALLY WRITE, so
+            # on Windows it does not advertise a .pdf the panel is not going
+            # to offer three lines further down. The reason is at the
+            # tickbox below.
+            if windows = 0
+                comment: "    .eps, .pdf — the same figure as vector, when ticked"
+            else
+                comment: "    .eps — the same figure as vector, when ticked"
+            endif
         endif
         comment: ""
         if .offerFigure = 1
             boolean: "Figure PNG", 1
+            # THE FORMAT CHOICE SITS WITH THE FIGURE, and it is TICKBOXES
+            # rather than a menu because the choice is additive: the PNG is
+            # always written and these are extra copies of the same figure,
+            # so the widget that says "one of these" would be saying the
+            # wrong thing. It is also the panel's own idiom -- every other
+            # output on this dialog is a tickbox for the same reason.
+            #
+            # THE RESOLUTION IS THE OTHER HALF OF THIS DECISION and it is set
+            # where the figure is made, on the graph's Advanced page
+            # (`optionmenu: "Output DPI"`, 300 or 600). That one IS a menu,
+            # because 300 and 600 are alternatives -- one PNG, one
+            # resolution. The line below names the value that will be used so
+            # the two read together at the moment of saving, without giving
+            # the same setting two places to live.
+            #
+            # DPI IS A RASTER PROPERTY. EPS and PDF carry the drawing itself
+            # rather than a grid of pixels, so the number applies to the PNG
+            # and the comment says so instead of implying it covers all three.
+            comment: .dpiNote$
+            comment: "Vector copies for journal submission — same figure, no dpi:"
+            boolean: "Also EPS", 0
+            # ── PDF IS NOT OFFERED ON WINDOWS, BECAUSE PRAAT HAS NOT GOT IT ──
+            #
+            # Praat's manual, on "Save as PDF file...": "A command in the File
+            # menu of the Picture window, on Macintosh and Linux." It is
+            # absent on Windows and the manual sends the reader to PNG or EPS
+            # instead. The author confirms it: the command is not in the menu
+            # on his Windows machine, and reaching for it crashed.
+            #
+            # THIS IS THE ONE PLATFORM FACT THE PLUGIN IS ENTITLED TO KNOW,
+            # and the distinction is worth stating because everything else
+            # here is deliberately built the other way. Where the plugin is
+            # GUESSING what a host can do, it must not branch on the
+            # platform: it attempts, looks at the disk, and believes the
+            # answer -- see @eml_saveFigureFormats, which names no operating
+            # system at all. Here it is not guessing. The command is
+            # DOCUMENTED absent, and offering a tickbox that is documented to
+            # do nothing -- and then apologising for it afterwards -- is
+            # worse than not offering it.
+            #
+            # THE ABSENCE IS EXPLAINED RATHER THAN LEFT MYSTERIOUS. A missing
+            # box with nothing in its place reads as a bug or a version
+            # difference; one comment line says which it is, and says it
+            # where the user is standing when they look for it.
+            #
+            # Praat has no way to disable a form field, so "greyed out" is a
+            # box that is not built. The variable is not built either --
+            # `boolean:` is what declares also_PDF -- which is why the read
+            # below goes through .alsoPDF and not through the field name.
+            if windows = 0
+                boolean: "Also PDF", 0
+            else
+                comment: "PDF is not available in Praat on Windows."
+            endif
         endif
         if .haveCSV = 1
             boolean: "Results CSV", 1
@@ -2750,6 +3225,23 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     if fileReadable (.folder$ + "/" + .try$ + "_legend.png")
         .taken = 1
     endif
+    # THE VECTOR NAMES ARE IN THE CANDIDATE SET TOO, whether or not their
+    # boxes are ticked -- the rule this walk states above. They earn their
+    # place twice over here: the landed-file check below reads "a file exists
+    # at this path" as "this press wrote it", and that reading is only true
+    # because the walk has already proved the path empty.
+    if fileReadable (.folder$ + "/" + .try$ + ".eps")
+        .taken = 1
+    endif
+    if fileReadable (.folder$ + "/" + .try$ + "_legend.eps")
+        .taken = 1
+    endif
+    if fileReadable (.folder$ + "/" + .try$ + ".pdf")
+        .taken = 1
+    endif
+    if fileReadable (.folder$ + "/" + .try$ + "_legend.pdf")
+        .taken = 1
+    endif
     if fileReadable (.folder$ + "/" + .try$ + "_tidy.csv")
         .taken = 1
     endif
@@ -2798,20 +3290,48 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
             if variableExists ("emlDrawnMinX")
                 @emlAssertFullViewport
             endif
-            if output_DPI = 1
-                Save as 300-dpi PNG file: .figPath$
-            else
-                Save as 600-dpi PNG file: .figPath$
+
+            # WHICH VECTOR FORMATS WERE ASKED FOR. also_EPS is a field on
+            # every host. also_PDF is a field only where the box was built,
+            # and `boolean:` is what builds the variable as well as the box --
+            # so on Windows, where there is no box, reading also_PDF raises
+            # "Unknown variable" and ends the save at the press. The value is
+            # resolved once, here, and the writer is handed a number.
+            .alsoPDF = 0
+            if windows = 0
+                .alsoPDF = also_PDF
             endif
-            .nWritten = .nWritten + 1
-            .fileList$ = .fileList$ + .figPath$ + newline$
+
+            # EVERY FORMAT ASKED FOR, EACH CHECKED ONTO THE DISK.
+            # @eml_saveFigureFormats writes the PNG unconditionally, attempts
+            # EPS and PDF only when they were ticked, and counts only what it
+            # can then find. Nothing here is counted from the fact that a Save
+            # command was issued.
+            #
+            # THE LANDED-FILE CHECK STAYS ON EVERY FORMAT, INCLUDING THE PNG,
+            # and it is not made redundant by the tickbox above knowing about
+            # Windows. Do not delete it as belt-and-braces. It is what catches
+            # a full disk, a folder that cannot be written to, a path the user
+            # has no permission for, and any future change in what a given
+            # Praat provides -- none of which is a platform question, and all
+            # of which end with a file the panel would otherwise claim to have
+            # written and the user would not find.
+            @eml_saveFigureFormats: .folder$, .stem$, .figureDPI,
+            ... also_EPS, .alsoPDF
+            .nWritten = .nWritten + eml_saveFigureFormats.nWritten
+            .fileList$ = .fileList$ + eml_saveFigureFormats.fileList$
+            .figFileList$ = .figFileList$ + eml_saveFigureFormats.fileList$
+            @eml_saveMergeFormats: .figLanded$, eml_saveFigureFormats.landed$
+            .figLanded$ = eml_saveMergeFormats.result$
+            @eml_saveMergeFormats: .figMissing$, eml_saveFigureFormats.missing$
+            .figMissing$ = eml_saveMergeFormats.result$
 
             # THE LEGEND IS A SECOND FILE when it was placed outside the
             # frame -- the figure is not complete without it, so it goes
-            # wherever the figure goes and shares its stem.
+            # wherever the figure goes and shares its stem, in whichever
+            # formats the figure itself was written in.
             if variableExists ("emlLegendSepActive")
                 if emlLegendSepActive = 1
-                    .legPath$ = .folder$ + "/" + .stem$ + "_legend.png"
                     # The legend is saved by narrowing the viewport to the
                     # coordinates the draw stored, writing, and then putting
                     # the figure's extent back -- otherwise a second Save from
@@ -2819,15 +3339,35 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
                     # figure.
                     Select outer viewport: emlLegendSepX0, emlLegendSepX1,
                     ... emlLegendSepY0, emlLegendSepY1
-                    if output_DPI = 1
-                        Save as 300-dpi PNG file: .legPath$
-                    else
-                        Save as 600-dpi PNG file: .legPath$
-                    endif
+                    @eml_saveFigureFormats: .folder$, .stem$ + "_legend",
+                    ... .figureDPI, also_EPS, .alsoPDF
                     @emlAssertFullViewport
-                    .nWritten = .nWritten + 1
-                    .fileList$ = .fileList$ + .legPath$ + newline$
+                    .nWritten = .nWritten + eml_saveFigureFormats.nWritten
+                    .fileList$ = .fileList$ + eml_saveFigureFormats.fileList$
+                    .figFileList$ = .figFileList$
+                    ... + eml_saveFigureFormats.fileList$
+                    @eml_saveMergeFormats: .figLanded$,
+                    ... eml_saveFigureFormats.landed$
+                    .figLanded$ = eml_saveMergeFormats.result$
+                    @eml_saveMergeFormats: .figMissing$,
+                    ... eml_saveFigureFormats.missing$
+                    .figMissing$ = eml_saveMergeFormats.result$
                 endif
+            endif
+
+            # ── THE REDIRECT ──────────────────────────────────────────────
+            # A format was asked for and no file arrived. The user is told
+            # which, what this press did write -- by name and by path -- and
+            # what to do next, which for a user who wanted vector means EPS.
+            # A save that loses a copy is a sentence, not a dead session.
+            if .figMissing$ <> ""
+                @eml_saveFormatRedirectLines: .figMissing$, .figLanded$,
+                ... .figFileList$
+                beginPause: "Figure format not available"
+                    for .rl from 1 to eml_saveFormatRedirectLines.nLines
+                        comment: eml_saveFormatRedirectLines.line$ [.rl]
+                    endfor
+                endPause: "OK", 1, 0
             endif
         endif
     endif
@@ -2862,6 +3402,33 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     # out reproduces a screen rather than a study. The folder is emitted as a
     # VARIABLE so the script survives being sent to a colleague -- the same
     # reasoning that made emlRecordPluginRoot$ home-relative.
+    #
+    # AND SO IS THE FORMAT CHOICE, for a reason that is the same one over
+    # again: a recording that dropped it would replay a ticked EPS as a PNG
+    # and say nothing about it, next month, to someone who kept the recording
+    # precisely so they would not have to remember. It travels as the FOURTH
+    # argument of the recorded call, which is where @emlRecordColumnManifest
+    # lifts it into the emitted script's editable block -- so it is a
+    # variable the reader can change, not a setting buried in a step.
+    #
+    # WHAT IS RECORDED IS THE REQUEST AND NOT THE RESULT. A tickbox that
+    # produced nothing on THIS machine is still what the user asked for, and
+    # the machine that replays the file may well be able to write it.
+    # A save with no figure records an empty choice, which the block leaves
+    # out altogether: a variable for a format nothing writes would invite an
+    # edit that does nothing.
+    .recFormats$ = ""
+    if .offerFigure = 1
+        if figure_PNG = 1
+            .recFormats$ = "PNG"
+            if also_EPS = 1
+                .recFormats$ = .recFormats$ + ", EPS"
+            endif
+            if .alsoPDF = 1
+                .recFormats$ = .recFormats$ + ", PDF"
+            endif
+        endif
+    endif
     if .nWritten > 0
         if variableExists ("emlRecordLoaded")
             @emlRecordStep: "save",
@@ -2869,7 +3436,8 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
             ... "Every output shares one folder and one name, so they stay a set.",
             ... "outputFolder$ = " + """" + .folder$ + """" + newline$
             ... + "@emlSavePanel: " + string$ (.offerFigure) + ", "
-            ... + """" + .stem$ + """, outputFolder$",
+            ... + """" + .stem$ + """, outputFolder$, "
+            ... + """" + .recFormats$ + """",
             ... "In the GUI: the Save button on the post-analysis or post-draw dialog."
         endif
     endif

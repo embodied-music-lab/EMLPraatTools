@@ -590,9 +590,19 @@ check_true(ID,
 # below this block names an object or a column" while every draw step below it
 # carried its axis as two bare literals. A block that tells the truth about
 # two of three things is the shape of the original defect.
+# The promise is EMITTED AS TWO LINES, so a grep for one source line can be
+# satisfied while the sentence a reader actually sees has lost the axis. Join
+# the emitted literals and read the sentence, not the source layout.
+promise_lit <- function(code, start) {
+    ln <- grep(paste0('\\+ "# ', start), code, value = TRUE)
+    if (!length(ln)) return("")
+    sub('.*\\+ "#([^"]*)".*', "\\1", ln[1])
+}
+promise_txt <- paste0(promise_lit(code_rec, "nothing below this block"),
+                      promise_lit(code_rec, "range or"))
 check_true(ID,
     "the block's promise now covers the axis range as well",
-    has(code_rec, "names an object, a column or an axis"))
+    grepl("an axis range", promise_txt, fixed = TRUE))
 
 # ===========================================================================
 # 2. RULING A, DRIVEN: ONE BIN, TWO BINS, NO BINS, AND ONE BELOW THE FLOOR

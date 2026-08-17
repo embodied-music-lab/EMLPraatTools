@@ -26,46 +26,75 @@
 # opens the zip.
 #
 # ---------------------------------------------------------------------------
-# THE TWO EXCLUSION LISTS, AND WHY THEY ARE NOT THE SAME LIST
+# WHO THE ASSET IS FOR, WHICH IS THE QUESTION UNDER EVERY RULING BELOW
 #
-# This repository now has two files that leave things out, and it was burned
-# this week by two hand-maintained lists drifting apart. So the relationship
+# Author ruling, 17 August 2026. THE AUTOMATIC ASSET IS FOR THE PERSON WHO
+# CLICKED THE OBVIOUS LINK ON THE RELEASES PAGE BECAUSE THEY WANTED THE
+# PLUGIN, not for a reader of the source. Three measurable facts settle it,
+# and each of them is already true elsewhere in this repository:
+#
+#   * a source reader cannot use this asset AS source -- most validators read
+#     evidence/ and several read audit/, both excluded, so the suite that
+#     ships here cannot be run from here (see the consequence note below);
+#   * RELEASE_EXCLUDE.tsv's own row says the suites in plugin/dev/ "are run
+#     from a clone of this repository, against plugin/ in place, and never
+#     from an installed copy" -- so shipping them serves no one running them;
+#   * the 84 MB measurement above is a record of traffic in the OTHER
+#     direction. The people who fetch this asset are trying to install.
+#
+# Where the two audiences pull against each other the installer wins; where
+# they do not, the reader is not charged for it. The two rulings pinned below
+# land on opposite sides of that line, and the thing that separates them is
+# not size -- it is whether the directory sits BESIDE plugin/ or INSIDE it.
+#
+# ---------------------------------------------------------------------------
+# THE TWO EXCLUSION LISTS: ONE AUTHOR, ONE FOLLOWER
+#
+# This repository has two files that leave things out, and it was burned this
+# week by two hand-maintained lists drifting apart. So the relationship
 # between them is computed here on every run rather than trusted.
 #
-# They cannot be made identical, and forcing that would be dishonest about
-# both. RELEASE_EXCLUDE.tsv's own header says why: its paths are
-# PLUGIN-RELATIVE, because plugin/dev/tools/build-release.py stages plugin/
-# alone. The repository's sibling directories -- audit/, evidence/, harness/,
-# validate/ -- are outside the built artefact by the shape of the tree, not by
-# any list, and that header forbids naming them in it ("an exclusion that can
-# never match", which the builder rejects). The two lists therefore cover
-# DIFFERENT SCOPES.
+# They are not peers. RELEASE_EXCLUDE.tsv's own header says why its scope is
+# what it is: its paths are PLUGIN-RELATIVE, because
+# plugin/dev/tools/build-release.py stages plugin/ alone, and the repository's
+# sibling directories -- audit/, evidence/, harness/, validate/ -- are outside
+# the built artefact by the shape of the tree rather than by any list, which is
+# why that header forbids naming them in it ("an exclusion that can never
+# match", which the builder rejects).
 #
-# The honest relationship is a partition plus a containment, and both halves
-# are checked below, both derived from RELEASE_EXCLUDE.tsv as it is on disk at
-# run time -- no path from that file is restated in this one:
+# So inside plugin/ there is exactly one author and one follower, and both
+# halves below are derived from RELEASE_EXCLUDE.tsv as it is on disk at run
+# time -- no path from that file is restated in this one:
 #
-#   PARTITION. RELEASE_EXCLUDE.tsv is the sole authority inside plugin/.
-#   .gitattributes is the sole authority outside it. Enforced by comparing
-#   the archive's plugin/ subtree against the tracked plugin/ subtree at HEAD,
-#   file for file: if they match, no export-ignore line can have had any
-#   effect inside plugin/, whatever it says. That is the structural version of
-#   "one source of truth" -- the second list is not asked to agree with the
-#   first, it is prevented from operating in the first's territory at all.
+#   NO EXTENSION. .gitattributes may name a path under plugin/ ONLY IF
+#   RELEASE_EXCLUDE.tsv already names it. Enforced by taking every tracked
+#   plugin/ file that NO row of RELEASE_EXCLUDE.tsv covers and requiring it in
+#   the archive: if one is missing, an export-ignore line has had an opinion of
+#   its own inside the region RELEASE_EXCLUDE.tsv governs, and that is where
+#   drift starts. The follower may follow; it may not lead.
 #
-#   CONTAINMENT. Every path RELEASE_EXCLUDE.tsv names must be PRESENT in the
-#   source archive. The artefact list names what a user of the INSTALLED
-#   PLUGIN does not need; a SOURCE archive is for someone reading the source,
-#   and plugin/dev/ -- the suites, the Praat and Python tooling, the four
-#   design documents -- is the first thing such a reader wants. So inside
-#   plugin/ the source archive is a strict superset of the artefact, and the
-#   two lists are COMPLEMENTARY rather than shared. Adding a row to
-#   RELEASE_EXCLUDE.tsv automatically adds a presence requirement here.
+#   CONGRUENCE. Every path RELEASE_EXCLUDE.tsv names must be ABSENT from the
+#   source archive. Inside plugin/ the archive and the release artefact
+#   therefore hold THE SAME FILES -- not a superset, the same set -- which is
+#   what the audience ruling above requires: plugin/ is the folder a user drags
+#   into Praat's preferences directory, so everything under it arrives in the
+#   install, and plugin/dev/ is the only developer material in the repository
+#   that can ride in that way.
 #
-# Read together: the source archive drops what the plugin's developer tree
-# sits beside, and keeps what the plugin's release drops. Neither list has to
-# be edited when the other changes, and neither can silently contradict the
-# other, because a contradiction in either direction turns this file red.
+# WHAT THIS REPLACED, stated because the reasoning is worth keeping and the
+# reversal is not an accident. Until 17 August this file asserted the opposite
+# containment -- every RELEASE_EXCLUDE.tsv path had to be PRESENT, the archive
+# a strict superset of the artefact -- on the argument that a source archive is
+# for a source reader and plugin/dev/ is the first thing such a reader wants.
+# That argument is sound about a source archive. It is not sound about THIS
+# asset, for the three reasons above, and it left 72 files of test scaffolding
+# inside the folder a user installs.
+#
+# THE COUPLING IT CREATES IS NAMED, NOT HIDDEN. `git archive` cannot read a
+# TSV, so a new row in RELEASE_EXCLUDE.tsv now needs a matching export-ignore
+# line. That is a real cost. It is paid loudly: the congruence check fails on
+# the next run and prints the path that is out of step, rather than the archive
+# quietly carrying something the artefact drops.
 #
 # ---------------------------------------------------------------------------
 # WHAT export-ignore CANNOT DO, ASSERTED AND NOT MERELY SAID
@@ -89,16 +118,29 @@
 # v47_plugin_folder_name.R is what holds it.
 #
 # ---------------------------------------------------------------------------
-# validate/ STAYS IN, BY AUTHOR RULING OF 17 AUGUST 2026
+# validate/ STAYS IN AND plugin/dev/ GOES OUT, BOTH BY AUTHOR RULING OF
+# 17 AUGUST 2026, AND BOTH PINNED IN THE DIRECTION NOBODY WOULD GUARD
 #
-# It is the largest thing that stays after the plugin -- 2.7 MB, and roughly
-# a quarter of the slimmed archive -- and cutting it would be the easy further
-# saving. An archive calling itself "source" carries the
-# tests that make the source credible, and for this project the validation
-# suite is the product's main claim. So the ruling is pinned in the direction
-# nobody would think to guard: this file fails if validate/ gets SMALLER in
-# the archive than it is in the tree, which is what an `export-ignore` on it,
-# or on any part of it, would do.
+# validate/ is the largest thing that stays after the plugin -- 2.7 MB, and
+# roughly a quarter of the slimmed archive -- and cutting it would be the easy
+# further saving. An archive calling itself "source" carries the tests that
+# make the source credible, and for this project the validation suite is the
+# product's main claim. So this file fails if validate/ gets SMALLER in the
+# archive than it is in the tree, which is what an `export-ignore` on it, or on
+# any part of it, would do.
+#
+# plugin/dev/ is the same KIND of material and it goes, because it is INSIDE
+# the folder Praat installs. 1.4 MB / 72 files of Praat test suites, Python and
+# R reference generators, release tooling, design documents and the history
+# ledger, arriving in the user's preferences directory as part of the plugin
+# they just dragged in. Measured 17 August 2026: with it, 450 files; without
+# it, 378. The pin is the congruence check above -- delete the export-ignore
+# line and the row RELEASE_EXCLUDE.tsv already carries turns this file red,
+# naming plugin/dev/.
+#
+# Neither ruling is pinned by weight. A size ceiling would let plugin/dev/ back
+# in the moment something else shrank, and would let validate/ out the moment
+# something else grew.
 #
 # A consequence to state rather than let someone discover: the suite that
 # ships in this archive CANNOT BE RUN FROM THIS ARCHIVE. Most validators read
@@ -171,7 +213,9 @@ GIT  <- Sys.which("git")
 #   somebody adds cannot ride into the asset unnoticed.
 # ---------------------------------------------------------------------------
 MUST_SHIP <- c(
-    # The plugin. The reason the asset exists. 4.55 MB / 327 files.
+    # The plugin. The reason the asset exists. 327 tracked files, of which 255
+    # ship: plugin/dev/ is the 72 the congruence check below keeps out, by the
+    # row RELEASE_EXCLUDE.tsv already carries.
     "plugin/",
     # The validation suite. Author ruling, above.  2.71 MB / 113 files.
     "validate/",
@@ -406,29 +450,9 @@ check_true("v85", "the suite registry ships", "validate/REGISTRY.md" %in% files)
 check_true("v85", "this validator is itself inside the archive it measures",
            "validate/v85_source_archive_shape.R" %in% files)
 
-# --- THE PARTITION: .gitattributes has no opinion inside plugin/ -----------
-p_tracked <- tracked_in("plugin")
-p_zipped  <- in_zip("plugin/")
-missing_p <- setdiff(p_tracked, p_zipped)
-check_true("v85",
-           sprintf("no export-ignore reaches inside plugin/: %d of %d tracked files ship%s",
-                   length(p_zipped), length(p_tracked),
-                   if (length(missing_p))
-                       paste0(" -- MISSING: ",
-                              paste(utils::head(missing_p, 5), collapse = ", ")) else ""),
-           length(p_tracked) > 0 && length(missing_p) == 0)
-if (length(missing_p)) {
-    cat("\n  A path under plugin/ is being dropped by .gitattributes. That makes\n",
-        "  it a SECOND authority over the region RELEASE_EXCLUDE.tsv governs,\n",
-        "  which is the exact arrangement that produced the manifest/artefact\n",
-        "  contradiction earlier this week. Remove the line. If the intent was\n",
-        "  to keep something out of the INSTALLED PLUGIN, it belongs in\n",
-        "  RELEASE_EXCLUDE.tsv, which the builder both obeys and audits.\n", sep = "")
-}
-
-# --- THE CONTAINMENT: everything the artefact drops, the source keeps ------
-# Derived. The rows are read here, not restated: add a row to
-# RELEASE_EXCLUDE.tsv and a presence requirement appears on the next run.
+# --- THE LIST THAT LEADS. Read first, because both checks below are derived
+# from it and neither restates a path from it. Add a row to
+# RELEASE_EXCLUDE.tsv and both requirements move on the next run.
 rx_path <- file.path(ROOT, "RELEASE_EXCLUDE.tsv")
 rx <- if (file.exists(rx_path)) readLines(rx_path, warn = FALSE) else character(0)
 rx <- rx[!grepl("^\\s*#", rx) & nzchar(trimws(rx))]
@@ -439,12 +463,69 @@ check_true("v85",
            sprintf("RELEASE_EXCLUDE.tsv parses and names %d path(s)", length(rx_paths)),
            length(rx_paths) > 0)
 
+# A path ending "/" is a directory and covers everything beneath it; anything
+# else is one exact file. That is RELEASE_EXCLUDE.tsv's own rule, quoted from
+# its header, and it is the only place this file interprets that format.
+rx_covers <- function(f) {
+    if (!length(rx_paths)) return(FALSE)
+    any(vapply(rx_paths, function(p) {
+        w <- paste0("plugin/", p)
+        if (grepl("/$", p)) startsWith(f, w) else identical(f, w)
+    }, logical(1)))
+}
+
+p_tracked <- tracked_in("plugin")
+p_zipped  <- in_zip("plugin/")
+p_covered <- p_tracked[vapply(p_tracked, rx_covers, logical(1))]
+p_kept    <- setdiff(p_tracked, p_covered)
+
+# --- NO EXTENSION: .gitattributes may follow that list, not lead it --------
+# Every tracked plugin/ file NO row covers must be in the archive. One that is
+# not means an export-ignore line reached into plugin/-space on its own
+# authority, which is where two hand-maintained lists start to drift.
+missing_p <- setdiff(p_kept, p_zipped)
+check_true("v85",
+           sprintf("no export-ignore drops a plugin/ path RELEASE_EXCLUDE.tsv does not name: %d of %d uncovered files ship%s",
+                   length(intersect(p_kept, p_zipped)), length(p_kept),
+                   if (length(missing_p))
+                       paste0(" -- MISSING: ",
+                              paste(utils::head(missing_p, 5), collapse = ", ")) else ""),
+           length(p_tracked) > 0 && length(missing_p) == 0)
+if (length(missing_p)) {
+    cat("\n  A path under plugin/ is being dropped by .gitattributes that\n",
+        "  RELEASE_EXCLUDE.tsv says nothing about. That makes .gitattributes a\n",
+        "  SECOND authority over the region RELEASE_EXCLUDE.tsv governs, which\n",
+        "  is the exact arrangement that produced the manifest/artefact\n",
+        "  contradiction earlier this week. If the path should leave the\n",
+        "  INSTALLED PLUGIN, give it a row in RELEASE_EXCLUDE.tsv -- which the\n",
+        "  builder both obeys and audits -- and then this line may follow it.\n",
+        "  If it should not, delete the line.\n", sep = "")
+}
+
+# --- CONGRUENCE: what the artefact drops, the source archive drops too -----
+# The audience ruling of 17 August 2026, pinned. Inside plugin/ the archive and
+# the release artefact hold the same files, because plugin/ is the folder a
+# user drags into Praat and everything under it arrives in the install.
 for (p in rx_paths) {
     want <- paste0("plugin/", p)
-    present <- if (grepl("/$", p)) any(startsWith(files, want)) else want %in% files
+    hits <- if (grepl("/$", p)) files[startsWith(files, want)] else files[files == want]
+    ntracked <- sum(vapply(p_tracked,
+                           function(f) if (grepl("/$", p)) startsWith(f, want)
+                                       else identical(f, want), logical(1)))
     check_true("v85",
-               sprintf("the artefact drops %s and the SOURCE archive keeps it", want),
-               present)
+               sprintf("the artefact drops %s and so does the SOURCE archive (%d tracked file(s), %d in the zip)",
+                       want, ntracked, length(hits)),
+               length(hits) == 0)
+}
+if (any(vapply(rx_paths, function(p) {
+        w <- paste0("plugin/", p)
+        if (grepl("/$", p)) any(startsWith(files, w)) else w %in% files
+    }, logical(1)))) {
+    cat("\n  A tree RELEASE_EXCLUDE.tsv drops from the installable artefact is\n",
+        "  still in the source archive, so a user who unzips the asset and\n",
+        "  drags plugin/ into Praat installs it. Give it an export-ignore line\n",
+        "  in .gitattributes. `git archive` cannot read RELEASE_EXCLUDE.tsv,\n",
+        "  which is why the line has to exist and why this check exists.\n", sep = "")
 }
 
 # The other direction, from RELEASE_EXCLUDE.tsv's own header: the repository's
@@ -541,6 +622,33 @@ if (length(refs) > REF_CEILING) {
         "  that does not. Either repair the link to a github.com URL, or do not\n",
         "  ship the document. Raising REF_CEILING is not a repair.\n", sep = "")
 }
+
+# --- THE SAME DEBT, ONE LEVEL DOWN, AND WHY IT IS A SECOND RATCHET --------
+# Dropping plugin/dev/ created references of exactly the shape above, inside
+# plugin/ rather than beside it, and the ratchet above CANNOT SEE THEM: it is
+# built from MUST_NOT_SHIP, which is a list of TOP-LEVEL names. Widening that
+# list to hold plugin/dev/ would be wrong twice over -- plugin/ is a
+# MUST_SHIP top-level entry, and the count would then have to be raised, which
+# this file has just said is not a repair.
+#
+# So it is its own ratchet at its own measured value. 17 August 2026: ONE
+# reference, README.md -> plugin/dev/ARCHITECTURE.md. It may fall to zero; it
+# may not grow. The repair is the same one -- a github.com URL resolves for a
+# reader of the archive and a reader of the repository alike.
+DEV_REF_CEILING <- 1L
+dev_refs <- character(0)
+if (length(shipped_docs)) {
+    for (d in shipped_docs) {
+        txt <- paste(readLines(file.path(ex, d), warn = FALSE), collapse = "\n")
+        m <- regmatches(txt, gregexpr("\\bplugin/dev/[A-Za-z0-9_./-]*", txt))[[1]]
+        dev_refs <- c(dev_refs, unique(m))
+    }
+}
+dev_refs <- unique(dev_refs)
+check_true("v85",
+           sprintf("shipped root docs reference %d path(s) inside plugin/dev/, which no longer ships; ratchet is %d",
+                   length(dev_refs), DEV_REF_CEILING),
+           length(dev_refs) <= DEV_REF_CEILING)
 
 }   # end if (built)
 

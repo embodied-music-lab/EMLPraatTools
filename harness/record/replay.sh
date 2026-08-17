@@ -367,7 +367,8 @@ table = selected ("Table")
 ... "Save the outputs of this analysis",
 ... "Every output shares one folder and one name, so they stay a set.",
 ... "outputFolder\$ = " + """" + "$OUT/saved" + """" + newline\$
-... + "@emlSavePanel: 0, " + """" + "$SAVE_STEM" + """" + ", outputFolder\$",
+... + "@emlSavePanel: 0, " + """" + "$SAVE_STEM" + """" + ", outputFolder\$, "
+... + """""",
 ... "In the GUI: the Save button on the post-analysis or post-draw dialog."
 
 @emlRecordFlush: "$OUT/save_emitted.praat"
@@ -654,7 +655,7 @@ $FIXTURE
 table = selected ("Table")
 @emlRunTwoGroupAnalysis: table, "val", "grp", "parametric", 0
 outputFolder\$ = "$DEEP"
-@emlRecordReplaySave: 0, "vt_deep_20260814_120000", outputFolder\$
+@emlRecordReplaySave: 0, "vt_deep_20260814_120000", outputFolder\$, ""
 PRAAT
 echo "# leg FOLDER" > "$OUT/folder.log"
 run_praat "$OUT/folder_replay.praat" "$OUT/folder.log"

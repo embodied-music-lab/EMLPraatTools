@@ -6,6 +6,10 @@ EML Stats & Graphs aims to solve multiple challenges for voice researches using 
 
 Features include robust descriptive and inferential statistics, professional quality graphs with auto-scaling typography and accessible color palettes, direct table editing (a workaround, but faster than writing code or clicking in the GUI), a statistics wizard that surfaces the right test and the right time, a statistics demo window 'mini course,' and direct drawing and statistics access.
 
+Every figure saves as PNG, and the Save panel offers vector copies beside it. EPS is the one to reach for: Praat writes it wherever Praat runs, and a journal that asks for vector will take it. PDF is offered on macOS and Linux; on Windows Praat has no PDF command, so the panel does not offer it and says why in its place. Every file the panel claims to have written is one it then found on the disk, and a format that does not arrive is a sentence naming what did.
+
+A recorded workflow keeps the choice. The emitted script declares it in the editable block at the top — `figureFormat$` for the first save, `figureFormat2$` for the second — so a replay a month later writes the formats you ticked, and changing that one line changes what the replay writes.
+
 This plugin is the statistical core, and it is self-contained. The signal-analysis
 tools — EGG, RespTrack RIP, vibrato, acoustic measures — ship as a SEPARATE Praat
 plugin that depends on this one. The dependency runs one way: a signal plugin

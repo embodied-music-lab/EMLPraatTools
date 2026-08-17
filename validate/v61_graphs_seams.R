@@ -256,6 +256,33 @@ for (g in c("scatterGroupShown", "histGroupShown", "spGroupShown")) {
                sum(grepl(paste0("\\b", g, "\\b"), fcode)) >= 4)
 }
 
+# D6. THE THREE TYPES WITH NO ANNOTATION-LAYOUT MENU SAY SO.
+# Histogram, GroupedViolin and GroupedBox force annotLayoutMode = 3 in the
+# draw path, because a significance bracket has no pair of x positions to span
+# on a histogram or a two-factor panel. The repair was not to add a menu -- a
+# menu whose only honest entry is the one already in force is not a choice --
+# it was to replace the absent field with the FACT, in a comment widget the
+# user reads. Nothing else in the suite reads that sentence, so the page it
+# sits on is checked as well as the count: a page that regained the menu and
+# kept the sentence would be lying, and a page that lost the sentence is the
+# finding back. Bounded by the enclosing beginPause .. endPause, which is the
+# only page scope this form has.
+.d6 <- grep("^\\s*comment: \"Comparisons appear as a matrix panel below the plot\\.\"\\s*$",
+            fcode)
+check("v61", "three pages state the forced matrix layout instead of offering a menu (D6)",
+      3L, length(.d6), tol = 0)
+.begins <- grep("^\\s*beginPause:", fcode)
+.ends   <- grep("endPause:", fcode)
+.d6bad <- vapply(.d6, function(i) {
+    b <- .begins[.begins < i]; e <- .ends[.ends > i]
+    if (!length(b) || !length(e)) return(TRUE)
+    any(grepl("optionmenu: \"Annotation layout\"", fcode[max(b):min(e)], fixed = TRUE))
+}, logical(1))
+check_true("v61",
+           sprintf("and each states it on a page that offers NO Annotation layout menu (%d of %d clean)",
+                   sum(!.d6bad), length(.d6)),
+           length(.d6) > 0 && !any(.d6bad))
+
 # ---------------------------------------------------------------------------
 # 2a. D5 -- THE ADJUSTMENT MENU IS GONE FROM THE PARAMETRIC ARM (RULING 1a)
 # ---------------------------------------------------------------------------
@@ -793,18 +820,37 @@ if (haveAdj) {
 # editable header block, referenced by the call, so that the one place a user
 # edits for new data is still the top block.
 #
+# BOTH HALVES OF THAT RULING ARE NOW MET, AND THIS SECTION CHECKS THEM RATHER
+# THAN ATTESTING THEM. Until 17 August 2026 sections 5d and 5e below were
+# `attest` calls -- measured numbers recorded WITHOUT an assertion, because the
+# files that had to change were not that pass's to edit. They have since
+# changed: @emlRecordViolin in plugin/graphs/eml-draw-procedures.praat routes
+# the axis through @emlRecordAxisRequest so the recorded call carries the
+# REQUEST, and @emlRecordAxisNote publishes the resolved range for the header
+# block, where @emlRecordColumnManifest declares `axisYMin` / `axisYMax` beside
+# the column names. The call now names those variables in both cases. So the
+# attestations became assertions on the same pass that re-drove the rig; an
+# attestation left standing over repaired numbers stops being stale and starts
+# being false.
+#
 # WHY IT MATTERS. The recorded script is the plugin's retargeting surface --
 # the whole editable header block exists so that one edit re-points the
 # workflow at other data. A frozen frame means the statistics recompute
 # honestly on the new table while the FIGURE stays at the original table's
 # extent: clipped, or swimming.
 #
-# WHAT THE FAILURE LOOKS LIKE. Silent, and spectacularly so. Measured
-# 15 Aug 2026: a violin recorded on auto over data spanning 194.5 .. 248.5
-# emitted `..., 180.000000, 270.000000`; replayed against a table spanning
-# 1083.6 .. 1245.5 it drew a titled, labelled, tick-marked, gridded frame with
-# ALL ONE HUNDRED POINTS off the top of it and no warning anywhere. The PNG is
-# harness/graphseams/axis_out/leg3.png and it is worth opening.
+# WHAT THE FAILURE LOOKED LIKE, AND WHAT THE RIG SHOWS NOW. Silent, and
+# spectacularly so. Measured 15 Aug 2026: a violin recorded on auto over data
+# spanning 194.5 .. 248.5 emitted `..., 180.000000, 270.000000`; replayed
+# against a table spanning 1083.6 .. 1245.5 it drew a titled, labelled,
+# tick-marked, gridded frame with ALL ONE HUNDRED POINTS off the top of it and
+# no warning anywhere -- 52,758 bytes of PNG with no ink inside the frame.
+# Re-driven 17 Aug 2026 against the repaired tree, the same leg emits
+# `..., groupCol$, valueCol$, axisYMin, axisYMax`, resolves 1000 .. 1300 on the
+# retargeted table, and leg3.png is now 83,869 bytes and BYTE-IDENTICAL to
+# leg4.png, the native auto draw of that table. Both PNGs are in
+# harness/graphseams/axis_out/ and the pair is still worth opening: the old one
+# is what a frozen frame looks like, and it is not subtle.
 #
 # WHAT COULD NOT HAVE CAUGHT IT.
 #
@@ -917,43 +963,91 @@ if (haveAx) {
                   .x("leg8_axis_lo"), .x("leg8_axis_hi")),
           1L, .xi("box_retarget_matches_native"), tol = 0)
 
-    # 5d. THE VIOLIN, WHICH IS THE ONE PROCEDURE THAT DOES NOT.
+    # 5d. THE VIOLIN, WHICH WENT ITS OWN WAY AND HAS BEEN BROUGHT BACK
+    #     (RULING 10a).
     #
-    # ATTESTED, NOT CHECKED, and the distinction is the same one §6 makes
-    # about the clamped dialog: this file records a measured number without
-    # asserting a fix nobody has made. The emission lives in
-    # plugin/graphs/eml-draw-procedures.praat -- @emlRecordViolin, whose
-    # .code$ is built from `fixed$ (emlDrawViolinPlot.yMin, 6)` rather than
-    # from its own .vMin argument -- and that file was not this pass's to
-    # edit. Every other draw recorder in the plugin already builds its call
-    # from the request, which is what 5c measures, so this is ONE procedure
-    # that went its own way rather than a policy the plugin holds.
-    attest("v61",
-           sprintf(paste0("a violin recorded on AUTO emits %s resolved ",
-                          "literals: %s"),
-                   .x("auto_call_literals"), .x("auto_call_tail")),
-           "harness/graphseams/axis_out/AXIS.tsv, measured 15 Aug 2026")
-    attest("v61",
-           sprintf(paste0("so its replay on retargeted data stays frozen at ",
-                          "%s..%s while the data is %s..%s and a native draw ",
-                          "resolves %s..%s -- every point off the page"),
-                   .x("leg3_axis_lo"), .x("leg3_axis_hi"),
-                   .x("leg3_data_lo"), .x("leg3_data_hi"),
-                   .x("leg4_axis_lo"), .x("leg4_axis_hi")),
-           "harness/graphseams/axis_out/leg3.png vs leg4.png")
+    # The emission is @emlRecordViolin in
+    # plugin/graphs/eml-draw-procedures.praat. It built its .code$ from
+    # `fixed$ (emlDrawViolinPlot.yMin, 6)` -- the RESOLVED axis -- rather than
+    # from its own .vMin argument, which is the request; every other draw
+    # recorder in the plugin already used the request, so it was one procedure
+    # out of step rather than a policy the plugin held. It now routes both ends
+    # through @emlRecordAxisRequest and publishes the resolved pair through
+    # @emlRecordAxisNote, so the call carries the request and the header block
+    # carries the range.
+    #
+    # FOUR STATEMENTS, KEPT APART, because "the emitted file mentions auto
+    # somewhere" is not the claim and never was:
+    #
+    #   the CALL carries no resolved literal      auto_call_literals
+    #   the HEADER BLOCK declares the axis pair   auto_hdr_axis
+    #   the resolved range is still WRITTEN DOWN  auto_resolved_comment
+    #   the REPLAY rescales, against the answer   retarget_matches_native
+    #     key rather than merely against leg 1
+    #
+    # The third is not decoration. The resolved numbers are what a reader needs
+    # to know what the recorded figure actually looked like; moving them out of
+    # the call would have LOST them if they were not put somewhere, and the
+    # somewhere is the @emlRecordResult comment beside the step. A fix that
+    # drops the record is a different defect, not this one repaired.
+    check("v61",
+          sprintf("a violin recorded on AUTO emits no resolved literals (RULING 10a): %s",
+                  .x("auto_call_tail")),
+          0L, .xi("auto_call_literals"), tol = 0)
+    check("v61",
+          "and the emitted script declares axisYMin/axisYMax in its header block",
+          2L, .xi("auto_hdr_axis"), tol = 0)
+    check("v61",
+          "and still records what the range RESOLVED to, beside the step",
+          1L, .xi("auto_resolved_comment"), tol = 0)
+    # THE REPLAY, AGAINST THE ANSWER KEY. leg3 is the emitted script run on the
+    # retargeted table; leg4 is a native auto draw of that same table. Byte
+    # equality of the two PNGs is the statement, for the reason 5a gives: "the
+    # axis changed" is not a finding on its own.
+    check("v61",
+          sprintf(paste0("and its replay on retargeted data rescales to the ",
+                         "native draw (%s..%s over data %s..%s, native %s..%s)"),
+                  .x("leg3_axis_lo"), .x("leg3_axis_hi"),
+                  .x("leg3_data_lo"), .x("leg3_data_hi"),
+                  .x("leg4_axis_lo"), .x("leg4_axis_hi")),
+          1L, .xi("retarget_matches_native"), tol = 0)
+    # AND THE RETARGETED FIGURE HAS ITS DATA ON IT. The same containment 5b
+    # applies to leg 1, applied to the leg that used to fail: an axis that
+    # brackets its data is what having the violins on the page MEANS, and the
+    # frozen frame -- 180..270 over data at 1083..1245 -- failed exactly this.
+    check_true("v61",
+               sprintf("and that axis holds the retargeted data (%s..%s over %s..%s)",
+                       .x("leg3_axis_lo"), .x("leg3_axis_hi"),
+                       .x("leg3_data_lo"), .x("leg3_data_hi")),
+               !is.na(.xn("leg3_axis_lo")) && !is.na(.xn("leg3_data_lo")) &&
+               .xn("leg3_axis_lo") <= .xn("leg3_data_lo") &&
+               .xn("leg3_axis_hi") >= .xn("leg3_data_hi"))
 
-    # 5e. THE EXPLICIT RANGE (RULING 10b), ALSO OPEN, AND OPEN EVERYWHERE.
-    # A user who TYPED a range should get it back as `axisYMin = 150` in the
-    # emitted script's editable header block, referenced by the call. No draw
-    # recorder does this today: the lift mechanism is
-    # @emlRecordColumnManifest / @emlRecordColumnSpec in
-    # plugin/stats/eml-record.praat, it is table-driven by argument position,
-    # and it lifts QUOTED literals only -- a numeric argument is not one. That
-    # file was not this pass's to edit either.
-    attest("v61",
-           sprintf(paste0("an explicit range is still emitted inline, not in ",
-                          "the header block: %s"), .x("expl_call_tail")),
-           "harness/graphseams/axis_out/AXIS.tsv, measured 15 Aug 2026")
+    # 5e. THE EXPLICIT RANGE (RULING 10b), ALSO CLOSED.
+    # A user who TYPED a range gets it back as `axisYMin = 150` in the emitted
+    # script's editable header block, referenced by the call. The lift is
+    # @emlRecordColumnManifest in plugin/stats/eml-record.praat, which used to
+    # lift QUOTED literals only -- it is table-driven by argument position and
+    # a numeric argument is not a quoted one -- and now carries the axis pair
+    # alongside the column names.
+    #
+    # THREE PARTS, AND EITHER OF THE FIRST TWO ALONE IS THE DEFECT WEARING THE
+    # FIX'S CLOTHES: a header variable nothing reads is a dead preset channel,
+    # which is the D4 shape this same file pins in section 2; a call naming a
+    # variable nobody declares does not parse at all. The third is placement --
+    # a declaration BELOW the first step is not in the editable block, and the
+    # block is the whole contract, since it is the one place ruling 9 asks a
+    # user to edit.
+    check("v61",
+          sprintf("a typed range comes back as axisYMin in the header block (RULING 10b): %s",
+                  .x("expl_call_tail")),
+          1L, .xi("expl_hdr_min"), tol = 0)
+    check("v61", "and axisYMax with it",
+          1L, .xi("expl_hdr_max"), tol = 0)
+    check("v61", "and the draw call references the two variables, not the numbers",
+          1L, .xi("expl_call_refs_vars"), tol = 0)
+    check("v61", "and the declaration is inside the editable block, above step 1",
+          1L, .xi("expl_hdr_in_block"), tol = 0)
 }
 
 if (!exists("EML_SUITE")) {

@@ -939,7 +939,23 @@ scripts <- c(
     # inside plugin/ and .gitattributes the sole authority outside it, and v85
     # recomputes both halves of that partition from RELEASE_EXCLUDE.tsv on
     # every run rather than keeping a second copy of it.
-    "v85_source_archive_shape.R"
+    "v85_source_archive_shape.R",
+    # v86's subject is a FIGURE FORMAT THE HOST MAY NOT HAVE. Praat's manual
+    # puts "Save as PDF file..." on Macintosh and Linux only, and a command
+    # that does not exist does not fail quietly -- it ends the script where it
+    # stands, which inside the Save panel takes the receipt, the panel's
+    # return and the caller's loop with it. The panel does not ask which
+    # operating system it is on: it attempts the save under `nocheck` and then
+    # looks for the file, so one piece of code reads both answers and a later
+    # Praat that moves its platform support needs no edit here. v86 drives six
+    # saves against a real Picture window -- four on a Praat that has all
+    # three formats, two on a copy of the panel whose vector command has been
+    # renamed to one Praat has not got -- reads the markers out of the bytes
+    # itself, and requires the redirect to have been SEEN firing: naming the
+    # format that failed, naming PNG, EPS and PDF as the alternatives, and
+    # carrying the path of the PNG that is still on disk. Every save the panel
+    # claims is now a file it found, the PNG included.
+    "v86_vector_figure_export.R"
 )
 
 cat("EML Stats & Graphs validation suite\n")

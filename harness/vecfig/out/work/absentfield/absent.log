@@ -1,0 +1,10 @@
+eps_exists=1
+pdf_exists=0
+BEFORE
+Error: Unknown variable:
+« also_PDF
+Script line 8 not performed or completed:
+« x = also_PDF »
+Script “/home/claude/EMLPraatTools/harness/vecfig/out/work/absentfield/absent.praat” not completed.
+Praat: script command <<absent.praat>> not completed.
+

@@ -2,7 +2,7 @@ SEAMS kwadv begin tableId=1
 
 ══════════════════════════════════════════════
   EML Stats : Kruskal-Wallis H Test
-  Sat Aug 15 17:56:06 2026
+  Mon Aug 17 18:26:11 2026
 ══════════════════════════════════════════════
 
   Table               demo 3groups
@@ -16,7 +16,7 @@ SEAMS kwadv begin tableId=1
   Why: Nonparametric comparison of three or more groups — no normality assumption needed.
   H                   16.6245		Test statistic: measures rank dispersion across groups (chi-squared distributed)
   df                  2		Number of groups (3) minus 1. Controls the chi-squared reference distribution.
-  p                   < .001  (0.0002454860263729046)		Statistically significant: <0.1% probability due to chance
+  p                   < .001  (2.45e-04)		Statistically significant: <0.1% probability due to chance
   Epsilon-squared     0.3778		Effect size: large (>0.14 = large). 38% of variance explained by group membership
   Effect magnitude    large effect
 

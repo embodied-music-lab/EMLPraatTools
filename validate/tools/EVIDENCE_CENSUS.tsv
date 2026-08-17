@@ -106,3 +106,4 @@ v82	v82_generated_barrel.R	SOURCE+LIVE	PRAAT	praat	plugin	work
 v83	v83_pin_definition.R	NONE	NO			census_script,ledger_p,rec_p,vdir,vfiles	
 v84	v84_axis_refusal.R	SOURCE+ARTEFACT	NO		harness,plugin		
 v85	v85_source_archive_shape.R	SOURCE	NO		plugin		
+v86	v86_vector_figure_export.R	SOURCE+ARTEFACT	NO		harness,plugin		

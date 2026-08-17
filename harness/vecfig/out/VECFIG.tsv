@@ -1,0 +1,233 @@
+meta_praat_found	1
+meta_output_code_sha256	8c52b583288607757c175cd46fa7ff19588217da1a956a28ffc46716827960a6
+meta_record_code_sha256	7bd854ad18fea6ca6bf2227a335e06e24f95e3d9aee6921d57d765c21f253bb1
+all_attempt_pdf_lines	1
+all_attempt_eps_lines	1
+all_mutation	none
+all_want_eps	1
+all_want_pdf	1
+all_sel_before	2
+all_sel_after	2
+all_sel_after_ids	ab
+all_n_written	3
+all_landed	PNG, EPS, PDF
+all_missing	
+all_png_path	/home/claude/EMLPraatTools/harness/vecfig/out/files/all/fig.png
+all_file_list	/home/claude/EMLPraatTools/harness/vecfig/out/files/all/fig.png | /home/claude/EMLPraatTools/harness/vecfig/out/files/all/fig.eps | /home/claude/EMLPraatTools/harness/vecfig/out/files/all/fig.pdf | 
+all_legend_n_written	3
+all_legend_landed	PNG, EPS, PDF
+all_legend_missing	
+all_fig_file_list	/home/claude/EMLPraatTools/harness/vecfig/out/files/all/fig.png | /home/claude/EMLPraatTools/harness/vecfig/out/files/all/fig.eps | /home/claude/EMLPraatTools/harness/vecfig/out/files/all/fig.pdf | /home/claude/EMLPraatTools/harness/vecfig/out/files/all/fig_legend.png | /home/claude/EMLPraatTools/harness/vecfig/out/files/all/fig_legend.eps | /home/claude/EMLPraatTools/harness/vecfig/out/files/all/fig_legend.pdf | 
+all_redirect_lines	0
+all_unit_png_right	1
+all_unit_png_wrong	0
+all_unit_eps_right	1
+all_unit_eps_wrong	0
+all_unit_pdf_right	1
+all_unit_pdf_wrong	0
+all_unit_empty	0
+all_unit_junk	0
+all_unit_absent	0
+all_unit_objects_left	0
+all_absent_command_survived	1
+all_absent_command_file	0
+all_praat_version	6.6.30
+all_finished	1
+pngonly_attempt_pdf_lines	1
+pngonly_attempt_eps_lines	1
+pngonly_mutation	none
+pngonly_want_eps	0
+pngonly_want_pdf	0
+pngonly_sel_before	2
+pngonly_sel_after	2
+pngonly_sel_after_ids	ab
+pngonly_n_written	1
+pngonly_landed	PNG
+pngonly_missing	
+pngonly_png_path	/home/claude/EMLPraatTools/harness/vecfig/out/files/pngonly/fig.png
+pngonly_file_list	/home/claude/EMLPraatTools/harness/vecfig/out/files/pngonly/fig.png | 
+pngonly_legend_n_written	1
+pngonly_legend_landed	PNG
+pngonly_legend_missing	
+pngonly_fig_file_list	/home/claude/EMLPraatTools/harness/vecfig/out/files/pngonly/fig.png | /home/claude/EMLPraatTools/harness/vecfig/out/files/pngonly/fig_legend.png | 
+pngonly_redirect_lines	0
+pngonly_praat_version	6.6.30
+pngonly_finished	1
+epsonly_attempt_pdf_lines	1
+epsonly_attempt_eps_lines	1
+epsonly_mutation	none
+epsonly_want_eps	1
+epsonly_want_pdf	0
+epsonly_sel_before	2
+epsonly_sel_after	2
+epsonly_sel_after_ids	ab
+epsonly_n_written	2
+epsonly_landed	PNG, EPS
+epsonly_missing	
+epsonly_png_path	/home/claude/EMLPraatTools/harness/vecfig/out/files/epsonly/fig.png
+epsonly_file_list	/home/claude/EMLPraatTools/harness/vecfig/out/files/epsonly/fig.png | /home/claude/EMLPraatTools/harness/vecfig/out/files/epsonly/fig.eps | 
+epsonly_legend_n_written	2
+epsonly_legend_landed	PNG, EPS
+epsonly_legend_missing	
+epsonly_fig_file_list	/home/claude/EMLPraatTools/harness/vecfig/out/files/epsonly/fig.png | /home/claude/EMLPraatTools/harness/vecfig/out/files/epsonly/fig.eps | /home/claude/EMLPraatTools/harness/vecfig/out/files/epsonly/fig_legend.png | /home/claude/EMLPraatTools/harness/vecfig/out/files/epsonly/fig_legend.eps | 
+epsonly_redirect_lines	0
+epsonly_praat_version	6.6.30
+epsonly_finished	1
+pdfonly_attempt_pdf_lines	1
+pdfonly_attempt_eps_lines	1
+pdfonly_mutation	none
+pdfonly_want_eps	0
+pdfonly_want_pdf	1
+pdfonly_sel_before	2
+pdfonly_sel_after	2
+pdfonly_sel_after_ids	ab
+pdfonly_n_written	2
+pdfonly_landed	PNG, PDF
+pdfonly_missing	
+pdfonly_png_path	/home/claude/EMLPraatTools/harness/vecfig/out/files/pdfonly/fig.png
+pdfonly_file_list	/home/claude/EMLPraatTools/harness/vecfig/out/files/pdfonly/fig.png | /home/claude/EMLPraatTools/harness/vecfig/out/files/pdfonly/fig.pdf | 
+pdfonly_legend_n_written	2
+pdfonly_legend_landed	PNG, PDF
+pdfonly_legend_missing	
+pdfonly_fig_file_list	/home/claude/EMLPraatTools/harness/vecfig/out/files/pdfonly/fig.png | /home/claude/EMLPraatTools/harness/vecfig/out/files/pdfonly/fig.pdf | /home/claude/EMLPraatTools/harness/vecfig/out/files/pdfonly/fig_legend.png | /home/claude/EMLPraatTools/harness/vecfig/out/files/pdfonly/fig_legend.pdf | 
+pdfonly_redirect_lines	0
+pdfonly_praat_version	6.6.30
+pdfonly_finished	1
+nopdf_attempt_pdf_lines	0
+nopdf_attempt_eps_lines	1
+nopdf_mutation	nopdf
+nopdf_want_eps	1
+nopdf_want_pdf	1
+nopdf_sel_before	2
+nopdf_sel_after	2
+nopdf_sel_after_ids	ab
+nopdf_n_written	2
+nopdf_landed	PNG, EPS
+nopdf_missing	PDF
+nopdf_png_path	/home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig.png
+nopdf_file_list	/home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig.png | /home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig.eps | 
+nopdf_legend_n_written	2
+nopdf_legend_landed	PNG, EPS
+nopdf_legend_missing	PDF
+nopdf_fig_file_list	/home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig.png | /home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig.eps | /home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig_legend.png | /home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig_legend.eps | 
+nopdf_redirect_lines	20
+nopdf_redirect_line	Praat on this system did not write the PDF file, so no PDF was
+nopdf_redirect_line	saved.
+nopdf_redirect_line	
+nopdf_redirect_line	This save did write: PNG, EPS.
+nopdf_redirect_line	
+nopdf_redirect_line	These figure files are on disk:
+nopdf_redirect_line	/home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig.
+nopdf_redirect_line	png
+nopdf_redirect_line	/home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig.
+nopdf_redirect_line	eps
+nopdf_redirect_line	/home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig_
+nopdf_redirect_line	legend.png
+nopdf_redirect_line	/home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig_
+nopdf_redirect_line	legend.eps
+nopdf_redirect_line	
+nopdf_redirect_line	Praat's figure formats are PNG, EPS and PDF. The EPS above is
+nopdf_redirect_line	a vector file, so this figure is already in the form a journal
+nopdf_redirect_line	asks for.
+nopdf_redirect_line	
+nopdf_redirect_line	Nothing else about this save changed.
+nopdf_redirect_text	Praat on this system did not write the PDF file, so no PDF was saved.  This save did write: PNG, EPS.  These figure files are on disk: /home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig. png /home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig. eps /home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig_ legend.png /home/claude/EMLPraatTools/harness/vecfig/out/files/nopdf/fig_ legend.eps  Praat's figure formats are PNG, EPS and PDF. The EPS above is a vector file, so this figure is already in the form a journal asks for.  Nothing else about this save changed. 
+nopdf_redirect_longest_line	62
+nopdf_praat_version	6.6.30
+nopdf_finished	1
+novector_attempt_pdf_lines	0
+novector_attempt_eps_lines	0
+novector_mutation	novector
+novector_want_eps	1
+novector_want_pdf	1
+novector_sel_before	2
+novector_sel_after	2
+novector_sel_after_ids	ab
+novector_n_written	1
+novector_landed	PNG
+novector_missing	EPS, PDF
+novector_png_path	/home/claude/EMLPraatTools/harness/vecfig/out/files/novector/fig.png
+novector_file_list	/home/claude/EMLPraatTools/harness/vecfig/out/files/novector/fig.png | 
+novector_legend_n_written	1
+novector_legend_landed	PNG
+novector_legend_missing	EPS, PDF
+novector_fig_file_list	/home/claude/EMLPraatTools/harness/vecfig/out/files/novector/fig.png | /home/claude/EMLPraatTools/harness/vecfig/out/files/novector/fig_legend.png | 
+novector_redirect_lines	19
+novector_redirect_line	Praat on this system did not write the EPS file, so no EPS was
+novector_redirect_line	saved.
+novector_redirect_line	Praat on this system did not write the PDF file, so no PDF was
+novector_redirect_line	saved.
+novector_redirect_line	
+novector_redirect_line	This save did write: PNG.
+novector_redirect_line	
+novector_redirect_line	These figure files are on disk:
+novector_redirect_line	/home/claude/EMLPraatTools/harness/vecfig/out/files/novector/f
+novector_redirect_line	ig.png
+novector_redirect_line	/home/claude/EMLPraatTools/harness/vecfig/out/files/novector/f
+novector_redirect_line	ig_legend.png
+novector_redirect_line	
+novector_redirect_line	Praat's figure formats are PNG, EPS and PDF. No vector copy
+novector_redirect_line	arrived this time. EPS is the vector format Praat writes
+novector_redirect_line	wherever it runs, so it is worth pressing Save again, or
+novector_redirect_line	saving to a folder with more room on it.
+novector_redirect_line	
+novector_redirect_line	Nothing else about this save changed.
+novector_redirect_text	Praat on this system did not write the EPS file, so no EPS was saved. Praat on this system did not write the PDF file, so no PDF was saved.  This save did write: PNG.  These figure files are on disk: /home/claude/EMLPraatTools/harness/vecfig/out/files/novector/f ig.png /home/claude/EMLPraatTools/harness/vecfig/out/files/novector/f ig_legend.png  Praat's figure formats are PNG, EPS and PDF. No vector copy arrived this time. EPS is the vector format Praat writes wherever it runs, so it is worth pressing Save again, or saving to a folder with more room on it.  Nothing else about this save changed. 
+novector_redirect_longest_line	62
+novector_praat_version	6.6.30
+novector_finished	1
+meta_unguarded_before	1
+meta_unguarded_after	0
+meta_unguarded_message	not available for current selection
+meta_field_figure_PNG	1
+meta_field_also_EPS	1
+meta_field_also_PDF	0
+meta_flag_windows	0
+meta_flag_macintosh	0
+meta_flag_unix	1
+meta_absent_eps_exists	1
+meta_absent_pdf_exists	0
+meta_absent_before	1
+meta_absent_after	0
+rec_flushed	1
+rec_complete	1
+rec_emitted	1
+rec_blockline	figureFormat$  = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- step 2 (save)
+rec_blockline	figureFormat2$ = "PNG, PDF"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- step 4 (save)
+rec_save_call1	@emlRecordReplaySave: 1, "figA_20260817_120000", outputFolder$, figureFormat$
+rec_save_call2	@emlRecordReplaySave: 1, "figB_20260817_120000", outputFolder$, figureFormat2$
+rec_savepanel_left	0
+rec_replaysave	2
+rec_beginpause	0
+rec_block_promise	1
+rec_edit_lines_changed	1
+rec_edit_below_block	0
+rec_same_ran	1
+rec_same_abort	0
+rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figA_20260817_191659.eps
+rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figA_20260817_191659.png
+rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figA_20260817_191659_report.txt
+rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figB_20260817_191659.pdf
+rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figB_20260817_191659.png
+rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figB_20260817_191659_report.txt
+rec_same_figA_png	1
+rec_same_figA_eps	1
+rec_same_figA_pdf	0
+rec_same_figB_png	1
+rec_same_figB_eps	0
+rec_same_figB_pdf	1
+rec_edited_ran	1
+rec_edited_abort	0
+rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figA_20260817_191700.eps
+rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figA_20260817_191700.png
+rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figA_20260817_191700_report.txt
+rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figB_20260817_191700.eps
+rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figB_20260817_191700.png
+rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figB_20260817_191700_report.txt
+rec_edited_figA_png	1
+rec_edited_figA_eps	1
+rec_edited_figA_pdf	0
+rec_edited_figB_png	1
+rec_edited_figB_eps	1
+rec_edited_figB_pdf	0
+meta_legs	6
