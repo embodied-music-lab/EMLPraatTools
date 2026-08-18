@@ -600,15 +600,22 @@ if (canDrive) {
 # checkout, so reading it would turn this section red for a reason that has
 # nothing to do with what it is about.
 repo <- repo_path(".")
+# THE PATH GIT IS ASKED ABOUT IS THE REAL FOLDER. `plugin` beside it is a
+# symlink to plugin_EML_StatsGraphs, and git refuses a pathspec that goes
+# through one -- check-ignore exits 128 with "beyond a symbolic link", and
+# ls-files silently returns nothing, which would make the second check below
+# pass whatever is tracked. Both questions are about git's own namespace, so
+# both are asked in git's own spelling.
+PLUGIN_DIR <- "plugin_EML_StatsGraphs"
 ign <- suppressWarnings(system2("git",
     c("-C", shQuote(repo), "check-ignore", "-q",
-      shQuote(file.path("plugin", BARREL))), stdout = TRUE, stderr = TRUE))
+      shQuote(file.path(PLUGIN_DIR, BARREL))), stdout = TRUE, stderr = TRUE))
 ign_status <- attr(ign, "status"); if (is.null(ign_status)) ign_status <- 0L
 check_true("v82", "the generated barrel is git-ignored",
            ign_status == 0L)
 tracked <- suppressWarnings(system2("git",
     c("-C", shQuote(repo), "ls-files",
-      shQuote(file.path("plugin", BARREL))), stdout = TRUE, stderr = TRUE))
+      shQuote(file.path(PLUGIN_DIR, BARREL))), stdout = TRUE, stderr = TRUE))
 check_true("v82", "and no copy of it is tracked",
            length(tracked) == 0L || !any(nzchar(tracked)))
 

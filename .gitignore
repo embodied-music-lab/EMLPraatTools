@@ -268,7 +268,7 @@ harness/record/replay_out/breaks/break_*.v75.log
 harness/bracketcap/out/break_*.v76.log
 
 # The one-line library barrel is GENERATED, at every Praat launch, by
-# plugin/setup.praat, into whichever folder the plugin is installed in. On a
+# setup.praat, into whichever folder the plugin is installed in. On a
 # development machine that folder can be this working tree -- harness/walks
 # symlinks the repository into a preferences directory -- and the file it
 # writes there carries THAT machine geometry in eleven absolute include
@@ -276,7 +276,12 @@ harness/bracketcap/out/break_*.v76.log
 # right on one machine and wrong everywhere else, beside three shipped ones
 # whose paths are relative on purpose. validate/v82 asserts this entry is
 # here and that nothing tracked matches it.
-plugin/scripts/eml-lib-user.praat
+#
+# THE PATH IS THE REAL FOLDER, NOT THE `plugin` SYMLINK BESIDE IT. git refuses
+# a pathspec that goes through a symlink -- `git check-ignore
+# plugin/scripts/eml-lib-user.praat` exits 128 with "beyond a symbolic link" --
+# so a pattern written the short way would match nothing and ignore nothing.
+plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
 # The vector-export rig's per-sabotage FIGURES. break.sh re-drives the whole
 # rig inside each break directory, so each one carries its own 1.7 MB of PNG,
 # EPS and PDF -- 9.9 MB of pictures whose only job was to make v86 go red once

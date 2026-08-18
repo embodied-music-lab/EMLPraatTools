@@ -262,9 +262,14 @@ done
 echo "== head_single"
 HEADTREE="$OUT/head_tree"
 mkdir -p "$HEADTREE"
-( cd "$ROOT" && git archive HEAD plugin ) | tar -x -C "$HEADTREE"
-if [ -f "$HEADTREE/plugin/stats/eml-record.praat" ]; then
-    record_case single "$HEADTREE/plugin" "$OUT/head_single"
+# THE PATHSPEC IS THE REAL FOLDER. `plugin` beside it is a symlink to
+# plugin_EML_StatsGraphs, and a git pathspec does not go through one: `git
+# archive HEAD plugin` exports the 22-byte link and nothing else, so the tar
+# would unpack a dangling name and this leg would record nothing while
+# exiting 0. Filesystem paths resolve through the symlink; git's do not.
+( cd "$ROOT" && git archive HEAD plugin_EML_StatsGraphs ) | tar -x -C "$HEADTREE"
+if [ -f "$HEADTREE/plugin_EML_StatsGraphs/stats/eml-record.praat" ]; then
+    record_case single "$HEADTREE/plugin_EML_StatsGraphs" "$OUT/head_single"
     if [ -s "$OUT/head_single/emitted.praat" ]; then
         emit head_single recorded 1
     else

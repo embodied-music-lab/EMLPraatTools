@@ -110,12 +110,21 @@
 # release channel.
 #
 # The rename limit is not left as prose. One archive below is built with
-# --prefix, the way GitHub builds it from a tag, and checked to confirm the
-# plugin still arrives at <prefix>plugin/ -- so the statement "this does not
-# produce an installable folder name" is a measurement. It doubles as the pin
-# on the 17 August ruling that the source folder stays `plugin/`; the INSTALL
-# name plugin_EML_StatsGraphs is a separate thing, set by packaging, and
-# v47_plugin_folder_name.R is what holds it.
+# --prefix, the way GitHub builds it from a tag, and the plugin is required to
+# arrive at <prefix>plugin_EML_StatsGraphs/ -- the name the SOURCE FOLDER
+# carries, which is where the archive gets it. export-ignore did not put it
+# there and could not have; it is a `git mv` in the tree.
+#
+# THE SOURCE FOLDER AND THE INSTALL FOLDER NOW HAVE THE SAME NAME, and the
+# reason is this asset. A user unzips it and drags one folder into Praat's
+# preferences directory, so the archive has to offer exactly one candidate
+# wearing the right name. `plugin` survives at the repository root as a
+# SYMLINK to plugin_EML_StatsGraphs, so the paths written as `plugin/...`
+# across the harnesses and validators keep resolving in a checkout -- and it
+# is export-ignored, because two entries that both look like the plugin is the
+# ambiguity the rename removed. Both halves are asserted below.
+# v47_plugin_folder_name.R holds the INSTALL name against the rigs; this file
+# holds what the archive presents.
 #
 # ---------------------------------------------------------------------------
 # validate/ STAYS IN AND plugin/dev/ GOES OUT, BOTH BY AUTHOR RULING OF
@@ -213,10 +222,11 @@ GIT  <- Sys.which("git")
 #   somebody adds cannot ride into the asset unnoticed.
 # ---------------------------------------------------------------------------
 MUST_SHIP <- c(
-    # The plugin. The reason the asset exists. 327 tracked files, of which 255
-    # ship: plugin/dev/ is the 72 the congruence check below keeps out, by the
-    # row RELEASE_EXCLUDE.tsv already carries.
-    "plugin/",
+    # The plugin, under the name Praat installs it by. The reason the asset
+    # exists, and the folder a user drags out of it. 332 tracked files, of
+    # which 257 ship: dev/ is the 75 the congruence check below keeps out, by
+    # the row RELEASE_EXCLUDE.tsv already carries.
+    "plugin_EML_StatsGraphs/",
     # The validation suite. Author ruling, above.  2.71 MB / 113 files.
     "validate/",
     # CI configuration, including the workflow that runs the suite. Tiny, and
@@ -265,7 +275,15 @@ MUST_NOT_SHIP <- c(
     # A one-row incident log from an agent session, about a harness that
     # killed its own driving shell. Session bookkeeping for a rig that is
     # itself excluded above.
-    "RETRIES.tsv"
+    "RETRIES.tsv",
+    # 124 KB / 12 files: one workstream's report, its proposals, its runner and
+    # the committed red/green transcripts behind them. The same class as
+    # audit/ -- a record of work done ON the source rather than source -- and
+    # judged the same way. What the lane PRODUCED is already in the asset:
+    # v90-v93 sit in validate/ and read their inputs from evidence/, not from
+    # here, so nothing that ships loses a file it reads. Readable on
+    # github.com like the rest.
+    "lane/"
 )
 
 ALSO_PERMITTED <- c(
@@ -275,6 +293,19 @@ ALSO_PERMITTED <- c(
     # window before it lands, and does not go green-by-silence after.
     "CITATION.cff"
 )
+
+# THE PLUGIN FOLDER'S NAME, WRITTEN ONCE. Everything below that has to form a
+# path inside the plugin takes it from here, so this file names the folder in
+# one place rather than in eight. It is the install name as well -- the source
+# folder and the folder Praat installs are the same folder now, which is what
+# lets a user drag the archive's plugin directly into a preferences directory.
+PLUGIN_DIR <- "plugin_EML_StatsGraphs/"
+
+# THE COMPATIBILITY SYMLINK. `plugin` at the repository root is a git symlink
+# (mode 120000) to plugin_EML_StatsGraphs, kept so that the paths written as
+# `plugin/...` throughout the harnesses, validators and documents keep
+# resolving in a checkout. It is export-ignored and must not reach the asset.
+SYMLINK <- "plugin"
 
 # ---------------------------------------------------------------------------
 # git plumbing. Everything runs with -C ROOT; the overlay index is a temp file
@@ -411,6 +442,34 @@ if (length(unjudged)) {
         "  .gitattributes. Do not widen ALSO_PERMITTED to make this quiet.\n", sep = "")
 }
 
+# --- THE SYMLINK DOES NOT SHIP --------------------------------------------
+# A user unzips this asset and drags ONE folder into Praat's preferences
+# directory, so the archive must offer exactly one thing that looks like the
+# plugin. The root symlink is the second thing that looks like it, and on a
+# checkout that did not preserve symlinks it looks like a 22-byte text file
+# with a folder name in it. Both shapes are asserted away: no top-level entry
+# called `plugin`, and no archive path under a `plugin/` folder.
+#
+# ASSERTED HERE RATHER THAN ADDED TO MUST_NOT_SHIP, for a reason worth writing
+# down: MUST_NOT_SHIP doubles as the vocabulary of the dangling-reference
+# ratchet at the foot of this file, where a bare entry becomes a word-boundary
+# regex run over every shipped document. `plugin` as a bare entry would match
+# the English word in every sentence README.md writes about the plugin, and
+# the ratchet would start measuring prose instead of paths.
+check_true("v85",
+           sprintf("the archive carries no top-level `%s` entry -- the compatibility symlink does not ship",
+                   SYMLINK),
+           !(SYMLINK %in% top) && !(paste0(SYMLINK, "/") %in% top))
+n_under <- sum(startsWith(files, paste0(SYMLINK, "/")))
+check_true("v85",
+           sprintf("and no archive path sits under a `%s/` folder (%d found)",
+                   SYMLINK, n_under),
+           n_under == 0)
+check_true("v85",
+           sprintf("exactly one top-level entry looks like the plugin folder (%s)",
+                   paste(grep("^plugin", top, value = TRUE), collapse = ", ")),
+           length(grep("^plugin", top, value = TRUE)) == 1L)
+
 # --- WEIGHT: the saving is real and stays real -----------------------------
 # Ceilings, not equalities: plugin/ and validate/ both grow, and a check that
 # has to be edited every time a validator is added is a check that gets edited
@@ -469,13 +528,13 @@ check_true("v85",
 rx_covers <- function(f) {
     if (!length(rx_paths)) return(FALSE)
     any(vapply(rx_paths, function(p) {
-        w <- paste0("plugin/", p)
+        w <- paste0(PLUGIN_DIR, p)
         if (grepl("/$", p)) startsWith(f, w) else identical(f, w)
     }, logical(1)))
 }
 
-p_tracked <- tracked_in("plugin")
-p_zipped  <- in_zip("plugin/")
+p_tracked <- tracked_in("plugin_EML_StatsGraphs")
+p_zipped  <- in_zip("plugin_EML_StatsGraphs/")
 p_covered <- p_tracked[vapply(p_tracked, rx_covers, logical(1))]
 p_kept    <- setdiff(p_tracked, p_covered)
 
@@ -485,7 +544,7 @@ p_kept    <- setdiff(p_tracked, p_covered)
 # authority, which is where two hand-maintained lists start to drift.
 missing_p <- setdiff(p_kept, p_zipped)
 check_true("v85",
-           sprintf("no export-ignore drops a plugin/ path RELEASE_EXCLUDE.tsv does not name: %d of %d uncovered files ship%s",
+           sprintf("no export-ignore drops a plugin path RELEASE_EXCLUDE.tsv does not name: %d of %d uncovered files ship%s",
                    length(intersect(p_kept, p_zipped)), length(p_kept),
                    if (length(missing_p))
                        paste0(" -- MISSING: ",
@@ -507,7 +566,7 @@ if (length(missing_p)) {
 # the release artefact hold the same files, because plugin/ is the folder a
 # user drags into Praat and everything under it arrives in the install.
 for (p in rx_paths) {
-    want <- paste0("plugin/", p)
+    want <- paste0(PLUGIN_DIR, p)
     hits <- if (grepl("/$", p)) files[startsWith(files, want)] else files[files == want]
     ntracked <- sum(vapply(p_tracked,
                            function(f) if (grepl("/$", p)) startsWith(f, want)
@@ -518,7 +577,7 @@ for (p in rx_paths) {
                length(hits) == 0)
 }
 if (any(vapply(rx_paths, function(p) {
-        w <- paste0("plugin/", p)
+        w <- paste0(PLUGIN_DIR, p)
         if (grepl("/$", p)) any(startsWith(files, w)) else w %in% files
     }, logical(1)))) {
     cat("\n  A tree RELEASE_EXCLUDE.tsv drops from the installable artefact is\n",
@@ -532,7 +591,8 @@ if (any(vapply(rx_paths, function(p) {
 # sibling directories must never appear in it, because the builder stages
 # plugin/ alone and such a row could never match. If one ever did, the two
 # lists would be describing the same path and the partition would be gone.
-siblings <- c("audit/", "evidence/", "harness/", "validate/", "plugin/", ".github/")
+siblings <- c("audit/", "evidence/", "harness/", "validate/", "lane/",
+               "plugin_EML_StatsGraphs/", ".github/")
 collide  <- intersect(rx_paths, siblings)
 check_true("v85",
            sprintf("no RELEASE_EXCLUDE.tsv row names a repository-level directory%s",
@@ -540,19 +600,26 @@ check_true("v85",
            length(collide) == 0)
 
 # --- THE LIMITS, MEASURED WHERE THEY CAN BE ------------------------------
-# GitHub names the archive root from the tag. Built the same way here to show
-# that the plugin still lands at <prefix>plugin/: export-ignore removes paths
-# and renames nothing, so no arrangement of it yields an installable folder.
-# This is also the pin on the 17 August ruling that the source folder is
-# `plugin/` and stays `plugin/`.
+# GitHub names the archive root from the tag and nothing else. Built the same
+# way here: under the tag prefix the plugin lands at its own name, because
+# export-ignore removes paths and renames nothing -- the name comes from the
+# tree. The same probe says the symlink is not there under the prefix either,
+# which is the shape a user actually unzips.
 if (file.exists(ZIP_TAG)) {
     tnames <- utils::unzip(ZIP_TAG, list = TRUE)$Name
     check_true("v85",
-               "a tag-built archive puts the plugin at <prefix>plugin/ -- export-ignore cannot rename it",
-               any(startsWith(tnames, paste0(PREFIX, "plugin/"))))
+               sprintf("a tag-built archive puts the plugin at <prefix>%s -- the name comes from the tree, not from export-ignore",
+                       PLUGIN_DIR),
+               any(startsWith(tnames, paste0(PREFIX, PLUGIN_DIR))))
     check_true("v85",
-               "and does NOT produce an installable plugin_EML_StatsGraphs/ folder (that name is set by packaging)",
-               !any(startsWith(tnames, paste0(PREFIX, "plugin_EML_StatsGraphs/"))))
+               sprintf("and carries no <prefix>%s entry beside it", SYMLINK),
+               !any(tnames == paste0(PREFIX, SYMLINK)) &&
+               !any(startsWith(tnames, paste0(PREFIX, SYMLINK, "/"))))
+    ttop <- unique(sub("/.*$", "", sub(paste0("^", PREFIX), "", tnames)))
+    check_true("v85",
+               sprintf("so a user unzipping a tagged asset meets exactly one plugin folder (%s)",
+                       paste(grep("^plugin", ttop, value = TRUE), collapse = ", ")),
+               length(grep("^plugin", ttop, value = TRUE)) == 1L)
 }
 
 # The statement of those limits has to arrive with the archive, or a reader
@@ -566,15 +633,20 @@ if (".gitattributes" %in% files) {
     ga_ship <- readLines(file.path(ex, ".gitattributes"), warn = FALSE)
 }
 said <- function(re) any(grepl(re, ga_ship, ignore.case = TRUE))
-check_true("v85", "the shipped archive states that the automatic asset is NOT installable",
-           said("not installable|non-installable"))
+check_true("v85", "the shipped archive names the one folder a user drags into Praat",
+           said("plugin_EML_StatsGraphs"))
 check_true("v85", "the shipped archive states that export-ignore cannot rename the folder",
            said("cannot|CANNOT") && said("rename"))
 check_true("v85", "the shipped archive states that export-ignore cannot set the install name",
            said("install name"))
-check_true("v85", "the shipped archive states that export-ignore cannot fix file modes (P1)",
-           said("file mode") && said("P1|0600"))
-check_true("v85", "the shipped archive points installers at the built zip instead",
+# Git records the executable bit and nothing else, so `git archive` writes
+# every file 0644 (0755 where git says executable) whatever its mode on disk.
+# That is why the modes in this asset are uniform and why a mode defect on
+# disk cannot be seen in it -- a statement about a limit, which is what this
+# block is for, and one a reader needs before trusting the asset's modes.
+check_true("v85", "the shipped archive states that git carries no file mode but the executable bit",
+           said("file mode") && said("0644"))
+check_true("v85", "the shipped archive still points at the built zip as the release",
            said("build-release\\.py"))
 
 # --- THE DEBT THIS CHANGE CREATES, RATCHETED ------------------------------
@@ -640,7 +712,8 @@ dev_refs <- character(0)
 if (length(shipped_docs)) {
     for (d in shipped_docs) {
         txt <- paste(readLines(file.path(ex, d), warn = FALSE), collapse = "\n")
-        m <- regmatches(txt, gregexpr("\\bplugin/dev/[A-Za-z0-9_./-]*", txt))[[1]]
+        m <- regmatches(txt, gregexpr(
+            "\\b(plugin|plugin_EML_StatsGraphs)/dev/[A-Za-z0-9_./-]*", txt))[[1]]
         dev_refs <- c(dev_refs, unique(m))
     }
 }

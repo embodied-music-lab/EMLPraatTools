@@ -21,25 +21,38 @@
 #
 # `export-ignore` removes paths. That is the whole of its power. It CANNOT:
 #
-#   * rename the top-level folder. The archive's root is named from the tag
-#     (EMLPraatTools-<tag>/) and the plugin sits inside it as `plugin/`.
-#     Praat installs a plugin by the folder's name, so nothing here produces
-#     a folder called `plugin_EML_StatsGraphs`.
-#   * set the install name. Same reason.
-#   * fix file modes. Finding P1 records that 13 of the 21 files in
-#     plugin/scripts/ are mode 0600 in the built tree. Git stores only the
-#     executable bit, so that defect cannot be represented in this repository
-#     and cannot be corrected by anything written in it. It is fixed in
-#     packaging (`chmod 0644` before zipping) and verified on the finished
-#     zip.
+#   * rename anything. The archive's root is named from the tag
+#     (EMLPraatTools-<tag>/) and every path beneath it keeps the name it has
+#     in the tree. The plugin arrives as `plugin_EML_StatsGraphs/` because
+#     THE SOURCE FOLDER IS CALLED THAT — a `git mv`, not a line in this file.
+#   * set the install name. Same reason: Praat installs a plugin by the
+#     folder's name, and the folder's name comes from the tree, not from here.
+#   * carry a file mode. Git records the executable bit and nothing else, so
+#     `git archive` writes every file 0644 — 0755 only where git says
+#     executable — whatever its mode on disk. Nothing here changes that in
+#     either direction: the modes in this asset are uniform because git
+#     flattened them, not because anything checked them, and a mode defect in
+#     a working tree is invisible from inside this archive. The instrument
+#     that reads modes is `build-release.py --verify`, and it reads the built
+#     folder and the zip.
 #
-# So: THE AUTOMATIC ASSET IS NOT INSTALLABLE, AND THIS FILE DOES NOT MAKE IT
-# INSTALLABLE. The zip built by plugin/dev/tools/build-release.py remains the
-# only artefact anyone should install, and the only one the documentation
-# points at. What follows reduces the confusion of a user who downloads the
-# automatic asset anyway; it does not open a second release channel. If you
-# ever find yourself writing "or just grab the source zip" in an install
-# instruction, this paragraph is the reason not to.
+# So what the asset offers is not built here — it is inherited from the tree.
+# Measured 18 August 2026 on the archive these lines produce: 391 files, 1.9 MB
+# zipped, and exactly ONE top-level entry that looks like a plugin —
+# plugin_EML_StatsGraphs/, 257 files, every one of them 0644. Copied into a
+# Praat preferences directory it registers the EML Stats & Graphs cascade and
+# its commands open their dialogs, and the README quick start runs headless out
+# of it and prints t(13.6) = 7.89, p < .001. v85 rebuilds that archive on every
+# run of the suite and asserts the shape; harness/release/ drives the built zip.
+#
+# THE BUILT ZIP IS STILL THE RELEASE. plugin_EML_StatsGraphs/dev/tools/
+# build-release.py produces the plugin folder alone, gates every file in it
+# against RELEASE_EXCLUDE.tsv and the history rules, verifies the modes it set,
+# and is what the documentation points at. This asset is that same folder with
+# the licence, the README, the CI configuration and the validation suite beside
+# it — things a user does not drag anywhere. The lines at the bottom of this
+# file are what keep the folder they DO drag unambiguous: one candidate,
+# wearing the name Praat installs it by.
 #
 # ---------------------------------------------------------------------------
 # WHO THE ARCHIVE IS FOR
@@ -86,8 +99,8 @@
 # plugin/dev/ is the same KIND of material — suites, tooling, design documents
 # — and it goes. The two rulings are not in tension, because Praat installs a
 # plugin BY DROPPING A FOLDER into its preferences directory. A user who
-# unzips this asset and drags `plugin/` into Praat carries EVERYTHING UNDER
-# plugin/ with them and NOTHING BESIDE IT. plugin/dev/ is the only developer
+# unzips this asset and drags `plugin_EML_StatsGraphs/` into Praat carries
+# EVERYTHING UNDER it and NOTHING BESIDE IT. dev/ is the only developer
 # material in the repository that rides into the install: 1.4 MB and 72 files
 # of test scaffolding, reference generators and release tooling, arriving
 # inside the folder the user just installed. validate/, harness/ and audit/
@@ -173,21 +186,46 @@ evidence/ export-ignore
 # above.
 RETRIES.tsv export-ignore
 
+# One workstream's lane: 124 KB / 12 files — a report, a proposals document, a
+# runner, and the committed red/green transcripts behind them. The same class
+# as audit/ above, a record of work done ON the source rather than source, and
+# judged the same way. What the lane produced already ships: validate/v90–v93
+# came out of it, they sit in validate/ and they read their inputs from
+# evidence/, so nothing in the asset loses a file it reads. Readable on
+# github.com like the rest.
+lane/ export-ignore
+
 # The developer tree, and THE ONLY LINE IN THIS FILE THAT NAMES A PATH INSIDE
-# plugin/. 1.4 MB / 72 files: the phase-1 and phase-2 Praat test suites, the
-# Python and R reference generators, the release and manifest tooling, the
-# four design documents, the retired experiments and the history ledger.
+# the plugin folder. 1.4 MB / 72 files: the phase-1 and phase-2 Praat test
+# suites, the Python and R reference generators, the release and manifest
+# tooling, the four design documents, the retired experiments and the history
+# ledger.
 #
 # It is here because RELEASE_EXCLUDE.tsv already names it — this line does not
 # decide anything, it makes the source archive agree with the artefact (rule 2
 # above), and v85 fails if the two ever disagree in either direction. What
-# makes it worth the coupling is that plugin/ is the folder a user drags into
-# Praat's preferences directory: everything under plugin/ arrives in the
-# install, and this is the only developer material in the repository that
-# does. Readable on github.com; its own suites run from a clone.
-plugin/dev/ export-ignore
+# makes it worth the coupling is that plugin_EML_StatsGraphs/ is the folder a
+# user drags into Praat's preferences directory: everything under it arrives
+# in the install, and this is the only developer material in the repository
+# that does. Readable on github.com; its own suites run from a clone.
+plugin_EML_StatsGraphs/dev/ export-ignore
+
+# THE COMPATIBILITY SYMLINK AT THE REPOSITORY ROOT. `plugin` is a symlink to
+# plugin_EML_StatsGraphs, tracked by git as a 22-byte link. It exists so that
+# the ~2,178 paths written as `plugin/...` across the harnesses, validators
+# and documents keep resolving in a checkout; the alternative was editing all
+# of them at once, and a rig whose path silently stops pointing at anything
+# runs, measures nothing and reports success.
+#
+# IT MUST NOT REACH THE ARCHIVE. A user unzips this asset and drags ONE folder
+# into Praat's preferences directory. Two entries that both look like the
+# plugin — one of them a dangling link on any system that did not preserve it
+# — is exactly the ambiguity the folder name was corrected to remove. The
+# leading slash anchors this at the repository root, so it names the link and
+# nothing else. v85 asserts the archive carries no top-level `plugin` entry.
+/plugin export-ignore
 
 # NOTHING BELOW THIS LINE. Any new entry must be justified in place, must
-# either be outside plugin/ or name a path RELEASE_EXCLUDE.tsv already names
-# (rule 1 above), and must not be validate/ (the ruling above). v85 enforces
-# all three against the archive it builds.
+# either be outside plugin_EML_StatsGraphs/ or name a path RELEASE_EXCLUDE.tsv
+# already names (rule 1 above), and must not be validate/ (the ruling above).
+# v85 enforces all three against the archive it builds.
