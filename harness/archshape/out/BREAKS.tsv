@@ -1,0 +1,10 @@
+control	0	(none — THIS BREAK DID NOT GO RED)
+symlink_ships	5	every top-level entry has been judged -- UNJUDGED: plugin
+folder_misnamed	8	and it points at `plugin_EML_StatsGraphs` (tracked target: plugin_EML_Graphs)
+dev_returns	2	the artefact drops plugin_EML_StatsGraphs/dev/ and so does the SOURCE archive (75 tracked file(s), 75 in the zip)
+validate_gone	6	archive top level carries validate/
+validate_thinned	2	validate/ ships COMPLETE: 113 of 122 tracked files (author ruling, 17 Aug 2026)
+link_deleted	4	git tracks `plugin` as a symlink, mode 120000 (found no such entry)
+link_dangling	3	and it points at `plugin_EML_StatsGraphs` (tracked target: plugin_EML_Stats_Graphs)
+link_regular_file	4	git tracks `plugin` as a symlink, mode 120000 (found 100644)
+link_is_a_copy	3	git tracks `plugin` as a symlink, mode 120000 (found 332 tracked entries under that name -- a DIRECTORY, not a link)

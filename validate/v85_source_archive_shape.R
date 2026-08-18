@@ -100,14 +100,20 @@
 # WHAT export-ignore CANNOT DO, ASSERTED AND NOT MERELY SAID
 #
 # It removes paths. That is all. It cannot rename the archive's top-level
-# folder, cannot set the plugin's install name, and cannot fix file modes
-# (finding P1: 13 of 21 files in plugin/scripts/ are 0600 in the built tree,
-# and git stores only the executable bit, so no file in this repository can
-# express the fix). THE AUTOMATIC ASSET REMAINS NON-INSTALLABLE. The zip from
-# plugin/dev/tools/build-release.py is still the only artefact to install and
-# the only one the documentation points at; this work reduces the confusion of
-# someone who downloads the automatic asset anyway, and does not open a second
-# release channel.
+# folder, cannot set the plugin's install name, and cannot carry a file mode:
+# git records the executable bit and nothing else, so `git archive` writes
+# every file 0644 (0755 where git says executable) whatever its mode on disk.
+# A mode defect on disk therefore cannot be seen in this asset, and the modes
+# a user unzips are uniform because git made them so rather than because
+# anything checked them.
+#
+# WHAT THE ASSET IS. Its plugin folder is named the way Praat installs it and
+# carries the 257 files an install needs, so a user who unzips it and drags
+# that one folder into their preferences directory has installed the plugin.
+# The zip from plugin/dev/tools/build-release.py remains the release: it is
+# the artefact the documentation points at, it gates every file it stages
+# against RELEASE_EXCLUDE.tsv, and it is built deliberately rather than by
+# GitHub unasked. Two ways in, one of them supported.
 #
 # The rename limit is not left as prose. One archive below is built with
 # --prefix, the way GitHub builds it from a tag, and the plugin is required to
@@ -122,9 +128,43 @@
 # SYMLINK to plugin_EML_StatsGraphs, so the paths written as `plugin/...`
 # across the harnesses and validators keep resolving in a checkout -- and it
 # is export-ignored, because two entries that both look like the plugin is the
-# ambiguity the rename removed. Both halves are asserted below.
+# ambiguity the rename removed.
 # v47_plugin_folder_name.R holds the INSTALL name against the rigs; this file
 # holds what the archive presents.
+#
+# BOTH HALVES OF THAT ARRANGEMENT ARE ASSERTED BELOW, AND THE SECOND HALF IS
+# THE ONE WITH TEETH. "The symlink does not ship" is easy to satisfy: delete
+# the link and it is true. What makes the link safe to rely on is that it
+# still WORKS in a checkout, and that is the half nothing measured until now.
+#
+# The failure it guards against is the reason the rename was done this way
+# rather than by editing 2,178 paths. If `plugin` stops resolving -- deleted,
+# committed as a 22-byte regular file instead of a link, retargeted at a name
+# that no longer exists, or replaced by an empty directory -- then every rig
+# that opens `plugin/stats/...` finds nothing there. Praat's `include` of a
+# missing file, a shell `for f in plugin/*`, a glob that matches zero paths:
+# these do not raise. They produce an empty population, and a rig that
+# measured an empty population reports success. The suite would stay green
+# while measuring nothing, which is the single outcome the split method was
+# chosen to make impossible.
+#
+# So four checks below read the link rather than the archive, and none of them
+# is a presence test. git's view: `plugin` is tracked at mode 120000, and the
+# blob's bytes are exactly the real folder's name. The checkout's view:
+# normalizePath() of both spellings lands on the SAME real directory -- which
+# is red for a dangling link, red for a wrong target, red for a plain
+# directory, and red for a physical COPY of the tree, the one repair somebody
+# would reach for on a checkout that lost the link and the one that would
+# start the two names drifting apart; and a named file read through both
+# spellings has identical, non-empty bytes, so the paths reach content and not
+# merely a resolvable name.
+#
+# The recorded caveat, kept because it is the cost of the method: git symlinks
+# need developer mode on a Windows checkout. The rigs are Linux and the
+# ARCHIVE never contains the link, so no user meets this on any platform; a
+# Windows contributor who checks out without developer mode gets `plugin` as a
+# regular file, and these four checks are what tells them so, by name, instead
+# of leaving them to wonder why every rig passes and measures nothing.
 #
 # ---------------------------------------------------------------------------
 # validate/ STAYS IN AND plugin/dev/ GOES OUT, BOTH BY AUTHOR RULING OF
@@ -188,6 +228,56 @@
 # any uncommitted file. They are unreferenced and a later `git gc` collects
 # them. Nothing is staged, no ref moves, and the repository's own index is
 # never opened for writing.
+#
+# ---------------------------------------------------------------------------
+# THE BREAKS, AS MEASURED
+#
+# harness/archshape/break.sh, 18 August 2026. Each break is a COMPLETE CLONE
+# of the repository carrying one deliberate defect, committed in that clone,
+# with this file run against it. The clone is what keeps the working tree out
+# of it; committing the damage is what keeps the HEAD-vs-working-tree
+# divergence check from going red in every case and drowning the one red the
+# break is for. Counts out of 48 checks, recorded in
+# harness/archshape/out/BREAKS.tsv with a log per break beside it.
+#
+#   control              0 red   an undamaged clone, or every count below is
+#                                noise rather than evidence
+#
+#   THE ARCHIVE'S SHAPE
+#   symlink_ships        5 red   `/plugin export-ignore` deleted. The link
+#                                arrives beside the plugin in both archives
+#                                and the top level stops being a closed set.
+#   folder_misnamed      8 red   the folder renamed to plugin_EML_Graphs. The
+#                                archive is internally consistent and wrong.
+#   dev_returns          2 red   the dev/ export-ignore line deleted; 75 files
+#                                of test scaffolding reach the folder a user
+#                                drags into Praat.
+#   validate_gone        6 red   `validate/ export-ignore` added.
+#   validate_thinned     2 red   `validate/v0*.R export-ignore` -- validate/ is
+#                                still there, still has its runner, its
+#                                registry and this file in it, and 113 of 122
+#                                files ship. THE SHARP ONE: every presence
+#                                test in this file passes that tree. Only the
+#                                two counts fall, which is the argument for
+#                                comparing against what git tracks rather than
+#                                asserting a floor.
+#
+#   THE SYMLINK IN THE CHECKOUT -- and in all four, EVERY ARCHIVE CHECK ABOVE
+#   STAYED GREEN, which is the whole reason these four exist
+#   link_deleted         4 red   the link removed from the index and the disk
+#   link_dangling        3 red   retargeted at plugin_EML_Stats_Graphs
+#   link_regular_file    4 red   committed at 100644 holding the folder name
+#                                -- the Windows-without-developer-mode shape
+#   link_is_a_copy       3 red   the link replaced by a physical copy of the
+#                                332-file tree. The bytes check PASSES here,
+#                                correctly: a copy has the same bytes. The
+#                                only thing that separates a copy from a link
+#                                is that the two names resolve to two
+#                                different real directories, which is why the
+#                                third check compares normalizePath() and not
+#                                content.
+#
+#   Re-run:  bash harness/archshape/break.sh [name-substring]
 #
 #     Rscript validate/v85_source_archive_shape.R
 #
@@ -319,6 +409,76 @@ gitq <- function(..., idx = NULL, stdout = TRUE) {
     suppressWarnings(system2(GIT, c("-C", shQuote(ROOT), ...),
                              stdout = stdout, stderr = FALSE, env = e))
 }
+
+# --- THE SYMLINK WORKS IN THE CHECKOUT -------------------------------------
+# The half of the ruling that the rest of this file's greenness depends on.
+# See the header: a link that has stopped resolving does not raise anywhere,
+# it empties the population every other rig measures, and an empty population
+# is reported as a pass. Four checks, none of them a presence test.
+#
+# git's view first, because that is what a fresh clone gets. A tracked entry
+# at mode 120000 IS a symlink to git; anything else -- 100644, 100755, a tree
+# -- is not, and 100644 is exactly what a Windows checkout without developer
+# mode commits back.
+sym_ls <- if (git_ok) gitq("ls-files", "-s", "--", SYMLINK) else character(0)
+sym_ls <- sym_ls[nzchar(sym_ls)]
+sym_mode <- if (length(sym_ls) == 1L) sub("^([0-9]+) .*$", "\\1", sym_ls[1]) else NA_character_
+check_true("v85",
+           sprintf("git tracks `%s` as a symlink, mode 120000 (found %s)",
+                   SYMLINK,
+                   if (length(sym_ls) == 0L) "no such entry"
+                   else if (length(sym_ls) > 1L)
+                       sprintf("%d tracked entries under that name -- a DIRECTORY, not a link",
+                               length(sym_ls))
+                   else sym_mode),
+           identical(sym_mode, "120000"))
+
+# The blob's bytes are the target. Compared to the folder name this file
+# already uses everywhere else, so a rename that moves one and not the other
+# is red here rather than silently dangling.
+sym_target <- if (identical(sym_mode, "120000"))
+    paste(gitq("cat-file", "-p", sub("^[0-9]+ ([0-9a-f]+).*$", "\\1", sym_ls[1])),
+          collapse = "") else NA_character_
+want_target <- sub("/$", "", PLUGIN_DIR)
+check_true("v85",
+           sprintf("and it points at `%s` (tracked target: %s)",
+                   want_target, if (is.na(sym_target)) "unreadable" else sym_target),
+           identical(sym_target, want_target))
+
+# The checkout's view. normalizePath resolves links, so this is one comparison
+# that is red for every way the link can be wrong INCLUDING the one that looks
+# right: a physical copy of the tree resolves to a different real directory.
+sym_p  <- file.path(ROOT, SYMLINK)
+real_p <- file.path(ROOT, want_target)
+np <- function(p) tryCatch(normalizePath(p, mustWork = TRUE),
+                           error = function(e) NA_character_,
+                           warning = function(w) NA_character_)
+sym_np  <- np(sym_p)
+real_np <- np(real_p)
+check_true("v85",
+           sprintf("in this checkout `%s` and `%s` are the SAME directory, not two (%s)",
+                   SYMLINK, want_target,
+                   if (is.na(sym_np)) "the link does not resolve"
+                   else if (identical(sym_np, real_np)) "same real path"
+                   else "TWO DIFFERENT REAL PATHS -- a copy, or a wrong target"),
+           !is.na(sym_np) && !is.na(real_np) && identical(sym_np, real_np))
+
+# And the paths reach CONTENT. setup.praat is the file Praat itself opens when
+# it registers the plugin, so if any one path has to work through the link it
+# is this one. Bytes compared, not existence, and required non-empty: a
+# zero-byte file at both spellings would satisfy an equality test and install
+# nothing.
+probe <- "setup.praat"
+b_sym  <- tryCatch(readBin(file.path(sym_p, probe), "raw",
+                           file.info(file.path(sym_p, probe))$size),
+                   error = function(e) raw(0))
+b_real <- tryCatch(readBin(file.path(real_p, probe), "raw",
+                           file.info(file.path(real_p, probe))$size),
+                   error = function(e) raw(0))
+check_true("v85",
+           sprintf("`%s/%s` and `%s/%s` are the same non-empty bytes (%d vs %d)",
+                   SYMLINK, probe, want_target, probe, length(b_sym), length(b_real)),
+           length(b_real) > 0 && identical(b_sym, b_real))
 
 zipdir  <- file.path(tempdir(), "v85")
 dir.create(zipdir, showWarnings = FALSE, recursive = TRUE)
@@ -605,22 +765,55 @@ check_true("v85",
 # export-ignore removes paths and renames nothing -- the name comes from the
 # tree. The same probe says the symlink is not there under the prefix either,
 # which is the shape a user actually unzips.
-if (file.exists(ZIP_TAG)) {
-    tnames <- utils::unzip(ZIP_TAG, list = TRUE)$Name
-    check_true("v85",
-               sprintf("a tag-built archive puts the plugin at <prefix>%s -- the name comes from the tree, not from export-ignore",
-                       PLUGIN_DIR),
-               any(startsWith(tnames, paste0(PREFIX, PLUGIN_DIR))))
-    check_true("v85",
-               sprintf("and carries no <prefix>%s entry beside it", SYMLINK),
-               !any(tnames == paste0(PREFIX, SYMLINK)) &&
-               !any(startsWith(tnames, paste0(PREFIX, SYMLINK, "/"))))
-    ttop <- unique(sub("/.*$", "", sub(paste0("^", PREFIX), "", tnames)))
-    check_true("v85",
-               sprintf("so a user unzipping a tagged asset meets exactly one plugin folder (%s)",
-                       paste(grep("^plugin", ttop, value = TRUE), collapse = ", ")),
-               length(grep("^plugin", ttop, value = TRUE)) == 1L)
-}
+# THE TAG ARCHIVE IS THE ASSET, so its four shape rulings are re-measured on
+# it rather than inferred from the unprefixed zip above. Its build is asserted
+# rather than guarded by `if (file.exists(...))`: a conditional here does not
+# fail when the archive is missing, it DELETES the checks, and a block of
+# assertions that quietly stops running is the failure mode this project keeps
+# meeting. If the tagged build breaks, that is red, and the reds below follow.
+check_true("v85", "the tag-built archive -- the one GitHub serves -- builds",
+           file.exists(ZIP_TAG) && file.size(ZIP_TAG) > 0)
+tnames <- if (file.exists(ZIP_TAG) && file.size(ZIP_TAG) > 0)
+    utils::unzip(ZIP_TAG, list = TRUE)$Name else character(0)
+tfiles <- tnames[!grepl("/$", tnames)]
+tbare  <- sub(paste0("^", PREFIX), "", tfiles)
+ttop   <- unique(sub("/.*$", "", sub(paste0("^", PREFIX), "", tnames)))
+
+# NAMED. export-ignore removes paths and renames nothing, so this name can
+# only have come from the tree.
+check_true("v85",
+           sprintf("a tag-built archive puts the plugin at <prefix>%s -- the name comes from the tree, not from export-ignore",
+                   PLUGIN_DIR),
+           any(startsWith(tfiles, paste0(PREFIX, PLUGIN_DIR))))
+# NO SYMLINK. Both shapes: the link as git stores it, and the folder it would
+# be on a checkout that resolved it before archiving.
+check_true("v85",
+           sprintf("and carries no <prefix>%s entry beside it", SYMLINK),
+           !any(tnames == paste0(PREFIX, SYMLINK)) &&
+           !any(startsWith(tnames, paste0(PREFIX, SYMLINK, "/"))))
+# EXACTLY ONE CANDIDATE. Not "at least one": a user drags one folder in, and
+# two that both look like the plugin is the ambiguity the rename removed.
+check_true("v85",
+           sprintf("so a user unzipping a tagged asset meets exactly one plugin folder (%s)",
+                   paste(grep("^plugin", ttop, value = TRUE), collapse = ", ")),
+           length(grep("^plugin", ttop, value = TRUE)) == 1L)
+# NO dev/. Counted, and the count is printed, because "0 of 75" and "0 of 0"
+# are the same green and only one of them means anything -- the second says
+# the plugin tree is not in this archive at all.
+t_dev  <- tbare[startsWith(tbare, paste0(PLUGIN_DIR, "dev/"))]
+t_plug <- tbare[startsWith(tbare, PLUGIN_DIR)]
+check_true("v85",
+           sprintf("the tagged asset carries %d dev/ file(s) inside a plugin folder of %d",
+                   length(t_dev), length(t_plug)),
+           length(t_plug) > 0 && length(t_dev) == 0)
+# validate/ WHOLE. Compared against what git tracks in the same tree the
+# archive was built from, so it moves when the suite grows and cannot be
+# satisfied by a floor or by one surviving file.
+t_val <- tbare[startsWith(tbare, "validate/")]
+check_true("v85",
+           sprintf("and validate/ whole: %d of %d tracked files reach the tagged asset",
+                   length(t_val), length(v_tracked)),
+           length(v_tracked) > 0 && length(t_val) == length(v_tracked))
 
 # The statement of those limits has to arrive with the archive, or a reader
 # meets a slimmer asset and reasonably concludes it is now the download. The

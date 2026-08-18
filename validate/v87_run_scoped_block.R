@@ -676,5 +676,14 @@ for (s in SAVED) {
 present <- setdiff(unique(TR$case), c("head_single", "meta"))
 eml_census(V, "cases the runblock harness drove", present, CASES)
 
-eml_report("v87 -- the editable block names its variables by run")
-eml_exit()
+# THE GUARD IS NOT DECORATION. eml_exit() calls quit(status = 1) as soon as
+# ANY check in the run has failed, so an unguarded call here is a no-op only
+# while the whole suite is green and a hard stop the moment it is not. Under
+# run_all.R that would end the run at this file -- silently, with a total that
+# looks like a complete pass -- and take the scripts after it with it,
+# coverage.R among them. The pass that finds green checks measuring nothing
+# must not be the first thing a red suite switches off.
+if (!exists("EML_SUITE")) {
+    eml_report("v87 -- the editable block names its variables by run")
+    eml_exit()
+}

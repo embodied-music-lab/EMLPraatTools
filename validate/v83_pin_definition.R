@@ -616,6 +616,60 @@ if (length(bad_rows)) {
         "  subject. The argument is in this file's header.\n", sep = "")
 }
 
+# ---------------------------------------------------------------------------
+# NO VALIDATOR MAY END THE SUITE EARLY, WHICH IS THE SAME SUBJECT AS THIS FILE
+#
+# eml_exit() is quit(status = 1) as soon as ANY check in the run has failed,
+# and nothing before that point. A script that calls it OUTSIDE the
+# `!exists("EML_SUITE")` guard is therefore invisible while the suite is green
+# and, the first time anything goes red, ends run_all.R where it stands.
+#
+# MEASURED 18 AUGUST 2026, and this is why the check is here rather than
+# argued for. v81 and v87 both called it unguarded. With one failing check in
+# v83, run_all.R sourced 86 of its 91 scripts, stopped inside v87, and printed
+# "13340 checks, 13339 passed, 1 FAILED" with no indication that v90, v91,
+# v92, v93 and coverage.R had never run -- 294 checks absent from a total that
+# reads like a complete pass. Against the same tree with nothing red it
+# sourced all 91 and reported 13627.
+#
+# THAT IS THIS FILE'S OWN SUBJECT, one level up. A check that ran nothing is
+# not a pin; a SUITE that ran 86 of 91 scripts and says so nowhere is not a
+# suite. And the script it drops first is coverage.R, whose whole job is to
+# find checks that are green because they measured an empty population --
+# switched off by exactly the condition that makes it worth running.
+#
+# The guard is the fix, so the guard is what is asserted. An eml_exit() call
+# indented inside a block counts as guarded; one at column zero does not,
+# except where the next non-blank line is an explicit quit(), which is a
+# deliberate hard stop on a missing artefact rather than an accident.
+val_files <- sort(list.files(repo_path("validate"), pattern = "^v[0-9]+.*\\.R$",
+                             full.names = TRUE))
+unguarded <- character(0)
+for (f in val_files) {
+    ln <- readLines(f, warn = FALSE)
+    hits <- grep("^eml_exit\\(\\)", ln)          # column zero == outside any block
+    for (h in hits) {
+        nxt <- ln[seq_len(length(ln))[-seq_len(h)]]
+        nxt <- nxt[nzchar(trimws(nxt))]
+        if (length(nxt) && grepl("^\\s*quit\\(", nxt[1])) next
+        unguarded <- c(unguarded, sprintf("%s:%d", basename(f), h))
+    }
+}
+check_true("v83",
+           sprintf("no validator calls eml_exit() outside the EML_SUITE guard, so no red check can truncate the run (%d file(s) read)%s",
+                   length(val_files),
+                   if (length(unguarded))
+                       paste0(" -- ", paste(unguarded, collapse = ", ")) else ""),
+           length(val_files) > 0 && length(unguarded) == 0)
+if (length(unguarded)) {
+    cat("\n  The line named above ends run_all.R the first time anything in the\n",
+        "  suite goes red, and reports a total that looks complete. Wrap it in\n",
+        "  `if (!exists(\"EML_SUITE\")) { ... }` the way every other validator\n",
+        "  does. Do not relax this check by counting scripts instead: the\n",
+        "  truncation happens INSIDE the sourcing loop, so there is nothing\n",
+        "  left running to count them.\n", sep = "")
+}
+
 if (!exists("EML_SUITE")) {
     eml_report("v83 pin definition — a check that ran nothing is not a pin")
     eml_exit()

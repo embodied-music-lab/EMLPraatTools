@@ -1,0 +1,58 @@
+
+  .gitattributes: HEAD present, working tree present -> archive under test is what github.com serves
+  archive: 1,946,945 bytes, 402 entries (388 files), 10 top-level
+
+
+==============================================================================
+v85 source archive shape -- what the automatic asset carries
+==============================================================================
+PASS  v85     git is available (this check cannot be skipped quietly)  computed=NA  expected TRUE
+FAIL  v85     git tracks `plugin` as a symlink, mode 120000 (found 332 tracked entries under that name -- a DIRECTORY, not a link)  computed=NA  expected TRUE
+FAIL  v85     and it points at `plugin_EML_StatsGraphs` (tracked target: unreadable)  computed=NA  expected TRUE
+FAIL  v85     in this checkout `plugin` and `plugin_EML_StatsGraphs` are the SAME directory, not two (TWO DIFFERENT REAL PATHS -- a copy, or a wrong target)  computed=NA  expected TRUE
+PASS  v85     `plugin/setup.praat` and `plugin_EML_StatsGraphs/setup.praat` are the same non-empty bytes (27687 vs 27687)  computed=NA  expected TRUE
+PASS  v85     the .gitattributes measured here is the one HEAD carries (else the measurement is not the asset)  computed=NA  expected TRUE
+PASS  v85     the release archive builds from the tree under test  computed=NA  expected TRUE
+PASS  v85     archive top level carries plugin_EML_StatsGraphs/  computed=NA  expected TRUE
+PASS  v85     archive top level carries validate/             computed=NA  expected TRUE
+PASS  v85     archive top level carries .github/              computed=NA  expected TRUE
+PASS  v85     archive top level carries LICENSE               computed=NA  expected TRUE
+PASS  v85     archive top level carries README.md             computed=NA  expected TRUE
+PASS  v85     archive top level carries RELEASE_EXCLUDE.tsv   computed=NA  expected TRUE
+PASS  v85     archive top level carries .gitignore            computed=NA  expected TRUE
+PASS  v85     archive top level carries .gitattributes        computed=NA  expected TRUE
+PASS  v85     archive top level carries START_HERE.md         computed=NA  expected TRUE
+PASS  v85     archive top level is free of audit/             computed=NA  expected TRUE
+PASS  v85     archive top level is free of evidence/          computed=NA  expected TRUE
+PASS  v85     archive top level is free of harness/           computed=NA  expected TRUE
+PASS  v85     archive top level is free of RETRIES.tsv        computed=NA  expected TRUE
+PASS  v85     archive top level is free of lane/              computed=NA  expected TRUE
+PASS  v85     every top-level entry has been judged           computed=NA  expected TRUE
+PASS  v85     the archive carries no top-level `plugin` entry -- the compatibility symlink does not ship  computed=NA  expected TRUE
+PASS  v85     and no archive path sits under a `plugin/` folder (0 found)  computed=NA  expected TRUE
+PASS  v85     exactly one top-level entry looks like the plugin folder (plugin_EML_StatsGraphs/)  computed=NA  expected TRUE
+PASS  v85     archive size in MB (was 83.95 at 84 MB / 3,945 entries)  computed=1.946945  expected < 6
+PASS  v85     archive file count (was 3,762)                  computed=388  expected < 600
+PASS  v85     validate/ ships COMPLETE: 122 of 122 tracked files (author ruling, 17 Aug 2026)  computed=NA  expected TRUE
+PASS  v85     the suite runner ships                          computed=NA  expected TRUE
+PASS  v85     the suite registry ships                        computed=NA  expected TRUE
+PASS  v85     this validator is itself inside the archive it measures  computed=NA  expected TRUE
+PASS  v85     RELEASE_EXCLUDE.tsv parses and names 1 path(s)  computed=NA  expected TRUE
+PASS  v85     no export-ignore drops a plugin path RELEASE_EXCLUDE.tsv does not name: 257 of 257 uncovered files ship  computed=NA  expected TRUE
+PASS  v85     the artefact drops plugin_EML_StatsGraphs/dev/ and so does the SOURCE archive (75 tracked file(s), 0 in the zip)  computed=NA  expected TRUE
+PASS  v85     no RELEASE_EXCLUDE.tsv row names a repository-level directory  computed=NA  expected TRUE
+PASS  v85     the tag-built archive -- the one GitHub serves -- builds  computed=NA  expected TRUE
+PASS  v85     a tag-built archive puts the plugin at <prefix>plugin_EML_StatsGraphs/ -- the name comes from the tree, not from export-ignore  computed=NA  expected TRUE
+PASS  v85     and carries no <prefix>plugin entry beside it   computed=NA  expected TRUE
+PASS  v85     so a user unzipping a tagged asset meets exactly one plugin folder (plugin_EML_StatsGraphs)  computed=NA  expected TRUE
+PASS  v85     the tagged asset carries 0 dev/ file(s) inside a plugin folder of 257  computed=NA  expected TRUE
+PASS  v85     and validate/ whole: 122 of 122 tracked files reach the tagged asset  computed=NA  expected TRUE
+PASS  v85     the shipped archive names the one folder a user drags into Praat  computed=NA  expected TRUE
+PASS  v85     the shipped archive states that export-ignore cannot rename the folder  computed=NA  expected TRUE
+PASS  v85     the shipped archive states that export-ignore cannot set the install name  computed=NA  expected TRUE
+PASS  v85     the shipped archive states that git carries no file mode but the executable bit  computed=NA  expected TRUE
+PASS  v85     the shipped archive still points at the built zip as the release  computed=NA  expected TRUE
+PASS  v85     shipped root docs reference 12 path(s) in excluded trees; ratchet is 13 (must not grow)  computed=NA  expected TRUE
+PASS  v85     shipped root docs reference 1 path(s) inside plugin/dev/, which no longer ships; ratchet is 1  computed=NA  expected TRUE
+------------------------------------------------------------------------------ 
+48 checks, 45 passed, 3 FAILED
