@@ -9,7 +9,7 @@ r03_identical,analysis,statistic,NA
 r03_identical,analysis,p.value,NA
 r03_identical,analysis,sw.usable,0
 r03_identical,analysis.shapiro,refused,1
-r03_identical,analysis,output.chars,1336
+r03_identical,analysis,output.chars,1597
 r03_identical,wizard,n.available,10
 r03_identical,wizard,n,10
 r03_identical,wizard,skewness,NA

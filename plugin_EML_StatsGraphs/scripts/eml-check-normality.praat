@@ -2,8 +2,10 @@
 # EML Stats & Graphs — Check Normality (Multi-Column)
 # ============================================================================
 # Purpose: Test normality for one or more numeric columns, optionally
-#          broken out by group. Reports Shapiro-Wilk, skewness, kurtosis,
-#          and a parametric/nonparametric recommendation per column.
+#          broken out by group. Reports Shapiro-Wilk, skewness and
+#          kurtosis, and flags columns whose marginal distribution
+#          departs strongly from normal. It recommends no test: the
+#          intended analysis is not known on this screen.
 # Version: 2.2
 # Date: 8 August 2026
 #
@@ -126,8 +128,8 @@ repeat
     appendInfoLine: "══════════════════════════════════════════════"
     appendInfoLine: ""
 
-    nParametric = 0
-    nNonparametric = 0
+    # One counter, and it counts alarms. See the SUMMARY block below.
+    nFlagged = 0
 
     # ── Q-Q picker state ──────────────────────────────────────────────────
     # qqNGroups stays 0 unless the grouped branch fills it. It is read only
@@ -268,14 +270,57 @@ repeat
                     appendInfoLine: "    Skewness = ", .skewTxt$,
                     ... "  Kurtosis (excess) = ", .kurtTxt$
 
+                    # ── WHAT WAS MEASURED, NOT WHAT TO DO ─────────────────
+                    #
+                    # This wrapper is a DIAGNOSTIC. It is reached from the
+                    # Describe menu with no question attached: it does not
+                    # know whether the user is heading for a t test, a
+                    # regression, a Kruskal-Wallis or nothing at all. The
+                    # choice of test depends on the design, on what the
+                    # numbers mean, on the sample size and on what the user
+                    # is willing to assume -- none of which is in scope here.
+                    # A line that named a family of tests would be answering
+                    # a question this screen was never asked.
+                    #
+                    # So each line states the reading and the thresholds it
+                    # was read against, and stops. The Shapiro-Wilk W, its p,
+                    # the skewness and the excess kurtosis are printed
+                    # immediately above; these lines say which side of the
+                    # line those numbers fell, in this column, for this group.
+                    # "Marginal distribution" is meant literally -- what was
+                    # examined is the spread of this group's values on its
+                    # own, which is not the residual distribution a
+                    # parametric model would actually assume.
+                    # THE THRESHOLDS ARE PRINTED AS CRITERIA, NOT AS CLAIMS
+                    # ABOUT THIS GROUP. The gate is not a conjunction of all
+                    # three readings: a group whose Shapiro-Wilk does not
+                    # reject is not flagged even when its skewness is past the
+                    # limit. So a line saying "|skew| < 2" would be asserting
+                    # something the branch it prints from does not establish.
+                    # What is printed instead is the set of thresholds the
+                    # reading was made against; the group's own W, p, skewness
+                    # and excess kurtosis are on the two lines above, where a
+                    # reader can hold them against these numbers directly.
+                    @eml_fixed: emlSkewThreshold, 0
+                    .skewLimit$ = eml_fixed.result$
+                    @eml_fixed: emlKurtosisThreshold, 0
+                    .kurtLimit$ = eml_fixed.result$
+                    .criteria$ = "thresholds: Shapiro-Wilk p < .05, |skew| >= "
+                    ... + .skewLimit$ + ", |excess kurt| >= " + .kurtLimit$
                     if .largeNOverride
-                        appendInfoLine: "    → Parametric (large-n override:"
-                        ... + " shape within limits)"
+                        appendInfoLine: "    → Shapiro-Wilk rejects at the 5%"
+                        ... + " level; shape statistics are within the"
+                        ... + " thresholds at n = " + string$ (.n)
+                        ... + " (" + .criteria$ + ")"
                     elsif .groupNonparametric
-                        appendInfoLine: "    → Nonparametric recommended"
+                        appendInfoLine: "    → Strong departure from normality"
+                        ... + " in this group's marginal distribution ("
+                        ... + .criteria$ + ")"
                         .allGroupsOK = 0
                     else
-                        appendInfoLine: "    → Normality OK"
+                        appendInfoLine: "    → No strong departure in this"
+                        ... + " group's marginal distribution ("
+                        ... + .criteria$ + ")"
                     endif
                 else
                     appendInfoLine: "  ", .gDisplay$, " (n = ",
@@ -285,11 +330,12 @@ repeat
 
             appendInfoLine: ""
             if .allGroupsOK
-                appendInfoLine: "  Summary: all groups pass → parametric"
-                nParametric = nParametric + 1
+                appendInfoLine: "  Summary: no group in this column shows a"
+                ... + " strong departure"
             else
-                appendInfoLine: "  Summary: one or more groups fail → nonparametric"
-                nNonparametric = nNonparametric + 1
+                appendInfoLine: "  Summary: one or more groups in this column"
+                ... + " show a strong departure"
+                nFlagged = nFlagged + 1
             endif
         else
             # Overall normality — orchestrator handles test + report
@@ -299,10 +345,8 @@ repeat
                 appendInfoLine: "── ", displayCol$, " ──"
                 appendInfoLine: "  Error: ", emlRunNormalityAnalysis.error$
             else
-                if emlRunNormalityAnalysis.recommendation$ = "parametric"
-                    nParametric = nParametric + 1
-                else
-                    nNonparametric = nNonparametric + 1
+                if emlRunNormalityAnalysis.recommendation$ <> "parametric"
+                    nFlagged = nFlagged + 1
                 endif
             endif
         endif
@@ -312,20 +356,32 @@ repeat
 
     # ── Summary ───────────────────────────────────────────────────────────
 
+    # AN ALARM COUNT, NOT A SCORE. The number below says how many columns
+    # tripped the threshold, and that is the only thing it says. It is not a
+    # tally of columns that "passed", because nothing here is being graded and
+    # no test has been proposed to pass it for. A count of columns needing a
+    # closer look is a fact about this table; a count of columns cleared for
+    # parametric testing would be a recommendation about an analysis this
+    # screen has not been told about.
     appendInfoLine: "══════════════════════════════════════════════"
     appendInfoLine: "  SUMMARY: ", nNumericCols, " columns tested"
-    appendInfoLine: "  Parametric OK:     ", nParametric
-    appendInfoLine: "  Nonparametric rec: ", nNonparametric
-    if nNonparametric = 0
-        appendInfoLine: ""
-        appendInfoLine: "  All columns pass → parametric tests appropriate."
-    elsif nParametric = 0
-        appendInfoLine: ""
-        appendInfoLine: "  All columns fail → consider nonparametric tests."
+    appendInfoLine: "  Columns flagged for a strong departure: ", nFlagged
+    appendInfoLine: ""
+    if nFlagged = 0
+        appendInfoLine: "  No column showed a strong departure from normality"
+        appendInfoLine: "  in its marginal distribution."
+    elsif nFlagged = nNumericCols
+        appendInfoLine: "  Every column showed a strong departure from"
+        appendInfoLine: "  normality in its marginal distribution."
     else
-        appendInfoLine: ""
-        appendInfoLine: "  Mixed results — consider variable-by-variable."
+        appendInfoLine: "  Some columns showed a strong departure and some"
+        appendInfoLine: "  did not; the per-column readings are above."
     endif
+    appendInfoLine: ""
+    appendInfoLine: "  What was checked: the marginal distribution of each"
+    appendInfoLine: "  numeric column, on its own. Normality of model"
+    appendInfoLine: "  residuals, independence and equality of variance were"
+    appendInfoLine: "  not examined here."
     appendInfoLine: "══════════════════════════════════════════════"
 
     selectObject: tableId

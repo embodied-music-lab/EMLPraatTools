@@ -8,7 +8,7 @@ g01_normal,analysis,kurtosis,-0.28111066693520836
 g01_normal,analysis,statistic,0.977029533247791
 g01_normal,analysis,p.value,0.8354644370130686
 g01_normal,analysis,sw.usable,1
-g01_normal,analysis,output.chars,1453
+g01_normal,analysis,output.chars,1714
 g01_normal,wizard,n.available,24
 g01_normal,wizard,n,24
 g01_normal,wizard,skewness,-0.019076554787003836

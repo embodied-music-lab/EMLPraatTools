@@ -8,7 +8,7 @@ g03_severe,analysis,kurtosis,9.260760345517875
 g03_severe,analysis,statistic,0.7465129854636128
 g03_severe,analysis,p.value,7.834095677750921e-09
 g03_severe,analysis,sw.usable,1
-g03_severe,analysis,output.chars,1500
+g03_severe,analysis,output.chars,1788
 g03_severe,wizard,n.available,60
 g03_severe,wizard,n,60
 g03_severe,wizard,skewness,2.650264784721308

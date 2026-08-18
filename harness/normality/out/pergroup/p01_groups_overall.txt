@@ -6,7 +6,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Sat Aug  8 13:22:34 2026
+  Tue Aug 18 12:46:39 2026
   from: analysis dialog
 ══════════════════════════════════════════════
 
@@ -32,13 +32,19 @@
   ── Shapiro-Wilk Test ───────────────────────
   Why: Formal test of whether the data are drawn from a normal distribution.
   W                   0.9378		Closer to 1 = more normal (range: 0 to 1)
-  p                   .065		Approaching significance (p < .10) — interpret with caution
+  p                   .065		Not statistically significant at the 5% level (p between .05 and .10)
   → Does not reject normality (p >= 0.05)
 
 
   ── Recommendation ──────────────────────────
-  Normality appears reasonable.
-  → Parametric tests (t-test, ANOVA, Pearson r) are appropriate.
+  Shapiro-Wilk does not reject normality (p >= .05), and skewness and
+  kurtosis are within the thresholds.
+  → Parametric tests (t-test, ANOVA, Pearson r) are recommended.
+  → The p is close to the .05 threshold. Nonparametric tests
+     (Mann-Whitney, Kruskal-Wallis, Spearman rho) are also defensible.
+  What was checked: the marginal distribution of this column. Parametric
+  tests assume normality of the model RESIDUALS, which is not the same
+  distribution and is not examined here.
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
@@ -46,8 +52,13 @@
 
 ══════════════════════════════════════════════
   SUMMARY: 1 columns tested
-  Parametric OK:     1
-  Nonparametric rec: 0
+  Columns flagged for a strong departure: 0
 
-  All columns pass → parametric tests appropriate.
+  No column showed a strong departure from normality
+  in its marginal distribution.
+
+  What was checked: the marginal distribution of each
+  numeric column, on its own. Normality of model
+  residuals, independence and equality of variance were
+  not examined here.
 ══════════════════════════════════════════════

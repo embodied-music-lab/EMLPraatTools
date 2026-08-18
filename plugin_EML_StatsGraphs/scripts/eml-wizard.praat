@@ -307,7 +307,7 @@ if goal = 1
                 comment: ""
                 comment: "ℹ️ Normality tells you whether a parametric"
                 comment: "     test (more powerful) or nonparametric"
-                comment: "     test (fewer assumptions) is appropriate."
+                comment: "     test (fewer assumptions) is recommended."
             clicked = endPause: "Quit", "Back", "Continue", 3, 0
             if clicked = 1
                 exitScript: ""
@@ -495,7 +495,7 @@ if goal = 1
                 comment: ""
                 comment: "ℹ️ Normality tells you whether a parametric"
                 comment: "     test (more powerful) or nonparametric"
-                comment: "     test (fewer assumptions) is appropriate."
+                comment: "     test (fewer assumptions) is recommended."
             clicked = endPause: "Quit", "Back", "Continue", 3, 0
             if clicked = 1
                 exitScript: ""
@@ -769,7 +769,7 @@ if goal = 1
             groupCol$ = factor_1$
 
             @wizardReportPlan: "Two-factor design",
-            ... "n/a", "Two-way ANOVA",
+            ... "not assessed", "Two-way ANOVA",
             ... "n/a", data_column$, factor_1$ + " × " + factor_2$,
             ... "", displayTable$
 
@@ -853,7 +853,7 @@ if goal = 1
             comment: ""
             comment: "ℹ️ Normality tells you whether a parametric"
             comment: "     test (more powerful) or nonparametric"
-            comment: "     test (fewer assumptions) is appropriate."
+            comment: "     test (fewer assumptions) is recommended."
         clicked = endPause: "Quit", "Back", "Continue", 3, 0
         if clicked = 1
             exitScript: ""
@@ -1161,7 +1161,7 @@ if goal = 1
 
         if test_approach = 1
             @wizardReportPlan: "Repeated measures (k conditions)",
-            ... "n/a", "RM-ANOVA (Greenhouse-Geisser)",
+            ... "not assessed", "RM-ANOVA (Greenhouse-Geisser)",
             ... "n/a", condList$, "", "", displayTable$
             @emlRunRepeatedMeasuresAnalysis: tableId, "", condList$,
             ... pairwise_post_hoc, adjustment$
@@ -1177,7 +1177,7 @@ if goal = 1
             wizTestType$ = "parametric"
         else
             @wizardReportPlan: "Repeated measures (k conditions)",
-            ... "n/a", "Friedman test",
+            ... "not assessed", "Friedman test",
             ... "n/a", condList$, "", "", displayTable$
             @emlRunFriedmanAnalysis: tableId, "", condList$,
             ... pairwise_post_hoc, adjustment$
@@ -1298,7 +1298,7 @@ elsif goal = 2
         endif
 
         @wizardReportPlan: "Simple linear regression",
-        ... "n/a (residual normality assumed)",
+        ... "not assessed (residual normality assumed)",
         ... "OLS regression (R², F-test)",
         ... "n/a", predictor_column$, "", response_column$, displayTable$
 
@@ -1772,7 +1772,7 @@ elsif goal = 4
     endif
 
     @wizardReportPlan: "Simple linear regression",
-    ... "n/a (residual normality assumed)",
+    ... "not assessed (residual normality assumed)",
     ... "OLS regression (R², F-test)",
     ... "n/a", predictor_column$, "", outcome_column$, displayTable$
 
@@ -1846,7 +1846,7 @@ elsif goal = 4
         @emlClearInfo
     endif
     @wizardReportPlan: "Linear mixed model",
-    ... "n/a", "Mixed model (REML, Satterthwaite df)",
+    ... "not assessed", "Mixed model (REML, Satterthwaite df)",
     ... "n/a", formula$, "", "", displayTable$
     @emlRunLMMAnalysis: tableId, formula$, contrast_coding$, use_REML,
     ... report_R_squared, report_confidence_intervals

@@ -9,7 +9,7 @@ r07_swceil_sev,analysis,statistic,NA
 r07_swceil_sev,analysis,p.value,NA
 r07_swceil_sev,analysis,sw.usable,0
 r07_swceil_sev,analysis.shapiro,refused,1
-r07_swceil_sev,analysis,output.chars,1354
+r07_swceil_sev,analysis,output.chars,1587
 r07_swceil_sev,wizard,n.available,5001
 r07_swceil_sev,wizard,n,5001
 r07_swceil_sev,wizard,skewness,12.10517287506761

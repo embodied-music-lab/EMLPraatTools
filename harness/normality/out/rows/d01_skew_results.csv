@@ -8,7 +8,7 @@ d01_skew,analysis,kurtosis,1.9172215141132423
 d01_skew,analysis,statistic,0.9194429141146067
 d01_skew,analysis,p.value,0.1263683208050045
 d01_skew,analysis,sw.usable,1
-d01_skew,analysis,output.chars,1448
+d01_skew,analysis,output.chars,1709
 d01_skew,wizard,n.available,18
 d01_skew,wizard,n,18
 d01_skew,wizard,skewness,1.2049975268497233

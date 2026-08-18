@@ -8,7 +8,7 @@ g04_reject30,analysis,kurtosis,1.6354857988948637
 g04_reject30,analysis,statistic,0.8982120172156375
 g04_reject30,analysis,p.value,0.007596207077228233
 g04_reject30,analysis,sw.usable,1
-g04_reject30,analysis,output.chars,1466
+g04_reject30,analysis,output.chars,1767
 g04_reject30,wizard,n.available,30
 g04_reject30,wizard,n,30
 g04_reject30,wizard,skewness,1.233840282599117

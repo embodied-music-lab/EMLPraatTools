@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Sat Aug 15 19:25:11 2026
+  Tue Aug 18 12:43:24 2026
 ══════════════════════════════════════════════
 
   Table               norm g01 normal
@@ -31,8 +31,12 @@
 
 
   ── Recommendation ──────────────────────────
-  Normality appears reasonable.
-  → Parametric tests (t-test, ANOVA, Pearson r) are appropriate.
+  Shapiro-Wilk does not reject normality (p >= .05), and skewness and
+  kurtosis are within the thresholds.
+  → Parametric tests (t-test, ANOVA, Pearson r) are recommended.
+  What was checked: the marginal distribution of this column. Parametric
+  tests assume normality of the model RESIDUALS, which is not the same
+  distribution and is not examined here.
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).

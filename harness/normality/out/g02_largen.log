@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Sat Aug 15 19:25:12 2026
+  Tue Aug 18 12:43:24 2026
 ══════════════════════════════════════════════
 
   Table               norm g02 largen
@@ -26,15 +26,20 @@
   ── Shapiro-Wilk Test ───────────────────────
   Why: Formal test of whether the data are drawn from a normal distribution.
   W                   0.8827		Closer to 1 = more normal (range: 0 to 1)
-  p                   < .001  (3.267402526926051e-05)		Statistically significant: <0.1% probability due to chance
+  p                   < .001  (3.27e-05)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
   → Rejects normality (p < 0.05)
 
 
   ── Recommendation ──────────────────────────
-  Shapiro-Wilk rejects normality, but with n = 60 the departure
-  is statistically detectable but practically negligible
-  (skewness and kurtosis within acceptable limits).
-  → Parametric tests are robust at this sample size.
+  Shapiro-Wilk rejects normality (p < .05), but skewness and kurtosis are
+  within the thresholds and n = 60. At this sample size the test
+  detects departures too small to unsettle a parametric procedure.
+  → Parametric tests (t-test, ANOVA, Pearson r) are recommended.
+  → Nonparametric tests (Mann-Whitney, Kruskal-Wallis, Spearman rho) remain
+     a defensible choice, since the test did reject.
+  What was checked: the marginal distribution of this column. Parametric
+  tests assume normality of the model RESIDUALS, which is not the same
+  distribution and is not examined here.
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).

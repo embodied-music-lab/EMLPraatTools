@@ -5,6 +5,6 @@ r02_single	analysis	Need at least 3 non-missing values (found 1).
 r03_identical	analysis.shapiro	All values identical (zero range)
 r04_n2	analysis	Need at least 3 non-missing values (found 2).
 r05_swceil	analysis.shapiro	Shapiro-Wilk requires n <= 5000, got 5001
-r06_text	analysis	Data column "y" holds no numbers. 12 cell(s) are not numeric in any locale (row 1: Singer_1). This is a type error, not missing data.
+r06_text	analysis	Data column "y" holds no numbers. 12 cell(s) are not numeric in any locale (row 1: Singer_1). Unrecognized nonnumeric token; excluded.
 r06_text	wizard	DRIVER SKIP: column holds no defined values, and a zero-length vector cannot be constructed
 r07_swceil_sev	analysis.shapiro	Shapiro-Wilk requires n <= 5000, got 5001
