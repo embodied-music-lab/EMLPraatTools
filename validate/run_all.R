@@ -1129,6 +1129,27 @@ scripts <- c(
                                  # whatever colour is current, so the right
                                  # scale cannot wear its series' colour.
                                  # Reads harness/secondaxis.
+    ,
+    "v96_line_style.R"           # the four pens. Every line this plugin drew
+                                 # before this change order was solid: there
+                                 # was no call to a line-style command
+                                 # anywhere in the graphs layer and no option
+                                 # for one. There is now a menu on every type
+                                 # that strokes a series, and the proof is a
+                                 # RUN STRUCTURE rather than a pixel count --
+                                 # where the ink stops and starts along the
+                                 # stroke -- because no count separates Dashed
+                                 # from Dashed-dotted. Four presses of Draw
+                                 # differing in one option must give four
+                                 # distinct signatures, in the order the
+                                 # geometry predicts, with the margins stated.
+                                 # The reset is pinned on a SECOND figure
+                                 # drawn in the same process: a bar chart
+                                 # after a dotted line chart must be the bar
+                                 # chart drawn alone, byte for byte, and a bar
+                                 # chart sets no pen of its own, so nothing in
+                                 # its code would be wrong if the pen leaked.
+                                 # Reads harness/linestyle.
 )
 
 # ---------------------------------------------------------------------------

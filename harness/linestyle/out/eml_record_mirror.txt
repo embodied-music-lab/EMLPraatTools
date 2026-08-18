@@ -1,0 +1,11 @@
+# EML record workflow -- crash mirror. Rows are appended as they
+# are recorded, so a session lost to a crash is still readable.
+--- step 1 (draw), run 1
+[MISSING PHRASE: drawstep.intent]
+emlEraseFirst = 1
+emlPanelOriginX = 0
+emlPanelOriginY = 0
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = 3
+emlSecondAxisOn = 0
+@emlDrawWaveform: data, "Line style", "Time (s)", "Value", 6, 4, "color", 1, 0, 0, 0, 0

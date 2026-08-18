@@ -1,0 +1,6 @@
+Time series: Line shows the mean per time point. 24 repeated observation(s) were averaged. Use Spaghetti Plot to show individual series, or Time Series (with CI) to show the spread around each mean.
+Bar chart: Bars show the group mean, not individual values. Use Violin Plot or Box Plot to show the distribution within each group.
+STYLE 1
+STYLENAME Solid
+TYPE 6
+UNION 0 6 0 4

@@ -1,0 +1,5 @@
+NOTE: measured F0 spans 0.000969 Hertz — under a tenth of a semitone, which is at or below what the ear can resolve. The y-axis is drawn 0.1 semitones wide rather than following the data, so the contour reads flat instead of magnifying rounding noise to full frame height. No measured value was changed.
+STYLE 1
+STYLENAME Solid
+TYPE 1
+UNION 0 6 0 4

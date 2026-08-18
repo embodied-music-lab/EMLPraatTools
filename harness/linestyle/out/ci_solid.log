@@ -1,0 +1,8 @@
+Time Series (with CI): 1 group(s)
+  12 time points
+  Observations per time point: up to 3
+Time series (with CI): Line shows the mean; band shows the 95% CI. 24 repeated observation(s) were averaged into their time points. Use Spaghetti Plot to show the individual series behind the mean.
+STYLE 1
+STYLENAME Solid
+TYPE 5
+UNION 0 6 0 4

@@ -1,0 +1,5 @@
+pen_ignored	40	the four pens make four different files
+styles_swapped	2	inked fraction falls Solid > Dashed > Dashed-dotted > Dotted
+no_draw_reset	4	a dark-pixel count cannot see a spaghetti strand's pen (813 px)
+no_form_reset	1	a caller that states no pen, after a dotted press, draws what it draws alone
+menu_removed	1	[LTAS] its dialog carries a Line style menu
