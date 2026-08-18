@@ -126,7 +126,14 @@ jobs:
 
       - name: Install R, and Praat 6.4 for its library dependencies
         run: |
-          sudo apt-get install -y --no-install-recommends r-base-core praat
+          # libjack-jackd2-0 IS NAMED HERE ON PURPOSE. Praat's own Linux
+          # binary links against libjack.so.0, but Ubuntu's praat package
+          # only RECOMMENDS the JACK library rather than depending on it, and
+          # --no-install-recommends skips it. The package install then
+          # succeeds, the binary lands, and Praat refuses to start with
+          # "libjack.so.0: cannot open shared object file".
+          sudo apt-get install -y --no-install-recommends \
+            r-base-core praat libjack-jackd2-0
           for tool in Rscript praat python3 unzip; do
             if ! command -v "$tool" > /dev/null; then
               echo "SETUP FAILED: '$tool' is not on PATH after the install." >&2
