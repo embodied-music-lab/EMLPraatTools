@@ -49,8 +49,8 @@ include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
 # nothing below this block names an object, a column or an axis
-# range.
-data1$ = "Table vt"   ; step 1 (analysis)
+# range or a figure format.
+data1$ = "Table vt"   ; run 1, step 1 (analysis)
 
 # --- Step 1 (analysis) ---
 selectObject: data1$

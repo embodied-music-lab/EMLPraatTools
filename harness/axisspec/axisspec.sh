@@ -124,10 +124,13 @@ for leg in rec_auto rec_two rec_form rec_noform rec_pairs; do
     # is the measurement that says the lift actually happened. A draw call is
     # matched on its own name so that a literal in some OTHER argument — a
     # viewport, a grid mode, a bin count — is not counted as an axis.
+    # THE COLUMN VARIABLE CARRIES ITS RUN, so the cut is made at whatever
+    # valueCol the step reads -- valueCol$ in run 1, valueCol2$ in run 2 --
+    # and what is left is the axis pair, which is what these keys are for.
     emit_kv "${leg}_violin_call" \
-        "$(grep -m1 '^@emlDrawViolinPlot: data' "$f" | sed 's/.*valueCol\$, //')"
+        "$(grep -m1 '^@emlDrawViolinPlot: data' "$f" | sed -E 's/.*valueCol[0-9a-z]*\$, //')"
     emit_kv "${leg}_box_call" \
-        "$(grep -m1 '^@emlDrawBoxPlot: data' "$f" | sed 's/.*valueCol\$, //')"
+        "$(grep -m1 '^@emlDrawBoxPlot: data' "$f" | sed -E 's/.*valueCol[0-9a-z]*\$, //')"
     emit_kv "${leg}_bar_call" \
         "$(grep -m1 '^@emlDrawBarChart: data' "$f" | sed 's/.*, "", //')"
     emit_kv "${leg}_spectrum_call" \

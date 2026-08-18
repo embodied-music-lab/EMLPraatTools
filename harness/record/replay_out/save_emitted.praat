@@ -49,10 +49,10 @@ include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
 # nothing below this block names an object, a column or an axis
-# range.
-data1$ = "Table vt"   ; steps 1 (analysis), 2 (save)
-valueCol$ = "val"   ; the measured column -- step 1 (analysis)
-groupCol$ = "grp"   ; the grouping column -- step 1 (analysis)
+# range or a figure format.
+data1$ = "Table vt"   ; run 1, steps 1 (analysis), 2 (save)
+valueCol$ = "val"   ; the measured column -- run 1, step 1 (analysis)
+groupCol$ = "grp"   ; the grouping column -- run 1, step 1 (analysis)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -76,7 +76,7 @@ data = selected ()
 # Every output shares one folder and one name, so they stay a set.
 
 outputFolder$ = "/home/claude/EMLPraatTools/harness/record/replay_out/saved"
-@emlRecordReplaySave: 0, "vt_two-group_20260814_120000", outputFolder$
+@emlRecordReplaySave: 0, "vt_two-group_20260814_120000", outputFolder$, ""
 
 # The same step through the menu:
 # In the GUI: the Save button on the post-analysis or post-draw dialog.

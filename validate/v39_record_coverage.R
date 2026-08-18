@@ -242,8 +242,12 @@ check_true("v39", "the emitted script names its objects in a manifest",
            any(grepl('^data1\\$ = "', em)))
 check_true("v39", "the manifest carries the type, not just the name",
            any(grepl('^data1\\$ = "(Table|Matrix|TableOfReal) ', em)))
-check_true("v39", "the manifest says what each object was used for",
-           any(grepl('^data1\\$ = .*;\\s*steps? ', em)))
+# WHAT IT WAS USED FOR, AND IN WHICH RUN. The object variables are named by
+# the run they belong to -- one pass through a form and the save that belongs
+# to it -- so the note has to carry both: the run is what the name's number
+# means, and the steps are where to look for it.
+check_true("v39", "the manifest says which run each object belongs to and what it was used for",
+           any(grepl('^data1\\$ = .*;\\s*run [0-9]+, steps? ', em)))
 check_true("v39", "every step selects through the manifest",
            sum(grepl("^selectObject: data[0-9]+\\$$", em)) == nRec)
 check_true("v39", "no step selects a hardcoded object type",

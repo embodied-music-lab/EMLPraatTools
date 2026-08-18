@@ -49,10 +49,10 @@ include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
 # nothing below this block names an object, a column or an axis
-# range.
-data1$ = "Table demo_3groups_input"   ; step 1 (analysis)
-valueCol$ = "SPL_dB"   ; the measured column -- step 1 (analysis)
-groupCol$ = "voice_type"   ; the grouping column -- step 1 (analysis)
+# range or a figure format.
+data1$ = "Table demo_3groups_input"   ; run 1, step 1 (analysis)
+valueCol$ = "SPL_dB"   ; the measured column -- run 1, step 1 (analysis)
+groupCol$ = "voice_type"   ; the grouping column -- run 1, step 1 (analysis)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 

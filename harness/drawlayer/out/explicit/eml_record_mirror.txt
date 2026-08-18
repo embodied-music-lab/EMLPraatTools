@@ -1,6 +1,6 @@
 # EML record workflow -- crash mirror. Rows are appended as they
 # are recorded, so a session lost to a crash is still readable.
---- step 1 (draw)
+--- step 1 (draw), run 1
 Violin plot of val, grouped by grp, 3 groups.
 Violin width is a kernel density estimate, not a count.
 @emlDrawViolinPlot: data, "Explicit axis", "Group", "Power (dB)", 6, 4, "color", 1, "grp", "val", 150, 400

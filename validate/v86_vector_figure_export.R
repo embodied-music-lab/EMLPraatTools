@@ -1015,8 +1015,17 @@ check_true("v86", "the format lift is a table entry of its own",
            any(grepl('^\\.formatSpec\\$ = "4 figureFormat"$', rcode)))
 check_true("v86", "and it is not keyed on .proc$, which v58 censuses",
            !any(grepl('\\.proc\\$ = "emlSavePanel"', rcode)))
+# A SECOND SAVE IS NOT THE FIRST SAVE'S VARIABLE, and the shape that makes
+# that true is read here. The slot a save reuses is the one its OWN RUN
+# opened -- one pass through the form, one format choice -- and the name is
+# built by the shared suffix procedure every variable in the block goes
+# through, so a second run's save is figureFormat2$ and cannot silently
+# replay the first run's choice.
 check_true("v86", "a second distinct choice is numbered, not shared",
-           any(grepl("^\\.fSuffix\\$ = string\\$ \\(\\.fSame \\+ 1\\)$", rcode)))
+           any(grepl("^if \\.fmtRun\\[\\.k\\] = \\.run$", rcode)) &&
+           any(grepl("^@emlRecordRunSuffix: \\.run, \\.fSame$", rcode)) &&
+           any(grepl("^\\.fmtName\\$\\[\\.nFmt\\] = \\.fBase\\$ \\+ emlRecordRunSuffix\\.suffix\\$ \\+ \"\\$\"$",
+                     rcode)))
 
 # ── THE FIXTURE MUST NOT DRIFT FROM THE CODE IT STANDS IN FOR ─────────────
 # harness/vecfig's record leg synthesises the save step, because @emlSavePanel

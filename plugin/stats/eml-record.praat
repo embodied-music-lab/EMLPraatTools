@@ -138,6 +138,30 @@ procedure emlRecordInit
     if not variableExists ("emlRecordMetaId")
         emlRecordMetaId = 0
     endif
+    ; WHICH RUN THE NEXT STEP BELONGS TO, AND WHY 0 IS THE RIGHT DEFAULT.
+    ;
+    ; A RUN is one pass through a GUI form and the save that belongs to it --
+    ; one press of Run in a wrapper, one press of Draw in the graphs form,
+    ; together with whatever that press recorded. It is the unit the editable
+    ; block names its variables by: run 2's grouping column is groupCol2$,
+    ; whether or not run 1 had a grouping column and whether or not the two
+    ; agree.
+    ;
+    ; 0 MEANS "THIS SCOPE HOLDS NO RUN YET", and the number is CLAIMED by the
+    ; first step recorded rather than here -- see @emlRecordClaimRun. A menu
+    ; command that opens a form and is cancelled records nothing and so
+    ; consumes no number, which is what keeps the block's run numbers and the
+    ; user's presses the same count.
+    ;
+    ; SCRIPT SCOPE IS ONE HALF OF THE BOUNDARY AND NOT THE WHOLE OF IT. A new
+    ; menu command starts a fresh scope, so this variable is absent there and
+    ; the next step opens a new run with no help from anybody. A wrapper's
+    ; `New` button and the graphs form's `Redraw` stay inside ONE scope and
+    ; are new runs even so; those call @emlRecordNewRun, which is the other
+    ; half, and neither half can be inferred from the other.
+    if not variableExists ("emlRecordRun")
+        emlRecordRun = 0
+    endif
     ; THE AUTO-CONVERTED INTERMEDIATE, and why this is script-scope state and
     ; not a row in the meta object. @emlGraphsWorkflow converts and draws in
     ; ONE menu invocation -- the Sound becomes a Pitch, the contour is drawn,
@@ -854,8 +878,16 @@ procedure emlRecordBegin: .tempFolder$
     ; the recorder spans menu commands, each of which is its own script
     ; scope, and the buffer Table is the only thing that survives between
     ; them -- which is the same reason @emlRecordCaptureEnv exists.
+    ;
+    ; `run` IS THE LAST COLUMN AND IT IS APPENDED FOR THE SAME REASON `axis`
+    ; IS. It carries the RUN the step belongs to -- one pass through a GUI
+    ; form and the save that belongs to it -- and the editable block names
+    ; every variable it lifts by that number. It has to be a column: the run
+    ; a step belonged to is a fact about the step, and the buffer is the only
+    ; thing that survives from the menu command that recorded it to the menu
+    ; command that flushes the file.
     Create Table with column names: "emlRecording_DO_NOT_REMOVE", 0,
-    ... "n kind intent caveat code env post result api derived source axis"
+    ... "n kind intent caveat code env post result api derived source axis run"
     emlRecordBufferId = selected ("Table")
 
     ; The per-session store. Created with the buffer and removed with it, so
@@ -889,6 +921,11 @@ procedure emlRecordBegin: .tempFolder$
     emlRecordPraatVersion = praatVersion
 
     emlRecordN = 0
+    ; NO RUN IS OPEN UNTIL A STEP OPENS ONE. @emlRecordBegin is its own menu
+    ; command on the user's path -- Start recording -- and it records nothing,
+    ; so claiming a number here would give the session's first real run the
+    ; number 2.
+    emlRecordRun = 0
     emlRecordActive = 1
     emlRecordHeaderInput$ = ""
     emlRecordHeaderShape$ = ""
@@ -950,6 +987,7 @@ procedure emlRecordDiscard
     emlRecordMetaId = 0
     emlRecordBufferId = 0
     emlRecordN = 0
+    emlRecordRun = 0
     emlRecordActive = 0
     emlRecordStamp$ = ""
     emlRecordHeaderInput$ = ""
@@ -1568,6 +1606,87 @@ procedure emlRecordCaptureAnnotations: .kind$
 endproc
 
 
+# ----------------------------------------------------------------------------
+# @emlRecordNewRun
+# THE NEXT STEP RECORDED BEGINS A NEW RUN.
+#
+# A RUN IS ONE PASS THROUGH A GUI FORM AND THE SAVE THAT BELONGS TO IT, and
+# the editable block at the top of an emitted script names every variable it
+# lifts by the run it came from: run 2's grouping column is groupCol2$, and it
+# is groupCol2$ whether or not run 1 had a grouping column and whether or not
+# the two happen to name the same column. Run 2 has no knowledge of run 1, so
+# an edit to one moves one figure.
+#
+# WHY A CALL AND NOT A DEDUCTION. Half of the boundary is free: a new menu
+# command is a new script scope, emlRecordRun is absent there, and the first
+# step claims a fresh number without anybody saying so. The other half cannot
+# be deduced at all. A wrapper's `New` button and the graphs form's `Redraw`
+# both stay INSIDE one script scope and both are new runs -- same variables,
+# same objects, a second complete pass through the form -- and nothing in the
+# buffer distinguishes that from the two steps ONE pass records when it
+# annotates a figure with its own statistics. Reading it off the step kinds
+# would name that pair two runs and split a figure from the numbers drawn on
+# it; reading it off step parity would do worse. So the form that knows says
+# so, once, at the top of the pass.
+#
+# IT RELEASES, IT DOES NOT ALLOCATE. Nothing is written and no number is
+# taken: a pass the user cancels records no step, and a run number spent on
+# it would make the block's numbering and the user's presses disagree from
+# there on.
+#
+# AND IT DOES NOT CALL @emlRecordInit, WHICH IS NOT AN OVERSIGHT. That
+# procedure re-attaches to the buffer by name, and `nocheck selectObject:` on
+# a name is how a Praat script enumerates one -- so it MOVES THE OBJECTS-
+# WINDOW SELECTION. The callers are the graphs form and the wrappers at the
+# top of a pass, where the selection is the user's choice of what to work on
+# and is read a few lines later: calling init here answered a form with "No
+# Table selected" for a Table the user had selected. Measured on 6.6.30, on
+# harness/axisrefuse, which drives that dialog. Nothing here needs init:
+# assigning a global creates it, and @emlRecordStep calls init before it
+# reads this.
+# ----------------------------------------------------------------------------
+procedure emlRecordNewRun
+    emlRecordRun = 0
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordClaimRun
+# Take the next run number, for the step that is about to be recorded.
+#
+# THE NUMBER COMES OFF THE BUFFER, which is the same argument @emlRecordInit
+# makes about the recording itself: the buffer's contents ARE the state, so
+# there is no counter that can disagree with them. A session spans menu
+# commands and the buffer is the only thing that crosses one, so a global
+# would be gone by the second run and the meta table would be a second place
+# to keep the same fact right.
+#
+# Sets emlRecordRun for the rest of this scope's pass.
+# ----------------------------------------------------------------------------
+procedure emlRecordClaimRun
+    .highest = 0
+    @emlRecordHasColumn: "run"
+    if emlRecordHasColumn.yes = 1
+        selectObject: emlRecordBufferId
+        .rows = Get number of rows
+        for .r from 1 to .rows
+            selectObject: emlRecordBufferId
+            .cell$ = Get value: .r, "run"
+            ; A BUFFER FROM BEFORE THE COLUMN EXISTED CAN STILL BE LIVE: a
+            ; user recording while the plugin is upgraded re-attaches to one,
+            ; and its rows carry no run at all. number$ of an empty cell is
+            ; undefined, so the cell is tested as text and skipped as text.
+            if .cell$ <> ""
+                if number (.cell$) > .highest
+                    .highest = number (.cell$)
+                endif
+            endif
+        endfor
+    endif
+    emlRecordRun = .highest + 1
+endproc
+
+
 procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     @emlRecordInit
     .added = 0
@@ -1578,6 +1697,15 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     .codeOut$ = .code$
     if .codeOut$ = ""
         .codeOut$ = "; (nothing executed at this step -- see the note above)"
+    endif
+
+    ; WHICH RUN THIS STEP BELONGS TO, CLAIMED BEFORE THE ROW EXISTS. The
+    ; claim reads the buffer for the highest run already in it, so it must
+    ; happen while the buffer still holds only finished steps -- afterwards
+    ; the new row is there with an empty run cell and would have to be
+    ; excluded by hand.
+    if emlRecordRun = 0
+        @emlRecordClaimRun
     endif
 
     emlRecordN = emlRecordN + 1
@@ -1609,6 +1737,14 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     if emlRecordHasColumn.yes = 1
         Set string value: .row, "axis", ""
     endif
+    ; THE RUN, THROUGH THE SAME GUARD AND FOR THE SAME REASON. A buffer made
+    ; before this column existed is still a live recording; it emits a block
+    ; whose runs are read one way rather than an abort in the middle of a
+    ; user's work. See @emlRecordColumnManifest for what it reads instead.
+    @emlRecordHasColumn: "run"
+    if emlRecordHasColumn.yes = 1
+        Set numeric value: .row, "run", emlRecordRun
+    endif
     Set string value: .row, "api", .api$
     ; DERIVED: "1" when the object this step ran on was AUTO-CREATED from
     ; something the user selected -- the graphs form converts a Sound to a
@@ -1631,7 +1767,7 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     ; crash takes the session with it; a file does not.
     if emlRecordTempPath$ <> ""
         appendFileLine: emlRecordTempPath$, "--- step ", emlRecordN,
-        ... " (", .kind$, ")"
+        ... " (", .kind$, "), run ", emlRecordRun
         appendFileLine: emlRecordTempPath$, .intent$
         if .caveat$ <> ""
             appendFileLine: emlRecordTempPath$, .caveat$
@@ -2326,16 +2462,18 @@ endproc
 # either. So the axis pair is lifted exactly the way a column is, into
 # `axisYMin` and `axisYMax`, and the step reads them.
 #
-# THE UNIT IS THE PAIR AND NOT THE NUMBER, and that is the one place this
-# differs from the column rule rather than copying it. The auto sentinel is
-# (0, 0): a lone 0 in the minimum slot is a perfectly ordinary axis FLOOR --
-# a bar chart's is zero -- and it means nothing on its own. Sharing one
-# `axisYMin = 0` variable between an auto figure and a figure the user gave a
-# floor of 0 would be two slots that happen to agree today, in the most
-# damaging form of that: editing the floor would turn the other figure's auto
-# into a half-specified range and it would silently redraw. Two draws
-# therefore share a pair only when they used the SAME pair, and a second
-# distinct pair becomes axisYMin2/axisYMax2 in first-use order.
+# THE UNIT IS THE PAIR AND NOT THE NUMBER, which is a fact about the axis
+# rather than about the naming. The auto sentinel is (0, 0): a lone 0 in the
+# minimum slot is a perfectly ordinary axis FLOOR -- a bar chart's is zero --
+# and it means nothing on its own. So the two slots are read together, matched
+# together and declared together, and a range is lifted only when BOTH slots
+# parse as plain numbers: a half-lifted range would let the block move one end
+# of an axis and not the other.
+#
+# WHICH RUN THE PAIR BELONGS TO IS WHAT NAMES IT, exactly as it names every
+# other variable in the block -- run 1's is axisYMin/axisYMax and run 2's is
+# axisYMin2/axisYMax2, so each figure's note can quote the range that figure
+# came out at. See @emlRecordColumnManifest.
 #
 # THE ROLE NAME TELLS THE TRUTH ABOUT WHICH AXIS IT IS. Twelve of the thirteen
 # draw procedures take the dialog's range as their Y axis and get axisY*. The
@@ -2681,23 +2819,152 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlRecordRunOf: .row
+# WHICH RUN THE STEP IN THAT BUFFER ROW BELONGS TO, AS THE EMITTED FILE COUNTS
+# RUNS: the first run the file contains is 1, the next 2, and so on.
+#
+# WHY NOT THE NUMBER OFF THE STEP. It is the same number in every ordinary
+# session. The two part where a run recorded steps and then gave them all
+# back -- which is what @emlRecordRewind does to the legend two-pass's first
+# draw -- and a block that opened at valueCol2$ with no valueCol$ above it
+# would be asking the reader about a run their file does not contain.
+#
+# COUNTED RATHER THAN CACHED, so that both halves of the block -- the objects
+# in @emlRecordTableManifest and the columns, axes and formats in
+# @emlRecordColumnManifest -- read runs off one procedure and cannot come to
+# two different answers about the same step. Runs enter the buffer in
+# ascending order, so the ordinal of row R is the number of distinct runs in
+# rows 1..R.
+#
+# A ROW WITH NO RUN AT ALL IS ITS OWN RUN. That is a buffer made before the
+# column existed, re-attached by a session that was recording while the
+# plugin was upgraded; reading those steps as one run would share a variable
+# between passes that never agreed to share one, and reading them as separate
+# runs merely writes a longer block.
+#
+# Outputs: .run
+# ----------------------------------------------------------------------------
+procedure emlRecordRunOf: .row
+    @emlRecordHasColumn: "run"
+    .have = emlRecordHasColumn.yes
+    .run = 0
+    .last$ = ""
+    for .r from 1 to .row
+        .key$ = ""
+        if .have = 1
+            selectObject: emlRecordBufferId
+            .cell$ = Get value: .r, "run"
+            if .cell$ <> ""
+                .key$ = "run " + string$ (number (.cell$))
+            endif
+        endif
+        if .key$ = ""
+            .key$ = "row " + string$ (.r)
+        endif
+        if .key$ <> .last$
+            .run = .run + 1
+            .last$ = .key$
+        endif
+    endfor
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordRunSuffix: .run, .already
+# THE END OF EVERY VARIABLE NAME IN THE EDITABLE BLOCK, WRITTEN ONCE.
+#
+# .run      the run, as the emitted file counts them: 1, 2, 3 ...
+# .already  how many variables this role already has IN THAT RUN
+#
+# Outputs: .number$  the run, always spelled: "1", "2", "1b" ...
+#          .suffix$  the same thing as a name ENDING: blank for run 1's first
+#                    variable of a role, .number$ otherwise
+#
+# TWO ANSWERS BECAUSE THERE ARE TWO SHAPES OF NAME AND ONE LAW UNDER THEM.
+# A role's variable is bare in run 1 and numbered after it -- valueCol$,
+# valueCol2$, axisYMin, axisYMin2, figureFormat$, figureFormat2$ -- while an
+# object's variable carries its number even in run 1, because data1$ has
+# always been spelled that way and a lone `data$` beside a `data2$` would read
+# as the odd one out rather than as the first of two. Same run, same number,
+# two spellings of it; every name in the block is built from one of these
+# two, so the law cannot drift into four versions of itself.
+#
+# THE LETTER IS THE ONE CASE A RUN NEEDS TWO NAMES FOR ONE ROLE. A user can
+# press Save twice in one pass of the post-draw dialog and tick different
+# formats the second time; one run then holds two answers and one variable
+# cannot carry both. The second is figureFormat2b$ -- run 2, second answer --
+# rather than a name belonging to some other run, and rather than a variable
+# that would replay one save's choice into the other.
+# ----------------------------------------------------------------------------
+procedure emlRecordRunSuffix: .run, .already
+    .number$ = string$ (.run)
+    if .already > 0
+        .letter$ = mid$ ("bcdefghijklmnopqrstuvwxyz", .already, 1)
+        ; THE ALPHABET RUNS OUT AT TWENTY-SIX ANSWERS IN ONE PASS, and past
+        ; it mid$ returns "" -- which would be a SECOND VARIABLE WITH THE
+        ; FIRST ONE'S NAME rather than a cosmetic problem. Past z the answer
+        ; is numbered.
+        if .letter$ = ""
+            .letter$ = "_" + string$ (.already + 1)
+        endif
+        .number$ = .number$ + .letter$
+    endif
+    .suffix$ = .number$
+    if .run = 1
+        if .already = 0
+            .suffix$ = ""
+        endif
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlRecordColumnManifest
 # The column half of the retarget block, and the rewritten steps that read it.
 #
-# ONE VARIABLE PER DISTINCT ROLE, WHICH IS NOT ONE PER DISTINCT LITERAL. The
-# identity of a variable here is the PAIR (role, name):
+# ONE VARIABLE PER ROLE PER RUN, AND THE SUFFIX IS THE RUN NUMBER.
 #
-#   * two steps that use the same column for the same purpose share one
-#     variable -- a value column analysed and then plotted is one decision the
-#     user makes once, and splitting it would hand them two edits that must
-#     agree or the figure stops describing the analysis;
-#   * the same string used as a value column in one step and a group column in
-#     another gets TWO, because they are two slots that happen to agree today.
-#     A user re-pointing the workflow may well move one and not the other, and
-#     a shared variable would silently move both;
-#   * two different columns in the same role are two variables of that role,
-#     numbered in first-use order -- valueCol$, valueCol2$ -- because a role is
-#     a kind of slot, not a promise that a session used it once.
+# A RUN is one pass through a GUI form and the save that belongs to it -- see
+# @emlRecordNewRun, which is what draws the boundary. Run 1's variables are
+# unsuffixed, run 2's end in 2, run 3's in 3:
+#
+#     run 1   valueCol$    groupCol$    axisYMin    figureFormat$
+#     run 2   valueCol2$   groupCol2$   axisYMin2   figureFormat2$
+#
+# and that is the whole of the naming rule. It holds for every variable the
+# block lifts -- columns, the axis pair, the figure format -- with no field
+# deciding anything for itself.
+#
+# WHAT FOLLOWS FROM IT, and every one of these is the point rather than a
+# side effect:
+#
+#   * A ROLE THAT ONLY RUN 2 USED IS STILL SUFFIXED 2. The suffix says which
+#     pass the variable belongs to, not how many variables of that role came
+#     before it, so a scatter's grouping column in run 2 is groupCol2$ even
+#     when run 1 was a box plot that had no grouping column at all.
+#   * TWO RUNS THAT NAME THE SAME COLUMN GET TWO VARIABLES. Two runs of the
+#     same figure on two tables, both of which call their count column "n",
+#     are two decisions the user made twice; one variable governing both
+#     would mean editing run 2 silently redrew run 1.
+#   * TWO RUNS ON ONE TABLE GET data1$ AND data2$, both reading the same name,
+#     because retargeting the second run is what the block is for.
+#   * The AXIS PAIR and the FIGURE FORMAT follow it exactly. A run's resolved
+#     -axis note quotes THAT run's numbers, and a session that saved run 1 as
+#     PNG and run 2 as PDF comes back with both.
+#
+# NO VALUE IS COMPARED TO CHOOSE A NAME. Two slots of one role in one run are
+# one variable because they are one pass through one form, not because they
+# read alike; two slots in two runs are two variables even when they read
+# identically. The only place a literal is looked at is the one below.
+#
+# THE ONE PLACE A RUN CANNOT SPEAK WITH ONE VOICE. A user may press Save twice
+# in one pass and tick different formats -- the post-draw dialog stays open --
+# and one variable cannot hold two answers. So a second slot of a role within
+# one run that carries a DIFFERENT literal is given the run number and a
+# letter, figureFormat2b$, which says what it is: run 2's second answer. The
+# alternative is a variable that silently replays one save's choice into the
+# other, and lettering it is the only part of this that reads a literal at
+# all.
 #
 # THE REWRITE IS POSITIONAL, NEVER textual. Replacing the string "val"
 # throughout a step would also replace the axis label that happens to read
@@ -2705,31 +2972,28 @@ endproc
 # split into arguments, the arguments named by the spec are replaced, and the
 # line is rejoined. Everything else in the line is untouched by construction.
 #
-# THE AXIS RANGE IS LIFTED BY THE SAME MACHINERY, with one difference and it is the interesting one: THE UNIT OF IDENTITY IS
-# THE PAIR. See @emlRecordColumnSpec's header for why -- a lone 0 in a minimum
-# slot is an ordinary axis floor, the (0, 0) that means AUTO is a property of
-# the two together, and a variable shared between an auto figure and a figure
-# whose floor happens to be zero would let one edit silently redraw the other.
-# So two draws share axisYMin/axisYMax only when they used the same PAIR, and
-# a second distinct pair is axisYMin2/axisYMax2 in first-use order.
+# THE AXIS IS LIFTED AS A PAIR, which is a fact about the axis and not about
+# the naming. See @emlRecordColumnSpec's header: a lone 0 in a minimum slot is
+# an ordinary axis floor, the (0, 0) that means AUTO is a property of the two
+# together, and both slots must parse as numbers or neither moves.
 #
 # AND ZERO IS NOT ABSENT. The column path skips a literal of "" because a role
 # the session did not use has no business in the block; the axis path lifts a
 # literal of 0 precisely because that is the auto sentinel it must preserve.
+# The format path skips an empty literal for the column path's reason -- an
+# empty format choice is a save that wrote no figure, and a variable for a
+# format nothing writes invites an edit that does nothing.
 #
-# THE FIGURE FORMAT IS LIFTED BY THE COLUMN PATH'S RULE EXACTLY: one string
-# literal, one variable per distinct value, numbered in first-use order --
-# figureFormat$, then figureFormat2$ -- and an empty literal skipped, because
-# an empty format choice is a save that wrote no figure. Two saves share a
-# variable only when they made the same choice, so a session that wrote one
-# figure as EPS and another as PDF comes back with both, and an edit to one
-# does not move the other.
+# A BUFFER FROM BEFORE THE `run` COLUMN EXISTED still emits. A user recording
+# while the plugin is upgraded re-attaches to one, and its steps carry no run;
+# each such step is read as its own run, which over-separates rather than
+# sharing a variable between passes that never agreed to share one.
 #
 # Outputs: .n          how many column variables the session used
 #          .out$       the lines that declare them -- columns, then axes,
 #                      then figure formats
 #          .nAxis      how many axis PAIRS the session used
-#          .nFmt       how many distinct figure format choices it made
+#          .nFmt       how many figure format variables it emitted
 #          .code$[s]   step s's code with its column literals, its axis range
 #                      and its format choice replaced by the variable names --
 #                      what @emlRecordRender emits
@@ -2749,6 +3013,8 @@ procedure emlRecordColumnManifest
         .stepCode$ = Get value: .s, "code"
         .stepKind$ = Get value: .s, "kind"
         .stepN = Get value: .s, "n"
+        @emlRecordRunOf: .s
+        .run = emlRecordRunOf.run
         ; WHAT THE AXIS RESOLVED TO ON THE RECORDED DATA, for the note beside
         ; an auto range. Guarded: a session that was running when the plugin
         ; was updated re-attaches to a buffer with no such column, and the
@@ -2817,13 +3083,18 @@ procedure emlRecordColumnManifest
                             ; would invite a user to fill it in and change what
                             ; the figure means.
                             if .isLit = 1 and .lit$ <> ""
+                                ; THE SLOT IS THE PAIR (ROLE, RUN). This run's
+                                ; variable for this role is reused; another
+                                ; run's is not, however it reads.
                                 .slot = 0
-                                .sameBase = 0
+                                .sameRun = 0
                                 for .k from 1 to .n
                                     if .varBase$[.k] = .b$
-                                        .sameBase = .sameBase + 1
-                                        if .varLit$[.k] = .lit$
-                                            .slot = .k
+                                        if .varRun[.k] = .run
+                                            .sameRun = .sameRun + 1
+                                            if .varLit$[.k] = .lit$
+                                                .slot = .k
+                                            endif
                                         endif
                                     endif
                                 endfor
@@ -2832,12 +3103,10 @@ procedure emlRecordColumnManifest
                                     .slot = .n
                                     .varBase$[.n] = .b$
                                     .varLit$[.n] = .lit$
-                                    if .sameBase = 0
-                                        .varName$[.n] = .b$ + "$"
-                                    else
-                                        .varName$[.n] = .b$
-                                        ... + string$ (.sameBase + 1) + "$"
-                                    endif
+                                    .varRun[.n] = .run
+                                    @emlRecordRunSuffix: .run, .sameRun
+                                    .varName$[.n] = .b$
+                                    ... + emlRecordRunSuffix.suffix$ + "$"
                                     .varSteps$[.n] = ""
                                     .varLast$[.n] = ""
                                 endif
@@ -2908,14 +3177,23 @@ procedure emlRecordColumnManifest
                                     .aMaxOut$ = "0.0"
                                 endif
 
+                                ; ONE PAIR PER RUN, by the rule every other
+                                ; variable here follows. Two runs that both
+                                ; drew on auto get axisYMin/axisYMax and
+                                ; axisYMin2/axisYMax2, so the note under each
+                                ; can quote the range ITS OWN figure came out
+                                ; at, and widening one figure's axis leaves
+                                ; the other where the user drew it.
                                 .aSlot = 0
                                 .aSame = 0
                                 for .k from 1 to .nAxis
                                     if .axBase$[.k] = .aBase$
-                                        .aSame = .aSame + 1
-                                        if .axMinLit$[.k] = .aMinOut$
-                                            if .axMaxLit$[.k] = .aMaxOut$
-                                                .aSlot = .k
+                                        if .axRun[.k] = .run
+                                            .aSame = .aSame + 1
+                                            if .axMinLit$[.k] = .aMinOut$
+                                                if .axMaxLit$[.k] = .aMaxOut$
+                                                    .aSlot = .k
+                                                endif
                                             endif
                                         endif
                                     endif
@@ -2928,23 +3206,21 @@ procedure emlRecordColumnManifest
                                     .axMaxLit$[.nAxis] = .aMaxOut$
                                     .axAuto[.nAxis] = .aAuto
                                     .axResolved$[.nAxis] = .stepAxis$
-                                    .axSuffix$ = ""
-                                    if .aSame > 0
-                                        .axSuffix$ = string$ (.aSame + 1)
-                                    endif
+                                    .axRun[.nAxis] = .run
+                                    @emlRecordRunSuffix: .run, .aSame
                                     .axMinName$[.nAxis] = .aBase$ + "Min"
-                                    ... + .axSuffix$
+                                    ... + emlRecordRunSuffix.suffix$
                                     .axMaxName$[.nAxis] = .aBase$ + "Max"
-                                    ... + .axSuffix$
+                                    ... + emlRecordRunSuffix.suffix$
                                     .axSteps$[.nAxis] = ""
                                     .axLast$[.nAxis] = ""
                                 endif
-                                ; The FIRST step to use a pair is the one
-                                ; whose resolved numbers the note carries: a
-                                ; later step sharing the pair drew the same
-                                ; request, and on auto it may well have
-                                ; resolved somewhere else, so the note names
-                                ; the steps and quotes the first.
+                                ; A DRAW STEP THAT RESOLVED NOTHING LEAVES THE
+                                ; NOTE TO THE NEXT ONE. The axis column is
+                                ; empty on a step recorded before the figure
+                                ; was measured, so the pair takes the first
+                                ; resolution its own run offers rather than
+                                ; going without.
                                 if .axResolved$[.aSlot] = ""
                                     .axResolved$[.aSlot] = .stepAxis$
                                 endif
@@ -2968,15 +3244,11 @@ procedure emlRecordColumnManifest
                     endif
 
                     ; ---- THE FIGURE FORMAT -------------------------------
-                    ; ONE VARIABLE PER DISTINCT CHOICE, NUMBERED IN FIRST-USE
-                    ; ORDER, exactly as the columns and the axis pairs are:
-                    ; figureFormat$ for the first, figureFormat2$ for the
-                    ; second, and two saves share one variable only when they
-                    ; made the SAME choice. A single shared variable would be
-                    ; wrong in the way that matters -- a session that saved
-                    ; one figure as EPS and a second as PDF would come back
-                    ; with both in whichever choice was recorded last, and
-                    ; editing the block to fix one would move the other.
+                    ; ONE VARIABLE PER RUN, exactly as the columns and the
+                    ; axis pairs are: figureFormat$ for run 1's save,
+                    ; figureFormat2$ for run 2's. A session that wrote one
+                    ; figure as PNG and the next as PDF comes back with both,
+                    ; and editing one does not move the other.
                     if .formatSpec$ <> ""
                         .fsp = index (.formatSpec$, " ")
                         .fPos = number (left$ (.formatSpec$, .fsp - 1))
@@ -2996,9 +3268,11 @@ procedure emlRecordColumnManifest
                                 .fSame = 0
                                 for .k from 1 to .nFmt
                                     if .fmtBase$[.k] = .fBase$
-                                        .fSame = .fSame + 1
-                                        if .fmtLit$[.k] = .fLit$
-                                            .fSlot = .k
+                                        if .fmtRun[.k] = .run
+                                            .fSame = .fSame + 1
+                                            if .fmtLit$[.k] = .fLit$
+                                                .fSlot = .k
+                                            endif
                                         endif
                                     endif
                                 endfor
@@ -3007,12 +3281,10 @@ procedure emlRecordColumnManifest
                                     .fSlot = .nFmt
                                     .fmtBase$[.nFmt] = .fBase$
                                     .fmtLit$[.nFmt] = .fLit$
-                                    .fSuffix$ = ""
-                                    if .fSame > 0
-                                        .fSuffix$ = string$ (.fSame + 1)
-                                    endif
-                                    .fmtName$[.nFmt] = .fBase$ + .fSuffix$
-                                    ... + "$"
+                                    .fmtRun[.nFmt] = .run
+                                    @emlRecordRunSuffix: .run, .fSame
+                                    .fmtName$[.nFmt] = .fBase$
+                                    ... + emlRecordRunSuffix.suffix$ + "$"
                                     .fmtSteps$[.nFmt] = ""
                                     .fmtLast$[.nFmt] = ""
                                 endif
@@ -3079,6 +3351,11 @@ procedure emlRecordColumnManifest
             .width = length (.fmtName$[.k])
         endif
     endfor
+    ; EVERY DECLARATION NAMES ITS OWN RUN, and the run comes first because it
+    ; is what the name's suffix means: `groupCol2$ ... run 2` is the sentence
+    ; that tells a reader why there are two of them. The steps follow, so a
+    ; reader can go straight to the ones this variable governs -- and they are
+    ; all one run's steps now, which is the whole of the change.
     for .k from 1 to .n
         .pad$ = ""
         for .p from 1 to .width - length (.varName$[.k])
@@ -3090,7 +3367,8 @@ procedure emlRecordColumnManifest
             .word$ = "step "
         endif
         .out$ = .out$ + .varName$[.k] + .pad$ + " = """ + .varLit$[.k]
-        ... + """   ; " + emlRecordColumnGloss.gloss$ + " -- " + .word$
+        ... + """   ; " + emlRecordColumnGloss.gloss$ + " -- run "
+        ... + string$ (.varRun[.k]) + ", " + .word$
         ... + .varSteps$[.k] + newline$
     endfor
 
@@ -3130,7 +3408,8 @@ procedure emlRecordColumnManifest
         if .axAuto[.k] = 1
             .out$ = .out$ + .axMinName$[.k] + .padA$ + " = "
             ... + .axMinLit$[.k] + "   ; " + emlRecordAxisGloss.gloss$
-            ... + " -- AUTO (both 0 = computed from the data) -- "
+            ... + " -- AUTO (both 0 = computed from the data) -- run "
+            ... + string$ (.axRun[.k]) + ", "
             ... + .word$ + .axSteps$[.k] + newline$
             if .resMin$ <> ""
                 .out$ = .out$ + .axMaxName$[.k] + .padB$ + " = "
@@ -3144,7 +3423,8 @@ procedure emlRecordColumnManifest
         else
             .out$ = .out$ + .axMinName$[.k] + .padA$ + " = "
             ... + .axMinLit$[.k] + "   ; " + emlRecordAxisGloss.gloss$
-            ... + " -- as typed in the dialog -- "
+            ... + " -- as typed in the dialog -- run "
+            ... + string$ (.axRun[.k]) + ", "
             ... + .word$ + .axSteps$[.k] + newline$
             if .resMin$ <> ""
                 .out$ = .out$ + .axMaxName$[.k] + .padB$ + " = "
@@ -3159,11 +3439,11 @@ procedure emlRecordColumnManifest
     endfor
 
     ; ---- THE FORMAT DECLARATIONS -----------------------------------------
-    ; ONE LINE PER CHOICE, and the trailing comment names the step it belongs
-    ; to, so a session with two saves shows which line governs which. The
-    ; gloss is written here rather than fetched from a table because there is
-    ; one format role, and a one-entry lookup is a table pretending to be a
-    ; rule.
+    ; ONE LINE PER RUN THAT SAVED, and the trailing comment names the run and
+    ; the step it belongs to, so a session with two saves shows which line
+    ; governs which. The gloss is written here rather than fetched from a
+    ; table because there is one format role, and a one-entry lookup is a
+    ; table pretending to be a rule.
     for .k from 1 to .nFmt
         .padF$ = ""
         for .p from 1 to .width - length (.fmtName$[.k])
@@ -3175,7 +3455,8 @@ procedure emlRecordColumnManifest
         endif
         .out$ = .out$ + .fmtName$[.k] + .padF$ + " = " + """" + .fmtLit$[.k]
         ... + """" + "   ; the figure formats saved -- PNG always, EPS"
-        ... + " and PDF when ticked -- " + .word$ + .fmtSteps$[.k] + newline$
+        ... + " and PDF when ticked -- run " + string$ (.fmtRun[.k]) + ", "
+        ... + .word$ + .fmtSteps$[.k] + newline$
     endfor
 
     label END_COLUMN_MANIFEST
@@ -3231,21 +3512,36 @@ procedure emlRecordTableManifest
     selectObject: emlRecordBufferId
     .nSteps = Get number of rows
 
-    ; Distinct sources, in the order they were first used, so the numbering
-    ; follows the session rather than the alphabet.
+    ; ONE OBJECT VARIABLE PER RUN, which is the law the whole block is named
+    ; by -- see @emlRecordColumnManifest. Run 1's object is data1$ and run 2's
+    ; is data2$ EVEN WHEN BOTH RUNS READ THE SAME TABLE, because two runs on
+    ; one table are two decisions the user made twice: editing data2$ has to
+    ; retarget the second figure and leave the first where it was drawn. A
+    ; run that moved between objects -- a Sound converted and then drawn --
+    ; gets data1$ and data1b$, one per object, by the same rule the columns
+    ; use when a run holds two answers for one role.
     for .s from 1 to .nSteps
         selectObject: emlRecordBufferId
         .src$ = Get value: .s, "source"
         if .src$ <> ""
+            @emlRecordRunOf: .s
+            .srcRun = emlRecordRunOf.run
             .seen = 0
+            .sameRun = 0
             for .k from 1 to .n
-                if .name$[.k] = .src$
-                    .seen = .k
+                if .run[.k] = .srcRun
+                    .sameRun = .sameRun + 1
+                    if .name$[.k] = .src$
+                        .seen = .k
+                    endif
                 endif
             endfor
             if .seen = 0
                 .n = .n + 1
                 .name$[.n] = .src$
+                .run[.n] = .srcRun
+                @emlRecordRunSuffix: .srcRun, .sameRun
+                .varName$[.n] = "data" + emlRecordRunSuffix.number$ + "$"
                 .steps$[.n] = ""
                 .seen = .n
             endif
@@ -3322,8 +3618,9 @@ procedure emlRecordTableManifest
         if not index (.steps$[.k], ",")
             .word$ = "step "
         endif
-        .out$ = .out$ + "data" + string$ (.k) + "$ = """ + .name$[.k]
-        ... + """   ; " + .word$ + .steps$[.k] + newline$
+        .out$ = .out$ + .varName$[.k] + " = """ + .name$[.k]
+        ... + """   ; run " + string$ (.run[.k]) + ", " + .word$
+        ... + .steps$[.k] + newline$
     endfor
     if .nCols > 0 or .nAxes > 0 or .nFmts > 0
         .out$ = .out$ + emlRecordColumnManifest.out$
@@ -3683,15 +3980,23 @@ procedure emlRecordRender
         ; step above it left that object in `data`, and the manifest names
         ; the Sound it came from, not the intermediate, which is gone.
         if .source$ <> "" and .derived$ <> "1"
+            ; MATCHED ON THE OBJECT AND THE RUN, because the block now
+            ; holds one object variable per run and two of them can name
+            ; the same Table -- which is the point of them: run 2's
+            ; selectObject: reads data2$, so retargeting run 2 moves run 2.
+            @emlRecordRunOf: .s
+            .stepRun = emlRecordRunOf.run
             .slot = 0
             for .k from 1 to .manifestN
                 if emlRecordTableManifest.name$[.k] = .source$
-                    .slot = .k
+                    if emlRecordTableManifest.run[.k] = .stepRun
+                        .slot = .k
+                    endif
                 endif
             endfor
             if .slot > 0
-                .text$ = .text$ + "selectObject: data" + string$ (.slot)
-                ... + "$" + newline$
+                .text$ = .text$ + "selectObject: "
+                ... + emlRecordTableManifest.varName$[.slot] + newline$
                 .text$ = .text$ + "data = selected ()" + newline$
             endif
         endif

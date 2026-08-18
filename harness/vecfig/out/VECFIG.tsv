@@ -1,6 +1,6 @@
 meta_praat_found	1
-meta_output_code_sha256	8c52b583288607757c175cd46fa7ff19588217da1a956a28ffc46716827960a6
-meta_record_code_sha256	7bd854ad18fea6ca6bf2227a335e06e24f95e3d9aee6921d57d765c21f253bb1
+meta_output_code_sha256	5fa89a7fe9710cc544979d66869aa5bc3ab9cd5f9a491e71ce2735628e4b5965
+meta_record_code_sha256	c97fc4cf1bdea8ebaaebc5fd319223bf58728800be5a30cf3b8f3c2a59340ccb
 all_attempt_pdf_lines	1
 all_attempt_eps_lines	1
 all_mutation	none
@@ -192,8 +192,8 @@ meta_absent_after	0
 rec_flushed	1
 rec_complete	1
 rec_emitted	1
-rec_blockline	figureFormat$  = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- step 2 (save)
-rec_blockline	figureFormat2$ = "PNG, PDF"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- step 4 (save)
+rec_blockline	figureFormat$  = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- run 1, step 2 (save)
+rec_blockline	figureFormat2$ = "PNG, PDF"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- run 2, step 4 (save)
 rec_save_call1	@emlRecordReplaySave: 1, "figA_20260817_120000", outputFolder$, figureFormat$
 rec_save_call2	@emlRecordReplaySave: 1, "figB_20260817_120000", outputFolder$, figureFormat2$
 rec_savepanel_left	0
@@ -204,12 +204,12 @@ rec_edit_lines_changed	1
 rec_edit_below_block	0
 rec_same_ran	1
 rec_same_abort	0
-rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figA_20260817_191659.eps
-rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figA_20260817_191659.png
-rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figA_20260817_191659_report.txt
-rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figB_20260817_191659.pdf
-rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figB_20260817_191659.png
-rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figB_20260817_191659_report.txt
+rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figA_20260817_214648.eps
+rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figA_20260817_214648.png
+rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figA_20260817_214648_report.txt
+rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figB_20260817_214648.pdf
+rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figB_20260817_214648.png
+rec_same_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_same/figB_20260817_214648_report.txt
 rec_same_figA_png	1
 rec_same_figA_eps	1
 rec_same_figA_pdf	0
@@ -218,12 +218,12 @@ rec_same_figB_eps	0
 rec_same_figB_pdf	1
 rec_edited_ran	1
 rec_edited_abort	0
-rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figA_20260817_191700.eps
-rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figA_20260817_191700.png
-rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figA_20260817_191700_report.txt
-rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figB_20260817_191700.eps
-rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figB_20260817_191700.png
-rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figB_20260817_191700_report.txt
+rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figA_20260817_214648.eps
+rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figA_20260817_214648.png
+rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figA_20260817_214648_report.txt
+rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figB_20260817_214648.eps
+rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figB_20260817_214648.png
+rec_edited_file	/home/claude/EMLPraatTools/harness/vecfig/out/files/replay_edited/figB_20260817_214648_report.txt
 rec_edited_figA_png	1
 rec_edited_figA_eps	1
 rec_edited_figA_pdf	0

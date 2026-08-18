@@ -3208,6 +3208,22 @@ scatterShowDots = 1
 
 repeat
 
+    # ONE PASS OF THIS LOOP IS ONE RECORDED RUN. The recorder names every
+    # variable in an emitted script's editable block by the run it came from,
+    # so run 2's grouping column is groupCol2$ and editing it retargets run 2
+    # and nothing else. Redraw comes back HERE, in the same script scope, with
+    # the same variables live -- there is nothing in the buffer that could
+    # tell a second complete pass through this form from the two steps ONE
+    # pass records when it annotates a figure with its own statistics. So the
+    # form says which it is, at the top of the pass, once.
+    #
+    # NOTHING IS SPENT BY SAYING IT. A pass the user abandons records no step
+    # and takes no run number; see @emlRecordNewRun. Guarded on the recorder's
+    # load flag like every other call into it.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordNewRun
+    endif
+
     # =================================================================
     # MAIN FORM + ACQUIRE OBJECT LOOP
     # (allows "Go Back" from object dialog to restart main form)

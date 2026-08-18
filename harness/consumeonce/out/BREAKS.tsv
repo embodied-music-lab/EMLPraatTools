@@ -1,6 +1,6 @@
-head_record	21	the reader compares the stamp with the step it is about to record
-head_form	25	@emlGraphsStampAxisRequest exists and was found
+head_record	0	<none>
+head_form	9	the block declares four axis variables, two per figure  reported=2
 exists_only	12	the reader compares the stamp with the step it is about to record
-no_consume	7	and zeroes the stamp once it has read it      
-stamp_at_publish	2	and @emlGraphsDispatchDraw re-takes the stamp before drawing  reported=0
-stamp_one_branch	16	the publication calls it once, after the type chain rather than inside it
+no_consume	16	and zeroes the stamp once it has read it      
+stamp_at_publish	11	and @emlGraphsDispatchDraw re-takes the stamp before drawing  reported=0
+stamp_one_branch	25	the publication calls it once, after the type chain rather than inside it

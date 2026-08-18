@@ -26,4 +26,4 @@ endfor
 table = selected ("Table")
 @emlRunTwoGroupAnalysis: table, "val", "grp", "parametric", 0
 outputFolder$ = "/home/claude/EMLPraatTools/harness/record/replay_out/deep/level2/level3"
-@emlRecordReplaySave: 0, "vt_deep_20260814_120000", outputFolder$
+@emlRecordReplaySave: 0, "vt_deep_20260814_120000", outputFolder$, ""

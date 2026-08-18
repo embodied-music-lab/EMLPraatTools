@@ -49,16 +49,16 @@ include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
 # nothing below this block names an object, a column or an axis
-# range.
-data1$ = "Table co"   ; steps 1 (analysis), 2 (draw)
-data2$ = "Table eml_qq_points"   ; step 3 (draw)
-valueCol$ = "val"   ; the measured column -- steps 1 (analysis), 2 (draw)
-groupCol$ = "grp"   ; the grouping column -- steps 1 (analysis), 2 (draw)
-xCol$     = "theoretical"   ; the x column -- step 3 (draw)
-yCol$     = "sample"   ; the y column -- step 3 (draw)
-axisYMin  = 0   ; the y-axis range -- as typed in the dialog -- step 2 (draw)
+# range or a figure format.
+data1$ = "Table co"   ; run 1, steps 1 (analysis), 2 (draw)
+data2$ = "Table eml_qq_points"   ; run 2, step 3 (draw)
+valueCol$ = "val"   ; the measured column -- run 1, steps 1 (analysis), 2 (draw)
+groupCol$ = "grp"   ; the grouping column -- run 1, steps 1 (analysis), 2 (draw)
+xCol2$    = "theoretical"   ; the x column -- run 2, step 3 (draw)
+yCol2$    = "sample"   ; the y column -- run 2, step 3 (draw)
+axisYMin  = 0   ; the y-axis range -- as typed in the dialog -- run 1, step 2 (draw)
 axisYMax  = 100   ; the figure was drawn on 0.0000 .. 184.8013
-axisYMin2 = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- step 3 (draw)
+axisYMin2 = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 3 (draw)
 axisYMax2 = 0.0   ; on the recorded data it resolved to 195.0000 .. 235.0000
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
@@ -127,7 +127,7 @@ annotate = 1
 scatterAnalysisType = 0
 annotCorrType$ = "pearson"
 scatterRegressionLine = 1
-@emlDrawScatterPlot: data, "Normal Q-Q plot: val", "Theoretical quantiles (z)", "Sample quantiles: val", 6, 4, "color", 1, xCol$, yCol$, "", 0, 0, axisYMin2, axisYMax2, 0
+@emlDrawScatterPlot: data, "Normal Q-Q plot: val", "Theoretical quantiles (z)", "Sample quantiles: val", 6, 4, "color", 1, xCol2$, yCol2$, "", 0, 0, axisYMin2, axisYMax2, 0
 # The figure's statistical annotation. In the GUI the graphs form
 # draws this after the figure returns; a recorded script has no
 # form, so the step carries its own render.

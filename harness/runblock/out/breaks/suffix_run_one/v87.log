@@ -1,0 +1,307 @@
+  twotables: named groupCol1$, the run in its comment wants groupCol$
+   twotables: named valueCol1$, the run in its comment wants valueCol$
+   twotables: named axisYMin1, the run in its comment wants axisYMin
+  onlyrun2: named groupCol1$, the run in its comment wants groupCol$
+   onlyrun2: named valueCol1$, the run in its comment wants valueCol$
+   onlyrun2: named axisYMin1, the run in its comment wants axisYMin
+  three: named groupCol1$, the run in its comment wants groupCol$
+   three: named valueCol1$, the run in its comment wants valueCol$
+   three: named axisYMin1, the run in its comment wants axisYMin
+  single: named groupCol1$, the run in its comment wants groupCol$
+   single: named valueCol1$, the run in its comment wants valueCol$
+   single: named axisYMin1, the run in its comment wants axisYMin
+   single: named figureFormat1$, the run in its comment wants figureFormat$
+  sametable: named groupCol1$, the run in its comment wants groupCol$
+   sametable: named valueCol1$, the run in its comment wants valueCol$
+   sametable: named axisYMin1, the run in its comment wants axisYMin
+  twosaves: named groupCol1$, the run in its comment wants groupCol$
+   twosaves: named valueCol1$, the run in its comment wants valueCol$
+   twosaves: named axisYMin1, the run in its comment wants axisYMin
+   twosaves: named figureFormat1$, the run in its comment wants figureFormat$
+  saveruns: named groupCol1$, the run in its comment wants groupCol$
+   saveruns: named valueCol1$, the run in its comment wants valueCol$
+   saveruns: named axisYMin1, the run in its comment wants axisYMin
+   saveruns: named figureFormat1$, the run in its comment wants figureFormat$
+  axisedit: named groupCol1$, the run in its comment wants groupCol$
+   axisedit: named valueCol1$, the run in its comment wants valueCol$
+   axisedit: named axisYMin1, the run in its comment wants axisYMin
+  callsite: named groupCol1$, the run in its comment wants groupCol$
+   callsite: named valueCol1$, the run in its comment wants valueCol$
+   callsite: named axisYMin1, the run in its comment wants axisYMin
+  twotables: unexpected declaration groupCol1$
+   twotables: unexpected declaration valueCol1$
+   twotables: unexpected declaration axisYMin1
+  onlyrun2: unexpected declaration groupCol1$
+   onlyrun2: unexpected declaration valueCol1$
+   onlyrun2: unexpected declaration axisYMin1
+  three: unexpected declaration groupCol1$
+   three: unexpected declaration valueCol1$
+   three: unexpected declaration axisYMin1
+  single: unexpected declaration groupCol1$
+   single: unexpected declaration valueCol1$
+   single: unexpected declaration axisYMin1
+   single: unexpected declaration figureFormat1$
+  sametable: unexpected declaration groupCol1$
+   sametable: unexpected declaration valueCol1$
+   sametable: unexpected declaration axisYMin1
+  twosaves: unexpected declaration groupCol1$
+   twosaves: unexpected declaration valueCol1$
+   twosaves: unexpected declaration axisYMin1
+   twosaves: unexpected declaration figureFormat1$
+  saveruns: unexpected declaration groupCol1$
+   saveruns: unexpected declaration valueCol1$
+   saveruns: unexpected declaration axisYMin1
+   saveruns: unexpected declaration figureFormat1$
+  axisedit: unexpected declaration groupCol1$
+   axisedit: unexpected declaration valueCol1$
+   axisedit: unexpected declaration axisYMin1
+  callsite: unexpected declaration groupCol1$
+   callsite: unexpected declaration valueCol1$
+   callsite: unexpected declaration axisYMin1
+  HEAD : 
+  groupCol$     = "grp"   ; the grouping column -- step 1 (draw)
+  valueCol$     = "val"   ; the measured column -- step 1 (draw)
+  axisYMin      = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- step 1 (draw)
+  axisYMax      = 0.0   ; on the recorded data it resolved to 5.5000 .. 9.0000
+  figureFormat$ = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- step 2 (save)
+  
+
+  now  : 
+  groupCol1$     = "grp"   ; the grouping column -- step 1 (draw)
+  valueCol1$     = "val"   ; the measured column -- step 1 (draw)
+  axisYMin1      = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- step 1 (draw)
+  axisYMax1      = 0.0   ; on the recorded data it resolved to 5.5000 .. 9.0000
+  figureFormat1$ = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- step 2 (save)
+  
+
+
+==============================================================================
+v87 -- the editable block names its variables by run
+==============================================================================
+PASS  v87     the driven transcript exists (RUNBLOCK.tsv)     computed=NA  expected TRUE
+PASS  v87     the blocks were driven against this tree's recorder (336260e67674)  computed=NA  expected TRUE
+PASS  v87     the graphs form: the boundary is inside the pass loop (3209 < 3224 < 8680)  computed=NA  expected TRUE
+PASS  v87     the wizard: the boundary is inside the pass loop (121 < 129 < 2095)  computed=NA  expected TRUE
+PASS  v87     twotables: the session recorded a script        computed=NA  expected TRUE
+PASS  v87     twotables: nothing aborted while recording      computed=NA  expected TRUE
+PASS  v87     twotables: nothing aborted while replaying      computed=NA  expected TRUE
+PASS  v87     twotables: it emitted 2 steps, draw/draw        computed=NA  expected TRUE
+PASS  v87     onlyrun2: the session recorded a script         computed=NA  expected TRUE
+PASS  v87     onlyrun2: nothing aborted while recording       computed=NA  expected TRUE
+PASS  v87     onlyrun2: nothing aborted while replaying       computed=NA  expected TRUE
+PASS  v87     onlyrun2: it emitted 2 steps, draw/draw         computed=NA  expected TRUE
+PASS  v87     three: the session recorded a script            computed=NA  expected TRUE
+PASS  v87     three: nothing aborted while recording          computed=NA  expected TRUE
+PASS  v87     three: nothing aborted while replaying          computed=NA  expected TRUE
+PASS  v87     three: it emitted 3 steps, draw/draw/draw       computed=NA  expected TRUE
+PASS  v87     single: the session recorded a script           computed=NA  expected TRUE
+PASS  v87     single: nothing aborted while recording         computed=NA  expected TRUE
+PASS  v87     single: nothing aborted while replaying         computed=NA  expected TRUE
+PASS  v87     single: it emitted 2 steps, draw/save           computed=NA  expected TRUE
+PASS  v87     sametable: the session recorded a script        computed=NA  expected TRUE
+PASS  v87     sametable: nothing aborted while recording      computed=NA  expected TRUE
+PASS  v87     sametable: nothing aborted while replaying      computed=NA  expected TRUE
+PASS  v87     sametable: it emitted 2 steps, draw/draw        computed=NA  expected TRUE
+PASS  v87     twosaves: the session recorded a script         computed=NA  expected TRUE
+PASS  v87     twosaves: nothing aborted while recording       computed=NA  expected TRUE
+PASS  v87     twosaves: nothing aborted while replaying       computed=NA  expected TRUE
+PASS  v87     twosaves: it emitted 3 steps, draw/save/save    computed=NA  expected TRUE
+PASS  v87     saveruns: the session recorded a script         computed=NA  expected TRUE
+PASS  v87     saveruns: nothing aborted while recording       computed=NA  expected TRUE
+PASS  v87     saveruns: nothing aborted while replaying       computed=NA  expected TRUE
+PASS  v87     saveruns: it emitted 4 steps, draw/save/draw/save  computed=NA  expected TRUE
+PASS  v87     axisedit: the session recorded a script         computed=NA  expected TRUE
+PASS  v87     axisedit: nothing aborted while recording       computed=NA  expected TRUE
+PASS  v87     axisedit: nothing aborted while replaying       computed=NA  expected TRUE
+PASS  v87     axisedit: it emitted 2 steps, draw/draw         computed=NA  expected TRUE
+PASS  v87     callsite: the session recorded a script         computed=NA  expected TRUE
+PASS  v87     callsite: nothing aborted while recording       computed=NA  expected TRUE
+PASS  v87     callsite: nothing aborted while replaying       computed=NA  expected TRUE
+PASS  v87     callsite: it emitted 2 steps, draw/draw         computed=NA  expected TRUE
+FAIL  v87     twotables: every name ends in its own run (8 decl.)  computed=NA  expected TRUE
+FAIL  v87     onlyrun2: every name ends in its own run (9 decl.)  computed=NA  expected TRUE
+FAIL  v87     three: every name ends in its own run (12 decl.)  computed=NA  expected TRUE
+FAIL  v87     single: every name ends in its own run (5 decl.)  computed=NA  expected TRUE
+FAIL  v87     sametable: every name ends in its own run (8 decl.)  computed=NA  expected TRUE
+FAIL  v87     twosaves: every name ends in its own run (6 decl.)  computed=NA  expected TRUE
+FAIL  v87     saveruns: every name ends in its own run (10 decl.)  computed=NA  expected TRUE
+FAIL  v87     axisedit: every name ends in its own run (8 decl.)  computed=NA  expected TRUE
+FAIL  v87     callsite: every name ends in its own run (8 decl.)  computed=NA  expected TRUE
+PASS  v87     twotables: data1$ = "Table cityA", run 1        computed=NA  expected TRUE
+PASS  v87     twotables: data2$ = "Table cityB", run 2        computed=NA  expected TRUE
+FAIL  v87     twotables: groupCol$ = "site", run 1            computed=NA  expected TRUE
+FAIL  v87     twotables: valueCol$ = "n", run 1               computed=NA  expected TRUE
+PASS  v87     twotables: groupCol2$ = "ward", run 2           computed=NA  expected TRUE
+PASS  v87     twotables: valueCol2$ = "n", run 2              computed=NA  expected TRUE
+FAIL  v87     twotables: axisYMin = "0.0", run 1              computed=NA  expected TRUE
+PASS  v87     twotables: axisYMin2 = "0.0", run 2             computed=NA  expected TRUE
+FAIL  v87     twotables: the block declares nothing else (8 run-bearing)  computed=NA  expected TRUE
+FAIL  v87     twotables: axisYMax = 0.0, note "on the recorded data it resolved to 3.5000 .. 7.0000"  computed=NA  expected TRUE
+PASS  v87     twotables: axisYMax2 = 0.0, note "on the recorded data it resolved to 9.5000 .. 14.0000"  computed=NA  expected TRUE
+PASS  v87     twotables: 2 axis ceiling(s) and no more        computed=NA  expected TRUE
+PASS  v87     onlyrun2: data1$ = "Table box", run 1           computed=NA  expected TRUE
+PASS  v87     onlyrun2: data2$ = "Table sc", run 2            computed=NA  expected TRUE
+FAIL  v87     onlyrun2: groupCol$ = "grp", run 1              computed=NA  expected TRUE
+FAIL  v87     onlyrun2: valueCol$ = "val", run 1              computed=NA  expected TRUE
+PASS  v87     onlyrun2: xCol2$ = "xx", run 2                  computed=NA  expected TRUE
+PASS  v87     onlyrun2: yCol2$ = "yy", run 2                  computed=NA  expected TRUE
+PASS  v87     onlyrun2: groupCol2$ = "cohort", run 2          computed=NA  expected TRUE
+FAIL  v87     onlyrun2: axisYMin = "0.0", run 1               computed=NA  expected TRUE
+PASS  v87     onlyrun2: axisYMin2 = "0.0", run 2              computed=NA  expected TRUE
+FAIL  v87     onlyrun2: the block declares nothing else (9 run-bearing)  computed=NA  expected TRUE
+FAIL  v87     onlyrun2: axisYMax = 0.0, note "on the recorded data it resolved to 4.0000 .. 7.0000"  computed=NA  expected TRUE
+PASS  v87     onlyrun2: axisYMax2 = 0.0, note "on the recorded data it resolved to 10.0000 .. 40.0000"  computed=NA  expected TRUE
+PASS  v87     onlyrun2: 2 axis ceiling(s) and no more         computed=NA  expected TRUE
+PASS  v87     three: data1$ = "Table t1", run 1               computed=NA  expected TRUE
+PASS  v87     three: data2$ = "Table t2", run 2               computed=NA  expected TRUE
+PASS  v87     three: data3$ = "Table t3", run 3               computed=NA  expected TRUE
+FAIL  v87     three: groupCol$ = "site", run 1                computed=NA  expected TRUE
+FAIL  v87     three: valueCol$ = "n", run 1                   computed=NA  expected TRUE
+PASS  v87     three: groupCol2$ = "ward", run 2               computed=NA  expected TRUE
+PASS  v87     three: valueCol2$ = "n", run 2                  computed=NA  expected TRUE
+PASS  v87     three: groupCol3$ = "block", run 3              computed=NA  expected TRUE
+PASS  v87     three: valueCol3$ = "n", run 3                  computed=NA  expected TRUE
+FAIL  v87     three: axisYMin = "0.0", run 1                  computed=NA  expected TRUE
+PASS  v87     three: axisYMin2 = "0.0", run 2                 computed=NA  expected TRUE
+PASS  v87     three: axisYMin3 = "2", run 3                   computed=NA  expected TRUE
+FAIL  v87     three: the block declares nothing else (12 run-bearing)  computed=NA  expected TRUE
+FAIL  v87     three: axisYMax = 0.0, note "on the recorded data it resolved to 2.5000 .. 5.5000"  computed=NA  expected TRUE
+PASS  v87     three: axisYMax2 = 0.0, note "on the recorded data it resolved to 10.0000 .. 14.0000"  computed=NA  expected TRUE
+PASS  v87     three: axisYMax3 = 30, note "the figure was drawn on 2.0000 .. 30.0000"  computed=NA  expected TRUE
+PASS  v87     three: 3 axis ceiling(s) and no more            computed=NA  expected TRUE
+PASS  v87     single: data1$ = "Table vt", run 1              computed=NA  expected TRUE
+FAIL  v87     single: groupCol$ = "grp", run 1                computed=NA  expected TRUE
+FAIL  v87     single: valueCol$ = "val", run 1                computed=NA  expected TRUE
+FAIL  v87     single: axisYMin = "0.0", run 1                 computed=NA  expected TRUE
+FAIL  v87     single: figureFormat$ = "PNG, EPS", run 1       computed=NA  expected TRUE
+FAIL  v87     single: the block declares nothing else (5 run-bearing)  computed=NA  expected TRUE
+FAIL  v87     single: axisYMax = 0.0, note "on the recorded data it resolved to 5.5000 .. 9.0000"  computed=NA  expected TRUE
+PASS  v87     single: 1 axis ceiling(s) and no more           computed=NA  expected TRUE
+PASS  v87     sametable: data1$ = "Table one", run 1          computed=NA  expected TRUE
+PASS  v87     sametable: data2$ = "Table one", run 2          computed=NA  expected TRUE
+FAIL  v87     sametable: groupCol$ = "grp", run 1             computed=NA  expected TRUE
+FAIL  v87     sametable: valueCol$ = "val", run 1             computed=NA  expected TRUE
+PASS  v87     sametable: groupCol2$ = "grp", run 2            computed=NA  expected TRUE
+PASS  v87     sametable: valueCol2$ = "other", run 2          computed=NA  expected TRUE
+FAIL  v87     sametable: axisYMin = "0.0", run 1              computed=NA  expected TRUE
+PASS  v87     sametable: axisYMin2 = "0.0", run 2             computed=NA  expected TRUE
+FAIL  v87     sametable: the block declares nothing else (8 run-bearing)  computed=NA  expected TRUE
+FAIL  v87     sametable: axisYMax = 0.0, note "on the recorded data it resolved to 5.5000 .. 9.0000"  computed=NA  expected TRUE
+PASS  v87     sametable: axisYMax2 = 0.0, note "on the recorded data it resolved to 13.0000 .. 18.5000"  computed=NA  expected TRUE
+PASS  v87     sametable: 2 axis ceiling(s) and no more        computed=NA  expected TRUE
+PASS  v87     twosaves: data1$ = "Table vt", run 1            computed=NA  expected TRUE
+FAIL  v87     twosaves: groupCol$ = "grp", run 1              computed=NA  expected TRUE
+FAIL  v87     twosaves: valueCol$ = "val", run 1              computed=NA  expected TRUE
+FAIL  v87     twosaves: axisYMin = "0.0", run 1               computed=NA  expected TRUE
+FAIL  v87     twosaves: figureFormat$ = "PNG", run 1          computed=NA  expected TRUE
+PASS  v87     twosaves: figureFormat1b$ = "PNG, PDF", run 1   computed=NA  expected TRUE
+FAIL  v87     twosaves: the block declares nothing else (6 run-bearing)  computed=NA  expected TRUE
+FAIL  v87     twosaves: axisYMax = 0.0, note "on the recorded data it resolved to 5.5000 .. 9.0000"  computed=NA  expected TRUE
+PASS  v87     twosaves: 1 axis ceiling(s) and no more         computed=NA  expected TRUE
+PASS  v87     saveruns: data1$ = "Table sa", run 1            computed=NA  expected TRUE
+PASS  v87     saveruns: data2$ = "Table sb", run 2            computed=NA  expected TRUE
+FAIL  v87     saveruns: groupCol$ = "grp", run 1              computed=NA  expected TRUE
+FAIL  v87     saveruns: valueCol$ = "val", run 1              computed=NA  expected TRUE
+PASS  v87     saveruns: groupCol2$ = "grp", run 2             computed=NA  expected TRUE
+PASS  v87     saveruns: valueCol2$ = "val", run 2             computed=NA  expected TRUE
+FAIL  v87     saveruns: axisYMin = "0.0", run 1               computed=NA  expected TRUE
+PASS  v87     saveruns: axisYMin2 = "0.0", run 2              computed=NA  expected TRUE
+FAIL  v87     saveruns: figureFormat$ = "PNG", run 1          computed=NA  expected TRUE
+PASS  v87     saveruns: figureFormat2$ = "PNG, PDF", run 2    computed=NA  expected TRUE
+FAIL  v87     saveruns: the block declares nothing else (10 run-bearing)  computed=NA  expected TRUE
+FAIL  v87     saveruns: axisYMax = 0.0, note "on the recorded data it resolved to 5.5000 .. 9.0000"  computed=NA  expected TRUE
+PASS  v87     saveruns: axisYMax2 = 0.0, note "on the recorded data it resolved to 15.5000 .. 19.0000"  computed=NA  expected TRUE
+PASS  v87     saveruns: 2 axis ceiling(s) and no more         computed=NA  expected TRUE
+PASS  v87     axisedit: data1$ = "Table ax1", run 1           computed=NA  expected TRUE
+PASS  v87     axisedit: data2$ = "Table ax2", run 2           computed=NA  expected TRUE
+FAIL  v87     axisedit: groupCol$ = "grp", run 1              computed=NA  expected TRUE
+FAIL  v87     axisedit: valueCol$ = "val", run 1              computed=NA  expected TRUE
+PASS  v87     axisedit: groupCol2$ = "grp", run 2             computed=NA  expected TRUE
+PASS  v87     axisedit: valueCol2$ = "val", run 2             computed=NA  expected TRUE
+FAIL  v87     axisedit: axisYMin = "2", run 1                 computed=NA  expected TRUE
+PASS  v87     axisedit: axisYMin2 = "2", run 2                computed=NA  expected TRUE
+FAIL  v87     axisedit: the block declares nothing else (8 run-bearing)  computed=NA  expected TRUE
+FAIL  v87     axisedit: axisYMax = 30, note "the figure was drawn on 2.0000 .. 30.0000"  computed=NA  expected TRUE
+PASS  v87     axisedit: axisYMax2 = 30, note "the figure was drawn on 2.0000 .. 30.0000"  computed=NA  expected TRUE
+PASS  v87     axisedit: 2 axis ceiling(s) and no more         computed=NA  expected TRUE
+PASS  v87     callsite: data1$ = "Table cityA", run 1         computed=NA  expected TRUE
+PASS  v87     callsite: data2$ = "Table cityB", run 2         computed=NA  expected TRUE
+FAIL  v87     callsite: groupCol$ = "site", run 1             computed=NA  expected TRUE
+FAIL  v87     callsite: valueCol$ = "n", run 1                computed=NA  expected TRUE
+PASS  v87     callsite: groupCol2$ = "ward", run 2            computed=NA  expected TRUE
+PASS  v87     callsite: valueCol2$ = "n", run 2               computed=NA  expected TRUE
+FAIL  v87     callsite: axisYMin = "0.0", run 1               computed=NA  expected TRUE
+PASS  v87     callsite: axisYMin2 = "0.0", run 2              computed=NA  expected TRUE
+FAIL  v87     callsite: the block declares nothing else (8 run-bearing)  computed=NA  expected TRUE
+FAIL  v87     callsite: axisYMax = 0.0, note "on the recorded data it resolved to 3.5000 .. 7.0000"  computed=NA  expected TRUE
+PASS  v87     callsite: axisYMax2 = 0.0, note "on the recorded data it resolved to 9.5000 .. 14.0000"  computed=NA  expected TRUE
+PASS  v87     callsite: 2 axis ceiling(s) and no more         computed=NA  expected TRUE
+PASS  v87     twotables: step 1 (run 1) reads only run 1 (data1$ groupCol1$ valueCol1$ axisYMin1 axisYMax1)  computed=NA  expected TRUE
+PASS  v87     twotables: step 2 (run 2) reads only run 2 (data2$ groupCol2$ valueCol2$ axisYMin2 axisYMax2)  computed=NA  expected TRUE
+PASS  v87     twotables: no declaration governs another run's steps  computed=NA  expected TRUE
+PASS  v87     onlyrun2: step 1 (run 1) reads only run 1 (data1$ groupCol1$ valueCol1$ axisYMin1 axisYMax1)  computed=NA  expected TRUE
+PASS  v87     onlyrun2: step 2 (run 2) reads only run 2 (data2$ xCol2$ yCol2$ groupCol2$ axisYMin2 axisYMax2)  computed=NA  expected TRUE
+PASS  v87     onlyrun2: no declaration governs another run's steps  computed=NA  expected TRUE
+PASS  v87     three: step 1 (run 1) reads only run 1 (data1$ groupCol1$ valueCol1$ axisYMin1 axisYMax1)  computed=NA  expected TRUE
+PASS  v87     three: step 2 (run 2) reads only run 2 (data2$ groupCol2$ valueCol2$ axisYMin2 axisYMax2)  computed=NA  expected TRUE
+PASS  v87     three: step 3 (run 3) reads only run 3 (data3$ groupCol3$ valueCol3$ axisYMin3 axisYMax3)  computed=NA  expected TRUE
+PASS  v87     three: no declaration governs another run's steps  computed=NA  expected TRUE
+PASS  v87     single: step 1 (run 1) reads only run 1 (data1$ groupCol1$ valueCol1$ axisYMin1 axisYMax1)  computed=NA  expected TRUE
+PASS  v87     single: step 2 (run 1) reads only run 1 (data1$ figureFormat1$)  computed=NA  expected TRUE
+PASS  v87     single: no declaration governs another run's steps  computed=NA  expected TRUE
+PASS  v87     sametable: step 1 (run 1) reads only run 1 (data1$ groupCol1$ valueCol1$ axisYMin1 axisYMax1)  computed=NA  expected TRUE
+PASS  v87     sametable: step 2 (run 2) reads only run 2 (data2$ groupCol2$ valueCol2$ axisYMin2 axisYMax2)  computed=NA  expected TRUE
+PASS  v87     sametable: no declaration governs another run's steps  computed=NA  expected TRUE
+PASS  v87     twosaves: step 1 (run 1) reads only run 1 (data1$ groupCol1$ valueCol1$ axisYMin1 axisYMax1)  computed=NA  expected TRUE
+PASS  v87     twosaves: step 2 (run 1) reads only run 1 (data1$ figureFormat1$)  computed=NA  expected TRUE
+PASS  v87     twosaves: step 3 (run 1) reads only run 1 (data1$ figureFormat1b$)  computed=NA  expected TRUE
+PASS  v87     twosaves: no declaration governs another run's steps  computed=NA  expected TRUE
+PASS  v87     saveruns: step 1 (run 1) reads only run 1 (data1$ groupCol1$ valueCol1$ axisYMin1 axisYMax1)  computed=NA  expected TRUE
+PASS  v87     saveruns: step 2 (run 1) reads only run 1 (data1$ figureFormat1$)  computed=NA  expected TRUE
+PASS  v87     saveruns: step 3 (run 2) reads only run 2 (data2$ groupCol2$ valueCol2$ axisYMin2 axisYMax2)  computed=NA  expected TRUE
+PASS  v87     saveruns: step 4 (run 2) reads only run 2 (data2$ figureFormat2$)  computed=NA  expected TRUE
+PASS  v87     saveruns: no declaration governs another run's steps  computed=NA  expected TRUE
+PASS  v87     axisedit: step 1 (run 1) reads only run 1 (data1$ groupCol1$ valueCol1$ axisYMin1 axisYMax1)  computed=NA  expected TRUE
+PASS  v87     axisedit: step 2 (run 2) reads only run 2 (data2$ groupCol2$ valueCol2$ axisYMin2 axisYMax2)  computed=NA  expected TRUE
+PASS  v87     axisedit: no declaration governs another run's steps  computed=NA  expected TRUE
+PASS  v87     callsite: step 1 (run 1) reads only run 1 (data1$ groupCol1$ valueCol1$ axisYMin1 axisYMax1)  computed=NA  expected TRUE
+PASS  v87     callsite: step 2 (run 2) reads only run 2 (data2$ groupCol2$ valueCol2$ axisYMin2 axisYMax2)  computed=NA  expected TRUE
+PASS  v87     callsite: no declaration governs another run's steps  computed=NA  expected TRUE
+PASS  v87     the HEAD baseline built and recorded its own block  computed=NA  expected TRUE
+FAIL  v87     single-run block is character-identical to HEAD's (10 lines)  computed=NA  expected TRUE
+PASS  v87     sametable: the retarget changed exactly one line of the block  computed=NA  expected TRUE
+PASS  v87     sametable: run 1 is untouched by the edit to data2$  computed=NA  expected TRUE
+PASS  v87     sametable: run 2 is no longer the figure it was  computed=NA  expected TRUE
+PASS  v87     sametable: run 2 lands on the twin table's own reference  computed=NA  expected TRUE
+PASS  v87     sametable: the edited block replayed without an abort  computed=NA  expected TRUE
+FAIL  v87     axisedit: the axis edit changed exactly one line of the block  computed=NA  expected TRUE
+FAIL  v87     axisedit: run 1 moved when its own ceiling was raised  computed=NA  expected TRUE
+FAIL  v87     axisedit: run 1 lands on the 2 .. 60 reference  computed=NA  expected TRUE
+PASS  v87     axisedit: run 2 stayed where it was drawn, on the same literals  computed=NA  expected TRUE
+PASS  v87     axisedit: the edited block replayed without an abort  computed=NA  expected TRUE
+PASS  v87     twotables: step 1 replays byte-for-byte         computed=NA  expected TRUE
+PASS  v87     twotables: step 2 replays byte-for-byte         computed=NA  expected TRUE
+PASS  v87     onlyrun2: step 1 replays byte-for-byte          computed=NA  expected TRUE
+PASS  v87     onlyrun2: step 2 replays byte-for-byte          computed=NA  expected TRUE
+PASS  v87     three: step 1 replays byte-for-byte             computed=NA  expected TRUE
+PASS  v87     three: step 2 replays byte-for-byte             computed=NA  expected TRUE
+PASS  v87     three: step 3 replays byte-for-byte             computed=NA  expected TRUE
+PASS  v87     single: step 1 replays byte-for-byte            computed=NA  expected TRUE
+PASS  v87     sametable: step 1 replays byte-for-byte         computed=NA  expected TRUE
+PASS  v87     sametable: step 2 replays byte-for-byte         computed=NA  expected TRUE
+PASS  v87     twosaves: step 1 replays byte-for-byte          computed=NA  expected TRUE
+PASS  v87     saveruns: step 1 replays byte-for-byte          computed=NA  expected TRUE
+PASS  v87     saveruns: step 3 replays byte-for-byte          computed=NA  expected TRUE
+PASS  v87     axisedit: step 1 replays byte-for-byte          computed=NA  expected TRUE
+PASS  v87     axisedit: step 2 replays byte-for-byte          computed=NA  expected TRUE
+PASS  v87     callsite: step 1 replays byte-for-byte          computed=NA  expected TRUE
+PASS  v87     callsite: step 2 replays byte-for-byte          computed=NA  expected TRUE
+PASS  v87     single: saved wrote eps,png,txt and nothing else  computed=NA  expected TRUE
+PASS  v87     twosaves: saved1 wrote png,txt and nothing else  computed=NA  expected TRUE
+PASS  v87     twosaves: saved2 wrote pdf,png,txt and nothing else  computed=NA  expected TRUE
+PASS  v87     saveruns: saved1 wrote png,txt and nothing else  computed=NA  expected TRUE
+PASS  v87     saveruns: saved2 wrote pdf,png,txt and nothing else  computed=NA  expected TRUE
+PASS  v87     every cases the runblock harness drove is accounted for by some check  computed=NA  expected TRUE
+PASS  v87     every cases the runblock harness drove a check reads was actually rendered  computed=NA  expected TRUE
+------------------------------------------------------------------------------ 
+225 checks, 164 passed, 61 FAILED

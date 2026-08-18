@@ -1676,6 +1676,23 @@ endproc
 # return value and variable derivation, before the orchestrator call.
 # ────────────────────────────────────────────────────────────────────────────
 procedure emlHandleCommonFields
+    ; A PRESS OF RUN IS A NEW RECORDED RUN, AND THIS IS THE ONE PLACE THAT
+    ; KNOWS IT FOR EVERY WRAPPER AT ONCE. The recorder names the variables in
+    ; an emitted script's editable block by the run they came from -- run 2's
+    ; measured column is valueCol2$ -- and a wrapper's `New` button loops back
+    ; to the same form INSIDE ONE SCRIPT SCOPE, so nothing about the script's
+    ; own state can tell the recorder that a second pass has begun. This
+    ; procedure already runs exactly once per Run, inside that loop, which is
+    ; what the boundary is; @emlWrapperInit would be wrong here for the
+    ; reason it is wrong below -- it runs once, outside the loop.
+    ;
+    ; GUARDED ON THE RECORDER'S LOAD FLAG, like every other call into it: a
+    ; wrapper run with the stats library alone must not abort with Procedure
+    ; "emlRecordNewRun" not found.
+    if variableExists ("emlRecordLoaded")
+        @emlRecordNewRun
+    endif
+
     ; Remember the answer so the next trip round the wrapper's repeat
     ; loop (and the next wrapper this session) reopens with it still set.
     emlLastClearInfo = clear_Info_window

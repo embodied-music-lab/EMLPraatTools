@@ -1,0 +1,16 @@
+# --- Step 2 (draw) ---
+selectObject: data2$
+data = selected ()
+# Scatter plot: Scatter
+# A fitted line is descriptive and carries no test.
+
+scatterAnalysisType = 0
+annotCorrType$ = "pearson"
+scatterRegressionLine = 0
+@emlDrawScatterPlot: data, "Scatter", "xx", "yy", 6, 4, "color", 1, xCol2$, yCol2$, groupCol2$, 0, 0, axisYMin2, axisYMax2, 0
+
+# The same step through the menu:
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
+
+
+

@@ -1,0 +1,13 @@
+# --- Step 3 (draw) ---
+selectObject: data3$
+data = selected ()
+# Box plot: Three
+# Whisker convention and outlier rule are stated in the figure, not assumed.
+
+@emlDrawBoxPlot: data, "Three", "Block", "n", 6, 4, "color", 1, groupCol3$, valueCol3$, axisYMin3, axisYMax3
+
+# The same step through the menu:
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
+
+
+

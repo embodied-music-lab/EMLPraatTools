@@ -49,14 +49,17 @@ include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
 # nothing below this block names an object, a column or an axis
-# range.
-data1$ = "Table co"   ; steps 1 (draw), 2 (draw)
-groupCol$ = "grp"   ; the grouping column -- steps 1 (draw), 2 (draw)
-valueCol$ = "val"   ; the measured column -- steps 1 (draw), 2 (draw)
-axisYMin  = 0   ; the y-axis range -- as typed in the dialog -- step 1 (draw)
-axisYMax  = 100   ; the figure was drawn on 0.0000 .. 100.0000
-axisYMin2 = 150   ; the y-axis range -- as typed in the dialog -- step 2 (draw)
-axisYMax2 = 400   ; the figure was drawn on 150.0000 .. 400.0000
+# range or a figure format.
+data1$ = "Table co"   ; run 1, step 1 (draw)
+data2$ = "Table co"   ; run 2, step 2 (draw)
+groupCol$  = "grp"   ; the grouping column -- run 1, step 1 (draw)
+valueCol$  = "val"   ; the measured column -- run 1, step 1 (draw)
+groupCol2$ = "grp"   ; the grouping column -- run 2, step 2 (draw)
+valueCol2$ = "val"   ; the measured column -- run 2, step 2 (draw)
+axisYMin   = 0   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
+axisYMax   = 100   ; the figure was drawn on 0.0000 .. 100.0000
+axisYMin2  = 150   ; the y-axis range -- as typed in the dialog -- run 2, step 2 (draw)
+axisYMax2  = 400   ; the figure was drawn on 150.0000 .. 400.0000
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -75,13 +78,13 @@ annotate = 0
 # Group column "grp", Value column "val".
 
 # --- Step 2 (draw) ---
-selectObject: data1$
+selectObject: data2$
 data = selected ()
 # Violin plot of val, grouped by grp, 4 groups.
 # Violin width is a kernel density estimate, not a count.
 
 annotate = 0
-@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin2, axisYMax2
+@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol2$, valueCol2$, axisYMin2, axisYMax2
 
 # Axis resolved to 150.0000 .. 400.0000 over 4 groups.
 # The same step through the menu:

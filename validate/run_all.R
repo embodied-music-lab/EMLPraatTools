@@ -955,7 +955,26 @@ scripts <- c(
     # format that failed, naming PNG, EPS and PDF as the alternatives, and
     # carrying the path of the PNG that is still on disk. Every save the panel
     # claims is now a file it found, the PNG included.
-    "v86_vector_figure_export.R"
+    "v86_vector_figure_export.R",
+    # v87's subject is WHICH RUN A VARIABLE BELONGS TO. The editable block at
+    # the top of a recorded script names every object, column, axis pair and
+    # figure format by the pass that produced it -- run 1's is groupCol$,
+    # run 2's is groupCol2$ -- and it does so whether or not run 1 used that
+    # role and whether or not the two name the same column. The naming used to
+    # key on (role, literal text), so a column called "n" in two different
+    # tables collapsed into one variable governing both, and one axis pair was
+    # shared across every figure while its resolved-value note quoted only the
+    # first. v87 drives eight sessions whose run structure is fixed by the
+    # driver -- two runs on two tables, a run using roles the run before it
+    # had not, three runs, one pass that saves twice, two runs drawn on the
+    # same typed axis literals -- and requires the block to be exactly the set
+    # of names the ruling gives, each step to read only its own run's
+    # variables, and the one-pass session to be character-identical to what a
+    # plugin built from HEAD emits. Two legs edit ONE line of a block and
+    # replay: the run that was edited must land on an independently drawn
+    # reference and the run that was not must be byte-identical, which is the
+    # whole promise of naming by run rather than by value.
+    "v87_run_scoped_block.R"
 )
 
 cat("EML Stats & Graphs validation suite\n")

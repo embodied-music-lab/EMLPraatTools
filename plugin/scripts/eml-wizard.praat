@@ -120,6 +120,15 @@ prevVarAssume = 1
 runAgain = 1
 while runAgain = 1
 
+# ONE TRIP ROUND THE WIZARD IS ONE RECORDED RUN, for the reason the graphs
+# form gives at its own pass loop: "Start over" returns here inside the same
+# script scope, and the recorder names an emitted script's variables by the
+# run they came from. Guarded on the recorder's load flag like every other
+# call into it.
+if variableExists ("emlRecordLoaded")
+    @emlRecordNewRun
+endif
+
 wizCanDraw = 0
 # Drawing and exporting are separate capabilities and were gated by one
 # flag. Repeated measures and Friedman set wizCanDraw = 0 because there is no

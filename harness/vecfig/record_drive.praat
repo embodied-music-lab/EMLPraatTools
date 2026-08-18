@@ -115,8 +115,14 @@ Erase all
 ... "In the GUI: the Save button on the post-analysis or post-draw dialog."
 
 # ---------------------------------------------------------------------------
-# STEP 3 -- a second figure
+# STEP 3 -- a second figure, and it is a SECOND RUN
 # ---------------------------------------------------------------------------
+# One pass through the graphs form and the save that belongs to it is one run,
+# and the recorder names the emitted block's variables by it. The form marks
+# the boundary at the top of each pass; this driver stands in for the form, so
+# it marks it here -- without that, a driver that presses Draw twice would be
+# describing one press to the recorder.
+@emlRecordNewRun
 Erase all
 @emlDrawBoxPlot: table, "second figure", "Group", "val", 6, 4, "color", 1,
 ... "grp", "val", 0, 300

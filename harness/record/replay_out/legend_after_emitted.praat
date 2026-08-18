@@ -49,13 +49,13 @@ include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
 # nothing below this block names an object, a column or an axis
-# range.
-data1$ = "Table lg"   ; steps 1 (analysis), 2 (draw)
-valueCol$    = "val"   ; the measured column -- steps 1 (analysis), 2 (draw)
-groupCol$    = "grp"   ; the grouping column -- step 1 (analysis)
-categoryCol$ = "grp"   ; the category column -- step 2 (draw)
-subgroupCol$ = "sub"   ; the sub-group column -- step 2 (draw)
-axisYMin     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- step 2 (draw)
+# range or a figure format.
+data1$ = "Table lg"   ; run 1, steps 1 (analysis), 2 (draw)
+valueCol$    = "val"   ; the measured column -- run 1, steps 1 (analysis), 2 (draw)
+groupCol$    = "grp"   ; the grouping column -- run 1, step 1 (analysis)
+categoryCol$ = "grp"   ; the category column -- run 1, step 2 (draw)
+subgroupCol$ = "sub"   ; the sub-group column -- run 1, step 2 (draw)
+axisYMin     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 2 (draw)
 axisYMax     = 0.0   ; on the recorded data it resolved to 195.0000 .. 275.0000
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)

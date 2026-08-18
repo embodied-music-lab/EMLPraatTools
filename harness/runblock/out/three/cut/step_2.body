@@ -1,0 +1,11 @@
+# --- Step 2 (draw) ---
+selectObject: data2$
+data = selected ()
+# Box plot: Two
+# Whisker convention and outlier rule are stated in the figure, not assumed.
+
+@emlDrawBoxPlot: data, "Two", "Ward", "n", 6, 4, "color", 1, groupCol2$, valueCol2$, axisYMin2, axisYMax2
+
+# The same step through the menu:
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
+

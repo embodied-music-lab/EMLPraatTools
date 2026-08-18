@@ -74,8 +74,27 @@ shadow () {
     mkdir -p "$WORK/$n/harness/axisrefuse/out"
 }
 
+# THE PRE-REPAIR REF, NOT HEAD. This mutation's whole job is to put the six
+# swapped pairs back, and the repair that removed them is itself committed --
+# so `git show HEAD:` returns the REPAIRED file and the mutation restores
+# nothing. Measured: HEAD's form carries 0 `tmpSwap` lines, dc15b97^'s carries
+# 12. Pinned to the commit BEFORE the repair, which is the only tree that
+# still contains the subject.
+PREREPAIR="dc15b97^"
+
 revert () {
-    ( cd "$ROOT" && git show "HEAD:$2" ) > "$WORK/$1/$2"
+    ( cd "$ROOT" && git show "$PREREPAIR:$2" ) > "$WORK/$1/$2"
+    # A MUTATION THAT CHANGES NOTHING IS NOT A MUTATION, and this is the one
+    # break in the file with no anchor string to assert before editing -- it
+    # replaces a whole file rather than a phrase. So it asserts the OUTCOME:
+    # the reverted file must differ from the working tree's. Without this the
+    # break reports red=0 and the summary line reads like a result.
+    if cmp -s "$WORK/$1/$2" "$ROOT/$2"; then
+        printf 'BREAK %s: reverting %s to %s changed nothing.\n' \
+            "$1" "$2" "$PREREPAIR" >&2
+        printf 'The mutation is a no-op, so the run would measure nothing.\n' >&2
+        exit 1
+    fi
 }
 
 # A DISPLAY OF ITS OWN PER BREAK is not needed — the breaks run one at a time

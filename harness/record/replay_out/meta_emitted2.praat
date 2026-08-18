@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Mon Aug 17 12:40:23 2026  --  recorded on Praat 6.6.30
+# Mon Aug 17 21:46:28 2026  --  recorded on Praat 6.6.30
 # (The session's start time was lost -- its record table was
 # removed from the Objects window -- so the time above is when
 # the recorder noticed, not when recording began.)
@@ -52,8 +52,9 @@ include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
 # nothing below this block names an object, a column or an axis
-# range.
-data1$ = "Table vt"   ; steps 1 (analysis), 2 (analysis)
+# range or a figure format.
+data1$ = "Table vt"   ; run 1, step 1 (analysis)
+data2$ = "Table vt"   ; run 2, step 2 (analysis)
 
 # --- Step 1 (analysis) ---
 selectObject: data1$
@@ -64,7 +65,7 @@ data = selected ()
 
 
 # --- Step 2 (analysis) ---
-selectObject: data1$
+selectObject: data2$
 data = selected ()
 # a recorded step
 

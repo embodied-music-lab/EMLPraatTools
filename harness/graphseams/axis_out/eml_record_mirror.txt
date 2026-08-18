@@ -1,6 +1,6 @@
 # EML record workflow -- crash mirror. Rows are appended as they
 # are recorded, so a session lost to a crash is still readable.
---- step 1 (draw)
+--- step 1 (draw), run 1
 Box plot: f0 by cohort
 Whisker convention and outlier rule are stated in the figure, not assumed.
 @emlDrawBoxPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, "grp", "val", 0, 0

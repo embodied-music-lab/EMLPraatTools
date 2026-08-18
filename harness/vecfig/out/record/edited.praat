@@ -50,15 +50,18 @@ include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/e
 # workflow. Edit a name to run the same workflow on other data;
 # nothing below this block names an object, a column or an axis
 # range or a figure format.
-data1$ = "Table vt"   ; steps 1 (draw), 2 (save), 3 (draw), 4 (save)
-groupCol$      = "grp"   ; the grouping column -- steps 1 (draw), 3 (draw)
-valueCol$      = "val"   ; the measured column -- steps 1 (draw), 3 (draw)
-axisYMin       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- step 1 (draw)
+data1$ = "Table vt"   ; run 1, steps 1 (draw), 2 (save)
+data2$ = "Table vt"   ; run 2, steps 3 (draw), 4 (save)
+groupCol$      = "grp"   ; the grouping column -- run 1, step 1 (draw)
+valueCol$      = "val"   ; the measured column -- run 1, step 1 (draw)
+groupCol2$     = "grp"   ; the grouping column -- run 2, step 3 (draw)
+valueCol2$     = "val"   ; the measured column -- run 2, step 3 (draw)
+axisYMin       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
 axisYMax       = 0.0   ; on the recorded data it resolved to 140.0000 .. 320.0000
-axisYMin2      = 0   ; the y-axis range -- as typed in the dialog -- step 3 (draw)
+axisYMin2      = 0   ; the y-axis range -- as typed in the dialog -- run 2, step 3 (draw)
 axisYMax2      = 300   ; the figure was drawn on 0.0000 .. 300.0000
-figureFormat$  = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- step 2 (save)
-figureFormat2$ = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- step 4 (save)
+figureFormat$  = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- run 1, step 2 (save)
+figureFormat2$ = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- run 2, step 4 (save)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -88,18 +91,18 @@ outputFolder$ = "/home/claude/EMLPraatTools/harness/vecfig/out/files/replay"
 # In the GUI: the Save button on the post-analysis or post-draw dialog.
 
 # --- Step 3 (draw) ---
-selectObject: data1$
+selectObject: data2$
 data = selected ()
 # Box plot: second figure
 # Whisker convention and outlier rule are stated in the figure, not assumed.
 
-@emlDrawBoxPlot: data, "second figure", "Group", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin2, axisYMax2
+@emlDrawBoxPlot: data, "second figure", "Group", "val", 6, 4, "color", 1, groupCol2$, valueCol2$, axisYMin2, axisYMax2
 
 # The same step through the menu:
 # In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 4 (save) ---
-selectObject: data1$
+selectObject: data2$
 data = selected ()
 # Save the outputs of this analysis
 # Every output shares one folder and one name, so they stay a set.

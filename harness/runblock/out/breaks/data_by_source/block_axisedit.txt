@@ -1,0 +1,15 @@
+# Name your data objects and columns here for this recorded
+# workflow. Edit a name to run the same workflow on other data;
+# nothing below this block names an object, a column or an axis
+# range or a figure format.
+data1$ = "Table ax1"   ; run 1, step 1 (draw)
+data2b$ = "Table ax2"   ; run 2, step 2 (draw)
+groupCol$  = "grp"   ; the grouping column -- run 1, step 1 (draw)
+valueCol$  = "val"   ; the measured column -- run 1, step 1 (draw)
+groupCol2$ = "grp"   ; the grouping column -- run 2, step 2 (draw)
+valueCol2$ = "val"   ; the measured column -- run 2, step 2 (draw)
+axisYMin   = 2   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
+axisYMax   = 30   ; the figure was drawn on 2.0000 .. 30.0000
+axisYMin2  = 2   ; the y-axis range -- as typed in the dialog -- run 2, step 2 (draw)
+axisYMax2  = 30   ; the figure was drawn on 2.0000 .. 30.0000
+# (Titles and axis labels are text, not column names, so they

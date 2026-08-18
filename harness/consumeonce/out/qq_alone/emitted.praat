@@ -49,11 +49,11 @@ include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
 # nothing below this block names an object, a column or an axis
-# range.
-data1$ = "Table eml_qq_points"   ; step 1 (draw)
-xCol$    = "theoretical"   ; the x column -- step 1 (draw)
-yCol$    = "sample"   ; the y column -- step 1 (draw)
-axisYMin = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- step 1 (draw)
+# range or a figure format.
+data1$ = "Table eml_qq_points"   ; run 1, step 1 (draw)
+xCol$    = "theoretical"   ; the x column -- run 1, step 1 (draw)
+yCol$    = "sample"   ; the y column -- run 1, step 1 (draw)
+axisYMin = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
 axisYMax = 0.0   ; on the recorded data it resolved to 195.0000 .. 235.0000
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)

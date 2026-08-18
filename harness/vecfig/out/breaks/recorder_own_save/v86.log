@@ -5,7 +5,7 @@ v86 vector figure export
 PASS  v86     the driven transcript exists (VECFIG.tsv)       computed=NA  expected TRUE
 PASS  v86     a Praat was found to drive                      computed=NA  expected TRUE
 PASS  v86     the transcript names the Praat it drove (6.6.30)  computed=NA  expected TRUE
-PASS  v86     the transcript was driven on THIS panel's code (8c52b5832886)  computed=NA  expected TRUE
+PASS  v86     the transcript was driven on THIS panel's code (5fa89a7fe971)  computed=NA  expected TRUE
 PASS  v86     an UNGUARDED absent command runs its script up to that line  computed=NA  expected TRUE
 PASS  v86     ... and stops there: the line after it never ran  computed=NA  expected TRUE
 PASS  v86     ... and Praat's words are "not available for current selection"  computed=NA  expected TRUE
@@ -24,7 +24,7 @@ PASS  v86     all: fig.eps is on disk                         computed=NA  expec
 PASS  v86     all: fig.eps is not empty (4929 bytes)          computed=NA  expected TRUE
 PASS  v86     all: fig.eps begins with its own marker         computed=NA  expected TRUE
 PASS  v86     all: fig.pdf is on disk                         computed=NA  expected TRUE
-PASS  v86     all: fig.pdf is not empty (8383 bytes)          computed=NA  expected TRUE
+PASS  v86     all: fig.pdf is not empty (8384 bytes)          computed=NA  expected TRUE
 PASS  v86     all: fig.pdf begins with its own marker         computed=NA  expected TRUE
 PASS  v86     all: the legend landed the same formats (PNG, EPS, PDF)  computed=NA  expected TRUE
 PASS  v86     all: and lost the same ones ("")                computed=NA  expected TRUE
@@ -75,7 +75,7 @@ PASS  v86     pdfonly: fig.png is on disk                     computed=NA  expec
 PASS  v86     pdfonly: fig.png is not empty (30447 bytes)     computed=NA  expected TRUE
 PASS  v86     pdfonly: fig.png begins with its own marker     computed=NA  expected TRUE
 PASS  v86     pdfonly: fig.pdf is on disk                     computed=NA  expected TRUE
-PASS  v86     pdfonly: fig.pdf is not empty (8383 bytes)      computed=NA  expected TRUE
+PASS  v86     pdfonly: fig.pdf is not empty (8384 bytes)      computed=NA  expected TRUE
 PASS  v86     pdfonly: fig.pdf begins with its own marker     computed=NA  expected TRUE
 PASS  v86     pdfonly: no fig.eps was written                 computed=NA  expected TRUE
 PASS  v86     pdfonly: the legend landed the same formats (PNG, PDF)  computed=NA  expected TRUE
@@ -218,7 +218,7 @@ PASS  v86     and no arm of it offers the PNG as the format that survived  compu
 PASS  v86     the panel hands the message the figure's whole landed list  computed=NA  expected TRUE
 PASS  v86     the source says in words why the landed check stays on every format  computed=NA  expected TRUE
 PASS  v86     the recorder module is present                  computed=NA  expected TRUE
-PASS  v86     the record leg was driven on THIS recorder's code (e65a6f8d4989)  computed=NA  expected TRUE
+PASS  v86     the record leg was driven on THIS recorder's code (b02f2550b182)  computed=NA  expected TRUE
 PASS  v86     @emlRecordReplaySave takes the format choice as an argument  computed=NA  expected TRUE
 FAIL  v86     and writes the figure through the panel's own writer  computed=NA  expected TRUE
 PASS  v86     ... and the separate legend through it too      computed=NA  expected TRUE
@@ -240,9 +240,9 @@ PASS  v86     the emitted script opens no dialog              computed=NA  expec
 PASS  v86     and replays both saves through the headless writer  computed=NA  expected TRUE
 PASS  v86     the block still promises to hold every name below it  computed=NA  expected TRUE
 PASS  v86     the block declares one format variable per save (2)  computed=NA  expected TRUE
-PASS  v86     the first is the first save's choice (figureFormat$  = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- step 2 (save))  computed=NA  expected TRUE
+PASS  v86     the first is the first save's choice (figureFormat$  = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- run 1, step 2 (save))  computed=NA  expected TRUE
 PASS  v86     ... and its comment names the step it belongs to  computed=NA  expected TRUE
-PASS  v86     the second is the second save's, under its own name (figureFormat2$ = "PNG, PDF"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- step 4 (save))  computed=NA  expected TRUE
+PASS  v86     the second is the second save's, under its own name (figureFormat2$ = "PNG, PDF"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- run 2, step 4 (save))  computed=NA  expected TRUE
 PASS  v86     ... and its comment names its own step          computed=NA  expected TRUE
 PASS  v86     the two saves do not share one variable         computed=NA  expected TRUE
 PASS  v86     the first save reads figureFormat$ (@emlRecordReplaySave: 1, "figA_20260817_120000", outputFolder$, figureFormat$)  computed=NA  expected TRUE

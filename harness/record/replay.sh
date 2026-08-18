@@ -884,17 +884,22 @@ done
 kv retarget_fig_vs_orig_over32 "$(pdiff "$OUT/RET_REPLAY.png" "$OUT/RET_ORIG.png" over)"
 kv retarget_fig_vs_orig_max    "$(pdiff "$OUT/RET_REPLAY.png" "$OUT/RET_ORIG.png" max)"
 
-# ---- THE BLOCK ITSELF, WHICH IS WHERE THE ROLE RULE IS VISIBLE -----------
+# ---- THE BLOCK ITSELF, WHERE THE ROLE RULE AND THE RUN RULE ARE VISIBLE --
+# The declarations name the run they belong to. This leg drives both steps in
+# ONE script scope with no form between them, so both are run 1 -- and inside
+# one run the role rule is what separates the variables: "val" analysed and
+# then plotted is ONE variable, "grp" as a two-way factor and as the violin's
+# grouping column is TWO.
 # Read from the EMITTED file, before the edit. Every one of these is an exact
 # line, because "a variable of about the right name exists somewhere" is the
 # assertion a renderer that gathered names and wired none of them would pass.
 rem="$OUT/retarget_emitted.praat"
 remc () { local n; n=$(grep -c -- "$1" "$rem" 2>/dev/null); echo "${n:-0}"; }
-kv retarget_block_value  "$(remc '^valueCol\$ *= "val"   ; the measured column -- steps 1 (analysis), 2 (draw)$')"
-kv retarget_block_factorA "$(remc '^factorACol\$ *= "grp"   ; the first factor -- step 1 (analysis)$')"
-kv retarget_block_factorB "$(remc '^factorBCol\$ *= "site"   ; the second factor -- step 1 (analysis)$')"
-kv retarget_block_group   "$(remc '^groupCol\$ *= "grp"   ; the grouping column -- step 2 (draw)$')"
-kv retarget_block_data    "$(remc '^data1\$ = "Table wt"   ; steps 1 (analysis), 2 (draw)$')"
+kv retarget_block_value  "$(remc '^valueCol\$ *= "val"   ; the measured column -- run 1, steps 1 (analysis), 2 (draw)$')"
+kv retarget_block_factorA "$(remc '^factorACol\$ *= "grp"   ; the first factor -- run 1, step 1 (analysis)$')"
+kv retarget_block_factorB "$(remc '^factorBCol\$ *= "site"   ; the second factor -- run 1, step 1 (analysis)$')"
+kv retarget_block_group   "$(remc '^groupCol\$ *= "grp"   ; the grouping column -- run 1, step 2 (draw)$')"
+kv retarget_block_data    "$(remc '^data1\$ = "Table wt"   ; run 1, steps 1 (analysis), 2 (draw)$')"
 # THE STEPS BELOW READ THEM. Exact call lines: the two-way's three column
 # slots and the violin's two, all variables, and -- on the same line -- the
 # violin's y-axis LABEL still the literal "val", which is the role rule
@@ -1050,8 +1055,12 @@ kv legend_draw_calls    "$(lemc '^@emlDrawGroupedViolin: data')"
 kv legend_all_steps     "$(grep -cE '^# --- Step [0-9]+ ' "$lem" 2>/dev/null || echo 0)"
 # THE BLOCK'S OWN WORDS. "step 1 (draw)" singular is the fixed shape; "steps
 # 1 (draw), 2 (draw)" is the defect, and it is read as text because that is
-# what a user sees.
-kv legend_block_steps "$(sed -n 's/^axisYMin  *= .*-- \(steps\? .*\)$/\1/p' "$lem" | head -1)"
+# what a user sees. The run is read separately: one press of Draw is ONE run,
+# and the discarded first pass must not have spent a run number on its way
+# out -- a block naming run 2 over a file with one run in it would be the
+# same defect wearing the other half of the name.
+kv legend_block_steps "$(sed -n 's/^axisYMin  *= .*-- run [0-9]*, \(steps\? .*\)$/\1/p' "$lem" | head -1)"
+kv legend_block_run   "$(sed -n 's/^axisYMin  *= .*-- run \([0-9]*\), steps\? .*$/\1/p' "$lem" | head -1)"
 kv legend_block_min   "$(sed -n 's/^axisYMin  *= \([^ ]*\)  *;.*$/\1/p' "$lem" | head -1)"
 kv legend_block_max   "$(sed -n 's/^axisYMax  *= \([^ ]*\)  *;.*$/\1/p' "$lem" | head -1)"
 # THE NOTE, and the two numbers out of it. Parsed rather than assumed, because
@@ -1199,7 +1208,8 @@ kv legend_after_draw_steps "$(grep -cE '^# --- Step [0-9]+ \(draw\) ---$' "$lea"
 kv legend_after_analysis_steps "$(grep -cE '^# --- Step [0-9]+ \(analysis\) ---$' "$lea" 2>/dev/null || echo 0)"
 kv legend_after_anova_calls "$(grep -c '^@emlRunAnovaAnalysis: data' "$lea" 2>/dev/null || echo 0)"
 kv legend_after_draw_calls  "$(grep -c '^@emlDrawGroupedViolin: data' "$lea" 2>/dev/null || echo 0)"
-kv legend_after_block_steps "$(sed -n 's/^axisYMin  *= .*-- \(steps\? .*\)$/\1/p' "$lea" | head -1)"
+kv legend_after_block_steps "$(sed -n 's/^axisYMin  *= .*-- run [0-9]*, \(steps\? .*\)$/\1/p' "$lea" | head -1)"
+kv legend_after_block_run   "$(sed -n 's/^axisYMin  *= .*-- run \([0-9]*\), steps\? .*$/\1/p' "$lea" | head -1)"
 kv legend_after_note "$(sed -n 's/^axisYMax  *= .*; on the recorded data it resolved to //p' "$lea" | head -1)"
 # The draw's own heading number, so "step 2 (draw)" in the block is checked
 # against the file rather than against itself.

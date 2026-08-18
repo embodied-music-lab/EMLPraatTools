@@ -147,12 +147,27 @@ BREAKS = {
     # figureFormat$ lines, the second wins at run time, and both figures come
     # back in whichever choice was recorded last. Invisible in any session
     # that saved once.
+    # ONE FORMAT VARIABLE FOR EVERY SAVE, whatever run it came from. The slot
+    # search stops asking which run opened the slot and reuses the first one
+    # of the role it finds, so a session that saved run 1 as EPS and run 2 as
+    # PDF comes back with both reading one variable -- and the second save
+    # replays the first's choice.
     "shared_format_var": (RECORD, [
-        ('                                    .fSuffix$ = ""\n'
-         '                                    if .fSame > 0\n'
-         '                                        .fSuffix$ = string$ (.fSame + 1)\n'
-         '                                    endif\n',
-         '                                    .fSuffix$ = ""\n'),
+        ('                                for .k from 1 to .nFmt\n'
+         '                                    if .fmtBase$[.k] = .fBase$\n'
+         '                                        if .fmtRun[.k] = .run\n'
+         '                                            .fSame = .fSame + 1\n'
+         '                                            if .fmtLit$[.k] = .fLit$\n'
+         '                                                .fSlot = .k\n'
+         '                                            endif\n'
+         '                                        endif\n'
+         '                                    endif\n'
+         '                                endfor\n',
+         '                                for .k from 1 to .nFmt\n'
+         '                                    if .fmtBase$[.k] = .fBase$\n'
+         '                                        .fSlot = .k\n'
+         '                                    endif\n'
+         '                                endfor\n'),
     ]),
 }
 

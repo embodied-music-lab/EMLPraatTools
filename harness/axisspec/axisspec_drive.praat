@@ -335,6 +335,11 @@ elsif leg$ = "rec_two"
     ... 1, "grp", "val", 0, 0
     @shortToken
     spec = shortToken.spec
+    ; A SECOND PRESS OF DRAW IS A SECOND RUN, and this driver has to say so.
+    ; The graphs form marks the boundary at the top of each pass; a driver
+    ; that stands in for two passes and marks neither is describing one press
+    ; to the recorder, and the block would name one run over two figures.
+    @emlRecordNewRun
     Erase all
     @emlDrawSpectrum: spec, "1 kHz tone, 0.15 s", "Frequency (Hz)",
     ... "Power (dB)", 6, 4, "color", 1, 995, 1005, 20, 95
@@ -432,9 +437,12 @@ elsif leg$ = "rec_pairs"
     Erase all
     @emlDrawViolinPlot: table, "auto", "Group", "val", 6, 4, "color", 1,
     ... "grp", "val", 0, 0
+    ; Three presses of Draw, three runs -- see the note in rec_two.
+    @emlRecordNewRun
     Erase all
     @emlDrawBoxPlot: table, "zero floor", "Group", "val", 6, 4, "color", 1,
     ... "grp", "val", 0, 120
+    @emlRecordNewRun
     Erase all
     @emlDrawBarChart: table, "same floor, other ceiling", "Group", "val",
     ... 6, 4, "color", 1, "grp", "val", 1, "", 0, 300

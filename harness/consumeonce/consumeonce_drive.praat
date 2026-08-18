@@ -244,7 +244,11 @@ if leg$ = "form_then_qq"
     @emitStamp: "form_then_qq_afterdraw"
 
     ; THE SECOND DRAW. No form, no dispatch, nothing republished — the shape
-    ; of every menu command in this plugin that is not EML Graphs.
+    ; of every menu command in this plugin that is not EML Graphs. A menu
+    ; command is its own run: in a user's session it is its own script scope
+    ; and the recorder sees the boundary for itself, and this driver stays in
+    ; one scope, so it marks the boundary the way the form does.
+    @emlRecordNewRun
     @coVector: coTable.id
     Erase all
     @emlDrawQQPlot: coVector.v#, "val", 6, 4, "color", 1
@@ -295,6 +299,9 @@ elsif leg$ = "bridge_then_qq"
     @emlGraphsDispatchDraw
     @emitStamp: "bridge_then_qq_afterdraw"
 
+    ; The Q-Q is a second menu command, hence a second run -- see the note in
+    ; leg form_then_qq.
+    @emlRecordNewRun
     @coVector: coTable.id
     Erase all
     @emlDrawQQPlot: coVector.v#, "val", 6, 4, "color", 1
@@ -329,6 +336,8 @@ elsif leg$ = "form_then_violin"
     @emlGraphsDispatchDraw
     @emitStamp: "form_then_violin_afterdraw"
 
+    ; A second menu command, hence a second run -- see leg form_then_qq.
+    @emlRecordNewRun
     Erase all
     @emlDrawViolinPlot: coTable.id, "f0 by cohort", "Cohort", "f0 (Hz)",
     ... 6, 4, "color", 1, "grp", "val", 150, 400

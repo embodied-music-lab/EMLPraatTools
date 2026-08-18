@@ -1,0 +1,9 @@
+break	checks	failed
+value_dedup	225	38
+first_use_number	225	52
+suffix_run_one	225	61
+shared_axis	225	40
+drop_format_run	225	9
+data_by_source	225	27
+boundary_outside_loop	225	2
+stale_fingerprint	225	1

@@ -202,6 +202,15 @@ check_true(ID,
     sprintf("the block names ONE step in the singular ('%s')",
             str_("legend_block_steps")),
     identical(str_("legend_block_steps"), "step 1 (draw)"))
+# AND IT NAMES ONE RUN. The block's variables are named by the run they came
+# from, so the discarded first pass has a second way to leave a mark: if it
+# had spent a run number on its way out, this figure -- the only one in the
+# file -- would come back as run 2, with the block reading axisYMin2 over a
+# recording whose first run is nowhere in it.
+check_true(ID,
+    sprintf("and names it as run 1, so the discarded pass spent no run number ('%s')",
+            str_("legend_block_run")),
+    identical(str_("legend_block_run"), "1"))
 check_true(ID,
     "and no declaration line anywhere in the block says 'steps 1 (draw), 2 (draw)'",
     !any(grepl("steps 1 \\(draw\\), 2 \\(draw\\)", L_emit, fixed = FALSE)))
@@ -316,6 +325,13 @@ check_true(ID,
 check_true(ID, "and the file's own step heading agrees it is step 2",
            identical(str_("legend_after_draw_heading"),
                      "# --- Step 2 (draw) ---"))
+# The analysis and the draw are one pass of the form here, so they are one
+# run: this leg's block is run 1 throughout, and a rewind that had spent a
+# number would show up as run 2 over a two-step file.
+check_true(ID,
+    sprintf("and the block names that step's run as run 1 ('%s')",
+            str_("legend_after_block_run")),
+    identical(str_("legend_after_block_run"), "1"))
 check_true(ID,
     sprintf("the note names the final range here too ('%s')",
             str_("legend_after_note")),

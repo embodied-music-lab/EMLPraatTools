@@ -49,16 +49,22 @@ include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
 # nothing below this block names an object, a column or an axis
-# range.
-data1$ = "Table vt"   ; steps 1 (draw), 2 (draw), 3 (draw)
-groupCol$ = "grp"   ; the grouping column -- steps 1 (draw), 2 (draw), 3 (draw)
-valueCol$ = "val"   ; the measured column -- steps 1 (draw), 2 (draw), 3 (draw)
-axisYMin  = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- step 1 (draw)
-axisYMax  = 0.0   ; on the recorded data it resolved to 140.0000 .. 320.0000
-axisYMin2 = 0   ; the y-axis range -- as typed in the dialog -- step 2 (draw)
-axisYMax2 = 120   ; the figure was drawn on 0.0000 .. 120.0000
-axisYMin3 = 0   ; the y-axis range -- as typed in the dialog -- step 3 (draw)
-axisYMax3 = 300   ; the figure was drawn on 0.0000 .. 300.0000
+# range or a figure format.
+data1$ = "Table vt"   ; run 1, step 1 (draw)
+data2$ = "Table vt"   ; run 2, step 2 (draw)
+data3$ = "Table vt"   ; run 3, step 3 (draw)
+groupCol$  = "grp"   ; the grouping column -- run 1, step 1 (draw)
+valueCol$  = "val"   ; the measured column -- run 1, step 1 (draw)
+groupCol2$ = "grp"   ; the grouping column -- run 2, step 2 (draw)
+valueCol2$ = "val"   ; the measured column -- run 2, step 2 (draw)
+groupCol3$ = "grp"   ; the grouping column -- run 3, step 3 (draw)
+valueCol3$ = "val"   ; the measured column -- run 3, step 3 (draw)
+axisYMin   = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
+axisYMax   = 0.0   ; on the recorded data it resolved to 140.0000 .. 320.0000
+axisYMin2  = 0   ; the y-axis range -- as typed in the dialog -- run 2, step 2 (draw)
+axisYMax2  = 120   ; the figure was drawn on 0.0000 .. 120.0000
+axisYMin3  = 0   ; the y-axis range -- as typed in the dialog -- run 3, step 3 (draw)
+axisYMax3  = 300   ; the figure was drawn on 0.0000 .. 300.0000
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -76,23 +82,23 @@ data = selected ()
 # Group column "grp", Value column "val".
 
 # --- Step 2 (draw) ---
-selectObject: data1$
+selectObject: data2$
 data = selected ()
 # Box plot: zero floor
 # Whisker convention and outlier rule are stated in the figure, not assumed.
 
-@emlDrawBoxPlot: data, "zero floor", "Group", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin2, axisYMax2
+@emlDrawBoxPlot: data, "zero floor", "Group", "val", 6, 4, "color", 1, groupCol2$, valueCol2$, axisYMin2, axisYMax2
 
 # The same step through the menu:
 # In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 # --- Step 3 (draw) ---
-selectObject: data1$
+selectObject: data3$
 data = selected ()
 # Bar chart: same floor, other ceiling
 # Bars show means. The spread, not the bar, is what tells you about the data.
 
-@emlDrawBarChart: data, "same floor, other ceiling", "Group", "val", 6, 4, "color", 1, groupCol$, valueCol$, 1, "", axisYMin3, axisYMax3
+@emlDrawBarChart: data, "same floor, other ceiling", "Group", "val", 6, 4, "color", 1, groupCol3$, valueCol3$, 1, "", axisYMin3, axisYMax3
 
 # The same step through the menu:
 # In the GUI: New > EML Stats & Graphs > EML Graphs...

@@ -37,7 +37,8 @@ table = selected ("Table")
 ... "Save the outputs of this analysis",
 ... "Every output shares one folder and one name, so they stay a set.",
 ... "outputFolder$ = " + """" + "/home/claude/EMLPraatTools/harness/record/replay_out/saved" + """" + newline$
-... + "@emlSavePanel: 0, " + """" + "vt_two-group_20260814_120000" + """" + ", outputFolder$",
+... + "@emlSavePanel: 0, " + """" + "vt_two-group_20260814_120000" + """" + ", outputFolder$, "
+... + """""",
 ... "In the GUI: the Save button on the post-analysis or post-draw dialog."
 
 @emlRecordFlush: "/home/claude/EMLPraatTools/harness/record/replay_out/save_emitted.praat"
