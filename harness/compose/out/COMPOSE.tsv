@@ -6,6 +6,14 @@ default_untouched	union_y0	0
 default_untouched	union_y1	4.0000
 default_untouched	png_px	1800x1200
 default_untouched	png_md5	277deadf535973761400b15d1b9e6e53
+erase_offset	verdict	OK
+erase_offset	presses	1
+erase_offset	union_x0	2.0000
+erase_offset	union_x1	8.0000
+erase_offset	union_y0	1.0000
+erase_offset	union_y1	5.0000
+erase_offset	png_px	1800x1200
+erase_offset	png_md5	6fb688855e54e69fcc2afe11a510f6af
 legend_band	verdict	OK
 legend_band	presses	4
 legend_band	union_x0	0

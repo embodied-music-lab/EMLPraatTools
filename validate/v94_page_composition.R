@@ -55,7 +55,7 @@ OUT <- repo_path("harness", "compose", "out")
 TSVP <- file.path(OUT, "COMPOSE.tsv")
 
 CASES <- c("single", "default_untouched", "side_by_side", "stacked",
-           "overlay", "legend_band")
+           "overlay", "legend_band", "erase_offset")
 
 ok_tsv <- check_true(V, "the compose harness has been driven",
                      file.exists(TSVP) && file.info(TSVP)$size > 0)
@@ -153,6 +153,35 @@ check_true(V, "side_by_side: the file is the whole page, not the last panel",
            identical(trv("side_by_side", "png_px"), "3750x1200"))
 check_true(V, "stacked: the file is the whole page, not the last panel",
            identical(trv("stacked", "png_px"), "1800x2550"))
+
+# ---------------------------------------------------------------------------
+# ERASE ON, ORIGIN OFFSET -- one panel, placed. The ruling makes these two
+# fields independent: erasing and starting a composite are different acts, and
+# a user may erase the page and then draw the first panel somewhere other than
+# the corner. ONE press, so nothing is being composed yet; what is asserted is
+# that the origin reached the drawing rather than being accepted and dropped.
+#
+# The union is the panel's own rectangle SHIFTED BY THE TYPED ORIGIN -- a 6x4
+# panel at (2, 1) spans x 2..8 and y 1..5. Nothing declares those bounds; they
+# are the arithmetic consequence of the two numbers the user typed, which is
+# the whole point of computing the page rather than declaring it.
+#
+# A tree that ignored the origin entirely would report 0..6 and 0..4 here and
+# would still pass every other check in this file, because every other case
+# either uses the default origin or moves a SECOND panel. This is the only
+# check that catches an origin accepted and discarded on the first panel.
+check_true(V, "erase_offset: one press, so nothing is composed yet",
+           identical(trv("erase_offset", "presses"), "1"))
+check_true(V, "erase_offset: the union is the panel shifted to the typed origin [2 8 1 5]",
+           isTRUE(all.equal(c(trn("erase_offset", "union_x0"),
+                              trn("erase_offset", "union_x1"),
+                              trn("erase_offset", "union_y0"),
+                              trn("erase_offset", "union_y1")),
+                            c(2, 8, 1, 5))))
+# The saved image is one panel's worth of pixels -- offsetting the origin
+# places the panel, it does not grow the page to reach it from the corner.
+check_true(V, "erase_offset: the file is one panel, not the corner-to-panel span",
+           identical(trv("erase_offset", "png_px"), "1800x1200"))
 
 # THE OVERLAY IS PERMITTED, AND IT IS PERMITTED TO LOOK LIKE AN OVERLAY. Two
 # presses at one origin with the erase off leave a page the size of one panel
