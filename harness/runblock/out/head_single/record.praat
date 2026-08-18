@@ -1,22 +1,22 @@
-include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-core-utilities.praat
-include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-core-descriptive.praat
-include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-extract.praat
-include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-output.praat
-include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-inferential.praat
-include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-result-writer.praat
-include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-record.praat
-include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin/graphs/eml-graph-procedures.praat
-include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin/graphs/eml-annotation-procedures.praat
-include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin/graphs/eml-draw-procedures.praat
-include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-analysis.praat
+include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-output.praat
+include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
+include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-record.praat
+include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
+include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
+include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
+include /home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 Text writing preferences: "UTF-8"
 @emlInitDrawingDefaults
 @emlClearAnnotations
 @emlRecordInit
-emlRecordPluginRoot$ = "/home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin"
+emlRecordPluginRoot$ = "/home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs"
 @emlRecordBegin: ""
-emlRecordPluginRoot$ = "/home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin"
-@emlRecordLoadPhrases: "/home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin/data/eml-record-phrases.csv"
+emlRecordPluginRoot$ = "/home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs"
+@emlRecordLoadPhrases: "/home/claude/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/data/eml-record-phrases.csv"
 include /home/claude/EMLPraatTools/harness/runblock/cases/single/fixture.praat
 @emlRecordHeader: "Table vt", 24, 2, "17 August 2026, 00:00:00"
 

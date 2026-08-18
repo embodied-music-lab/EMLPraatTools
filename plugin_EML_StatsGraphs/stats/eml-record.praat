@@ -3823,6 +3823,16 @@ procedure emlRecordRender
     .text$ = .text$ + "include " + .p$ + "/stats/eml-output.praat" + newline$
     .text$ = .text$ + "include " + .p$ + "/stats/eml-inferential.praat"
     ... + newline$
+    ; The SURVEY kernels -- Cronbach's alpha and its respondent-influence
+    ; jackknife, chi-square with Cramer's V, the Wilson interval. They are in
+    ; the block because this list and setup.praat's generated barrel are the
+    ; same list, pinned against each other by validate/v82: a module a user can
+    ; load from the barrel and cannot load from a recorded script would make an
+    ; emitted file that runs on one machine and not on the next edit of it.
+    .text$ = .text$ + "include " + .p$ + "/stats/eml-psychometrics.praat"
+    ... + newline$
+    .text$ = .text$ + "include " + .p$ + "/stats/eml-categorical.praat"
+    ... + newline$
     .text$ = .text$ + "include " + .p$ + "/stats/eml-result-writer.praat"
     ... + newline$
     .text$ = .text$ + "include " + .p$ + "/stats/eml-record.praat" + newline$

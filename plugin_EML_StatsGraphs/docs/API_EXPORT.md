@@ -176,13 +176,13 @@ to one line — pick the row for your platform and paste the line:
 | macOS | `include ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat` |
 | Windows | `include ~/Praat/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat` |
 
-It loads exactly the eleven modules below, in the same order. Move the plugin,
+It loads exactly the modules below, in the same order. Move the plugin,
 or upgrade to a Praat that keeps its preferences somewhere else, and the next
 launch rewrites the file for the new location; a launch that would change
 nothing writes nothing. Do not edit it — it is generated, and your edit goes
 away the next time the paths change.
 
-### The eleven lines, which always work
+### The full include block, which always works
 
 Written out, this is what that one line expands to, and it is the fallback if
 the generated file is not there — a plugin folder that cannot be written to,
@@ -196,6 +196,8 @@ include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-extract.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-output.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-categorical.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-record.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
@@ -284,9 +286,9 @@ where it will be installed; `setup.praat` runs from there, so it can, and it
 writes the paths out in full. That is why the one-line include above is a
 generated file and not a shipped one.
 
-So: one generated line, or eleven written out. The eleven are pasted verbatim
-from what the recorder emits, and the order matters — later files call into
-earlier ones.
+So: one generated line, or the whole block written out. The block is pasted
+verbatim from what the recorder emits, and the order matters — later files
+call into earlier ones.
 
 **`eml-lib-stats.praat` is not enough on its own** even when the paths do
 resolve. It stops at the statistics engine; the orchestrators live in

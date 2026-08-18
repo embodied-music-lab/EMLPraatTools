@@ -1,17 +1,17 @@
 praat_version	Praat 6.6.30 (June 30 2026)
 build_rc	0
 name	plugin_EML_StatsGraphs
-artefact_sha256	d80c377c2e8de6d9f376529f70fb5d879b3fe8820180fb4c427a27a437c80183
-zip_sha256	52cf1037da60cb2c6bce83af9c3dc8857e160eae11a5f955a0c124b4a312e1b9
+artefact_sha256	b406ca6e4edb8f18d1f71d8d6674891ab557716a2d266871d1a1261d9bd93b0e
+zip_sha256	5748defb15cfc41e19ef3bb24bede06f61947475e76a9efd57ace3e0f423e6ac
 setup_under_test	shipped
-setup_sha256	bc551ed975d170279c6b9f4be1664ce0347cb5b65f49d531d355d3acbee4eca8
+setup_sha256	291181d9a9d79b556cbf7d541f680d61975de9c705984be92e8c6c7d1710b246
 unpacked_folder	plugin_EML_StatsGraphs
-unpacked_files	327
-record_files	327
+unpacked_files	257
+record_files	257
 unpacked_modes_other_than_0644_0755	0
 installed_verify_rc	0
-installed_verify_line	
-installed_include_lines	143
+installed_verify_line	exclusion rows 1, history patterns 10, allowlist rows 2 [RELEASE_EXCLUDE.tsv + extract-history.py + v80_history_allowlis
+installed_include_lines	42
 installed_includes_dangling	0
 installed_includes_first_dangling	
 installed_target_script	scripts/eml-create-demo.praat

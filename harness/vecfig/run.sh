@@ -297,7 +297,13 @@ REC="$OUT/work/record"
 RECOUT="$OUT/record"
 SAVEDIR="$OUT/files/replay"
 mkdir -p "$REC/home" "$RECOUT" "$SAVEDIR"
-cp -r "$ROOT/plugin" "$REC/plugin"
+# THE SOURCE IS THE REAL FOLDER, NOT THE COMPATIBILITY SYMLINK. `plugin` in
+# the repository root is a symlink to plugin_EML_StatsGraphs, and `cp -r` of a
+# symlink argument copies the LINK: $REC/plugin then points at a relative name
+# that does not exist beside it, and every write into it fails with "No such
+# file or directory" while the leg carries on. The destination keeps the short
+# name because record_drive.praat includes plugin/stats/... out of $REC.
+cp -r "$ROOT/plugin_EML_StatsGraphs" "$REC/plugin"
 rm -rf "$REC/plugin/stats"
 cp -r "$SRC" "$REC/plugin/stats"
 cp "$HERE/record_drive.praat" "$REC/drive.praat"

@@ -29,6 +29,8 @@ include ~/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
 include ~/EMLPraatTools/plugin/stats/eml-extract.praat
 include ~/EMLPraatTools/plugin/stats/eml-output.praat
 include ~/EMLPraatTools/plugin/stats/eml-inferential.praat
+include ~/EMLPraatTools/plugin/stats/eml-psychometrics.praat
+include ~/EMLPraatTools/plugin/stats/eml-categorical.praat
 include ~/EMLPraatTools/plugin/stats/eml-result-writer.praat
 include ~/EMLPraatTools/plugin/stats/eml-record.praat
 include ~/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat

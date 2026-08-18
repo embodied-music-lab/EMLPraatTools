@@ -1113,13 +1113,41 @@ check_true("v79",
            sprintf("the builder verified the tree the zip produced (rc %s: %s)",
                    tsv("installed_verify_rc"), tsv("installed_verify_line")),
            identical(tsv("installed_verify_rc"), "0"))
+# THE COUNT IS DERIVED FROM THE SHIPPED SOURCE, NOT TYPED HERE. This check
+# once carried a floor of 100 lines, and on 18 August 2026 the artefact
+# legitimately fell to 42: dev/ had joined RELEASE_EXCLUDE.tsv, and with it
+# every include line in the developer test tree. A literal floor cannot tell
+# that apart from a scan that broke, and the only thing it did tell anyone was
+# what the tree looked like on the day somebody typed it.
+#
+# So the same population is recomputed here, from plugin/ minus the exclusion
+# rows parsed in 2b, with the harness's own regex -- and the two are required
+# to be EQUAL rather than merely large. That binds this check to the shipped
+# tree the way the setup.praat digest above binds the walk to the shipped
+# registration: add an include line to a script a user receives and the
+# release harness has to be re-driven, which is the event that went unnoticed
+# and left this file reading a record of a 327-file artefact that no longer
+# existed.
+shipped_praat <- list.files(plug, pattern = "\\.praat$", recursive = TRUE)
+shipped_praat <- shipped_praat[!vapply(shipped_praat, function(f)
+    any(vapply(xpath, function(e)
+        identical(f, e) || (grepl("/$", e) && startsWith(f, e)),
+        logical(1))), logical(1))]
+inc_src <- sum(vapply(shipped_praat, function(f)
+    sum(grepl("^\\s*include\\s+\\S",
+              readLines(file.path(plug, f), warn = FALSE))), integer(1)))
 check_true("v79",
-           sprintf("every include in the installed tree resolved (%s lines, %s dangling: %s)",
-                   tsv("installed_include_lines"), tsv("installed_includes_dangling"),
+           sprintf("the include population recomputed here is not empty (%d line(s) in %d shipped script(s))",
+                   inc_src, length(shipped_praat)),
+           inc_src > 0 && length(shipped_praat) > 0)
+check_true("v79",
+           sprintf("every include in the installed tree resolved, and the tree holds the shipped source's include lines (%s of %d, %s dangling: %s)",
+                   tsv("installed_include_lines"), inc_src,
+                   tsv("installed_includes_dangling"),
                    tsv("installed_includes_first_dangling")),
            identical(tsv("installed_includes_dangling"), "0") &&
            !is.na(tsvn("installed_include_lines")) &&
-           tsvn("installed_include_lines") >= 100)
+           tsvn("installed_include_lines") == inc_src)
 
 # --- THE HEADLESS LEG, AND ITS NUMBER RECOMPUTED --------------------------
 check_true("v79",

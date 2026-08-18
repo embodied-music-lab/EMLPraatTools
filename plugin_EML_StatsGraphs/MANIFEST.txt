@@ -99,7 +99,7 @@ dev/tools/theilsen-negative-controls.py | 250 | - | Prove that test-theilsen.pra
 dev/tools/theilsen_margin_rows.json | 225 | - | Machine-generated margin data for the test-theilsen.praat assertion sites (written by theilsen-build-margins.py).
 dev/tools/vacuity-negative-controls.py | 238 | - | Prove that scan-assertion-vacuity.py can fail: inject one defect per class into a copy of the phase2 tree and require the scanner to catch each.
 dev/tutorial-wireframes-v09.praat | 888 | 0.10 | EML Stats Tutorial — Layout Wireframes
-docs/API_EXPORT.md | ~3081 words | - | Worked how-to for @emlExportResultFiles: which analyses declare broom frames, the file set each call writes, the collision rule, and the batch pattern for a folder of files with no dialogs.
+docs/API_EXPORT.md | ~3087 words | - | Worked how-to for @emlExportResultFiles: which analyses declare broom frames, the file set each call writes, the collision rule, and the batch pattern for a folder of files with no dialogs.
 docs/RECIPES.md | ~3043 words | - | Five worked scripts for calling the statistics from your own Praat script: two groups from a table, paired columns and correlation, a full analysis with CSV export, a batch loop, and a Sound through Pitch into the descriptive kernels. Every script is extracted from the page and run verbatim by harness/recipes, with its printed numbers pinned by validate/v81_recipes.R.
 graphs/eml-annotation-procedures.praat | 5771 | 3.22 | EML GRAPHS — ANNOTATION + STATS BRIDGE PROCEDURES
 graphs/eml-draw-procedures.praat | 6562 | 1.26 | EML GRAPHS — DRAWING PROCEDURES
@@ -135,7 +135,7 @@ scripts/eml-regress.praat | 155 | 2.2 | OLS simple linear regression (slope, int
 scripts/eml-stats-demo.praat | 490 | 1.4 | Demonstrates three core inferential statistics workflows
 scripts/eml-tutorial.praat | 754 | 0.19 | EML Stats Tutorial — Interactive Statistics Guide
 scripts/eml-wizard.praat | 2929 | 2.6 | Question-driven statistical analysis wizard. Routes research
-setup.praat | 472 | 1.7 | Register menu entries and dynamic action buttons for the
+setup.praat | 487 | 1.7 | Register menu entries and dynamic action buttons for the
 sprites/ | 204 files, 45803 bytes | sha256:48d0a2cc3f22c34c | Pre-rendered PNG stamps for alpha compositing — shape_colour_alpha_size, addressed as a family by @emlSetColorPalette and @emlDrawAlphaDot, never by name. Praat has no alpha channel, so a translucent dot or box is a stretched stamp; @emlInitAlphaSprites falls back to opaque Paint when the folder is absent.
 stats/eml-analysis.praat | 4733 | 1.3 | EML Stats : Analysis Orchestrators
 stats/eml-categorical.praat | 277 | 1.0 | EML Stats & Graphs — Counts and proportions. Chi-square test of independence with Cramér's V, expected-count disclosure and a refusal on an empty row or column, and the Wilson confidence interval for a proportion, which stays inside 0 and 1 where the ordinary formula does not.
@@ -148,7 +148,7 @@ stats/eml-lmm.praat | 4436 | - | EML Stats & Graphs — Linear Mixed Models
 stats/eml-optimizer.praat | 2402 | 2.0 | EML Stats & Graphs — Derivative-Free Optimizers
 stats/eml-output.praat | 4072 | 2.4 | EML Stats : Output Formatting
 stats/eml-psychometrics.praat | 376 | 1.0 | EML Stats & Graphs — Questionnaire reliability. Cronbach's alpha with a Feldt confidence interval and alpha-if-item-deleted, and a respondent-influence jackknife that names an influential respondent by their row in the original table rather than by their position after incomplete rows were dropped.
-stats/eml-record.praat | 4424 | 1.0 | EML Stats & Graphs — Record workflow: buffer, phrases, renderer. Accumulates a session's analyses and figures and writes one annotated Praat script that both re-runs and reads like a lab notebook.
+stats/eml-record.praat | 4434 | 1.0 | EML Stats & Graphs — Record workflow: buffer, phrases, renderer. Accumulates a session's analyses and figures and writes one annotated Praat script that both re-runs and reads like a lab notebook.
 stats/eml-result-writer.praat | 735 | 1.0 | EML Stats & Graphs — broom-style result writer. Collects one analysis as tidy/glance/augment tables and writes the three CSVs with the shapes and names R's broom package uses.
 
 # --------------------------------------------------------------------------

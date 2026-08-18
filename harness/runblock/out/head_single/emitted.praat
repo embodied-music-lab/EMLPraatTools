@@ -24,17 +24,17 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-core-utilities.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-core-descriptive.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-extract.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-output.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-inferential.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-result-writer.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-record.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin/graphs/eml-graph-procedures.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin/graphs/eml-annotation-procedures.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin/graphs/eml-draw-procedures.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-analysis.praat
+include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
+include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-record.praat
+include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
+include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
+include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
+include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -50,12 +50,12 @@ include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin/stats/eml-analysis
 # workflow. Edit a name to run the same workflow on other data;
 # nothing below this block names an object, a column or an axis
 # range or a figure format.
-data1$ = "Table vt"   ; steps 1 (draw), 2 (save)
-groupCol$     = "grp"   ; the grouping column -- step 1 (draw)
-valueCol$     = "val"   ; the measured column -- step 1 (draw)
-axisYMin      = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- step 1 (draw)
+data1$ = "Table vt"   ; run 1, steps 1 (draw), 2 (save)
+groupCol$     = "grp"   ; the grouping column -- run 1, step 1 (draw)
+valueCol$     = "val"   ; the measured column -- run 1, step 1 (draw)
+axisYMin      = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
 axisYMax      = 0.0   ; on the recorded data it resolved to 5.5000 .. 9.0000
-figureFormat$ = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- step 2 (save)
+figureFormat$ = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- run 1, step 2 (save)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 

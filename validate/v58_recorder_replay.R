@@ -375,8 +375,21 @@ check_true("v58", "the recovered header line still carries a real timestamp",
 # began the recording, which is the shape of every menu-driven session. The
 # ADV leg is the one whose root is overridden after Begin. Between them they
 # cover both guarantees, and both must now show a tilde.
-check("v58", "the resolved plugin root survives to the flush as home-relative",
-      11L, num("meta_emit_root_is_home_relative"), tol = 0)
+# COUNTED AGAINST THE FILE'S OWN INCLUDE BLOCK, NOT AGAINST A NUMBER TYPED
+# HERE. The block is exactly as long as the module list in setup.praat, which
+# grows whenever a finished module joins the barrel, and a literal here would
+# go stale on that day and be edited to match rather than read. What has to
+# hold is a ratio: every include line in the emitted file home-relative, none
+# left absolute. Both halves are measured off the same file by the harness, so
+# an emission with no include block at all cannot satisfy this by arithmetic --
+# the line above it requires the block to exist.
+emit_inc_n <- num("meta_emit_include_lines")
+check_true("v58",
+           sprintf("the emitted script carries an include block (%d lines)",
+                   emit_inc_n),
+           emit_inc_n > 0L)
+check("v58", "and every line of it survives the flush home-relative",
+      emit_inc_n, num("meta_emit_root_is_home_relative"), tol = 0)
 check_true("v58",
            sprintf("the include root really is written with a tilde (%s)",
                    str_("meta_emit_include_root")),

@@ -29,6 +29,8 @@ include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/e
 include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-extract.praat
 include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-output.praat
 include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-inferential.praat
+include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-psychometrics.praat
+include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-categorical.praat
 include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-result-writer.praat
 include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-record.praat
 include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/graphs/eml-graph-procedures.praat

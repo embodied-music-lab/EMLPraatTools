@@ -366,18 +366,33 @@ emlSetupPath$ = emlPluginRoot.abs$ + "/scripts/eml-lib-user.praat"
 # THE MODULE ORDER IS THE DEPENDENCY ORDER, and it is the same list, in the
 # same sequence, that @emlRecordRender writes into a recorded script. The two
 # are pinned against each other by validate/v82.
-emlSetupNModules = 11
+#
+# THE TWO SURVEY MODULES SIT AT 6 AND 7 BECAUSE NOTHING CONSTRAINS THEM.
+# stats/eml-psychometrics.praat (@emlCronbachAlpha, @emlAlphaInfluence) and
+# stats/eml-categorical.praat (@emlChiSquareIndependence, @emlWilsonInterval)
+# call only Praat's own vector, matrix and distribution primitives, and no
+# other module calls them, so the dependency order permits them anywhere. They
+# are placed beside the other statistical kernels rather than after the
+# orchestrator, which is where a reader looks for them.
+#
+# THEY ARE IN THE BARREL AND ON NO MENU. This list decides what a user's own
+# script can `include`; a menu entry is a separate registration above, and
+# these four procedures have none. What is listed here is loadable, not
+# clickable.
+emlSetupNModules = 13
 emlSetupModule$ [ 1] = "stats/eml-core-utilities.praat"
 emlSetupModule$ [ 2] = "stats/eml-core-descriptive.praat"
 emlSetupModule$ [ 3] = "stats/eml-extract.praat"
 emlSetupModule$ [ 4] = "stats/eml-output.praat"
 emlSetupModule$ [ 5] = "stats/eml-inferential.praat"
-emlSetupModule$ [ 6] = "stats/eml-result-writer.praat"
-emlSetupModule$ [ 7] = "stats/eml-record.praat"
-emlSetupModule$ [ 8] = "graphs/eml-graph-procedures.praat"
-emlSetupModule$ [ 9] = "graphs/eml-annotation-procedures.praat"
-emlSetupModule$ [10] = "graphs/eml-draw-procedures.praat"
-emlSetupModule$ [11] = "stats/eml-analysis.praat"
+emlSetupModule$ [ 6] = "stats/eml-psychometrics.praat"
+emlSetupModule$ [ 7] = "stats/eml-categorical.praat"
+emlSetupModule$ [ 8] = "stats/eml-result-writer.praat"
+emlSetupModule$ [ 9] = "stats/eml-record.praat"
+emlSetupModule$ [10] = "graphs/eml-graph-procedures.praat"
+emlSetupModule$ [11] = "graphs/eml-annotation-procedures.praat"
+emlSetupModule$ [12] = "graphs/eml-draw-procedures.praat"
+emlSetupModule$ [13] = "stats/eml-analysis.praat"
 
 # THE GENERATED TEXT IS PURE ASCII, ON PURPOSE. Praat picks an output encoding
 # from the text it is given — ASCII where it can, UTF-16 where it cannot — so

@@ -29,6 +29,8 @@ include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-core-descripti
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-extract.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-output.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-categorical.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-record.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat

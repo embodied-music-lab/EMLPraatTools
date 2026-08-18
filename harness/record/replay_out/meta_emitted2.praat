@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Mon Aug 17 21:46:28 2026  --  recorded on Praat 6.6.30
+# Tue Aug 18 11:08:50 2026  --  recorded on Praat 6.6.30
 # (The session's start time was lost -- its record table was
 # removed from the Objects window -- so the time above is when
 # the recorder noticed, not when recording began.)
@@ -32,6 +32,8 @@ include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-core-descripti
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-extract.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-output.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-categorical.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-record.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat

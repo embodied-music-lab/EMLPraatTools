@@ -5,7 +5,7 @@
 # Ian Howell -- Embodied Music Lab -- GPL-3.0-or-later
 #
 # WHAT THIS IS ABOUT. A user writing their own Praat script wants one line,
-# not eleven, and until setup.praat generated one there was no line that could
+# not thirteen, and until setup.praat generated one there was no line that could
 # work. The reason is a property of Praat, and it is measured rather than
 # quoted: `include` is a parse-time text paste, and a relative path inside an
 # included file resolves against the TOP-LEVEL script's folder, not against
@@ -32,8 +32,8 @@
 #
 #   2. THE INCLUDE LIST DRIFTS FROM THE RECORDER'S. Two places in this plugin
 #      write an include block: this generator, and @emlRecordRender, which
-#      writes one into every recorded script. They are the same eleven modules
-#      in the same dependency order, and if they stop being the same then one
+#      writes one into every recorded script. They are the same thirteen
+#      modules in the same dependency order, and if they stop being the same then one
 #      of the two produces a file that dies on "Procedure ... not found" --
 #      which is how the draw layer's omission from the recorder's list was
 #      found. Section 5 does not compare the barrel against a list retyped
@@ -108,6 +108,8 @@ CANON <- c(
     "stats/eml-extract.praat",
     "stats/eml-output.praat",
     "stats/eml-inferential.praat",
+    "stats/eml-psychometrics.praat",
+    "stats/eml-categorical.praat",
     "stats/eml-result-writer.praat",
     "stats/eml-record.praat",
     "graphs/eml-graph-procedures.praat",
@@ -285,7 +287,8 @@ if (canDrive) {
         check_true("v82", "the generated file is pure ASCII, so it re-reads exactly",
                    !is.null(rw) && all(as.integer(rw) < 128L))
     }
-    check_true("v82", "the barrel names eleven modules", length(inc1) == 11L)
+    check_true("v82", "the barrel names every module in the list",
+               length(inc1) == length(CANON))
     stripped <- sub("^.*/plugin_EML_StatsGraphs/", "", inc1)
     check_true("v82",
                "its include list is the canonical module order",
@@ -379,7 +382,7 @@ if (canDrive) {
 # Not against a list retyped in this file: against the block @emlRecordRender
 # actually writes, taken off an emitted script produced by a recording on this
 # same installation. Two independent writers of the same block, compared.
-if (canDrive && length(inc1) == 11L) {
+if (canDrive && length(inc1) == length(CANON)) {
     home1 <- file.path(work, "s1", "home")
     prefs1 <- file.path(home1, ".praat-dir")
     pr <- file.path(prefs1, "plugin_EML_StatsGraphs")
@@ -507,7 +510,7 @@ check_true("v82", "the write is guarded by a comparison against the file on disk
            any(grepl("if\\s+emlSetupOnDisk\\$\\s*<>\\s*emlSetupText\\$", code_s)))
 check_true("v82", "and the write is the only one, inside that guard",
            sum(grepl("writeFile", code_s)) == 1L)
-# THE ELEVEN MODULES ARE WRITTEN DOWN IN setup.praat, in order.
+# THE MODULES ARE WRITTEN DOWN IN setup.praat, in order.
 mods_s <- regmatches(code_s,
     regexpr('(stats|graphs)/eml-[a-z-]+\\.praat', code_s))
 mods_s <- mods_s[nzchar(mods_s)]
@@ -539,7 +542,7 @@ if (canDrive) {
     inc3 <- includes_of(bp)
     check_true("v82",
                "a launch at the new location regenerates every line for it",
-               length(inc3) == 11L &&
+               length(inc3) == length(CANON) &&
                all(startsWith(inc3, "~/moved-prefs/plugin_EML_StatsGraphs/")))
     u <- file.path(work, "s3", "user")
     dir.create(u, recursive = TRUE, showWarnings = FALSE)
@@ -574,7 +577,7 @@ if (canDrive) {
     inc4 <- includes_of(bp)
     check_true("v82",
                "a launch on the 7.x preferences folder regenerates for it",
-               length(inc4) == 11L &&
+               length(inc4) == length(CANON) &&
                all(startsWith(inc4, "~/.config/praat/plugin_EML_StatsGraphs/")))
     u <- file.path(work, "s4", "user")
     dir.create(u, recursive = TRUE, showWarnings = FALSE)

@@ -32,6 +32,8 @@ include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-extract.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-output.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-categorical.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-record.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat

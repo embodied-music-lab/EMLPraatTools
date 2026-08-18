@@ -75,7 +75,7 @@ PASS  v86     pdfonly: fig.png is on disk                     computed=NA  expec
 PASS  v86     pdfonly: fig.png is not empty (30447 bytes)     computed=NA  expected TRUE
 PASS  v86     pdfonly: fig.png begins with its own marker     computed=NA  expected TRUE
 PASS  v86     pdfonly: fig.pdf is on disk                     computed=NA  expected TRUE
-PASS  v86     pdfonly: fig.pdf is not empty (8383 bytes)      computed=NA  expected TRUE
+PASS  v86     pdfonly: fig.pdf is not empty (8382 bytes)      computed=NA  expected TRUE
 PASS  v86     pdfonly: fig.pdf begins with its own marker     computed=NA  expected TRUE
 PASS  v86     pdfonly: no fig.eps was written                 computed=NA  expected TRUE
 PASS  v86     pdfonly: the legend landed the same formats (PNG, PDF)  computed=NA  expected TRUE
@@ -218,7 +218,7 @@ FAIL  v86     and no arm of it offers the PNG as the format that survived  compu
 PASS  v86     the panel hands the message the figure's whole landed list  computed=NA  expected TRUE
 PASS  v86     the source says in words why the landed check stays on every format  computed=NA  expected TRUE
 PASS  v86     the recorder module is present                  computed=NA  expected TRUE
-PASS  v86     the record leg was driven on THIS recorder's code (c97fc4cf1bde)  computed=NA  expected TRUE
+PASS  v86     the record leg was driven on THIS recorder's code (37046a57b810)  computed=NA  expected TRUE
 PASS  v86     @emlRecordReplaySave takes the format choice as an argument  computed=NA  expected TRUE
 PASS  v86     and writes the figure through the panel's own writer  computed=NA  expected TRUE
 PASS  v86     ... and the separate legend through it too      computed=NA  expected TRUE

@@ -609,6 +609,13 @@ if [[ -f "$OUT/meta_emitted.praat" ]]; then
           "$OUT/meta_emitted.praat" | head -1)"
     kv meta_emit_root_is_home_relative \
        "$(grep -c '^include ~/' "$OUT/meta_emitted.praat" | head -1)"
+    # THE DENOMINATOR FOR THE LINE ABOVE. The include block is as long as the
+    # module list in setup.praat, so the count that matters is not a number
+    # but a ratio: every include line home-relative, none left absolute.
+    # Recording both halves here means v58 compares two measurements of this
+    # file instead of one measurement against a literal.
+    kv meta_emit_include_lines \
+       "$(grep -c '^include ' "$OUT/meta_emitted.praat" | head -1)"
     kv meta_emit_claims_home_relative \
        "$(grep -c 'Paths are home-relative' "$OUT/meta_emitted.praat")"
     kv meta_emit_states_absolute \
@@ -617,6 +624,7 @@ if [[ -f "$OUT/meta_emitted.praat" ]]; then
 else
     kv meta_emit_include_root MISSING
     kv meta_emit_root_is_home_relative -1
+    kv meta_emit_include_lines -1
     kv meta_emit_claims_home_relative -1
     kv meta_emit_states_absolute -1
     kv meta_emitted_stamp_line MISSING
