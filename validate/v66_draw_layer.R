@@ -376,8 +376,16 @@ check_true(ID,
 # would be a second thing to keep right.
 check_true(ID, "the annotation reporters call the shared formatter",
            cnt(code_annot, "@eml_fixed:") >= 60L)
-check_true(ID, "the normality wrapper calls it too",
-           cnt(code_norm, "@eml_fixed:") == 3L)
+# A FLOOR, NOT AN EXACT COUNT. What this asserts is that the wrapper routes
+# its numbers through the shared formatter; the raw-fixed$ check above is what
+# asserts none escape. An equality here makes the count itself the contract,
+# so printing one more honest number -- a threshold beside the reading that
+# was made against it -- reads as a regression. The property is "uses the
+# shared formatter", and a floor states it without freezing the line count.
+check_true(ID,
+           sprintf("the normality wrapper calls it too (%d call(s))",
+                   cnt(code_norm, "@eml_fixed:")),
+           cnt(code_norm, "@eml_fixed:") >= 3L)
 for (nm in c("eml_fixed", "emlFixed", "eml_fixed4")) {
     check_true(ID,
         sprintf("and neither file defines its own @%s", nm),
@@ -970,13 +978,44 @@ if (!length(t_pg)) {
                 trimws(pgs[1] %or% "<none>")),
         length(pgs) == 2L && !any(grepl("[0-9]\\.[0-9]{4,}", pgs)) &&
         grepl("Skewness = 0\\.000\\s", pgs[1]))
-    # AND THE VERDICT UNDERNEATH IS UNCHANGED, which is what says a display
-    # repair did not become a decision repair. The rule reads the raw .skew,
-    # .kurt and Shapiro-Wilk p, never these strings.
+    # AND THE READING UNDERNEATH STILL DISCRIMINATES, which is what says a
+    # display repair did not become a decision repair. The rule reads the raw
+    # .skew, .kurt and Shapiro-Wilk p, never these strings.
+    #
+    # WHAT IS PINNED HERE IS THE DISCRIMINATION, NOT THE SENTENCE. The two
+    # groups in this fixture are built to land on opposite sides of the rule
+    # -- "sym" is symmetric, "skw" is skewed past the threshold -- so the
+    # assertion is that the wrapper says something DIFFERENT about them, and
+    # that the flagged one is the skewed one. Pinning the verdict's exact
+    # wording would make the wording unfixable, and this wrapper's wording is
+    # deliberately evidence-scoped rather than a recommendation: it reports a
+    # departure, it does not name a family of tests, because nothing on that
+    # screen knows what analysis the user intends.
+    # Located by an ASCII substring. The line begins with an arrow glyph, and
+    # grepping a multi-byte literal aborts the run outright when the suite is
+    # started in a non-UTF-8 locale -- "unable to translate to a wide string",
+    # which ends the validator rather than failing a check.
+    arrows <- trimws(grep("thresholds: Shapiro-Wilk", t_pg,
+                          value = TRUE, fixed = TRUE, useBytes = TRUE))
     check_true(ID,
-        "and the recommendation the rule reaches is untouched by the formatting",
-        any(grepl("Normality OK", t_pg)) &&
-        any(grepl("Nonparametric recommended", t_pg)))
+        sprintf("the per-group branch prints one reading per tested group (%d found)",
+                length(arrows)),
+        length(arrows) == 2L)
+    check_true(ID,
+        "and it reaches DIFFERENT readings for the symmetric and the skewed group",
+        length(arrows) == 2L && !identical(arrows[1], arrows[2]))
+    check_true(ID,
+        "and the skewed group is the one flagged for a strong departure",
+        length(arrows) == 2L &&
+        !grepl("Strong departure", arrows[1]) &&
+        grepl("Strong departure", arrows[2]))
+    # The thresholds it read against are on the line, so a reader can check
+    # the printed skewness against them without leaving the report.
+    check_true(ID,
+        "and each reading shows the thresholds it was made against",
+        length(arrows) == 2L &&
+        all(grepl("Shapiro-Wilk p < .05", arrows, fixed = TRUE)) &&
+        all(grepl("|skew| >= 2", arrows, fixed = TRUE)))
 }
 
 # ===========================================================================
