@@ -101,14 +101,14 @@ dev/tools/vacuity-negative-controls.py | 238 | - | Prove that scan-assertion-vac
 dev/tutorial-wireframes-v09.praat | 888 | 0.10 | EML Stats Tutorial — Layout Wireframes
 docs/API_EXPORT.md | ~3087 words | - | Worked how-to for @emlExportResultFiles: which analyses declare broom frames, the file set each call writes, the collision rule, and the batch pattern for a folder of files with no dialogs.
 docs/RECIPES.md | ~3043 words | - | Five worked scripts for calling the statistics from your own Praat script: two groups from a table, paired columns and correlation, a full analysis with CSV export, a batch loop, and a Sound through Pitch into the descriptive kernels. Every script is extracted from the page and run verbatim by harness/recipes, with its printed numbers pinned by validate/v81_recipes.R.
-graphs/eml-annotation-procedures.praat | 5771 | 3.22 | EML GRAPHS — ANNOTATION + STATS BRIDGE PROCEDURES
+graphs/eml-annotation-procedures.praat | 5892 | 3.22 | EML GRAPHS — ANNOTATION + STATS BRIDGE PROCEDURES
 graphs/eml-draw-procedures.praat | 6562 | 1.26 | EML GRAPHS — DRAWING PROCEDURES
 graphs/eml-draw-qq.praat | 345 | - | EML Stats & Graphs — Normal Q-Q plot. @emlDrawQQPlot; an ADAPTER, not a draw procedure — it computes the theoretical quantiles and hands them to the shared scatter machinery.
 graphs/eml-graph-procedures.praat | 7189 | 3.32 | EML GRAPHS — STANDARD DRAWING PROCEDURES
 graphs/eml-graphs-form.praat | 8722 | 2.9 | EML Graphs — Form System and Workflow
 scripts/eml-batch-process.praat | 1665 | 1.3 | Batch process a folder of Sound files to extract user-selected
 scripts/eml-check-data.praat | 685 | 1.1 | EML Stats & Graphs — Check & repair data. Names, in advance, which cells an analysis will exclude and why, and offers to repair the unambiguous ones.
-scripts/eml-check-normality.praat | 470 | 2.2 | Test normality for one or more numeric columns, optionally
+scripts/eml-check-normality.praat | 526 | 2.2 | Test normality for one or more numeric columns, optionally
 scripts/eml-compare-groups.praat | 171 | 3.0 | Compare two independent groups from a Table using parametric
 scripts/eml-compare-k-groups.praat | 130 | 3.0 | One-way ANOVA with optional Tukey HSD post-hoc comparisons.
 scripts/eml-compare-kw.praat | 152 | 3.1 | Compare 3+ groups using Kruskal-Wallis H test with Dunn's
@@ -137,16 +137,16 @@ scripts/eml-tutorial.praat | 754 | 0.19 | EML Stats Tutorial — Interactive Sta
 scripts/eml-wizard.praat | 2929 | 2.6 | Question-driven statistical analysis wizard. Routes research
 setup.praat | 514 | 1.7 | Register menu entries and dynamic action buttons for the
 sprites/ | 204 files, 45803 bytes | sha256:48d0a2cc3f22c34c | Pre-rendered PNG stamps for alpha compositing — shape_colour_alpha_size, addressed as a family by @emlSetColorPalette and @emlDrawAlphaDot, never by name. Praat has no alpha channel, so a translucent dot or box is a stretched stamp; @emlInitAlphaSprites falls back to opaque Paint when the folder is absent.
-stats/eml-analysis.praat | 4733 | 1.3 | EML Stats : Analysis Orchestrators
+stats/eml-analysis.praat | 4746 | 1.3 | EML Stats : Analysis Orchestrators
 stats/eml-categorical.praat | 277 | 1.0 | EML Stats & Graphs — Counts and proportions. Chi-square test of independence with Cramér's V, expected-count disclosure and a refusal on an empty row or column, and the Wilson confidence interval for a proportion, which stays inside 0 and 1 where the ordinary formula does not.
 stats/eml-core-descriptive.praat | 864 | 1.2 | EML Stats : Core Descriptive Statistics
 stats/eml-core-utilities.praat | 945 | 1.0 | EML Stats : Core Utility Procedures
-stats/eml-extract.praat | 2867 | 1.5 | EML Stats : Data Extraction Layer
+stats/eml-extract.praat | 2874 | 1.5 | EML Stats : Data Extraction Layer
 stats/eml-inferential.praat | 6059 | 1.4 | EML Stats : Inferential Statistics
 stats/eml-linalg.praat | 347 | 1.0 | EML Stats & Graphs — Numerical Linear Algebra Layer
 stats/eml-lmm.praat | 4436 | - | EML Stats & Graphs — Linear Mixed Models
 stats/eml-optimizer.praat | 2402 | 2.0 | EML Stats & Graphs — Derivative-Free Optimizers
-stats/eml-output.praat | 4072 | 2.4 | EML Stats : Output Formatting
+stats/eml-output.praat | 4209 | 2.4 | EML Stats : Output Formatting
 stats/eml-psychometrics.praat | 376 | 1.0 | EML Stats & Graphs — Questionnaire reliability. Cronbach's alpha with a Feldt confidence interval and alpha-if-item-deleted, and a respondent-influence jackknife that names an influential respondent by their row in the original table rather than by their position after incomplete rows were dropped.
 stats/eml-record.praat | 4434 | 1.0 | EML Stats & Graphs — Record workflow: buffer, phrases, renderer. Accumulates a session's analyses and figures and writes one annotated Praat script that both re-runs and reads like a lab notebook.
 stats/eml-result-writer.praat | 735 | 1.0 | EML Stats & Graphs — broom-style result writer. Collects one analysis as tidy/glance/augment tables and writes the three CSVs with the shapes and names R's broom package uses.
