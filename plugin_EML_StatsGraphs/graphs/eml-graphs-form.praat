@@ -2108,8 +2108,20 @@ procedure emlGraphsDispatchDraw
     # is the contract; @emlRecordAxisRequest in stats/eml-record.praat is the
     # reader that consumes it.
     @emlGraphsStampAxisRequest
-    Erase all
-    @emlResetDrawnExtent
+
+    # ── OPEN THE PANEL ──────────────────────────────────────────────────────
+    # THE ERASE, THE EXTENT RESET AND THE ORIGIN ARE ONE DECISION, so they are
+    # one call. @emlBeginPanel in graphs/eml-graph-procedures.praat is the only
+    # implementation: a recorded workflow replays through the same procedure,
+    # so the page a script rebuilds is the page the dialog built.
+    #
+    # THE THREE GLOBALS ARE ALREADY SET. @emlGraphsWorkflow copies them from
+    # the dialog's fields as soon as the main form closes -- see THE PAGE, in
+    # the form-value block -- because the measurement stages between there and
+    # here (the theme, the categorical labels, the matrix layout) run at this
+    # panel's origin. A probe that drives this loop without a dialog sets them
+    # itself; there is nothing to read from a form it never showed.
+    @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 
     # Hand the drawing layer the placement the user chose. This is the
     # ONLY write to emlLegendPlacement in the plugin, and it is the boundary
@@ -2162,7 +2174,16 @@ procedure emlGraphsDispatchDraw
     # an error.
     emlDrawLegend.position$ = ""
 
-    Select outer viewport: 0, figure_width, 0, totalCanvasHeight
+    # OFFSET BY THE PANEL ORIGIN. totalCanvasHeight stays per-drawing -- it is
+    # this figure's own height plus its comparison matrix, not a page height --
+    # and the origin moves the whole of it onto the page. @emlSetAdaptiveTheme
+    # offsets every viewport it computes by the same origin, so the panel this
+    # pre-selection opens and the panel the draw procedure lays out are the
+    # same rectangle.
+    Select outer viewport: emlPanelOriginX,
+    ... emlPanelOriginX + figure_width,
+    ... emlPanelOriginY,
+    ... emlPanelOriginY + totalCanvasHeight
 
     if graph_type = 1
         @emlDrawF0Contour: objectId, title$, x_axis_label$, y_axis_label$, figure_width, figure_height, colorMode$, gridline_mode, timeMin, timeMax, freqMin, freqMax, f0YUnit
@@ -2354,7 +2375,56 @@ procedure emlGraphsDrawWithLegendRoom
 
         @emlGraphsDispatchDraw
 
+        # ── THE NEGOTIATION STANDS DOWN ON A COMPOSED PAGE ──────────────────
+        #
+        # The loop below draws, measures, ERASES and draws again. The erase is
+        # not incidental to it: the first pass is thrown away, and on a page
+        # that already carries a sibling panel there is no way to throw one
+        # panel away. The alternatives were considered and refused. Painting a
+        # white rectangle over the discarded pass is destructive in exactly the
+        # overlay case the author permitted. Computing the legend's size
+        # without drawing it returns to trusting arithmetic, which this
+        # codebase abandoned after a legend that measured itself at one font
+        # size and drew itself at another and looked correct.
+        #
+        # So a composed page gets ONE PASS and the legend takes the naive
+        # position. That is the compositor's own layout to own, and the draw
+        # dialog says so beside the tickbox that causes it, pointing at the two
+        # placements that keep the plot clear. It also dissolves the
+        # discarded-first-pass hazard outright: no second pass, no ghost.
+        #
+        # A SINGLE FIGURE IS UNTOUCHED. emlEraseFirst is 1 on every draw that
+        # is not a composition, which is every draw the plugin made before this
+        # control existed.
+        legendRoomMeasure = 0
         if legendRoomPass = 1
+            legendRoomMeasure = 1
+        endif
+        if emlEraseFirst = 0
+            legendRoomMeasure = 0
+        endif
+
+        # SAID AT THE MOMENT IT HAPPENS, not only on the dialog beforehand. A
+        # user who ticked an inside-plot legend and composed a page gets a key
+        # over the data; the sentence names the two placements that do not.
+        # Nested rather than ANDed -- Praat does not short-circuit `and`, and
+        # emlDrawLegend.position$ is blanked before every draw so "" means no
+        # legend was drawn on THIS panel.
+        if legendRoomMeasure = 0
+            if legendRoomPass = 1
+                if emlLegendPlacement = 1
+                    if emlDrawLegend.position$ <> ""
+                        appendInfoLine: "NOTE: This figure was added to a ",
+                        ... "page that already held one, so its legend is ",
+                        ... "placed where it falls and the y-axis is not ",
+                        ... "widened for it. Set Legend placement to Right ",
+                        ... "of plot or Below plot to keep the plot clear."
+                    endif
+                endif
+            endif
+        endif
+
+        if legendRoomMeasure = 1
             # --- What did the figure decide? Read the axis back from the
             # procedure that just drew it. Praat procedure "locals" are
             # globals named procedure.variable, so this is the resolved axis
@@ -2796,7 +2866,9 @@ procedure emlGraphsPostDispatchAnnotations
         # --- MATRIX PANEL (nGroups >= 4, or type 11) ---
         if annotMatrixN > 0 and matrixPanelHeight > 0
             # Draw panel below the plot — match graph inner box width
-            @emlDrawMatrixPanel: 0, figure_width, figure_height + matrixGap, totalCanvasHeight, emlSetAdaptiveTheme.matrixSize, colorMode$
+            # Origin-offset, exactly as the panel above it is: the matrix
+            # belongs to its figure and travels with it onto the page.
+            @emlDrawMatrixPanel: emlPanelOriginX, emlPanelOriginX + figure_width, emlPanelOriginY + figure_height + matrixGap, emlPanelOriginY + totalCanvasHeight, emlSetAdaptiveTheme.matrixSize, colorMode$
         endif
     endif
 endproc
@@ -3330,6 +3402,42 @@ repeat
                 option: "Black and White"
             positive: "Figure width (inches)", string$ (config_width)
             positive: "Figure height (inches)", string$ (config_height)
+            # ── THE PAGE ────────────────────────────────────────────────────
+            # PER-DRAW FIELDS, NEVER A SESSION MODE. Both are read fresh from
+            # this dialog on every press and both are recorded with the
+            # drawing they belong to, so a composed page is a sequence of
+            # visible choices rather than a state the user has to remember
+            # they are in. A mode would be hidden state, which is the class of
+            # trouble the axis-publication work was about.
+            #
+            # NEITHER IS PERSISTED TO CONFIG, and that is the same decision
+            # from the other side. Figure width and height are remembered
+            # across sessions because they describe the figure a user makes;
+            # erase and origin describe one step of one page. A remembered
+            # "erase off" would greet a user with a dialog that quietly
+            # overlays their next figure on last week's, and the tick that
+            # caused it would be a session old. Every press starts from
+            # today's behaviour, and composition is stated each time it
+            # happens.
+            boolean: "Erase page first", 1
+            # ORIGIN IS TYPED INCHES. Not a grid, which would impose a layout
+            # model, and not an auto-advancing slot, which would be a counter
+            # that outlives its page. It is live whether or not the page is
+            # erased: erase-on with an offset origin is valid and starts a
+            # composite whose first panel is not at 0, 0.
+            real: "Panel origin x (inches)", "0"
+            real: "Panel origin y (inches)", "0"
+            comment: "Untick Erase to add this figure to the page already drawn."
+            # THE ONE SENTENCE THE NO-ERASE LEGEND RULE OWES THE USER. The
+            # headroom negotiation in @emlGraphsDrawWithLegendRoom draws,
+            # measures and draws again on a widened axis; the second pass
+            # depends on the first being erased, so on a composed page there
+            # is one pass and the legend takes the naive position. Said here,
+            # on the dialog that offers the choice, and pointing at the two
+            # placements that keep the plot clear -- the same advice
+            # @emlLegendHeadroomAfterDraw gives when it cannot serve a legend.
+            comment: "   On a composed page a legend inside the plot is not"
+            comment: "   given axis room — use Right of plot or Below plot."
         clicked = endPause: "Quit", "Continue", 2, 1
 
         if clicked = 1
@@ -3409,6 +3517,24 @@ repeat
     config_colorMode = color_mode
     config_width = figure_width
     config_height = figure_height
+
+    # ── THE PAGE ─────────────────────────────────────────────────────────────
+    # The dialog's page fields, into the drawing layer's globals, HERE and not
+    # at dispatch. Everything between this line and the draw measures at the
+    # panel's origin -- @emlSetAdaptiveTheme's viewport, the categorical label
+    # fit, the comparison matrix layout -- so the origin has to be in place
+    # before the first of them runs. @emlGraphsDispatchDraw then hands these
+    # same three values to @emlBeginPanel, which is where the erase and the
+    # extent union are decided together.
+    #
+    # NOT WRITTEN TO config_*, unlike the two lines above. See the fields
+    # themselves on the main form for why: width and height describe the
+    # figure a user makes and are remembered; erase and origin describe one
+    # step of one page and are asked again every press.
+    emlEraseFirst = erase_page_first
+    emlPanelOriginX = panel_origin_x
+    emlPanelOriginY = panel_origin_y
+    @emlSetPanelOrigin: emlPanelOriginX, emlPanelOriginY
 
     # =================================================================
     # ACQUIRE OBJECT

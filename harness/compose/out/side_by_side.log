@@ -1,0 +1,7 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+PANEL Left panel type=11 origin=0,0 erase=1 placement=1 passes=2
+NOTE: This figure was added to a page that already held one, so its legend is placed where it falls and the y-axis is not widened for it. Set Legend placement to Right of plot or Below plot to keep the plot clear.
+PANEL Right panel type=12 origin=6.5,0 erase=0 placement=1 passes=1
+UNION 0 12.5000 0 4.0000
+SAVED /home/claude/EMLPraatTools/harness/compose/out/side_by_side.png

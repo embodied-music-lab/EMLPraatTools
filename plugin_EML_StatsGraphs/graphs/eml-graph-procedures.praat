@@ -111,6 +111,29 @@ emlDrawnMinY = 0
 emlDrawnMaxY = 0
 
 # ----------------------------------------------------------------------------
+# PAGE COMPOSITION
+# ----------------------------------------------------------------------------
+# emlEraseFirst — 1 clears the Picture window before a panel is drawn and
+# starts the extent union again from that panel; 0 leaves whatever is on the
+# page and adds to the union. 1 is the default everywhere, and it is the
+# behaviour a single figure has always had.
+#
+# THE PAGE IS COMPUTED, NEVER DECLARED. There is no page width, no page
+# height and no grid: each panel keeps its own (width, height), and the page
+# rectangle is the extent union @emlExpandDrawnExtent maintains, which is
+# already what @emlAssertFullViewport hands to Save. So a composite is saved
+# by the machinery that saves a single figure, and an early save of a
+# half-built page is simply a smaller image.
+#
+# emlPagePanelN — how many panels are on the page the union describes. Reset
+# to 1 by an erasing panel, incremented by a composing one. It is a
+# DESCRIPTION of the page rather than a layout decision: nothing reads it to
+# place anything. The Save panel reads it to decide whether to call what it
+# is about to write a figure or a page.
+emlEraseFirst = 1
+emlPagePanelN = 0
+
+# ----------------------------------------------------------------------------
 # @emlSetPanelOrigin
 # Sets the origin for the current drawing panel. All subsequent calls to
 # @emlSetAdaptiveTheme will offset viewport bounds by this origin.
@@ -165,6 +188,47 @@ procedure emlExpandDrawnExtent: .left, .right, .top, .bottom
 endproc
 
 # ----------------------------------------------------------------------------
+# @emlBeginPanel: .originX, .originY, .erase
+# OPEN A PANEL ON THE PAGE. The one place that decides whether a draw starts a
+# fresh page or adds to the one already there.
+#
+# .erase = 1  clear the Picture window, restart the extent union, and count
+#             this panel as the first on a new page.
+# .erase = 0  leave the page alone, keep the union, and count this panel as
+#             another one on the page already there.
+#
+# THE ERASE AND THE UNION MOVE TOGETHER, and that is the whole of the
+# mechanism. @emlAssertFullViewport saves the union, so a union that survived
+# an erase would save a rectangle larger than the ink -- and a union reset
+# without an erase would save the last panel and crop the rest of the page
+# off. One procedure, one decision, so the two cannot drift apart.
+#
+# THE ORIGIN IS TYPED INCHES, not a grid and not a slot. It is applied here
+# through @emlSetPanelOrigin, which every @emlSetAdaptiveTheme call already
+# reads, so a panel drawn at (6.5, 0) reports its rectangle at (6.5, 0) to the
+# union as well as drawing there. Erase with an offset origin is valid: it
+# clears the page and starts a composite whose first panel is not at 0, 0.
+#
+# CALLERS. graphs/eml-graphs-form.praat calls this once per press of Draw,
+# from @emlGraphsDispatchDraw, with the values from the draw dialog's
+# "Erase page first" and "Panel origin" fields. A recorded workflow calls it
+# with the values the block at the top of the emitted script declares. A
+# standalone script that never calls it gets @emlInitDrawingDefaults' erase-on
+# single panel at the origin, which is what such a script has always had.
+# ----------------------------------------------------------------------------
+procedure emlBeginPanel: .originX, .originY, .erase
+    @emlSetPanelOrigin: .originX, .originY
+    emlEraseFirst = .erase
+    if .erase = 1
+        Erase all
+        @emlResetDrawnExtent
+        emlPagePanelN = 1
+    else
+        emlPagePanelN = emlPagePanelN + 1
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
 # @emlSetPanelViewport
 # Sets both outer and inner viewport for the current panel using
 # theme-computed bounds. Replaces the repeated 2-line pattern at the
@@ -200,6 +264,11 @@ procedure emlInitDrawingDefaults
     emlDrawnMaxX = 0
     emlDrawnMinY = 0
     emlDrawnMaxY = 0
+    # Page composition. Erase-on and no panels yet: a script that calls
+    # nothing else gets the single figure it has always got. See
+    # @emlBeginPanel, which is where the two of these are decided per panel.
+    emlEraseFirst = 1
+    emlPagePanelN = 0
     # Y-axis minimum tick step. 0 = unconstrained. A drawing procedure whose
     # y-axis is integral (a count, an ordinal rank) sets this to 1 so the
     # nice-number step cannot fall below a whole unit and label the axis in
@@ -5167,6 +5236,16 @@ endproc
 #   4 Separate figure — parked off-figure and saved as a second file.
 #   5 None            — not drawn.
 #
+# THE PARKED BAND IS RESERVED SPACE, AND ITS TOP IS emlLegendSepY0. Placement
+# 4 draws its legend on a patch of picture below everything the page holds:
+# twelve inches below the bottom of the EXTENT UNION, and never above 24
+# inches. Nothing else may draw at or below that line — the save path selects
+# emlLegendSepX0/X1/Y0/Y1 and writes it as the second PNG, so ink placed there
+# by anyone else lands in the legend file. Taking the band from the union
+# rather than from the current panel is what makes it clear of SIBLING panels
+# on a composed page as well as of the panel whose legend it is; on a single
+# figure the union is that figure and the band sits where it always has.
+#
 # Requires global variables before call:
 #   legendN          — integer, number of entries. The palette holds 24
 #                      sub-group styles, so 24 is the number this has to
@@ -5526,9 +5605,44 @@ procedure emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .position$, .fontSize
             ; Twelve inches clear of the bottom of the page, and never less
             ; than 24 — the same .pageBottom placement 3 uses, so a matrix
             ; measured outside the form pushes the park down here too.
+            ;
+            ; AND THE PAGE IS THE EXTENT UNION, NOT THIS PANEL. .pageBottom
+            ; above is built from THIS panel's own arithmetic — its outer
+            ; bottom, plus its comparison matrix if it has one — which is the
+            ; whole page exactly when the panel is the whole page. On a
+            ; composite it is not: a legend parked from a short panel at the
+            ; top right of a tall page would be parked under THAT panel and
+            ; drawn straight through a sibling further down. So the band is
+            ; taken below the union @emlExpandDrawnExtent has accumulated,
+            ; which already holds every panel drawn since the last erase.
+            ;
+            ; TODAY'S SINGLE FIGURE IS UNCHANGED BY CONSTRUCTION: on one
+            ; panel the union IS that panel, so the maximum below picks the
+            ; same number it picked before. And the band is by construction
+            ; below everything on the page rather than below one panel of it.
+            ;
+            ; THE BAND IS RESERVED. Nothing else may be drawn at or below
+            ; .park: the save path selects this rectangle and writes it as
+            ; the separate legend file, and @emlAssertFullViewport is
+            ; deliberately not told about it so the figure keeps its own
+            ; extent. A caller that draws down here gets its ink in somebody
+            ; else's PNG.
+            ;
+            ; READ THROUGH variableExists, like every other cross-layer read
+            ; in this procedure: a caller that loaded the draw library but
+            ; never @emlInitDrawingDefaults has no union to consult, and
+            ; reading one unconditionally aborts with "Unknown variable".
+            .unionBottom = .pageBottom
+            if variableExists ("emlDrawnMaxY")
+                if emlDrawnMaxY <> undefined
+                    if emlDrawnMaxY > .unionBottom
+                        .unionBottom = emlDrawnMaxY
+                    endif
+                endif
+            endif
             .park = 24
-            if .pageBottom + 12 > .park
-                .park = .pageBottom + 12
+            if .unionBottom + 12 > .park
+                .park = .unionBottom + 12
             endif
             .panelX0 = .inset
             .panelX1 = .panelX0 + (emlSetAdaptiveTheme.outerRight

@@ -1,0 +1,83 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+PANEL Top panel type=11 origin=0,0 erase=1 placement=1 passes=2
+
+══════════════════════════════════════════════
+  EML Stats : Spaghetti Plot Summary
+  Tue Aug 18 15:36:15 2026
+══════════════════════════════════════════════
+
+  Table               compose
+  Condition column    t
+  Value column        v
+  ID column           s
+  Conditions          10
+  Groups              5
+
+
+  ── 2 ───────────────────────────────────────
+  N                   6
+  Mean                111.852
+  SD                  1.615
+
+
+  ── 3 ───────────────────────────────────────
+  N                   6
+  Mean                124.496
+  SD                  1.703
+
+
+  ── 4 ───────────────────────────────────────
+  N                   6
+  Mean                136.340
+  SD                  1.562
+
+
+  ── 5 ───────────────────────────────────────
+  N                   6
+  Mean                148.120
+  SD                  1.912
+
+
+  ── 6 ───────────────────────────────────────
+  N                   6
+  Mean                98.693
+  SD                  1.476
+
+
+  ── 7 ───────────────────────────────────────
+  N                   6
+  Mean                110.862
+  SD                  1.554
+
+
+  ── 8 ───────────────────────────────────────
+  N                   6
+  Mean                124.028
+  SD                  2.069
+
+
+  ── 9 ───────────────────────────────────────
+  N                   6
+  Mean                136.298
+  SD                  1.127
+
+
+  ── 10 ──────────────────────────────────────
+  N                   6
+  Mean                149.435
+  SD                  1.058
+
+
+  ── 1 ───────────────────────────────────────
+  N                   6
+  Mean                101.568
+  SD                  1.573
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+NOTE: This figure was added to a page that already held one, so its legend is placed where it falls and the y-axis is not widened for it. Set Legend placement to Right of plot or Below plot to keep the plot clear.
+PANEL Bottom panel type=13 origin=0,4.5 erase=0 placement=1 passes=1
+UNION 0 6.0000 0 8.5000
+SAVED /home/claude/EMLPraatTools/harness/compose/out/stacked.png
