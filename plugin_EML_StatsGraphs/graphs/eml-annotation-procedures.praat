@@ -3685,7 +3685,7 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
             @emlWizardExplainEffectG: emlCohenD.g
         endif
         @emlReportLine: "Hedges' g", emlCohenD.g, 3
-        @emlReportLineString: "Magnitude", emlFormatEffectLabel.label$
+        @emlReportLineString: "Magnitude", emlFormatEffectLabel.labelPhrase$
         # Named fields, and an absent value writes no row.
         @emlCSVSetTable: .tableName$
         @emlCSVTermType: "contrast"
@@ -3775,7 +3775,31 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
             @emlWizardExplainEffectR: emlRankBiserialR.r
         endif
         @emlReportLine: "Rank-biserial r", emlRankBiserialR.r, 3
-        @emlReportLineString: "Magnitude", emlFormatEffectLabel.label$
+        @emlReportLineString: "Magnitude", emlFormatEffectLabel.labelPhrase$
+
+        ; |r| = 1 IS A CEILING, NOT A RECORD. Rank-biserial r is the
+        ; proportion of cross-group pairs favouring one group minus the
+        ; proportion favouring the other, so it reaches 1 exactly when every
+        ; observation in one group outranks every observation in the other.
+        ; That is complete separation and it is the largest value the
+        ; statistic can take -- which means it cannot distinguish a large
+        ; difference from an enormous one, and it says nothing on its own
+        ; about how much the groups differ BY. It is also cheap at small n:
+        ; three against three separate completely by chance about once in ten
+        ; runs. Called out because "1.000" beside "large" reads as the
+        ; strongest possible finding when it is a boundary being touched.
+        ; Praat does not short-circuit `and`, so the guard is nested.
+        if emlRankBiserialR.r <> undefined
+            if abs (emlRankBiserialR.r) >= 0.999999
+                @emlReportNote: "Note: r = 1 means the two groups do not "
+                ... + "overlap at all -- every value in one group outranks "
+                ... + "every value in the other. This is the largest value "
+                ... + "the statistic can take, so it marks complete "
+                ... + "separation rather than measuring how far apart the "
+                ... + "groups are, and it occurs readily in small samples. "
+                ... + "Read it beside the group medians and n."
+            endif
+        endif
         if emlMannWhitneyU.z <> undefined
             .mwuDf = emlMannWhitneyU.z
         else
@@ -4222,9 +4246,12 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
         @emlReportSection: "If the spreads are unequal"
         @emlReportNote: "Welch's F does not pool the within-group spread, "
         ... + "and Games-Howell uses each pair's own spread instead of one "
-        ... + "shared error term. Where these agree with the block above, "
-        ... + "the unequal spread did not change the conclusion. Where they "
-        ... + "disagree, prefer these -- that is what they are for."
+        ... + "shared error term. Where these land on the same side of the "
+        ... + "5% threshold as the block above, the unequal spread did not "
+        ... + "change the thresholded decision in this sample -- which is "
+        ... + "not the same as the two methods agreeing, and says nothing "
+        ... + "about the next sample. Where they disagree, prefer these; "
+        ... + "that is what they are for."
 
         @emlWelchAnova: .tableId, .dataCol$, .groupCol$
         if emlWelchAnova.error$ <> ""
@@ -4361,10 +4388,17 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
     @emlReportSection: "Omnibus Test"
     if emlShowExplanations
         appendInfoLine: "  Why: Nonparametric comparison of three or "
-        ... + "more groups — no normality assumption needed."
+        ... + "more groups. Every observation is ranked in one pooled "
+        ... + "ranking and the groups' mean ranks are compared, so no "
+        ... + "normal distribution is assumed. Observations must still be "
+        ... + "independent, and reading the result as a difference in "
+        ... + "MEDIANS additionally requires the groups to have similar "
+        ... + "distribution shapes."
     endif
     if emlShowExplanations
-        emlWizardExplain$ = "Test statistic: measures rank dispersion across groups (chi-squared distributed)"
+        emlWizardExplain$ = "Test statistic: how far the groups' mean "
+        ... + "ranks sit from the overall mean rank. Its p comes from a "
+        ... + "chi-squared approximation, which improves as the groups grow"
     endif
     @emlReportLine: "H", emlKruskalWallis.h, 4
     if emlShowExplanations
@@ -4379,11 +4413,11 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
     ; Reachable only from the CSV, and the label was printed twice.
     @emlReportPWithExact: "p", emlKruskalWallis.p
     if emlShowExplanations
-        @emlWizardExplainEffectEta2: emlKruskalWallis.epsilonSq
+        @emlWizardExplainEffectEpsilon2: emlKruskalWallis.epsilonSq
     endif
     @emlReportLine: "Epsilon-squared", emlKruskalWallis.epsilonSq, 4
     @emlFormatEffectLabel: emlKruskalWallis.epsilonSq, "eta_squared"
-    @emlReportLineString: "Effect magnitude", emlFormatEffectLabel.label$
+    @emlReportLineString: "Effect magnitude", emlFormatEffectLabel.labelPhrase$
 
     @emlCSVSetTable: .tableName$
     @emlCSVTermType: "omnibus"
@@ -4843,6 +4877,21 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
         ... + " + " + .fx2$
         emlWizardExplain$ = .proseEqn$
         appendInfoLine: "  " + emlWizardExplain$
+
+        ; THE SLOPE IN WORDS, stated as a comparison BETWEEN cases rather
+        ; than as a change WITHIN one. Per unit of the predictor, the fitted
+        ; line puts predicted response this much higher or lower; it does not
+        ; forecast what moving a case along X would do to it.
+        @eml_fixed: abs (emlLinearRegression.slope), 4
+        .slopeAbs$ = eml_fixed.result$
+        if emlLinearRegression.slope >= 0
+            .slopeDir$ = "higher"
+        else
+            .slopeDir$ = "lower"
+        endif
+        appendInfoLine: "  For each 1-unit increase in " + .displayPred$
+        ... + ", predicted " + .displayDep$ + " is "
+        ... + .slopeAbs$ + " units " + .slopeDir$ + "."
     endif
     if emlShowExplanations
         @emlWizardExplainCorrelation: emlLinearRegression.r
@@ -4870,7 +4919,9 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     .dfLabel$ = "F(" + string$ (emlLinearRegression.dfReg)
     ... + "," + string$ (emlLinearRegression.dfRes) + ")"
     if emlShowExplanations
-        emlWizardExplain$ = "Overall model significance — ratio of explained to unexplained variance"
+        emlWizardExplain$ = "Ratio of the mean square accounted for by the "
+        ... + "model to the mean square left over. With no real association, "
+        ... + "this ratio tends to be near 1"
     endif
     @emlReportLine: .dfLabel$, emlLinearRegression.fStat, 4
     if emlShowExplanations
@@ -4957,17 +5008,23 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
 
     # Direction and magnitude
     @emlReportBlank
+    ; ASSOCIATION, NOT CHANGE. A slope fitted to observational data says how
+    ; predicted Y DIFFERS between cases whose X differs; it does not say what
+    ; happens to a case when its X is changed. "Y increases as X increases"
+    ; describes a process nobody watched. "Higher X goes with higher Y"
+    ; describes what was measured, and stays true whichever way the causal
+    ; arrow points -- or if it points from somewhere else entirely.
     if emlLinearRegression.slope > 0
         .dir$ = "positive"
-        .verb$ = "increases"
+        .verb$ = "higher"
     else
         .dir$ = "negative"
-        .verb$ = "decreases"
+        .verb$ = "lower"
     endif
     @emlFormatEffectLabel: emlLinearRegression.rSquared, "r_squared"
     appendInfoLine: "  Direction: " + .dir$
-    ... + " (" + .displayDep$ + " " + .verb$
-    ... + " as " + .displayPred$ + " increases)"
+    ... + " (cases with higher " + .displayPred$
+    ... + " tend to have " + .verb$ + " " + .displayDep$ + ")"
     # This printed as "Variance explained   large effect" in the same
     # label/value layout as "R-squared   0.8770", so a Cohen benchmark verdict
     # wore the visual authority of a second computed statistic — and read as a
@@ -4977,12 +5034,12 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     .fx1$ = eml_fixed.result$
     @eml_fixed: 100 * emlLinearRegression.rSquared, 1
     .fx2$ = eml_fixed.result$
-    appendInfoLine: "  Variance explained: R-squared = "
+    appendInfoLine: "  Model fit: R-squared = "
     ... + .fx1$
-    ... + " ("
+    ... + " -- the fitted model accounts for "
     ... + .fx2$
     ... + "% of the variance in " + .displayDep$
-    ... + "), a " + emlFormatEffectLabel.label$
+    ... + " in this sample, a " + emlFormatEffectLabel.label$
     ... + " by Cohen's R-squared benchmarks"
 
     # THE CLEAREST CASE OF SLOT REUSE a wide schema invites: the
@@ -5152,29 +5209,83 @@ procedure emlReportNormalityAnalysis: .tableName$, .dataCol$,
         @emlReportLineString: "Error", emlRunNormalityAnalysis.swError$
     endif
 
+    # ── Recommendation ─────────────────────────────────────────────────────
+    #
+    # THIS SECTION RECOMMENDS; IT DOES NOT CERTIFY. A recommendation can be
+    # declined, and the wording keeps that door open at every branch: a test
+    # is "recommended", never "appropriate", because appropriateness is a
+    # property of the research question and this procedure has only seen a
+    # column of numbers.
+    #
+    # Three things are printed with the recommendation, and each is there to
+    # let a reader disagree with it on the evidence:
+    #
+    #   * the reading it rests on, named -- not just the verdict it produced;
+    #   * BOTH options when the call is close, because a rule with a
+    #     threshold in it produces its least reliable answers next to the
+    #     threshold, and a reader at p = .049 and a reader at p = .051 should
+    #     not be handed opposite conclusions with equal confidence;
+    #   * what was actually examined, which is the marginal distribution of
+    #     one column. Parametric tests assume normality of the model
+    #     RESIDUALS, and that is a different distribution from this one.
+    #
+    # Praat does not short-circuit `and`, so the close-call test is nested.
+    .closeCall = 0
+    if emlRunNormalityAnalysis.swError$ = ""
+        if emlRunNormalityAnalysis.swP >= 0.01
+            if emlRunNormalityAnalysis.swP < 0.10
+                .closeCall = 1
+            endif
+        endif
+    endif
+
     @emlReportBlank
     @emlReportSection: "Recommendation"
     if emlRunNormalityAnalysis.recommendation$ = "parametric"
         if emlRunNormalityAnalysis.largeNOverride = 1
-            appendInfoLine: "  Shapiro-Wilk rejects normality, but with n = "
+            appendInfoLine: "  Shapiro-Wilk rejects normality (p < .05), but"
+            ... + " skewness and kurtosis are"
+            appendInfoLine: "  within the thresholds and n = "
             ... + string$ (emlRunNormalityAnalysis.nValid)
-            ... + " the departure"
-            appendInfoLine: "  is statistically detectable but practically"
-            ... + " negligible"
-            appendInfoLine: "  (skewness and kurtosis within acceptable"
-            ... + " limits)."
-            appendInfoLine: "  → Parametric tests are robust at this sample"
-            ... + " size."
-        else
-            appendInfoLine: "  Normality appears reasonable."
+            ... + ". At this sample size the test"
+            appendInfoLine: "  detects departures too small to unsettle a"
+            ... + " parametric procedure."
             appendInfoLine: "  → Parametric tests (t-test, ANOVA, Pearson r)"
-            ... + " are appropriate."
+            ... + " are recommended."
+            appendInfoLine: "  → Nonparametric tests (Mann-Whitney,"
+            ... + " Kruskal-Wallis, Spearman rho) remain"
+            appendInfoLine: "     a defensible choice, since the test did"
+            ... + " reject."
+        else
+            appendInfoLine: "  Shapiro-Wilk does not reject normality"
+            ... + " (p >= .05), and skewness and"
+            appendInfoLine: "  kurtosis are within the thresholds."
+            appendInfoLine: "  → Parametric tests (t-test, ANOVA, Pearson r)"
+            ... + " are recommended."
+            if .closeCall
+                appendInfoLine: "  → The p is close to the .05 threshold."
+                ... + " Nonparametric tests"
+                appendInfoLine: "     (Mann-Whitney, Kruskal-Wallis, Spearman"
+                ... + " rho) are also defensible."
+            endif
         endif
     else
-        appendInfoLine: "  Evidence against normality."
-        appendInfoLine: "  → Consider nonparametric tests (Mann-Whitney,"
-        ... + " Kruskal-Wallis, Spearman rho)."
+        appendInfoLine: "  The evidence is against normality on the reading"
+        ... + " printed above."
+        appendInfoLine: "  → Nonparametric tests (Mann-Whitney,"
+        ... + " Kruskal-Wallis, Spearman rho) are"
+        appendInfoLine: "     recommended."
+        if .closeCall
+            appendInfoLine: "  → The p is close to the .05 threshold."
+            ... + " Parametric tests are also"
+            appendInfoLine: "     defensible, particularly at larger n."
+        endif
     endif
+    appendInfoLine: "  What was checked: the marginal distribution of this"
+    ... + " column. Parametric"
+    appendInfoLine: "  tests assume normality of the model RESIDUALS, which"
+    ... + " is not the same"
+    appendInfoLine: "  distribution and is not examined here."
 
     # Skewness and kurtosis were being carried in the mean2/sd2 slots
     # while n2 and median2 were zero-as-NA. Each is now its own field.
@@ -5536,14 +5647,24 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     ; caution in @emlRunRepeatedMeasuresAnalysis (eml-analysis.praat, the
     ; `emlRMAnovaTest.warning$` block). Grep the anchor rather than trusting
     ; a line number; they move.
+    ;
+    ; THE DIRECTION IS NOT FIXED, so the caveat does not name one. A marginal
+    ; effect is an average of the simple effects, and an average sits between
+    ; its terms: it is smaller than the largest and larger than the smallest.
+    ; Measured on evidence/csv/dump_demo_twoway.csv, voice type marginally is
+    ; 94.646 - 89.842 = 4.80 dB, while its simple effects are 8.03 dB within
+    ; Singing and 1.58 dB within Speech -- the one marginal number understates
+    ; the first and overstates the second at the same time. Naming a direction
+    ; would be a second claim about the data, and no direction is available to
+    ; claim.
     if emlTwoWayAnova.pAB < 0.05
         @emlReportBlank
-        @emlReportNote: "Caution: the interaction is significant, so the "
-        ... + "two main-effect rows above are averages taken across a "
-        ... + "difference that is itself real. Each factor's effect depends "
-        ... + "on the level of the other, and reporting either main effect "
-        ... + "on its own will understate that. Read the cell means below "
-        ... + "before reading the main effects."
+        @emlReportNote: "Caution: the interaction is significant, so each "
+        ... + "factor's effect depends on the level of the other. The two "
+        ... + "main-effect rows above average over simple effects that "
+        ... + "differ from one another, and such an average can obscure, "
+        ... + "understate or overstate any one of them. Read the cell means "
+        ... + "below before reading the main effects."
     endif
 
     # Effect sizes
@@ -5561,7 +5682,7 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     @emlReportBlank
     @emlReportSection: "Effect Sizes (partial eta-squared)"
     if emlShowExplanations
-        @emlWizardExplainEffectEta2: emlTwoWayAnova.partialEtaSqA
+        @emlWizardExplainEffectPartialEta2: emlTwoWayAnova.partialEtaSqA
     endif
     @eml_fixed: emlTwoWayAnova.partialEtaSqA, 4
     .etaTextA$ = eml_fixed.result$
@@ -5570,7 +5691,7 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     endif
     @emlReportLineString: .displayF1$, .etaTextA$
     if emlShowExplanations
-        @emlWizardExplainEffectEta2: emlTwoWayAnova.partialEtaSqB
+        @emlWizardExplainEffectPartialEta2: emlTwoWayAnova.partialEtaSqB
     endif
     @eml_fixed: emlTwoWayAnova.partialEtaSqB, 4
     .etaTextB$ = eml_fixed.result$
@@ -5579,7 +5700,7 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     endif
     @emlReportLineString: .displayF2$, .etaTextB$
     if emlShowExplanations
-        @emlWizardExplainEffectEta2: emlTwoWayAnova.partialEtaSqAB
+        @emlWizardExplainEffectPartialEta2: emlTwoWayAnova.partialEtaSqAB
     endif
     @eml_fixed: emlTwoWayAnova.partialEtaSqAB, 4
     .etaTextAB$ = eml_fixed.result$
