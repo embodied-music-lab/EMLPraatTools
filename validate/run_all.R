@@ -22,6 +22,72 @@ Sys.setenv(EML_VALIDATE_DIR = HERE)
 source(file.path(HERE, "helpers.R"))
 EML_SUITE <- TRUE
 
+# ============================================================================
+# A RUN THAT CHECKED NOTHING MUST NOT LOOK LIKE A RUN THAT PASSED
+# ============================================================================
+# ON 18 AUGUST 2026 THIS FILE RAN ZERO VALIDATORS, TWICE, AND NOTHING SAID SO.
+# A trailing comma was left in the list below -- the last entry followed by a
+# comma, with the closing bracket under it. R PARSES THAT. It refuses only when
+# it evaluates:
+#
+#     Error in c("v01_pairwise_welch_bonferroni.R", ... :  argument 91 is empty
+#
+# so the list never came into existence, not one validator was sourced, and the
+# run ended before the first check. Two commits went out reported green.
+#
+# THE DEFECT WAS NOT THE COMMA. It was that nothing else about the run looked
+# any different. Measured on this machine: `Rscript validate/run_all.R` does
+# exit 1 on that error. But the command README.md gives a reader is
+#
+#     Rscript validate/run_all.R | tee /tmp/suite.log
+#
+# and a shell pipeline reports the LAST command's status, so tee's 0 is what
+# anybody sees unless `set -o pipefail` was said first (the release workflow
+# says it; a person at a terminal does not). What is left to read is the log --
+# and the log of a run that did nothing differs from the log of a clean run
+# only by ABSENCE. Neither has a FAIL line in it. Silence and success are the
+# same shape, and the eye reaches for the same conclusion.
+#
+# So the three questions below are asked out loud, and any one of them
+# answered wrongly ends the run with a banner rather than with nothing:
+# was every script in the list real and sourced, did R get through the run at
+# all, and did the run record a plausible number of checks.
+
+# THE BANNER, AND WHY ITS STATUS IS 2. A red check exits 1; this exits 2, so a
+# caller that cares can tell "the suite ran and something failed" from "the
+# suite did not run". Every caller that only asks about zero is served either
+# way. The text is what matters more than the number: it is written to be
+# unmissable at the foot of a log that otherwise ends in silence.
+eml_abort <- function(headline, detail = character(0)) {
+    bar <- strrep("!", 78)
+    cat("\n", bar, "\n", sep = "")
+    cat("!! THE VALIDATION SUITE DID NOT RUN TO COMPLETION -- THIS IS NOT A PASS\n")
+    cat(bar, "\n", sep = "")
+    cat(headline, "\n", sep = "")
+    for (d in detail) cat("   ", d, "\n", sep = "")
+    cat("\nNo verdict was reached. Treat this run as having checked NOTHING,\n")
+    cat("whatever the exit status of a pipeline you ran it through.\n")
+    cat(bar, "\n", sep = "")
+    flush(stdout())
+    quit(status = 2, runLast = FALSE)
+}
+
+# QUESTION TWO, INSTALLED FIRST, BECAUSE IT IS THE ONE THAT CATCHES THE LIST
+# ITSELF. An empty argument is refused while `scripts <- c(...)` is being
+# evaluated, which is before any code below it exists to inspect anything. The
+# only thing that can speak at that moment is an error handler already in
+# place. It covers the general case too: a validator that dies mid-run leaves
+# every validator after it unrun, and that is also not a pass.
+options(error = function() {
+    msg <- unlist(strsplit(sub("[[:space:]]+$", "", geterrmessage()), "\n",
+                           fixed = TRUE))
+    eml_abort("R raised an error and the run stopped where it stood:",
+              c(msg, "",
+                "A trailing comma in the script list below arrives here, as",
+                "\"argument N is empty\" -- the list is then never built and no",
+                "validator is sourced."))
+})
+
 scripts <- c(
     "v01_pairwise_welch_bonferroni.R",
     "v02_pairwise_holm_differential.R",
@@ -1017,14 +1083,78 @@ scripts <- c(
                                  # Drives Praat live.
 )
 
+# ---------------------------------------------------------------------------
+# QUESTION ONE: IS EVERY ENTRY IN THAT LIST A REAL SCRIPT?
+# ---------------------------------------------------------------------------
+# The comma that started this is refused by the handler above, but it is one
+# member of a family and the loudest member at that. The quiet ones survive
+# evaluation: c("a.R", "", "b.R") is a perfectly good character vector, a NULL
+# entry disappears without trace and shortens the list by one, and a renamed
+# file leaves an entry pointing at nothing. `source()` on a missing file does
+# error -- but on a file that has been emptied it does not, and a validator
+# reduced to nothing contributes no checks and no complaint.
+#
+# So the list is read as data before a line of it is run, and the whole list is
+# reported at once rather than one fault per run.
+faults <- character(0)
+if (!is.character(scripts)) {
+    faults <- c(faults, sprintf("the list is %s, not a character vector",
+                                class(scripts)[1]))
+} else {
+    if (!length(scripts)) faults <- c(faults, "the list is empty")
+    na <- which(is.na(scripts))
+    if (length(na))
+        faults <- c(faults, sprintf("entry %d is NA", na))
+    blank <- which(!is.na(scripts) & !nzchar(trimws(scripts)))
+    if (length(blank))
+        faults <- c(faults, sprintf(
+            "entry %d is empty -- a stray comma or a deleted name", blank))
+    dupe <- unique(scripts[duplicated(scripts)])
+    if (length(dupe))
+        faults <- c(faults, sprintf("%s is listed more than once", dupe))
+    real <- scripts[!is.na(scripts) & nzchar(trimws(scripts))]
+    paths <- file.path(HERE, real)
+    gone <- real[!file.exists(paths)]
+    if (length(gone))
+        faults <- c(faults, sprintf("%s is not in %s", gone, HERE))
+    here <- real[file.exists(paths)]
+    sz <- file.size(file.path(HERE, here))
+    if (any(sz == 0))
+        faults <- c(faults, sprintf("%s is an empty file", here[sz == 0]))
+}
+if (length(faults))
+    eml_abort(sprintf("the script list is not a list of scripts (%d fault(s)):",
+                      length(faults)),
+              faults)
+
 cat("EML Stats & Graphs validation suite\n")
 cat("R ", R.version$major, ".", R.version$minor, "  ",
     format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n", sep = "")
+cat(length(scripts), " scripts to source from ", HERE, "\n", sep = "")
 
-for (s in scripts) {
+# COUNTED, NOT ASSUMED. The loop cannot silently skip an iteration today, and
+# that is exactly the kind of thing a later rewrite -- a tryCatch put round the
+# source() so "one bad script does not stop the suite", say -- changes without
+# meaning to. The counter costs one integer and holds the promise open.
+n_sourced <- 0L
+# AND WHAT EACH ONE PUT IN THE ACCUMULATOR, read off EML_RESULTS itself rather
+# than inferred from the id a script writes into its rows. The two are not the
+# same thing: v07_redpath_degenerate_inputs.R records under R1..R7, so a guess
+# that a file named v07 files its checks under "v07" reports it silent when it
+# is the opposite. Row counts before and after are exact and need to know
+# nothing about naming.
+contributed <- integer(length(scripts))
+for (i in seq_along(scripts)) {
+    s <- scripts[i]
     cat("\n>> ", s, "\n", sep = "")
+    before <- length(EML_RESULTS$rows)
     source(file.path(HERE, s), local = new.env(parent = globalenv()))
+    contributed[i] <- length(EML_RESULTS$rows) - before
+    n_sourced <- n_sourced + 1L
 }
+if (n_sourced != length(scripts))
+    eml_abort("not every script in the list was sourced:",
+              sprintf("%d of %d ran", n_sourced, length(scripts)))
 
 # THE COVERAGE PASS, LAST AND ONLY HERE. coverage.R compares what every
 # validator above CLAIMED, recorded through eml_claim() as each one ran,
@@ -1060,5 +1190,56 @@ if (!is.null(df)) {
     }
     print(agg, row.names = FALSE)
 }
+
+# ---------------------------------------------------------------------------
+# QUESTION THREE: DID THE RUN RECORD A PLAUSIBLE NUMBER OF CHECKS?
+# ---------------------------------------------------------------------------
+# THE FLOOR IS THE LENGTH OF THE LIST, AND IT IS DERIVED RATHER THAN TYPED.
+#
+# WHAT THIS GUARD IS FOR: catastrophic non-execution. The list never built, the
+# accumulator was reset between scripts, a refactor left every validator
+# recording into an environment nobody reads. It is NOT a coverage measure and
+# must not be allowed to become one, because a number that tracks the real
+# total goes red on the next commit that adds a check, and a number people edit
+# on every commit is a number nobody reads.
+#
+# A LITERAL IS THE WRONG SHAPE, and this repository has the receipts. v79 held
+# a floor of "at least 100 include lines in the installed tree"; the artefact
+# legitimately fell to 42 when dev/ joined RELEASE_EXCLUDE.tsv, and until that
+# day the number had never once been the thing that failed. A hardcoded total
+# here would be the same object, checked more often.
+#
+# A FLOOR OF 1 IS ALSO THE WRONG SHAPE. One validator running and ninety not is
+# the disaster this block exists for, and it clears a floor of 1 comfortably.
+#
+# ONE CHECK PER SOURCED SCRIPT is the weakest statement a broken run still
+# cannot satisfy. On the run this line was written against the ratio was 13,637
+# checks over 91 sourced files -- 150 to 1 -- so the floor sits two orders of
+# magnitude under the truth and moves by itself: add a validator, the floor
+# rises by one, and nobody edits anything.
+#
+# IT IS AN AGGREGATE ON PURPOSE, because a rule of "every script contributes a
+# check" is false on a clean machine. v19_nist_strd.R contributes nothing until
+# the NIST .dat files have been ingested -- they are not redistributable -- and
+# prints a loud SKIP instead. Those scripts are NAMED below rather than counted,
+# so a reader sees which ones were quiet without the suite refusing to pass.
+n_checks <- if (is.null(df)) 0L else sum(df$expect != "attested")
+floor_checks <- n_sourced
+
+quiet <- scripts[contributed == 0L]
+# Printed only when SOME script was quiet. When every one of them is, the list
+# is the whole suite and the banner below says it better.
+if (length(quiet) && length(quiet) < length(scripts))
+    cat("\nrecorded nothing: ", paste(quiet, collapse = ", "), "\n", sep = "")
+
+if (n_checks < floor_checks)
+    eml_abort("the run recorded too few checks to have happened:",
+              c(sprintf("%d check(s) from %d sourced script(s)",
+                        n_checks, n_sourced),
+                sprintf("the floor is one check per sourced script, %d here",
+                        floor_checks),
+                "",
+                "This is not a coverage judgement. A number this low means the",
+                "checks did not run or were not recorded at all."))
 
 eml_exit()

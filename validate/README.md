@@ -35,6 +35,18 @@ and prints which mode it ran in), and the suite itself makes no network call.
 That is the whole thing. If it prints that, every number the plugin printed in
 a committed run agrees with what R computes from the same input file.
 
+**A run that did not happen says so, in a banner, and exits 2.** Before it
+sources anything the runner reads its own script list as data — no empty
+entry, no duplicate, no name that is not a file, no file that is empty — and
+after the run it requires at least one recorded check per script it sourced.
+Any of those unmet, or an R error anywhere in the run, ends the output with
+`THE VALIDATION SUITE DID NOT RUN TO COMPLETION`. The exit status is 2 rather
+than 1 so that "the suite ran and something failed" and "the suite did not
+run" are different answers; the banner matters more than the status, because
+`Rscript validate/run_all.R | tee suite.log` reports `tee`'s status and not
+R's, and a log of a run that checked nothing is otherwise indistinguishable
+from a clean one — neither has a FAIL line in it.
+
 Nothing on this page tells you how many checks that is, and the omission is
 deliberate. The suite prints its own count, and that count rises every time a
 validator is added — so a figure copied into a paragraph is a measurement of a
