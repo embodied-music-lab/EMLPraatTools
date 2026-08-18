@@ -974,7 +974,47 @@ scripts <- c(
     # replay: the run that was edited must land on an independently drawn
     # reference and the run that was not must be byte-identical, which is the
     # whole promise of naming by run rather than by value.
-    "v87_run_scoped_block.R"
+    "v87_run_scoped_block.R",
+
+    # ------------------------------------------------------------------
+    # The survey core statistics. Four kernels a voice researcher needs
+    # before a questionnaire can be reported at all, each pinned against
+    # an oracle computed in base R from the same numbers -- no package is
+    # required to run any of these.
+    # ------------------------------------------------------------------
+    "v90_lane_alpha_oracle.R",   # Cronbach's alpha against a base-R oracle:
+                                 # covariance-matrix alpha, the Feldt
+                                 # confidence interval through qf, and the
+                                 # alpha-if-item-deleted drops. Where the
+                                 # psych package happens to be installed it
+                                 # cross-checks the oracle itself at 1e-12
+                                 # and says which mode it ran in, the same
+                                 # arrangement v17 has with broom. Drives
+                                 # Praat live; carries its own seeded-defect
+                                 # negative control.
+    "v91_lane_chisq_oracle.R",   # chi-square independence and Cramer's V
+                                 # against chisq.test on both correction
+                                 # settings, the warning behaviour, and the
+                                 # refusal on a zero margin. Drives Praat
+                                 # live; negative control inside.
+    "v92_lane_wilson_oracle.R",  # the Wilson interval against
+                                 # prop.test(correct = FALSE), including the
+                                 # endpoints at no successes and at all
+                                 # successes, where the ordinary formula is
+                                 # at its worst, plus two published pins.
+                                 # Drives Praat live; negative control inside.
+    "v93_lane_alpha_influence_oracle.R",
+                                 # the respondent-influence jackknife against
+                                 # a base-R leave-one-out oracle: every
+                                 # dropped-respondent alpha and its change,
+                                 # the equality between the full-sample alpha
+                                 # here and the one the alpha kernel reports,
+                                 # and -- the part that matters to whoever
+                                 # reads the output -- that a flagged
+                                 # respondent is named by their row in the
+                                 # ORIGINAL table, not by their position
+                                 # after incomplete rows were dropped.
+                                 # Drives Praat live.
 )
 
 cat("EML Stats & Graphs validation suite\n")
