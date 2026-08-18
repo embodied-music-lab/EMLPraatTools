@@ -973,6 +973,24 @@ procedure emlFormatEffectLabel: .effectValue, .effectType$
     else
         .label$ = "negligible effect"
     endif
+
+    # TWO STRINGS, TWO JOBS. .label$ is the EXPORT token -- it is written to
+    # the effect_label column of the CSV, where a stable short value is what a
+    # downstream script can group and filter on, and where a clause of English
+    # attribution would be noise in a data cell.
+    #
+    # .labelPhrase$ is for a REPORT LINE that has to stand on its own. Read
+    # aloud, "large effect" sounds like a measurement; it is a bin. The
+    # boundaries are Cohen's rules of thumb for the behavioural sciences, they
+    # differ by effect type (see the thresholds above), and a field with its
+    # own effect-size norms may put the same number in a different bin. Naming
+    # the source is what keeps the bin from being read as a finding.
+    if .recognized = 0
+        .labelPhrase$ = ""
+    else
+        .labelPhrase$ = replace$ (.label$, " effect", "", 0)
+        ... + " by Cohen's convention"
+    endif
 endproc
 
 
@@ -3498,15 +3516,41 @@ endproc
 # ============================================================================
 
 procedure emlWizardExplainP: .p
-    # Generate p-value interpretation anchored to actual value
+    # Generate p-value interpretation anchored to actual value.
+    #
+    # A p-value is a CONDITIONAL frequency, and the conditional is the whole
+    # of it: it is computed by assuming there is no real effect and asking how
+    # often data at least this extreme would then arise. It is not the
+    # probability that the result arose by chance, and it is not the
+    # probability that the effect is absent -- both of those run the
+    # conditional backwards, and neither is a quantity this test computes.
+    # So every arm below states the assumption before it states the frequency.
+    #
+    # "No real effect" rather than "no difference" because this one procedure
+    # glosses the p of a t test, an ANOVA F, a Kruskal-Wallis H, a Pearson r
+    # and a regression slope. There is no difference between two groups in a
+    # correlation, and the sentence has to be true at every site that calls it.
     if .p < 0.001
-        emlWizardExplain$ = "Statistically significant: <0.1% probability due to chance"
+        emlWizardExplain$ = "Statistically significant: if there were truly "
+        ... + "no effect, results at least this extreme would occur less "
+        ... + "than 0.1% of the time"
     elsif .p < 0.01
-        emlWizardExplain$ = "Statistically significant: <1% probability due to chance"
+        emlWizardExplain$ = "Statistically significant: if there were truly "
+        ... + "no effect, results at least this extreme would occur less "
+        ... + "than 1% of the time"
     elsif .p < 0.05
-        emlWizardExplain$ = "Statistically significant at the 5% level"
+        emlWizardExplain$ = "Statistically significant at the 5% level: if "
+        ... + "there were truly no effect, results at least this extreme "
+        ... + "would occur less than 5% of the time"
     elsif .p < 0.10
-        emlWizardExplain$ = "Approaching significance (p < .10) — interpret with caution"
+        # This band is a NULL result, and it is reported as one. A p of .08
+        # is not travelling toward .05: the test either cleared the stated
+        # threshold or it did not, and describing an outcome as being on its
+        # way somewhere invites a reader to report it as a positive finding
+        # held up by sample size. The band is named so the reader can see
+        # which side of the line it fell, and nothing more is implied.
+        emlWizardExplain$ = "Not statistically significant at the 5% level "
+        ... + "(p between .05 and .10)"
     else
         emlWizardExplain$ = "Not statistically significant at the 5% level"
     endif
@@ -3525,8 +3569,9 @@ procedure emlWizardExplainEffectD: .d
         .mag$ = "large"
     endif
     @eml_fixed: .absD, 1
-    emlWizardExplain$ = "Effect size: " + .mag$ + " (>0.8 = large). Groups differ by "
-    ... + eml_fixed.result$ + " pooled standard deviations"
+    emlWizardExplain$ = "Effect size: " + .mag$
+    ... + " by Cohen's convention (d >= 0.8 = large). The group means differ "
+    ... + "by " + eml_fixed.result$ + " pooled standard deviations"
 endproc
 
 procedure emlWizardExplainEffectG: .g
@@ -3541,8 +3586,8 @@ procedure emlWizardExplainEffectG: .g
     else
         .mag$ = "large"
     endif
-    emlWizardExplain$ = "Bias-corrected d (better for small samples). "
-    ... + .mag$ + " effect"
+    emlWizardExplain$ = "Cohen's d with the small-sample bias removed; "
+    ... + .mag$ + " by Cohen's convention (g >= 0.8 = large)"
 endproc
 
 procedure emlWizardExplainEffectR: .r
@@ -3557,24 +3602,101 @@ procedure emlWizardExplainEffectR: .r
     else
         .mag$ = "large"
     endif
-    emlWizardExplain$ = "Effect size: " + .mag$ + " (>0.5 = large). Rank-biserial correlation"
+    emlWizardExplain$ = "Effect size: " + .mag$
+    ... + " by Cohen's convention (|r| >= 0.5 = large). Rank-biserial r: the "
+    ... + "net proportion of cross-group pairs favouring one group"
 endproc
 
+# ────────────────────────────────────────────────────────────────────────────
+# THREE STATISTICS, THREE SENTENCES.
+#
+# Eta-squared, PARTIAL eta-squared and epsilon-squared share the 0.01 / 0.06 /
+# 0.14 benchmarks and share nothing else. What separates them is the
+# DENOMINATOR, and the denominator is what a "% of variance" sentence is
+# about, so each gets its own procedure and its own sentence.
+#
+#   eta-squared          SS_effect / SS_total
+#                        The denominator is the whole variance. A share of the
+#                        whole is what this is, and the sentence may say so.
+#
+#   partial eta-squared  SS_effect / (SS_effect + SS_error)
+#                        Every OTHER effect is out of the denominator, so each
+#                        effect in a factorial table is a share of a different
+#                        quantity. On a two-way table the three values are
+#                        free to sum past 100% -- 44 + 71 + 26 = 141 is an
+#                        ordinary result, not a miscomputation -- because they
+#                        were never shares of one total. The sentence has to
+#                        carry that, on every line, or the arithmetic reads as
+#                        an error.
+#
+#   epsilon-squared      H / (n - 1)
+#                        H is computed from RANKS, so the variance this is a
+#                        share of is variance among ranks, not among the
+#                        measured milliseconds or decibels. Naming the scale
+#                        is the point.
+#
+# The magnitude word is attributed -- "by Cohen's convention" -- because
+# small/medium/large are a rule of thumb for the behavioural sciences, not a
+# property of the data.
+# ────────────────────────────────────────────────────────────────────────────
+
 procedure emlWizardExplainEffectEta2: .eta2
-    # Eta-squared interpretation
-    if .eta2 < 0.01
+    # ETA-SQUARED, one-way: SS_effect / SS_total. The denominator IS the whole
+    # variance, so a share-of-the-whole sentence is true here and only here.
+    @emlCohenMagnitudeEta2: .eta2
+    .pct = .eta2 * 100
+    @eml_fixed: .pct, 0
+    emlWizardExplain$ = "Effect size: " + emlCohenMagnitudeEta2.mag$
+    ... + " by Cohen's convention (eta-squared >= 0.14 = large). Group "
+    ... + "membership accounts for " + eml_fixed.result$
+    ... + "% of the total variance"
+endproc
+
+procedure emlWizardExplainEffectPartialEta2: .peta2
+    # PARTIAL ETA-SQUARED, factorial: SS_effect / (SS_effect + SS_error). The
+    # other effects are OUT of the denominator, so this is a share of what is
+    # left after they are removed, not a share of the total -- and the three
+    # values in a two-way table are shares of three different quantities. The
+    # sentence says so on every line, because a reader who reads only one line
+    # must not be able to take it for a share of one whole.
+    @emlCohenMagnitudeEta2: .peta2
+    .pct = .peta2 * 100
+    @eml_fixed: .pct, 0
+    emlWizardExplain$ = "Effect size: " + emlCohenMagnitudeEta2.mag$
+    ... + " by Cohen's convention (partial eta-squared >= 0.14 = large). "
+    ... + "Accounts for " + eml_fixed.result$
+    ... + "% of the variance left once the other effects are removed -- each "
+    ... + "effect has its own denominator, so these are not shares of one "
+    ... + "total and do not sum to 100%"
+endproc
+
+procedure emlWizardExplainEffectEpsilon2: .eps2
+    # EPSILON-SQUARED, Kruskal-Wallis: H / (n - 1). H is computed from ranks,
+    # so the variance this is a share of is variance among the RANKS. Naming
+    # the scale is the whole point -- it is what stops the number being read
+    # as a share of the variance in the measured values.
+    @emlCohenMagnitudeEta2: .eps2
+    .pct = .eps2 * 100
+    @eml_fixed: .pct, 0
+    emlWizardExplain$ = "Effect size: " + emlCohenMagnitudeEta2.mag$
+    ... + " by Cohen's convention (epsilon-squared >= 0.14 = large). Group "
+    ... + "membership accounts for " + eml_fixed.result$
+    ... + "% of the variance in the RANKS, which is not the variance in the "
+    ... + "measured values"
+endproc
+
+procedure emlCohenMagnitudeEta2: .value
+    # The 0.01 / 0.06 / 0.14 benchmarks, in one place, for the three
+    # procedures above. They are Cohen's, and every caller says so.
+    if .value < 0.01
         .mag$ = "negligible"
-    elsif .eta2 < 0.06
+    elsif .value < 0.06
         .mag$ = "small"
-    elsif .eta2 < 0.14
+    elsif .value < 0.14
         .mag$ = "medium"
     else
         .mag$ = "large"
     endif
-    .pct = .eta2 * 100
-    @eml_fixed: .pct, 0
-    emlWizardExplain$ = "Effect size: " + .mag$ + " (>0.14 = large). "
-    ... + eml_fixed.result$ + "% of variance explained by group membership"
 endproc
 
 procedure emlWizardExplainCorrelation: .r
@@ -3600,26 +3722,41 @@ procedure emlWizardExplainCorrelation: .r
 endproc
 
 procedure emlWizardExplainR2: .r2
-    # R-squared interpretation
+    # "ACCOUNTS FOR", NOT "EXPLAINS". R-squared is the share of the variance
+    # in Y that the fitted line reproduces IN THIS SAMPLE. It is a measure of
+    # fit, not of explanation: the same number arises whether X drives Y, Y
+    # drives X, or a third variable drives both, and nothing in an ordinary
+    # least-squares fit can tell those apart.
     .pct = .r2 * 100
     @eml_fixed: .pct, 0
-    emlWizardExplain$ = eml_fixed.result$
-    ... + "% of variance in Y is explained by X"
+    emlWizardExplain$ = "The fitted model accounts for " + eml_fixed.result$
+    ... + "% of the variance in Y in this sample"
 endproc
 
 procedure emlWizardExplainT: .t
-    # t-statistic interpretation (signal-to-noise)
+    # t IS A DISTANCE IN STANDARD ERRORS, and that is all it is: the observed
+    # difference divided by the standard error of that difference. It is not a
+    # multiple of some quantity of noise that was expected -- nothing here
+    # forms an expectation and then compares against it. Stated as the
+    # measurement it is, with the unit named.
     .absT = abs (.t)
     @eml_fixed: .absT, 1
-    emlWizardExplain$ = "Signal-to-noise: " + eml_fixed.result$
-    ... + "x larger than expected from sampling noise"
+    emlWizardExplain$ = "The observed difference is " + eml_fixed.result$
+    ... + " standard errors from zero"
 endproc
 
 procedure emlWizardExplainF: .f
-    # F-statistic interpretation
+    # F IS A RATIO OF MEAN SQUARES -- between-group over within-group -- and
+    # the second sentence gives the reader the one landmark that makes the
+    # first one legible. Both mean squares estimate the same error variance
+    # when no effect is present, so their ratio then sits around 1. That is a
+    # statement about what this statistic is compatible with, not a count of
+    # how many times more something happened than chance would allow: F has no
+    # such reading, and a multiplier phrasing invites one.
     @eml_fixed: .f, 1
-    emlWizardExplain$ = "Ratio of between-group to within-group variance: groups differ "
-    ... + eml_fixed.result$ + "x more than expected by chance"
+    emlWizardExplain$ = "Ratio of mean squares: the between-group mean square "
+    ... + "is " + eml_fixed.result$ + " times the within-group mean square. "
+    ... + "With no real effect, this ratio tends to be near 1"
 endproc
 
 procedure emlWizardExplainDfBetween: .df, .nGroups
