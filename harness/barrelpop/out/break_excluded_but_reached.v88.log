@@ -1,0 +1,20 @@
+
+==============================================================================
+v88 barrel population: every module accounted for
+==============================================================================
+PASS  v88     setup.praat is where the module table lives     computed=NA  expected TRUE
+PASS  v88     setup.praat's module table has rows in it (13)  computed=NA  expected TRUE
+PASS  v88     and emlSetupNModules is the number of rows, not a typed number  reported=13  computed=13  (match, tol 0)
+PASS  v88     every row of the table names a module exactly once  computed=NA  expected TRUE
+PASS  v88     setup.praat carries the not-in-barrel rows (5)  computed=NA  expected TRUE
+PASS  v88     no module is excluded twice                     computed=NA  expected TRUE
+PASS  v88     every not-in-barrel row carries a reason        computed=NA  expected TRUE
+PASS  v88     the module folders hold files to account for (18 in stats, graphs)  computed=NA  expected TRUE
+PASS  v88     every module under stats/ and graphs/ is either in the barrel or excluded with a reason  computed=NA  expected TRUE
+PASS  v88     every module the barrel names is a file on disk  computed=NA  expected TRUE
+PASS  v88     every excluded module is a file on disk         computed=NA  expected TRUE
+PASS  v88     no module is in the barrel and excluded from it at once  computed=NA  expected TRUE
+PASS  v88     the two lists account for the folder exactly (13 in barrel + 5 excluded)  reported=18  computed=18  (match, tol 0)
+FAIL  v88     no excluded module is pulled in by a barrel module anyway -- reached: stats/eml-lmm.praat  computed=NA  expected TRUE
+------------------------------------------------------------------------------ 
+14 checks, 13 passed, 1 FAILED

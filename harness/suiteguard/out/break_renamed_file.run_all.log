@@ -1,0 +1,10 @@
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! THE VALIDATION SUITE DID NOT RUN TO COMPLETION -- THIS IS NOT A PASS
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+the script list is not a list of scripts (1 fault(s)):
+   v22_homogeneity.R is not in /tmp/suiteguard.12674/renamed_file/validate
+
+No verdict was reached. Treat this run as having checked NOTHING,
+whatever the exit status of a pipeline you ran it through.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

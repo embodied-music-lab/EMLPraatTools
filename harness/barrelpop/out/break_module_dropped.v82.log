@@ -1,0 +1,50 @@
+
+==============================================================================
+v82 generated barrel: the one include line, written at launch
+==============================================================================
+PASS  v82     a Praat at or above the 6.6.30 floor is available to drive  computed=NA  expected TRUE
+PASS  v82     a relative include resolves against the TOP-LEVEL script's folder  computed=NA  expected TRUE
+PASS  v82     the shipped relative barrel cannot be included from a user folder  computed=NA  expected TRUE
+PASS  v82     the launch completed                            computed=NA  expected TRUE
+PASS  v82     the launch generated scripts/eml-lib-user.praat  computed=NA  expected TRUE
+PASS  v82     the header says the file is generated           computed=NA  expected TRUE
+PASS  v82     the header says it is generated at launch       computed=NA  expected TRUE
+PASS  v82     the header says hand edits are overwritten      computed=NA  expected TRUE
+PASS  v82     the header quotes the one line a user writes    computed=NA  expected TRUE
+PASS  v82     the generated file is pure ASCII, so it re-reads exactly  computed=NA  expected TRUE
+FAIL  v82     the barrel names every module in the list       computed=NA  expected TRUE
+FAIL  v82     its include list is the canonical module order  computed=NA  expected TRUE
+PASS  v82     every include line names the installed root, home-relative  computed=NA  expected TRUE
+PASS  v82     the one generated line loads the stack from a user's folder  computed=NA  expected TRUE
+PASS  v82     the second launch completed                     computed=NA  expected TRUE
+PASS  v82     an unchanged launch leaves the modification time alone  computed=NA  expected TRUE
+PASS  v82     and the bytes are unchanged                     computed=NA  expected TRUE
+PASS  v82     the modification-time read can tell two writes apart  computed=NA  expected TRUE
+PASS  v82     a stale barrel is rewritten by the next launch  computed=NA  expected TRUE
+PASS  v82     the regenerated barrel exists                   computed=NA  expected TRUE
+PASS  v82     regenerating from nothing reproduces the file on disk, byte for byte  computed=NA  expected TRUE
+PASS  v82     the recorder source is present                  computed=NA  expected TRUE
+PASS  v82     the setup source is present                     computed=NA  expected TRUE
+PASS  v82     eml-record.praat defines @emlPluginRoot exactly once  computed=NA  expected TRUE
+PASS  v82     @emlRecordBegin takes its root from that procedure  computed=NA  expected TRUE
+PASS  v82     the recorder mentions preferencesDirectory$ once, where the join happens (1)  computed=NA  expected TRUE
+PASS  v82     and that one mention is the join, inside @emlPluginRoot  computed=NA  expected TRUE
+PASS  v82     and eml-record.praat carries no relative include of its own  computed=NA  expected TRUE
+PASS  v82     setup.praat includes the module that defines the resolver  computed=NA  expected TRUE
+PASS  v82     setup.praat calls @emlPluginRoot rather than resolving again  computed=NA  expected TRUE
+PASS  v82     setup.praat mentions preferencesDirectory$ nowhere (0)  computed=NA  expected TRUE
+PASS  v82     and takes the file it writes from emlPluginRoot.abs$  computed=NA  expected TRUE
+PASS  v82     setup.praat names the generated barrel          computed=NA  expected TRUE
+PASS  v82     the write is guarded by a comparison against the file on disk  computed=NA  expected TRUE
+PASS  v82     and the write is the only one, inside that guard  computed=NA  expected TRUE
+FAIL  v82     setup.praat's module table is the canonical order  computed=NA  expected TRUE
+PASS  v82     the barrel that travelled names the old folder  computed=NA  expected TRUE
+FAIL  v82     a launch at the new location regenerates every line for it  computed=NA  expected TRUE
+PASS  v82     and the repaired barrel runs from a user's folder  computed=NA  expected TRUE
+PASS  v82     the barrel carried into the 7.x folder still names the 6.x one  computed=NA  expected TRUE
+FAIL  v82     a launch on the 7.x preferences folder regenerates for it  computed=NA  expected TRUE
+PASS  v82     and that barrel runs from a user's folder too   computed=NA  expected TRUE
+PASS  v82     the generated barrel is git-ignored             computed=NA  expected TRUE
+PASS  v82     and no copy of it is tracked                    computed=NA  expected TRUE
+------------------------------------------------------------------------------ 
+44 checks, 39 passed, 5 FAILED

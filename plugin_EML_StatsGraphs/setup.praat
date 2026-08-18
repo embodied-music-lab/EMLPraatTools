@@ -394,6 +394,33 @@ emlSetupModule$ [11] = "graphs/eml-annotation-procedures.praat"
 emlSetupModule$ [12] = "graphs/eml-draw-procedures.praat"
 emlSetupModule$ [13] = "stats/eml-analysis.praat"
 
+# ── THE MODULES THAT ARE NOT IN THE BARREL, AND WHY ────────────────────────
+#
+# THIS LIST AND THE TABLE ABOVE ARE ONE STATEMENT, NOT TWO. Between them they
+# name every .praat file under stats/ and graphs/ exactly once.
+# validate/v88_barrel_population.R reads both out of THIS file, walks those
+# two folders, and goes red if a module is in neither list, in both, or named
+# here and not on disk. That is what makes an omission loud: the table above
+# is a list of what a user's one include line loads, and until something
+# compared it against the folder it draws from, a finished module could sit
+# outside it indefinitely and the only symptom was a "Procedure not found" in
+# somebody else's script.
+#
+# THE REASON IS THE POINT, NOT THE PATH. "Out of the barrel" is a decision,
+# and a decision written down with no reason beside it cannot be told from an
+# oversight by anyone reading it later. v88 requires every row to carry one.
+#
+# ROW FORMAT, and v88 parses it: one module per line, two fields, " -- "
+# between them.
+#
+#     # not-in-barrel: <plugin-relative path> -- <why>
+#
+# not-in-barrel: stats/eml-lmm.praat -- Mixed models. Under no oracle of any kind: 32 procedures, no test, and its menu entry is withdrawn for exactly that reason (see the Mixed models note above). A barrel line would make it loadable from any script on the machine in one include, which is the opposite of withdrawing it.
+# not-in-barrel: stats/eml-linalg.praat -- Linear algebra. Nothing but eml-lmm.praat calls it, so it is out for the same reason and would be weight in every user script that is not using a mixed model.
+# not-in-barrel: stats/eml-optimizer.praat -- Derivative-free optimisers. Nothing but eml-lmm.praat calls them; out with it.
+# not-in-barrel: graphs/eml-graphs-form.praat -- The interactive graphs dialog: the graph-type registry, config persistence and @emlGraphsWorkflow. It raises pause dialogs, so a script that included it from the barrel would be a headless script that can stop for a window nobody is watching. The plugin's own wrappers reach it through scripts/eml-lib-graphs.praat, which sits in scripts/ and can therefore use relative paths.
+# not-in-barrel: graphs/eml-draw-qq.praat -- @emlDrawQQPlot, an adapter that computes Blom quantiles and hands them to @emlDrawScatterPlot. THIS ROW IS NOT A DEPENDENCY RULING: every procedure it calls is in the table above, and the file loads and draws on top of the generated barrel. It is reached today through scripts/eml-check-normality.praat, which includes it directly, and a user's own script has to include it directly too. Putting it in the table changes what one include line loads, and carries the re-drive of every harness that records an include block; that has not been done.
+
 # THE GENERATED TEXT IS PURE ASCII, ON PURPOSE. Praat picks an output encoding
 # from the text it is given — ASCII where it can, UTF-16 where it cannot — so
 # a single em dash in this header would decide the file's encoding, and the

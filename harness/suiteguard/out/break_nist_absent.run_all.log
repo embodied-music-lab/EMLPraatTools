@@ -1,0 +1,596 @@
+# nist_absent -- validate/run_all.R, exit 0
+# 25215 PASS lines removed; every other line of the run is below.
+# Reproduce in full: bash harness/suiteguard/break.sh nist_absent
+
+EML Stats & Graphs validation suite
+R 4.3.3  2026-08-18 12:43:02
+91 scripts to source from /tmp/suiteguard.29985/nist_absent/validate
+
+>> v01_pairwise_welch_bonferroni.R
+
+>> v02_pairwise_holm_differential.R
+
+>> v03_rm_anova_greenhouse_geisser.R
+
+>> v04_friedman.R
+
+>> v05_paired_t.R
+
+>> v06_D15_effect_size_defect.R
+
+>> v07_redpath_degenerate_inputs.R
+
+Red-path tables written to: /tmp/suiteguard.29985/nist_absent/validate/redpath
+
+>> v08_twogroup_orchestrator.R
+
+>> v09_anova_tukey_orchestrator.R
+
+>> v10_kruskal_dunn_orchestrator.R
+
+>> v11_twoway_orchestrator.R
+
+>> v12_correlation_orchestrator.R
+
+>> v13_regression_orchestrator.R
+
+>> v14_descriptive_orchestrator.R
+
+>> v15_normality_orchestrator.R
+
+>> v16_csv_export.R
+
+>> v17_broom_parity.R
+v17 broom parity  [mode: BASE]
+R 4.3.3
+
+STRUCTURE
+  ok    tidy is EXACTLY broom::tidy(aov)'s columns, in order
+  ok    tidy carries every broom::tidy(aov) column
+  ok    tidy columns appear in broom's relative order
+  ok    post-hoc is its own file, not extra rows on tidy(aov)
+  ok    post-hoc is EXACTLY broom::tidy(TukeyHSD)'s columns, in order
+  ok    tidy has one row per ANOVA term plus Residuals
+  ok    last model row is Residuals
+  ok    glance is exactly one row
+  ok    augment has one row per observation
+  ok    augment carries every input column
+  ok    augment derived columns use broom's dot prefix
+
+NUMBERS
+  ok    df between
+  ok    df residual
+  ok    sumsq between
+  ok    sumsq residual
+  ok    meansq between
+  ok    meansq residual
+  ok    F statistic
+  ok    p value
+  ok    glance nobs
+  ok    glance F
+  ok    glance df.residual
+  ok    glance r.squared
+  ok    glance sigma = residual SE
+  ok    glance adj.r.squared
+  ok    glance deviance = residual sum of squares
+  ok    glance logLik matches R
+  ok    glance AIC matches R
+  ok    glance BIC matches R
+  ok    glance leads with broom::glance(lm)'s columns, in order
+  ok    effect sizes are their own file
+  ok    eta squared equals r.squared
+  ok    augment .fitted = group means
+  ok    augment .resid = value - fitted
+  ok    augment .resid sums to zero
+  ok    one tidy row per Tukey contrast
+  ok    Tukey estimate (mean difference), as a set
+  ok    Tukey adjusted p, as a set
+  ok    Tukey conf.low matches R
+  ok    Tukey conf.high matches R
+  ok    Tukey null.value is 0 on every row
+  ok    every Tukey contrast names both of its levels
+
+RED PATH
+  ok    no --undefined-- anywhere in any file
+  ok    Residuals row leaves statistic empty, not 0
+  ok    Residuals row leaves p.value empty, not 0
+  ok    a level name containing a comma survives the round trip
+  ok    every tidy row has the same field count
+  ok    every augment row has the same field count
+
+48 passed, 0 failed  [mode: BASE]
+NOTE: broom is not installed here, so column names were checked against
+      a transcribed list rather than against broom itself. Re-run where
+      broom is available before treating naming as validated.
+
+>> v18_sweep_parity.R
+
+>> v19_nist_strd.R
+SKIP  v19  no evidence/nist/results.csv -- NIST .dat files not ingested.
+          See validate/tools/nist_ingest.R for the fetch commands.
+
+>> v20_shipping_anova_broom.R
+
+>> v21_shipping_paths_broom.R
+
+>> v22_homogeneity.R
+
+v22 maximum RELATIVE error vs base R, by statistic:
+  gh.p           1.31e-06   (n = 31)
+  gh.qcrit       3.28e-14   (n = 28)
+  bf.p           6.16e-15   (n = 10)
+  welch.p        2.77e-15   (n = 8)
+  k2.identity    2.25e-15   (n = 10)
+  bf.ss          1.52e-15   (n = 18)
+  bf.F           8.68e-16   (n = 10)
+  gh.q           2.72e-16   (n = 28)
+  gh.df          2.56e-16   (n = 28)
+  welch.var      2.18e-16   (n = 24)
+  welch.F        2.12e-16   (n = 8)
+  welch.df       2.07e-16   (n = 16)
+  gh.se          2.00e-16   (n = 28)
+  bf.df          0.00e+00   (n = 18)
+  bf.meandev     0.00e+00   (n = 26)
+  bf.median      0.00e+00   (n = 26)
+  gh.estimate    0.00e+00   (n = 28)
+
+
+>> v23_qq_points.R
+
+>> v24_influence.R
+
+>> v25_anova_showboth.R
+
+>> v26_twoway_caveat.R
+
+>> v27_empty_frames.R
+
+>> v28_column_type_guard.R
+
+v28 maximum RELATIVE error vs base R, by statistic:
+  lib.twoway.F     1.96e-13   (n = 2)
+  norm.p           6.08e-14   (n = 2)
+  twoway.ss        5.32e-14   (n = 4)
+  twoway.F         5.00e-14   (n = 3)
+  kw.p             1.44e-14   (n = 2)
+  reg.r2           1.40e-14   (n = 2)
+  reg.p            1.24e-14   (n = 2)
+  rm.F             1.10e-14   (n = 2)
+  twogroup.p       9.92e-15   (n = 2)
+  anova.p          7.98e-15   (n = 2)
+  lib.anova.p      7.98e-15   (n = 1)
+  reg.coef         7.86e-15   (n = 4)
+  twoway.p         7.48e-15   (n = 3)
+  rm.p             7.27e-15   (n = 2)
+  anova.ss         6.48e-15   (n = 4)
+  kw.H             3.96e-15   (n = 2)
+  lib.scheffe.mse  3.96e-15   (n = 1)
+  lib.twoway.ss    3.45e-15   (n = 1)
+  corr.p           3.25e-15   (n = 2)
+  pairwise.p       3.15e-15   (n = 6)
+  anova.F          2.64e-15   (n = 2)
+  lib.anova.F      2.64e-15   (n = 1)
+  lib.pairwiset.p  2.03e-15   (n = 3)
+  norm.W           9.23e-16   (n = 2)
+  lib.welch.p      8.31e-16   (n = 1)
+  corr.r           6.35e-16   (n = 2)
+  rm.gg            4.75e-16   (n = 2)
+  fried.p          3.97e-16   (n = 2)
+  fried.chisq      3.45e-16   (n = 2)
+  twogroup.df      2.16e-16   (n = 2)
+  paired.t         1.56e-16   (n = 2)
+  lib.welch.F      1.44e-16   (n = 1)
+  corr.rho         1.23e-16   (n = 2)
+  anova.df         0.00e+00   (n = 4)
+  anova.n          0.00e+00   (n = 6)
+  corr.n           0.00e+00   (n = 4)
+  desc.mean        0.00e+00   (n = 2)
+  desc.median      0.00e+00   (n = 2)
+  desc.n           0.00e+00   (n = 4)
+  desc.sd          0.00e+00   (n = 2)
+  fried.df         0.00e+00   (n = 2)
+  fried.n          0.00e+00   (n = 4)
+  kw.df            0.00e+00   (n = 2)
+  kw.n             0.00e+00   (n = 2)
+  lib.anova.df     0.00e+00   (n = 2)
+  lib.kw.H         0.00e+00   (n = 1)
+  lib.kw.n         0.00e+00   (n = 1)
+  lib.kw.p         0.00e+00   (n = 1)
+  lib.pairwiset.t  0.00e+00   (n = 1)
+  lib.welch.df     0.00e+00   (n = 1)
+  norm.n           0.00e+00   (n = 2)
+  paired.df        0.00e+00   (n = 2)
+  paired.n         0.00e+00   (n = 4)
+  paired.p         0.00e+00   (n = 2)
+  pairwise.t       0.00e+00   (n = 6)
+  reg.n            0.00e+00   (n = 2)
+  rm.df            0.00e+00   (n = 4)
+  rm.n             0.00e+00   (n = 6)
+  twogroup.mean    0.00e+00   (n = 4)
+  twogroup.n       0.00e+00   (n = 4)
+  twogroup.t       0.00e+00   (n = 2)
+  twoway.df        0.00e+00   (n = 1)
+
+
+>> v29_figure_disclosure.R
+
+>> v30_wizard_state.R
+
+>> v31_gridmode.R
+
+>> v32_legend_geometry.R
+
+>> v33_exclusion_parity.R
+
+>> v34_label_escape.R
+
+>> v35_assembly.R
+
+>> v36_stress_output.R
+
+>> v37_determinism.R
+
+>> v39_record_coverage.R
+
+>> v40_norecord.R
+
+>> v41_blank_group.R
+
+>> v42_legend_room.R
+
+>> v43_form_helpers.R
+
+>> v44_tab_walk.R
+
+>> v45_gui_teardown.R
+
+>> v46_export_surface.R
+
+>> v47_plugin_folder_name.R
+
+>> v48_save_paths.R
+
+>> v49_every_path_exports.R
+
+>> v50_api_export.R
+
+>> v51_advanced_mode.R
+
+>> v52_acoustic_calls.R
+
+>> v53_batch_flow.R
+
+>> v54_batch_praatgen.R
+
+>> v55_editor_addressing.R
+
+>> v56_save_guards.R
+
+>> v57_export_integrity.R
+
+>> v58_recorder_replay.R
+
+>> v59_entry_points.R
+
+>> v60_wrapper_paths.R
+
+>> v61_graphs_seams.R
+
+>> v62_graphs_axes_channels.R
+
+>> v63_coercion_parity.R
+
+>> v64_display_and_coercion.R
+
+>> v65_display_standard.R
+
+>> v66_draw_layer.R
+
+>> v67_axis_and_spectrum.R
+
+>> v68_form_axis_and_display.R
+
+>> v69_bracket_disclosure.R
+NOTE  v69  tukey            1800x1277 px, 110923 bytes, 9777 ink in band
+NOTE  v69  dunn_holm        1800x1277 px, 95281 bytes, 8723 ink in band
+NOTE  v69  dunn_bonferroni  1800x1277 px, 95701 bytes, 9339 ink in band
+NOTE  v69  dunn_bh          1800x1277 px, 99997 bytes, 8483 ink in band
+NOTE  v69  narrow           960x875 px, 61937 bytes, 4945 ink in band
+NOTE  v69  welch_two        1800x1277 px, 94955 bytes, 7460 ink in band
+NOTE  v69  mw_two           1800x1277 px, 90121 bytes, 8522 ink in band
+
+>> v70_p_precision.R
+
+>> v71_tidy_vocab_and_warning.R
+
+==============================================================================
+v71 -- the tidy vocabulary and the repeated-measures caution
+==============================================================================
+ATST  R1      plugin states the complete-case count it analysed  computed=NA  expected attested
+ATST  R1      plugin states how many rows it excluded and why  computed=NA  expected attested
+ATST  R3      plugin refuses and names the zero variance (driven)  computed=NA  expected attested
+ATST  R5      plugin refuses before computing anything (driven)  computed=NA  expected attested
+ATST  R5      D99 FIXED: the refusal states groups-vs-rows, not one group  computed=NA  expected attested
+ATST  R6      plugin reports N (valid) 4 and N (undefined) 1 (driven)  computed=NA  expected attested
+ATST  R7      driven headlessly 6 Aug 2026; axis 0.380-0.580 on data 0.401-0.548, figure at evidence/figures/r7_small_range_axis.png  computed=NA  expected attested
+ATST  v20     these five files were produced by @emlRunAnovaAnalysis  computed=NA  expected attested
+ATST  v61     the advanced scatter dialog is 976 px on a 1000 px screen -- still clamped; the split page is the open fix  computed=NA  expected attested
+ATST  v62     the one-bin spectrum was measured: 1 bin in range, 1840 ink pixels inside the frame, 81.90 dB not shown  computed=NA  expected attested
+ATST  v63     the graphs door's row-label convention was measured: r1,r2,r3,r4  computed=NA  expected attested
+ATST  v63     desc_matrix: the column numbering was measured: Column_1->src1, Column_2->src2, Column_3->src3  computed=NA  expected attested
+ATST  v63     clean_matrix: the column numbering was measured: Column_1->src1, Column_2->src2, Column_3->src3  computed=NA  expected attested
+ATST  v64     ruling 3 measured: multi-column tidy carries [term,statistic,p.value,skewness,kurtosis,method]; single-column glance carries [statistic,p.value,nobs,n.excluded,skewness,kurtosis,method,alternative]  computed=NA  expected attested
+ATST  v65     NEW-G5-2 measured: 2 APA exact tail(s) in the driven reports, longest mantissa 3 significant digits  computed=NA  expected attested
+ATST  v66     a fully furnished empty frame weighs 88532 bytes -- a size threshold would pass it  computed=NA  expected attested
+ATST  v66     all 39 stress figures are byte-identical across this change  computed=NA  expected attested
+ATST  v66     the one-bin spectrum was measured: 1 bin, 90.40 dB, 1645 ink inside the frame, 47609 bytes  computed=NA  expected attested
+ATST  v66     the empty one-bin Ltas weighed 46,360 bytes and the CORRECT bar figure 46129 -- the empty file was the bigger one  computed=NA  expected attested
+ATST  v67     the empty one-bin frame weighed 48,870 bytes at HEAD and the drawn one weighs 48531 -- a size threshold cannot separate them, and would call the bigger file the good one  computed=NA  expected attested
+ATST  v67     the graphs form's half of the axis contract -- publishing emlGraphsAxisYReqMin/Max where the user's values are first read, unwritten by the headroom and legend passes -- is NOT tested here  computed=NA  expected attested
+ATST  v67     the one-bin LTAS Curve was measured: 1 bin, 67.5269 dB, 1874 ink inside the frame against 3412 for Bars, 53747 bytes  computed=NA  expected attested
+ATST  v67     all 39 stress figures are byte-identical across this change  computed=NA  expected attested
+ATST  v67     validate/v66 sections 2's two `recorded_axis_args` checks now read `axisYMin, axisYMax` where they expect `0, 0` and `150, 400`  computed=NA  expected attested
+ATST  v68     harness/record/roundtrip_graph.sh: leg1.png, leg2.png and the mirror are byte-identical across this change  computed=NA  expected attested
+ATST  v68     harness/legend: all 229 PNGs and 220 of 225 logs are byte-identical across this change  computed=NA  expected attested
+ATST  v68     @emlGraphsPreDispatchHeadroom is a verbatim lift out of @emlGraphsWorkflow  computed=NA  expected attested
+ATST  v68     validate/run_all.R does not yet source this file  computed=NA  expected attested
+ATST  v68     the Q-Q leak this file raised is CLOSED, and is pinned by validate/v74 rather than here  computed=NA  expected attested
+ATST  v68     validate/v32's source check on @emlExpandDrawnExtent callers is red, and not from here  computed=NA  expected attested
+ATST  v68     the two-draw-steps defect this file raised is CLOSED, and is pinned by validate/v75 rather than here  computed=NA  expected attested
+ATST  v71     no repeated-measures design reaches k = 10002, so the split moves no printed byte today (measured on Praat 6.6.30 (June 30 2026))  computed=NA  expected attested
+------------------------------------------------------------------------------ 
+11662 checks, 11662 passed, 0 FAILED
+32 attestation(s) recorded, not counted as checks
+
+>> v72_batch_registration.R
+
+>> v73_directional_p.R
+
+>> v74_axis_consume_once.R
+
+>> v75_legend_single_step.R
+
+>> v76_bracket_names_test.R
+NOTE  v76  tukey            brackets=6  corner line: One-way ANOVA: F(3, 44) = 559.05, p < .001
+NOTE  v76  dunn_holm        brackets=3  corner line: Kruskal-Wallis: H(3) = 44.08, p < .001, \ep^2 = 0.938
+NOTE  v76  dunn_bonferroni  brackets=3  corner line: Kruskal-Wallis: H(3) = 44.08, p < .001, \ep^2 = 0.938
+NOTE  v76  dunn_bh          brackets=6  corner line: Kruskal-Wallis: H(3) = 44.08, p < .001, \ep^2 = 0.938
+NOTE  v76  narrow           brackets=3  corner line: Kruskal-Wallis: H(3) = 44.08, p < .001, \ep^2 = 0.938
+NOTE  v76  welch_two        brackets=1  corner line: Welch t: t(22.0) = -14.90, p < .001, d = -6.08
+NOTE  v76  mw_two           brackets=1  corner line: Mann-Whitney: U = 0, p < .001, r = -1.00
+
+>> v77_one_tailed_direction.R
+
+>> v78_repo_hygiene.R
+
+>> v79_release_artefact.R
+
+>> v80_shipped_history.R
+
+>> v81_recipes.R
+
+-- 1. verbatim: the file Praat ran is the file the page prints --
+
+-- 2. every recipe ran --
+
+-- 3. each printed block appears in its recipe's capture --
+
+-- 4. the printed numbers, recomputed --
+
+-- 5. every name the page uses exists in the source --
+
+-- 6. the files R3 and R4 wrote --
+
+-- 7. coverage --
+
+>> v82_generated_barrel.R
+
+>> v83_pin_definition.R
+
+-- census: what each validator READS -----------------------------------
+     ARTEFACT           39
+     NONE               1
+     SOURCE             5
+     SOURCE+ARTEFACT    34
+     SOURCE+LIVE        8
+     SOURCE+LIVE+ARTEFACT 4
+     TOTAL              91
+
+-- census: did anything under test RUN ---------------------------------
+     NO                 77
+     PRAAT              12
+     TOOL               2
+     ARTEFACT AS ORACLE (reads a committed file AND regenerated it): v78 v79 v90 v91 v92 v93
+
+-- vacuity: the classifier is alive -----------------------------------
+     reads none of the three evidence roots: v83
+
+-- vacuity: the execution detector is alive ---------------------------
+
+-- the census record reproduces ---------------------------------------
+
+-- the ledger ---------------------------------------------------------
+
+-- every pin reads source, or ran something ---------------------------
+
+>> v84_axis_refusal.R
+
+>> v85_source_archive_shape.R
+
+  .gitattributes: HEAD present, working tree present -> archive under test is what github.com serves
+  archive: 1,960,105 bytes, 403 entries (389 files), 10 top-level
+
+
+>> v86_vector_figure_export.R
+
+>> v87_run_scoped_block.R
+
+>> v88_barrel_population.R
+
+>> v90_lane_alpha_oracle.R
+      v90 oracle mode: base R alone (psych not installed; cross-check not run)
+
+>> v91_lane_chisq_oracle.R
+
+>> v92_lane_wilson_oracle.R
+
+>> v93_lane_alpha_influence_oracle.R
+Warning messages:
+1: In summary.lm(m) : essentially perfect fit: summary may be unreliable
+2: In prop.test(cs$x, cs$n, conf.level = cs$conf, correct = FALSE) :
+  Chi-squared approximation may be incorrect
+3: In prop.test(cs$x, cs$n, conf.level = cs$conf, correct = FALSE) :
+  Chi-squared approximation may be incorrect
+4: In prop.test(cs$x, cs$n, conf.level = cs$conf, correct = FALSE) :
+  Chi-squared approximation may be incorrect
+
+>> coverage.R
+
+==============================================================================
+SUMMARY — all scripts
+==============================================================================
+ATST  R1      plugin states the complete-case count it analysed  computed=NA  expected attested
+ATST  R1      plugin states how many rows it excluded and why  computed=NA  expected attested
+ATST  R3      plugin refuses and names the zero variance (driven)  computed=NA  expected attested
+ATST  R5      plugin refuses before computing anything (driven)  computed=NA  expected attested
+ATST  R5      D99 FIXED: the refusal states groups-vs-rows, not one group  computed=NA  expected attested
+ATST  R6      plugin reports N (valid) 4 and N (undefined) 1 (driven)  computed=NA  expected attested
+ATST  R7      driven headlessly 6 Aug 2026; axis 0.380-0.580 on data 0.401-0.548, figure at evidence/figures/r7_small_range_axis.png  computed=NA  expected attested
+ATST  v20     these five files were produced by @emlRunAnovaAnalysis  computed=NA  expected attested
+ATST  v61     the advanced scatter dialog is 976 px on a 1000 px screen -- still clamped; the split page is the open fix  computed=NA  expected attested
+ATST  v62     the one-bin spectrum was measured: 1 bin in range, 1840 ink pixels inside the frame, 81.90 dB not shown  computed=NA  expected attested
+ATST  v63     the graphs door's row-label convention was measured: r1,r2,r3,r4  computed=NA  expected attested
+ATST  v63     desc_matrix: the column numbering was measured: Column_1->src1, Column_2->src2, Column_3->src3  computed=NA  expected attested
+ATST  v63     clean_matrix: the column numbering was measured: Column_1->src1, Column_2->src2, Column_3->src3  computed=NA  expected attested
+ATST  v64     ruling 3 measured: multi-column tidy carries [term,statistic,p.value,skewness,kurtosis,method]; single-column glance carries [statistic,p.value,nobs,n.excluded,skewness,kurtosis,method,alternative]  computed=NA  expected attested
+ATST  v65     NEW-G5-2 measured: 2 APA exact tail(s) in the driven reports, longest mantissa 3 significant digits  computed=NA  expected attested
+ATST  v66     a fully furnished empty frame weighs 88532 bytes -- a size threshold would pass it  computed=NA  expected attested
+ATST  v66     all 39 stress figures are byte-identical across this change  computed=NA  expected attested
+ATST  v66     the one-bin spectrum was measured: 1 bin, 90.40 dB, 1645 ink inside the frame, 47609 bytes  computed=NA  expected attested
+ATST  v66     the empty one-bin Ltas weighed 46,360 bytes and the CORRECT bar figure 46129 -- the empty file was the bigger one  computed=NA  expected attested
+ATST  v67     the empty one-bin frame weighed 48,870 bytes at HEAD and the drawn one weighs 48531 -- a size threshold cannot separate them, and would call the bigger file the good one  computed=NA  expected attested
+ATST  v67     the graphs form's half of the axis contract -- publishing emlGraphsAxisYReqMin/Max where the user's values are first read, unwritten by the headroom and legend passes -- is NOT tested here  computed=NA  expected attested
+ATST  v67     the one-bin LTAS Curve was measured: 1 bin, 67.5269 dB, 1874 ink inside the frame against 3412 for Bars, 53747 bytes  computed=NA  expected attested
+ATST  v67     all 39 stress figures are byte-identical across this change  computed=NA  expected attested
+ATST  v67     validate/v66 sections 2's two `recorded_axis_args` checks now read `axisYMin, axisYMax` where they expect `0, 0` and `150, 400`  computed=NA  expected attested
+ATST  v68     harness/record/roundtrip_graph.sh: leg1.png, leg2.png and the mirror are byte-identical across this change  computed=NA  expected attested
+ATST  v68     harness/legend: all 229 PNGs and 220 of 225 logs are byte-identical across this change  computed=NA  expected attested
+ATST  v68     @emlGraphsPreDispatchHeadroom is a verbatim lift out of @emlGraphsWorkflow  computed=NA  expected attested
+ATST  v68     validate/run_all.R does not yet source this file  computed=NA  expected attested
+ATST  v68     the Q-Q leak this file raised is CLOSED, and is pinned by validate/v74 rather than here  computed=NA  expected attested
+ATST  v68     validate/v32's source check on @emlExpandDrawnExtent callers is red, and not from here  computed=NA  expected attested
+ATST  v68     the two-draw-steps defect this file raised is CLOSED, and is pinned by validate/v75 rather than here  computed=NA  expected attested
+ATST  v71     no repeated-measures design reaches k = 10002, so the split moves no printed byte today (measured on Praat 6.6.30 (June 30 2026))  computed=NA  expected attested
+ATST  v74     a legend-bearing figure still records TWO draw steps, and both are entitled to the request  computed=NA  expected attested
+ATST  v74     no figure changed anywhere across this repair   computed=NA  expected attested
+ATST  v75     an UNEDITED replay of an auto legend figure is not the picture the user got, and cannot be  computed=NA  expected attested
+ATST  v75     the figure the user gets is unchanged by this change  computed=NA  expected attested
+ATST  v75     harness/formaxis/out/legend_auto and legend_typed were re-driven and their blocks changed  computed=NA  expected attested
+------------------------------------------------------------------------------ 
+13553 checks, 13553 passed, 0 FAILED
+37 attestation(s) recorded, not counted as checks
+
+By script id:
+              id    passed attested
+              R1       8/8        2
+              R2     15/15        0
+              R3       1/1        1
+              R4       2/2        0
+              R5       4/4        2
+              R6     18/18        1
+              R7       7/7        1
+             v01     15/15        0
+             v02     24/24        0
+             v03     30/30        0
+             v04     30/30        0
+             v05     21/21        0
+             v06       9/9        0
+             v08     26/26        0
+             v09     55/55        0
+             v10     35/35        0
+             v11     31/31        0
+             v12     16/16        0
+             v13     30/30        0
+             v14     29/29        0
+             v15       7/7        0
+       v15:F0_Hz     12/12        0
+  v15:jitter_pct     12/12        0
+ v15:shimmer_pct     12/12        0
+             v16     45/45        0
+             v17     48/48        0
+             v18   294/294        0
+             v20     58/58        1
+             v21   102/102        0
+             v22   447/447        0
+             v23   396/396        0
+             v24   214/214        0
+             v25     34/34        0
+             v26     18/18        0
+             v27   181/181        0
+             v28   613/613        0
+             v29 1066/1066        0
+             v30     23/23        0
+             v31     61/61        0
+             v32 4463/4463        0
+             v33     41/41        0
+             v34     15/15        0
+             v35     13/13        0
+             v36   586/586        0
+             v37   108/108        0
+             v38     61/61        0
+             v39     78/78        0
+             v40     45/45        0
+             v41     20/20        0
+             v42     16/16        0
+             v43     30/30        0
+             v44     44/44        0
+             v45     39/39        0
+             v46     23/23        0
+             v47     24/24        0
+             v48   185/185        0
+             v49     13/13        0
+             v50   139/139        0
+             v51     16/16        0
+             v52     30/30        0
+             v53   110/110        0
+             v54   115/115        0
+             v55     94/94        0
+             v56   107/107        0
+             v57     81/81        0
+             v58     98/98        0
+             v59     42/42        0
+             v60     52/52        0
+             v61     95/95        1
+             v62   117/117        1
+             v63     41/41        3
+             v64     36/36        1
+             v65     99/99        1
+             v66   143/143        4
+             v67     92/92        5
+             v68     99/99        7
+             v69   121/121        0
+             v70     70/70        0
+             v71     73/73        1
+             v72     69/69        0
+             v73   181/181        0
+             v74     89/89        2
+             v75     58/58        3
+             v76     78/78        0
+             v77   122/122        0
+             v78     25/25        0
+             v79   108/108        0
+             v80     15/15        0
+             v81   108/108        0
+             v82     49/49        0
+             v83     67/67        0
+             v84     78/78        0
+             v85     48/48        0
+             v86   263/263        0
+             v87   225/225        0
+             v88     14/14        0
+             v90     59/59        0
+             v91     68/68        0
+             v92     49/49        0
+             v93     57/57        0
+
+recorded nothing: v19_nist_strd.R

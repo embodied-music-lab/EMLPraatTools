@@ -1041,6 +1041,21 @@ scripts <- c(
     # reference and the run that was not must be byte-identical, which is the
     # whole promise of naming by run rather than by value.
     "v87_run_scoped_block.R",
+    # v88 is the check that reads the barrel as a POPULATION rather than as a
+    # list. setup.praat's module table is the whole of what a user's one
+    # include line loads, and on 18 August 2026 two finished, oracled modules
+    # were found sitting outside it -- four procedures no script a user could
+    # write was able to load, for as long as they had existed. Nothing here
+    # could have said so: v82 pins the table against a list retyped inside
+    # v82 and against the recorder's block, both satisfied by a change made
+    # in both places; v78's include closure asks whether includes RESOLVE,
+    # and a module never included dangles nothing; everything else reaches a
+    # procedure by calling it. v88 walks stats/ and graphs/ off disk and
+    # requires every file to be in the table or in the reasoned
+    # not-in-barrel rows beneath it, which live in setup.praat and nowhere
+    # else.
+    #     bash harness/barrelpop/break.sh
+    "v88_barrel_population.R",
 
     # ------------------------------------------------------------------
     # The survey core statistics. Four kernels a voice researcher needs

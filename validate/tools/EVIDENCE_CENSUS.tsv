@@ -108,6 +108,7 @@ v84	v84_axis_refusal.R	SOURCE+ARTEFACT	NO		harness,plugin
 v85	v85_source_archive_shape.R	SOURCE	NO		plugin,plugin_EML_StatsGraphs		
 v86	v86_vector_figure_export.R	SOURCE+ARTEFACT	NO		harness,plugin		
 v87	v87_run_scoped_block.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v88	v88_barrel_population.R	SOURCE	NO		plugin		
 v90	v90_lane_alpha_oracle.R	SOURCE+LIVE+ARTEFACT	PRAAT	praat	evidence,plugin	red_mode	
 v91	v91_lane_chisq_oracle.R	SOURCE+LIVE+ARTEFACT	PRAAT	praat	evidence,plugin	red_mode	
 v92	v92_lane_wilson_oracle.R	SOURCE+LIVE+ARTEFACT	PRAAT	praat	evidence,plugin	red_mode	

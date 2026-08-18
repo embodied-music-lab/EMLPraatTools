@@ -1,0 +1,11 @@
+# break	v88_red	v82_red	first_v88_failure
+control	0	0	(none — THIS BREAK DID NOT GO RED)
+module_dropped	2	5	every module under stats/ and graphs/ is either in the barrel or excluded with a reason -- unaccounted: stats/eml-analysis.praat
+dropped_from_both	2	1	every module under stats/ and graphs/ is either in the barrel or excluded with a reason -- unaccounted: stats/eml-analysis.praat
+dropped_from_all_three	2	0	every module under stats/ and graphs/ is either in the barrel or excluded with a reason -- unaccounted: stats/eml-analysis.praat
+new_module_unlisted	2	0	every module under stats/ and graphs/ is either in the barrel or excluded with a reason -- unaccounted: stats/eml-survival.praat
+renamed_module	2	3	every module under stats/ and graphs/ is either in the barrel or excluded with a reason -- unaccounted: stats/eml-extraction.praat
+reason_removed	1	0	every not-in-barrel row carries a reason -- bare: stats/eml-optimizer.praat
+in_both_lists	2	0	no module is in the barrel and excluded from it at once -- both: stats/eml-output.praat
+count_short	1	4	and emlSetupNModules is the number of rows, not a typed number
+excluded_but_reached	1	3	no excluded module is pulled in by a barrel module anyway -- reached: stats/eml-lmm.praat
