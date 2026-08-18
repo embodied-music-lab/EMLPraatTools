@@ -1277,12 +1277,19 @@ procedure emlAuditColumn: .tableId, .columnName$
         ... + "numbers. Write a leading zero to use these values."
         .sep$ = " "
     endif
+    # WHAT THIS SENTENCE MAY CLAIM. This path DESCRIBES a column; it does not
+    # repair one. It sees a cell it cannot read as a number and excludes it,
+    # and that is the entire extent of what it knows. Whether a given token is
+    # a placeholder standing in for a value that was never collected, or a
+    # note somebody typed into a numeric column, is a question about intent,
+    # and nothing on this path inspects intent -- the token is reported as
+    # unrecognised and the reader is told what became of the cell.
     if .nUnreadable > 0
         .note$ = .note$ + .sep$ + string$ (.nUnreadable)
         ... + " cell(s) are not numeric in any locale (row "
         ... + string$ (.firstUnreadableRow) + ": "
-        ... + .firstUnreadableValue$ + "). This is a type error, not "
-        ... + "missing data."
+        ... + .firstUnreadableValue$ + "). Unrecognized nonnumeric token; "
+        ... + "excluded."
         .sep$ = " "
     endif
     if .nEmpty > 0

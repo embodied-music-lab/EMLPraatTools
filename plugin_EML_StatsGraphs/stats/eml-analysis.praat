@@ -3144,19 +3144,30 @@ procedure emlRMAnovaTest: .data##, .n, .k
     # the only rounding in the plugin; this builds a second STRING, not a
     # second rule for how a number is written.
     if .n <= 2
-        .warning$ = "n = " + string$ (.n) + " subjects. Greenhouse-Geisser "
+        # THE BRANCH IS n <= 2, SO THE SENTENCE CANNOT SAY "two". It is
+        # reached at n = 1 as well, and a warning that misreports the sample
+        # it is warning about is one more thing for the reader to distrust.
+        # The count is written from .n, with the noun agreeing, and the
+        # closing clause names the data rather than a subject count so it
+        # stays true at either n.
+        if .n = 1
+            .subjPhrase$ = "1 subject"
+        else
+            .subjPhrase$ = string$ (.n) + " subjects"
+        endif
+        .warning$ = "n = " + .subjPhrase$ + ". Greenhouse-Geisser "
         ... + "epsilon is forced to its lower bound "
         ... + fixed$ (1 / (.k - 1), 4) + " for any data at this n, so the "
         ... + "sphericity correction carries no information. Read F, p "
-        ... + "and the corrected p as description of these two subjects, "
-        ... + "not as a test."
+        ... + "and the corrected p as a description of the data in hand, "
+        ... + "not as a test of anything beyond it."
         @eml_fixed: 1 / (.k - 1), 4
-        .warningPrinted$ = "n = " + string$ (.n) + " subjects. "
+        .warningPrinted$ = "n = " + .subjPhrase$ + ". "
         ... + "Greenhouse-Geisser epsilon is forced to its lower bound "
         ... + eml_fixed.result$ + " for any data at this n, so the "
         ... + "sphericity correction carries no information. Read F, p "
-        ... + "and the corrected p as description of these two subjects, "
-        ... + "not as a test."
+        ... + "and the corrected p as a description of the data in hand, "
+        ... + "not as a test of anything beyond it."
     elsif .ggEpsilon <= 1 / (.k - 1) + 1e-9
         .warning$ = "Greenhouse-Geisser epsilon is at its lower bound "
         ... + fixed$ (1 / (.k - 1), 4) + ", the maximum possible departure "
@@ -3444,7 +3455,9 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
         @eml_fixed: emlFriedmanTest.chiSq / (.n * (.k - 1)), 4
         .wLine$ = "  Kendall's W = "
             ... + eml_fixed.result$
-            ... + "  (0 = no agreement, 1 = identical rankings)"
+            ... + "  (agreement among subjects in how they rank the"
+            ... + " conditions: 0 = none, 1 = every subject ranks them"
+            ... + " identically)"
     else
         .wLine$ = "  Kendall's W = n/a"
     endif
