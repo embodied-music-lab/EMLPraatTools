@@ -1934,10 +1934,11 @@ endproc
 # procedure states the whole request every time -- including the parts that
 # are off -- and the dialogs only fill in the variables it reads.
 #
-# THE LINE STYLE IS PER TYPE, because the control is: the line chart, the
-# pitch contour and the spaghetti plot each carry their own, and every other
-# type has none and gets Solid, which is what every line this plugin drew
-# before this change order was.
+# THE LINE STYLE IS PER TYPE, because the control is. Six types stroke a
+# series and each carries its own menu: the pitch contour, the waveform, the
+# spectrum, the LTAS, the line chart (with or without its confidence band)
+# and the spaghetti plot. Every other type draws no line and gets Solid,
+# which is what every line this plugin drew before this change order was.
 #
 # THE SECOND AXIS IS ONE TYPE'S, and the condition is the v1 scope written
 # out: graph type 5 with the confidence-interval box UNTICKED. The dialog
@@ -1949,6 +1950,12 @@ procedure emlGraphsPublishSeriesPens
     emlLineStyle = 1
     if graph_type = 1
         emlLineStyle = f0LineStyle
+    elsif graph_type = 2
+        emlLineStyle = wavLineStyle
+    elsif graph_type = 3
+        emlLineStyle = specLineStyle
+    elsif graph_type = 4
+        emlLineStyle = ltasLineStyle
     elsif graph_type = 5
         emlLineStyle = tsLineStyle
     elsif graph_type = 13
@@ -3071,6 +3078,9 @@ prev_tsShowCI = 0
 prev_tsLineStyle = 1
 prev_f0LineStyle = 1
 prev_spLineStyle = 1
+prev_wavLineStyle = 1
+prev_specLineStyle = 1
+prev_ltasLineStyle = 1
 prev_tsSecondAxis = 0
 prev_tsSecondIdx = 0
 prev_tsSecondStyle = 3
@@ -3083,6 +3093,9 @@ prev_tsSecondLabel$ = ""
 # touches it.
 f0LineStyle = 1
 tsLineStyle = 1
+wavLineStyle = 1
+specLineStyle = 1
+ltasLineStyle = 1
 spLineStyle = 1
 tsSecondAxis = 0
 tsSecondStyle = 3
@@ -4171,6 +4184,7 @@ repeat
                 toggleLabel$ = "Advanced"
             endif
 
+            wavLineStyle = prev_wavLineStyle
             beginPause: "Waveform Settings"
                 comment: "⏱️ Time range (both 0 = auto)"
                 real: "Time minimum", tmpTMin$
@@ -4178,6 +4192,11 @@ repeat
                 comment: "📐 Amplitude range (both 0 = auto)"
                 real: "Amplitude maximum", tmpAMax$
                 real: "Amplitude minimum", tmpAMin$
+                optionmenu: "Line style", wavLineStyle
+                    option: "Solid"
+                    option: "Dotted"
+                    option: "Dashed"
+                    option: "Dashed-dotted"
                 if config_showAdvanced
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Both"
@@ -4224,6 +4243,10 @@ repeat
                 tmpTMax$ = string$ (time_maximum)
                 tmpAMin$ = string$ (amplitude_minimum)
                 tmpAMax$ = string$ (amplitude_maximum)
+                ; The pen, read on the toggle as well as on Draw, so that
+                ; re-presenting the page does not reset it -- the same rule
+                ; every other beginner-page field on this dialog follows.
+                wavLineStyle = line_style
                 if config_showAdvanced
                     tmpGridMode = gridline_mode
                     tmpShowInnerBox = show_inner_box
@@ -4262,6 +4285,12 @@ repeat
                 prev_wav_timeMax = timeMax
                 prev_wav_ampMin = ampMin
                 prev_wav_ampMax = ampMax
+
+                # The waveform's pen. @emlGraphsPublishSeriesPens hands it to
+                # the drawing layer; the draw sets it around Praat's own
+                # `Draw:` on the Sound object` and resets it afterwards.
+                wavLineStyle = line_style
+                prev_wavLineStyle = wavLineStyle
 
                 if config_showAdvanced
                     tmpGridMode = gridline_mode
@@ -4325,6 +4354,7 @@ repeat
                 toggleLabel$ = "Advanced"
             endif
 
+            specLineStyle = prev_specLineStyle
             beginPause: "Spectrum Settings"
                 comment: "📐 Frequency range (both 0 = auto)"
                 real: "Frequency minimum", tmpFMin$
@@ -4332,6 +4362,11 @@ repeat
                 comment: "📐 Power range (both 0 = auto)"
                 real: "Power maximum", tmpPMax$
                 real: "Power minimum", tmpPMin$
+                optionmenu: "Line style", specLineStyle
+                    option: "Solid"
+                    option: "Dotted"
+                    option: "Dashed"
+                    option: "Dashed-dotted"
                 if config_showAdvanced
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Both"
@@ -4378,6 +4413,10 @@ repeat
                 tmpFMax$ = string$ (frequency_maximum)
                 tmpPMin$ = string$ (power_minimum)
                 tmpPMax$ = string$ (power_maximum)
+                ; The pen, read on the toggle as well as on Draw, so that
+                ; re-presenting the page does not reset it -- the same rule
+                ; every other beginner-page field on this dialog follows.
+                specLineStyle = line_style
                 if config_showAdvanced
                     tmpGridMode = gridline_mode
                     tmpShowInnerBox = show_inner_box
@@ -4416,6 +4455,12 @@ repeat
                 prev_spec_freqMax = freqMax
                 prev_spec_powerMin = powerMin
                 prev_spec_powerMax = powerMax
+
+                # The spectrum's pen. @emlGraphsPublishSeriesPens hands it to
+                # the drawing layer; the draw sets it around Praat's own
+                # `Draw:` on the Spectrum object` and resets it afterwards.
+                specLineStyle = line_style
+                prev_specLineStyle = specLineStyle
 
                 if config_showAdvanced
                     tmpGridMode = gridline_mode
@@ -4487,6 +4532,7 @@ repeat
                 toggleLabel$ = "Advanced"
             endif
 
+            ltasLineStyle = prev_ltasLineStyle
             beginPause: "LTAS Settings"
                 comment: "📐 Frequency range (both 0 = auto)"
                 real: "Frequency minimum", tmpFMin$
@@ -4494,6 +4540,11 @@ repeat
                 comment: "📐 Power range (both 0 = auto)"
                 real: "Power maximum", tmpPMax$
                 real: "Power minimum", tmpPMin$
+                optionmenu: "Line style", ltasLineStyle
+                    option: "Solid"
+                    option: "Dotted"
+                    option: "Dashed"
+                    option: "Dashed-dotted"
                 if config_showAdvanced
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Both"
@@ -4545,6 +4596,10 @@ repeat
                 tmpFMax$ = string$ (frequency_maximum)
                 tmpPMin$ = string$ (power_minimum)
                 tmpPMax$ = string$ (power_maximum)
+                ; The pen, read on the toggle as well as on Draw, so that
+                ; re-presenting the page does not reset it -- the same rule
+                ; every other beginner-page field on this dialog follows.
+                ltasLineStyle = line_style
                 if config_showAdvanced
                     tmpGridMode = gridline_mode
                     tmpShowInnerBox = show_inner_box
@@ -4591,6 +4646,12 @@ repeat
                 prev_ltas_freqMax = freqMax
                 prev_ltas_powerMin = powerMin
                 prev_ltas_powerMax = powerMax
+
+                # The LTAS curve's pen. @emlGraphsPublishSeriesPens hands it to
+                # the drawing layer; the draw sets it around Praat's own
+                # `Draw:` on the Ltas object` and resets it afterwards.
+                ltasLineStyle = line_style
+                prev_ltasLineStyle = ltasLineStyle
 
                 if config_showAdvanced
                     tmpGridMode = gridline_mode

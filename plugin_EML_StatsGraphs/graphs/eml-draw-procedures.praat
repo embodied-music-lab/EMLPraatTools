@@ -814,7 +814,15 @@ procedure emlDrawWaveform: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     selectObject: .objectId
     Colour: emlSetColorPalette.line$[1]
     Line width: emlSetAdaptiveTheme.dataLineWidth
+    ; THE SERIES' PEN, AROUND A DRAW THIS FILE DOES NOT ISSUE ITSELF. The
+    ; waveform is stroked by Praat's own `Draw:` on the Sound object, which
+    ; obeys the Picture window's line style like any other stroke -- so the
+    ; style is set here and reset immediately, before @emlDrawAxes puts a
+    ; frame and a set of tick marks on the same page.
+    @emlPrimaryLineStyle
+    @emlApplyLineStyle: emlPrimaryLineStyle.style
     Draw: .timeMin, .timeMax, .ampBottom, .ampTop, "no", "Curve"
+    @emlResetLineStyle
 
     # Step 8: Draw axes on top
     @emlDrawAxes: .timeMin, .timeMax, .ampBottom, .ampTop, .xLabel$, .yLabel$, .title$, .vpW, .vpH
@@ -970,6 +978,12 @@ procedure emlDrawSpectrum: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     endif
     .oneBinDrawn = 0
 
+    ; THE SERIES' PEN. Praat's own `Draw:` on the Spectrum object obeys the
+    ; Picture window's line style, and so does the `Draw line` the one-bin
+    ; branch strokes its stem with -- the stem IS the series here, so it
+    ; carries the same pen the curve would have.
+    @emlPrimaryLineStyle
+    @emlApplyLineStyle: emlPrimaryLineStyle.style
     if .binsInRange >= 2
         Draw: .freqMin, .freqMax, .powerMin, .powerMax, "no"
     elsif .binsInRange = 1
@@ -995,6 +1009,9 @@ procedure emlDrawSpectrum: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
             .oneBinDrawn = 1
         endif
     endif
+    ; And put it back before the frame is drawn: a dashed pen left set here
+    ; would dash the inner box and every tick mark @emlDrawAxes issues.
+    @emlResetLineStyle
 
     # Draw axes
     @emlDrawAxes: .freqMin, .freqMax, .powerMin, .powerMax, .xLabel$, .yLabel$, .title$, .vpW, .vpH
@@ -1223,6 +1240,12 @@ procedure emlDrawLTAS: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colo
         endif
         .curveStemDrawn = 0
 
+        ; THE SERIES' PEN, ON THE CURVE LAYER ONLY. Bars, poles and speckles
+        ; are not strokes of a line -- a dashed pen would break a bar's
+        ; outline and a speckle's dot into pieces -- so the style is set here,
+        ; inside `if .showCurve`, and reset before the next layer draws.
+        @emlPrimaryLineStyle
+        @emlApplyLineStyle: emlPrimaryLineStyle.style
         if .curveBins >= 2
             Draw: .freqMin, .freqMax, .powerMin, .powerMax, "no", "Curve"
         elsif .curveBins = 1
@@ -1241,6 +1264,7 @@ procedure emlDrawLTAS: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colo
                 endif
             endif
         endif
+        @emlResetLineStyle
     endif
 
     # --- Speckles (custom — dots at data values, drawn last to cap poles) ---
