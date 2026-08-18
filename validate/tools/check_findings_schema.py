@@ -119,6 +119,82 @@
 #     three fields" vacuously, and that is precisely the shape of pin this
 #     repository has resolved to stop writing.
 #
+# ============================================================================
+# THE ID CENSUS (added 18 August 2026)
+# ============================================================================
+# THE FAILURE IT EXISTS FOR. On 18 August 2026 nine findings -- D88, D97, D110,
+# D123, D124, D125, D126, D134, D135 -- were discussed at length in the audit
+# tree's prose and had no row in this ledger at all. Two of them had been
+# CLOSED for ten days by validators that said so in their own headers while the
+# prose still called them LIVE. Nothing noticed, because every check in this
+# file reads the ledger and asks whether its rows are well formed. A ledger
+# that is missing a row is perfectly well formed. Completeness is the one
+# property a schema check cannot see, and it is the property that failed.
+#
+# So the census asks the other question: DOES EVERY FINDING THE PROSE NAMES
+# HAVE A ROW? It walks every Markdown file under audit/, pulls out every token
+# matching the finding-ID grammar, and fails on any ID with neither a row in
+# the ledger nor a line in audit/FINDINGS_UNMIGRATED.tsv.
+#
+# THE GRAMMAR, and what it deliberately does not match. Five families, each
+# anchored on a prefix this project has actually used:
+#
+#     D\d+ with an optional -a/-b/-c tail   D5, D110, D66-b
+#     NEW-<AREA>-<n>                        NEW-G10-2
+#     RULE-<TOKEN>                          RULE-28I
+#     LANE-<TOKEN>-<n>                      LANE-B-1
+#     SAVED-<TOKEN>                         SAVED-OVERPRINT
+#
+# NOT MATCHED, ON PURPOSE, EACH DECIDED BY MEASUREMENT RATHER THAN BY TASTE:
+#
+#   * `P\d+`. Every P<n> in the audit tree -- 7 of them, P0 through P6 -- is a
+#     PRIORITY label ("P0 -- one-tailed p defect in scripting API", "P0-3",
+#     "From P1: cross-platform render comparison"). Not one is a finding. A
+#     family that matched them would put seven non-findings into the unmigrated
+#     list on the day it was written, which is the "too loose, and now it
+#     matches prose that merely looks like an ID" failure with a paper trail.
+#   * A GENERIC `CAPS-CAPS` family, which is the obvious way to catch
+#     SAVED-OVERPRINT without naming its prefix. Measured over audit/**.md it
+#     matches 32 tokens of which 31 are English: APPEND-ONLY, PRE-REPO,
+#     CONFIRMED-LIVE, TOP-LEVEL, MIXED-MODEL. One in thirty-two is not a
+#     grammar, it is a coin flip, so the prefix is named instead.
+#   * Anything inside a longer word or identifier. The boundaries are explicit
+#     (`(?<![A-Za-z0-9_])` / `(?![A-Za-z0-9_])`) rather than `\b`, so `emlD5`
+#     and `xD110y` do not match -- but a hyphen is allowed on the LEFT so that
+#     the range "D102-D108", which the prose writes constantly, yields both
+#     ends and not just the first.
+#
+# AND THE OTHER SIDE OF THE SAME COIN -- WHAT STOPS THE GRAMMAR GOING STALE.
+# A grammar that names its prefixes misses the next convention somebody
+# invents, and misses it SILENTLY, which is the failure this whole file is
+# about. So the grammar is audited by the ledger: EVERY ID IN THE LEDGER MUST
+# BE MATCHED BY THE GRAMMAR. File `WIDGET-7` as a finding and this check goes
+# red the same day, saying the family is unknown. The register cannot outrun
+# the census, because the register is what tests it.
+#
+# THE UNMIGRATED LIST, and why it is not a hole. 113 IDs from the 4 August
+# drive and the audits after it have never been given rows. They are named in
+# audit/FINDINGS_UNMIGRATED.tsv with a reason apiece, and three rules keep that
+# file from becoming the drawer failures get swept into:
+#
+#     an entry that ALSO has a row  -> FAIL   (migrate, then delete the line)
+#     an entry named NOWHERE in the audit tree -> FAIL   (no speculative
+#                                              padding; the list shrinks as
+#                                              prose retires)
+#     an entry with no reason -> FAIL          (a bare ID argues nothing)
+#
+# The only way to quiet a new red is to file a row, or to type an ID and a
+# sentence. Both are visible in a diff. Neither happens by accident.
+#
+# WHAT A DEFECTIVE TREE WOULD STILL HAVE TO LOOK LIKE TO PASS. It would have to
+# file a finding whose ID uses a prefix outside the five families AND never put
+# that ID in the ledger -- because the moment it IS in the ledger the grammar
+# check demands the family. Or it would have to discuss a finding in prose
+# without ever writing its ID down. Or somebody would have to add a line to the
+# unmigrated list on purpose, with a reason, in a diff. Those are the three
+# holes, they are stated here rather than discovered later, and the first two
+# are the same hole: an ID that is never written is an ID no census can see.
+#
 # USAGE
 #   python3 validate/tools/check_findings_schema.py
 #   python3 validate/tools/check_findings_schema.py path/to/ledger.json
@@ -155,6 +231,112 @@ POINTER_KINDS = ("evidence", "roadmap", "refutation")
 # both evidence fields. Kept as one tuple so the entailment table, the
 # required-pointer check and the contradiction check cannot drift apart.
 NOTHING_BUILT = {"roadmap": "superseded", "refutation": "refuted"}
+
+# ---------------------------------------------------------------------------
+# THE ID CENSUS. Constants first; the reasoning is in the header block above.
+# ---------------------------------------------------------------------------
+import re
+
+# Five families, each anchored on a prefix this project has used. Kept as an
+# ordered list of (name, pattern) so a failure can say WHICH family matched,
+# and so adding one is a single line rather than an edit to a regex.
+ID_FAMILIES = (
+    ("drive",  r"D\d{1,4}(?:-[a-z]{1,2})?"),
+    ("stress", r"NEW-[A-Z]+\d*-\d+"),
+    ("rule",   r"RULE-[A-Z0-9]+"),
+    ("lane",   r"LANE-[A-Z0-9]+-\d+"),
+    ("saved",  r"SAVED-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*"),
+)
+
+# Explicit boundaries rather than \b: no alphanumeric or underscore on either
+# side, but a HYPHEN is allowed on the left so "D102-D108" yields both ends.
+ID_RX = re.compile(r"(?<![A-Za-z0-9_])(?:%s)(?![A-Za-z0-9_])"
+                   % "|".join(p for _n, p in ID_FAMILIES))
+ID_FULL = re.compile(r"(?:%s)\Z" % "|".join(p for _n, p in ID_FAMILIES))
+
+CENSUS_DIR = "audit"
+CENSUS_EXT = (".md",)
+# The unmigrated list names IDs by definition; censusing it would make it
+# self-satisfying. It is READ, not scanned.
+UNMIGRATED = os.path.join("audit", "FINDINGS_UNMIGRATED.tsv")
+
+
+def id_atoms(ident):
+    """The grammar-shaped pieces of a ledger id. Compound ids are real in this
+    ledger -- `D1/D2`, `D66-b/c`, `D98/D99` -- and prose names their pieces
+    singly, so a row filed as `D98/D99` must satisfy a mention of `D98`. The
+    bare stem of a lettered id counts too: a row filed as `D66-b/c` covers a
+    mention of `D66`, because that is what a reader writing `D66` means."""
+    parts = [p.strip() for p in str(ident).split("/") if p.strip()]
+    if not parts:
+        return {str(ident)}
+    stem = re.match(r"\A(D\d{1,4})(?:-[a-z]{1,2})?\Z", parts[0])
+    out = set()
+    for p in parts:
+        if ID_FULL.match(p):
+            out.add(p)
+        elif stem and re.fullmatch(r"[a-z]{1,2}", p):
+            out.add(stem.group(1) + "-" + p)
+    if stem:
+        out.add(stem.group(1))
+    return out or {str(ident)}
+
+
+def read_unmigrated(path):
+    """-> (mapping id -> reason, list of complaints). Blank lines and # lines
+    are ignored; everything else must be <id>TAB<reason>."""
+    out, bad = {}, []
+    with open(path, encoding="utf-8") as fh:
+        for n, raw in enumerate(fh, 1):
+            line = raw.rstrip("\n")
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue
+            if "\t" not in line:
+                bad.append("line %d: no tab -- the format is <id>TAB<reason>" % n)
+                continue
+            ident, reason = line.split("\t", 1)
+            ident, reason = ident.strip(), reason.strip()
+            if not ident:
+                bad.append("line %d: no id" % n)
+                continue
+            if not reason:
+                bad.append("line %d: %s carries no reason" % (n, ident))
+                continue
+            if ident in out:
+                bad.append("line %d: %s listed twice" % (n, ident))
+                continue
+            out[ident] = reason
+    return out, bad
+
+
+def scan_prose(root):
+    """-> (id -> set of repo-relative files naming it, number of files read)."""
+    where, nfiles = {}, 0
+    base = os.path.join(root, CENSUS_DIR)
+    skip = os.path.join(root, UNMIGRATED)
+    for dirpath, _dirs, fns in os.walk(base):
+        for fn in sorted(fns):
+            if not fn.endswith(CENSUS_EXT):
+                continue
+            full = os.path.join(dirpath, fn)
+            if os.path.abspath(full) == os.path.abspath(skip):
+                continue
+            rel = os.path.relpath(full, root)
+            try:
+                with open(full, encoding="utf-8", errors="replace") as fh:
+                    text = fh.read()
+            except OSError:
+                continue
+            nfiles += 1
+            for m in ID_RX.findall(text):
+                where.setdefault(m, set()).add(rel)
+    return where, nfiles
+
+
+def natkey(s):
+    return tuple((int(t), "") if t.isdigit() else (-1, t)
+                 for t in re.findall(r"\d+|\D+", s))
+
 
 fail_n = 0
 
@@ -598,6 +780,90 @@ def main():
         print("        " + m)
 
     # -----------------------------------------------------------------------
+    # 10. THE GRAMMAR IS AUDITED BY THE LEDGER. Every id in the ledger must be
+    #     matched by one of the families below, so a naming convention the
+    #     census cannot see is a naming convention this file refuses. This is
+    #     the guard against the OTHER failure direction -- a grammar so tight
+    #     it stops seeing the findings people actually file, silently.
+    # -----------------------------------------------------------------------
+    unknown_shape = []
+    ledger_atoms = set()
+    for i, r in lit_rows:
+        atoms = id_atoms(row_label(r, i))
+        ledger_atoms |= atoms
+        for a in atoms:
+            if not ID_FULL.match(a):
+                unknown_shape.append(
+                    "%s: the atom %r matches no ID family (%s) -- teach the "
+                    "census the family, or the next one goes unseen"
+                    % (row_label(r, i), a,
+                       ", ".join(n for n, _p in ID_FAMILIES)))
+    say(not unknown_shape,
+        "every ledger id is a shape the census grammar recognises",
+        "" if not unknown_shape else "%d unrecognised" % len(unknown_shape))
+    for m in unknown_shape:
+        print("        " + m)
+
+    # -----------------------------------------------------------------------
+    # 11. THE UNMIGRATED LIST. It exists so the census can be green and honest
+    #     at once, and these three rules are what stop it being the drawer
+    #     failures get swept into.
+    # -----------------------------------------------------------------------
+    unmig_path = os.path.join(ROOT, UNMIGRATED)
+    unmig, unmig_bad = {}, []
+    if not os.path.exists(unmig_path):
+        say(False, "the unmigrated list exists", "not found at " + UNMIGRATED)
+    else:
+        unmig, unmig_bad = read_unmigrated(unmig_path)
+        say(not unmig_bad, "the unmigrated list parses (<id>TAB<reason>)",
+            "" if not unmig_bad else "%d bad line(s)" % len(unmig_bad))
+        for m in unmig_bad:
+            print("        " + m)
+        also_row = sorted((set(unmig) & ledger_atoms), key=natkey)
+        say(not also_row,
+            "no unmigrated entry names an id that already has a row",
+            "" if not also_row
+            else "%d stale excuse(s): %s" % (len(also_row), ", ".join(also_row)))
+        for m in also_row:
+            print("        %s has a row in the ledger -- delete its line from %s"
+                  % (m, UNMIGRATED))
+
+    # -----------------------------------------------------------------------
+    # 12. THE CENSUS ITSELF. Every finding id the audit tree names must have a
+    #     row, or a line in the unmigrated list saying why not.
+    # -----------------------------------------------------------------------
+    where, nfiles = scan_prose(ROOT)
+
+    # A census that read nothing is not a clean census -- the same rule the
+    # empty ledger gets above, applied to the other input.
+    say(nfiles > 0, "the census read the audit tree",
+        "%d markdown file(s) under %s/" % (nfiles, CENSUS_DIR))
+    say(len(where) > 0, "and found finding ids in it",
+        "%d distinct id(s)" % len(where))
+
+    orphan = sorted((i for i in where
+                     if i not in ledger_atoms and i not in unmig), key=natkey)
+    say(not orphan,
+        "every id the audit prose names has a row or an unmigrated line",
+        "" if not orphan else "%d id(s) filed nowhere" % len(orphan))
+    for m in orphan:
+        seen = sorted(where[m])
+        print("        %s -- named in %s%s, and it is neither a row in the "
+              "ledger nor a line in %s"
+              % (m, ", ".join(seen[:3]),
+                 " (+%d more)" % (len(seen) - 3) if len(seen) > 3 else "",
+                 UNMIGRATED))
+
+    # And the reverse: an unmigrated entry for an id nothing names any more.
+    ghost = sorted((i for i in unmig if i not in where), key=natkey)
+    say(not ghost,
+        "no unmigrated entry names an id the audit tree has stopped mentioning",
+        "" if not ghost else "%d ghost(s): %s" % (len(ghost), ", ".join(ghost)))
+    for m in ghost:
+        print("        %s appears nowhere under %s/ -- delete its line, the "
+              "list may not be padded" % (m, CENSUS_DIR))
+
+    # -----------------------------------------------------------------------
     # The census. Not an assertion -- a photograph, printed because the
     # fixed-unpinned count is the number this change order exists to surface.
     # -----------------------------------------------------------------------
@@ -616,6 +882,10 @@ def main():
     if tally["refuted"]:
         print("   (refuted is not a queue either: somebody looked and there was"
               "\n    no defect, and the row's pointer says what they looked at.)")
+    print("   %-16s %d" % ("unmigrated", len(unmig)))
+    if unmig:
+        print("   (unmigrated is not a status: these are ids the audit tree"
+              "\n    names and this ledger does not carry. Every line is a debt.)")
 
     print("\n%s" % ("all checks passed" if fail_n == 0
                     else "%d check(s) FAILED" % fail_n))

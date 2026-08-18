@@ -1,3 +1,5 @@
+> **Historical record (2026-08-18).** Current finding status lives in `audit/FINDINGS_MACHINE.json`.
+
 # HISTORY LEDGER — EML Stats & Graphs
 
 Ian Howell — Embodied Music Lab — GPL-3.0-or-later

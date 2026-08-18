@@ -1,3 +1,5 @@
+> **Historical record (2026-08-06).** Current finding status lives in `audit/FINDINGS_MACHINE.json`.
+
 # Phase One audit — EML Praat Tools
 
 Ian Howell — Embodied Music Lab — 6 August 2026

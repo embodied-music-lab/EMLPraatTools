@@ -291,6 +291,51 @@ procedure emlInitDrawingDefaults
     # companion flag is the once-per-session latch on the Info-window NOTE.
     emlAlphaBgMode$ = ""
     emlAlphaBgDisclosed = 0
+    # ── THE SECOND VERTICAL AXIS, AND THE PENS THAT DISTINGUISH THE PAIR ────
+    # The right-hand axis is a REQUEST carried in globals, not a parameter of
+    # any draw procedure. Same shape as the page settings above and for the
+    # same reason: thirteen draw procedures share one dispatch, and only one
+    # of them can honour it, so an argument on all thirteen would be twelve
+    # arguments that mean "refuse". @emlSecondAxisScope is the judge, and
+    # @emlSecondAxisGate is the one-line call every other draw procedure makes
+    # so that a request it cannot honour is refused out loud rather than
+    # ignored.
+    #
+    # emlSecondAxisOn      0 no second axis, 1 draw one
+    # emlSecondAxisCol$    the value column the right series is read from
+    # emlSecondAxisMin/Max the right-axis range; BOTH 0 IS AUTO, the same
+    #                      sentinel the left axis and every dialog uses
+    # emlSecondAxisLabel$  the right axis name; "" falls back to the column
+    # emlSecondAxisStyle   1 Solid 2 Dotted 3 Dashed 4 Dashed-dotted
+    #
+    # COLOUR IS SHARED AND STYLE IS NOT. Ruled by Ian on 18 August 2026,
+    # superseding an earlier rule under which the right series took a colour
+    # of its own. The two series wear the FIGURE'S colour -- one colour
+    # control, on the first dialog, governing both -- and are told apart by
+    # their line style, because the field's journals still print in grayscale
+    # and a pair separated only by hue arrives at the reader as two identical
+    # lines. Style survives the photocopier; colour does not. So there is no
+    # emlSecondAxisColour$ here: there is nothing for it to mean.
+    #
+    # THE DEFAULTS ARE SOLID THEN DASHED, and both are overridable: the first
+    # series from a "Line style" menu on its own dialog, the second from the
+    # follow-up pause that asks for everything else the right axis needs.
+    emlSecondAxisOn = 0
+    emlSecondAxisCol$ = ""
+    emlSecondAxisMin = 0
+    emlSecondAxisMax = 0
+    emlSecondAxisLabel$ = ""
+    emlSecondAxisStyle = 3
+    # The PRIMARY series' pen. 1 Solid, and every line this plugin drew
+    # before this change order was solid, so 1 is also the no-change value.
+    emlLineStyle = 1
+    # Read by @emlDrawAlignedMarksRight and by @emlDrawSecondSeries' name.
+    # "" means "the theme's default ink", which is what the LEFT margin wears
+    # and therefore what the right margin wears too: under the shared-colour
+    # rule above, painting the right furniture in the series colour would bind
+    # it to BOTH series and say nothing. It is left as a hook rather than
+    # deleted so that the ruling can be reversed by assigning one string.
+    emlRightAxisColour$ = ""
     # Axis display
     emlShowInnerBox = 1
     emlShowAxisNameX = 1
@@ -409,6 +454,27 @@ procedure emlSetAdaptiveTheme: .vpWidth, .vpHeight
     .marginRight = .marginLeft
     .marginBottom = min (0.5, max (0.2, .vpHeight * 0.14))
     .marginRightWithLegend = max (1.0, .vpWidth * 0.22)
+
+    # A RIGHT AXIS IS PAID FOR IN THE RIGHT MARGIN, and the payment is made
+    # here because margins are decided before anything is drawn on them.
+    # Symmetric margins are sized for tick labels plus one axis name on the
+    # LEFT; a right axis puts the same two things in a margin sized for
+    # neither, and Praat does not clip a `Text right`, so the name simply
+    # runs off the saved image.
+    #
+    # THE GUARD IS THE TICK-WIDTH RULE'S GUARD, not a new one: read through
+    # variableExists, take the WIDER of the two candidates, never shrink.
+    # A caller that has not loaded @emlInitDrawingDefaults -- a PraatGen
+    # companion, a harness case, this repository's own probes -- reads
+    # nothing and gets the margin it has always had.
+    if variableExists ("emlSecondAxisOn")
+        if emlSecondAxisOn = 1
+            .marginRightForAxis = min (1.0, max (0.5, .vpWidth * 0.18))
+            if .marginRightForAxis > .marginRight
+                .marginRight = .marginRightForAxis
+            endif
+        endif
+    endif
 
     # Top margin — derived from title typography, not viewport height.
     # Title area height is driven by its contents (title + optional subtitle),
@@ -2453,7 +2519,17 @@ procedure emlDrawAlignedMarksRight: .yMin, .yMax, .targetTicks, .useMinor
         goto ALIGNED_RIGHT_END
     endif
 
-    Colour: emlSetAdaptiveTheme.tickColor$
+    # THE RIGHT MARGIN'S INK IS THE RIGHT SERIES' INK when there is a right
+    # series, because a tick that is not bound to its series is a number with
+    # no scale on it. emlRightAxisColour$ is "" for every caller that has no
+    # second axis, and "" means the theme tick ink this axis has always used.
+    .markColour$ = emlSetAdaptiveTheme.tickColor$
+    if variableExists ("emlRightAxisColour$")
+        if emlRightAxisColour$ <> ""
+            .markColour$ = emlRightAxisColour$
+        endif
+    endif
+    Colour: .markColour$
 
     # Derive dynamic mark parameters
     if emlShowAxisValuesY

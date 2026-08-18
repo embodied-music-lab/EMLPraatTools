@@ -1,3 +1,5 @@
+> **Historical record (2026-08-06).** Current finding status lives in `audit/FINDINGS_MACHINE.json`.
+
 # Verification sweep — 6 August 2026
 
 Every open finding re-checked against the code as it stands, because the

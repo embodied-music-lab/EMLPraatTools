@@ -1,3 +1,5 @@
+> **Historical record (2026-08-14).** Current finding status lives in `audit/FINDINGS_MACHINE.json`.
+
 # Author rulings — 14 Aug 2026 stress-test session (addendum for the managing session)
 
 Given by Ian in the stress-test thread after report delivery. These resolve the three

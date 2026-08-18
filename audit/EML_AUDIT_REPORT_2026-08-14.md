@@ -1,3 +1,5 @@
+> **Historical record (2026-08-14).** Current finding status lives in `audit/FINDINGS_MACHINE.json`.
+
 # EML Praat Tools — End-to-End Stress-Test Audit & Usability Report
 
 **Session:** Friday 14 August 2026, 5:30 PM – 11:00 PM EDT · **report-only** (no file under `plugin/` touched)

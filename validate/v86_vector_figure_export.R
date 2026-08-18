@@ -591,11 +591,19 @@ for (L in LEGS) {
     # the bytes. A message listing a file that is not on disk is the failure
     # this whole feature is against, arriving through the reassurance.
     ext_marker <- function(p) MARKERS[[tolower(sub("^.*\\.", "", p))]]
+    # RESOLVED AGAINST THIS CHECKOUT, NOT AGAINST THE PATH IN THE MESSAGE. The
+    # quoted path is ABSOLUTE, and correctly so -- it is what the user was told,
+    # and telling somebody where their figure landed is the whole point of the
+    # line. But it is absolute on the machine that drove the rig, so opening it
+    # here only works when this is that machine. It passed for weeks on the
+    # box the evidence was recorded on and failed the first time the suite ran
+    # anywhere else. The bytes are still read; only the lookup moves.
+    here <- function(f) file.path(VF_DIR, "files", lg, basename(f))
     check_true("v86",
                sprintf("%s: and every file it names is on disk with its marker", lg),
                length(figfiles) > 0 &&
                all(vapply(figfiles,
-                          function(f) starts_with_marker(f, ext_marker(f)),
+                          function(f) starts_with_marker(here(f), ext_marker(f)),
                           logical(1))))
     # AND THE FIGURE'S OWN PNG IS AMONG THEM. The list is built from what
     # landed, so this is the fact behind the sentence rather than the sentence
@@ -1120,13 +1128,17 @@ for (R in REPLAY) {
     # AND THE FILES ARE WHAT THEY CLAIM TO BE, read here out of the bytes.
     files <- all_of(paste0("rec_", arm, "_file"))
     figs <- files[grepl("\\.(png|eps|pdf)$", files)]
+    # Resolved against this checkout for the reason given at the leg check
+    # above: the recorded path is absolute on the machine that drove the rig.
+    rhere <- function(f) file.path(VF_DIR, "files", paste0("replay_", arm),
+                                   basename(f))
     check_true("v86",
                sprintf("%s replay: every figure it wrote carries its own marker (%d)",
                        arm, length(figs)),
                length(figs) == 4 &&
                all(vapply(figs,
                           function(f) starts_with_marker(
-                              f, MARKERS[[tolower(sub("^.*\\.", "", f))]]),
+                              rhere(f), MARKERS[[tolower(sub("^.*\\.", "", f))]]),
                           logical(1))))
 }
 check_true("v86", "the edit changed exactly one line of the block",

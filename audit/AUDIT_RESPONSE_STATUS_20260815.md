@@ -1,3 +1,5 @@
+> **Historical record (2026-08-15).** Current finding status lives in `audit/FINDINGS_MACHINE.json`.
+
 # Audit response status — 15–16 August 2026
 
 Ian Howell — Embodied Music Lab — GPL-3.0-or-later

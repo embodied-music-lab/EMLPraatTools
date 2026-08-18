@@ -1,3 +1,5 @@
+> **Historical record (2026-08-14).** Current finding status lives in `audit/FINDINGS_MACHINE.json`.
+
 # TODO — remote cleanup: 78 superseded artefact files
 
 **Owner: Ian. Needs one `git push`, or 78 web-UI deletes. Not doable from the

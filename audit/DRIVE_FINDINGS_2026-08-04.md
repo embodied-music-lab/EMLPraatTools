@@ -1,3 +1,5 @@
+> **Historical record (2026-08-04).** Current finding status lives in `audit/FINDINGS_MACHINE.json`.
+
 # End-to-end path drive — EML Praat Tools plugin
 
 Date: 4 August 2026. Praat 6.6.30, Xvfb :99 1400x1000x24, matchbox WM.

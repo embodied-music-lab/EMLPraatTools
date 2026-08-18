@@ -1,3 +1,5 @@
+> **Historical record (2026-08-15).** Current finding status lives in `audit/FINDINGS_MACHINE.json`.
+
 # Remaining before the graphing push
 
 Working tracker. Written 9 August 2026. Supersedes nothing — it collects what

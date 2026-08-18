@@ -1,0 +1,147 @@
+# FINDINGS_UNMIGRATED.tsv -- the IDs the audit tree names and the register does not carry.
+#
+# Ian Howell -- Embodied Music Lab -- GPL-3.0-or-later
+#
+# THIS FILE IS THE SIZE OF THE GAP, WRITTEN DOWN. audit/FINDINGS_MACHINE.json is
+# the only surface that states finding status, and the ID census in
+# validate/tools/check_findings_schema.py fails when an ID appears in the audit
+# tree's prose with no row in it. On 18 August 2026 that was true of 113 IDs --
+# the whole D-series from the 4 August GUI drive and the audits that followed it,
+# plus two NEW-series findings from the 14 August stress test. Nine were migrated
+# that day by author ruling. These are the rest, and listing them here is what
+# lets the census be GREEN and HONEST at the same time: the gap is a number
+# somebody can read rather than a silence.
+#
+# EVERY LINE IS A DEBT, NOT A DISMISSAL. An ID here is not refuted, not closed
+# and not out of scope -- it is unfiled. Migrating one means giving it a row and
+# DELETING its line here.
+#
+# THE THREE RULES THE CENSUS ENFORCES ON THIS FILE, which are what stop it from
+# becoming the place failures go to be silenced:
+#
+#   1. An entry whose ID also has a row in the register is a FAILURE. You
+#      migrate, you delete the line. The file cannot carry a stale excuse beside
+#      a real row.
+#   2. An entry whose ID appears NOWHERE in the audit tree any more is a
+#      FAILURE. The file cannot be padded with IDs somebody might invent later,
+#      and it shrinks as prose retires rather than accreting forever.
+#   3. Every entry needs a reason. A bare ID says nothing about why it is here.
+#
+# So the only way to quiet a new red is to file a row, or to type an ID and a
+# sentence saying why not -- which is a thing a reader can argue with.
+#
+# FORMAT: <id>\t<reason>. Blank lines and # comments ignored.
+
+D3	D-series finding from the 4 August 2026 GUI drive; never migrated. Also collides with a DATASET LABEL in audit/static/LMM_v08_empirical_audit.md's results table, which is an imported third-party audit that predates this project's ID scheme -- the census cannot tell the two apart and is not asked to.
+D9	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D10	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D13	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D14	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D16	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D17	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D18	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D19	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D20	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D21	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D22	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D23	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D24	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D25	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D26	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D27	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D28	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D29	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D30	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D31	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D32	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D33	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D34	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D35	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D36	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D37	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D39	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D41	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D42	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D43	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D44	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D45	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D46	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D47	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D48	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D49	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D50	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D51	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D52	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D53	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D54	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D55	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D56	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D57	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D58	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D59	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D60	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D61	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D62	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D63	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D64	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D65	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D67	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D68	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D69	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D70	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D71	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D72	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D73	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D74	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D75	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D76	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D77	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D78	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D79	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D80	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D81	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D82	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D83	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D84	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D85	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D86	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D87	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D89	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D90	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D91	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D92	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D93	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D94	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D95	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D96	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D100	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D101	D-series finding from the 4 August 2026 GUI drive; never migrated.
+D102	D-series finding filed by the 6 August 2026 Phase One audit; never migrated.
+D103	D-series finding filed by the 6 August 2026 Phase One audit; never migrated.
+D104	D-series finding filed by the 6 August 2026 Phase One audit; never migrated.
+D105	D-series finding filed by the 6 August 2026 Phase One audit; never migrated.
+D106	D-series finding filed by the 6 August 2026 Phase One audit; never migrated.
+D107	D-series finding filed by the 6 August 2026 Phase One audit; never migrated.
+D108	D-series finding filed by the 6 August 2026 Phase One audit; never migrated.
+D109	D-series finding filed by the 6 August 2026 Phase One audit; never migrated.
+D111	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D112	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D113	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D114	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D115	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D116	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D117	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D118	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D119	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D120	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D121	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D122	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D127	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D128	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D129	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D130	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D131	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D132	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+D133	D-series finding filed by the 7-8 August 2026 work and recorded only in the old findings index, now the verbatim block of audit/FINDINGS_NARRATIVE.md; never migrated.
+NEW-G5-2	NEW-series finding from the 14 August 2026 stress test, named in AUDIT_RESPONSE_STATUS_20260815.md; never given a row.
+NEW-G11-5	NEW-series finding from the 14 August 2026 stress test, named in AUTHOR_RULINGS_ADDENDUM_2026-08-14.md; never given a row.

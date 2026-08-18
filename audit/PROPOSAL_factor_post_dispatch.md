@@ -1,3 +1,5 @@
+> **Historical record (2026-08-12).** Current finding status lives in `audit/FINDINGS_MACHINE.json`.
+
 # Proposal — factor the post-dispatch annotation block to file scope
 
 Written 11 August 2026, for author approval before any edit. Nothing in this
