@@ -1334,8 +1334,30 @@ for (rn in renderers) {
              all(startsWith(toks, ".") | toks %in% THEME_RECT))
   check("v32", sprintf("@%s: no page coordinate in a viewport selection", rn),
         sum(grepl("^[-+]?[0-9]", toks)), 0, tol = 0)
-  check("v32", sprintf("@%s never reads the figure-level drawn extent", rn),
-        sum(grepl("emlDrawn(Min|Max)[XY]", body)), 0, tol = 0)
+  # THE RENDERER WORKS IN THE RECTANGLE IT WAS GIVEN. Reaching for the
+  # figure-level extent instead is how a legend comes to be laid out against
+  # something other than its own budget, so the whole tracker is out of bounds
+  # here -- with ONE exception, argued for below and pinned separately.
+  #
+  # THE EXCEPTION IS THE PARKED BAND'S TOP EDGE, and it is the one quantity in
+  # this procedure that is a property of the PAGE rather than of the panel.
+  # Placement 4 draws the legend on a patch of picture that must be clear of
+  # everything already on the page, not merely of the panel whose legend it
+  # is; on a composed page those are different rectangles. So @emlDrawLegend
+  # -- and only @emlDrawLegend, and only for that one number -- reads
+  # emlDrawnMaxY. Nothing else about the tracker is legible to it: not the
+  # left, right or top bounds, and not in any other renderer in the chain.
+  # The entitled name is REMOVED from each line before the line is judged, so
+  # a line that mentioned both emlDrawnMaxY and a bound it may not read is
+  # still caught. Testing "does the line contain the allowed name" would pass
+  # that line on its good half.
+  scrubbed <- if (identical(rn, "emlDrawLegend"))
+                gsub("emlDrawnMaxY", "", body) else body
+  stray <- grep("emlDrawn(Min|Max)[XY]", scrubbed, value = TRUE)
+  check("v32", sprintf("@%s reads no figure-level extent bound it is not entitled to [%s]",
+                       rn, if (length(stray)) paste(unique(stray), collapse = " | ")
+                           else "none"),
+        length(stray), 0, tol = 0)
   check("v32", sprintf("@%s never reads the panel origin", rn),
         sum(grepl("emlPanelOrigin[XY]", body)), 0, tol = 0)
 }
@@ -1955,8 +1977,29 @@ if (!is.null(legend_body)) {
                   legend_body)), 2, tol = 0)
   check_true("v32", "the placement-3 band starts from the page bottom",
              any(grepl("^\\.below = \\.pageBottom$", legend_body)))
-  check_true("v32", "the placement-4 park clears the page bottom",
-             any(grepl("^\\.park = \\.pageBottom \\+ 12$", legend_body)))
+  # THE PARK CLEARS THE PAGE, AND THE PAGE IS THE UNION. The band starts from
+  # the page bottom this procedure computed for itself and is then pushed down
+  # to clear the extent union if the union reaches further -- which it does
+  # exactly when a sibling panel drawn earlier on the same page hangs below
+  # this one. Seeded from .pageBottom and widened by a comparison, so the band
+  # can only ever move DOWN and a single figure, whose union is itself, is
+  # unmoved.
+  check_true("v32", "the parked band is seeded from the page bottom",
+             any(grepl("^\\.unionBottom = \\.pageBottom$", legend_body)))
+  check_true("v32", "...and pushed down to clear the extent union",
+             any(grepl("^if emlDrawnMaxY > \\.unionBottom$", legend_body)) &&
+             any(grepl("^\\.unionBottom = emlDrawnMaxY$", legend_body)))
+  check_true("v32", "the placement-4 park clears the whole page",
+             any(grepl("^\\.park = \\.unionBottom \\+ 12$", legend_body)))
+  # FOUR MENTIONS, exactly as totalCanvasHeight has four and for the same
+  # reason: the variableExists test, the undefined test, the widening
+  # comparison and the assignment. A fifth would be a second rule, and a
+  # second rule about where the band goes is how placements 3 and 4 came to
+  # disagree in the first place.
+  check("v32", "the union's bottom is read only where the park is settled",
+        sum(grepl("emlDrawnMaxY", legend_body)), 4, tol = 0)
+  check_true("v32", "...and through variableExists, like every other cross-layer read",
+             any(grepl('variableExists \\("emlDrawnMaxY"\\)', legend_body)))
   # NEITHER PLACEMENT BRANCH READS totalCanvasHeight ANY MORE. The form's
   # global appears in the page-bottom block and nowhere else -- four mentions,
   # which are the variableExists test, the undefined test, the comparison and

@@ -1453,6 +1453,64 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlRecordCapturePage   ->  .out$
+#
+# WHICH PAGE THE FIGURE WENT ON, AND WHERE ON IT.
+#
+# "Erase page first" and "Panel origin" are not parameters of any draw
+# procedure. They are globals -- emlEraseFirst, emlPanelOriginX,
+# emlPanelOriginY -- set by the graphs form from the draw dialog's fields and
+# acted on by @emlBeginPanel, exactly the shape @emlRecordCaptureEnv exists
+# for. A recorded call that carried every argument faithfully would still
+# replay a different picture: two figures composed side by side come back one
+# on top of the other, because nothing in the emitted file ever said which
+# panel started a page and which joined one.
+#
+# SO THE STEP CARRIES THE THREE VALUES AND THE CALL THAT ACTS ON THEM. The
+# @emlBeginPanel line is emitted here rather than assumed, because a replay
+# must not depend on the reader knowing that a draw procedure does not erase.
+# It is the same procedure the form calls, so a replayed page is built by the
+# code that built the original.
+#
+# ON THE STEP'S CODE, NOT IN ITS env COLUMN, and that is the difference
+# between this and @emlRecordCaptureEnv. The env column is emitted verbatim;
+# the code column is what @emlRecordColumnManifest rewrites, and these three
+# values are decisions the user made in a dialog, so they belong in the
+# editable block at the top of the file with the columns and the axis ranges.
+# The manifest lifts them from these lines by name.
+#
+# DRAW STEPS ONLY -- see the caller. An analysis draws nothing, and a page
+# statement over a t-test would be three lines of noise per step and three
+# variables in the block governing nothing.
+#
+# READ THROUGH variableExists, ALWAYS. A stats-only script has not loaded
+# graphs/eml-graph-procedures.praat and has none of these; it also has no
+# @emlBeginPanel to call, so such a step states nothing and replays as it
+# always did.
+# ----------------------------------------------------------------------------
+procedure emlRecordCapturePage
+    .out$ = ""
+    .have = 1
+    if not variableExists ("emlEraseFirst")
+        .have = 0
+    endif
+    if not variableExists ("emlPanelOriginX")
+        .have = 0
+    endif
+    if not variableExists ("emlPanelOriginY")
+        .have = 0
+    endif
+    if .have = 1
+        .out$ = "emlEraseFirst = " + string$ (emlEraseFirst) + newline$
+        ... + "emlPanelOriginX = " + string$ (emlPanelOriginX) + newline$
+        ... + "emlPanelOriginY = " + string$ (emlPanelOriginY) + newline$
+        ... + "@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, "
+        ... + "emlEraseFirst" + newline$
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlRecordCaptureAnnotations: .kind$   ->  .out$
 #
 # THE OTHER HALF OF THE SAME PROBLEM: THE BRACKET.
@@ -1697,6 +1755,13 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     .codeOut$ = .code$
     if .codeOut$ = ""
         .codeOut$ = "; (nothing executed at this step -- see the note above)"
+    endif
+    ; THE PAGE THE FIGURE WENT ON, in front of the call that drew it. Draw
+    ; steps only: see @emlRecordCapturePage, which is also where the reason
+    ; this rides on the code column rather than the env column is set out.
+    if .kind$ = "draw"
+        @emlRecordCapturePage
+        .codeOut$ = emlRecordCapturePage.out$ + .codeOut$
     endif
 
     ; WHICH RUN THIS STEP BELONGS TO, CLAIMED BEFORE THE ROW EXISTS. The
@@ -2651,6 +2716,80 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlRecordPageSpec: .line$
+# IS THIS LINE A PAGE SETTING, AND WHICH ONE.
+#
+# THE FOURTH TABLE, AND A FOURTH KEY. The columns, the axis pair and the
+# figure format are lifted out of a recorded call's ARGUMENTS by position.
+# These three are not arguments of anything: they are assignments
+# @emlRecordCapturePage writes in front of the draw call, so they are matched
+# by the name on the left of the `=` instead. Everything after that -- one
+# variable per role per run, the run suffix, the note naming the steps -- is
+# the same rule the other three follow.
+#
+# THE MATCH IS EXACT AND ANCHORED. Only a line that IS one of these three
+# assignments qualifies; a line that merely contains the name (a comment, an
+# argument that happens to read alike) does not, because the name must be the
+# whole of the text to the left of the first `=`.
+#
+# Outputs: .base$  the role name for the block's variable, "" if no match
+#          .lit$   the literal on the right, "" if no match
+# ----------------------------------------------------------------------------
+procedure emlRecordPageSpec: .line$
+    .base$ = ""
+    .lit$ = ""
+    .eq = index (.line$, "=")
+    if .eq > 1
+        .lhs$ = left$ (.line$, .eq - 1)
+        .rhs$ = mid$ (.line$, .eq + 1, 1000000)
+        while left$ (.lhs$, 1) = " "
+            .lhs$ = mid$ (.lhs$, 2, 1000000)
+        endwhile
+        while .lhs$ <> "" and right$ (.lhs$, 1) = " "
+            .lhs$ = left$ (.lhs$, length (.lhs$) - 1)
+        endwhile
+        if .lhs$ = "emlEraseFirst"
+            .base$ = "eraseFirst"
+        elsif .lhs$ = "emlPanelOriginX"
+            .base$ = "panelOriginX"
+        elsif .lhs$ = "emlPanelOriginY"
+            .base$ = "panelOriginY"
+        endif
+        if .base$ <> ""
+            ; The right-hand side has to be a plain number, for the reason
+            ; the axis pair has to: a value that is already a variable is a
+            ; re-recorded session, and lifting a lift would declare a
+            ; variable holding the name of another one.
+            @emlRecordQuotedLiteral: .rhs$
+            if emlRecordQuotedLiteral.isNum = 1
+                .lit$ = emlRecordQuotedLiteral.num$
+            else
+                .base$ = ""
+            endif
+        endif
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordPageGloss: .base$
+# One short phrase per page setting, for the inline note in the block. Same
+# job as @emlRecordColumnGloss and written the same way: the variable name
+# says what the setting IS, this says what it MEANS.
+# ----------------------------------------------------------------------------
+procedure emlRecordPageGloss: .base$
+    .gloss$ = "a page setting"
+    if .base$ = "eraseFirst"
+        .gloss$ = "1 clears the page before this figure, 0 adds it to the page already there"
+    elsif .base$ = "panelOriginX"
+        .gloss$ = "inches from the left of the page to this panel's corner"
+    elsif .base$ = "panelOriginY"
+        .gloss$ = "inches from the top of the page to this panel's corner"
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlRecordColumnGloss: .base$
 # One short phrase per role, for the inline note in the block. The variable
 # name already says what the role IS; this says what it MEANS, which is what a
@@ -2991,9 +3130,11 @@ endproc
 #
 # Outputs: .n          how many column variables the session used
 #          .out$       the lines that declare them -- columns, then axes,
-#                      then figure formats
+#                      then figure formats, then the page settings
 #          .nAxis      how many axis PAIRS the session used
 #          .nFmt       how many figure format variables it emitted
+#          .nPage      how many page-setting variables it emitted -- three per
+#                      run that drew: erase, origin x, origin y
 #          .code$[s]   step s's code with its column literals, its axis range
 #                      and its format choice replaced by the variable names --
 #                      what @emlRecordRender emits
@@ -3004,6 +3145,7 @@ procedure emlRecordColumnManifest
     .n = 0
     .nAxis = 0
     .nFmt = 0
+    .nPage = 0
 
     selectObject: emlRecordBufferId
     .nSteps = Get number of rows
@@ -3315,6 +3457,66 @@ procedure emlRecordColumnManifest
                 endif
             endif
 
+            ; ---- THE PAGE SETTINGS -------------------------------------
+            ; MATCHED ON THE NAME, NOT ON AN ARGUMENT POSITION, because
+            ; these are assignments @emlRecordCapturePage wrote in front of
+            ; the draw call rather than arguments of it. A line cannot be
+            ; both a call and an assignment, so this is tested on the line
+            ; as it was captured and only rewrites when it matches.
+            ;
+            ; ONE VARIABLE PER ROLE PER RUN, by the rule every other
+            ; variable in this block follows: run 1's are eraseFirst,
+            ; panelOriginX, panelOriginY and run 2's end in 2. A composed
+            ; page is several runs, so its origins arrive as a column of
+            ; numbers a reader can retype to move a panel -- which is the
+            ; whole reason they are in the block rather than in the step.
+            ; THE SCALARS ARE NOT SPELLED LIKE THE ARRAYS. `.pgRole$` holds
+            ; this line's role and `.pgBase$[k]` holds slot k's; a scalar and
+            ; an indexed variable of the same name are one variable in Praat,
+            ; so sharing the spelling would make the slot search compare a
+            ; value with itself. Same reason the column path above reads
+            ; `.b$` against `.varBase$[.k]`.
+            @emlRecordPageSpec: .line$
+            .pgRole$ = emlRecordPageSpec.base$
+            if .pgRole$ <> ""
+                .pgValue$ = emlRecordPageSpec.lit$
+                .pgSlot = 0
+                .pgSame = 0
+                for .k from 1 to .nPage
+                    if .pgBase$[.k] = .pgRole$
+                        if .pgRun[.k] = .run
+                            .pgSame = .pgSame + 1
+                            if .pgLit$[.k] = .pgValue$
+                                .pgSlot = .k
+                            endif
+                        endif
+                    endif
+                endfor
+                if .pgSlot = 0
+                    .nPage = .nPage + 1
+                    .pgSlot = .nPage
+                    .pgBase$[.nPage] = .pgRole$
+                    .pgLit$[.nPage] = .pgValue$
+                    .pgRun[.nPage] = .run
+                    @emlRecordRunSuffix: .run, .pgSame
+                    .pgName$[.nPage] = .pgRole$
+                    ... + emlRecordRunSuffix.suffix$
+                    .pgSteps$[.nPage] = ""
+                    .pgLast$[.nPage] = ""
+                endif
+                .pgNote$ = string$ (.stepN) + " (" + .stepKind$ + ")"
+                if .pgLast$[.pgSlot] <> .pgNote$
+                    if .pgSteps$[.pgSlot] <> ""
+                        .pgSteps$[.pgSlot] = .pgSteps$[.pgSlot] + ", "
+                    endif
+                    .pgSteps$[.pgSlot] = .pgSteps$[.pgSlot] + .pgNote$
+                    .pgLast$[.pgSlot] = .pgNote$
+                endif
+                .eqAt = index (.line$, "=")
+                .lineOut$ = left$ (.line$, .eqAt) + " "
+                ... + .pgName$[.pgSlot]
+            endif
+
             .rebuilt$ = .rebuilt$ + .lineOut$
             if .more = 1
                 .rebuilt$ = .rebuilt$ + newline$
@@ -3323,7 +3525,7 @@ procedure emlRecordColumnManifest
         .code$[.s] = .rebuilt$
     endfor
 
-    if .n = 0 and .nAxis = 0 and .nFmt = 0
+    if .n = 0 and .nAxis = 0 and .nFmt = 0 and .nPage = 0
         goto END_COLUMN_MANIFEST
     endif
 
@@ -3349,6 +3551,11 @@ procedure emlRecordColumnManifest
     for .k from 1 to .nFmt
         if length (.fmtName$[.k]) > .width
             .width = length (.fmtName$[.k])
+        endif
+    endfor
+    for .k from 1 to .nPage
+        if length (.pgName$[.k]) > .width
+            .width = length (.pgName$[.k])
         endif
     endfor
     ; EVERY DECLARATION NAMES ITS OWN RUN, and the run comes first because it
@@ -3457,6 +3664,36 @@ procedure emlRecordColumnManifest
         ... + """" + "   ; the figure formats saved -- PNG always, EPS"
         ... + " and PDF when ticked -- run " + string$ (.fmtRun[.k]) + ", "
         ... + .word$ + .fmtSteps$[.k] + newline$
+    endfor
+
+    ; ---- THE PAGE DECLARATIONS -------------------------------------------
+    ; THREE LINES PER FIGURE, AND THEY ARE THE PAGE. Erase says whether the
+    ; figure started a page or joined one; the origin says where on it. A
+    ; session that drew one figure declares eraseFirst = 1 and an origin of
+    ; 0, 0, which is what it did; a session that composed a page declares one
+    ; set per run, so the layout is a column of numbers at the top of the file
+    ; that a reader can retype to move a panel.
+    ;
+    ; NOT SKIPPED WHEN THEY READ AS THE DEFAULT, unlike an empty column and
+    ; unlike an empty format. Every step in an emitted script runs in ONE
+    ; scope, so a figure composed at 6.5 leaves emlPanelOriginX = 6.5 behind
+    ; and the next figure would inherit it. A step is only self-contained if
+    ; it states the settings it did not use -- the same rule
+    ; @emlRecordCaptureEnv states for the jitter switches, and for the same
+    ; measured reason.
+    for .k from 1 to .nPage
+        .padP$ = ""
+        for .p from 1 to .width - length (.pgName$[.k])
+            .padP$ = .padP$ + " "
+        endfor
+        @emlRecordPageGloss: .pgBase$[.k]
+        .word$ = "steps "
+        if not index (.pgSteps$[.k], ",")
+            .word$ = "step "
+        endif
+        .out$ = .out$ + .pgName$[.k] + .padP$ + " = " + .pgLit$[.k]
+        ... + "   ; " + emlRecordPageGloss.gloss$ + " -- run "
+        ... + string$ (.pgRun[.k]) + ", " + .word$ + .pgSteps$[.k] + newline$
     endfor
 
     label END_COLUMN_MANIFEST

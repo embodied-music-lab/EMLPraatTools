@@ -293,6 +293,38 @@ EXPECT <- do.call(rbind, list(
 ))
 
 # ---------------------------------------------------------------------------
+# THE PAGE, ONE SET PER RUN THAT DREW.
+#
+# "Erase page first" and the panel origin are not arguments of any draw
+# procedure -- they are globals the graphs form sets and @emlBeginPanel acts
+# on -- so the recorder writes them in front of the draw call and the block
+# lifts them by NAME rather than by argument position. Everything after that
+# is the rule every other declaration follows: one variable per role per run,
+# unsuffixed in run 1.
+#
+# DERIVED FROM STEP_KIND RATHER THAN TYPED OUT, and that is the point of
+# deriving it: the claim being made is "every run that drew has these three
+# and no run that only saved has any of them". Typing thirty rows would state
+# the same thing in a form where a wrong one reads exactly like a right one.
+# STEP_KIND and STEP_RUN are the driver's own account of what each case did,
+# and they are already pinned above.
+#
+# THE VALUES ARE THE DEFAULTS BECAUSE THESE CASES ARE NOT COMPOSITES: every
+# runblock fixture draws one figure per pass on a fresh page. That the block
+# declares them anyway is the assertion -- a step is only self-contained if it
+# states the settings it did not use, or the second figure in a replayed
+# script inherits the first one's origin.
+EXPECT <- rbind(EXPECT, do.call(rbind, lapply(names(STEP_KIND), function(cs) {
+    runs <- sort(unique(STEP_RUN[[cs]][STEP_KIND[[cs]] == "draw"]))
+    do.call(rbind, lapply(runs, function(r) {
+        sfx <- if (r == 1L) "" else as.character(r)
+        rbind(d(cs, paste0("eraseFirst", sfx),   "1", r),
+              d(cs, paste0("panelOriginX", sfx), "0", r),
+              d(cs, paste0("panelOriginY", sfx), "0", r))
+    }))
+})))
+
+# ---------------------------------------------------------------------------
 # THE CEILING OF EACH AXIS PAIR AND THE NOTE UNDER IT. The maximum is declared
 # on its own line whose comment carries no run: it is the continuation of the
 # minimum above it, and it is where the pair says what the figure ACTUALLY
