@@ -81,7 +81,7 @@ GUIP <- file.path(OUT, "gui", "GUIPAUSE.tsv")
 CASES <- c("auto_pair", "typed_pair", "grouped_pair", "bw_pair",
            "styles_sweep", "single_untouched", "solid_default",
            "refuse_violin", "refuse_histogram", "refuse_ci", "refuse_scatter",
-           "refuse_column", "margin_ink", "recorded", "replay")
+           "refuse_column", "margin_ink", "melt_carry", "recorded", "replay")
 
 ok_tsv <- check_true(V, "the second-axis harness has been driven",
                      file.exists(TSVP) && file.info(TSVP)$size > 0)
@@ -243,6 +243,10 @@ check_true(V, "and a black-and-white one none of either colour",
 # nothing else.
 draw_src <- readLines(repo_path("plugin_EML_StatsGraphs", "graphs",
                                 "eml-draw-procedures.praat"), warn = FALSE)
+graph_src <- readLines(repo_path("plugin_EML_StatsGraphs", "graphs",
+                                 "eml-graph-procedures.praat"), warn = FALSE)
+form_src  <- readLines(repo_path("plugin_EML_StatsGraphs", "graphs",
+                                 "eml-graphs-form.praat"), warn = FALSE)
 i0 <- grep("STEP 7C: THE SECOND SERIES", draw_src)
 i1 <- grep("THE KEY IS DRAWN AFTER BOTH SERIES", draw_src)
 block <- if (length(i0) && length(i1)) draw_src[i0[1]:i1[1]] else character(0)
@@ -337,6 +341,49 @@ check_true(V, "and still produces the figure",
            identical(trv("refuse_column", "verdict"), "OK"))
 check_true(V, "with none of slot two's ink on it",
            trn("refuse_column", "ink_slot2_px") == 0)
+
+# ============================================================================
+# 8B. WIDE FORMAT DRAWS FROM A DIFFERENT OBJECT, AND THE COLUMN GOES WITH IT
+# ============================================================================
+# Two or more series in wide format are MELTED into a three-column table --
+# time, `eml_series`, `eml_value` -- and that table is what the draw procedure
+# is handed. The right-hand column is chosen from the ORIGINAL table, which
+# the melt does not carry, so @emlGraphsCarrySecondColumn copies it in under
+# its own name and nothing downstream has to know a melt happened.
+#
+# THE ROW MAPPING IS WHAT CAN BE WRONG HERE. The melt writes the whole table
+# once per series, so row r of the melt is row ((r-1) mod n) + 1 of the
+# source: the first row of the SECOND series' block is row 1 of the source
+# again, and an off-by-one there would put every value one row out without
+# changing the column's length.
+check_true(V, "the melted table gains a fourth column",
+           identical(trv("melt_carry", "meltcols"), "4"))
+check_true(V, "and keeps its two-series length",
+           identical(trv("melt_carry", "meltrows"), "48"))
+check_true(V, "the carried column's first row is the source's first row",
+           identical(trv("melt_carry", "carry1_melt"),
+                     trv("melt_carry", "carry1_source")) &&
+           !is.na(trv("melt_carry", "carry1_melt")))
+check_true(V, "the second series' block starts at the source's first row again",
+           identical(trv("melt_carry", "carry2_melt"),
+                     trv("melt_carry", "carry2_source")))
+check_true(V, "and the melt's last row is the source's last row",
+           identical(trv("melt_carry", "carryn_melt"),
+                     trv("melt_carry", "carryn_source")))
+check_true(V, "the two carried rows are different values, so the mapping is doing work",
+           !identical(trv("melt_carry", "carry1_melt"),
+                      trv("melt_carry", "carryn_melt")))
+check_true(V, "the melted figure draws its right-hand series",
+           identical(trv("melt_carry", "secondon"), "1") &&
+           trn("melt_carry", "ink_slot2_px") > 3000)
+check_true(V, "and the right series takes the slot after the melted ones",
+           identical(trv("melt_carry", "rightslot"), "3"))
+check_true(V, "the copy is a procedure, defined once",
+           sum(grepl("^procedure emlGraphsCarrySecondColumn\\b", form_src)) == 1)
+# The call, not a comment naming it: a line whose first non-blank character
+# is the @ sign.
+check_true(V, "and called once, from the melt's own branch",
+           sum(grepl("^\\s*@emlGraphsCarrySecondColumn:", form_src)) == 1)
 
 # ============================================================================
 # 9. THE RECORDED SCRIPT CARRIES THE SECOND AXIS, AND REPLAYS IT
@@ -456,10 +503,6 @@ check_true(V, "and only the plain time series goes on to honour it",
 # "Command not available for current selection"; the four styles are set by
 # the state-setting commands `Solid line`, `Dotted line`, `Dashed line` and
 # `Dashed-dotted line`, and they are named in ONE procedure.
-graph_src <- readLines(repo_path("plugin_EML_StatsGraphs", "graphs",
-                                 "eml-graph-procedures.praat"), warn = FALSE)
-form_src  <- readLines(repo_path("plugin_EML_StatsGraphs", "graphs",
-                                 "eml-graphs-form.praat"), warn = FALSE)
 all_src <- c(graph_src, draw_src, form_src)
 check_true(V, "nothing calls the line-style command Praat does not have",
            !any(grepl("^\\s*Line style:", all_src)))

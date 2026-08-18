@@ -100,6 +100,23 @@ for f in "$SCRIPT_DIR"/*.praat; do
     # the user reads rather than a paraphrase of it.
     emit "$name" refusal "$(sed -n 's/^NOTE: a second right-hand y-axis was requested and refused. //p' "$OUT/$name.log" | tail -1)"
     emit "$name" note_lines "$(grep -c '^NOTE: ' "$OUT/$name.log")"
+    # THE MELT CARRY, read back out of the melted table before anything was
+    # drawn from it: the column's width, its length, and three rows of it
+    # against the source's own values -- the first, the first row of the
+    # SECOND series' block (which is row 1 of the source again, and the one a
+    # wrong row mapping gets wrong), and the last.
+    for key in MELTCOLS MELTROWS; do
+        emit "$name" "$(echo "$key" | tr 'A-Z' 'a-z')" \
+            "$(sed -n "s/^$key //p" "$OUT/$name.log" | tail -1)"
+    done
+    for key in CARRY1 CARRY2 CARRYN; do
+        set -- $(sed -n "s/^$key //p" "$OUT/$name.log" | tail -1)
+        if [ -n "${1:-}" ]; then
+            lk=$(echo "$key" | tr 'A-Z' 'a-z')
+            emit "$name" "${lk}_melt" "$1"
+            emit "$name" "${lk}_source" "${2:-}"
+        fi
+    done
     if [ -s "$OUT/$name.png" ]; then
         emit "$name" png_px "$(identify -format '%wx%h' "$OUT/$name.png" 2>/dev/null)"
         emit "$name" png_md5 "$(md5sum "$OUT/$name.png" | cut -d' ' -f1)"
