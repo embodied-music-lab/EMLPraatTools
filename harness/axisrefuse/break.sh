@@ -113,6 +113,16 @@ run_break () {
     red=$(grep -c '^FAIL' "$OUT/break_$n.v84.log")
     first=$(grep -m1 '^FAIL' "$OUT/break_$n.v84.log" \
             | sed 's/^FAIL  *v84  *//; s/  computed.*//' | cut -c1-100)
+    # ONE ROW PER SABOTAGE, however this file was reached. The truncation
+    # above only happens on a full run, so running breaks one at a time --
+    # which is how they are run when each has to fit inside a time limit --
+    # appends to whatever was already there, and re-running one leaves TWO
+    # rows for it. A results file that can hold the same break twice can hold
+    # a stale count beside a fresh one and read as a complete run.
+    if [ -f "$TSV" ]; then
+        grep -v "^$n	" "$TSV" > "$TSV.new" 2>/dev/null || : > "$TSV.new"
+        mv "$TSV.new" "$TSV"
+    fi
     printf '%s\t%s\t%s\n' "$n" "$red" "${first:-<none>}" >> "$TSV"
     printf '  %-18s red=%-4s %s\n' "$n" "$red" "${first:-NOTHING WENT RED}"
 }

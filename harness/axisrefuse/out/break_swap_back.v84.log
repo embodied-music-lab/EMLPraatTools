@@ -5,7 +5,7 @@ v84 axis refusal — the form refuses a pair it cannot read
 PASS  v84     the driven transcript exists (AXISREFUSE.tsv)   computed=NA  expected TRUE
 PASS  v84     the transcript names the Praat it drove (Praat 6.6.30 (June 30 2026))  computed=NA  expected TRUE
 PASS  v84     a compositor was running for the ink measure (running)  computed=NA  expected TRUE
-PASS  v84     the transcript was driven on THIS form's code (e8a6ab01ca82)  computed=NA  expected TRUE
+PASS  v84     the transcript was driven on THIS form's code (04cba5fea654)  computed=NA  expected TRUE
 PASS  v84     every leg was driven (7)                        computed=NA  expected TRUE
 PASS  v84     pitch_time: the form showed [EML Graphs > Pitch Contour Settings > Axis range > EML Graphs > Pitch Contour Settings > Graph Complete]  computed=NA  expected TRUE
 PASS  v84     pitch_time: the dialog displayed "Time maximum (0) is below Time minimum (0.3)."  computed=NA  expected TRUE
