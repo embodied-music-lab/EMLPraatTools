@@ -34,6 +34,20 @@
 # qnorm(ppoints(n, a = 3/8)) at every n, and exact agreement with qqnorm()
 # itself at n <= 10.
 #
+# THE PAGE
+# --------
+# This procedure CLEARS THE PICTURE WINDOW before it draws, and starts the
+# extent union again from this figure. That is what @emlBeginPanel does when
+# emlEraseFirst is 1, and 1 is what it is unless a caller has set otherwise.
+#
+# The graphs form's "Erase page first" and "Panel origin" fields DO reach
+# here -- the three globals are read below -- but nothing in the plugin sets
+# them on the way to a Q-Q plot: the only route is
+# scripts/eml-check-normality.praat, a stats wrapper whose dialog has no page
+# controls. So a Q-Q plot drawn from the normality checker clears whatever was
+# on the page, every time. A caller that wants it as a panel of a composed
+# page sets emlEraseFirst = 0 and the origin before calling.
+#
 # REFUSALS
 # --------
 # Every refusal is a message in .error$ with .drew = 0 and nothing drawn.
@@ -249,9 +263,42 @@ procedure emlDrawQQPlot: .data#, .colLabel$, .vpW, .vpH, .colorMode$, .gridMode
         scatterShowFormula = 0
         annotCorrType$ = "pearson"
 
-        Erase all
-        @emlResetDrawnExtent
-        Select outer viewport: 0, .vpW, 0, .vpH
+        ; ── THE PAGE ─────────────────────────────────────────────────────
+        ; THIS FIGURE CLEARS THE PICTURE WINDOW unless a caller has said
+        ; otherwise. @emlBeginPanel is the plugin's one place for that
+        ; decision -- erase, extent reset and panel origin together -- and
+        ; reading emlEraseFirst / emlPanelOriginX / emlPanelOriginY here is
+        ; what makes the graphs form's "Erase page first" and "Panel origin"
+        ; fields reach a Q-Q plot IF a caller sets them.
+        ;
+        ; NO CALLER IN THE PLUGIN SETS THEM ON THIS PATH. The only route to
+        ; this procedure today is scripts/eml-check-normality.praat, which
+        ; is a stats wrapper with no page controls on its dialog, so a Q-Q
+        ; drawn from the normality checker CLEARS THE PAGE. That is stated
+        ; in this file's header as well, because it is what a user of that
+        ; wrapper will see; it is not a gap to be discovered later.
+        ;
+        ; The globals are read through variableExists because this procedure
+        ; is also reachable from a headless harness that loaded the draw
+        ; library and nothing else. Absent means the defaults: erase, at the
+        ; origin, which is what this figure has always done.
+        .pageErase = 1
+        .pageX = 0
+        .pageY = 0
+        if variableExists ("emlEraseFirst")
+            .pageErase = emlEraseFirst
+        endif
+        if variableExists ("emlPanelOriginX")
+            .pageX = emlPanelOriginX
+        endif
+        if variableExists ("emlPanelOriginY")
+            .pageY = emlPanelOriginY
+        endif
+        @emlBeginPanel: .pageX, .pageY, .pageErase
+        ; Origin-offset, so the rectangle this pre-selection opens is the
+        ; rectangle @emlDrawScatterPlot lays itself out in -- that procedure
+        ; reaches @emlSetAdaptiveTheme, which offsets by the same origin.
+        Select outer viewport: .pageX, .pageX + .vpW, .pageY, .pageY + .vpH
         @emlDrawScatterPlot: .tmpId, .title$, .xLabel$, .yLabel$,
         ... .vpW, .vpH, .colorMode$, .gridMode,
         ... "theoretical", "sample", "", 0, 0, 0, 0, 0

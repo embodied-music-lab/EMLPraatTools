@@ -2918,6 +2918,12 @@ endproc
 # stem, so a study's outputs arrive as a set instead of three files the user
 # has to keep together by hand.
 #
+# THE TITLE IS "Save" FOR ONE PANEL AND "Save page" FOR SEVERAL, and a page
+# gets one extra line giving the extent union's size in inches. That is the
+# whole of what page composition adds here: the figure written is the union,
+# which is what this panel has always written. See WHAT IS ON THE PAGE in the
+# body for why there is no "finish page" action to go with it.
+#
 # WHY A PANEL AND NOT THREE BUTTONS. The saves belong on the dialog rather
 # than hidden in a menu, and three separate buttons would satisfy that. A
 # panel does better for a reason that is about the files rather than the
@@ -3040,7 +3046,62 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
         .dpiNote$ = "PNG is written at 600 dpi (set on the graph's Advanced page)."
     endif
 
-    beginPause: "Save"
+    # ── WHAT IS ON THE PAGE, AND WHETHER THE TITLE SHOULD SAY SO ────────────
+    #
+    # A save writes the extent union, which is what it has always written.
+    # When that union holds more than one panel the file is a PAGE and the
+    # dialog says so, because "Save" over a picture holding two figures reads
+    # as an offer to save the one just drawn -- and the user would find panel 1
+    # in the file with no warning. There is deliberately NO "finish page"
+    # action to go with this: that would be a mode the user has to remember to
+    # leave, it would break one-press-one-step, and an early save of a
+    # half-built page is merely a smaller image, not a wrong one.
+    #
+    # ONE DISCLOSURE, TWO SENTENCES: the title names the thing, and the info
+    # line gives the union's size in inches so nobody has to open the file to
+    # find out what came out. Below the union is measured, not declared --
+    # there is no page width or height anywhere in the plugin.
+    #
+    # READ THROUGH variableExists, like the two @emlAssertFullViewport calls
+    # further down and for the same reason: this panel is reachable from a
+    # stats-only script that never loaded the graphs layer, where none of
+    # these globals exist.
+    .panelsOnPage = 1
+    if variableExists ("emlPagePanelN")
+        if emlPagePanelN > 1
+            .panelsOnPage = emlPagePanelN
+        endif
+    endif
+    .saveTitle$ = "Save"
+    .pageLine$ = ""
+    if .offerFigure = 1
+        if .panelsOnPage > 1
+            .saveTitle$ = "Save page"
+            .pageW = 0
+            .pageH = 0
+            if variableExists ("emlDrawnMinX")
+                .pageW = emlDrawnMaxX - emlDrawnMinX
+                .pageH = emlDrawnMaxY - emlDrawnMinY
+            endif
+            # @eml_fixed, NOT fixed$, which is not a fixed-precision
+            # formatter: it escalates on small magnitudes and prints a bare
+            # "0" for exact zero. Hoisted into temporaries because Praat
+            # cannot nest a procedure call inside an expression.
+            @eml_fixed: .pageW, 2
+            .pageWStr$ = eml_fixed.result$
+            @eml_fixed: .pageH, 2
+            .pageHStr$ = eml_fixed.result$
+            .pageLine$ = "The page holds " + string$ (.panelsOnPage)
+            ... + " panels and measures " + .pageWStr$ + " x " + .pageHStr$
+            ... + " inches. All of them go in the one file."
+        endif
+    endif
+
+    beginPause: .saveTitle$
+        if .pageLine$ <> ""
+            comment: .pageLine$
+            comment: ""
+        endif
         comment: "Everything ticked is written to one folder, sharing one"
         comment: "base name. Each output adds its own suffix:"
         if .haveCSV = 1
