@@ -1,0 +1,14 @@
+refuse	1	EML Graphs
+refuse	2	Line Chart -- Data Format
+refuse	3	Line Chart -- Column Mapping
+refuse	4	Line Chart -- Second Dataset on a Right Y-Axis
+refuse	5	Second dataset
+refuse	6	Line Chart -- Second Dataset on a Right Y-Axis
+refuse	steps	6
+accept	1	EML Graphs
+accept	2	Line Chart -- Data Format
+accept	3	Line Chart -- Column Mapping
+accept	4	Line Chart -- Second Dataset on a Right Y-Axis
+accept	5	Line Chart -- Second Dataset on a Right Y-Axis
+accept	6	Graph Complete
+accept	steps	6

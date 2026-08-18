@@ -1110,6 +1110,25 @@ scripts <- c(
                                  # byte for byte, so the default path is
                                  # proved unmoved rather than asserted.
                                  # Reads harness/compose.
+    ,
+    "v95_second_axis.R"          # the second vertical axis and the pens: two
+                                 # series in one draw, the right series taking
+                                 # the palette's next slot, an auto right-hand
+                                 # range placed at the same fractions of the
+                                 # box the left series occupies, the four line
+                                 # styles measured on the rendered ink, the
+                                 # refusal every other figure type gives in
+                                 # the words its own shape earns, the emitted
+                                 # script replaying a two-scale figure byte
+                                 # for byte, and the dialogs driven under Xvfb
+                                 # so that the follow-up page is photographed
+                                 # re-presenting itself on a column it cannot
+                                 # use. Section 12 is the measurement that
+                                 # settled the one thing the ruling left open:
+                                 # Praat's margin commands draw in black
+                                 # whatever colour is current, so the right
+                                 # scale cannot wear its series' colour.
+                                 # Reads harness/secondaxis.
 )
 
 # ---------------------------------------------------------------------------

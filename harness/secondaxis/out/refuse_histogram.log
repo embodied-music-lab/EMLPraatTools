@@ -1,0 +1,8 @@
+NOTE: a second right-hand y-axis was requested and refused. A histogram is a distribution -- its vertical axis counts the values on its horizontal axis -- so a second vertical scale would have nothing of its own to measure. The figure was drawn with one y-axis.
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+Histogram: 6 bins, bin width = 12.6667
+Groups: 2
+NOTE: The legend sits in the bottom-left corner and a frequency axis cannot be taken below zero, so no room could be made for it — it may overlap the bars. Set Legend placement to Right of plot or Below plot to keep the plot clear.
+REFUSAL NOTE: a second right-hand y-axis was requested and refused. A histogram is a distribution -- its vertical axis counts the values on its horizontal axis -- so a second vertical scale would have nothing of its own to measure. The figure was drawn with one y-axis.
+REFUSED 1
+UNION 0 6 0 4

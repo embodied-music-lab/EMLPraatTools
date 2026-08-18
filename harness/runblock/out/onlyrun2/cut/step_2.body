@@ -8,6 +8,8 @@ emlEraseFirst = eraseFirst2
 emlPanelOriginX = panelOriginX2
 emlPanelOriginY = panelOriginY2
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle2
+emlSecondAxisOn = secondAxisOn2
 scatterAnalysisType = 0
 annotCorrType$ = "pearson"
 scatterRegressionLine = 0

@@ -1,0 +1,4 @@
+NOTE: a second right-hand y-axis was requested and refused. A second y-axis needs a continuous horizontal axis under it, and a Violin plot puts categories along the bottom: two series on two scales would have no common x to be read against. The figure was drawn with one y-axis.
+REFUSAL NOTE: a second right-hand y-axis was requested and refused. A second y-axis needs a continuous horizontal axis under it, and a Violin plot puts categories along the bottom: two series on two scales would have no common x to be read against. The figure was drawn with one y-axis.
+REFUSED 1
+UNION 0 6 0 4

@@ -1,0 +1,9 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+LEFT 180 318.7044341810541
+RIGHT 0.38875000000000004 0.7701871939978988
+SECONDON 1
+RIGHTSLOT 3
+RIGHTINK {0.00, 0.62, 0.45}
+LEFTINK {0.00, 0.45, 0.70}
+UNION 0 6 0 4

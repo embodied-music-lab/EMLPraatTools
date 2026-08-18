@@ -1,0 +1,8 @@
+NOTE: a second right-hand y-axis was requested and refused. In this version the second axis ships on the plain time series -- the Line chart with the confidence-interval box unticked -- and this figure is a Time series with CI. The figure was drawn with one y-axis.
+Time Series (with CI): 1 group(s)
+  12 time points
+  Observations per time point: up to 2
+Time series (with CI): Line shows the mean; band shows the 95% CI. 12 repeated observation(s) were averaged into their time points. Use Spaghetti Plot to show the individual series behind the mean.
+REFUSAL NOTE: a second right-hand y-axis was requested and refused. In this version the second axis ships on the plain time series -- the Line chart with the confidence-interval box unticked -- and this figure is a Time series with CI. The figure was drawn with one y-axis.
+REFUSED 1
+UNION 0 6 0 4

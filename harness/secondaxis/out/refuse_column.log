@@ -1,0 +1,7 @@
+NOTE: the second right-hand y-axis asked for column "noise", which is missing or does not contain numeric data; the figure was drawn with one y-axis.
+Time series: Line shows the mean per time point. 12 repeated observation(s) were averaged. Use Spaghetti Plot to show individual series, or Time Series (with CI) to show the spread around each mean.
+LEFT 190 260
+RIGHT 0 0
+SECONDON 0
+RIGHTSLOT 0
+UNION 0 6 0 4

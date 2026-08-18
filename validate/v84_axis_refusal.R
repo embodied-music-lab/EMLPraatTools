@@ -479,12 +479,21 @@ pair_vars <- vapply(strsplit(args, " *, *"), function(a) {
     if (length(a) < 3) return(NA_character_)
     paste(a[2], a[3], sep = "/")
 }, "")
+# THE SEVENTH PAIR ARRIVED WITH THE SECOND VERTICAL AXIS, 18 August 2026, and
+# it arrived through this check: the roster above is derived from the dialogs,
+# so the line chart's "Right minimum" / "Right maximum" fields put "Right" into
+# `pair_labels` the moment they existed and the label census went red until the
+# sweep named it. That is the rule working, and the list below is the human
+# half of it -- a pair is added here only once somebody has looked at where it
+# is judged. The right-hand pair is judged in the sweep with the other six and
+# nowhere else; the page that asks for it tests its COLUMN and carries its two
+# numbers out.
 want_vars <- c("timeMin/timeMax", "freqMin/freqMax", "powerMin/powerMax",
                "ampMin/ampMax", "valueMin/valueMax",
-               "scatterXMin/scatterXMax")
+               "scatterXMin/scatterXMax", "secondMin/secondMax")
 check_true("v84",
-           sprintf("all six pair variables are swept, each once [%s]",
-                   paste(sort(pair_vars), collapse = ", ")),
+           sprintf("all %d pair variables are swept, each once [%s]",
+                   length(want_vars), paste(sort(pair_vars), collapse = ", ")),
            setequal(pair_vars, want_vars) &&
                length(pair_vars) == length(want_vars))
 check_true("v84", "the sweep is the only caller of the refusal",

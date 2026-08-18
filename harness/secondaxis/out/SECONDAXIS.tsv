@@ -1,0 +1,248 @@
+auto_pair	verdict	OK
+auto_pair	secondon	1
+auto_pair	rightslot	2
+auto_pair	left_min	190
+auto_pair	left_max	260
+auto_pair	right_min	0.36884000000000006
+auto_pair	right_max	0.66144
+auto_pair	left_ink	{0.00, 0.45, 0.70}
+auto_pair	right_ink	{0.90, 0.62, 0.00}
+auto_pair	refusal	
+auto_pair	note_lines	0
+auto_pair	png_px	1800x1200
+auto_pair	png_md5	2d725e66ecf3a17679ccd2197add74d2
+auto_pair	ink_slot1_px	9972
+auto_pair	ink_slot2_px	9882
+auto_pair	red_plot_px	68
+auto_pair	red_margin_px	20
+bw_pair	verdict	OK
+bw_pair	secondon	1
+bw_pair	rightslot	2
+bw_pair	left_min	190
+bw_pair	left_max	260
+bw_pair	right_min	0.36884000000000006
+bw_pair	right_max	0.66144
+bw_pair	left_ink	{0, 0, 0}
+bw_pair	right_ink	{0.63, 0.63, 0.63}
+bw_pair	refusal	
+bw_pair	note_lines	0
+bw_pair	png_px	1800x1200
+bw_pair	png_md5	dbe708189dd786415c62facfacd0c606
+bw_pair	ink_slot1_px	0
+bw_pair	ink_slot2_px	0
+bw_pair	red_plot_px	68
+bw_pair	red_margin_px	20
+grouped_pair	verdict	OK
+grouped_pair	secondon	1
+grouped_pair	rightslot	3
+grouped_pair	left_min	180
+grouped_pair	left_max	318.7044341810541
+grouped_pair	right_min	0.38875000000000004
+grouped_pair	right_max	0.7701871939978988
+grouped_pair	left_ink	{0.00, 0.45, 0.70}
+grouped_pair	right_ink	{0.00, 0.62, 0.45}
+grouped_pair	refusal	
+grouped_pair	note_lines	2
+grouped_pair	png_px	1800x1200
+grouped_pair	png_md5	b5bb20ecbb60b6968eb17e57d981b0bc
+grouped_pair	ink_slot1_px	11350
+grouped_pair	ink_slot2_px	11095
+grouped_pair	red_plot_px	71
+grouped_pair	red_margin_px	24
+margin_ink	verdict	OK
+margin_ink	secondon	
+margin_ink	rightslot	
+margin_ink	left_min	
+margin_ink	left_max	
+margin_ink	right_min	
+margin_ink	right_max	
+margin_ink	left_ink	
+margin_ink	right_ink	
+margin_ink	refusal	
+margin_ink	note_lines	0
+margin_ink	png_px	1800x1200
+margin_ink	png_md5	4515c9487309b619f01919d1ea76b76e
+margin_ink	ink_slot1_px	0
+margin_ink	ink_slot2_px	0
+margin_ink	red_plot_px	786
+margin_ink	red_margin_px	21
+recorded	verdict	OK
+recorded	secondon	1
+recorded	rightslot	2
+recorded	left_min	190
+recorded	left_max	260
+recorded	right_min	0.36884000000000006
+recorded	right_max	0.66144
+recorded	left_ink	{0.00, 0.45, 0.70}
+recorded	right_ink	{0.90, 0.62, 0.00}
+recorded	refusal	
+recorded	note_lines	0
+recorded	png_px	1800x1200
+recorded	png_md5	fcd25fd7ba4ec0299b14cf9dd3d53584
+recorded	ink_slot1_px	9276
+recorded	ink_slot2_px	9882
+recorded	red_plot_px	68
+recorded	red_margin_px	20
+refuse_ci	verdict	OK
+refuse_ci	secondon	
+refuse_ci	rightslot	
+refuse_ci	left_min	
+refuse_ci	left_max	
+refuse_ci	right_min	
+refuse_ci	right_max	
+refuse_ci	left_ink	
+refuse_ci	right_ink	
+refuse_ci	refusal	In this version the second axis ships on the plain time series -- the Line chart with the confidence-interval box unticked -- and this figure is a Time series with CI. The figure was drawn with one y-axis.
+refuse_ci	note_lines	1
+refuse_ci	png_px	1800x1200
+refuse_ci	png_md5	24465810b62dae18d9b96b74d9743e35
+refuse_ci	ink_slot1_px	10313
+refuse_ci	ink_slot2_px	0
+refuse_ci	red_plot_px	104
+refuse_ci	red_margin_px	0
+refuse_column	verdict	OK
+refuse_column	secondon	0
+refuse_column	rightslot	0
+refuse_column	left_min	190
+refuse_column	left_max	260
+refuse_column	right_min	0
+refuse_column	right_max	0
+refuse_column	left_ink	
+refuse_column	right_ink	
+refuse_column	refusal	
+refuse_column	note_lines	1
+refuse_column	png_px	1800x1200
+refuse_column	png_md5	f11d6d88696486bde5ca0c38d6b9f530
+refuse_column	ink_slot1_px	10299
+refuse_column	ink_slot2_px	0
+refuse_column	red_plot_px	212
+refuse_column	red_margin_px	0
+refuse_histogram	verdict	OK
+refuse_histogram	secondon	
+refuse_histogram	rightslot	
+refuse_histogram	left_min	
+refuse_histogram	left_max	
+refuse_histogram	right_min	
+refuse_histogram	right_max	
+refuse_histogram	left_ink	
+refuse_histogram	right_ink	
+refuse_histogram	refusal	A histogram is a distribution -- its vertical axis counts the values on its horizontal axis -- so a second vertical scale would have nothing of its own to measure. The figure was drawn with one y-axis.
+refuse_histogram	note_lines	3
+refuse_histogram	png_px	1800x1200
+refuse_histogram	png_md5	f71828fe0e32566c431c61b44941623a
+refuse_histogram	ink_slot1_px	841
+refuse_histogram	ink_slot2_px	841
+refuse_histogram	red_plot_px	95
+refuse_histogram	red_margin_px	0
+refuse_scatter	verdict	OK
+refuse_scatter	secondon	
+refuse_scatter	rightslot	
+refuse_scatter	left_min	
+refuse_scatter	left_max	
+refuse_scatter	right_min	
+refuse_scatter	right_max	
+refuse_scatter	left_ink	
+refuse_scatter	right_ink	
+refuse_scatter	refusal	In this version the second axis ships on the plain time series -- the Line chart with the confidence-interval box unticked -- and this figure is a Scatter plot. The figure was drawn with one y-axis.
+refuse_scatter	note_lines	4
+refuse_scatter	png_px	1800x1200
+refuse_scatter	png_md5	2a4c30343059f6ec6e03920926c5c452
+refuse_scatter	ink_slot1_px	13589
+refuse_scatter	ink_slot2_px	13572
+refuse_scatter	red_plot_px	68
+refuse_scatter	red_margin_px	0
+refuse_violin	verdict	OK
+refuse_violin	secondon	
+refuse_violin	rightslot	
+refuse_violin	left_min	
+refuse_violin	left_max	
+refuse_violin	right_min	
+refuse_violin	right_max	
+refuse_violin	left_ink	
+refuse_violin	right_ink	
+refuse_violin	refusal	A second y-axis needs a continuous horizontal axis under it, and a Violin plot puts categories along the bottom: two series on two scales would have no common x to be read against. The figure was drawn with one y-axis.
+refuse_violin	note_lines	1
+refuse_violin	png_px	1800x1200
+refuse_violin	png_md5	d4e7c56e488e3f7eae0bd1f33c36a683
+refuse_violin	ink_slot1_px	62
+refuse_violin	ink_slot2_px	80
+refuse_violin	red_plot_px	87
+refuse_violin	red_margin_px	0
+single_untouched	verdict	OK
+single_untouched	secondon	0
+single_untouched	rightslot	0
+single_untouched	left_min	190
+single_untouched	left_max	260
+single_untouched	right_min	0
+single_untouched	right_max	0
+single_untouched	left_ink	
+single_untouched	right_ink	
+single_untouched	refusal	
+single_untouched	note_lines	0
+single_untouched	png_px	1800x1200
+single_untouched	png_md5	f7c4af5a8ee4c9857eb43e6b9b540dc4
+single_untouched	ink_slot1_px	10340
+single_untouched	ink_slot2_px	0
+single_untouched	red_plot_px	67
+single_untouched	red_margin_px	4
+solid_default	verdict	OK
+solid_default	secondon	0
+solid_default	rightslot	0
+solid_default	left_min	190
+solid_default	left_max	260
+solid_default	right_min	0
+solid_default	right_max	0
+solid_default	left_ink	
+solid_default	right_ink	
+solid_default	refusal	
+solid_default	note_lines	0
+solid_default	png_px	1800x1200
+solid_default	png_md5	f7c4af5a8ee4c9857eb43e6b9b540dc4
+solid_default	ink_slot1_px	10340
+solid_default	ink_slot2_px	0
+solid_default	red_plot_px	67
+solid_default	red_margin_px	4
+styles_sweep	verdict	OK
+styles_sweep	secondon	1
+styles_sweep	rightslot	2
+styles_sweep	left_min	190
+styles_sweep	left_max	260
+styles_sweep	right_min	0.36884000000000006
+styles_sweep	right_max	0.66144
+styles_sweep	left_ink	{0.00, 0.45, 0.70}
+styles_sweep	right_ink	{0.90, 0.62, 0.00}
+styles_sweep	refusal	
+styles_sweep	note_lines	0
+styles_sweep	png_px	1800x1200
+styles_sweep	png_md5	66bba1543c1821db521615b53f95bdbb
+styles_sweep	ink_slot1_px	9276
+styles_sweep	ink_slot2_px	9778
+styles_sweep	red_plot_px	68
+styles_sweep	red_margin_px	20
+typed_pair	verdict	OK
+typed_pair	secondon	1
+typed_pair	rightslot	2
+typed_pair	left_min	190
+typed_pair	left_max	260
+typed_pair	right_min	0
+typed_pair	right_max	1
+typed_pair	left_ink	{0.00, 0.45, 0.70}
+typed_pair	right_ink	{0.90, 0.62, 0.00}
+typed_pair	refusal	
+typed_pair	note_lines	0
+typed_pair	png_px	1800x1200
+typed_pair	png_md5	01d5e68cb0c6234d8886653d3db0ed0b
+typed_pair	ink_slot1_px	9500
+typed_pair	ink_slot2_px	9940
+typed_pair	red_plot_px	68
+typed_pair	red_margin_px	13
+replay	verdict	OK
+replay	png_md5	fcd25fd7ba4ec0299b14cf9dd3d53584
+replay	png_px	1800x1200
+block	lineStyle	2
+block	secondAxisOn	1
+block	secondAxisCol$	"cq"
+block	secondAxisMin	0
+block	secondAxisMax	0
+block	secondAxisLabel$	"Contact quotient"
+block	secondAxisStyle	3

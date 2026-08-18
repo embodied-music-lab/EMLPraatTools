@@ -67,9 +67,13 @@ figureFormat2$ = "PNG, PDF"   ; the figure formats saved -- PNG always, EPS and 
 eraseFirst     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 1 (draw)
 panelOriginX   = 0   ; inches from the left of the page to this panel's corner -- run 1, step 1 (draw)
 panelOriginY   = 0   ; inches from the top of the page to this panel's corner -- run 1, step 1 (draw)
+lineStyle      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 1, step 1 (draw)
+secondAxisOn   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 1, step 1 (draw)
 eraseFirst2    = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 2, step 3 (draw)
 panelOriginX2  = 0   ; inches from the left of the page to this panel's corner -- run 2, step 3 (draw)
 panelOriginY2  = 0   ; inches from the top of the page to this panel's corner -- run 2, step 3 (draw)
+lineStyle2     = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 2, step 3 (draw)
+secondAxisOn2  = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 2, step 3 (draw)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -105,6 +109,8 @@ emlEraseFirst = eraseFirst2
 emlPanelOriginX = panelOriginX2
 emlPanelOriginY = panelOriginY2
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle2
+emlSecondAxisOn = secondAxisOn2
 @emlDrawBoxPlot: data, "B", "Group", "val", 6, 4, "color", 1, groupCol2$, valueCol2$, axisYMin2, axisYMax2
 
 # The same step through the menu:

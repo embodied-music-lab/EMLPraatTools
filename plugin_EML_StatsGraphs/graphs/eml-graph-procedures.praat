@@ -346,8 +346,8 @@ procedure emlInitDrawingDefaults
     emlSecondAxisMax = 0
     emlSecondAxisLabel$ = ""
     emlSecondAxisStyle = 3
-    # The PRIMARY series' pen. 1 Solid, and every line this plugin drew
-    # before this change order was solid, so 1 is also the no-change value.
+    # The PRIMARY series' pen. 1 Solid, which is what a figure that says
+    # nothing about its pen is drawn with.
     emlLineStyle = 1
     # THE RIGHT MARGIN'S INK IS NOT OURS TO CHOOSE, AND THAT IS MEASURED.
     # Ian left one thing open: whether the right-hand axis FURNITURE -- its
@@ -2455,13 +2455,12 @@ endproc
 # ============================================================================
 # THE PEN, AND THE SECOND VERTICAL AXIS
 # ============================================================================
-# Measured at HEAD before this change order: NOT ONE call to a line-style
-# command anywhere in the graphs layer and no user option for one, so every
-# line this plugin has ever drawn is solid. Praat provides four natively, and
-# the command is the STATE it sets rather than a parameterised call --
-# `Solid line`, `Dotted line`, `Dashed line`, `Dashed-dotted line`. There is
-# no `Line style:` in 6.6.30; that spelling is refused with "Command not
-# available for current selection", which is how this was settled.
+# Praat provides four line styles, and each command is the STATE it sets
+# rather than a parameterised call -- `Solid line`, `Dotted line`,
+# `Dashed line`, `Dashed-dotted line`. There is no `Line style:` in 6.6.30;
+# that spelling is refused with "Command not available for current
+# selection", which is how the four names above were settled. Solid is the
+# default everywhere and is what a caller that sets nothing draws.
 #
 # THE STATE IS GLOBAL TO THE PICTURE WINDOW, which is the whole reason these
 # are procedures and not four lines typed at four call sites. A dashed pen

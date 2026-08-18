@@ -1736,8 +1736,8 @@ endproc
 # SWEEP EVERY AXIS PAIR THE DIALOGS CAN RETURN THROUGH THE ONE JUDGE ABOVE,
 # and report how many were refused in emlGraphsAxisRefusalN.
 #
-# ONE CALL PER PAIR AND ONE JUDGE FOR ALL OF THEM. Six pairs judged by six
-# copies of the same test is five pairs repaired and a sixth found later; the
+# ONE CALL PER PAIR AND ONE JUDGE FOR ALL OF THEM. Seven pairs judged by seven
+# copies of the same test is six pairs repaired and a seventh found later; the
 # pairs differ only in their name and their two variables, so that is all a
 # call site carries.
 #
@@ -1758,6 +1758,11 @@ procedure emlGraphsCheckAxisRanges
     @emlGraphsAxisPairRefusal: "Amplitude", ampMin, ampMax
     @emlGraphsAxisPairRefusal: .valueName$, valueMin, valueMax
     @emlGraphsAxisPairRefusal: "X", scatterXMin, scatterXMax
+    # THE SEVENTH PAIR IS THE RIGHT-HAND AXIS'S, and it is here rather than on
+    # the page that asks for it because this is where a pair is judged. The
+    # line chart's second-dataset page tests its COLUMN and carries its two
+    # numbers out; the pair itself arrives here with the other six.
+    @emlGraphsAxisPairRefusal: "Right", secondMin, secondMax
     .refused = emlGraphsAxisRefusalN
 endproc
 # ============================================================================
@@ -1921,8 +1926,8 @@ procedure emlGraphsPublishSeriesPens
         if tsSecondAxis = 1
             emlSecondAxisOn = 1
             emlSecondAxisCol$ = tsSecondColName$
-            emlSecondAxisMin = number (tmpSecMin$)
-            emlSecondAxisMax = number (tmpSecMax$)
+            emlSecondAxisMin = secondMin
+            emlSecondAxisMax = secondMax
             emlSecondAxisLabel$ = tmpSecLabel$
             emlSecondAxisStyle = tsSecondStyle
         endif
@@ -3041,6 +3046,12 @@ tsSecondColName$ = ""
 tmpSecMin$ = "0"
 tmpSecMax$ = "0"
 tmpSecLabel$ = ""
+# THE RIGHT-HAND PAIR AS NUMBERS, which is the form the range sweep judges
+# every pair in. Seeded here so @emlGraphsCheckAxisRanges can read them on a
+# type whose dialog never offered them, exactly as it reads the frequency pair
+# when a bar chart is on screen.
+secondMin = 0
+secondMax = 0
 prev_tsSeries1Idx = 0
 prev_tsSeries2Idx = 0
 prev_groupSort = config_groupSort
@@ -4720,6 +4731,8 @@ repeat
         tmpSecMin$ = string$ (prev_ts_secondMin)
         tmpSecMax$ = string$ (prev_ts_secondMax)
         tmpSecLabel$ = prev_tsSecondLabel$
+        secondMin = prev_ts_secondMin
+        secondMax = prev_ts_secondMax
 
         tsFormatDone = 0
         repeat
@@ -5166,12 +5179,6 @@ repeat
                             if tsMeltTableId > 0
                                 tsSecondSourceId = tsOrigObjectId
                             endif
-                            ; The pair judge accumulates into a counter that
-                            ; @emlGraphsCheckAxisRanges clears at ITS start,
-                            ; and that sweep has not run yet on this press.
-                            ; Cleared here so the one judge can be used here
-                            ; too rather than copied.
-                            emlGraphsAxisRefusalN = 0
                             tsSecondDone = 0
                             repeat
                                 beginPause: "Line Chart -- Second Dataset on a Right Y-Axis"
@@ -5230,16 +5237,21 @@ repeat
                                             tsSecondBad$ = """" + tsSecondColName$ + """ does not contain numeric data. Choose a numeric column for the right-hand series."
                                         endif
                                     endif
-                                    if tsSecondBad$ = ""
-                                        @emlGraphsAxisPairRefusal: "Right",
-                                        ... number (tmpSecMin$), number (tmpSecMax$)
-                                        if emlGraphsAxisPairRefusal.refused = 1
-                                            tsSecondBad$ = emlGraphsAxisPairRefusal.message$
-                                        endif
-                                    endif
 
                                     if tsSecondBad$ = ""
                                         tsSecondDone = 1
+                                        ; THE RANGE GOES TO THE SWEEP, NOT TO
+                                        ; A JUDGE OF ITS OWN. This page tests
+                                        ; the COLUMN, which is its own
+                                        ; business; the pair is judged with
+                                        ; every other pair the dialogs can
+                                        ; return, by @emlGraphsCheckAxisRanges
+                                        ; at the bottom of the form loop, so
+                                        ; that "the maximum is below the
+                                        ; minimum" is decided in one place for
+                                        ; all seven of them.
+                                        secondMin = number (tmpSecMin$)
+                                        secondMax = number (tmpSecMax$)
                                         # THE MELTED TABLE GETS THE COLUMN
                                         # TOO. Wide format with two or more
                                         # series replaces objectId with a

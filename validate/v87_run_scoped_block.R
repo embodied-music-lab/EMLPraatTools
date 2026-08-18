@@ -318,9 +318,19 @@ EXPECT <- rbind(EXPECT, do.call(rbind, lapply(names(STEP_KIND), function(cs) {
     runs <- sort(unique(STEP_RUN[[cs]][STEP_KIND[[cs]] == "draw"]))
     do.call(rbind, lapply(runs, function(r) {
         sfx <- if (r == 1L) "" else as.character(r)
+        # THE PENS RIDE WITH THE PAGE SETTINGS, and for the page settings'
+        # reason: a draw step states the settings it did NOT use as well as
+        # the ones it did, because every step in an emitted script runs in one
+        # scope and a figure that asked for a dotted line or a right-hand axis
+        # would otherwise leave both set for the next one. Two per draw run --
+        # the pen and the second-axis switch -- and the five that only govern
+        # a second axis are emitted only when there is one, which no case in
+        # this harness has. Added 18 August 2026 with the second axis.
         rbind(d(cs, paste0("eraseFirst", sfx),   "1", r),
               d(cs, paste0("panelOriginX", sfx), "0", r),
-              d(cs, paste0("panelOriginY", sfx), "0", r))
+              d(cs, paste0("panelOriginY", sfx), "0", r),
+              d(cs, paste0("lineStyle", sfx),    "1", r),
+              d(cs, paste0("secondAxisOn", sfx), "0", r))
     }))
 })))
 

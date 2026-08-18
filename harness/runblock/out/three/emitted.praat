@@ -70,12 +70,18 @@ axisYMax3     = 30   ; the figure was drawn on 2.0000 .. 30.0000
 eraseFirst    = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 1 (draw)
 panelOriginX  = 0   ; inches from the left of the page to this panel's corner -- run 1, step 1 (draw)
 panelOriginY  = 0   ; inches from the top of the page to this panel's corner -- run 1, step 1 (draw)
+lineStyle     = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 1, step 1 (draw)
+secondAxisOn  = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 1, step 1 (draw)
 eraseFirst2   = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 2, step 2 (draw)
 panelOriginX2 = 0   ; inches from the left of the page to this panel's corner -- run 2, step 2 (draw)
 panelOriginY2 = 0   ; inches from the top of the page to this panel's corner -- run 2, step 2 (draw)
+lineStyle2    = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 2, step 2 (draw)
+secondAxisOn2 = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 2, step 2 (draw)
 eraseFirst3   = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 3, step 3 (draw)
 panelOriginX3 = 0   ; inches from the left of the page to this panel's corner -- run 3, step 3 (draw)
 panelOriginY3 = 0   ; inches from the top of the page to this panel's corner -- run 3, step 3 (draw)
+lineStyle3    = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 3, step 3 (draw)
+secondAxisOn3 = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 3, step 3 (draw)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -89,6 +95,8 @@ emlEraseFirst = eraseFirst
 emlPanelOriginX = panelOriginX
 emlPanelOriginY = panelOriginY
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle
+emlSecondAxisOn = secondAxisOn
 @emlDrawBoxPlot: data, "One", "Site", "n", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:
@@ -104,6 +112,8 @@ emlEraseFirst = eraseFirst2
 emlPanelOriginX = panelOriginX2
 emlPanelOriginY = panelOriginY2
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle2
+emlSecondAxisOn = secondAxisOn2
 @emlDrawBoxPlot: data, "Two", "Ward", "n", 6, 4, "color", 1, groupCol2$, valueCol2$, axisYMin2, axisYMax2
 
 # The same step through the menu:
@@ -119,6 +129,8 @@ emlEraseFirst = eraseFirst3
 emlPanelOriginX = panelOriginX3
 emlPanelOriginY = panelOriginY3
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle3
+emlSecondAxisOn = secondAxisOn3
 @emlDrawBoxPlot: data, "Three", "Block", "n", 6, 4, "color", 1, groupCol3$, valueCol3$, axisYMin3, axisYMax3
 
 # The same step through the menu:

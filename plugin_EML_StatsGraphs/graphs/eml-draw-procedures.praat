@@ -1404,8 +1404,8 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
 
     # THE PALETTE IS OPTIMISED ONCE, FOR THE NUMBER OF SERIES ACTUALLY DRAWN.
     # @emlOptimizePaletteContrast permutes the palette arrays IN PLACE, so
-    # calling it twice would re-spread an already-spread palette; the group
-    # block above therefore no longer calls it and this is the only call.
+    # calling it twice would re-spread an already-spread palette. The group
+    # block above leaves the call to this line, and this line is the only one.
     #
     # THE RIGHT SERIES IS THE LAST SLOT. Ungrouped, that is slot two of two --
     # blue and orange in colour, the two ends of the grey ramp in
@@ -2036,10 +2036,11 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         ; units, from the world-per-inch @emlSetPatternScale published for the
         ; axis in force -- so a marker drawn on the right-hand world with the
         ; left-hand scale still loaded is sized in hertz and placed in
-        ; proportions. Measured, before this line existed: every marker on the
-        ; second series was drawn hundreds of times too large, entirely
-        ; outside the frame, and the series came out as a bare line. The
-        ; left-hand scale is restored with the left-hand axis below.
+        ; proportions: measured on this figure's own numbers, a marker sized
+        ; in hertz on a world 0.3 proportions high lands hundreds of times too
+        ; large and entirely outside the frame, and the series comes out as a
+        ; bare line. The left-hand scale is restored with the left-hand axis
+        ; below.
         @emlSetPatternScale: .xMin, .xMax, .rMin, .rMax
         Colour: emlSetColorPalette.line$[.rightSlot]
         Line width: emlSetAdaptiveTheme.dataLineWidth
@@ -2107,13 +2108,11 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         Line width: 1.0
     endif
 
-    # THE KEY IS DRAWN AFTER BOTH SERIES AND NOT BETWEEN THEM. It was inside
-    # the grouped branch until the second axis arrived; a legend drawn there
-    # would have had the right-hand series stroked across the top of it,
-    # because that series is drawn after the branch closes. Nothing else about
-    # it moved -- the quadrant scan, the corner and the entries are the lines
-    # that were there -- and it is still a grouped-figure legend, which is why
-    # it is wrapped in the test the branch used to be.
+    # THE KEY IS DRAWN AFTER BOTH SERIES AND NOT BETWEEN THEM. The right-hand
+    # series is drawn above, after the grouped branch closes, so a key placed
+    # inside that branch would have that series stroked across the top of it.
+    # It is a grouped-figure key, which is what the test around it says: the
+    # ungrouped path draws one series and names it on the y-axis.
     if .hasGroup = 1
         # Quadrant scoring for adaptive legend placement
         selectObject: .objectId
