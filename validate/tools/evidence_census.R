@@ -263,9 +263,16 @@
 # regex halfway down.
 # ---------------------------------------------------------------------------
 
-# The three directory roots that decide the class of what was read.
-EML_CENSUS_ROOTS <- c(plugin = "SOURCE", harness = "ARTEFACT",
-                      evidence = "ARTEFACT")
+# The directory roots that decide the class of what was read.
+#
+# THE PLUGIN IS HERE UNDER BOTH OF ITS NAMES. The folder is
+# plugin_EML_StatsGraphs -- the name Praat installs it by -- and `plugin`
+# beside it is a symlink to it, which is what almost every validator still
+# writes. A vocabulary holding only one of the two would score a validator
+# that spells the other as reading NOTHING, and a coverage record that
+# silently drops a reader is worse than one that names too many.
+EML_CENSUS_ROOTS <- c(plugin = "SOURCE", plugin_EML_StatsGraphs = "SOURCE",
+                      harness = "ARTEFACT", evidence = "ARTEFACT")
 
 # Calls that OPEN something. `source` is here because sourcing a file reads
 # it; `system2`/`system` because a path handed to a subprocess is read by the
@@ -787,10 +794,15 @@ eml_classify_one <- function(path) {
                       collapse = "+")
     if (!nzchar(executes)) executes <- "NO"
 
+    # THE CLASSES COME OUT OF THE VOCABULARY ABOVE, not out of a second list
+    # written here. A root added there and forgotten here would be harvested
+    # and then classified as nothing.
+    src_roots <- names(EML_CENSUS_ROOTS)[EML_CENSUS_ROOTS == "SOURCE"]
+    art_roots <- names(EML_CENSUS_ROOTS)[EML_CENSUS_ROOTS == "ARTEFACT"]
     cls <- character(0)
-    if ("plugin" %in% reads) cls <- c(cls, "SOURCE")
-    if (praat && shells)     cls <- c(cls, "LIVE")
-    if (any(c("harness", "evidence") %in% reads)) cls <- c(cls, "ARTEFACT")
+    if (any(src_roots %in% reads)) cls <- c(cls, "SOURCE")
+    if (praat && shells)           cls <- c(cls, "LIVE")
+    if (any(art_roots %in% reads)) cls <- c(cls, "ARTEFACT")
     if (!length(cls)) cls <- "NONE"
 
     row(paste(cls, collapse = "+"),

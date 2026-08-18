@@ -1003,7 +1003,7 @@ scripts <- c(
                                  # successes, where the ordinary formula is
                                  # at its worst, plus two published pins.
                                  # Drives Praat live; negative control inside.
-    "v93_lane_alpha_influence_oracle.R",
+    "v93_lane_alpha_influence_oracle.R"
                                  # the respondent-influence jackknife against
                                  # a base-R leave-one-out oracle: every
                                  # dropped-respondent alpha and its change,

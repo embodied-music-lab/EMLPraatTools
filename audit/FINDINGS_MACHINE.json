@@ -468,7 +468,7 @@
    "mechanism": "Sum-of-squares accumulated from the raw values rather than from values centered on the column mean. On ordinary questionnaire responses the loss is invisible; on a column carrying a large constant offset the subtraction of two nearly equal large numbers throws away most of the significant digits, and the reliability figure degrades quietly. Found by a stress battery in the lane before merge.",
    "verdict": "CONFIRMED",
    "fixedBy": "2f1cd7dbd30a7fb6c16ed03b30995b40e77508fc",
-   "pinnedBy": "v90_lane_alpha_oracle.R,v93_lane_alpha_influence_oracle.R",
+   "pinnedBy": "v90, v93",
    "status": "closed"
   }
  ]
