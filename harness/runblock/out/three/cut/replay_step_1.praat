@@ -55,18 +55,27 @@ include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 data1$ = "Table t1"   ; run 1, step 1 (draw)
 data2$ = "Table t2"   ; run 2, step 2 (draw)
 data3$ = "Table t3"   ; run 3, step 3 (draw)
-groupCol$  = "site"   ; the grouping column -- run 1, step 1 (draw)
-valueCol$  = "n"   ; the measured column -- run 1, step 1 (draw)
-groupCol2$ = "ward"   ; the grouping column -- run 2, step 2 (draw)
-valueCol2$ = "n"   ; the measured column -- run 2, step 2 (draw)
-groupCol3$ = "block"   ; the grouping column -- run 3, step 3 (draw)
-valueCol3$ = "n"   ; the measured column -- run 3, step 3 (draw)
-axisYMin   = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-axisYMax   = 0.0   ; on the recorded data it resolved to 2.5000 .. 5.5000
-axisYMin2  = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 2 (draw)
-axisYMax2  = 0.0   ; on the recorded data it resolved to 10.0000 .. 14.0000
-axisYMin3  = 2   ; the y-axis range -- as typed in the dialog -- run 3, step 3 (draw)
-axisYMax3  = 30   ; the figure was drawn on 2.0000 .. 30.0000
+groupCol$     = "site"   ; the grouping column -- run 1, step 1 (draw)
+valueCol$     = "n"   ; the measured column -- run 1, step 1 (draw)
+groupCol2$    = "ward"   ; the grouping column -- run 2, step 2 (draw)
+valueCol2$    = "n"   ; the measured column -- run 2, step 2 (draw)
+groupCol3$    = "block"   ; the grouping column -- run 3, step 3 (draw)
+valueCol3$    = "n"   ; the measured column -- run 3, step 3 (draw)
+axisYMin      = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
+axisYMax      = 0.0   ; on the recorded data it resolved to 2.5000 .. 5.5000
+axisYMin2     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 2 (draw)
+axisYMax2     = 0.0   ; on the recorded data it resolved to 10.0000 .. 14.0000
+axisYMin3     = 2   ; the y-axis range -- as typed in the dialog -- run 3, step 3 (draw)
+axisYMax3     = 30   ; the figure was drawn on 2.0000 .. 30.0000
+eraseFirst    = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 1 (draw)
+panelOriginX  = 0   ; inches from the left of the page to this panel's corner -- run 1, step 1 (draw)
+panelOriginY  = 0   ; inches from the top of the page to this panel's corner -- run 1, step 1 (draw)
+eraseFirst2   = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 2, step 2 (draw)
+panelOriginX2 = 0   ; inches from the left of the page to this panel's corner -- run 2, step 2 (draw)
+panelOriginY2 = 0   ; inches from the top of the page to this panel's corner -- run 2, step 2 (draw)
+eraseFirst3   = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 3, step 3 (draw)
+panelOriginX3 = 0   ; inches from the left of the page to this panel's corner -- run 3, step 3 (draw)
+panelOriginY3 = 0   ; inches from the top of the page to this panel's corner -- run 3, step 3 (draw)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -99,6 +108,10 @@ data = selected ()
 # Box plot: One
 # Whisker convention and outlier rule are stated in the figure, not assumed.
 
+emlEraseFirst = eraseFirst
+emlPanelOriginX = panelOriginX
+emlPanelOriginY = panelOriginY
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawBoxPlot: data, "One", "Site", "n", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:

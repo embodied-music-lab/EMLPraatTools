@@ -1096,6 +1096,20 @@ scripts <- c(
                                  # ORIGINAL table, not by their position
                                  # after incomplete rows were dropped.
                                  # Drives Praat live.
+    ,
+    "v94_page_composition.R"     # page composition: the draw dialog's erase
+                                 # tickbox and typed panel origin, the extent
+                                 # union as the page, the parked separate
+                                 # legend taking its band below that union,
+                                 # the save panel naming a page, and the
+                                 # recorder carrying the page a figure went
+                                 # on. Its first section is the one that
+                                 # matters most -- the same figure drawn
+                                 # through the controls at their defaults and
+                                 # with those globals never assigned, compared
+                                 # byte for byte, so the default path is
+                                 # proved unmoved rather than asserted.
+                                 # Reads harness/compose.
 )
 
 # ---------------------------------------------------------------------------

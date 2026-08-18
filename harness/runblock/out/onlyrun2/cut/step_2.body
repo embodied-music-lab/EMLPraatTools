@@ -4,6 +4,10 @@ data = selected ()
 # Scatter plot: Scatter
 # A fitted line is descriptive and carries no test.
 
+emlEraseFirst = eraseFirst2
+emlPanelOriginX = panelOriginX2
+emlPanelOriginY = panelOriginY2
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 scatterAnalysisType = 0
 annotCorrType$ = "pearson"
 scatterRegressionLine = 0

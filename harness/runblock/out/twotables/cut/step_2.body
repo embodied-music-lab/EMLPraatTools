@@ -4,6 +4,10 @@ data = selected ()
 # Box plot: City B
 # Whisker convention and outlier rule are stated in the figure, not assumed.
 
+emlEraseFirst = eraseFirst2
+emlPanelOriginX = panelOriginX2
+emlPanelOriginY = panelOriginY2
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawBoxPlot: data, "City B", "Ward", "n", 6, 4, "color", 1, groupCol2$, valueCol2$, axisYMin2, axisYMax2
 
 # The same step through the menu:

@@ -123,20 +123,20 @@ stamp_types_recordn	0
 stamp_types_exit	0
 leg	--shell--
 form_then_qq_emitted	yes
-form_then_qq_blockline	axisYMin  = 0   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
-form_then_qq_blockline	axisYMax  = 100   ; the figure was drawn on 0.0000 .. 100.0000
-form_then_qq_blockline	axisYMin2 = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 2 (draw)
-form_then_qq_blockline	axisYMax2 = 0.0   ; on the recorded data it resolved to 195.0000 .. 235.0000
+form_then_qq_blockline	axisYMin      = 0   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
+form_then_qq_blockline	axisYMax      = 100   ; the figure was drawn on 0.0000 .. 100.0000
+form_then_qq_blockline	axisYMin2     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 2 (draw)
+form_then_qq_blockline	axisYMax2     = 0.0   ; on the recorded data it resolved to 195.0000 .. 235.0000
 form_then_qq_steps	2
 form_then_qq_stepline	# --- Step 1 (draw) ---
 form_then_qq_stepline	# --- Step 2 (draw) ---
 form_then_qq_violin_call	axisYMin, axisYMax
 form_then_qq_scatter_call	@emlDrawScatterPlot: data, "Normal Q-Q plot: val", "Theoretical quantiles (z)", "Sample quantiles: val", 6, 4, "color", 1, xCol2$, yCol2$, "", 0, 0, axisYMin2, axisYMax2, 0
 bridge_then_qq_emitted	yes
-bridge_then_qq_blockline	axisYMin  = 0   ; the y-axis range -- as typed in the dialog -- run 1, step 2 (draw)
-bridge_then_qq_blockline	axisYMax  = 100   ; the figure was drawn on 0.0000 .. 184.8013
-bridge_then_qq_blockline	axisYMin2 = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 3 (draw)
-bridge_then_qq_blockline	axisYMax2 = 0.0   ; on the recorded data it resolved to 195.0000 .. 235.0000
+bridge_then_qq_blockline	axisYMin      = 0   ; the y-axis range -- as typed in the dialog -- run 1, step 2 (draw)
+bridge_then_qq_blockline	axisYMax      = 100   ; the figure was drawn on 0.0000 .. 184.8013
+bridge_then_qq_blockline	axisYMin2     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 3 (draw)
+bridge_then_qq_blockline	axisYMax2     = 0.0   ; on the recorded data it resolved to 195.0000 .. 235.0000
 bridge_then_qq_steps	3
 bridge_then_qq_stepline	# --- Step 1 (analysis) ---
 bridge_then_qq_stepline	# --- Step 2 (draw) ---
@@ -144,36 +144,36 @@ bridge_then_qq_stepline	# --- Step 3 (draw) ---
 bridge_then_qq_violin_call	axisYMin, axisYMax
 bridge_then_qq_scatter_call	@emlDrawScatterPlot: data, "Normal Q-Q plot: val", "Theoretical quantiles (z)", "Sample quantiles: val", 6, 4, "color", 1, xCol2$, yCol2$, "", 0, 0, axisYMin2, axisYMax2, 0
 form_then_violin_emitted	yes
-form_then_violin_blockline	axisYMin   = 0   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
-form_then_violin_blockline	axisYMax   = 100   ; the figure was drawn on 0.0000 .. 100.0000
-form_then_violin_blockline	axisYMin2  = 150   ; the y-axis range -- as typed in the dialog -- run 2, step 2 (draw)
-form_then_violin_blockline	axisYMax2  = 400   ; the figure was drawn on 150.0000 .. 400.0000
+form_then_violin_blockline	axisYMin      = 0   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
+form_then_violin_blockline	axisYMax      = 100   ; the figure was drawn on 0.0000 .. 100.0000
+form_then_violin_blockline	axisYMin2     = 150   ; the y-axis range -- as typed in the dialog -- run 2, step 2 (draw)
+form_then_violin_blockline	axisYMax2     = 400   ; the figure was drawn on 150.0000 .. 400.0000
 form_then_violin_steps	2
 form_then_violin_stepline	# --- Step 1 (draw) ---
 form_then_violin_stepline	# --- Step 2 (draw) ---
 form_then_violin_violin_call	axisYMin, axisYMax
 form_then_violin_violin_call	@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol2$, valueCol2$, axisYMin2, axisYMax2
 stamp_live_emitted	yes
-stamp_live_blockline	axisYMin  = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-stamp_live_blockline	axisYMax  = 0.0   ; on the recorded data it resolved to 150.0000 .. 400.0000
+stamp_live_blockline	axisYMin     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
+stamp_live_blockline	axisYMax     = 0.0   ; on the recorded data it resolved to 150.0000 .. 400.0000
 stamp_live_steps	1
 stamp_live_stepline	# --- Step 1 (draw) ---
 stamp_live_violin_call	axisYMin, axisYMax
 stamp_stale_emitted	yes
-stamp_stale_blockline	axisYMin  = 150   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
-stamp_stale_blockline	axisYMax  = 400   ; the figure was drawn on 150.0000 .. 400.0000
+stamp_stale_blockline	axisYMin     = 150   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
+stamp_stale_blockline	axisYMax     = 400   ; the figure was drawn on 150.0000 .. 400.0000
 stamp_stale_steps	1
 stamp_stale_stepline	# --- Step 1 (draw) ---
 stamp_stale_violin_call	axisYMin, axisYMax
 pair_unstamped_emitted	yes
-pair_unstamped_blockline	axisYMin  = 150   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
-pair_unstamped_blockline	axisYMax  = 400   ; the figure was drawn on 150.0000 .. 400.0000
+pair_unstamped_blockline	axisYMin     = 150   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
+pair_unstamped_blockline	axisYMax     = 400   ; the figure was drawn on 150.0000 .. 400.0000
 pair_unstamped_steps	1
 pair_unstamped_stepline	# --- Step 1 (draw) ---
 pair_unstamped_violin_call	axisYMin, axisYMax
 qq_alone_emitted	yes
-qq_alone_blockline	axisYMin = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-qq_alone_blockline	axisYMax = 0.0   ; on the recorded data it resolved to 195.0000 .. 235.0000
+qq_alone_blockline	axisYMin     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
+qq_alone_blockline	axisYMax     = 0.0   ; on the recorded data it resolved to 195.0000 .. 235.0000
 qq_alone_steps	1
 qq_alone_stepline	# --- Step 1 (draw) ---
 qq_alone_scatter_call	@emlDrawScatterPlot: data, "Normal Q-Q plot: val", "Theoretical quantiles (z)", "Sample quantiles: val", 6, 4, "color", 1, xCol$, yCol$, "", 0, 0, axisYMin, axisYMax, 0

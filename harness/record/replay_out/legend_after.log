@@ -2,7 +2,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Tue Aug 18 11:09:08 2026
+  Tue Aug 18 15:45:48 2026
 ══════════════════════════════════════════════
 
   Table               lg
@@ -19,9 +19,9 @@ Between             2513.16         3     837.72          151.3899    < .001
 Within              287.74          52    5.53            
 Total               2800.90         55    
 
-  F                   151.3899		Ratio of between-group to within-group variance: groups differ 151.4x more than expected by chance
-  p                   < .001  (1.12e-25)		Statistically significant: <0.1% probability due to chance
-  Effect size         eta-squared = 0.8973		Effect size: large (>0.14 = large). 90% of variance explained by group membership
+  F                   151.3899		Ratio of mean squares: the between-group mean square is 151.4 times the within-group mean square. With no real effect, this ratio tends to be near 1
+  p                   < .001  (1.12e-25)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  Effect size         eta-squared = 0.8973		Effect size: large by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 90% of the total variance
   Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
   Equal spread        Brown-Forsythe F(3, 52) = 0.3362
   Equal-spread p      p = .799

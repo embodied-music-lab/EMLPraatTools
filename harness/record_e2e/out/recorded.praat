@@ -29,6 +29,8 @@ include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-extract.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-output.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-categorical.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-record.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
@@ -188,6 +190,78 @@ axisYMin37       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the 
 axisYMax37       = 0.0   ; on the recorded data it resolved to 196.0000 .. 212.0000
 axisYMin38       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 38, step 46 (draw)
 axisYMax38       = 0.0   ; on the recorded data it resolved to 196.0000 .. 212.0000
+eraseFirst14     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 14, step 14 (draw)
+panelOriginX14   = 0   ; inches from the left of the page to this panel's corner -- run 14, step 14 (draw)
+panelOriginY14   = 0   ; inches from the top of the page to this panel's corner -- run 14, step 14 (draw)
+eraseFirst15     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 15, step 15 (draw)
+panelOriginX15   = 0   ; inches from the left of the page to this panel's corner -- run 15, step 15 (draw)
+panelOriginY15   = 0   ; inches from the top of the page to this panel's corner -- run 15, step 15 (draw)
+eraseFirst16     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 16, step 16 (draw)
+panelOriginX16   = 0   ; inches from the left of the page to this panel's corner -- run 16, step 16 (draw)
+panelOriginY16   = 0   ; inches from the top of the page to this panel's corner -- run 16, step 16 (draw)
+eraseFirst17     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 17, step 17 (draw)
+panelOriginX17   = 0   ; inches from the left of the page to this panel's corner -- run 17, step 17 (draw)
+panelOriginY17   = 0   ; inches from the top of the page to this panel's corner -- run 17, step 17 (draw)
+eraseFirst18     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 18, step 18 (draw)
+panelOriginX18   = 0   ; inches from the left of the page to this panel's corner -- run 18, step 18 (draw)
+panelOriginY18   = 0   ; inches from the top of the page to this panel's corner -- run 18, step 18 (draw)
+eraseFirst19     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 19, step 19 (draw)
+panelOriginX19   = 0   ; inches from the left of the page to this panel's corner -- run 19, step 19 (draw)
+panelOriginY19   = 0   ; inches from the top of the page to this panel's corner -- run 19, step 19 (draw)
+eraseFirst20     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 20, step 20 (draw)
+panelOriginX20   = 0   ; inches from the left of the page to this panel's corner -- run 20, step 20 (draw)
+panelOriginY20   = 0   ; inches from the top of the page to this panel's corner -- run 20, step 20 (draw)
+eraseFirst21     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 21, step 21 (draw)
+panelOriginX21   = 0   ; inches from the left of the page to this panel's corner -- run 21, step 21 (draw)
+panelOriginY21   = 0   ; inches from the top of the page to this panel's corner -- run 21, step 21 (draw)
+eraseFirst22     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 22, step 22 (draw)
+panelOriginX22   = 0   ; inches from the left of the page to this panel's corner -- run 22, step 22 (draw)
+panelOriginY22   = 0   ; inches from the top of the page to this panel's corner -- run 22, step 22 (draw)
+eraseFirst23     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 23, step 23 (draw)
+panelOriginX23   = 0   ; inches from the left of the page to this panel's corner -- run 23, step 23 (draw)
+panelOriginY23   = 0   ; inches from the top of the page to this panel's corner -- run 23, step 23 (draw)
+eraseFirst24     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 24, step 24 (draw)
+panelOriginX24   = 0   ; inches from the left of the page to this panel's corner -- run 24, step 24 (draw)
+panelOriginY24   = 0   ; inches from the top of the page to this panel's corner -- run 24, step 24 (draw)
+eraseFirst25     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 25, step 25 (draw)
+panelOriginX25   = 0   ; inches from the left of the page to this panel's corner -- run 25, step 25 (draw)
+panelOriginY25   = 0   ; inches from the top of the page to this panel's corner -- run 25, step 25 (draw)
+eraseFirst26     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 26, step 26 (draw)
+panelOriginX26   = 0   ; inches from the left of the page to this panel's corner -- run 26, step 26 (draw)
+panelOriginY26   = 0   ; inches from the top of the page to this panel's corner -- run 26, step 26 (draw)
+eraseFirst27     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 27, step 27 (draw)
+panelOriginX27   = 0   ; inches from the left of the page to this panel's corner -- run 27, step 27 (draw)
+panelOriginY27   = 0   ; inches from the top of the page to this panel's corner -- run 27, step 27 (draw)
+eraseFirst28     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 28, step 29 (draw)
+panelOriginX28   = 0   ; inches from the left of the page to this panel's corner -- run 28, step 29 (draw)
+panelOriginY28   = 0   ; inches from the top of the page to this panel's corner -- run 28, step 29 (draw)
+eraseFirst29     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 29, step 31 (draw)
+panelOriginX29   = 0   ; inches from the left of the page to this panel's corner -- run 29, step 31 (draw)
+panelOriginY29   = 0   ; inches from the top of the page to this panel's corner -- run 29, step 31 (draw)
+eraseFirst30     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 30, step 33 (draw)
+panelOriginX30   = 0   ; inches from the left of the page to this panel's corner -- run 30, step 33 (draw)
+panelOriginY30   = 0   ; inches from the top of the page to this panel's corner -- run 30, step 33 (draw)
+eraseFirst31     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 31, step 35 (draw)
+panelOriginX31   = 0   ; inches from the left of the page to this panel's corner -- run 31, step 35 (draw)
+panelOriginY31   = 0   ; inches from the top of the page to this panel's corner -- run 31, step 35 (draw)
+eraseFirst32     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 32, step 37 (draw)
+panelOriginX32   = 0   ; inches from the left of the page to this panel's corner -- run 32, step 37 (draw)
+panelOriginY32   = 0   ; inches from the top of the page to this panel's corner -- run 32, step 37 (draw)
+eraseFirst33     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 33, step 39 (draw)
+panelOriginX33   = 0   ; inches from the left of the page to this panel's corner -- run 33, step 39 (draw)
+panelOriginY33   = 0   ; inches from the top of the page to this panel's corner -- run 33, step 39 (draw)
+eraseFirst34     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 34, step 41 (draw)
+panelOriginX34   = 0   ; inches from the left of the page to this panel's corner -- run 34, step 41 (draw)
+panelOriginY34   = 0   ; inches from the top of the page to this panel's corner -- run 34, step 41 (draw)
+eraseFirst35     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 35, step 43 (draw)
+panelOriginX35   = 0   ; inches from the left of the page to this panel's corner -- run 35, step 43 (draw)
+panelOriginY35   = 0   ; inches from the top of the page to this panel's corner -- run 35, step 43 (draw)
+eraseFirst37     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 37, step 45 (draw)
+panelOriginX37   = 0   ; inches from the left of the page to this panel's corner -- run 37, step 45 (draw)
+panelOriginY37   = 0   ; inches from the top of the page to this panel's corner -- run 37, step 45 (draw)
+eraseFirst38     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 38, step 46 (draw)
+panelOriginX38   = 0   ; inches from the left of the page to this panel's corner -- run 38, step 46 (draw)
+panelOriginY38   = 0   ; inches from the top of the page to this panel's corner -- run 38, step 46 (draw)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -355,6 +429,10 @@ data = selected ()
 # Violin plot of spl, grouped by grp, 2 groups.
 # Violin width is a kernel density estimate, not a count.
 
+emlEraseFirst = eraseFirst14
+emlPanelOriginX = panelOriginX14
+emlPanelOriginY = panelOriginY14
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawViolinPlot: data, "Violin", "grp", "spl", 6, 4, "color", 1, groupCol14$, valueCol14$, axisYMin14, axisYMax14
 
 # Axis resolved to 56.0000 .. 74.0000 over 2 groups.
@@ -368,6 +446,10 @@ data = selected ()
 # Scatter plot: Scatter
 # A fitted line is descriptive and carries no test.
 
+emlEraseFirst = eraseFirst15
+emlPanelOriginX = panelOriginX15
+emlPanelOriginY = panelOriginY15
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 scatterAnalysisType = 0
 annotCorrType$ = "pearson"
 scatterRegressionLine = 0
@@ -382,6 +464,10 @@ data = selected ()
 # Histogram: Histogram
 # Bin count changes the shape; it is a display choice, not a property of the data.
 
+emlEraseFirst = eraseFirst16
+emlPanelOriginX = panelOriginX16
+emlPanelOriginY = panelOriginY16
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawHistogram: data, "Histogram", "spl", "Count", 6, 4, "color", 1, valueCol16$, "", 0, 1, axisValueMin16, axisValueMax16, 0
 
 # The same step through the menu:
@@ -392,6 +478,10 @@ selectObject: data17$
 data = selected ()
 # Line chart: Line
 
+emlEraseFirst = eraseFirst17
+emlPanelOriginX = panelOriginX17
+emlPanelOriginY = panelOriginY17
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawTimeSeries: data, "Line", "t", "spl", 6, 4, "color", 1, timeCol17$, valueCol17$, groupCol17$, 0, 0, axisYMin17, axisYMax17
 
 # The same step through the menu:
@@ -402,6 +492,10 @@ selectObject: data18$
 data = selected ()
 # Line chart (+/-CI): Line CI
 
+emlEraseFirst = eraseFirst18
+emlPanelOriginX = panelOriginX18
+emlPanelOriginY = panelOriginY18
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawTimeSeriesCI: data, "Line CI", "t", "spl", 6, 4, "color", 1, timeCol18$, valueCol18$, groupCol18$, 0, 0, axisYMin18, axisYMax18
 
 # The same step through the menu:
@@ -412,6 +506,10 @@ selectObject: data19$
 data = selected ()
 # Spaghetti plot: Spaghetti
 
+emlEraseFirst = eraseFirst19
+emlPanelOriginX = panelOriginX19
+emlPanelOriginY = panelOriginY19
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawSpaghettiPlot: data, "Spaghetti", "t", "spl", 6, 4, "color", 1, conditionCol19$, valueCol19$, idCol19$, groupCol19$, 1, axisYMin19, axisYMax19
 
 # The same step through the menu:
@@ -423,6 +521,10 @@ data = selected ()
 # Bar chart: Bar
 # Bars show means. The spread, not the bar, is what tells you about the data.
 
+emlEraseFirst = eraseFirst20
+emlPanelOriginX = panelOriginX20
+emlPanelOriginY = panelOriginY20
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawBarChart: data, "Bar", "grp", "spl", 6, 4, "color", 1, groupCol20$, valueCol20$, 0, "", axisYMin20, axisYMax20
 
 # The same step through the menu:
@@ -434,6 +536,10 @@ data = selected ()
 # Box plot: Box
 # Whisker convention and outlier rule are stated in the figure, not assumed.
 
+emlEraseFirst = eraseFirst21
+emlPanelOriginX = panelOriginX21
+emlPanelOriginY = panelOriginY21
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawBoxPlot: data, "Box", "grp", "spl", 6, 4, "color", 1, groupCol21$, valueCol21$, axisYMin21, axisYMax21
 
 # The same step through the menu:
@@ -445,6 +551,10 @@ data = selected ()
 # Grouped violin: GViolin
 # Violin width is a kernel density estimate, not a count.
 
+emlEraseFirst = eraseFirst22
+emlPanelOriginX = panelOriginX22
+emlPanelOriginY = panelOriginY22
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawGroupedViolin: data, "GViolin", "grp", "spl", 6, 4, "color", 1, categoryCol22$, subgroupCol22$, valueCol22$, axisYMin22, axisYMax22
 
 # The same step through the menu:
@@ -456,6 +566,10 @@ data = selected ()
 # Grouped box plot: GBox
 # Whisker convention and outlier rule are stated in the figure, not assumed.
 
+emlEraseFirst = eraseFirst23
+emlPanelOriginX = panelOriginX23
+emlPanelOriginY = panelOriginY23
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawGroupedBoxPlot: data, "GBox", "grp", "spl", 6, 4, "color", 1, categoryCol23$, subgroupCol23$, valueCol23$, axisYMin23, axisYMax23
 
 # The same step through the menu:
@@ -466,6 +580,10 @@ selectObject: data24$
 data = selected ()
 # Waveform: Waveform
 
+emlEraseFirst = eraseFirst24
+emlPanelOriginX = panelOriginX24
+emlPanelOriginY = panelOriginY24
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawWaveform: data, "Waveform", "Time (s)", "Amplitude", 6, 4, "color", 1, 0, 0, axisYMin24, axisYMax24
 
 # The same step through the menu:
@@ -476,6 +594,10 @@ selectObject: data25$
 data = selected ()
 # F0 contour: F0
 
+emlEraseFirst = eraseFirst25
+emlPanelOriginX = panelOriginX25
+emlPanelOriginY = panelOriginY25
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawF0Contour: data, "F0", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, axisYMin25, axisYMax25, 1
 
 # The same step through the menu:
@@ -486,6 +608,10 @@ selectObject: data26$
 data = selected ()
 # Spectrum: Spectrum
 
+emlEraseFirst = eraseFirst26
+emlPanelOriginX = panelOriginX26
+emlPanelOriginY = panelOriginY26
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawSpectrum: data, "Spectrum", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin26, axisYMax26
 
 # The same step through the menu:
@@ -496,6 +622,10 @@ selectObject: data27$
 data = selected ()
 # Long-term average spectrum: LTAS
 
+emlEraseFirst = eraseFirst27
+emlPanelOriginX = panelOriginX27
+emlPanelOriginY = panelOriginY27
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawLTAS: data, "LTAS", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin27, axisYMax27, 1, 0, 0, 0
 
 # The same step through the menu:
@@ -515,6 +645,10 @@ data = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "yes", 0.03, 0.09, 0
 # --- Step 29 (draw) ---
 # F0 contour: F0 from Sound
 
+emlEraseFirst = eraseFirst28
+emlPanelOriginX = panelOriginX28
+emlPanelOriginY = panelOriginY28
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawF0Contour: data, "F0 from Sound", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, axisYMin28, axisYMax28, 1
 
 # The same step through the menu:
@@ -534,6 +668,10 @@ data = To Spectrum: "yes"
 # --- Step 31 (draw) ---
 # Spectrum: Spectrum from Sound
 
+emlEraseFirst = eraseFirst29
+emlPanelOriginX = panelOriginX29
+emlPanelOriginY = panelOriginY29
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawSpectrum: data, "Spectrum from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin29, axisYMax29
 
 # The same step through the menu:
@@ -553,6 +691,10 @@ data = To Ltas: 100
 # --- Step 33 (draw) ---
 # Long-term average spectrum: LTAS from Sound
 
+emlEraseFirst = eraseFirst30
+emlPanelOriginX = panelOriginX30
+emlPanelOriginY = panelOriginY30
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawLTAS: data, "LTAS from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin30, axisYMax30, 1, 0, 0, 0
 
 # The same step through the menu:
@@ -572,6 +714,10 @@ data = To Ltas (1-to-1)
 # --- Step 35 (draw) ---
 # Long-term average spectrum: LTAS from Spectrum
 
+emlEraseFirst = eraseFirst31
+emlPanelOriginX = panelOriginX31
+emlPanelOriginY = panelOriginY31
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawLTAS: data, "LTAS from Spectrum", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin31, axisYMax31, 1, 0, 0, 0
 
 # The same step through the menu:
@@ -591,6 +737,10 @@ data = To Sound
 # --- Step 37 (draw) ---
 # Waveform: Waveform from Spectrum
 
+emlEraseFirst = eraseFirst32
+emlPanelOriginX = panelOriginX32
+emlPanelOriginY = panelOriginY32
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawWaveform: data, "Waveform from Spectrum", "Time (s)", "Amplitude", 6, 4, "color", 1, 0, 0, axisYMin32, axisYMax32
 
 # The same step through the menu:
@@ -614,6 +764,10 @@ selectObject: data
 # --- Step 39 (draw) ---
 # F0 contour: F0 from Spectrum
 
+emlEraseFirst = eraseFirst33
+emlPanelOriginX = panelOriginX33
+emlPanelOriginY = panelOriginY33
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawF0Contour: data, "F0 from Spectrum", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, axisYMin33, axisYMax33, 1
 
 # The same step through the menu:
@@ -635,6 +789,10 @@ data = To Table: "row"
 # Histogram: Histogram from TableOfReal
 # Bin count changes the shape; it is a display choice, not a property of the data.
 
+emlEraseFirst = eraseFirst34
+emlPanelOriginX = panelOriginX34
+emlPanelOriginY = panelOriginY34
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawHistogram: data, "Histogram from TableOfReal", "row", "Count", 6, 4, "color", 1, valueCol34$, "", 0, 1, axisValueMin34, axisValueMax34, 0
 
 # The same step through the menu:
@@ -659,6 +817,10 @@ selectObject: data
 # Histogram: Histogram from Matrix
 # Bin count changes the shape; it is a display choice, not a property of the data.
 
+emlEraseFirst = eraseFirst35
+emlPanelOriginX = panelOriginX35
+emlPanelOriginY = panelOriginY35
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawHistogram: data, "Histogram from Matrix", "row", "Count", 6, 4, "color", 1, valueCol35$, "", 0, 1, axisValueMin35, axisValueMax35, 0
 
 # The same step through the menu:
@@ -683,6 +845,10 @@ data = selected ()
 # Scatter plot: Scatter with stats
 # A fitted line is descriptive and carries no test. The correlation and regression below were reported from this figure.
 
+emlEraseFirst = eraseFirst37
+emlPanelOriginX = panelOriginX37
+emlPanelOriginY = panelOriginY37
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 scatterAnalysisType = 3
 annotCorrType$ = "spearman"
 scatterRegressionLine = 1
@@ -700,6 +866,10 @@ data = selected ()
 # Scatter plot: Scatter, monotonic fit
 # A fitted line is descriptive and carries no test. The correlation and regression below were reported from this figure.
 
+emlEraseFirst = eraseFirst38
+emlPanelOriginX = panelOriginX38
+emlPanelOriginY = panelOriginY38
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 scatterAnalysisType = 1
 annotCorrType$ = "spearman"
 scatterRegressionLine = 1

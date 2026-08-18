@@ -54,15 +54,21 @@ include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 # range or a figure format.
 data1$ = "Table box"   ; run 1, step 1 (draw)
 data2$ = "Table sc"   ; run 2, step 2 (draw)
-groupCol$  = "grp"   ; the grouping column -- run 1, step 1 (draw)
-valueCol$  = "val"   ; the measured column -- run 1, step 1 (draw)
-xCol2$     = "xx"   ; the x column -- run 2, step 2 (draw)
-yCol2$     = "yy"   ; the y column -- run 2, step 2 (draw)
-groupCol2$ = "cohort"   ; the grouping column -- run 2, step 2 (draw)
-axisYMin   = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-axisYMax   = 0.0   ; on the recorded data it resolved to 4.0000 .. 7.0000
-axisYMin2  = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 2 (draw)
-axisYMax2  = 0.0   ; on the recorded data it resolved to 10.0000 .. 40.0000
+groupCol$     = "grp"   ; the grouping column -- run 1, step 1 (draw)
+valueCol$     = "val"   ; the measured column -- run 1, step 1 (draw)
+xCol2$        = "xx"   ; the x column -- run 2, step 2 (draw)
+yCol2$        = "yy"   ; the y column -- run 2, step 2 (draw)
+groupCol2$    = "cohort"   ; the grouping column -- run 2, step 2 (draw)
+axisYMin      = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
+axisYMax      = 0.0   ; on the recorded data it resolved to 4.0000 .. 7.0000
+axisYMin2     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 2 (draw)
+axisYMax2     = 0.0   ; on the recorded data it resolved to 10.0000 .. 40.0000
+eraseFirst    = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 1 (draw)
+panelOriginX  = 0   ; inches from the left of the page to this panel's corner -- run 1, step 1 (draw)
+panelOriginY  = 0   ; inches from the top of the page to this panel's corner -- run 1, step 1 (draw)
+eraseFirst2   = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 2, step 2 (draw)
+panelOriginX2 = 0   ; inches from the left of the page to this panel's corner -- run 2, step 2 (draw)
+panelOriginY2 = 0   ; inches from the top of the page to this panel's corner -- run 2, step 2 (draw)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 

@@ -2,7 +2,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Two-Way ANOVA
-  Tue Aug 18 11:08:51 2026
+  Tue Aug 18 15:45:30 2026
 ══════════════════════════════════════════════
 
   Table               rt
@@ -32,9 +32,9 @@ Total               20.80           39
 
 
   ── Effect Sizes (partial eta-squared) ──────
-  cohort              0.6638  (large effect)		Effect size: large (>0.14 = large). 66% of variance explained by group membership
-  room                0.3025  (large effect)		Effect size: large (>0.14 = large). 30% of variance explained by group membership
-  cohort x room       0.0000  (negligible effect)		Effect size: negligible (>0.14 = large). 0% of variance explained by group membership
+  cohort              0.6638  (large effect)		Effect size: large by Cohen's convention (partial eta-squared >= 0.14 = large). Accounts for 66% of the variance left once the other effects are removed -- each effect has its own denominator, so these are not shares of one total and do not sum to 100%
+  room                0.3025  (large effect)		Effect size: large by Cohen's convention (partial eta-squared >= 0.14 = large). Accounts for 30% of the variance left once the other effects are removed -- each effect has its own denominator, so these are not shares of one total and do not sum to 100%
+  cohort x room       0.0000  (negligible effect)		Effect size: negligible by Cohen's convention (partial eta-squared >= 0.14 = large). Accounts for 0% of the variance left once the other effects are removed -- each effect has its own denominator, so these are not shares of one total and do not sum to 100%
 
 
   ── Cell Means ──────────────────────────────

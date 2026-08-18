@@ -53,10 +53,13 @@ include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 # nothing below this block names an object, a column or an axis
 # range or a figure format.
 data1$ = "Table vt"   ; run 1, steps 1 (analysis), 2 (draw)
-valueCol$ = "val"   ; the measured column -- run 1, steps 1 (analysis), 2 (draw)
-groupCol$ = "grp"   ; the grouping column -- run 1, steps 1 (analysis), 2 (draw)
-axisYMin  = 1.5549643754959108   ; the y-axis range -- as typed in the dialog -- run 1, step 2 (draw)
-axisYMax  = 4.416269793367434   ; the figure was drawn on 1.5550 .. 4.4163
+valueCol$    = "val"   ; the measured column -- run 1, steps 1 (analysis), 2 (draw)
+groupCol$    = "grp"   ; the grouping column -- run 1, steps 1 (analysis), 2 (draw)
+axisYMin     = 1.5549643754959108   ; the y-axis range -- as typed in the dialog -- run 1, step 2 (draw)
+axisYMax     = 4.416269793367434   ; the figure was drawn on 1.5550 .. 4.4163
+eraseFirst   = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 2 (draw)
+panelOriginX = 0   ; inches from the left of the page to this panel's corner -- run 1, step 2 (draw)
+panelOriginY = 0   ; inches from the top of the page to this panel's corner -- run 1, step 2 (draw)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -83,6 +86,10 @@ data = selected ()
 
 prev_violinShowJitter = 1
 annotate = 1
+emlEraseFirst = eraseFirst
+emlPanelOriginX = panelOriginX
+emlPanelOriginY = panelOriginY
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawViolinPlot: data, "advanced violin", "Cohort", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 # The figure's statistical annotation. In the GUI the graphs form
 # draws this after the figure returns; a recorded script has no

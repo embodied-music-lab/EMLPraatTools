@@ -54,14 +54,20 @@ include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 # range or a figure format.
 data1$ = "Table cityA"   ; run 1, step 1 (draw)
 data2$ = "Table cityB"   ; run 2, step 2 (draw)
-groupCol$  = "site"   ; the grouping column -- run 1, step 1 (draw)
-valueCol$  = "n"   ; the measured column -- run 1, step 1 (draw)
-groupCol2$ = "ward"   ; the grouping column -- run 2, step 2 (draw)
-valueCol2$ = "n"   ; the measured column -- run 2, step 2 (draw)
-axisYMin   = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-axisYMax   = 0.0   ; on the recorded data it resolved to 3.5000 .. 7.0000
-axisYMin2  = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 2 (draw)
-axisYMax2  = 0.0   ; on the recorded data it resolved to 9.5000 .. 14.0000
+groupCol$     = "site"   ; the grouping column -- run 1, step 1 (draw)
+valueCol$     = "n"   ; the measured column -- run 1, step 1 (draw)
+groupCol2$    = "ward"   ; the grouping column -- run 2, step 2 (draw)
+valueCol2$    = "n"   ; the measured column -- run 2, step 2 (draw)
+axisYMin      = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
+axisYMax      = 0.0   ; on the recorded data it resolved to 3.5000 .. 7.0000
+axisYMin2     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 2 (draw)
+axisYMax2     = 0.0   ; on the recorded data it resolved to 9.5000 .. 14.0000
+eraseFirst    = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 1 (draw)
+panelOriginX  = 0   ; inches from the left of the page to this panel's corner -- run 1, step 1 (draw)
+panelOriginY  = 0   ; inches from the top of the page to this panel's corner -- run 1, step 1 (draw)
+eraseFirst2   = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 2, step 2 (draw)
+panelOriginX2 = 0   ; inches from the left of the page to this panel's corner -- run 2, step 2 (draw)
+panelOriginY2 = 0   ; inches from the top of the page to this panel's corner -- run 2, step 2 (draw)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -71,6 +77,10 @@ data = selected ()
 # Box plot: City A
 # Whisker convention and outlier rule are stated in the figure, not assumed.
 
+emlEraseFirst = eraseFirst
+emlPanelOriginX = panelOriginX
+emlPanelOriginY = panelOriginY
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawBoxPlot: data, "City A", "Site", "n", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:
@@ -82,6 +92,10 @@ data = selected ()
 # Box plot: City B
 # Whisker convention and outlier rule are stated in the figure, not assumed.
 
+emlEraseFirst = eraseFirst2
+emlPanelOriginX = panelOriginX2
+emlPanelOriginY = panelOriginY2
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawBoxPlot: data, "City B", "Ward", "n", 6, 4, "color", 1, groupCol2$, valueCol2$, axisYMin2, axisYMax2
 
 # The same step through the menu:

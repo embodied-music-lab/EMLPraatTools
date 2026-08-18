@@ -11,7 +11,7 @@ ROOM gviolin_inside type=11 placement=1 passes=2 axisMode=1 baseMin=90.0000 base
 
 ══════════════════════════════════════════════
   EML Stats : Spaghetti Plot Summary
-  Sun Aug 16 18:14:44 2026
+  Tue Aug 18 15:39:31 2026
 ══════════════════════════════════════════════
 
   Table               vt
@@ -88,7 +88,7 @@ NOTE: The legend needs y-axis room, so the figure is drawn again on the widened 
 
 ══════════════════════════════════════════════
   EML Stats : Spaghetti Plot Summary
-  Sun Aug 16 18:14:44 2026
+  Tue Aug 18 15:39:31 2026
 ══════════════════════════════════════════════
 
   Table               vt

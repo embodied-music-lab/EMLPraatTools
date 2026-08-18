@@ -29,6 +29,8 @@ include /home/claude/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
 include /home/claude/EMLPraatTools/plugin/stats/eml-extract.praat
 include /home/claude/EMLPraatTools/plugin/stats/eml-output.praat
 include /home/claude/EMLPraatTools/plugin/stats/eml-inferential.praat
+include /home/claude/EMLPraatTools/plugin/stats/eml-psychometrics.praat
+include /home/claude/EMLPraatTools/plugin/stats/eml-categorical.praat
 include /home/claude/EMLPraatTools/plugin/stats/eml-result-writer.praat
 include /home/claude/EMLPraatTools/plugin/stats/eml-record.praat
 include /home/claude/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
@@ -51,10 +53,13 @@ include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
 # nothing below this block names an object, a column or an axis
 # range or a figure format.
 data1$ = "Table eml_qq_points"   ; run 1, step 1 (draw)
-xCol$    = "theoretical"   ; the x column -- run 1, step 1 (draw)
-yCol$    = "sample"   ; the y column -- run 1, step 1 (draw)
-axisYMin = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-axisYMax = 0.0   ; on the recorded data it resolved to 195.0000 .. 235.0000
+xCol$        = "theoretical"   ; the x column -- run 1, step 1 (draw)
+yCol$        = "sample"   ; the y column -- run 1, step 1 (draw)
+axisYMin     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
+axisYMax     = 0.0   ; on the recorded data it resolved to 195.0000 .. 235.0000
+eraseFirst   = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 1 (draw)
+panelOriginX = 0   ; inches from the left of the page to this panel's corner -- run 1, step 1 (draw)
+panelOriginY = 0   ; inches from the top of the page to this panel's corner -- run 1, step 1 (draw)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -64,6 +69,10 @@ data = selected ()
 # Scatter plot: Normal Q-Q plot: val
 # A fitted line is descriptive and carries no test. The correlation and regression below were reported from this figure.
 
+emlEraseFirst = eraseFirst
+emlPanelOriginX = panelOriginX
+emlPanelOriginY = panelOriginY
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 scatterAnalysisType = 0
 annotCorrType$ = "pearson"
 scatterRegressionLine = 1

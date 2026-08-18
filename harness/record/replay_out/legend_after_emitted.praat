@@ -59,6 +59,9 @@ categoryCol$ = "grp"   ; the category column -- run 1, step 2 (draw)
 subgroupCol$ = "sub"   ; the sub-group column -- run 1, step 2 (draw)
 axisYMin     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 2 (draw)
 axisYMax     = 0.0   ; on the recorded data it resolved to 195.0000 .. 275.0000
+eraseFirst   = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 2 (draw)
+panelOriginX = 0   ; inches from the left of the page to this panel's corner -- run 1, step 2 (draw)
+panelOriginY = 0   ; inches from the top of the page to this panel's corner -- run 1, step 2 (draw)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -86,6 +89,10 @@ data = selected ()
 # Violin width is a kernel density estimate, not a count.
 
 annotate = 0
+emlEraseFirst = eraseFirst
+emlPanelOriginX = panelOriginX
+emlPanelOriginY = panelOriginY
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawGroupedViolin: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, categoryCol$, subgroupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:

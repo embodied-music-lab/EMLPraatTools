@@ -53,12 +53,15 @@ include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 # nothing below this block names an object, a column or an axis
 # range or a figure format.
 data1$ = "Table wt"   ; run 1, steps 1 (analysis), 2 (draw)
-valueCol$   = "val"   ; the measured column -- run 1, steps 1 (analysis), 2 (draw)
-factorACol$ = "grp"   ; the first factor -- run 1, step 1 (analysis)
-factorBCol$ = "site"   ; the second factor -- run 1, step 1 (analysis)
-groupCol$   = "grp"   ; the grouping column -- run 1, step 2 (draw)
-axisYMin    = 2.0769446372985843   ; the y-axis range -- as typed in the dialog -- run 1, step 2 (draw)
-axisYMax    = 4.75420343875885   ; the figure was drawn on 2.0769 .. 4.7542
+valueCol$    = "val"   ; the measured column -- run 1, steps 1 (analysis), 2 (draw)
+factorACol$  = "grp"   ; the first factor -- run 1, step 1 (analysis)
+factorBCol$  = "site"   ; the second factor -- run 1, step 1 (analysis)
+groupCol$    = "grp"   ; the grouping column -- run 1, step 2 (draw)
+axisYMin     = 2.0769446372985843   ; the y-axis range -- as typed in the dialog -- run 1, step 2 (draw)
+axisYMax     = 4.75420343875885   ; the figure was drawn on 2.0769 .. 4.7542
+eraseFirst   = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 2 (draw)
+panelOriginX = 0   ; inches from the left of the page to this panel's corner -- run 1, step 2 (draw)
+panelOriginY = 0   ; inches from the top of the page to this panel's corner -- run 1, step 2 (draw)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -83,6 +86,10 @@ data = selected ()
 # Violin plot of val, grouped by grp, 2 groups.
 # Violin width is a kernel density estimate, not a count.
 
+emlEraseFirst = eraseFirst
+emlPanelOriginX = panelOriginX
+emlPanelOriginY = panelOriginY
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawViolinPlot: data, "retarget violin", "Cohort", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # Axis resolved to 2.0769 .. 4.7542 over 2 groups.

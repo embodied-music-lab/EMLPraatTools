@@ -3,6 +3,10 @@
 --- step 1 (draw), run 1
 Violin plot of val, grouped by grp, 3 groups.
 Violin width is a kernel density estimate, not a count.
+emlEraseFirst = 1
+emlPanelOriginX = 0
+emlPanelOriginY = 0
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawViolinPlot: data, "first figure", "Group", "val", 6, 4, "color", 1, "grp", "val", 0, 0
 --- step 2 (save), run 1
 Save the outputs of this analysis
@@ -12,6 +16,10 @@ outputFolder$ = "/home/claude/EMLPraatTools/harness/vecfig/out/files/replay"
 --- step 3 (draw), run 2
 Box plot: second figure
 Whisker convention and outlier rule are stated in the figure, not assumed.
+emlEraseFirst = 1
+emlPanelOriginX = 0
+emlPanelOriginY = 0
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawBoxPlot: data, "second figure", "Group", "val", 6, 4, "color", 1, "grp", "val", 0, 300
 --- step 4 (save), run 2
 Save the outputs of this analysis

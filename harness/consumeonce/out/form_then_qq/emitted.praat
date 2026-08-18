@@ -29,6 +29,8 @@ include /home/claude/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
 include /home/claude/EMLPraatTools/plugin/stats/eml-extract.praat
 include /home/claude/EMLPraatTools/plugin/stats/eml-output.praat
 include /home/claude/EMLPraatTools/plugin/stats/eml-inferential.praat
+include /home/claude/EMLPraatTools/plugin/stats/eml-psychometrics.praat
+include /home/claude/EMLPraatTools/plugin/stats/eml-categorical.praat
 include /home/claude/EMLPraatTools/plugin/stats/eml-result-writer.praat
 include /home/claude/EMLPraatTools/plugin/stats/eml-record.praat
 include /home/claude/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
@@ -52,14 +54,20 @@ include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
 # range or a figure format.
 data1$ = "Table co"   ; run 1, step 1 (draw)
 data2$ = "Table eml_qq_points"   ; run 2, step 2 (draw)
-groupCol$ = "grp"   ; the grouping column -- run 1, step 1 (draw)
-valueCol$ = "val"   ; the measured column -- run 1, step 1 (draw)
-xCol2$    = "theoretical"   ; the x column -- run 2, step 2 (draw)
-yCol2$    = "sample"   ; the y column -- run 2, step 2 (draw)
-axisYMin  = 0   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
-axisYMax  = 100   ; the figure was drawn on 0.0000 .. 100.0000
-axisYMin2 = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 2 (draw)
-axisYMax2 = 0.0   ; on the recorded data it resolved to 195.0000 .. 235.0000
+groupCol$     = "grp"   ; the grouping column -- run 1, step 1 (draw)
+valueCol$     = "val"   ; the measured column -- run 1, step 1 (draw)
+xCol2$        = "theoretical"   ; the x column -- run 2, step 2 (draw)
+yCol2$        = "sample"   ; the y column -- run 2, step 2 (draw)
+axisYMin      = 0   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
+axisYMax      = 100   ; the figure was drawn on 0.0000 .. 100.0000
+axisYMin2     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 2 (draw)
+axisYMax2     = 0.0   ; on the recorded data it resolved to 195.0000 .. 235.0000
+eraseFirst    = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 1 (draw)
+panelOriginX  = 0   ; inches from the left of the page to this panel's corner -- run 1, step 1 (draw)
+panelOriginY  = 0   ; inches from the top of the page to this panel's corner -- run 1, step 1 (draw)
+eraseFirst2   = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 2, step 2 (draw)
+panelOriginX2 = 0   ; inches from the left of the page to this panel's corner -- run 2, step 2 (draw)
+panelOriginY2 = 0   ; inches from the top of the page to this panel's corner -- run 2, step 2 (draw)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -70,6 +78,10 @@ data = selected ()
 # Violin width is a kernel density estimate, not a count.
 
 annotate = 0
+emlEraseFirst = eraseFirst
+emlPanelOriginX = panelOriginX
+emlPanelOriginY = panelOriginY
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # Axis resolved to 0 .. 100.0000 over 4 groups.
@@ -84,6 +96,10 @@ data = selected ()
 # A fitted line is descriptive and carries no test. The correlation and regression below were reported from this figure.
 
 annotate = 0
+emlEraseFirst = eraseFirst2
+emlPanelOriginX = panelOriginX2
+emlPanelOriginY = panelOriginY2
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 scatterAnalysisType = 0
 annotCorrType$ = "pearson"
 scatterRegressionLine = 1

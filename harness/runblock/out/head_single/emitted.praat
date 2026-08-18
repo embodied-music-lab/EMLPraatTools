@@ -29,6 +29,8 @@ include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/st
 include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-extract.praat
 include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-output.praat
 include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
+include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-categorical.praat
 include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
 include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-record.praat
 include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
@@ -56,6 +58,9 @@ valueCol$     = "val"   ; the measured column -- run 1, step 1 (draw)
 axisYMin      = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
 axisYMax      = 0.0   ; on the recorded data it resolved to 5.5000 .. 9.0000
 figureFormat$ = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- run 1, step 2 (save)
+eraseFirst    = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 1 (draw)
+panelOriginX  = 0   ; inches from the left of the page to this panel's corner -- run 1, step 1 (draw)
+panelOriginY  = 0   ; inches from the top of the page to this panel's corner -- run 1, step 1 (draw)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -65,6 +70,10 @@ data = selected ()
 # Box plot: Voice
 # Whisker convention and outlier rule are stated in the figure, not assumed.
 
+emlEraseFirst = eraseFirst
+emlPanelOriginX = panelOriginX
+emlPanelOriginY = panelOriginY
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 @emlDrawBoxPlot: data, "Voice", "Group", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:

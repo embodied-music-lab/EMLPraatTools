@@ -113,3 +113,4 @@ v90	v90_lane_alpha_oracle.R	SOURCE+LIVE+ARTEFACT	PRAAT	praat	evidence,plugin	red
 v91	v91_lane_chisq_oracle.R	SOURCE+LIVE+ARTEFACT	PRAAT	praat	evidence,plugin	red_mode	
 v92	v92_lane_wilson_oracle.R	SOURCE+LIVE+ARTEFACT	PRAAT	praat	evidence,plugin	red_mode	
 v93	v93_lane_alpha_influence_oracle.R	SOURCE+LIVE+ARTEFACT	PRAAT	praat	evidence,plugin	red_mode	
+v94	v94_page_composition.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
