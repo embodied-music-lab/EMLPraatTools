@@ -27,7 +27,8 @@
 #   Shapiro    p = .001, .049, .05, .9      the 5% gate, both sides
 #              plus UNUSABLE (error set, p undefined)
 #
-# 6 x 4 x 3 x 5 = 360 decisions. validate/v32_normality_parity.R recomputes
+# 6 x 4 x 3 x 5 = 360 decisions, which NO VALIDATOR READS -- see run.sh.
+# Recomputing them
 # every one of them from the hierarchy as STATED in the procedure's header
 # comment, not from its branches, so a branch that stops matching its own
 # documentation fails here.

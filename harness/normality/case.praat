@@ -43,7 +43,8 @@
 #   to the last bit, and a formula evaluated twice is not a guarantee of that.
 #
 # NOTHING IS COMPARED HERE. Every case writes the Info window verbatim and
-# the raw statistics in long form; validate/v32_normality_parity.R recomputes
+# the raw statistics in long form. NO VALIDATOR READS THEM -- see run.sh. A
+# reader who wants them recomputed
 # the hierarchy in base R from its stated rules and asserts the printed
 # verdicts against that. The two halves share no code, so they cannot agree
 # by sharing a mistake.

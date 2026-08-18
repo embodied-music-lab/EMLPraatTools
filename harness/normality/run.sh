@@ -31,7 +31,10 @@
 #                             outcome, so a case that CRASHED is a recorded
 #                             fact and not an absence
 #
-# validate/v32_normality_parity.R reads all of it.
+# NOTHING IN validate/ READS ANY OF IT. This rig was written for a
+# validate/v32_normality_parity.R that was never built, and no validator
+# took its place -- v32 is the legend-geometry validator. The artefacts
+# below are produced, committed, and unchecked.
 # ---------------------------------------------------------------------------
 set -u
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -11,7 +11,7 @@
 # the wrapper's own.
 #
 # THE TABLE IS READ BACK, NOT REBUILT. case.praat wrote it; this reads the
-# same file; validate/v32_normality_parity.R reads the same file again. The
+# same file. NO VALIDATOR READS IT -- see the note in run.sh. The
 # claim under test is that per-group mode and overall mode agree ON THE SAME
 # DATA, and two constructions of "the same" numbers is not that claim.
 #
