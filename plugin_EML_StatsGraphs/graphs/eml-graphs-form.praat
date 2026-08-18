@@ -1870,6 +1870,97 @@ endproc
 
 
 # ============================================================================
+# @emlGraphsPublishSeriesPens
+# ============================================================================
+# HAND THE DRAWING LAYER THE PENS AND THE SECOND-AXIS REQUEST, from one place,
+# on every press, for every type. Sets emlLineStyle and the six emlSecondAxis*
+# globals and does nothing else.
+#
+# WHY ONE PROCEDURE AND NOT SEVEN ASSIGNMENTS AT THE DIALOGS. The drawing
+# layer reads these as globals, and Praat cannot unset a global: a type whose
+# dialog has no line-style control would otherwise draw with whatever the last
+# type that HAS one left behind, and a press with the second-axis box unticked
+# would inherit the request of the press before it. So the rule is that this
+# procedure states the whole request every time -- including the parts that
+# are off -- and the dialogs only fill in the variables it reads.
+#
+# THE LINE STYLE IS PER TYPE, because the control is: the line chart, the
+# pitch contour and the spaghetti plot each carry their own, and every other
+# type has none and gets Solid, which is what every line this plugin drew
+# before this change order was.
+#
+# THE SECOND AXIS IS ONE TYPE'S, and the condition is the v1 scope written
+# out: graph type 5 with the confidence-interval box UNTICKED. The dialog
+# refuses the two boxes together before it gets here; this is the second half
+# of the same statement, so that no other route can arrive with a request the
+# draw layer would only refuse.
+# ============================================================================
+procedure emlGraphsPublishSeriesPens
+    emlLineStyle = 1
+    if graph_type = 1
+        emlLineStyle = f0LineStyle
+    elsif graph_type = 5
+        emlLineStyle = tsLineStyle
+    elsif graph_type = 13
+        emlLineStyle = spLineStyle
+    endif
+
+    emlSecondAxisOn = 0
+    emlSecondAxisCol$ = ""
+    emlSecondAxisMin = 0
+    emlSecondAxisMax = 0
+    emlSecondAxisLabel$ = ""
+    emlSecondAxisStyle = 3
+    .eligible = 0
+    if graph_type = 5
+        if tsShowCI = 0
+            .eligible = 1
+        endif
+    endif
+    if .eligible = 1
+        if tsSecondAxis = 1
+            emlSecondAxisOn = 1
+            emlSecondAxisCol$ = tsSecondColName$
+            emlSecondAxisMin = number (tmpSecMin$)
+            emlSecondAxisMax = number (tmpSecMax$)
+            emlSecondAxisLabel$ = tmpSecLabel$
+            emlSecondAxisStyle = tsSecondStyle
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlGraphsResetSeriesPens
+# ============================================================================
+# AND TAKE THEM BACK AFTERWARDS. Called once the figure and its annotations
+# are on the page, so that nothing this press asked for is still asking when
+# some other menu command draws in the same Praat session.
+#
+# THE PRESS IS THE LIFETIME OF THE REQUEST. @emlGraphsPublishSeriesPens states
+# it in full at the start of every press, so this reset is not what makes the
+# NEXT press correct -- it is what makes every draw that does not come through
+# this form correct: a stats wrapper's figure, the Q-Q plot, a recorded script
+# replayed from the same session. Without it a dotted line chart would leave a
+# dotted pen in the Picture window's state and a ticked second axis would meet
+# a violin plot and be refused out loud for no reason the user could see.
+#
+# The persisted prev_* choices are NOT touched: the dialog must come back with
+# the box still ticked and the pen still chosen. What is cleared is the
+# request the drawing layer reads, not the user's answer to the dialog.
+# ============================================================================
+procedure emlGraphsResetSeriesPens
+    emlLineStyle = 1
+    emlSecondAxisOn = 0
+    emlSecondAxisCol$ = ""
+    emlSecondAxisMin = 0
+    emlSecondAxisMax = 0
+    emlSecondAxisLabel$ = ""
+    emlSecondAxisStyle = 3
+endproc
+
+
+# ============================================================================
 # @emlGraphsStampAxisRequest
 # ============================================================================
 # STAMP THE PUBLISHED PAIR WITH THE STEP IT IS FOR. Sets one global --
@@ -2923,6 +3014,33 @@ procedure emlGraphsWorkflow: .objectId
 prev_tsTimeIdx = 0
 prev_tsDataFormat = 0
 prev_tsShowCI = 0
+# THE PENS AND THE SECOND AXIS, remembered across Redraw and across workflow
+# calls like every other choice on these pages. The line style is per TYPE
+# because the control is per type: a dotted line chart does not make the next
+# pitch contour dotted, which is the same rule the axis ranges follow.
+prev_tsLineStyle = 1
+prev_f0LineStyle = 1
+prev_spLineStyle = 1
+prev_tsSecondAxis = 0
+prev_tsSecondIdx = 0
+prev_tsSecondStyle = 3
+prev_ts_secondMin = 0
+prev_ts_secondMax = 0
+prev_tsSecondLabel$ = ""
+# AND THE LIVE COPIES, SEEDED ONCE. @emlGraphsPublishSeriesPens states the
+# whole request on every press and reads these by name, so each of them has to
+# exist before the first press -- including on a type whose dialog never
+# touches it.
+f0LineStyle = 1
+tsLineStyle = 1
+spLineStyle = 1
+tsSecondAxis = 0
+tsSecondStyle = 3
+tsSecondIdx = 0
+tsSecondColName$ = ""
+tmpSecMin$ = "0"
+tmpSecMax$ = "0"
+tmpSecLabel$ = ""
 prev_tsSeries1Idx = 0
 prev_tsSeries2Idx = 0
 prev_groupSort = config_groupSort
@@ -3770,6 +3888,7 @@ repeat
                 toggleLabel$ = "Advanced"
             endif
 
+            f0LineStyle = prev_f0LineStyle
             beginPause: "Pitch Contour Settings"
                 comment: "⏱️ Time range (both 0 = auto)"
                 real: "Time minimum", tmpTMin$
@@ -3780,6 +3899,11 @@ repeat
                 optionmenu: "Y axis unit", tmpYUnit
                     option: "Hertz"
                     option: "Semitones re 440 Hz"
+                optionmenu: "Line style", f0LineStyle
+                    option: "Solid"
+                    option: "Dotted"
+                    option: "Dashed"
+                    option: "Dashed-dotted"
                 if loadedObjectId > 0
                     comment: "🎵 Pitch analysis (auto-converted from Sound)"
                     comment: "Ceiling is doubled internally for the analysis algorithm."
@@ -3835,6 +3959,10 @@ repeat
                 tmpFMin$ = string$ (frequency_minimum)
                 tmpFMax$ = string$ (frequency_maximum)
                 tmpYUnit = y_axis_unit
+                ; The pen, read on the toggle as well as on Draw, so that
+                ; re-presenting the page does not reset it -- the same rule
+                ; every other beginner-page field on this dialog follows.
+                f0LineStyle = line_style
                 if loadedObjectId > 0
                     tmpPitchFloor$ = string$ (pitch_floor)
                     tmpPitchCeiling$ = string$ (pitch_ceiling)
@@ -3883,6 +4011,12 @@ repeat
                 f0YUnit = y_axis_unit
                 tmpYUnit = f0YUnit
                 prev_f0_yUnit = f0YUnit
+
+                # The contour's pen. @emlGraphsPublishSeriesPens hands it to
+                # the drawing layer; the draw sets it around Praat's own
+                # `Draw:` on the Pitch object and resets it afterwards.
+                f0LineStyle = line_style
+                prev_f0LineStyle = f0LineStyle
 
                 # Capture pitch analysis fields (always visible when auto-converted)
                 if loadedObjectId > 0
@@ -4571,6 +4705,21 @@ repeat
             tsDataFormat = 1
         endif
         tsShowCI = prev_tsShowCI
+        ; THE PENS AND THE SECOND-AXIS TICKBOX come back as the user left
+        ; them, like every other field on this page.
+        tsLineStyle = prev_tsLineStyle
+        tsSecondAxis = prev_tsSecondAxis
+        tsSecondStyle = prev_tsSecondStyle
+        tsSecondIdx = prev_tsSecondIdx
+        if tsSecondIdx < 1
+            tsSecondIdx = min (2, nCols)
+        endif
+        if tsSecondIdx > nCols
+            tsSecondIdx = min (2, nCols)
+        endif
+        tmpSecMin$ = string$ (prev_ts_secondMin)
+        tmpSecMax$ = string$ (prev_ts_secondMax)
+        tmpSecLabel$ = prev_tsSecondLabel$
 
         tsFormatDone = 0
         repeat
@@ -4641,6 +4790,12 @@ repeat
                                     option: colName$[iCol]
                                 endfor
                             boolean: "Show confidence interval (Time Series with CI)", tsShowCI
+                            optionmenu: "Line style", tsLineStyle
+                                option: "Solid"
+                                option: "Dotted"
+                                option: "Dashed"
+                                option: "Dashed-dotted"
+                            boolean: "Add second dataset (right y-axis)", tsSecondAxis
                         else
                             optionmenu: "Value column", tsValueIdx
                                 for iCol from 1 to nCols
@@ -4655,6 +4810,22 @@ repeat
                                 option: "Table order"
                                 option: "Alphabetical"
                             boolean: "Show confidence interval (Time Series with CI)", tsShowCI
+                            optionmenu: "Line style", tsLineStyle
+                                option: "Solid"
+                                option: "Dotted"
+                                option: "Dashed"
+                                option: "Dashed-dotted"
+                            # ONE TICKBOX AND A FOLLOW-UP PAUSE, NOT SEVEN
+                            # INERT FIELDS. Praat forms cannot reveal fields
+                            # dynamically, so the alternative -- the second
+                            # series' column, range, label and pen sitting on
+                            # this page, dead until the box is ticked -- is the
+                            # defect class where a control looks live and is
+                            # not, which is already a severity-3 row in the
+                            # ledger. Everything visible here is live;
+                            # everything the second axis needs is asked for
+                            # once, afterwards, on its own page.
+                            boolean: "Add second dataset (right y-axis)", tsSecondAxis
                         endif
                         if config_showAdvanced
                             comment: "📐 X-axis range (both 0 = auto)"
@@ -4727,6 +4898,13 @@ repeat
                             config_groupSort = group_order
                             tsShowCI = show_confidence_interval
                         endif
+                        ; The pen and the tickbox are on BOTH data formats, so
+                        ; they are read outside the branch -- and they are read
+                        ; on the toggle as well as on Draw, because Advanced
+                        ; re-presents the page and an unread field comes back
+                        ; at its seeded value rather than at the user's.
+                        tsLineStyle = line_style
+                        tsSecondAxis = add_second_dataset
                         if config_showAdvanced
                             tmpTMin$ = string$ (time_minimum)
                             tmpTMax$ = string$ (time_maximum)
@@ -4882,6 +5060,12 @@ repeat
                         prev_tsTimeIdx = time_column
                         prev_tsDataFormat = tsDataFormat
                         prev_tsShowCI = tsShowCI
+                        ; The pen and the tickbox, read once for both formats
+                        ; and remembered for the next press.
+                        tsLineStyle = line_style
+                        tsSecondAxis = add_second_dataset
+                        prev_tsLineStyle = tsLineStyle
+                        prev_tsSecondAxis = tsSecondAxis
 
                         timeMin = number (tmpTMin$)
                         timeMax = number (tmpTMax$)
@@ -4929,6 +5113,176 @@ repeat
                                 tsFormatDone = 0
                                 allFormsDone = 0
                             endif
+                        endif
+
+                        # =================================================
+                        # THE SECOND DATASET'S OWN PAGE
+                        # =================================================
+                        # ONE FOLLOW-UP PAUSE, AND ONLY WHEN THE BOX IS
+                        # TICKED. It asks for everything the right-hand axis
+                        # needs and nothing else: the column, the range, the
+                        # name and the pen. See the tickbox above for why this
+                        # is a second page rather than five inert fields on
+                        # the first one.
+                        #
+                        # AFTER THE PRIMARY VALIDATION, so a user whose value
+                        # column is text is told about THAT first and is not
+                        # asked to configure a second series for a figure that
+                        # cannot be drawn. `allFormsDone` is the test: it is 0
+                        # if anything above refused.
+                        #
+                        # THE CI TICKBOX WINS, AND SAYS SO. Both boxes ticked
+                        # is a request for a figure v1 does not draw, so it is
+                        # refused here -- at the dialog, naming the scope --
+                        # rather than at the draw, where the user would get a
+                        # CI figure and a line in the Info window.
+                        tsSecondReady = 0
+                        if allFormsDone = 1
+                            if tsSecondAxis = 1
+                                tsSecondReady = 1
+                            endif
+                        endif
+                        if tsSecondReady = 1
+                            if tsShowCI = 1
+                                beginPause: "Second dataset"
+                                    comment: "A second dataset on a right y-axis is not available with the confidence-interval band."
+                                    comment: "In this version the second axis ships on the plain line chart only."
+                                    comment: "Untick one of the two boxes and press Draw again."
+                                endPause: "OK", 1, 0
+                                tsSecondReady = 0
+                                tsFormDone = 0
+                                tsFormatDone = 0
+                                allFormsDone = 0
+                            endif
+                        endif
+                        if tsSecondReady = 1
+                            ; WHICH TABLE THE COLUMN NAMES BELONG TO. In wide
+                            ; format with two or more series, objectId is by
+                            ; now the MELT table -- three columns of its own
+                            ; that this dialog's list does not name -- so the
+                            ; second series is validated against, and later
+                            ; copied from, the table the user chose from.
+                            tsSecondSourceId = objectId
+                            if tsMeltTableId > 0
+                                tsSecondSourceId = tsOrigObjectId
+                            endif
+                            ; The pair judge accumulates into a counter that
+                            ; @emlGraphsCheckAxisRanges clears at ITS start,
+                            ; and that sweep has not run yet on this press.
+                            ; Cleared here so the one judge can be used here
+                            ; too rather than copied.
+                            emlGraphsAxisRefusalN = 0
+                            tsSecondDone = 0
+                            repeat
+                                beginPause: "Line Chart -- Second Dataset on a Right Y-Axis"
+                                    comment: "This series is drawn in the same plot box on its own scale."
+                                    comment: "Its ticks and its name go in the right margin."
+                                    optionmenu: "Right value column", tsSecondIdx
+                                        for iCol from 1 to nCols
+                                            option: colName$[iCol]
+                                        endfor
+                                    comment: "📐 Right y-axis range (both 0 = auto)"
+                                    real: "Right minimum", tmpSecMin$
+                                    real: "Right maximum", tmpSecMax$
+                                    comment: "🏷️ Right axis label (blank = the column name)"
+                                    sentence: "Right axis label", tmpSecLabel$
+                                    optionmenu: "Right line style", tsSecondStyle
+                                        option: "Solid"
+                                        option: "Dotted"
+                                        option: "Dashed"
+                                        option: "Dashed-dotted"
+                                clicked = endPause: "Go Back", "Draw", 2, 1
+
+                                if clicked = 1
+                                    # Go Back to the column mapping page. The
+                                    # second-axis choices are kept, so the
+                                    # page comes back as it was left.
+                                    tsSecondDone = 1
+                                    tsSecondReady = 0
+                                    tsFormDone = 0
+                                    tsFormatDone = 0
+                                    allFormsDone = 0
+                                else
+                                    tsSecondIdx = right_value_column
+                                    tsSecondStyle = right_line_style
+                                    tmpSecMin$ = string$ (right_minimum)
+                                    tmpSecMax$ = string$ (right_maximum)
+                                    tmpSecLabel$ = right_axis_label$
+                                    tsSecondColName$ = right_value_column$
+
+                                    # THE THREE THINGS THAT CAN BE WRONG, each
+                                    # with its own sentence. A refusal
+                                    # RE-PRESENTS this page, as every other
+                                    # form in this file does, with the user's
+                                    # choices still in it.
+                                    tsSecondBad$ = ""
+                                    if tsSecondColName$ = valueColName$
+                                        tsSecondBad$ = "The right-hand series is the same column as the left-hand one (" + valueColName$ + "), so both axes would measure the same numbers. Choose a different column."
+                                    endif
+                                    if tsSecondBad$ = ""
+                                        if tsSecondColName$ = timeColName$
+                                            tsSecondBad$ = "The right-hand series is the time column (" + timeColName$ + "), which is the horizontal axis of this figure. Choose a column of measurements."
+                                        endif
+                                    endif
+                                    if tsSecondBad$ = ""
+                                        @emlCheckNumericColumn: tsSecondSourceId, tsSecondColName$
+                                        if emlCheckNumericColumn.isNumeric = 0
+                                            tsSecondBad$ = """" + tsSecondColName$ + """ does not contain numeric data. Choose a numeric column for the right-hand series."
+                                        endif
+                                    endif
+                                    if tsSecondBad$ = ""
+                                        @emlGraphsAxisPairRefusal: "Right",
+                                        ... number (tmpSecMin$), number (tmpSecMax$)
+                                        if emlGraphsAxisPairRefusal.refused = 1
+                                            tsSecondBad$ = emlGraphsAxisPairRefusal.message$
+                                        endif
+                                    endif
+
+                                    if tsSecondBad$ = ""
+                                        tsSecondDone = 1
+                                        # THE MELTED TABLE GETS THE COLUMN
+                                        # TOO. Wide format with two or more
+                                        # series replaces objectId with a
+                                        # melt table of three columns, and the
+                                        # draw procedure reads the second
+                                        # series from the object it is given.
+                                        # The column is copied in under its
+                                        # own name, so nothing downstream --
+                                        # the draw, the recorder, the emitted
+                                        # script -- has to know that a melt
+                                        # happened. The melt repeats the
+                                        # table once per series, so row r of
+                                        # the melt is row ((r-1) mod n) + 1 of
+                                        # the original; the second series is
+                                        # collapsed per time point anyway, and
+                                        # the mean of a value repeated k times
+                                        # is that value.
+                                        if tsMeltTableId > 0
+                                            selectObject: tsMeltTableId
+                                            Append column: tsSecondColName$
+                                            tsMeltRows = Get number of rows
+                                            for iMelt from 1 to tsMeltRows
+                                                iOrig = (iMelt - 1) mod nDataRows + 1
+                                                selectObject: tsSecondSourceId
+                                                val$ = Get value: iOrig, tsSecondColName$
+                                                selectObject: tsMeltTableId
+                                                Set numeric value: iMelt,
+                                                ... tsSecondColName$, number (val$)
+                                            endfor
+                                            selectObject: objectId
+                                        endif
+                                        prev_tsSecondIdx = tsSecondIdx
+                                        prev_tsSecondStyle = tsSecondStyle
+                                        prev_ts_secondMin = number (tmpSecMin$)
+                                        prev_ts_secondMax = number (tmpSecMax$)
+                                        prev_tsSecondLabel$ = tmpSecLabel$
+                                    else
+                                        beginPause: "Second dataset"
+                                            comment: tsSecondBad$
+                                        endPause: "OK", 1, 0
+                                    endif
+                                endif
+                            until tsSecondDone = 1
                         endif
                     endif
                 until tsFormDone = 1
@@ -8206,6 +8560,7 @@ repeat
             tmpShowMean = 1
         else
             tmpShowMean = prev_spShowMean
+            spLineStyle = prev_spLineStyle
         endif
 
         spFormDone = 0
@@ -8243,6 +8598,13 @@ repeat
                         option: "Alphabetical"
                 endif
                 boolean: "Show mean overlay", tmpShowMean
+                # THE PEN IS THE STRAND'S, and the mean overlay stays solid --
+                # it is the summary of the strands, not another one of them.
+                optionmenu: "Line style", spLineStyle
+                    option: "Solid"
+                    option: "Dotted"
+                    option: "Dashed"
+                    option: "Dashed-dotted"
                 if config_showAdvanced
                     comment: "📐 Y-axis range (both 0 = auto)"
                     real: "Value maximum", tmpVMax$
@@ -8302,6 +8664,7 @@ repeat
                 endif
                 tmpUseGroup = use_group_column
                 tmpShowMean = show_mean_overlay
+                spLineStyle = line_style
                 if config_showAdvanced
                     tmpVMin$ = "0"
                     tmpVMax$ = "0"
@@ -8376,6 +8739,8 @@ repeat
                     allFormsDone = 0
                 endif
                 spShowMean = show_mean_overlay
+                spLineStyle = line_style
+                prev_spLineStyle = spLineStyle
                 prev_spCondIdx = condition_column
                 prev_spValueIdx = value_column
                 prev_spSubjectIdx = subject_column
@@ -8453,6 +8818,16 @@ repeat
     # over the auto one republishes it rather than recording the previous
     # press's choice.
     @emlGraphsPublishAxisRequest
+
+    # =================================================================
+    # PUBLISH THE PENS AND THE SECOND-AXIS REQUEST
+    # =================================================================
+    # Beside the axis publication and for a related reason: the drawing layer
+    # reads both as globals, and both must describe THIS press. The difference
+    # is that the axis pair must be captured before anything resolves it,
+    # while these are simply stated in full every press --
+    # @emlGraphsPublishSeriesPens' header is the argument.
+    @emlGraphsPublishSeriesPens
 
     # =================================================================
     # Set group sort order before any procedure calls @emlCountGroups.
@@ -8712,6 +9087,10 @@ repeat
 
     # Assert full viewport so save captures entire figure + panel
     @emlAssertFullViewport
+
+    # The pens and the second-axis request end with the press that made them.
+    # See @emlGraphsResetSeriesPens for what that protects.
+    @emlGraphsResetSeriesPens
 
     # Clean up melt table if created (wide-format time series)
     if tsMeltTableId > 0

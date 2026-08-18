@@ -1511,6 +1511,78 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlRecordCaptureSeriesPens   ->  .out$
+#
+# THE PENS AND THE SECOND VERTICAL AXIS, on the step that drew with them.
+#
+# Same shape and same reason as @emlRecordCapturePage above: these are not
+# parameters of any draw procedure. They are globals -- emlLineStyle and the
+# six emlSecondAxis* -- set by the graphs form from its dialogs and read by
+# the drawing layer, so a recorded call that carried every argument faithfully
+# would still replay a different picture: a two-scale figure comes back with
+# one axis, and a dashed series comes back solid.
+#
+# WHAT IS EMITTED WHEN THE FEATURE IS OFF, AND WHY IT IS NOT NOTHING. Two
+# lines: the pen and the switch. Every step in an emitted script runs in ONE
+# scope, so a first figure that asked for a dotted line and a right-hand axis
+# leaves both set behind it, and a second figure that said nothing would
+# inherit them. Stating the two that GOVERN is what makes each step
+# self-contained -- the rule @emlRecordCaptureEnv states for the jitter
+# switches and @emlRecordCapturePage states for the origin.
+#
+# THE OTHER FIVE ARE EMITTED ONLY WHEN THE AXIS IS ON, because with the switch
+# at 0 they govern nothing: a column, a range, a name and a pen for a series
+# nobody is drawing. That is the empty-column rule from
+# @emlRecordColumnManifest -- a role the session did not use has no business
+# in the block, where it would invite an edit that changes nothing.
+#
+# READ THROUGH variableExists, ALWAYS, and as a set: a stats-only script has
+# not loaded graphs/eml-graph-procedures.praat and has none of these, and a
+# caller that has emlLineStyle but not the second-axis globals is a caller
+# whose figure has one axis.
+# ----------------------------------------------------------------------------
+procedure emlRecordCaptureSeriesPens
+    .out$ = ""
+    if variableExists ("emlLineStyle")
+        .out$ = .out$ + "emlLineStyle = " + string$ (emlLineStyle) + newline$
+    endif
+    .haveSecond = 1
+    if not variableExists ("emlSecondAxisOn")
+        .haveSecond = 0
+    endif
+    if not variableExists ("emlSecondAxisCol$")
+        .haveSecond = 0
+    endif
+    if not variableExists ("emlSecondAxisMin")
+        .haveSecond = 0
+    endif
+    if not variableExists ("emlSecondAxisMax")
+        .haveSecond = 0
+    endif
+    if not variableExists ("emlSecondAxisLabel$")
+        .haveSecond = 0
+    endif
+    if not variableExists ("emlSecondAxisStyle")
+        .haveSecond = 0
+    endif
+    if .haveSecond = 1
+        .out$ = .out$ + "emlSecondAxisOn = " + string$ (emlSecondAxisOn)
+        ... + newline$
+        if emlSecondAxisOn = 1
+            .out$ = .out$ + "emlSecondAxisCol$ = """ + emlSecondAxisCol$
+            ... + """" + newline$
+            ... + "emlSecondAxisMin = " + string$ (emlSecondAxisMin) + newline$
+            ... + "emlSecondAxisMax = " + string$ (emlSecondAxisMax) + newline$
+            ... + "emlSecondAxisLabel$ = """ + emlSecondAxisLabel$ + """"
+            ... + newline$
+            ... + "emlSecondAxisStyle = " + string$ (emlSecondAxisStyle)
+            ... + newline$
+        endif
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlRecordCaptureAnnotations: .kind$   ->  .out$
 #
 # THE OTHER HALF OF THE SAME PROBLEM: THE BRACKET.
@@ -1761,7 +1833,9 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     ; this rides on the code column rather than the env column is set out.
     if .kind$ = "draw"
         @emlRecordCapturePage
-        .codeOut$ = emlRecordCapturePage.out$ + .codeOut$
+        @emlRecordCaptureSeriesPens
+        .codeOut$ = emlRecordCapturePage.out$
+        ... + emlRecordCaptureSeriesPens.out$ + .codeOut$
     endif
 
     ; WHICH RUN THIS STEP BELONGS TO, CLAIMED BEFORE THE ROW EXISTS. The
@@ -2717,13 +2791,16 @@ endproc
 
 # ----------------------------------------------------------------------------
 # @emlRecordPageSpec: .line$
-# IS THIS LINE A PAGE SETTING, AND WHICH ONE.
+# IS THIS LINE ONE OF THE SETTINGS WRITTEN AS AN ASSIGNMENT, AND WHICH ONE.
 #
 # THE FOURTH TABLE, AND A FOURTH KEY. The columns, the axis pair and the
 # figure format are lifted out of a recorded call's ARGUMENTS by position.
-# These three are not arguments of anything: they are assignments
-# @emlRecordCapturePage writes in front of the draw call, so they are matched
-# by the name on the left of the `=` instead. Everything after that -- one
+# These are not arguments of anything: they are assignments
+# @emlRecordCapturePage and @emlRecordCaptureSeriesPens write in front of the
+# draw call -- the page, the pens and the second vertical axis -- so they are
+# matched by the name on the left of the `=` instead. The procedure is still
+# called PageSpec because the page is what it was built for and renaming it
+# would rename it in the census that reads it. Everything after that -- one
 # variable per role per run, the run suffix, the note naming the steps -- is
 # the same rule the other three follow.
 #
@@ -2738,6 +2815,10 @@ endproc
 procedure emlRecordPageSpec: .line$
     .base$ = ""
     .lit$ = ""
+    ; 1 for a setting whose value is a STRING: its block variable is named
+    ; with a trailing $ and its declaration is written in quotes. The two
+    ; second-axis text settings are the only ones today.
+    .quoted = 0
     .eq = index (.line$, "=")
     if .eq > 1
         .lhs$ = left$ (.line$, .eq - 1)
@@ -2754,17 +2835,49 @@ procedure emlRecordPageSpec: .line$
             .base$ = "panelOriginX"
         elsif .lhs$ = "emlPanelOriginY"
             .base$ = "panelOriginY"
+        ; THE PENS AND THE SECOND AXIS, by the same rule and in the same
+        ; table: @emlRecordCaptureSeriesPens writes them as assignments in
+        ; front of the draw call, so they are matched on the name to the left
+        ; of the `=` exactly as the three page settings are. Two of them carry
+        ; a STRING, which is the only thing that made this table grow a second
+        ; output -- see .quoted below.
+        elsif .lhs$ = "emlLineStyle"
+            .base$ = "lineStyle"
+        elsif .lhs$ = "emlSecondAxisOn"
+            .base$ = "secondAxisOn"
+        elsif .lhs$ = "emlSecondAxisMin"
+            .base$ = "secondAxisMin"
+        elsif .lhs$ = "emlSecondAxisMax"
+            .base$ = "secondAxisMax"
+        elsif .lhs$ = "emlSecondAxisStyle"
+            .base$ = "secondAxisStyle"
+        elsif .lhs$ = "emlSecondAxisCol$"
+            .base$ = "secondAxisCol"
+            .quoted = 1
+        elsif .lhs$ = "emlSecondAxisLabel$"
+            .base$ = "secondAxisLabel"
+            .quoted = 1
         endif
         if .base$ <> ""
-            ; The right-hand side has to be a plain number, for the reason
+            ; The right-hand side has to be a plain literal, for the reason
             ; the axis pair has to: a value that is already a variable is a
             ; re-recorded session, and lifting a lift would declare a
-            ; variable holding the name of another one.
+            ; variable holding the name of another one. A numeric setting
+            ; must parse as a number and a string setting as a quoted string;
+            ; neither accepts the other's form.
             @emlRecordQuotedLiteral: .rhs$
-            if emlRecordQuotedLiteral.isNum = 1
-                .lit$ = emlRecordQuotedLiteral.num$
+            if .quoted = 1
+                if emlRecordQuotedLiteral.ok = 1
+                    .lit$ = emlRecordQuotedLiteral.value$
+                else
+                    .base$ = ""
+                endif
             else
-                .base$ = ""
+                if emlRecordQuotedLiteral.isNum = 1
+                    .lit$ = emlRecordQuotedLiteral.num$
+                else
+                    .base$ = ""
+                endif
             endif
         endif
     endif
@@ -2785,6 +2898,20 @@ procedure emlRecordPageGloss: .base$
         .gloss$ = "inches from the left of the page to this panel's corner"
     elsif .base$ = "panelOriginY"
         .gloss$ = "inches from the top of the page to this panel's corner"
+    elsif .base$ = "lineStyle"
+        .gloss$ = "the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted"
+    elsif .base$ = "secondAxisOn"
+        .gloss$ = "1 draws a second series on a right-hand y-axis, 0 draws one axis"
+    elsif .base$ = "secondAxisCol"
+        .gloss$ = "the column the right-hand series is read from"
+    elsif .base$ = "secondAxisMin"
+        .gloss$ = "the right-hand axis floor; 0 with the ceiling also 0 means auto"
+    elsif .base$ = "secondAxisMax"
+        .gloss$ = "the right-hand axis ceiling; 0 with the floor also 0 means auto"
+    elsif .base$ = "secondAxisLabel"
+        .gloss$ = "the right-hand axis name; empty falls back to the column name"
+    elsif .base$ = "secondAxisStyle"
+        .gloss$ = "the right-hand series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted"
     endif
 endproc
 
@@ -3133,8 +3260,9 @@ endproc
 #                      then figure formats, then the page settings
 #          .nAxis      how many axis PAIRS the session used
 #          .nFmt       how many figure format variables it emitted
-#          .nPage      how many page-setting variables it emitted -- three per
-#                      run that drew: erase, origin x, origin y
+#          .nPage      how many ASSIGNMENT settings it emitted -- per run that
+#                      drew: the three page settings, the series' pen and the
+#                      second-axis switch, and that axis's five when it was on
 #          .code$[s]   step s's code with its column literals, its axis range
 #                      and its format choice replaced by the variable names --
 #                      what @emlRecordRender emits
@@ -3480,6 +3608,7 @@ procedure emlRecordColumnManifest
             .pgRole$ = emlRecordPageSpec.base$
             if .pgRole$ <> ""
                 .pgValue$ = emlRecordPageSpec.lit$
+                .pgIsText = emlRecordPageSpec.quoted
                 .pgSlot = 0
                 .pgSame = 0
                 for .k from 1 to .nPage
@@ -3498,9 +3627,16 @@ procedure emlRecordColumnManifest
                     .pgBase$[.nPage] = .pgRole$
                     .pgLit$[.nPage] = .pgValue$
                     .pgRun[.nPage] = .run
+                    .pgText[.nPage] = .pgIsText
                     @emlRecordRunSuffix: .run, .pgSame
+                    ; A STRING SETTING'S VARIABLE ENDS IN $, by Praat's rule
+                    ; and by the same rule the column path follows.
+                    .pgTail$ = ""
+                    if .pgIsText = 1
+                        .pgTail$ = "$"
+                    endif
                     .pgName$[.nPage] = .pgRole$
-                    ... + emlRecordRunSuffix.suffix$
+                    ... + emlRecordRunSuffix.suffix$ + .pgTail$
                     .pgSteps$[.nPage] = ""
                     .pgLast$[.nPage] = ""
                 endif
@@ -3667,7 +3803,9 @@ procedure emlRecordColumnManifest
     endfor
 
     ; ---- THE PAGE DECLARATIONS -------------------------------------------
-    ; THREE LINES PER FIGURE, AND THEY ARE THE PAGE. Erase says whether the
+    ; THE PAGE, THE PENS AND THE SECOND AXIS -- every setting the recorder
+    ; wrote as an assignment rather than as an argument.
+    ; Erase says whether the
     ; figure started a page or joined one; the origin says where on it. A
     ; session that drew one figure declares eraseFirst = 1 and an origin of
     ; 0, 0, which is what it did; a session that composed a page declares one
@@ -3691,7 +3829,14 @@ procedure emlRecordColumnManifest
         if not index (.pgSteps$[.k], ",")
             .word$ = "step "
         endif
-        .out$ = .out$ + .pgName$[.k] + .padP$ + " = " + .pgLit$[.k]
+        ; The value as it will be READ BACK: a string setting is declared in
+        ; quotes, a numeric one bare. The lift stored the literal without its
+        ; quotes, so they are put back here and only here.
+        .pgOut$ = .pgLit$[.k]
+        if .pgText[.k] = 1
+            .pgOut$ = """" + .pgLit$[.k] + """"
+        endif
+        .out$ = .out$ + .pgName$[.k] + .padP$ + " = " + .pgOut$
         ... + "   ; " + emlRecordPageGloss.gloss$ + " -- run "
         ... + string$ (.pgRun[.k]) + ", " + .word$ + .pgSteps$[.k] + newline$
     endfor

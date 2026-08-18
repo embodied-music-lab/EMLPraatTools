@@ -499,6 +499,10 @@ endproc
 
 
 procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .tMin, .tMax, .fMin, .fMax, .yUnit
+    # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
+    # @emlSecondAxisGate is the judge for all thirteen types and
+    # says nothing at all when no second axis was asked for.
+    @emlSecondAxisGate: "Pitch contour"
 
     # Step 1: Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -662,11 +666,19 @@ procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
     selectObject: .objectId
     Colour: emlSetColorPalette.line$[1]
     Line width: emlSetAdaptiveTheme.dataLineWidth
+    ; THE SERIES' PEN, AROUND A DRAW THIS FILE DOES NOT ISSUE ITSELF. The
+    ; contour is stroked by Praat's own `Draw:` on the Pitch object, which
+    ; obeys the Picture window's line style like any other stroke -- so the
+    ; style is set here and reset immediately, before @emlDrawAxes puts a
+    ; frame and a set of tick marks on the same page.
+    @emlPrimaryLineStyle
+    @emlApplyLineStyle: emlPrimaryLineStyle.style
     if .yUnit = 2
         Draw semitones (re 440 Hz): .timeMin, .timeMax, .freqMin, .freqMax, "no"
     else
         Draw: .timeMin, .timeMax, .freqMin, .freqMax, "no"
     endif
+    @emlResetLineStyle
 
     # Step 7: Draw axes on top
     @emlDrawAxes: .timeMin, .timeMax, .freqMin, .freqMax, .xLabel$, .yLabel$, .title$, .vpW, .vpH
@@ -720,6 +732,10 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawWaveform: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .tMin, .tMax, .aMin, .aMax
+    # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
+    # @emlSecondAxisGate is the judge for all thirteen types and
+    # says nothing at all when no second axis was asked for.
+    @emlSecondAxisGate: "Waveform"
 
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
@@ -840,6 +856,10 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawSpectrum: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .fMin, .fMax, .pMin, .pMax
+    # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
+    # @emlSecondAxisGate is the judge for all thirteen types and
+    # says nothing at all when no second axis was asked for.
+    @emlSecondAxisGate: "Spectrum"
 
     # Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -1019,6 +1039,10 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawLTAS: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .fMin, .fMax, .pMin, .pMax, .showCurve, .showBars, .showPoles, .showSpeckles
+    # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
+    # @emlSecondAxisGate is the judge for all thirteen types and
+    # says nothing at all when no second axis was asked for.
+    @emlSecondAxisGate: "LTAS"
 
     # Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -1328,12 +1352,83 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         if emlCountGroups.error$ = "" and emlCountGroups.nGroups > 1
             .hasGroup = 1
             .nGroups = emlCountGroups.nGroups
-            @emlOptimizePaletteContrast: .nGroups
             for .g from 1 to .nGroups
                 .grpLabel$[.g] = emlCountGroups.groupLabel$[.g]
             endfor
         endif
     endif
+
+    # ── STEP 1B: THE SECOND SERIES, IF ONE WAS ASKED FOR ────────────────
+    # THIS IS THE ONE FIGURE IN THE PLUGIN THAT MAY CARRY A RIGHT-HAND
+    # Y-AXIS. @emlSecondAxisGate is the judge for all of them; here it says
+    # yes, and every other draw procedure calls the same line and is told no
+    # out loud. See the second-axis block in @emlInitDrawingDefaults.
+    #
+    # THE REQUEST IS VALIDATED HERE AS WELL AS AT THE DIALOG, because the
+    # dialog is not the only caller: a recorded script, the API export and any
+    # user script can set these globals directly, and a column that is missing
+    # or is not numeric must produce a figure with one axis and a sentence
+    # saying why, not an abort in the middle of somebody's drawing.
+    @emlSecondAxisGate: "Line chart"
+    .secondOn = emlSecondAxisGate.honoured
+    @emlSecondAxisRequest
+    .secondCol$ = emlSecondAxisRequest.col$
+    .secondReqMin = emlSecondAxisRequest.min
+    .secondReqMax = emlSecondAxisRequest.max
+    .secondLabel$ = emlSecondAxisRequest.label$
+    .secondStyle = emlSecondAxisRequest.style
+    if .secondOn = 1
+        if .secondCol$ = ""
+            .secondOn = 0
+            appendInfoLine: "NOTE: a second right-hand y-axis was requested"
+            ... + " with no column named for it; the figure was drawn with"
+            ... + " one y-axis."
+        endif
+    endif
+    if .secondOn = 1
+        @emlCheckNumericColumn: .objectId, .secondCol$
+        if emlCheckNumericColumn.isNumeric = 0
+            .secondOn = 0
+            appendInfoLine: "NOTE: the second right-hand y-axis asked for"
+            ... + " column """ + .secondCol$ + """, which is missing or does"
+            ... + " not contain numeric data; the figure was drawn with one"
+            ... + " y-axis."
+        endif
+    endif
+    if .secondOn = 1
+        if .secondLabel$ = ""
+            @emlCapitalizeLabel: .secondCol$
+            .secondLabel$ = emlCapitalizeLabel.result$
+        endif
+    endif
+
+    # THE PALETTE IS OPTIMISED ONCE, FOR THE NUMBER OF SERIES ACTUALLY DRAWN.
+    # @emlOptimizePaletteContrast permutes the palette arrays IN PLACE, so
+    # calling it twice would re-spread an already-spread palette; the group
+    # block above therefore no longer calls it and this is the only call.
+    #
+    # THE RIGHT SERIES IS THE LAST SLOT. Ungrouped, that is slot two of two --
+    # blue and orange in colour, the two ends of the grey ramp in
+    # black-and-white -- which is Ian's ruling of 18 August verbatim. Grouped,
+    # it is slot nGroups + 1, which is the same rule with more series in it.
+    .paletteN = 1
+    if .hasGroup = 1
+        .paletteN = .nGroups
+    endif
+    .rightSlot = 0
+    if .secondOn = 1
+        .paletteN = .paletteN + 1
+        .rightSlot = .paletteN
+    endif
+    if .paletteN >= 2
+        @emlOptimizePaletteContrast: .paletteN
+    endif
+
+    # THE PRIMARY SERIES' PEN, read through the guard for a caller that never
+    # loaded the defaults. Solid is what every line this plugin drew before
+    # line styles existed, so an absent global draws yesterday's figure.
+    @emlPrimaryLineStyle
+    .primaryStyle = emlPrimaryLineStyle.style
 
     # Step 2: Copy and sort table
     selectObject: .objectId
@@ -1497,6 +1592,107 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         endfor
     endif
 
+    # ── STEP 3C: THE SECOND SERIES' OWN DATA ───────────────────────
+    # READ, SORTED AND COLLAPSED SEPARATELY, on purpose. The primary series is
+    # collapsed per (group, time) because a grouped figure is several series;
+    # the right-hand series is ONE series against the same time axis whatever
+    # the primary's grouping is, so it is collapsed per TIME alone. Sharing
+    # the primary's loop would have meant one of the two rules governing both.
+    #
+    # The mean is what a repeated time point means here, exactly as it does
+    # for the primary -- see Step 3b, whose worked example is the reason that
+    # collapse exists at all.
+    .sN = 0
+    .sDataMin = 0
+    .sDataMax = 0
+    if .secondOn = 1
+        selectObject: .objectId
+        .sTemp = Copy: "eml_ts_second"
+        Sort rows: .timeCol$
+        .sRawN = Get number of rows
+        @emlDrawColumnIsClean: .sTemp, .timeCol$
+        .sCleanT = emlDrawColumnIsClean.clean
+        @emlDrawColumnIsClean: .sTemp, .secondCol$
+        .sCleanY = emlDrawColumnIsClean.clean
+        for .i from 1 to .sRawN
+            selectObject: .sTemp
+            @eml_readCell: .sTemp, .i, .timeCol$, .sCleanT
+            .sRawT'.i' = eml_readCell.value
+            @eml_readCell: .sTemp, .i, .secondCol$, .sCleanY
+            .sRawY'.i' = eml_readCell.value
+        endfor
+        removeObject: .sTemp
+
+        .sRunT = undefined
+        .sRunSum = 0
+        .sRunCount = 0
+        for .i from 1 to .sRawN + 1
+            .sEnd = 0
+            if .i > .sRawN
+                .sEnd = 1
+            else
+                .sThisT = .sRawT'.i'
+                .sThisY = .sRawY'.i'
+            endif
+            .sFlush = 0
+            if .sRunCount > 0
+                if .sEnd = 1
+                    .sFlush = 1
+                elsif .sThisT <> .sRunT
+                    .sFlush = 1
+                endif
+            endif
+            if .sFlush = 1
+                .sN = .sN + 1
+                .sT'.sN' = .sRunT
+                .sY'.sN' = .sRunSum / .sRunCount
+                .sRunCount = 0
+                .sRunSum = 0
+            endif
+            if .sEnd = 0
+                ; An undefined member of either pair is dropped rather than
+                ; carried, for the reason Step 3b sets out at length: a run
+                ; flushed at an undefined time is filed at an undefined x and
+                ; never drawn.
+                .sOk = 0
+                if .sThisT <> undefined
+                    if .sThisY <> undefined
+                        .sOk = 1
+                    endif
+                endif
+                if .sOk = 1
+                    if .sRunCount = 0
+                        .sRunT = .sThisT
+                    endif
+                    .sRunSum = .sRunSum + .sThisY
+                    .sRunCount = .sRunCount + 1
+                endif
+            endif
+        endfor
+
+        .sSeeded = 0
+        for .i from 1 to .sN
+            if .sSeeded = 0
+                .sDataMin = .sY'.i'
+                .sDataMax = .sY'.i'
+                .sSeeded = 1
+            else
+                if .sY'.i' < .sDataMin
+                    .sDataMin = .sY'.i'
+                endif
+                if .sY'.i' > .sDataMax
+                    .sDataMax = .sY'.i'
+                endif
+            endif
+        endfor
+        if .sSeeded = 0
+            .secondOn = 0
+            appendInfoLine: "NOTE: the second right-hand y-axis asked for"
+            ... + " column """ + .secondCol$ + """, which holds no usable"
+            ... + " (time, value) pair; the figure was drawn with one y-axis."
+        endif
+    endif
+
     # Step 4: Axis ranges
     # THE RANGE IS SEEDED FROM THE FIRST VALID OBSERVATION, not from row 1.
     # A blank or non-numeric row 1 seeds it undefined, every later comparison
@@ -1577,6 +1773,28 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         .yMax = .vMax
     endif
 
+    # THE RIGHT AXIS'S RANGE, RESOLVED AGAINST THE LEFT ONE THAT WAS JUST
+    # SETTLED. @emlSecondAxisResolve is the whole of the rule and its header
+    # is where it is argued: a typed pair is the range, and an auto pair puts
+    # the right series at THE SAME FRACTIONS of the plot box the left series
+    # occupies -- so the headroom this figure negotiated once, for nice
+    # numbers or for a legend or for a bracket, was negotiated for both.
+    #
+    # NOTHING IS WRITTEN BACK INTO THE REQUEST GLOBALS. The resolution is
+    # local, because Praat cannot unset a variable and a resolved range parked
+    # in emlSecondAxisMin/Max would be the range the NEXT figure drew on while
+    # its user believed they had asked for auto -- which is the defect the
+    # left axis's whole consume-once apparatus exists to prevent.
+    .rMin = 0
+    .rMax = 0
+    if .secondOn = 1
+        @emlSecondAxisResolve: .sDataMin, .sDataMax,
+        ... .secondReqMin, .secondReqMax,
+        ... .yMin, .yMax, .yDataMin, .yDataMax
+        .rMin = emlSecondAxisResolve.min
+        .rMax = emlSecondAxisResolve.max
+    endif
+
     # THE PUBLISHED RESOLVED EXTENT. Read this file's header note on the
     # `axis*` contract before changing it.
     #
@@ -1601,6 +1819,11 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     .axisXMax = .xMax
     .axisYMin = .yMin
     .axisYMax = .yMax
+    ; THE RIGHT AXIS IS PUBLISHED BY THE SAME CONTRACT, under names of its
+    ; own so that nothing reading the four canonical ones can pick it up by
+    ; accident. Both are 0 on a figure that drew no second axis.
+    .axisRightMin = .rMin
+    .axisRightMax = .rMax
 
     # Step 5: Viewport and axes
     @emlSetPanelViewport
@@ -1643,6 +1866,11 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         # Single line
         Colour: emlSetColorPalette.line$[1]
         Line width: emlSetAdaptiveTheme.dataLineWidth
+        ; THE SERIES' PEN. Solid unless the dialog said otherwise, and reset
+        ; the moment the segments are done: Praat's line style is Picture
+        ; window state, so a style left set dashes the next tick mark and the
+        ; next figure. See @emlApplyLineStyle.
+        @emlApplyLineStyle: .primaryStyle
         for .i from 1 to .nRows - 1
             .iN = .i + 1
             # v1.19 (C 96): an undefined endpoint propagated through min/max
@@ -1668,6 +1896,7 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
                 endif
             endif
         endfor
+        @emlResetLineStyle
         # A marker at every vertex that is actually on the panel. Segments
         # are CLAMPED to the axes above, which is right for a line -- it
         # keeps entering and leaving the frame -- but a clamped marker would
@@ -1710,6 +1939,7 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         for .g from 1 to .nGroups
             Colour: emlSetColorPalette.line$[.g]
             Line width: emlSetAdaptiveTheme.dataLineWidth
+            @emlApplyLineStyle: .primaryStyle
             .prevT = 0
             .prevY = 0
             .started = 0
@@ -1756,6 +1986,11 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
                             endif
                         endif
                         if .mOk = 1
+                            ; A MARKER IS NOT A SERIES AND IS NEVER DASHED.
+                            ; Two of @emlDrawMarker's shapes are drawn with
+                            ; `Draw line`, so a dashed pen left set would
+                            ; render a cross as two broken strokes.
+                            @emlResetLineStyle
                             @emlDrawMarker: .thisT, .thisY, .markerHalfIn,
                             ... emlSetColorPalette.marker[.g],
                             ... emlSetColorPalette.line$[.g]
@@ -1766,6 +2001,7 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
                         # next segment rather than assumed.
                         Colour: emlSetColorPalette.line$[.g]
                         Line width: emlSetAdaptiveTheme.dataLineWidth
+                        @emlApplyLineStyle: .primaryStyle
                         .prevT = .thisT
                         .prevY = .thisY
                         .started = 1
@@ -1773,7 +2009,112 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
                 endif
             endfor
         endfor
+        @emlResetLineStyle
 
+    endif
+
+    # ── STEP 7C: THE SECOND SERIES, ON ITS OWN SCALE, IN THE SAME BOX ──────
+    # IT ADOPTS THE INNER RECTANGLE RATHER THAN COMPUTING ONE. Same plot box,
+    # not same world: `Axes:` is re-issued with the right-hand range over the
+    # unchanged x, the series is drawn, its ticks and its name are put in the
+    # right margin, and the left-hand mapping is put back before anything else
+    # is drawn on this figure. No new drawing machinery -- Praat's own
+    # `One mark right:` and `Text right:` do the margin, which was settled by
+    # driving them rather than by reading about them.
+    #
+    # IT DRAWS NO TITLE, NO X-AXIS AND NO FRAME. There is one of each on this
+    # figure and the first series already drew them.
+    if .secondOn = 1
+        ; NO INK IS BOUND TO THE RIGHT MARGIN, because Praat will not take
+        ; one: `One mark right:`, `Marks right every:` and `Text right:` draw
+        ; in black whatever colour is current. That is measured, not assumed
+        ; -- harness/secondaxis/margin_ink.praat drives all three under a red
+        ; pen and reads the ink back off the pixels -- and it is the answer to
+        ; the one thing Ian left open. See @emlInitDrawingDefaults.
+        Axes: .xMin, .xMax, .rMin, .rMax
+        ; AND THE MARKER SCALE WITH IT. @emlDrawMarker sizes a mark in WORLD
+        ; units, from the world-per-inch @emlSetPatternScale published for the
+        ; axis in force -- so a marker drawn on the right-hand world with the
+        ; left-hand scale still loaded is sized in hertz and placed in
+        ; proportions. Measured, before this line existed: every marker on the
+        ; second series was drawn hundreds of times too large, entirely
+        ; outside the frame, and the series came out as a bare line. The
+        ; left-hand scale is restored with the left-hand axis below.
+        @emlSetPatternScale: .xMin, .xMax, .rMin, .rMax
+        Colour: emlSetColorPalette.line$[.rightSlot]
+        Line width: emlSetAdaptiveTheme.dataLineWidth
+        @emlApplyLineStyle: .secondStyle
+        for .i from 1 to .sN - 1
+            .iN = .i + 1
+            if .sT'.iN' >= .xMin and .sT'.i' <= .xMax
+                .cx1 = max (.xMin, min (.xMax, .sT'.i'))
+                .cy1 = max (.rMin, min (.rMax, .sY'.i'))
+                .cx2 = max (.xMin, min (.xMax, .sT'.iN'))
+                .cy2 = max (.rMin, min (.rMax, .sY'.iN'))
+                Draw line: .cx1, .cy1, .cx2, .cy2
+            endif
+        endfor
+        @emlResetLineStyle
+
+        ; A marker at every vertex that is on the panel, by the primary
+        ; series' rule and for its reason: a clamped marker would claim an
+        ; observation at a value nobody measured.
+        for .i from 1 to .sN
+            .mOk = 1
+            if .sT'.i' < .xMin
+                .mOk = 0
+            endif
+            if .mOk = 1
+                if .sT'.i' > .xMax
+                    .mOk = 0
+                endif
+            endif
+            if .mOk = 1
+                if .sY'.i' < .rMin
+                    .mOk = 0
+                endif
+            endif
+            if .mOk = 1
+                if .sY'.i' > .rMax
+                    .mOk = 0
+                endif
+            endif
+            if .mOk = 1
+                @emlDrawMarker: .sT'.i', .sY'.i', .markerHalfIn,
+                ... emlSetColorPalette.marker[.rightSlot],
+                ... emlSetColorPalette.line$[.rightSlot]
+            endif
+        endfor
+
+        ; THE RIGHT MARGIN. The font is asserted rather than inherited: the
+        ; numbers in the right margin have to be the size of the numbers in
+        ; the left one, and what is current here is whatever the data drawing
+        ; left behind.
+        Font size: emlSetAdaptiveTheme.bodySize
+        Line width: emlSetAdaptiveTheme.axisLineWidth
+        @emlDrawAlignedMarksRight: .rMin, .rMax,
+        ... emlSetAdaptiveTheme.targetTicksY,
+        ... emlSetAdaptiveTheme.useMinorTicks
+        @emlDrawAxisNameRight: .secondLabel$
+
+        ; PUT THE WORLD BACK. Everything after this point -- the disclosure
+        ; block, the legend, the axes, the title -- is placed in the LEFT
+        ; series' coordinates, and a figure that left the right mapping in
+        ; force would hang its disclosure box at a value from the wrong scale.
+        Axes: .xMin, .xMax, .yMin, .yMax
+        @emlSetPatternScale: .xMin, .xMax, .yMin, .yMax
+        Colour: emlSetAdaptiveTheme.textColor$
+        Line width: 1.0
+    endif
+
+    # THE KEY IS DRAWN AFTER BOTH SERIES AND NOT BETWEEN THEM. It was inside
+    # the grouped branch until the second axis arrived; a legend drawn there
+    # would have had the right-hand series stroked across the top of it,
+    # because that series is drawn after the branch closes. Nothing else about
+    # it moved -- the quadrant scan, the corner and the entries are the lines
+    # that were there -- and it is still a grouped-figure legend, which is why
+    # it is wrapped in the test the branch used to be.
+    if .hasGroup = 1
         # Quadrant scoring for adaptive legend placement
         selectObject: .objectId
         .nScanRows = Get number of rows
@@ -1812,12 +2153,29 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         legendMarkered = 1
         legendMarkerLine = 1
         legendN = .nGroups
+        ; THE KEY CARRIES THE PENS. legendStyled is the promise that
+        ; legendStyle[] is filled for every entry -- see @emlDrawLegendPanel,
+        ; which draws the sample line with it. Without this the key would show
+        ; solid samples for a figure drawn in dashes.
+        legendStyled = 1
         for .g from 1 to .nGroups
             legendColor$[.g] = emlSetColorPalette.line$[.g]
             legendMarker[.g] = emlSetColorPalette.marker[.g]
+            legendStyle[.g] = .primaryStyle
             @emlSanitizeLabel: .grpLabel$[.g]
             legendLabel$[.g] = emlSanitizeLabel.result$
         endfor
+        ; THE RIGHT-HAND SERIES IS TAGGED, and the tag is the author's own
+        ; wording. Its swatch is slot nGroups + 1 and its sample wears its own
+        ; pen, so the key states both halves of what tells the two apart.
+        if .secondOn = 1
+            legendN = .nGroups + 1
+            legendColor$[legendN] = emlSetColorPalette.line$[.rightSlot]
+            legendMarker[legendN] = emlSetColorPalette.marker[.rightSlot]
+            legendStyle[legendN] = .secondStyle
+            @emlSanitizeLabel: .secondLabel$ + " (right axis)"
+            legendLabel$[legendN] = emlSanitizeLabel.result$
+        endif
         .legendCorner$ = emlPlaceElements.corner1$
         @emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .legendCorner$,
         ... emlSetAdaptiveTheme.annotSize
@@ -1890,6 +2248,11 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # Step 9: Reset
     Line width: 1.0
     Colour: "Black"
+    ; AND THE PEN. Praat keeps the line style in the Picture window, so a
+    ; figure that ended dashed dashes the next one. Reset here as well as
+    ; after each stroke, for the same reason `Colour: "Black"` is: this is the
+    ; line that makes the state the drawing procedure found.
+    @emlResetLineStyle
 
     ; RECORD WORKFLOW. Same three-part guard the violin path uses:
     ; present, initialised, recording. emlRecordLoaded is set at LOAD
@@ -1927,6 +2290,10 @@ endproc
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme),
 #                annotAlpha (confidence level; default 0.05 = 95% CI).
 procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .timeCol$, .valueCol$, .groupCol$, .tMin, .tMax, .vMin, .vMax
+    # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
+    # @emlSecondAxisGate is the judge for all thirteen types and
+    # says nothing at all when no second axis was asked for.
+    @emlSecondAxisGate: "Time series with CI"
 
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
@@ -2213,6 +2580,12 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
         # Mean line
         Colour: emlSetColorPalette.line$[.colorIdx]
         Line width: emlSetAdaptiveTheme.dataLineWidth
+        ; THE MEAN LINE IS THE SERIES, so it is the stroke that carries the
+        ; chosen pen. The band around it is painted, not stroked, and is left
+        ; alone; the markers below are reset for the reason the time series
+        ; states -- two marker shapes are drawn with `Draw line`.
+        @emlPrimaryLineStyle
+        @emlApplyLineStyle: emlPrimaryLineStyle.style
         for .k from 2 to .nUT
             .kp = .k - 1
             .mt1 = .gUT'.g'_'.kp'
@@ -2227,6 +2600,7 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
             endif
         endfor
 
+        @emlResetLineStyle
         # Marker at every mean point on the panel. Not clamped -- see the
         # same loop in @emlDrawTimeSeries.
         for .k from 1 to .nUT
@@ -2451,6 +2825,10 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .condCol$, .valueCol$, .idCol$, .groupCol$, .showMean, .vMin, .vMax
+    # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
+    # @emlSecondAxisGate is the judge for all thirteen types and
+    # says nothing at all when no second axis was asked for.
+    @emlSecondAxisGate: "Spaghetti plot"
     # The column test runs once, at procedure entry, because the flag is
     # read by loops that a conditional does not always reach. Same reader
     # as the analysis -- see @emlDrawColumnIsClean.
@@ -2671,8 +3049,17 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
                 if .foundVal = 1
                     .thisX = .c
                     # Draw connecting line from previous condition
+                    # THE STRAND IS THE SERIES, so the strand carries the pen
+                    # the dialog chose. Set and reset around the stroke rather
+                    # than around the loop: the endpoint dot below is drawn
+                    # between two segments and two of its shapes are strokes.
+                    # The MEAN OVERLAY is left solid on purpose -- it is the
+                    # summary of the strands, not another one of them.
                     if .hasPrev = 1
+                        @emlPrimaryLineStyle
+                        @emlApplyLineStyle: emlPrimaryLineStyle.style
                         Draw line: .prevX, .prevY, .thisX, .thisY
+                        @emlResetLineStyle
                     endif
                     # Endpoint dot
                     @emlDrawMarker: .thisX, .thisY, .dotHalfIn,
@@ -2764,8 +3151,13 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
                 endif
                 if .foundVal = 1
                     .thisX = .c
+                    ; The grouped strand, with the same pen and the same
+                    ; reset as the ungrouped one above.
                     if .hasPrev = 1
+                        @emlPrimaryLineStyle
+                        @emlApplyLineStyle: emlPrimaryLineStyle.style
                         Draw line: .prevX, .prevY, .thisX, .thisY
+                        @emlResetLineStyle
                     endif
                     @emlDrawMarker: .thisX, .thisY, .dotHalfIn,
                     ... emlSetColorPalette.marker[.sGrp], .strandCol$[.sGrp]
@@ -3049,6 +3441,10 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .groupCol$, .valueCol$, .errorMode, .errorCol$, .vMin, .vMax
+    # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
+    # @emlSecondAxisGate is the judge for all thirteen types and
+    # says nothing at all when no second axis was asked for.
+    @emlSecondAxisGate: "Bar chart"
 
     # Step 1: Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -3426,6 +3822,10 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .groupCol$, .valueCol$, .vMin, .vMax
+    # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
+    # @emlSecondAxisGate is the judge for all thirteen types and
+    # says nothing at all when no second axis was asked for.
+    @emlSecondAxisGate: "Violin plot"
 
     # Step 1: Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -3893,6 +4293,10 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .colX$, .colY$, .groupCol$, .xMin, .xMax, .yMin, .yMax, .annotate
+    # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
+    # @emlSecondAxisGate is the judge for all thirteen types and
+    # says nothing at all when no second axis was asked for.
+    @emlSecondAxisGate: "Scatter plot"
     ; What the scatter's own statistics produced, for the record. Empty when
     ; the figure carries no analysis, which the renderer then omits.
     .recFit$ = ""
@@ -4870,6 +5274,10 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .groupCol$, .valueCol$, .vMin, .vMax
+    # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
+    # @emlSecondAxisGate is the judge for all thirteen types and
+    # says nothing at all when no second axis was asked for.
+    @emlSecondAxisGate: "Box plot"
 
     # Step 1: Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -5142,6 +5550,10 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .valueCol$, .groupCol$, .binCount, .displayMode, .vMin, .vMax, .freqMax
+    # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
+    # @emlSecondAxisGate is the judge for all thirteen types and
+    # says nothing at all when no second axis was asked for.
+    @emlSecondAxisGate: "Histogram"
     # @emlInitAlphaSprites is idempotent and cheap, and this procedure NEEDS
     # it: the overlay path calls @emlDrawAlphaRect, which reads
     # emlInitAlphaSprites.available. Without this, a GROUPED histogram aborts
@@ -5728,6 +6140,10 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .catCol$, .subCol$, .valueCol$, .vMin, .vMax
+    # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
+    # @emlSecondAxisGate is the judge for all thirteen types and
+    # says nothing at all when no second axis was asked for.
+    @emlSecondAxisGate: "Grouped violin"
 
     # Step 1: Theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -6124,6 +6540,10 @@ endproc
 # Requires: @emlInitDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .catCol$, .subCol$, .valueCol$, .vMin, .vMax
+    # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
+    # @emlSecondAxisGate is the judge for all thirteen types and
+    # says nothing at all when no second axis was asked for.
+    @emlSecondAxisGate: "Grouped box plot"
 
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
@@ -6453,6 +6873,10 @@ endproc
 # Requires: nothing. Reads globals: emlShow* and colorMode$ if already set.
 # ============================================================================
 procedure emlDrawLMMForest
+    # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
+    # @emlSecondAxisGate is the judge for all thirteen types and
+    # says nothing at all when no second axis was asked for.
+    @emlSecondAxisGate: "Forest plot"
     .p = emlLMM.nFixedCols
 
     # X range from CI bounds, always spanning 0, buffered 12%.

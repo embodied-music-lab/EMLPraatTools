@@ -308,14 +308,34 @@ procedure emlInitDrawingDefaults
     # emlSecondAxisLabel$  the right axis name; "" falls back to the column
     # emlSecondAxisStyle   1 Solid 2 Dotted 3 Dashed 4 Dashed-dotted
     #
-    # COLOUR IS SHARED AND STYLE IS NOT. Ruled by Ian on 18 August 2026,
-    # superseding an earlier rule under which the right series took a colour
-    # of its own. The two series wear the FIGURE'S colour -- one colour
-    # control, on the first dialog, governing both -- and are told apart by
-    # their line style, because the field's journals still print in grayscale
-    # and a pair separated only by hue arrives at the reader as two identical
-    # lines. Style survives the photocopier; colour does not. So there is no
-    # emlSecondAxisColour$ here: there is nothing for it to mean.
+    # COLOUR IS THE PALETTE'S AND STYLE IS THE SERIES'. Ruled by Ian on
+    # 18 August 2026, and it supersedes BOTH earlier rules -- the one under
+    # which the right series picked a colour of its own, and the one written
+    # in this block before him, under which the two series shared one ink.
+    # The ruling is what the palette machinery already does:
+    #
+    #   * The FIRST series selects the THEME -- that is the existing colour
+    #     mode, colour or black-and-white. There is no new colour control and
+    #     no per-series colour picker.
+    #   * The SECOND series takes SLOT TWO of that theme. Measured:
+    #     @emlSetColorPalette declares eight ordered slots, Okabe-Ito in
+    #     colour and a grey ramp in black-and-white, and
+    #     @emlOptimizePaletteContrast re-spreads them for the number of series
+    #     actually drawn. At two it gives blue and orange in colour, and in
+    #     black-and-white its own comment says "a two-group figure gets the
+    #     extreme ends" -- maximally contrasting by construction. So a
+    #     two-series figure calls the palette with the chosen mode, runs the
+    #     optimiser with two, and takes slots one and two. NO NEW COLOUR LOGIC
+    #     IS WRITTEN HERE; a colour literal in this feature is a wrong turn.
+    #   * EACH series carries its OWN line style, and style is what
+    #     distinguishes them, because the field's journals still print in
+    #     grayscale and a pair separated only by hue arrives at the reader as
+    #     two identical lines. Style survives the photocopier; colour does not.
+    #
+    # A GROUPED PRIMARY IS THE SAME RULE, GENERALISED AND NOT EXCEPTED. The
+    # primary may itself be several groups, and the optimiser is then called
+    # with nGroups + 1 and the right series takes the LAST slot -- which at
+    # the ungrouped case is exactly slot two of two, the ruling verbatim.
     #
     # THE DEFAULTS ARE SOLID THEN DASHED, and both are overridable: the first
     # series from a "Line style" menu on its own dialog, the second from the
@@ -329,13 +349,33 @@ procedure emlInitDrawingDefaults
     # The PRIMARY series' pen. 1 Solid, and every line this plugin drew
     # before this change order was solid, so 1 is also the no-change value.
     emlLineStyle = 1
-    # Read by @emlDrawAlignedMarksRight and by @emlDrawSecondSeries' name.
-    # "" means "the theme's default ink", which is what the LEFT margin wears
-    # and therefore what the right margin wears too: under the shared-colour
-    # rule above, painting the right furniture in the series colour would bind
-    # it to BOTH series and say nothing. It is left as a hook rather than
-    # deleted so that the ruling can be reversed by assigning one string.
-    emlRightAxisColour$ = ""
+    # THE RIGHT MARGIN'S INK IS NOT OURS TO CHOOSE, AND THAT IS MEASURED.
+    # Ian left one thing open: whether the right-hand axis FURNITURE -- its
+    # ticks, its numbers and its name -- should take slot two's colour or stay
+    # default ink. Praat 6.6.30 settles it. Its margin commands IGNORE the
+    # current colour and draw in black:
+    #
+    #     Colour: "Red"
+    #     One mark right: 50, "yes", "yes", "no", ""     -> black
+    #     Marks right every: 1, 25, "yes", "yes", "no"   -> black
+    #     Text right: "yes", "name"                      -> black
+    #
+    # and the left and bottom margins behave identically, which is why the
+    # `Colour:` call at the top of @emlDrawAlignedMarksLeft has never coloured
+    # anything either. Every one of those was driven, in isolation, and the
+    # ink was read back off the rendered pixels -- see
+    # harness/secondaxis/margin_ink.praat, which is that probe kept.
+    #
+    # So there is no colour hook here. Colouring the right margin would mean
+    # drawing the right margin ourselves -- ticks as `Draw line` and numbers
+    # as `Text` in a viewport widened past the plot -- which is the new
+    # drawing machinery this change order was told not to build. If Ian rules
+    # for coloured furniture, that is what it will cost, and it is a change
+    # order of its own.
+    #
+    # WHAT DISTINGUISHES THE TWO SERIES IS THEREFORE THE SERIES THEMSELVES:
+    # slot one and slot two, solid and dashed. The right axis is named, and
+    # its name is the tie between the black scale and the coloured line.
     # Axis display
     emlShowInnerBox = 1
     emlShowAxisNameX = 1
@@ -754,6 +794,12 @@ procedure emlSetColorPalette: .mode$
     # and a violin drawn after a scatter must not inherit its markers.
     legendMarkered = 0
     legendMarkerLine = 0
+    # And the third of the same family: a key whose samples carry per-entry
+    # LINE STYLES, which only a two-series figure sets. Cleared here so that
+    # the figure drawn after a dual-axis line chart cannot inherit its dashes,
+    # and so that @emlDrawLegendPanel can read the flag without variableExists
+    # on any path that reached it through a palette.
+    legendStyled = 0
 endproc
 
 # ----------------------------------------------------------------------------
@@ -2406,6 +2452,332 @@ procedure emlExpandAxisControls
     emlShowAxisValuesY = (config_showAxisValues = 2) or (config_showAxisValues = 4)
 endproc
 
+# ============================================================================
+# THE PEN, AND THE SECOND VERTICAL AXIS
+# ============================================================================
+# Measured at HEAD before this change order: NOT ONE call to a line-style
+# command anywhere in the graphs layer and no user option for one, so every
+# line this plugin has ever drawn is solid. Praat provides four natively, and
+# the command is the STATE it sets rather than a parameterised call --
+# `Solid line`, `Dotted line`, `Dashed line`, `Dashed-dotted line`. There is
+# no `Line style:` in 6.6.30; that spelling is refused with "Command not
+# available for current selection", which is how this was settled.
+#
+# THE STATE IS GLOBAL TO THE PICTURE WINDOW, which is the whole reason these
+# are procedures and not four lines typed at four call sites. A dashed pen
+# left set does not merely dash the next series -- it dashes the next TICK
+# MARK, the next inner box and the next bracket, on this figure and on every
+# figure drawn after it in the same session. So a stroke that sets a style
+# resets it, and @emlResetLineStyle is called at the end of every draw
+# procedure that sets one, beside the `Line width: 1.0` and `Colour: "Black"`
+# that have always been there.
+# ----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
+# @emlLineStyleName: .style   ->  .word$
+# The dialog's option index as the word a reader recognises. 1..4 in the
+# order the option menu offers them; anything else is Solid, because an
+# out-of-range style is a caller's mistake and a solid line is the figure
+# this plugin drew before styles existed.
+# ----------------------------------------------------------------------------
+procedure emlLineStyleName: .style
+    .word$ = "Solid"
+    if .style = 2
+        .word$ = "Dotted"
+    elsif .style = 3
+        .word$ = "Dashed"
+    elsif .style = 4
+        .word$ = "Dashed-dotted"
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlApplyLineStyle: .style
+# Sets the Picture window's pen to one of Praat's four line styles.
+# The command names are literals here and nowhere else.
+# ----------------------------------------------------------------------------
+procedure emlApplyLineStyle: .style
+    if .style = 2
+        Dotted line
+    elsif .style = 3
+        Dashed line
+    elsif .style = 4
+        Dashed-dotted line
+    else
+        Solid line
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlResetLineStyle
+# Back to solid. Called after every stroke that set a style, and again at the
+# end of the draw, so that no style leaks into the next drawing -- the
+# config-stash lesson, applied to a piece of state Praat keeps for us.
+# ----------------------------------------------------------------------------
+procedure emlResetLineStyle
+    Solid line
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlPrimaryLineStyle   ->  .style
+# THE PRIMARY'S PEN, READ THROUGH THE GUARD every other request global is read
+# through. A caller that never loaded @emlInitDrawingDefaults -- a PraatGen
+# companion, a harness case, this repository's own probes -- has no
+# emlLineStyle, and an unguarded read would abort its figure at "Unknown
+# variable" rather than drawing the solid line it has always drawn.
+# ----------------------------------------------------------------------------
+procedure emlPrimaryLineStyle
+    .style = 1
+    if variableExists ("emlLineStyle")
+        .style = emlLineStyle
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlSecondAxisScope: .type$   ->  .allowed, .reason$, .kind$
+# THE JUDGE. One place decides which figures may carry a right-hand y-axis,
+# and it decides by NAME rather than by graph-type number, because the number
+# is the graphs form's and three of the callers here have no form behind them.
+#
+# V1 SHIPS ON THE PLAIN TIME SERIES ONLY -- the Line chart with the
+# confidence-interval box unticked -- and every other type refuses. The
+# refusals are not one refusal: a reader who is told "not this type" learns
+# nothing about whether to ask again, so each kind carries the reason that
+# belongs to it.
+#
+#   scope        a continuous-x figure that a later version could carry this
+#                on; the message names the current scope so the answer to
+#                "why not mine" is a version and not a shrug
+#   axisshape    a categorical-x figure -- a second axis needs a continuous
+#                horizontal axis under it, and there is none
+#   distribution the histogram, whose vertical axis is a COUNT of what is on
+#                its horizontal axis; there is nothing for a second vertical
+#                scale to measure
+#   listing      the forest plot, which lists its terms down the vertical axis
+#
+# Outputs: .allowed  1 only for the plain time series
+#          .reason$  one sentence, in the reader's language, ready to print
+#          .kind$    which of the four above, for a check that wants to assert
+#                    the CLASS of a refusal rather than its wording
+# ----------------------------------------------------------------------------
+procedure emlSecondAxisScope: .type$
+    .allowed = 0
+    .kind$ = "scope"
+    .reason$ = "In this version the second axis ships on the plain time"
+    ... + " series -- the Line chart with the confidence-interval box"
+    ... + " unticked -- and this figure is a " + .type$ + "."
+
+    if .type$ = "Line chart"
+        .allowed = 1
+        .kind$ = "allowed"
+        .reason$ = ""
+    elsif .type$ = "Bar chart" or .type$ = "Violin plot" or .type$ = "Box plot"
+        .kind$ = "axisshape"
+    elsif .type$ = "Grouped violin" or .type$ = "Grouped box plot"
+        .kind$ = "axisshape"
+    elsif .type$ = "Spaghetti plot"
+        .kind$ = "axisshape"
+    elsif .type$ = "Histogram"
+        .kind$ = "distribution"
+    elsif .type$ = "Forest plot"
+        .kind$ = "listing"
+    endif
+
+    if .kind$ = "axisshape"
+        .reason$ = "A second y-axis needs a continuous horizontal axis under"
+        ... + " it, and a " + .type$ + " puts categories along the bottom:"
+        ... + " two series on two scales would have no common x to be read"
+        ... + " against."
+    elsif .kind$ = "distribution"
+        .reason$ = "A histogram is a distribution -- its vertical axis counts"
+        ... + " the values on its horizontal axis -- so a second vertical"
+        ... + " scale would have nothing of its own to measure."
+    elsif .kind$ = "listing"
+        .reason$ = "A forest plot lists its terms down the vertical axis,"
+        ... + " so there is no second vertical scale to add."
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlSecondAxisGate: .type$   ->  .honoured
+# THE ONE LINE EVERY DRAW PROCEDURE CALLS. A request a figure cannot honour is
+# refused OUT LOUD -- in the Info window, and in a global a check can quote --
+# rather than ignored, because a tickbox that does nothing and says nothing is
+# the defect this gate exists to prevent.
+#
+# IT DOES NOT CLEAR THE REQUEST, and that is deliberate. Praat cannot unset a
+# variable, so "consume it here" would mean writing emlSecondAxisOn = 0, and a
+# script that set the request once and drew a violin and then a line chart
+# would silently lose the axis on the figure that could have carried it. The
+# gate judges and announces; the request belongs to whoever set it. The graphs
+# form clears its own after each dispatch -- see @emlGraphsResetSeriesPens --
+# which is where a per-press request is meant to end.
+#
+# SILENT WHEN NOTHING WAS ASKED FOR, which is every figure anyone has drawn
+# until now: a caller with no emlSecondAxisOn, or one holding 0, prints
+# nothing and gets .honoured = 0 exactly as it would have before this existed.
+#
+# Outputs: .honoured  1 when this figure both was asked and may draw one
+#          also sets emlSecondAxisRefused and emlSecondAxisRefusal$
+# ----------------------------------------------------------------------------
+procedure emlSecondAxisGate: .type$
+    .honoured = 0
+    .asked = 0
+    emlSecondAxisRefused = 0
+    emlSecondAxisRefusal$ = ""
+    if variableExists ("emlSecondAxisOn")
+        if emlSecondAxisOn = 1
+            .asked = 1
+        endif
+    endif
+    if .asked = 1
+        @emlSecondAxisScope: .type$
+        if emlSecondAxisScope.allowed = 1
+            .honoured = 1
+        else
+            emlSecondAxisRefused = 1
+            emlSecondAxisRefusal$ = "NOTE: a second right-hand y-axis was"
+            ... + " requested and refused. " + emlSecondAxisScope.reason$
+            ... + " The figure was drawn with one y-axis."
+            appendInfoLine: emlSecondAxisRefusal$
+        endif
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlSecondAxisRequest   ->  .col$, .min, .max, .label$, .style
+# THE REQUEST, READ THROUGH THE GUARD, ONCE. Five globals, five
+# variableExists tests, and one place they are spelled -- so that a draw
+# procedure reads the request the way it reads the page settings and cannot
+# abort a figure on a caller that set the tickbox and nothing else.
+#
+# The defaults are @emlInitDrawingDefaults' defaults, which is what makes a
+# partial request behave like the dialog: no range is auto, no label falls
+# back to the column name at the call site, and no style is Dashed.
+# ----------------------------------------------------------------------------
+procedure emlSecondAxisRequest
+    .col$ = ""
+    .min = 0
+    .max = 0
+    .label$ = ""
+    .style = 3
+    if variableExists ("emlSecondAxisCol$")
+        .col$ = emlSecondAxisCol$
+    endif
+    if variableExists ("emlSecondAxisMin")
+        .min = emlSecondAxisMin
+    endif
+    if variableExists ("emlSecondAxisMax")
+        .max = emlSecondAxisMax
+    endif
+    if variableExists ("emlSecondAxisLabel$")
+        .label$ = emlSecondAxisLabel$
+    endif
+    if variableExists ("emlSecondAxisStyle")
+        .style = emlSecondAxisStyle
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlSecondAxisResolve: .dataMin, .dataMax, .reqMin, .reqMax,
+#                        .leftMin, .leftMax, .leftDataMin, .leftDataMax
+#                                                            ->  .min, .max
+# THE RIGHT AXIS'S RANGE, AND THE ONE HEADROOM NEGOTIATION BOTH SERIES ARE IN.
+#
+# THE TYPED CASE IS THE EASY HALF: a pair the user typed is the range, exactly
+# as on the left, and (0, 0) is the auto sentinel every dialog in this plugin
+# names on its own face.
+#
+# THE AUTO CASE IS WHERE THE TWO SERIES MEET. The second series ADOPTS the
+# inner rectangle the first one built -- same plot box, not same world -- so
+# the question is not "what is a nice range for this column" but "where in
+# THIS box should this column sit". The left series answered that already: its
+# data occupies some fraction of the box, and everything above and below it is
+# headroom the figure negotiated once -- for the nice-number rounding, for a
+# legend, for an annotation bracket. The right series is placed at THE SAME
+# FRACTIONS, so whatever room the figure made, both series made it together
+# and neither can end up jammed under a legend the other one moved.
+#
+# It also means the two series cannot be made to cross by an accident of
+# scaling: a rising left series and a rising right series rise together, which
+# is what a reader of a dual-scale figure is entitled to assume.
+#
+# NICE NUMBERS ARE NOT APPLIED TO THE RANGE, and that is not an omission.
+# @emlDrawAlignedMarksRight puts its ticks at multiples of a nice STEP inside
+# whatever range it is given, so the numbers in the right margin are round
+# whether or not the ends of the axis are -- and rounding the ends here would
+# add a second helping of headroom on top of the one just inherited.
+#
+# DEGENERATE INPUTS FALL BACK RATHER THAN ABORT: a left axis of zero height, a
+# left series that fills its box exactly, or a right column with one distinct
+# value each end in a range that is merely padded. A figure with an odd axis
+# is a figure; an undefined bound handed to `Axes:` is not.
+# ----------------------------------------------------------------------------
+procedure emlSecondAxisResolve: .dataMin, .dataMax, .reqMin, .reqMax,
+    ... .leftMin, .leftMax, .leftDataMin, .leftDataMax
+    ; The typed pair, tested as a pair. Nested rather than `and`-ed
+    ; throughout this procedure: Praat does not short-circuit.
+    .typed = 0
+    if .reqMin <> 0
+        .typed = 1
+    endif
+    if .reqMax <> 0
+        .typed = 1
+    endif
+    if .typed = 1
+        if .reqMax > .reqMin
+            .min = .reqMin
+            .max = .reqMax
+            goto SECOND_AXIS_RESOLVED
+        endif
+    endif
+
+    ; A column with no spread of its own gets a range around its value, so
+    ; that a flat right series is drawn as a flat line across the middle
+    ; rather than mapped onto a zero-height world.
+    .dMin = .dataMin
+    .dMax = .dataMax
+    if .dMax <= .dMin
+        .pad = abs (.dMin) * 0.1
+        if .pad <= 0
+            .pad = 0.5
+        endif
+        .dMin = .dMin - .pad
+        .dMax = .dMax + .pad
+    endif
+
+    ; WHERE THE LEFT SERIES SITS IN ITS OWN BOX, as two fractions.
+    .f0 = 0
+    .f1 = 1
+    .leftSpan = .leftMax - .leftMin
+    if .leftSpan > 0
+        .cand0 = (.leftDataMin - .leftMin) / .leftSpan
+        .cand1 = (.leftDataMax - .leftMin) / .leftSpan
+        ; Only believe a pair that describes a real occupancy of the box.
+        ; 0.2 of the height is the floor: below it the reciprocal below
+        ; magnifies the right series' range by more than five, which is a
+        ; right axis drawn mostly out of the frame.
+        .usable = 0
+        if .cand1 - .cand0 >= 0.2
+            .usable = 1
+        endif
+        if .usable = 1
+            if .cand0 >= 0
+                if .cand1 <= 1
+                    .f0 = .cand0
+                    .f1 = .cand1
+                endif
+            endif
+        endif
+    endif
+
+    .span = (.dMax - .dMin) / (.f1 - .f0)
+    .min = .dMin - .f0 * .span
+    .max = .min + .span
+
+    label SECOND_AXIS_RESOLVED
+endproc
+
 # ----------------------------------------------------------------------------
 # @emlDrawAlignedMarksLeft
 # Draws y-axis tick marks at nice-number positions (for manual axis code)
@@ -2519,17 +2891,13 @@ procedure emlDrawAlignedMarksRight: .yMin, .yMax, .targetTicks, .useMinor
         goto ALIGNED_RIGHT_END
     endif
 
-    # THE RIGHT MARGIN'S INK IS THE RIGHT SERIES' INK when there is a right
-    # series, because a tick that is not bound to its series is a number with
-    # no scale on it. emlRightAxisColour$ is "" for every caller that has no
-    # second axis, and "" means the theme tick ink this axis has always used.
-    .markColour$ = emlSetAdaptiveTheme.tickColor$
-    if variableExists ("emlRightAxisColour$")
-        if emlRightAxisColour$ <> ""
-            .markColour$ = emlRightAxisColour$
-        endif
-    endif
-    Colour: .markColour$
+    # NO COLOUR IS SET HERE, AND SETTING ONE WOULD BE A COMMENT RATHER THAN
+    # AN INSTRUCTION: Praat's margin commands draw in black whatever the
+    # current colour is. Measured in 6.6.30 on `One mark right:`,
+    # `Marks right every:` and `Text right:`, each on its own, reading the ink
+    # back off the pixels -- harness/secondaxis/margin_ink.praat is the probe.
+    # See the second-axis block in @emlInitDrawingDefaults for what follows
+    # from it for the ruling.
 
     # Derive dynamic mark parameters
     if emlShowAxisValuesY
@@ -2592,6 +2960,37 @@ procedure emlDrawAlignedMarksRight: .yMin, .yMax, .targetTicks, .useMinor
         endwhile
     endif
     label ALIGNED_RIGHT_END
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlDrawAxisNameRight: .label$
+# The right axis's name, in the right margin, in black -- which is the only
+# ink Praat's margin commands draw in. The twin of the `Text left` call
+# inside @emlDrawAxes --
+# and deliberately NOT the twin of @emlDrawAxisNameLeft, which shifts the name
+# outward when a wide tick label would collide with it. The left margin has to
+# hold ticks, numbers and a name inside a width chosen for a single-axis
+# figure; the right margin is WIDENED by @emlSetAdaptiveTheme the moment a
+# right axis is requested, so it has the room the left one has to negotiate
+# for.
+#
+# Suppressed by the same switch that suppresses the left name. A user who
+# turned y-axis names off asked for a figure with no y-axis names on it, and
+# a name in the right margin would be one.
+# ----------------------------------------------------------------------------
+procedure emlDrawAxisNameRight: .label$
+    if emlShowAxisNameY = 0
+        goto AXIS_NAME_RIGHT_END
+    endif
+    if .label$ = ""
+        goto AXIS_NAME_RIGHT_END
+    endif
+    ; Font only. `Text right:` draws in black whatever colour is current --
+    ; see the note in @emlDrawAlignedMarksRight, and the probe it names.
+    Font size: emlSetAdaptiveTheme.bodySize
+    @emlSanitizeLabel: .label$
+    Text right: "yes", emlSanitizeLabel.result$
+    label AXIS_NAME_RIGHT_END
 endproc
 
 # ----------------------------------------------------------------------------
@@ -5140,7 +5539,22 @@ procedure emlDrawLegendPanel: .x0, .x1, .y0, .y1, .fontSize
                 if .markerLine = 1
                     Colour: legendColor$[.i]
                     Line width: emlSetAdaptiveTheme.dataLineWidth
+                    ; THE SAMPLE WEARS THE SERIES' PEN. Under the second-axis
+                    ; ruling the two series are told apart by line STYLE, so a
+                    ; key whose samples were all solid would describe a figure
+                    ; nobody drew. legendStyled is the caller's promise that
+                    ; legendStyle[] is filled for every entry -- the same
+                    ; shape as legendMarkered, and set to 0 at every legend
+                    ; call site that has one pen for the whole figure.
+                    .sampleStyle = 1
+                    if variableExists ("legendStyled")
+                        if legendStyled = 1
+                            .sampleStyle = legendStyle[.i]
+                        endif
+                    endif
+                    @emlApplyLineStyle: .sampleStyle
                     Draw line: .swatchLeft, .entryY, .swatchRight, .entryY
+                    @emlResetLineStyle
                     Line width: 0.5
                 endif
                 @emlDrawMarker: .midX, .entryY, .swatchSide * 0.42,
