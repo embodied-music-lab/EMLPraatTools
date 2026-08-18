@@ -1,0 +1,5 @@
+type	mode	dialog	width	height	screen_h	clamped
+10	advanced	EML Graphs	524	288	768	no
+10	advanced	Histogram -- Column Mapping	568	744	768	no
+8	advanced	EML Graphs	524	288	768	no
+8	advanced	Scatter Plot -- Column Mapping	568	744	768	no

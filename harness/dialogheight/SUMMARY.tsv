@@ -1,0 +1,49 @@
+dialog	route	configuration	width	height	fits_768	fits_900	fits_1080
+Histogram -- Column Mapping	graphs form	advanced + group column	568	1110	NO	NO	NO
+Scatter Plot -- Column Mapping	graphs form	advanced + group column	568	999	NO	NO	yes
+Grouped Violin -- Column Mapping	graphs form	advanced	568	992	NO	NO	yes
+Grouped Box Plot -- Column Mapping	graphs form	advanced	568	992	NO	NO	yes
+Batch Voice Analysis	New menu 13	unconditional	524	974	NO	NO	yes
+Violin Plot -- Column Mapping	New menu 12	advanced, parametric	568	923	NO	NO	yes
+Bar Chart -- Column Mapping	graphs form	advanced, nonparametric	568	918	NO	NO	yes
+Box Plot -- Column Mapping	graphs form	advanced, nonparametric	568	918	NO	NO	yes
+Violin Plot -- Column Mapping	graphs form	advanced, nonparametric	568	918	NO	NO	yes
+Line Chart -- Column Mapping	graphs form	advanced, wide format	599	881	NO	yes	yes
+Two independent groups - Choose test	wizard	normality checked, not supported	524	826	NO	yes	yes
+Two independent groups - Choose test	wizard	normality checked, reasonable	524	804	NO	yes	yes
+Spaghetti Plot -- Column Mapping	graphs form	advanced + group column	568	785	NO	yes	yes
+Cannot run this analysis	New menu 4	3-level group column	524	750	yes	yes	yes
+Pitch Contour Settings	graphs form	advanced, from a Sound	524	753	yes	yes	yes
+LTAS Settings	graphs form	advanced	524	738	yes	yes	yes
+EML Stats Wizard	New menu 1	unconditional	524	712	yes	yes	yes
+Spectrum Settings	graphs form	advanced	524	588	yes	yes	yes
+Waveform Settings	graphs form	advanced	524	588	yes	yes	yes
+Correlate Two Columns	New menu 9	as opened	524	531	yes	yes	yes
+Simple Linear Regression	New menu 10	as opened	524	477	yes	yes	yes
+Compare Paired Observations	New menu 5	as opened	524	472	yes	yes	yes
+Two groups - Select columns	wizard	as opened	524	467	yes	yes	yes
+Check Normality	New menu 3	as opened	524	432	yes	yes	yes
+Cannot run this analysis (wizard)	wizard	3-level group column	524	413	yes	yes	yes
+Pairwise Comparisons	New menu 11	as opened	533	403	yes	yes	yes
+Compare K Groups (Kruskal-Wallis)	New menu 7	as opened	524	349	yes	yes	yes
+Compare Two Groups	New menu 4	as opened	540	339	yes	yes	yes
+Compare k Groups (ANOVA)	New menu 6	as opened	524	339	yes	yes	yes
+Line Chart -- Column Mapping	graphs form	BEGINNER, wide format	599	337	yes	yes	yes
+Spaghetti Plot -- Column Mapping	graphs form	BEGINNER + group column	524	337	yes	yes	yes
+Bar Chart -- Column Mapping	graphs form	BEGINNER	524	310	yes	yes	yes
+Histogram -- Column Mapping	graphs form	BEGINNER + group column	524	310	yes	yes	yes
+Grouped Violin -- Column Mapping	graphs form	BEGINNER	524	310	yes	yes	yes
+Grouped Box Plot -- Column Mapping	graphs form	BEGINNER	524	310	yes	yes	yes
+Two-Way ANOVA	New menu 8	as opened	524	307	yes	yes	yes
+EML Graphs (main page)	graphs form	unconditional	524	288	yes	yes	yes
+Violin Plot -- Column Mapping	graphs form	BEGINNER	524	278	yes	yes	yes
+Box Plot -- Column Mapping	graphs form	BEGINNER	524	278	yes	yes	yes
+Scatter Plot -- Column Mapping	graphs form	BEGINNER + group column	524	273	yes	yes	yes
+EML - Check & repair data	New menu 14	as opened	580	270	yes	yes	yes
+Describe Table Column	New menu 2	as opened	524	243	yes	yes	yes
+Create Demo Table	New menu 18	as opened	639	219	yes	yes	yes
+Compare - Observation type	wizard	as opened	555	204	yes	yes	yes
+Compare independent - Design	wizard	as opened	586	204	yes	yes	yes
+Normality assessment complete	New menu 3	as opened	524	187	yes	yes	yes
+Line Chart -- Data Format	graphs form	unconditional	524	152	yes	yes	yes
+Analysis complete	New menu	unconditional	524	113	yes	yes	yes

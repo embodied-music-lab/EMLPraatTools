@@ -1,0 +1,20 @@
+type	mode	dialog	width	height	screen_h	clamped
+5	beginner	EML Graphs	524	288	2000	no
+5	beginner	Line Chart -- Data Format	524	152	2000	no
+5	beginner	Line Chart -- Column Mapping	599	337	2000	no
+6	beginner	EML Graphs	524	288	2000	no
+6	beginner	Bar Chart -- Column Mapping	524	310	2000	no
+7	beginner	EML Graphs	524	288	2000	no
+7	beginner	Violin Plot -- Column Mapping	524	278	2000	no
+8	beginner	EML Graphs	524	288	2000	no
+8	beginner	Scatter Plot -- Column Mapping	524	273	2000	no
+9	beginner	EML Graphs	524	288	2000	no
+9	beginner	Box Plot -- Column Mapping	524	278	2000	no
+10	beginner	EML Graphs	524	288	2000	no
+10	beginner	Histogram -- Column Mapping	524	310	2000	no
+11	beginner	EML Graphs	524	288	2000	no
+11	beginner	Grouped Violin -- Column Mapping	524	310	2000	no
+12	beginner	EML Graphs	524	288	2000	no
+12	beginner	Grouped Box Plot -- Column Mapping	524	310	2000	no
+13	beginner	EML Graphs	524	288	2000	no
+13	beginner	Spaghetti Plot -- Column Mapping	524	337	2000	no

@@ -1,0 +1,2 @@
+setWorkingDirectory: "/home/claude/EMLPraatTools"
+runScript: "/home/claude/EMLPraatTools/harness/dialogheight/out/menu/work/seed.praat"

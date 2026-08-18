@@ -1,0 +1,8 @@
+
+(praat:22826): Gtk-WARNING **: 01:46:59.528: Could not load a pixbuf from /org/gtk/libgtk/theme/Adwaita/assets/check-symbolic.svg.
+This may indicate that pixbuf loaders or the mime database could not be found.
+PRAAT ERROR MESSAGE:
+No sound folder selected. Please re-run and select a folder.
+Script exited.
+This happened after you clicked “Run” in the pause form.
+(END OF PRAAT ERROR MESSAGE)
