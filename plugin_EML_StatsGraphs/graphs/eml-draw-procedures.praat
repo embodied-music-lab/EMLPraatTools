@@ -5306,6 +5306,12 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                 ... + "scatterRegressionLine = "
                 ... + string$ (scatterRegressionLine) + newline$
             endif
+            .recNote$ = "A fitted line is descriptive and carries no test."
+            .recBoth$ = .recFit$
+            if .recLine$ <> ""
+                if .recBoth$ <> ""
+                    .recBoth$ = .recBoth$ + newline$ + "  "
+                endif
                 .recBoth$ = .recBoth$ + .recLine$
             endif
             if .recBoth$ <> ""

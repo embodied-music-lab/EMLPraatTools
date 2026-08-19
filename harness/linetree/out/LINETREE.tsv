@@ -3,7 +3,7 @@
 --run--	legs_requested	long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2
 --run--	code_sha256_eml-graphs-form	d68985c0b986fc5e6f5bddaf29b8b60797ef02546482bd072fe398e5e1ebd59d
 --run--	code_sha256_eml-graph-procedures	62e08b3b21b1bcfe841041839329a4dbdfb0d25a06664f80b745e24ed7f66019
---run--	code_sha256_eml-draw-procedures	21d18006a63c8f75c537301be953a119678eae6833a1c844a721f109e447a4dd
+--run--	code_sha256_eml-draw-procedures	65ff13f1acc712c52f7a56da7805d4873d05cda9325bf006a2749f8ea755fb99
 --run--	code_sha256_eml-record	631d406dd11c452128c49f1d520bc4a16b88eda2f50da8e43869cfcd370d135e
 --run--	compositor	running
 long_titled	leg_started	1
