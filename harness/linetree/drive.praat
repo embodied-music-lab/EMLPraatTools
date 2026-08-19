@@ -54,6 +54,26 @@ elsif ltLeg$ = "rec_subjects4"
     ltObjId = ltSubjects4Id
 elsif ltLeg$ = "rec_meas2"
     ltObjId = ltMeas2Id
+# THE LONG-SHAPE LEGS. Same meaning question, same right-hand axis, a table
+# stored as one value column beside a name column. long_meas2 holds exactly
+# the numbers meas2 holds, which is what makes the two figures comparable.
+elsif ltLeg$ = "long_meas2"
+    ltObjId = ltLongMeas2Id
+elsif ltLeg$ = "long_meas3_refuse"
+    ltObjId = ltLongMeas3Id
+elsif ltLeg$ = "rec_long_meas2"
+    ltObjId = ltLongMeas2Id
+# THE TWO SHAPES, SIDE BY SIDE, WITH THE TITLE TAKEN OUT OF THE ARGUMENT.
+# long_titled and wide_titled hold the same numbers in the two storages and
+# are driven with the same keystrokes INCLUDING a typed title, because the
+# composed title is the one thing that legitimately differs: it names the
+# table the figure came from, and the two tables have different names. With
+# the title typed, everything the two figures could differ in is data, and
+# the two PNGs are required to be the same file.
+elsif ltLeg$ = "long_titled"
+    ltObjId = ltLongMeas2Id
+elsif ltLeg$ = "wide_titled"
+    ltObjId = ltMeas2Id
 else
     exitScript: "linetree: unknown leg '" + ltLeg$ + "'"
 endif
@@ -130,6 +150,26 @@ endfor
 @ltEmit: "max_per_point", string$ (tsMaxPerPoint)
 @ltEmit: "ci_offered", string$ (tsCIOffer)
 @ltEmit: "shape", string$ (tsShape)
+# THE LONG-SHAPE ARM, read out of the form's own variables. tsLevelMode is 1
+# when the series are the LEVELS of a name column rather than the columns of a
+# wide table; tsPivotTableId is the two-column table the pivot built, and it is
+# 0 by the time this runs because the form removes it -- which is exactly why
+# the recorder has to carry the pivot as a step of its own.
+if variableExists ("tsLevelMode")
+    @ltEmit: "level_mode", string$ (tsLevelMode)
+else
+    @ltEmit: "level_mode", "absent"
+endif
+if variableExists ("tsLevelNameCol$")
+    @ltEmit: "level_name_col", tsLevelNameCol$
+else
+    @ltEmit: "level_name_col", "absent"
+endif
+if variableExists ("tsLongValueCol$")
+    @ltEmit: "long_value_col", tsLongValueCol$
+else
+    @ltEmit: "long_value_col", "absent"
+endif
 @ltEmit: "n_numeric", string$ (tsNNum)
 @ltEmit: "n_text", string$ (tsNTxt)
 @ltEmit: "y_label", y_axis_label$

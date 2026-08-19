@@ -1,7 +1,13 @@
-key_grouped_only	8	[meas2] and the right-hand series is tagged on the figure
-right_col_free	4	while a figure with a named value column still composes its own
-no_third_refusal	26	[meas3_refuse] and returned by name
-ci_unconditional	15	[meas2_rep] and the interval was NOT offered, because two scales
+level_refusal_gone	4	[long_meas3_refuse] which names the column the three came from
+long_one_series	107	[long_meas2] and returned by name
+no_third_refusal	27	[meas3_refuse] and returned by name
+right_col_free	8	while a figure with a named value column still composes its own
+key_grouped_only	13	[meas2] and the right-hand series is tagged on the figure
+ci_unconditional	30	[meas2_rep] and the interval was NOT offered, because two scales
 gate_deaf	9	[script_refuse] and the refused arm tags nothing
 melt_ceiling_five	4	[seven] the form read all seven back
-name_menu_all_columns	14	[subjects_ci] one measurement column and a name column
+name_menu_all_columns	100	[long_meas2] and returned by name
+melt_step_dropped	19	[rec_subjects4] the melted figure emitted two steps
+role_not_emitted	9	the recorder emits emlSeriesRole$ in front of the draw call
+series_cols_not_lifted	5	[rec_subjects4] the block declares seriesCols$ = "S1,S2,S3,S4"
+pivot_dropped	89	[long_meas2] and returned by name

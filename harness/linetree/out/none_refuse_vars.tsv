@@ -13,6 +13,9 @@ none_refuse	repeats_found	0
 none_refuse	max_per_point	1
 none_refuse	ci_offered	0
 none_refuse	shape	1
+none_refuse	level_mode	0
+none_refuse	level_name_col	
+none_refuse	long_value_col	
 none_refuse	n_numeric	2
 none_refuse	n_text	0
 none_refuse	y_label	F0

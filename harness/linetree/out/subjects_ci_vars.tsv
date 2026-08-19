@@ -13,6 +13,9 @@ subjects_ci	repeats_found	1
 subjects_ci	max_per_point	4
 subjects_ci	ci_offered	1
 subjects_ci	shape	2
+subjects_ci	level_mode	0
+subjects_ci	level_name_col	
+subjects_ci	long_value_col	
 subjects_ci	n_numeric	1
 subjects_ci	n_text	1
 subjects_ci	y_label	F0

@@ -13,6 +13,9 @@ meas3_refuse	repeats_found	0
 meas3_refuse	max_per_point	1
 meas3_refuse	ci_offered	0
 meas3_refuse	shape	1
+meas3_refuse	level_mode	0
+meas3_refuse	level_name_col	
+meas3_refuse	long_value_col	
 meas3_refuse	n_numeric	3
 meas3_refuse	n_text	0
 meas3_refuse	y_label	F0

@@ -13,6 +13,9 @@ seven	repeats_found	0
 seven	max_per_point	1
 seven	ci_offered	0
 seven	shape	1
+seven	level_mode	0
+seven	level_name_col	
+seven	long_value_col	
 seven	n_numeric	7
 seven	n_text	0
 seven	y_label	

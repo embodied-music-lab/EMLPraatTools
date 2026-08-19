@@ -12,9 +12,9 @@
 # and puts it back is one interrupted run away from committing a defect.
 #
 # EACH DEFECT IS ONE THE QUESTION TREE WAS BUILT TO MAKE IMPOSSIBLE. They are
-# not invented failures; six of the seven are the state of this form before
-# the line-chart change order or before the 19 August repairs, restored one at
-# a time.
+# not invented failures; every one of them is the state of this form before the
+# line-chart change order, before the 19 August repairs, or before the long
+# shape reached the right-hand axis -- restored one at a time.
 #
 #   key_grouped_only   -- D139 PUT BACK. The key is drawn only when the figure
 #                         is grouped, which is the test that was there before:
@@ -77,49 +77,88 @@
 #                         when it is not grouped instead of the 4 it has when
 #                         it is.
 #
-# WHAT EACH BREAK IS SCORED ON. v97 asserts on all eight legs and refuses a
-# transcript with fewer, so EVERY break drives the whole harness: eight legs,
-# about seven minutes. A break that drove only the leg it expects to move
-# would be scored against a validator complaining about the seven legs that
-# were not there, and the first failing check -- the one this file reports --
-# would name a missing leg rather than the defect.
+# WHAT EACH BREAK IS SCORED ON. v97 asserts on all fifteen legs and refuses a
+# transcript with fewer, so EVERY break drives the whole harness. A break that
+# drove only the leg it expects to move would be scored against a validator
+# complaining about the fourteen legs that were not there, and the first
+# failing check -- the one this file reports -- would name a missing leg
+# rather than the defect.
+#
+# THAT IS FIFTEEN LEGS AND THREE REPLAYS, thirteen minutes on a repaired tree
+# and longer on a broken one, so the drive stage takes an optional leg list:
+#
+#   EML_LT_BREAK_STAGE=patch bash break.sh <name>
+#   EML_LT_BREAK_STAGE=drive EML_LT_BREAK_LEGS="<legs>" bash break.sh <name>
+#   ... repeated until every leg is driven ...
+#   EML_LT_BREAK_STAGE=score bash break.sh <name>
+#
+# run.sh carries the legs a batch was not asked to drive over from the
+# transcript already in that shadow's own out directory, and REFUSES to carry
+# anything over from a transcript taken against different code -- so a batched
+# drive produces exactly the artefact one drive would, and cannot be used to
+# leave a stale leg in place. The batches the table below was measured with:
+#
+#   A  subjects4 subjects_ci meas2 meas2_rep script_refuse
+#   B  meas3_refuse none_refuse seven long_meas2 long_meas3_refuse
+#   C  long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2
 #
 # A BREAK THAT SCORES red=0 IS A HOLE IN v97, NOT A PASS. It is printed as
 # such at the console and left in the file as such; the defect is real by
 # construction, so a green score means no check looks where it lives.
 #
-# WHAT THIS FILE MEASURED, 19 August 2026, against v97's 387 checks -- which
-# are 387 green on the working tree, before and after this run. The tree was
-# re-driven that morning for the four form edits (the text-only series-name
-# menu, the beginner y-axis field, the disclosure moving to the draw layer)
-# and every break below was re-run against the re-driven validator:
+# WHAT THIS FILE MEASURED, 19 August 2026, against v97's 721 checks -- which
+# are 721 green on the working tree, before and after this run. Every break
+# was driven and scored on this rig on that date; nothing below is recalled.
 #
-#   key_grouped_only      red=8   first: [meas2] and the right-hand series is
+#   pivot_dropped         red=89  first: [long_meas2] and returned by name
+#   long_one_series       red=107 first: [long_meas2] and returned by name
+#   level_refusal_gone    red=4   first: [long_meas3_refuse] which names the
+#                                 column the three came from
+#   key_grouped_only      red=13  first: [meas2] and the right-hand series is
 #                                 tagged on the figure
-#   right_col_free        red=4   first: while a figure with a named value
+#   right_col_free        red=8   first: while a figure with a named value
 #                                 column still composes its own
-#   no_third_refusal      red=26  first: [meas3_refuse] and returned by name
-#   ci_unconditional      red=15  first: [meas2_rep] and the interval was NOT
+#   no_third_refusal      red=27  first: [meas3_refuse] and returned by name
+#   ci_unconditional      red=30  first: [meas2_rep] and the interval was NOT
 #                                 offered, because two scales
 #   gate_deaf             red=9   first: [script_refuse] and the refused arm
 #                                 tags nothing
 #   melt_ceiling_five     red=4   first: [seven] the form read all seven back
-#   name_menu_all_columns red=14  first: [subjects_ci] one measurement column
-#                                 and a name column
+#   name_menu_all_columns red=100 first: [long_meas2] and returned by name
+#   melt_step_dropped     red=19  first: [rec_subjects4] the melted figure
+#                                 emitted two steps
+#   role_not_emitted      red=9   first: the recorder emits emlSeriesRole$ in
+#                                 front of the draw call
+#   series_cols_not_lifted red=5  first: [rec_subjects4] the block declares
+#                                 seriesCols$ = "S1,S2,S3,S4"
 #
-# NO BREAK CAME BACK GREEN, and each one's reds name its own subject rather
-# than a leg that fell over: right_col_free moves only the checks that ask
-# which column is on which axis -- four now rather than three, because the
-# y-axis label a figure composes for itself is composed from the LEFT column,
-# so putting the same column on both sides changes it -- melt_ceiling_five
-# moves the seven-series count, its seven hues, their stroke coverage and the
-# static no-cap check, gate_deaf moves the scripted leg and the two source
-# checks on the gate, and name_menu_all_columns moves fourteen checks that are
-# all on one leg: the menu opens on "time" and the check that reads the
-# button quotes it, the interval label goes back to the ungrouped 8, the
-# figure is grouped by the time column so the speakers leave the key and the
-# bands leave the page, and the source check on where tsTxtName$[] is filled
-# from goes with them.
+# NO BREAK CAME BACK GREEN. Two of them are loud and it is worth saying why:
+# pivot_dropped and long_one_series both stop a leg RETURNING rather than
+# changing what it draws. With the pivot falsified, pressing Draw on the
+# right-hand axis page aborts inside `Get value:` -- the draw layer is handed
+# the user's long table and told to read a column called "f0" that is not in
+# it -- and with tsLevelMode falsified the right-hand axis page never opens,
+# so three plans meet a dialog they have no step for and are killed. Both
+# cascade across every check on the three long legs, which is honest: the
+# feature is not degraded in those trees, it is absent.
+#
+# THE QUIET ONES ARE THE INFORMATIVE ONES. level_refusal_gone moves four
+# checks and no more: the refusal still fires, with the COLUMN page's wording
+# -- "untick columns until two are left", on a page that has one column and no
+# tickboxes, naming no column at all. melt_ceiling_five moves the seven-series
+# count, its seven hues, their stroke coverage and the static no-cap check.
+# series_cols_not_lifted moves five checks and NO figure: its emitted script
+# still runs and still replays byte-identically, which is exactly the defect
+# -- the block stops being the whole form -- and exactly why section 15's
+# by-name checks exist beside the md5.
+#
+# TWO COUNTS GREW WHEN THE LONG SHAPE LANDED, and they grew for a reason worth
+# recording. name_menu_all_columns was 14 and is 100: the series-name menu is
+# where a long table's SERIES come from now, not just how they are grouped, so
+# defaulting it to the time column stops three legs reaching the right-hand
+# axis at all. ci_unconditional was 15 and is 30, and no_third_refusal 26 and
+# 27, because the extra field and the missing refusal shift the widget offsets
+# and the page count on legs that did not exist before.
 #
 #   Run:  bash harness/linetree/break.sh [name-substring]
 #   Out:  harness/linetree/out/BREAKS.tsv       break, red count, first failure
@@ -257,12 +296,25 @@ run_break () {
     # end, was still driving at 500 seconds with two legs to go. A ceiling that
     # cuts a break off mid-run leaves NO transcript, which is scored below as no
     # result rather than as a red -- correct, but not a measurement of anything.
+    # WHICH LEGS THIS INVOCATION DRIVES. Empty means all fifteen, which is
+    # what a whole run does and what the table at the top was measured with.
+    #
+    # WHY IT IS A SEAM. A full drive of a BROKEN tree is fifteen legs and can
+    # run past twenty minutes -- a defect that removes a dialog spends
+    # run.sh's waitpause ceiling on every plan step that no longer matches --
+    # and some environments will not let one command run that long. run.sh
+    # carries the legs it was not asked to drive over from the transcript
+    # already in this shadow's own out directory, and refuses to carry
+    # anything over from a transcript taken against different code, so
+    # driving a break in batches produces exactly the artefact one drive
+    # would. The FIRST batch must start from an empty out directory, which
+    # the patch stage guarantees.
     local drove
     if stage_do drive; then
         PRAAT="$PRAAT" EML_LT_SRC="$WORK/$n" EML_LT_OUTDIR="$o" \
             EML_LT_DISPLAY="${EML_LT_DISPLAY:-:121}" \
             timeout "${EML_LT_BREAK_TIMEOUT:-1200}" \
-            bash "$WORK/$n/harness/linetree/run.sh" \
+            bash "$WORK/$n/harness/linetree/run.sh" ${EML_LT_BREAK_LEGS:-} \
             > "$o/drive.log" 2>&1
         drove=$?
         # THE EXIT STATUS OUTLIVES THE STAGE, because the score stage reports
@@ -364,9 +416,9 @@ if want no_third_refusal; then
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-anchor = "                            if tsSeriesRole = 2 and tsNSeries >= 3\n"
+anchor = "                            elsif tsSeriesRole = 2 and tsNSeries >= 3\n"
 assert s.count(anchor) == 1, "no_third_refusal anchor: %d" % s.count(anchor)
-new = "                            if 1 = 0\n"
+new = "                            elsif 1 = 0\n"
 open(p, "w", encoding="utf-8").write(s.replace(anchor, new, 1))
 PY
     run_break no_third_refusal
@@ -587,6 +639,90 @@ new = ("    elsif .proc$ = \"emlGraphsMeltSeries\"\n"
 open(p, "w", encoding="utf-8").write(s.replace(anchor, new, 1))
 PY
     run_break series_cols_not_lifted
+fi
+
+# ---------------------------------------------------------------------------
+# 11. THE PIVOT DROPPED -- the long table reaches the draw layer unspread
+# ---------------------------------------------------------------------------
+# The question tree still concludes everything it concludes: the answer is
+# "different measurements", the levels are counted, the right-hand axis page is
+# shown and answered, valueColName$ and tsSecondColName$ are set to the two
+# LEVEL names. Only the transform is falsified, so the drawing layer is handed
+# the user's own long table and told to read a column called "f0" that is not
+# in it.
+#
+# WHY THE CONDITION AND NOT THE CALL. Deleting @emlGraphsPivotSeries would be a
+# parse error the moment the branch ran; falsifying the guard leaves every line
+# of the pivot, its recording and its cleanup in the file, so a check that
+# greps the source for the call reads it and calls the pivot present. Only a
+# driven leg can tell that the table was never spread.
+if want pivot_dropped; then
+    shadow pivot_dropped
+    edit pivot_dropped "$FORM" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+anchor = "                                if allFormsDone = 1 and tsLevelMode = 1\n"
+assert s.count(anchor) == 1, "pivot_dropped anchor: %d" % s.count(anchor)
+new = "                                if 1 = 0\n"
+open(p, "w", encoding="utf-8").write(s.replace(anchor, new, 1))
+PY
+    run_break pivot_dropped
+fi
+
+# ---------------------------------------------------------------------------
+# 12. THE LEVEL REFUSAL REMOVED -- three levels get the column page's message
+# ---------------------------------------------------------------------------
+# The branch that refuses three LEVELS is falsified, so three stacked
+# measurements fall through to the branch that refuses three COLUMNS. A refusal
+# still appears, which is what makes this break worth having: the count is
+# right and the advice is not. The message tells the user to "untick columns
+# until two are left" on a page that has one column and no tickboxes, and names
+# no column at all -- so a reader cannot tell where the three came from.
+#
+# A REFUSAL NOBODY CAN ACT ON READS AS ADVICE WHILE BEING NONE, which is the
+# argument the wrapped-comment repair already makes on this same dialog. A
+# check that only asked whether a refusal appeared would pass this.
+if want level_refusal_gone; then
+    shadow level_refusal_gone
+    edit level_refusal_gone "$FORM" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+anchor = "                            if tsLevelMode = 1 and tsNSeries >= 3\n"
+assert s.count(anchor) == 1, "level_refusal_gone anchor: %d" % s.count(anchor)
+new = "                            if 1 = 0\n"
+open(p, "w", encoding="utf-8").write(s.replace(anchor, new, 1))
+PY
+    run_break level_refusal_gone
+fi
+
+# ---------------------------------------------------------------------------
+# 13. THE LONG BRANCH FALLS BACK TO ONE SERIES -- the state before the pivot
+# ---------------------------------------------------------------------------
+# THIS IS THE DEFECT THE PIVOT WAS BUILT FOR, RESTORED. tsLevelMode never turns
+# on, so "different measurements" on a long table counts NUMERIC COLUMNS as it
+# did before 19 August, finds one, and draws it as a single series grouped by
+# the name column: every level on one shared vertical axis, no right-hand axis
+# page, and -- on the three-level fixture -- three unlike quantities normalised
+# onto one scale without a word, which is exactly the figure the wide path
+# refuses to draw.
+#
+# MEASURED ON THE UNPATCHED FORM, 19 August 2026, before any of this was built:
+# long_meas2 walked EML Graphs, the meaning question and the column page and
+# arrived at Graph Complete. No right-hand axis page and no refusal.
+if want long_one_series; then
+    shadow long_one_series
+    edit long_one_series "$FORM" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+anchor = "                                if emlCountGroups.nGroups >= 2\n"
+assert s.count(anchor) == 1, "long_one_series anchor: %d" % s.count(anchor)
+new = "                                if 1 = 0\n"
+open(p, "w", encoding="utf-8").write(s.replace(anchor, new, 1))
+PY
+    run_break long_one_series
 fi
 
 echo "BREAKS.tsv:"

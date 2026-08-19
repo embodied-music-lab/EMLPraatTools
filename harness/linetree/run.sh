@@ -68,7 +68,7 @@ TMP="$OUT/.LINETREE.$$.tsv"
 emitted=0
 emit () { printf '%s\t%s\t%s\n' "$1" "$2" "$3" >> "$TMP"; emitted=$((emitted + 1)); }
 
-LEGS="${*:-subjects4 subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven script_refuse rec_subjects4 rec_meas2}"
+LEGS="${*:-subjects4 subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven script_refuse long_meas2 long_meas3_refuse long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2}"
 
 emit "--run--" praat_version "$("$PRAAT" --version 2>&1 | head -1)"
 emit "--run--" source_tree "$SRC"
@@ -255,6 +255,12 @@ dialog_text () {
 #   shape 2 (one numeric, one or more text), repeats found, role subjects:
 #       0 Time column, 1 Series names come from, 2 Group order,
 #       3 Draw the mean and its interval, 4 Line style
+#   shape 2, NO repeats, role MEASUREMENTS -- the long-format right-hand axis:
+#       0 Time column, 1 Series names come from, 2 Group order, 3 Line style
+#       The interval field is absent twice over: this table has one row per
+#       (time, level), and intervals are not offered across two scales
+#       whatever the storage. So the page is the shape-2 page minus that one
+#       field, and every step below addresses widget 0 or 1.
 #       No Y axis label here: one numeric column HAS a name in the table, so
 #       the axis label composes itself from it.
 #
@@ -402,6 +408,85 @@ Graph Complete|ink,ocr,btn3
 PLAN
   ;;
   rec_meas2) cat <<'PLAN'
+EML Graphs|ocr,btn1
+Line Chart -- What the lines are|ocr,opt0=2,btn1
+Line Chart -- Column Mapping|ocr,btn1
+Line Chart -- The Right-Hand Axis|ocr,btn1
+Graph Complete|ink,ocr,btn3
+PLAN
+  ;;
+  # THE TWO LONG-SHAPE LEGS. The right-hand axis reached from a table that
+  # stores its two measurements as one value column beside a name column,
+  # which is the shape every EML stats tool emits.
+  #
+  # long_meas2 IS DRIVEN WITH THE SAME KEYSTROKES AS meas2 AND THAT IS THE
+  # CLAIM. Same answer to the meaning question, the column page accepted as
+  # it opens, the right-hand axis page accepted as it opens. The fixture holds
+  # the numbers data_meas2.praat holds, so if meaning and storage are really
+  # independent the two PNGs are the same file -- which is what v97 section 16
+  # asks for, in bytes.
+  long_meas2) cat <<'PLAN'
+EML Graphs|ocr,btn1
+Line Chart -- What the lines are|ocr,opt0=2,btn1
+Line Chart -- Column Mapping|ocr,btn1
+Line Chart -- The Right-Hand Axis|ocr,btn1
+Graph Complete|ink,ocr,btn3
+PLAN
+  ;;
+  # THE IDENTITY PAIR. The same twenty-four time points and the same two
+  # arithmetic expressions, stored two ways, drawn with the same keystrokes,
+  # under a title that is typed rather than composed.
+  #
+  # WHY THE TITLE IS TYPED, AND IT IS THE ONLY DIFFERENCE THESE TWO LEGS TAKE
+  # OUT OF THE COMPARISON. A blank Title field composes one, and the composed
+  # title ends in the name of the table the figure was drawn from -- "(lt
+  # meas2)" against "(lt longmeas2)". That is correct on both sides and it is
+  # not a difference in the figure; it is a difference in the fixtures' names.
+  # Measured before this pair existed: long_meas2 and meas2 differed in 9223
+  # pixels and every one of them was in rows 54 to 97 of 1200, the title line,
+  # with the axis pair agreeing to seventeen significant digits and the colour
+  # census agreeing exactly. Typing the same title into both removes the one
+  # legitimate difference and leaves the claim as a claim about the data.
+  #
+  # THE TITLE FIELD IS WIDGET 1 ON THE MAIN PAGE: 0 Graph type, 1 Title,
+  # 2 Subtitle, 3 Colour mode, and so on -- read off the page's own OCR.
+  long_titled) cat <<'PLAN'
+EML Graphs|ocr,tab1=Two measurements,btn1
+Line Chart -- What the lines are|ocr,opt0=2,btn1
+Line Chart -- Column Mapping|ocr,btn1
+Line Chart -- The Right-Hand Axis|ocr,btn1
+Graph Complete|ink,ocr,btn3
+PLAN
+  ;;
+  wide_titled) cat <<'PLAN'
+EML Graphs|ocr,tab1=Two measurements,btn1
+Line Chart -- What the lines are|ocr,opt0=2,btn1
+Line Chart -- Column Mapping|ocr,btn1
+Line Chart -- The Right-Hand Axis|ocr,btn1
+Graph Complete|ink,ocr,btn3
+PLAN
+  ;;
+  # THREE LEVELS -- the composition refusal, worded for levels. There is no
+  # tickbox to untick on this page, so the message cannot tell the user to
+  # untick one and the way out this leg then takes is the one the message
+  # names: set the series-name menu back to "(none - one series)" and draw the
+  # measurement column on its own. A refusal that left the page unusable would
+  # pass a test that stopped at the message.
+  long_meas3_refuse) cat <<'PLAN'
+EML Graphs|ocr,btn1
+Line Chart -- What the lines are|ocr,opt0=2,btn1
+Line Chart -- Column Mapping|ocr,btn1
+Line chart|ocr,ink,btn1
+Line Chart -- Column Mapping|ocr,opt1=1,btn1
+Graph Complete|ink,ocr,btn3
+PLAN
+  ;;
+  # THE THIRD RECORDER LEG. long_meas2 with the recorder running: what it
+  # emits has to rebuild the PIVOT, for the same reason rec_subjects4's file
+  # has to rebuild the melt -- the two-column table the draw layer was handed
+  # is made by this pass and removed by it, so a recorded call that named it
+  # would name an object nobody has.
+  rec_long_meas2) cat <<'PLAN'
 EML Graphs|ocr,btn1
 Line Chart -- What the lines are|ocr,opt0=2,btn1
 Line Chart -- Column Mapping|ocr,btn1
@@ -920,10 +1005,121 @@ for leg in $LEGS; do
     case "$leg" in
       rec_subjects4) replay_leg rec_subjects4 data_subjects4.praat ;;
       rec_meas2)     replay_leg rec_meas2     data_meas2.praat ;;
+      rec_long_meas2) replay_leg rec_long_meas2 data_longmeas2.praat ;;
     esac
 done
 
 emit "--run--" legs_driven "$(echo $LEGS | wc -w)"
+
+# ---------------------------------------------------------------------------
+# A SUBSET RUN KEEPS THE LEGS IT DID NOT DRIVE, AND ONLY IF THEY DESCRIBE THE
+# SAME FORM.
+#
+# WHY THIS EXISTS. The full list is fifteen legs and three replays and takes
+# something over twenty minutes; some environments will not let one command
+# run that long, and break.sh's own stage seam was added for the same reason.
+# Without this, driving the tree in batches means the last batch's transcript
+# holds only the last batch's legs, and v97 -- which asserts on every leg and
+# refuses a transcript with fewer -- reports fourteen missing legs rather than
+# anything about the plugin.
+#
+# THE DIGESTS ARE THE GUARD, and they are the same four digests the staleness
+# binding at the top of this file writes. Rows are carried over ONLY when the
+# transcript already on disk was taken against byte-identical code; anything
+# else is refused out loud, because a transcript mixing two forms' legs under
+# one digest is precisely the lie that binding exists to prevent. Carrying a
+# leg over is therefore never a way to avoid re-driving a leg the change
+# touched -- edit the form and every batch has to be driven again.
+#
+# WHICH LEGS CAME FROM WHERE IS WRITTEN DOWN. legs_requested names what this
+# invocation drove and legs_carried names what it inherited, so a reader of
+# the transcript can always tell the difference.
+# ---------------------------------------------------------------------------
+FULL="subjects4 subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven script_refuse long_meas2 long_meas3_refuse long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2"
+carried=""
+if [[ -s "$TSV" ]]; then
+    for leg in $FULL; do
+        driven=no
+        for d in $LEGS; do [[ "$d" == "$leg" ]] && driven=yes; done
+        [[ "$driven" == yes ]] && continue
+        awk -F'\t' -v l="$leg" '$1==l { found = 1 } END { exit !found }' \
+            "$TSV" || continue
+        carried="$carried $leg"
+    done
+fi
+if [[ -n "$carried" ]]; then
+    stale=""
+    for f in graphs/eml-graphs-form.praat graphs/eml-graph-procedures.praat \
+             graphs/eml-draw-procedures.praat stats/eml-record.praat; do
+        k="code_sha256_$(basename "$f" .praat)"
+        now=$(sed -E '/^[[:space:]]*(#|;|!)/d' "$SRC/plugin_EML_StatsGraphs/$f" \
+              | sha256sum | cut -d' ' -f1)
+        was=$(awk -F'\t' -v k="$k" '$1=="--run--" && $2==k {print $3}' "$TSV" | tail -1)
+        [[ "$now" == "$was" ]] || stale="$stale $k"
+    done
+    if [[ -n "$stale" ]]; then
+        echo "linetree: FAIL — this run drove [$LEGS] and would have carried"
+        echo "          [$carried ] over from the transcript already on disk,"
+        echo "          but that transcript describes a different form:"
+        echo "         $stale"
+        echo "          Re-drive every leg, or delete $TSV."
+        rm -f "$TMP"; exit 1
+    fi
+    while IFS= read -r row; do
+        printf '%s\n' "$row" >> "$TMP"
+        emitted=$((emitted + 1))
+    done < <(awk -F'\t' -v legs="$carried" '
+        BEGIN { n = split(legs, a, " "); for (i = 1; i <= n; i++) keep[a[i]] = 1 }
+        keep[$1]' "$TSV")
+    emit "--run--" legs_carried "${carried# }"
+else
+    emit "--run--" legs_carried "none"
+fi
+
+# ---------------------------------------------------------------------------
+# THE TWO SHAPES, COMPARED AS FILES.
+#
+# THE CLAIM WORTH PINNING ABOVE ALL THE OTHERS IN THIS DIRECTORY: the same
+# numbers under the same names draw the same figure whether the table holds
+# its two measurements side by side or stacked in one column. Everything else
+# here -- which page appeared, what it offered, what the form's variables said
+# afterwards -- is evidence about the route. This is the destination.
+#
+# TWO PAIRS, AND THEY ARE NOT THE SAME STATEMENT.
+#
+#   titled   long_titled vs wide_titled. Both legs typed the SAME title, so
+#            nothing about the figure is allowed to differ and the verdict has
+#            to be IDENTICAL, in bytes.
+#   auto     long_meas2 vs meas2. Neither typed anything, so each figure
+#            composed its own title and each title correctly names the table
+#            it was drawn from -- "(lt longmeas2)" and "(lt meas2)". These two
+#            files CANNOT be identical and the point of measuring them is to
+#            say exactly how they are not: how many pixels, and in which rows.
+#
+# THE ROWS ARE WHY THIS PAIR IS WORTH KEEPING. A pair that differs only in the
+# title line differs only in the caption; a pair that differs anywhere below it
+# differs in the data, and the two are indistinguishable from a verdict alone.
+#
+# THE COMPARISON IS DONE HERE AND NOT IN THE VALIDATOR because a validator in R
+# has no image reader it can rely on, and because the harness is where
+# measurement belongs in this tree -- v97 asserts on rows, it does not open
+# files. Filed under "--pairs--" rather than under a leg: it is a statement
+# ABOUT two legs and belongs to neither.
+#
+# RUN AFTER THE CARRY-OVER, so that a batched drive compares the figures on
+# disk whichever batch produced them.
+# ---------------------------------------------------------------------------
+compare_pair () {
+    local tag="$1" a="$OUT/$2.png" b="$OUT/$3.png"
+    emit "--pairs--" "${tag}_a" "$2"
+    emit "--pairs--" "${tag}_b" "$3"
+    while IFS=$'\t' read -r k v; do
+        [[ -n "$k" ]] && emit "--pairs--" "${tag}_$k" "$v"
+    done < <(python3 "$SCRIPT_DIR/pngdiff.py" "$a" "$b" 2>/dev/null)
+}
+compare_pair titled long_titled wide_titled
+compare_pair auto   long_meas2  meas2
+
 rm -f "$OUT/_ink.png" "$OUT/_ocr.png" "$OUT/_fig_ocr.png"
 mv "$TMP" "$TSV"
 disk=$(wc -l < "$TSV")

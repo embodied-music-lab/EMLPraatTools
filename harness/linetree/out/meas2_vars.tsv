@@ -13,6 +13,9 @@ meas2	repeats_found	0
 meas2	max_per_point	1
 meas2	ci_offered	0
 meas2	shape	1
+meas2	level_mode	0
+meas2	level_name_col	
+meas2	long_value_col	
 meas2	n_numeric	2
 meas2	n_text	0
 meas2	y_label	F0

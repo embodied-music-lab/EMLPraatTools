@@ -39,10 +39,10 @@
 | `D124` | 3 | graphs | `fixed-unpinned` | CONFIRMED | `pre-repo` | — | @emlDrawAnnotationBlock did not wrap -- on a narrow figure a long disclosure line made the box wide enough to sit over the data |
 | `D126` | 3 | packaging | `fixed-unpinned` | CONFIRMED | `pre-repo` | — | The GUI harness recipe recommended `pkill -9 -f matchbox`, which kills the driving shell -- the same self-kill hazard the next line warned about for praat |
 | `D134` | 3 | stats | `fixed-unpinned` | CONFIRMED | `pre-repo` | — | The wizard's normality gate was a stale hand-maintained copy of the eml-analysis.praat hierarchy, and two comments named a kurtosis threshold of 1 where the code used 7 |
-| `D140` | 1 | graphing | `closed` | CONFIRMED | `9a5826fd0fec1dd05ac60b6ff9e2ede79b7b6ca8` | `validate/v97_line_tree.R -- [seven] seven tickboxes built and read back, seven hues on the page, the tickbox loop bounded by the table with no numeric cap; break melt_ceiling_five puts 4 red` | The wide-format line chart stops at five series and says nothing about why |
+| `D140` | 1 | graphing | `closed` | CONFIRMED | `9a5826fd0fec1dd05ac60b6ff9e2ede79b7b6ca8` | `v97` | The wide-format line chart stops at five series and says nothing about why |
 | `NEW-G10-2` | 1 | editor | `closed` | CONFIRMED | `c112b7cc0e21720fefa0e8882aaf8be78fab0936` | `v55` | Delete Column removes first label match, not user's selection — silent wrong-column data loss |
-| `D138` | 2 | graphing | `closed` | CONFIRMED | `9a5826fd0fec1dd05ac60b6ff9e2ede79b7b6ca8` | `validate/v97_line_tree.R -- [meas2] the right-hand axis is chosen from the two measurements already chosen, so the left-hand column is the OTHER one; break right_col_free puts 4 red` | A column can be drawn as a left-hand series and as the right-axis series at once |
-| `D139` | 2 | graphing | `closed` | CONFIRMED | `9a5826fd0fec1dd05ac60b6ff9e2ede79b7b6ca8` | `validate/v97_line_tree.R -- [meas2] the ungrouped two-scale figure carries a two-entry key and the right-hand entry is tagged; break key_grouped_only puts 8 red` | No key is drawn when a second axis is on and the left-hand side is ungrouped |
+| `D138` | 2 | graphing | `closed` | CONFIRMED | `9a5826fd0fec1dd05ac60b6ff9e2ede79b7b6ca8` | `v97` | A column can be drawn as a left-hand series and as the right-axis series at once |
+| `D139` | 2 | graphing | `closed` | CONFIRMED | `9a5826fd0fec1dd05ac60b6ff9e2ede79b7b6ca8` | `v97` | No key is drawn when a second axis is on and the left-hand side is ungrouped |
 | `LANE-B-1` | 2 | stats | `closed` | CONFIRMED | `2f1cd7dbd30a7fb6c16ed03b30995b40e77508fc` | `v90, v93` | Alpha kernels accumulated variance without centering, so a column with a large offset lost precision to cancellation |
 | `NEW-G1-1` | 2 | export | `closed` | CONFIRMED | `a4de0eecaa5b96e6d6113b69f041b99faaaadf62` | `v57` | Multi-column normality Save exports only last column to tidy/glance |
 | `NEW-G2-1` | 2 | save | `closed` | CONFIRMED | `a4de0eecaa5b96e6d6113b69f041b99faaaadf62` | `v56` | Slash in Save base name aborts wrapper session, raw error points at dead window |
@@ -199,11 +199,11 @@
 
 ### `D140` — The wide-format line chart stops at five series and says nothing about why
 
-`closed` · severity 1 · graphing · verdict CONFIRMED · fixedBy `9a5826fd0fec1dd05ac60b6ff9e2ede79b7b6ca8` · pinnedBy `validate/v97_line_tree.R -- [seven] seven tickboxes built and read back, seven hues on the page, the tickbox loop bounded by the table with no numeric cap; break melt_ceiling_five puts 4 red`
+`closed` · severity 1 · graphing · verdict CONFIRMED · fixedBy `9a5826fd0fec1dd05ac60b6ff9e2ede79b7b6ca8` · pinnedBy `v97`
 
 **Mechanism.** Five hardcoded option menus, Series 1 to Series 5. A user with six columns finds the list simply ends. The ceiling is the dialog's rather than the chart's — the long-format path on the same page takes as many series as the grouping column holds — and it is not a Praat constraint either: field declarations execute inside an open beginPause block, so the slots can be built from the columns that exist. Fixed by the restructure, where the slots no longer exist to overflow.
 
-**Pointer.** evidence: plugin_EML_StatsGraphs/graphs/eml-graphs-form.praat declares Series 1 through Series 5 as five separate optionmenu fields. Found by Ian reading the photographed dialog at harness/dialogheight/out/advanced/t5_3_Line_Chart_Column_Mapping.png.
+**Pointer.** evidence: plugin_EML_StatsGraphs/graphs/eml-graphs-form.praat declares Series 1 through Series 5 as five separate optionmenu fields. Found by Ian reading the photographed dialog at harness/dialogheight/out/advanced/t5_3_Line_Chart_Column_Mapping.png. pinned by v97 -- [seven] seven tickboxes built and read back, seven hues on the page, the tickbox loop bounded by the table with no numeric cap; break melt_ceiling_five puts 4 red.
 
 ### `NEW-G10-2` — Delete Column removes first label match, not user's selection — silent wrong-column data loss
 
@@ -213,19 +213,19 @@
 
 ### `D138` — A column can be drawn as a left-hand series and as the right-axis series at once
 
-`closed` · severity 2 · graphing · verdict CONFIRMED · fixedBy `9a5826fd0fec1dd05ac60b6ff9e2ede79b7b6ca8` · pinnedBy `validate/v97_line_tree.R -- [meas2] the right-hand axis is chosen from the two measurements already chosen, so the left-hand column is the OTHER one; break right_col_free puts 4 red`
+`closed` · severity 2 · graphing · verdict CONFIRMED · fixedBy `9a5826fd0fec1dd05ac60b6ff9e2ede79b7b6ca8` · pinnedBy `v97`
 
 **Mechanism.** The guard compares the second-axis column against valueColName only, which is one column. In wide format the left side is a list of series columns, so choosing one of those for the right axis passes and the column is drawn twice: once against a scale where it reads as a flat line, once against its own. Fixed by the question-tree restructure, where the right-hand series is chosen from series not already drawn — impossible by construction rather than refused by a guard.
 
-**Pointer.** evidence: harness/secondaxis/out/melt_carry.png shows cq drawn as an orange left-hand series flat along zero and again as the green right-axis series, with the key naming both. Found by Ian reading the figure; v95 passed 145 checks on it, having asked whether the column was carried into the melt correctly and never whether drawing it twice made sense.
+**Pointer.** evidence: harness/secondaxis/out/melt_carry.png shows cq drawn as an orange left-hand series flat along zero and again as the green right-axis series, with the key naming both. Found by Ian reading the figure; v95 passed 145 checks on it, having asked whether the column was carried into the melt correctly and never whether drawing it twice made sense. pinned by v97 -- [meas2] the right-hand axis is chosen from the two measurements already chosen, so the left-hand column is the OTHER one; break right_col_free puts 4 red.
 
 ### `D139` — No key is drawn when a second axis is on and the left-hand side is ungrouped
 
-`closed` · severity 2 · graphing · verdict CONFIRMED · fixedBy `9a5826fd0fec1dd05ac60b6ff9e2ede79b7b6ca8` · pinnedBy `validate/v97_line_tree.R -- [meas2] the ungrouped two-scale figure carries a two-entry key and the right-hand entry is tagged; break key_grouped_only puts 8 red`
+`closed` · severity 2 · graphing · verdict CONFIRMED · fixedBy `9a5826fd0fec1dd05ac60b6ff9e2ede79b7b6ca8` · pinnedBy `v97`
 
 **Mechanism.** The legend block sits inside the grouped branch, so a grouped figure names each group plus the right-hand series tagged (right axis), while an ungrouped primary with a second series gets no key at all. That is the figure that needs one most: two unlabelled lines on two scales is exactly the ambiguity the tag exists to prevent. Fixed by the restructure, where a key appears whenever two or more series are on the page.
 
-**Pointer.** evidence: harness/secondaxis/out/auto_pair.png and typed_pair.png carry two series on two scales and no key; grouped_pair.png carries the key correctly. Found by Ian comparing the driven figures.
+**Pointer.** evidence: harness/secondaxis/out/auto_pair.png and typed_pair.png carry two series on two scales and no key; grouped_pair.png carries the key correctly. Found by Ian comparing the driven figures. pinned by v97 -- [meas2] the ungrouped two-scale figure carries a two-entry key and the right-hand entry is tagged; break key_grouped_only puts 8 red.
 
 ### `LANE-B-1` — Alpha kernels accumulated variance without centering, so a column with a large offset lost precision to cancellation
 

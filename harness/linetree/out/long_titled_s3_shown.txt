@@ -1,0 +1,7 @@
+[-] Select columns from your Table.
+Time column: time Vv
+Measurement column: value
+Series names come from: measure v
+Group order: Table order v
+Line style: Solid v
+Undo Go Back Quit Advanced Draw

@@ -1,7 +1,13 @@
 # EML record workflow -- crash mirror. Rows are appended as they
 # are recorded, so a session lost to a crash is still readable.
---- step 1 (draw), run 1
-Line chart: F0 over time (lt meas2)
+--- step 1 (convert), run 1
+Converted Table lt_longmeas2 to Table eml_pivot.
+This table stores its measurements stacked in one column, so they are spread back out into a column each: the time column, then one column per measurement. That is the shape a two-axis line chart is drawn from.
+@emlGraphsPivotSeries: data, "time", "value", "measure", "f0,cq"
+data = emlGraphsPivotSeries.tableId
+selectObject: data
+--- step 2 (draw), run 1
+Line chart: F0 over time (lt longmeas2)
 emlEraseFirst = 1
 emlPanelOriginX = 0
 emlPanelOriginY = 0
@@ -14,10 +20,10 @@ emlSecondAxisMin = 0
 emlSecondAxisMax = 0
 emlSecondAxisLabel$ = ""
 emlSecondAxisStyle = 3
-@emlDrawTimeSeries: data, "F0 over time (lt meas2)", "Time", "F0", 6, 4, "color", 1, "time", "f0", "", 0, 0, 0, 0
+@emlDrawTimeSeries: data, "F0 over time (lt longmeas2)", "Time", "F0", 6, 4, "color", 1, "time", "f0", "", 0, 0, 0, 0
 --- discarded 1 step(s): a pass that was measured and then thrown away. The steps above this line are NOT in the recording.
---- step 1 (draw), run 1
-Line chart: F0 over time (lt meas2)
+--- step 2 (draw), run 1
+Line chart: F0 over time (lt longmeas2)
 emlEraseFirst = 1
 emlPanelOriginX = 0
 emlPanelOriginY = 0
@@ -30,4 +36,4 @@ emlSecondAxisMin = 0
 emlSecondAxisMax = 0
 emlSecondAxisLabel$ = ""
 emlSecondAxisStyle = 3
-@emlDrawTimeSeries: data, "F0 over time (lt meas2)", "Time", "F0", 6, 4, "color", 1, "time", "f0", "", 0, 0, 0, 0
+@emlDrawTimeSeries: data, "F0 over time (lt longmeas2)", "Time", "F0", 6, 4, "color", 1, "time", "f0", "", 0, 0, 0, 0

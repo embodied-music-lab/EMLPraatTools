@@ -1,0 +1,28 @@
+rec_long_meas2	leg_object	7
+rec_long_meas2	rec_begun	1
+rec_long_meas2	leg_returned	rec_long_meas2
+rec_long_meas2	series_role	measurements
+rec_long_meas2	n_series	2
+rec_long_meas2	series_cols	f0,cq
+rec_long_meas2	time_col	time
+rec_long_meas2	value_col	f0
+rec_long_meas2	group_col	
+rec_long_meas2	right_col	cq
+rec_long_meas2	second_axis	1
+rec_long_meas2	ci_accepted	0
+rec_long_meas2	repeats_found	0
+rec_long_meas2	max_per_point	1
+rec_long_meas2	ci_offered	0
+rec_long_meas2	shape	2
+rec_long_meas2	level_mode	1
+rec_long_meas2	level_name_col	measure
+rec_long_meas2	long_value_col	value
+rec_long_meas2	n_numeric	1
+rec_long_meas2	n_text	1
+rec_long_meas2	y_label	F0
+rec_long_meas2	rec_steps	2
+rec_long_meas2	rec_phrases	113
+rec_long_meas2	rec_written	1
+rec_long_meas2	axis_y_min	180
+rec_long_meas2	axis_y_max	283.49608977795856
+rec_long_meas2	drawn_union	0 6 0 4

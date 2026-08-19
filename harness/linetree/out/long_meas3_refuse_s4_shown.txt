@@ -1,0 +1,5 @@
+The "measure" column holds 3 different measurements and a
+figure has two vertical axes. Draw the extra ones as stacked
+panels: untick "Erase page first", set a panel origin, and
+press Draw again — or narrow the table to two measurements.
+OK

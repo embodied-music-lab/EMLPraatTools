@@ -1,0 +1,24 @@
+long_meas3_refuse	leg_object	8
+long_meas3_refuse	leg_returned	long_meas3_refuse
+long_meas3_refuse	series_role	measurements
+long_meas3_refuse	n_series	1
+long_meas3_refuse	series_cols	value
+long_meas3_refuse	time_col	time
+long_meas3_refuse	value_col	value
+long_meas3_refuse	group_col	
+long_meas3_refuse	right_col	
+long_meas3_refuse	second_axis	0
+long_meas3_refuse	ci_accepted	0
+long_meas3_refuse	repeats_found	0
+long_meas3_refuse	max_per_point	1
+long_meas3_refuse	ci_offered	0
+long_meas3_refuse	shape	2
+long_meas3_refuse	level_mode	0
+long_meas3_refuse	level_name_col	
+long_meas3_refuse	long_value_col	
+long_meas3_refuse	n_numeric	1
+long_meas3_refuse	n_text	1
+long_meas3_refuse	y_label	Value
+long_meas3_refuse	axis_y_min	82
+long_meas3_refuse	axis_y_max	104
+long_meas3_refuse	drawn_union	0 6 0 4

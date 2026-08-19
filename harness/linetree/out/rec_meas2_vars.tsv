@@ -14,11 +14,14 @@ rec_meas2	repeats_found	0
 rec_meas2	max_per_point	1
 rec_meas2	ci_offered	0
 rec_meas2	shape	1
+rec_meas2	level_mode	0
+rec_meas2	level_name_col	
+rec_meas2	long_value_col	
 rec_meas2	n_numeric	2
 rec_meas2	n_text	0
 rec_meas2	y_label	F0
 rec_meas2	rec_steps	1
-rec_meas2	rec_phrases	13
+rec_meas2	rec_phrases	15
 rec_meas2	rec_written	1
 rec_meas2	axis_y_min	180
 rec_meas2	axis_y_max	283.49608977795856

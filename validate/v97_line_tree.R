@@ -13,6 +13,16 @@
 # contact quotient are the same table shape and completely different figures:
 # one shared vertical axis in the first case, two scales in the second.
 #
+# AND THE ANSWER IS INDEPENDENT OF THE STORAGE, WHICH IS THE 19 AUGUST
+# ADDITION AND THE POINT OF THE WHOLE TREE. "Different measurements" reaches
+# the same figure whether the file holds the two side by side or stacked in
+# one column beside a column naming what was measured -- which is the shape
+# every EML stats tool in this plugin emits. When the table is long the series
+# are the LEVELS of the name column: two reach the right-hand axis page, three
+# or more meet the refusal three columns meet. Underneath,
+# @emlGraphsPivotSeries spreads the levels into a column each before the draw
+# call -- the mirror image of the melt, and equally invisible. Section 16.
+#
 # WHAT SHIPPED. The storage question is gone and the meaning question is in
 # its place, on a page of its own; the column page is BUILT FROM THE TABLE --
 # one tickbox per numeric column, all ticked, no ceiling, where five hardcoded
@@ -89,7 +99,7 @@
 # WHAT THIS FILE READS
 # ============================================================================
 #
-# harness/linetree/out/LINETREE.tsv -- case / key / value, 8 legs:
+# harness/linetree/out/LINETREE.tsv -- case / key / value, 15 legs:
 #
 #   subjects4      4 subject columns, one row per time      dispatch row 1
 #   subjects_ci    time/f0/speaker, 4 observations a point  dispatch row 2
@@ -103,9 +113,22 @@
 #                  role = measurements -- the only leg with no dialog,
 #                  because the tree cannot ask for that figure and the
 #                  callers that can have no dialog to ask through
+#   long_meas2     time/value/measure, two levels                section 16
+#   long_meas3_refuse  three levels -> refused, then one series
+#   long_titled    the same numbers as meas2, stored long, titled
+#   wide_titled    the same numbers, stored wide, same title
+#   rec_subjects4  subjects4 with the recorder running
+#   rec_meas2      meas2 with the recorder running
+#   rec_long_meas2 long_meas2 with the recorder running
 #
-#     bash harness/linetree/run.sh     regenerate
-#     bash harness/linetree/break.sh   drive the seven deliberate defects
+# and one non-leg row group, "--pairs--": the file-level comparison of the two
+# shapes' figures, written by harness/linetree/pngdiff.py. Section 16.4 is
+# what it is for, and it is the claim this whole directory exists to make.
+#
+#     bash harness/linetree/run.sh     regenerate (a subset drives that
+#                                      subset and carries the rest over,
+#                                      refusing if the code has moved)
+#     bash harness/linetree/break.sh   drive the ten deliberate defects
 #
 # and the source of the three graph files plus the recorder, for the
 # statements that are about shape.
@@ -156,7 +179,19 @@ CASES <- c("subjects4", "subjects_ci", "meas2", "meas2_rep",
            # a difference between a session figure and its replay cannot be a
            # difference in the walk -- with the recorder RUNNING, and they
            # flush the emitted script. Section 15 is about them.
-           "rec_subjects4", "rec_meas2")
+           "rec_subjects4", "rec_meas2",
+           # THE FIVE LONG-SHAPE LEGS, added 19 August 2026 with the pivot.
+           # A table that stores two measurements stacked in one column means
+           # what a table that stores them side by side means, so it has to
+           # reach the same page and draw the same figure. Section 16 is about
+           # them.
+           #   long_meas2        the right-hand axis, reached from a long table
+           #   long_meas3_refuse three levels, refused toward stacked panels
+           #   long_titled       the same numbers, long, under a typed title
+           #   wide_titled       the same numbers, wide, under the same title
+           #   rec_long_meas2    long_meas2 with the recorder running
+           "long_meas2", "long_meas3_refuse", "long_titled", "wide_titled",
+           "rec_long_meas2")
 
 # The nine legs that walked dialogs. script_refuse is not one of them: it
 # runs with DISPLAY unset, on purpose.
@@ -169,8 +204,9 @@ GUI <- setdiff(CASES, "script_refuse")
 # assigned forty lines down, and a second REC would be read by whichever
 # assignment ran last -- a collision R reports as "subscript out of bounds"
 # at the first use and not at the assignment.
-RECLEGS <- c("rec_subjects4", "rec_meas2")
-TWIN <- c(rec_subjects4 = "subjects4", rec_meas2 = "meas2")
+RECLEGS <- c("rec_subjects4", "rec_meas2", "rec_long_meas2")
+TWIN <- c(rec_subjects4 = "subjects4", rec_meas2 = "meas2",
+          rec_long_meas2 = "long_meas2")
 # The one leg with repeated observations on a shared scale, named once here
 # because sections 4B, 5, 9 and 9B are all about the same walk through it.
 CI <- "subjects_ci"
@@ -313,12 +349,32 @@ check_true(V, "driven on Praat 6.6.30",
            has(trv("--run--", "praat_version"), "6.6.30"))
 check_true(V, "with a compositor running (a bare Xvfb maps no dialog)",
            identical(trv("--run--", "compositor"), "running"))
-check_true(V, "ten legs were requested",
-           length(strsplit(trv("--run--", "legs_requested"), " +")[[1]]) == 10L)
-check_true(V, "ten legs were driven",
-           identical(trn("--run--", "legs_driven"), 10))
-check_true(V, "and the legs requested are the legs this file reads",
-           setequal(strsplit(trv("--run--", "legs_requested"), " +")[[1]], CASES))
+# FIFTEEN LEGS, AND NOT NECESSARILY IN ONE INVOCATION.
+#
+# harness/linetree/run.sh drives a subset when it is given one and carries the
+# legs it did not drive over from the transcript already on disk -- refusing to
+# do so unless that transcript was taken against byte-identical code, which is
+# the same staleness rule the four digests above enforce. A full drive is over
+# twenty minutes and some environments will not run one command that long.
+#
+# SO THE QUESTION THIS ASKS IS ABOUT THE TRANSCRIPT AND NOT ABOUT ONE RUN:
+# every leg is in it, and every leg in it was either driven by the invocation
+# that wrote it or carried over from code identical to this code. The driver
+# writes the two lists separately so that a reader can always tell which was
+# which.
+lt_legs <- function() {
+    req <- strsplit(trv("--run--", "legs_requested"), " +")[[1]]
+    car <- trv("--run--", "legs_carried")
+    if (is.na(car) || identical(car, "none")) car <- character(0)
+    else car <- strsplit(car, " +")[[1]]
+    unique(c(req[nzchar(req)], car[nzchar(car)]))
+}
+check_true(V, "fifteen legs are in the transcript, driven or carried",
+           length(lt_legs()) == 15L)
+check_true(V, "the invocation that wrote it drove at least one of them",
+           isTRUE(trn("--run--", "legs_driven") >= 1))
+check_true(V, "and the legs in the transcript are the legs this file reads",
+           setequal(lt_legs(), CASES))
 
 # ============================================================================
 # 2. EVERY LEG STARTED, RETURNED, AND LEFT A FIGURE
@@ -340,12 +396,18 @@ for (cs in CASES) {
     check_true(V, paste0("[", cs, "] and the PNG is still beside the transcript"),
                file.exists(file.path(OUT, paste0(cs, ".png"))))
 }
-# NO TWO WALKS DREW THE SAME FIGURE. Eight distinct walks, eight md5s: a
-# driver that saved one leg's page eight times would satisfy every check above.
+# NO TWO WALKS DREW THE SAME FIGURE, WITH ONE DELIBERATE EXCEPTION.
+#
+# Twelve legs walk without a recorder running, and eleven of their figures are
+# distinct: a driver that saved one leg's page twelve times would satisfy
+# every check above. The exception is wide_titled, which is the identity
+# pair's other half and whose whole subject is that it IS long_titled's file
+# -- section 16.4. It is named here rather than allowed to make the count one
+# smaller quietly, so that a SECOND accidental collision still fails.
 md5s <- vapply(CASES, function(c) trv(c, "fig_png_md5"), character(1))
-check_true(V, "the eight distinct walks are eight different figures",
-           length(unique(md5s[setdiff(CASES, RECLEGS)])) == 8L &&
-           !any(is.na(md5s)))
+SOLO <- setdiff(CASES, c(RECLEGS, "wide_titled"))
+check_true(V, "the eleven distinct walks are eleven different figures",
+           length(unique(md5s[SOLO])) == 11L && !any(is.na(md5s)))
 # AND THE TWO RECORDER LEGS ARE NOT A NINTH AND TENTH FIGURE. They drive the
 # same plans as subjects4 and meas2 with a recording running, so their pages
 # must be byte-identical to their twins'. This is the statement that RECORDING
@@ -420,7 +482,20 @@ WALK <- list(
     # copied by reference: if either plan is edited, this is the line that
     # says the comparison in section 15 stopped being like-for-like.
     rec_subjects4 = c("EML Graphs", PAGE_A, PAGE_B, "Graph Complete"),
-    rec_meas2     = c("EML Graphs", PAGE_A, PAGE_B, PAGE_C, "Graph Complete"))
+    rec_meas2     = c("EML Graphs", PAGE_A, PAGE_B, PAGE_C, "Graph Complete"),
+    # THE LONG SHAPE WALKS THE SAME PAGES AS THE WIDE ONE, and that is the
+    # whole claim of section 16 expressed as a list of window titles. Two
+    # measurements stacked in one column reach the right-hand axis page; two
+    # measurements in two columns reach it; the walk is indistinguishable.
+    long_meas2    = c("EML Graphs", PAGE_A, PAGE_B, PAGE_C, "Graph Complete"),
+    long_titled   = c("EML Graphs", PAGE_A, PAGE_B, PAGE_C, "Graph Complete"),
+    wide_titled   = c("EML Graphs", PAGE_A, PAGE_B, PAGE_C, "Graph Complete"),
+    rec_long_meas2 = c("EML Graphs", PAGE_A, PAGE_B, PAGE_C, "Graph Complete"),
+    # three LEVELS: refused, and handed back to a column page that still
+    # works -- the level refusal has no tickbox to send the user to, so the
+    # page it returns to has to be usable by some other route.
+    long_meas3_refuse = c("EML Graphs", PAGE_A, PAGE_B, REFUSE, PAGE_B,
+                          "Graph Complete"))
 for (cs in names(WALK)) {
     check_true(V, paste0("[", cs, "] walked ", length(WALK[[cs]]),
                          " pages, in this order"),
@@ -1699,13 +1774,20 @@ for (r in RECLEGS) {
 # the code that made it, so that a second table cannot take a different route.
 check_true(V, "the form records the melt through @emlRecordConvert",
            any(grepl("^\\s*@emlRecordConvert: tsOrigObjectId,\\s*$", form_src)))
+# TWO CALL SITES SINCE THE PIVOT LANDED, and the guard is asked of BOTH rather
+# than of the one that happens to come first. The melt and the pivot are the
+# same shape of thing -- a table the form makes, draws from and removes -- and
+# a recorder call left unguarded is a "Unknown variable: emlRecordLoaded" for
+# every user who never pressed Start recording.
 check_true(V, "guarded like every other recorder call site: loaded, then active",
            {
                i <- grep("^\\s*@emlRecordConvert: tsOrigObjectId,\\s*$", form_src)
-               length(i) == 1L &&
-               any(grepl('variableExists \\("emlRecordLoaded"\\)',
-                         form_src[max(1, i - 12):i])) &&
-               any(grepl("emlRecordActive = 1", form_src[max(1, i - 12):i]))
+               length(i) == 2L &&
+               all(vapply(i, function(j)
+                   any(grepl('variableExists \\("emlRecordLoaded"\\)',
+                             form_src[max(1, j - 12):j])) &&
+                   any(grepl("emlRecordActive = 1", form_src[max(1, j - 12):j])),
+                   logical(1)))
            })
 check_true(V, "and the code it hands over assigns to `data`, which is the contract",
            any(grepl('"data = emlGraphsMeltSeries.tableId"', form_src,
@@ -1754,11 +1836,358 @@ check_true(V, "and the CI figure is a draw step of its own in the draw layer",
            any(grepl('@emlRecordDrawStep: .objectId, "Line chart', draw_src)))
 
 # ============================================================================
+# ============================================================================
+# 16. THE LONG SHAPE REACHES THE RIGHT-HAND AXIS
+# ============================================================================
+# WHAT THE PAGE DID BEFORE THIS SECTION EXISTED, driven on 19 August 2026 with
+# the same fixture and the same keystrokes these legs use: the meaning
+# question was answered "different measurements", the column page came up
+# saying "Measurement column: value" with a "Series names come from" menu on
+# "measure", and pressing Draw went straight to Graph Complete. No right-hand
+# axis page, no refusal, and -- with the three-level fixture -- three unlike
+# quantities normalised onto one shared scale without a word. That is the
+# figure the wide path refuses to draw. The tree had made meaning and storage
+# independent everywhere except here.
+#
+# WHAT THE TREE DOES NOW. When the answer is "different measurements" and the
+# table is long -- one numeric column beside a column that names what was
+# measured -- the series are the LEVELS of the name column. Two levels reach
+# the same right-hand axis page, which asks which LEVEL goes on the right;
+# three or more meet the same refusal three columns meet, worded for a page
+# with nothing to untick. Underneath, @emlGraphsPivotSeries spreads the levels
+# into a column each before the draw call, which is the mirror image of the
+# melt and equally invisible to the user.
+#
+# THE CLAIM THIS SECTION EXISTS FOR IS 16.4.
+
+# ---- 16.1 what the tree concluded, out of the form's own variables --------
+# long_meas2 is time / value / measure with two levels. Every row below is a
+# variable the FORM set, read after its dispatch: the shape it worked out, the
+# arm it took, and the two names it handed the drawing layer.
+check_true(V, "[long_meas2] the columns are different measurements",
+           identical(trv("long_meas2", "series_role"), "measurements"))
+check_true(V, "[long_meas2] one numeric column and one text column: the long shape",
+           identical(trn("long_meas2", "shape"), 2) &&
+           identical(trn("long_meas2", "n_numeric"), 1) &&
+           identical(trn("long_meas2", "n_text"), 1))
+check_true(V, "[long_meas2] so the series are LEVELS, not columns",
+           identical(trn("long_meas2", "level_mode"), 1))
+check_true(V, "[long_meas2] and the level count is what reached the tree: two",
+           identical(trn("long_meas2", "n_series"), 2))
+check_true(V, "[long_meas2] the two levels are named, in table order",
+           identical(trv("long_meas2", "series_cols"), "f0,cq"))
+check_true(V, "[long_meas2] the name column and the stacked column are both recorded",
+           identical(trv("long_meas2", "level_name_col"), "measure") &&
+           identical(trv("long_meas2", "long_value_col"), "value"))
+# THE LEVELS BECAME COLUMNS. value_col and right_col are level names here and
+# column names on the wide path, and after the pivot there is no difference:
+# that is the whole mechanism, stated as two rows.
+check_true(V, "[long_meas2] the left-hand series is the level the user did not pick",
+           identical(trv("long_meas2", "value_col"), "f0"))
+check_true(V, "[long_meas2] the right-hand series is the level they did",
+           identical(trv("long_meas2", "right_col"), "cq") &&
+           identical(trn("long_meas2", "second_axis"), 1))
+# AND NOTHING IS GROUPED. A long table drawn as SUBJECTS keeps its name column
+# as the grouping column and gets one shared axis; drawn as MEASUREMENTS it is
+# pivoted and the grouping column is gone, because each level is now a column
+# of its own. A group column surviving here would mean the pivot did not run.
+check_true(V, "[long_meas2] and no grouping column survives the pivot",
+           identical(trv("long_meas2", "group_col"), ""))
+check_true(V, "[long_meas2] the interval was not offered: two scales, ruling 3",
+           identical(trn("long_meas2", "ci_offered"), 0) &&
+           identical(trn("long_meas2", "ci_accepted"), 0))
+
+# ---- 16.2 the page the user was shown -------------------------------------
+# THE ONE THING A SOURCE GREP CANNOT SAY. Section 3's walk already requires
+# these five windows in this order; this reads the pixels of the right-hand
+# axis page and requires the two options on it to be the two LEVELS.
+RHP <- shown1("long_meas2", 4)
+check_true(V, "[long_meas2] the right-hand axis page named the two measurements",
+           has(RHP, "Right hand axis") && has(RHP, "different scales"))
+# THE COLUMN PAGE ASKED WHICH COLUMN NAMES THE SERIES, and opened on the one
+# text column the table has. On this page the answer is not a cosmetic
+# grouping: it is where the two series come from.
+CP <- shown1("long_meas2", 3)
+check_true(V, "[long_meas2] the column page offered the name column, on 'measure'",
+           has(CP, "Series names come from") && has(CP, "measure"))
+check_true(V, "[long_meas2] and named the one numeric column it found",
+           has(CP, "Measurement column: value"))
+
+# ---- 16.3 the figure ------------------------------------------------------
+# TWO SERIES ON TWO SCALES, READ OFF THE PAGE. The key's second entry carries
+# the right-axis tag, which is the drawing layer's own statement that the two
+# lines are on different axes; two chromatic colours is palette.py's count of
+# how many series actually reached the paper.
+check_true(V, "[long_meas2] the key tags the right-hand series",
+           has(figtext1("long_meas2"), "right axis"))
+check_true(V, "[long_meas2] two series are on the page, counted by colour",
+           identical(trn("long_meas2", "fig_chromatic_colours"), 2))
+# THE TITLE NAMES THE USER'S TABLE AND NOT THE PLUGIN'S. objectId IS the pivot
+# table by the time the title is composed, so an uncorrected source suffix
+# reads "(eml pivot)" -- an internal name in the one line of a figure a reader
+# reads first. This is the same repair the melt already carries.
+# THE OCR IS TREATED AS OCR, per this file's opening note. tesseract renders
+# the "lt" prefix of a 300-dpi figure title as "It" -- lowercase L read as
+# capital i -- so the match is on the part of the name no plausible misread
+# touches. Raw string on this run: "FO over time (It longmeas2)".
+check_true(V, "[long_meas2] the composed title names the table the user selected",
+           has(figtext1("long_meas2"), "longmeas2"))
+check_true(V, "[long_meas2] and never the table the pivot made",
+           !has(figtext1("long_meas2"), "eml pivot") &&
+           !has(figtext1("long_meas2"), "eml_pivot"))
+
+# ---- 16.4 THE SAME DATA IN THE TWO SHAPES IS THE SAME FIGURE -------------
+# THE CLAIM WORTH PINNING ABOVE ALL THE OTHERS IN THIS FILE.
+#
+# data_meas2.praat and data_longmeas2.praat hold the same twenty-four time
+# points and the same two arithmetic expressions under the same two names, one
+# table storing them side by side and one storing them stacked. long_titled
+# and wide_titled drive those two tables through the same five dialogs with
+# the same keystrokes -- including a TYPED title, so that the one thing the
+# two figures may legitimately differ in is taken out of the comparison: a
+# composed title ends in the name of the table it came from, and the two
+# tables have different names.
+#
+# THE COMPARISON IS A FILE COMPARISON, done by harness/linetree/pngdiff.py and
+# read here as rows. Not a colour census, not an axis pair, not a count of
+# strokes: the two PNGs are the same file or they are not.
+check_true(V, "[identity] the two shapes were compared as files",
+           identical(trv("--pairs--", "titled_a"), "long_titled") &&
+           identical(trv("--pairs--", "titled_b"), "wide_titled"))
+check_true(V, paste0("THE SAME DATA IN THE TWO SHAPES PRODUCES THE SAME FIGURE, ",
+                     "BYTE FOR BYTE (", trv("--pairs--", "titled_diff_md5_a"), ")"),
+           identical(trv("--pairs--", "titled_diff_verdict"), "IDENTICAL"))
+check_true(V, "[identity] the same md5 on both sides, and the same byte count",
+           !is.na(trv("--pairs--", "titled_diff_md5_a")) &&
+           identical(trv("--pairs--", "titled_diff_md5_a"),
+                     trv("--pairs--", "titled_diff_md5_b")) &&
+           identical(trv("--pairs--", "titled_diff_bytes_a"),
+                     trv("--pairs--", "titled_diff_bytes_b")))
+# AND THE TWO LEGS TOOK DIFFERENT ROUTES TO IT. Identical figures from
+# identical code paths would be a tautology; what makes this a statement is
+# that one of them pivoted and the other did not.
+check_true(V, "[identity] one leg pivoted a long table",
+           identical(trn("long_titled", "level_mode"), 1) &&
+           identical(trv("long_titled", "long_value_col"), "value"))
+check_true(V, "[identity] and the other drew two columns as they stood",
+           identical(trn("wide_titled", "level_mode"), 0) &&
+           identical(trn("wide_titled", "shape"), 1))
+check_true(V, "[identity] both put the same level/column on the right-hand axis",
+           identical(trv("long_titled", "right_col"), "cq") &&
+           identical(trv("wide_titled", "right_col"), "cq"))
+check_true(V, "[identity] and both resolved the left axis to the same pair",
+           identical(trv("long_titled", "axis_y_min"),
+                     trv("wide_titled", "axis_y_min")) &&
+           identical(trv("long_titled", "axis_y_max"),
+                     trv("wide_titled", "axis_y_max")))
+
+# ---- 16.4b THE UNTYPED PAIR, AND EXACTLY HOW IT DIFFERS -------------------
+# long_meas2 and meas2 are the same two figures with the titles left to
+# compose. They CANNOT be byte-identical and it would be a defect if they
+# were: each title correctly names the table its figure was drawn from. The
+# point of measuring them is to say precisely how far the difference goes --
+# because "the two figures differ" is indistinguishable, from a verdict alone,
+# from a pivot that dropped a point.
+#
+# MEASURED: 11463 pixels of 2160000 differ, and every one of them is in rows
+# 54 to 97 of 1200 -- forty-four rows, which is the title line. The data area
+# is identical.
+check_true(V, "[identity] the untitled pair was compared too",
+           identical(trv("--pairs--", "auto_a"), "long_meas2") &&
+           identical(trv("--pairs--", "auto_b"), "meas2"))
+check_true(V, paste0("[identity] it differs, as it must -- each title names its ",
+                     "own table (", trv("--pairs--", "auto_diff_pixels"),
+                     " pixels of ", trv("--pairs--", "auto_diff_total_px"), ")"),
+           identical(trv("--pairs--", "auto_diff_verdict"), "DIFFERS"))
+check_true(V, paste0("[identity] AND THE DIFFERENCE IS THE TITLE LINE AND ",
+                     "NOTHING ELSE: rows ", trv("--pairs--", "auto_diff_rows"),
+                     ", ", trv("--pairs--", "auto_diff_row_count"), " rows of them"),
+           identical(trv("--pairs--", "auto_diff_rows"), "54-97 of 1200") &&
+           identical(trn("--pairs--", "auto_diff_row_count"), 44))
+# EACH NAMES ITS OWN AND NOT THE OTHER'S. "longmeas2" contains "meas2", so
+# the discriminating statement is the negative one: the wide leg's title does
+# NOT carry the long fixture's name.
+check_true(V, "[identity] the two titles are the two table names",
+           has(figtext1("long_meas2"), "longmeas2") &&
+           has(figtext1("meas2"), "meas2") &&
+           !has(figtext1("meas2"), "longmeas2"))
+# THE DATA AREA AGREES BY A SECOND, INDEPENDENT MEASURE. The row span above
+# says the strokes did not move; this says the axis they were drawn on was
+# computed identically, to every digit Praat prints.
+check_true(V, "[identity] and the axis pair agrees to the last digit",
+           identical(trv("long_meas2", "axis_y_min"), trv("meas2", "axis_y_min")) &&
+           identical(trv("long_meas2", "axis_y_max"), trv("meas2", "axis_y_max")))
+
+# ---- 16.5 three levels are refused, in the level page's own words ---------
+# THE SAME REFUSAL AS THREE COLUMNS AND NOT THE SAME SENTENCE. A figure has
+# two vertical axes however the third measurement is stored, so the count is
+# refused identically -- but the wide message ends "untick columns until two
+# are left", and this page has one column and no tickboxes. The level message
+# has to say where the three came from and what can be done instead.
+LR <- shown1("long_meas3_refuse", 4)
+check_true(V, "[long_meas3_refuse] three levels put a refusal on screen",
+           identical(titles("long_meas3_refuse")[4], REFUSE))
+# THE COLUMN NAME IN QUOTES, NOT THE BARE WORD. "measure" is a substring of
+# "measurements", so a bare match is satisfied by the COLUMN page's refusal --
+# "There are 3 different measurements here" -- which names no column at all.
+# Measured: the level_refusal_gone break, which puts exactly that message on
+# this page, passed a bare match and fails this one.
+check_true(V, "[long_meas3_refuse] which names the column the three came from",
+           has(LR, "\"measure\" column") && has(LR, "3 different measurements"))
+check_true(V, "[long_meas3_refuse] and says a figure has two vertical axes",
+           has(LR, "two vertical axes"))
+check_true(V, "[long_meas3_refuse] it names the machinery that does the job",
+           has(LR, "stacked panels") && has(LR, "Erase page first") &&
+           has(LR, "panel origin"))
+check_true(V, "[long_meas3_refuse] the whole message is on screen, not under the button",
+           has(LR, "press Draw again") && has(LR, "narrow the table"))
+# IT DOES NOT SAY "UNTICK COLUMNS". That advice is unfollowable on this page,
+# and a refusal a user cannot act on reads as advice while being none.
+check_true(V, "[long_meas3_refuse] and does NOT offer advice this page cannot take",
+           !has(LR, "untick columns"))
+# NOTHING WAS DRAWN WHILE IT WAS ON SCREEN. The refusal comes before the
+# draw, so the Picture window must still hold the leg's own empty baseline.
+check_true(V, "[long_meas3_refuse] and nothing was drawn behind it",
+           identical(trv("long_meas3_refuse", "s4_ink"),
+                     trv("long_meas3_refuse", "ink_empty")))
+# THE PAGE IT HANDS BACK IS USABLE. There is no tickbox to change here, so the
+# way out is the series-name menu: set it to "(none)" and the one measurement
+# column is drawn on its own. A refusal that left the form stuck would pass a
+# test that stopped at the message.
+check_true(V, "[long_meas3_refuse] the column page it returns to still draws",
+           identical(trn("long_meas3_refuse", "n_series"), 1) &&
+           identical(trv("long_meas3_refuse", "value_col"), "value"))
+check_true(V, "[long_meas3_refuse] as one series, with no right-hand axis",
+           identical(trn("long_meas3_refuse", "second_axis"), 0) &&
+           identical(trv("long_meas3_refuse", "right_col"), "") &&
+           identical(trn("long_meas3_refuse", "level_mode"), 0))
+check_true(V, "[long_meas3_refuse] and one colour of ink reached the page",
+           identical(trn("long_meas3_refuse", "fig_chromatic_colours"), 1))
+
+# ---- 16.6 the recorder carries the pivot the way it carries the melt ------
+# WITHOUT THIS THE EMITTED SCRIPT CANNOT RUN, for the melt's reason exactly:
+# the two-column table the figure was drawn from is made by the pass and
+# removed by it, so a recorded manifest naming it would name an object nobody
+# has. The pivot is recorded as a CONVERT step and the emitted file rebuilds
+# it from the user's own column and levels.
+check_true(V, "[rec_long_meas2] the long leg emitted two steps",
+           length(steps("rec_long_meas2")) == 2L)
+check_true(V, "[rec_long_meas2] the first is a convert -- the pivot itself",
+           identical(steps("rec_long_meas2")[1], "# --- Step 1 (convert) ---"))
+check_true(V, "[rec_long_meas2] the second is the draw",
+           identical(steps("rec_long_meas2")[2], "# --- Step 2 (draw) ---"))
+check_true(V, "[rec_long_meas2] the manifest names the table the USER selected",
+           identical(blockv("rec_long_meas2", "data1$"), '"Table lt_longmeas2"'))
+# ALL FOUR LITERALS REACH THE BLOCK, each under a name that says what it is.
+PIV <- "@emlGraphsPivotSeries: data, timeCol$, longValueCol$, seriesNameCol$, seriesLevels$"
+check_true(V, "[rec_long_meas2] the pivot is emitted as a call, in the block's variables",
+           PIV %in% calls("rec_long_meas2"))
+check_true(V, "[rec_long_meas2] and it runs BEFORE the figure that reads it",
+           which(calls("rec_long_meas2") == PIV)[1] <
+           grep("^@emlDrawTimeSeries:", calls("rec_long_meas2"))[1])
+check_true(V, "[rec_long_meas2] the pivot's result is what the draw is handed",
+           any(grepl("^data = emlGraphsPivotSeries\\.tableId$",
+                     emitted_src("rec_long_meas2"))))
+check_true(V, "[rec_long_meas2] the block carries the time column",
+           identical(blockv("rec_long_meas2", "timeCol$"), '"time"'))
+check_true(V, "[rec_long_meas2] the stacked value column, under a name of its own",
+           identical(blockv("rec_long_meas2", "longValueCol$"), '"value"'))
+check_true(V, "[rec_long_meas2] the column that names the measurements",
+           identical(blockv("rec_long_meas2", "seriesNameCol$"), '"measure"'))
+check_true(V, "[rec_long_meas2] and the two levels, as one editable list",
+           identical(blockv("rec_long_meas2", "seriesLevels$"), '"f0,cq"'))
+# THE TWO valueCols ARE TWO VARIABLES. The pivot's is the stacked column and
+# the draw's is the level that ended up on the left-hand axis; they are
+# different columns of different tables, and a block that gave them one name
+# would let a reader retarget one and silently move the other.
+check_true(V, "[rec_long_meas2] the draw's value column is separate, and is the left level",
+           identical(blockv("rec_long_meas2", "valueCol$"), '"f0"'))
+check_true(V, "[rec_long_meas2] the right-hand level reaches the block as secondAxisCol$",
+           identical(blockv("rec_long_meas2", "secondAxisCol$"), '"cq"') &&
+           identical(blockv("rec_long_meas2", "secondAxisOn"), "1"))
+# NOTHING WAS MELTED HERE. The two transforms are mirror images and a file
+# carrying both would be reshaping a table twice.
+check_true(V, "[rec_long_meas2] and no melt call is in the file",
+           !any(grepl("^@emlGraphsMeltSeries", calls("rec_long_meas2"))))
+check_true(V, "[rec_meas2] nor does the wide two-scale leg pivot anything",
+           !any(grepl("^@emlGraphsPivotSeries", calls("rec_meas2"))))
+check_true(V, "[rec_subjects4] nor does the melted leg",
+           !any(grepl("^@emlGraphsPivotSeries", calls("rec_subjects4"))))
+# THE RECORDED TITLE IS THE USER'S TABLE. The emitted draw call carries the
+# title as a literal, so the pivot-source repair is readable in the file as
+# well as on the figure.
+check_true(V, "[rec_long_meas2] the recorded title names the user's table",
+           any(grepl("lt longmeas2", calls("rec_long_meas2"), fixed = TRUE)) &&
+           !any(grepl("eml pivot", calls("rec_long_meas2"), fixed = TRUE)))
+
+# ---- 16.7 the wiring, read in the source ---------------------------------
+# The statements above are about one table. These are about the code, so that
+# a second table cannot take a different route.
+#
+# THE PIVOT LIVES IN THE GRAPH LIBRARY AND NOT IN THE FORM, and that is the
+# same rule the melt was moved for: a procedure a RECORDED step emits a call
+# to must be in a file the emitted script includes, and the emitted script
+# includes the graph, annotation and draw procedures and NOT the form.
+check_true(V, "@emlGraphsPivotSeries is defined once, in the graph library",
+           sum(grepl("^procedure emlGraphsPivotSeries:", graph_src)) == 1L)
+check_true(V, "and not in the form, which no emitted script includes",
+           !any(grepl("^procedure emlGraphsPivotSeries:", form_src)))
+check_true(V, "with the signature the form and the emitted call both use",
+           any(grepl(paste0("^procedure emlGraphsPivotSeries: \\.objectId, ",
+                            "\\.timeCol\\$, \\.valueCol\\$, \\.nameCol\\$, ",
+                            "\\.levels\\$"), graph_src)))
+# THE FORM CALLS IT, AND ASSIGNS ITS RESULT INTO objectId BEFORE THE DISPATCH.
+# A pivot built and not adopted would draw the long table with a level name
+# for a column and produce an empty frame.
+check_true(V, "the form calls the pivot and adopts its table",
+           any(grepl("^\\s*@emlGraphsPivotSeries: objectId,", form_src)) &&
+           any(grepl("^\\s*tsPivotTableId = emlGraphsPivotSeries\\.tableId$",
+                     form_src)) &&
+           any(grepl("^\\s*objectId = tsPivotTableId$", form_src)))
+# AND REMOVES IT AFTERWARDS, restoring the user's own object. An intermediate
+# left in the Objects window is one the user did not make and cannot explain.
+check_true(V, "and removes it after the draw, putting objectId back",
+           any(grepl("^\\s*removeObject: tsPivotTableId$", form_src)))
+# THE LEVELS ARE COUNTED BY THE PROCEDURE THE DRAWING LAYER COUNTS SERIES
+# WITH. A private counter here would be a second opinion about how many
+# series the figure has, and the refusal is decided on that number.
+check_true(V, "the level count comes from @emlCountGroups, as the draw layer's does",
+           any(grepl("^\\s*@emlCountGroups: objectId, tsLevelNameCol\\$$",
+                     form_src)) &&
+           any(grepl("^\\s*tsNSeries = emlCountGroups\\.nGroups$", form_src)))
+# THE REFUSAL IS A BRANCH OF ITS OWN. Sharing the wide message would put
+# "untick columns" on a page with no tickboxes.
+check_true(V, "the level refusal is its own branch with its own words",
+           any(grepl("^\\s*if tsLevelMode = 1 and tsNSeries >= 3$", form_src)) &&
+           any(grepl("narrow the table to two measurements", form_src)))
+check_true(V, "and the column refusal keeps its own",
+           any(grepl("^\\s*elsif tsSeriesRole = 2 and tsNSeries >= 3$", form_src)) &&
+           any(grepl("untick columns until two are left", form_src)))
+# THE RECORDER'S MAP KNOWS THE PIVOT, with four roles and no collision.
+check_true(V, "the recorder's column map carries the pivot's four literals",
+           any(grepl('elsif \\.proc\\$ = "emlGraphsPivotSeries"', rec_src)) &&
+           any(grepl(paste0('\\.spec\\$ = "2=timeCol 3=longValueCol ',
+                            '4=seriesNameCol 5=seriesLevels"'), rec_src)))
+check_true(V, "and each of its three new roles has a gloss, so the block reads as prose",
+           all(vapply(c("longValueCol", "seriesNameCol", "seriesLevels"),
+                      function(b) any(grepl(paste0('\\.base\\$ = "', b, '"'),
+                                            rec_src)),
+                      logical(1))))
+# THE DRAW LAYER WAS NOT TAUGHT ABOUT LEVELS, which is the point of doing this
+# as a table transform: @emlDrawTimeSeries takes a left column and a right
+# column by name and knows nothing about how they got there.
+check_true(V, "and @emlDrawTimeSeries was not taught what a level is",
+           !any(grepl("emlGraphsPivotSeries|tsLevelMode", draw_src)))
+
+# ============================================================================
 # EVERYTHING THE DRIVER RENDERED IS LOOKED AT
 # ============================================================================
 # "--run--" is the run header, not a leg: it carries the Praat version, the
 # code digests and the leg list, all of which section 1 reads.
-present <- setdiff(unique(TR$case), "--run--")
+# "--pairs--" is the second such header: it carries the file-level comparison
+# of the two shapes' figures, which is a statement ABOUT two legs and belongs
+# to neither. Section 16.4 reads it.
+present <- setdiff(unique(TR$case), c("--run--", "--pairs--"))
 eml_census(V, "line-tree legs", present, CASES)
 
 if (!exists("EML_SUITE")) eml_report("v97 -- the line chart's question tree")

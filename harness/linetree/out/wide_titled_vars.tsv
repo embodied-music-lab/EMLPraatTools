@@ -1,0 +1,24 @@
+wide_titled	leg_object	3
+wide_titled	leg_returned	wide_titled
+wide_titled	series_role	measurements
+wide_titled	n_series	2
+wide_titled	series_cols	f0,cq
+wide_titled	time_col	time
+wide_titled	value_col	f0
+wide_titled	group_col	
+wide_titled	right_col	cq
+wide_titled	second_axis	1
+wide_titled	ci_accepted	0
+wide_titled	repeats_found	0
+wide_titled	max_per_point	1
+wide_titled	ci_offered	0
+wide_titled	shape	1
+wide_titled	level_mode	0
+wide_titled	level_name_col	
+wide_titled	long_value_col	
+wide_titled	n_numeric	2
+wide_titled	n_text	0
+wide_titled	y_label	F0
+wide_titled	axis_y_min	180
+wide_titled	axis_y_max	283.49608977795856
+wide_titled	drawn_union	0 6 0 4

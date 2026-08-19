@@ -16,9 +16,9 @@
 #
 # EVERY DATA FIXTURE IS BUILT ON EVERY LEG. Praat's `include` is a parse-time
 # splice, not a runtime call, so a leg cannot include the one table it wants.
-# All six are created and drive.praat selects one. The cost is five unused
-# Tables in the Objects window; the alternative is six near-identical drive
-# scripts, which is six places for a fixture to drift.
+# All eight are created and drive.praat selects one. The cost is seven unused
+# Tables in the Objects window; the alternative is eight near-identical drive
+# scripts, which is eight places for a fixture to drift.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -66,3 +66,5 @@ include data_meas2.praat
 include data_meas2rep.praat
 include data_meas3.praat
 include data_seven.praat
+include data_longmeas2.praat
+include data_longmeas3.praat

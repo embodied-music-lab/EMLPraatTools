@@ -13,6 +13,9 @@ subjects4	repeats_found	0
 subjects4	max_per_point	1
 subjects4	ci_offered	0
 subjects4	shape	1
+subjects4	level_mode	0
+subjects4	level_name_col	
+subjects4	long_value_col	
 subjects4	n_numeric	4
 subjects4	n_text	0
 subjects4	y_label	

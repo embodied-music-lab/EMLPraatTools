@@ -14,11 +14,14 @@ rec_subjects4	repeats_found	0
 rec_subjects4	max_per_point	1
 rec_subjects4	ci_offered	0
 rec_subjects4	shape	1
+rec_subjects4	level_mode	0
+rec_subjects4	level_name_col	
+rec_subjects4	long_value_col	
 rec_subjects4	n_numeric	4
 rec_subjects4	n_text	0
 rec_subjects4	y_label	
 rec_subjects4	rec_steps	2
-rec_subjects4	rec_phrases	16
+rec_subjects4	rec_phrases	18
 rec_subjects4	rec_written	1
 rec_subjects4	axis_y_min	50
 rec_subjects4	axis_y_max	722.7071716977504

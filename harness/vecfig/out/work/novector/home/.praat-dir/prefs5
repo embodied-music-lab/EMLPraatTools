@@ -146,7 +146,7 @@ PointArea.maximumPeriodFactor: 1.3
 PointArea.periodCeiling: 0.02
 PointArea.periodFloor: 0.0001
 PraatShell.batchSessions: 1
-PraatShell.dateOfFirstSession: Wed Aug 19 03:20:57 2026
+PraatShell.dateOfFirstSession: Wed Aug 19 08:26:53 2026
 PraatShell.interactiveSessions: 0
 PraatShell.memory: 125707257
 Printer.allowDirectPostScript: 1

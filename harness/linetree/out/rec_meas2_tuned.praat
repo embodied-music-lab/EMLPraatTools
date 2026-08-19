@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Wed Aug 19 02:25:12 2026  --  recorded on Praat 6.6.30
+# Wed Aug 19 04:36:26 2026  --  recorded on Praat 6.6.30
 # Input: Table lt_meas2 -- 24 rows, 3 columns
 # ============================================================
 
@@ -11,7 +11,7 @@
 # for any user on this platform. If this file fails to parse, the
 # plugin is somewhere else -- edit this block and nothing else.
 #
-#   Praat 6.x  Linux    /home/claude/treebuild/plugin_EML_StatsGraphs
+#   Praat 6.x  Linux    /home/claude/EMLPraatTools/plugin_EML_StatsGraphs
 #   Praat 7.x  Linux    ~/.config/praat/plugin_EML_StatsGraphs
 #   macOS      ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs
 #   Windows    ~/Praat/plugin_EML_StatsGraphs
@@ -24,19 +24,19 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include /home/claude/treebuild/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
-include /home/claude/treebuild/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
-include /home/claude/treebuild/plugin_EML_StatsGraphs/stats/eml-extract.praat
-include /home/claude/treebuild/plugin_EML_StatsGraphs/stats/eml-output.praat
-include /home/claude/treebuild/plugin_EML_StatsGraphs/stats/eml-inferential.praat
-include /home/claude/treebuild/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
-include /home/claude/treebuild/plugin_EML_StatsGraphs/stats/eml-categorical.praat
-include /home/claude/treebuild/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
-include /home/claude/treebuild/plugin_EML_StatsGraphs/stats/eml-record.praat
-include /home/claude/treebuild/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
-include /home/claude/treebuild/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
-include /home/claude/treebuild/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
-include /home/claude/treebuild/plugin_EML_StatsGraphs/stats/eml-analysis.praat
+include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-output.praat
+include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
+include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-categorical.praat
+include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
+include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-record.praat
+include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
+include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
+include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
+include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -120,4 +120,4 @@ emlSecondAxisStyle = secondAxisStyle
 
 
 Select outer viewport: 0, 6, 0, 4
-Save as 300-dpi PNG file: "/home/claude/treebuild/harness/linetree/out/rec_meas2_tuned.png"
+Save as 300-dpi PNG file: "/home/claude/EMLPraatTools/harness/linetree/out/rec_meas2_tuned.png"

@@ -1,5 +1,0 @@
-Power maximum (0) is below Power minimum (20).
-To set a full range, enter both values. For automatic scaling leave both at 0.
-(A one-sided limit isn't possible: 0 means auto, so the other side can't be
-left blank.)
-OK

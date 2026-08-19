@@ -1,0 +1,3 @@
+| Graph has been drawn in the Picture window.
+What would you like to do?
+Done Save Redraw
