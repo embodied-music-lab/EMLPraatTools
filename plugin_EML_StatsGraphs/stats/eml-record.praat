@@ -1543,6 +1543,21 @@ endproc
 # ----------------------------------------------------------------------------
 procedure emlRecordCaptureSeriesPens
     .out$ = ""
+    ; WHAT THE SERIES MEAN, FIRST IN THE GROUP, because it governs the columns
+    ; underneath it: with "subjects" the columns are several people measured
+    ; the same way and a right-hand axis is refused; with "measurements" they
+    ; are unlike quantities and the second one may carry its own scale. A
+    ; reader editing the block needs to see the meaning before the columns, and
+    ; a replay needs it because @emlSecondAxisGate reads it.
+    ;
+    ; EMITTED ONLY WHEN IT SAYS SOMETHING. An empty role is a caller with no
+    ; question tree behind it, and the line would state nothing.
+    if variableExists ("emlSeriesRole$")
+        if emlSeriesRole$ <> ""
+            .out$ = .out$ + "emlSeriesRole$ = """ + emlSeriesRole$ + """"
+            ... + newline$
+        endif
+    endif
     if variableExists ("emlLineStyle")
         .out$ = .out$ + "emlLineStyle = " + string$ (emlLineStyle) + newline$
     endif
@@ -2684,6 +2699,19 @@ procedure emlRecordColumnSpec: .proc$
     elsif .proc$ = "emlBridgeGroupComparison"
         .spec$ = "2=valueCol 3=groupCol"
 
+    ; ---- the melt (graphs/eml-graph-procedures.praat) ---------------------
+    ; NOT A DRAW AND NOT AN ANALYSIS. @emlGraphsMeltSeries is recorded as a
+    ; CONVERT step by the graphs form: several columns of one measurement are
+    ; stacked into the long shape the drawing layer takes, and the emitted
+    ; script has to rebuild that table because the form removes it before the
+    ; pass returns. Its two literals are columns like any other -- the time
+    ; axis, and the ticked series columns as one comma-separated list, which
+    ; is the seriesCols$ SPEC section 8 names -- so they belong in the block
+    ; where a reader retargets everything else. Arguments count `data` as 1:
+    ; data, timeCol$, cols$.
+    elsif .proc$ = "emlGraphsMeltSeries"
+        .spec$ = "2=timeCol 3=seriesCols"
+
     ; ---- the draw procedures (graphs/eml-draw-procedures.praat) -----------
     ; data, title, xLabel, yLabel, width, height, colorMode, gridMode, then
     ; whatever columns the figure takes.
@@ -2841,6 +2869,13 @@ procedure emlRecordPageSpec: .line$
         ; of the `=` exactly as the three page settings are. Two of them carry
         ; a STRING, which is the only thing that made this table grow a second
         ; output -- see .quoted below.
+        elsif .lhs$ = "emlSeriesRole$"
+            ; THE MEANING, LIFTED LIKE THE REST. It reaches the block as
+            ; seriesRole$ and sits with the columns it governs, so a reader
+            ; changing "subjects" to "measurements" changes what the figure
+            ; claims rather than having to know which globals encode it.
+            .base$ = "seriesRole"
+            .quoted = 1
         elsif .lhs$ = "emlLineStyle"
             .base$ = "lineStyle"
         elsif .lhs$ = "emlSecondAxisOn"
@@ -2962,6 +2997,12 @@ procedure emlRecordColumnGloss: .base$
         .gloss$ = "the sub-group column"
     elsif .base$ = "errorCol"
         .gloss$ = "the error-bar column"
+    elsif .base$ = "seriesCols"
+        ; PLURAL, AND IT SAYS WHAT EDITING IT DOES. This one string is the
+        ; whole of the melt's input -- untype a name and that series leaves
+        ; the figure, add one and it joins -- which is not obvious from a
+        ; variable called seriesCols$ sitting beside a column of singulars.
+        .gloss$ = "the columns drawn as series, in order"
     endif
 endproc
 

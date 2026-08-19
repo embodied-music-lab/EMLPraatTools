@@ -341,6 +341,12 @@ procedure emlInitDrawingDefaults
     # series from a "Line style" menu on its own dialog, the second from the
     # follow-up pause that asks for everything else the right axis needs.
     emlSecondAxisOn = 0
+    # WHAT THE SERIES MEAN. Empty is "nobody said", which is what a caller
+    # with no graphs form is: the right-hand axis is judged on the type alone
+    # for such a caller, exactly as it was before the question tree existed.
+    # "subjects" is the one value that REFUSES a right-hand axis -- see
+    # @emlSecondAxisGate.
+    emlSeriesRole$ = ""
     emlSecondAxisCol$ = ""
     emlSecondAxisMin = 0
     emlSecondAxisMax = 0
@@ -2628,6 +2634,32 @@ procedure emlSecondAxisGate: .type$
         if emlSecondAxisOn = 1
             .asked = 1
         endif
+    endif
+    # THE MEANING OF THE SERIES IS PART OF THE SCOPE, and it is the one part
+    # the type name cannot carry. A line chart whose series are the SAME
+    # measurement on different subjects is refused a right-hand axis however
+    # it arrives, because a second scale on one quantity says the two lines
+    # are not comparable when they are. The dialog never offers it -- the
+    # question tree only reaches the right-hand axis from "different
+    # measurements" -- so this refusal exists for the callers that have no
+    # dialog: a recorded script edited by hand, the API export, a user script.
+    .roleRefused = 0
+    if .asked = 1
+        if variableExists ("emlSeriesRole$")
+            if emlSeriesRole$ = "subjects"
+                .roleRefused = 1
+            endif
+        endif
+    endif
+    if .roleRefused = 1
+        emlSecondAxisRefused = 1
+        emlSecondAxisRefusal$ = "NOTE: a second right-hand y-axis was"
+        ... + " requested and refused. These series are the same measurement"
+        ... + " on different subjects, so a second scale would say they are"
+        ... + " not comparable when they are. The figure was drawn with one"
+        ... + " y-axis."
+        appendInfoLine: emlSecondAxisRefusal$
+        .asked = 0
     endif
     if .asked = 1
         @emlSecondAxisScope: .type$
@@ -6516,6 +6548,129 @@ procedure emlInitAlphaSprites
 endproc
 
 # ----------------------------------------------------------------------------
+# @emlLineTreeColumns: .tableId, .timeCol$
+#   -> .nNumeric, .numericIdx'k', .numericName'k'$
+#      .nText,    .textIdx'k',    .textName'k'$
+#
+# WHAT THE TABLE LOOKS LIKE, ASKED ONCE, BEFORE THE PAGE IS BUILT.
+#
+# The line chart's dialog asks what the columns MEAN -- the one thing the file
+# cannot say -- and works the shape out for itself. This is the working out.
+# Every column that is not the time column is sorted into numeric or text, in
+# table order, and the page is built from the two lists: a tickbox per numeric
+# column when there are several, a "series names come from" menu over the text
+# columns when there is one numeric column and a name column beside it.
+#
+# THE TIME COLUMN IS EXCLUDED HERE RATHER THAN LATER, because a numeric time
+# column is numeric and would otherwise be offered as a series against itself.
+#
+# The judgement is @emlCheckNumericColumn's, not a second opinion: one reader
+# decides what "numeric" means in this plugin, and it is the reader the draw
+# layer and the refusals already use.
+# ----------------------------------------------------------------------------
+procedure emlLineTreeColumns: .tableId, .timeCol$
+    .nNumeric = 0
+    .nText = 0
+    selectObject: .tableId
+    .nCols = Get number of columns
+    for .c from 1 to .nCols
+        selectObject: .tableId
+        .thisName$ = Get column label: .c
+        if .thisName$ <> .timeCol$
+            @emlCheckNumericColumn: .tableId, .thisName$
+            if emlCheckNumericColumn.isNumeric = 1
+                .nNumeric = .nNumeric + 1
+                .numericIdx'.nNumeric' = .c
+                .numericName'.nNumeric'$ = .thisName$
+            else
+                .nText = .nText + 1
+                .textIdx'.nText' = .c
+                .textName'.nText'$ = .thisName$
+            endif
+        endif
+    endfor
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlLineTreeRepeats: .tableId, .timeCol$, .groupCol$
+#   -> .found, .maxPerPoint, .nPointsWithRepeats, .nPoints
+#
+# WHETHER A LINE HAS MORE THAN ONE OBSERVATION AT A TIME POINT IS A FACT ABOUT
+# THE TABLE, AND THE PLUGIN CAN LOOK.
+#
+# NEITHER HALF OF IT IS A QUESTION ONLY THE USER CAN ANSWER, so neither half
+# is asked. A control that asks would let someone request a mean and an
+# interval where there is nothing to average, and -- worse the other way
+# round -- would let someone miss that an interval is available at all. So
+# this procedure counts, and the dialog offers the interval only where there
+# is something to draw one from, saying how many observations it found.
+#
+# HOW IT COUNTS. A copy of the table sorted by the key, then one pass over
+# adjacent rows: equal keys are one point, and the longest run is the most
+# observations any point carries. Sorting is what makes it one pass rather
+# than a comparison of every row with every other, which on a real EGG table
+# is the difference between instant and unusable.
+#
+# .groupCol$ = "" is the ungrouped case -- the key is the time alone.
+# ----------------------------------------------------------------------------
+procedure emlLineTreeRepeats: .tableId, .timeCol$, .groupCol$
+    .found = 0
+    .maxPerPoint = 0
+    .nPointsWithRepeats = 0
+    .nPoints = 0
+    selectObject: .tableId
+    .tmp = Copy: "eml_repeat_scan"
+    if .groupCol$ <> ""
+        Sort rows: .groupCol$ + " " + .timeCol$
+    else
+        Sort rows: .timeCol$
+    endif
+    .nRows = Get number of rows
+    .runLen = 0
+    .prevKey$ = ""
+    for .r from 1 to .nRows
+        selectObject: .tmp
+        ; TWO READS AND A JOIN, NOT A COMPOSED COLUMN NAME. `Get value:`
+        ; takes one column, so the grouped key is built from two reads with a
+        ; tab between them -- a separator no column value can contain, since
+        ; the table itself is tab-delimited.
+        .key$ = Get value: .r, .timeCol$
+        if .groupCol$ <> ""
+            .grp$ = Get value: .r, .groupCol$
+            .key$ = .grp$ + tab$ + .key$
+        endif
+        if .r > 1 and .key$ = .prevKey$
+            .runLen = .runLen + 1
+        else
+            if .runLen > 1
+                .nPointsWithRepeats = .nPointsWithRepeats + 1
+            endif
+            if .runLen > .maxPerPoint
+                .maxPerPoint = .runLen
+            endif
+            if .runLen > 0
+                .nPoints = .nPoints + 1
+            endif
+            .runLen = 1
+        endif
+        .prevKey$ = .key$
+    endfor
+    if .runLen > 1
+        .nPointsWithRepeats = .nPointsWithRepeats + 1
+    endif
+    if .runLen > .maxPerPoint
+        .maxPerPoint = .runLen
+    endif
+    if .runLen > 0
+        .nPoints = .nPoints + 1
+    endif
+    removeObject: .tmp
+    if .nPointsWithRepeats > 0
+        .found = 1
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
 # @emlSetAlphaDotGeometry
 # Computes aspect-corrected stamp dimensions for alpha dots.
 # Call once per plot after axes are established, before drawing any dots.
@@ -7677,6 +7832,97 @@ procedure emlConvertForGraph: .sourceId, .targetType$, .pitchFloor, .pitchTop
     if .result > 0
         selectObject: .result
     endif
+endproc
+
+
+# ============================================================================
+# @emlGraphsMeltSeries: .objectId, .timeCol$, .cols$
+#   -> .tableId, .nSeries, .nDataRows
+# ============================================================================
+# SEVERAL COLUMNS BECOME THE ONE SHAPE THE DRAWING LAYER TAKES, and the user
+# is never asked about it.
+#
+# The draw procedures see long format only -- time, series name, value -- and
+# always have. What changed with the question tree is that the melt stopped
+# being the consequence of a question ("is your data wide or long?") and
+# became what it always was: an implementation detail between the columns the
+# user ticked and the figure they asked for.
+#
+# IT LIVES HERE AND NOT IN eml-graphs-form.praat, and that is the whole of the
+# 19 August move. @emlCleanConvertedTable's header two screens down states the
+# rule and the reason: a procedure a RECORDED step emits a call to must be in
+# a file the emitted script includes, and the emitted script includes the
+# graph, annotation and draw procedures and NOT the form. Until this moved,
+# a melted-subjects figure recorded from the menu emitted a draw step whose
+# manifest read `data1$ = "Table eml_melt"` -- an object the form removes
+# before the workflow returns -- and replaying it stopped dead at
+#
+#     Error: No object with name "Table eml_melt".
+#
+# The form now records the melt as a CONVERSION, exactly as
+# @emlConvertForGraph records Sound -> Pitch, and the emitted file rebuilds
+# the melt from the user's own Table. Driven by harness/linetree's
+# rec_subjects4 leg, which replays what it emitted.
+#
+# THE COLUMNS ARE AN ARGUMENT AND NOT A GLOBAL, for the same reason. They were
+# read out of tsSeriesCol$[], which the dialog fills from the ticks -- a
+# variable no emitted script has, and one a reader of the emitted file could
+# not see or edit. They now arrive as one comma-separated string, which is the
+# `seriesCols$` SPEC section 8 names, and which reaches the block by the same
+# route every other column name does: @emlRecordColumnSpec lifts argument 3.
+#
+# tsSeriesCol$[] IS STILL FILLED, from that string, because the form reads it
+# after the melt and because a caller that wants the array gets it either way.
+# The form passes a list it built from the array, so the round trip is the
+# identity.
+# ============================================================================
+procedure emlGraphsMeltSeries: .objectId, .timeCol$, .cols$
+    ; The list, split into the array the melt walks. Trailing separator
+    ; tolerated: the form builds this list beside a `prev_` copy that ends in
+    ; one, and a refusal to accept it would be a trap rather than a rule.
+    .nSeries = 0
+    .rest$ = .cols$
+    while .rest$ <> ""
+        .comma = index (.rest$, ",")
+        if .comma = 0
+            .one$ = .rest$
+            .rest$ = ""
+        else
+            .one$ = left$ (.rest$, .comma - 1)
+            .rest$ = mid$ (.rest$, .comma + 1, 1000000)
+        endif
+        while left$ (.one$, 1) = " "
+            .one$ = mid$ (.one$, 2, 1000000)
+        endwhile
+        while .one$ <> "" and right$ (.one$, 1) = " "
+            .one$ = left$ (.one$, length (.one$) - 1)
+        endwhile
+        if .one$ <> ""
+            .nSeries = .nSeries + 1
+            tsSeriesCol$ [.nSeries] = .one$
+        endif
+    endwhile
+
+    selectObject: .objectId
+    .nDataRows = Get number of rows
+    .nMeltRows = .nDataRows * .nSeries
+    .tableId = Create Table with column names: "eml_melt", .nMeltRows,
+    ... .timeCol$ + " eml_series eml_value"
+    .meltRow = 0
+    for .iSeries from 1 to .nSeries
+        for .iRow from 1 to .nDataRows
+            .meltRow = .meltRow + 1
+            selectObject: .objectId
+            .val$ = Get value: .iRow, .timeCol$
+            .timeVal = number (.val$)
+            .val$ = Get value: .iRow, tsSeriesCol$[.iSeries]
+            .dataVal = number (.val$)
+            selectObject: .tableId
+            Set numeric value: .meltRow, .timeCol$, .timeVal
+            Set string value: .meltRow, "eml_series", tsSeriesCol$[.iSeries]
+            Set numeric value: .meltRow, "eml_value", .dataVal
+        endfor
+    endfor
 endproc
 
 

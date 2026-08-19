@@ -1581,6 +1581,39 @@ procedure emlComposeGraphTitle
         .value$ = valueColName$
         .x$ = timeColName$
         .sub$ = groupColName$
+        ; THE MELT IS NOT SOMETHING THE USER IS TOLD ABOUT. When several
+        ; columns are drawn as several series they are melted into a private
+        ; three-column table -- eml_melt, eml_series, eml_value -- and by the
+        ; time this runs, objectId IS that table. Composing from it produced
+        ; "Eml value over time and eml series (eml melt)": three internal
+        ; names in the one line of the figure a reader reads first. Measured
+        ; on the four-subject fixture, 18 August 2026.
+        ;
+        ; SO THE MELTED FIGURE IS NAMED FROM WHAT THE USER CHOSE. The source
+        ; is the table they selected, not the copy; and the quantity has no
+        ; name to compose with, because the columns name the SUBJECTS -- which
+        ; is the same reason the shared y-axis label is left to the axis-label
+        ; field rather than guessed. Naming the source alone is what this
+        ; procedure already does for every figure whose value column is
+        ; unmapped, and it is the honest answer here for the same reason.
+        if tsMeltTableId > 0
+            .value$ = ""
+            .x$ = ""
+            .sub$ = ""
+            .source$ = ""
+            if tsOrigObjectId > 0
+                selectObject: tsOrigObjectId
+                .full$ = selected$ ()
+                .space = index (.full$, " ")
+                if .space > 0
+                    .source$ = right$ (.full$, length (.full$) - .space)
+                else
+                    .source$ = .full$
+                endif
+                @emlSanitizeLabel: .source$
+                .source$ = emlSanitizeLabel.result$
+            endif
+        endif
     elsif graph_type = 6 or graph_type = 7 or graph_type = 9
         .value$ = valueColName$
         .x$ = groupColName$
@@ -1947,6 +1980,20 @@ endproc
 # draw layer would only refuse.
 # ============================================================================
 procedure emlGraphsPublishSeriesPens
+    ; WHAT THE SERIES MEAN, PUBLISHED WITH THE PENS. The question tree asks it
+    ; once per press and the drawing layer needs it for one decision -- whether
+    ; a right-hand axis may be honoured -- so it travels the same way
+    ; everything else the dialogs decide travels: stated in full on every
+    ; press, including the types that have no such question, and cleared by
+    ; @emlGraphsResetSeriesPens afterwards.
+    emlSeriesRole$ = ""
+    if graph_type = 5
+        if tsSeriesRole = 2
+            emlSeriesRole$ = "measurements"
+        else
+            emlSeriesRole$ = "subjects"
+        endif
+    endif
     emlLineStyle = 1
     if graph_type = 1
         emlLineStyle = f0LineStyle
@@ -2007,6 +2054,7 @@ endproc
 # request the drawing layer reads, not the user's answer to the dialog.
 # ============================================================================
 procedure emlGraphsResetSeriesPens
+    emlSeriesRole$ = ""
     emlLineStyle = 1
     emlSecondAxisOn = 0
     emlSecondAxisCol$ = ""
@@ -2226,8 +2274,6 @@ procedure emlGraphsPreDispatchHeadroom
         endif
     endif
 endproc
-
-
 
 
 # ============================================================================
@@ -3069,8 +3115,18 @@ procedure emlGraphsWorkflow: .objectId
 
 # Column mapping persistence (0 = use auto-detect, >0 = reuse previous selection)
 prev_tsTimeIdx = 0
-prev_tsDataFormat = 0
 prev_tsShowCI = 0
+; THE MEANING QUESTION'S ANSWER, THE TICKED COLUMNS AND THE SIDE THE SECOND
+; MEASUREMENT SITS ON. The ticks are remembered by NAME, comma-delimited with
+; a leading and trailing comma so a substring search cannot match half a name;
+; empty means "no press yet", which the page reads as "tick everything".
+prev_tsSeriesRole = 1
+prev_tsSeriesCols$ = ""
+; WHICH TEXT COLUMN NAMED THE SERIES LAST TIME, by name rather than by
+; position. "" means "no press yet", which the page reads as "the first text
+; column"; "(none)" is the user's own answer that there is one series.
+prev_tsGroupName$ = ""
+prev_tsRightPick = 2
 # THE PENS AND THE SECOND AXIS, remembered across Redraw and across workflow
 # calls like every other choice on these pages. The line style is per TYPE
 # because the control is per type: a dotted line chart does not make the next
@@ -3082,7 +3138,6 @@ prev_wavLineStyle = 1
 prev_specLineStyle = 1
 prev_ltasLineStyle = 1
 prev_tsSecondAxis = 0
-prev_tsSecondIdx = 0
 prev_tsSecondStyle = 3
 prev_ts_secondMin = 0
 prev_ts_secondMax = 0
@@ -3099,7 +3154,6 @@ ltasLineStyle = 1
 spLineStyle = 1
 tsSecondAxis = 0
 tsSecondStyle = 3
-tsSecondIdx = 0
 tsSecondColName$ = ""
 tmpSecMin$ = "0"
 tmpSecMax$ = "0"
@@ -3110,14 +3164,8 @@ tmpSecLabel$ = ""
 # when a bar chart is on screen.
 secondMin = 0
 secondMax = 0
-prev_tsSeries1Idx = 0
-prev_tsSeries2Idx = 0
 prev_groupSort = config_groupSort
-prev_tsSeries3Idx = 0
-prev_tsSeries4Idx = 0
-prev_tsSeries5Idx = 0
 prev_tsValueIdx = 0
-prev_tsGroupIdx = 0
 prev_barGroupIdx = 0
 prev_barValueIdx = 0
 prev_barErrorIdx = 0
@@ -4705,47 +4753,52 @@ repeat
 
     elsif graph_type = 5
         # =============================================================
-        # Time Series — Page 2 (format selection + column mapping)
+        # Line chart — the question tree
         # =============================================================
         #
-        # This page covers the time series with a confidence interval as
-        # well, so the toggle's label names it: "Show confidence interval
-        # (Time Series with CI)" — a user looking for that figure by name
-        # finds it on the toggle.
-        # Praat drops a TRAILING parenthesised part when it derives the form
-        # variable name (same trick as "Adjustment method (nonparametric
-        # post-hoc only)" further down), so the value still arrives as
-        # show_confidence_interval and the two read sites below are unchanged.
-        # Do not move the parentheses into the middle of the label.
+        # WHAT CHANGED AND WHY, once, here.
+        #
+        # THIS PAGE ASKS WHAT THE COLUMNS MEAN AND NOT HOW THE FILE IS
+        # SHAPED. How the file is shaped is a question the plugin answers
+        # for itself: it can see which columns are numeric and which name
+        # things. What it cannot see -- what nothing in the file records --
+        # is whether several numeric columns are the SAME measurement on
+        # different subjects or DIFFERENT measurements on one subject. Four
+        # singers' F0 and one singer's F0-with-contact-quotient are the same
+        # table shape and completely different figures.
+        #
+        # Everything else follows from the answer:
+        #
+        #   same measurement  -> one shared vertical axis, a key naming the
+        #                        series, no right-hand axis to offer
+        #   different measures-> each series may carry its own scale; with
+        #                        exactly two, the second goes on the right
+        #
+        # AND THE COLUMN PAGE IS BUILT FROM THE TABLE. One tickbox per
+        # numeric column, all ticked, no ceiling -- the five hardcoded
+        # "Series N" menus are gone. Praat executes field declarations inside
+        # an open beginPause block, and a field built in a loop is read back
+        # in a loop through 'name$' substitution; both are exercised by
+        # harness/linetree.
+        #
+        # THE INTERVAL IS NOT ASKED FOR EITHER. Whether a line has more than
+        # one observation at a time point is a fact about the table, so
+        # @emlLineTreeRepeats looks: the offer appears, naming the count it
+        # found, or it does not appear at all. It is never present and inert.
 
-        # --- Auto-detect column defaults ---
+        # --- Auto-detect column defaults -----------------------------
         tsTimeIdx = 1
-        tsSeries1Idx = min (2, nCols)
-        tsSeries2Idx = 1
-        tsSeries3Idx = 1
-        tsSeries4Idx = 1
-        tsSeries5Idx = 1
         tsValueIdx = min (2, nCols)
-        tsGroupIdx = 1
 
         if prev_tsTimeIdx > 0
             tsTimeIdx = prev_tsTimeIdx
-            tsSeries1Idx = prev_tsSeries1Idx
-            tsSeries2Idx = prev_tsSeries2Idx
-            tsSeries3Idx = prev_tsSeries3Idx
-            tsSeries4Idx = prev_tsSeries4Idx
-            tsSeries5Idx = prev_tsSeries5Idx
             tsValueIdx = prev_tsValueIdx
-            tsGroupIdx = prev_tsGroupIdx
-            # Guard against 0 indices from cross-format persistence
-            if tsSeries1Idx < 1
-                tsSeries1Idx = min (2, nCols)
-            endif
+            # Guard against 0 indices from cross-table persistence
             if tsValueIdx < 1
                 tsValueIdx = min (2, nCols)
             endif
-            if tsGroupIdx < 1
-                tsGroupIdx = 1
+            if tsTimeIdx > nCols
+                tsTimeIdx = 1
             endif
         else
             # Pass 1: keyword matching
@@ -4758,13 +4811,7 @@ repeat
                 tsTimeIdx = emlGuessColumnRoles.timeIdx
             endif
             if emlGuessColumnRoles.dataIdx > 0
-                tsSeries1Idx = emlGuessColumnRoles.dataIdx
-            endif
-            if emlGuessColumnRoles.dataIdx > 0
                 tsValueIdx = emlGuessColumnRoles.dataIdx
-            endif
-            if emlGuessColumnRoles.groupIdx > 0
-                tsGroupIdx = emlGuessColumnRoles.groupIdx + 1
             endif
             # Pass 2: verify time column is numeric; fallback to first numeric
             @emlCheckNumericColumn: objectId, colName$[tsTimeIdx]
@@ -4782,23 +4829,6 @@ repeat
                     tsTimeIdx = 1
                 endif
             endif
-            # Verify value/series 1 column is numeric; fallback to first numeric != time
-            @emlCheckNumericColumn: objectId, colName$[tsSeries1Idx]
-            if emlCheckNumericColumn.isNumeric = 0
-                tsSeries1Idx = 0
-                for iCol from 1 to nCols
-                    if tsSeries1Idx = 0 and iCol <> tsTimeIdx
-                        @emlCheckNumericColumn: objectId, colName$[iCol]
-                        if emlCheckNumericColumn.isNumeric = 1
-                            tsSeries1Idx = iCol
-                        endif
-                    endif
-                endfor
-                if tsSeries1Idx = 0
-                    tsSeries1Idx = min (2, nCols)
-                endif
-                tsValueIdx = tsSeries1Idx
-            endif
         endif
 
         # Initialize tmp vars for advanced fields
@@ -4815,60 +4845,55 @@ repeat
         endif
         @emlSeedAxisLabels
 
-        # Default format from previous pass or 1 (wide)
-        if prev_tsDataFormat > 0
-            tsDataFormat = prev_tsDataFormat
-        else
-            tsDataFormat = 1
+        ; THE MEANING, THE PENS AND THE RIGHT-HAND AXIS come back as the user
+        ; left them, like every other field on these pages.
+        tsSeriesRole = prev_tsSeriesRole
+        if tsSeriesRole < 1
+            tsSeriesRole = 1
         endif
         tsShowCI = prev_tsShowCI
-        ; THE PENS AND THE SECOND-AXIS TICKBOX come back as the user left
-        ; them, like every other field on this page.
         tsLineStyle = prev_tsLineStyle
-        tsSecondAxis = prev_tsSecondAxis
         tsSecondStyle = prev_tsSecondStyle
-        tsSecondIdx = prev_tsSecondIdx
-        if tsSecondIdx < 1
-            tsSecondIdx = min (2, nCols)
-        endif
-        if tsSecondIdx > nCols
-            tsSecondIdx = min (2, nCols)
+        tsRightPick = prev_tsRightPick
+        if tsRightPick < 1
+            tsRightPick = 2
         endif
         tmpSecMin$ = string$ (prev_ts_secondMin)
         tmpSecMax$ = string$ (prev_ts_secondMax)
         tmpSecLabel$ = prev_tsSecondLabel$
         secondMin = prev_ts_secondMin
         secondMax = prev_ts_secondMax
+        ; THE REQUEST IS REBUILT ON EVERY PRESS. tsSecondAxis is not a
+        ; control the user sets: it is what the question tree concludes from
+        ; the meaning and the column count, so it starts each pass at 0 and
+        ; is turned on only by the branch that means it.
+        tsSecondAxis = 0
+        tsSecondColName$ = ""
+        tsMeltTableId = 0
 
-        tsFormatDone = 0
+        tsRoleDone = 0
         repeat
-            # --- Format selection ---
-            beginPause: "Line Chart -- Data Format"
-                # TWO SHORT COMMENT ROWS, NO BLANK SPACER. Praat sizes a
-                # pause dialog from its field list, and a `comment:` is not
-                # measured the way a labelled field is: the widest comment
-                # decides the dialog WIDTH, and a menu laid out below long
-                # comment rows is drawn against a row pitch those rows
-                # overrun, so the explainer and its own optionmenu overlap.
-                # These two rows carry the same two facts in a width the
-                # layout survives.
-                comment: "How is your data organized?"
-                comment: "Wide: one column per series · Long: value + group"
-                optionmenu: "Data format", tsDataFormat
-                    option: "Wide (multiple columns)"
-                    option: "Long (value + group)"
+            # --- Page A: what the lines are --------------------------
+            beginPause: "Line Chart -- What the lines are"
+                comment: "What do the columns beside the time column hold?"
+                optionmenu: "The other columns hold", tsSeriesRole
+                    option: "The same measurement, on different subjects or groups"
+                    option: "Different measurements, on the same subject"
+                comment: "Same measurement: four singers' F0 — one shared vertical axis."
+                comment: "Different measurements: F0 and contact quotient — each its own scale."
             clicked = endPause: "Go Back", "Quit", "Continue", 3, 1
 
             if clicked = 1
                 # Go Back to main form
-                tsFormatDone = 1
+                tsRoleDone = 1
             elsif clicked = 2
                 @emlSaveConfig
                 exitScript: ""
             else
-                tsDataFormat = data_format
+                tsSeriesRole = the_other_columns_hold
+                prev_tsSeriesRole = tsSeriesRole
 
-                # --- Column mapping form ---
+                # --- Page B: which columns ---------------------------
                 tsFormDone = 0
                 repeat
                     if config_showAdvanced
@@ -4877,75 +4902,154 @@ repeat
                         tsToggleLabel$ = "Advanced"
                     endif
 
+                    # WHAT THE TABLE LOOKS LIKE, ASKED BEFORE THE PAGE IS
+                    # BUILT. The survey runs against the time column this
+                    # page will OPEN with; if the user changes it and presses
+                    # Draw, the new time column is dropped from the series
+                    # list and the drop is disclosed rather than silently
+                    # applied. See the capture below.
+                    tsTimeName$ = colName$[tsTimeIdx]
+                    @emlLineTreeColumns: objectId, tsTimeName$
+                    tsNNum = emlLineTreeColumns.nNumeric
+                    tsNTxt = emlLineTreeColumns.nText
+                    for iN from 1 to tsNNum
+                        tsNumName$[iN] = emlLineTreeColumns.numericName'iN'$
+                    endfor
+                    for iT from 1 to tsNTxt
+                        tsTxtName$[iT] = emlLineTreeColumns.textName'iT'$
+                    endfor
+
+                    # THE SHAPE, WORKED OUT RATHER THAN ASKED.
+                    #   1  several numeric columns  -> a tickbox each
+                    #   2  one numeric, some text   -> the text column names
+                    #                                  the series
+                    #   3  one numeric, no text     -> one series
+                    tsShape = 3
+                    if tsNNum >= 2
+                        tsShape = 1
+                    elsif tsNNum = 1 and tsNTxt >= 1
+                        tsShape = 2
+                    endif
+
+                    # THE TICKS, remembered by column NAME rather than by
+                    # position, so a different table does not inherit a
+                    # meaningless set of indices. An unremembered column is
+                    # ticked: the guess is "draw what is there", shown, and
+                    # unticked by anyone who disagrees.
+                    for iN from 1 to tsNNum
+                        tsTick[iN] = 1
+                        if prev_tsSeriesCols$ <> ""
+                            tsTick[iN] = 0
+                            if index (prev_tsSeriesCols$, "," + tsNumName$[iN] + ",") > 0
+                                tsTick[iN] = 1
+                            endif
+                        endif
+                    endfor
+
+                    # WHICH TEXT COLUMN NAMES THE SERIES. Remembered by name
+                    # like the ticks are, and defaulted to the first text
+                    # column rather than to a guess over all columns: on a
+                    # table with one measurement and one name column there is
+                    # only one answer, and where there are several the menu
+                    # asks plainly instead of guessing.
+                    tsTxtPick = 1
+                    if tsNTxt >= 1
+                        tsTxtPick = 2
+                        for iT from 1 to tsNTxt
+                            if tsTxtName$[iT] = prev_tsGroupName$
+                                tsTxtPick = iT + 1
+                            endif
+                        endfor
+                        if prev_tsGroupName$ = "(none)"
+                            tsTxtPick = 1
+                        endif
+                    endif
+
+                    # THE GROUPING FOR THE REPEAT SCAN, which is the grouping
+                    # the page is about to open with. Shape 1 and 3 have one
+                    # row per series per time, so their key is the time alone.
+                    tsScanGroup$ = ""
+                    if tsShape = 2
+                        if tsTxtPick > 1
+                            tsScanGroup$ = tsTxtName$[tsTxtPick - 1]
+                        endif
+                    endif
+                    @emlLineTreeRepeats: objectId, tsTimeName$, tsScanGroup$
+                    tsRepeatsFound = emlLineTreeRepeats.found
+                    tsMaxPerPoint = emlLineTreeRepeats.maxPerPoint
+
+                    # THE INTERVAL IS OFFERED ONLY WHERE IT MEANS SOMETHING:
+                    # repeated observations to average, and a figure whose
+                    # series are the same quantity. Two unlike measurements
+                    # on two scales get their means drawn and a line saying
+                    # so — see the disclosure after the draw.
+                    tsCIOffer = 0
+                    if tsRepeatsFound = 1
+                        if tsSeriesRole = 1
+                            tsCIOffer = 1
+                        endif
+                    endif
+                    if tsCIOffer = 0
+                        tsShowCI = 0
+                    endif
+
                     beginPause: "Line Chart -- Column Mapping"
                         comment: "📋 Select columns from your Table."
                         optionmenu: "Time column", tsTimeIdx
                             for iCol from 1 to nCols
                                 option: colName$[iCol]
                             endfor
-                        if tsDataFormat = 1
-                            optionmenu: "Series 1", tsSeries1Idx
-                                for iCol from 1 to nCols
-                                    option: colName$[iCol]
-                                endfor
-                            optionmenu: "Series 2", tsSeries2Idx
-                                option: "(none)"
-                                for iCol from 1 to nCols
-                                    option: colName$[iCol]
-                                endfor
-                            optionmenu: "Series 3", tsSeries3Idx
-                                option: "(none)"
-                                for iCol from 1 to nCols
-                                    option: colName$[iCol]
-                                endfor
-                            optionmenu: "Series 4", tsSeries4Idx
-                                option: "(none)"
-                                for iCol from 1 to nCols
-                                    option: colName$[iCol]
-                                endfor
-                            optionmenu: "Series 5", tsSeries5Idx
-                                option: "(none)"
-                                for iCol from 1 to nCols
-                                    option: colName$[iCol]
-                                endfor
-                            boolean: "Show confidence interval (Time Series with CI)", tsShowCI
-                            optionmenu: "Line style", tsLineStyle
-                                option: "Solid"
-                                option: "Dotted"
-                                option: "Dashed"
-                                option: "Dashed-dotted"
-                            boolean: "Add second dataset (right y-axis)", tsSecondAxis
-                        else
-                            optionmenu: "Value column", tsValueIdx
-                                for iCol from 1 to nCols
-                                    option: colName$[iCol]
-                                endfor
-                            optionmenu: "Group column", tsGroupIdx
-                                option: "(none)"
-                                for iCol from 1 to nCols
-                                    option: colName$[iCol]
+                        if tsShape = 1
+                            comment: "Every numeric column is drawn. Untick any you do not want."
+                            for iN from 1 to tsNNum
+                                boolean: "Series " + string$ (iN) + " (" + tsNumName$[iN] + ")", tsTick[iN]
+                            endfor
+                        elsif tsShape = 2
+                            comment: "Measurement column: " + tsNumName$[1]
+                            ; THE SERIES NAMER IS A TEXT COLUMN, so the menu
+                            ; offers the text columns and nothing else, and
+                            ; opens on the first of them. A menu built over
+                            ; every column can open on the TIME column -- it
+                            ; is what @emlGuessColumnRoles proposes on a
+                            ; time/f0/speaker table -- which offers to name
+                            ; the series after the horizontal axis and keys
+                            ; the repeat count below on the wrong grouping.
+                            ; Measured on the four-observation fixture:
+                            ; "up to 8" against time, "up to 4" against
+                            ; speaker.
+                            optionmenu: "Series names come from", tsTxtPick
+                                option: "(none — one series)"
+                                for iT from 1 to tsNTxt
+                                    option: tsTxtName$[iT]
                                 endfor
                             optionmenu: "Group order", prev_groupSort
                                 option: "Table order"
                                 option: "Alphabetical"
-                            boolean: "Show confidence interval (Time Series with CI)", tsShowCI
-                            optionmenu: "Line style", tsLineStyle
-                                option: "Solid"
-                                option: "Dotted"
-                                option: "Dashed"
-                                option: "Dashed-dotted"
-                            # ONE TICKBOX AND A FOLLOW-UP PAUSE, NOT SEVEN
-                            # INERT FIELDS. Praat forms cannot reveal fields
-                            # dynamically, so the alternative -- the second
-                            # series' column, range, label and pen sitting on
-                            # this page, dead until the box is ticked -- is the
-                            # defect class where a control looks live and is
-                            # not, which is already a severity-3 row in the
-                            # ledger. Everything visible here is live;
-                            # everything the second axis needs is asked for
-                            # once, afterwards, on its own page.
-                            boolean: "Add second dataset (right y-axis)", tsSecondAxis
+                        else
+                            comment: "Measurement column: " + tsNumName$[1]
                         endif
+                        if tsCIOffer = 1
+                            boolean: "Draw the mean and its interval (up to " + string$ (tsMaxPerPoint) + " observations per point)", tsShowCI
+                        endif
+                        ; THE SHARED AXIS HAS TO BE NAMED BY THE USER, AND IN
+                        ; BEGINNER MODE THERE IS NOWHERE ELSE TO NAME IT.
+                        ; Several columns holding the same measurement name
+                        ; the SUBJECTS, so nothing in the table names the
+                        ; quantity they share -- the plugin cannot compose the
+                        ; y-axis label the way it composes every other one.
+                        ; The advanced page has always carried a "Y axis
+                        ; label" field; this is the same field, shown on the
+                        ; beginner page for the one case that cannot do
+                        ; without it. Only one of the two exists at a time, so
+                        ; they share the name Praat derives.
+                        if tsSeriesRole = 1 and tsNNum >= 2 and config_showAdvanced = 0
+                            sentence: "Y axis label", tmpYLabel$
+                        endif
+                        optionmenu: "Line style", tsLineStyle
+                            option: "Solid"
+                            option: "Dotted"
+                            option: "Dashed"
+                            option: "Dashed-dotted"
                         if config_showAdvanced
                             comment: "📐 X-axis range (both 0 = auto)"
                             real: "Time minimum", tmpTMin$
@@ -4994,36 +5098,45 @@ repeat
                         endif
                     clicked = endPause: "Go Back", "Quit", tsToggleLabel$, "Draw", 4, 1
 
+                    # THE FIELDS ARE READ ON BOTH BUTTONS THAT COME BACK HERE.
+                    # Advanced re-presents this page, and an unread field
+                    # returns at its seeded value rather than at the user's.
+                    if clicked = 3 or clicked = 4
+                        tsTimeIdx = time_column
+                        if tsShape = 1
+                            for iN from 1 to tsNNum
+                                tsTickName$ = "series_" + string$ (iN)
+                                tsTick[iN] = 'tsTickName$'
+                            endfor
+                        elsif tsShape = 2
+                            tsTxtPick = series_names_come_from
+                            if tsTxtPick > 1
+                                prev_tsGroupName$ = tsTxtName$[tsTxtPick - 1]
+                            else
+                                prev_tsGroupName$ = "(none)"
+                            endif
+                            prev_groupSort = group_order
+                            config_groupSort = group_order
+                        endif
+                        if tsCIOffer = 1
+                            tsShowCI = draw_the_mean_and_its_interval
+                        else
+                            tsShowCI = 0
+                        endif
+                        if tsSeriesRole = 1 and tsNNum >= 2 and config_showAdvanced = 0
+                            tmpYLabel$ = y_axis_label$
+                        endif
+                        tsLineStyle = line_style
+                    endif
+
                     if clicked = 1
-                        # Go Back to format question
+                        # Go Back to the meaning question
                         tsFormDone = 1
                     elsif clicked = 2
                         @emlSaveConfig
                         exitScript: ""
                     elsif clicked = 3
                         # Toggle — preserve beginner field values
-                        tsTimeIdx = time_column
-                        if tsDataFormat = 1
-                            tsSeries1Idx = series_1
-                            tsSeries2Idx = series_2
-                            tsSeries3Idx = series_3
-                            tsSeries4Idx = series_4
-                            tsSeries5Idx = series_5
-                            tsShowCI = show_confidence_interval
-                        else
-                            tsValueIdx = value_column
-                            tsGroupIdx = group_column
-                            prev_groupSort = group_order
-                            config_groupSort = group_order
-                            tsShowCI = show_confidence_interval
-                        endif
-                        ; The pen and the tickbox are on BOTH data formats, so
-                        ; they are read outside the branch -- and they are read
-                        ; on the toggle as well as on Draw, because Advanced
-                        ; re-presents the page and an unread field comes back
-                        ; at its seeded value rather than at the user's.
-                        tsLineStyle = line_style
-                        tsSecondAxis = add_second_dataset
                         if config_showAdvanced
                             tmpTMin$ = string$ (time_minimum)
                             tmpTMax$ = string$ (time_maximum)
@@ -5063,7 +5176,7 @@ repeat
                     else
                         # Draw — capture values and exit
                         tsFormDone = 1
-                        tsFormatDone = 1
+                        tsRoleDone = 1
                         allFormsDone = 1
 
                         # Capture advanced from form or tmp
@@ -5099,92 +5212,267 @@ repeat
                         gridline_mode = tmpGridMode
                         output_DPI = tmpDPI
 
-                        # Column names — format-dependent
                         timeColName$ = time_column$
-                        tsNSeries = 1
-                        if tsDataFormat = 1
-                            # Wide format — count series and melt
-                            tsNSeries = 1
-                            tsSeriesCol$[1] = series_1$
-                            if series_2$ <> "(none)"
-                                tsNSeries = tsNSeries + 1
-                                tsSeriesCol$[tsNSeries] = series_2$
+
+                        # THE SERIES THIS PRESS IS DRAWING, in table order.
+                        # The time column is excluded here rather than
+                        # trusted to be unticked: it is numeric, so it
+                        # carried a tickbox, and a user who changed the time
+                        # column after the page was built would otherwise
+                        # draw it against itself.
+                        tsNSeries = 0
+                        tsDroppedTime$ = ""
+                        if tsShape = 1
+                            for iN from 1 to tsNNum
+                                if tsTick[iN] = 1
+                                    if tsNumName$[iN] = timeColName$
+                                        tsDroppedTime$ = tsNumName$[iN]
+                                    else
+                                        tsNSeries = tsNSeries + 1
+                                        tsSeriesCol$[tsNSeries] = tsNumName$[iN]
+                                    endif
+                                endif
+                            endfor
+                        else
+                            if tsNumName$[1] <> timeColName$
+                                tsNSeries = 1
+                                tsSeriesCol$[1] = tsNumName$[1]
                             endif
-                            if series_3$ <> "(none)"
-                                tsNSeries = tsNSeries + 1
-                                tsSeriesCol$[tsNSeries] = series_3$
+                        endif
+
+                        # Remember the ticks by name for the next press.
+                        prev_tsSeriesCols$ = ","
+                        for iS from 1 to tsNSeries
+                            prev_tsSeriesCols$ = prev_tsSeriesCols$ + tsSeriesCol$[iS] + ","
+                        endfor
+
+                        # THE SAME LIST, WITHOUT THE SENTINEL COMMAS, because
+                        # it is going somewhere else. prev_tsSeriesCols$ is
+                        # bracketed by commas so that a ",S1," search cannot
+                        # match "S10"; this one is the plain list the melt
+                        # takes and the recorder writes into the emitted block
+                        # as seriesCols$ (SPEC section 8), where a leading
+                        # comma would read as an empty first column.
+                        tsSeriesCols$ = ""
+                        for iS from 1 to tsNSeries
+                            if iS > 1
+                                tsSeriesCols$ = tsSeriesCols$ + ","
                             endif
-                            if series_4$ <> "(none)"
-                                tsNSeries = tsNSeries + 1
-                                tsSeriesCol$[tsNSeries] = series_4$
+                            tsSeriesCols$ = tsSeriesCols$ + tsSeriesCol$[iS]
+                        endfor
+
+                        # ---- the refusals, before anything is drawn ----
+                        tsRefuse$ = ""
+                        if tsNSeries = 0
+                            tsRefuse$ = "No measurement columns are selected, so there is nothing to draw. Tick at least one column that is not the time axis."
+                        endif
+                        if tsRefuse$ = ""
+                            if tsSeriesRole = 2 and tsNSeries >= 3
+                                # NO THIRD AXIS EXISTS, and normalising three
+                                # unlike quantities onto one scale would be an
+                                # analytic transform smuggled into a display
+                                # choice. The refusal points at the machinery
+                                # that DOES exist for this.
+                                tsRefuse$ = "There are " + string$ (tsNSeries) + " different measurements here and a figure has two vertical axes. Draw the extra ones as stacked panels: untick ""Erase page first"", set a panel origin, and press Draw again — or untick columns until two are left."
                             endif
-                            if series_5$ <> "(none)"
-                                tsNSeries = tsNSeries + 1
-                                tsSeriesCol$[tsNSeries] = series_5$
-                            endif
-                            if tsNSeries >= 2
-                                # Melt to long format
-                                selectObject: objectId
-                                nDataRows = Get number of rows
-                                nMeltRows = nDataRows * tsNSeries
-                                tsMeltTableId = Create Table with column names: "eml_melt",
-                                ... nMeltRows, timeColName$ + " eml_series eml_value"
-                                meltRow = 0
-                                for iSeries from 1 to tsNSeries
-                                    for iRow from 1 to nDataRows
-                                        meltRow = meltRow + 1
-                                        selectObject: objectId
-                                        val$ = Get value: iRow, timeColName$
-                                        timeVal = number (val$)
-                                        val$ = Get value: iRow, tsSeriesCol$[iSeries]
-                                        dataVal = number (val$)
-                                        selectObject: tsMeltTableId
-                                        Set numeric value: meltRow, timeColName$, timeVal
-                                        Set string value: meltRow, "eml_series", tsSeriesCol$[iSeries]
-                                        Set numeric value: meltRow, "eml_value", dataVal
-                                    endfor
+                        endif
+                        if tsRefuse$ <> ""
+                            beginPause: "Line chart"
+                                # ONE comment: PER LINE, NOT ONE PER
+                                # PARAGRAPH. A single long comment is WRAPPED
+                                # on screen but sized as ONE row, so the
+                                # button strip is laid out over the overflow
+                                # and the last line of the refusal is drawn
+                                # UNDER the OK button. Measured by
+                                # harness/linetree on 18 August 2026: the
+                                # three-measurement refusal displayed its
+                                # first two lines and hid the third -- which
+                                # is the half that names "press Draw again"
+                                # and the way out. A refusal nobody can finish
+                                # reading is worse than no refusal, because it
+                                # looks like advice.
+                                #
+                                # @emlWrapText is the plugin's own wrapper and
+                                # 62 is the width @emlErrorDialog uses for the
+                                # same job in stats/eml-output.praat; the two
+                                # refusal dialogs now measure the same.
+                                @emlWrapText: tsRefuse$, 62
+                                for iWrap from 1 to emlWrapText.nLines
+                                    comment: emlWrapText.line$ [iWrap]
                                 endfor
+                            endPause: "OK", 1, 0
+                            tsFormDone = 0
+                            tsRoleDone = 0
+                            allFormsDone = 0
+                        endif
+
+                        if allFormsDone = 1
+                            # ---- what the drawing layer is handed ----
+                            # The melt is an implementation detail the user is
+                            # never asked about: several series become the
+                            # long shape the draw layer has always taken.
+                            if tsSeriesRole = 1 and tsNSeries >= 2
+                                @emlGraphsMeltSeries: objectId, timeColName$,
+                                ... tsSeriesCols$
                                 tsOrigObjectId = objectId
+                                tsMeltTableId = emlGraphsMeltSeries.tableId
+
+                                # ---- THE MELT, RECORDED AS A CONVERSION ----
+                                # WITHOUT THIS THE EMITTED SCRIPT CANNOT RUN.
+                                # The recorder's capture hook is inside the
+                                # DRAW procedure, so what it sees is the melt
+                                # table -- and this pass REMOVES that table
+                                # before it returns. A recorded melted-subjects
+                                # figure therefore emitted
+                                #
+                                #     data1$ = "Table eml_melt"
+                                #     selectObject: data1$
+                                #
+                                # and replaying it stopped at
+                                # « Error: No object with name "Table
+                                # eml_melt". » before a single pixel was
+                                # drawn. Measured 19 August 2026 by
+                                # harness/linetree's rec_subjects4 leg, which
+                                # now replays what it emits.
+                                #
+                                # IT IS THE SAME SHAPE @emlConvertForGraph
+                                # ALREADY USES for Sound -> Pitch, and for the
+                                # same reason: an object the plugin made and
+                                # then deleted has no business in the
+                                # manifest, and the step that MAKES it belongs
+                                # in the file. @emlRecordConvert attributes
+                                # the session to the user's own Table, marks
+                                # the draw step derived so the renderer emits
+                                # no select for it, and leaves the melt in
+                                # `data`.
+                                #
+                                # THE CODE IS WRITTEN TO ASSIGN TO `data`,
+                                # which is @emlRecordConvert's contract. Both
+                                # literals in it are lifted into the editable
+                                # block -- timeCol$ and seriesCols$ -- by
+                                # @emlRecordColumnSpec, so a reader retargets
+                                # the melt in the same place they retarget
+                                # everything else.
+                                #
+                                # GUARDED THE WAY EVERY RECORDER CALL SITE IN
+                                # THIS FILE IS: present, initialised,
+                                # recording. A user who never pressed Start
+                                # recording executes nothing here.
+                                if variableExists ("emlRecordLoaded")
+                                    @emlRecordInit
+                                    if emlRecordActive = 1
+                                        tsMeltCode$ = "@emlGraphsMeltSeries: data, """
+                                        ... + timeColName$ + """, """
+                                        ... + tsSeriesCols$ + """" + newline$
+                                        ... + "data = emlGraphsMeltSeries.tableId"
+                                        ... + newline$ + "selectObject: data"
+                                        @emlRecordConvert: tsOrigObjectId,
+                                        ... tsMeltTableId, tsMeltCode$,
+                                        ... "These columns are one measurement on several subjects, so they are stacked into the long shape every line chart is drawn from: the time column, a series name and a value."
+                                    endif
+                                endif
+
                                 objectId = tsMeltTableId
+                                selectObject: objectId
                                 valueColName$ = "eml_value"
                                 groupColName$ = "eml_series"
+                            elsif tsSeriesRole = 2 and tsNSeries = 2
+                                # THE RIGHT-HAND AXIS IS NOT A TICKBOX AND NOT
+                                # A SECOND COLUMN MENU: the two measurements
+                                # are already chosen, and the only open
+                                # question is which of them the right-hand
+                                # scale belongs to. Choosing one makes the
+                                # other the left, so the column cannot be
+                                # drawn twice — the defect that prompted this
+                                # restructure is not guarded against, it is
+                                # unsayable.
+                                tsSecondDone = 0
+                                repeat
+                                    beginPause: "Line Chart -- The Right-Hand Axis"
+                                        comment: "These two measurements are on different scales, so each gets its own."
+                                        comment: "Its ticks and its name go in the right margin."
+                                        # NO HYPHEN IN THIS LABEL, and it is
+                                        # not a typo. Praat derives a field's
+                                        # variable name by truncating the
+                                        # label AT THE FIRST CHARACTER THAT
+                                        # CANNOT BE IN AN IDENTIFIER -- the
+                                        # "(" rule the rest of this form
+                                        # relies on is one case of that, and a
+                                        # hyphen is another. Measured on
+                                        # 6.6.30 by harness/linetree: a field
+                                        # labelled "Right-hand axis" is
+                                        # readable only as `right`, and
+                                        # `right_hand_axis` does not exist, so
+                                        # this page aborted with "Unknown
+                                        # variable" the moment Draw was
+                                        # pressed and no two-measurement
+                                        # figure could be drawn at all.
+                                        # The window title above keeps the
+                                        # hyphen; a title is not a field.
+                                        optionmenu: "Right hand axis", tsRightPick
+                                            option: tsSeriesCol$[1]
+                                            option: tsSeriesCol$[2]
+                                        comment: "📐 Right y-axis range (both 0 = auto)"
+                                        real: "Right minimum", tmpSecMin$
+                                        real: "Right maximum", tmpSecMax$
+                                        comment: "🏷️ Right axis label (blank = the column name)"
+                                        sentence: "Right axis label", tmpSecLabel$
+                                        optionmenu: "Right line style", tsSecondStyle
+                                            option: "Solid"
+                                            option: "Dotted"
+                                            option: "Dashed"
+                                            option: "Dashed-dotted"
+                                    clicked = endPause: "Go Back", "Draw", 2, 1
+
+                                    if clicked = 1
+                                        tsSecondDone = 1
+                                        tsFormDone = 0
+                                        tsRoleDone = 0
+                                        allFormsDone = 0
+                                    else
+                                        tsSecondDone = 1
+                                        tsRightPick = right_hand_axis
+                                        tsSecondStyle = right_line_style
+                                        tmpSecMin$ = string$ (right_minimum)
+                                        tmpSecMax$ = string$ (right_maximum)
+                                        tmpSecLabel$ = right_axis_label$
+                                        tsSecondColName$ = tsSeriesCol$[tsRightPick]
+                                        tsLeftPick = 3 - tsRightPick
+                                        valueColName$ = tsSeriesCol$[tsLeftPick]
+                                        groupColName$ = ""
+                                        tsSecondAxis = 1
+                                        ; THE RANGE GOES TO THE SWEEP, NOT TO
+                                        ; A JUDGE OF ITS OWN — the pair is
+                                        ; judged with every other pair the
+                                        ; dialogs can return, by
+                                        ; @emlGraphsCheckAxisRanges.
+                                        secondMin = number (tmpSecMin$)
+                                        secondMax = number (tmpSecMax$)
+                                        prev_tsRightPick = tsRightPick
+                                        prev_tsSecondStyle = tsSecondStyle
+                                        prev_ts_secondMin = secondMin
+                                        prev_ts_secondMax = secondMax
+                                        prev_tsSecondLabel$ = tmpSecLabel$
+                                    endif
+                                until tsSecondDone = 1
                             else
-                                # Single series in wide mode
-                                valueColName$ = series_1$
+                                # One series, or several different
+                                # measurements refused above: a single column
+                                # against one axis.
+                                valueColName$ = tsSeriesCol$[1]
                                 groupColName$ = ""
+                                if tsShape = 2
+                                    if tsTxtPick > 1
+                                        groupColName$ = tsTxtName$[tsTxtPick - 1]
+                                    endif
+                                endif
                             endif
-                            # Save wide-format persistence
-                            prev_tsSeries1Idx = series_1
-                            prev_tsSeries2Idx = series_2
-                            prev_tsSeries3Idx = series_3
-                            prev_tsSeries4Idx = series_4
-                            prev_tsSeries5Idx = series_5
-                            tsShowCI = show_confidence_interval
-                        else
-                            # Long format
-                            valueColName$ = value_column$
-                            if group_column$ = "(none)"
-                                groupColName$ = ""
-                            else
-                                groupColName$ = group_column$
-                            endif
-                            # Save long-format persistence
-                            prev_tsValueIdx = value_column
-                            prev_tsGroupIdx = group_column
-                            prev_groupSort = group_order
-                            config_groupSort = group_order
-                            tsShowCI = show_confidence_interval
                         endif
 
                         prev_tsTimeIdx = time_column
-                        prev_tsDataFormat = tsDataFormat
+                        prev_tsValueIdx = tsValueIdx
                         prev_tsShowCI = tsShowCI
-                        ; The pen and the tickbox, read once for both formats
-                        ; and remembered for the next press.
-                        tsLineStyle = line_style
-                        tsSecondAxis = add_second_dataset
                         prev_tsLineStyle = tsLineStyle
-                        prev_tsSecondAxis = tsSecondAxis
 
                         timeMin = number (tmpTMin$)
                         timeMax = number (tmpTMax$)
@@ -5203,7 +5491,13 @@ repeat
                             x_axis_label$ = emlCapitalizeLabel.result$
                         endif
                         if y_axis_label$ = ""
-                            if tsDataFormat = 1 and tsNSeries >= 2
+                            # SEVERAL SUBJECTS SHARE ONE QUANTITY AND THE
+                            # COLUMN NAMES NAME THE SUBJECTS, so they cannot
+                            # name the axis. It is left to the axis-label
+                            # field, which the advanced page offers and which
+                            # defaults to blank rather than to a subject's
+                            # name.
+                            if tsSeriesRole = 1 and tsNSeries >= 2
                                 y_axis_label$ = ""
                             else
                                 @emlCapitalizeLabel: valueColName$
@@ -5212,181 +5506,45 @@ repeat
                         endif
 
                         # Validate numeric columns
-                        @emlCheckNumericColumn: objectId, timeColName$
-                        if emlCheckNumericColumn.isNumeric = 0
-                            beginPause: "Column Error"
-                                comment: """" + timeColName$ + """ does not contain numeric data."
-                                comment: "Please select a numeric column for the time axis."
-                            endPause: "OK", 1, 0
-                            tsFormDone = 0
-                            tsFormatDone = 0
-                            allFormsDone = 0
-                        else
-                            @emlCheckNumericColumn: objectId, valueColName$
+                        if allFormsDone = 1
+                            @emlCheckNumericColumn: objectId, timeColName$
                             if emlCheckNumericColumn.isNumeric = 0
                                 beginPause: "Column Error"
-                                    comment: """" + valueColName$ + """ does not contain numeric data."
-                                    comment: "Please select a numeric column for the value axis."
+                                    comment: """" + timeColName$ + """ does not contain numeric data."
+                                    comment: "Please select a numeric column for the time axis."
                                 endPause: "OK", 1, 0
                                 tsFormDone = 0
-                                tsFormatDone = 0
+                                tsRoleDone = 0
                                 allFormsDone = 0
                             endif
                         endif
 
-                        # =================================================
-                        # THE SECOND DATASET'S OWN PAGE
-                        # =================================================
-                        # ONE FOLLOW-UP PAUSE, AND ONLY WHEN THE BOX IS
-                        # TICKED. It asks for everything the right-hand axis
-                        # needs and nothing else: the column, the range, the
-                        # name and the pen. See the tickbox above for why this
-                        # is a second page rather than five inert fields on
-                        # the first one.
-                        #
-                        # AFTER THE PRIMARY VALIDATION, so a user whose value
-                        # column is text is told about THAT first and is not
-                        # asked to configure a second series for a figure that
-                        # cannot be drawn. `allFormsDone` is the test: it is 0
-                        # if anything above refused.
-                        #
-                        # THE CI TICKBOX WINS, AND SAYS SO. Both boxes ticked
-                        # is a request for a figure v1 does not draw, so it is
-                        # refused here -- at the dialog, naming the scope --
-                        # rather than at the draw, where the user would get a
-                        # CI figure and a line in the Info window.
-                        tsSecondReady = 0
+                        # WHAT THE PRESS QUIETLY DID, SAID OUT LOUD. Nothing
+                        # here changes the figure; each line reports a
+                        # decision the user did not make and would otherwise
+                        # have to infer from the picture.
                         if allFormsDone = 1
-                            if tsSecondAxis = 1
-                                tsSecondReady = 1
+                            tsNotice$ = ""
+                            if tsDroppedTime$ <> ""
+                                tsNotice$ = tsNotice$ + """" + tsDroppedTime$ + """ is the time axis of this figure, so it is not drawn as a series. "
                             endif
-                        endif
-                        if tsSecondReady = 1
-                            if tsShowCI = 1
-                                beginPause: "Second dataset"
-                                    comment: "A second dataset on a right y-axis is not available with the confidence-interval band."
-                                    comment: "In this version the second axis ships on the plain line chart only."
-                                    comment: "Untick one of the two boxes and press Draw again."
-                                endPause: "OK", 1, 0
-                                tsSecondReady = 0
-                                tsFormDone = 0
-                                tsFormatDone = 0
-                                allFormsDone = 0
+                            ; THE MEAN AND THE MISSING BAND ARE THE DRAW
+                            ; LAYER'S TO DISCLOSE, not this dialog's.
+                            ; @emlDrawTimeSeries already says "Line shows the
+                            ; mean per time point" wherever it collapsed
+                            ; repeats, and it now says why no band is offered
+                            ; when the figure carries two scales -- see its
+                            ; disclosure block. A second sentence here would
+                            ; be the same fact in a second voice, in a place
+                            ; the figure does not carry.
+                            if tsNotice$ <> ""
+                                appendInfoLine: "Line chart: ", tsNotice$
                             endif
-                        endif
-                        if tsSecondReady = 1
-                            ; WHICH TABLE THE COLUMN NAMES BELONG TO. In wide
-                            ; format with two or more series, objectId is by
-                            ; now the MELT table -- three columns of its own
-                            ; that this dialog's list does not name -- so the
-                            ; second series is validated against, and later
-                            ; copied from, the table the user chose from.
-                            tsSecondSourceId = objectId
-                            if tsMeltTableId > 0
-                                tsSecondSourceId = tsOrigObjectId
-                            endif
-                            tsSecondDone = 0
-                            repeat
-                                beginPause: "Line Chart -- Second Dataset on a Right Y-Axis"
-                                    comment: "This series is drawn in the same plot box on its own scale."
-                                    comment: "Its ticks and its name go in the right margin."
-                                    optionmenu: "Right value column", tsSecondIdx
-                                        for iCol from 1 to nCols
-                                            option: colName$[iCol]
-                                        endfor
-                                    comment: "📐 Right y-axis range (both 0 = auto)"
-                                    real: "Right minimum", tmpSecMin$
-                                    real: "Right maximum", tmpSecMax$
-                                    comment: "🏷️ Right axis label (blank = the column name)"
-                                    sentence: "Right axis label", tmpSecLabel$
-                                    optionmenu: "Right line style", tsSecondStyle
-                                        option: "Solid"
-                                        option: "Dotted"
-                                        option: "Dashed"
-                                        option: "Dashed-dotted"
-                                clicked = endPause: "Go Back", "Draw", 2, 1
-
-                                if clicked = 1
-                                    # Go Back to the column mapping page. The
-                                    # second-axis choices are kept, so the
-                                    # page comes back as it was left.
-                                    tsSecondDone = 1
-                                    tsSecondReady = 0
-                                    tsFormDone = 0
-                                    tsFormatDone = 0
-                                    allFormsDone = 0
-                                else
-                                    tsSecondIdx = right_value_column
-                                    tsSecondStyle = right_line_style
-                                    tmpSecMin$ = string$ (right_minimum)
-                                    tmpSecMax$ = string$ (right_maximum)
-                                    tmpSecLabel$ = right_axis_label$
-                                    tsSecondColName$ = right_value_column$
-
-                                    # THE THREE THINGS THAT CAN BE WRONG, each
-                                    # with its own sentence. A refusal
-                                    # RE-PRESENTS this page, as every other
-                                    # form in this file does, with the user's
-                                    # choices still in it.
-                                    tsSecondBad$ = ""
-                                    if tsSecondColName$ = valueColName$
-                                        tsSecondBad$ = "The right-hand series is the same column as the left-hand one (" + valueColName$ + "), so both axes would measure the same numbers. Choose a different column."
-                                    endif
-                                    if tsSecondBad$ = ""
-                                        if tsSecondColName$ = timeColName$
-                                            tsSecondBad$ = "The right-hand series is the time column (" + timeColName$ + "), which is the horizontal axis of this figure. Choose a column of measurements."
-                                        endif
-                                    endif
-                                    if tsSecondBad$ = ""
-                                        @emlCheckNumericColumn: tsSecondSourceId, tsSecondColName$
-                                        if emlCheckNumericColumn.isNumeric = 0
-                                            tsSecondBad$ = """" + tsSecondColName$ + """ does not contain numeric data. Choose a numeric column for the right-hand series."
-                                        endif
-                                    endif
-
-                                    if tsSecondBad$ = ""
-                                        tsSecondDone = 1
-                                        ; THE RANGE GOES TO THE SWEEP, NOT TO
-                                        ; A JUDGE OF ITS OWN. This page tests
-                                        ; the COLUMN, which is its own
-                                        ; business; the pair is judged with
-                                        ; every other pair the dialogs can
-                                        ; return, by @emlGraphsCheckAxisRanges
-                                        ; at the bottom of the form loop, so
-                                        ; that "the maximum is below the
-                                        ; minimum" is decided in one place for
-                                        ; all seven of them.
-                                        secondMin = number (tmpSecMin$)
-                                        secondMax = number (tmpSecMax$)
-                                        # THE MELTED TABLE GETS THE COLUMN
-                                        # TOO, and the copy is a procedure so
-                                        # that something other than a dialog
-                                        # can reach it: see
-                                        # @emlGraphsCarrySecondColumn.
-                                        if tsMeltTableId > 0
-                                            @emlGraphsCarrySecondColumn:
-                                            ... tsSecondSourceId,
-                                            ... tsMeltTableId,
-                                            ... tsSecondColName$, nDataRows
-                                            selectObject: objectId
-                                        endif
-                                        prev_tsSecondIdx = tsSecondIdx
-                                        prev_tsSecondStyle = tsSecondStyle
-                                        prev_ts_secondMin = number (tmpSecMin$)
-                                        prev_ts_secondMax = number (tmpSecMax$)
-                                        prev_tsSecondLabel$ = tmpSecLabel$
-                                    else
-                                        beginPause: "Second dataset"
-                                            comment: tsSecondBad$
-                                        endPause: "OK", 1, 0
-                                    endif
-                                endif
-                            until tsSecondDone = 1
                         endif
                     endif
                 until tsFormDone = 1
             endif
-        until tsFormatDone = 1
+        until tsRoleDone = 1
 
     elsif graph_type = 6
         # =============================================================

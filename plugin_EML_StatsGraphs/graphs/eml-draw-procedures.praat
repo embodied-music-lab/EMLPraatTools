@@ -2135,9 +2135,29 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # THE KEY IS DRAWN AFTER BOTH SERIES AND NOT BETWEEN THEM. The right-hand
     # series is drawn above, after the grouped branch closes, so a key placed
     # inside that branch would have that series stroked across the top of it.
-    # It is a grouped-figure key, which is what the test around it says: the
-    # ungrouped path draws one series and names it on the y-axis.
+    #
+    # A KEY APPEARS WHENEVER TWO OR MORE SERIES ARE ON THE PAGE, however they
+    # got there -- a group column, several melted columns, or one series with
+    # a second measurement on the right-hand axis. THE LAST OF THOSE IS THE
+    # ONE THE TEST HAS TO REACH: two unlabelled lines on two scales is exactly
+    # the ambiguity the "(right axis)" tag exists to prevent, and a key drawn
+    # only on grouped figures would leave that one figure without it.
+    #
+    # The ungrouped left-hand series is named by its own column, since there
+    # is no group label to name it with; the shared y-axis label names the
+    # QUANTITY, which on this figure is not the same thing.
+    .keyEntries = 1
     if .hasGroup = 1
+        .keyEntries = .nGroups
+    endif
+    .drawKey = 0
+    if .hasGroup = 1
+        .drawKey = 1
+    endif
+    if .secondOn = 1
+        .drawKey = 1
+    endif
+    if .drawKey = 1
         # Quadrant scoring for adaptive legend placement
         selectObject: .objectId
         .nScanRows = Get number of rows
@@ -2175,24 +2195,32 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         # Line plus marker, because that is what the series is.
         legendMarkered = 1
         legendMarkerLine = 1
-        legendN = .nGroups
+        legendN = .keyEntries
         ; THE KEY CARRIES THE PENS. legendStyled is the promise that
         ; legendStyle[] is filled for every entry -- see @emlDrawLegendPanel,
         ; which draws the sample line with it. Without this the key would show
         ; solid samples for a figure drawn in dashes.
         legendStyled = 1
-        for .g from 1 to .nGroups
+        for .g from 1 to .keyEntries
             legendColor$[.g] = emlSetColorPalette.line$[.g]
             legendMarker[.g] = emlSetColorPalette.marker[.g]
             legendStyle[.g] = .primaryStyle
-            @emlSanitizeLabel: .grpLabel$[.g]
+            if .hasGroup = 1
+                .keyLabel$ = .grpLabel$[.g]
+            else
+                .keyLabel$ = .valueCol$
+            endif
+            @emlSanitizeLabel: .keyLabel$
             legendLabel$[.g] = emlSanitizeLabel.result$
         endfor
         ; THE RIGHT-HAND SERIES IS TAGGED, and the tag is the author's own
-        ; wording. Its swatch is slot nGroups + 1 and its sample wears its own
-        ; pen, so the key states both halves of what tells the two apart.
+        ; wording. Its swatch is the slot after the primary's -- slot two of
+        ; the theme on an ungrouped figure, which is the maximally contrasting
+        ; partner in greyscale and the second of two colours in colour -- and
+        ; its sample wears its own pen, so the key states both halves of what
+        ; tells the two apart.
         if .secondOn = 1
-            legendN = .nGroups + 1
+            legendN = .keyEntries + 1
             legendColor$[legendN] = emlSetColorPalette.line$[.rightSlot]
             legendMarker[legendN] = emlSetColorPalette.marker[.rightSlot]
             legendStyle[legendN] = .secondStyle
@@ -2211,10 +2239,23 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # and neither touches emlSubtitle$ -- see the emlSubtitle$ note at the top
     # of this file.
     if .nCollapsed > 0
-        @emlDisclose: "Line shows the mean per time point.",
-        ... string$ (.nCollapsed) + " repeated observation(s) were averaged. "
-        ... + "Use Spaghetti Plot to show individual series, or Time Series "
-        ... + "(with CI) to show the spread around each mean."
+        ; TWO SCALES GET THE MEANS AND SAY WHY THEY GET NOTHING ELSE. A band
+        ; around each of two series measured in different units, drawn against
+        ; two different axes in one frame, is a picture whose overlaps mean
+        ; nothing -- so the interval is refused and the refusal is stated,
+        ; rather than the figure being refused. The plain-scale advice below
+        ; would be wrong here: Time Series (with CI) does not draw a right-hand
+        ; axis either.
+        if .secondOn = 1
+            @emlDisclose: "Lines show the mean per time point.",
+            ... string$ (.nCollapsed) + " repeated observation(s) were averaged. "
+            ... + "Intervals are not offered across two scales."
+        else
+            @emlDisclose: "Line shows the mean per time point.",
+            ... string$ (.nCollapsed) + " repeated observation(s) were averaged. "
+            ... + "Use Spaghetti Plot to show individual series, or Time Series "
+            ... + "(with CI) to show the spread around each mean."
+        endif
     endif
     if .nSkippedRows > 0
         @emlDisclose: string$ (.nSkippedRows)
