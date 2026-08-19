@@ -1,0 +1,19 @@
+subjects_ci	leg_object	2
+subjects_ci	leg_returned	subjects_ci
+subjects_ci	series_role	subjects
+subjects_ci	n_series	1
+subjects_ci	series_cols	f0
+subjects_ci	time_col	time
+subjects_ci	value_col	f0
+subjects_ci	group_col	speaker
+subjects_ci	right_col	
+subjects_ci	second_axis	0
+subjects_ci	ci_accepted	1
+subjects_ci	repeats_found	1
+subjects_ci	max_per_point	4
+subjects_ci	ci_offered	1
+subjects_ci	shape	2
+subjects_ci	n_numeric	1
+subjects_ci	n_text	1
+subjects_ci	y_label	F0
+subjects_ci	drawn_union	0 6 0 4

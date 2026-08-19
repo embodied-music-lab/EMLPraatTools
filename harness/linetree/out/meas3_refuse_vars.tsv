@@ -1,0 +1,21 @@
+meas3_refuse	leg_object	5
+meas3_refuse	leg_returned	meas3_refuse
+meas3_refuse	series_role	measurements
+meas3_refuse	n_series	2
+meas3_refuse	series_cols	f0,cq
+meas3_refuse	time_col	time
+meas3_refuse	value_col	f0
+meas3_refuse	group_col	
+meas3_refuse	right_col	cq
+meas3_refuse	second_axis	1
+meas3_refuse	ci_accepted	0
+meas3_refuse	repeats_found	0
+meas3_refuse	max_per_point	1
+meas3_refuse	ci_offered	0
+meas3_refuse	shape	1
+meas3_refuse	n_numeric	3
+meas3_refuse	n_text	0
+meas3_refuse	y_label	F0
+meas3_refuse	axis_y_min	156.50391022204144
+meas3_refuse	axis_y_max	260
+meas3_refuse	drawn_union	0 6 0 4

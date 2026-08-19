@@ -1,0 +1,11 @@
+Same measurement, two subjects
+140
+130
+oO
+2
+Gi
+> 120
+110
+100
+2 4 6 8 10 12
+Time

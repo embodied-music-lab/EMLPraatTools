@@ -1,0 +1,7 @@
+[-] Select columns from your Table.
+Time column: time 7
+Every numeric column is drawn. Untick any you do not want.
+Series 1 (f0)
+Series 2 (cq)
+Line style: Solid v
+Undo Go Back Quit Advanced Draw

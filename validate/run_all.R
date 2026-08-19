@@ -1150,6 +1150,30 @@ scripts <- c(
                                  # chart sets no pen of its own, so nothing in
                                  # its code would be wrong if the pen leaked.
                                  # Reads harness/linestyle.
+    ,
+    "v97_line_tree.R"            # the line chart's question tree. The page
+                                 # used to open by asking how the user's FILE
+                                 # was shaped -- a question the plugin can
+                                 # answer for itself -- instead of what the
+                                 # columns MEAN, which is the one thing no
+                                 # file records and which decides whether the
+                                 # figure has one vertical axis or two. The
+                                 # storage question is gone, the column page
+                                 # is built from the table with no ceiling
+                                 # where five hardcoded slots used to be, the
+                                 # interval is offered only where the table
+                                 # carries repeats and names how many, and
+                                 # three unlike measurements are refused
+                                 # toward stacked panels. Driven as DIALOGS,
+                                 # because the claims are about what a user
+                                 # can reach: harness/linetree photographs
+                                 # every page before dismissing it and reads
+                                 # the form's variables back out of the
+                                 # process that drew. Both refusals are pinned
+                                 # on the words displayed, including the last
+                                 # line, which was drawn under the OK button
+                                 # until this harness saw it.
+                                 # Reads harness/linetree.
 )
 
 # ---------------------------------------------------------------------------

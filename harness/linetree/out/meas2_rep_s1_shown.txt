@@ -1,0 +1,14 @@
+Graph type: Line Chart (+Cl) v
+Title (blank = auto from table and
+columns):
+Subtitle:
+Colormode: Color v
+Figure width (inches): ¢
+Figure height (inches): | 4
+Erase page first
+Panel origin x (inches):
+Panel origin y (inches):
+Untick Erase to add this figure to the page already drawn.
+On a composed page a legend inside the plot is not
+given axis room — use Right of plot or Below plot.
+Undo Quit Continue

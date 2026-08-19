@@ -1,0 +1,21 @@
+none_refuse	leg_object	3
+none_refuse	leg_returned	none_refuse
+none_refuse	series_role	subjects
+none_refuse	n_series	1
+none_refuse	series_cols	f0
+none_refuse	time_col	time
+none_refuse	value_col	f0
+none_refuse	group_col	
+none_refuse	right_col	
+none_refuse	second_axis	0
+none_refuse	ci_accepted	0
+none_refuse	repeats_found	0
+none_refuse	max_per_point	1
+none_refuse	ci_offered	0
+none_refuse	shape	1
+none_refuse	n_numeric	2
+none_refuse	n_text	0
+none_refuse	y_label	F0
+none_refuse	axis_y_min	180
+none_refuse	axis_y_max	260
+none_refuse	drawn_union	0 6 0 4

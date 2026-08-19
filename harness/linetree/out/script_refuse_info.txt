@@ -1,0 +1,3 @@
+NOTE: a second right-hand y-axis was requested and refused. These series are the same measurement on different subjects, so a second scale would say they are not comparable when they are. The figure was drawn with one y-axis.
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+

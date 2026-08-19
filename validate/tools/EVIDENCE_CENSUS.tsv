@@ -116,3 +116,4 @@ v93	v93_lane_alpha_influence_oracle.R	SOURCE+LIVE+ARTEFACT	PRAAT	praat	evidence,
 v94	v94_page_composition.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
 v95	v95_second_axis.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
 v96	v96_line_style.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
+v97	v97_line_tree.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		

@@ -1,0 +1,6 @@
+--run--	praat_version	Praat 6.6.30 (June 30 2026)
+--run--	source_tree	/home/claude/treebuild
+--run--	legs_requested	meas2 meas2_rep
+--run--	code_sha256_eml-graphs-form	205ed6d4be9af8b7381864da8c59af453ec87d387e52b7df020ebe98608fdf30
+--run--	code_sha256_eml-graph-procedures	57e798246b08082a03a2d701e135f7d0e6aece80b1fba57e76388b3e9a74cf37
+--run--	code_sha256_eml-draw-procedures	d387fb41edbca2481b72715138788e8236849a2fd46561590db7321d25ac9e87

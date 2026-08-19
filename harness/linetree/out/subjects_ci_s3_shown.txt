@@ -1,0 +1,8 @@
+[-] Select columns from your Table.
+Time column: time v
+Measurement column: fO
+Series names come from: _ speaker v
+Group order: Table order Vv
+Draw the mean and its interval (up to 4 observations per point)
+Line style: Solid v
+Undo Go Back Quit Advanced Draw

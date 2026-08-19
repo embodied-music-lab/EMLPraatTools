@@ -1,0 +1,5 @@
+script_refuse	subjects_refused	1
+script_refuse	subjects_refusal_text	NOTE: a second right-hand y-axis was requested and refused. These series are the same measurement on different subjects, so a second scale would say they are not comparable when they are. The figure was drawn with one y-axis.
+script_refuse	subjects_union	0 6 0 4
+script_refuse	measurements_refused	0
+script_refuse	leg_returned	script_refuse

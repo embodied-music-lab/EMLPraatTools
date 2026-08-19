@@ -1,0 +1,5 @@
+There are 3 different measurements here and a figure has two
+vertical axes. Draw the extra ones as stacked panels: untick
+"Erase page first", set a panel origin, and press Draw again —
+or untick columns until two are left.
+OK

@@ -1,0 +1,189 @@
+--run--	praat_version	Praat 6.6.30 (June 30 2026)
+--run--	source_tree	/home/claude/treebuild
+--run--	legs_requested	subjects_ci meas2
+--run--	code_sha256_eml-graphs-form	68cc7634a3656f1848de4e114c92a9e8a09c08a7a6b6a7e6649b0f924ddbe26e
+--run--	code_sha256_eml-graph-procedures	57e798246b08082a03a2d701e135f7d0e6aece80b1fba57e76388b3e9a74cf37
+--run--	code_sha256_eml-draw-procedures	d387fb41edbca2481b72715138788e8236849a2fd46561590db7321d25ac9e87
+--run--	compositor	running
+subjects_ci	leg_started	1
+subjects_ci	ink_empty	0.000704286
+subjects_ci	s1_title	EML Graphs
+subjects_ci	s1_want	EML Graphs
+subjects_ci	s1_shown	Graph type: Line Chart (+Cl) v
+subjects_ci	s1_shown	Title (blank = auto from table and
+subjects_ci	s1_shown	columns):
+subjects_ci	s1_shown	Subtitle:
+subjects_ci	s1_shown	Colormode: Color v
+subjects_ci	s1_shown	Figure width (inches): ¢
+subjects_ci	s1_shown	Figure height (inches): | 4
+subjects_ci	s1_shown	Erase page first
+subjects_ci	s1_shown	Panel origin x (inches):
+subjects_ci	s1_shown	Panel origin y (inches):
+subjects_ci	s1_shown	Untick Erase to add this figure to the page already drawn.
+subjects_ci	s1_shown	On a composed page a legend inside the plot is not
+subjects_ci	s1_shown	given axis room — use Right of plot or Below plot.
+subjects_ci	s1_shown	Undo Quit Continue
+subjects_ci	s2_title	Line Chart -- What the lines are
+subjects_ci	s2_want	Line Chart -- What the lines are
+subjects_ci	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+subjects_ci	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
+subjects_ci	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
+subjects_ci	s2_shown	Different measurements: FO and contact quotient — each its own scale.
+subjects_ci	s2_shown	Undo Go Back Quit Continue
+subjects_ci	s3_title	Line Chart -- Column Mapping
+subjects_ci	s3_want	Line Chart -- Column Mapping
+subjects_ci	s3_shown	[-] Select columns from your Table.
+subjects_ci	s3_shown	Time column: time v
+subjects_ci	s3_shown	Measurement column: f0
+subjects_ci	s3_shown	Series names come from: time v
+subjects_ci	s3_shown	Group order: Table order Vv
+subjects_ci	s3_shown	Draw the mean and its interval (up to 8 observations per point)
+subjects_ci	s3_shown	Line style: Solid v
+subjects_ci	s3_shown	Undo Go Back Quit Advanced Draw
+subjects_ci	s4_title	Line Chart -- Column Mapping
+subjects_ci	s4_want	Line Chart -- Column Mapping
+subjects_ci	s4_shown	[-] Select columns from your Table.
+subjects_ci	s4_shown	Time column: time v
+subjects_ci	s4_shown	Measurement column: f0
+subjects_ci	s4_shown	Series names come from: _ speaker Vv
+subjects_ci	s4_shown	Group order: Table order Vv
+subjects_ci	s4_shown	Draw the mean and its interval (up to 4 observations per point)
+subjects_ci	s4_shown	Line style: Solid v
+subjects_ci	s4_shown	»\ axis range (both 0 = auto)
+subjects_ci	s4_shown	Time minimum: | g
+subjects_ci	s4_shown	Time maximum: | g
+subjects_ci	s4_shown	». Y-axis range (both 0 = auto)
+subjects_ci	s4_shown	Value maximum: g
+subjects_ci	s4_shown	Value minimum: 9g
+subjects_ci	s4_shown	Gridline mode: Both v
+subjects_ci	s4_shown	Legend placement: Inside plot Vv
+subjects_ci	s4_shown	Output DPI: 300 dpi v
+subjects_ci	s4_shown	Show inner box
+subjects_ci	s4_shown	Show axis names: Both v
+subjects_ci	s4_shown	Show ticks: Both 7
+subjects_ci	s4_shown	Show axis values: Both v
+subjects_ci	s4_shown	Font: Helvetica v
+subjects_ci	s4_shown	.. Axis labels (blank = auto) - %italic #bold “super sub - \% and a space
+subjects_ci	s4_shown	prints % X axis label:
+subjects_ci	s4_shown	Y axis label:
+subjects_ci	s4_shown	Undo Go Back Quit Beginner Draw
+subjects_ci	s5_title	Line Chart -- Column Mapping
+subjects_ci	s5_want	Line Chart -- Column Mapping
+subjects_ci	s5_shown	[-] Select columns from your Table.
+subjects_ci	s5_shown	Time column: time v
+subjects_ci	s5_shown	Measurement column: fO
+subjects_ci	s5_shown	Series names come from: _ speaker v
+subjects_ci	s5_shown	Group order: Table order Vv
+subjects_ci	s5_shown	Draw the mean and its interval (up to 4 observations per point)
+subjects_ci	s5_shown	Line style: Solid v
+subjects_ci	s5_shown	Undo Go Back Quit Advanced Draw
+subjects_ci	s6_title	Graph Complete
+subjects_ci	s6_want	Graph Complete
+subjects_ci	s6_ink	0.00454786
+subjects_ci	s6_shown	| Graph has been drawn in the Picture window.
+subjects_ci	s6_shown	What would you like to do?
+subjects_ci	s6_shown	Done Save Redraw
+subjects_ci	steps	6
+subjects_ci	exited	no
+subjects_ci	leg_object	2
+subjects_ci	leg_returned	subjects_ci
+subjects_ci	series_role	subjects
+subjects_ci	n_series	1
+subjects_ci	series_cols	f0
+subjects_ci	time_col	time
+subjects_ci	value_col	f0
+subjects_ci	group_col	speaker
+subjects_ci	right_col	
+subjects_ci	second_axis	0
+subjects_ci	ci_accepted	1
+subjects_ci	repeats_found	1
+subjects_ci	max_per_point	4
+subjects_ci	ci_offered	1
+subjects_ci	shape	2
+subjects_ci	n_numeric	1
+subjects_ci	n_text	1
+subjects_ci	y_label	F0
+subjects_ci	drawn_union	0 6 0 4
+subjects_ci	vars_written	19
+subjects_ci	fig_png_md5	132c5fd68b5508a86672496774d85264
+subjects_ci	fig_png_bytes	71040
+subjects_ci	fig_png_px	1800x1200
+subjects_ci	fig_chromatic_colours	4
+subjects_ci	fig_colour_#B3D4E8	143211
+subjects_ci	fig_colour_#F8E3B3	113528
+subjects_ci	fig_colour_#E69E00	7052
+subjects_ci	fig_colour_#0073B3	7010
+subjects_ci	fig_chromatic_bands	4964,2991,1735,692,89789,32966,42053,110374,288,964
+subjects_ci	fig_chromatic_bands_nonempty	10
+subjects_ci	fig_figtext	FO over time and speaker (It grouprep)
+subjects_ci	fig_figtext	400.
+subjects_ci	fig_figtext	@ Speaker 1
+subjects_ci	fig_figtext	@ Speaker 2
+subjects_ci	fig_figtext	350.
+subjects_ci	fig_figtext	___—_——@——_®
+subjects_ci	fig_figtext	sof tt
+subjects_ci	fig_figtext	: eS
+subjects_ci	fig_figtext	1 2 3 4 5 6
+subjects_ci	fig_figtext	Time
+subjects_ci	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+subjects_ci	info	Time Series (with CI): 2 group(s)
+subjects_ci	info	  Group: Speaker 1 — 6 time points
+subjects_ci	info	  Observations per time point: up to 4
+subjects_ci	info	  Group: Speaker 2 — 6 time points
+subjects_ci	info	  Observations per time point: up to 4
+subjects_ci	info	Time series (with CI): Line shows the mean; band shows the 95% CI. 36 repeated observation(s) were averaged into their time points. Use Spaghetti Plot to show the individual series behind the mean.
+subjects_ci	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+subjects_ci	info	Time Series (with CI): 2 group(s)
+subjects_ci	info	  Group: Speaker 1 — 6 time points
+subjects_ci	info	  Observations per time point: up to 4
+subjects_ci	info	  Group: Speaker 2 — 6 time points
+subjects_ci	info	  Observations per time point: up to 4
+subjects_ci	info	Time series (with CI): Line shows the mean; band shows the 95% CI. 36 repeated observation(s) were averaged into their time points. Use Spaghetti Plot to show the individual series behind the mean.
+subjects_ci	info_lines	14
+subjects_ci	display_clear	yes
+meas2	leg_started	1
+meas2	ink_empty	0.000704286
+meas2	s1_title	EML Graphs
+meas2	s1_want	EML Graphs
+meas2	s1_shown	Graph type: Line Chart (+Cl) v
+meas2	s1_shown	Title (blank = auto from table and
+meas2	s1_shown	columns):
+meas2	s1_shown	Subtitle:
+meas2	s1_shown	Colormode: Color v
+meas2	s1_shown	Figure width (inches): ¢
+meas2	s1_shown	Figure height (inches): | 4
+meas2	s1_shown	Erase page first
+meas2	s1_shown	Panel origin x (inches):
+meas2	s1_shown	Panel origin y (inches):
+meas2	s1_shown	Untick Erase to add this figure to the page already drawn.
+meas2	s1_shown	On a composed page a legend inside the plot is not
+meas2	s1_shown	given axis room — use Right of plot or Below plot.
+meas2	s1_shown	Undo Quit Continue
+meas2	s2_title	Line Chart -- What the lines are
+meas2	s2_want	Line Chart -- What the lines are
+meas2	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+meas2	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
+meas2	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
+meas2	s2_shown	Different measurements: FO and contact quotient — each its own scale.
+meas2	s2_shown	Undo Go Back Quit Continue
+meas2	s3_title	Line Chart -- Column Mapping
+meas2	s3_want	Line Chart -- Column Mapping
+meas2	s3_shown	[-] Select columns from your Table.
+meas2	s3_shown	Time column: time 7
+meas2	s3_shown	Every numeric column is drawn. Untick any you do not want.
+meas2	s3_shown	Series 1 (f0)
+meas2	s3_shown	Series 2 (cq)
+meas2	s3_shown	Line style: Solid v
+meas2	s3_shown	Undo Go Back Quit Advanced Draw
+meas2	s4_title	Line Chart -- The Right-Hand Axis
+meas2	s4_want	Line Chart -- The Right-Hand Axis
+meas2	s4_shown	These two measurements are on different scales, so each gets its own.
+meas2	s4_shown	Its ticks and its name go in the right margin.
+meas2	s4_shown	Right-hand axis: cq v
+meas2	s4_shown	\. Right y-axis range (both 0 = auto)
+meas2	s4_shown	Right minimum: 9g
+meas2	s4_shown	Right maximum: 9g
+meas2	s4_shown	\, Right axis label (blank = the column name)
+meas2	s4_shown	Right axis label:
+meas2	s4_shown	Right line style: Dashed Vv
+meas2	s4_shown	Undo Go Back Draw

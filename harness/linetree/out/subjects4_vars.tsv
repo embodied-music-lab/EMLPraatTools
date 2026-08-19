@@ -1,0 +1,21 @@
+subjects4	leg_object	1
+subjects4	leg_returned	subjects4
+subjects4	series_role	subjects
+subjects4	n_series	4
+subjects4	series_cols	S1,S2,S3,S4
+subjects4	time_col	time
+subjects4	value_col	eml_value
+subjects4	group_col	eml_series
+subjects4	right_col	
+subjects4	second_axis	0
+subjects4	ci_accepted	0
+subjects4	repeats_found	0
+subjects4	max_per_point	1
+subjects4	ci_offered	0
+subjects4	shape	1
+subjects4	n_numeric	4
+subjects4	n_text	0
+subjects4	y_label	
+subjects4	axis_y_min	50
+subjects4	axis_y_max	722.7071716977504
+subjects4	drawn_union	0 6 0 4

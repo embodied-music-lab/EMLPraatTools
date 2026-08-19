@@ -1,0 +1,21 @@
+meas2	leg_object	3
+meas2	leg_returned	meas2
+meas2	series_role	measurements
+meas2	n_series	2
+meas2	series_cols	f0,cq
+meas2	time_col	time
+meas2	value_col	f0
+meas2	group_col	
+meas2	right_col	cq
+meas2	second_axis	1
+meas2	ci_accepted	0
+meas2	repeats_found	0
+meas2	max_per_point	1
+meas2	ci_offered	0
+meas2	shape	1
+meas2	n_numeric	2
+meas2	n_text	0
+meas2	y_label	F0
+meas2	axis_y_min	180
+meas2	axis_y_max	283.49608977795856
+meas2	drawn_union	0 6 0 4

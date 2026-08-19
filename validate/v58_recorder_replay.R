@@ -728,9 +728,17 @@ check_true("v58",
 # typo -- a misspelled key never matches, lifts nothing, and is invisible.
 csdir <- Sys.getenv("EML_RECORD_CALLSITES", unset = "")
 if (!nzchar(csdir)) csdir <- repo_path("plugin")
+# THE GRAPHS FORM IS A RECORDING CALL SITE TOO, and leaving it out of this
+# list is how a live map entry can look dead. Most recorded steps are composed
+# where the work is done -- the analyses, the draw procedures, the figure's own
+# statistics -- but the melt is composed in the FORM, because the form is what
+# knows which columns the user ticked. Its template names two columns and its
+# map entry is exactly right; with the form unscanned, the entry named a call
+# site this file could not see.
 cs_files <- file.path(csdir, c("stats/eml-analysis.praat",
                                "graphs/eml-draw-procedures.praat",
-                               "graphs/eml-annotation-procedures.praat"))
+                               "graphs/eml-annotation-procedures.praat",
+                               "graphs/eml-graphs-form.praat"))
 if (check_true("v58", "the recording call sites are present",
                all(file.exists(cs_files))) &&
     check_true("v58", "the recorder core is readable for the column map",
@@ -758,7 +766,17 @@ if (check_true("v58", "the recording call sites are present",
     # .raterCols$, .colX$, .col1$. `.colorMode$` is not one of those and
     # neither is `.xLabel$`, which is how the waveform, the spectrum and the
     # LTAS stay correctly outside the map -- they draw an object whole.
-    withcol <- tmpl[grepl("[.]([A-Za-z]*Col[0-9]*|[A-Za-z]*Cols|col[0-9XY]+)[$]",
+    #
+    # THE LEADING DOT IS OPTIONAL, and `timeColName$` is why. Most recording
+    # call sites sit inside a procedure and interpolate its locals, so the
+    # column variables carry a dot; the graphs form's own call sites sit at
+    # file scope and interpolate the form's globals, which do not. Requiring
+    # the dot read the melt's template -- which interpolates timeColName$ and
+    # tsSeriesCols$ -- as a call that names no column, so its map entry looked
+    # dead while being exactly right. Measured when the pattern was widened:
+    # it admits emlGraphsMeltSeries and nothing else.
+    withcol <- tmpl[grepl(paste0("[.]?([A-Za-z]*Col[0-9]*|[A-Za-z]*Cols",
+                                 "|[A-Za-z]*ColName|col[0-9XY]+)[$]"),
                           tmpl)]
     procs <- unique(sub('.*"@(eml[A-Za-z]+): .*', "\\1", withcol))
     procs <- sort(procs[grepl("^eml", procs)])

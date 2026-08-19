@@ -1,0 +1,15 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+Time Series (with CI): 2 group(s)
+  Group: Speaker 1 — 6 time points
+  Observations per time point: up to 4
+  Group: Speaker 2 — 6 time points
+  Observations per time point: up to 4
+Time series (with CI): Line shows the mean; band shows the 95% CI. 36 repeated observation(s) were averaged into their time points. Use Spaghetti Plot to show the individual series behind the mean.
+NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+Time Series (with CI): 2 group(s)
+  Group: Speaker 1 — 6 time points
+  Observations per time point: up to 4
+  Group: Speaker 2 — 6 time points
+  Observations per time point: up to 4
+Time series (with CI): Line shows the mean; band shows the 95% CI. 36 repeated observation(s) were averaged into their time points. Use Spaghetti Plot to show the individual series behind the mean.
+
