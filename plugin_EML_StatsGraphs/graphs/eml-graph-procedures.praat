@@ -237,6 +237,19 @@ endproc
 # No arguments — reads from emlSetAdaptiveTheme outputs.
 # ----------------------------------------------------------------------------
 procedure emlSetPanelViewport
+    ; THE SIZE IS ASSERTED BEFORE THE SELECT, NOT BEFORE THE BOX.
+    ; Praat stores a viewport as an OUTER rectangle: `Select inner viewport`
+    ; converts what you give it using the margins in effect AT THAT MOMENT,
+    ; and every later drawing command converts back using the margins in
+    ; effect at ITS moment. Margin width is a function of font size, so a
+    ; viewport selected at the ambient size and a box drawn at bodySize land
+    ; on rectangles that differ by about 2.9% per point of difference —
+    ; measured, Praat 6.6.30: gridlines at 10 and box at 11 put the box
+    ; 2.92% narrower and 2.59% shorter, inside its own gridlines.
+    ; Asserting the size in the box wrapper does not fix that; it causes it.
+    ; PraatGen BEST_PRACTICES_DRAWING states the correct order outright:
+    ; Font size, then Select inner viewport, then Axes, then Draw inner box.
+    Font size: emlSetAdaptiveTheme.bodySize
     Select outer viewport: emlSetAdaptiveTheme.outerLeft,
     ... emlSetAdaptiveTheme.outerRight,
     ... emlSetAdaptiveTheme.outerTop,
