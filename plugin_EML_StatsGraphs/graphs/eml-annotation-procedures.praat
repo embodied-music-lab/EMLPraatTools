@@ -405,9 +405,18 @@ procedure emlDrawBracket: .xI, .xJ, .yBase, .tierHeight, .tier, .label$, .fontSi
 
     # Label centered above bar
     .xMid = (.xI + .xJ) / 2
-    Font size: .fontSize
+    ; THE SIZE TRAVELS WITH THE TEXT, NOT WITH THE PICTURE WINDOW.
+    ; `Font size:` followed by `Text:` left the annotation size ambient on
+    ; return, and this procedure is called in a LOOP (@emlDrawAnnotations).
+    ; So bracket 1 drew its three `Draw line:` bars above at the caller's
+    ; bodySize and brackets 2..n drew theirs at the size bracket 1 left
+    ; behind -- one figure, two rectangles, about 2.9% apart per point of
+    ; difference. `Text special:` carries its size as an argument and touches
+    ; no ambient state, so every bracket on the figure, bar and label alike,
+    ; is converted through the margins the caller selected the viewport with.
     Colour: "{0.1, 0.1, 0.1}"
-    Text: .xMid, "centre", .yText, "bottom", .label$
+    Text special: .xMid, "centre", .yText, "bottom",
+    ... emlFont$, .fontSize, "0", .label$
 
     Colour: "Black"
 endproc
@@ -676,6 +685,14 @@ procedure emlDrawAnnotation: .x, .y, .anchor$, .label$, .fontSize, .hasBg, .xRan
 
     Colour: "Black"
     Line width: 1.0
+    ; ...AND THE FONT SIZE, which this procedure installed three times above
+    ; (the width measurement, the post-sprite restore, and the label). The box
+    ; and its text are internally consistent at .fontSize and that is correct;
+    ; what was not correct is leaving .fontSize ambient on return. The caller's
+    ; figure runs at bodySize, and the next coordinate-dependent command it
+    ; issues has to land on the rectangle it selected. @emlDrawMatrixPanel's
+    ; Reset block (below, near the end of this file) is the pattern.
+    Font size: emlSetAdaptiveTheme.bodySize
 endproc
 
 
@@ -1411,6 +1428,16 @@ procedure emlDrawAnnotationBlock: .corner$, .xMin, .xMax, .yMin, .yMax, .fontSiz
         ; not set is how the SECOND call ends up in measure mode too.
         if variableExists ("emlAnnotBlockMeasureOnly")
             if emlAnnotBlockMeasureOnly = 1
+                ; MEASURE MODE LEAVES BY THE SIDE DOOR, SO IT CLEANS UP ITSELF.
+                ; `label ANNOT_BLOCK_END` sits below the Reset block, not
+                ; above it, so this goto jumps past every restore there is --
+                ; including the size set at the top of this procedure for the
+                ; text measurement. @emlPlaceAnnotationBox drives this pass in
+                ; the MIDDLE of a figure, before the block is drawn for real,
+                ; so the size it leaves behind is the size the rest of the
+                ; figure would inherit. The measured outputs (.boxW, .boxH)
+                ; are already computed and are not affected by this.
+                Font size: emlSetAdaptiveTheme.bodySize
                 goto ANNOT_BLOCK_END
             endif
         endif
@@ -1486,6 +1513,14 @@ procedure emlDrawAnnotationBlock: .corner$, .xMin, .xMax, .yMin, .yMax, .fontSiz
         # Reset
         Colour: "Black"
         Line width: 1.0
+        ; ...AND THE FONT SIZE. This procedure sets it twice -- once above for
+        ; the text measurement and again after @emlPaintAlphaBox's sprite path
+        ; re-selects the viewport -- and it runs mid-figure on every annotated
+        ; scatter, so anything drawn after it was being converted through the
+        ; annotation size's margins instead of the body size's: about 2.9%
+        ; per point of difference. @emlDrawMatrixPanel's Reset block is the
+        ; compliant pattern and restores all three.
+        Font size: emlSetAdaptiveTheme.bodySize
     endif
     label ANNOT_BLOCK_END
 endproc
@@ -1880,6 +1915,14 @@ procedure emlMeasureMatrixLayout: .vpLeft, .vpRight, .vpTop, .vpBottom, .fontSiz
     # Final tier check: too narrow for even shading?
     if .cellW < .fontInch * 1.0
         emlMatrixLayout_suppressed = 1
+        ; THE SUPPRESSED PATH RESTORES THE SIZE TOO. The restore at the foot
+        ; of this procedure is above `label END_MEASURE_MATRIX`, so this goto
+        ; jumps past it and would leave .scaledFont ambient. The earlier goto
+        ; in this procedure is safe because it fires before the first size
+        ; change; this one does not. @emlMeasureMatrixLayout runs PRE-DISPATCH
+        ; from the graphs form -- before the figure is drawn -- so the size it
+        ; leaves is the size the figure would open on.
+        Font size: emlSetAdaptiveTheme.bodySize
         goto END_MEASURE_MATRIX
     endif
 

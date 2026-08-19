@@ -4775,23 +4775,42 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                 # a reported fit is already on screen to be confused with it.
                 .lineEqn$ = .lineMethod$ + " fitted line: y = "
                 ... + fixed$ (.slope, 4) + "x + " + fixed$ (.intercept, 4)
+                ; R² LEFT THE FIGURE, SO THE RECORD HAS TO HOLD IT.
+                ; The on-figure equation no longer carries R² (see the
+                ; ruling note below), and the correlation line that does is
+                ; only built when Annotate is ticked. With Annotate off and
+                ; the formula on, this line is the only place a goodness of
+                ; fit can appear at all -- the regression reporter does not
+                ; run in that configuration either. Emitted for OLS only: a
+                ; Theil-Sen line has no OLS R². This is what the grouped
+                ; path already does for .gEqn$.
+                if .lineMethod$ = "OLS"
+                    .rSqInfo = .pearsonR * .pearsonR
+                    .lineEqn$ = .lineEqn$ + "  (R² = " + fixed$ (.rSqInfo, 3) + ")"
+                endif
                 appendInfoLine: .lineEqn$
 
                 # Formula on graph if requested (independent of annotate)
                 # On-graph formula is labelled with the estimator.
+                #
+                # NO R² HERE, BY RULING (19 Aug 2026). The correlation line
+                # built above at the top of this path already states R², and
+                # it is the line that carries the figure's goodness of fit;
+                # repeating it inside the equation put the same number on
+                # one figure twice. The equation keeps everything that
+                # describes the line that was DRAWN -- estimator tag, slope,
+                # intercept -- and nothing that describes the fit.
+                #
+                # Both former branches now produce the same text, so there
+                # is one branch. Do not reintroduce an "if OLS" test here:
+                # the Theil-Sen line never had an OLS R² to print, which is
+                # the whole reason the branch existed.
                 if scatterShowFormula = 1
                     annotBlockN = annotBlockN + 1
                     .methodTag$ = .lineMethod$ + ": "
-                    if .lineMethod$ = "OLS" and .pearsonR <> undefined
-                        .rSqAnnot = .pearsonR * .pearsonR
-                        .formulaStr$ = .methodTag$ + "y = " + fixed$ (.slope, 4) + "x + " + fixed$ (.intercept, 4) + "  (R² = " + fixed$ (.rSqAnnot, 3) + ")"
-                        annotBlockLabel$[annotBlockN] = .formulaStr$
-                        annotBlockDraw$[annotBlockN] = .methodTag$ + "%y = " + fixed$ (.slope, 4) + "%x + " + fixed$ (.intercept, 4) + "  (%R² = " + fixed$ (.rSqAnnot, 3) + ")"
-                    else
-                        .formulaStr$ = .methodTag$ + "y = " + fixed$ (.slope, 4) + "x + " + fixed$ (.intercept, 4)
-                        annotBlockLabel$[annotBlockN] = .formulaStr$
-                        annotBlockDraw$[annotBlockN] = .methodTag$ + "%y = " + fixed$ (.slope, 4) + "%x + " + fixed$ (.intercept, 4)
-                    endif
+                    .formulaStr$ = .methodTag$ + "y = " + fixed$ (.slope, 4) + "x + " + fixed$ (.intercept, 4)
+                    annotBlockLabel$[annotBlockN] = .formulaStr$
+                    annotBlockDraw$[annotBlockN] = .methodTag$ + "%y = " + fixed$ (.slope, 4) + "%x + " + fixed$ (.intercept, 4)
                 endif
             endif
         endif
