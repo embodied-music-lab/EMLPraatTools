@@ -3259,15 +3259,10 @@ prev_autoTitle$ = ""
 # Which graph type prev_autoTitle$ was composed FOR.
 # 0 = none composed yet. See the block after the main form.
 prev_autoTitleType = 0
-# SEEDED FROM THE CONFIG, NOT FROM "". @emlSaveConfig writes `subtitle:` on
-# every exit and @emlLoadConfig parses it back into config_subtitle$; the main
-# form's Subtitle field is seeded from prev_subtitle$, so unless prev_subtitle$
-# starts from the config the saved value is overwritten by a blank field two
-# lines before it could be shown, and one Continue erases it from disk. The
-# seed belongs HERE, in the sentinel block that runs once per session -- not
-# per workflow call, or a wrapper's second Draw would resurrect a subtitle the
-# user had just cleared.
 # THE SUBTITLE LIVES FOR THE SESSION, NOT ON DISK.
+# The seed belongs HERE, in the sentinel block that runs once per session --
+# not per workflow call, or a wrapper's second Draw would resurrect a
+# subtitle the user had just cleared.
 # It used to be written to the config on every exit and read back at
 # startup, so a subtitle typed for one figure reappeared over an unrelated
 # figure days later -- a caption is written about a particular figure and
