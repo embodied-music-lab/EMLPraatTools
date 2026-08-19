@@ -608,8 +608,6 @@ procedure emlLoadConfig
                         config_lastCSVFolder$ = .value$
                     elsif .key$ = "showAdvanced"
                         config_showAdvanced = number (.value$)
-                    elsif .key$ = "subtitle"
-                        config_subtitle$ = .value$
                     elsif .key$ = "groupSort"
                         config_groupSort = number (.value$)
                     endif
@@ -676,7 +674,6 @@ procedure emlSaveConfig
     appendFileLine: .configPath$, "lastPNGFolder: ", config_lastPNGFolder$
     appendFileLine: .configPath$, "lastCSVFolder: ", config_lastCSVFolder$
     appendFileLine: .configPath$, "showAdvanced: ", config_showAdvanced
-    appendFileLine: .configPath$, "subtitle: ", config_subtitle$
     appendFileLine: .configPath$, "groupSort: ", config_groupSort
 endproc
 
@@ -3270,6 +3267,15 @@ prev_autoTitleType = 0
 # seed belongs HERE, in the sentinel block that runs once per session -- not
 # per workflow call, or a wrapper's second Draw would resurrect a subtitle the
 # user had just cleared.
+# THE SUBTITLE LIVES FOR THE SESSION, NOT ON DISK.
+# It used to be written to the config on every exit and read back at
+# startup, so a subtitle typed for one figure reappeared over an unrelated
+# figure days later -- a caption is written about a particular figure and
+# almost never true of the next one. It is still remembered ACROSS DRAWS
+# within a session, because config_subtitle$ holds it and a redraw should
+# not make the user retype it; the config file simply no longer carries it,
+# so every session starts blank. Same rule as the page controls: remembered
+# while you work, reset when you come back.
 prev_subtitle$ = config_subtitle$
 
 # The per-type custom axis-label store; see @emlSeedAxisLabels. EVERY TYPE IS

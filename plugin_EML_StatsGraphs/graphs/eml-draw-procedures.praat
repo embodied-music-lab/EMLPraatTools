@@ -4614,6 +4614,8 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
         # Compute correlations and build annotation block
         .havePearson = 0
         .pearsonR = 0
+        ; Set when the correlation line states R², read by the equation line.
+        .rSqOnFigure = 0
 
         # Correlation annotations (gated by annotate)
         if .annotate = 1 and .nValid >= 3
@@ -4636,6 +4638,16 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                     annotBlockN = annotBlockN + 1
                     annotBlockLabel$[annotBlockN] = "r = " + fixed$ (.pearsonR, 3) + ", R² = " + fixed$ (.rSq, 3) + ", " + .pText$
                     annotBlockDraw$[annotBlockN] = "%r = " + fixed$ (.pearsonR, 3) + ", %R² = " + fixed$ (.rSq, 3) + ", " + .pText$
+                    ; THE CORRELATION LINE HAS CLAIMED R² FOR THIS FIGURE.
+                    ; The equation line below tests this flag rather than
+                    ; dropping R² unconditionally: the user is never asked
+                    ; about R² -- the Regression menu offers None / line /
+                    ; Formula / Both and R² has always ridden along with the
+                    ; formula -- so removing it outright takes the fit
+                    ; statistic off any figure that asks for a formula
+                    ; without a Pearson correlation to carry it. The rule is
+                    ; ONCE PER FIGURE, not "never on the equation".
+                    .rSqOnFigure = 1
                 endif
             endif
 
@@ -4809,8 +4821,21 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                     annotBlockN = annotBlockN + 1
                     .methodTag$ = .lineMethod$ + ": "
                     .formulaStr$ = .methodTag$ + "y = " + fixed$ (.slope, 4) + "x + " + fixed$ (.intercept, 4)
+                    .drawStr$ = .methodTag$ + "%y = " + fixed$ (.slope, 4) + "%x + " + fixed$ (.intercept, 4)
+                    ; ONCE PER FIGURE, NOT NEVER. If the correlation line
+                    ; above already states R² this line does not repeat it;
+                    ; if there is no correlation line -- Formula chosen with
+                    ; correlation set to None, or annotation switched off --
+                    ; the equation carries it, because otherwise the figure
+                    ; reports a fitted line with no goodness of fit at all.
+                    ; OLS only: a Theil-Sen line has no OLS R².
+                    if .rSqOnFigure = 0 and .lineMethod$ = "OLS" and .pearsonR <> undefined
+                        .rSqAnnot = .pearsonR * .pearsonR
+                        .formulaStr$ = .formulaStr$ + "  (R² = " + fixed$ (.rSqAnnot, 3) + ")"
+                        .drawStr$ = .drawStr$ + "  (%R² = " + fixed$ (.rSqAnnot, 3) + ")"
+                    endif
                     annotBlockLabel$[annotBlockN] = .formulaStr$
-                    annotBlockDraw$[annotBlockN] = .methodTag$ + "%y = " + fixed$ (.slope, 4) + "%x + " + fixed$ (.intercept, 4)
+                    annotBlockDraw$[annotBlockN] = .drawStr$
                 endif
             endif
         endif
