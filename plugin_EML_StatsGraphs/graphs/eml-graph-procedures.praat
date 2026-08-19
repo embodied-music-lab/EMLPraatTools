@@ -7926,6 +7926,213 @@ procedure emlGraphsMeltSeries: .objectId, .timeCol$, .cols$
 endproc
 
 
+# ============================================================================
+# @emlGraphsPivotSeries: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$
+#   -> .tableId, .nSeries, .nDataRows, .nUnlisted
+# ============================================================================
+# THE MIRROR IMAGE OF @emlGraphsMeltSeries, AND IT IS HERE FOR THE SAME
+# REASON: the user is never asked about it.
+#
+# The melt takes several columns of one measurement and stacks them into the
+# long shape the drawing layer takes. This takes the LONG shape -- one value
+# column beside a column that names what was measured -- and spreads the
+# levels back out into one column each, which is the two-column table the
+# right-hand axis is drawn from. @emlDrawTimeSeries takes a left column and a
+# right column by NAME; it has no concept of a level, and teaching it one
+# would be a change to the most heavily pinned procedure in the plugin to buy
+# something a table transform buys outright.
+#
+# MEANING AND STORAGE ARE INDEPENDENT, WHICH IS THE WHOLE POINT OF THE
+# QUESTION TREE. The tree asks what the columns MEAN and works the shape out
+# for itself, so "two different measurements" has to reach the same figure
+# whether the file holds them side by side or stacked -- and long is the shape
+# every EML stats tool in this plugin emits. Making the right-hand axis a
+# wide-only capability would re-couple the two after the tree had just pulled
+# them apart. harness/linetree's long_meas2 leg drives the same keystrokes as
+# its meas2 leg over the same numbers in the other shape and requires the two
+# PNGs to be the same file.
+#
+# WHY THE LEVELS ARRIVE AS ONE COMMA-SEPARATED STRING. It is the shape
+# @emlGraphsMeltSeries' `.cols$` already has, and for the same reason: the
+# recorder lifts a call's string literals into the editable block, so a list
+# that is one literal is one line a reader can retarget. A level whose own
+# name contains a comma cannot be carried this way, and the FORM refuses that
+# table by name rather than letting this procedure split it wrongly and draw a
+# figure with a series missing.
+#
+# HOW IT IS BUILT, AND WHY THE SORT IS NOT COSMETIC. The working copy is
+# sorted by (time, name), so every row sharing a time value is contiguous and,
+# within that, every row of one level is contiguous too. One pass then reads
+# the whole table: for each time, the k-th observation of each level goes to
+# the k-th output row of that time. A time point where one level was measured
+# three times and another twice produces three rows, and the level with two
+# leaves the third cell UNDEFINED -- which @emlDrawTimeSeries drops outright,
+# the same treatment a blank cell gets anywhere else in this plugin.
+#
+# ROW ORDER IS NOT PART OF THE RESULT, and that is measured rather than
+# assumed: @emlDrawTimeSeries copies its table and sorts it before it reads a
+# single value. The rows come out in ascending time because that is what the
+# sort this procedure needs anyway leaves behind.
+# ============================================================================
+procedure emlGraphsPivotSeries: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$
+    ; ---- the levels, split exactly as the melt splits its column list -----
+    .nSeries = 0
+    .rest$ = .levels$
+    while .rest$ <> ""
+        .comma = index (.rest$, ",")
+        if .comma = 0
+            .one$ = .rest$
+            .rest$ = ""
+        else
+            .one$ = left$ (.rest$, .comma - 1)
+            .rest$ = mid$ (.rest$, .comma + 1, 1000000)
+        endif
+        while left$ (.one$, 1) = " "
+            .one$ = mid$ (.one$, 2, 1000000)
+        endwhile
+        while .one$ <> "" and right$ (.one$, 1) = " "
+            .one$ = left$ (.one$, length (.one$) - 1)
+        endwhile
+        if .one$ <> ""
+            .nSeries = .nSeries + 1
+            .level'.nSeries'$ = .one$
+            ; MATCHED ON THE NORMALISED LABEL, WHICH IS @emlCountGroups' RULE.
+            ; "Male", "male" and " Male" are one group everywhere else in this
+            ; plugin, and the form counts the levels of this very column with
+            ; that procedure before it asks which one goes on the right. An
+            ; exact-string match here would agree with that count on tidy data
+            ; and disagree on the data the normalisation exists for: the level
+            ; would be listed, the figure would show its name in the key, and
+            ; the rows spelled the other way would silently not be drawn.
+            @eml_normalizeLabel: .one$
+            .levelNorm'.nSeries'$ = eml_normalizeLabel.result$
+        endif
+    endwhile
+
+    ; ---- the working copy, sorted so that one pass is enough --------------
+    selectObject: .objectId
+    .work = Copy: "eml_pivot_scan"
+    Sort rows: .timeCol$ + " " + .nameCol$
+    .nSrcRows = Get number of rows
+    for .r from 1 to .nSrcRows
+        .srcTime$ [.r] = Get value: .r, .timeCol$
+        .srcName$ [.r] = Get value: .r, .nameCol$
+        .srcValue$ [.r] = Get value: .r, .valueCol$
+    endfor
+    removeObject: .work
+    for .r from 1 to .nSrcRows
+        @eml_normalizeLabel: .srcName$ [.r]
+        .srcNorm$ [.r] = eml_normalizeLabel.result$
+    endfor
+
+    ; ---- pass 1: the time runs, and how many rows each one needs ----------
+    ; A time point needs as many output rows as its BUSIEST level has
+    ; observations there. One row per time is the ordinary case and gives one
+    ; row back.
+    .nTimes = 0
+    .nDataRows = 0
+    .nUnlisted = 0
+    .r = 1
+    while .r <= .nSrcRows
+        .runEndHere = .r
+        .more = 1
+        while .more = 1
+            .more = 0
+            ; NESTED AND NOT `and`: Praat evaluates both operands, so a
+            ; combined test would read .srcTime$ [.nSrcRows + 1] on the last
+            ; run and abort on an array element that does not exist.
+            if .runEndHere < .nSrcRows
+                if .srcTime$ [.runEndHere + 1] = .srcTime$ [.r]
+                    .runEndHere = .runEndHere + 1
+                    .more = 1
+                endif
+            endif
+        endwhile
+        .deepest = 0
+        for .k from 1 to .nSeries
+            .countHere = 0
+            for .q from .r to .runEndHere
+                if .srcNorm$ [.q] = .levelNorm'.k'$
+                    .countHere = .countHere + 1
+                endif
+            endfor
+            if .countHere > .deepest
+                .deepest = .countHere
+            endif
+        endfor
+        .nTimes = .nTimes + 1
+        .runFrom [.nTimes] = .r
+        .runTo [.nTimes] = .runEndHere
+        .runBase [.nTimes] = .nDataRows
+        .runRows [.nTimes] = .deepest
+        .nDataRows = .nDataRows + .deepest
+        .r = .runEndHere + 1
+    endwhile
+
+    ; ---- the table, its columns named after the levels --------------------
+    ; PLACEHOLDER NAMES FIRST, THEN RENAMED. `Create Table with column names:`
+    ; splits its argument on spaces, so a level called "Contact quotient" or a
+    ; time column called "Time (s)" would silently become two columns. Setting
+    ; each label afterwards takes the string whole.
+    .spec$ = "eml_pivot_t"
+    for .k from 1 to .nSeries
+        .spec$ = .spec$ + " eml_pivot_c" + string$ (.k)
+    endfor
+    .tableId = Create Table with column names: "eml_pivot", .nDataRows, .spec$
+    Set column label (index): 1, .timeCol$
+    for .k from 1 to .nSeries
+        Set column label (index): .k + 1, .level'.k'$
+    endfor
+
+    ; EVERY CELL STARTS UNDEFINED. A ragged table -- a level not measured at
+    ; some time point -- must leave a hole the drawing layer drops, not a
+    ; zero it plots. `Create Table with column names:` fills with zeroes.
+    for .row from 1 to .nDataRows
+        for .k from 1 to .nSeries
+            Set numeric value: .row, .level'.k'$, undefined
+        endfor
+    endfor
+
+    ; ---- pass 2: fill --------------------------------------------------
+    for .ti from 1 to .nTimes
+        .base = .runBase [.ti]
+        .timeVal = number (.srcTime$ [.runFrom [.ti]])
+        for .row from 1 to .runRows [.ti]
+            Set numeric value: .base + .row, .timeCol$, .timeVal
+        endfor
+        for .k from 1 to .nSeries
+            .seen = 0
+            for .q from .runFrom [.ti] to .runTo [.ti]
+                if .srcNorm$ [.q] = .levelNorm'.k'$
+                    .seen = .seen + 1
+                    Set numeric value: .base + .seen, .level'.k'$,
+                    ... number (.srcValue$ [.q])
+                endif
+            endfor
+        endfor
+    endfor
+
+    ; ---- what was left behind -------------------------------------------
+    ; Rows whose level is not one of the ones asked for. Counted rather than
+    ; refused: the caller decides whether a table holding a third measurement
+    ; is a mistake or a subset, and the form's level refusal is where that
+    ; decision is made.
+    for .q from 1 to .nSrcRows
+        .listed = 0
+        for .k from 1 to .nSeries
+            if .srcNorm$ [.q] = .levelNorm'.k'$
+                .listed = 1
+            endif
+        endfor
+        if .listed = 0
+            .nUnlisted = .nUnlisted + 1
+        endif
+    endfor
+
+    selectObject: .tableId
+endproc
+
+
 # ----------------------------------------------------------------------------
 # @emlCleanConvertedTable
 # After converting TableOfReal or Matrix -> Table, fix "?" placeholders.

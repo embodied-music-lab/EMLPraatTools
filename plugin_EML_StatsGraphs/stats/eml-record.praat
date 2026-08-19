@@ -2712,6 +2712,24 @@ procedure emlRecordColumnSpec: .proc$
     elsif .proc$ = "emlGraphsMeltSeries"
         .spec$ = "2=timeCol 3=seriesCols"
 
+    ; ---- the pivot (graphs/eml-graph-procedures.praat) --------------------
+    ; THE MELT'S MIRROR IMAGE, RECORDED THE SAME WAY. The graphs form records
+    ; it as a CONVERT step when the two measurements a line chart draws arrive
+    ; STACKED -- one value column beside a column naming what was measured --
+    ; and it has to, for the melt's reason exactly: the two-column table the
+    ; right-hand axis is drawn from is made by that pass and removed by it, so
+    ; a recorded call naming it would name an object the user never had.
+    ;
+    ; FOUR LITERALS AND FOUR ROLES. The value column is longValueCol and NOT
+    ; valueCol, and the distinction is load-bearing rather than pedantic: the
+    ; DRAW step in the same run declares valueCol too, and it is a different
+    ; column -- the level that ended up on the left-hand axis. Two roles
+    ; sharing a name in one run are two variables in the block, and a reader
+    ; retargeting the workflow would be editing whichever one the renderer
+    ; numbered first.
+    elsif .proc$ = "emlGraphsPivotSeries"
+        .spec$ = "2=timeCol 3=longValueCol 4=seriesNameCol 5=seriesLevels"
+
     ; ---- the draw procedures (graphs/eml-draw-procedures.praat) -----------
     ; data, title, xLabel, yLabel, width, height, colorMode, gridMode, then
     ; whatever columns the figure takes.
@@ -3003,6 +3021,21 @@ procedure emlRecordColumnGloss: .base$
         ; the figure, add one and it joins -- which is not obvious from a
         ; variable called seriesCols$ sitting beside a column of singulars.
         .gloss$ = "the columns drawn as series, in order"
+    elsif .base$ = "longValueCol"
+        ; THE STACKED COLUMN, NAMED FOR WHAT MAKES IT DIFFERENT from the
+        ; valueCol$ two lines below it in the same block. One holds every
+        ; measurement's numbers; the other is the one measurement drawn on the
+        ; left-hand axis after they were spread apart.
+        .gloss$ = "the column every measurement's values are stacked in"
+    elsif .base$ = "seriesNameCol"
+        .gloss$ = "the column that says which measurement a row holds"
+    elsif .base$ = "seriesLevels"
+        ; PLURAL, AND IT SAYS WHAT EDITING IT DOES, exactly as seriesCols$
+        ; does for the melt. This one string is the whole of the pivot's
+        ; input: name a different pair of measurements and a different pair of
+        ; lines is drawn, from the same table and without touching anything
+        ; else.
+        .gloss$ = "the measurements drawn as series, in order"
     endif
 endproc
 

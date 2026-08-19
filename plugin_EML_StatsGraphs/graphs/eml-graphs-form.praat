@@ -1614,6 +1614,42 @@ procedure emlComposeGraphTitle
                 .source$ = emlSanitizeLabel.result$
             endif
         endif
+        ; THE PIVOT IS NOT SOMETHING THE USER IS TOLD ABOUT EITHER, and it
+        ; reached the title by the same route the melt did. When two stacked
+        ; measurements are spread into a column each, objectId IS the
+        ; two-column table this pass built, so the figure came out titled
+        ; "F0 over time (eml pivot)": an internal name in the one line a
+        ; reader reads first. Measured on the long two-measurement fixture,
+        ; 19 August 2026: it was the ONLY difference between that figure and
+        ; the figure drawn from the same numbers stored wide -- the strokes,
+        ; the colours and the axis pair agreed exactly, and the differing
+        ; pixels were confined to the rows the title line occupies.
+        ;
+        ; WITH THE SOURCE CORRECTED THE TWO STILL DIFFER THERE, and must: each
+        ; title now names its own table, "lt longmeas2" and "lt meas2". 11463
+        ; pixels of 2160000, all in rows 54 to 97 of 1200. Type the same title
+        ; into both and the two PNGs are the same file, byte for byte.
+        ; harness/linetree/pngdiff.py measures both pairs and v97 section 16.4
+        ; is where the claim is made.
+        ;
+        ; UNLIKE THE MELT, THE QUANTITY STILL HAS A NAME HERE. The columns the
+        ; pivot made are named after the MEASUREMENTS, not after subjects, so
+        ; "F0 over time" composes exactly as it does from a wide table and
+        ; only the source needs correcting back to the table the user picked.
+        if tsPivotTableId > 0
+            if tsOrigObjectId > 0
+                selectObject: tsOrigObjectId
+                .full$ = selected$ ()
+                .space = index (.full$, " ")
+                if .space > 0
+                    .source$ = right$ (.full$, length (.full$) - .space)
+                else
+                    .source$ = .full$
+                endif
+                @emlSanitizeLabel: .source$
+                .source$ = emlSanitizeLabel.result$
+            endif
+        endif
     elsif graph_type = 6 or graph_type = 7 or graph_type = 9
         .value$ = valueColName$
         .x$ = groupColName$
@@ -3326,6 +3362,14 @@ prev_scatter_yMax = 0
     keepGoing = 1
     loadedObjectId = 0
     tsMeltTableId = 0
+    ; THE PIVOT'S TABLE, BESIDE THE MELT'S AND FOR THE SAME REASONS. The two
+    ; transforms are mirror images -- wide columns stacked into the long shape
+    ; the draw layer takes, and long levels spread into the two columns the
+    ; right-hand axis takes -- and each makes an object this pass owns and
+    ; must remove. They are separate slots and not one, because the title is
+    ; composed differently from each: a melted figure has no quantity to name
+    ; (the columns name the subjects), while a pivoted one does.
+    tsPivotTableId = 0
     objectId = 0
 
 # Annotation config (reset per workflow call; persists across Redraw)
@@ -3550,6 +3594,10 @@ repeat
     if tsMeltTableId > 0
         removeObject: tsMeltTableId
         tsMeltTableId = 0
+    endif
+    if tsPivotTableId > 0
+        removeObject: tsPivotTableId
+        tsPivotTableId = 0
     endif
     objectId = 0
 
@@ -4870,6 +4918,13 @@ repeat
         tsSecondAxis = 0
         tsSecondColName$ = ""
         tsMeltTableId = 0
+        tsPivotTableId = 0
+        ; WHETHER THE SERIES ARE LEVELS IS A CONCLUSION, NOT A CONTROL, so it
+        ; starts every pass at "no" exactly as tsSecondAxis does and is turned
+        ; on only by the branch that means it.
+        tsLevelMode = 0
+        tsLevelNameCol$ = ""
+        tsLongValueCol$ = ""
 
         tsRoleDone = 0
         repeat
@@ -5222,6 +5277,59 @@ repeat
                         # draw it against itself.
                         tsNSeries = 0
                         tsDroppedTime$ = ""
+
+                        # WHEN THE TABLE IS LONG, THE SERIES ARE THE LEVELS.
+                        #
+                        # A table of time / value / measure holds two
+                        # different measurements just as surely as a table of
+                        # time / f0 / cq does; it holds them stacked. The tree
+                        # asks what the columns MEAN and works the shape out
+                        # for itself, so the answer "different measurements"
+                        # has to reach the same figure from either shape --
+                        # otherwise the right-hand axis is a wide-only
+                        # capability and meaning and storage are welded back
+                        # together, which is the thing this page was rebuilt
+                        # to separate. Long is also the shape every EML stats
+                        # tool in this plugin emits.
+                        #
+                        # SO THE COUNT THAT MATTERS IS THE NUMBER OF LEVELS,
+                        # not the number of numeric columns. Two reaches the
+                        # right-hand axis page; three or more is refused
+                        # toward stacked panels, in the same terms three
+                        # columns are refused and in words that fit a page
+                        # with nothing to untick.
+                        #
+                        # @emlCountGroups IS THE COUNTER, and not a private
+                        # one, because the drawing layer counts its series
+                        # with exactly that procedure: same blank-cell rule,
+                        # same label normalisation, same order. A second
+                        # counter here would be a second opinion about how
+                        # many series the figure has.
+                        tsLevelMode = 0
+                        tsLevelNameCol$ = ""
+                        tsLongValueCol$ = ""
+                        tsLevelComma$ = ""
+                        if tsSeriesRole = 2 and tsShape = 2 and tsTxtPick > 1
+                            if tsNumName$[1] <> timeColName$
+                                ; THE ORDER IS THE ONE THE USER JUST CHOSE.
+                                ; emlGroupSortAlphabetical is published to the
+                                ; drawing layer much later in this file, so at
+                                ; this point it still holds the PREVIOUS
+                                ; press's answer; the levels would then be
+                                ; ordered by last press's menu and drawn by
+                                ; this one's.
+                                emlGroupSortAlphabetical = config_groupSort - 1
+                                tsLevelNameCol$ = tsTxtName$[tsTxtPick - 1]
+                                @emlCountGroups: objectId, tsLevelNameCol$
+                                if emlCountGroups.nGroups >= 2
+                                    tsLevelMode = 1
+                                endif
+                            endif
+                        endif
+                        if tsLevelMode = 0
+                            tsLevelNameCol$ = ""
+                        endif
+
                         if tsShape = 1
                             for iN from 1 to tsNNum
                                 if tsTick[iN] = 1
@@ -5231,6 +5339,32 @@ repeat
                                         tsNSeries = tsNSeries + 1
                                         tsSeriesCol$[tsNSeries] = tsNumName$[iN]
                                     endif
+                                endif
+                            endfor
+                        elsif tsLevelMode = 1
+                            # THE SERIES ARE THE LEVELS, IN THE ORDER THE
+                            # FIGURE WILL DRAW THEM. tsSeriesCol$[] holds
+                            # level names here where it holds column names on
+                            # the wide path, and everything downstream -- the
+                            # refusal's count, the right-hand axis menu, the
+                            # left/right derivation -- reads it without caring
+                            # which it is. That is the point: after the pivot
+                            # below, a level name IS a column name.
+                            tsLongValueCol$ = tsNumName$[1]
+                            tsNSeries = emlCountGroups.nGroups
+                            for iL from 1 to tsNSeries
+                                tsSeriesCol$[iL] = emlCountGroups.groupLabel$[iL]
+                                ; A COMMA IN A LEVEL NAME CANNOT BE CARRIED.
+                                ; The pivot takes its levels as one
+                                ; comma-separated literal, which is what lets
+                                ; the recorder lift them into the editable
+                                ; block as one line -- the same shape
+                                ; seriesCols$ has. A level called "Cohort 1, 2"
+                                ; would split into two, and the figure would
+                                ; come out silently short of a series. It is
+                                ; refused by name below instead.
+                                if index (tsSeriesCol$[iL], ",") > 0
+                                    tsLevelComma$ = tsSeriesCol$[iL]
                                 endif
                             endfor
                         else
@@ -5267,7 +5401,23 @@ repeat
                             tsRefuse$ = "No measurement columns are selected, so there is nothing to draw. Tick at least one column that is not the time axis."
                         endif
                         if tsRefuse$ = ""
-                            if tsSeriesRole = 2 and tsNSeries >= 3
+                            if tsLevelComma$ <> ""
+                                tsRefuse$ = "The measurement named """ + tsLevelComma$ + """ has a comma in it, and the comma is what separates one measurement from the next when this figure is written down. Rename it in the """ + tsLevelNameCol$ + """ column and press Draw again."
+                            endif
+                        endif
+                        if tsRefuse$ = ""
+                            if tsLevelMode = 1 and tsNSeries >= 3
+                                # THE SAME REFUSAL, WORDED FOR A PAGE WITH NO
+                                # TICKBOXES. Three unlike quantities have no
+                                # third axis to go on however the file stores
+                                # them, so the count is refused identically --
+                                # but "untick columns until two are left" is
+                                # advice this page cannot take. There is one
+                                # column here and three measurements inside
+                                # it, so the message says where the three came
+                                # from and what to do instead.
+                                tsRefuse$ = "The """ + tsLevelNameCol$ + """ column holds " + string$ (tsNSeries) + " different measurements and a figure has two vertical axes. Draw the extra ones as stacked panels: untick ""Erase page first"", set a panel origin, and press Draw again — or narrow the table to two measurements."
+                            elsif tsSeriesRole = 2 and tsNSeries >= 3
                                 # NO THIRD AXIS EXISTS, and normalising three
                                 # unlike quantities onto one scale would be an
                                 # analytic transform smuggled into a display
@@ -5455,6 +5605,74 @@ repeat
                                         prev_tsSecondLabel$ = tmpSecLabel$
                                     endif
                                 until tsSecondDone = 1
+
+                                # ---- THE PIVOT: LONG IN, TWO COLUMNS OUT ----
+                                # THE MIRROR IMAGE OF THE MELT ABOVE, and the
+                                # user is asked about it exactly as much: not
+                                # at all. @emlDrawTimeSeries takes a left
+                                # column and a right column BY NAME; it has no
+                                # concept of a level and is the most heavily
+                                # pinned procedure in this plugin. Spreading
+                                # the two levels into two columns before the
+                                # call buys the same figure without touching
+                                # it, and after the pivot the level names ARE
+                                # column names, so valueColName$ and
+                                # tsSecondColName$ -- set by the page above out
+                                # of tsSeriesCol$[] -- are already right.
+                                #
+                                # AFTER THE PAGE AND NOT BEFORE IT. Go Back on
+                                # the right-hand axis page returns to the
+                                # column page, which reads objectId and
+                                # re-surveys it; a pivot done before the
+                                # question would leave the column page looking
+                                # at a table the user does not have.
+                                if allFormsDone = 1 and tsLevelMode = 1
+                                    @emlGraphsPivotSeries: objectId,
+                                    ... timeColName$, tsLongValueCol$,
+                                    ... tsLevelNameCol$, tsSeriesCols$
+                                    tsOrigObjectId = objectId
+                                    tsPivotTableId = emlGraphsPivotSeries.tableId
+
+                                    # ---- RECORDED AS A CONVERSION ----
+                                    # WITHOUT THIS THE EMITTED SCRIPT CANNOT
+                                    # RUN, for the reason the melt's own
+                                    # recording block states three screens up:
+                                    # the recorder's capture hook is inside
+                                    # the DRAW procedure, so what it sees is
+                                    # the pivot table -- and this pass REMOVES
+                                    # that table before it returns. The
+                                    # manifest would name "Table eml_pivot",
+                                    # an object nobody has.
+                                    #
+                                    # A REPLAY THEREFORE REBUILDS THE PIVOT
+                                    # FROM THE USER'S OWN COLUMN AND LEVELS.
+                                    # All four literals are lifted into the
+                                    # editable block by @emlRecordColumnSpec
+                                    # -- the time column, the value column,
+                                    # the column that names the measurements
+                                    # and the two levels themselves -- so
+                                    # retargeting the workflow at next month's
+                                    # table is four edits in the one place
+                                    # every other name is edited.
+                                    if variableExists ("emlRecordLoaded")
+                                        @emlRecordInit
+                                        if emlRecordActive = 1
+                                            tsPivotCode$ = "@emlGraphsPivotSeries: data, """
+                                            ... + timeColName$ + """, """
+                                            ... + tsLongValueCol$ + """, """
+                                            ... + tsLevelNameCol$ + """, """
+                                            ... + tsSeriesCols$ + """" + newline$
+                                            ... + "data = emlGraphsPivotSeries.tableId"
+                                            ... + newline$ + "selectObject: data"
+                                            @emlRecordConvert: tsOrigObjectId,
+                                            ... tsPivotTableId, tsPivotCode$,
+                                            ... "This table stores its measurements stacked in one column, so they are spread back out into a column each: the time column, then one column per measurement. That is the shape a two-axis line chart is drawn from."
+                                        endif
+                                    endif
+
+                                    objectId = tsPivotTableId
+                                    selectObject: objectId
+                                endif
                             else
                                 # One series, or several different
                                 # measurements refused above: a single column
@@ -9354,6 +9572,15 @@ repeat
         removeObject: tsMeltTableId
         objectId = tsOrigObjectId
         tsMeltTableId = 0
+    endif
+    # And the pivot table, for the same reason: the two columns the right-hand
+    # axis was drawn from were made by this pass out of a long table, and they
+    # are not the user's data. The recorded CONVERT step is what lets an
+    # emitted script build them again.
+    if tsPivotTableId > 0
+        removeObject: tsPivotTableId
+        objectId = tsOrigObjectId
+        tsPivotTableId = 0
     endif
 
     # Track which graph type was drawn for range persistence
