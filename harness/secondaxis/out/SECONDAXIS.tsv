@@ -2,40 +2,40 @@ auto_pair	verdict	OK
 auto_pair	secondon	1
 auto_pair	rightslot	2
 auto_pair	left_min	190
-auto_pair	left_max	260
+auto_pair	left_max	280.5590785557137
 auto_pair	right_min	0.36884000000000006
-auto_pair	right_max	0.66144
+auto_pair	right_max	0.7473769483628834
 auto_pair	left_ink	{0.00, 0.45, 0.70}
 auto_pair	right_ink	{0.90, 0.62, 0.00}
 auto_pair	refusal	
-auto_pair	note_lines	0
+auto_pair	note_lines	2
 auto_pair	meltcols	
 auto_pair	meltrows	
 auto_pair	png_px	1800x1200
-auto_pair	png_md5	2d725e66ecf3a17679ccd2197add74d2
-auto_pair	ink_slot1_px	9972
-auto_pair	ink_slot2_px	9882
-auto_pair	red_plot_px	68
-auto_pair	red_margin_px	20
+auto_pair	png_md5	79cd26b632449f5f806edaf6b408b85d
+auto_pair	ink_slot1_px	11056
+auto_pair	ink_slot2_px	11125
+auto_pair	red_plot_px	63
+auto_pair	red_margin_px	21
 bw_pair	verdict	OK
 bw_pair	secondon	1
 bw_pair	rightslot	2
 bw_pair	left_min	190
-bw_pair	left_max	260
+bw_pair	left_max	280.5590785557137
 bw_pair	right_min	0.36884000000000006
-bw_pair	right_max	0.66144
+bw_pair	right_max	0.7473769483628834
 bw_pair	left_ink	{0, 0, 0}
 bw_pair	right_ink	{0.63, 0.63, 0.63}
 bw_pair	refusal	
-bw_pair	note_lines	0
+bw_pair	note_lines	2
 bw_pair	meltcols	
 bw_pair	meltrows	
 bw_pair	png_px	1800x1200
-bw_pair	png_md5	dbe708189dd786415c62facfacd0c606
+bw_pair	png_md5	624935a0f9d7211288a3a23ce5d4cb9c
 bw_pair	ink_slot1_px	0
 bw_pair	ink_slot2_px	0
-bw_pair	red_plot_px	68
-bw_pair	red_margin_px	20
+bw_pair	red_plot_px	63
+bw_pair	red_margin_px	21
 grouped_pair	verdict	OK
 grouped_pair	secondon	1
 grouped_pair	rightslot	3
@@ -74,50 +74,25 @@ margin_ink	ink_slot1_px	0
 margin_ink	ink_slot2_px	0
 margin_ink	red_plot_px	786
 margin_ink	red_margin_px	21
-melt_carry	verdict	OK
-melt_carry	secondon	1
-melt_carry	rightslot	3
-melt_carry	left_min	0
-melt_carry	left_max	416.1133025431624
-melt_carry	right_min	0.418651917275152
-melt_carry	right_max	0.7643365287184681
-melt_carry	left_ink	{0.00, 0.45, 0.70}
-melt_carry	right_ink	{0.00, 0.62, 0.45}
-melt_carry	refusal	
-melt_carry	note_lines	2
-melt_carry	meltcols	4
-melt_carry	meltrows	48
-melt_carry	carry1_melt	0.41900000000000004
-melt_carry	carry1_source	0.41900000000000004
-melt_carry	carry2_melt	0.41900000000000004
-melt_carry	carry2_source	0.41900000000000004
-melt_carry	carryn_melt	0.628
-melt_carry	carryn_source	0.628
-melt_carry	png_px	1800x1200
-melt_carry	png_md5	ad1dcf2ea3817ff813ff365c5fa61ca6
-melt_carry	ink_slot1_px	10933
-melt_carry	ink_slot2_px	9835
-melt_carry	red_plot_px	156
-melt_carry	red_margin_px	24
 recorded	verdict	OK
 recorded	secondon	1
 recorded	rightslot	2
 recorded	left_min	190
-recorded	left_max	260
+recorded	left_max	280.5590785557137
 recorded	right_min	0.36884000000000006
-recorded	right_max	0.66144
+recorded	right_max	0.7473769483628834
 recorded	left_ink	{0.00, 0.45, 0.70}
 recorded	right_ink	{0.90, 0.62, 0.00}
 recorded	refusal	
-recorded	note_lines	0
+recorded	note_lines	2
 recorded	meltcols	
 recorded	meltrows	
 recorded	png_px	1800x1200
-recorded	png_md5	fcd25fd7ba4ec0299b14cf9dd3d53584
-recorded	ink_slot1_px	9276
-recorded	ink_slot2_px	9882
-recorded	red_plot_px	68
-recorded	red_margin_px	20
+recorded	png_md5	9d4bdbd039f275065fd1bec710f552ec
+recorded	ink_slot1_px	10373
+recorded	ink_slot2_px	11125
+recorded	red_plot_px	63
+recorded	red_margin_px	21
 refuse_ci	verdict	OK
 refuse_ci	secondon	
 refuse_ci	rightslot	
@@ -255,42 +230,42 @@ styles_sweep	verdict	OK
 styles_sweep	secondon	1
 styles_sweep	rightslot	2
 styles_sweep	left_min	190
-styles_sweep	left_max	260
+styles_sweep	left_max	280.5590785557137
 styles_sweep	right_min	0.36884000000000006
-styles_sweep	right_max	0.66144
+styles_sweep	right_max	0.7473769483628834
 styles_sweep	left_ink	{0.00, 0.45, 0.70}
 styles_sweep	right_ink	{0.90, 0.62, 0.00}
 styles_sweep	refusal	
-styles_sweep	note_lines	0
+styles_sweep	note_lines	2
 styles_sweep	meltcols	
 styles_sweep	meltrows	
 styles_sweep	png_px	1800x1200
-styles_sweep	png_md5	66bba1543c1821db521615b53f95bdbb
-styles_sweep	ink_slot1_px	9276
-styles_sweep	ink_slot2_px	9778
-styles_sweep	red_plot_px	68
-styles_sweep	red_margin_px	20
+styles_sweep	png_md5	96d4571154a83193fdf7845a5c53f32d
+styles_sweep	ink_slot1_px	10373
+styles_sweep	ink_slot2_px	10989
+styles_sweep	red_plot_px	63
+styles_sweep	red_margin_px	21
 typed_pair	verdict	OK
 typed_pair	secondon	1
 typed_pair	rightslot	2
 typed_pair	left_min	190
-typed_pair	left_max	260
+typed_pair	left_max	280.5590785557137
 typed_pair	right_min	0
 typed_pair	right_max	1
 typed_pair	left_ink	{0.00, 0.45, 0.70}
 typed_pair	right_ink	{0.90, 0.62, 0.00}
 typed_pair	refusal	
-typed_pair	note_lines	0
+typed_pair	note_lines	2
 typed_pair	meltcols	
 typed_pair	meltrows	
 typed_pair	png_px	1800x1200
-typed_pair	png_md5	01d5e68cb0c6234d8886653d3db0ed0b
-typed_pair	ink_slot1_px	9500
-typed_pair	ink_slot2_px	9940
-typed_pair	red_plot_px	68
+typed_pair	png_md5	f23e7c702ed5742e774c0ebd851b8a29
+typed_pair	ink_slot1_px	11035
+typed_pair	ink_slot2_px	11202
+typed_pair	red_plot_px	63
 typed_pair	red_margin_px	13
 replay	verdict	OK
-replay	png_md5	fcd25fd7ba4ec0299b14cf9dd3d53584
+replay	png_md5	9d4bdbd039f275065fd1bec710f552ec
 replay	png_px	1800x1200
 block	lineStyle	2
 block	secondAxisOn	1

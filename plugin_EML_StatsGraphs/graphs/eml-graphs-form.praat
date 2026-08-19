@@ -1944,51 +1944,6 @@ endproc
 
 
 # ============================================================================
-# @emlGraphsCarrySecondColumn: .sourceId, .meltId, .col$, .nSourceRows
-# ============================================================================
-# THE RIGHT-HAND SERIES' COLUMN, CARRIED INTO THE MELTED TABLE.
-#
-# WIDE FORMAT WITH TWO OR MORE SERIES IS DRAWN FROM A DIFFERENT OBJECT. The
-# form melts the chosen series columns into a three-column table -- the time
-# column, `eml_series` and `eml_value` -- and hands THAT to the draw
-# procedure. The right-hand series is chosen from the ORIGINAL table's
-# columns, which the melt does not carry, so a draw procedure asked for it
-# would find no such column and say so.
-#
-# THE COLUMN IS COPIED IN UNDER ITS OWN NAME. Nothing downstream then has to
-# know that a melt happened: the draw reads the column the user named, the
-# recorder records that name, and the emitted script names it too.
-#
-# THE ROW MAPPING IS THE MELT'S OWN. The melt writes the whole table once per
-# series, in order, so row r of the melt is row ((r - 1) mod n) + 1 of the
-# source. A value therefore appears once per series -- and the right-hand
-# series is collapsed per time point before it is drawn, where the mean of a
-# value repeated k times is that value.
-#
-# IT IS A PROCEDURE SO THAT SOMETHING OTHER THAN A DIALOG CAN REACH IT.
-# Inline in the Draw arm, the only way to exercise this was to drive the whole
-# form through a window manager with the right column chosen in a combo box,
-# which is why harness/secondaxis calls it directly on a melt table it builds
-# the same way.
-#
-# The caller re-selects whatever it needs afterwards; this leaves the melted
-# table selected.
-# ============================================================================
-procedure emlGraphsCarrySecondColumn: .sourceId, .meltId, .col$, .nSourceRows
-    selectObject: .meltId
-    Append column: .col$
-    .nMelt = Get number of rows
-    for .i from 1 to .nMelt
-        .iSource = (.i - 1) mod .nSourceRows + 1
-        selectObject: .sourceId
-        .val$ = Get value: .iSource, .col$
-        selectObject: .meltId
-        Set numeric value: .i, .col$, number (.val$)
-    endfor
-endproc
-
-
-# ============================================================================
 # @emlGraphsPublishSeriesPens
 # ============================================================================
 # HAND THE DRAWING LAYER THE PENS AND THE SECOND-AXIS REQUEST, from one place,

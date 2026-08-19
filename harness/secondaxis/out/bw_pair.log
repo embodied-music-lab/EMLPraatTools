@@ -1,6 +1,9 @@
-Time series: Line shows the mean per time point. 12 repeated observation(s) were averaged. Use Spaghetti Plot to show individual series, or Time Series (with CI) to show the spread around each mean.
-LEFT 190 260
-RIGHT 0.36884000000000006 0.66144
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+Time series: Lines show the mean per time point. 12 repeated observation(s) were averaged. Intervals are not offered across two scales.
+NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+Time series: Lines show the mean per time point. 12 repeated observation(s) were averaged. Intervals are not offered across two scales.
+LEFT 190 280.5590785557137
+RIGHT 0.36884000000000006 0.7473769483628834
 SECONDON 1
 RIGHTSLOT 2
 RIGHTINK {0.63, 0.63, 0.63}

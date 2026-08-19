@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Tue Aug 18 20:13:27 2026  --  recorded on Praat 6.6.30
+# Wed Aug 19 14:51:04 2026  --  recorded on Praat 6.6.30
 # Input: Table secondaxis -- 24 rows, 5 columns
 # ============================================================
 
@@ -55,8 +55,8 @@ include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 data1$ = "Table secondaxis"   ; run 1, step 1 (draw)
 timeCol$         = "t"   ; the time column -- run 1, step 1 (draw)
 valueCol$        = "f0"   ; the measured column -- run 1, step 1 (draw)
-axisYMin         = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-axisYMax         = 0.0   ; on the recorded data it resolved to 190.0000 .. 260.0000
+axisYMin         = 190   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
+axisYMax         = 280.5590785557137   ; the figure was drawn on 190.0000 .. 280.5591
 eraseFirst       = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 1 (draw)
 panelOriginX     = 0   ; inches from the left of the page to this panel's corner -- run 1, step 1 (draw)
 panelOriginY     = 0   ; inches from the top of the page to this panel's corner -- run 1, step 1 (draw)

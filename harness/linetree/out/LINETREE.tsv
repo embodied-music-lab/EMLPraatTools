@@ -1,65 +1,235 @@
 --run--	praat_version	Praat 6.6.30 (June 30 2026)
 --run--	source_tree	/home/claude/EMLPraatTools
---run--	legs_requested	script_refuse
---run--	code_sha256_eml-graphs-form	cba89496ad5c41d15af4686a2a00cc67bb22fa1aeede46cd88f35c184d3e67ae
+--run--	legs_requested	long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2
+--run--	code_sha256_eml-graphs-form	d68985c0b986fc5e6f5bddaf29b8b60797ef02546482bd072fe398e5e1ebd59d
 --run--	code_sha256_eml-graph-procedures	eee6eb1dbfa261c8de4a384991a8d84d80c6cb4d5af0075f8ce4ea8fb0d71c15
 --run--	code_sha256_eml-draw-procedures	9f9e6982ff2a6c01e78e4c31355280151865b880c6595ae6d7800c385495376c
 --run--	code_sha256_eml-record	631d406dd11c452128c49f1d520bc4a16b88eda2f50da8e43869cfcd370d135e
 --run--	compositor	running
-script_refuse	leg_started	1
-script_refuse	exit_code	0
-script_refuse	subjects_refused	1
-script_refuse	subjects_refusal_text	NOTE: a second right-hand y-axis was requested and refused. These series are the same measurement on different subjects, so a second scale would say they are not comparable when they are. The figure was drawn with one y-axis.
-script_refuse	subjects_union	0 6 0 4
-script_refuse	measurements_refused	0
-script_refuse	leg_returned	script_refuse
-script_refuse	vars_written	5
-script_refuse	fig_png_md5	91fa4e9472bc829cee84b617f8e20699
-script_refuse	fig_png_bytes	67535
-script_refuse	fig_png_px	1800x1200
-script_refuse	fig_chromatic_colours	1
-script_refuse	fig_colour_#0073B3	10279
-script_refuse	fig_chromatic_bands	4235,405,2205,2691,2606,3031,1823,2957,865,1127
-script_refuse	fig_chromatic_bands_nonempty	10
-script_refuse	fig_figtext	Same measurement, two subjects
-script_refuse	fig_figtext	140
-script_refuse	fig_figtext	130
-script_refuse	fig_figtext	oO
-script_refuse	fig_figtext	2
-script_refuse	fig_figtext	Gi
-script_refuse	fig_figtext	> 120
-script_refuse	fig_figtext	110
-script_refuse	fig_figtext	100
-script_refuse	fig_figtext	2 4 6 8 10 12
-script_refuse	fig_figtext	Time
-script_refuse	honoured_png_md5	d8eadb8bced8118500034924f6d0386e
-script_refuse	honoured_png_bytes	123772
-script_refuse	honoured_png_px	1800x1200
-script_refuse	honoured_chromatic_colours	2
-script_refuse	honoured_colour_#E69E00	11293
-script_refuse	honoured_colour_#0073B3	9676
-script_refuse	honoured_chromatic_bands	4794,3028,4982,5337,5784,6731,4718,4631,863,1127
-script_refuse	honoured_chromatic_bands_nonempty	10
-script_refuse	honoured_figtext	Different measurements, two columns
-script_refuse	honoured_figtext	140, @ Ss! ae
-script_refuse	honoured_figtext	© S82 (right axis)
-script_refuse	honoured_figtext	pais 230
-script_refuse	honoured_figtext	130 o ‘bo05
-script_refuse	honoured_figtext	3 i *# 220
-script_refuse	honoured_figtext	Gi a \. a ine)
-script_refuse	honoured_figtext	> 120 » \ A
-script_refuse	honoured_figtext	e 7 ® 215
-script_refuse	honoured_figtext	; C # 210
-script_refuse	honoured_figtext	110) SLY
-script_refuse	honoured_figtext	y ©
-script_refuse	honoured_figtext	"4 205
-script_refuse	honoured_figtext	100
-script_refuse	honoured_figtext	2 4 6 8 10 2
-script_refuse	honoured_figtext	Time
-script_refuse	info	NOTE: a second right-hand y-axis was requested and refused. These series are the same measurement on different subjects, so a second scale would say they are not comparable when they are. The figure was drawn with one y-axis.
-script_refuse	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
-script_refuse	info_lines	2
---run--	legs_driven	1
+long_titled	leg_started	1
+long_titled	ink_empty	0.000704286
+long_titled	s1_title	EML Graphs
+long_titled	s1_want	EML Graphs
+long_titled	s1_shown	Graph type: Line Chart (+Cl) v
+long_titled	s1_shown	Title (blank = auto from table and
+long_titled	s1_shown	columns):
+long_titled	s1_shown	Subtitle:
+long_titled	s1_shown	Colormode: Color v
+long_titled	s1_shown	Figure width (inches): ¢
+long_titled	s1_shown	Figure height (inches): | 4
+long_titled	s1_shown	Erase page first
+long_titled	s1_shown	Panel origin x (inches):
+long_titled	s1_shown	Panel origin y (inches):
+long_titled	s1_shown	Untick Erase to add this figure to the page already drawn.
+long_titled	s1_shown	On a composed page a legend inside the plot is not
+long_titled	s1_shown	given axis room — use Right of plot or Below plot.
+long_titled	s1_shown	Undo Quit Continue
+long_titled	s2_title	Line Chart -- What the lines are
+long_titled	s2_want	Line Chart -- What the lines are
+long_titled	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+long_titled	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
+long_titled	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
+long_titled	s2_shown	Different measurements: FO and contact quotient — each its own scale.
+long_titled	s2_shown	Undo Go Back Quit Continue
+long_titled	s3_title	Line Chart -- Column Mapping
+long_titled	s3_want	Line Chart -- Column Mapping
+long_titled	s3_shown	[-] Select columns from your Table.
+long_titled	s3_shown	Time column: time Vv
+long_titled	s3_shown	Measurement column: value
+long_titled	s3_shown	Series names come from: measure v
+long_titled	s3_shown	Group order: Table order v
+long_titled	s3_shown	Line style: Solid v
+long_titled	s3_shown	Undo Go Back Quit Advanced Draw
+long_titled	s4_title	Line Chart -- The Right-Hand Axis
+long_titled	s4_want	Line Chart -- The Right-Hand Axis
+long_titled	s4_shown	These two measurements are on different scales, so each gets its own.
+long_titled	s4_shown	Its ticks and its name go in the right margin.
+long_titled	s4_shown	Right hand axis: cq v
+long_titled	s4_shown	\. Right y-axis range (both 0 = auto)
+long_titled	s4_shown	Right minimum: 9g
+long_titled	s4_shown	Right maximum: 9g
+long_titled	s4_shown	\, Right axis label (blank = the column name)
+long_titled	s4_shown	Right axis label:
+long_titled	s4_shown	Right line style: Dashed Vv
+long_titled	s4_shown	Undo Go Back Draw
+long_titled	s5_title	Graph Complete
+long_titled	s5_want	Graph Complete
+long_titled	s5_ink	0.00597214
+long_titled	s5_shown	| Graph has been drawn in the Picture window.
+long_titled	s5_shown	What would you like to do?
+long_titled	s5_shown	Done Save Redraw
+long_titled	steps	5
+long_titled	wait_seconds	0
+long_titled	windows_at_exit	[Praat Objects][Praat Picture][Praat Info]
+long_titled	exited	no
+long_titled	leg_object	7
+long_titled	leg_returned	long_titled
+long_titled	series_role	measurements
+long_titled	n_series	2
+long_titled	series_cols	f0,cq
+long_titled	time_col	time
+long_titled	value_col	f0
+long_titled	group_col	
+long_titled	right_col	cq
+long_titled	second_axis	1
+long_titled	ci_accepted	0
+long_titled	repeats_found	0
+long_titled	max_per_point	1
+long_titled	ci_offered	0
+long_titled	shape	2
+long_titled	level_mode	1
+long_titled	level_name_col	measure
+long_titled	long_value_col	value
+long_titled	n_numeric	1
+long_titled	n_text	1
+long_titled	y_label	F0
+long_titled	axis_y_min	180
+long_titled	axis_y_max	283.49608977795856
+long_titled	drawn_union	0 6 0 4
+long_titled	vars_written	24
+long_titled	fig_png_md5	1f895e25d0f8127f5e4ab5f3c3b58e48
+long_titled	fig_png_bytes	136030
+long_titled	fig_png_px	1800x1200
+long_titled	fig_chromatic_colours	2
+long_titled	fig_colour_#0073B3	20827
+long_titled	fig_colour_#E69E00	20722
+long_titled	fig_chromatic_bands	2438,2899,2651,11179,10230,8279,7203,12434,3444,2362
+long_titled	fig_chromatic_bands_nonempty	10
+long_titled	fig_figtext	Two measurements
+long_titled	fig_figtext	280
+long_titled	fig_figtext	@ fo
+long_titled	fig_figtext	@ Cq (right axis) 0.6
+long_titled	fig_figtext	260
+long_titled	fig_figtext	0.55
+long_titled	fig_figtext	. »* Ce
+long_titled	fig_figtext	240 bal é e
+long_titled	fig_figtext	® ‘e 0.5
+long_titled	fig_figtext	Oo A A (2)
+long_titled	fig_figtext	ire 6 I a
+long_titled	fig_figtext	/ @
+long_titled	fig_figtext	220 4 \ 40.45
+long_titled	fig_figtext	/ |
+long_titled	fig_figtext	200 04
+long_titled	fig_figtext	0.35
+long_titled	fig_figtext	180
+long_titled	fig_figtext	01 #02 038 04 O05 O06 O07 O08 09 1
+long_titled	fig_figtext	Time
+long_titled	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+long_titled	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+long_titled	info_lines	2
+long_titled	display_clear	yes
+wide_titled	leg_started	1
+wide_titled	ink_empty	0.000704286
+wide_titled	s1_title	EML Graphs
+wide_titled	s1_want	EML Graphs
+wide_titled	s1_shown	Graph type: Line Chart (+Cl) v
+wide_titled	s1_shown	Title (blank = auto from table and
+wide_titled	s1_shown	columns):
+wide_titled	s1_shown	Subtitle:
+wide_titled	s1_shown	Colormode: Color v
+wide_titled	s1_shown	Figure width (inches): ¢
+wide_titled	s1_shown	Figure height (inches): | 4
+wide_titled	s1_shown	Erase page first
+wide_titled	s1_shown	Panel origin x (inches):
+wide_titled	s1_shown	Panel origin y (inches):
+wide_titled	s1_shown	Untick Erase to add this figure to the page already drawn.
+wide_titled	s1_shown	On a composed page a legend inside the plot is not
+wide_titled	s1_shown	given axis room — use Right of plot or Below plot.
+wide_titled	s1_shown	Undo Quit Continue
+wide_titled	s2_title	Line Chart -- What the lines are
+wide_titled	s2_want	Line Chart -- What the lines are
+wide_titled	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+wide_titled	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
+wide_titled	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
+wide_titled	s2_shown	Different measurements: FO and contact quotient — each its own scale.
+wide_titled	s2_shown	Undo Go Back Quit Continue
+wide_titled	s3_title	Line Chart -- Column Mapping
+wide_titled	s3_want	Line Chart -- Column Mapping
+wide_titled	s3_shown	[-] Select columns from your Table.
+wide_titled	s3_shown	Time column: time 7
+wide_titled	s3_shown	Every numeric column is drawn. Untick any you do not want.
+wide_titled	s3_shown	Series 1 (f0)
+wide_titled	s3_shown	Series 2 (cq)
+wide_titled	s3_shown	Line style: Solid v
+wide_titled	s3_shown	Undo Go Back Quit Advanced Draw
+wide_titled	s4_title	Line Chart -- The Right-Hand Axis
+wide_titled	s4_want	Line Chart -- The Right-Hand Axis
+wide_titled	s4_shown	These two measurements are on different scales, so each gets its own.
+wide_titled	s4_shown	Its ticks and its name go in the right margin.
+wide_titled	s4_shown	Right hand axis: cq v
+wide_titled	s4_shown	\. Right y-axis range (both 0 = auto)
+wide_titled	s4_shown	Right minimum: 9g
+wide_titled	s4_shown	Right maximum: 9g
+wide_titled	s4_shown	\, Right axis label (blank = the column name)
+wide_titled	s4_shown	Right axis label:
+wide_titled	s4_shown	Right line style: Dashed Vv
+wide_titled	s4_shown	Undo Go Back Draw
+wide_titled	s5_title	Graph Complete
+wide_titled	s5_want	Graph Complete
+wide_titled	s5_ink	0.00597214
+wide_titled	s5_shown	| Graph has been drawn in the Picture window.
+wide_titled	s5_shown	What would you like to do?
+wide_titled	s5_shown	Done Save Redraw
+wide_titled	steps	5
+wide_titled	wait_seconds	0
+wide_titled	windows_at_exit	[Praat Objects][Praat Picture][Praat Info]
+wide_titled	exited	no
+wide_titled	leg_object	3
+wide_titled	leg_returned	wide_titled
+wide_titled	series_role	measurements
+wide_titled	n_series	2
+wide_titled	series_cols	f0,cq
+wide_titled	time_col	time
+wide_titled	value_col	f0
+wide_titled	group_col	
+wide_titled	right_col	cq
+wide_titled	second_axis	1
+wide_titled	ci_accepted	0
+wide_titled	repeats_found	0
+wide_titled	max_per_point	1
+wide_titled	ci_offered	0
+wide_titled	shape	1
+wide_titled	level_mode	0
+wide_titled	level_name_col	
+wide_titled	long_value_col	
+wide_titled	n_numeric	2
+wide_titled	n_text	0
+wide_titled	y_label	F0
+wide_titled	axis_y_min	180
+wide_titled	axis_y_max	283.49608977795856
+wide_titled	drawn_union	0 6 0 4
+wide_titled	vars_written	24
+wide_titled	fig_png_md5	1f895e25d0f8127f5e4ab5f3c3b58e48
+wide_titled	fig_png_bytes	136030
+wide_titled	fig_png_px	1800x1200
+wide_titled	fig_chromatic_colours	2
+wide_titled	fig_colour_#0073B3	20827
+wide_titled	fig_colour_#E69E00	20722
+wide_titled	fig_chromatic_bands	2438,2899,2651,11179,10230,8279,7203,12434,3444,2362
+wide_titled	fig_chromatic_bands_nonempty	10
+wide_titled	fig_figtext	Two measurements
+wide_titled	fig_figtext	280
+wide_titled	fig_figtext	@ fo
+wide_titled	fig_figtext	@ Cq (right axis) 0.6
+wide_titled	fig_figtext	260
+wide_titled	fig_figtext	0.55
+wide_titled	fig_figtext	. »* Ce
+wide_titled	fig_figtext	240 bal é e
+wide_titled	fig_figtext	® ‘e 0.5
+wide_titled	fig_figtext	Oo A A (2)
+wide_titled	fig_figtext	ire 6 I a
+wide_titled	fig_figtext	/ @
+wide_titled	fig_figtext	220 4 \ 40.45
+wide_titled	fig_figtext	/ |
+wide_titled	fig_figtext	200 04
+wide_titled	fig_figtext	0.35
+wide_titled	fig_figtext	180
+wide_titled	fig_figtext	01 #02 038 04 O05 O06 O07 O08 09 1
+wide_titled	fig_figtext	Time
+wide_titled	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+wide_titled	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+wide_titled	info_lines	2
+wide_titled	display_clear	yes
 rec_subjects4	leg_started	1
 rec_subjects4	ink_empty	0.000704286
 rec_subjects4	s1_title	EML Graphs
@@ -560,361 +730,7 @@ rec_long_meas2	tuned_verdict	OK
 rec_long_meas2	tuned_png_md5	de85d5a725020d1e9cc264ef58886a16
 rec_long_meas2	tuned_png_px	1800x1200
 rec_long_meas2	tuned_error	
-long_titled	leg_started	1
-long_titled	ink_empty	0.000704286
-long_titled	s1_title	EML Graphs
-long_titled	s1_want	EML Graphs
-long_titled	s1_shown	Graph type: Line Chart (+Cl) v
-long_titled	s1_shown	Title (blank = auto from table and
-long_titled	s1_shown	columns):
-long_titled	s1_shown	Subtitle:
-long_titled	s1_shown	Colormode: Color v
-long_titled	s1_shown	Figure width (inches): ¢
-long_titled	s1_shown	Figure height (inches): | 4
-long_titled	s1_shown	Erase page first
-long_titled	s1_shown	Panel origin x (inches):
-long_titled	s1_shown	Panel origin y (inches):
-long_titled	s1_shown	Untick Erase to add this figure to the page already drawn.
-long_titled	s1_shown	On a composed page a legend inside the plot is not
-long_titled	s1_shown	given axis room — use Right of plot or Below plot.
-long_titled	s1_shown	Undo Quit Continue
-long_titled	s2_title	Line Chart -- What the lines are
-long_titled	s2_want	Line Chart -- What the lines are
-long_titled	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
-long_titled	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
-long_titled	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
-long_titled	s2_shown	Different measurements: FO and contact quotient — each its own scale.
-long_titled	s2_shown	Undo Go Back Quit Continue
-long_titled	s3_title	Line Chart -- Column Mapping
-long_titled	s3_want	Line Chart -- Column Mapping
-long_titled	s3_shown	[-] Select columns from your Table.
-long_titled	s3_shown	Time column: time Vv
-long_titled	s3_shown	Measurement column: value
-long_titled	s3_shown	Series names come from: measure v
-long_titled	s3_shown	Group order: Table order v
-long_titled	s3_shown	Line style: Solid v
-long_titled	s3_shown	Undo Go Back Quit Advanced Draw
-long_titled	s4_title	Line Chart -- The Right-Hand Axis
-long_titled	s4_want	Line Chart -- The Right-Hand Axis
-long_titled	s4_shown	These two measurements are on different scales, so each gets its own.
-long_titled	s4_shown	Its ticks and its name go in the right margin.
-long_titled	s4_shown	Right hand axis: cq v
-long_titled	s4_shown	\. Right y-axis range (both 0 = auto)
-long_titled	s4_shown	Right minimum: 9g
-long_titled	s4_shown	Right maximum: 9g
-long_titled	s4_shown	\, Right axis label (blank = the column name)
-long_titled	s4_shown	Right axis label:
-long_titled	s4_shown	Right line style: Dashed Vv
-long_titled	s4_shown	Undo Go Back Draw
-long_titled	s5_title	Graph Complete
-long_titled	s5_want	Graph Complete
-long_titled	s5_ink	0.00597214
-long_titled	s5_shown	| Graph has been drawn in the Picture window.
-long_titled	s5_shown	What would you like to do?
-long_titled	s5_shown	Done Save Redraw
-long_titled	steps	5
-long_titled	wait_seconds	0
-long_titled	windows_at_exit	[Praat Objects][Praat Picture][Praat Info]
-long_titled	exited	no
-long_titled	leg_object	7
-long_titled	leg_returned	long_titled
-long_titled	series_role	measurements
-long_titled	n_series	2
-long_titled	series_cols	f0,cq
-long_titled	time_col	time
-long_titled	value_col	f0
-long_titled	group_col	
-long_titled	right_col	cq
-long_titled	second_axis	1
-long_titled	ci_accepted	0
-long_titled	repeats_found	0
-long_titled	max_per_point	1
-long_titled	ci_offered	0
-long_titled	shape	2
-long_titled	level_mode	1
-long_titled	level_name_col	measure
-long_titled	long_value_col	value
-long_titled	n_numeric	1
-long_titled	n_text	1
-long_titled	y_label	F0
-long_titled	axis_y_min	180
-long_titled	axis_y_max	283.49608977795856
-long_titled	drawn_union	0 6 0 4
-long_titled	vars_written	24
-long_titled	fig_png_md5	1f895e25d0f8127f5e4ab5f3c3b58e48
-long_titled	fig_png_bytes	136030
-long_titled	fig_png_px	1800x1200
-long_titled	fig_chromatic_colours	2
-long_titled	fig_colour_#0073B3	20827
-long_titled	fig_colour_#E69E00	20722
-long_titled	fig_chromatic_bands	2438,2899,2651,11179,10230,8279,7203,12434,3444,2362
-long_titled	fig_chromatic_bands_nonempty	10
-long_titled	fig_figtext	Two measurements
-long_titled	fig_figtext	280
-long_titled	fig_figtext	@ fo
-long_titled	fig_figtext	@ Cq (right axis) 0.6
-long_titled	fig_figtext	260
-long_titled	fig_figtext	0.55
-long_titled	fig_figtext	. »* Ce
-long_titled	fig_figtext	240 bal é e
-long_titled	fig_figtext	® ‘e 0.5
-long_titled	fig_figtext	Oo A A (2)
-long_titled	fig_figtext	ire 6 I a
-long_titled	fig_figtext	/ @
-long_titled	fig_figtext	220 4 \ 40.45
-long_titled	fig_figtext	/ |
-long_titled	fig_figtext	200 04
-long_titled	fig_figtext	0.35
-long_titled	fig_figtext	180
-long_titled	fig_figtext	01 #02 038 04 O05 O06 O07 O08 09 1
-long_titled	fig_figtext	Time
-long_titled	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
-long_titled	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
-long_titled	info_lines	2
-long_titled	display_clear	yes
-wide_titled	leg_started	1
-wide_titled	ink_empty	0.000704286
-wide_titled	s1_title	EML Graphs
-wide_titled	s1_want	EML Graphs
-wide_titled	s1_shown	Graph type: Line Chart (+Cl) v
-wide_titled	s1_shown	Title (blank = auto from table and
-wide_titled	s1_shown	columns):
-wide_titled	s1_shown	Subtitle:
-wide_titled	s1_shown	Colormode: Color v
-wide_titled	s1_shown	Figure width (inches): ¢
-wide_titled	s1_shown	Figure height (inches): | 4
-wide_titled	s1_shown	Erase page first
-wide_titled	s1_shown	Panel origin x (inches):
-wide_titled	s1_shown	Panel origin y (inches):
-wide_titled	s1_shown	Untick Erase to add this figure to the page already drawn.
-wide_titled	s1_shown	On a composed page a legend inside the plot is not
-wide_titled	s1_shown	given axis room — use Right of plot or Below plot.
-wide_titled	s1_shown	Undo Quit Continue
-wide_titled	s2_title	Line Chart -- What the lines are
-wide_titled	s2_want	Line Chart -- What the lines are
-wide_titled	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
-wide_titled	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
-wide_titled	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
-wide_titled	s2_shown	Different measurements: FO and contact quotient — each its own scale.
-wide_titled	s2_shown	Undo Go Back Quit Continue
-wide_titled	s3_title	Line Chart -- Column Mapping
-wide_titled	s3_want	Line Chart -- Column Mapping
-wide_titled	s3_shown	[-] Select columns from your Table.
-wide_titled	s3_shown	Time column: time 7
-wide_titled	s3_shown	Every numeric column is drawn. Untick any you do not want.
-wide_titled	s3_shown	Series 1 (f0)
-wide_titled	s3_shown	Series 2 (cq)
-wide_titled	s3_shown	Line style: Solid v
-wide_titled	s3_shown	Undo Go Back Quit Advanced Draw
-wide_titled	s4_title	Line Chart -- The Right-Hand Axis
-wide_titled	s4_want	Line Chart -- The Right-Hand Axis
-wide_titled	s4_shown	These two measurements are on different scales, so each gets its own.
-wide_titled	s4_shown	Its ticks and its name go in the right margin.
-wide_titled	s4_shown	Right hand axis: cq v
-wide_titled	s4_shown	\. Right y-axis range (both 0 = auto)
-wide_titled	s4_shown	Right minimum: 9g
-wide_titled	s4_shown	Right maximum: 9g
-wide_titled	s4_shown	\, Right axis label (blank = the column name)
-wide_titled	s4_shown	Right axis label:
-wide_titled	s4_shown	Right line style: Dashed Vv
-wide_titled	s4_shown	Undo Go Back Draw
-wide_titled	s5_title	Graph Complete
-wide_titled	s5_want	Graph Complete
-wide_titled	s5_ink	0.00597214
-wide_titled	s5_shown	| Graph has been drawn in the Picture window.
-wide_titled	s5_shown	What would you like to do?
-wide_titled	s5_shown	Done Save Redraw
-wide_titled	steps	5
-wide_titled	wait_seconds	0
-wide_titled	windows_at_exit	[Praat Objects][Praat Picture][Praat Info]
-wide_titled	exited	no
-wide_titled	leg_object	3
-wide_titled	leg_returned	wide_titled
-wide_titled	series_role	measurements
-wide_titled	n_series	2
-wide_titled	series_cols	f0,cq
-wide_titled	time_col	time
-wide_titled	value_col	f0
-wide_titled	group_col	
-wide_titled	right_col	cq
-wide_titled	second_axis	1
-wide_titled	ci_accepted	0
-wide_titled	repeats_found	0
-wide_titled	max_per_point	1
-wide_titled	ci_offered	0
-wide_titled	shape	1
-wide_titled	level_mode	0
-wide_titled	level_name_col	
-wide_titled	long_value_col	
-wide_titled	n_numeric	2
-wide_titled	n_text	0
-wide_titled	y_label	F0
-wide_titled	axis_y_min	180
-wide_titled	axis_y_max	283.49608977795856
-wide_titled	drawn_union	0 6 0 4
-wide_titled	vars_written	24
-wide_titled	fig_png_md5	1f895e25d0f8127f5e4ab5f3c3b58e48
-wide_titled	fig_png_bytes	136030
-wide_titled	fig_png_px	1800x1200
-wide_titled	fig_chromatic_colours	2
-wide_titled	fig_colour_#0073B3	20827
-wide_titled	fig_colour_#E69E00	20722
-wide_titled	fig_chromatic_bands	2438,2899,2651,11179,10230,8279,7203,12434,3444,2362
-wide_titled	fig_chromatic_bands_nonempty	10
-wide_titled	fig_figtext	Two measurements
-wide_titled	fig_figtext	280
-wide_titled	fig_figtext	@ fo
-wide_titled	fig_figtext	@ Cq (right axis) 0.6
-wide_titled	fig_figtext	260
-wide_titled	fig_figtext	0.55
-wide_titled	fig_figtext	. »* Ce
-wide_titled	fig_figtext	240 bal é e
-wide_titled	fig_figtext	® ‘e 0.5
-wide_titled	fig_figtext	Oo A A (2)
-wide_titled	fig_figtext	ire 6 I a
-wide_titled	fig_figtext	/ @
-wide_titled	fig_figtext	220 4 \ 40.45
-wide_titled	fig_figtext	/ |
-wide_titled	fig_figtext	200 04
-wide_titled	fig_figtext	0.35
-wide_titled	fig_figtext	180
-wide_titled	fig_figtext	01 #02 038 04 O05 O06 O07 O08 09 1
-wide_titled	fig_figtext	Time
-wide_titled	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
-wide_titled	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
-wide_titled	info_lines	2
-wide_titled	display_clear	yes
-meas3_refuse	leg_started	1
-meas3_refuse	ink_empty	0.000704286
-meas3_refuse	s1_title	EML Graphs
-meas3_refuse	s1_want	EML Graphs
-meas3_refuse	s1_shown	Graph type: Line Chart (+Cl) v
-meas3_refuse	s1_shown	Title (blank = auto from table and
-meas3_refuse	s1_shown	columns):
-meas3_refuse	s1_shown	Subtitle:
-meas3_refuse	s1_shown	Colormode: Color v
-meas3_refuse	s1_shown	Figure width (inches): ¢
-meas3_refuse	s1_shown	Figure height (inches): | 4
-meas3_refuse	s1_shown	Erase page first
-meas3_refuse	s1_shown	Panel origin x (inches):
-meas3_refuse	s1_shown	Panel origin y (inches):
-meas3_refuse	s1_shown	Untick Erase to add this figure to the page already drawn.
-meas3_refuse	s1_shown	On a composed page a legend inside the plot is not
-meas3_refuse	s1_shown	given axis room — use Right of plot or Below plot.
-meas3_refuse	s1_shown	Undo Quit Continue
-meas3_refuse	s2_title	Line Chart -- What the lines are
-meas3_refuse	s2_want	Line Chart -- What the lines are
-meas3_refuse	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
-meas3_refuse	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
-meas3_refuse	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
-meas3_refuse	s2_shown	Different measurements: FO and contact quotient — each its own scale.
-meas3_refuse	s2_shown	Undo Go Back Quit Continue
-meas3_refuse	s3_title	Line Chart -- Column Mapping
-meas3_refuse	s3_want	Line Chart -- Column Mapping
-meas3_refuse	s3_shown	[-] Select columns from your Table.
-meas3_refuse	s3_shown	Time column: time Vv
-meas3_refuse	s3_shown	Every numeric column is drawn. Untick any you do not want.
-meas3_refuse	s3_shown	Series 1 (f0)
-meas3_refuse	s3_shown	Series 2 (cq)
-meas3_refuse	s3_shown	Series 3 (spl)
-meas3_refuse	s3_shown	Line style: Solid Vv
-meas3_refuse	s3_shown	Undo Go Back Quit Advanced Draw
-meas3_refuse	s4_title	Line chart
-meas3_refuse	s4_want	Line chart
-meas3_refuse	s4_shown	There are 3 different measurements here and a figure has two
-meas3_refuse	s4_shown	vertical axes. Draw the extra ones as stacked panels: untick
-meas3_refuse	s4_shown	"Erase page first", set a panel origin, and press Draw again —
-meas3_refuse	s4_shown	or untick columns until two are left.
-meas3_refuse	s4_shown	OK
-meas3_refuse	s4_ink	0.000704286
-meas3_refuse	s5_title	Line Chart -- Column Mapping
-meas3_refuse	s5_want	Line Chart -- Column Mapping
-meas3_refuse	s5_shown	[-] Select columns from your Table.
-meas3_refuse	s5_shown	Time column: time Vv
-meas3_refuse	s5_shown	Every numeric column is drawn. Untick any you do not want.
-meas3_refuse	s5_shown	Series 1 (f0)
-meas3_refuse	s5_shown	Series 2 (cq)
-meas3_refuse	s5_shown	Series 3 (spl)
-meas3_refuse	s5_shown	Line style: Solid Vv
-meas3_refuse	s5_shown	Undo Go Back Quit Advanced Draw
-meas3_refuse	s6_title	Line Chart -- The Right-Hand Axis
-meas3_refuse	s6_want	Line Chart -- The Right-Hand Axis
-meas3_refuse	s6_shown	These two measurements are on different scales, so each gets its own.
-meas3_refuse	s6_shown	Its ticks and its name go in the right margin.
-meas3_refuse	s6_shown	Right hand axis: cq v
-meas3_refuse	s6_shown	\. Right y-axis range (both 0 = auto)
-meas3_refuse	s6_shown	Right minimum: 9g
-meas3_refuse	s6_shown	Right maximum: 9g
-meas3_refuse	s6_shown	\, Right axis label (blank = the column name)
-meas3_refuse	s6_shown	Right axis label:
-meas3_refuse	s6_shown	Right line style: Dashed Vv
-meas3_refuse	s6_shown	Undo Go Back Draw
-meas3_refuse	s7_title	Graph Complete
-meas3_refuse	s7_want	Graph Complete
-meas3_refuse	s7_ink	0.00572
-meas3_refuse	s7_shown	| Graph has been drawn in the Picture window.
-meas3_refuse	s7_shown	What would you like to do?
-meas3_refuse	s7_shown	Done Save Redraw
-meas3_refuse	steps	7
-meas3_refuse	wait_seconds	0
-meas3_refuse	windows_at_exit	[Praat Objects][Praat Picture][Praat Info]
-meas3_refuse	exited	no
-meas3_refuse	leg_object	5
-meas3_refuse	leg_returned	meas3_refuse
-meas3_refuse	series_role	measurements
-meas3_refuse	n_series	2
-meas3_refuse	series_cols	f0,cq
-meas3_refuse	time_col	time
-meas3_refuse	value_col	f0
-meas3_refuse	group_col	
-meas3_refuse	right_col	cq
-meas3_refuse	second_axis	1
-meas3_refuse	ci_accepted	0
-meas3_refuse	repeats_found	0
-meas3_refuse	max_per_point	1
-meas3_refuse	ci_offered	0
-meas3_refuse	shape	1
-meas3_refuse	level_mode	0
-meas3_refuse	level_name_col	
-meas3_refuse	long_value_col	
-meas3_refuse	n_numeric	3
-meas3_refuse	n_text	0
-meas3_refuse	y_label	F0
-meas3_refuse	axis_y_min	156.50391022204144
-meas3_refuse	axis_y_max	260
-meas3_refuse	drawn_union	0 6 0 4
-meas3_refuse	vars_written	24
-meas3_refuse	fig_png_md5	accae2c07d7b4658c2bab78a84bed9c0
-meas3_refuse	fig_png_bytes	130039
-meas3_refuse	fig_png_px	1800x1200
-meas3_refuse	fig_chromatic_colours	2
-meas3_refuse	fig_colour_#0073B3	17699
-meas3_refuse	fig_colour_#E69E00	17492
-meas3_refuse	fig_chromatic_bands	3208,8062,9991,6101,6513,6978,6830,2554,3618,2362
-meas3_refuse	fig_chromatic_bands_nonempty	10
-meas3_refuse	fig_figtext	FO over time (It meas3)
-meas3_refuse	fig_figtext	260
-meas3_refuse	fig_figtext	0.55
-meas3_refuse	fig_figtext	240
-meas3_refuse	fig_figtext	e@ 0.5
-meas3_refuse	fig_figtext	.
-meas3_refuse	fig_figtext	220 \ 0.45
-meas3_refuse	fig_figtext	@
-meas3_refuse	fig_figtext	ra ‘e s o4 =
-meas3_refuse	fig_figtext	200 ‘eo ss ,
-meas3_refuse	fig_figtext	‘4 °
-meas3_refuse	fig_figtext	ee
-meas3_refuse	fig_figtext	° 0.35
-meas3_refuse	fig_figtext	180
-meas3_refuse	fig_figtext	@ 0 0.3
-meas3_refuse	fig_figtext	@ Cq (right axis)
-meas3_refuse	fig_figtext	160
-meas3_refuse	fig_figtext	01 O02 038 04 O05 O06 O07 O08 09 1
-meas3_refuse	fig_figtext	Time
-meas3_refuse	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
-meas3_refuse	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
-meas3_refuse	info_lines	2
-meas3_refuse	display_clear	yes
+--run--	legs_driven	5
 none_refuse	leg_started	1
 none_refuse	ink_empty	0.000704286
 none_refuse	s1_title	EML Graphs
@@ -1129,6 +945,59 @@ seven	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this
 seven	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
 seven	info_lines	2
 seven	display_clear	yes
+script_refuse	leg_started	1
+script_refuse	exit_code	0
+script_refuse	subjects_refused	1
+script_refuse	subjects_refusal_text	NOTE: a second right-hand y-axis was requested and refused. These series are the same measurement on different subjects, so a second scale would say they are not comparable when they are. The figure was drawn with one y-axis.
+script_refuse	subjects_union	0 6 0 4
+script_refuse	measurements_refused	0
+script_refuse	leg_returned	script_refuse
+script_refuse	vars_written	5
+script_refuse	fig_png_md5	91fa4e9472bc829cee84b617f8e20699
+script_refuse	fig_png_bytes	67535
+script_refuse	fig_png_px	1800x1200
+script_refuse	fig_chromatic_colours	1
+script_refuse	fig_colour_#0073B3	10279
+script_refuse	fig_chromatic_bands	4235,405,2205,2691,2606,3031,1823,2957,865,1127
+script_refuse	fig_chromatic_bands_nonempty	10
+script_refuse	fig_figtext	Same measurement, two subjects
+script_refuse	fig_figtext	140
+script_refuse	fig_figtext	130
+script_refuse	fig_figtext	oO
+script_refuse	fig_figtext	2
+script_refuse	fig_figtext	Gi
+script_refuse	fig_figtext	> 120
+script_refuse	fig_figtext	110
+script_refuse	fig_figtext	100
+script_refuse	fig_figtext	2 4 6 8 10 12
+script_refuse	fig_figtext	Time
+script_refuse	honoured_png_md5	d8eadb8bced8118500034924f6d0386e
+script_refuse	honoured_png_bytes	123772
+script_refuse	honoured_png_px	1800x1200
+script_refuse	honoured_chromatic_colours	2
+script_refuse	honoured_colour_#E69E00	11293
+script_refuse	honoured_colour_#0073B3	9676
+script_refuse	honoured_chromatic_bands	4794,3028,4982,5337,5784,6731,4718,4631,863,1127
+script_refuse	honoured_chromatic_bands_nonempty	10
+script_refuse	honoured_figtext	Different measurements, two columns
+script_refuse	honoured_figtext	140, @ Ss! ae
+script_refuse	honoured_figtext	© S82 (right axis)
+script_refuse	honoured_figtext	pais 230
+script_refuse	honoured_figtext	130 o ‘bo05
+script_refuse	honoured_figtext	3 i *# 220
+script_refuse	honoured_figtext	Gi a \. a ine)
+script_refuse	honoured_figtext	> 120 » \ A
+script_refuse	honoured_figtext	e 7 ® 215
+script_refuse	honoured_figtext	; C # 210
+script_refuse	honoured_figtext	110) SLY
+script_refuse	honoured_figtext	y ©
+script_refuse	honoured_figtext	"4 205
+script_refuse	honoured_figtext	100
+script_refuse	honoured_figtext	2 4 6 8 10 2
+script_refuse	honoured_figtext	Time
+script_refuse	info	NOTE: a second right-hand y-axis was requested and refused. These series are the same measurement on different subjects, so a second scale would say they are not comparable when they are. The figure was drawn with one y-axis.
+script_refuse	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+script_refuse	info_lines	2
 long_meas2	leg_started	1
 long_meas2	ink_empty	0.000704286
 long_meas2	s1_title	EML Graphs
@@ -1809,7 +1678,138 @@ meas2_rep	info	NOTE: The legend needs y-axis room, so the figure is drawn again 
 meas2_rep	info	Time series: Lines show the mean per time point. 16 repeated observation(s) were averaged. Intervals are not offered across two scales.
 meas2_rep	info_lines	4
 meas2_rep	display_clear	yes
---run--	legs_carried	subjects4 subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven long_meas2 long_meas3_refuse long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2
+meas3_refuse	leg_started	1
+meas3_refuse	ink_empty	0.000704286
+meas3_refuse	s1_title	EML Graphs
+meas3_refuse	s1_want	EML Graphs
+meas3_refuse	s1_shown	Graph type: Line Chart (+Cl) v
+meas3_refuse	s1_shown	Title (blank = auto from table and
+meas3_refuse	s1_shown	columns):
+meas3_refuse	s1_shown	Subtitle:
+meas3_refuse	s1_shown	Colormode: Color v
+meas3_refuse	s1_shown	Figure width (inches): ¢
+meas3_refuse	s1_shown	Figure height (inches): | 4
+meas3_refuse	s1_shown	Erase page first
+meas3_refuse	s1_shown	Panel origin x (inches):
+meas3_refuse	s1_shown	Panel origin y (inches):
+meas3_refuse	s1_shown	Untick Erase to add this figure to the page already drawn.
+meas3_refuse	s1_shown	On a composed page a legend inside the plot is not
+meas3_refuse	s1_shown	given axis room — use Right of plot or Below plot.
+meas3_refuse	s1_shown	Undo Quit Continue
+meas3_refuse	s2_title	Line Chart -- What the lines are
+meas3_refuse	s2_want	Line Chart -- What the lines are
+meas3_refuse	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+meas3_refuse	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
+meas3_refuse	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
+meas3_refuse	s2_shown	Different measurements: FO and contact quotient — each its own scale.
+meas3_refuse	s2_shown	Undo Go Back Quit Continue
+meas3_refuse	s3_title	Line Chart -- Column Mapping
+meas3_refuse	s3_want	Line Chart -- Column Mapping
+meas3_refuse	s3_shown	[-] Select columns from your Table.
+meas3_refuse	s3_shown	Time column: time Vv
+meas3_refuse	s3_shown	Every numeric column is drawn. Untick any you do not want.
+meas3_refuse	s3_shown	Series 1 (f0)
+meas3_refuse	s3_shown	Series 2 (cq)
+meas3_refuse	s3_shown	Series 3 (spl)
+meas3_refuse	s3_shown	Line style: Solid Vv
+meas3_refuse	s3_shown	Undo Go Back Quit Advanced Draw
+meas3_refuse	s4_title	Line chart
+meas3_refuse	s4_want	Line chart
+meas3_refuse	s4_shown	There are 3 different measurements here and a figure has two
+meas3_refuse	s4_shown	vertical axes. Draw the extra ones as stacked panels: untick
+meas3_refuse	s4_shown	"Erase page first", set a panel origin, and press Draw again —
+meas3_refuse	s4_shown	or untick columns until two are left.
+meas3_refuse	s4_shown	OK
+meas3_refuse	s4_ink	0.000704286
+meas3_refuse	s5_title	Line Chart -- Column Mapping
+meas3_refuse	s5_want	Line Chart -- Column Mapping
+meas3_refuse	s5_shown	[-] Select columns from your Table.
+meas3_refuse	s5_shown	Time column: time Vv
+meas3_refuse	s5_shown	Every numeric column is drawn. Untick any you do not want.
+meas3_refuse	s5_shown	Series 1 (f0)
+meas3_refuse	s5_shown	Series 2 (cq)
+meas3_refuse	s5_shown	Series 3 (spl)
+meas3_refuse	s5_shown	Line style: Solid Vv
+meas3_refuse	s5_shown	Undo Go Back Quit Advanced Draw
+meas3_refuse	s6_title	Line Chart -- The Right-Hand Axis
+meas3_refuse	s6_want	Line Chart -- The Right-Hand Axis
+meas3_refuse	s6_shown	These two measurements are on different scales, so each gets its own.
+meas3_refuse	s6_shown	Its ticks and its name go in the right margin.
+meas3_refuse	s6_shown	Right hand axis: cq v
+meas3_refuse	s6_shown	\. Right y-axis range (both 0 = auto)
+meas3_refuse	s6_shown	Right minimum: 9g
+meas3_refuse	s6_shown	Right maximum: 9g
+meas3_refuse	s6_shown	\, Right axis label (blank = the column name)
+meas3_refuse	s6_shown	Right axis label:
+meas3_refuse	s6_shown	Right line style: Dashed Vv
+meas3_refuse	s6_shown	Undo Go Back Draw
+meas3_refuse	s7_title	Graph Complete
+meas3_refuse	s7_want	Graph Complete
+meas3_refuse	s7_ink	0.00572
+meas3_refuse	s7_shown	| Graph has been drawn in the Picture window.
+meas3_refuse	s7_shown	What would you like to do?
+meas3_refuse	s7_shown	Done Save Redraw
+meas3_refuse	steps	7
+meas3_refuse	wait_seconds	0
+meas3_refuse	windows_at_exit	[Praat Objects][Praat Picture][Praat Info]
+meas3_refuse	exited	no
+meas3_refuse	leg_object	5
+meas3_refuse	leg_returned	meas3_refuse
+meas3_refuse	series_role	measurements
+meas3_refuse	n_series	2
+meas3_refuse	series_cols	f0,cq
+meas3_refuse	time_col	time
+meas3_refuse	value_col	f0
+meas3_refuse	group_col	
+meas3_refuse	right_col	cq
+meas3_refuse	second_axis	1
+meas3_refuse	ci_accepted	0
+meas3_refuse	repeats_found	0
+meas3_refuse	max_per_point	1
+meas3_refuse	ci_offered	0
+meas3_refuse	shape	1
+meas3_refuse	level_mode	0
+meas3_refuse	level_name_col	
+meas3_refuse	long_value_col	
+meas3_refuse	n_numeric	3
+meas3_refuse	n_text	0
+meas3_refuse	y_label	F0
+meas3_refuse	axis_y_min	156.50391022204144
+meas3_refuse	axis_y_max	260
+meas3_refuse	drawn_union	0 6 0 4
+meas3_refuse	vars_written	24
+meas3_refuse	fig_png_md5	accae2c07d7b4658c2bab78a84bed9c0
+meas3_refuse	fig_png_bytes	130039
+meas3_refuse	fig_png_px	1800x1200
+meas3_refuse	fig_chromatic_colours	2
+meas3_refuse	fig_colour_#0073B3	17699
+meas3_refuse	fig_colour_#E69E00	17492
+meas3_refuse	fig_chromatic_bands	3208,8062,9991,6101,6513,6978,6830,2554,3618,2362
+meas3_refuse	fig_chromatic_bands_nonempty	10
+meas3_refuse	fig_figtext	FO over time (It meas3)
+meas3_refuse	fig_figtext	260
+meas3_refuse	fig_figtext	0.55
+meas3_refuse	fig_figtext	240
+meas3_refuse	fig_figtext	e@ 0.5
+meas3_refuse	fig_figtext	.
+meas3_refuse	fig_figtext	220 \ 0.45
+meas3_refuse	fig_figtext	@
+meas3_refuse	fig_figtext	ra ‘e s o4 =
+meas3_refuse	fig_figtext	200 ‘eo ss ,
+meas3_refuse	fig_figtext	‘4 °
+meas3_refuse	fig_figtext	ee
+meas3_refuse	fig_figtext	° 0.35
+meas3_refuse	fig_figtext	180
+meas3_refuse	fig_figtext	@ 0 0.3
+meas3_refuse	fig_figtext	@ Cq (right axis)
+meas3_refuse	fig_figtext	160
+meas3_refuse	fig_figtext	01 O02 038 04 O05 O06 O07 O08 09 1
+meas3_refuse	fig_figtext	Time
+meas3_refuse	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+meas3_refuse	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+meas3_refuse	info_lines	2
+meas3_refuse	display_clear	yes
+--run--	legs_carried	subjects4 subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven script_refuse long_meas2 long_meas3_refuse
 --pairs--	titled_a	long_titled
 --pairs--	titled_b	wide_titled
 --pairs--	titled_diff_md5_a	1f895e25d0f8127f5e4ab5f3c3b58e48

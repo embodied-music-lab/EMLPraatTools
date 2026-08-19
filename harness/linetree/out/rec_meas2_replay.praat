@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Wed Aug 19 04:36:26 2026  --  recorded on Praat 6.6.30
+# Wed Aug 19 15:42:35 2026  --  recorded on Praat 6.6.30
 # Input: Table lt_meas2 -- 24 rows, 3 columns
 # ============================================================
 
