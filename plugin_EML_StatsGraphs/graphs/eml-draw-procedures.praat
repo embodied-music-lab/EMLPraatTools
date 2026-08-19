@@ -5952,7 +5952,17 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
 
             # Group label — left margin, rotated 90° (reading bottom-to-top)
             # Truncate if label exceeds panel height
-            Font size: emlSetAdaptiveTheme.bodySize
+            ; AT THE PANEL'S SIZE, FOR THE REASON GIVEN ABOVE THE BOX.
+            ; This panel's viewport was selected at .facetBodySize, and
+            ; `Text left:` is placed in the LEFT MARGIN of the inner viewport,
+            ; whose width Praat recomputes from the ambient size at the moment
+            ; of the call. Asserting the PAGE's bodySize here put the label --
+            ; and the `Text width (world coordinates)` readings the truncation
+            ; loop below trusts -- on a rectangle displaced from the panel they
+            ; belong to, about 2.9% per point of difference. The invariant this
+            ; loop runs on is "one drawing, one size", and the drawing is the
+            ; panel: its box, its ticks, its gridlines and now its name.
+            Font size: .facetBodySize
             Colour: emlSetAdaptiveTheme.textColor$
             @emlSanitizeLabel: emlCountGroups.groupLabel$[.g]
             .panelLabel$ = emlSanitizeLabel.result$
@@ -7016,6 +7026,19 @@ procedure emlDrawLMMForest
         colorMode$ = "color"
     endif
 
+    ; THE PAGE: ONE PANEL, AT THE ORIGIN, SAID OUT LOUD.
+    ; @emlSetAdaptiveTheme derives its viewport from emlPanelOriginX/Y and only
+    ; DEFAULTS them to zero when they do not exist -- a stale origin left by an
+    ; earlier multi-panel draw survives. The hand-rolled `Select outer viewport:
+    ; 0, .figW, 0, .figH` this used to carry overrode that by force; the theme
+    ; viewport selected below does not, so the origin is pinned here instead.
+    ; The extent union is restarted for the same reason @emlBeginPanel restarts
+    ; it on an erase: a union that survived would report an earlier figure's
+    ; rectangle. Not @emlBeginPanel itself, because that also writes
+    ; emlEraseFirst, and this procedure is reached from a stats wrapper with no
+    ; page controls -- it has no business setting the graphs form's preference.
+    @emlSetPanelOrigin: 0, 0
+    @emlResetDrawnExtent
     Erase all
 
     # Theme prologue (Rule 2): font size is set here, once, before any
@@ -7026,7 +7049,19 @@ procedure emlDrawLMMForest
     @emlSetAdaptiveTheme: .figW, .figH
     @emlSetColorPalette: colorMode$
 
-    Select outer viewport: 0, .figW, 0, .figH
+    ; THE HOUSE OPENING, NOT A HAND-ROLLED ONE.
+    ; @emlSetPanelViewport asserts bodySize and then selects the theme's OUTER
+    ; and INNER rectangles, in that order, which is what every other
+    ; orchestrator in this file does. The bare `Select outer viewport` this
+    ; replaces selected no inner viewport at all, so the plotting frame was
+    ; Praat's default margins rather than the ones @emlSetAdaptiveTheme sized
+    ; for this figure -- and the `Text bottom:` and `Text top:` at the foot of
+    ; this procedure were placed in a margin nothing had budgeted. The forest
+    ; needs no special margins: it draws a bottom axis name and a top title and
+    ; nothing in the left margin (the coefficient labels go INSIDE the frame,
+    ; at .xlo), which is exactly the layout the theme's margins are computed
+    ; for.
+    @emlSetPanelViewport
     Axes: .xlo, .xhi, 0.5, .p + 0.7
     Line width: emlSetAdaptiveTheme.axisLineWidth
 
@@ -7061,13 +7096,15 @@ procedure emlDrawLMMForest
         Colour: .seriesColor$
     endfor
 
-    ; THE SIZE IS ASSERTED BEFORE THE BOX. The rows above are labelled with
-    ; `Text:` at whatever size the label pass left, and the box, the ticks and
-    ; the axis name below all take their margins from the current size.
-    Font size: emlSetAdaptiveTheme.bodySize
-    Colour: emlSetAdaptiveTheme.axisColor$
-    Line width: emlSetAdaptiveTheme.axisLineWidth
-    Draw inner box
+    ; THE SIZE IS ASSERTED BEFORE THE BOX, THROUGH THE WRAPPER EVERY OTHER
+    ; FIGURE USES. @emlDrawInnerBoxIf sets exactly the three pieces of state
+    ; that stood here by hand -- bodySize, axisColor$, axisLineWidth -- and
+    ; then honours emlShowInnerBox, which the bare `Draw inner box` it replaces
+    ; ignored: a user who turned the frame off still got one on this figure.
+    ; The globals it reads are seeded by the @emlInitDrawingDefaults guard at
+    ; the top of this procedure, which sets emlShowInnerBox and emlShowTicksX
+    ; together.
+    @emlDrawInnerBoxIf
 
     # Rule 1: nice-number ticks. A bare "Marks bottom: 5" would divide the
     # 12%-buffered range into four arbitrary intervals.
