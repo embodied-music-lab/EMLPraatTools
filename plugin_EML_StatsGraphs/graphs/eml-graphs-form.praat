@@ -5525,17 +5525,25 @@ repeat
                                         # 6.6.30 by harness/linetree: a field
                                         # labelled "Right-hand axis" is
                                         # readable only as `right`, and
-                                        # `right_hand_axis` does not exist, so
+                                        # `which_measurement` does not exist, so
                                         # this page aborted with "Unknown
                                         # variable" the moment Draw was
                                         # pressed and no two-measurement
                                         # figure could be drawn at all.
                                         # The window title above keeps the
                                         # hyphen; a title is not a field.
-                                        optionmenu: "Right hand axis", tsRightPick
+                                        ; ONE HEADING GOVERNS THE WHOLE GROUP.
+                                        ; Everything below belongs to the right
+                                        ; y-axis, so it is said once, at the top,
+                                        ; and the rows underneath carry only what
+                                        ; distinguishes them. Repeating "Right" on
+                                        ; every row made the page read as five
+                                        ; unrelated settings that happen to share
+                                        ; a word.
+                                        comment: "📐 Right y-axis"
+                                        optionmenu: "Which measurement", tsRightPick
                                             option: tsSeriesCol$[1]
                                             option: tsSeriesCol$[2]
-                                        comment: "📐 Right y-axis (both 0 = auto)"
                                         ; ONE ROW, TWO BOXES. `left` and `right`
                                         ; as the FIRST WORD of a numeric field's
                                         ; label are a layout cue, not part of the
@@ -5549,14 +5557,13 @@ repeat
                                         ; The cue word STAYS in the derived
                                         ; variable name, and Praat lowercases
                                         ; only the first character of a label, so
-                                        ; these bind `left_Right_y_axis_range` and
-                                        ; `right_Right_y_axis_range`.
+                                        ; these bind `left_Range` and
+                                        ; `right_Range`.
                                         ; APPENDIX_C_GUI section C.1.
-                                        real: "left Right y axis range (bottom/top)", tmpSecMin$
-                                        real: "right Right y axis range (bottom/top)", tmpSecMax$
-                                        comment: "🏷️ Right axis label (blank = the column name)"
-                                        sentence: "Right axis label", tmpSecLabel$
-                                        optionmenu: "Right line style", tsSecondStyle
+                                        real: "left Range (bottom/top, both 0 = auto)", tmpSecMin$
+                                        real: "right Range (bottom/top, both 0 = auto)", tmpSecMax$
+                                        sentence: "Axis name (blank = the column name)", tmpSecLabel$
+                                        optionmenu: "Line style", tsSecondStyle
                                             option: "Solid"
                                             option: "Dotted"
                                             option: "Dashed"
@@ -5570,11 +5577,11 @@ repeat
                                         allFormsDone = 0
                                     else
                                         tsSecondDone = 1
-                                        tsRightPick = right_hand_axis
-                                        tsSecondStyle = right_line_style
-                                        tmpSecMin$ = string$ (left_Right_y_axis_range)
-                                        tmpSecMax$ = string$ (right_Right_y_axis_range)
-                                        tmpSecLabel$ = right_axis_label$
+                                        tsRightPick = which_measurement
+                                        tsSecondStyle = line_style
+                                        tmpSecMin$ = string$ (left_Range)
+                                        tmpSecMax$ = string$ (right_Range)
+                                        tmpSecLabel$ = axis_name$
                                         tsSecondColName$ = tsSeriesCol$[tsRightPick]
                                         tsLeftPick = 3 - tsRightPick
                                         valueColName$ = tsSeriesCol$[tsLeftPick]

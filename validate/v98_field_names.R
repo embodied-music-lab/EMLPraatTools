@@ -75,6 +75,7 @@ field_re <- paste0("^\\s*(", paste(FIELD_KINDS, collapse = "|"),
 
 truncated <- list()
 collisions <- list()
+all_labels <- character(0)
 n_fields <- 0L
 
 for (f in plugin_files()) {
@@ -88,6 +89,7 @@ for (f in plugin_files()) {
             d <- derive_name(lab)
             w <- intended_name(lab)
             n_fields <- n_fields + 1L
+            all_labels <- c(all_labels, lab)
             if (!identical(d, w)) {
                 truncated[[length(truncated) + 1L]] <-
                     sprintf("%s:%d  \"%s\" -> %s (intended %s)",
@@ -125,12 +127,19 @@ check_true("v98", "no field label is truncated before its full name",
 check_true("v98", "no two fields in one dialog derive the same name",
            length(collisions) == 0L)
 
-# The specific label that shipped broken, kept by name so the regression
-# cannot return quietly under a different guise.
-form_src <- readLines(repo_path("plugin_EML_StatsGraphs", "graphs",
-                                "eml-graphs-form.praat"), warn = FALSE)
-check_true("v98", "the right-hand axis field carries no hyphen",
-           !any(grepl("optionmenu:\\s*\"Right-hand", form_src)) &&
-               any(grepl("optionmenu:\\s*\"Right hand axis\"", form_src)))
+# THE HYPHEN RULE, STATED DIRECTLY. The label that shipped broken was
+# "Right-hand axis", and the field has since been renamed, so pinning that
+# one string would pin a name nobody uses. What survives the rename is the
+# rule underneath it: a hyphen in a field label always truncates the derived
+# variable, so no field label carries one. Written as its own check because
+# it names the cause in one word, where the truncation check above reports
+# the symptom.
+hyphenated <- Filter(function(x) grepl("-", sub("\\(.*$", "", x)), all_labels)
+if (length(hyphenated) > 0L) {
+    cat("FIELD LABELS CONTAINING A HYPHEN:\n")
+    cat(paste0("  ", hyphenated, "\n"))
+}
+check_true("v98", "no field label contains a hyphen",
+           length(hyphenated) == 0L)
 
 if (!exists("EML_SUITE")) { eml_report("v98 dialog field names derive what the code reads"); eml_exit() }
