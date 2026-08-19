@@ -21,4 +21,6 @@ none_refuse	n_text	0
 none_refuse	y_label	F0
 none_refuse	axis_y_min	180
 none_refuse	axis_y_max	260
+none_refuse	axis_x_min	0.003333333333333327
+none_refuse	axis_x_max	1.0383333333333333
 none_refuse	drawn_union	0 6 0 4

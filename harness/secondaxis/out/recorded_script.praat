@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Wed Aug 19 14:51:04 2026  --  recorded on Praat 6.6.30
+# Wed Aug 19 17:31:12 2026  --  recorded on Praat 6.6.30
 # Input: Table secondaxis -- 24 rows, 5 columns
 # ============================================================
 

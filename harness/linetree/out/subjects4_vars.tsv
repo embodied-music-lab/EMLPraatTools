@@ -21,4 +21,6 @@ subjects4	n_text	0
 subjects4	y_label	
 subjects4	axis_y_min	50
 subjects4	axis_y_max	722.7071716977504
+subjects4	axis_x_min	0.56
+subjects4	axis_x_max	12.44
 subjects4	drawn_union	0 6 0 4

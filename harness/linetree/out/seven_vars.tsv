@@ -21,4 +21,6 @@ seven	n_text	0
 seven	y_label	
 seven	axis_y_min	0
 seven	axis_y_max	1754.7855888991057
+seven	axis_x_min	0.64
+seven	axis_x_max	10.36
 seven	drawn_union	0 6 0 4

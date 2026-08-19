@@ -218,6 +218,14 @@ if variableExists ("emlDrawTimeSeries.axisYMin")
     @ltEmit: "axis_y_min", string$ (emlDrawTimeSeries.axisYMin)
     @ltEmit: "axis_y_max", string$ (emlDrawTimeSeries.axisYMax)
 endif
+; THE HORIZONTAL PAIR TOO, because it is now resolved rather than copied. A
+; time axis takes its bounds from the data and pads them -- see
+; @emlPadDataRange -- so the drawn range is a statement about the resolver,
+; not a restatement of the fixture.
+if variableExists ("emlDrawTimeSeries.axisXMin")
+    @ltEmit: "axis_x_min", string$ (emlDrawTimeSeries.axisXMin)
+    @ltEmit: "axis_x_max", string$ (emlDrawTimeSeries.axisXMax)
+endif
 
 # THE FIGURE, AS THE PLUGIN SAYS IT SITS ON THE PAGE. emlDrawn* is the union
 # the plugin itself tracks, and @emlAssertFullViewport selects it; a driver

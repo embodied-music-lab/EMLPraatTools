@@ -1212,15 +1212,29 @@ check_true(V, "[meas2] the figure carries exactly one right-axis key entry",
            length(tagged) == 1L)
 check_true(V, "[meas2] and it names the right-hand column",
            isTRUE(grepl("Cq \\(right axis\\)", tagged[1], ignore.case = TRUE)))
-# THE LEFT ENTRY, read off the same photograph. tesseract renders the label
-# "f0" as "fo" at this size, so the match is spelled to accept either glyph
-# and the raw line is quoted in the check's own text; what is being asked is
-# that a SECOND key entry exists beside the tagged one, on a figure with no
-# group column.
-left <- grep("^[^A-Za-z0-9]*f[0oO][[:space:]]*$", m2, value = TRUE)
-check_true(V, sprintf("[meas2] beside a second entry naming the left column (%s)",
-                      if (length(left)) left[1] else "<none>"),
-           length(left) == 1L)
+# THE SECOND ENTRY, COUNTED BY ITS SWATCH RATHER THAN READ AS A WORD.
+#
+# An earlier version of this check matched the left column's name in the OCR,
+# spelled to accept "f0" or "fo" because tesseract renders the glyph either
+# way at this size. It went red when the axis padding moved the figure by a
+# few pixels and the reading became "0" -- the letter dropped entirely. The
+# figure was correct; the check was pinned to an accident of the recogniser.
+#
+# What the claim actually needs is that TWO entries stand in the key, which is
+# countable from the swatch that leads each line and does not depend on any
+# letter being legible. It is the same measure the one-series control below
+# uses, so the two statements are made the same way.
+# COUNTED WHERE THE KEY IS, NOT ACROSS THE WHOLE PAGE. A swatch-led line is
+# not unique to the legend: on this figure tesseract reads one data marker as
+# "@ } e" nine lines below the key, so a count over the whole photograph
+# returns three. The key is a BLOCK of adjacent entries, so the claim is made
+# locally -- the tagged entry has another entry immediately above or below it.
+sw <- grep("^[@©®*] ", m2)
+ti <- grep("right axis", m2)
+check_true(V, sprintf("[meas2] beside a second entry, adjacent to the tagged one (%s)",
+                      paste(sw, collapse = ",")),
+           length(ti) == 1L &&
+           any(abs(setdiff(sw, ti) - ti[1]) == 1L))
 check_true(V, "[meas2] on a figure with no group column at all",
            identical(trv("meas2", "group_col"), ""))
 # THE CONTROL. One series and no second axis: no key, and nothing tagged.
@@ -2187,6 +2201,65 @@ check_true(V, "and @emlDrawTimeSeries was not taught what a level is",
 # "--pairs--" is the second such header: it carries the file-level comparison
 # of the two shapes' figures, which is a statement ABOUT two legs and belongs
 # to neither. Section 16.4 reads it.
+# ============================================================================
+# 17. THE TIME AXIS IS PADDED, AND THE MARKERS ARE INSIDE THE FRAME
+# ============================================================================
+# A time axis takes its bounds from the data rather than from nice numbers --
+# a recording that runs to 1.37 seconds runs to 1.37 -- and bounds set exactly
+# to the data put the first and last markers ON the frame, half of each hanging
+# outside it. Measured before the change: 15 pixels of a 30-pixel marker at
+# 300 dpi, at both ends, on every line chart this plugin drew.
+#
+# BASE R IS THE REFERENCE AND THE FIGURE IS MEASURED, NOT QUOTED. On R 4.3.3,
+# data 0..9 with the default xaxs returns par("usr") of -0.36 .. 9.36: 0.04 of
+# the span at each end. That is the fraction here. ggplot2's 5% is documented
+# rather than measured -- it is not installed on the machine that ran this --
+# so it is named nowhere in the plugin.
+#
+# THE FIXTURE'S OWN RANGE IS THE ARITHMETIC. subjects4 runs 1 .. 12, so the
+# padded axis is 0.56 .. 12.44, and this file computes that from the fixture
+# rather than restating the number the driver reported.
+lt_pad_frac <- 0.04
+pad_expect <- function(lo, hi) {
+    p <- (hi - lo) * lt_pad_frac
+    c(lo - p, hi + p)
+}
+axS <- c(trn("subjects4", "axis_x_min"), trn("subjects4", "axis_x_max"))
+check_true(V, "[subjects4] the time axis is the data range padded by 4% each end",
+           isTRUE(all.equal(axS, pad_expect(1, 12))))
+check_true(V, "[subjects4] and the padding is the same at both ends",
+           isTRUE(all.equal(1 - axS[1], axS[2] - 12)))
+check_true(V, "[subjects4] so both end markers are inside the frame, not on it",
+           isTRUE(axS[1] < 1) && isTRUE(axS[2] > 12))
+# A SECOND SPAN, so the check is about a fraction rather than about one
+# fixture's numbers. meas2 runs 1/24 .. 1.
+axM <- c(trn("meas2", "axis_x_min"), trn("meas2", "axis_x_max"))
+check_true(V, "[meas2] a different span is padded by the same fraction",
+           isTRUE(all.equal(axM, pad_expect(1 / 24, 1))))
+
+# THE RESOLVER IS ONE PROCEDURE, AND BOTH TIME AXES REACH IT.
+check_true(V, "@emlPadDataRange is defined exactly once",
+           sum(grepl("^procedure emlPadDataRange:", graph_src)) == 1)
+check_true(V, "and both time-axis call sites pad through it, at 0.04",
+           sum(grepl("^\\s*@emlPadDataRange: \\.xDataMin, \\.xDataMax, 0\\.04\\s*$",
+                     draw_src)) == 2)
+check_true(V, "while a range the user typed is still assigned unpadded",
+           sum(grepl("^\\s*\\.xMin = \\.tMin\\s*$", draw_src)) == 2)
+# THE ZERO-SPAN GUARD, AND WHY IT IS NOT DECORATION. A table whose time column
+# holds one repeated value used to abort the figure outright -- Praat's `Axes:`
+# refuses equal bounds with "Left and right should not be equal", reproduced on
+# both callers before this procedure existed. The guard pads by half the
+# fallback span, so the single point sits in the middle of the frame.
+check_true(V, "the resolver guards a zero span rather than passing it to Axes:",
+           any(grepl("^\\s*if \\.span = 0\\s*$", graph_src)) &&
+           any(grepl("^\\s*\\.min = \\.dataMin - \\.span / 2\\s*$", graph_src)))
+check_true(V, "and it falls back the way the value resolver does",
+           any(grepl("^\\s*\\.span = abs \\(\\.dataMin\\) \\* 0\\.2\\s*$",
+                     graph_src)))
+check_true(V, "no nice-number rounding reaches the time axis",
+           !any(grepl("emlComputeNiceStep|emlComputeAxisRange",
+                      grep("emlPadDataRange", graph_src, value = TRUE))))
+
 present <- setdiff(unique(TR$case), c("--run--", "--pairs--"))
 eml_census(V, "line-tree legs", present, CASES)
 

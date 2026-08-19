@@ -25,4 +25,6 @@ rec_subjects4	rec_phrases	18
 rec_subjects4	rec_written	1
 rec_subjects4	axis_y_min	50
 rec_subjects4	axis_y_max	722.7071716977504
+rec_subjects4	axis_x_min	0.56
+rec_subjects4	axis_x_max	12.44
 rec_subjects4	drawn_union	0 6 0 4

@@ -12,10 +12,10 @@ auto_pair	note_lines	2
 auto_pair	meltcols	
 auto_pair	meltrows	
 auto_pair	png_px	1800x1200
-auto_pair	png_md5	79cd26b632449f5f806edaf6b408b85d
-auto_pair	ink_slot1_px	11056
-auto_pair	ink_slot2_px	11125
-auto_pair	red_plot_px	63
+auto_pair	png_md5	f1ba5492ad2874bb9251d50f28e0ae96
+auto_pair	ink_slot1_px	11091
+auto_pair	ink_slot2_px	11218
+auto_pair	red_plot_px	66
 auto_pair	red_margin_px	21
 bw_pair	verdict	OK
 bw_pair	secondon	1
@@ -31,10 +31,10 @@ bw_pair	note_lines	2
 bw_pair	meltcols	
 bw_pair	meltrows	
 bw_pair	png_px	1800x1200
-bw_pair	png_md5	624935a0f9d7211288a3a23ce5d4cb9c
+bw_pair	png_md5	d381f3ae28d21721541fff3d371e40e3
 bw_pair	ink_slot1_px	0
 bw_pair	ink_slot2_px	0
-bw_pair	red_plot_px	63
+bw_pair	red_plot_px	66
 bw_pair	red_margin_px	21
 grouped_pair	verdict	OK
 grouped_pair	secondon	1
@@ -50,10 +50,10 @@ grouped_pair	note_lines	2
 grouped_pair	meltcols	
 grouped_pair	meltrows	
 grouped_pair	png_px	1800x1200
-grouped_pair	png_md5	b5bb20ecbb60b6968eb17e57d981b0bc
-grouped_pair	ink_slot1_px	11350
-grouped_pair	ink_slot2_px	11095
-grouped_pair	red_plot_px	71
+grouped_pair	png_md5	d20cfd671e8867aa94c974bc1c5d8d10
+grouped_pair	ink_slot1_px	11380
+grouped_pair	ink_slot2_px	11135
+grouped_pair	red_plot_px	74
 grouped_pair	red_margin_px	24
 margin_ink	verdict	OK
 margin_ink	secondon	
@@ -88,10 +88,10 @@ recorded	note_lines	2
 recorded	meltcols	
 recorded	meltrows	
 recorded	png_px	1800x1200
-recorded	png_md5	9d4bdbd039f275065fd1bec710f552ec
-recorded	ink_slot1_px	10373
-recorded	ink_slot2_px	11125
-recorded	red_plot_px	63
+recorded	png_md5	dbf5817deab2a0648f75de186e4f0797
+recorded	ink_slot1_px	10476
+recorded	ink_slot2_px	11218
+recorded	red_plot_px	66
 recorded	red_margin_px	21
 refuse_ci	verdict	OK
 refuse_ci	secondon	
@@ -107,10 +107,10 @@ refuse_ci	note_lines	1
 refuse_ci	meltcols	
 refuse_ci	meltrows	
 refuse_ci	png_px	1800x1200
-refuse_ci	png_md5	24465810b62dae18d9b96b74d9743e35
-refuse_ci	ink_slot1_px	10313
+refuse_ci	png_md5	641ed06ca4d012d65e100367eec56144
+refuse_ci	ink_slot1_px	10369
 refuse_ci	ink_slot2_px	0
-refuse_ci	red_plot_px	104
+refuse_ci	red_plot_px	107
 refuse_ci	red_margin_px	0
 refuse_column	verdict	OK
 refuse_column	secondon	0
@@ -126,10 +126,10 @@ refuse_column	note_lines	1
 refuse_column	meltcols	
 refuse_column	meltrows	
 refuse_column	png_px	1800x1200
-refuse_column	png_md5	f11d6d88696486bde5ca0c38d6b9f530
-refuse_column	ink_slot1_px	10299
+refuse_column	png_md5	f3bfffa4fc4e7e7c56526ace089ed7f9
+refuse_column	ink_slot1_px	10360
 refuse_column	ink_slot2_px	0
-refuse_column	red_plot_px	212
+refuse_column	red_plot_px	215
 refuse_column	red_margin_px	0
 refuse_histogram	verdict	OK
 refuse_histogram	secondon	
@@ -202,11 +202,11 @@ single_untouched	note_lines	0
 single_untouched	meltcols	
 single_untouched	meltrows	
 single_untouched	png_px	1800x1200
-single_untouched	png_md5	f7c4af5a8ee4c9857eb43e6b9b540dc4
-single_untouched	ink_slot1_px	10340
+single_untouched	png_md5	36b62d6eecd8a1ae3ba360d61708f0cb
+single_untouched	ink_slot1_px	10402
 single_untouched	ink_slot2_px	0
-single_untouched	red_plot_px	67
-single_untouched	red_margin_px	4
+single_untouched	red_plot_px	68
+single_untouched	red_margin_px	0
 solid_default	verdict	OK
 solid_default	secondon	0
 solid_default	rightslot	0
@@ -221,11 +221,11 @@ solid_default	note_lines	0
 solid_default	meltcols	
 solid_default	meltrows	
 solid_default	png_px	1800x1200
-solid_default	png_md5	f7c4af5a8ee4c9857eb43e6b9b540dc4
-solid_default	ink_slot1_px	10340
+solid_default	png_md5	36b62d6eecd8a1ae3ba360d61708f0cb
+solid_default	ink_slot1_px	10402
 solid_default	ink_slot2_px	0
-solid_default	red_plot_px	67
-solid_default	red_margin_px	4
+solid_default	red_plot_px	68
+solid_default	red_margin_px	0
 styles_sweep	verdict	OK
 styles_sweep	secondon	1
 styles_sweep	rightslot	2
@@ -240,10 +240,10 @@ styles_sweep	note_lines	2
 styles_sweep	meltcols	
 styles_sweep	meltrows	
 styles_sweep	png_px	1800x1200
-styles_sweep	png_md5	96d4571154a83193fdf7845a5c53f32d
-styles_sweep	ink_slot1_px	10373
-styles_sweep	ink_slot2_px	10989
-styles_sweep	red_plot_px	63
+styles_sweep	png_md5	dcaaa8afc4078020cbce92d4b2ee4538
+styles_sweep	ink_slot1_px	10476
+styles_sweep	ink_slot2_px	11106
+styles_sweep	red_plot_px	66
 styles_sweep	red_margin_px	21
 typed_pair	verdict	OK
 typed_pair	secondon	1
@@ -259,13 +259,13 @@ typed_pair	note_lines	2
 typed_pair	meltcols	
 typed_pair	meltrows	
 typed_pair	png_px	1800x1200
-typed_pair	png_md5	f23e7c702ed5742e774c0ebd851b8a29
-typed_pair	ink_slot1_px	11035
-typed_pair	ink_slot2_px	11202
-typed_pair	red_plot_px	63
+typed_pair	png_md5	471c3bd61ae2b28beb9d05ff75be0e00
+typed_pair	ink_slot1_px	11057
+typed_pair	ink_slot2_px	11265
+typed_pair	red_plot_px	66
 typed_pair	red_margin_px	13
 replay	verdict	OK
-replay	png_md5	9d4bdbd039f275065fd1bec710f552ec
+replay	png_md5	dbf5817deab2a0648f75de186e4f0797
 replay	png_px	1800x1200
 block	lineStyle	2
 block	secondAxisOn	1

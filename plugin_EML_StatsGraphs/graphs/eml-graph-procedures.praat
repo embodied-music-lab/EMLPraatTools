@@ -1802,6 +1802,66 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlPadDataRange: .dataMin, .dataMax, .fraction   ->  .min, .max, .degenerate
+#
+# THE DRAWN RANGE FOR AN AXIS THAT TAKES ITS BOUNDS FROM THE DATA ITSELF.
+#
+# A time axis is not rounded to nice numbers the way a value axis is -- a
+# recording that runs 0 to 1.37 seconds runs to 1.37, and a reader expects the
+# last sample to be at the right-hand end. But bounds set exactly to the data
+# put the first and last markers ON the frame, so half of each marker hangs
+# outside the plot: measured at 15 pixels of a 30-pixel marker at 300 dpi,
+# 1.16% of the plotted width, on every line chart this plugin draws.
+#
+# BASE R PADS, AND BY HOW MUCH IS MEASURED RATHER THAN QUOTED. On R 4.3.3,
+# data 0..9 with the default xaxs returns par("usr") of -0.36 .. 9.36: exactly
+# 0.04 of the span at each end, on both axes. xaxs="i" gives the flush range,
+# which is the exception a user asks for. This procedure is the default.
+#
+# NO NICE-NUMBER ROUNDING, for the reason the call sites already state: a time
+# axis is not rounded. Base R does not round either -- it returned -0.36 and
+# not -0.5.
+#
+# NO CLAMP AT ZERO. @emlComputeAxisRange clamps non-negative data so a value
+# axis cannot dip below 0; base R does not, and a frame reaching t = -0.04 is
+# not a claim that t = -0.04 was observed. The first tick LABEL is still 0:
+# @emlDrawAlignedMarksBottom starts at the first nice multiple at or above the
+# minimum, so the padding widens the frame without adding a label.
+#
+# THE ZERO-SPAN GUARD CLOSES A LIVE ABORT. A table whose time column holds one
+# repeated value gives .dataMin = .dataMax, and Praat's `Axes:` refuses it --
+# "Error: Left and right should not be equal", the figure abandoned mid-draw.
+# Reproduced on both callers before this procedure existed. The fallback span
+# is the one @emlComputeAxisRange already uses for the same situation on the
+# value axis, so the two resolvers degenerate the same way, and the pad is
+# half of it so the single point sits in the middle of the frame.
+# ----------------------------------------------------------------------------
+procedure emlPadDataRange: .dataMin, .dataMax, .fraction
+    .degenerate = 0
+    if .dataMin = undefined or .dataMax = undefined
+        .min = 0
+        .max = 1
+        .degenerate = 1
+        goto PAD_RANGE_END
+    endif
+    .span = .dataMax - .dataMin
+    if .span = 0
+        .degenerate = 1
+        .span = abs (.dataMin) * 0.2
+        if .span = 0
+            .span = 1
+        endif
+        .min = .dataMin - .span / 2
+        .max = .dataMax + .span / 2
+        goto PAD_RANGE_END
+    endif
+    .pad = .span * .fraction
+    .min = .dataMin - .pad
+    .max = .dataMax + .pad
+    label PAD_RANGE_END
+endproc
+
+# ----------------------------------------------------------------------------
 # @emlComputeAxisRange
 # Computes axis bounds from data range with buffer and rounding
 # Arguments: dataMin, dataMax, roundTo, isPercentage (0 or 1)

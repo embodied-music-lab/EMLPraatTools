@@ -2,8 +2,8 @@
 --run--	source_tree	/home/claude/EMLPraatTools
 --run--	legs_requested	long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2
 --run--	code_sha256_eml-graphs-form	d68985c0b986fc5e6f5bddaf29b8b60797ef02546482bd072fe398e5e1ebd59d
---run--	code_sha256_eml-graph-procedures	eee6eb1dbfa261c8de4a384991a8d84d80c6cb4d5af0075f8ce4ea8fb0d71c15
---run--	code_sha256_eml-draw-procedures	9f9e6982ff2a6c01e78e4c31355280151865b880c6595ae6d7800c385495376c
+--run--	code_sha256_eml-graph-procedures	226827fa66a4cd13d82dbaa0590012ea8007c4a22f716f42ad276970f318a21d
+--run--	code_sha256_eml-draw-procedures	6de38eb2bb7f2ecb9454f3a0c820e63b7be46b2bd091187bb9c6a78d07f4f930
 --run--	code_sha256_eml-record	631d406dd11c452128c49f1d520bc4a16b88eda2f50da8e43869cfcd370d135e
 --run--	compositor	running
 long_titled	leg_started	1
@@ -54,7 +54,7 @@ long_titled	s4_shown	Right line style: Dashed Vv
 long_titled	s4_shown	Undo Go Back Draw
 long_titled	s5_title	Graph Complete
 long_titled	s5_want	Graph Complete
-long_titled	s5_ink	0.00597214
+long_titled	s5_ink	0.006005
 long_titled	s5_shown	| Graph has been drawn in the Picture window.
 long_titled	s5_shown	What would you like to do?
 long_titled	s5_shown	Done Save Redraw
@@ -85,34 +85,40 @@ long_titled	n_text	1
 long_titled	y_label	F0
 long_titled	axis_y_min	180
 long_titled	axis_y_max	283.49608977795856
+long_titled	axis_x_min	0.003333333333333327
+long_titled	axis_x_max	1.0383333333333333
 long_titled	drawn_union	0 6 0 4
-long_titled	vars_written	24
-long_titled	fig_png_md5	1f895e25d0f8127f5e4ab5f3c3b58e48
-long_titled	fig_png_bytes	136030
+long_titled	vars_written	26
+long_titled	fig_png_md5	88835ff139e9b4ef1971d77dafbe2975
+long_titled	fig_png_bytes	134479
 long_titled	fig_png_px	1800x1200
 long_titled	fig_chromatic_colours	2
-long_titled	fig_colour_#0073B3	20827
-long_titled	fig_colour_#E69E00	20722
-long_titled	fig_chromatic_bands	2438,2899,2651,11179,10230,8279,7203,12434,3444,2362
+long_titled	fig_colour_#0073B3	20937
+long_titled	fig_colour_#E69E00	20845
+long_titled	fig_chromatic_bands	2438,2899,2651,11148,10180,8340,7275,12344,3440,2362
 long_titled	fig_chromatic_bands_nonempty	10
 long_titled	fig_figtext	Two measurements
 long_titled	fig_figtext	280
-long_titled	fig_figtext	@ fo
+long_titled	fig_figtext	@0
 long_titled	fig_figtext	@ Cq (right axis) 0.6
 long_titled	fig_figtext	260
 long_titled	fig_figtext	0.55
-long_titled	fig_figtext	. »* Ce
-long_titled	fig_figtext	240 bal é e
-long_titled	fig_figtext	® ‘e 0.5
-long_titled	fig_figtext	Oo A A (2)
-long_titled	fig_figtext	ire 6 I a
-long_titled	fig_figtext	/ @
-long_titled	fig_figtext	220 4 \ 40.45
-long_titled	fig_figtext	/ |
-long_titled	fig_figtext	200 04
-long_titled	fig_figtext	0.35
+long_titled	fig_figtext	@ ore
+long_titled	fig_figtext	e had ‘e
+long_titled	fig_figtext	240 y m | 05
+long_titled	fig_figtext	° @ / e “oOo
+long_titled	fig_figtext	tig \ é \ g
+long_titled	fig_figtext	@ } e
+long_titled	fig_figtext	220 \ | \ 10.45
+long_titled	fig_figtext	@ ‘a °
+long_titled	fig_figtext	e ®
+long_titled	fig_figtext	\ / 0.4
+long_titled	fig_figtext	200 e ©
+long_titled	fig_figtext	‘eo. 8
+long_titled	fig_figtext	ee
+long_titled	fig_figtext	° 0.35
 long_titled	fig_figtext	180
-long_titled	fig_figtext	01 #02 038 04 O05 O06 O07 O08 09 1
+long_titled	fig_figtext	01 02 03 04 05 06 O07 08 O09 1
 long_titled	fig_figtext	Time
 long_titled	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 long_titled	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
@@ -166,7 +172,7 @@ wide_titled	s4_shown	Right line style: Dashed Vv
 wide_titled	s4_shown	Undo Go Back Draw
 wide_titled	s5_title	Graph Complete
 wide_titled	s5_want	Graph Complete
-wide_titled	s5_ink	0.00597214
+wide_titled	s5_ink	0.006005
 wide_titled	s5_shown	| Graph has been drawn in the Picture window.
 wide_titled	s5_shown	What would you like to do?
 wide_titled	s5_shown	Done Save Redraw
@@ -197,34 +203,40 @@ wide_titled	n_text	0
 wide_titled	y_label	F0
 wide_titled	axis_y_min	180
 wide_titled	axis_y_max	283.49608977795856
+wide_titled	axis_x_min	0.003333333333333327
+wide_titled	axis_x_max	1.0383333333333333
 wide_titled	drawn_union	0 6 0 4
-wide_titled	vars_written	24
-wide_titled	fig_png_md5	1f895e25d0f8127f5e4ab5f3c3b58e48
-wide_titled	fig_png_bytes	136030
+wide_titled	vars_written	26
+wide_titled	fig_png_md5	88835ff139e9b4ef1971d77dafbe2975
+wide_titled	fig_png_bytes	134479
 wide_titled	fig_png_px	1800x1200
 wide_titled	fig_chromatic_colours	2
-wide_titled	fig_colour_#0073B3	20827
-wide_titled	fig_colour_#E69E00	20722
-wide_titled	fig_chromatic_bands	2438,2899,2651,11179,10230,8279,7203,12434,3444,2362
+wide_titled	fig_colour_#0073B3	20937
+wide_titled	fig_colour_#E69E00	20845
+wide_titled	fig_chromatic_bands	2438,2899,2651,11148,10180,8340,7275,12344,3440,2362
 wide_titled	fig_chromatic_bands_nonempty	10
 wide_titled	fig_figtext	Two measurements
 wide_titled	fig_figtext	280
-wide_titled	fig_figtext	@ fo
+wide_titled	fig_figtext	@0
 wide_titled	fig_figtext	@ Cq (right axis) 0.6
 wide_titled	fig_figtext	260
 wide_titled	fig_figtext	0.55
-wide_titled	fig_figtext	. »* Ce
-wide_titled	fig_figtext	240 bal é e
-wide_titled	fig_figtext	® ‘e 0.5
-wide_titled	fig_figtext	Oo A A (2)
-wide_titled	fig_figtext	ire 6 I a
-wide_titled	fig_figtext	/ @
-wide_titled	fig_figtext	220 4 \ 40.45
-wide_titled	fig_figtext	/ |
-wide_titled	fig_figtext	200 04
-wide_titled	fig_figtext	0.35
+wide_titled	fig_figtext	@ ore
+wide_titled	fig_figtext	e had ‘e
+wide_titled	fig_figtext	240 y m | 05
+wide_titled	fig_figtext	° @ / e “oOo
+wide_titled	fig_figtext	tig \ é \ g
+wide_titled	fig_figtext	@ } e
+wide_titled	fig_figtext	220 \ | \ 10.45
+wide_titled	fig_figtext	@ ‘a °
+wide_titled	fig_figtext	e ®
+wide_titled	fig_figtext	\ / 0.4
+wide_titled	fig_figtext	200 e ©
+wide_titled	fig_figtext	‘eo. 8
+wide_titled	fig_figtext	ee
+wide_titled	fig_figtext	° 0.35
 wide_titled	fig_figtext	180
-wide_titled	fig_figtext	01 #02 038 04 O05 O06 O07 O08 09 1
+wide_titled	fig_figtext	01 02 03 04 05 06 O07 08 O09 1
 wide_titled	fig_figtext	Time
 wide_titled	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 wide_titled	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
@@ -269,7 +281,7 @@ rec_subjects4	s3_shown	Line style: Solid Vv
 rec_subjects4	s3_shown	Undo Go Back Quit Advanced Draw
 rec_subjects4	s4_title	Graph Complete
 rec_subjects4	s4_want	Graph Complete
-rec_subjects4	s4_ink	0.00583286
+rec_subjects4	s4_ink	0.00582643
 rec_subjects4	s4_shown	| Graph has been drawn in the Picture window.
 rec_subjects4	s4_shown	What would you like to do?
 rec_subjects4	s4_shown	Done Save Redraw
@@ -304,29 +316,32 @@ rec_subjects4	rec_phrases	18
 rec_subjects4	rec_written	1
 rec_subjects4	axis_y_min	50
 rec_subjects4	axis_y_max	722.7071716977504
+rec_subjects4	axis_x_min	0.56
+rec_subjects4	axis_x_max	12.44
 rec_subjects4	drawn_union	0 6 0 4
-rec_subjects4	vars_written	28
-rec_subjects4	fig_png_md5	290d24858462fcc7f6c755361e618939
-rec_subjects4	fig_png_bytes	100428
+rec_subjects4	vars_written	30
+rec_subjects4	fig_png_md5	33ca5bf44244beae6075eb4b5eb14900
+rec_subjects4	fig_png_bytes	102225
 rec_subjects4	fig_png_px	1800x1200
 rec_subjects4	fig_chromatic_colours	4
-rec_subjects4	fig_colour_#0073B3	11620
-rec_subjects4	fig_colour_#009E73	11617
-rec_subjects4	fig_colour_#CC78A6	11608
-rec_subjects4	fig_colour_#E69E00	11607
-rec_subjects4	fig_chromatic_bands	3451,2511,4805,549,13146,13483,13016,9766,4844,1127
+rec_subjects4	fig_colour_#009E73	11674
+rec_subjects4	fig_colour_#0073B3	11668
+rec_subjects4	fig_colour_#CC78A6	11659
+rec_subjects4	fig_colour_#E69E00	11655
+rec_subjects4	fig_chromatic_bands	3451,2511,4805,549,13062,13361,12877,9687,4842,1127
 rec_subjects4	fig_chromatic_bands_nonempty	10
 rec_subjects4	fig_figtext	Line Chart (+Cl): It subjects4
 rec_subjects4	fig_figtext	700
-rec_subjects4	fig_figtext	es
+rec_subjects4	fig_figtext	@si
 rec_subjects4	fig_figtext	@ s2
-rec_subjects4	fig_figtext	600. @s3
-rec_subjects4	fig_figtext	@ s4
+rec_subjects4	fig_figtext	600} @ s3
+rec_subjects4	fig_figtext	@s4
 rec_subjects4	fig_figtext	500
-rec_subjects4	fig_figtext	- SESSSSarres
-rec_subjects4	fig_figtext	300
-rec_subjects4	fig_figtext	200
-rec_subjects4	fig_figtext	a a on
+rec_subjects4	fig_figtext	400 eee @_9@ © © ©@ © oe © ©
+rec_subjects4	fig_figtext	300 e300 e 0 © oo © © e °
+rec_subjects4	fig_figtext	—e _@—@_@_@ © © ©
+rec_subjects4	fig_figtext	200] e —® ® —-@— @ © ~e
+rec_subjects4	fig_figtext	100 o 09 ee ee © © eo 0 0
 rec_subjects4	fig_figtext	2 4 6 8 10 12
 rec_subjects4	fig_figtext	Time
 rec_subjects4	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
@@ -381,7 +396,7 @@ rec_meas2	s4_shown	Right line style: Dashed Vv
 rec_meas2	s4_shown	Undo Go Back Draw
 rec_meas2	s5_title	Graph Complete
 rec_meas2	s5_want	Graph Complete
-rec_meas2	s5_ink	0.00597357
+rec_meas2	s5_ink	0.00600643
 rec_meas2	s5_shown	| Graph has been drawn in the Picture window.
 rec_meas2	s5_shown	What would you like to do?
 rec_meas2	s5_shown	Done Save Redraw
@@ -416,33 +431,39 @@ rec_meas2	rec_phrases	15
 rec_meas2	rec_written	1
 rec_meas2	axis_y_min	180
 rec_meas2	axis_y_max	283.49608977795856
+rec_meas2	axis_x_min	0.003333333333333327
+rec_meas2	axis_x_max	1.0383333333333333
 rec_meas2	drawn_union	0 6 0 4
-rec_meas2	vars_written	28
-rec_meas2	fig_png_md5	679ccad9893789bb5134652a049e0b60
-rec_meas2	fig_png_bytes	138472
+rec_meas2	vars_written	30
+rec_meas2	fig_png_md5	deab345dd1b4aa7bf411efeb1588f427
+rec_meas2	fig_png_bytes	136990
 rec_meas2	fig_png_px	1800x1200
 rec_meas2	fig_chromatic_colours	2
-rec_meas2	fig_colour_#0073B3	20827
-rec_meas2	fig_colour_#E69E00	20722
-rec_meas2	fig_chromatic_bands	2821,2899,2651,11179,10230,8279,7203,12434,3444,2362
+rec_meas2	fig_colour_#0073B3	20937
+rec_meas2	fig_colour_#E69E00	20845
+rec_meas2	fig_chromatic_bands	2821,2899,2651,11148,10180,8340,7275,12344,3440,2362
 rec_meas2	fig_chromatic_bands_nonempty	10
 rec_meas2	fig_figtext	FO over time (It meas2)
 rec_meas2	fig_figtext	280
-rec_meas2	fig_figtext	@ fo
+rec_meas2	fig_figtext	@ 0
 rec_meas2	fig_figtext	@ Cq (right axis) 0.6
 rec_meas2	fig_figtext	260
 rec_meas2	fig_figtext	0.55
-rec_meas2	fig_figtext	. »* Ce
-rec_meas2	fig_figtext	240) & / @
-rec_meas2	fig_figtext	® ‘e 0.5
-rec_meas2	fig_figtext	uw 6 \ a
-rec_meas2	fig_figtext	/ @
-rec_meas2	fig_figtext	220 © 10.45
-rec_meas2	fig_figtext	/ |
-rec_meas2	fig_figtext	200 0.4
-rec_meas2	fig_figtext	0.35
+rec_meas2	fig_figtext	@. eee
+rec_meas2	fig_figtext	e Pa ‘e
+rec_meas2	fig_figtext	240 \ . . Os
+rec_meas2	fig_figtext	° @ / e “oOo
+rec_meas2	fig_figtext	2 . é \ 9
+rec_meas2	fig_figtext	@ } e
+rec_meas2	fig_figtext	220 \ 4 ‘£0.45
+rec_meas2	fig_figtext	e °
+rec_meas2	fig_figtext	e ®
+rec_meas2	fig_figtext	200 e © 0.4
+rec_meas2	fig_figtext	‘eo. 8
+rec_meas2	fig_figtext	@
+rec_meas2	fig_figtext	° 0.35
 rec_meas2	fig_figtext	180
-rec_meas2	fig_figtext	01 #02 O08 04 O05 06 O07 O08 09 1
+rec_meas2	fig_figtext	01 #02 03 04 05 06 07 08 09 1
 rec_meas2	fig_figtext	Time
 rec_meas2	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 rec_meas2	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
@@ -496,7 +517,7 @@ rec_long_meas2	s4_shown	Right line style: Dashed Vv
 rec_long_meas2	s4_shown	Undo Go Back Draw
 rec_long_meas2	s5_title	Graph Complete
 rec_long_meas2	s5_want	Graph Complete
-rec_long_meas2	s5_ink	0.00601643
+rec_long_meas2	s5_ink	0.00604929
 rec_long_meas2	s5_shown	| Graph has been drawn in the Picture window.
 rec_long_meas2	s5_shown	What would you like to do?
 rec_long_meas2	s5_shown	Done Save Redraw
@@ -531,33 +552,39 @@ rec_long_meas2	rec_phrases	113
 rec_long_meas2	rec_written	1
 rec_long_meas2	axis_y_min	180
 rec_long_meas2	axis_y_max	283.49608977795856
+rec_long_meas2	axis_x_min	0.003333333333333327
+rec_long_meas2	axis_x_max	1.0383333333333333
 rec_long_meas2	drawn_union	0 6 0 4
-rec_long_meas2	vars_written	28
-rec_long_meas2	fig_png_md5	de85d5a725020d1e9cc264ef58886a16
-rec_long_meas2	fig_png_bytes	140094
+rec_long_meas2	vars_written	30
+rec_long_meas2	fig_png_md5	02933b80afb51efb118f13090338a031
+rec_long_meas2	fig_png_bytes	138570
 rec_long_meas2	fig_png_px	1800x1200
 rec_long_meas2	fig_chromatic_colours	2
-rec_long_meas2	fig_colour_#0073B3	20827
-rec_long_meas2	fig_colour_#E69E00	20722
-rec_long_meas2	fig_chromatic_bands	3482,2899,2651,11179,10230,8279,7203,12434,3444,2362
+rec_long_meas2	fig_colour_#0073B3	20937
+rec_long_meas2	fig_colour_#E69E00	20845
+rec_long_meas2	fig_chromatic_bands	3482,2899,2651,11148,10180,8340,7275,12344,3440,2362
 rec_long_meas2	fig_chromatic_bands_nonempty	10
 rec_long_meas2	fig_figtext	FO over time (It longmeas2)
 rec_long_meas2	fig_figtext	280
-rec_long_meas2	fig_figtext	@ fo
+rec_long_meas2	fig_figtext	@0
 rec_long_meas2	fig_figtext	@ Cq (right axis) 0.6
 rec_long_meas2	fig_figtext	260
 rec_long_meas2	fig_figtext	0.55
-rec_long_meas2	fig_figtext	. Pd Ce
-rec_long_meas2	fig_figtext	240) © / @
-rec_long_meas2	fig_figtext	® ‘e 0.5
-rec_long_meas2	fig_figtext	uw 6 \ a
-rec_long_meas2	fig_figtext	/ @
-rec_long_meas2	fig_figtext	220 © 10.45
-rec_long_meas2	fig_figtext	/ |
-rec_long_meas2	fig_figtext	200 0.4
-rec_long_meas2	fig_figtext	0.35
+rec_long_meas2	fig_figtext	@. ee @
+rec_long_meas2	fig_figtext	e had ‘e
+rec_long_meas2	fig_figtext	240 y . . Os
+rec_long_meas2	fig_figtext	° @ / e “oOo
+rec_long_meas2	fig_figtext	ire \ © N a
+rec_long_meas2	fig_figtext	@ } e
+rec_long_meas2	fig_figtext	220 \ f ‘10.45
+rec_long_meas2	fig_figtext	e * °
+rec_long_meas2	fig_figtext	® A 0.4
+rec_long_meas2	fig_figtext	200 e 6
+rec_long_meas2	fig_figtext	‘eo. .6
+rec_long_meas2	fig_figtext	@
+rec_long_meas2	fig_figtext	° 0.35
 rec_long_meas2	fig_figtext	180
-rec_long_meas2	fig_figtext	01 #02 O08 04 O05 06 O07 O08 09 1
+rec_long_meas2	fig_figtext	01 02 03 04 05 06 O07 08 O09 1
 rec_long_meas2	fig_figtext	Time
 rec_long_meas2	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 rec_long_meas2	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
@@ -607,12 +634,12 @@ rec_subjects4	replay_include_rewritten	13
 rec_subjects4	tuned_axis	50 722.7071716977504
 rec_subjects4	replay_wait	1
 rec_subjects4	replay_verdict	OK
-rec_subjects4	replay_png_md5	a7a3c57b738d21ba8a01e2a38cf01a7c
+rec_subjects4	replay_png_md5	1b269a9cd4e4bf7b76fc86b7accfddc4
 rec_subjects4	replay_png_px	1800x1200
 rec_subjects4	replay_error	
 rec_subjects4	tuned_wait	1
 rec_subjects4	tuned_verdict	OK
-rec_subjects4	tuned_png_md5	290d24858462fcc7f6c755361e618939
+rec_subjects4	tuned_png_md5	33ca5bf44244beae6075eb4b5eb14900
 rec_subjects4	tuned_png_px	1800x1200
 rec_subjects4	tuned_error	
 rec_meas2	emitted_bytes	5295
@@ -659,12 +686,12 @@ rec_meas2	replay_include_rewritten	13
 rec_meas2	tuned_axis	180 283.49608977795856
 rec_meas2	replay_wait	1
 rec_meas2	replay_verdict	OK
-rec_meas2	replay_png_md5	08c2b8b6b752c6c4c995f9c4de324032
+rec_meas2	replay_png_md5	39ba2dbe956d67ce179474df523a63ae
 rec_meas2	replay_png_px	1800x1200
 rec_meas2	replay_error	
 rec_meas2	tuned_wait	1
 rec_meas2	tuned_verdict	OK
-rec_meas2	tuned_png_md5	679ccad9893789bb5134652a049e0b60
+rec_meas2	tuned_png_md5	deab345dd1b4aa7bf411efeb1588f427
 rec_meas2	tuned_png_px	1800x1200
 rec_meas2	tuned_error	
 rec_long_meas2	emitted_bytes	6321
@@ -722,12 +749,12 @@ rec_long_meas2	replay_include_rewritten	13
 rec_long_meas2	tuned_axis	180 283.49608977795856
 rec_long_meas2	replay_wait	1
 rec_long_meas2	replay_verdict	OK
-rec_long_meas2	replay_png_md5	559231088ba3e32bb9a705a4eb7cbb97
+rec_long_meas2	replay_png_md5	c21f5e7e89d8aa04140f3e4fddba4571
 rec_long_meas2	replay_png_px	1800x1200
 rec_long_meas2	replay_error	
 rec_long_meas2	tuned_wait	1
 rec_long_meas2	tuned_verdict	OK
-rec_long_meas2	tuned_png_md5	de85d5a725020d1e9cc264ef58886a16
+rec_long_meas2	tuned_png_md5	02933b80afb51efb118f13090338a031
 rec_long_meas2	tuned_png_px	1800x1200
 rec_long_meas2	tuned_error	
 --run--	legs_driven	5
@@ -784,7 +811,7 @@ none_refuse	s5_shown	Line style: Solid v
 none_refuse	s5_shown	Undo Go Back Quit Advanced Draw
 none_refuse	s6_title	Graph Complete
 none_refuse	s6_want	Graph Complete
-none_refuse	s6_ink	0.00572286
+none_refuse	s6_ink	0.00572571
 none_refuse	s6_shown	| Graph has been drawn in the Picture window.
 none_refuse	s6_shown	What would you like to do?
 none_refuse	s6_shown	Done Save Redraw
@@ -815,14 +842,16 @@ none_refuse	n_text	0
 none_refuse	y_label	F0
 none_refuse	axis_y_min	180
 none_refuse	axis_y_max	260
+none_refuse	axis_x_min	0.003333333333333327
+none_refuse	axis_x_max	1.0383333333333333
 none_refuse	drawn_union	0 6 0 4
-none_refuse	vars_written	24
-none_refuse	fig_png_md5	9353ace0f369b43caf87492118e5f833
-none_refuse	fig_png_bytes	93050
+none_refuse	vars_written	26
+none_refuse	fig_png_md5	310c957d7a5e8a1811e5806436449965
+none_refuse	fig_png_bytes	92227
 none_refuse	fig_png_px	1800x1200
 none_refuse	fig_chromatic_colours	1
-none_refuse	fig_colour_#0073B3	19790
-none_refuse	fig_chromatic_bands	3157,1736,6123,3641,2683,3250,3760,6274,1428,2362
+none_refuse	fig_colour_#0073B3	19850
+none_refuse	fig_chromatic_bands	3157,1724,6093,3620,2738,3311,3733,6211,1428,2362
 none_refuse	fig_chromatic_bands_nonempty	10
 none_refuse	fig_figtext	FO over time (It meas2)
 none_refuse	fig_figtext	260.
@@ -834,7 +863,7 @@ none_refuse	fig_figtext	210
 none_refuse	fig_figtext	200.
 none_refuse	fig_figtext	190
 none_refuse	fig_figtext	180
-none_refuse	fig_figtext	0.41 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1
+none_refuse	fig_figtext	0.41 0.2 0.3 0.4 0.5 06 O07 O8 09 1
 none_refuse	fig_figtext	Time
 none_refuse	info_lines	0
 none_refuse	display_clear	yes
@@ -880,7 +909,7 @@ seven	s3_shown	Line style: Solid Vv
 seven	s3_shown	Undo Go Back Quit Advanced Draw
 seven	s4_title	Graph Complete
 seven	s4_want	Graph Complete
-seven	s4_ink	0.00675143
+seven	s4_ink	0.00674357
 seven	s4_shown	| Graph has been drawn in the Picture window.
 seven	s4_shown	What would you like to do?
 seven	s4_shown	Done Save Redraw
@@ -911,34 +940,39 @@ seven	n_text	0
 seven	y_label	
 seven	axis_y_min	0
 seven	axis_y_max	1754.7855888991057
+seven	axis_x_min	0.64
+seven	axis_x_max	10.36
 seven	drawn_union	0 6 0 4
-seven	vars_written	24
-seven	fig_png_md5	09964aaab3f030f6074f19b171c731be
-seven	fig_png_bytes	130106
+seven	vars_written	26
+seven	fig_png_md5	a4121d56b25bf33e812a61d178f380af
+seven	fig_png_bytes	134682
 seven	fig_png_px	1800x1200
 seven	fig_chromatic_colours	7
-seven	fig_colour_#57B5E8	10117
-seven	fig_colour_#D75E00	10113
-seven	fig_colour_#0073B3	10104
-seven	fig_colour_#F3E640	10100
-seven	fig_colour_#009E73	10099
-seven	fig_colour_#CC78A6	10099
-seven	fig_colour_#E69E00	10085
-seven	fig_chromatic_bands	2847,2573,4761,4084,1831,19426,26999,24162,12115,1402
+seven	fig_colour_#0073B3	10163
+seven	fig_colour_#F3E640	10158
+seven	fig_colour_#D75E00	10156
+seven	fig_colour_#009E73	10152
+seven	fig_colour_#E69E00	10152
+seven	fig_colour_#57B5E8	10149
+seven	fig_colour_#CC78A6	10142
+seven	fig_chromatic_bands	2847,2573,4761,4084,1831,19198,26769,23945,11982,1402
 seven	fig_chromatic_bands_nonempty	10
 seven	fig_figtext	Line Chart (+Cl): It seven
-seven	fig_figtext	1600 @ct
-seven	fig_figtext	@ 02
-seven	fig_figtext	1400{ @ °3
-seven	fig_figtext	@ -4
-seven	fig_figtext	4200] O°
-seven	fig_figtext	@
-seven	fig_figtext	1000 of
+seven	fig_figtext	1600} @c1
+seven	fig_figtext	@ 2
+seven	fig_figtext	14001 @ 3
+seven	fig_figtext	@ 4
+seven	fig_figtext	@ 5
+seven	fig_figtext	1200 ec
+seven	fig_figtext	1000 7
 seven	fig_figtext	800
-seven	fig_figtext	‘=.
-seven	fig_figtext	a a a aa a a
-seven	fig_figtext	SS scaas
-seven	fig_figtext	ottir ttl tlitliii it]
+seven	fig_figtext	600| e —@—_@ __@ __@—__@ __@ © @ ®
+seven	fig_figtext	ee _e _e © ee © ee
+seven	fig_figtext	4001 e —@—_e—_@ __@ _@ __® _®@__@__ ®
+seven	fig_figtext	e—_e__e 0 © oe © © e ©
+seven	fig_figtext	200! e —®—_@__@__@ _@ _@® _~@__@ _®
+seven	fig_figtext	e_e—__e _e © e © © e@ ©
+seven	fig_figtext	0
 seven	fig_figtext	1 2 3 4 5 6 7 8 9 10
 seven	fig_figtext	Time
 seven	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
@@ -953,12 +987,12 @@ script_refuse	subjects_union	0 6 0 4
 script_refuse	measurements_refused	0
 script_refuse	leg_returned	script_refuse
 script_refuse	vars_written	5
-script_refuse	fig_png_md5	91fa4e9472bc829cee84b617f8e20699
-script_refuse	fig_png_bytes	67535
+script_refuse	fig_png_md5	35b3a67d1ddf5bc21b7a9017cf33565f
+script_refuse	fig_png_bytes	65092
 script_refuse	fig_png_px	1800x1200
 script_refuse	fig_chromatic_colours	1
-script_refuse	fig_colour_#0073B3	10279
-script_refuse	fig_chromatic_bands	4235,405,2205,2691,2606,3031,1823,2957,865,1127
+script_refuse	fig_colour_#0073B3	10368
+script_refuse	fig_chromatic_bands	4235,405,2240,2646,2574,2976,1811,2977,872,1127
 script_refuse	fig_chromatic_bands_nonempty	10
 script_refuse	fig_figtext	Same measurement, two subjects
 script_refuse	fig_figtext	140
@@ -971,29 +1005,28 @@ script_refuse	fig_figtext	110
 script_refuse	fig_figtext	100
 script_refuse	fig_figtext	2 4 6 8 10 12
 script_refuse	fig_figtext	Time
-script_refuse	honoured_png_md5	d8eadb8bced8118500034924f6d0386e
-script_refuse	honoured_png_bytes	123772
+script_refuse	honoured_png_md5	dd3b37d05203e1db05f1f814bb33a2fa
+script_refuse	honoured_png_bytes	120735
 script_refuse	honoured_png_px	1800x1200
 script_refuse	honoured_chromatic_colours	2
-script_refuse	honoured_colour_#E69E00	11293
-script_refuse	honoured_colour_#0073B3	9676
-script_refuse	honoured_chromatic_bands	4794,3028,4982,5337,5784,6731,4718,4631,863,1127
+script_refuse	honoured_colour_#E69E00	11432
+script_refuse	honoured_colour_#0073B3	9684
+script_refuse	honoured_chromatic_bands	4794,3028,5009,5348,5734,6656,4671,4635,870,1127
 script_refuse	honoured_chromatic_bands_nonempty	10
 script_refuse	honoured_figtext	Different measurements, two columns
-script_refuse	honoured_figtext	140, @ Ss! ae
+script_refuse	honoured_figtext	140] @ ae
 script_refuse	honoured_figtext	© S82 (right axis)
-script_refuse	honoured_figtext	pais 230
-script_refuse	honoured_figtext	130 o ‘bo05
-script_refuse	honoured_figtext	3 i *# 220
-script_refuse	honoured_figtext	Gi a \. a ine)
-script_refuse	honoured_figtext	> 120 » \ A
-script_refuse	honoured_figtext	e 7 ® 215
-script_refuse	honoured_figtext	; C # 210
-script_refuse	honoured_figtext	110) SLY
+script_refuse	honoured_figtext	ran 230
+script_refuse	honoured_figtext	130 4 ‘| 905
+script_refuse	honoured_figtext	8 /K. 2- 220
+script_refuse	honoured_figtext	> 120 Bad A
+script_refuse	honoured_figtext	@ 7 ° 215
+script_refuse	honoured_figtext	‘ XY 210
+script_refuse	honoured_figtext	110 \
 script_refuse	honoured_figtext	y ©
-script_refuse	honoured_figtext	"4 205
+script_refuse	honoured_figtext	‘ 205
 script_refuse	honoured_figtext	100
-script_refuse	honoured_figtext	2 4 6 8 10 2
+script_refuse	honoured_figtext	2 4 6 8 10 12
 script_refuse	honoured_figtext	Time
 script_refuse	info	NOTE: a second right-hand y-axis was requested and refused. These series are the same measurement on different subjects, so a second scale would say they are not comparable when they are. The figure was drawn with one y-axis.
 script_refuse	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
@@ -1046,7 +1079,7 @@ long_meas2	s4_shown	Right line style: Dashed Vv
 long_meas2	s4_shown	Undo Go Back Draw
 long_meas2	s5_title	Graph Complete
 long_meas2	s5_want	Graph Complete
-long_meas2	s5_ink	0.00601643
+long_meas2	s5_ink	0.00604929
 long_meas2	s5_shown	| Graph has been drawn in the Picture window.
 long_meas2	s5_shown	What would you like to do?
 long_meas2	s5_shown	Done Save Redraw
@@ -1077,33 +1110,39 @@ long_meas2	n_text	1
 long_meas2	y_label	F0
 long_meas2	axis_y_min	180
 long_meas2	axis_y_max	283.49608977795856
+long_meas2	axis_x_min	0.003333333333333327
+long_meas2	axis_x_max	1.0383333333333333
 long_meas2	drawn_union	0 6 0 4
-long_meas2	vars_written	24
-long_meas2	fig_png_md5	de85d5a725020d1e9cc264ef58886a16
-long_meas2	fig_png_bytes	140094
+long_meas2	vars_written	26
+long_meas2	fig_png_md5	02933b80afb51efb118f13090338a031
+long_meas2	fig_png_bytes	138570
 long_meas2	fig_png_px	1800x1200
 long_meas2	fig_chromatic_colours	2
-long_meas2	fig_colour_#0073B3	20827
-long_meas2	fig_colour_#E69E00	20722
-long_meas2	fig_chromatic_bands	3482,2899,2651,11179,10230,8279,7203,12434,3444,2362
+long_meas2	fig_colour_#0073B3	20937
+long_meas2	fig_colour_#E69E00	20845
+long_meas2	fig_chromatic_bands	3482,2899,2651,11148,10180,8340,7275,12344,3440,2362
 long_meas2	fig_chromatic_bands_nonempty	10
 long_meas2	fig_figtext	FO over time (It longmeas2)
 long_meas2	fig_figtext	280
-long_meas2	fig_figtext	@ fo
+long_meas2	fig_figtext	@0
 long_meas2	fig_figtext	@ Cq (right axis) 0.6
 long_meas2	fig_figtext	260
 long_meas2	fig_figtext	0.55
-long_meas2	fig_figtext	. Pd Ce
-long_meas2	fig_figtext	240) © / @
-long_meas2	fig_figtext	® ‘e 0.5
-long_meas2	fig_figtext	uw 6 \ a
-long_meas2	fig_figtext	/ @
-long_meas2	fig_figtext	220 © 10.45
-long_meas2	fig_figtext	/ |
-long_meas2	fig_figtext	200 0.4
-long_meas2	fig_figtext	0.35
+long_meas2	fig_figtext	@. ee @
+long_meas2	fig_figtext	e had ‘e
+long_meas2	fig_figtext	240 y . . Os
+long_meas2	fig_figtext	° @ / e “oOo
+long_meas2	fig_figtext	ire \ © N a
+long_meas2	fig_figtext	@ } e
+long_meas2	fig_figtext	220 \ f ‘10.45
+long_meas2	fig_figtext	e * °
+long_meas2	fig_figtext	® A 0.4
+long_meas2	fig_figtext	200 e 6
+long_meas2	fig_figtext	‘eo. .6
+long_meas2	fig_figtext	@
+long_meas2	fig_figtext	° 0.35
 long_meas2	fig_figtext	180
-long_meas2	fig_figtext	01 #02 O08 04 O05 06 O07 O08 09 1
+long_meas2	fig_figtext	01 02 03 04 05 06 O07 08 O09 1
 long_meas2	fig_figtext	Time
 long_meas2	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 long_meas2	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
@@ -1162,7 +1201,7 @@ long_meas3_refuse	s5_shown	Line style: Solid v
 long_meas3_refuse	s5_shown	Undo Go Back Quit Advanced Draw
 long_meas3_refuse	s6_title	Graph Complete
 long_meas3_refuse	s6_want	Graph Complete
-long_meas3_refuse	s6_ink	0.00524
+long_meas3_refuse	s6_ink	0.00525
 long_meas3_refuse	s6_shown	| Graph has been drawn in the Picture window.
 long_meas3_refuse	s6_shown	What would you like to do?
 long_meas3_refuse	s6_shown	Done Save Redraw
@@ -1193,14 +1232,16 @@ long_meas3_refuse	n_text	1
 long_meas3_refuse	y_label	Value
 long_meas3_refuse	axis_y_min	82
 long_meas3_refuse	axis_y_max	104
+long_meas3_refuse	axis_x_min	0.012000000000000004
+long_meas3_refuse	axis_x_max	1.038
 long_meas3_refuse	drawn_union	0 6 0 4
-long_meas3_refuse	vars_written	24
-long_meas3_refuse	fig_png_md5	90337244642376edba64e13034e6b799
-long_meas3_refuse	fig_png_bytes	76433
+long_meas3_refuse	vars_written	26
+long_meas3_refuse	fig_png_md5	9f345f180b77179241754dc4f063c47b
+long_meas3_refuse	fig_png_bytes	76066
 long_meas3_refuse	fig_png_px	1800x1200
 long_meas3_refuse	fig_chromatic_colours	1
-long_meas3_refuse	fig_colour_#0073B3	16571
-long_meas3_refuse	fig_chromatic_bands	3996,0,6602,3500,4320,2508,2246,3151,1003,2362
+long_meas3_refuse	fig_colour_#0073B3	16641
+long_meas3_refuse	fig_chromatic_bands	3996,0,6541,3449,4377,2484,2225,3193,1003,2362
 long_meas3_refuse	fig_chromatic_bands_nonempty	9
 long_meas3_refuse	fig_figtext	Value over time (It longmeas3)
 long_meas3_refuse	fig_figtext	100
@@ -1211,7 +1252,7 @@ long_meas3_refuse	fig_figtext	Ws
 long_meas3_refuse	fig_figtext	>
 long_meas3_refuse	fig_figtext	90
 long_meas3_refuse	fig_figtext	85
-long_meas3_refuse	fig_figtext	0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1
+long_meas3_refuse	fig_figtext	0.1 02 0.3 04 #05 06 07 «0.8 0.9 1
 long_meas3_refuse	fig_figtext	Time
 long_meas3_refuse	info	Time series: Line shows the mean per time point. 40 repeated observation(s) were averaged. Use Spaghetti Plot to show individual series, or Time Series (with CI) to show the spread around each mean.
 long_meas3_refuse	info_lines	1
@@ -1255,7 +1296,7 @@ subjects4	s3_shown	Line style: Solid Vv
 subjects4	s3_shown	Undo Go Back Quit Advanced Draw
 subjects4	s4_title	Graph Complete
 subjects4	s4_want	Graph Complete
-subjects4	s4_ink	0.00583286
+subjects4	s4_ink	0.00582643
 subjects4	s4_shown	| Graph has been drawn in the Picture window.
 subjects4	s4_shown	What would you like to do?
 subjects4	s4_shown	Done Save Redraw
@@ -1286,29 +1327,32 @@ subjects4	n_text	0
 subjects4	y_label	
 subjects4	axis_y_min	50
 subjects4	axis_y_max	722.7071716977504
+subjects4	axis_x_min	0.56
+subjects4	axis_x_max	12.44
 subjects4	drawn_union	0 6 0 4
-subjects4	vars_written	24
-subjects4	fig_png_md5	290d24858462fcc7f6c755361e618939
-subjects4	fig_png_bytes	100428
+subjects4	vars_written	26
+subjects4	fig_png_md5	33ca5bf44244beae6075eb4b5eb14900
+subjects4	fig_png_bytes	102225
 subjects4	fig_png_px	1800x1200
 subjects4	fig_chromatic_colours	4
-subjects4	fig_colour_#0073B3	11620
-subjects4	fig_colour_#009E73	11617
-subjects4	fig_colour_#CC78A6	11608
-subjects4	fig_colour_#E69E00	11607
-subjects4	fig_chromatic_bands	3451,2511,4805,549,13146,13483,13016,9766,4844,1127
+subjects4	fig_colour_#009E73	11674
+subjects4	fig_colour_#0073B3	11668
+subjects4	fig_colour_#CC78A6	11659
+subjects4	fig_colour_#E69E00	11655
+subjects4	fig_chromatic_bands	3451,2511,4805,549,13062,13361,12877,9687,4842,1127
 subjects4	fig_chromatic_bands_nonempty	10
 subjects4	fig_figtext	Line Chart (+Cl): It subjects4
 subjects4	fig_figtext	700
-subjects4	fig_figtext	es
+subjects4	fig_figtext	@si
 subjects4	fig_figtext	@ s2
-subjects4	fig_figtext	600. @s3
-subjects4	fig_figtext	@ s4
+subjects4	fig_figtext	600} @ s3
+subjects4	fig_figtext	@s4
 subjects4	fig_figtext	500
-subjects4	fig_figtext	- SESSSSarres
-subjects4	fig_figtext	300
-subjects4	fig_figtext	200
-subjects4	fig_figtext	a a on
+subjects4	fig_figtext	400 eee @_9@ © © ©@ © oe © ©
+subjects4	fig_figtext	300 e300 e 0 © oo © © e °
+subjects4	fig_figtext	—e _@—@_@_@ © © ©
+subjects4	fig_figtext	200] e —® ® —-@— @ © ~e
+subjects4	fig_figtext	100 o 09 ee ee © © eo 0 0
 subjects4	fig_figtext	2 4 6 8 10 12
 subjects4	fig_figtext	Time
 subjects4	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
@@ -1389,7 +1433,7 @@ subjects_ci	s5_shown	Line style: Solid v
 subjects_ci	s5_shown	Undo Go Back Quit Advanced Draw
 subjects_ci	s6_title	Graph Complete
 subjects_ci	s6_want	Graph Complete
-subjects_ci	s6_ink	0.00454786
+subjects_ci	s6_ink	0.00454286
 subjects_ci	s6_shown	| Graph has been drawn in the Picture window.
 subjects_ci	s6_shown	What would you like to do?
 subjects_ci	s6_shown	Done Save Redraw
@@ -1420,24 +1464,24 @@ subjects_ci	n_text	1
 subjects_ci	y_label	F0
 subjects_ci	drawn_union	0 6 0 4
 subjects_ci	vars_written	22
-subjects_ci	fig_png_md5	132c5fd68b5508a86672496774d85264
-subjects_ci	fig_png_bytes	71040
+subjects_ci	fig_png_md5	29ace2efb3412c18e54a6fad71205878
+subjects_ci	fig_png_bytes	70848
 subjects_ci	fig_png_px	1800x1200
 subjects_ci	fig_chromatic_colours	4
-subjects_ci	fig_colour_#B3D4E8	143211
-subjects_ci	fig_colour_#F8E3B3	113528
-subjects_ci	fig_colour_#E69E00	7052
-subjects_ci	fig_colour_#0073B3	7010
-subjects_ci	fig_chromatic_bands	4964,2991,1735,692,89789,32966,42053,110374,288,964
+subjects_ci	fig_colour_#B3D4E8	132528
+subjects_ci	fig_colour_#F8E3B3	104977
+subjects_ci	fig_colour_#E69E00	7085
+subjects_ci	fig_colour_#0073B3	7034
+subjects_ci	fig_chromatic_bands	4964,2991,1735,675,83399,30679,39123,102491,288,964
 subjects_ci	fig_chromatic_bands_nonempty	10
 subjects_ci	fig_figtext	FO over time and speaker (It grouprep)
-subjects_ci	fig_figtext	400.
+subjects_ci	fig_figtext	400
 subjects_ci	fig_figtext	@ Speaker 1
 subjects_ci	fig_figtext	@ Speaker 2
-subjects_ci	fig_figtext	350.
-subjects_ci	fig_figtext	___—_——@——_®
-subjects_ci	fig_figtext	sof tt
-subjects_ci	fig_figtext	: eS
+subjects_ci	fig_figtext	350
+subjects_ci	fig_figtext	One
+subjects_ci	fig_figtext	30%
+subjects_ci	fig_figtext	950 ae
 subjects_ci	fig_figtext	1 2 3 4 5 6
 subjects_ci	fig_figtext	Time
 subjects_ci	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
@@ -1504,7 +1548,7 @@ meas2	s4_shown	Right line style: Dashed Vv
 meas2	s4_shown	Undo Go Back Draw
 meas2	s5_title	Graph Complete
 meas2	s5_want	Graph Complete
-meas2	s5_ink	0.00597357
+meas2	s5_ink	0.00600643
 meas2	s5_shown	| Graph has been drawn in the Picture window.
 meas2	s5_shown	What would you like to do?
 meas2	s5_shown	Done Save Redraw
@@ -1535,33 +1579,39 @@ meas2	n_text	0
 meas2	y_label	F0
 meas2	axis_y_min	180
 meas2	axis_y_max	283.49608977795856
+meas2	axis_x_min	0.003333333333333327
+meas2	axis_x_max	1.0383333333333333
 meas2	drawn_union	0 6 0 4
-meas2	vars_written	24
-meas2	fig_png_md5	679ccad9893789bb5134652a049e0b60
-meas2	fig_png_bytes	138472
+meas2	vars_written	26
+meas2	fig_png_md5	deab345dd1b4aa7bf411efeb1588f427
+meas2	fig_png_bytes	136990
 meas2	fig_png_px	1800x1200
 meas2	fig_chromatic_colours	2
-meas2	fig_colour_#0073B3	20827
-meas2	fig_colour_#E69E00	20722
-meas2	fig_chromatic_bands	2821,2899,2651,11179,10230,8279,7203,12434,3444,2362
+meas2	fig_colour_#0073B3	20937
+meas2	fig_colour_#E69E00	20845
+meas2	fig_chromatic_bands	2821,2899,2651,11148,10180,8340,7275,12344,3440,2362
 meas2	fig_chromatic_bands_nonempty	10
 meas2	fig_figtext	FO over time (It meas2)
 meas2	fig_figtext	280
-meas2	fig_figtext	@ fo
+meas2	fig_figtext	@ 0
 meas2	fig_figtext	@ Cq (right axis) 0.6
 meas2	fig_figtext	260
 meas2	fig_figtext	0.55
-meas2	fig_figtext	. »* Ce
-meas2	fig_figtext	240) & / @
-meas2	fig_figtext	® ‘e 0.5
-meas2	fig_figtext	uw 6 \ a
-meas2	fig_figtext	/ @
-meas2	fig_figtext	220 © 10.45
-meas2	fig_figtext	/ |
-meas2	fig_figtext	200 0.4
-meas2	fig_figtext	0.35
+meas2	fig_figtext	@. eee
+meas2	fig_figtext	e Pa ‘e
+meas2	fig_figtext	240 \ . . Os
+meas2	fig_figtext	° @ / e “oOo
+meas2	fig_figtext	2 . é \ 9
+meas2	fig_figtext	@ } e
+meas2	fig_figtext	220 \ 4 ‘£0.45
+meas2	fig_figtext	e °
+meas2	fig_figtext	e ®
+meas2	fig_figtext	200 e © 0.4
+meas2	fig_figtext	‘eo. 8
+meas2	fig_figtext	@
+meas2	fig_figtext	° 0.35
 meas2	fig_figtext	180
-meas2	fig_figtext	01 #02 O08 04 O05 06 O07 O08 09 1
+meas2	fig_figtext	01 #02 03 04 05 06 07 08 09 1
 meas2	fig_figtext	Time
 meas2	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 meas2	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
@@ -1615,7 +1665,7 @@ meas2_rep	s4_shown	Right line style: Dashed Vv
 meas2_rep	s4_shown	Undo Go Back Draw
 meas2_rep	s5_title	Graph Complete
 meas2_rep	s5_want	Graph Complete
-meas2_rep	s5_ink	0.00506214
+meas2_rep	s5_ink	0.00509714
 meas2_rep	s5_shown	| Graph has been drawn in the Picture window.
 meas2_rep	s5_shown	What would you like to do?
 meas2_rep	s5_shown	Done Save Redraw
@@ -1646,31 +1696,34 @@ meas2_rep	n_text	0
 meas2_rep	y_label	F0
 meas2_rep	axis_y_min	169.44092144428626
 meas2_rep	axis_y_max	260
+meas2_rep	axis_x_min	0.09
+meas2_rep	axis_x_max	1.035
 meas2_rep	drawn_union	0 6 0 4
-meas2_rep	vars_written	24
-meas2_rep	fig_png_md5	5b55b106d974f7332d7dea7aa1591a0b
-meas2_rep	fig_png_bytes	116944
+meas2_rep	vars_written	26
+meas2_rep	fig_png_md5	768301b962c31f9ffa21f459562e0b17
+meas2_rep	fig_png_bytes	115746
 meas2_rep	fig_png_px	1800x1200
 meas2_rep	fig_chromatic_colours	2
-meas2_rep	fig_colour_#0073B3	8348
-meas2_rep	fig_colour_#E69E00	8009
-meas2_rep	fig_chromatic_bands	3639,2715,5990,3124,3515,5308,3171,2847,3107,2189
+meas2_rep	fig_colour_#0073B3	8455
+meas2_rep	fig_colour_#E69E00	8107
+meas2_rep	fig_chromatic_bands	3639,2766,5891,3135,3467,5266,3247,2847,3198,2362
 meas2_rep	fig_chromatic_bands_nonempty	10
 meas2_rep	fig_figtext	FO over time (It meas2rep)
-meas2_rep	fig_figtext	_ 0.55
-meas2_rep	fig_figtext	qj
-meas2_rep	fig_figtext	0.5
+meas2_rep	fig_figtext	260 0.55
+meas2_rep	fig_figtext	eo
+meas2_rep	fig_figtext	» 0.5
 meas2_rep	fig_figtext	240 eo
-meas2_rep	fig_figtext	“e
-meas2_rep	fig_figtext	~ 0.45
-meas2_rep	fig_figtext	220 _
-meas2_rep	fig_figtext	& °. - 0.4 8
-meas2_rep	fig_figtext	e e p
-meas2_rep	fig_figtext	200 ~
+meas2_rep	fig_figtext	‘e
+meas2_rep	fig_figtext	. 0.45
+meas2_rep	fig_figtext	220 \N
+meas2_rep	fig_figtext	°o . fe)
+meas2_rep	fig_figtext	* o4 2
+meas2_rep	fig_figtext	‘e. ° e
+meas2_rep	fig_figtext	200 —o
 meas2_rep	fig_figtext	e 0.35
-meas2_rep	fig_figtext	10, @° 03
+meas2_rep	fig_figtext	is0f @O 0.3
 meas2_rep	fig_figtext	@ Ca (right axis)
-meas2_rep	fig_figtext	02 #08 04 O85 O06 O7 O08 09 1
+meas2_rep	fig_figtext	01 #02 O08 O04 O05 06 O07 O08 09 1
 meas2_rep	fig_figtext	Time
 meas2_rep	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 meas2_rep	info	Time series: Lines show the mean per time point. 16 repeated observation(s) were averaged. Intervals are not offered across two scales.
@@ -1745,7 +1798,7 @@ meas3_refuse	s6_shown	Right line style: Dashed Vv
 meas3_refuse	s6_shown	Undo Go Back Draw
 meas3_refuse	s7_title	Graph Complete
 meas3_refuse	s7_want	Graph Complete
-meas3_refuse	s7_ink	0.00572
+meas3_refuse	s7_ink	0.00571929
 meas3_refuse	s7_shown	| Graph has been drawn in the Picture window.
 meas3_refuse	s7_shown	What would you like to do?
 meas3_refuse	s7_shown	Done Save Redraw
@@ -1776,34 +1829,38 @@ meas3_refuse	n_text	0
 meas3_refuse	y_label	F0
 meas3_refuse	axis_y_min	156.50391022204144
 meas3_refuse	axis_y_max	260
+meas3_refuse	axis_x_min	0.012000000000000004
+meas3_refuse	axis_x_max	1.038
 meas3_refuse	drawn_union	0 6 0 4
-meas3_refuse	vars_written	24
-meas3_refuse	fig_png_md5	accae2c07d7b4658c2bab78a84bed9c0
-meas3_refuse	fig_png_bytes	130039
+meas3_refuse	vars_written	26
+meas3_refuse	fig_png_md5	c7bafd429bc221735d82f7860a2eded7
+meas3_refuse	fig_png_bytes	129901
 meas3_refuse	fig_png_px	1800x1200
 meas3_refuse	fig_chromatic_colours	2
-meas3_refuse	fig_colour_#0073B3	17699
-meas3_refuse	fig_colour_#E69E00	17492
-meas3_refuse	fig_chromatic_bands	3208,8062,9991,6101,6513,6978,6830,2554,3618,2362
+meas3_refuse	fig_colour_#0073B3	17782
+meas3_refuse	fig_colour_#E69E00	17592
+meas3_refuse	fig_chromatic_bands	3208,8121,9914,6137,6475,6926,6812,2554,3618,2362
 meas3_refuse	fig_chromatic_bands_nonempty	10
 meas3_refuse	fig_figtext	FO over time (It meas3)
 meas3_refuse	fig_figtext	260
 meas3_refuse	fig_figtext	0.55
-meas3_refuse	fig_figtext	240
-meas3_refuse	fig_figtext	e@ 0.5
-meas3_refuse	fig_figtext	.
-meas3_refuse	fig_figtext	220 \ 0.45
+meas3_refuse	fig_figtext	e. @@ )
+meas3_refuse	fig_figtext	e@ 6
+meas3_refuse	fig_figtext	240 S 4
+meas3_refuse	fig_figtext	e s 0.5
+meas3_refuse	fig_figtext	e »
+meas3_refuse	fig_figtext	220 \, / 0.45
+meas3_refuse	fig_figtext	e bad
+meas3_refuse	fig_figtext	: . s a 8
+meas3_refuse	fig_figtext	200 ‘e s ,
+meas3_refuse	fig_figtext	‘4 «
 meas3_refuse	fig_figtext	@
-meas3_refuse	fig_figtext	ra ‘e s o4 =
-meas3_refuse	fig_figtext	200 ‘eo ss ,
-meas3_refuse	fig_figtext	‘4 °
-meas3_refuse	fig_figtext	ee
 meas3_refuse	fig_figtext	° 0.35
 meas3_refuse	fig_figtext	180
 meas3_refuse	fig_figtext	@ 0 0.3
 meas3_refuse	fig_figtext	@ Cq (right axis)
 meas3_refuse	fig_figtext	160
-meas3_refuse	fig_figtext	01 O02 038 04 O05 O06 O07 O08 09 1
+meas3_refuse	fig_figtext	01 #02 03 04 05 06 O07 08 O09 1
 meas3_refuse	fig_figtext	Time
 meas3_refuse	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 meas3_refuse	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
@@ -1812,19 +1869,19 @@ meas3_refuse	display_clear	yes
 --run--	legs_carried	subjects4 subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven script_refuse long_meas2 long_meas3_refuse
 --pairs--	titled_a	long_titled
 --pairs--	titled_b	wide_titled
---pairs--	titled_diff_md5_a	1f895e25d0f8127f5e4ab5f3c3b58e48
---pairs--	titled_diff_md5_b	1f895e25d0f8127f5e4ab5f3c3b58e48
---pairs--	titled_diff_bytes_a	136030
---pairs--	titled_diff_bytes_b	136030
+--pairs--	titled_diff_md5_a	88835ff139e9b4ef1971d77dafbe2975
+--pairs--	titled_diff_md5_b	88835ff139e9b4ef1971d77dafbe2975
+--pairs--	titled_diff_bytes_a	134479
+--pairs--	titled_diff_bytes_b	134479
 --pairs--	titled_diff_verdict	IDENTICAL
 --pairs--	titled_diff_pixels	0
 --pairs--	titled_diff_rows	none
 --pairs--	auto_a	long_meas2
 --pairs--	auto_b	meas2
---pairs--	auto_diff_md5_a	de85d5a725020d1e9cc264ef58886a16
---pairs--	auto_diff_md5_b	679ccad9893789bb5134652a049e0b60
---pairs--	auto_diff_bytes_a	140094
---pairs--	auto_diff_bytes_b	138472
+--pairs--	auto_diff_md5_a	02933b80afb51efb118f13090338a031
+--pairs--	auto_diff_md5_b	deab345dd1b4aa7bf411efeb1588f427
+--pairs--	auto_diff_bytes_a	138570
+--pairs--	auto_diff_bytes_b	136990
 --pairs--	auto_diff_verdict	DIFFERS
 --pairs--	auto_diff_pixels	11463
 --pairs--	auto_diff_total_px	2160000

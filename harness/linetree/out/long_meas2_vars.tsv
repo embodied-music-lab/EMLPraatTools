@@ -21,4 +21,6 @@ long_meas2	n_text	1
 long_meas2	y_label	F0
 long_meas2	axis_y_min	180
 long_meas2	axis_y_max	283.49608977795856
+long_meas2	axis_x_min	0.003333333333333327
+long_meas2	axis_x_max	1.0383333333333333
 long_meas2	drawn_union	0 6 0 4

@@ -21,4 +21,6 @@ meas3_refuse	n_text	0
 meas3_refuse	y_label	F0
 meas3_refuse	axis_y_min	156.50391022204144
 meas3_refuse	axis_y_max	260
+meas3_refuse	axis_x_min	0.012000000000000004
+meas3_refuse	axis_x_max	1.038
 meas3_refuse	drawn_union	0 6 0 4

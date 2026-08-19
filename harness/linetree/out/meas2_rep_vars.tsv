@@ -21,4 +21,6 @@ meas2_rep	n_text	0
 meas2_rep	y_label	F0
 meas2_rep	axis_y_min	169.44092144428626
 meas2_rep	axis_y_max	260
+meas2_rep	axis_x_min	0.09
+meas2_rep	axis_x_max	1.035
 meas2_rep	drawn_union	0 6 0 4

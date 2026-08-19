@@ -1774,10 +1774,14 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         appendInfoLine: .noDataMsg$
     endif
 
-    # X-axis: exact data range (no nice-number rounding for time axes)
+    # X-axis: the data range, padded, and never rounded to nice numbers -- see
+    # @emlPadDataRange for the measurement of base R's 4% and for why a
+    # single-time table draws instead of aborting. A range the user TYPED is
+    # honoured exactly; only the auto pair is padded.
     if .tMin = 0 and .tMax = 0
-        .xMin = .xDataMin
-        .xMax = .xDataMax
+        @emlPadDataRange: .xDataMin, .xDataMax, 0.04
+        .xMin = emlPadDataRange.min
+        .xMax = emlPadDataRange.max
     else
         .xMin = .tMin
         .xMax = .tMax
@@ -2559,10 +2563,14 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
     endif
 
     # Axis ranges
-    # X-axis: exact data range (no nice-number rounding for time axes)
+    # X-axis: the data range, padded, and never rounded to nice numbers -- see
+    # @emlPadDataRange for the measurement of base R's 4% and for why a
+    # single-time table draws instead of aborting. A range the user TYPED is
+    # honoured exactly; only the auto pair is padded.
     if .tMin = 0 and .tMax = 0
-        .xMin = .xDataMin
-        .xMax = .xDataMax
+        @emlPadDataRange: .xDataMin, .xDataMax, 0.04
+        .xMin = emlPadDataRange.min
+        .xMax = emlPadDataRange.max
     else
         .xMin = .tMin
         .xMax = .tMax
