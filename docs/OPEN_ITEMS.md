@@ -46,6 +46,42 @@ when an item is opened, changed, or closed. Newest ruling wins.
   replay receipt lag in the vector-figure harness; two plugin versions can
   produce a truncated menu with no warning.
 
+## From the 19 Aug audit — font geometry (class not yet closed)
+
+The scatter is fixed and Ian confirms it. The CLASS is not closed. Still owed:
+
+- The annotation block leaves the ambient font size at annotation size when
+  it returns: its Reset block restores colour and line width but not size.
+  Everything drawn after it in that figure is on a displaced rectangle.
+  (A sibling procedure elsewhere in the same file restores size correctly —
+  copy that.)
+- Two bare `Draw inner box` calls bypass the wrapper: the coefficient forest
+  plot, and the faceted-histogram panel loop.
+- Full census: every site that sets an ambient size other than body size and
+  does not restore it before the next coordinate command.
+- A render-level validator that parses the saved figure and asserts the box,
+  the ticks, and the plotted extremes all land on ONE rectangle, per figure
+  type. Plus a mutation demonstration.
+
+## From the 19 Aug audit — pitch canon, encoding, paths
+
+- Pitch analysis parameters become canonical everywhere, including dev tests
+  and the code the recorder emits. Four sites in the graphs layer change one
+  setting; one procedure owns each parameter set; the emitted string is
+  generated from the same source as the executed call. NOTE: this shifts a
+  reported mean by roughly 1 Hz on a short token — a user-visible change.
+- CSV and report files get an ASCII fold at the file boundary. One non-ASCII
+  character makes Praat rewrite the whole file in UTF-16, which is unreadable
+  to R, pandas and Excel.
+- The duplicate-filename loop is replaced by the shared unique-path procedure.
+
+## New from Ian, 19 Aug
+
+- After Record is pressed, all objects are deselected. The recording's own
+  table is never what the user wants selected.
+- Driving ANOVA through to a violin plot in the wizard, Save offered only the
+  data, not the image. Needs a sweep of every path that produces a figure.
+
 ## In flight right now
 
 - Uncommitted: a guard in the graphs form so drawing from outside the form
