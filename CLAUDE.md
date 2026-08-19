@@ -18,6 +18,19 @@ bundle is ~90 MB and will not transfer.
 Name it for what it carries, e.g. `eml-guardfix.bundle`, and say plainly
 in chat which earlier bundle it supersedes.
 
+**ALWAYS paste the five push commands with the bundle, every single time.**
+Not "same commands as before" — the actual block, with the actual filename.
+Ian should never have to ask for it or scroll back for it:
+
+```
+cd ~/EMLPraatTools
+git bundle verify <name>.bundle
+git fetch <name>.bundle main
+git log --oneline HEAD..FETCH_HEAD
+git merge --ff-only FETCH_HEAD
+git push origin main
+```
+
 ## Scope of work units
 
 One narrow stated scope per unit of work. Do not launch long drives that
