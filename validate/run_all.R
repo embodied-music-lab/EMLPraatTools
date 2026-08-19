@@ -1190,6 +1190,26 @@ scripts <- c(
                                  # name -- a collision being a wrong value
                                  # rather than an error, and so worse.
                                  # Source only; reads no harness.
+    ,
+    "v99_form_variable_locality.R" # Praat names a field's variable for you and
+                                 # that variable is a global it cannot unset,
+                                 # so the same label on two pages is one
+                                 # variable -- deliberate here, since thirteen
+                                 # graph pages share `gridline_mode` and
+                                 # friends. What makes the sharing safe is that
+                                 # every page reads its own fields the moment
+                                 # its dialog closes. A page that OFFERS a
+                                 # field and never reads it silently draws
+                                 # from whatever the last page that did offer
+                                 # it left behind: the user types a number and
+                                 # nothing happens, with no error anywhere.
+                                 # This asserts every dialog reads every field
+                                 # it offers, before another dialog offering
+                                 # the same field can overwrite it. It has to
+                                 # be green before any wording pass that makes
+                                 # labels shorter, because shorter labels
+                                 # collide more.
+                                 # Source only; reads no harness.
 )
 
 # ---------------------------------------------------------------------------

@@ -7920,7 +7920,7 @@ repeat
                     histDisplayMode = display_mode
                     tmpVMin$ = string$ (left_Value_range)
                     tmpVMax$ = string$ (right_Value_range)
-                    tmpFreqMax$ = string$ (right_Frequency_range)
+                    tmpFreqMax$ = string$ (frequency_maximum)
                     tmpGridMode = gridline_mode
                     tmpLegendPlacement = legend_placement
                     tmpShowInnerBox = show_inner_box
