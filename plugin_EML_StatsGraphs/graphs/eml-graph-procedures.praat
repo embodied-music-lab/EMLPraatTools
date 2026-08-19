@@ -2318,6 +2318,14 @@ endproc
 # Call after Axes command, before data drawing
 # ----------------------------------------------------------------------------
 procedure emlDrawGridlines: .xMin, .xMax, .yMin, .yMax, .targetTicksX, .targetTicksY, .useMinor
+    ; THE FONT STATE IS ASSERTED HERE FOR THE SAME REASON @emlDrawInnerBoxIf
+    ; asserts it. A gridline is placed in world coordinates, but the world is
+    ; mapped through the INNER VIEWPORT, whose margins Praat computes from the
+    ; current font size -- the manual's own warning, and BUG-007/008's cause.
+    ; The box defended itself against a size left behind by an annotation and
+    ; the gridlines did not, so the two rectangles were computed from different
+    ; margins whenever the sizes differed. One drawing, one size.
+    Font size: emlSetAdaptiveTheme.bodySize
     # Compute nice step for each axis
     @emlComputeNiceStep: .yMax - .yMin, .targetTicksY
     .yStep = emlComputeNiceStep.step
@@ -3290,64 +3298,6 @@ procedure emlDrawAxes: .xMin, .xMax, .yMin, .yMax, .xLabel$, .yLabel$, .title$, 
     Colour: "Black"
     Font size: emlSetAdaptiveTheme.bodySize
 endproc
-
-# ----------------------------------------------------------------------------
-# @emlDrawAxesSelective
-# Draws axes with selective element display (for panel grids)
-# Arguments: xMin, xMax, yMin, yMax, xLabel$, yLabel$, title$,
-#            vpWidth, vpHeight, showXLabel, showYLabel, showXTicks, showYTicks
-# showXLabel, showYLabel, showXTicks, showYTicks are 0 or 1
-# ----------------------------------------------------------------------------
-procedure emlDrawAxesSelective: .xMin, .xMax, .yMin, .yMax, .xLabel$, .yLabel$, .title$, .vpWidth, .vpHeight, .showXLabel, .showYLabel, .showXTicks, .showYTicks
-    # Sanitize title only — axis labels handled at generation
-    @emlSanitizeLabel: .title$
-    .title$ = emlSanitizeLabel.result$
-
-    @emlSetAdaptiveTheme: .vpWidth, .vpHeight
-
-    Font size: emlSetAdaptiveTheme.bodySize
-
-    # Box
-    @emlDrawInnerBoxIf
-
-    # Conditional Y-axis ticks
-    # .yWideLabelMM is seeded to 0 for the panel whose ticks are suppressed:
-    # no numbers were drawn there, so nothing can crowd its axis name, and
-    # reading the neighbouring panel's measurement would move it for no
-    # reason.
-    .yWideLabelMM = 0
-    if .showYTicks
-        @emlDrawAlignedMarksLeft: .yMin, .yMax,
-        ... emlSetAdaptiveTheme.targetTicksY, emlSetAdaptiveTheme.useMinorTicks
-        .yWideLabelMM = emlDrawAlignedMarksLeft.maxWideLabelMM
-    endif
-
-    # Conditional X-axis ticks
-    if .showXTicks
-        @emlDrawAlignedMarksBottom: .xMin, .xMax,
-        ... emlSetAdaptiveTheme.targetTicksX, emlSetAdaptiveTheme.useMinorTicks
-    endif
-
-    # Conditional labels
-    Colour: emlSetAdaptiveTheme.textColor$
-    if .showXLabel
-        Text bottom: "yes", .xLabel$
-    endif
-    if .showYLabel
-        @emlDrawAxisNameLeft: .yLabel$, .yWideLabelMM,
-        ... .xMin, .xMax, .yMin, .yMax
-    endif
-
-    # Title
-    if .title$ <> ""
-        Font size: emlSetAdaptiveTheme.titleSize
-        Text top: "yes", .title$
-    endif
-
-    Colour: "Black"
-    Font size: emlSetAdaptiveTheme.bodySize
-endproc
-
 
 # ============================================================================
 # LABEL DERIVATION — UNIT/ACRONYM TOKENS AND OVERRIDES

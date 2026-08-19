@@ -5306,12 +5306,6 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                 ... + "scatterRegressionLine = "
                 ... + string$ (scatterRegressionLine) + newline$
             endif
-            .recNote$ = "A fitted line is descriptive and carries no test."
-            .recBoth$ = .recFit$
-            if .recLine$ <> ""
-                if .recBoth$ <> ""
-                    .recBoth$ = .recBoth$ + newline$ + "  "
-                endif
                 .recBoth$ = .recBoth$ + .recLine$
             endif
             if .recBoth$ <> ""
@@ -5910,7 +5904,14 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
                 endif
             endfor
 
-            # Panel frame and y-axis (facetBodySize — matches panel viewport)
+            # Panel frame and y-axis. THE SIZE IS ASSERTED, AND IT IS THE
+            # PANEL'S, NOT THE PAGE'S. A facet panel draws its whole content
+            # one tier below the body size, so its viewport margins are
+            # computed at .facetBodySize; @emlDrawInnerBoxIf would assert the
+            # PAGE's body size and move this box off the gridlines and ticks
+            # around it. The invariant is "one drawing, one size" -- here the
+            # drawing is the panel.
+            Font size: .facetBodySize
             Colour: emlSetAdaptiveTheme.axisColor$
             Line width: emlSetAdaptiveTheme.axisLineWidth
             if emlShowInnerBox = 1
@@ -7035,6 +7036,10 @@ procedure emlDrawLMMForest
         Colour: .seriesColor$
     endfor
 
+    ; THE SIZE IS ASSERTED BEFORE THE BOX. The rows above are labelled with
+    ; `Text:` at whatever size the label pass left, and the box, the ticks and
+    ; the axis name below all take their margins from the current size.
+    Font size: emlSetAdaptiveTheme.bodySize
     Colour: emlSetAdaptiveTheme.axisColor$
     Line width: emlSetAdaptiveTheme.axisLineWidth
     Draw inner box

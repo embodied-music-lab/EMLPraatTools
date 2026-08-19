@@ -914,14 +914,20 @@ if (have_axes) {
 
 check_true(ID, "@emlDrawAxisNameLeft exists and is where the name is placed",
            has(code_graph, "^procedure emlDrawAxisNameLeft:"))
-check_true(ID, "both axis orchestrators place the y-axis name through it",
-           sum(grepl("@emlDrawAxisNameLeft:", code_graph)) >= 2L)
-# AND NO BARE `Text left` SURVIVES IN THEM. The guard is worth nothing if one
-# of the two orchestrators still draws the name the old way -- which is the
-# shape the first version of this change had, with @emlDrawAxesSelective left
-# behind. Scoped to the two procedure bodies, because @emlDrawAxisNameLeft
-# itself contains the bare call by construction.
-for (nm in c("emlDrawAxes", "emlDrawAxesSelective")) {
+check_true(ID, "the axis orchestrator places the y-axis name through it",
+           sum(grepl("@emlDrawAxisNameLeft:", code_graph)) >= 1L)
+# AND NO BARE `Text left` SURVIVES IN IT. The guard is worth nothing if the
+# orchestrator still draws the name the old way -- which is the shape the first
+# version of this change had. Scoped to the procedure body, because
+# @emlDrawAxisNameLeft itself contains the bare call by construction.
+#
+# THERE USED TO BE TWO ORCHESTRATORS. @emlDrawAxesSelective was the second, and
+# it had no caller anywhere in the tree while carrying the one live breach of
+# PraatGen's font-state invariant in this library: `Font size: titleSize`
+# followed by `Text top:`, the pattern the standard prints as WRONG. Dead code
+# is where a reader looks for a pattern to copy, so it was removed rather than
+# repaired.
+for (nm in c("emlDrawAxes")) {
     body <- proc_body(code_graph, nm)
     check_true(ID,
         sprintf("@%s draws no bare Text left of its own", nm),

@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Wed Aug 19 17:01:03 2026  --  recorded on Praat 6.6.30
+# Wed Aug 19 19:10:51 2026  --  recorded on Praat 6.6.30
 # Input: Table lt_subjects4 -- 12 rows, 5 columns
 # ============================================================
 
