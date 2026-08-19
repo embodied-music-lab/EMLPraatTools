@@ -39,20 +39,27 @@ FIELD_KINDS <- c("boolean", "integer", "real", "positive", "natural",
 
 # Praat's derivation, reimplemented.
 derive_name <- function(label) {
-    s <- sub("\\(.*$", "", label)
-    s <- tolower(trimws(s))
+    s <- trimws(sub("\\(.*$", "", label))
+    # Praat lowercases only the FIRST character; the rest keeps its case.
+    # Verified in 6.6.30: "Voice Type" binds voice_Type, not voice_type, and
+    # "left Time range (s)" binds left_Time_range.
+    if (nchar(s) > 0L) {
+        s <- paste0(tolower(substr(s, 1, 1)), substr(s, 2, nchar(s)))
+    }
     s <- gsub(" ", "_", s)
-    m <- regmatches(s, regexpr("^[a-z][a-z0-9_]*", s))
+    m <- regmatches(s, regexpr("^[A-Za-z][A-Za-z0-9_]*", s))
     if (length(m) == 0L) "" else m
 }
 
 # The name the label plainly intends: same fold, but punctuation becomes
 # underscore instead of ending the name.
 intended_name <- function(label) {
-    s <- sub("\\(.*$", "", label)
-    s <- tolower(trimws(s))
+    s <- trimws(sub("\\(.*$", "", label))
+    if (nchar(s) > 0L) {
+        s <- paste0(tolower(substr(s, 1, 1)), substr(s, 2, nchar(s)))
+    }
     s <- gsub(" ", "_", s)
-    s <- gsub("[^a-z0-9_]", "_", s)
+    s <- gsub("[^A-Za-z0-9_]", "_", s)
     gsub("^_+|_+$", "", s)
 }
 

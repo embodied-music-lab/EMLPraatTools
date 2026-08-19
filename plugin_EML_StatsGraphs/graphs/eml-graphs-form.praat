@@ -5536,8 +5536,24 @@ repeat
                                             option: tsSeriesCol$[1]
                                             option: tsSeriesCol$[2]
                                         comment: "📐 Right y-axis range (both 0 = auto)"
-                                        real: "Right minimum", tmpSecMin$
-                                        real: "Right maximum", tmpSecMax$
+                                        ; ONE ROW, TWO BOXES. `left` and `right`
+                                        ; as the FIRST WORD of a numeric field's
+                                        ; label are a layout cue, not part of the
+                                        ; displayed label: Praat puts the two
+                                        ; boxes on one row and shows the shared
+                                        ; remainder once. This is the house idiom
+                                        ; for a range -- a minimum and a maximum
+                                        ; are one setting with two ends, and
+                                        ; stacking them as two captioned rows
+                                        ; reads as two unrelated numbers.
+                                        ; The cue word STAYS in the derived
+                                        ; variable name, and Praat lowercases
+                                        ; only the first character of a label, so
+                                        ; these bind `left_Right_axis_range` and
+                                        ; `right_Right_axis_range`.
+                                        ; APPENDIX_C_GUI section C.1.
+                                        real: "left Right axis range", tmpSecMin$
+                                        real: "right Right axis range", tmpSecMax$
                                         comment: "🏷️ Right axis label (blank = the column name)"
                                         sentence: "Right axis label", tmpSecLabel$
                                         optionmenu: "Right line style", tsSecondStyle
@@ -5556,8 +5572,8 @@ repeat
                                         tsSecondDone = 1
                                         tsRightPick = right_hand_axis
                                         tsSecondStyle = right_line_style
-                                        tmpSecMin$ = string$ (right_minimum)
-                                        tmpSecMax$ = string$ (right_maximum)
+                                        tmpSecMin$ = string$ (left_Right_axis_range)
+                                        tmpSecMax$ = string$ (right_Right_axis_range)
                                         tmpSecLabel$ = right_axis_label$
                                         tsSecondColName$ = tsSeriesCol$[tsRightPick]
                                         tsLeftPick = 3 - tsRightPick

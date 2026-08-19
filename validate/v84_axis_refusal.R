@@ -481,7 +481,7 @@ pair_vars <- vapply(strsplit(args, " *, *"), function(a) {
 }, "")
 # THE SEVENTH PAIR ARRIVED WITH THE SECOND VERTICAL AXIS, 18 August 2026, and
 # it arrived through this check: the roster above is derived from the dialogs,
-# so the line chart's "Right minimum" / "Right maximum" fields put "Right" into
+# so the line chart's right-hand range fields put "Right" into
 # `pair_labels` the moment they existed and the label census went red until the
 # sweep named it. That is the rule working, and the list below is the human
 # half of it -- a pair is added here only once somebody has looked at where it

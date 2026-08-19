@@ -766,9 +766,18 @@ check_true(V, "[meas2] so nothing about means is disclosed",
 p3 <- shown1("meas2", 4)
 check_true(V, "[meas2] the right-hand page asks which column takes the scale",
            has(p3, "Right hand axis"))
+# ONE ROW, TWO BOXES. The two ends of the range are one setting, so they
+# share a row and a caption via Praat's `left`/`right` first-word layout cue
+# (APPENDIX_C_GUI C.1). The cue is consumed by the layout and does not appear
+# in the displayed label, so what the page SHOWS is a single "Right axis
+# range" caption -- and that is what this asserts, because the photograph is
+# the evidence. The two boxes still bind separate variables; the source check
+# below pins those names.
 check_true(V, "[meas2] and offers the range on the 0 = auto sentinel",
            has(p3, "Right y-axis range (both 0 = auto)") &&
-           has(p3, "Right minimum") && has(p3, "Right maximum"))
+           has(p3, "Right axis range"))
+check_true(V, "[meas2] the range is one row of two boxes, not two rows",
+           !has(p3, "Right minimum") && !has(p3, "Right maximum"))
 check_true(V, "[meas2] the axis name, blank = the column name",
            has(p3, "Right axis label (blank = the column name)"))
 check_true(V, "[meas2] and that series' own pen, defaulting to Dashed",
