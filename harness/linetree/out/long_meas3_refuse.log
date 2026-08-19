@@ -1,3 +1,3 @@
 
-(praat:4222): Gtk-WARNING **: 20:14:19.861: Could not load a pixbuf from /org/gtk/libgtk/theme/Adwaita/assets/check-symbolic.svg.
+(praat:19910): Gtk-WARNING **: 20:50:14.909: Could not load a pixbuf from /org/gtk/libgtk/theme/Adwaita/assets/check-symbolic.svg.
 This may indicate that pixbuf loaders or the mime database could not be found.
