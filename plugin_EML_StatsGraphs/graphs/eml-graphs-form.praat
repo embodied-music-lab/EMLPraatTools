@@ -1979,7 +1979,19 @@ procedure emlGraphsPublishSeriesPens
     ; @emlGraphsResetSeriesPens afterwards.
     emlSeriesRole$ = ""
     if graph_type = 5
-        if tsSeriesRole = 2
+        ; READ THROUGH THE GUARD, like every other request global. The form
+        ; always sets tsSeriesRole before it publishes, but the form is not the
+        ; only caller: a harness case, a stats wrapper and a probe in this tree
+        ; all press Draw through this procedure without having answered a
+        ; dialog, and an unguarded read aborts their figure at "Unknown
+        ; variable" rather than drawing the one they asked for. Absent means
+        ; subjects -- the shared-axis figure this plugin drew before the
+        ; question tree existed.
+        .role = 1
+        if variableExists ("tsSeriesRole")
+            .role = tsSeriesRole
+        endif
+        if .role = 2
             emlSeriesRole$ = "measurements"
         else
             emlSeriesRole$ = "subjects"
