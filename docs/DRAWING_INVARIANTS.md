@@ -1,72 +1,81 @@
 # Drawing invariants
 
-Rules that hold everywhere in the plugin, with the measurement each one
-rests on. A rule without a measurement behind it is a preference; these
-are not preferences.
+Rules that hold everywhere in the plugin, with the measurement each rests
+on. These restate the PraatGen best-practice standard; where this file and
+PraatGen differ, PraatGen governs.
 
-## 1. Viewport mode decides whether font size can move the box
+## 1. One ambient font size per figure — including at viewport selection
 
-Praat has two viewport modes and they behave differently:
+Praat stores a viewport as an OUTER rectangle. `Select inner viewport`
+converts the rectangle you give it to outer form using the margins in
+effect AT THAT MOMENT, and every later drawing command converts back using
+the margins in effect at ITS moment. Margin width is a function of font
+size. So if the font size changes between selecting the viewport and
+drawing — or between two drawing commands — those commands land on
+different rectangles.
 
-- Under `Select outer viewport`, Praat computes the plotting box itself
-  from the current font metrics. Changing the font size moves the box.
-- Under `Select inner viewport`, the coordinates given ARE the box. Font
-  size has no effect on it.
+### Measured, Praat 6.6.30
 
-Measured in Praat 6.6.30 on a 4 x 3 inch outer viewport, drawing
-`Draw inner box` at three font sizes:
+Viewport selected as inner 1..5 x 1..4 inches at font size 11, then
+`Draw inner box` at three sizes:
 
-| font size | box x-range   | box width |
-|-----------|---------------|-----------|
-| 9         | 915 .. 2685   | 1770      |
-| 11        | 985 .. 2615   | 1630      |
-| 16        | 1160 .. 2440  | 1280      |
+| font at draw | box width | vs selection |
+|--------------|-----------|--------------|
+| 9            | 2540      | 5.8% wider   |
+| 11           | 2400      | exact        |
+| 16           | 2050      | 14.6% narrower |
 
-Roughly 4% narrower per point of font size. The same test under
-`Select inner viewport` gives an identical box at all three sizes, to the
-last decimal.
+About 2.9% per point.
+
+### The defect this produces, reproduced
+
+Draw the data and gridlines at the ambient size, then set the font size and
+draw the box — which is what a "assert the size before the box" wrapper
+does:
+
+```
+Font size: 10
+Select inner viewport: 1, 5, 1, 4
+Axes: 0, 100, 0, 100
+Draw line: ...          ; gridlines and data at size 10
+Font size: 11
+Draw inner box          ; box at size 11
+```
+
+Result: the box is 2.92% narrower and 2.59% shorter than the gridlines. It
+sits inside them, and any data line that reaches the top of the gridlines
+appears to overshoot the box. This matches the defect reported from a macOS
+build at 3.1% and 2.0%.
 
 ### The rule
 
-Everything that must register with the axes — the inner box, ticks and
-marks, gridlines, axis lines, and the data drawn against them — is drawn
-under an explicit `Select inner viewport`. Their page positions are then
-font-independent, and they agree with each other by construction.
+Set `Font size:` to the theme body size ONCE, BEFORE `Select inner
+viewport`, and do not change it until every coordinate-dependent command in
+the figure is done. Coordinate-dependent means: `Select inner viewport`,
+`Select outer viewport`, `Draw inner box`, `One mark`, any `Marks` command,
+`Text left/right/top/bottom`, and every `Draw line` / `Paint` that must
+register with the axes.
 
-`Select outer viewport` is permitted only to place a region, and must be
-followed immediately by a `Select inner viewport` for that same region.
-The pattern is `@emlSetPanelViewport`; use it rather than repeating the
-pair by hand.
+A wrapper that asserts the body size immediately before drawing the box
+does NOT make the box safe. It makes the box safe only if the viewport was
+also selected at the body size — otherwise the assertion is itself the
+thing that moves the box. Assert early, at selection, not late.
 
-Any remaining use of `Select outer viewport` carries a comment stating in
-one or two plain sentences why outer is correct at that site.
+Where a different visual size is genuinely needed — titles, annotations,
+legend text — use `Text special:`, which takes the size as an argument and
+leaves the ambient state alone. Never `Font size:` followed by `Text top:`.
 
-A procedure that changes the viewport restores the caller's viewport
-before returning, or documents that it does not and why.
+A procedure that changes the ambient font size restores it before
+returning, or it does not change it at all.
 
-### Why the older wording was too broad
+## 2. Never a bare `Marks left:` or `Marks bottom:`
 
-The standard previously said, in effect, that changing font size mid-draw
-shifts margins. That is true only in outer-viewport mode. Stated without
-that qualification it is unfalsifiable — it predicts a shift in code that
-demonstrably does not shift — and an unfalsifiable rule cannot be
-enforced by a check. The rule above can be: it names a mode, and the mode
-is visible in the source.
+Bare marks divide the range into arbitrary intervals. Use the EML
+nice-number procedures with `One mark`.
 
-## 2. Font size is set once before a drawing sequence
+## 3. Assert the full viewport before saving
 
-Set `Font size:` to the theme body size once, before the drawing
-sequence, and leave it until every coordinate-dependent command is done.
-This remains good practice under either viewport mode — under outer mode
-it is load-bearing, under inner mode it keeps text sizes consistent.
-
-## 3. Titles use `Text special:`
-
-Never `Font size:` followed by `Text top:`. The two-step form changes the
-font state at the worst possible moment; `Text special:` states the size
-as an argument and leaves the state alone.
-
-## 4. Never a bare `Marks left:` or `Marks bottom:`
-
-Bare marks divide the range into arbitrary intervals and are also
-font-sensitive. Use the EML nice-number procedures with `One mark`.
+The viewport in effect at save time determines what is captured. For
+multi-panel figures use the tracked extent (`@emlExpandDrawnExtent` /
+`@emlAssertFullViewport`); single-panel figures assert it too, because the
+Picture window may hold residual state.
