@@ -1151,7 +1151,7 @@ scripts <- c(
                                  # its code would be wrong if the pen leaked.
                                  # Reads harness/linestyle.
     ,
-    "v97_line_tree.R"            # the line chart's question tree. The page
+    "v97_line_tree.R",            # the line chart's question tree. The page
                                  # used to open by asking how the user's FILE
                                  # was shaped -- a question the plugin can
                                  # answer for itself -- instead of what the
@@ -1174,6 +1174,22 @@ scripts <- c(
                                  # line, which was drawn under the OK button
                                  # until this harness saw it.
                                  # Reads harness/linetree.
+    ,
+    "v98_field_names.R"          # Praat derives a dialog field's variable
+                                 # name from its LABEL, truncating at the
+                                 # first character that is not a letter,
+                                 # digit, space or underscore. "Right-hand
+                                 # axis" therefore derives `right`, the code
+                                 # reading `right_hand_axis` aborts, and the
+                                 # label looks perfectly correct while every
+                                 # two-measurement line chart refuses to
+                                 # draw. That shipped once. This walks every
+                                 # dialog field in the tree and asserts each
+                                 # label derives its whole name, and that no
+                                 # two fields in one dialog derive the same
+                                 # name -- a collision being a wrong value
+                                 # rather than an error, and so worse.
+                                 # Source only; reads no harness.
 )
 
 # ---------------------------------------------------------------------------
