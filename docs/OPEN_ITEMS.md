@@ -3,93 +3,98 @@
 Kept in the repo on purpose: this file survives session loss. Update it
 when an item is opened, changed, or closed. Newest ruling wins.
 
-## Defects Ian has seen and reported (not yet fixed)
+Last reconciled against the tree: 19 Aug 2026, late.
 
-1. Inner box / gridlines don't line up. On Ian's Mac the drawn box is
-   ~2-3% smaller than the gridline rectangle, so a regression line appears
-   to overshoot the top. Measured in two of his EPS files; NOT reproducible
-   on the Linux build here — gridlines and tick marks coincide exactly.
-   Ruled out: font size at gridline time, theme re-run, the legend-room
-   two-pass. Remaining hypothesis: platform font metrics (Praat computes
-   margins from font metrics; macOS and Linux differ). Testable only on
-   Ian's machine.
-2. R-squared is reported twice in the scatter note.
-3. The text wrapper breaks "label = value" across lines.
-4. Subtitle text persists between runs, and is read without a guard.
-5. "Erase page first" is not remembered between runs (form default is
-   hard-coded to on).
-6. Legend placement label should read "(when drawn)".
-7. Recorder: stopping with nothing recorded does not stop. Ruled 19 Aug —
-   stop must always stop and say plainly that nothing was written.
-8. Recorder status messages clear the Info window. Ruled — they must append.
-9. Recorder leaves a process table in the Objects window.
-10. Recorder does not record creation of the demo table. Ruled 19 Aug —
-    creation becomes a recorded step, split by source.
+## A. The unification (largest remaining piece)
 
-## Ruled, not yet built
+Drawing a figure re-runs the analysis instead of receiving its result.
+Demonstrated: one Kruskal-Wallis produced two identical reports fifteen
+seconds apart, the second from the graph door. The two agreed only because
+both happened to use Holm; the graph form offers test type, adjustment
+method and alpha independently, so the figure can contradict the report.
 
-- Recorder state publication (ruling of 19 Aug). The form publishes its
-  complete display state; the recorder emits it ahead of each draw step;
-  a validator pins three sets equal — seeded, published, emitted. Includes
-  per-figure-type session-vs-replay legs and one mutation demonstration.
-  Reason it matters: the form's annotation-style default and the replay
-  default are different constants, so every recorded annotated scatter
-  replays with a different significance decision than the session showed.
-- Open sub-question, unruled: whether ~10 runtime bookkeeping globals get a
-  written exclusion list in that validator.
+Ruled: the graph carries the analysis's settings forward; changing a
+result-affecting setting from the graph re-runs and says so in one line in
+the Info window; changing nothing re-runs nothing and prints nothing. The
+duplicate-report stopgap is rolled into this, not taken separately.
 
-## Test-coverage gaps to close
+Memo with the design questions is with Fable
+(MEMO_TO_FABLE_unification_20260819.md).
+
+## B. Form and dialog work
+
+- The label sweep: headings group, rows carry only what distinguishes them.
+  The right-hand axis page is the exemplar and is done. The remaining pages
+  are not swept. Do them one page at a time with the locality check run
+  between, not in one pass.
+- "Erase page first": remembered within a session, default on at session
+  start, never written to disk. Ruled, not built.
+- Legend placement label should read "(when drawn)".
+
+## C. Everything else
+
+### Not started
+
+1. **Save offers the data but not the image.** Driving ANOVA to a violin
+   plot and clicking Save offered only the data. Ruled: sweep every route
+   that draws, and the detected figure's tickbox starts ticked. A patch
+   exists but turns an existing check red, because that check pins the
+   tickbox line literally; both must land together.
+2. **The render-level geometry check.** Parse a saved figure and assert the
+   box, the ticks and the plotted extremes land on one rectangle, per figure
+   type, plus a mutation demonstration. Designed, not written. This is what
+   makes the font-geometry class impossible to reopen.
+3. **Recorder state publication.** The form states its complete display
+   state once per press; the recorder writes it ahead of each step; a check
+   pins seeded == published == emitted. Measured today: 41 settings are
+   seeded, 13 are written into recorded scripts, 28 are not — about 22 of
+   those are real user choices including annotation style, alpha,
+   correlation type, whether the regression line is drawn, the axis
+   show/hide flags and the subtitle. Praat cannot unset a variable, so a
+   replayed script inherits whatever the session already held rather than
+   falling back to a default.
+4. **Recorder records table creation.** Ruled: creation becomes a recorded
+   step, split by source — plugin-created gets its command and a seed,
+   file-loaded gets its path, pre-existing states its precondition loudly.
+5. **Pitch parameters canonical everywhere**, including dev tests and the
+   code the recorder emits; one procedure owns each parameter set. Shifts a
+   reported mean by about 1 Hz on a short token. Ruled: change it, no
+   release note.
+6. **ASCII fold at the CSV and report file boundary.** One non-ASCII
+   character makes Praat rewrite the whole file as UTF-16, which R, pandas
+   and Excel cannot read.
+7. **Duplicate-filename loop** replaced by the shared unique-path procedure.
+8. **The text wrapper breaks "label = value" across lines.** A patch exists;
+   it fixes the break but can lengthen the longest line, which in about one
+   case in 150 pushes the annotation box into an extra resize pass. Needs
+   driving rather than assuming.
+
+### Test-coverage gaps
 
 - No check drives any figure type through the form's own dispatch. This is
-  why the scatter crash of 19 Aug shipped.
+  why the scatter crash of 19 Aug reached Ian.
 - Ledger rows owed: 19 tracked process files under harness/dialogheight;
   replay receipt lag in the vector-figure harness; two plugin versions can
   produce a truncated menu with no warning.
 
-## From the 19 Aug audit — font geometry (class not yet closed)
+### Housekeeping
 
-The scatter is fixed and Ian confirms it. The CLASS is not closed. Still owed:
+- Line-chart evidence is stale, deliberately: the photographs are what those
+  checks read, and the dialog wording is still moving. One re-drive after
+  the sweep, not one per change.
 
-- The annotation block leaves the ambient font size at annotation size when
-  it returns: its Reset block restores colour and line width but not size.
-  Everything drawn after it in that figure is on a displaced rectangle.
-  (A sibling procedure elsewhere in the same file restores size correctly —
-  copy that.)
-- Two bare `Draw inner box` calls bypass the wrapper: the coefficient forest
-  plot, and the faceted-histogram panel loop.
-- Full census: every site that sets an ambient size other than body size and
-  does not restore it before the next coordinate command.
-- A render-level validator that parses the saved figure and asserts the box,
-  the ticks, and the plotted extremes all land on ONE rectangle, per figure
-  type. Plus a mutation demonstration.
+## Closed since this file was written
 
-## From the 19 Aug audit — pitch canon, encoding, paths
+Font geometry root cause found and fixed — Praat converts a viewport using
+the margins in effect when it is SELECTED, so the panel viewport now asserts
+the body size before selecting; every annotation routine restores the
+ambient size, including on early exits; the coefficient plot uses the shared
+layout and honours the frame toggle; facet labels stay on their panel. Ian
+confirms the scatter symptom is gone.
 
-- Pitch analysis parameters become canonical everywhere, including dev tests
-  and the code the recorder emits. Four sites in the graphs layer change one
-  setting; one procedure owns each parameter set; the emitted string is
-  generated from the same source as the executed call. NOTE: this shifts a
-  reported mean by roughly 1 Hz on a short token — a user-visible change.
-- CSV and report files get an ASCII fold at the file boundary. One non-ASCII
-  character makes Praat rewrite the whole file in UTF-16, which is unreadable
-  to R, pandas and Excel.
-- The duplicate-filename loop is replaced by the shared unique-path procedure.
-
-## New from Ian, 19 Aug
-
-- After Record is pressed, all objects are deselected. The recording's own
-  table is never what the user wants selected.
-- Driving ANOVA through to a violin plot in the wizard, Save offered only the
-  data, not the image. Needs a sweep of every path that produces a figure.
-
-## In flight right now
-
-- Uncommitted: a guard in the graphs form so drawing from outside the form
-  no longer aborts on an unset series-role variable.
-- Line-chart verification re-drive: 10 of 15 legs green, 5 remain
-  (long_titled, wide_titled, and the three recorder legs).
-
-## Shipped but not yet on GitHub
-
-- c70d183, the scatter crash fix. Ian has it locally as eml-crashfix.bundle.
-  GitHub main is at 40f2d2e until he pushes.
+R-squared appears once per figure. The subtitle no longer persists across
+sessions. Stop always stops; recorder messages append instead of clearing
+the Info window; the phrase table is cleaned up; recording starts with
+nothing selected. Dialog field names are pinned against truncation and
+collision, and every dialog is now checked to read the fields it offers —
+which caught the histogram's frequency cap being offered but ignored.
