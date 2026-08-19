@@ -4028,12 +4028,12 @@ repeat
 
             f0LineStyle = prev_f0LineStyle
             beginPause: "Pitch Contour Settings"
-                comment: "⏱️ Time range (both 0 = auto)"
-                real: "Time minimum", tmpTMin$
-                real: "Time maximum", tmpTMax$
-                comment: "📐 Frequency range (both 0 = auto)"
-                real: "Frequency maximum", tmpFMax$
-                real: "Frequency minimum", tmpFMin$
+                comment: "⏱️ Time (both 0 = auto)"
+                real: "left Time range (left/right)", tmpTMin$
+                real: "right Time range (left/right)", tmpTMax$
+                comment: "📐 Frequency (both 0 = auto)"
+                real: "left Frequency range (bottom/top)", tmpFMin$
+                real: "right Frequency range (bottom/top)", tmpFMax$
                 optionmenu: "Y axis unit", tmpYUnit
                     option: "Hertz"
                     option: "Semitones re 440 Hz"
@@ -4092,10 +4092,10 @@ repeat
                 exitScript: ""
             elsif clicked = 3
                 # Toggle — preserve beginner field values
-                tmpTMin$ = string$ (time_minimum)
-                tmpTMax$ = string$ (time_maximum)
-                tmpFMin$ = string$ (frequency_minimum)
-                tmpFMax$ = string$ (frequency_maximum)
+                tmpTMin$ = string$ (left_Time_range)
+                tmpTMax$ = string$ (right_Time_range)
+                tmpFMin$ = string$ (left_Frequency_range)
+                tmpFMax$ = string$ (right_Frequency_range)
                 tmpYUnit = y_axis_unit
                 ; The pen, read on the toggle as well as on Draw, so that
                 ; re-presenting the page does not reset it -- the same rule
@@ -4136,10 +4136,10 @@ repeat
                 f0FormDone = 1
                 allFormsDone = 1
 
-                timeMin = time_minimum
-                timeMax = time_maximum
-                freqMin = frequency_minimum
-                freqMax = frequency_maximum
+                timeMin = left_Time_range
+                timeMax = right_Time_range
+                freqMin = left_Frequency_range
+                freqMax = right_Frequency_range
                 prev_f0_timeMin = timeMin
                 prev_f0_timeMax = timeMax
                 prev_f0_freqMin = freqMin
@@ -4255,12 +4255,12 @@ repeat
 
             wavLineStyle = prev_wavLineStyle
             beginPause: "Waveform Settings"
-                comment: "⏱️ Time range (both 0 = auto)"
-                real: "Time minimum", tmpTMin$
-                real: "Time maximum", tmpTMax$
-                comment: "📐 Amplitude range (both 0 = auto)"
-                real: "Amplitude maximum", tmpAMax$
-                real: "Amplitude minimum", tmpAMin$
+                comment: "⏱️ Time (both 0 = auto)"
+                real: "left Time range (left/right)", tmpTMin$
+                real: "right Time range (left/right)", tmpTMax$
+                comment: "📐 Amplitude (both 0 = auto)"
+                real: "left Amplitude range (bottom/top)", tmpAMin$
+                real: "right Amplitude range (bottom/top)", tmpAMax$
                 optionmenu: "Line style", wavLineStyle
                     option: "Solid"
                     option: "Dotted"
@@ -4308,10 +4308,10 @@ repeat
                 @emlSaveConfig
                 exitScript: ""
             elsif clicked = 3
-                tmpTMin$ = string$ (time_minimum)
-                tmpTMax$ = string$ (time_maximum)
-                tmpAMin$ = string$ (amplitude_minimum)
-                tmpAMax$ = string$ (amplitude_maximum)
+                tmpTMin$ = string$ (left_Time_range)
+                tmpTMax$ = string$ (right_Time_range)
+                tmpAMin$ = string$ (left_Amplitude_range)
+                tmpAMax$ = string$ (right_Amplitude_range)
                 ; The pen, read on the toggle as well as on Draw, so that
                 ; re-presenting the page does not reset it -- the same rule
                 ; every other beginner-page field on this dialog follows.
@@ -4346,10 +4346,10 @@ repeat
                 wavFormDone = 1
                 allFormsDone = 1
 
-                timeMin = time_minimum
-                timeMax = time_maximum
-                ampMin = amplitude_minimum
-                ampMax = amplitude_maximum
+                timeMin = left_Time_range
+                timeMax = right_Time_range
+                ampMin = left_Amplitude_range
+                ampMax = right_Amplitude_range
                 prev_wav_timeMin = timeMin
                 prev_wav_timeMax = timeMax
                 prev_wav_ampMin = ampMin
@@ -4425,12 +4425,12 @@ repeat
 
             specLineStyle = prev_specLineStyle
             beginPause: "Spectrum Settings"
-                comment: "📐 Frequency range (both 0 = auto)"
-                real: "Frequency minimum", tmpFMin$
-                real: "Frequency maximum", tmpFMax$
-                comment: "📐 Power range (both 0 = auto)"
-                real: "Power maximum", tmpPMax$
-                real: "Power minimum", tmpPMin$
+                comment: "📐 Frequency (both 0 = auto)"
+                real: "left Frequency range (left/right)", tmpFMin$
+                real: "right Frequency range (left/right)", tmpFMax$
+                comment: "📐 Power (both 0 = auto)"
+                real: "left Power range (bottom/top)", tmpPMin$
+                real: "right Power range (bottom/top)", tmpPMax$
                 optionmenu: "Line style", specLineStyle
                     option: "Solid"
                     option: "Dotted"
@@ -4478,10 +4478,10 @@ repeat
                 @emlSaveConfig
                 exitScript: ""
             elsif clicked = 3
-                tmpFMin$ = string$ (frequency_minimum)
-                tmpFMax$ = string$ (frequency_maximum)
-                tmpPMin$ = string$ (power_minimum)
-                tmpPMax$ = string$ (power_maximum)
+                tmpFMin$ = string$ (left_Frequency_range)
+                tmpFMax$ = string$ (right_Frequency_range)
+                tmpPMin$ = string$ (left_Power_range)
+                tmpPMax$ = string$ (right_Power_range)
                 ; The pen, read on the toggle as well as on Draw, so that
                 ; re-presenting the page does not reset it -- the same rule
                 ; every other beginner-page field on this dialog follows.
@@ -4516,10 +4516,10 @@ repeat
                 specFormDone = 1
                 allFormsDone = 1
 
-                freqMin = frequency_minimum
-                freqMax = frequency_maximum
-                powerMin = power_minimum
-                powerMax = power_maximum
+                freqMin = left_Frequency_range
+                freqMax = right_Frequency_range
+                powerMin = left_Power_range
+                powerMax = right_Power_range
                 prev_spec_freqMin = freqMin
                 prev_spec_freqMax = freqMax
                 prev_spec_powerMin = powerMin
@@ -4603,12 +4603,12 @@ repeat
 
             ltasLineStyle = prev_ltasLineStyle
             beginPause: "LTAS Settings"
-                comment: "📐 Frequency range (both 0 = auto)"
-                real: "Frequency minimum", tmpFMin$
-                real: "Frequency maximum", tmpFMax$
-                comment: "📐 Power range (both 0 = auto)"
-                real: "Power maximum", tmpPMax$
-                real: "Power minimum", tmpPMin$
+                comment: "📐 Frequency (both 0 = auto)"
+                real: "left Frequency range (left/right)", tmpFMin$
+                real: "right Frequency range (left/right)", tmpFMax$
+                comment: "📐 Power (both 0 = auto)"
+                real: "left Power range (bottom/top)", tmpPMin$
+                real: "right Power range (bottom/top)", tmpPMax$
                 optionmenu: "Line style", ltasLineStyle
                     option: "Solid"
                     option: "Dotted"
@@ -4661,10 +4661,10 @@ repeat
                 @emlSaveConfig
                 exitScript: ""
             elsif clicked = 3
-                tmpFMin$ = string$ (frequency_minimum)
-                tmpFMax$ = string$ (frequency_maximum)
-                tmpPMin$ = string$ (power_minimum)
-                tmpPMax$ = string$ (power_maximum)
+                tmpFMin$ = string$ (left_Frequency_range)
+                tmpFMax$ = string$ (right_Frequency_range)
+                tmpPMin$ = string$ (left_Power_range)
+                tmpPMax$ = string$ (right_Power_range)
                 ; The pen, read on the toggle as well as on Draw, so that
                 ; re-presenting the page does not reset it -- the same rule
                 ; every other beginner-page field on this dialog follows.
@@ -4707,10 +4707,10 @@ repeat
                 ltasFormDone = 1
                 allFormsDone = 1
 
-                freqMin = frequency_minimum
-                freqMax = frequency_maximum
-                powerMin = power_minimum
-                powerMax = power_maximum
+                freqMin = left_Frequency_range
+                freqMax = right_Frequency_range
+                powerMin = left_Power_range
+                powerMax = right_Power_range
                 prev_ltas_freqMin = freqMin
                 prev_ltas_freqMax = freqMax
                 prev_ltas_powerMin = powerMin
@@ -5079,12 +5079,12 @@ repeat
                             option: "Dashed"
                             option: "Dashed-dotted"
                         if config_showAdvanced
-                            comment: "📐 X-axis range (both 0 = auto)"
-                            real: "Time minimum", tmpTMin$
-                            real: "Time maximum", tmpTMax$
-                            comment: "📐 Y-axis range (both 0 = auto)"
-                            real: "Value maximum", tmpVMax$
-                            real: "Value minimum", tmpVMin$
+                            comment: "📐 X-axis (both 0 = auto)"
+                            real: "left Time range (left/right)", tmpTMin$
+                            real: "right Time range (left/right)", tmpTMax$
+                            comment: "📐 Y-axis (both 0 = auto)"
+                            real: "left Value range (bottom/top)", tmpVMin$
+                            real: "right Value range (bottom/top)", tmpVMax$
                             optionmenu: "Gridline mode", tmpGridMode
                                 option: "Both"
                                 option: "Horizontal only"
@@ -5166,10 +5166,10 @@ repeat
                     elsif clicked = 3
                         # Toggle — preserve beginner field values
                         if config_showAdvanced
-                            tmpTMin$ = string$ (time_minimum)
-                            tmpTMax$ = string$ (time_maximum)
-                            tmpVMin$ = string$ (value_minimum)
-                            tmpVMax$ = string$ (value_maximum)
+                            tmpTMin$ = string$ (left_Time_range)
+                            tmpTMax$ = string$ (right_Time_range)
+                            tmpVMin$ = string$ (left_Value_range)
+                            tmpVMax$ = string$ (right_Value_range)
                             tmpGridMode = gridline_mode
                             tmpLegendPlacement = legend_placement
                             tmpShowInnerBox = show_inner_box
@@ -5209,10 +5209,10 @@ repeat
 
                         # Capture advanced from form or tmp
                         if config_showAdvanced
-                            tmpTMin$ = string$ (time_minimum)
-                            tmpTMax$ = string$ (time_maximum)
-                            tmpVMin$ = string$ (value_minimum)
-                            tmpVMax$ = string$ (value_maximum)
+                            tmpTMin$ = string$ (left_Time_range)
+                            tmpTMax$ = string$ (right_Time_range)
+                            tmpVMin$ = string$ (left_Value_range)
+                            tmpVMax$ = string$ (right_Value_range)
                             tmpGridMode = gridline_mode
                             tmpLegendPlacement = legend_placement
                             tmpShowInnerBox = show_inner_box
@@ -5535,7 +5535,7 @@ repeat
                                         optionmenu: "Right hand axis", tsRightPick
                                             option: tsSeriesCol$[1]
                                             option: tsSeriesCol$[2]
-                                        comment: "📐 Right y-axis range (both 0 = auto)"
+                                        comment: "📐 Right y-axis (both 0 = auto)"
                                         ; ONE ROW, TWO BOXES. `left` and `right`
                                         ; as the FIRST WORD of a numeric field's
                                         ; label are a layout cue, not part of the
@@ -5549,11 +5549,11 @@ repeat
                                         ; The cue word STAYS in the derived
                                         ; variable name, and Praat lowercases
                                         ; only the first character of a label, so
-                                        ; these bind `left_Right_axis_range` and
-                                        ; `right_Right_axis_range`.
+                                        ; these bind `left_Right_y_axis_range` and
+                                        ; `right_Right_y_axis_range`.
                                         ; APPENDIX_C_GUI section C.1.
-                                        real: "left Right axis range", tmpSecMin$
-                                        real: "right Right axis range", tmpSecMax$
+                                        real: "left Right y axis range (bottom/top)", tmpSecMin$
+                                        real: "right Right y axis range (bottom/top)", tmpSecMax$
                                         comment: "🏷️ Right axis label (blank = the column name)"
                                         sentence: "Right axis label", tmpSecLabel$
                                         optionmenu: "Right line style", tsSecondStyle
@@ -5572,8 +5572,8 @@ repeat
                                         tsSecondDone = 1
                                         tsRightPick = right_hand_axis
                                         tsSecondStyle = right_line_style
-                                        tmpSecMin$ = string$ (left_Right_axis_range)
-                                        tmpSecMax$ = string$ (right_Right_axis_range)
+                                        tmpSecMin$ = string$ (left_Right_y_axis_range)
+                                        tmpSecMax$ = string$ (right_Right_y_axis_range)
                                         tmpSecLabel$ = right_axis_label$
                                         tsSecondColName$ = tsSeriesCol$[tsRightPick]
                                         tsLeftPick = 3 - tsRightPick
@@ -5895,9 +5895,9 @@ repeat
                         option: "Annotate"
                         option: "Matrix"
                     real: "Alpha", string$ (annotAlpha)
-                    comment: "📐 Y-axis range (both 0 = auto)"
-                    real: "Value maximum", tmpVMax$
-                    real: "Value minimum", tmpVMin$
+                    comment: "📐 Y-axis (both 0 = auto)"
+                    real: "left Value range (bottom/top)", tmpVMin$
+                    real: "right Value range (bottom/top)", tmpVMax$
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
@@ -5976,8 +5976,8 @@ repeat
                     if adjustOffered = 1
                         prev_annotAdjustIdx = adjustment_method
                     endif
-                    prev_adv_bar_VMin$ = string$ (value_minimum)
-                    prev_adv_bar_VMax$ = string$ (value_maximum)
+                    prev_adv_bar_VMin$ = string$ (left_Value_range)
+                    prev_adv_bar_VMax$ = string$ (right_Value_range)
                     prev_adv_bar_gridMode = gridline_mode
                     prev_adv_bar_showInnerBox = show_inner_box
                     prev_adv_bar_showAxisNames = show_axis_names
@@ -6067,8 +6067,8 @@ repeat
                 allFormsDone = 1
 
                 if config_showAdvanced
-                    tmpVMin$ = string$ (value_minimum)
-                    tmpVMax$ = string$ (value_maximum)
+                    tmpVMin$ = string$ (left_Value_range)
+                    tmpVMax$ = string$ (right_Value_range)
                     tmpGridMode = gridline_mode
                     tmpShowInnerBox = show_inner_box
                     tmpShowAxisNames = show_axis_names
@@ -6320,9 +6320,9 @@ repeat
                         option: "Matrix"
                     real: "Alpha", string$ (annotAlpha)
                     boolean: "Show jittered points", prev_violinShowJitter
-                    comment: "📐 Y-axis range (both 0 = auto)"
-                    real: "Value maximum", tmpVMax$
-                    real: "Value minimum", tmpVMin$
+                    comment: "📐 Y-axis (both 0 = auto)"
+                    real: "left Value range (bottom/top)", tmpVMin$
+                    real: "right Value range (bottom/top)", tmpVMax$
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
@@ -6401,8 +6401,8 @@ repeat
                         prev_annotAdjustIdx = adjustment_method
                     endif
                     prev_adv_vio_showJitter = show_jittered_points
-                    prev_adv_vio_VMin$ = string$ (value_minimum)
-                    prev_adv_vio_VMax$ = string$ (value_maximum)
+                    prev_adv_vio_VMin$ = string$ (left_Value_range)
+                    prev_adv_vio_VMax$ = string$ (right_Value_range)
                     prev_adv_vio_gridMode = gridline_mode
                     prev_adv_vio_showInnerBox = show_inner_box
                     prev_adv_vio_showAxisNames = show_axis_names
@@ -6494,8 +6494,8 @@ repeat
                 allFormsDone = 1
 
                 if config_showAdvanced
-                    tmpVMin$ = string$ (value_minimum)
-                    tmpVMax$ = string$ (value_maximum)
+                    tmpVMin$ = string$ (left_Value_range)
+                    tmpVMax$ = string$ (right_Value_range)
                     tmpGridMode = gridline_mode
                     tmpShowInnerBox = show_inner_box
                     tmpShowAxisNames = show_axis_names
@@ -6852,11 +6852,11 @@ repeat
                         option: "Small"
                         option: "Medium"
                         option: "Large"
-                    comment: "📐 Axis ranges (both 0 = auto)"
-                    real: "X maximum", tmpXMax$
-                    real: "X minimum", tmpXMin$
-                    real: "Y maximum", tmpYMax$
-                    real: "Y minimum", tmpYMin$
+                    comment: "📐 Axis (both 0 = auto)"
+                    real: "left X range (left/right)", tmpXMin$
+                    real: "right X range (left/right)", tmpXMax$
+                    real: "left Y range (bottom/top)", tmpYMin$
+                    real: "right Y range (bottom/top)", tmpYMax$
                     comment: "🎨 Layout"
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Both"
@@ -6920,10 +6920,10 @@ repeat
                     prev_adv_sca_regressionLine = regression
                     prev_adv_sca_showDots = show_data_points
                     prev_adv_sca_dotSize = dot_size
-                    prev_adv_sca_XMin$ = string$ (x_minimum)
-                    prev_adv_sca_XMax$ = string$ (x_maximum)
-                    prev_adv_sca_YMin$ = string$ (y_minimum)
-                    prev_adv_sca_YMax$ = string$ (y_maximum)
+                    prev_adv_sca_XMin$ = string$ (left_X_range)
+                    prev_adv_sca_XMax$ = string$ (right_X_range)
+                    prev_adv_sca_YMin$ = string$ (left_Y_range)
+                    prev_adv_sca_YMax$ = string$ (right_Y_range)
                     prev_adv_sca_gridMode = gridline_mode
                     prev_adv_sca_showInnerBox = show_inner_box
                     prev_adv_sca_showAxisNames = show_axis_names
@@ -6986,10 +6986,10 @@ repeat
                 allFormsDone = 1
 
                 if config_showAdvanced
-                    tmpXMin$ = string$ (x_minimum)
-                    tmpXMax$ = string$ (x_maximum)
-                    tmpYMin$ = string$ (y_minimum)
-                    tmpYMax$ = string$ (y_maximum)
+                    tmpXMin$ = string$ (left_X_range)
+                    tmpXMax$ = string$ (right_X_range)
+                    tmpYMin$ = string$ (left_Y_range)
+                    tmpYMax$ = string$ (right_Y_range)
                     tmpGridMode = gridline_mode
                     tmpLegendPlacement = legend_placement
                     tmpShowInnerBox = show_inner_box
@@ -7280,9 +7280,9 @@ repeat
                         option: "Matrix"
                     real: "Alpha", string$ (annotAlpha)
                     boolean: "Show jittered points", prev_boxShowJitter
-                    comment: "📐 Y-axis range (both 0 = auto)"
-                    real: "Value maximum", tmpVMax$
-                    real: "Value minimum", tmpVMin$
+                    comment: "📐 Y-axis (both 0 = auto)"
+                    real: "left Value range (bottom/top)", tmpVMin$
+                    real: "right Value range (bottom/top)", tmpVMax$
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
@@ -7361,8 +7361,8 @@ repeat
                         prev_annotAdjustIdx = adjustment_method
                     endif
                     prev_adv_box_showJitter = show_jittered_points
-                    prev_adv_box_VMin$ = string$ (value_minimum)
-                    prev_adv_box_VMax$ = string$ (value_maximum)
+                    prev_adv_box_VMin$ = string$ (left_Value_range)
+                    prev_adv_box_VMax$ = string$ (right_Value_range)
                     prev_adv_box_gridMode = gridline_mode
                     prev_adv_box_showInnerBox = show_inner_box
                     prev_adv_box_showAxisNames = show_axis_names
@@ -7454,8 +7454,8 @@ repeat
                 allFormsDone = 1
 
                 if config_showAdvanced
-                    tmpVMin$ = string$ (value_minimum)
-                    tmpVMax$ = string$ (value_maximum)
+                    tmpVMin$ = string$ (left_Value_range)
+                    tmpVMax$ = string$ (right_Value_range)
                     tmpGridMode = gridline_mode
                     tmpShowInnerBox = show_inner_box
                     tmpShowAxisNames = show_axis_names
@@ -7704,9 +7704,9 @@ repeat
                         # choice, so what is offered instead is the fact.
                         comment: "Comparisons appear as a matrix panel below the plot."
                     real: "Alpha", string$ (annotAlpha)
-                    comment: "📐 Axis ranges (both 0 = auto)"
-                    real: "Value maximum", tmpVMax$
-                    real: "Value minimum", tmpVMin$
+                    comment: "📐 Axis (both 0 = auto)"
+                    real: "left Value range (bottom/top)", tmpVMin$
+                    real: "right Value range (bottom/top)", tmpVMax$
                     real: "Frequency maximum (0 = auto)", tmpFreqMax$
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
@@ -7795,9 +7795,9 @@ repeat
                     if adjustOffered = 1
                         prev_annotAdjustIdx = adjustment_method
                     endif
-                    prev_adv_his_VMin$ = string$ (value_minimum)
-                    prev_adv_his_VMax$ = string$ (value_maximum)
-                    prev_adv_his_freqMax$ = string$ (frequency_maximum)
+                    prev_adv_his_VMin$ = string$ (left_Value_range)
+                    prev_adv_his_VMax$ = string$ (right_Value_range)
+                    prev_adv_his_freqMax$ = string$ (right_Frequency_range)
                     prev_adv_his_gridMode = gridline_mode
                     prev_adv_his_showInnerBox = show_inner_box
                     prev_adv_his_showAxisNames = show_axis_names
@@ -7916,9 +7916,9 @@ repeat
                 if config_showAdvanced
                     histBinCount = bin_count
                     histDisplayMode = display_mode
-                    tmpVMin$ = string$ (value_minimum)
-                    tmpVMax$ = string$ (value_maximum)
-                    tmpFreqMax$ = string$ (frequency_maximum)
+                    tmpVMin$ = string$ (left_Value_range)
+                    tmpVMax$ = string$ (right_Value_range)
+                    tmpFreqMax$ = string$ (right_Frequency_range)
                     tmpGridMode = gridline_mode
                     tmpLegendPlacement = legend_placement
                     tmpShowInnerBox = show_inner_box
@@ -8220,9 +8220,9 @@ repeat
                         comment: "Comparisons appear as a matrix panel below the plot."
                     real: "Alpha", string$ (annotAlpha)
                     boolean: "Show jittered points", prev_gvShowJitter
-                    comment: "📐 Y-axis range (both 0 = auto)"
-                    real: "Value maximum", tmpVMax$
-                    real: "Value minimum", tmpVMin$
+                    comment: "📐 Y-axis (both 0 = auto)"
+                    real: "left Value range (bottom/top)", tmpVMin$
+                    real: "right Value range (bottom/top)", tmpVMax$
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
@@ -8307,8 +8307,8 @@ repeat
                         prev_annotAdjustIdx = adjustment_method
                     endif
                     prev_adv_gv_showJitter = show_jittered_points
-                    prev_adv_gv_VMin$ = string$ (value_minimum)
-                    prev_adv_gv_VMax$ = string$ (value_maximum)
+                    prev_adv_gv_VMin$ = string$ (left_Value_range)
+                    prev_adv_gv_VMax$ = string$ (right_Value_range)
                     prev_adv_gv_gridMode = gridline_mode
                     prev_adv_gv_showInnerBox = show_inner_box
                     prev_adv_gv_showAxisNames = show_axis_names
@@ -8404,8 +8404,8 @@ repeat
                 gvValueCol$ = value_column$
 
                 if config_showAdvanced
-                    tmpVMin$ = string$ (value_minimum)
-                    tmpVMax$ = string$ (value_maximum)
+                    tmpVMin$ = string$ (left_Value_range)
+                    tmpVMax$ = string$ (right_Value_range)
                     tmpGridMode = gridline_mode
                     tmpLegendPlacement = legend_placement
                     tmpShowInnerBox = show_inner_box
@@ -8649,9 +8649,9 @@ repeat
                         comment: "Comparisons appear as a matrix panel below the plot."
                     real: "Alpha", string$ (annotAlpha)
                     boolean: "Show jittered points", prev_gbShowJitter
-                    comment: "📐 Y-axis range (both 0 = auto)"
-                    real: "Value maximum", tmpVMax$
-                    real: "Value minimum", tmpVMin$
+                    comment: "📐 Y-axis (both 0 = auto)"
+                    real: "left Value range (bottom/top)", tmpVMin$
+                    real: "right Value range (bottom/top)", tmpVMax$
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
@@ -8736,8 +8736,8 @@ repeat
                         prev_annotAdjustIdx = adjustment_method
                     endif
                     prev_adv_gbShowJitter = show_jittered_points
-                    prev_adv_gb_VMin$ = string$ (value_minimum)
-                    prev_adv_gb_VMax$ = string$ (value_maximum)
+                    prev_adv_gb_VMin$ = string$ (left_Value_range)
+                    prev_adv_gb_VMax$ = string$ (right_Value_range)
                     prev_adv_gb_gridMode = gridline_mode
                     prev_adv_gb_showInnerBox = show_inner_box
                     prev_adv_gb_showAxisNames = show_axis_names
@@ -8831,8 +8831,8 @@ repeat
                 gbSubCol$ = subgroup_column$
                 gbValueCol$ = value_column$
                 if config_showAdvanced
-                    tmpVMin$ = string$ (value_minimum)
-                    tmpVMax$ = string$ (value_maximum)
+                    tmpVMin$ = string$ (left_Value_range)
+                    tmpVMax$ = string$ (right_Value_range)
                     tmpGridMode = gridline_mode
                     tmpLegendPlacement = legend_placement
                     tmpShowInnerBox = show_inner_box
@@ -9070,9 +9070,9 @@ repeat
                     option: "Dashed"
                     option: "Dashed-dotted"
                 if config_showAdvanced
-                    comment: "📐 Y-axis range (both 0 = auto)"
-                    real: "Value maximum", tmpVMax$
-                    real: "Value minimum", tmpVMin$
+                    comment: "📐 Y-axis (both 0 = auto)"
+                    real: "left Value range (bottom/top)", tmpVMin$
+                    real: "right Value range (bottom/top)", tmpVMax$
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
@@ -9152,8 +9152,8 @@ repeat
                 spFormDone = 1
                 allFormsDone = 1
                 if config_showAdvanced
-                    tmpVMin$ = string$ (value_minimum)
-                    tmpVMax$ = string$ (value_maximum)
+                    tmpVMin$ = string$ (left_Value_range)
+                    tmpVMax$ = string$ (right_Value_range)
                     tmpGridMode = gridline_mode
                     tmpLegendPlacement = legend_placement
                     tmpShowInnerBox = show_inner_box
