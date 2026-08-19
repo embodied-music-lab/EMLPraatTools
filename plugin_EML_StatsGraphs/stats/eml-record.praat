@@ -984,6 +984,23 @@ procedure emlRecordDiscard
     if emlRecordMetaId > 0
         nocheck removeObject: emlRecordMetaId
     endif
+    ; AND THE PHRASE TABLE, WHICH IS THE THIRD OBJECT AND WAS THE ONE LEFT
+    ; BEHIND. 'Table eml-record-phrases' is read into the Objects window by
+    ; @emlRecordInit and by @emlRecordLoadPhrases, and until now nothing ever
+    ; removed it -- so every stopped recording left it sitting there, which
+    ; is exactly what eml-record-start.praat promises it will not do:
+    ; "Leave all three alone and they are cleaned up when you stop."
+    ;
+    ; It is the shipped wording, not the user's data, so there is nothing to
+    ; lose: @emlRecordInit reads it back from ../data/eml-record-phrases.csv
+    ; the first time the NEXT recording records a step. The id must be reset
+    ; with it -- @emlPhrase does a bare `selectObject: emlRecordPhraseId`,
+    ; which aborts on a dangling id, and the re-attach in @emlRecordInit is
+    ; guarded on this variable being 0.
+    if emlRecordPhraseId > 0
+        nocheck removeObject: emlRecordPhraseId
+    endif
+    emlRecordPhraseId = 0
     emlRecordMetaId = 0
     emlRecordBufferId = 0
     emlRecordN = 0

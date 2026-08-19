@@ -68,7 +68,9 @@ if emlRecordActive = 0
     # the only evidence there is.
     @emlRecordOrphanCheck
     if emlRecordOrphanCheck.orphan = 1
-        writeInfoLine: "EML: the recording ended when its buffer was removed."
+        appendInfoLine: ""
+        appendInfoLine: "------------------------------------------------------------"
+        appendInfoLine: "EML: the recording ended when its buffer was removed."
         appendInfoLine: ""
         appendInfoLine: "'Table emlRecording_DO_NOT_REMOVE' is gone from the"
         appendInfoLine: "Objects window — that table IS the recording, so"
@@ -78,7 +80,9 @@ if emlRecordActive = 0
         appendInfoLine: "Run 'Record script' to start again."
         goto END_RECORD_OPEN
     endif
-    writeInfoLine: "EML: nothing is being recorded."
+    appendInfoLine: ""
+    appendInfoLine: "------------------------------------------------------------"
+    appendInfoLine: "EML: nothing is being recorded."
     appendInfoLine: ""
     appendInfoLine: "Run 'Record script' first, then any EML analysis or"
     appendInfoLine: "figure, then this command."
@@ -87,14 +91,20 @@ endif
 
 nSteps = emlRecordN
 if nSteps < 1
-    # NOT AN ERROR. Starting a recording and stopping it without running
-    # anything is a reasonable thing to do by accident, and the right answer
-    # is to say so and leave the session alone rather than write an empty
-    # script and end the recording the user may still want.
-    writeInfoLine: "EML: nothing has been recorded yet."
+    # STOP MEANS STOP (author's ruling, 19 August 2026). This branch used to
+    # refuse: it left the session running on the grounds that an empty
+    # recording was one the user might still want. That is OVERRULED. The
+    # menu item is called 'Stop recording and open' and the name is the
+    # contract -- it stops, whether or not there was anything to open, and it
+    # says so rather than leaving the user to guess whether the session is
+    # still live.
+    @emlRecordDiscard
     appendInfoLine: ""
-    appendInfoLine: "The recording is still running. Run an analysis or draw"
-    appendInfoLine: "a figure, then use this command again."
+    appendInfoLine: "------------------------------------------------------------"
+    appendInfoLine: "EML: recording stopped; nothing had been recorded, so no"
+    appendInfoLine: "script was written."
+    appendInfoLine: ""
+    appendInfoLine: "'Record script' starts a new one."
     goto END_RECORD_OPEN
 endif
 
@@ -120,7 +130,9 @@ openPath$ = emlGenerateUniquePath.result$
 @emlRecordFlush: openPath$
 
 if emlRecordFlush.written = 0
-    writeInfoLine: "EML: nothing was written, so nothing was opened."
+    appendInfoLine: ""
+    appendInfoLine: "------------------------------------------------------------"
+    appendInfoLine: "EML: nothing was written, so nothing was opened."
     appendInfoLine: "The recording is still running."
     goto END_RECORD_OPEN
 endif
@@ -132,7 +144,9 @@ endif
 # This is the line the whole file exists for.
 Read from file: openPath$
 
-writeInfoLine: "EML: recording stopped, and the script is open."
+appendInfoLine: ""
+appendInfoLine: "------------------------------------------------------------"
+appendInfoLine: "EML: recording stopped, and the script is open."
 appendInfoLine: ""
 appendInfoLine: string$ (nSteps), " step(s) recorded."
 appendInfoLine: ""

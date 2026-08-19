@@ -73,6 +73,14 @@ endif
 
 @emlRecordBegin: ""
 
+# NOTHING IS SELECTED WHEN RECORDING STARTS.
+# @emlRecordBegin leaves the recording's own buffer table selected, because
+# that is the object it just wrote to. That table is never what the user
+# wants to work on next — it is bookkeeping — and a selected object is an
+# invitation: the next menu command they run would act on it. Clear the
+# selection so the first thing they pick is the thing they meant to pick.
+nocheck selectObject ( )
+
 writeInfoLine: "EML: recording started."
 appendInfoLine: ""
 appendInfoLine: "Every EML analysis and figure from now on is added to one"

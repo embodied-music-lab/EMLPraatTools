@@ -18,9 +18,12 @@
 # overridden here. Ending the session is this FILE's decision, made once,
 # after the write succeeds.
 #
-# NOTHING RECORDED IS NOT AN ERROR. Starting a recording and saving without
-# running an analysis is a reasonable thing to do by accident, and the right
-# response is to say so plainly and leave the session alone.
+# NOTHING RECORDED IS NOT AN ERROR, BUT STOP STILL MEANS STOP (author's
+# ruling, 19 August 2026). Starting a recording and saving without running an
+# analysis is a reasonable thing to do by accident; the response is to say so
+# plainly and END the recording, because ending it is what the menu item the
+# user chose says this command does. No file is written, because there was
+# nothing to write, and 'Record script' starts a new one.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -46,7 +49,9 @@ if emlRecordActive = 0
     # and "yours stopped at some point and nothing told you".
     @emlRecordOrphanCheck
     if emlRecordOrphanCheck.orphan = 1
-        writeInfoLine: "EML: the recording ended when its buffer was removed."
+        appendInfoLine: ""
+        appendInfoLine: "------------------------------------------------------------"
+        appendInfoLine: "EML: the recording ended when its buffer was removed."
         appendInfoLine: ""
         appendInfoLine: "'Table emlRecording_DO_NOT_REMOVE' is gone from the"
         appendInfoLine: "Objects window — that table IS the recording, so"
@@ -56,7 +61,9 @@ if emlRecordActive = 0
         appendInfoLine: "Run 'Record script' to start again."
         goto END_RECORD_SAVE
     endif
-    writeInfoLine: "EML: no recording is in progress."
+    appendInfoLine: ""
+    appendInfoLine: "------------------------------------------------------------"
+    appendInfoLine: "EML: no recording is in progress."
     appendInfoLine: ""
     appendInfoLine: "Run 'Record script' first, then the analyses and"
     appendInfoLine: "figures you want captured."
@@ -67,14 +74,19 @@ selectObject: emlRecordBufferId
 nSteps = Get number of rows
 
 if nSteps = 0
-    beginPause: "Nothing recorded yet"
-        comment: "The recording is running but no analysis has been"
-        comment: "captured yet, so there is nothing to save."
-    clicked = endPause: "Keep recording", "Stop recording", 1, 1
-    if clicked = 2
-        @emlRecordDiscard
-        writeInfoLine: "EML: recording stopped. Nothing was saved."
-    endif
+    # STOP MEANS STOP (author's ruling, 19 August 2026) -- the same ruling
+    # that overruled the refusal in eml-record-open.praat. This pause asked a
+    # question the user had already answered by choosing a command called
+    # 'Stop recording and save', and its DEFAULT answer, 'Keep recording',
+    # was the one that did not stop. So it is gone: the recording ends, and
+    # nothing is written because there was nothing to write.
+    @emlRecordDiscard
+    appendInfoLine: ""
+    appendInfoLine: "------------------------------------------------------------"
+    appendInfoLine: "EML: recording stopped; nothing had been recorded, so no"
+    appendInfoLine: "script was written."
+    appendInfoLine: ""
+    appendInfoLine: "'Record script' starts a new one."
     goto END_RECORD_SAVE
 endif
 
@@ -161,7 +173,9 @@ probe$ = outFolder$ + "/.eml_record_write_probe"
 nocheck deleteFile: probe$
 nocheck writeFileLine: probe$, "eml"
 if not fileReadable (probe$)
-    writeInfoLine: "EML: that folder cannot be written to."
+    appendInfoLine: ""
+    appendInfoLine: "------------------------------------------------------------"
+    appendInfoLine: "EML: that folder cannot be written to."
     appendInfoLine: ""
     appendInfoLine: outFolder$
     appendInfoLine: ""
@@ -189,11 +203,15 @@ endif
 @emlRecordFlush: outPath$
 
 if emlRecordFlush.written = 0
-    writeInfoLine: "EML: nothing was written."
+    appendInfoLine: ""
+    appendInfoLine: "------------------------------------------------------------"
+    appendInfoLine: "EML: nothing was written."
     goto END_RECORD_SAVE
 endif
 
-writeInfoLine: "EML: recorded script saved."
+appendInfoLine: ""
+appendInfoLine: "------------------------------------------------------------"
+appendInfoLine: "EML: recorded script saved."
 appendInfoLine: ""
 appendInfoLine: outPath$
 appendInfoLine: ""
