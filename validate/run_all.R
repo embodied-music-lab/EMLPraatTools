@@ -1151,7 +1151,7 @@ scripts <- c(
                                  # its code would be wrong if the pen leaked.
                                  # Reads harness/linestyle.
     ,
-    "v97_line_tree.R",            # the line chart's question tree. The page
+    "v97_line_tree.R"             # the line chart's question tree. The page
                                  # used to open by asking how the user's FILE
                                  # was shaped -- a question the plugin can
                                  # answer for itself -- instead of what the
