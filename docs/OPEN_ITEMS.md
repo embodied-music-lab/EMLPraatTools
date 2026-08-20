@@ -3,7 +3,10 @@
 Kept in the repo on purpose: this file survives session loss. Update it
 when an item is opened, changed, or closed. Newest ruling wins.
 
-Last reconciled against the tree: 20 Aug 2026.
+Last reconciled against the tree: 20 Aug 2026, afternoon. Every item below
+was checked against the code, the checks and the committed evidence rather
+than carried forward on trust; seven items that were listed as open turned
+out to be built and have moved to the closed section.
 
 The phase register for features beyond 1.0.0 is `ROADMAP.md` at the repo
 root. This file is defects and ruled-but-unbuilt work; that one is where
@@ -12,10 +15,9 @@ the plugin is going.
 ## A. The unification (largest remaining piece)
 
 Drawing a figure re-runs the analysis instead of receiving its result.
-Demonstrated: one Kruskal-Wallis produced two identical reports fifteen
-seconds apart, the second from the graph door. The two agreed only because
-both happened to use Holm; the graph form offers test type, adjustment
-method and alpha independently, so the figure can contradict the report.
+Confirmed still true: the bridge that draws a group comparison computes the
+test itself from its arguments rather than reading a stored result, and no
+result store exists anywhere in the plugin.
 
 Ruled: the graph carries the analysis's settings forward; changing a
 result-affecting setting from the graph re-runs and says so in one line in
@@ -23,7 +25,7 @@ the Info window; changing nothing re-runs nothing and prints nothing. The
 duplicate-report stopgap is rolled into this, not taken separately.
 
 Memo with the design questions is with Fable
-(MEMO_TO_FABLE_unification_20260819.md).
+(`docs/MEMO_TO_FABLE_unification.md`).
 
 ## B. Form and dialog work
 
@@ -33,13 +35,18 @@ The ruling arrived 19-20 Aug and the block is lifted:
 Praat 6.6.30 under Xvfb, not on reasoning about Praat.
 
 - **The label sweep, per the ruling.** Headings group; rows carry only what
-  distinguishes them. Icon headings stay; the two per-axis icon headings
-  merge into one carrying "both 0 = auto". Ranges become one paired row
-  named by QUANTITY, never by axis. X and Y axis labels become one
-  sentence-paired row on every page that has them. The right-hand axis page
-  is the exemplar and is done; the rest are not. One page at a time, with
-  the locality check run between, and the ruling's per-page row counts
-  (12→9, 20→17, and so on) verified against the rendered page under Xvfb.
+  distinguishes them. Ranges become one paired row named by QUANTITY, never
+  by axis. X and Y axis labels become one sentence-paired row on every page
+  that has them. One page at a time, with the locality check run between,
+  and the ruling's per-page row counts (12→9, 20→17, and so on) verified
+  against the rendered page under Xvfb.
+
+  State as measured: the right-hand axis page is the exemplar and is done.
+  Scatter and the single-value-axis stat pages already carry ONE merged
+  range heading. Pitch, waveform, spectrum and LTAS still carry two
+  per-axis icon headings and need the merge. The paired axis-labels row
+  exists NOWHERE yet — all thirteen pages still stack a separate X axis
+  label row above a separate Y axis label row.
 - **The label character law** (ruling, measured). Before the parenthetical,
   a field label may contain letters, digits and spaces only, plus the
   leading left/right pairing word. Praat strips the label from the first
@@ -47,94 +54,47 @@ Praat 6.6.30 under Xvfb, not on reasoning about Praat.
   verbatim — so a hyphen, a slash or an emoji makes a variable that is
   bound but unreachable, and code referring to it silently reads
   arithmetic instead. Demonstrated: a field named "left Y-limits" fed -99
-  to code that thought it was reading the user's 5. Check 11 must assert
-  both this and prefix uniqueness per rendered branch.
+  to code that thought it was reading the user's 5.
+
+  The check that must assert this is not the check that exists. The field
+  name checker refuses truncation, refuses two fields in the SAME dialog
+  block deriving one name, and refuses a hyphen. The ruling requires two
+  things wider than that: the full character class (letters, digits and
+  spaces only), and uniqueness per RENDERED BRANCH rather than per block —
+  the collision that loses user input happens between two rows that only
+  co-render on one branch of a conditional page. Both are unbuilt.
 - **The histogram compound row is IAN'S CALL** and nothing else uses the
   pattern: "left Bins and max frequency (0 = auto each)" would put two
   unrelated numbers on one row, saving a row on the tallest page in the
   plugin at the cost of the label carrying the whole burden of honesty.
   Not taken unless Ian says so.
-- **Two wording items, ruled 20 Aug.** The wizard's gate page reads
-  "Under how many conditions was each subject measured?" (not "How many
-  repeated measurements per subject?"), and the observation-type page
-  reads "Yes — same people, measured more than once (within-subject)"
-  (not "repeated (paired)"). "Paired" is reserved for the k = 2 test whose
-  name it is. Option labels unchanged; pins assert value lines and that a
-  gloss is present, never the gloss wording.
-- **Terminology-uniformity audit** (new, small). Every dialog, report line
-  and doc checked for four terms against R and SPSS usage: CONDITION (a
-  level of a within-subject factor), TOKEN (a replicate of the same
-  measurement within a cell), MEASUREMENT (the dependent variable itself),
-  WITHIN-SUBJECT / PAIRED (a design property; "paired" only at k = 2).
-  The line-chart tree's "different measurements" wording is correct and
-  out of scope — there it names genuinely different variables.
+- **Two wording items, ruled 20 Aug, not yet in the code.** The wizard
+  still reads "How many repeated measurements per subject?" and still
+  offers "Yes — same people, repeated (paired)". They become "Under how
+  many conditions was each subject measured?" and "Yes — same people,
+  measured more than once (within-subject)". "Paired" is reserved for the
+  k = 2 test whose name it is. Option labels unchanged; pins assert value
+  lines and that a gloss is present, never the gloss wording.
+- **Terminology-uniformity audit** (new, small, not started). Every dialog,
+  report line and doc checked for four terms against R and SPSS usage:
+  CONDITION (a level of a within-subject factor), TOKEN (a replicate of the
+  same measurement within a cell), MEASUREMENT (the dependent variable
+  itself), WITHIN-SUBJECT / PAIRED (a design property; "paired" only at
+  k = 2). The line-chart tree's "different measurements" wording is correct
+  and out of scope — there it names genuinely different variables.
 - Booleans are OUT OF SCOPE by ruling: no gating, no collapsing, no
   relocation, labels unchanged. Title and subtitle stay two full-width
   rows, also by ruling.
-- "Erase page first": remembered within a session, default on at session
-  start, never written to disk. Ruled, not built.
-- Legend placement label should read "(when drawn)".
-
-## B2. The test-type / post-hoc coupling (reported 20 Aug, not started)
-
-On the group-comparison draw pages, the correction menu is BUILT from the
-previous run's test type. Praat dialogs are static, so the control's
-presence lags the choice by one press:
-
-- Last run parametric, user switches to nonparametric: the correction menu
-  was not built, so Dunn runs under whatever correction the previous run
-  left behind. Invisible, and the user never chose it.
-- Last run nonparametric, user switches to parametric: the menu is shown and
-  read, but Tukey ignores it. Confusing rather than wrong.
-
-Six pages share the pattern (bar, violin, box, grouped violin, grouped box,
-spaghetti).
-
-Ian's proposal, which removes the dependency rather than patching it: one
-dropdown listing every post-hoc, each option naming which test family it
-belongs to and what it does. Nothing can then be stale, because there is
-only one control.
-
-Strongest form of that: the options are COMPLETE choices, so the omnibus
-follows from the post-hoc rather than being asked separately —
-
-    ANOVA, no post-hoc
-    ANOVA + Tukey HSD (family-wise; no separate correction)
-    Kruskal-Wallis, no post-hoc
-    Kruskal-Wallis + Dunn, Holm (step-down; more power than Bonferroni)
-    Kruskal-Wallis + Dunn, Bonferroni (most conservative)
-    Kruskal-Wallis + Dunn, Benjamini-Hochberg (false discovery rate)
-
-Three controls collapse to one, no mismatch is expressible, and each line
-reads the way a methods section has to read.
-
-Ruled 20 Aug: the list carries section headers -- `-- Parametric --`,
-`-- Nonparametric --` -- and guards against someone selecting a header and
-clicking through.
-
-THE GUARD ALREADY EXISTS AND IS REUSED, not reinvented. The graph-type
-menu is built with a parallel array (`filteredMenuToType[]`) in which 0
-marks a header; after the dialog the menu index is remapped through it, and
-a 0 re-shows the page with a small box saying the item chosen is a category
-header. The post-hoc menu gets the same shape: a parallel array mapping
-each menu row to its test family, post-hoc and correction, 0 for a header,
-and the same re-show on 0.
-
-Interacts with the unification: when an analysis has already run, this
-choice should come FROM it rather than be asked again.
+- **Legend placement has no encoding validator.** It has the structural
+  protection gridline mode has — one registry, one seed, one commit,
+  identical option lists, and now a clamp on load — but nothing pins the
+  encoding the way the gridline-mode check does. The legend geometry check
+  says in its own text that the dialog side is out of its scope.
 
 ## B3. Dialog audit, 20 Aug — what the hand-read found
 
 Every one of the 128 dialogs was opened and read. The claim that the
 lagging-control defect existed only on the six comparison pages was WRONG.
-Three more instances, plus three classes worth naming.
-
-FIXED IMMEDIATELY (it was in the fix commit itself): the category-header
-guard set `clicked = 0` and every page's button dispatch ended in a bare
-`else` that WAS the Draw branch — so refusing a header printed the refusal
-and then drew the figure anyway, annotated parametric under Holm from the
-procedure's declared defaults. The Draw arm is now named explicitly, so a
-refused press falls through to the loop and the page re-shows.
 
 STILL OPEN, lagging controls:
 
@@ -149,100 +109,146 @@ STILL OPEN, lagging controls:
 STILL OPEN, stored values that can seed a menu out of range:
 
 - Six config keys are read from disk and used as menu defaults with no range
-  check. Praat draws a menu whose default exceeds its option count blank and
-  then refuses the form — a dead end the user cannot escape, and the bad
-  value is on disk so restarting does not clear it. Gridline mode has a
-  clamp; these do not.
+  check: colour mode, output DPI, show axis names, show ticks, show axis
+  values, group sort. Praat draws a menu whose default exceeds its option
+  count blank and then refuses the form — a dead end the user cannot escape,
+  and the bad value is on disk so restarting does not clear it. Gridline mode
+  and legend placement both have clamps; these six do not.
 - Numeric config keys parse to undefined on an empty or corrupt line, and the
-  clamps run after the parse rather than on it.
+  two clamps that exist run after the whole parse loop rather than on the key.
 - The table editor's Scope menu is rebuilt from the live table each pass but
-  defaults to a remembered index.
+  defaults to a remembered index with no clamp against the current column
+  count.
 
-STILL OPEN, dead controls (present but inert for some choices):
+STILL OPEN, dead controls (present but inert for some choices), all four
+confirmed in the code:
 
-- Histogram display mode when ungrouped; the regression dialog's group column,
-  which the analysis never receives; the wizard's variance assumption on the
-  nonparametric path; and the three already-known wrapper labels carrying
-  "(t and Wilcoxon only)" and similar.
-
-Also noted: legend placement has the structural protection gridline mode has
-(one registry, one seed, one commit, identical option lists) but no validator
-pinning the encoding the way v31 pins gridline mode.
+- Histogram display mode is offered whenever advanced mode is on, and forced
+  to a single value whenever the data is ungrouped.
+- The regression dialog's group column is built and read, but the analysis is
+  called without it; it only seeds the drawing step.
+- The wizard's variance assumption is shown on every path and passed on the
+  nonparametric call, where nothing reads it.
+- Three wrapper labels carry "(t and Wilcoxon only)", "(pairwise t only)" and
+  "(post hoc only)" and are always shown and always read regardless of the
+  neighbouring choice.
 
 ## C. Everything else
 
 ### Not started
 
-1. **Save offers the data but not the image.** Driving ANOVA to a violin
-   plot and clicking Save offered only the data. Ruled: sweep every route
-   that draws, and the detected figure's tickbox starts ticked. A patch
-   exists but turns an existing check red, because that check pins the
-   tickbox line literally; both must land together.
-2. **The render-level geometry check.** Parse a saved figure and assert the
-   box, the ticks and the plotted extremes land on one rectangle, per figure
-   type, plus a mutation demonstration. Designed, not written. This is what
-   makes the font-geometry class impossible to reopen.
-3. **Recorder state publication.** The form states its complete display
+1. **Recorder state publication.** The form states its complete display
    state once per press; the recorder writes it ahead of each step; a check
-   pins seeded == published == emitted. Measured today: 41 settings are
-   seeded, 13 are written into recorded scripts, 28 are not — about 22 of
-   those are real user choices including annotation style, alpha,
-   correlation type, whether the regression line is drawn, the axis
-   show/hide flags and the subtitle. Praat cannot unset a variable, so a
-   replayed script inherits whatever the session already held rather than
-   falling back to a default.
-4. **Recorder records table creation.** Ruled: creation becomes a recorded
+   pins seeded == published == emitted. Nothing of this exists: no
+   procedure, no check, no harness. The often-quoted "41 seeded, 13
+   written, 28 not" has no artefact in the tree behind it — the numbers
+   need re-measuring before they are quoted again.
+2. **Recorder records table creation.** Ruled: creation becomes a recorded
    step, split by source — plugin-created gets its command and a seed,
    file-loaded gets its path, pre-existing states its precondition loudly.
-5. **Pitch parameters canonical everywhere**, including dev tests and the
-   code the recorder emits; one procedure owns each parameter set. Shifts a
-   reported mean by about 1 Hz on a short token. Ruled: change it, no
-   release note.
-6. **ASCII fold at the CSV and report file boundary.** One non-ASCII
-   character makes Praat rewrite the whole file as UTF-16, which R, pandas
-   and Excel cannot read.
-7. **Duplicate-filename loop** replaced by the shared unique-path procedure.
-8. **The text wrapper breaks "label = value" across lines.** A patch exists;
-   it fixes the break but can lengthen the longest line, which in about one
-   case in 150 pushes the annotation box into an extra resize pass. Needs
-   driving rather than assuming.
+   The recorder has five step kinds and none of them is creation; it has no
+   notion of how a table came to exist.
+3. **The text wrapper breaks "label = value" across lines.** The wrapper is
+   a plain greedy word wrap with no special case for the equals sign. The
+   claim that "a patch exists" could not be substantiated anywhere in the
+   tree — treat this as unstarted, and expect the known cost when it is
+   built: fixing the break can lengthen the longest line, which in about one
+   case in 150 pushes the annotation box into an extra resize pass, so it
+   needs driving rather than assuming.
 
 ### Test-coverage gaps
 
-- Ledger rows owed: 19 tracked process files under harness/dialogheight;
-  replay receipt lag in the vector-figure harness; two plugin versions can
-  produce a truncated menu with no warning.
+- **The render-level geometry check is written but never runs.** It parses a
+  saved figure and asserts the box, the ticks and the plotted extremes land
+  on one rectangle, for all thirteen figure types, with a mutation
+  demonstration beside it, and it passes on its own. It is the only check
+  file in the tree that the suite runner does not list, so a regression it
+  would catch reaches a green suite. Wiring it in is one line plus a
+  coverage entry.
+- The validator index documents the older checks only; roughly a dozen of
+  the newest have no entry in it, so "read the index to see what is
+  checked" now understates the suite.
+- Nothing drives a non-ASCII character through a saved CSV or report and
+  asserts the file stays readable. The fold is built and wired at both
+  boundaries, but its behaviour is unchecked.
+- Nothing pins the pitch parameters equal across the graph, batch and
+  recorder paths. They agree today by hand, not by construction: two call
+  sites still spell the parameter list literally instead of calling the
+  procedure that owns it.
+- Replay receipt lag in the vector-figure harness: the harness drives
+  record and replay and checks which files land, but never asserts the save
+  receipt a replayed run prints.
+- Two plugin versions installed at once can produce a truncated menu with
+  no warning. Nothing tests it.
+- Sixteen stray process files (`pid`, and the `xvfb.log` / `wm.log` beside
+  them) are tracked under the dialog-height harness and should not be.
 
 ### Housekeeping
 
 - Line-chart evidence is stale, deliberately: the photographs are what those
   checks read, and the dialog wording is still moving. One re-drive after
-  the sweep, not one per change.
+  the sweep, not one per change. Confirmed still correct — no line-chart
+  code has moved since the last re-drive.
 
-## Closed since this file was written
+## Closed
 
-The table editor no longer copies one cell's value into another. Choosing a
+**The comparison control is one dropdown.** Test type, post-hoc and
+correction were three controls, and the correction menu was built from the
+PREVIOUS run's test type, so a user switching to a nonparametric test got
+whatever correction the last run left behind — invisibly, having never
+chosen it. They are now a single list of complete choices with
+`-- Parametric --` and `-- Nonparametric --` section headers, and the
+category-header guard from the graph-type menu is reused on all six pages.
+No mismatch is expressible any more. The six pages are bar, violin, box,
+histogram, grouped violin and grouped box — spaghetti was named in error in
+earlier versions of this file; it has no comparison control at all.
+
+**Save offers the figure.** Every route that draws now detects the drawn
+page and starts the figure tickbox ticked, and the check that pins the
+tickbox line landed in the same commit.
+
+**Reports and CSVs are ASCII at the file boundary.** One non-ASCII
+character used to make Praat rewrite the whole file as UTF-16, which R,
+pandas and Excel cannot read. The fold runs on report content and on every
+CSV cell. (The recorder log is deliberately outside this, and says so.)
+
+**Duplicate output names go through the shared unique-path procedure**,
+which no longer mis-splits a folder whose name contains a dot. Three checks
+pin it and two harnesses drive it.
+
+**Pitch analysis uses the canonical parameters on every path**, including
+the dev tests and the code the recorder emits. This shifts a reported mean
+by about 1 Hz on a short token; ruled, no release note.
+
+**"Erase page first" is remembered while you work** — on at session start,
+carried across draws, never written to disk.
+
+**Legend placement says when it applies**: the label reads "(when drawn)",
+and the key now has a clamp on load.
+
+**The table editor cannot write one cell's value into another.** Choosing a
 different cell and pressing Set without changing the Value box now writes
 nothing and shows the chosen cell's real contents instead; typing a value
 into a newly chosen cell still writes on the first press. Two drive cases
 and eleven checks, with the pre-fix editor demonstrated writing "A1" into
 row 3.
 
-Every figure type is now driven through the form's own dispatch: sixteen
+**Every figure type is driven through the form's own dispatch**: sixteen
 legs, one Praat process each, recorded and unrecorded runs kept separate.
 The seam that let a scatter abort reach a user before the suite saw it is
 now covered.
 
-Font geometry root cause found and fixed — Praat converts a viewport using
-the margins in effect when it is SELECTED, so the panel viewport now asserts
-the body size before selecting; every annotation routine restores the
-ambient size, including on early exits; the coefficient plot uses the shared
-layout and honours the frame toggle; facet labels stay on their panel. Ian
-confirms the scatter symptom is gone.
+**Font geometry root cause found and fixed** — Praat converts a viewport
+using the margins in effect when it is SELECTED, so the panel viewport now
+asserts the body size before selecting; every annotation routine restores
+the ambient size, including on early exits; the coefficient plot uses the
+shared layout and honours the frame toggle; facet labels stay on their
+panel. Ian confirms the scatter symptom is gone.
 
-R-squared appears once per figure. The subtitle no longer persists across
-sessions. Stop always stops; recorder messages append instead of clearing
-the Info window; the phrase table is cleaned up; recording starts with
-nothing selected. Dialog field names are pinned against truncation and
-collision, and every dialog is now checked to read the fields it offers —
-which caught the histogram's frequency cap being offered but ignored.
+**Earlier, and still true.** R-squared appears once per figure. The
+subtitle no longer persists across sessions. Stop always stops; recorder
+messages append instead of clearing the Info window; the phrase table is
+cleaned up; recording starts with nothing selected. Dialog field names are
+pinned against truncation and collision, and every dialog is checked to
+read the fields it offers — which caught the histogram's frequency cap
+being offered but ignored.
