@@ -1210,6 +1210,23 @@ scripts <- c(
                                  # labels shorter, because shorter labels
                                  # collide more.
                                  # Source only; reads no harness.
+    ,
+    "v101_dispatch_coverage.R"   # thirteen figure types reach the page through
+                                 # the form's dispatch, and until this existed
+                                 # nothing drove any of them through it. Every
+                                 # other harness calls a draw procedure
+                                 # directly or drives one type through the
+                                 # dialogs, so a fault in the seam between the
+                                 # form and a draw procedure was reachable by a
+                                 # user and by nothing here -- which is how a
+                                 # scatter that aborted with recording off
+                                 # reached the author's machine. One Praat
+                                 # process per type, because an abort kills the
+                                 # process and a loop would stop at the first
+                                 # failure. Recorded and unrecorded are separate
+                                 # legs: the fault that shipped was invisible
+                                 # with recording on.
+                                 # Reads harness/dispatch.
 )
 
 # ---------------------------------------------------------------------------

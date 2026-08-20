@@ -1,0 +1,33 @@
+
+══════════════════════════════════════════════
+  EML Stats : Spaghetti Plot Summary
+  Thu Aug 20 13:13:50 2026
+══════════════════════════════════════════════
+
+  Table               dp
+  Condition column    grp
+  Value column        val
+  ID column           sub
+  Conditions          3
+
+
+  ── Cohort 1 ────────────────────────────────
+  N                   12
+  Mean                212.797
+  SD                  9.872
+
+
+  ── Cohort 2 ────────────────────────────────
+  N                   12
+  Mean                225.934
+  SD                  8.403
+
+
+  ── Cohort 3 ────────────────────────────────
+  N                   12
+  Mean                231.638
+  SD                  7.585
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
