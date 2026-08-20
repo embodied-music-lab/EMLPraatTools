@@ -79,6 +79,42 @@ re-run everything; verify what the change touched and re-run the rest
 separately. Long jobs block Ian from interacting and correlate with
 things getting dropped.
 
+## Fanning work out to agents
+
+**Default to agents for basically everything.** Independent pieces of work
+run in parallel, in their own context, and only their conclusions come back.
+A sweep that would take an hour of one context takes minutes of it this way.
+Reserve doing it yourself for the case where the work is genuinely one
+thread.
+
+**ONE VERIFICATION PASS, AT THE END, BY ONE AGENT.** Builders build; they do
+not each run the suite. Three agents fixing three unrelated checks will
+otherwise each run most of the validators, which is the same work three
+times, and none of them sees the interactions between the three changes --
+which is the thing that actually needs checking. So: fan out the builders,
+then send one agent over the whole tree once.
+
+Two corollaries learned the hard way:
+
+- A builder agent must be told what the OTHER agents are touching, or it
+  reports their in-flight edits as unexplained churn in its own diff.
+- Before changing anything, an agent states the check's result as it found
+  it. Without that baseline, a failure that was already there gets
+  attributed to the change in front of it -- which cost most of an evening
+  on 20 August, when good work was reverted because a harness that had been
+  broken for weeks went red at the wrong moment.
+
+## Run the checks that read what you touched, before committing
+
+Not after. The suite knows which files each check reads; a check that
+describes a file you edited is a check you have to run before you believe
+the edit. Three defects shipped on 20 August for want of this: a comment
+that tripped the release gate's history rule, a comma that stopped the
+whole suite from parsing, and a renamed export column the result writer's
+vocabulary refused -- which killed every repeated-measures and Friedman
+export, and whose error message says, in the message itself, to update the
+vocabulary in the same commit.
+
 ## Standing list
 
 `docs/OPEN_ITEMS.md` holds every open defect and every ruled-but-unbuilt
