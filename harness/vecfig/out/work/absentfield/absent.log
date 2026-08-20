@@ -5,6 +5,6 @@ Error: Unknown variable:
 « also_PDF
 Script line 8 not performed or completed:
 « x = also_PDF »
-Script “/home/claude/EMLPraatTools/harness/vecfig/out/work/absentfield/absent.praat” not completed.
+Script “/home/claude/repo/harness/vecfig/out/work/absentfield/absent.praat” not completed.
 Praat: script command <<absent.praat>> not completed.
 

@@ -229,9 +229,6 @@ wording and output work so its report strings are written once.
   accurate" ON where canon has it OFF. Test fixtures, not shipped code, so no
   user's number is wrong -- but those fixtures measure something the plugin
   does not do. Reported rather than changed: which way it goes is Ian's.
-- Replay receipt lag in the vector-figure harness: the harness drives
-  record and replay and checks which files land, but never asserts the save
-  receipt a replayed run prints.
 - Two plugin versions installed at once can produce a truncated menu with
   no warning. Nothing tests it.
 - The same process-artefact debris is still tracked in three other harnesses:
@@ -246,6 +243,24 @@ wording and output work so its report strings are written once.
   code has moved since the last re-drive.
 
 ## Closed
+
+**The replayed save's receipt is read, not just its files.** `harness/vecfig`
+drove record and replay and looked only at the disk; the three lines
+`@emlRecordReplaySave` prints -- how many files, where, under what base name
+-- were the one thing an unattended replay says about itself and nothing
+asserted them. The harness now takes them verbatim into `VECFIG.tsv` and
+`validate/v86` compares them to that replay's own disk: the count against the
+files carrying that base name, the folder against the folder it was pointed
+at, and the base name against a base name a file was actually written under.
+The comparison is deliberately NOT against the recording's receipt --
+`@emlRecordReplaySave` regenerates the stamp rather than replaying it, so two
+receipts that agreed would mean the defect that procedure exists to prevent.
+Fourteen checks, and two new breaks in `harness/vecfig/break.sh` watched red:
+`receipt_stale_stem` (the recorded base name printed instead of the written
+one) puts ten red and moves nothing else in the file, `receipt_before_report`
+(the report written after the receipt rather than before it) puts the four
+count checks red on a save where nothing failed and nothing went missing.
+
 
 **A bad line in the config file can no longer lock a dialog.** Every menu
 setting read from disk is parsed and range-checked in one step, at the line

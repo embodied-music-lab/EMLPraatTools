@@ -2,6 +2,6 @@ BEFORE
 Error: Command “Save as SVG file:” not available for current selection.
 Script line 6 not performed or completed:
 « Save as SVG file: "bare.svg" »
-Script “/home/claude/EMLPraatTools/harness/vecfig/out/work/unguarded/bare.praat” not completed.
+Script “/home/claude/repo/harness/vecfig/out/work/unguarded/bare.praat” not completed.
 Praat: script command <<bare.praat>> not completed.
 

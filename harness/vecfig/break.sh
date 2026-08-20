@@ -29,8 +29,16 @@
 #                       recorded EPS replays as a PNG and says nothing.
 #   shared_format_var   the per-save suffix flattened, so two saves with
 #                       different choices collide on one variable.
+#   receipt_stale_stem  the replayed save's receipt prints the RECORDED base
+#                       name instead of the one it wrote under, so the only
+#                       account an unattended run gives of itself names files
+#                       that are not there.
+#   receipt_before_report
+#                       the report file written AFTER the receipt is printed,
+#                       so the count states one fewer file than landed -- the
+#                       ordering the code's own comment warns against.
 #
-# THE LAST TWO DAMAGE eml-record.praat AND THE OTHERS eml-output.praat, which
+# THE LAST FOUR DAMAGE eml-record.praat AND THE OTHERS eml-output.praat, which
 # is why mutate.py names the file for each break rather than being handed one.
 #
 # Output: out/BREAKS.tsv, one row per break with the red count.
@@ -85,6 +93,8 @@ run_break pdf_box_on_windows
 run_break png_only_message
 run_break recorder_own_save
 run_break shared_format_var
+run_break receipt_stale_stem
+run_break receipt_before_report
 
 echo "vecfig/break: summary"
 cat "$BTSV"

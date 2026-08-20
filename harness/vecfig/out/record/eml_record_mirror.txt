@@ -13,7 +13,7 @@ emlSecondAxisOn = 0
 --- step 2 (save), run 1
 Save the outputs of this analysis
 Every output shares one folder and one name, so they stay a set.
-outputFolder$ = "/home/claude/EMLPraatTools/harness/vecfig/out/files/replay"
+outputFolder$ = "/home/claude/repo/harness/vecfig/out/files/replay"
 @emlSavePanel: 1, "figA_20260817_120000", outputFolder$, "PNG, EPS"
 --- step 3 (draw), run 2
 Box plot: second figure
@@ -28,5 +28,5 @@ emlSecondAxisOn = 0
 --- step 4 (save), run 2
 Save the outputs of this analysis
 Every output shares one folder and one name, so they stay a set.
-outputFolder$ = "/home/claude/EMLPraatTools/harness/vecfig/out/files/replay"
+outputFolder$ = "/home/claude/repo/harness/vecfig/out/files/replay"
 @emlSavePanel: 1, "figB_20260817_120000", outputFolder$, "PNG, PDF"

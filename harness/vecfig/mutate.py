@@ -169,6 +169,55 @@ BREAKS = {
          '                                    endif\n'
          '                                endfor\n'),
     ]),
+    # THE RECEIPT PRINTS THE NAME THAT WAS RECORDED, not the name that was
+    # written. Everything else is untouched: the same files land, under the
+    # replay's own regenerated stamp, exactly as they should. Only the
+    # sentence the user reads is about a different save -- one made a month
+    # ago, in a folder they may no longer have. A replay opens no dialog, so
+    # this line is the whole of what an unattended run says about itself, and
+    # a base name that matches nothing on the disk sends the reader looking
+    # for files under a name nothing wrote.
+    "receipt_stale_stem": (RECORD, [
+        ('    @emlRecordStripStamp: .stem$\n'
+         '    .base$ = emlRecordStripStamp.result$\n',
+         '    .recordedStem$ = .stem$\n'
+         '    @emlRecordStripStamp: .stem$\n'
+         '    .base$ = emlRecordStripStamp.result$\n'),
+        ('    appendInfoLine: "base name ", .stem$\n',
+         '    appendInfoLine: "base name ", .recordedStem$\n'),
+    ]),
+    # THE RECEIPT COUNTED BEFORE THE LAST FILE IS WRITTEN. The report is
+    # moved below the receipt, which is the ordering the comment above it
+    # warns against -- and the count then states one fewer file than the save
+    # leaves behind. Nothing fails, nothing is missing, and the only symptom
+    # is a number: the save says two and wrote three. This is the drift a
+    # receipt nothing reads is free to acquire.
+    "receipt_before_report": (RECORD, [
+        ('    .txtPath$ = .folder$ + "/" + .stem$ + "_report.txt"\n'
+         '    @emlSaveInfoToFile: .txtPath$\n'
+         '    if emlSaveInfoToFile.success = 1\n'
+         '        .nWritten = .nWritten + 1\n'
+         '        .fileList$ = .fileList$ + emlSaveInfoToFile.actualPath$ + newline$\n'
+         '    endif\n'
+         '\n'
+         '    ; --- say what happened, without asking anything ------------------------\n'
+         '    appendInfoLine: ""\n'
+         '    appendInfoLine: "EML: replayed save -- wrote ", .nWritten, " file(s) to"\n'
+         '    appendInfoLine: .folder$\n'
+         '    appendInfoLine: "base name ", .stem$\n',
+         '    ; --- say what happened, without asking anything ------------------------\n'
+         '    appendInfoLine: ""\n'
+         '    appendInfoLine: "EML: replayed save -- wrote ", .nWritten, " file(s) to"\n'
+         '    appendInfoLine: .folder$\n'
+         '    appendInfoLine: "base name ", .stem$\n'
+         '\n'
+         '    .txtPath$ = .folder$ + "/" + .stem$ + "_report.txt"\n'
+         '    @emlSaveInfoToFile: .txtPath$\n'
+         '    if emlSaveInfoToFile.success = 1\n'
+         '        .nWritten = .nWritten + 1\n'
+         '        .fileList$ = .fileList$ + emlSaveInfoToFile.actualPath$ + newline$\n'
+         '    endif\n'),
+    ]),
 }
 
 

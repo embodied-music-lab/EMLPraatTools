@@ -24,19 +24,19 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-core-utilities.praat
-include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-core-descriptive.praat
-include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-extract.praat
-include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-output.praat
-include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-inferential.praat
-include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-psychometrics.praat
-include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-categorical.praat
-include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-result-writer.praat
-include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-record.praat
-include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/graphs/eml-graph-procedures.praat
-include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/graphs/eml-annotation-procedures.praat
-include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/graphs/eml-draw-procedures.praat
-include /home/claude/EMLPraatTools/harness/vecfig/out/work/record/plugin/stats/eml-analysis.praat
+include /home/claude/repo/harness/vecfig/out/work/record/plugin/stats/eml-core-utilities.praat
+include /home/claude/repo/harness/vecfig/out/work/record/plugin/stats/eml-core-descriptive.praat
+include /home/claude/repo/harness/vecfig/out/work/record/plugin/stats/eml-extract.praat
+include /home/claude/repo/harness/vecfig/out/work/record/plugin/stats/eml-output.praat
+include /home/claude/repo/harness/vecfig/out/work/record/plugin/stats/eml-inferential.praat
+include /home/claude/repo/harness/vecfig/out/work/record/plugin/stats/eml-psychometrics.praat
+include /home/claude/repo/harness/vecfig/out/work/record/plugin/stats/eml-categorical.praat
+include /home/claude/repo/harness/vecfig/out/work/record/plugin/stats/eml-result-writer.praat
+include /home/claude/repo/harness/vecfig/out/work/record/plugin/stats/eml-record.praat
+include /home/claude/repo/harness/vecfig/out/work/record/plugin/graphs/eml-graph-procedures.praat
+include /home/claude/repo/harness/vecfig/out/work/record/plugin/graphs/eml-annotation-procedures.praat
+include /home/claude/repo/harness/vecfig/out/work/record/plugin/graphs/eml-draw-procedures.praat
+include /home/claude/repo/harness/vecfig/out/work/record/plugin/stats/eml-analysis.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -102,7 +102,7 @@ data = selected ()
 # Save the outputs of this analysis
 # Every output shares one folder and one name, so they stay a set.
 
-outputFolder$ = "/home/claude/EMLPraatTools/harness/vecfig/out/files/replay"
+outputFolder$ = "/home/claude/repo/harness/vecfig/out/files/replay"
 @emlRecordReplaySave: 1, "figA_20260817_120000", outputFolder$, figureFormat$
 
 # The same step through the menu:
@@ -131,7 +131,7 @@ data = selected ()
 # Save the outputs of this analysis
 # Every output shares one folder and one name, so they stay a set.
 
-outputFolder$ = "/home/claude/EMLPraatTools/harness/vecfig/out/files/replay"
+outputFolder$ = "/home/claude/repo/harness/vecfig/out/files/replay"
 @emlRecordReplaySave: 1, "figB_20260817_120000", outputFolder$, figureFormat2$
 
 # The same step through the menu:

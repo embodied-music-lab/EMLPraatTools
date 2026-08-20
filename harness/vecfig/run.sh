@@ -284,9 +284,10 @@ emit "meta_absent_after"  "$(grep -c '^AFTER' "$FA/absent.log")"
 # ---------------------------------------------------------------------------
 # A recording holds two figures saved with DIFFERENT formats. It is replayed
 # as emitted, then replayed again with ONE line of its editable block changed
-# -- the second save's format -- and the files each replay leaves are what the
-# validator reads. The second half is the point of putting the choice in the
-# block at all: a block whose variables change nothing is decoration.
+# -- the second save's format -- and the files each replay leaves, TOGETHER
+# WITH THE RECEIPT IT PRINTED ABOUT THEM, are what the validator reads. The
+# second half is the point of putting the choice in the block at all: a block
+# whose variables change nothing is decoration.
 #
 # THE WHOLE PLUGIN IS COPIED for this leg, not the stats layer alone: a
 # recording draws figures, so the graphs modules have to be there, and the
@@ -395,6 +396,52 @@ PRAAT
     emit "rec_${arm}_ran" "1"
     emit "rec_${arm}_abort" \
          "$(grep -c 'not performed or completed' "$OUT/replay_$arm.log")"
+
+    # ── THE RECEIPT THE REPLAY PRINTED ────────────────────────────────────
+    # A save that says nothing about itself is the failure @eml_saveFileLanded
+    # exists against, and @emlRecordReplaySave's answer to a replay -- which
+    # may open no dialog -- is three printed lines per save:
+    #
+    #     EML: replayed save -- wrote <n> file(s) to
+    #     <folder>
+    #     base name <stem>
+    #
+    # They are taken VERBATIM into the transcript first, so a reader can see
+    # what the run said, and then parsed into the three numbers the validator
+    # compares against the files below. What must correspond is the REPLAY's
+    # receipt to the REPLAY's disk -- not to the recording's receipt, which
+    # the procedure's own contract forbids: the stamp in the stem is
+    # regenerated at replay time rather than replayed, so a replay's outputs
+    # are dated when they were made, and the folder is a line the reader is
+    # invited to edit. A check that demanded the two receipts match would be
+    # demanding the opposite of what the code promises.
+    #
+    # THE FOLDER THE REPLAY WAS POINTED AT is recorded beside them, because
+    # "the receipt names the right folder" is otherwise a claim with nothing
+    # to be right about.
+    emit "rec_${arm}_savedir" "$SAVEDIR"
+    local rk rv
+    while IFS=$'\t' read -r rk rv; do
+        emit "rec_${arm}_$rk" "$rv"
+    done < <(awk '
+        /^EML: replayed save -- wrote / {
+            n = $0
+            sub(/^EML: replayed save -- wrote /, "", n)
+            sub(/ file\(s\) to$/, "", n)
+            print "receipt_line\t" $0
+            folder = ""
+            stem = ""
+            if ((getline folder) > 0) { print "receipt_line\t" folder }
+            if ((getline stem)   > 0) { print "receipt_line\t" stem }
+            sub(/^base name /, "", stem)
+            print "receipt_n\t"      n
+            print "receipt_folder\t" folder
+            print "receipt_stem\t"   stem
+            seen = seen + 1
+        }
+        END { print "receipts\t" seen + 0 }
+    ' "$OUT/replay_$arm.log")
+
     # THE FILES THE REPLAY LEFT, moved out of the shared folder so the second
     # replay writes into an empty one and the two arms cannot be confused.
     local dest="$OUT/files/replay_$arm"

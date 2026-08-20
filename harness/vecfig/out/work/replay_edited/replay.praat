@@ -11,4 +11,4 @@ for g from 1 to 3
         Set numeric value: r, "val", 200 + g * 18 + (st / 2147483648 - 0.5) * 80
     endfor
 endfor
-include /home/claude/EMLPraatTools/harness/vecfig/out/record/edited.praat
+include /home/claude/repo/harness/vecfig/out/record/edited.praat

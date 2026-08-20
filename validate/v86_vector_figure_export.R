@@ -85,7 +85,17 @@
 #
 # THE RECORD LEG is a recording of two figures saved with DIFFERENT format
 # choices, replayed, then replayed again with ONE line of its editable block
-# changed. It answers the question a recording is kept for -- tick EPS today,
+# changed. Both what it left on the disk and WHAT IT SAID ABOUT IT are read:
+# a replay opens no dialog, so @emlRecordReplaySave's three printed lines per
+# save -- how many files, where, under what base name -- are the whole of the
+# account an unattended run gives of itself, and they are taken verbatim into
+# the transcript and compared against the files.
+#
+# THE COMPARISON IS AGAINST THE REPLAY'S OWN DISK, not against the recording's
+# receipt. @emlRecordReplaySave regenerates the timestamp rather than
+# replaying it, so a replay's outputs are dated when they were made and two
+# receipts that agreed would mean the stamp had been replayed -- the defect
+# that procedure exists to prevent. It answers the question a recording is kept for -- tick EPS today,
 # replay next month, is the EPS there -- and the second replay answers the
 # question that makes exposing the variable worth anything: does editing it
 # change what comes back, and does it leave the other save alone.
@@ -129,9 +139,9 @@
 # ============================================================================
 # THE BREAKS, AS MEASURED
 # ============================================================================
-# harness/vecfig/break.sh drives seven deliberately broken copies of the tree
+# harness/vecfig/break.sh drives nine deliberately broken copies of the tree
 # through the whole harness and runs this file against each. Recorded in
-# harness/vecfig/out/BREAKS.tsv, out of 263 checks:
+# harness/vecfig/out/BREAKS.tsv, out of 280 checks:
 #
 #   no_landed_check     43 red. The landed-file check removed from the vector
 #                       arms, so a file is counted because the Save command
@@ -174,6 +184,21 @@
 #                       figure comes back as PDF -- a format its save never
 #                       asked for -- and the one-line edit now moves both.
 #                       Invisible in any session that saved once.
+#   receipt_stale_stem  10 red, and all ten of them the receipt checks. The
+#                       replayed save prints the RECORDED base name instead
+#                       of the one it wrote under. Every file still lands,
+#                       under the replay's own stamp, exactly where it
+#                       should -- so nothing else in this file moves, and
+#                       the base name the user is handed matches nothing on
+#                       the disk.
+#   receipt_before_report
+#                       4 red, all of them the count. The report file is
+#                       written AFTER the receipt is printed -- the ordering
+#                       the recorder's own comment warns against -- so each
+#                       save states two files and leaves three. Nothing
+#                       fails and nothing is missing; the only symptom is a
+#                       number, which is precisely the drift an unchecked
+#                       receipt is free to acquire.
 #
 # Input:  harness/vecfig/out/VECFIG.tsv        ($EML_VECFIG_DIR overrides)
 #         harness/vecfig/out/files/<leg>/
@@ -1197,6 +1222,88 @@ for (R in REPLAY) {
                           function(f) starts_with_marker(
                               rhere(f), MARKERS[[tolower(sub("^.*\\.", "", f))]]),
                           logical(1))))
+
+    # ── AND THE RECEIPT SAYS SO ───────────────────────────────────────────
+    # Until now this leg watched the disk and never read a word the replay
+    # said about it. A replay opens no dialog, so its whole account of itself
+    # is three printed lines per save -- how many files, where, under what
+    # base name -- and those lines are what a user who ran the script
+    # unattended has instead of a folder listing. A receipt nothing checks is
+    # a receipt that can drift from the save it describes, which is the exact
+    # failure @eml_saveFileLanded was built to end on the panel's side.
+    #
+    # WHICH CORRESPONDENCE IS THE HONEST ONE. Not the replay's receipt against
+    # the RECORDING's: @emlRecordReplaySave says in its own contract that the
+    # stamp is regenerated and not replayed -- "a replay's outputs are the
+    # replay's, dated when they were made" -- and the folder is a line the
+    # emitted script invites the reader to edit. Two receipts that matched
+    # would mean the stamp had been replayed, which is the defect that
+    # procedure exists to prevent. So the claim under test is the one the
+    # procedure actually makes: WHAT THIS REPLAY SAID IT WROTE IS WHAT THIS
+    # REPLAY LEFT ON THE DISK.
+    rn    <- all_of(sprintf("rec_%s_receipt_n", arm))
+    rstem <- all_of(sprintf("rec_%s_receipt_stem", arm))
+    rfold <- all_of(sprintf("rec_%s_receipt_folder", arm))
+    nrec  <- one(sprintf("rec_%s_receipts", arm))
+    check_true("v86",
+               sprintf("%s replay: it printed one receipt per replayed save (%s)",
+                       arm, nrec),
+               identical(nrec, "2") && length(rn) == 2 &&
+               length(rstem) == 2 && length(rfold) == 2)
+
+    savedir <- one(sprintf("rec_%s_savedir", arm))
+    check_true("v86",
+               sprintf("%s replay: every receipt names the folder it wrote into",
+                       arm),
+               length(rfold) > 0 && !is.na(savedir) && all(rfold == savedir))
+
+    # THE STEM IS THIS RUN'S, NOT THE RECORDING'S -- the fact that makes the
+    # comparison above the only one available. Stated as a check so that a
+    # recorder which started replaying the recorded stamp would be caught
+    # here rather than quietly making the receipt comparison trivial.
+    check_true("v86",
+               sprintf("%s replay: no receipt carries the recorded stamp (%s)",
+                       arm, paste(rstem, collapse = ", ")),
+               length(rstem) > 0 &&
+               !any(grepl("_20260817_120000$", rstem)) &&
+               all(grepl("^fig[AB]_", rstem)))
+
+    # AND THE BASE NAME IS A NAME SOMETHING WAS ACTUALLY WRITTEN UNDER. The
+    # prefix rule below cannot see a receipt that prints a TRUNCATION of the
+    # real stem -- "figA" is a prefix of every figA file -- so the base name
+    # is also required to be the whole base of at least one landed file. A
+    # user given a base name pastes it into a file manager; one that matches
+    # nothing there is wrong however well it matches as a prefix.
+    bn <- basename(files)
+    check_true("v86",
+               sprintf("%s replay: each base name it printed is a file's own base name",
+                       arm),
+               length(rstem) > 0 &&
+               all(rstem %in% sub("\\.[A-Za-z0-9]+$", "", bn)))
+
+    # THE COUNT, AGAINST THE FILES. Each file on disk is attributed to the
+    # receipt whose base name is the LONGEST prefix of it: a stem uniqued to
+    # <stem>_1 is a prefix-match for <stem> as well, and a shorter match must
+    # not steal the longer one's file. A file no receipt claims is a file the
+    # replay wrote and did not mention, and that fails on its own line.
+    owner <- vapply(bn, function(b) {
+        m <- which(startsWith(b, rstem))
+        if (!length(m)) return(0L)
+        as.integer(m[which.max(nchar(rstem[m]))])
+    }, integer(1), USE.NAMES = FALSE)
+    check_true("v86",
+               sprintf("%s replay: every file it left is claimed by a receipt (%d)",
+                       arm, length(bn)),
+               length(bn) > 0 && length(rstem) > 0 && all(owner > 0))
+    counted <- if (length(rstem)) {
+        tabulate(owner[owner > 0], nbins = length(rstem))
+    } else integer(0)
+    for (i in seq_along(rn)) {
+        check_true("v86",
+                   sprintf("%s replay: the receipt says %s file(s) under %s, and %d landed",
+                           arm, rn[i], rstem[i], counted[i]),
+                   identical(as.character(counted[i]), rn[i]))
+    }
 }
 check_true("v86", "the edit changed exactly one line of the block",
            identical(one("rec_edit_lines_changed"), "1"))
