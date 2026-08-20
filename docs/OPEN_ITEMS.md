@@ -63,11 +63,11 @@ Praat 6.6.30 under Xvfb, not on reasoning about Praat.
   spaces only), and uniqueness per RENDERED BRANCH rather than per block —
   the collision that loses user input happens between two rows that only
   co-render on one branch of a conditional page. Both are unbuilt.
-- **The histogram compound row is IAN'S CALL** and nothing else uses the
-  pattern: "left Bins and max frequency (0 = auto each)" would put two
-  unrelated numbers on one row, saving a row on the tallest page in the
-  plugin at the cost of the label carrying the whole burden of honesty.
-  Not taken unless Ian says so.
+- **The histogram compound row is REFUSED** (Ian, 20 Aug): bin count and top
+  frequency are totally different measures, and the paired row is for two
+  halves of one quantity. The histogram page takes the other two savings and
+  goes 32 to 30, not 29. Nothing else uses the pattern, so it is now unused
+  everywhere.
 - **Terminology-uniformity audit** (new, small, not started). Every dialog,
   report line and doc checked for four terms against R and SPSS usage:
   CONDITION (a level of a within-subject factor), TOKEN (a replicate of the
@@ -124,7 +124,12 @@ STILL OPEN, stored values that can seed a menu out of range:
   two clamps that exist run after the whole parse loop rather than on the key.
 
 STILL OPEN, dead controls (present but inert for some choices), all four
-confirmed in the code:
+confirmed in the code. RULED 20 AUG (Ian) TO BE A FABLE QUESTION, not a
+per-control answer from him: the memo is `docs/MEMO_TO_FABLE_dead_controls.md`,
+which sets out what each one does today, the five answers available, and why
+two of them (re-show on change; compose on a later page) did not exist as
+options when these controls were written. Nothing here is built until she
+rules.
 
 - Histogram display mode is offered whenever advanced mode is on, and forced
   to a single value whenever the data is ungrouped.
