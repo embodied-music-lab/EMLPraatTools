@@ -5250,6 +5250,78 @@ repeat
                         tsLineStyle = line_style
                     endif
 
+                    # ------------------------------------------------------
+                    # THE TIME COLUMN DECIDES WHAT EVERY OTHER CONTROL HERE
+                    # MEANS, AND IT IS CHOSEN ON THIS PAGE.
+                    # ------------------------------------------------------
+                    # Praat composes a page in full before it opens, so the
+                    # survey above -- which columns are numeric, how many
+                    # series tickboxes there are, whether repeated
+                    # observations exist, how many there are per point --
+                    # ran against the time column the page OPENED with. Pick a
+                    # different one from the menu and every one of those is
+                    # now describing a column that is no longer the time
+                    # column:
+                    #
+                    #   the tickboxes still offer the old time column as a
+                    #   series and still hide the new one;
+                    #   the interval offer appears or not by the old
+                    #   column's repeat structure;
+                    #   and "up to N observations per point" states a count
+                    #   measured against the old column.
+                    #
+                    # None of that errors. The figure draws, and the label
+                    # the user read while deciding was true of a different
+                    # question. So the page is REBUILT instead of drawn: the
+                    # change is disclosed, the survey re-runs against the new
+                    # column, and Draw then means what the page says.
+                    #
+                    # IT COSTS ONE PRESS, AND ONLY ON THE ONE ACTION THAT
+                    # CHANGES WHAT THE WHOLE PAGE MEANS. Changing anything
+                    # else -- ticks, series namer, line style, any advanced
+                    # field -- draws on the first press exactly as before.
+                    #
+                    # THE TICKS SURVIVE, BY NAME. They have just been read
+                    # from the form, and the rebuild seeds them from
+                    # prev_tsSeriesCols$; without this the user's ticking is
+                    # discarded by the very rebuild that exists to protect
+                    # it. Names, not indices, because the numeric column list
+                    # is about to be re-derived and a column's position in it
+                    # can move.
+                    if clicked = 4 and colName$[time_column] <> tsTimeName$
+                        if tsShape = 1
+                            prev_tsSeriesCols$ = ","
+                            for iN from 1 to tsNNum
+                                if tsTick[iN] = 1
+                                    prev_tsSeriesCols$ = prev_tsSeriesCols$
+                                    ... + tsNumName$[iN] + ","
+                                endif
+                            endfor
+                        endif
+                        # ONE SHORT SENTENCE PER LINE, AND NO WORD SPLIT
+                        # ACROSS TWO. This box is read back off a photograph
+                        # by the drive, and a line broken mid-word is read as
+                        # two damaged words -- "being" and "rebuilt" came back
+                        # as "bein" and "rebunt" on the first drive. The
+                        # evidence is only as good as the sentence it can
+                        # read.
+                        beginPause: "Time column changed"
+                            comment: "The time column is now """
+                            ... + colName$[time_column] + """."
+                            comment: ""
+                            comment: "The rest of the page was worked out from """
+                            ... + tsTimeName$ + """."
+                            comment: "It is being rebuilt for your new choice."
+                            comment: ""
+                            comment: "Your other choices are kept."
+                        endPause: "OK", 1, 0
+                        # 0 is not a button. Nothing in the dispatch below
+                        # fires, the loop comes round, and the page is
+                        # composed again -- this time against time_column,
+                        # which tsTimeIdx now holds.
+                        clicked = 0
+                    endif
+
                     if clicked = 1
                         # Go Back to the meaning question
                         tsFormDone = 1
@@ -5294,8 +5366,13 @@ repeat
                             tmpYLabel$ = ""
                         endif
                         config_showAdvanced = 1 - config_showAdvanced
-                    else
-                        # Draw — capture values and exit
+                    elsif clicked = 4
+                        # Draw — capture values and exit.
+                        # NAMED, NOT A BARE `else`. The guard above answers a
+                        # changed time column with clicked = 0, and a bare
+                        # else is the Draw arm -- so it would disclose the
+                        # rebuild and then draw the figure it just said it
+                        # was not drawing.
                         tsFormDone = 1
                         tsRoleDone = 1
                         allFormsDone = 1

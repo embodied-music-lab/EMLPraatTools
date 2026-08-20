@@ -1,11 +1,128 @@
 --run--	praat_version	Praat 6.6.30 (June 30 2026)
 --run--	source_tree	/home/claude/repo
---run--	legs_requested	subjects4 subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven script_refuse long_meas2 long_meas3_refuse long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2
---run--	code_sha256_eml-graphs-form	3c8adf4965f5cb905fe28c1bcb273ff73b732785cd488656806936959e6f8dac
+--run--	legs_requested	timeswitch
+--run--	code_sha256_eml-graphs-form	2206eab22780915d386d49db96e285c31fc3aeeaa826c639c61189b5895ad396
 --run--	code_sha256_eml-graph-procedures	4c7d71724a9d65c51e82f002467ec89e1c2c5e36bc54e2b173584eb9d36fc9c8
 --run--	code_sha256_eml-draw-procedures	ba68b2cc6dfb46beae45416bc0d84a08a44c0e54432fbed9052cac875ab11ef9
 --run--	code_sha256_eml-record	557296e395a243dbdcbba9bfc5bc7fa35e03dbf4d4f16dc004c3541157ac94fb
 --run--	compositor	running
+timeswitch	leg_started	1
+timeswitch	ink_empty	0.000687143
+timeswitch	s1_title	EML Graphs
+timeswitch	s1_want	EML Graphs
+timeswitch	s1_shown	Graph type: Line Chart (+Cl) v
+timeswitch	s1_shown	Title (blank = auto from table and
+timeswitch	s1_shown	columns):
+timeswitch	s1_shown	Subtitle:
+timeswitch	s1_shown	Colormode: Color v
+timeswitch	s1_shown	Figure width (inches): ¢
+timeswitch	s1_shown	Figure height (inches): | 4
+timeswitch	s1_shown	Erase page first
+timeswitch	s1_shown	Panel origin x (inches):
+timeswitch	s1_shown	Panel origin y (inches):
+timeswitch	s1_shown	Untick Erase to add this figure to the page already drawn.
+timeswitch	s1_shown	On a composed page a legend inside the plot is not
+timeswitch	s1_shown	given axis room — use Right of plot or Below plot.
+timeswitch	s1_shown	Undo Quit Continue
+timeswitch	s2_title	Line Chart -- What the lines are
+timeswitch	s2_want	Line Chart -- What the lines are
+timeswitch	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+timeswitch	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
+timeswitch	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
+timeswitch	s2_shown	Different measurements: FO and contact quotient — each its own scale.
+timeswitch	s2_shown	Undo Go Back Quit Continue
+timeswitch	s3_title	Line Chart -- Column Mapping
+timeswitch	s3_want	Line Chart -- Column Mapping
+timeswitch	s3_shown	[-] Select columns from your Table.
+timeswitch	s3_shown	Time column: time v
+timeswitch	s3_shown	Every numeric column is drawn. Untick any you do not want.
+timeswitch	s3_shown	Series 1 (S1)
+timeswitch	s3_shown	Series 2 (S2)
+timeswitch	s3_shown	Series 3 (S3)
+timeswitch	s3_shown	Series 4 (S4)
+timeswitch	s3_shown	Y axis label:
+timeswitch	s3_shown	Line style: Solid Vv
+timeswitch	s3_shown	Undo Go Back Quit Advanced Draw
+timeswitch	s4_title	Time column changed
+timeswitch	s4_want	Time column changed
+timeswitch	s4_shown	The time column is now "S1".
+timeswitch	s4_shown	The rest of the page was worked out from "time".
+timeswitch	s4_shown	It is being rebuilt for your new choice.
+timeswitch	s4_shown	Your other choices are kept.
+timeswitch	s4_shown	OK
+timeswitch	s5_title	Line Chart -- Column Mapping
+timeswitch	s5_want	Line Chart -- Column Mapping
+timeswitch	s5_shown	[-] Select columns from your Table.
+timeswitch	s5_shown	Time column: $1 v
+timeswitch	s5_shown	Every numeric column is drawn. Untick any you do not want.
+timeswitch	s5_shown	Series 1 (time)
+timeswitch	s5_shown	Series 2 (S2)
+timeswitch	s5_shown	Series 3 (S3)
+timeswitch	s5_shown	Series 4 (S4)
+timeswitch	s5_shown	Y axis label:
+timeswitch	s5_shown	Line style: Solid Vv
+timeswitch	s5_shown	Undo Go Back Quit Advanced Draw
+timeswitch	s6_title	Graph Complete
+timeswitch	s6_want	Graph Complete
+timeswitch	s6_ink	0.00575214
+timeswitch	s6_shown	| Graph has been drawn in the Picture window.
+timeswitch	s6_shown	What would you like to do?
+timeswitch	s6_shown	Done Save Redraw
+timeswitch	steps	6
+timeswitch	wait_seconds	0
+timeswitch	windows_at_exit	[Praat Objects][Praat Picture][Praat Info]
+timeswitch	exited	no
+timeswitch	leg_object	1
+timeswitch	leg_returned	timeswitch
+timeswitch	series_role	subjects
+timeswitch	n_series	3
+timeswitch	series_cols	S2,S3,S4
+timeswitch	time_col	S1
+timeswitch	value_col	eml_value
+timeswitch	group_col	eml_series
+timeswitch	right_col	
+timeswitch	second_axis	0
+timeswitch	ci_accepted	0
+timeswitch	repeats_found	0
+timeswitch	max_per_point	1
+timeswitch	ci_offered	0
+timeswitch	shape	1
+timeswitch	level_mode	0
+timeswitch	level_name_col	
+timeswitch	long_value_col	
+timeswitch	n_numeric	4
+timeswitch	n_text	0
+timeswitch	y_label	
+timeswitch	axis_y_min	150
+timeswitch	axis_y_max	635.4655196336895
+timeswitch	axis_x_min	103.72
+timeswitch	axis_x_max	138.28
+timeswitch	drawn_union	0 6 0 4
+timeswitch	vars_written	26
+timeswitch	fig_png_md5	96f81d331d076676f3c188b94e06b122
+timeswitch	fig_png_bytes	85376
+timeswitch	fig_png_px	1800x1200
+timeswitch	fig_chromatic_colours	3
+timeswitch	fig_colour_#009E73	11624
+timeswitch	fig_colour_#0073B3	11622
+timeswitch	fig_colour_#E69E00	11621
+timeswitch	fig_chromatic_bands	3430,2566,2793,451,13424,4191,9427,13363,845,1838
+timeswitch	fig_chromatic_bands_nonempty	10
+timeswitch	fig_figtext	Line Chart (+Cl): It subjects4
+timeswitch	fig_figtext	600} @ sz
+timeswitch	fig_figtext	@ s3
+timeswitch	fig_figtext	@s4
+timeswitch	fig_figtext	500
+timeswitch	fig_figtext	400 o —_*e —_® 02 © #0 ee
+timeswitch	fig_figtext	300 eo % © ee i °
+timeswitch	fig_figtext	200 o —*e _e —*e _“® ®e _® 0°
+timeswitch	fig_figtext	105 110 115 120 125 130 135
+timeswitch	fig_figtext	St
+timeswitch	info	NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+timeswitch	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+timeswitch	info_lines	2
+timeswitch	display_clear	yes
+--run--	legs_driven	1
 subjects4	leg_started	1
 subjects4	ink_empty	0.000687143
 subjects4	s1_title	EML Graphs
@@ -1853,8 +1970,7 @@ rec_long_meas2	tuned_verdict	OK
 rec_long_meas2	tuned_png_md5	e34a26d6509243dd70eb260d3174cff5
 rec_long_meas2	tuned_png_px	1800x1200
 rec_long_meas2	tuned_error	
---run--	legs_driven	15
---run--	legs_carried	none
+--run--	legs_carried	subjects4 subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven script_refuse long_meas2 long_meas3_refuse long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2
 --pairs--	titled_a	long_titled
 --pairs--	titled_b	wide_titled
 --pairs--	titled_diff_md5_a	0503ef93a0673cc4ea117fa25f1831a0

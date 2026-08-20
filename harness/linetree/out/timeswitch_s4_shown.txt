@@ -1,0 +1,5 @@
+The time column is now "S1".
+The rest of the page was worked out from "time".
+It is being rebuilt for your new choice.
+Your other choices are kept.
+OK

@@ -91,26 +91,7 @@ lagging-control defect existed only on the six comparison pages was WRONG.
 
 STILL OPEN, lagging controls:
 
-- Line chart column-mapping page. Everything deciding which controls exist —
-  how many series tickboxes, whether the interval offer appears, the
-  observation count printed in a label — is computed from the time column
-  chosen on the PREVIOUS pass, and the time column menu is on that same page.
-  Drawing the new time column against itself is already handled and disclosed;
-  the interval offer and the "up to N observations per point" count are not.
-
-  THE FIX IS DESIGNED AND WAS WRITTEN, THEN BACKED OUT UNDRIVEN. Record the
-  time column the page was built from just before it opens; on Draw, if the
-  menu now names a different one, rebuild the page instead of drawing —
-  carrying the ticks forward by name — and say so in a small box. It costs one
-  press on the one action that changes what every other control on the page
-  means, and it fixes all three symptoms at once rather than patching each.
-
-  It cannot land without re-driving the line-chart evidence, because the
-  checks that read it are bound to the form's hash and the harness refuses a
-  partial re-drive. That drive is a fifteen-leg GUI run under Xvfb with
-  screenshots and OCR; it did not complete in the cloud container on the
-  first attempt, and was not pursued further. Whoever takes this needs the
-  drive working first.
+(The line-chart column-mapping page is closed -- see below.)
 
 STILL OPEN, stored values that can seed a menu out of range:
 
@@ -207,6 +188,18 @@ rules.
   code has moved since the last re-drive.
 
 ## Closed
+
+**The line chart rebuilds its page when the time column moves.** Everything
+on that page except the time menu itself -- how many series tickboxes there
+are and what they are called, whether the interval offer appears at all, and
+the observation count printed inside its label -- is worked out before the
+page opens, from the time column it opens with. Choosing a different one and
+pressing Draw drew a figure whose page had been answering a different
+question. It now says so and rebuilds instead, keeping the ticks by name; one
+press, and only on the action that changes what the whole page means. A
+sixteenth drive leg walks it under a real X server and reads the box and the
+rebuilt page off the photographs; without the guard the walk cannot reach the
+box at all.
 
 **A bad line in the config file can no longer lock a dialog.** Thirteen
 stored settings are parsed and clamped in one step at the point the line is

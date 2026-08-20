@@ -68,7 +68,7 @@ TMP="$OUT/.LINETREE.$$.tsv"
 emitted=0
 emit () { printf '%s\t%s\t%s\n' "$1" "$2" "$3" >> "$TMP"; emitted=$((emitted + 1)); }
 
-LEGS="${*:-subjects4 subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven script_refuse long_meas2 long_meas3_refuse long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2}"
+LEGS="${*:-subjects4 timeswitch subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven script_refuse long_meas2 long_meas3_refuse long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2}"
 
 emit "--run--" praat_version "$("$PRAAT" --version 2>&1 | head -1)"
 emit "--run--" source_tree "$SRC"
@@ -285,6 +285,37 @@ case "$1" in
   subjects4) cat <<'PLAN'
 EML Graphs|ocr,btn1
 Line Chart -- What the lines are|ocr,opt0=1,btn1
+Line Chart -- Column Mapping|ocr,btn1
+Graph Complete|ink,ocr,btn3
+PLAN
+  ;;
+  # LEG 1b -- THE TIME COLUMN IS MOVED ON THE PAGE THAT ASKS FOR IT.
+  #
+  # Every other control on the column-mapping page is worked out BEFORE the
+  # page opens, from the time column it opens with -- how many tickboxes there
+  # are and which columns they name, whether the interval field exists, and
+  # the observation count printed inside its label. Praat cannot recompose a
+  # page in response to a menu on that same page, so choosing a different time
+  # column and pressing Draw used to draw a figure whose page had been
+  # describing a different question.
+  #
+  # THE WALK: open the mapping page, set the Time column menu to its second
+  # entry (opt0=2), press Draw (btn1). The page must NOT draw. A one-button
+  # box has to appear naming both columns, and behind it the mapping page has
+  # to come back -- rebuilt, this time against the column just chosen -- with
+  # the tick the user did not touch still ticked. Draw from there.
+  #
+  # WHAT MAKES IT EVIDENCE AND NOT A CLICK-THROUGH: step 4's title is asserted
+  # by name, so a build with no guard cannot satisfy the plan -- it goes
+  # straight to "Graph Complete" and the walk fails on a window that never
+  # appeared. And the second visit to "Line Chart -- Column Mapping" is
+  # OCR'd, so the tickbox list it comes back with is read off the photograph
+  # rather than assumed.
+  timeswitch) cat <<'PLAN'
+EML Graphs|ocr,btn1
+Line Chart -- What the lines are|ocr,opt0=1,btn1
+Line Chart -- Column Mapping|ocr,opt0=2,btn1
+Time column changed|ocr,btn1
 Line Chart -- Column Mapping|ocr,btn1
 Graph Complete|ink,ocr,btn3
 PLAN

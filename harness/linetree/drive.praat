@@ -38,6 +38,13 @@ include fixture.praat
 ltObjId = 0
 if ltLeg$ = "subjects4"
     ltObjId = ltSubjects4Id
+elsif ltLeg$ = "timeswitch"
+    ; THE SAME TABLE AS subjects4, ON PURPOSE. The leg is about what the page
+    ; does when the time column MOVES, so the fixture has to be one whose page
+    ; is already understood -- four numeric series, four tickboxes, no
+    ; repeats, no interval offer. Anything read differently on this leg is the
+    ; time column changing and not the table.
+    ltObjId = ltSubjects4Id
 elsif ltLeg$ = "subjects_ci"
     ltObjId = ltGroupRepId
 elsif ltLeg$ = "meas2"

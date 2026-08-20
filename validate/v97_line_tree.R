@@ -172,7 +172,7 @@ TSVP <- file.path(OUT, "LINETREE.tsv")
 # Every leg the harness drives, and every one this file asserts on. The two
 # lists are compared at the end (eml_census): a leg the driver renders that
 # nothing here reads is silent non-coverage, which is what that census is for.
-CASES <- c("subjects4", "subjects_ci", "meas2", "meas2_rep",
+CASES <- c("subjects4", "timeswitch", "subjects_ci", "meas2", "meas2_rep",
            "meas3_refuse", "none_refuse", "seven", "script_refuse",
            # THE TWO RECORDER LEGS, added 19 August 2026. They walk the same
            # dialogs as subjects4 and meas2 -- deliberately the same, so that
@@ -369,8 +369,8 @@ lt_legs <- function() {
     else car <- strsplit(car, " +")[[1]]
     unique(c(req[nzchar(req)], car[nzchar(car)]))
 }
-check_true(V, "fifteen legs are in the transcript, driven or carried",
-           length(lt_legs()) == 15L)
+check_true(V, "sixteen legs are in the transcript, driven or carried",
+           length(lt_legs()) == 16L)
 check_true(V, "the invocation that wrote it drove at least one of them",
            isTRUE(trn("--run--", "legs_driven") >= 1))
 check_true(V, "and the legs in the transcript are the legs this file reads",
@@ -406,8 +406,12 @@ for (cs in CASES) {
 # smaller quietly, so that a SECOND accidental collision still fails.
 md5s <- vapply(CASES, function(c) trv(c, "fig_png_md5"), character(1))
 SOLO <- setdiff(CASES, c(RECLEGS, "wide_titled"))
-check_true(V, "the eleven distinct walks are eleven different figures",
-           length(unique(md5s[SOLO])) == 11L && !any(is.na(md5s)))
+# TWELVE SINCE 20 AUGUST 2026: timeswitch draws the four-subject table with a
+# SUBJECT column on the horizontal axis and the old time column as a series,
+# which is a different picture from every other walk here and has to be, or
+# the leg proved nothing about the rebuild.
+check_true(V, "the twelve distinct walks are twelve different figures",
+           length(unique(md5s[SOLO])) == 12L && !any(is.na(md5s)))
 # AND THE TWO RECORDER LEGS ARE NOT A NINTH AND TENTH FIGURE. They drive the
 # same plans as subjects4 and meas2 with a recording running, so their pages
 # must be byte-identical to their twins'. This is the statement that RECORDING
@@ -2307,5 +2311,82 @@ check_true(V, "no nice-number rounding reaches the time axis",
 
 present <- setdiff(unique(TR$case), c("--run--", "--pairs--"))
 eml_census(V, "line-tree legs", present, CASES)
+
+# ============================================================================
+# 16B. THE TIME COLUMN MOVES, AND THE PAGE IS REBUILT RATHER THAN DRAWN
+# ============================================================================
+# Everything on the column-mapping page except the time menu itself is worked
+# out BEFORE the page opens, against the time column it opens with: which
+# numeric columns exist, therefore how many tickboxes there are and what they
+# are called; whether the table holds repeated observations, therefore whether
+# the interval field is offered at all; and how many there are per point,
+# which is printed inside that field's label. Praat cannot recompose a page in
+# response to a control on the same page, so a user who moves the time menu
+# and presses Draw was, until 20 August 2026, given a figure whose page had
+# been answering a different question.
+#
+# THE WALK, and what makes each step evidence rather than a click-through:
+#
+#   step 3  the page as it opens -- time column "time", four series tickboxes
+#           named for the four subject columns. The time column is NOT among
+#           them.
+#   step 3  Draw is pressed with the menu moved to entry 2 ("S1").
+#   step 4  A one-button box, ASSERTED BY WINDOW TITLE in the plan. A build
+#           without the guard cannot satisfy the plan at all: it goes straight
+#           to "Graph Complete" and the walk fails on a window that never
+#           opened. So this check cannot pass by accident.
+#   step 5  the page AGAIN -- and this is the whole claim. Time column is now
+#           "S1", the tickbox list has dropped "S1" and gained "time", and the
+#           user's untouched ticks are still ticked. That is the survey having
+#           been re-run against the new column.
+#
+# READ OFF THE PHOTOGRAPHS, not off the transcript's own summary, because what
+# is being asserted is what a user could see on the screen.
+if (ok_tsv && "timeswitch" %in% lt_legs()) {
+    # shown1 AND NOT shown: has() is a single-string test, and a dialog
+    # arrives as one line per row. The wrap points are the renderer's
+    # business; the words are the plugin's.
+    ts3 <- shown1("timeswitch", 3)
+    ts4 <- shown1("timeswitch", 4)
+    ts5 <- shown1("timeswitch", 5)
+
+    check_true(V, "[timeswitch] the page opened on the time column",
+               has(ts3, "Time column: time"))
+    check_true(V, "[timeswitch] and offered the four subject columns as series",
+               has(ts3, "Series 1 (S1)") && has(ts3, "Series 2 (S2)") &&
+               has(ts3, "Series 3 (S3)") && has(ts3, "Series 4 (S4)"))
+    check_true(V, "[timeswitch] the time column was not offered as a series",
+               !has(ts3, "(time)"))
+
+    # THE REFUSAL TO DRAW. Both column names appear, because a box that named
+    # only one of them would leave the user to work out which way the swap
+    # went.
+    check_true(V, "[timeswitch] Draw did not draw -- a box came up instead",
+               has(ts4, "The time column is now"))
+    check_true(V, "[timeswitch] it names the column now chosen",
+               has(ts4, "S1"))
+    check_true(V, "[timeswitch] and the column the rest of the page was built from",
+               has(ts4, "time"))
+    check_true(V, "[timeswitch] it says the page is being rebuilt",
+               has(ts4, "rebuilt"))
+    check_true(V, "[timeswitch] and that the other choices survive",
+               has(ts4, "kept"))
+
+    # THE REBUILD ITSELF.
+    check_true(V, "[timeswitch] the page came back on the new time column",
+               has(ts5, "Time column: S1") || has(ts5, "Time column: $1"))
+    check_true(V, "[timeswitch] the old time column is now offered as a series",
+               has(ts5, "(time)"))
+    check_true(V, "[timeswitch] and the new one is no longer offered as one",
+               !has(ts5, "Series 1 (S1)"))
+    check_true(V, "[timeswitch] the ticks the user did not touch are still ticked",
+               has(ts5, "Series 2 (S2)") && has(ts5, "Series 3 (S3)"))
+
+    # AND IT DREW IN THE END. A guard that refused twice, or that lost the
+    # walk, would leave no figure.
+    check_true(V, "[timeswitch] the second press drew the figure",
+               identical(trv("timeswitch", "leg_returned"), "timeswitch") &&
+               !is.na(trv("timeswitch", "fig_png_md5")))
+}
 
 if (!exists("EML_SUITE")) { eml_report("v97 -- the line chart's question tree"); eml_exit() }

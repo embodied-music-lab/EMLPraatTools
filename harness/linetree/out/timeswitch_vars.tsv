@@ -1,0 +1,26 @@
+timeswitch	leg_object	1
+timeswitch	leg_returned	timeswitch
+timeswitch	series_role	subjects
+timeswitch	n_series	3
+timeswitch	series_cols	S2,S3,S4
+timeswitch	time_col	S1
+timeswitch	value_col	eml_value
+timeswitch	group_col	eml_series
+timeswitch	right_col	
+timeswitch	second_axis	0
+timeswitch	ci_accepted	0
+timeswitch	repeats_found	0
+timeswitch	max_per_point	1
+timeswitch	ci_offered	0
+timeswitch	shape	1
+timeswitch	level_mode	0
+timeswitch	level_name_col	
+timeswitch	long_value_col	
+timeswitch	n_numeric	4
+timeswitch	n_text	0
+timeswitch	y_label	
+timeswitch	axis_y_min	150
+timeswitch	axis_y_max	635.4655196336895
+timeswitch	axis_x_min	103.72
+timeswitch	axis_x_max	138.28
+timeswitch	drawn_union	0 6 0 4
