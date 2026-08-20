@@ -1,10 +1,8 @@
 These two measurements are on different scales, so each gets its own.
 Its ticks and its name go in the right margin.
-Right hand axis: cq v
-\. Right y-axis range (both 0 = auto)
-Right minimum: 9g
-Right maximum: 9g
-\, Right axis label (blank = the column name)
-Right axis label:
-Right line style: Dashed Vv
+». Right y-axis
+Which measurement: cq v
+Range (bottom/top, both 0 = auto): 9 0
+Axis name (blank = the column name):
+Line style: Dashed Vv
 Undo Go Back Draw

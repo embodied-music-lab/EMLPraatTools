@@ -1,10 +1,10 @@
 --run--	praat_version	Praat 6.6.30 (June 30 2026)
 --run--	source_tree	/home/claude/EMLPraatTools
 --run--	legs_requested	long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2
---run--	code_sha256_eml-graphs-form	a189a16dbc50f47661bed0c3092c38335e869522aa0d0d962cbd3ddb5ac82083
---run--	code_sha256_eml-graph-procedures	62e08b3b21b1bcfe841041839329a4dbdfb0d25a06664f80b745e24ed7f66019
---run--	code_sha256_eml-draw-procedures	65ff13f1acc712c52f7a56da7805d4873d05cda9325bf006a2749f8ea755fb99
---run--	code_sha256_eml-record	631d406dd11c452128c49f1d520bc4a16b88eda2f50da8e43869cfcd370d135e
+--run--	code_sha256_eml-graphs-form	498091814fe0ef9365f6b353d88012c8fda586f0198dcac58a65d6585bd5ffe4
+--run--	code_sha256_eml-graph-procedures	218ce703ecb84d72fd91973d7b62d7d8a974822908fbd4aba2a9aeec803fe27b
+--run--	code_sha256_eml-draw-procedures	ba68b2cc6dfb46beae45416bc0d84a08a44c0e54432fbed9052cac875ab11ef9
+--run--	code_sha256_eml-record	557296e395a243dbdcbba9bfc5bc7fa35e03dbf4d4f16dc004c3541157ac94fb
 --run--	compositor	running
 long_titled	leg_started	1
 long_titled	ink_empty	0.000704286
@@ -44,13 +44,11 @@ long_titled	s4_title	Line Chart -- The Right-Hand Axis
 long_titled	s4_want	Line Chart -- The Right-Hand Axis
 long_titled	s4_shown	These two measurements are on different scales, so each gets its own.
 long_titled	s4_shown	Its ticks and its name go in the right margin.
-long_titled	s4_shown	Right hand axis: cq v
-long_titled	s4_shown	\. Right y-axis range (both 0 = auto)
-long_titled	s4_shown	Right minimum: 9g
-long_titled	s4_shown	Right maximum: 9g
-long_titled	s4_shown	\, Right axis label (blank = the column name)
-long_titled	s4_shown	Right axis label:
-long_titled	s4_shown	Right line style: Dashed Vv
+long_titled	s4_shown	». Right y-axis
+long_titled	s4_shown	Which measurement: cq v
+long_titled	s4_shown	Range (bottom/top, both 0 = auto): 9 0
+long_titled	s4_shown	Axis name (blank = the column name):
+long_titled	s4_shown	Line style: Dashed Vv
 long_titled	s4_shown	Undo Go Back Draw
 long_titled	s5_title	Graph Complete
 long_titled	s5_want	Graph Complete
@@ -162,13 +160,11 @@ wide_titled	s4_title	Line Chart -- The Right-Hand Axis
 wide_titled	s4_want	Line Chart -- The Right-Hand Axis
 wide_titled	s4_shown	These two measurements are on different scales, so each gets its own.
 wide_titled	s4_shown	Its ticks and its name go in the right margin.
-wide_titled	s4_shown	Right hand axis: cq v
-wide_titled	s4_shown	\. Right y-axis range (both 0 = auto)
-wide_titled	s4_shown	Right minimum: 9g
-wide_titled	s4_shown	Right maximum: 9g
-wide_titled	s4_shown	\, Right axis label (blank = the column name)
-wide_titled	s4_shown	Right axis label:
-wide_titled	s4_shown	Right line style: Dashed Vv
+wide_titled	s4_shown	». Right y-axis
+wide_titled	s4_shown	Which measurement: cq v
+wide_titled	s4_shown	Range (bottom/top, both 0 = auto): 9 0
+wide_titled	s4_shown	Axis name (blank = the column name):
+wide_titled	s4_shown	Line style: Dashed Vv
 wide_titled	s4_shown	Undo Go Back Draw
 wide_titled	s5_title	Graph Complete
 wide_titled	s5_want	Graph Complete
@@ -386,13 +382,11 @@ rec_meas2	s4_title	Line Chart -- The Right-Hand Axis
 rec_meas2	s4_want	Line Chart -- The Right-Hand Axis
 rec_meas2	s4_shown	These two measurements are on different scales, so each gets its own.
 rec_meas2	s4_shown	Its ticks and its name go in the right margin.
-rec_meas2	s4_shown	Right hand axis: cq v
-rec_meas2	s4_shown	\. Right y-axis range (both 0 = auto)
-rec_meas2	s4_shown	Right minimum: 9g
-rec_meas2	s4_shown	Right maximum: 9g
-rec_meas2	s4_shown	\, Right axis label (blank = the column name)
-rec_meas2	s4_shown	Right axis label:
-rec_meas2	s4_shown	Right line style: Dashed Vv
+rec_meas2	s4_shown	». Right y-axis
+rec_meas2	s4_shown	Which measurement: cq v
+rec_meas2	s4_shown	Range (bottom/top, both 0 = auto): 9 0
+rec_meas2	s4_shown	Axis name (blank = the column name):
+rec_meas2	s4_shown	Line style: Dashed Vv
 rec_meas2	s4_shown	Undo Go Back Draw
 rec_meas2	s5_title	Graph Complete
 rec_meas2	s5_want	Graph Complete
@@ -507,13 +501,11 @@ rec_long_meas2	s4_title	Line Chart -- The Right-Hand Axis
 rec_long_meas2	s4_want	Line Chart -- The Right-Hand Axis
 rec_long_meas2	s4_shown	These two measurements are on different scales, so each gets its own.
 rec_long_meas2	s4_shown	Its ticks and its name go in the right margin.
-rec_long_meas2	s4_shown	Right hand axis: cq v
-rec_long_meas2	s4_shown	\. Right y-axis range (both 0 = auto)
-rec_long_meas2	s4_shown	Right minimum: 9g
-rec_long_meas2	s4_shown	Right maximum: 9g
-rec_long_meas2	s4_shown	\, Right axis label (blank = the column name)
-rec_long_meas2	s4_shown	Right axis label:
-rec_long_meas2	s4_shown	Right line style: Dashed Vv
+rec_long_meas2	s4_shown	». Right y-axis
+rec_long_meas2	s4_shown	Which measurement: cq v
+rec_long_meas2	s4_shown	Range (bottom/top, both 0 = auto): 9 0
+rec_long_meas2	s4_shown	Axis name (blank = the column name):
+rec_long_meas2	s4_shown	Line style: Dashed Vv
 rec_long_meas2	s4_shown	Undo Go Back Draw
 rec_long_meas2	s5_title	Graph Complete
 rec_long_meas2	s5_want	Graph Complete
@@ -1069,13 +1061,11 @@ long_meas2	s4_title	Line Chart -- The Right-Hand Axis
 long_meas2	s4_want	Line Chart -- The Right-Hand Axis
 long_meas2	s4_shown	These two measurements are on different scales, so each gets its own.
 long_meas2	s4_shown	Its ticks and its name go in the right margin.
-long_meas2	s4_shown	Right hand axis: cq v
-long_meas2	s4_shown	\. Right y-axis range (both 0 = auto)
-long_meas2	s4_shown	Right minimum: 9g
-long_meas2	s4_shown	Right maximum: 9g
-long_meas2	s4_shown	\, Right axis label (blank = the column name)
-long_meas2	s4_shown	Right axis label:
-long_meas2	s4_shown	Right line style: Dashed Vv
+long_meas2	s4_shown	». Right y-axis
+long_meas2	s4_shown	Which measurement: cq v
+long_meas2	s4_shown	Range (bottom/top, both 0 = auto): 9 0
+long_meas2	s4_shown	Axis name (blank = the column name):
+long_meas2	s4_shown	Line style: Dashed Vv
 long_meas2	s4_shown	Undo Go Back Draw
 long_meas2	s5_title	Graph Complete
 long_meas2	s5_want	Graph Complete
@@ -1397,24 +1387,22 @@ subjects_ci	s3_shown	Undo Go Back Quit Advanced Draw
 subjects_ci	s4_title	Line Chart -- Column Mapping
 subjects_ci	s4_want	Line Chart -- Column Mapping
 subjects_ci	s4_shown	[-] Select columns from your Table.
-subjects_ci	s4_shown	Time column: time v
-subjects_ci	s4_shown	Measurement column: f0
+subjects_ci	s4_shown	Time column: time 7
+subjects_ci	s4_shown	Measurement column: fO
 subjects_ci	s4_shown	Series names come from: _ speaker Vv
 subjects_ci	s4_shown	Group order: Table order Vv
 subjects_ci	s4_shown	Draw the mean and its interval (up to 4 observations per point)
 subjects_ci	s4_shown	Line style: Solid v
-subjects_ci	s4_shown	»\ axis range (both 0 = auto)
-subjects_ci	s4_shown	Time minimum: | g
-subjects_ci	s4_shown	Time maximum: | g
-subjects_ci	s4_shown	». Y-axis range (both 0 = auto)
-subjects_ci	s4_shown	Value maximum: g
-subjects_ci	s4_shown	Value minimum: 9g
+subjects_ci	s4_shown	»\ X-axis (both 0 = auto)
+subjects_ci	s4_shown	Time range (left/right): 0
+subjects_ci	s4_shown	». Y-axis (both 0 = auto)
+subjects_ci	s4_shown	Value range (bottom/top): 9 0
 subjects_ci	s4_shown	Gridline mode: Both v
-subjects_ci	s4_shown	Legend placement: Inside plot Vv
+subjects_ci	s4_shown	Legend placement (when drawn): Inside plot v
 subjects_ci	s4_shown	Output DPI: 300 dpi v
 subjects_ci	s4_shown	Show inner box
 subjects_ci	s4_shown	Show axis names: Both v
-subjects_ci	s4_shown	Show ticks: Both 7
+subjects_ci	s4_shown	Show ticks: Both 4
 subjects_ci	s4_shown	Show axis values: Both v
 subjects_ci	s4_shown	Font: Helvetica v
 subjects_ci	s4_shown	.. Axis labels (blank = auto) - %italic #bold “super sub - \% and a space
@@ -1538,13 +1526,11 @@ meas2	s4_title	Line Chart -- The Right-Hand Axis
 meas2	s4_want	Line Chart -- The Right-Hand Axis
 meas2	s4_shown	These two measurements are on different scales, so each gets its own.
 meas2	s4_shown	Its ticks and its name go in the right margin.
-meas2	s4_shown	Right hand axis: cq v
-meas2	s4_shown	\. Right y-axis range (both 0 = auto)
-meas2	s4_shown	Right minimum: 9g
-meas2	s4_shown	Right maximum: 9g
-meas2	s4_shown	\, Right axis label (blank = the column name)
-meas2	s4_shown	Right axis label:
-meas2	s4_shown	Right line style: Dashed Vv
+meas2	s4_shown	». Right y-axis
+meas2	s4_shown	Which measurement: cq v
+meas2	s4_shown	Range (bottom/top, both 0 = auto): 9 0
+meas2	s4_shown	Axis name (blank = the column name):
+meas2	s4_shown	Line style: Dashed Vv
 meas2	s4_shown	Undo Go Back Draw
 meas2	s5_title	Graph Complete
 meas2	s5_want	Graph Complete
@@ -1655,13 +1641,11 @@ meas2_rep	s4_title	Line Chart -- The Right-Hand Axis
 meas2_rep	s4_want	Line Chart -- The Right-Hand Axis
 meas2_rep	s4_shown	These two measurements are on different scales, so each gets its own.
 meas2_rep	s4_shown	Its ticks and its name go in the right margin.
-meas2_rep	s4_shown	Right hand axis: cq v
-meas2_rep	s4_shown	\. Right y-axis range (both 0 = auto)
-meas2_rep	s4_shown	Right minimum: 9g
-meas2_rep	s4_shown	Right maximum: 9g
-meas2_rep	s4_shown	\, Right axis label (blank = the column name)
-meas2_rep	s4_shown	Right axis label:
-meas2_rep	s4_shown	Right line style: Dashed Vv
+meas2_rep	s4_shown	». Right y-axis
+meas2_rep	s4_shown	Which measurement: cq v
+meas2_rep	s4_shown	Range (bottom/top, both 0 = auto): 9 0
+meas2_rep	s4_shown	Axis name (blank = the column name):
+meas2_rep	s4_shown	Line style: Dashed Vv
 meas2_rep	s4_shown	Undo Go Back Draw
 meas2_rep	s5_title	Graph Complete
 meas2_rep	s5_want	Graph Complete
@@ -1788,13 +1772,11 @@ meas3_refuse	s6_title	Line Chart -- The Right-Hand Axis
 meas3_refuse	s6_want	Line Chart -- The Right-Hand Axis
 meas3_refuse	s6_shown	These two measurements are on different scales, so each gets its own.
 meas3_refuse	s6_shown	Its ticks and its name go in the right margin.
-meas3_refuse	s6_shown	Right hand axis: cq v
-meas3_refuse	s6_shown	\. Right y-axis range (both 0 = auto)
-meas3_refuse	s6_shown	Right minimum: 9g
-meas3_refuse	s6_shown	Right maximum: 9g
-meas3_refuse	s6_shown	\, Right axis label (blank = the column name)
-meas3_refuse	s6_shown	Right axis label:
-meas3_refuse	s6_shown	Right line style: Dashed Vv
+meas3_refuse	s6_shown	». Right y-axis
+meas3_refuse	s6_shown	Which measurement: cq v
+meas3_refuse	s6_shown	Range (bottom/top, both 0 = auto): 9 0
+meas3_refuse	s6_shown	Axis name (blank = the column name):
+meas3_refuse	s6_shown	Line style: Dashed Vv
 meas3_refuse	s6_shown	Undo Go Back Draw
 meas3_refuse	s7_title	Graph Complete
 meas3_refuse	s7_want	Graph Complete

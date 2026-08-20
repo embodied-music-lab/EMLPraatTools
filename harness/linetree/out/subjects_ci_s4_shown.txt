@@ -1,22 +1,20 @@
 [-] Select columns from your Table.
-Time column: time v
-Measurement column: f0
+Time column: time 7
+Measurement column: fO
 Series names come from: _ speaker Vv
 Group order: Table order Vv
 Draw the mean and its interval (up to 4 observations per point)
 Line style: Solid v
-»\ axis range (both 0 = auto)
-Time minimum: | g
-Time maximum: | g
-». Y-axis range (both 0 = auto)
-Value maximum: g
-Value minimum: 9g
+»\ X-axis (both 0 = auto)
+Time range (left/right): 0
+». Y-axis (both 0 = auto)
+Value range (bottom/top): 9 0
 Gridline mode: Both v
-Legend placement: Inside plot Vv
+Legend placement (when drawn): Inside plot v
 Output DPI: 300 dpi v
 Show inner box
 Show axis names: Both v
-Show ticks: Both 7
+Show ticks: Both 4
 Show axis values: Both v
 Font: Helvetica v
 .. Axis labels (blank = auto) - %italic #bold “super sub - \% and a space

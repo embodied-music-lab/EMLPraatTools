@@ -764,8 +764,15 @@ check_true(V, "[meas2] so nothing about means is disclosed",
 # the column, the range on the 0/0 auto sentinel, the name, and that series'
 # own pen defaulting to Dashed.
 p3 <- shown1("meas2", 4)
-check_true(V, "[meas2] the right-hand page asks which column takes the scale",
-           has(p3, "Right hand axis"))
+# ONE HEADING GOVERNS THE GROUP, so the rows below it carry only what
+# distinguishes them. The page says "Right y-axis" once, at the top, and the
+# four rows are the measurement, the range, the axis name and the pen. Naming
+# the axis on every row made five settings that belong together read as five
+# unrelated ones sharing a word.
+check_true(V, "[meas2] the right-hand page says which axis it is, once",
+           has(p3, "Right y-axis"))
+check_true(V, "[meas2] and asks which measurement takes that scale",
+           has(p3, "Which measurement"))
 # ONE ROW, TWO BOXES. The two ends of the range are one setting, so they
 # share a row and a caption via Praat's `left`/`right` first-word layout cue
 # (APPENDIX_C_GUI C.1). The cue is consumed by the layout and does not appear
@@ -773,15 +780,21 @@ check_true(V, "[meas2] the right-hand page asks which column takes the scale",
 # range" caption -- and that is what this asserts, because the photograph is
 # the evidence. The two boxes still bind separate variables; the source check
 # below pins those names.
+# THE SENTINEL SITS IN THE ROW ON THIS PAGE, not in the heading. The heading
+# names the axis for the whole group; the row is self-contained -- which end
+# each box holds and what zero means -- because it is the only range here and
+# there is room for it. The eighteen other range rows on the draw path carry
+# the sentinel in their heading instead, since those pages have two ranges
+# under one heading and the row has to stay short enough not to wrap.
 check_true(V, "[meas2] and offers the range on the 0 = auto sentinel",
-           has(p3, "Right y-axis range (both 0 = auto)") &&
-           has(p3, "Right axis range"))
+           has(p3, "Right y-axis") &&
+           has(p3, "Range (bottom/top, both 0 = auto)"))
 check_true(V, "[meas2] the range is one row of two boxes, not two rows",
            !has(p3, "Right minimum") && !has(p3, "Right maximum"))
 check_true(V, "[meas2] the axis name, blank = the column name",
-           has(p3, "Right axis label (blank = the column name)"))
+           has(p3, "Axis name (blank = the column name)"))
 check_true(V, "[meas2] and that series' own pen, defaulting to Dashed",
-           isTRUE(any(grepl("^Right line style: *Dashed", shown("meas2", 4)))))
+           isTRUE(any(grepl("^Line style: *Dashed", shown("meas2", 4)))))
 # THE LABEL HAS NO HYPHEN, AND IT IS NOT A TYPO. Praat truncates a field's
 # derived variable name at the first character that cannot be in an
 # identifier, so "Right-hand axis" is readable only as `right`: measured on
@@ -794,11 +807,13 @@ check_true(V, "[meas2] the page's title keeps its hyphen",
 check_true(V, "[meas2] while the FIELD's label does not carry one",
            !isTRUE(any(grepl("Right-hand axis:", shown("meas2", 4)))))
 check_true(V, "the form declares the field without a hyphen",
-           any(grepl('optionmenu: "Right hand axis", tsRightPick',
+           any(grepl('optionmenu: "Which measurement", tsRightPick',
                      form_src, fixed = TRUE)) &&
-           !any(grepl('optionmenu: "Right-hand axis"', form_src, fixed = TRUE)))
+           !any(grepl("-", sub("\\(.*$", "",
+                              grep('^\\s*optionmenu: "Which measurement"',
+                                   form_src, value = TRUE)))))
 check_true(V, "and reads it back at the name Praat derives from that label",
-           any(grepl("^\\s*tsRightPick = right_hand_axis\\s*$", form_src)))
+           any(grepl("^\\s*tsRightPick = which_measurement\\s*$", form_src)))
 
 # ============================================================================
 # 7. DISPATCH ROW 4 -- TWO MEASUREMENTS WITH REPEATS: MEANS, NO BANDS
@@ -1926,7 +1941,7 @@ check_true(V, "[long_meas2] the interval was not offered: two scales, ruling 3",
 # axis page and requires the two options on it to be the two LEVELS.
 RHP <- shown1("long_meas2", 4)
 check_true(V, "[long_meas2] the right-hand axis page named the two measurements",
-           has(RHP, "Right hand axis") && has(RHP, "different scales"))
+           has(RHP, "Which measurement") && has(RHP, "different scales"))
 # THE COLUMN PAGE ASKED WHICH COLUMN NAMES THE SERIES, and opened on the one
 # text column the table has. On this page the answer is not a cosmetic
 # grouping: it is where the two series come from.
