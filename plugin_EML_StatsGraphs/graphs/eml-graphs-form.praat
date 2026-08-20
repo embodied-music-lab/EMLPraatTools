@@ -460,6 +460,64 @@ endproc
 # Arguments: none
 # Outputs: populates global config_* variables
 # ----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+# @emlConfigMenu: .raw$, .lo, .hi
+# @emlConfigFlag: .raw$
+#
+# ONE PLACE WHERE A STORED MENU INDEX BECOMES A USABLE ONE, AND IT IS THE
+# PLACE THE LINE IS READ.
+#
+# eml-graphs-config.txt is plain text in the preferences folder. It is written
+# by this plugin, and it is also editable, truncatable, syncable and
+# restorable by the person who owns the machine -- so a line can arrive empty,
+# half-written, or holding a number that is not an option.
+#
+# WHAT THAT COSTS IF NOTHING CATCHES IT. An optionmenu whose default is
+# outside its option count draws BLANK, and Praat then refuses to close the
+# form. The user cannot proceed and cannot escape, and because the bad value
+# is on disk, quitting and reopening Praat brings it straight back. The only
+# way out is to find and edit a text file whose location the dialog does not
+# name.
+#
+# AND WHY THE PARSE IS THE PLACE. `number ("")` and `number ("abc")` are
+# `undefined`, not zero, and a comparison against undefined is not true -- so
+# a range test written after the parse lets undefined through the very guard
+# that exists to stop it. Both halves have to happen here, on the value, in
+# one step: parse, refuse anything that is not a number, round to an index,
+# and clamp into the option count. A key whose line is missing entirely never
+# reaches this at all and keeps the default set before the file is opened.
+#
+# .lo is returned for anything unusable, because .lo is the first option of
+# every menu here and the first option is the plugin's default in each case.
+# The user's next choice overwrites it, so a clamped value costs one press and
+# never a dead end.
+# ----------------------------------------------------------------------------
+procedure emlConfigMenu: .raw$, .lo, .hi
+    .v = number (.raw$)
+    if .v = undefined
+        .v = .lo
+    endif
+    .v = round (.v)
+    if .v < .lo
+        .v = .lo
+    endif
+    if .v > .hi
+        .v = .lo
+    endif
+endproc
+
+# A stored boolean is the same problem with a smaller range: anything that is
+# not 0 or 1 becomes 0, and undefined with it.
+procedure emlConfigFlag: .raw$
+    .v = number (.raw$)
+    if .v = undefined
+        .v = 0
+    endif
+    if .v <> 1
+        .v = 0
+    endif
+endproc
+
 procedure emlLoadConfig
     # Set defaults first — these persist if file missing or key absent
     config_graphType = 1
@@ -536,27 +594,35 @@ procedure emlLoadConfig
 
                     # Match key to known keys
                     if .key$ = "graphType"
-                        config_graphType = number (.value$)
+                        @emlConfigMenu: .value$, 1, nGraphTypes
+                        config_graphType = emlConfigMenu.v
                     elsif .key$ = "source"
                         config_source = number (.value$)
                     elsif .key$ = "colorMode"
-                        config_colorMode = number (.value$)
+                        @emlConfigMenu: .value$, 1, 2
+                        config_colorMode = emlConfigMenu.v
                     elsif .key$ = "width"
                         config_width = number (.value$)
                     elsif .key$ = "height"
                         config_height = number (.value$)
                     elsif .key$ = "gridlineMode"
-                        config_gridlineMode = number (.value$)
+                        @emlConfigMenu: .value$, 1, 4
+                        config_gridlineMode = emlConfigMenu.v
                     elsif .key$ = "legendPlacement"
-                        config_legendPlacement = number (.value$)
+                        @emlConfigMenu: .value$, 1, 5
+                        config_legendPlacement = emlConfigMenu.v
                     elsif .key$ = "showInnerBox"
-                        config_showInnerBox = number (.value$)
+                        @emlConfigFlag: .value$
+                        config_showInnerBox = emlConfigFlag.v
                     elsif .key$ = "showTicks"
-                        config_showTicks = number (.value$)
+                        @emlConfigMenu: .value$, 1, 4
+                        config_showTicks = emlConfigMenu.v
                     elsif .key$ = "showAxisValues"
-                        config_showAxisValues = number (.value$)
+                        @emlConfigMenu: .value$, 1, 4
+                        config_showAxisValues = emlConfigMenu.v
                     elsif .key$ = "showAxisNames"
-                        config_showAxisNames = number (.value$)
+                        @emlConfigMenu: .value$, 1, 4
+                        config_showAxisNames = emlConfigMenu.v
                     elsif .key$ = "font"
                         config_font$ = .value$
                         config_font = 1
@@ -568,7 +634,8 @@ procedure emlLoadConfig
                             config_font = 4
                         endif
                     elsif .key$ = "outputDPI"
-                        config_outputDPI = number (.value$)
+                        @emlConfigMenu: .value$, 1, 2
+                        config_outputDPI = emlConfigMenu.v
                     elsif .key$ = "xLabel"
                         config_xLabel$ = .value$
                     elsif .key$ = "yLabel"
@@ -607,9 +674,11 @@ procedure emlLoadConfig
                         config_lastPNGFolder$ = .value$
                         config_lastCSVFolder$ = .value$
                     elsif .key$ = "showAdvanced"
-                        config_showAdvanced = number (.value$)
+                        @emlConfigFlag: .value$
+                        config_showAdvanced = emlConfigFlag.v
                     elsif .key$ = "groupSort"
-                        config_groupSort = number (.value$)
+                        @emlConfigMenu: .value$, 1, 2
+                        config_groupSort = emlConfigMenu.v
                     endif
                 endif
             endif
@@ -617,33 +686,19 @@ procedure emlLoadConfig
     endif
 
     # C1. gridlineMode on disk is canonical — 1 Both / 2 Horizontal only /
-    # 3 Vertical only / 4 Off. A file written by a pre-C1 build could hold a
-    # categorical index whose MEANING was different but whose value is still
-    # in 1..4; nothing can recover that, and every in-range value is a legal
-    # canonical one, so it is read as canonical and the user's next choice
-    # corrects it. What is worth refusing is a value that is not an option at
-    # all, from a hand-edited or truncated file: left alone it would seed a
-    # blank optionmenu, which is precisely the dead end C1 is about.
-    if config_gridlineMode < 1
-        config_gridlineMode = 1
-    endif
-    if config_gridlineMode > 4
-        config_gridlineMode = 1
-    endif
-
-    # Same refusal, same reason. legendPlacement has one encoding, so an
-    # in-range value is always readable as itself; a value that is not an
-    # option at all, from a hand-edited or truncated file, seeds a blank
-    # optionmenu and Praat then refuses the form. That is a dead end with
-    # no way out, and it survives a restart because the bad value is on
-    # disk. Clamped to the default here, once, where the file is read,
-    # rather than at fourteen dialogs.
-    if config_legendPlacement < 1
-        config_legendPlacement = 1
-    endif
-    if config_legendPlacement > 5
-        config_legendPlacement = 1
-    endif
+    # 3 Vertical only / 4 Off — and legendPlacement has one encoding, so an
+    # in-range value for either is always readable as itself. A file written
+    # by a pre-C1 build could hold an index whose MEANING was different but
+    # whose value is still in range; nothing can recover that, and the user's
+    # next choice corrects it. What is worth refusing is a value that is not
+    # an option at all.
+    #
+    # BOTH ARE CLAMPED WHERE THEY ARE PARSED NOW, by @emlConfigMenu, along
+    # with every other menu key in this file. The two clamps that used to sit
+    # here ran after the whole parse loop and tested a value that could
+    # already be `undefined` -- which no comparison catches -- so they were
+    # exactly the guard the empty-line case walked through. See the procedure
+    # above for what a value that is not an option costs the user.
 endproc
 
 # ----------------------------------------------------------------------------

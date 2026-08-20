@@ -352,8 +352,19 @@ load_start <- grep("^procedure emlLoadConfig", form)[1]
 load_end <- grep("^endproc", form)
 load_end <- load_end[load_end > load_start][1]
 loader <- form[load_start:load_end]
-check_true("v31", "@emlLoadConfig clamps gridlineMode into 1..4",
-           any(grepl("if config_gridlineMode < 1", loader)) &&
-               any(grepl("if config_gridlineMode > 4", loader)))
+# THE CLAMP MOVED TO THE PARSE, AND SO DID THIS CHECK. It used to sit after
+# the read loop and test the parsed number -- but `number ("")` is
+# `undefined`, and no comparison against undefined is true, so an empty or
+# truncated line walked straight through the guard written to stop it. Every
+# menu key in the loader now goes through @emlConfigMenu, which parses,
+# refuses anything that is not a number, and clamps in one step. The property
+# asserted here is unchanged: a value that is not an option cannot reach the
+# dropdown. What is read as evidence for it is the call, with its bounds,
+# bound to the key it feeds.
+gridClamp <- grep("@emlConfigMenu: \\.value\\$, 1, 4", loader)
+gridFed <- grep("config_gridlineMode = emlConfigMenu\\.v", loader)
+check_true("v31", "@emlLoadConfig clamps gridlineMode into 1..4 as it parses it",
+           length(gridFed) == 1L &&
+               any(gridClamp == gridFed - 1L))
 
 if (!exists("EML_SUITE")) { eml_report("v31 gridline mode: one encoding, translated at the dialog (C1)"); eml_exit() }
