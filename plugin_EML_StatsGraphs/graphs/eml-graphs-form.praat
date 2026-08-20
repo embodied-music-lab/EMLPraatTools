@@ -3667,10 +3667,21 @@ repeat
             # erase and origin describe one step of one page. A remembered
             # "erase off" would greet a user with a dialog that quietly
             # overlays their next figure on last week's, and the tick that
-            # caused it would be a session old. Every press starts from
-            # today's behaviour, and composition is stated each time it
-            # happens.
-            boolean: "Erase page first", 1
+            # caused it would be a session old.
+            #
+            # ERASE IS REMEMBERED WITHIN THE SESSION, AND STARTS ON.
+            # Composing a page means drawing, looking, and drawing again,
+            # and re-ticking the same box on every redraw is the friction
+            # that made this a defect rather than a discipline. The value
+            # lives in a session variable seeded to 1: today's behaviour on
+            # every fresh start, remembered while the composing lasts, gone
+            # when Praat closes. That is not the hidden state the paragraph
+            # above warns about -- reopening always returns a known position.
+            sessionEraseDefault = 1
+            if variableExists ("sessionEraseFirst")
+                sessionEraseDefault = sessionEraseFirst
+            endif
+            boolean: "Erase page first", sessionEraseDefault
             # ORIGIN IS TYPED INCHES. Not a grid, which would impose a layout
             # model, and not an auto-advancing slot, which would be a counter
             # that outlives its page. It is live whether or not the page is
@@ -3783,6 +3794,8 @@ repeat
     # figure a user makes and are remembered; erase and origin describe one
     # step of one page and are asked again every press.
     emlEraseFirst = erase_page_first
+    ; Remembered for the rest of the session; see THE PAGE above.
+    sessionEraseFirst = erase_page_first
     emlPanelOriginX = panel_origin_x
     emlPanelOriginY = panel_origin_y
     @emlSetPanelOrigin: emlPanelOriginX, emlPanelOriginY
@@ -5085,7 +5098,7 @@ repeat
                                 option: "Horizontal only"
                                 option: "Vertical only"
                                 option: "Off"
-                            optionmenu: "Legend placement", tmpLegendPlacement
+                            optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                                 option: "Inside plot"
                                 option: "Right of plot"
                                 option: "Below plot"
@@ -6865,7 +6878,7 @@ repeat
                         option: "Horizontal only"
                         option: "Vertical only"
                         option: "Off"
-                    optionmenu: "Legend placement", tmpLegendPlacement
+                    optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"
@@ -7713,7 +7726,7 @@ repeat
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
-                    optionmenu: "Legend placement", tmpLegendPlacement
+                    optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"
@@ -8228,7 +8241,7 @@ repeat
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
-                    optionmenu: "Legend placement", tmpLegendPlacement
+                    optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"
@@ -8657,7 +8670,7 @@ repeat
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
-                    optionmenu: "Legend placement", tmpLegendPlacement
+                    optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"
@@ -9078,7 +9091,7 @@ repeat
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
-                    optionmenu: "Legend placement", tmpLegendPlacement
+                    optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"

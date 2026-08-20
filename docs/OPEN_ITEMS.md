@@ -64,6 +64,18 @@ follows from the post-hoc rather than being asked separately —
 Three controls collapse to one, no mismatch is expressible, and each line
 reads the way a methods section has to read.
 
+Ruled 20 Aug: the list carries section headers -- `-- Parametric --`,
+`-- Nonparametric --` -- and guards against someone selecting a header and
+clicking through.
+
+THE GUARD ALREADY EXISTS AND IS REUSED, not reinvented. The graph-type
+menu is built with a parallel array (`filteredMenuToType[]`) in which 0
+marks a header; after the dialog the menu index is remapped through it, and
+a 0 re-shows the page with a small box saying the item chosen is a category
+header. The post-hoc menu gets the same shape: a parallel array mapping
+each menu row to its test family, post-hoc and correction, 0 for a header,
+and the same re-show on 0.
+
 Interacts with the unification: when an analysis has already run, this
 choice should come FROM it rather than be asked again.
 
