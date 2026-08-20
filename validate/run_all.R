@@ -1305,7 +1305,8 @@ scripts <- c(
                                  # data. Pins the two ruled sentences and the
                                  # absence of the two they replaced, and the
                                  # value lines rather than the gloss wording.
-                                 # Source only; reads no harness.,
+                                 # Source only; reads no harness.
+    ,
     "v107_record_census.R"       # of the 42 commands the menu registers, which
                                  # ones leave a trace in a recorded script. The
                                  # universe is read from setup.praat, so a

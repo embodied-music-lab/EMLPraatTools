@@ -4,7 +4,7 @@ data = selected ()
 # Save the outputs of this analysis
 # Every output shares one folder and one name, so they stay a set.
 
-outputFolder$ = "/home/claude/EMLPraatTools/harness/runblock/out/saveruns/saved1"
+outputFolder$ = "/home/claude/repo/harness/runblock/out/saveruns/saved1"
 @emlRecordReplaySave: 1, "figA_20260817_120000", outputFolder$, figureFormat$
 
 # The same step through the menu:

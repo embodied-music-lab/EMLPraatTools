@@ -78,7 +78,13 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 SRC="${EML_RUNBLOCK_SRC:-$ROOT/plugin}"
 OUT="${EML_RUNBLOCK_OUT:-$HERE/out}"
-PRAAT=/usr/bin/praat
+# THE BINARY COMES FROM harness/_env.sh, LIKE EVERY OTHER DRIVER'S.
+# This file used to hard-code /usr/bin/praat, which is the exact
+# resolution _env.sh exists to remove: a bare system Praat can be any
+# version -- or absent, in which case every case below records nothing
+# and the rig still exits 0. _env.sh refuses anything below 6.6.30
+# instead of warning about it, and $PRAAT still overrides.
+source "$ROOT/harness/_env.sh" || exit 1
 PREFS="$OUT/prefs"
 
 # EVERYTHING THIS RIG WRITES IS REBUILT, EXCEPT THE RED-WATCH EVIDENCE.

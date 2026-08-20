@@ -24,19 +24,19 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include ~/EMLPraatTools/plugin/stats/eml-core-utilities.praat
-include ~/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
-include ~/EMLPraatTools/plugin/stats/eml-extract.praat
-include ~/EMLPraatTools/plugin/stats/eml-output.praat
-include ~/EMLPraatTools/plugin/stats/eml-inferential.praat
-include ~/EMLPraatTools/plugin/stats/eml-psychometrics.praat
-include ~/EMLPraatTools/plugin/stats/eml-categorical.praat
-include ~/EMLPraatTools/plugin/stats/eml-result-writer.praat
-include ~/EMLPraatTools/plugin/stats/eml-record.praat
-include ~/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
-include ~/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
-include ~/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
-include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
+include ~/repo/plugin/stats/eml-core-utilities.praat
+include ~/repo/plugin/stats/eml-core-descriptive.praat
+include ~/repo/plugin/stats/eml-extract.praat
+include ~/repo/plugin/stats/eml-output.praat
+include ~/repo/plugin/stats/eml-inferential.praat
+include ~/repo/plugin/stats/eml-psychometrics.praat
+include ~/repo/plugin/stats/eml-categorical.praat
+include ~/repo/plugin/stats/eml-result-writer.praat
+include ~/repo/plugin/stats/eml-record.praat
+include ~/repo/plugin/graphs/eml-graph-procedures.praat
+include ~/repo/plugin/graphs/eml-annotation-procedures.praat
+include ~/repo/plugin/graphs/eml-draw-procedures.praat
+include ~/repo/plugin/stats/eml-analysis.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -105,7 +105,7 @@ data = selected ()
 # Save the outputs of this analysis
 # Every output shares one folder and one name, so they stay a set.
 
-outputFolder$ = "/home/claude/EMLPraatTools/harness/runblock/out/twosaves/saved1"
+outputFolder$ = "/home/claude/repo/harness/runblock/out/twosaves/saved1"
 @emlRecordReplaySave: 1, "figA_20260817_120000", outputFolder$, figureFormat$
 
 # The same step through the menu:
@@ -117,7 +117,7 @@ data = selected ()
 # Save the outputs of this analysis
 # Every output shares one folder and one name, so they stay a set.
 
-outputFolder$ = "/home/claude/EMLPraatTools/harness/runblock/out/twosaves/saved2"
+outputFolder$ = "/home/claude/repo/harness/runblock/out/twosaves/saved2"
 @emlRecordReplaySave: 1, "figB_20260817_120000", outputFolder$, figureFormat1b$
 
 # The same step through the menu:

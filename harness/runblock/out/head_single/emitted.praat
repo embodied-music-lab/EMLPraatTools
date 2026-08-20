@@ -24,19 +24,19 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-extract.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-output.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-inferential.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-categorical.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-record.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
-include ~/EMLPraatTools/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-analysis.praat
+include ~/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include ~/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include ~/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include ~/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include ~/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
+include ~/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-categorical.praat
+include ~/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
+include ~/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-record.praat
+include ~/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
+include ~/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
+include ~/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
+include ~/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -89,7 +89,7 @@ data = selected ()
 # Save the outputs of this analysis
 # Every output shares one folder and one name, so they stay a set.
 
-outputFolder$ = "/home/claude/EMLPraatTools/harness/runblock/out/head_single/saved"
+outputFolder$ = "/home/claude/repo/harness/runblock/out/head_single/saved"
 @emlRecordReplaySave: 1, "vt_20260817_120000", outputFolder$, figureFormat$
 
 # The same step through the menu:

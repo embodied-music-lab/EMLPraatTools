@@ -485,13 +485,21 @@ check_true("v61", "and @eml_fixed is defined in eml-output",
 # preference the user still owns.
 check_true("v61", "beginner mode overrides the legend placement for the draw (D8)",
            any(grepl("emlLegendPlacement\\s*=\\s*1", fcode)))
-# AND THE PERSISTED KEY STILL HAS EXACTLY FIVE WRITERS: the load default, the
-# config parser, the two clamp arms, and @emlCommitLegendPlacement. A sixth
-# would be the tempting version of this fix -- commit a beginner default over
-# the user's advanced choice -- which trades the leak for silently forgetting
-# what they picked. The count is what says which fix was made.
+# AND THE PERSISTED KEY STILL HAS EXACTLY THREE WRITERS: the load default, the
+# config parser, and @emlCommitLegendPlacement. A FOURTH would be the tempting
+# version of this fix -- commit a beginner default over the user's advanced
+# choice -- which trades the leak for silently forgetting what they picked.
+# The count is what says which fix was made.
+#
+# IT WAS FIVE UNTIL 20 AUGUST 2026, and the two that went were the clamp's two
+# arms. Every menu-backed config key is now parsed and clamped in one step by
+# @emlConfigMenu, at the line where the file is read, so the clamp no longer
+# assigns to this key by name -- it returns a value the parser assigns. The
+# clamp did not go away; it stopped being a WRITER of this key. What this check
+# is about is unchanged: no arm anywhere writes the user's stored choice on
+# their behalf.
 check("v61", "the persisted legend key gained no new writer (D8)",
-      5L, sum(grepl("^\\s*config_legendPlacement\\s*=", fcode)), tol = 0)
+      3L, sum(grepl("^\\s*config_legendPlacement\\s*=", fcode)), tol = 0)
 
 # D7. Six pages, six beginner arms, and the count is the check: five would be a
 # graph type that silently kept the old behaviour.

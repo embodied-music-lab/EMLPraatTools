@@ -24,19 +24,19 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include ~/EMLPraatTools/plugin/stats/eml-core-utilities.praat
-include ~/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
-include ~/EMLPraatTools/plugin/stats/eml-extract.praat
-include ~/EMLPraatTools/plugin/stats/eml-output.praat
-include ~/EMLPraatTools/plugin/stats/eml-inferential.praat
-include ~/EMLPraatTools/plugin/stats/eml-psychometrics.praat
-include ~/EMLPraatTools/plugin/stats/eml-categorical.praat
-include ~/EMLPraatTools/plugin/stats/eml-result-writer.praat
-include ~/EMLPraatTools/plugin/stats/eml-record.praat
-include ~/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
-include ~/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
-include ~/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
-include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
+include ~/repo/plugin/stats/eml-core-utilities.praat
+include ~/repo/plugin/stats/eml-core-descriptive.praat
+include ~/repo/plugin/stats/eml-extract.praat
+include ~/repo/plugin/stats/eml-output.praat
+include ~/repo/plugin/stats/eml-inferential.praat
+include ~/repo/plugin/stats/eml-psychometrics.praat
+include ~/repo/plugin/stats/eml-categorical.praat
+include ~/repo/plugin/stats/eml-result-writer.praat
+include ~/repo/plugin/stats/eml-record.praat
+include ~/repo/plugin/graphs/eml-graph-procedures.praat
+include ~/repo/plugin/graphs/eml-annotation-procedures.praat
+include ~/repo/plugin/graphs/eml-draw-procedures.praat
+include ~/repo/plugin/stats/eml-analysis.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -117,4 +117,4 @@ emlSecondAxisOn = secondAxisOn
 # In the GUI: New > EML Stats & Graphs > EML Graphs...
 
 @emlAssertFullViewport
-Save as 300-dpi PNG file: "/home/claude/EMLPraatTools/harness/runblock/out/saveruns/REPLAY_step1.png"
+Save as 300-dpi PNG file: "/home/claude/repo/harness/runblock/out/saveruns/REPLAY_step1.png"

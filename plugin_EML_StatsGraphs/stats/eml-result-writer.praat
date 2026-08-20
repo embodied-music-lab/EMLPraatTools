@@ -150,9 +150,18 @@ emlVocabTidy$ = "term effect contrast null.value estimate estimate1"
 # statistics tool. Matching glance.lm gives a superset of glance.aov in R's own
 # order, so the file is still something an R user recognises immediately.
 # Our own additions trail after the broom block.
+# n.conditions SITS BESIDE n.groups AND NOT INSIDE THE BROOM BLOCK. It is
+# not a broom name; it is the within-subject counterpart of n.groups, written
+# by the repeated-measures ANOVA and by Friedman, where a count of
+# independent groups would say a between-subjects design had been run. It is
+# placed immediately after n.groups so that a reader comparing a
+# between-subjects glance row with a within-subject one finds the design
+# count in the same place in both, and after the broom block so that
+# validate/v17_broom_parity.R's "glance leads with broom::glance(lm)'s
+# columns, in order" check still reads the same twelve columns first.
 emlVocabGlance$ = "r.squared adj.r.squared sigma statistic p.value df"
 ... + " logLik AIC BIC deviance df.residual nobs"
-... + " n.subjects n.groups n.cells n.pairs n.excluded"
+... + " n.subjects n.groups n.conditions n.cells n.pairs n.excluded"
 ... + " estimate parameter partial.eta.squared epsilon.squared"
 ... + " tie.correction gg.epsilon p.value.gg kendalls.w"
 ... + " skewness kurtosis method alternative warning"

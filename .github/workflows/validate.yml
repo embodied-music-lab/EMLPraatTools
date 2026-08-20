@@ -193,4 +193,15 @@ jobs:
           unzip -v | head -1
 
       - name: Run the validation suite
-        run: Rscript validate/run_all.R
+        run: |
+          # THE LIST BEFORE THE SUITE. R parses a whole file before running any
+          # of it, so a comma in the wrong place in run_all.R's list of checks
+          # means nothing runs at all -- not "one check was skipped". That has
+          # happened three times, once with the comma inside a comment where
+          # the eye that wrote it could not see it. This guard reads the list,
+          # evaluates it on its own, and refuses when a check file is on disk
+          # but unlisted, which is the quieter version of the same fault: a
+          # validator nobody listed never runs and catches nothing while
+          # passing in isolation.
+          Rscript validate/tools/check_list.R
+          Rscript validate/run_all.R

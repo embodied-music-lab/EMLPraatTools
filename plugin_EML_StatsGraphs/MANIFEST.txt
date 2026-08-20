@@ -149,7 +149,7 @@ stats/eml-optimizer.praat | 2402 | 2.0 | EML Stats & Graphs — Derivative-Free 
 stats/eml-output.praat | 4482 | 2.4 | EML Stats : Output Formatting
 stats/eml-psychometrics.praat | 376 | 1.0 | EML Stats & Graphs — Questionnaire reliability. Cronbach's alpha with a Feldt confidence interval and alpha-if-item-deleted, and a respondent-influence jackknife that names an influential respondent by their row in the original table rather than by their position after incomplete rows were dropped.
 stats/eml-record.praat | 4907 | 1.0 | EML Stats & Graphs — Record workflow: buffer, phrases, renderer. Accumulates a session's analyses and figures and writes one annotated Praat script that both re-runs and reads like a lab notebook.
-stats/eml-result-writer.praat | 735 | 1.0 | EML Stats & Graphs — broom-style result writer. Collects one analysis as tidy/glance/augment tables and writes the three CSVs with the shapes and names R's broom package uses.
+stats/eml-result-writer.praat | 744 | 1.0 | EML Stats & Graphs — broom-style result writer. Collects one analysis as tidy/glance/augment tables and writes the three CSVs with the shapes and names R's broom package uses.
 
 # --------------------------------------------------------------------------
 # RETIRED — moved out of the plugin, kept on disk because this tree is not
