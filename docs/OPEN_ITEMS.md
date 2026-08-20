@@ -118,6 +118,7 @@ STILL OPEN, lagging controls:
   screenshots and OCR; it did not complete in the cloud container on the
   first attempt, and was not pursued further. Whoever takes this needs the
   drive working first.
+
 STILL OPEN, stored values that can seed a menu out of range:
 
 - Six config keys are read from disk and used as menu defaults with no range
