@@ -1,0 +1,6 @@
+table,analysis,term,term_type,field,value
+etude - Sopranos,descriptives,Mezzo uber,group,note,"singer said ""it felt easy"""
+etude - Sopranos,descriptives,Tenor eric,group,range,"220-440 Hz, +/-3 dB"
+etude - Sopranos,descriptives,chi^2 block,group,symbol,chi^2 and eta^2
+etude - Sopranos,descriptives,Nino,group,mic,take ? 3 at 20 degC
+etude - Sopranos,descriptives,Mezzo uber,group,mean,220.5

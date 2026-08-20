@@ -1,0 +1,10 @@
+name	bytes	bom	nul	nonascii
+broom.outputs.tsv	150	6c65	0	0
+broom_glance.csv	36	feff	15	5
+broom_tidy.csv	108	feff	52	6
+csv.outputs.tsv	97	6c65	0	0
+info.outputs.tsv	93	6c65	0	0
+info.txt	599	0a3d	0	0
+report.outputs.tsv	108	6c65	0	0
+report.txt	597	3d3d	0	0
+stats.csv	394	7461	0	0

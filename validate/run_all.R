@@ -1259,6 +1259,53 @@ scripts <- c(
                                  # the buttons are pressed in that order and
                                  # the output read.
                                  # Reads harness/correlgroup.
+    ,
+    "v103_legend_encoding.R"     # legend placement has the same shape gridline
+                                 # mode has -- one registry, one seed, one
+                                 # commit, one clamp -- and until now nothing
+                                 # asserted any of it. What the numbers on disk
+                                 # MEAN is decided by the option lists, so six
+                                 # dialogs whose lists drifted apart would put
+                                 # a legend somewhere the user did not choose
+                                 # with nothing red. Registry, dispatch,
+                                 # seed/commit counts and the six option lists,
+                                 # character-identical and in order.
+                                 # Source only; reads no harness.
+    ,
+    "v104_ascii_fold.R"          # one non-ASCII character makes Praat rewrite
+                                 # a whole file as UTF-16 -- measured, on
+                                 # 6.6.30 -- and R, pandas and Excel cannot
+                                 # read it. The fold at the CSV and report
+                                 # boundary is what stops a user's export
+                                 # becoming unopenable, and nothing drove a
+                                 # curly quote or a degree sign through it. The
+                                 # bytes on disk are read as bytes, because the
+                                 # tools that read them as text are the ones
+                                 # whose behaviour is the defect.
+                                 # Reads harness/asciifold.
+    ,
+    "v105_pitch_parity.R"        # the pitch parameters agree across the graph,
+                                 # batch, recorder and test paths BY HAND. A
+                                 # single flag drifting moves a reported mean
+                                 # by about a hertz on a short token -- a wrong
+                                 # number in someone's paper, with nothing red
+                                 # anywhere. Every To Pitch call in the tree is
+                                 # found and censused, executed calls told from
+                                 # the ones a recorded script only emits, so a
+                                 # call site added later and not enumerated
+                                 # turns this red rather than passing unseen.
+                                 # Source only; reads no harness.
+    ,
+    "v106_wizard_wording.R"      # the wizard's two design questions decide
+                                 # which test runs. Labelling the whole
+                                 # within-subject branch "paired" sent a user
+                                 # with three or more conditions to the
+                                 # independent option, which runs a
+                                 # between-subjects test on within-subject
+                                 # data. Pins the two ruled sentences and the
+                                 # absence of the two they replaced, and the
+                                 # value lines rather than the gloss wording.
+                                 # Source only; reads no harness.
 )
 
 # ---------------------------------------------------------------------------

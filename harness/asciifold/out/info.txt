@@ -1,0 +1,12 @@
+
+================================
+EML Stats -- Reanalyse - Sopranos
+chi^2(2) = 6.41, p <= .05, eta^2 = 0.31
+F0 220-440 Hz, +/-3 dB, tilt -6 deg, sigma = 1.2
+Singer said "it felt easy", then 'open'.
+Groups:	Mezzo uber	Tenor eric	Nino
+Take ? 3 -> best; rho ~ .48, y-bar = 3.1
+--------------------------------
+
+
+Note: characters outside plain ASCII were replaced with ASCII equivalents in this file (chi^2 for the chi-square symbol, "-" for a rule) so it stays readable to every text tool. Praat writes a whole file as UTF-16 as soon as one such character is in it. The Info window shows the original.

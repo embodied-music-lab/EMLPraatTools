@@ -236,9 +236,21 @@ if goal = 1
     beginPause: "Compare — Observation type"
         comment: "Were the same people measured more than once?"
         comment: ""
+        # WITHIN-SUBJECT, not "paired", on this branch label. "Paired" is the
+        # proper name of exactly one test -- the paired t-test -- and that test
+        # exists only at k = 2. This page is the fork that sends a user with
+        # THREE OR MORE conditions on to RM-ANOVA / Friedman, so a label that
+        # says "paired" tells a user with four conditions that this is not
+        # their answer. What they pick instead is the other option, and a
+        # between-subjects test then runs on within-subject data: it completes,
+        # it prints, and it is wrong in the direction nobody checks, because
+        # the subject-to-subject variance stays in the error term and the
+        # effect the design was built to see is buried under it. "Paired" is
+        # kept where it is the name of the thing -- the k = 2 option on the A3
+        # gate page below.
         optionmenu: "Observation type", prevObsType
             option: "No — different groups (independent)"
-            option: "Yes — same people, repeated (paired)"
+            option: "Yes — same people, measured more than once (within-subject)"
         comment: ""
     clicked = endPause: "Quit", "Back", "Continue", 3, 0
     if clicked = 1
@@ -807,7 +819,19 @@ if goal = 1
             comment: "📋 Table: " + displayTable$
             comment: "─────────────────────────────────────"
             comment: ""
-            comment: "How many repeated measurements per subject?"
+            # CONDITIONS, not "measurements". The k things counted here are
+            # LEVELS OF THE WITHIN-SUBJECT FACTOR -- SPSS's term, and what the
+            # wide format glossed below already encodes: ONE measurement, taken
+            # under k circumstances. Asking how many "measurements per subject"
+            # invites the reader to count DIFFERENT VARIABLES -- F0 and SPL and
+            # jitter -- which is a plotting question and not this one. A user
+            # who reads it that way answers "three or more" for three unrelated
+            # columns and is handed an RM-ANOVA across incommensurable units:
+            # an F, a p and a Greenhouse-Geisser correction computed over Hz,
+            # decibels and percent as though they were one measurement. It read
+            # that way to the author of this plugin, so it will read that way
+            # to a student.
+            comment: "Under how many conditions was each subject measured?"
             optionmenu: "Conditions", 1
                 option: "Two (paired t-test / Wilcoxon)"
                 option: "Three or more (RM-ANOVA / Friedman)"
