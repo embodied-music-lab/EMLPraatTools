@@ -168,7 +168,7 @@ jobs:
     timeout-minutes: 120
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # ---------------------------------------------------------------
       # ENVIRONMENT — validate.yml's block, deliberately identical.
@@ -370,7 +370,7 @@ jobs:
       # a failed walk is exactly when the pictures are wanted.
       - name: Keep the install evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: release-install-evidence
           path: ${{ runner.temp }}/release-evidence

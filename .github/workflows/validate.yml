@@ -109,7 +109,7 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Enable universe, where both r-base-core and praat live
         run: |

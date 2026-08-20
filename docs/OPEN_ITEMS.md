@@ -102,6 +102,22 @@ STILL OPEN, lagging controls:
   how many series tickboxes, whether the interval offer appears, the
   observation count printed in a label — is computed from the time column
   chosen on the PREVIOUS pass, and the time column menu is on that same page.
+  Drawing the new time column against itself is already handled and disclosed;
+  the interval offer and the "up to N observations per point" count are not.
+
+  THE FIX IS DESIGNED AND WAS WRITTEN, THEN BACKED OUT UNDRIVEN. Record the
+  time column the page was built from just before it opens; on Draw, if the
+  menu now names a different one, rebuild the page instead of drawing —
+  carrying the ticks forward by name — and say so in a small box. It costs one
+  press on the one action that changes what every other control on the page
+  means, and it fixes all three symptoms at once rather than patching each.
+
+  It cannot land without re-driving the line-chart evidence, because the
+  checks that read it are bound to the form's hash and the harness refuses a
+  partial re-drive. That drive is a fifteen-leg GUI run under Xvfb with
+  screenshots and OCR; it did not complete in the cloud container on the
+  first attempt, and was not pursued further. Whoever takes this needs the
+  drive working first.
 STILL OPEN, stored values that can seed a menu out of range:
 
 - Six config keys are read from disk and used as menu defaults with no range
