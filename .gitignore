@@ -98,6 +98,15 @@ harness/batchcmd/out/driver.log
 harness/edittable/prefs/
 harness/edittable/out/work/
 
+# harness/correlgroup: the EVIDENCE is CORREL.tsv, DIALOGS.tsv, EXCISED.txt,
+# EXCISED_ERRDLG.txt and the three Info-window transcripts — all committed,
+# all read by validate/v102. out/work/ is not evidence: it is a whole COPY of
+# the plugin per case, because `include` resolves against the folder of the
+# script that was run and the drive needs a twinned wrapper standing beside a
+# real library. Three copies of the plugin is not a thing to check in.
+harness/correlgroup/prefs/
+harness/correlgroup/out/work/
+
 # Two guard harnesses added 15 Aug 2026 keep their evidence and drop their
 # scratch: savepaths/guards drives the unwritable-folder and hostile-base-name
 # legs (its point is that NO file lands, so it cannot live under out/ where

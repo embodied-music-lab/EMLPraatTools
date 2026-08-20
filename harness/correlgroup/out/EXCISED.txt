@@ -1,0 +1,38 @@
+# Cut from eml-correlate.praat to make the headless twin.
+# --- stanza 1  (correlate_two_columns#1)  lines 124-155
+    beginPause: "Correlate Two Columns"
+        comment: "📋 Table: " + tableName$
+        comment: "─────────────────────────────────────"
+        optionmenu: "Column X", guessXIdx
+        for iCol from 1 to nCols
+            option: emlTableColumnNames.name$ [iCol]
+        endfor
+        optionmenu: "Column Y", guessYIdx
+        for iCol from 1 to nCols
+            option: emlTableColumnNames.name$ [iCol]
+        endfor
+        comment: ""
+        optionmenu: "Group column", selGroupIdx
+            option: "(none — overall only)"
+        for iCol from 1 to grpN
+            option: grpName$ [iCol]
+        endfor
+        if grpN = 0
+            comment: "     (no column in this Table has a usable number"
+            comment: "     of groups — overall only)"
+        endif
+        comment: ""
+        comment: "ℹ️ Pearson assumes a straight-line relation and roughly"
+        comment: "     normal variables; Spearman ranks first, so it suits"
+        comment: "     skewed data, outliers, or curved-but-monotonic trends."
+        comment: "     Unsure? Run Check normality on both columns first."
+        optionmenu: "Test", selTest
+            option: "Pearson r"
+            option: "Spearman rho"
+            option: "Both"
+        @emlWrapperCommonFields
+    clicked = endPause: "Quit", "Run", 2, 0
+# --- stanza 2  (analysis_complete#1)  lines 468-470
+                beginPause: "Analysis complete"
+                    comment: "📊 Results are in the Info window."
+                clicked = endPause: "Done", "Save", "Draw", "New", 3, 0

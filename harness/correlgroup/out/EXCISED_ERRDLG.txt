@@ -1,0 +1,123 @@
+procedure emlErrorDialog: .msg$, .remedy$, .mode$
+    # Split the remedy on "|" up front: it is needed in two places below and
+    # form-building code should not be doing string surgery inline.
+    .nRemedy = 0
+    .rest$ = .remedy$
+    while .rest$ <> ""
+        .bar = index (.rest$, "|")
+        .nRemedy += 1
+        if .bar = 0
+            .remLine$ [.nRemedy] = .rest$
+            .rest$ = ""
+        else
+            .remLine$ [.nRemedy] = left$ (.rest$, .bar - 1)
+            .rest$ = mid$ (.rest$, .bar + 1, length (.rest$))
+        endif
+    endwhile
+
+    # The title and the headline are computed rather than literal, because an
+    # entry refusal is not an analysis that did not run — nothing has been
+    # asked of the data yet, and a window headed "Cannot run this analysis"
+    # over the sentence "Please select exactly one Table" tells the user the
+    # analysis failed when what happened is that it never started.
+    .title$ = "Cannot run this analysis"
+    .headline$ = "⚠  This analysis did not run."
+    if .mode$ = "entry"
+        .title$ = "Cannot start this tool"
+        .headline$ = "⚠  This tool did not start."
+    endif
+
+    beginPause: .title$
+        comment: .headline$
+        comment: "─────────────────────────────────────────────────"
+        @emlWrapText: .msg$, 62
+        for .i from 1 to emlWrapText.nLines
+            comment: emlWrapText.line$ [.i]
+        endfor
+        comment: "─────────────────────────────────────────────────"
+        comment: ""
+
+        if .mode$ = "entry"
+            # REMEDY-AWARE, AND THE REMEDY HERE IS ABOUT THE OBJECT LIST, not
+            # about which test to run. The remedy string on this mode names
+            # what to select — not a menu entry — so the sentence that follows
+            # it says "select", not "pick another test".
+            comment: "Nothing has been changed."
+            if .nRemedy > 0
+                comment: ""
+                if .nRemedy = 1
+                    comment: "What this tool needs:"
+                else
+                    comment: "What this tool needs — either of:"
+                endif
+                for .i from 1 to .nRemedy
+                    comment: "        " + .remLine$ [.i]
+                endfor
+                comment: ""
+                comment: "Click OK, select that in the Objects window, then"
+                comment: "run this command again."
+            else
+                comment: ""
+                comment: "Click OK, adjust the selection in the Objects"
+                comment: "window, then run this command again."
+            endif
+
+        elsif .mode$ = "wizard"
+            comment: "Nothing has been lost. Click Back to return to the"
+            comment: "wizard and choose again."
+            if .nRemedy > 0
+                comment: ""
+                if .nRemedy = 1
+                    comment: "What fits this table:"
+                else
+                    comment: "What fits this table — either of:"
+                endif
+                for .i from 1 to .nRemedy
+                    comment: "        " + .remLine$ [.i]
+                endfor
+            endif
+
+        else
+            if .nRemedy > 0
+                if .nRemedy = 1
+                    comment: "This table needs a different test. The one that"
+                    comment: "fits it is:"
+                else
+                    comment: "This table needs a different test. Either of"
+                    comment: "these fits it:"
+                endif
+                comment: ""
+                for .i from 1 to .nRemedy
+                    comment: "        " + .remLine$ [.i]
+                endfor
+                comment: ""
+                comment: "A running script cannot open a Praat menu, so this"
+                comment: "dialog cannot take you there. To switch tests:"
+                comment: ""
+                comment: "        1.  Click Quit below."
+                comment: "        2.  In the Objects window choose"
+                comment: "             New  >  EML Stats & Graphs  >  and then the"
+                comment: "             entry named above."
+                comment: ""
+                comment: "Or click Back to change your column choices and try"
+                comment: "this test again."
+            else
+                comment: "Your selections are kept. Click Back to adjust them"
+                comment: "and run again."
+                comment: ""
+                comment: "If a different test is needed, click Quit, then pick"
+                comment: "it from the Objects window under"
+                comment: "             New  >  EML Stats & Graphs  >"
+            endif
+        endif
+    # ONE BUTTON ON THE ENTRY REFUSAL. There is nothing behind it to go back
+    # to — the wrapper has not built a form yet — and a Back that can only
+    # re-refuse is a loop with no exit that is not Quit.
+    if .mode$ = "entry"
+        .clicked = endPause: "OK", 1, 0
+        .back = 0
+    else
+        .clicked = endPause: "Quit", "Back", 2, 0
+        .back = (.clicked = 2)
+    endif
+endproc

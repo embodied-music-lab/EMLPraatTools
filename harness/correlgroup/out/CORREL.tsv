@@ -1,0 +1,40 @@
+praat_version	Praat 6.6.30 (June 30 2026)
+file_under_test	eml-correlate.praat
+file_sha	d09b404a4fe3380dd74f354561ef0474b7e8c0b5218a5c278475b936d414a802
+errdlg_file_sha	8dc883b3d4e4f52ead6de92d46bc5acf789274f74a97af6701df1ad9ed7fc85d
+stanza_count	2
+stanza_1_key	correlate_two_columns#1
+stanza_2_key	analysis_complete#1
+twin_body_sha_shipped	56fafb95cd7ead75112cf2753d573948b4400e4e20e2d7fe27def33665afd6f6
+twin_body_sha_twin	56fafb95cd7ead75112cf2753d573948b4400e4e20e2d7fe27def33665afd6f6
+twin_body_identical	1
+errdlg_lines	4279-4401
+errdlg_body_identical	1
+G_stale_exit	0
+G_stale_returned	1
+G_stale_dlg_trace	correlate_two_columns#1,analysis_complete#1,correlate_two_columns#1,errdlg,correlate_two_columns#1
+G_stale_reports	1
+G_stale_grouped_blocks	0
+G_stale_grouped_by	
+G_stale_errmsgs	1
+G_stale_errmsg_first	ERRMSG|The grouping column "dose" is now one of the two columns being correlated, so it cannot also group them. Nothing was run. The list of grouping columns was built before you changed X and Y; click Back and it will be rebuilt for the columns you have now chosen.
+G_stale_stderr_head	
+H_legit_exit	0
+H_legit_returned	1
+H_legit_dlg_trace	correlate_two_columns#1,analysis_complete#1,correlate_two_columns#1,analysis_complete#1
+H_legit_reports	5
+H_legit_grouped_blocks	1
+H_legit_grouped_by	dose
+H_legit_errmsgs	0
+H_legit_errmsg_first	
+H_legit_stderr_head	
+K_movedok_exit	0
+K_movedok_returned	1
+K_movedok_dlg_trace	correlate_two_columns#1,analysis_complete#1,correlate_two_columns#1,analysis_complete#1
+K_movedok_reports	4
+K_movedok_grouped_blocks	1
+K_movedok_grouped_by	site
+K_movedok_errmsgs	0
+K_movedok_errmsg_first	
+K_movedok_stderr_head	
+completed	1

@@ -154,12 +154,6 @@ confirmed in the code:
 
 ### Test-coverage gaps
 
-- **The correlation dialog has no drive.** Its stale-group-list guard is in
-  and the file parses, but nothing presses its buttons: the only checks that
-  read it are source-level. The table editor's headless twin — every pause
-  stanza excised mechanically and replaced by a scripted answer, with the
-  remaining body hashed against the shipped file — is the pattern to reuse,
-  and reusing it is a unit of work rather than a line.
 - The validator index documents the older checks only; roughly a dozen of
   the newest have no entry in it, so "read the index to see what is
   checked" now understates the suite.
@@ -187,8 +181,17 @@ confirmed in the code:
 
 ## Closed
 
-**A correlation cannot be grouped by one of the columns it correlates.** The
-list of grouping columns has to be built before the dialog opens, from the X
+**A correlation cannot be grouped by one of the columns it correlates**, and
+the dialog is now driven rather than only read. Three cases press its
+buttons in order — offer the column, move X onto it, pick it — and assert
+that no grouped analysis ran, that the refusal named the column, and that
+coming back rebuilt the menu. The pre-guard wrapper turns nine of them red.
+The drive answers the shared refusal dialog by replacing that one procedure
+in a copy of the tree, with the rest of the file hashed against the shipped
+bytes, because a Praat procedure cannot be stubbed by redefining it —
+measured: the duplicate warns and the first definition wins.
+
+The list of grouping columns has to be built before the dialog opens, from the X
 and Y of the previous pass, while X and Y are chosen on that same page — so
 moving X onto a column the list already offered, and then picking it, ran a
 correlation of a column against itself split by itself, and reported the

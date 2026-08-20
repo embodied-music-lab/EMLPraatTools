@@ -1245,6 +1245,20 @@ scripts <- c(
                                  # legs: the fault that shipped was invisible
                                  # with recording on.
                                  # Reads harness/dispatch.
+    ,
+    "v102_correlate_grouping.R"  # the correlation wrapper builds its grouping
+                                 # menu before the page opens, from the X and Y
+                                 # of the previous pass, while X and Y are
+                                 # chosen on that same page -- so a column just
+                                 # moved onto X is still on the menu, and
+                                 # picking it correlates a variable against
+                                 # itself split by itself. It does not error:
+                                 # it prints a report whose every number is an
+                                 # artefact of the grouping. Neither the source
+                                 # checks nor the parse drive can see that, so
+                                 # the buttons are pressed in that order and
+                                 # the output read.
+                                 # Reads harness/correlgroup.
 )
 
 # ---------------------------------------------------------------------------
