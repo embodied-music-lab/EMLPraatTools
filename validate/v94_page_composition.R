@@ -5,7 +5,11 @@
 # Ian Howell -- Embodied Music Lab -- GPL-3.0-or-later
 #
 # WHAT THIS IS ABOUT. The draw dialog carries two controls: "Erase page first",
-# ticked by default, and a panel origin in typed inches. Unticking the erase
+# which opens ticked on the first draw of a session and thereafter at whatever
+# the last draw of that session left it, and a panel origin in typed inches.
+# Neither reaches the config file: the tick lives in a session variable and is
+# gone when Praat closes, so reopening always returns a known position.
+# Unticking the erase
 # adds the figure to whatever is on the page instead of replacing it, and the
 # extent union -- which is already what Save writes -- grows to hold both.
 # There is no page width, no page height and no grid anywhere in the plugin:
@@ -354,8 +358,60 @@ check_true(V, "the form's dispatch does not erase for itself",
 # visible; a global set somewhere else would be the session mode this design
 # refused.
 form_raw <- readLines(FORM, warn = FALSE)
-check_true(V, 'the draw dialog carries "Erase page first", ticked',
-           any(grepl('^[[:space:]]*boolean: "Erase page first", 1$', form_raw)))
+# "ERASE PAGE FIRST" IS SESSION-SCOPED, WHICH IS THREE PROMISES AND NOT ONE.
+# The tick used to be the literal 1 on the boolean, so every redraw of a page
+# in progress arrived re-ticked and the composer had to untick it again --
+# drawing, looking and drawing again is the whole of composing a page, and
+# re-ticking on every pass was the friction that made this a defect rather
+# than a discipline. The seed is now a session variable, and each of the
+# three things that variable promises is a separate way for this to break:
+#
+#   ON AT SESSION START. `sessionEraseDefault = 1` runs unconditionally,
+#   ahead of the guard, so the first dialog of a fresh Praat is the old
+#   behaviour exactly. Without it the tick opens at whatever the variable
+#   last happened to hold, and reopening no longer returns a known position.
+#
+#   FROM THE SESSION'S OWN REMEMBERED VALUE AFTER THAT. The variableExists
+#   guard replaces that 1 with the previous press's answer, and the press
+#   writes its answer back. This pair IS the feature: with the seed but not
+#   the carry-back the default is a constant and nothing is remembered, and
+#   with the carry-back but not the read it is remembered where nobody looks.
+#   Order matters as much as presence, which is why these are line indices
+#   and not just greps -- a carry-back placed above the boolean would seed
+#   the dialog from the answer the user has not given yet.
+#
+#   NEVER READ FROM OR WRITTEN TO THE CONFIG FILE. That is the promise the
+#   per-draw design makes and the reason a session variable was the right
+#   store rather than a config_ key. A remembered "erase off" that outlived
+#   Praat would greet a user with a dialog quietly set to overlay their next
+#   figure on last week's, and the tick that caused it would be a session
+#   old. So @emlSaveConfig and @emlLoadConfig must not know this name, and
+#   the session variables must be assigned from nowhere but the literal 1,
+#   each other, and the field. This one is about right-hand SIDES and not
+#   about presence -- that the assignments exist at all is what the two
+#   checks above are for -- so a config key appearing on any of them is the
+#   defect arriving by the back door and is caught here alone.
+i_seed  <- grep("^sessionEraseDefault = 1$", form)
+i_guard <- grep('^if variableExists \\("sessionEraseFirst"\\)$', form)
+i_carry <- grep("^sessionEraseDefault = sessionEraseFirst$", form)
+i_bool  <- grep('^boolean: "Erase page first", sessionEraseDefault$', form)
+i_keep  <- grep("^sessionEraseFirst = erase_page_first$", form)
+check_true(V, 'the draw dialog\'s "Erase page first" is seeded on at session start',
+           length(i_seed) == 1L && length(i_bool) == 1L &&
+           length(i_guard) == 1L &&
+           i_seed < i_guard && i_seed < i_bool)
+check_true(V, "...and seeded from the session's own remembered value after that",
+           length(i_guard) == 1L && length(i_carry) == 1L &&
+           length(i_keep) == 1L && length(i_bool) == 1L &&
+           i_guard < i_carry && i_carry < i_bool && i_bool < i_keep)
+cfg_bodies <- c(proc_body(form, "emlSaveConfig"), proc_body(form, "emlLoadConfig"))
+check_true(V, "...and never read from or written to the config file",
+           length(cfg_bodies) > 0L &&
+           !any(grepl("sessionErase|[Ee]rase", cfg_bodies)) &&
+           all(grep("^sessionErase[A-Za-z]* = ", form, value = TRUE) %in%
+               c("sessionEraseDefault = 1",
+                 "sessionEraseDefault = sessionEraseFirst",
+                 "sessionEraseFirst = erase_page_first")))
 check_true(V, "the draw dialog carries a typed origin defaulting to 0, 0",
            any(grepl('^[[:space:]]*real: "Panel origin x \\(inches\\)", "0"$', form_raw)) &&
            any(grepl('^[[:space:]]*real: "Panel origin y \\(inches\\)", "0"$', form_raw)))
