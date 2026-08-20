@@ -183,7 +183,8 @@ labels_of <- function(case) {
 
 CASES <- c("A_rename_dup", "B_delete_dup", "C_cell_dup", "D_repall_dup",
            "E_onecol", "F_add_dup", "G_insert_dup", "H_plain", "I_findnav",
-           "J_rename_back", "K_autolabel", "L_stalecell", "M_movedtyped")
+           "J_rename_back", "K_autolabel", "L_stalecell", "M_movedtyped",
+           "N_scopeclamp")
 
 # ---------------------------------------------------------------------------
 # 1. THE TWIN IS THE EDITOR
@@ -277,6 +278,33 @@ check_true("v55", "Delete Column refuses at <= 1 column, not < 1",
            length(delGuard) == 1)
 check_true("v55", "the refusal is the editor's own dialog, not Praat's error",
            any(grepl("^\\s*@refuseLastColumn: \\.nCols\\s*$", srcLines)))
+
+# THE SCOPE SEED, PINNED WHERE IT IS USED. Find/Replace rebuilds its Scope
+# list from the live table every pass -- "All columns" plus one entry per
+# column -- so the legal range is 1..nCols+1 and it shrinks when a column is
+# deleted. The remembered index is not revised when that happens, and Praat
+# does not clamp an out-of-range optionmenu default: measured on 6.6.30 under
+# Xvfb, 20 August 2026, a default past the end draws the dropdown blank and
+# then refuses every button on the form -- Go Back and the window's close box
+# included -- with "No option chosen for "Scope"". The form cannot be closed
+# and the table cannot be got back to. N_scopeclamp measures the seed; this
+# pins the clamp in the source, because a clamp that survives as a comment
+# while the line goes is the same dead end with better documentation.
+scopeClamp <- grep("^\\s*if prevScope < 1 or prevScope > \\.nCols \\+ 1\\s*$",
+                   srcLines)
+scopeSeed  <- grep("^\\s*optionmenu: \"Scope\", prevScope\\s*$", srcLines)
+check_true("v55", "the Scope seed is clamped to the range the menu is built on",
+           length(scopeClamp) == 1)
+frProc  <- grep("^procedure findReplaceDialog\\s*$", srcLines)
+frLoop  <- if (length(frProc) == 1) {
+    w <- grep("^\\s*while \\.running\\s*$", srcLines); w <- w[w > frProc[1]]
+    if (length(w)) w[1] else NA_integer_
+} else NA_integer_
+check_true("v55",
+           "the clamp is inside the Find/Replace loop, above the menu it seeds",
+           length(scopeClamp) == 1 && length(scopeSeed) == 1 &&
+           !is.na(frLoop) && frLoop < scopeClamp[1] &&
+           scopeClamp[1] < scopeSeed[1])
 
 # THE PREVENTION LAYER, all three ways a duplicate can be created from the UI.
 # Rename is the one the audit named; Append and Insert accept a duplicate name
@@ -447,6 +475,64 @@ check_true("v55", "D_repall_dup: Replace All rewrites the scoped column",
            identical(csv_of("D_repall_dup"),
                      c("id,colA,colA", "S1,A1,Z1", "S2,A2,Z2", "S3,A3,Z3")))
 
+# -- N_scopeclamp: the remembered Scope is still on the menu -----------------
+# The Scope list is rebuilt from the live table on every pass and SHRINKS when
+# a column is deleted, while prevScope keeps whatever the user picked last
+# time. The drive scopes a Replace All to entry 3 of a three-column table
+# (scope 4), deletes that column, and re-opens Find/Replace with a menu that
+# now stops at 3.
+#
+# WHAT IS BEING MEASURED, AND WHY IT IS A PROBE RATHER THAN A TABLE. The
+# seeding line lives inside the pause stanza, and the stanza is the one thing
+# the twin cannot run. What it CAN run is everything up to it, so the probe
+# reads the value the shipped code hands that line at the point the stanza
+# used to be. There is no artefact for this failure: an out-of-range default
+# produces a form the user cannot close (measured, 6.6.30 under Xvfb, 20
+# August 2026: blank dropdown, and "No option chosen for "Scope"" on every
+# button including Go Back and the close box), so the table is never saved and
+# nothing on disk says what happened. The number the menu is seeded with is
+# the only evidence there is.
+scope_probe <- function(kind) {
+    p <- probe_of("N_scopeclamp", kind)
+    if (is.na(p)) return(c(seed = NA_integer_, ncols = NA_integer_))
+    m <- regmatches(p, regexec("\\|(-?[0-9]+)\\|ncols=(-?[0-9]+)\\s*$", p))[[1]]
+    if (length(m) != 3) return(c(seed = NA_integer_, ncols = NA_integer_))
+    c(seed = as.integer(m[2]), ncols = as.integer(m[3]))
+}
+scHeld <- scope_probe("held")
+scSeed <- scope_probe("seeded")
+
+# THE CONTROL ARM FIRST. If the drive never got the editor to remember 4, the
+# check below is green about a state it never reached -- which is the way a
+# check quietly stops covering the thing it was written for.
+check_true("v55",
+           "N_scopeclamp: the editor really did remember scope 4 while 4 was legal",
+           identical(unname(scHeld["seed"]), 4L) &&
+           identical(unname(scHeld["ncols"]), 3L))
+check_true("v55",
+           "N_scopeclamp: the column was deleted -- the Scope menu is one entry shorter",
+           identical(unname(scSeed["ncols"]), 2L))
+check_true("v55",
+           "N_scopeclamp: Find/Replace was re-opened after the delete",
+           sum(trace_of("N_scopeclamp") == "find_replace#1") == 3)
+check_true("v55",
+           "N_scopeclamp: the re-opened Scope menu is seeded inside its range (1..nCols+1)",
+           !is.na(scSeed["seed"]) && scSeed["seed"] >= 1L &&
+           scSeed["seed"] <= scSeed["ncols"] + 1L)
+# WHICH value, not just a legal one. Falling back to the nearest surviving
+# column would be in range and still wrong: that column is not the one the
+# user scoped to, and a Replace All against it rewrites cells they never
+# pointed at -- silently, in a table that stays well-formed. "All columns" is
+# what the menu shows on first open, so the reset lands on the documented
+# default rather than on a guess.
+check_true("v55",
+           "N_scopeclamp: the stale scope falls back to 'All columns', not to a neighbouring column",
+           identical(unname(scSeed["seed"]), 1L))
+check_true("v55",
+           "N_scopeclamp: the clamp changed the menu's seed and nothing else in the table",
+           identical(csv_of("N_scopeclamp"),
+                     c("id,colA", "S1,A1", "S2,A2", "S3,A3")))
+
 # -- I_findnav: Find reports where it actually looked ------------------------
 check_true("v55", "I_findnav: Find lands on the second duplicate, row 2",
            identical(probe_of("I_findnav", "found"), "PROBE|found|col=3|row=2"))
@@ -522,7 +608,8 @@ if (length(leaked) > 0) {
 # renamed a user's columns to make its own life easier would be a different
 # and worse bug, so this is asserted in both directions.
 for (cs in c("A_rename_dup", "F_add_dup", "G_insert_dup", "H_plain",
-             "J_rename_back", "K_autolabel", "L_stalecell", "M_movedtyped")) {
+             "J_rename_back", "K_autolabel", "L_stalecell", "M_movedtyped",
+             "N_scopeclamp")) {
     lb <- labels_of(cs)
     check_true("v55", sprintf("%s: the saved table has unique column names", cs),
                length(lb) > 0 && !any(duplicated(lb)))

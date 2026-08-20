@@ -38,7 +38,7 @@
                     ... + colName$[column] + ", row " + string$ (row) + "."
                     comment: "Change it and press Set to write."
                 endPause: "OK", 1, 0
-# --- stanza 6  (find_replace#1)  lines 306-317
+# --- stanza 6  (find_replace#1)  lines 349-360
         beginPause: "Find / Replace"
             sentence: "Find text", prevFind$
             sentence: "Replace with", prevReplace$
@@ -51,25 +51,25 @@
                 option: "Contains"
                 option: "Exact"
         .clicked = endPause: "Go Back", "Find", "Fnd Nxt", "Rep Nxt", "Rep All", 3, 0
-# --- stanza 7  (find#1)  lines 398-400
+# --- stanza 7  (find#1)  lines 441-443
                     beginPause: "Find"
                         comment: "No match found for """ + find_text$ + """."
                     endPause: "OK", 1, 0
-# --- stanza 8  (rep_nxt#1)  lines 412-415
+# --- stanza 8  (rep_nxt#1)  lines 455-458
                         beginPause: "Rep Nxt"
                             comment: "Replaced at column """ + .displayCol$ + """, row " + string$ (prevRow) + "."
                             comment: "New value: " + .newVal$
                         endPause: "OK", 1, 0
-# --- stanza 9  (found#1)  lines 419-422
+# --- stanza 9  (found#1)  lines 462-465
                         beginPause: "Found"
                             comment: "Column: " + .displayCol$ + ",  Row: " + string$ (prevRow)
                             comment: "Value: " + .foundVal$
                         endPause: "OK", 1, 0
-# --- stanza 10  (rep_all#1)  lines 456-458
+# --- stanza 10  (rep_all#1)  lines 499-501
                 beginPause: "Rep All"
                     comment: "Replaced " + string$ (.count) + " cell(s)."
                 endPause: "OK", 1, 0
-# --- stanza 11  (table_structure#1)  lines 474-486
+# --- stanza 11  (table_structure#1)  lines 517-529
     beginPause: "Table Structure"
         comment: displayName$ + ": "
         ... + string$ (.nRows) + " rows x "
@@ -83,42 +83,42 @@
             option: "Delete column..."
             option: "Rename column..."
     .clicked = endPause: "Go Back", "Next", 2, 0
-# --- stanza 12  (insert_row#1)  lines 500-503
+# --- stanza 12  (insert_row#1)  lines 543-546
             beginPause: "Insert Row"
                 comment: "Table has " + string$ (.nRows) + " rows."
                 natural: "After row", prevRow
             .clicked2 = endPause: "Go Back", "Insert", 2, 0
-# --- stanza 13  (cannot_delete#1)  lines 515-517
+# --- stanza 13  (cannot_delete#1)  lines 558-560
                 beginPause: "Cannot Delete"
                     comment: "Table has no rows to delete."
                 endPause: "OK", 1, 0
-# --- stanza 14  (delete_row#1)  lines 519-522
+# --- stanza 14  (delete_row#1)  lines 562-565
                 beginPause: "Delete Row"
                     comment: "Table has " + string$ (.nRows) + " rows."
                     natural: "Row number", prevRow
                 .clicked2 = endPause: "Go Back", "Delete", 2, 0
-# --- stanza 15  (add_column#2)  lines 543-545
+# --- stanza 15  (add_column#2)  lines 586-588
                 beginPause: "Add Column"
                     sentence: "Column name", .pending$
                 .clicked2 = endPause: "Go Back", "Add", 2, 0
-# --- stanza 16  (insert_column#1)  lines 570-574
+# --- stanza 16  (insert_column#1)  lines 613-617
                 beginPause: "Insert Column"
                     comment: "Table has " + string$ (.nCols) + " columns."
                     natural: "At position", prevCol
                     sentence: "Column name", .pending$
                 .clicked2 = endPause: "Go Back", "Insert", 2, 0
-# --- stanza 17  (delete_column#1)  lines 613-618
+# --- stanza 17  (delete_column#1)  lines 656-661
                 beginPause: "Delete Column"
                     optionmenu: "Column to delete", prevCol
                         for .iCol from 1 to .nCols
                             option: .colLabel$[.iCol]
                         endfor
                 .clicked2 = endPause: "Go Back", "Delete", 2, 0
-# --- stanza 18  (cannot_rename#1)  lines 634-636
+# --- stanza 18  (cannot_rename#1)  lines 677-679
                 beginPause: "Cannot Rename"
                     comment: "Table has no columns to rename."
                 endPause: "OK", 1, 0
-# --- stanza 19  (rename_column#1)  lines 652-658
+# --- stanza 19  (rename_column#1)  lines 695-701
                     beginPause: "Rename Column"
                         optionmenu: "Column to rename", prevCol
                             for .iCol from 1 to .nCols
@@ -126,7 +126,7 @@
                             endfor
                         sentence: "New name", .pending$
                     .clicked2 = endPause: "Go Back", "Rename", 2, 0
-# --- stanza 20  (cannot_open_the_table_editor#1)  lines 885-903
+# --- stanza 20  (cannot_open_the_table_editor#1)  lines 928-946
     beginPause: "Cannot Open the Table Editor"
         comment: "⚠  The editor did not open."
         comment: "──────────────────────────────────────────────"
@@ -146,7 +146,7 @@
         comment: "Click OK, select exactly one Table in the"
         comment: "Objects window, then open the editor again."
     .clicked = endPause: "OK", 1, 0
-# --- stanza 21  (cannot_use_that_column_name#1)  lines 936-962
+# --- stanza 21  (cannot_use_that_column_name#1)  lines 979-1005
     beginPause: "Cannot Use That Column Name"
         comment: "⚠  The column was not " + .verb$ + "."
         comment: "──────────────────────────────────────────────"
@@ -174,7 +174,7 @@
         comment: "Your selections are kept. Click Back to choose"
         comment: "another name, or Quit to leave the editor."
     .clicked = endPause: "Quit", "Back", 2, 0
-# --- stanza 22  (cannot_delete_column#1)  lines 993-1014
+# --- stanza 22  (cannot_delete_column#1)  lines 1036-1057
     beginPause: "Cannot Delete Column"
         comment: "⚠  The column was not deleted."
         comment: "──────────────────────────────────────────────"

@@ -303,6 +303,49 @@ procedure findReplaceDialog
             colName$[.iCol] = autoLabel.name$
         endfor
 
+        # SEED THE SCOPE MENU WITH A VALUE THAT IS STILL ON IT.
+        #
+        # The Scope list is rebuilt from the LIVE table on every pass —
+        # "All columns" followed by one entry per column — so the legal
+        # range is 1..nCols+1 and it SHRINKS when a column is deleted.
+        # prevScope is only what the user picked last time, and nothing
+        # revises it when the table changes underneath: scope 4 on a
+        # three-column table, then Table structure > Delete Column, and the
+        # remembered 4 is one past the end of a menu that now stops at 3.
+        #
+        # Praat does not clamp an out-of-range optionmenu default, and it
+        # does not fall back to the first entry either. Measured on 6.6.30
+        # under Xvfb, 20 August 2026, with a pause form built to this shape:
+        # a default of 4 against three options draws the dropdown BLANK — no
+        # entry shown, none selected — and then refuses every button on the
+        # form with "No option chosen for "Scope". Please correct command
+        # window ... or cancel." Go Back is refused with the same message as
+        # Find, and so is the window's own close box. There is no Stop button
+        # to fall back on: this endPause passes 0 to suppress it, as every
+        # dialog in the plugin does. So a user who deletes a column and
+        # re-opens Find/Replace is looking at a form that will not close, on
+        # a control that is showing them nothing, with no sentence anywhere
+        # saying which field is blocking it.
+        #
+        # Out of range falls back to "All columns" and not to the nearest
+        # surviving column. The column they had scoped to is gone; the one
+        # that slid into its index is a different column, and a Replace All
+        # seeded to it would rewrite cells the user never pointed at —
+        # silently, in a table that still looks well-formed afterwards, which
+        # is the exact class of harm the rest of this file exists to prevent.
+        # "All columns" is what the menu shows the first time it is opened,
+        # so a user who does not notice the reset gets the documented default
+        # rather than a guess about which column they meant.
+        #
+        # THE CLAMP IS LOCAL ON PURPOSE. A helper of this shape belongs in
+        # eml-lib.praat, and this script deliberately does not include it —
+        # see the file header and @refuseSelection. Pulling in some 26,000
+        # lines of statistics and graphing to reach three lines of arithmetic
+        # is a worse trade than keeping the three lines here.
+        if prevScope < 1 or prevScope > .nCols + 1
+            prevScope = 1
+        endif
+
         beginPause: "Find / Replace"
             sentence: "Find text", prevFind$
             sentence: "Replace with", prevReplace$

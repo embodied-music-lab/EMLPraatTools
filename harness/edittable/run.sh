@@ -641,6 +641,48 @@ tape "$K_MAIN" 3 'dlg_clicked = 1'
 run_case M_movedtyped "$FIX/plain.praat"
 
 # ---------------------------------------------------------------------------
+# N_scopeclamp — the remembered Scope must still be on the menu.
+# ---------------------------------------------------------------------------
+# Find/Replace rebuilds its Scope list from the LIVE table on every pass —
+# "All columns" plus one entry per column — so the legal range is 1..nCols+1
+# and it SHRINKS when a column is deleted. prevScope is only what the user
+# picked last time and nothing revises it when the table changes underneath.
+#
+# The tape picks scope 4 on a three-column table (entry 3, colB), presses
+# Rep All so the choice is remembered, deletes that column, and re-opens
+# Find/Replace. The first probe proves the memory really is holding 4 while
+# four is still legal; the second reads what the re-opened form is seeded
+# with, after the delete, when the menu stops at 3.
+#
+# THE PROBE IS THE WHOLE CASE, because the seeding itself is the one thing
+# the twin cannot run: `optionmenu: "Scope", prevScope` is inside the pause
+# stanza and the stanza is what was cut. What CAN be measured is the value
+# the shipped code hands that line, and it is measured at the point the
+# stanza used to be — the clamp runs before the dialog, so @dlgN sees exactly
+# what Praat would have seen. Out of range there is not a cosmetic problem:
+# measured on 6.6.30 under Xvfb, 20 Aug 2026, a default past the end draws
+# the dropdown blank and then refuses every button on the form — Go Back and
+# the window's close box included — with "No option chosen for "Scope"".
+# The user cannot close Find/Replace and cannot get back to their table.
+tape_reset
+tape "$K_MAIN" 1 'column = 1' 'row = 1' 'value$ = ""' 'dlg_clicked = 4'
+tape "$K_FR"   1 'find_text$ = "B"' 'replace_with$ = "Z"' 'scope = 4' \
+                 'match_type = 1' 'dlg_clicked = 5'
+tape "$K_FR"   2 \
+    'appendInfoLine: "PROBE|held|", prevScope, "|ncols=", findReplaceDialog.nCols' \
+    'dlg_clicked = 1'
+tape "$K_MAIN"   2 'column = 1' 'row = 1' 'value$ = ""' 'dlg_clicked = 5'
+tape "$K_STRUCT" 1 'action = 6' 'dlg_clicked = 2'
+tape "$K_DELCOL" 1 'column_to_delete = 3' 'column_to_delete$ = "colB"' \
+                   'dlg_clicked = 2'
+tape "$K_MAIN" 3 'column = 1' 'row = 1' 'value$ = ""' 'dlg_clicked = 4'
+tape "$K_FR"   3 \
+    'appendInfoLine: "PROBE|seeded|", prevScope, "|ncols=", findReplaceDialog.nCols' \
+    'dlg_clicked = 1'
+tape "$K_MAIN" 4 'dlg_clicked = 1'
+run_case N_scopeclamp "$FIX/plain.praat"
+
+# ---------------------------------------------------------------------------
 # 5. REPORT
 # ---------------------------------------------------------------------------
 say completed 1
@@ -648,7 +690,7 @@ say completed 1
 printf '%-14s %-5s %-6s %s\n' case exit ncols header
 for c in A_rename_dup B_delete_dup C_cell_dup D_repall_dup E_onecol \
          F_add_dup G_insert_dup H_plain I_findnav J_rename_back K_autolabel \
-         L_stalecell M_movedtyped; do
+         L_stalecell M_movedtyped N_scopeclamp; do
     printf '%-14s %-5s %-6s %s\n' "$c" \
         "$(awk -F'\t' -v k="${c}_exit" '$1==k{print $2}' "$TSV")" \
         "$(awk -F'\t' -v k="${c}_after_ncols" '$1==k{print $2}' "$TSV")" \

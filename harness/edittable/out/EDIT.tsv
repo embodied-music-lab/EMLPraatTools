@@ -1,7 +1,7 @@
 praat_version	Praat 6.6.30 (June 30 2026)
 file_under_test	eml-edit-table.praat
-file_sha	de9eb0dc5d902617d4d643ba50faddef7c532973dcaae02d65f0dc332e166826
-shipped_total_lines	1019
+file_sha	5aac2d77865f35b72c99b3dab92e44ec0fad7e4ad5545b8f3620a7a3443ea0ba
+shipped_total_lines	1062
 stanza_count	22
 stanza_1_key	eml_table_editor#1
 stanza_2_key	add_column#1
@@ -25,8 +25,8 @@ stanza_19_key	rename_column#1
 stanza_20_key	cannot_open_the_table_editor#1
 stanza_21_key	cannot_use_that_column_name#1
 stanza_22_key	cannot_delete_column#1
-twin_body_sha_shipped	097da7bbea583048f346fb0bdff148160773ba1cd2dc4b698be9943fbf2e4cdd
-twin_body_sha_twin	097da7bbea583048f346fb0bdff148160773ba1cd2dc4b698be9943fbf2e4cdd
+twin_body_sha_shipped	f7600af9be2f4d2407a0471673549ffd0353900ae077fa377dbc5562e0663daa
+twin_body_sha_twin	f7600af9be2f4d2407a0471673549ffd0353900ae077fa377dbc5562e0663daa
 twin_body_identical	1
 twin_excised_lines	175
 A_rename_dup_exit	0
@@ -120,4 +120,11 @@ M_movedtyped_after_ncols	3
 M_movedtyped_returned	1
 M_movedtyped_dlg_trace	eml_table_editor#3,eml_table_editor#3,eml_table_editor#3
 M_movedtyped_stderr_head	
+N_scopeclamp_exit	0
+N_scopeclamp_after_header	id,colA
+N_scopeclamp_after_row1	S1,A1
+N_scopeclamp_after_ncols	2
+N_scopeclamp_returned	1
+N_scopeclamp_dlg_trace	eml_table_editor#3,find_replace#1,rep_all#1,find_replace#1,eml_table_editor#3,table_structure#1,delete_column#1,eml_table_editor#3,find_replace#1,eml_table_editor#3
+N_scopeclamp_stderr_head	
 completed	1
