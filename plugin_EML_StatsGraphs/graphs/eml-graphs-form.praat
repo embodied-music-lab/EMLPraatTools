@@ -5260,8 +5260,8 @@ repeat
                     # observations exist, how many there are per point --
                     # ran against the time column the page OPENED with. Pick a
                     # different one from the menu and every one of those is
-                    # now describing a column that is no longer the time
-                    # column:
+                    # describing a column the user has just stopped treating
+                    # as the time column:
                     #
                     #   the tickboxes still offer the old time column as a
                     #   series and still hide the new one;

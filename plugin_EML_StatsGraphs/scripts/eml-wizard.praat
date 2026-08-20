@@ -917,7 +917,7 @@ if goal = 1
 
         label A3_TEST_PAGE
 
-        beginPause: "Paired / repeated — Choose test"
+        beginPause: "Paired — Choose test"
             comment: "📋 Table: " + displayTable$
             comment: "     " + replace$ (column_1$, "_", " ", 0)
             ... + " · vs · "
@@ -963,7 +963,7 @@ if goal = 1
         @wizardNormLabel: normChecked, normSummary$, test_approach
 
         if test_approach = 1
-            @wizardReportPlan: "Two paired / repeated measures",
+            @wizardReportPlan: "Two conditions (paired)",
             ... wizardNormLabel.result$,
             ... "Paired t-test (Cohen's d)",
             ... "n/a", column_1$, "", column_2$, displayTable$
@@ -971,7 +971,7 @@ if goal = 1
             ... "parametric"
             wizTestType$ = "parametric"
         else
-            @wizardReportPlan: "Two paired / repeated measures",
+            @wizardReportPlan: "Two conditions (paired)",
             ... wizardNormLabel.result$,
             ... "Wilcoxon signed-rank (r)",
             ... "n/a", column_1$, "", column_2$, displayTable$

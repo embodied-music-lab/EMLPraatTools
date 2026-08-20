@@ -68,13 +68,13 @@ Praat 6.6.30 under Xvfb, not on reasoning about Praat.
   halves of one quantity. The histogram page takes the other two savings and
   goes 32 to 30, not 29. Nothing else uses the pattern, so it is now unused
   everywhere.
-- **Terminology-uniformity audit** (new, small, not started). Every dialog,
-  report line and doc checked for four terms against R and SPSS usage:
-  CONDITION (a level of a within-subject factor), TOKEN (a replicate of the
-  same measurement within a cell), MEASUREMENT (the dependent variable
-  itself), WITHIN-SUBJECT / PAIRED (a design property; "paired" only at
-  k = 2). The line-chart tree's "different measurements" wording is correct
-  and out of scope — there it names genuinely different variables.
+- **Terminology-uniformity audit — done, with six fixes.** The four terms
+  now read the same way everywhere: CONDITION (a level of a within-subject
+  factor), TOKEN (a replicate within one cell), MEASUREMENT (the dependent
+  variable), and WITHIN-SUBJECT / PAIRED (a design property; "paired" only at
+  k = 2). What it caught is in the closed section. The line-chart tree's
+  "different measurements" wording was confirmed correct and left alone —
+  there it names genuinely different variables.
 - Booleans are OUT OF SCOPE by ruling: no gating, no collapsing, no
   relocation, labels unchanged. Title and subtitle stay two full-width
   rows, also by ruling.
@@ -188,6 +188,26 @@ rules.
   code has moved since the last re-drive.
 
 ## Closed
+
+**The exported summary counts conditions, not groups.** A repeated-measures
+ANOVA and a Friedman test wrote the number of conditions into the summary
+CSV under `n.groups` — the same column every independent-groups test uses.
+Anyone reading that file, or a script reading it, was told a
+between-subjects design had been run. It reads `n.conditions`.
+
+**"Compare paired..." says what it does.** The menu item read "Compare
+paired/repeated...", but the dialog behind it takes exactly two columns and
+offers only the paired t-test and Wilcoxon. Anyone with three or more
+conditions who followed the word "repeated" landed somewhere that cannot run
+their design. The repeated-measures route is the Stats Wizard, and the
+reproduction notes recorded with an RM-ANOVA or Friedman result now name it
+instead of the two-column dialog they used to point at.
+
+**The wizard stops calling a two-condition design "repeated measures".** Its
+plan report described a paired t-test or Wilcoxon as "Two paired / repeated
+measures", which reads in a manuscript as a design that was not run. It says
+"Two conditions (paired)". The page that chooses between them is titled
+"Paired — Choose test", matching the column-selection page beside it.
 
 **The line chart rebuilds its page when the time column moves.** Everything
 on that page except the time menu itself -- how many series tickboxes there

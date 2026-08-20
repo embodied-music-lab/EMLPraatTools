@@ -153,7 +153,7 @@ elsif demo_type = 3
         ... + newline$ + "         than once (within-subject)"
         ... + newline$ + "       → Two (paired t-test / Wilcoxon)"
         ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
-        ... + newline$ + "       Compare paired/repeated..."
+        ... + newline$ + "       Compare paired..."
 
 # ============================================================================
 # 4. Correlation: speaking F0 vs singing F0

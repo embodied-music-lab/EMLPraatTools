@@ -1848,7 +1848,7 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
         ... .col1$ + " vs " + .col2$ + ", " + .testType$,
         ... "Rows with a missing value in either column are dropped pairwise.",
         ... "@emlRunPairedAnalysis: data, """ + .col1$ + """, """ + .col2$ + """, """ + .testType$ + """",
-        ... "In the GUI: New > EML Stats & Graphs > Compare paired/repeated...",
+        ... "In the GUI: New > EML Stats & Graphs > Stats Wizard... (three or more conditions)",
         ... .recResult$, .error$
     endif
 
@@ -3375,7 +3375,7 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
         ... .conditionCols$ + ", subject " + .subjectCol$,
         ... "Sphericity is corrected, not assumed; the report names the correction.",
         ... "@emlRunRepeatedMeasuresAnalysis: data, """ + .subjectCol$ + """, """ + .conditionCols$ + """, " + string$ (.doPostHoc) + ", """ + .adjMethod$ + """",
-        ... "In the GUI: New > EML Stats & Graphs > Compare paired/repeated...",
+        ... "In the GUI: New > EML Stats & Graphs > Stats Wizard... (three or more conditions)",
         ... .recResult$, .error$
     endif
 
@@ -3515,7 +3515,7 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
         ... .conditionCols$ + ", subject " + .subjectCol$,
         ... "Rank-based repeated measures; it does not assume normality and does not test it.",
         ... "@emlRunFriedmanAnalysis: data, """ + .subjectCol$ + """, """ + .conditionCols$ + """, " + string$ (.doPostHoc) + ", """ + .adjMethod$ + """",
-        ... "In the GUI: New > EML Stats & Graphs > Compare paired/repeated (Friedman)...",
+        ... "In the GUI: New > EML Stats & Graphs > Stats Wizard... (three or more conditions, Friedman)",
         ... .recResult$, .error$
     endif
 
@@ -4675,7 +4675,13 @@ procedure emlDeclareRMResult: .tableName$, .n, .k
     @emlGlanceNum: "partial.eta.squared",
     ... emlRMAnovaTest.ssCond / (emlRMAnovaTest.ssCond + emlRMAnovaTest.ssErr)
     @emlGlanceNum: "n.subjects",  .n
-    @emlGlanceNum: "n.groups",    .k
+    # n.conditions AND NOT n.groups. The exported summary row is what a
+    # researcher pastes into R or into a manuscript table, and every other
+    # test in this file writes n.groups for genuinely INDEPENDENT groups. A
+    # repeated-measures design has no groups: .k counts the conditions each
+    # subject was measured under. Reading n.groups here says a
+    # between-subjects design was run.
+    @emlGlanceNum: "n.conditions", .k
     @emlGlanceNum: "nobs",        .n * .k
     @emlGlanceStr: "method",      "Repeated-measures ANOVA"
     ; THE EXPORTED half of the split pair, and the one that must not move.
@@ -4724,7 +4730,8 @@ procedure emlDeclareFriedmanResult: .tableName$, .n, .k
     @emlGlanceNum: "parameter",  emlFriedmanTest.df
     @emlGlanceNum: "kendalls.w", emlFriedmanTest.chiSq / (.n * (.k - 1))
     @emlGlanceNum: "n.subjects", .n
-    @emlGlanceNum: "n.groups",   .k
+    # n.conditions, for the reason written at the RM-ANOVA export above.
+    @emlGlanceNum: "n.conditions", .k
     @emlGlanceNum: "nobs",       .n * .k
     @emlGlanceStr: "method",     "Friedman rank sum test"
 endproc

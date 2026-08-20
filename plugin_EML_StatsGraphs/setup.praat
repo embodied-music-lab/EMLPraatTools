@@ -67,8 +67,8 @@ Add menu command: "Objects", "New", "Check normality (all columns)...", "Describ
 # Compare
 Add menu command: "Objects", "New", "-- eml compare --", "Check normality (all columns)...", 1, ""
 Add menu command: "Objects", "New", "Compare two groups...", "-- eml compare --", 1, "scripts/eml-compare-groups.praat"
-Add menu command: "Objects", "New", "Compare paired/repeated...", "Compare two groups...", 1, "scripts/eml-compare-paired.praat"
-Add menu command: "Objects", "New", "Compare k groups (ANOVA)...", "Compare paired/repeated...", 1, "scripts/eml-compare-k-groups.praat"
+Add menu command: "Objects", "New", "Compare paired...", "Compare two groups...", 1, "scripts/eml-compare-paired.praat"
+Add menu command: "Objects", "New", "Compare k groups (ANOVA)...", "Compare paired...", 1, "scripts/eml-compare-k-groups.praat"
 Add menu command: "Objects", "New", "Compare k groups (Kruskal-Wallis)...", "Compare k groups (ANOVA)...", 1, "scripts/eml-compare-kw.praat"
 Add menu command: "Objects", "New", "Compare two-way (ANOVA)...", "Compare k groups (Kruskal-Wallis)...", 1, "scripts/eml-compare-twoway.praat"
 
