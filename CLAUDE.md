@@ -31,6 +31,27 @@ git merge --ff-only FETCH_HEAD
 git push origin main
 ```
 
+## When the container rolls back
+
+This container is reclaimed and restored from older snapshots without
+warning; it has happened four times in one day. GitHub is the only durable
+copy of the work.
+
+After a rollback the container is BEHIND GitHub, not ahead. So:
+
+1. `git fetch origin main`, then `git reset --hard origin/main`.
+2. Spot-check that the content is really present, not just the commit ids.
+3. Recover anything GitHub is missing from the bundle already on Ian's
+   disk — that bundle is the only remaining copy.
+
+Do NOT build a fresh bundle from a rolled-back tree. A bundle carries work
+in one direction only, from a container that is ahead of GitHub. A
+rolled-back container has nothing to give, so the bundle is empty at best
+and points at an older HEAD at worst.
+
+Corollary: commit and bundle after every unit of work, not in batches.
+Anything uncommitted when a rollback lands is gone.
+
 ## Scope of work units
 
 One narrow stated scope per unit of work. Do not launch long drives that
