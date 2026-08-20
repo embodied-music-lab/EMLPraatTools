@@ -1176,64 +1176,99 @@ endproc
 # ============================================================================
 # ADJUSTMENT-METHOD LOOKUP
 # ============================================================================
-# Maps the "Adjustment method (nonparametric post-hoc only)" optionmenu index
-# used by every annotate-capable column-mapping dialog onto the string that
-# @emlBridgeGroupComparison expects in annotCorrectionMethod$. Index 2 (Holm)
-# is the default everywhere.
+# Maps a correction index onto the string @emlBridgeGroupComparison expects in
+# annotCorrectionMethod$. The index now comes from @emlComparisonFromMenu, so
+# the family and the correction are two outputs of one chosen row and cannot
+# disagree; see THE COMPARISON MENU below for why that replaced two controls
+# and the gate that had to stand between them.
 #
-# THE CONTROL IS CONSUMED ONLY ON THE NONPARAMETRIC (DUNN) POST-HOC PATH.
-# A parametric k >= 3 comparison annotates with Tukey, whose p comes from the
-# studentized range distribution and is ALREADY family-wise, so a Holm or a
-# Bonferroni step on top of it would double-correct: a Tukey draw is
-# md5-identical under either, and it is right to be. There is nothing honest
-# for the menu to do on that arm.
-#
-# SO THE MENU IS OFFERED ONLY ON THE NONPARAMETRIC ARM, on all six
-# annotate-capable column-mapping dialogs, and the parametric arm gets a
-# `comment:` in its place saying why there is nothing to choose. A live-looking
-# control that is silently ignored is the same class of defect as an editable
-# field whose value is thrown away at the commit, and the remedy is the same:
-# gate the field, do not qualify its label. The Dunn arm keeps the menu,
-# because it reads it — Holm and Bonferroni produce DIFFERENT annotated
-# p-values there, both matching scipy.
-#
-# The field name still carries the condition in parentheses, because Praat
-# cannot grey a field out conditionally inside a single form — the whole form
-# is built before the user touches anything. Praat strips a trailing
-# parenthesised part when it derives the variable name, so the value arrives
-# as adjustment_method.
-#
-# WHAT DECIDES, AND WHY IT IS A VARIABLE RATHER THAN A RE-TEST.
-#
-# `adjustOffered` is set to 0 immediately before the dialog is built and to 1
-# in the same branch that adds the field, so ONE value answers both "was the
-# field on the dialog" and "may adjustment_method be read back". Re-testing
-# the test-type variable at the commit is not the same question, and on three
-# of the six pages it is the WRONG question: the histogram, the grouped-violin
-# and the grouped-box commits write `prev_<x>AnnotTestType = test_type` a line
-# or two ABOVE the adjustment read, so by the time a re-test ran the variable
-# it would test has already been overwritten with the user's NEW choice. A
-# user who opened the page parametric and switched to Nonparametric before
-# pressing Draw would then pass the gate and read an adjustment_method that
-# was never on the screen — which in Praat is not an error but the value left
-# over from the last dialog that did have the field, on a different graph
-# type, possibly in a different session state.
-#
-# Praat does not delete a pause variable when the field goes away, so
-# READING WITHOUT THE GATE CANNOT FAIL LOUDLY. It returns stale data. That is
-# the whole reason the gate is one variable set next to the field rather than
-# a condition re-derived at the commit.
-#
-# A PARAMETRIC COMMIT LEAVES annotCorrectionMethod$ ALONE, and loses nothing
-# by it: the global is initialised to "holm" at file scope and a wrapper preset
-# writes it through @emlAdjustMethodName before the form opens, so the value in
-# hand is already the one a menu seeded from the same source would produce.
+# A parametric row loses nothing by carrying a correction it does not use:
+# Tukey is family-wise, and the global is initialised to "holm" at file scope
+# anyway, so a wrapper preset that writes it before the form opens still holds.
 #
 # Arguments:
 #   .idx — 1 = Bonferroni, 2 = Holm, 3 = Benjamini-Hochberg
 # Outputs:
 #   .name$ — "bonferroni", "holm", or "bh"
 # ============================================================================
+# THE COMPARISON MENU — one control, no expressible mismatch
+# ============================================================================
+# The test family and the post-hoc correction used to be two controls, and a
+# Praat dialog is static once drawn: the correction menu was BUILT from the
+# PREVIOUS run's test type, so its presence lagged the user's choice by one
+# press. Switching parametric -> nonparametric was the harmful direction —
+# the correction menu had not been built, so Dunn ran under whatever
+# correction the last run happened to leave behind, invisibly, and the user
+# never chose it. The other direction merely showed a control Tukey ignores.
+#
+# One control fixes it by construction. A mismatch is not guarded against;
+# it stops being expressible. Each row also reads the way a methods section
+# has to read, which is the same argument as the direction words on ranges.
+#
+# HEADERS ARE ROWS, AND THE GUARD IS THE ONE THE GRAPH MENU ALREADY USES.
+# @emlFilterGraphMenu marks a header with 0 in a parallel array and the main
+# form re-shows itself when the remap yields 0. This does the same: rows 1
+# and 3 are headers, @emlComparisonFromMenu reports .isHeader, and the page
+# re-shows. Two mechanisms for one idea would be one too many.
+# ----------------------------------------------------------------------------
+# @emlComparisonMenuRows
+# Emits the option rows. Called INSIDE a beginPause block, immediately after
+# the optionmenu line, so every page offers the same list in the same order.
+# ----------------------------------------------------------------------------
+procedure emlComparisonMenuRows
+    option: "-- Parametric --"
+    option: "Tukey HSD (family-wise; no separate correction)"
+    option: "-- Nonparametric --"
+    option: "Dunn, Holm (step-down; more power than Bonferroni)"
+    option: "Dunn, Bonferroni (most conservative)"
+    option: "Dunn, Benjamini-Hochberg (false discovery rate)"
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlComparisonFromMenu: .row
+# Outputs: .isHeader (1 = a category header, not a choice)
+#          .testType  (1 = parametric, 2 = nonparametric)
+#          .adjustIdx (1 = bonferroni, 2 = holm, 3 = bh — as @emlAdjustMethodName)
+# The parametric row carries holm as its adjustment so that switching to a
+# nonparametric row later starts from the same default the old two-control
+# page did. Tukey ignores it.
+# ----------------------------------------------------------------------------
+procedure emlComparisonFromMenu: .row
+    .isHeader = 0
+    .testType = 1
+    .adjustIdx = 2
+    if .row = 1 or .row = 3
+        .isHeader = 1
+    elsif .row = 4
+        .testType = 2
+        .adjustIdx = 2
+    elsif .row = 5
+        .testType = 2
+        .adjustIdx = 1
+    elsif .row = 6
+        .testType = 2
+        .adjustIdx = 3
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlComparisonToMenu: .testType, .adjustIdx
+# The inverse, for seeding the menu from what the page last used. Never
+# returns a header row: a seed that landed on one would re-show the page the
+# user just left.
+# ----------------------------------------------------------------------------
+procedure emlComparisonToMenu: .testType, .adjustIdx
+    .row = 2
+    if .testType = 2
+        .row = 4
+        if .adjustIdx = 1
+            .row = 5
+        elsif .adjustIdx = 3
+            .row = 6
+        endif
+    endif
+endproc
+
 procedure emlAdjustMethodName: .idx
     if .idx = 1
         .name$ = "bonferroni"
@@ -3236,12 +3271,12 @@ prev_histAnnotStyle = 1
 # annotate-capable dialog). 1 = Bonferroni, 2 = Holm, 3 = Benjamini-Hochberg.
 prev_annotAdjustIdx = 2
 
-# Was the Adjustment field actually put on the dialog that is about to be read
-# back? Set beside the field on all six annotate-capable pages, read at all
-# twelve commit sites. Declared here as well so that it is defined before any
-# page runs: Praat aborts on an unset variable, and a gate that can abort is
-# worse than no gate at all.
-adjustOffered = 0
+# THE ADJUSTMENT GATE IS GONE, AND SO IS THE CONDITION IT GUARDED.
+# It existed because the correction field was only put on the dialog when the
+# PREVIOUS run had been nonparametric, so the commit sites had to ask whether
+# the field they were about to read even existed. One comparison menu removed
+# the condition: the row is always there, and the family and the correction
+# come out of it together. See THE COMPARISON MENU above.
 
 # Violin jitter persistence
 prev_violinShowJitter = 0
@@ -5886,19 +5921,11 @@ repeat
                     # field, and read at this page's two commit sites.
                     # See ADJUSTMENT-METHOD LOOKUP for why it is a
                     # variable and not a re-test of tmpBarTestType.
-                    adjustOffered = 0
-                    optionmenu: "Test type", tmpBarTestType
-                        option: "Parametric"
-                        option: "Nonparametric"
-                    if tmpBarTestType = 2
-                        adjustOffered = 1
-                        optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
-                            option: "Bonferroni"
-                            option: "Holm"
-                            option: "Benjamini-Hochberg"
-                    else
-                        comment: "Adjustment method: none — Tukey HSD is already family-wise."
-                    endif
+                    ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
+                    ; for why the family and the correction stopped being two.
+                    @emlComparisonToMenu: tmpBarTestType, prev_annotAdjustIdx
+                    optionmenu: "Comparison", emlComparisonToMenu.row
+                        @emlComparisonMenuRows
                     optionmenu: "Significance style", tmpBarAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -5967,6 +5994,27 @@ repeat
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", barToggleLabel$, "Draw", 4, 1
+            ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
+            ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
+            ; has no other way to group a menu, and a user can land on one. This
+            ; is the guard the graph-type menu already uses, in the same shape:
+            ; say what happened and re-show the page rather than drawing from a
+            ; row that names no test.
+            ; Guarded on existence because the comparison row only appears in
+            ; advanced mode, and Praat aborts on reading a variable that was
+            ; never put on a dialog.
+            if variableExists ("comparison")
+                @emlComparisonFromMenu: comparison
+                if emlComparisonFromMenu.isHeader = 1
+                    if clicked > 2
+                        beginPause: "Please choose a comparison."
+                            comment: "The item you selected is a category header."
+                            comment: "Please choose a test from the list."
+                        endPause: "OK", 1, 0
+                        clicked = 0
+                    endif
+                endif
+            endif
 
             if clicked = 1
                 barFormDone = 1
@@ -5986,11 +6034,12 @@ repeat
                     prev_adv_bar_annotShowEffect = show_effect_sizes
                     prev_adv_bar_annotAlpha = alpha
                     prev_adv_bar_annotLayoutMode = annotation_layout
-                    prev_adv_bar_testType = test_type
-                    prev_adv_bar_annotStyle = significance_style
-                    if adjustOffered = 1
-                        prev_annotAdjustIdx = adjustment_method
+                    @emlComparisonFromMenu: comparison
+                    if emlComparisonFromMenu.isHeader = 0
+                        prev_adv_bar_testType = emlComparisonFromMenu.testType
+                        prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
                     endif
+                    prev_adv_bar_annotStyle = significance_style
                     prev_adv_bar_VMin$ = string$ (left_Value_range)
                     prev_adv_bar_VMax$ = string$ (right_Value_range)
                     prev_adv_bar_gridMode = gridline_mode
@@ -6110,12 +6159,13 @@ repeat
                     annotShowEffect = show_effect_sizes
                     annotAlpha = alpha
                     annotLayoutMode = annotation_layout
-                    if adjustOffered = 1
-                        @emlAdjustMethodName: adjustment_method
-                        annotCorrectionMethod$ = emlAdjustMethodName.name$
-                        prev_annotAdjustIdx = adjustment_method
-                    endif
-                    if test_type = 2
+                    ; ONE CONTROL, RESOLVED ONCE. The family and the correction
+                    ; come out of the same row, so they cannot disagree.
+                    @emlComparisonFromMenu: comparison
+                    @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
+                    annotCorrectionMethod$ = emlAdjustMethodName.name$
+                    prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
                         annotTestType$ = "parametric"
@@ -6310,19 +6360,11 @@ repeat
                     # field, and read at this page's two commit sites.
                     # See ADJUSTMENT-METHOD LOOKUP for why it is a
                     # variable and not a re-test of tmpViolinTestType.
-                    adjustOffered = 0
-                    optionmenu: "Test type", tmpViolinTestType
-                        option: "Parametric"
-                        option: "Nonparametric"
-                    if tmpViolinTestType = 2
-                        adjustOffered = 1
-                        optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
-                            option: "Bonferroni"
-                            option: "Holm"
-                            option: "Benjamini-Hochberg"
-                    else
-                        comment: "Adjustment method: none — Tukey HSD is already family-wise."
-                    endif
+                    ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
+                    ; for why the family and the correction stopped being two.
+                    @emlComparisonToMenu: tmpViolinTestType, prev_annotAdjustIdx
+                    optionmenu: "Comparison", emlComparisonToMenu.row
+                        @emlComparisonMenuRows
                     optionmenu: "Significance style", tmpViolinAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -6392,6 +6434,27 @@ repeat
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", violinToggleLabel$, "Draw", 4, 1
+            ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
+            ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
+            ; has no other way to group a menu, and a user can land on one. This
+            ; is the guard the graph-type menu already uses, in the same shape:
+            ; say what happened and re-show the page rather than drawing from a
+            ; row that names no test.
+            ; Guarded on existence because the comparison row only appears in
+            ; advanced mode, and Praat aborts on reading a variable that was
+            ; never put on a dialog.
+            if variableExists ("comparison")
+                @emlComparisonFromMenu: comparison
+                if emlComparisonFromMenu.isHeader = 1
+                    if clicked > 2
+                        beginPause: "Please choose a comparison."
+                            comment: "The item you selected is a category header."
+                            comment: "Please choose a test from the list."
+                        endPause: "OK", 1, 0
+                        clicked = 0
+                    endif
+                endif
+            endif
 
             if clicked = 1
                 violinFormDone = 1
@@ -6410,11 +6473,12 @@ repeat
                     prev_adv_vio_annotShowEffect = show_effect_sizes
                     prev_adv_vio_annotAlpha = alpha
                     prev_adv_vio_annotLayoutMode = annotation_layout
-                    prev_adv_vio_testType = test_type
-                    prev_adv_vio_annotStyle = significance_style
-                    if adjustOffered = 1
-                        prev_annotAdjustIdx = adjustment_method
+                    @emlComparisonFromMenu: comparison
+                    if emlComparisonFromMenu.isHeader = 0
+                        prev_adv_vio_testType = emlComparisonFromMenu.testType
+                        prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
                     endif
+                    prev_adv_vio_annotStyle = significance_style
                     prev_adv_vio_showJitter = show_jittered_points
                     prev_adv_vio_VMin$ = string$ (left_Value_range)
                     prev_adv_vio_VMax$ = string$ (right_Value_range)
@@ -6538,12 +6602,13 @@ repeat
                     annotAlpha = alpha
                     annotLayoutMode = annotation_layout
                     prev_violinShowJitter = show_jittered_points
-                    if adjustOffered = 1
-                        @emlAdjustMethodName: adjustment_method
-                        annotCorrectionMethod$ = emlAdjustMethodName.name$
-                        prev_annotAdjustIdx = adjustment_method
-                    endif
-                    if test_type = 2
+                    ; ONE CONTROL, RESOLVED ONCE. The family and the correction
+                    ; come out of the same row, so they cannot disagree.
+                    @emlComparisonFromMenu: comparison
+                    @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
+                    annotCorrectionMethod$ = emlAdjustMethodName.name$
+                    prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
                         annotTestType$ = "parametric"
@@ -7270,19 +7335,11 @@ repeat
                     # field, and read at this page's two commit sites.
                     # See ADJUSTMENT-METHOD LOOKUP for why it is a
                     # variable and not a re-test of tmpBoxTestType.
-                    adjustOffered = 0
-                    optionmenu: "Test type", tmpBoxTestType
-                        option: "Parametric"
-                        option: "Nonparametric"
-                    if tmpBoxTestType = 2
-                        adjustOffered = 1
-                        optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
-                            option: "Bonferroni"
-                            option: "Holm"
-                            option: "Benjamini-Hochberg"
-                    else
-                        comment: "Adjustment method: none — Tukey HSD is already family-wise."
-                    endif
+                    ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
+                    ; for why the family and the correction stopped being two.
+                    @emlComparisonToMenu: tmpBoxTestType, prev_annotAdjustIdx
+                    optionmenu: "Comparison", emlComparisonToMenu.row
+                        @emlComparisonMenuRows
                     optionmenu: "Significance style", tmpBoxAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -7352,6 +7409,27 @@ repeat
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", boxToggleLabel$, "Draw", 4, 1
+            ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
+            ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
+            ; has no other way to group a menu, and a user can land on one. This
+            ; is the guard the graph-type menu already uses, in the same shape:
+            ; say what happened and re-show the page rather than drawing from a
+            ; row that names no test.
+            ; Guarded on existence because the comparison row only appears in
+            ; advanced mode, and Praat aborts on reading a variable that was
+            ; never put on a dialog.
+            if variableExists ("comparison")
+                @emlComparisonFromMenu: comparison
+                if emlComparisonFromMenu.isHeader = 1
+                    if clicked > 2
+                        beginPause: "Please choose a comparison."
+                            comment: "The item you selected is a category header."
+                            comment: "Please choose a test from the list."
+                        endPause: "OK", 1, 0
+                        clicked = 0
+                    endif
+                endif
+            endif
 
             if clicked = 1
                 boxFormDone = 1
@@ -7370,11 +7448,12 @@ repeat
                     prev_adv_box_annotShowEffect = show_effect_sizes
                     prev_adv_box_annotAlpha = alpha
                     prev_adv_box_annotLayoutMode = annotation_layout
-                    prev_adv_box_testType = test_type
-                    prev_adv_box_annotStyle = significance_style
-                    if adjustOffered = 1
-                        prev_annotAdjustIdx = adjustment_method
+                    @emlComparisonFromMenu: comparison
+                    if emlComparisonFromMenu.isHeader = 0
+                        prev_adv_box_testType = emlComparisonFromMenu.testType
+                        prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
                     endif
+                    prev_adv_box_annotStyle = significance_style
                     prev_adv_box_showJitter = show_jittered_points
                     prev_adv_box_VMin$ = string$ (left_Value_range)
                     prev_adv_box_VMax$ = string$ (right_Value_range)
@@ -7498,12 +7577,13 @@ repeat
                     annotAlpha = alpha
                     annotLayoutMode = annotation_layout
                     prev_boxShowJitter = show_jittered_points
-                    if adjustOffered = 1
-                        @emlAdjustMethodName: adjustment_method
-                        annotCorrectionMethod$ = emlAdjustMethodName.name$
-                        prev_annotAdjustIdx = adjustment_method
-                    endif
-                    if test_type = 2
+                    ; ONE CONTROL, RESOLVED ONCE. The family and the correction
+                    ; come out of the same row, so they cannot disagree.
+                    @emlComparisonFromMenu: comparison
+                    @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
+                    annotCorrectionMethod$ = emlAdjustMethodName.name$
+                    prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
                         annotTestType$ = "parametric"
@@ -7690,19 +7770,11 @@ repeat
                     # field, and read at this page's two commit sites.
                     # See ADJUSTMENT-METHOD LOOKUP for why it is a
                     # variable and not a re-test of prev_histAnnotTestType.
-                    adjustOffered = 0
-                    optionmenu: "Test type", prev_histAnnotTestType
-                        option: "Parametric"
-                        option: "Nonparametric"
-                    if prev_histAnnotTestType = 2
-                        adjustOffered = 1
-                        optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
-                            option: "Bonferroni"
-                            option: "Holm"
-                            option: "Benjamini-Hochberg"
-                    else
-                        comment: "Adjustment method: none — Tukey HSD is already family-wise."
-                    endif
+                    ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
+                    ; for why the family and the correction stopped being two.
+                    @emlComparisonToMenu: prev_histAnnotTestType, prev_annotAdjustIdx
+                    optionmenu: "Comparison", emlComparisonToMenu.row
+                        @emlComparisonMenuRows
                     optionmenu: "Significance style", prev_histAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -7783,6 +7855,27 @@ repeat
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", histToggleLabel$, "Draw", 4, 1
+            ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
+            ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
+            ; has no other way to group a menu, and a user can land on one. This
+            ; is the guard the graph-type menu already uses, in the same shape:
+            ; say what happened and re-show the page rather than drawing from a
+            ; row that names no test.
+            ; Guarded on existence because the comparison row only appears in
+            ; advanced mode, and Praat aborts on reading a variable that was
+            ; never put on a dialog.
+            if variableExists ("comparison")
+                @emlComparisonFromMenu: comparison
+                if emlComparisonFromMenu.isHeader = 1
+                    if clicked > 2
+                        beginPause: "Please choose a comparison."
+                            comment: "The item you selected is a category header."
+                            comment: "Please choose a test from the list."
+                        endPause: "OK", 1, 0
+                        clicked = 0
+                    endif
+                endif
+            endif
 
             if clicked = 1
                 histFormDone = 1
@@ -7805,11 +7898,12 @@ repeat
                     prev_adv_his_annotShowNS = show_nonsignificant
                     prev_adv_his_annotShowEffect = show_effect_sizes
                     prev_adv_his_annotAlpha = alpha
-                    prev_adv_his_testType = test_type
-                    prev_adv_his_annotStyle = significance_style
-                    if adjustOffered = 1
-                        prev_annotAdjustIdx = adjustment_method
+                    @emlComparisonFromMenu: comparison
+                    if emlComparisonFromMenu.isHeader = 0
+                        prev_adv_his_testType = emlComparisonFromMenu.testType
+                        prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
                     endif
+                    prev_adv_his_annotStyle = significance_style
                     prev_adv_his_VMin$ = string$ (left_Value_range)
                     prev_adv_his_VMax$ = string$ (right_Value_range)
                     prev_adv_his_freqMax$ = string$ (right_Frequency_range)
@@ -7962,14 +8056,16 @@ repeat
                     annotShowEffect = show_effect_sizes
                     annotAlpha = alpha
                     annotLayoutMode = 3
-                    prev_histAnnotTestType = test_type
+                    @emlComparisonFromMenu: comparison
+                    prev_histAnnotTestType = emlComparisonFromMenu.testType
                     prev_histAnnotStyle = significance_style
-                    if adjustOffered = 1
-                        @emlAdjustMethodName: adjustment_method
-                        annotCorrectionMethod$ = emlAdjustMethodName.name$
-                        prev_annotAdjustIdx = adjustment_method
-                    endif
-                    if test_type = 2
+                    ; ONE CONTROL, RESOLVED ONCE. The family and the correction
+                    ; come out of the same row, so they cannot disagree.
+                    @emlComparisonFromMenu: comparison
+                    @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
+                    annotCorrectionMethod$ = emlAdjustMethodName.name$
+                    prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
                         annotTestType$ = "parametric"
@@ -8205,19 +8301,11 @@ repeat
                     # field, and read at this page's two commit sites.
                     # See ADJUSTMENT-METHOD LOOKUP for why it is a
                     # variable and not a re-test of prev_gvAnnotTestType.
-                    adjustOffered = 0
-                    optionmenu: "Test type", prev_gvAnnotTestType
-                        option: "Parametric"
-                        option: "Nonparametric"
-                    if prev_gvAnnotTestType = 2
-                        adjustOffered = 1
-                        optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
-                            option: "Bonferroni"
-                            option: "Holm"
-                            option: "Benjamini-Hochberg"
-                    else
-                        comment: "Adjustment method: none — Tukey HSD is already family-wise."
-                    endif
+                    ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
+                    ; for why the family and the correction stopped being two.
+                    @emlComparisonToMenu: prev_gvAnnotTestType, prev_annotAdjustIdx
+                    optionmenu: "Comparison", emlComparisonToMenu.row
+                        @emlComparisonMenuRows
                     optionmenu: "Significance style", prev_gvAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -8298,6 +8386,27 @@ repeat
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", gvToggleLabel$, "Draw", 4, 1
+            ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
+            ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
+            ; has no other way to group a menu, and a user can land on one. This
+            ; is the guard the graph-type menu already uses, in the same shape:
+            ; say what happened and re-show the page rather than drawing from a
+            ; row that names no test.
+            ; Guarded on existence because the comparison row only appears in
+            ; advanced mode, and Praat aborts on reading a variable that was
+            ; never put on a dialog.
+            if variableExists ("comparison")
+                @emlComparisonFromMenu: comparison
+                if emlComparisonFromMenu.isHeader = 1
+                    if clicked > 2
+                        beginPause: "Please choose a comparison."
+                            comment: "The item you selected is a category header."
+                            comment: "Please choose a test from the list."
+                        endPause: "OK", 1, 0
+                        clicked = 0
+                    endif
+                endif
+            endif
 
             if clicked = 1
                 gvFormDone = 1
@@ -8316,11 +8425,12 @@ repeat
                     prev_adv_gv_annotShowNS = show_nonsignificant
                     prev_adv_gv_annotShowEffect = show_effect_sizes
                     prev_adv_gv_annotAlpha = alpha
-                    prev_adv_gv_testType = test_type
-                    prev_adv_gv_annotStyle = significance_style
-                    if adjustOffered = 1
-                        prev_annotAdjustIdx = adjustment_method
+                    @emlComparisonFromMenu: comparison
+                    if emlComparisonFromMenu.isHeader = 0
+                        prev_adv_gv_testType = emlComparisonFromMenu.testType
+                        prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
                     endif
+                    prev_adv_gv_annotStyle = significance_style
                     prev_adv_gv_showJitter = show_jittered_points
                     prev_adv_gv_VMin$ = string$ (left_Value_range)
                     prev_adv_gv_VMax$ = string$ (right_Value_range)
@@ -8450,14 +8560,16 @@ repeat
                     annotShowEffect = show_effect_sizes
                     annotAlpha = alpha
                     annotLayoutMode = 3
-                    prev_gvAnnotTestType = test_type
+                    @emlComparisonFromMenu: comparison
+                    prev_gvAnnotTestType = emlComparisonFromMenu.testType
                     prev_gvAnnotStyle = significance_style
-                    if adjustOffered = 1
-                        @emlAdjustMethodName: adjustment_method
-                        annotCorrectionMethod$ = emlAdjustMethodName.name$
-                        prev_annotAdjustIdx = adjustment_method
-                    endif
-                    if test_type = 2
+                    ; ONE CONTROL, RESOLVED ONCE. The family and the correction
+                    ; come out of the same row, so they cannot disagree.
+                    @emlComparisonFromMenu: comparison
+                    @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
+                    annotCorrectionMethod$ = emlAdjustMethodName.name$
+                    prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
                         annotTestType$ = "parametric"
@@ -8634,19 +8746,11 @@ repeat
                     # field, and read at this page's two commit sites.
                     # See ADJUSTMENT-METHOD LOOKUP for why it is a
                     # variable and not a re-test of prev_gbAnnotTestType.
-                    adjustOffered = 0
-                    optionmenu: "Test type", prev_gbAnnotTestType
-                        option: "Parametric"
-                        option: "Nonparametric"
-                    if prev_gbAnnotTestType = 2
-                        adjustOffered = 1
-                        optionmenu: "Adjustment method (nonparametric post-hoc only)", prev_annotAdjustIdx
-                            option: "Bonferroni"
-                            option: "Holm"
-                            option: "Benjamini-Hochberg"
-                    else
-                        comment: "Adjustment method: none — Tukey HSD is already family-wise."
-                    endif
+                    ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
+                    ; for why the family and the correction stopped being two.
+                    @emlComparisonToMenu: prev_gbAnnotTestType, prev_annotAdjustIdx
+                    optionmenu: "Comparison", emlComparisonToMenu.row
+                        @emlComparisonMenuRows
                     optionmenu: "Significance style", prev_gbAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -8727,6 +8831,27 @@ repeat
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", gbToggleLabel$, "Draw", 4, 1
+            ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
+            ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
+            ; has no other way to group a menu, and a user can land on one. This
+            ; is the guard the graph-type menu already uses, in the same shape:
+            ; say what happened and re-show the page rather than drawing from a
+            ; row that names no test.
+            ; Guarded on existence because the comparison row only appears in
+            ; advanced mode, and Praat aborts on reading a variable that was
+            ; never put on a dialog.
+            if variableExists ("comparison")
+                @emlComparisonFromMenu: comparison
+                if emlComparisonFromMenu.isHeader = 1
+                    if clicked > 2
+                        beginPause: "Please choose a comparison."
+                            comment: "The item you selected is a category header."
+                            comment: "Please choose a test from the list."
+                        endPause: "OK", 1, 0
+                        clicked = 0
+                    endif
+                endif
+            endif
 
             if clicked = 1
                 gbFormDone = 1
@@ -8745,11 +8870,12 @@ repeat
                     prev_adv_gb_annotShowNS = show_nonsignificant
                     prev_adv_gb_annotShowEffect = show_effect_sizes
                     prev_adv_gb_annotAlpha = alpha
-                    prev_adv_gbTestType = test_type
-                    prev_adv_gbAnnotStyle = significance_style
-                    if adjustOffered = 1
-                        prev_annotAdjustIdx = adjustment_method
+                    @emlComparisonFromMenu: comparison
+                    if emlComparisonFromMenu.isHeader = 0
+                        prev_adv_gbTestType = emlComparisonFromMenu.testType
+                        prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
                     endif
+                    prev_adv_gbAnnotStyle = significance_style
                     prev_adv_gbShowJitter = show_jittered_points
                     prev_adv_gb_VMin$ = string$ (left_Value_range)
                     prev_adv_gb_VMax$ = string$ (right_Value_range)
@@ -8877,14 +9003,16 @@ repeat
                     annotShowEffect = show_effect_sizes
                     annotAlpha = alpha
                     annotLayoutMode = 3
-                    prev_gbAnnotTestType = test_type
+                    @emlComparisonFromMenu: comparison
+                    prev_gbAnnotTestType = emlComparisonFromMenu.testType
                     prev_gbAnnotStyle = significance_style
-                    if adjustOffered = 1
-                        @emlAdjustMethodName: adjustment_method
-                        annotCorrectionMethod$ = emlAdjustMethodName.name$
-                        prev_annotAdjustIdx = adjustment_method
-                    endif
-                    if test_type = 2
+                    ; ONE CONTROL, RESOLVED ONCE. The family and the correction
+                    ; come out of the same row, so they cannot disagree.
+                    @emlComparisonFromMenu: comparison
+                    @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
+                    annotCorrectionMethod$ = emlAdjustMethodName.name$
+                    prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
                         annotTestType$ = "parametric"
