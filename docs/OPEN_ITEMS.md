@@ -93,34 +93,57 @@ STILL OPEN, lagging controls:
 
 (The line-chart column-mapping page is closed -- see below.)
 
-STILL OPEN, stored values that can seed a menu out of range:
+(Stored values that could seed a menu out of range are closed -- see below.)
 
-- Six config keys are read from disk and used as menu defaults with no range
-  check: colour mode, output DPI, show axis names, show ticks, show axis
-  values, group sort. Praat draws a menu whose default exceeds its option
-  count blank and then refuses the form — a dead end the user cannot escape,
-  and the bad value is on disk so restarting does not clear it. Gridline mode
-  and legend placement both have clamps; these six do not.
-- Numeric config keys parse to undefined on an empty or corrupt line, and the
-  two clamps that exist run after the whole parse loop rather than on the key.
+DEAD CONTROLS -- RULED BY FABLE, 20 Aug (`docs/RULING_DEAD_CONTROLS.md`).
+One principle governs all of them, and it is house law now: THE PLUGIN MAY
+OVERRIDE A USER'S CHOICE, BUT NEVER QUIETLY. Wherever code ignores a control
+-- because of the data or because of a sibling control -- it says so at the
+moment it happens, in the output the user reads and in the recorded script.
 
-STILL OPEN, dead controls (present but inert for some choices), all four
-confirmed in the code. RULED 20 AUG (Ian) TO BE A FABLE QUESTION, not a
-per-control answer from him: the memo is `docs/MEMO_TO_FABLE_dead_controls.md`,
-which sets out what each one does today, the five answers available, and why
-two of them (re-show on change; compose on a later page) did not exist as
-options when these controls were written. Nothing here is built until she
-rules.
+- Histogram display mode: kept, with the condition in the label ("2 or more
+  groups") and a line at the override site saying a faceted request on one
+  group was drawn overlapped.
+- The regression group column: the ruling was REVISED. This is an unfinished
+  feature, not a mislabelled control -- the wording promises per-group work
+  and the correlation dialog already has the whole pattern. Finish it: per-
+  group fits beside the overall one, groups too small named and skipped,
+  labelled rows in the export, and the drawn lines then matching the report.
+  Ruled into 1.0.
+- The wizard's variance assumption and the three wrapper labels: both become
+  ONE list of complete choices, the pattern the comparison pages already use
+  -- "Parametric -- Welch t (unequal variances)", "Pairwise t (Welch), Holm".
+  The dead control disappears by construction, because the sub-choice only
+  exists inside the options where it is real.
 
-- Histogram display mode is offered whenever advanced mode is on, and forced
-  to a single value whenever the data is ungrouped.
-- The regression dialog's group column is built and read, but the analysis is
-  called without it; it only seeds the drawing step.
-- The wizard's variance assumption is shown on every path and passed on the
-  nonparametric call, where nothing reads it.
-- Three wrapper labels carry "(t and Wilcoxon only)", "(pairwise t only)" and
-  "(post hoc only)" and are always shown and always read regardless of the
-  neighbouring choice.
+Sequencing is Fable's: the histogram disclosure and the two collapses ride
+the compaction sweep's re-drives; the regression feature lands with the
+wording and output work so its report strings are written once.
+
+## Newly ordered, 20 Aug
+
+- **The correlation confidence interval ignores the alpha you set.** It is a
+  Fisher-z interval with the 1.96 quantile written into the code, while the
+  error bars and mean intervals on the same figure are t-based and honour
+  alpha. At alpha = .01 one figure carries a 99% error bar beside a 95%
+  correlation band and says nothing about it. The quantile comes from alpha;
+  every other hardcoded quantile found in the same sweep is dispositioned.
+  Oracle: R's cor.test at two alphas, plus one driven figure.
+- **The door-agreement census** (`docs/WORK_ORDER_DOOR_CENSUS.md`). Every
+  user intent reachable through more than one door gets one adversarial
+  fixture -- built so that divergent mappings produce loudly different
+  numbers rather than coincidentally equal ones -- and a leg per door. Each
+  leg asserts one of exactly two things: the doors agree to oracle tolerance,
+  or they state plainly that they are showing different models. Silent
+  disagreement is the only red. Seeded with one already found: the
+  correlation dialog reports overall and per-group labelled, the regression
+  dialog reports overall only, and the scatter annotation reports per-group
+  only.
+- **Behaviour is not intent** (standing law). When a control's promise and
+  the code's behaviour disagree, the first question is which side is the
+  defect. Lowering a label to match the behaviour needs positive evidence
+  that the behaviour is the design; without it the finding is an unfinished
+  implementation and goes to Ian as scope.
 
 ## C. Everything else
 
@@ -188,6 +211,13 @@ rules.
   code has moved since the last re-drive.
 
 ## Closed
+
+**A bad line in the config file can no longer lock a dialog.** Every menu
+setting read from disk is parsed and range-checked in one step, at the line
+it is read. A value that is not an option, or a line that is empty or
+corrupt, falls back to the default instead of drawing a blank menu the form
+then refuses to close -- a dead end that survived restarting, because the bad
+value was on disk.
 
 **The exported summary counts conditions, not groups.** A repeated-measures
 ANOVA and a Friedman test wrote the number of conditions into the summary
