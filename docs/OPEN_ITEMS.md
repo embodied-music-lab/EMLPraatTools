@@ -158,13 +158,6 @@ confirmed in the code:
 
 ### Test-coverage gaps
 
-- **The render-level geometry check is written but never runs.** It parses a
-  saved figure and asserts the box, the ticks and the plotted extremes land
-  on one rectangle, for all thirteen figure types, with a mutation
-  demonstration beside it, and it passes on its own. It is the only check
-  file in the tree that the suite runner does not list, so a regression it
-  would catch reaches a green suite. Wiring it in is one line plus a
-  coverage entry.
 - The validator index documents the older checks only; roughly a dozen of
   the newest have no entry in it, so "read the index to see what is
   checked" now understates the suite.
@@ -191,6 +184,16 @@ confirmed in the code:
   code has moved since the last re-drive.
 
 ## Closed
+
+**The render-level geometry check runs.** It reads the frame, the ticks and
+the plotted extremes out of a saved figure as numbers and asserts they land
+on one rectangle, for all thirteen figure types, with two break tests that
+move the font by one point and must turn it red. It was written, passing,
+and the one check file the suite runner did not list — so it caught
+nothing. The suite now also refuses to run at all if any check file in the
+folder is missing from its list, which is the asymmetry that hid this: the
+runner asked whether every name was a real file and never whether every
+real file was named.
 
 **The comparison control is one dropdown.** Test type, post-hoc and
 correction were three controls, and the correction menu was built from the

@@ -1211,6 +1211,24 @@ scripts <- c(
                                  # collide more.
                                  # Source only; reads no harness.
     ,
+    "v100_box_geometry.R"        # Praat stores a viewport as an OUTER rectangle
+                                 # and converts it using the margins in effect
+                                 # at that moment, and margin width is a
+                                 # function of font size -- so a figure whose
+                                 # font size changes between two
+                                 # coordinate-dependent commands draws them on
+                                 # two different rectangles, and nothing
+                                 # errors. The figure saves, the pixel counts
+                                 # every other harness takes come back normal,
+                                 # and the only witness is where the ink
+                                 # landed. This reads the frame, the ticks and
+                                 # the plotted extremes out of a saved EPS as
+                                 # numbers and asserts they are one rectangle,
+                                 # for all thirteen figure types, with two
+                                 # break tests that move the font by one point
+                                 # and must turn it red.
+                                 # Reads harness/boxgeom.
+    ,
     "v101_dispatch_coverage.R"   # thirteen figure types reach the page through
                                  # the form's dispatch, and until this existed
                                  # nothing drove any of them through it. Every
@@ -1267,6 +1285,29 @@ if (!is.character(scripts)) {
     sz <- file.size(file.path(HERE, here))
     if (any(sz == 0))
         faults <- c(faults, sprintf("%s is an empty file", here[sz == 0]))
+
+    # ---------------------------------------------------------------------
+    # AND THE OTHER DIRECTION, WHICH IS THE ONE THAT ACTUALLY BIT.
+    # ---------------------------------------------------------------------
+    # Everything above asks whether each NAME in the list is a real file.
+    # Nothing asked whether each real FILE is in the list, and that asymmetry
+    # is silent by construction: a validator nobody lists contributes no
+    # checks and no complaint, so the suite reports green over a check that
+    # never ran. v100_box_geometry.R sat written, passing and unlisted for a
+    # day -- the one check standing between the font-geometry defect class
+    # and a repeat, reporting nothing.
+    #
+    # The population is every file in this folder named vNN_*.R. The four
+    # that are not validators -- this file, the coverage census, the shared
+    # helpers and the LRE oracle -- do not match that shape, so the rule
+    # needs no exception list to maintain.
+    onDisk <- sort(grep("^v[0-9]+_.*\\.R$",
+                        list.files(HERE), value = TRUE))
+    unlisted <- setdiff(onDisk, real)
+    if (length(unlisted))
+        faults <- c(faults, sprintf(
+            "%s is in %s but not in the list -- it would never run", unlisted,
+            HERE))
 }
 if (length(faults))
     eml_abort(sprintf("the script list is not a list of scripts (%d fault(s)):",
