@@ -391,7 +391,7 @@ testSound = Create Sound as pure tone: "test", 1, 0, 1, 44100, 440, 0.4, 0.01, 0
 
 # --- Test 5.1: Pitch extraction ---
 selectObject: testSound
-testPitch = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "no", 0.03, 0.45, 0.01, 0.35, 0.14, 0.14
+testPitch = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "no", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
 @emlExtractPitchValues: testPitch, "Hertz"
 .t5_1_hasData = (emlExtractPitchValues.n > 0)
 # A 440 Hz tone should produce values near 440

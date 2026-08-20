@@ -4237,12 +4237,12 @@ repeat
                     selectObject: originalSourceId
                     sourceType$ = selected$ ()
                     if startsWith (sourceType$, "Sound")
-                        objectId = To Pitch (filtered autocorrelation): 0, newFloor, pitchTop, 15, "yes", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
+                        objectId = To Pitch (filtered autocorrelation): 0, newFloor, pitchTop, 15, "no", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
                     else
                         # Spectrum source — two-step conversion
                         tmpSnd = To Sound
                         selectObject: tmpSnd
-                        objectId = To Pitch (filtered autocorrelation): 0, newFloor, pitchTop, 15, "yes", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
+                        objectId = To Pitch (filtered autocorrelation): 0, newFloor, pitchTop, 15, "no", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
                         removeObject: tmpSnd
                     endif
                     loadedObjectId = objectId

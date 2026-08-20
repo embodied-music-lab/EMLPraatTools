@@ -236,6 +236,24 @@ endproc
 # Requires: @emlSetAdaptiveTheme has been called for this panel.
 # No arguments — reads from emlSetAdaptiveTheme outputs.
 # ----------------------------------------------------------------------------
+# @emlPitchArgsFAC: .floor, .top
+# The canonical filtered-autocorrelation parameter tail, stated once.
+# Outputs: .args$ — the argument list as a recorded script would write it.
+#
+# The floor and the ceiling are the session's, because the user chooses them
+# and they change the contour. Everything after them is canon and is not a
+# per-call decision: 15 candidates, very accurate OFF, and the six thresholds
+# the appendix fixes. Very accurate ON changes voiced edge coverage, which
+# moves a short token's mean by about a hertz -- a difference between two
+# doors onto the same sound, which is the kind of thing a reader cannot see
+# and cannot reproduce.
+# ----------------------------------------------------------------------------
+procedure emlPitchArgsFAC: .floor, .top
+    .args$ = "0, " + string$ (.floor) + ", " + string$ (.top)
+    ... + ", 15, ""no"", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14"
+endproc
+
+# ----------------------------------------------------------------------------
 procedure emlSetPanelViewport
     ; THE SIZE IS ASSERTED BEFORE THE SELECT, NOT BEFORE THE BOX.
     ; Praat stores a viewport as an OUTER rectangle: `Select inner viewport`
@@ -7729,8 +7747,13 @@ procedure emlConvertForGraph: .sourceId, .targetType$, .pitchFloor, .pitchTop
         .srcType$ = .full$
     endif
 
-    .pitchArgs$ = "0, " + string$ (.pitchFloor) + ", " + string$ (.pitchTop)
-    ... + ", 15, ""yes"", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14"
+    ; ONE SOURCE FOR THE EXECUTED CALL AND THE EMITTED ONE.
+    ; @emlPitchArgsFAC states the canonical filtered-autocorrelation tail
+    ; once. The call below is written from the same procedure that writes
+    ; this string, so a recorded script cannot claim parameters the session
+    ; did not use -- which is the way a methods section goes wrong quietly.
+    @emlPitchArgsFAC: .pitchFloor, .pitchTop
+    .pitchArgs$ = emlPitchArgsFAC.args$
     .pitchWhy$ = "The pitch floor and ceiling are the ones this session used. "
     ... + "They change the contour, so they belong in a methods section."
 
@@ -7766,7 +7789,7 @@ procedure emlConvertForGraph: .sourceId, .targetType$, .pitchFloor, .pitchTop
         selectObject: .sourceId
         if .targetType$ = "Pitch"
             .result = To Pitch (filtered autocorrelation): 0, .pitchFloor,
-            ... .pitchTop, 15, "yes", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
+            ... .pitchTop, 15, "no", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
             .code$ = "data = To Pitch (filtered autocorrelation): "
             ... + .pitchArgs$
             .why$ = .pitchWhy$
@@ -7804,7 +7827,7 @@ procedure emlConvertForGraph: .sourceId, .targetType$, .pitchFloor, .pitchTop
             .tmp = To Sound
             selectObject: .tmp
             .result = To Pitch (filtered autocorrelation): 0, .pitchFloor,
-            ... .pitchTop, 15, "yes", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
+            ... .pitchTop, 15, "no", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
             removeObject: .tmp
             .code$ = "tmp = To Sound" + newline$
             ... + "selectObject: tmp" + newline$

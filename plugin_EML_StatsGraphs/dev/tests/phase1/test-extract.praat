@@ -172,7 +172,7 @@ Set numeric value: 4, "post", 120
 testSound = Create Sound from formula: "testTone", 1, 0, 1, 44100, "sin(2*pi*200*x)"
 
 selectObject: testSound
-testPitch = To Pitch: 0.0, 75, 600
+testPitch = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "no", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
 
 # --- Test Formant object ---
 # Use a vowel-like sound for formant testing
