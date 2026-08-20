@@ -212,24 +212,31 @@ dialog_text () {
 #
 # FIELD ORDER, read off plugin/graphs/eml-graphs-form.praat:
 #
+#   EVERY RANGE IS ONE ROW OF TWO BOXES, and the tab ring visits the LEFT box
+#   then the RIGHT one -- so a pair is always (minimum, maximum) in that
+#   order, whatever order the two used to be stacked in. The second pair on
+#   the acoustic pages used to be stacked maximum-above-minimum, which is why
+#   these indices read as though two of them are swapped against the older
+#   note: they are, and the pairing is what swapped them.
+#
 #   Pitch Contour Settings (Sound source, so the pitch fields are present)
-#     0 Time minimum  1 Time maximum  2 Frequency maximum  3 Frequency minimum
+#     0 Time minimum  1 Time maximum  2 Frequency minimum  3 Frequency maximum
 #     4 Y axis unit   5 Pitch floor   6 Pitch ceiling
 #   Waveform Settings
-#     0 Time minimum  1 Time maximum  2 Amplitude maximum  3 Amplitude minimum
+#     0 Time minimum  1 Time maximum  2 Amplitude minimum  3 Amplitude maximum
 #   Spectrum Settings
-#     0 Frequency minimum  1 Frequency maximum  2 Power maximum
-#     3 Power minimum
+#     0 Frequency minimum  1 Frequency maximum  2 Power minimum
+#     3 Power maximum
 #   Box Plot -- Column Mapping, ADVANCED, parametric (so the adjustment
 #   optionmenu is a comment rather than a field)
 #     0 Value column  1 Group column  2 Group order  3 Annotate
 #     4 Test type     5 Significance style  6 Show nonsignificant
 #     7 Show effect sizes  8 Annotation layout  9 Alpha
-#     10 Show jittered points  11 Value maximum  12 Value minimum
+#     10 Show jittered points  11 Value minimum  12 Value maximum
 #   Scatter Plot -- Column Mapping, ADVANCED, no group column
 #     0 X column  1 Y column  2 Use group column  3 Correlation method
 #     4 Regression  5 Significance style  6 Show data points  7 Dot size
-#     8 X maximum  9 X minimum  10 Y maximum  11 Y minimum
+#     8 X minimum  9 X maximum  10 Y minimum  11 Y maximum
 #
 # BUTTON ROWS: the type pages are Go Back / Quit / <toggle> / Draw, so Draw is
 # btn1. The main form is Quit / Continue, so Continue is btn1. The refusal is
@@ -255,37 +262,37 @@ PLAN
   # THE SAME PAGE, THE OTHER PAIR. Frequency minimum 300, maximum 0.
   pitch_freq) cat <<'PLAN'
 EML Graphs|btn1
-Pitch Contour Settings|tab3=300,btn1
+Pitch Contour Settings|tab2=300,btn1
 Axis range|ocr,ink,btn1
 EML Graphs|btn1
-Pitch Contour Settings|tab2=500,btn1
+Pitch Contour Settings|tab3=500,btn1
 Graph Complete|ink,btn3
 PLAN
   ;;
   wave_amp) cat <<'PLAN'
 EML Graphs|btn1
-Waveform Settings|tab3=0.2,btn1
+Waveform Settings|tab2=0.2,btn1
 Axis range|ocr,ink,btn1
 EML Graphs|btn1
-Waveform Settings|tab2=0.9,btn1
+Waveform Settings|tab3=0.9,btn1
 Graph Complete|ink,btn3
 PLAN
   ;;
   spec_power) cat <<'PLAN'
 EML Graphs|btn1
-Spectrum Settings|tab3=20,btn1
+Spectrum Settings|tab2=20,btn1
 Axis range|ocr,ink,btn1
 EML Graphs|btn1
-Spectrum Settings|tab2=60,btn1
+Spectrum Settings|tab3=60,btn1
 Graph Complete|ink,btn3
 PLAN
   ;;
   box_value) cat <<'PLAN'
 EML Graphs|btn1
-Box Plot -- Column Mapping|tab12=300,btn1
+Box Plot -- Column Mapping|tab11=300,btn1
 Axis range|ocr,ink,btn1
 EML Graphs|btn1
-Box Plot -- Column Mapping|tab11=400,btn1
+Box Plot -- Column Mapping|tab12=400,btn1
 Graph Complete|ink,btn3
 PLAN
   ;;
@@ -294,10 +301,10 @@ PLAN
   # two conflicts must name both at once rather than one per round trip.
   scatter_xy) cat <<'PLAN'
 EML Graphs|btn1
-Scatter Plot -- Column Mapping|tab9=300,tab11=5,btn1
+Scatter Plot -- Column Mapping|tab8=300,tab10=5,btn1
 Axis range|ocr,ink,btn1
 EML Graphs|btn1
-Scatter Plot -- Column Mapping|tab8=400,tab10=400,btn1
+Scatter Plot -- Column Mapping|tab9=400,tab11=400,btn1
 Graph Complete|ink,btn3
 PLAN
   ;;
@@ -311,7 +318,7 @@ EML Graphs|btn1
 Box Plot -- Column Mapping|btn1
 Graph Complete|ink,btn1
 EML Graphs|btn1
-Box Plot -- Column Mapping|tab11=400,btn1
+Box Plot -- Column Mapping|tab12=400,btn1
 Graph Complete|ink,btn3
 PLAN
   ;;

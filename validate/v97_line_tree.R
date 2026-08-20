@@ -784,15 +784,23 @@ check_true(V, "[meas2] and asks which measurement takes that scale",
 # range" caption -- and that is what this asserts, because the photograph is
 # the evidence. The two boxes still bind separate variables; the source check
 # below pins those names.
-# THE SENTINEL SITS IN THE ROW ON THIS PAGE, not in the heading. The heading
-# names the axis for the whole group; the row is self-contained -- which end
-# each box holds and what zero means -- because it is the only range here and
-# there is room for it. The eighteen other range rows on the draw path carry
-# the sentinel in their heading instead, since those pages have two ranges
-# under one heading and the row has to stay short enough not to wrap.
+# THE SENTINEL SITS IN THE HEADING, like the eighteen other range rows on the
+# draw path. It used to sit in the row, because this is the only range on the
+# page and there was room. There is not any more: the row's noun is now
+# "Second axis" rather than "Range", and "left Second axis (bottom/top, both
+# 0 = auto)" WRAPS at the dialog's default width -- measured, and visible in
+# the photograph this check reads, where the wrapped line comes back through
+# OCR as "both 0 = o o auto". A label a machine cannot read is one a person
+# has to squint at.
+# THE NOUN IS THE QUANTITY, NOT THE SHAPE. Praat makes a field's variable by
+# cutting the label at its first "(", so a row labelled "Range" derives
+# `left_Range` -- a name every other unqualified range in the form would also
+# derive the moment one rendered beside it, with the page drawing both rows
+# and keeping only the last. "Second axis" cannot collide with anything.
 check_true(V, "[meas2] and offers the range on the 0 = auto sentinel",
            has(p3, "Right y-axis") &&
-           has(p3, "Range (bottom/top, both 0 = auto)"))
+           has(p3, "Right y-axis (both 0 = auto)") &&
+           has(p3, "Second axis (bottom/top)"))
 check_true(V, "[meas2] the range is one row of two boxes, not two rows",
            !has(p3, "Right minimum") && !has(p3, "Right maximum"))
 check_true(V, "[meas2] the axis name, blank = the column name",

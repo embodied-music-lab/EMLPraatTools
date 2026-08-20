@@ -1,8 +1,8 @@
 These two measurements are on different scales, so each gets its own.
 Its ticks and its name go in the right margin.
-». Right y-axis
+\. Right y-axis (both 0 = auto)
 Which measurement: cq v
-Range (bottom/top, both 0 = auto): 9 0
+Second axis (bottom/top): 9 0
 Axis name (blank = the column name):
 Line style: Dashed Vv
 Undo Go Back Draw

@@ -1916,7 +1916,10 @@ procedure emlGraphsCheckAxisRanges
     # the page that asks for it because this is where a pair is judged. The
     # line chart's second-dataset page tests its COLUMN and carries its two
     # numbers out; the pair itself arrives here with the other six.
-    @emlGraphsAxisPairRefusal: "Right", secondMin, secondMax
+    # NAMED AS THE PAGE NAMES IT. The row the user filled in says "Second
+    # axis"; a refusal that answers it with the word "Right" makes the reader
+    # hunt for a field by that name, and there is none.
+    @emlGraphsAxisPairRefusal: "Second axis", secondMin, secondMax
     .refused = emlGraphsAxisRefusalN
 endproc
 # ============================================================================
@@ -5710,7 +5713,7 @@ repeat
                                         ; every row made the page read as five
                                         ; unrelated settings that happen to share
                                         ; a word.
-                                        comment: "📐 Right y-axis"
+                                        comment: "📐 Right y-axis (both 0 = auto)"
                                         optionmenu: "Which measurement", tsRightPick
                                             option: tsSeriesCol$[1]
                                             option: tsSeriesCol$[2]
@@ -5727,11 +5730,23 @@ repeat
                                         ; The cue word STAYS in the derived
                                         ; variable name, and Praat lowercases
                                         ; only the first character of a label, so
-                                        ; these bind `left_Range` and
-                                        ; `right_Range`.
+                                        ; these bind `left_Second_axis` and
+                                        ; `right_Second_axis`.
                                         ; APPENDIX_C_GUI section C.1.
-                                        real: "left Range (bottom/top, both 0 = auto)", tmpSecMin$
-                                        real: "right Range (bottom/top, both 0 = auto)", tmpSecMax$
+                                        ;
+                                        ; THE NOUN IS "SECOND AXIS", NOT "RANGE".
+                                        ; Praat cuts a label at its first "(" to
+                                        ; make the variable name, so every
+                                        ; unqualified range on any page that ever
+                                        ; renders beside this one derives the same
+                                        ; `left_Range` -- and a page with two rows
+                                        ; deriving one name draws both and keeps
+                                        ; only the last, silently. Naming the
+                                        ; quantity instead of the shape is what
+                                        ; makes that impossible rather than
+                                        ; merely unlikely.
+                                        real: "left Second axis (bottom/top)", tmpSecMin$
+                                        real: "right Second axis (bottom/top)", tmpSecMax$
                                         sentence: "Axis name (blank = the column name)", tmpSecLabel$
                                         optionmenu: "Line style", tsSecondStyle
                                             option: "Solid"
@@ -5749,8 +5764,8 @@ repeat
                                         tsSecondDone = 1
                                         tsRightPick = which_measurement
                                         tsSecondStyle = line_style
-                                        tmpSecMin$ = string$ (left_Range)
-                                        tmpSecMax$ = string$ (right_Range)
+                                        tmpSecMin$ = string$ (left_Second_axis)
+                                        tmpSecMax$ = string$ (right_Second_axis)
                                         tmpSecLabel$ = axis_name$
                                         tsSecondColName$ = tsSeriesCol$[tsRightPick]
                                         tsLeftPick = 3 - tsRightPick

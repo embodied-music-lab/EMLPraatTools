@@ -446,12 +446,31 @@ check_true("v84", "the sweep procedure is defined once",
 # THE PAIR ROSTER, DERIVED FROM THE DIALOGS. Every axis the form offers a
 # minimum AND a maximum field for must be named to the refusal. This is the
 # rule a seventh pair trips without anyone writing a new test.
+# THE VOCABULARY THIS READS IS THE ONE THE FORM USES. Every axis range on
+# these pages is now ONE ROW OF TWO BOXES -- Praat renders a `left X` field
+# and a `right X` field side by side -- so the two ends of a range are no
+# longer two fields called "X minimum" and "X maximum". They are `left Value
+# range (bottom/top)` and `right Value range (bottom/top)`, and a scan looking
+# for the word "minimum" finds nothing at all.
+#
+# THAT IS THE FAILURE MODE THIS COMMENT EXISTS TO PREVENT A SECOND TIME. The
+# check did not go red when the labels changed; it reported ZERO pairs and
+# went red on a floor of six, which reads like the form losing its refusals
+# rather than like a scanner that has stopped matching. The population is
+# printed for exactly that reason -- an empty roster is now visibly an empty
+# roster.
+#
+# A pair is a quantity for which the form offers BOTH a left and a right box.
 lab <- function(side) {
-    pat <- sprintf('real: "([^"]*) %s"', side)
+    pat <- sprintf('real: "%s ([^"(]*)', side)
     hits <- grep(pat, code, value = TRUE)
-    unique(sub(sprintf('.*real: "([^"]*) %s".*', side), "\\1", hits))
+    unique(trimws(sub(sprintf('.*real: "%s ([^"(]*).*', side), "\\1", hits)))
 }
-pair_labels <- sort(intersect(lab("minimum"), lab("maximum")))
+# The trailing noun is dropped: the refusal names the QUANTITY ("Time",
+# "Value"), while the field label may carry "range" after it. Both are the
+# same axis, and the roster is about which axes exist, not about how each
+# page words its row.
+pair_labels <- sort(sub(" +range$", "", intersect(lab("left"), lab("right"))))
 check_true("v84",
            sprintf("the form's dialogs offer %d min/max pairs [%s]",
                    length(pair_labels), paste(pair_labels, collapse = ", ")),
