@@ -1193,17 +1193,16 @@ endproc
 # ============================================================================
 # THE COMPARISON MENU — one control, no expressible mismatch
 # ============================================================================
-# The test family and the post-hoc correction used to be two controls, and a
-# Praat dialog is static once drawn: the correction menu was BUILT from the
-# PREVIOUS run's test type, so its presence lagged the user's choice by one
-# press. Switching parametric -> nonparametric was the harmful direction —
-# the correction menu had not been built, so Dunn ran under whatever
-# correction the last run happened to leave behind, invisibly, and the user
-# never chose it. The other direction merely showed a control Tukey ignores.
+# ONE CONTROL, BECAUSE A PRAAT DIALOG IS STATIC ONCE DRAWN.
+# A dialog cannot rebuild a correction menu when the user changes the test
+# family beside it, so a family control and a correction control on one page
+# can only ever agree by luck: whichever the page was built from is one press
+# behind whatever the user just chose, and Praat cannot unset the leftover.
 #
-# One control fixes it by construction. A mismatch is not guarded against;
-# it stops being expressible. Each row also reads the way a methods section
-# has to read, which is the same argument as the direction words on ranges.
+# Stating the family and its correction in a single row removes the
+# possibility rather than guarding against it. Each row also reads the way a
+# methods section has to read, which is the same argument as the direction
+# words on ranges.
 #
 # HEADERS ARE ROWS, AND THE GUARD IS THE ONE THE GRAPH MENU ALREADY USES.
 # @emlFilterGraphMenu marks a header with 0 in a parallel array and the main
@@ -3298,13 +3297,10 @@ prev_autoTitleType = 0
 # The seed belongs HERE, in the sentinel block that runs once per session --
 # not per workflow call, or a wrapper's second Draw would resurrect a
 # subtitle the user had just cleared.
-# It used to be written to the config on every exit and read back at
-# startup, so a subtitle typed for one figure reappeared over an unrelated
-# figure days later -- a caption is written about a particular figure and
-# almost never true of the next one. It is still remembered ACROSS DRAWS
-# within a session, because config_subtitle$ holds it and a redraw should
-# not make the user retype it; the config file simply no longer carries it,
-# so every session starts blank. Same rule as the page controls: remembered
+# A caption is written about a particular figure and is almost never true of
+# the next one, so it is not carried on disk. It IS remembered across draws
+# within a session, because config_subtitle$ holds it and a redraw should not
+# make the user retype it. Same rule as the page controls: remembered
 # while you work, reset when you come back.
 prev_subtitle$ = config_subtitle$
 

@@ -91,13 +91,11 @@ endif
 
 nSteps = emlRecordN
 if nSteps < 1
-    # STOP MEANS STOP (author's ruling, 19 August 2026). This branch used to
-    # refuse: it left the session running on the grounds that an empty
-    # recording was one the user might still want. That is OVERRULED. The
-    # menu item is called 'Stop recording and open' and the name is the
-    # contract -- it stops, whether or not there was anything to open, and it
-    # says so rather than leaving the user to guess whether the session is
-    # still live.
+    # STOP MEANS STOP. The menu item is called 'Stop recording and open' and
+    # the name is the contract: it ends the recording whether or not there was
+    # anything to open, and it says which happened rather than leaving the
+    # user to guess whether the session is still live. An accidental stop
+    # costs one click; a command that does not do what it says costs trust.
     @emlRecordDiscard
     appendInfoLine: ""
     appendInfoLine: "------------------------------------------------------------"

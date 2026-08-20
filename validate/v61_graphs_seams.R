@@ -342,81 +342,105 @@ check_true("v61",
 #     but a picture cannot say whether the value was READ, and reading a field
 #     that is not on the screen is the failure above.
 #
-# WHAT SEPARATES THEM: the gate variable, counted at both ends. `adjustOffered`
-# is set to 0 immediately before each of the six dialogs is built and to 1
-# inside the same branch that adds the field, so ONE value answers both "was
-# the field on the dialog" and "may adjustment_method be read back". The
-# checks below assert that the two ends agree in NUMBER, that the reads are
-# guarded by that variable and not by a re-test of the test type, and -- in
-# the drive -- that the two arms disagree on the screen as well as in the
-# variable.
+# WHAT SEPARATES THEM NOW: there is one control, so there is nothing to gate.
+# The family and its correction are two outputs of one chosen row, and the row
+# is on every one of the six dialogs unconditionally. A gate variable existed
+# to answer "was the correction field even built"; with the row always built,
+# the question has no content and the checks below assert the shape that
+# replaced it instead.
 #
-# THE LABEL, STILL PINNED, AND NOW MERELY TRUE. Six menus, on the six
-# nonparametric arms. A seventh would be the field back where it was ruled
-# out; a fifth would be a graph type that lost it from the arm that reads it.
-check("v61", "the adjustment menu survives on six arms and no more (D5)",
-      6L, sum(grepl('optionmenu: "Adjustment method \\(nonparametric post-hoc only\\)"',
-                    fcode)), tol = 0)
+# SIX MENUS, ONE PER ANNOTATE-CAPABLE PAGE. A seventh would be a page that
+# grew one outside the registry; a fifth would be a page that lost the ability
+# to choose a test at all.
+check("v61", "the comparison menu stands on six dialogs and no more",
+      6L, sum(grepl('optionmenu: "Comparison"', fcode)), tol = 0)
 
-# SIX GATES OPENED, ONE PER MENU. `adjustOffered = 1` is written in the branch
-# that adds the field and nowhere else, so this is the count of dialogs that
-# can offer it.
-check("v61", "six dialogs open the gate, one per menu (RULING 1a)",
-      6L, sum(grepl("^\\s*adjustOffered = 1\\s*$", fcode)), tol = 0)
-# AND EVERY MENU IS INSIDE ONE. Proximity, for the reason section 1 already
-# gives: Praat has no block scope a static reader can lean on, so the anchor
-# is the line that must immediately precede it. `adjustOffered = 1` is the
-# first statement of the branch and the optionmenu is the second, so the
-# window is tight on purpose -- a wide window would pass on a file where the
-# gate opened somewhere else entirely.
-.gateAt <- grep("^\\s*adjustOffered = 1\\s*$", fcode)
-.menuAt <- grep('optionmenu: "Adjustment method \\(nonparametric post-hoc only\\)"',
-                fcode)
-check("v61",
-      "every adjustment menu is inside a gate that was just opened",
+# AND EVERY ONE OF THEM IS THE SHARED LIST. The rows come from one procedure,
+# so a page cannot quietly offer a different set of tests from its siblings --
+# which is what six hand-copied option blocks would eventually become.
+.menuAt <- grep('optionmenu: "Comparison"', fcode)
+.rowsAt <- grep("^\\s*@emlComparisonMenuRows\\s*$", fcode)
+check("v61", "every comparison menu draws its rows from the one registry",
       6L,
-      sum(vapply(.menuAt, function(i) any(.gateAt == i - 1), logical(1))),
-      tol = 0)
-# AND SIX PARAMETRIC ARMS SAY WHY THERE IS NOTHING TO CHOOSE. Five would be a
-# graph type whose parametric page simply lost a row with no account of it,
-# which is the shape of change a user reads as a bug.
-check("v61", "and six parametric arms say what replaced it",
-      6L,
-      sum(grepl('comment: "Adjustment method: none', fcode)), tol = 0)
-
-# THE READS. Eighteen statements -- six toggle stashes and six commits of
-# three lines each -- and TWELVE gates, one per commit site. The two numbers
-# are counted separately and neither implies the other: eighteen reads with
-# eleven gates is a page committing a field that was not on it, and twelve
-# gates with seventeen reads is a page that quietly stopped honouring the menu
-# on the arm that does read it.
-check("v61", "adjustment_method is read at eighteen sites",
-      18L, sum(grepl("\\badjustment_method\\b", fcode)), tol = 0)
-check("v61", "and twelve gates guard them, one per commit site",
-      12L, sum(grepl("^\\s*if adjustOffered = 1\\s*$", fcode)), tol = 0)
-.readAt <- grep("\\badjustment_method\\b", fcode)
-.guardAt <- grep("^\\s*if adjustOffered = 1\\s*$", fcode)
-check("v61",
-      "and no read stands outside one",
-      18L,
-      sum(vapply(.readAt,
-                 function(i) any(.guardAt < i & .guardAt > i - 5), logical(1))),
+      sum(vapply(.menuAt, function(i) any(.rowsAt == i + 1), logical(1))),
       tol = 0)
 
-# THE GUARD IS THE GATE VARIABLE AND NOT A RE-TEST OF THE TEST TYPE, and this
-# is the check that records the subtlety rather than leaving it to be
-# rediscovered. Three of the six pages -- histogram, grouped violin, grouped
-# box -- write `prev_<x>AnnotTestType = test_type` ONE OR TWO LINES ABOVE the
-# adjustment commit. A guard written as `if prev_gvAnnotTestType = 2` would
-# therefore be testing the user's NEW choice, made after the dialog was built,
-# and a user who opened the page parametric and switched to Nonparametric
-# before pressing Draw would pass it and read a field that was never on the
-# screen. So: no test-type variable may appear in a guard position here.
-check("v61",
-      "no adjustment read is guarded by a test-type variable instead",
+# AND EVERY ONE IS SEEDED FROM WHAT THE PAGE LAST USED, through the inverse of
+# the same registry. A page seeded any other way would open on a row that does
+# not match the figure it last drew.
+check("v61", "and every menu is seeded through the inverse map",
+      6L, sum(grepl("^\\s*@emlComparisonToMenu:", fcode)), tol = 0)
+
+# THE REGISTRY IS SINGULAR. Three procedures, defined once each. Two
+# definitions of the forward map is how the six pages drift apart again.
+check("v61", "the comparison registry is defined exactly once",
+      3L,
+      sum(grepl("^procedure emlComparisonMenuRows\\s*$", fcode)) +
+      sum(grepl("^procedure emlComparisonFromMenu:", fcode)) +
+      sum(grepl("^procedure emlComparisonToMenu:", fcode)),
+      tol = 0)
+
+# THE HEADER GUARD, ON EVERY PAGE. The list carries category headings as rows,
+# because Praat has no other way to group a menu, so a user can land on one.
+# Six guards, and each one refuses only the Draw button -- refusing the
+# toggle would trap a user who wanted to switch modes.
+check("v61", "six pages refuse a category heading",
+      6L, sum(grepl("^\\s*if emlComparisonFromMenu\\.isHeader = 1\\s*$", fcode)),
+      tol = 0)
+
+# AND THE REFUSAL CANNOT DRAW. The guard clears the button value; a bare
+# `else` on the dispatch would catch that cleared value and draw anyway, which
+# is a refusal that prints its message and then does the thing it refused.
+# Naming the Draw arm is what makes the refusal real, so the count of named
+# arms is pinned to the count of guards.
+# Stated as the absence of the hazard, and scoped to the pages that carry the
+# guard. A page without a comparison menu may end its dispatch with a bare
+# `else` safely -- nothing clears its button value. A page WITH one may not:
+# the cleared value would fall into that else and draw the figure the guard
+# just refused. So for each guard, the first draw below it must sit on a
+# named arm.
+.guardAt <- grep("^\\s*if emlComparisonFromMenu\\.isHeader = 1\\s*$", fcode)
+.doneAt  <- grep("^\\s*\\w+FormDone = 1\\s*$", fcode)
+check("v61", "and no guarded page starts its draw from a bare else",
       0L,
-      sum(grepl("^\\s*if (tmp\\w*TestType|prev_\\w*AnnotTestType|test_type) = 2\\s*$",
-                fcode[unlist(lapply(.readAt, function(i) max(1, i - 4):(i - 1)))])),
+      sum(vapply(.guardAt, function(g) {
+          after <- .doneAt[.doneAt > g]
+          if (!length(after)) return(FALSE)
+          # the draw arm is the LAST done-flag in this page's dispatch, since
+          # "Go Back" sets one too and sits above it
+          d <- after[min(2L, length(after))]
+          grepl("^\\s*else\\s*$", fcode[d - 1])
+      }, logical(1))),
+      tol = 0)
+
+# NOTHING READS THE RETIRED FIELDS. `test_type` and `adjustment_method` were
+# the two controls' variables. Praat cannot unset a form variable, so a read
+# left behind would return whatever the last dialog that had the field set,
+# silently -- the exact failure the one-control shape removes.
+check("v61", "no page reads the retired two-control fields",
+      0L,
+      sum(grepl("\\btest_type\\b", fcode)) +
+      sum(grepl("\\badjustment_method\\b", fcode)) +
+      sum(grepl("\\badjustOffered\\b", fcode)),
+      tol = 0)
+
+# THE FAMILY IS RESOLVED FROM THE ROW, NEVER RE-DERIVED. The subtlety this
+# records: a page that decided the family by testing its own remembered
+# test-type variable would be testing a value written from the row a moment
+# earlier on three of the six pages, and a value one press old on the others.
+# One resolution per commit, from the menu row, is what keeps the family and
+# the correction in step.
+.resolveAt <- grep("^\\s*@emlComparisonFromMenu:", fcode)
+check("v61",
+      "the family is resolved from the chosen row at every site that needs it",
+      TRUE,
+      length(.resolveAt) >= 12L)
+check("v61",
+      "and no commit re-derives it from a remembered test-type variable",
+      0L,
+      sum(grepl("^\\s*if (tmp\\w*TestType|prev_\\w*AnnotTestType) = 2\\s*$",
+                fcode[unlist(lapply(.resolveAt,
+                                    function(i) i:min(length(fcode), i + 6)))])),
       tol = 0)
 
 # ---------------------------------------------------------------------------

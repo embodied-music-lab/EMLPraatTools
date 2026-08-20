@@ -4787,13 +4787,12 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                 # a reported fit is already on screen to be confused with it.
                 .lineEqn$ = .lineMethod$ + " fitted line: y = "
                 ... + fixed$ (.slope, 4) + "x + " + fixed$ (.intercept, 4)
-                ; R² LEFT THE FIGURE, SO THE RECORD HAS TO HOLD IT.
-                ; The on-figure equation no longer carries R² (see the
-                ; ruling note below), and the correlation line that does is
-                ; only built when Annotate is ticked. With Annotate off and
-                ; the formula on, this line is the only place a goodness of
-                ; fit can appear at all -- the regression reporter does not
-                ; run in that configuration either. Emitted for OLS only: a
+                ; THE REPORT STATES THE FIT EVEN WHEN THE FIGURE CANNOT.
+                ; The on-figure correlation line carries R², and it is built
+                ; only when Annotate is ticked. With Annotate off and the
+                ; formula on, this line is the only place a goodness of fit
+                ; appears at all -- the regression reporter does not run in
+                ; that configuration either. Emitted for OLS only: a
                 ; Theil-Sen line has no OLS R². This is what the grouped
                 ; path already does for .gEqn$.
                 if .lineMethod$ = "OLS"
@@ -7054,9 +7053,9 @@ procedure emlDrawLMMForest
     ; THE PAGE: ONE PANEL, AT THE ORIGIN, SAID OUT LOUD.
     ; @emlSetAdaptiveTheme derives its viewport from emlPanelOriginX/Y and only
     ; DEFAULTS them to zero when they do not exist -- a stale origin left by an
-    ; earlier multi-panel draw survives. The hand-rolled `Select outer viewport:
-    ; 0, .figW, 0, .figH` this used to carry overrode that by force; the theme
-    ; viewport selected below does not, so the origin is pinned here instead.
+    ; earlier multi-panel draw survives. The theme viewport selected below
+    ; honours that origin rather than overriding it, so the origin is pinned
+    ; here.
     ; The extent union is restarted for the same reason @emlBeginPanel restarts
     ; it on an erase: a union that survived would report an earlier figure's
     ; rectangle. Not @emlBeginPanel itself, because that also writes
