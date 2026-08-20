@@ -567,8 +567,18 @@ check_true(V, "so no other graph type can publish anything but Solid",
 # AND THE SECOND SERIES CARRIES ITS OWN, DEFAULTING TO DASHED. Two controls,
 # not one with a hardcoded partner: the right-hand menu is a separate widget
 # bound to a separate variable, and its default is style 3.
+#
+# THE LABEL IS "Line style", NOT "Right line style". The right-hand axis page
+# names itself once, in its heading, and its rows carry only what
+# distinguishes them -- so the word "Right" belongs to the page and not to
+# every field on it. That is the label ruling applied, and this check reads
+# the variable rather than the adjective because the variable is what decides
+# which pen gets drawn. The two menus spelled "Line style" sit on two
+# different pages -- the column-mapping page and the right-hand axis page --
+# so they never render together and cannot collide into one derived name; the
+# field-name check is what holds that, and holds it for every page at once.
 check_true(V, "the second series has its own Line style menu",
-           any(grepl('optionmenu: "Right line style", tsSecondStyle',
+           any(grepl('optionmenu: "Line style", tsSecondStyle',
                      form_src, fixed = TRUE)))
 check_true(V, "seeded Dashed rather than Solid",
            any(grepl("^tsSecondStyle = 3$", form_src)) &&

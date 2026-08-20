@@ -1,12 +1,14 @@
 Different measurements, two columns
-140] @ ae
+140] @ 8! ase
 © S82 (right axis)
 ran 230
-130 4 ‘| 905
-8 /K. 2- 220
-> 120 Bad A
+130 , \ |905
+fo @
+@ ,
+3 /K. 2- 220
+> 120 lad 4
 @ 7 ° 215
-‘ XY 210
+7 Xx 210
 110 \
 y ©
 ‘ 205

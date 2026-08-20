@@ -1,17 +1,17 @@
 FO over time (It meas2rep)
 260 0.55
 eo
-» 0.5
+b 0.5
 240 eo
 ‘e
-. 0.45
+0.45
 220 \N
-°o . fe)
+[=] ‘ fe)
 * o4 2
 ‘e. ° e
 200 —o
 e 0.35
-is0f @O 0.3
-@ Ca (right axis)
-01 #02 O08 O04 O05 06 O07 O08 09 1
+190] @O | 0.3
+@ Cq (right axis)
+01 02 08 O04 O05 06 O7 O8 09 1
 Time

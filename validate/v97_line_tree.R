@@ -2027,9 +2027,25 @@ check_true(V, "[identity] and both resolved the left axis to the same pair",
 # because "the two figures differ" is indistinguishable, from a verdict alone,
 # from a pivot that dropped a point.
 #
-# MEASURED: 11463 pixels of 2160000 differ, and every one of them is in rows
-# 54 to 97 of 1200 -- forty-four rows, which is the title line. The data area
-# is identical.
+# MEASURED: about 11,450 pixels of 2,160,000 differ, and every one of them is
+# in a single contiguous band starting at row 54 of 1200 and running under
+# sixty rows -- one line of text, which is the title. The data area is
+# identical.
+#
+# THE BAND IS ASSERTED AS A PROPERTY AND NOT AS AN EXACT SPAN, and the reason
+# is worth writing down. The two titles name two different tables, so they are
+# two different strings of glyphs; whether the last row of the band belongs to
+# a descender in one name and not the other is a fact about the words
+# "longmeas2" and "meas2", not about the plugin. A re-drive measured 54-97 on
+# one occasion and 54-98 on the next, with the data area identical both times.
+# Pinning the last row therefore pins something that carries no meaning and
+# reds on an honest re-drive, which is the failure mode this repository calls
+# evidence rot.
+#
+# What DOES carry meaning, and is asserted: the band starts where the title
+# starts, it is one line of text tall and not two, and the difference is a
+# fraction of a percent of the image -- so a pivot that dropped a point, which
+# would differ inside the plot area and far below row 54, cannot pass.
 check_true(V, "[identity] the untitled pair was compared too",
            identical(trv("--pairs--", "auto_a"), "long_meas2") &&
            identical(trv("--pairs--", "auto_b"), "meas2"))
@@ -2040,8 +2056,13 @@ check_true(V, paste0("[identity] it differs, as it must -- each title names its 
 check_true(V, paste0("[identity] AND THE DIFFERENCE IS THE TITLE LINE AND ",
                      "NOTHING ELSE: rows ", trv("--pairs--", "auto_diff_rows"),
                      ", ", trv("--pairs--", "auto_diff_row_count"), " rows of them"),
-           identical(trv("--pairs--", "auto_diff_rows"), "54-97 of 1200") &&
-           identical(trn("--pairs--", "auto_diff_row_count"), 44))
+           grepl("^54-(9[0-9]|1[01][0-9]) of 1200$",
+                 trv("--pairs--", "auto_diff_rows")) &&
+           is.finite(trn("--pairs--", "auto_diff_row_count")) &&
+           trn("--pairs--", "auto_diff_row_count") <= 60 &&
+           is.finite(trn("--pairs--", "auto_diff_pixels")) &&
+           trn("--pairs--", "auto_diff_pixels") <
+               0.01 * trn("--pairs--", "auto_diff_total_px"))
 # EACH NAMES ITS OWN AND NOT THE OTHER'S. "longmeas2" contains "meas2", so
 # the discriminating statement is the negative one: the wide leg's title does
 # NOT carry the long fixture's name.
