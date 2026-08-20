@@ -1,0 +1,6 @@
+WARNING: Time range (1.000 – 12.000 s) outside Pitch domain (0 – 0.300 s). Using full domain.
+NOTE: measured F0 spans 0.000969 Hertz — under a tenth of a semitone, which is at or below what the ear can resolve. The y-axis is drawn 0.1 semitones wide rather than following the data, so the contour reads flat instead of magnifying rounding noise to full frame height. No measured value was changed.
+TYPE 1
+REACH none
+DECLINNER 0.8400000000000001 5.16 0.39 3.5
+BODYSIZE 9.36

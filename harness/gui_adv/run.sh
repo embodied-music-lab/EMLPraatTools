@@ -345,8 +345,18 @@ REPORTTXT=$(ls "$ADVHOME"/*_report.txt 2>/dev/null | head -1)
 BRIDGE="$OUT/BRIDGE.tsv"
 : > "$BRIDGE"
 if [[ -n "$REPORTTXT" ]]; then
-    iconv -f UTF-16 -t UTF-8 "$REPORTTXT" 2>/dev/null > "$OUT/report.utf8.txt" \
-        || cp "$REPORTTXT" "$OUT/report.utf8.txt"
+    # DECIDE BY THE BOM, NOT BY iconv's EXIT CODE. The report used to be
+    # written UTF-16 whenever it carried one non-ASCII character; it is now
+    # folded to ASCII at the file boundary. "iconv -f UTF-16 || cp" looks
+    # like it handles both, and does not: on an ASCII file with an EVEN byte
+    # count iconv exits 0 and emits mojibake, so the fallback never fires and
+    # every grep below silently returns nothing. Odd byte counts happen to
+    # fail and fall through, which makes the bug intermittent by file length.
+    if head -c 2 "$REPORTTXT" | od -An -tx1 | grep -qE "fe ff|ff fe"; then
+        iconv -f UTF-16 -t UTF-8 "$REPORTTXT" > "$OUT/report.utf8.txt"
+    else
+        cp "$REPORTTXT" "$OUT/report.utf8.txt"
+    fi
     printf 'report_sections\t%s\n' \
         "$(grep -c 'Two-Group Comparison' "$OUT/report.utf8.txt")" >> "$BRIDGE"
     printf 'report_bytes\t%s\n' "$(wc -c < "$OUT/report.utf8.txt")" >> "$BRIDGE"

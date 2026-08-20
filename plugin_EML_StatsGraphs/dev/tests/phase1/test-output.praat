@@ -41,6 +41,13 @@
 # ============================================================================
 
 # Include the module under test
+#
+# @emlReportToFile now walks duplicate names through @emlGenerateUniquePath,
+# which lives in eml-core-utilities.praat. Both production barrels already
+# load that file first (scripts/eml-lib-stats.praat), so this line only
+# restores here what the plugin already has; without it this suite dies at the
+# first @emlReportToFile case with Procedure "emlGenerateUniquePath" not found.
+include ../../../stats/eml-core-utilities.praat
 include ../../../stats/eml-output.praat
 
 # Shared harness — used only for @emlTestInit / @emlTestSummary (the

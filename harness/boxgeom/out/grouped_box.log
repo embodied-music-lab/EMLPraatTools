@@ -1,0 +1,7 @@
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+NOTE: y-axis maximum widened from 120.000 to 162.575 to make room for the legend.
+NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
+TYPE 12
+REACH bottom
+DECLINNER 0.8400000000000001 5.16 0.39 3.5
+BODYSIZE 9.36

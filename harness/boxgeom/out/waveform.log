@@ -1,0 +1,5 @@
+WARNING: Time range (1.000 – 12.000 s) outside Sound domain (0 – 0.300 s). Using full domain.
+TYPE 2
+REACH left right
+DECLINNER 0.8400000000000001 5.16 0.39 3.5
+BODYSIZE 9.36

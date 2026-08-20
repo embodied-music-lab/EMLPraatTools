@@ -1,0 +1,5 @@
+Bar chart: Bars show the group mean, not individual values. Use Violin Plot or Box Plot to show the distribution within each group.
+TYPE 6
+REACH bottom
+DECLINNER 0.8400000000000001 5.16 0.39 3.5
+BODYSIZE 9.36

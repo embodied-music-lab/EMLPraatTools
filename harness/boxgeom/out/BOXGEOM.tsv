@@ -1,0 +1,65 @@
+pitch_contour	eps	pitch_contour.eps
+pitch_contour	type	1
+pitch_contour	reach	none
+pitch_contour	declinner	0.8400000000000001 5.16 0.39 3.5
+pitch_contour	bodysize	9.36
+waveform	eps	waveform.eps
+waveform	type	2
+waveform	reach	left right
+waveform	declinner	0.8400000000000001 5.16 0.39 3.5
+waveform	bodysize	9.36
+spectrum	eps	spectrum.eps
+spectrum	type	3
+spectrum	reach	left right bottom
+spectrum	declinner	0.8400000000000001 5.16 0.39 3.5
+spectrum	bodysize	9.36
+ltas	eps	ltas.eps
+ltas	type	4
+ltas	reach	none
+ltas	declinner	0.8400000000000001 5.16 0.39 3.5
+ltas	bodysize	9.36
+line_chart	eps	line_chart.eps
+line_chart	type	5
+line_chart	reach	left right bottom top
+line_chart	declinner	0.8400000000000001 5.16 0.39 3.5
+line_chart	bodysize	9.36
+bar_chart	eps	bar_chart.eps
+bar_chart	type	6
+bar_chart	reach	bottom
+bar_chart	declinner	0.8400000000000001 5.16 0.39 3.5
+bar_chart	bodysize	9.36
+violin	eps	violin.eps
+violin	type	7
+violin	reach	bottom top
+violin	declinner	0.8400000000000001 5.16 0.39 3.5
+violin	bodysize	9.36
+scatter	eps	scatter.eps
+scatter	type	8
+scatter	reach	left right bottom top
+scatter	declinner	0.8400000000000001 5.16 0.39 3.5
+scatter	bodysize	9.36
+box_plot	eps	box_plot.eps
+box_plot	type	9
+box_plot	reach	bottom top
+box_plot	declinner	0.8400000000000001 5.16 0.39 3.5
+box_plot	bodysize	9.36
+histogram	eps	histogram.eps
+histogram	type	10
+histogram	reach	left right bottom
+histogram	declinner	0.8400000000000001 5.16 0.39 3.5
+histogram	bodysize	9.36
+grouped_violin	eps	grouped_violin.eps
+grouped_violin	type	11
+grouped_violin	reach	bottom
+grouped_violin	declinner	0.8400000000000001 5.16 0.39 3.5
+grouped_violin	bodysize	9.36
+grouped_box	eps	grouped_box.eps
+grouped_box	type	12
+grouped_box	reach	bottom
+grouped_box	declinner	0.8400000000000001 5.16 0.39 3.5
+grouped_box	bodysize	9.36
+spaghetti	eps	spaghetti.eps
+spaghetti	type	13
+spaghetti	reach	bottom top
+spaghetti	declinner	0.8400000000000001 5.16 0.39 3.5
+spaghetti	bodysize	9.36

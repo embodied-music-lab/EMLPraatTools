@@ -1097,56 +1097,185 @@ endproc
 # FILE OUTPUT PROCEDURES
 # ============================================================================
 
+# ----------------------------------------------------------------------------
+# @emlAsciiFold: .s$
+#
+# Fold one string to plain ASCII, on its way to a FILE and nowhere else.
+#
+# Praat rewrites an ENTIRE file as UTF-16 the moment one non-ASCII character is
+# written into it. Measured on 6.6.30 with the shipped prefs5, whose
+# TextEncoding.outputEncoding is "try ASCII, then UTF-16": a report whose only
+# non-ASCII is its own box rule lands as UTF-16BE with a BOM, and so does a CSV
+# whose only non-ASCII is one Greek letter in one cell. R's read.csv, pandas,
+# Excel and this repo's own validate/ scripts all then read the file as binary,
+# so a run that computed everything correctly produces results nobody
+# downstream can open.
+#
+# THE INFO WINDOW IS NOT FOLDED. On screen the box rules and "χ²" are the
+# better rendering and nothing parses them; only the bytes that reach disk have
+# to be plain. That is why the fold lives at the two writers and not in the
+# reporters.
+#
+# Named substitutions first, sweep last, so a character with a real
+# transliteration gets it and only genuinely unmappable text -- an emoji in a
+# user's column name -- falls through to "?".
+#
+# Sets: .result$, .changed (1 when the fold altered the string)
+# ----------------------------------------------------------------------------
+procedure emlAsciiFold: .s$
+    .result$ = .s$
+    ; Compound symbols before their parts, so the pair a reader is looking for
+    ; is findable on one line rather than assembled by two later rules.
+    .result$ = replace$ (.result$, "χ²", "chi^2", 0)
+    .result$ = replace$ (.result$, "η²", "eta^2", 0)
+    .result$ = replace$ (.result$, "ε²", "epsilon^2", 0)
+    .result$ = replace$ (.result$, "ω²", "omega^2", 0)
+    ; Rules and box drawing. @emlReportHeader and @emlReportSection draw these,
+    ; so this is the branch that fires on essentially every report written.
+    .result$ = replace$ (.result$, "═", "=", 0)
+    .result$ = replace$ (.result$, "─", "-", 0)
+    .result$ = replace$ (.result$, "━", "-", 0)
+    .result$ = replace$ (.result$, "│", "|", 0)
+    .result$ = replace$ (.result$, "║", "|", 0)
+    .result$ = replace$ (.result$, "┌", "+", 0)
+    .result$ = replace$ (.result$, "┐", "+", 0)
+    .result$ = replace$ (.result$, "└", "+", 0)
+    .result$ = replace$ (.result$, "┘", "+", 0)
+    .result$ = replace$ (.result$, "├", "+", 0)
+    .result$ = replace$ (.result$, "┤", "+", 0)
+    .result$ = replace$ (.result$, "┬", "+", 0)
+    .result$ = replace$ (.result$, "┴", "+", 0)
+    .result$ = replace$ (.result$, "┼", "+", 0)
+    ; Separators and dashes. The middle dot is the report's own field joiner.
+    .result$ = replace$ (.result$, "·", "-", 0)
+    .result$ = replace$ (.result$, "•", "*", 0)
+    .result$ = replace$ (.result$, "—", "--", 0)
+    .result$ = replace$ (.result$, "–", "-", 0)
+    .result$ = replace$ (.result$, "−", "-", 0)
+    ; Quotes. This is the one group that can CREATE a CSV metacharacter, which
+    ; is why @eml_csvQuote folds a cell BEFORE deciding whether it needs
+    ; quoting rather than after.
+    .result$ = replace$ (.result$, "“", """", 0)
+    .result$ = replace$ (.result$, "”", """", 0)
+    .result$ = replace$ (.result$, "‘", "'", 0)
+    .result$ = replace$ (.result$, "’", "'", 0)
+    .result$ = replace$ (.result$, "«", "<<", 0)
+    .result$ = replace$ (.result$, "»", ">>", 0)
+    .result$ = replace$ (.result$, "…", "...", 0)
+    ; Arrows, operators, superscripts.
+    .result$ = replace$ (.result$, "↔", "<->", 0)
+    .result$ = replace$ (.result$, "→", "->", 0)
+    .result$ = replace$ (.result$, "←", "<-", 0)
+    .result$ = replace$ (.result$, "×", "x", 0)
+    .result$ = replace$ (.result$, "±", "+/-", 0)
+    .result$ = replace$ (.result$, "≈", "~", 0)
+    .result$ = replace$ (.result$, "≤", "<=", 0)
+    .result$ = replace$ (.result$, "≥", ">=", 0)
+    .result$ = replace$ (.result$, "≠", "!=", 0)
+    .result$ = replace$ (.result$, "√", "sqrt", 0)
+    .result$ = replace$ (.result$, "⊗", "(x)", 0)
+    .result$ = replace$ (.result$, "²", "^2", 0)
+    .result$ = replace$ (.result$, "³", "^3", 0)
+    .result$ = replace$ (.result$, "⁴", "^4", 0)
+    .result$ = replace$ (.result$, "°", " deg", 0)
+    .result$ = replace$ (.result$, "§", "S", 0)
+    ; Greek letters the report and the annotation blocks actually use.
+    .result$ = replace$ (.result$, "Λ", "Lambda", 0)
+    .result$ = replace$ (.result$, "Σ", "Sum", 0)
+    .result$ = replace$ (.result$, "σ", "sigma", 0)
+    .result$ = replace$ (.result$, "ρ", "rho", 0)
+    .result$ = replace$ (.result$, "η", "eta", 0)
+    .result$ = replace$ (.result$, "ε", "epsilon", 0)
+    .result$ = replace$ (.result$, "χ", "chi", 0)
+    .result$ = replace$ (.result$, "ȳ", "y-bar", 0)
+    .result$ = replace$ (.result$, "̄", "", 0)
+    .result$ = replace$ (.result$, "⚠", "!", 0)
+    .result$ = replace$ (.result$, "ℹ", "i", 0)
+    ; Accented Latin letters. Not from the plugin's own strings -- from the
+    ; USER's. A column name, a group label or a table name typed in German,
+    ; French or Spanish reaches the CSV verbatim, and losing an accent is a far
+    ; smaller loss than losing the whole file to UTF-16.
+    .result$ = replace$ (.result$, "ß", "ss", 0)
+    .result$ = replace_regex$ (.result$, "[àáâãäåÀÁÂÃÄÅ]", "a", 0)
+    .result$ = replace_regex$ (.result$, "[èéêëÈÉÊË]", "e", 0)
+    .result$ = replace_regex$ (.result$, "[ìíîïÌÍÎÏ]", "i", 0)
+    .result$ = replace_regex$ (.result$, "[òóôõöøÒÓÔÕÖØ]", "o", 0)
+    .result$ = replace_regex$ (.result$, "[ùúûüÙÚÛÜ]", "u", 0)
+    .result$ = replace_regex$ (.result$, "[ñÑ]", "n", 0)
+    .result$ = replace_regex$ (.result$, "[çÇ]", "c", 0)
+    ; Everything still outside ASCII becomes "?".
+    ;
+    ; A SWEEP AND NOT A LOOP. The obvious form of this is a per-character walk
+    ; testing unicode (mid$ (...)) > 127; measured on 6.6.30 that costs 3.25 s
+    ; on a 53 KB report against 0.010 s for this one call, and this runs behind
+    ; the Save button while the user waits.
+    ;
+    ; The class is written 0x01-0x7F and not "printable" on purpose: tab and
+    ; newline are 0x09 and 0x0A, so they pass through and the file keeps its
+    ; lines. \x is the only hex escape Praat's regex accepts here -- \x{7F},
+    ; \177 and \p{ASCII} are all rejected as invalid class escapes.
+    .result$ = replace_regex$ (.result$, "[^\x01-\x7F]", "?", 0)
+    .changed = (.result$ <> .s$)
+endproc
+
 procedure emlReportToFile: .filePath$, .content$
     # Write content to file with overwrite protection
     # Output: .success (1/0), .actualPath$
     # If file exists, append ascending integer: results.txt -> results_1.txt
-    
+
     .success = 0
-    .actualPath$ = .filePath$
-    
-    # Check if file exists
-    if fileReadable(.filePath$)
-        # File exists, need to find available name
-        # Extract base name and extension
-        .dot$ = "."
-        .dotPos = rindex(.filePath$, .dot$)
-        
-        if .dotPos > 0
-            .baseName$ = left$(.filePath$, .dotPos - 1)
-            .extension$ = right$(.filePath$, length(.filePath$) - .dotPos + 1)
-        else
-            .baseName$ = .filePath$
-            .extension$ = ""
-        endif
-        
-        # Try incrementing numbers
-        .counter = 1
-        .found = 0
-        while .found = 0 and .counter <= 999
-            .underscore$ = "_"
-            .counterStr$ = string$(.counter)
-            .tryPath$ = .baseName$ + .underscore$ + .counterStr$ + .extension$
-            if not fileReadable(.tryPath$)
-                .actualPath$ = .tryPath$
-                .found = 1
-            else
-                .counter = .counter + 1
-            endif
-        endwhile
-        
-        if .found = 0
-            # Could not find available name
-            .success = 0
-        else
-            writeFileLine: .actualPath$, .content$
-            .success = 1
-        endif
-    else
-        # File does not exist, write directly
-        writeFileLine: .actualPath$, .content$
-        .success = 1
+
+    # ASCII AT THE FILE BOUNDARY, not at the reporters. One box rule is enough
+    # to make Praat write the whole file as UTF-16, and a UTF-16 _report.txt is
+    # unreadable to grep, diff, Excel and validate/. See @emlAsciiFold.
+    @emlAsciiFold: .content$
+    .out$ = emlAsciiFold.result$
+    .folded = emlAsciiFold.changed
+
+    # DISCLOSED ONCE, AND ONLY WHEN IT BIT. A reader who compares this file
+    # with the Info window sees "chi^2" where the window said the symbol, and
+    # has to be told why; a file the fold did not touch has nothing to
+    # disclose, and a note on every file is a note nobody reads.
+    #
+    # The CSV never reaches here with anything left to fold -- @eml_csvQuote
+    # folds each cell on its way into the buffer, so .folded is 0 by the time
+    # the assembled rows arrive. The extension is tested as well, because the
+    # cost of being wrong about that is not a redundant note but a line of
+    # English appended to a CSV, which every reader reports as a malformed
+    # row. `and` does not short-circuit in Praat; both operands here are safe
+    # to evaluate unconditionally.
+    if .folded = 1 and not endsWith (.filePath$, ".csv")
+        .out$ = .out$ + newline$ + newline$
+        ... + "Note: characters outside plain ASCII were replaced with ASCII"
+        ... + " equivalents in this file (chi^2 for the chi-square symbol, ""-"""
+        ... + " for a rule) so it stays readable to every text tool. Praat"
+        ... + " writes a whole file as UTF-16 as soon as one such character is"
+        ... + " in it. The Info window shows the original."
     endif
+
+    # ONE UNIQUING WALK FOR THE WHOLE PLUGIN. This carried its own copy of the
+    # walk, and the copy differed from @emlGenerateUniquePath in two ways that
+    # both mattered.
+    #
+    # It searched for the extension with rindex over the WHOLE PATH, so a
+    # folder with a dot in its name and a file without an extension --
+    # "~/study v1.2/report" -- split at the folder's dot and produced
+    # "~/study v1_1.2/report", a path in a folder that does not exist, which
+    # writeFileLine: then kills the session on. @emlGenerateUniquePath splits
+    # the folder off at the last "/" first, so it cannot make that mistake.
+    #
+    # AND THE CAP IS GONE, DELIBERATELY. The old loop stopped at _999 and
+    # returned .success = 0, which callers render as "Could not write the
+    # file." -- a disk-failure sentence for a folder that simply already holds
+    # 999 results. @emlGenerateUniquePath walks until a name is free, which
+    # always terminates because the counter is unbounded, and 1000 fileReadable
+    # calls are milliseconds. The honest failure is now the only one left:
+    # writeFileLine: itself on an unwritable folder, which @eml_saveFolderWritable
+    # proves before the panel ever gets here.
+    @emlGenerateUniquePath: .filePath$
+    .actualPath$ = emlGenerateUniquePath.result$
+    writeFileLine: .actualPath$, .out$
+    .success = 1
 endproc
 
 
@@ -1361,11 +1490,29 @@ endproc
 # @eml_csvQuote: .s$  -- RFC 4180 quoting, so a column label containing a
 # comma or a quote cannot silently split a row into two fields. The old
 # writer concatenated raw strings and had no protection at all.
+#
+# THE ASCII FOLD IS HERE, UPSTREAM OF THE QUOTE TEST, AND NOT ON THE ASSEMBLED
+# BUFFER. Two reasons, and the second is the load-bearing one.
+#
+# Praat writes a whole file as UTF-16 as soon as one cell in it is non-ASCII,
+# and a UTF-16 CSV is not a CSV to read.csv, to pandas, to Excel or to
+# validate/. So every cell has to be folded before it is written.
+#
+# And the fold can PRODUCE a CSV metacharacter: a curly quote folds to a
+# straight one. Folded after the test, "he said "yes"" -- a cell with no comma
+# and no straight quote, so left unquoted -- lands as a bare quote inside an
+# unquoted field. Measured: R's read.csv reads that cell back as
+# `he said yes`, silently dropping the quotes, and nothing anywhere reports an
+# error. Folding first means the quote test sees the straight quote and the
+# cell is quoted and doubled correctly.
 procedure eml_csvQuote: .s$
-    if index (.s$, ",") > 0 or index (.s$, """") > 0 or index (.s$, newline$) > 0
-        .result$ = """" + replace$ (.s$, """", """""", 0) + """"
+    @emlAsciiFold: .s$
+    .folded$ = emlAsciiFold.result$
+    if index (.folded$, ",") > 0 or index (.folded$, """") > 0
+    ... or index (.folded$, newline$) > 0
+        .result$ = """" + replace$ (.folded$, """", """""", 0) + """"
     else
-        .result$ = .s$
+        .result$ = .folded$
     endif
 endproc
 
@@ -2938,14 +3085,25 @@ endproc
 # this test is empty" -- so there has to be a way to keep it.
 # @emlSaveInfoToFile is what writes it.
 #
-# THE FIGURE BRANCH IS REACHED ONLY WHEN THE CALLER SAYS THERE IS ONE.
-# .offerFigure = 1 comes from the graphs form, where a figure has just been
-# drawn and the graphs layer is loaded; the stats wrappers pass 0, because at
-# the end of an analysis there is nothing drawn yet. That gate is what makes
-# it safe for this stats-layer procedure to call @emlAssertFullViewport: the
-# call sits inside the branch, and Praat only resolves a procedure name when
-# the call actually executes. A stats-only script -- eml-lib-stats.praat
-# without the graphs barrel -- can therefore still use this panel.
+# THE FIGURE BRANCH IS REACHED WHEN THERE IS A FIGURE, WHICH IS NOT THE SAME
+# THING AS WHEN THE CALLER SAYS SO. .offerFigure = 1 comes from the graphs
+# form, where a figure has just been drawn; the stats wrappers pass 0 because
+# at the END of an analysis nothing has been drawn yet. That 0 was then read
+# as "and nothing ever will be", which is false the moment a wrapper's Draw
+# button hands off to the graphs workflow and comes BACK to its own
+# Done | Save | Draw | New loop: the next press of Save was a 0 standing over
+# a violin plot, and the figure could only be kept by having saved it before
+# pressing Done. So the argument is a FLOOR and not the whole answer -- the
+# panel also asks the page whether anything is on it. See IS THERE A FIGURE?
+# in the body.
+#
+# IT IS STILL SAFE FOR THIS STATS-LAYER PROCEDURE TO CALL
+# @emlAssertFullViewport. The call sits inside the branch, Praat resolves a
+# procedure name only when the call actually executes, and the second way
+# into that branch is itself gated on `variableExists ("emlDrawnMinX")` -- a
+# global the graphs layer assigns at file scope. A stats-only script --
+# eml-lib-stats.praat without the graphs barrel -- has no such variable, so it
+# cannot enter the branch and can still use this panel.
 #
 # AND THE ARGUMENT IS NOT THE ONLY GATE. The paragraph above is a claim about
 # thirteen call sites, and no reader can check it -- one wrapper passing 1
@@ -2953,11 +3111,13 @@ endproc
 # which is the class of break harness/check_includes.py exists for and the one
 # it cannot see, because it cannot read arguments. So the two calls also sit
 # behind `if variableExists ("emlDrawnMinX")`, which is true exactly when the
-# layer that defines the procedure is loaded: reachability is what the
-# argument says it is, and a static reader can now confirm it.
+# layer that defines the procedure is loaded -- and which is now also the gate
+# on the detected way into the branch, so both ways in carry the same proof
+# and a static reader can confirm each of them.
 #
 # Arguments:
-#   .offerFigure  1 to offer the figure, 0 when nothing is drawn
+#   .offerFigure  1 when the caller has just drawn a figure; 0 to leave the
+#                 question to the panel, which asks the page itself
 #   .stem$        default file name, no extension
 #   .folder$      default folder
 # Outputs:
@@ -3001,6 +3161,43 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
         endif
     endif
 
+    # IS THERE A FIGURE? THE PANEL ASKS THE PAGE, NOT ONLY THE CALLER. Every
+    # caller but the graphs form passes 0, and passing 0 is right at the
+    # moment an analysis finishes -- but a wrapper's Draw button sends the
+    # user into the graphs workflow and RETURNS to the same
+    # Done | Save | Draw | New loop, so the very next Save was a 0 standing
+    # over a figure. That is the whole reported defect: an ANOVA driven
+    # through to a violin plot offered the numbers and not the picture.
+    # Fixing it at the callers would be a rule written thirteen times and
+    # forgotten on the fourteenth; the panel is where it is one rule.
+    #
+    # THE QUESTION IS PUT TO THE EXTENT UNION, because that union is the
+    # rectangle @emlAssertFullViewport hands to Save: if there is a rectangle
+    # to write there is a figure, and if there is not, there is nothing this
+    # panel could write anyway. Empty is 0,0,0,0 -- what the graphs layer
+    # declares at file scope and what @emlResetDrawnExtent restores -- so an
+    # untouched page answers no, and the wrapper legs that draw nothing are
+    # offered nothing.
+    #
+    # NESTED ifs, NOT `and`: Praat's `and` does not short-circuit, so a single
+    # expression naming emlDrawnMaxX would read it even where variableExists
+    # answered 0, and reading an unset global ends the session inside the
+    # save. The existence gate is also what keeps the branch below honest --
+    # it is true exactly when the graphs layer is loaded, which is the layer
+    # that defines @emlAssertFullViewport.
+    .showFigure = .offerFigure
+    .figureFound = 0
+    if .offerFigure = 0
+        if variableExists ("emlDrawnMinX")
+            if emlDrawnMaxX > emlDrawnMinX
+                if emlDrawnMaxY > emlDrawnMinY
+                    .showFigure = 1
+                    .figureFound = 1
+                endif
+            endif
+        endif
+    endif
+
     # THE FIELD VARIABLE NAME LOWERCASES ONLY THE FIRST CHARACTER, and keeps
     # every other character's case: `boolean: "Figure PNG"` is read back as
     # figure_PNG, not figure_png. Reading figure_png raises "Unknown variable"
@@ -3033,9 +3230,12 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     # evaluates every line of a `beginPause` block as it draws the dialog, so
     # an unbound variable there aborts the panel with the dialog half-drawn --
     # the same shape of outage the emlLastCSVFolder$ note above describes,
-    # and this one would sit on the ONE path that has a figure. output_DPI is
-    # set by the graphs form and is therefore bound whenever .offerFigure is
-    # 1; the guard is here because a comment line is not worth a session.
+    # and this one would sit on a path that has a figure. output_DPI is set by
+    # the graphs form, so it is bound wherever that form ran -- but the panel
+    # now also offers a figure it FOUND, and a figure can be drawn without the
+    # form (the normality wrapper's Q-Q plot calls @emlDrawQQPlot directly).
+    # The guard is what makes that route read 300 dpi instead of aborting the
+    # panel with the dialog half-drawn.
     .figureDPI = 1
     if variableExists ("output_DPI")
         .figureDPI = output_DPI
@@ -3074,7 +3274,7 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     endif
     .saveTitle$ = "Save"
     .pageLine$ = ""
-    if .offerFigure = 1
+    if .showFigure = 1
         if .panelsOnPage > 1
             .saveTitle$ = "Save page"
             .pageW = 0
@@ -3110,7 +3310,7 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
             comment: "    analysis produces them"
         endif
         comment: "    _report.txt — the Info window"
-        if .offerFigure = 1
+        if .showFigure = 1
             comment: "    .png — the figure, and _legend.png beside it when"
             comment: "    the legend was placed outside the frame"
             # THE SUFFIX LIST NAMES WHAT THIS DIALOG CAN ACTUALLY WRITE, so
@@ -3124,7 +3324,19 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
             endif
         endif
         comment: ""
-        if .offerFigure = 1
+        if .showFigure = 1
+            # THE FOUND FIGURE IS NAMED BEFORE IT IS TICKED. On this arm the
+            # user pressed Save on an analysis dialog rather than straight
+            # after a draw, so a Figure PNG box with nothing said about it
+            # raises the question the panel should be answering: which
+            # figure. It is the one in the Picture window, which within a
+            # single run of a wrapper is the one its own Draw button made.
+            # TICKED either way, by author ruling: the common case is this
+            # analysis's own figure, and a box the user can see is a box the
+            # user can untick.
+            if .figureFound = 1
+                comment: "Includes the figure now in the Picture window."
+            endif
             boolean: "Figure PNG", 1
             # THE FORMAT CHOICE SITS WITH THE FIGURE, and it is TICKBOXES
             # rather than a menu because the choice is additive: the PNG is
@@ -3358,7 +3570,7 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     .stem$ = .try$
 
     # --- the figure -------------------------------------------------------
-    if .offerFigure = 1
+    if .showFigure = 1
         if figure_PNG = 1
             # NO PER-FILE UNIQUING. The stem was made free above, against
             # every name this panel can write, so a check here could only
@@ -3514,7 +3726,7 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
     # out altogether: a variable for a format nothing writes would invite an
     # edit that does nothing.
     .recFormats$ = ""
-    if .offerFigure = 1
+    if .showFigure = 1
         if figure_PNG = 1
             .recFormats$ = "PNG"
             if also_EPS = 1
@@ -3531,7 +3743,7 @@ procedure emlSavePanel: .offerFigure, .stem$, .folder$
             ... "Save the outputs of this analysis",
             ... "Every output shares one folder and one name, so they stay a set.",
             ... "outputFolder$ = " + """" + .folder$ + """" + newline$
-            ... + "@emlSavePanel: " + string$ (.offerFigure) + ", "
+            ... + "@emlSavePanel: " + string$ (.showFigure) + ", "
             ... + """" + .stem$ + """, outputFolder$, "
             ... + """" + .recFormats$ + """",
             ... "In the GUI: the Save button on the post-analysis or post-draw dialog."

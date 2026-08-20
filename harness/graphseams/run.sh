@@ -262,8 +262,18 @@ SEAMS="$OUT/SEAMS.tsv"
 # --- leg A1: the crash ------------------------------------------------------
 RPTA=$(ls "$OUT"/home_kwadv/*_report.txt 2>/dev/null | head -1)
 if [[ -n "$RPTA" ]]; then
-    iconv -f UTF-16 -t UTF-8 "$RPTA" 2>/dev/null > "$OUT/report_kwadv.utf8.txt" \
-        || cp "$RPTA" "$OUT/report_kwadv.utf8.txt"
+    # DECIDE BY THE BOM, NOT BY iconv's EXIT CODE. The report used to be
+    # written UTF-16 whenever it carried one non-ASCII character; it is now
+    # folded to ASCII at the file boundary. "iconv -f UTF-16 || cp" looks
+    # like it handles both, and does not: on an ASCII file with an EVEN byte
+    # count iconv exits 0 and emits mojibake, so the fallback never fires and
+    # every grep below silently returns nothing. Odd byte counts happen to
+    # fail and fall through, which makes the bug intermittent by file length.
+    if head -c 2 "$RPTA" | od -An -tx1 | grep -qE "fe ff|ff fe"; then
+        iconv -f UTF-16 -t UTF-8 "$RPTA" > "$OUT/report_kwadv.utf8.txt"
+    else
+        cp "$RPTA" "$OUT/report_kwadv.utf8.txt"
+    fi
     # THE MATRIX IS THE CRASH SITE. Its heading is printed one line before the
     # read that used to abort, so the heading alone proves nothing -- the
     # audit's screenshot has it, above an error dialog. The VALUES are the
@@ -297,8 +307,18 @@ printf 'kwadv_unknown_variable\t%s\n' \
 # --- leg A2: the report ------------------------------------------------------
 RPT=$(ls "$OUT"/home_kw/*_report.txt 2>/dev/null | head -1)
 if [[ -n "$RPT" ]]; then
-    iconv -f UTF-16 -t UTF-8 "$RPT" 2>/dev/null > "$OUT/report_kw.utf8.txt" \
-        || cp "$RPT" "$OUT/report_kw.utf8.txt"
+    # DECIDE BY THE BOM, NOT BY iconv's EXIT CODE. The report used to be
+    # written UTF-16 whenever it carried one non-ASCII character; it is now
+    # folded to ASCII at the file boundary. "iconv -f UTF-16 || cp" looks
+    # like it handles both, and does not: on an ASCII file with an EVEN byte
+    # count iconv exits 0 and emits mojibake, so the fallback never fires and
+    # every grep below silently returns nothing. Odd byte counts happen to
+    # fail and fall through, which makes the bug intermittent by file length.
+    if head -c 2 "$RPT" | od -An -tx1 | grep -qE "fe ff|ff fe"; then
+        iconv -f UTF-16 -t UTF-8 "$RPT" > "$OUT/report_kw.utf8.txt"
+    else
+        cp "$RPT" "$OUT/report_kw.utf8.txt"
+    fi
     # "EML Stats : Kruskal-Wallis H Test" is @emlReportHeader's banner, and on
     # this journey it can appear once or twice. ONCE means the driver's own
     # orchestrator reported and nothing else did -- the annotate preset died at

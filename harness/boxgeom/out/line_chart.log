@@ -1,0 +1,5 @@
+Time series: Line shows the mean per time point. 24 repeated observation(s) were averaged. Use Spaghetti Plot to show individual series, or Time Series (with CI) to show the spread around each mean.
+TYPE 5
+REACH left right bottom top
+DECLINNER 0.8400000000000001 5.16 0.39 3.5
+BODYSIZE 9.36

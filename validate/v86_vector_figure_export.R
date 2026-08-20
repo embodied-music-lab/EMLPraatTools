@@ -714,6 +714,63 @@ check_true("v86",
            length(iFigBox) == 1 && length(iEps) == 1 && length(iPdf) == 1 &&
            iEps > iFigBox && iPdf > iEps)
 
+# ── AND THE BOXES ARE BUILT WHENEVER THERE IS A FIGURE, NOT ONLY WHEN THE
+# CALLER SAID SO ────────────────────────────────────────────────────────────
+#
+# WHAT THE THREE LINES ABOVE PROTECT IS UNCHANGED and they are still pinned as
+# literals: the LABELS, because Praat derives each field's variable from the
+# label and figure_png would be an unknown variable at the write; the
+# DEFAULTS, because PNG on and vector off is the panel's ruling and a silent
+# flip would start writing EPS for everybody; and the ORDER, because the
+# vector boxes belong with the figure rather than with the numbers. The
+# detection fix below leaves all three byte-identical -- it changes only the
+# CONDITION on the block they sit in, which is why those greps still read what
+# they always read.
+#
+# WHAT IS NEW IS THE CONDITION. @emlSavePanel used to build these fields only
+# when its caller passed .offerFigure = 1, and only the graphs form ever does:
+# the thirteen stats wrappers and the wizard pass 0 because at the END of an
+# analysis nothing is drawn yet. But their own Draw button hands off to the
+# graphs workflow and RETURNS to the same Done | Save | Draw | New loop, so
+# the next press of Save was a 0 standing over a violin plot and the figure
+# was not offered at all. The panel now resolves .showFigure from the
+# argument OR the extent union -- the same rectangle @emlAssertFullViewport
+# hands to Save -- and every figure-bearing block reads that.
+#
+# PINNED HERE BECAUSE THE ARTEFACTS CANNOT SEE IT. A drive of the graphs
+# form's own save passes either way; the defect lives on the paths where a
+# figure exists and the caller does not know it, and one of these five blocks
+# reverted to the raw argument would drop the figure again with every tickbox
+# in this file still in place. Red on the source as it stood before the fix:
+# five blocks on .offerFigure, none on .showFigure.
+iShow <- grep("^if \\.showFigure = 1$", panel)
+iRaw <- grep("^if \\.offerFigure = 1$", panel)
+check_true("v86",
+           sprintf("the figure fields are built on the resolved .showFigure (%d blocks; %d left on the raw argument)",
+                   length(iShow), length(iRaw)),
+           length(iShow) >= 1 && length(iRaw) == 0 && any(iShow < iFigBox[1]))
+# AND THE RESOLUTION IS THE ARGUMENT WIDENED BY THE PAGE, not a second
+# opinion about it. The existence gate is load-bearing twice over: Praat's
+# `and` does not short-circuit, so the union can only be read inside it, and
+# it is true exactly when the graphs layer -- the layer that defines
+# @emlAssertFullViewport -- is loaded, which is what keeps this stats-layer
+# procedure callable from eml-lib-stats.praat.
+check_true("v86",
+           "and .showFigure is the caller's argument widened by the extent union",
+           any(grepl("^\\.showFigure = \\.offerFigure$", panel)) &&
+           any(grepl('^if variableExists \\("emlDrawnMinX"\\)$', panel)) &&
+           any(grepl("^if emlDrawnMaxX > emlDrawnMinX$", panel)) &&
+           any(grepl("^if emlDrawnMaxY > emlDrawnMinY$", panel)))
+# AND A RECORDING KEEPS WHAT THE PRESS DID. @emlRecordReplaySave writes the
+# figure only when its first argument is 1, so a recorded save that emitted
+# the caller's 0 would replay a script carrying the format choice "PNG" and
+# then write no PNG -- a recording that silently loses the figure it was kept
+# for.
+check_true("v86",
+           "the recorded save step carries what the panel offered, not what the caller declared",
+           any(grepl('\\+ "@emlSavePanel: " \\+ string\\$ \\(\\.showFigure\\) \\+ ", "',
+                     panel)))
+
 # ---------------------------------------------------------------------------
 # 8a. PDF IS NOT OFFERED ON WINDOWS, BECAUSE PRAAT HAS NOT GOT IT THERE
 #
