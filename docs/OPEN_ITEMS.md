@@ -31,6 +31,42 @@ Memo with the design questions is with Fable
   start, never written to disk. Ruled, not built.
 - Legend placement label should read "(when drawn)".
 
+## B2. The test-type / post-hoc coupling (reported 20 Aug, not started)
+
+On the group-comparison draw pages, the correction menu is BUILT from the
+previous run's test type. Praat dialogs are static, so the control's
+presence lags the choice by one press:
+
+- Last run parametric, user switches to nonparametric: the correction menu
+  was not built, so Dunn runs under whatever correction the previous run
+  left behind. Invisible, and the user never chose it.
+- Last run nonparametric, user switches to parametric: the menu is shown and
+  read, but Tukey ignores it. Confusing rather than wrong.
+
+Six pages share the pattern (bar, violin, box, grouped violin, grouped box,
+spaghetti).
+
+Ian's proposal, which removes the dependency rather than patching it: one
+dropdown listing every post-hoc, each option naming which test family it
+belongs to and what it does. Nothing can then be stale, because there is
+only one control.
+
+Strongest form of that: the options are COMPLETE choices, so the omnibus
+follows from the post-hoc rather than being asked separately —
+
+    ANOVA, no post-hoc
+    ANOVA + Tukey HSD (family-wise; no separate correction)
+    Kruskal-Wallis, no post-hoc
+    Kruskal-Wallis + Dunn, Holm (step-down; more power than Bonferroni)
+    Kruskal-Wallis + Dunn, Bonferroni (most conservative)
+    Kruskal-Wallis + Dunn, Benjamini-Hochberg (false discovery rate)
+
+Three controls collapse to one, no mismatch is expressible, and each line
+reads the way a methods section has to read.
+
+Interacts with the unification: when an analysis has already run, this
+choice should come FROM it rather than be asked again.
+
 ## C. Everything else
 
 ### Not started
