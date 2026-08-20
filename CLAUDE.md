@@ -37,20 +37,40 @@ This container is reclaimed and restored from older snapshots without
 warning; it has happened four times in one day. GitHub is the only durable
 copy of the work.
 
-After a rollback the container is BEHIND GitHub, not ahead. So:
+A bundle is a DELTA: it carries commits from a container that has them to
+a GitHub that does not. After a rollback the container has FEWER commits
+than GitHub, so it has nothing to send. A bundle built then is empty at
+best and anchored to an older HEAD at worst. Never build one from a
+rolled-back tree.
 
-1. `git fetch origin main`, then `git reset --hard origin/main`.
-2. Spot-check that the content is really present, not just the commit ids.
-3. Recover anything GitHub is missing from the bundle already on Ian's
-   disk — that bundle is the only remaining copy.
+### Establish that it is a rollback before treating it as one
 
-Do NOT build a fresh bundle from a rolled-back tree. A bundle carries work
-in one direction only, from a container that is ahead of GitHub. A
-rolled-back container has nothing to give, so the bundle is empty at best
-and points at an older HEAD at worst.
+`git reset --hard` destroys uncommitted work silently, so it is not the
+first move. In order:
 
-Corollary: commit and bundle after every unit of work, not in batches.
-Anything uncommitted when a rollback lands is gone.
+1. `git status --porcelain`. If anything is uncommitted, COMMIT IT FIRST,
+   on the branch as it stands. It may be the only copy of a finished
+   drive. Never reset over it, never stash it and move on — a stash in
+   this container is as temporary as the container.
+2. `git fetch origin main`.
+3. Ask whether HEAD is an ancestor of origin/main:
+   `git merge-base --is-ancestor HEAD origin/main`. True means the
+   container is simply behind — a rollback, or a push made elsewhere —
+   and fast-forwarding is safe and loses nothing.
+4. If it is NOT an ancestor, the histories have diverged and something
+   here is not on GitHub. Do not reset. Say so, and bundle the divergent
+   commits, because in that case the container IS ahead and the bundle is
+   exactly right.
+5. After moving, spot-check that the CONTENT is present — grep for
+   something the work added — not just that the commit ids look right.
+6. Recover anything GitHub still lacks from the bundle already on Ian's
+   disk. That bundle is the only remaining copy; do not delete it.
+
+### The corollary that prevents most of this
+
+Commit and bundle after every unit of work, not in batches. Anything
+uncommitted when a rollback lands is gone, and "I showed him the result"
+is not the same as "the result is saved".
 
 ## Scope of work units
 
