@@ -3,7 +3,11 @@
 Kept in the repo on purpose: this file survives session loss. Update it
 when an item is opened, changed, or closed. Newest ruling wins.
 
-Last reconciled against the tree: 19 Aug 2026, late.
+Last reconciled against the tree: 20 Aug 2026.
+
+The phase register for features beyond 1.0.0 is `ROADMAP.md` at the repo
+root. This file is defects and ruled-but-unbuilt work; that one is where
+the plugin is going.
 
 ## A. The unification (largest remaining piece)
 
@@ -23,10 +27,50 @@ Memo with the design questions is with Fable
 
 ## B. Form and dialog work
 
-- The label sweep: headings group, rows carry only what distinguishes them.
-  The right-hand axis page is the exemplar and is done. The remaining pages
-  are not swept. Do them one page at a time with the locality check run
-  between, not in one pass.
+The ruling arrived 19-20 Aug and the block is lifted:
+`docs/RULING_DIALOG_LABELS_v3.md` (supersedes v1 and v2) plus
+`docs/ADDENDUM_WORDING_AND_ROADMAP.md`. Both rest on live probes of
+Praat 6.6.30 under Xvfb, not on reasoning about Praat.
+
+- **The label sweep, per the ruling.** Headings group; rows carry only what
+  distinguishes them. Icon headings stay; the two per-axis icon headings
+  merge into one carrying "both 0 = auto". Ranges become one paired row
+  named by QUANTITY, never by axis. X and Y axis labels become one
+  sentence-paired row on every page that has them. The right-hand axis page
+  is the exemplar and is done; the rest are not. One page at a time, with
+  the locality check run between, and the ruling's per-page row counts
+  (12→9, 20→17, and so on) verified against the rendered page under Xvfb.
+- **The label character law** (ruling, measured). Before the parenthetical,
+  a field label may contain letters, digits and spaces only, plus the
+  leading left/right pairing word. Praat strips the label from the first
+  "(" onward, turns spaces into underscores, and keeps everything else
+  verbatim — so a hyphen, a slash or an emoji makes a variable that is
+  bound but unreachable, and code referring to it silently reads
+  arithmetic instead. Demonstrated: a field named "left Y-limits" fed -99
+  to code that thought it was reading the user's 5. Check 11 must assert
+  both this and prefix uniqueness per rendered branch.
+- **The histogram compound row is IAN'S CALL** and nothing else uses the
+  pattern: "left Bins and max frequency (0 = auto each)" would put two
+  unrelated numbers on one row, saving a row on the tallest page in the
+  plugin at the cost of the label carrying the whole burden of honesty.
+  Not taken unless Ian says so.
+- **Two wording items, ruled 20 Aug.** The wizard's gate page reads
+  "Under how many conditions was each subject measured?" (not "How many
+  repeated measurements per subject?"), and the observation-type page
+  reads "Yes — same people, measured more than once (within-subject)"
+  (not "repeated (paired)"). "Paired" is reserved for the k = 2 test whose
+  name it is. Option labels unchanged; pins assert value lines and that a
+  gloss is present, never the gloss wording.
+- **Terminology-uniformity audit** (new, small). Every dialog, report line
+  and doc checked for four terms against R and SPSS usage: CONDITION (a
+  level of a within-subject factor), TOKEN (a replicate of the same
+  measurement within a cell), MEASUREMENT (the dependent variable itself),
+  WITHIN-SUBJECT / PAIRED (a design property; "paired" only at k = 2).
+  The line-chart tree's "different measurements" wording is correct and
+  out of scope — there it names genuinely different variables.
+- Booleans are OUT OF SCOPE by ruling: no gating, no collapsing, no
+  relocation, labels unchanged. Title and subtitle stay two full-width
+  rows, also by ruling.
 - "Erase page first": remembered within a session, default on at session
   start, never written to disk. Ruled, not built.
 - Legend placement label should read "(when drawn)".
@@ -167,8 +211,6 @@ pinning the encoding the way v31 pins gridline mode.
 
 ### Test-coverage gaps
 
-- No check drives any figure type through the form's own dispatch. This is
-  why the scatter crash of 19 Aug reached Ian.
 - Ledger rows owed: 19 tracked process files under harness/dialogheight;
   replay receipt lag in the vector-figure harness; two plugin versions can
   produce a truncated menu with no warning.
@@ -180,6 +222,11 @@ pinning the encoding the way v31 pins gridline mode.
   the sweep, not one per change.
 
 ## Closed since this file was written
+
+Every figure type is now driven through the form's own dispatch: sixteen
+legs, one Praat process each, recorded and unrecorded runs kept separate.
+The seam that let a scatter abort reach a user before the suite saw it is
+now covered.
 
 Font geometry root cause found and fixed — Praat converts a viewport using
 the margins in effect when it is SELECTED, so the panel viewport now asserts

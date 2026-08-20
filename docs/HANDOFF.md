@@ -12,6 +12,9 @@ from older snapshots without warning and has been five times in two days.
 2. `docs/OPEN_ITEMS.md` — every open defect and every ruled-but-unbuilt
    item, with anchors. This is the backlog.
 3. This file — the parts that are true today and not yet anywhere else.
+4. `ROADMAP.md` at the repo root — where the plugin is going after 1.0.0,
+   with each phase's contract, the outside software its numbers are checked
+   against, and what has to be done before it starts.
 
 ## Where the work actually is
 
@@ -33,12 +36,16 @@ commit ids.
   display/result split gets a validator, where the store lives given Praat
   has no result object, and whether the pitch doors are the same mechanism.
   Do not start building until that lands.
-- **A form field and field-order redesign** is coming from Fable. Until it
-  arrives, do not touch dialog labels, field order, or the config clamps —
-  they will collide. Everything else is fair game.
-- **The dispatch coverage gap** is the next unstarted item and the most
-  valuable: no check drives any figure type through the form's own dispatch,
-  which is why a crash reached Ian instead of the suite.
+- **The form field and field-order redesign has ARRIVED** and the block on
+  dialog work is lifted. `docs/RULING_DIALOG_LABELS_v3.md` is the ruling —
+  it supersedes v1 and v2 — and `docs/ADDENDUM_WORDING_AND_ROADMAP.md`
+  carries two wording items, a terminology audit, and the order to create
+  `ROADMAP.md`. Both were measured against Praat 6.6.30 under Xvfb, not
+  reasoned about. Read the ruling before touching any field label; the
+  label character law in it is not a style preference, it is what stops a
+  field binding to a name no script can read.
+- **The dispatch coverage gap** is closed: every figure type is now driven
+  through the form's own dispatch.
 
 ## Judgement calls already made, so they are not relitigated
 
