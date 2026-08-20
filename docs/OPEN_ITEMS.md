@@ -145,8 +145,6 @@ STILL OPEN, lagging controls:
 - Correlation dialog. The group-column list is built by excluding the X and Y
   columns as they were on the previous pass, so changing X or Y leaves the
   group list one press out of date.
-- Table editor. The Value field is defaulted from the cell selected on the
-  previous pass, so changing row or column and typing edits the wrong cell.
 
 STILL OPEN, stored values that can seed a menu out of range:
 
@@ -222,6 +220,13 @@ pinning the encoding the way v31 pins gridline mode.
   the sweep, not one per change.
 
 ## Closed since this file was written
+
+The table editor no longer copies one cell's value into another. Choosing a
+different cell and pressing Set without changing the Value box now writes
+nothing and shows the chosen cell's real contents instead; typing a value
+into a newly chosen cell still writes on the first press. Two drive cases
+and eleven checks, with the pre-fix editor demonstrated writing "A1" into
+row 3.
 
 Every figure type is now driven through the form's own dispatch: sixteen
 legs, one Praat process each, recorded and unrecorded runs kept separate.

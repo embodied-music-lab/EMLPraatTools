@@ -183,7 +183,7 @@ labels_of <- function(case) {
 
 CASES <- c("A_rename_dup", "B_delete_dup", "C_cell_dup", "D_repall_dup",
            "E_onecol", "F_add_dup", "G_insert_dup", "H_plain", "I_findnav",
-           "J_rename_back", "K_autolabel")
+           "J_rename_back", "K_autolabel", "L_stalecell", "M_movedtyped")
 
 # ---------------------------------------------------------------------------
 # 1. THE TWIN IS THE EDITOR
@@ -215,7 +215,7 @@ stanzaKeys <- unname(unlist(E[grep("^stanza_[0-9]+_key$", names(E))]))
 for (k in c("eml_table_editor#3", "table_structure#1", "delete_column#1",
             "rename_column#1", "add_column#2", "insert_column#1",
             "find_replace#1", "cannot_delete_column#1",
-            "cannot_use_that_column_name#1")) {
+            "cannot_use_that_column_name#1", "nothing_was_written#1")) {
     check_true("v55", sprintf("the editor still has the dialog '%s'", k),
                k %in% stanzaKeys)
 }
@@ -389,6 +389,57 @@ check_true("v55", "C_cell_dup: the cell write lands in menu entry 3",
            identical(csv_of("C_cell_dup"),
                      c("id,colA,colA", "S1,A1,B1", "S2,A2,WROTE", "S3,A3,B3")))
 
+# -- L_stalecell / M_movedtyped: the box and the menus can disagree ----------
+# A Praat dialog is static. The Value box is filled once, when the page is
+# built, from the cell the previous pass ended on, and it cannot follow the
+# Column and Row menus while the page is open. So the box and the menus CAN
+# name different cells, and before the guard a Set in that state wrote one
+# cell's contents into another -- silently, with no undo, leaving a table that
+# reads as an ordinary CSV and says the wrong thing. That is the same class of
+# harm as B_delete_dup and is checked as hard.
+#
+# The two cases are the two halves of one rule, and neither is evidence alone.
+# L moves the selection and hands back the box UNTOUCHED (the tape assigns
+# value$ = currentValue$, which is exactly what an unedited field returns):
+# nothing may be written, the refusal must be reached, and the page must come
+# back showing the cell the user actually chose. M moves the selection and
+# TYPES: that write must go through on the first press, with no refusal in the
+# trace, because a guard that charges the ordinary edit an extra press would
+# be paid for on every cell a user fills in.
+check_true("v55", "L_stalecell: the box was holding the previous cell's value",
+           identical(probe_of("L_stalecell", "held"), "PROBE|held|A1"))
+check_true("v55",
+           "L_stalecell: the stale write was refused, not performed",
+           identical(csv_of("L_stalecell"),
+                     c("id,colA,colB", "S1,A1,B1", "S2,A2,B2", "S3,A3,B3")))
+check_true("v55",
+           "L_stalecell: the refusal was shown -- the write did not just quietly do nothing",
+           "nothing_was_written#1" %in% trace_of("L_stalecell"))
+check_true("v55",
+           "L_stalecell: the page came back showing the cell the user chose",
+           identical(probe_of("L_stalecell", "after"), "PROBE|after|A3"))
+check_true("v55",
+           "M_movedtyped: typing into a newly chosen cell still writes on the first press",
+           identical(csv_of("M_movedtyped"),
+                     c("id,colA,colB", "S1,A1,B1", "S2,A2,B2", "S3,TYPED,B3")))
+check_true("v55",
+           "M_movedtyped: the guard did not fire on an edit the user meant",
+           !("nothing_was_written#1" %in% trace_of("M_movedtyped")))
+
+staleRefusal <- refusalBlock("Nothing was written")
+check_true("v55", "the stale-value refusal exists in the shipped dialogs",
+           length(staleRefusal) > 0)
+check_true("v55", "it says plainly that nothing was written",
+           any(grepl("Nothing was written", staleRefusal)))
+check_true("v55", "it names the cell the page is now showing",
+           any(grepl("colName\\$\\[column\\]", staleRefusal)) &&
+           any(grepl("string\\$ \\(row\\)", staleRefusal)))
+check_true("v55", "it says what to do next rather than only refusing",
+           any(grepl("press Set to write", staleRefusal)))
+check_true("v55",
+           "APPENDIX_F S0A: the stale-value refusal suppresses the Stop button",
+           any(grepl('endPause: "OK", 1, 0', staleRefusal)))
+
 # -- D_repall_dup: Replace All scoped to the second duplicate ----------------
 # "B" occurs only in the B-data column, so before the fix this reported zero
 # replacements and changed nothing while telling the user it had looked.
@@ -471,7 +522,7 @@ if (length(leaked) > 0) {
 # renamed a user's columns to make its own life easier would be a different
 # and worse bug, so this is asserted in both directions.
 for (cs in c("A_rename_dup", "F_add_dup", "G_insert_dup", "H_plain",
-             "J_rename_back", "K_autolabel")) {
+             "J_rename_back", "K_autolabel", "L_stalecell", "M_movedtyped")) {
     lb <- labels_of(cs)
     check_true("v55", sprintf("%s: the saved table has unique column names", cs),
                length(lb) > 0 && !any(duplicated(lb)))

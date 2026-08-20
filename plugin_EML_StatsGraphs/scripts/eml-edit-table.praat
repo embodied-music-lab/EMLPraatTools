@@ -215,9 +215,40 @@ while running
 
         elsif clicked = 3
             # Set — write value to cell, then auto-advance row
-            @cellWrite: row, column, value$
-            prevCol = column
-            prevRow = min (row + 1, nRows)
+            #
+            # THE STALE-VALUE GUARD — READ BEFORE REMOVING IT.
+            #
+            # A Praat dialog is static: the Value box is filled once, from the
+            # cell prevRow/prevCol named when the page was BUILT, and cannot
+            # follow the Column and Row menus while the page is open. So a user
+            # who picks a different cell and presses Set is looking at the
+            # previous cell's contents, and the write would put them into the
+            # new cell — silently, with no undo, in a table that stays
+            # perfectly well-formed while saying the wrong thing.
+            #
+            # An untouched box is the whole signal. If the text differs from
+            # what was seeded, the user typed it and means it, wherever the
+            # menus now point — that write goes through unchanged, so entering
+            # a value into a freshly chosen cell still takes one press. Only
+            # the unedited box on a moved selection is refused, and the refusal
+            # navigates: the next pass shows the chosen cell's real contents.
+            if (column <> prevCol or row <> prevRow) and value$ = currentValue$
+                beginPause: "Nothing was written"
+                    comment: "You chose a different cell without changing the"
+                    comment: "Value box, so it still held the previous cell's"
+                    comment: "contents. Nothing was written."
+                    comment: ""
+                    comment: "The box now shows what is in "
+                    ... + colName$[column] + ", row " + string$ (row) + "."
+                    comment: "Change it and press Set to write."
+                endPause: "OK", 1, 0
+                prevCol = column
+                prevRow = row
+            else
+                @cellWrite: row, column, value$
+                prevCol = column
+                prevRow = min (row + 1, nRows)
+            endif
 
         elsif clicked = 4
             # Find/Replace sub-dialog

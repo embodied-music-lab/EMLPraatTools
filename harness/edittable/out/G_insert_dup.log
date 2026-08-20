@@ -1,8 +1,8 @@
 CASE handoff
 DLG|4|eml_table_editor#3|visit=1|clicked=5
-DLG|10|table_structure#1|visit=1|clicked=2
-DLG|15|insert_column#1|visit=1|clicked=2
-DLG|19|cannot_use_that_column_name#1|visit=1|clicked=1
+DLG|11|table_structure#1|visit=1|clicked=2
+DLG|16|insert_column#1|visit=1|clicked=2
+DLG|21|cannot_use_that_column_name#1|visit=1|clicked=1
 CASE returned
 CASE labels|id
 CASE ncols|3

@@ -53,8 +53,9 @@ commit ids.
   release gate.
 - Only a few open items can put a wrong number in someone's work: the
   recorder replaying a different significance decision than the session
-  showed, the graph door running a different test than the report, and the
-  table editor writing to the wrong cell. The rest is friction.
+  showed, and the graph door running a different test than the report. The
+  table editor's stale-cell write was the third and is now closed. The rest
+  is friction.
 - Pitch parameters went canonical with no release note, by ruling.
 - The forest plot was swept rather than left deferred, by ruling.
 - Erase-page and the subtitle are session-scoped: default at session start,

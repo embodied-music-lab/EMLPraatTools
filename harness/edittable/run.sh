@@ -605,13 +605,50 @@ tape "$K_MAIN" 1 'dlg_clicked = 1'
 run_case K_autolabel "$FIX/blank.praat"
 
 # ---------------------------------------------------------------------------
+# L_stalecell — THE SEVERITY 1 OF THE SECOND KIND. Move, do not type, Set.
+# ---------------------------------------------------------------------------
+# The Value box is filled once, when the page is built, from the cell the
+# previous pass ended on. A Praat dialog is static, so it cannot follow the
+# Column and Row menus while it is open. Before the guard, choosing another
+# cell and pressing Set wrote the box's contents — the OTHER cell's contents —
+# into it: no warning, no undo, and a table that still reads as a perfectly
+# ordinary CSV afterwards.
+#
+# The tape sets value$ to currentValue$ on the Set press, which is exactly
+# what an untouched box hands back. The first probe proves the box was holding
+# colA row 1; the second, after the refusal, proves the page came back showing
+# colA row 3. The table must still carry A3 in that cell.
+tape_reset
+tape "$K_MAIN" 1 'column = 2' 'row = 1' 'value$ = ""' 'dlg_clicked = 2'
+tape "$K_MAIN" 2 'appendInfoLine: "PROBE|held|", currentValue$' \
+                 'column = 2' 'row = 3' 'value$ = currentValue$' \
+                 'dlg_clicked = 3'
+tape "$K_MAIN" 3 'appendInfoLine: "PROBE|after|", currentValue$' \
+                 'dlg_clicked = 1'
+run_case L_stalecell "$FIX/plain.praat"
+
+# ---------------------------------------------------------------------------
+# M_movedtyped — the guard must not cost the ordinary edit a press.
+# ---------------------------------------------------------------------------
+# The companion arm, and the reason the guard reads the box rather than the
+# menus alone. Text that differs from what was seeded is the user's, wherever
+# the menus now point, so choosing a cell and typing into it still writes on
+# the first Set — and the refusal must not appear in the trace.
+tape_reset
+tape "$K_MAIN" 1 'column = 2' 'row = 1' 'value$ = ""' 'dlg_clicked = 2'
+tape "$K_MAIN" 2 'column = 2' 'row = 3' 'value$ = "TYPED"' 'dlg_clicked = 3'
+tape "$K_MAIN" 3 'dlg_clicked = 1'
+run_case M_movedtyped "$FIX/plain.praat"
+
+# ---------------------------------------------------------------------------
 # 5. REPORT
 # ---------------------------------------------------------------------------
 say completed 1
 
 printf '%-14s %-5s %-6s %s\n' case exit ncols header
 for c in A_rename_dup B_delete_dup C_cell_dup D_repall_dup E_onecol \
-         F_add_dup G_insert_dup H_plain I_findnav J_rename_back K_autolabel; do
+         F_add_dup G_insert_dup H_plain I_findnav J_rename_back K_autolabel \
+         L_stalecell M_movedtyped; do
     printf '%-14s %-5s %-6s %s\n' "$c" \
         "$(awk -F'\t' -v k="${c}_exit" '$1==k{print $2}' "$TSV")" \
         "$(awk -F'\t' -v k="${c}_after_ncols" '$1==k{print $2}' "$TSV")" \
