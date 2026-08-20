@@ -339,25 +339,20 @@ SITES <- rbind.data.frame(
 # the divergence sitting in the tree with nothing in the suite aware of it,
 # which is where it was before this file existed.
 #
-# The pin is deliberately narrow: these six may differ from canon in the
-# very-accurate slot and in NOTHING ELSE. Change 0.09 in one of them and the
-# ordinary parity check catches it, because the pin does not lift the rest.
+# THE ALLOWANCE IS EMPTY, AND THAT IS THE RULING. On 20 August 2026 Ian ruled
+# that a pitch call in this repository aligns with the PraatGen canonical
+# standards and with nothing else -- there is no such thing as a fixture that
+# is allowed to ask Praat a different question. The seven filtered-
+# autocorrelation calls under harness/graphaxes that carried very-accurate ON
+# were brought to canon in the same commit as this line.
 #
-# Whether harness/graphaxes SHOULD be corrected is a judgement about what those
-# figures are for -- they measure axis geometry off synthetic tones, and no
-# number a user reads comes off them -- and it belongs to whoever owns that
-# harness, not to this file. What this file owes is that the question cannot be
-# forgotten.
+# The list is kept, empty, rather than deleted. It is the shape a future
+# exception would have to take, and leaving it visible means a divergence can
+# only be introduced by writing one down here, in public, with a key -- never
+# by editing a number in a fixture and hoping the parity check reads it as
+# ordinary. An empty list is a stronger statement than no list.
 # ---------------------------------------------------------------------------
-DIVERGENT <- list(
-    list(key = "harness/graphaxes/axes_drive.praat#FAC1",         slot = 5L, is = "yes"),
-    list(key = "harness/graphaxes/axes_drive.praat#FAC2",         slot = 5L, is = "yes"),
-    list(key = "harness/graphaxes/axes_drive.praat#FAC3",         slot = 5L, is = "yes"),
-    list(key = "harness/graphaxes/stereo_drive.praat#FAC1",       slot = 5L, is = "yes"),
-    list(key = "harness/graphaxes/cases/repro_ramp2.praat#FAC1",  slot = 5L, is = "yes"),
-    list(key = "harness/graphaxes/cases/repro_steady_pitch.praat#FAC1", slot = 5L, is = "yes"),
-    list(key = "harness/graphaxes/cases/repro_tickprec.praat#FAC1",     slot = 5L, is = "yes")
-)
+DIVERGENT <- list()
 divergence_for <- function(key) {
     for (d in DIVERGENT) if (identical(d$key, key)) return(d)
     NULL

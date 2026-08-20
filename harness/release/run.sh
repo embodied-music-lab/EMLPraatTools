@@ -117,8 +117,18 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO="$(cd "$SCRIPT_DIR/../.." && pwd)"
-PRAAT="${PRAAT:-/usr/bin/praat}"
+
+# THE BINARY COMES FROM harness/_env.sh, LIKE EVERY OTHER DRIVER'S.
+# This file used to default to /usr/bin/praat on its own. That is the exact
+# resolution _env.sh was written to remove: a bare system Praat can be any
+# version, and a walk that installs the plugin and reads a menu off a
+# screenshot is meaningless on a build whose setup.praat refuses to load it —
+# while still producing a full, plausible, green transcript. _env.sh refuses
+# anything below 6.6.30 instead of warning about it, and $PRAAT still
+# overrides, so nothing that worked before stops working.
+source "$(cd "$SCRIPT_DIR/.." && pwd)/_env.sh" || exit 1
+
+REPO="$EML_ROOT"
 BUILDER="$REPO/plugin/dev/tools/build-release.py"
 
 OUT="${EML_RELEASE_OUT:-$SCRIPT_DIR/out}"

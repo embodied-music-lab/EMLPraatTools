@@ -75,7 +75,7 @@ endproc
 if leg$ = "steady"
     snd = Create Sound from formula: "steady200", 1, 0, 1.0, 44100,
     ... "0.5*sin(2*pi*200*x)"
-    pit = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "yes",
+    pit = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "no",
     ... 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
     pMin = Get minimum: 0, 0, "Hertz", "parabolic"
     pMax = Get maximum: 0, 0, "Hertz", "parabolic"
@@ -100,7 +100,7 @@ if leg$ = "steady"
 elsif leg$ = "ramp2"
     snd = Create Sound from formula: "ramp2hz", 1, 0, 1.0, 44100,
     ... "0.5*sin(2*pi*(199*x+1*x*x))"
-    pit = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "yes",
+    pit = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "no",
     ... 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
     pMin = Get minimum: 0, 0, "Hertz", "parabolic"
     pMax = Get maximum: 0, 0, "Hertz", "parabolic"
@@ -226,7 +226,7 @@ elsif leg$ = "collide"
 elsif leg$ = "margin_st"
     snd = Create Sound from formula: "c2", 1, 0, 1.0, 44100,
     ... "0.5*sin(2*pi*65.406*x)"
-    pit = To Pitch (filtered autocorrelation): 0, 50, 300, 15, "yes",
+    pit = To Pitch (filtered autocorrelation): 0, 50, 300, 15, "no",
     ... 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
     Erase all
     @emlDrawF0Contour: pit, "Sustained C2", "Time (s)",

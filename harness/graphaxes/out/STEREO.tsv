@@ -14,14 +14,14 @@ gate_waveform_exited_cleanly	1
 leg	gate_pitch
 gate_pitch_dialog_title	Stereo Sound — choose a channel
 pitch_created	1
-pitch_mean	220.0000
+pitch_mean	220.0002
 completed	1
 gate_pitch_dialog_seen	1
 gate_pitch_dialogs_answered	1
 gate_pitch_exited_cleanly	1
 leg	mono_silent
 pitch_created	1
-pitch_mean	220.0000
+pitch_mean	220.0002
 completed	1
 mono_silent_dialog_seen	0
 mono_silent_dialogs_answered	0
@@ -43,16 +43,16 @@ gate_repeat_dialog_seen	1
 gate_repeat_dialogs_answered	3
 gate_repeat_exited_cleanly	1
 leg	ungated
-ungated_mean_f0	110.0000
+ungated_mean_f0	110.0001
 completed	1
 leg	choices
 choice_1_label	Mix to mono
 choice_1_channels	1
-choice_1_mean_f0	110.0000
+choice_1_mean_f0	110.0002
 choice_2_label	Left channel only
 choice_2_channels	1
-choice_2_mean_f0	220.0000
+choice_2_mean_f0	220.0002
 choice_3_label	Right channel only
 choice_3_channels	1
-choice_3_mean_f0	330.0000
+choice_3_mean_f0	329.9994
 completed	1

@@ -73,7 +73,7 @@ endproc
 # Mean F0 of a Sound, through the plugin's own canonical pitch call.
 procedure meanF0: .soundId
     selectObject: .soundId
-    .pit = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "yes",
+    .pit = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "no",
     ... 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
     .f0 = Get mean: 0, 0, "Hertz"
     removeObject: .pit

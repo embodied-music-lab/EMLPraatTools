@@ -416,15 +416,33 @@ if (have_axes) {
         grepl("6\\.6\\.30|6\\.[7-9]|[7-9]\\.", av("praat_version") %or% ""))
 
     # THE DATA ARE EXACT AND WERE NEVER THE PROBLEM. Say so with a number:
-    # the pitch track of a synthesised 200 Hz tone spans a hundred-thousandth
-    # of a hertz. The verifier's discriminating probe is what established
-    # this, and it is re-confirmed here rather than taken on trust.
+    # the pitch track of a synthesised 200 Hz tone sits on 200 Hz to within a
+    # thousandth of a hertz and spans less than a five-thousandth. The
+    # verifier's discriminating probe is what established this, and it is
+    # re-confirmed here rather than taken on trust.
+    #
+    # THE TOLERANCES WERE LOOSENED ON 20 AUGUST 2026, and by how much matters
+    # less than why. The fixture used to ask Praat for a "very accurate"
+    # filtered autocorrelation, which is not what the plugin asks for; on Ian's
+    # ruling that a pitch call in this repository follows the PraatGen
+    # canonical settings and nothing else, the fixture now asks the same
+    # question the plugin does. Canon is the cheaper analysis, so the tone
+    # tracks at 200.0004 Hz rather than 200.000004, and the span is 0.00017 Hz
+    # rather than 0.0000097.
+    #
+    # NEITHER NUMBER TOUCHES WHAT THESE TWO CHECKS ARE FOR. They exist to say
+    # that the axis anomaly this file documents came from the DRAWING and not
+    # from the analysis underneath it -- and the anomaly is a whole hertz wide.
+    # Four ten-thousandths of a hertz makes that case exactly as well as four
+    # millionths did. The tolerances are set an order of magnitude above the
+    # measured values, so ordinary run-to-run variation cannot red them, and
+    # anything that could plausibly explain a 1 Hz axis artefact still does.
     check(ID, "a synthesised 200 Hz tone tracks at 200 Hz",
-          200, an("steady_data_min"), tol = 1e-4)
+          200, an("steady_data_min"), tol = 1e-2)
     check_true(ID,
         sprintf("its measured span is numerical noise (%s Hz) -- the analysis was never wrong",
                 av("steady_data_span")),
-        is.finite(an("steady_data_span")) && an("steady_data_span") < 1e-4)
+        is.finite(an("steady_data_span")) && an("steady_data_span") < 1e-3)
 
     # THE FLOOR. A tenth of a semitone at 200 Hz is 1.16 Hz; the axis is then
     # rounded out to nice ticks. Anything at or under a hertz means the floor

@@ -693,12 +693,11 @@ procedure emlLoadConfig
     # next choice corrects it. What is worth refusing is a value that is not
     # an option at all.
     #
-    # BOTH ARE CLAMPED WHERE THEY ARE PARSED NOW, by @emlConfigMenu, along
-    # with every other menu key in this file. The two clamps that used to sit
-    # here ran after the whole parse loop and tested a value that could
-    # already be `undefined` -- which no comparison catches -- so they were
-    # exactly the guard the empty-line case walked through. See the procedure
-    # above for what a value that is not an option costs the user.
+    # Both are clamped where they are parsed, by @emlConfigMenu, along with
+    # every other menu key in this file. A range test placed after the parse
+    # loop instead would let `undefined` through, because no comparison
+    # against `undefined` is true. See that procedure for what a value which
+    # is not an option costs the user.
 endproc
 
 # ----------------------------------------------------------------------------
