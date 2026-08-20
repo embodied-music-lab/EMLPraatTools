@@ -32,6 +32,13 @@ v07	v07_redpath_degenerate_inputs.R	ARTEFACT	NO		evidence
 v08	v08_twogroup_orchestrator.R	ARTEFACT	NO		evidence		
 v09	v09_anova_tukey_orchestrator.R	ARTEFACT	NO		evidence		
 v10	v10_kruskal_dunn_orchestrator.R	ARTEFACT	NO		evidence		
+v100	v100_box_geometry.R	ARTEFACT	NO		harness		
+v101	v101_dispatch_coverage.R	ARTEFACT	NO		harness		
+v102	v102_correlate_grouping.R	ARTEFACT	NO		harness		
+v103	v103_legend_encoding.R	SOURCE	NO		plugin		
+v104	v104_ascii_fold.R	ARTEFACT	NO		harness		
+v105	v105_pitch_parity.R	SOURCE	NO		plugin_EML_StatsGraphs	ROOT	
+v106	v106_wizard_wording.R	SOURCE	NO		plugin		
 v11	v11_twoway_orchestrator.R	ARTEFACT	NO		evidence		
 v12	v12_correlation_orchestrator.R	ARTEFACT	NO		evidence		
 v13	v13_regression_orchestrator.R	ARTEFACT	NO		evidence		
@@ -117,3 +124,5 @@ v94	v94_page_composition.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs
 v95	v95_second_axis.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
 v96	v96_line_style.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
 v97	v97_line_tree.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
+v98	v98_field_names.R	SOURCE	NO		plugin_EML_StatsGraphs		
+v99	v99_form_variable_locality.R	SOURCE	NO		plugin_EML_StatsGraphs		

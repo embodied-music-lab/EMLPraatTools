@@ -186,7 +186,7 @@ check_true("v104", "report: the writer reported success", isTRUE(o["success"] ==
 check_true("v104", "report: the writer reported it had folded something",
            isTRUE(o["folded"] == "1"))
 if (is.na(rp) || !nzchar(rp)) {
-    check_true("v104", "report: the writer named the file it wrote", FALSE); FALSE
+    check_true("v104", "report: the writer named the file it wrote", FALSE)
 } else {
     check_true("v104", "report: the writer named the file it wrote", TRUE)
     ascii_verdicts("report", rp)
@@ -236,8 +236,13 @@ if (!is.na(rp) && file.exists(rp)) {
     # BEFORE the sweep. Ordered the other way round, every character above
     # would also be "?" -- still ASCII, still no NUL, still passing every byte
     # check in section 2, and completely useless to read.
-    check("v104", "report: '?' appears once and only once",
-          1, length(gregexpr("?", body, fixed = TRUE)[[1]]), tol = 0)
+    # COUNTED, NOT MEASURED BY LENGTH. gregexpr returns -1 when it finds
+    # nothing, and length(-1) is 1 -- so written as a length this check passed
+    # on a body containing NO "?" exactly as readily as on one containing one,
+    # which is the outcome it exists to refuse.
+    qm <- gregexpr("?", body, fixed = TRUE)[[1]]
+    n_qm <- if (length(qm) == 1L && qm[1] == -1L) 0L else length(qm)
+    check("v104", "report: '?' appears once and only once", 1, n_qm, tol = 0)
 
     # --- the structure ----------------------------------------------------
     # THE LINES. writeFileLine: adds one trailing newline, the driver wrote
@@ -271,7 +276,7 @@ cp <- unname(o["path"])
 check_true("v104", "csv: the writer reported success", isTRUE(o["success"] == "1"))
 check_true("v104", "csv: the writer reported five rows", isTRUE(o["rows"] == "5"))
 if (is.na(cp) || !nzchar(cp)) {
-    check_true("v104", "csv: the writer named the file it wrote", FALSE); FALSE
+    check_true("v104", "csv: the writer named the file it wrote", FALSE)
 } else {
     check_true("v104", "csv: the writer named the file it wrote", TRUE)
     ascii_verdicts("csv", cp)
@@ -290,7 +295,7 @@ if (is.na(cp) || !nzchar(cp)) {
 # embedded-null warnings from burying the verdict lines.
 dcsv <- tryCatch(suppressWarnings(read.csv(cp, stringsAsFactors = FALSE)),
                  error = function(e) NULL)
-if (TRUE) {
+{
     d <- dcsv
     if (is.null(d)) {
         check_true("v104", "csv: read.csv could open the file", FALSE)
@@ -335,7 +340,10 @@ if (TRUE) {
         # AND NO NOTE WAS APPENDED. @emlReportToFile adds a line of English
         # when it folded; on a .csv that line is not a disclosure, it is a
         # malformed row, and every reader reports it as one. The suppression is
-        # by extension, so this is the check that it holds.
+        # by extension. What is asserted here is narrower than that claim: the
+        # CSV's last line is not the disclosure sentence, and the file is the
+        # header plus its five rows. Whether the suppression is reached by the
+        # extension test or by something else is not decided here.
         last <- tail(readLines(cp, warn = FALSE), 1)
         check_true("v104", "csv: no disclosure prose was appended to the CSV",
                    !grepl("outside plain ASCII", last, fixed = TRUE))
@@ -386,7 +394,11 @@ if (file.exists(cen)) {
         if (nrow(row) == 1) {
             check("v104", sprintf("%s: shell and R agree on the byte count", leg),
                   as.numeric(row$bytes[1]), length(raw_bytes(p)), tol = 0)
-            check("v104", sprintf("%s: shell and R agree there is no non-ASCII", leg),
+            # NOT a shell-versus-R comparison, whatever it was called before:
+            # this is the shell census on its own. R's own byte reading is
+            # asserted separately in section 2, and the two agreeing is the
+            # byte-count check immediately above, which does compare them.
+            check("v104", sprintf("%s: the shell census counted no non-ASCII byte", leg),
                   as.numeric(row$nonascii[1]), 0, tol = 0)
         }
     }
@@ -410,7 +422,7 @@ if (file.exists(cen)) {
 # green, and goes red the moment eml-output.praat gains the uppercase classes --
 # at which point the fix has arrived and this section is updated to "Tenor Eric"
 # in the same edit.
-if (TRUE) {
+{
     d <- dcsv
     if (!is.null(d)) {
         check_true("v104",

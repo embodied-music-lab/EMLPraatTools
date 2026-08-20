@@ -381,7 +381,30 @@ ALSO_PERMITTED <- c(
     # this repository", and a citation file belongs with the source it cites.
     # Listed as permitted-not-required so this check does not go red in the
     # window before it lands, and does not go green-by-silence after.
-    "CITATION.cff"
+    "CITATION.cff",
+    # Judged 20 August 2026, all three PERMITTED TO SHIP rather than excluded,
+    # and the reason is worth stating because the instinct runs the other way.
+    #
+    # They are maintainer documents: the working rules this repository is
+    # developed under, the phase register for what comes after 1.0.0, and the
+    # standing open-defect list with the design rulings behind it. None of it
+    # is about USING the plugin, and the documentation a user needs ships
+    # inside the plugin folder.
+    #
+    # But the four trees excluded above are excluded for WEIGHT -- 74 MB of
+    # harness, 24 MB of figures, inert without a Linux sandbox to run them in.
+    # These three are some sixty kilobytes of text that cost a downloader
+    # nothing and answer the two questions a reader of the source actually
+    # has: what is known to be broken, and where is this going. Excluding
+    # them would also break the reference ratchet below, which cannot tell
+    # `docs/` at the root from `plugin/docs/` inside the shipped folder.
+    #
+    # Permitted-not-required, like CITATION.cff, so this check does not go red
+    # in a window where one of them has been renamed and does not go green by
+    # silence if one disappears.
+    "CLAUDE.md",
+    "ROADMAP.md",
+    "docs/"
 )
 
 # THE PLUGIN FOLDER'S NAME, WRITTEN ONCE. Everything below that has to form a

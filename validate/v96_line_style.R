@@ -669,4 +669,4 @@ check_true(V, "the full-resolution detail strip was cut from those same files",
 present <- unique(TR$case[TR$case != "block"])
 eml_census(V, "line-style cases", present, CASES)
 
-if (!exists("EML_SUITE")) eml_report("v96 -- the four pens")
+if (!exists("EML_SUITE")) { eml_report("v96 -- the four pens"); eml_exit() }

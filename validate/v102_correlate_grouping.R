@@ -211,5 +211,4 @@ check_true(V, "K_movedok: no refusal was raised, and no extra press was charged"
 present <- sub("_exit$", "", grep("_exit$", names(E), value = TRUE))
 eml_census(V, "correlation drive case", present, CASES)
 
-if (!exists("EML_SUITE"))
-    eml_report("v102 correlation grouping: the grouping column is never X or Y")
+if (!exists("EML_SUITE")) { eml_report("v102 correlation grouping: the grouping column is never X or Y"); eml_exit() }

@@ -945,4 +945,7 @@ if (!canDrive) {
     }
 }
 
-eml_report("v71 -- the tidy vocabulary and the repeated-measures caution")
+if (!exists("EML_SUITE")) {
+    eml_report("v71 -- the tidy vocabulary and the repeated-measures caution")
+    eml_exit()
+}

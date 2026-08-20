@@ -318,4 +318,83 @@ check_true("v103", "@emlSaveConfig writes the key the loader parses ('legendPlac
                      code)) == 1L &&
                any(grepl('\\.key\\$ = "legendPlacement"', loader)))
 
+# THE BODY OF ONE NAMED PROCEDURE, from its `procedure` line to its `endproc`.
+# Used by the wiring checks below, which have to look INSIDE a procedure
+# rather than anywhere in the file: `tmpLegendPlacement = ...` appears in more
+# than one place, and only the one inside the seed is the join that matters.
+proc_body <- function(name) {
+    i <- grep(sprintf("^procedure %s[: ]|^procedure %s$", name, name), form)
+    if (!length(i)) return(character(0))
+    j <- grep("^endproc", form)
+    j <- j[j > i[1]]
+    if (!length(j)) return(character(0))
+    form[i[1]:j[1]]
+}
+
+# ---------------------------------------------------------------------------
+# THE WIRING, NOT JUST THE PARTS
+# ---------------------------------------------------------------------------
+# EVERY CHECK ABOVE PASSES ON A BUILD WHERE THE SETTING IS IGNORED. Measured,
+# not supposed: replacing the one line
+#
+#     tmpLegendPlacement = emlLegendPlacementToMenu.menu
+#
+# with `tmpLegendPlacement = 1` leaves all of them green, and every legend
+# dialog in the plugin then opens on "Inside plot" whatever the user saved.
+# The registry can be perfect, the option lists identical, the seed and commit
+# called in the right places, and the value still never travel -- because what
+# those checks assert is that the PARTS exist, and a stored setting is only
+# honoured if the parts are JOINED.
+#
+# So the two joins are pinned here as source, by shape rather than by line:
+# the seed takes its value out of the translation procedure's own output, and
+# the commit puts the dialog's answer back through the reverse one. A literal
+# on either side of either assignment is the defect, and it is exactly what a
+# well-meant "just default it" edit looks like.
+seedBody <- proc_body("emlSeedLegendPlacement")
+commitBody <- proc_body("emlCommitLegendPlacement")
+
+check_true("v103", "the seed exists as one procedure", length(seedBody) > 0)
+check_true("v103",
+           "the seed calls the translation with the STORED value and the type",
+           any(grepl("@emlLegendPlacementToMenu:\\s*graph_type,\\s*config_legendPlacement",
+                     seedBody)))
+check_true("v103",
+           "and takes what the dialog opens on FROM that call, not from a literal",
+           any(grepl("^\\s*tmpLegendPlacement\\s*=\\s*emlLegendPlacementToMenu\\.menu\\s*$",
+                     seedBody)) &&
+               !any(grepl("^\\s*tmpLegendPlacement\\s*=\\s*[0-9]", seedBody)))
+
+check_true("v103", "the commit exists as one procedure", length(commitBody) > 0)
+check_true("v103",
+           "the commit puts the dialog's answer back through the reverse translation",
+           any(grepl("@emlLegendPlacementFromMenu:\\s*graph_type,\\s*\\.chosen",
+                     commitBody)))
+check_true("v103",
+           "and stores what that call returned, not a literal",
+           any(grepl("^\\s*config_legendPlacement\\s*=\\s*emlLegendPlacementFromMenu\\.canonical\\s*$",
+                     commitBody)) &&
+               !any(grepl("^\\s*config_legendPlacement\\s*=\\s*[0-9]", commitBody)))
+
+# AND THE TWO TRANSLATIONS ARE INVERSES OVER THE WHOLE RANGE. Today both are
+# the identity plus a clamp, which is what makes the stored number readable as
+# itself -- but "today it is the identity" is the kind of fact that stops being
+# true quietly. Each is asserted to carry the clamp at the real option count
+# and to pass its input through, so a translation that started mapping 3 to 2
+# would be visible here rather than in a figure.
+toBody <- proc_body("emlLegendPlacementToMenu")
+fromBody <- proc_body("emlLegendPlacementFromMenu")
+check_true("v103", "the forward translation passes the canonical value through",
+           any(grepl("^\\s*\\.menu\\s*=\\s*\\.canonical\\s*$", toBody)))
+check_true("v103", "the reverse translation passes the menu index through",
+           any(grepl("^\\s*\\.canonical\\s*=\\s*\\.menu\\s*$", fromBody)))
+for (nm in list(c("forward", "toBody", ".menu"), c("reverse", "fromBody", ".canonical"))) {
+    b <- get(nm[2]); v <- nm[3]
+    check_true("v103",
+               sprintf("the %s translation clamps into 1..5, the real option count",
+                       nm[1]),
+               any(grepl(sprintf("if %s < 1", gsub("\\.", "\\\\.", v)), b)) &&
+                   any(grepl(sprintf("if %s > 5", gsub("\\.", "\\\\.", v)), b)))
+}
+
 if (!exists("EML_SUITE")) { eml_report("v103 legend placement: one encoding, one registry, one clamp"); eml_exit() }

@@ -484,4 +484,4 @@ cat(sprintf("  [worst anchoring error %.4f | worst overshoot %.4f | worst claime
 # not to CASES would be thirteen green checks and one unread figure.
 eml_census(V, "boxgeom figures", present, CASES)
 
-if (!exists("EML_SUITE")) eml_report("v100 -- one rectangle per figure")
+if (!exists("EML_SUITE")) { eml_report("v100 -- one rectangle per figure"); eml_exit() }

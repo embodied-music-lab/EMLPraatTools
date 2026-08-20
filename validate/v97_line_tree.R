@@ -2287,4 +2287,4 @@ check_true(V, "no nice-number rounding reaches the time axis",
 present <- setdiff(unique(TR$case), c("--run--", "--pairs--"))
 eml_census(V, "line-tree legs", present, CASES)
 
-if (!exists("EML_SUITE")) eml_report("v97 -- the line chart's question tree")
+if (!exists("EML_SUITE")) { eml_report("v97 -- the line chart's question tree"); eml_exit() }

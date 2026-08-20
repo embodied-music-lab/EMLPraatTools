@@ -332,4 +332,4 @@ check_true("v80",
            file.exists(file.path(plug, "dev", "FIX_NOTES.md")) &&
            !file.exists(file.path(plug, "FIX_NOTES.md")))
 
-if (!exists("EML_SUITE")) eml_report("v80 — shipped files do not narrate history")
+if (!exists("EML_SUITE")) { eml_report("v80 — shipped files do not narrate history"); eml_exit() }

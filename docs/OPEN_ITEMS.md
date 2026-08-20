@@ -68,13 +68,6 @@ Praat 6.6.30 under Xvfb, not on reasoning about Praat.
   unrelated numbers on one row, saving a row on the tallest page in the
   plugin at the cost of the label carrying the whole burden of honesty.
   Not taken unless Ian says so.
-- **Two wording items, ruled 20 Aug, not yet in the code.** The wizard
-  still reads "How many repeated measurements per subject?" and still
-  offers "Yes — same people, repeated (paired)". They become "Under how
-  many conditions was each subject measured?" and "Yes — same people,
-  measured more than once (within-subject)". "Paired" is reserved for the
-  k = 2 test whose name it is. Option labels unchanged; pins assert value
-  lines and that a gloss is present, never the gloss wording.
 - **Terminology-uniformity audit** (new, small, not started). Every dialog,
   report line and doc checked for four terms against R and SPSS usage:
   CONDITION (a level of a within-subject factor), TOKEN (a replicate of the
@@ -129,9 +122,6 @@ STILL OPEN, stored values that can seed a menu out of range:
   and legend placement both have clamps; these six do not.
 - Numeric config keys parse to undefined on an empty or corrupt line, and the
   two clamps that exist run after the whole parse loop rather than on the key.
-- The table editor's Scope menu is rebuilt from the live table each pass but
-  defaults to a remembered index with no clamp against the current column
-  count.
 
 STILL OPEN, dead controls (present but inert for some choices), all four
 confirmed in the code:
@@ -169,25 +159,40 @@ confirmed in the code:
    case in 150 pushes the annotation box into an extra resize pass, so it
    needs driving rather than assuming.
 
+### Red today, and known
+
+- **The line-style check fails on the second series.** "The second series has
+  its own Line style menu" is red, and was red before any of today's work --
+  invisible until the exit-code hole was closed, because that file reported
+  its result and returned success either way. Nobody has yet decided whether
+  the menu is missing or the check describes a page that changed.
+- **The line-chart dialog photographs are older than the form.** The checks
+  that read them are bound to the form's fingerprint, and the config-file
+  clamp edits that form, so two of them are red. Nothing in the plugin is
+  broken; the pictures are of the previous version. It clears when the
+  fifteen-leg photograph run works -- see the line-chart item above, which is
+  blocked on the same thing.
+
 ### Test-coverage gaps
 
 - The validator index documents the older checks only; roughly a dozen of
   the newest have no entry in it, so "read the index to see what is
   checked" now understates the suite.
-- Nothing drives a non-ASCII character through a saved CSV or report and
-  asserts the file stays readable. The fold is built and wired at both
-  boundaries, but its behaviour is unchecked.
-- Nothing pins the pitch parameters equal across the graph, batch and
-  recorder paths. They agree today by hand, not by construction: two call
-  sites still spell the parameter list literally instead of calling the
-  procedure that owns it.
+- The pitch parameters are pinned equal across every path now, but two call
+  sites in the graphs form still spell the parameter tail literally instead
+  of calling the procedure that owns it. They agree; they are not joined.
+- Seven filtered-autocorrelation calls under harness/graphaxes run with "very
+  accurate" ON where canon has it OFF. Test fixtures, not shipped code, so no
+  user's number is wrong -- but those fixtures measure something the plugin
+  does not do. Reported rather than changed: which way it goes is Ian's.
 - Replay receipt lag in the vector-figure harness: the harness drives
   record and replay and checks which files land, but never asserts the save
   receipt a replayed run prints.
 - Two plugin versions installed at once can produce a truncated menu with
   no warning. Nothing tests it.
-- Sixteen stray process files (`pid`, and the `xvfb.log` / `wm.log` beside
-  them) are tracked under the dialog-height harness and should not be.
+- The same process-artefact debris is still tracked in three other harnesses:
+  axisrefuse and linetree carry their own xvfb.log and wm.log. The
+  dialog-height ones are out; these are not.
 
 ### Housekeeping
 
@@ -197,6 +202,29 @@ confirmed in the code:
   code has moved since the last re-drive.
 
 ## Closed
+
+**A bad line in the config file can no longer lock a dialog.** Thirteen
+stored settings are parsed and clamped in one step at the point the line is
+read; before, eleven had no range check at all and the two that did tested a
+value that could already be undefined, which no comparison catches.
+
+**The table editor's search scope cannot be seeded past the end of the
+table**, and **the wizard says conditions and within-subject** rather than
+counting "repeated measurements" and calling every within-subject design
+"paired" -- the second of which was sending anyone with three or more
+conditions to the independent-samples option.
+
+**Three things that worked and were unguarded now have checks**: legend
+placement's encoding, the ASCII fold at the file boundary, and the pitch
+parameters across every path that uses them.
+
+**Every validator now sets an exit code when run on its own.** Seven printed
+their report and returned success whatever the result, so a failing check was
+invisible to anything reading exit codes.
+
+**The field-name check reads all 129 dialogs.** It matched a bare `endPause`
+to find where a dialog ended, and this tree writes `clicked = endPause:`, so
+97 of them were dropped from the population without a word.
 
 **A correlation cannot be grouped by one of the columns it correlates**, and
 the dialog is now driven rather than only read. Three cases press its

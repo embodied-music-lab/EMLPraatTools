@@ -559,4 +559,4 @@ check_true(V, "and the file records the measurement where the ruling is discusse
 present <- unique(TR$case[TR$case != "block"])
 eml_census(V, "second-axis cases", present, CASES)
 
-if (!exists("EML_SUITE")) eml_report("v95 -- the second vertical axis")
+if (!exists("EML_SUITE")) { eml_report("v95 -- the second vertical axis"); eml_exit() }
