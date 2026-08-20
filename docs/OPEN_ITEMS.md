@@ -151,10 +151,31 @@ wording and output work so its report strings are written once.
 
 1. **Recorder state publication.** The form states its complete display
    state once per press; the recorder writes it ahead of each step; a check
-   pins seeded == published == emitted. Nothing of this exists: no
-   procedure, no check, no harness. The often-quoted "41 seeded, 13
-   written, 28 not" has no artefact in the tree behind it — the numbers
-   need re-measuring before they are quoted again.
+   pins seeded == published == emitted.
+
+   MEASURED, AND THE MEASUREMENT IS NOW IN THE REPO:
+   `validate/tools/recorder_census.py`, so this stops being a number in a
+   sentence. Of 41 globals the draw layer seeds, 14 are assigned in scripts
+   the recorder actually produced and 27 are not; 18 of those 27 are real
+   user choices — the font, gridline mode, legend placement, the tick,
+   axis-name and axis-value flags, the inner box, the subtitle, the
+   annotation style and alpha, the scatter's dot size and formula toggle.
+   The rest is bookkeeping.
+
+   The earlier "13 emitted" was measured by asking whether the RECORDER'S
+   SOURCE mentions a name, which over-counts: two names it mentions
+   (`emlDrawnMinX`, `emlLegendSepActive`) appear in no emitted script. The
+   census reads emitted scripts instead. It measures a FLOOR — a setting
+   only shows as emitted if some committed recording exercised the figure
+   that carries it — and says so.
+
+   WHY THEY ARE MISSING, which decides the fix: a recorded step is a
+   procedure CALL with its arguments, so a setting passed as an argument is
+   recorded and a setting read from a global is invisible. The plugin's
+   display state travels in globals. `@emlRecordAxisRequest` is the
+   existing precedent for the answer — the form publishes what the user
+   asked for and the recorder prefers it over what the draw resolved.
+
 2. **Recorder records table creation.** Ruled: creation becomes a recorded
    step, split by source — plugin-created gets its command and a seed,
    file-loaded gets its path, pre-existing states its precondition loudly.
