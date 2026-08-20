@@ -176,12 +176,26 @@ wording and output work so its report strings are written once.
    existing precedent for the answer — the form publishes what the user
    asked for and the recorder prefers it over what the draw resolved.
 
-2. **Recorder records table creation.** Ruled: creation becomes a recorded
+2. **Four commands leave no trace in a recorded script**, measured by
+   `validate/v107_record_census.R` over every command `setup.praat`
+   registers: creating a demo table, both doors of the table editor, and
+   checking data. Thirteen record their work. The check is a ratchet — red if
+   a fifth appears, and red if one is fixed without its line being removed —
+   so the gap cannot grow quietly and the list cannot outlive the defect.
+
+   The demo generator is the sharpest of the four: it makes a table out of
+   nothing, so a recording taken afterwards describes an analysis of data
+   whose origin the script cannot state. The editor is the most dangerous:
+   a replay runs the recorded analysis against the table as it stands now,
+   and nothing says the numbers were edited in between. Checking data is the
+   weakest and may end up exempt with a reason rather than fixed.
+
+3. **Recorder records table creation.** Ruled: creation becomes a recorded
    step, split by source — plugin-created gets its command and a seed,
    file-loaded gets its path, pre-existing states its precondition loudly.
    The recorder has five step kinds and none of them is creation; it has no
    notion of how a table came to exist.
-3. **The text wrapper breaks "label = value" across lines.** The wrapper is
+4. **The text wrapper breaks "label = value" across lines.** The wrapper is
    a plain greedy word wrap with no special case for the equals sign. The
    claim that "a patch exists" could not be substantiated anywhere in the
    tree — treat this as unstarted, and expect the known cost when it is
