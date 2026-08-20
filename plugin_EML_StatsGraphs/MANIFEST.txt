@@ -1,6 +1,6 @@
 # ==========================================================================
 # MANIFEST — EML Stats & Graphs plugin
-# Generated: 2026-08-19  |  331 files in 128 rows (retired included, MANIFEST.txt not)
+# Generated: 2026-08-20  |  331 files in 128 rows (retired included, MANIFEST.txt not)
 # Columns: path | lines (code) or word count (prose) | version | description
 #
 # Regenerate with: python3 dev/tools/build-manifest.py
@@ -40,7 +40,7 @@ dev/tests/eml-test-helpers.praat | 739 | 1.2 | EML Stats : Test Helpers
 dev/tests/phase1/test-core-descriptive.praat | 611 | 1.1 | EML Stats : Core Descriptive Statistics — Validation Suite
 dev/tests/phase1/test-core-utilities.praat | 736 | 1.1 | EML Stats : Core Utility Procedures — Validation Suite
 dev/tests/phase1/test-extract.praat | 624 | 1.1 | EML Stats : Data Extraction Layer - Test Suite
-dev/tests/phase1/test-output.praat | 518 | 1.2 | EML Stats : Output Formatting — Test Suite
+dev/tests/phase1/test-output.praat | 525 | 1.2 | EML Stats : Output Formatting — Test Suite
 dev/tests/phase1/test-record-anova.praat | 205 | - | EML Stats & Graphs — test: the ANOVA orchestrator records itself. Drives @emlRunAnovaAnalysis with a recording running and asserts the buffer holds what the analysis computed, plus the refusal path.
 dev/tests/phase1/test-record.praat | 283 | - | EML Stats & Graphs — test: record workflow foundation. @emlRecordBegin/Step/Result/Source/Flush, @emlPhrase and the renderer, with no wrapper and no GUI.
 dev/tests/phase2/_margins_generated.praat | 95 | - | Generated harness (theilsen-build-margins.py): prints the numeric margin at every assertion site in test-theilsen.praat. Not a suite — excluded from the runner.
@@ -101,11 +101,11 @@ dev/tools/vacuity-negative-controls.py | 238 | - | Prove that scan-assertion-vac
 dev/tutorial-wireframes-v09.praat | 888 | 0.10 | EML Stats Tutorial — Layout Wireframes
 docs/API_EXPORT.md | ~3087 words | - | Worked how-to for @emlExportResultFiles: which analyses declare broom frames, the file set each call writes, the collision rule, and the batch pattern for a folder of files with no dialogs.
 docs/RECIPES.md | ~3043 words | - | Five worked scripts for calling the statistics from your own Praat script: two groups from a table, paired columns and correlation, a full analysis with CSV export, a batch loop, and a Sound through Pitch into the descriptive kernels. Every script is extracted from the page and run verbatim by harness/recipes, with its printed numbers pinned by validate/v81_recipes.R.
-graphs/eml-annotation-procedures.praat | 5892 | 3.22 | EML GRAPHS — ANNOTATION + STATS BRIDGE PROCEDURES
-graphs/eml-draw-procedures.praat | 7069 | 1.26 | EML GRAPHS — DRAWING PROCEDURES
+graphs/eml-annotation-procedures.praat | 5935 | 3.22 | EML GRAPHS — ANNOTATION + STATS BRIDGE PROCEDURES
+graphs/eml-draw-procedures.praat | 7150 | 1.26 | EML GRAPHS — DRAWING PROCEDURES
 graphs/eml-draw-qq.praat | 392 | - | EML Stats & Graphs — Normal Q-Q plot. @emlDrawQQPlot; an ADAPTER, not a draw procedure — it computes the theoretical quantiles and hands them to the shared scatter machinery.
-graphs/eml-graph-procedures.praat | 8255 | 3.32 | EML GRAPHS — STANDARD DRAWING PROCEDURES
-graphs/eml-graphs-form.praat | 9666 | 2.9 | EML Graphs — Form System and Workflow
+graphs/eml-graph-procedures.praat | 8268 | 3.32 | EML GRAPHS — STANDARD DRAWING PROCEDURES
+graphs/eml-graphs-form.praat | 9891 | 2.9 | EML Graphs — Form System and Workflow
 scripts/eml-batch-process.praat | 1665 | 1.3 | Batch process a folder of Sound files to extract user-selected
 scripts/eml-check-data.praat | 685 | 1.1 | EML Stats & Graphs — Check & repair data. Names, in advance, which cells an analysis will exclude and why, and offers to repair the unambiguous ones.
 scripts/eml-check-normality.praat | 526 | 2.2 | Test normality for one or more numeric columns, optionally
@@ -128,9 +128,9 @@ scripts/eml-lib.praat | 38 | - | Include list: the whole stack, stats then graph
 scripts/eml-lmm.praat | 105 | 1.0 | Fit a linear mixed-effects model (lme4-style formula) to a Table
 scripts/eml-pairwise.praat | 154 | 3.1 | All-pairs comparisons from a Table using pairwise t-test,
 scripts/eml-quick-start.praat | 103 | 1.1 | EML Stats & Graphs — Quick Start Guide
-scripts/eml-record-open.praat | 145 | 1.0 | EML Stats & Graphs — Stop recording and open. Ends the session started by 'Record script' and puts the generated script in a Praat ScriptEditor.
-scripts/eml-record-save.praat | 210 | 2.0 | EML Stats & Graphs — Stop recording and save. Renders the session to a runnable Praat file at a place the user chooses, and ends it.
-scripts/eml-record-start.praat | 106 | 1.0 | EML Stats & Graphs — Start recording a script. Begins the session every later analysis and figure is captured into.
+scripts/eml-record-open.praat | 159 | 1.0 | EML Stats & Graphs — Stop recording and open. Ends the session started by 'Record script' and puts the generated script in a Praat ScriptEditor.
+scripts/eml-record-save.praat | 228 | 2.0 | EML Stats & Graphs — Stop recording and save. Renders the session to a runnable Praat file at a place the user chooses, and ends it.
+scripts/eml-record-start.praat | 114 | 1.0 | EML Stats & Graphs — Start recording a script. Begins the session every later analysis and figure is captured into.
 scripts/eml-regress.praat | 155 | 2.2 | OLS simple linear regression (slope, intercept, R², SE, F, p)
 scripts/eml-stats-demo.praat | 490 | 1.4 | Demonstrates three core inferential statistics workflows
 scripts/eml-tutorial.praat | 754 | 0.19 | EML Stats Tutorial — Interactive Statistics Guide
@@ -146,9 +146,9 @@ stats/eml-inferential.praat | 6059 | 1.4 | EML Stats : Inferential Statistics
 stats/eml-linalg.praat | 347 | 1.0 | EML Stats & Graphs — Numerical Linear Algebra Layer
 stats/eml-lmm.praat | 4436 | - | EML Stats & Graphs — Linear Mixed Models
 stats/eml-optimizer.praat | 2402 | 2.0 | EML Stats & Graphs — Derivative-Free Optimizers
-stats/eml-output.praat | 4270 | 2.4 | EML Stats : Output Formatting
+stats/eml-output.praat | 4482 | 2.4 | EML Stats : Output Formatting
 stats/eml-psychometrics.praat | 376 | 1.0 | EML Stats & Graphs — Questionnaire reliability. Cronbach's alpha with a Feldt confidence interval and alpha-if-item-deleted, and a respondent-influence jackknife that names an influential respondent by their row in the original table rather than by their position after incomplete rows were dropped.
-stats/eml-record.praat | 4890 | 1.0 | EML Stats & Graphs — Record workflow: buffer, phrases, renderer. Accumulates a session's analyses and figures and writes one annotated Praat script that both re-runs and reads like a lab notebook.
+stats/eml-record.praat | 4907 | 1.0 | EML Stats & Graphs — Record workflow: buffer, phrases, renderer. Accumulates a session's analyses and figures and writes one annotated Praat script that both re-runs and reads like a lab notebook.
 stats/eml-result-writer.praat | 735 | 1.0 | EML Stats & Graphs — broom-style result writer. Collects one analysis as tidy/glance/augment tables and writes the three CSVs with the shapes and names R's broom package uses.
 
 # --------------------------------------------------------------------------
