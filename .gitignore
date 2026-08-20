@@ -297,3 +297,40 @@ plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
 # and which regenerate from `bash harness/vecfig/break.sh`. BREAKS.tsv and the
 # two logs per sabotage, which are the red-watch evidence, stay tracked.
 harness/vecfig/out/breaks/*/out/
+
+# harness/dialogheight: the EVIDENCE is SUMMARY.tsv, out/advanced/HEIGHTS.tsv,
+# the per-case driver_N.log transcripts and the dialog photographs beside them
+# -- those are the measurement, and they stay tracked, because no validator
+# reads this rig and a reviewer's only way to see what a dialog measured is to
+# look at what the drive left behind. What is ignored here is the operating
+# system's own debris from having run an X server and a Praat: the pref-dir
+# `pid` lock files, and the xvfb.log / wm.log the display and the window
+# manager write beside each lane.
+#
+# None of it is read. Every reference to any of these three names in harness/
+# or validate/ either creates the file with a `>` redirect or deletes it with
+# `rm -f`/`unlink` -- nothing ever opens one to decide anything, and
+# dialogheight's own run.sh does `rm -rf` on the whole pref dir before each
+# case, so a committed copy is not even the copy the next run will see.
+#
+# Committing them is actively wrong rather than merely untidy. A `pid` holds
+# the process id of a Praat that exited months ago, so every run rewrites all
+# sixteen of them with fresh numbers and the diff for a one-dialog change
+# arrives with sixteen meaningless line changes hiding it. The six xvfb.log
+# files are ONE blob committed six times -- byte-identical, all of them the
+# same xkbcomp "could not resolve keysym" warnings from this container's
+# keymap, which say something about the machine that ran the harness and
+# nothing about the plugin. Three of the six wm.log files are empty and the
+# other three hold a matchbox BadWindow warning about a window that had
+# already gone.
+#
+# THE COUNT IS TWENTY-EIGHT, NOT SIXTEEN. Sixteen is the number of `pid`
+# files, and it is the number docs/OPEN_ITEMS.md carried while this was open;
+# the six xvfb.log and six wm.log beside them are the same class of debris and
+# are removed with them.
+harness/dialogheight/work/prefs_*/pid
+harness/dialogheight/out/*/work/prefs/pid
+harness/dialogheight/out/*/xvfb.log
+harness/dialogheight/out/*/wm.log
+harness/dialogheight/out/*/work/xvfb.log
+harness/dialogheight/out/*/work/wm.log
