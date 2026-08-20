@@ -102,10 +102,6 @@ STILL OPEN, lagging controls:
   how many series tickboxes, whether the interval offer appears, the
   observation count printed in a label — is computed from the time column
   chosen on the PREVIOUS pass, and the time column menu is on that same page.
-- Correlation dialog. The group-column list is built by excluding the X and Y
-  columns as they were on the previous pass, so changing X or Y leaves the
-  group list one press out of date.
-
 STILL OPEN, stored values that can seed a menu out of range:
 
 - Six config keys are read from disk and used as menu defaults with no range
@@ -158,6 +154,12 @@ confirmed in the code:
 
 ### Test-coverage gaps
 
+- **The correlation dialog has no drive.** Its stale-group-list guard is in
+  and the file parses, but nothing presses its buttons: the only checks that
+  read it are source-level. The table editor's headless twin — every pause
+  stanza excised mechanically and replaced by a scripted answer, with the
+  remaining body hashed against the shipped file — is the pattern to reuse,
+  and reusing it is a unit of work rather than a line.
 - The validator index documents the older checks only; roughly a dozen of
   the newest have no entry in it, so "read the index to see what is
   checked" now understates the suite.
@@ -184,6 +186,17 @@ confirmed in the code:
   code has moved since the last re-drive.
 
 ## Closed
+
+**A correlation cannot be grouped by one of the columns it correlates.** The
+list of grouping columns has to be built before the dialog opens, from the X
+and Y of the previous pass, while X and Y are chosen on that same page — so
+moving X onto a column the list already offered, and then picking it, ran a
+correlation of a column against itself split by itself, and reported the
+result. That combination is now refused with a sentence saying why, nothing
+runs, and coming back rebuilds the list against the columns now chosen. Only
+that one combination is refused: nothing else about a column's eligibility
+depends on X and Y, so an ordinary change of X or Y still costs no extra
+press.
 
 **The render-level geometry check runs.** It reads the frame, the ticks and
 the plotted extremes out of a saved figure as numbers and asserts they land

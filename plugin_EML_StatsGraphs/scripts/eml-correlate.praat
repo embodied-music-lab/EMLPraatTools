@@ -187,6 +187,46 @@ repeat
         if not emlErrorDialog.back
             allDone = 1
         endif
+
+    elsif hasGroupCol and (groupCol$ = colX$ or groupCol$ = colY$)
+        # ── THE STALE GROUP LIST — READ BEFORE REMOVING THIS BRANCH ──────
+        #
+        # The candidate list above is built BEFORE the dialog opens, from the
+        # X and Y of the previous pass, because Praat has to know a menu's
+        # options before it can draw it. X and Y are chosen on that same
+        # page. So a user who moves X or Y onto a column that was offered as
+        # a grouping column, and then picks it, is handed a choice the list
+        # would not have offered had it known: a column correlating against
+        # itself, split by itself. The analysis would run and report, and
+        # every number in it would be an artefact of that.
+        #
+        # ONLY THIS ONE CASE IS REFUSED. Eligibility otherwise turns on the
+        # number of levels in a column, which X and Y cannot change, so
+        # "is it now X or Y" is the whole of what a change to X or Y can
+        # break. Refusing more than that would cost a press on every
+        # ordinary change of X or Y and buy nothing.
+        #
+        # Coming back re-enters the loop, which rebuilds the list against the
+        # X and Y now chosen — so a column that BECAME eligible by being
+        # moved off X or Y appears on the same return, without a second
+        # refusal to explain it.
+        # Built in statements rather than one continued literal: the wrapper
+        # dialog wraps the message itself, and a string split across `...`
+        # continuations is a source-formatting decision that shows up in the
+        # rendered sentence.
+        staleMsg$ = "The grouping column """ + groupCol$ + """ is now one of"
+        staleMsg$ = staleMsg$ + " the two columns being correlated, so it"
+        staleMsg$ = staleMsg$ + " cannot also group them. Nothing was run."
+        staleMsg$ = staleMsg$ + " The list of grouping columns was built"
+        staleMsg$ = staleMsg$ + " before you changed X and Y; click Back and"
+        staleMsg$ = staleMsg$ + " it will be rebuilt for the columns you have"
+        staleMsg$ = staleMsg$ + " now chosen."
+        @emlErrorDialog: staleMsg$, "", "menu"
+        selGroupName$ = ""
+        if not emlErrorDialog.back
+            allDone = 1
+        endif
+
     else
         if testChoice = 1
             testType$ = "pearson"
