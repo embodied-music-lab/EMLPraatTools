@@ -79,6 +79,54 @@ and the same re-show on 0.
 Interacts with the unification: when an analysis has already run, this
 choice should come FROM it rather than be asked again.
 
+## B3. Dialog audit, 20 Aug — what the hand-read found
+
+Every one of the 128 dialogs was opened and read. The claim that the
+lagging-control defect existed only on the six comparison pages was WRONG.
+Three more instances, plus three classes worth naming.
+
+FIXED IMMEDIATELY (it was in the fix commit itself): the category-header
+guard set `clicked = 0` and every page's button dispatch ended in a bare
+`else` that WAS the Draw branch — so refusing a header printed the refusal
+and then drew the figure anyway, annotated parametric under Holm from the
+procedure's declared defaults. The Draw arm is now named explicitly, so a
+refused press falls through to the loop and the page re-shows.
+
+STILL OPEN, lagging controls:
+
+- Line chart column-mapping page. Everything deciding which controls exist —
+  how many series tickboxes, whether the interval offer appears, the
+  observation count printed in a label — is computed from the time column
+  chosen on the PREVIOUS pass, and the time column menu is on that same page.
+- Correlation dialog. The group-column list is built by excluding the X and Y
+  columns as they were on the previous pass, so changing X or Y leaves the
+  group list one press out of date.
+- Table editor. The Value field is defaulted from the cell selected on the
+  previous pass, so changing row or column and typing edits the wrong cell.
+
+STILL OPEN, stored values that can seed a menu out of range:
+
+- Six config keys are read from disk and used as menu defaults with no range
+  check. Praat draws a menu whose default exceeds its option count blank and
+  then refuses the form — a dead end the user cannot escape, and the bad
+  value is on disk so restarting does not clear it. Gridline mode has a
+  clamp; these do not.
+- Numeric config keys parse to undefined on an empty or corrupt line, and the
+  clamps run after the parse rather than on it.
+- The table editor's Scope menu is rebuilt from the live table each pass but
+  defaults to a remembered index.
+
+STILL OPEN, dead controls (present but inert for some choices):
+
+- Histogram display mode when ungrouped; the regression dialog's group column,
+  which the analysis never receives; the wizard's variance assumption on the
+  nonparametric path; and the three already-known wrapper labels carrying
+  "(t and Wilcoxon only)" and similar.
+
+Also noted: legend placement has the structural protection gridline mode has
+(one registry, one seed, one commit, identical option lists) but no validator
+pinning the encoding the way v31 pins gridline mode.
+
 ## C. Everything else
 
 ### Not started

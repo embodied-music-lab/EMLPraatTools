@@ -6006,7 +6006,7 @@ repeat
             if variableExists ("comparison")
                 @emlComparisonFromMenu: comparison
                 if emlComparisonFromMenu.isHeader = 1
-                    if clicked > 2
+                    if clicked = 4
                         beginPause: "Please choose a comparison."
                             comment: "The item you selected is a category header."
                             comment: "Please choose a test from the list."
@@ -6126,7 +6126,15 @@ repeat
                     endif
                 endif
                 config_showAdvanced = 1 - config_showAdvanced
-            else
+            ; DRAW IS AN EXPLICIT ARM, NOT THE LEFTOVER ONE.
+            ; The comparison guard above refuses a category header by
+            ; clearing `clicked`, and a bare `else` would have caught that
+            ; cleared value and drawn anyway -- the refusal would have
+            ; printed its message and then drawn the figure it refused.
+            ; Naming the button lets a refused press fall through to the
+            ; repeat, which re-shows the page. Same shape as the graph-type
+            ; divider guard, which leaves its done-flag at 0 and loops.
+            elsif clicked = 4
                 barFormDone = 1
                 allFormsDone = 1
 
@@ -6446,7 +6454,7 @@ repeat
             if variableExists ("comparison")
                 @emlComparisonFromMenu: comparison
                 if emlComparisonFromMenu.isHeader = 1
-                    if clicked > 2
+                    if clicked = 4
                         beginPause: "Please choose a comparison."
                             comment: "The item you selected is a category header."
                             comment: "Please choose a test from the list."
@@ -6568,7 +6576,15 @@ repeat
                     endif
                 endif
                 config_showAdvanced = 1 - config_showAdvanced
-            else
+            ; DRAW IS AN EXPLICIT ARM, NOT THE LEFTOVER ONE.
+            ; The comparison guard above refuses a category header by
+            ; clearing `clicked`, and a bare `else` would have caught that
+            ; cleared value and drawn anyway -- the refusal would have
+            ; printed its message and then drawn the figure it refused.
+            ; Naming the button lets a refused press fall through to the
+            ; repeat, which re-shows the page. Same shape as the graph-type
+            ; divider guard, which leaves its done-flag at 0 and loops.
+            elsif clicked = 4
                 violinFormDone = 1
                 allFormsDone = 1
 
@@ -7421,7 +7437,7 @@ repeat
             if variableExists ("comparison")
                 @emlComparisonFromMenu: comparison
                 if emlComparisonFromMenu.isHeader = 1
-                    if clicked > 2
+                    if clicked = 4
                         beginPause: "Please choose a comparison."
                             comment: "The item you selected is a category header."
                             comment: "Please choose a test from the list."
@@ -7543,7 +7559,15 @@ repeat
                     endif
                 endif
                 config_showAdvanced = 1 - config_showAdvanced
-            else
+            ; DRAW IS AN EXPLICIT ARM, NOT THE LEFTOVER ONE.
+            ; The comparison guard above refuses a category header by
+            ; clearing `clicked`, and a bare `else` would have caught that
+            ; cleared value and drawn anyway -- the refusal would have
+            ; printed its message and then drawn the figure it refused.
+            ; Naming the button lets a refused press fall through to the
+            ; repeat, which re-shows the page. Same shape as the graph-type
+            ; divider guard, which leaves its done-flag at 0 and loops.
+            elsif clicked = 4
                 boxFormDone = 1
                 allFormsDone = 1
 
@@ -7867,7 +7891,7 @@ repeat
             if variableExists ("comparison")
                 @emlComparisonFromMenu: comparison
                 if emlComparisonFromMenu.isHeader = 1
-                    if clicked > 2
+                    if clicked = 4
                         beginPause: "Please choose a comparison."
                             comment: "The item you selected is a category header."
                             comment: "Please choose a test from the list."
@@ -7997,7 +8021,15 @@ repeat
                     endif
                 endif
                 config_showAdvanced = 1 - config_showAdvanced
-            else
+            ; DRAW IS AN EXPLICIT ARM, NOT THE LEFTOVER ONE.
+            ; The comparison guard above refuses a category header by
+            ; clearing `clicked`, and a bare `else` would have caught that
+            ; cleared value and drawn anyway -- the refusal would have
+            ; printed its message and then drawn the figure it refused.
+            ; Naming the button lets a refused press fall through to the
+            ; repeat, which re-shows the page. Same shape as the graph-type
+            ; divider guard, which leaves its done-flag at 0 and loops.
+            elsif clicked = 4
                 histFormDone = 1
                 allFormsDone = 1
 
@@ -8398,7 +8430,7 @@ repeat
             if variableExists ("comparison")
                 @emlComparisonFromMenu: comparison
                 if emlComparisonFromMenu.isHeader = 1
-                    if clicked > 2
+                    if clicked = 4
                         beginPause: "Please choose a comparison."
                             comment: "The item you selected is a category header."
                             comment: "Please choose a test from the list."
@@ -8520,7 +8552,15 @@ repeat
                     endif
                 endif
                 config_showAdvanced = 1 - config_showAdvanced
-            else
+            ; DRAW IS AN EXPLICIT ARM, NOT THE LEFTOVER ONE.
+            ; The comparison guard above refuses a category header by
+            ; clearing `clicked`, and a bare `else` would have caught that
+            ; cleared value and drawn anyway -- the refusal would have
+            ; printed its message and then drawn the figure it refused.
+            ; Naming the button lets a refused press fall through to the
+            ; repeat, which re-shows the page. Same shape as the graph-type
+            ; divider guard, which leaves its done-flag at 0 and loops.
+            elsif clicked = 4
                 gvFormDone = 1
                 allFormsDone = 1
 
@@ -8843,7 +8883,7 @@ repeat
             if variableExists ("comparison")
                 @emlComparisonFromMenu: comparison
                 if emlComparisonFromMenu.isHeader = 1
-                    if clicked > 2
+                    if clicked = 4
                         beginPause: "Please choose a comparison."
                             comment: "The item you selected is a category header."
                             comment: "Please choose a test from the list."
@@ -8965,7 +9005,15 @@ repeat
                     endif
                 endif
                 config_showAdvanced = 1 - config_showAdvanced
-            else
+            ; DRAW IS AN EXPLICIT ARM, NOT THE LEFTOVER ONE.
+            ; The comparison guard above refuses a category header by
+            ; clearing `clicked`, and a bare `else` would have caught that
+            ; cleared value and drawn anyway -- the refusal would have
+            ; printed its message and then drawn the figure it refused.
+            ; Naming the button lets a refused press fall through to the
+            ; repeat, which re-shows the page. Same shape as the graph-type
+            ; divider guard, which leaves its done-flag at 0 and loops.
+            elsif clicked = 4
                 gbFormDone = 1
                 allFormsDone = 1
                 gbCatCol$ = category_column$
