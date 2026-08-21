@@ -2850,6 +2850,14 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
     # --- Tukey HSD post-hoc (optional, chained) ---
 
     if .error$ = "" and .tukey = 1
+        ; THE ALPHA THIS PASSES FIXES .qCritical, AND NOTHING ELSE. The
+        ; pairwise adjusted p-values in .pMatrix## and the q statistics in
+        ; .qMatrix## are computed from the data and do not depend on it; only
+        ; the critical q does, and the only readers of .qCritical are the
+        ; family-wise interval the ANOVA report prints and the conf.low /
+        ; conf.high pair the Tukey export frame carries. Both of those are
+        ; labelled 95%, which is the level this line sets. A caller wanting
+        ; another level calls @emlTukeyHSD directly, which takes .alpha.
         @emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, 0.05
         if emlTukeyHSD.error$ <> ""
             .error$ = "Tukey HSD: " + emlTukeyHSD.error$

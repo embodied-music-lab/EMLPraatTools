@@ -4319,10 +4319,28 @@ procedure emlRecordViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
 
     @emlRecordStep: "draw", .intent$, .caveat$, .code$, .api$
 
-    @emlRecordResult: "Axis resolved to "
+    ; A RANGE WORKED OUT FROM THE DATA DESCRIBES THE RECORDING AND DOES NOT
+    ; BIND THE REPLAY, and the note says which of the two it is. The recorded
+    ; call carries the user's (0, 0) sentinel, so a replay against another
+    ; table works the axis out again and lands somewhere else -- correct
+    ; behaviour, and a note reading "Axis resolved to X .. Y" beside it reads
+    ; like a promise the file cannot keep. The clause is added only on the
+    ; auto arm: a range the user typed is the same range on every table, and
+    ; there the note IS binding.
+    ; The block at the top of an emitted script states the same thing about
+    ; the same numbers -- see @emlRecordColumnManifest's axis declarations.
+    .axisNote$ = "Axis resolved to "
     ... + fixed$ (emlDrawViolinPlot.yMin, 4) + " .. "
     ... + fixed$ (emlDrawViolinPlot.yMax, 4) + " over "
     ... + string$ (.nGroups) + " groups."
+    if .vMin = 0 and .vMax = 0
+        .axisNote$ = "Axis resolved to "
+        ... + fixed$ (emlDrawViolinPlot.yMin, 4) + " .. "
+        ... + fixed$ (emlDrawViolinPlot.yMax, 4) + " over "
+        ... + string$ (.nGroups) + " groups on the recorded data;"
+        ... + " auto adapts to other data."
+    endif
+    @emlRecordResult: .axisNote$
 
     ; THE SAME NUMBERS, IN A FORM THE BLOCK CAN READ. The note
     ; above is prose for the reader beside the step; this is the machine-

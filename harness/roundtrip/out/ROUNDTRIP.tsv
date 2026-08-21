@@ -3,9 +3,9 @@ plugin_root	/home/claude/repo/plugin
 harness_root	/home/claude/repo/harness/roundtrip
 record_stamp	21 August 2026, 00:00:00
 stage_scripts_linked	29
-stage_stats_linked	13
-savepanel_range	3130-3780
-stanza_dmo_1	35-47|Create Demo Table
+stage_stats_linked	14
+savepanel_range	3163-3813
+stanza_dmo_1	40-52|Create Demo Table
 stanza_edt_1	132-134|EML Table Editor — 
 stanza_edt_2	139-141|Add Column
 stanza_edt_3	156-159|EML Table Editor — 
@@ -30,21 +30,21 @@ stanza_edt_21	979-1005|Cannot Use That Column Name
 stanza_edt_22	1036-1057|Cannot Delete Column
 stanza_anv_1	47-63|Compare k Groups (ANOVA)
 stanza_anv_2	100-102|Analysis complete
-stanza_out_1	3300-3404|
-stanza_out_2	3445-3462|Cannot save there
-stanza_out_3	3674-3678|Figure format not available
-stanza_out_4	3767-3772|Saved
-stanza_out_5	3774-3776|Nothing saved
+stanza_out_1	3333-3437|
+stanza_out_2	3478-3495|Cannot save there
+stanza_out_3	3707-3711|Figure format not available
+stanza_out_4	3800-3805|Saved
+stanza_out_5	3807-3809|Nothing saved
 input_csv	/home/claude/repo/harness/roundtrip/out/data/rt_input.csv
 input_csv_sha	c6ffb44c86c0f3afbcfe7dcc68af13522883ce794a240b0edd113bc9b8d925cd
 input_csv_rows	24
 edit_target_cell	row 1, column f0_Hz
 edit_new_value	4242
 twin_dmo_source	eml-create-demo.praat
-twin_dmo_source_sha	b3e1383194af21fa0c786b1c03eaff4854b61daadf7837f342e95e090237f78e
+twin_dmo_source_sha	6720fb8bb3f04d7dc86fb71ef31405397123227f53694c7b27cc7b8e933733d6
 twin_dmo_stanzas	1
-twin_dmo_body_sha_shipped	76e3741027bf7b10e482971aa54f621a0bc789a8d7baecd26f5e5fb31698b1b5
-twin_dmo_body_sha_twin	76e3741027bf7b10e482971aa54f621a0bc789a8d7baecd26f5e5fb31698b1b5
+twin_dmo_body_sha_shipped	08ea585d9f2f3aefcb5cebbd6323716b0c860e9ae3c0ba4010a812dd87f26d7b
+twin_dmo_body_sha_twin	08ea585d9f2f3aefcb5cebbd6323716b0c860e9ae3c0ba4010a812dd87f26d7b
 twin_dmo_body_identical	1
 twin_edt_source	eml-edit-table.praat
 twin_edt_source_sha	5aac2d77865f35b72c99b3dab92e44ec0fad7e4ad5545b8f3620a7a3443ea0ba
@@ -59,10 +59,10 @@ twin_anv_body_sha_shipped	b19fb75fdf581335a7b43decb9ed97e752848ddcbee52e9b1bd71e
 twin_anv_body_sha_twin	b19fb75fdf581335a7b43decb9ed97e752848ddcbee52e9b1bd71e4024c20395
 twin_anv_body_identical	1
 twin_out_source	eml-output.praat
-twin_out_source_sha	020f26331c6ce1662eaa45a5cdb161de5500259f9e51f7419747bf74d538cda5
+twin_out_source_sha	949a497581d6b7faf82ba74ddd71b1501caada5498325e77a68c85e1718bf8dc
 twin_out_stanzas	5
-twin_out_body_sha_shipped	731308fab0eb7362de3f33bf8b9a4179636387ef920c405b7a2978391076f102
-twin_out_body_sha_twin	731308fab0eb7362de3f33bf8b9a4179636387ef920c405b7a2978391076f102
+twin_out_body_sha_shipped	474a8f81f1fa1eeda7f713bd1ba5c5199ec6dd464278c27663a461068703df55
+twin_out_body_sha_twin	474a8f81f1fa1eeda7f713bd1ba5c5199ec6dd464278c27663a461068703df55
 twin_out_body_identical	1
 drive_exit	0
 record_started	1
@@ -71,17 +71,17 @@ action1_create_demo_ran	1
 action1_create_demo_table	demo_3groups
 action1_create_demo_rows	45
 action1_create_demo_cols	4
-action1_steps_in_buffer_after	0
+action1_steps_in_buffer_after	1
 action2_load_file_ran	1
 action2_load_file_object	Table rt_input
 action2_load_file_rows	24
 action2_load_file_cols	3
-action2_steps_in_buffer_after	0
+action2_steps_in_buffer_after	1
 action3_edit_cell_ran	1
 action3_edit_cell_before	100
 action3_edit_cell_after	4242
 action3_table_mean_after	609.416667
-action3_steps_in_buffer_after	0
+action3_steps_in_buffer_after	1
 action4_analysis_ran	1
 action4_anova_between	Between 1441680.33 2 720840.17 1.0103 .381
 action4_anova_within	Within 14982775.50 21 713465.50 
@@ -96,41 +96,41 @@ action5_drawn_extent	0|6.0000|0|4.0000
 action6_files_written	7
 action6_file_list	rt_roundtrip.png,rt_roundtrip_augment.csv,rt_roundtrip_effectsize_tidy.csv,rt_roundtrip_glance.csv,rt_roundtrip_posthoc_tidy.csv,rt_roundtrip_report.txt,rt_roundtrip_tidy.csv
 action6_png_bytes	62639
-action6_steps_in_buffer_after	3
+action6_steps_in_buffer_after	5
 flush_written	1
 discard	1|0
 emitted_exists	1
-emitted_bytes	5407
-emitted_lines	119
-emitted_sha	4d6342fc3c1e3dd61eca6333cacda19a4c8606f957ad66b429dff21ed2922429
-emitted_step_headings	3
-emitted_step_kinds	analysis,draw,save
+emitted_bytes	7054
+emitted_lines	151
+emitted_sha	c3e54a0247ac96b7f2dfc87eec30ffe8f61687c789fbcc903c4b1c50477d8d11
+emitted_step_headings	5
+emitted_step_kinds	create,read,analysis,draw,save
 emitted_missing_phrases	0
 emitted_include_root	~/repo/plugin
 emitted_input_line	# Input: Table rt_input -- 24 rows, 3 columns
-emitted_selectobject	selectObject: data1$
-emitted_has_create_demo	0
-emitted_has_load_file	0
+emitted_selectobject	selectObject: data2$
+emitted_has_create_demo	2
+emitted_has_load_file	3
 emitted_has_edit_cell	0
 emitted_has_analysis	1
 emitted_has_draw	1
 emitted_has_save	1
-emitted_analysis_line	@emlRunAnovaAnalysis: data, valueCol$, groupCol$, 1
-emitted_draw_line	@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
-emitted_save_line	@emlRecordReplaySave: 1, "rt_roundtrip", outputFolder$, figureFormat$
-emitted_block_vars	22
-emitted_data_decl	data1$ = "Table rt_input"   ; run 1, steps 1 (analysis), 2 (draw), 3 (save)
-emitted_axis_note	-2000.0000 .. 6000.0000 over 3 groups.
-emitted_axis_block	axisYMax      = 0.0   ; on the recorded data it resolved to -2000.0000 .. 6000.0000
+emitted_analysis_line	@emlRunAnovaAnalysis: data, valueCol2$, groupCol2$, 1
+emitted_draw_line	@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol2$, valueCol2$, axisYMin2, axisYMax2
+emitted_save_line	@emlRecordReplaySave: 1, "rt_roundtrip", outputFolder$, figureFormat2$
+emitted_block_vars	24
+emitted_data_decl	data1$ = "Table demo_3groups"   ; run 1, step 1 (create)
+emitted_axis_note	-2000.0000 .. 6000.0000 over 3 groups on the recorded data; auto adapts to other data.
+emitted_axis_block	axisYMax2      = 0.0   ; on the recorded data this resolved to -2000.0000 .. 6000.0000; auto adapts to other data
 emitted_folder_line	outputFolder$ = "/home/claude/repo/harness/roundtrip/out/saved"
-emitted_first_step_body	selectObject: data1$
-emitted_replay_precondition	requires 'Table rt_input' already open AND already carrying the hand edit (row 1 f0_Hz = 4242); the emitted script neither creates, loads nor edits it
-action1_emitted	<nothing>
-action2_emitted	<nothing>
+emitted_first_step_body	# Built Table demo_3groups with the plugin's demo generator: Three-group comparison (Soprano / Mezzo / Alto).
+emitted_replay_precondition	carries no cell edit; whatever it does not supply must be open, under the name the block gives, before a replay
+action1_emitted	data1$ = "Table demo_3groups"   ; run 1, step 1 (create)
+action2_emitted	inputFile$     = "/home/claude/repo/harness/roundtrip/out/data/rt_input.csv"   ; the data file read from disk -- step 2 (read)
 action3_emitted	<nothing>
-action4_emitted	@emlRunAnovaAnalysis: data, valueCol$, groupCol$, 1
-action5_emitted	@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
-action6_emitted	@emlRecordReplaySave: 1, "rt_roundtrip", outputFolder$, figureFormat$
+action4_emitted	@emlRunAnovaAnalysis: data, valueCol2$, groupCol2$, 1
+action5_emitted	@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol2$, valueCol2$, axisYMin2, axisYMax2
+action6_emitted	@emlRecordReplaySave: 1, "rt_roundtrip", outputFolder$, figureFormat2$
 replay_edit_lines	2
 replay_exit	0
 replay_reached_end	1

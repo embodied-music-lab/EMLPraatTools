@@ -1332,6 +1332,22 @@ scripts <- c(
                                  # The unset-annotAlpha headless path is driven
                                  # for the documented 0.05 fallback. Drives
                                  # Praat live; negative control inside.
+    ,
+    "v109_report_ci_alpha_oracle.R" # the same rule for the three intervals
+                                 # that spell the level as a TAIL PROBABILITY
+                                 # rather than as a z value, which is why a
+                                 # search for 1.96 cannot see them: the
+                                 # two-group report's CI of the difference,
+                                 # the regression coefficient table's CI
+                                 # column, and the Feldt interval on
+                                 # Cronbach's alpha. Drives all three live at
+                                 # two alphas against t.test, confint(lm) and
+                                 # the published Feldt form, requires each
+                                 # printed label to name the level it used,
+                                 # and requires every bound to move when the
+                                 # alpha does. The headless path is driven for
+                                 # the documented 0.05 fallback. Drives Praat
+                                 # live; one negative control per site.
 )
 
 # ---------------------------------------------------------------------------

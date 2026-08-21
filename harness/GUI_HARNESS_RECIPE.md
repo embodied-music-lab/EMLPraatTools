@@ -584,3 +584,128 @@ a real regression would need two failures before anyone saw it. Removing the
 mechanism on the strength of one clean session would trade a visible,
 instrumented one-in-nine for a silent one. If `RETRIES.tsv` is non-empty after
 a run, that is a finding — read it before reading anything else in the output.
+
+---
+
+## 12. Five Praat facts a rig meets early (added 2026-08-21)
+
+Five behaviours of Praat itself, each of which has cost this project time
+twice. The measurements, the probe transcripts and the version stamps are in
+`docs/PRAAT_FACTS.md`; what is here is what a driver *sees in its own log* and
+what to call instead. Facts 12.1 and 12.2 were re-measured in this sandbox on
+21 August 2026 against Praat 6.6.30; 12.3 and 12.4 are Ian's measurements on
+his own machine, with the halves this image can reach re-measured here and
+agreeing; 12.5 is Ian's alone.
+
+### 12.1 The stop-recording commands abort under `praat --run` — flush instead
+
+A rig cannot end a recording by calling the shipped wrapper. Driven through
+`runScript:` after a live recording, on Praat 6.6.30:
+
+| command | `--run`, no DISPLAY | `--run`, DISPLAY set, Xvfb + matchbox up | `--send` to a live GUI instance |
+|---|---|---|---|
+| `Stop recording and save...` | `Trace/breakpoint trap`, exit **133** | `Trace/breakpoint trap`, exit **133** | renders `Pause: Stop recording and save`, blocks for a click |
+| `Stop recording and open` | `Aborted`, exit **134** | `Aborted`, exit **134** | completes, ScriptEditor window appears |
+
+The 134 carries Praat's own crash banner —
+`Crashing bug: Praat will crash` and `No sequential unique ID for class Script
+(selectObject)` at `Read from file: openPath$`. Note that adding a display
+moves neither result: this is a `--run` wall, not a headless one.
+
+**What to call instead.** The two procedures the wrappers call underneath:
+
+```praat
+@emlRecordFlush: outPath$      ; writes the script, recording stays live
+@emlRecordDiscard              ; ends the recording
+```
+
+`harness/roundtrip/drive.praat` says so in its header and takes that route;
+`harness/record_e2e/driver.praat:80` and `harness/vecfig/record_drive.praat:140`
+flush the same way. To exercise the shipped wrapper itself, drive a live GUI
+instance (§2.4a, §9.1) and click the dialog.
+
+### 12.2 The save panel is a `beginPause:`, and `DISPLAY` does not rescue it
+
+§0 states that `beginPause:` hard-crashes under `praat --run`. The measurement
+that a rig writer needs alongside it: **adding a display does not help.**
+`@emlSavePanel: 0, "probe", "/tmp"` after an analysis, Praat 6.6.30:
+
+| launch | result |
+|---|---|
+| `praat --run`, no DISPLAY | `Trace/breakpoint trap`, exit **133** |
+| `praat --run`, DISPLAY=:81, Xvfb + matchbox up | `Trace/breakpoint trap`, exit **133** |
+
+Both end on the same three toolkit lines, of which the last is
+`Gtk-ERROR **: Can't create a GtkStyleContext without a display connection`.
+The message names a display that the second run had. `praat --run` starts no
+toolkit, so there is nothing for a `DISPLAY` value to attach to.
+
+**What to do.** Either drive the real dialog in an interactive instance
+(§2.4a + §9.1 + §3), or excise the pause mechanically the way
+`harness/edittable/` does and `harness/roundtrip/run.sh` generalises. Do not
+put Xvfb in front of a `--run` driver and expect the pause to render.
+
+### 12.3 Praat's command history is unreachable from a script
+
+There is no script-context `Clear history` and no history accessor in the
+formula language. Measured by Ian in a plain script and inside a
+ScriptEditor-run script, on 6.6.30 and 7.0.01. Re-measured here on 6.6.30 in
+the two contexts this image can reach — under `praat --run`, and sent to a
+live GUI instance with `--send` — with the same two errors in both:
+
+```
+Clear history          -> Command “Clear history” not available for current selection.
+h$ = history$ ()       -> Unknown function «history$» in formula.
+x$ = historyLines$ ()  -> Unknown function «historyLines$» in formula.
+```
+
+The history is human-only, via **Edit > Paste history** in a script window.
+
+**What to do.** Do not design a rig around scraping it. This closes off the
+otherwise obvious route to capturing what a person did in a Praat editor.
+
+### 12.4 Tracing is scriptable, and blind to editor actions
+
+`Debug: 1, 0` switches tracing on and `Debug: 0, 0` off, from an ordinary
+script, no dialog and no display. Verified here under `--run` and in a live
+GUI instance, and by Ian on Linux 6.6.30 and macOS.
+
+Output goes to a file called `tracing` in the preferences directory in force —
+`<pref-dir>/tracing` under `--pref-dir=`, `/root/.praat-dir/tracing` for a
+default launch — **not** to stdout. It is truncated at each switch-on and
+stamped with the version and time.
+
+For a script the trace carries dispatch and object construction:
+
+```
+Interpreter_resume (Interpreter.cpp:2355): going to handle line 3: Create Table with column names: "traceprobe", 2, "a"
+NEW1_Table_createWithColumnNames (praat_Stat.cpp:238): args 0x85d1a60
+Thing_newFromClass (Thing.cpp:52): created Table
+```
+
+For a hand edit committed in Praat's own TableEditor — Ian's measurement, on
+Linux 6.6.30 and macOS — it carries **only glyph-painting calls**: no command
+dispatch, no cell coordinates, no values. The lines that name a command are
+`Interpreter_resume` lines, and an editor action never enters the interpreter.
+
+**What to do.** Trace a script, not a person. Read `<pref-dir>/tracing`, and
+switch tracing off in the same script that switched it on — a leftover
+`Debug: 1, 0` costs the next run its file.
+
+### 12.5 A TableEditor edit is in the history; a plugin edit is one opaque line
+
+Ian's measurement, 20–21 August 2026, Praat 6.6.30. A cell changed by hand in
+Praat's native TableEditor enters the command history in replayable syntax,
+`Set numeric value: 1, "Speaker", 1.5`. The same cell changed through the
+plugin's wrapper enters it as a bare `runScript:` with every internal command
+invisible.
+
+The two recorders are exact complements, which is why the plugin's own is
+necessary rather than redundant: it captures the analyses, figures and saves
+that Praat's history reduces to one line, and the hand edit it cannot see is
+the one thing Praat's history holds — and 12.3 says no code can read that.
+
+**What a rig should do.** Treat a recorded script as a statement about the
+plugin's operations and nothing else. A rig that stages a hand edit by writing
+the cell directly — `harness/roundtrip/` does — is testing the script rather
+than the editor, and its header should say so.

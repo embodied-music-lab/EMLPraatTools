@@ -2,9 +2,9 @@
 --run--	source_tree	/home/claude/repo
 --run--	legs_requested	subjects4 timeswitch subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven script_refuse long_meas2 long_meas3_refuse long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2
 --run--	code_sha256_eml-graphs-form	850fdf178a8b06d87bec77d428a04abb90aa12bb835f616a7055d2794e60843f
---run--	code_sha256_eml-graph-procedures	4c7d71724a9d65c51e82f002467ec89e1c2c5e36bc54e2b173584eb9d36fc9c8
---run--	code_sha256_eml-draw-procedures	ba68b2cc6dfb46beae45416bc0d84a08a44c0e54432fbed9052cac875ab11ef9
---run--	code_sha256_eml-record	557296e395a243dbdcbba9bfc5bc7fa35e03dbf4d4f16dc004c3541157ac94fb
+--run--	code_sha256_eml-graph-procedures	8ba64e46aa591e1ec885c4c6a62e2403f60e3d72e129b17072f617a1c7157a72
+--run--	code_sha256_eml-draw-procedures	57c7e9d26b03e8fd1a86ba1953e4b636516d0ed583d1428abb4359edcc03d0e8
+--run--	code_sha256_eml-record	9dc15a37578405e641e75918d4806c2129015aa74407cf202b8fd5276b05afe9
 --run--	compositor	running
 subjects4	leg_started	1
 subjects4	ink_empty	0.000687143
@@ -1802,7 +1802,7 @@ rec_long_meas2	info	NOTE: on-figure box backgrounds are drawn as a stipple scree
 rec_long_meas2	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
 rec_long_meas2	info_lines	2
 rec_long_meas2	display_clear	yes
-rec_subjects4	emitted_bytes	10670
+rec_subjects4	emitted_bytes	12226
 rec_subjects4	emitted_encoding	utf16
 rec_subjects4	emitted_step	# --- Step 1 (convert) ---
 rec_subjects4	emitted_step	# --- Step 2 (draw) ---
@@ -1842,7 +1842,7 @@ rec_subjects4	emitted_call	@emlClearAnnotations
 rec_subjects4	emitted_call	@emlGraphsMeltSeries: data, timeCol$, seriesCols$
 rec_subjects4	emitted_call	@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 rec_subjects4	emitted_call	@emlDrawTimeSeries: data, "Line Chart (±CI): lt subjects4", "Time", "", 6, 4, "color", 1, timeCol$, valueCol$, groupCol$, 0, 0, axisYMin, axisYMax
-rec_subjects4	replay_include_rewritten	13
+rec_subjects4	replay_include_rewritten	14
 rec_subjects4	tuned_axis	50 722.7071716977504
 rec_subjects4	replay_wait	1
 rec_subjects4	replay_verdict	OK
@@ -1854,7 +1854,7 @@ rec_subjects4	tuned_verdict	OK
 rec_subjects4	tuned_png_md5	530636ee02f28a50e645957657fedbed
 rec_subjects4	tuned_png_px	1800x1200
 rec_subjects4	tuned_error	
-rec_meas2	emitted_bytes	5295
+rec_meas2	emitted_bytes	6069
 rec_meas2	emitted_encoding	ascii
 rec_meas2	emitted_step	# --- Step 1 (draw) ---
 rec_meas2	block_data1$	"Table lt_meas2"
@@ -1894,7 +1894,7 @@ rec_meas2	emitted_call	@emlInitDrawingDefaults
 rec_meas2	emitted_call	@emlClearAnnotations
 rec_meas2	emitted_call	@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 rec_meas2	emitted_call	@emlDrawTimeSeries: data, "F0 over time (lt meas2)", "Time", "F0", 6, 4, "color", 1, timeCol$, valueCol$, "", 0, 0, axisYMin, axisYMax
-rec_meas2	replay_include_rewritten	13
+rec_meas2	replay_include_rewritten	14
 rec_meas2	tuned_axis	180 283.49608977795856
 rec_meas2	replay_wait	1
 rec_meas2	replay_verdict	OK
@@ -1906,7 +1906,7 @@ rec_meas2	tuned_verdict	OK
 rec_meas2	tuned_png_md5	92b3410ae7d18549728cce222282733f
 rec_meas2	tuned_png_px	1800x1200
 rec_meas2	tuned_error	
-rec_long_meas2	emitted_bytes	6321
+rec_long_meas2	emitted_bytes	7099
 rec_long_meas2	emitted_encoding	ascii
 rec_long_meas2	emitted_step	# --- Step 1 (convert) ---
 rec_long_meas2	emitted_step	# --- Step 2 (draw) ---
@@ -1957,7 +1957,7 @@ rec_long_meas2	emitted_call	@emlClearAnnotations
 rec_long_meas2	emitted_call	@emlGraphsPivotSeries: data, timeCol$, longValueCol$, seriesNameCol$, seriesLevels$
 rec_long_meas2	emitted_call	@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 rec_long_meas2	emitted_call	@emlDrawTimeSeries: data, "F0 over time (lt longmeas2)", "Time", "F0", 6, 4, "color", 1, timeCol$, valueCol$, "", 0, 0, axisYMin, axisYMax
-rec_long_meas2	replay_include_rewritten	13
+rec_long_meas2	replay_include_rewritten	14
 rec_long_meas2	tuned_axis	180 283.49608977795856
 rec_long_meas2	replay_wait	1
 rec_long_meas2	replay_verdict	OK

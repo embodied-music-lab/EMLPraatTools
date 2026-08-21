@@ -37,6 +37,7 @@ include ~/repo/plugin/graphs/eml-graph-procedures.praat
 include ~/repo/plugin/graphs/eml-annotation-procedures.praat
 include ~/repo/plugin/graphs/eml-draw-procedures.praat
 include ~/repo/plugin/stats/eml-analysis.praat
+include ~/repo/plugin/stats/eml-demo-tables.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -45,8 +46,23 @@ include ~/repo/plugin/stats/eml-analysis.praat
 # THE OBJECT
 # Recorded against: Table sa -- 24 rows, 2 columns.
 # The objects this workflow ran on are named in the block below.
-# All of them must be open before you run this script.
+# None of them is built or opened by a step below: see
+# PRECONDITION, and open them before you run this script.
 # ------------------------------------------------------------
+
+# ============================================================
+# PRECONDITION -- THIS SCRIPT CANNOT REBUILD ITS DATA
+#
+# These objects were already open when this recording started.
+#     Table sa
+#     Table sb
+# Nothing in the session made them, so nothing below can remake them.
+#
+# YOU MUST SUPPLY THE DATA YOURSELF, open and named as above, before you
+# run this file. The steps below select by name: with nothing of that name
+# open the script stops at its first step, and with DIFFERENT data of that
+# name it runs to the end and answers a different question without saying so.
+# ============================================================
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
@@ -59,9 +75,9 @@ valueCol$      = "val"   ; the measured column -- run 1, step 1 (draw)
 groupCol2$     = "grp"   ; the grouping column -- run 2, step 3 (draw)
 valueCol2$     = "val"   ; the measured column -- run 2, step 3 (draw)
 axisYMin       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-axisYMax       = 0.0   ; on the recorded data it resolved to 5.5000 .. 9.0000
+axisYMax       = 0.0   ; on the recorded data this resolved to 5.5000 .. 9.0000; auto adapts to other data
 axisYMin2      = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 3 (draw)
-axisYMax2      = 0.0   ; on the recorded data it resolved to 15.5000 .. 19.0000
+axisYMax2      = 0.0   ; on the recorded data this resolved to 15.5000 .. 19.0000; auto adapts to other data
 figureFormat$  = "PNG"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- run 1, step 2 (save)
 figureFormat2$ = "PNG, PDF"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- run 2, step 4 (save)
 eraseFirst     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 1 (draw)

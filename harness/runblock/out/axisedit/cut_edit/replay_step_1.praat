@@ -37,6 +37,7 @@ include ~/repo/plugin/graphs/eml-graph-procedures.praat
 include ~/repo/plugin/graphs/eml-annotation-procedures.praat
 include ~/repo/plugin/graphs/eml-draw-procedures.praat
 include ~/repo/plugin/stats/eml-analysis.praat
+include ~/repo/plugin/stats/eml-demo-tables.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -45,8 +46,23 @@ include ~/repo/plugin/stats/eml-analysis.praat
 # THE OBJECT
 # Recorded against: Table ax1 -- 24 rows, 2 columns.
 # The objects this workflow ran on are named in the block below.
-# All of them must be open before you run this script.
+# None of them is built or opened by a step below: see
+# PRECONDITION, and open them before you run this script.
 # ------------------------------------------------------------
+
+# ============================================================
+# PRECONDITION -- THIS SCRIPT CANNOT REBUILD ITS DATA
+#
+# These objects were already open when this recording started.
+#     Table ax1
+#     Table ax2
+# Nothing in the session made them, so nothing below can remake them.
+#
+# YOU MUST SUPPLY THE DATA YOURSELF, open and named as above, before you
+# run this file. The steps below select by name: with nothing of that name
+# open the script stops at its first step, and with DIFFERENT data of that
+# name it runs to the end and answers a different question without saying so.
+# ============================================================
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;

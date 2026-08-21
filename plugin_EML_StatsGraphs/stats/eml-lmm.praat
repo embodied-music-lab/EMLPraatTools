@@ -4409,6 +4409,13 @@ procedure emlRunLMMAnalysis: .tableId, .formula$, .contrastCoding$, .useREML, .d
     endif
 
     # 95% Wald confidence intervals for the fixed effects (t / Satterthwaite df).
+    #
+    # 0.95 IS A FIXED CONVENTION HERE, not an ignored setting. The LMM dialog
+    # offers a boolean -- report intervals or do not -- and no level control,
+    # so there is no user choice for this call to contradict, and the header
+    # printed two lines down names the level the constant sets. @emlWaldCI
+    # itself takes .level, so a scripted caller working at another level asks
+    # it directly.
     if .doCI
         @emlWaldCI: 0.95
         appendInfoLine: ""

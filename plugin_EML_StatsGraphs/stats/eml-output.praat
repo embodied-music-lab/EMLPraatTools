@@ -828,6 +828,46 @@ procedure emlFormatCI: .lower, .upper, .level
 endproc
 
 
+# ----------------------------------------------------------------------------
+# @emlCILevelLabel
+# The confidence level a two-sided interval carries, as the percentage a
+# label prints, derived from the tail probability the interval was built at.
+#
+# A report that says "95% CI" beside an interval built at another alpha
+# misstates its own result, so every reporter that takes its quantile from
+# the alpha in force takes its LABEL from this, and the two cannot drift.
+#
+# The percentage is rendered through @eml_fixed at four decimals and then
+# stripped of trailing zeros, so .05 reads "95", .025 reads "97.5" and .001
+# reads "99.9" -- @eml_fixed rather than fixed$ because this module keeps one
+# door to fixed$ and because fixed$ answers a level of nought with a bare
+# "0", which the strip below would erase entirely.
+#
+# Rounding the percentage to whole numbers instead would print "100%" for
+# both .005 and .001 — a level no interval has — and "98%" for .025, which
+# is a level the interval is not.
+#
+# Arguments: .alpha (two-sided tail probability, e.g. 0.05)
+# Output:
+#   .percent$  — the level as a percentage, no "%" sign, e.g. "95", "97.5"
+# ----------------------------------------------------------------------------
+procedure emlCILevelLabel: .alpha
+    @eml_fixed: 100 * (1 - .alpha), 4
+    .percent$ = eml_fixed.result$
+    ; @eml_fixed delivers exactly four decimals, so the trailing run is
+    ; dropped rather than a fixed number of characters: "95.0000" is "95"
+    ; and "97.5000" is "97.5". A bare fixed$ here would answer "0" for a
+    ; level of nought -- no decimals at all -- and the strip would take
+    ; that single character away, labelling the interval "% CI".
+    while right$ (.percent$, 1) = "0"
+        .percent$ = left$ (.percent$, length (.percent$) - 1)
+    endwhile
+    if right$ (.percent$, 1) = "."
+        .percent$ = left$ (.percent$, length (.percent$) - 1)
+    endif
+endproc
+
+
 procedure emlFormatTestResult: .testName$, .statSymbol$, .statValue, .df1, .df2, .pValue, .effectName$, .effectValue, .ciLower, .ciUpper
     # Format complete test result line
     # Output: .summary$

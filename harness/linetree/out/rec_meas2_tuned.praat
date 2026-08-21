@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Thu Aug 20 21:29:58 2026  --  recorded on Praat 6.6.30
+# Fri Aug 21 04:11:33 2026  --  recorded on Praat 6.6.30
 # Input: Table lt_meas2 -- 24 rows, 3 columns
 # ============================================================
 
@@ -37,6 +37,7 @@ include /home/claude/repo/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.pra
 include /home/claude/repo/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
 include /home/claude/repo/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
 include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-analysis.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-demo-tables.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -65,8 +66,21 @@ ltMeas2Id = selected ("Table")
 # THE OBJECT
 # Recorded against: Table lt_meas2 -- 24 rows, 3 columns.
 # The objects this workflow ran on are named in the block below.
-# All of them must be open before you run this script.
+# None of them is built or opened by a step below: see
+# PRECONDITION, and open them before you run this script.
 # ------------------------------------------------------------
+
+# ============================================================
+# PRECONDITION -- THIS SCRIPT CANNOT REBUILD ITS DATA
+#
+# Table lt_meas2 was already open when this recording started.
+# Nothing in the session made it, so nothing below can remake it.
+#
+# YOU MUST SUPPLY THE DATA YOURSELF, open and named as above, before you
+# run this file. The steps below select by name: with nothing of that name
+# open the script stops at its first step, and with DIFFERENT data of that
+# name it runs to the end and answers a different question without saying so.
+# ============================================================
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
@@ -76,7 +90,7 @@ data1$ = "Table lt_meas2"   ; run 1, step 1 (draw)
 timeCol$         = "time"   ; the time column -- run 1, step 1 (draw)
 valueCol$        = "f0"   ; the measured column -- run 1, step 1 (draw)
 axisYMin         = 180   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-axisYMax         = 283.49608977795856   ; on the recorded data it resolved to 180.0000 .. 283.4961
+axisYMax         = 283.49608977795856   ; on the recorded data this resolved to 180.0000 .. 283.4961; auto adapts to other data
 eraseFirst       = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 1 (draw)
 panelOriginX     = 0   ; inches from the left of the page to this panel's corner -- run 1, step 1 (draw)
 panelOriginY     = 0   ; inches from the top of the page to this panel's corner -- run 1, step 1 (draw)

@@ -37,6 +37,7 @@ include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-analysis.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-demo-tables.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -45,8 +46,28 @@ include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 # THE OBJECT
 # Recorded against: Table voiceA -- 24 rows, 13 columns.
 # The objects this workflow ran on are named in the block below.
-# All of them must be open before you run this script.
+# None of them is built or opened by a step below: see
+# PRECONDITION, and open them before you run this script.
 # ------------------------------------------------------------
+
+# ============================================================
+# PRECONDITION -- THIS SCRIPT CANNOT REBUILD ITS DATA
+#
+# These objects were already open when this recording started.
+#     Table voiceA
+#     Sound tone
+#     Pitch tone
+#     Spectrum tone
+#     Ltas tone
+#     TableOfReal tor
+#     Matrix mat
+# Nothing in the session made them, so nothing below can remake them.
+#
+# YOU MUST SUPPLY THE DATA YOURSELF, open and named as above, before you
+# run this file. The steps below select by name: with nothing of that name
+# open the script stops at its first step, and with DIFFERENT data of that
+# name it runs to the end and answers a different question without saying so.
+# ============================================================
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
@@ -143,125 +164,173 @@ yCol37$          = "spl2"   ; the y column -- run 37, step 45 (draw)
 xCol38$          = "spl"   ; the x column -- run 38, step 46 (draw)
 yCol38$          = "spl2"   ; the y column -- run 38, step 46 (draw)
 axisYMin14       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 14, step 14 (draw)
-axisYMax14       = 0.0   ; on the recorded data it resolved to 56.0000 .. 74.0000
+axisYMax14       = 0.0   ; on the recorded data this resolved to 56.0000 .. 74.0000; auto adapts to other data
 axisYMin15       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 15, step 15 (draw)
-axisYMax15       = 0.0   ; on the recorded data it resolved to 196.0000 .. 212.0000
+axisYMax15       = 0.0   ; on the recorded data this resolved to 196.0000 .. 212.0000; auto adapts to other data
 axisValueMin16   = 0.0   ; the value-axis range (the histogram's horizontal axis) -- AUTO (both 0 = computed from the data) -- run 16, step 16 (draw)
-axisValueMax16   = 0.0   ; on the recorded data it resolved to 59.8175 .. 70.2386
+axisValueMax16   = 0.0   ; on the recorded data this resolved to 59.8175 .. 70.2386; auto adapts to other data
 axisYMin17       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 17, step 17 (draw)
-axisYMax17       = 0.0   ; on the recorded data it resolved to 62.5000 .. 67.0000
+axisYMax17       = 0.0   ; on the recorded data this resolved to 62.5000 .. 67.0000; auto adapts to other data
 axisYMin18       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 18, step 18 (draw)
-axisYMax18       = 0.0   ; on the recorded data it resolved to 56.0000 .. 76.0000
+axisYMax18       = 0.0   ; on the recorded data this resolved to 56.0000 .. 76.0000; auto adapts to other data
 axisYMin19       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 19, step 19 (draw)
-axisYMax19       = 0.0   ; on the recorded data it resolved to 58.0000 .. 72.0000
+axisYMax19       = 0.0   ; on the recorded data this resolved to 58.0000 .. 72.0000; auto adapts to other data
 axisYMin20       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 20, step 20 (draw)
-axisYMax20       = 0.0   ; on the recorded data it resolved to 0.0000 .. 80.0000
+axisYMax20       = 0.0   ; on the recorded data this resolved to 0.0000 .. 80.0000; auto adapts to other data
 axisYMin21       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 21, step 21 (draw)
-axisYMax21       = 0.0   ; on the recorded data it resolved to 58.0000 .. 72.0000
+axisYMax21       = 0.0   ; on the recorded data this resolved to 58.0000 .. 72.0000; auto adapts to other data
 axisYMin22       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 22, step 22 (draw)
-axisYMax22       = 0.0   ; on the recorded data it resolved to 54.0000 .. 76.0000
+axisYMax22       = 0.0   ; on the recorded data this resolved to 54.0000 .. 76.0000; auto adapts to other data
 axisYMin23       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 23, step 23 (draw)
-axisYMax23       = 0.0   ; on the recorded data it resolved to 58.0000 .. 72.0000
+axisYMax23       = 0.0   ; on the recorded data this resolved to 58.0000 .. 72.0000; auto adapts to other data
 axisYMin24       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 24, step 24 (draw)
-axisYMax24       = 0.0   ; on the recorded data it resolved to -0.4500 .. 0.4500
+axisYMax24       = 0.0   ; on the recorded data this resolved to -0.4500 .. 0.4500; auto adapts to other data
 axisYMin25       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 25, step 25 (draw)
-axisYMax25       = 0.0   ; on the recorded data it resolved to 219.2000 .. 220.8000
+axisYMax25       = 0.0   ; on the recorded data this resolved to 219.2000 .. 220.8000; auto adapts to other data
 axisYMin26       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 26, step 26 (draw)
-axisYMax26       = 0.0   ; on the recorded data it resolved to 0.0000 .. 80.0000
+axisYMax26       = 0.0   ; on the recorded data this resolved to 0.0000 .. 80.0000; auto adapts to other data
 axisYMin27       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 27, step 27 (draw)
-axisYMax27       = 0.0   ; on the recorded data it resolved to -20.0000 .. 80.0000
+axisYMax27       = 0.0   ; on the recorded data this resolved to -20.0000 .. 80.0000; auto adapts to other data
 axisYMin28       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 28, step 29 (draw)
-axisYMax28       = 0.0   ; on the recorded data it resolved to 219.2000 .. 220.8000
+axisYMax28       = 0.0   ; on the recorded data this resolved to 219.0000 .. 220.8000; auto adapts to other data
 axisYMin29       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 29, step 31 (draw)
-axisYMax29       = 0.0   ; on the recorded data it resolved to 0.0000 .. 80.0000
+axisYMax29       = 0.0   ; on the recorded data this resolved to 0.0000 .. 80.0000; auto adapts to other data
 axisYMin30       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 30, step 33 (draw)
-axisYMax30       = 0.0   ; on the recorded data it resolved to -20.0000 .. 80.0000
+axisYMax30       = 0.0   ; on the recorded data this resolved to -20.0000 .. 80.0000; auto adapts to other data
 axisYMin31       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 31, step 35 (draw)
-axisYMax31       = 0.0   ; on the recorded data it resolved to -20.0000 .. 80.0000
+axisYMax31       = 0.0   ; on the recorded data this resolved to -20.0000 .. 80.0000; auto adapts to other data
 axisYMin32       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 32, step 37 (draw)
-axisYMax32       = 0.0   ; on the recorded data it resolved to -0.4500 .. 0.4500
+axisYMax32       = 0.0   ; on the recorded data this resolved to -0.4500 .. 0.4500; auto adapts to other data
 axisYMin33       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 33, step 39 (draw)
-axisYMax33       = 0.0   ; on the recorded data it resolved to 217.0000 .. 220.5000
+axisYMax33       = 0.0   ; on the recorded data this resolved to 217.5000 .. 220.5000; auto adapts to other data
 axisValueMin34   = 0.0   ; the value-axis range (the histogram's horizontal axis) -- AUTO (both 0 = computed from the data) -- run 34, step 41 (draw)
-axisValueMax34   = 0.0   ; on the recorded data it resolved to 0.0000 .. 1.0000
+axisValueMax34   = 0.0   ; on the recorded data this resolved to 0.0000 .. 1.0000; auto adapts to other data
 axisValueMin35   = 0.0   ; the value-axis range (the histogram's horizontal axis) -- AUTO (both 0 = computed from the data) -- run 35, step 43 (draw)
-axisValueMax35   = 0.0   ; on the recorded data it resolved to 0.0000 .. 1.0000
+axisValueMax35   = 0.0   ; on the recorded data this resolved to 0.0000 .. 1.0000; auto adapts to other data
 axisYMin37       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 37, step 45 (draw)
-axisYMax37       = 0.0   ; on the recorded data it resolved to 196.0000 .. 212.0000
+axisYMax37       = 0.0   ; on the recorded data this resolved to 196.0000 .. 212.0000; auto adapts to other data
 axisYMin38       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 38, step 46 (draw)
-axisYMax38       = 0.0   ; on the recorded data it resolved to 196.0000 .. 212.0000
+axisYMax38       = 0.0   ; on the recorded data this resolved to 196.0000 .. 212.0000; auto adapts to other data
 eraseFirst14     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 14, step 14 (draw)
 panelOriginX14   = 0   ; inches from the left of the page to this panel's corner -- run 14, step 14 (draw)
 panelOriginY14   = 0   ; inches from the top of the page to this panel's corner -- run 14, step 14 (draw)
+lineStyle14      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 14, step 14 (draw)
+secondAxisOn14   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 14, step 14 (draw)
 eraseFirst15     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 15, step 15 (draw)
 panelOriginX15   = 0   ; inches from the left of the page to this panel's corner -- run 15, step 15 (draw)
 panelOriginY15   = 0   ; inches from the top of the page to this panel's corner -- run 15, step 15 (draw)
+lineStyle15      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 15, step 15 (draw)
+secondAxisOn15   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 15, step 15 (draw)
 eraseFirst16     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 16, step 16 (draw)
 panelOriginX16   = 0   ; inches from the left of the page to this panel's corner -- run 16, step 16 (draw)
 panelOriginY16   = 0   ; inches from the top of the page to this panel's corner -- run 16, step 16 (draw)
+lineStyle16      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 16, step 16 (draw)
+secondAxisOn16   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 16, step 16 (draw)
 eraseFirst17     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 17, step 17 (draw)
 panelOriginX17   = 0   ; inches from the left of the page to this panel's corner -- run 17, step 17 (draw)
 panelOriginY17   = 0   ; inches from the top of the page to this panel's corner -- run 17, step 17 (draw)
+lineStyle17      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 17, step 17 (draw)
+secondAxisOn17   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 17, step 17 (draw)
 eraseFirst18     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 18, step 18 (draw)
 panelOriginX18   = 0   ; inches from the left of the page to this panel's corner -- run 18, step 18 (draw)
 panelOriginY18   = 0   ; inches from the top of the page to this panel's corner -- run 18, step 18 (draw)
+lineStyle18      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 18, step 18 (draw)
+secondAxisOn18   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 18, step 18 (draw)
 eraseFirst19     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 19, step 19 (draw)
 panelOriginX19   = 0   ; inches from the left of the page to this panel's corner -- run 19, step 19 (draw)
 panelOriginY19   = 0   ; inches from the top of the page to this panel's corner -- run 19, step 19 (draw)
+lineStyle19      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 19, step 19 (draw)
+secondAxisOn19   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 19, step 19 (draw)
 eraseFirst20     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 20, step 20 (draw)
 panelOriginX20   = 0   ; inches from the left of the page to this panel's corner -- run 20, step 20 (draw)
 panelOriginY20   = 0   ; inches from the top of the page to this panel's corner -- run 20, step 20 (draw)
+lineStyle20      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 20, step 20 (draw)
+secondAxisOn20   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 20, step 20 (draw)
 eraseFirst21     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 21, step 21 (draw)
 panelOriginX21   = 0   ; inches from the left of the page to this panel's corner -- run 21, step 21 (draw)
 panelOriginY21   = 0   ; inches from the top of the page to this panel's corner -- run 21, step 21 (draw)
+lineStyle21      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 21, step 21 (draw)
+secondAxisOn21   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 21, step 21 (draw)
 eraseFirst22     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 22, step 22 (draw)
 panelOriginX22   = 0   ; inches from the left of the page to this panel's corner -- run 22, step 22 (draw)
 panelOriginY22   = 0   ; inches from the top of the page to this panel's corner -- run 22, step 22 (draw)
+lineStyle22      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 22, step 22 (draw)
+secondAxisOn22   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 22, step 22 (draw)
 eraseFirst23     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 23, step 23 (draw)
 panelOriginX23   = 0   ; inches from the left of the page to this panel's corner -- run 23, step 23 (draw)
 panelOriginY23   = 0   ; inches from the top of the page to this panel's corner -- run 23, step 23 (draw)
+lineStyle23      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 23, step 23 (draw)
+secondAxisOn23   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 23, step 23 (draw)
 eraseFirst24     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 24, step 24 (draw)
 panelOriginX24   = 0   ; inches from the left of the page to this panel's corner -- run 24, step 24 (draw)
 panelOriginY24   = 0   ; inches from the top of the page to this panel's corner -- run 24, step 24 (draw)
+lineStyle24      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 24, step 24 (draw)
+secondAxisOn24   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 24, step 24 (draw)
 eraseFirst25     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 25, step 25 (draw)
 panelOriginX25   = 0   ; inches from the left of the page to this panel's corner -- run 25, step 25 (draw)
 panelOriginY25   = 0   ; inches from the top of the page to this panel's corner -- run 25, step 25 (draw)
+lineStyle25      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 25, step 25 (draw)
+secondAxisOn25   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 25, step 25 (draw)
 eraseFirst26     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 26, step 26 (draw)
 panelOriginX26   = 0   ; inches from the left of the page to this panel's corner -- run 26, step 26 (draw)
 panelOriginY26   = 0   ; inches from the top of the page to this panel's corner -- run 26, step 26 (draw)
+lineStyle26      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 26, step 26 (draw)
+secondAxisOn26   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 26, step 26 (draw)
 eraseFirst27     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 27, step 27 (draw)
 panelOriginX27   = 0   ; inches from the left of the page to this panel's corner -- run 27, step 27 (draw)
 panelOriginY27   = 0   ; inches from the top of the page to this panel's corner -- run 27, step 27 (draw)
+lineStyle27      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 27, step 27 (draw)
+secondAxisOn27   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 27, step 27 (draw)
 eraseFirst28     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 28, step 29 (draw)
 panelOriginX28   = 0   ; inches from the left of the page to this panel's corner -- run 28, step 29 (draw)
 panelOriginY28   = 0   ; inches from the top of the page to this panel's corner -- run 28, step 29 (draw)
+lineStyle28      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 28, step 29 (draw)
+secondAxisOn28   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 28, step 29 (draw)
 eraseFirst29     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 29, step 31 (draw)
 panelOriginX29   = 0   ; inches from the left of the page to this panel's corner -- run 29, step 31 (draw)
 panelOriginY29   = 0   ; inches from the top of the page to this panel's corner -- run 29, step 31 (draw)
+lineStyle29      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 29, step 31 (draw)
+secondAxisOn29   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 29, step 31 (draw)
 eraseFirst30     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 30, step 33 (draw)
 panelOriginX30   = 0   ; inches from the left of the page to this panel's corner -- run 30, step 33 (draw)
 panelOriginY30   = 0   ; inches from the top of the page to this panel's corner -- run 30, step 33 (draw)
+lineStyle30      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 30, step 33 (draw)
+secondAxisOn30   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 30, step 33 (draw)
 eraseFirst31     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 31, step 35 (draw)
 panelOriginX31   = 0   ; inches from the left of the page to this panel's corner -- run 31, step 35 (draw)
 panelOriginY31   = 0   ; inches from the top of the page to this panel's corner -- run 31, step 35 (draw)
+lineStyle31      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 31, step 35 (draw)
+secondAxisOn31   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 31, step 35 (draw)
 eraseFirst32     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 32, step 37 (draw)
 panelOriginX32   = 0   ; inches from the left of the page to this panel's corner -- run 32, step 37 (draw)
 panelOriginY32   = 0   ; inches from the top of the page to this panel's corner -- run 32, step 37 (draw)
+lineStyle32      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 32, step 37 (draw)
+secondAxisOn32   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 32, step 37 (draw)
 eraseFirst33     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 33, step 39 (draw)
 panelOriginX33   = 0   ; inches from the left of the page to this panel's corner -- run 33, step 39 (draw)
 panelOriginY33   = 0   ; inches from the top of the page to this panel's corner -- run 33, step 39 (draw)
+lineStyle33      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 33, step 39 (draw)
+secondAxisOn33   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 33, step 39 (draw)
 eraseFirst34     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 34, step 41 (draw)
 panelOriginX34   = 0   ; inches from the left of the page to this panel's corner -- run 34, step 41 (draw)
 panelOriginY34   = 0   ; inches from the top of the page to this panel's corner -- run 34, step 41 (draw)
+lineStyle34      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 34, step 41 (draw)
+secondAxisOn34   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 34, step 41 (draw)
 eraseFirst35     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 35, step 43 (draw)
 panelOriginX35   = 0   ; inches from the left of the page to this panel's corner -- run 35, step 43 (draw)
 panelOriginY35   = 0   ; inches from the top of the page to this panel's corner -- run 35, step 43 (draw)
+lineStyle35      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 35, step 43 (draw)
+secondAxisOn35   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 35, step 43 (draw)
 eraseFirst37     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 37, step 45 (draw)
 panelOriginX37   = 0   ; inches from the left of the page to this panel's corner -- run 37, step 45 (draw)
 panelOriginY37   = 0   ; inches from the top of the page to this panel's corner -- run 37, step 45 (draw)
+lineStyle37      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 37, step 45 (draw)
+secondAxisOn37   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 37, step 45 (draw)
 eraseFirst38     = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 38, step 46 (draw)
 panelOriginX38   = 0   ; inches from the left of the page to this panel's corner -- run 38, step 46 (draw)
 panelOriginY38   = 0   ; inches from the top of the page to this panel's corner -- run 38, step 46 (draw)
+lineStyle38      = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 38, step 46 (draw)
+secondAxisOn38   = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 38, step 46 (draw)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -271,6 +340,7 @@ data = selected ()
 # One-way ANOVA of spl by grp, 2 groups.
 # Normality was NOT tested on this path.
 
+@emlReportContext: "recorded script (recorded 12 August 2026, originally analysis dialog)", ""
 @emlRunAnovaAnalysis: data, valueCol$, groupCol$, 0
 
 # F(1, 22) = 5.2251, p = 0.0323, eta-squared = 0.1919
@@ -286,6 +356,7 @@ data = selected ()
 # Two-group comparison: spl by grp, welch
 # Equal-variance assumption: Welch.
 
+@emlReportContext: "recorded script (recorded 12 August 2026, originally analysis dialog)", ""
 @emlRunTwoGroupAnalysis: data, valueCol2$, groupCol2$, "welch", 0
 
 # y: n = 12, mean = 66.1949, SD = 3.1734
@@ -299,6 +370,7 @@ data = selected ()
 # Kruskal-Wallis: spl by grp
 # Rank-based; it does not assume normality and does not test it.
 
+@emlReportContext: "recorded script (recorded 12 August 2026, originally analysis dialog)", ""
 @emlRunKWAnalysis: data, valueCol3$, groupCol3$, 0, "holm"
 
 # H(1) = 4.5633, p = 0.0327
@@ -311,6 +383,7 @@ data = selected ()
 # Descriptive statistics: spl
 # Descriptives only; no test was run and no assumption was checked.
 
+@emlReportContext: "recorded script (recorded 12 August 2026, originally analysis dialog)", ""
 @emlRunDescriptiveAnalysis: data, valueCol4$
 
 # n = 24 valid
@@ -323,6 +396,7 @@ data = selected ()
 # Normality: spl, both
 # A normality test answers a question about the sample, not a licence for a later test.
 
+@emlReportContext: "recorded script (recorded 12 August 2026, originally analysis dialog)", ""
 @emlRunNormalityAnalysis: data, valueCol5$, "both"
 
 # Shapiro-Wilk W = 0.9502, p = 0.2739
@@ -337,6 +411,7 @@ data = selected ()
 # Correlation: spl with spl2, pearson
 # Correlation is not causation, and a single coefficient hides the shape of the cloud.
 
+@emlReportContext: "recorded script (recorded 12 August 2026, originally analysis dialog)", ""
 @emlRunCorrelationAnalysis: data, xCol6$, yCol6$, "pearson"
 
 # Pearson r = 0.0678, t(22) = 0.3189, p = 0.7528
@@ -350,6 +425,7 @@ data = selected ()
 # Linear regression: spl on spl2
 # Residual diagnostics are not run on this path.
 
+@emlReportContext: "recorded script (recorded 12 August 2026, originally analysis dialog)", ""
 @emlRunRegressionAnalysis: data, outcomeCol7$, predictorCol7$
 
 # spl = 49.6803 + 0.0741 x spl2
@@ -371,6 +447,7 @@ data = selected ()
 # Two-way ANOVA: spl by grp and grp2
 # Type of sums of squares and the balance of the design both matter here; see the report.
 
+@emlReportContext: "recorded script (recorded 12 August 2026, originally analysis dialog)", ""
 @emlRunTwoWayAnalysis: data, valueCol9$, factorACol9$, factorBCol9$
 
 # grp: F(1, 20) = 3.8873, p = 0.0626
@@ -402,13 +479,14 @@ data = selected ()
 # Repeated-measures ANOVA: c1|c2|c3, subject subj
 # Sphericity is corrected, not assumed; the report names the correction.
 
+@emlReportContext: "recorded script (recorded 12 August 2026, originally analysis dialog)", ""
 @emlRunRepeatedMeasuresAnalysis: data, subjectCol12$, conditionCols12$, 0, "holm"
 
 # F(2, 46) = 110.3303, p = 0.000000000000000003
 #   Greenhouse-Geisser epsilon = 0.9078, corrected p = 0.00000000000000008
 #   n = 24 subjects, k = 3 conditions
 # The same step through the menu:
-# In the GUI: New > EML Stats & Graphs > Compare paired/repeated...
+# In the GUI: New > EML Stats & Graphs > Stats Wizard... (three or more conditions)
 
 # --- Step 13 (analysis) ---
 selectObject: data13$
@@ -416,12 +494,13 @@ data = selected ()
 # Friedman: c1|c2|c3, subject subj
 # Rank-based repeated measures; it does not assume normality and does not test it.
 
+@emlReportContext: "recorded script (recorded 12 August 2026, originally analysis dialog)", ""
 @emlRunFriedmanAnalysis: data, subjectCol13$, conditionCols13$, 0, "holm"
 
 # chi-square(2) = 42.2500, p = 0.0000000007
 #   n = 24 subjects, k = 3 conditions
 # The same step through the menu:
-# In the GUI: New > EML Stats & Graphs > Compare paired/repeated (Friedman)...
+# In the GUI: New > EML Stats & Graphs > Stats Wizard... (three or more conditions, Friedman)
 
 # --- Step 14 (draw) ---
 selectObject: data14$
@@ -433,9 +512,11 @@ emlEraseFirst = eraseFirst14
 emlPanelOriginX = panelOriginX14
 emlPanelOriginY = panelOriginY14
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle14
+emlSecondAxisOn = secondAxisOn14
 @emlDrawViolinPlot: data, "Violin", "grp", "spl", 6, 4, "color", 1, groupCol14$, valueCol14$, axisYMin14, axisYMax14
 
-# Axis resolved to 56.0000 .. 74.0000 over 2 groups.
+# Axis resolved to 56.0000 .. 74.0000 over 2 groups on the recorded data; auto adapts to other data.
 # The same step through the menu:
 # In the GUI: EML Graphs..., type Violin Plot,
 # Group column "grp", Value column "spl".
@@ -450,6 +531,8 @@ emlEraseFirst = eraseFirst15
 emlPanelOriginX = panelOriginX15
 emlPanelOriginY = panelOriginY15
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle15
+emlSecondAxisOn = secondAxisOn15
 scatterAnalysisType = 0
 annotCorrType$ = "pearson"
 scatterRegressionLine = 0
@@ -468,6 +551,8 @@ emlEraseFirst = eraseFirst16
 emlPanelOriginX = panelOriginX16
 emlPanelOriginY = panelOriginY16
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle16
+emlSecondAxisOn = secondAxisOn16
 @emlDrawHistogram: data, "Histogram", "spl", "Count", 6, 4, "color", 1, valueCol16$, "", 0, 1, axisValueMin16, axisValueMax16, 0
 
 # The same step through the menu:
@@ -482,6 +567,8 @@ emlEraseFirst = eraseFirst17
 emlPanelOriginX = panelOriginX17
 emlPanelOriginY = panelOriginY17
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle17
+emlSecondAxisOn = secondAxisOn17
 @emlDrawTimeSeries: data, "Line", "t", "spl", 6, 4, "color", 1, timeCol17$, valueCol17$, groupCol17$, 0, 0, axisYMin17, axisYMax17
 
 # The same step through the menu:
@@ -496,6 +583,8 @@ emlEraseFirst = eraseFirst18
 emlPanelOriginX = panelOriginX18
 emlPanelOriginY = panelOriginY18
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle18
+emlSecondAxisOn = secondAxisOn18
 @emlDrawTimeSeriesCI: data, "Line CI", "t", "spl", 6, 4, "color", 1, timeCol18$, valueCol18$, groupCol18$, 0, 0, axisYMin18, axisYMax18
 
 # The same step through the menu:
@@ -510,6 +599,8 @@ emlEraseFirst = eraseFirst19
 emlPanelOriginX = panelOriginX19
 emlPanelOriginY = panelOriginY19
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle19
+emlSecondAxisOn = secondAxisOn19
 @emlDrawSpaghettiPlot: data, "Spaghetti", "t", "spl", 6, 4, "color", 1, conditionCol19$, valueCol19$, idCol19$, groupCol19$, 1, axisYMin19, axisYMax19
 
 # The same step through the menu:
@@ -525,6 +616,8 @@ emlEraseFirst = eraseFirst20
 emlPanelOriginX = panelOriginX20
 emlPanelOriginY = panelOriginY20
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle20
+emlSecondAxisOn = secondAxisOn20
 @emlDrawBarChart: data, "Bar", "grp", "spl", 6, 4, "color", 1, groupCol20$, valueCol20$, 0, "", axisYMin20, axisYMax20
 
 # The same step through the menu:
@@ -540,6 +633,8 @@ emlEraseFirst = eraseFirst21
 emlPanelOriginX = panelOriginX21
 emlPanelOriginY = panelOriginY21
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle21
+emlSecondAxisOn = secondAxisOn21
 @emlDrawBoxPlot: data, "Box", "grp", "spl", 6, 4, "color", 1, groupCol21$, valueCol21$, axisYMin21, axisYMax21
 
 # The same step through the menu:
@@ -555,6 +650,8 @@ emlEraseFirst = eraseFirst22
 emlPanelOriginX = panelOriginX22
 emlPanelOriginY = panelOriginY22
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle22
+emlSecondAxisOn = secondAxisOn22
 @emlDrawGroupedViolin: data, "GViolin", "grp", "spl", 6, 4, "color", 1, categoryCol22$, subgroupCol22$, valueCol22$, axisYMin22, axisYMax22
 
 # The same step through the menu:
@@ -570,6 +667,8 @@ emlEraseFirst = eraseFirst23
 emlPanelOriginX = panelOriginX23
 emlPanelOriginY = panelOriginY23
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle23
+emlSecondAxisOn = secondAxisOn23
 @emlDrawGroupedBoxPlot: data, "GBox", "grp", "spl", 6, 4, "color", 1, categoryCol23$, subgroupCol23$, valueCol23$, axisYMin23, axisYMax23
 
 # The same step through the menu:
@@ -584,6 +683,8 @@ emlEraseFirst = eraseFirst24
 emlPanelOriginX = panelOriginX24
 emlPanelOriginY = panelOriginY24
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle24
+emlSecondAxisOn = secondAxisOn24
 @emlDrawWaveform: data, "Waveform", "Time (s)", "Amplitude", 6, 4, "color", 1, 0, 0, axisYMin24, axisYMax24
 
 # The same step through the menu:
@@ -598,6 +699,8 @@ emlEraseFirst = eraseFirst25
 emlPanelOriginX = panelOriginX25
 emlPanelOriginY = panelOriginY25
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle25
+emlSecondAxisOn = secondAxisOn25
 @emlDrawF0Contour: data, "F0", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, axisYMin25, axisYMax25, 1
 
 # The same step through the menu:
@@ -612,6 +715,8 @@ emlEraseFirst = eraseFirst26
 emlPanelOriginX = panelOriginX26
 emlPanelOriginY = panelOriginY26
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle26
+emlSecondAxisOn = secondAxisOn26
 @emlDrawSpectrum: data, "Spectrum", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin26, axisYMax26
 
 # The same step through the menu:
@@ -626,6 +731,8 @@ emlEraseFirst = eraseFirst27
 emlPanelOriginX = panelOriginX27
 emlPanelOriginY = panelOriginY27
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle27
+emlSecondAxisOn = secondAxisOn27
 @emlDrawLTAS: data, "LTAS", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin27, axisYMax27, 1, 0, 0, 0
 
 # The same step through the menu:
@@ -637,7 +744,7 @@ data = selected ()
 # Converted Sound tone to Pitch tone.
 # The pitch floor and ceiling are the ones this session used. They change the contour, so they belong in a methods section.
 
-data = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "yes", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
+data = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "no", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
 
 # The same step through the menu:
 # In the GUI: this happens automatically when you ask for a figure that needs it.
@@ -649,6 +756,8 @@ emlEraseFirst = eraseFirst28
 emlPanelOriginX = panelOriginX28
 emlPanelOriginY = panelOriginY28
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle28
+emlSecondAxisOn = secondAxisOn28
 @emlDrawF0Contour: data, "F0 from Sound", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, axisYMin28, axisYMax28, 1
 
 # The same step through the menu:
@@ -672,6 +781,8 @@ emlEraseFirst = eraseFirst29
 emlPanelOriginX = panelOriginX29
 emlPanelOriginY = panelOriginY29
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle29
+emlSecondAxisOn = secondAxisOn29
 @emlDrawSpectrum: data, "Spectrum from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin29, axisYMax29
 
 # The same step through the menu:
@@ -695,6 +806,8 @@ emlEraseFirst = eraseFirst30
 emlPanelOriginX = panelOriginX30
 emlPanelOriginY = panelOriginY30
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle30
+emlSecondAxisOn = secondAxisOn30
 @emlDrawLTAS: data, "LTAS from Sound", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin30, axisYMax30, 1, 0, 0, 0
 
 # The same step through the menu:
@@ -718,6 +831,8 @@ emlEraseFirst = eraseFirst31
 emlPanelOriginX = panelOriginX31
 emlPanelOriginY = panelOriginY31
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle31
+emlSecondAxisOn = secondAxisOn31
 @emlDrawLTAS: data, "LTAS from Spectrum", "Frequency (Hz)", "dB", 6, 4, "color", 1, 0, 0, axisYMin31, axisYMax31, 1, 0, 0, 0
 
 # The same step through the menu:
@@ -741,6 +856,8 @@ emlEraseFirst = eraseFirst32
 emlPanelOriginX = panelOriginX32
 emlPanelOriginY = panelOriginY32
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle32
+emlSecondAxisOn = secondAxisOn32
 @emlDrawWaveform: data, "Waveform from Spectrum", "Time (s)", "Amplitude", 6, 4, "color", 1, 0, 0, axisYMin32, axisYMax32
 
 # The same step through the menu:
@@ -754,7 +871,7 @@ data = selected ()
 
 tmp = To Sound
 selectObject: tmp
-data = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "yes", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
+data = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "no", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
 removeObject: tmp
 selectObject: data
 
@@ -768,6 +885,8 @@ emlEraseFirst = eraseFirst33
 emlPanelOriginX = panelOriginX33
 emlPanelOriginY = panelOriginY33
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle33
+emlSecondAxisOn = secondAxisOn33
 @emlDrawF0Contour: data, "F0 from Spectrum", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, 0, 0, axisYMin33, axisYMax33, 1
 
 # The same step through the menu:
@@ -793,6 +912,8 @@ emlEraseFirst = eraseFirst34
 emlPanelOriginX = panelOriginX34
 emlPanelOriginY = panelOriginY34
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle34
+emlSecondAxisOn = secondAxisOn34
 @emlDrawHistogram: data, "Histogram from TableOfReal", "row", "Count", 6, 4, "color", 1, valueCol34$, "", 0, 1, axisValueMin34, axisValueMax34, 0
 
 # The same step through the menu:
@@ -821,6 +942,8 @@ emlEraseFirst = eraseFirst35
 emlPanelOriginX = panelOriginX35
 emlPanelOriginY = panelOriginY35
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle35
+emlSecondAxisOn = secondAxisOn35
 @emlDrawHistogram: data, "Histogram from Matrix", "row", "Count", 6, 4, "color", 1, valueCol35$, "", 0, 1, axisValueMin35, axisValueMax35, 0
 
 # The same step through the menu:
@@ -832,6 +955,7 @@ data = selected ()
 # Group comparison on a figure: spl by grp3, parametric, 3 groups
 # Reached through the figure's annotation rather than the stats menu; the test and the correction are the same.
 
+@emlReportContext: "recorded script (recorded 12 August 2026, originally analysis dialog)", ""
 @emlBridgeGroupComparison: data, valueCol36$, groupCol36$, 0.05, "stars", 0, 1, "parametric", 1
 
 # One-way ANOVA: F(2, 21) = 0.02, p = .979
@@ -849,6 +973,8 @@ emlEraseFirst = eraseFirst37
 emlPanelOriginX = panelOriginX37
 emlPanelOriginY = panelOriginY37
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle37
+emlSecondAxisOn = secondAxisOn37
 scatterAnalysisType = 3
 annotCorrType$ = "spearman"
 scatterRegressionLine = 1
@@ -870,6 +996,8 @@ emlEraseFirst = eraseFirst38
 emlPanelOriginX = panelOriginX38
 emlPanelOriginY = panelOriginY38
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle38
+emlSecondAxisOn = secondAxisOn38
 scatterAnalysisType = 1
 annotCorrType$ = "spearman"
 scatterRegressionLine = 1

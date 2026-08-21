@@ -2,7 +2,8 @@ RP|cell|100
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Fri Aug 21 01:23:25 2026
+  Fri Aug 21 04:13:42 2026
+  from: recorded script (recorded 21 August 2026, originally analysis dialog)
 ══════════════════════════════════════════════
 
   Table               rt input
@@ -63,5 +64,5 @@ charlie       326.599     244.949     ---
 
 EML: replayed save -- wrote 7 file(s) to
 /home/claude/repo/harness/roundtrip/out/replay/saved
-base name rt_roundtrip_20260821_012326
+base name rt_roundtrip_20260821_041342
 RP|done|1

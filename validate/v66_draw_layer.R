@@ -295,11 +295,30 @@ check_true(ID,
 # of what the axis actually was -- which is the thing the line it replaced was
 # right about.
 rv_note <- rv[grepl("emlRecordResult", rv)]
+# READ FROM THE WHOLE BODY, NOT FROM THE CALL LINE. The note is composed
+# before it is passed, because it carries an extra clause on the auto arm --
+# see below -- so the numbers are in the lines that BUILD it and the call
+# line names the variable that holds it. Requiring them on the call line
+# would report a note that says more as a note that says nothing.
+rv_build <- rv[grepl("axisNote\\$", rv) | grepl("emlRecordResult", rv)]
 check_true(ID,
     "the resolved axis survives in the record's own result note",
     length(rv_note) == 1L &&
-    grepl("emlDrawViolinPlot\\.yMin", rv_note) &&
-    grepl("emlDrawViolinPlot\\.yMax", rv_note))
+    any(grepl("emlDrawViolinPlot\\.yMin", rv_build)) &&
+    any(grepl("emlDrawViolinPlot\\.yMax", rv_build)))
+# AND THE NOTE SAYS WHICH OF THE TWO IT IS. A range worked out from the data
+# describes the recording; it does not bind a replay, which resolves the axis
+# again against whatever table it is pointed at. The clause is on the auto arm
+# only: a range the user typed is the same range on every table, and there the
+# note IS binding. Both halves are asserted, because a clause added to every
+# arm would be as wrong as a clause added to none.
+rv_auto <- rv[grepl("auto adapts to other data", rv, fixed = TRUE)]
+check_true(ID,
+    "and an auto range is marked as descriptive, not as a promise",
+    length(rv_auto) == 1L)
+check_true(ID,
+    "and the clause is guarded by the auto sentinel, so a typed range keeps its word",
+    any(grepl("if \\.vMin = 0 and \\.vMax = 0", rv)))
 # AND THE SIBLING RECORDERS STILL AGREE WITH IT. If a later change "tidied"
 # them the other way, the violin would be right and alone.
 for (nm in c("emlRecordBar", "emlRecordBox", "emlRecordScatter")) {

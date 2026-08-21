@@ -901,6 +901,45 @@ if (check_true("v58", "the three recording commands are present",
                any(grepl("emlRecordMeta", st_code, fixed = TRUE)))
 }
 
+# ---------------------------------------------------------------------------
+# THE PROVENANCE LABEL, QUOTED IN TWO FILES AND THEREFORE PINNED
+# ---------------------------------------------------------------------------
+# A replayed report sets its own provenance: the emitted script writes
+#
+#     @emlReportContext: "recorded script (recorded <date>, originally <route>)"
+#
+# and <route> is the name the plugin gives the path the recording came from.
+# The recorder cannot read that name off the live variable -- stats/eml-output
+# .praat's report header CONSUMES emlReportAnalysis$ before any recorder call
+# runs -- so @emlRecordOrigin supplies it from the record instead, using the
+# one literal @emlHandleCommonFields stamps on every analysis Run.
+#
+# That literal is now written in two files. This is the check that keeps them
+# the same one: rename the route in eml-output.praat and every replayed report
+# would quietly go on claiming the old name.
+prov_src <- repo_path("plugin", "stats", "eml-output.praat")
+rec_src  <- repo_path("plugin", "stats", "eml-record.praat")
+if (check_true("v58", "both files that name the analysis route are readable",
+               file.exists(prov_src) && file.exists(rec_src))) {
+    prov <- readLines(prov_src, warn = FALSE)
+    recl <- readLines(rec_src,  warn = FALSE)
+    ctx <- grep('@emlReportContext:\\s*"', prov, value = TRUE)
+    ctx <- ctx[!grepl("^\\s*[#;]", ctx)]
+    route <- unique(sub('.*@emlReportContext:\\s*"([^"]*)".*', "\\1", ctx))
+    check_true("v58",
+               sprintf("the analysis path stamps exactly one route name (%s)",
+                       paste(route, collapse = ", ")),
+               length(route) == 1L)
+    if (length(route) == 1L) {
+        fb <- grep('\\.text\\$ = "', recl, value = TRUE)
+        fb <- fb[!grepl("^\\s*[#;]", fb)]
+        fb <- unique(sub('.*\\.text\\$ = "([^"]*)".*', "\\1", fb))
+        check_true("v58",
+                   "and the recorder's fallback is that same name, not a copy that can drift",
+                   route %in% fb)
+    }
+}
+
 if (!exists("EML_SUITE")) {
     eml_report("v58 recorder replay: a recorded workflow, run rather than read")
     eml_exit()

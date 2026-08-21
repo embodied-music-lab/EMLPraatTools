@@ -37,6 +37,7 @@ include /home/claude/repo/harness/vecfig/out/work/record/plugin/graphs/eml-graph
 include /home/claude/repo/harness/vecfig/out/work/record/plugin/graphs/eml-annotation-procedures.praat
 include /home/claude/repo/harness/vecfig/out/work/record/plugin/graphs/eml-draw-procedures.praat
 include /home/claude/repo/harness/vecfig/out/work/record/plugin/stats/eml-analysis.praat
+include /home/claude/repo/harness/vecfig/out/work/record/plugin/stats/eml-demo-tables.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -45,8 +46,21 @@ include /home/claude/repo/harness/vecfig/out/work/record/plugin/stats/eml-analys
 # THE OBJECT
 # Recorded against: vt -- 60 rows, 2 columns.
 # The objects this workflow ran on are named in the block below.
-# All of them must be open before you run this script.
+# None of them is built or opened by a step below: see
+# PRECONDITION, and open them before you run this script.
 # ------------------------------------------------------------
+
+# ============================================================
+# PRECONDITION -- THIS SCRIPT CANNOT REBUILD ITS DATA
+#
+# Table vt was already open when this recording started.
+# Nothing in the session made it, so nothing below can remake it.
+#
+# YOU MUST SUPPLY THE DATA YOURSELF, open and named as above, before you
+# run this file. The steps below select by name: with nothing of that name
+# open the script stops at its first step, and with DIFFERENT data of that
+# name it runs to the end and answers a different question without saying so.
+# ============================================================
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
@@ -59,7 +73,7 @@ valueCol$      = "val"   ; the measured column -- run 1, step 1 (draw)
 groupCol2$     = "grp"   ; the grouping column -- run 2, step 3 (draw)
 valueCol2$     = "val"   ; the measured column -- run 2, step 3 (draw)
 axisYMin       = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-axisYMax       = 0.0   ; on the recorded data it resolved to 140.0000 .. 320.0000
+axisYMax       = 0.0   ; on the recorded data this resolved to 140.0000 .. 320.0000; auto adapts to other data
 axisYMin2      = 0   ; the y-axis range -- as typed in the dialog -- run 2, step 3 (draw)
 axisYMax2      = 300   ; the figure was drawn on 0.0000 .. 300.0000
 figureFormat$  = "PNG, EPS"   ; the figure formats saved -- PNG always, EPS and PDF when ticked -- run 1, step 2 (save)
@@ -91,7 +105,7 @@ emlLineStyle = lineStyle
 emlSecondAxisOn = secondAxisOn
 @emlDrawViolinPlot: data, "first figure", "Group", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
-# Axis resolved to 140.0000 .. 320.0000 over 3 groups.
+# Axis resolved to 140.0000 .. 320.0000 over 3 groups on the recorded data; auto adapts to other data.
 # The same step through the menu:
 # In the GUI: EML Graphs..., type Violin Plot,
 # Group column "grp", Value column "val".

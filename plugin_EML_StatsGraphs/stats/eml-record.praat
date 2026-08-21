@@ -132,6 +132,9 @@ procedure emlRecordInit
     if not variableExists ("emlRecordCurrentSource$")
         emlRecordCurrentSource$ = ""
     endif
+    if not variableExists ("emlRecordSourceCreate")
+        emlRecordSourceCreate = 0
+    endif
     if not variableExists ("emlRecordAmbiguousName")
         emlRecordAmbiguousName = 0
     endif
@@ -1152,6 +1155,33 @@ procedure emlRecordSource: .tableId
     ; The header therefore describes the object the session STARTED on. A
     ; session that moves to another object is not silently flattened into
     ; that claim: .changed is raised, and the renderer says so.
+    ;
+    ; A TABLE THIS SESSION BUILT HOLDS THE HEADER ONLY UNTIL SOMETHING IS
+    ; DONE TO A TABLE. "Recorded against:" answers "what is this a record
+    ; of", and building a demo table and then analysing a CSV makes the CSV
+    ; the answer -- a header naming the demo table would put a 45-row table
+    ; nothing below touches at the top of a file whose analysis ran on 24
+    ; rows of something else. That is the confidently-wrong header this rule
+    ; exists to prevent, arriving from the other direction.
+    ;
+    ; So a create step's claim is marked as one and the first working step on
+    ; another object replaces it. A session that ONLY built a table keeps the
+    ; claim, which is correct: that table is what the record is about.
+    .fromCreate = 0
+    if variableExists ("emlRecordSourceCreate")
+        .fromCreate = emlRecordSourceCreate
+    endif
+    .heldByCreate = 0
+    @emlRecordMetaGet: "inputFromCreate"
+    if emlRecordMetaGet.result$ = "1"
+        .heldByCreate = 1
+    endif
+    if .heldByCreate = 1 and .fromCreate = 0
+        if emlRecordHeaderInput$ <> .name$
+            emlRecordHeaderInput$ = ""
+        endif
+    endif
+
     .changed = 0
     if emlRecordHeaderInput$ = ""
         emlRecordHeaderInput$ = .name$
@@ -1164,6 +1194,11 @@ procedure emlRecordSource: .tableId
         @emlRecordMetaSet: "rows", string$ (.rows)
         @emlRecordMetaSet: "cols", string$ (.cols)
         @emlRecordMetaSet: "shape", .shape$
+        if .fromCreate = 1
+            @emlRecordMetaSet: "inputFromCreate", "1"
+        else
+            @emlRecordMetaSet: "inputFromCreate", "0"
+        endif
     elsif emlRecordHeaderInput$ <> .name$
         .changed = 1
         emlRecordSourceChanged = 1
@@ -1184,6 +1219,36 @@ procedure emlRecordSource: .tableId
     ; select only where it changes. A single-table session is unchanged --
     ; one select at the top and no noise.
     emlRecordCurrentSource$ = .name$
+
+    ; WHERE THIS OBJECT CAME FROM, WRITTEN IN FRONT OF THE STEP THAT USES IT.
+    ;
+    ; A file the user opened is the one origin the recorder can establish
+    ; without a hook, because the object carries it: see @emlRecordFilePath,
+    ; where the "Associated file" line and its five measured cases are set
+    ; out. The read step therefore goes in HERE, at the first step that names
+    ; the object, which is both the first moment it is knowable and the right
+    ; place for it in the emitted script -- the file was opened before the
+    ; analysis that reads it.
+    ;
+    ; ONCE PER OBJECT, and an object the plugin BUILT is already accounted
+    ; for: @emlRecordCreateStep wrote a create step for it, @emlRecordOriginKnown
+    ; sees that step, and no read step follows. A demo table has no
+    ; associated file in any case, so the two never both fire.
+    ;
+    ; NOT FOR A DERIVED OBJECT. A Pitch converted from a Sound is attributed
+    ; to the Sound above, and the Sound is the object whose file this would
+    ; be; the convert step already says how the intermediate was made.
+    if .fromConversion = 0
+        @emlRecordOriginKnown: .name$
+        if emlRecordOriginKnown.yes = 0
+            @emlRecordFilePath: .tableId
+            .filePath$ = emlRecordFilePath.path$
+            if .filePath$ <> ""
+                @emlRecordReadStep: .tableId, .filePath$
+            endif
+        endif
+    endif
+    selectObject: .tableId
 
     ; AN AMBIGUOUS NAME, DETECTED WHERE IT IS KNOWABLE. The emitted script
     ; selects by NAME, and two Tables sharing one name make that ambiguous:
@@ -1383,6 +1448,385 @@ procedure emlRecordConvert: .sourceId, .targetId, .code$, .why$
     emlRecordDerivedFrom$ = .from$
 
     label END_RECORD_CONVERT
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordCreateStep: .objectId, .label$, .detail$, .caveat$, .code$, .api$
+#
+# A TABLE COMING INTO EXISTENCE, RECORDED AS A STEP.
+#
+# The other step kinds describe what was done TO data. None of them can say
+# where the data came from, so a script emitted from a session that made its
+# own table opens by instructing the reader to have that table already open --
+# an instruction nobody can follow, because the object it names was built by
+# the session that is telling them to have it.
+#
+# THIS KIND IS FOR THE HALF THE PLUGIN MADE. A table the plugin built can be
+# rebuilt, so the step carries executable code and the emitted script begins
+# by building it. The other half -- a table that was already open when
+# recording started -- has no step at all and cannot have one: nothing
+# observed it being made. @emlRecordRender states that in a precondition
+# header instead, which is the honest form of the same fact.
+#
+# .code$ MUST REBUILD THE OBJECT WITHOUT A DIALOG. @emlRecordReplaySave's
+# header sets out the rule and the reason; a create step is the same case one
+# step earlier. For the demo generator that means @emlDemoTable, which is the
+# generator's body as a callable procedure precisely so that this step has
+# something to call.
+#
+# Arguments:
+#   .objectId   the object that was made
+#   .label$     its name, for the phrase
+#   .detail$    one phrase naming what was built, for the reader
+#   .caveat$    the seed sentence, or "" when nothing was random
+#   .code$      the rebuild, headless
+#   .api$       the same step through the menu
+# ----------------------------------------------------------------------------
+procedure emlRecordCreateStep: .objectId, .label$, .detail$, .caveat$,
+    ... .code$, .api$
+    @emlRecordInit
+    if emlRecordActive = 0
+        goto END_RECORD_CREATE_STEP
+    endif
+
+    ; MARKED AS A CREATE FOR THE HEADER'S BENEFIT, and cleared immediately.
+    ; @emlRecordSource reads it to decide whether the claim it is about to
+    ; make on "Recorded against:" is a provisional one -- see the header rule
+    ; there. The flag lasts exactly one call, because every other caller of
+    ; @emlRecordSource is a working step and must not inherit it.
+    emlRecordSourceCreate = 1
+    @emlRecordSource: .objectId
+    emlRecordSourceCreate = 0
+
+    @emlPhrase: "create.intent", .label$, .detail$, "", "", "", ""
+    @emlRecordStep: "create", emlPhrase.result$, .caveat$, .code$, .api$
+
+    label END_RECORD_CREATE_STEP
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordFilePath: .objectId  ->  .path$
+# THE FILE AN OBJECT WAS READ FROM, ASKED OF PRAAT RATHER THAN OF THE PLUGIN.
+#
+# This plugin registers no reader: a user with a CSV opens it through Praat's
+# own Open menu, which the recorder cannot hook. What it can do is ask the
+# object. MEASURED on Praat 6.6.30, 21 August 2026, from the Objects window's
+# own Info:
+#
+#   read from a CSV        Associated file: /…/probe.csv     -- present
+#   read, then a cell set  Associated file: /…/probe.csv     -- survives edits
+#   read, then renamed     Associated file: /…/probe.csv     -- survives Rename
+#   Create Table with …    no such line                      -- absent
+#   created, then SAVED    no such line                      -- absent
+#
+# The last row is the one that makes this usable: the line means "Praat read
+# this object from that file" and never "Praat wrote this object to that
+# file", so it cannot label a table the session invented as one the session
+# loaded.
+#
+# Returns "" for anything with no such line, which is the answer for every
+# object the plugin built and for every object the user built by hand.
+# ----------------------------------------------------------------------------
+procedure emlRecordFilePath: .objectId
+    .path$ = ""
+    selectObject: .objectId
+    .info$ = Info
+    .at = index (.info$, "Associated file: ")
+    if .at > 0
+        .rest$ = mid$ (.info$, .at + 17, 1000000)
+        .nl = index (.rest$, newline$)
+        if .nl > 0
+            .path$ = left$ (.rest$, .nl - 1)
+        else
+            .path$ = .rest$
+        endif
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordOriginKnown: .name$  ->  .yes
+# HAS THIS SESSION ALREADY SAID WHERE THIS OBJECT CAME FROM?
+#
+# Read off the buffer, for @emlRecordClaimRun's reason: the buffer's contents
+# ARE the state, a session spans menu commands and nothing else crosses one.
+# One create step or one read step per object is the whole rule; the second
+# analysis on the same table must not emit a second "you opened this file".
+# ----------------------------------------------------------------------------
+procedure emlRecordOriginKnown: .name$
+    .yes = 0
+    if emlRecordBufferId = 0
+        goto END_RECORD_ORIGIN_KNOWN
+    endif
+    selectObject: emlRecordBufferId
+    .rows = Get number of rows
+    for .r from 1 to .rows
+        selectObject: emlRecordBufferId
+        .k$ = Get value: .r, "kind"
+        if .k$ = "create" or .k$ = "read"
+            .s$ = Get value: .r, "source"
+            if .s$ = .name$
+                .yes = 1
+            endif
+        endif
+    endfor
+    label END_RECORD_ORIGIN_KNOWN
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordPrecondition
+# WHICH OBJECTS THIS SCRIPT CANNOT REBUILD, AND THE HEADER THAT SAYS SO.
+#
+# An object the session MADE has a create step; an object the session OPENED
+# has a read step. Anything else was already in the Objects window when
+# recording started, and there is nothing the recorder could have observed
+# about where it came from -- so the emitted script cannot rebuild it and must
+# not pretend otherwise.
+#
+# THIS IS A HEADER AND NOT A STEP, and that is the honest form. A step is a
+# record of something that happened while the recorder was watching. Nothing
+# happened here: the object was simply there. Writing a step for it would put
+# executable-looking prose in the body of the file over a fact the recorder
+# does not have.
+#
+# READ OFF THE BUFFER, like everything else the renderer decides, because the
+# buffer is the only thing that crosses a menu command.
+#
+# Outputs: .n       how many sources have no origin step
+#          .nKnown  how many DO have one, so the block above can say whether
+#                   the file supplies some of its data or none of it
+#          .out$    the precondition header, empty when every source has one
+# ----------------------------------------------------------------------------
+procedure emlRecordPrecondition
+    @emlRecordInit
+    .n = 0
+    .nKnown = 0
+    .out$ = ""
+    if emlRecordBufferId = 0
+        goto END_RECORD_PRECONDITION
+    endif
+
+    selectObject: emlRecordBufferId
+    .rows = Get number of rows
+    .list$ = ""
+    for .r from 1 to .rows
+        selectObject: emlRecordBufferId
+        .src$ = Get value: .r, "source"
+        .derived$ = Get value: .r, "derived"
+        ; A DERIVED OBJECT IS NOT A PRECONDITION. The convert step above it
+        ; builds it out of the object the manifest names, and that object is
+        ; judged on its own row.
+        if .src$ <> "" and .derived$ <> "1"
+            @emlRecordOriginKnown: .src$
+            if emlRecordOriginKnown.yes = 1
+                .knownSeen = 0
+                for .k from 1 to .nKnown
+                    if .known$[.k] = .src$
+                        .knownSeen = 1
+                    endif
+                endfor
+                if .knownSeen = 0
+                    .nKnown = .nKnown + 1
+                    .known$[.nKnown] = .src$
+                endif
+            endif
+            if emlRecordOriginKnown.yes = 0
+                .seen = 0
+                for .k from 1 to .n
+                    if .name$[.k] = .src$
+                        .seen = 1
+                    endif
+                endfor
+                if .seen = 0
+                    .n = .n + 1
+                    .name$[.n] = .src$
+                endif
+            endif
+        endif
+    endfor
+
+    if .n = 0
+        goto END_RECORD_PRECONDITION
+    endif
+
+    .bar$ = "# ============================================================"
+    .out$ = .out$ + .bar$ + newline$
+    .out$ = .out$ + "# PRECONDITION -- THIS SCRIPT CANNOT REBUILD ITS DATA"
+    ... + newline$
+    .out$ = .out$ + "#" + newline$
+    if .n = 1
+        .out$ = .out$ + "# " + .name$[1] + " was already open when this"
+        ... + " recording started." + newline$
+        .out$ = .out$ + "# Nothing in the session made it, so nothing below"
+        ... + " can remake it." + newline$
+    else
+        .out$ = .out$ + "# These objects were already open when this"
+        ... + " recording started." + newline$
+        for .k from 1 to .n
+            .out$ = .out$ + "#     " + .name$[.k] + newline$
+        endfor
+        .out$ = .out$ + "# Nothing in the session made them, so nothing below"
+        ... + " can remake them." + newline$
+    endif
+    .out$ = .out$ + "#" + newline$
+    .out$ = .out$ + "# YOU MUST SUPPLY THE DATA YOURSELF, open and named as"
+    ... + " above, before you" + newline$
+    .out$ = .out$ + "# run this file. The steps below select by name: with"
+    ... + " nothing of that name" + newline$
+    .out$ = .out$ + "# open the script stops at its first step, and with"
+    ... + " DIFFERENT data of that" + newline$
+    .out$ = .out$ + "# name it runs to the end and answers a different"
+    ... + " question without saying so." + newline$
+    .out$ = .out$ + .bar$ + newline$ + newline$
+
+    label END_RECORD_PRECONDITION
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordOriginCapture
+# THE ROUTE THE ORIGINAL REPORT NAMED, TAKEN WHILE IT IS STILL THERE.
+#
+# stats/eml-output.praat's report header prints a provenance line -- "from:
+# analysis dialog" -- out of emlReportAnalysis$, and CONSUMES it: the header
+# clears both halves so that a stale adjustment cannot appear on the next
+# report. That is the right discipline for the header and it is why this is a
+# capture rather than a read at render time.
+#
+# MEASURED, Praat 6.6.30, 21 August 2026, driving the shipped stack:
+#
+#   @emlReportContext: "analysis dialog", ""
+#   emlReportAnalysis$  ->  [analysis dialog]
+#   @emlRunAnovaAnalysis: …
+#   emlReportAnalysis$  ->  []
+#
+# so the value is gone by the time the orchestrator's recording hook runs.
+# This procedure therefore takes whatever is live whenever any step is
+# recorded, and keeps the FIRST non-empty answer in the meta table, where it
+# survives the menu command that recorded it.
+#
+# AND THE CAPTURE NEVER FIRES ON THE SHIPPED PATH, WHICH IS ALSO MEASURED.
+# Same session, recording on, @emlReportContext set the way a wrapper sets it,
+# then the orchestrator run: the meta table's "origin" came back empty, because
+# every recorder call inside the orchestrator happens after the header has
+# printed and cleared. So the capture is the path for a caller that declares
+# an origin the recorder can still see, and @emlRecordOrigin below supplies
+# the shipped path's answer from the record itself.
+# ----------------------------------------------------------------------------
+procedure emlRecordOriginCapture
+    if not variableExists ("emlReportAnalysis$")
+        goto END_RECORD_ORIGIN_CAPTURE
+    endif
+    if emlReportAnalysis$ = ""
+        goto END_RECORD_ORIGIN_CAPTURE
+    endif
+    @emlRecordMetaGet: "origin"
+    if emlRecordMetaGet.result$ <> ""
+        goto END_RECORD_ORIGIN_CAPTURE
+    endif
+    @emlRecordMetaSet: "origin", emlReportAnalysis$
+    label END_RECORD_ORIGIN_CAPTURE
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordOrigin  ->  .text$
+# What the emitted script should call the route the recording came from.
+#
+# A CAPTURED ORIGIN WINS. Anything @emlRecordOriginCapture caught is a value
+# some caller published while the recorder could see it, and it is that
+# caller's own word for where it came from.
+#
+# OTHERWISE THE RECORD ANSWERS. A buffer holding an analysis step was made by
+# this plugin's analysis path, and that path stamps every Run with one literal:
+# stats/eml-output.praat's @emlHandleCommonFields calls
+#
+#     @emlReportContext: "analysis dialog", ""
+#
+# and it is the only call to @emlReportContext in the plugin. So the label is
+# the plugin's own name for the route, not a name this file invented -- and
+# the two literals are pinned against each other by validate/v58, because a
+# string quoted in two files is a string that can drift.
+#
+# "" when the session recorded no analysis at all -- a figure-only session,
+# say. The provenance line then states the recording and claims no origin,
+# which is the right answer when there is nothing to claim.
+# ----------------------------------------------------------------------------
+procedure emlRecordOrigin
+    @emlRecordMetaGet: "origin"
+    .text$ = emlRecordMetaGet.result$
+    if .text$ <> ""
+        goto END_RECORD_ORIGIN
+    endif
+    if emlRecordBufferId = 0
+        goto END_RECORD_ORIGIN
+    endif
+    selectObject: emlRecordBufferId
+    .rows = Get number of rows
+    for .r from 1 to .rows
+        selectObject: emlRecordBufferId
+        .k$ = Get value: .r, "kind"
+        if .k$ = "analysis"
+            .text$ = "analysis dialog"
+        endif
+    endfor
+    label END_RECORD_ORIGIN
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordStampDate  ->  .text$
+# The recording's date without its clock time.
+#
+# emlRecordStamp$ is date$ ()'s wording -- "21 August 2026, 00:00:00" -- and
+# the provenance line is a sentence inside parentheses, where a second comma
+# and a time of day are noise. The split is on the LAST comma and only when
+# what follows it parses as a clock, so a stamp in any other shape is carried
+# whole rather than truncated on a guess.
+# ----------------------------------------------------------------------------
+procedure emlRecordStampDate
+    .text$ = emlRecordStamp$
+    .tail$ = replace_regex$ (.text$, "^.*, ", "", 0)
+    if index_regex (.tail$, "^[0-9][0-9]:[0-9][0-9]:[0-9][0-9]$") > 0
+        .text$ = replace_regex$ (.text$, ", [^,]*$", "", 0)
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordReadStep: .objectId, .path$
+# THE FILE THE SESSION OPENED, RECORDED WHERE IT BECOMES KNOWABLE.
+#
+# Recorded from @emlRecordSource rather than from a wrapper, because there is
+# no wrapper: the read happened in Praat's own Open menu, before any of this
+# plugin's code ran. The first step that names the object is the first moment
+# the recorder exists in the same session as the file, so the read step is
+# written immediately in front of that step -- which is also where it belongs
+# in the emitted script, since the file was opened before the analysis.
+#
+# THE WORDING IS THE SHIPPED ONE. `read.intent` -- "Loaded {1} as supplied.
+# Nothing below modifies it." -- and the claim is about the FILE: this plugin
+# reads a table and never writes back to the path it came from.
+#
+# The path is passed rather than re-derived so that this procedure records
+# what @emlRecordSource measured, in the scope that measured it.
+# ----------------------------------------------------------------------------
+procedure emlRecordReadStep: .objectId, .path$
+    @emlPhrase: "read.intent", .path$, "", "", "", "", ""
+    ; THE CODE IS THE TWIN, NOT `Read Table from comma-separated file:`.
+    ; @emlRecordReplayRead chooses the reader from the extension and says so
+    ; when the file is not there, and it takes ONE argument, which is what
+    ; lets @emlRecordColumnManifest lift the path into the editable block the
+    ; same way it lifts a column name.
+    @emlRecordStep: "read", emlPhrase.result$, "",
+    ... "@emlRecordReplayRead: """ + .path$ + """",
+    ... "In the GUI: Praat's own Open menu. This plugin registers no"
+    ... + newline$ + "reader of its own, so a data file arrives through"
+    ... + newline$ + "Open > Read from file... or Open > Read Table from"
+    ... + newline$ + "comma-separated file..."
 endproc
 
 
@@ -1878,6 +2322,12 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     if emlRecordRun = 0
         @emlRecordClaimRun
     endif
+
+    ; WHERE THIS SESSION CAME FROM, CAUGHT BEFORE THE REPORT CLEARS IT.
+    ; See @emlRecordOriginCapture: the provenance the original report printed
+    ; lives in a variable the report header consumes, so the only place to
+    ; take it is inside the recording call itself.
+    @emlRecordOriginCapture
 
     emlRecordN = emlRecordN + 1
     selectObject: emlRecordBufferId
@@ -2678,6 +3128,7 @@ procedure emlRecordColumnSpec: .proc$
     .spec$ = ""
     .axisSpec$ = ""
     .formatSpec$ = ""
+    .fileSpec$ = ""
 
     ; ---- the stats orchestrators (stats/eml-analysis.praat) ---------------
     if .proc$ = "emlRunTwoGroupAnalysis"
@@ -2848,6 +3299,26 @@ procedure emlRecordColumnSpec: .proc$
     if .fmtProc$ = "emlSavePanel"
         ; offerFigure, stem, folder, formats
         .formatSpec$ = "4 figureFormat"
+    endif
+
+    ; ---- THE INPUT FILE, ONE ENTRY, AND A FIFTH KEY -----------------------
+    ; The read step's only argument is the path the recorded session opened,
+    ; and it is lifted for the reason every other literal here is: the block's
+    ; promise is that nothing below it holds a decision the user made, and
+    ; WHICH FILE is the first of those decisions. A path left in the body
+    ; would be the one thing a reader retargeting the workflow has to hunt
+    ; for, in a file whose whole design is that they do not have to.
+    ;
+    ; THE KEY IS `.readProc$` FOR `.fmtProc$`'S REASON, stated above:
+    ; validate/v58 censuses every line spelled `if .proc$ = "..."` and
+    ; requires the procedure it names to have a recorded call template that
+    ; interpolates a COLUMN variable. @emlRecordReplayRead names no column --
+    ; it names a file -- so it belongs outside that census. Five tables, five
+    ; keys, five censuses.
+    .readProc$ = .proc$
+    if .readProc$ = "emlRecordReplayRead"
+        ; path
+        .fileSpec$ = "1 inputFile"
     endif
 endproc
 
@@ -3351,6 +3822,8 @@ endproc
 #                      then figure formats, then the page settings
 #          .nAxis      how many axis PAIRS the session used
 #          .nFmt       how many figure format variables it emitted
+#          .nFile      how many input-file variables it emitted -- one per
+#                      distinct path the session read, unsuffixed by run
 #          .nPage      how many ASSIGNMENT settings it emitted -- per run that
 #                      drew: the three page settings, the series' pen and the
 #                      second-axis switch, and that axis's five when it was on
@@ -3365,6 +3838,7 @@ procedure emlRecordColumnManifest
     .nAxis = 0
     .nFmt = 0
     .nPage = 0
+    .nFile = 0
 
     selectObject: emlRecordBufferId
     .nSteps = Get number of rows
@@ -3413,7 +3887,9 @@ procedure emlRecordColumnManifest
                 .spec$ = emlRecordColumnSpec.spec$
                 .axisSpec$ = emlRecordColumnSpec.axisSpec$
                 .formatSpec$ = emlRecordColumnSpec.formatSpec$
+                .fileSpec$ = emlRecordColumnSpec.fileSpec$
                 if .spec$ <> "" or .axisSpec$ <> "" or .formatSpec$ <> ""
+                ... or .fileSpec$ <> ""
                     .head$ = left$ (.line$, .colon)
                     @emlRecordSplitArgs: mid$ (.line$, .colon + 1, 1000000)
                     .nArgs = emlRecordSplitArgs.n
@@ -3666,6 +4142,60 @@ procedure emlRecordColumnManifest
                         endif
                     endif
 
+                    ; ---- THE INPUT FILE ---------------------------------
+                    ; ONE VARIABLE PER FILE, AND THE RUN IS NOT IN THE NAME.
+                    ; Every other family here is suffixed by run because two
+                    ; passes are two decisions; a file is not. Reading the
+                    ; same CSV in two runs is one file, and giving it two
+                    ; variables would let a reader retarget one of them and
+                    ; leave the workflow half pointed at data that is no
+                    ; longer there. So the slot is matched on the PATH alone,
+                    ; and two different files in one session get inputFile$
+                    ; and inputFile2$ by their order of appearance.
+                    if .fileSpec$ <> ""
+                        .rsp = index (.fileSpec$, " ")
+                        .rPos = number (left$ (.fileSpec$, .rsp - 1))
+                        .rBase$ = mid$ (.fileSpec$, .rsp + 1, 100)
+
+                        if .rPos <= .nArgs
+                            @emlRecordQuotedLiteral: .newArg$[.rPos]
+                            .rIsLit = emlRecordQuotedLiteral.ok
+                            .rLit$ = emlRecordQuotedLiteral.value$
+                            .rLead$ = emlRecordQuotedLiteral.lead$
+                            if .rIsLit = 1 and .rLit$ <> ""
+                                .rSlot = 0
+                                for .k from 1 to .nFile
+                                    if .fileLit$[.k] = .rLit$
+                                        .rSlot = .k
+                                    endif
+                                endfor
+                                if .rSlot = 0
+                                    .nFile = .nFile + 1
+                                    .rSlot = .nFile
+                                    .fileLit$[.nFile] = .rLit$
+                                    .fileName$[.nFile] = .rBase$
+                                    if .nFile > 1
+                                        .fileName$[.nFile] = .rBase$
+                                        ... + string$ (.nFile)
+                                    endif
+                                    .fileName$[.nFile] = .fileName$[.nFile]
+                                    ... + "$"
+                                    .fileSteps$[.nFile] = ""
+                                endif
+                                .rNote$ = string$ (.stepN) + " ("
+                                ... + .stepKind$ + ")"
+                                if .fileSteps$[.rSlot] <> ""
+                                    .fileSteps$[.rSlot] = .fileSteps$[.rSlot]
+                                    ... + ", "
+                                endif
+                                .fileSteps$[.rSlot] = .fileSteps$[.rSlot]
+                                ... + .rNote$
+                                .newArg$[.rPos] = .rLead$
+                                ... + .fileName$[.rSlot]
+                            endif
+                        endif
+                    endif
+
                     .lineOut$ = .head$
                     for .a from 1 to .nArgs
                         if .a > 1
@@ -3753,6 +4283,7 @@ procedure emlRecordColumnManifest
     endfor
 
     if .n = 0 and .nAxis = 0 and .nFmt = 0 and .nPage = 0
+    ... and .nFile = 0
         goto END_COLUMN_MANIFEST
     endif
 
@@ -3785,11 +4316,68 @@ procedure emlRecordColumnManifest
             .width = length (.pgName$[.k])
         endif
     endfor
+    for .k from 1 to .nFile
+        if length (.fileName$[.k]) > .width
+            .width = length (.fileName$[.k])
+        endif
+    endfor
     ; EVERY DECLARATION NAMES ITS OWN RUN, and the run comes first because it
     ; is what the name's suffix means: `groupCol2$ ... run 2` is the sentence
     ; that tells a reader why there are two of them. The steps follow, so a
     ; reader can go straight to the ones this variable governs -- and they are
     ; all one run's steps now, which is the whole of the change.
+    ; ---- THE INPUT FILE DECLARATIONS -------------------------------------
+    ; FIRST IN THE BLOCK, because it is first in the workflow: a reader
+    ; retargeting this file changes the data before they change what is done
+    ; to it, and the order of the block is the order of the questions.
+    ;
+    ; THE PER-OS NOTE IS THE INCLUDE BLOCK'S NOTE, ONE LAYER DOWN. The library
+    ; block at the top of the emitted file names the four places the plugin
+    ; can be and tells the reader how to find out which one is theirs; this is
+    ; the same service for the data. The last line of it is measured rather
+    ; than invented: Praat's own Info on a Table it read carries an
+    ; "Associated file" line naming the path, and that is where the recorder
+    ; got this one. See @emlRecordFilePath.
+    ;
+    ; THE WINDOWS SPELLING IS SHOWN WITH FORWARD SLASHES. Praat accepts them
+    ; on every platform, and a backslash inside a Praat string is the first
+    ; character of a trigraph -- so the spelling that reads most natural on
+    ; Windows is the one spelling this line could not carry.
+    if .nFile > 0
+        if .nFile = 1
+            .out$ = .out$ + "# The data file this workflow was recorded"
+            ... + " from. The path is absolute" + newline$
+            .out$ = .out$ + "# and spelled the way the recording machine"
+            ... + " spells it:" + newline$
+        else
+            .out$ = .out$ + "# The data files this workflow was recorded"
+            ... + " from. The paths are absolute" + newline$
+            .out$ = .out$ + "# and spelled the way the recording machine"
+            ... + " spells them:" + newline$
+        endif
+        .out$ = .out$ + "#   macOS / Linux   /Users/you/data/table.csv"
+        ... + newline$
+        .out$ = .out$ + "#   Windows         C:/Users/you/data/table.csv"
+        ... + newline$
+        .out$ = .out$ + "#   Not sure?  Select the Table and press Info --"
+        ... + " its Associated file line" + newline$
+        .out$ = .out$ + "#              names the file Praat read it from."
+        ... + newline$
+    endif
+    for .k from 1 to .nFile
+        .padR$ = ""
+        for .p from 1 to .width - length (.fileName$[.k])
+            .padR$ = .padR$ + " "
+        endfor
+        .word$ = "steps "
+        if not index (.fileSteps$[.k], ",")
+            .word$ = "step "
+        endif
+        .out$ = .out$ + .fileName$[.k] + .padR$ + " = """
+        ... + .fileLit$[.k] + """   ; the data file read from disk -- "
+        ... + .word$ + .fileSteps$[.k] + newline$
+    endfor
+
     for .k from 1 to .n
         .pad$ = ""
         for .p from 1 to .width - length (.varName$[.k])
@@ -3814,6 +4402,19 @@ procedure emlRecordColumnManifest
     ; the zeros are a request and not a range, and roughly where the figure
     ; actually sat -- otherwise the only way to find out what to type instead
     ; is to run the file and look.
+    ;
+    ; AND THE SECOND LINE SAYS WHICH OF THE TWO IT IS. A range worked out
+    ; from the data DESCRIBES the recording; it does not bind the replay. Run
+    ; the same file against a different table and the axis moves to suit it,
+    ; which is what an automatic axis is for -- so the note ends "auto adapts
+    ; to other data" and reads as a record rather than as a promise. The
+    ; typed-range arm below carries no such clause, because a range the user
+    ; typed IS binding: it is the same numbers on every table.
+    ;
+    ; The same rule governs the resolved range quoted beside the draw call
+    ; itself -- see @emlDrawViolinPlot's recording hook in
+    ; graphs/eml-draw-procedures.praat, which appends the clause to its own
+    ; note when the recorded request was auto.
     for .k from 1 to .nAxis
         .padA$ = ""
         for .p from 1 to .width - length (.axMinName$[.k])
@@ -3847,8 +4448,9 @@ procedure emlRecordColumnManifest
             ... + .word$ + .axSteps$[.k] + newline$
             if .resMin$ <> ""
                 .out$ = .out$ + .axMaxName$[.k] + .padB$ + " = "
-                ... + .axMaxLit$[.k] + "   ; on the recorded data it resolved"
-                ... + " to " + .resMin$ + " .. " + .resMax$ + newline$
+                ... + .axMaxLit$[.k] + "   ; on the recorded data this"
+                ... + " resolved to " + .resMin$ + " .. " + .resMax$
+                ... + "; auto adapts to other data" + newline$
             else
                 .out$ = .out$ + .axMaxName$[.k] + .padB$ + " = "
                 ... + .axMaxLit$[.k] + "   ; set both to fix the axis instead"
@@ -4323,6 +4925,13 @@ procedure emlRecordRender
     ... + newline$
     .text$ = .text$ + "include " + .p$ + "/stats/eml-analysis.praat"
     ... + newline$
+    ; The DEMO TABLE builders. In the list because a create step calls
+    ; @emlDemoTable, and a recorded script that built its own table and then
+    ; could not rebuild it would be the gap the create step exists to close.
+    ; It is in setup.praat's generated barrel at the same position, which
+    ; validate/v82 pins by recording a session and comparing the two lists.
+    .text$ = .text$ + "include " + .p$ + "/stats/eml-demo-tables.praat"
+    ... + newline$
     .text$ = .text$ + newline$
 
     ; INITIALISE THE DRAWING DEFAULTS. Every real caller does this before it
@@ -4370,9 +4979,42 @@ procedure emlRecordRender
     .text$ = .text$
     ... + "# The objects this workflow ran on are named in the block below."
     ... + newline$
-    .text$ = .text$
-    ... + "# All of them must be open before you run this script."
-    ... + newline$
+    ; WHAT THE READER HAS TO PROVIDE, SPLIT FROM WHAT THE FILE PROVIDES.
+    ;
+    ; "All of them must be open before you run this script" was true of every
+    ; recording while creation and opening were unrecordable. A session that
+    ; built its table with the demo generator, or opened one from disk, now
+    ; carries a step that does it again, and telling that reader to open an
+    ; object the file's own second step creates is an instruction they cannot
+    ; act on and do not need.
+    ;
+    ; So the sentence is decided by @emlRecordPrecondition, which asks the
+    ; buffer the only question that answers it: does every object a step ran
+    ; on have a create step or a read step of its own?
+    @emlRecordPrecondition
+    if emlRecordPrecondition.n = 0
+        .text$ = .text$
+        ... + "# Every one of them is built or opened by a step below, so"
+        ... + newline$
+        .text$ = .text$
+        ... + "# this script supplies its own data and runs on its own."
+        ... + newline$
+    elsif emlRecordPrecondition.nKnown = 0
+        .text$ = .text$
+        ... + "# None of them is built or opened by a step below: see"
+        ... + newline$
+        .text$ = .text$
+        ... + "# PRECONDITION, and open them before you run this script."
+        ... + newline$
+    else
+        .text$ = .text$
+        ... + "# Some are built or opened by a step below; the rest are"
+        ... + newline$
+        .text$ = .text$
+        ... + "# listed under PRECONDITION and must be open before you run"
+        ... + newline$
+        .text$ = .text$ + "# this script." + newline$
+    endif
     if emlRecordAmbiguousName = 1
         .text$ = .text$
         ... + "# WARNING: more than one Table shared a name during this"
@@ -4385,6 +5027,12 @@ procedure emlRecordRender
         ... + newline$
     endif
     .text$ = .text$ + .rule$ + newline$ + newline$
+
+    ; ---- THE PRECONDITION ------------------------------------------------
+    ; LOUD, AND IN ITS OWN RULED BLOCK, because it is the one thing in the
+    ; file a reader cannot fix by editing a line. Everything else here is a
+    ; setting; this is a requirement.
+    .text$ = .text$ + emlRecordPrecondition.out$
 
     ; ---- THE TABLE MANIFEST ----------------------------------------------
     ;
@@ -4462,7 +5110,21 @@ procedure emlRecordRender
         ; A step on an auto-converted object selects NOTHING: the convert
         ; step above it left that object in `data`, and the manifest names
         ; the Sound it came from, not the intermediate, which is gone.
-        if .source$ <> "" and .derived$ <> "1"
+        ; A STEP THAT MAKES ITS OBJECT SELECTS NOTHING. A create step builds
+        ; the Table and a read step opens it; both leave it selected, and
+        ; both run at a point in the file where selecting it by name would
+        ; name an object that does not exist yet. The manifest still declares
+        ; it, because the steps BELOW select it -- which is the whole reason
+        ; a rebuilt object has to come back under the recorded name.
+        .makesIt = 0
+        if .kind$ = "create" or .kind$ = "read"
+            .makesIt = 1
+        endif
+        ; THE MANIFEST SLOT IS LOOKED UP FOR EVERY STEP, because a step that
+        ; makes its object needs it too -- not to select with, but to NAME
+        ; with: see the rename emitted after a read step below.
+        .renameVar$ = ""
+        if .source$ <> "" and .derived$ <> "1" and .makesIt = 0
             ; MATCHED ON THE OBJECT AND THE RUN, because the block now
             ; holds one object variable per run and two of them can name
             ; the same Table -- which is the point of them: run 2's
@@ -4482,6 +5144,17 @@ procedure emlRecordRender
                 ... + emlRecordTableManifest.varName$[.slot] + newline$
                 .text$ = .text$ + "data = selected ()" + newline$
             endif
+        endif
+        if .kind$ = "read" and .source$ <> ""
+            @emlRecordRunOf: .s
+            .stepRun = emlRecordRunOf.run
+            for .k from 1 to .manifestN
+                if emlRecordTableManifest.name$[.k] = .source$
+                    if emlRecordTableManifest.run[.k] = .stepRun
+                        .renameVar$ = emlRecordTableManifest.varName$[.k]
+                    endif
+                endif
+            endfor
         endif
 
         @emlRecordCommentBlock: .intent$
@@ -4537,7 +5210,48 @@ procedure emlRecordRender
             .codeOut$ = replace$ (.codeOut$, "@emlSavePanel:",
             ... "@emlRecordReplaySave:", 0)
         endif
+
+        ; ---- THE PROVENANCE LINE, AND IT DOES NOT INHERIT ------------------
+        ;
+        ; A report carries "from: <route>" naming how the analysis was
+        ; reached. A replayed analysis was reached from THIS FILE, and a
+        ; replay that printed the original's route would be putting a claim
+        ; about a menu press into a report nobody pressed a menu for.
+        ;
+        ; So the emitted script sets its own, and states both halves: this
+        ; report came from a recorded script, and the recording it came from
+        ; was made on such a date from such a route. A reader comparing a
+        ; replayed report against the original can then see at a glance which
+        ; of the two they are holding -- which is exactly what the line is
+        ; for, and exactly what a replayed report without it could not say.
+        ;
+        ; SET PER ANALYSIS STEP AND NOT ONCE AT THE TOP, because the report
+        ; header CONSUMES it: stats/eml-output.praat clears both halves after
+        ; printing, so a single declaration would label the file's first
+        ; report and leave every later one bare.
+        ;
+        ; THE ADJUSTMENT HALF IS PASSED EMPTY, which is what @emlReportContext
+        ; means by "" -- leave that half unstated. The post-hoc reporters
+        ; write their own adjustment as an ordinary result row; nothing here
+        ; has an adjustment to declare.
+        if .kind$ = "analysis"
+            @emlRecordOrigin
+            @emlRecordStampDate
+            .prov$ = "recorded script (recorded " + emlRecordStampDate.text$
+            if emlRecordOrigin.text$ <> ""
+                .prov$ = .prov$ + ", originally " + emlRecordOrigin.text$
+            endif
+            .prov$ = .prov$ + ")"
+            .q$ = """"
+            .text$ = .text$ + "@emlReportContext: " + .q$ + .prov$ + .q$
+            ... + ", " + .q$ + .q$ + newline$
+        endif
+
         .text$ = .text$ + .codeOut$ + newline$
+        if .renameVar$ <> ""
+            .text$ = .text$ + "@emlRecordReplayName: " + .renameVar$
+            ... + newline$
+        endif
 
         if .post$ <> ""
             .text$ = .text$ + .post$
@@ -4904,4 +5618,154 @@ procedure emlRecordReplaySave: .offerFigure, .stem$, .folder$, .formats$
     appendInfoLine: "base name ", .stem$
 
     label END_RECORD_REPLAY_SAVE
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordReplayRead: .path$
+#
+# THE NON-INTERACTIVE TWIN OF PRAAT'S OPEN MENU, for the step that says which
+# file the recording was made from. It exists for @emlRecordReplaySave's
+# reason -- a replayed recording opens no dialog -- and for one more: it gives
+# the read step a single-argument call, which is what lets
+# @emlRecordColumnManifest lift the path into the editable block at the top of
+# the file beside the column names. A bare `Read Table from comma-separated
+# file: "/…/x.csv"` is an object name and a path buried in the body, which is
+# the arrangement the block exists to end.
+#
+# THE READER IS CHOSEN FROM THE EXTENSION, and the two arms are measured
+# rather than assumed. Praat 6.6.30, 21 August 2026:
+#
+#   Read from file:                        on a .csv   0 objects -- nothing read
+#   Read Table from comma-separated file:  on a .csv   Table
+#   Read from file:                        on a .tsv   Table
+#   Read Table from tab-separated file:    on a .tsv   Table
+#
+# So a comma-separated file needs its own reader and everything else --
+# tab-separated text, Praat's own Table format, anything else Praat knows --
+# is read correctly by `Read from file:`. Two arms cover the field.
+#
+# THE OBJECT COMES BACK UNDER THE NAME THE RECORDING USED. Praat names a read
+# object after the file's stem, so a file re-read here arrives as the same
+# "Table <stem>" the block at the top of the emitted script names, and the
+# steps below select it without anything being renamed.
+#
+# A MISSING FILE IS A SENTENCE, NOT AN ABORT. The recorded path is the path on
+# the machine that recorded it; on any other machine the ordinary case is that
+# it is somewhere else. The replay says which line to edit and returns, rather
+# than stopping the run with the plugin's own source quoted at the reader.
+#
+# Outputs: .ok      1 when one object was read
+#          .id      that object, selected; 0 when nothing was read
+# ----------------------------------------------------------------------------
+procedure emlRecordReplayRead: .path$
+    .ok = 0
+    .id = 0
+
+    if not fileReadable (.path$)
+        appendInfoLine: ""
+        appendInfoLine: "EML: this recorded step reads a file that is not"
+        appendInfoLine: "readable here:"
+        appendInfoLine: .path$
+        appendInfoLine: "Edit the inputFile line in the block at the top of"
+        appendInfoLine: "this script to point at your own copy, then run it"
+        appendInfoLine: "again. Nothing was read for this step."
+        goto END_RECORD_REPLAY_READ
+    endif
+
+    ; THE EXTENSION, CASE-FOLDED. A file named .CSV off a Windows share is
+    ; the same file, and sending it to `Read from file:` would read nothing
+    ; at all and leave the steps below selecting an object that is not there.
+    .ext$ = ""
+    .dot = rindex (.path$, ".")
+    if .dot > 0
+        .ext$ = mid$ (.path$, .dot, 100)
+    endif
+    .ext$ = replace_regex$ (.ext$, "[A-Z]", "\L&", 0)
+
+    ; NOTHING SELECTED GOING IN, so what came back can be read off the
+    ; Objects window rather than inferred. scripts/eml-batch-process.praat's
+    ; own read guard states the same rule and the reason: `nocheck` swallows
+    ; the error and leaves no return value to test -- and measured on 6.6.30,
+    ; `nocheck x = <command>` does not assign x even when the command
+    ; SUCCEEDS -- so the outcome is only unambiguous against an empty
+    ; selection.
+    ;
+    ; `selectObject ()` WITH NO ARGUMENTS IS THE EMPTY SELECTION. Measured,
+    ; 6.6.30, 21 August 2026: two objects selected, `selectObject ()`, then
+    ; numberOfSelected () = 0 and both objects still in the list. It is a
+    ; deselect and not a Remove, which is the distinction that matters here --
+    ; a `select all` followed by anything destructive would take the user's
+    ; whole session with it.
+    selectObject ()
+    if .ext$ = ".csv"
+        nocheck Read Table from comma-separated file: .path$
+    else
+        nocheck Read from file: .path$
+    endif
+
+    if numberOfSelected () = 1
+        .ok = 1
+        .id = selected ()
+    else
+        appendInfoLine: ""
+        appendInfoLine: "EML: this recorded step could not read"
+        appendInfoLine: .path$
+        appendInfoLine: "as an object Praat understands. Nothing was read"
+        appendInfoLine: "for this step."
+    endif
+
+    label END_RECORD_REPLAY_READ
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordReplayName: .name$
+#
+# GIVE THE OBJECT JUST READ THE NAME THE RECORDING KNEW IT BY.
+#
+# Praat names a read object after the file's stem, and the recorded session's
+# object may not have been called that. MEASURED, 6.6.30, 21 August 2026: the
+# "Associated file" line an object carries SURVIVES a Rename --
+#
+#   Read Table from comma-separated file: …/probe.csv   ->  Table probe
+#   Rename: "renamed"                                   ->  Table renamed,
+#                                                           Associated file
+#                                                           still …/probe.csv
+#
+# -- so the recorder can find the file of a table the user renamed, and a
+# replay that re-read it would put "Table probe" in the Objects window while
+# every step below asked for "Table renamed". The script would stop at its
+# first select, on a machine where the data is present and correct.
+#
+# THE NAME COMES FROM THE BLOCK. .name$ is the manifest's own variable for
+# this object, so retargeting the workflow stays one edit in one place: point
+# inputFile$ at another file and dataN$ at what you want it called, and every
+# step below follows. Emitted for every read, not only for the ones that need
+# it: renaming an object to the name it already has is a no-op, and a
+# condition here would be one more thing that can be wrong in a file whose
+# whole purpose is to run somewhere else.
+#
+# `Rename:` TAKES THE BARE NAME. The manifest carries the full "Table x"
+# spelling that `selectObject:` needs, so the type word is stripped here --
+# renaming a Table to "Table x" would make every later select ask for
+# "Table Table x".
+# ----------------------------------------------------------------------------
+procedure emlRecordReplayName: .name$
+    if numberOfSelected () <> 1
+        goto END_RECORD_REPLAY_NAME
+    endif
+    .bare$ = .name$
+    .space = index (.bare$, " ")
+    if .space > 0
+        .bare$ = mid$ (.bare$, .space + 1, 1000000)
+    endif
+    if .bare$ = ""
+        goto END_RECORD_REPLAY_NAME
+    endif
+    if selected$ () = .name$
+        goto END_RECORD_REPLAY_NAME
+    endif
+    Rename: .bare$
+    label END_RECORD_REPLAY_NAME
 endproc

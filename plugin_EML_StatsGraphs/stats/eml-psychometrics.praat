@@ -86,18 +86,24 @@ endproc
 # an undefined cell are removed before computation (listwise deletion)
 # and the removal is disclosed in .nExcluded.
 #
-# The 95% confidence interval uses the Feldt (1965) F-distribution
-# method with df1 = n - 1 and df2 = (n - 1)(k - 1), matching R's
-# psych::alpha.
+# The confidence interval uses the Feldt (1965) F-distribution method
+# with df1 = n - 1 and df2 = (n - 1)(k - 1), matching R's psych::alpha.
+#
+# ITS LEVEL IS AN ARGUMENT, not a constant, the same way @emlCI and the
+# sibling @emlWilsonInterval take theirs. A caller working at alpha = .01
+# gets a 99% interval by asking for one, and .confidence is echoed back
+# beside the bounds so a report printing them can name the level it prints.
 #
 # Arguments:
-#   .data##  - numeric matrix; rows = respondents, columns = items
+#   .data##      - numeric matrix; rows = respondents, columns = items
+#   .confidence  - confidence level as a proportion, e.g. 0.95
 #
 # Output:
 #   .alpha            - Cronbach's alpha (covariance-based, sample
 #                       variances with n - 1 denominator)
-#   .ci95low          - lower bound of the Feldt 95% CI
-#   .ci95high         - upper bound of the Feldt 95% CI
+#   .ciLow            - lower bound of the Feldt interval
+#   .ciHigh           - upper bound of the Feldt interval
+#   .confidence       - the level the bounds were computed at, echoed
 #   .k                - number of items (columns)
 #   .n                - number of respondents used (complete rows)
 #   .nExcluded        - rows removed by listwise deletion
@@ -107,7 +113,7 @@ endproc
 #   .error$           - error message, or "" if valid
 #
 # Access pattern:
-#   @emlCronbachAlpha: responses##
+#   @emlCronbachAlpha: responses##, 0.95
 #   a = emlCronbachAlpha.alpha
 #   dropTwo = emlCronbachAlpha.alphaIfDeleted# [2]
 #
@@ -117,14 +123,17 @@ endproc
 #     in the wrong direction lowers alpha — it is not detected here.
 #   - Requires k >= 2 items and, after listwise deletion, n >= 3
 #     respondents (the Feldt CI needs n - 1 >= 2).
+#   - .confidence must lie strictly between 0 and 1; anything else is
+#     refused in .error$ rather than handed to invFisherQ, whose tail
+#     probability is undefined at 0 and at 1.
 #   - Raw values are returned; callers format for display.
 # ============================================================================
 
-procedure emlCronbachAlpha: .data##
+procedure emlCronbachAlpha: .data##, .confidence
     # Initialize outputs
     .alpha = undefined
-    .ci95low = undefined
-    .ci95high = undefined
+    .ciLow = undefined
+    .ciHigh = undefined
     .k = undefined
     .n = undefined
     .nExcluded = undefined
@@ -141,7 +150,10 @@ procedure emlCronbachAlpha: .data##
     .work## = eml_listwiseComplete.clean##
 
     # --- Input validation ---
-    if .k < 2
+    if .confidence = undefined or .confidence <= 0 or .confidence >= 1
+        .error$ = "confidence must be strictly between 0 and 1, "
+        ... + "e.g. 0.95"
+    elsif .k < 2
         .error$ = "Alpha needs at least 2 items; the matrix has "
         ... + string$ (.k) + "."
     elsif .n < 3
@@ -178,11 +190,16 @@ procedure emlCronbachAlpha: .data##
             .sumItemVar = sum (.itemVar#)
             .alpha = (.k / (.k - 1)) * (1 - .sumItemVar / .varTotal)
 
-            # --- Feldt (1965) 95% CI ---
+            # --- Feldt (1965) confidence interval ---
+            # Both tails come from .confidence, so the level the caller
+            # asked for is the level the bounds carry. The two-sided tail
+            # is (1 - confidence) / 2 at each end, which reproduces the
+            # .025 / .975 pair exactly at the conventional 0.95.
+            .tail = (1 - .confidence) / 2
             .df1 = .n - 1
             .df2 = (.n - 1) * (.k - 1)
-            .ci95low = 1 - (1 - .alpha) * invFisherQ (0.025, .df1, .df2)
-            .ci95high = 1 - (1 - .alpha) * invFisherQ (0.975, .df1, .df2)
+            .ciLow = 1 - (1 - .alpha) * invFisherQ (.tail, .df1, .df2)
+            .ciHigh = 1 - (1 - .alpha) * invFisherQ (1 - .tail, .df1, .df2)
 
             # --- Alpha if item deleted ---
             # For k = 2 the reduced scale has one item and no alpha;

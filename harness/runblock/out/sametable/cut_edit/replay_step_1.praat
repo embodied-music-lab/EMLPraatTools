@@ -37,6 +37,7 @@ include ~/repo/plugin/graphs/eml-graph-procedures.praat
 include ~/repo/plugin/graphs/eml-annotation-procedures.praat
 include ~/repo/plugin/graphs/eml-draw-procedures.praat
 include ~/repo/plugin/stats/eml-analysis.praat
+include ~/repo/plugin/stats/eml-demo-tables.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -45,8 +46,21 @@ include ~/repo/plugin/stats/eml-analysis.praat
 # THE OBJECT
 # Recorded against: Table one -- 24 rows, 3 columns.
 # The objects this workflow ran on are named in the block below.
-# All of them must be open before you run this script.
+# None of them is built or opened by a step below: see
+# PRECONDITION, and open them before you run this script.
 # ------------------------------------------------------------
+
+# ============================================================
+# PRECONDITION -- THIS SCRIPT CANNOT REBUILD ITS DATA
+#
+# Table one was already open when this recording started.
+# Nothing in the session made it, so nothing below can remake it.
+#
+# YOU MUST SUPPLY THE DATA YOURSELF, open and named as above, before you
+# run this file. The steps below select by name: with nothing of that name
+# open the script stops at its first step, and with DIFFERENT data of that
+# name it runs to the end and answers a different question without saying so.
+# ============================================================
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
@@ -59,9 +73,9 @@ valueCol$     = "val"   ; the measured column -- run 1, step 1 (draw)
 groupCol2$    = "grp"   ; the grouping column -- run 2, step 2 (draw)
 valueCol2$    = "other"   ; the measured column -- run 2, step 2 (draw)
 axisYMin      = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-axisYMax      = 0.0   ; on the recorded data it resolved to 5.5000 .. 9.0000
+axisYMax      = 0.0   ; on the recorded data this resolved to 5.5000 .. 9.0000; auto adapts to other data
 axisYMin2     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 2, step 2 (draw)
-axisYMax2     = 0.0   ; on the recorded data it resolved to 13.0000 .. 18.5000
+axisYMax2     = 0.0   ; on the recorded data this resolved to 13.0000 .. 18.5000; auto adapts to other data
 eraseFirst    = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 1 (draw)
 panelOriginX  = 0   ; inches from the left of the page to this panel's corner -- run 1, step 1 (draw)
 panelOriginY  = 0   ; inches from the top of the page to this panel's corner -- run 1, step 1 (draw)

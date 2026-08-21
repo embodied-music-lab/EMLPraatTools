@@ -122,13 +122,23 @@ wording and output work so its report strings are written once.
 
 ## Newly ordered, 20 Aug
 
-- **The correlation confidence interval ignores the alpha you set.** It is a
-  Fisher-z interval with the 1.96 quantile written into the code, while the
-  error bars and mean intervals on the same figure are t-based and honour
-  alpha. At alpha = .01 one figure carries a 99% error bar beside a 95%
-  correlation band and says nothing about it. The quantile comes from alpha;
-  every other hardcoded quantile found in the same sweep is dispositioned.
-  Oracle: R's cor.test at two alphas, plus one driven figure.
+- **The Tukey family-wise interval ignores the alpha you set.** Found by the
+  quantile sweep, not named in the 20 Aug ruling, and the same defect class:
+  the ANOVA report's "Tukey HSD Mean Differences (95% family-wise CI)" table
+  and the `conf.low` / `conf.high` pair in the Tukey export frame both take
+  their critical q from `@emlOneWayAnova`, which passes 0.05 to
+  `@emlTukeyHSD` and takes no alpha of its own. Measured: on a three-group
+  fixture the whole report is byte-identical at annotAlpha = .05 and .01,
+  under a fixed "95%" heading, on a path where the stars beside it do obey
+  the user's alpha.
+
+  It is NOT the same fix as the other three. `@emlTukeyHSD` already takes
+  `.alpha`; the constant is at the call site inside `@emlOneWayAnova`, whose
+  arity is fixed by roughly twenty-five callers across the plugin, the dev
+  tests and the harness drivers, and whose `.qCritical` also reaches an
+  exported column. That is a scope of its own and needs a ruling on whether
+  the level travels as a new argument or as a graphs-layer resolution at the
+  reporter.
 - **The door-agreement census** (`docs/WORK_ORDER_DOOR_CENSUS.md`). Every
   user intent reachable through more than one door gets one adversarial
   fixture -- built so that divergent mappings produce loudly different
@@ -236,6 +246,37 @@ wording and output work so its report strings are written once.
   code has moved since the last re-drive.
 
 ## Closed
+
+**Every report interval takes its level from the alpha in force.** The
+correlation band was the first; the sweep the ruling ordered found three more
+that spell the level as a TAIL PROBABILITY rather than as a z value, which is
+why grepping for 1.96 could not see them: the two-group report's CI of the
+difference and the regression coefficient table's CI column, both
+`invStudentQ (0.025, df)`, and the Feldt interval on Cronbach's alpha,
+`invFisherQ (0.025 / 0.975, ...)`. All three were measured ignoring the
+control before they were touched -- at annotAlpha = .05 and .01 the three
+printed intervals were byte-identical.
+
+The two report sites now resolve the level through one procedure,
+`@emlCIAlphaInForce`, so the stars, the error bars and every bracket in that
+module read one answer. The Cronbach kernel takes its level as an argument
+the way its sibling `@emlWilsonInterval` does, and its outputs are `.ciLow` /
+`.ciHigh` rather than names that assert a level the caller chose. Every label
+is built by `@emlCILevelLabel`, which renders the percentage without rounding
+it to a whole number -- so alpha = .005 reads "99.5%" and .025 reads "97.5%",
+where rounding printed "100%" and "98%".
+
+`validate/v109` drives all three live at two alphas against `t.test`,
+`confint(lm)` and the published Feldt form, requires each printed label to
+name the level it used, requires every bound to move when the alpha does, and
+carries one seeded-constant negative control per site. 65 checks. Agreement
+with R is exact to the printed precision at .05, .01, .005, .025 and .1.
+
+The rest of the sweep is dispositioned in place, with the reason written at
+the site: `@emlDescribe`'s interval, the LMM Wald intervals and the Tukey
+call inside `@emlOneWayAnova` keep their constants because the label beside
+each states the same level and no dialog offers a control for it -- except
+the Tukey one, which is a real finding and is in the open list above.
 
 **The text wrapper keeps "label = value" on one line.** The space before an
 equals sign and the space after it are not break candidates in

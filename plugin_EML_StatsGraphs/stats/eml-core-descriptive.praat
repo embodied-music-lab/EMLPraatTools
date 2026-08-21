@@ -646,6 +646,12 @@ procedure emlDescribe: .data#
         .skewness = emlSkewness.result
         @emlKurtosis: .data#
         .kurtosis = emlKurtosis.result
+        ; 0.95 IS THIS PROCEDURE'S CONTRACT, not an ignored setting. The
+        ; outputs are NAMED .ci95Lower / .ci95Upper, the descriptives report
+        ; heads them "95% Confidence Interval", and the descriptives dialog
+        ; carries no alpha control, so the constant and every label that
+        ; describes it state the same level. A caller wanting another level
+        ; calls @emlCI directly, which takes one.
         @emlCI: .data#, 0.95
         .ci95Lower = emlCI.lower
         .ci95Upper = emlCI.upper

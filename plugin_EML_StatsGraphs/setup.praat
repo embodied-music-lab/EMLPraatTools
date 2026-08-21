@@ -379,7 +379,17 @@ emlSetupPath$ = emlPluginRoot.abs$ + "/scripts/eml-lib-user.praat"
 # script can `include`; a menu entry is a separate registration above, and
 # these four procedures have none. What is listed here is loadable, not
 # clickable.
-emlSetupNModules = 13
+#
+# THE DEMO BUILDERS SIT LAST, AND NOTHING CONSTRAINS THEM EITHER.
+# stats/eml-demo-tables.praat (@emlDemoTable) calls only Praat's own Table
+# and random primitives and nothing calls it from inside the stack, so its
+# position is free; last is where it reads, since it is the only module that
+# makes data rather than working on it. It is in the barrel because the
+# recorder's own include block lists it: a recorded workflow that built its
+# table with the demo generator emits a create step that calls @emlDemoTable
+# to build it again, and the two lists are compared against each other by
+# validate/v82.
+emlSetupNModules = 14
 emlSetupModule$ [ 1] = "stats/eml-core-utilities.praat"
 emlSetupModule$ [ 2] = "stats/eml-core-descriptive.praat"
 emlSetupModule$ [ 3] = "stats/eml-extract.praat"
@@ -393,6 +403,7 @@ emlSetupModule$ [10] = "graphs/eml-graph-procedures.praat"
 emlSetupModule$ [11] = "graphs/eml-annotation-procedures.praat"
 emlSetupModule$ [12] = "graphs/eml-draw-procedures.praat"
 emlSetupModule$ [13] = "stats/eml-analysis.praat"
+emlSetupModule$ [14] = "stats/eml-demo-tables.praat"
 
 # ── THE MODULES THAT ARE NOT IN THE BARREL, AND WHY ────────────────────────
 #

@@ -252,6 +252,38 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlCIAlphaInForce
+# The alpha every confidence interval in this module is built at.
+#
+# ONE ANSWER, SO THE FIGURE AND ITS REPORT CANNOT DISAGREE. The stars, the
+# error bars, the mean intervals and every bracket a report prints all read
+# the alpha the user set on the graph dialog, and they read it from here, so
+# a figure cannot carry a 99% error bar beside a 95% correlation band.
+#
+# annotAlpha is a graphs-layer global and an API or headless caller can reach
+# these reporters without one, so the guard is the same shape @emlFormatStars
+# uses and falls back to the same documented default of 0.05. A value outside
+# the open interval (0, 1) is refused for the same reason: invStudentQ (0, df)
+# never converges and invGaussQ is undefined above 1, so a quantile taken
+# from one is a hang or a garbage bracket rather than a wrong number.
+#
+# Arguments: none (reads the global)
+# Output:
+#   .alpha  — the two-sided tail probability in force, strictly in (0, 1)
+# ----------------------------------------------------------------------------
+procedure emlCIAlphaInForce
+    .alpha = 0.05
+    if variableExists ("annotAlpha")
+        if annotAlpha <> undefined
+            if annotAlpha > 0 and annotAlpha < 1
+                .alpha = annotAlpha
+            endif
+        endif
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlFormatAnnotLabel
 # Format the display label for a bracket annotation.
 # Arguments: .p, .d, .style$, .showEffect, .effectLabel$
@@ -3707,15 +3739,24 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
             endif
         endif
         if .ciOK = 1
+            ; THE LEVEL IS THE USER'S. The quantile comes from the alpha in
+            ; force, so this interval states the same confidence as the stars
+            ; above it and the error bars on the figure beside it, and the
+            ; label carries that level with it — a reader never has to know
+            ; which alpha was set to read the bracket.
+            @emlCIAlphaInForce
+            .ciAlpha = emlCIAlphaInForce.alpha
             .seDiff = abs (emlTTest.meanDiff / emlTTest.t)
-            .tCritDiff = invStudentQ (0.025, emlTTest.df)
+            .tCritDiff = invStudentQ (.ciAlpha / 2, emlTTest.df)
             .diffLo = emlTTest.meanDiff - .tCritDiff * .seDiff
             .diffHi = emlTTest.meanDiff + .tCritDiff * .seDiff
             @eml_fixed: .diffLo, 4
             .fx1$ = eml_fixed.result$
             @eml_fixed: .diffHi, 4
             .fx2$ = eml_fixed.result$
-            @emlReportLineString: "95% CI of diff",
+            @emlCILevelLabel: .ciAlpha
+            .ciDiffLabel$ = emlCILevelLabel.percent$ + "% CI of diff"
+            @emlReportLineString: .ciDiffLabel$,
             ... "[" + .fx1$ + ", " + .fx2$ + "]"
         endif
         @emlReportBlank
@@ -4777,22 +4818,11 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 endif
             endif
             if .fisherOK = 1
-                # annotAlpha is a graphs-layer global, and a headless or API
-                # caller can reach this report without one. Guarded the same
-                # way as @emlFormatStars, and falling back to the same
-                # documented default of 0.05, so the stars and the interval
-                # cannot disagree about the alpha in force. The upper bound
-                # belongs to the same guard: invGaussQ is undefined above 1,
-                # and an undefined quantile is the garbage bracket the block
-                # exists to refuse.
-                .ciAlpha = 0.05
-                if variableExists ("annotAlpha")
-                    if annotAlpha <> undefined
-                        if annotAlpha > 0 and annotAlpha < 1
-                            .ciAlpha = annotAlpha
-                        endif
-                    endif
-                endif
+                # The level is the user's, resolved once for the whole module
+                # by @emlCIAlphaInForce, so the stars and the interval cannot
+                # disagree about the alpha in force.
+                @emlCIAlphaInForce
+                .ciAlpha = emlCIAlphaInForce.alpha
                 .zCrit = invGaussQ (.ciAlpha / 2)
                 .fisherZ = 0.5 * ln ((1 + .rPearson) / (1 - .rPearson))
                 .fisherSE = 1 / sqrt (.n - 3)
@@ -4804,7 +4834,8 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 .fx1$ = eml_fixed.result$
                 @eml_fixed: .rHi, 4
                 .fx2$ = eml_fixed.result$
-                .ciLabel$ = fixed$ (100 * (1 - .ciAlpha), 0) + "% CI for r"
+                @emlCILevelLabel: .ciAlpha
+                .ciLabel$ = emlCILevelLabel.percent$ + "% CI for r"
                 @emlReportLineString: .ciLabel$,
                 ... "[" + .fx1$ + ", " + .fx2$ + "]"
             endif
@@ -5004,21 +5035,30 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     # under the numeric-aligned "p" header held the string "p < .001". The
     # block is now indented, the term column is headed, and the cells carry
     # @emlFormatP's bare form so the column contains values, not labels.
-    # SE was printed without the interval it defines. dfRes and the two
-    # standard errors are already on screen, so the 95% CI is one t quantile
-    # away and is printed beside each coefficient.
+    # SE is printed with the interval it defines: dfRes and the two standard
+    # errors are already on screen, so the interval is one t quantile away and
+    # is printed beside each coefficient.
+    #
+    # THE LEVEL IS THE USER'S, taken from the alpha in force, and the column
+    # heading names it. A coefficient table headed "95% CI" under an alpha of
+    # .01 would contradict the p column beside it, which marks significance
+    # against that same alpha.
+    @emlCIAlphaInForce
+    .ciAlpha = emlCIAlphaInForce.alpha
     .ciWidth = 0
     if emlLinearRegression.dfRes <> undefined
         if emlLinearRegression.dfRes >= 1
-            .ciWidth = invStudentQ (0.025, emlLinearRegression.dfRes)
+            .ciWidth = invStudentQ (.ciAlpha / 2, emlLinearRegression.dfRes)
         endif
     endif
+    @emlCILevelLabel: .ciAlpha
+    .ciColHead$ = emlCILevelLabel.percent$ + "% CI"
     .hdr$ = "  " + left$ ("Term" + "                    ", 20)
     ... + left$ ("Estimate" + "              ", 14)
     ... + left$ ("SE" + "              ", 14)
     ... + left$ ("t" + "              ", 12)
     ... + left$ ("p" + "            ", 12)
-    ... + "95% CI"
+    ... + .ciColHead$
     appendInfoLine: .hdr$
     # Intercept row
     @emlFormatP: emlLinearRegression.pIntercept

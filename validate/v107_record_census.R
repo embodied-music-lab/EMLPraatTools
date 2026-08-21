@@ -191,16 +191,16 @@ for (i in seq_len(nrow(cmd))) {
 check_true(V, sprintf("%d commands reach a record step", length(recording)),
            length(recording) > 0)
 
-# THE FOUR THAT DO NOT RECORD, NAMED RATHER THAN TOLERATED SILENTLY.
+# THE THREE THAT DO NOT RECORD, NAMED RATHER THAN TOLERATED SILENTLY.
 #
 # A check that simply failed here would make the suite red for as long as the
 # gap exists, and a suite that is permanently red stops being read -- which
 # would cost more than the gap it was complaining about. A check that ignored
-# the gap would be worse. So the population is RATCHETED: these four are
+# the gap would be worse. So the population is RATCHETED: these three are
 # known, they are written down with what each one loses, and the check goes
 # red the moment the set changes in either direction.
 #
-# It fails if a FIFTH appears, which is the whole point -- a new command that
+# It fails if a FOURTH appears, which is the whole point -- a new command that
 # forgets to record is caught the day it is added, not the day someone
 # happens to replay a script and notice something missing.
 #
@@ -210,18 +210,14 @@ check_true(V, sprintf("%d commands reach a record step", length(recording)),
 # failure mode this file exists to prevent, and it would be ironic to build
 # one in.
 KNOWN_SILENT <- c(
-    # Creates a table out of nothing and hands it to the user. A recording
-    # made after this ran describes an analysis of data whose origin the
-    # script cannot state -- the strongest case of the four, because the
-    # table is not merely unrecorded, it did not exist beforehand.
-    "scripts/eml-create-demo.praat",
     # Both doors of the table editor. Every cell written, column added,
     # renamed or deleted. A replay runs the recorded analysis against the
-    # table as it is NOW, and nothing says the numbers were edited between
-    # the recording and the replay.
+    # table as it stands, and nothing says the numbers were edited between
+    # the recording and the replay. The strongest of the three: a changed
+    # cell leaves no trace anywhere in the emitted file.
     "scripts/eml-edit-table-launch.praat",
     "scripts/eml-edit-table-editor.praat",
-    # Reports on the data's shape. The weakest of the four -- it changes
+    # Reports on the data's shape. The weakest of the three -- it changes
     # nothing and produces no result the analysis depends on -- and the one
     # most likely to end up EXEMPT with a reason rather than fixed.
     "scripts/eml-check-data.praat"

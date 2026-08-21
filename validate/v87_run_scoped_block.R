@@ -344,26 +344,32 @@ EXPECT <- rbind(EXPECT, do.call(rbind, lapply(names(STEP_KIND), function(cs) {
 # ---------------------------------------------------------------------------
 a <- function(case, name, value, note) data.frame(case = case, name = name,
     value = value, note = note, stringsAsFactors = FALSE)
-RES <- "on the recorded data it resolved to "
+# AN AUTO NOTE ENDS BY SAYING IT IS DESCRIPTIVE. The numbers a range resolved
+# to on the recorded data do not bind a replay -- run the file against another
+# table and the axis moves to suit it -- so the note says so, and the check
+# requires the clause rather than tolerating it. A TYPED range carries no such
+# clause and must not: those numbers are the same on every table.
+AUTO <- "; auto adapts to other data"
+RES <- "on the recorded data this resolved to "
 DRW <- "the figure was drawn on "
 EXPECT_MAX <- do.call(rbind, list(
-    a("twotables", "axisYMax",  "0.0", paste0(RES, "3.5000 .. 7.0000")),
-    a("twotables", "axisYMax2", "0.0", paste0(RES, "9.5000 .. 14.0000")),
-    a("onlyrun2",  "axisYMax",  "0.0", paste0(RES, "4.0000 .. 7.0000")),
-    a("onlyrun2",  "axisYMax2", "0.0", paste0(RES, "10.0000 .. 40.0000")),
-    a("three",     "axisYMax",  "0.0", paste0(RES, "2.5000 .. 5.5000")),
-    a("three",     "axisYMax2", "0.0", paste0(RES, "10.0000 .. 14.0000")),
+    a("twotables", "axisYMax",  "0.0", paste0(RES, "3.5000 .. 7.0000", AUTO)),
+    a("twotables", "axisYMax2", "0.0", paste0(RES, "9.5000 .. 14.0000", AUTO)),
+    a("onlyrun2",  "axisYMax",  "0.0", paste0(RES, "4.0000 .. 7.0000", AUTO)),
+    a("onlyrun2",  "axisYMax2", "0.0", paste0(RES, "10.0000 .. 40.0000", AUTO)),
+    a("three",     "axisYMax",  "0.0", paste0(RES, "2.5000 .. 5.5000", AUTO)),
+    a("three",     "axisYMax2", "0.0", paste0(RES, "10.0000 .. 14.0000", AUTO)),
     a("three",     "axisYMax3", "30",  paste0(DRW, "2.0000 .. 30.0000")),
-    a("single",    "axisYMax",  "0.0", paste0(RES, "5.5000 .. 9.0000")),
-    a("sametable", "axisYMax",  "0.0", paste0(RES, "5.5000 .. 9.0000")),
-    a("sametable", "axisYMax2", "0.0", paste0(RES, "13.0000 .. 18.5000")),
-    a("twosaves",  "axisYMax",  "0.0", paste0(RES, "5.5000 .. 9.0000")),
-    a("saveruns",  "axisYMax",  "0.0", paste0(RES, "5.5000 .. 9.0000")),
-    a("saveruns",  "axisYMax2", "0.0", paste0(RES, "15.5000 .. 19.0000")),
+    a("single",    "axisYMax",  "0.0", paste0(RES, "5.5000 .. 9.0000", AUTO)),
+    a("sametable", "axisYMax",  "0.0", paste0(RES, "5.5000 .. 9.0000", AUTO)),
+    a("sametable", "axisYMax2", "0.0", paste0(RES, "13.0000 .. 18.5000", AUTO)),
+    a("twosaves",  "axisYMax",  "0.0", paste0(RES, "5.5000 .. 9.0000", AUTO)),
+    a("saveruns",  "axisYMax",  "0.0", paste0(RES, "5.5000 .. 9.0000", AUTO)),
+    a("saveruns",  "axisYMax2", "0.0", paste0(RES, "15.5000 .. 19.0000", AUTO)),
     a("axisedit",  "axisYMax",  "30",  paste0(DRW, "2.0000 .. 30.0000")),
     a("axisedit",  "axisYMax2", "30",  paste0(DRW, "2.0000 .. 30.0000")),
-    a("callsite",  "axisYMax",  "0.0", paste0(RES, "3.5000 .. 7.0000")),
-    a("callsite",  "axisYMax2", "0.0", paste0(RES, "9.5000 .. 14.0000"))
+    a("callsite",  "axisYMax",  "0.0", paste0(RES, "3.5000 .. 7.0000", AUTO)),
+    a("callsite",  "axisYMax2", "0.0", paste0(RES, "9.5000 .. 14.0000", AUTO))
 ))
 
 CASES <- names(STEP_RUN)
@@ -645,6 +651,13 @@ norm_block <- function(path) {
     if (!length(a) || !length(b)) return(NULL)
     seg <- ln[a[1]:(b[1] - 1L)]
     seg <- sub("run 1, step", "step", seg, fixed = TRUE)
+    # AND THE AUTO-AXIS NOTE'S WORDING, WHICH IS NOT WHAT THIS SECTION TESTS.
+    # This check is about the SHAPE of an ordinary one-pass block: which
+    # variables it declares, in what order, aligned how. The sentence under an
+    # auto range says whether the numbers describe or bind, and it is asserted
+    # word for word by EXPECT_MAX above -- here it is folded to one token so
+    # that a change to the wording cannot masquerade as a change to the block.
+    seg <- sub("; on the recorded data .*$", "; <AUTO NOTE>", seg)
     seg
 }
 new_blk  <- norm_block(file.path(OUT, "single", "emitted.praat"))

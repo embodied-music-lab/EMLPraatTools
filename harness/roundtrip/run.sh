@@ -630,13 +630,25 @@ if [[ -f "$EMIT" ]]; then
     say emitted_folder_line   "$(grep -m1 '^outputFolder\$' "$EMIT" | tr '\t' ' ')"
     say emitted_first_step_body "$(awk '/^# --- Step 1 /{f=1;next} f&&NF{print;exit}' "$EMIT")"
 
-    # WHAT A REPLAY WOULD NEED THAT THE FILE DOES NOT CARRY. The first thing
-    # the script does is re-select an object BY NAME; nothing above that line
-    # creates it, loads it or edits it. So this key is the one-line statement
-    # of what actions 1-3 left behind, and it is a statement about the FILE,
-    # not about this harness.
-    say emitted_replay_precondition \
-        "requires '$(sed -n 's/^data1\$ *= *"\([^"]*\)".*/\1/p' "$EMIT" | head -1)' already open AND already carrying the hand edit (row 1 f0_Hz = 4242); the emitted script neither creates, loads nor edits it"
+    # WHAT A REPLAY WOULD NEED THAT THE FILE DOES NOT CARRY, read off the
+    # file rather than asserted. Three questions, each answered by whether
+    # the emitted script contains the step: does it build its own table, does
+    # it open its own file, does it reproduce the edit? The key is a statement
+    # about the FILE, not about this harness, so it is composed from what the
+    # file has and not from what this harness knows it drove.
+    rt_need=""
+    grep -qE '^# --- Step [0-9]+ \(create\) ---' "$EMIT" \
+        || rt_need="${rt_need}builds no table; "
+    grep -qE '^# --- Step [0-9]+ \(read\) ---' "$EMIT" \
+        || rt_need="${rt_need}opens no file; "
+    grep -qE '4242' "$EMIT" \
+        || rt_need="${rt_need}carries no cell edit; "
+    if [ -z "$rt_need" ]; then
+        say emitted_replay_precondition "none -- the file builds, opens and edits its own data"
+    else
+        say emitted_replay_precondition \
+            "${rt_need}whatever it does not supply must be open, under the name the block gives, before a replay"
+    fi
 else
     say emitted_exists 0
     for k in emitted_bytes emitted_lines emitted_step_headings; do say "$k" 0; done
@@ -650,8 +662,8 @@ emitted_for () {   # emitted_for <key> <grep-ere>
     hit=$(grep -m1 -E "$2" "$EMIT" 2>/dev/null | sed 's/^[[:space:]]*//' | tr '\t' ' ')
     say "$1" "${hit:-<nothing>}"
 }
-emitted_for action1_emitted 'Create Table with column names|demo_3groups|eml-create-demo'
-emitted_for action2_emitted 'Read Table from comma-separated file|Read from file|rt_input\.csv'
+emitted_for action1_emitted '@emlDemoTable|Create Table with column names|demo_3groups|eml-create-demo'
+emitted_for action2_emitted '@emlRecordReplayRead|Read Table from comma-separated file|Read from file|rt_input\.csv'
 emitted_for action3_emitted 'Set string value|Set numeric value|@cellWrite|4242'
 emitted_for action4_emitted '^@emlRunAnovaAnalysis'
 emitted_for action5_emitted '^@emlDrawViolinPlot'

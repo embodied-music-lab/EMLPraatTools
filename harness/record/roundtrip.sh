@@ -163,12 +163,44 @@ if ! grep -q "<TIMESTAMP>" "$OUT/leg1_norm.txt"; then
     exit 1
 fi
 
+# --- and the one line that MUST NOT match -------------------------------------
+# The report's provenance line names the route the analysis was reached from,
+# and the two legs were reached from different routes: leg 1 from whatever
+# drove the recording, leg 2 from the recorded script. An emitted script
+# declares its own — "from: recorded script (recorded <stamp>, originally
+# <route>)" — precisely so that a replayed report cannot claim a menu press
+# nobody made.
+#
+# So this line is EXPECTED to differ, and the diff is told what to expect
+# rather than told to ignore it: leg 2 must carry the recorded-script form,
+# and the check fails if it does not. The line is then REMOVED from both
+# captures rather than folded to one token, because leg 1 may not have one at
+# all -- a recording driven without a wrapper declares no route -- and a
+# placeholder in one capture and nothing in the other is a difference of a
+# whole line. Every other byte in the report still has to match.
+if ! grep -q "from: recorded script (recorded " "$OUT/leg2_norm.txt"; then
+    echo "roundtrip: FAIL — the replayed report does not set its own provenance."
+    echo "           A recorded script must declare where it came from; see"
+    echo "           @emlRecordRender's provenance line."
+    exit 1
+fi
+if grep -q "^  from: analysis dialog$" "$OUT/leg2_norm.txt"; then
+    echo "roundtrip: FAIL — the replayed report claims the ORIGINAL's route."
+    echo "           A replay was not reached from a dialog."
+    exit 1
+fi
+for leg in leg1 leg2; do
+    sed -E '/^  from: /d' "$OUT/${leg}_norm.txt" > "$OUT/${leg}_norm2.txt"
+    mv "$OUT/${leg}_norm2.txt" "$OUT/${leg}_norm.txt"
+done
+
 # --- diff --------------------------------------------------------------------
 if diff -q "$OUT/leg1_norm.txt" "$OUT/leg2_norm.txt" >/dev/null; then
     echo "roundtrip: PASS — the recorded session and the emitted script"
     echo "           (Praat $("$PRAAT" --version 2>&1 | head -1))"
     echo "           produce byte-identical Info output"
-    echo "           ($(wc -l < "$OUT/leg1_norm.txt") lines compared, timestamp normalised)"
+    echo "           ($(wc -l < "$OUT/leg1_norm.txt") lines compared;"
+    echo "           timestamp normalised, provenance asserted then removed)"
     exit 0
 fi
 

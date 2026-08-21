@@ -52,3 +52,8 @@ include ../stats/eml-result-writer.praat
 ; while emlRecordActive is 0. So loading it here costs a parse and no
 ; behaviour, and a wrapper that never records is unaffected.
 include ../stats/eml-record.praat
+; The demo table builders. Definitions only, like the recorder above it: the
+; procedure runs when a caller asks for a demo table and at no other time.
+; A recorded script includes it for the same reason a wrapper does -- a create
+; step calls @emlDemoTable to rebuild the table the session was recorded on.
+include ../stats/eml-demo-tables.praat

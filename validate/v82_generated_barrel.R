@@ -95,7 +95,7 @@ if (!nzchar(record_src)) record_src <- file.path(plug, "stats", "eml-record.praa
 
 BARREL <- file.path("scripts", "eml-lib-user.praat")
 
-# THE ELEVEN MODULES, IN THE ORDER THE LAYERS REQUIRE. This list is written
+# THE MODULES, IN THE ORDER THE LAYERS REQUIRE. This list is written
 # out here because an order has to be pinned against something, and a
 # generator compared only against itself pins nothing. It is not the only
 # thing the order is checked against: section 5 compares the same barrel
@@ -115,7 +115,8 @@ CANON <- c(
     "graphs/eml-graph-procedures.praat",
     "graphs/eml-annotation-procedures.praat",
     "graphs/eml-draw-procedures.praat",
-    "stats/eml-analysis.praat")
+    "stats/eml-analysis.praat",
+    "stats/eml-demo-tables.praat")
 
 # ---------------------------------------------------------------------------
 # THE BINARY. Same floor and the same refusal as harness/_env.sh: a green live

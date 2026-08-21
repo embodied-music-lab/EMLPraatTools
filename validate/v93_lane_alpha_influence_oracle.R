@@ -105,7 +105,7 @@ if (!canDrive) {
             '        ... emlAlphaInfluence.delta# [j]',
             "    endfor",
             "endif",
-            "@emlCronbachAlpha: d##",
+            "@emlCronbachAlpha: d##, 0.95",
             'appendInfoLine: "alpharef|", emlCronbachAlpha.alpha'),
             probe)
         suppressWarnings(system2("env",

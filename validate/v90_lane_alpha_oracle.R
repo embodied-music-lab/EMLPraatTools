@@ -2,7 +2,8 @@
 # v90 — Cronbach's alpha kernel vs a BASE-R oracle (survey-stats lane)
 # ===========================================================================
 # Drives @emlCronbachAlpha (plugin/stats/eml-psychometrics.praat) LIVE on
-# the four committed fixtures and settles alpha, the Feldt 95% CI, every
+# the four committed fixtures at a requested level of 0.95 and settles
+# alpha, the Feldt CI at that level, every
 # alpha-if-deleted value, and the listwise-deletion disclosure against an
 # oracle computed IN THIS RUN from base R alone: raw alpha from the
 # covariance matrix (k/(k-1) * (1 - tr(C)/sum(C))), the Feldt (1965) CI
@@ -102,9 +103,12 @@ if (!canDrive) {
             "",
             'writeInfoLine: "v90"',
             sprintf("d## = %s", mat_literal(m)),
-            "@emlCronbachAlpha: d##",
+            # 0.95 is passed explicitly because the oracle below reads
+            # qf at 0.975 / 0.025: the two state the same level, in the
+            # two places the level can be stated.
+            "@emlCronbachAlpha: d##, 0.95",
             'appendInfo: "res|", emlCronbachAlpha.alpha, "|",',
-            '... emlCronbachAlpha.ci95low, "|", emlCronbachAlpha.ci95high, "|",',
+            '... emlCronbachAlpha.ciLow, "|", emlCronbachAlpha.ciHigh, "|",',
             '... emlCronbachAlpha.k, "|", emlCronbachAlpha.n, "|",',
             '... emlCronbachAlpha.nExcluded, "|", emlCronbachAlpha.error$',
             'appendInfoLine: ""',

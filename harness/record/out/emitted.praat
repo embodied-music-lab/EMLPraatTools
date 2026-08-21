@@ -24,17 +24,20 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include ~/EMLPraatTools/plugin/stats/eml-core-utilities.praat
-include ~/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
-include ~/EMLPraatTools/plugin/stats/eml-extract.praat
-include ~/EMLPraatTools/plugin/stats/eml-output.praat
-include ~/EMLPraatTools/plugin/stats/eml-inferential.praat
-include ~/EMLPraatTools/plugin/stats/eml-result-writer.praat
-include ~/EMLPraatTools/plugin/stats/eml-record.praat
-include ~/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
-include ~/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
-include ~/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
-include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
+include ~/repo/plugin/stats/eml-core-utilities.praat
+include ~/repo/plugin/stats/eml-core-descriptive.praat
+include ~/repo/plugin/stats/eml-extract.praat
+include ~/repo/plugin/stats/eml-output.praat
+include ~/repo/plugin/stats/eml-inferential.praat
+include ~/repo/plugin/stats/eml-psychometrics.praat
+include ~/repo/plugin/stats/eml-categorical.praat
+include ~/repo/plugin/stats/eml-result-writer.praat
+include ~/repo/plugin/stats/eml-record.praat
+include ~/repo/plugin/graphs/eml-graph-procedures.praat
+include ~/repo/plugin/graphs/eml-annotation-procedures.praat
+include ~/repo/plugin/graphs/eml-draw-procedures.praat
+include ~/repo/plugin/stats/eml-analysis.praat
+include ~/repo/plugin/stats/eml-demo-tables.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -43,26 +46,47 @@ include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 # THE OBJECT
 # Recorded against: demo_3groups_input.csv -- 45 rows, 4 columns.
 # The objects this workflow ran on are named in the block below.
-# All of them must be open before you run this script.
+# Every one of them is built or opened by a step below, so
+# this script supplies its own data and runs on its own.
 # ------------------------------------------------------------
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
 # nothing below this block names an object, a column or an axis
 # range or a figure format.
-data1$ = "Table demo_3groups_input"   ; run 1, step 1 (analysis)
-valueCol$ = "SPL_dB"   ; the measured column -- run 1, step 1 (analysis)
-groupCol$ = "voice_type"   ; the grouping column -- run 1, step 1 (analysis)
+data1$ = "Table demo_3groups_input"   ; run 1, steps 1 (read), 2 (analysis)
+# The data file this workflow was recorded from. The path is absolute
+# and spelled the way the recording machine spells it:
+#   macOS / Linux   /Users/you/data/table.csv
+#   Windows         C:/Users/you/data/table.csv
+#   Not sure?  Select the Table and press Info -- its Associated file line
+#              names the file Praat read it from.
+inputFile$ = "/home/claude/repo/evidence/csv/demo_3groups_input.csv"   ; the data file read from disk -- step 1 (read)
+valueCol$  = "SPL_dB"   ; the measured column -- run 1, step 2 (analysis)
+groupCol$  = "voice_type"   ; the grouping column -- run 1, step 2 (analysis)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
-# --- Step 1 (analysis) ---
+# --- Step 1 (read) ---
+# Loaded /home/claude/repo/evidence/csv/demo_3groups_input.csv as supplied. Nothing below modifies it.
+
+@emlRecordReplayRead: inputFile$
+@emlRecordReplayName: data1$
+
+# The same step through the menu:
+# In the GUI: Praat's own Open menu. This plugin registers no
+# reader of its own, so a data file arrives through
+# Open > Read from file... or Open > Read Table from
+# comma-separated file...
+
+# --- Step 2 (analysis) ---
 selectObject: data1$
 data = selected ()
 # One-way ANOVA of SPL_dB by voice_type, 3 groups.
 # Tukey HSD requested. Alpha 0.05 (default, not specified by the user).
 # Normality was NOT tested on this path.
 
+@emlReportContext: "recorded script (recorded roundtrip, originally analysis dialog)", ""
 @emlRunAnovaAnalysis: data, valueCol$, groupCol$, 1
 
 # F(2, 42) = 18.0603, p = 0.000002, eta-squared = 0.4624

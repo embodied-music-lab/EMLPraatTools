@@ -1,6 +1,9 @@
 # EML record workflow -- crash mirror. Rows are appended as they
 # are recorded, so a session lost to a crash is still readable.
---- step 1 (analysis), run 1
+--- step 1 (read), run 1
+Loaded /home/claude/repo/evidence/csv/demo_3groups_input.csv as supplied. Nothing below modifies it.
+@emlRecordReplayRead: "/home/claude/repo/evidence/csv/demo_3groups_input.csv"
+--- step 2 (analysis), run 1
 One-way ANOVA of SPL_dB by voice_type, 3 groups.
 Tukey HSD requested. Alpha 0.05 (default, not specified by the user).
 Normality was NOT tested on this path.

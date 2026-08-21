@@ -14,22 +14,24 @@ Three-group comparison (Soprano / Mezzo / Alto).
        Compare k groups (ANOVA)... or
        Compare k groups (Kruskal-Wallis)...
 
+Seed: 2067519806 -- the same seed rebuilds this table.
+
 Select the Table and use the EML Stats & Graphs menu or Wizard.
 RT|create_demo|1|45|4
-RT|steps_after|create_demo|0
+RT|steps_after|create_demo|1
 RT|load_file|1|24|3|Table rt_input
-RT|steps_after|load_file|0
+RT|steps_after|load_file|1
 RT|cell_before|100
 DLG|edt|4|visit=1|clicked=3
 DLG|edt|4|visit=2|clicked=1
 RT|edit_cell|1|4242
 RT|table_mean_after_edit|609.416667
-RT|steps_after|edit_cell|0
+RT|steps_after|edit_cell|1
 DLG|anv|1|visit=1|clicked=2
 
 ==============================================
   EML Stats : One-Way ANOVA
-  Fri Aug 21 01:23:25 2026
+  Fri Aug 21 04:13:41 2026
   from: analysis dialog
 ==============================================
 

@@ -475,6 +475,7 @@ endproc
 #          .marginLeft, .marginRight,
 #          .marginTop, .marginBottom, .marginRightWithLegend,
 #          .dataLineWidth, .axisLineWidth, .gridLineWidth, .markerSize,
+#          .arrowSize, .speckleSize,
 #          .outerLeft, .outerRight, .outerTop, .outerBottom,
 #          .innerLeft, .innerRight, .innerTop, .innerBottom,
 #          .targetTicksX, .targetTicksY, .useMinorTicks,
@@ -573,6 +574,38 @@ procedure emlSetAdaptiveTheme: .vpWidth, .vpHeight
     # Marker scaling
     .markerSize = max (0.4, min (1.2, .baseUnit * 0.25))
 
+    # PEN SIZES WITH NO DRAWING SITE OF THEIR OWN.
+    # Colour, line width and font size are re-asserted at the drawing sites
+    # themselves, from this procedure's outputs, so an ambient value a user's
+    # session was left holding cannot reach a figure through any of the three.
+    # Arrow size and speckle size have no such site: they are pen state Praat
+    # carries in from the session, and a mark that reads one of them takes
+    # whatever the session holds. Setting them here puts them on the same
+    # footing as the font, which this procedure asserts alongside them below,
+    # and every figure in the plugin enters through this procedure before it
+    # draws anything.
+    #
+    # 1.0 IS PRAAT 6.6.30'S OWN VALUE FOR BOTH, MEASURED RATHER THAN ASSUMED.
+    # An arrow and an Ltas "Speckles" draw made with the pen untouched are
+    # pixel-identical to the same two made after `Arrow size: 1.0` and
+    # `Speckle size: 1.0`: 0 differing pixels each. Other values move both --
+    # 12,700 differing pixels on one arrow at size 5, 263,697 on a speckle
+    # draw at size 12 -- so these two lines hold a live channel, not a dead
+    # one. With the pen left at 7.5 and 9.0 before the figure starts, an
+    # arrow and a speckle draw placed after this procedure come out at
+    # 0 differing pixels against the same two drawn in a clean session; cut
+    # these two lines and the same pair differs by 157,849.
+    #
+    # harness/penassert/run.sh is that rig, and it also measures the two
+    # marks the plugin draws TODAY: `Paint circle`, which @emlDrawLTAS uses
+    # for its own speckle layer, does not read Speckle size (0 differing
+    # pixels at 1.0 against 12.0), and no procedure here draws an arrow. So
+    # these lines protect the primitives rather than the current figures,
+    # which is the point of asserting the whole pen instead of the parts of
+    # it something happens to use.
+    .arrowSize = 1.0
+    .speckleSize = 1.0
+
     # Derived viewport bounds (offset by panel origin)
     .outerLeft = emlPanelOriginX
     .outerRight = emlPanelOriginX + .vpWidth
@@ -608,10 +641,14 @@ procedure emlSetAdaptiveTheme: .vpWidth, .vpHeight
     .gridColor$ = "{0.85, 0.85, 0.85}"
     .minorGridColor$ = "{0.90, 0.90, 0.90}"
 
-    # Apply font (from global emlFont$, set by main script)
+    # Apply font (from global emlFont$, set by main script) and the pen sizes
+    # named above, so the drawing that follows runs on this plugin's values
+    # and not on whatever the session was holding.
     .font$ = emlFont$
     'emlFont$'
     Font size: .bodySize
+    Arrow size: .arrowSize
+    Speckle size: .speckleSize
 
     # Update drawn extent tracking
     @emlExpandDrawnExtent: .outerLeft, .outerRight, .outerTop, .outerBottom

@@ -52,11 +52,11 @@ tolerance = 0.000000001
 d## = {{2, 3, 3, 3, 2}, {4, 4, 3, 4, 4}, {3, 4, 4, 3, 3},
 ... {5, 5, 4, 5, 5}, {1, 2, 2, 1, 2}, {4, 3, 3, 4, 4},
 ... {2, 2, 3, 2, 2}, {5, 4, 5, 5, 4}, {3, 3, 3, 3, 4}, {4, 5, 4, 4, 5}}
-@emlCronbachAlpha: d##
+@emlCronbachAlpha: d##, 0.95
 @emlTestAssertEqualStr: "clean run has no error", "", emlCronbachAlpha.error$
 @emlTestAssertEqualNum: "alpha", 0.9491763761, emlCronbachAlpha.alpha, tolerance
-@emlTestAssertEqualNum: "Feldt CI lower", 0.8733351023, emlCronbachAlpha.ci95low, tolerance
-@emlTestAssertEqualNum: "Feldt CI upper", 0.9855775272, emlCronbachAlpha.ci95high, tolerance
+@emlTestAssertEqualNum: "Feldt CI lower", 0.8733351023, emlCronbachAlpha.ciLow, tolerance
+@emlTestAssertEqualNum: "Feldt CI upper", 0.9855775272, emlCronbachAlpha.ciHigh, tolerance
 @emlTestAssertEqualNum: "k", 5, emlCronbachAlpha.k, 0
 @emlTestAssertEqualNum: "n", 10, emlCronbachAlpha.n, 0
 @emlTestAssertEqualNum: "nExcluded", 0, emlCronbachAlpha.nExcluded, 0
@@ -65,6 +65,32 @@ expectedDrop# = {0.9209039548, 0.9375000000, 0.9580922322,
 @emlTestAssertVectorsEqual: "alpha-if-deleted vector", expectedDrop#,
 ... emlCronbachAlpha.alphaIfDeleted#, tolerance
 
+@emlTestSection: "@emlCronbachAlpha — the level is the caller's"
+
+# The same matrix at 0.99. Feldt on df1 = 9, df2 = 36 with the two-sided
+# tail at 0.005: R gives [0.8324624444, 0.9908495094]. Alpha itself does
+# not depend on the level, so it must not move.
+@emlCronbachAlpha: d##, 0.99
+@emlTestAssertEqualStr: "0.99 run has no error", "", emlCronbachAlpha.error$
+@emlTestAssertEqualNum: "alpha is the same at 0.99", 0.9491763761,
+... emlCronbachAlpha.alpha, tolerance
+@emlTestAssertEqualNum: "Feldt 0.99 lower", 0.8324624444,
+... emlCronbachAlpha.ciLow, tolerance
+@emlTestAssertEqualNum: "Feldt 0.99 upper", 0.9908495094,
+... emlCronbachAlpha.ciHigh, tolerance
+@emlTestAssertEqualNum: "the level is echoed back", 0.99,
+... emlCronbachAlpha.confidence, tolerance
+
+# A level outside (0, 1) is refused rather than handed to invFisherQ.
+@emlCronbachAlpha: d##, 1
+@emlTestAssertContains: "a level of 1 is refused", emlCronbachAlpha.error$,
+... "strictly between 0 and 1"
+@emlTestAssertUndefined: "alpha undefined on a refused level",
+... emlCronbachAlpha.alpha
+@emlCronbachAlpha: d##, 0
+@emlTestAssertContains: "a level of 0 is refused", emlCronbachAlpha.error$,
+... "strictly between 0 and 1"
+
 @emlTestSection: "@emlCronbachAlpha — listwise deletion disclosed"
 
 # Same matrix with one cell undefined: row 2 drops, n = 9.
@@ -72,7 +98,7 @@ expectedDrop# = {0.9209039548, 0.9375000000, 0.9580922322,
 dm## = {{2, 3, 3, 3, 2}, {4, undefined, 3, 4, 4}, {3, 4, 4, 3, 3},
 ... {5, 5, 4, 5, 5}, {1, 2, 2, 1, 2}, {4, 3, 3, 4, 4},
 ... {2, 2, 3, 2, 2}, {5, 4, 5, 5, 4}, {3, 3, 3, 3, 4}, {4, 5, 4, 4, 5}}
-@emlCronbachAlpha: dm##
+@emlCronbachAlpha: dm##, 0.95
 @emlTestAssertEqualStr: "missing-cell run has no error", "", emlCronbachAlpha.error$
 @emlTestAssertEqualNum: "alpha after listwise deletion", 0.9528130672,
 ... emlCronbachAlpha.alpha, tolerance
@@ -86,7 +112,7 @@ dm## = {{2, 3, 3, 3, 2}, {4, undefined, 3, 4, 4}, {3, 4, 4, 3, 3},
 # A one-item scale has no alpha, so alpha-if-deleted stays undefined.
 d2## = {{2, 3}, {4, 4}, {3, 4}, {5, 5}, {1, 2},
 ... {4, 3}, {2, 2}, {5, 4}, {3, 3}, {4, 5}}
-@emlCronbachAlpha: d2##
+@emlCronbachAlpha: d2##, 0.95
 @emlTestAssertEqualStr: "2-item run has no error", "", emlCronbachAlpha.error$
 @emlTestAssertEqualNum: "2-item alpha", 0.8823529412, emlCronbachAlpha.alpha, tolerance
 @emlTestAssertUndefined: "alpha-if-deleted item 1 undefined at k = 2",
@@ -97,19 +123,19 @@ d2## = {{2, 3}, {4, 4}, {3, 4}, {5, 5}, {1, 2},
 @emlTestSection: "@emlCronbachAlpha — refusals"
 
 one## = {{1}, {2}, {3}}
-@emlCronbachAlpha: one##
+@emlCronbachAlpha: one##, 0.95
 @emlTestAssertContains: "one item is refused", emlCronbachAlpha.error$,
 ... "at least 2 items"
 @emlTestAssertUndefined: "alpha undefined on refusal", emlCronbachAlpha.alpha
 
 small## = {{1, 2}, {3, 4}}
-@emlCronbachAlpha: small##
+@emlCronbachAlpha: small##, 0.95
 @emlTestAssertContains: "two respondents are refused", emlCronbachAlpha.error$,
 ... "at least 3 complete respondents"
 
 # All rows share the same totals: total variance is zero.
 flat## = {{3, 3}, {2, 4}, {4, 2}}
-@emlCronbachAlpha: flat##
+@emlCronbachAlpha: flat##, 0.95
 @emlTestAssertContains: "zero total variance is refused", emlCronbachAlpha.error$,
 ... "zero variance"
 
@@ -125,7 +151,7 @@ flat## = {{3, 3}, {2, 4}, {4, 2}}
 ... emlAlphaInfluence.error$
 @emlTestAssertEqualNum: "alphaFull", 0.9491763761,
 ... emlAlphaInfluence.alphaFull, tolerance
-@emlCronbachAlpha: d##
+@emlCronbachAlpha: d##, 0.95
 @emlTestAssertEqualNum: "alphaFull equals the alpha kernel's alpha",
 ... emlCronbachAlpha.alpha, emlAlphaInfluence.alphaFull, tolerance
 @emlTestAssertEqualNum: "alpha without respondent 1", 0.9519787645,
@@ -170,13 +196,13 @@ di## = {{2, 3, 3, 3, 2}, {4, undefined, 3, 4, 4}, {3, 4, 4, 3, 3},
 # implementation fails by cancellation (values at 1e8 square to 1e16,
 # past double precision), pinned so it cannot come back.
 dOff## = d## + 100000000
-@emlCronbachAlpha: dOff##
+@emlCronbachAlpha: dOff##, 0.95
 @emlTestAssertEqualStr: "offset alpha run has no error", "",
 ... emlCronbachAlpha.error$
 @emlTestAssertEqualNum: "offset alpha equals the clean literal",
 ... 0.9491763761, emlCronbachAlpha.alpha, tolerance
 @emlTestAssertEqualNum: "offset Feldt CI lower unchanged", 0.8733351023,
-... emlCronbachAlpha.ci95low, tolerance
+... emlCronbachAlpha.ciLow, tolerance
 @emlAlphaInfluence: dOff##
 @emlTestAssertEqualNum: "offset influence alphaFull unchanged",
 ... 0.9491763761, emlAlphaInfluence.alphaFull, tolerance

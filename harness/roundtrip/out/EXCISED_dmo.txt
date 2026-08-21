@@ -1,6 +1,6 @@
 # Cut from eml-create-demo.praat to make the headless twin _rt_create_demo.praat.
 # Every beginPause:/endPause region in the driven range, in file order.
-# --- stanza 1  (Create Demo Table)  lines 35-47
+# --- stanza 1  (Create Demo Table)  lines 40-52
 beginPause: "Create Demo Table"
     comment: "Select the type of demo data to generate."
     comment: "Each table is designed for a specific analysis path."
