@@ -1316,6 +1316,22 @@ scripts <- c(
                                  # a ratchet, red if a fifth appears AND red if
                                  # one is fixed without its line being removed.
                                  # Source only; reads no harness.
+    ,
+    "v108_fisher_alpha_oracle.R" # the Fisher-z interval printed beside r takes
+                                 # its level from the Alpha the user set on the
+                                 # dialog, like every other interval on that
+                                 # figure. A hardcoded 1.96 agrees with
+                                 # cor.test at exactly one alpha and misstates
+                                 # every other one while printing a fixed
+                                 # "95% CI" label over it. Drives the shipped
+                                 # reporter live at alpha = .05 and .01 against
+                                 # cor.test(conf.level = 1 - alpha), reads the
+                                 # bracket out of the Info text, and asserts
+                                 # the .01 interval is strictly wider at both
+                                 # ends and that the label names its own level.
+                                 # The unset-annotAlpha headless path is driven
+                                 # for the documented 0.05 fallback. Drives
+                                 # Praat live; negative control inside.
 )
 
 # ---------------------------------------------------------------------------

@@ -33,6 +33,18 @@ rd <- function(base, part)
              stringsAsFactors = FALSE, check.names = FALSE)
 has <- function(base, part) file.exists(file.path(B, paste0(base, "_", part, ".csv")))
 
+# A COLUMN THAT IS ABSENT MUST READ AS NA, NOT AS NULL.
+#
+# check() builds a one-row data.frame from its arguments, so a NULL reported
+# value -- which is what `frame$missing_column` gives you -- collapses it to
+# zero rows and R aborts the whole script with "arguments imply differing
+# number of rows: 1, 0". That is the worst available failure mode for exactly
+# the defect these checks exist to catch: the run stops at the first dropped
+# column and every check AFTER it goes unreported, so a renamed column reads
+# as a broken validator rather than as a stale artefact. NA reaches check()
+# as a clean FAIL (is.finite(NA) is FALSE) and the rest of the script runs.
+gcol <- function(f, nm) if (nm %in% names(f)) f[[nm]] else NA_real_
+
 # broom emits no augment for an htest. Assert the absence.
 no_augment <- function(base)
     check_true("v21", paste(base, "writes no augment (broom has none for htest)"),
@@ -243,7 +255,38 @@ check("v21", "RM p",  ti$p.value[1],   w[["Pr(>F)"]][1],  tol = 1e-10)
 check("v21", "RM df condition", ti$df[1], w[["Df"]][1], tol = 0)
 check("v21", "RM df error",     ti$df[2], w[["Df"]][2], tol = 0)
 check("v21", "RM sumsq condition", ti$sumsq[1], w[["Sum Sq"]][1], tol = 1e-8)
-check("v21", "RM n.subjects", gl$n.subjects, nrow(d), tol = 0)
+check("v21", "RM n.subjects", gcol(gl, "n.subjects"), nrow(d), tol = 0)
+
+# THE WHOLE HEADER, NOT ONE COLUMN OF IT.
+#
+# On 20 Aug 2026 the within-subject summary column was renamed n.groups ->
+# n.conditions in eml-analysis.praat (a repeated-measures design has no
+# groups; every subject is measured under every condition, and the writer's
+# vocabulary in eml-result-writer.praat was widened to match). The committed
+# ship_rmanova_glance.csv kept the pre-rename header and this script stayed
+# GREEN over it, because n.subjects was the only glance column anyone
+# asserted. A check that reads a file and asserts almost nothing about it
+# does not fail when the file stops describing the plugin -- it just stops
+# being evidence, quietly.
+#
+# So the frame is pinned by its FULL column set and order, the same standard
+# the regression tidy is already held to above. A column added, dropped,
+# reordered or renamed now fails here rather than surviving unnoticed.
+check_true("v21", "RM glance header is exactly this, in this order",
+           identical(names(gl),
+                     c("statistic","p.value","df","df.residual","nobs",
+                       "n.subjects","n.conditions","partial.eta.squared",
+                       "gg.epsilon","p.value.gg","method")))
+# Named separately from the header pin, and deliberately. The header check
+# says "this frame changed"; these two say WHICH way it must have changed,
+# so a revert to the retired name is reported as the rename coming undone
+# rather than as an unexplained shape difference.
+check_true("v21", "RM glance names the within-subject count n.conditions",
+           "n.conditions" %in% names(gl))
+check_true("v21", "RM glance does NOT carry the retired n.groups",
+           !("n.groups" %in% names(gl)))
+check("v21", "RM n.conditions is the number of condition columns",
+      gcol(gl, "n.conditions"), 3, tol = 0)
 check_true("v21", "RM glance carries Greenhouse-Geisser epsilon and its p",
            all(c("gg.epsilon","p.value.gg") %in% names(gl)))
 check_true("v21", "RM GG epsilon is within its theoretical bounds",
@@ -263,6 +306,18 @@ check("v21", "Friedman p",           ti$p.value,   fr$p.value,           tol = 1
 # @emlFriedmanTest exposes no effect size at all.
 check("v21", "Kendall's W from its definition",
       gl$kendalls.w, unname(fr$statistic) / (nrow(d) * (3 - 1)), tol = 1e-12)
+# The same full-header pin as the RM glance above, for the same reason and
+# from the same rename: Friedman is a within-subject test, so its summary
+# count is n.conditions. This file carried n.groups too.
+check_true("v21", "Friedman glance header is exactly this, in this order",
+           identical(names(gl),
+                     c("statistic","p.value","nobs","n.subjects",
+                       "n.conditions","parameter","kendalls.w","method")))
+check_true("v21", "Friedman glance names the count n.conditions, not n.groups",
+           "n.conditions" %in% names(gl) && !("n.groups" %in% names(gl)))
+check("v21", "Friedman n.conditions is the number of condition columns",
+      gcol(gl, "n.conditions"), 3, tol = 0)
+check("v21", "Friedman n.subjects", gcol(gl, "n.subjects"), nrow(d), tol = 0)
 no_augment("ship_friedman")
 
 if (!exists("EML_SUITE")) { eml_report("v21 shipping paths, broom shape"); eml_exit() }

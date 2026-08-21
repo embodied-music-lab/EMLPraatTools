@@ -11,4 +11,4 @@ BARGROUP 4 label=G4 valid=1 meanDefined=1 mean=-13.0000 errorDefined=1 errorSlot
 LEDGER case=barmix chart=Bar chart annotate=0 info=5 fig=0
 SUBTITLE [SENTINEL-SUBTITLE]
 CHARTNAME [Bar chart]
-SAVED /home/claude/EMLPraatTools/harness/disclosure/out/oc_barmix_a0.png
+SAVED /home/claude/repo/harness/disclosure/out/oc_barmix_a0.png

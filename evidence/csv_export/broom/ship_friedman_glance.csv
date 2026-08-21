@@ -1,2 +1,2 @@
-statistic,p.value,nobs,n.subjects,n.groups,parameter,kendalls.w,method
+statistic,p.value,nobs,n.subjects,n.conditions,parameter,kendalls.w,method
 40,2.0611536224385566e-09,60,20,3,2,1,Friedman rank sum test

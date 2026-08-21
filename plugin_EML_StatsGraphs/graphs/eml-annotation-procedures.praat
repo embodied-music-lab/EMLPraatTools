@@ -4758,9 +4758,15 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 @emlWizardExplainP: emlPearsonCorrelation.p
             endif
             @emlReportPWithExact: "p", emlPearsonCorrelation.p
-            # R was reported as a point estimate with no interval. The
-            # Fisher z transform gives one from numbers already in hand:
-            # z = atanh(r), se = 1/sqrt(n-3), interval = tanh(z +/- 1.96 se).
+            # An interval for r, from numbers already in hand, by the
+            # Fisher z transform: z = atanh(r), se = 1/sqrt(n-3), and the
+            # interval is tanh(z +/- zCrit se). It is a z interval — the
+            # transform is asymptotically normal, so the quantile is normal
+            # and not Student's — but the LEVEL is the user's, taken from
+            # annotAlpha, so this band states the same confidence as the
+            # t-based error bars and mean CIs the same figure carries. The
+            # printed label carries the level with it, so a reader never has
+            # to know which alpha was in force to read the bracket.
             # Undefined for n <= 3 (se blows up) and for |r| = 1 (atanh is
             # infinite), so both are guarded rather than printed as garbage.
             .rPearson = emlPearsonCorrelation.r
@@ -4771,17 +4777,35 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 endif
             endif
             if .fisherOK = 1
+                # annotAlpha is a graphs-layer global, and a headless or API
+                # caller can reach this report without one. Guarded the same
+                # way as @emlFormatStars, and falling back to the same
+                # documented default of 0.05, so the stars and the interval
+                # cannot disagree about the alpha in force. The upper bound
+                # belongs to the same guard: invGaussQ is undefined above 1,
+                # and an undefined quantile is the garbage bracket the block
+                # exists to refuse.
+                .ciAlpha = 0.05
+                if variableExists ("annotAlpha")
+                    if annotAlpha <> undefined
+                        if annotAlpha > 0 and annotAlpha < 1
+                            .ciAlpha = annotAlpha
+                        endif
+                    endif
+                endif
+                .zCrit = invGaussQ (.ciAlpha / 2)
                 .fisherZ = 0.5 * ln ((1 + .rPearson) / (1 - .rPearson))
                 .fisherSE = 1 / sqrt (.n - 3)
-                .zLo = .fisherZ - 1.96 * .fisherSE
-                .zHi = .fisherZ + 1.96 * .fisherSE
+                .zLo = .fisherZ - .zCrit * .fisherSE
+                .zHi = .fisherZ + .zCrit * .fisherSE
                 .rLo = (exp (2 * .zLo) - 1) / (exp (2 * .zLo) + 1)
                 .rHi = (exp (2 * .zHi) - 1) / (exp (2 * .zHi) + 1)
                 @eml_fixed: .rLo, 4
                 .fx1$ = eml_fixed.result$
                 @eml_fixed: .rHi, 4
                 .fx2$ = eml_fixed.result$
-                @emlReportLineString: "95% CI for r",
+                .ciLabel$ = fixed$ (100 * (1 - .ciAlpha), 0) + "% CI for r"
+                @emlReportLineString: .ciLabel$,
                 ... "[" + .fx1$ + ", " + .fx2$ + "]"
             endif
             # The row carried r and r_squared but left effect_label

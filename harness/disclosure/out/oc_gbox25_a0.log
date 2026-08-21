@@ -4,4 +4,4 @@ SUBSTAT nSubs=25 drawn=24 dropped=1 droppedRows=16 legendN=24 names=[P25]
 LEDGER case=gbox25 chart=Grouped box plot annotate=0 info=1 fig=0
 SUBTITLE [SENTINEL-SUBTITLE]
 CHARTNAME [Grouped box plot]
-SAVED /home/claude/EMLPraatTools/harness/disclosure/out/oc_gbox25_a0.png
+SAVED /home/claude/repo/harness/disclosure/out/oc_gbox25_a0.png

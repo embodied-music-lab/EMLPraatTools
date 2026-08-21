@@ -4143,10 +4143,11 @@ endproc
 # ────────────────────────────────────────────────────────────────────────────
 # @emlWrapText: .s$, .width
 #
-# Greedy word wrap. Written for @emlErrorDialog: Praat's `comment:` field in a
-# pause dialog does not wrap, and orchestrator error strings run well past any
-# sensible dialog width, so they are broken up here. (`comment:` is a Praat
-# dialog command, not an EML procedure — it takes no "@".)
+# Greedy word wrap that keeps a "label = value" unit whole. Written for
+# @emlErrorDialog: Praat's `comment:` field in a pause dialog does not wrap,
+# and orchestrator error strings run well past any sensible dialog width, so
+# they are broken up here. (`comment:` is a Praat dialog command, not an EML
+# procedure — it takes no "@".)
 #
 # IT IS NOT ONLY THE DIALOG'S. @emlReportNote wraps to the report's 68-column
 # body through this, and @emlDrawAnnotationBlock
@@ -4154,6 +4155,48 @@ endproc
 # to a character budget converted from the plotting frame. So .width is a
 # CHARACTER count and every caller owns the conversion from whatever units it
 # actually cares about; do not add a unit assumption here.
+#
+# "LABEL = VALUE" IS ONE UNIT, AND THE ONE SPECIAL CASE IN HERE.
+# Everything this procedure wraps is read one line at a time — a corner
+# caption on a figure, a comment row in a pause dialog, an indented note in
+# the report — and a break at either space around an equals sign hands the
+# reader a label whose number is on the next line, or an "=" sitting alone at
+# a line end. "Cohen's d = 0.83" is a single fact and it travels as one.
+#
+# So the space BEFORE an "=" and the space AFTER it are not break candidates:
+# the line breaks at the last space that is not part of such a unit. Every
+# other property callers depend on holds unchanged by the rule — breaks land
+# on spaces, no line exceeds .width, and the segments' word count still sums
+# to the input's, which is what @emlDrawAnnotationBlock needs to carry
+# Picture markup across a break word for word.
+#
+# WHEN THE UNIT IS ITSELF WIDER THAN THE LINE nothing can keep it whole, so
+# the search falls back to the last space of any kind, and then to a hard
+# break. Keeping a unit together is a preference; the width limit outranks it.
+#
+# WHAT THE RULE COSTS, and it was driven rather than reasoned about, because
+# holding a unit together can only push the longest line out and a longer
+# longest line is what sends @emlDrawAnnotationBlock's fit loop round again.
+# Measured 20 Aug 2026 by harness/wraptext/ over 39 annotation strings taken
+# from the omnibus, correlation, regression and disclosure call sites, at
+# every width from 16 to 72 (2223 wraps), and over 1274 annotation boxes —
+# 182 blocks of one to six of those lines on seven figure sizes:
+#
+#   * The longest line grows in 21 wraps of 2223 (0.94%), by a median of 3
+#     characters and at most 5, and never past .width. It SHRINKS in 442
+#     (19.9%): deferring a unit to the next line usually pulls the widest
+#     line in rather than out.
+#   * @emlDrawAnnotationBlock takes one extra fit pass on 4 boxes of 1274
+#     (0.31%, one in 319) and never more than one; it takes FEWER passes on
+#     135 (10.6%). Drawn rows go up on 5.7% of boxes and down on 1.4%.
+#   * Breaks touching an equals sign, over those same boxes: 1316 to none.
+#
+# The fallback is reachable and is measured too: 7 wraps of 2223 still break
+# beside an "=", all of them at a .width of 21 characters or less, where a
+# single unit is wider than the whole line and the limit outranks the
+# preference. None of them reaches a figure — across all 1274 boxes the drawn
+# rows carry no such break at all, because no box's budget comes out that
+# narrow at any figure size the theme produces.
 #
 # Sets: .nLines, .line$ [1 .. .nLines]
 # ────────────────────────────────────────────────────────────────────────────
@@ -4166,15 +4209,43 @@ procedure emlWrapText: .s$, .width
             .line$ [.nLines] = .rest$
             .rest$ = ""
         else
-            # Last space at or immediately after the width limit. Breaking at
-            # .width + 1 is correct: a space in that position means the word
-            # ends exactly on the limit.
+            # One pass over the line's first .width + 1 characters collects
+            # two candidates. Looking as far as .width + 1 is correct: a
+            # space in that position means the word ends exactly on the limit.
+            #
+            #   .cut     the last space that does not sit inside a
+            #            "label = value" unit — the break this wrap wants.
+            #   .anyCut  the last space of any kind — the fallback for a unit
+            #            too wide to keep whole.
+            #
+            # .prevSp carries the previous space's position so the word ENDING
+            # at each candidate is read directly rather than scanned back for.
             .cut = 0
+            .anyCut = 0
+            .prevSp = 0
             for .i from 1 to .width + 1
                 if mid$ (.rest$, .i, 1) = " "
-                    .cut = .i
+                    .anyCut = .i
+                    # The word after this space, and the word before it.
+                    # Either may come out empty on a double space, which is
+                    # not an equals sign and so does not bind.
+                    .tail$ = mid$ (.rest$, .i + 1, length (.rest$))
+                    .sp = index (.tail$, " ")
+                    if .sp = 0
+                        .after$ = .tail$
+                    else
+                        .after$ = left$ (.tail$, .sp - 1)
+                    endif
+                    .before$ = mid$ (.rest$, .prevSp + 1, .i - .prevSp - 1)
+                    if .after$ <> "=" and .before$ <> "="
+                        .cut = .i
+                    endif
+                    .prevSp = .i
                 endif
             endfor
+            if .cut = 0
+                .cut = .anyCut
+            endif
             if .cut = 0
                 # A single token longer than the line. Hard-break it rather
                 # than emit an over-long line: column names can be arbitrary.

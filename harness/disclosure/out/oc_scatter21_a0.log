@@ -47,4 +47,4 @@ SCATSTAT nGroups=21 buffered=21 room=18 annotBlockN=0
 LEDGER case=scatter21 chart=Scatter plot annotate=0 info=2 fig=0
 SUBTITLE [SENTINEL-SUBTITLE]
 CHARTNAME [Scatter plot]
-SAVED /home/claude/EMLPraatTools/harness/disclosure/out/oc_scatter21_a0.png
+SAVED /home/claude/repo/harness/disclosure/out/oc_scatter21_a0.png

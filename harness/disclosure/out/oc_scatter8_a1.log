@@ -33,10 +33,11 @@ Scatter plot: Per-group stats (8 groups): Info window only. 24 line(s) do not fi
   Group8: OLS: y = 1.5357x + 40.9643  (R² = 0.954)
 Scatter plot: 3 row(s) skipped (missing or non-numeric value).
 NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+Scatter plot: the annotation panel covers 3 data point(s) — no corner of this figure is clear. Widen the figure, shorten the annotation, or read the covered values from the table.
 SCATSTAT nGroups=8 buffered=24 room=18 annotBlockN=2
 LEDGER case=scatter8 chart=Scatter plot annotate=1 info=2 fig=2
 FIGLINE 1: Per-group stats (8 groups): Info window only.
 FIGLINE 2: 3 row(s) skipped (missing or non-numeric value).
 SUBTITLE [SENTINEL-SUBTITLE]
 CHARTNAME [Scatter plot]
-SAVED /home/claude/EMLPraatTools/harness/disclosure/out/oc_scatter8_a1.png
+SAVED /home/claude/repo/harness/disclosure/out/oc_scatter8_a1.png

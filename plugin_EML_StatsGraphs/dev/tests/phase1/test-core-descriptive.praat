@@ -509,6 +509,8 @@ procedure test_emlCI
     @assertApprox: "CI lower = 1.0364", emlCI.lower, 1.036417, tolCI
     @assertApprox: "CI upper = 4.9636", emlCI.upper, 4.963583, tolCI
     # 99% CI should be wider
+    # 1.963583 is this dataset's 95% margin, computed above from
+    # invStudentQ (0.025, 4) — an expected value, not a quantile constant.
     @emlCI: .d1#, 0.99
     .isWider = emlCI.marginOfError > 1.963583
     @assertExact: "99% CI wider than 95%", .isWider, 1

@@ -2,7 +2,7 @@ Spaghetti plot: 6 row(s) skipped (missing or non-numeric value).
 
 ══════════════════════════════════════════════
   EML Stats : Spaghetti Plot Summary
-  Mon Aug 10 12:25:10 2026
+  Fri Aug 21 00:01:35 2026
 ══════════════════════════════════════════════
 
   Table               disc
@@ -46,4 +46,4 @@ Spaghetti plot: 6 row(s) skipped (missing or non-numeric value).
 ══════════════════════════════════════════════
 LEDGER chart=Spaghetti plot annotate=0 dirty=1 info=1 fig=0
 SUBTITLE [SENTINEL-SUBTITLE]
-SAVED /home/claude/EMLPraatTools/harness/disclosure/out/spaghetti_a0_d1.png
+SAVED /home/claude/repo/harness/disclosure/out/spaghetti_a0_d1.png

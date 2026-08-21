@@ -1,7 +1,9 @@
 Violin plot: 6 row(s) skipped (missing or non-numeric value).
 NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+Violin plot: 6 row(s) skipped (missing or non-numeric value).
 FORMPATH brackets: annotBlockN after draw = 0
 FORMCORNER brackets disclosure=top-left omnibus=bottom-right
+Violin plot: 6 row(s) skipped (missing or non-numeric value).
 Violin plot: 6 row(s) skipped (missing or non-numeric value).
 FORMPATH nobrackets: annotBlockN after draw = 0
 FORMCORNER nobrackets disclosure=bottom-right omnibus=top-right

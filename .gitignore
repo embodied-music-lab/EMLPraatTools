@@ -334,3 +334,9 @@ harness/dialogheight/out/*/xvfb.log
 harness/dialogheight/out/*/wm.log
 harness/dialogheight/out/*/work/xvfb.log
 harness/dialogheight/out/*/work/wm.log
+# The wrap probe stages a whole second copy of plugin/graphs and plugin/stats
+# under out/before/, carrying the plain greedy @emlWrapText, so the shipped
+# rule can be measured against it through @emlDrawAnnotationBlock's own fit
+# loop. run.sh rebuilds it from nothing every run. SUMMARY.txt and the two
+# TSVs ARE the measurement and are NOT ignored.
+harness/wraptext/out/before/

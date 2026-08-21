@@ -5,4 +5,4 @@ LEDGER case=gviolin25 chart=Grouped violin annotate=1 info=1 fig=1
 FIGLINE 1: 1 sub-group(s) not drawn (palette holds 24).
 SUBTITLE [SENTINEL-SUBTITLE]
 CHARTNAME [Grouped violin]
-SAVED /home/claude/EMLPraatTools/harness/disclosure/out/oc_gviolin25_a1.png
+SAVED /home/claude/repo/harness/disclosure/out/oc_gviolin25_a1.png

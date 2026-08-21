@@ -5,4 +5,4 @@ Time series (with CI): Line shows the mean; band shows the 95% CI. 9 repeated ob
 Time series (with CI): 6 row(s) skipped (missing or non-numeric value).
 LEDGER chart=Time series (with CI) annotate=0 dirty=1 info=2 fig=0
 SUBTITLE [SENTINEL-SUBTITLE]
-SAVED /home/claude/EMLPraatTools/harness/disclosure/out/tsci_a0_d1.png
+SAVED /home/claude/repo/harness/disclosure/out/tsci_a0_d1.png

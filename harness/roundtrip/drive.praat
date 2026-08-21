@@ -1,0 +1,213 @@
+# ============================================================================
+# harness/roundtrip/drive.praat — one session, six user actions, one recording
+# ============================================================================
+# Ian Howell — Embodied Music Lab — GPL-3.0-or-later
+#
+# ONE PRAAT PROCESS. eml-record-start.praat's own header states the limit:
+# `praat --run` starts a fresh process per script, so a recording cannot span
+# invocations. Every action below therefore happens inside this one session,
+# and the ones that a user reaches through a menu are reached through
+# `runScript:` — which gives a script its OWN variable scope inside ONE
+# process, exactly as a menu command gets. harness/record_e2e established
+# that shape; this file is the six-action journey rather than a sweep.
+#
+# WHAT IS RUN, IN ORDER, AND BY WHAT ROUTE
+#
+#   0. START      runScript: "eml-record-start.praat"   — the shipped wrapper.
+#                 The START wrapper IS script-callable. The STOP and SAVE
+#                 wrappers are not: `runScript: "eml-record-save.praat"` after
+#                 a live recording aborts Praat 6.6.30 at its beginPause with
+#                 SIGTRAP (shell exit 133). So the recording is stopped and
+#                 saved from a script with @emlRecordFlush + @emlRecordDiscard,
+#                 which is what those wrappers call underneath.
+#   1. create_demo  runScript: the headless twin of eml-create-demo.praat
+#   2. load_file    Read Table from comma-separated file: — Praat's own Open.
+#                   MEASURED: setup.praat registers no CSV loader of its own
+#                   (43 Add menu/action commands, none of them a reader), so
+#                   this is the only route a user has to a table on disk.
+#   3. edit_cell    runScript: the headless twin of eml-edit-table.praat
+#   4. analysis     runScript: the headless twin of eml-compare-k-groups.praat
+#   5. draw         inside that wrapper, at its Draw button's call site
+#   6. save         inside that wrapper, its Save button -> @emlSavePanel
+#
+# WHY 4, 5 AND 6 SHARE ONE SCOPE, AND WHY THAT IS THE FAITHFUL ARRANGEMENT
+# RATHER THAN A CONVENIENCE. @emlSavePanel decides whether there is anything
+# to write by reading emlResult_declared / emlCSV_n and the drawn-extent union
+# — all of them SCRIPT-SCOPE globals. A `runScript:`ed script does not hand
+# its variables back, so a save called from this driver after the wrapper
+# returned would find no results and no figure and write nothing. The plugin
+# is built the other way round: every one of the thirteen wrappers calls
+# @emlSavePanel from inside its own Done | Save | Draw | New loop, and
+# eml-output.praat's own note says why the panel also asks the PAGE — "a
+# wrapper's Draw button sends the user into the graphs workflow and RETURNS to
+# the same loop, so the very next Save was a 0 standing over a figure". This
+# drive walks exactly that path: Run, then Draw, then Save, one loop, one
+# scope, results and figure in one press.
+#
+# THE ADVERSARIAL EDIT. The CSV holds three cohorts whose f0 columns do not
+# overlap (alpha 100..107, bravo 300..307, charlie 900..907) and the editor
+# writes 4242 into row 1. That single cell moves cohort alpha's mean from
+# 103.5 to 621.25 and its SD from 2.4 to about 1465, so the ANOVA's F falls
+# by orders of magnitude. A replay that skips the edit, or an analysis that
+# silently ran on the demo table instead, cannot land on the same numbers by
+# accident.
+#
+# Env in:
+#   EML_RT_OUT      artefact folder (emitted script, saved outputs)
+#   EML_RT_CSV      the adversarial CSV to load
+#   EML_RT_PLUGIN   absolute plugin root to write into the emitted include block
+#
+# ATTRIBUTION
+# Framework: EML PraatGen by Ian Howell
+#            Embodied Music Lab — www.embodiedmusiclab.com
+# Code generation: Claude (Anthropic)
+# Script author: Ian Howell — created and verified by this individual
+# ============================================================================
+include eml-lib.praat
+
+@emlInitDrawingDefaults
+
+rtOut$ = environment$ ("EML_RT_OUT")
+rtCsv$ = environment$ ("EML_RT_CSV")
+rtPlug$ = environment$ ("EML_RT_PLUGIN")
+
+writeInfoLine: "RT|begin|", rtOut$
+
+# ===========================================================================
+# 0. START THE RECORDING — the shipped wrapper, pressed
+# ===========================================================================
+runScript: "eml-record-start.praat"
+
+nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
+rtStarted = numberOfSelected ()
+appendInfoLine: "RT|record_started|", rtStarted
+
+# RE-ATTACH IN THIS SCOPE AND THEN OVERRIDE THE PLUGIN ROOT.
+#
+# @emlRecordBegin ran inside the wrapper's scope and stamped the meta table
+# with a root derived from preferencesDirectory$ — which under --pref-dir is
+# this harness's throwaway prefs folder, not a plugin anyone can include.
+# @emlRecordInit re-reads that value here; the assignment after it is the seam
+# harness/record/replay.sh uses for the same reason, and the renderer's own
+# tilde substitution runs again over whatever it is handed, so the emitted
+# header cannot disagree with the emitted paths.
+@emlRecordInit
+emlRecordPluginRoot$ = rtPlug$
+
+# ===========================================================================
+# 1. create_demo — the plugin's demo generator
+# ===========================================================================
+# SEEDED, because the generator is randomGauss throughout and an artefact this
+# harness commits must not change on every run.
+random_initializeWithSeedUnsafelyButPredictably (20260821)
+nocheck runScript: "_rt_create_demo.praat"
+
+rtDemoRows = -1
+rtDemoCols = -1
+nocheck selectObject: "Table demo_3groups"
+rtDemo = numberOfSelected ()
+if rtDemo = 1
+    rtDemoRows = Get number of rows
+    rtDemoCols = Get number of columns
+endif
+appendInfoLine: "RT|create_demo|", rtDemo, "|", rtDemoRows, "|", rtDemoCols
+
+nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
+rtStepsAfter1 = -1
+if numberOfSelected () = 1
+    rtStepsAfter1 = Get number of rows
+endif
+appendInfoLine: "RT|steps_after|create_demo|", rtStepsAfter1
+
+# ===========================================================================
+# 2. load_file — a table read from a CSV on disk
+# ===========================================================================
+rtTable = 0
+rtLoaded = 0
+if fileReadable (rtCsv$)
+    Read Table from comma-separated file: rtCsv$
+    rtTable = selected ("Table")
+    rtLoaded = 1
+endif
+rtLoadRows = -1
+rtLoadCols = -1
+rtLoadName$ = "<none>"
+if rtLoaded = 1
+    selectObject: rtTable
+    rtLoadRows = Get number of rows
+    rtLoadCols = Get number of columns
+    rtLoadName$ = selected$ ()
+endif
+appendInfoLine: "RT|load_file|", rtLoaded, "|", rtLoadRows, "|", rtLoadCols,
+... "|", rtLoadName$
+
+nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
+rtStepsAfter2 = -1
+if numberOfSelected () = 1
+    rtStepsAfter2 = Get number of rows
+endif
+appendInfoLine: "RT|steps_after|load_file|", rtStepsAfter2
+
+# ===========================================================================
+# 3. edit_cell — the Table editor, driven through its own code
+# ===========================================================================
+selectObject: rtTable
+rtCellBefore$ = Get value: 1, "f0_Hz"
+appendInfoLine: "RT|cell_before|", rtCellBefore$
+
+selectObject: rtTable
+nocheck runScript: "_rt_edit_table.praat", "editor"
+
+selectObject: rtTable
+rtCellAfter$ = Get value: 1, "f0_Hz"
+rtEdited = 0
+if rtCellAfter$ <> rtCellBefore$
+    rtEdited = 1
+endif
+appendInfoLine: "RT|edit_cell|", rtEdited, "|", rtCellAfter$
+
+# The whole column, so a reader can see the edit is the ONLY change.
+selectObject: rtTable
+rtAlphaMean = Get mean: "f0_Hz"
+appendInfoLine: "RT|table_mean_after_edit|", fixed$ (rtAlphaMean, 6)
+
+nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
+rtStepsAfter3 = -1
+if numberOfSelected () = 1
+    rtStepsAfter3 = Get number of rows
+endif
+appendInfoLine: "RT|steps_after|edit_cell|", rtStepsAfter3
+
+# ===========================================================================
+# 4, 5, 6 — analysis, draw and save, through the wrapper's own loop
+# ===========================================================================
+selectObject: rtTable
+nocheck runScript: "_rt_compare_k.praat"
+
+nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
+rtStepsAfter6 = -1
+if numberOfSelected () = 1
+    rtStepsAfter6 = Get number of rows
+endif
+appendInfoLine: "RT|steps_after|analysis_draw_save|", rtStepsAfter6
+
+# ===========================================================================
+# STOP AND SAVE THE RECORDING
+# ===========================================================================
+# @emlRecordFlush writes the script and does NOT end the session;
+# @emlRecordDiscard ends it. That pair is what eml-record-save.praat does
+# either side of its dialog, and it is the only route a script has, because
+# the wrapper itself takes the process down at its beginPause.
+rtEmit$ = rtOut$ + "/emitted.praat"
+@emlRecordFlush: rtEmit$
+appendInfoLine: "RT|flush|", emlRecordFlush.written, "|", rtEmit$
+
+nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
+rtBufferBeforeDiscard = numberOfSelected ()
+@emlRecordDiscard
+nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
+rtBufferAfterDiscard = numberOfSelected ()
+appendInfoLine: "RT|discard|", rtBufferBeforeDiscard, "|",
+... rtBufferAfterDiscard
+
+appendInfoLine: "RT|end|ok"

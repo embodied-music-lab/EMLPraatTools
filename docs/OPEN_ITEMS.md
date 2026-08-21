@@ -195,13 +195,6 @@ wording and output work so its report strings are written once.
    file-loaded gets its path, pre-existing states its precondition loudly.
    The recorder has five step kinds and none of them is creation; it has no
    notion of how a table came to exist.
-4. **The text wrapper breaks "label = value" across lines.** The wrapper is
-   a plain greedy word wrap with no special case for the equals sign. The
-   claim that "a patch exists" could not be substantiated anywhere in the
-   tree — treat this as unstarted, and expect the known cost when it is
-   built: fixing the break can lengthen the longest line, which in about one
-   case in 150 pushes the annotation box into an extra resize pass, so it
-   needs driving rather than assuming.
 
 ### Red today, and known
 
@@ -243,6 +236,27 @@ wording and output work so its report strings are written once.
   code has moved since the last re-drive.
 
 ## Closed
+
+**The text wrapper keeps "label = value" on one line.** The space before an
+equals sign and the space after it are not break candidates in
+`@emlWrapText`; the line breaks at the last space that is not part of such a
+unit, and when a unit is itself wider than the line the search falls back to
+any space and then to a hard break. Every property the callers depend on
+holds: breaks land on spaces, no line exceeds the width, and the segments'
+word count still sums to the input's, which is what
+`@emlDrawAnnotationBlock` needs to carry Picture markup across a break.
+
+The known cost was driven, not assumed. `harness/wraptext/` runs the corpus
+through two plugin trees that differ in `@emlWrapText` and nothing else: 39
+annotation strings from the omnibus, correlation, regression and disclosure
+call sites at every width from 16 to 72 (2223 wraps), and 182 blocks of one
+to six of those lines on seven figure sizes (1274 boxes) through
+`@emlDrawAnnotationBlock`'s own fit loop. The longest line grows in 0.94% of
+wraps, by a median of 3 characters and never past the width, and shrinks in
+19.9%. The box takes one extra fit pass on 4 boxes of 1274 — one in 319,
+better than the one in 150 the standing list warned of, and never more than
+one pass — while 10.6% take fewer. Breaks touching an equals sign, over
+those boxes: 1316 to none. The probe is not wired into the suite.
 
 **The replayed save's receipt is read, not just its files.** `harness/vecfig`
 drove record and replay and looked only at the disk; the three lines

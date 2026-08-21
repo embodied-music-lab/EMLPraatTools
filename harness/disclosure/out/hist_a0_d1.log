@@ -3,4 +3,4 @@ Histogram: 5 bins, bin width = 2.0000
 Groups: 1
 LEDGER chart=Histogram annotate=0 dirty=1 info=1 fig=0
 SUBTITLE [SENTINEL-SUBTITLE]
-SAVED /home/claude/EMLPraatTools/harness/disclosure/out/hist_a0_d1.png
+SAVED /home/claude/repo/harness/disclosure/out/hist_a0_d1.png

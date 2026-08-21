@@ -3,7 +3,7 @@ NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform �
 
 ══════════════════════════════════════════════
   EML Stats : Spaghetti Plot Summary
-  Mon Aug 10 12:25:10 2026
+  Fri Aug 21 00:01:35 2026
 ══════════════════════════════════════════════
 
   Table               disc
@@ -48,4 +48,4 @@ NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform �
 LEDGER chart=Spaghetti plot annotate=1 dirty=1 info=1 fig=1
 FIGLINE 1: 6 row(s) skipped (missing or non-numeric value).
 SUBTITLE [SENTINEL-SUBTITLE]
-SAVED /home/claude/EMLPraatTools/harness/disclosure/out/spaghetti_a1_d1.png
+SAVED /home/claude/repo/harness/disclosure/out/spaghetti_a1_d1.png

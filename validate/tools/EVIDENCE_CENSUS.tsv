@@ -40,6 +40,7 @@ v104	v104_ascii_fold.R	ARTEFACT	NO		harness
 v105	v105_pitch_parity.R	SOURCE	NO		plugin_EML_StatsGraphs	ROOT	
 v106	v106_wizard_wording.R	SOURCE	NO		plugin		
 v107	v107_record_census.R	SOURCE	NO		plugin_EML_StatsGraphs		
+v108	v108_fisher_alpha_oracle.R	SOURCE+LIVE	PRAAT	praat	plugin	red_mode	
 v11	v11_twoway_orchestrator.R	ARTEFACT	NO		evidence		
 v12	v12_correlation_orchestrator.R	ARTEFACT	NO		evidence		
 v13	v13_regression_orchestrator.R	ARTEFACT	NO		evidence		

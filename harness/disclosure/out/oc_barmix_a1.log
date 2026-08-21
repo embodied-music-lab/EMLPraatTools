@@ -16,4 +16,4 @@ FIGLINE 4: 1 bar(s) not drawn (no usable observation): G3.
 FIGLINE 5: 3 row(s) skipped (missing or non-numeric value).
 SUBTITLE [SENTINEL-SUBTITLE]
 CHARTNAME [Bar chart]
-SAVED /home/claude/EMLPraatTools/harness/disclosure/out/oc_barmix_a1.png
+SAVED /home/claude/repo/harness/disclosure/out/oc_barmix_a1.png

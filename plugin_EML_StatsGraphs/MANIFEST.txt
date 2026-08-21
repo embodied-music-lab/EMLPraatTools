@@ -1,6 +1,6 @@
 # ==========================================================================
 # MANIFEST — EML Stats & Graphs plugin
-# Generated: 2026-08-20  |  331 files in 128 rows (retired included, MANIFEST.txt not)
+# Generated: 2026-08-21  |  331 files in 128 rows (retired included, MANIFEST.txt not)
 # Columns: path | lines (code) or word count (prose) | version | description
 #
 # Regenerate with: python3 dev/tools/build-manifest.py
@@ -37,7 +37,7 @@ dev/WIREFRAMES_STATS_TUTORIAL.md | ~3923 words | - | EML Stats Tutorial — Page
 dev/tests/REFERENCE_PROVENANCE.md | ~794 words | - | Which external tool — R or scipy, at which version — produced each asserted literal, and how to re-verify.
 dev/tests/eml-integration-test.praat | 533 | 1.2 | Praat + 1 : Integration Test Suite
 dev/tests/eml-test-helpers.praat | 739 | 1.2 | EML Stats : Test Helpers
-dev/tests/phase1/test-core-descriptive.praat | 611 | 1.1 | EML Stats : Core Descriptive Statistics — Validation Suite
+dev/tests/phase1/test-core-descriptive.praat | 613 | 1.1 | EML Stats : Core Descriptive Statistics — Validation Suite
 dev/tests/phase1/test-core-utilities.praat | 736 | 1.1 | EML Stats : Core Utility Procedures — Validation Suite
 dev/tests/phase1/test-extract.praat | 624 | 1.1 | EML Stats : Data Extraction Layer - Test Suite
 dev/tests/phase1/test-output.praat | 525 | 1.2 | EML Stats : Output Formatting — Test Suite
@@ -101,7 +101,7 @@ dev/tools/vacuity-negative-controls.py | 238 | - | Prove that scan-assertion-vac
 dev/tutorial-wireframes-v09.praat | 888 | 0.10 | EML Stats Tutorial — Layout Wireframes
 docs/API_EXPORT.md | ~3087 words | - | Worked how-to for @emlExportResultFiles: which analyses declare broom frames, the file set each call writes, the collision rule, and the batch pattern for a folder of files with no dialogs.
 docs/RECIPES.md | ~3043 words | - | Five worked scripts for calling the statistics from your own Praat script: two groups from a table, paired columns and correlation, a full analysis with CSV export, a batch loop, and a Sound through Pitch into the descriptive kernels. Every script is extracted from the page and run verbatim by harness/recipes, with its printed numbers pinned by validate/v81_recipes.R.
-graphs/eml-annotation-procedures.praat | 5935 | 3.22 | EML GRAPHS — ANNOTATION + STATS BRIDGE PROCEDURES
+graphs/eml-annotation-procedures.praat | 5959 | 3.22 | EML GRAPHS — ANNOTATION + STATS BRIDGE PROCEDURES
 graphs/eml-draw-procedures.praat | 7149 | 1.26 | EML GRAPHS — DRAWING PROCEDURES
 graphs/eml-draw-qq.praat | 392 | - | EML Stats & Graphs — Normal Q-Q plot. @emlDrawQQPlot; an ADAPTER, not a draw procedure — it computes the theoretical quantiles and hands them to the shared scatter machinery.
 graphs/eml-graph-procedures.praat | 8291 | 3.32 | EML GRAPHS — STANDARD DRAWING PROCEDURES
@@ -146,7 +146,7 @@ stats/eml-inferential.praat | 6059 | 1.4 | EML Stats : Inferential Statistics
 stats/eml-linalg.praat | 347 | 1.0 | EML Stats & Graphs — Numerical Linear Algebra Layer
 stats/eml-lmm.praat | 4436 | - | EML Stats & Graphs — Linear Mixed Models
 stats/eml-optimizer.praat | 2402 | 2.0 | EML Stats & Graphs — Derivative-Free Optimizers
-stats/eml-output.praat | 4482 | 2.4 | EML Stats : Output Formatting
+stats/eml-output.praat | 4553 | 2.4 | EML Stats : Output Formatting
 stats/eml-psychometrics.praat | 376 | 1.0 | EML Stats & Graphs — Questionnaire reliability. Cronbach's alpha with a Feldt confidence interval and alpha-if-item-deleted, and a respondent-influence jackknife that names an influential respondent by their row in the original table rather than by their position after incomplete rows were dropped.
 stats/eml-record.praat | 4907 | 1.0 | EML Stats & Graphs — Record workflow: buffer, phrases, renderer. Accumulates a session's analyses and figures and writes one annotated Praat script that both re-runs and reads like a lab notebook.
 stats/eml-result-writer.praat | 744 | 1.0 | EML Stats & Graphs — broom-style result writer. Collects one analysis as tidy/glance/augment tables and writes the three CSVs with the shapes and names R's broom package uses.

@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Spaghetti Plot Summary
-  Mon Aug 10 12:25:09 2026
+  Fri Aug 21 00:01:34 2026
 ══════════════════════════════════════════════
 
   Table               disc
@@ -45,4 +45,4 @@
 ══════════════════════════════════════════════
 LEDGER chart=Spaghetti plot annotate=0 dirty=0 info=0 fig=0
 SUBTITLE [SENTINEL-SUBTITLE]
-SAVED /home/claude/EMLPraatTools/harness/disclosure/out/spaghetti_a0_d0.png
+SAVED /home/claude/repo/harness/disclosure/out/spaghetti_a0_d0.png

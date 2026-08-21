@@ -1,0 +1,24 @@
+PART A -- the wrap alone (2223 wraps: 39 strings x widths 16..72)
+  breaks touching an "="      before 652   after 7
+  wraps carrying one          544 of 2223 (24.5%)
+  longest line grew           21 of 2223 (0.94%)
+    mean growth when it does  2.71 characters, max 5
+  longest line shrank         442 (19.88%)
+  line count grew             67 (3.01%)
+  any line over the width     0  (must be 0)
+
+PART B -- the annotation box (1274 boxes: 182 blocks x 7 figure sizes)
+  drawn rows split at an "="  before 1316   after 0
+  boxes showing one           before 779 of 1274 (61.1%)
+  fit passes grew             4 of 1274 (0.31%)  1 in 319
+    mean extra passes         1.00, max 1
+  fit passes fell             135 (10.60%)
+  drawn rows grew             72 (5.65%)
+  drawn rows fell             18 (1.41%)
+
+longest-line growth, characters:
+  +1   6
+  +2   2
+  +3   7
+  +4   4
+  +5   2
