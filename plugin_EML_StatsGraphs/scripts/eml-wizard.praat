@@ -46,6 +46,21 @@ nToR = numberOfSelected ("TableOfReal")
 hasTable = 0
 tableId = 0
 nCols = 0
+# THE NAME EVERY PAGE PRINTS EXISTS FROM THE FIRST LINE.
+#
+# Fourteen pages print "Table: " + displayTable$, and the table itself is not
+# always there when they do: with nothing selected the wizard invents example
+# data, and it invents it at the point the chosen branch needs columns --
+# which on some branches is AFTER a page that has already printed the name.
+# Praat stops the script dead on an unset variable, so such a page does not
+# render blank, it raises "Unknown variable" over a form the user has just
+# clicked Continue on.
+#
+# Seeding it here means no page can reach an unset name, whatever order a
+# future branch puts its questions in, and it is the one line that cannot be
+# forgotten by the fifteenth page. @wizardPrepareTable overwrites it with the
+# real name the moment the example table exists.
+displayTable$ = "none selected — example data will be created"
 
 if nTables = 1 and nToR = 0
     tableId = selected ("Table")
