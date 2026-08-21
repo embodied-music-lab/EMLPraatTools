@@ -66,6 +66,13 @@ TSV="$OUT/BREAKS.tsv"
 FILTER="${1:-}"
 ANNOT=plugin/graphs/eml-annotation-procedures.praat
 
+# THE SAME FILE, NAMED THE WAY GIT CAN READ IT. `plugin` is a symlink to the
+# real plugin folder, and git refuses a pathspec that traverses one:
+# `git show HEAD:plugin/graphs/...` exits with "exists on disk, but not in
+# 'HEAD'". The head_revert case reads the tracked blob through this name
+# instead, so the revert writes the file HEAD holds rather than nothing.
+ANNOT_GIT="$( (cd "$ROOT" && readlink plugin) 2>/dev/null || echo plugin )/graphs/eml-annotation-procedures.praat"
+
 mkdir -p "$OUT" "$WORK"
 [ -z "$FILTER" ] && : > "$TSV"
 
@@ -116,7 +123,12 @@ want () {
 # which test drew them or what was done about multiplicity.
 if want head_revert; then
     shadow head_revert
-    ( cd "$ROOT" && git show "HEAD:$ANNOT" ) > "$WORK/head_revert/$ANNOT"
+    ( cd "$ROOT" && git show "HEAD:$ANNOT_GIT" ) > "$WORK/head_revert/$ANNOT"
+    # An unreadable blob leaves the redirect's empty file behind, which is the
+    # annotation procedures DELETED rather than reverted -- a different break
+    # wearing this one's name and reporting a larger red count for it.
+    [ -s "$WORK/head_revert/$ANNOT" ] || {
+        echo "break.sh: HEAD:$ANNOT_GIT is empty or unreadable" >&2; exit 1; }
     run_break head_revert
 fi
 

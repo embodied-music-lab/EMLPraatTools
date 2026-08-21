@@ -56,13 +56,32 @@ Praat 6.6.30 under Xvfb, not on reasoning about Praat.
   arithmetic instead. Demonstrated: a field named "left Y-limits" fed -99
   to code that thought it was reading the user's 5.
 
-  The check that must assert this is not the check that exists. The field
-  name checker refuses truncation, refuses two fields in the SAME dialog
-  block deriving one name, and refuses a hyphen. The ruling requires two
-  things wider than that: the full character class (letters, digits and
-  spaces only), and uniqueness per RENDERED BRANCH rather than per block —
-  the collision that loses user input happens between two rows that only
-  co-render on one branch of a conditional page. Both are unbuilt.
+  BUILT, and both of the wider things the ruling asked for are in
+  `validate/v98_field_names.R`: the full character class (letters, digits
+  and spaces only before the parenthetical, plus the leading left/right
+  pairing word), and uniqueness per RENDERED BRANCH — every field carries
+  the branch path it sits on, and a shared name is judged provably-together
+  (fails), provably-apart in two branches of one `if` (legal, and it stays
+  legal), or cannot-rule-on, which is pinned by name so a new one gets read
+  by a person.
+
+  A rendered page also carries rows nothing in the block declares. A
+  `beginPause` block is ordinary code, so a procedure called from inside one
+  emits its field rows into that dialog: `@emlWrapperCommonFields` is
+  declared in `stats/eml-output.praat`, ten wrapper dialogs call it, and
+  eleven sites read the `clear_Info_window` it binds. The sweep follows a
+  call made inside a block, audits the rows it contributes as rows of the
+  calling page, and fails a call it cannot resolve. Measured under Xvfb by
+  `harness/labellaw/inject.sh`, which renders
+  `validate/fixtures/dialog_labels/inject_collision.praat` and reads the
+  collision back out of Praat; demonstrated red against seeded copies of the
+  shipped tree via `$EML_DIALOG_SRC`.
+
+  OPEN, AND NOT PART OF THIS ITEM: `validate/v99_form_variable_locality.R`
+  reads dialog blocks with a scanner of its own that does not follow a
+  procedure call, so the rows a procedure contributes are outside its
+  subject too. Whether locality should see them is a question for whoever
+  owns v99.
 - **The histogram compound row is REFUSED** (Ian, 20 Aug): bin count and top
   frequency are totally different measures, and the paired row is for two
   halves of one quantity. The histogram page takes the other two savings and

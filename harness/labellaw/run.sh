@@ -13,6 +13,11 @@
 # The two scripts live in validate/fixtures/dialog_labels, next to the
 # validator that reads them, and nothing in the plugin includes them.
 #
+# ITS SIBLING IS harness/labellaw/inject.sh, which needs a display: it renders
+# inject_collision.praat under Xvfb to measure the rows a procedure called
+# from inside a beginPause block puts on the calling page. This driver stays
+# headless and covers the two fixtures Praat can run without one.
+#
 #   collide_same_noun.praat  Four range boxes, two derived names. Praat draws
 #                            all four rows and binds the LAST pair. Expected:
 #                            left_Value=333, right_Value=444 — the 111 and
@@ -30,8 +35,8 @@
 # NO DISPLAY IS NEEDED and none is used. `praat --run` takes a form's values
 # from the command line, which is exactly the point: the pathology is in the
 # binding, not in the drawing, so it can be measured with the GUI out of the
-# way. The third fixture, branch_collision.praat, uses beginPause and so
-# needs a click; it is checked in source by v98 and deliberately not run.
+# way. The fixture branch_collision.praat uses beginPause and so needs a
+# click; it is checked in source by v98 and deliberately not run at all.
 #
 # Run from anywhere:  bash harness/labellaw/run.sh
 # Exit 0 = both scripts produced exactly the damage the ruling recorded.
@@ -45,7 +50,19 @@ OUT="${EML_LABELLAW_DIR:-$SCRIPT_DIR/out}"
 PREFS="$SCRIPT_DIR/prefs"
 mkdir -p "$OUT" "$PREFS"
 TSV="$OUT/LABELLAW.tsv"
-rm -f "$OUT"/*.log "$TSV"
+
+# THE SWEEP NAMES ITS FILES; IT DOES NOT GLOB THE FOLDER. inject.sh writes
+# inject.log, inject_wm.log and inject_xvfb.log into this same folder, and a
+# glob over *.log takes those with it -- a rig deleting a sibling's
+# transcripts, including under it while the sibling is still running.
+# Measured 21 August 2026: one `bash harness/labellaw/run.sh` removed all
+# three. Deleting the fixtures this script drives can only ever remove a file
+# it wrote.
+FIXTURES="collide_same_noun trap_minus99"
+for fixture in $FIXTURES; do
+    rm -f "$OUT/$fixture.log"
+done
+rm -f "$TSV"
 
 run_fixture () {
     local name="$1"; shift

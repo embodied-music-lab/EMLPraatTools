@@ -200,6 +200,10 @@ harness/bracketcap/out/*.band.png
 harness/bracketcap/out/*.band.txt
 harness/bracketcap/out/*.band.err
 harness/bracketcap/out/*.fig.png
+# The leg names bracketcap.sh wrote on its last full run. It reads this
+# back to sweep the artefacts of a leg that has since been renamed or
+# dropped, which is rig state rather than evidence.
+harness/bracketcap/out/.legs
 
 # v71 scratch. The sandbox, the break-battery tree copies and the drive output
 # all live under /tmp, outside this repository, so nothing here is strictly

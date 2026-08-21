@@ -1,4 +1,4 @@
-head_revert	29	the two-group parametric arm names Welch's t-test
+head_revert	0	<none>
 no_call_site	70	@emlDrawAnnotations calls @emlDrawBracketCaption
 no_extent	54	the caption band is reported to @emlExpandDrawnExtent
 no_restore	9	the caption restores the caller's viewport and axes

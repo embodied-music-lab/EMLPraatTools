@@ -76,6 +76,29 @@
 #       the set of them is pinned below, so the one reviewed case stays
 #       green and a new one goes red and gets read by a person.
 #
+# AND A RENDERED PAGE IS NOT ONLY WHAT IS WRITTEN BETWEEN beginPause AND
+# endPause. A `form:` block is a declaration Praat reads whole; a beginPause
+# block is ORDINARY CODE, run top to bottom, so a procedure called from inside
+# one emits its field rows INTO that dialog. The rows land on the caller's
+# page, in the caller's namespace, under names derived from labels written in
+# another file. The tree does this: @emlWrapperCommonFields is declared in
+# stats/eml-output.praat, ten wrapper dialogs call it, and eleven sites read
+# the `clear_Info_window` it binds. So a call made inside a block is FOLLOWED,
+# and the rows it contributes are audited as rows of the page that called it,
+# carrying the call site's branch path.
+#
+# MEASURED, 6.6.30 under Xvfb, by harness/labellaw/inject.sh on
+# validate/fixtures/dialog_labels/inject_collision.praat: a block writing two
+# range rows and calling one procedure rendered FIVE fields, three of them the
+# procedure's; the procedure's two range rows collided with the block's own
+# and bound last, so left_Value came back 333 and right_Value 444 while the
+# block's 111 and 222 vanished; and the procedure's "left Y-limits" row bound
+# a value no script can name, reading back as -99.
+#
+# A call this file cannot follow is FAILED rather than skipped. An unread
+# procedure is part of a rendered page nobody has looked at, and from here it
+# is indistinguishable from a page with nothing on it.
+#
 # The honest statement of what this catches: it is a SOURCE check. It proves
 # co-rendering from block structure alone. It cannot evaluate a condition, it
 # cannot follow a label assembled at run time past the point of assembly (the
@@ -131,8 +154,158 @@ label_head <- function(label) {
 }
 
 # ---------------------------------------------------------------------------
+# THE ROW WALKER'S THREE PIECES, shared by the block scanner and the procedure
+# resolver below so that one set of rules governs both.
+#
+# branch_step  advances the `if` stack for one line. elsif/elif are tested
+#              before else, and else before if, so no keyword is claimed by a
+#              shorter pattern. Branch ids are strings carrying the walker's
+#              own prefix, which keeps a procedure body's `if`s distinct from
+#              the caller's.
+# stack_branch turns the stack into the named vector a field carries, on top
+#              of whatever path the caller was already on.
+# read_field   parses one field line into the record the audit reads.
+# ---------------------------------------------------------------------------
+FIELD_RE <- paste0("^\\s*(", paste(FIELD_KINDS, collapse = "|"),
+                   ")\\s*:\\s*\"([^\"]*)\"")
+
+# A dialog block runs the procedures it calls, in place. Praat writes the call
+# as `@name`, `@name: args` or `call name`.
+CALL_RE <- "^\\s*(@\\s*|call\\s+)([A-Za-z0-9_.]+)"
+
+branch_step <- function(struct, stack, ctr, prefix) {
+    if (grepl("^\\s*(elsif|elif)\\b", struct)) {
+        if (length(stack))
+            stack[[length(stack)]]$branch <- stack[[length(stack)]]$branch + 1L
+    } else if (grepl("^\\s*else\\b", struct)) {
+        if (length(stack))
+            stack[[length(stack)]]$branch <- stack[[length(stack)]]$branch + 1L
+    } else if (grepl("^\\s*if\\b", struct)) {
+        ctr <- ctr + 1L
+        stack[[length(stack) + 1L]] <-
+            list(id = paste0(prefix, ctr), branch = 1L)
+    } else if (grepl("^\\s*endif\\b", struct)) {
+        if (length(stack)) stack[[length(stack)]] <- NULL
+    }
+    list(stack = stack, ctr = ctr)
+}
+
+stack_branch <- function(stack, base) {
+    here <- if (length(stack))
+        stats::setNames(vapply(stack, function(x) x$branch, integer(1)),
+                        vapply(stack, function(x) x$id, character(1)))
+    else stats::setNames(integer(0), character(0))
+    c(base, here)
+}
+
+read_field <- function(raw, file, line, branch, via) {
+    m <- regmatches(raw, regexec(FIELD_RE, raw))[[1]]
+    if (length(m) != 3L) return(NULL)
+    lab <- m[3]
+    # A label built by concatenation whose literal part carries no "(" has its
+    # derived name finished at run time by whatever is appended. The literal
+    # can still be checked; the finished name cannot. Flagged, and pinned
+    # below.
+    dyn <- !grepl("(", lab, fixed = TRUE) &&
+           grepl("^\\s*[a-z]+\\s*:\\s*\"[^\"]*\"\\s*\\+", raw)
+    list(file = file, line = line, label = lab, kind = m[2],
+         prefix = praat_field_prefix(lab), branch = branch, dynamic = dyn,
+         via = via)
+}
+
+# ---------------------------------------------------------------------------
+# index_procedures — every procedure body in a file set, keyed by name, so a
+# call made inside a dialog block can be followed into the file that defines
+# it. @emlWrapperCommonFields is declared in stats/eml-output.praat and called
+# from ten wrapper scripts, so the index has to span the whole set rather than
+# the file being scanned.
+# ---------------------------------------------------------------------------
+index_procedures <- function(files) {
+    idx <- list()
+    for (f in files) {
+        code <- readLines(f, warn = FALSE)
+        name <- NULL; start <- NA_integer_
+        for (i in seq_along(code)) {
+            if (grepl("^\\s*procedure\\s+[A-Za-z0-9_.]+", code[i])) {
+                name <- sub("^\\s*procedure\\s+([A-Za-z0-9_.]+).*$", "\\1",
+                            code[i])
+                start <- i
+            } else if (grepl("^\\s*endproc\\b", code[i])) {
+                if (!is.null(name) && i - 1L >= start + 1L)
+                    idx[[name]] <- list(file = f, first = start + 1L,
+                                        lines = code[(start + 1L):(i - 1L)])
+                name <- NULL
+            }
+        }
+    }
+    idx
+}
+
+# ---------------------------------------------------------------------------
+# proc_fields — the rows a called procedure contributes to the page that calls
+# it, with the caller's branch path already on them.
+#
+# WHY THIS EXISTS. A `form:` block is a declaration Praat reads whole, but a
+# beginPause block is ORDINARY CODE that runs top to bottom, and a procedure
+# called from inside one emits its field rows into that dialog. The rows are
+# written in one file and rendered on a page in another, they land in the
+# caller's namespace, and the caller reads them by their derived names —
+# @emlWrapperCommonFields declares `boolean: "Clear Info window"` and eleven
+# sites across the tree read `clear_Info_window`. A scan that stops at the
+# lexical edge of the block cannot see the row, so it cannot see the row's
+# label and cannot see it collide with anything on the page.
+#
+# `chain` and `depth` stop a procedure that calls itself, directly or through
+# another, from walking forever. A call that resolves to nothing in the
+# audited set is returned as unresolved rather than skipped: an unread
+# procedure is a piece of a rendered page the check has not looked at, and
+# silence about it would read exactly like a clean page.
+#
+# TWO CALLS TO ONE PROCEDURE FROM ONE BLOCK are given distinct branch-id
+# prefixes, so an `if` inside the procedure body reads as two different `if`s.
+# Rows outside any such `if` still compare as together — which is the real
+# case, and the one the tree has — while rows inside one land in the
+# cannot-rule-on set and get read by a person.
+# ---------------------------------------------------------------------------
+proc_fields <- function(name, procs, base, prefix, via, depth = 1L,
+                        chain = character(0)) {
+    if (depth > 8L || name %in% chain)
+        return(list(fields = list(), unresolved = character(0)))
+    p <- procs[[name]]
+    if (is.null(p)) return(list(fields = list(), unresolved = name))
+
+    out <- list(); unres <- character(0)
+    stack <- list(); ctr <- 0L
+    for (k in seq_along(p$lines)) {
+        raw <- p$lines[k]
+        if (grepl("^\\s*[#;]", raw)) next
+        line <- p$first + k - 1L
+        struct <- gsub("\"[^\"]*\"", "\"\"", raw)
+
+        st <- branch_step(struct, stack, ctr, prefix)
+        stack <- st$stack; ctr <- st$ctr
+        branch <- stack_branch(stack, base)
+
+        fl <- read_field(raw, p$file, line, branch, via)
+        if (!is.null(fl)) { out[[length(out) + 1L]] <- fl; next }
+
+        cm <- regmatches(struct, regexec(CALL_RE, struct))[[1]]
+        if (length(cm) == 3L) {
+            sub <- proc_fields(cm[3], procs, branch,
+                               paste0(prefix, k, "."), via,
+                               depth + 1L, c(chain, name))
+            out <- c(out, sub$fields)
+            unres <- c(unres, sub$unresolved)
+        }
+    }
+    list(fields = out, unresolved = unres)
+}
+
+# ---------------------------------------------------------------------------
 # scan_dialog_blocks — read one source file and return its dialogs, each with
-# its fields and each field with the branch path it renders on.
+# its fields and each field with the branch path it renders on. Fields a
+# called procedure contributes are spliced in at the call site, carrying that
+# site's branch path.
 #
 # STRUCTURE IS MATCHED ON THE LINE WITH ITS STRING LITERALS BLANKED and its
 # whole-line comments dropped. eml-output.praat documents its own pause
@@ -140,23 +313,19 @@ label_head <- function(label) {
 # ..."; matched raw, that comment closes a dialog forty lines early and every
 # field after it disappears from the check.
 #
-# THE TERMINATOR IS NOT ANCHORED, and that is the point of rewriting this.
-# Praat's endPause RETURNS the button number, so the tree writes it as
-# `clicked = endPause: ...`. Of the 129 dialogs in the plugin, 32 end on a
-# line that begins with the terminator and 97 do not. Anchored at the start
-# of the line, as this file matched it until now, those 97 dialogs never
-# closed: their field lists were thrown away when the next dialog opened, and
-# the collision check ran on 32 dialogs out of 129. It reported no collisions
-# because it was barely looking.
+# THE TERMINATOR IS NOT ANCHORED. Praat's endPause RETURNS the button number,
+# so the tree writes it as `clicked = endPause: ...`: of the 131 dialogs in
+# the plugin, 32 end on a line that begins with the terminator and 99 do not.
+# Anchoring it at the start of the line leaves those 99 dialogs open, their
+# field lists thrown away when the next dialog opens, and the collision check
+# looking at 32 dialogs out of 131.
 # ---------------------------------------------------------------------------
-scan_dialog_blocks <- function(path) {
+scan_dialog_blocks <- function(path, procs = list()) {
     code <- readLines(path, warn = FALSE)
     blocks <- list()
-    open <- FALSE; fields <- list(); stack <- list(); ctr <- 0L; start <- NA_integer_
-    unclosed <- character(0)
-
-    field_re <- paste0("^\\s*(", paste(FIELD_KINDS, collapse = "|"),
-                       ")\\s*:\\s*\"([^\"]*)\"")
+    open <- FALSE; fields <- list(); stack <- list(); ctr <- 0L
+    start <- NA_integer_
+    unclosed <- character(0); unresolved <- character(0); n_calls <- 0L
 
     for (i in seq_along(code)) {
         raw <- code[i]
@@ -178,44 +347,31 @@ scan_dialog_blocks <- function(path) {
             next
         }
 
-        # Branch bookkeeping. elsif/elif are tested before else, and else
-        # before if, so that no keyword is claimed by a shorter pattern.
-        if (grepl("^\\s*(elsif|elif)\\b", struct)) {
-            if (length(stack))
-                stack[[length(stack)]]$branch <- stack[[length(stack)]]$branch + 1L
-        } else if (grepl("^\\s*else\\b", struct)) {
-            if (length(stack))
-                stack[[length(stack)]]$branch <- stack[[length(stack)]]$branch + 1L
-        } else if (grepl("^\\s*if\\b", struct)) {
-            ctr <- ctr + 1L
-            stack[[length(stack) + 1L]] <- list(id = ctr, branch = 1L)
-        } else if (grepl("^\\s*endif\\b", struct)) {
-            if (length(stack)) stack[[length(stack)]] <- NULL
-        }
+        st <- branch_step(struct, stack, ctr, "b")
+        stack <- st$stack; ctr <- st$ctr
+        branch <- stack_branch(stack, stats::setNames(integer(0), character(0)))
 
-        m <- regmatches(raw, regexec(field_re, raw))[[1]]
-        if (length(m) == 3L) {
-            branch <- if (length(stack))
-                stats::setNames(vapply(stack, function(x) x$branch, integer(1)),
-                                vapply(stack, function(x) as.character(x$id),
-                                       character(1)))
-            else stats::setNames(integer(0), character(0))
-            lab <- m[3]
-            # A label built by concatenation whose literal part carries no
-            # "(" has its derived name finished at run time by whatever is
-            # appended. The literal can still be checked; the finished name
-            # cannot. Flagged, and pinned below.
-            dyn <- !grepl("(", lab, fixed = TRUE) &&
-                   grepl("^\\s*[a-z]+\\s*:\\s*\"[^\"]*\"\\s*\\+", raw)
-            fields[[length(fields) + 1L]] <- list(
-                line = i, label = lab, kind = m[2],
-                prefix = praat_field_prefix(lab), branch = branch, dynamic = dyn)
+        fl <- read_field(raw, path, i, branch, NA_character_)
+        if (!is.null(fl)) { fields[[length(fields) + 1L]] <- fl; next }
+
+        cm <- regmatches(struct, regexec(CALL_RE, struct))[[1]]
+        if (length(cm) == 3L) {
+            n_calls <- n_calls + 1L
+            via <- sprintf("@%s called at %s:%d", cm[3], basename(path), i)
+            sub <- proc_fields(cm[3], procs, branch, sprintf("c%d.", i), via)
+            fields <- c(fields, sub$fields)
+            if (length(sub$unresolved))
+                unresolved <- c(unresolved,
+                                sprintf("%s:%d  calls @%s, which is defined in no audited file",
+                                        basename(path), i,
+                                        paste(sub$unresolved, collapse = ", @")))
         }
     }
     if (open)
         unclosed <- sprintf("%s: dialog opened at line %d never closed",
                             basename(path), start)
-    list(blocks = blocks, unclosed = unclosed)
+    list(blocks = blocks, unclosed = unclosed, unresolved = unresolved,
+         n_calls = n_calls)
 }
 
 # Two branch paths are PROVABLY EXCLUSIVE when some `if` they share sends
@@ -228,8 +384,14 @@ branch_relation <- function(a, b) {
     "unknown"
 }
 
+# EML_DIALOG_SRC points the sweep at a tree other than the shipped one. It is
+# how the red demonstrations are run: a copy of the plugin with one violating
+# label seeded into it, audited by this file unmodified, so the failure shown
+# is this check's own failure and not a rehearsal of it.
 plugin_files <- function() {
-    root <- repo_path("plugin_EML_StatsGraphs")
+    root <- Sys.getenv("EML_DIALOG_SRC", unset = "")
+    if (!nzchar(root)) root <- repo_path("plugin_EML_StatsGraphs")
+    if (!dir.exists(root)) stop("dialog source tree not found: ", root)
     f <- list.files(root, pattern = "\\.praat$", recursive = TRUE,
                     full.names = TRUE)
     f[!grepl("/dev/", f, fixed = TRUE)]
@@ -244,16 +406,28 @@ audit_files <- function(files) {
     illegal <- character(0); unreachable <- character(0)
     together <- character(0); apart <- character(0); unknown <- character(0)
     dynamic <- character(0); unclosed <- character(0); hyphen <- character(0)
-    n_fields <- 0L; n_blocks <- 0L
+    unresolved <- character(0)
+    n_fields <- 0L; n_blocks <- 0L; n_calls <- 0L; n_injected <- 0L
+
+    # The index spans the whole set before any file is scanned, because the
+    # procedure a dialog calls is routinely declared in another file.
+    procs <- index_procedures(files)
 
     for (f in files) {
-        sc <- scan_dialog_blocks(f)
+        sc <- scan_dialog_blocks(f, procs)
         unclosed <- c(unclosed, sc$unclosed)
+        unresolved <- c(unresolved, sc$unresolved)
+        n_calls <- n_calls + sc$n_calls
         n_blocks <- n_blocks + length(sc$blocks)
         for (blk in sc$blocks) {
             n_fields <- n_fields + length(blk$fields)
             for (fl in blk$fields) {
-                where <- sprintf("%s:%d  \"%s\"", basename(f), fl$line, fl$label)
+                where <- sprintf("%s:%d  \"%s\"", basename(fl$file), fl$line,
+                                 fl$label)
+                if (!is.na(fl$via)) {
+                    where <- sprintf("%s  [%s]", where, fl$via)
+                    n_injected <- n_injected + 1L
+                }
                 if (!grepl(LEGAL_LABEL_RE, label_head(fl$label)))
                     illegal <- c(illegal, sprintf("%s  -> binds %s", where,
                                                   fl$prefix))
@@ -263,17 +437,23 @@ audit_files <- function(files) {
                 if (grepl("-", label_head(fl$label), fixed = TRUE))
                     hyphen <- c(hyphen, where)
                 if (fl$dynamic)
-                    dynamic <- c(dynamic, sprintf("%s|%s", basename(f), fl$label))
+                    dynamic <- c(dynamic, sprintf("%s|%s", basename(fl$file),
+                                                  fl$label))
             }
             pre <- vapply(blk$fields, function(x) x$prefix, character(1))
             for (p in unique(pre[duplicated(pre)])) {
                 grp <- blk$fields[pre == p]
                 for (a in seq_along(grp)) for (b in seq_len(a - 1L)) {
                     rel <- branch_relation(grp[[a]]$branch, grp[[b]]$branch)
-                    line <- sprintf("%s: %s <- line %d \"%s\" ; line %d \"%s\"",
-                                    basename(f), p,
-                                    grp[[b]]$line, grp[[b]]$label,
-                                    grp[[a]]$line, grp[[a]]$label)
+                    # The page is named by the block that renders the pair; a
+                    # row a procedure contributes is named by the file it is
+                    # written in, which is where a reader goes to fix it.
+                    line <- sprintf("%s page at line %d: %s <- %s:%d \"%s\" ; %s:%d \"%s\"",
+                                    basename(f), blk$start, p,
+                                    basename(grp[[b]]$file), grp[[b]]$line,
+                                    grp[[b]]$label,
+                                    basename(grp[[a]]$file), grp[[a]]$line,
+                                    grp[[a]]$label)
                     key <- sprintf("%s|%s|%s|%s", basename(f), p,
                                    grp[[b]]$label, grp[[a]]$label)
                     if (rel == "together") together <- c(together, line)
@@ -283,20 +463,26 @@ audit_files <- function(files) {
             }
         }
     }
-    list(n_fields = n_fields, n_blocks = n_blocks, illegal = illegal,
+    list(n_fields = n_fields, n_blocks = n_blocks, n_calls = n_calls,
+         n_injected = n_injected, illegal = illegal,
          unreachable = unreachable, together = together, apart = apart,
          unknown = unknown, dynamic = dynamic, unclosed = unclosed,
-         hyphen = hyphen)
+         hyphen = hyphen, unresolved = unresolved)
 }
 
 shipped <- audit_files(plugin_files())
 
-cat(sprintf("v98: %d dialog blocks, %d fields\n",
-            shipped$n_blocks, shipped$n_fields))
+cat(sprintf("v98: %d dialog blocks, %d fields (%d of them contributed by %d procedure calls)\n",
+            shipped$n_blocks, shipped$n_fields, shipped$n_injected,
+            shipped$n_calls))
 
 if (length(shipped$unclosed)) {
     cat("DIALOGS THAT NEVER CLOSED:\n")
     cat(paste0("  ", shipped$unclosed, "\n"))
+}
+if (length(shipped$unresolved)) {
+    cat("PROCEDURES A DIALOG CALLS AND THIS SWEEP COULD NOT READ:\n")
+    cat(paste0("  ", shipped$unresolved, "\n"))
 }
 if (length(shipped$illegal)) {
     cat("LABELS CARRYING A CHARACTER PRAAT KEEPS IN THE VARIABLE NAME:\n")
@@ -315,6 +501,21 @@ check_true("v98", "the sweep found dialog fields to check",
            shipped$n_fields > 100L)
 check_true("v98", "every dialog the sweep opened was closed",
            length(shipped$unclosed) == 0L)
+
+# A dialog block is code, and the procedures it calls emit rows into the page
+# it renders. A call this sweep cannot follow is a part of that page nobody
+# has read, and it looks from here exactly like a page with nothing on it.
+check_true("v98",
+           "every procedure a dialog calls was found and read",
+           length(shipped$unresolved) == 0L)
+
+# The rows that arrive by procedure call are the ones a lexical scan of the
+# block cannot see. Asserting that there ARE some keeps the resolver from
+# quietly resolving nothing: @emlWrapperCommonFields alone puts one row on
+# each of the ten wrapper pages.
+check_true("v98",
+           "the rows procedures contribute to a dialog are in the sweep",
+           shipped$n_injected >= 10L)
 
 # (a) THE LABEL CHARACTER LAW. The rule, stated as a rule about labels.
 check_true("v98",
@@ -419,7 +620,8 @@ fix <- function(n) file.path(fixdir, n)
 check_true("v98", "the seeded violations are on disk",
            all(file.exists(fix(c("trap_minus99.praat",
                                  "collide_same_noun.praat",
-                                 "branch_collision.praat")))))
+                                 "branch_collision.praat",
+                                 "inject_collision.praat")))))
 
 trap <- audit_files(fix("trap_minus99.praat"))
 check_true("v98",
@@ -448,5 +650,28 @@ check_true("v98",
 check_true("v98",
            "the branch fixture's opposite-branch pair is not reported",
            length(branchy$apart) == 2L && length(branchy$unknown) == 0L)
+
+# THE ROWS THAT ARRIVE BY CALL. inject_collision.praat writes two range rows
+# between beginPause and endPause and gets three more from @seededCommonRows —
+# two that collide with the ones in the block and one carrying a hyphen. A
+# scan that stopped at the lexical edge of the block would report a clean page
+# with two rows on it, which is what makes this the fixture for the resolver.
+#
+# harness/labellaw/inject.sh renders the same file under Xvfb and reads the
+# damage back: five fields on three displayed rows, left_Value = 333 and
+# right_Value = 444 with the block's own 111 and 222 gone, bound = 1 and
+# read = -99 for the injected hyphen row.
+inj <- audit_files(fix("inject_collision.praat"))
+check_true("v98",
+           "the injected fixture's rows are followed out of the block into the procedure",
+           inj$n_fields == 5L && inj$n_injected == 3L && inj$n_calls == 1L)
+check_true("v98",
+           "the two ranges a procedure adds are caught as collisions on the calling page",
+           length(inj$together) == 2L && length(inj$apart) == 0L &&
+               length(inj$unknown) == 0L)
+check_true("v98",
+           "the character law reaches a label written inside a called procedure",
+           length(inj$illegal) == 1L && identical(inj$unreachable, inj$illegal) &&
+               grepl("seededCommonRows", inj$illegal))
 
 if (!exists("EML_SUITE")) { eml_report("v98 dialog field names derive what the code reads"); eml_exit() }

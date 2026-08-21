@@ -300,11 +300,21 @@ CASE=$CASEDIR/case.praat
 SERIES=$CASEDIR/series_case.praat
 SWEEP=$CASEDIR/placement_sweep_case.praat
 
-: > "$OUT/RESULTS.tsv"
 # Clear stale per-case artefacts, for the reason harness/disclosure/run.sh
 # gives: a renamed case leaves its old .log behind and a validator that still
 # names it reads a previous run's evidence and passes.
-rm -f "$OUT"/*.log "$OUT"/*.png
+#
+# ONLY ON A FULL RUN, which is the guard harness/bracketcap/bracketcap.sh
+# carries for the same sweep. Measured 21 August 2026: with the sweep outside
+# this test, `bash harness/legend/run.sh 10x3_color_g1` drove one case and
+# left five files in a folder that had held 455 -- the other 224 cases' logs
+# and figures deleted, and RESULTS.tsv truncated to the single row driven.
+# A filtered re-run of one case is the normal way to look at one case, so the
+# rig has to survive it.
+if [ -z "$FILTER" ]; then
+    : > "$OUT/RESULTS.tsv"
+    rm -f "$OUT"/*.log "$OUT"/*.png
+fi
 
 # field RECORD KEY FILE — pull "key=value" out of a record line in a transcript
 field () {

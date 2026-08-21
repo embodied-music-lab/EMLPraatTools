@@ -1,0 +1,134 @@
+NOTE  v69  tukey            1800x1277 px, 110020 bytes, 9735 ink in band
+NOTE  v69  dunn_holm        1800x1277 px, 94676 bytes, 8654 ink in band
+NOTE  v69  dunn_bonferroni  1800x1277 px, 95103 bytes, 9274 ink in band
+NOTE  v69  dunn_bh          1800x1277 px, 99254 bytes, 8420 ink in band
+NOTE  v69  narrow           960x838 px, 57487 bytes, 4937 ink in band
+NOTE  v69  welch_two        1800x1277 px, 93749 bytes, 7379 ink in band
+NOTE  v69  mw_two           1800x1277 px, 89132 bytes, 8422 ink in band
+
+==============================================================================
+v69 bracket disclosure: what the bracket layout says about its post-hoc
+==============================================================================
+PASS  v69     the annotation bridge source is present         computed=NA  expected TRUE
+PASS  v69     harness/bracketcap has been driven              computed=NA  expected TRUE
+PASS  v69     all eight legs are present in the driven artefact  computed=NA  expected TRUE
+PASS  v69     leg tukey rendered without error                computed=NA  expected TRUE
+PASS  v69     leg dunn_holm rendered without error            computed=NA  expected TRUE
+PASS  v69     leg dunn_bonferroni rendered without error      computed=NA  expected TRUE
+PASS  v69     leg dunn_bh rendered without error              computed=NA  expected TRUE
+PASS  v69     leg narrow rendered without error               computed=NA  expected TRUE
+PASS  v69     leg welch_two rendered without error            computed=NA  expected TRUE
+PASS  v69     leg mw_two rendered without error               computed=NA  expected TRUE
+PASS  v69     leg ns_omnibus rendered without error           computed=NA  expected TRUE
+PASS  v69     @emlDrawBracketCaption exists                   computed=NA  expected TRUE
+PASS  v69     @emlDrawAnnotations calls @emlDrawBracketCaption  computed=NA  expected TRUE
+PASS  v69     the caption call is gated on there being brackets to describe  computed=NA  expected TRUE
+PASS  v69     the parametric arm names Tukey HSD as the pairwise test  computed=NA  expected TRUE
+PASS  v69     the nonparametric arm names Dunn's test         computed=NA  expected TRUE
+PASS  v69     the Tukey arm's clause claims its own family-wise control  computed=NA  expected TRUE
+PASS  v69     the Dunn arm's clause is the SPSS-shaped adjustment line  computed=NA  expected TRUE
+PASS  v69     the Dunn clause interpolates .correction$ rather than a literal  computed=NA  expected TRUE
+PASS  v69     no bracket caption hardcodes a correction name  computed=NA  expected TRUE
+PASS  v69     the two-group parametric arm names Welch's t-test  computed=NA  expected TRUE
+PASS  v69     the two-group nonparametric arm names the Mann-Whitney U test  computed=NA  expected TRUE
+PASS  v69     both two-group arms state that one comparison needs no adjustment  computed=NA  expected TRUE
+PASS  v69     no two-group arm claims family-wise control     computed=NA  expected TRUE
+PASS  v69     the bridge no longer writes an empty bracket caption anywhere  computed=NA  expected TRUE
+PASS  v69     @emlClearAnnotations resets both caption halves  computed=NA  expected TRUE
+PASS  v69     the caption band is reported to @emlExpandDrawnExtent  computed=NA  expected TRUE
+PASS  v69     the caption restores the caller's viewport and axes  computed=NA  expected TRUE
+PASS  v69     the Tukey figure names Tukey HSD as the pairwise test  computed=NA  expected TRUE
+PASS  v69     the Tukey figure states its own family-wise control  computed=NA  expected TRUE
+PASS  v69     the Dunn figure names Dunn's test as the pairwise test  computed=NA  expected TRUE
+PASS  v69     the Dunn figure claims NO family-wise control of its own  computed=NA  expected TRUE
+PASS  v69     the Tukey figure does not report an adjustment it never made  computed=NA  expected TRUE
+PASS  v69     the two arms' captions are not the same sentence  computed=NA  expected TRUE
+PASS  v69     leg dunn_holm reports the correction the user chose (read: 'holm')  computed=NA  expected TRUE
+PASS  v69     leg dunn_bonferroni reports the correction the user chose (read: 'bonferroni')  computed=NA  expected TRUE
+PASS  v69     leg dunn_bh reports the correction the user chose (read: 'bh')  computed=NA  expected TRUE
+PASS  v69     the three corrections produce three different captions  computed=NA  expected TRUE
+PASS  v69     the wrapped caption still carries the whole claim  computed=NA  expected TRUE
+PASS  v69     the two-group parametric figure names Welch's t-test  computed=NA  expected TRUE
+PASS  v69     the two-group nonparametric figure names the Mann-Whitney U test  computed=NA  expected TRUE
+PASS  v69     both two-group figures state one comparison and no adjustment  computed=NA  expected TRUE
+PASS  v69     neither two-group figure reports a correction it never applied  computed=NA  expected TRUE
+PASS  v69     no two-group figure claims family-wise control  computed=NA  expected TRUE
+PASS  v69     the two two-group arms' captions are not the same sentence  computed=NA  expected TRUE
+PASS  v69     leg tukey: the caption procedure ran and drew   computed=NA  expected TRUE
+PASS  v69     leg tukey: there is ink inside the caption band  computed=NA  expected TRUE
+PASS  v69     leg tukey: the caption fits the room it has (73.6 <= 147.2 mm)  computed=NA  expected TRUE
+PASS  v69     leg tukey: caption ink clears the RIGHT edge by its own padding (right 1556, limit 1769 of 1800 px)  computed=NA  expected TRUE
+PASS  v69     leg tukey: caption ink clears the left edge by its own padding  computed=NA  expected TRUE
+PASS  v69     leg tukey: the ink on the page fits the room (111.1 <= 147.2 mm)  computed=NA  expected TRUE
+FAIL  v69     leg tukey: the measured ink width agrees with the reported one (ratio 1.509)  computed=NA  expected TRUE
+PASS  v69     leg dunn_holm: the caption procedure ran and drew  computed=NA  expected TRUE
+PASS  v69     leg dunn_holm: there is ink inside the caption band  computed=NA  expected TRUE
+PASS  v69     leg dunn_holm: the caption fits the room it has (73.6 <= 147.2 mm)  computed=NA  expected TRUE
+PASS  v69     leg dunn_holm: caption ink clears the RIGHT edge by its own padding (right 1499, limit 1769 of 1800 px)  computed=NA  expected TRUE
+PASS  v69     leg dunn_holm: caption ink clears the left edge by its own padding  computed=NA  expected TRUE
+PASS  v69     leg dunn_holm: the ink on the page fits the room (101.5 <= 147.2 mm)  computed=NA  expected TRUE
+FAIL  v69     leg dunn_holm: the measured ink width agrees with the reported one (ratio 1.379)  computed=NA  expected TRUE
+PASS  v69     leg dunn_bonferroni: the caption procedure ran and drew  computed=NA  expected TRUE
+PASS  v69     leg dunn_bonferroni: there is ink inside the caption band  computed=NA  expected TRUE
+PASS  v69     leg dunn_bonferroni: the caption fits the room it has (73.6 <= 147.2 mm)  computed=NA  expected TRUE
+PASS  v69     leg dunn_bonferroni: caption ink clears the RIGHT edge by its own padding (right 1539, limit 1769 of 1800 px)  computed=NA  expected TRUE
+PASS  v69     leg dunn_bonferroni: caption ink clears the left edge by its own padding  computed=NA  expected TRUE
+PASS  v69     leg dunn_bonferroni: the ink on the page fits the room (108.2 <= 147.2 mm)  computed=NA  expected TRUE
+FAIL  v69     leg dunn_bonferroni: the measured ink width agrees with the reported one (ratio 1.470)  computed=NA  expected TRUE
+PASS  v69     leg dunn_bh: the caption procedure ran and drew  computed=NA  expected TRUE
+PASS  v69     leg dunn_bh: there is ink inside the caption band  computed=NA  expected TRUE
+PASS  v69     leg dunn_bh: the caption fits the room it has (73.6 <= 147.2 mm)  computed=NA  expected TRUE
+PASS  v69     leg dunn_bh: caption ink clears the RIGHT edge by its own padding (right 1481, limit 1769 of 1800 px)  computed=NA  expected TRUE
+PASS  v69     leg dunn_bh: caption ink clears the left edge by its own padding  computed=NA  expected TRUE
+PASS  v69     leg dunn_bh: the ink on the page fits the room (98.5 <= 147.2 mm)  computed=NA  expected TRUE
+FAIL  v69     leg dunn_bh: the measured ink width agrees with the reported one (ratio 1.338)  computed=NA  expected TRUE
+PASS  v69     leg narrow: the caption procedure ran and drew  computed=NA  expected TRUE
+PASS  v69     leg narrow: there is ink inside the caption band  computed=NA  expected TRUE
+PASS  v69     leg narrow: the caption fits the room it has (38.7 <= 77.4 mm)  computed=NA  expected TRUE
+FAIL  v69     leg narrow: caption ink clears the RIGHT edge by its own padding (right 955, limit 937 of 960 px)  computed=NA  expected TRUE
+FAIL  v69     leg narrow: caption ink clears the left edge by its own padding  computed=NA  expected TRUE
+FAIL  v69     leg narrow: the ink on the page fits the room (80.6 <= 77.4 mm)  computed=NA  expected TRUE
+FAIL  v69     leg narrow: the measured ink width agrees with the reported one (ratio 2.082)  computed=NA  expected TRUE
+PASS  v69     leg welch_two: the caption procedure ran and drew  computed=NA  expected TRUE
+PASS  v69     leg welch_two: there is ink inside the caption band  computed=NA  expected TRUE
+PASS  v69     leg welch_two: the caption fits the room it has (73.6 <= 147.2 mm)  computed=NA  expected TRUE
+PASS  v69     leg welch_two: caption ink clears the RIGHT edge by its own padding (right 1409, limit 1769 of 1800 px)  computed=NA  expected TRUE
+PASS  v69     leg welch_two: caption ink clears the left edge by its own padding  computed=NA  expected TRUE
+PASS  v69     leg welch_two: the ink on the page fits the room (86.3 <= 147.2 mm)  computed=NA  expected TRUE
+FAIL  v69     leg welch_two: the measured ink width agrees with the reported one (ratio 1.172)  computed=NA  expected TRUE
+PASS  v69     leg mw_two: the caption procedure ran and drew  computed=NA  expected TRUE
+PASS  v69     leg mw_two: there is ink inside the caption band  computed=NA  expected TRUE
+PASS  v69     leg mw_two: the caption fits the room it has (73.6 <= 147.2 mm)  computed=NA  expected TRUE
+PASS  v69     leg mw_two: caption ink clears the RIGHT edge by its own padding (right 1478, limit 1769 of 1800 px)  computed=NA  expected TRUE
+PASS  v69     leg mw_two: caption ink clears the left edge by its own padding  computed=NA  expected TRUE
+PASS  v69     leg mw_two: the ink on the page fits the room (98.0 <= 147.2 mm)  computed=NA  expected TRUE
+FAIL  v69     leg mw_two: the measured ink width agrees with the reported one (ratio 1.331)  computed=NA  expected TRUE
+FAIL  v69     the narrow figure wraps the caption onto two lines  computed=NA  expected TRUE
+PASS  v69     the wide figures keep the caption on one line   computed=NA  expected TRUE
+PASS  v69     the export grew to include the caption band     computed=NA  expected TRUE
+PASS  v69     the two-group export grew for the same reason   computed=NA  expected TRUE
+PASS  v69     leg tukey: the omnibus line is still on the figure  computed=NA  expected TRUE
+PASS  v69     leg dunn_holm: the omnibus line is still on the figure  computed=NA  expected TRUE
+PASS  v69     leg dunn_bonferroni: the omnibus line is still on the figure  computed=NA  expected TRUE
+PASS  v69     leg dunn_bh: the omnibus line is still on the figure  computed=NA  expected TRUE
+PASS  v69     leg narrow: the omnibus line is still on the figure  computed=NA  expected TRUE
+PASS  v69     leg ns_omnibus: the omnibus line is still on the figure  computed=NA  expected TRUE
+PASS  v69     leg welch_two: the omnibus line is still on the figure  computed=NA  expected TRUE
+PASS  v69     leg mw_two: the omnibus line is still on the figure  computed=NA  expected TRUE
+PASS  v69     leg tukey: the caption is outside the frame, not in it  computed=NA  expected TRUE
+PASS  v69     leg dunn_holm: the caption is outside the frame, not in it  computed=NA  expected TRUE
+PASS  v69     leg dunn_bonferroni: the caption is outside the frame, not in it  computed=NA  expected TRUE
+PASS  v69     leg dunn_bh: the caption is outside the frame, not in it  computed=NA  expected TRUE
+PASS  v69     leg narrow: the caption is outside the frame, not in it  computed=NA  expected TRUE
+PASS  v69     leg welch_two: the caption is outside the frame, not in it  computed=NA  expected TRUE
+PASS  v69     leg mw_two: the caption is outside the frame, not in it  computed=NA  expected TRUE
+PASS  v69     a non-significant omnibus draws no brackets     computed=NA  expected TRUE
+PASS  v69     a non-significant omnibus reaches no caption at all  computed=NA  expected TRUE
+PASS  v69     leg dunn_holm: the drawn caption carries the clause the bridge composed  computed=NA  expected TRUE
+PASS  v69     leg dunn_bonferroni: the drawn caption carries the clause the bridge composed  computed=NA  expected TRUE
+PASS  v69     leg dunn_bh: the drawn caption carries the clause the bridge composed  computed=NA  expected TRUE
+PASS  v69     every bracketcap leg is accounted for by some check  computed=NA  expected TRUE
+PASS  v69     every bracketcap leg a check reads was actually rendered  computed=NA  expected TRUE
+PASS  v69     the finding of 16 Aug is closed: the whole two-group figure names its test  computed=NA  expected TRUE
+------------------------------------------------------------------------------ 
+121 checks, 110 passed, 11 FAILED

@@ -1,0 +1,7 @@
+Ik Axes (both 0 = auto)
+
+Value (bottom/top): { FEI 222
+Value (left/right): | 333 444
+Ylimits: | 5
+
+Undo Quit Draw

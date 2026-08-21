@@ -71,14 +71,37 @@ PREFS="$ROOT/harness/bracketcap/prefs"
 FILTER="${1:-}"
 TSV="$OUT/BRACKETCAP.tsv"
 
+# The legs this rig drives, and the suffixes it writes for each one. Both are
+# named here so the cleanup below can be expressed as "the files this script
+# produces" rather than as a glob over the folder.
+LEGS="tukey dunn_holm dunn_bonferroni dunn_bh narrow welch_two mw_two ns_omnibus"
+SUFFIXES="png kv log ocr band.png band.txt band.err fig.png fig.ocr"
+
+# The leg names the previous full run wrote, so a leg dropped or renamed since
+# then can still be swept. Scratch, and gitignored: absent, the union below is
+# just $LEGS, which is the safe direction.
+MANIFEST="$OUT/.legs"
+
 mkdir -p "$OUT" "$PREFS"
 
 # A RENAMED LEG MUST NOT LEAVE ITS OLD ARTEFACT BEHIND. Measured on
 # harness/disclosure 7 Aug 2026: gviolin11 became gviolin25 and the validator
 # went on reading the previous run's log and passing. Only cleared on a full
 # run, so a filtered re-run of one leg does not destroy the other six.
+#
+# THE SWEEP NAMES ITS FILES; IT DOES NOT GLOB THE FOLDER. break.sh and
+# break_v76.sh write break_<name>.v69.log and break_<name>.v76.log into this
+# same folder, and a glob over *.log takes those with it -- a rig deleting a
+# sibling's transcripts, including under it while the sibling is still running.
+# Deleting "$leg.$suffix" for legs drawn from $LEGS and from this rig's own
+# manifest can only ever remove a file this script wrote.
 if [ -z "$FILTER" ]; then
-    rm -f "$OUT"/*.png "$OUT"/*.kv "$OUT"/*.log "$OUT"/*.ocr
+    for leg in $LEGS $( [ -f "$MANIFEST" ] && cat "$MANIFEST" ); do
+        for suffix in $SUFFIXES; do
+            rm -f "$OUT/$leg.$suffix"
+        done
+    done
+    printf '%s\n' $LEGS > "$MANIFEST"
     : > "$TSV"
 fi
 
@@ -86,7 +109,7 @@ kv () {  # kv <file> <key>  -> value, or empty
     awk -F'\t' -v k="$2" '$1 == k { print $2; exit }' "$1" 2>/dev/null
 }
 
-for leg in tukey dunn_holm dunn_bonferroni dunn_bh narrow welch_two mw_two ns_omnibus; do
+for leg in $LEGS; do
     [ -n "$FILTER" ] && case "$leg" in *"$FILTER"*) ;; *) continue ;; esac
     KVF="$OUT/$leg.kv"
     PNG="$OUT/$leg.png"
