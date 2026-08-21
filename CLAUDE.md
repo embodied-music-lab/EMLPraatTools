@@ -16,7 +16,18 @@ Build it incrementally from the commit currently on GitHub main
 bundle is ~90 MB and will not transfer.
 
 Name it for what it carries, e.g. `eml-guardfix.bundle`, and say plainly
-in chat which earlier bundle it supersedes.
+in chat which bundle is the one to push.
+
+**NEVER DELETE A BUNDLE FROM IAN'S DISK, AND NEVER TELL HIM TO.** Ever. The
+bundles in `~/EMLPraatTools/` are the backup chain -- the only durable copy
+of any commit GitHub does not yet have, and the only thing that survives a
+container rollback. A newer bundle usually CONTAINS the commits of the older
+ones, which makes deleting the old ones look tidy; it is not tidy, it is
+removing every earlier restore point in favour of one. They cost kilobytes.
+They stay.
+
+The word "supersedes" caused this: it reads as "the old one is now rubbish".
+Say instead which bundle to push, and leave the rest alone.
 
 **ALWAYS paste the five push commands with the bundle, every single time.**
 Not "same commands as before" — the actual block, with the actual filename.
