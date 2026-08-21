@@ -340,3 +340,11 @@ harness/dialogheight/out/*/work/wm.log
 # loop. run.sh rebuilds it from nothing every run. SUMMARY.txt and the two
 # TSVs ARE the measurement and are NOT ignored.
 harness/wraptext/out/before/
+# The roundtrip harness's scratch. out/ROUNDTRIP.tsv, out/emitted.praat, the
+# EXCISED_*/MAP_* files and out/saved are the evidence and are NOT ignored;
+# out/stage is sixty symlinks into plugin/ plus the derived twins, and out/work
+# holds the intermediate bodies the twin hashes are taken over. Committing the
+# stage would put what looks like a second copy of the plugin in the tree.
+harness/roundtrip/out/stage/
+harness/roundtrip/out/work/
+harness/roundtrip/out/replay/

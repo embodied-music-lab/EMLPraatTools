@@ -1,0 +1,199 @@
+# Cut from eml-edit-table.praat to make the headless twin _rt_edit_table.praat.
+# Every beginPause:/endPause region in the driven range, in file order.
+# --- stanza 1  (EML Table Editor — )  lines 132-134
+        beginPause: "EML Table Editor — " + displayName$
+            comment: "Table has no columns. Add a column to begin editing."
+        clicked = endPause: "Quit", "Add Column", 2, 0
+# --- stanza 2  (Add Column)  lines 139-141
+            beginPause: "Add Column"
+                sentence: "Column name", "newcolumn"
+            clicked2 = endPause: "Go Back", "Add", 2, 0
+# --- stanza 3  (EML Table Editor — )  lines 156-159
+        beginPause: "EML Table Editor — " + displayName$
+            comment: displayName$ + ": 0 rows x " + string$ (nCols) + " columns"
+            comment: "Table has no rows. Add a row to begin editing."
+        clicked = endPause: "Quit", "Edit", 2, 0
+# --- stanza 4  (EML Table Editor — )  lines 192-205
+        beginPause: "EML Table Editor — " + displayName$
+            comment: displayName$ + ": "
+            ... + string$ (nRows) + " rows x "
+            ... + string$ (nCols) + " columns"
+            optionmenu: "Column", prevCol
+                for iCol from 1 to nCols
+                    option: colName$[iCol]
+                endfor
+            optionmenu: "Row", prevRow
+                for iRow from 1 to nRows
+                    option: string$ (iRow)
+                endfor
+            sentence: "Value", currentValue$
+        clicked = endPause: "Quit", "Read", "Set", "Find...", "Edit", 3, 0
+# --- stanza 5  (Nothing was written)  lines 236-244
+                beginPause: "Nothing was written"
+                    comment: "You chose a different cell without changing the"
+                    comment: "Value box, so it still held the previous cell's"
+                    comment: "contents. Nothing was written."
+                    comment: ""
+                    comment: "The box now shows what is in "
+                    ... + colName$[column] + ", row " + string$ (row) + "."
+                    comment: "Change it and press Set to write."
+                endPause: "OK", 1, 0
+# --- stanza 6  (Find / Replace)  lines 349-360
+        beginPause: "Find / Replace"
+            sentence: "Find text", prevFind$
+            sentence: "Replace with", prevReplace$
+            optionmenu: "Scope", prevScope
+                option: "All columns"
+                for .iCol from 1 to .nCols
+                    option: colName$[.iCol]
+                endfor
+            optionmenu: "Match type", prevMatch
+                option: "Contains"
+                option: "Exact"
+        .clicked = endPause: "Go Back", "Find", "Fnd Nxt", "Rep Nxt", "Rep All", 3, 0
+# --- stanza 7  (Find)  lines 441-443
+                    beginPause: "Find"
+                        comment: "No match found for """ + find_text$ + """."
+                    endPause: "OK", 1, 0
+# --- stanza 8  (Rep Nxt)  lines 455-458
+                        beginPause: "Rep Nxt"
+                            comment: "Replaced at column """ + .displayCol$ + """, row " + string$ (prevRow) + "."
+                            comment: "New value: " + .newVal$
+                        endPause: "OK", 1, 0
+# --- stanza 9  (Found)  lines 462-465
+                        beginPause: "Found"
+                            comment: "Column: " + .displayCol$ + ",  Row: " + string$ (prevRow)
+                            comment: "Value: " + .foundVal$
+                        endPause: "OK", 1, 0
+# --- stanza 10  (Rep All)  lines 499-501
+                beginPause: "Rep All"
+                    comment: "Replaced " + string$ (.count) + " cell(s)."
+                endPause: "OK", 1, 0
+# --- stanza 11  (Table Structure)  lines 517-529
+    beginPause: "Table Structure"
+        comment: displayName$ + ": "
+        ... + string$ (.nRows) + " rows x "
+        ... + string$ (.nCols) + " columns"
+        optionmenu: "Action", prevAction
+            option: "Add row at end"
+            option: "Insert row after..."
+            option: "Delete row..."
+            option: "Add column at end..."
+            option: "Insert column at..."
+            option: "Delete column..."
+            option: "Rename column..."
+    .clicked = endPause: "Go Back", "Next", 2, 0
+# --- stanza 12  (Insert Row)  lines 543-546
+            beginPause: "Insert Row"
+                comment: "Table has " + string$ (.nRows) + " rows."
+                natural: "After row", prevRow
+            .clicked2 = endPause: "Go Back", "Insert", 2, 0
+# --- stanza 13  (Cannot Delete)  lines 558-560
+                beginPause: "Cannot Delete"
+                    comment: "Table has no rows to delete."
+                endPause: "OK", 1, 0
+# --- stanza 14  (Delete Row)  lines 562-565
+                beginPause: "Delete Row"
+                    comment: "Table has " + string$ (.nRows) + " rows."
+                    natural: "Row number", prevRow
+                .clicked2 = endPause: "Go Back", "Delete", 2, 0
+# --- stanza 15  (Add Column)  lines 586-588
+                beginPause: "Add Column"
+                    sentence: "Column name", .pending$
+                .clicked2 = endPause: "Go Back", "Add", 2, 0
+# --- stanza 16  (Insert Column)  lines 613-617
+                beginPause: "Insert Column"
+                    comment: "Table has " + string$ (.nCols) + " columns."
+                    natural: "At position", prevCol
+                    sentence: "Column name", .pending$
+                .clicked2 = endPause: "Go Back", "Insert", 2, 0
+# --- stanza 17  (Delete Column)  lines 656-661
+                beginPause: "Delete Column"
+                    optionmenu: "Column to delete", prevCol
+                        for .iCol from 1 to .nCols
+                            option: .colLabel$[.iCol]
+                        endfor
+                .clicked2 = endPause: "Go Back", "Delete", 2, 0
+# --- stanza 18  (Cannot Rename)  lines 677-679
+                beginPause: "Cannot Rename"
+                    comment: "Table has no columns to rename."
+                endPause: "OK", 1, 0
+# --- stanza 19  (Rename Column)  lines 695-701
+                    beginPause: "Rename Column"
+                        optionmenu: "Column to rename", prevCol
+                            for .iCol from 1 to .nCols
+                                option: .colLabel$[.iCol]
+                            endfor
+                        sentence: "New name", .pending$
+                    .clicked2 = endPause: "Go Back", "Rename", 2, 0
+# --- stanza 20  (Cannot Open the Table Editor)  lines 928-946
+    beginPause: "Cannot Open the Table Editor"
+        comment: "⚠  The editor did not open."
+        comment: "──────────────────────────────────────────────"
+        if .nTables = 0
+            comment: "No Table object is selected."
+        else
+            comment: "There are " + string$ (.nTables) + " Table objects"
+            comment: "selected, and the editor edits one at a time."
+        endif
+        comment: ""
+        comment: "The editor works on a single Table, because every"
+        comment: "cell it writes has to belong to a table it can"
+        comment: "name without ambiguity."
+        comment: "──────────────────────────────────────────────"
+        comment: "Nothing has been changed."
+        comment: ""
+        comment: "Click OK, select exactly one Table in the"
+        comment: "Objects window, then open the editor again."
+    .clicked = endPause: "OK", 1, 0
+# --- stanza 21  (Cannot Use That Column Name)  lines 979-1005
+    beginPause: "Cannot Use That Column Name"
+        comment: "⚠  The column was not " + .verb$ + "."
+        comment: "──────────────────────────────────────────────"
+        if .name$ = ""
+            comment: "A column name cannot be empty."
+            comment: ""
+            comment: "Every column has to be nameable, because Praat"
+            comment: "addresses table columns by name."
+        else
+            comment: "This table already has a column named:"
+            comment: "        " + .shown$
+            comment: ""
+            comment: "It is column " + string$ (.at) + " of "
+            ... + string$ (.total) + "."
+            comment: ""
+            comment: "Two columns with the same name cannot be told"
+            comment: "apart. Praat's own table commands address a"
+            comment: "column by its name and always find the first"
+            comment: "one, so the second becomes unreachable — and"
+            comment: "deleting it would delete the first instead."
+        endif
+        comment: "──────────────────────────────────────────────"
+        comment: "Column names must be unique within a table."
+        comment: ""
+        comment: "Your selections are kept. Click Back to choose"
+        comment: "another name, or Quit to leave the editor."
+    .clicked = endPause: "Quit", "Back", 2, 0
+# --- stanza 22  (Cannot Delete Column)  lines 1036-1057
+    beginPause: "Cannot Delete Column"
+        comment: "⚠  The column was not deleted."
+        comment: "──────────────────────────────────────────────"
+        if .nCols = 1
+            comment: "This table has one column left:"
+            comment: "        " + .only$
+        else
+            comment: "This table has no columns."
+        endif
+        comment: ""
+        comment: "A Praat table must always have at least one"
+        comment: "column. Deleting the last one would leave a"
+        comment: "table Praat cannot hold, and the attempt ends"
+        comment: "the editing session outright."
+        comment: "──────────────────────────────────────────────"
+        comment: "To empty the table, delete its rows instead."
+        comment: "To replace this column, add the new one first,"
+        comment: "then delete this one."
+        comment: ""
+        comment: "Nothing has changed. Click Back to return to"
+        comment: "the editor, or Quit to leave it."
+    .clicked = endPause: "Quit", "Back", 2, 0

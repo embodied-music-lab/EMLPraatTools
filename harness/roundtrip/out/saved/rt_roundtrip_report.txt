@@ -1,0 +1,97 @@
+Created demo Table: demo_3groups
+
+Three-group comparison (Soprano / Mezzo / Alto).
+  Data column: SPL_dB or vibrato_rate_Hz
+  Group column: voice_type
+  Note: both measures decline across the three
+        voice types -- SPL_dB at 92 / 88 / 85 dB,
+        vibrato_rate_Hz at 5.8 / 5.5 / 5.2 Hz.
+        The SPL gap is the larger of the two.
+  Try: Stats Wizard -> Compare groups or conditions
+       -> No -- different groups (independent)
+       -> Three or more groups
+  Or go straight there: New -> EML Stats & Graphs ->
+       Compare k groups (ANOVA)... or
+       Compare k groups (Kruskal-Wallis)...
+
+Select the Table and use the EML Stats & Graphs menu or Wizard.
+RT|create_demo|1|45|4
+RT|steps_after|create_demo|0
+RT|load_file|1|24|3|Table rt_input
+RT|steps_after|load_file|0
+RT|cell_before|100
+DLG|edt|4|visit=1|clicked=3
+DLG|edt|4|visit=2|clicked=1
+RT|edit_cell|1|4242
+RT|table_mean_after_edit|609.416667
+RT|steps_after|edit_cell|0
+DLG|anv|1|visit=1|clicked=2
+
+==============================================
+  EML Stats : One-Way ANOVA
+  Fri Aug 21 01:23:25 2026
+  from: analysis dialog
+==============================================
+
+  Table               rt input
+  Data column         f0 Hz
+  Group column        cohort
+  Groups              3
+
+
+  -- ANOVA Table -----------------------------
+  Why: Tests whether group means differ when normality and equal variances hold.
+
+Source              SS              df    MS              F           p
+Between             1441680.33      2     720840.17       1.0103      .381
+Within              14982775.50     21    713465.50       
+Total               16424455.83     23    
+
+  F                   1.0103		Ratio of mean squares: the between-group mean square is 1.0 times the within-group mean square. With no real effect, this ratio tends to be near 1
+  p                   .381		Not statistically significant at the 5% level
+  Effect size         eta-squared = 0.0878		Effect size: medium by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 9% of the total variance
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(2, 21) = 0.9992
+  Equal-spread p      p = .385
+
+
+  -- Group Descriptives ----------------------
+  Group         N     Mean      SD        Median    
+  alpha         8     621.25    1463.01   104.50    
+  bravo         8     303.50    2.45      303.50    
+  charlie       8     903.50    2.45      903.50    
+
+
+  -- Tukey HSD Pairwise Comparisons (p-values) ---
+
+              alpha       bravo       charlie     
+alpha         ---         .736        .784        
+bravo         .736        ---         .349        
+charlie       .784        .349        ---         
+
+
+  -- Tukey HSD Mean Differences (95% family-wise CI) ---
+
+Comparison                Difference    95% CI
+alpha - bravo             317.7500      [-746.7736, 1382.2736]
+alpha - charlie           -282.2500     [-1346.7736, 782.2736]
+bravo - charlie           -600.0000     [-1664.5236, 464.5236]
+
+
+  -- Pairwise Effect Sizes (Cohen's d) -------
+
+              alpha       bravo       charlie     
+alpha         ---         0.307       -0.273      
+bravo         -0.307      ---         -244.949    
+charlie       0.273       244.949     ---         
+
+  Conventions: quartiles R type 7 - SD & variance n-1
+  - rank tests average tied ranks (tie-corrected).
+==============================================
+RT|draw|1|passes=1|ymin=0|ymax=0
+RT|drawn_extent|0|6.0000|0|4.0000
+DLG|anv|2|visit=1|clicked=2
+DLG|out|1|visit=1|clicked=2
+
+
+Note: characters outside plain ASCII were replaced with ASCII equivalents in this file (chi^2 for the chi-square symbol, "-" for a rule) so it stays readable to every text tool. Praat writes a whole file as UTF-16 as soon as one such character is in it. The Info window shows the original.

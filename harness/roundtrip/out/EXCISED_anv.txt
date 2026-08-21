@@ -1,0 +1,24 @@
+# Cut from eml-compare-k-groups.praat to make the headless twin _rt_compare_k.praat.
+# Every beginPause:/endPause region in the driven range, in file order.
+# --- stanza 1  (Compare k Groups (ANOVA))  lines 47-63
+    beginPause: "Compare k Groups (ANOVA)"
+        comment: "📋 Table: " + tableName$
+        comment: "─────────────────────────────────────"
+        optionmenu: "Data column", guessDataIdx
+        for iCol from 1 to nCols
+            option: emlTableColumnNames.name$ [iCol]
+        endfor
+        optionmenu: "Group column", guessGroupIdx
+        for iCol from 1 to nCols
+            option: emlTableColumnNames.name$ [iCol]
+        endfor
+        boolean: "Tukey HSD post hoc", selTukey
+        optionmenu: "Group order", selGroupOrder
+            option: "Table order"
+            option: "Alphabetical"
+        @emlWrapperCommonFields
+    clicked = endPause: "Quit", "Run", 2, 0
+# --- stanza 2  (Analysis complete)  lines 100-102
+            beginPause: "Analysis complete"
+                comment: "📊 Results are in the Info window."
+            clicked = endPause: "Done", "Save", "Draw", "New", 3, 0

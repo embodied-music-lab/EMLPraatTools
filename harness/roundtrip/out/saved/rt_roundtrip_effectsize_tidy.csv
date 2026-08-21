@@ -1,0 +1,5 @@
+term,contrast,effect.size,effect.size.type
+cohort,,0.0877764443438943,eta.squared
+cohort,alpha-bravo,0.3071524965954936,cohens.d
+cohort,alpha-charlie,-0.27283648202699623,cohens.d
+cohort,bravo-charlie,-244.94897427831782,cohens.d

@@ -1,0 +1,144 @@
+# Cut from eml-output.praat to make the headless twin eml-output.praat.
+# Every beginPause:/endPause region in the driven range, in file order.
+# --- stanza 1  ()  lines 3300-3404
+    beginPause: .saveTitle$
+        if .pageLine$ <> ""
+            comment: .pageLine$
+            comment: ""
+        endif
+        comment: "Everything ticked is written to one folder, sharing one"
+        comment: "base name. Each output adds its own suffix:"
+        if .haveCSV = 1
+            comment: "    _tidy.csv, _glance.csv — and _augment.csv,"
+            comment: "    _posthoc_tidy.csv, _effectsize_tidy.csv when the"
+            comment: "    analysis produces them"
+        endif
+        comment: "    _report.txt — the Info window"
+        if .showFigure = 1
+            comment: "    .png — the figure, and _legend.png beside it when"
+            comment: "    the legend was placed outside the frame"
+            # THE SUFFIX LIST NAMES WHAT THIS DIALOG CAN ACTUALLY WRITE, so
+            # on Windows it does not advertise a .pdf the panel is not going
+            # to offer three lines further down. The reason is at the
+            # tickbox below.
+            if windows = 0
+                comment: "    .eps, .pdf — the same figure as vector, when ticked"
+            else
+                comment: "    .eps — the same figure as vector, when ticked"
+            endif
+        endif
+        comment: ""
+        if .showFigure = 1
+            # THE FOUND FIGURE IS NAMED BEFORE IT IS TICKED. On this arm the
+            # user pressed Save on an analysis dialog rather than straight
+            # after a draw, so a Figure PNG box with nothing said about it
+            # raises the question the panel should be answering: which
+            # figure. It is the one in the Picture window, which within a
+            # single run of a wrapper is the one its own Draw button made.
+            # TICKED either way, by author ruling: the common case is this
+            # analysis's own figure, and a box the user can see is a box the
+            # user can untick.
+            if .figureFound = 1
+                comment: "Includes the figure now in the Picture window."
+            endif
+            boolean: "Figure PNG", 1
+            # THE FORMAT CHOICE SITS WITH THE FIGURE, and it is TICKBOXES
+            # rather than a menu because the choice is additive: the PNG is
+            # always written and these are extra copies of the same figure,
+            # so the widget that says "one of these" would be saying the
+            # wrong thing. It is also the panel's own idiom -- every other
+            # output on this dialog is a tickbox for the same reason.
+            #
+            # THE RESOLUTION IS THE OTHER HALF OF THIS DECISION and it is set
+            # where the figure is made, on the graph's Advanced page
+            # (`optionmenu: "Output DPI"`, 300 or 600). That one IS a menu,
+            # because 300 and 600 are alternatives -- one PNG, one
+            # resolution. The line below names the value that will be used so
+            # the two read together at the moment of saving, without giving
+            # the same setting two places to live.
+            #
+            # DPI IS A RASTER PROPERTY. EPS and PDF carry the drawing itself
+            # rather than a grid of pixels, so the number applies to the PNG
+            # and the comment says so instead of implying it covers all three.
+            comment: .dpiNote$
+            comment: "Vector copies for journal submission — same figure, no dpi:"
+            boolean: "Also EPS", 0
+            # ── PDF IS NOT OFFERED ON WINDOWS, BECAUSE PRAAT HAS NOT GOT IT ──
+            #
+            # Praat's manual, on "Save as PDF file...": "A command in the File
+            # menu of the Picture window, on Macintosh and Linux." It is
+            # absent on Windows and the manual sends the reader to PNG or EPS
+            # instead. The author confirms it: the command is not in the menu
+            # on his Windows machine, and reaching for it crashed.
+            #
+            # THIS IS THE ONE PLATFORM FACT THE PLUGIN IS ENTITLED TO KNOW,
+            # and the distinction is worth stating because everything else
+            # here is deliberately built the other way. Where the plugin is
+            # GUESSING what a host can do, it must not branch on the
+            # platform: it attempts, looks at the disk, and believes the
+            # answer -- see @eml_saveFigureFormats, which names no operating
+            # system at all. Here it is not guessing. The command is
+            # DOCUMENTED absent, and offering a tickbox that is documented to
+            # do nothing -- and then apologising for it afterwards -- is
+            # worse than not offering it.
+            #
+            # THE ABSENCE IS EXPLAINED RATHER THAN LEFT MYSTERIOUS. A missing
+            # box with nothing in its place reads as a bug or a version
+            # difference; one comment line says which it is, and says it
+            # where the user is standing when they look for it.
+            #
+            # Praat has no way to disable a form field, so "greyed out" is a
+            # box that is not built. The variable is not built either --
+            # `boolean:` is what declares also_PDF -- which is why the read
+            # below goes through .alsoPDF and not through the field name.
+            if windows = 0
+                boolean: "Also PDF", 0
+            else
+                comment: "PDF is not available in Praat on Windows."
+            endif
+        endif
+        if .haveCSV = 1
+            boolean: "Results CSV", 1
+        else
+            comment: "(No results to export — this analysis produced no rows.)"
+        endif
+        boolean: "Report from the Info window", 1
+        folder: "Folder", .folder$
+        word: "Base name", .proposed$
+    .clicked = endPause: "Cancel", "Save", 2, 1
+# --- stanza 2  (Cannot save there)  lines 3445-3462
+        beginPause: "Cannot save there"
+            @emlWrapText: eml_saveFolderWritable.reason$, 62
+            for .wl from 1 to emlWrapText.nLines
+                comment: emlWrapText.line$ [.wl]
+            endfor
+            comment: ""
+            @emlWrapText: .folder$, 62
+            for .wl from 1 to emlWrapText.nLines
+                comment: emlWrapText.line$ [.wl]
+            endfor
+            comment: ""
+            @emlWrapText: "Nothing has been written. Press Save again and "
+            ... + "choose a folder you can write to -- your analysis is "
+            ... + "still here.", 62
+            for .wl from 1 to emlWrapText.nLines
+                comment: emlWrapText.line$ [.wl]
+            endfor
+        endPause: "OK", 1, 0
+# --- stanza 3  (Figure format not available)  lines 3674-3678
+                beginPause: "Figure format not available"
+                    for .rl from 1 to eml_saveFormatRedirectLines.nLines
+                        comment: eml_saveFormatRedirectLines.line$ [.rl]
+                    endfor
+                endPause: "OK", 1, 0
+# --- stanza 4  (Saved)  lines 3767-3772
+        beginPause: "Saved"
+            comment: "Wrote " + string$ (.nWritten) + " file(s):"
+            for .rl from 1 to eml_saveReceiptLines.nLines
+                comment: eml_saveReceiptLines.line$ [.rl]
+            endfor
+        endPause: "OK", 1, 0
+# --- stanza 5  (Nothing saved)  lines 3774-3776
+        beginPause: "Nothing saved"
+            comment: "Nothing was ticked, so nothing was written."
+        endPause: "OK", 1, 0

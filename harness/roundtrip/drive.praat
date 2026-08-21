@@ -86,12 +86,23 @@ appendInfoLine: "RT|record_started|", rtStarted
 #
 # @emlRecordBegin ran inside the wrapper's scope and stamped the meta table
 # with a root derived from preferencesDirectory$ — which under --pref-dir is
-# this harness's throwaway prefs folder, not a plugin anyone can include.
-# @emlRecordInit re-reads that value here; the assignment after it is the seam
-# harness/record/replay.sh uses for the same reason, and the renderer's own
-# tilde substitution runs again over whatever it is handed, so the emitted
-# header cannot disagree with the emitted paths.
-@emlRecordInit
+# this harness's throwaway prefs folder, not a plugin anyone can include. The
+# assignment below is the seam harness/record/replay.sh uses for the same
+# reason: @emlRecordInit fills emlRecordPluginRoot$ from the meta table only
+# `if not variableExists`, so setting it first wins, and the renderer's own
+# tilde substitution runs again over whatever it is handed.
+#
+# AND IT IS DELIBERATELY *NOT* PRECEDED BY @emlRecordInit, WHICH COST AN
+# AFTERNOON. MEASURED, 21 August 2026, eml-record.praat:190-198: the buffer's
+# row count is copied into emlRecordN only on the branch that ATTACHES —
+# `if emlRecordBufferId = 0`. A scope that calls @emlRecordInit before the
+# first step is recorded therefore pins emlRecordN at 0 for the rest of its
+# life, and since every step here is added in some OTHER scope, the flush at
+# the end of this file saw `emlRecordN < 1`, wrote nothing, and returned
+# written = 0 with no error anywhere. The shipped GUI never meets this: every
+# menu command is a fresh scope, so eml-record-save.praat always attaches
+# cold. A one-scope headless driver is the only thing that can, and the cure
+# is simply to leave the first @emlRecordInit to the flush.
 emlRecordPluginRoot$ = rtPlug$
 
 # ===========================================================================
@@ -100,7 +111,7 @@ emlRecordPluginRoot$ = rtPlug$
 # SEEDED, because the generator is randomGauss throughout and an artefact this
 # harness commits must not change on every run.
 random_initializeWithSeedUnsafelyButPredictably (20260821)
-nocheck runScript: "_rt_create_demo.praat"
+runScript: "_rt_create_demo.praat"
 
 rtDemoRows = -1
 rtDemoCols = -1
@@ -156,7 +167,7 @@ rtCellBefore$ = Get value: 1, "f0_Hz"
 appendInfoLine: "RT|cell_before|", rtCellBefore$
 
 selectObject: rtTable
-nocheck runScript: "_rt_edit_table.praat", "editor"
+runScript: "_rt_edit_table.praat", "editor"
 
 selectObject: rtTable
 rtCellAfter$ = Get value: 1, "f0_Hz"
@@ -182,7 +193,7 @@ appendInfoLine: "RT|steps_after|edit_cell|", rtStepsAfter3
 # 4, 5, 6 — analysis, draw and save, through the wrapper's own loop
 # ===========================================================================
 selectObject: rtTable
-nocheck runScript: "_rt_compare_k.praat"
+runScript: "_rt_compare_k.praat"
 
 nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
 rtStepsAfter6 = -1

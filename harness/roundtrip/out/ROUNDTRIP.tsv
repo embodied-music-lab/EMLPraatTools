@@ -1,0 +1,145 @@
+praat_version	Praat 6.6.30 (June 30 2026)
+plugin_root	/home/claude/repo/plugin
+harness_root	/home/claude/repo/harness/roundtrip
+record_stamp	21 August 2026, 00:00:00
+stage_scripts_linked	29
+stage_stats_linked	13
+savepanel_range	3130-3780
+stanza_dmo_1	35-47|Create Demo Table
+stanza_edt_1	132-134|EML Table Editor — 
+stanza_edt_2	139-141|Add Column
+stanza_edt_3	156-159|EML Table Editor — 
+stanza_edt_4	192-205|EML Table Editor — 
+stanza_edt_5	236-244|Nothing was written
+stanza_edt_6	349-360|Find / Replace
+stanza_edt_7	441-443|Find
+stanza_edt_8	455-458|Rep Nxt
+stanza_edt_9	462-465|Found
+stanza_edt_10	499-501|Rep All
+stanza_edt_11	517-529|Table Structure
+stanza_edt_12	543-546|Insert Row
+stanza_edt_13	558-560|Cannot Delete
+stanza_edt_14	562-565|Delete Row
+stanza_edt_15	586-588|Add Column
+stanza_edt_16	613-617|Insert Column
+stanza_edt_17	656-661|Delete Column
+stanza_edt_18	677-679|Cannot Rename
+stanza_edt_19	695-701|Rename Column
+stanza_edt_20	928-946|Cannot Open the Table Editor
+stanza_edt_21	979-1005|Cannot Use That Column Name
+stanza_edt_22	1036-1057|Cannot Delete Column
+stanza_anv_1	47-63|Compare k Groups (ANOVA)
+stanza_anv_2	100-102|Analysis complete
+stanza_out_1	3300-3404|
+stanza_out_2	3445-3462|Cannot save there
+stanza_out_3	3674-3678|Figure format not available
+stanza_out_4	3767-3772|Saved
+stanza_out_5	3774-3776|Nothing saved
+input_csv	/home/claude/repo/harness/roundtrip/out/data/rt_input.csv
+input_csv_sha	c6ffb44c86c0f3afbcfe7dcc68af13522883ce794a240b0edd113bc9b8d925cd
+input_csv_rows	24
+edit_target_cell	row 1, column f0_Hz
+edit_new_value	4242
+twin_dmo_source	eml-create-demo.praat
+twin_dmo_source_sha	b3e1383194af21fa0c786b1c03eaff4854b61daadf7837f342e95e090237f78e
+twin_dmo_stanzas	1
+twin_dmo_body_sha_shipped	76e3741027bf7b10e482971aa54f621a0bc789a8d7baecd26f5e5fb31698b1b5
+twin_dmo_body_sha_twin	76e3741027bf7b10e482971aa54f621a0bc789a8d7baecd26f5e5fb31698b1b5
+twin_dmo_body_identical	1
+twin_edt_source	eml-edit-table.praat
+twin_edt_source_sha	5aac2d77865f35b72c99b3dab92e44ec0fad7e4ad5545b8f3620a7a3443ea0ba
+twin_edt_stanzas	22
+twin_edt_body_sha_shipped	f7600af9be2f4d2407a0471673549ffd0353900ae077fa377dbc5562e0663daa
+twin_edt_body_sha_twin	f7600af9be2f4d2407a0471673549ffd0353900ae077fa377dbc5562e0663daa
+twin_edt_body_identical	1
+twin_anv_source	eml-compare-k-groups.praat
+twin_anv_source_sha	7bce3e0ca6929eee7d86af1d3a3c7957aed0c9a5d7244b2b1b2dea544a2edd19
+twin_anv_stanzas	2
+twin_anv_body_sha_shipped	b19fb75fdf581335a7b43decb9ed97e752848ddcbee52e9b1bd71e4024c20395
+twin_anv_body_sha_twin	b19fb75fdf581335a7b43decb9ed97e752848ddcbee52e9b1bd71e4024c20395
+twin_anv_body_identical	1
+twin_out_source	eml-output.praat
+twin_out_source_sha	020f26331c6ce1662eaa45a5cdb161de5500259f9e51f7419747bf74d538cda5
+twin_out_stanzas	5
+twin_out_body_sha_shipped	731308fab0eb7362de3f33bf8b9a4179636387ef920c405b7a2978391076f102
+twin_out_body_sha_twin	731308fab0eb7362de3f33bf8b9a4179636387ef920c405b7a2978391076f102
+twin_out_body_identical	1
+drive_exit	0
+record_started	1
+dlg_trace	dmo|1,edt|4,edt|4,anv|1,anv|2,out|1,out|4,anv|2
+action1_create_demo_ran	1
+action1_create_demo_table	demo_3groups
+action1_create_demo_rows	45
+action1_create_demo_cols	4
+action1_steps_in_buffer_after	0
+action2_load_file_ran	1
+action2_load_file_object	Table rt_input
+action2_load_file_rows	24
+action2_load_file_cols	3
+action2_steps_in_buffer_after	0
+action3_edit_cell_ran	1
+action3_edit_cell_before	100
+action3_edit_cell_after	4242
+action3_table_mean_after	609.416667
+action3_steps_in_buffer_after	0
+action4_analysis_ran	1
+action4_anova_between	Between 1441680.33 2 720840.17 1.0103 .381
+action4_anova_within	Within 14982775.50 21 713465.50 
+action4_group_means	alpha: n = 8, mean = 621.2500;bravo: n = 8, mean = 303.5000;charlie: n = 8, mean = 903.5000;
+action4_report_context	from: analysis dialog
+action5_draw_ran	1
+action5_draw_type	violin (graph_type 7), f0_Hz by cohort
+action5_draw_legend_passes	1
+action5_axis_request_min	0
+action5_axis_request_max	0
+action5_drawn_extent	0|6.0000|0|4.0000
+action6_files_written	7
+action6_file_list	rt_roundtrip.png,rt_roundtrip_augment.csv,rt_roundtrip_effectsize_tidy.csv,rt_roundtrip_glance.csv,rt_roundtrip_posthoc_tidy.csv,rt_roundtrip_report.txt,rt_roundtrip_tidy.csv
+action6_png_bytes	62639
+action6_steps_in_buffer_after	3
+flush_written	1
+discard	1|0
+emitted_exists	1
+emitted_bytes	5407
+emitted_lines	119
+emitted_sha	4d6342fc3c1e3dd61eca6333cacda19a4c8606f957ad66b429dff21ed2922429
+emitted_step_headings	3
+emitted_step_kinds	analysis,draw,save
+emitted_missing_phrases	0
+emitted_include_root	~/repo/plugin
+emitted_input_line	# Input: Table rt_input -- 24 rows, 3 columns
+emitted_selectobject	selectObject: data1$
+emitted_has_create_demo	0
+emitted_has_load_file	0
+emitted_has_edit_cell	0
+emitted_has_analysis	1
+emitted_has_draw	1
+emitted_has_save	1
+emitted_analysis_line	@emlRunAnovaAnalysis: data, valueCol$, groupCol$, 1
+emitted_draw_line	@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
+emitted_save_line	@emlRecordReplaySave: 1, "rt_roundtrip", outputFolder$, figureFormat$
+emitted_block_vars	22
+emitted_data_decl	data1$ = "Table rt_input"   ; run 1, steps 1 (analysis), 2 (draw), 3 (save)
+emitted_axis_note	-2000.0000 .. 6000.0000 over 3 groups.
+emitted_axis_block	axisYMax      = 0.0   ; on the recorded data it resolved to -2000.0000 .. 6000.0000
+emitted_folder_line	outputFolder$ = "/home/claude/repo/harness/roundtrip/out/saved"
+emitted_first_step_body	selectObject: data1$
+emitted_replay_precondition	requires 'Table rt_input' already open AND already carrying the hand edit (row 1 f0_Hz = 4242); the emitted script neither creates, loads nor edits it
+action1_emitted	<nothing>
+action2_emitted	<nothing>
+action3_emitted	<nothing>
+action4_emitted	@emlRunAnovaAnalysis: data, valueCol$, groupCol$, 1
+action5_emitted	@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
+action6_emitted	@emlRecordReplaySave: 1, "rt_roundtrip", outputFolder$, figureFormat$
+replay_edit_lines	2
+replay_exit	0
+replay_reached_end	1
+replay_cell_row1	100
+replay_anova_between	Between 2773333.33 2 1386666.67 231111.1111 < .001
+replay_files_written	7
+replay_file_list	rt_roundtrip.png,rt_roundtrip_augment.csv,rt_roundtrip_effectsize_tidy.csv,rt_roundtrip_glance.csv,rt_roundtrip_posthoc_tidy.csv,rt_roundtrip_report.txt,rt_roundtrip_tidy.csv
+session_F	1.0103
+replay_F	231111.1111
+replay_matches_session_F	0
+session_png_md5	6b59375983743203edb3377751306662
+replay_png_md5	82cb56657efc82e94517098e040c1c7a

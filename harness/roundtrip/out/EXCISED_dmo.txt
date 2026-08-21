@@ -1,0 +1,16 @@
+# Cut from eml-create-demo.praat to make the headless twin _rt_create_demo.praat.
+# Every beginPause:/endPause region in the driven range, in file order.
+# --- stanza 1  (Create Demo Table)  lines 35-47
+beginPause: "Create Demo Table"
+    comment: "Select the type of demo data to generate."
+    comment: "Each table is designed for a specific analysis path."
+    comment: ""
+    optionmenu: "Demo type", 1
+        option: "Two groups (N=40) — t-test / Mann-Whitney"
+        option: "Three groups (N=45) — ANOVA / Kruskal-Wallis"
+        option: "Paired measures (N=20) — paired t-test / Wilcoxon"
+        option: "Correlation (N=30) — Pearson / Spearman"
+        option: "Regression (N=25) — simple linear regression"
+        option: "Two-way design (N=48) — two-way ANOVA"
+        option: "Normality check (N=40) — normal vs skewed"
+clicked = endPause: "Quit", "Create", 2, 0

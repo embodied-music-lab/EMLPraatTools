@@ -1,0 +1,67 @@
+RP|cell|100
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Fri Aug 21 01:23:25 2026
+══════════════════════════════════════════════
+
+  Table               rt input
+  Data column         f0 Hz
+  Group column        cohort
+  Groups              3
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests whether group means differ when normality and equal variances hold.
+
+Source              SS              df    MS              F           p
+Between             2773333.33      2     1386666.67      231111.1111 < .001
+Within              126.00          21    6.00            
+Total               2773459.33      23    
+
+  F                   231111.1111		Ratio of mean squares: the between-group mean square is 231111.1 times the within-group mean square. With no real effect, this ratio tends to be near 1
+  p                   < .001  (2.52e-46)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  Effect size         eta-squared = 1.0000		Effect size: large by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 100% of the total variance
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(2, 21) = 0.0000
+  Equal-spread p      p = 1.000
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  alpha         8     103.50    2.45      103.50    
+  bravo         8     303.50    2.45      303.50    
+  charlie       8     903.50    2.45      903.50    
+
+
+  ── Tukey HSD Pairwise Comparisons (p-values) ───
+
+              alpha       bravo       charlie     
+alpha         ---         < .001      < .001      
+bravo         < .001      ---         < .001      
+charlie       < .001      < .001      ---         
+
+
+  ── Tukey HSD Mean Differences (95% family-wise CI) ───
+
+Comparison                Difference    95% CI
+alpha − bravo             -200.0000     [-203.0871, -196.9129]
+alpha − charlie           -800.0000     [-803.0871, -796.9129]
+bravo − charlie           -600.0000     [-603.0871, -596.9129]
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+
+              alpha       bravo       charlie     
+alpha         ---         -81.650     -326.599    
+bravo         81.650      ---         -244.949    
+charlie       326.599     244.949     ---         
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+
+EML: replayed save -- wrote 7 file(s) to
+/home/claude/repo/harness/roundtrip/out/replay/saved
+base name rt_roundtrip_20260821_012326
+RP|done|1
