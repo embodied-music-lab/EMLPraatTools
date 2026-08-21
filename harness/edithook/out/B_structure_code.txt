@@ -1,0 +1,7 @@
+CODE Append row
+CODE Insert row: 2
+CODE Remove row: 2
+CODE Append column: "added"
+CODE Insert column: 2, "inserted"
+CODE Rename column (by number): 2, "renamed"
+CODE Remove column: "renamed"

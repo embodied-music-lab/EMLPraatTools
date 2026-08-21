@@ -1,22 +1,22 @@
-1	132	134	8	8	clicked	EML Table Editor — 
-2	139	141	12	12	clicked2	Add Column
-3	156	159	8	8	clicked	EML Table Editor — 
-4	192	205	8	8	clicked	EML Table Editor — 
-5	236	244	16	16	-	Nothing was written
-6	349	360	8	8	.clicked	Find / Replace
-7	441	443	20	20	-	Find
-8	455	458	24	24	-	Rep Nxt
-9	462	465	24	24	-	Found
-10	499	501	16	16	-	Rep All
-11	517	529	4	4	.clicked	Table Structure
-12	543	546	12	12	.clicked2	Insert Row
-13	558	560	16	16	-	Cannot Delete
-14	562	565	16	16	.clicked2	Delete Row
-15	586	588	16	16	.clicked2	Add Column
-16	613	617	16	16	.clicked2	Insert Column
-17	656	661	16	16	.clicked2	Delete Column
-18	677	679	16	16	-	Cannot Rename
-19	695	701	20	20	.clicked2	Rename Column
-20	928	946	4	4	.clicked	Cannot Open the Table Editor
-21	979	1005	4	4	.clicked	Cannot Use That Column Name
-22	1036	1057	4	4	.clicked	Cannot Delete Column
+1	158	160	8	8	clicked	EML Table Editor — 
+2	165	167	12	12	clicked2	Add Column
+3	185	188	8	8	clicked	EML Table Editor — 
+4	221	234	8	8	clicked	EML Table Editor — 
+5	265	273	16	16	-	Nothing was written
+6	385	396	8	8	.clicked	Find / Replace
+7	477	479	20	20	-	Find
+8	494	497	24	24	-	Rep Nxt
+9	501	504	24	24	-	Found
+10	563	565	16	16	-	Rep All
+11	581	593	4	4	.clicked	Table Structure
+12	609	612	12	12	.clicked2	Insert Row
+13	626	628	16	16	-	Cannot Delete
+14	630	633	16	16	.clicked2	Delete Row
+15	656	658	16	16	.clicked2	Add Column
+16	686	690	16	16	.clicked2	Insert Column
+17	734	739	16	16	.clicked2	Delete Column
+18	759	761	16	16	-	Cannot Rename
+19	777	783	20	20	.clicked2	Rename Column
+20	1134	1152	4	4	.clicked	Cannot Open the Table Editor
+21	1185	1211	4	4	.clicked	Cannot Use That Column Name
+22	1242	1263	4	4	.clicked	Cannot Delete Column

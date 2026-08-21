@@ -1,8 +1,7 @@
-RP|cell|100
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Fri Aug 21 04:13:42 2026
+  Fri Aug 21 05:05:38 2026
   from: recorded script (recorded 21 August 2026, originally analysis dialog)
 ══════════════════════════════════════════════
 
@@ -16,21 +15,21 @@ RP|cell|100
   Why: Tests whether group means differ when normality and equal variances hold.
 
 Source              SS              df    MS              F           p
-Between             2773333.33      2     1386666.67      231111.1111 < .001
-Within              126.00          21    6.00            
-Total               2773459.33      23    
+Between             1441680.33      2     720840.17       1.0103      .381
+Within              14982775.50     21    713465.50       
+Total               16424455.83     23    
 
-  F                   231111.1111		Ratio of mean squares: the between-group mean square is 231111.1 times the within-group mean square. With no real effect, this ratio tends to be near 1
-  p                   < .001  (2.52e-46)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
-  Effect size         eta-squared = 1.0000		Effect size: large by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 100% of the total variance
+  F                   1.0103		Ratio of mean squares: the between-group mean square is 1.0 times the within-group mean square. With no real effect, this ratio tends to be near 1
+  p                   .381		Not statistically significant at the 5% level
+  Effect size         eta-squared = 0.0878		Effect size: medium by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 9% of the total variance
   Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
-  Equal spread        Brown-Forsythe F(2, 21) = 0.0000
-  Equal-spread p      p = 1.000
+  Equal spread        Brown-Forsythe F(2, 21) = 0.9992
+  Equal-spread p      p = .385
 
 
   ── Group Descriptives ──────────────────────
   Group         N     Mean      SD        Median    
-  alpha         8     103.50    2.45      103.50    
+  alpha         8     621.25    1463.01   104.50    
   bravo         8     303.50    2.45      303.50    
   charlie       8     903.50    2.45      903.50    
 
@@ -38,31 +37,32 @@ Total               2773459.33      23
   ── Tukey HSD Pairwise Comparisons (p-values) ───
 
               alpha       bravo       charlie     
-alpha         ---         < .001      < .001      
-bravo         < .001      ---         < .001      
-charlie       < .001      < .001      ---         
+alpha         ---         .736        .784        
+bravo         .736        ---         .349        
+charlie       .784        .349        ---         
 
 
   ── Tukey HSD Mean Differences (95% family-wise CI) ───
 
 Comparison                Difference    95% CI
-alpha − bravo             -200.0000     [-203.0871, -196.9129]
-alpha − charlie           -800.0000     [-803.0871, -796.9129]
-bravo − charlie           -600.0000     [-603.0871, -596.9129]
+alpha − bravo             317.7500      [-746.7736, 1382.2736]
+alpha − charlie           -282.2500     [-1346.7736, 782.2736]
+bravo − charlie           -600.0000     [-1664.5236, 464.5236]
 
 
   ── Pairwise Effect Sizes (Cohen's d) ───────
 
               alpha       bravo       charlie     
-alpha         ---         -81.650     -326.599    
-bravo         81.650      ---         -244.949    
-charlie       326.599     244.949     ---         
+alpha         ---         0.307       -0.273      
+bravo         -0.307      ---         -244.949    
+charlie       0.273       244.949     ---         
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
 ══════════════════════════════════════════════
 
 EML: replayed save -- wrote 7 file(s) to
-/home/claude/repo/harness/roundtrip/out/replay/saved
-base name rt_roundtrip_20260821_041342
+/home/claude/repo/harness/roundtrip/out/replay_colleague/saved
+base name rt_roundtrip_20260821_050538
+RP|cell|4242
 RP|done|1

@@ -1,9 +1,31 @@
 RT|begin|/home/claude/repo/harness/roundtrip/out
 EML: recording started.
 
-Every EML analysis and figure from now on is added to one
-script. Finish with 'Stop recording and open' to read it in
-an editor, or 'Stop recording and save' to file it directly.
+Every EML analysis, figure and table edit from now on is
+added to one script. Finish with 'Stop recording and open'
+to read it in an editor, or 'Stop recording and save' to
+file it directly.
+
+WHAT GOES INTO IT, AND WHAT DOES NOT:
+
+    Recorded — anything you do through an EML command:
+        analyses, figures, saves, and changes you make
+        in EML's own 'EML: Edit Table...' window.
+
+    Not recorded — a cell you type into Praat's own
+        table window, and anything a script of your own
+        does to your data.
+
+An edit made in Praat's own table window can still be
+got back by hand: open a script window and choose
+Edit > Paste history. Praat writes out what you did in a
+form that runs, and you can paste it into the recorded
+script where it belongs. Work done by a script of your
+own leaves no trace in either place.
+
+To keep the whole session reproducible, edit your tables
+through 'EML: Edit Table...' and they are recorded with
+everything else.
 
 Two Tables now sit in the Objects window:
 
@@ -50,12 +72,14 @@ DLG|edt|4|visit=1|clicked=3
 DLG|edt|4|visit=2|clicked=1
 RT|edit_cell|1|4242
 RT|table_mean_after_edit|609.416667
-RT|steps_after|edit_cell|1
+RT|steps_after|edit_cell|3
+RT|refusal|1|Data column "speaker" holds no numbers. 24 cell(s) are not numeric in any locale (row 1: A01). Unrecognized nonnumeric token; excluded.
+RT|steps_after|refusal|4
 DLG|anv|1|visit=1|clicked=2
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Fri Aug 21 04:13:41 2026
+  Fri Aug 21 05:05:36 2026
   from: analysis dialog
 ══════════════════════════════════════════════
 
@@ -121,7 +145,9 @@ DLG|out|1|visit=1|clicked=2
 DLG|out|4|visit=1|clicked=1
 RT|wrapper_done|1
 DLG|anv|2|visit=2|clicked=1
-RT|steps_after|analysis_draw_save|5
+RT|steps_after|analysis_draw_save|7
+RT|convert|1|Sound rt_tone|Spectrum rt_tone|1
+RT|steps_after|convert|8
 RT|flush|1|/home/claude/repo/harness/roundtrip/out/emitted.praat
 RT|discard|1|0
 RT|end|ok

@@ -197,6 +197,21 @@ KNOWN = {
         {'emlExportResultFiles', 'emlFileStamp',
          'emlHaveExportableResult', 'emlSaveInfoToFile',
          'eml_saveFigureFormats', 'eml_saveFormatRedirectLines'}),
+    'eml-record-edit-step.praat': (
+        'The table editor deliberately does not include eml-lib.praat -- its '
+        'header says why: pulling in some 26,000 lines of statistics and '
+        'graphing to reach a refusal dialog is a worse trade than a local '
+        'copy. So when an edit has to become a recorded step, the editor '
+        'hands it to this one-purpose script through runScript:, and this '
+        'script includes stats/eml-record.praat and nothing else. That module '
+        'brings its whole surface, and @emlRecordReplaySave -- the procedure a '
+        'REPLAYED script uses to write its files -- calls six procedures from '
+        'the output and utility modules. This script never calls it: it adds '
+        'one step to a live recording and exits. The same six names, for the '
+        'same reason, as setup.praat above',
+        {'emlExportResultFiles', 'emlFileStamp',
+         'emlHaveExportableResult', 'emlSaveInfoToFile',
+         'eml_saveFigureFormats', 'eml_saveFormatRedirectLines'}),
     'eml-quick-start.praat': (
         'the quick start prints the install folder name to the user, and it '
         'asks @emlPluginFolder for it rather than spelling it, so an '

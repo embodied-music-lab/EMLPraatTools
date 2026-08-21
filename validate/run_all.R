@@ -1348,6 +1348,29 @@ scripts <- c(
                                  # alpha does. The headless path is driven for
                                  # the documented 0.05 fallback. Drives Praat
                                  # live; one negative control per site.
+    ,
+    "v110_roundtrip_replay.R"    # the recorded script IS the session, run
+                                 # again. One recording of eight user actions,
+                                 # then the emitted file run three times in
+                                 # fresh Praat processes: the colleague's
+                                 # replay, the same replay out of a Praat set
+                                 # hostile first (another typeface, font size
+                                 # 60, thick red lines, the page and the
+                                 # coordinate system redefined, a drawing
+                                 # already on the page), and a retarget leg
+                                 # over a second fixture that has to come out
+                                 # DIFFERENT or every comparison above is a
+                                 # constant. Requires the session's numbers,
+                                 # its five result files and its figure back
+                                 # byte for byte -- zero differing pixels,
+                                 # hostile included -- with a control that
+                                 # measures those same settings moving an
+                                 # ordinary Praat drawing by 10,206 to 196,601
+                                 # pixels. Also censuses the recorder's whole
+                                 # step-kind vocabulary, read out of the
+                                 # sources rather than declared, against the
+                                 # kinds the emitted file carries. Reads
+                                 # harness/roundtrip/out/ROUNDTRIP.tsv.
 )
 
 # ---------------------------------------------------------------------------

@@ -1,19 +1,19 @@
 # Cut from eml-edit-table.praat to make the headless twin _rt_edit_table.praat.
 # Every beginPause:/endPause region in the driven range, in file order.
-# --- stanza 1  (EML Table Editor — )  lines 132-134
+# --- stanza 1  (EML Table Editor — )  lines 158-160
         beginPause: "EML Table Editor — " + displayName$
             comment: "Table has no columns. Add a column to begin editing."
         clicked = endPause: "Quit", "Add Column", 2, 0
-# --- stanza 2  (Add Column)  lines 139-141
+# --- stanza 2  (Add Column)  lines 165-167
             beginPause: "Add Column"
                 sentence: "Column name", "newcolumn"
             clicked2 = endPause: "Go Back", "Add", 2, 0
-# --- stanza 3  (EML Table Editor — )  lines 156-159
+# --- stanza 3  (EML Table Editor — )  lines 185-188
         beginPause: "EML Table Editor — " + displayName$
             comment: displayName$ + ": 0 rows x " + string$ (nCols) + " columns"
             comment: "Table has no rows. Add a row to begin editing."
         clicked = endPause: "Quit", "Edit", 2, 0
-# --- stanza 4  (EML Table Editor — )  lines 192-205
+# --- stanza 4  (EML Table Editor — )  lines 221-234
         beginPause: "EML Table Editor — " + displayName$
             comment: displayName$ + ": "
             ... + string$ (nRows) + " rows x "
@@ -28,7 +28,7 @@
                 endfor
             sentence: "Value", currentValue$
         clicked = endPause: "Quit", "Read", "Set", "Find...", "Edit", 3, 0
-# --- stanza 5  (Nothing was written)  lines 236-244
+# --- stanza 5  (Nothing was written)  lines 265-273
                 beginPause: "Nothing was written"
                     comment: "You chose a different cell without changing the"
                     comment: "Value box, so it still held the previous cell's"
@@ -38,7 +38,7 @@
                     ... + colName$[column] + ", row " + string$ (row) + "."
                     comment: "Change it and press Set to write."
                 endPause: "OK", 1, 0
-# --- stanza 6  (Find / Replace)  lines 349-360
+# --- stanza 6  (Find / Replace)  lines 385-396
         beginPause: "Find / Replace"
             sentence: "Find text", prevFind$
             sentence: "Replace with", prevReplace$
@@ -51,25 +51,25 @@
                 option: "Contains"
                 option: "Exact"
         .clicked = endPause: "Go Back", "Find", "Fnd Nxt", "Rep Nxt", "Rep All", 3, 0
-# --- stanza 7  (Find)  lines 441-443
+# --- stanza 7  (Find)  lines 477-479
                     beginPause: "Find"
                         comment: "No match found for """ + find_text$ + """."
                     endPause: "OK", 1, 0
-# --- stanza 8  (Rep Nxt)  lines 455-458
+# --- stanza 8  (Rep Nxt)  lines 494-497
                         beginPause: "Rep Nxt"
                             comment: "Replaced at column """ + .displayCol$ + """, row " + string$ (prevRow) + "."
                             comment: "New value: " + .newVal$
                         endPause: "OK", 1, 0
-# --- stanza 9  (Found)  lines 462-465
+# --- stanza 9  (Found)  lines 501-504
                         beginPause: "Found"
                             comment: "Column: " + .displayCol$ + ",  Row: " + string$ (prevRow)
                             comment: "Value: " + .foundVal$
                         endPause: "OK", 1, 0
-# --- stanza 10  (Rep All)  lines 499-501
+# --- stanza 10  (Rep All)  lines 563-565
                 beginPause: "Rep All"
                     comment: "Replaced " + string$ (.count) + " cell(s)."
                 endPause: "OK", 1, 0
-# --- stanza 11  (Table Structure)  lines 517-529
+# --- stanza 11  (Table Structure)  lines 581-593
     beginPause: "Table Structure"
         comment: displayName$ + ": "
         ... + string$ (.nRows) + " rows x "
@@ -83,42 +83,42 @@
             option: "Delete column..."
             option: "Rename column..."
     .clicked = endPause: "Go Back", "Next", 2, 0
-# --- stanza 12  (Insert Row)  lines 543-546
+# --- stanza 12  (Insert Row)  lines 609-612
             beginPause: "Insert Row"
                 comment: "Table has " + string$ (.nRows) + " rows."
                 natural: "After row", prevRow
             .clicked2 = endPause: "Go Back", "Insert", 2, 0
-# --- stanza 13  (Cannot Delete)  lines 558-560
+# --- stanza 13  (Cannot Delete)  lines 626-628
                 beginPause: "Cannot Delete"
                     comment: "Table has no rows to delete."
                 endPause: "OK", 1, 0
-# --- stanza 14  (Delete Row)  lines 562-565
+# --- stanza 14  (Delete Row)  lines 630-633
                 beginPause: "Delete Row"
                     comment: "Table has " + string$ (.nRows) + " rows."
                     natural: "Row number", prevRow
                 .clicked2 = endPause: "Go Back", "Delete", 2, 0
-# --- stanza 15  (Add Column)  lines 586-588
+# --- stanza 15  (Add Column)  lines 656-658
                 beginPause: "Add Column"
                     sentence: "Column name", .pending$
                 .clicked2 = endPause: "Go Back", "Add", 2, 0
-# --- stanza 16  (Insert Column)  lines 613-617
+# --- stanza 16  (Insert Column)  lines 686-690
                 beginPause: "Insert Column"
                     comment: "Table has " + string$ (.nCols) + " columns."
                     natural: "At position", prevCol
                     sentence: "Column name", .pending$
                 .clicked2 = endPause: "Go Back", "Insert", 2, 0
-# --- stanza 17  (Delete Column)  lines 656-661
+# --- stanza 17  (Delete Column)  lines 734-739
                 beginPause: "Delete Column"
                     optionmenu: "Column to delete", prevCol
                         for .iCol from 1 to .nCols
                             option: .colLabel$[.iCol]
                         endfor
                 .clicked2 = endPause: "Go Back", "Delete", 2, 0
-# --- stanza 18  (Cannot Rename)  lines 677-679
+# --- stanza 18  (Cannot Rename)  lines 759-761
                 beginPause: "Cannot Rename"
                     comment: "Table has no columns to rename."
                 endPause: "OK", 1, 0
-# --- stanza 19  (Rename Column)  lines 695-701
+# --- stanza 19  (Rename Column)  lines 777-783
                     beginPause: "Rename Column"
                         optionmenu: "Column to rename", prevCol
                             for .iCol from 1 to .nCols
@@ -126,7 +126,7 @@
                             endfor
                         sentence: "New name", .pending$
                     .clicked2 = endPause: "Go Back", "Rename", 2, 0
-# --- stanza 20  (Cannot Open the Table Editor)  lines 928-946
+# --- stanza 20  (Cannot Open the Table Editor)  lines 1134-1152
     beginPause: "Cannot Open the Table Editor"
         comment: "⚠  The editor did not open."
         comment: "──────────────────────────────────────────────"
@@ -146,7 +146,7 @@
         comment: "Click OK, select exactly one Table in the"
         comment: "Objects window, then open the editor again."
     .clicked = endPause: "OK", 1, 0
-# --- stanza 21  (Cannot Use That Column Name)  lines 979-1005
+# --- stanza 21  (Cannot Use That Column Name)  lines 1185-1211
     beginPause: "Cannot Use That Column Name"
         comment: "⚠  The column was not " + .verb$ + "."
         comment: "──────────────────────────────────────────────"
@@ -174,7 +174,7 @@
         comment: "Your selections are kept. Click Back to choose"
         comment: "another name, or Quit to leave the editor."
     .clicked = endPause: "Quit", "Back", 2, 0
-# --- stanza 22  (Cannot Delete Column)  lines 1036-1057
+# --- stanza 22  (Cannot Delete Column)  lines 1242-1263
     beginPause: "Cannot Delete Column"
         comment: "⚠  The column was not deleted."
         comment: "──────────────────────────────────────────────"

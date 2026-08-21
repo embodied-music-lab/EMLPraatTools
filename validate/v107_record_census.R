@@ -128,18 +128,47 @@ calls_in <- function(txt) unique(sub("^@", "",
 RECORD_RX <- "@emlRecord(AnalysisStep|DrawStep|Step|Convert)\\b"
 records_directly <- function(txt) any(grepl(RECORD_RX, txt))
 
+# A `runScript:` IS AN EDGE IN THIS GRAPH, and leaving it out makes the
+# census read the wrong answer with total confidence. Two of the commands
+# below reach their work that way -- both doors of the table editor register
+# a thin wrapper whose whole body is `runScript: "eml-edit-table.praat"` --
+# and the editor in turn hands each committed change to
+# scripts/eml-record-edit-step.praat by the same mechanism, because it
+# includes nothing. A walk that followed only `@` calls stops at the first
+# hop and reports a command that records as one that does not, which is the
+# stale entry this file's own KNOWN_SILENT note refuses to tolerate.
+#
+# The target is a bare filename resolved against the caller's folder, so it
+# is matched against the file basenames `toplevel` is keyed by, and a target
+# that is not a plugin file is simply an edge that goes nowhere.
+runscripts_in <- function(txt) {
+    hits <- grep('runScript:[[:space:]]*"', txt, value = TRUE)
+    if (!length(hits)) return(character(0))
+    unique(basename(sub('^.*runScript:[[:space:]]*"([^"]+)".*$', "\\1", hits)))
+}
+
 reaches_record <- function(start_txt) {
     seen <- character(0)
+    seen_file <- character(0)
     front <- calls_in(start_txt)
+    front_file <- runscripts_in(start_txt)
     if (records_directly(start_txt)) return(TRUE)
-    while (length(front)) {
-        n <- front[1]; front <- front[-1]
-        if (n %in% seen) next
-        seen <- c(seen, n)
-        b <- bodies[[n]]
+    while (length(front) || length(front_file)) {
+        if (length(front)) {
+            n <- front[1]; front <- front[-1]
+            if (n %in% seen) next
+            seen <- c(seen, n)
+            b <- bodies[[n]]
+        } else {
+            f <- front_file[1]; front_file <- front_file[-1]
+            if (f %in% seen_file) next
+            seen_file <- c(seen_file, f)
+            b <- toplevel[[f]]
+        }
         if (is.null(b)) next
         if (records_directly(b)) return(TRUE)
         front <- c(front, setdiff(calls_in(b), seen))
+        front_file <- c(front_file, setdiff(runscripts_in(b), seen_file))
     }
     FALSE
 }
@@ -191,35 +220,28 @@ for (i in seq_len(nrow(cmd))) {
 check_true(V, sprintf("%d commands reach a record step", length(recording)),
            length(recording) > 0)
 
-# THE THREE THAT DO NOT RECORD, NAMED RATHER THAN TOLERATED SILENTLY.
+# WHAT DOES NOT RECORD, NAMED RATHER THAN TOLERATED SILENTLY.
 #
 # A check that simply failed here would make the suite red for as long as the
 # gap exists, and a suite that is permanently red stops being read -- which
 # would cost more than the gap it was complaining about. A check that ignored
-# the gap would be worse. So the population is RATCHETED: these three are
-# known, they are written down with what each one loses, and the check goes
+# the gap would be worse. So the population is RATCHETED: what is left is
+# written down with what it loses, and the check goes
 # red the moment the set changes in either direction.
 #
-# It fails if a FOURTH appears, which is the whole point -- a new command that
+# It fails if another appears, which is the whole point -- a new command that
 # forgets to record is caught the day it is added, not the day someone
 # happens to replay a script and notice something missing.
 #
-# It also fails when one is FIXED, and that is deliberate rather than
+# It also fails when one is closed, and that is deliberate rather than
 # annoying: closing one has to come with deleting its line here, so this list
 # cannot quietly outlive the defect it describes. A stale exemption is the
 # failure mode this file exists to prevent, and it would be ironic to build
 # one in.
 KNOWN_SILENT <- c(
-    # Both doors of the table editor. Every cell written, column added,
-    # renamed or deleted. A replay runs the recorded analysis against the
-    # table as it stands, and nothing says the numbers were edited between
-    # the recording and the replay. The strongest of the three: a changed
-    # cell leaves no trace anywhere in the emitted file.
-    "scripts/eml-edit-table-launch.praat",
-    "scripts/eml-edit-table-editor.praat",
-    # Reports on the data's shape. The weakest of the three -- it changes
-    # nothing and produces no result the analysis depends on -- and the one
-    # most likely to end up EXEMPT with a reason rather than fixed.
+    # Reports on the data's shape. It changes nothing and produces no result
+    # an analysis depends on, which makes it the one most likely to end up
+    # EXEMPT with a reason rather than fixed.
     "scripts/eml-check-data.praat"
 )
 

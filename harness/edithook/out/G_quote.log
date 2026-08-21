@@ -1,0 +1,53 @@
+EML: recording started.
+
+Every EML analysis, figure and table edit from now on is
+added to one script. Finish with 'Stop recording and open'
+to read it in an editor, or 'Stop recording and save' to
+file it directly.
+
+WHAT GOES INTO IT, AND WHAT DOES NOT:
+
+    Recorded — anything you do through an EML command:
+        analyses, figures, saves, and changes you make
+        in EML's own 'EML: Edit Table...' window.
+
+    Not recorded — a cell you type into Praat's own
+        table window, and anything a script of your own
+        does to your data.
+
+An edit made in Praat's own table window can still be
+got back by hand: open a script window and choose
+Edit > Paste history. Praat writes out what you did in a
+form that runs, and you can paste it into the recorded
+script where it belongs. Work done by a script of your
+own leaves no trace in either place.
+
+To keep the whole session reproducible, edit your tables
+through 'EML: Edit Table...' and they are recorded with
+everything else.
+
+Two Tables now sit in the Objects window:
+
+    emlRecording_DO_NOT_REMOVE
+        the steps — this IS the recording, and removing it
+        ends the session, which is why it is named that way
+    emlRecordMeta
+        when it started and what it ran on
+
+A third, 'eml-record-phrases', appears after the first step;
+it is the shipped wording the script is written from. Leave
+all three alone and they are cleaned up when you stop.
+
+'Stop recording and open' puts the script in an editor and
+keeps a review copy at:
+/home/claude/repo/harness/edithook/prefs/eml-recorded-scripts
+CASE handoff
+DLG|4|eml_table_editor#3|visit=1|clicked=3
+DLG|4|eml_table_editor#3|visit=2|clicked=1
+CASE returned
+STEP|1|edit|Table demo|Changed f0 in row 1 from 101 to he said "hi"
+CODE<<<
+Set string value: 1, "f0", "he said ""hi"""
+CODE>>>
+CASE steps|1
+CASE done

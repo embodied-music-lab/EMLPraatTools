@@ -1,0 +1,6 @@
+CASE handoff
+DLG|4|eml_table_editor#3|visit=1|clicked=3
+DLG|4|eml_table_editor#3|visit=2|clicked=1
+CASE returned
+CASE steps|0
+CASE done

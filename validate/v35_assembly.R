@@ -96,7 +96,15 @@ WRAPPERS_EXPECTED <- c(
   # because the Info window holds the analysis reports and is what Save Info
   # writes -- a script in there destroys the deliverable.
   "eml-record-start.praat", "eml-record-open.praat",
-  "eml-record-save.praat")
+  "eml-record-save.praat",
+  # NOT A MENU COMMAND, and it lives in plugin/scripts because of where
+  # Praat resolves a relative name from. eml-edit-table.praat hands each
+  # committed change to it with `runScript: "eml-record-edit-step.praat"`,
+  # which Praat resolves against the CALLING script's folder -- so the two
+  # files have to be siblings. setup.praat registers no button for it, and
+  # v107's census reads setup.praat rather than this list, so it is counted
+  # here only as a file that must parse, which is all this file asks.
+  "eml-record-edit-step.praat")
 eml_census("v35", "entry point", wr$wrapper, WRAPPERS_EXPECTED)
 # Declared for validate/coverage.R (§19).
 eml_claim("v35", "wrappers_out", WRAPPERS_EXPECTED)

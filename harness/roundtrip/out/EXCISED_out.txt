@@ -1,6 +1,6 @@
 # Cut from eml-output.praat to make the headless twin eml-output.praat.
 # Every beginPause:/endPause region in the driven range, in file order.
-# --- stanza 1  ()  lines 3333-3437
+# --- stanza 1  ()  lines 3340-3444
     beginPause: .saveTitle$
         if .pageLine$ <> ""
             comment: .pageLine$
@@ -106,7 +106,7 @@
         folder: "Folder", .folder$
         word: "Base name", .proposed$
     .clicked = endPause: "Cancel", "Save", 2, 1
-# --- stanza 2  (Cannot save there)  lines 3478-3495
+# --- stanza 2  (Cannot save there)  lines 3485-3502
         beginPause: "Cannot save there"
             @emlWrapText: eml_saveFolderWritable.reason$, 62
             for .wl from 1 to emlWrapText.nLines
@@ -125,20 +125,20 @@
                 comment: emlWrapText.line$ [.wl]
             endfor
         endPause: "OK", 1, 0
-# --- stanza 3  (Figure format not available)  lines 3707-3711
+# --- stanza 3  (Figure format not available)  lines 3714-3718
                 beginPause: "Figure format not available"
                     for .rl from 1 to eml_saveFormatRedirectLines.nLines
                         comment: eml_saveFormatRedirectLines.line$ [.rl]
                     endfor
                 endPause: "OK", 1, 0
-# --- stanza 4  (Saved)  lines 3800-3805
+# --- stanza 4  (Saved)  lines 3807-3812
         beginPause: "Saved"
             comment: "Wrote " + string$ (.nWritten) + " file(s):"
             for .rl from 1 to eml_saveReceiptLines.nLines
                 comment: eml_saveReceiptLines.line$ [.rl]
             endfor
         endPause: "OK", 1, 0
-# --- stanza 5  (Nothing saved)  lines 3807-3809
+# --- stanza 5  (Nothing saved)  lines 3814-3816
         beginPause: "Nothing saved"
             comment: "Nothing was ticked, so nothing was written."
         endPause: "OK", 1, 0

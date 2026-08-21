@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 # ============================================================================
-# harness/roundtrip/run.sh — one session, six user actions, one recording,
-#                            and what the emitted script says about each
+# harness/roundtrip/run.sh — one session, eight user actions, one recording,
+#                            and three replays of the script it produced
 # ============================================================================
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #
 # THE QUESTION. A user switches recording on, makes a table, opens a CSV,
-# fixes a cell, runs an ANOVA, draws a violin and presses Save. What is in the
-# file they get? Not "does the recorder work" — harness/record_e2e counts
-# which operations reach the buffer — but: of the six things this person did,
-# which ones does the emitted script contain, and what does it say about the
-# ones it does not?
+# fixes a cell, picks the wrong column and is refused, runs an ANOVA, draws a
+# violin, presses Save and asks for a figure of a Sound. What is in the file
+# they get, and what does that file DO when somebody runs it? Not "does the
+# recorder work" — harness/record_e2e counts which operations reach the
+# buffer — but: of the eight things this person did, which ones does the
+# emitted script contain, what does it say about the ones it does not, and do
+# its numbers and its figure come back.
 #
 # Nothing in the tree asked that before. harness/record/roundtrip.sh records
 # ONE analysis; roundtrip_graph.sh records ONE figure; harness/record_e2e
@@ -18,6 +20,64 @@
 # The actions a user takes BETWEEN those operations — making the data,
 # loading it, editing it — had never been in a recording session at all, and
 # whether the emitted script can stand on its own depends entirely on them.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS HARNESS ASSERTS, AND WHICH LEG ASSERTS IT
+# ---------------------------------------------------------------------------
+# Four claims, and each one needs a leg the others cannot substitute for.
+# validate/v110_roundtrip_replay.R holds them; this file measures them.
+#
+#   1. THE NUMBERS COME BACK. The session's ANOVA and the replay's ANOVA are
+#      the same numbers; the five machine-readable result files are
+#      byte-identical; and the report is the session's report apart from its
+#      wall clock and the line that says it came from a recorded script this
+#      time. Nothing is staged for it — the recording carries the hand edit
+#      to row 1 as a step of its own, so the file rebuilds the table it was
+#      recorded against out of the CSV as supplied.
+#
+#   2. THE FIGURE COMES BACK, byte for byte — the same file, not a picture
+#      that looks the same. `cmp` and a per-pixel count, both.
+#
+#      AND THE RETARGET LEG IS PART OF BOTH CLAIMS, not an extra. Identical
+#      is evidence only where different was available: the same script over
+#      the second fixture has to come out with another F and another picture,
+#      or every comparison above is a constant dressed as a measurement.
+#
+#   3. AND IT COMES BACK OUT OF A HOSTILE PRAAT. The HOSTILE leg sets a
+#      different typeface, font size 60, thick lines, red ink, a redefined
+#      page area and coordinate system, and draws a figure onto the page
+#      BEFORE running the recorded script. Zero differing pixels. This is
+#      the strongest thing in the rig and it is the one claim an ordinary
+#      replay is structurally unable to make: an identical replay in an
+#      identical Praat proves the script is deterministic, not that it is
+#      immune to the machine it lands on.
+#
+#      THE CONTROL IS PART OF THE CLAIM, not a footnote. A perturbation that
+#      moves nothing proves nothing, so the same four settings are applied
+#      one at a time to an ORDINARY Praat drawing — box, lines, circles,
+#      marks, one text — in a fresh process off a fresh preferences folder,
+#      and the differing-pixel count is reported for each. Tens of thousands
+#      of pixels move. The plugin's figure moves zero, because it re-asserts
+#      colour, line width, font size and the page before every panel.
+#
+#   4. EVERY STEP KIND THE RECORDER CAN EXPRESS IS IN THE EMITTED SCRIPT.
+#      The vocabulary is read out of the loaded sources — every literal
+#      handed to @emlRecordStep — and compared against the kinds the file
+#      actually carries. Two of the seven are why the session has eight
+#      actions rather than six: a session built out of tables reaches
+#      `refusal` and `convert` by accident never.
+#
+# ---------------------------------------------------------------------------
+# THE SUBJECT, AND HOW A BREAK TEST DRIVES A DAMAGED ONE
+# ---------------------------------------------------------------------------
+# The subject is the RECORDER, plugin/stats/eml-record.praat. $EML_ROUNDTRIP_FILE
+# replaces it in the staged tree — the same seam, and the same two names, that
+# $EML_EDITTABLE_FILE and $EML_CORREL_FILE give harness/edittable and
+# harness/correlgroup, so break.sh scores a deliberately damaged copy and
+# never goes near the shipped one. The emitted script's own include block
+# still names the PLUGIN, so a replay of a damaged recording runs shipped
+# code: what the break changes is what was written down, which is the thing
+# under test.
 #
 # ONE PRAAT PROCESS, because a recording cannot span invocations
 # (eml-record-start.praat's own header says so: `praat --run` is a fresh
@@ -104,22 +164,30 @@
 # EVIDENCE
 # ---------------------------------------------------------------------------
 #   out/ROUNDTRIP.tsv   one key/value per line: for each action, whether it
-#                       ran and what the emitted script contains for it
+#                       ran and what the emitted script contains for it;
+#                       then one block per replay leg; then the control
 #   out/emitted.praat   the recorded script, as the user would receive it
 #   out/drive.log       the Info window
 #   out/saved/          what the Save press wrote
-#   out/data/rt_input.csv   the adversarial input
+#   out/data/rt_input.csv   the adversarial input, copied from fixtures/
+#   out/data/rt_other.csv   the second fixture, for the retarget leg
 #   out/EXCISED_*.txt   every byte cut to make each twin
 #   out/MAP_*.tsv       the stanza map each twin was cut from
-#
-# NOT WIRED INTO validate/run_all.R, by instruction. Run it directly:
+#   out/replay_colleague/ the replay somebody sent the file would get
+#   out/replay_hostile/   the same, out of a Praat set up to break it
+#   out/replay_retarget/  the same, pointed at the other fixture — the leg
+#                         that has to come out different
+#   out/control/        an ordinary drawing, and it under each setting
 #
 #   bash harness/roundtrip/run.sh
+#   Rscript validate/v110_roundtrip_replay.R
+#   bash harness/roundtrip/break.sh          # and the checks going red
 #
-# Exit 0 = every twin matched its shipped body and the drive produced an
-# emitted script. The CONTENT of that script is reported, not judged: this
-# harness measures what the recorder covers, it does not decide what it ought
-# to cover.
+# Exit 0 = every twin matched its shipped body, the drive produced an emitted
+# script, and every leg ran. WHAT THE ARTEFACTS SAY IS NOT JUDGED HERE. The
+# verdict at the bottom is about the MECHANISM — did the rig do what it says
+# it does — and the claims are asserted in validate/v110, where a red line
+# names the claim that failed instead of a shell exit code naming nothing.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -138,6 +206,18 @@ OUT="${EML_ROUNDTRIP_DIR:-$SCRIPT_DIR/out}"
 PREFS="$SCRIPT_DIR/prefs"
 STAGE="$OUT/stage"
 WORK="$OUT/work"
+FIX="$SCRIPT_DIR/fixtures"
+
+# THE FILES UNDER TEST. The recorder is not one file: the buffer, the phrase
+# lookup and the renderer are in stats/eml-record.praat, and the step that
+# records a hand edit is in scripts/eml-record-edit-step.praat, which the
+# editor reaches by `runScript:`. $EML_ROUNDTRIP_FILE is therefore a COLON-
+# SEPARATED LIST of .praat files, each of which replaces the staged file of
+# the same basename — which is what makes it possible to damage exactly one
+# of them and leave everything else shipped. Empty by default: with nothing
+# set, every file in the stage is the working copy.
+REC_OVERRIDE="${EML_ROUNDTRIP_FILE:-}"
+PNGDIFF="$ROOT/harness/record/pngdiff.py"
 
 rm -rf "$OUT"
 mkdir -p "$OUT" "$PREFS" "$STAGE/scripts" "$STAGE/stats" "$WORK" \
@@ -154,6 +234,8 @@ say plugin_root     "$PLUG"
 say harness_root    "$SCRIPT_DIR"
 say record_stamp    "21 August 2026, 00:00:00"
 
+[[ -f "$PNGDIFF" ]] || die "no pngdiff at $PNGDIFF"
+
 # ===========================================================================
 # 1. THE STAGE
 # ===========================================================================
@@ -166,6 +248,42 @@ done
 ln -s "$PLUG/graphs"  "$STAGE/graphs"
 ln -s "$PLUG/data"    "$STAGE/data"
 ln -s "$PLUG/sprites" "$STAGE/sprites"
+
+# THE OVERRIDES ARE PLACED OVER THE STAGE, one per basename, so a damaged
+# copy lands where `include ../stats/eml-record.praat` and `runScript:
+# "eml-record-edit-step.praat"` — both shipped lines — pick it up with nothing
+# else edited anywhere. The same move the eml-output twin makes below. A name
+# that is not in the stage is a HARD EXIT rather than a no-op: a break that
+# silently applied to nothing would drive the undamaged tree and report a
+# green break test, which is the one outcome a break test exists to prevent.
+overridden=""
+if [[ -n "$REC_OVERRIDE" ]]; then
+    IFS=':' read -r -a _ovr <<< "$REC_OVERRIDE"
+    for f in "${_ovr[@]}"; do
+        [[ -f "$f" ]] || die "override does not exist: $f"
+        b="$(basename "$f")"
+        if   [[ -e "$STAGE/scripts/$b" ]]; then d="$STAGE/scripts"
+        elif [[ -e "$STAGE/stats/$b"   ]]; then d="$STAGE/stats"
+        else die "override $b matches no staged file"
+        fi
+        rm -f "$d/$b"
+        ln -s "$f" "$d/$b"
+        overridden="${overridden:+$overridden,}$b"
+    done
+fi
+say stage_overrides   "${overridden:-<none>}"
+say stage_is_shipped  "$([[ -z "$overridden" ]] && echo 1 || echo 0)"
+
+# THE RECORDER FAMILY, HASHED. One line per file, so a transcript says which
+# recorder it describes without anybody having to trust the folder it came
+# from — and a break run's line differs from the shipped run's in exactly the
+# file the break edited.
+recfam=""
+for f in "$STAGE/stats/eml-record.praat" "$STAGE"/scripts/eml-record-*.praat; do
+    [[ -e "$f" ]] || continue
+    recfam="${recfam:+$recfam,}$(basename "$f"):$(sha256sum < "$f" | cut -c1-12)"
+done
+say recorder_files "$recfam"
 say stage_scripts_linked "$(find "$STAGE/scripts" -maxdepth 1 -name '*.praat' | wc -l)"
 say stage_stats_linked   "$(find "$STAGE/stats"   -maxdepth 1 -name '*.praat' | wc -l)"
 
@@ -369,18 +487,38 @@ expect_title out 4 "Saved"
 # every number downstream is checkable by hand. The editor writes 4242 into
 # row 1: cohort alpha's mean moves 103.5 -> 621.25 and its SD 2.449 -> 1464.8,
 # which is not a value any other arrangement of these steps lands on.
+#
+# COMMITTED, NOT GENERATED. A fixture a rig builds for itself cannot be
+# inspected by a reader of the repository, and cannot be pointed at by the
+# transcript's sha in any way that means something: the sha would describe
+# whatever the generator produced on the day. fixtures/rt_input.csv is in the
+# tree and this copies it.
 CSV="$OUT/data/rt_input.csv"
-{
-    echo "speaker,cohort,f0_Hz"
-    for i in $(seq 1 8); do printf 'A%02d,alpha,%d\n'   "$i" $((99 + i)); done
-    for i in $(seq 1 8); do printf 'B%02d,bravo,%d\n'   "$i" $((299 + i)); done
-    for i in $(seq 1 8); do printf 'C%02d,charlie,%d\n' "$i" $((899 + i)); done
-} > "$CSV"
+[[ -f "$FIX/rt_input.csv" ]] || die "no fixture at $FIX/rt_input.csv"
+cp "$FIX/rt_input.csv" "$CSV"
 say input_csv        "$CSV"
 say input_csv_sha    "$(sha256sum < "$CSV" | cut -d' ' -f1)"
 say input_csv_rows   "$(( $(wc -l < "$CSV") - 1 ))"
 say edit_target_cell "row 1, column f0_Hz"
 say edit_new_value   "4242"
+
+# THE SECOND FIXTURE, which is not a variant of the first. Same three columns
+# and same 24 rows, entirely different numbers: three cohorts that OVERLAP,
+# where the recorded file's three do not. It exists for the retarget leg in
+# section 8 — the leg that has to come out DIFFERENT — and it has to be
+# different in the numbers rather than in the shape, because a file of another
+# shape would fail the replay for reasons that say nothing about the data.
+OTHER="$OUT/data/rt_other.csv"
+[[ -f "$FIX/rt_other.csv" ]] || die "no fixture at $FIX/rt_other.csv"
+cp "$FIX/rt_other.csv" "$OTHER"
+say other_csv       "$OTHER"
+say other_csv_sha   "$(sha256sum < "$OTHER" | cut -d' ' -f1)"
+say other_csv_rows  "$(( $(wc -l < "$OTHER") - 1 ))"
+say other_csv_shape_matches \
+    "$([[ "$(head -1 "$CSV")" == "$(head -1 "$OTHER")" && \
+          "$(wc -l < "$CSV")" == "$(wc -l < "$OTHER")" ]] && echo 1 || echo 0)"
+say other_csv_values_differ \
+    "$(diff <(cut -d, -f3 "$CSV") <(cut -d, -f3 "$OTHER") | grep -c '^[<>]')"
 
 # ===========================================================================
 # 4. THE TAPES
@@ -563,7 +701,14 @@ say action3_edit_cell_after   "${A_EDIT_AFTER:-<none>}"
 say action3_table_mean_after  "$(rt table_mean_after_edit)"
 say action3_steps_in_buffer_after "$(sed -n 's/^RT|steps_after|edit_cell|//p' "$LOG" | head -1)"
 
-# --- 4 analysis ------------------------------------------------------------
+# --- 4 refusal -------------------------------------------------------------
+IFS='|' read -r A_REF_RAN A_REF_MSG <<< "$(rt refusal)"
+say action4_refusal_ran      "${A_REF_RAN:-0}"
+say action4_refusal_message  "${A_REF_MSG:-<none>}"
+say action4_refusal_column   "speaker (the wrong column, in the Data slot)"
+say action4_steps_in_buffer_after "$(sed -n 's/^RT|steps_after|refusal|//p' "$LOG" | head -1)"
+
+# --- 5 analysis ------------------------------------------------------------
 # The numbers are read out of the Info window the wrapper wrote, because that
 # is the report the user is looking at when they press Save. The ANOVA table's
 # Between row carries SS, df, MS, F and p in one line.
@@ -590,6 +735,14 @@ say action6_files_written   "$(find "$OUT/saved" -type f | wc -l)"
 say action6_file_list       "$(find "$OUT/saved" -type f -printf '%f\n' | sort | paste -sd, -)"
 say action6_png_bytes       "$(stat -c%s "$OUT/saved"/*.png 2>/dev/null | head -1 || echo 0)"
 say action6_steps_in_buffer_after "$(sed -n 's/^RT|steps_after|analysis_draw_save|//p' "$LOG" | head -1)"
+
+# --- 8 convert -------------------------------------------------------------
+IFS='|' read -r A_CONV_RAN A_CONV_SRC A_CONV_DST A_CONV_TMP <<< "$(rt convert)"
+say action8_convert_ran       "${A_CONV_RAN:-0}"
+say action8_convert_source    "${A_CONV_SRC:-<none>}"
+say action8_convert_result    "${A_CONV_DST:-<none>}"
+say action8_convert_temporary "${A_CONV_TMP:--1}"
+say action8_steps_in_buffer_after "$(sed -n 's/^RT|steps_after|convert|//p' "$LOG" | head -1)"
 
 IFS='|' read -r F_WRITTEN F_PATH <<< "$(rt flush)"
 say flush_written "${F_WRITTEN:-0}"
@@ -668,65 +821,309 @@ emitted_for action3_emitted 'Set string value|Set numeric value|@cellWrite|4242'
 emitted_for action4_emitted '^@emlRunAnovaAnalysis'
 emitted_for action5_emitted '^@emlDrawViolinPlot'
 emitted_for action6_emitted '^@emlRecordReplaySave'
+emitted_for action8_emitted '^data = To Spectrum|To Spectrum'
 
 # ===========================================================================
-# 8. THE REPLAY — what the emitted script does when it is run
+# 7b. THE RECORDER'S WHOLE VOCABULARY, AND HOW MUCH OF IT THIS SESSION SPENT
 # ===========================================================================
-# THE ADVERSARIAL DATA EARNS ITS KEEP HERE. The emitted file re-selects
-# "Table rt_input" by name and never creates, loads or edits it, so a replay
-# has to start by loading the CSV — and the CSV on disk does NOT carry the
-# hand edit, because the edit was made in the Objects window and nothing
-# recorded it. If the two ANOVAs agree, either the edit did nothing or the
-# recorder captured it; they cannot agree by coincidence, because 4242 in a
-# column of 100..107 moves cohort alpha's mean by 518.
+# WHAT THE RECORDER CAN SAY is not a list anybody maintains — it is every
+# literal ever handed to @emlRecordStep, and the callers are spread across
+# the analysis layer, the graphs layer and the recorder itself. So it is READ
+# rather than declared, out of the sources this drive actually loaded, which
+# is what makes it move when the plugin does: a fourteenth kind added next
+# month lands in `kinds_missing_from_emitted` on the next run instead of
+# quietly widening the gap between what the recorder can express and what
+# anything has ever exercised.
 #
-# ONE LINE OF THE EMITTED FILE IS EDITED and it is the one the file itself
-# invites a reader to edit: outputFolder$, so the replay's outputs land beside
-# the session's rather than on top of them. Same move as the RETARGET and
-# TUNED legs in harness/record/replay.sh, and the edited copy is kept.
-REPLAY_DIR="$OUT/replay"
-mkdir -p "$REPLAY_DIR/saved"
-REPLAY_EMIT="$WORK/replay_emitted.praat"
-if [[ -f "$EMIT" ]]; then
-    sed "s|^outputFolder\$ = \".*\"|outputFolder\$ = \"$REPLAY_DIR/saved\"|" \
-        "$EMIT" > "$REPLAY_EMIT"
-    say replay_edit_lines "$(diff "$EMIT" "$REPLAY_EMIT" | grep -c '^[<>]')"
+# The population is the staged tree, so a break test that damages the
+# recorder is scored against ITS vocabulary rather than the shipped one.
+# -R, NOT -r. The staged scripts and stats folders hold SYMLINKS to the
+# working copy, and `grep -r` does not follow a symlinked file: the first run
+# of this census read two kinds out of a tree that has eight, and reported a
+# vocabulary the emitted script had exceeded.
+kinds_of () {
+    grep -RhoE '@emlRecordStep: *"[a-z]+"' "$@" 2>/dev/null \
+        | sed 's/.*"\(.*\)"/\1/' | sort -u | paste -sd, -
+}
+REC_KINDS="$(kinds_of "$STAGE/scripts" "$STAGE/stats" "$PLUG/graphs")"
+say recorder_kinds "$REC_KINDS"
+say recorder_kinds_n "$(printf '%s' "$REC_KINDS" | tr ',' '\n' | grep -c .)"
 
-    cat > "$WORK/replay.praat" <<PRAAT
-# Generated by harness/roundtrip/run.sh. The emitted workflow, replayed from
-# the CSV alone — which is all a colleague who was sent the file would have.
-Read Table from comma-separated file: "$CSV"
-rp = selected ("Table")
-selectObject: rp
-rpCell\$ = Get value: 1, "f0_Hz"
-appendInfoLine: "RP|cell|", rpCell\$
-include $REPLAY_EMIT
-appendInfoLine: "RP|done|1"
-PRAAT
+EMIT_KINDS="$(sed -n 's/^# --- Step [0-9]* (\([a-z]*\)) ---$/\1/p' "$EMIT" 2>/dev/null \
+              | sort -u | paste -sd, -)"
+say emitted_kinds_sorted "$EMIT_KINDS"
+say kinds_missing_from_emitted "$(comm -23 \
+    <(printf '%s' "$REC_KINDS"  | tr ',' '\n' | grep . | sort) \
+    <(printf '%s' "$EMIT_KINDS" | tr ',' '\n' | grep . | sort) | paste -sd, -)"
+say kinds_not_in_vocabulary "$(comm -13 \
+    <(printf '%s' "$REC_KINDS"  | tr ',' '\n' | grep . | sort) \
+    <(printf '%s' "$EMIT_KINDS" | tr ',' '\n' | grep . | sort) | paste -sd, -)"
+
+# ===========================================================================
+# 8. THE REPLAYS — what the emitted script does when somebody runs it
+# ===========================================================================
+# THREE LEGS OVER ONE SCRIPT, and the differences between them are the whole
+# argument. Every leg runs the SAME emitted file in a fresh Praat process.
+#
+#   colleague  the replay somebody who was sent the file would get. The data
+#              file exactly as it was sent, the script exactly as it was
+#              received, nothing staged but the one object the recorder
+#              cannot build. Numbers and figure must MATCH the session.
+#   hostile    the same again, out of a Praat set up to ruin it. Must MATCH.
+#   retarget   the same script pointed at a DIFFERENT table, through the one
+#              line the editable block exists for. Must NOT match — and must
+#              still run to the end.
+#
+# WHY THE RETARGET LEG IS NOT OPTIONAL. "Identical" is only evidence where
+# "different" was available. A comparison that cannot fail is a constant, and
+# every check on this figure and these numbers would pass just as well against
+# a rig that compared the session's outputs with themselves. This leg is the
+# one that says the emitted script reads the file the block names, computes
+# from it, and draws from it — measured as a different F, a different figure
+# and a run that still reaches its end.
+#
+# THE COLLEAGUE'S LEG STAGES NOTHING, and that is a fact about the recorder
+# rather than a convenience of the rig. The hand edit to row 1 is written down
+# as a step — `Set string value: 1, "f0_Hz", "4242"` under a heading that says
+# what it changed and from what — so the file rebuilds the table it was
+# recorded against out of the CSV as supplied. A recorder that stopped
+# emitting that step would leave this leg analysing 100 where the session
+# analysed 4242, and its F would move by five orders of magnitude.
+#
+# WHAT EVERY LEG EDITS. outputFolder$, so a leg's outputs land beside the
+# session's rather than on top of them — the same move as the RETARGET and
+# TUNED legs in harness/record/replay.sh — plus inputFile$ on the retarget
+# leg. Both lines are in the block the emitted file itself invites a reader
+# to edit, and the count of differing lines is in the transcript.
+#
+# WHAT NO LEG CAN EDIT INTO EXISTENCE is the Sound. The convert step names an
+# object the recorder has no way to build — nothing creates a Sound but a
+# microphone or a formula — so every leg's prelude makes it, under the name
+# the manifest gives, which is precisely the precondition the emitted file's
+# own header states. That is a limitation being obeyed, not worked around.
+REPLAY_PRELUDE="Create Sound from formula: \"rt_tone\", 1, 0, 0.5, 44100, \"0.5 * sin (2 * pi * 220 * x)\""
+
+# THE HOSTILE PRELUDE. Everything a Picture window can carry into a replay.
+# Each line is a setting the plugin either re-asserts before it draws or does
+# not use at all — which is the claim, and section 9 is the control that says
+# these settings are not inert.
+HOSTILE=$(cat <<'HOS'
+Palatino
+Font size: 60
+Line width: 5
+Colour: "red"
+Select outer viewport: 1, 5, 1, 4
+Axes: -3, 17, -9, 42
+Draw inner box
+Draw line: -3, -9, 17, 42
+Text: 7, "centre", 16, "half", "a drawing that was already on the page"
+HOS
+)
+# `paste -sd'; '` CYCLES its delimiters, one character at a time, so a
+# two-character separator alternates ';' and ' ' between the joins. Measured
+# on the first run of this line. One delimiter, then space it out.
+say hostile_settings "$(printf '%s' "$HOSTILE" | paste -sd';' - | sed 's/;/; /g')"
+say hostile_lines    "$(printf '%s\n' "$HOSTILE" | grep -c .)"
+
+SESSION_PNG="$OUT/saved/rt_roundtrip.png"
+
+# report_body <report.txt> — the analysis report, without this rig's trace.
+report_body () {
+    awk '/EML Stats : One-Way ANOVA/{f = 1} f' "$1" \
+        | grep -v '^RT|' | grep -v '^DLG|'
+}
+
+# replay_leg <name> <csv-for-inputFile, or "-"> <hostile 0|1>
+replay_leg () {
+    local name="$1" csv="$2" hostile="$3"
+    local dir="$OUT/replay_$name"
+    local emit="$WORK/replay_${name}_emitted.praat"
+    local run="$WORK/replay_${name}.praat"
+    mkdir -p "$dir/saved"
+
+    if [[ ! -f "$EMIT" ]]; then say "leg_${name}_exit" -1; return; fi
+
+    if [[ "$csv" == "-" ]]; then
+        sed "s|^outputFolder\$ = \".*\"|outputFolder\$ = \"$dir/saved\"|" \
+            "$EMIT" > "$emit"
+    else
+        sed -e "s|^outputFolder\$ = \".*\"|outputFolder\$ = \"$dir/saved\"|" \
+            -e "s|^inputFile\$ *= \".*\"|inputFile\$     = \"$csv\"|" \
+            "$EMIT" > "$emit"
+    fi
+    say "leg_${name}_edited_lines" "$(diff "$EMIT" "$emit" | grep -c '^[<>]')"
+    say "leg_${name}_input_line"   "$(grep -m1 '^inputFile\$' "$emit" | tr '\t' ' ')"
+
+    {
+        echo "# Generated by harness/roundtrip/run.sh. The emitted workflow,"
+        echo "# replayed in a fresh process. Leg: $name."
+        echo "$REPLAY_PRELUDE"
+        if [[ "$hostile" == "1" ]]; then
+            echo "$HOSTILE"
+        fi
+        echo "include $emit"
+        echo 'nocheck selectObject: data2$'
+        echo 'if numberOfSelected () = 1'
+        echo '    rpCell$ = Get value: 1, "f0_Hz"'
+        echo '    appendInfoLine: "RP|cell|", rpCell$'
+        echo 'endif'
+        echo 'appendInfoLine: "RP|done|1"'
+    } > "$run"
+
     ( cd "$WORK" && env -u DISPLAY HOME="$(dirname "$ROOT")" \
         timeout 300 "$PRAAT" $PRAAT_TRUST --pref-dir="$PREFS" \
-        --run "$WORK/replay.praat" > "$OUT/replay.log" 2>&1 )
-    say replay_exit       "$?"
-    say replay_reached_end "$(grep -c '^RP|done|1$' "$OUT/replay.log")"
-    say replay_cell_row1  "$(sed -n 's/^RP|cell|//p' "$OUT/replay.log" | head -1)"
-    say replay_anova_between "$(grep -m1 '^Between' "$OUT/replay.log" | tr -s ' \t' ' ')"
-    say replay_files_written "$(find "$REPLAY_DIR/saved" -type f | wc -l)"
-    say replay_file_list  "$(find "$REPLAY_DIR/saved" -type f -printf '%f\n' | sed 's/_[0-9]\{8\}_[0-9]\{6\}//' | sort | paste -sd, -)"
-    R_F=$(grep -m1 '^Between' "$OUT/replay.log" | tr -s ' \t' ' ' | cut -d' ' -f5)
-    S_F=$(grep -m1 '^Between' "$LOG"            | tr -s ' \t' ' ' | cut -d' ' -f5)
-    say session_F "$S_F"
-    say replay_F  "$R_F"
-    say replay_matches_session_F "$([[ -n "$R_F" && "$R_F" == "$S_F" ]] && echo 1 || echo 0)"
-    # AND THE PICTURE, for the same reason: the 4242 cell is visible in the
-    # session's violin as a tail to 5000 and absent from the replay's.
-    say session_png_md5 "$(md5sum "$OUT/saved"/rt_roundtrip.png 2>/dev/null | cut -d' ' -f1)"
-    say replay_png_md5  "$(md5sum "$REPLAY_DIR/saved"/*.png 2>/dev/null | head -1 | cut -d' ' -f1)"
-else
-    say replay_exit -1
-fi
+        --run "$run" > "$OUT/replay_$name.log" 2>&1 )
+    say "leg_${name}_exit"        "$?"
+    local lg="$OUT/replay_$name.log"
+    say "leg_${name}_reached_end" "$(grep -c '^RP|done|1$' "$lg")"
+    say "leg_${name}_cell_row1"   "$(sed -n 's/^RP|cell|//p' "$lg" | head -1)"
+    say "leg_${name}_anova_between" "$(grep -m1 '^Between' "$lg" | tr -s ' \t' ' ')"
+    say "leg_${name}_F"           "$(grep -m1 '^Between' "$lg" | tr -s ' \t' ' ' | cut -d' ' -f5)"
+    say "leg_${name}_files_written" "$(find "$dir/saved" -type f | wc -l)"
+    say "leg_${name}_file_list"   "$(find "$dir/saved" -type f -printf '%f\n' \
+                                     | sed 's/_[0-9]\{8\}_[0-9]\{6\}//' | sort | paste -sd, -)"
+
+    # ---- the figure, two ways --------------------------------------------
+    # `cmp` answers "is it the same file", which is the claim. The per-pixel
+    # count answers "and if not, by how much" — the number that separates a
+    # replay which lost its axis from one which differs in anti-aliasing, and
+    # the number section 9's control is measured in.
+    local png
+    png=$(find "$dir/saved" -name '*.png' | head -1)
+    if [[ -n "$png" && -f "$SESSION_PNG" ]]; then
+        say "leg_${name}_png_bytes" "$(stat -c%s "$png")"
+        say "leg_${name}_png_md5"   "$(md5sum "$png" | cut -d' ' -f1)"
+        say "leg_${name}_png_identical" \
+            "$(cmp -s "$SESSION_PNG" "$png" && echo 1 || echo 0)"
+        local d
+        d=$(python3 "$PNGDIFF" "$SESSION_PNG" "$png" 0 2>&1)
+        say "leg_${name}_png_pixels_differing" "$(printf '%s' "$d" | sed -n 's/^over0 \([0-9]*\).*/\1/p')"
+        say "leg_${name}_png_max_delta"        "$(printf '%s' "$d" | sed -n 's/.*max \([0-9]*\).*/\1/p')"
+    else
+        say "leg_${name}_png_bytes" 0
+        say "leg_${name}_png_identical" 0
+        say "leg_${name}_png_pixels_differing" -1
+    fi
+
+    # ---- the numbers, as files -------------------------------------------
+    # THE REPORT IS NOT IN THIS COUNT and that is deliberate: it carries a
+    # wall-clock stamp and a provenance line, so it cannot be byte-identical
+    # and a count that included it could never reach five. Its differing-line
+    # count is reported on its own, below.
+    # THE `find` PATTERN CARRIES A DIGIT ON PURPOSE. A replayed file is
+    # <stem>_YYYYMMDD_HHMMSS<suffix>, and `*_tidy.csv` also matches
+    # `*_posthoc_tidy.csv` and `*_effectsize_tidy.csv` — which is how this
+    # first reported 4 of 5 identical over five files that were all identical,
+    # having compared the ANOVA table against the effect-size table.
+    local same=0 total=0 suffix sf rf
+    for suffix in _tidy.csv _glance.csv _posthoc_tidy.csv _effectsize_tidy.csv _augment.csv; do
+        sf="$OUT/saved/rt_roundtrip$suffix"
+        rf=$(find "$dir/saved" -name "*[0-9]$suffix" | head -1)
+        total=$((total + 1))
+        [[ -f "$sf" && -n "$rf" ]] && cmp -s "$sf" "$rf" && same=$((same + 1))
+    done
+    say "leg_${name}_result_csvs_identical" "$same"
+    say "leg_${name}_result_csvs_total"     "$total"
+
+    # THE REPORT IS NOT COMPARED WHOLE, and the reason is in the artefact: the
+    # saved report is the Info window, and this rig's own trace lines are in
+    # the session's Info window and cannot be in a replay's. What is compared
+    # is the ANOVA report itself — from its heading to the end, with the trace
+    # lines dropped from both sides. Two lines differ, and they are named
+    # rather than tolerated: the wall clock, and the provenance line that says
+    # the numbers came from a recorded script this time.
+    local srep rrep
+    srep="$OUT/saved/rt_roundtrip_report.txt"
+    rrep=$(find "$dir/saved" -name '*_report.txt' | head -1)
+    if [[ -f "$srep" && -n "$rrep" ]]; then
+        report_body "$srep" > "$WORK/report_session.txt"
+        report_body "$rrep" > "$WORK/report_$name.txt"
+        say "leg_${name}_report_body_lines" "$(wc -l < "$WORK/report_$name.txt")"
+        say "leg_${name}_report_body_difflines" \
+            "$(diff "$WORK/report_session.txt" "$WORK/report_$name.txt" | grep -c '^[<>]')"
+        say "leg_${name}_report_body_diff" \
+            "$(diff "$WORK/report_session.txt" "$WORK/report_$name.txt" \
+               | grep '^[<>]' | tr -s ' \t' ' ' | paste -sd'~' - | cut -c1-220)"
+    else
+        say "leg_${name}_report_body_difflines" -1
+    fi
+}
+
+replay_leg colleague "-"      0
+replay_leg hostile   "-"      1
+replay_leg retarget  "$OTHER" 0
+
+S_F=$(grep -m1 '^Between' "$LOG" | tr -s ' \t' ' ' | cut -d' ' -f5)
+say session_F "$S_F"
+say session_png_md5   "$(md5sum "$SESSION_PNG" 2>/dev/null | cut -d' ' -f1)"
+say session_png_bytes "$(stat -c%s "$SESSION_PNG" 2>/dev/null || echo 0)"
 
 # ===========================================================================
-# 9. VERDICT — mechanism only. Coverage is reported, never asserted.
+# 9. THE CONTROL — the same settings, on a drawing that is not the plugin's
+# ===========================================================================
+# WITHOUT THIS SECTION THE HOSTILE LEG PROVES NOTHING. "The figure came back
+# identical out of a hostile Praat" and "those settings do not reach a Praat
+# drawing at all" are the same transcript, and only one of them is a fact
+# about the plugin.
+#
+# ONE FRESH PROCESS AND ONE FRESH PREFERENCES FOLDER PER MEASUREMENT, which
+# is not fastidiousness: Praat persists Picture-window settings, so a control
+# run started from a folder some earlier run left behind measures the
+# difference between two states it did not choose. The first attempt at this
+# control measured zero for a changed typeface for exactly that reason.
+CTRL="$OUT/control"
+mkdir -p "$CTRL"
+ctrl_fig () {   # ctrl_fig <name> <perturbation-line or "">
+    # SEPARATE STATEMENTS, not one `local a= b= c=$a`. Bash expands every word
+    # of a command before it assigns any of them, so `d="$CTRL/$name"` on that
+    # line reads the name from the enclosing scope -- unset, and fatal under
+    # `set -u`. Measured here, exit 1 at this line on the first call.
+    local name="$1"
+    local pert="$2"
+    local d="$CTRL/$name"
+    mkdir -p "$d/prefs"
+    {
+        echo 'Erase all'
+        echo 'Select outer viewport: 0, 6, 0, 4'
+        echo 'Axes: 0, 10, 0, 10'
+        [[ -n "$pert" ]] && echo "$pert"
+        echo 'Draw inner box'
+        echo 'Draw line: 0, 0, 10, 10'
+        echo 'Draw line: 0, 10, 10, 0'
+        echo 'Draw circle: 5, 5, 3'
+        echo 'Draw circle: 5, 5, 2'
+        echo 'Text: 5, "centre", 11, "half", "control figure"'
+        echo 'Marks bottom every: 1, 1, "yes", "yes", "no"'
+        echo 'Marks left every: 1, 1, "yes", "yes", "no"'
+        echo "Save as 300-dpi PNG file: \"$d/fig.png\""
+    } > "$d/fig.praat"
+    ( env -u DISPLAY timeout 120 "$PRAAT" $PRAAT_TRUST \
+        --pref-dir="$d/prefs" --run "$d/fig.praat" > "$d/fig.log" 2>&1 )
+}
+
+ctrl_fig base ""
+say control_base_png_bytes "$(stat -c%s "$CTRL/base/fig.png" 2>/dev/null || echo 0)"
+say control_base_png_md5   "$(md5sum "$CTRL/base/fig.png" 2>/dev/null | cut -d' ' -f1)"
+
+ctrl_pert () {  # ctrl_pert <key> <praat line>
+    local key="$1" line="$2"
+    ctrl_fig "$key" "$line"
+    say "control_${key}_setting" "$line"
+    if [[ -f "$CTRL/base/fig.png" && -f "$CTRL/$key/fig.png" ]]; then
+        say "control_${key}_pixels_differing" \
+            "$(python3 "$PNGDIFF" "$CTRL/base/fig.png" "$CTRL/$key/fig.png" 0 \
+               | sed -n 's/^over0 \([0-9]*\).*/\1/p')"
+    else
+        say "control_${key}_pixels_differing" -1
+    fi
+}
+ctrl_pert typeface  'Palatino'
+ctrl_pert fontsize  'Font size: 60'
+ctrl_pert linewidth 'Line width: 5'
+ctrl_pert ink       'Colour: "red"'
+
+# ===========================================================================
+# 10. VERDICT — mechanism only. The claims are validate/v110's to judge.
 # ===========================================================================
 fail=0
 for p in dmo edt anv out; do
@@ -737,25 +1134,48 @@ done
 [[ "${F_WRITTEN:-0}" == "1" ]]     || { echo "FAIL: no script was written"; fail=1; }
 [[ -f "$EMIT" ]]                   || { echo "FAIL: no emitted script at $EMIT"; fail=1; }
 grep -q '^RT|end|ok$' "$LOG"       || { echo "FAIL: the drive did not reach its end — see $LOG"; fail=1; }
+for leg in colleague hostile retarget; do
+    [[ -n "$(awk -F'\t' -v k="leg_${leg}_exit" '$1==k{print $2}' "$TSV")" ]] \
+        || { echo "FAIL: leg $leg did not run"; fail=1; }
+done
+[[ -f "$CTRL/base/fig.png" ]] || { echo "FAIL: the control drawing was not rendered"; fail=1; }
 
 echo
 printf '%-34s %s\n' "action" "ran / emitted"
 printf '%-34s %s\n' "1 create_demo" "$(awk -F'\t' '$1=="action1_create_demo_ran"{print $2}' "$TSV") / $(awk -F'\t' '$1=="emitted_has_create_demo"{print $2}' "$TSV")"
 printf '%-34s %s\n' "2 load_file"   "$(awk -F'\t' '$1=="action2_load_file_ran"{print $2}' "$TSV") / $(awk -F'\t' '$1=="emitted_has_load_file"{print $2}' "$TSV")"
 printf '%-34s %s\n' "3 edit_cell"   "$(awk -F'\t' '$1=="action3_edit_cell_ran"{print $2}' "$TSV") / $(awk -F'\t' '$1=="emitted_has_edit_cell"{print $2}' "$TSV")"
-printf '%-34s %s\n' "4 analysis"    "$(awk -F'\t' '$1=="action4_analysis_ran"{print $2}' "$TSV") / $(awk -F'\t' '$1=="emitted_has_analysis"{print $2}' "$TSV")"
-printf '%-34s %s\n' "5 draw"        "$(awk -F'\t' '$1=="action5_draw_ran"{print $2}' "$TSV") / $(awk -F'\t' '$1=="emitted_has_draw"{print $2}' "$TSV")"
-printf '%-34s %s\n' "6 save"        "$(awk -F'\t' '$1=="action6_files_written"{print $2}' "$TSV") / $(awk -F'\t' '$1=="emitted_has_save"{print $2}' "$TSV")"
+printf '%-34s %s\n' "4 refusal"     "$(awk -F'\t' '$1=="action4_refusal_ran"{print $2}' "$TSV")"
+printf '%-34s %s\n' "5 analysis"    "$(awk -F'\t' '$1=="action4_analysis_ran"{print $2}' "$TSV") / $(awk -F'\t' '$1=="emitted_has_analysis"{print $2}' "$TSV")"
+printf '%-34s %s\n' "6 draw"        "$(awk -F'\t' '$1=="action5_draw_ran"{print $2}' "$TSV") / $(awk -F'\t' '$1=="emitted_has_draw"{print $2}' "$TSV")"
+printf '%-34s %s\n' "7 save"        "$(awk -F'\t' '$1=="action6_files_written"{print $2}' "$TSV") / $(awk -F'\t' '$1=="emitted_has_save"{print $2}' "$TSV")"
+printf '%-34s %s\n' "8 convert"     "$(awk -F'\t' '$1=="action8_convert_ran"{print $2}' "$TSV")"
 echo
-printf '%-34s %s\n' "session   ANOVA F" "$(awk -F'\t' '$1=="session_F"{print $2}' "$TSV")"
-printf '%-34s %s\n' "replayed  ANOVA F" "$(awk -F'\t' '$1=="replay_F"{print $2}' "$TSV")  (the emitted file carries no cell edit)"
+printf '%-34s %s\n' "recorder vocabulary" "$(awk -F'\t' '$1=="recorder_kinds"{print $2}' "$TSV")"
+printf '%-34s %s\n' "emitted kinds"       "$(awk -F'\t' '$1=="emitted_kinds_sorted"{print $2}' "$TSV")"
+printf '%-34s %s\n' "missing"             "$(awk -F'\t' '$1=="kinds_missing_from_emitted"{print $2}' "$TSV")"
+echo
+printf '%-10s %-12s %-12s %-9s %s\n' "leg" "ANOVA F" "figure" "pixels" "result CSVs"
+printf '%-10s %-12s %-12s %-9s %s\n' "session" "$S_F" "-" "-" "-"
+for leg in colleague hostile retarget; do
+    printf '%-10s %-12s %-12s %-9s %s\n' "$leg" \
+        "$(awk -F'\t' -v k="leg_${leg}_F" '$1==k{print $2}' "$TSV")" \
+        "$([[ "$(awk -F'\t' -v k="leg_${leg}_png_identical" '$1==k{print $2}' "$TSV")" == "1" ]] && echo identical || echo DIFFERS)" \
+        "$(awk -F'\t' -v k="leg_${leg}_png_pixels_differing" '$1==k{print $2}' "$TSV")" \
+        "$(awk -F'\t' -v k="leg_${leg}_result_csvs_identical" '$1==k{print $2}' "$TSV")/$(awk -F'\t' -v k="leg_${leg}_result_csvs_total" '$1==k{print $2}' "$TSV")"
+done
+echo
+printf '%-34s %s\n' "control: typeface"   "$(awk -F'\t' '$1=="control_typeface_pixels_differing"{print $2}' "$TSV") px"
+printf '%-34s %s\n' "control: font size"  "$(awk -F'\t' '$1=="control_fontsize_pixels_differing"{print $2}' "$TSV") px"
+printf '%-34s %s\n' "control: line width" "$(awk -F'\t' '$1=="control_linewidth_pixels_differing"{print $2}' "$TSV") px"
+printf '%-34s %s\n' "control: red ink"    "$(awk -F'\t' '$1=="control_ink_pixels_differing"{print $2}' "$TSV") px"
 echo
 echo "emitted steps : $(awk -F'\t' '$1=="emitted_step_kinds"{print $2}' "$TSV")"
 echo "emitted script: $EMIT"
 echo "transcript    : $TSV"
 
 if [[ $fail -eq 0 ]]; then
-    echo "roundtrip: PASS — one session, six actions, one emitted script"
+    echo "roundtrip: PASS — eight actions, one emitted script, three replays"
     exit 0
 fi
 exit 1

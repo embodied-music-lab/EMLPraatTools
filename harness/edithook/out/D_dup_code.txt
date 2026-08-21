@@ -1,0 +1,3 @@
+CODE Rename column (by number): 3, "eml_col_lock"
+CODE Set string value: 1, "eml_col_lock", "ZZZ"
+CODE Rename column (by number): 3, "colA"

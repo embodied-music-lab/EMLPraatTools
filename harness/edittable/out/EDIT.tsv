@@ -1,7 +1,7 @@
 praat_version	Praat 6.6.30 (June 30 2026)
 file_under_test	eml-edit-table.praat
-file_sha	5aac2d77865f35b72c99b3dab92e44ec0fad7e4ad5545b8f3620a7a3443ea0ba
-shipped_total_lines	1062
+file_sha	6258f980089c44954718044110ea9e2055fa6e82c7fe80b2867f8670ccea242e
+shipped_total_lines	1270
 stanza_count	22
 stanza_1_key	eml_table_editor#1
 stanza_2_key	add_column#1
@@ -25,8 +25,8 @@ stanza_19_key	rename_column#1
 stanza_20_key	cannot_open_the_table_editor#1
 stanza_21_key	cannot_use_that_column_name#1
 stanza_22_key	cannot_delete_column#1
-twin_body_sha_shipped	f7600af9be2f4d2407a0471673549ffd0353900ae077fa377dbc5562e0663daa
-twin_body_sha_twin	f7600af9be2f4d2407a0471673549ffd0353900ae077fa377dbc5562e0663daa
+twin_body_sha_shipped	846f941a6aabf9340106d58fc51e410f24a18bfa927db1c2cfa49fa1e2e330e4
+twin_body_sha_twin	846f941a6aabf9340106d58fc51e410f24a18bfa927db1c2cfa49fa1e2e330e4
 twin_body_identical	1
 twin_excised_lines	175
 A_rename_dup_exit	0

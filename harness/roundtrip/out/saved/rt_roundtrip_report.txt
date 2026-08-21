@@ -26,12 +26,14 @@ DLG|edt|4|visit=1|clicked=3
 DLG|edt|4|visit=2|clicked=1
 RT|edit_cell|1|4242
 RT|table_mean_after_edit|609.416667
-RT|steps_after|edit_cell|1
+RT|steps_after|edit_cell|3
+RT|refusal|1|Data column "speaker" holds no numbers. 24 cell(s) are not numeric in any locale (row 1: A01). Unrecognized nonnumeric token; excluded.
+RT|steps_after|refusal|4
 DLG|anv|1|visit=1|clicked=2
 
 ==============================================
   EML Stats : One-Way ANOVA
-  Fri Aug 21 04:13:41 2026
+  Fri Aug 21 05:05:36 2026
   from: analysis dialog
 ==============================================
 

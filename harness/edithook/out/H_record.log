@@ -1,0 +1,95 @@
+EML: recording started.
+
+Every EML analysis, figure and table edit from now on is
+added to one script. Finish with 'Stop recording and open'
+to read it in an editor, or 'Stop recording and save' to
+file it directly.
+
+WHAT GOES INTO IT, AND WHAT DOES NOT:
+
+    Recorded — anything you do through an EML command:
+        analyses, figures, saves, and changes you make
+        in EML's own 'EML: Edit Table...' window.
+
+    Not recorded — a cell you type into Praat's own
+        table window, and anything a script of your own
+        does to your data.
+
+An edit made in Praat's own table window can still be
+got back by hand: open a script window and choose
+Edit > Paste history. Praat writes out what you did in a
+form that runs, and you can paste it into the recorded
+script where it belongs. Work done by a script of your
+own leaves no trace in either place.
+
+To keep the whole session reproducible, edit your tables
+through 'EML: Edit Table...' and they are recorded with
+everything else.
+
+Two Tables now sit in the Objects window:
+
+    emlRecording_DO_NOT_REMOVE
+        the steps — this IS the recording, and removing it
+        ends the session, which is why it is named that way
+    emlRecordMeta
+        when it started and what it ran on
+
+A third, 'eml-record-phrases', appears after the first step;
+it is the shipped wording the script is written from. Leave
+all three alone and they are cleaned up when you stop.
+
+'Stop recording and open' puts the script in an editor and
+keeps a review copy at:
+/home/claude/repo/harness/edithook/prefs/eml-recorded-scripts
+H opened|Table H_input
+DLG|4|eml_table_editor#3|visit=1|clicked=3
+DLG|4|eml_table_editor#3|visit=2|clicked=1
+H edited
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Fri Aug 21 05:09:31 2026
+══════════════════════════════════════════════
+
+  Table               H input
+  Data column         f0 Hz
+  Group column        group
+  Groups              3
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests whether group means differ when normality and equal variances hold.
+
+Source              SS              df    MS              F           p
+Between             2505784.67      2     1252892.33      0.8730      .450
+Within              12916973.00     9     1435219.22      
+Total               15422757.67     11    
+
+  F                   0.8730		Ratio of mean squares: the between-group mean square is 0.9 times the within-group mean square. With no real effect, this ratio tends to be near 1
+  p                   .450		Not statistically significant at the 5% level
+  Effect size         eta-squared = 0.1625		Effect size: large by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 16% of the total variance
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(2, 9) = 0.9992
+  Equal-spread p      p = .406
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  A             4     1129.50   2075.00   93.00     
+  B             4     120.00    3.56      119.00    
+  C             4     206.00    3.92      206.50    
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+
+              A           B           C           
+A             ---         0.688       0.629       
+B             -0.688      ---         -22.984     
+C             -0.629      22.984      ---         
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+H session groupA mean|1129.5000
+H session F|0.8730
+H flushed|1

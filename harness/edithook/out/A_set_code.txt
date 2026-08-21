@@ -1,0 +1,1 @@
+CODE Set string value: 1, "f0", "4242"

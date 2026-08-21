@@ -1,0 +1,114 @@
+praat_version	Praat 6.6.30 (June 30 2026)
+file_under_test	eml-edit-table.praat
+file_sha	6258f980089c44954718044110ea9e2055fa6e82c7fe80b2867f8670ccea242e
+file_is_shipped	1
+sidecar_sha	1c33e7a360bcdb0db1a70d0666f567f608184acfe4847c704ee8adbeceb1e71f
+phrases_sha	c24222b2edf00c38aff05033d47fca58ee40390b9c9e3a9ce8910ec6c75a8e67
+stage_scripts_linked	30
+stanza_count	22
+stanza_1_key	eml_table_editor#1
+stanza_2_key	add_column#1
+stanza_3_key	eml_table_editor#2
+stanza_4_key	eml_table_editor#3
+stanza_5_key	nothing_was_written#1
+stanza_6_key	find_replace#1
+stanza_7_key	find#1
+stanza_8_key	rep_nxt#1
+stanza_9_key	found#1
+stanza_10_key	rep_all#1
+stanza_11_key	table_structure#1
+stanza_12_key	insert_row#1
+stanza_13_key	cannot_delete#1
+stanza_14_key	delete_row#1
+stanza_15_key	add_column#2
+stanza_16_key	insert_column#1
+stanza_17_key	delete_column#1
+stanza_18_key	cannot_rename#1
+stanza_19_key	rename_column#1
+stanza_20_key	cannot_open_the_table_editor#1
+stanza_21_key	cannot_use_that_column_name#1
+stanza_22_key	cannot_delete_column#1
+twin_body_sha_shipped	846f941a6aabf9340106d58fc51e410f24a18bfa927db1c2cfa49fa1e2e330e4
+twin_body_sha_twin	846f941a6aabf9340106d58fc51e410f24a18bfa927db1c2cfa49fa1e2e330e4
+twin_body_identical	1
+A_set_exit	0
+A_set_returned	1
+A_set_steps	1
+A_set_dlg_trace	eml_table_editor#3,eml_table_editor#3
+A_set_error	
+A_set_intent	Table demo|Changed f0 in row 1 from 101 to 4242
+A_set_code_lines	1
+B_structure_exit	0
+B_structure_returned	1
+B_structure_steps	7
+B_structure_dlg_trace	eml_table_editor#3,table_structure#1,eml_table_editor#3,table_structure#1,insert_row#1,eml_table_editor#3,table_structure#1,delete_row#1,eml_table_editor#3,table_structure#1,add_column#2,eml_table_editor#3,table_structure#1,insert_column#1,eml_table_editor#3,table_structure#1,rename_column#1,eml_table_editor#3,table_structure#1,delete_column#1,eml_table_editor#3
+B_structure_error	
+B_structure_intent	Table demo|Added a row at the end. The table now has 4 rows
+B_structure_intent	Table demo|Inserted a row at position 2
+B_structure_intent	Table demo|Deleted row 2
+B_structure_intent	Table demo|Added column added at the end
+B_structure_intent	Table demo|Inserted column inserted at position 2
+B_structure_intent	Table demo|Renamed column inserted to renamed
+B_structure_intent	Table demo|Deleted column renamed, which was column 2 of 4
+B_structure_code_lines	7
+C_repall_exit	0
+C_repall_returned	1
+C_repall_steps	1
+C_repall_dlg_trace	eml_table_editor#3,find_replace#1,rep_all#1,find_replace#1,eml_table_editor#3
+C_repall_error	
+C_repall_intent	Table demo|Replaced keep with drop in 3 cell(s), across all columns
+C_repall_code_lines	3
+D_dup_exit	0
+D_dup_returned	1
+D_dup_steps	1
+D_dup_dlg_trace	eml_table_editor#3,eml_table_editor#3
+D_dup_error	
+D_dup_intent	Table demo|Changed colA in row 1 from B1 to ZZZ
+D_dup_code_lines	3
+E_autoname_exit	0
+E_autoname_returned	1
+E_autoname_steps	3
+E_autoname_dlg_trace	eml_table_editor#3,eml_table_editor#3
+E_autoname_error	
+E_autoname_intent	Table demo|Named column 1, which had no name, Column_1
+E_autoname_intent	Table demo|Named column 2, which had no name, Column_2
+E_autoname_intent	Table demo|Changed Column_1 in row 1 from  to named
+E_autoname_code_lines	3
+F_norecord_exit	0
+F_norecord_returned	1
+F_norecord_steps	0
+F_norecord_dlg_trace	eml_table_editor#3,eml_table_editor#3
+F_norecord_error	
+F_norecord_code_lines	0
+G_quote_exit	0
+G_quote_returned	1
+G_quote_steps	1
+G_quote_dlg_trace	eml_table_editor#3,eml_table_editor#3
+G_quote_error	
+G_quote_intent	Table demo|Changed f0 in row 1 from 101 to he said "hi"
+G_quote_code_lines	1
+start_message_lines	43
+start_message_sha	3e0749560eceeb54084d37676449371cfa36223746dbdc2df3b8108586ba6efd
+start_message_has_recorded	1
+start_message_has_notrecorded	1
+start_message_has_pastehistory	1
+start_message_has_emledittable	2
+start_message_has_scriptofyourown	1
+H_input_sha	e8cd68e22e3a0f30bf45160ada4d236a6d77ed90808caf29c6fd0a8b404c2606
+H_record_exit	0
+H_flushed	1
+H_session_meanA	1129.5000
+H_session_F	0.8730
+H_emitted_steps	3
+H_emitted_edit_line	Set string value: 1, "f0_Hz", "4242"
+H_naive_removed_lines	1
+H_replay_exit	0
+H_replay_meanA	1129.5000
+H_replay_error	
+H_naive_exit	0
+H_naive_meanA	94.0000
+H_naive_error	
+H_replay_table_matches_session	1
+H_naive_table_matches_session	0
+H_naive_table_matches_input	1
+cases_run	8

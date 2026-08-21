@@ -1,5 +1,5 @@
 # ============================================================================
-# harness/roundtrip/drive.praat — one session, six user actions, one recording
+# harness/roundtrip/drive.praat — one session, eight user actions, one recording
 # ============================================================================
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #
@@ -9,7 +9,7 @@
 # and the ones that a user reaches through a menu are reached through
 # `runScript:` — which gives a script its OWN variable scope inside ONE
 # process, exactly as a menu command gets. harness/record_e2e established
-# that shape; this file is the six-action journey rather than a sweep.
+# that shape; this file is the eight-action journey rather than a sweep.
 #
 # WHAT IS RUN, IN ORDER, AND BY WHAT ROUTE
 #
@@ -26,9 +26,30 @@
 #                   (43 Add menu/action commands, none of them a reader), so
 #                   this is the only route a user has to a table on disk.
 #   3. edit_cell    runScript: the headless twin of eml-edit-table.praat
-#   4. analysis     runScript: the headless twin of eml-compare-k-groups.praat
-#   5. draw         inside that wrapper, at its Draw button's call site
-#   6. save         inside that wrapper, its Save button -> @emlSavePanel
+#   4. refusal      @emlRunAnovaAnalysis with the speaker column in the Data
+#                   slot -- the wrong column, picked the way a user picks it.
+#                   THE ONE ACTION THAT IS NOT REACHED THROUGH ITS WRAPPER,
+#                   and the reason is in the wrapper rather than here: a
+#                   refused analysis lands in @emlErrorDialog, whose region
+#                   holds two `endPause` lines on opposite arms of an `if`,
+#                   and run.sh refuses to excise a region like that. The
+#                   orchestrator IS the call the wrapper makes, one line above
+#                   the dialog, and it is the call that records the step. What
+#                   is not exercised is the wrapper's error window.
+#   5. analysis     runScript: the headless twin of eml-compare-k-groups.praat
+#   6. draw         inside that wrapper, at its Draw button's call site
+#   7. save         inside that wrapper, its Save button -> @emlSavePanel
+#   8. convert      @emlConvertForGraph on a mono Sound, with the two pitch
+#                   arguments the form passes it (eml-graphs-form.praat:3940,
+#                   prev_f0_pitchFloor and prev_f0_pitchCeiling * 2). The
+#                   form's acquire path is a `beginPause:` loop, so what is
+#                   driven is the procedure that path calls -- the same
+#                   substitution, and for the same reason, as the draw chain.
+#
+# WHY 4 AND 8 ARE HERE AT ALL. The recorder can express seven step kinds and
+# the other six actions produce five of them. A recording that never exercises
+# a kind says nothing about it, and `convert` and `refusal` are exactly the two
+# a session built out of tables cannot reach by accident.
 #
 # WHY 4, 5 AND 6 SHARE ONE SCOPE, AND WHY THAT IS THE FAITHFUL ARRANGEMENT
 # RATHER THAN A CONVENIENCE. @emlSavePanel decides whether there is anything
@@ -190,7 +211,31 @@ endif
 appendInfoLine: "RT|steps_after|edit_cell|", rtStepsAfter3
 
 # ===========================================================================
-# 4, 5, 6 — analysis, draw and save, through the wrapper's own loop
+# 4. refusal — the wrong column in the Data slot
+# ===========================================================================
+# speaker holds A01..C08, so @emlRequireNumericColumn refuses and
+# @emlRunAnovaAnalysis returns with .error$ set. @emlRecordAnova, which the
+# orchestrator calls on both arms, writes a `refusal` step carrying the
+# sentence rather than dropping the attempt: a log that shows only the
+# analyses that worked lies by omission.
+selectObject: rtTable
+@emlRunAnovaAnalysis: rtTable, "speaker", "cohort", 1
+rtRefusal$ = emlRunAnovaAnalysis.error$
+rtRefused = 0
+if rtRefusal$ <> ""
+    rtRefused = 1
+endif
+appendInfoLine: "RT|refusal|", rtRefused, "|", rtRefusal$
+
+nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
+rtStepsAfter4 = -1
+if numberOfSelected () = 1
+    rtStepsAfter4 = Get number of rows
+endif
+appendInfoLine: "RT|steps_after|refusal|", rtStepsAfter4
+
+# ===========================================================================
+# 5, 6, 7 — analysis, draw and save, through the wrapper's own loop
 # ===========================================================================
 selectObject: rtTable
 runScript: "_rt_compare_k.praat"
@@ -201,6 +246,35 @@ if numberOfSelected () = 1
     rtStepsAfter6 = Get number of rows
 endif
 appendInfoLine: "RT|steps_after|analysis_draw_save|", rtStepsAfter6
+
+# ===========================================================================
+# 8. convert — a Sound asked for as a figure the Sound cannot draw
+# ===========================================================================
+# ONE CHANNEL, so @emlGraphsChannelGate passes it through untouched: the gate
+# only asks a question of a Sound with two or more channels, and a dialog here
+# would take the process down. The Sound is built by formula so the Spectrum
+# is the same Spectrum on every run.
+Create Sound from formula: "rt_tone", 1, 0, 0.5, 44100, "0.5 * sin (2 * pi * 220 * x)"
+rtSound = selected ("Sound")
+rtSoundName$ = selected$ ()
+
+@emlConvertForGraph: rtSound, "Spectrum", 50, 800
+rtConverted = 0
+rtConvertName$ = "<none>"
+if emlConvertForGraph.result > 0
+    rtConverted = 1
+    selectObject: emlConvertForGraph.result
+    rtConvertName$ = selected$ ()
+endif
+appendInfoLine: "RT|convert|", rtConverted, "|", rtSoundName$, "|",
+... rtConvertName$, "|", emlConvertForGraph.temporary
+
+nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
+rtStepsAfter8 = -1
+if numberOfSelected () = 1
+    rtStepsAfter8 = Get number of rows
+endif
+appendInfoLine: "RT|steps_after|convert|", rtStepsAfter8
 
 # ===========================================================================
 # STOP AND SAVE THE RECORDING
