@@ -5824,7 +5824,24 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
 
     # 1-group edge case: faceting a single group produces viewport
     # mismatch between bar rendering and garnish. Treat as ungrouped.
+    #
+    # AND SAY SO WHEN IT CHANGES THE FIGURE. Silently drawing something other
+    # than what was asked for is the class of defect this plugin discloses
+    # rather than hides: the user picked "Faceted (stacked panels)", got one
+    # overlapped panel, and nothing on the figure says which of the two they
+    # are looking at. The dialog states the condition in the Display mode
+    # label ("2 or more groups"); this states the outcome on the one draw
+    # where the condition failed, in the same Info window and the same voice
+    # @emlSecondAxisGate uses for a request it cannot honour. The line is
+    # emitted only when faceting was actually requested — an ungrouped
+    # histogram drawn at the default mode has nothing to disclose.
     if .nGroups = 1
+        if .displayMode = 2
+            appendInfoLine: "NOTE: faceted display was requested and drawn "
+            ... + "overlapped. Faceting stacks one panel per group, and this "
+            ... + "column yields a single group, so there is one panel. Give "
+            ... + "a group column with two or more levels to see facets."
+        endif
         .hasGroups = 0
         .displayMode = 1
     endif

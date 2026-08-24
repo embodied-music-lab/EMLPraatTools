@@ -41,12 +41,26 @@ Praat 6.6.30 under Xvfb, not on reasoning about Praat.
   and the ruling's per-page row counts (12→9, 20→17, and so on) verified
   against the rendered page under Xvfb.
 
-  State as measured: the right-hand axis page is the exemplar and is done.
-  Scatter and the single-value-axis stat pages already carry ONE merged
-  range heading. Pitch, waveform, spectrum and LTAS still carry two
-  per-axis icon headings and need the merge. The paired axis-labels row
-  exists NOWHERE yet — all thirteen pages still stack a separate X axis
-  label row above a separate Y axis label row.
+  DONE, all thirteen pages, 24 Aug, as one batched sweep with a single
+  photographed re-drive at the end (ruled: the source-level checks stay
+  green page by page, the photographed evidence goes stale en bloc). Row
+  counts land on the approved targets ±1; the only overshoot is Spaghetti
+  at +1. Every page now closes its fields inside a named group, the four
+  acoustic pages carry one merged axes heading, and the paired axis-labels
+  row exists on every page that has axis labels.
+
+  Two answers the sweep had to measure rather than assume, both now in the
+  code: the histogram's value range governs the HORIZONTAL axis
+  (`@emlDrawHistogram` assigns `.xMin = .vMin`), so the label that read
+  "Value range (bottom/top)" was backwards and now reads "Value
+  (left/right)"; and the paired-row idiom is not exclusive to axes — the
+  panel origin's x/y inches and the pitch floor/ceiling render the same
+  way, which is why v84's axis roster is now derived from the group each
+  row sits in rather than from the row's shape.
+
+  Follow-up, small: the line-chart pages take the same grouping in their
+  own file set as a separate commit, never as a retrofit against the old
+  form.
 - **The label character law** (ruling, measured). Before the parenthetical,
   a field label may contain letters, digits and spaces only, plus the
   leading left/right pairing word. Praat strips the label from the first
@@ -182,6 +196,16 @@ wording and output work so its report strings are written once.
    state once per press; the recorder writes it ahead of each step; a check
    pins seeded == published == emitted.
 
+   ONE CONCRETE INSTANCE, FOUND 24 AUG WHILE READING THE HISTOGRAM DRAW.
+   The recorder writes `.displayMode` into the emitted script AFTER the
+   one-group path has forced it from 2 (faceted) to 1 (overlap). So a
+   session in which the user chose faceting and got one panel records a
+   script that says they chose overlap. The replay draws the same picture,
+   which is why nothing has gone red: the fidelity claim the recorder makes
+   is about the USER'S CHOICES, and this is the draw layer's derived value
+   standing in for one. Publication (this item) is the fix — the form
+   states what was chosen, not what survived the draw.
+
    MEASURED, AND THE MEASUREMENT IS NOW IN THE REPO:
    `validate/tools/recorder_census.py`, so this stops being a number in a
    sentence. Of 41 globals the draw layer seeds, 14 are assigned in scripts
@@ -263,6 +287,29 @@ wording and output work so its report strings are written once.
   checks read, and the dialog wording is still moving. One re-drive after
   the sweep, not one per change. Confirmed still correct — no line-chart
   code has moved since the last re-drive.
+- **Photographed-dialog evidence is stale EN BLOC, deliberately, as of the
+  24 Aug sweep commit, and the re-drive that clears it is the next unit of
+  work.** Exactly three checks are red for this reason and no other: v84's
+  "the transcript was driven on THIS form's code", and v97's two
+  "the transcript was taken from THIS ..." digests. All three are digest
+  bindings — they say the photographs describe a different revision of the
+  form, which is TRUE and is the whole point of batching a thirteen-page
+  sweep behind one re-drive. Every source-level check over those same pages
+  is green.
+
+  THE RE-DRIVE IS NOT A RERUN. The harnesses address dialog fields by TAB
+  INDEX, and grouping headings shift those indices, so the drives must be
+  re-taught before they are re-run or they will type into the wrong box and
+  report a plugin defect: axisrefuse `box_value` tab11→tab10 and tab12→tab11,
+  `box_bound` tab12→tab11, `scatter_xy` tab8→tab6, tab9→tab7, tab10→tab8,
+  tab11→tab9, plus that harness's own FIELD ORDER comment block. This is the
+  same class of mistake that cost most of 20 Aug: a harness written for the
+  old layout going red at the moment a change lands, and the change getting
+  blamed.
+
+  If the re-drive has not happened by the end of 25 Aug, re-drive anyway —
+  deliberate staleness that ages stops being deliberate and becomes an
+  unanswered question about which pages the photographs describe.
 
 ## Closed
 

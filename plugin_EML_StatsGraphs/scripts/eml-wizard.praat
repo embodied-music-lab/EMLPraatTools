@@ -405,22 +405,16 @@ if goal = 1
                 endif
                 comment: ""
                 comment: "Parametric — independent-samples t-test, Cohen's d"
-                comment: "More statistical power. Assumes approximate normality."
+                comment: "More statistical power. Welch does not assume equal"
+                comment: "group variances and is the safer default."
                 comment: ""
                 comment: "Nonparametric — Mann-Whitney U, rank-biserial r"
                 comment: "Works on any distribution. Tests rank order, not means."
                 comment: ""
                 comment: "─────────────────────────────────────"
-                optionmenu: "Test approach", normDefault
-                    option: "Parametric"
-                    option: "Nonparametric"
-                comment: ""
-                comment: "Variance assumption (parametric only):"
-                comment: "     Welch does not assume equal group variances"
-                comment: "     and is the safer default."
-                optionmenu: "Variance assumption", prevVarAssume
-                    option: "Welch (unequal variances)"
-                    option: "Pooled (equal variances)"
+                @emlWizard2GroupTestToMenu: normDefault, prevVarAssume
+                optionmenu: "Test", emlWizard2GroupTestToMenu.row
+                    @emlWizard2GroupTestRows
                 boolean: "Clear Info window", 0
                 comment: ""
             clicked = endPause: "Quit", "Back", "Run", 3, 0
@@ -430,22 +424,39 @@ if goal = 1
                 goto A2A_NORM_PAGE
             endif
 
+            # A CATEGORY HEADER IS NOT A CHOICE. Same guard the graph-type
+            # menu uses (graphs/eml-graphs-form.praat), reused rather than
+            # reinvented: a parallel mapping marks the header rows, the
+            # chosen row is remapped through it, and landing on a header
+            # re-shows the page with a small box instead of dispatching a
+            # test the row never named. This file already returns to a page
+            # by `goto` rather than a repeat loop, so the re-show does the
+            # same, back to this page's own label.
+            @emlWizard2GroupTestFromMenu: test
+            if emlWizard2GroupTestFromMenu.isHeader = 1
+                beginPause: "Please choose a test."
+                    comment: "The item you selected is a category header."
+                    comment: "Please choose a test from the list."
+                endPause: "OK", 1, 0
+                goto A2A_TEST_PAGE
+            endif
+
             if clear_Info_window
                 @emlClearInfo
             endif
 
             # ── Dispatch ───────────────────────────────────────────────
 
-            @wizardNormLabel: normChecked, normSummary$, test_approach
+            # ONE SOURCE FOR THE CHOSEN ROW. test_approach, prevVarAssume and
+            # wizTName$ all come off @emlWizard2GroupTestFromMenu's decode of
+            # the SAME row the user picked, so the report can never name a
+            # test other than the one dispatched below.
+            test_approach = emlWizard2GroupTestFromMenu.testApproach
+            prevVarAssume = emlWizard2GroupTestFromMenu.varAssume
+            wizEqualVar = prevVarAssume - 1
+            wizTName$ = emlWizard2GroupTestFromMenu.reportName$
 
-            prevVarAssume = variance_assumption
-            if variance_assumption = 2
-                wizEqualVar = 1
-                wizTName$ = "Student t-test, pooled variance (Cohen's d)"
-            else
-                wizEqualVar = 0
-                wizTName$ = "Welch t-test, unequal variances (Cohen's d)"
-            endif
+            @wizardNormLabel: normChecked, normSummary$, test_approach
 
             if test_approach = 1
                 wizTestType$ = "parametric"
@@ -468,7 +479,7 @@ if goal = 1
                 wizTestType$ = "nonparametric"
                 @wizardReportPlan: "Two independent groups",
                 ... wizardNormLabel.result$,
-                ... "Mann-Whitney U (rank-biserial r)",
+                ... wizTName$,
                 ... "n/a", dataCol$, groupCol$, "", displayTable$
                 @emlRunTwoGroupAnalysis: tableId, dataCol$,
                 ... groupCol$, "nonparametric", wizEqualVar
@@ -596,17 +607,15 @@ if goal = 1
                 comment: "└── Nonparametric: Kruskal-Wallis with Dunn"
                 comment: "      └── Fewer assumptions"
                 comment: ""
-                optionmenu: "Test approach", normDefault
-                    option: "Parametric"
-                    option: "Nonparametric"
+                comment: "If the overall test is significant, the wizard compares"
+                comment: "each pair of groups. Standard/Conservative/Liberal name how"
+                comment: "cautious those comparisons are — Tukey/Scheffe/pairwise-Welch"
+                comment: "under Parametric, Dunn with Holm/Bonferroni/BH under"
+                comment: "Nonparametric."
                 comment: ""
-                comment: "If the overall test is significant, the wizard will compare"
-                comment: "each pair of groups. How cautious should those comparisons be?"
-                comment: ""
-                optionmenu: "Correction approach", 1
-                    option: "Standard (recommended)"
-                    option: "Conservative (fewer false positives, may miss real differences)"
-                    option: "Liberal (more sensitive, higher false positive risk)"
+                @emlWizard3GroupTestToMenu: normDefault, 1
+                optionmenu: "Test", emlWizard3GroupTestToMenu.row
+                    @emlWizard3GroupTestRows
                 boolean: "Clear Info window", 0
                 comment: ""
             clicked = endPause: "Quit", "Back", "Run", 3, 0
@@ -616,13 +625,32 @@ if goal = 1
                 goto A2B_NORM_PAGE
             endif
 
+            # A CATEGORY HEADER IS NOT A CHOICE. Same guard as the two-group
+            # test page above and the graph-type menu it was reused from: a
+            # parallel mapping marks the header rows, the chosen row is
+            # remapped through it, and landing on a header re-shows this
+            # page with a small box instead of dispatching a test the row
+            # never named.
+            @emlWizard3GroupTestFromMenu: test
+            if emlWizard3GroupTestFromMenu.isHeader = 1
+                beginPause: "Please choose a test."
+                    comment: "The item you selected is a category header."
+                    comment: "Please choose a test from the list."
+                endPause: "OK", 1, 0
+                goto A2B_TEST_PAGE
+            endif
+
             if clear_Info_window
                 @emlClearInfo
             endif
 
             # ── Map correction approach ────────────────────────────────────
+            # test_approach and corrApproach both decode off the ONE row the
+            # user picked, so the pairing dispatched below is always the
+            # pairing the row named — never a leftover from a different row.
 
-            corrApproach = correction_approach
+            test_approach = emlWizard3GroupTestFromMenu.testApproach
+            corrApproach = emlWizard3GroupTestFromMenu.corrApproach
 
             # ── Dispatch: ANOVA or KW ──────────────────────────────────────
 
@@ -2137,6 +2165,144 @@ endwhile
 # ###########################################################################
 # PROCEDURES
 # ###########################################################################
+
+
+# ============================================================================
+# THE TWO-GROUP TEST MENU — one control, no expressible mismatch
+# ============================================================================
+# Collapses "Test approach" (Parametric / Nonparametric) and "Variance
+# assumption" (Welch / Pooled) into one list. Variance assumption was drawn
+# and read on every pass of the old page, but @emlRunTwoGroupAnalysis never
+# consulted it once Test approach chose Nonparametric — the same hazard THE
+# COMPARISON MENU in graphs/eml-graphs-form.praat names: a sibling control on
+# a static page cannot react to the choice beside it, so the two can only
+# ever agree by luck. One row per honest choice removes the possibility
+# rather than guarding it; see docs/RULING_DEAD_CONTROLS.md #3.
+#
+# HEADERS ARE ROWS, AND THE GUARD IS THE ONE THE GRAPH-TYPE MENU USES.
+# graphs/eml-graphs-form.praat marks a header with 0 in a parallel array and
+# re-shows the page when the remap lands there; its own Comparison list
+# reuses the identical idea. This file already returns to a page by `goto`
+# rather than a repeat loop, so the re-show below does the same: a small
+# dialog, then `goto` back to this page's own label.
+# ----------------------------------------------------------------------------
+# @emlWizard2GroupTestRows
+# Emits the option rows. Called INSIDE the "Test" optionmenu, immediately
+# after the field line.
+# ----------------------------------------------------------------------------
+procedure emlWizard2GroupTestRows
+    option: "-- Parametric --"
+    option: "Welch t (unequal variances; default)"
+    option: "Student t (pooled variances)"
+    option: "-- Nonparametric --"
+    option: "Mann-Whitney U"
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlWizard2GroupTestFromMenu: .row
+# Outputs: .isHeader     (1 = a category header, not a choice)
+#          .testApproach (1 = parametric, 2 = nonparametric)
+#          .varAssume    (1 = Welch/unequal, 2 = pooled/Student — the same
+#                         1/2 encoding the old "Variance assumption" menu
+#                         used, so prevVarAssume needs no reshaping)
+#          .reportName$  (the exact string @wizardReportPlan prints for this
+#                         row — the ONE source, so the report can never name
+#                         a test other than the one the row describes)
+# ----------------------------------------------------------------------------
+procedure emlWizard2GroupTestFromMenu: .row
+    .isHeader = 0
+    .testApproach = 1
+    .varAssume = 1
+    .reportName$ = "Welch t-test, unequal variances (Cohen's d)"
+    if .row = 1 or .row = 4
+        .isHeader = 1
+    elsif .row = 3
+        .varAssume = 2
+        .reportName$ = "Student t-test, pooled variance (Cohen's d)"
+    elsif .row = 5
+        .testApproach = 2
+        .reportName$ = "Mann-Whitney U (rank-biserial r)"
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlWizard2GroupTestToMenu: .testApproach, .varAssume
+# The inverse, for seeding the menu from the normality recommendation (or
+# from a returning user's own answer). Never returns a header row.
+# ----------------------------------------------------------------------------
+procedure emlWizard2GroupTestToMenu: .testApproach, .varAssume
+    .row = 2
+    if .testApproach = 2
+        .row = 5
+    elsif .varAssume = 2
+        .row = 3
+    endif
+endproc
+
+
+# ============================================================================
+# THE THREE-OR-MORE-GROUP TEST MENU — same collapse, found by the sweep
+# ============================================================================
+# "Test approach" (Parametric one-way ANOVA / Nonparametric Kruskal-Wallis)
+# sat beside "Correction approach" (Standard / Conservative / Liberal), and
+# the three correction labels named a DIFFERENT post-hoc procedure depending
+# on the test approach the same page's other field held — Standard meant
+# Tukey under Parametric and Dunn-Holm under Nonparametric, Conservative
+# meant Scheffe or Dunn-Bonferroni, Liberal meant pairwise Welch t (BH) or
+# Dunn-BH. Same shape as the two-group menu above — a sub-choice menu whose
+# meaning is conditioned by the menu beside it — collapsed the same way,
+# into six honest rows under two headers.
+# ----------------------------------------------------------------------------
+# @emlWizard3GroupTestRows
+# ----------------------------------------------------------------------------
+procedure emlWizard3GroupTestRows
+    option: "-- Parametric (one-way ANOVA) --"
+    option: "Tukey HSD, all pairs (standard)"
+    option: "Scheffe, if ANOVA significant (conservative)"
+    option: "Pairwise Welch t, Benjamini-Hochberg, if ANOVA significant (liberal)"
+    option: "-- Nonparametric (Kruskal-Wallis) --"
+    option: "Dunn, Holm, all pairs (standard)"
+    option: "Dunn, Bonferroni, all pairs (conservative)"
+    option: "Dunn, Benjamini-Hochberg, all pairs (liberal)"
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlWizard3GroupTestFromMenu: .row
+# Outputs: .isHeader
+#          .testApproach (1 = parametric/ANOVA, 2 = nonparametric/KW)
+#          .corrApproach (1 = standard, 2 = conservative, 3 = liberal — the
+#                        index the dispatch code already branches on)
+# ----------------------------------------------------------------------------
+procedure emlWizard3GroupTestFromMenu: .row
+    .isHeader = 0
+    .testApproach = 1
+    .corrApproach = 1
+    if .row = 1 or .row = 5
+        .isHeader = 1
+    elsif .row = 3
+        .corrApproach = 2
+    elsif .row = 4
+        .corrApproach = 3
+    elsif .row = 6
+        .testApproach = 2
+    elsif .row = 7
+        .testApproach = 2
+        .corrApproach = 2
+    elsif .row = 8
+        .testApproach = 2
+        .corrApproach = 3
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlWizard3GroupTestToMenu: .testApproach, .corrApproach
+# ----------------------------------------------------------------------------
+procedure emlWizard3GroupTestToMenu: .testApproach, .corrApproach
+    .row = 1 + .corrApproach
+    if .testApproach = 2
+        .row = 5 + .corrApproach
+    endif
+endproc
 
 
 # ============================================================================

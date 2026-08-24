@@ -267,7 +267,15 @@ for (g in c("scatterGroupShown", "histGroupShown", "spGroupShown")) {
 # kept the sentence would be lying, and a page that lost the sentence is the
 # finding back. Bounded by the enclosing beginPause .. endPause, which is the
 # only page scope this form has.
-.d6 <- grep("^\\s*comment: \"Comparisons appear as a matrix panel below the plot\\.\"\\s*$",
+#
+# THE SENTENCE NOW RIDES ON THE GROUP HEADING. Under the layout-groups ruling
+# every field renders inside a named group, and on these three pages the fact
+# is stated in the 📊 Analysis heading itself rather than in a comment row of
+# its own -- one row instead of two, and the fact sits on the heading the user
+# reads before the fields it qualifies. What is pinned is the FACT, not the
+# row it occupies: the anchor is the sentence, wherever a comment widget
+# carries it, and the page test below is unchanged.
+.d6 <- grep("^\\s*comment: \".*[Cc]omparisons appear as a matrix panel below the plot",
             fcode)
 check("v61", "three pages state the forced matrix layout instead of offering a menu (D6)",
       3L, length(.d6), tol = 0)

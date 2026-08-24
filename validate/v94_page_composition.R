@@ -412,9 +412,19 @@ check_true(V, "...and never read from or written to the config file",
                c("sessionEraseDefault = 1",
                  "sessionEraseDefault = sessionEraseFirst",
                  "sessionEraseFirst = erase_page_first")))
+# THE ORIGIN IS ONE ROW OF TWO BOXES, and this check reads both halves plus
+# the remap that carries them. Praat pairs two numeric fields onto one row
+# when their labels begin "left " and "right ", showing the LEFT label's
+# remainder once -- so the pair binds left_Panel_origin / right_Panel_origin
+# and the canonical panel_origin_x / panel_origin_y the drawing layer reads
+# exist only because the dialog's remap block assigns them. Reading the
+# fields without the remap would pass over a page whose typed inches reach
+# nothing. RULING_DIALOG_LABELS_v3 (row patterns), RULING_DIALOG_COMPACTION.
 check_true(V, "the draw dialog carries a typed origin defaulting to 0, 0",
-           any(grepl('^[[:space:]]*real: "Panel origin x \\(inches\\)", "0"$', form_raw)) &&
-           any(grepl('^[[:space:]]*real: "Panel origin y \\(inches\\)", "0"$', form_raw)))
+           any(grepl('^[[:space:]]*real: "left Panel origin \\(x/y, inches\\)", "0"$', form_raw)) &&
+           any(grepl('^[[:space:]]*real: "right Panel origin", "0"$', form_raw)) &&
+           any(grepl("^panel_origin_x = left_Panel_origin$", form)) &&
+           any(grepl("^panel_origin_y = right_Panel_origin$", form)))
 # NOT PERSISTED. Width and height are remembered across sessions because they
 # describe the figure; erase and origin describe one step of one page and are
 # asked again every press. A config_ key for either would be the hidden state
@@ -431,9 +441,13 @@ check_true(V, "the fields reach the drawing layer's globals",
 #
 # The loop draws, measures, ERASES and draws again on a widened axis. There is
 # no way to erase one panel of a page, so a composed page takes one pass and
-# the legend goes where it falls. The dialog says so beside the tickbox that
-# causes it and the Info window says so at the moment it happens, both
-# pointing at the two placements that keep the plot clear.
+# the legend goes where it falls. The Info window says so at the moment it
+# happens, and every dialog that lets a user CHOOSE a legend placement says so
+# beside that menu, both pointing at the two placements that keep the plot
+# clear. The advice sits with the placement control rather than with the erase
+# tickbox because the two placements it names are options of that menu: on the
+# page carrying the tickbox there is no legend menu to act on, and a page
+# offering the menu is exactly where the reader can do something about it.
 # ---------------------------------------------------------------------------
 room <- proc_body(form, "emlGraphsDrawWithLegendRoom")
 check_true(V, "@emlGraphsDrawWithLegendRoom's body is closed", !is.null(room))
@@ -448,8 +462,14 @@ if (!is.null(room)) {
                any(grepl("Right \\|\\| \"of plot or Below plot", room) |
                    grepl("Right ", room)))
 }
-check_true(V, "the dialog says it beside the tickbox",
-           any(grepl("composed page a legend inside the plot is not", form_raw)))
+i_legend <- grep('^[[:space:]]*optionmenu: "Legend placement \\(when drawn\\)"',
+                 form_raw)
+i_advice <- grep('^[[:space:]]*comment: "On a composed page a legend inside the plot is not given axis room',
+                 form_raw)
+check_true(V, "every dialog offering a legend placement says it beside that menu",
+           length(i_legend) > 0L &&
+           length(i_advice) == length(i_legend) &&
+           all(i_advice == i_legend - 1L))
 
 # ---------------------------------------------------------------------------
 # 7. THE SAVE PANEL NAMES A PAGE

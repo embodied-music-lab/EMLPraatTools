@@ -11,6 +11,12 @@
 #        "Tukey HSD post hoc" control. The chosen adjustment is also carried
 #        into the graph annotation so Draw cannot silently disagree with the
 #        report.
+# V3.2: "Run Dunn post hoc" and "Adjustment" are one "Comparison" list —
+#        four rows, each a complete, runnable choice ("Kruskal-Wallis",
+#        "Kruskal-Wallis + Dunn, Holm/Bonferroni/Benjamini-Hochberg").
+#        The tickbox-plus-menu pairing let a user set an adjustment the
+#        tickbox then discarded; a list has no row that discards a field
+#        beside it. See docs/RULING_DEAD_CONTROLS.md #4.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -47,8 +53,9 @@ guessGroupIdx = emlWrapperInit.guessGroupIdx
 # return to the form — after an error or after "New" — silently discarded
 # What the user had set.
 selGroupOrder = 1
-selDunn = 1
-selAdj = 2
+# 1 = Kruskal-Wallis alone; 2/3/4 = + Dunn, Holm/Bonferroni/BH — the same
+# encoding the "Comparison" optionmenu below returns.
+selComparison = 2
 
 allDone = 0
 repeat
@@ -62,11 +69,17 @@ repeat
         for iCol from 1 to nCols
             option: emlTableColumnNames.name$ [iCol]
         endfor
-        boolean: "Run Dunn post hoc", selDunn
-        optionmenu: "Adjustment (post hoc only)", selAdj
-            option: "Bonferroni"
-            option: "Holm"
-            option: "Benjamini-Hochberg"
+        # ONE CONTROL. "Run Dunn post hoc" and "Adjustment (post hoc only)"
+        # were two fields, and the adjustment was read and reported on every
+        # pass yet never reached @emlRunKWAnalysis when the tickbox was off
+        # (stats/eml-analysis.praat: .adjMethod$ sits inside `if .doDunn`).
+        # One list of complete choices removes the dead pairing by
+        # construction — see docs/RULING_DEAD_CONTROLS.md #4.
+        optionmenu: "Comparison", selComparison
+            option: "Kruskal-Wallis"
+            option: "Kruskal-Wallis + Dunn, Holm"
+            option: "Kruskal-Wallis + Dunn, Bonferroni"
+            option: "Kruskal-Wallis + Dunn, Benjamini-Hochberg"
         optionmenu: "Group order", selGroupOrder
             option: "Table order"
             option: "Alphabetical"
@@ -85,16 +98,24 @@ repeat
     guessDataIdx = emlKeepChoice.idx
     @emlKeepChoice: groupCol$, guessGroupIdx
     guessGroupIdx = emlKeepChoice.idx
-    doDunn = run_Dunn_post_hoc
-    adjChoice = adjustment
-    selDunn = doDunn
-    selAdj = adjChoice
+    selComparison = comparison
     selGroupOrder = group_order
-    if adjChoice = 1
-        adjMethod$ = "bonferroni"
-    elsif adjChoice = 2
+    # The four rows are complete choices, not a header list — every row
+    # names a real, runnable analysis, so there is no header to guard
+    # against and no remap array needed (contrast the wizard's and the
+    # pairwise-family Comparison menus, whose header rows reuse the
+    # graph-type menu's guard).
+    if comparison = 1
+        doDunn = 0
         adjMethod$ = "holm"
+    elsif comparison = 2
+        doDunn = 1
+        adjMethod$ = "holm"
+    elsif comparison = 3
+        doDunn = 1
+        adjMethod$ = "bonferroni"
     else
+        doDunn = 1
         adjMethod$ = "bh"
     endif
     if group_order = 2

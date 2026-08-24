@@ -3730,18 +3730,40 @@ repeat
     mainFormDone = 0
     repeat
         beginPause: "EML Graphs"
+            ; TWO GROUPS, AND EVERY ROW SITS UNDER ONE OF THEM. What the
+            ; figure IS comes first, then where it lands on the page: a
+            ; reader scanning for the origin boxes finds them under a
+            ; heading that says "page", not at the bottom of an unlabelled
+            ; list. RULING_LAYOUT_GROUPS, rule 1 — no field renders outside
+            ; a named group.
+            comment: "🖼️ Figure"
             optionmenu: "Graph type", menuDefault
                 for iMenu from 1 to filteredNMenuItems
                     option: filteredMenuLabel$[iMenu]
                 endfor
+            ; TITLE AND SUBTITLE ARE TWO FULL-WIDTH ROWS, NOT A PAIR. The
+            ; two-box row is visual grammar for like, symmetric, short
+            ; values — a range, coordinates, dimensions. These are unlike
+            ; kinds of long free text and read as one truncated mess side
+            ; by side. RULING_DIALOG_LABELS_v3, pairing legitimacy.
             sentence: "Title (blank = auto from table and columns)", prev_title$
             sentence: "Subtitle", prev_subtitle$
             optionmenu: "Color mode", config_colorMode
                 option: "Color"
                 option: "Black and White"
-            positive: "Figure width (inches)", string$ (config_width)
-            positive: "Figure height (inches)", string$ (config_height)
+            ; ONE ROW, TWO BOXES. `left` and `right` as the first word of a
+            ; numeric field's label are a layout cue: Praat puts the two
+            ; boxes on one row and shows the LEFT field's label remainder
+            ; once, so the right field's text never appears. Width and
+            ; height are one decision with two numbers. The cue word stays
+            ; in the derived name, so these bind left_Figure_size and
+            ; right_Figure_size and the remap block below carries them to
+            ; figure_width and figure_height. APPENDIX_C_GUI section C.1.
+            positive: "left Figure size (w × h, inches)", string$ (config_width)
+            positive: "right Figure size", string$ (config_height)
             # ── THE PAGE ────────────────────────────────────────────────────
+            comment: "📄 Page"
+            comment: "Untick Erase to add this figure to the page already drawn."
             # PER-DRAW FIELDS, NEVER A SESSION MODE. Both are read fresh from
             # this dialog on every press and both are recorded with the
             # drawing they belong to, so a composed page is a sequence of
@@ -3775,20 +3797,36 @@ repeat
             # that outlives its page. It is live whether or not the page is
             # erased: erase-on with an offset origin is valid and starts a
             # composite whose first panel is not at 0, 0.
-            real: "Panel origin x (inches)", "0"
-            real: "Panel origin y (inches)", "0"
-            comment: "Untick Erase to add this figure to the page already drawn."
-            # THE ONE SENTENCE THE NO-ERASE LEGEND RULE OWES THE USER. The
-            # headroom negotiation in @emlGraphsDrawWithLegendRoom draws,
-            # measures and draws again on a widened axis; the second pass
+            #
+            # X AND Y ARE ONE ROW, TWO BOXES, for the same reason the figure
+            # size is: a point is one setting with two coordinates. They bind
+            # left_Panel_origin and right_Panel_origin; the remap block below
+            # carries them to panel_origin_x and panel_origin_y.
+            real: "left Panel origin (x/y, inches)", "0"
+            real: "right Panel origin", "0"
+            # THE ONE SENTENCE THE NO-ERASE LEGEND RULE OWES THE USER travels
+            # with the Legend placement field on each page that offers one:
+            # the headroom negotiation in @emlGraphsDrawWithLegendRoom draws,
+            # measures and draws again on a widened axis, and the second pass
             # depends on the first being erased, so on a composed page there
-            # is one pass and the legend takes the naive position. Said here,
-            # on the dialog that offers the choice, and pointing at the two
-            # placements that keep the plot clear -- the same advice
-            # @emlLegendHeadroomAfterDraw gives when it cannot serve a legend.
-            comment: "   On a composed page a legend inside the plot is not"
-            comment: "   given axis room — use Right of plot or Below plot."
+            # is one pass and the legend takes the naive position. That advice
+            # is worth a row only where the placement is choosable, so it
+            # rides in the placement field's parenthetical there rather than
+            # costing this page two comment rows it cannot act on.
         clicked = endPause: "Quit", "Continue", 2, 1
+
+        # ── REMAP ───────────────────────────────────────────────────────────
+        # LABELS ARE PRESENTATION; VARIABLES ARE API. Praat derives a field's
+        # variable name from its label, so a label chosen for the dialog's
+        # layout binds a name the rest of this file has no reason to know.
+        # Every such name is copied to its canonical variable HERE, directly
+        # after endPause and before any commit logic, so nothing downstream
+        # reads a label-derived name and no rename ever reaches the draw
+        # layer, the recorder or the harnesses. RULING_DIALOG_COMPACTION §1.
+        figure_width = left_Figure_size
+        figure_height = right_Figure_size
+        panel_origin_x = left_Panel_origin
+        panel_origin_y = right_Panel_origin
 
         if clicked = 1
             @emlSaveConfig
@@ -4124,35 +4162,65 @@ repeat
 
             f0LineStyle = prev_f0LineStyle
             beginPause: "Pitch Contour Settings"
-                comment: "⏱️ Time (both 0 = auto)"
-                real: "left Time range (left/right)", tmpTMin$
-                real: "right Time range (left/right)", tmpTMax$
-                comment: "📐 Frequency (both 0 = auto)"
-                real: "left Frequency range (bottom/top)", tmpFMin$
-                real: "right Frequency range (bottom/top)", tmpFMax$
+                ; ONE AXES HEADING FOR BOTH RANGES. "both 0 = auto" is said
+                ; once, at the top, and each row underneath carries only the
+                ; quantity and which end is which. Two per-axis headings say
+                ; the auto rule twice and make two ranges read as two
+                ; unrelated groups. RULING_DIALOG_LABELS_v3, heading pattern.
+                comment: "📐 Axes (both 0 = auto)"
+                ; ONE ROW, TWO BOXES, AND THE NOUN IS THE QUANTITY. Praat
+                ; derives the variable name by cutting the label at its first
+                ; "(", so the parenthetical distinguishes nothing: two rows
+                ; whose labels differ only inside the brackets both bind one
+                ; name, and Praat draws both and silently keeps the last.
+                ; Naming the quantity — Time, Frequency — is what makes that
+                ; impossible on a page that carries two ranges.
+                real: "left Time (left/right)", tmpTMin$
+                real: "right Time (left/right)", tmpTMax$
+                real: "left Frequency (bottom/top)", tmpFMin$
+                real: "right Frequency (bottom/top)", tmpFMax$
                 optionmenu: "Y axis unit", tmpYUnit
                     option: "Hertz"
                     option: "Semitones re 440 Hz"
+                if config_showAdvanced
+                    ; THE LABELS SUB-HEADING SITS INSIDE THE AXIS GROUP,
+                    ; directly above the row it explains — the markup legend
+                    ; is about these two boxes and nothing else.
+                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR TOO. left/right on a sentence
+                    ; label puts both text boxes on one row and shows the
+                    ; left remainder once, so the x and y names are one
+                    ; decision rather than two stacked rows. Measured on
+                    ; 6.6.30 with this exact label text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                endif
+                if loadedObjectId > 0
+                    comment: "🎵 Pitch analysis (auto-converted from Sound)"
+                    comment: "Ceiling is doubled internally for the analysis algorithm."
+                    ; THE SEARCH RANGE IS AN HONEST PAIR — one setting with a
+                    ; bottom and a top — so it takes the two-box row like any
+                    ; other range.
+                    real: "left Pitch (floor/ceiling, Hz)", tmpPitchFloor$
+                    real: "right Pitch (floor/ceiling, Hz)", tmpPitchCeiling$
+                endif
+                ; THE LAYOUT GROUP OPENS ON THE BEGINNER BRANCH TOO, because
+                ; Line style renders there: a heading gated on the advanced
+                ; flag would leave that row under whatever heading happened to
+                ; be above it. RULING_LAYOUT_GROUPS rule 1 is judged per
+                ; rendered branch, not per source listing.
+                comment: "🎛️ Layout"
                 optionmenu: "Line style", f0LineStyle
                     option: "Solid"
                     option: "Dotted"
                     option: "Dashed"
                     option: "Dashed-dotted"
-                if loadedObjectId > 0
-                    comment: "🎵 Pitch analysis (auto-converted from Sound)"
-                    comment: "Ceiling is doubled internally for the analysis algorithm."
-                    real: "Pitch floor (Hz)", tmpPitchFloor$
-                    real: "Pitch ceiling (Hz)", tmpPitchCeiling$
-                endif
                 if config_showAdvanced
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Both"
                         option: "Horizontal only"
                         option: "Vertical only"
                         option: "Off"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -4174,11 +4242,35 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST. The layout group runs mark, frame, text,
+                    ; output, so the resolution the figure is written at sits
+                    ; at the bottom rather than between two frame controls.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 endif
             clicked = endPause: "Go Back", "Quit", toggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Labels are presentation; variables are API. Each label-derived
+            ; name is copied to the canonical variable the rest of this page
+            ; reads, here, before any commit logic — so the toggle branch, the
+            ; draw branch and everything downstream keep the names they always
+            ; had. Each assignment is gated on the same condition that rendered
+            ; its field: reading a field a branch never drew is an error.
+            ; RULING_DIALOG_COMPACTION §1.
+            left_Time_range = left_Time
+            right_Time_range = right_Time
+            left_Frequency_range = left_Frequency
+            right_Frequency_range = right_Frequency
+            if config_showAdvanced
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
+            if loadedObjectId > 0
+                pitch_floor = left_Pitch
+                pitch_ceiling = right_Pitch
+            endif
 
             if clicked = 1
                 # Go Back — exit form, allFormsDone stays 0
@@ -4351,12 +4443,29 @@ repeat
 
             wavLineStyle = prev_wavLineStyle
             beginPause: "Waveform Settings"
-                comment: "⏱️ Time (both 0 = auto)"
-                real: "left Time range (left/right)", tmpTMin$
-                real: "right Time range (left/right)", tmpTMax$
-                comment: "📐 Amplitude (both 0 = auto)"
-                real: "left Amplitude range (bottom/top)", tmpAMin$
-                real: "right Amplitude range (bottom/top)", tmpAMax$
+                ; ONE AXES HEADING FOR BOTH RANGES, and each row below it
+                ; carries the quantity and which end is which. The noun is
+                ; the quantity because Praat cuts a label at its first "(":
+                ; two rows distinguished only inside the brackets bind one
+                ; name, and Praat draws both and keeps the last, silently.
+                comment: "📐 Axes (both 0 = auto)"
+                real: "left Time (left/right)", tmpTMin$
+                real: "right Time (left/right)", tmpTMax$
+                real: "left Amplitude (bottom/top)", tmpAMin$
+                real: "right Amplitude (bottom/top)", tmpAMax$
+                if config_showAdvanced
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                endif
+                ; THE LAYOUT GROUP OPENS ON BOTH BRANCHES, because Line style
+                ; renders on the beginner page: a heading gated on the
+                ; advanced flag would leave that row under the axis heading.
+                comment: "🎛️ Layout"
                 optionmenu: "Line style", wavLineStyle
                     option: "Solid"
                     option: "Dotted"
@@ -4368,9 +4477,6 @@ repeat
                         option: "Horizontal only"
                         option: "Vertical only"
                         option: "Off"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -4392,11 +4498,28 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 endif
             clicked = endPause: "Go Back", "Quit", toggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer or the recorder. Each
+            ; assignment is gated on the condition that rendered its field.
+            ; RULING_DIALOG_COMPACTION §1.
+            left_Time_range = left_Time
+            right_Time_range = right_Time
+            left_Amplitude_range = left_Amplitude
+            right_Amplitude_range = right_Amplitude
+            if config_showAdvanced
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
 
             if clicked = 1
                 wavFormDone = 1
@@ -4521,12 +4644,29 @@ repeat
 
             specLineStyle = prev_specLineStyle
             beginPause: "Spectrum Settings"
-                comment: "📐 Frequency (both 0 = auto)"
-                real: "left Frequency range (left/right)", tmpFMin$
-                real: "right Frequency range (left/right)", tmpFMax$
-                comment: "📐 Power (both 0 = auto)"
-                real: "left Power range (bottom/top)", tmpPMin$
-                real: "right Power range (bottom/top)", tmpPMax$
+                ; ONE AXES HEADING FOR BOTH RANGES, and each row carries the
+                ; quantity and which end is which. The noun is the quantity
+                ; because Praat cuts a label at its first "(": two rows
+                ; distinguished only inside the brackets bind one name, and
+                ; Praat draws both and keeps the last, silently.
+                comment: "📐 Axes (both 0 = auto)"
+                real: "left Frequency (left/right)", tmpFMin$
+                real: "right Frequency (left/right)", tmpFMax$
+                real: "left Power (bottom/top)", tmpPMin$
+                real: "right Power (bottom/top)", tmpPMax$
+                if config_showAdvanced
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                endif
+                ; THE LAYOUT GROUP OPENS ON BOTH BRANCHES, because Line style
+                ; renders on the beginner page: a heading gated on the
+                ; advanced flag would leave that row under the axis heading.
+                comment: "🎛️ Layout"
                 optionmenu: "Line style", specLineStyle
                     option: "Solid"
                     option: "Dotted"
@@ -4538,9 +4678,6 @@ repeat
                         option: "Horizontal only"
                         option: "Vertical only"
                         option: "Off"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -4562,11 +4699,28 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 endif
             clicked = endPause: "Go Back", "Quit", toggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer or the recorder. Each
+            ; assignment is gated on the condition that rendered its field.
+            ; RULING_DIALOG_COMPACTION §1.
+            left_Frequency_range = left_Frequency
+            right_Frequency_range = right_Frequency
+            left_Power_range = left_Power
+            right_Power_range = right_Power
+            if config_showAdvanced
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
 
             if clicked = 1
                 specFormDone = 1
@@ -4699,12 +4853,39 @@ repeat
 
             ltasLineStyle = prev_ltasLineStyle
             beginPause: "LTAS Settings"
-                comment: "📐 Frequency (both 0 = auto)"
-                real: "left Frequency range (left/right)", tmpFMin$
-                real: "right Frequency range (left/right)", tmpFMax$
-                comment: "📐 Power (both 0 = auto)"
-                real: "left Power range (bottom/top)", tmpPMin$
-                real: "right Power range (bottom/top)", tmpPMax$
+                ; ONE AXES HEADING FOR BOTH RANGES, and each row carries the
+                ; quantity and which end is which. The noun is the quantity
+                ; because Praat cuts a label at its first "(": two rows
+                ; distinguished only inside the brackets bind one name, and
+                ; Praat draws both and keeps the last, silently.
+                comment: "📐 Axes (both 0 = auto)"
+                real: "left Frequency (left/right)", tmpFMin$
+                real: "right Frequency (left/right)", tmpFMax$
+                real: "left Power (bottom/top)", tmpPMin$
+                real: "right Power (bottom/top)", tmpPMax$
+                if config_showAdvanced
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                endif
+                if config_showAdvanced
+                    ; WHAT THE LTAS IS DRAWN AS is its own decision, taken
+                    ; before any question of frame or font, so it gets its own
+                    ; group above Layout. LTAS is the only type that offers it.
+                    comment: "🖌️ Drawing methods"
+                    boolean: "Show curve", tmpShowCurve
+                    boolean: "Show bars", tmpShowBars
+                    boolean: "Show poles", tmpShowPoles
+                    boolean: "Show speckles", tmpShowSpeckles
+                endif
+                ; THE LAYOUT GROUP OPENS ON BOTH BRANCHES, because Line style
+                ; renders on the beginner page: a heading gated on the
+                ; advanced flag would leave that row under the axis heading.
+                comment: "🎛️ Layout"
                 optionmenu: "Line style", ltasLineStyle
                     option: "Solid"
                     option: "Dotted"
@@ -4716,9 +4897,6 @@ repeat
                         option: "Horizontal only"
                         option: "Vertical only"
                         option: "Off"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -4740,16 +4918,28 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🎨 Drawing methods"
-                    boolean: "Show curve", tmpShowCurve
-                    boolean: "Show bars", tmpShowBars
-                    boolean: "Show poles", tmpShowPoles
-                    boolean: "Show speckles", tmpShowSpeckles
-                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 endif
             clicked = endPause: "Go Back", "Quit", toggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer or the recorder. Each
+            ; assignment is gated on the condition that rendered its field.
+            ; RULING_DIALOG_COMPACTION §1.
+            left_Frequency_range = left_Frequency
+            right_Frequency_range = right_Frequency
+            left_Power_range = left_Power
+            right_Power_range = right_Power
+            if config_showAdvanced
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
 
             if clicked = 1
                 ltasFormDone = 1
@@ -5186,6 +5376,15 @@ repeat
                                 option: "Horizontal only"
                                 option: "Vertical only"
                                 option: "Off"
+                            ; THE ADVICE RIDES WITH THE CONTROL IT IS ABOUT. The headroom
+                            ; negotiation in @emlGraphsDrawWithLegendRoom draws, measures and
+                            ; draws again on a widened axis, and the second pass depends on the
+                            ; first being erased — so a page composed with Erase unticked takes
+                            ; one pass and a legend inside the plot lands where it falls. The
+                            ; two placements that keep the plot clear are named here, on the
+                            ; dialog that offers the choice, matching what
+                            ; @emlLegendHeadroomAfterDraw says when it cannot serve a legend.
+                            comment: "On a composed page a legend inside the plot is not given axis room — use Right of plot or Below plot."
                             optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                                 option: "Inside plot"
                                 option: "Right of plot"
@@ -6058,6 +6257,12 @@ repeat
                     option: "Table order"
                     option: "Alphabetical"
                 if config_showAdvanced
+                    ; ONE ANALYSIS GROUP, one icon. Everything from the
+                    ; annotate tick down to alpha is one decision — what
+                    ; statistics go on the figure — and it is named once at
+                    ; the top instead of the rows reading as seven unrelated
+                    ; switches. RULING_LAYOUT_GROUPS, icons final.
+                    comment: "📊 Analysis"
                     boolean: "Annotate results on graph", annotate
                     # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
@@ -6080,14 +6285,25 @@ repeat
                         option: "Matrix"
                     real: "Alpha", string$ (annotAlpha)
                     comment: "📐 Y-axis (both 0 = auto)"
-                    real: "left Value range (bottom/top)", tmpVMin$
-                    real: "right Value range (bottom/top)", tmpVMax$
+                    ; THE RANGE ROW SHEDS ITS SUFFIX. The two-box rendering
+                    ; already says it is a range and the heading already says
+                    ; 0 = auto, so the label carries the quantity and which
+                    ; end is which. It binds left_Value / right_Value, and the
+                    ; remap block below carries those to the canonical
+                    ; left_Value_range / right_Value_range this page reads.
+                    real: "left Value (bottom/top)", tmpVMin$
+                    real: "right Value (bottom/top)", tmpVMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                    comment: "🎛️ Layout"
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -6109,9 +6325,11 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 elsif emlGraphsPresetAnnotate > 0
                     # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
                     # THE REQUEST ARRIVES AT.
@@ -6132,10 +6350,26 @@ repeat
                     # and untickable, which is the part a hidden carried-over
                     # flag cannot be. The page offers annotation, so drawing it
                     # is drawing what the dialog offers.
-                    comment: "📈 Your analysis found a result to put on this figure."
+                    ; THE GROUP IS NAMED ON THIS BRANCH TOO, and the reason
+                    ; it exists rides in the same row: one heading, one icon,
+                    ; the same 📊 the advanced branch uses.
+                    comment: "📊 Analysis — your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", barToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_Value_range = left_Value
+                right_Value_range = right_Value
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
             ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
             ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
             ; has no other way to group a menu, and a user can land on one. This
@@ -6505,6 +6739,12 @@ repeat
                     option: "Table order"
                     option: "Alphabetical"
                 if config_showAdvanced
+                    ; ONE ANALYSIS GROUP, one icon. Everything from the
+                    ; annotate tick down to alpha is one decision — what
+                    ; statistics go on the figure — and it is named once at
+                    ; the top instead of the rows reading as seven unrelated
+                    ; switches. RULING_LAYOUT_GROUPS, icons final.
+                    comment: "📊 Analysis"
                     boolean: "Annotate results on graph", annotate
                     # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
@@ -6526,16 +6766,30 @@ repeat
                         option: "Annotate"
                         option: "Matrix"
                     real: "Alpha", string$ (annotAlpha)
-                    boolean: "Show jittered points", prev_violinShowJitter
                     comment: "📐 Y-axis (both 0 = auto)"
-                    real: "left Value range (bottom/top)", tmpVMin$
-                    real: "right Value range (bottom/top)", tmpVMax$
+                    ; THE RANGE ROW SHEDS ITS SUFFIX. The two-box rendering
+                    ; already says it is a range and the heading already says
+                    ; 0 = auto, so the label carries the quantity and which
+                    ; end is which. It binds left_Value / right_Value, and the
+                    ; remap block below carries those to the canonical
+                    ; left_Value_range / right_Value_range this page reads.
+                    real: "left Value (bottom/top)", tmpVMin$
+                    real: "right Value (bottom/top)", tmpVMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                    comment: "🎛️ Layout"
+                    ; DATA MARKS FIRST. The layout group runs mark, frame,
+                    ; text, output: what is drawn ON the data comes before
+                    ; what is drawn around it.
+                    boolean: "Show jittered points", prev_violinShowJitter
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -6557,9 +6811,11 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 elsif emlGraphsPresetAnnotate > 0
                     # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
                     # THE REQUEST ARRIVES AT.
@@ -6580,10 +6836,26 @@ repeat
                     # and untickable, which is the part a hidden carried-over
                     # flag cannot be. The page offers annotation, so drawing it
                     # is drawing what the dialog offers.
-                    comment: "📈 Your analysis found a result to put on this figure."
+                    ; THE GROUP IS NAMED ON THIS BRANCH TOO, and the reason
+                    ; it exists rides in the same row: one heading, one icon,
+                    ; the same 📊 the advanced branch uses.
+                    comment: "📊 Analysis — your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", violinToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_Value_range = left_Value
+                right_Value_range = right_Value
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
             ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
             ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
             ; has no other way to group a menu, and a user can land on one. This
@@ -7085,31 +7357,58 @@ repeat
                         option: "p-value"
                         option: "stars"
                         option: "both"
+                    comment: "📐 Axes (both 0 = auto)"
+                    ; THE NOUNS ARE X AND Y, and they carry no "range"
+                    ; suffix: the two-box rendering already says range and
+                    ; the heading already says 0 = auto. Naming the axis is
+                    ; forced here rather than optional — Praat cuts a label
+                    ; at its first "(", so two unqualified ranges on one page
+                    ; would derive one name, and Praat would draw both rows
+                    ; and silently keep the last. These bind left_X/right_X
+                    ; and left_Y/right_Y, remapped below to the canonical
+                    ; *_range names, and they do not collide with the
+                    ; x_column / y_column menus above: the pairing word is
+                    ; part of the derived name.
+                    real: "left X (left/right)", tmpXMin$
+                    real: "right X (left/right)", tmpXMax$
+                    real: "left Y (bottom/top)", tmpYMin$
+                    real: "right Y (bottom/top)", tmpYMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                    comment: "🎛️ Layout"
+                    ; DATA MARKS FIRST. The layout group runs mark, frame,
+                    ; text, output: what is drawn ON the data comes before
+                    ; what is drawn around it.
                     boolean: "Show data points", tmpShowDots
                     optionmenu: "Dot size", tmpDotSize
                         option: "Small"
                         option: "Medium"
                         option: "Large"
-                    comment: "📐 Axis (both 0 = auto)"
-                    real: "left X range (left/right)", tmpXMin$
-                    real: "right X range (left/right)", tmpXMax$
-                    real: "left Y range (bottom/top)", tmpYMin$
-                    real: "right Y range (bottom/top)", tmpYMax$
-                    comment: "🎨 Layout"
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Both"
                         option: "Horizontal only"
                         option: "Vertical only"
                         option: "Off"
+                    ; THE ADVICE RIDES WITH THE CONTROL IT IS ABOUT. The headroom
+                    ; negotiation in @emlGraphsDrawWithLegendRoom draws, measures and
+                    ; draws again on a widened axis, and the second pass depends on the
+                    ; first being erased — so a page composed with Erase unticked takes
+                    ; one pass and a legend inside the plot lands where it falls. The
+                    ; two placements that keep the plot clear are named here, on the
+                    ; dialog that offers the choice, matching what
+                    ; @emlLegendHeadroomAfterDraw says when it cannot serve a legend.
+                    comment: "On a composed page a legend inside the plot is not given axis room — use Right of plot or Below plot."
                     optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"
                         option: "Separate figure"
                         option: "None"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -7131,11 +7430,28 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 endif
             clicked = endPause: "Go Back", "Quit", scatterToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_X_range = left_X
+                right_X_range = right_X
+                left_Y_range = left_Y
+                right_Y_range = right_Y
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
 
             if clicked = 1
                 scatterFormDone = 1
@@ -7488,6 +7804,12 @@ repeat
                     option: "Table order"
                     option: "Alphabetical"
                 if config_showAdvanced
+                    ; ONE ANALYSIS GROUP, one icon. Everything from the
+                    ; annotate tick down to alpha is one decision — what
+                    ; statistics go on the figure — and it is named once at
+                    ; the top instead of the rows reading as seven unrelated
+                    ; switches. RULING_LAYOUT_GROUPS, icons final.
+                    comment: "📊 Analysis"
                     boolean: "Annotate results on graph", annotate
                     # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
@@ -7509,16 +7831,30 @@ repeat
                         option: "Annotate"
                         option: "Matrix"
                     real: "Alpha", string$ (annotAlpha)
-                    boolean: "Show jittered points", prev_boxShowJitter
                     comment: "📐 Y-axis (both 0 = auto)"
-                    real: "left Value range (bottom/top)", tmpVMin$
-                    real: "right Value range (bottom/top)", tmpVMax$
+                    ; THE RANGE ROW SHEDS ITS SUFFIX. The two-box rendering
+                    ; already says it is a range and the heading already says
+                    ; 0 = auto, so the label carries the quantity and which
+                    ; end is which. It binds left_Value / right_Value, and the
+                    ; remap block below carries those to the canonical
+                    ; left_Value_range / right_Value_range this page reads.
+                    real: "left Value (bottom/top)", tmpVMin$
+                    real: "right Value (bottom/top)", tmpVMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                    comment: "🎛️ Layout"
+                    ; DATA MARKS FIRST. The layout group runs mark, frame,
+                    ; text, output: what is drawn ON the data comes before
+                    ; what is drawn around it.
+                    boolean: "Show jittered points", prev_boxShowJitter
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -7540,9 +7876,11 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 elsif emlGraphsPresetAnnotate > 0
                     # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
                     # THE REQUEST ARRIVES AT.
@@ -7563,10 +7901,26 @@ repeat
                     # and untickable, which is the part a hidden carried-over
                     # flag cannot be. The page offers annotation, so drawing it
                     # is drawing what the dialog offers.
-                    comment: "📈 Your analysis found a result to put on this figure."
+                    ; THE GROUP IS NAMED ON THIS BRANCH TOO, and the reason
+                    ; it exists rides in the same row: one heading, one icon,
+                    ; the same 📊 the advanced branch uses.
+                    comment: "📊 Analysis — your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", boxToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_Value_range = left_Value
+                right_Value_range = right_Value
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
             ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
             ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
             ; has no other way to group a menu, and a user can land on one. This
@@ -7925,12 +8279,38 @@ repeat
                         option: "Alphabetical"
                 endif
                 if config_showAdvanced
-                    comment: "📊 Binning"
+                    ; HOW THE HISTOGRAM IS BUILT is one group: how many bins,
+                    ; how high the count axis is allowed to go, and how the
+                    ; groups are laid out. The compound row that would put bin
+                    ; count and frequency maximum in one pair of boxes is
+                    ; refused — they are two unrelated numbers, and a shared
+                    ; label naming both in order makes the label carry the
+                    ; whole burden of honesty. Two rows stay.
+                    comment: "📊 Histogram"
                     integer: "Bin count (0 = auto)", string$ (tmpBinCount)
-                    comment: "📊 Grouped display"
-                    optionmenu: "Display mode", tmpDisplayMode
+                    ; THE FREQUENCY CAP IS THE COUNT AXIS'S TOP. It belongs
+                    ; with the binning that produces the counts, not with the
+                    ; value axis below, which is the other axis entirely.
+                    real: "Frequency maximum (0 = auto)", tmpFreqMax$
+                    ; THE CONDITION IS IN THE LABEL. Faceting needs panels to
+                    ; stack, so it does something only when the group column
+                    ; yields two or more groups; @emlDrawHistogram treats a
+                    ; single group as ungrouped and draws it overlapped, and
+                    ; says so when that happens. Saying the condition here is
+                    ; what keeps that from being a surprise.
+                    optionmenu: "Display mode (2 or more groups)", tmpDisplayMode
                         option: "Overlap (transparent)"
                         option: "Faceted (stacked panels)"
+                    ; ONE ANALYSIS GROUP, one icon, and the matrix note is
+                    ; the heading's own second clause rather than a row of its
+                    ; own: Violin, Bar and Box offer an "Annotation layout"
+                    ; menu, this type does not, and the draw path forces
+                    ; annotLayoutMode = 3 (Matrix) for it because significance
+                    ; BRACKETS have no place to land on a histogram — there is
+                    ; no single pair of x positions to span. A menu whose only
+                    ; honest entry is the one already in force is not a choice,
+                    ; so what is offered instead is the fact.
+                    comment: "📊 Analysis · comparisons appear as a matrix panel below the plot"
                     boolean: "Annotate results on graph", annotate
                     # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
@@ -7947,32 +8327,48 @@ repeat
                         option: "both"
                     boolean: "Show nonsignificant", annotShowNS
                     boolean: "Show effect sizes", annotShowEffect
-                        # Violin, Bar and Box offer an
-                        # "Annotation layout" menu here; this type does not,
-                        # and the draw path forces annotLayoutMode = 3 (Matrix)
-                        # for it because significance BRACKETS have no place to
-                        # land on a histogram or on a two-factor panel -- there
-                        # is no single pair of x positions to span. A menu whose
-                        # only honest entry is the one already in force is not a
-                        # choice, so what is offered instead is the fact.
-                        comment: "Comparisons appear as a matrix panel below the plot."
                     real: "Alpha", string$ (annotAlpha)
-                    comment: "📐 Axis (both 0 = auto)"
-                    real: "left Value range (bottom/top)", tmpVMin$
-                    real: "right Value range (bottom/top)", tmpVMax$
-                    real: "Frequency maximum (0 = auto)", tmpFreqMax$
+                    ; THE VALUE RANGE GOVERNS THE HORIZONTAL AXIS, so the row
+                    ; says left/right. MEASURED on 6.6.30 against
+                    ; @emlDrawHistogram: the procedure assigns .xMin = .vMin
+                    ; and .xMax = .vMax, and passing 22 and 28 drew x from 22
+                    ; to 28 with the count axis untouched, while the frequency
+                    ; maximum above moves .yMax alone. A histogram's data
+                    ; values lie along x and its counts rise up y — the
+                    ; opposite of every other stat page here, which is exactly
+                    ; why the orientation is stated rather than copied.
+                    comment: "📐 Value axis (both 0 = auto)"
+                    ; The row sheds its "range" suffix: the two-box rendering
+                    ; already says range. It binds left_Value / right_Value,
+                    ; remapped below to left_Value_range / right_Value_range.
+                    real: "left Value (left/right)", tmpVMin$
+                    real: "right Value (left/right)", tmpVMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                    comment: "🎛️ Layout"
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
+                    ; THE ADVICE RIDES WITH THE CONTROL IT IS ABOUT. The headroom
+                    ; negotiation in @emlGraphsDrawWithLegendRoom draws, measures and
+                    ; draws again on a widened axis, and the second pass depends on the
+                    ; first being erased — so a page composed with Erase unticked takes
+                    ; one pass and a legend inside the plot lands where it falls. The
+                    ; two placements that keep the plot clear are named here, on the
+                    ; dialog that offers the choice, matching what
+                    ; @emlLegendHeadroomAfterDraw says when it cannot serve a legend.
+                    comment: "On a composed page a legend inside the plot is not given axis room — use Right of plot or Below plot."
                     optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"
                         option: "Separate figure"
                         option: "None"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -7994,9 +8390,11 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 elsif emlGraphsPresetAnnotate > 0
                     # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
                     # THE REQUEST ARRIVES AT.
@@ -8017,10 +8415,26 @@ repeat
                     # and untickable, which is the part a hidden carried-over
                     # flag cannot be. The page offers annotation, so drawing it
                     # is drawing what the dialog offers.
-                    comment: "📈 Your analysis found a result to put on this figure."
+                    ; THE GROUP IS NAMED ON THIS BRANCH TOO, and the reason
+                    ; it exists rides in the same row: one heading, one icon,
+                    ; the same 📊 the advanced branch uses.
+                    comment: "📊 Analysis — your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", histToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_Value_range = left_Value
+                right_Value_range = right_Value
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
             ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
             ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
             ; has no other way to group a menu, and a user can land on one. This
@@ -8470,6 +8884,16 @@ repeat
                     option: "Table order"
                     option: "Alphabetical"
                 if config_showAdvanced
+                    ; ONE ANALYSIS GROUP, one icon, and the matrix note is
+                    ; the heading's own second clause rather than a row of its
+                    ; own: Violin, Bar and Box offer an "Annotation layout"
+                    ; menu, this type does not, and the draw path forces
+                    ; annotLayoutMode = 3 (Matrix) for it because significance
+                    ; BRACKETS have no place to land on a two-factor panel —
+                    ; there is no single pair of x positions to span. A menu
+                    ; whose only honest entry is the one already in force is
+                    ; not a choice, so what is offered instead is the fact.
+                    comment: "📊 Analysis · comparisons appear as a matrix panel below the plot"
                     boolean: "Annotate results on graph", annotate
                     # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
@@ -8486,32 +8910,46 @@ repeat
                         option: "both"
                     boolean: "Show nonsignificant", annotShowNS
                     boolean: "Show effect sizes", annotShowEffect
-                        # Violin, Bar and Box offer an
-                        # "Annotation layout" menu here; this type does not,
-                        # and the draw path forces annotLayoutMode = 3 (Matrix)
-                        # for it because significance BRACKETS have no place to
-                        # land on a histogram or on a two-factor panel -- there
-                        # is no single pair of x positions to span. A menu whose
-                        # only honest entry is the one already in force is not a
-                        # choice, so what is offered instead is the fact.
-                        comment: "Comparisons appear as a matrix panel below the plot."
                     real: "Alpha", string$ (annotAlpha)
-                    boolean: "Show jittered points", prev_gvShowJitter
                     comment: "📐 Y-axis (both 0 = auto)"
-                    real: "left Value range (bottom/top)", tmpVMin$
-                    real: "right Value range (bottom/top)", tmpVMax$
+                    ; THE RANGE ROW SHEDS ITS SUFFIX. The two-box rendering
+                    ; already says it is a range and the heading already says
+                    ; 0 = auto, so the label carries the quantity and which
+                    ; end is which. It binds left_Value / right_Value, and the
+                    ; remap block below carries those to the canonical
+                    ; left_Value_range / right_Value_range this page reads.
+                    real: "left Value (bottom/top)", tmpVMin$
+                    real: "right Value (bottom/top)", tmpVMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                    comment: "🎛️ Layout"
+                    ; DATA MARKS FIRST. The layout group runs mark, frame,
+                    ; text, output: what is drawn ON the data comes before
+                    ; what is drawn around it.
+                    boolean: "Show jittered points", prev_gvShowJitter
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
+                    ; THE ADVICE RIDES WITH THE CONTROL IT IS ABOUT. The headroom
+                    ; negotiation in @emlGraphsDrawWithLegendRoom draws, measures and
+                    ; draws again on a widened axis, and the second pass depends on the
+                    ; first being erased — so a page composed with Erase unticked takes
+                    ; one pass and a legend inside the plot lands where it falls. The
+                    ; two placements that keep the plot clear are named here, on the
+                    ; dialog that offers the choice, matching what
+                    ; @emlLegendHeadroomAfterDraw says when it cannot serve a legend.
+                    comment: "On a composed page a legend inside the plot is not given axis room — use Right of plot or Below plot."
                     optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"
                         option: "Separate figure"
                         option: "None"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -8533,9 +8971,11 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 elsif emlGraphsPresetAnnotate > 0
                     # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
                     # THE REQUEST ARRIVES AT.
@@ -8556,10 +8996,26 @@ repeat
                     # and untickable, which is the part a hidden carried-over
                     # flag cannot be. The page offers annotation, so drawing it
                     # is drawing what the dialog offers.
-                    comment: "📈 Your analysis found a result to put on this figure."
+                    ; THE GROUP IS NAMED ON THIS BRANCH TOO, and the reason
+                    ; it exists rides in the same row: one heading, one icon,
+                    ; the same 📊 the advanced branch uses.
+                    comment: "📊 Analysis — your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", gvToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_Value_range = left_Value
+                right_Value_range = right_Value
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
             ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
             ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
             ; has no other way to group a menu, and a user can land on one. This
@@ -8923,6 +9379,16 @@ repeat
                     option: "Table order"
                     option: "Alphabetical"
                 if config_showAdvanced
+                    ; ONE ANALYSIS GROUP, one icon, and the matrix note is
+                    ; the heading's own second clause rather than a row of its
+                    ; own: Violin, Bar and Box offer an "Annotation layout"
+                    ; menu, this type does not, and the draw path forces
+                    ; annotLayoutMode = 3 (Matrix) for it because significance
+                    ; BRACKETS have no place to land on a two-factor panel —
+                    ; there is no single pair of x positions to span. A menu
+                    ; whose only honest entry is the one already in force is
+                    ; not a choice, so what is offered instead is the fact.
+                    comment: "📊 Analysis · comparisons appear as a matrix panel below the plot"
                     boolean: "Annotate results on graph", annotate
                     # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
@@ -8939,32 +9405,46 @@ repeat
                         option: "both"
                     boolean: "Show nonsignificant", annotShowNS
                     boolean: "Show effect sizes", annotShowEffect
-                        # Violin, Bar and Box offer an
-                        # "Annotation layout" menu here; this type does not,
-                        # and the draw path forces annotLayoutMode = 3 (Matrix)
-                        # for it because significance BRACKETS have no place to
-                        # land on a histogram or on a two-factor panel -- there
-                        # is no single pair of x positions to span. A menu whose
-                        # only honest entry is the one already in force is not a
-                        # choice, so what is offered instead is the fact.
-                        comment: "Comparisons appear as a matrix panel below the plot."
                     real: "Alpha", string$ (annotAlpha)
-                    boolean: "Show jittered points", prev_gbShowJitter
                     comment: "📐 Y-axis (both 0 = auto)"
-                    real: "left Value range (bottom/top)", tmpVMin$
-                    real: "right Value range (bottom/top)", tmpVMax$
+                    ; THE RANGE ROW SHEDS ITS SUFFIX. The two-box rendering
+                    ; already says it is a range and the heading already says
+                    ; 0 = auto, so the label carries the quantity and which
+                    ; end is which. It binds left_Value / right_Value, and the
+                    ; remap block below carries those to the canonical
+                    ; left_Value_range / right_Value_range this page reads.
+                    real: "left Value (bottom/top)", tmpVMin$
+                    real: "right Value (bottom/top)", tmpVMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                    comment: "🎛️ Layout"
+                    ; DATA MARKS FIRST. The layout group runs mark, frame,
+                    ; text, output: what is drawn ON the data comes before
+                    ; what is drawn around it.
+                    boolean: "Show jittered points", prev_gbShowJitter
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
+                    ; THE ADVICE RIDES WITH THE CONTROL IT IS ABOUT. The headroom
+                    ; negotiation in @emlGraphsDrawWithLegendRoom draws, measures and
+                    ; draws again on a widened axis, and the second pass depends on the
+                    ; first being erased — so a page composed with Erase unticked takes
+                    ; one pass and a legend inside the plot lands where it falls. The
+                    ; two placements that keep the plot clear are named here, on the
+                    ; dialog that offers the choice, matching what
+                    ; @emlLegendHeadroomAfterDraw says when it cannot serve a legend.
+                    comment: "On a composed page a legend inside the plot is not given axis room — use Right of plot or Below plot."
                     optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"
                         option: "Separate figure"
                         option: "None"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -8986,9 +9466,11 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 elsif emlGraphsPresetAnnotate > 0
                     # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
                     # THE REQUEST ARRIVES AT.
@@ -9009,10 +9491,26 @@ repeat
                     # and untickable, which is the part a hidden carried-over
                     # flag cannot be. The page offers annotation, so drawing it
                     # is drawing what the dialog offers.
-                    comment: "📈 Your analysis found a result to put on this figure."
+                    ; THE GROUP IS NAMED ON THIS BRANCH TOO, and the reason
+                    ; it exists rides in the same row: one heading, one icon,
+                    ; the same 📊 the advanced branch uses.
+                    comment: "📊 Analysis — your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", gbToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_Value_range = left_Value
+                right_Value_range = right_Value
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
             ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
             ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
             ; has no other way to group a menu, and a user can land on one. This
@@ -9394,6 +9892,33 @@ repeat
                         option: "Table order"
                         option: "Alphabetical"
                 endif
+                if config_showAdvanced
+                    comment: "📐 Y-axis (both 0 = auto)"
+                    ; THE RANGE ROW SHEDS ITS SUFFIX. The two-box rendering
+                    ; already says it is a range and the heading already says
+                    ; 0 = auto, so the label carries the quantity and which
+                    ; end is which. It binds left_Value / right_Value, and the
+                    ; remap block below carries those to the canonical
+                    ; left_Value_range / right_Value_range this page reads.
+                    real: "left Value (bottom/top)", tmpVMin$
+                    real: "right Value (bottom/top)", tmpVMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                endif
+                ; THE LAYOUT GROUP OPENS ON BOTH BRANCHES, because the mean
+                ; overlay and the pen render on the beginner page: a heading
+                ; gated on the advanced flag would leave those two rows under
+                ; the column heading. RULING_LAYOUT_GROUPS rule 1 is judged
+                ; per rendered branch, not per source listing.
+                comment: "🎛️ Layout"
+                ; DATA MARKS FIRST. The layout group runs mark, frame, text,
+                ; output: what is drawn ON the data comes before what is drawn
+                ; around it.
                 boolean: "Show mean overlay", tmpShowMean
                 # THE PEN IS THE STRAND'S, and the mean overlay stays solid --
                 # it is the summary of the strands, not another one of them.
@@ -9403,21 +9928,24 @@ repeat
                     option: "Dashed"
                     option: "Dashed-dotted"
                 if config_showAdvanced
-                    comment: "📐 Y-axis (both 0 = auto)"
-                    real: "left Value range (bottom/top)", tmpVMin$
-                    real: "right Value range (bottom/top)", tmpVMax$
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
+                    ; THE ADVICE RIDES WITH THE CONTROL IT IS ABOUT. The headroom
+                    ; negotiation in @emlGraphsDrawWithLegendRoom draws, measures and
+                    ; draws again on a widened axis, and the second pass depends on the
+                    ; first being erased — so a page composed with Erase unticked takes
+                    ; one pass and a legend inside the plot lands where it falls. The
+                    ; two placements that keep the plot clear are named here, on the
+                    ; dialog that offers the choice, matching what
+                    ; @emlLegendHeadroomAfterDraw says when it cannot serve a legend.
+                    comment: "On a composed page a legend inside the plot is not given axis room — use Right of plot or Below plot."
                     optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"
                         option: "Separate figure"
                         option: "None"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -9439,11 +9967,26 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 endif
             clicked = endPause: "Go Back", "Quit", spToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_Value_range = left_Value
+                right_Value_range = right_Value
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
 
             if clicked = 1
                 spFormDone = 1

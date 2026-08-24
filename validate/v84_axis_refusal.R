@@ -461,16 +461,62 @@ check_true("v84", "the sweep procedure is defined once",
 # roster.
 #
 # A pair is a quantity for which the form offers BOTH a left and a right box.
+#
+# THE PAIRED ROW IS NOT ONLY AN AXIS IDIOM, and that is the second thing this
+# block has had to learn. Praat pairs ANY two adjacent numeric fields whose
+# labels begin "left " and "right ", so the same rendering that carries a
+# range carries the panel origin's x/y inches and the pitch analysis's
+# floor/ceiling. Neither is an axis; neither can be named to an axis refusal;
+# a roster that counted them reported two axes the sweep had failed to judge
+# and pointed at nothing wrong.
+#
+# THE DISCRIMINATOR IS THE GROUP THE ROW RENDERS IN, which is a fact about the
+# page rather than a list kept here. Under the layout-groups ruling no field
+# renders outside a named group, and axis ranges render under a 📐 heading
+# while the origin renders under 📄 Page and the pitch pair under 🎵 Pitch
+# analysis. So the rule keeps extending itself: an eighth axis pair added next
+# year is placed under 📐 by the same ruling that placed the seven, joins the
+# roster the moment it exists, and turns this red until the sweep names it.
+# A pair hidden from the roster by being filed under the wrong heading is a
+# violation of the grouping ruling, which the page-composition checks read.
+# 🏷️ is a sub-heading INSIDE the axis group and does not close it.
+# Matched as BYTES. The form is UTF-8 on disk and R reads it without declaring
+# an encoding, so a pattern written as a character escape matches nothing on a
+# machine whose locale is not UTF-8 -- silently, and a silent zero here reads
+# as "the form has no axes". useBytes compares the same bytes on every machine.
+.icons <- c("\U0001F4D0", "\U0001F4CB", "\U0001F4CA", "\U0001F39B",
+            "\U0001F58C", "\U0001F5BC", "\U0001F3B5", "\U0001F4C4")
+head_at <- Reduce(`|`, lapply(.icons, function(ic)
+    grepl(paste0('comment: "', ic), code, fixed = TRUE, useBytes = TRUE)))
+is_axis_head <- grepl('comment: "\U0001F4D0', code, fixed = TRUE, useBytes = TRUE)
+# For each line, the icon-state of the nearest heading at or above it.
+# RESET AT EACH PAGE. A group heading cannot reach across a beginPause into
+# the next page: a page that opened its fields without a heading would
+# otherwise inherit the previous page's, and an axis pair could be admitted or
+# excluded by a heading the user never sees on that page. Every page names its
+# groups under the ruling, so this changes nothing today and keeps it that way.
+under_axis <- logical(length(code))
+.page <- grepl("^[[:space:]]*beginPause:", code)
+cur <- FALSE
+for (k in seq_along(code)) {
+    if (.page[k]) cur <- FALSE
+    if (head_at[k]) cur <- is_axis_head[k]
+    under_axis[k] <- cur
+}
 lab <- function(side) {
     pat <- sprintf('real: "%s ([^"(]*)', side)
-    hits <- grep(pat, code, value = TRUE)
-    unique(trimws(sub(sprintf('.*real: "%s ([^"(]*).*', side), "\\1", hits)))
+    hits <- which(grepl(pat, code) & under_axis)
+    unique(trimws(sub(sprintf('.*real: "%s ([^"(]*).*', side), "\\1", code[hits])))
 }
 # The trailing noun is dropped: the refusal names the QUANTITY ("Time",
 # "Value"), while the field label may carry "range" after it. Both are the
 # same axis, and the roster is about which axes exist, not about how each
 # page words its row.
-pair_labels <- sort(sub(" +range$", "", intersect(lab("left"), lab("right"))))
+# unique() AFTER the trailing noun is dropped, not before: "Time" and "Time
+# range" are two labels and one axis, and a roster that printed the axis twice
+# would make its own population unreadable.
+pair_labels <- sort(unique(sub(" +range$", "",
+                               intersect(lab("left"), lab("right")))))
 check_true("v84",
            sprintf("the form's dialogs offer %d min/max pairs [%s]",
                    length(pair_labels), paste(pair_labels, collapse = ", ")),
