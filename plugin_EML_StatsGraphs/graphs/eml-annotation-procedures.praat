@@ -286,9 +286,27 @@ endproc
 # ----------------------------------------------------------------------------
 # @emlFormatAnnotLabel
 # Format the display label for a bracket annotation.
+#
+# THE EFFECT SIZE IS PRINTED AS A MAGNITUDE, and the reason is that a bracket
+# is the figure's COMPACT surface. A signed effect size is readable only
+# beside a statement of which member of the pair the subtraction starts from;
+# the bracket has room for the number and not for the sentence. The sign here
+# is always left member minus right member, because the bridge only ever
+# builds a bracket with annotBracketI < annotBracketJ and the groups draw left
+# to right -- but that is a rule the reader would have to arrive already
+# knowing, and it moves with the group ordering setting, since table order is
+# the default and the left group is therefore whichever one the spreadsheet
+# lists first. So the compact surface carries |d| and the Info report carries
+# the signed value under a line naming the subtraction.
+#
+# @emlDrawMatrixPanel treats its lower triangle the same way, to two decimals
+# through fixed$, and says "(magnitude)" in its subtitle; a bracket names its
+# quantity inline instead, "d = 0.83" beside its p.
+#
 # Arguments: .p, .d, .style$, .showEffect, .effectLabel$
 #   .p            — p-value
-#   .d            — effect size value (Cohen's d, rank-biserial r, etc.)
+#   .d            — effect size value (Cohen's d, rank-biserial r, etc.);
+#                   printed as its magnitude, sign discarded
 #   .style$       — "p-value", "stars", or "both"
 #   .showEffect   — 0 or 1
 #   .effectLabel$ — symbol to display (e.g., "d", "r", "ε²")
@@ -313,7 +331,10 @@ procedure emlFormatAnnotLabel: .p, .d, .style$, .showEffect, .effectLabel$
     endif
 
     if .showEffect = 1 and .d <> undefined
-        .dText$ = fixed$ (.d, 2)
+        ; abs, and two decimals through fixed$: the same treatment
+        ; @emlDrawMatrixPanel gives the effect size in its lower triangle, so
+        ; the two annotation layouts of one comparison print one number.
+        .dText$ = fixed$ (abs (.d), 2)
         .result$ = .result$ + ", " + .effectLabel$ + " = " + .dText$
     endif
 endproc

@@ -121,6 +121,23 @@ A sweep that would take an hour of one context takes minutes of it this way.
 Reserve doing it yourself for the case where the work is genuinely one
 thread.
 
+**NAME THE MODEL ON EVERY AGENT. OMITTING IT IS THE DEFECT.** An agent with
+no model named inherits the session model, which is the expensive one, so
+doing nothing is the costly choice and it is invisible in the script. On
+24 August roughly twenty agents ran and two named a model; a day's work took
+a large share of a weekly plan.
+
+The test is one question: DOES A MISTAKE HERE ANNOUNCE ITSELF?
+
+- Loud, so `model: "sonnet"` — driving a harness, running checks, mechanical
+  edits a check will catch, writing a check against a pattern that already
+  exists, measuring, reporting.
+- Silent, so the default model — adversarial passes, design where a wrong
+  choice looks right, and the single end-of-batch verification.
+
+Drop `effort` from high to medium on mechanical work. State the split in chat
+when launching a batch, so it can be vetoed before the tokens are spent.
+
 **ONE VERIFICATION PASS, AT THE END, BY ONE AGENT.** Builders build; they do
 not each run the suite. Three agents fixing three unrelated checks will
 otherwise each run most of the validators, which is the same work three
