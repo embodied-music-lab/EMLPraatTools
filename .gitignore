@@ -352,3 +352,11 @@ harness/wraptext/out/before/
 harness/roundtrip/out/stage/
 harness/roundtrip/out/work/
 harness/roundtrip/out/replay/
+
+# The settings-publication harness. SETTINGSPUB.tsv and the emitted scripts
+# ARE the evidence validate/v115 reads and are NOT ignored. The per-leg logs
+# and the break tree's whole output are scratch: break.sh builds a copy of the
+# plugin with the capture removed and drives the same legs against it, so its
+# artefacts describe a library this repository does not contain.
+harness/settingspub/out/*.log
+harness/settingspub/out/break/

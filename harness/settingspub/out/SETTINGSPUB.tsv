@@ -1,0 +1,209 @@
+praat_version	Praat 6.6.30 (June 30 2026)
+source_tree	/home/claude/repo
+leg	corr_holm
+corr_holm_set_corr	holm
+corr_holm_set_alpha	0.05
+corr_holm_set_sort	0
+corr_holm_bridge_error	
+corr_holm_omnibus	Kruskal-Wallis: H(2) = 11.39, p = .003, \ep^2 = 0.326
+corr_holm_session_brackets	3
+corr_holm_session_adjust	adjustment for multiple comparisons: holm
+corr_holm_session_p1	0.313704
+corr_holm_session_label1	p = .314
+corr_holm_session_p2	0.002967
+corr_holm_session_label2	p = .003
+corr_holm_session_p3	0.044485
+corr_holm_session_label3	p = .044
+corr_holm_flushed	1
+corr_holm_record_exit	0
+corr_holm_emitted	yes
+corr_holm_emits_annotCorrectionMethod	1
+corr_holm_emits_annotAlpha	1
+corr_holm_emits_emlGroupSortAlphabetical	1
+corr_holm_settingline	annotCorrectionMethod$ = "holm"
+corr_holm_settingline	annotAlpha = 0.05
+corr_holm_settingline	emlGroupSortAlphabetical = 0
+corr_holm_replay_brackets	3
+corr_holm_replay_adjust	adjustment for multiple comparisons: holm
+corr_holm_replay_p1	0.313704
+corr_holm_replay_label1	p = .314
+corr_holm_replay_p2	0.002967
+corr_holm_replay_label2	p = .003
+corr_holm_replay_p3	0.044485
+corr_holm_replay_label3	p = .044
+corr_holm_replay_alpha_inforce	0.05
+corr_holm_replay_sort_inforce	0
+corr_holm_replay_corr_inforce	holm
+corr_holm_replay_exit	0
+corr_holm_session_report	0
+corr_holm_replay_report	1
+leg	corr_bonf
+corr_bonf_set_corr	bonferroni
+corr_bonf_set_alpha	0.05
+corr_bonf_set_sort	0
+corr_bonf_bridge_error	
+corr_bonf_omnibus	Kruskal-Wallis: H(2) = 11.39, p = .003, \ep^2 = 0.326
+corr_bonf_session_brackets	3
+corr_bonf_session_adjust	adjustment for multiple comparisons: bonferroni
+corr_bonf_session_p1	0.941113
+corr_bonf_session_label1	p = .941
+corr_bonf_session_p2	0.002967
+corr_bonf_session_label2	p = .003
+corr_bonf_session_p3	0.066727
+corr_bonf_session_label3	p = .067
+corr_bonf_flushed	1
+corr_bonf_record_exit	0
+corr_bonf_emitted	yes
+corr_bonf_emits_annotCorrectionMethod	1
+corr_bonf_emits_annotAlpha	1
+corr_bonf_emits_emlGroupSortAlphabetical	1
+corr_bonf_settingline	annotCorrectionMethod$ = "bonferroni"
+corr_bonf_settingline	annotAlpha = 0.05
+corr_bonf_settingline	emlGroupSortAlphabetical = 0
+corr_bonf_replay_brackets	3
+corr_bonf_replay_adjust	adjustment for multiple comparisons: bonferroni
+corr_bonf_replay_p1	0.941113
+corr_bonf_replay_label1	p = .941
+corr_bonf_replay_p2	0.002967
+corr_bonf_replay_label2	p = .003
+corr_bonf_replay_p3	0.066727
+corr_bonf_replay_label3	p = .067
+corr_bonf_replay_alpha_inforce	0.05
+corr_bonf_replay_sort_inforce	0
+corr_bonf_replay_corr_inforce	bonferroni
+corr_bonf_replay_exit	0
+corr_bonf_session_report	0
+corr_bonf_replay_report	1
+leg	alpha_05
+alpha_05_set_corr	holm
+alpha_05_set_alpha	0.05
+alpha_05_set_sort	0
+alpha_05_flushed	1
+alpha_05_record_exit	0
+alpha_05_emitted	yes
+alpha_05_emits_annotCorrectionMethod	1
+alpha_05_emits_annotAlpha	1
+alpha_05_emits_emlGroupSortAlphabetical	1
+alpha_05_settingline	annotCorrectionMethod$ = "holm"
+alpha_05_settingline	annotAlpha = 0.05
+alpha_05_settingline	emlGroupSortAlphabetical = 0
+alpha_05_replay_brackets	0
+alpha_05_replay_adjust	
+alpha_05_replay_alpha_inforce	0.05
+alpha_05_replay_sort_inforce	0
+alpha_05_replay_corr_inforce	holm
+alpha_05_replay_exit	0
+alpha_05_session_report	1
+alpha_05_session_ci	 95% CI of diff [-9.8411, -4.8599]
+alpha_05_session_meandiff	 Mean diff (zulu − alfa) -7.3505
+alpha_05_session_sign	 Sign: every difference below is zulu minus alfa, and t, z and the
+alpha_05_session_t	 t -6.067
+alpha_05_session_grouprow	 zulu 14 210.53 3.24 211.68 
+alpha_05_session_grouprow	 alfa 14 217.88 3.17 218.38 
+alpha_05_replay_report	1
+alpha_05_replay_ci	 95% CI of diff [-9.8411, -4.8599]
+alpha_05_replay_meandiff	 Mean diff (zulu − alfa) -7.3505
+alpha_05_replay_sign	 Sign: every difference below is zulu minus alfa, and t, z and the
+alpha_05_replay_t	 t -6.067
+alpha_05_replay_grouprow	 zulu 14 210.53 3.24 211.68 
+alpha_05_replay_grouprow	 alfa 14 217.88 3.17 218.38 
+leg	alpha_01
+alpha_01_set_corr	holm
+alpha_01_set_alpha	0.01
+alpha_01_set_sort	0
+alpha_01_flushed	1
+alpha_01_record_exit	0
+alpha_01_emitted	yes
+alpha_01_emits_annotCorrectionMethod	1
+alpha_01_emits_annotAlpha	1
+alpha_01_emits_emlGroupSortAlphabetical	1
+alpha_01_settingline	annotCorrectionMethod$ = "holm"
+alpha_01_settingline	annotAlpha = 0.01
+alpha_01_settingline	emlGroupSortAlphabetical = 0
+alpha_01_replay_brackets	0
+alpha_01_replay_adjust	
+alpha_01_replay_alpha_inforce	0.01
+alpha_01_replay_sort_inforce	0
+alpha_01_replay_corr_inforce	holm
+alpha_01_replay_exit	0
+alpha_01_session_report	1
+alpha_01_session_ci	 99% CI of diff [-10.7174, -3.9836]
+alpha_01_session_meandiff	 Mean diff (zulu − alfa) -7.3505
+alpha_01_session_sign	 Sign: every difference below is zulu minus alfa, and t, z and the
+alpha_01_session_t	 t -6.067
+alpha_01_session_grouprow	 zulu 14 210.53 3.24 211.68 
+alpha_01_session_grouprow	 alfa 14 217.88 3.17 218.38 
+alpha_01_replay_report	1
+alpha_01_replay_ci	 99% CI of diff [-10.7174, -3.9836]
+alpha_01_replay_meandiff	 Mean diff (zulu − alfa) -7.3505
+alpha_01_replay_sign	 Sign: every difference below is zulu minus alfa, and t, z and the
+alpha_01_replay_t	 t -6.067
+alpha_01_replay_grouprow	 zulu 14 210.53 3.24 211.68 
+alpha_01_replay_grouprow	 alfa 14 217.88 3.17 218.38 
+leg	sort_disc
+sort_disc_set_corr	holm
+sort_disc_set_alpha	0.05
+sort_disc_set_sort	0
+sort_disc_flushed	1
+sort_disc_record_exit	0
+sort_disc_emitted	yes
+sort_disc_emits_annotCorrectionMethod	1
+sort_disc_emits_annotAlpha	1
+sort_disc_emits_emlGroupSortAlphabetical	1
+sort_disc_settingline	annotCorrectionMethod$ = "holm"
+sort_disc_settingline	annotAlpha = 0.05
+sort_disc_settingline	emlGroupSortAlphabetical = 0
+sort_disc_replay_brackets	0
+sort_disc_replay_adjust	
+sort_disc_replay_alpha_inforce	0.05
+sort_disc_replay_sort_inforce	0
+sort_disc_replay_corr_inforce	holm
+sort_disc_replay_exit	0
+sort_disc_session_report	1
+sort_disc_session_ci	 95% CI of diff [-9.8411, -4.8599]
+sort_disc_session_meandiff	 Mean diff (zulu − alfa) -7.3505
+sort_disc_session_sign	 Sign: every difference below is zulu minus alfa, and t, z and the
+sort_disc_session_t	 t -6.067
+sort_disc_session_grouprow	 zulu 14 210.53 3.24 211.68 
+sort_disc_session_grouprow	 alfa 14 217.88 3.17 218.38 
+sort_disc_replay_report	1
+sort_disc_replay_ci	 95% CI of diff [-9.8411, -4.8599]
+sort_disc_replay_meandiff	 Mean diff (zulu − alfa) -7.3505
+sort_disc_replay_sign	 Sign: every difference below is zulu minus alfa, and t, z and the
+sort_disc_replay_t	 t -6.067
+sort_disc_replay_grouprow	 zulu 14 210.53 3.24 211.68 
+sort_disc_replay_grouprow	 alfa 14 217.88 3.17 218.38 
+leg	sort_alpha
+sort_alpha_set_corr	holm
+sort_alpha_set_alpha	0.05
+sort_alpha_set_sort	1
+sort_alpha_flushed	1
+sort_alpha_record_exit	0
+sort_alpha_emitted	yes
+sort_alpha_emits_annotCorrectionMethod	1
+sort_alpha_emits_annotAlpha	1
+sort_alpha_emits_emlGroupSortAlphabetical	1
+sort_alpha_settingline	annotCorrectionMethod$ = "holm"
+sort_alpha_settingline	annotAlpha = 0.05
+sort_alpha_settingline	emlGroupSortAlphabetical = 1
+sort_alpha_replay_brackets	0
+sort_alpha_replay_adjust	
+sort_alpha_replay_alpha_inforce	0.05
+sort_alpha_replay_sort_inforce	1
+sort_alpha_replay_corr_inforce	holm
+sort_alpha_replay_exit	0
+sort_alpha_session_report	1
+sort_alpha_session_ci	 95% CI of diff [4.8599, 9.8411]
+sort_alpha_session_meandiff	 Mean diff (alfa − zulu) 7.3505
+sort_alpha_session_sign	 Sign: every difference below is alfa minus zulu, and t, z and the
+sort_alpha_session_t	 t 6.067
+sort_alpha_session_grouprow	 alfa 14 217.88 3.17 218.38 
+sort_alpha_session_grouprow	 zulu 14 210.53 3.24 211.68 
+sort_alpha_replay_report	1
+sort_alpha_replay_ci	 95% CI of diff [4.8599, 9.8411]
+sort_alpha_replay_meandiff	 Mean diff (alfa − zulu) 7.3505
+sort_alpha_replay_sign	 Sign: every difference below is alfa minus zulu, and t, z and the
+sort_alpha_replay_t	 t 6.067
+sort_alpha_replay_grouprow	 alfa 14 217.88 3.17 218.38 
+sort_alpha_replay_grouprow	 zulu 14 210.53 3.24 211.68 
+leg	--shell--

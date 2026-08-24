@@ -1,0 +1,9 @@
+# EML record workflow -- crash mirror. Rows are appended as they
+# are recorded, so a session lost to a crash is still readable.
+--- step 1 (analysis), run 1
+Group comparison on a figure: val by grp, nonparametric, 3 groups
+Reached through the figure's annotation rather than the stats menu; the test and the correction are the same.
+annotCorrectionMethod$ = "bonferroni"
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+@emlBridgeGroupComparison: data, "val", "grp", 0.05, "p-value", 1, 0, "nonparametric", 2

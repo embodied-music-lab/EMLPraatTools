@@ -1,0 +1,9 @@
+# EML record workflow -- crash mirror. Rows are appended as they
+# are recorded, so a session lost to a crash is still readable.
+--- step 1 (analysis), run 1
+Two-group comparison: val by grp, parametric
+Equal-variance assumption: Welch.
+annotCorrectionMethod$ = "holm"
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 1
+@emlRunTwoGroupAnalysis: data, "val", "grp", "parametric", 0

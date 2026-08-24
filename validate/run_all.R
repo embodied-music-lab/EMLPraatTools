@@ -1423,6 +1423,28 @@ scripts <- c(
                                  # contributes to a page are part of the
                                  # subject here too. Fails on a walk of zero
                                  # and prints how many paths it covered.
+    ,
+    "v114_fingerprint_suite.R"   # the data fingerprint's own 278 legs, run
+                                 # from inside this suite. They live in the
+                                 # phase2 tree, which this suite does not
+                                 # call, so a shipped component's only
+                                 # evidence was evidence it wrote about
+                                 # itself. Reads both channels the test
+                                 # contract names -- the process exit status
+                                 # AND the printed result line -- because
+                                 # exit 0 alone is what that contract forbids
+                                 # a runner to trust. Fails on a missing file,
+                                 # an unresolvable Praat, an unparseable
+                                 # result, or a total of zero.
+    ,
+    "v115_settings_publication.R" # the three settings that change a result
+                                 # and travel as globals -- the correction
+                                 # method, the interval level, and the group
+                                 # ordering -- reach the recorded script, and
+                                 # a replay obeys them. Driven at two values
+                                 # each, so a leg cannot pass on the default
+                                 # it would fall back to. Reads
+                                 # harness/settingspub/out/SETTINGSPUB.tsv.
 )
 
 # ---------------------------------------------------------------------------

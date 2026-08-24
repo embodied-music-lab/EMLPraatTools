@@ -564,6 +564,26 @@ wording and output work so its report strings are written once.
    state once per press; the recorder writes it ahead of each step; a check
    pins seeded == published == emitted.
 
+   THE THREE SETTINGS THAT CHANGE A RESULT ARE BUILT AND DRIVEN (24 Aug).
+   `@emlRecordCaptureStats` in `stats/eml-record.praat` writes
+   `annotCorrectionMethod$`, `annotAlpha` and `emlGroupSortAlphabetical`
+   ahead of every analysis and draw step, each behind its own
+   `variableExists`, in the same place and for the same reason as
+   `@emlRecordCaptureEnv`. `harness/settingspub` records a session at each
+   of two values of each setting, replays the emitted script in a fresh
+   Praat process, and compares the numbers.
+   `validate/v115_settings_publication.R` reads it, 105 checks;
+   `harness/settingspub/break.sh` removes the call and reds 53 of them. The census moves 14 -> 15 emitted,
+   18 -> 17 not-emitted user choices; it sees only `annotAlpha`, because
+   its frame is `@emlInitDrawingDefaults`' seeded block and the other two
+   belong to the form and to `stats/eml-extract.praat`.
+
+   WHAT IS LEFT OF THIS ITEM: the twelve DISPLAY-ONLY settings v112's
+   census names — the font, the gridline mode, the legend placement, the
+   tick, axis-name and axis-value flags, the inner box, the subtitle, the
+   annotation style, the scatter's dot size and its formula toggle — and
+   the `.displayMode` instance below. None of them changes a number.
+
    ONE CONCRETE INSTANCE, FOUND 24 AUG WHILE READING THE HISTOGRAM DRAW.
    The recorder writes `.displayMode` into the emitted script AFTER the
    one-group path has forced it from 2 (faceted) to 1 (overlap). So a
@@ -632,6 +652,19 @@ photograph. They clear on the next re-drive of harness/linetree and
 harness/axisrefuse, which is one drive at the end of this page set under the
 standing one-re-drive rule -- and which needs no re-teaching, because no tab
 index on any driven leg moved.
+
+A THIRD, since the recorder gained `@emlRecordCaptureStats` on 24 August:
+
+- `v97` "the transcript was taken from THIS eml-record.praat"
+
+`v97` binds the recorder's own comment-stripped digest as well as the three
+graph files', because section 15 claims a script that file emitted redraws
+the figure byte for byte. The two headless rigs bound the same way -- `v86`'s
+`harness/vecfig` and `v87`'s `harness/runblock` -- were re-driven with the
+change and are green, and the only line either emitted script gained is the
+settings statement in front of the draw call; no number in either moved.
+`v97`'s is a GUI drive and clears with the same re-drive of
+`harness/linetree` the two bindings above are waiting on.
 
 Before that: the suite was green -- 15974 checks, 15974 passed, on the 24 Aug
 verification pass over the whole tree.

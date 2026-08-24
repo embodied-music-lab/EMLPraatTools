@@ -2059,6 +2059,79 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlRecordCaptureStats   ->  .out$
+#
+# THE SETTINGS THAT CHANGE THE NUMBERS, AND THAT NO CALL CARRIES.
+#
+# @emlRecordCaptureEnv above states the rule and the jitter switches are its
+# display-side case. A recorded step is a procedure CALL WITH ITS ARGUMENTS,
+# so a setting handed over as an argument is in the record and a setting read
+# from a global is invisible to it. Three of the globals read that way do not
+# change how a figure looks. They change what it says.
+#
+#   annotCorrectionMethod$    the multiple-comparison correction. The bridge
+#                             takes no parameter for it and resolves it from
+#                             this global, so a step that leaves it unstated
+#                             replays under the documented holm fallback and
+#                             reports adjusted p-values the session never
+#                             computed.
+#   annotAlpha                the level every confidence interval in the
+#                             reporters is built at, through
+#                             @emlCIAlphaInForce. An emitted script opens with
+#                             @emlInitDrawingDefaults, which seeds 0.05, so an
+#                             unstated alpha of 0.01 replays as an interval
+#                             that is narrower than the session's and labelled
+#                             95%.
+#   emlGroupSortAlphabetical  the order @emlCountGroups puts the levels in. It
+#                             decides which level is group 1, so it flips the
+#                             sign of every reported difference and swaps
+#                             which group a bracket names first.
+#
+# A REPLAY THAT COMPUTES DIFFERENT NUMBERS IS THE FAILURE THIS WHOLE FEATURE
+# EXISTS TO PREVENT, and each of these three is silent about it: the replay
+# runs clean, draws its figure, and prints a well-formed answer to a question
+# nobody asked.
+#
+# ON ANALYSIS AND DRAW STEPS, WHICH ARE THE STEPS THAT COMPUTE. See the
+# caller. A read, a create, a convert and a save decide nothing these three
+# govern, and three lines in front of each of them would state settings that
+# step has no use for.
+#
+# EVERY GLOBAL PRESENT IS EMITTED, INCLUDING THE DEFAULTS, for the reason
+# @emlRecordCaptureEnv gives: an emitted script is ONE scope, so a step drawn
+# under "bh" leaves "bh" behind it and the next step in the file inherits a
+# correction its own session never used. A step is self-contained only when it
+# states the settings it did not use.
+#
+# READ THROUGH variableExists, ALWAYS, AND ONE NAME AT A TIME. The three
+# belong to three layers: the graphs form sets the two annotation settings and
+# stats/eml-extract.praat seeds the sort order. So a stats-only script has the
+# sort order and neither annotation setting, and a direct caller of a draw
+# procedure -- a user script, a PraatGen companion, this tree's own harnesses
+# -- may have none of the three. Reading one unconditionally ends a user's
+# recording with "Unknown variable".
+# ----------------------------------------------------------------------------
+procedure emlRecordCaptureStats
+    .out$ = ""
+    if variableExists ("annotCorrectionMethod$")
+        .out$ = .out$ + "annotCorrectionMethod$ = """
+        ... + annotCorrectionMethod$ + """" + newline$
+    endif
+    ; string$ rather than fixed$, so the value written is the value read.
+    ; fixed$ takes a width, and an alpha finer than that width comes back a
+    ; different number -- which is the one thing a setting emitted for
+    ; fidelity may not do.
+    if variableExists ("annotAlpha")
+        .out$ = .out$ + "annotAlpha = " + string$ (annotAlpha) + newline$
+    endif
+    if variableExists ("emlGroupSortAlphabetical")
+        .out$ = .out$ + "emlGroupSortAlphabetical = "
+        ... + string$ (emlGroupSortAlphabetical) + newline$
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlRecordCaptureAnnotations: .kind$   ->  .out$
 #
 # THE OTHER HALF OF THE SAME PROBLEM: THE BRACKET.
@@ -2303,6 +2376,15 @@ procedure emlRecordStep: .kind$, .intent$, .caveat$, .code$, .api$
     .codeOut$ = .code$
     if .codeOut$ = ""
         .codeOut$ = "; (nothing executed at this step -- see the note above)"
+    endif
+    ; THE SETTINGS THAT DECIDE THE NUMBERS, in front of the call that
+    ; computed them, and nearest of everything prepended here because the
+    ; call itself is what reads them. Analysis and draw steps only: see
+    ; @emlRecordCaptureStats for what the three are and why a step that
+    ; leaves them unstated replays a different answer.
+    if .kind$ = "analysis" or .kind$ = "draw"
+        @emlRecordCaptureStats
+        .codeOut$ = emlRecordCaptureStats.out$ + .codeOut$
     endif
     ; THE PAGE THE FIGURE WENT ON, in front of the call that drew it. Draw
     ; steps only: see @emlRecordCapturePage, which is also where the reason

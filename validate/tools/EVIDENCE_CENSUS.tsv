@@ -47,6 +47,8 @@ v110	v110_roundtrip_replay.R	ARTEFACT	NO		harness
 v111	v111_cold_start_census.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
 v112	v112_settings_census.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs	src	
 v113	v113_cancel_path_reads.R	SOURCE	NO		plugin_EML_StatsGraphs	old_src	
+v114	v114_fingerprint_suite.R	SOURCE+LIVE	PRAAT	praat	plugin		
+v115	v115_settings_publication.R	SOURCE+ARTEFACT	NO		harness,plugin		
 v12	v12_correlation_orchestrator.R	ARTEFACT	NO		evidence		
 v13	v13_regression_orchestrator.R	ARTEFACT	NO		evidence		
 v14	v14_descriptive_orchestrator.R	ARTEFACT	NO		evidence		

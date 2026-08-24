@@ -103,6 +103,8 @@ emlPanelOriginY = panelOriginY
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 emlLineStyle = lineStyle
 emlSecondAxisOn = secondAxisOn
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
 @emlDrawViolinPlot: data, "first figure", "Group", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # Axis resolved to 140.0000 .. 320.0000 over 3 groups on the recorded data; auto adapts to other data.
@@ -134,6 +136,8 @@ emlPanelOriginY = panelOriginY2
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 emlLineStyle = lineStyle2
 emlSecondAxisOn = secondAxisOn2
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
 @emlDrawBoxPlot: data, "second figure", "Group", "val", 6, 4, "color", 1, groupCol2$, valueCol2$, axisYMin2, axisYMax2
 
 # The same step through the menu:

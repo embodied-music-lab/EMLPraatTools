@@ -34,7 +34,19 @@ which is a coincidence and not a confirmation.
 
 The population depends on which scripts are on disk: a setting only shows as
 emitted if some committed recording exercised the figure that carries it. So
-this measures a FLOOR, and the file says so rather than implying otherwise.
+this measures a FLOOR, and the file says so rather than implying otherwise. A
+rig whose recordings are committed belongs in the glob list below for exactly
+that reason -- leaving one out does not make the number conservative, it makes
+it wrong about the recorder.
+
+AND THE FRAME IS THE SEEDED BLOCK, WHICH IS NARROWER THAN "SETTINGS THAT
+MATTER". @emlInitDrawingDefaults seeds what the DRAW layer reads, so two of
+the three settings that decide a computed answer are outside it:
+annotCorrectionMethod$ belongs to the graphs form and emlGroupSortAlphabetical
+to stats/eml-extract.praat, and neither is counted here however faithfully a
+recording carries it. Widening the frame to take them in would cost the thing
+that makes it defensible -- that the draw layer crashes when a seeded name is
+missing. validate/v115 is where those two are measured.
 
     python3 validate/tools/recorder_census.py
     python3 validate/tools/recorder_census.py --list
@@ -47,6 +59,7 @@ DEFAULTS = "plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat"
 EMITTED_GLOBS = [
     "harness/linetree/out/*_emitted.utf8.praat",
     "harness/record*/out/**/*.praat",
+    "harness/settingspub/out/*/emitted.praat",
 ]
 
 # Bookkeeping rather than a choice the user made: the drawn extent the save

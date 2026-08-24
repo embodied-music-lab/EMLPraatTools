@@ -104,6 +104,8 @@ emlPanelOriginY = panelOriginY
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 emlLineStyle = lineStyle
 emlSecondAxisOn = secondAxisOn
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
 @emlDrawBoxPlot: data, "Box", "Group", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:
@@ -121,6 +123,8 @@ emlPanelOriginY = panelOriginY2
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 emlLineStyle = lineStyle2
 emlSecondAxisOn = secondAxisOn2
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
 scatterAnalysisType = 0
 annotCorrType$ = "pearson"
 scatterRegressionLine = 0
