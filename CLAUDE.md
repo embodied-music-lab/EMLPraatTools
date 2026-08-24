@@ -132,3 +132,46 @@ vocabulary in the same commit.
 item. Read it at the start of a session; update it when something opens,
 changes, or closes. It exists because session context is lost and this
 file is not.
+
+## Writing Praat in this repository
+
+How Praat is written here is governed by the PraatGen knowledge base, which is
+not in this repo. Fetch it read-only when you need it; never edit it:
+
+    git clone --depth 1 https://github.com/embodied-music-lab/PraatGen.git /tmp/pg
+
+**Where PraatGen and anything here disagree, PraatGen governs** — except two
+settled carve-outs. PraatGen forbids `include` in *generated* scripts, which must
+stand alone; this plugin is the tree those includes are internal to, so the
+barrel includes stay. And our floor is `emlMinPraatVersion = 6630`, refusing at
+load, where PraatGen's 6.4.39 warn-and-continue is for generated scripts. Two
+artefacts, two contracts — do not lower ours. The rest bites silently:
+
+- Read a procedure's `Outputs:` header before consuming its return; the name
+  differs from the parameter. `@emlGenerateUniquePath` takes `.path$`, returns
+  `.result$` — reading `.path$` back compiles and defeats the collision guard.
+  Outputs survive only until that procedure runs again: copy them on the next line.
+- Inside a procedure an undotted variable is the main-script global, for read
+  **and write**. Pass inputs as dotted parameters; never assign undotted.
+- `'`-interpolation of variable names works in procedure bodies only; main body
+  uses `var[i]` / `var#[i]`. `$` goes before the bracket (`v$[i]`) and after a
+  full interpolated name (`v'.i'$`). `e`, `pi`, `undefined` are constants.
+- Commands are statements, not expressions: `x = Get total duration`, then use x.
+  `Unknown symbol «Get» in formula` always means exactly this.
+- Dialog labels carry letters, digits and spaces only before the parenthetical
+  (`docs/RULING_DIALOG_LABELS_v3.md`). `left Y-limits` binds a name no script can
+  write; the read parses as subtraction and yields a plausible wrong number.
+- Form variables are globals nothing can unset. Read a page's fields into
+  page-scoped variables between its `endPause` and the next dialog, never later.
+- Every string literal that can reach a file must be ASCII. One non-ASCII
+  character makes Praat write the whole file UTF-16BE. Use `@emlAsciiFold`.
+- `%`, `#`, `^`, `_` are style toggles in drawn text. Variable-derived display
+  text goes through `@emlSanitizeLabel`; literals need only reading.
+- Set `Font size:` once per panel, before `Select inner viewport:`; use
+  `Text special:` for any other size — it takes its own and leaves state alone.
+- Vectorize: `Formula: ~self ...`, `List values in all frames`, `Get all numbers
+  in column`. A per-element `Get`/`Set` loop is 100-400x slower, not untidy.
+- DRY here: state the canon once in a procedure **and** add a text check that the
+  copies agree (`v105` is the model). A procedure records a rule, never enforces it.
+- Two PraatGen rules are knowingly unmet, pending Ian's adjudication: leading
+  `;` comments (~4,900 of them) and `+=`. Do not sweep either.
