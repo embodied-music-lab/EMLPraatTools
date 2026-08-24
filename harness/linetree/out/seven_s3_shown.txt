@@ -1,4 +1,4 @@
-[-] Select columns from your Table.
+[-] Columns
 Time column: time Vv
 Every numeric column is drawn. Untick any you do not want.
 Series 1 (cl)
@@ -8,6 +8,8 @@ Series 4 (c4)
 Series 5 (c5)
 Series 6 (c6)
 Series 7 (c7)
+ds Y axis
 Y axis label:
-Line style: Solid Vv
+Layout
+Line style: Solid v
 Undo Go Back Quit Advanced Draw

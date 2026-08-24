@@ -562,18 +562,24 @@ check_true("v98",
 # asserted alongside, so a second copy of a pinned pair cannot hide behind
 # the first one's key.
 #
-# THE ONE ENTRY, and why it is safe: eml-graphs-form.praat's Line Chart
-# column page carries "Y axis label" twice. The first is offered on the
-# BEGINNER page for the one case that has nowhere else to name the shared
-# axis (`if tsSeriesRole = 1 and tsNNum >= 2 and config_showAdvanced = 0`);
-# the second is the advanced branch's own axis-label row (`if
-# config_showAdvanced`). config_showAdvanced is 0 in one condition and true
-# in the other, so exactly one of the two rows exists on any rendering, and
-# the source says so where it stands.
+# THE SET IS EMPTY TODAY, AND THAT IS A RESULT RATHER THAN A DEFAULT.
+#
+# It held one entry until the line chart's pages took the layout grouping:
+# eml-graphs-form.praat's Line Chart column page carried "Y axis label"
+# twice -- once on the BEGINNER branch, for the one case that has nowhere
+# else to name a shared axis, and once as the advanced branch's own
+# axis-label row. The two conditions could not both hold, but they were two
+# separate `if`s rather than two arms of one, so the parser could not say so
+# and a person had to.
+#
+# The advanced row is now the paired "left / right Axis labels" row every
+# other page in this form uses, remapped to x_axis_label$ / y_axis_label$
+# after endPause, so only the beginner row is spelled "Y axis label" and
+# there is nothing left to rule on. An entry appearing here again means a
+# new same-named pair the parser cannot separate: read it, and either fix the
+# page or pin it with the reason, as the entry above was pinned.
 # ---------------------------------------------------------------------------
-REVIEWED_UNKNOWN <- c(
-    "eml-graphs-form.praat|y_axis_label|Y axis label|Y axis label"
-)
+REVIEWED_UNKNOWN <- character(0)
 new_unknown <- setdiff(shipped$unknown, REVIEWED_UNKNOWN)
 if (length(new_unknown)) {
     cat("SHARED NAMES THIS CHECK CANNOT RULE ON — READ THESE:\n")

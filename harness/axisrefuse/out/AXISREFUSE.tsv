@@ -1,7 +1,7 @@
 praat_version	Praat 6.6.30 (June 30 2026)
 source_tree	/home/claude/repo
 host	vm
-form_code_sha256	106392046c3db2bf10ecbc4b82d66a7b11883cca5d36cf2eacb980edcf4e8afd
+form_code_sha256	fd5e13ac332a5277f84607fd28055cb6dc8f4f14f2c2f8e37558e33157870040
 compositor	running
 leg	pitch_time
 leg_object	1

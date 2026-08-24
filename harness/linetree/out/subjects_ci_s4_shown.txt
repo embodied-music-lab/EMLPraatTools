@@ -1,25 +1,25 @@
-[-] Select columns from your Table.
+[-] Columns
 Time column: time 7
 Measurement column: fO
 Series names come from: _ speaker Vv
 Group order: Table order Vv
+| Analysis
 Draw the mean and its interval (up to 4 observations per point)
+», Axes (both 0 = auto)
+Time (left/right): | g 0
+Value (bottom/top): | 9 0
+.. Axis labels (blank = auto) - %italic #bold “super sub - \% and a space
+printex# labels (x / y; blank = auto):
+£2 Layout
 Line style: Solid v
-», X-axis (both 0 = auto)
-Time range (left/right): 0
-». Y-axis (both 0 = auto)
-Value range (bottom/top): 9 0
 Gridline mode: Both v
 On a composed page a legend inside the plot is not given axis room — use
 Right of plot or Below plot.
 Legend placement (when drawn): Inside plot v
-Output DPI: 300 dpi v
 Show inner box
 Show axis names: Both v
 Show ticks: Both 4
 Show axis values: Both v
 Font: Helvetica v
-.. Axis labels (blank = auto) - %italic #bold “super sub - \% and a space
-prints % X axis label:
-Y axis label:
+Output DPI: 300 dpi v
 Undo Go Back Quit Beginner Draw

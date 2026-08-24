@@ -2,7 +2,7 @@
 --run--	source_tree	/home/claude/repo
 --run--	host	vm
 --run--	legs_requested	subjects4 timeswitch subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven script_refuse long_meas2 long_meas3_refuse long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2
---run--	code_sha256_eml-graphs-form	106392046c3db2bf10ecbc4b82d66a7b11883cca5d36cf2eacb980edcf4e8afd
+--run--	code_sha256_eml-graphs-form	fd5e13ac332a5277f84607fd28055cb6dc8f4f14f2c2f8e37558e33157870040
 --run--	code_sha256_eml-graph-procedures	8ba64e46aa591e1ec885c4c6a62e2403f60e3d72e129b17072f617a1c7157a72
 --run--	code_sha256_eml-draw-procedures	8a32e7b6d0198fa1d478db39d124c197417f348eb0932e98ae1e775ec2bf2540
 --run--	code_sha256_eml-record	9dc15a37578405e641e75918d4806c2129015aa74407cf202b8fd5276b05afe9
@@ -25,21 +25,23 @@ subjects4	s1_shown	Panel origin (x/y, inches): 0
 subjects4	s1_shown	Undo Quit Continue
 subjects4	s2_title	Line Chart -- What the lines are
 subjects4	s2_want	Line Chart -- What the lines are
-subjects4	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+subjects4	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 subjects4	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 subjects4	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 subjects4	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 subjects4	s2_shown	Undo Go Back Quit Continue
 subjects4	s3_title	Line Chart -- Column Mapping
 subjects4	s3_want	Line Chart -- Column Mapping
-subjects4	s3_shown	[-] Select columns from your Table.
-subjects4	s3_shown	Time column: time v
+subjects4	s3_shown	[-] Columns
+subjects4	s3_shown	Time column: time Vv
 subjects4	s3_shown	Every numeric column is drawn. Untick any you do not want.
 subjects4	s3_shown	Series 1 (S1)
 subjects4	s3_shown	Series 2 (S2)
 subjects4	s3_shown	Series 3 (S3)
 subjects4	s3_shown	Series 4 (S4)
+subjects4	s3_shown	 Y axis
 subjects4	s3_shown	Y axis label:
+subjects4	s3_shown	£2 Layout
 subjects4	s3_shown	Line style: Solid Vv
 subjects4	s3_shown	Undo Go Back Quit Advanced Draw
 subjects4	s4_title	Graph Complete
@@ -125,21 +127,23 @@ timeswitch	s1_shown	Panel origin (x/y, inches): 0
 timeswitch	s1_shown	Undo Quit Continue
 timeswitch	s2_title	Line Chart -- What the lines are
 timeswitch	s2_want	Line Chart -- What the lines are
-timeswitch	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+timeswitch	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 timeswitch	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 timeswitch	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 timeswitch	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 timeswitch	s2_shown	Undo Go Back Quit Continue
 timeswitch	s3_title	Line Chart -- Column Mapping
 timeswitch	s3_want	Line Chart -- Column Mapping
-timeswitch	s3_shown	[-] Select columns from your Table.
-timeswitch	s3_shown	Time column: time v
+timeswitch	s3_shown	[-] Columns
+timeswitch	s3_shown	Time column: time Vv
 timeswitch	s3_shown	Every numeric column is drawn. Untick any you do not want.
 timeswitch	s3_shown	Series 1 (S1)
 timeswitch	s3_shown	Series 2 (S2)
 timeswitch	s3_shown	Series 3 (S3)
 timeswitch	s3_shown	Series 4 (S4)
+timeswitch	s3_shown	 Y axis
 timeswitch	s3_shown	Y axis label:
+timeswitch	s3_shown	£2 Layout
 timeswitch	s3_shown	Line style: Solid Vv
 timeswitch	s3_shown	Undo Go Back Quit Advanced Draw
 timeswitch	s4_title	Time column changed
@@ -151,14 +155,16 @@ timeswitch	s4_shown	Your other choices are kept.
 timeswitch	s4_shown	OK
 timeswitch	s5_title	Line Chart -- Column Mapping
 timeswitch	s5_want	Line Chart -- Column Mapping
-timeswitch	s5_shown	[-] Select columns from your Table.
+timeswitch	s5_shown	[-] Columns
 timeswitch	s5_shown	Time column: $1 v
 timeswitch	s5_shown	Every numeric column is drawn. Untick any you do not want.
 timeswitch	s5_shown	Series 1 (time)
 timeswitch	s5_shown	Series 2 (S2)
 timeswitch	s5_shown	Series 3 (S3)
 timeswitch	s5_shown	Series 4 (S4)
+timeswitch	s5_shown	 Y axis
 timeswitch	s5_shown	Y axis label:
+timeswitch	s5_shown	£2 Layout
 timeswitch	s5_shown	Line style: Solid Vv
 timeswitch	s5_shown	Undo Go Back Quit Advanced Draw
 timeswitch	s6_title	Graph Complete
@@ -239,56 +245,60 @@ subjects_ci	s1_shown	Panel origin (x/y, inches): 0
 subjects_ci	s1_shown	Undo Quit Continue
 subjects_ci	s2_title	Line Chart -- What the lines are
 subjects_ci	s2_want	Line Chart -- What the lines are
-subjects_ci	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+subjects_ci	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 subjects_ci	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 subjects_ci	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 subjects_ci	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 subjects_ci	s2_shown	Undo Go Back Quit Continue
 subjects_ci	s3_title	Line Chart -- Column Mapping
 subjects_ci	s3_want	Line Chart -- Column Mapping
-subjects_ci	s3_shown	[-] Select columns from your Table.
+subjects_ci	s3_shown	[-] Columns
 subjects_ci	s3_shown	Time column: time v
-subjects_ci	s3_shown	Measurement column: fO
+subjects_ci	s3_shown	Measurement column: f0
 subjects_ci	s3_shown	Series names come from: _ speaker v
-subjects_ci	s3_shown	Group order: Table order Vv
+subjects_ci	s3_shown	Group order: Table order v
+subjects_ci	s3_shown	| Analysis
 subjects_ci	s3_shown	Draw the mean and its interval (up to 4 observations per point)
+subjects_ci	s3_shown	£2 Layout
 subjects_ci	s3_shown	Line style: Solid v
 subjects_ci	s3_shown	Undo Go Back Quit Advanced Draw
 subjects_ci	s4_title	Line Chart -- Column Mapping
 subjects_ci	s4_want	Line Chart -- Column Mapping
-subjects_ci	s4_shown	[-] Select columns from your Table.
+subjects_ci	s4_shown	[-] Columns
 subjects_ci	s4_shown	Time column: time 7
 subjects_ci	s4_shown	Measurement column: fO
 subjects_ci	s4_shown	Series names come from: _ speaker Vv
 subjects_ci	s4_shown	Group order: Table order Vv
+subjects_ci	s4_shown	| Analysis
 subjects_ci	s4_shown	Draw the mean and its interval (up to 4 observations per point)
+subjects_ci	s4_shown	», Axes (both 0 = auto)
+subjects_ci	s4_shown	Time (left/right): | g 0
+subjects_ci	s4_shown	Value (bottom/top): | 9 0
+subjects_ci	s4_shown	.. Axis labels (blank = auto) - %italic #bold “super sub - \% and a space
+subjects_ci	s4_shown	printex# labels (x / y; blank = auto):
+subjects_ci	s4_shown	£2 Layout
 subjects_ci	s4_shown	Line style: Solid v
-subjects_ci	s4_shown	», X-axis (both 0 = auto)
-subjects_ci	s4_shown	Time range (left/right): 0
-subjects_ci	s4_shown	». Y-axis (both 0 = auto)
-subjects_ci	s4_shown	Value range (bottom/top): 9 0
 subjects_ci	s4_shown	Gridline mode: Both v
 subjects_ci	s4_shown	On a composed page a legend inside the plot is not given axis room — use
 subjects_ci	s4_shown	Right of plot or Below plot.
 subjects_ci	s4_shown	Legend placement (when drawn): Inside plot v
-subjects_ci	s4_shown	Output DPI: 300 dpi v
 subjects_ci	s4_shown	Show inner box
 subjects_ci	s4_shown	Show axis names: Both v
 subjects_ci	s4_shown	Show ticks: Both 4
 subjects_ci	s4_shown	Show axis values: Both v
 subjects_ci	s4_shown	Font: Helvetica v
-subjects_ci	s4_shown	.. Axis labels (blank = auto) - %italic #bold “super sub - \% and a space
-subjects_ci	s4_shown	prints % X axis label:
-subjects_ci	s4_shown	Y axis label:
+subjects_ci	s4_shown	Output DPI: 300 dpi v
 subjects_ci	s4_shown	Undo Go Back Quit Beginner Draw
 subjects_ci	s5_title	Line Chart -- Column Mapping
 subjects_ci	s5_want	Line Chart -- Column Mapping
-subjects_ci	s5_shown	[-] Select columns from your Table.
+subjects_ci	s5_shown	[-] Columns
 subjects_ci	s5_shown	Time column: time v
-subjects_ci	s5_shown	Measurement column: fO
+subjects_ci	s5_shown	Measurement column: f0
 subjects_ci	s5_shown	Series names come from: _ speaker v
-subjects_ci	s5_shown	Group order: Table order Vv
+subjects_ci	s5_shown	Group order: Table order v
+subjects_ci	s5_shown	| Analysis
 subjects_ci	s5_shown	Draw the mean and its interval (up to 4 observations per point)
+subjects_ci	s5_shown	£2 Layout
 subjects_ci	s5_shown	Line style: Solid v
 subjects_ci	s5_shown	Undo Go Back Quit Advanced Draw
 subjects_ci	s6_title	Graph Complete
@@ -378,19 +388,20 @@ meas2	s1_shown	Panel origin (x/y, inches): 0
 meas2	s1_shown	Undo Quit Continue
 meas2	s2_title	Line Chart -- What the lines are
 meas2	s2_want	Line Chart -- What the lines are
-meas2	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+meas2	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 meas2	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 meas2	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 meas2	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 meas2	s2_shown	Undo Go Back Quit Continue
 meas2	s3_title	Line Chart -- Column Mapping
 meas2	s3_want	Line Chart -- Column Mapping
-meas2	s3_shown	[-] Select columns from your Table.
-meas2	s3_shown	Time column: time 7
+meas2	s3_shown	[-] Columns
+meas2	s3_shown	Time column: time v
 meas2	s3_shown	Every numeric column is drawn. Untick any you do not want.
 meas2	s3_shown	Series 1 (f0)
 meas2	s3_shown	Series 2 (cq)
-meas2	s3_shown	Line style: Solid v
+meas2	s3_shown	£2 Layout
+meas2	s3_shown	Line style: Solid Vv
 meas2	s3_shown	Undo Go Back Quit Advanced Draw
 meas2	s4_title	Line Chart -- The Right-Hand Axis
 meas2	s4_want	Line Chart -- The Right-Hand Axis
@@ -492,19 +503,20 @@ meas2_rep	s1_shown	Panel origin (x/y, inches): 0
 meas2_rep	s1_shown	Undo Quit Continue
 meas2_rep	s2_title	Line Chart -- What the lines are
 meas2_rep	s2_want	Line Chart -- What the lines are
-meas2_rep	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+meas2_rep	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 meas2_rep	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 meas2_rep	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 meas2_rep	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 meas2_rep	s2_shown	Undo Go Back Quit Continue
 meas2_rep	s3_title	Line Chart -- Column Mapping
 meas2_rep	s3_want	Line Chart -- Column Mapping
-meas2_rep	s3_shown	[-] Select columns from your Table.
-meas2_rep	s3_shown	Time column: time 7
+meas2_rep	s3_shown	[-] Columns
+meas2_rep	s3_shown	Time column: time v
 meas2_rep	s3_shown	Every numeric column is drawn. Untick any you do not want.
 meas2_rep	s3_shown	Series 1 (f0)
 meas2_rep	s3_shown	Series 2 (cq)
-meas2_rep	s3_shown	Line style: Solid v
+meas2_rep	s3_shown	£2 Layout
+meas2_rep	s3_shown	Line style: Solid Vv
 meas2_rep	s3_shown	Undo Go Back Quit Advanced Draw
 meas2_rep	s4_title	Line Chart -- The Right-Hand Axis
 meas2_rep	s4_want	Line Chart -- The Right-Hand Axis
@@ -602,19 +614,20 @@ meas3_refuse	s1_shown	Panel origin (x/y, inches): 0
 meas3_refuse	s1_shown	Undo Quit Continue
 meas3_refuse	s2_title	Line Chart -- What the lines are
 meas3_refuse	s2_want	Line Chart -- What the lines are
-meas3_refuse	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+meas3_refuse	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 meas3_refuse	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 meas3_refuse	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 meas3_refuse	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 meas3_refuse	s2_shown	Undo Go Back Quit Continue
 meas3_refuse	s3_title	Line Chart -- Column Mapping
 meas3_refuse	s3_want	Line Chart -- Column Mapping
-meas3_refuse	s3_shown	[-] Select columns from your Table.
+meas3_refuse	s3_shown	[-] Columns
 meas3_refuse	s3_shown	Time column: time Vv
 meas3_refuse	s3_shown	Every numeric column is drawn. Untick any you do not want.
 meas3_refuse	s3_shown	Series 1 (f0)
 meas3_refuse	s3_shown	Series 2 (cq)
 meas3_refuse	s3_shown	Series 3 (spl)
+meas3_refuse	s3_shown	£2 Layout
 meas3_refuse	s3_shown	Line style: Solid Vv
 meas3_refuse	s3_shown	Undo Go Back Quit Advanced Draw
 meas3_refuse	s4_title	Line chart
@@ -627,12 +640,13 @@ meas3_refuse	s4_shown	OK
 meas3_refuse	s4_ink	0.000687143
 meas3_refuse	s5_title	Line Chart -- Column Mapping
 meas3_refuse	s5_want	Line Chart -- Column Mapping
-meas3_refuse	s5_shown	[-] Select columns from your Table.
+meas3_refuse	s5_shown	[-] Columns
 meas3_refuse	s5_shown	Time column: time Vv
 meas3_refuse	s5_shown	Every numeric column is drawn. Untick any you do not want.
 meas3_refuse	s5_shown	Series 1 (f0)
 meas3_refuse	s5_shown	Series 2 (cq)
 meas3_refuse	s5_shown	Series 3 (spl)
+meas3_refuse	s5_shown	£2 Layout
 meas3_refuse	s5_shown	Line style: Solid Vv
 meas3_refuse	s5_shown	Undo Go Back Quit Advanced Draw
 meas3_refuse	s6_title	Line Chart -- The Right-Hand Axis
@@ -734,19 +748,21 @@ none_refuse	s1_shown	Panel origin (x/y, inches): 0
 none_refuse	s1_shown	Undo Quit Continue
 none_refuse	s2_title	Line Chart -- What the lines are
 none_refuse	s2_want	Line Chart -- What the lines are
-none_refuse	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+none_refuse	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 none_refuse	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 none_refuse	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 none_refuse	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 none_refuse	s2_shown	Undo Go Back Quit Continue
 none_refuse	s3_title	Line Chart -- Column Mapping
 none_refuse	s3_want	Line Chart -- Column Mapping
-none_refuse	s3_shown	[-] Select columns from your Table.
+none_refuse	s3_shown	[-] Columns
 none_refuse	s3_shown	Time column: time Vv
 none_refuse	s3_shown	Every numeric column is drawn. Untick any you do not want.
 none_refuse	s3_shown	Series 1 (f0)
 none_refuse	s3_shown	Series 2 (cq)
+none_refuse	s3_shown	» Y axis
 none_refuse	s3_shown	Y axis label:
+none_refuse	s3_shown	£2 Layout
 none_refuse	s3_shown	Line style: Solid Vv
 none_refuse	s3_shown	Undo Go Back Quit Advanced Draw
 none_refuse	s4_title	Line chart
@@ -757,12 +773,14 @@ none_refuse	s4_shown	OK
 none_refuse	s4_ink	0.000687143
 none_refuse	s5_title	Line Chart -- Column Mapping
 none_refuse	s5_want	Line Chart -- Column Mapping
-none_refuse	s5_shown	[-] Select columns from your Table.
+none_refuse	s5_shown	[-] Columns
 none_refuse	s5_shown	Time column: time v
 none_refuse	s5_shown	Every numeric column is drawn. Untick any you do not want.
 none_refuse	s5_shown	Series 1 (f0)
 none_refuse	s5_shown	Series 2 (cq)
+none_refuse	s5_shown	» Y axis
 none_refuse	s5_shown	Y axis label:
+none_refuse	s5_shown	£2 Layout
 none_refuse	s5_shown	Line style: Solid v
 none_refuse	s5_shown	Undo Go Back Quit Advanced Draw
 none_refuse	s6_title	Graph Complete
@@ -841,14 +859,14 @@ seven	s1_shown	Panel origin (x/y, inches): 0
 seven	s1_shown	Undo Quit Continue
 seven	s2_title	Line Chart -- What the lines are
 seven	s2_want	Line Chart -- What the lines are
-seven	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+seven	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 seven	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 seven	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 seven	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 seven	s2_shown	Undo Go Back Quit Continue
 seven	s3_title	Line Chart -- Column Mapping
 seven	s3_want	Line Chart -- Column Mapping
-seven	s3_shown	[-] Select columns from your Table.
+seven	s3_shown	[-] Columns
 seven	s3_shown	Time column: time Vv
 seven	s3_shown	Every numeric column is drawn. Untick any you do not want.
 seven	s3_shown	Series 1 (cl)
@@ -858,8 +876,10 @@ seven	s3_shown	Series 4 (c4)
 seven	s3_shown	Series 5 (c5)
 seven	s3_shown	Series 6 (c6)
 seven	s3_shown	Series 7 (c7)
+seven	s3_shown	ds Y axis
 seven	s3_shown	Y axis label:
-seven	s3_shown	Line style: Solid Vv
+seven	s3_shown	Layout
+seven	s3_shown	Line style: Solid v
 seven	s3_shown	Undo Go Back Quit Advanced Draw
 seven	s4_title	Graph Complete
 seven	s4_want	Graph Complete
@@ -1006,18 +1026,19 @@ long_meas2	s1_shown	Panel origin (x/y, inches): 0
 long_meas2	s1_shown	Undo Quit Continue
 long_meas2	s2_title	Line Chart -- What the lines are
 long_meas2	s2_want	Line Chart -- What the lines are
-long_meas2	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+long_meas2	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 long_meas2	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 long_meas2	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 long_meas2	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 long_meas2	s2_shown	Undo Go Back Quit Continue
 long_meas2	s3_title	Line Chart -- Column Mapping
 long_meas2	s3_want	Line Chart -- Column Mapping
-long_meas2	s3_shown	[-] Select columns from your Table.
+long_meas2	s3_shown	[-] Columns
 long_meas2	s3_shown	Time column: time Vv
 long_meas2	s3_shown	Measurement column: value
 long_meas2	s3_shown	Series names come from: measure v
 long_meas2	s3_shown	Group order: Table order v
+long_meas2	s3_shown	£2 Layout
 long_meas2	s3_shown	Line style: Solid v
 long_meas2	s3_shown	Undo Go Back Quit Advanced Draw
 long_meas2	s4_title	Line Chart -- The Right-Hand Axis
@@ -1119,18 +1140,19 @@ long_meas3_refuse	s1_shown	Panel origin (x/y, inches): 0
 long_meas3_refuse	s1_shown	Undo Quit Continue
 long_meas3_refuse	s2_title	Line Chart -- What the lines are
 long_meas3_refuse	s2_want	Line Chart -- What the lines are
-long_meas3_refuse	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+long_meas3_refuse	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 long_meas3_refuse	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 long_meas3_refuse	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 long_meas3_refuse	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 long_meas3_refuse	s2_shown	Undo Go Back Quit Continue
 long_meas3_refuse	s3_title	Line Chart -- Column Mapping
 long_meas3_refuse	s3_want	Line Chart -- Column Mapping
-long_meas3_refuse	s3_shown	[-] Select columns from your Table.
+long_meas3_refuse	s3_shown	[-] Columns
 long_meas3_refuse	s3_shown	Time column: time Vv
 long_meas3_refuse	s3_shown	Measurement column: value
 long_meas3_refuse	s3_shown	Series names come from: measure v
 long_meas3_refuse	s3_shown	Group order: Table order v
+long_meas3_refuse	s3_shown	£2 Layout
 long_meas3_refuse	s3_shown	Line style: Solid v
 long_meas3_refuse	s3_shown	Undo Go Back Quit Advanced Draw
 long_meas3_refuse	s4_title	Line chart
@@ -1143,11 +1165,12 @@ long_meas3_refuse	s4_shown	OK
 long_meas3_refuse	s4_ink	0.000687143
 long_meas3_refuse	s5_title	Line Chart -- Column Mapping
 long_meas3_refuse	s5_want	Line Chart -- Column Mapping
-long_meas3_refuse	s5_shown	[-] Select columns from your Table.
+long_meas3_refuse	s5_shown	[-] Columns
 long_meas3_refuse	s5_shown	Time column: time Vv
 long_meas3_refuse	s5_shown	Measurement column: value
 long_meas3_refuse	s5_shown	Series names come from: measure v
 long_meas3_refuse	s5_shown	Group order: Table order v
+long_meas3_refuse	s5_shown	£2 Layout
 long_meas3_refuse	s5_shown	Line style: Solid v
 long_meas3_refuse	s5_shown	Undo Go Back Quit Advanced Draw
 long_meas3_refuse	s6_title	Graph Complete
@@ -1226,18 +1249,19 @@ long_titled	s1_shown	Panel origin (x/y, inches): 0
 long_titled	s1_shown	Undo Quit Continue
 long_titled	s2_title	Line Chart -- What the lines are
 long_titled	s2_want	Line Chart -- What the lines are
-long_titled	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+long_titled	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 long_titled	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 long_titled	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 long_titled	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 long_titled	s2_shown	Undo Go Back Quit Continue
 long_titled	s3_title	Line Chart -- Column Mapping
 long_titled	s3_want	Line Chart -- Column Mapping
-long_titled	s3_shown	[-] Select columns from your Table.
+long_titled	s3_shown	[-] Columns
 long_titled	s3_shown	Time column: time Vv
 long_titled	s3_shown	Measurement column: value
 long_titled	s3_shown	Series names come from: measure v
 long_titled	s3_shown	Group order: Table order v
+long_titled	s3_shown	£2 Layout
 long_titled	s3_shown	Line style: Solid v
 long_titled	s3_shown	Undo Go Back Quit Advanced Draw
 long_titled	s4_title	Line Chart -- The Right-Hand Axis
@@ -1340,19 +1364,20 @@ wide_titled	s1_shown	Panel origin (x/y, inches): 0
 wide_titled	s1_shown	Undo Quit Continue
 wide_titled	s2_title	Line Chart -- What the lines are
 wide_titled	s2_want	Line Chart -- What the lines are
-wide_titled	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+wide_titled	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 wide_titled	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 wide_titled	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 wide_titled	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 wide_titled	s2_shown	Undo Go Back Quit Continue
 wide_titled	s3_title	Line Chart -- Column Mapping
 wide_titled	s3_want	Line Chart -- Column Mapping
-wide_titled	s3_shown	[-] Select columns from your Table.
-wide_titled	s3_shown	Time column: time 7
+wide_titled	s3_shown	[-] Columns
+wide_titled	s3_shown	Time column: time v
 wide_titled	s3_shown	Every numeric column is drawn. Untick any you do not want.
 wide_titled	s3_shown	Series 1 (f0)
 wide_titled	s3_shown	Series 2 (cq)
-wide_titled	s3_shown	Line style: Solid v
+wide_titled	s3_shown	£2 Layout
+wide_titled	s3_shown	Line style: Solid Vv
 wide_titled	s3_shown	Undo Go Back Quit Advanced Draw
 wide_titled	s4_title	Line Chart -- The Right-Hand Axis
 wide_titled	s4_want	Line Chart -- The Right-Hand Axis
@@ -1454,21 +1479,23 @@ rec_subjects4	s1_shown	Panel origin (x/y, inches): 0
 rec_subjects4	s1_shown	Undo Quit Continue
 rec_subjects4	s2_title	Line Chart -- What the lines are
 rec_subjects4	s2_want	Line Chart -- What the lines are
-rec_subjects4	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+rec_subjects4	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 rec_subjects4	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 rec_subjects4	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 rec_subjects4	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 rec_subjects4	s2_shown	Undo Go Back Quit Continue
 rec_subjects4	s3_title	Line Chart -- Column Mapping
 rec_subjects4	s3_want	Line Chart -- Column Mapping
-rec_subjects4	s3_shown	[-] Select columns from your Table.
-rec_subjects4	s3_shown	Time column: time v
+rec_subjects4	s3_shown	[-] Columns
+rec_subjects4	s3_shown	Time column: time Vv
 rec_subjects4	s3_shown	Every numeric column is drawn. Untick any you do not want.
 rec_subjects4	s3_shown	Series 1 (S1)
 rec_subjects4	s3_shown	Series 2 (S2)
 rec_subjects4	s3_shown	Series 3 (S3)
 rec_subjects4	s3_shown	Series 4 (S4)
+rec_subjects4	s3_shown	 Y axis
 rec_subjects4	s3_shown	Y axis label:
+rec_subjects4	s3_shown	£2 Layout
 rec_subjects4	s3_shown	Line style: Solid Vv
 rec_subjects4	s3_shown	Undo Go Back Quit Advanced Draw
 rec_subjects4	s4_title	Graph Complete
@@ -1558,19 +1585,20 @@ rec_meas2	s1_shown	Panel origin (x/y, inches): 0
 rec_meas2	s1_shown	Undo Quit Continue
 rec_meas2	s2_title	Line Chart -- What the lines are
 rec_meas2	s2_want	Line Chart -- What the lines are
-rec_meas2	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+rec_meas2	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 rec_meas2	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 rec_meas2	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 rec_meas2	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 rec_meas2	s2_shown	Undo Go Back Quit Continue
 rec_meas2	s3_title	Line Chart -- Column Mapping
 rec_meas2	s3_want	Line Chart -- Column Mapping
-rec_meas2	s3_shown	[-] Select columns from your Table.
-rec_meas2	s3_shown	Time column: time 7
+rec_meas2	s3_shown	[-] Columns
+rec_meas2	s3_shown	Time column: time v
 rec_meas2	s3_shown	Every numeric column is drawn. Untick any you do not want.
 rec_meas2	s3_shown	Series 1 (f0)
 rec_meas2	s3_shown	Series 2 (cq)
-rec_meas2	s3_shown	Line style: Solid v
+rec_meas2	s3_shown	£2 Layout
+rec_meas2	s3_shown	Line style: Solid Vv
 rec_meas2	s3_shown	Undo Go Back Quit Advanced Draw
 rec_meas2	s4_title	Line Chart -- The Right-Hand Axis
 rec_meas2	s4_want	Line Chart -- The Right-Hand Axis
@@ -1676,18 +1704,19 @@ rec_long_meas2	s1_shown	Panel origin (x/y, inches): 0
 rec_long_meas2	s1_shown	Undo Quit Continue
 rec_long_meas2	s2_title	Line Chart -- What the lines are
 rec_long_meas2	s2_want	Line Chart -- What the lines are
-rec_long_meas2	s2_shown	What do the columns beside the time ~~'~~-~+-!-!>
+rec_long_meas2	s2_shown	{-] Columns — what do the columns bu7*7> 4h 450 bmn ttn
 rec_long_meas2	s2_shown	The other columns hold: The same measurement, on different subjects or groups w
 rec_long_meas2	s2_shown	Same measurement: four singers' FO — one shared vertical axis.
 rec_long_meas2	s2_shown	Different measurements: FO and contact quotient — each its own scale.
 rec_long_meas2	s2_shown	Undo Go Back Quit Continue
 rec_long_meas2	s3_title	Line Chart -- Column Mapping
 rec_long_meas2	s3_want	Line Chart -- Column Mapping
-rec_long_meas2	s3_shown	[-] Select columns from your Table.
+rec_long_meas2	s3_shown	[-] Columns
 rec_long_meas2	s3_shown	Time column: time Vv
 rec_long_meas2	s3_shown	Measurement column: value
 rec_long_meas2	s3_shown	Series names come from: measure v
 rec_long_meas2	s3_shown	Group order: Table order v
+rec_long_meas2	s3_shown	£2 Layout
 rec_long_meas2	s3_shown	Line style: Solid v
 rec_long_meas2	s3_shown	Undo Go Back Quit Advanced Draw
 rec_long_meas2	s4_title	Line Chart -- The Right-Hand Axis

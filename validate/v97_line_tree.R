@@ -625,13 +625,21 @@ check_true(V, "[meas3_refuse] nor on the page the refusal hands back",
            ylab_n("meas3_refuse", 3) == 0L && ylab_n("meas3_refuse", 5) == 0L)
 check_true(V, "[subjects_ci] one numeric column has a name already, so no field",
            ylab_n(CI, 3) == 0L && ylab_n(CI, 5) == 0L)
-# AND THE ADVANCED PAGE STILL HAS ITS OWN, EXACTLY ONE. subjects_ci's second
-# dialog is that page: the field the beginner page borrows, in the place it
-# has always been.
-check_true(V, "[subjects_ci] the advanced page carries the field it always did",
-           ylab_n(CI, 4) == 1L)
-check_true(V, "[subjects_ci] beside the x-axis label, which is advanced-only",
-           sum(grepl("X axis label:", shown(CI, 4))) == 1L &&
+# AND THE ADVANCED PAGE STILL HAS ITS OWN, EXACTLY ONE ROW CARRYING BOTH.
+# subjects_ci's second dialog is that page. It offers the axis labels as one
+# paired row -- "labels (x / y; blank = auto)" under the labels sub-heading --
+# where it offered two separately captioned rows before the layout grouping.
+# Praat renders a left/right pair as one row of two boxes, so ONE caption is
+# the whole pair and reading it twice would be the defect.
+#
+# THE HALF THAT DOES THE WORK IS THE SECOND ONE. What matters is not the
+# spelling of the caption but that the page offering an x-axis label is the
+# ADVANCED page and never the beginner one. The beginner page renders no
+# labels row at all, which is asserted just above as well, from the other side.
+check_true(V, "[subjects_ci] the advanced page offers the axis labels, as one paired row",
+           sum(grepl("labels \\(x / y; blank = auto\\):", shown(CI, 4))) == 1L)
+check_true(V, "[subjects_ci] and the x-axis label is advanced-only, absent from the beginner page",
+           !any(grepl("labels \\(x / y", shown(CI, 3))) &&
            !any(grepl("X axis label:", shown(CI, 3))))
 # THE LABEL THE FIELD PRODUCES. Blank on the melted legs -- the plugin did not
 # invent one from a subject's name -- and composed from the column everywhere
@@ -650,17 +658,48 @@ pg_to   <- grep('^\\s*clicked = endPause: "Go Back", "Quit", tsToggleLabel\\$, "
 page_b <- if (length(pg_from) == 1L && length(pg_to) == 1L) {
     form_src[pg_from:pg_to]
 } else character(0)
+# ONE DECLARATION SPELLED "Y axis label", NOT TWO. Until the line chart took
+# the layout grouping the advanced branch carried a row of its own by that
+# name and the two were kept apart by their guards alone. The advanced branch
+# now carries the paired "left / right Axis labels" row every other page in
+# this form uses, remapped to x_axis_label$ / y_axis_label$ after endPause, so
+# the beginner row is the only one left with that label and the two can no
+# longer be confused for each other. v98's pinned same-name pair went with it.
 yl <- grep('^\\s*sentence: "Y axis label", tmpYLabel\\$\\s*$', page_b)
-check_true(V, "the column page declares the y-axis field exactly twice",
-           length(yl) == 2L)
-check_true(V, "the first guarded by melted subjects in BEGINNER mode",
-           length(yl) == 2L &&
-           isTRUE(grepl("^\\s*if tsSeriesRole = 1 and tsNNum >= 2 and config_showAdvanced = 0\\s*$",
-                        page_b[yl[1] - 1])))
-check_true(V, "the second inside the advanced block, so never both at once",
-           length(yl) == 2L &&
-           any(grepl("^\\s*if config_showAdvanced\\s*$", page_b[1:yl[2]])) &&
-           yl[2] > max(grep("^\\s*if config_showAdvanced\\s*$", page_b[1:yl[2]])))
+check_true(V, "the column page declares the y-axis field exactly once",
+           length(yl) == 1L)
+check_true(V, "guarded by melted subjects in BEGINNER mode",
+           length(yl) == 1L &&
+           isTRUE(any(grepl("^\\s*if tsSeriesRole = 1 and tsNNum >= 2 and config_showAdvanced = 0\\s*$",
+                            page_b[max(1, yl[1] - 3):(yl[1] - 1)]))))
+# AND IT RENDERS UNDER AN AXIS HEADING, like every other field on this page
+# renders under one. RULING_LAYOUT_GROUPS rule 1: a field after the last
+# heading joins that heading's group silently, so no field is left outside a
+# named one. The heading is the row directly above the field.
+check_true(V, "under its own axis heading, so no field renders outside a group",
+           length(yl) == 1L &&
+           isTRUE(grepl('^\\s*comment: "\U0001F4D0', page_b[yl[1] - 1], useBytes = TRUE)))
+# THE ADVANCED BRANCH'S OWN AXIS-LABEL ROW: paired, and remapped to the names
+# the arms read. A pair that is never remapped is a page whose typed labels
+# reach nothing, which a check reading labels alone would pass over.
+check_true(V, "the advanced branch pairs the two axis labels in one row",
+           sum(grepl('^\\s*sentence: "left Axis labels \\(x / y; blank = auto\\)", tmpXLabel\\$\\s*$',
+                     page_b)) == 1L &&
+           sum(grepl('^\\s*sentence: "right Axis labels \\(x / y; blank = auto\\)", tmpYLabel\\$\\s*$',
+                     page_b)) == 1L)
+check_true(V, "and remaps the pair to the names the toggle and draw arms read",
+           any(grepl("^\\s*x_axis_label\\$ = left_Axis_labels\\$\\s*$", form_src)) &&
+           any(grepl("^\\s*y_axis_label\\$ = right_Axis_labels\\$\\s*$", form_src)))
+# THE FOUR RANGE BOXES ARE REMAPPED TOO. They are named by the QUANTITY now --
+# "left Time", "left Value" -- so the *_range names the arms read are produced
+# by the remap and by nothing else.
+check_true(V, "the two range pairs are remapped to the *_range names as well",
+           all(vapply(c("left_Time_range = left_Time",
+                        "right_Time_range = right_Time",
+                        "left_Value_range = left_Value",
+                        "right_Value_range = right_Value"),
+                      function(a) any(grepl(paste0("^\\s*", a, "\\s*$"), form_src)),
+                      logical(1))))
 # AND IT IS READ BACK UNDER THE SAME GUARD IT IS BUILT UNDER. A field built on
 # a condition and read on another is a field whose answer is discarded on some
 # presses and a "Unknown variable" abort on others.

@@ -1,7 +1,8 @@
-[-] Select columns from your Table.
+[-] Columns
 Time column: time Vv
 Measurement column: value
 Series names come from: measure v
 Group order: Table order v
+£2 Layout
 Line style: Solid v
 Undo Go Back Quit Advanced Draw

@@ -5189,7 +5189,15 @@ repeat
         repeat
             # --- Page A: what the lines are --------------------------
             beginPause: "Line Chart -- What the lines are"
-                comment: "What do the columns beside the time column hold?"
+                ; ONE GROUP, AND THE PAGE'S OWN QUESTION RIDES IN ITS HEADING.
+                ; The menu below is a fact about the COLUMNS -- what the ones
+                ; beside the time column hold -- so it belongs under 📋 like
+                ; every other column decision in this form, and rule 1 says it
+                ; cannot render without a heading over it. Folding the
+                ; question into the heading is what keeps that from costing a
+                ; row: the histogram's analysis heading carries a sentence the
+                ; same way. RULING_LAYOUT_GROUPS rules 1 and 5.
+                comment: "📋 Columns — what do the columns beside the time column hold?"
                 optionmenu: "The other columns hold", tsSeriesRole
                     option: "The same measurement, on different subjects or groups"
                     option: "Different measurements, on the same subject"
@@ -5308,7 +5316,20 @@ repeat
                     endif
 
                     beginPause: "Line Chart -- Column Mapping"
-                        comment: "📋 Select columns from your Table."
+                        ; FOUR GROUPS, IN THE ORDER THE DECISIONS ARE MADE:
+                        ; which columns the figure is drawn from, what is
+                        ; computed from them, what the axes are, and how the
+                        ; result is drawn. RULING_LAYOUT_GROUPS rules 1 and 2.
+                        ;
+                        ; NO FIELD RENDERS OUTSIDE A NAMED GROUP, on either
+                        ; branch. That is rule 1, and it is a rule because a
+                        ; field placed after the last heading joins whatever
+                        ; group that heading named, silently and wrongly. The
+                        ; beginner branch therefore pays for its own headings
+                        ; -- two rows on the page a new user meets -- rather
+                        ; than letting Line style trail off the end of the
+                        ; column list.
+                        comment: "📋 Columns"
                         optionmenu: "Time column", tsTimeIdx
                             for iCol from 1 to nCols
                                 option: colName$[iCol]
@@ -5342,8 +5363,53 @@ repeat
                         else
                             comment: "Measurement column: " + tsNumName$[1]
                         endif
+                        ; 📊 ANALYSIS, AND ONLY WHERE THERE IS ONE TO OFFER.
+                        ; The interval is not a way of drawing the line, it is
+                        ; a summary computed from the repeated observations at
+                        ; each point -- a mean and a confidence band that do
+                        ; not exist unless this box is ticked. So it is filed
+                        ; with the analysis and not with the data marks in
+                        ; 🎛️ Layout, which is where the spaghetti plot's mean
+                        ; OVERLAY sits: that one draws a summary of lines that
+                        ; are on the figure either way.
+                        ;
+                        ; THE HEADING IS INSIDE THE SAME GUARD AS THE FIELD.
+                        ; A heading emitted on its own would name an empty
+                        ; group on every table with one observation per point,
+                        ; which is most of them.
                         if tsCIOffer = 1
+                            comment: "📊 Analysis"
                             boolean: "Draw the mean and its interval (up to " + string$ (tsMaxPerPoint) + " observations per point)", tsShowCI
+                        endif
+                        if config_showAdvanced
+                            ; ONE AXIS HEADING, NOT TWO. Both ranges are axis
+                            ; ranges and both take the same sentinel, so the
+                            ; "(both 0 = auto)" is said once at the top of the
+                            ; group and each row carries only which axis it
+                            ; is. The four acoustic pages were merged the same
+                            ; way in c74d432.
+                            comment: "📐 Axes (both 0 = auto)"
+                            ; ONE ROW, TWO BOXES, NAMED BY THE QUANTITY. The
+                            ; trailing noun "range" is dropped: the roster
+                            ; @emlGraphsCheckAxisRanges is judged against
+                            ; names the axis, and every other page in this
+                            ; form spells its pairs this way. The cue word
+                            ; stays in the derived name, so these bind
+                            ; left_Time / right_Time and left_Value /
+                            ; right_Value and the remap block below carries
+                            ; them to the *_range names the arms read.
+                            real: "left Time (left/right)", tmpTMin$
+                            real: "right Time (left/right)", tmpTMax$
+                            real: "left Value (bottom/top)", tmpVMin$
+                            real: "right Value (bottom/top)", tmpVMax$
+                            ; The markup legend sits inside the axis group,
+                            ; directly above the row it explains.
+                            comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                            ; SENTENCE FIELDS PAIR: one row, two boxes, the
+                            ; left remainder shown once. Measured on 6.6.30
+                            ; with this text.
+                            sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                            sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
                         endif
                         ; THE SHARED AXIS HAS TO BE NAMED BY THE USER, AND IN
                         ; BEGINNER MODE THERE IS NOWHERE ELSE TO NAME IT.
@@ -5351,26 +5417,37 @@ repeat
                         ; the SUBJECTS, so nothing in the table names the
                         ; quantity they share -- the plugin cannot compose the
                         ; y-axis label the way it composes every other one.
-                        ; The advanced page has always carried a "Y axis
-                        ; label" field; this is the same field, shown on the
+                        ; The advanced page carries it in the paired axis-label
+                        ; row above; this is the same setting, shown on the
                         ; beginner page for the one case that cannot do
-                        ; without it. Only one of the two exists at a time, so
-                        ; they share the name Praat derives.
+                        ; without it, and only one of the two rows exists on
+                        ; any rendering.
+                        ;
+                        ; IT IS AN AXIS SETTING, SO IT SITS UNDER AN AXIS
+                        ; HEADING -- rule 1 again. There is no range on this
+                        ; branch, so the heading does not promise a sentinel
+                        ; it is not offering.
                         if tsSeriesRole = 1 and tsNNum >= 2 and config_showAdvanced = 0
+                            comment: "📐 Y axis"
                             sentence: "Y axis label", tmpYLabel$
                         endif
+                        ; 🎛️ LAYOUT, IN THE ORDER MARK -> FRAME -> TEXT ->
+                        ; OUTPUT. The line chart has no data-mark toggle, so
+                        ; the group opens on the pen that strokes the series.
+                        ; Legend placement follows Gridline mode here because
+                        ; that is where every other page in this form that
+                        ; offers one puts it -- scatter, spaghetti, histogram
+                        ; and the two grouped pages, all built to the ruling's
+                        ; own per-page maps. See the note in the report: the
+                        ; ruling's general sentence lists it between Font and
+                        ; Output DPI, and the five built pages do not.
+                        comment: "🎛️ Layout"
                         optionmenu: "Line style", tsLineStyle
                             option: "Solid"
                             option: "Dotted"
                             option: "Dashed"
                             option: "Dashed-dotted"
                         if config_showAdvanced
-                            comment: "📐 X-axis (both 0 = auto)"
-                            real: "left Time range (left/right)", tmpTMin$
-                            real: "right Time range (left/right)", tmpTMax$
-                            comment: "📐 Y-axis (both 0 = auto)"
-                            real: "left Value range (bottom/top)", tmpVMin$
-                            real: "right Value range (bottom/top)", tmpVMax$
                             optionmenu: "Gridline mode", tmpGridMode
                                 option: "Both"
                                 option: "Horizontal only"
@@ -5391,9 +5468,6 @@ repeat
                                 option: "Below plot"
                                 option: "Separate figure"
                                 option: "None"
-                            optionmenu: "Output DPI", tmpDPI
-                                option: "300 dpi"
-                                option: "600 dpi"
                             boolean: "Show inner box", tmpShowInnerBox
                             optionmenu: "Show axis names", tmpShowAxisNames
                                 option: "None"
@@ -5415,11 +5489,27 @@ repeat
                                 option: "Times"
                                 option: "Palatino"
                                 option: "Courier"
-                            comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                            sentence: "X axis label", tmpXLabel$
-                            sentence: "Y axis label", tmpYLabel$
+                            optionmenu: "Output DPI", tmpDPI
+                                option: "300 dpi"
+                                option: "600 dpi"
                         endif
                     clicked = endPause: "Go Back", "Quit", tsToggleLabel$, "Draw", 4, 1
+
+                    ; ── REMAP ───────────────────────────────────────────────
+                    ; Label-derived names are copied to the canonical
+                    ; variables this page's toggle and draw arms read, before
+                    ; any commit logic, so no rename reaches the draw layer,
+                    ; the recorder or a harness. Gated on the branch that
+                    ; rendered the fields: reading a field a branch never drew
+                    ; is an error, not a blank. RULING_DIALOG_COMPACTION §1.
+                    if config_showAdvanced
+                        left_Time_range = left_Time
+                        right_Time_range = right_Time
+                        left_Value_range = left_Value
+                        right_Value_range = right_Value
+                        x_axis_label$ = left_Axis_labels$
+                        y_axis_label$ = right_Axis_labels$
+                    endif
 
                     # THE FIELDS ARE READ ON BOTH BUTTONS THAT COME BACK HERE.
                     # Advanced re-presents this page, and an unread field

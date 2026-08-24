@@ -1,8 +1,9 @@
-[-] Select columns from your Table.
+[-] Columns
 Time column: time Vv
 Every numeric column is drawn. Untick any you do not want.
 Series 1 (f0)
 Series 2 (cq)
 Series 3 (spl)
+£2 Layout
 Line style: Solid Vv
 Undo Go Back Quit Advanced Draw

@@ -287,3 +287,50 @@ Treat a recorded script as a statement about the plugin's operations and
 about nothing else. A rig that stages a hand edit — as
 `harness/roundtrip/` does, writing the cell directly — is testing the
 script, not the editor, and should say so in its own header.
+
+---
+
+## 6. A pause dialog's height is a sum over its rows, and a comment row is not a constant
+
+Measured 24 August 2026 on Praat 6.6.30 (June 30 2026), Linux, under
+`Xvfb :N -screen 0 1400x2400x24` with `matchbox-window-manager
+-use_titlebar no`, reading `xdotool getwindowgeometry --shell` on the
+`Pause: <title>` window. Synthetic dialogs of known composition, one row
+type at a time and then mixed.
+
+    height_px = 76
+              + 22 * comment rows
+              + 32 * (optionmenu rows + boolean rows)
+              + 37 * (real + positive + sentence + PAIRED rows)
+
+A paired row -- two adjacent numeric or sentence fields whose labels begin
+`left ` and `right ` -- is ONE row of two boxes and costs 37, and it widens
+the dialog from 524 px to 560 px. The 76 px of chrome does not depend on
+the BUTTON COUNT: measured identical at one, two, three and four buttons.
+
+**A comment row is 22 px or 37 px, and which one is not a matter of
+character count.** Two things were measured to move it:
+
+  - the LAST row of a dialog, when it is a comment, is always 37;
+  - some comment TEXTS cost 37 in a non-last position and others 22.
+    Ninety `x` characters cost 22. `one shared vertical axis.` costs 37 and
+    `shared vertical axis` costs 22. `Same measurement:` costs 27. It
+    tracks the text's rendered extent, not its length.
+
+**WHAT A RIG SHOULD DO ABOUT IT.** Do not read a row count back out of a
+height. Take the census from the source -- it is exact, and it is what the
+ruling's per-page counts are about -- and use the height as a CONSISTENCY
+CHECK on it: predict the delta between two versions of one page and see the
+render agree. Done that way it is precise. The line chart's grouping change
+predicted −15 (a shortened heading) +22 (📊 Analysis) −22 (two 📐 headings
+merged to one) −37 (two label rows paired into one) +22 (🎛️ Layout) = −30,
+and the page measured 817 px before and 787 px after; the beginner branch
+predicted +66 −15 = +51 and measured 347 px before and 398 px after.
+
+**AND A COMMENT WIDER THAN ITS DIALOG OVERPRINTS THE ROW BELOW IT.** GTK
+wraps the comment onto a second line; Praat has allotted the row one line's
+advance; the overflow is drawn on top of the next row's label. The dialog's
+width comes from its widest row, and on a column-mapping page the rows are
+built from the user's own column names -- so the same page overprints on one
+table and not on another. Photographed on six pages, and filed in
+`docs/OPEN_ITEMS.md` under section B.

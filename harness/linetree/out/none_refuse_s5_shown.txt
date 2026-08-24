@@ -1,8 +1,10 @@
-[-] Select columns from your Table.
+[-] Columns
 Time column: time v
 Every numeric column is drawn. Untick any you do not want.
 Series 1 (f0)
 Series 2 (cq)
+» Y axis
 Y axis label:
+£2 Layout
 Line style: Solid v
 Undo Go Back Quit Advanced Draw
