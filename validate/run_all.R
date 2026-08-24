@@ -1395,6 +1395,34 @@ scripts <- c(
                                  # walk of zero and prints how many entry
                                  # points it covered. Reads
                                  # harness/coldstart/out/COLDSTART.tsv.
+    ,
+    "v112_settings_census.R"     # every setting the DRAWING LAYER reads,
+                                 # classified as one that changes the result
+                                 # or one that changes only what is shown.
+                                 # A setting in neither list goes red. The
+                                 # population is derived from the two doors
+                                 # the store ruling names -- their declared
+                                 # parameters, plus every global their call
+                                 # closure reads that the plugin assigns
+                                 # somewhere and the closure itself does not
+                                 # write. Never from the dialog: a dialog
+                                 # cannot show a setting that has no control,
+                                 # and one of the fifteen has none. Ratcheted
+                                 # both ways, and refuted by a resolver gate
+                                 # that fails on a walk of zero. Reads
+                                 # harness/settings/out/SETTINGS.tsv.
+    ,
+    "v113_cancel_path_reads.R"   # the escape hatch is permitted only where
+                                 # its path reads no typed field value. For
+                                 # every dialog whose window-close maps to a
+                                 # safe never-mind, the path taken on that
+                                 # press must reach no read of the page's own
+                                 # field names before they are reassigned.
+                                 # Shares v98's resolver rather than carrying
+                                 # a second copy, so rows a procedure
+                                 # contributes to a page are part of the
+                                 # subject here too. Fails on a walk of zero
+                                 # and prints how many paths it covered.
 )
 
 # ---------------------------------------------------------------------------
