@@ -2,7 +2,7 @@
 # EML Stats : Data Extraction Layer
 # ============================================================================
 # Module: eml-extract.praat
-# Version: 1.7
+# Version: 1.9
 # Date: 24 August 2026
 #
 #
@@ -18,15 +18,18 @@
 #   @emlValidateNumericColumn, @emlTableColumnNames,
 #   @emlCountGroups, @emlGuessColumnRoles,
 #   @eml_normalizeLabel, @eml_strictNumericColumn,
-#   @emlGroupFingerprint, @emlAnalysisFingerprint, @emlFingerprintsAgree
+#   @emlDataFingerprint, @emlGroupFingerprint,
+#   @emlAnalysisFingerprint, @emlFingerprintsAgree
 #
-# The fingerprint pair at the foot of this file is the result store's data
+# The fingerprint doors at the foot of this file are the result store's data
 # key (docs/RULING_RESULT_STORE.md, §a). It lives HERE, in the extraction
 # layer, and not beside either side of the store, because both sides need it:
 # the statistics kernels stamp it onto a published result, and the graphs
 # layer's annotation bridge recomputes it at draw time to decide whether that
 # result still describes the table in front of it. This module is included
-# before both.
+# before both. The key answers "same data, same declared scope?" and nothing
+# about the settings a result was computed under; the foot of this file says
+# what a stored result carries beside it.
 #
 # These procedures extract data from Praat objects into numeric
 # vectors suitable for passing to EML Stats statistical procedures.
@@ -2886,801 +2889,888 @@ endproc
 # ============================================================================
 # THE RESULT STORE'S DATA FINGERPRINT
 # ============================================================================
-# Provides: @emlGroupFingerprint, @emlAnalysisFingerprint,
-#           @emlFingerprintsAgree,
-#           @eml_fpNumber, @eml_fpFoldText, @eml_fpTextHash,
-#           @eml_fpValueDigest (internal helpers)
+# Provides: @emlDataFingerprint, @emlGroupFingerprint,
+#           @emlAnalysisFingerprint, @emlFingerprintsAgree,
+#           @eml_fpCompose, @eml_fpMix (internal helpers)
 #
 # WHAT THIS IS FOR. The result store (docs/RULING_RESULT_STORE.md) lets a
 # figure RECEIVE the analysis's result instead of re-running the analysis at
 # draw time. A stored result may be consumed by many figures, and stays valid
 # until either a result-affecting setting changes or THE DATA CHANGES. This
-# module answers the second half: it reduces the data an analysis was
-# computed from to one short string, so a later reader can ask "is this still
-# the same data?" without keeping a copy of the table.
+# module answers the second half.
 #
-# WHY IT IS PER GROUP LEVEL, AND NOT A COLUMN CHECKSUM. Count, sum, sum of
-# squares, min and max of the VALUE COLUMN ALONE are unchanged when two
-# values are swapped between two groups: the column's multiset is the same
-# and so is every group size. That single edit moves every group mean, every
-# pairwise p-value and the omnibus test. A column-level fingerprint holds the
-# cache over exactly the mutation that most needs to break it. So the key
-# binds the value-to-group PAIRING: the description is taken PER LEVEL, over
-# the rows that level actually contributed, and the level identities travel
-# with it.
+# THE CONSTRUCTION, IN ONE SENTENCE. Digest the whole table — the table's
+# name, its row and column counts, every column name in order, and the
+# content of every cell in row order then column order, exactly as the table
+# holds it — and then digest the ANALYSIS SCOPE the key is being taken for,
+# which is the column names the caller handed in, folded as the caller wrote
+# them.
 #
-# WHY IT IS THE VALUES AND NOT THEIR MOMENTS
+# TWO PROPERTIES, AND THE KEY HAS TO HAVE BOTH:
 #
-# The obvious cheap description of a level is a handful of moment aggregates
-# — n, sum, sum of squares, min, max. DO NOT USE ONE. The reason is a
-# theorem, not a probability:
+#   CONTENT. Every cell of the table is in the key, including the cells of
+#   columns nobody named. An edit anywhere in the table moves every key on
+#   that table, so a caller cannot scope its way out of an edit it did not
+#   anticipate.
 #
-#   PER-LEVEL MOMENT AGGREGATES CANNOT DESCRIBE A MULTISET.
+#   SCOPE. The declared column names are in the key, so two analyses of ONE
+#   unmodified table get two different keys. A store keyed on content alone
+#   answers "is this the same data?" and is asked "is this the same result?",
+#   which are different questions on a table carrying more than one column
+#   anybody could analyse.
 #
-# Fixing n, sum, sum of squares, min and max pins four numbers on the n - 2
-# interior values of a level, so for n >= 5 a CONTINUUM of different level
-# contents satisfies them, and any two points of that continuum are the same
-# key. It is a solution manifold and not a hash collision, so nothing about
-# it gets rarer if the description is made wider: a sixth or a seventh moment
-# only raises the n at which the manifold reappears. Levels of n <= 4 are
-# provably safe under five aggregates and no others are, which is not a
-# guarantee any analysis can rely on.
+# NEITHER HALF SUBSTITUTES FOR THE OTHER. Content without scope serves the
+# result of one comparison to a figure drawing another. Scope without content
+# holds while an undeclared column is rewritten under the result. The two
+# failures are independent, so the key carries both terms.
 #
-# The consequences are the ones that matter most. A rearrangement of a
-# level's interior that holds those five numbers is available on ordinary
-# one-decimal formant data, and it moves a rank test's p across .05, moves a
-# post-hoc's adjusted p, moves the level's median by a fifth of its range and
-# flips its skewness — all of it invisible to a key made of moments. The same
-# hole from other angles: two levels built with matching aggregates are
-# interchangeable, so their LABELS can be exchanged, and a change too small
-# for a loose quantum can still break every TIE a rank test reads.
+# ============================================================================
+# THE RULING THIS RESTS ON
+# ============================================================================
+# docs/RULING_RESULT_STORE.md §a requires table identity, BOTH COLUMN NAMES,
+# and content. Ian's ruling of 24 August 2026 relaxes exactly one clause of
+# it — that a reorder of rows may hold the cache — and leaves the rest
+# standing:
 #
-# So the key COMMITS TO THE VALUES THEMSELVES: a digest over each level's
-# quantised, SORTED value list (@eml_fpValueDigest). The values have to be
-# sorted anyway, so the cost is nearly nothing, and one construction closes
-# ranks, ties and moments together:
-#   - the multiset is pinned exactly, so no interior rearrangement survives;
-#   - MULTIPLICITY is pinned, which is what a rank test's tie correction
-#     reads and what no aggregate records at all;
-#   - the digest is a function of the SORTED list, so a within-level row
-#     reorder is bit-identical by construction, not merely by luck;
-#   - two levels with matching moments now have DIFFERENT digests, so
-#     exchanging their labels moves the key.
+#   "Since the result of 'somehow this data changed' is to safely rerun the
+#    tests, I am fine with 'any change to the data including reordering of
+#    rows' forces the mismatch error and redoing of the stats. Otherwise
+#    rebuild as you see fit. Agreed we don't round away machine precision."
 #
-# QUANTISE PER VALUE, NOT PER AGGREGATE. A key that quantises a SUM has to
-# leave the quantum loose enough to absorb the last bits of an accumulation —
-# several spare digits of a double — and that slack is wide enough to hide a
-# change that breaks ties. Here nothing is accumulated: each value is
-# quantised on its own and folded in, and a row reorder cannot perturb an
-# individual value at all, so the quantum does not have to absorb reordering
-# noise and sits at 15 significant digits. 400.00000000001 and 400 are
-# different values to this key, which is the correct answer, because they are
-# different values to every rank test in the plugin.
+# ANY CHANGE MOVES THE KEY. A moved key costs a re-run of the analysis, and a
+# re-run is correct by definition; a held key that should have moved is a
+# figure quoting a number computed from other data. The two failures are not
+# comparable, so the construction is allowed to be crude in the safe
+# direction and must not be crude in the other.
 #
-# WHAT MOVES THE KEY (the requirement, from the ruling):
-#   - any single-cell edit to the data column, at constant row count
-#   - any single-cell edit to the group column, at constant row count
-#   - any row added or removed
-#   - any value swapped BETWEEN groups
-#   - any rearrangement of a level's values, interior or not
-#   - any change to the tie structure within or between levels
-# WHAT LEGITIMATELY DOES NOT MOVE IT:
-#   - reordering rows within a group (nothing an independent-groups
-#     comparison computes depends on it, so the cache holds — this is a
-#     requirement, not a concession)
-#   - reordering whole groups, and the emlGroupSortAlphabetical display
-#     setting, because the level records are emitted in a canonical order
-#     of this module's own choosing rather than in discovery order
+# THE COST OF THAT, STATED PLAINLY. Sorting a table's rows in a spreadsheet,
+# renaming a subject, adding an unrelated column, correcting a typo in a
+# column the analysis never read — each of these re-runs the analysis. None
+# of them changes a printed number. So does asking the same question through
+# a door that declares its columns differently: a two-name declaration and a
+# one-string declaration of the same two columns are two scopes and two keys.
+# This is a deliberate exchange of cache hits for the impossibility of two
+# whole classes of stale result.
 #
-# NOT COVERED, DELIBERATELY, EACH WITH ITS REASON:
-#   - A SECOND GROUPING FACTOR. This key describes ONE value column split by
-#     ONE group column. @emlTwoWayAnova reads a second factor, and rewriting
-#     half the cells of that second factor moves F(group) and its p across
-#     .05 without touching either column this key describes. A key that
-#     silently describes less than the analysis read is the danger, so the
-#     store-facing door is @emlAnalysisFingerprint, which is given the
-#     analysis's FULL column list and REFUSES — no key, stated error — when
-#     it is handed more columns than this key can describe. Refusing re-runs
-#     an analysis; describing less validates a result against data it was
-#     never computed from. Whether this grows a two-way composition is a
-#     scope question, not a defect; the shape is ready for it (see
-#     @emlAnalysisFingerprint).
-#   - ROW PAIRING. An independent-groups layout has interchangeable rows
-#     within a level. A paired/repeated-measures door does not — which row
-#     sits opposite which is part of its data — and a within-subject door
-#     joining the store needs pairing IN THE KEY at that moment. Same for the
-#     scatter/correlation door: x and y are bound row-wise, and a
-#     pair-preserving key needs a cross term that no per-level description of
-#     one column can supply. Neither is built here. Give either its own
-#     procedure and its own format tag, and route it through
-#     @emlAnalysisFingerprint so that the refusal is what happens until then.
-#   - COLUMNS THE ANALYSIS DID NOT READ. Adding an unrelated column to the
-#     table does not move the key, because it cannot move a result. This is
-#     why the analysis must declare what it read: the key cannot tell an
-#     unread column from an unnamed one.
-#   - A CHANGE OF SPELLING THAT NORMALISATION FOLDS AWAY, when the set of
-#     spellings present in that level is unchanged — e.g. a level holding
-#     both "Male" and "male" where one cell flips to the other spelling.
-#     @emlCountGroups merges those into one level, so no number moves; the
-#     printed level label can, because it is the first spelling ENCOUNTERED.
-#     The key carries the SET of raw spellings per level, sorted and folded
-#     as a SEQUENCE, so introducing or removing a spelling moves it. FOLD A
-#     SET WITH A SORT, NOT WITH A SUM. A linear combination of the spellings'
-#     hashes is order-independent for the wrong reason and cancels: {aa, AA}
-#     and {Aa, aA} sum alike while the level's displayed label — the first
-#     spelling encountered — differs. A sorted sequence is order-independent
-#     without being linear.
+# ============================================================================
+# WHY THE SCOPE IS FOLDED VERBATIM AND NOTHING IS PARSED
+# ============================================================================
+# The scope is the text the caller handed in, folded in the order it was
+# handed in, with each item's length folded after its characters. Nothing is
+# split on a separator, trimmed, lower-cased, prefix-stripped, deduplicated,
+# or resolved against the table.
+#
+# THAT IS WHAT MAKES THE SCOPE SAFE TO CARRY. A key that parses a declaration
+# has to decide what an empty item means, what a "num:" prefix means, and
+# what to do with a name that is not a column — and every one of those
+# decisions is a way for two different declarations to fold to one key. Folded
+# verbatim, "val,grp" and "val,,grp" and "grp,val" are three scopes, because
+# they are three strings.
+#
+# A NAME THAT IS NOT A COLUMN IS NOT RESOLVED, AND NOT REFUSED. It is folded
+# like any other text, so it yields its own key — distinguishable from every
+# other scope, and equal only to itself. A caller with a typo in a column name
+# therefore never gets a false hit; it gets a key that only its own typo
+# matches, and any real analysis re-runs. The failure is a permanent cache
+# miss, which is the safe direction, and the column names a store displays
+# come from the store's own record and not from this key.
+#
+# WHY THE COLUMN NAMES CANNOT SIMPLY BE READ OFF THE KEY. They reach the key
+# through the digest and never as their own characters, so the key can
+# DISTINGUISH two scopes and cannot DISCLOSE either. A store that wants to
+# print what a result is about records the names itself; see WHAT A STORED
+# RESULT NEEDS BESIDES THIS KEY below.
+#
+# ============================================================================
+# THE UNSCOPED KEY, AND HOW IT RELATES TO A SCOPED ONE
+# ============================================================================
+# @emlDataFingerprint takes a table and nothing else, and is the right door
+# for a caller that legitimately keys the whole table without naming any
+# analysis — the recorder's edit tripwire, which asks only whether the table
+# in front of it is the table it saw, is exactly that caller.
+#
+# ITS KEY IS THE SCOPED KEY WITH AN EMPTY SCOPE. The three doors share one
+# construction: the content fold is identical in all of them, and they differ
+# only in how many scope items follow it — none, one, or two. The item COUNT
+# is folded before the items, so:
+#
+#   - an unscoped key never equals a scoped key on the same table. "The whole
+#     table, no analysis named" and "the whole table, for this comparison" are
+#     different questions, and a store must not answer one with the other;
+#   - a one-item scope never equals a two-item scope, whatever the items;
+#   - two calls with the same arguments always give the same key.
+#
+# The three keys on one table therefore agree on their r, c and d prelude and
+# part company at the scope. Nothing reads a key apart to exploit that; it is
+# stated because the relationship is otherwise invisible.
+#
+# ============================================================================
+# WHAT A STORED RESULT NEEDS BESIDES THIS KEY
+# ============================================================================
+# THIS KEY IS NOT THE WHOLE VALIDITY TEST, AND A STORE BUILT AS IF IT WERE
+# WILL SERVE STALE NUMBERS. The key answers "same data, same declared
+# scope?". It says nothing about the settings the result was computed under,
+# and the settings move printed numbers. Measured on Praat 6.6.30, on one
+# table, with the key byte-identical across each pair:
+#
+#   - CORRECTION METHOD. The same Dunn post-hoc on the same columns gives
+#     p = 0.329830 under holm and p = 0.494744 under bonferroni.
+#   - GROUP SORT ORDER. `emlGroupSortAlphabetical` — declared in this file,
+#     above @emlCountGroups, and assigned from `config_groupSort` at two
+#     sites in graphs/eml-graphs-form.praat — decides whether levels arrive
+#     in discovery order or alphabetically. A Tukey comparison of the same
+#     two levels reads "Zebra - Alpha = +10.0000" under one and
+#     "Alpha - Zebra = -10.0000" under the other: the sign of the difference
+#     and the names on the bracket both change.
+#
+# GROUP SORT ORDER HAS NO DIALOG OF ITS OWN. It is a global set from a graphs
+# form control, so it is NOT one of the three result-affecting dialog controls
+# the ruling's settings census covers, and a census that enumerates dialog
+# controls will not find it. It is result-affecting all the same.
+#
+# SO A STORED RESULT CARRIES, BESIDE THIS KEY:
+#   - the column names, in readable form, because the key distinguishes
+#     scopes without disclosing them;
+#   - the test type, the correction method, and alpha;
+#   - the group sort order in force when the result was computed.
+# A reader that checks the key alone has checked the data and the scope, and
+# has not checked any of the four.
+#
+# ============================================================================
+# HOW A NUMBER REACHES THE KEY
+# ============================================================================
+# EVERY CELL IS READ AS TEXT, AND ENTERS THE KEY AS THAT TEXT. No number is
+# formatted, rounded or quantised anywhere in this module. There is no
+# tolerance and no significant-digit count to get wrong.
+#
+# THE TEXT IS NOT AN APPROXIMATION OF THE CELL — IT IS THE CELL. A Praat
+# Table stores each cell as a string and derives its numeric queries from
+# that string. Measured on Praat 6.6.30 (dev/tests/phase2/test-fingerprint
+# .praat records the probes):
+#
+#   - a cell set from a double and read back as text re-parses to a
+#     bit-identical double, over 4000 random doubles spanning 1e-30 to 1e30,
+#     with no exception;
+#   - Praat's own Table statistics agree with that re-parse exactly: for a
+#     cell holding 0.1 + 0.2, "Get mean" returns the same double as
+#     number (cellText$), which is 0.30000000000000004 and not 0.3;
+#   - two doubles ONE ULP apart get different cell texts, over 2000 measured
+#     pairs, and so do two doubles 2.25 ulps apart, over another 2000;
+#   - the subnormal edge holds: 4.94065645841247e-324, 9.88131291682493e-324
+#     and 1.48219693752374e-323 are three different texts for three
+#     consecutive doubles.
+#
+# Praat writes the shortest decimal that re-reads as the same double — 17
+# significant digits where 17 are needed, fewer where fewer suffice — so the
+# text is a faithful name for the double and distinct doubles get distinct
+# names. Reading the text therefore loses nothing that any Praat statistic
+# could have seen, and it sidesteps number formatting entirely: no exponent
+# is computed, so no exponent can underflow.
+#
+# THE NON-FINITE CORNER IS ONE STATE, NOT THREE. A Praat number cannot hold
+# an infinity for a cell to render ambiguously: every overflow route yields
+# Praat's `undefined` at the point of arithmetic, before any Table is
+# involved. Measured on 6.6.30, `1e308 * 10`, `-1e308 * 10`, `1e308 + 1e308`
+# and `exp (1000)` each test equal to `undefined` as a number, and a cell set
+# from any of them holds the text "--undefined--" and reads back as
+# `undefined`. So there is one non-finite state, the key sees it as that
+# text, and there is no three-way ambiguity between +inf, -inf and undefined
+# to exploit — the two infinities are not reachable states of a cell.
+#
+# ============================================================================
+# THE MIXING STEP, AND WHAT IT IS WORTH
+# ============================================================================
+# The key must be short, so the table's text is reduced by @eml_fpMix. That
+# procedure is the whole of the arithmetic in this module, and the property
+# it has to have is not width but NONLINEARITY.
+#
+# WHY. A running polynomial — h = (h * B + c) mod M, however many of them in
+# parallel, whatever salt each starts from — has this property: for two
+# strings OF EQUAL LENGTH the difference of the digests is a fixed linear
+# form in the character differences, with coefficients that depend only on
+# position. The salt contributes the same term to both strings and cancels.
+# So a difference pattern that collides for one pair of strings collides for
+# EVERY pair of strings with that pattern, under every salt, and finding one
+# is a short lattice reduction rather than a search. Adding a second and a
+# third polynomial adds a second and a third linear constraint, and lattice
+# reduction consumes them.
+#
+# THE FIX IS TO REMOVE THE FIXED COEFFICIENTS, not to add more of them.
+# @eml_fpMix carries three 31-bit state words and mixes them so that each
+# step's coefficients are themselves functions of the state:
+#
+#   - the multiplier applied to each word is drawn from ANOTHER word's
+#     current value, so the "polynomial" has no fixed base;
+#   - a QUADRATIC term, the product of two state-derived quantities, enters
+#     the first word every step;
+#   - the words feed forward within the step, so the second and third words
+#     see the first word's new value.
+#
+# The consequence is measurable, and the suite measures it: for a fixed
+# difference pattern applied to 40 random equal-length strings, the digest
+# difference is 40 different values, where a plain polynomial gives one
+# value 40 times. The reimplementation named under WHAT THIS IS WORTH below
+# carries the same measurement to 4000 strings and gets 4000 different
+# values, and finds no two distinct characters that commute, over 400000
+# state-and-pair trials.
+#
+# ONE STEP IS NOT ONE-TO-ONE, AND THE SEPARATION DOES NOT REST ON ITS BEING
+# SO. Hold h2 and h3 fixed and write h1 = 46337 * u + r, with r = h1 mod
+# 46337 and K = h2 mod 46337. The first word's update is then exactly
+#
+#     h1' = (46337 * m1) * u + (m1 + K) * r + 1031 * c + 1   mod 2147483647
+#
+# — an affine form in the two coordinates (u, r) — and the second and third
+# words reach h1 only through h1'. The character's contribution 1031 * c is
+# the same for every h1, so which h1 differences merge depends on h2 and h3
+# alone and not on the character; the length terminator has the same shape,
+# so it merges them too. TWO STATES THAT SHARE h2 AND h3 AND DIFFER IN h1 BY
+# A MERGING AMOUNT THEREFORE FOLD TO ONE STATE UNDER ANY STRING, THE EMPTY
+# STRING INCLUDED, AND NEVER SEPARATE AGAIN.
+#
+# EVERY (h2, h3) ADMITS SUCH A DIFFERENCE, AND ADMITS ABOUT TWO OF THEM. For
+# one (h2, h3) the merging differences are the short vectors of a lattice of
+# determinant 2147483647 inside a box of about four times that area, so the
+# count is a handful and its median is two — measured at a median of two
+# over 4000 sampled pairs, with none of the 4000 admitting no difference at
+# all. The set of h1 values reaching one output triple has median size two
+# in consequence, measured over the same 4000.
+#
+# THE SUITE PINS TWO WHOLE SUCH SETS. Under h2 = 1554331573 and
+# h3 = 1375090233 the sets are arithmetic progressions of step 24928653.
+# dev/tests/phase2/test-fingerprint.praat folds all 66 members of the one
+# beginning at h1 = 510355490, and all 71 members of the one beginning at
+# h1 = 45710, through @eml_fpMix, and gets one triple from each; it also
+# folds the in-range state one step off the end of each progression, which
+# does not join it, so each set is pinned at exactly its size.
+#
+# WHAT THAT COSTS IS NOTHING, AND HERE IS THE ARITHMETIC. Two states merge
+# only if their h2 and h3 agree EXACTLY — 62 bits — while h1 differs by one
+# of about two amounts out of 2^31. A pair of states meets that at about
+# 2^-92, which is no better than the birthday bound the digest already
+# carries, so a search for a merge is a search for a collision by another
+# name. The separation is carried by the MULTI-STEP nonlinearity above,
+# where each step's multipliers are drawn from the other words: two folds
+# that have not already agreed do not converge.
+#
+# WHAT THIS IS WORTH, HONESTLY. This is a home-made mixer. It is not proven
+# secure, and Praat script has no SHA-2 to reach for instead. What can be
+# said is measured rather than asserted: the digest's collision counts are
+# the counts a uniform random function gives — over 3 million equal-length
+# numeric strings, truncating the output to 32 bits gives 1025 collisions
+# against 1047 expected, and to 40 bits gives 2 against 4.1 expected, while
+# the full 93-bit output gives none.
+#
+# THE COUNTS THIS SUITE CANNOT AFFORD TO RUN COME FROM A REIMPLEMENTATION,
+# AND WHAT IS CHECKED IS THE AGREEMENT. Three million folds, and the sampled
+# distributions above, are minutes of work outside Praat and hours inside
+# it. They are measured in a reimplementation of @eml_fpMix and
+# @eml_fpCompose that agrees with the shipped procedures bit for bit: 48
+# single-string folds spanning the empty string, non-ASCII text and the
+# extremes of all three words, and 200 whole keys through all three doors.
+# Every count in this section is either pinned by the suite or comes from
+# there.
+#
+# TWO ATTACKS, TWO COSTS, AND HERE THEY ARE THE SAME COST.
+#
+#   A COLLISION — any two tables that share a key, neither of them chosen in
+#   advance — is a birthday search against 93 bits: about 2^46.5, near
+#   enough 1e14 mixing steps.
+#
+#   A SECOND PREIMAGE — a second table matching ONE key already stored — is
+#   NOT 2^93. THE STEP INVERTS EFFICIENTLY. Given an output triple and the
+#   character, the multiplier of each of the second and third words is read
+#   off the output itself, so h2 and h3 each come back by one modular
+#   inverse; h1 then comes back by a scan of the 46337 possible values of r
+#   in the affine form above. The scan costs milliseconds and returns about
+#   two candidates, the true preimage among them 300 times in 300. Walking
+#   the fold backwards costs about what walking it forwards costs, so a
+#   second preimage is a MEET-IN-THE-MIDDLE: forward from the start state,
+#   backward from the stored digest, and match in the middle at about
+#   2^46.5 — the same 1e14 as the collision, and not the 2^93 the digest's
+#   width suggests on its own.
+#
+# WHAT THAT MEANS FOR A STORE. Both attacks cost about 1e14 mixing steps,
+# and the meet-in-the-middle wants roughly a petabyte of stored states
+# besides, or a memoryless variant that pays for that in time. THE FAILURE
+# THIS KEY IS SIZED AGAINST IS NOT AN ATTACK AT ALL: it is a table edited
+# between the analysis and the figure that quotes it, by someone who is not
+# attacking anything, and both costs are beyond that failure by every margin
+# it has. Neither cost is a claim of resistance to someone who IS attacking:
+# a home-made mixer with no proof behind it earns no such claim, and 1e14 is
+# not a margin to lean on deliberately. A store that needs a guarantee
+# against a motivated adversary needs a different instrument, and should say
+# so rather than widening this one.
+#
+# THE EXACT-INTEGER LIMIT IS THE BINDING CONSTRAINT ON EVERY CONSTANT HERE.
+# A Praat number is a double, which holds integers exactly to 2^53
+# (9007199254740992). Every intermediate in @eml_fpMix is bounded by
+# construction: the largest is a 31-bit word times a multiplier under 2^19,
+# about 8.4e14, measured at 8.43e14 over random input. Raising any multiplier
+# far enough to cross 2^53 would make the arithmetic silently stop being the
+# arithmetic written down, and a digest that rounds is not a digest.
+#
+# ============================================================================
+# HOW THE CELLS ARE REACHED
+# ============================================================================
+# THE TABLE IS COPIED AND ITS COLUMNS ARE RENAMED BY POSITION before any cell
+# is read. Praat's "Get value:" addresses a column by LABEL and returns the
+# first column carrying that label, so on a table with two columns of the
+# same name it reads one of them twice and never reads the other — and a
+# change in the column it never reads would not move the key. Renaming the
+# copy's columns to c1, c2, ... makes every read positional, so no label can
+# be ambiguous and no label needs interpreting. The ORIGINAL labels are read
+# off first and are digested as they stand.
+#
+# The copy is unconditional. A fast path for the common case of unique labels
+# would be a second code path guarding a rule, and this module states each
+# rule once. The copy is a C-level object copy; measured cost is below the
+# noise of the cell reads it protects.
+#
+# ============================================================================
+# WHAT THE KEY CARRIES
+# ============================================================================
+#   eTF2|r=<rows>|c=<columns>|n=<characters>|s=<scope items>|d=<h1>_<h2>_<h3>
+#
+# r and c are the table's shape and s is the number of declared scope items,
+# written literally because they are small, exact and useful to a reader. n
+# is the total number of characters folded into the digest, content and scope
+# together, which is an exact non-hash invariant: any edit that changes the
+# total length of the text moves the key whatever the digest does. d is the
+# digest of, in this order: the format tag, the table's name, the row count,
+# the column count, every column label in table order, every cell in row
+# order and within a row in column order, then the scope item count and each
+# scope item as the caller wrote it.
+#
+# EACH PIECE'S LENGTH IS FOLDED IN AFTER ITS CHARACTERS, so a sequence of
+# pieces cannot be re-cut: "ab" then "c" and "a" then "bc" digest apart. That
+# is what lets a cell or a column name containing the key's own separators
+# travel safely, and it is why no escaping is needed anywhere. The length
+# enters that terminator as length mod 1000003, which holds the guarantee for
+# every piece this module folds and stops short of a length guarantee in
+# general; THE TERMINATOR SEES THE LENGTH ONLY AS length mod 1000003 under
+# @eml_fpMix below says exactly where the line is.
+#
+# THE LEADING TAG IS A FORMAT VERSION. Change the composition, change the
+# tag. A stored key written under any other tag then fails to match by
+# construction, which re-runs an analysis, whereas a silent change of meaning
+# under an unchanged tag would validate a result against data it was never
+# computed from. Keys tagged eGF1, eGF2, eDF1 or eTF1 cannot compare equal to
+# an eTF2 key, which is the point of the tag.
+#
+# THE KEY IS ASCII whatever the table holds, because every piece of text
+# reaches it as a digest and never as its own characters. The key crosses
+# file boundaries — the recorder writes it into an emitted script — where the
+# house rule is ASCII-only and Praat has a UTF-16 trap. The human-readable
+# forms are separate outputs (.summary$, .covers$, .scope$), which are for the
+# Info window, are not ASCII-guaranteed, and are NEVER compared.
+#
+# ============================================================================
+# WHAT MOVES THE KEY
+# ============================================================================
+# Every edit to the table: any cell, any row added or removed, any column
+# added or removed, any column renamed, any reordering of rows or of columns,
+# any change to the table's name that survives Praat's own rewriting of it
+# (see A NOTE FOR WHOEVER PINS THIS below). And every change of declared
+# scope: a
+# different column name, the same names in another order, a different number
+# of names, or the same names declared through a different door.
+#
+# THREE THINGS THE KEY CANNOT SEE, and all three are named rather than
+# reasoned away:
+#   - THE SETTINGS. Correction method, alpha, test type and group sort order
+#     are not inputs to this key and do not move it. See WHAT A STORED RESULT
+#     NEEDS BESIDES THIS KEY: they are the store's job, not the key's.
+#   - A DIGEST COLLISION. The digest is 93 bits over a table of any size, so
+#     two different tables can in principle share a key. What is measured
+#     about the cost of finding such a pair is in THE MIXING STEP above.
+#   - WHEN THE KEY WAS TAKEN. A key describes the table at the instant it is
+#     asked for, and a caller that computes a result, lets the table change,
+#     and only then stamps a key has stamped a truthful key on a result the
+#     table does not support. Nothing inside this module can detect that:
+#     the fault is in the ORDER of the calls, not in the arithmetic. THE RULE
+#     THAT CLOSES IT IS THE CALLER'S: take the key in the same pass that reads
+#     the data, before anything can touch the table, and stamp that key on the
+#     result. This is the one place where a caller can still be wrong, and it
+#     is the reason the store must have a single write site.
 #
 # A NOTE FOR WHOEVER PINS THIS. The key carries the table's NAME, so a
-# mutation leg that builds its mutant as a SEPARATELY NAMED table goes green
-# whatever the content did — the name alone moved it. Every mutation fixture
-# must carry the same table name as its control, and the within-group-reorder
-# leg (which must HOLD) is the one that catches the mistake, because it is the
-# only leg whose expected answer the name can flip. Measured: the first run of
-# this module's own probe rig named each mutant after its mutation, and four
-# legs passed for that reason rather than for the data.
+# mutation fixture built as a SEPARATELY NAMED table moves the key on the
+# name alone, whatever its content did. Every mutation fixture must carry the
+# same table name as its control.
+#
+# AND THE NAME IN THE KEY IS PRAAT'S OBJECT NAME, NOT THE STRING THE CALLER
+# ASKED FOR. It is read with selected$ ("Table"), and Praat rewrites a name
+# it will not hold: "a b" becomes "a_b" and "data|1" becomes "data_1", so
+# "data|1" and "data_1" are ONE name term and two tables a caller believes
+# are named apart are named alike here. THAT IS THE TRAP THIS NOTE EXISTS
+# FOR. A fixture whose name differs from its control only in characters
+# Praat rewrites carries the control's name term, so it looks like a fixture
+# that shares a name correctly while pinning nothing — green for the wrong
+# reason. Check the name the object ENDED UP WITH, with selected$ ("Table"),
+# and never the name it was asked for. dev/tests/phase2/test-fingerprint.praat
+# measures the rewriting and the trap: two tables asked for "data|1" and
+# "data_1", holding the same content, come back with one key.
 #
 # POST-1.0 CONSUMERS. EMMs, diagnostics and the LMM phases consume the store
 # natively, and the recorder's edit tripwire (docs/RULING_RECORDER_ROUNDTRIP)
 # consumes THIS machinery to detect a table edited mid-recording. There is
-# one fingerprint; nobody builds a second one.
+# one fingerprint; nobody builds a second one. If a paired or repeated door
+# joins the store, row pairing enters the key at that moment — it is carried
+# today only because every cell is, in the order the table holds it.
 #
-# FLOATING POINT — READ THIS BEFORE CHANGING ANYTHING HERE
-#
-# A fingerprint made of raw doubles compared with "=" is a trap. Two things
-# break it: (1) a number arrived at by a different route differs in the last
-# bits; (2) any journey through text — a stored result written to disk, a
-# fingerprint emitted into a recorded script — re-parses to a double that
-# need not be the one that was written.
-#
-# Both are answered by construction rather than by a tolerance:
-#   - THE KEY IS TEXT, AND IS ONLY EVER COMPARED AS TEXT. @emlFingerprintsAgree
-#     compares strings. Nothing re-parses a fingerprint into a number, so no
-#     text round trip can perturb it. A tolerance-based numeric comparison
-#     would be strictly worse: it would have to be loose enough to absorb
-#     numerical noise, which is the same width as the data edits the key
-#     exists to catch.
-#   - EVERY NUMBER IS QUANTISED BEFORE IT BECOMES TEXT, to 15 significant
-#     digits in a normalised mantissa/exponent form (@eml_fpNumber), so
-#     differences below that relative size are invisible to the key. A double
-#     carries about 16 to 17 significant digits; the spare digit or two
-#     absorbs re-parsing noise. Measured on Praat 6.6.30: a Table saved as
-#     text and read back returns bit-identical doubles, because Praat writes
-#     the shortest round-tripping decimal, so the spare digits are headroom
-#     rather than a working margin.
-#   - NOTHING IS ACCUMULATED. A key built on sums needs each level's values
-#     SORTED BEFORE THEY ARE SUMMED so that a reordered sum stays
-#     bit-identical, and needs a loose quantum underneath that as a second
-#     line of defence. There is no sum here. The values are sorted so that the
-#     DIGEST is a function of the multiset rather than of the row order, which
-#     is the same requirement met without any arithmetic that could drift.
-#
-# THE COST OF THE QUANTISATION, STATED. An edit smaller than one part in
-# 1e15 of a value does not move the key. On realistic measurement data that
-# is below the last bit anyone can measure or type; it is not zero, and a
-# caller that needs bit-exactness needs a different instrument. The direction
-# of every other design choice here is the safe one: when in doubt the key
-# MOVES and the analysis re-runs.
-#
-# WHAT THE DIGESTS ARE, AND WHAT THEY ARE NOT. Labels, names and value lists
-# reach the key as two independent polynomial hashes, over different bases
-# and different primes near 2^31, each seeded from a fixed salt — about 62
-# bits, written as "<count>_<h1>_<h2>". ONE 31-bit polynomial IS NOT ENOUGH
-# HERE, and the margin is not close: a birthday search over a few million
-# six-character strings finds a 31-bit collision in seconds on a laptop, and
-# a colliding pair renames a whole level with the key unmoved, so a reused
-# result prints level names that are not in the table. Two hashes of that
-# width put an accidental collision past any plausible number of tables, and
-# the salt separates this key's hash from any collision list computed against
-# a bare polynomial.
-#
-# IT IS STILL A HASH, AND THE SALT IS NOT A SECRET. It is in this file. This
-# key is tamper-EVIDENCE against accident, drift and recomputation — the
-# failure modes a cache actually meets — and not a message authentication
-# code against someone who has read the source and wants a collision. Praat
-# script has no practical SHA-2. Anyone relying on this against a motivated
-# adversary is relying on the wrong instrument; say so rather than widening
-# the hash again.
-#
-# ASCII BY CONSTRUCTION. Labels, table names and column names reach the key
-# as a count plus numeric hashes, never as their own text. Three reasons:
-# the key crosses file boundaries (the recorder writes it into an emitted
-# script) where the house rule is ASCII-only and Praat has a UTF-16 trap; a
-# label containing the key's own separators cannot forge a record boundary;
-# and the key stays short on a table with many levels. The human-readable
-# form is a separate output (.summary$), which is for the Info window and is
-# never compared.
+# COST, measured on Praat 6.6.30. One C-level table copy, one column rename
+# per column, one cell read per cell, one pass over the characters of the
+# table's text, and one pass over the characters of the declared scope. The
+# scope is two short names; the table is everything else, so the work is
+# LINEAR in the number of characters in the table and there is nothing
+# quadratic in it — measured at 100, 1000, 2000, 4000 and 8000 rows, where
+# each doubling of the rows doubles the time. Figures: 1000 rows x 2 columns
+# 0.35 s, 1000 x 3 0.43 s, 2000 x 3 0.90 s, 8000 x 3 3.26 s. The table copy
+# is 2 ms on a 4000 x 3 table, about a thousandth of the digest it makes
+# positional.
 # ============================================================================
 
 
 # ============================================================================
-# @eml_fpNumber (internal helper)
+# @eml_fpMix (internal helper)
 # ============================================================================
-# Canonical text for one number, at 15 significant digits, in a normalised
-# mantissa/exponent form: "1.50000000000000e3" is 1500 — one digit before the
-# point and fourteen after it, which is fifteen significant digits. Same
-# number in, same text out, always; near-equal numbers that differ below the
-# 15th digit give the same text. See FLOATING POINT above for why the key is
-# text, and why the quantum sits where it does.
-#
-# Arguments:
-#   .x       - the number
-#
-# Output:
-#   .result$ - canonical text ("und" for undefined, "0" for zero)
-# ============================================================================
-procedure eml_fpNumber: .x
-    .result$ = "und"
-
-    if .x <> undefined
-        if .x = 0
-            .result$ = "0"
-        else
-            .sign$ = ""
-            if .x < 0
-                .sign$ = "-"
-            endif
-            .a = abs (.x)
-            .e = floor (log10 (.a))
-            .m = .a / 10 ^ .e
-
-            ; log10 and the division are themselves floating point, so the
-            ; mantissa can land just outside [1, 10) at an exact power of
-            ; ten. Renormalise rather than trusting it.
-            if .m >= 10
-                .m = .m / 10
-                .e = .e + 1
-            endif
-            if .m < 1
-                .m = .m * 10
-                .e = .e - 1
-            endif
-
-            ; Round first, THEN carry: a mantissa of 9.999999999999999 rounds
-            ; to 10, which must become 1.0 at one exponent higher or the same
-            ; magnitude would have two spellings. The scale factor is 1e14 —
-            ; a mantissa in [1, 10) times 1e14 is at most 1e15, inside the
-            ; 2^53 a double holds exactly, so the rounding is exact.
-            .m = round (.m * 1e14) / 1e14
-            if .m >= 10
-                .m = .m / 10
-                .e = .e + 1
-            endif
-
-            .result$ = .sign$ + fixed$ (.m, 14) + "e" + string$ (.e)
-        endif
-    endif
-endproc
-
-
-# ============================================================================
-# @eml_fpFoldText (internal helper)
-# ============================================================================
-# Folds one string into a running pair of polynomial hashes. This is the one
-# mixing step in this module: labels, column names and value texts all go
+# Folds one string into a running triple of 31-bit state words. This is the
+# only mixing step in this module: the format tag, the table's name, the
+# counts, the column labels, every cell and every declared scope item all go
 # through it, so there is one thing to reason about and one thing to change.
 #
-# Two hashes, not one: different bases (1000003, 8191) over different primes
-# below 2^31 (2147483647 and 2147483629), giving about 62 bits together. The
-# largest intermediate is 2147483646 * 1000003, about 2.15e15 and so inside
-# the 2^53 (about 9.0e15) a double holds exactly — the arithmetic is exact,
-# and the digest is not itself a rounding question. THAT HEADROOM IS THE
-# CONSTRAINT ON THE BASES: raising either base much further silently starts
-# rounding, and a hash that rounds is not a hash.
+# WHY IT IS SHAPED THIS WAY. See THE MIXING STEP in the section header. In
+# short: a running polynomial's digest DIFFERENCE for equal-length strings is
+# a fixed linear form in the character differences, which lattice reduction
+# solves. Here every multiplier is drawn from the state, and a quadratic term
+# in the state enters every step, so there are no fixed coefficients to
+# solve for.
 #
-# A SALT ALONE DOES NOT SEPARATE A COLLIDING PAIR. Adding a seed to a
-# polynomial of fixed base contributes the SAME term to two strings of equal
-# length, so a pair that collides without the salt collides with it. What
-# separates such a pair is a different base — and what makes the next pair
-# expensive to find rather than lucky is having two of them, over different
-# moduli, both embedded in the key.
+# THE MODULI are three primes just below 2^31: 2147483647, 2147483629 and
+# 2147483587. Together the state is about 93 bits.
 #
-# The string's LENGTH is folded in after its characters, so that a sequence
-# of strings cannot be re-cut: "ab" then "c" and "a" then "bc" fold apart.
-# That is what makes @eml_fpValueDigest's list a list and not a puddle.
+# THE BOUND ON EVERY INTERMEDIATE is 2^53 = 9007199254740992, the largest
+# integer a Praat number holds exactly. Term by term, with h < 2^31:
+#   h1 * m1  <  2147483647 * 393217   = 8.45e14
+#   q        <  46337 * 46337         = 2.15e9
+#   h2 * m2  <  2147483629 * 196621   = 4.22e14
+#   h3 * m3  <  2147483587 * 98285    = 2.11e14
+#   the h3 cross term < 1000003 * 4093 = 4.09e9
+# The largest sum is about 8.5e14, a factor of ten inside the limit. RAISING
+# ANY MULTIPLIER BOUND MUST BE CHECKED AGAINST THIS ARITHMETIC; past 2^53 the
+# operations silently stop being the ones written here.
 #
-# Arguments:
-#   .h1, .h2 - the running hashes to fold into
-#   .s$      - the string to fold
+# EACH CHARACTER ENTERS EVERY WORD INJECTIVELY. Praat code points run to
+# 1114111, and 1114111 * 1039 is 1.16e9, below every modulus, so no two
+# characters contribute the same amount to any word. THAT IS A STATEMENT
+# ABOUT THE CHARACTER TERM AND NOT ABOUT THE STEP: the step itself is not
+# one-to-one in its state, and ONE STEP IS NOT ONE-TO-ONE in the section
+# header says which states merge, how often, and why it costs nothing.
 #
-# Output:
-#   .h1, .h2 - the updated hashes (read as eml_fpFoldText.h1 / .h2)
-# ============================================================================
-procedure eml_fpFoldText: .h1, .h2, .s$
-    .len = length (.s$)
-
-    for .i from 1 to .len
-        .c = unicode (mid$ (.s$, .i, 1))
-        .h1 = (.h1 * 1000003 + .c + 7) mod 2147483647
-        .h2 = (.h2 * 8191 + .c * 31 + 13) mod 2147483629
-    endfor
-
-    .h1 = (.h1 * 1000003 + (.len mod 1000000) + 3) mod 2147483647
-    .h2 = (.h2 * 8191 + (.len mod 1000000) * 31 + 5) mod 2147483629
-endproc
-
-
-# ============================================================================
-# @eml_fpTextHash (internal helper)
-# ============================================================================
-# Deterministic wide hash of a string, so that labels and names can enter the
-# fingerprint without their own text (see ASCII BY CONSTRUCTION above).
+# THE STRING'S LENGTH IS FOLDED IN AFTER ITS CHARACTERS, so a sequence of
+# strings cannot be re-cut. That is what makes a cell a cell and not a
+# puddle, and it is what lets a cell or a column name carrying the key's own
+# separators travel safely.
 #
-# Two salted polynomials, about 62 bits — see WHAT THE DIGESTS ARE above for
-# why one 31-bit polynomial is not enough for this job. The salt is
-# domain-separated from the one @eml_fpValueDigest starts from, so a label
-# and a value list can never produce the same digest text.
+# THE TERMINATOR SEES THE LENGTH ONLY AS length mod 1000003. Every length
+# term in it is written (.n mod 1000003), so two pieces whose lengths differ
+# by exactly 1000003 — or by any multiple of it — terminate identically, and
+# the terminator contributes nothing that tells them apart.
 #
-# A whole-level rename rests on this hash alone — a relabelled CELL moves the
-# level sizes and value digests as well — so it is the one place where hash
-# width is load-bearing rather than belt-and-braces.
+# WHAT THAT BUYS AND WHAT IT DOES NOT. It buys the re-cut guarantee for
+# every piece this module folds, because a cell, a column label, a table
+# name and a scope item are all far shorter than 1000003 characters, and
+# inside that range the length term IS the length: no two pieces this module
+# can meet are congruent without being equal. It does NOT buy a length
+# guarantee in general. Two pieces a million characters apart in length are
+# told apart by their CHARACTERS, which run the step a different number of
+# times, and not by the terminator. Total length is carried separately and
+# exactly by the key's n= field, which is written out in full and is not
+# reduced by anything.
 #
 # Arguments:
-#   .s$      - the string
+#   .h1, .h2, .h3 - the running state to fold into
+#   .s$           - the string to fold
 #
 # Output:
-#   .h1, .h2 - the two hashes
-#   .hash    - alias for .h1, kept so older probe rigs still read something
-#   .result$ - "<length>_<h1>_<h2>", the form the fingerprint embeds
+#   .h1, .h2, .h3 - the updated state (read as eml_fpMix.h1 / .h2 / .h3)
+#   .n            - the number of characters folded from .s$
 # ============================================================================
-procedure eml_fpTextHash: .s$
-    .len = length (.s$)
-
-    @eml_fpFoldText: 1948287391, 1103515245, .s$
-    .h1 = eml_fpFoldText.h1
-    .h2 = eml_fpFoldText.h2
-    .hash = .h1
-
-    .result$ = string$ (.len) + "_" + string$ (.h1) + "_" + string$ (.h2)
-endproc
-
-
-# ============================================================================
-# @eml_fpValueDigest (internal helper)
-# ============================================================================
-# The commitment to a level's values: a digest over the QUANTISED, SORTED
-# list. It is deliberately not a set of moments; the reasoning is in WHY IT
-# IS THE VALUES AND NOT THEIR MOMENTS above and should be read before this is
-# changed to anything cheaper.
-#
-# Order-independence comes from the SORT, not from the fold: the fold is
-# deliberately position-dependent, because a position-independent fold over
-# the values (a sum, an xor) is exactly the shape that cannot count a
-# multiplicity, and multiplicity is what the rank tests read.
-#
-# THE CALLER SORTS. The argument must already be sorted ascending; the caller
-# has usually just sorted it for another reason, and a second sort inside
-# here would hide the requirement rather than enforce it.
-#
-# Arguments:
-#   .v#      - the level's values, ALREADY SORTED ASCENDING
-#
-# Output:
-#   .result$ - "<n>_<h1>_<h2>"
-# ============================================================================
-procedure eml_fpValueDigest: .v#
-    .n = size (.v#)
-    .h1 = 743243441
-    .h2 = 1266874889
+procedure eml_fpMix: .h1, .h2, .h3, .s$
+    .n = length (.s$)
 
     for .i from 1 to .n
-        @eml_fpNumber: .v# [.i]
-        @eml_fpFoldText: .h1, .h2, eml_fpNumber.result$
-        .h1 = eml_fpFoldText.h1
-        .h2 = eml_fpFoldText.h2
+        .c = unicode (mid$ (.s$, .i, 1))
+
+        ; The quadratic term: a product of two state-derived quantities, so
+        ; the step is not affine in the state. 46337 squared is 2.15e9.
+        .q = (.h1 mod 46337) * (.h2 mod 46337)
+
+        ; Every multiplier is drawn from another word's current value, which
+        ; is what leaves the digest difference with no fixed coefficients.
+        .m1 = 262147 + (.h3 mod 131071)
+        .h1 = (.h1 * .m1 + .q + .c * 1031 + 1) mod 2147483647
+
+        .m2 = 131101 + (.h1 mod 65521)
+        .h2 = (.h2 * .m2 + (.h1 mod 1000003) + .c * 1033 + 3) mod 2147483629
+
+        .m3 = 65537 + (.h2 mod 32749)
+        .h3 = (.h3 * .m3 + (.h2 mod 1000003) * (.h1 mod 4093) + .c * 1039 + 5)
+        ... mod 2147483587
     endfor
 
-    .result$ = string$ (.n) + "_" + string$ (.h1) + "_" + string$ (.h2)
+    ; The length, folded through the same step so that the terminator is as
+    ; well mixed as the characters are.
+    .q = (.h1 mod 46337) * (.h2 mod 46337)
+    .m1 = 262147 + (.h3 mod 131071)
+    .h1 = (.h1 * .m1 + .q + (.n mod 1000003) * 1031 + 7) mod 2147483647
+
+    .m2 = 131101 + (.h1 mod 65521)
+    .h2 = (.h2 * .m2 + (.h1 mod 1000003) + (.n mod 1000003) * 1033 + 11)
+    ... mod 2147483629
+
+    .m3 = 65537 + (.h2 mod 32749)
+    .h3 = (.h3 * .m3 + (.h2 mod 1000003) * (.h1 mod 4093)
+    ... + (.n mod 1000003) * 1039 + 13) mod 2147483587
+endproc
+
+
+# ============================================================================
+# @eml_fpCompose (internal helper)
+# ============================================================================
+# THE ONE PLACE A KEY IS BUILT. All three doors call this and differ only in
+# how many scope items they pass, so the content fold is the same arithmetic
+# on the same bytes whichever door was used, and the scope is the only thing
+# that can make two keys on one table differ.
+#
+# TWO SLOTS, BECAUSE THERE ARE TWO SHAPES OF DECLARATION in this plugin: a
+# pair of column names (@emlGroupFingerprint), or one list string the caller
+# wrote (@emlAnalysisFingerprint). A door needing three names passes them as
+# one string through the list form; nothing here splits that string, so a
+# list is one item and a pair is two, and the item count is folded so the two
+# can never coincide.
+#
+# THE SCOPE IS FOLDED AFTER THE CONTENT, and the item count is folded before
+# the items. Zero items is therefore a fold of its own and not a no-op, which
+# is what keeps an unscoped key distinct from a scoped one.
+#
+# Arguments:
+#   .tableId   - ID of the Table object
+#   .nScope    - how many of the scope slots are declared: 0, 1 or 2
+#   .scope1$   - the first declared item, folded verbatim
+#   .scope2$   - the second declared item, folded verbatim
+#
+# Output: as @emlDataFingerprint.
+# ============================================================================
+procedure eml_fpCompose: .tableId, .nScope, .scope1$, .scope2$
+    .result$ = ""
+    .summary$ = ""
+    .covers$ = ""
+    .scope$ = ""
+    .nRows = 0
+    .nCols = 0
+    .nChars = 0
+    .error$ = ""
+
+    if .tableId <= 0
+        .error$ = "No table: a data key needs a Table object, and none was "
+        ... + "given. No key is issued and the analysis re-runs."
+        goto FP_COMPOSE_DONE
+    endif
+
+    selectObject: .tableId
+    .tableName$ = selected$ ("Table")
+    .nRows = Get number of rows
+    .nCols = Get number of columns
+
+    ; The copy exists so that every cell read is POSITIONAL. See HOW THE
+    ; CELLS ARE REACHED in the section header: "Get value:" resolves a column
+    ; by label and returns the first match, so two columns sharing a label
+    ; would leave one of them unread.
+    .copy = Copy: "eml_fpScratch"
+
+    for .c from 1 to .nCols
+        selectObject: .copy
+        .lab$[.c] = Get column label: .c
+        if .c > 1
+            .covers$ = .covers$ + ","
+        endif
+        .covers$ = .covers$ + .lab$[.c]
+    endfor
+    for .c from 1 to .nCols
+        selectObject: .copy
+        Set column label (index): .c, "c" + string$ (.c)
+    endfor
+
+    ; The prelude: the format tag, the table's name, and the shape. Folding
+    ; the tag means a future format cannot collide with this one even before
+    ; the tag text is compared.
+    @eml_fpMix: 1948287391, 1103515245, 1571394749, "eTF2"
+    .h1 = eml_fpMix.h1
+    .h2 = eml_fpMix.h2
+    .h3 = eml_fpMix.h3
+    .nChars = eml_fpMix.n
+
+    @eml_fpMix: .h1, .h2, .h3, .tableName$
+    .h1 = eml_fpMix.h1
+    .h2 = eml_fpMix.h2
+    .h3 = eml_fpMix.h3
+    .nChars = .nChars + eml_fpMix.n
+
+    @eml_fpMix: .h1, .h2, .h3, string$ (.nRows)
+    .h1 = eml_fpMix.h1
+    .h2 = eml_fpMix.h2
+    .h3 = eml_fpMix.h3
+    .nChars = .nChars + eml_fpMix.n
+
+    @eml_fpMix: .h1, .h2, .h3, string$ (.nCols)
+    .h1 = eml_fpMix.h1
+    .h2 = eml_fpMix.h2
+    .h3 = eml_fpMix.h3
+    .nChars = .nChars + eml_fpMix.n
+
+    ; The column names, in table order.
+    for .c from 1 to .nCols
+        @eml_fpMix: .h1, .h2, .h3, .lab$[.c]
+        .h1 = eml_fpMix.h1
+        .h2 = eml_fpMix.h2
+        .h3 = eml_fpMix.h3
+        .nChars = .nChars + eml_fpMix.n
+    endfor
+
+    ; Every cell, in the order the table holds it. No sort, no normalisation,
+    ; no numeric parsing: the cell's text is the cell.
+    for .r from 1 to .nRows
+        for .c from 1 to .nCols
+            selectObject: .copy
+            .cell$ = Get value: .r, "c" + string$ (.c)
+            @eml_fpMix: .h1, .h2, .h3, .cell$
+            .h1 = eml_fpMix.h1
+            .h2 = eml_fpMix.h2
+            .h3 = eml_fpMix.h3
+            .nChars = .nChars + eml_fpMix.n
+        endfor
+    endfor
+
+    removeObject: .copy
+    selectObject: .tableId
+
+    ; The declared scope, verbatim and in the order it was declared. The
+    ; count first, so that no scope of one length can fold like a scope of
+    ; another; then each item, whose own length @eml_fpMix folds after its
+    ; characters, so no two items can be re-cut into two others.
+    @eml_fpMix: .h1, .h2, .h3, string$ (.nScope)
+    .h1 = eml_fpMix.h1
+    .h2 = eml_fpMix.h2
+    .h3 = eml_fpMix.h3
+    .nChars = .nChars + eml_fpMix.n
+
+    if .nScope >= 1
+        @eml_fpMix: .h1, .h2, .h3, .scope1$
+        .h1 = eml_fpMix.h1
+        .h2 = eml_fpMix.h2
+        .h3 = eml_fpMix.h3
+        .nChars = .nChars + eml_fpMix.n
+        .scope$ = .scope1$
+    endif
+    if .nScope >= 2
+        @eml_fpMix: .h1, .h2, .h3, .scope2$
+        .h1 = eml_fpMix.h1
+        .h2 = eml_fpMix.h2
+        .h3 = eml_fpMix.h3
+        .nChars = .nChars + eml_fpMix.n
+        .scope$ = .scope$ + " ~ " + .scope2$
+    endif
+
+    .result$ = "eTF2|r=" + string$ (.nRows)
+    ... + "|c=" + string$ (.nCols)
+    ... + "|n=" + string$ (.nChars)
+    ... + "|s=" + string$ (.nScope)
+    ... + "|d=" + string$ (.h1) + "_" + string$ (.h2) + "_" + string$ (.h3)
+
+    .summary$ = "the whole of " + .tableName$ + ": " + string$ (.nRows)
+    ... + " rows x " + string$ (.nCols) + " columns (" + .covers$ + ")"
+    if .nScope = 0
+        .summary$ = .summary$ + ", no analysis named"
+    else
+        .summary$ = .summary$ + ", for " + .scope$
+    endif
+
+    label FP_COMPOSE_DONE
+endproc
+
+
+# ============================================================================
+# @emlDataFingerprint
+# ============================================================================
+# THE UNSCOPED DOOR. Hand it a Table; it returns a key describing the whole of
+# that table and naming no analysis. It is the right door for a caller that
+# asks only "is the table in front of me the table I saw?" — the recorder's
+# edit tripwire is that caller.
+#
+# A CALLER THAT IS KEYING AN ANALYSIS WANTS @emlGroupFingerprint OR
+# @emlAnalysisFingerprint. This key does not distinguish two analyses of one
+# table, because it is told about neither; the scoped doors are told, and do.
+# The key here is the scoped key with an empty scope, so it never compares
+# equal to a scoped key on the same table.
+#
+# Arguments:
+#   .tableId   - ID of the Table object
+#
+# Output:
+#   .result$   - the fingerprint, or "" if no table was given
+#   .summary$  - human-readable one-liner, for the Info window; NEVER
+#                compared, and not ASCII-guaranteed
+#   .covers$   - every column of the table, in table order, comma-separated.
+#                Descriptive only: it is not part of the key, is not
+#                ASCII-guaranteed, and a column name containing a comma makes
+#                it ambiguous. Never compare it and never parse it.
+#   .scope$    - the declared scope as a reader would say it, "" here.
+#                Descriptive only, on the same terms as .covers$.
+#   .nScope    - how many scope items the key carries: 0 here
+#   .nRows     - rows in the table
+#   .nCols     - columns in the table
+#   .nChars    - characters folded into the digest, content and scope
+#   .error$    - "" on success, diagnostic otherwise
+#
+# THE ONE REFUSAL is a table ID that is not a positive number, which is what
+# an uninitialised caller variable looks like. Selecting on it would abort
+# the whole script, and a caller that has lost track of its table should get
+# a re-run and not a crash. A well-formed ID naming an object that is not a
+# Table cannot be detected from script and is not claimed to be.
+#
+# AN EMPTY .result$ IS NOT A KEY AND MUST NEVER MATCH ONE. When no key can be
+# computed the safe answer is "the data is not what it was", so callers
+# re-run. @emlFingerprintsAgree enforces that; do not compare with "=".
+#
+# AN EMPTY TABLE IS NOT AN ERROR. A table of no rows is a data state like any
+# other and gets a key, so that a store written when a table was empty does
+# not agree with one written after it was filled.
+# ============================================================================
+procedure emlDataFingerprint: .tableId
+    @eml_fpCompose: .tableId, 0, "", ""
+
+    .result$ = eml_fpCompose.result$
+    .summary$ = eml_fpCompose.summary$
+    .covers$ = eml_fpCompose.covers$
+    .scope$ = eml_fpCompose.scope$
+    .nScope = eml_fpCompose.nScope
+    .nRows = eml_fpCompose.nRows
+    .nCols = eml_fpCompose.nCols
+    .nChars = eml_fpCompose.nChars
+    .error$ = eml_fpCompose.error$
 endproc
 
 
 # ============================================================================
 # @emlGroupFingerprint
 # ============================================================================
-# The result store's data key for an independent-groups analysis: ONE value
-# column split by ONE group column, and nothing else. Everything above this
-# line is about why it is shaped the way it is; read WHY IT IS THE VALUES AND
-# NOT THEIR MOMENTS before altering the composition.
+# THE TWO-COLUMN DOOR, for a group comparison: one value column against one
+# grouping column.
 #
-# CALLERS THAT READ MORE COLUMNS THAN TWO MUST NOT CALL THIS DIRECTLY. Go
-# through @emlAnalysisFingerprint, which is handed the analysis's full column
-# list and refuses what it cannot describe. This procedure describes exactly
-# .dataCol$ and .groupCol$, says so in .covers$, and cannot know what else its
-# caller read.
+# IT CARRIES BOTH HALVES. The whole table's content is in the key, so an edit
+# to a column neither argument names still invalidates it. Both column names
+# are in the key, so the same table analysed as ("val", "grp") and as
+# ("val2", "grp2") yields two different keys and a store cannot serve one
+# comparison's result to a figure drawing the other.
 #
-# The key describes the data AS THE ANALYSIS SAW IT. Levels come from
-# @emlCountGroups and values from @eml_getGroupData, which are the same
-# procedures the kernels use, so the same rows are counted, the same blank
-# group cells are skipped, the same non-numeric cells are excluded, and the
-# same case/whitespace folding of labels applies. A fingerprint built from a
-# private reading of the table could hold while the analysis's own view of
-# it moved.
+# THE NAMES ARE FOLDED VERBATIM AND IN ORDER. ("val", "grp") and
+# ("grp", "val") are two scopes. A name that is not a column of the table is
+# not resolved and not refused: it folds like any other text, so it yields a
+# key of its own that only the same typo matches. See WHY THE SCOPE IS FOLDED
+# VERBATIM in the section header.
 #
 # Arguments:
 #   .tableId   - ID of the Table object
-#   .dataCol$  - numeric (dependent) column
-#   .groupCol$ - grouping column
+#   .dataCol$  - the value column, as the caller names it
+#   .groupCol$ - the grouping column, as the caller names it
 #
-# Output:
-#   .result$   - the fingerprint, or "" if it could not be computed
-#   .summary$  - human-readable one-liner, for the Info window; NEVER
-#                compared, and not ASCII-guaranteed
-#   .covers$   - the columns this key describes, comma-separated. A caller
-#                that read anything else has a key that does not describe its
-#                own result; that is what @emlAnalysisFingerprint checks.
-#   .nLevels   - number of group levels
-#   .nUsable   - rows that reached a level with a usable value
-#   .nBlank    - rows skipped for a blank group cell
-#   .error$    - "" on success, diagnostic otherwise
-#
-# AN EMPTY .result$ IS NOT A KEY AND MUST NEVER MATCH ONE. When the table
-# cannot be read the safe answer is "the data is not what it was", so callers
-# re-run. @emlFingerprintsAgree enforces that; do not compare with "=".
-#
-# FORMAT. The leading tag is a FORMAT VERSION. Change the composition, change
-# the tag: a stored key written by an older composition then fails to match
-# by construction, which re-runs an analysis, whereas a silent change of
-# meaning under an unchanged tag would validate a result against data it was
-# never computed from. A key written under any other tag — eGF1 among them —
-# cannot compare equal to an eGF2 key, which is the point of the tag.
-#
-#   eGF2|t=<tableName>|r=<rows>|d=<dataCol>|g=<groupCol>|k=<levels>|b=<blank>
-#   then one record per level, in canonical label order:
-#   |L=<label>;n=<n>;x=<excluded>;v=<valueDigest>;p=<spellings>
-#
-# Names and labels are <length>_<h1>_<h2> (@eml_fpTextHash); each level's
-# values are <n>_<h1>_<h2> over the sorted quantised list
-# (@eml_fpValueDigest); the spelling set is the same digest over that level's
-# distinct raw spellings, SORTED. The level records are sorted by normalised
-# label, NOT by discovery order, so the key does not move when the display
-# order setting does.
+# Output: as @emlDataFingerprint, with .nScope = 2 and .scope$ naming both
+#         columns.
 # ============================================================================
 procedure emlGroupFingerprint: .tableId, .dataCol$, .groupCol$
-    .result$ = ""
-    .summary$ = ""
-    .covers$ = .dataCol$ + "," + .groupCol$
-    .nLevels = 0
-    .nUsable = 0
-    .nBlank = 0
-    .error$ = ""
+    @eml_fpCompose: .tableId, 2, .dataCol$, .groupCol$
 
-    @emlCountGroups: .tableId, .groupCol$
-
-    if emlCountGroups.error$ <> ""
-        .error$ = emlCountGroups.error$
-    elsif emlCountGroups.nGroups < 1
-        .error$ = "No group levels found in column: " + .groupCol$
-    else
-        .nLevels = emlCountGroups.nGroups
-        .nBlank = emlCountGroups.nBlankRows
-        .nRaw = emlCountGroups.nRaw
-
-        ; @emlCountGroups' outputs live only until it runs again, and
-        ; @eml_getGroupData below reaches other procedures that call it.
-        ; Copy everything needed FIRST — this is the same trap
-        ; @emlBridgeGroupComparison documents at its own top.
-        for .gi from 1 to .nLevels
-            .norm$[.gi] = emlCountGroups.groupNorm$[.gi]
-            .gLabel$[.gi] = emlCountGroups.groupLabel$[.gi]
-            .order[.gi] = .gi
-        endfor
-        for .ri from 1 to .nRaw
-            .raw$[.ri] = emlCountGroups.rawLabel$[.ri]
-        endfor
-
-        ; Canonical order: by normalised label, so neither discovery order
-        ; nor emlGroupSortAlphabetical can move the key. Insertion sort —
-        ; k is the number of GROUPS, not of rows.
-        for .i from 2 to .nLevels
-            .hold = .order[.i]
-            .holdNorm$ = .norm$[.hold]
-            .j = .i - 1
-            .placed = 0
-            ; Praat's "and" does not short-circuit, so the bound test cannot
-            ; be a conjunct with the comparison it protects — the same rule
-            ; @eml_normalizeLabel states above.
-            while .placed = 0
-                .shift = 0
-                if .j >= 1
-                    .at = .order[.j]
-                    if .norm$[.at] > .holdNorm$
-                        .shift = 1
-                    endif
-                endif
-                if .shift = 1
-                    .order[.j + 1] = .order[.j]
-                    .j = .j - 1
-                else
-                    .placed = 1
-                endif
-            endwhile
-            .order[.j + 1] = .hold
-        endfor
-
-        @eml_fpTextHash: .dataCol$
-        .dataKey$ = eml_fpTextHash.result$
-        @eml_fpTextHash: .groupCol$
-        .groupKey$ = eml_fpTextHash.result$
-
-        selectObject: .tableId
-        .tableName$ = selected$ ("Table")
-        .nRows = Get number of rows
-        @eml_fpTextHash: .tableName$
-        .tableKey$ = eml_fpTextHash.result$
-
-        .body$ = "eGF2|t=" + .tableKey$
-        ... + "|r=" + string$ (.nRows)
-        ... + "|d=" + .dataKey$
-        ... + "|g=" + .groupKey$
-        ... + "|k=" + string$ (.nLevels)
-        ... + "|b=" + string$ (.nBlank)
-        .sum$ = ""
-
-        for .oi from 1 to .nLevels
-            .gi = .order[.oi]
-
-            @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .gLabel$[.gi]
-
-            if eml_getGroupData.error$ <> "" and .error$ = ""
-                .error$ = eml_getGroupData.error$
-            endif
-
-            .n = eml_getGroupData.n
-            .nExcluded = eml_getGroupData.nExcluded
-            .v# = eml_getGroupData.data#
-            .nUsable = .nUsable + .n
-
-            if .n > 0
-                ; SORTED, THEN COMMITTED TO VALUE BY VALUE. Two rows of one
-                ; group exchanged produce the identical sorted list and so
-                ; the identical digest — by construction, with no arithmetic
-                ; in between that could drift. See FLOATING POINT above.
-                .s# = sort# (.v#)
-                @eml_fpValueDigest: .s#
-                .valText$ = eml_fpValueDigest.result$
-            else
-                ; An empty level still gets a digest rather than a word, so
-                ; that "no usable values" and "a value that hashes oddly"
-                ; can never be the same key text.
-                @eml_fpValueDigest: zero# (0)
-                .valText$ = eml_fpValueDigest.result$
-            endif
-
-            ; The distinct raw spellings this level was folded from. They are
-            ; SORTED and then folded as a SEQUENCE: order-independent because
-            ; sorted, and non-linear because the fold is positional. NOT a
-            ; sum of their hashes — a sum is order-independent for the wrong
-            ; reason and cancels, so {aa, AA} and {Aa, aA} would be one key
-            ; while the level's displayed label differed.
-            ;
-            ; @emlCountGroups' rawLabel$[] is already deduplicated, so this
-            ; is a set and not a bag.
-            .nSpell = 0
-            for .ri from 1 to .nRaw
-                @eml_normalizeLabel: .raw$[.ri]
-                if eml_normalizeLabel.result$ = .norm$[.gi]
-                    .nSpell = .nSpell + 1
-                    .spell$[.nSpell] = .raw$[.ri]
-                endif
-            endfor
-
-            for .si from 2 to .nSpell
-                .holdSpell$ = .spell$[.si]
-                .sj = .si - 1
-                .spellPlaced = 0
-                while .spellPlaced = 0
-                    .spellShift = 0
-                    if .sj >= 1
-                        if .spell$[.sj] > .holdSpell$
-                            .spellShift = 1
-                        endif
-                    endif
-                    if .spellShift = 1
-                        .spell$[.sj + 1] = .spell$[.sj]
-                        .sj = .sj - 1
-                    else
-                        .spellPlaced = 1
-                    endif
-                endwhile
-                .spell$[.sj + 1] = .holdSpell$
-            endfor
-
-            .sh1 = 1583421407
-            .sh2 = 1442695041
-            for .si from 1 to .nSpell
-                @eml_fpFoldText: .sh1, .sh2, .spell$[.si]
-                .sh1 = eml_fpFoldText.h1
-                .sh2 = eml_fpFoldText.h2
-            endfor
-            .spellText$ = string$ (.nSpell) + "_" + string$ (.sh1)
-            ... + "_" + string$ (.sh2)
-
-            @eml_fpTextHash: .norm$[.gi]
-            .body$ = .body$ + "|L=" + eml_fpTextHash.result$
-            ... + ";n=" + string$ (.n)
-            ... + ";x=" + string$ (.nExcluded)
-            ... + ";v=" + .valText$
-            ... + ";p=" + .spellText$
-
-            if .oi > 1
-                .sum$ = .sum$ + ", "
-            endif
-            .sum$ = .sum$ + .gLabel$[.gi] + " n=" + string$ (.n)
-        endfor
-
-        if .error$ = ""
-            .result$ = .body$
-            .summary$ = string$ (.nLevels) + " levels of " + .groupCol$
-            ... + " on " + .dataCol$ + ": " + .sum$
-            if .nBlank > 0
-                .summary$ = .summary$ + " (" + string$ (.nBlank)
-                ... + " rows skipped: no group)"
-            endif
-        endif
-    endif
+    .result$ = eml_fpCompose.result$
+    .summary$ = eml_fpCompose.summary$
+    .covers$ = eml_fpCompose.covers$
+    .scope$ = eml_fpCompose.scope$
+    .nScope = eml_fpCompose.nScope
+    .nRows = eml_fpCompose.nRows
+    .nCols = eml_fpCompose.nCols
+    .nChars = eml_fpCompose.nChars
+    .error$ = eml_fpCompose.error$
 endproc
 
 
 # ============================================================================
 # @emlAnalysisFingerprint
 # ============================================================================
-# THE STORE-FACING DOOR. An analysis asks for a data key by naming EVERY
-# column it read, in one comma-separated list, value column first. It gets
-# back a key that describes exactly those columns, or no key and a stated
-# reason.
+# THE LIST DOOR, for an analysis whose declaration is one string the caller
+# wrote — three columns for a two-way design, a covariate beside a factor, a
+# subject column beside a condition.
 #
-# WHY THIS EXISTS. @emlGroupFingerprint cannot tell an unread column from an
-# unnamed one — nothing in a table says which columns an analysis touched. So
-# a two-column key handed to a three-column analysis is silently wrong in the
-# most dangerous way available: @emlTwoWayAnova's second factor can be
-# rewritten wholesale, moving F(group) and its p across .05, without either
-# column the key describes changing at all. No composition can fix that,
-# because the omission is in the CALL and not in the arithmetic.
+# IT CARRIES BOTH HALVES, on the same terms as @emlGroupFingerprint: the whole
+# table's content, and the declaration.
 #
-# So it is closed at the door: a caller declares every column it read, and a
-# declaration this module cannot describe is REFUSED. Refusing costs a
-# re-run. Not refusing costs a figure quoting a number computed from data the
-# table does not hold.
+# THE LIST IS ONE ITEM AND NOTHING PARSES IT. No separator is split on, no
+# empty item is dropped, no role prefix is stripped, no name is resolved.
+# "val,grp", "val,,grp", "grp,val" and "num:val,lab:grp" are four strings and
+# therefore four scopes. That is what stops two different declarations folding
+# to one key.
 #
-# THE SHAPE IS READY FOR TWO-WAY, AND TWO-WAY IS NOT BUILT. A two-way key
-# would key the levels on the CROSS of the factors — one record per design
-# cell — under a new format tag, and would land as another branch of the
-# .nFactors test below. Whether it is built is a scope question for Ian, not
-# a defect in this file; until it is, @emlTwoWayAnova asking for a key gets
-# the refusal, which is the correct answer and not a stopgap.
+# A LIST IS NOT A PAIR. This door folds one scope item and
+# @emlGroupFingerprint folds two, and the item count is in the digest, so
+# "val,grp" here never agrees with ("val", "grp") there. A store keyed through
+# one door does not serve the other; the cost is a re-run, the alternative is
+# a rule about how a list joins that nothing could enforce.
 #
 # Arguments:
 #   .tableId     - ID of the Table object
-#   .columnList$ - EVERY column the analysis read, comma-separated, value
-#                  column first, then the grouping factor(s). Whitespace
-#                  around items is trimmed. Order of the factors is not
-#                  significant to the refusal, only their number.
+#   .columnList$ - the declaration, folded verbatim as one item
 #
-# Output:
-#   .result$   - the fingerprint, or "" if it could not be computed OR was
-#                refused. An empty key never agrees with anything.
-#   .summary$  - human-readable one-liner; "" when refused
-#   .covers$   - the columns the returned key describes; "" when refused
-#   .nLevels, .nUsable, .nBlank - as @emlGroupFingerprint
-#   .nFactors  - how many grouping columns were declared
-#   .refused   - 1 when a well-formed request was declined because no key in
-#                this module can describe it, else 0. A refusal is not a
-#                malformed call; .error$ says which it was either way.
-#   .error$    - "" on success, diagnostic otherwise
+# Output: as @emlDataFingerprint, with .nScope = 1 and .scope$ the list as
+#         the caller wrote it.
 # ============================================================================
 procedure emlAnalysisFingerprint: .tableId, .columnList$
-    .result$ = ""
-    .summary$ = ""
-    .covers$ = ""
-    .nLevels = 0
-    .nUsable = 0
-    .nBlank = 0
-    .nFactors = 0
-    .refused = 0
-    .error$ = ""
+    @eml_fpCompose: .tableId, 1, .columnList$, ""
 
-    ; Split on commas, trimming each item. Praat has no split for strings
-    ; that returns a vector of them, so this is done by hand; the list is a
-    ; handful of column names, not data.
-    .nItems = 0
-    .rest$ = .columnList$
-    .scanning = 1
-    while .scanning = 1
-        .at = index (.rest$, ",")
-        if .at > 0
-            .tok$ = left$ (.rest$, .at - 1)
-            .rest$ = right$ (.rest$, length (.rest$) - .at)
-        else
-            .tok$ = .rest$
-            .rest$ = ""
-            .scanning = 0
-        endif
-        ; Trim spaces and tabs at both ends, the same way
-        ; @eml_normalizeLabel does, but WITHOUT its case folding: a column
-        ; name is matched exactly by every other procedure in this file.
-        .trimming = 1
-        while .trimming = 1
-            .trimming = 0
-            if length (.tok$) > 0
-                .ch$ = left$ (.tok$, 1)
-                if .ch$ = " " or .ch$ = tab$
-                    .tok$ = right$ (.tok$, length (.tok$) - 1)
-                    .trimming = 1
-                endif
-            endif
-        endwhile
-        .trimming = 1
-        while .trimming = 1
-            .trimming = 0
-            if length (.tok$) > 0
-                .ch$ = right$ (.tok$, 1)
-                if .ch$ = " " or .ch$ = tab$
-                    .tok$ = left$ (.tok$, length (.tok$) - 1)
-                    .trimming = 1
-                endif
-            endif
-        endwhile
-        if .tok$ <> ""
-            .nItems = .nItems + 1
-            .item$[.nItems] = .tok$
-        endif
-    endwhile
-
-    .nFactors = .nItems - 1
-
-    if .nItems = 0
-        .error$ = "No columns declared: a data key must name every column "
-        ... + "the analysis read."
-    elsif .nItems = 1
-        .error$ = "Only one column declared (" + .item$[1] + "): an "
-        ... + "independent-groups key needs a value column and a grouping "
-        ... + "column."
-    elsif .nItems = 2
-        @emlGroupFingerprint: .tableId, .item$[1], .item$[2]
-        .result$ = emlGroupFingerprint.result$
-        .summary$ = emlGroupFingerprint.summary$
-        .covers$ = emlGroupFingerprint.covers$
-        .nLevels = emlGroupFingerprint.nLevels
-        .nUsable = emlGroupFingerprint.nUsable
-        .nBlank = emlGroupFingerprint.nBlank
-        .error$ = emlGroupFingerprint.error$
-    else
-        ; MORE COLUMNS THAN THIS MODULE CAN DESCRIBE. Name them, so the
-        ; message says what would have to be built rather than only that
-        ; something was refused.
-        .refused = 1
-        .extra$ = ""
-        for .i from 3 to .nItems
-            if .i > 3
-                .extra$ = .extra$ + ", "
-            endif
-            .extra$ = .extra$ + .item$[.i]
-        endfor
-        .error$ = "REFUSED: no data key here describes " + string$ (.nFactors)
-        ... + " grouping columns. This module keys ONE value column split by "
-        ... + "ONE group column; the analysis also read: " + .extra$
-        ... + ". A key that described less than the analysis read would "
-        ... + "validate a result against data it was never computed from, so "
-        ... + "no key is issued and the analysis re-runs."
-    endif
+    .result$ = eml_fpCompose.result$
+    .summary$ = eml_fpCompose.summary$
+    .covers$ = eml_fpCompose.covers$
+    .scope$ = eml_fpCompose.scope$
+    .nScope = eml_fpCompose.nScope
+    .nRows = eml_fpCompose.nRows
+    .nCols = eml_fpCompose.nCols
+    .nChars = eml_fpCompose.nChars
+    .error$ = eml_fpCompose.error$
 endproc
 
 
 # ============================================================================
 # @emlFingerprintsAgree
 # ============================================================================
-# The one place two fingerprints are compared. Text equality, never numeric
-# equality — see FLOATING POINT at the top of this section.
+# The one place two fingerprints are compared. TEXT EQUALITY, NEVER NUMERIC
+# EQUALITY. Nothing re-parses a fingerprint into a number, so no text round
+# trip can perturb it. A tolerance-based numeric comparison would be strictly
+# worse: it would have to be loose enough to absorb numerical noise, which is
+# the same width as the data edits the key exists to catch.
 #
-# An empty fingerprint on either side means "not known", and NOT KNOWN NEVER
-# AGREES: a result whose key could not be computed, a request that was
-# refused, or a store that has never been written, must send the caller back
-# to the analysis rather than let a figure quote a number that was computed
-# from something else.
+# AN EMPTY FINGERPRINT ON EITHER SIDE MEANS "NOT KNOWN", AND NOT KNOWN NEVER
+# AGREES: a result whose key could not be computed, or a store that has never
+# been written, must send the caller back to the analysis rather than let a
+# figure quote a number that was computed from something else.
 #
 # THE FORMAT TAG IS PART OF THE TEXT, so two keys written under different
 # tags cannot agree even if every other field happens to match. That is
 # deliberate and is the whole reason the tag exists.
+#
+# THE SCOPE IS PART OF THE TEXT TOO, through the digest and through the s=
+# field, so two keys taken on the same table for two different analyses do
+# not agree. That is this procedure's whole contribution to the scope half of
+# the key: it compares the string it is given and asks nothing about how the
+# string was built.
 #
 # Arguments:
 #   .a$   - one fingerprint
