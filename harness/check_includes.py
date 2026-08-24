@@ -64,6 +64,11 @@ import sys
 
 DEF = re.compile(r'^\s*procedure\s+([A-Za-z_][A-Za-z0-9_]*)', re.M)
 CALL = re.compile(r'@\s*([A-Za-z_][A-Za-z0-9_]*)')
+# A procedure's own line, and the line that closes it. Praat's `endproc` sits
+# at column zero in this tree, but the opener may be indented in generated
+# fragments, so the opener is matched loosely and the closer strictly.
+PROC_OPEN = re.compile(r'^\s*procedure\s+([A-Za-z_][A-Za-z0-9_]*)')
+PROC_CLOSE = re.compile(r'^\s*endproc\s*$')
 INC = re.compile(r'^\s*include\s+(\S.*?)\s*$', re.M)
 
 # Praat comments: a line whose first non-blank character is "#", ";" or "!".
@@ -168,6 +173,100 @@ def closure(path, seen=None):
     return seen
 
 
+def top_level_calls(path):
+    """Calls made by a file's own statements, outside any procedure body.
+
+    An entry script's execution starts here: whatever it calls at the top
+    level, plus whatever those calls reach, is the whole of what it can run.
+    A `procedure` body is skipped -- it runs only if something calls it, which
+    is the question this function's caller is asking.
+    """
+    out = []
+    depth = 0
+    src = open(path, encoding='utf-8', errors='replace').read()
+    for lineno, raw in enumerate(src.splitlines(), 1):
+        code = strip_noise(raw)
+        if PROC_OPEN.match(code):
+            depth = 1
+            continue
+        if depth and PROC_CLOSE.match(code):
+            depth = 0
+            continue
+        if depth:
+            continue
+        for name in CALL.findall(code):
+            out.append((name, lineno))
+    return out
+
+
+def procedure_bodies(files):
+    """name -> [(called name, defining file, line), ...] over a whole closure.
+
+    One pass, so the walk below is a lookup rather than a re-read per step.
+    """
+    bodies = {}
+    for path in files:
+        src = open(path, encoding='utf-8', errors='replace').read()
+        cur = None
+        for lineno, raw in enumerate(src.splitlines(), 1):
+            code = strip_noise(raw)
+            m = PROC_OPEN.match(code)
+            if m:
+                cur = m.group(1)
+                bodies.setdefault(cur, [])
+                continue
+            if cur is not None and PROC_CLOSE.match(code):
+                cur = None
+                continue
+            if cur is None:
+                continue
+            for name in CALL.findall(code):
+                bodies[cur].append((name, path, lineno))
+    return bodies
+
+
+def reachable_calls(entry, files):
+    """Every call an entry script can actually make, with where it is made.
+
+    WHY REACHABILITY AND NOT TEXT.
+    
+    A module is included whole. stats/eml-record.praat is the only one that
+    can be included from three different top-level folders -- it carries no
+    relative include of its own -- so setup.praat, the quick start and the
+    editor's recording hand-off all pull it in for one small procedure each.
+    It brings @emlRecordReplaySave with it, which is what a REPLAYED script
+    uses to write its files, and that procedure calls six others from modules
+    none of those three entry points has any reason to parse.
+    
+    Reading the closure's TEXT reports those six as unresolved in all three,
+    and the answer has been three near-identical exemptions naming the same
+    six procedures for the same reason -- a table that grows by one entry
+    every time somebody includes the recorder for a different small reason.
+    
+    Reading the CALL GRAPH answers it once: none of the three can reach
+    @emlRecordReplaySave, so its calls are not theirs. What remains reported
+    is what an entry script can genuinely run into.
+    
+    The walk starts at the file's own top-level statements and follows only
+    procedures whose bodies are in the closure. A call to something the
+    closure does not define is a leaf AND a finding -- that is the defect
+    this file exists for.
+    """
+    bodies = procedure_bodies(files)
+    found = []
+    seen = set()
+    frontier = [(n, entry, ln) for n, ln in top_level_calls(entry)]
+    while frontier:
+        name, site, lineno = frontier.pop()
+        found.append((name, site, lineno))
+        if name in seen:
+            continue
+        seen.add(name)
+        for inner, ipath, iline in bodies.get(name, ()):
+            frontier.append((inner, ipath, iline))
+    return found
+
+
 # Entry points whose unresolved calls are a KNOWN, documented state rather
 # than a defect. Each needs a reason and a way back; an entry here is a
 # promise that the call is unreachable, not that it is harmless.
@@ -182,53 +281,6 @@ KNOWN = {
         'include of tutorial/eml-demo-procedures.praat deliberately '
         'neutralised; restoring the include restores '
         'the calls',
-    'setup.praat': (
-        'setup.praat includes stats/eml-record.praat for @emlPluginRoot, the '
-        'procedure it and the recorder share so a generated barrel and a '
-        'recorded script cannot name different folders. That module is the '
-        'only one that can be included from three different top-level '
-        'folders, because it carries no relative include of its own -- but it '
-        'brings its whole surface with it, and @emlRecordReplaySave calls six '
-        'procedures from modules setup.praat has no reason to parse at every '
-        'Praat launch -- the figure writer and its message among them, because '
-        'a replayed save writes the figure through the panel\'s own writer '
-        'rather than a second copy of it. setup.praat never calls '
-        '@emlRecordReplaySave; the wrappers that do include those modules',
-        {'emlExportResultFiles', 'emlFileStamp',
-         'emlHaveExportableResult', 'emlSaveInfoToFile',
-         'eml_saveFigureFormats', 'eml_saveFormatRedirectLines'}),
-    'eml-record-edit-step.praat': (
-        'The table editor deliberately does not include eml-lib.praat -- its '
-        'header says why: pulling in some 26,000 lines of statistics and '
-        'graphing to reach a refusal dialog is a worse trade than a local '
-        'copy. So when an edit has to become a recorded step, the editor '
-        'hands it to this one-purpose script through runScript:, and this '
-        'script includes stats/eml-record.praat and nothing else. That module '
-        'brings its whole surface, and @emlRecordReplaySave -- the procedure a '
-        'REPLAYED script uses to write its files -- calls six procedures from '
-        'the output and utility modules. This script never calls it: it adds '
-        'one step to a live recording and exits. The same six names, for the '
-        'same reason, as setup.praat above',
-        {'emlExportResultFiles', 'emlFileStamp',
-         'emlHaveExportableResult', 'emlSaveInfoToFile',
-         'eml_saveFigureFormats', 'eml_saveFormatRedirectLines'}),
-    'eml-quick-start.praat': (
-        'the quick start prints the install folder name to the user, and it '
-        'asks @emlPluginFolder for it rather than spelling it, so an '
-        'instruction and an installation cannot name different folders. That '
-        'procedure lives in stats/eml-record.praat for the same reason '
-        'setup.praat includes that module: it is the only one that can be '
-        'included from three different top-level folders, because it carries '
-        'no relative include of its own. It brings its whole surface with it, '
-        'and @emlRecordReplaySave calls six procedures from modules a script '
-        'that only prints text has no reason to parse -- the figure writer and '
-        'its message among them, because a replayed save writes the figure '
-        'through the panel\'s own writer rather than a second copy of it. The '
-        'quick start never calls @emlRecordReplaySave; the wrappers that do '
-        'include those modules',
-        {'emlExportResultFiles', 'emlFileStamp',
-         'emlHaveExportableResult', 'emlSaveInfoToFile',
-         'eml_saveFigureFormats', 'eml_saveFormatRedirectLines'}),
 }
 
 
@@ -243,6 +295,12 @@ def main():
     problems = 0
     barrels = []
     optional = 0
+    # AN EXEMPTION THAT MATCHES NOTHING IS REPORTED, not quietly kept. This
+    # table is a list of promises that a named call is unreachable; a promise
+    # about a call the tree no longer makes tells its reader the tree still
+    # holds something it does not, and the next person to read it believes the
+    # exemption is doing work. Emptied as each entry is consulted.
+    unused_known = set(KNOWN)
     for entry in entries:
         if is_barrel(entry):
             barrels.append(os.path.relpath(entry, root))
@@ -251,18 +309,27 @@ def main():
         defined = set()
         for f in files:
             defined |= defs_in(f)
-        missing = {}
+        # THE EXISTENCE-GUARDED CALLS ARE COUNTED OVER THE WHOLE CLOSURE, and
+        # deliberately so: a call on the true arm of `if variableExists (...)`
+        # is optional wherever it sits, and the count is a population figure
+        # that would drop silently if it were narrowed to the reachable set.
+        guarded_names = set()
         for f in files:
-            for name, lineno, guarded in calls_in(f):
-                if name in defined:
-                    continue
-                if guarded:
+            for name, lineno, is_guarded in calls_in(f):
+                if is_guarded and name not in defined:
+                    guarded_names.add(name)
                     optional += 1
-                    continue
-                missing.setdefault(name, (os.path.relpath(f, root), lineno))
+
+        # WHAT AN ENTRY SCRIPT CAN RUN INTO, not what its closure contains.
+        missing = {}
+        for name, site, lineno in reachable_calls(entry, files):
+            if name in defined or name in guarded_names:
+                continue
+            missing.setdefault(name, (os.path.relpath(site, root), lineno))
         if missing:
             base = os.path.basename(entry)
             if base in KNOWN:
+                unused_known.discard(base)
                 entry_known = KNOWN[base]
                 if isinstance(entry_known, tuple):
                     reason, allowed = entry_known
@@ -302,6 +369,12 @@ def main():
         print('skipped %s: include list only — no procedure, no statement, '
               'so its closure is a fragment by design' % b)
     if problems == 0:
+        if unused_known:
+            print('STALE EXEMPTION: %s exempts a call the tree no longer '
+                  'makes. Delete the entry -- an exemption nobody consults '
+                  'reads as protection that is not there.'
+                  % ', '.join(sorted(unused_known)))
+            return 1
         print('include closure: every @call resolves, %d entry script(s), '
               '%d existence-guarded optional call(s) allowed'
               % (len(entries) - len(barrels), optional))
