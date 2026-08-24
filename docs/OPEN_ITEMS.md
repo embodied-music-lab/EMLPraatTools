@@ -28,58 +28,281 @@ Memo with the design questions is with Fable
 (`docs/MEMO_TO_FABLE_unification.md`); the answers are
 `docs/RULING_RESULT_STORE.md`.
 
-FIRST PIECE BUILT, 24 Aug: THE DATA KEY. `@emlGroupFingerprint`,
-`@emlAnalysisFingerprint` and `@emlFingerprintsAgree` in
-`stats/eml-extract.praat` — the ruling's §a per-group-level fingerprint. It
-lives in the extraction layer because both sides of the store need it: the
-kernels stamp it on a published result, the annotation bridge recomputes it at
-draw time. Levels and values come from `@emlCountGroups` and
-`@eml_getGroupData`, so the key describes the data as the analysis saw it. The
-key is TEXT and is only ever compared as text; nothing about it is a float
-comparison.
+FIRST PIECE BUILT, 24 Aug: THE DATA KEY. `@emlDataFingerprint` and
+`@emlFingerprintsAgree` in `stats/eml-extract.praat`, with
+`@emlGroupFingerprint` and `@emlAnalysisFingerprint` kept as thin wrappers —
+the ruling's §a data fingerprint. It lives in the extraction layer because
+both sides of the store need it: the kernels stamp it on a published result,
+the annotation bridge recomputes it at draw time. The key is TEXT and is only
+ever compared as text; nothing about it is a float comparison.
 
-REBUILT THE SAME DAY, FORMAT `eGF2`. An adversarial pass defeated the first
-composition (`eGF1`: n, sum, sum of squares, min, max per level) six times.
-Three of the six were one fault — per-level moment aggregates cannot describe
-a multiset, and for n >= 5 a continuum of alternative level contents satisfies
-five fixed aggregates, so the hole does not close by adding a sixth. The key
-now commits to a digest over each level's quantised SORTED value list, which
-closes moments, tie structure and rank order together; quantisation moved from
-12 to 15 significant digits because nothing is accumulated any more; the label
-hash went from one unsalted 31-bit polynomial to two salted ones over
-different bases and primes (about 62 bits); and the per-level spelling set is
-folded as a sorted SEQUENCE rather than as a linear sum of hashes. Details and
-the six fixtures are in `dev/tests/phase2/test-fingerprint.praat` (110 checks;
-23 of them, including all six defeats, go red against a scratch revert of
-`eGF1`, and the four published acceptance probes stay green in both).
+REBUILT FOUR TIMES IN ONE DAY. `eGF1` (per-level moment aggregates) was
+defeated six times; `eGF2` (a digest of each level's quantised sorted value
+list) once; `eDF1` (a digest of the whole sorted row list over the columns an
+analysis declared) twice; `eTF1` (the whole table and no declaration at all)
+once, by Defeat 9. THE SHIPPED FORMAT IS `eTF2`.
 
-STORED `eGF1` KEYS DO NOT UPGRADE and must not be treated as if they did: the
-format tag is part of the compared text, so an `eGF1` key never matches an
-`eGF2` key and the analysis re-runs. That is the intended behaviour, not a
-migration to be written.
+THE RULING THAT MADE `eTF1` POSSIBLE, Ian, 24 Aug:
 
-OPEN BY DESIGN, WITH IAN: A TWO-WAY KEY. The sixth defeat was
-`@emlTwoWayAnova` — the key describes (value, group) only, and rewriting half
-the cells of a second factor moves F(group) and its p across .05 without
-touching either column the key names. The fault is in the CALL, not the
-arithmetic, so the closure is a door: `@emlAnalysisFingerprint` takes the
-analysis's FULL comma-separated column list and REFUSES — no key, stated error
-naming the columns — when handed more than it can describe. Whether a two-way
-composition gets BUILT (one record per design cell, new format tag) is a scope
-call for Ian; the shape is ready for it as another branch of the same
-procedure. Until it is built, two-way analyses simply do not get a key.
+> "Since the result of 'somehow this data changed' is to safely rerun the
+> tests, I am fine with 'any change to the data including reordering of rows'
+> forces the mismatch error and redoing of the stats. Otherwise rebuild as you
+> see fit. Agreed we don't round away machine precision."
+
+WHAT THAT OVERTURNED. Every earlier format carried a requirement that a row
+reorder must HOLD the cache, on the rationale that reordering changes no
+result. THAT RATIONALE WAS FALSE. Group order comes from discovery order under
+the shipped default (`emlGroupSortAlphabetical = 0`, from `config_groupSort`
+in `graphs/eml-graphs-form.praat`), so moving one group's rows above another's
+flips the sign of t, of Cohen's d, of rank-biserial r and of every Tukey mean
+difference, and inverts the comparison names. The requirement was not merely
+expensive, it was wrong.
+
+DEFEAT 9, AND WHY `eTF1` DID NOT SURVIVE THE DAY. Deleting the column
+declaration closed under-declaration — a caller cannot under-declare what it
+never declares — and opened something worse: the key could not tell two
+analyses of ONE unmodified table apart. Measured on a 9 x 4 table never
+touched between the calls: KW(val ~ grp) p = 0.670320, KW(val2 ~ grp)
+p = 0.021128, KW(val2 ~ grp2) p = 0.953497, and
+`@emlGroupFingerprint: t, "val", "grp"` and
+`@emlGroupFingerprint: t, "val2", "grp2"` returned the SAME key with
+`@emlFingerprintsAgree` reporting the data unchanged. A store keying on that
+serves one comparison's result to a figure drawing another. §a of the ruling
+requires table identity plus BOTH COLUMN NAMES plus content; the 24 Aug ruling
+overturned only the row-reorder clause and said nothing about the names.
+
+`eTF2` IN ONE SENTENCE: digest the whole table — its name, its row and column
+counts, every column name in order, and every cell's content in row order then
+column order, exactly as the table holds it — and then digest the DECLARED
+SCOPE, the column names the caller handed in, folded verbatim and in order.
+The key is `eTF2|r=<rows>|c=<cols>|n=<chars>|s=<scope items>|d=<h1>_<h2>_<h3>`,
+about 60 characters.
+
+TWO TERMS, BOTH LOAD-BEARING. Content without scope is Defeat 9; scope without
+content is Defeat 8. The content term is folded identically in all three
+doors, so the scope is the only thing that can make two keys on one table
+differ. The item count is folded before the items, so `@emlDataFingerprint`
+(no scope), `@emlAnalysisFingerprint` (one list string) and
+`@emlGroupFingerprint` (two names) never coincide on one table.
+
+NOTHING PARSES THE DECLARATION. The scope is the caller's text, folded in the
+caller's order, with each item's length folded after its characters. No
+separator is split on, no empty item dropped, no role prefix stripped, no name
+resolved against the table. A name that is not a column is not refused: it
+folds like any other text, so a typo yields a key only the same typo matches —
+a permanent cache miss, never a false hit. That is how the whole class of
+list-parsing defects stays closed while the scope comes back.
+
+WHAT `eTF1` DELETED AND `eTF2` KEEPS DELETED, none of it back without a new
+ruling:
+
+- THE SORT. Rows are folded where they sit.
+- COLUMN-LIST PARSING, and every decision it required. The declaration is
+  digested, not interpreted.
+- IDENTITY CANONICALISATION — the block digests, and the refusal of two
+  identity columns. A subject label is text and goes in as text.
+- THE LEVEL CENSUS, and all special handling of blank, unusable and excluded
+  cells. Every cell is in the key as its literal content.
+- `@eml_fpNumber`, `@eml_fpTextHash`, `@eml_fpFoldText` and the `eml_fpReq`
+  namespace. What remains is `@eml_fpMix`, one composer (`@eml_fpCompose`,
+  the single place a key is built) and the three doors.
+
+HOW A NUMBER REACHES THE KEY: AS TEXT, AND NOTHING IS ROUNDED. Praat stores a
+Table cell as a string and derives its numeric queries from that string, so
+the text IS the cell rather than a rendering of it. Measured on 6.6.30 and
+asserted in the suite: 2000 random doubles all re-parse from their cell text
+bit-identically; `Get mean` on a cell holding 0.1 + 0.2 returns exactly
+`number (cellText$)`, which is 0.30000000000000004; 500 pairs one ulp apart
+and 500 pairs 2.25 ulps apart all get different texts; three consecutive
+subnormals get three different texts. Reading text also sidesteps formatting
+entirely, so the `--undefined--e-324` underflow that `eDF1` emitted for two
+different subnormals cannot occur — no exponent is computed.
+
+THE TEXT-TO-NUMBER STEP WAS THE EIGHTH DEFEAT AND IS REPLACED. `eDF1`'s
+`@eml_fpFoldText` was two salted polynomial hashes. For two strings OF EQUAL
+LENGTH the difference of the folded pair is a fixed linear form in the
+character differences and THE SALT CANCELS, so a colliding difference pattern
+found once collides under every salt, and lattice reduction finds one in under
+a second — inside the digit alphabet, on the key's own numeric text, with
+digit changes of at most 7. `@eml_fpMix` breaks the linearity rather than
+adding more polynomials: three 31-bit words, every multiplier drawn from
+another word's current value, a quadratic term in the state every step, and
+the words feeding forward within the step. Measured: for one fixed difference
+pattern over 40 random equal-length strings, a plain polynomial gives ONE
+digest difference and `@eml_fpMix` gives 40; a single digit change moves about
+half of the 93 bits; over 3 million equal-length numeric strings the collision
+counts at 32 and 40 bits match a uniform random function (1025 against 1047
+expected, 2 against 4.1) and the full width gives none. A birthday search
+against 93 bits is about 1e14 digest evaluations, AND SO IS A SECOND PREIMAGE
+— see THE SECOND PREIMAGE IS NOT 2^93 below. IT IS A HOME-MADE MIXER AND IS
+NOT PROVEN SECURE; the claim is that both attacks cost about 1e14 mixing
+steps, which is far beyond the accidental edit this key is sized against, and
+is not a claim of resistance to anyone attacking on purpose.
+
+THE SECOND PREIMAGE IS NOT 2^93, AND THE SHIPPED HEADER NOW SAYS SO. The
+header quoted the birthday number alone and did not distinguish the two
+attacks, which read as a 2^93 second-preimage cost it does not have. THE STEP
+INVERTS EFFICIENTLY: given an output triple and the character, `m2` is read
+off the output's own first word and `m3` off its second, so `h2` and `h3` each
+come back by ONE modular inverse; `h1` then comes back by a scan of the 46337
+values of `r` in the affine form below. Milliseconds, about two candidates,
+and the true preimage is among them — 300 times in 300. So attacking ONE
+SPECIFIC STORED KEY is a meet-in-the-middle at about 2^46.5, the same 1e14 as
+the collision, plus roughly a petabyte of stored states or a memoryless
+variant that pays for it in time. Both numbers are far beyond the failure this
+key exists to catch, which is a table edited between the analysis and the
+figure that quotes it, by someone who is not attacking anything.
+
+THE STEP IS NOT INJECTIVE, AND THE HEADER NOW SAYS WHY THAT COSTS NOTHING.
+Writing `h1 = 46337 * u + r`, the first word's update is exactly
+`(46337 * m1) * u + (m1 + K) * r + 1031 * c + 1 mod 2147483647` with
+`K = h2 mod 46337` — verified identical to the shipped expression over 5000
+random state-and-character pairs, and over 240 more inside the suite. Within
+one step `h1` is a 2-D affine form, so the merging differences of a fixed
+`(h2, h3)` are the short vectors of a lattice of determinant 2147483647 in a
+box of about four times that area: a handful, median two, and none of 4000
+sampled pairs admitted none. Two states that share `h2` and `h3` and differ in
+`h1` by a merging amount fold to one state under ANY string, the empty string
+included, and never separate again. THAT IS NOT A WEAKNESS: reaching two such
+states requires `h2` and `h3` to agree exactly — 62 bits — with `h1` differing
+by one of about two values out of 2^31, so about 2^-92 for a pair, no better
+than the birthday bound the digest already carries. The separation is carried
+by the MULTI-STEP nonlinearity, where each multiplier is drawn from another
+word's current value, and that held under every measurement: 4000 of 4000
+distinct digest differences for one fixed difference pattern, zero commuting
+distinct-character pairs in 400000 state-and-pair trials, and the collision
+counts above.
+
+PINNED, NOT ASSERTED. Under `h2 = 1554331573` and `h3 = 1375090233` the
+merging sets are arithmetic progressions of step 24928653, and the suite folds
+TWO WHOLE SETS through the shipped `@eml_fpMix`: all 66 members of the one
+beginning at `h1 = 510355490`, and all 71 of the one beginning at
+`h1 = 45710`. Each size is exact rather than a lower bound, because one end of
+each progression falls out of the modulus and the other end's neighbour is a
+legal `h1` that the suite folds and finds apart. An earlier draft of the
+header called 66 "the largest found", which is a claim about a search and was
+wrong on its own terms — 71 is larger, under the same pair.
+
+THE LENGTH TERMINATOR SEES ONLY `length mod 1000003`, so two pieces whose
+lengths differ by exactly 1000003, or by any multiple of it, terminate
+identically. WHAT THAT BUYS: the re-cut guarantee for every piece this module
+folds, because a cell, a column label, a table name and a scope item are all
+far shorter than 1000003 characters, and inside that range the length term IS
+the length. WHAT IT DOES NOT BUY: a length guarantee in general — two pieces a
+million characters apart are told apart by their CHARACTERS, which run the
+step a different number of times, and not by the terminator. Total length is
+carried separately and exactly by the key's `n=` field, which nothing reduces.
+Pinned in the suite by a local copy of the terminator whose length comes from
+a parameter, tied to the shipped procedure by legs that fold both and compare,
+plus text checks that every length term in the shipped file reduces modulo
+1000003 — a real 1000003-character fold runs past ten minutes against a suite
+that finishes in under three seconds.
+
+PRAAT REWRITES OBJECT NAMES, AND THE KEY CARRIES THE REWRITTEN ONE. The name
+term is read with `selected$ ("Table")`, not the string the caller handed to
+the create command, and Praat replaces a space, a bar, a comma or a slash with
+an underscore: `"a b"` becomes `"a_b"`, `"data|1"` becomes `"data_1"`. So two
+tables a user believes are named apart can share one name term. This is the
+mirror image of the standing fixture rule — a mutant and its control must
+share a table name, or the mutant goes green on the name alone — and it is the
+same trap from the other side: a fixture named `"data|1"` against a control
+named `"data_1"` IS named alike whatever its author intended, and pins nothing
+while passing. Measured in the suite, both the rewriting and the shared key.
+
+STORED `eGF1`, `eGF2`, `eDF1` AND `eTF1` KEYS DO NOT UPGRADE and must not be
+treated as if they did: the format tag is part of the compared text, so none
+of them matches an `eTF2` key and the analysis re-runs. That is the intended
+behaviour, not a migration to be written. `eTF1` is the one to watch, because
+it digests the same cells in the same order and differs only in folding no
+scope.
+
+WHAT THE DOOR REFUSES is now one thing: a table ID that is not a positive
+number, which is what an uninitialised caller variable looks like. Selecting
+on it would abort the whole script, so the refusal turns a crash into a
+re-run.
+
+THE NON-FINITE CORNER IS NARROWER THAN IT WAS WRITTEN. The header claimed
+`+inf`, `-inf` and `undefined` share one text, implying a three-way ambiguity.
+Measured on 6.6.30: Praat has no reachable `+inf` in a Table at all —
+`1e308 * 10`, `-1e308 * 10`, `1e308 + 1e308` and `exp (1000)` each test equal
+to `undefined` as a NUMBER, before any cell holds them. So there is ONE
+non-finite state, the key sees it as `--undefined--`, and there is no
+exploitable ambiguity between three states. Asserted in the suite.
+
+WHAT IS STILL NOT COVERED, and there are exactly three:
+
+- THE SETTINGS, and this is the boundary a store builder must read. The key
+  answers "same data, same declared scope?" and nothing else. Measured on a
+  byte-identical key: the same Dunn post-hoc gives p = 0.329830 under holm and
+  p = 0.494744 under bonferroni; and `emlGroupSortAlphabetical` — a global
+  with NO DIALOG OF ITS OWN, set from `config_groupSort` at two sites in
+  `graphs/eml-graphs-form.praat`, and therefore not one of the three
+  result-affecting dialog controls the ruling's settings census enumerates —
+  turns a Tukey comparison from `Zebra - Alpha = +10.0000` into
+  `Alpha - Zebra = -10.0000`, sign and names together. A stored result carries,
+  beside the key: the column names in readable form (the key distinguishes
+  scopes without disclosing them), the test type, the correction method,
+  alpha, and the group sort order.
+- A DIGEST COLLISION, AND A SECOND PREIMAGE. 93 bits over a table of any size,
+  both at about 1e14 mixing steps, with the measured costs above.
+- WHEN THE KEY WAS TAKEN, and this is the one that matters. A key describes
+  the table at the instant it is asked for. A caller that computes a result,
+  lets the table change, and only then stamps a key has stamped a truthful key
+  on a result the table does not support. The fault is in the ORDER of the
+  calls, not in the arithmetic, so nothing inside the module can see it — it
+  is the structural successor to under-declaration, which the content term
+  closed. THE RULE THAT CLOSES IT BELONGS TO THE STORE: take the key in the
+  same pass that reads the data, before anything can touch the table, and
+  stamp that key on the result. It is a large part of why the store must have
+  a SINGLE write site, and it should be checked when that write site is built.
+
+WHAT IT COSTS, AND THE COST IS REAL. A reorder, a subject rename, a new
+column, a typo fixed in a column nobody read — each re-runs the analysis and
+none of them changes a printed number. That is the deliberate exchange: cache
+hits for the impossibility of a whole class of stale result.
+
+COST, measured on Praat 6.6.30 and linear in the table's characters (each
+doubling of the rows doubles the time, measured at 100, 1000, 2000, 4000 and
+8000 rows): 1000 x 2 in 0.35 s, 1000 x 3 in 0.43 s, 2000 x 3 in 0.90 s,
+8000 x 3 in 3.26 s. `eDF1` took 0.63-0.73 s on 1000 x 2, so the whole-table
+key is about twice as fast as the sorted per-column key it replaces while
+digesting more. The scope adds one pass over two short column names, which is
+below the noise of the table. The table copy that makes every cell read
+positional is 2 ms on a 4000 x 3 table.
+
+WHAT IT ALSO COSTS: the same question asked through a different door is a
+different key. A pair declared as two names and the same pair declared as one
+list string are two scopes and two re-runs. Joining a list to a pair would need
+a separator rule nothing could enforce against a column literally named with
+it, so the doors stay apart and the cost is a cache miss.
+
+TWO REPAIRS FOUND BY THE ATTACK, both closed by deletion: a real column named
+`num:v` was silently resolved to a different column `v` and issued a
+bit-identical key, and empty items in a declaration list were silently dropped
+so `"v,,grp"` and `"v,grp"` were indistinguishable. There is no declaration
+list. Separately, Praat's `Get value:` resolves a column by LABEL and returns
+the first match, so two columns sharing a name would leave one unread — the
+door copies the table and renames its columns BY POSITION before reading a
+cell, so every read is positional.
+
+TESTS: `dev/tests/phase2/test-fingerprint.praat`, 278 checks, all green in
+about 2.6 s. Every defeat of all four formats is a section, and each goes
+green. TWO LEGS ASSERT THE OPPOSITE OF WHAT THEY ONCE ASSERTED — a within-group
+row reorder, and a subject rename in an identity column, both now MOVE the key
+— and the file says so loudly at the top, with Ian's ruling quoted, so that
+nobody "fixes" them back. New sections: a column the analysis never read now
+invalidates; two columns sharing a name; a column really named `num:v`; the
+measured precision of a cell's text; the nonlinearity of the mixing step
+against a plain polynomial built in the file for the comparison; and a loose
+linear-cost guard.
 
 STILL UNBUILT in this item, and each is a separate piece of work: the store
 itself (the single write site, the published names, the §b census of
-result-affecting vs display-only settings, the one-line announcement); the
-bridge reading the store instead of recomputing; and the two neighbouring
-keys the ruling anticipates — a paired/repeated door needs ROW PAIRING in the
-key, and the scatter's correlation needs a cross term (sum of x*y), neither
-of which any per-column or per-level description of ONE column can supply.
-The fingerprint's own header states both, and both should route through
-`@emlAnalysisFingerprint` so that the refusal is what happens until they
-exist. There is no pinned validator for the fingerprint yet: the mutation legs
-live in the phase2 suite, not in `validate/`.
+result-affecting vs display-only settings, the one-line announcement); and the
+bridge reading the store instead of recomputing. The review of every kernel
+call site is NO LONGER PART OF THIS — there is nothing for a call site to
+declare. There is no pinned validator for the fingerprint yet: the mutation
+legs live in the phase2 suite, not in `validate/`.
 
 ## B. Form and dialog work
 
