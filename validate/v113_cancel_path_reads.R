@@ -124,6 +124,27 @@ for (.e in parse(V98_FILE)) {
 V98_MISSING <- setdiff(V98_IMPORTS, ls(V98))
 
 # ---------------------------------------------------------------------------
+# THE GATE IS ASSERTED HERE, BEFORE THE FIRST USE, AND NOT AT THE FOOT OF THE
+# FILE. A rename in v98 does not make this check resolve nothing quietly --
+# it raises, every time, measured three ways: a renamed function gives
+# "attempt to apply non-function", a renamed constant gives "object not found"
+# inside the import loop itself. That is the safe direction. But an error
+# reaching run_all.R's handler ABORTS THE WHOLE SUITE rather than reddening one
+# check, and a suite that aborts reports nothing about the other 110 files.
+# Asserting before the first use turns a v98 rename into one red check with a
+# message naming what disappeared, which is what the suite can act on.
+# ---------------------------------------------------------------------------
+check_true("v113", "the v98 field-name resolver was imported, entire",
+           length(V98_MISSING) == 0L)
+if (length(V98_MISSING)) {
+    cat("v98 NO LONGER DEFINES:", paste(V98_MISSING, collapse = ", "), "\n")
+    cat("v113 cannot walk a cancel path without it; stopping here rather than\n")
+    cat("aborting the suite from the first call site.\n")
+    eml_report("v113")
+    quit(save = "no", status = 0)
+}
+
+# ---------------------------------------------------------------------------
 # The readable form of a field name. v98's praat_field_prefix returns the
 # stored name WITHOUT the "$" a string field appends; which suffixes exist is
 # a property of the field's KIND, measured in v98's header: word / sentence /
@@ -500,10 +521,8 @@ for (s in shipped$sites)
 RULING_SITES   <- 24L
 EXPECTED_SITES <- 23L
 
-check_true("v113", "the v98 field-name resolver was imported, entire",
-           length(V98_MISSING) == 0L)
-if (length(V98_MISSING))
-    cat("v98 NO LONGER DEFINES:", paste(V98_MISSING, collapse = ", "), "\n")
+# The import gate is asserted at the point of import, ABOVE, because a rename
+# in v98 stops this file before it reaches here. See that block.
 
 check_true("v113",
            sprintf("the sweep walked at least one cancel path (%d walked)",

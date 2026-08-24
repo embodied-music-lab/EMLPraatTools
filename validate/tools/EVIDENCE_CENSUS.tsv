@@ -44,6 +44,9 @@ v108	v108_fisher_alpha_oracle.R	SOURCE+LIVE	PRAAT	praat	plugin	red_mode
 v109	v109_report_ci_alpha_oracle.R	SOURCE+LIVE	PRAAT	praat	plugin	red_mode	
 v11	v11_twoway_orchestrator.R	ARTEFACT	NO		evidence		
 v110	v110_roundtrip_replay.R	ARTEFACT	NO		harness		
+v111	v111_cold_start_census.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
+v112	v112_settings_census.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs	src	
+v113	v113_cancel_path_reads.R	SOURCE	NO		plugin_EML_StatsGraphs	old_src	
 v12	v12_correlation_orchestrator.R	ARTEFACT	NO		evidence		
 v13	v13_regression_orchestrator.R	ARTEFACT	NO		evidence		
 v14	v14_descriptive_orchestrator.R	ARTEFACT	NO		evidence		
