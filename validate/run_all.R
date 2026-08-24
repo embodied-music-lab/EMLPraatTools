@@ -1371,6 +1371,30 @@ scripts <- c(
                                  # sources rather than declared, against the
                                  # kinds the emitted file carries. Reads
                                  # harness/roundtrip/out/ROUNDTRIP.tsv.
+    ,
+    "v111_cold_start_census.R"   # every door, opened from the state a
+                                 # first-time user is actually in: NOTHING
+                                 # SELECTED. One fixture, and it is the
+                                 # absence of a fixture -- which is why no
+                                 # other rig had it, since every one of them
+                                 # begins by making a table. The population is
+                                 # the twenty commands setup.praat registers,
+                                 # read through the same walk v107 uses, plus
+                                 # the wizard's fifteen branches, which count
+                                 # separately because Ian's crash was
+                                 # branch-ORDER dependent. Each leg must
+                                 # either refuse honestly -- the plugin's own
+                                 # refusal, its own dialog, or its own
+                                 # sentence -- or answer the "No table
+                                 # selected" page and carry on to a column
+                                 # page, which is where the crash was. A raw
+                                 # Praat error fails; so does the rig failing
+                                 # to drive, under its own name. Ratcheted in
+                                 # both directions on the leg name, and
+                                 # refuted by a resolver gate that fails on a
+                                 # walk of zero and prints how many entry
+                                 # points it covered. Reads
+                                 # harness/coldstart/out/COLDSTART.tsv.
 )
 
 # ---------------------------------------------------------------------------

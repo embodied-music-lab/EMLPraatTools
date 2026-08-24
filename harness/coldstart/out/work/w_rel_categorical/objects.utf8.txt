@@ -1,0 +1,9 @@
+(objects window empty)
+== INFO ==
+── Not Yet Available ──
+
+  Categorical association (chi-squared) is planned for a future update.
+
+  In the meantime, you can use the named tools
+  in the EML Stats & Graphs menu for available analyses.
+

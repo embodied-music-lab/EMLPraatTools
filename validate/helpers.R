@@ -719,3 +719,64 @@ printed_eq <- function(cap, key, which = 1L, occurrence = 1L) {
     }
     v
 }
+
+# ---------------------------------------------------------------------------
+# eml_setup_commands — THE MENU, READ FROM THE FILE PRAAT READS
+#
+# setup.praat is what Praat itself reads to build the menus, so it is the only
+# honest answer to "which commands does this plugin have". A hand-kept list
+# beside it is a second copy that can disagree, and the disagreement is silent:
+# a command added tomorrow is simply absent from every check that reads the
+# copy, and every one of them stays green.
+#
+# THIS LIVES HERE BECAUSE TWO VALIDATORS NEED THE SAME UNIVERSE. v107 asks, of
+# every registered command, whether it records; v111 asks, of every registered
+# command, whether anything has ever opened it from an empty Objects window.
+# Two questions, one population — and if each file derived the population for
+# itself, the two could drift apart while both passed. The canon is stated
+# once, here, and both read it. (CLAUDE.md: state the canon once in a
+# procedure; a copy that can disagree is the defect.)
+#
+# A registration line ends with the script it runs, in quotes. Lines whose
+# script is "" are STRUCTURE — the cascade itself, and the "-- eml describe --"
+# separators — and are not commands a user can invoke, so they are dropped.
+# The same script may be registered against several object types (the table
+# editor's two doors, Describe on Table / TableOfReal / Matrix); the caller
+# almost always wants the FILES, so duplicates are collapsed and the raw
+# registration count is kept as an attribute for the callers that report it.
+#
+#   setup_path   path to setup.praat
+#   ->           data.frame(label, script), one row per distinct script,
+#                in registration order, with attr "registrations" = the number
+#                of runnable registration lines before de-duplication.
+# ---------------------------------------------------------------------------
+eml_setup_commands <- function(setup_path) {
+    if (!file.exists(setup_path)) stop("setup.praat not found: ", setup_path)
+    sl <- readLines(setup_path, warn = FALSE)
+    reg <- grep('^Add (menu|action) command', sl, value = TRUE)
+
+    quoted <- function(s) regmatches(s, gregexpr('"[^"]*"', s))[[1]]
+    lastq <- function(s) {
+        txt <- quoted(s)
+        if (!length(txt)) return("")
+        gsub('"', "", txt[length(txt)])
+    }
+    # The third quoted field is the label the user sees. Fewer than three and
+    # the line is not a command registration in the shape this reads.
+    label_of <- function(s) {
+        txt <- quoted(s)
+        if (length(txt) >= 3) gsub('"', "", txt[3]) else ""
+    }
+
+    scripts <- vapply(reg, lastq, "")
+    labels  <- vapply(reg, label_of, "")
+    runnable <- nzchar(scripts)
+
+    cmd <- data.frame(label = labels[runnable], script = scripts[runnable],
+                      stringsAsFactors = FALSE)
+    rownames(cmd) <- NULL
+    cmd <- cmd[!duplicated(cmd$script), , drop = FALSE]
+    rownames(cmd) <- NULL
+    attr(cmd, "registrations") <- sum(runnable)
+    cmd
+}

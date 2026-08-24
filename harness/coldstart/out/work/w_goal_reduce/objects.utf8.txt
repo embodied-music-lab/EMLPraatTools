@@ -1,0 +1,9 @@
+(objects window empty)
+== INFO ==
+── Not Yet Available ──
+
+  Dimensionality reduction (PCA, MDS) is planned for a future update.
+
+  In the meantime, you can use the named tools
+  in the EML Stats & Graphs menu for available analyses.
+

@@ -1,0 +1,8 @@
+(objects window empty)
+== INFO ==
+
+------------------------------------------------------------
+EML: no recording is in progress.
+
+Run 'Record script' first, then the analyses and
+figures you want captured.

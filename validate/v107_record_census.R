@@ -66,27 +66,17 @@ if (!ok_setup) {
 # A registration line ends with the script it runs, in quotes. Lines whose
 # script is "" are structure -- the cascade itself, and the "-- eml describe --"
 # separators -- and are not commands a user can invoke.
-sl <- read_lines(setup)
-reg <- grep('^Add (menu|action) command', sl, value = TRUE)
-lastq <- function(s) {
-    m <- gregexpr('"[^"]*"', s)[[1]]
-    if (m[1] == -1) return("")
-    txt <- regmatches(s, gregexpr('"[^"]*"', s))[[1]]
-    gsub('"', "", txt[length(txt)])
-}
-label_of <- function(s) {
-    txt <- regmatches(s, gregexpr('"[^"]*"', s))[[1]]
-    if (length(txt) >= 3) gsub('"', "", txt[3]) else ""
-}
-scripts <- vapply(reg, lastq, "")
-labels  <- vapply(reg, label_of, "")
-runnable <- nzchar(scripts)
-cmd <- data.frame(label = labels[runnable], script = scripts[runnable],
-                  stringsAsFactors = FALSE)
-cmd <- cmd[!duplicated(cmd$script), ]
+# THE WALK ITSELF NOW LIVES IN helpers.R, as eml_setup_commands(). It moved
+# there on 24 August 2026 when v111 needed the same population -- of every
+# command the menu registers, which ones has anything ever opened from an
+# empty Objects window -- and two files deriving one universe separately is
+# the drift this census exists to refuse. Nothing about what is read changed:
+# the same registration lines, the same last-quoted-field rule, the same
+# collapse of the several object-type registrations of one script.
+cmd <- eml_setup_commands(setup)
 
 check_true(V, sprintf("the menu registers %d runnable commands across %d files",
-                      sum(runnable), nrow(cmd)),
+                      attr(cmd, "registrations"), nrow(cmd)),
            nrow(cmd) >= 15)
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,8 @@
+(objects window empty)
+== INFO ==
+
+------------------------------------------------------------
+EML: nothing is being recorded.
+
+Run 'Record script' first, then any EML analysis or
+figure, then this command.

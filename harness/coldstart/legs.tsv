@@ -1,0 +1,54 @@
+# harness/coldstart/legs.tsv — the population, one row per leg. TAB separated.
+#
+# leg    a name, unique, and the name validate/v111 ratchets on
+# entry  the script setup.praat registers, relative to <plugin>/scripts/
+# plan   how the leg answers pages: steps separated by ";", one step per page.
+#          sN=V  set the Nth optionmenu on this page (top to bottom) to
+#                option V, then press the page's last button
+#          -     press the page's last button and answer nothing
+#          .     the whole plan: open the door and look at what came up.
+#                A dot, not an empty cell: TAB is IFS whitespace, so bash
+#                COLLAPSES two tabs in a row and every field after an empty
+#                one shifts left by one. Measured, not feared.
+# kind   entry  = a command registered in setup.praat, opened cold
+#        branch = one route through the wizard, which is thirteen-plus doors
+#                 wearing one menu entry. Ian's crash was branch-ORDER
+#                 dependent, so a single wizard leg would have missed it.
+# note   what the leg is for, in one line
+#
+leg	entry	plan	kind	note
+e_wizard	eml-wizard.praat	.	entry	the wizard's own front page, nothing selected
+e_describe	eml-describe-table.praat	.	entry	Describe Table column
+e_normality	eml-check-normality.praat	.	entry	Check normality (all columns)
+e_compare_groups	eml-compare-groups.praat	.	entry	Compare two groups
+e_compare_paired	eml-compare-paired.praat	.	entry	Compare paired
+e_compare_k	eml-compare-k-groups.praat	.	entry	Compare k groups (ANOVA)
+e_compare_kw	eml-compare-kw.praat	.	entry	Compare k groups (Kruskal-Wallis)
+e_compare_twoway	eml-compare-twoway.praat	.	entry	Compare two-way (ANOVA)
+e_correlate	eml-correlate.praat	.	entry	Correlate two columns
+e_regress	eml-regress.praat	.	entry	Linear regression
+e_pairwise	eml-pairwise.praat	.	entry	Pairwise comparisons
+e_graphs	eml-graphs.praat	.	entry	EML Graphs
+e_batch	eml-batch-process.praat	.	entry	Batch voice analysis
+e_check_data	eml-check-data.praat	.	entry	Check and repair data
+e_record_start	eml-record-start.praat	.	entry	Record script
+e_record_open	eml-record-open.praat	.	entry	Stop recording and open
+e_record_save	eml-record-save.praat	.	entry	Stop recording and save
+e_create_demo	eml-create-demo.praat	.	entry	Create Demo Table
+e_edit_launch	eml-edit-table-launch.praat	.	entry	EML: Edit Table (Objects door)
+e_edit_editor	eml-edit-table-editor.praat	.	entry	EML: Edit Table (TableEditor door)
+w_indep_two	eml-wizard.praat	s1=1;s1=1;s1=1;-	branch	Compare / independent / two groups
+w_indep_k	eml-wizard.praat	s1=1;s1=1;s1=2;-	branch	Compare / independent / three or more
+w_indep_twofactor	eml-wizard.praat	s1=1;s1=1;s1=3;-	branch	Compare / independent / two-factor
+w_within_two	eml-wizard.praat	s1=1;s1=2;s1=1;-	branch	Compare / within-subject / two conditions -- IAN'S CRASH
+w_within_k	eml-wizard.praat	s1=1;s1=2;s1=2;-	branch	Compare / within-subject / three or more
+w_rel_correlation	eml-wizard.praat	s1=2;s1=1;-	branch	Relationship / correlation
+w_rel_regression	eml-wizard.praat	s1=2;s1=2;-	branch	Relationship / regression
+w_rel_categorical	eml-wizard.praat	s1=2;s1=3	branch	Relationship / categorical association (stub)
+w_rel_cont_cat	eml-wizard.praat	s1=2;s1=4;s1=1;s1=1;-	branch	Relationship / one continuous + one categorical, which reroutes into Compare
+w_desc_single	eml-wizard.praat	s1=3;s1=1;-	branch	Describe / single variable
+w_desc_bygroup	eml-wizard.praat	s1=3;s1=2;-	branch	Describe / by group
+w_desc_normality	eml-wizard.praat	s1=3;s1=3;-	branch	Describe / normality check
+w_predict	eml-wizard.praat	s1=4;-	branch	Predict an outcome (regression)
+w_goal_classify	eml-wizard.praat	s1=5	branch	Classify observations (stub)
+w_goal_reduce	eml-wizard.praat	s1=6	branch	Reduce dimensionality (stub)

@@ -123,6 +123,65 @@ Praat 6.6.30 under Xvfb, not on reasoning about Praat.
   Follow-up, small: the line-chart pages take the same grouping in their
   own file set as a separate commit, never as a retrofit against the old
   form.
+
+  DONE, 24 Aug, as its own change over the tree's own pages. "What the lines
+  are" folds its question into a 📋 Columns heading and stays at 4 rows.
+  "Column Mapping" gains 📊 Analysis and 🎛️ Layout headings, merges its two
+  📐 headings into one, and pairs its two axis-label rows: 23 rows before and
+  23 after in advanced mode, 8 to 11 in beginner mode, where the three
+  headings are what a branch that had none has to pay. Measured under Xvfb on
+  6.6.30: 817 px to 787 px advanced, 347 px to 398 px beginner, both
+  unclipped, and each delta accounted for row by row. "The Right-Hand Axis"
+  is untouched -- rule 5 keeps its ruled rows and every field on it already
+  renders under its 📐 heading.
+
+  THE RANGE PAIRS ARE NAMED BY THE QUANTITY NOW ("left Time", "left Value"),
+  like every other page, with a remap block after endPause carrying them to
+  the *_range names the toggle and draw arms read; the paired axis-label row
+  remaps to x_axis_label$ / y_axis_label$ the same way. v97 gained checks for
+  both remaps, because a page whose typed values reach nothing passes a check
+  that only reads labels.
+
+  NO TAB INDEX MOVED ON ANY DRIVEN LEG. harness/linetree drives these pages
+  in beginner mode, and no beginner field was reordered -- Time column, the
+  tickboxes, the y-axis name, Line style, in that order, as run.sh's plans
+  record. Headings take no tab stop. The ADVANCED page's fields did reorder
+  (Line style, Gridline and the six frame controls move down; Output DPI
+  moves to the end; the two range pairs and the labels row move up), and no
+  leg addresses an advanced-page widget by index -- subjects_ci reaches that
+  page and presses only buttons, which count from the end of the ring.
+- **The 🏷️ heading overprints the row below it on a narrow dialog** (OPEN,
+  measured 24 Aug, six pages). The markup legend the sweep gave every
+  axis-label group is 83 characters —
+
+      🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %
+
+  — and where the page is narrower than that, GTK wraps it onto a second
+  line while Praat has allotted the row one line's advance. The overflow
+  ("prints %") is drawn ON TOP of the next row's label. It is legible as
+  damage rather than as text: the paired label reads "printex# labels (x /
+  y; blank = auto):" off the photograph.
+
+  IT IS A PROPERTY OF THE PAGE'S WIDTH, WHICH IS DATA. A dialog is as wide as
+  its widest row, and the rows are built from the user's column names — so
+  the same page overprints on one table and not on another. Photographed on
+  the scatter page at 689 px (`t8_2_Scatter_Plot_Column_Mapping.png`) and on
+  the line chart at 707 px.
+
+  IT PREDATES THE LINE CHART'S GROUPING and was not caused by it. Before
+  that change the line chart's next row was the short "X axis label:", whose
+  right-aligned label starts well clear of the overflow, so the wrap was
+  merely an odd-looking two-line heading; pairing the labels lengthened that
+  label and the two now collide. Every page the sweep gave a paired labels
+  row has the collision: scatter, spaghetti, histogram, grouped violin,
+  grouped box, and now the line chart.
+
+  NOT FIXED HERE, DELIBERATELY. The string is shared by six pages; shortening
+  it on one would leave five broken and add a sixth spelling of one heading.
+  It wants one commit over all six, and a decision about what to drop —
+  "\% and a space prints %" is the half that overflows and also the half
+  that states a real Praat rule.
+
 - **The label character law** (ruling, measured). Before the parenthetical,
   a field label may contain letters, digits and spaces only, plus the
   leading left/right pairing word. Praat strips the label from the first
@@ -313,7 +372,21 @@ wording and output work so its report strings are written once.
 
 ### Red today, and known
 
-Nothing. The suite is green: 15974 checks, 15974 passed, on the 24 Aug
+TWO STALENESS BINDINGS, ON PURPOSE, both since the line chart's own pages
+took the layout grouping:
+
+- `v97` "the transcript was taken from THIS eml-graphs-form.praat"
+- `v84` "the transcript was driven on THIS form's code"
+
+Each is one check. Both are the photographed evidence declaring itself older
+than the form, which is what those digests exist to do; nothing else in
+either file is red, and no other check anywhere reads a line-chart
+photograph. They clear on the next re-drive of harness/linetree and
+harness/axisrefuse, which is one drive at the end of this page set under the
+standing one-re-drive rule -- and which needs no re-teaching, because no tab
+index on any driven leg moved.
+
+Before that: the suite was green -- 15974 checks, 15974 passed, on the 24 Aug
 verification pass over the whole tree.
 
 The two entries that stood here are closed. The line-style menu on the second

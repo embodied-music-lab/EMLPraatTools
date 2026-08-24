@@ -1,0 +1,9 @@
+An instance of Praat that is not me is already running.
+Cannot send message. The program may have crashed.
+PRAAT ERROR MESSAGE:
+Cannot open file “/home/claude/repo/plugin_EML_StatsGraphs/scripts/”.
+Hint: one of the folders or files in this file path does not exist.
+Hint: this is a folder, not a file.
+Error reading file “/home/claude/repo/plugin_EML_StatsGraphs/scripts/”.
+Script “/home/claude/repo/plugin_EML_StatsGraphs/scripts/” not completed.
+(END OF PRAAT ERROR MESSAGE)

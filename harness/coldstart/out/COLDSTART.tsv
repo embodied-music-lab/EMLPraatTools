@@ -1,0 +1,351 @@
+leg	key	value
+e_wizard	display	:145
+e_wizard	listening	1
+e_wizard	entry	eml-wizard.praat
+e_wizard	steps	0
+e_wizard	trail	Pause: EML Stats Wizard
+e_wizard	final	Pause: EML Stats Wizard
+e_wizard	state	page
+e_wizard	objects	(objects window empty)
+e_wizard	info	<none>
+e_wizard	returned	1
+e_describe	display	:145
+e_describe	listening	1
+e_describe	entry	eml-describe-table.praat
+e_describe	steps	0
+e_describe	trail	Pause: Cannot start this tool
+e_describe	final	Pause: Cannot start this tool
+e_describe	state	refused
+e_describe	objects	(objects window empty)
+e_describe	info	<none>
+e_describe	returned	1
+e_normality	display	:145
+e_normality	listening	1
+e_normality	entry	eml-check-normality.praat
+e_normality	steps	0
+e_normality	trail	Pause: Cannot start this tool
+e_normality	final	Pause: Cannot start this tool
+e_normality	state	refused
+e_normality	objects	(objects window empty)
+e_normality	info	<none>
+e_normality	returned	1
+e_compare_paired	display	:145
+e_compare_paired	listening	1
+e_compare_paired	entry	eml-compare-paired.praat
+e_compare_paired	steps	0
+e_compare_paired	trail	Pause: Cannot start this tool
+e_compare_paired	final	Pause: Cannot start this tool
+e_compare_paired	state	refused
+e_compare_paired	objects	(objects window empty)
+e_compare_paired	info	<none>
+e_compare_paired	returned	1
+e_compare_k	display	:145
+e_compare_k	listening	1
+e_compare_k	entry	eml-compare-k-groups.praat
+e_compare_k	steps	0
+e_compare_k	trail	Pause: Cannot start this tool
+e_compare_k	final	Pause: Cannot start this tool
+e_compare_k	state	refused
+e_compare_k	objects	(objects window empty)
+e_compare_k	info	<none>
+e_compare_k	returned	1
+e_compare_kw	display	:145
+e_compare_kw	listening	1
+e_compare_kw	entry	eml-compare-kw.praat
+e_compare_kw	steps	0
+e_compare_kw	trail	Pause: Cannot start this tool
+e_compare_kw	final	Pause: Cannot start this tool
+e_compare_kw	state	refused
+e_compare_kw	objects	(objects window empty)
+e_compare_kw	info	<none>
+e_compare_kw	returned	1
+e_compare_twoway	display	:145
+e_compare_twoway	listening	1
+e_compare_twoway	entry	eml-compare-twoway.praat
+e_compare_twoway	steps	0
+e_compare_twoway	trail	Pause: Cannot start this tool
+e_compare_twoway	final	Pause: Cannot start this tool
+e_compare_twoway	state	refused
+e_compare_twoway	objects	(objects window empty)
+e_compare_twoway	info	<none>
+e_compare_twoway	returned	1
+e_correlate	display	:145
+e_correlate	listening	1
+e_correlate	entry	eml-correlate.praat
+e_correlate	steps	0
+e_correlate	trail	Pause: Cannot start this tool
+e_correlate	final	Pause: Cannot start this tool
+e_correlate	state	refused
+e_correlate	objects	(objects window empty)
+e_correlate	info	<none>
+e_correlate	returned	1
+e_regress	display	:145
+e_regress	listening	1
+e_regress	entry	eml-regress.praat
+e_regress	steps	0
+e_regress	trail	Pause: Cannot start this tool
+e_regress	final	Pause: Cannot start this tool
+e_regress	state	refused
+e_regress	objects	(objects window empty)
+e_regress	info	<none>
+e_regress	returned	1
+e_pairwise	display	:145
+e_pairwise	listening	1
+e_pairwise	entry	eml-pairwise.praat
+e_pairwise	steps	0
+e_pairwise	trail	Pause: Cannot start this tool
+e_pairwise	final	Pause: Cannot start this tool
+e_pairwise	state	refused
+e_pairwise	objects	(objects window empty)
+e_pairwise	info	<none>
+e_pairwise	returned	1
+e_graphs	display	:145
+e_graphs	listening	1
+e_graphs	entry	eml-graphs.praat
+e_graphs	steps	0
+e_graphs	trail	Pause: EML Graphs
+e_graphs	final	Pause: EML Graphs
+e_graphs	state	page
+e_graphs	objects	(objects window empty)
+e_graphs	info	<none>
+e_graphs	returned	1
+e_batch	display	:145
+e_batch	listening	1
+e_batch	entry	eml-batch-process.praat
+e_batch	steps	0
+e_batch	trail	Pause: Batch Voice Analysis
+e_batch	final	Pause: Batch Voice Analysis
+e_batch	state	page
+e_batch	objects	(objects window empty)
+e_batch	info	<none>
+e_batch	returned	1
+e_check_data	display	:145
+e_check_data	listening	1
+e_check_data	entry	eml-check-data.praat
+e_check_data	steps	0
+e_check_data	trail	Pause: EML — Check & repair data
+e_check_data	final	Pause: EML — Check & repair data
+e_check_data	state	page
+e_check_data	objects	(objects window empty)
+e_check_data	info	<none>
+e_check_data	returned	1
+e_record_start	display	:145
+e_record_start	listening	1
+e_record_start	entry	eml-record-start.praat
+e_record_start	steps	0
+e_record_start	trail	
+e_record_start	final	<none>
+e_record_start	state	spoke
+e_record_start	objects	Table emlRecording_DO_NOT_REMOVE/Table emlRecordMeta
+e_record_start	info	EML: recording started. Every EML analysis, figure and table edit from now on is added to one script. Finish with 'Stop recording and open' to read it in an editor, or 'Stop recording and save' to file it directly. WHAT GOES INTO IT, AND WHAT DOES NOT: Recorded — anything you do through an EML command: analyses, figures, saves, and changes you make in EML's own 'EML: Edit Table...' window. Not r...
+e_record_start	returned	1
+e_record_open	display	:145
+e_record_open	listening	1
+e_record_open	entry	eml-record-open.praat
+e_record_open	steps	0
+e_record_open	trail	
+e_record_open	final	<none>
+e_record_open	state	spoke
+e_record_open	objects	(objects window empty)
+e_record_open	info	------------------------------------------------------------ EML: nothing is being recorded. Run 'Record script' first, then any EML analysis or figure, then this command.
+e_record_open	returned	1
+e_record_save	display	:145
+e_record_save	listening	1
+e_record_save	entry	eml-record-save.praat
+e_record_save	steps	0
+e_record_save	trail	
+e_record_save	final	<none>
+e_record_save	state	spoke
+e_record_save	objects	(objects window empty)
+e_record_save	info	------------------------------------------------------------ EML: no recording is in progress. Run 'Record script' first, then the analyses and figures you want captured.
+e_record_save	returned	1
+e_create_demo	display	:145
+e_create_demo	listening	1
+e_create_demo	entry	eml-create-demo.praat
+e_create_demo	steps	0
+e_create_demo	trail	Pause: Create Demo Table
+e_create_demo	final	Pause: Create Demo Table
+e_create_demo	state	page
+e_create_demo	objects	(objects window empty)
+e_create_demo	info	<none>
+e_create_demo	returned	1
+e_edit_launch	display	:145
+e_edit_launch	listening	1
+e_edit_launch	entry	eml-edit-table-launch.praat
+e_edit_launch	steps	0
+e_edit_launch	trail	Pause: Cannot Open the Table Editor
+e_edit_launch	final	Pause: Cannot Open the Table Editor
+e_edit_launch	state	refused
+e_edit_launch	objects	(objects window empty)
+e_edit_launch	info	<none>
+e_edit_launch	returned	1
+e_edit_editor	display	:145
+e_edit_editor	listening	1
+e_edit_editor	entry	eml-edit-table-editor.praat
+e_edit_editor	steps	0
+e_edit_editor	trail	Pause: Cannot Open the Table Editor
+e_edit_editor	final	Pause: Cannot Open the Table Editor
+e_edit_editor	state	refused
+e_edit_editor	objects	(objects window empty)
+e_edit_editor	info	<none>
+e_edit_editor	returned	1
+w_indep_two	display	:145
+w_indep_two	listening	1
+w_indep_two	entry	eml-wizard.praat
+w_indep_two	steps	4
+w_indep_two	trail	Pause: EML Stats Wizard > Pause: Compare — Observation type > Pause: Compare independent — Design > Pause: No table selected > Pause: Two groups — Select columns
+w_indep_two	final	Pause: Two groups — Select columns
+w_indep_two	state	example
+w_indep_two	objects	n/a
+w_indep_two	info	<none>
+w_indep_two	returned	1
+w_indep_k	display	:145
+w_indep_k	listening	1
+w_indep_k	entry	eml-wizard.praat
+w_indep_k	steps	4
+w_indep_k	trail	Pause: EML Stats Wizard > Pause: Compare — Observation type > Pause: Compare independent — Design > Pause: No table selected > Pause: Three+ groups — Select columns
+w_indep_k	final	Pause: Three+ groups — Select columns
+w_indep_k	state	example
+w_indep_k	objects	n/a
+w_indep_k	info	<none>
+w_indep_k	returned	1
+w_within_two	display	:145
+w_within_two	listening	1
+w_within_two	entry	eml-wizard.praat
+w_within_two	steps	4
+w_within_two	trail	Pause: EML Stats Wizard > Pause: Compare — Observation type > Pause: Paired / repeated — how many conditions? > Pause: No table selected > Pause: Paired — Select columns
+w_within_two	final	Pause: Paired — Select columns
+w_within_two	state	example
+w_within_two	objects	n/a
+w_within_two	info	<none>
+w_within_two	returned	1
+w_within_k	display	:145
+w_within_k	listening	1
+w_within_k	entry	eml-wizard.praat
+w_within_k	steps	4
+w_within_k	trail	Pause: EML Stats Wizard > Pause: Compare — Observation type > Pause: Paired / repeated — how many conditions? > Pause: No table selected > Pause: Repeated measures — select condition columns
+w_within_k	final	Pause: Repeated measures — select condition columns
+w_within_k	state	example
+w_within_k	objects	Table demo_pre_post
+w_within_k	info	<none>
+w_within_k	returned	1
+w_rel_correlation	display	:145
+w_rel_correlation	listening	1
+w_rel_correlation	entry	eml-wizard.praat
+w_rel_correlation	steps	3
+w_rel_correlation	trail	Pause: EML Stats Wizard > Pause: Relationship — What type? > Pause: No table selected > Pause: Correlation — Select columns
+w_rel_correlation	final	Pause: Correlation — Select columns
+w_rel_correlation	state	example
+w_rel_correlation	objects	n/a
+w_rel_correlation	info	<none>
+w_rel_correlation	returned	1
+w_rel_regression	display	:145
+w_rel_regression	listening	1
+w_rel_regression	entry	eml-wizard.praat
+w_rel_regression	steps	3
+w_rel_regression	trail	Pause: EML Stats Wizard > Pause: Relationship — What type? > Pause: No table selected > Pause: Regression — Select columns
+w_rel_regression	final	Pause: Regression — Select columns
+w_rel_regression	state	example
+w_rel_regression	objects	Table demo_practice_effect
+w_rel_regression	info	<none>
+w_rel_regression	returned	1
+w_rel_categorical	display	:145
+w_rel_categorical	listening	1
+w_rel_categorical	entry	eml-wizard.praat
+w_rel_categorical	steps	2
+w_rel_categorical	trail	Pause: EML Stats Wizard > Pause: Relationship — What type? > Pause: Analysis complete
+w_rel_categorical	final	Pause: Analysis complete
+w_rel_categorical	state	page
+w_rel_categorical	objects	(objects window empty)
+w_rel_categorical	info	── Not Yet Available ── Categorical association (chi-squared) is planned for a future update. In the meantime, you can use the named tools in the EML Stats & Graphs menu for available analyses.
+w_rel_categorical	returned	1
+w_rel_cont_cat	display	:145
+w_rel_cont_cat	listening	1
+w_rel_cont_cat	entry	eml-wizard.praat
+w_rel_cont_cat	steps	5
+w_rel_cont_cat	trail	Pause: EML Stats Wizard > Pause: Relationship — What type? > Pause: Compare — Observation type > Pause: Compare independent — Design > Pause: No table selected > Pause: Two groups — Select columns
+w_rel_cont_cat	final	Pause: Two groups — Select columns
+w_rel_cont_cat	state	example
+w_rel_cont_cat	objects	n/a
+w_rel_cont_cat	info	<none>
+w_rel_cont_cat	returned	1
+w_desc_single	display	:145
+w_desc_single	listening	1
+w_desc_single	entry	eml-wizard.praat
+w_desc_single	steps	3
+w_desc_single	trail	Pause: EML Stats Wizard > Pause: Describe — What to summarize > Pause: No table selected > Pause: Describe — Select column
+w_desc_single	final	Pause: Describe — Select column
+w_desc_single	state	example
+w_desc_single	objects	n/a
+w_desc_single	info	<none>
+w_desc_single	returned	1
+w_desc_bygroup	display	:145
+w_desc_bygroup	listening	1
+w_desc_bygroup	entry	eml-wizard.praat
+w_desc_bygroup	steps	3
+w_desc_bygroup	trail	Pause: EML Stats Wizard > Pause: Describe — What to summarize > Pause: No table selected > Pause: Describe by group — Select columns
+w_desc_bygroup	final	Pause: Describe by group — Select columns
+w_desc_bygroup	state	example
+w_desc_bygroup	objects	n/a
+w_desc_bygroup	info	<none>
+w_desc_bygroup	returned	1
+w_desc_normality	display	:145
+w_desc_normality	listening	1
+w_desc_normality	entry	eml-wizard.praat
+w_desc_normality	steps	3
+w_desc_normality	trail	Pause: EML Stats Wizard > Pause: Describe — What to summarize > Pause: No table selected > Pause: Normality check — Select column
+w_desc_normality	final	Pause: Normality check — Select column
+w_desc_normality	state	example
+w_desc_normality	objects	n/a
+w_desc_normality	info	<none>
+w_desc_normality	returned	1
+w_predict	display	:145
+w_predict	listening	1
+w_predict	entry	eml-wizard.praat
+w_predict	steps	2
+w_predict	trail	Pause: EML Stats Wizard > Pause: No table selected > Pause: Predict — Select columns
+w_predict	final	Pause: Predict — Select columns
+w_predict	state	example
+w_predict	objects	Table demo_practice_effect
+w_predict	info	<none>
+w_predict	returned	1
+w_goal_classify	display	:145
+w_goal_classify	listening	1
+w_goal_classify	entry	eml-wizard.praat
+w_goal_classify	steps	1
+w_goal_classify	trail	Pause: EML Stats Wizard > Pause: Analysis complete
+w_goal_classify	final	Pause: Analysis complete
+w_goal_classify	state	page
+w_goal_classify	objects	(objects window empty)
+w_goal_classify	info	── Not Yet Available ── Classification (discriminant analysis) is planned for a future update. In the meantime, you can use the named tools in the EML Stats & Graphs menu for available analyses.
+w_goal_classify	returned	1
+w_goal_reduce	display	:145
+w_goal_reduce	listening	1
+w_goal_reduce	entry	eml-wizard.praat
+w_goal_reduce	steps	1
+w_goal_reduce	trail	Pause: EML Stats Wizard > Pause: Analysis complete
+w_goal_reduce	final	Pause: Analysis complete
+w_goal_reduce	state	page
+w_goal_reduce	objects	(objects window empty)
+w_goal_reduce	info	── Not Yet Available ── Dimensionality reduction (PCA, MDS) is planned for a future update. In the meantime, you can use the named tools in the EML Stats & Graphs menu for available analyses.
+w_goal_reduce	returned	1
+w_indep_twofactor	display	:172
+w_indep_twofactor	listening	1
+w_indep_twofactor	entry	eml-wizard.praat
+w_indep_twofactor	steps	4
+w_indep_twofactor	trail	Pause: EML Stats Wizard > Pause: Compare — Observation type > Pause: Compare independent — Design > Pause: No table selected > Pause: Two-Factor Design
+w_indep_twofactor	final	Pause: Two-Factor Design
+w_indep_twofactor	state	example
+w_indep_twofactor	objects	n/a
+w_indep_twofactor	info	<none>
+w_indep_twofactor	returned	1
+e_compare_groups	display	:173
+e_compare_groups	listening	1
+e_compare_groups	entry	eml-compare-groups.praat
+e_compare_groups	steps	0
+e_compare_groups	trail	Pause: Cannot start this tool
+e_compare_groups	final	Pause: Cannot start this tool
+e_compare_groups	state	refused
+e_compare_groups	objects	(objects window empty)
+e_compare_groups	info	<none>
+e_compare_groups	returned	1
