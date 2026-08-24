@@ -72,6 +72,14 @@ LEGS="${*:-subjects4 timeswitch subjects_ci meas2 meas2_rep meas3_refuse none_re
 
 emit "--run--" praat_version "$("$PRAAT" --version 2>&1 | head -1)"
 emit "--run--" source_tree "$SRC"
+# THE MACHINE IS PART OF THE EVIDENCE. Every figure comparison below is a
+# pixel comparison, and a pixel comparison is a property of the container that
+# took it as much as of the plugin: legend widths and glyph metrics move a
+# pixel or three between machines for reasons no commit causes. Recording the
+# host means a re-drive somewhere else declares itself as a re-baseline rather
+# than reading as a regression, and spares the next reader a bisect over a
+# cross-machine pixel delta.
+emit "--run--" host "$(hostname 2>/dev/null || uname -n)"
 emit "--run--" legs_requested "$LEGS"
 
 # ---------------------------------------------------------------------------
@@ -263,6 +271,18 @@ dialog_text () {
 #       field, and every step below addresses widget 0 or 1.
 #       No Y axis label here: one numeric column HAS a name in the table, so
 #       the axis label composes itself from it.
+#
+# AND THE THIRTEEN-PAGE GROUPING SWEEP (c74d432) DID NOT REACH ANY OF THEM.
+# The line chart's own pages take the grouping in their own file set as a
+# later commit, so the sweep's only mark on this walk's line-chart region is
+# one added comment row -- the no-erase legend advice beside "Legend
+# placement" on the column page. A comment takes no Tab stop. Measured, not
+# assumed: the focusable widgets and the endPause button rows of all five
+# line-chart pages -- "What the lines are", "Column Mapping", "Time column
+# changed", the "Line chart" refusal and "The Right-Hand Axis" -- are
+# byte-identical across c74d432, so every opt/tog/btn step below stands as
+# written. The one shared page this walk crosses on its way in, "EML Graphs",
+# WAS swept; see the long_titled leg for why its tab1 did not move.
 #
 # BUTTON ROWS:
 #   EML Graphs (main)              Quit / Continue          -> Continue = btn1
@@ -479,8 +499,24 @@ PLAN
   # census agreeing exactly. Typing the same title into both removes the one
   # legitimate difference and leaves the claim as a claim about the data.
   #
-  # THE TITLE FIELD IS WIDGET 1 ON THE MAIN PAGE: 0 Graph type, 1 Title,
-  # 2 Subtitle, 3 Colour mode, and so on -- read off the page's own OCR.
+  # THE TITLE FIELD IS WIDGET 1 ON THE MAIN PAGE. Read off
+  # eml-graphs-form.praat rather than off this transcript's photograph of
+  # the page, because the photograph is one commit stale and the page has
+  # been regrouped since. Focusable order, all nine:
+  #       0 Graph type, 1 Title, 2 Subtitle, 3 Color mode,
+  #       4 left Figure size, 5 right Figure size, 6 Erase page first,
+  #       7 left Panel origin, 8 right Panel origin
+  #
+  # c74d432 REGROUPED THIS PAGE AND MOVED NOTHING. The sweep put every row
+  # under a named group -- a "🖼️ Figure" comment above Graph type and a
+  # "📄 Page" comment above Erase -- and renamed two pairs into Praat's
+  # left/right paired-row idiom (Figure width/height -> left/right Figure
+  # size, Panel origin x/y -> left/right Panel origin). A comment row takes
+  # no Tab stop, and a paired row still takes ONE STOP PER BOX -- both boxes
+  # are real entry fields and Praat only shares the row and the label. So
+  # the count is nine before and nine after, in the same order, and tab1 is
+  # the Title on both revisions. Derived from the source on both sides of
+  # the commit, not assumed.
   long_titled) cat <<'PLAN'
 EML Graphs|ocr,tab1=Two measurements,btn1
 Line Chart -- What the lines are|ocr,opt0=2,btn1

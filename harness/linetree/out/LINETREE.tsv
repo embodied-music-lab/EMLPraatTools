@@ -1,28 +1,27 @@
 --run--	praat_version	Praat 6.6.30 (June 30 2026)
 --run--	source_tree	/home/claude/repo
+--run--	host	vm
 --run--	legs_requested	subjects4 timeswitch subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven script_refuse long_meas2 long_meas3_refuse long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2
---run--	code_sha256_eml-graphs-form	850fdf178a8b06d87bec77d428a04abb90aa12bb835f616a7055d2794e60843f
+--run--	code_sha256_eml-graphs-form	106392046c3db2bf10ecbc4b82d66a7b11883cca5d36cf2eacb980edcf4e8afd
 --run--	code_sha256_eml-graph-procedures	8ba64e46aa591e1ec885c4c6a62e2403f60e3d72e129b17072f617a1c7157a72
---run--	code_sha256_eml-draw-procedures	57c7e9d26b03e8fd1a86ba1953e4b636516d0ed583d1428abb4359edcc03d0e8
+--run--	code_sha256_eml-draw-procedures	8a32e7b6d0198fa1d478db39d124c197417f348eb0932e98ae1e775ec2bf2540
 --run--	code_sha256_eml-record	9dc15a37578405e641e75918d4806c2129015aa74407cf202b8fd5276b05afe9
 --run--	compositor	running
 subjects4	leg_started	1
 subjects4	ink_empty	0.000687143
 subjects4	s1_title	EML Graphs
 subjects4	s1_want	EML Graphs
+subjects4	s1_shown	[S) Figure
 subjects4	s1_shown	Graph type: Line Chart (+Cl) v
 subjects4	s1_shown	Title (blank = auto from table and
 subjects4	s1_shown	columns):
 subjects4	s1_shown	Subtitle:
 subjects4	s1_shown	Colormode: Color v
-subjects4	s1_shown	Figure width (inches): ¢
-subjects4	s1_shown	Figure height (inches): | 4
-subjects4	s1_shown	Erase page first
-subjects4	s1_shown	Panel origin x (inches):
-subjects4	s1_shown	Panel origin y (inches):
+subjects4	s1_shown	Figure size (w x h, inches): ¢ 4
+subjects4	s1_shown	' Page
 subjects4	s1_shown	Untick Erase to add this figure to the page already drawn.
-subjects4	s1_shown	On a composed page a legend inside the plot is not
-subjects4	s1_shown	given axis room — use Right of plot or Below plot.
+subjects4	s1_shown	Erase page first
+subjects4	s1_shown	Panel origin (x/y, inches): 0
 subjects4	s1_shown	Undo Quit Continue
 subjects4	s2_title	Line Chart -- What the lines are
 subjects4	s2_want	Line Chart -- What the lines are
@@ -112,19 +111,17 @@ timeswitch	leg_started	1
 timeswitch	ink_empty	0.000687143
 timeswitch	s1_title	EML Graphs
 timeswitch	s1_want	EML Graphs
+timeswitch	s1_shown	[S) Figure
 timeswitch	s1_shown	Graph type: Line Chart (+Cl) v
 timeswitch	s1_shown	Title (blank = auto from table and
 timeswitch	s1_shown	columns):
 timeswitch	s1_shown	Subtitle:
 timeswitch	s1_shown	Colormode: Color v
-timeswitch	s1_shown	Figure width (inches): ¢
-timeswitch	s1_shown	Figure height (inches): | 4
-timeswitch	s1_shown	Erase page first
-timeswitch	s1_shown	Panel origin x (inches):
-timeswitch	s1_shown	Panel origin y (inches):
+timeswitch	s1_shown	Figure size (w x h, inches): ¢ 4
+timeswitch	s1_shown	' Page
 timeswitch	s1_shown	Untick Erase to add this figure to the page already drawn.
-timeswitch	s1_shown	On a composed page a legend inside the plot is not
-timeswitch	s1_shown	given axis room — use Right of plot or Below plot.
+timeswitch	s1_shown	Erase page first
+timeswitch	s1_shown	Panel origin (x/y, inches): 0
 timeswitch	s1_shown	Undo Quit Continue
 timeswitch	s2_title	Line Chart -- What the lines are
 timeswitch	s2_want	Line Chart -- What the lines are
@@ -228,19 +225,17 @@ subjects_ci	leg_started	1
 subjects_ci	ink_empty	0.000687143
 subjects_ci	s1_title	EML Graphs
 subjects_ci	s1_want	EML Graphs
+subjects_ci	s1_shown	[S) Figure
 subjects_ci	s1_shown	Graph type: Line Chart (+Cl) v
 subjects_ci	s1_shown	Title (blank = auto from table and
 subjects_ci	s1_shown	columns):
 subjects_ci	s1_shown	Subtitle:
 subjects_ci	s1_shown	Colormode: Color v
-subjects_ci	s1_shown	Figure width (inches): ¢
-subjects_ci	s1_shown	Figure height (inches): | 4
-subjects_ci	s1_shown	Erase page first
-subjects_ci	s1_shown	Panel origin x (inches):
-subjects_ci	s1_shown	Panel origin y (inches):
+subjects_ci	s1_shown	Figure size (w x h, inches): ¢ 4
+subjects_ci	s1_shown	' Page
 subjects_ci	s1_shown	Untick Erase to add this figure to the page already drawn.
-subjects_ci	s1_shown	On a composed page a legend inside the plot is not
-subjects_ci	s1_shown	given axis room — use Right of plot or Below plot.
+subjects_ci	s1_shown	Erase page first
+subjects_ci	s1_shown	Panel origin (x/y, inches): 0
 subjects_ci	s1_shown	Undo Quit Continue
 subjects_ci	s2_title	Line Chart -- What the lines are
 subjects_ci	s2_want	Line Chart -- What the lines are
@@ -268,11 +263,13 @@ subjects_ci	s4_shown	Series names come from: _ speaker Vv
 subjects_ci	s4_shown	Group order: Table order Vv
 subjects_ci	s4_shown	Draw the mean and its interval (up to 4 observations per point)
 subjects_ci	s4_shown	Line style: Solid v
-subjects_ci	s4_shown	»\ X-axis (both 0 = auto)
+subjects_ci	s4_shown	», X-axis (both 0 = auto)
 subjects_ci	s4_shown	Time range (left/right): 0
 subjects_ci	s4_shown	». Y-axis (both 0 = auto)
 subjects_ci	s4_shown	Value range (bottom/top): 9 0
 subjects_ci	s4_shown	Gridline mode: Both v
+subjects_ci	s4_shown	On a composed page a legend inside the plot is not given axis room — use
+subjects_ci	s4_shown	Right of plot or Below plot.
 subjects_ci	s4_shown	Legend placement (when drawn): Inside plot v
 subjects_ci	s4_shown	Output DPI: 300 dpi v
 subjects_ci	s4_shown	Show inner box
@@ -367,19 +364,17 @@ meas2	leg_started	1
 meas2	ink_empty	0.000687143
 meas2	s1_title	EML Graphs
 meas2	s1_want	EML Graphs
+meas2	s1_shown	[S) Figure
 meas2	s1_shown	Graph type: Line Chart (+Cl) v
 meas2	s1_shown	Title (blank = auto from table and
 meas2	s1_shown	columns):
 meas2	s1_shown	Subtitle:
 meas2	s1_shown	Colormode: Color v
-meas2	s1_shown	Figure width (inches): ¢
-meas2	s1_shown	Figure height (inches): | 4
-meas2	s1_shown	Erase page first
-meas2	s1_shown	Panel origin x (inches):
-meas2	s1_shown	Panel origin y (inches):
+meas2	s1_shown	Figure size (w x h, inches): ¢ 4
+meas2	s1_shown	' Page
 meas2	s1_shown	Untick Erase to add this figure to the page already drawn.
-meas2	s1_shown	On a composed page a legend inside the plot is not
-meas2	s1_shown	given axis room — use Right of plot or Below plot.
+meas2	s1_shown	Erase page first
+meas2	s1_shown	Panel origin (x/y, inches): 0
 meas2	s1_shown	Undo Quit Continue
 meas2	s2_title	Line Chart -- What the lines are
 meas2	s2_want	Line Chart -- What the lines are
@@ -483,19 +478,17 @@ meas2_rep	leg_started	1
 meas2_rep	ink_empty	0.000687143
 meas2_rep	s1_title	EML Graphs
 meas2_rep	s1_want	EML Graphs
+meas2_rep	s1_shown	[S) Figure
 meas2_rep	s1_shown	Graph type: Line Chart (+Cl) v
 meas2_rep	s1_shown	Title (blank = auto from table and
 meas2_rep	s1_shown	columns):
 meas2_rep	s1_shown	Subtitle:
 meas2_rep	s1_shown	Colormode: Color v
-meas2_rep	s1_shown	Figure width (inches): ¢
-meas2_rep	s1_shown	Figure height (inches): | 4
-meas2_rep	s1_shown	Erase page first
-meas2_rep	s1_shown	Panel origin x (inches):
-meas2_rep	s1_shown	Panel origin y (inches):
+meas2_rep	s1_shown	Figure size (w x h, inches): ¢ 4
+meas2_rep	s1_shown	' Page
 meas2_rep	s1_shown	Untick Erase to add this figure to the page already drawn.
-meas2_rep	s1_shown	On a composed page a legend inside the plot is not
-meas2_rep	s1_shown	given axis room — use Right of plot or Below plot.
+meas2_rep	s1_shown	Erase page first
+meas2_rep	s1_shown	Panel origin (x/y, inches): 0
 meas2_rep	s1_shown	Undo Quit Continue
 meas2_rep	s2_title	Line Chart -- What the lines are
 meas2_rep	s2_want	Line Chart -- What the lines are
@@ -595,19 +588,17 @@ meas3_refuse	leg_started	1
 meas3_refuse	ink_empty	0.000687143
 meas3_refuse	s1_title	EML Graphs
 meas3_refuse	s1_want	EML Graphs
+meas3_refuse	s1_shown	[S) Figure
 meas3_refuse	s1_shown	Graph type: Line Chart (+Cl) v
 meas3_refuse	s1_shown	Title (blank = auto from table and
 meas3_refuse	s1_shown	columns):
 meas3_refuse	s1_shown	Subtitle:
 meas3_refuse	s1_shown	Colormode: Color v
-meas3_refuse	s1_shown	Figure width (inches): ¢
-meas3_refuse	s1_shown	Figure height (inches): | 4
-meas3_refuse	s1_shown	Erase page first
-meas3_refuse	s1_shown	Panel origin x (inches):
-meas3_refuse	s1_shown	Panel origin y (inches):
+meas3_refuse	s1_shown	Figure size (w x h, inches): ¢ 4
+meas3_refuse	s1_shown	' Page
 meas3_refuse	s1_shown	Untick Erase to add this figure to the page already drawn.
-meas3_refuse	s1_shown	On a composed page a legend inside the plot is not
-meas3_refuse	s1_shown	given axis room — use Right of plot or Below plot.
+meas3_refuse	s1_shown	Erase page first
+meas3_refuse	s1_shown	Panel origin (x/y, inches): 0
 meas3_refuse	s1_shown	Undo Quit Continue
 meas3_refuse	s2_title	Line Chart -- What the lines are
 meas3_refuse	s2_want	Line Chart -- What the lines are
@@ -729,19 +720,17 @@ none_refuse	leg_started	1
 none_refuse	ink_empty	0.000687143
 none_refuse	s1_title	EML Graphs
 none_refuse	s1_want	EML Graphs
+none_refuse	s1_shown	[S) Figure
 none_refuse	s1_shown	Graph type: Line Chart (+Cl) v
 none_refuse	s1_shown	Title (blank = auto from table and
 none_refuse	s1_shown	columns):
 none_refuse	s1_shown	Subtitle:
 none_refuse	s1_shown	Colormode: Color v
-none_refuse	s1_shown	Figure width (inches): ¢
-none_refuse	s1_shown	Figure height (inches): | 4
-none_refuse	s1_shown	Erase page first
-none_refuse	s1_shown	Panel origin x (inches):
-none_refuse	s1_shown	Panel origin y (inches):
+none_refuse	s1_shown	Figure size (w x h, inches): ¢ 4
+none_refuse	s1_shown	' Page
 none_refuse	s1_shown	Untick Erase to add this figure to the page already drawn.
-none_refuse	s1_shown	On a composed page a legend inside the plot is not
-none_refuse	s1_shown	given axis room — use Right of plot or Below plot.
+none_refuse	s1_shown	Erase page first
+none_refuse	s1_shown	Panel origin (x/y, inches): 0
 none_refuse	s1_shown	Undo Quit Continue
 none_refuse	s2_title	Line Chart -- What the lines are
 none_refuse	s2_want	Line Chart -- What the lines are
@@ -838,19 +827,17 @@ seven	leg_started	1
 seven	ink_empty	0.000687143
 seven	s1_title	EML Graphs
 seven	s1_want	EML Graphs
+seven	s1_shown	[S) Figure
 seven	s1_shown	Graph type: Line Chart (+Cl) v
 seven	s1_shown	Title (blank = auto from table and
 seven	s1_shown	columns):
 seven	s1_shown	Subtitle:
 seven	s1_shown	Colormode: Color v
-seven	s1_shown	Figure width (inches): ¢
-seven	s1_shown	Figure height (inches): | 4
-seven	s1_shown	Erase page first
-seven	s1_shown	Panel origin x (inches):
-seven	s1_shown	Panel origin y (inches):
+seven	s1_shown	Figure size (w x h, inches): ¢ 4
+seven	s1_shown	' Page
 seven	s1_shown	Untick Erase to add this figure to the page already drawn.
-seven	s1_shown	On a composed page a legend inside the plot is not
-seven	s1_shown	given axis room — use Right of plot or Below plot.
+seven	s1_shown	Erase page first
+seven	s1_shown	Panel origin (x/y, inches): 0
 seven	s1_shown	Undo Quit Continue
 seven	s2_title	Line Chart -- What the lines are
 seven	s2_want	Line Chart -- What the lines are
@@ -1005,19 +992,17 @@ long_meas2	leg_started	1
 long_meas2	ink_empty	0.000687143
 long_meas2	s1_title	EML Graphs
 long_meas2	s1_want	EML Graphs
+long_meas2	s1_shown	[S) Figure
 long_meas2	s1_shown	Graph type: Line Chart (+Cl) v
 long_meas2	s1_shown	Title (blank = auto from table and
 long_meas2	s1_shown	columns):
 long_meas2	s1_shown	Subtitle:
 long_meas2	s1_shown	Colormode: Color v
-long_meas2	s1_shown	Figure width (inches): ¢
-long_meas2	s1_shown	Figure height (inches): | 4
-long_meas2	s1_shown	Erase page first
-long_meas2	s1_shown	Panel origin x (inches):
-long_meas2	s1_shown	Panel origin y (inches):
+long_meas2	s1_shown	Figure size (w x h, inches): ¢ 4
+long_meas2	s1_shown	' Page
 long_meas2	s1_shown	Untick Erase to add this figure to the page already drawn.
-long_meas2	s1_shown	On a composed page a legend inside the plot is not
-long_meas2	s1_shown	given axis room — use Right of plot or Below plot.
+long_meas2	s1_shown	Erase page first
+long_meas2	s1_shown	Panel origin (x/y, inches): 0
 long_meas2	s1_shown	Undo Quit Continue
 long_meas2	s2_title	Line Chart -- What the lines are
 long_meas2	s2_want	Line Chart -- What the lines are
@@ -1120,19 +1105,17 @@ long_meas3_refuse	leg_started	1
 long_meas3_refuse	ink_empty	0.000687143
 long_meas3_refuse	s1_title	EML Graphs
 long_meas3_refuse	s1_want	EML Graphs
+long_meas3_refuse	s1_shown	[S) Figure
 long_meas3_refuse	s1_shown	Graph type: Line Chart (+Cl) v
 long_meas3_refuse	s1_shown	Title (blank = auto from table and
 long_meas3_refuse	s1_shown	columns):
 long_meas3_refuse	s1_shown	Subtitle:
 long_meas3_refuse	s1_shown	Colormode: Color v
-long_meas3_refuse	s1_shown	Figure width (inches): ¢
-long_meas3_refuse	s1_shown	Figure height (inches): | 4
-long_meas3_refuse	s1_shown	Erase page first
-long_meas3_refuse	s1_shown	Panel origin x (inches):
-long_meas3_refuse	s1_shown	Panel origin y (inches):
+long_meas3_refuse	s1_shown	Figure size (w x h, inches): ¢ 4
+long_meas3_refuse	s1_shown	' Page
 long_meas3_refuse	s1_shown	Untick Erase to add this figure to the page already drawn.
-long_meas3_refuse	s1_shown	On a composed page a legend inside the plot is not
-long_meas3_refuse	s1_shown	given axis room — use Right of plot or Below plot.
+long_meas3_refuse	s1_shown	Erase page first
+long_meas3_refuse	s1_shown	Panel origin (x/y, inches): 0
 long_meas3_refuse	s1_shown	Undo Quit Continue
 long_meas3_refuse	s2_title	Line Chart -- What the lines are
 long_meas3_refuse	s2_want	Line Chart -- What the lines are
@@ -1229,19 +1212,17 @@ long_titled	leg_started	1
 long_titled	ink_empty	0.000687143
 long_titled	s1_title	EML Graphs
 long_titled	s1_want	EML Graphs
+long_titled	s1_shown	[S) Figure
 long_titled	s1_shown	Graph type: Line Chart (+Cl) v
 long_titled	s1_shown	Title (blank = auto from table and
 long_titled	s1_shown	columns):
 long_titled	s1_shown	Subtitle:
 long_titled	s1_shown	Colormode: Color v
-long_titled	s1_shown	Figure width (inches): ¢
-long_titled	s1_shown	Figure height (inches): | 4
-long_titled	s1_shown	Erase page first
-long_titled	s1_shown	Panel origin x (inches):
-long_titled	s1_shown	Panel origin y (inches):
+long_titled	s1_shown	Figure size (w x h, inches): ¢ 4
+long_titled	s1_shown	' Page
 long_titled	s1_shown	Untick Erase to add this figure to the page already drawn.
-long_titled	s1_shown	On a composed page a legend inside the plot is not
-long_titled	s1_shown	given axis room — use Right of plot or Below plot.
+long_titled	s1_shown	Erase page first
+long_titled	s1_shown	Panel origin (x/y, inches): 0
 long_titled	s1_shown	Undo Quit Continue
 long_titled	s2_title	Line Chart -- What the lines are
 long_titled	s2_want	Line Chart -- What the lines are
@@ -1345,19 +1326,17 @@ wide_titled	leg_started	1
 wide_titled	ink_empty	0.000687143
 wide_titled	s1_title	EML Graphs
 wide_titled	s1_want	EML Graphs
+wide_titled	s1_shown	[S) Figure
 wide_titled	s1_shown	Graph type: Line Chart (+Cl) v
 wide_titled	s1_shown	Title (blank = auto from table and
 wide_titled	s1_shown	columns):
 wide_titled	s1_shown	Subtitle:
 wide_titled	s1_shown	Colormode: Color v
-wide_titled	s1_shown	Figure width (inches): ¢
-wide_titled	s1_shown	Figure height (inches): | 4
-wide_titled	s1_shown	Erase page first
-wide_titled	s1_shown	Panel origin x (inches):
-wide_titled	s1_shown	Panel origin y (inches):
+wide_titled	s1_shown	Figure size (w x h, inches): ¢ 4
+wide_titled	s1_shown	' Page
 wide_titled	s1_shown	Untick Erase to add this figure to the page already drawn.
-wide_titled	s1_shown	On a composed page a legend inside the plot is not
-wide_titled	s1_shown	given axis room — use Right of plot or Below plot.
+wide_titled	s1_shown	Erase page first
+wide_titled	s1_shown	Panel origin (x/y, inches): 0
 wide_titled	s1_shown	Undo Quit Continue
 wide_titled	s2_title	Line Chart -- What the lines are
 wide_titled	s2_want	Line Chart -- What the lines are
@@ -1461,19 +1440,17 @@ rec_subjects4	leg_started	1
 rec_subjects4	ink_empty	0.000687143
 rec_subjects4	s1_title	EML Graphs
 rec_subjects4	s1_want	EML Graphs
+rec_subjects4	s1_shown	[S) Figure
 rec_subjects4	s1_shown	Graph type: Line Chart (+Cl) v
 rec_subjects4	s1_shown	Title (blank = auto from table and
 rec_subjects4	s1_shown	columns):
 rec_subjects4	s1_shown	Subtitle:
 rec_subjects4	s1_shown	Colormode: Color v
-rec_subjects4	s1_shown	Figure width (inches): ¢
-rec_subjects4	s1_shown	Figure height (inches): | 4
-rec_subjects4	s1_shown	Erase page first
-rec_subjects4	s1_shown	Panel origin x (inches):
-rec_subjects4	s1_shown	Panel origin y (inches):
+rec_subjects4	s1_shown	Figure size (w x h, inches): ¢ 4
+rec_subjects4	s1_shown	' Page
 rec_subjects4	s1_shown	Untick Erase to add this figure to the page already drawn.
-rec_subjects4	s1_shown	On a composed page a legend inside the plot is not
-rec_subjects4	s1_shown	given axis room — use Right of plot or Below plot.
+rec_subjects4	s1_shown	Erase page first
+rec_subjects4	s1_shown	Panel origin (x/y, inches): 0
 rec_subjects4	s1_shown	Undo Quit Continue
 rec_subjects4	s2_title	Line Chart -- What the lines are
 rec_subjects4	s2_want	Line Chart -- What the lines are
@@ -1567,19 +1544,17 @@ rec_meas2	leg_started	1
 rec_meas2	ink_empty	0.000687143
 rec_meas2	s1_title	EML Graphs
 rec_meas2	s1_want	EML Graphs
+rec_meas2	s1_shown	[S) Figure
 rec_meas2	s1_shown	Graph type: Line Chart (+Cl) v
 rec_meas2	s1_shown	Title (blank = auto from table and
 rec_meas2	s1_shown	columns):
 rec_meas2	s1_shown	Subtitle:
 rec_meas2	s1_shown	Colormode: Color v
-rec_meas2	s1_shown	Figure width (inches): ¢
-rec_meas2	s1_shown	Figure height (inches): | 4
-rec_meas2	s1_shown	Erase page first
-rec_meas2	s1_shown	Panel origin x (inches):
-rec_meas2	s1_shown	Panel origin y (inches):
+rec_meas2	s1_shown	Figure size (w x h, inches): ¢ 4
+rec_meas2	s1_shown	' Page
 rec_meas2	s1_shown	Untick Erase to add this figure to the page already drawn.
-rec_meas2	s1_shown	On a composed page a legend inside the plot is not
-rec_meas2	s1_shown	given axis room — use Right of plot or Below plot.
+rec_meas2	s1_shown	Erase page first
+rec_meas2	s1_shown	Panel origin (x/y, inches): 0
 rec_meas2	s1_shown	Undo Quit Continue
 rec_meas2	s2_title	Line Chart -- What the lines are
 rec_meas2	s2_want	Line Chart -- What the lines are
@@ -1687,19 +1662,17 @@ rec_long_meas2	leg_started	1
 rec_long_meas2	ink_empty	0.000687143
 rec_long_meas2	s1_title	EML Graphs
 rec_long_meas2	s1_want	EML Graphs
+rec_long_meas2	s1_shown	[S) Figure
 rec_long_meas2	s1_shown	Graph type: Line Chart (+Cl) v
 rec_long_meas2	s1_shown	Title (blank = auto from table and
 rec_long_meas2	s1_shown	columns):
 rec_long_meas2	s1_shown	Subtitle:
 rec_long_meas2	s1_shown	Colormode: Color v
-rec_long_meas2	s1_shown	Figure width (inches): ¢
-rec_long_meas2	s1_shown	Figure height (inches): | 4
-rec_long_meas2	s1_shown	Erase page first
-rec_long_meas2	s1_shown	Panel origin x (inches):
-rec_long_meas2	s1_shown	Panel origin y (inches):
+rec_long_meas2	s1_shown	Figure size (w x h, inches): ¢ 4
+rec_long_meas2	s1_shown	' Page
 rec_long_meas2	s1_shown	Untick Erase to add this figure to the page already drawn.
-rec_long_meas2	s1_shown	On a composed page a legend inside the plot is not
-rec_long_meas2	s1_shown	given axis room — use Right of plot or Below plot.
+rec_long_meas2	s1_shown	Erase page first
+rec_long_meas2	s1_shown	Panel origin (x/y, inches): 0
 rec_long_meas2	s1_shown	Undo Quit Continue
 rec_long_meas2	s2_title	Line Chart -- What the lines are
 rec_long_meas2	s2_want	Line Chart -- What the lines are

@@ -5,11 +5,13 @@ Series names come from: _ speaker Vv
 Group order: Table order Vv
 Draw the mean and its interval (up to 4 observations per point)
 Line style: Solid v
-»\ X-axis (both 0 = auto)
+», X-axis (both 0 = auto)
 Time range (left/right): 0
 ». Y-axis (both 0 = auto)
 Value range (bottom/top): 9 0
 Gridline mode: Both v
+On a composed page a legend inside the plot is not given axis room — use
+Right of plot or Below plot.
 Legend placement (when drawn): Inside plot v
 Output DPI: 300 dpi v
 Show inner box

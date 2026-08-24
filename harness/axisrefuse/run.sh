@@ -70,6 +70,14 @@ emit () { printf '%s\t%s\n' "$1" "$2" >> "$TSV"; }
 
 emit "praat_version" "$("$PRAAT" --version 2>&1 | head -1)"
 emit "source_tree" "$SRC"
+# THE MACHINE IS PART OF THE EVIDENCE. The ink measure and the dialog
+# photographs are pixel readings, and a pixel reading is a property of the
+# container that took it as much as of the plugin: font rendering and legend
+# widths move a pixel or three between machines for reasons no commit causes.
+# Recording the host means a re-drive somewhere else declares itself as a
+# re-baseline instead of being read as a regression, and spares the next
+# reader a bisect over a cross-machine pixel delta.
+emit "host" "$(hostname 2>/dev/null || uname -n)"
 
 # ---------------------------------------------------------------------------
 # THE STALENESS BINDING. The digest of the form's CODE — comment lines
@@ -210,33 +218,54 @@ dialog_text () {
 # step's actions regardless, so a form that shows the wrong dialog produces a
 # wrong transcript rather than a hung run.
 #
-# FIELD ORDER, read off plugin/graphs/eml-graphs-form.praat:
+# FIELD ORDER, read off plugin/graphs/eml-graphs-form.praat as it stands after
+# the thirteen-page grouping (c74d432):
+#
+#   ONLY A FOCUSABLE WIDGET TAKES A TAB STOP. The group headings the grouping
+#   added -- 📐 Axes, 📊 Analysis, 🏷️ Axis labels, 🎛️ Layout -- are
+#   `comment:` rows, so the headings THEMSELVES moved nothing. What moved the
+#   box and scatter indices is the reordering that rode in with them: on both
+#   pages the range rows now sit under the axis heading, ABOVE the layout
+#   group, where they used to sit inside it. Read a page top to bottom on the
+#   branch the leg drives and count the focusable rows; do not count headings.
 #
 #   EVERY RANGE IS ONE ROW OF TWO BOXES, and the tab ring visits the LEFT box
 #   then the RIGHT one -- so a pair is always (minimum, maximum) in that
-#   order, whatever order the two used to be stacked in. The second pair on
-#   the acoustic pages used to be stacked maximum-above-minimum, which is why
-#   these indices read as though two of them are swapped against the older
-#   note: they are, and the pairing is what swapped them.
+#   order, whatever order the two used to be stacked in. The `left/right Axis
+#   labels` sentence pair renders the same way and therefore takes TWO stops,
+#   not one; on the advanced pages it sits between the ranges and the layout
+#   group, and it is counted below.
 #
-#   Pitch Contour Settings (Sound source, so the pitch fields are present)
+#   Pitch Contour Settings -- BEGINNER, Sound source (so the pitch pair is
+#   built and the axis-label pair is not)
 #     0 Time minimum  1 Time maximum  2 Frequency minimum  3 Frequency maximum
-#     4 Y axis unit   5 Pitch floor   6 Pitch ceiling
-#   Waveform Settings
+#     4 Y axis unit   5 Pitch floor   6 Pitch ceiling      7 Line style
+#   Waveform Settings -- BEGINNER
 #     0 Time minimum  1 Time maximum  2 Amplitude minimum  3 Amplitude maximum
-#   Spectrum Settings
+#     4 Line style
+#   Spectrum Settings -- BEGINNER
 #     0 Frequency minimum  1 Frequency maximum  2 Power minimum
-#     3 Power maximum
-#   Box Plot -- Column Mapping, ADVANCED, parametric (so the adjustment
-#   optionmenu is a comment rather than a field)
-#     0 Value column  1 Group column  2 Group order  3 Annotate
-#     4 Test type     5 Significance style  6 Show nonsignificant
+#     3 Power maximum      4 Line style
+#   Box Plot -- Column Mapping, ADVANCED. The test family and its correction
+#   are ONE `Comparison` menu now, on every branch, so there is no adjustment
+#   control that is a field on one test type and a comment on another; the
+#   count below does not depend on which comparison is selected.
+#     0 Value column   1 Group column        2 Group order   3 Annotate
+#     4 Comparison     5 Significance style  6 Show nonsignificant
 #     7 Show effect sizes  8 Annotation layout  9 Alpha
-#     10 Show jittered points  11 Value minimum  12 Value maximum
-#   Scatter Plot -- Column Mapping, ADVANCED, no group column
-#     0 X column  1 Y column  2 Use group column  3 Correlation method
-#     4 Regression  5 Significance style  6 Show data points  7 Dot size
-#     8 X minimum  9 X maximum  10 Y minimum  11 Y maximum
+#     10 Value minimum  11 Value maximum
+#     12 X axis label   13 Y axis label   14 Show jittered points
+#     15.. the rest of the layout group
+#   Scatter Plot -- Column Mapping, ADVANCED, group box unticked. Group column
+#   and Group order are NOT BUILT while it is clear -- ticking it re-raises the
+#   page with them, and this rig never ticks it -- so the count runs straight
+#   from Use group column into the analysis group. Tick it and everything from
+#   3 down moves by two.
+#     0 X column     1 Y column     2 Use group column  3 Correlation method
+#     4 Regression   5 Significance style
+#     6 X minimum    7 X maximum    8 Y minimum   9 Y maximum
+#     10 X axis label  11 Y axis label  12 Show data points  13 Dot size
+#     14.. the rest of the layout group
 #
 # BUTTON ROWS: the type pages are Go Back / Quit / <toggle> / Draw, so Draw is
 # btn1. The main form is Quit / Continue, so Continue is btn1. The refusal is
@@ -289,10 +318,10 @@ PLAN
   ;;
   box_value) cat <<'PLAN'
 EML Graphs|btn1
-Box Plot -- Column Mapping|tab11=300,btn1
+Box Plot -- Column Mapping|tab10=300,btn1
 Axis range|ocr,ink,btn1
 EML Graphs|btn1
-Box Plot -- Column Mapping|tab12=400,btn1
+Box Plot -- Column Mapping|tab11=400,btn1
 Graph Complete|ink,btn3
 PLAN
   ;;
@@ -301,10 +330,10 @@ PLAN
   # two conflicts must name both at once rather than one per round trip.
   scatter_xy) cat <<'PLAN'
 EML Graphs|btn1
-Scatter Plot -- Column Mapping|tab8=300,tab10=5,btn1
+Scatter Plot -- Column Mapping|tab6=300,tab8=5,btn1
 Axis range|ocr,ink,btn1
 EML Graphs|btn1
-Scatter Plot -- Column Mapping|tab9=400,tab11=400,btn1
+Scatter Plot -- Column Mapping|tab7=400,tab9=400,btn1
 Graph Complete|ink,btn3
 PLAN
   ;;
@@ -318,7 +347,7 @@ EML Graphs|btn1
 Box Plot -- Column Mapping|btn1
 Graph Complete|ink,btn1
 EML Graphs|btn1
-Box Plot -- Column Mapping|tab12=400,btn1
+Box Plot -- Column Mapping|tab11=400,btn1
 Graph Complete|ink,btn3
 PLAN
   ;;

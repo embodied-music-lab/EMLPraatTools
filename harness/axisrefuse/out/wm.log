@@ -1,3 +1,1 @@
-matchbox-wm: X error warning (0x6041f0): BadWindow (invalid Window parameter) (opcode: 42)
-matchbox-wm: X error warning (0x604536): BadWindow (invalid Window parameter) (opcode: 42)
-matchbox-wm: X error warning (0x6040a3): BadWindow (invalid Window parameter) (opcode: 42)
+matchbox-wm: X error warning (0x603f9f): BadWindow (invalid Window parameter) (opcode: 42)
