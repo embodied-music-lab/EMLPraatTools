@@ -138,6 +138,15 @@ The test is one question: DOES A MISTAKE HERE ANNOUNCE ITSELF?
 Drop `effort` from high to medium on mechanical work. State the split in chat
 when launching a batch, so it can be vetoed before the tokens are spent.
 
+**PUT THE MODEL IN THE TASK NAME.** Every workflow label and every agent
+description carries it: `sonnet - drive:redrive`, `opus - attack:fingerprint`.
+The running-task list is the only place the spend is visible while it is
+happening, and a label without a model hides the one fact worth seeing there.
+
+**RUN EVERYTHING THROUGH THE WORKFLOW TOOL, single tasks included.** A direct
+agent call surfaces differently in the task list -- one showed as stopped while
+it was working -- and splits attention across two places. One list, always.
+
 **ONE VERIFICATION PASS, AT THE END, BY ONE AGENT.** Builders build; they do
 not each run the suite. Three agents fixing three unrelated checks will
 otherwise each run most of the validators, which is the same work three
