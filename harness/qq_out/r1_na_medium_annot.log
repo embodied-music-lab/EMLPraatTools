@@ -1,8 +1,8 @@
-QQ drive: case=r1_na_medium_annot col=SPL_medium src=/home/claude/EMLPraatTools/validate/redpath/r1_incomplete_cases.csv annotate=1
-OLS fitted line: y = 3.2495x + 83.9500
+QQ drive: case=r1_na_medium_annot col=SPL_medium src=/home/claude/repo/validate/redpath/r1_incomplete_cases.csv annotate=1
+OLS fitted line: y = 3.2495x + 83.9500  (R² = 0.976)
 Normal Q-Q plot: n = 6, Blom plotting positions (a = 3/8). Theoretical quantiles are qnorm ((i - 0.375) / (n + 0.25)) - the same normal scores the reported Shapiro-Wilk W was computed from, so the figure and the test cannot disagree about which quantiles are expected. R's qqnorm() uses a = 1/2 above n = 10, so its tails sit slightly wider than this axis.
 Normal Q-Q plot: 2 row(s) excluded as missing. Plotted from the 6 complete value(s). The Shapiro-Wilk reported beside this figure used the same ones.
 NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
-SAVED /home/claude/EMLPraatTools/harness/qq_out/r1_na_medium_annot.png
-SAVED-CHROME /home/claude/EMLPraatTools/harness/qq_out/r1_na_medium_annot_chrome.png
+SAVED /home/claude/repo/harness/qq_out/r1_na_medium_annot.png
+SAVED-CHROME /home/claude/repo/harness/qq_out/r1_na_medium_annot_chrome.png
 OBJECTS-AFTER-DRAW 1

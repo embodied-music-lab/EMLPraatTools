@@ -40,7 +40,15 @@ set -u
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 OUT=${EML_NORMALITY_OUT:-$HERE/out}
-PRAAT=${PRAAT:-praat}
+
+# THE BINARY IS RESOLVED BEFORE THE OUTPUT DIRECTORY IS CLEARED. `praat` as a
+# bare name is a binary that need not exist, and this driver empties out/rows,
+# out/info, out/data and every log before it drives anything — so where the
+# name does not resolve, the run deletes the committed evidence, regenerates
+# none, and still exits 0. harness/_env.sh resolves the binary the way every
+# other driver here does and refuses a version below the plugin's floor, so a
+# run that cannot produce evidence stops before it destroys any.
+source "$REPO/harness/_env.sh" || exit 1
 PREFS=${EML_NORMALITY_PREFS:-"$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/prefs"}
 FILTER="${1:-}"
 

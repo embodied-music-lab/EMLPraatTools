@@ -25,7 +25,26 @@ set -u
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 DRIVER=$ROOT/harness/qq_cases/qq_drive.praat
 OUT=$ROOT/harness/qq_out
-PRAAT=${PRAAT:-praat}
+
+# THE BINARY IS RESOLVED BEFORE ANYTHING IS DELETED, and both halves of that
+# sentence are load-bearing.
+#
+# `PRAAT=${PRAAT:-praat}` names a binary that need not exist. There is no bare
+# `praat` on a machine that keeps its Praat somewhere else, and this driver
+# clears each case's artefacts BEFORE driving it, inside a retry loop that
+# treats a failed launch as a retryable error. So on such a machine the driver
+# deletes every committed artefact, regenerates none, writes sixteen logs that
+# say `env: 'praat': No such file or directory`, overwrites the results
+# transcript with sixteen failures — and exits 0. Measured: 74 tracked files
+# gone, and the checks that read them then describe a tree that no longer
+# exists.
+#
+# harness/_env.sh answers both halves. It resolves the binary the way every
+# other driver in this tree does, and it REFUSES rather than warns when the
+# version is below the plugin's floor, so a run that cannot produce evidence
+# stops before it destroys any.
+source "$ROOT/harness/_env.sh" || exit 1
+
 FILTER="${1:-}"
 
 mkdir -p "$OUT"
