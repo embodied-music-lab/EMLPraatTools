@@ -1,0 +1,114 @@
+# Change order — the conformance suite: rules live in checks, not in context
+
+Verification session → executing session, 19 Aug 2026, on Ian's authority.
+
+## The principle (Ian's constraint, stated once)
+
+No session carries the PraatGen master prompt in context, ever. The
+enforceable rules move into committed, mechanical checks that run with the
+suite; a violation goes red the day it is written, mid-refactor, at full
+strength, regardless of what any session remembers. The division of labor
+is total: mechanical rules live in this lint; judgment rules live in the
+ruling loop (memo → verification session → ruling); working context
+carries only the task. For plugin work the master prompt's role shrinks
+to one sentence: THE CONFORMANCE SUITE IS AUTHORITATIVE; RED MEANS STOP.
+
+## The teaching-message contract (what makes this work without the MP)
+
+Every red check prints, at the violation site: (1) the rule, stated in
+one sentence; (2) the rationale, one line; (3) the exact house idiom to
+use instead. Example:
+
+    eml-foo.praat:412  endPause ends in 1
+      Rule: endPause's final argument is 0.
+      Why: window-close maps to the designated button; a cancel
+           designation can fire with field variables unread.
+      Fix: trailing 0; if window-close must be safe here, see the
+           sanctioned-exception procedure in this check's header.
+
+The message IS the rule, delivered at the only moment it matters. No bare
+rule numbers, no "see the master prompt." A check whose message a session
+cannot act on without external reading is not done.
+
+## The checks — encodable now
+
+Derived from the 19 Aug audit's scan battery plus this week's findings.
+Static text scans; base-R per the validate/ charter; each check ships
+with a seeded-violation red demonstration (mutation standard), and
+sanctioned exceptions are enumerated as data with per-entry justification,
+never pattern-broadened.
+
+1. **Canonical pitch parameter sets** — every `To Pitch (` site matches
+   the canonical set for its named algorithm (user-solicited floor/top
+   slots exempt). This IS the pin ordered in the pitch-canon change
+   order; one check, referenced from both.
+2. **Bare `Draw inner box`** outside the sanctioned draw path.
+3. **Font-before-viewport ordering** — the landed rule ("font size, then
+   Select inner viewport"): flag viewport selections not preceded by a
+   size assert in scope, and ambient `Font size:` sets between a
+   selection and its geometry commands, against a sanctioned-sites list.
+4. **Uppercase-initial variable assignments** (reserved-name trap).
+5. **Inline `#` after code** — a hard parse error; currently zero; stays
+   zero.
+6. **Bare `Marks left/right/top/bottom:`** — currently zero; stays zero.
+7. **Hardcoded numeric `Font size:`** — theme-sourced only; currently
+   zero; stays zero.
+8. **Non-ASCII in file-bound strings** — literals on `writeFileLine` /
+   `appendFileLine` / CSV-assembly paths; after the encoding folds land,
+   asserts the fold procedure guards every file boundary (the UTF-16
+   class, probe-verified on 6.6.30).
+9. **Duplicate procedure definitions** across the tree.
+10. **Hardcoded I/O paths** outside comments.
+11. **Dialog field-name derivation** — every pause-field label's derived
+    variable (Praat truncates at the first non-word character) matches a
+    variable the code actually reads; generalizes the 5da802c pin.
+12. **Include-graph shape** — relative, variable-free, barrel-layered;
+    fold or reference the existing v82/v88 machinery rather than
+    duplicating it.
+13. **Empty `exitScript:` messages.**
+14. **Single-quote interpolation outside procedure bodies.**
+15. **Legacy syntax** — old `To Pitch:` shorthand, legacy space-separated
+    Create Table column strings; house style is "new Praat script"
+    throughout, dev tests included.
+
+## Deferred — encoded ONLY after Ian reconciles the prompt
+
+The lint and the law must never disagree, so these wait for the
+adjudications already flagged: endPause trailing designation (Rule 19 vs
+S0A), the four "Cancel" buttons (S0B carve-out), leading-`;` comments
+(Rule 7's scope), `+=` (prohibition scope). The lint's README lists them
+as PENDING ADJUDICATION with one line each, so their absence reads as a
+decision, not a gap. When Ian rules, each becomes a check (or is
+dropped) in the same commit that amends the PKB text.
+
+## Mechanics
+
+- Location: a conformance family under validate/ (ships in the archive
+  per the standing ruling — it is part of the rigor story), registered in
+  run_all.R, with a fast standalone entry point for use before any push.
+- CI: runs in the existing suite job; it is static and costs seconds.
+- False positives: a check that cries wolf gets fixed or its rule
+  adjudicated in the same round — it is never ignored and never
+  loosened silently. An ignored red is a process defect with a ledger row.
+- Refactor integration: any refactor's scope memo may include a
+  conformance-risk section GENERATED by running the lint over the touched
+  files — no rule-reading, no recall.
+- Authorship: lint checks are test code; author ≠ verifier applies. You
+  author; verification here re-runs every red demonstration with fresh
+  seeded violations before the family counts.
+
+## Sequencing
+
+No queue slot of its own, but land it BEFORE the item-9 refactors (tree,
+result store, recorder publication) — those are the largest remaining
+refactors of the release, and the entire point is that they run under the
+gate. Checks whose subject is still moving (8 waits on the encoding
+folds) land with their subject.
+
+DONE WHEN: every listed check is green at head with zero unsanctioned
+exceptions; every check's red demonstration is recorded; CI runs the
+family on every push; the deferred list is in the lint's README; and one
+red output has been read on this side and judged actionable without
+reference to any external document.
+
+— verification session
