@@ -1,6 +1,6 @@
 # ==========================================================================
 # MANIFEST — EML Stats & Graphs plugin
-# Generated: 2026-08-24  |  333 files in 130 rows (retired included, MANIFEST.txt not)
+# Generated: 2026-08-24  |  334 files in 131 rows (retired included, MANIFEST.txt not)
 # Columns: path | lines (code) or word count (prose) | version | description
 #
 # Regenerate with: python3 dev/tools/build-manifest.py
@@ -52,6 +52,7 @@ dev/tests/phase2/regression_scipy_refs.py | 128 | 1.0 | External reference gener
 dev/tests/phase2/repeatedmeasures_refs.py | 291 | 1.0 | External reference generator (scipy, statsmodels, pingouin): expected values for test-repeated-measures.praat. Sole [EXT] oracle for Greenhouse-Geisser epsilon — base R has no GG routine.
 dev/tests/phase2/test-12-groups.praat | 107 | 1.1 | Test: 12-group ANOVA (verifies no 10-group ceiling)
 dev/tests/phase2/test-categorical.praat | 215 | 1.0 | EML Stats & Graphs — Dev tests for the categorical kernels, literals checked against R.
+dev/tests/phase2/test-fingerprint.praat | 1177 | 1.1 | The result store's data key: the ruling's four acceptance probes on @emlGroupFingerprint, the six defeats of the eGF1 composition, the refusal door @emlAnalysisFingerprint, plus the text round trip and the label encoding.
 dev/tests/phase2/test-inferential-batch1.praat | 320 | 1.1 | EML Stats : Test Suite — Inferential Statistics (Batch 1)
 dev/tests/phase2/test-inferential-batch2.praat | 222 | - | EML Stats : Test Suite — Inferential Statistics (Batch 2)
 dev/tests/phase2/test-inferential-batch3.praat | 288 | - | EML Stats : Test Suite — Inferential Statistics (Batch 3)
@@ -143,7 +144,7 @@ stats/eml-categorical.praat | 277 | 1.0 | EML Stats & Graphs — Counts and prop
 stats/eml-core-descriptive.praat | 870 | 1.2 | EML Stats : Core Descriptive Statistics
 stats/eml-core-utilities.praat | 945 | 1.0 | EML Stats : Core Utility Procedures
 stats/eml-demo-tables.praat | 383 | 1.0 | EML Stats & Graphs — Demo tables: the seven generators, callable. One synthetic voice-science Table per wizard analysis path, built from a seed with no dialog, so scripts/eml-create-demo.praat and a recorded script that rebuilds the same table call one implementation rather than two.
-stats/eml-extract.praat | 2874 | 1.5 | EML Stats : Data Extraction Layer
+stats/eml-extract.praat | 3700 | 1.7 | EML Stats : Data Extraction Layer
 stats/eml-inferential.praat | 6067 | 1.4 | EML Stats : Inferential Statistics
 stats/eml-linalg.praat | 347 | 1.0 | EML Stats & Graphs — Numerical Linear Algebra Layer
 stats/eml-lmm.praat | 4443 | - | EML Stats & Graphs — Linear Mixed Models

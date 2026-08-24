@@ -25,7 +25,61 @@ the Info window; changing nothing re-runs nothing and prints nothing. The
 duplicate-report stopgap is rolled into this, not taken separately.
 
 Memo with the design questions is with Fable
-(`docs/MEMO_TO_FABLE_unification.md`).
+(`docs/MEMO_TO_FABLE_unification.md`); the answers are
+`docs/RULING_RESULT_STORE.md`.
+
+FIRST PIECE BUILT, 24 Aug: THE DATA KEY. `@emlGroupFingerprint`,
+`@emlAnalysisFingerprint` and `@emlFingerprintsAgree` in
+`stats/eml-extract.praat` — the ruling's §a per-group-level fingerprint. It
+lives in the extraction layer because both sides of the store need it: the
+kernels stamp it on a published result, the annotation bridge recomputes it at
+draw time. Levels and values come from `@emlCountGroups` and
+`@eml_getGroupData`, so the key describes the data as the analysis saw it. The
+key is TEXT and is only ever compared as text; nothing about it is a float
+comparison.
+
+REBUILT THE SAME DAY, FORMAT `eGF2`. An adversarial pass defeated the first
+composition (`eGF1`: n, sum, sum of squares, min, max per level) six times.
+Three of the six were one fault — per-level moment aggregates cannot describe
+a multiset, and for n >= 5 a continuum of alternative level contents satisfies
+five fixed aggregates, so the hole does not close by adding a sixth. The key
+now commits to a digest over each level's quantised SORTED value list, which
+closes moments, tie structure and rank order together; quantisation moved from
+12 to 15 significant digits because nothing is accumulated any more; the label
+hash went from one unsalted 31-bit polynomial to two salted ones over
+different bases and primes (about 62 bits); and the per-level spelling set is
+folded as a sorted SEQUENCE rather than as a linear sum of hashes. Details and
+the six fixtures are in `dev/tests/phase2/test-fingerprint.praat` (110 checks;
+23 of them, including all six defeats, go red against a scratch revert of
+`eGF1`, and the four published acceptance probes stay green in both).
+
+STORED `eGF1` KEYS DO NOT UPGRADE and must not be treated as if they did: the
+format tag is part of the compared text, so an `eGF1` key never matches an
+`eGF2` key and the analysis re-runs. That is the intended behaviour, not a
+migration to be written.
+
+OPEN BY DESIGN, WITH IAN: A TWO-WAY KEY. The sixth defeat was
+`@emlTwoWayAnova` — the key describes (value, group) only, and rewriting half
+the cells of a second factor moves F(group) and its p across .05 without
+touching either column the key names. The fault is in the CALL, not the
+arithmetic, so the closure is a door: `@emlAnalysisFingerprint` takes the
+analysis's FULL comma-separated column list and REFUSES — no key, stated error
+naming the columns — when handed more than it can describe. Whether a two-way
+composition gets BUILT (one record per design cell, new format tag) is a scope
+call for Ian; the shape is ready for it as another branch of the same
+procedure. Until it is built, two-way analyses simply do not get a key.
+
+STILL UNBUILT in this item, and each is a separate piece of work: the store
+itself (the single write site, the published names, the §b census of
+result-affecting vs display-only settings, the one-line announcement); the
+bridge reading the store instead of recomputing; and the two neighbouring
+keys the ruling anticipates — a paired/repeated door needs ROW PAIRING in the
+key, and the scatter's correlation needs a cross term (sum of x*y), neither
+of which any per-column or per-level description of ONE column can supply.
+The fingerprint's own header states both, and both should route through
+`@emlAnalysisFingerprint` so that the refusal is what happens until they
+exist. There is no pinned validator for the fingerprint yet: the mutation legs
+live in the phase2 suite, not in `validate/`.
 
 ## B. Form and dialog work
 

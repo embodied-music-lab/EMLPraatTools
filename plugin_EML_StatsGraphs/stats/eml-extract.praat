@@ -2,8 +2,8 @@
 # EML Stats : Data Extraction Layer
 # ============================================================================
 # Module: eml-extract.praat
-# Version: 1.5
-# Date: 2 August 2026
+# Version: 1.7
+# Date: 24 August 2026
 #
 #
 # Part of the EML Stats library (EML Stats & Graphs).
@@ -17,7 +17,16 @@
 #   @emlExtractHarmonicityFrames, @emlValidateTable,
 #   @emlValidateNumericColumn, @emlTableColumnNames,
 #   @emlCountGroups, @emlGuessColumnRoles,
-#   @eml_normalizeLabel, @eml_strictNumericColumn
+#   @eml_normalizeLabel, @eml_strictNumericColumn,
+#   @emlGroupFingerprint, @emlAnalysisFingerprint, @emlFingerprintsAgree
+#
+# The fingerprint pair at the foot of this file is the result store's data
+# key (docs/RULING_RESULT_STORE.md, §a). It lives HERE, in the extraction
+# layer, and not beside either side of the store, because both sides need it:
+# the statistics kernels stamp it onto a published result, and the graphs
+# layer's annotation bridge recomputes it at draw time to decide whether that
+# result still describes the table in front of it. This module is included
+# before both.
 #
 # These procedures extract data from Praat objects into numeric
 # vectors suitable for passing to EML Stats statistical procedures.
@@ -2871,4 +2880,821 @@ procedure emlStripHeaderQuotes: .tableId
             endif
         endif
     endfor
+endproc
+
+
+# ============================================================================
+# THE RESULT STORE'S DATA FINGERPRINT
+# ============================================================================
+# Provides: @emlGroupFingerprint, @emlAnalysisFingerprint,
+#           @emlFingerprintsAgree,
+#           @eml_fpNumber, @eml_fpFoldText, @eml_fpTextHash,
+#           @eml_fpValueDigest (internal helpers)
+#
+# WHAT THIS IS FOR. The result store (docs/RULING_RESULT_STORE.md) lets a
+# figure RECEIVE the analysis's result instead of re-running the analysis at
+# draw time. A stored result may be consumed by many figures, and stays valid
+# until either a result-affecting setting changes or THE DATA CHANGES. This
+# module answers the second half: it reduces the data an analysis was
+# computed from to one short string, so a later reader can ask "is this still
+# the same data?" without keeping a copy of the table.
+#
+# WHY IT IS PER GROUP LEVEL, AND NOT A COLUMN CHECKSUM. Count, sum, sum of
+# squares, min and max of the VALUE COLUMN ALONE are unchanged when two
+# values are swapped between two groups: the column's multiset is the same
+# and so is every group size. That single edit moves every group mean, every
+# pairwise p-value and the omnibus test. A column-level fingerprint holds the
+# cache over exactly the mutation that most needs to break it. So the key
+# binds the value-to-group PAIRING: the description is taken PER LEVEL, over
+# the rows that level actually contributed, and the level identities travel
+# with it.
+#
+# WHY IT IS THE VALUES AND NOT THEIR MOMENTS
+#
+# The obvious cheap description of a level is a handful of moment aggregates
+# — n, sum, sum of squares, min, max. DO NOT USE ONE. The reason is a
+# theorem, not a probability:
+#
+#   PER-LEVEL MOMENT AGGREGATES CANNOT DESCRIBE A MULTISET.
+#
+# Fixing n, sum, sum of squares, min and max pins four numbers on the n - 2
+# interior values of a level, so for n >= 5 a CONTINUUM of different level
+# contents satisfies them, and any two points of that continuum are the same
+# key. It is a solution manifold and not a hash collision, so nothing about
+# it gets rarer if the description is made wider: a sixth or a seventh moment
+# only raises the n at which the manifold reappears. Levels of n <= 4 are
+# provably safe under five aggregates and no others are, which is not a
+# guarantee any analysis can rely on.
+#
+# The consequences are the ones that matter most. A rearrangement of a
+# level's interior that holds those five numbers is available on ordinary
+# one-decimal formant data, and it moves a rank test's p across .05, moves a
+# post-hoc's adjusted p, moves the level's median by a fifth of its range and
+# flips its skewness — all of it invisible to a key made of moments. The same
+# hole from other angles: two levels built with matching aggregates are
+# interchangeable, so their LABELS can be exchanged, and a change too small
+# for a loose quantum can still break every TIE a rank test reads.
+#
+# So the key COMMITS TO THE VALUES THEMSELVES: a digest over each level's
+# quantised, SORTED value list (@eml_fpValueDigest). The values have to be
+# sorted anyway, so the cost is nearly nothing, and one construction closes
+# ranks, ties and moments together:
+#   - the multiset is pinned exactly, so no interior rearrangement survives;
+#   - MULTIPLICITY is pinned, which is what a rank test's tie correction
+#     reads and what no aggregate records at all;
+#   - the digest is a function of the SORTED list, so a within-level row
+#     reorder is bit-identical by construction, not merely by luck;
+#   - two levels with matching moments now have DIFFERENT digests, so
+#     exchanging their labels moves the key.
+#
+# QUANTISE PER VALUE, NOT PER AGGREGATE. A key that quantises a SUM has to
+# leave the quantum loose enough to absorb the last bits of an accumulation —
+# several spare digits of a double — and that slack is wide enough to hide a
+# change that breaks ties. Here nothing is accumulated: each value is
+# quantised on its own and folded in, and a row reorder cannot perturb an
+# individual value at all, so the quantum does not have to absorb reordering
+# noise and sits at 15 significant digits. 400.00000000001 and 400 are
+# different values to this key, which is the correct answer, because they are
+# different values to every rank test in the plugin.
+#
+# WHAT MOVES THE KEY (the requirement, from the ruling):
+#   - any single-cell edit to the data column, at constant row count
+#   - any single-cell edit to the group column, at constant row count
+#   - any row added or removed
+#   - any value swapped BETWEEN groups
+#   - any rearrangement of a level's values, interior or not
+#   - any change to the tie structure within or between levels
+# WHAT LEGITIMATELY DOES NOT MOVE IT:
+#   - reordering rows within a group (nothing an independent-groups
+#     comparison computes depends on it, so the cache holds — this is a
+#     requirement, not a concession)
+#   - reordering whole groups, and the emlGroupSortAlphabetical display
+#     setting, because the level records are emitted in a canonical order
+#     of this module's own choosing rather than in discovery order
+#
+# NOT COVERED, DELIBERATELY, EACH WITH ITS REASON:
+#   - A SECOND GROUPING FACTOR. This key describes ONE value column split by
+#     ONE group column. @emlTwoWayAnova reads a second factor, and rewriting
+#     half the cells of that second factor moves F(group) and its p across
+#     .05 without touching either column this key describes. A key that
+#     silently describes less than the analysis read is the danger, so the
+#     store-facing door is @emlAnalysisFingerprint, which is given the
+#     analysis's FULL column list and REFUSES — no key, stated error — when
+#     it is handed more columns than this key can describe. Refusing re-runs
+#     an analysis; describing less validates a result against data it was
+#     never computed from. Whether this grows a two-way composition is a
+#     scope question, not a defect; the shape is ready for it (see
+#     @emlAnalysisFingerprint).
+#   - ROW PAIRING. An independent-groups layout has interchangeable rows
+#     within a level. A paired/repeated-measures door does not — which row
+#     sits opposite which is part of its data — and a within-subject door
+#     joining the store needs pairing IN THE KEY at that moment. Same for the
+#     scatter/correlation door: x and y are bound row-wise, and a
+#     pair-preserving key needs a cross term that no per-level description of
+#     one column can supply. Neither is built here. Give either its own
+#     procedure and its own format tag, and route it through
+#     @emlAnalysisFingerprint so that the refusal is what happens until then.
+#   - COLUMNS THE ANALYSIS DID NOT READ. Adding an unrelated column to the
+#     table does not move the key, because it cannot move a result. This is
+#     why the analysis must declare what it read: the key cannot tell an
+#     unread column from an unnamed one.
+#   - A CHANGE OF SPELLING THAT NORMALISATION FOLDS AWAY, when the set of
+#     spellings present in that level is unchanged — e.g. a level holding
+#     both "Male" and "male" where one cell flips to the other spelling.
+#     @emlCountGroups merges those into one level, so no number moves; the
+#     printed level label can, because it is the first spelling ENCOUNTERED.
+#     The key carries the SET of raw spellings per level, sorted and folded
+#     as a SEQUENCE, so introducing or removing a spelling moves it. FOLD A
+#     SET WITH A SORT, NOT WITH A SUM. A linear combination of the spellings'
+#     hashes is order-independent for the wrong reason and cancels: {aa, AA}
+#     and {Aa, aA} sum alike while the level's displayed label — the first
+#     spelling encountered — differs. A sorted sequence is order-independent
+#     without being linear.
+#
+# A NOTE FOR WHOEVER PINS THIS. The key carries the table's NAME, so a
+# mutation leg that builds its mutant as a SEPARATELY NAMED table goes green
+# whatever the content did — the name alone moved it. Every mutation fixture
+# must carry the same table name as its control, and the within-group-reorder
+# leg (which must HOLD) is the one that catches the mistake, because it is the
+# only leg whose expected answer the name can flip. Measured: the first run of
+# this module's own probe rig named each mutant after its mutation, and four
+# legs passed for that reason rather than for the data.
+#
+# POST-1.0 CONSUMERS. EMMs, diagnostics and the LMM phases consume the store
+# natively, and the recorder's edit tripwire (docs/RULING_RECORDER_ROUNDTRIP)
+# consumes THIS machinery to detect a table edited mid-recording. There is
+# one fingerprint; nobody builds a second one.
+#
+# FLOATING POINT — READ THIS BEFORE CHANGING ANYTHING HERE
+#
+# A fingerprint made of raw doubles compared with "=" is a trap. Two things
+# break it: (1) a number arrived at by a different route differs in the last
+# bits; (2) any journey through text — a stored result written to disk, a
+# fingerprint emitted into a recorded script — re-parses to a double that
+# need not be the one that was written.
+#
+# Both are answered by construction rather than by a tolerance:
+#   - THE KEY IS TEXT, AND IS ONLY EVER COMPARED AS TEXT. @emlFingerprintsAgree
+#     compares strings. Nothing re-parses a fingerprint into a number, so no
+#     text round trip can perturb it. A tolerance-based numeric comparison
+#     would be strictly worse: it would have to be loose enough to absorb
+#     numerical noise, which is the same width as the data edits the key
+#     exists to catch.
+#   - EVERY NUMBER IS QUANTISED BEFORE IT BECOMES TEXT, to 15 significant
+#     digits in a normalised mantissa/exponent form (@eml_fpNumber), so
+#     differences below that relative size are invisible to the key. A double
+#     carries about 16 to 17 significant digits; the spare digit or two
+#     absorbs re-parsing noise. Measured on Praat 6.6.30: a Table saved as
+#     text and read back returns bit-identical doubles, because Praat writes
+#     the shortest round-tripping decimal, so the spare digits are headroom
+#     rather than a working margin.
+#   - NOTHING IS ACCUMULATED. A key built on sums needs each level's values
+#     SORTED BEFORE THEY ARE SUMMED so that a reordered sum stays
+#     bit-identical, and needs a loose quantum underneath that as a second
+#     line of defence. There is no sum here. The values are sorted so that the
+#     DIGEST is a function of the multiset rather than of the row order, which
+#     is the same requirement met without any arithmetic that could drift.
+#
+# THE COST OF THE QUANTISATION, STATED. An edit smaller than one part in
+# 1e15 of a value does not move the key. On realistic measurement data that
+# is below the last bit anyone can measure or type; it is not zero, and a
+# caller that needs bit-exactness needs a different instrument. The direction
+# of every other design choice here is the safe one: when in doubt the key
+# MOVES and the analysis re-runs.
+#
+# WHAT THE DIGESTS ARE, AND WHAT THEY ARE NOT. Labels, names and value lists
+# reach the key as two independent polynomial hashes, over different bases
+# and different primes near 2^31, each seeded from a fixed salt — about 62
+# bits, written as "<count>_<h1>_<h2>". ONE 31-bit polynomial IS NOT ENOUGH
+# HERE, and the margin is not close: a birthday search over a few million
+# six-character strings finds a 31-bit collision in seconds on a laptop, and
+# a colliding pair renames a whole level with the key unmoved, so a reused
+# result prints level names that are not in the table. Two hashes of that
+# width put an accidental collision past any plausible number of tables, and
+# the salt separates this key's hash from any collision list computed against
+# a bare polynomial.
+#
+# IT IS STILL A HASH, AND THE SALT IS NOT A SECRET. It is in this file. This
+# key is tamper-EVIDENCE against accident, drift and recomputation — the
+# failure modes a cache actually meets — and not a message authentication
+# code against someone who has read the source and wants a collision. Praat
+# script has no practical SHA-2. Anyone relying on this against a motivated
+# adversary is relying on the wrong instrument; say so rather than widening
+# the hash again.
+#
+# ASCII BY CONSTRUCTION. Labels, table names and column names reach the key
+# as a count plus numeric hashes, never as their own text. Three reasons:
+# the key crosses file boundaries (the recorder writes it into an emitted
+# script) where the house rule is ASCII-only and Praat has a UTF-16 trap; a
+# label containing the key's own separators cannot forge a record boundary;
+# and the key stays short on a table with many levels. The human-readable
+# form is a separate output (.summary$), which is for the Info window and is
+# never compared.
+# ============================================================================
+
+
+# ============================================================================
+# @eml_fpNumber (internal helper)
+# ============================================================================
+# Canonical text for one number, at 15 significant digits, in a normalised
+# mantissa/exponent form: "1.50000000000000e3" is 1500 — one digit before the
+# point and fourteen after it, which is fifteen significant digits. Same
+# number in, same text out, always; near-equal numbers that differ below the
+# 15th digit give the same text. See FLOATING POINT above for why the key is
+# text, and why the quantum sits where it does.
+#
+# Arguments:
+#   .x       - the number
+#
+# Output:
+#   .result$ - canonical text ("und" for undefined, "0" for zero)
+# ============================================================================
+procedure eml_fpNumber: .x
+    .result$ = "und"
+
+    if .x <> undefined
+        if .x = 0
+            .result$ = "0"
+        else
+            .sign$ = ""
+            if .x < 0
+                .sign$ = "-"
+            endif
+            .a = abs (.x)
+            .e = floor (log10 (.a))
+            .m = .a / 10 ^ .e
+
+            ; log10 and the division are themselves floating point, so the
+            ; mantissa can land just outside [1, 10) at an exact power of
+            ; ten. Renormalise rather than trusting it.
+            if .m >= 10
+                .m = .m / 10
+                .e = .e + 1
+            endif
+            if .m < 1
+                .m = .m * 10
+                .e = .e - 1
+            endif
+
+            ; Round first, THEN carry: a mantissa of 9.999999999999999 rounds
+            ; to 10, which must become 1.0 at one exponent higher or the same
+            ; magnitude would have two spellings. The scale factor is 1e14 —
+            ; a mantissa in [1, 10) times 1e14 is at most 1e15, inside the
+            ; 2^53 a double holds exactly, so the rounding is exact.
+            .m = round (.m * 1e14) / 1e14
+            if .m >= 10
+                .m = .m / 10
+                .e = .e + 1
+            endif
+
+            .result$ = .sign$ + fixed$ (.m, 14) + "e" + string$ (.e)
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @eml_fpFoldText (internal helper)
+# ============================================================================
+# Folds one string into a running pair of polynomial hashes. This is the one
+# mixing step in this module: labels, column names and value texts all go
+# through it, so there is one thing to reason about and one thing to change.
+#
+# Two hashes, not one: different bases (1000003, 8191) over different primes
+# below 2^31 (2147483647 and 2147483629), giving about 62 bits together. The
+# largest intermediate is 2147483646 * 1000003, about 2.15e15 and so inside
+# the 2^53 (about 9.0e15) a double holds exactly — the arithmetic is exact,
+# and the digest is not itself a rounding question. THAT HEADROOM IS THE
+# CONSTRAINT ON THE BASES: raising either base much further silently starts
+# rounding, and a hash that rounds is not a hash.
+#
+# A SALT ALONE DOES NOT SEPARATE A COLLIDING PAIR. Adding a seed to a
+# polynomial of fixed base contributes the SAME term to two strings of equal
+# length, so a pair that collides without the salt collides with it. What
+# separates such a pair is a different base — and what makes the next pair
+# expensive to find rather than lucky is having two of them, over different
+# moduli, both embedded in the key.
+#
+# The string's LENGTH is folded in after its characters, so that a sequence
+# of strings cannot be re-cut: "ab" then "c" and "a" then "bc" fold apart.
+# That is what makes @eml_fpValueDigest's list a list and not a puddle.
+#
+# Arguments:
+#   .h1, .h2 - the running hashes to fold into
+#   .s$      - the string to fold
+#
+# Output:
+#   .h1, .h2 - the updated hashes (read as eml_fpFoldText.h1 / .h2)
+# ============================================================================
+procedure eml_fpFoldText: .h1, .h2, .s$
+    .len = length (.s$)
+
+    for .i from 1 to .len
+        .c = unicode (mid$ (.s$, .i, 1))
+        .h1 = (.h1 * 1000003 + .c + 7) mod 2147483647
+        .h2 = (.h2 * 8191 + .c * 31 + 13) mod 2147483629
+    endfor
+
+    .h1 = (.h1 * 1000003 + (.len mod 1000000) + 3) mod 2147483647
+    .h2 = (.h2 * 8191 + (.len mod 1000000) * 31 + 5) mod 2147483629
+endproc
+
+
+# ============================================================================
+# @eml_fpTextHash (internal helper)
+# ============================================================================
+# Deterministic wide hash of a string, so that labels and names can enter the
+# fingerprint without their own text (see ASCII BY CONSTRUCTION above).
+#
+# Two salted polynomials, about 62 bits — see WHAT THE DIGESTS ARE above for
+# why one 31-bit polynomial is not enough for this job. The salt is
+# domain-separated from the one @eml_fpValueDigest starts from, so a label
+# and a value list can never produce the same digest text.
+#
+# A whole-level rename rests on this hash alone — a relabelled CELL moves the
+# level sizes and value digests as well — so it is the one place where hash
+# width is load-bearing rather than belt-and-braces.
+#
+# Arguments:
+#   .s$      - the string
+#
+# Output:
+#   .h1, .h2 - the two hashes
+#   .hash    - alias for .h1, kept so older probe rigs still read something
+#   .result$ - "<length>_<h1>_<h2>", the form the fingerprint embeds
+# ============================================================================
+procedure eml_fpTextHash: .s$
+    .len = length (.s$)
+
+    @eml_fpFoldText: 1948287391, 1103515245, .s$
+    .h1 = eml_fpFoldText.h1
+    .h2 = eml_fpFoldText.h2
+    .hash = .h1
+
+    .result$ = string$ (.len) + "_" + string$ (.h1) + "_" + string$ (.h2)
+endproc
+
+
+# ============================================================================
+# @eml_fpValueDigest (internal helper)
+# ============================================================================
+# The commitment to a level's values: a digest over the QUANTISED, SORTED
+# list. It is deliberately not a set of moments; the reasoning is in WHY IT
+# IS THE VALUES AND NOT THEIR MOMENTS above and should be read before this is
+# changed to anything cheaper.
+#
+# Order-independence comes from the SORT, not from the fold: the fold is
+# deliberately position-dependent, because a position-independent fold over
+# the values (a sum, an xor) is exactly the shape that cannot count a
+# multiplicity, and multiplicity is what the rank tests read.
+#
+# THE CALLER SORTS. The argument must already be sorted ascending; the caller
+# has usually just sorted it for another reason, and a second sort inside
+# here would hide the requirement rather than enforce it.
+#
+# Arguments:
+#   .v#      - the level's values, ALREADY SORTED ASCENDING
+#
+# Output:
+#   .result$ - "<n>_<h1>_<h2>"
+# ============================================================================
+procedure eml_fpValueDigest: .v#
+    .n = size (.v#)
+    .h1 = 743243441
+    .h2 = 1266874889
+
+    for .i from 1 to .n
+        @eml_fpNumber: .v# [.i]
+        @eml_fpFoldText: .h1, .h2, eml_fpNumber.result$
+        .h1 = eml_fpFoldText.h1
+        .h2 = eml_fpFoldText.h2
+    endfor
+
+    .result$ = string$ (.n) + "_" + string$ (.h1) + "_" + string$ (.h2)
+endproc
+
+
+# ============================================================================
+# @emlGroupFingerprint
+# ============================================================================
+# The result store's data key for an independent-groups analysis: ONE value
+# column split by ONE group column, and nothing else. Everything above this
+# line is about why it is shaped the way it is; read WHY IT IS THE VALUES AND
+# NOT THEIR MOMENTS before altering the composition.
+#
+# CALLERS THAT READ MORE COLUMNS THAN TWO MUST NOT CALL THIS DIRECTLY. Go
+# through @emlAnalysisFingerprint, which is handed the analysis's full column
+# list and refuses what it cannot describe. This procedure describes exactly
+# .dataCol$ and .groupCol$, says so in .covers$, and cannot know what else its
+# caller read.
+#
+# The key describes the data AS THE ANALYSIS SAW IT. Levels come from
+# @emlCountGroups and values from @eml_getGroupData, which are the same
+# procedures the kernels use, so the same rows are counted, the same blank
+# group cells are skipped, the same non-numeric cells are excluded, and the
+# same case/whitespace folding of labels applies. A fingerprint built from a
+# private reading of the table could hold while the analysis's own view of
+# it moved.
+#
+# Arguments:
+#   .tableId   - ID of the Table object
+#   .dataCol$  - numeric (dependent) column
+#   .groupCol$ - grouping column
+#
+# Output:
+#   .result$   - the fingerprint, or "" if it could not be computed
+#   .summary$  - human-readable one-liner, for the Info window; NEVER
+#                compared, and not ASCII-guaranteed
+#   .covers$   - the columns this key describes, comma-separated. A caller
+#                that read anything else has a key that does not describe its
+#                own result; that is what @emlAnalysisFingerprint checks.
+#   .nLevels   - number of group levels
+#   .nUsable   - rows that reached a level with a usable value
+#   .nBlank    - rows skipped for a blank group cell
+#   .error$    - "" on success, diagnostic otherwise
+#
+# AN EMPTY .result$ IS NOT A KEY AND MUST NEVER MATCH ONE. When the table
+# cannot be read the safe answer is "the data is not what it was", so callers
+# re-run. @emlFingerprintsAgree enforces that; do not compare with "=".
+#
+# FORMAT. The leading tag is a FORMAT VERSION. Change the composition, change
+# the tag: a stored key written by an older composition then fails to match
+# by construction, which re-runs an analysis, whereas a silent change of
+# meaning under an unchanged tag would validate a result against data it was
+# never computed from. A key written under any other tag — eGF1 among them —
+# cannot compare equal to an eGF2 key, which is the point of the tag.
+#
+#   eGF2|t=<tableName>|r=<rows>|d=<dataCol>|g=<groupCol>|k=<levels>|b=<blank>
+#   then one record per level, in canonical label order:
+#   |L=<label>;n=<n>;x=<excluded>;v=<valueDigest>;p=<spellings>
+#
+# Names and labels are <length>_<h1>_<h2> (@eml_fpTextHash); each level's
+# values are <n>_<h1>_<h2> over the sorted quantised list
+# (@eml_fpValueDigest); the spelling set is the same digest over that level's
+# distinct raw spellings, SORTED. The level records are sorted by normalised
+# label, NOT by discovery order, so the key does not move when the display
+# order setting does.
+# ============================================================================
+procedure emlGroupFingerprint: .tableId, .dataCol$, .groupCol$
+    .result$ = ""
+    .summary$ = ""
+    .covers$ = .dataCol$ + "," + .groupCol$
+    .nLevels = 0
+    .nUsable = 0
+    .nBlank = 0
+    .error$ = ""
+
+    @emlCountGroups: .tableId, .groupCol$
+
+    if emlCountGroups.error$ <> ""
+        .error$ = emlCountGroups.error$
+    elsif emlCountGroups.nGroups < 1
+        .error$ = "No group levels found in column: " + .groupCol$
+    else
+        .nLevels = emlCountGroups.nGroups
+        .nBlank = emlCountGroups.nBlankRows
+        .nRaw = emlCountGroups.nRaw
+
+        ; @emlCountGroups' outputs live only until it runs again, and
+        ; @eml_getGroupData below reaches other procedures that call it.
+        ; Copy everything needed FIRST — this is the same trap
+        ; @emlBridgeGroupComparison documents at its own top.
+        for .gi from 1 to .nLevels
+            .norm$[.gi] = emlCountGroups.groupNorm$[.gi]
+            .gLabel$[.gi] = emlCountGroups.groupLabel$[.gi]
+            .order[.gi] = .gi
+        endfor
+        for .ri from 1 to .nRaw
+            .raw$[.ri] = emlCountGroups.rawLabel$[.ri]
+        endfor
+
+        ; Canonical order: by normalised label, so neither discovery order
+        ; nor emlGroupSortAlphabetical can move the key. Insertion sort —
+        ; k is the number of GROUPS, not of rows.
+        for .i from 2 to .nLevels
+            .hold = .order[.i]
+            .holdNorm$ = .norm$[.hold]
+            .j = .i - 1
+            .placed = 0
+            ; Praat's "and" does not short-circuit, so the bound test cannot
+            ; be a conjunct with the comparison it protects — the same rule
+            ; @eml_normalizeLabel states above.
+            while .placed = 0
+                .shift = 0
+                if .j >= 1
+                    .at = .order[.j]
+                    if .norm$[.at] > .holdNorm$
+                        .shift = 1
+                    endif
+                endif
+                if .shift = 1
+                    .order[.j + 1] = .order[.j]
+                    .j = .j - 1
+                else
+                    .placed = 1
+                endif
+            endwhile
+            .order[.j + 1] = .hold
+        endfor
+
+        @eml_fpTextHash: .dataCol$
+        .dataKey$ = eml_fpTextHash.result$
+        @eml_fpTextHash: .groupCol$
+        .groupKey$ = eml_fpTextHash.result$
+
+        selectObject: .tableId
+        .tableName$ = selected$ ("Table")
+        .nRows = Get number of rows
+        @eml_fpTextHash: .tableName$
+        .tableKey$ = eml_fpTextHash.result$
+
+        .body$ = "eGF2|t=" + .tableKey$
+        ... + "|r=" + string$ (.nRows)
+        ... + "|d=" + .dataKey$
+        ... + "|g=" + .groupKey$
+        ... + "|k=" + string$ (.nLevels)
+        ... + "|b=" + string$ (.nBlank)
+        .sum$ = ""
+
+        for .oi from 1 to .nLevels
+            .gi = .order[.oi]
+
+            @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .gLabel$[.gi]
+
+            if eml_getGroupData.error$ <> "" and .error$ = ""
+                .error$ = eml_getGroupData.error$
+            endif
+
+            .n = eml_getGroupData.n
+            .nExcluded = eml_getGroupData.nExcluded
+            .v# = eml_getGroupData.data#
+            .nUsable = .nUsable + .n
+
+            if .n > 0
+                ; SORTED, THEN COMMITTED TO VALUE BY VALUE. Two rows of one
+                ; group exchanged produce the identical sorted list and so
+                ; the identical digest — by construction, with no arithmetic
+                ; in between that could drift. See FLOATING POINT above.
+                .s# = sort# (.v#)
+                @eml_fpValueDigest: .s#
+                .valText$ = eml_fpValueDigest.result$
+            else
+                ; An empty level still gets a digest rather than a word, so
+                ; that "no usable values" and "a value that hashes oddly"
+                ; can never be the same key text.
+                @eml_fpValueDigest: zero# (0)
+                .valText$ = eml_fpValueDigest.result$
+            endif
+
+            ; The distinct raw spellings this level was folded from. They are
+            ; SORTED and then folded as a SEQUENCE: order-independent because
+            ; sorted, and non-linear because the fold is positional. NOT a
+            ; sum of their hashes — a sum is order-independent for the wrong
+            ; reason and cancels, so {aa, AA} and {Aa, aA} would be one key
+            ; while the level's displayed label differed.
+            ;
+            ; @emlCountGroups' rawLabel$[] is already deduplicated, so this
+            ; is a set and not a bag.
+            .nSpell = 0
+            for .ri from 1 to .nRaw
+                @eml_normalizeLabel: .raw$[.ri]
+                if eml_normalizeLabel.result$ = .norm$[.gi]
+                    .nSpell = .nSpell + 1
+                    .spell$[.nSpell] = .raw$[.ri]
+                endif
+            endfor
+
+            for .si from 2 to .nSpell
+                .holdSpell$ = .spell$[.si]
+                .sj = .si - 1
+                .spellPlaced = 0
+                while .spellPlaced = 0
+                    .spellShift = 0
+                    if .sj >= 1
+                        if .spell$[.sj] > .holdSpell$
+                            .spellShift = 1
+                        endif
+                    endif
+                    if .spellShift = 1
+                        .spell$[.sj + 1] = .spell$[.sj]
+                        .sj = .sj - 1
+                    else
+                        .spellPlaced = 1
+                    endif
+                endwhile
+                .spell$[.sj + 1] = .holdSpell$
+            endfor
+
+            .sh1 = 1583421407
+            .sh2 = 1442695041
+            for .si from 1 to .nSpell
+                @eml_fpFoldText: .sh1, .sh2, .spell$[.si]
+                .sh1 = eml_fpFoldText.h1
+                .sh2 = eml_fpFoldText.h2
+            endfor
+            .spellText$ = string$ (.nSpell) + "_" + string$ (.sh1)
+            ... + "_" + string$ (.sh2)
+
+            @eml_fpTextHash: .norm$[.gi]
+            .body$ = .body$ + "|L=" + eml_fpTextHash.result$
+            ... + ";n=" + string$ (.n)
+            ... + ";x=" + string$ (.nExcluded)
+            ... + ";v=" + .valText$
+            ... + ";p=" + .spellText$
+
+            if .oi > 1
+                .sum$ = .sum$ + ", "
+            endif
+            .sum$ = .sum$ + .gLabel$[.gi] + " n=" + string$ (.n)
+        endfor
+
+        if .error$ = ""
+            .result$ = .body$
+            .summary$ = string$ (.nLevels) + " levels of " + .groupCol$
+            ... + " on " + .dataCol$ + ": " + .sum$
+            if .nBlank > 0
+                .summary$ = .summary$ + " (" + string$ (.nBlank)
+                ... + " rows skipped: no group)"
+            endif
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlAnalysisFingerprint
+# ============================================================================
+# THE STORE-FACING DOOR. An analysis asks for a data key by naming EVERY
+# column it read, in one comma-separated list, value column first. It gets
+# back a key that describes exactly those columns, or no key and a stated
+# reason.
+#
+# WHY THIS EXISTS. @emlGroupFingerprint cannot tell an unread column from an
+# unnamed one — nothing in a table says which columns an analysis touched. So
+# a two-column key handed to a three-column analysis is silently wrong in the
+# most dangerous way available: @emlTwoWayAnova's second factor can be
+# rewritten wholesale, moving F(group) and its p across .05, without either
+# column the key describes changing at all. No composition can fix that,
+# because the omission is in the CALL and not in the arithmetic.
+#
+# So it is closed at the door: a caller declares every column it read, and a
+# declaration this module cannot describe is REFUSED. Refusing costs a
+# re-run. Not refusing costs a figure quoting a number computed from data the
+# table does not hold.
+#
+# THE SHAPE IS READY FOR TWO-WAY, AND TWO-WAY IS NOT BUILT. A two-way key
+# would key the levels on the CROSS of the factors — one record per design
+# cell — under a new format tag, and would land as another branch of the
+# .nFactors test below. Whether it is built is a scope question for Ian, not
+# a defect in this file; until it is, @emlTwoWayAnova asking for a key gets
+# the refusal, which is the correct answer and not a stopgap.
+#
+# Arguments:
+#   .tableId     - ID of the Table object
+#   .columnList$ - EVERY column the analysis read, comma-separated, value
+#                  column first, then the grouping factor(s). Whitespace
+#                  around items is trimmed. Order of the factors is not
+#                  significant to the refusal, only their number.
+#
+# Output:
+#   .result$   - the fingerprint, or "" if it could not be computed OR was
+#                refused. An empty key never agrees with anything.
+#   .summary$  - human-readable one-liner; "" when refused
+#   .covers$   - the columns the returned key describes; "" when refused
+#   .nLevels, .nUsable, .nBlank - as @emlGroupFingerprint
+#   .nFactors  - how many grouping columns were declared
+#   .refused   - 1 when a well-formed request was declined because no key in
+#                this module can describe it, else 0. A refusal is not a
+#                malformed call; .error$ says which it was either way.
+#   .error$    - "" on success, diagnostic otherwise
+# ============================================================================
+procedure emlAnalysisFingerprint: .tableId, .columnList$
+    .result$ = ""
+    .summary$ = ""
+    .covers$ = ""
+    .nLevels = 0
+    .nUsable = 0
+    .nBlank = 0
+    .nFactors = 0
+    .refused = 0
+    .error$ = ""
+
+    ; Split on commas, trimming each item. Praat has no split for strings
+    ; that returns a vector of them, so this is done by hand; the list is a
+    ; handful of column names, not data.
+    .nItems = 0
+    .rest$ = .columnList$
+    .scanning = 1
+    while .scanning = 1
+        .at = index (.rest$, ",")
+        if .at > 0
+            .tok$ = left$ (.rest$, .at - 1)
+            .rest$ = right$ (.rest$, length (.rest$) - .at)
+        else
+            .tok$ = .rest$
+            .rest$ = ""
+            .scanning = 0
+        endif
+        ; Trim spaces and tabs at both ends, the same way
+        ; @eml_normalizeLabel does, but WITHOUT its case folding: a column
+        ; name is matched exactly by every other procedure in this file.
+        .trimming = 1
+        while .trimming = 1
+            .trimming = 0
+            if length (.tok$) > 0
+                .ch$ = left$ (.tok$, 1)
+                if .ch$ = " " or .ch$ = tab$
+                    .tok$ = right$ (.tok$, length (.tok$) - 1)
+                    .trimming = 1
+                endif
+            endif
+        endwhile
+        .trimming = 1
+        while .trimming = 1
+            .trimming = 0
+            if length (.tok$) > 0
+                .ch$ = right$ (.tok$, 1)
+                if .ch$ = " " or .ch$ = tab$
+                    .tok$ = left$ (.tok$, length (.tok$) - 1)
+                    .trimming = 1
+                endif
+            endif
+        endwhile
+        if .tok$ <> ""
+            .nItems = .nItems + 1
+            .item$[.nItems] = .tok$
+        endif
+    endwhile
+
+    .nFactors = .nItems - 1
+
+    if .nItems = 0
+        .error$ = "No columns declared: a data key must name every column "
+        ... + "the analysis read."
+    elsif .nItems = 1
+        .error$ = "Only one column declared (" + .item$[1] + "): an "
+        ... + "independent-groups key needs a value column and a grouping "
+        ... + "column."
+    elsif .nItems = 2
+        @emlGroupFingerprint: .tableId, .item$[1], .item$[2]
+        .result$ = emlGroupFingerprint.result$
+        .summary$ = emlGroupFingerprint.summary$
+        .covers$ = emlGroupFingerprint.covers$
+        .nLevels = emlGroupFingerprint.nLevels
+        .nUsable = emlGroupFingerprint.nUsable
+        .nBlank = emlGroupFingerprint.nBlank
+        .error$ = emlGroupFingerprint.error$
+    else
+        ; MORE COLUMNS THAN THIS MODULE CAN DESCRIBE. Name them, so the
+        ; message says what would have to be built rather than only that
+        ; something was refused.
+        .refused = 1
+        .extra$ = ""
+        for .i from 3 to .nItems
+            if .i > 3
+                .extra$ = .extra$ + ", "
+            endif
+            .extra$ = .extra$ + .item$[.i]
+        endfor
+        .error$ = "REFUSED: no data key here describes " + string$ (.nFactors)
+        ... + " grouping columns. This module keys ONE value column split by "
+        ... + "ONE group column; the analysis also read: " + .extra$
+        ... + ". A key that described less than the analysis read would "
+        ... + "validate a result against data it was never computed from, so "
+        ... + "no key is issued and the analysis re-runs."
+    endif
+endproc
+
+
+# ============================================================================
+# @emlFingerprintsAgree
+# ============================================================================
+# The one place two fingerprints are compared. Text equality, never numeric
+# equality — see FLOATING POINT at the top of this section.
+#
+# An empty fingerprint on either side means "not known", and NOT KNOWN NEVER
+# AGREES: a result whose key could not be computed, a request that was
+# refused, or a store that has never been written, must send the caller back
+# to the analysis rather than let a figure quote a number that was computed
+# from something else.
+#
+# THE FORMAT TAG IS PART OF THE TEXT, so two keys written under different
+# tags cannot agree even if every other field happens to match. That is
+# deliberate and is the whole reason the tag exists.
+#
+# Arguments:
+#   .a$   - one fingerprint
+#   .b$   - the other
+#
+# Output:
+#   .same - 1 if both are non-empty and identical, else 0
+# ============================================================================
+procedure emlFingerprintsAgree: .a$, .b$
+    .same = 0
+
+    if .a$ <> "" and .b$ <> ""
+        if .a$ = .b$
+            .same = 1
+        endif
+    endif
 endproc

@@ -141,7 +141,7 @@ The graphs module is independent of the stats modules. Stats-only scripts can om
 
 **In your own scripts:** Add the include chain at the top, then call procedures directly. `docs/RECIPES.md` is the place to start — five worked scripts, each one run verbatim by the test suite before it ships.
 
-**Where the reference is.** There is no single procedure-reference page, and that is deliberate: `stats/` and `graphs/` define 554 procedures (`grep -c "^procedure " plugin/stats/*.praat plugin/graphs/*.praat`), and a hand-written signature list that long would be wrong in places by the end of the week it was written. What the plugin carries instead, and keeps true:
+**Where the reference is.** There is no single procedure-reference page, and that is deliberate: `stats/` and `graphs/` define 561 procedures (`grep -c "^procedure " plugin/stats/*.praat plugin/graphs/*.praat`), and a hand-written signature list that long would be wrong in places by the end of the week it was written. What the plugin carries instead, and keeps true:
 
 - **Every procedure is documented at its definition.** The header block above each `procedure` in `stats/` and `graphs/` gives its arguments, its outputs, and — where it matters — why it works the way it does. That is the reference; it cannot drift from the code, because it sits on top of it.
 - **`MANIFEST.txt`** lists every file in the plugin with a one-line description of what it is for, so you know which module to open. It is generated from the tree by `dev/tools/build-manifest.py` and checked on every push.
