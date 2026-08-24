@@ -20,6 +20,9 @@ emlSecondAxisMin = 0
 emlSecondAxisMax = 0
 emlSecondAxisLabel$ = ""
 emlSecondAxisStyle = 3
+annotCorrectionMethod$ = "holm"
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
 @emlDrawTimeSeries: data, "F0 over time (lt longmeas2)", "Time", "F0", 6, 4, "color", 1, "time", "f0", "", 0, 0, 0, 0
 --- discarded 1 step(s): a pass that was measured and then thrown away. The steps above this line are NOT in the recording.
 --- step 2 (draw), run 1
@@ -36,4 +39,7 @@ emlSecondAxisMin = 0
 emlSecondAxisMax = 0
 emlSecondAxisLabel$ = ""
 emlSecondAxisStyle = 3
+annotCorrectionMethod$ = "holm"
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
 @emlDrawTimeSeries: data, "F0 over time (lt longmeas2)", "Time", "F0", 6, 4, "color", 1, "time", "f0", "", 0, 0, 0, 0

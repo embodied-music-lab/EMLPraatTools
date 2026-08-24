@@ -5,7 +5,7 @@
 --run--	code_sha256_eml-graphs-form	fd5e13ac332a5277f84607fd28055cb6dc8f4f14f2c2f8e37558e33157870040
 --run--	code_sha256_eml-graph-procedures	8ba64e46aa591e1ec885c4c6a62e2403f60e3d72e129b17072f617a1c7157a72
 --run--	code_sha256_eml-draw-procedures	8a32e7b6d0198fa1d478db39d124c197417f348eb0932e98ae1e775ec2bf2540
---run--	code_sha256_eml-record	9dc15a37578405e641e75918d4806c2129015aa74407cf202b8fd5276b05afe9
+--run--	code_sha256_eml-record	5f532945d2cd540c7da246544a4cc16046e205fb39c7cf37f385774bf0d32533
 --run--	compositor	running
 subjects4	leg_started	1
 subjects4	ink_empty	0.000687143
@@ -1804,7 +1804,7 @@ rec_long_meas2	info	NOTE: on-figure box backgrounds are drawn as a stipple scree
 rec_long_meas2	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
 rec_long_meas2	info_lines	2
 rec_long_meas2	display_clear	yes
-rec_subjects4	emitted_bytes	12226
+rec_subjects4	emitted_bytes	12384
 rec_subjects4	emitted_encoding	utf16
 rec_subjects4	emitted_step	# --- Step 1 (convert) ---
 rec_subjects4	emitted_step	# --- Step 2 (draw) ---
@@ -1839,6 +1839,9 @@ rec_subjects4	block_emlPanelOriginY	panelOriginY
 rec_subjects4	block_emlSeriesRole$	seriesRole$
 rec_subjects4	block_emlLineStyle	lineStyle
 rec_subjects4	block_emlSecondAxisOn	secondAxisOn
+rec_subjects4	block_annotCorrectionMethod$	"holm"
+rec_subjects4	block_annotAlpha	0.05
+rec_subjects4	block_emlGroupSortAlphabetical	0
 rec_subjects4	emitted_call	@emlInitDrawingDefaults
 rec_subjects4	emitted_call	@emlClearAnnotations
 rec_subjects4	emitted_call	@emlGraphsMeltSeries: data, timeCol$, seriesCols$
@@ -1856,7 +1859,7 @@ rec_subjects4	tuned_verdict	OK
 rec_subjects4	tuned_png_md5	530636ee02f28a50e645957657fedbed
 rec_subjects4	tuned_png_px	1800x1200
 rec_subjects4	tuned_error	
-rec_meas2	emitted_bytes	6069
+rec_meas2	emitted_bytes	6148
 rec_meas2	emitted_encoding	ascii
 rec_meas2	emitted_step	# --- Step 1 (draw) ---
 rec_meas2	block_data1$	"Table lt_meas2"
@@ -1892,6 +1895,9 @@ rec_meas2	block_emlSecondAxisMin	secondAxisMin
 rec_meas2	block_emlSecondAxisMax	secondAxisMax
 rec_meas2	block_emlSecondAxisLabel$	secondAxisLabel$
 rec_meas2	block_emlSecondAxisStyle	secondAxisStyle
+rec_meas2	block_annotCorrectionMethod$	"holm"
+rec_meas2	block_annotAlpha	0.05
+rec_meas2	block_emlGroupSortAlphabetical	0
 rec_meas2	emitted_call	@emlInitDrawingDefaults
 rec_meas2	emitted_call	@emlClearAnnotations
 rec_meas2	emitted_call	@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
@@ -1908,7 +1914,7 @@ rec_meas2	tuned_verdict	OK
 rec_meas2	tuned_png_md5	92b3410ae7d18549728cce222282733f
 rec_meas2	tuned_png_px	1800x1200
 rec_meas2	tuned_error	
-rec_long_meas2	emitted_bytes	7099
+rec_long_meas2	emitted_bytes	7178
 rec_long_meas2	emitted_encoding	ascii
 rec_long_meas2	emitted_step	# --- Step 1 (convert) ---
 rec_long_meas2	emitted_step	# --- Step 2 (draw) ---
@@ -1954,6 +1960,9 @@ rec_long_meas2	block_emlSecondAxisMin	secondAxisMin
 rec_long_meas2	block_emlSecondAxisMax	secondAxisMax
 rec_long_meas2	block_emlSecondAxisLabel$	secondAxisLabel$
 rec_long_meas2	block_emlSecondAxisStyle	secondAxisStyle
+rec_long_meas2	block_annotCorrectionMethod$	"holm"
+rec_long_meas2	block_annotAlpha	0.05
+rec_long_meas2	block_emlGroupSortAlphabetical	0
 rec_long_meas2	emitted_call	@emlInitDrawingDefaults
 rec_long_meas2	emitted_call	@emlClearAnnotations
 rec_long_meas2	emitted_call	@emlGraphsPivotSeries: data, timeCol$, longValueCol$, seriesNameCol$, seriesLevels$
