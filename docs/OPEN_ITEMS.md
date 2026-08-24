@@ -14,6 +14,25 @@ the plugin is going.
 
 ## A. The unification (largest remaining piece)
 
+### RULED 24 Aug — the re-run and the reprint are two decisions
+
+Ian, through the verification session. Any key mismatch RE-RUNS the analysis.
+The Info report is reprinted only when what the user reads has changed, and a
+reprint carries one line above it: "Data changed since this analysis was last
+run; re-measured." A re-run that reproduces the stored report exactly prints
+nothing.
+
+The store therefore keeps the REPORT TEXT beside the key. On a mismatch:
+re-run, compare the new report to the stored one, and either stay silent and
+update the stored key, or print with the note. THE REPORT COMPARISON, NOT THE
+KEY, DECIDES WHAT THE USER SEES — which is what makes this hold under either
+group-order default, and it needs no machinery the whole-table key removed.
+
+A richer note — which group, whether a group was renamed, whether n moved —
+needs a small order-ignoring describer (per-group n, label, content digest) as
+a DESCRIBER ONLY, never as the trigger. Priced separately and not ruled.
+
+
 Drawing a figure re-runs the analysis instead of receiving its result.
 Confirmed still true: the bridge that draws a group comparison computes the
 test itself from its arguments rather than reading a stored result, and no

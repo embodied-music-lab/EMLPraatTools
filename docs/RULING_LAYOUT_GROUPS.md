@@ -24,8 +24,12 @@ script rendered under Xvfb on 6.6.30 and eyeballed by Ian.
 4. **🎛️ Layout contents and order:** mark → frame → text → output:
    data-mark toggles first (jitter / mean overlay / show points + dot
    size, per page), Line style where the type strokes, Gridline mode,
-   Show inner box, Show axis names, Show ticks, Show axis values, Font,
-   Legend placement, Output DPI. Booleans untouched per standing ruling.
+   Legend placement, Show inner box, Show axis names, Show ticks, Show
+   axis values, Font, Output DPI. Booleans untouched per standing ruling.
+   AMENDED 24 Aug: Legend placement sits directly after Gridline mode, as
+   the per-page maps below have always said and as the five built pages
+   render. This sentence previously placed it between Font and Output DPI
+   and was the defect; the maps and the approved mockups govern.
 5. **The organization row is paid for:** each page's Layout header costs
    one row and buys the scan; the approved counts below are the ruling.
 
@@ -66,9 +70,14 @@ script rendered under Xvfb on 6.6.30 and eyeballed by Ian.
 - **Spaghetti (→21):** 📋 Columns (teaching parentheticals kept) · 📐
   Y-axis · 🎛️ Layout (Show mean overlay, Line style, Gridline, Legend
   placement, box, names, ticks, values, Font, DPI).
-- **Line chart pages:** the grouping lands inside the tree's own file
-  set as a follow-up commit, same rules — never a retrofit against the
-  old form. The Right-Hand Axis content keeps its ruled rows.
+- **Line chart pages (→4, →23 advanced / 11 beginner, →7):** the grouping
+  lands inside the tree's own file set as a follow-up commit, same rules —
+  never a retrofit against the old form. The Right-Hand Axis content keeps
+  its ruled rows. TARGETS ADOPTED 24 Aug at the built actuals, provisionally:
+  What the lines are 4, Column Mapping 23 advanced and 11 beginner,
+  Right-Hand Axis 7. Provisional means the rendered counts are verified
+  independently once the commits are on the remote, and a mismatch reopens
+  the number rather than the page.
 
 Counts are the approved targets ±1; verify each against the rendered
 page under Xvfb and report actuals, per the compaction ruling's
