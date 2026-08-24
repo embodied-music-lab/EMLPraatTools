@@ -29,6 +29,29 @@ They stay.
 The word "supersedes" caused this: it reads as "the old one is now rubbish".
 Say instead which bundle to push, and leave the rest alone.
 
+**WHEN A BUNDLE WILL NOT TRANSFER, CHAIN IT FROM THE LAST ONE DELIVERED.**
+The delivery path is an upload from this container followed by a write to
+Ian's disk, and the upload is the half that fails. On 24 August every
+attempt at 1.1 MB timed out while 2.5 KB went through on the first try.
+The size grows because the bundle is built from GitHub's head, and a
+stalled push makes that delta wider every commit -- re-driven harness
+evidence is what pushes it over.
+
+So when a bundle fails to transfer, rebuild it from the SHA of the last
+bundle that reached his disk (`git bundle create <path> ^<last-delivered-sha>
+main`) and deliver that. It applies in sequence after the one before it, so
+the chain stays valid and each link stays small. Say plainly which order
+they apply in.
+
+TRY THE FULL BUNDLE FIRST, EVERY TIME. The ceiling may be temporary or may
+not exist at all -- it is inferred from timeouts, not from anything the
+service states. Attempting the full one and falling back is how that
+assumption keeps getting tested instead of hardening into a fact. If a
+single commit ever carries too much evidence for even a chained delta,
+split the file into sub-megabyte parts and have Ian reassemble with one
+`cat` -- `eml-part-aa` through `-ad` on his disk are from an earlier
+occasion of exactly that.
+
 **ALWAYS paste the five push commands with the bundle, every single time.**
 Not "same commands as before" — the actual block, with the actual filename.
 Ian should never have to ask for it or scroll back for it:
