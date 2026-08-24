@@ -477,8 +477,11 @@ check_true("v84", "the sweep procedure is defined once",
 # analysis. So the rule keeps extending itself: an eighth axis pair added next
 # year is placed under 📐 by the same ruling that placed the seven, joins the
 # roster the moment it exists, and turns this red until the sweep names it.
-# A pair hidden from the roster by being filed under the wrong heading is a
-# violation of the grouping ruling, which the page-composition checks read.
+# THE ROSTER IS THE ONLY THING READING THE HEADING A PAIR SITS UNDER. Measured
+# against every check that reads this form: a range pair filed under a
+# non-axis heading leaves the roster and no source-level check anywhere
+# objects. The refusal it then escapes is this file's subject, so the gap is
+# named here rather than assumed away.
 # 🏷️ is a sub-heading INSIDE the axis group and does not close it.
 # Matched as BYTES. The form is UTF-8 on disk and R reads it without declaring
 # an encoding, so a pattern written as a character escape matches nothing on a

@@ -78,8 +78,16 @@ key, and the scatter's correlation needs a cross term (sum of x*y), neither
 of which any per-column or per-level description of ONE column can supply.
 The fingerprint's own header states both, and both should route through
 `@emlAnalysisFingerprint` so that the refusal is what happens until they
-exist. There is no pinned validator for the fingerprint yet: the mutation legs
-live in the phase2 suite, not in `validate/`.
+exist.
+
+TWO THINGS THE 24 AUG VERIFICATION PASS NAMED HERE. There is no pinned
+validator for the fingerprint: its mutation legs live in the phase2 suite, not
+in `validate/`, so the main suite's count is unmoved by 832 lines of shipped
+code and the only evidence for that code is evidence it wrote about itself.
+The cheap fix is one `validate/` check that runs the phase2 legs, not more
+phase2 legs. And the fingerprint has no shipped caller yet — expected while the
+store is unbuilt, and the reason the coverage question is worth settling before
+the store lands rather than after.
 
 ## B. Form and dialog work
 
@@ -305,20 +313,31 @@ wording and output work so its report strings are written once.
 
 ### Red today, and known
 
-- **The line-style check fails on the second series.** "The second series has
-  its own Line style menu" is red, and was red before any of today's work --
-  invisible until the exit-code hole was closed, because that file reported
-  its result and returned success either way. Nobody has yet decided whether
-  the menu is missing or the check describes a page that changed.
-- **The line-chart dialog photographs are older than the form.** The checks
-  that read them are bound to the form's fingerprint, and the config-file
-  clamp edits that form, so two of them are red. Nothing in the plugin is
-  broken; the pictures are of the previous version. It clears when the
-  fifteen-leg photograph run works -- see the line-chart item above, which is
-  blocked on the same thing.
+Nothing. The suite is green: 15974 checks, 15974 passed, on the 24 Aug
+verification pass over the whole tree.
+
+The two entries that stood here are closed. The line-style menu on the second
+series went green on 20 Aug and stayed green -- it was listed as red here for
+twenty-one commits after it was fixed, which is the argument for reconciling
+this file against a run rather than against the last edit. The line-chart
+photographs were one commit stale on two digests and were re-driven on 24 Aug.
 
 ### Test-coverage gaps
 
+- **The pitch floor and ceiling are now judged by nothing.** Removing them
+  from the axis-refusal roster was correct — they set an analysis search
+  range, not a plot axis, and they only ever qualified because they render as
+  a paired row. But they remain a range a user types, floor above ceiling
+  remains nonsense, and after the 24 Aug sweep no check asserts anything about
+  their ordering. Whether they want a refusal of their own is scope, not a
+  defect.
+- **A range pair filed under a non-axis heading escapes the whole suite.**
+  Measured 24 Aug against all twenty-five checks that read the graphs form: a
+  pair placed under the layout heading leaves the axis roster and nothing
+  objects, so it also escapes the max-below-min refusal. Only the transcript
+  digests move, and they move for any edit at all. The axis-refusal check's
+  header previously claimed the page-composition checks caught this; they do
+  not, and the header now names the gap instead.
 - The validator index documents the older checks only; roughly a dozen of
   the newest have no entry in it, so "read the index to see what is
   checked" now understates the suite.
@@ -337,33 +356,33 @@ wording and output work so its report strings are written once.
 
 ### Housekeeping
 
-- Line-chart evidence is stale, deliberately: the photographs are what those
-  checks read, and the dialog wording is still moving. One re-drive after
-  the sweep, not one per change. Confirmed still correct — no line-chart
-  code has moved since the last re-drive.
-- **Photographed-dialog evidence is stale EN BLOC, deliberately, as of the
-  24 Aug sweep commit, and the re-drive that clears it is the next unit of
-  work.** Exactly three checks are red for this reason and no other: v84's
-  "the transcript was driven on THIS form's code", and v97's two
-  "the transcript was taken from THIS ..." digests. All three are digest
-  bindings — they say the photographs describe a different revision of the
-  form, which is TRUE and is the whole point of batching a thirteen-page
-  sweep behind one re-drive. Every source-level check over those same pages
-  is green.
+- Line-chart evidence was stale deliberately behind the sweep's single
+  re-drive. Discharged 24 Aug: driven on Praat 6.6.30, 765 checks green. The
+  line chart's own pages were never touched by the sweep -- 80 widget lines
+  identical on each side of the commit -- so only the digests moved.
+- **Photographed-dialog evidence — DISCHARGED 24 Aug.** The batching ruling
+  held the pictures stale behind one re-drive at the sweep's end. That drive
+  ran: axis refusal 78 checks green, line chart 765 green, and the whole suite
+  green behind them.
 
-  THE RE-DRIVE IS NOT A RERUN. The harnesses address dialog fields by TAB
-  INDEX, and grouping headings shift those indices, so the drives must be
-  re-taught before they are re-run or they will type into the wrong box and
-  report a plugin defect: axisrefuse `box_value` tab11→tab10 and tab12→tab11,
-  `box_bound` tab12→tab11, `scatter_xy` tab8→tab6, tab9→tab7, tab10→tab8,
-  tab11→tab9, plus that harness's own FIELD ORDER comment block. This is the
-  same class of mistake that cost most of 20 Aug: a harness written for the
-  old layout going red at the moment a change lands, and the change getting
-  blamed.
+  WHAT THE RE-DRIVE TAUGHT, kept because the next sweep meets it again. The
+  harnesses address dialog fields by TAB INDEX, and seven indices moved on the
+  box-plot and scatter pages. The reason is not the one this file recorded:
+  group headings are comment rows and take no tab stop, so they shift nothing.
+  The range rows moving out of the layout group and up under the axis heading
+  is what moved them. Anyone re-deriving indices by counting added headings
+  gets the wrong answer.
 
-  If the re-drive has not happened by the end of 25 Aug, re-drive anyway —
-  deliberate staleness that ages stops being deliberate and becomes an
-  unanswered question about which pages the photographs describe.
+  Each corrected index was measured before anything was driven — a marker typed
+  at every position and read back from the variable that received it, with the
+  neighbouring positions recorded beside it. A Praat paired row takes one tab
+  stop per box, not one per row; that had never been covered and now is.
+
+  The evidence that the indices are right rather than merely different: across
+  the re-drive the axis-refusal transcript changed in exactly two lines, the
+  code digest and a new line naming the machine. Every refusal message, every
+  ink measure and every recorded axis range is byte-identical. A wrong index
+  types into another box and the refusal names a different axis or never fires.
 
 ## Closed
 
