@@ -1212,8 +1212,13 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                 appendInfoLine: .row$
             endfor
         endfor
+        ; t IS SIGNED, AND SO IS d, and both come out of the same
+        ; subtraction: @emlPairwiseT runs each pair as the first group
+        ; against the second and negates for the mirror cell. One clause
+        ; therefore names the direction of the pair of them.
         appendInfoLine: "  * adjusted p < ", .alphaText$,
-            ... ". d is Cohen's d, first group minus second."
+            ... ". t and d both run first group minus second;"
+            ... + " d is Cohen's d."
 
         @emlReportBlank
         @emlReportSection: "Adjusted p-values (" + .adjLabel$ + ")"
@@ -1354,8 +1359,12 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                 appendInfoLine: .row$
             endfor
         endfor
+        ; U belongs to a group; r carries a direction. @emlRankBiserialR
+        ; returns +1 when the first group of the pair outranks the second,
+        ; so this line states both facts rather than only the first.
         appendInfoLine: "  * adjusted p < ", .alphaText$,
-            ... ". U is for the first group of the pair."
+            ... ". U is for the first group of the pair; r is positive"
+            ... + " when that group ranks above the second."
 
         @emlReportBlank
         @emlReportSection: "Adjusted p-values (" + .adjLabel$ + ")"

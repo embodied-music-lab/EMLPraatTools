@@ -102,7 +102,7 @@ dev/tools/vacuity-negative-controls.py | 238 | - | Prove that scan-assertion-vac
 dev/tutorial-wireframes-v09.praat | 888 | 0.10 | EML Stats Tutorial — Layout Wireframes
 docs/API_EXPORT.md | ~3087 words | - | Worked how-to for @emlExportResultFiles: which analyses declare broom frames, the file set each call writes, the collision rule, and the batch pattern for a folder of files with no dialogs.
 docs/RECIPES.md | ~3043 words | - | Five worked scripts for calling the statistics from your own Praat script: two groups from a table, paired columns and correlation, a full analysis with CSV export, a batch loop, and a Sound through Pitch into the descriptive kernels. Every script is extracted from the page and run verbatim by harness/recipes, with its printed numbers pinned by validate/v81_recipes.R.
-graphs/eml-annotation-procedures.praat | 5999 | 3.22 | EML GRAPHS — ANNOTATION + STATS BRIDGE PROCEDURES
+graphs/eml-annotation-procedures.praat | 6086 | 3.22 | EML GRAPHS — ANNOTATION + STATS BRIDGE PROCEDURES
 graphs/eml-draw-procedures.praat | 7184 | 1.26 | EML GRAPHS — DRAWING PROCEDURES
 graphs/eml-draw-qq.praat | 392 | - | EML Stats & Graphs — Normal Q-Q plot. @emlDrawQQPlot; an ADAPTER, not a draw procedure — it computes the theoretical quantiles and hands them to the shared scatter machinery.
 graphs/eml-graph-procedures.praat | 8328 | 3.32 | EML GRAPHS — STANDARD DRAWING PROCEDURES
@@ -139,7 +139,7 @@ scripts/eml-tutorial.praat | 754 | 0.19 | EML Stats Tutorial — Interactive Sta
 scripts/eml-wizard.praat | 3134 | 2.6 | Question-driven statistical analysis wizard. Routes research
 setup.praat | 525 | 1.7 | Register menu entries and dynamic action buttons for the
 sprites/ | 204 files, 45803 bytes | sha256:48d0a2cc3f22c34c | Pre-rendered PNG stamps for alpha compositing — shape_colour_alpha_size, addressed as a family by @emlSetColorPalette and @emlDrawAlphaDot, never by name. Praat has no alpha channel, so a translucent dot or box is a stretched stamp; @emlInitAlphaSprites falls back to opaque Paint when the folder is absent.
-stats/eml-analysis.praat | 4753 | 1.3 | EML Stats : Analysis Orchestrators
+stats/eml-analysis.praat | 4762 | 1.3 | EML Stats : Analysis Orchestrators
 stats/eml-categorical.praat | 277 | 1.0 | EML Stats & Graphs — Counts and proportions. Chi-square test of independence with Cramér's V, expected-count disclosure and a refusal on an empty row or column, and the Wilson confidence interval for a proportion, which stays inside 0 and 1 where the ordinary formula does not.
 stats/eml-core-descriptive.praat | 870 | 1.2 | EML Stats : Core Descriptive Statistics
 stats/eml-core-utilities.praat | 945 | 1.0 | EML Stats : Core Utility Procedures

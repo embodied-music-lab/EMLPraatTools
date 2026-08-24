@@ -3676,6 +3676,17 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
     @emlReportDescriptiveRow: .displayG1$, .n1, .mean1, .sd1, .median1
     @emlReportDescriptiveRow: .displayG2$, .n2, .mean2, .sd2, .median2
 
+    ; THE DIRECTION IS STATED ONCE, FOR BOTH ARMS. The mean-difference row
+    ; below names its own subtraction, but t, Cohen's d, Hedges' g, the
+    ; Mann-Whitney z and the rank-biserial r are signed too and carry the
+    ; same direction: the group this report lists first against the group it
+    ; lists second. Which group is listed first follows the group order in
+    ; force, so it changes with the ordering setting and cannot be inferred
+    ; from the names.
+    @emlReportNote: "Sign: every difference below is " + .displayG1$
+    ... + " minus " + .displayG2$ + ", and t, z and the effect sizes carry "
+    ... + "that direction."
+
     if .testType$ = "parametric" or .testType$ = "both"
         @emlFormatEffectLabel: emlCohenD.d, "d"
         @emlReportBlank
@@ -4138,7 +4149,35 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
         @emlReportBlank
         @emlReportSection: "Tukey HSD Mean Differences (95% family-wise CI)"
         appendInfoLine: ""
-        appendInfoLine: left$ ("Comparison" + "                          ", 26),
+        ; THE COMPARISON COLUMN IS MEASURED, NOT ASSUMED. A fixed cut at 24
+        ; characters is silent when it bites: two groups whose names share a
+        ; prefix -- "Soprano belt trained" and "Soprano belt untrained" --
+        ; give two different comparisons whose first 24 characters are
+        ; identical, so two rows print under one label with nothing on the
+        ; page to tell them apart, and a reader attributes an interval to the
+        ; wrong pair. The width is therefore taken from the widest comparison
+        ; this table actually holds and no name is cut.
+        ;
+        ; ORDINARY REPORTS ARE UNCHANGED. The floor is the 26 this table has
+        ; always been laid out on, so any table whose longest comparison fits
+        ; in 24 characters prints exactly as it did; only a table that would
+        ; otherwise have collided gets a wider column, and a wide column is
+        ; visible where a collision is not.
+        .cmpWidth = 26
+        for .iGroup from 1 to .nGroups - 1
+            for .jGroup from .iGroup + 1 to .nGroups
+                .measure$ = replace$ (emlOneWayAnova.groupLabel$[.iGroup],
+                ... "_", " ", 0)
+                ... + " − "
+                ... + replace$ (emlOneWayAnova.groupLabel$[.jGroup],
+                ... "_", " ", 0)
+                if length (.measure$) + 2 > .cmpWidth
+                    .cmpWidth = length (.measure$) + 2
+                endif
+            endfor
+        endfor
+        @emlPadRight: "Comparison", .cmpWidth
+        appendInfoLine: emlPadRight.result$,
         ... left$ ("Difference" + "              ", 14),
         ... "95% CI"
         for .iGroup from 1 to .nGroups - 1
@@ -4146,9 +4185,6 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 .ciName$ = replace$ (emlOneWayAnova.groupLabel$[.iGroup], "_", " ", 0)
                 ... + " − "
                 ... + replace$ (emlOneWayAnova.groupLabel$[.jGroup], "_", " ", 0)
-                if length (.ciName$) > 24
-                    .ciName$ = left$ (.ciName$, 24)
-                endif
                 .tukeyDiff = emlOneWayAnova.meanDiff## [.iGroup, .jGroup]
                 .tukeyHalf = undefined
                 if emlOneWayAnova.qCritical <> undefined
@@ -4169,7 +4205,11 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 endif
                 @eml_fixed: .tukeyDiff, 4
                 .fx1$ = eml_fixed.result$
-                appendInfoLine: left$ (.ciName$ + "                          ", 26),
+                ; @emlPadRight pads and never cuts, and .cmpWidth was
+                ; measured to be at least two wider than this name, so the
+                ; gutter before the Difference column survives every name.
+                @emlPadRight: .ciName$, .cmpWidth
+                appendInfoLine: emlPadRight.result$,
                 ... left$ (.fx1$ + "              ", 14),
                 ... .ciText$
             endfor
@@ -4270,6 +4310,13 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
         endfor
         appendInfoLine: .dRowLine$
     endfor
+    ; The Tukey p matrix above is SYMMETRIC and this one is ANTISYMMETRIC:
+    ; d[i, j] is -d[j, i], so the sign here is the direction of the
+    ; difference and not the strength of the effect. The convention is the
+    ; one @emlReportPairwiseComparison prints under its own d matrix, in the
+    ; same words, because a reader meeting both should meet one rule.
+    @emlReportNote: "Row minus column: a negative d means the ROW group's "
+    ... + "mean is lower than the COLUMN group's. |d| is the effect size."
 
     # CSV rows for Cohen's d only (when Tukey did NOT run)
     if .doTukey = 0
@@ -4597,6 +4644,15 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                 endfor
                 appendInfoLine: .rowLine$
             endfor
+            ; The adjusted-p matrix above is symmetric; this one is not.
+            ; @emlDunnTest builds each z from mean rank i minus mean rank j
+            ; and fills the lower triangle with the negation, so the sign is
+            ; the direction of the rank difference. Same convention, same
+            ; wording, as the effect-size matrices in this file and in
+            ; @emlReportPairwiseComparison.
+            @emlReportNote: "Row minus column: a negative z means the ROW "
+            ... + "group's mean rank is lower than the COLUMN group's. |z| "
+            ... + "is the size of the standardised difference."
 
             # CSV rows — per-pair descriptives + rank-biserial r
             for .iGroup from 1 to .nGroups - 1
@@ -4702,6 +4758,11 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
         endfor
         appendInfoLine: .rRowLine$
     endfor
+    ; Antisymmetric, for the same reason the Cohen's d matrix above is:
+    ; r[i, j] is -r[j, i], so the sign is the direction and the magnitude is
+    ; the effect. Same wording as @emlReportPairwiseComparison's r matrix.
+    @emlReportNote: "Row minus column: a negative r means the ROW group "
+    ... + "ranks lower than the COLUMN group. |r| is the effect size."
 
     # CSV rows for rank-biserial r (when Dunn did NOT run)
     if .doDunn = 0
@@ -5455,6 +5516,17 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
     ... ", SD = ", .fx2$,
     ... ", Median = ", .fx3$
 
+    ; THE DIRECTION IS STATED ONCE, ON THE PAGE, FOR BOTH ARMS. Every signed
+    ; quantity a paired test reports -- t, Cohen's dz, r from t, the Wilcoxon
+    ; z and the matched-pairs r -- is built from the same per-pair difference,
+    ; and @emlTTestPaired and @emlWilcoxonSignedRank both take that as their
+    ; first vector minus their second, which is column 1 minus column 2 here.
+    ; A reader who has only the numbers cannot tell which way that runs, so
+    ; the report says it rather than leaving it to be inferred.
+    @emlReportNote: "Sign: every difference below is " + .displayC1$
+    ... + " minus " + .displayC2$ + ", and t, z and the effect sizes carry "
+    ... + "that direction."
+
     if .testType$ = "parametric" or .testType$ = "both"
         if emlTTestPaired.error$ = ""
             @emlReportBlank
@@ -5475,7 +5547,22 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
                 @emlWizardExplainP: emlTTestPaired.p
             endif
             @emlReportPWithExact: "p", emlTTestPaired.p
-            @emlReportLine: "Mean difference", emlTTestPaired.meanDiff, 4
+            ; A PAIRED SIGN FOLLOWS THE TWO COLUMNS, NOT THE GROUP SORT.
+            ; @emlTTestPaired forms every pair's difference as its first
+            ; vector minus its second, and @emlRunPairedAnalysis hands it
+            ; column 1 first, so the printed difference is column 1 minus
+            ; column 2. A bare "Mean difference" would leave that to be
+            ; inferred from the two descriptive lines above, so the label
+            ; names it, in the same display names those lines print.
+            .diffLabel$ = "Mean diff (" + .displayC1$ + " − "
+            ... + .displayC2$ + ")"
+            if length (.diffLabel$) >= 20
+                ; @emlPadRight leaves an over-long label unpadded, which
+                ; would run the value straight into the ")". One space keeps
+                ; them apart.
+                .diffLabel$ = .diffLabel$ + " "
+            endif
+            @emlReportLine: .diffLabel$, emlTTestPaired.meanDiff, 4
             @emlReportLine: "SD of differences", emlTTestPaired.sdDiff, 4
 
             # The effect size under the t-test is the one derived from the
