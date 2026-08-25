@@ -1,0 +1,30 @@
+# LEG 3 -- post-hoc opt-out intent: the SAME table as leg 1 (three groups,
+# n=6), reused deliberately because the underlying mechanism is the same
+# hardcoded "1" (eml-annotation-procedures.praat:3543-3544) -- here probed
+# from the opposite side. Analysis door: Compare k Groups (ANOVA) with
+# "Tukey HSD post hoc" UNCHECKED (doTukey = 0) -- the report has no
+# post-hoc table at all. Draw door: the bridge runs Tukey regardless of
+# that choice. The two "doors" are the SAME dialog's own two runs (post-hoc
+# on vs off) compared against what the figure shows no matter which one
+# the user picked -- loud because group C is miles from A and B, so
+# Tukey's C-A and C-B pairs are significant to a dozen decimal places
+# whenever they are allowed to print at all.
+value,group
+13.81,A
+12.29,A
+8.47,A
+7.09,A
+7.81,A
+10.59,A
+13.01,B
+15.31,B
+17.27,B
+13.48,B
+10.43,B
+13.07,B
+28.14,C
+25.32,C
+23.51,C
+22.86,C
+21.75,C
+22.86,C

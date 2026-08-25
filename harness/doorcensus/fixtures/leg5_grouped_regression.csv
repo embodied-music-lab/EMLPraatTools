@@ -1,0 +1,31 @@
+# LEG 5 -- grouped regression intent: the Simple Linear Regression dialog
+# (which reads a Group column into groupCol$ and then never passes it to
+# @emlRunRegressionAnalysis -- scripts/eml-regress.praat:107, the call
+# carries only tableId, respCol$, predCol$) vs the scatter Draw door,
+# which DOES fit per group. This is Sol's Simpson fixture joining the
+# two-door exhibit (docs/EXHIBIT_TWO_DOOR_REGRESSION.md): two groups,
+# x = 1..10 in both, slopes +2 and -2 with light noise -- per-group R^2
+# ~ .998 in each direction, pooled slope ~ 0 (R^2 ~ 2e-9). The dialog
+# reports the pooled line and never mentions the group column was
+# selected but unused.
+x,y,group
+1,7.30,A
+2,8.80,A
+3,11.10,A
+4,12.60,A
+5,15.20,A
+6,16.90,A
+7,19.30,A
+8,20.70,A
+9,23.10,A
+10,24.80,A
+1,97.80,B
+2,96.30,B
+3,93.90,B
+4,92.20,B
+5,89.70,B
+6,88.10,B
+7,85.80,B
+8,84.20,B
+9,81.90,B
+10,80.30,B

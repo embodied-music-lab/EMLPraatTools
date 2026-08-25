@@ -1,0 +1,22 @@
+# LEG 4 -- paired intent: Compare Paired Observations (paired t-test on
+# the two condition columns, row-matched by subject) vs the same eight
+# subjects' data run through the plugin's OWN independent-samples kernel
+# (@emlTTest, unpaired) on Condition/Value -- the mistake the audit
+# continuation calls "Subject doubling as grouping variable; paired state
+# lost": the spaghetti plot itself prints no inferential test at all
+# (graphs/eml-draw-procedures.praat:3417-3462, N/Mean/SD only), so nothing
+# in that figure warns a reader off reaching for the plugin's ordinary
+# group-comparison door on the reshaped long table instead. Built with a
+# large between-subject offset (-6..+6) and a small, consistent within-
+# subject improvement (+1, +/-0.3 noise): the paired test cancels the
+# offset and finds it easily; the unpaired test does not, because ignoring
+# the pairing folds the between-subject spread into the error term.
+subject,cond1,cond2
+1,14.30,14.90
+2,15.80,17.20
+3,18.10,18.85
+4,18.90,20.25
+5,21.20,21.80
+6,21.70,23.10
+7,24.15,24.75
+8,25.85,27.20

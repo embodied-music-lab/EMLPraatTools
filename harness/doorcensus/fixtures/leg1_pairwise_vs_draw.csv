@@ -1,0 +1,29 @@
+# LEG 1 -- pairwise comparisons intent: the standalone Pairwise dialog
+# (Student t, Bonferroni) vs the figure's own annotation, which the bridge
+# hardcodes to classical ANOVA + Tukey HSD regardless of what the user chose
+# at the analysis door (eml-annotation-procedures.praat:3543-3544, the
+# literal "1" passed as .doTukey). Modelled on Sol's p=.052 -> .037 seed
+# fixture (EML_Praat_Audit_CONTINUATION_2026-08-25.md, Part 4, item 1):
+# three groups, n=6, engineered so the Student/Bonferroni pairwise p for
+# A vs B and the Tukey HSD p for the SAME pair land on opposite sides of
+# .05 -- "not significant" at one door, "significant" at the other, same
+# data, same pair.
+value,group
+13.81,A
+12.29,A
+8.47,A
+7.09,A
+7.81,A
+10.59,A
+13.01,B
+15.31,B
+17.27,B
+13.48,B
+10.43,B
+13.07,B
+28.14,C
+25.32,C
+23.51,C
+22.86,C
+21.75,C
+22.86,C

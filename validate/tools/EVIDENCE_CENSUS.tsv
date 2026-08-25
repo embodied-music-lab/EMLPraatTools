@@ -49,6 +49,7 @@ v112	v112_settings_census.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs	s
 v113	v113_cancel_path_reads.R	SOURCE	NO		plugin_EML_StatsGraphs	old_src	
 v114	v114_fingerprint_suite.R	SOURCE+LIVE	PRAAT	praat	plugin		
 v115	v115_settings_publication.R	SOURCE+ARTEFACT	NO		harness,plugin		
+v116	v116_frozen_choice_conformance.R	SOURCE	NO		plugin_EML_StatsGraphs	old_src	
 v117	v117_pair_group_placement.R	SOURCE	NO		plugin_EML_StatsGraphs	old,walk_seeded	
 v12	v12_correlation_orchestrator.R	ARTEFACT	NO		evidence		
 v122	v122_posthoc_never_gated.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
@@ -56,6 +57,7 @@ v123	v123_nummiss.R	NONE	NO
 v124	v124_describesniff.R	NONE	NO				
 v125	v125_group_order_persistence.R	SOURCE	NO		plugin_EML_StatsGraphs		
 v126	v126_normality_coverage.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
+v127	v127_door_agreement_census.R	SOURCE+ARTEFACT	NO		harness,plugin,plugin_EML_StatsGraphs	plugin_src_root	
 v13	v13_regression_orchestrator.R	ARTEFACT	NO		evidence		
 v14	v14_descriptive_orchestrator.R	ARTEFACT	NO		evidence		
 v15	v15_normality_orchestrator.R	ARTEFACT	NO		evidence		

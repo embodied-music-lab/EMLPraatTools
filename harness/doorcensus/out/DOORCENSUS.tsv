@@ -1,0 +1,77 @@
+leg	key	value
+leg1	door	pairwise_dialog
+leg1	test_label	Student t-test
+leg1	adjust_label	bonferroni
+leg1	p_AB	0.079980919215
+leg1	p_AC	0.000006032954
+leg1	p_BC	0.000048809734
+leg1	t_AB	-2.596298059256
+leg1	df_AB	10.000000000000
+leg1	door2	draw_bridge
+leg1	door2_label	Tukey HSD
+leg1	anova_F	53.390668601448
+leg1	anova_p	0.000000150949
+leg1	tukey_p_AB	0.044253502826
+leg1	tukey_p_AC	0.000000147302
+leg1	tukey_p_BC	0.000007208528
+leg1	tukey_q_AB	3.764386337587
+leg1	tukey_df	15.000000000000
+leg3	door	analysis_optout
+leg3	anova_F	53.390668601448
+leg3	anova_p	0.000000150949
+leg3	posthoc_ran	0
+leg3	door2	draw_bridge
+leg3	posthoc_ran_door2	1
+leg3	tukey_p_CA	0.000000147302
+leg3	tukey_p_CB	0.000007208528
+leg2	bf_p	0.033176232075
+leg2	door	analysis_supplement
+leg2	welch_F	5.410359404865
+leg2	welch_df1	2.000000000000
+leg2	welch_df2	6.796366357702
+leg2	welch_p	0.039293147182
+leg2	door2	draw_supplement
+leg2	welch_F_door2	5.410359404865
+leg2	welch_p_door2	0.039293147182
+leg2	gh_p_AB	0.056914091010
+leg2	gh_p_AC	0.354781813421
+leg2	gh_p_BC	0.993084552125
+leg2	gh_q_AB	4.387112476605
+leg2	gh_df_AB	5.154312115045
+leg4	door	paired_dialog
+leg4	test_label	Paired t-test
+leg4	paired_t	-7.156312877414
+leg4	paired_df	7.000000000000
+leg4	paired_p	0.000184340624
+leg4	paired_meandiff	-1.006250000000
+leg4	door2	unpaired_kernel
+leg4	test_label_door2	Welch t-test
+leg4	unpaired_t	-0.501880593365
+leg4	unpaired_df	13.996295784477
+leg4	unpaired_p	0.623553865359
+leg4	unpaired_meandiff	-1.006250000000
+leg5	door	regression_dialog
+leg5	scope_label	pooled (group column read, never passed)
+leg5	pooled_slope	-0.000606060606
+leg5	pooled_intercept	52.503333333333
+leg5	pooled_r2	0.000000002218
+leg5	door2	scatter_draw
+leg5	slopeA	1.984242424242
+leg5	r2A	0.998292697828
+leg5	slopeB	-1.985454545455
+leg5	r2B	0.998653347537
+leg6	door	correlate_dialog
+leg6	scope_label_A	group A
+leg6	r_A	0.999441383322
+leg6	p_A	0.000000000436
+leg6	df_A	6.000000000000
+leg6	scope_label_B	group B
+leg6	r_B	0.999441383322
+leg6	p_B	0.000000000436
+leg6	door2	scatter_draw
+leg6	r_A_door2	0.999441383322
+leg6	r_B_door2	0.999441383322
+leg6	pooled_scope_label	pooled (neither door draws this)
+leg6	r_pooled	-0.561090778226
+leg6	p_pooled	0.023740836786
+DONE	DONE	DONE

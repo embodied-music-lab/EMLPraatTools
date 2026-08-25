@@ -1507,6 +1507,23 @@ scripts <- c(
                                  # derived from the too-small-to-test skip
                                  # idiom rather than from a list of the two
                                  # places that use it.
+    ,
+    "v116_frozen_choice_conformance.R"  # a door that freezes a choice its
+                                 # sibling offers must say so in its output.
+                                 # Reads the reviewed correspondence map, which
+                                 # has its own author: a wrong map makes this
+                                 # noisy, an incomplete one makes it blind, and
+                                 # only blindness is caught by the count gate.
+                                 # Reports how many correspondences it walked.
+    ,
+    "v127_door_agreement_census.R"  # every intent reachable through more than
+                                 # one door, on a fixture built so that two
+                                 # doors mapping the data differently give
+                                 # loudly different numbers. Each leg asserts
+                                 # the doors agree to the oracle, or that they
+                                 # say plainly they show different models.
+                                 # Silent disagreement is the only red. Reads
+                                 # harness/doorcensus/out/DOORCENSUS.tsv.
 )
 
 # ---------------------------------------------------------------------------

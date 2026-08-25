@@ -1,0 +1,28 @@
+# LEG 2 -- unequal-spread k-group intent: the analysis door's supplemental
+# Welch F + Games-Howell block vs the SAME block on the Draw door. Both
+# call sites route through the one shared reporter,
+# @emlReportAnovaComparison (stats/eml-analysis.praat:379 and
+# graphs/eml-annotation-procedures.praat:3543-3544), so this fixture's job
+# is to force the Brown-Forsythe gate open (p < .05, unequal spread) on
+# BOTH doors and confirm the numbers that come out are the same numbers,
+# not a coincidence of equal input. Three groups, n=6, variances roughly
+# 0.3 : 34 : 100 -- loud enough that Brown-Forsythe cannot miss it.
+value,group
+11.14,A
+9.40,A
+9.65,A
+9.79,A
+9.51,A
+9.53,A
+15.37,B
+11.47,B
+12.69,B
+21.85,B
+13.61,B
+24.23,B
+29.25,C
+13.59,C
+26.17,C
+14.74,C
+3.85,C
+8.54,C

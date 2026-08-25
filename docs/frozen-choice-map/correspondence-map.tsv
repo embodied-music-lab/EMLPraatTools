@@ -1,0 +1,151 @@
+# docs/frozen-choice-map/correspondence-map.tsv -- the correspondence map
+# punch item 8.4's lint is built against. TAB separated.
+#
+# WHAT THIS IS. For every statistics engine the plugin calls from more than
+# one door, one row per (engine, parameter, door): does that door BIND the
+# parameter to a user choice, or pass it a fixed LITERAL, and if a literal,
+# what value. Built and reviewed under risk register R4 -- author is never
+# verifier on this file; the lint that consumes it (8.4) is a separate build.
+#
+# DERIVED FROM THE DIALOGS AND CALL SITES, not from documentation, against
+# head 3e34b1a on 25 Aug 2026 (docs/PUNCH_LIST_DOORS_UNIFICATION_2026-08-25.md
+# lane 8, docs/RISK_REGISTER_2026-08-25.md R4). Checked against, but not
+# copied from, docs/WIZARD_HARDCODE_REVIEW_2026-08-25.md section A -- see
+# DISAGREEMENTS below. All file:line citations are relative to
+# plugin_EML_StatsGraphs/.
+#
+# SCOPE. Two tiers of engine share parameters across doors:
+#   orchestrator -- the shared @emlRun*Analysis procedures in
+#     stats/eml-analysis.praat, called directly by both the menu wrapper
+#     script and the wizard branch for the same intent.
+#   bridge -- the lower-level primitive (@emlTTest, @emlOneWayAnova,
+#     @emlDunnTest, @emlPearsonCorrelation/@emlSpearmanCorrelation) that
+#     graphs/eml-annotation-procedures.praat calls directly, bypassing the
+#     orchestrator, to compute the statistic a DRAWN figure annotates. A
+#     door that launches a figure (the "Draw" button on a menu wrapper, or
+#     the wizard's own Draw step) hands the bridge its choices only through
+#     the emlGraphsPreset*/annot* globals the graphs form reads -- so for
+#     the bridge tier, "binds" means "some door sets the matching preset
+#     global before the figure draws"; "literal" means the bridge always
+#     runs the same value because no preset carries it and the graphs
+#     form's own compiled-in default is what fires.
+#
+# EXCLUDED BY DESIGN, not missed: plain column/table selectors (tableId,
+# dataCol$, groupCol$, colX$/colY$, col1$/col2$, factor1$/factor2$,
+# predictor/response columns). Every door binds every one of these to a
+# user-picked column; none is ever a policy literal on any door. Same
+# principle validate/v112_settings_census.R already uses for settings: only
+# parameters that can carry a POLICY choice are rows here. This is a
+# decision, stated once, not silently applied -- keeps the fixture reviewable
+# rather than forty rows of "column selector, bound, bound, bound".
+#
+# COLUMNS.
+#   engine     the shared procedure (orchestrator tier) or the primitive the
+#              bridge calls (bridge tier)
+#   param      the parameter name in that procedure's own signature, or the
+#              emlGraphsPreset*/annot* global that functions as the bridge's
+#              implicit argument for it (noted as such)
+#   tier       orchestrator | bridge
+#   door       menu | wizard:<branch> | bridge:<draw path>
+#   site       file:line of the call (or of the preset assignment / its
+#              absence, for the bridge tier)
+#   binding    bound | literal
+#   literal    the fixed value passed, or "-" when bound
+#   note       what makes the binding true, and (for a literal) whether a
+#              SIBLING door binds the same parameter -- the condition 8.4
+#              itself gates on
+#
+# WHAT THE LINT STILL HAS TO DECIDE. This map states binding and the
+# literal value; it does NOT decide "disclosed in the output", which is a
+# property of the report/figure TEXT at check time, not of the call site --
+# that determination belongs to the lint (8.4), not to this fixture. Some
+# notes below record what this reviewer observed in the report/figure code
+# while deriving the row, as a lead for the lint to verify, not as a ruling.
+#
+engine	param	tier	door	site	binding	literal	note
+emlRunKWAnalysis	doDunn	orchestrator	menu:eml-compare-kw.praat	scripts/eml-compare-kw.praat:129	bound	-	Comparison row 1 sets doDunn=0 (scripts/eml-compare-kw.praat:106-109); rows 2-4 set doDunn=1 with holm/bonferroni/bh
+emlRunKWAnalysis	doDunn	orchestrator	wizard:A2B_TEST_PAGE (KW arm)	scripts/eml-wizard.praat:801-802	literal	1	Own comment at :783-784: "Dunn runs on all pairs regardless of the KW p-value." No wizard row ever sets doDunn=0. Sibling door (menu) binds this parameter -- WIZARD_HARDCODE_REVIEW A8, CONFIRMED current, matches this derivation exactly
+emlRunKWAnalysis	adjMethod$	orchestrator	menu:eml-compare-kw.praat	scripts/eml-compare-kw.praat:129	bound	-	Comparison rows 2/3/4 -> holm/bonferroni/bh (scripts/eml-compare-kw.praat:106-113)
+emlRunKWAnalysis	adjMethod$	orchestrator	wizard:A2B_TEST_PAGE (KW arm)	scripts/eml-wizard.praat:786-793,801-802	bound	-	corrApproach 1/2/3 (the user's row) -> holm/bonferroni/bh; all three menu values are reachable from the wizard. No disagreement with the menu door on this parameter
+emlRunPairwiseAnalysis	test$	orchestrator	menu:eml-pairwise.praat	scripts/eml-pairwise.praat:107	bound	-	Test x "T test type" dropdowns -> welch/student/wilcoxon/scheffe (scripts/eml-pairwise.praat:90-99)
+emlRunPairwiseAnalysis	test$	orchestrator	wizard:A2B (corrApproach=2, Scheffe row)	scripts/eml-wizard.praat:751-753	literal	scheffe	One of two hardcoded presets standing in for the menu's 4-way test grid; no wizard control reaches "wilcoxon" (that family is dispatched to emlRunKWAnalysis instead) -- WIZARD_HARDCODE_REVIEW A7, CONFIRMED current
+emlRunPairwiseAnalysis	test$	orchestrator	wizard:A2B (corrApproach=3, Welch-BH row)	scripts/eml-wizard.praat:768-770	literal	welch	Second of the two hardcoded presets; the t-variant (student) half of the menu's "T test type" control is unreachable from the wizard on any row -- WIZARD_HARDCODE_REVIEW A7, CONFIRMED current
+emlRunPairwiseAnalysis	adjMethod$	orchestrator	menu:eml-pairwise.praat	scripts/eml-pairwise.praat:107	bound	-	"Adjustment (t and Wilcoxon only)" dropdown -> bonferroni/holm/bh (scripts/eml-pairwise.praat:82-85)
+emlRunPairwiseAnalysis	adjMethod$	orchestrator	wizard:A2B (corrApproach=2, Scheffe row)	scripts/eml-wizard.praat:751-753	literal	none	Inert for test$="scheffe": the emlScheffe branch of @emlReportPairwiseComparison never reads .adjMethod$ (stats/eml-analysis.praat:1545, scheffe arm); the report instead prints its own literal line "p adjustment: Scheffe (familywise, built in)" (stats/eml-analysis.praat:1557). Not a sibling-door disagreement over a used value -- the parameter does not apply to this test
+emlRunPairwiseAnalysis	adjMethod$	orchestrator	wizard:A2B (corrApproach=3, Welch-BH row)	scripts/eml-wizard.praat:768-770	literal	bh	No wizard control reaches "bonferroni" or "holm" for the Welch pairwise row, though the menu offers all three -- WIZARD_HARDCODE_REVIEW A7, CONFIRMED current. The value IS printed via the report's "p adjustment: Benjamini-Hochberg" line (stats/eml-analysis.praat @emlReportPairwiseComparison, welch/student arm)
+emlTTest	.equalVariances (4th positional arg)	bridge	menu:eml-compare-groups.praat (via emlRunTwoGroupAnalysis)	scripts/eml-compare-groups.praat:122 -> stats/eml-analysis.praat:186	bound	-	equalVar derived from the Test dropdown (Welch=0 / Student=1), scripts/eml-compare-groups.praat:113-117
+emlTTest	.equalVariances	bridge	wizard:A2A (via emlRunTwoGroupAnalysis)	scripts/eml-wizard.praat:467,484 -> stats/eml-analysis.praat:186	bound	-	wizEqualVar = prevVarAssume - 1, off emlWizard2GroupTestFromMenu.varAssume, itself off the Test-approach row the user picked (scripts/eml-wizard.praat:453-454)
+emlTTest	.equalVariances	bridge	bridge:eml-annotation-procedures.praat two-group parametric arm	graphs/eml-annotation-procedures.praat:2730	literal	0 (Welch, always)	No emlGraphsPreset*/annot* global carries the analysis door's Welch/Student choice into a drawn figure -- grepped for a preset name and found none in scripts/eml-compare-groups.praat or scripts/eml-wizard.praat's wizDrawSource$="group" block (scripts/eml-wizard.praat:2094-2100). The literal is the SAME on every door (menu-drawn and wizard-drawn figures both always show Welch brackets even for a Student-run analysis), so no SIBLING door binds this parameter for the draw -- outside 8.4's own trigger condition ("...where any sibling door passes a user-bound choice"), but it is the identical defect class and is flagged here for Ian, not silently dropped
+emlOneWayAnova	.tukey (4th positional arg)	bridge	menu:eml-compare-k-groups.praat (via emlRunAnovaAnalysis)	scripts/eml-compare-k-groups.praat:89 -> stats/eml-analysis.praat:355	bound	-	doTukey from the "Tukey HSD post hoc" boolean, scripts/eml-compare-k-groups.praat:71
+emlOneWayAnova	.tukey	bridge	wizard:A2B (via emlRunAnovaAnalysis)	scripts/eml-wizard.praat:714 -> stats/eml-analysis.praat:355	bound	-	doTukey = 1 when corrApproach=1, else 0 -- derived from the user's post-hoc row, scripts/eml-wizard.praat:696-699
+emlOneWayAnova	.tukey	bridge	bridge:eml-annotation-procedures.praat k-group parametric arm	graphs/eml-annotation-procedures.praat:3020	literal	1 (Tukey, always)	Drawn figure brackets are always Tukey HSD even when the analysis report's chosen post-hoc was Scheffe or Welch-BH pairwise. No preset carries the post-hoc family to the draw on EITHER door -- grepped scripts/eml-compare-k-groups.praat and scripts/eml-wizard.praat's wizDrawSource$="group" block (:2094-2100) for a PresetTukey/PresetPostHoc name and found none. Same literal on every door, so outside 8.4's own trigger condition as with emlTTest above; flagged for Ian
+emlDunnTest	.correction$ (read from annotCorrectionMethod$)	bridge	menu:eml-compare-kw.praat draw	scripts/eml-compare-kw.praat:165 -> graphs/eml-graphs-form.praat:3700-3705 -> graphs/eml-annotation-procedures.praat:2586	bound	-	emlGraphsPresetCorrection$ = adjMethod$, set from the Comparison row (scripts/eml-compare-kw.praat:106-113), read into annotCorrectionMethod$ by the graphs form before the bridge runs
+emlDunnTest	.correction$	bridge	menu:eml-pairwise.praat draw	scripts/eml-pairwise.praat:146 -> graphs/eml-graphs-form.praat:3700-3705	bound	-	Same emlGraphsPresetCorrection$ = adjMethod$ pattern as the KW door, off the pairwise dialog's own Adjustment dropdown
+emlDunnTest	.correction$	bridge	wizard:group draw (wizDrawSource$="group")	scripts/eml-wizard.praat:2094-2100	literal	holm (graphs form default)	No emlGraphsPresetCorrection$ assignment anywhere in eml-wizard.praat (grepped, found none); the preset block at :2094-2100 sets Type/DataCol/GroupCol/TestType$/Annotate only. annotCorrectionMethod$ therefore stays at the graphs form's own compiled-in default "holm" (graphs/eml-graphs-form.praat:3550) regardless of whether the wizard's own KW row chose Holm, Bonferroni, or BH. Sibling doors (menu-KW, standalone pairwise) both bind this parameter -- WIZARD_HARDCODE_REVIEW C4, CONFIRMED current
+emlPearsonCorrelation / emlSpearmanCorrelation	.corrType$ (read from annotCorrType$)	bridge	menu:eml-correlate.praat draw	scripts/eml-correlate.praat:487-497 -> graphs/eml-graphs-form.praat:3663-3665	bound	-	emlGraphsPresetCorrType$ set from the Test dropdown (pearson/spearman/both), read into annotCorrType$ by the graphs form before the bridge runs
+emlPearsonCorrelation / emlSpearmanCorrelation	.corrType$	bridge	wizard:correlation/regression draw (wizDrawSource$="correlation"/"regression")	scripts/eml-wizard.praat:2101-2112	literal	pearson (graphs form default)	No emlGraphsPresetCorrType$ assignment anywhere in eml-wizard.praat (grepped, found none); the preset blocks at :2101-2112 set Type/XCol/YCol/Annotate(/RegressionLine) only. annotCorrType$ therefore stays at the graphs form's own compiled-in default "pearson" (graphs/eml-graphs-form.praat:3545) regardless of whether the wizard run was Pearson or Spearman -- a Spearman wizard run can draw a Pearson-annotated figure. Sibling door (menu-correlate) binds this parameter -- WIZARD_HARDCODE_REVIEW C1, CONFIRMED current
+emlRunTwoGroupAnalysis	testType$	orchestrator	menu:eml-compare-groups.praat	scripts/eml-compare-groups.praat:122	bound	-	Test dropdown, 4 rows incl. "Both parametric and nonparametric" -> parametric/nonparametric/both (scripts/eml-compare-groups.praat:66-70,101-107)
+emlRunTwoGroupAnalysis	testType$	orchestrator	wizard:A2A (2 call sites)	scripts/eml-wizard.praat:467,484	bound	-	"Test approach" row, 2 options only (Parametric/Nonparametric) -> parametric/nonparametric; both values ARE bound to the user's own pick, but "both" is not offered on this door at all -- a menu-completeness gap (punch list 4.1), not a frozen literal. No disagreement filed here; noted for completeness of this engine's row set
+emlRunTwoGroupAnalysis	equalVar	orchestrator	menu:eml-compare-groups.praat	scripts/eml-compare-groups.praat:122	bound	-	testChoice=2 (Student) -> equalVar=1, else 0 (scripts/eml-compare-groups.praat:113-117)
+emlRunTwoGroupAnalysis	equalVar	orchestrator	wizard:A2A (2 call sites)	scripts/eml-wizard.praat:467,484	bound	-	wizEqualVar = prevVarAssume - 1, off the same Test-approach row (scripts/eml-wizard.praat:453-454). No disagreement with the menu door
+emlRunPairedAnalysis	testType$	orchestrator	menu:eml-compare-paired.praat	scripts/eml-compare-paired.praat:182	bound	-	Test dropdown, 3 rows incl. "Both" -> parametric/nonparametric/both (scripts/eml-compare-paired.praat:105-108,159-165)
+emlRunPairedAnalysis	testType$	orchestrator	wizard:A3_TEST_PAGE (2 call sites)	scripts/eml-wizard.praat:1074,1082	bound	-	"Test approach" row, 2 options only -> parametric/nonparametric; both bound, "both" not offered -- same menu-completeness class as emlRunTwoGroupAnalysis.testType$ above (punch list 4.1), not a frozen literal
+emlRunAnovaAnalysis	doTukey	orchestrator	menu:eml-compare-k-groups.praat	scripts/eml-compare-k-groups.praat:89	bound	-	"Tukey HSD post hoc" boolean, scripts/eml-compare-k-groups.praat:71
+emlRunAnovaAnalysis	doTukey	orchestrator	wizard:A2B (via corrApproach)	scripts/eml-wizard.praat:714	bound	-	doTukey = 1 when corrApproach=1, else 0, off the user's post-hoc row (scripts/eml-wizard.praat:696-699). No disagreement with the menu door
+emlRunCorrelationAnalysis	testType$	orchestrator	menu:eml-correlate.praat	scripts/eml-correlate.praat:240	bound	-	Test dropdown, 3 rows incl. "Both" -> pearson/spearman/both (scripts/eml-correlate.praat:150-152,220-226)
+emlRunCorrelationAnalysis	testType$	orchestrator	wizard:B_TEST_PAGE (2 call sites)	scripts/eml-wizard.praat:1585,1591	bound	-	"Test approach" row, 2 options only -> pearson/spearman; both bound, "both" not offered -- same menu-completeness class as above (punch list 4.1), not a frozen literal
+#
+# COUNTS (recount if this file is edited -- do not trust this comment over
+# the rows; `awk -F'\t' '!/^#/ && NF>1 && $1!="engine"'` isolates them).
+#   31 correspondences examined above (one row per engine+parameter+door
+#   triple) -- 17 distinct (engine, parameter) pairs, of which 7 are frozen
+#   (literal on at least one door): KW.doDunn, Pairwise.test$,
+#   Pairwise.adjMethod$, TTest.equalVariances, OneWayAnova.tukey,
+#   Dunn.correction$, Correlation.corrType$. The other 10 pairs are bound on
+#   every door that calls them.
+#
+# DISAGREEMENTS WITH docs/WIZARD_HARDCODE_REVIEW_2026-08-25.md SECTION A,
+# found deriving this map from source rather than from that document:
+#
+#   A6 (normality mode frozen to "single") is NOT an instance of this map's
+#   shape. @emlRunNormalityAnalysis's third argument ("single"/anything-else)
+#   is an accumulate-for-CSV-export flag (@eml_normalityPress,
+#   stats/eml-analysis.praat:2570-2596), not a test-choice parameter, and no
+#   dialog on any door exposes it as a control -- it is set mechanically by
+#   whether the calling loop is testing one column or several. The real A6
+#   finding -- the wizard's Describe/normality page offers only ONE column
+#   with no all-columns or by-group choice, where the standalone
+#   eml-check-normality.praat door always tests every numeric column and
+#   optionally breaks out by group -- is an absent PAGE (which procedure
+#   the door calls, and how many times), not a literal argument to a shared
+#   call both doors make. It is real and current (scripts/eml-wizard.praat
+#   :1747-1780 offers a single "Data column" menu only), but it does not fit
+#   an engine+parameter+binding row and is not one here. Flagged, not filed.
+#
+#   A1/A2/A3/A9 (missing "Both" rows on two-group/paired/correlation;
+#   no Group order control anywhere in the wizard) are the same class as
+#   A6's real half: every value the wizard DOES send for these parameters
+#   is bound to a real user choice on that door, just from a shorter list
+#   than the menu offers (2 rows where the menu has 3, or a control entirely
+#   absent). Section A's own class label ("frozen user choice") is about the
+#   parity contract, and it is right to call these hardcoded FROM THAT ANGLE
+#   -- but they are not literals a sibling door's user-bound value exposes
+#   as wrong, which is what 8.4's lint is built to catch. They appear above
+#   only where needed to give this map's row set for a shared engine, marked
+#   bound with a note, not as frozen-literal rows.
+#
+#   Two correspondences THIS DERIVATION FOUND that section A does not list
+#   at all, because section A audited eml-wizard.praat only and these two
+#   sit in the DRAW bridge (graphs/eml-annotation-procedures.praat), reached
+#   from every door's Draw button, not the wizard file: emlTTest's
+#   .equalVariances (always Welch on a drawn figure, every door) and
+#   emlOneWayAnova's .tukey (always Tukey HSD on a drawn figure, every
+#   door). Both are literal on every door and so sit outside 8.4's own
+#   trigger condition (no SIBLING door binds them either), but they are the
+#   same defect class C1/C4 name for correlation-type and Dunn-correction,
+#   just for the two-group and k-group test FAMILY itself, and are recorded
+#   above for Ian's attention rather than silently dropped for not fitting
+#   the lint's exact gate.
+#
+#   C1 and C4 are CONFIRMED as derived independently (rows above), matching
+#   section C's own citations and conclusion.

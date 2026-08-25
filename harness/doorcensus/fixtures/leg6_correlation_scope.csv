@@ -1,0 +1,30 @@
+# LEG 6 -- correlation display-scope intent: the correlate dialog (overall
+# + per-group, each row labelled "(overall)" / the group level --
+# scripts/eml-correlate.praat, V3.5 header and the "(overall)" term at
+# line 346) vs the scatter's own per-group annotation block (labelled
+# "Per-group stats (N groups)" -- graphs/eml-draw-procedures.praat:5261),
+# both of which route through the SAME @emlReportCorrelationAnalysis
+# (graphs/eml-draw-procedures.praat:4709 and :5117). Built as a Simpson
+# fixture for correlation, not regression: within each group r ~ +.999
+# (x and y rise together), but group B's whole y-range sits far below
+# group A's despite having higher x, so the POOLED r is ~ -.56 -- a
+# fixture where "the same number, mislabelled as a different scope"
+# and "the wrong scope, mislabelled as the same number" would both be
+# unmistakable if either door drifted onto the pooled figure by mistake.
+x,y,group
+1,7.20,A
+2,8.90,A
+3,11.15,A
+4,12.80,A
+5,15.10,A
+6,16.85,A
+7,19.20,A
+8,20.90,A
+11,-7.80,B
+12,-6.10,B
+13,-3.85,B
+14,-2.20,B
+15,0.10,B
+16,1.85,B
+17,4.20,B
+18,5.90,B
