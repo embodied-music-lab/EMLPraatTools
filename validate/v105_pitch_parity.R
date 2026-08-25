@@ -24,12 +24,14 @@
 #
 # Commit 5d424aa made the filtered-autocorrelation tail canonical -- procedure
 # @emlPitchArgsFAC in graphs/eml-graph-procedures.praat states it once -- and
-# corrected the call sites to match. But most call sites still spell the tail
-# literally rather than calling the procedure: two in the graphs form, one in
-# the batch layer, two in the dev tests, and several in the harness drivers.
-# They agree today by hand. A procedure that only one caller calls does not
-# prevent drift in the others; it only records what they are supposed to say.
-# This file is the thing that would notice.
+# corrected the call sites to match. Most call sites still spell the tail
+# literally rather than calling the procedure: one in the batch layer, two in
+# the dev tests, and several in the harness drivers. They agree today by hand.
+# A procedure that only one caller calls does not prevent drift in the
+# others; it only records what they are supposed to say. This file is the
+# thing that would notice -- for the sites that still spell literally, and
+# for the two graphs-form sites that now call the procedure, where the thing
+# to notice is a literal tail creeping back in (section 4A below).
 #
 # WHY SOURCE-LEVEL AND NOT A RUN. The failure is that two call sites DISAGREE,
 # and no single run can see that -- each one, run on its own, returns a
@@ -279,9 +281,9 @@ SITES <- rbind.data.frame(
   data.frame(key = "plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat#FAC4",
              mode = "emit", note = "the recorded script for the line above"),
   data.frame(key = "plugin_EML_StatsGraphs/graphs/eml-graphs-form.praat#FAC1",
-             mode = "exec", note = "pitch range changed in the form, Sound source"),
+             mode = "exec", note = "pitch range changed in the form, Sound source -- joined to @emlPitchArgsFAC"),
   data.frame(key = "plugin_EML_StatsGraphs/graphs/eml-graphs-form.praat#FAC2",
-             mode = "exec", note = "pitch range changed in the form, Spectrum source"),
+             mode = "exec", note = "pitch range changed in the form, Spectrum source -- joined to @emlPitchArgsFAC"),
   data.frame(key = "plugin_EML_StatsGraphs/scripts/eml-batch-process.praat#FAC1",
              mode = "exec", note = "batch mean F0, APPENDIX_D S1A"),
   data.frame(key = "plugin_EML_StatsGraphs/scripts/eml-batch-process.praat#RCC1",
@@ -579,9 +581,35 @@ compare_site <- function(key, site, canon, slots) {
     invisible(TRUE)
 }
 
+# ---------------------------------------------------------------------------
+# 3A. THE JOINED EXEC SITES.
+#
+# graphs/eml-graphs-form.praat#FAC1 and #FAC2 do not spell the tail at all --
+# they call @emlPitchArgsFAC and interpolate its .args$ straight into the
+# command line ('emlPitchArgsFAC.args$'), so the source carries ONE token
+# where a literal site carries eleven. compare_site's argument-by-argument
+# match cannot apply to that token (there is nothing to split), and does not
+# need to: the join itself is the guarantee, the same reasoning section 4
+# applies to an EMITTED call. What is asserted here is the same shape as
+# section 4 -- the statement names the procedure, and no literal tail
+# reappears beside it -- so a future edit that quietly re-spells the tail
+# inline (leaving the @emlPitchArgsFAC call as an unused leftover, say) is
+# still caught.
+# ---------------------------------------------------------------------------
+is_joined_exec <- function(s) {
+    length(s$args) == 1L && grepl("emlPitchArgsFAC", s$args[1], fixed = TRUE)
+}
+
 for (key in names(found)) {
     s <- found[[key]]
     if (s$mode != "exec") next
+    if (s$family %in% c("FAC", "RCC") && is_joined_exec(s)) {
+        check_true(V, sprintf("%s builds its arguments from @emlPitchArgsFAC", key),
+                   grepl("emlPitchArgsFAC", s$text, fixed = TRUE))
+        check_true(V, sprintf("%s spells no arguments of its own", key),
+                   !grepl('To Pitch \\([^)]*\\):\\s*[0-9]', s$text))
+        next
+    }
     if (s$family == "FAC" && !is.null(canon_fac)) compare_site(key, s, canon_fac, SLOT_FAC)
     if (s$family == "RCC") compare_site(key, s, canon_rcc, SLOT_RCC)
     if (s$family == "AC3") {

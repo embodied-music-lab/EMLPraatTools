@@ -691,23 +691,48 @@ photographs were one commit stale on two digests and were re-driven on 24 Aug.
   digests move, and they move for any edit at all. The axis-refusal check's
   header previously claimed the page-composition checks caught this; they do
   not, and the header now names the gap instead.
-- The validator index documents the older checks only; roughly a dozen of
-  the newest have no entry in it, so "read the index to see what is
-  checked" now understates the suite.
-- The pitch parameters are pinned equal across every path now, but two call
-  sites in the graphs form still spell the parameter tail literally instead
-  of calling the procedure that owns it. They agree; they are not joined.
+- **RESOLVED 25 Aug.** The validator index documented the older checks only;
+  nine of the newest (v107-v115) had no entry. `validate/REGISTRY.md`'s
+  script table is now current with `validate/run_all.R`, derived by diffing
+  the two programmatically rather than by re-reading the directory; each new
+  row states what the check asserts and what it reads, in the voice of the
+  rows beside it. The table has no generated portion -- it is hand-written
+  throughout, and this pass touched only the nine new rows.
 - Seven filtered-autocorrelation calls under harness/graphaxes run with "very
   accurate" ON where canon has it OFF. Test fixtures, not shipped code, so no
   user's number is wrong -- but those fixtures measure something the plugin
   does not do. Reported rather than changed: which way it goes is Ian's.
 - Two plugin versions installed at once can produce a truncated menu with
   no warning. Nothing tests it.
-- The same process-artefact debris is still tracked in three other harnesses:
-  axisrefuse and linetree carry their own xvfb.log and wm.log. The
-  dialog-height ones are out; these are not.
+- **RESOLVED 25 Aug.** The pitch parameters were pinned equal across every
+  path, but two exec call sites in the graphs form spelled the
+  filtered-autocorrelation tail literally instead of calling the procedure
+  that owns it. Both now call `@emlPitchArgsFAC` and interpolate its
+  `.args$` straight into the `To Pitch (filtered autocorrelation)` call
+  (verified against a live Praat 6.6.30 run: the interpolation produces the
+  identical command and the identical mean F0 as the literal spelling did).
+  `v105_pitch_parity.R`'s source-level scan cannot argument-match a single
+  interpolated token against canon the way it does a literal tail, so it now
+  recognises the joined pattern (the same "builds its arguments from the
+  procedure / spells no literal tail" shape section 4 already used for
+  emitted calls) and still goes red if a literal tail creeps back in --
+  confirmed by re-introducing one by hand and watching the two `== canon`
+  assertions fail. `v105`'s text assertions for every other still-literal
+  site are unchanged.
 
 ### Housekeeping
+
+- **RESOLVED 25 Aug.** The process-artefact debris the dialog-height entry
+  above closed was still tracked in two other harnesses: `axisrefuse` and
+  `linetree` each carried their own `xvfb.log` and `wm.log`. Established
+  before untracking, not assumed: `grep -rl` for both names across
+  `validate/` and `harness/` turns up only each rig's own `run.sh`, which
+  only ever creates them with a `>` redirect or reads `wm.log` back for a
+  diagnostic print on a failed launch -- no check opens either file to
+  decide anything, matching the dialog-height precedent exactly. Everything
+  else under each `out/` -- the TSVs, the per-case logs, the photographs --
+  stays tracked; only these two names per rig were untracked, following the
+  same `.gitignore` convention dialog-height already established.
 
 - Line-chart evidence was stale deliberately behind the sweep's single
   re-drive. Discharged 24 Aug: driven on Praat 6.6.30, 765 checks green. The

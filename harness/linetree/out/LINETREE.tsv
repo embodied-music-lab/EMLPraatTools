@@ -2,7 +2,7 @@
 --run--	source_tree	/home/claude/repo
 --run--	host	vm
 --run--	legs_requested	subjects4 timeswitch subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven script_refuse long_meas2 long_meas3_refuse long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2
---run--	code_sha256_eml-graphs-form	fd5e13ac332a5277f84607fd28055cb6dc8f4f14f2c2f8e37558e33157870040
+--run--	code_sha256_eml-graphs-form	d31c91b6a804480bf60e880695a9e06b93ee8b59f74612701643a96137479400
 --run--	code_sha256_eml-graph-procedures	8ba64e46aa591e1ec885c4c6a62e2403f60e3d72e129b17072f617a1c7157a72
 --run--	code_sha256_eml-draw-procedures	8a32e7b6d0198fa1d478db39d124c197417f348eb0932e98ae1e775ec2bf2540
 --run--	code_sha256_eml-record	5f532945d2cd540c7da246544a4cc16046e205fb39c7cf37f385774bf0d32533

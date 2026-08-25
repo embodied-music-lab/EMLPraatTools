@@ -1,0 +1,45 @@
+praat_version	Praat 6.6.30 (June 30 2026)
+source_tree	/home/claude/repo
+host	vm
+form_code_sha256	d31c91b6a804480bf60e880695a9e06b93ee8b59f74612701643a96137479400
+compositor	running
+leg	pitch_range_reversed
+leg_object	1
+pitch_range_reversed_ink_empty	0.000687143
+pitch_range_reversed_s1_title	EML Graphs
+pitch_range_reversed_s1_want	EML Graphs
+pitch_range_reversed_s2_title	Pitch Contour Settings
+pitch_range_reversed_s2_want	Pitch Contour Settings
+pitch_range_reversed_s3_title	Pitch analysis
+pitch_range_reversed_s3_want	Pitch analysis
+pitch_range_reversed_s3_shown	Pitch ceiling (100) is below Pitch floor (500).
+pitch_range_reversed_s3_shown	Enter a pitch floor that is below the pitch ceiling.
+pitch_range_reversed_s3_shown	OK
+pitch_range_reversed_s3_ink	0.000687143
+pitch_range_reversed_s4_title	EML Graphs
+pitch_range_reversed_s4_want	EML Graphs
+pitch_range_reversed_s5_title	Pitch Contour Settings
+pitch_range_reversed_s5_want	Pitch Contour Settings
+pitch_range_reversed_s6_title	Graph Complete
+pitch_range_reversed_s6_want	Graph Complete
+pitch_range_reversed_s6_ink	0.00428571
+leg_returned	pitch_range_reversed
+pitch_range_reversed_steps	6
+pitch_range_reversed_exited	no
+pitch_range_reversed_display_clear	yes
+leg	pitch_range_ok
+leg_object	1
+pitch_range_ok_ink_empty	0.000687143
+pitch_range_ok_s1_title	EML Graphs
+pitch_range_ok_s1_want	EML Graphs
+pitch_range_ok_s2_title	Pitch Contour Settings
+pitch_range_ok_s2_want	Pitch Contour Settings
+pitch_range_ok_s3_title	Graph Complete
+pitch_range_ok_s3_want	Graph Complete
+pitch_range_ok_s3_ink	0.00428
+leg_returned	pitch_range_ok
+pitch_range_ok_steps	3
+pitch_range_ok_exited	no
+pitch_range_ok_display_clear	yes
+leg	--shell--
+legs_driven	2

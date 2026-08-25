@@ -360,3 +360,20 @@ harness/roundtrip/out/replay/
 # artefacts describe a library this repository does not contain.
 harness/settingspub/out/*.log
 harness/settingspub/out/break/
+
+# harness/axisrefuse and harness/linetree carry the same class of debris the
+# dialog-height entry above describes: the X server and window-manager logs
+# each rig's run.sh writes with a `>` redirect before it ever drives Praat.
+# Established before untracking: neither wm.log nor xvfb.log is opened by
+# validate/v84_axis_refusal.R, validate/v97_line_tree.R, or any other file
+# under validate/ or harness/ -- `grep -rl` for both names across both trees
+# turns up only the two run.sh scripts that create them, and run.sh's own
+# read of wm.log is a diagnostic `sed`+print on a failed launch, not a check
+# reading it to decide anything. AXISREFUSE.tsv, LINETREE.tsv, BREAKS.tsv,
+# the per-case logs and photographs, and every other file under each out/
+# ARE evidence a check reads and stay tracked; only these two names per rig
+# are the process artefacts.
+harness/axisrefuse/out/xvfb.log
+harness/axisrefuse/out/wm.log
+harness/linetree/out/xvfb.log
+harness/linetree/out/wm.log

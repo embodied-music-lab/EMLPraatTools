@@ -1445,6 +1445,19 @@ scripts <- c(
                                  # each, so a leg cannot pass on the default
                                  # it would fall back to. Reads
                                  # harness/settingspub/out/SETTINGSPUB.tsv.
+    ,
+    "v117_pair_group_placement.R" # every two-box numeric row in the graphs
+                                 # form sits under the heading that says what
+                                 # it is: a row whose parenthetical names an
+                                 # orientation on the page is an axis range
+                                 # and renders under the axes heading, and a
+                                 # row under that heading names an
+                                 # orientation. Closes v84's blind spot -- its
+                                 # roster is derived from the axes heading, so
+                                 # a range misfiled under any other heading
+                                 # escapes the refusal sweep entirely and is
+                                 # silently rewritten instead of refused.
+                                 # Reads the graphs form's dialog source.
 )
 
 # ---------------------------------------------------------------------------

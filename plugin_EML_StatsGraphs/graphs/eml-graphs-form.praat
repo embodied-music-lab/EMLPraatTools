@@ -1922,6 +1922,91 @@ procedure emlGraphsCheckAxisRanges
     @emlGraphsAxisPairRefusal: "Second axis", secondMin, secondMax
     .refused = emlGraphsAxisRefusalN
 endproc
+
+
+# ============================================================================
+# @emlGraphsPitchRangeRefusal
+# ============================================================================
+# THE PITCH FLOOR/CEILING PAIR IS JUDGED HERE, ON ITS OWN. It is not an axis:
+# it sets the search range the analysis algorithm hunts within, not a plot
+# axis, and @emlGraphsCheckAxisRanges's roster is expressly not the place for
+# it — that roster is derived from the rows rendered under the 📐 axes
+# heading, and this pair renders under "🎵 Pitch analysis" instead. A ceiling
+# below its floor is the same order-reversal mistake the axis pairs already
+# refuse, and gets a refusal of its own beside theirs rather than borrowing
+# it.
+#
+#   .refused    1 when the pair cannot be used, 0 otherwise
+#   .headline$  the one-line statement of the conflict, with both numbers
+#   .message$   the whole refusal as a single sentence-run
+#
+# NAMED AS THE PAGE NAMES IT. The row the user filled in reads "Pitch
+# (floor/ceiling, Hz)" — one label split across a left box and a right box,
+# floor on the left, ceiling on the right. The refusal names the two halves
+# of that label, "Pitch floor" and "Pitch ceiling", so a reader can find the
+# field the message is about; the page has no field called anything else.
+# ============================================================================
+procedure emlGraphsPitchRangeRefusal: .floor, .ceiling
+    emlGraphsPitchRefusalRemedy$ = "Enter a pitch floor that is below the "
+    ... + "pitch ceiling."
+    .refused = 0
+    .headline$ = ""
+    .message$ = ""
+    if .ceiling < .floor
+        .refused = 1
+        .headline$ = "Pitch ceiling (" + string$ (.ceiling) + ") is below "
+        ... + "Pitch floor (" + string$ (.floor) + ")."
+        .message$ = .headline$ + " " + emlGraphsPitchRefusalRemedy$
+        emlGraphsPitchRefusalN = emlGraphsPitchRefusalN + 1
+        emlGraphsPitchRefusalLine$ [emlGraphsPitchRefusalN] = .headline$
+    endif
+endproc
+
+
+# ============================================================================
+# @emlGraphsShowPitchRefusal
+# ============================================================================
+# PUT THE ACCUMULATED REFUSAL ON SCREEN. Same shape as
+# @emlGraphsShowAxisRefusal: one headline, then the remedy, one button, and
+# nothing to choose.
+# ============================================================================
+procedure emlGraphsShowPitchRefusal
+    beginPause: "Pitch analysis"
+        for .i from 1 to emlGraphsPitchRefusalN
+            comment: emlGraphsPitchRefusalLine$ [.i]
+        endfor
+        comment: emlGraphsPitchRefusalRemedy$
+    endPause: "OK", 1, 0
+endproc
+
+
+# ============================================================================
+# @emlGraphsCheckPitchRange
+# ============================================================================
+# SWEEPS THE ONE PITCH PAIR THE PITCH CONTOUR PAGE CAN RETURN, WHEN IT EXISTS.
+# The floor/ceiling row only renders — and only assigns pitch_floor and
+# pitch_ceiling — on the pitch-contour page (graph_type = 1) when the source
+# was auto-converted from a Sound (loadedObjectId > 0). Reading either
+# variable outside that gate reads something never set, and Praat does not
+# stop to tell you: it stops dead. So the gate is tested HERE, by this
+# procedure, rather than trusted to the caller.
+#
+# THE GATE IS SAFE TO EVALUATE ON EVERY CALL. Praat does not short-circuit
+# `and` — both sides of "graph_type = 1 and loadedObjectId > 0" are always
+# evaluated — but graph_type and loadedObjectId are themselves set long
+# before any page's dialog loop runs (loadedObjectId = 0 at the top of the
+# script), so testing them is never the unset read the pair itself would be.
+# pitch_floor and pitch_ceiling are read only from inside the `if` body,
+# which Praat does not enter unless the gate already passed.
+# ============================================================================
+procedure emlGraphsCheckPitchRange
+    emlGraphsPitchRefusalN = 0
+    .refused = 0
+    if graph_type = 1 and loadedObjectId > 0
+        @emlGraphsPitchRangeRefusal: pitch_floor, pitch_ceiling
+        .refused = emlGraphsPitchRangeRefusal.refused
+    endif
+endproc
 # ============================================================================
 # @emlGraphsPublishAxisRequest
 # ============================================================================
@@ -3417,6 +3502,14 @@ prev_scatter_yMax = 0
     # Loop control
     keepGoing = 1
     loadedObjectId = 0
+    # THE PITCH REFUSAL'S ACCUMULATOR, INITIALISED HERE. Reversed pair
+    # guards run inside the pitch-contour page's own Draw branch, ahead of
+    # the sweep (@emlGraphsCheckPitchRange) that normally zeroes this before
+    # anything increments it -- so it has to already exist by the time that
+    # branch can run, or the very first reversed pair reads a global nothing
+    # has set yet and stops Praat dead, the same failure this file's own
+    # rule warns against.
+    emlGraphsPitchRefusalN = 0
     tsMeltTableId = 0
     ; THE PIVOT'S TABLE, BESIDE THE MELT'S AND FOR THE SAME REASONS. The two
     ; transforms are mirror images -- wide columns stacked into the long shape
@@ -4379,22 +4472,39 @@ repeat
                 newFloor = number (tmpPitchFloor$)
                 newCeiling = number (tmpPitchCeiling$)
                 if loadedObjectId > 0 and (newFloor <> prev_f0_pitchFloor or newCeiling <> prev_f0_pitchCeiling)
-                    # User changed pitch range — re-convert from source
-                    selectObject: loadedObjectId
-                    Remove
-                    pitchTop = newCeiling * 2
-                    selectObject: originalSourceId
-                    sourceType$ = selected$ ()
-                    if startsWith (sourceType$, "Sound")
-                        objectId = To Pitch (filtered autocorrelation): 0, newFloor, pitchTop, 15, "no", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
-                    else
-                        # Spectrum source — two-step conversion
-                        tmpSnd = To Sound
-                        selectObject: tmpSnd
-                        objectId = To Pitch (filtered autocorrelation): 0, newFloor, pitchTop, 15, "no", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
-                        removeObject: tmpSnd
+                    # A REVERSED PAIR IS NOT RE-CONVERTED. `To Pitch
+                    # (filtered autocorrelation)` needs its ceiling
+                    # (doubled into pitchTop) above its floor internally; a
+                    # newFloor above newCeiling does not read back a wrong
+                    # number from that command, it stops Praat before the
+                    # refusal below ever gets a chance to run. The refusal
+                    # itself is judged once, downstream, by
+                    # @emlGraphsCheckPitchRange, in the same place every
+                    # other pair on this form is judged — this call is only
+                    # a guard against the crash arriving first.
+                    @emlGraphsPitchRangeRefusal: newFloor, newCeiling
+                    if emlGraphsPitchRangeRefusal.refused = 0
+                        # User changed pitch range — re-convert from source
+                        selectObject: loadedObjectId
+                        Remove
+                        pitchTop = newCeiling * 2
+                        selectObject: originalSourceId
+                        sourceType$ = selected$ ()
+                        ; @emlPitchArgsFAC states the canonical filtered-
+                        ; autocorrelation tail once; both branches below read
+                        ; it back rather than spelling it out a second time.
+                        @emlPitchArgsFAC: newFloor, pitchTop
+                        if startsWith (sourceType$, "Sound")
+                            objectId = To Pitch (filtered autocorrelation): 'emlPitchArgsFAC.args$'
+                        else
+                            # Spectrum source — two-step conversion
+                            tmpSnd = To Sound
+                            selectObject: tmpSnd
+                            objectId = To Pitch (filtered autocorrelation): 'emlPitchArgsFAC.args$'
+                            removeObject: tmpSnd
+                        endif
+                        loadedObjectId = objectId
                     endif
-                    loadedObjectId = objectId
                 endif
                 prev_f0_pitchFloor = newFloor
                 prev_f0_pitchCeiling = newCeiling
@@ -10224,6 +10334,24 @@ repeat
         @emlGraphsCheckAxisRanges
         if emlGraphsCheckAxisRanges.refused > 0
             @emlGraphsShowAxisRefusal
+            allFormsDone = 0
+            lastDrawnGraphType = graph_type
+        endif
+    endif
+
+    # =================================================================
+    # PITCH RANGE VALIDATION — REFUSE A CEILING BELOW ITS FLOOR
+    # =================================================================
+    # SAME MECHANISM, A DIFFERENT ROSTER OF ONE. The pitch floor/ceiling pair
+    # is not an axis — @emlGraphsCheckAxisRanges's roster is derived from the
+    # 📐 axes heading by design, and this pair renders under 🎵 Pitch
+    # analysis — so it gets its own sweep rather than joining that one.
+    # @emlGraphsCheckPitchRange is itself the gate: it is safe to call
+    # whether or not the pitch pair exists on the page that just committed.
+    if allFormsDone = 1
+        @emlGraphsCheckPitchRange
+        if emlGraphsCheckPitchRange.refused > 0
+            @emlGraphsShowPitchRefusal
             allFormsDone = 0
             lastDrawnGraphType = graph_type
         endif

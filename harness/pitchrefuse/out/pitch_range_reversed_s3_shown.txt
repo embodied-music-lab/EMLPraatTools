@@ -1,0 +1,3 @@
+Pitch ceiling (100) is below Pitch floor (500).
+Enter a pitch floor that is below the pitch ceiling.
+OK
