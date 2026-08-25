@@ -76,6 +76,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$SCRIPT_DIR/../.." && pwd)"
 OUT="$SCRIPT_DIR/out"
 PREFS="$SCRIPT_DIR/prefs"
+# PRAAT IS RESOLVED THE WAY EVERY OTHER DRIVER RESOLVES IT. _env.sh knows
+# where the binary is and what version floor this repository requires. An
+# explicit $PRAAT still wins.
+if [ -z "${PRAAT:-}" ] && [ -r "$REPO/harness/_env.sh" ]; then
+    # shellcheck disable=SC1091
+    . "$REPO/harness/_env.sh"
+fi
 PRAAT="${PRAAT:-praat}"
 PRAAT_TRUST="${PRAAT_TRUST:---no-pref-files}"
 PRAAT_TRUST=""
@@ -86,17 +93,27 @@ PRAAT_TRUST=""
 # leg runs and out/ starts empty, which is what makes the committed artefact
 # a whole-run artefact rather than an accumulation.
 ONLY="${EML_SAVEPATHS_ONLY:-}"
+
+# EVERY TOOL IS PROVEN BEFORE THE EVIDENCE IS CLEARED. These checks ran after
+# the wipe, so a driver that could not start deleted the whole folder and then
+# said why, leaving every check that reads it red against nothing. A rig that
+# cannot run leaves the evidence it cannot replace.
+command -v "$PRAAT"   >/dev/null || { echo "savepaths: FAIL — no praat, evidence untouched";   exit 1; }
+command -v xdotool    >/dev/null || { echo "savepaths: FAIL — no xdotool, evidence untouched"; exit 1; }
+command -v Xvfb       >/dev/null || { echo "savepaths: FAIL — no Xvfb, evidence untouched";    exit 1; }
+command -v xprop      >/dev/null || { echo "savepaths: FAIL — no xprop, evidence untouched";   exit 1; }
+command -v matchbox-window-manager >/dev/null \
+    || { echo "savepaths: FAIL — no window manager, evidence untouched"; exit 1; }
+
+# ITERATING ON ONE LEG. $EML_SAVEPATHS_ONLY restricts the run to legs whose
+# name contains it, and then out/ is NOT wiped -- so a probe of one wrapper
+# does not destroy the evidence the other nine already produced. Unset, every
+# leg runs and out/ starts empty, which is what makes the committed artefact
+# a whole-run artefact rather than an accumulation.
 if [[ -z "$ONLY" ]]; then
     rm -rf "$OUT"
 fi
 mkdir -p "$OUT"
-
-command -v "$PRAAT"   >/dev/null || { echo "savepaths: FAIL — no praat";   exit 1; }
-command -v xdotool    >/dev/null || { echo "savepaths: FAIL — no xdotool"; exit 1; }
-command -v Xvfb       >/dev/null || { echo "savepaths: FAIL — no Xvfb";    exit 1; }
-command -v xprop      >/dev/null || { echo "savepaths: FAIL — no xprop";   exit 1; }
-command -v matchbox-window-manager >/dev/null \
-    || { echo "savepaths: FAIL — no window manager"; exit 1; }
 
 DISP=":88"
 Xvfb "$DISP" -screen 0 1400x1000x24 > "$OUT/xvfb.log" 2>&1 &

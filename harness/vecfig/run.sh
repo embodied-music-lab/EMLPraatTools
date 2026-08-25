@@ -47,7 +47,17 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 OUT="${EML_VECFIG_OUT:-$HERE/out}"
 TSV="$OUT/VECFIG.tsv"
-PRAAT="${EML_PRAAT:-praat}"
+# PRAAT IS RESOLVED THE WAY EVERY OTHER DRIVER RESOLVES IT. _env.sh knows
+# where the binary is and what version floor this repository requires; a
+# driver carrying its own guess answers "no Praat on PATH" on a machine that
+# has one, and answers it AFTER clearing the evidence it was about to
+# regenerate. EML_PRAAT still wins, so break.sh and a hand-run keep their
+# override.
+if [ -z "${EML_PRAAT:-}" ] && [ -r "$ROOT/harness/_env.sh" ]; then
+    # shellcheck disable=SC1091
+    . "$ROOT/harness/_env.sh"
+fi
+PRAAT="${EML_PRAAT:-${PRAAT:-praat}}"
 
 # THE TREE UNDER TEST. Unset, it is the shipped plugin. break.sh points it at
 # a deliberately broken copy, so a break test never edits the working tree --
@@ -55,17 +65,22 @@ PRAAT="${EML_PRAAT:-praat}"
 # reverted is one this harness cannot have.
 SRC="${EML_VECFIG_SRC:-$ROOT/plugin/stats}"
 
+# THE TOOL IS PROVEN BEFORE THE EVIDENCE IS CLEARED. This ran the other way
+# round, so a driver that could not start deleted 53 committed files, wrote
+# one line saying it found no Praat, and left every check that reads this
+# folder red against nothing. A rig that cannot run must leave the evidence
+# it cannot replace.
+if ! command -v "$PRAAT" >/dev/null 2>&1; then
+    echo "vecfig: cannot resolve Praat ($PRAAT) — evidence left untouched" >&2
+    exit 1
+fi
+
 rm -rf "$OUT"
 mkdir -p "$OUT/files" "$OUT/work"
 : > "$TSV"
 
 emit() { printf '%s\t%s\n' "$1" "$2" >> "$TSV"; }
 
-if ! command -v "$PRAAT" >/dev/null 2>&1; then
-    echo "vecfig: no Praat on PATH (set EML_PRAAT) — nothing driven" >&2
-    emit "meta_praat_found" "0"
-    exit 1
-fi
 emit "meta_praat_found" "1"
 
 # THE TRANSCRIPT IS BOUND TO THE CODE IT WAS TAKEN FROM. Comment lines are

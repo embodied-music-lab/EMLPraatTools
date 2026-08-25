@@ -139,6 +139,7 @@ emlLineStyle = lineStyle3
 emlSecondAxisOn = secondAxisOn3
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
+emlShowExplanations = 1
 @emlDrawBoxPlot: data, "Three", "Block", "n", 6, 4, "color", 1, groupCol3$, valueCol3$, axisYMin3, axisYMax3
 
 # The same step through the menu:

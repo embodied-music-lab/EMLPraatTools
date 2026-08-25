@@ -63,6 +63,7 @@ v13	v13_regression_orchestrator.R	ARTEFACT	NO		evidence
 v130	v130_explanations_gate.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
 v131	v131_explanation_wiring.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
 v132	v132_routing_split.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
+v133	v133_dialog_field_guard.R	SOURCE	NO		plugin_EML_StatsGraphs		
 v14	v14_descriptive_orchestrator.R	ARTEFACT	NO		evidence		
 v15	v15_normality_orchestrator.R	ARTEFACT	NO		evidence		
 v16	v16_csv_export.R	ARTEFACT	NO		evidence		

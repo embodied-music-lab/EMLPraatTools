@@ -2,7 +2,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Two-Group Comparison
-  Tue Aug 18 15:45:29 2026
+  Tue Aug 25 23:29:53 2026
 ══════════════════════════════════════════════
 
   Table               vt
@@ -12,6 +12,8 @@
   Group         N     Mean      SD        Median    
   Cohort 1      20    2.21      0.32      2.20      
   Cohort 2      20    3.31      0.48      3.40      
+  Sign: every difference below is Cohort 1 minus Cohort 2, and t, z
+  and the effect sizes carry that direction.
 
 
   ── Welch ───────────────────────────────────
@@ -33,5 +35,5 @@
 ══════════════════════════════════════════════
 
 EML: replayed save -- wrote 4 file(s) to
-/home/claude/EMLPraatTools/harness/record/replay_out/deep/level2/level3
-base name vt_deep_20260818_154529
+/home/claude/repo/harness/record/replay_out/deep/level2/level3
+base name vt_deep_20260825_232953

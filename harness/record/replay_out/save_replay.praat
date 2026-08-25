@@ -12,4 +12,4 @@ for g from 1 to 2
     endfor
 endfor
 table = selected ("Table")
-include /home/claude/EMLPraatTools/harness/record/replay_out/save_emitted.praat
+include /home/claude/repo/harness/record/replay_out/save_emitted.praat

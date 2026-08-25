@@ -16,6 +16,6 @@ for g from 1 to 2
 endfor
 Erase all
 random_initializeWithSeedUnsafelyButPredictably (20260814)
-include /home/claude/EMLPraatTools/harness/record/replay_out/retarget_edited.praat
+include /home/claude/repo/harness/record/replay_out/retarget_edited.praat
 @emlAssertFullViewport
-Save as 300-dpi PNG file: "/home/claude/EMLPraatTools/harness/record/replay_out/RET_REPLAY.png"
+Save as 300-dpi PNG file: "/home/claude/repo/harness/record/replay_out/RET_REPLAY.png"

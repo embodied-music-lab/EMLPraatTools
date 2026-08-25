@@ -11,6 +11,7 @@ emlLineStyle = 1
 emlSecondAxisOn = 0
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
+emlShowExplanations = 1
 @emlDrawViolinPlot: data, "first figure", "Group", "val", 6, 4, "color", 1, "grp", "val", 0, 0
 --- step 2 (save), run 1
 Save the outputs of this analysis
@@ -28,6 +29,7 @@ emlLineStyle = 1
 emlSecondAxisOn = 0
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
+emlShowExplanations = 1
 @emlDrawBoxPlot: data, "second figure", "Group", "val", 6, 4, "color", 1, "grp", "val", 0, 300
 --- step 4 (save), run 2
 Save the outputs of this analysis

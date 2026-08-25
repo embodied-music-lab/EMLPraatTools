@@ -590,14 +590,38 @@ kv meta_tables_after_new_begin \
 kv meta_flush_written \
    "$(sed -n 's/^FLUSHED written=\([0-9-]*\).*/\1/p' "$OUT/meta.log" | head -1)"
 if [[ -f "$OUT/meta_emitted.praat" ]]; then
+    # THE RULED PROVENANCE LINE (docs/RULING_RECORDER_ROUNDTRIP.md item 1)
+    # restates the SAME session stamp this section already exists to count:
+    # @emlReportContext's "recorded script (recorded SESSION_B, ...)" repeats
+    # the header comment's own date text. Counting the raw file would count
+    # that ruled line as a second "live stamp" -- and would never notice if
+    # it had instead named the DEAD session, which is exactly the class of
+    # mistake this section is here to catch. So, the same way roundtrip.sh
+    # and the RETARGET leg above handle their own copy of this same ruled
+    # line: assert its shape first, then remove ONLY that line before the
+    # counts below run — allowing the ruled addition without widening what
+    # the counts underneath it are measuring.
+    if ! grep -q '^@emlReportContext: "recorded script (recorded SESSION_B' \
+        "$OUT/meta_emitted.praat"; then
+        echo "replay: FAIL — the META leg's provenance line does not name the live session."
+        echo "        See @emlRecordRender's provenance line."
+        exit 1
+    fi
+    if grep -q '^@emlReportContext: "recorded script (recorded SESSION_DEAD' \
+        "$OUT/meta_emitted.praat"; then
+        echo "replay: FAIL — the META leg's provenance line names the DEAD session."
+        exit 1
+    fi
+    grep -v '^@emlReportContext: "recorded script (recorded ' \
+        "$OUT/meta_emitted.praat" > "$OUT/meta_emitted_noprov.praat"
     kv meta_emitted_stamp_line \
-       "$(grep -m1 -- '-- *recorded on Praat' "$OUT/meta_emitted.praat" | tr -d '\r')"
+       "$(grep -m1 -- '-- *recorded on Praat' "$OUT/meta_emitted_noprov.praat" | tr -d '\r')"
     kv meta_emitted_has_dead_stamp \
-       "$(grep -c 'SESSION_DEAD' "$OUT/meta_emitted.praat")"
+       "$(grep -c 'SESSION_DEAD' "$OUT/meta_emitted_noprov.praat")"
     kv meta_emitted_has_live_stamp \
-       "$(grep -c 'SESSION_B' "$OUT/meta_emitted.praat")"
+       "$(grep -c 'SESSION_B' "$OUT/meta_emitted_noprov.praat")"
     kv meta_emitted_names_dead_table \
-       "$(grep -c 'deadTable' "$OUT/meta_emitted.praat")"
+       "$(grep -c 'deadTable' "$OUT/meta_emitted_noprov.praat")"
     # THE INCLUDE ROOT, MEASURED ACROSS A SCRIPT BOUNDARY. This is the only
     # leg that flushes in a DIFFERENT scope from the one that began the
     # recording, which is the shape of every real menu-driven session and the
@@ -861,9 +885,56 @@ notime "$OUT/retarget_replay.log"    > "$OUT/retarget_replay_norm.txt"
 # The two logs open with their own harness banner line, which is not report
 # text; dropped from both.
 sed -i '1d' "$OUT/retarget_ref_norm.txt" "$OUT/retarget_replay_norm.txt"
+
+# --- the one line that MUST NOT match, same handling as roundtrip.sh -------
+# docs/RULING_RECORDER_ROUNDTRIP.md item 1: an analysis reached by replaying
+# a recorded script now sets its own provenance line ("from: recorded
+# script (recorded <date>, originally <route>)"), because a replayed report
+# printing the reference's route -- or no route at all -- would be a report
+# claiming a menu press nobody made. The reference here is run DIRECTLY, with
+# no recorder wrapper in front of it, so it carries no "from:" line at all;
+# the replay's line is therefore expected to be the one and only difference,
+# and roundtrip.sh already worked out the right way to treat an expected
+# difference: assert it, rather than silently ignore it, then remove ONLY
+# that named line from both captures before the real diff. A comparator that
+# instead dropped every "from: " line (or a `-I` on diff) would also stop
+# noticing if the recorded-script form went missing, or if the REFERENCE
+# somehow claimed a route it does not have -- this still requires exactly
+# one of those two shapes and fails if the replay has neither or both.
+if ! grep -q "from: recorded script (recorded " "$OUT/retarget_replay_norm.txt"; then
+    echo "replay: FAIL — the retargeted report does not set its own provenance."
+    echo "        A recorded script must declare where it came from; see"
+    echo "        @emlRecordRender's provenance line."
+    exit 1
+fi
+if grep -q "^  from: analysis dialog$" "$OUT/retarget_replay_norm.txt"; then
+    echo "replay: FAIL — the retargeted report claims the REFERENCE's route."
+    echo "        A replay was not reached from a dialog."
+    exit 1
+fi
+sed -i '/^  from: /d' "$OUT/retarget_ref_norm.txt" "$OUT/retarget_replay_norm.txt"
 kv retarget_matches_reference "$(cmp -s "$OUT/retarget_ref_norm.txt" \
     "$OUT/retarget_replay_norm.txt" && echo 1 || echo 0)"
 kv retarget_report_lines "$(wc -l < "$OUT/retarget_replay_norm.txt")"
+
+# THE COMPARATOR STILL HAS TO CATCH A REAL DIFFERENCE. Allowing one named,
+# ruled line out of the comparison is not the same as widening the match to
+# ignore drift generally, and that has to be demonstrated rather than taken
+# on faith -- so a THIRD copy of the same normalised replay gets one digit of
+# a real ANOVA number changed (byte surgery, not a re-run: the seed is
+# reproducible and does not cost a second Praat process), and the same
+# post-allowance comparison is run over it. A comparator that had been
+# widened to ignore more than the provenance line would go green here; this
+# one must not.
+sed 's/^\(cohort  *[0-9]*\.[0-9]\)[0-9]/\19/' \
+    "$OUT/retarget_replay_norm.txt" > "$OUT/retarget_replay_norm_seeded.txt"
+if cmp -s "$OUT/retarget_replay_norm.txt" "$OUT/retarget_replay_norm_seeded.txt"; then
+    echo "replay: FAIL — the seeded-difference control did not change anything;"
+    echo "        it proves nothing about what the comparator still catches."
+    exit 1
+fi
+kv retarget_seeded_diff_caught "$(cmp -s "$OUT/retarget_ref_norm.txt" \
+    "$OUT/retarget_replay_norm_seeded.txt" && echo 0 || echo 1)"
 
 # AND AGAINST THE ORIGINAL RECORDING: the NUMBERS only, because the labels are
 # exactly what changed. The report pads its label field to a fixed width, so
@@ -1074,9 +1145,24 @@ kv legend_block_max   "$(sed -n 's/^axisYMax  *= \([^ ]*\)  *;.*$/\1/p' "$lem" |
 # THE NOTE, and the two numbers out of it. Parsed rather than assumed, because
 # the edit below is made FROM the note: the leg has to be unable to tune the
 # replay to anything the file did not say.
-kv legend_note "$(sed -n 's/^axisYMax  *= .*; on the recorded data it resolved to //p' "$lem" | head -1)"
-LG_NOTE_MIN="$(sed -n 's/^axisYMax  *= .*; on the recorded data it resolved to \([^ ]*\) \.\. \([^ ]*\)$/\1/p' "$lem" | head -1)"
-LG_NOTE_MAX="$(sed -n 's/^axisYMax  *= .*; on the recorded data it resolved to \([^ ]*\) \.\. \([^ ]*\)$/\2/p' "$lem" | head -1)"
+#
+# ANCHORED ON "resolved to", NOT ON THE SENTENCE AROUND IT. The prose here is
+# approved wording (docs/RULING_RECORDER_ROUNDTRIP.md item 2), and approved
+# wording is exactly what the next ruling is free to reword -- this round
+# already changed "it resolved to" to "this resolved to" on purpose. A
+# comparator keyed to the full sentence breaks on every such wording change
+# even though nothing it is actually checking (the resolved range) moved; it
+# did break, silently, for eight checks. "resolved to" is the one phrase the
+# ruling keeps constant across the wording change and reuses verbatim
+# elsewhere for the same kind of value (eml-draw-procedures.praat's "Axis
+# resolved to X .. Y"), so it is the durable anchor, not a third rewrite of
+# the same brittle pattern. The match also no longer anchors on end-of-line:
+# the resolved clause is followed by "; auto adapts to other data", which a
+# trailing `$` could never match, so the range is captured up to the next
+# `;` instead.
+kv legend_note "$(sed -n 's/^axisYMax  *= .*resolved to \([^;]*\);.*/\1/p' "$lem" | head -1)"
+LG_NOTE_MIN="$(sed -n 's/^axisYMax  *= .*resolved to \([^ ]*\) \.\. \([^;]*\);.*/\1/p' "$lem" | head -1)"
+LG_NOTE_MAX="$(sed -n 's/^axisYMax  *= .*resolved to \([^ ]*\) \.\. \([^;]*\);.*/\2/p' "$lem" | head -1)"
 kv legend_note_min "${LG_NOTE_MIN:-<none>}"
 kv legend_note_max "${LG_NOTE_MAX:-<none>}"
 
@@ -1218,7 +1304,9 @@ kv legend_after_anova_calls "$(grep -c '^@emlRunAnovaAnalysis: data' "$lea" 2>/d
 kv legend_after_draw_calls  "$(grep -c '^@emlDrawGroupedViolin: data' "$lea" 2>/dev/null || echo 0)"
 kv legend_after_block_steps "$(sed -n 's/^axisYMin  *= .*-- run [0-9]*, \(steps\? .*\)$/\1/p' "$lea" | head -1)"
 kv legend_after_block_run   "$(sed -n 's/^axisYMin  *= .*-- run \([0-9]*\), steps\? .*$/\1/p' "$lea" | head -1)"
-kv legend_after_note "$(sed -n 's/^axisYMax  *= .*; on the recorded data it resolved to //p' "$lea" | head -1)"
+# Same durable anchor as legend_note above: "resolved to", not the sentence
+# around it, and captured up to the next `;` rather than end-of-line.
+kv legend_after_note "$(sed -n 's/^axisYMax  *= .*resolved to \([^;]*\);.*/\1/p' "$lea" | head -1)"
 # The draw's own heading number, so "step 2 (draw)" in the block is checked
 # against the file rather than against itself.
 kv legend_after_draw_heading "$(grep -oE '^# --- Step [0-9]+ \(draw\) ---$' "$lea" | head -1)"

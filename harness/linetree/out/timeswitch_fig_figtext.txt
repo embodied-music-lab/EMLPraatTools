@@ -1,10 +1,10 @@
 Line Chart (+Cl): It subjects4
-600} @ sz
+600) @ so
 @ s3
-@s4
+@ s4
 500
 400 o —_*e —_® 02 © #0 ee
-300 eo % © ee i °
+3001 @—_@qg__ © eo —° nd
 200 o —*e _e —*e _“® ®e _® 0°
 105 110 115 120 125 130 135
-St
+S1

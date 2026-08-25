@@ -14,6 +14,6 @@ endfor
 table = selected ("Table")
 Erase all
 random_initializeWithSeedUnsafelyButPredictably (20260814)
-include /home/claude/EMLPraatTools/harness/record/replay_out/adv_emitted.praat
+include /home/claude/repo/harness/record/replay_out/adv_emitted.praat
 @emlAssertFullViewport
-Save as 300-dpi PNG file: "/home/claude/EMLPraatTools/harness/record/replay_out/ADV_REPLAY.png"
+Save as 300-dpi PNG file: "/home/claude/repo/harness/record/replay_out/ADV_REPLAY.png"

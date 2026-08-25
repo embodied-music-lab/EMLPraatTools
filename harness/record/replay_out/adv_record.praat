@@ -1,19 +1,19 @@
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-utilities.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-extract.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-output.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-inferential.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-result-writer.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-record.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
+include /home/claude/repo/plugin/stats/eml-core-utilities.praat
+include /home/claude/repo/plugin/stats/eml-core-descriptive.praat
+include /home/claude/repo/plugin/stats/eml-extract.praat
+include /home/claude/repo/plugin/stats/eml-output.praat
+include /home/claude/repo/plugin/stats/eml-inferential.praat
+include /home/claude/repo/plugin/stats/eml-result-writer.praat
+include /home/claude/repo/plugin/stats/eml-record.praat
+include /home/claude/repo/plugin/graphs/eml-graph-procedures.praat
+include /home/claude/repo/plugin/graphs/eml-annotation-procedures.praat
+include /home/claude/repo/plugin/graphs/eml-draw-procedures.praat
+include /home/claude/repo/plugin/stats/eml-analysis.praat
 @emlInitDrawingDefaults
 @emlRecordInit
 @emlRecordBegin: ""
-emlRecordPluginRoot$ = "/home/claude/EMLPraatTools/plugin"
-@emlRecordLoadPhrases: "/home/claude/EMLPraatTools/plugin/data/eml-record-phrases.csv"
+emlRecordPluginRoot$ = "/home/claude/repo/plugin"
+@emlRecordLoadPhrases: "/home/claude/repo/plugin/data/eml-record-phrases.csv"
 @emlRecordHeader: "Table vt", 40, 2, "14 August 2026, 00:00:00"
 
 Create Table with column names: "vt", 0, "grp val"
@@ -85,9 +85,9 @@ if annotBracketN > 0 or (annotTextN > 0 and annotMatrixN = 0)
     endif
 endif
 @emlAssertFullViewport
-Save as 300-dpi PNG file: "/home/claude/EMLPraatTools/harness/record/replay_out/ADV_ORIG.png"
+Save as 300-dpi PNG file: "/home/claude/repo/harness/record/replay_out/ADV_ORIG.png"
 
-@emlRecordFlush: "/home/claude/EMLPraatTools/harness/record/replay_out/adv_emitted.praat"
+@emlRecordFlush: "/home/claude/repo/harness/record/replay_out/adv_emitted.praat"
 @emlRecordDiscard
 
 # THE UN-ADVANCED REFERENCE, drawn in the same process at the same axis so
@@ -103,4 +103,4 @@ random_initializeWithSeedUnsafelyButPredictably (20260814)
 @emlDrawViolinPlot: table, "advanced violin", "Cohort", "val", 6, 4,
 ... "color", 1, "grp", "val", valueMin, valueMax
 @emlAssertFullViewport
-Save as 300-dpi PNG file: "/home/claude/EMLPraatTools/harness/record/replay_out/ADV_BARE.png"
+Save as 300-dpi PNG file: "/home/claude/repo/harness/record/replay_out/ADV_BARE.png"

@@ -1945,9 +1945,23 @@ procedure emlHandleCommonFields
 
     ; Remember the answer so the next trip round the wrapper's repeat
     ; loop (and the next wrapper this session) reopens with it still set.
-    emlLastClearInfo = clear_Info_window
-    if clear_Info_window
-        @emlClearInfo
+    ;
+    ; GUARDED THE SAME WAY AS THE EXPLANATIONS TOGGLE BELOW, for the same
+    ; reason: clear_Info_window is the OTHER field @emlWrapperCommonFields
+    ; declares, and this procedure is the one place that reads it. A caller
+    ; that never ran the dialog has no clear_Info_window either -- it just
+    ; happens that every such caller in this tree today (the harness leg
+    ; standing in for the wrapper's repeat-loop boundary) presets it by
+    ; hand, which masks the same unguarded-read defect rather than closing
+    ; it. Absent, there is nothing to remember and nothing to clear, so the
+    ; whole step is skipped rather than given a literal default -- unlike
+    ; the explanations toggle, this field carries no ruled default to fall
+    ; back to.
+    if variableExists ("clear_Info_window")
+        emlLastClearInfo = clear_Info_window
+        if clear_Info_window
+            @emlClearInfo
+        endif
     endif
 
     ; THE EXPLANATIONS TOGGLE (punch list 6.1). Remembered the same way as
@@ -1966,9 +1980,31 @@ procedure emlHandleCommonFields
     ; stuck with the first Run's answer, and never cleared here -- the
     ; wrapper's "Quit" ends the whole script (@emlWrapperCommonFields's own
     ; header note), so nothing outside this script scope can see it.
-    emlLastShowExplanations = annotate_results_with_explanations
-    emlShowExplanations = annotate_results_with_explanations
-    emlDialogShowExplanations = annotate_results_with_explanations
+    ; GUARDED ON THE FIELD'S OWN PRESENCE, the same idiom
+    ; @emlRecordCaptureStats uses for every dialog-only variable it reads
+    ; (eml-record.praat, "if variableExists (...)" per field, never a
+    ; compound and/or -- Praat evaluates both halves of one regardless of
+    ; the first, so a compound guard here would read the very variable it
+    ; is testing for and reintroduce the crash it exists to prevent). A
+    ; caller that reaches this procedure without having run
+    ; @emlWrapperCommonFields's dialog -- the harness leg standing in for
+    ; a wrapper's repeat-loop boundary (harness/runblock's "callsite" case)
+    ; is exactly that caller -- has no annotate_results_with_explanations
+    ; at all, and Praat stops the script dead on the unset variable rather
+    ; than answering with anything. Absent, the toggle keeps the ruled
+    ; default (punch list 6.1: "Annotate results with explanations",
+    ; default off), not whatever a previous dialog in this session left
+    ; behind -- emlLastShowExplanations already opens at 0 for exactly the
+    ; same reason.
+    if variableExists ("annotate_results_with_explanations")
+        emlLastShowExplanations = annotate_results_with_explanations
+        emlShowExplanations = annotate_results_with_explanations
+        emlDialogShowExplanations = annotate_results_with_explanations
+    else
+        emlLastShowExplanations = 0
+        emlShowExplanations = 0
+        emlDialogShowExplanations = 0
+    endif
     emlExplanationsFromDialog = 1
 
     ; This runs once per Run, inside the wrapper's repeat loop, and it

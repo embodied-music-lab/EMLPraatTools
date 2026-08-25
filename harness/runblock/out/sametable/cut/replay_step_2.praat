@@ -128,6 +128,7 @@ emlLineStyle = lineStyle2
 emlSecondAxisOn = secondAxisOn2
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
+emlShowExplanations = 1
 @emlDrawBoxPlot: data, "Second", "Group", "other", 6, 4, "color", 1, groupCol2$, valueCol2$, axisYMin2, axisYMax2
 
 # The same step through the menu:

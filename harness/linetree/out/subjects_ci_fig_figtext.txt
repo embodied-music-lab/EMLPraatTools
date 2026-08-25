@@ -1,10 +1,10 @@
 FO over time and speaker (It grouprep)
-400.
+400
 @ Speaker 1
 @ Speaker 2
-350.
+350
 One
-30°
-350 ae
+30%
+950 ae
 1 2 3 4 5 6
 Time

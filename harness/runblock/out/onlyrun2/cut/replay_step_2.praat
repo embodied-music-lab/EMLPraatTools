@@ -136,6 +136,7 @@ emlLineStyle = lineStyle2
 emlSecondAxisOn = secondAxisOn2
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
+emlShowExplanations = 1
 scatterAnalysisType = 0
 annotCorrType$ = "pearson"
 scatterRegressionLine = 0

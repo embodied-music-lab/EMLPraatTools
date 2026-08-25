@@ -83,6 +83,14 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# PRAAT IS RESOLVED THE WAY EVERY OTHER DRIVER RESOLVES IT. A hardcoded
+# /usr/bin/praat is right on one machine and wrong on the next; _env.sh knows
+# where the binary is and what version floor this repository requires. An
+# explicit $PRAAT still wins.
+if [ -z "${PRAAT:-}" ] && [ -r "$REPO/harness/_env.sh" ]; then
+    # shellcheck disable=SC1091
+    . "$REPO/harness/_env.sh"
+fi
 PRAAT="${PRAAT:-/usr/bin/praat}"
 
 SETUP="${EML_SETUP_FILE:-$REPO/plugin/setup.praat}"

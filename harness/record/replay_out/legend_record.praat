@@ -1,20 +1,20 @@
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-utilities.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-extract.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-output.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-inferential.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-result-writer.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-record.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-analysis.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-graphs-form.praat
+include /home/claude/repo/plugin/stats/eml-core-utilities.praat
+include /home/claude/repo/plugin/stats/eml-core-descriptive.praat
+include /home/claude/repo/plugin/stats/eml-extract.praat
+include /home/claude/repo/plugin/stats/eml-output.praat
+include /home/claude/repo/plugin/stats/eml-inferential.praat
+include /home/claude/repo/plugin/stats/eml-result-writer.praat
+include /home/claude/repo/plugin/stats/eml-record.praat
+include /home/claude/repo/plugin/graphs/eml-graph-procedures.praat
+include /home/claude/repo/plugin/graphs/eml-annotation-procedures.praat
+include /home/claude/repo/plugin/graphs/eml-draw-procedures.praat
+include /home/claude/repo/plugin/stats/eml-analysis.praat
+include /home/claude/repo/plugin/graphs/eml-graphs-form.praat
 @emlInitDrawingDefaults
 @emlRecordInit
 @emlRecordBegin: ""
-emlRecordPluginRoot$ = "/home/claude/EMLPraatTools/plugin"
-@emlRecordLoadPhrases: "/home/claude/EMLPraatTools/plugin/data/eml-record-phrases.csv"
+emlRecordPluginRoot$ = "/home/claude/repo/plugin"
+@emlRecordLoadPhrases: "/home/claude/repo/plugin/data/eml-record-phrases.csv"
 @emlRecordHeader: "Table lg", 56, 3, "16 August 2026, 00:00:00"
 
 Create Table with column names: "lg", 0, "grp sub val"
@@ -66,11 +66,11 @@ dataYMax_forAnnotation = 0
 random_initializeWithSeedUnsafelyButPredictably (20260816)
 @emlGraphsDrawWithLegendRoom
 @emlAssertFullViewport
-Save as 300-dpi PNG file: "/home/claude/EMLPraatTools/harness/record/replay_out/LEG_ORIG.png"
+Save as 300-dpi PNG file: "/home/claude/repo/harness/record/replay_out/LEG_ORIG.png"
 
 writeInfoLine: "legend_passes=", legendRoomPass
 appendInfoLine: "legend_final_min=", fixed$ (valueMin, 6)
 appendInfoLine: "legend_final_max=", fixed$ (valueMax, 6)
 
-@emlRecordFlush: "/home/claude/EMLPraatTools/harness/record/replay_out/legend_emitted.praat"
+@emlRecordFlush: "/home/claude/repo/harness/record/replay_out/legend_emitted.praat"
 @emlRecordDiscard

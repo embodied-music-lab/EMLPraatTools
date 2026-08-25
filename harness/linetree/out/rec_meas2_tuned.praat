@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Tue Aug 25 00:56:18 2026  --  recorded on Praat 6.6.30
+# Tue Aug 25 22:59:28 2026  --  recorded on Praat 6.6.30
 # Input: Table lt_meas2 -- 24 rows, 3 columns
 # ============================================================
 
@@ -130,6 +130,7 @@ emlSecondAxisStyle = secondAxisStyle
 annotCorrectionMethod$ = "holm"
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
+emlShowExplanations = 1
 @emlDrawTimeSeries: data, "F0 over time (lt meas2)", "Time", "F0", 6, 4, "color", 1, timeCol$, valueCol$, "", 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:

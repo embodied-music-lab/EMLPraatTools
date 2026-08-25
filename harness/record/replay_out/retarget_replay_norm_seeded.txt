@@ -1,0 +1,57 @@
+
+══════════════════════════════════════════════
+  EML Stats : Two-Way ANOVA
+══════════════════════════════════════════════
+
+  Table               rt
+  Data column         dB
+  Factor 1            cohort
+  Factor 2            room
+  Total N             40
+  Cells               4
+  n per cell          10
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests main effects of two factors and their interaction.
+
+Source              SS              df    MS              F           p
+cohort              12.09           1     12.05           71.0945     < .001
+room                2.65            1     2.65            15.6125     < .001
+cohort x room       0.00            1     0.00            0.0001      .991
+Error               6.10            36    0.17            
+Total               20.80           39    
+
+
+  ── Exact p-values ──────────────────────────
+  cohort              p < .001  (4.81e-10)
+  room                p < .001  (3.47e-04)
+  cohort x room       p = .991
+
+
+  ── Effect Sizes (partial eta-squared) ──────
+  cohort              0.6638  (large effect)		Effect size: large by Cohen's convention (partial eta-squared >= 0.14 = large). Accounts for 66% of the variance left once the other effects are removed -- each effect has its own denominator, so these are not shares of one total and do not sum to 100%
+  room                0.3025  (large effect)		Effect size: large by Cohen's convention (partial eta-squared >= 0.14 = large). Accounts for 30% of the variance left once the other effects are removed -- each effect has its own denominator, so these are not shares of one total and do not sum to 100%
+  cohort x room       0.0000  (negligible effect)		Effect size: negligible by Cohen's convention (partial eta-squared >= 0.14 = large). Accounts for 0% of the variance left once the other effects are removed -- each effect has its own denominator, so these are not shares of one total and do not sum to 100%
+
+
+  ── Cell Means ──────────────────────────────
+
+cohort            room              n       Mean
+Cohort 1          Room 1            10      2.5539
+Cohort 1          Room 2            10      3.0670
+Cohort 2          Room 1            10      3.6503
+Cohort 2          Room 2            10      4.1662
+
+
+  ── Marginal Means ──────────────────────────
+
+Level                         n       Mean
+cohort: Cohort 1              20      2.8104
+cohort: Cohort 2              20      3.9083
+room: Room 1                  20      3.1021
+room: Room 2                  20      3.6166
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════

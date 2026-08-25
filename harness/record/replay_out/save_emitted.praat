@@ -24,19 +24,20 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include ~/EMLPraatTools/plugin/stats/eml-core-utilities.praat
-include ~/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
-include ~/EMLPraatTools/plugin/stats/eml-extract.praat
-include ~/EMLPraatTools/plugin/stats/eml-output.praat
-include ~/EMLPraatTools/plugin/stats/eml-inferential.praat
-include ~/EMLPraatTools/plugin/stats/eml-psychometrics.praat
-include ~/EMLPraatTools/plugin/stats/eml-categorical.praat
-include ~/EMLPraatTools/plugin/stats/eml-result-writer.praat
-include ~/EMLPraatTools/plugin/stats/eml-record.praat
-include ~/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
-include ~/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
-include ~/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
-include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
+include ~/repo/plugin/stats/eml-core-utilities.praat
+include ~/repo/plugin/stats/eml-core-descriptive.praat
+include ~/repo/plugin/stats/eml-extract.praat
+include ~/repo/plugin/stats/eml-output.praat
+include ~/repo/plugin/stats/eml-inferential.praat
+include ~/repo/plugin/stats/eml-psychometrics.praat
+include ~/repo/plugin/stats/eml-categorical.praat
+include ~/repo/plugin/stats/eml-result-writer.praat
+include ~/repo/plugin/stats/eml-record.praat
+include ~/repo/plugin/graphs/eml-graph-procedures.praat
+include ~/repo/plugin/graphs/eml-annotation-procedures.praat
+include ~/repo/plugin/graphs/eml-draw-procedures.praat
+include ~/repo/plugin/stats/eml-analysis.praat
+include ~/repo/plugin/stats/eml-demo-tables.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -45,8 +46,21 @@ include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 # THE OBJECT
 # Recorded against: Table vt -- 40 rows, 2 columns.
 # The objects this workflow ran on are named in the block below.
-# All of them must be open before you run this script.
+# None of them is built or opened by a step below: see
+# PRECONDITION, and open them before you run this script.
 # ------------------------------------------------------------
+
+# ============================================================
+# PRECONDITION -- THIS SCRIPT CANNOT REBUILD ITS DATA
+#
+# Table vt was already open when this recording started.
+# Nothing in the session made it, so nothing below can remake it.
+#
+# YOU MUST SUPPLY THE DATA YOURSELF, open and named as above, before you
+# run this file. The steps below select by name: with nothing of that name
+# open the script stops at its first step, and with DIFFERENT data of that
+# name it runs to the end and answers a different question without saying so.
+# ============================================================
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
@@ -64,6 +78,10 @@ data = selected ()
 # Two-group comparison: val by grp, parametric
 # Equal-variance assumption: Welch.
 
+@emlReportContext: "recorded script (recorded 14 August 2026, originally analysis dialog)", ""
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 1
 @emlRunTwoGroupAnalysis: data, valueCol$, groupCol$, "parametric", 0
 
 # Cohort 1: n = 20, mean = 2.2104, SD = 0.3165
@@ -77,7 +95,7 @@ data = selected ()
 # Save the outputs of this analysis
 # Every output shares one folder and one name, so they stay a set.
 
-outputFolder$ = "/home/claude/EMLPraatTools/harness/record/replay_out/saved"
+outputFolder$ = "/home/claude/repo/harness/record/replay_out/saved"
 @emlRecordReplaySave: 0, "vt_two-group_20260814_120000", outputFolder$, ""
 
 # The same step through the menu:

@@ -2,13 +2,14 @@
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Tue Aug 18 15:45:48 2026
+  Tue Aug 25 23:30:11 2026
 ══════════════════════════════════════════════
 
   Table               lg
   Data column         val
   Group column        grp
   Groups              4
+  Group order: table order (Cohort 1, Cohort 2, Cohort 3, Cohort 4).
 
 
   ── ANOVA Table ─────────────────────────────
@@ -36,12 +37,16 @@ Total               2800.90         55
 
 
   ── Pairwise Effect Sizes (Cohen's d) ───────
+  No pairwise significance tests were run.
+  Effect sizes estimate the size of each pairwise difference.
 
               Cohort 1    Cohort 2    Cohort 3    Cohort 4    
 Cohort 1      ---         -2.988      -4.349      -8.180      
 Cohort 2      2.988       ---         -1.729      -5.418      
 Cohort 3      4.349       1.729       ---         -3.066      
 Cohort 4      8.180       5.418       3.066       ---         
+  Row minus column: a negative d means the ROW group's mean is lower
+  than the COLUMN group's. |d| is the effect size.
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).

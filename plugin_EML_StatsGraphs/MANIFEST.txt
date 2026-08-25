@@ -149,7 +149,7 @@ stats/eml-inferential.praat | 6067 | 1.4 | EML Stats : Inferential Statistics
 stats/eml-linalg.praat | 347 | 1.0 | EML Stats & Graphs — Numerical Linear Algebra Layer
 stats/eml-lmm.praat | 4443 | - | EML Stats & Graphs — Linear Mixed Models
 stats/eml-optimizer.praat | 2402 | 2.0 | EML Stats & Graphs — Derivative-Free Optimizers
-stats/eml-output.praat | 4671 | 2.4 | EML Stats : Output Formatting
+stats/eml-output.praat | 4707 | 2.4 | EML Stats : Output Formatting
 stats/eml-psychometrics.praat | 393 | 1.0 | EML Stats & Graphs — Questionnaire reliability. Cronbach's alpha with a Feldt confidence interval and alpha-if-item-deleted, and a respondent-influence jackknife that names an influential respondent by their row in the original table rather than by their position after incomplete rows were dropped.
 stats/eml-record.praat | 5873 | 1.0 | EML Stats & Graphs — Record workflow: buffer, phrases, renderer. Accumulates a session's analyses and figures and writes one annotated Praat script that both re-runs and reads like a lab notebook.
 stats/eml-result-writer.praat | 744 | 1.0 | EML Stats & Graphs — broom-style result writer. Collects one analysis as tidy/glance/augment tables and writes the three CSVs with the shapes and names R's broom package uses.

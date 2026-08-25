@@ -13,8 +13,8 @@ for g from 1 to 2
 endfor
 writeInfoLine: "meta driver"
 
-runScript: "/home/claude/EMLPraatTools/harness/record/replay_out/meta_op.praat", "begin", "A"
-runScript: "/home/claude/EMLPraatTools/harness/record/replay_out/meta_op.praat", "step", ""
+runScript: "/home/claude/repo/harness/record/replay_out/meta_op.praat", "begin", "A"
+runScript: "/home/claude/repo/harness/record/replay_out/meta_op.praat", "step", ""
 
 # The user removes the BUFFER from the Objects window. Measured behaviour: the
 # recording silently ends, and the meta table is left behind.
@@ -30,12 +30,12 @@ for o from 1 to numberOfSelected ()
     endif
 endfor
 appendInfoLine: "ORPHANMETA=", nMetaAfterKill
-runScript: "/home/claude/EMLPraatTools/harness/record/replay_out/meta_op.praat", "report", ""
+runScript: "/home/claude/repo/harness/record/replay_out/meta_op.praat", "report", ""
 
 # A NEW SESSION STARTS WITH THE ORPHAN STILL THERE. This is the audit's
 # sequence exactly, and it is the state that stamped a live session with a
 # dead one's time.
-runScript: "/home/claude/EMLPraatTools/harness/record/replay_out/meta_op.praat", "begin", "B"
+runScript: "/home/claude/repo/harness/record/replay_out/meta_op.praat", "begin", "B"
 select all
 nMetaAfterBegin = 0
 for o from 1 to numberOfSelected ()
@@ -62,8 +62,8 @@ Append row
 Set string value: 3, "key", "input"
 Set string value: 3, "value", "Table deadTable"
 
-runScript: "/home/claude/EMLPraatTools/harness/record/replay_out/meta_op.praat", "step", ""
-runScript: "/home/claude/EMLPraatTools/harness/record/replay_out/meta_op.praat", "flush", ""
+runScript: "/home/claude/repo/harness/record/replay_out/meta_op.praat", "step", ""
+runScript: "/home/claude/repo/harness/record/replay_out/meta_op.praat", "flush", ""
 
 # ---- THE AUDIT'S OWN SEQUENCE, TO THE END -------------------------------
 # The user then deleted the LIVE meta, not the decoy — two rows with the same
@@ -71,7 +71,7 @@ runScript: "/home/claude/EMLPraatTools/harness/record/replay_out/meta_op.praat",
 # reachable store belongs to a recording that is gone, and it is what stamped
 # a live emission with a dead session's time. The sweep cannot help here: the
 # decoy arrived after this session started.
-runScript: "/home/claude/EMLPraatTools/harness/record/replay_out/meta_op.praat", "begin", "C"
+runScript: "/home/claude/repo/harness/record/replay_out/meta_op.praat", "begin", "C"
 Create Table with column names: "emlRecordMeta", 0, "key value"
 Append row
 Set string value: 1, "key", "stamp"
@@ -99,5 +99,5 @@ for k from 1 to nKill
     nocheck removeObject: killMeta[k]
 endfor
 appendInfoLine: "METAKILLED=", nKill
-runScript: "/home/claude/EMLPraatTools/harness/record/replay_out/meta_op.praat", "step", ""
-runScript: "/home/claude/EMLPraatTools/harness/record/replay_out/meta_op.praat", "flush2", ""
+runScript: "/home/claude/repo/harness/record/replay_out/meta_op.praat", "step", ""
+runScript: "/home/claude/repo/harness/record/replay_out/meta_op.praat", "flush2", ""

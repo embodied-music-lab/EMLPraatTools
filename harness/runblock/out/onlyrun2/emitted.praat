@@ -106,6 +106,7 @@ emlLineStyle = lineStyle
 emlSecondAxisOn = secondAxisOn
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
+emlShowExplanations = 1
 @emlDrawBoxPlot: data, "Box", "Group", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:
@@ -125,6 +126,7 @@ emlLineStyle = lineStyle2
 emlSecondAxisOn = secondAxisOn2
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
+emlShowExplanations = 1
 scatterAnalysisType = 0
 annotCorrType$ = "pearson"
 scatterRegressionLine = 0

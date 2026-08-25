@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Tue Aug 25 00:55:37 2026  --  recorded on Praat 6.6.30
+# Tue Aug 25 22:58:44 2026  --  recorded on Praat 6.6.30
 # Input: Table lt_subjects4 -- 12 rows, 5 columns
 # ============================================================
 
@@ -144,6 +144,7 @@ emlSecondAxisOn = secondAxisOn
 annotCorrectionMethod$ = "holm"
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
+emlShowExplanations = 1
 @emlDrawTimeSeries: data, "Line Chart (±CI): lt subjects4", "Time", "", 6, 4, "color", 1, timeCol$, valueCol$, groupCol$, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:

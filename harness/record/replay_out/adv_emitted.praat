@@ -24,19 +24,20 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include ~/EMLPraatTools/plugin/stats/eml-core-utilities.praat
-include ~/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
-include ~/EMLPraatTools/plugin/stats/eml-extract.praat
-include ~/EMLPraatTools/plugin/stats/eml-output.praat
-include ~/EMLPraatTools/plugin/stats/eml-inferential.praat
-include ~/EMLPraatTools/plugin/stats/eml-psychometrics.praat
-include ~/EMLPraatTools/plugin/stats/eml-categorical.praat
-include ~/EMLPraatTools/plugin/stats/eml-result-writer.praat
-include ~/EMLPraatTools/plugin/stats/eml-record.praat
-include ~/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
-include ~/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
-include ~/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
-include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
+include ~/repo/plugin/stats/eml-core-utilities.praat
+include ~/repo/plugin/stats/eml-core-descriptive.praat
+include ~/repo/plugin/stats/eml-extract.praat
+include ~/repo/plugin/stats/eml-output.praat
+include ~/repo/plugin/stats/eml-inferential.praat
+include ~/repo/plugin/stats/eml-psychometrics.praat
+include ~/repo/plugin/stats/eml-categorical.praat
+include ~/repo/plugin/stats/eml-result-writer.praat
+include ~/repo/plugin/stats/eml-record.praat
+include ~/repo/plugin/graphs/eml-graph-procedures.praat
+include ~/repo/plugin/graphs/eml-annotation-procedures.praat
+include ~/repo/plugin/graphs/eml-draw-procedures.praat
+include ~/repo/plugin/stats/eml-analysis.praat
+include ~/repo/plugin/stats/eml-demo-tables.praat
 
 @emlInitDrawingDefaults
 @emlClearAnnotations
@@ -45,8 +46,21 @@ include ~/EMLPraatTools/plugin/stats/eml-analysis.praat
 # THE OBJECT
 # Recorded against: Table vt -- 40 rows, 2 columns.
 # The objects this workflow ran on are named in the block below.
-# All of them must be open before you run this script.
+# None of them is built or opened by a step below: see
+# PRECONDITION, and open them before you run this script.
 # ------------------------------------------------------------
+
+# ============================================================
+# PRECONDITION -- THIS SCRIPT CANNOT REBUILD ITS DATA
+#
+# Table vt was already open when this recording started.
+# Nothing in the session made it, so nothing below can remake it.
+#
+# YOU MUST SUPPLY THE DATA YOURSELF, open and named as above, before you
+# run this file. The steps below select by name: with nothing of that name
+# open the script stops at its first step, and with DIFFERENT data of that
+# name it runs to the end and answers a different question without saying so.
+# ============================================================
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
@@ -60,6 +74,8 @@ axisYMax     = 4.416269793367434   ; the figure was drawn on 1.5550 .. 4.4163
 eraseFirst   = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 2 (draw)
 panelOriginX = 0   ; inches from the left of the page to this panel's corner -- run 1, step 2 (draw)
 panelOriginY = 0   ; inches from the top of the page to this panel's corner -- run 1, step 2 (draw)
+lineStyle    = 1   ; the series' pen: 1 Solid, 2 Dotted, 3 Dashed, 4 Dashed-dotted -- run 1, step 2 (draw)
+secondAxisOn = 0   ; 1 draws a second series on a right-hand y-axis, 0 draws one axis -- run 1, step 2 (draw)
 # (Titles and axis labels are text, not column names, so they
 #  stay as they were typed -- edit those in the step itself.)
 
@@ -71,6 +87,11 @@ data = selected ()
 
 prev_violinShowJitter = 1
 annotate = 1
+@emlReportContext: "recorded script (recorded 14 August 2026, originally analysis dialog)", ""
+annotCorrectionMethod$ = "holm"
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 1
 @emlBridgeGroupComparison: data, valueCol$, groupCol$, 0.05, "p-value", 0, 1, "parametric", 1
 
 # Welch t: t(33.0) = -8.57, p < .001, d = -2.71
@@ -90,6 +111,12 @@ emlEraseFirst = eraseFirst
 emlPanelOriginX = panelOriginX
 emlPanelOriginY = panelOriginY
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle
+emlSecondAxisOn = secondAxisOn
+annotCorrectionMethod$ = "holm"
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 1
 @emlDrawViolinPlot: data, "advanced violin", "Cohort", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 # The figure's statistical annotation. In the GUI the graphs form
 # draws this after the figure returns; a recorded script has no

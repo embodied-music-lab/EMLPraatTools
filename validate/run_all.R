@@ -1581,6 +1581,16 @@ scripts <- c(
                                  # permute.sh) and records what R1 cannot
                                  # assert while no result store exists. Red
                                  # demo: harness/routingsplit/break.sh.
+    ,
+    "v133_dialog_field_guard.R"  # a procedure that reads a dialog field must
+                                 # not stop the script when it is called
+                                 # without one. Praat ends a script on an
+                                 # unset variable, so an unguarded read is a
+                                 # dead script rather than a wrong number.
+                                 # Derives the fields from the block that
+                                 # declares them and the call sites from the
+                                 # tree, and reports how many of each it
+                                 # walked.
 )
 
 # ---------------------------------------------------------------------------
