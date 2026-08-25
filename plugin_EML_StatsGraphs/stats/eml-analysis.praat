@@ -1259,6 +1259,23 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
 
         @emlReportBlank
         @emlReportSection: "Per-pair results"
+        ; EXPLANATION, reused verbatim from @emlReportTwoGroupComparison's
+        ; Welch/Student branch (punch list 6.2) -- this table runs the same
+        ; test pairwise, so the same sentence is true of every row in it.
+        ; No per-pair gloss is added below: @emlWizardExplainP and
+        ; @emlWizardExplainEffectD are written for ONE value, and this table
+        ; prints .nPairs of each, so applying either per row would repeat
+        ; the same banded sentence under most pairs and misstate it under
+        ; the rest. No existing helper is shaped for a matrix of values.
+        if emlShowExplanations
+            if .test$ = "welch"
+                appendInfoLine: "  Why: Compares means of two independent "
+                ... + "groups (robust to unequal variances)."
+            else
+                appendInfoLine: "  Why: Compares means of two independent "
+                ... + "groups (assumes equal variances)."
+            endif
+        endif
         appendInfoLine: ""
         @emlPadCell: "Comparison", 26
         .hdr$ = "  " + emlPadCell.result$
@@ -1418,6 +1435,19 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
 
         @emlReportBlank
         @emlReportSection: "Per-pair results"
+        ; EXPLANATION, reused verbatim from @emlReportTwoGroupComparison's
+        ; Mann-Whitney branch (punch list 6.2) -- pairwise Wilcoxon re-ranks
+        ; each pair on its own, the same procedure Mann-Whitney runs on two
+        ; groups, so the same sentence is true of every row here. No
+        ; per-pair gloss is added: @emlWizardExplainP and
+        ; @emlWizardExplainEffectR are written for ONE value, and this table
+        ; prints .nPairs of each, so applying either per row would repeat
+        ; the same banded sentence under most pairs and misstate it under
+        ; the rest. No existing helper is shaped for a matrix of values.
+        if emlShowExplanations
+            appendInfoLine: "  Why: Compares distributions of two "
+            ... + "independent groups without assuming normality."
+        endif
         appendInfoLine: ""
         @emlPadCell: "Comparison", 26
         .hdr$ = "  " + emlPadCell.result$
@@ -1570,6 +1600,18 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
 
         @emlReportBlank
         @emlReportSection: "Per-pair results"
+        ; EXPLANATION, reused verbatim from @emlReportTwoGroupComparison's
+        ; Student branch (punch list 6.2) -- Scheffe compares pairwise means
+        ; off the same pooled within-group variance a Student t uses, so the
+        ; same equal-variance sentence is true of it. No per-pair gloss is
+        ; added: @emlWizardExplainP is written for ONE p, and this table
+        ; prints .nPairs of them, so applying it per row would repeat the
+        ; same banded sentence under most pairs and misstate it under the
+        ; rest. No existing helper is shaped for a matrix of values.
+        if emlShowExplanations
+            appendInfoLine: "  Why: Compares means of two independent "
+            ... + "groups (assumes equal variances)."
+        endif
         appendInfoLine: ""
         @emlPadCell: "Comparison", 26
         .hdr$ = "  " + emlPadCell.result$
@@ -3412,12 +3454,31 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
         ... + string$ (emlRMAnovaTest.dfErr) + ") = "
         ... + eml_fixed.result$ + ", " + emlInlineP.text$
     appendInfoLine: .fLine$
+    ; EXPLANATION (punch list 6.2), reusing @emlWizardExplainP verbatim --
+    ; it glosses the p of a t, F, H, r or slope generically ("if there were
+    ; truly no effect...") and names no design, so it is exactly as true of
+    ; this within-subject F as of the between-subjects one the ANOVA report
+    ; already glosses this way. NOT glossed here: F itself
+    ; (@emlWizardExplainF names it a "between-group" mean square ratio,
+    ; which misdescribes a within-subject design) and partial eta squared
+    ; (@emlWizardExplainEffectPartialEta2 is written for a factorial table
+    ; with several effects sharing different denominators; this design has
+    ; one). Neither existing helper is correct here, and this report is not
+    ; the place to compose new ones.
+    if emlShowExplanations
+        @emlWizardExplainP: emlRMAnovaTest.p
+        appendInfoLine: "    " + emlWizardExplain$
+    endif
     @emlInlineP: emlRMAnovaTest.pGG
     @eml_fixed: emlRMAnovaTest.ggEpsilon, 4
     .ggLine$ = "  Greenhouse-Geisser epsilon = "
         ... + eml_fixed.result$ + ", GG-corrected "
         ... + emlInlineP.text$
     appendInfoLine: .ggLine$
+    if emlShowExplanations
+        @emlWizardExplainP: emlRMAnovaTest.pGG
+        appendInfoLine: "    " + emlWizardExplain$
+    endif
 
     ; AN EFFECT SIZE, not only F, p and epsilon: without one the report says
     ; how unlikely the condition effect is under the null and not how big it
@@ -3582,6 +3643,18 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     .chiLine$ = "  chi-square(" + string$ (emlFriedmanTest.df) + ") = "
         ... + eml_fixed.result$ + ", " + emlInlineP.text$
     appendInfoLine: .chiLine$
+    ; EXPLANATION (punch list 6.2), @emlWizardExplainP reused verbatim for
+    ; the same reason as the RM-ANOVA path above -- it names no design and
+    ; is exactly as true of this chi-square as of a t, F, H, r or slope.
+    ; NOT glossed here: chi-square itself and Kendall's W. No existing
+    ; helper describes either -- @emlWizardExplainEffectEpsilon2 is the
+    ; Kruskal-Wallis epsilon-squared (H / (n - 1), a share of variance in
+    ; ranks across GROUPS), a different quantity from Kendall's W (rank
+    ; agreement across within-subject CONDITIONS), so it is not reused here.
+    if emlShowExplanations
+        @emlWizardExplainP: emlFriedmanTest.p
+        appendInfoLine: "    " + emlWizardExplain$
+    endif
 
     ; AN EFFECT SIZE beside the chi-square and p. Kendall's W is
     ; chi-square / (n * (k - 1)) — the same quantity the glance frame

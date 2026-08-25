@@ -1,0 +1,36 @@
+kgroups	display	:237
+kgroups	listening	1
+kgroups	step0_combo1_rows	6 (wanted 1, arrow at W-19)
+kgroups	step0_page	Pause: EML Stats Wizard
+kgroups	step0_combos	1
+kgroups	step0_buttons	3
+kgroups	step1_combo1_rows	2 (wanted 1, arrow at W-19)
+kgroups	step1_page	Pause: Compare — Observation type
+kgroups	step1_combos	1
+kgroups	step1_buttons	4
+kgroups	step2_combo1_rows	3 (wanted 2, arrow at W-19)
+kgroups	step2_page	Pause: Compare independent — Design
+kgroups	step2_combos	1
+kgroups	step2_buttons	4
+kgroups	step3_combo1_rows	3 (wanted 3, arrow at W-32)
+kgroups	step3_page	Pause: Three+ groups — Select columns
+kgroups	step3_combos	2
+kgroups	step3_buttons	4
+kgroups	step4_page	Pause: Three or More Groups — Test
+kgroups	step4_combos	2
+kgroups	step4_buttons	4
+kgroups	step5_page	Pause: Three+ groups — Select columns
+kgroups	step5_combos	2
+kgroups	step5_buttons	4
+kgroups	step6_combo1_rows	16 (wanted 2, arrow at W-19)
+kgroups	step6_page	Pause: Three or More Groups — Test
+kgroups	step6_combos	2
+kgroups	step6_buttons	4
+kgroups	steps	7
+kgroups	planned_steps	7
+kgroups	trail	Pause: EML Stats Wizard[C] > Pause: Compare — Observation type[C] > Pause: Compare independent — Design[C] > Pause: Three+ groups — Select columns[C] > Pause: Three or More Groups — Test[B] > Pause: Three+ groups — Select columns[C] > Pause: Three or More Groups — Test[C] > Pause: Analysis complete
+kgroups	info_bytes	3478
+kgroups	state	walked
+kgroups	plan_lines	0
+kgroups	first_group	zeta
+kgroups	praat_error	0

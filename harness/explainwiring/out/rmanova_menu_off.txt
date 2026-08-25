@@ -1,0 +1,10 @@
+== LEG rmanova_menu_off ==
+Repeated-measures ANOVA — fixture_rm
+  Subjects (complete cases) n = 6, conditions k = 3
+    pre mean = 11.5000
+    mid mean = 15.0000
+    post mean = 19.3333
+  F(2, 10) = 286.7241, p < .001  (1.48e-09)
+  Greenhouse-Geisser epsilon = 0.7364, GG-corrected p < .001  (1.75e-07)
+  Partial eta squared = 0.9829  (condition SS / (condition SS + error SS))
+== END rmanova_menu_off ==

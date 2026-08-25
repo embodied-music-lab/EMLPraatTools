@@ -162,6 +162,72 @@ if leg$ = "pw_student_bonf_menu"
 endif
 
 # ---------------------------------------------------------------------------
+# 4.3 CORRECTION — the three rows the first wording of 4.3 left out: the
+# standalone pairwise dialog's rank-based cells (test$ = "wilcoxon"), decoded
+# like the twelve rows above, into the SAME @emlRunPairwiseAnalysis call the
+# standalone dialog makes for each cell. One leg per adjustment, both doors,
+# so all three new rows carry their own proof rather than one row standing
+# in for the family. Wizard rows 16/17/18 -> phTest$ = "wilcoxon", phAdj$ =
+# "holm"/"bonferroni"/"bh" (eml-wizard.praat's emlWizard3GroupTestFromMenu).
+# Menu sibling: eml-pairwise.praat, testChoice = 2 (Pairwise Wilcoxon) ->
+# test$ = "wilcoxon"; adjChoice 2/1/3 -> adjMethod$ "holm"/"bonferroni"/"bh"
+# respectively. Same shape as pw_student_bonf above: the wizard leg also
+# runs the preceding ANOVA/KW-omnibus page code the pairwise leg does not,
+# so the ANOVA-page KW omnibus runs OUTSIDE the diffed block and the parity
+# claim is on the PAIRWISE call only.
+# ---------------------------------------------------------------------------
+if leg$ = "pw_wilcoxon_holm_wizard"
+    @loadK
+    selectObject: loadK.id
+    @emlRunKWAnalysis: loadK.id, "F0_Hz", "voice_type", 0, "holm"
+    appendInfoLine: "===PARITY_BLOCK_START==="
+    selectObject: loadK.id
+    @emlRunPairwiseAnalysis: loadK.id, "F0_Hz", "voice_type", "wilcoxon", "holm"
+    appendInfoLine: "===PARITY_BLOCK_END==="
+endif
+if leg$ = "pw_wilcoxon_holm_menu"
+    @loadK
+    appendInfoLine: "===PARITY_BLOCK_START==="
+    selectObject: loadK.id
+    @emlRunPairwiseAnalysis: loadK.id, "F0_Hz", "voice_type", "wilcoxon", "holm"
+    appendInfoLine: "===PARITY_BLOCK_END==="
+endif
+
+if leg$ = "pw_wilcoxon_bonf_wizard"
+    @loadK
+    selectObject: loadK.id
+    @emlRunKWAnalysis: loadK.id, "F0_Hz", "voice_type", 0, "holm"
+    appendInfoLine: "===PARITY_BLOCK_START==="
+    selectObject: loadK.id
+    @emlRunPairwiseAnalysis: loadK.id, "F0_Hz", "voice_type", "wilcoxon", "bonferroni"
+    appendInfoLine: "===PARITY_BLOCK_END==="
+endif
+if leg$ = "pw_wilcoxon_bonf_menu"
+    @loadK
+    appendInfoLine: "===PARITY_BLOCK_START==="
+    selectObject: loadK.id
+    @emlRunPairwiseAnalysis: loadK.id, "F0_Hz", "voice_type", "wilcoxon", "bonferroni"
+    appendInfoLine: "===PARITY_BLOCK_END==="
+endif
+
+if leg$ = "pw_wilcoxon_bh_wizard"
+    @loadK
+    selectObject: loadK.id
+    @emlRunKWAnalysis: loadK.id, "F0_Hz", "voice_type", 0, "holm"
+    appendInfoLine: "===PARITY_BLOCK_START==="
+    selectObject: loadK.id
+    @emlRunPairwiseAnalysis: loadK.id, "F0_Hz", "voice_type", "wilcoxon", "bh"
+    appendInfoLine: "===PARITY_BLOCK_END==="
+endif
+if leg$ = "pw_wilcoxon_bh_menu"
+    @loadK
+    appendInfoLine: "===PARITY_BLOCK_START==="
+    selectObject: loadK.id
+    @emlRunPairwiseAnalysis: loadK.id, "F0_Hz", "voice_type", "wilcoxon", "bh"
+    appendInfoLine: "===PARITY_BLOCK_END==="
+endif
+
+# ---------------------------------------------------------------------------
 # 4.4 correlation "Group column" — per-group report. Fixture has cohort
 # A (n=4), B (n=3), C (n=1, too small to test). Wizard row: corrCol1$ = "x",
 # corrCol2$ = "y", wizCorrGroupCol$ = "cohort", wizCorrTestType$ = "both"

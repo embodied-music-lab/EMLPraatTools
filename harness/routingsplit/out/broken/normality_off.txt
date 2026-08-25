@@ -1,0 +1,44 @@
+== LEG normality_off ==
+
+══════════════════════════════════════════════
+  EML Stats : Normality Assessment
+  Tue Aug 25 20:46:12 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               fixture k
+  Column              Loud
+  N                   15
+
+
+  ── Descriptive Statistics ──────────────────
+  Mean                68.7133
+  SD                  5.7442
+  Median              68.8000
+
+
+  ── Distribution Shape ──────────────────────
+  Skewness            -0.0263
+  Kurtosis (excess)   -1.4324
+  → Skewness within typical limits (criterion: |skew| < 2)
+  → Kurtosis within typical limits (criterion: |excess kurt| < 7)
+
+
+  ── Shapiro-Wilk Test ───────────────────────
+  W                   0.9275
+  p                   .251
+  → Does not reject normality (p >= 0.05)
+
+
+  ── Recommendation ──────────────────────────
+  Shapiro-Wilk does not reject normality (p >= .05), and skewness and
+  kurtosis are within the thresholds.
+  → Parametric tests (t-test, ANOVA, Pearson r) are recommended.
+  What was checked: the marginal distribution of this column. Parametric
+  tests assume normality of the model RESIDUALS, which is not the same
+  distribution and is not examined here.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END normality_off ==

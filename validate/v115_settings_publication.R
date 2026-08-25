@@ -138,6 +138,18 @@ check_true(ID, "the recorder, the form, the bridge and the extractor are present
 
 SETTINGS <- c("annotCorrectionMethod$", "annotAlpha", "emlGroupSortAlphabetical")
 
+# JOINED 25 AUG (punch list 6.3): emlShowExplanations captures in the SAME
+# procedure, on the SAME analysis-and-draw steps, for a DIFFERENT reason --
+# it is classified DISPLAY-ONLY in v112 (no number a result-store re-run
+# would need moves when it changes), so it is deliberately NOT in SETTINGS
+# above, which this file's own header says is the three that decide what a
+# group comparison REPORTS. It is still a user's own choice (the menu
+# dialog's "Annotate results with explanations" toggle, language batch item
+# 9), and 6.3's ruling is "a recorded script reproduces it", which does not
+# require moving a number. Named separately so a guard count of 4 reads as
+# stated rather than as this file having quietly stopped checking.
+ALSO_CAPTURED <- c("emlShowExplanations")
+
 # ---------------------------------------------------------------------------
 # JOIN PRAAT CONTINUATIONS, AND STRIP WHOLE-LINE COMMENTS BEFORE MATCHING.
 #
@@ -220,10 +232,18 @@ for (s in SETTINGS) {
         sprintf("and reads %s only through its own variableExists guard", s),
         any(grepl(sprintf("variableExists \\(\"%s\"\\)", lit(s)), body_cap)))
 }
+for (s in ALSO_CAPTURED) {
+    check_true(ID,
+        sprintf("@emlRecordCaptureStats also writes %s into the step's code", s),
+        any(grepl(sprintf("\"%s = ", lit(s)), body_cap)))
+    check_true(ID,
+        sprintf("and reads %s only through its own variableExists guard", s),
+        any(grepl(sprintf("variableExists \\(\"%s\"\\)", lit(s)), body_cap)))
+}
 check_true(ID,
-    sprintf("the guards are one per setting and nothing is read unguarded (%d)",
+    sprintf("the guards are one per setting (SETTINGS + ALSO_CAPTURED) and nothing is read unguarded (%d)",
             sum(grepl("variableExists \\(", body_cap))),
-    sum(grepl("variableExists \\(", body_cap)) == length(SETTINGS))
+    sum(grepl("variableExists \\(", body_cap)) == length(SETTINGS) + length(ALSO_CAPTURED))
 
 # THE ALPHA IS WRITTEN WITH string$, NOT fixed$. fixed$ takes a width, and an
 # alpha finer than that width comes back a different number -- which is the

@@ -1,0 +1,40 @@
+== LEG twogroup_mwu_off ==
+
+══════════════════════════════════════════════
+  EML Stats : Two-Group Comparison
+  Tue Aug 25 20:36:15 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               fixture two
+  Data column         Loud
+  Group column        Voice
+
+  Group         N     Mean      SD        Median    
+  zeta          6     61.87     1.29      61.55     
+  alpha         6     75.27     1.14      75.10     
+  Sign: every difference below is zeta minus alpha, and t, z and the
+  effect sizes carry that direction.
+
+
+  ── Mann-Whitney U Test ─────────────────────
+  U1                  0.0
+  U2                  36.0
+  p                   .002
+  Method              exact
+
+
+  ── Nonparametric Effect Size ───────────────
+  Rank-biserial r     -1.000
+  Magnitude           large by Cohen's convention
+  Note: r = 1 means the two groups do not overlap at all -- every
+  value in one group outranks every value in the other. This is the
+  largest value the statistic can take, so it marks complete
+  separation rather than measuring how far apart the groups are, and
+  it occurs readily in small samples. Read it beside the group medians
+  and n.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END twogroup_mwu_off ==

@@ -1,0 +1,48 @@
+== LEG paired_both_off ==
+
+══════════════════════════════════════════════
+  EML Stats : Paired Comparison
+  Tue Aug 25 20:46:13 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               fixture rm
+  Column 1            pre
+  Column 2            post
+  N (pairs)           6
+
+  pre: Mean = 11.500, SD = 1.871, Median = 11.500
+  post: Mean = 19.333, SD = 2.582, Median = 19.500
+  Sign: every difference below is pre minus post, and t, z and the
+  effect sizes carry that direction.
+
+
+  ── Paired t-test ───────────────────────────
+  t                   -19.516
+  df                  5
+  p                   < .001  (6.52e-06)
+  Mean diff (pre − post) -7.8333
+  SD of differences   0.9832
+
+
+  ── Effect Size ─────────────────────────────
+  Cohen's dz          -7.967
+  r (from t)          -0.993
+  Magnitude           large effect
+
+
+  ── Wilcoxon Signed-Rank Test ───────────────
+  T+                  0.0
+  T-                  21.0
+  z                   -2.126
+  p                   .034
+
+
+  ── Nonparametric Effect Size ───────────────
+  Matched-pairs r     -1.000
+  Magnitude           large effect
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END paired_both_off ==

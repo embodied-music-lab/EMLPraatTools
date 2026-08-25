@@ -1,0 +1,61 @@
+== LEG pairwise_scheffe_menu_on ==
+
+══════════════════════════════════════════════
+  EML Stats : Scheffe Post-Hoc Comparisons
+  Tue Aug 25 20:20:11 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               fixture_k
+  Data column         Loud
+  Group column        Voice
+  Groups              3
+  Pairs tested        3
+  MSE                 1.7507
+  df (within)         12
+  p adjustment        Scheffe (familywise, built in)
+  Alpha               0.05
+  Group order: table order (zeta, alpha, mu).
+
+
+  ── Group descriptives ──────────────────────
+
+  Group               n      Mean         SD
+  zeta                5      62.0400      1.3649
+  alpha               5      75.3200      1.2677
+  mu                  5      68.7800      1.3349
+
+
+  ── Per-pair results ────────────────────────
+  Why: Compares means of two independent groups (assumes equal variances).
+
+  Comparison                F (df)              p          Mean diff
+  zeta vs alpha             125.922 (2, 12)     < .001     -13.280 *
+  zeta vs mu                32.436 (2, 12)      < .001     -6.740 *
+  alpha vs mu               30.540 (2, 12)      < .001     6.540 *
+  * p < 0.05. Mean diff is first group minus second.
+
+
+  ── Scheffe p-values ────────────────────────
+
+              zeta        alpha       mu          
+zeta          ---         < .001 *    < .001 *    
+alpha         < .001 *    ---         < .001 *    
+mu            < .001 *    < .001 *    ---         
+  Symmetric: the p for A vs B is the p for B vs A.
+  * p < 0.05
+
+
+  ── Mean Differences ────────────────────────
+
+              zeta        alpha       mu          
+zeta          ---         -13.280     -6.740      
+alpha         13.280      ---         6.540       
+mu            6.740       -6.540      ---         
+  Row minus column: a negative difference means the ROW group's
+  mean is lower than the COLUMN group's.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END pairwise_scheffe_menu_on ==

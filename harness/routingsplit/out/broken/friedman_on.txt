@@ -1,0 +1,14 @@
+== LEG friedman_on ==
+Friedman test — fixture_rm
+  Subjects (complete cases) n = 6, conditions k = 3
+    pre rank sum = 6.0
+    mid rank sum = 12.0
+    post rank sum = 18.0
+  chi-square(2) = 12.0000, p = .002
+    Statistically significant: if there were truly no effect, results at least this extreme would occur less than 1% of the time
+  Kendall's W = 1.0000  (agreement among subjects in how they rank the conditions: 0 = none, 1 = every subject ranks them identically)
+  Post-hoc pairwise (nonparametric, Holm-adjusted):
+    pre vs mid: raw p = .032, adj p = .096
+    pre vs post: raw p = .034, adj p = .096
+    mid vs post: raw p = .034, adj p = .096
+== END friedman_on ==

@@ -5,6 +5,9 @@ corr_both	1	36	36
 anova_only	1	52	52
 kw_only	1	47	47
 norm_all	1	90	90
-pw_student_bonf	1	54	54
+pw_student_bonf	1	55	55
 corr_group	1	76	76
 norm_group	1	14	14
+pw_wilcoxon_holm	1	55	55
+pw_wilcoxon_bonf	1	55	55
+pw_wilcoxon_bh	1	55	55

@@ -2,7 +2,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Tue Aug 25 16:07:07 2026
+  Tue Aug 25 20:52:28 2026
 ══════════════════════════════════════════════
 
   Table               fixture kgroups
@@ -53,7 +53,7 @@ Soprano       1.064       0.554       ---
 
 ══════════════════════════════════════════════
   EML Stats : Pairwise Student t-test (Bonferroni adjustment)
-  Tue Aug 25 16:07:07 2026
+  Tue Aug 25 20:52:28 2026
 ══════════════════════════════════════════════
 
   Table               fixture_kgroups
@@ -75,6 +75,7 @@ Soprano       1.064       0.554       ---
 
 
   ── Per-pair results ────────────────────────
+  Why: Compares means of two independent groups (assumes equal variances).
 
   Comparison                t (df)              p (raw)    p (adj)    d
   Alto vs Mezzo             -1.079 (14.00)      .299       .897       -0.539

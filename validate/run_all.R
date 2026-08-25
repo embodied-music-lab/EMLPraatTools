@@ -1538,6 +1538,49 @@ scripts <- c(
                                  # reports how many labels it walked, and
                                  # seeds one write-back out through
                                  # EML_DIALOG_SRC to prove it can go red.
+    ,
+    "v130_explanations_gate.R"  # punch list 6.1: one fixture (Kruskal-
+                                 # Wallis, no Dunn) through the wizard (GUI,
+                                 # harness/wizardback), a menu dialog with
+                                 # "Annotate results with explanations" off,
+                                 # and the same dialog on (headless,
+                                 # harness/explaingate) -- identical
+                                 # statistics on all four captures, the
+                                 # explanation line present only where the
+                                 # ruling says on. Also reads the source
+                                 # shape of @emlHandleCommonFields and
+                                 # @emlGraphsWorkflow's entry. Red demo:
+                                 # harness/explaingate/break.sh.
+    ,
+    "v131_explanation_wiring.R" # punch list 6.2: the seven reporter sites in
+                                 # stats/eml-analysis.praat and
+                                 # stats/eml-output.praat that gained
+                                 # explanation lines -- pairwise (Welch,
+                                 # Student, Scheffe, Wilcoxon), RM ANOVA,
+                                 # Friedman, and descriptive statistics.
+                                 # Drives each measure with explanations off
+                                 # and on (harness/explainwiring) and asserts
+                                 # the statistics are byte-identical once the
+                                 # explanation lines are stripped, plus a
+                                 # source-shape section anchoring each site's
+                                 # read of emlShowExplanations. Red demo:
+                                 # harness/explainwiring/break.sh.
+    ,
+    "v132_routing_split.R"      # the language batch's DISCLOSURE/EXPLANATION
+                                 # routing, over WHOLE reports rather than a
+                                 # list of sentences: subtracts the
+                                 # explanations-off report from the
+                                 # explanations-on one across nineteen
+                                 # analyses (harness/routingsplit) and asserts
+                                 # no line the toggle removes is a labelled
+                                 # statistic row, nothing appears only when
+                                 # the toggle is off, and the off leg carries
+                                 # no stray two-tab suffix. Carries risk R1's
+                                 # settings-permutation drive (display toggle
+                                 # x group sort x alpha, harness/routingsplit/
+                                 # permute.sh) and records what R1 cannot
+                                 # assert while no result store exists. Red
+                                 # demo: harness/routingsplit/break.sh.
 )
 
 # ---------------------------------------------------------------------------

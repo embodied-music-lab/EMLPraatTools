@@ -439,8 +439,27 @@ if (!canDrive) {
                    length(under) == 1 &&
                    !is.na(suppressWarnings(as.numeric(under))) &&
                    as.numeric(under) != 0)
+        # THE VALUE IS THE FIRST TAB-SEPARATED CELL OF THE ROW, not the rest
+        # of the line. @emlReportLine (stats/eml-output.praat) appends
+        # emlWizardExplain$ after TWO TABS when emlShowExplanations is set,
+        # so a row that has gained a plain-language gloss reads
+        # "Skewness<pad>0.0000\t\tApproximately symmetric ...". Reading the
+        # whole remainder would make this file assert about the gloss and not
+        # about the formatter -- and this file is about the formatter.
+        # v130's own stat reader splits at the same place, for the same
+        # reason. THE GLOSS IS STILL CHECKED, on the line below: if one is
+        # present it must be in its own cell, because a gloss that ran into
+        # the value cell would be the defect this split assumes away.
         skewLine <- grep("^\\s*Skewness\\s", rep, value = TRUE)
-        skewVal <- trimws(sub("^\\s*Skewness\\s+", "", skewLine))
+        skewCells <- if (length(skewLine))
+            strsplit(skewLine[1], "\t", fixed = TRUE)[[1]] else character(0)
+        skewVal <- if (length(skewCells))
+            trimws(sub("^\\s*Skewness\\s+", "", skewCells[1])) else character(0)
+        check_true("v64",
+                   sprintf("the Skewness row's value stands in its own tab cell (%d cell(s))",
+                           length(skewCells)),
+                   length(skewCells) >= 1 &&
+                   !grepl("[A-Za-z]", sub("^\\s*Skewness\\s+", "", skewCells[1])))
         check_true("v64",
                    sprintf("the Skewness row prints at exactly four decimals (%s)",
                            paste(skewVal, collapse = "|")),

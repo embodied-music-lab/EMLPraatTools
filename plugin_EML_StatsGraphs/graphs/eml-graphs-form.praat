@@ -3264,20 +3264,43 @@ endproc
 # ============================================================================
 procedure emlGraphsWorkflow: .objectId
 
-    # Enable explanations in the graphs/drawing path.
+    # THE EXPLANATIONS GATE (punch list 6.1). Three origins reach this
+    # procedure, and the ruling gives each a different answer:
     #
-    # THIS GATE IS GLOBAL, so raising it here and walking away would make
-    # every LATER analysis report in the same session verbose, and report
-    # content would depend on draw order: the same test printing different
-    # text depending on whether a figure had been drawn first. The bottom of
-    # this procedure calls @emlResetExplanations, which puts the gate back to
-    # the default declared in stats/eml-output.praat — the declared default
-    # and not a literal 0, so this file cannot drift from that declaration.
-    # Whatever the calling wrapper does after Draw returns, it sees the same
-    # gate it would have seen without the Draw. The "Quit" buttons inside the
-    # form call exitScript, which ends the script and its entire variable
-    # scope, so they need no reset of their own.
-    emlShowExplanations = 1
+    #   -- THE WIZARD sets emlShowExplanations = 1 itself, once, at the very
+    #      top of eml-wizard.praat, before any page or any draw call. It has
+    #      no control and none of what follows is meant to touch that.
+    #   -- A MENU ANALYSIS DIALOG'S OWN TOGGLE ("Annotate results with
+    #      explanations", item 9) is read in @emlHandleCommonFields
+    #      (stats/eml-output.praat), which -- in every wrapper that has one --
+    #      runs before this procedure ever could. It sets emlShowExplanations
+    #      to the user's own answer AND sets emlExplanationsFromDialog = 1
+    #      with emlDialogShowExplanations holding that same answer, so a
+    #      later "Draw" button on the SAME wrapper hands this procedure the
+    #      dialog's own setting rather than a default.
+    #   -- STANDALONE (scripts/eml-graphs.praat, a fresh script scope that
+    #      never ran a wrapper dialog first) leaves emlExplanationsFromDialog
+    #      unset. The ruling says a standalone graph that annotates
+    #      statistics is on, unconditionally.
+    #
+    # emlExplanationsFromDialog is the only thing that tells the standalone
+    # case apart from the menu-dialog case, and it is re-asserted from
+    # emlDialogShowExplanations on EVERY entry rather than left to whatever
+    # emlShowExplanations already holds -- @emlResetExplanations below runs at
+    # the end of every call, including a first Draw, so a second Draw off the
+    # same wrapper's post-analysis dialog must not see the shared default in
+    # its place. Overwriting emlShowExplanations unconditionally here is
+    # exactly the bug the item's red demonstration exists to catch: it would
+    # make the toggle's OFF setting invisible on every figure a menu dialog
+    # launches.
+    if not variableExists ("emlExplanationsFromDialog")
+        emlExplanationsFromDialog = 0
+    endif
+    if emlExplanationsFromDialog
+        emlShowExplanations = emlDialogShowExplanations
+    else
+        emlShowExplanations = 1
+    endif
 
     # =================================================================
     # 1. IDEMPOTENT SETUP (every call)
@@ -10819,10 +10842,14 @@ until keepGoing = 0
     scatterPresetHasGroup = 0
 
     # --- restore the explanation gate ---
-    # Raised at the top of this procedure for the graphs path only. It is a
-    # global, so leaving it raised would make every later analysis report in
-    # the session verbose and make report content depend on draw order. The
-    # gate goes back to the default declared in stats/eml-output.praat, not to
-    # a literal written out here.
+    # Set at the top of this procedure for every call. It is a global, so
+    # leaving it as this call left it would make a later analysis report in
+    # the session verbose (or silent) depending only on draw order. The gate
+    # goes back to the default declared in stats/eml-output.praat, not to a
+    # literal written out here. emlExplanationsFromDialog is deliberately NOT
+    # cleared here: a wrapper's post-analysis dialog can call this procedure
+    # more than once per Run (a second "Draw"), and the entry above re-derives
+    # emlShowExplanations from emlDialogShowExplanations on every one of those
+    # calls, not just the first.
     @emlResetExplanations
 endproc

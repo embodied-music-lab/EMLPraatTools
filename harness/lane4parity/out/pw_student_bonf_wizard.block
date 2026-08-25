@@ -22,6 +22,7 @@
 
 
   ── Per-pair results ────────────────────────
+  Why: Compares means of two independent groups (assumes equal variances).
 
   Comparison                t (df)              p (raw)    p (adj)    d
   Alto vs Mezzo             -1.079 (14.00)      .299       .897       -0.539

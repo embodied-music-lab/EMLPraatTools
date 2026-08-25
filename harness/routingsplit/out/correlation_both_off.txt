@@ -1,0 +1,35 @@
+== LEG correlation_both_off ==
+
+══════════════════════════════════════════════
+  EML Stats : Correlation Analysis
+  Tue Aug 25 20:36:18 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               fixture k
+  Column X            Pitch
+  Column Y            Loud
+  N                   15
+
+
+  ── Pearson Correlation ─────────────────────
+  r                   0.9980
+  R-squared           0.9961
+  t                   57.503
+  df                  13
+  p                   < .001  (4.91e-17)
+  95% CI for r        [0.9939, 0.9994]
+  Magnitude           large effect
+
+
+  ── Spearman Correlation ────────────────────
+  rho                 1.0000
+  t                   --undefined--
+  df                  13
+  p                   < .001  (0)
+  Magnitude           large effect
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END correlation_both_off ==

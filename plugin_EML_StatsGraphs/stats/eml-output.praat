@@ -1865,9 +1865,11 @@ endproc
 #
 # Fields:
 #   boolean: "Clear Info window", emlLastClearInfo
+#   boolean: "Annotate results with explanations", emlLastShowExplanations
 #
 # Variable derivation (available after endPause):
 #   clear_Info_window (numeric, 0 or 1)
+#   annotate_results_with_explanations (numeric, 0 or 1)
 #
 # THE SECTION MARKER IS THE HEAVY BOX-DRAWING RULE every dialog separates its
 # zones with (see dev/DESIGN_DIALOG_SYSTEM.md, "Separator"). This procedure
@@ -1881,6 +1883,16 @@ endproc
 # purpose is iteration. @emlHandleCommonFields records it, because that is
 # the procedure that already reads the answer.
 #
+# THE EXPLANATIONS TOGGLE (punch list 6.1; language batch item 9, verbatim
+# label; default off) PERSISTS THE SAME WAY, in emlLastShowExplanations. This
+# is the ONE control the ruling gives every menu analysis dialog for the
+# explanations gate — the wizard has no control (always on) and a standalone
+# graph has no control (always on); only a dialog reached through this
+# procedure gets to choose, and DERIVING the population from this shared
+# call, instead of a hand-kept list of wrapper names, is what the ruling
+# asks for: a dialog added later that calls @emlWrapperCommonFields is
+# covered without anyone remembering to add it anywhere.
+#
 # Usage:
 #   beginPause: "My Analysis"
 #       # ... wrapper-specific fields ...
@@ -1893,14 +1905,19 @@ endproc
 # Wrappers needing group order add it to their own dialog.
 # ────────────────────────────────────────────────────────────────────────────
 emlLastClearInfo = 0
+emlLastShowExplanations = 0
 
 procedure emlWrapperCommonFields
     if not variableExists ("emlLastClearInfo")
         emlLastClearInfo = 0
     endif
+    if not variableExists ("emlLastShowExplanations")
+        emlLastShowExplanations = 0
+    endif
     comment: ""
     comment: "─────────────────────────────────────"
     boolean: "Clear Info window", emlLastClearInfo
+    boolean: "Annotate results with explanations", emlLastShowExplanations
 endproc
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -1932,6 +1949,27 @@ procedure emlHandleCommonFields
     if clear_Info_window
         @emlClearInfo
     endif
+
+    ; THE EXPLANATIONS TOGGLE (punch list 6.1). Remembered the same way as
+    ; "Clear Info window", and applied to the SAME global the wizard sets
+    ; unconditionally and @emlGraphsWorkflow's standalone entry defaults --
+    ; there is only one emlShowExplanations gate, and this is where a menu
+    ; dialog's own answer reaches it, once per Run, before the orchestrator
+    ; call that is about to read it.
+    ;
+    ; emlExplanationsFromDialog and emlDialogShowExplanations are what let a
+    ; later "Draw" button on THIS wrapper's post-analysis dialog hand the
+    ; SAME answer to @emlGraphsWorkflow instead of that procedure's own
+    ; standalone-launch default of 1 -- see the entry of @emlGraphsWorkflow in
+    ; graphs/eml-graphs-form.praat, the only reader of either variable. Set
+    ; every Run (not just once), so a `New` that changes the toggle is not
+    ; stuck with the first Run's answer, and never cleared here -- the
+    ; wrapper's "Quit" ends the whole script (@emlWrapperCommonFields's own
+    ; header note), so nothing outside this script scope can see it.
+    emlLastShowExplanations = annotate_results_with_explanations
+    emlShowExplanations = annotate_results_with_explanations
+    emlDialogShowExplanations = annotate_results_with_explanations
+    emlExplanationsFromDialog = 1
 
     ; This runs once per Run, inside the wrapper's repeat loop, and it
     ; runs before the orchestrator prints anything — so it is the one place
@@ -4609,7 +4647,19 @@ procedure emlReportDescriptiveAnalysis: .tableName$, .dataCol$, .nValid,
 
     @emlReportBlank
     @emlReportSection: "Distribution Shape"
+    ; EXPLANATION (punch list 6.2): @emlWizardExplainSkewness and
+    ; @emlWizardExplainKurtosis already exist, reused verbatim from the
+    ; normality reporter (@emlReportNormalityAnalysis), which glosses the
+    ; same two quantities computed the same way. @emlReportLine appends
+    ; emlWizardExplain$ itself when emlShowExplanations is set, so setting
+    ; it just before the call is the whole change.
+    if emlShowExplanations
+        @emlWizardExplainSkewness: emlDescribe.skewness
+    endif
     @emlReportLine: "Skewness", emlDescribe.skewness, 4
+    if emlShowExplanations
+        @emlWizardExplainKurtosis: emlDescribe.kurtosis
+    endif
     @emlReportLine: "Kurtosis (excess)", emlDescribe.kurtosis, 4
 
     @emlReportBlank

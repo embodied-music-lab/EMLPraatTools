@@ -1,0 +1,58 @@
+== LEG pairwise_wilcoxon_menu_off ==
+
+══════════════════════════════════════════════
+  EML Stats : Pairwise Wilcoxon/Mann-Whitney (Holm adjustment)
+  Tue Aug 25 20:20:11 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               fixture_k
+  Data column         Loud
+  Group column        Voice
+  Groups              3
+  Pairs tested        3
+  p adjustment        Holm
+  Alpha               0.05
+  Group order: table order (zeta, alpha, mu).
+
+
+  ── Group descriptives ──────────────────────
+
+  Group               n      Mean         SD
+  zeta                5      62.0400      1.3649
+  alpha               5      75.3200      1.2677
+  mu                  5      68.7800      1.3349
+
+
+  ── Per-pair results ────────────────────────
+
+  Comparison                U                   p (raw)    p (adj)    r
+  zeta vs alpha             0.00                .008       .024       -1.000 *
+  zeta vs mu                0.00                .008       .024       -1.000 *
+  alpha vs mu               25.00               .008       .024       1.000 *
+  * adjusted p < 0.05. U is for the first group of the pair; r is positive when that group ranks above the second.
+
+
+  ── Adjusted p-values (Holm) ────────────────
+
+              zeta        alpha       mu          
+zeta          ---         .024 *      .024 *      
+alpha         .024 *      ---         .024 *      
+mu            .024 *      .024 *      ---         
+  Symmetric: the p for A vs B is the p for B vs A.
+  * adjusted p < 0.05
+
+
+  ── Rank-biserial r (effect sizes) ──────────
+
+              zeta        alpha       mu          
+zeta          ---         -1.000      -1.000      
+alpha         1.000       ---         1.000       
+mu            1.000       -1.000      ---         
+  Row minus column: a negative r means the ROW group ranks
+  lower than the COLUMN group. |r| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END pairwise_wilcoxon_menu_off ==

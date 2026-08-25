@@ -60,6 +60,9 @@ v126	v126_normality_coverage.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraph
 v127	v127_door_agreement_census.R	SOURCE+ARTEFACT	NO		harness,plugin,plugin_EML_StatsGraphs	plugin_src_root	
 v128	v128_wizard_flow_invariant.R	SOURCE	NO		plugin_EML_StatsGraphs	old_src	
 v13	v13_regression_orchestrator.R	ARTEFACT	NO		evidence		
+v130	v130_explanations_gate.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
+v131	v131_explanation_wiring.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
+v132	v132_routing_split.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
 v14	v14_descriptive_orchestrator.R	ARTEFACT	NO		evidence		
 v15	v15_normality_orchestrator.R	ARTEFACT	NO		evidence		
 v16	v16_csv_export.R	ARTEFACT	NO		evidence		

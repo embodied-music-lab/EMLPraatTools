@@ -1,0 +1,63 @@
+Table fixture_k
+== INFO ==
+
+══════════════════════════════════════════════
+  EML Stats Wizard — Analysis Plan
+══════════════════════════════════════════════
+
+  Design:         Three or more independent groups
+  Normality:      Not assumed
+  Test:           Kruskal-Wallis (ε²)
+  Data column:    Loud
+  Group column:   Voice
+  Table:          fixture k
+
+══════════════════════════════════════════════
+  Running analysis...
+══════════════════════════════════════════════
+
+
+══════════════════════════════════════════════
+  EML Stats : Kruskal-Wallis H Test
+  Tue Aug 25 19:56:01 2026
+══════════════════════════════════════════════
+
+  Table               fixture k
+  Data column         Loud
+  Group column        Voice
+  Groups              3
+  Total N             15
+  Group order: table order (zeta, alpha, mu).
+
+
+  ── Omnibus Test ────────────────────────────
+  Why: Nonparametric comparison of three or more groups. Every observation is ranked in one pooled ranking and the groups' mean ranks are compared, so no normal distribution is assumed. Observations must still be independent, and reading the result as a difference in MEDIANS additionally requires the groups to have similar distribution shapes.
+  H                   12.5000		Test statistic: how far the groups' mean ranks sit from the overall mean rank. Its p comes from a chi-squared approximation, which improves as the groups grow
+  df                  2		Number of groups (3) minus 1. Controls the chi-squared reference distribution.
+  p                   .002		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 1% of the time
+  Epsilon-squared     0.8929		Effect size: large by Cohen's convention (epsilon-squared >= 0.14 = large). Group membership accounts for 89% of the variance in the RANKS, which is not the variance in the measured values
+  Effect magnitude    large by Cohen's convention
+
+
+  ── Group Mean Ranks ────────────────────────
+
+Group         N     Mean Rank
+zeta          5     3.00
+alpha         5     13.00
+mu            5     8.00
+
+
+  ── Pairwise Effect Sizes (rank-biserial r) ───
+  No pairwise significance tests were run.
+  Effect sizes estimate the size of each pairwise difference.
+
+              zeta        alpha       mu          
+zeta          ---         -1.000      -1.000      
+alpha         1.000       ---         1.000       
+mu            1.000       -1.000      ---         
+  Row minus column: a negative r means the ROW group ranks lower than
+  the COLUMN group. |r| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════

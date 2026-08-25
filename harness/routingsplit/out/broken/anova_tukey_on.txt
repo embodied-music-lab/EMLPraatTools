@@ -1,0 +1,67 @@
+== LEG anova_tukey_on ==
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Tue Aug 25 20:46:09 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               fixture k
+  Data column         Loud
+  Group column        Voice
+  Groups              3
+  Group order: table order (zeta, alpha, mu).
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests whether group means differ when normality and equal variances hold.
+
+Source              SS              df    MS              F           p
+Between             440.93          2     220.46          125.9318    < .001
+Within              21.01           12    1.75            
+Total               461.94          14    
+
+  F                   125.9318		Ratio of mean squares: the between-group mean square is 125.9 times the within-group mean square. With no real effect, this ratio tends to be near 1
+  p                   < .001  (8.85e-09)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  Effect size         eta-squared = 0.9545		Effect size: large by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 95% of the total variance
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(2, 12) = 0.0085
+  Equal-spread p      p = .992
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  zeta          5     62.04     1.36      61.90     
+  alpha         5     75.32     1.27      75.20     
+  mu            5     68.78     1.33      68.80     
+
+
+  ── Tukey HSD Pairwise Comparisons (p-values) ───
+
+              zeta        alpha       mu          
+zeta          ---         < .001      < .001      
+alpha         < .001      ---         < .001      
+mu            < .001      < .001      ---         
+
+
+  ── Tukey HSD Mean Differences (95% family-wise CI) ───
+
+Comparison                Difference    95% CI
+zeta − alpha              -13.2800      [-15.5125, -11.0475]
+zeta − mu                 -6.7400       [-8.9725, -4.5075]
+alpha − mu                6.5400        [4.3075, 8.7725]
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+
+              zeta        alpha       mu          
+zeta          ---         -10.082     -4.993      
+alpha         10.082      ---         5.024       
+mu            4.993       -5.024      ---         
+  Row minus column: a negative d means the ROW group's mean is lower
+  than the COLUMN group's. |d| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END anova_tukey_on ==

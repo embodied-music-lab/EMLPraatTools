@@ -1,0 +1,47 @@
+== LEG descriptive_off ==
+
+══════════════════════════════════════════════
+  EML Stats : Descriptive Statistics
+  Tue Aug 25 20:36:19 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               fixture k
+  Column              Loud
+  N (valid)           15
+
+
+  ── Central Tendency ────────────────────────
+  Mean                68.7133
+  Median              68.8000
+  SEM                 1.4831
+
+
+  ── Dispersion ──────────────────────────────
+  SD                  5.7442
+  Variance            32.9955
+  Range               16.6000
+  Min                 60.4000
+  Max                 77.0000
+
+
+  ── Quartiles ───────────────────────────────
+  Q1                  63.3500
+  Q2 (Median)         68.8000
+  Q3                  74.1500
+  IQR                 10.8000
+
+
+  ── Distribution Shape ──────────────────────
+  Skewness            -0.0263
+  Kurtosis (excess)   -1.4324
+
+
+  ── 95% Confidence Interval ─────────────────
+  Lower               65.5323
+  Upper               71.8944
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END descriptive_off ==

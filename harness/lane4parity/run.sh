@@ -23,7 +23,10 @@ LEGS="two_both_wizard two_both_menu paired_both_wizard paired_both_menu \
 corr_both_wizard corr_both_menu anova_only_wizard anova_only_menu \
 kw_only_wizard kw_only_menu pw_student_bonf_wizard pw_student_bonf_menu \
 corr_group_wizard corr_group_menu norm_all_wizard norm_all_menu \
-norm_group_wizard norm_group_menu"
+norm_group_wizard norm_group_menu \
+pw_wilcoxon_holm_wizard pw_wilcoxon_holm_menu \
+pw_wilcoxon_bonf_wizard pw_wilcoxon_bonf_menu \
+pw_wilcoxon_bh_wizard pw_wilcoxon_bh_menu"
 
 echo "lane4parity: running legs"
 rc_any=0
@@ -85,7 +88,8 @@ done
 # under different local variable names, and the wizard's B_TEST_PAGE and
 # the menu's hasGroupCol branch echo it via the SAME @emlRunCorrelationAnalysis
 # call so it belongs on both sides equally and does not need separate proof).
-BLOCK_PAIRS="pw_student_bonf corr_group norm_group"
+BLOCK_PAIRS="pw_student_bonf corr_group norm_group \
+pw_wilcoxon_holm pw_wilcoxon_bonf pw_wilcoxon_bh"
 for pair in $BLOCK_PAIRS; do
     pwf="$OUT/${pair}_wizard.txt"
     pmf="$OUT/${pair}_menu.txt"

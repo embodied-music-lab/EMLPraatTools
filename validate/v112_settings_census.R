@@ -468,7 +468,12 @@ DISPLAY_ONLY <- c(
     "emlShowExplanations" =
         paste("whether the reporters append their plain-language column.",
               "@emlReportLine prints the same formatted value either way and",
-              "adds emlWizardExplain$ after two tabs when this is on"),
+              "adds emlWizardExplain$ after two tabs when this is on. A menu",
+              "analysis dialog's own toggle (punch list 6.1, language batch",
+              "item 9) and @emlRecordCaptureStats now publishes it on",
+              "analysis and draw steps (6.3) beside the three settings that",
+              "ARE result-affecting -- it is a user choice a replay must",
+              "reproduce, which is a narrower bar than 'changes a number'"),
     "emlLegendPlacement" = "which corner the legend sits in",
     "legendFill$" = "legend swatch fill",
     "legendPattern" = "legend swatch pattern",

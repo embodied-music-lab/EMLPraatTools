@@ -1,0 +1,36 @@
+== LEG twogroup_welch_off ==
+
+══════════════════════════════════════════════
+  EML Stats : Two-Group Comparison
+  Tue Aug 25 20:46:08 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               fixture two
+  Data column         Loud
+  Group column        Voice
+
+  Group         N     Mean      SD        Median    
+  zeta          6     61.87     1.29      61.55     
+  alpha         6     75.27     1.14      75.10     
+  Sign: every difference below is zeta minus alpha, and t, z and the
+  effect sizes carry that direction.
+
+
+  ── Welch ───────────────────────────────────
+  t                   -19.035
+  df                  9.8
+  p                   < .001  (4.28e-09)
+  Mean diff (zeta − alpha) -13.4000
+  95% CI of diff      [-14.9718, -11.8282]
+
+
+  ── Effect Size ─────────────────────────────
+  Cohen's d           -10.990
+  Hedges' g           -10.145
+  Magnitude           large by Cohen's convention
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END twogroup_welch_off ==

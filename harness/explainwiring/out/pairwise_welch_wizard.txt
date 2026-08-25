@@ -1,0 +1,58 @@
+== LEG pairwise_welch_wizard ==
+
+══════════════════════════════════════════════
+  EML Stats : Pairwise Welch t-test (Holm adjustment)
+  Tue Aug 25 20:20:09 2026
+══════════════════════════════════════════════
+
+  Table               fixture_k
+  Data column         Loud
+  Group column        Voice
+  Groups              3
+  Pairs tested        3
+  p adjustment        Holm
+  Alpha               0.05
+  Group order: table order (zeta, alpha, mu).
+
+
+  ── Group descriptives ──────────────────────
+
+  Group               n      Mean         SD
+  zeta                5      62.0400      1.3649
+  alpha               5      75.3200      1.2677
+  mu                  5      68.7800      1.3349
+
+
+  ── Per-pair results ────────────────────────
+  Why: Compares means of two independent groups (robust to unequal variances).
+
+  Comparison                t (df)              p (raw)    p (adj)    d
+  zeta vs alpha             -15.941 (7.96)      < .001     < .001     -10.082 *
+  zeta vs mu                -7.894 (8.00)       < .001     < .001     -4.993 *
+  alpha vs mu               7.944 (7.98)        < .001     < .001     5.024 *
+  * adjusted p < 0.05. t and d both run first group minus second; d is Cohen's d.
+
+
+  ── Adjusted p-values (Holm) ────────────────
+
+              zeta        alpha       mu          
+zeta          ---         < .001 *    < .001 *    
+alpha         < .001 *    ---         < .001 *    
+mu            < .001 *    < .001 *    ---         
+  Symmetric: the p for A vs B is the p for B vs A.
+  * adjusted p < 0.05
+
+
+  ── Cohen's d (effect sizes) ────────────────
+
+              zeta        alpha       mu          
+zeta          ---         -10.082     -4.993      
+alpha         10.082      ---         5.024       
+mu            4.993       -5.024      ---         
+  Row minus column: a negative d means the ROW group's mean is
+  lower than the COLUMN group's. |d| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END pairwise_welch_wizard ==

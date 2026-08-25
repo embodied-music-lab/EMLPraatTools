@@ -1,0 +1,55 @@
+
+══════════════════════════════════════════════
+  EML Stats : Pairwise Wilcoxon/Mann-Whitney (Bonferroni adjustment)
+══════════════════════════════════════════════
+
+  Table               fixture_kgroups
+  Data column         F0_Hz
+  Group column        voice_type
+  Groups              3
+  Pairs tested        3
+  p adjustment        Bonferroni
+  Alpha               0.05
+  Group order: table order (Alto, Mezzo, Soprano).
+
+
+  ── Group descriptives ──────────────────────
+
+  Group               n      Mean         SD
+  Alto                8      214.8750     12.0337
+  Mezzo               8      221.2000     11.4163
+  Soprano             8      227.7125     12.0987
+
+
+  ── Per-pair results ────────────────────────
+  Why: Compares distributions of two independent groups without assuming normality.
+
+  Comparison                U                   p (raw)    p (adj)    r
+  Alto vs Mezzo             23.00               .382       1.000      -0.281
+  Alto vs Soprano           15.00               .083       .249       -0.531
+  Mezzo vs Soprano          22.00               .328       .985       -0.312
+  * adjusted p < 0.05. U is for the first group of the pair; r is positive when that group ranks above the second.
+
+
+  ── Adjusted p-values (Bonferroni) ──────────
+
+              Alto        Mezzo       Soprano     
+Alto          ---         1.000       .249        
+Mezzo         1.000       ---         .985        
+Soprano       .249        .985        ---         
+  Symmetric: the p for A vs B is the p for B vs A.
+  * adjusted p < 0.05
+
+
+  ── Rank-biserial r (effect sizes) ──────────
+
+              Alto        Mezzo       Soprano     
+Alto          ---         -0.281      -0.531      
+Mezzo         0.281       ---         -0.312      
+Soprano       0.531       0.312       ---         
+  Row minus column: a negative r means the ROW group ranks
+  lower than the COLUMN group. |r| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════

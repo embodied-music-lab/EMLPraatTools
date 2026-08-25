@@ -1,0 +1,43 @@
+== LEG regression_on ==
+
+══════════════════════════════════════════════
+  EML Stats : Simple Linear Regression
+  Tue Aug 25 20:36:19 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               fixture k
+  Response (Y)        Loud
+  Predictor (X)       Pitch
+  N                   15
+
+
+  ── Model ───────────────────────────────────
+  Why: Tests whether the predictor linearly predicts the response.
+  Equation            y = 0.2850x + -1.4776
+  Loud = 0.2850 x Pitch + -1.4776
+  For each 1-unit increase in Pitch, predicted Loud is 0.2850 units higher.
+  R                   0.9980		Very strong positive relationship (range: -1 to 1)
+  R-squared           0.9961		The fitted model accounts for 100% of the variance in Y in this sample
+  Adj. R-squared      0.9958		R-squared adjusted for number of predictors — penalizes model complexity
+  Residual SE         0.3730		Typical prediction error — points deviate from the line by +/-0.37 units on average
+
+
+  ── Overall Model Test (F) ──────────────────
+  F(1,13)             3306.6315		Ratio of the mean square accounted for by the model to the mean square left over. With no real association, this ratio tends to be near 1
+  p                   < .001  (4.91e-17)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+
+
+  ── Coefficients ────────────────────────────
+
+  Term                Estimate      SE            t           p           95% CI
+  (Intercept)         -1.4776       1.2244        -1.207      .249        [-4.1228, 1.1676]
+  Pitch               0.2850        0.0050        57.503      < .001      [0.2743, 0.2957]
+
+  Direction: positive (cases with higher Pitch tend to have higher Loud)
+  Model fit: R-squared = 0.9961 -- the fitted model accounts for 99.6% of the variance in Loud in this sample, a large effect by Cohen's R-squared benchmarks
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END regression_on ==

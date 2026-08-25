@@ -671,15 +671,21 @@ if goal = 1
                 # groups", which was true of two of the six rows below and is
                 # true of none of them now: a post-hoc the user chooses always
                 # runs (punch list 2026-08-25, lane 3.1/3.2). The replacement
-                # is the approved wording, language batch item 4, verbatim, and
-                # it is dialog text -- always visible, since the explanations
-                # toggle does not reach a dialog page.
+                # is the approved wording, language batch item 4 revision 6,
+                # verbatim, and it is dialog text -- always visible, since the
+                # explanations toggle does not reach a dialog page. The Dunn/
+                # pairwise-Wilcoxon sentence is the revision-6 addition that
+                # explains why the grid needed the three Wilcoxon rows (4.3):
+                # Dunn is not a substitute for pairwise Wilcoxon, and vice
+                # versa -- they rank differently.
                 comment: "Pairwise comparisons run when you choose them, and every pairwise"
                 comment: "option adjusts for multiple comparisons. Tukey, Scheffe, Holm, and"
                 comment: "Bonferroni keep the chance of any false positive at or below the"
                 comment: "stated level; Benjamini-Hochberg instead limits the expected share"
-                comment: "of false positives, which is less strict. The overall test and the"
-                comment: "pairwise results are reported together."
+                comment: "of false positives, which is less strict. Dunn compares groups on"
+                comment: "the shared ranking from the overall test; pairwise Wilcoxon re-ranks"
+                comment: "each pair on its own. The overall test and the pairwise results are"
+                comment: "reported together."
                 comment: ""
                 @emlWizard3GroupTestToMenu: normDefault
                 optionmenu: "Test", emlWizard3GroupTestToMenu.row
@@ -853,8 +859,19 @@ if goal = 1
                 ... phMethod$,
                 ... dataCol$, groupCol$, "", displayTable$
 
+                # SAME BRACKET AS THE ANOVA BRANCH ABOVE, and for the same
+                # reason: with Dunn off, @emlReportKWComparison's own
+                # effect-size caption (@emlEffectMatrixCaption) would say "no
+                # pairwise significance tests were run" even on the row that
+                # is about to run pairwise Wilcoxon a few lines down. Raised
+                # around the KW call, lowered immediately after.
+                emlPairwiseFollows = 0
+                if phTest$ = "wilcoxon"
+                    emlPairwiseFollows = 1
+                endif
                 @emlRunKWAnalysis: tableId, dataCol$, groupCol$, doDunn,
                 ... adjMethod$
+                emlPairwiseFollows = 0
                 if emlRunKWAnalysis.error$ <> ""
                     # An analysis error must not tear down the wizard. Return
                     # the user into the back-chain with every answer intact.
@@ -863,6 +880,25 @@ if goal = 1
                         goto A2B_NORM_PAGE
                     endif
                     exitScript: ""
+                endif
+
+                # PAIRWISE WILCOXON, THE ROW THE USER CHOSE — punch list 4.3.
+                # Dunn is not a substitute: Dunn re-uses the KW omnibus's own
+                # ranking, while pairwise Wilcoxon re-ranks each pair on its
+                # own, so this is a second engine call, exactly the shape the
+                # Scheffe/Welch/Student rows already take above. Same
+                # @emlRunPairwiseAnalysis call the standalone pairwise
+                # dialog makes for this cell (test$ = "wilcoxon"), decoded
+                # off the row, not invented here.
+                if phTest$ = "wilcoxon"
+                    @emlRunPairwiseAnalysis: tableId, dataCol$,
+                    ... groupCol$, phTest$, phAdj$
+                    if emlRunPairwiseAnalysis.error$ <> ""
+                        appendInfoLine: "NOTE: Post-hoc error — "
+                        ... + emlRunPairwiseAnalysis.error$
+                    else
+                        @emlPostHocCaution: emlKruskalWallis.p
+                    endif
                 endif
             endif
 
@@ -3199,6 +3235,14 @@ endproc
 # old grid never had (the ANOVA's and the Kruskal-Wallis's own "alone" row,
 # language batch item 4). One list, header-guard idiom, same shape as the
 # two-group and paired menus above.
+#
+# 4.3 CORRECTION: the first wording of 4.3 said "parametric post-hoc rows"
+# and the grid above shipped without the standalone dialog's rank-based
+# cells — pairwise Wilcoxon with Holm/Bonferroni/Benjamini-Hochberg. Dunn is
+# not a substitute: Dunn compares groups on the shared ranking from the
+# overall Kruskal-Wallis test, while pairwise Wilcoxon re-ranks each pair on
+# its own — a different engine call, not a relabelling of Dunn. The three
+# rows below close that gap; the grid is now the WHOLE standalone dialog.
 # ----------------------------------------------------------------------------
 # @emlWizard3GroupTestRows
 # ----------------------------------------------------------------------------
@@ -3222,6 +3266,15 @@ procedure emlWizard3GroupTestRows
     option: "Dunn, Holm (standard)"
     option: "Dunn, Bonferroni (conservative)"
     option: "Dunn, Benjamini-Hochberg (less strict)"
+    ; PUNCH LIST 4.3 — the three rows the first wording of this item left
+    ; out. Dunn is not a substitute for these: Dunn compares groups on the
+    ; shared ranking from the overall test, while pairwise Wilcoxon re-ranks
+    ; each pair on its own. Decoded like the twelve rows above, into the
+    ; SAME @emlRunPairwiseAnalysis call the standalone pairwise dialog makes
+    ; (test$ = "wilcoxon"), not a parallel path.
+    option: "Pairwise Wilcoxon, Holm (standard)"
+    option: "Pairwise Wilcoxon, Bonferroni (conservative)"
+    option: "Pairwise Wilcoxon, Benjamini-Hochberg (less strict)"
 endproc
 
 # ----------------------------------------------------------------------------
@@ -3229,10 +3282,10 @@ endproc
 # Outputs: .isHeader
 #          .testApproach (1 = parametric/ANOVA, 2 = nonparametric/KW)
 #          .phTest$ ("" = no pairwise tests; else "tukey", "scheffe",
-#                    "welch", "student" under ANOVA, or "dunn" under KW —
-#                    "tukey" and "dunn" are the wizard's own decode, "welch"/
-#                    "student"/"scheffe" go straight into
-#                    @emlRunPairwiseAnalysis's .test$, unchanged)
+#                    "welch", "student" under ANOVA, or "dunn"/"wilcoxon"
+#                    under KW — "tukey" and "dunn" are the wizard's own
+#                    decode, "welch"/"student"/"scheffe"/"wilcoxon" go
+#                    straight into @emlRunPairwiseAnalysis's .test$, unchanged)
 #          .phAdj$  (the adjustment for the row's pairwise test — "none" for
 #                    Scheffe, else "holm"/"bonferroni"/"bh", the SAME
 #                    .adjMethod$ vocabulary @emlRunPairwiseAnalysis and
@@ -3298,6 +3351,21 @@ procedure emlWizard3GroupTestFromMenu: .row
         .phTest$ = "dunn"
         .phAdj$ = "bh"
         .phLabel$ = "Dunn, Benjamini-Hochberg"
+    elsif .row = 16
+        .testApproach = 2
+        .phTest$ = "wilcoxon"
+        .phAdj$ = "holm"
+        .phLabel$ = "Pairwise Wilcoxon, Holm"
+    elsif .row = 17
+        .testApproach = 2
+        .phTest$ = "wilcoxon"
+        .phAdj$ = "bonferroni"
+        .phLabel$ = "Pairwise Wilcoxon, Bonferroni"
+    elsif .row = 18
+        .testApproach = 2
+        .phTest$ = "wilcoxon"
+        .phAdj$ = "bh"
+        .phLabel$ = "Pairwise Wilcoxon, Benjamini-Hochberg"
     else
         .testApproach = 2
         .phLabel$ = "Kruskal-Wallis only, no pairwise tests"

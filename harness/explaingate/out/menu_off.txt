@@ -1,0 +1,46 @@
+== LEG menu_off ==
+
+══════════════════════════════════════════════
+  EML Stats : Kruskal-Wallis H Test
+  Tue Aug 25 20:03:13 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               fixture k
+  Data column         Loud
+  Group column        Voice
+  Groups              3
+  Total N             15
+  Group order: table order (zeta, alpha, mu).
+
+
+  ── Omnibus Test ────────────────────────────
+  H                   12.5000
+  df                  2
+  p                   .002
+  Epsilon-squared     0.8929
+  Effect magnitude    large by Cohen's convention
+
+
+  ── Group Mean Ranks ────────────────────────
+
+Group         N     Mean Rank
+zeta          5     3.00
+alpha         5     13.00
+mu            5     8.00
+
+
+  ── Pairwise Effect Sizes (rank-biserial r) ───
+  No pairwise significance tests were run.
+
+              zeta        alpha       mu          
+zeta          ---         -1.000      -1.000      
+alpha         1.000       ---         1.000       
+mu            1.000       -1.000      ---         
+  Row minus column: a negative r means the ROW group ranks lower than
+  the COLUMN group. |r| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END menu_off ==

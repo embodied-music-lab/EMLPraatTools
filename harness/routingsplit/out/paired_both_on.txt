@@ -1,0 +1,50 @@
+== LEG paired_both_on ==
+
+══════════════════════════════════════════════
+  EML Stats : Paired Comparison
+  Tue Aug 25 20:36:20 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               fixture rm
+  Column 1            pre
+  Column 2            post
+  N (pairs)           6
+
+  pre: Mean = 11.500, SD = 1.871, Median = 11.500
+  post: Mean = 19.333, SD = 2.582, Median = 19.500
+  Sign: every difference below is pre minus post, and t, z and the
+  effect sizes carry that direction.
+
+
+  ── Paired t-test ───────────────────────────
+  Why: Tests whether the mean difference between paired observations differs from zero.
+  t                   -19.516		The observed difference is 19.5 standard errors from zero
+  df                  5		Number of pairs (6) minus 1. Independent difference scores.
+  p                   < .001  (6.52e-06)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  Mean diff (pre − post) -7.8333
+  SD of differences   0.9832
+
+
+  ── Effect Size ─────────────────────────────
+  Cohen's dz          -7.967
+  r (from t)          -0.993
+  Magnitude           large effect
+
+
+  ── Wilcoxon Signed-Rank Test ───────────────
+  Why: Nonparametric test for paired observations — no normality assumption needed.
+  T+                  0.0		Sum of ranks for positive differences (subjects who increased)
+  T-                  21.0		Sum of ranks for negative differences (subjects who decreased)
+  z                   -2.126
+  p                   .034		Statistically significant at the 5% level: if there were truly no effect, results at least this extreme would occur less than 5% of the time
+
+
+  ── Nonparametric Effect Size ───────────────
+  Matched-pairs r     -1.000		Effect size: large by Cohen's convention (|r| >= 0.5 = large). Rank-biserial r: the net proportion of cross-group pairs favouring one group
+  Magnitude           large effect
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END paired_both_on ==

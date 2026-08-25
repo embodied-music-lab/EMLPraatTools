@@ -1,0 +1,59 @@
+== LEG caution_pairwise_on ==
+
+══════════════════════════════════════════════
+  EML Stats : Pairwise Student t-test (Bonferroni adjustment)
+  Tue Aug 25 20:46:15 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               fixture_flat
+  Data column         Loud
+  Group column        Voice
+  Groups              3
+  Pairs tested        3
+  p adjustment        Bonferroni
+  Alpha               0.05
+  Group order: table order (zeta, alpha, mu).
+
+
+  ── Group descriptives ──────────────────────
+
+  Group               n      Mean         SD
+  zeta                5      65.2400      4.5982
+  alpha               5      65.1200      3.0524
+  mu                  5      65.5800      3.8887
+
+
+  ── Per-pair results ────────────────────────
+  Why: Compares means of two independent groups (assumes equal variances).
+
+  Comparison                t (df)              p (raw)    p (adj)    d
+  zeta vs alpha             0.049 (8.00)        .962       1.000      0.031
+  zeta vs mu                -0.126 (8.00)       .903       1.000      -0.080
+  alpha vs mu               -0.208 (8.00)       .840       1.000      -0.132
+  * adjusted p < 0.05. t and d both run first group minus second; d is Cohen's d.
+
+
+  ── Adjusted p-values (Bonferroni) ──────────
+
+              zeta        alpha       mu          
+zeta          ---         1.000       1.000       
+alpha         1.000       ---         1.000       
+mu            1.000       1.000       ---         
+  Symmetric: the p for A vs B is the p for B vs A.
+  * adjusted p < 0.05
+
+
+  ── Cohen's d (effect sizes) ────────────────
+
+              zeta        alpha       mu          
+zeta          ---         0.031       -0.080      
+alpha         -0.031      ---         -0.132      
+mu            0.080       0.132       ---         
+  Row minus column: a negative d means the ROW group's mean is
+  lower than the COLUMN group's. |d| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END caution_pairwise_on ==

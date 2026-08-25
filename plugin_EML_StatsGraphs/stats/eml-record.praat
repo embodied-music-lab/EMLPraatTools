@@ -2110,6 +2110,22 @@ endproc
 # procedure -- a user script, a PraatGen companion, this tree's own harnesses
 # -- may have none of the three. Reading one unconditionally ends a user's
 # recording with "Unknown variable".
+#
+# A FOURTH SETTING JOINS THESE THREE, ON THE SAME STEPS, FOR A DIFFERENT
+# REASON (punch list 6.3): emlShowExplanations -- whether a reporter appends
+# its plain-language gloss (language batch item 9's menu toggle; the wizard
+# has no control and is always on). Unlike the three above it is classified
+# DISPLAY-ONLY in validate/v112_settings_census.R: it changes no number a
+# result store would need to re-run over. It is captured here anyway, because
+# 6.3's ruling is narrower than "result-affecting" -- IT IS A USER CHOICE, and
+# a recorded script reproduces a user's choices, full stop. Left unstated, a
+# replay of a menu run made with the toggle off falls back to whatever
+# emlShowExplanationsDefault happens to be (stats/eml-output.praat) rather
+# than the off the session actually saw, and a replay of one made with it on
+# loses the explanations from the reproduced report. Captured on analysis and
+# draw steps for the same reason as the other three: those are the steps that
+# print a report this setting can change the TEXT of; a read, a create, a
+# convert and a save print none.
 # ----------------------------------------------------------------------------
 procedure emlRecordCaptureStats
     .out$ = ""
@@ -2127,6 +2143,10 @@ procedure emlRecordCaptureStats
     if variableExists ("emlGroupSortAlphabetical")
         .out$ = .out$ + "emlGroupSortAlphabetical = "
         ... + string$ (emlGroupSortAlphabetical) + newline$
+    endif
+    if variableExists ("emlShowExplanations")
+        .out$ = .out$ + "emlShowExplanations = "
+        ... + string$ (emlShowExplanations) + newline$
     endif
 endproc
 

@@ -1,0 +1,70 @@
+== LEG expl1_sort0_alpha01 ==
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Tue Aug 25 20:46:16 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               fixture flat
+  Data column         Loud
+  Group column        Voice
+  Groups              3
+  Group order: table order (zeta, alpha, mu).
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests whether group means differ when normality and equal variances hold.
+
+Source              SS              df    MS              F           p
+Between             0.57            2     0.28            0.0187      .981
+Within              182.33          12    15.19           
+Total               182.90          14    
+
+  F                   0.0187		Ratio of mean squares: the between-group mean square is 0.0 times the within-group mean square. With no real effect, this ratio tends to be near 1
+  p                   .981		Not statistically significant at the 5% level
+  Effect size         eta-squared = 0.0031		Effect size: negligible by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 0% of the total variance
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(2, 12) = 0.4940
+  Equal-spread p      p = .622
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  zeta          5     65.24     4.60      64.90     
+  alpha         5     65.12     3.05      65.20     
+  mu            5     65.58     3.89      64.80     
+
+
+  ── Tukey HSD Pairwise Comparisons (p-values) ───
+
+              zeta        alpha       mu          
+zeta          ---         .999        .990        
+alpha         .999        ---         .981        
+mu            .990        .981        ---         
+
+
+  ── Tukey HSD Mean Differences (95% family-wise CI) ───
+
+Comparison                Difference    95% CI
+zeta − alpha              0.1200        [-6.4570, 6.6970]
+zeta − mu                 -0.3400       [-6.9170, 6.2370]
+alpha − mu                -0.4600       [-7.0370, 6.1170]
+
+  The overall test did not reach significance at the .01 level;
+  interpret individual pairwise results with caution.
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+
+              zeta        alpha       mu          
+zeta          ---         0.031       -0.080      
+alpha         -0.031      ---         -0.132      
+mu            0.080       0.132       ---         
+  Row minus column: a negative d means the ROW group's mean is lower
+  than the COLUMN group's. |d| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END expl1_sort0_alpha01 ==
