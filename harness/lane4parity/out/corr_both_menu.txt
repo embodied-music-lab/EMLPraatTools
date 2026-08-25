@@ -1,0 +1,36 @@
+== LEG corr_both_menu ==
+
+══════════════════════════════════════════════
+  EML Stats : Correlation Analysis
+  Tue Aug 25 16:07:06 2026
+══════════════════════════════════════════════
+
+  Table               fixture corr
+  Column X            x
+  Column Y            y
+  N                   8
+
+
+  ── Pearson Correlation ─────────────────────
+  Why: Measures linear association between two continuous variables.
+  r                   0.9978		Very strong positive relationship (range: -1 to 1)
+  R-squared           0.9957		The fitted model accounts for 100% of the variance in Y in this sample
+  t                   37.292		The observed difference is 37.3 standard errors from zero
+  df                  6		Observations (8) minus 2. Two parameters (slope, intercept) estimated.
+  p                   < .001  (2.48e-08)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  95% CI for r        [0.9877, 0.9996]
+  Magnitude           large effect
+
+
+  ── Spearman Correlation ────────────────────
+  Why: Measures monotonic association — no normality assumption needed.
+  rho                 1.0000		Very strong positive relationship (range: -1 to 1)
+  t                   --undefined--		The observed difference is --undefined-- standard errors from zero
+  df                  6		Observations (8) minus 2. Two parameters (slope, intercept) estimated.
+  p                   < .001  (0)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  Magnitude           large effect
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END corr_both_menu ==

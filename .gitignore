@@ -395,3 +395,17 @@ harness/nummiss/out/driver.log
 harness/describesniff/prefs/
 harness/describesniff/out/work/
 harness/describesniff/out/driver.log
+
+# harness/wizardback drives every wizard branch under the display, INCLUDING
+# Back-and-return on each page, and asserts the value chosen before the jump
+# survives it (risk register R3). What is evidence is out/WIZARDBACK.tsv and,
+# per leg, the decoded Info window, the Analysis Plan block lifted out of it,
+# and the trail of page titles the walk met -- all committed, and out/red/ is
+# the same set driven against a tree with one preserve step seeded out.
+#
+# out/work/ is not evidence. It is one Praat preference directory, one Xvfb
+# and window-manager log, and a PNG of every page and every open combo popup
+# per leg -- about 4 MB a run, none of it read by anything, and regenerated
+# whole on the next drive. Same rule as every other rig above.
+harness/wizardback/out/work/
+harness/wizardback/out/red/work/

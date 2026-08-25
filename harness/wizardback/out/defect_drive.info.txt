@@ -1,0 +1,34 @@
+Table fixture_corr_err
+== INFO ==
+
+══════════════════════════════════════════════
+  EML Stats Wizard — Analysis Plan
+══════════════════════════════════════════════
+
+  Design:         Correlation
+  Normality:      Not assumed
+  Test:           Both Pearson and Spearman
+  Column 1:       X
+  Column 2:       Cohort
+  Table:          fixture corr err
+
+══════════════════════════════════════════════
+  Running analysis...
+══════════════════════════════════════════════
+
+
+══════════════════════════════════════════════
+  EML Stats Wizard — Analysis Plan
+══════════════════════════════════════════════
+
+  Design:         Correlation
+  Normality:      Not assumed
+  Test:           Both Pearson and Spearman
+  Column 1:       X
+  Column 2:       Cohort
+  Table:          fixture corr err
+
+══════════════════════════════════════════════
+  Running analysis...
+══════════════════════════════════════════════
+

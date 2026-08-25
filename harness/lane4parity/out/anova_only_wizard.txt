@@ -1,0 +1,52 @@
+== LEG anova_only_wizard ==
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Tue Aug 25 16:07:06 2026
+══════════════════════════════════════════════
+
+  Table               fixture kgroups
+  Data column         F0 Hz
+  Group column        voice type
+  Groups              3
+  Group order: table order (Alto, Mezzo, Soprano).
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests whether group means differ when normality and equal variances hold.
+
+Source              SS              df    MS              F           p
+Between             659.25          2     329.63          2.3460      .120
+Within              2950.64         21    140.51          
+Total               3609.90         23    
+
+  F                   2.3460		Ratio of mean squares: the between-group mean square is 2.3 times the within-group mean square. With no real effect, this ratio tends to be near 1
+  p                   .120		Not statistically significant at the 5% level
+  Effect size         eta-squared = 0.1826		Effect size: large by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 18% of the total variance
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(2, 21) = 0.0258
+  Equal-spread p      p = .975
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  Alto          8     214.88    12.03     215.50    
+  Mezzo         8     221.20    11.42     222.05    
+  Soprano       8     227.71    12.10     228.65    
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+  No pairwise significance tests were run.
+  Effect sizes estimate the size of each pairwise difference.
+
+              Alto        Mezzo       Soprano     
+Alto          ---         -0.539      -1.064      
+Mezzo         0.539       ---         -0.554      
+Soprano       1.064       0.554       ---         
+  Row minus column: a negative d means the ROW group's mean is lower
+  than the COLUMN group's. |d| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END anova_only_wizard ==

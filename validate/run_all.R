@@ -1524,6 +1524,20 @@ scripts <- c(
                                  # say plainly they show different models.
                                  # Silent disagreement is the only red. Reads
                                  # harness/doorcensus/out/DOORCENSUS.tsv.
+    ,
+    "v128_wizard_flow_invariant.R"  # the wizard's goto-chained pages: every
+                                 # label some goto jumps back to must write
+                                 # the user's answer back into the seed
+                                 # variable (@wizardColIdx / @wizardCondSlot)
+                                 # BEFORE that goto, or the re-render shows
+                                 # the plugin's guess instead of what was
+                                 # typed. Label set, jump targets and
+                                 # preservable fields are all derived from
+                                 # scripts/eml-wizard.praat itself, so a page
+                                 # added later is in scope by construction;
+                                 # reports how many labels it walked, and
+                                 # seeds one write-back out through
+                                 # EML_DIALOG_SRC to prove it can go red.
 )
 
 # ---------------------------------------------------------------------------

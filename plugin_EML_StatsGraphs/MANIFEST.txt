@@ -136,7 +136,7 @@ scripts/eml-record-start.praat | 158 | 1.1 | EML Stats & Graphs — Start record
 scripts/eml-regress.praat | 155 | 2.2 | OLS simple linear regression (slope, intercept, R², SE, F, p)
 scripts/eml-stats-demo.praat | 490 | 1.4 | Demonstrates three core inferential statistics workflows
 scripts/eml-tutorial.praat | 754 | 0.19 | EML Stats Tutorial — Interactive Statistics Guide
-scripts/eml-wizard.praat | 3231 | 2.6 | Question-driven statistical analysis wizard. Routes research
+scripts/eml-wizard.praat | 4211 | 2.6 | Question-driven statistical analysis wizard. Routes research
 setup.praat | 525 | 1.7 | Register menu entries and dynamic action buttons for the
 sprites/ | 204 files, 45803 bytes | sha256:48d0a2cc3f22c34c | Pre-rendered PNG stamps for alpha compositing — shape_colour_alpha_size, addressed as a family by @emlSetColorPalette and @emlDrawAlphaDot, never by name. Praat has no alpha channel, so a translucent dot or box is a stretched stamp; @emlInitAlphaSprites falls back to opaque Paint when the folder is absent.
 stats/eml-analysis.praat | 4895 | 1.3 | EML Stats : Analysis Orchestrators

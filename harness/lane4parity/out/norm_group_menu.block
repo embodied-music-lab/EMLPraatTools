@@ -1,0 +1,14 @@
+  Grouped by: cohort
+── F0 Hz ──
+
+  A (n = 4):
+    W = 0.9551  p = .748
+    Skewness = 0.244  Kurtosis (excess) = -2.795
+    -> No strong departure (thresholds: Shapiro-Wilk p < .05, |skew| >= 2, |excess kurt| >= 7)
+  B (n = 3):
+    W = 0.9101  p = .418
+    Skewness = 1.371  Kurtosis (excess) = --undefined--
+    -> No strong departure (thresholds: Shapiro-Wilk p < .05, |skew| >= 2, |excess kurt| >= 7)
+  C (n = 1): skipped (n < 3)
+
+  Summary: assessed 2 of 3.

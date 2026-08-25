@@ -1,0 +1,90 @@
+== LEG norm_all_menu ==
+
+══════════════════════════════════════════════
+  EML Stats : Normality Assessment
+  Tue Aug 25 16:07:08 2026
+══════════════════════════════════════════════
+
+  Table               fixture normality
+  Column              F0 Hz
+  N                   8
+
+
+  ── Descriptive Statistics ──────────────────
+  Mean                215.0750
+  SD                  12.9300
+  Median              213.1500
+
+
+  ── Distribution Shape ──────────────────────
+  Why: Skewness and kurtosis indicate departures from a normal (bell-shaped) distribution.
+  Skewness            0.3296		Approximately symmetric (|skew| < 2 is typically acceptable)
+  Kurtosis (excess)   -1.3265		Near-normal peakedness (0 = normal; |excess| < 7 treated as typical)
+  → Skewness within typical limits (criterion: |skew| < 2)
+  → Kurtosis within typical limits (criterion: |excess kurt| < 7)
+
+
+  ── Shapiro-Wilk Test ───────────────────────
+  Why: Formal test of whether the data are drawn from a normal distribution.
+  W                   0.9282		Closer to 1 = more normal (range: 0 to 1)
+  p                   .500		Not statistically significant at the 5% level
+  → Does not reject normality (p >= 0.05)
+
+
+  ── Recommendation ──────────────────────────
+  Shapiro-Wilk does not reject normality (p >= .05), and skewness and
+  kurtosis are within the thresholds.
+  → Parametric tests (t-test, ANOVA, Pearson r) are recommended.
+  What was checked: the marginal distribution of this column. Parametric
+  tests assume normality of the model RESIDUALS, which is not the same
+  distribution and is not examined here.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+
+══════════════════════════════════════════════
+  EML Stats : Normality Assessment
+  Tue Aug 25 16:07:08 2026
+══════════════════════════════════════════════
+
+  Table               fixture normality
+  Column              jitter pct
+  N                   8
+
+
+  ── Descriptive Statistics ──────────────────
+  Mean                1.3250
+  SD                  0.5651
+  Median              1.1500
+
+
+  ── Distribution Shape ──────────────────────
+  Why: Skewness and kurtosis indicate departures from a normal (bell-shaped) distribution.
+  Skewness            1.5417		Substantial right skew (|skew| < 2 is typically acceptable)
+  Kurtosis (excess)   2.0941		Near-normal peakedness (0 = normal; |excess| < 7 treated as typical)
+  → Skewness within typical limits (criterion: |skew| < 2)
+  → Kurtosis within typical limits (criterion: |excess kurt| < 7)
+
+
+  ── Shapiro-Wilk Test ───────────────────────
+  Why: Formal test of whether the data are drawn from a normal distribution.
+  W                   0.8416		Closer to 1 = more normal (range: 0 to 1)
+  p                   .078		Not statistically significant at the 5% level (p between .05 and .10)
+  → Does not reject normality (p >= 0.05)
+
+
+  ── Recommendation ──────────────────────────
+  Shapiro-Wilk does not reject normality (p >= .05), and skewness and
+  kurtosis are within the thresholds.
+  → Parametric tests (t-test, ANOVA, Pearson r) are recommended.
+  → The p is close to the .05 threshold. Nonparametric tests
+     (Mann-Whitney, Kruskal-Wallis, Spearman rho) are also defensible.
+  What was checked: the marginal distribution of this column. Parametric
+  tests assume normality of the model RESIDUALS, which is not the same
+  distribution and is not examined here.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END norm_all_menu ==

@@ -1,0 +1,31 @@
+key	value
+src	/tmp/claude-0/-home-claude/93f3de1f-e6c9-5f61-b1bd-143273ac0781/scratchpad/wb_after/plugin_EML_StatsGraphs
+display	:276
+listening	1
+page_0	Pause: EML Stats Wizard
+step0_combo1_rows	6 (wanted 2)
+step0_buttons	3
+page_1	Pause: Relationship — What type?
+step1_combo1_rows	4 (wanted 1)
+step1_buttons	4
+page_2	Pause: Correlation — Select columns
+step2_combo1_rows	2 (wanted 1)
+step2_combo2_rows	2 (wanted 2)
+step2_buttons	4
+page_3	Pause: Correlation — Choose test
+test_page_combos	2
+test_page_buttons	4
+chose_test_rows	3
+chose_group_rows	3
+error_dialog_title	Pause: Cannot run this analysis
+error_dialog_buttons	2
+redraw_title	Pause: Correlation — Choose test
+redraw_combos	2
+redraw_buttons	4
+redraw_test_selected_row	selected 3
+redraw_test_popup_rows	rows 821 543 571 600
+redraw_group_selected_row	selected 2
+redraw_group_popup_rows	rows 821 597 669
+after_rerun_title	Pause: Cannot run this analysis
+info_bytes	1640
+test_lines	10:  Test:           Both Pearson and Spearman;26:  Test:           Both Pearson and Spearman;

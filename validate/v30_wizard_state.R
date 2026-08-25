@@ -196,9 +196,10 @@ check_true("v30", "no hand-written column-index loop survives in the wizard",
            !any(grepl("^\\s*if emlTableColumnNames\\.name\\$\\[iCol\\] =", wiz)))
 # One call per column optionmenu that has to survive a return: two groups (2),
 # three-or-more groups (2), two-factor (3), paired (2), regression (2),
-# correlation (2), describe one column (1), predict (2) = 16. An exact count
-# is the point — a page that loses its call is what this is here to catch.
-check_true("v30", "one call per column menu on all eight pages (16)",
-           sum(grepl("^\\s*@wizardColIdx:", wiz)) == 16L)
+# correlation (2), describe one column (1), predict (2), normality: one
+# column (1), normality: one column by group (1) = 18. An exact count is the
+# point — a page that loses its call is what this is here to catch.
+check_true("v30", "one call per column menu on all ten pages (18)",
+           sum(grepl("^\\s*@wizardColIdx:", wiz)) == 18L)
 
 if (!exists("EML_SUITE")) { eml_report("v30 wizard form state across an error return (D117)"); eml_exit() }

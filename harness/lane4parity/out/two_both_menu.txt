@@ -1,0 +1,55 @@
+== LEG two_both_menu ==
+
+══════════════════════════════════════════════
+  EML Stats : Two-Group Comparison
+  Tue Aug 25 16:07:05 2026
+══════════════════════════════════════════════
+
+  Table               fixture two
+  Data column         value
+  Group column        group
+
+  Group         N     Mean      SD        Median    
+  A             5     12.88     0.97      12.90     
+  B             5     16.84     1.08      16.90     
+  Sign: every difference below is A minus B, and t, z and the effect
+  sizes carry that direction.
+
+
+  ── Welch ───────────────────────────────────
+  Why: Compares means of two independent groups (robust to unequal variances).
+  t                   -6.096		The observed difference is 6.1 standard errors from zero
+  df                  7.9		Welch-adjusted for unequal variances. More df = more reliable.
+  p                   < .001  (3.03e-04)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  Mean diff (A − B)   -3.9600		B mean is 3.96 units higher
+  95% CI of diff      [-5.4608, -2.4592]
+
+
+  ── Effect Size ─────────────────────────────
+  Cohen's d           -3.855		Effect size: large by Cohen's convention (d >= 0.8 = large). The group means differ by 3.9 pooled standard deviations
+  Hedges' g           -3.482		Cohen's d with the small-sample bias removed; large by Cohen's convention (g >= 0.8 = large)
+  Magnitude           large by Cohen's convention
+
+
+  ── Mann-Whitney U Test ─────────────────────
+  Why: Compares distributions of two independent groups without assuming normality.
+  U1                  0.0		U: how often a value from one group exceeds a value from the other, out of n1 x n2 possible pairs
+  U2                  25.0
+  p                   .008		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 1% of the time
+  Method              exact		P-value computed by exact enumeration (used when both groups have n < 50 and there are no ties)
+
+
+  ── Nonparametric Effect Size ───────────────
+  Rank-biserial r     -1.000		Effect size: large by Cohen's convention (|r| >= 0.5 = large). Rank-biserial r: the net proportion of cross-group pairs favouring one group
+  Magnitude           large by Cohen's convention
+  Note: r = 1 means the two groups do not overlap at all -- every
+  value in one group outranks every value in the other. This is the
+  largest value the statistic can take, so it marks complete
+  separation rather than measuring how far apart the groups are, and
+  it occurs readily in small samples. Read it beside the group medians
+  and n.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END two_both_menu ==
