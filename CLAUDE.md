@@ -175,6 +175,25 @@ vocabulary refused -- which killed every repeated-measures and Friedman
 export, and whose error message says, in the message itself, to update the
 vocabulary in the same commit.
 
+## Adding a check to the suite's list
+
+The entries in `validate/run_all.R` are separated by a comma ON ITS OWN LINE,
+because every entry ends in a comment block and a comma appended to a comment
+is inside the comment. The file then does not parse, and the whole suite never
+starts -- which reads as silence, not as a failure. This has happened three
+times: once on 20 August, and twice on 25 August by the same mechanical slip,
+inserting text after the previous entry rather than before the closing paren.
+
+Insert like this, newline first:
+
+```
+    ,
+    "vNNN_name.R"               # what it asserts, and what evidence it reads
+```
+
+Then run `validate/tools/check_list.R`. It exists for this, it is the only
+thing that catches it, and it takes a second.
+
 ## Standing list
 
 `docs/OPEN_ITEMS.md` holds every open defect and every ruled-but-unbuilt

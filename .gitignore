@@ -377,3 +377,21 @@ harness/axisrefuse/out/xvfb.log
 harness/axisrefuse/out/wm.log
 harness/linetree/out/xvfb.log
 harness/linetree/out/wm.log
+
+# Lane 7 (punch list 7.1-7.3, 25 Aug 2026): harness/regsign, harness/nummiss
+# and harness/describesniff follow harness/directional's pattern exactly --
+# the real evidence is the committed capture under evidence/info/, which
+# validate/v13_regression_orchestrator.R, validate/v123_nummiss.R and
+# validate/v124_describesniff.R read. out/work/ is a disposable staging copy
+# (the `plugin` symlink plus a copy of the driver) and out/driver.log is
+# Praat's echo of the same capture, grep'd only by run.sh for the end
+# marker -- neither is read by any validator.
+harness/regsign/prefs/
+harness/regsign/out/work/
+harness/regsign/out/driver.log
+harness/nummiss/prefs/
+harness/nummiss/out/work/
+harness/nummiss/out/driver.log
+harness/describesniff/prefs/
+harness/describesniff/out/work/
+harness/describesniff/out/driver.log

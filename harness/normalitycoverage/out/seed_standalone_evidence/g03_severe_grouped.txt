@@ -1,0 +1,27 @@
+══════════════════════════════════════════════
+  Normality Assessment
+  Table: g03 severe
+  Grouped by: grp
+══════════════════════════════════════════════
+
+── y ──
+
+  All (n = 60):
+    W = 0.7465  p < .001
+    Skewness = 2.650  Kurtosis (excess) = 9.261
+    → Strong departure from normality in this group's marginal distribution (thresholds: Shapiro-Wilk p < .05, |skew| >= 2, |excess kurt| >= 7)
+
+  Summary: one or more groups in this column show a strong departure
+
+══════════════════════════════════════════════
+  SUMMARY: 1 columns tested
+  Columns flagged for a strong departure: 1
+
+  Every column showed a strong departure from
+  normality in its marginal distribution.
+
+  What was checked: the marginal distribution of each
+  numeric column, on its own. Normality of model
+  residuals, independence and equality of variance were
+  not examined here.
+══════════════════════════════════════════════

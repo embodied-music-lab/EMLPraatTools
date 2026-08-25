@@ -1,0 +1,64 @@
+== LEG kw_dunn_sig ==
+
+══════════════════════════════════════════════
+  EML Stats : Kruskal-Wallis H Test
+  Tue Aug 25 14:36:18 2026
+══════════════════════════════════════════════
+
+  Table               fixture kgroups sig
+  Data column         F0 Hz
+  Group column        voice type
+  Groups              3
+  Total N             24
+  Group order: table order (Alto, Mezzo, Soprano).
+
+
+  ── Omnibus Test ────────────────────────────
+  Why: Nonparametric comparison of three or more groups. Every observation is ranked in one pooled ranking and the groups' mean ranks are compared, so no normal distribution is assumed. Observations must still be independent, and reading the result as a difference in MEDIANS additionally requires the groups to have similar distribution shapes.
+  H                   18.0128		Test statistic: how far the groups' mean ranks sit from the overall mean rank. Its p comes from a chi-squared approximation, which improves as the groups grow
+  df                  2		Number of groups (3) minus 1. Controls the chi-squared reference distribution.
+  p                   < .001  (1.23e-04)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  Epsilon-squared     0.7832		Effect size: large by Cohen's convention (epsilon-squared >= 0.14 = large). Group membership accounts for 78% of the variance in the RANKS, which is not the variance in the measured values
+  Effect magnitude    large by Cohen's convention
+
+
+  ── Group Mean Ranks ────────────────────────
+
+Group         N     Mean Rank
+Alto          8     4.50
+Mezzo         8     13.62
+Soprano       8     19.38
+
+
+  ── Dunn's Post-Hoc (adjusted p, holm) ──────
+
+              Alto        Mezzo       Soprano     
+Alto          ---         .020        < .001      
+Mezzo         .020        ---         .104        
+Soprano       < .001      .104        ---         
+
+
+  ── Dunn's z-statistics ─────────────────────
+
+              Alto        Mezzo       Soprano     
+Alto          ---         -2.582      -4.208      
+Mezzo         2.582       ---         -1.627      
+Soprano       4.208       1.627       ---         
+  Row minus column: a negative z means the ROW group's mean rank is
+  lower than the COLUMN group's. |z| is the size of the standardised
+  difference.
+
+
+  ── Pairwise Effect Sizes (rank-biserial r) ───
+
+              Alto        Mezzo       Soprano     
+Alto          ---         -1.000      -1.000      
+Mezzo         1.000       ---         -0.719      
+Soprano       1.000       0.719       ---         
+  Row minus column: a negative r means the ROW group ranks lower than
+  the COLUMN group. |r| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END kw_dunn_sig ==

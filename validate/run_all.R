@@ -1458,6 +1458,55 @@ scripts <- c(
                                  # escapes the refusal sweep entirely and is
                                  # silently rewritten instead of refused.
                                  # Reads the graphs form's dialog source.
+    ,
+    "v122_posthoc_never_gated.R"  # a post-hoc the user chose runs whatever
+                                 # the omnibus said -- on every door -- and
+                                 # the report says what that means: the
+                                 # caution line at the alpha in force, and
+                                 # the effect-size caption when the post-hoc
+                                 # is off. Driven through the menu, the
+                                 # wizard (real GUI under Xvfb) and the
+                                 # graph doors on a fixture whose omnibus is
+                                 # not significant, with the tables oracled
+                                 # against aov / TukeyHSD / kruskal.test.
+                                 # The second half is static and is the
+                                 # ratchet: no call to a post-hoc, pairwise
+                                 # or effect-size producer sits under an
+                                 # omnibus p anywhere in the shipping tree.
+                                 # Reads harness/posthocgate/out/.
+    ,
+    "v123_nummiss.R"             # @emlCheckNumericColumn counts Praat's
+                                 # native missing cell as missing rather
+                                 # than as non-numeric. A column holding one
+                                 # undefined cell used to vanish from every
+                                 # dialog that filters on this check instead
+                                 # of being analysed complete-case. Reads
+                                 # evidence/info/v123_nummiss_info.txt.
+    ,
+    "v124_describesniff.R"       # Describe Table's numeric-column filter
+                                 # reads every row rather than the first
+                                 # five: a column whose opening rows are
+                                 # missing is offered, and a column that
+                                 # turns to text below the sampled window is
+                                 # not. Reads
+                                 # evidence/info/v124_describesniff_info.txt.
+    ,
+    "v125_group_order_persistence.R"  # the ordering clause is printed by
+                                 # every grouped comparison reporter, worded
+                                 # as approved, and printed always rather
+                                 # than only where explanations are on. The
+                                 # group-order choice lives for a session and
+                                 # not on disk: absent from the config file's
+                                 # load and save, present as a session
+                                 # restore. Population derived from the
+                                 # reporters themselves.
+    ,
+    "v126_normality_coverage.R"  # an assessment that could not test every
+                                 # group says so, and never generalises over
+                                 # a group it did not examine. Population
+                                 # derived from the too-small-to-test skip
+                                 # idiom rather than from a list of the two
+                                 # places that use it.
 )
 
 # ---------------------------------------------------------------------------

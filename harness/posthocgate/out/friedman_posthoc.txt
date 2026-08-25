@@ -1,0 +1,16 @@
+== LEG friedman_posthoc ==
+Friedman test — fixture_rm
+  Subjects (complete cases) n = 10, conditions k = 3
+    quiet rank sum = 17.0
+    normal rank sum = 18.0
+    loud rank sum = 25.0
+  chi-square(2) = 3.8000, p = .150
+  Kendall's W = 0.1900  (agreement among subjects in how they rank the conditions: 0 = none, 1 = every subject ranks them identically)
+  Post-hoc pairwise (nonparametric, Holm-adjusted):
+    quiet vs normal: raw p = .760, adj p = .760
+    quiet vs loud: raw p = .066, adj p = .199
+    normal vs loud: raw p = .185, adj p = .369
+
+  The overall test did not reach significance at the .05 level;
+  interpret individual pairwise results with caution.
+== END friedman_posthoc ==

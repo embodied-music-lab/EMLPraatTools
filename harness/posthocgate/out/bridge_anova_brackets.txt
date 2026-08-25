@@ -1,0 +1,8 @@
+== LEG bridge_anova_brackets ==
+BRIDGE error=[]
+ANNOT bracketN=3
+ANNOT matrixN=0
+ANNOT bracket 1-2 p=0.5442225875014937 label=p = .544, d = 0.54
+ANNOT bracket 1-3 p=0.10074485624474583 label=p = .101, d = 1.06
+ANNOT bracket 2-3 p=0.5252836427081902 label=p = .525, d = 0.55
+== END bridge_anova_brackets ==

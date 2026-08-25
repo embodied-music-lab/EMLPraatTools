@@ -1,0 +1,5 @@
+V124 DESCRIBESNIFF CAPTURE
+nNumericCols  1
+offered1  late_numeric
+
+V124DESCRIBESNIFF DONE

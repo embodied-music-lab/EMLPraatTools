@@ -1,0 +1,17 @@
+== LEG rm_posthoc ==
+Repeated-measures ANOVA — fixture_rm
+  Subjects (complete cases) n = 10, conditions k = 3
+    quiet mean = 54.2600
+    normal mean = 54.2100
+    loud mean = 55.0100
+  F(2, 18) = 1.3467, p = .285
+  Greenhouse-Geisser epsilon = 0.8883, GG-corrected p = .285
+  Partial eta squared = 0.1302  (condition SS / (condition SS + error SS))
+  Post-hoc pairwise (parametric, Holm-adjusted):
+    quiet vs normal: raw p = .936, adj p = .936
+    quiet vs loud: raw p = .124, adj p = .371
+    normal vs loud: raw p = .197, adj p = .394
+
+  The overall test did not reach significance at the .05 level;
+  interpret individual pairwise results with caution.
+== END rm_posthoc ==

@@ -1,0 +1,39 @@
+
+══════════════════════════════════════════════
+  EML Stats : Simple Linear Regression
+  Tue Aug 25 14:00:51 2026
+══════════════════════════════════════════════
+
+  Table               demo regression neg
+  Response (Y)        vibrato regularity pct
+  Predictor (X)       practice hrs wk
+  N                   25
+
+
+  ── Model ───────────────────────────────────
+  Equation            y = -4.1601x + 120.4577
+  R                   -0.9852
+  R-squared           0.9707
+  Adj. R-squared      0.9694
+  Residual SE         3.2581
+
+
+  ── Overall Model Test (F) ──────────────────
+  F(1,23)             761.2145
+  p                   < .001  (3.95e-19)
+
+
+  ── Coefficients ────────────────────────────
+
+  Term                Estimate      SE            t           p           95% CI
+  (Intercept)         120.4577      1.4986        80.381      < .001      [117.3576, 123.5577]
+  practice hrs wk     -4.1601       0.1508        -27.590     < .001      [-4.4720, -3.8482]
+
+  Direction: negative (cases with higher practice hrs wk tend to have lower vibrato regularity pct)
+  Model fit: R-squared = 0.9707 -- the fitted model accounts for 97.1% of the variance in vibrato regularity pct in this sample, a large effect by Cohen's R-squared benchmarks
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+
+V13NEG DONE

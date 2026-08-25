@@ -1,0 +1,57 @@
+== LEG pairwise_welch_bh ==
+
+══════════════════════════════════════════════
+  EML Stats : Pairwise Welch t-test (Benjamini-Hochberg adjustment)
+  Tue Aug 25 14:36:16 2026
+══════════════════════════════════════════════
+
+  Table               fixture_kgroups
+  Data column         F0_Hz
+  Group column        voice_type
+  Groups              3
+  Pairs tested        3
+  p adjustment        Benjamini-Hochberg
+  Alpha               0.05
+  Group order: table order (Alto, Mezzo, Soprano).
+
+
+  ── Group descriptives ──────────────────────
+
+  Group               n      Mean         SD
+  Alto                8      214.8750     12.0337
+  Mezzo               8      221.2000     11.4163
+  Soprano             8      227.7125     12.0987
+
+
+  ── Per-pair results ────────────────────────
+
+  Comparison                t (df)              p (raw)    p (adj)    d
+  Alto vs Mezzo             -1.079 (13.96)      .299       .299       -0.539
+  Alto vs Soprano           -2.128 (14.00)      .052       .155       -1.064
+  Mezzo vs Soprano          -1.107 (13.95)      .287       .299       -0.554
+  * adjusted p < 0.05. t and d both run first group minus second; d is Cohen's d.
+
+
+  ── Adjusted p-values (Benjamini-Hochberg) ───
+
+              Alto        Mezzo       Soprano     
+Alto          ---         .299        .155        
+Mezzo         .299        ---         .299        
+Soprano       .155        .299        ---         
+  Symmetric: the p for A vs B is the p for B vs A.
+  * adjusted p < 0.05
+
+
+  ── Cohen's d (effect sizes) ────────────────
+
+              Alto        Mezzo       Soprano     
+Alto          ---         -0.539      -1.064      
+Mezzo         0.539       ---         -0.554      
+Soprano       1.064       0.554       ---         
+  Row minus column: a negative d means the ROW group's mean is
+  lower than the COLUMN group's. |d| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+== END pairwise_welch_bh ==

@@ -1,0 +1,2 @@
+setWorkingDirectory: "/home/claude/repo"
+runScript: "/home/claude/repo/harness/posthocgate/out/work/wizard_scheffe/probe.praat"

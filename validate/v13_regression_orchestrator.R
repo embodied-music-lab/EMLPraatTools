@@ -58,6 +58,29 @@ check("v13", "residual SE", printed(cap, "Residual SE"), sm$sigma, tol = 5e-5)
 check_true("v13", "sign of the printed R agrees with the printed slope",
            sign(printed(cap, "R")) == sign(printed(cap, pred, 1)))
 
+# --- negative-slope fixture (7.1) ------------------------------------------
+# The committed fixture above has a positive slope, so the sign-agreement
+# check just above can never fire: sign(R) == sign(slope) holds whether R is
+# printed signed or printed as abs(sqrt(R-squared)), because on THIS data the
+# true R is positive either way. harness/regsign drives the same production
+# procedure, @emlRunRegressionAnalysis, on evidence/csv/
+# v13_regression_neg_input.csv, whose slope is negative (R = -0.9852 in R),
+# so a wrapper that unconditionally prints the positive root has something to
+# disagree with.
+dNeg    <- read_input("v13_regression_neg_input.csv")
+capNeg  <- capture("v13_regression_neg_info.txt")
+xNeg <- dNeg$practice_hrs_wk
+yNeg <- dNeg$vibrato_regularity_pct
+fitNeg <- lm(yNeg ~ xNeg)
+check_true("v13", "negative-slope fixture: R computed in R is indeed negative",
+           cor(xNeg, yNeg) < 0)
+check_true("v13", "negative-slope fixture: printed slope is indeed negative",
+           printed(capNeg, pred, 1) < 0)
+check_true("v13", "negative-slope fixture: sign of the printed R agrees with the printed slope",
+           sign(printed(capNeg, "R")) == sign(printed(capNeg, pred, 1)))
+check("v13", "negative-slope fixture: printed R equals Pearson r(x, y)",
+      printed(capNeg, "R"), cor(xNeg, yNeg), tol = 5e-4)
+
 # For simple regression, R must equal Pearson's r between x and y. This ties
 # the regression orchestrator to the correlation orchestrator in v12.
 check("v13", "printed R equals Pearson r(x, y)", printed(cap, "R"), cor(x, y), tol = 5e-5)

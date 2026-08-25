@@ -1,0 +1,11 @@
+V123 NUMMISS CAPTURE
+isNumeric  1
+nRows      6
+nNumeric   4
+nMissing   2
+nCoerced   0
+nNonNumeric  0
+nBad       0
+reason     column measure is numeric (4 values, 2 blank)
+
+V123NUMMISS DONE
