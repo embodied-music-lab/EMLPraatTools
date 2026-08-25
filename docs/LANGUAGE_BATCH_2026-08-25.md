@@ -1,6 +1,10 @@
 # Language batch — every new or changed user-facing string, for approval
 
-Verification session, 25 Aug 2026. Revision 5: item 10 re-derived against
+Verification session, 25 Aug 2026. Revision 6: item 4 gains the three
+pairwise Wilcoxon rows (the standalone dialog's rank-based cells, missed
+by revision 5's "parametric rows" framing — punch item 4.3 corrected to
+match) and one paragraph sentence distinguishing Dunn's shared ranking
+from pairwise Wilcoxon's per-pair ranking. Revision 5: item 10 re-derived against
 the real remote head `3e34b1a` — the direction wording shipped there is
 adopted, and the item shrinks to the ordering clause. This batch is
 APPROVAL-READY, not certified final: any further push that lands wording
@@ -81,6 +85,9 @@ conventional default, "(conservative)" harder to reach significance,
     Dunn, Holm (standard)
     Dunn, Bonferroni (conservative)
     Dunn, Benjamini-Hochberg (less strict)
+    Pairwise Wilcoxon, Holm (standard)
+    Pairwise Wilcoxon, Bonferroni (conservative)
+    Pairwise Wilcoxon, Benjamini-Hochberg (less strict)
 
 The page paragraph above the menu, replacing the "If the overall test is
 significant..." text:
@@ -89,8 +96,10 @@ significant..." text:
     option adjusts for multiple comparisons. Tukey, Scheffe, Holm, and
     Bonferroni keep the chance of any false positive at or below the
     stated level; Benjamini-Hochberg instead limits the expected share
-    of false positives, which is less strict. The overall test and the
-    pairwise results are reported together.
+    of false positives, which is less strict. Dunn compares groups on
+    the shared ranking from the overall test; pairwise Wilcoxon re-ranks
+    each pair on its own. The overall test and the pairwise results are
+    reported together.
 
 (Dialog text, always visible — the explanations toggle does not apply to
 dialog pages.)

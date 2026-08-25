@@ -23,7 +23,14 @@ comes back through Ian, not decided in place.
 5. `RISK_REGISTER_2026-08-25.md` — the round's named risks, each with its
    guard and its inspection hook. Part of the work order; changes only
    through Ian.
-6. `Sol Audit 8 24 26/` — Sol's frozen audit ZIP plus
+6. `ERROR_CENSUS_2026-08-25.md` with `error-census/` (row-level data) —
+   the error-propagation census behind punch lane 9. Ruled: all 63
+   mishandling sites fixed before the tag.
+7. `planning/STUDY_DESIGN_MODULE_PLAN_2026-08-25.md` — the study-design
+   phase plan; its ROADMAP.md entry (Phase 5d) sits uncommitted in Ian's
+   working copy for review and commit. Post-1.0; no build work in this
+   round.
+8. `Sol Audit 8 24 26/` — Sol's frozen audit ZIP plus
    `EML_Praat_Audit_Continuation_2026-08-25.zip` (the verification
    session's sample verification of Sol's findings, the completed
    psychometrics leg — 154/154 against base R — and the census seed

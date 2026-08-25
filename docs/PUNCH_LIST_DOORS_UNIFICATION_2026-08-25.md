@@ -110,16 +110,27 @@ the file.
   and correlation pages; dispatch passes "both" as the menu door does.
 - **4.2 "One-way ANOVA, no post-hoc" and "Kruskal-Wallis alone" rows.**
   The `doDunn = 1` literal becomes the row's choice.
-- **4.3 Pairwise grid unfrozen.** The wizard's parametric post-hoc rows
-  expand to the same complete choices the standalone pairwise dialog
-  offers (test × adjustment × t-variant as one-list rows); the two
-  hardcoded `@emlRunPairwiseAnalysis` presets become row-decoded
+- **4.3 Pairwise grid unfrozen — the WHOLE grid.** The wizard's post-hoc
+  rows expand to every complete choice the standalone pairwise dialog
+  offers, the rank-based cells included: pairwise Wilcoxon with Holm,
+  Bonferroni, and Benjamini-Hochberg join the menu (three rows, decoded
+  like the other twelve). The first wording of this item said "parametric
+  post-hoc rows" and created a three-row gap the builder correctly
+  stayed inside; the lane's acceptance — zero menu-only options on
+  shared intents — was always the contract, and the item now says so.
+  The two hardcoded `@emlRunPairwiseAnalysis` presets become row-decoded
   arguments.
 - **4.4 Per-group correlation.** The wizard correlation page gains the
   menu door's group column (same 2..n/3 filter), passing through to the
   same per-group report.
 - **4.5 Regression group column.** Rides the per-group regression port
-  already ruled into 1.0; wizard and menu pages gain it together.
+  already ruled into 1.0; wizard and menu pages gain it together, and
+  NOT before — a group column that colours the figure without entering
+  the analysis is a new instance of the silent-override class (the
+  census measured the cost: slopes of +1.98 and −1.99 pooled to a
+  reported zero). The port lands in-round, so no interim colours-only
+  control and no interim disclosure line are needed; the menu dialog's
+  existing half-live control is closed by the same port.
 - **4.6 Normality modes and Q-Q.** The wizard normality page offers
   single / all columns / by group (the orchestrator's own modes) and the
   branch sets `wizCanDraw` so the Q-Q draw is reachable, as on the menu
