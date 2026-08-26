@@ -1086,7 +1086,29 @@ if (!canDrive) {
                             c3 = sample(1:8, 12, TRUE)),
         r_big  = data.frame(c1 = round(rnorm(52, 10, 2), 6),
                             c2 = round(rnorm(52, 11, 2), 6),
-                            c3 = round(rnorm(52, 9, 2), 6))
+                            c3 = round(rnorm(52, 9, 2), 6)),
+        # r_zeroeff: all three pairs share the SAME raw n (16), but a
+        # different number of exact zero differences per pair -- the
+        # paired cache (.cacheN[]) is keyed on the effective n after
+        # zero-difference removal, and Fable's pin asks for at least
+        # three distinct effective n's forced by ties within one run.
+        # pair(c1,c2): 0 zero diffs  -> effective n 16
+        # pair(c1,c3): 4 zero diffs  -> effective n 12
+        # pair(c2,c3): 7 zero diffs  -> effective n  9
+        r_zeroeff = local({
+            n <- 16
+            z1 <- round(rnorm(n, 10, 2), 6)
+            z2 <- round(rnorm(n, 12, 2), 6)
+            while (any(z1 == z2)) z2 <- round(rnorm(n, 12, 2), 6)
+            z3 <- numeric(n)
+            z3[1:4]  <- z1[1:4]
+            z3[5:11] <- z2[5:11]
+            rest <- round(rnorm(5, 9, 2), 6)
+            while (any(rest %in% z1[12:16]) || any(rest %in% z2[12:16]))
+                rest <- round(rnorm(5, 9, 2), 6)
+            z3[12:16] <- rest
+            data.frame(c1 = z1, c2 = z2, c3 = z3)
+        })
     )
     rm_alphas <- c(a05 = 0.05, a01 = 0.01)
 
@@ -1226,8 +1248,22 @@ if (!canDrive) {
                 }
             }
         }
-        check(V, "paired-t wired cells checked (3 fixtures x 2 alphas x 3 pairs)", nRMt, 18, tol = 0)
-        check(V, "signed-rank wired cells checked (3 fixtures x 2 alphas x 3 pairs)", nRMw, 18, tol = 0)
+        check(V, "paired-t wired cells checked (4 fixtures x 2 alphas x 3 pairs)", nRMt, 24, tol = 0)
+        check(V, "signed-rank wired cells checked (4 fixtures x 2 alphas x 3 pairs)", nRMw, 24, tol = 0)
+
+        # -- r_zeroeff: the raw n is one number (16); the effective n the
+        # paired cache actually keys on is three, forced by the zero
+        # differences built into the fixture above. A cache wrongly keyed
+        # on raw n, or one that silently collapsed the three pairs onto a
+        # single key, would not be caught by the identity checks above if
+        # this assertion did not also confirm the keys really differ.
+        zeroeff_df <- rm_fx$r_zeroeff
+        rawN <- vapply(rm_pairs, function(p) nrow(zeroeff_df), integer(1))
+        effN <- vapply(rm_pairs, function(p)
+            sum(zeroeff_df[[CLAB[p[1]]]] != zeroeff_df[[CLAB[p[2]]]]), integer(1))
+        check_true(V,
+            "r_zeroeff: one raw n (16) across all three pairs, but three distinct effective n's from ties",
+            all(rawN == 16) && length(unique(effN)) == 3)
 
         # -- the Holm and BH canaries, on BOTH branches ------------------
         for (k in seq_len(rmPairs)) {
