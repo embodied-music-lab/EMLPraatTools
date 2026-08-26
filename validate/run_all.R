@@ -1742,6 +1742,17 @@ scripts <- c(
                                  # broken recompute-then-republish call. R1's
                                  # drive and section (c)'s pins share one
                                  # root cause, not six.
+    ,
+    "v143_pairwise_stn.R"        # @emlRunPairwiseAnalysis's .stN, per the 26
+                                 # August work order: the total complete-case
+                                 # N the analysis consumed (per-group sum for
+                                 # welch/student/wilcoxon, Scheffe's own
+                                 # .totalN for that arm). Drives all four
+                                 # arms on a clean fixture (N=12) and a gappy
+                                 # one (N=10) and settles emlStoreN against a
+                                 # length()-sum oracle. READ RED BEFORE THIS
+                                 # COMMIT: .stN was initialised to undefined
+                                 # at entry and never assigned.
 )
 
 # ---------------------------------------------------------------------------

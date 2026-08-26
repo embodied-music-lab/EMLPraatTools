@@ -1390,6 +1390,20 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
             ; second analysis with no door of its own.
             @emlPublishAbsentMatrix: .recGroups
             .stDiffMat## = emlPublishAbsentMatrix.m##
+            ; .stN -- THE TOTAL COMPLETE-CASE N THE ANALYSIS CONSUMED, per
+            ; Fable's 26 August work order: the sum, across every group this
+            ; run used, of that group's own complete-case count (the same
+            ; total the R oracle reads as length(x) after dropping a blank
+            ; group cell or an unusable value cell). @emlPairwiseT tests all
+            ; C(k,2) pairs from the SAME k groups, so this is one pass over
+            ; the groups, not per pair -- each row is counted once no matter
+            ; how many pairs it appears in.
+            .stN = 0
+            for .gi from 1 to .recGroups
+                @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
+                ... emlPublishInLabel$ [.gi]
+                .stN = .stN + eml_getGroupData.n
+            endfor
         elsif .test$ = "wilcoxon"
             .stTest$ = "pairwise wilcoxon"
             .stPostHoc$ = "wilcoxon"
@@ -1403,6 +1417,14 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
             .stEffMat## = emlPairwiseWilcoxon.rMatrix##
             @emlPublishAbsentMatrix: .recGroups
             .stDiffMat## = emlPublishAbsentMatrix.m##
+            ; .stN -- same definition and same reason as the t arm above:
+            ; one pass over the k groups this run used, not per pair.
+            .stN = 0
+            for .gi from 1 to .recGroups
+                @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
+                ... emlPublishInLabel$ [.gi]
+                .stN = .stN + eml_getGroupData.n
+            endfor
         elsif .test$ = "scheffe"
             .stTest$ = "scheffe"
             .stPostHoc$ = "scheffe"
@@ -1420,6 +1442,13 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
             .stDiffMat## = emlScheffe.diffMatrix##
             @emlPublishAbsentMatrix: .recGroups
             .stEffMat## = emlPublishAbsentMatrix.m##
+            ; .stN -- the Scheffe arm's existing .totalN, design-wide by
+            ; construction (it is summed once over all k groups inside
+            ; @emlScheffe, not per pair -- see its .dfWithin = .totalN -
+            ; .nGroups). Reusing it here is the "existing .totalN" half of
+            ; the same work-order sentence the t/wilcoxon arms above answer
+            ; with their own per-group sum.
+            .stN = emlScheffe.totalN
         endif
     endif
 
