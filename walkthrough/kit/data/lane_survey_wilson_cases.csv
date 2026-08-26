@@ -1,0 +1,10 @@
+"case","x","n","conf"
+"central",10,20,0.95
+"near_zero",1,50,0.95
+"near_one",49,50,0.95
+"n_small",3,5,0.95
+"n_large",700,1000,0.95
+"x_zero",0,10,0.95
+"x_equals_n",10,10,0.95
+"x_zero_conf99",0,5,0.99
+"x_n_conf90",5,5,0.9
