@@ -824,6 +824,15 @@ process_paired <- function(row) {
     if (testType %in% c("parametric", "both")) {
         d_ab <- a - b
         if (sd(d_ab) == 0) {
+            # THE ARM WAS ASKED FOR AND PRODUCED NOTHING, WHICH IS A RESULT.
+            # quantities.tsv contracts t, df and cohens_dz on every cell whose
+            # test axis includes the parametric arm; the report says plainly
+            # that the arm was omitted, and the results table has to say the
+            # same thing rather than going quiet, or a refused arm reads as an
+            # arm nobody asked for.
+            emit(cid, "t", NA_real_, "stats")
+            emit(cid, "df", NA_real_, "stats")
+            emit(cid, "cohens_dz", NA_real_, "effectsize")
             lines <- c(lines, "Paired t-test: all differences identical (zero variance) -- omitted.")
         } else {
             tt <- t.test(a, b, paired = TRUE)
@@ -855,6 +864,12 @@ process_paired <- function(row) {
             pName <- if (testType == "both" && ranPar) "wilcoxon_p" else "p"
             emit(cid, "w_statistic", unname(wt$statistic), "stats")
             emit(cid, pName, wt$p.value, "stats")
+            # On test=both the contract owes a wilcoxon_p. Where the
+            # parametric arm refused there is no second arm to hold one --
+            # this cell's only p is the Wilcoxon p and it is reported under
+            # "p" above -- so the second-arm slot is reported as empty rather
+            # than left out of the table.
+            if (testType == "both" && !ranPar) emit(cid, "wilcoxon_p", NA_real_, "stats")
             # UPSTREAM BUG, WORKED AROUND AND REPORTED: effectsize 0.8.6
             # returns an UNSIGNED paired rank-biserial when every paired
             # difference has the same magnitude -- +1 whether the first
@@ -973,6 +988,15 @@ process_descriptive <- function(row) {
         emit(cid, "ci_low", ci[1], "stats"); emit(cid, "ci_high", ci[2], "stats")
         ciLine <- sprintf("95%% CI of the mean: [%.4f, %.4f] (stats::t.test)", ci[1], ci[2])
     } else if (length(x) >= 2) {
+        # REPORTED AS UNDEFINED, NOT OMITTED. quantities.tsv contracts ci_low
+        # and ci_high on every descriptive cell, and a runner that writes no
+        # row has not reported the quantity -- it has gone quiet, which is the
+        # exact failure mode the contract exists to catch. The kit's own
+        # convention for "we reached this quantity and it has no value here"
+        # is the _undefined marker (n_undefined, gg_epsilon_undefined,
+        # chi_square_undefined), so the marker is what goes out.
+        emit(cid, "ci_low_undefined", 1, "stats")
+        emit(cid, "ci_high_undefined", 1, "stats")
         ciLine <- "95% CI of the mean: undefined (zero variance -- t.test's own precondition fails)."
     }
     lines <- c(sprintf("Descriptives -- %s (n=%d valid, %d undefined)", row$col_a, length(x), nU), "",
@@ -1121,6 +1145,11 @@ process_normality <- function(row) {
         emit(cid, "p", sw$p.value, "stats")
         lines <- c(lines, sprintf("Shapiro-Wilk: W=%.4f p=%.4g", sw$statistic, sw$p.value))
     } else {
+        # Reported as undefined, not omitted: the contract owes w_statistic
+        # and p on every normality cell, and "the column is constant so the
+        # test has no variance to work on" is an answer, not a silence.
+        emit(cid, "w_statistic", NA_real_, "stats")
+        emit(cid, "p", NA_real_, "stats")
         lines <- c(lines, "Shapiro-Wilk not computed (n out of [3,5000] or zero range).")
     }
     lines <- c(lines, sprintf("skewness=%.4f kurtosis=%.4f (psych::describe)", desc$skew, desc$kurtosis))
@@ -1215,6 +1244,7 @@ process_rm <- function(row) {
         # results table. Epsilon gates the pair: no epsilon, no GG row.
         if (is.na(ggEps)) {
             emit(cid, "gg_epsilon", NA_real_, "afex")
+            emit(cid, "gg_p", NA_real_, "afex")
             lines <- c(lines, paste0("Greenhouse-Geisser: not available -- afex returned NA epsilon ",
                                       "(singular error SSP matrix on this design); its Pr(>F[GG]) of 0 ",
                                       "is a sentinel, not a p-value, and is not reported."))
@@ -1223,6 +1253,14 @@ process_rm <- function(row) {
             lines <- c(lines, sprintf("Greenhouse-Geisser epsilon=%.4f, GG-corrected p=%.4g", ggEps, ggP))
         }
     } else {
+        # k = 2. Sphericity is trivial with one within-subject df, so afex
+        # reports no correction -- and the plugin falls back to the epsilon
+        # lower bound 1/(k-1) and reports one. Both are defensible and they
+        # are DIFFERENT, which is exactly why both sides have to say
+        # something: the pair is reported as undefined here rather than
+        # dropped, so the disagreement stays visible as a disagreement.
+        emit(cid, "gg_epsilon", NA_real_, "afex")
+        emit(cid, "gg_p", NA_real_, "afex")
         lines <- c(lines, "Greenhouse-Geisser correction not applicable (k=2 conditions, 1 df; sphericity is trivial).")
     }
     lines <- c(lines, sprintf("partial eta^2 (effectsize)=%.4f", peta), "")

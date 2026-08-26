@@ -1,0 +1,353 @@
+# ===========================================================================
+# quantities.tsv -- the declaration of WHAT EACH RUN MUST REPORT.
+# ===========================================================================
+# matrix.tsv says WHAT TO RUN: 630 cells, each a procedure, a dataset and
+# every option setting. It never said what a cell that ran must come back
+# with. Without that, neither runner could be short of anything: a quantity
+# absent from one table was indistinguishable from a feature the plugin does
+# not have, and the difference was settled by writing a sentence in
+# compare.R's DECLARED[] rather than by reading the plugin.
+#
+# That is how D-NOCI survived. It claimed no post-hoc comparison in the
+# plugin returns a confidence interval, and it covered 1500 rows -- the
+# largest entry in the table. @emlOneWayAnova returns .qCritical, .msWithin
+# and .groupN[] when .tukey = 1, graphs/eml-annotation-procedures.praat:5569
+# builds the family-wise half-width from exactly those three and PRINTS the
+# interval, and the kit's own praat_reports/*.txt carry it:
+#
+#     -- Tukey HSD Mean Differences (95% family-wise CI) ---
+#     Comparison                Difference    95% CI
+#     Soprano - Mezzo           5.5295        [1.8896, 9.1694]
+#
+# The Praat runner never read those bounds. With nothing declaring that a
+# Tukey cell owes an interval, a runner bug looked like a plugin gap.
+#
+# DERIVED, NOT WRITTEN FROM MEMORY. Every row below was read off the source
+# named in its `source` column, in this order of authority:
+#
+#   1. The procedure's own `Output:` / `Outputs:` header, where it has one.
+#      CLAUDE.md requires reading that header before consuming a return,
+#      precisely because the returned name differs from the parameter name.
+#   2. @emlPublishAnalysisResult's argument contract
+#      (stats/eml-extract.praat:4370) -- THE WRITE SITE, the single place any
+#      emlStore name is assigned. For the analysis lane this IS the
+#      orchestrator's declared output surface: omnibus stat / df1 / df2 / p,
+#      effect, n, the SECOND ARM where a door ran two tests of one
+#      hypothesis, and the four post-hoc matrices
+#      (.pMatrix## .diffMatrix## .statMatrix## .effectMatrix##).
+#   3. The reporter that prints it, where a quantity is assembled for the
+#      report out of several kernel returns and has no single header of its
+#      own (medians in the Group Descriptives block; the Tukey interval;
+#      adjusted R-squared). A number a user reads in the Info window is a
+#      number the plugin reports, whatever slot it arrives in.
+#
+# HEADERS READ: 32 procedures. The full list is in the `source` column;
+# every distinct file:line there is a header that was opened and read.
+#
+# ---------------------------------------------------------------------------
+# FINDING: 12 OF THE 13 ANALYSIS-LANE ORCHESTRATORS HAVE NO Outputs HEADER.
+# ---------------------------------------------------------------------------
+# stats/eml-analysis.praat is 4800 lines and contains exactly ONE `Outputs:`
+# block (line 3193, @emlRunGroupedRegression) -- and that one lists only
+# .pgTotal / .pgRun / .pgSkipped, the group counts, not one statistic. These
+# twelve have none at all:
+#
+#   @emlRunTwoGroupAnalysis   @emlRunAnovaAnalysis     @emlRunKWAnalysis
+#   @emlRunPairwiseAnalysis   @emlRunPairedAnalysis    @emlRunCorrelationAnalysis
+#   @emlRunRegressionAnalysis @emlRunTwoWayAnalysis    @emlRunRepeatedMeasuresAnalysis
+#   @emlRunFriedmanAnalysis   @emlRunNormalityAnalysis @emlRunDescriptiveAnalysis
+#
+# They are the twelve doors a user actually walks through, and they are the
+# twelve with nothing to read before consuming a return. That is why every
+# analysis-lane row below cites either a KERNEL header (@emlTTest,
+# @emlOneWayAnova, @emlKruskalWallis, ...) or the write site, never the
+# orchestrator: the orchestrators do not say what they return, so the
+# contract had to be assembled from the layer underneath them and from the
+# layer above them. Recommend the twelve get headers; until they do, this
+# file is the nearest thing to one, and it is in the wrong repository layer.
+#
+# ---------------------------------------------------------------------------
+# WHAT IS DELIBERATELY NOT CONTRACTED
+# ---------------------------------------------------------------------------
+# Bookkeeping and disclosure fields that appear in the headers but are not
+# results a reader states an outcome in: .error$, .warning$, .capped,
+# .hasTies, .method$, .alternative$, .nSkipped, .skipReason$, .nUndefined,
+# .perfect, .sortMap[], .tieCorrection, .confidence (echoed input),
+# .rowIndex#, .nPairs, .nGroups where a k is already contracted. Naming them
+# here is the point: they are excluded on purpose, not overlooked.
+#
+# One header-listed RESULT is reported by neither runner and is named here so
+# the gap is visible rather than absent: nothing else. @emlChiSquareIndependence's
+# .nCellsBelow5 IS reported by both (n_cells_below5), and was the candidate.
+#
+# ---------------------------------------------------------------------------
+# COLUMNS
+# ---------------------------------------------------------------------------
+#   procedure   the matrix.tsv procedure this contract clause governs
+#   quantity    the quantity name in the shared long schema. Placeholders:
+#                 <PAIR>  a post-hoc pair, "labela__labelb", first-minus-second
+#                 <LEVEL> a group or condition level, slugged
+#                 <ITEM>  a scale item column, slugged
+#                 <ROW>   a respondent row number
+#                 <TERM>  a two-way ANOVA term
+#   scope       cell | pair | level | item | row | term -- how many of this
+#               quantity one cell owes. `cell` owes exactly one.
+#   when        the condition, over the cell's OWN AXES in matrix.tsv, under
+#               which the cell owes it. Atoms: `always`; `<axis>=<value>`;
+#               `<axis>!=<value>`; `<axis>:<v1>,<v2>` (membership). Joined
+#               with `&`. A CONDITIONAL QUANTITY IS STILL CONTRACTED -- the
+#               condition is written down, not used as an excuse to drop it.
+#   sides       both | praat | r. `both` means each runner must report it and
+#               the two are compared. `praat` / `r` means the quantity
+#               belongs to that side alone, WITH THE REASON in `note` -- this
+#               is the only thing that makes a one-sided row legitimate.
+#   source      file:line of the header or reporter this row was read from.
+#   note        why, where a `sides` other than `both` or a `when` other than
+#               `always` needs one.
+#
+# HOW AN INDEX SET IS FIXED, and the one place this file reads output.
+# `cell`- and `term`-scoped quantities are expanded from the declaration
+# alone: one per cell, and for `term` the three two-way terms built from
+# col_b, col_c and their interaction. `level`-scoped quantities on the
+# repeated-measures and Friedman rows likewise come from the declaration --
+# matrix.tsv's col_a IS the pipe-delimited condition list. But the group
+# labels behind <PAIR>, the surviving <ROW> numbers and the <ITEM> columns
+# are properties of the DATA, not of the declaration, and deriving them here
+# would mean re-implementing each runner's row filtering in a third place.
+# For those, compare.R takes the index set as the UNION of the indices each
+# side actually emitted for that cell. That is weaker than a declaration and
+# it is stated plainly rather than hidden: it cannot catch a pair BOTH
+# runners drop, but it catches every case where one side reports an index and
+# the other does not -- which is the entire class of defect this file exists
+# to close, D-NOCI included.
+#
+# A quantity counts as REPORTED if the side emitted `<quantity>` or
+# `<quantity>_undefined`. A runner that says "this is undefined here" has
+# reported it; a runner that writes no row has not. That convention is the
+# kit's own (n_undefined, gg_epsilon_undefined, chi_square_undefined).
+# ===========================================================================
+procedure	quantity	scope	when	sides	source	note
+emlRunTwoGroupAnalysis	n_group1	cell	always	both	stats/eml-inferential.praat:90 @emlTTest .n1	
+emlRunTwoGroupAnalysis	n_group2	cell	always	both	stats/eml-inferential.praat:90 @emlTTest .n2	
+emlRunTwoGroupAnalysis	n	cell	always	both	stats/eml-extract.praat:4370 write site .n	
+emlRunTwoGroupAnalysis	mean_group1	cell	always	both	stats/eml-inferential.praat:90 @emlTTest .mean1	
+emlRunTwoGroupAnalysis	mean_group2	cell	always	both	stats/eml-inferential.praat:90 @emlTTest .mean2	
+emlRunTwoGroupAnalysis	sd_group1	cell	always	both	stats/eml-inferential.praat:90 @emlTTest .sd1	
+emlRunTwoGroupAnalysis	sd_group2	cell	always	both	stats/eml-inferential.praat:90 @emlTTest .sd2	
+emlRunTwoGroupAnalysis	median_group1	cell	always	both	stats/eml-analysis.praat:229 reporter	Assembled for the Group Descriptives block from @emlMedian; no kernel header carries it.
+emlRunTwoGroupAnalysis	median_group2	cell	always	both	stats/eml-analysis.praat:236 reporter	Assembled for the Group Descriptives block from @emlMedian; no kernel header carries it.
+emlRunTwoGroupAnalysis	mean_diff	cell	always	both	stats/eml-inferential.praat:90 @emlTTest .meanDiff	
+emlRunTwoGroupAnalysis	p	cell	always	both	stats/eml-extract.praat:4370 write site .omnibusP	
+emlRunTwoGroupAnalysis	t	cell	test:parametric,both	both	stats/eml-inferential.praat:90 @emlTTest .t	Parametric arm only; the nonparametric arm runs no t.
+emlRunTwoGroupAnalysis	df	cell	test:parametric,both	both	stats/eml-inferential.praat:90 @emlTTest .df	Parametric arm only.
+emlRunTwoGroupAnalysis	cohens_d	cell	test:parametric,both	both	stats/eml-inferential.praat:488 @emlCohenD .d	Parametric arm only.
+emlRunTwoGroupAnalysis	hedges_g	cell	test:parametric,both	both	stats/eml-inferential.praat:488 @emlCohenD .g	Parametric arm only.
+emlRunTwoGroupAnalysis	u1	cell	test:nonparametric,both	both	stats/eml-inferential.praat:1075 @emlMannWhitneyU .u1	Nonparametric arm only.
+emlRunTwoGroupAnalysis	u2	cell	test:nonparametric,both	both	stats/eml-inferential.praat:1075 @emlMannWhitneyU .u2	Nonparametric arm only.
+emlRunTwoGroupAnalysis	rank_biserial	cell	test:nonparametric,both	both	stats/eml-inferential.praat:1695 @emlRankBiserialR .r	Nonparametric arm only.
+emlRunTwoGroupAnalysis	mw_p	cell	test=both	both	stats/eml-extract.praat:4370 write site .secondP	THE SECOND ARM. The write site carries .secondLabel$/.secondStat/.secondP for a door that ran two tests of one hypothesis; test=both is the only axis value that fills it.
+emlRunTwoGroupAnalysis	wilcox_r	cell	test:nonparametric,both	r	run_analyses.R rstatix::wilcox_effsize	R side alone. Rosenthal's r = Z/sqrt(N); not the rank-biserial correlation and it has no plugin counterpart. See D-WILCOXR.
+emlRunAnovaAnalysis	f	cell	always	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .fValue	
+emlRunAnovaAnalysis	p	cell	always	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .p	
+emlRunAnovaAnalysis	df_between	cell	always	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .dfBetween	
+emlRunAnovaAnalysis	df_within	cell	always	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .dfWithin	
+emlRunAnovaAnalysis	ss_between	cell	always	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .ssBetween	
+emlRunAnovaAnalysis	ss_within	cell	always	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .ssWithin	
+emlRunAnovaAnalysis	ss_total	cell	always	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .ssTotal	
+emlRunAnovaAnalysis	ms_between	cell	always	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .msBetween	
+emlRunAnovaAnalysis	ms_within	cell	always	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .msWithin	
+emlRunAnovaAnalysis	eta_squared	cell	always	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .etaSquared	
+emlRunAnovaAnalysis	n	cell	always	both	stats/eml-extract.praat:4370 write site .n	
+emlRunAnovaAnalysis	posthoc_<PAIR>_cohens_d	pair	always	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .dMatrix##	Populated on both post-hoc settings: Tukey's own d when doTukey=1, the orchestrator's fallback loop when doTukey=0.
+emlRunAnovaAnalysis	posthoc_<PAIR>_padj	pair	posthoc=1	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .pMatrix## (tukey=1)	Post-hoc axis: the matrices are filled only when .tukey = 1.
+emlRunAnovaAnalysis	posthoc_<PAIR>_diff	pair	posthoc=1	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .meanDiff## (tukey=1)	Post-hoc axis.
+emlRunAnovaAnalysis	posthoc_<PAIR>_ci_low	pair	posthoc=1	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .qCritical .msWithin .groupN[] (tukey=1); printed graphs/eml-annotation-procedures.praat:5569	THE ROW D-NOCI DENIED. The plugin computes the family-wise half-width qCritical*sqrt(msWithin/2*(1/ni+1/nj)) from its own declared returns and PRINTS the interval in the Tukey HSD Mean Differences block. Compared against stats::TukeyHSD lwr.
+emlRunAnovaAnalysis	posthoc_<PAIR>_ci_high	pair	posthoc=1	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .qCritical .msWithin .groupN[] (tukey=1); printed graphs/eml-annotation-procedures.praat:5569	As ci_low. Compared against stats::TukeyHSD upr.
+emlRunAnovaAnalysis	posthoc_<PAIR>_q	pair	posthoc=1	praat	stats/eml-inferential.praat:2364 @emlTukeyHSD .qMatrix##	Praat side alone. The studentised range q is intrinsic to the plugin's method; stats::TukeyHSD does not expose it. See D-TUKEYQ.
+emlRunKWAnalysis	h	cell	always	both	stats/eml-inferential.praat:3656 @emlKruskalWallis .h	
+emlRunKWAnalysis	df	cell	always	both	stats/eml-inferential.praat:3656 @emlKruskalWallis .df	
+emlRunKWAnalysis	p	cell	always	both	stats/eml-inferential.praat:3656 @emlKruskalWallis .p	
+emlRunKWAnalysis	n	cell	always	both	stats/eml-inferential.praat:3656 @emlKruskalWallis .n	
+emlRunKWAnalysis	epsilon_squared	cell	always	both	stats/eml-inferential.praat:3593 @emlEpsilonSquared .result	
+emlRunKWAnalysis	eta_squared	cell	always	r	run_analyses.R rstatix::kruskal_effsize	R side alone. eta-squared[H]; the plugin reports epsilon-squared only. A coverage gap, not an error. See D-KW-ETA.
+emlRunKWAnalysis	posthoc_<PAIR>_padj	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .pMatrix##	Post-hoc axis.
+emlRunKWAnalysis	posthoc_<PAIR>_p	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .rawP#	Post-hoc axis.
+emlRunKWAnalysis	posthoc_<PAIR>_z	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .zMatrix##	Post-hoc axis.
+emlRunKWAnalysis	posthoc_<PAIR>_rank_biserial	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .rMatrix##	Post-hoc axis.
+emlRunPairwiseAnalysis	k	cell	always	both	stats/eml-extract.praat:4370 write site .nGroups	
+emlRunPairwiseAnalysis	n	cell	always	both	stats/eml-extract.praat:4370 write site .n	THE PLUGIN CANNOT MEET THIS AND SAYS SO. @emlRunPairwiseAnalysis initialises .stN to undefined and never assigns it, so the Praat runner reports n_undefined -- which the contract accepts as REPORTED, because a runner that says a quantity is undefined has reported it. The defect is named in D-PAIRWISE-N and is not excused by dropping the quantity from the contract.
+emlRunPairwiseAnalysis	posthoc_<PAIR>_padj	pair	always	both	stats/eml-inferential.praat:4146 @emlPairwiseT .pMatrix## / 4412 @emlPairwiseWilcoxon .pMatrix## / 4630 @emlScheffe .pMatrix##	Every arm of this procedure returns an adjusted-p matrix.
+emlRunPairwiseAnalysis	posthoc_<PAIR>_p	pair	test:welch,student,wilcoxon	both	stats/eml-inferential.praat:4146 @emlPairwiseT .rawP# / 4412 @emlPairwiseWilcoxon .rawP#	@emlScheffe returns no unadjusted p -- its header lists .pMatrix## and .fMatrix## only -- so the Scheffe arm does not owe one.
+emlRunPairwiseAnalysis	posthoc_<PAIR>_t	pair	test:welch,student	both	stats/eml-inferential.praat:4146 @emlPairwiseT .tMatrix##	t arms only.
+emlRunPairwiseAnalysis	posthoc_<PAIR>_df	pair	test:welch,student	both	stats/eml-inferential.praat:4146 @emlPairwiseT .dfMatrix##	t arms only. Welch-Satterthwaite for welch, pooled n1+n2-2 for student -- the same df the p was computed from.
+emlRunPairwiseAnalysis	posthoc_<PAIR>_cohens_d	pair	test:welch,student	both	stats/eml-inferential.praat:4146 @emlPairwiseT .dMatrix##	t arms only.
+emlRunPairwiseAnalysis	posthoc_<PAIR>_u	pair	test=wilcoxon	both	stats/eml-inferential.praat:4412 @emlPairwiseWilcoxon .uMatrix##	Wilcoxon arm only.
+emlRunPairwiseAnalysis	posthoc_<PAIR>_rank_biserial	pair	test=wilcoxon	both	stats/eml-inferential.praat:4412 @emlPairwiseWilcoxon .rMatrix##	Wilcoxon arm only.
+emlRunPairwiseAnalysis	posthoc_<PAIR>_f	pair	test=scheffe	praat	stats/eml-inferential.praat:4630 @emlScheffe .fMatrix##	Praat side alone. No installed R package implements Scheffe; the R side emits a declared skip. See D-SCHEFFE.
+emlRunPairwiseAnalysis	posthoc_<PAIR>_diff	pair	test=scheffe	praat	stats/eml-inferential.praat:4630 @emlScheffe .diffMatrix##	Praat side alone, for the same reason as _f. NOTE the asymmetry inside one procedure: @emlScheffe DOES return a mean-difference matrix; @emlPairwiseT and @emlPairwiseWilcoxon do not.
+emlRunPairwiseAnalysis	posthoc_<PAIR>_diff	pair	test:welch,student,wilcoxon	r	stats/eml-inferential.praat:4146 and 4412 -- neither header lists a difference matrix	R side alone, and PROVEN not believed. Three checks agree: (1) @emlPairwiseT returns .pMatrix## .tMatrix## .dfMatrix## .dMatrix## .rawP# .adjustedP# and no difference; @emlPairwiseWilcoxon returns .pMatrix## .uMatrix## .rMatrix## .rawP# .adjustedP# and no difference. (2) @emlRunPairwiseAnalysis hands .stDiffMat to @emlPublishAbsentMatrix on these arms -- marked absent, not merely unextracted. (3) The printed Per-pair results table for welch and for wilcoxon carries t(df)/p/p/d and U/p/p/r respectively and NO Difference column; the Difference column in the kit's reports belongs to the ANOVA Tukey block, which is a different procedure. The plugin states how far apart two groups are in SD units and not in the data's own units.
+emlRunPairwiseAnalysis	posthoc_<PAIR>_ci_low	pair	test:welch,student,wilcoxon	r	stats/eml-inferential.praat:4146 and 4412 -- neither header lists an interval	R side alone. Same three checks as _diff: no bound is returned by either kernel and none is printed. A real plugin gap, and reporting a comparison without an interval is against current reporting guidance -- but it is a gap on THESE arms only, which is what D-NOCI got wrong.
+emlRunPairwiseAnalysis	posthoc_<PAIR>_ci_high	pair	test:welch,student,wilcoxon	r	stats/eml-inferential.praat:4146 and 4412 -- neither header lists an interval	R side alone. See ci_low.
+emlRunPairedAnalysis	n	cell	always	both	stats/eml-inferential.praat:303 @emlTTestPaired .n	
+emlRunPairedAnalysis	mean_group1	cell	always	both	stats/eml-analysis.praat:2548 reporter	Condition descriptives, assembled by the orchestrator.
+emlRunPairedAnalysis	mean_group2	cell	always	both	stats/eml-analysis.praat:2548 reporter	Condition descriptives.
+emlRunPairedAnalysis	sd_group1	cell	always	both	stats/eml-analysis.praat:2548 reporter	Condition descriptives.
+emlRunPairedAnalysis	sd_group2	cell	always	both	stats/eml-analysis.praat:2548 reporter	Condition descriptives.
+emlRunPairedAnalysis	median_group1	cell	always	both	stats/eml-analysis.praat:2548 reporter	Condition descriptives.
+emlRunPairedAnalysis	median_group2	cell	always	both	stats/eml-analysis.praat:2548 reporter	Condition descriptives.
+emlRunPairedAnalysis	mean_diff	cell	always	both	stats/eml-inferential.praat:303 @emlTTestPaired .meanDiff	
+emlRunPairedAnalysis	p	cell	always	both	stats/eml-extract.praat:4370 write site .omnibusP	
+emlRunPairedAnalysis	t	cell	test:parametric,both	both	stats/eml-inferential.praat:303 @emlTTestPaired .t	Parametric arm only.
+emlRunPairedAnalysis	df	cell	test:parametric,both	both	stats/eml-inferential.praat:303 @emlTTestPaired .df	Parametric arm only.
+emlRunPairedAnalysis	cohens_dz	cell	test:parametric,both	both	stats/eml-inferential.praat:1380 @emlCohenDz .dz	Parametric arm only.
+emlRunPairedAnalysis	w_statistic	cell	test:nonparametric,both	both	stats/eml-inferential.praat:1441 @emlWilcoxonSignedRank .tPlus	Nonparametric arm only.
+emlRunPairedAnalysis	rank_biserial	cell	test:nonparametric,both	both	stats/eml-inferential.praat:1441 @emlWilcoxonSignedRank	Nonparametric arm only.
+emlRunPairedAnalysis	wilcoxon_p	cell	test=both	both	stats/eml-extract.praat:4370 write site .secondP	THE SECOND ARM, as mw_p is for the two-group door.
+emlRunPairedAnalysis	n_excluded	cell	always	r	run_analyses.R	R side alone. @emlRunPairedAnalysis exposes no excluded-row count. See D-MINOR.
+emlRunPairedAnalysis	wilcox_r	cell	test:nonparametric,both	r	run_analyses.R rstatix::wilcox_effsize	R side alone, and only where the nonparametric arm runs -- rstatix::wilcox_effsize is computed inside that arm. Rosenthal's r; no plugin counterpart. See D-WILCOXR.
+emlRunCorrelationAnalysis	n	cell	always	both	stats/eml-inferential.praat:600 @emlPearsonCorrelation .n	
+emlRunCorrelationAnalysis	p	cell	always	both	stats/eml-extract.praat:4370 write site .omnibusP	
+emlRunCorrelationAnalysis	r	cell	test:pearson,both	both	stats/eml-inferential.praat:600 @emlPearsonCorrelation .r	Pearson arm only.
+emlRunCorrelationAnalysis	t	cell	test:pearson,both	both	stats/eml-inferential.praat:600 @emlPearsonCorrelation .t	Pearson arm only.
+emlRunCorrelationAnalysis	df	cell	test:pearson,both	both	stats/eml-inferential.praat:600 @emlPearsonCorrelation .df	Pearson arm only.
+emlRunCorrelationAnalysis	rho	cell	test:spearman,both	both	stats/eml-inferential.praat:808 @emlSpearmanCorrelation .r	Spearman arm only.
+emlRunCorrelationAnalysis	spearman_p_asymptotic	cell	test:spearman,both	both	stats/eml-inferential.praat:808 @emlSpearmanCorrelation .p	Spearman arm only. Both sides compute the large-sample t-approximation under this name and they AGREE, which is what pins D-SPEARMAN to the choice of tail rather than to arithmetic.
+emlRunCorrelationAnalysis	spearman_t	cell	test:spearman,both	praat	stats/eml-inferential.praat:808 @emlSpearmanCorrelation .t	Praat side alone. t and df are intrinsic to the plugin's t-approximation; cor.test reports S instead. See D-SPEARMAN.
+emlRunCorrelationAnalysis	spearman_df	cell	test:spearman,both	praat	stats/eml-inferential.praat:808 @emlSpearmanCorrelation .df	Praat side alone. See spearman_t.
+emlRunCorrelationAnalysis	spearman_s	cell	test:spearman,both	r	run_analyses.R stats::cor.test	R side alone. S is intrinsic to cor.test's exact method. See D-SPEARMAN.
+emlRunCorrelationAnalysis	spearman_p	cell	test=both	r	run_analyses.R stats::cor.test	R side alone, AND ONLY ON THE SECOND ARM: where test=spearman the exact Spearman p arrives under the plain name p, and where test=both the Pearson p holds that name. See D-SPEARMAN.
+emlRunRegressionAnalysis	slope	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .slope	
+emlRunRegressionAnalysis	intercept	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .intercept	
+emlRunRegressionAnalysis	r	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .r	
+emlRunRegressionAnalysis	r_squared	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .rSquared	
+emlRunRegressionAnalysis	adj_r_squared	cell	always	both	reporter -- assembled for the report; not in @emlLinearRegression's header	A number the Info window prints that no kernel header declares.
+emlRunRegressionAnalysis	f	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .fStat	
+emlRunRegressionAnalysis	df_between	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .dfReg	
+emlRunRegressionAnalysis	df_within	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .dfRes	
+emlRunRegressionAnalysis	p	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pF	
+emlRunRegressionAnalysis	residual_se	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seResidual	
+emlRunRegressionAnalysis	slope_se	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seSlope	
+emlRunRegressionAnalysis	intercept_se	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seIntercept	
+emlRunRegressionAnalysis	slope_t	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .tSlope	
+emlRunRegressionAnalysis	intercept_t	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .tIntercept	
+emlRunRegressionAnalysis	slope_p	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pSlope	
+emlRunRegressionAnalysis	intercept_p	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pIntercept	
+emlRunRegressionAnalysis	n	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .n	
+emlRunGroupedRegression	pg_total	cell	always	both	stats/eml-analysis.praat:3193 @emlRunGroupedRegression Outputs .pgTotal	THE ONLY Outputs HEADER IN THE ANALYSIS LANE, and it declares these three group counts and nothing else.
+emlRunGroupedRegression	pg_run	cell	always	both	stats/eml-analysis.praat:3193 @emlRunGroupedRegression Outputs .pgRun	
+emlRunGroupedRegression	pg_skipped	cell	always	both	stats/eml-analysis.praat:3193 @emlRunGroupedRegression Outputs .pgSkipped	
+emlRunGroupedRegression	n	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .n	
+emlRunGroupedRegression	overall_slope	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .slope	Whole-table fit.
+emlRunGroupedRegression	overall_intercept	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .intercept	
+emlRunGroupedRegression	overall_r_squared	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .rSquared	
+emlRunGroupedRegression	overall_residual_se	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seResidual	
+emlRunGroupedRegression	overall_slope_se	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seSlope	
+emlRunGroupedRegression	overall_intercept_se	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seIntercept	
+emlRunGroupedRegression	overall_slope_t	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .tSlope	
+emlRunGroupedRegression	overall_intercept_t	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .tIntercept	
+emlRunGroupedRegression	overall_slope_p	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pSlope	
+emlRunGroupedRegression	overall_intercept_p	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pIntercept	
+emlRunGroupedRegression	overall_adj_r_squared	cell	always	r	run_analyses.R stats::lm	R side alone. @emlRunGroupedRegression exposes no adjusted R-squared, though the ungrouped door does. See D-MINOR.
+emlRunGroupedRegression	grp_<LEVEL>_n	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .n per group	One per-group fit for every group the two-pass loop ran.
+emlRunGroupedRegression	grp_<LEVEL>_slope	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .slope per group	
+emlRunGroupedRegression	grp_<LEVEL>_intercept	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .intercept per group	
+emlRunGroupedRegression	grp_<LEVEL>_r_squared	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .rSquared per group	
+emlRunGroupedRegression	grp_<LEVEL>_slope_se	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seSlope per group	
+emlRunGroupedRegression	grp_<LEVEL>_slope_t	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .tSlope per group	
+emlRunGroupedRegression	grp_<LEVEL>_p	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pSlope per group	
+emlRunTwoWayAnalysis	n	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	Parsed from Praat's own built-in Report two-way anova; see D-TWOWAY-PRECISION for the precision ceiling that parse imposes.
+emlRunTwoWayAnalysis	factor1_name	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
+emlRunTwoWayAnalysis	factor2_name	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
+emlRunTwoWayAnalysis	ss_within	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
+emlRunTwoWayAnalysis	df_within	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
+emlRunTwoWayAnalysis	ms_within	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
+emlRunTwoWayAnalysis	ss_total	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
+emlRunTwoWayAnalysis	df_total	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
+emlRunTwoWayAnalysis	<TERM>_ss	term	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	One per term. The three terms are col_b, col_c and their interaction col_b__col_c -- taken from the declaration, not from the output.
+emlRunTwoWayAnalysis	<TERM>_df	term	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
+emlRunTwoWayAnalysis	<TERM>_ms	term	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
+emlRunTwoWayAnalysis	<TERM>_f	term	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
+emlRunTwoWayAnalysis	<TERM>_p	term	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
+emlRunTwoWayAnalysis	<TERM>_partial_eta_squared	term	always	both	stats/eml-analysis.praat:5298 @emlTwoWayAnova.partialEtaSqA/B/AB	
+emlRunTwoWayAnalysis	<TERM>_eta_squared	term	always	r	run_analyses.R effectsize	R side alone. Non-partial eta-squared per term; the plugin reports partial only. A coverage gap. See D-TWOWAY-ETA.
+emlRunRepeatedMeasuresAnalysis	f	cell	always	both	stats/eml-analysis.praat:4054 @emlRMAnovaTest .fStat	
+emlRunRepeatedMeasuresAnalysis	df_between	cell	always	both	stats/eml-analysis.praat:4054 @emlRMAnovaTest .dfCond	
+emlRunRepeatedMeasuresAnalysis	df_within	cell	always	both	stats/eml-analysis.praat:4054 @emlRMAnovaTest .dfErr	
+emlRunRepeatedMeasuresAnalysis	p	cell	always	both	stats/eml-analysis.praat:4054 @emlRMAnovaTest .p	
+emlRunRepeatedMeasuresAnalysis	gg_epsilon	cell	always	both	stats/eml-analysis.praat:3986 @emlGGEpsilon .epsilon	Reported at every k. At k=2 there is one within-subject df and sphericity is trivial, so the plugin falls back to the epsilon lower bound 1/(k-1) and the R side reports the quantity as undefined -- which the contract accepts as reported. See D-GG.
+emlRunRepeatedMeasuresAnalysis	gg_p	cell	always	both	stats/eml-analysis.praat:4054 @emlRMAnovaTest .pGG	See gg_epsilon.
+emlRunRepeatedMeasuresAnalysis	ss_between	cell	always	both	stats/eml-analysis.praat:4078 @emlRMAnovaTest .ssCond	COMPUTED BUT NOT DECLARED: .ssCond and .ssErr are assigned in @emlRMAnovaTest's body and are absent from its own one-line Output header. Read off the body, and noted here because the header understates what the procedure returns.
+emlRunRepeatedMeasuresAnalysis	ss_within	cell	always	both	stats/eml-analysis.praat:4091 @emlRMAnovaTest .ssErr	See ss_between.
+emlRunRepeatedMeasuresAnalysis	partial_eta_squared	cell	always	both	reporter -- ssCond/(ssCond+ssErr)	Printed in the report; not in @emlRMAnovaTest's header.
+emlRunRepeatedMeasuresAnalysis	n	cell	always	both	stats/eml-analysis.praat:3809 @eml_extractConditions .n	
+emlRunRepeatedMeasuresAnalysis	n_excluded	cell	always	both	stats/eml-analysis.praat:3809 @eml_extractConditions .nExcluded	
+emlRunRepeatedMeasuresAnalysis	mean_<LEVEL>	level	always	both	stats/eml-analysis.praat:4054 @emlRMAnovaTest .condMean#[1..k]	One per condition. The conditions are the pipe-delimited list in matrix.tsv's col_a -- declared, not read from the output.
+emlRunRepeatedMeasuresAnalysis	posthoc_<PAIR>_p	pair	posthoc=1	both	stats/eml-inferential.praat:303 @emlTTestPaired .p per pair	Post-hoc axis.
+emlRunRepeatedMeasuresAnalysis	posthoc_<PAIR>_padj	pair	posthoc=1	both	stats/eml-analysis.praat @emlBonferroni/@emlHolm/@emlBenjaminiHochberg	Post-hoc axis.
+emlRunRepeatedMeasuresAnalysis	posthoc_<PAIR>_diff	pair	posthoc=1	r	the RM post-hoc block prints raw p and adjusted p only	R side alone, and CHECKED: the printed Post-hoc pairwise block carries "raw p ..., adj p ..." per pair and nothing else, and the orchestrator publishes no difference matrix for this door. The per-condition means ARE published, so a difference is arithmetically available -- but the plugin does not report one, and having the runner subtract two means would be the runner inventing a quantity, which is what this kit exists not to do.
+emlRunRepeatedMeasuresAnalysis	posthoc_<PAIR>_ci_low	pair	posthoc=1	r	the RM post-hoc block prints no bound	R side alone. See _diff.
+emlRunRepeatedMeasuresAnalysis	posthoc_<PAIR>_ci_high	pair	posthoc=1	r	the RM post-hoc block prints no bound	R side alone. See _diff.
+emlRunFriedmanAnalysis	chi_square	cell	always	both	stats/eml-analysis.praat:3930 @emlFriedmanTest .chiSq	
+emlRunFriedmanAnalysis	df	cell	always	both	stats/eml-analysis.praat:3930 @emlFriedmanTest .df	
+emlRunFriedmanAnalysis	p	cell	always	both	stats/eml-analysis.praat:3930 @emlFriedmanTest .p	
+emlRunFriedmanAnalysis	kendalls_w	cell	always	both	stats/eml-analysis.praat:5817 chiSq/(n*(k-1))	Derived at the result declaration; not in @emlFriedmanTest's header.
+emlRunFriedmanAnalysis	n	cell	always	both	stats/eml-analysis.praat:3809 @eml_extractConditions .n	
+emlRunFriedmanAnalysis	n_excluded	cell	always	both	stats/eml-analysis.praat:3809 @eml_extractConditions .nExcluded	
+emlRunFriedmanAnalysis	posthoc_<PAIR>_p	pair	posthoc=1	both	stats/eml-inferential.praat:1441 @emlWilcoxonSignedRank .p per pair	Post-hoc axis.
+emlRunFriedmanAnalysis	posthoc_<PAIR>_padj	pair	posthoc=1	both	stats/eml-analysis.praat @emlBonferroni/@emlHolm/@emlBenjaminiHochberg	Post-hoc axis.
+emlRunFriedmanAnalysis	posthoc_<PAIR>_diff	pair	posthoc=1	r	the Friedman post-hoc block prints raw p and adjusted p only	R side alone. Same check as the RM door: no difference is returned or printed for a rank-based post hoc.
+emlRunNormalityAnalysis	w_statistic	cell	always	both	stats/eml-core-descriptive.praat:706 @emlShapiroWilk .w	
+emlRunNormalityAnalysis	p	cell	always	both	stats/eml-core-descriptive.praat:706 @emlShapiroWilk .p	
+emlRunNormalityAnalysis	n	cell	always	both	stats/eml-core-descriptive.praat:706 @emlShapiroWilk .n	
+emlRunNormalityAnalysis	mean	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .mean	
+emlRunNormalityAnalysis	sd	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .sd	
+emlRunNormalityAnalysis	median	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .median	
+emlRunNormalityAnalysis	skewness	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .skewness	
+emlRunNormalityAnalysis	kurtosis	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .kurtosis	
+emlRunNormalityAnalysis	skewness_b1	cell	always	r	run_analyses.R psych::describe	R side alone. psych::describe's own default estimator (type 3, the b1 moment ratio), emitted beside the type-2 G1 both sides carry under `skewness`. See D-SHAPE.
+emlRunNormalityAnalysis	kurtosis_b2	cell	always	r	run_analyses.R psych::describe	R side alone. See skewness_b1.
+emlRunDescriptiveAnalysis	n	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .n	
+emlRunDescriptiveAnalysis	mean	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .mean	
+emlRunDescriptiveAnalysis	sd	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .sd	
+emlRunDescriptiveAnalysis	variance	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .variance	
+emlRunDescriptiveAnalysis	sem	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .sem	
+emlRunDescriptiveAnalysis	median	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .median	
+emlRunDescriptiveAnalysis	q1	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .q1	
+emlRunDescriptiveAnalysis	q3	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .q3	
+emlRunDescriptiveAnalysis	iqr	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .iqr	
+emlRunDescriptiveAnalysis	min	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .min	
+emlRunDescriptiveAnalysis	max	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .max	
+emlRunDescriptiveAnalysis	range	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .range	
+emlRunDescriptiveAnalysis	skewness	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .skewness	
+emlRunDescriptiveAnalysis	kurtosis	cell	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .kurtosis	
+emlRunDescriptiveAnalysis	ci_low	cell	always	both	stats/eml-core-descriptive.praat:542 @emlCI .lower (@emlDescribe .ci95Lower)	Owed on every descriptive cell. On a zero-variance column stats::t.test refuses -- the R runner reports ci_low_undefined there, which the contract accepts as reported; the plugin returns the degenerate interval [mean, mean]. Both are honest and the run is complete either way.
+emlRunDescriptiveAnalysis	ci_high	cell	always	both	stats/eml-core-descriptive.praat:542 @emlCI .upper (@emlDescribe .ci95Upper)	See ci_low.
+emlRunDescriptiveAnalysis	skewness_b1	cell	always	r	run_analyses.R psych::describe	R side alone. See D-SHAPE.
+emlRunDescriptiveAnalysis	kurtosis_b2	cell	always	r	run_analyses.R psych::describe	R side alone. See D-SHAPE.
+emlCronbachAlpha	alpha	cell	always	both	stats/eml-psychometrics.praat:101 @emlCronbachAlpha Output .alpha	
+emlCronbachAlpha	alpha_ci_low	cell	always	both	stats/eml-psychometrics.praat:101 @emlCronbachAlpha Output .ciLow	Feldt interval lower bound, at the cell's own conf axis.
+emlCronbachAlpha	alpha_ci_high	cell	always	both	stats/eml-psychometrics.praat:101 @emlCronbachAlpha Output .ciHigh	Feldt interval upper bound.
+emlCronbachAlpha	k	cell	always	both	stats/eml-psychometrics.praat:101 @emlCronbachAlpha Output .k	
+emlCronbachAlpha	n	cell	always	both	stats/eml-psychometrics.praat:101 @emlCronbachAlpha Output .n	
+emlCronbachAlpha	n_excluded	cell	always	both	stats/eml-psychometrics.praat:101 @emlCronbachAlpha Output .nExcluded	
+emlCronbachAlpha	alpha_if_deleted_<ITEM>	item	dataset!=lane_survey_alpha_2item	both	stats/eml-psychometrics.praat:101 @emlCronbachAlpha Output .alphaIfDeleted#[1..k]	Conditional on the scale having more than two items -- the header says so: "undefined for every item when k = 2, because a one-item scale has no alpha". lane_survey_alpha_2item is the only two-item fixture in the matrix; the plugin emits the undefined marker there and the R side does not attempt the quantity. See D-ALPHA2ITEM.
+emlAlphaInfluence	alpha	cell	always	both	stats/eml-psychometrics.praat:251 @emlAlphaInfluence Output .alphaFull	
+emlAlphaInfluence	k	cell	always	both	stats/eml-psychometrics.praat:251 @emlAlphaInfluence Output .k	
+emlAlphaInfluence	n	cell	always	both	stats/eml-psychometrics.praat:251 @emlAlphaInfluence Output .n	
+emlAlphaInfluence	n_excluded	cell	always	both	stats/eml-psychometrics.praat:251 @emlAlphaInfluence Output .nExcluded	
+emlAlphaInfluence	delta_max	cell	always	both	stats/eml-psychometrics.praat:251 @emlAlphaInfluence Output .deltaMax	
+emlAlphaInfluence	delta_max_row	cell	always	both	stats/eml-psychometrics.praat:251 @emlAlphaInfluence Output .deltaMaxRow	ORIGINAL row number, per the header -- not the surviving index.
+emlAlphaInfluence	delta_row_<ROW>	row	always	both	stats/eml-psychometrics.praat:251 @emlAlphaInfluence Output .delta#[1..n]	One per surviving respondent.
+emlChiSquareIndependence	chi_square	cell	always	both	stats/eml-categorical.praat:68 @emlChiSquareIndependence Output .chiSq	Yates-corrected where the correction axis is on and the table is 2x2, per the header.
+emlChiSquareIndependence	df	cell	always	both	stats/eml-categorical.praat:68 @emlChiSquareIndependence Output .df	
+emlChiSquareIndependence	p	cell	always	both	stats/eml-categorical.praat:68 @emlChiSquareIndependence Output .p	
+emlChiSquareIndependence	cramers_v	cell	always	both	stats/eml-categorical.praat:68 @emlChiSquareIndependence Output .cramersV	From the UNCORRECTED statistic, per the header. Yates corrects a test, not an effect size.
+emlChiSquareIndependence	n	cell	always	both	stats/eml-categorical.praat:68 @emlChiSquareIndependence Output .n	
+emlChiSquareIndependence	min_expected	cell	always	both	stats/eml-categorical.praat:68 @emlChiSquareIndependence Output .minExpected	
+emlChiSquareIndependence	n_cells_below5	cell	always	both	stats/eml-categorical.praat:68 @emlChiSquareIndependence Output .nCellsBelow5	
+emlChiSquareIndependence	cramers_v_yates	cell	always	r	run_analyses.R rstatix::cramer_v	R side alone. That package's own default is the Yates-corrected V; kept under a name that says so. See D-CRAMER.
+emlChiSquareIndependence	cramers_v_bias_corrected	cell	always	r	run_analyses.R effectsize::cramers_v	R side alone. That package's own default is Bergsma's bias-corrected V. See D-CRAMER.
+emlWilsonInterval	prop_hat	cell	always	both	stats/eml-categorical.praat:222 @emlWilsonInterval Output .propHat	
+emlWilsonInterval	ci_low	cell	always	both	stats/eml-categorical.praat:222 @emlWilsonInterval Output .ciLow	At the cell's own conf axis.
+emlWilsonInterval	ci_high	cell	always	both	stats/eml-categorical.praat:222 @emlWilsonInterval Output .ciHigh	At the cell's own conf axis.
+emlWilsonInterval	n	cell	always	both	stats/eml-categorical.praat:222 @emlWilsonInterval input .n echoed	

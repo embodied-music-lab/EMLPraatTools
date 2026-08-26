@@ -13,6 +13,9 @@
 #
 #   AGREE       matched on (cell_id, quantity) and equal to within the
 #               tolerance below.
+#   CONTRACT_*  a one-sided row that quantities.tsv accounts for: the
+#               quantity belongs to that side alone, or one side reported it
+#               as undefined while the other reported a value.
 #   DECLARED    a difference or a one-sided row whose cause is written down
 #               in DECLARED[] at the bottom of this file, with the reason.
 #               Every entry there is a statement someone can check and
@@ -23,6 +26,29 @@
 #               the same cells refuse IS compared, and is asserted below.
 #   UNEXPLAINED anything else. If this is not zero the kit is not green and
 #               the run says so in its last line.
+#
+# AND THE KIT IS GREEN ONLY IF IT ALSO REPORTED EVERYTHING IT OWED. Agreement
+# alone was never enough: for 1500 rows this file called a quantity the R side
+# computed and the Praat side did not a "one-sided row", looked it up in
+# DECLARED[], found a sentence saying the plugin has no such feature, and went
+# green. The sentence was wrong -- the plugin computes AND PRINTS the Tukey
+# interval -- and nothing in the join could tell a missing feature from a
+# runner that never read one, because nothing declared what a run owed.
+#
+# quantities.tsv now declares that, per procedure, derived from the plugin's
+# own Output headers and from what its reporters print. This file expands that
+# contract over the 630 cells of matrix.tsv and counts three numbers beside
+# the agreement numbers: EXPECTED, REPORTED, MISSING. A missing contracted
+# quantity is a FAILURE. It is not a one-sided row and it has no entry in
+# DECLARED[] to fall back on -- the contract, not a sentence in this file, is
+# what says whether a quantity may legitimately appear on one side only.
+#
+# THE SEEDED DEMONSTRATION, so the completeness check cannot pass vacuously:
+#
+#     EML_KIT_BREAK=posthoc_soprano__mezzo_ci_low Rscript compare.R
+#
+# drops that one contracted quantity from the Praat table before the walk and
+# the run must go red on it. A check that never goes red is not a check.
 #
 # TOLERANCE. Agreement is relative: |a-b| / max(|a|,|b|) < 1e-9, falling back
 # to absolute difference below 1e-12 where both values are ~0. That is far
@@ -64,6 +90,114 @@ rd <- function(f) read.delim(f, sep = "\t", colClasses = "character",
 P <- rd(need[1]); R <- rd(need[2])
 mx <- read.delim(file.path(kitDir, "matrix.tsv"), sep = "\t", comment.char = "#",
                  colClasses = "character", quote = "")
+
+# --- THE SEEDED BREAK -------------------------------------------------------
+# Naming a quantity in $EML_KIT_BREAK removes every Praat row carrying it,
+# before anything below has looked at the table. Nothing else in this file
+# knows the variable exists.
+breakQ <- Sys.getenv("EML_KIT_BREAK", "")
+if (nzchar(breakQ)) {
+    nB <- nrow(P)
+    P <- P[P$quantity != breakQ, , drop = FALSE]
+    cat(sprintf("\n*** SEEDED BREAK: removed %d Praat row(s) with quantity '%s'.\n",
+                nB - nrow(P), breakQ))
+    cat("*** The completeness lines below must go red. If they do not, they are not measuring anything.\n")
+}
+
+# --- THE CONTRACT -----------------------------------------------------------
+# quantities.tsv carries a long '#' preamble AND '#' characters inside its
+# source column (Praat matrix names end '##'), so the preamble is stripped by
+# hand rather than with comment.char, which would truncate those rows mid-line.
+qtPath <- file.path(kitDir, "quantities.tsv")
+if (!file.exists(qtPath)) {
+    stop("compare.R needs quantities.tsv beside it -- the declaration of what each\n",
+         "run must report. Without it there is nothing to check completeness against.",
+         call. = FALSE)
+}
+qtLines <- readLines(qtPath, warn = FALSE)
+QT <- read.delim(text = qtLines[!startsWith(qtLines, "#")], sep = "\t",
+                 colClasses = "character", quote = "", comment.char = "")
+stopifnot(identical(names(QT),
+          c("procedure", "quantity", "scope", "when", "sides", "source", "note")))
+if (!all(QT$sides %in% c("both", "praat", "r")))
+    stop("quantities.tsv: `sides` must be both | praat | r.", call. = FALSE)
+if (!all(QT$scope %in% c("cell", "pair", "level", "item", "row", "term")))
+    stop("quantities.tsv: unrecognised `scope`.", call. = FALSE)
+
+slug <- function(x) tolower(gsub("[^A-Za-z0-9]+", "_", trimws(x)))
+
+# `when` is a tiny fixed language on the cell's OWN axes in matrix.tsv, read
+# left to right. No eval(): a contract that could run arbitrary code would be
+# a second implementation rather than a declaration.
+whenHolds <- function(expr, cell) {
+    if (!nzchar(expr) || identical(expr, "always")) return(TRUE)
+    for (atom in trimws(strsplit(expr, "&", fixed = TRUE)[[1]])) {
+        if (grepl("!=", atom, fixed = TRUE)) {
+            kv <- strsplit(atom, "!=", fixed = TRUE)[[1]]
+            if (identical(unname(cell[[kv[1]]]), kv[2])) return(FALSE)
+        } else if (grepl(":", atom, fixed = TRUE)) {
+            kv <- strsplit(atom, ":", fixed = TRUE)[[1]]
+            if (!(unname(cell[[kv[1]]]) %in% strsplit(kv[2], ",", fixed = TRUE)[[1]]))
+                return(FALSE)
+        } else if (grepl("=", atom, fixed = TRUE)) {
+            kv <- strsplit(atom, "=", fixed = TRUE)[[1]]
+            if (!identical(unname(cell[[kv[1]]]), kv[2])) return(FALSE)
+        } else {
+            stop("quantities.tsv: unreadable `when` atom: ", atom, call. = FALSE)
+        }
+    }
+    TRUE
+}
+
+# A template's placeholder becomes a capture group. The templates hold only
+# [a-z0-9_<>], asserted here, so no regex escaping is needed and none is done
+# silently.
+PH <- "<[A-Z]+>"
+if (any(grepl("[^a-z0-9_]", gsub(PH, "", QT$quantity))))
+    stop("quantities.tsv: a quantity template holds a character this file would\n",
+         "have to escape. Keep templates to [a-z0-9_<>].", call. = FALSE)
+tmplRegex <- function(tmpl) {
+    ph <- regmatches(tmpl, regexpr(PH, tmpl))
+    parts <- strsplit(tmpl, ph, fixed = TRUE)[[1]]
+    pre <- parts[1]; post <- if (length(parts) > 1) parts[2] else ""
+    paste0("^", pre, "(.+?)", post, "$")
+}
+
+# Base name: a runner that says "this quantity is undefined here" has REPORTED
+# it. A runner that writes no row has not.
+baseName <- function(q) sub("_undefined$", "", q)
+
+Pbase <- split(baseName(P$quantity), P$cell_id)
+Rbase <- split(baseName(R$quantity), R$cell_id)
+obs <- function(cid) unique(c(Pbase[[cid]], Rbase[[cid]]))
+
+# THE INDEX SETS. cell and term come from the declaration alone; so do the
+# levels and pairs of the repeated-measures and Friedman doors, whose
+# conditions ARE matrix.tsv's col_a. The group labels, surviving row numbers
+# and scale items behind the other placeholders are properties of the DATA,
+# and are taken as the union of what the two sides emitted -- the one place
+# this file reads output to decide what to expect, stated in quantities.tsv's
+# header rather than hidden here.
+DECLARED_LEVEL_PROCS <- c("emlRunRepeatedMeasuresAnalysis", "emlRunFriedmanAnalysis")
+indexSet <- function(scope, cell, tmpl) {
+    if (scope == "cell") return("")
+    if (scope == "term") {
+        a <- slug(cell$col_b); b <- slug(cell$col_c)
+        return(c(a, b, paste0(a, "__", b)))
+    }
+    if (cell$procedure %in% DECLARED_LEVEL_PROCS && scope %in% c("level", "pair")) {
+        lv <- slug(strsplit(cell$col_a, "|", fixed = TRUE)[[1]])
+        if (scope == "level") return(lv)
+        out <- character(0)
+        for (i in seq_along(lv)) for (j in seq_along(lv)) if (i < j)
+            out <- c(out, paste0(lv[i], "__", lv[j]))
+        return(out)
+    }
+    rx <- tmplRegex(tmpl)
+    o <- obs(cell$cell_id)
+    m <- regmatches(o, regexec(rx, o))
+    unique(vapply(m[lengths(m) > 0], function(z) z[2], ""))
+}
 
 # ---------------------------------------------------------------------------
 # DECLARED DIFFERENCES. Each entry names a quantity pattern, which side it
@@ -220,6 +354,87 @@ procOf <- setNames(mx$procedure, mx$cell_id)
 testOf <- setNames(mx$test, mx$cell_id)
 dsOf   <- setNames(mx$dataset, mx$cell_id)
 
+# ---------------------------------------------------------------------------
+# EXPANDING THE CONTRACT OVER THE 630 CELLS.
+# One pass. For every cell, every clause of its procedure whose `when` holds,
+# expanded over that clause's index set. The result is the flat list of
+# (cell_id, quantity, sides) this run owes.
+# ---------------------------------------------------------------------------
+expCell <- character(0); expQty <- character(0); expSides <- character(0)
+QTbyProc <- split(seq_len(nrow(QT)), QT$procedure)
+for (ci in seq_len(nrow(mx))) {
+    cell <- mx[ci, ]
+    idxs <- QTbyProc[[cell$procedure]]
+    if (is.null(idxs)) next
+    for (qi in idxs) {
+        if (!whenHolds(QT$when[qi], cell)) next
+        tmpl <- QT$quantity[qi]
+        if (QT$scope[qi] == "cell") {
+            names <- tmpl
+        } else {
+            ix <- indexSet(QT$scope[qi], cell, tmpl)
+            if (!length(ix)) next
+            ph <- regmatches(tmpl, regexpr(PH, tmpl))
+            names <- vapply(ix, function(k) sub(ph, k, tmpl, fixed = TRUE), "")
+        }
+        expCell  <- c(expCell,  rep(cell$cell_id, length(names)))
+        expQty   <- c(expQty,   names)
+        expSides <- c(expSides, rep(QT$sides[qi], length(names)))
+    }
+}
+EXP <- data.frame(cell_id = expCell, quantity = expQty, sides = expSides,
+                  stringsAsFactors = FALSE)
+EXP <- EXP[!duplicated(paste(EXP$cell_id, EXP$quantity, sep = "\r")), , drop = FALSE]
+sidesOf <- setNames(EXP$sides, paste(EXP$cell_id, EXP$quantity, sep = "\r"))
+
+# A REFUSAL DISCHARGES THE CONTRACT FOR THAT SIDE ON THAT CELL, and nothing
+# else does. A run that refused reported completely: it said why it computed
+# nothing. A run that computed and then went quiet about a quantity did not.
+refusedP <- unique(P$cell_id[P$quantity %in% c("refused", "skipped")])
+refusedR <- unique(R$cell_id[R$quantity %in% c("refused", "skipped")])
+
+hasP <- function(cid, q) q %in% Pbase[[cid]]
+hasR <- function(cid, q) q %in% Rbase[[cid]]
+
+nExpected <- 0L; nReported <- 0L; nWaived <- 0L
+missRows <- list(); missByProc <- integer(0); missByQty <- integer(0)
+for (i in seq_len(nrow(EXP))) {
+    cid <- EXP$cell_id[i]; q <- EXP$quantity[i]; sd <- EXP$sides[i]
+    for (side in if (sd == "both") c("praat", "r") else sd) {
+        if (side == "praat" && cid %in% refusedP) { nWaived <- nWaived + 1L; next }
+        if (side == "r"     && cid %in% refusedR) { nWaived <- nWaived + 1L; next }
+        nExpected <- nExpected + 1L
+        got <- if (side == "praat") hasP(cid, q) else hasR(cid, q)
+        if (got) { nReported <- nReported + 1L; next }
+        pr <- procOf[[cid]]
+        missByProc[pr] <- (if (is.na(missByProc[pr])) 0L else missByProc[pr]) + 1L
+        missByQty[q]   <- (if (is.na(missByQty[q]))   0L else missByQty[q])   + 1L
+        missRows[[length(missRows) + 1L]] <- list(
+            bucket = paste0("MISSING_", toupper(side)), id = "CONTRACT",
+            cell_id = cid, quantity = q, praat = "", r = "",
+            source = paste0(pr, " / contracted sides=", sd))
+    }
+}
+nMissing <- length(missRows)
+
+# WHAT THE CONTRACT SAYS ABOUT A ONE-SIDED ROW. Consulted BEFORE DECLARED[]:
+# where the contract governs a quantity, the contract decides, and a sentence
+# in DECLARED[] cannot overrule it.
+contractVerdict <- function(cell, quantity, side) {
+    base <- baseName(quantity)
+    sd <- sidesOf[paste(cell, base, sep = "\r")]
+    if (is.na(sd)) return(NULL)
+    sd <- unname(sd)
+    other <- if (side == "praat") "r" else "praat"
+    if (identical(sd, side)) return(list(b = paste0("CONTRACT_ONLY_", toupper(side)), fail = FALSE))
+    if (identical(sd, "both")) {
+        otherHas <- if (other == "praat") hasP(cell, base) else hasR(cell, base)
+        if (otherHas) return(list(b = "CONTRACT_UNDEFINED", fail = FALSE))
+        return(list(b = "CONTRACT_MISSING_PARTNER", fail = FALSE))  # counted once, above
+    }
+    list(b = paste0("CONTRACT_VIOLATION_", toupper(side)), fail = TRUE)
+}
+
 matches <- function(rule, cell, quantity, side) {
     if (!grepl(rule$q, quantity)) return(FALSE)
     if (!(rule$where %in% c("both", side))) return(FALSE)
@@ -241,7 +456,7 @@ agree <- function(a, b) {
 }
 
 rows <- list(); add <- function(...) rows[[length(rows) + 1]] <<- list(...)
-nAgree <- 0L; nDeclared <- 0L; nUnexplained <- 0L; maxRelSeen <- list()
+nAgree <- 0L; nDeclared <- 0L; nUnexplained <- 0L; nCompared <- 0L; maxRelSeen <- list()
 
 both <- intersect(P$key, R$key)
 Pl <- split(seq_len(nrow(P)), P$key); Rl <- split(seq_len(nrow(R)), R$key)
@@ -249,6 +464,7 @@ for (k in both) {
     pi <- Pl[[k]][1]; cell <- P$cell_id[pi]; q <- P$quantity[pi]
     pv <- num(P$value[pi])
     for (ri in Rl[[k]]) {
+        nCompared <- nCompared + 1L
         rv <- num(R$value[ri]); src <- R$source[ri]
         if (is.na(pv) && is.na(rv)) {
             # text-valued on both sides (refuse_reason and friends)
@@ -270,10 +486,20 @@ for (k in both) {
         }
     }
 }
+nContract <- 0L; nViolation <- 0L
 oneSided <- function(keys, tbl, side) {
     for (k in keys) {
         i <- if (side == "praat") Pl[[k]][1] else Rl[[k]][1]
         cell <- tbl$cell_id[i]; q <- tbl$quantity[i]
+        cv <- contractVerdict(cell, q, side)
+        if (!is.null(cv)) {
+            nContract <<- nContract + 1L
+            if (cv$fail) nViolation <<- nViolation + 1L
+            add(bucket = cv$b, id = "CONTRACT", cell_id = cell, quantity = q,
+                praat = if (side == "praat") tbl$value[i] else "",
+                r = if (side == "r") tbl$value[i] else "", source = tbl$source[i])
+            next
+        }
         rule <- declaredFor(cell, q, side)
         if (!is.null(rule)) {
             nDeclared <<- nDeclared + 1L
@@ -292,6 +518,7 @@ oneSided <- function(keys, tbl, side) {
 }
 oneSided(setdiff(P$key, R$key), P, "praat")
 oneSided(setdiff(R$key, P$key), R, "r")
+for (m in missRows) rows[[length(rows) + 1L]] <- m
 
 # --- the refusal assertion: same cells refuse, whatever the wording ---------
 refP <- sort(unique(P$cell_id[P$quantity %in% c("refused", "skipped")]))
@@ -312,11 +539,86 @@ cat("=========================================================\n")
 cat(sprintf("cells declared in matrix.tsv : %d\n", nrow(mx)))
 cat(sprintf("rows, Praat table            : %d\n", nrow(P)))
 cat(sprintf("rows, R table                : %d\n", nrow(R)))
-cat(sprintf("value comparisons made       : %d\n", nAgree + nDeclared + nUnexplained -
-            sum(grepl("ONLY|UNMATCHED", vapply(rows, function(r) r$bucket, "")))))
+cat(sprintf("value comparisons made       : %d\n", nCompared))
 cat(sprintf("\n  AGREE       %6d   (relative difference < 1e-9)\n", nAgree))
+cat(sprintf("  CONTRACT    %6d   (one-sided rows quantities.tsv accounts for)\n", nContract))
 cat(sprintf("  DECLARED    %6d   (differences and one-sided rows with a written reason)\n", nDeclared))
 cat(sprintf("  UNEXPLAINED %6d\n", nUnexplained))
+
+# ---------------------------------------------------------------------------
+# THE COMPLETENESS LINE, BESIDE THE AGREEMENT LINE.
+# ---------------------------------------------------------------------------
+cat("\n--- completeness against quantities.tsv ---\n")
+cat(sprintf("  contract clauses read        : %d over %d procedures\n",
+            nrow(QT), length(unique(QT$procedure))))
+cat(sprintf("  contracted quantities, expanded over the %d cells : %d\n",
+            nrow(mx), nrow(EXP)))
+cat(sprintf("  EXPECTED  %6d   (a `both` clause is expected of each runner)\n", nExpected))
+cat(sprintf("  REPORTED  %6d\n", nReported))
+cat(sprintf("  MISSING   %6d\n", nMissing))
+cat(sprintf("  waived    %6d   (the side refused the cell; a refusal reports completely)\n", nWaived))
+if (nMissing) {
+    cat("\n  missing, by procedure:\n")
+    for (nm in names(sort(missByProc, decreasing = TRUE)))
+        cat(sprintf("    %-34s %5d\n", nm, missByProc[[nm]]))
+    cat("\n  missing, by quantity (top 12):\n")
+    for (nm in head(names(sort(missByQty, decreasing = TRUE)), 12))
+        cat(sprintf("    %-44s %5d\n", nm, missByQty[[nm]]))
+}
+if (nViolation) {
+    cat(sprintf("\n  CONTRACT VIOLATIONS %d: a runner reported a quantity the contract\n", nViolation))
+    cat("  assigns to the other side alone. See bucket CONTRACT_VIOLATION_* .\n")
+}
+
+# ---------------------------------------------------------------------------
+# THE STANDING KIT.
+#
+# POPULATION DERIVED, NOT WRITTEN DOWN. The members are the procedures
+# matrix.tsv actually runs, read out of matrix.tsv. No list of procedures is
+# typed in this file, so a procedure added to the matrix is graded on the next
+# run without anyone editing here.
+#
+# ONE PROPERTY PER MEMBER. Every procedure gets exactly one assertion: every
+# contracted quantity every cell of that procedure owed was reported.
+#
+# THE RATCHET, BOTH DIRECTIONS. The derived population is compared to the
+# procedures quantities.tsv governs by SET EQUALITY -- a procedure the matrix
+# runs with no contract clause is red (it would be graded on nothing), and a
+# clause for a procedure no cell runs is ALSO red (it grades nothing and would
+# rot unnoticed).
+#
+# A FAILURE IF IT WALKED ZERO MEMBERS, checked before any per-member
+# assertion, so a matrix that stopped parsing cannot read as all-clear.
+# ---------------------------------------------------------------------------
+cat("\n--- the standing kit: one property per procedure ---\n")
+members <- sort(unique(mx$procedure))
+governed <- sort(unique(QT$procedure))
+kitFail <- 0L
+if (!length(members)) {
+    cat("  RED: the walk found zero procedures in matrix.tsv. Nothing was graded.\n")
+    kitFail <- kitFail + 1L
+} else {
+    onlyMatrix <- setdiff(members, governed)
+    onlyContract <- setdiff(governed, members)
+    if (length(onlyMatrix)) {
+        cat(sprintf("  RED: %d procedure(s) run by matrix.tsv with no clause in quantities.tsv: %s\n",
+                    length(onlyMatrix), paste(onlyMatrix, collapse = ", ")))
+        kitFail <- kitFail + length(onlyMatrix)
+    }
+    if (length(onlyContract)) {
+        cat(sprintf("  RED: %d clause procedure(s) no cell runs: %s\n",
+                    length(onlyContract), paste(onlyContract, collapse = ", ")))
+        kitFail <- kitFail + length(onlyContract)
+    }
+    for (pr in members) {
+        m <- if (is.na(missByProc[pr])) 0L else missByProc[[pr]]
+        nCl <- sum(QT$procedure == pr)
+        cat(sprintf("  %-34s %s  %2d clause(s), %d missing\n",
+                    pr, if (m == 0L) "complete" else "RED     ", nCl, m))
+        if (m != 0L) kitFail <- kitFail + 1L
+    }
+    cat(sprintf("  walked %d procedures.\n", length(members)))
+}
 cat("\n--- declared, by cause ---\n")
 tb <- table(vapply(rows, function(r) r$id, ""))
 tb <- tb[names(tb) != ""]
@@ -341,11 +643,21 @@ cat(sprintf("  declared refusals missed by R:     %d %s\n", length(missR),
 if (length(missP) || length(missR)) nUnexplained <- nUnexplained + length(missP) + length(missR)
 
 cat("\n---------------------------------------------------------\n")
-if (nUnexplained == 0) {
-    cat("  GREEN. Every row is accounted for.\n")
+if (nUnexplained == 0 && nMissing == 0 && nViolation == 0 && kitFail == 0) {
+    cat("  GREEN. Every row is accounted for AND every contracted quantity arrived.\n")
 } else {
-    cat(sprintf("  NOT GREEN: %d unexplained row(s). See out/reconciliation.tsv,\n", nUnexplained))
-    cat("  bucket UNEXPLAINED / UNMATCHED_PRAAT / UNMATCHED_R.\n")
+    cat("  NOT GREEN.\n")
+    if (nUnexplained)
+        cat(sprintf("    %d unexplained row(s)  -- bucket UNEXPLAINED / UNMATCHED_PRAAT / UNMATCHED_R.\n", nUnexplained))
+    if (nMissing)
+        cat(sprintf("    %d contracted quantit(ies) MISSING -- bucket MISSING_PRAAT / MISSING_R.\n", nMissing))
+    if (nViolation)
+        cat(sprintf("    %d contract violation(s) -- bucket CONTRACT_VIOLATION_*.\n", nViolation))
+    if (kitFail)
+        cat(sprintf("    %d standing-kit failure(s) -- see the per-procedure walk above.\n", kitFail))
+    cat("  See out/reconciliation.tsv.\n")
+    cat("  A run that compares fewer quantities than the contract requires is not green,\n")
+    cat("  however well the ones present agree.\n")
 }
 cat("---------------------------------------------------------\n")
 cat(sprintf("full detail: %s\n\n", file.path(outDir, "reconciliation.tsv")))

@@ -532,13 +532,35 @@ endproc
 # diffMatrix##), so reading [i,j] for i<j needs no re-orientation here -- that
 # bookkeeping already happened at the point each matrix was built.
 #
-# NO CONFIDENCE INTERVAL IS EMITTED for any pairwise comparison. None of
-# @emlTukeyHSD / @emlDunnTest / @emlPairwiseT / @emlPairwiseWilcoxon /
-# @emlScheffe expose one (each gives a statistic, a p and an effect size, not
-# a bound) and deriving one from qCritical or a pairwise SE this script does
-# not itself have would be a second, independently-invented computation --
-# exactly what this kit exists to avoid. See the final report: this is a
-# known, reported gap, not a silent omission.
+# THE FAMILY-WISE INTERVAL IS EMITTED WHERE THE PLUGIN ITSELF COMPUTES ONE,
+# AND NOWHERE ELSE. The paragraph that used to stand here said no post-hoc arm
+# exposes an interval and that deriving one would be a second, independently
+# invented computation. The first half was wrong and the second half followed
+# from it. @emlOneWayAnova's own header declares .qCritical, .msWithin and
+# .groupN[] when .tukey = 1; graphs/eml-annotation-procedures.praat:5569 forms
+# the half-width qCritical * sqrt(msWithin / 2 * (1/ni + 1/nj)) from exactly
+# those three and PRINTS the interval, in every Tukey report this kit writes:
+#
+#     -- Tukey HSD Mean Differences (95% family-wise CI) ---
+#     Soprano - Mezzo           5.5295        [1.8896, 9.1694]
+#
+# So reading it here invents nothing. It is the plugin's own formula over the
+# plugin's own declared returns, and the alternative -- printing a bound to
+# the user and withholding it from the comparison -- is how 1500 rows were
+# excused as an absent feature under D-NOCI while the feature was on the page.
+#
+# The other arms are a different matter, and they were CHECKED rather than
+# assumed: @emlDunnTest, @emlPairwiseT and @emlPairwiseWilcoxon return no
+# bound and no mean difference in their headers, their reports print neither,
+# and @emlRunPairwiseAnalysis hands .stDiffMat to @emlPublishAbsentMatrix on
+# the t and Wilcoxon arms -- marked absent, not merely unextracted. Those are
+# real plugin gaps and quantities.tsv declares them as belonging to the R side
+# alone. @emlScheffe DOES return .diffMatrix##, and that one is emitted.
+#
+# The ingredients arrive in emlKitCurHasCI / emlKitCurQCrit / emlKitCurMSW /
+# emlKitCurGroupN#, set by the caller beside the matrices, and every caller
+# sets emlKitCurHasCI explicitly so an arm that gains an interval later
+# cannot inherit the previous cell's.
 # ----------------------------------------------------------------------------
 procedure emlKitEmitPosthocPairs: .cellId$, .nGroups, .statName$, .effName$,
     ... .hasDiff, .hasEff, .hasStat, .rawSource$
@@ -564,6 +586,29 @@ procedure emlKitEmitPosthocPairs: .cellId$, .nGroups, .statName$, .effName$,
             if .hasEff = 1
                 @emlKitNum: .cellId$, "posthoc_" + .pn$ + "_" + .effName$,
                 ... emlKitCurEffMat## [.i, .j]
+            endif
+
+            ; THE FAMILY-WISE INTERVAL, by the plugin's own formula. Emitted
+            ; only where the caller says the ingredients exist; @emlKitNum
+            ; writes the _undefined marker rather than nothing when a pair's
+            ; half-width or difference is undefined, so a pair that could not
+            ; be bounded is still REPORTED as such.
+            if emlKitCurHasCI = 1
+                .ciHalf = undefined
+                if emlKitCurQCrit <> undefined and emlKitCurMSW <> undefined
+                    .ciHalf = emlKitCurQCrit * sqrt (emlKitCurMSW / 2
+                    ... * (1 / emlKitCurGroupN# [.i]
+                    ... + 1 / emlKitCurGroupN# [.j]))
+                endif
+                .ciDiff = emlKitCurDiffMat## [.i, .j]
+                .ciLow = undefined
+                .ciHigh = undefined
+                if .ciHalf <> undefined and .ciDiff <> undefined
+                    .ciLow = .ciDiff - .ciHalf
+                    .ciHigh = .ciDiff + .ciHalf
+                endif
+                @emlKitNum: .cellId$, "posthoc_" + .pn$ + "_ci_low", .ciLow
+                @emlKitNum: .cellId$, "posthoc_" + .pn$ + "_ci_high", .ciHigh
             endif
 
             if .rawSource$ = "dunn"
@@ -668,6 +713,23 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                 emlKitCurPMat## = emlRunAnovaAnalysis.stPMat##
                 emlKitCurStatMat## = emlRunAnovaAnalysis.stStatMat##
                 emlKitCurDiffMat## = emlRunAnovaAnalysis.stDiffMat##
+
+                # THE INTERVAL'S INGREDIENTS, COPIED ON THE NEXT LINE.
+                # @emlOneWayAnova's header lists .qCritical, .msWithin and
+                # .groupN[g] among its "Output (when .tukey = 1)" returns, and
+                # CLAUDE.md's rule is that a procedure's outputs survive only
+                # until it runs again -- so they are taken here, beside the
+                # matrices, and never read back later. .groupN is an indexed
+                # variable rather than a vector, so it is copied element by
+                # element into one the shared emitter can index.
+                emlKitCurHasCI = 1
+                emlKitCurQCrit = emlOneWayAnova.qCritical
+                emlKitCurMSW = emlOneWayAnova.msWithin
+                emlKitCurGroupN# = zero# (emlRunAnovaAnalysis.stNGroups)
+                for .gi to emlRunAnovaAnalysis.stNGroups
+                    emlKitCurGroupN# [.gi] = emlOneWayAnova.groupN [.gi]
+                endfor
+
                 @emlKitEmitPosthocPairs: .cellId$,
                 ... emlRunAnovaAnalysis.stNGroups, "q", "cohens_d", 1, 1, 1, ""
             else
@@ -701,7 +763,12 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
 
             emlKitCurEffMat## = emlRunKWAnalysis.stEffMat##
             if emlRunKWAnalysis.stDunnRan = 1
-                emlKitCurPMat## = emlRunKWAnalysis.stPMat##
+                # @emlDunnTest returns no bound: its header lists .pMatrix##,
+            # .zMatrix##, .rMatrix##, .rawP# and .adjustedP# and nothing else,
+            # and the Kruskal-Wallis report prints no interval. Declared as an
+            # R-side-only quantity in quantities.tsv, not emitted here.
+            emlKitCurHasCI = 0
+            emlKitCurPMat## = emlRunKWAnalysis.stPMat##
                 emlKitCurStatMat## = emlRunKWAnalysis.stStatMat##
                 @emlKitEmitPosthocPairs: .cellId$,
                 ... emlRunKWAnalysis.stNGroups, "z", "rank_biserial", 0, 1, 1,
@@ -729,6 +796,9 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
             @emlKitNum: .cellId$, "n", emlRunPairwiseAnalysis.stN
             @emlKitNum: .cellId$, "k", emlRunPairwiseAnalysis.stNGroups
             .nG = emlRunPairwiseAnalysis.stNGroups
+            # Neither @emlPairwiseT nor @emlPairwiseWilcoxon nor @emlScheffe
+            # returns an interval; see the note on @emlKitEmitPosthocPairs.
+            emlKitCurHasCI = 0
             emlKitCurPMat## = emlRunPairwiseAnalysis.stPMat##
             emlKitCurStatMat## = emlRunPairwiseAnalysis.stStatMat##
             emlKitCurDiffMat## = emlRunPairwiseAnalysis.stDiffMat##
@@ -836,6 +906,17 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                 @emlKitNum: .cellId$, "df", emlTTestPaired.df
                 @emlKitNum: .cellId$, "p", emlTTestPaired.p
                 @emlKitNum: .cellId$, "cohens_dz", emlCohenDz.dz
+            elsif .test$ = "parametric" or .test$ = "both"
+                # THE ARM WAS ASKED FOR AND PRODUCED NOTHING, WHICH IS A
+                # RESULT. The library prints "Parametric results omitted --
+                # Paired t-test failed: ..." on the page; writing no row here
+                # made a REFUSED arm indistinguishable from an arm nobody
+                # asked for, which is the same confusion that let 1500 Tukey
+                # rows read as an absent feature. @emlKitNum turns undefined
+                # into the explicit marker.
+                @emlKitNum: .cellId$, "t", undefined
+                @emlKitNum: .cellId$, "df", undefined
+                @emlKitNum: .cellId$, "cohens_dz", undefined
             endif
             if .nonOK
                 @emlKitNum: .cellId$, "w_statistic",
@@ -845,7 +926,13 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                     @emlKitNum: .cellId$, "wilcoxon_p",
                     ... emlWilcoxonSignedRank.p
                 else
+                    # This cell's only p is the Wilcoxon p, so it takes the
+                    # headline name. On test=both the second-arm slot is
+                    # still owed and is reported as empty.
                     @emlKitNum: .cellId$, "p", emlWilcoxonSignedRank.p
+                    if .test$ = "both"
+                        @emlKitNum: .cellId$, "wilcoxon_p", undefined
+                    endif
                 endif
             endif
         endif
@@ -1045,6 +1132,12 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                 @emlKitNum: .cellId$, "w_statistic",
                 ... emlRunNormalityAnalysis.swW
                 @emlKitNum: .cellId$, "p", emlRunNormalityAnalysis.swP
+            else
+                # Shapiro-Wilk refused this column (a constant column has no
+                # variance to work on). The refusal is the answer and it is
+                # reported, not dropped.
+                @emlKitNum: .cellId$, "w_statistic", undefined
+                @emlKitNum: .cellId$, "p", undefined
             endif
         endif
 
