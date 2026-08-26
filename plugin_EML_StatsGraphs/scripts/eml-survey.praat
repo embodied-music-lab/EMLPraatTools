@@ -169,8 +169,18 @@ procedure emlSurveyReportLanguage
     .msgAlphaOkE$ = "."
 
     .msgItemDelHeader$ = "Alpha if each item were dropped:"
-    .msgItemDelNA$ = "Not computed: alpha-if-item-deleted needs at least "
-    ... + "three items in the subscale; this one has two."
+    # V1.10: split into two fragments, joined at the call site with the
+    # SUBSCALE'S OWN item count, rather than one literal sentence that
+    # assumed the count -- see @eml_survey_lineItemDeleted, below, for why.
+    # "3" here is @emlCronbachAlpha's own alpha-if-deleted floor
+    # (eml-psychometrics.praat, "if .k >= 3" inside @emlCronbachAlpha) typed
+    # as a numeral rather than spelled out, so
+    # validate/v132_survey_report_layer.R's parity check can read this
+    # fragment and that line with the same regex and assert they still
+    # agree, instead of only this file's author trusting they do.
+    .msgItemDelNAa$ = "Not computed: alpha-if-item-deleted needs at least "
+    ... + "3 items in the subscale; this one has "
+    .msgItemDelNAb$ = "."
     .msgItemDelRefused$ = "Not computed: alpha itself did not compute for "
     ... + "this subscale (see Alpha, above)."
 
@@ -228,6 +238,16 @@ procedure emlSurveyReportLanguage
     .msgScoreE$ = ". "
     .msgScoreF$ = " respondent(s) received a score; "
     .msgScoreG$ = " received none."
+
+    .msgCsvOkA$ = "CSV export written to "
+    .msgCsvOkB$ = "."
+    .msgCsvRenamedA$ = "CSV export requested at "
+    .msgCsvRenamedB$ = " already exists; wrote to "
+    .msgCsvRenamedC$ = " instead."
+    .msgCsvFailEmpty$ = "CSV export was not written: nothing was collected "
+    ... + "to write."
+    .msgCsvFailWriteA$ = "CSV export to "
+    .msgCsvFailWriteB$ = " failed: the file could not be written."
 endproc
 
 
@@ -281,9 +301,24 @@ endproc
 # ============================================================================
 # "The item-deleted table." One line per item, or a stated reason there is
 # none: the alpha kernel refused (see Alpha, above -- the SAME refusal, not
-# repeated a second time), or the subscale has only two items and
-# alpha-if-deleted has nothing to drop to (@emlCronbachAlpha's own k >= 3
-# floor for this one output, eml-psychometrics.praat).
+# repeated a second time), or the subscale is too small for
+# alpha-if-deleted to have anything to drop to.
+#
+# V1.10: "too small" is READ off @emlCronbachAlpha's OWN verdict, not
+# re-derived from a restated floor. @emlSurveyScoreScales
+# (eml-psychometrics.praat) copies emlCronbachAlpha.alphaIfDeleted# into
+# .subAlphaIfDeleted[.s,*] verbatim; that vector is undefined at every
+# index precisely when @emlCronbachAlpha's own "if .k >= 3" gate did not
+# run (eml-psychometrics.praat), because a subscale that reaches this line
+# already passed refusal 3 (k >= 2) and the .subAlphaError$[.s] <> "" arm
+# above, so item 1 is undefined here if and only if k = 2 -- the ONLY value
+# k >= 2 can hold that is also k < 3. Asking .subK[.s] < 3 directly would
+# restate that same "3" a second time with nothing keeping the two in
+# sync; asking whether the kernel actually left its own output undefined
+# needs no restatement at all. See validate/v129's [alpha-if-deleted floor]
+# demo for a seeded subscale that exercises this branch, and
+# validate/v132's parity check for the "3" that DOES still have to be
+# stated in English, in .msgItemDelNAa$ above.
 # ----------------------------------------------------------------------------
 procedure eml_survey_lineItemDeleted: .s
     @emlSurveyReportLanguage
@@ -291,8 +326,11 @@ procedure eml_survey_lineItemDeleted: .s
     if emlSurveyScoreScales.subAlphaError$[.s] <> ""
         .line$ = .line$ + newline$ + "  "
         ... + emlSurveyReportLanguage.msgItemDelRefused$
-    elsif emlSurveyScoreScales.subK[.s] < 3
-        .line$ = .line$ + newline$ + "  " + emlSurveyReportLanguage.msgItemDelNA$
+    elsif emlSurveyScoreScales.subAlphaIfDeleted[.s, 1] = undefined
+        .line$ = .line$ + newline$ + "  "
+        ... + emlSurveyReportLanguage.msgItemDelNAa$
+        ... + string$ (emlSurveyScoreScales.subK[.s])
+        ... + emlSurveyReportLanguage.msgItemDelNAb$
     else
         for .j from 1 to emlSurveyScoreScales.subK[.s]
             .origIdx = emlSurveyScoreScales.subItemOrigIdx[.s, .j]
@@ -718,13 +756,51 @@ endproc
 # .csvExportPath$ = "" skips the CSV export entirely (report only); any
 # other string is passed straight to @emlSurveyExportCSV.
 #
+# THE EXPORT'S VERDICT IS CONSUMED HERE, NOT DISCARDED. @emlSurveyExportCSV
+# faithfully carries .success / .reason$ / .actualPath$ out of
+# @emlExportStatsCSV (eml-output.praat), and a caller that reads none of
+# them tells the user nothing when the two paths differ or the write fails
+# -- standing instruction 3 ("consume a classifier's whole verdict"), which
+# applies here just as much as to a refusal kind. @emlExportStatsCSV's
+# writer is non-destructive (@emlReportToFile's uniquing walk): a second
+# export to the same requested path is never overwritten and never lost,
+# but silently landing at "..._1.csv" instead of the requested name, with
+# nothing printed, is indistinguishable from data loss to a user who asked
+# for one file and did not get it under that name. So this door prints,
+# unconditionally whenever an export was attempted (.csvExportPath$ <> ""):
+# the actual path written, named explicitly whenever it differs from what
+# was requested (msgCsvRenamed*), and the reason when nothing was written
+# at all (msgCsvFailEmpty$ / msgCsvFailWrite*, keyed off
+# @emlExportStatsCSV's own "empty" / "write" .reason$ values -- see its
+# header for what each means). This procedure also returns the verdict as
+# its own outputs (.csvAttempted, .csvSuccess, .csvActualPath$,
+# .csvReason$) so a future caller other than the Info window -- a test, a
+# batch driver -- can act on it without re-parsing printed text.
+#
 # Leaves the three Table objects it read selected/available in the object
 # list on return, exactly like every other menu door in this plugin that
 # leaves its result Table for the user to inspect afterward -- this
 # procedure does not remove them.
+#
+# Output (in addition to the printed report):
+#   .refusal          - emlSurveyValidateDeclaration.refusal, unchanged
+#   .csvAttempted     - 1 if .csvExportPath$ <> "" and the declaration was
+#                        not refused (an export is only ever attempted when
+#                        there is a report to attach it to), 0 otherwise
+#   .csvSuccess       - @emlExportStatsCSV's .success; 0 when .csvAttempted
+#                        is 0 too, so a caller need not check both
+#   .csvActualPath$   - @emlExportStatsCSV's .actualPath$; "" when
+#                        .csvAttempted is 0
+#   .csvReason$       - @emlExportStatsCSV's .reason$; "" when .csvAttempted
+#                        is 0 or .csvSuccess is 1
 # ----------------------------------------------------------------------------
 procedure emlSurveyRunReport: .dataPath$, .itemsPath$, .scalesPath$, .csvExportPath$
     @emlSurveyReportLanguage
+
+    .csvAttempted = 0
+    .csvSuccess = 0
+    .csvActualPath$ = ""
+    .csvReason$ = ""
 
     .dataTableId = Read Table from comma-separated file: .dataPath$
     .scalesTableId = Read Table from comma-separated file: .scalesPath$
@@ -750,8 +826,31 @@ procedure emlSurveyRunReport: .dataPath$, .itemsPath$, .scalesPath$, .csvExportP
         endfor
 
         if .csvExportPath$ <> ""
+            .csvAttempted = 1
             @emlSurveyExportCSV: .dataTableId, .dataPath$, .itemsPath$,
             ... .scalesPath$, .csvExportPath$
+            .csvSuccess = emlSurveyExportCSV.success
+            .csvActualPath$ = emlSurveyExportCSV.actualPath$
+            .csvReason$ = emlSurveyExportCSV.reason$
+
+            if .csvSuccess = 1
+                if .csvActualPath$ = .csvExportPath$
+                    appendInfoLine: emlSurveyReportLanguage.msgCsvOkA$
+                    ... + .csvActualPath$ + emlSurveyReportLanguage.msgCsvOkB$
+                else
+                    appendInfoLine: emlSurveyReportLanguage.msgCsvRenamedA$
+                    ... + .csvExportPath$
+                    ... + emlSurveyReportLanguage.msgCsvRenamedB$
+                    ... + .csvActualPath$
+                    ... + emlSurveyReportLanguage.msgCsvRenamedC$
+                endif
+            elsif .csvReason$ = "empty"
+                appendInfoLine: emlSurveyReportLanguage.msgCsvFailEmpty$
+            else
+                appendInfoLine: emlSurveyReportLanguage.msgCsvFailWriteA$
+                ... + .csvExportPath$
+                ... + emlSurveyReportLanguage.msgCsvFailWriteB$
+            endif
         endif
     endif
 endproc

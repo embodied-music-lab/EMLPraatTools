@@ -196,6 +196,67 @@ if (!canDrive) {
     esc <- function(p) gsub('"', '""', p)
 
     # -------------------------------------------------------------------
+    # [Finding 3] eml_menu_canon -- setup.praat, READ, is the source of
+    #    truth for the repair door's command label and menu path, not a
+    #    second copy typed into this check. Before this fix, the
+    #    "refusal-routing demo" below (section 6) asserted two LITERAL
+    #    strings ("Check & repair data", "Objects > New > EML Stats &
+    #    Graphs > Check & repair data") -- a third copy of the same two
+    #    facts eml-psychometrics.praat's .rem8d$ already hardcodes and
+    #    setup.praat already registers, agreeing with neither by
+    #    construction, only by nobody having changed one of the three
+    #    yet. A rename in setup.praat would leave that check green while
+    #    refusal 8 routed users to a menu entry that no longer exists.
+    #
+    #    Praat's "Add menu command" depth argument is LITERAL menu depth,
+    #    not "child of whatever 'after$' names": every command registered
+    #    at depth 1 under "Objects"/"New" sits one level under the single
+    #    depth-0 cascade header, regardless of which sibling command its
+    #    own 'after$' field names for display ordering (verified against
+    #    setup.praat's own registration table -- "EML Graphs...",
+    #    "-- eml data --" and "Check & repair data..." are all depth 1,
+    #    despite each naming the previous as its 'after$'). So the menu
+    #    path this check needs is never deeper than "cascade > command",
+    #    and .depth is asserted below to still be exactly 1 rather than
+    #    assumed, so a future re-nesting cannot pass silently.
+    # -------------------------------------------------------------------
+    eml_menu_canon <- function(setup_path, script_rel) {
+        sl <- readLines(setup_path, warn = FALSE)
+        reg <- grep("^Add menu command:", sl, value = TRUE)
+        parse_line <- function(s) {
+            m <- regmatches(s, regexec(
+                '^Add menu command:\\s*"([^"]*)",\\s*"([^"]*)",\\s*"([^"]*)",\\s*"([^"]*)",\\s*([0-9]+),\\s*"([^"]*)"',
+                s))[[1]]
+            if (length(m) != 7L) return(NULL)
+            list(window = m[2], menu = m[3], label = m[4], after = m[5],
+                depth = as.integer(m[6]), script = m[7])
+        }
+        parsed <- Filter(Negate(is.null), lapply(reg, parse_line))
+        parsed <- Filter(function(p) identical(p$window, "Objects") && identical(p$menu, "New"), parsed)
+
+        depth0 <- Filter(function(p) p$depth == 0L && identical(p$after, "") && identical(p$script, ""),
+                         parsed)
+        if (length(depth0) != 1L)
+            stop("eml_menu_canon: expected exactly one depth-0 Objects>New cascade header in ",
+                setup_path, ", found ", length(depth0))
+
+        cmd <- Filter(function(p) identical(p$script, script_rel), parsed)
+        if (length(cmd) != 1L)
+            stop("eml_menu_canon: expected exactly one registration for '", script_rel,
+                "' in ", setup_path, ", found ", length(cmd))
+        if (cmd[[1]]$depth != 1L)
+            stop("eml_menu_canon: '", script_rel, "' is registered at depth ", cmd[[1]]$depth,
+                ", not 1 -- the 'cascade > command' menu-path assumption no longer holds")
+
+        list(top_label = depth0[[1]]$label, cmd_label = cmd[[1]]$label,
+            full_path = paste0("Objects > New > ", depth0[[1]]$label, " > ", cmd[[1]]$label))
+    }
+    setup_path <- file.path(plug, "setup.praat")
+    menu_canon <- eml_menu_canon(setup_path, "scripts/eml-check-data.praat")
+    check_true("v132", "[Finding 3] setup.praat's own registration for the repair door was read (command label + top cascade label, both non-empty)",
+               nzchar(menu_canon$cmd_label) && nzchar(menu_canon$top_label))
+
+    # -------------------------------------------------------------------
     # 2. THE DRIVER -- builds a probe against one stats/scripts directory
     #    (the clean symlinked one, or a mutant), one data fixture, and
     #    dumps a rich tagged report of the report layer's raw facts:
@@ -279,6 +340,13 @@ if (!canDrive) {
             # when it refused, so a caller need not guard every read.
             "        ... lastOrigRow, \"|\",",
             '        ... "END"',
+            # IDTEXT dumps eml_survey_lineItemDeleted's own raw .line$ text
+            # (never carried by the BLK tag above, which records only
+            # presence/containment booleans) -- needed so Finding 4's
+            # behavioural demo can grep the LIVE sentence itself, not just
+            # confirm it exists.
+            '        appendInfoLine: "IDTEXT|", s, "|",',
+            "        ... eml_survey_lineItemDeleted.line$, \"|END\"",
             "        if emlSurveySubscaleDisclosure.count > 0",
             '            appendInfoLine: "DISCITEM|", s, "|",',
             '            ... emlSurveySubscaleDisclosure.item$[1], "|",',
@@ -569,11 +637,53 @@ if (!canDrive) {
                !any(grepl("^Error", out_bad)))
     check_true("v132", "[refusal-routing demo] no subscale report was printed (no \"--- Subscale:\" line)",
                !any(grepl("^--- Subscale:", out_bad)))
-    check_true("v132", "[refusal-routing demo] the door echoes the routing phrase naming \"Check & repair data\" by command name",
-               any(grepl("Check & repair data", out_bad, fixed = TRUE)))
-    check_true("v132", "[refusal-routing demo] the door echoes the routing phrase naming the menu location",
-               any(grepl("Objects > New > EML Stats & Graphs > Check & repair data",
-                        out_bad, fixed = TRUE)))
+    check_true("v132", "[refusal-routing demo, Finding 3] the door echoes the routing phrase naming the repair command by setup.praat's OWN registered label (read from source, not restated)",
+               any(grepl(menu_canon$cmd_label, out_bad, fixed = TRUE)))
+    check_true("v132", "[refusal-routing demo, Finding 3] the door echoes the routing phrase naming the menu location, derived from setup.praat's OWN cascade header + the command's OWN registration depth (read from source, not restated)",
+               any(grepl(menu_canon$full_path, out_bad, fixed = TRUE)))
+
+    # -------------------------------------------------------------------
+    # NEGATIVE CONTROL for Finding 3: setup.praat RENAMED, in a SCRATCH
+    # COPY only (this file may READ the real setup.praat; it may not
+    # edit it) -- proving the parity check above is load-bearing. A
+    # rename desyncs the door's UNCHANGED printed text from setup.praat's
+    # own registration; eml_menu_canon, reading the renamed scratch copy,
+    # correctly derives a DIFFERENT label/path than what the door (driven
+    # once, above, against the real setup.praat) actually printed.
+    # -------------------------------------------------------------------
+    # The bare label literal also appears as the NEXT registration's
+    # "after$" ordering field (setup.praat: "-- eml record --" is
+    # inserted after "Check & repair data...") -- a second, harmless
+    # occurrence that is not the registration line itself, so the seed
+    # site asserted here is the REGISTRATION LINE (label + its own
+    # script), which setup.praat's own registration-line shape
+    # (validate/helpers.R's eml_setup_commands reads the same shape)
+    # guarantees is unique per script.
+    f3_needle <- '"Check & repair data...", "-- eml data --", 1, "scripts/eml-check-data.praat"'
+    mut_setup_lines <- readLines(setup_path, warn = FALSE)
+    f3_hits <- sum(grepl(f3_needle, mut_setup_lines, fixed = TRUE))
+    check_true("v132", "[Finding 3] the repair command's registration line appears in setup.praat exactly once (negative-control seed site)",
+               f3_hits == 1L)
+    mut_setup_lines <- sub('"Check & repair data..."', '"Repair & check data..."', mut_setup_lines, fixed = TRUE)
+    mut_setup_path <- file.path(work, "csv", "setup-renamed.praat")
+    writeLines(mut_setup_lines, mut_setup_path)
+    mut_menu_canon <- eml_menu_canon(mut_setup_path, "scripts/eml-check-data.praat")
+    check_true("v132", "[Finding 3] the renamed scratch copy of setup.praat actually parses to a DIFFERENT command label (the seed took)",
+               !identical(mut_menu_canon$cmd_label, menu_canon$cmd_label))
+
+    if (red_mode) {
+        cat("      EML_LANE_RED: running the standard routing-phrase checks with setup.praat's\n")
+        cat("      renamed-scratch-copy verdict standing in for the real one -- the next two\n")
+        cat("      checks are EXPECTED to FAIL: the door's printed text was never touched, so\n")
+        cat("      it does not name what the renamed setup.praat says.\n")
+        check_true("v132", "[RED] the door echoes the routing phrase naming the (renamed) command (must go red -- the door's text was never touched by the rename)",
+                   any(grepl(mut_menu_canon$cmd_label, out_bad, fixed = TRUE)))
+        check_true("v132", "[RED] the door echoes the routing phrase naming the (renamed) menu location (must go red)",
+                   any(grepl(mut_menu_canon$full_path, out_bad, fixed = TRUE)))
+    } else {
+        check_true("v132", "[Finding 3] renamed-setup.praat mutant differs from correct: its derived command label no longer appears in the (real, unrenamed) door's printed text -- exactly Finding 3's reported defect (a rename desyncs the door silently)",
+                   !any(grepl(mut_menu_canon$cmd_label, out_bad, fixed = TRUE)))
+    }
 
     # -------------------------------------------------------------------
     # 7. THE CSV EXPORT: item_rest / item_total as raw values, and
@@ -624,6 +734,283 @@ if (!canDrive) {
             row <- exp[exp$field == fld_name, ]
             check_true("v132", sprintf("[csv export] provenance row \"%s\" is present and cites the file BY PATH", fld_name),
                        nrow(row) == 1 && identical(row$value[1], prov[[fld_name]]))
+        }
+    }
+
+    # -------------------------------------------------------------------
+    # 7b [Finding 2]: THE DOOR CONSUMES THE EXPORT'S VERDICT. Exporting
+    #    to the SAME requested path twice must not silently rename the
+    #    second file with nothing said: @emlExportStatsCSV's writer is
+    #    non-destructive (the uniquing walk in eml-output.praat), so the
+    #    SECOND export lands at "..._1.csv" while the requested name is
+    #    what run 1 already used -- and @emlSurveyRunReport must NAME
+    #    the actual path both times, explicitly flagging the mismatch on
+    #    run 2. Live-verified defect, before this fix: exporting twice
+    #    silently wrote the second run to a different file with nothing
+    #    printed about it.
+    # -------------------------------------------------------------------
+    f2_csv_path <- file.path(work, "csv", "f2_export.csv")
+    if (file.exists(f2_csv_path)) file.remove(f2_csv_path)
+    drive_door_csv <- function(dirlabel, csv_export_path, tag) {
+        probe <- file.path(work, "scripts", paste0("v132-f2-", tag, ".praat"))
+        writeLines(c(
+            paste0("include ../", dirlabel, "/eml-core-utilities.praat"),
+            paste0("include ../", dirlabel, "/eml-extract.praat"),
+            paste0("include ../", dirlabel, "/eml-inferential.praat"),
+            paste0("include ../", dirlabel, "/eml-analysis.praat"),
+            paste0("include ../", dirlabel, "/eml-output.praat"),
+            paste0("include ../", dirlabel, "/eml-psychometrics.praat"),
+            paste0("include ../", dirlabel, "/eml-survey.praat"),
+            "",
+            'writeInfoLine: "DOORSTART"',
+            sprintf('@emlSurveyRunReport: "%s", "%s", "%s", "%s"',
+                   esc(committed_data_path), esc(committed_items_path),
+                   esc(committed_scales_path), esc(csv_export_path)),
+            'appendInfoLine: "DOOREND"',
+            'appendInfoLine: "F2|", emlSurveyRunReport.csvAttempted, "|",',
+            '... emlSurveyRunReport.csvSuccess, "|",',
+            '... emlSurveyRunReport.csvActualPath$, "|",',
+            '... emlSurveyRunReport.csvReason$, "|END"'),
+            probe)
+        suppressWarnings(system2("env",
+            c("-u", "DISPLAY", shQuote(praat), shQuote(paste0("--pref-dir=", prefs)),
+              "--run", shQuote(probe)), stdout = TRUE, stderr = TRUE))
+    }
+    f2_field <- function(out, i) {
+        row <- grep("^F2\\|", out, value = TRUE)
+        if (!length(row)) return(NA_character_)
+        strsplit(row[1], "|", fixed = TRUE)[[1]][i + 1L]
+    }
+
+    out_f2_run1 <- drive_door_csv("clean", f2_csv_path, "run1")
+    check_true("v132", "[Finding 2] door probe (run 1, fresh path) ran without a Praat error",
+               !any(grepl("^Error", out_f2_run1)))
+    check_true("v132", "[Finding 2] run 1: the file exists on disk at the requested path",
+               file.exists(f2_csv_path))
+    check_true("v132", "[Finding 2] run 1: the door NAMES the written path in its own printed output",
+               any(grepl(f2_csv_path, out_f2_run1, fixed = TRUE)))
+
+    out_f2_run2 <- drive_door_csv("clean", f2_csv_path, "run2")
+    check_true("v132", "[Finding 2] door probe (run 2, SAME requested path) ran without a Praat error",
+               !any(grepl("^Error", out_f2_run2)))
+    run2_actual <- f2_field(out_f2_run2, 3)
+    check_true("v132", "[Finding 2] run 2: csvSuccess is still 1 (the write itself succeeded)",
+               identical(f2_field(out_f2_run2, 2), "1"))
+    check_true("v132", "[Finding 2] run 2: the ACTUAL written path DIFFERS from the requested one (the non-destructive uniquing walk really did rename it -- the seed for this whole demo)",
+               !is.na(run2_actual) && !identical(run2_actual, f2_csv_path))
+    check_true("v132", "[Finding 2] run 2: the renamed file actually exists on disk",
+               !is.na(run2_actual) && file.exists(run2_actual))
+    check_true("v132", "[Finding 2] run 2: the door's own printed output NAMES BOTH the requested path and the actual path used instead -- exactly the fact the discarded verdict used to lose",
+               any(grepl(f2_csv_path, out_f2_run2, fixed = TRUE)) &&
+               !is.na(run2_actual) && any(grepl(run2_actual, out_f2_run2, fixed = TRUE)))
+
+    # -------------------------------------------------------------------
+    # NEGATIVE CONTROL for Finding 2: a mutant copy of eml-survey.praat
+    # with the door's export block reverted to the ORIGINAL,
+    # verdict-discarding 2-line form (call @emlSurveyExportCSV, read
+    # nothing back) -- located by BRACKET DEPTH from the
+    # ".csvAttempted = 1" line to its enclosing "if .csvExportPath$ <>
+    # """'s matching endif, never a hand-typed line count.
+    # -------------------------------------------------------------------
+    f2_src <- readLines(file.path(scriptsdir, "eml-survey.praat"), warn = FALSE)
+    f2_start <- grep("^\\s*\\.csvAttempted = 1\\s*$", f2_src)
+    check_true("v132", "[Finding 2] the verdict-consuming block's start line exists in source, exactly once (negative-control seed site)",
+               length(f2_start) == 1L)
+    f2_inner_if <- grep('^\\s*if \\.csvSuccess = 1\\s*$', f2_src)
+    check_true("v132", "[Finding 2] the verdict-consuming block's own \"if .csvSuccess = 1\" exists, exactly once",
+               length(f2_inner_if) == 1L)
+    if (length(f2_start) == 1L && length(f2_inner_if) == 1L) {
+        depth <- 1L; k <- f2_inner_if[1] + 1L
+        while (depth > 0L && k <= length(f2_src)) {
+            if (grepl("^\\s*if\\b", f2_src[k])) depth <- depth + 1L
+            if (grepl("^\\s*endif\\b", f2_src[k])) depth <- depth - 1L
+            if (depth > 0L) k <- k + 1L
+        }
+        f2_end <- k  # the endif line closing "if .csvSuccess = 1"
+        check_true("v132", "[Finding 2] the verdict-consuming block's own closing endif was found by bracket depth",
+                   depth == 0L && f2_end > f2_inner_if[1])
+
+        f2_mut_lines <- c(f2_src[seq_len(f2_start[1] - 1L)],
+                          "            @emlSurveyExportCSV: .dataTableId, .dataPath$, .itemsPath$,",
+                          "            ... .scalesPath$, .csvExportPath$",
+                          f2_src[seq(f2_end + 1L, length(f2_src))])
+        f2_mutdir <- file.path(work, "m_finding2_verdict_discarded")
+        link_deps(f2_mutdir, survey_path = { p <- file.path(work, "csv", "f2-mut-survey.praat")
+                                             writeLines(f2_mut_lines, p); p })
+
+        f2_mut_csv_path <- file.path(work, "csv", "f2_export_mut.csv")
+        if (file.exists(f2_mut_csv_path)) file.remove(f2_mut_csv_path)
+        out_f2_mut_run1 <- drive_door_csv("m_finding2_verdict_discarded", f2_mut_csv_path, "mut-run1")
+        out_f2_mut_run2 <- drive_door_csv("m_finding2_verdict_discarded", f2_mut_csv_path, "mut-run2")
+        check_true("v132", "[Finding 2] verdict-discarding mutant probes ran",
+                   !any(grepl("^Error", out_f2_mut_run1)) && !any(grepl("^Error", out_f2_mut_run2)))
+
+        if (red_mode) {
+            cat("      EML_LANE_RED: running the standard 'names both paths on run 2' check\n")
+            cat("      against the verdict-discarding mutant -- the next check is EXPECTED to\n")
+            cat("      FAIL: the mutant never reads .actualPath$ at all, so it cannot name it.\n")
+            mut_actual3 <- f2_field(out_f2_mut_run2, 3)
+            check_true("v132", "[RED] run 2 (mutant): the door's printed output names the actual path used instead (must go red -- the mutant discards the verdict, so .csvActualPath$ stays at its unset default, \"\")",
+                       !is.na(mut_actual3) && nzchar(mut_actual3) &&
+                       any(grepl(mut_actual3, out_f2_mut_run2, fixed = TRUE)))
+        } else {
+            check_true("v132", "[Finding 2] verdict-discarding mutant differs from correct: run 2's printed output says NOTHING that names any path at all (no requested path, no actual path -- exactly the reported defect, \"the user was told nothing\")",
+                       !any(grepl(f2_mut_csv_path, out_f2_mut_run2, fixed = TRUE)))
+        }
+    }
+
+    # -------------------------------------------------------------------
+    # 7c [Finding 4]: THE ALPHA-IF-DELETED FLOOR IS NOT RESTATED. Before
+    #    this fix, eml-survey.praat's @eml_survey_lineItemDeleted asked
+    #    `emlSurveyScoreScales.subK[.s] < 3` (a SECOND copy of
+    #    @emlCronbachAlpha's own "if .k >= 3" gate) to decide whether to
+    #    print the item-deleted table or the "not computed" sentence, AND
+    #    that sentence hardcoded "this one has two" -- correct only
+    #    because refusal 3 independently floors k at 2, a coupling stated
+    #    in comments but never asserted.
+    #
+    #    THE FIX: the decision now reads
+    #    `emlSurveyScoreScales.subAlphaIfDeleted[.s, 1] = undefined` --
+    #    the kernel's OWN output, left undefined by @emlCronbachAlpha
+    #    itself exactly when its "if .k >= 3" gate did not run -- so no
+    #    threshold is restated in the LOGIC at all. The one number that
+    #    CANNOT be eliminated (the ENGLISH SENTENCE has to say a number)
+    #    is a numeral, not a spelled-out word, exactly so a check can
+    #    read it: this is a v105-style TEXT parity check, source-level,
+    #    no live run, because the fact being asserted is "two pieces of
+    #    TEXT agree", not "two computations agree".
+    # -------------------------------------------------------------------
+
+    # 7c-i. BEHAVIOUR: a seeded 2-item subscale (B3 reassigned to
+    # "ignore", leaving Knowledge with only B1/B2) prints the item-count
+    # LIVE, not a hardcoded "two" -- checked with k=2 here specifically
+    # because the 24-respondent and small_data.csv fixtures both declare
+    # every subscale at k>=3, so this path is otherwise never exercised
+    # by any check in this file.
+    items4_lines <- readLines(committed_items_path, warn = FALSE)
+    items4_lines[grepl("^B3,", items4_lines)] <- "B3,ignore,0"
+    p4_items <- write_csv_lines(items4_lines, "f4_k2_items.csv")
+    out_f4 <- drive_report("clean", committed_data_path, committed_scales_path,
+                           p4_items, "f4-k2")
+    check_true("v132", "[Finding 4] k=2 probe ran cleanly", ran_ok(out_f4))
+    if (ran_ok(out_f4)) {
+        blk_f4 <- fld_all(out_f4, "BLK")
+        know_f4 <- blk_f4[[which(vapply(blk_f4, function(r) r[2] == "Knowledge", logical(1)))]]
+        item_deleted_present <- know_f4[3 + 1]  # length(eml_survey_lineItemDeleted.line$) > 0 (the 2nd "present" value, index = 3 + (k-1) for the k-th appended value)
+        check_true("v132", "[Finding 4] Knowledge's item-deleted block is still non-empty (prints the \"not computed\" sentence, not nothing)",
+                   identical(item_deleted_present, "1"))
+        item_deleted_contained <- know_f4[3 + 15]  # contains eml_survey_lineItemDeleted.line$ (the 16th appended value)
+        check_true("v132", "[Finding 4] Knowledge's item-deleted line is present in the ASSEMBLED subscale report text",
+                   identical(item_deleted_contained, "1"))
+    }
+    # The line's own TEXT is read directly (not just presence/containment)
+    # from a dedicated "IDTEXT|s|<line$>|END" dump drive_report emits per
+    # subscale (the BLK tag itself carries only booleans, never the raw
+    # text), to confirm it says "2", live, not "3" or any other stale
+    # number.
+    # .line$ itself embeds newline$ (the header sits on its own line above
+    # the message), so the single appendInfoLine call that dumped it spans
+    # SEVERAL captured output lines, only the first of which carries the
+    # "IDTEXT|3|" tag -- the block is read out as the run of lines from
+    # that tag through the next one ending "|END".
+    idtext_start_f4 <- grep("^IDTEXT\\|3\\|", out_f4)
+    check_true("v132", "[Finding 4] Knowledge's IDTEXT dump was found, exactly once",
+               length(idtext_start_f4) == 1L)
+    idtext_block_f4 <- character(0)
+    if (length(idtext_start_f4) == 1L) {
+        end_offsets <- which(grepl("\\|END$", out_f4[idtext_start_f4:length(out_f4)]))
+        idtext_end_f4 <- idtext_start_f4 - 1L + end_offsets[1]
+        idtext_block_f4 <- paste(out_f4[idtext_start_f4:idtext_end_f4], collapse = "\n")
+    }
+    check_true("v132", "[Finding 4] the item-deleted block's raw text says \"this one has 2\" -- the LIVE subK value, not a hardcoded \"two\"",
+               nzchar(idtext_block_f4) && grepl("this one has 2", idtext_block_f4, fixed = TRUE))
+    check_true("v132", "[Finding 4] the item-deleted block's raw text does NOT say \"two\" (the old hardcoded word)",
+               !(nzchar(idtext_block_f4) && grepl("this one has two", idtext_block_f4, fixed = TRUE)))
+
+    # 7c-ii. THE TEXT PARITY CHECK: @emlCronbachAlpha's OWN "if .k >= N"
+    # gate for alpha-if-deleted (read from ITS procedure body, never the
+    # OTHER "if .k >= 3" line eml-psychometrics.praat's
+    # @emlSurveyScoreScales itself still carries when copying the
+    # kernel's array -- scoped to the KERNEL's procedure specifically, by
+    # its own "procedure emlCronbachAlpha:" ... "endproc" bounds, so a
+    # copy elsewhere in the file can never be misread as the canon) vs
+    # eml-survey.praat's prose-stated floor.
+    psych_lines_f4 <- readLines(file.path(statsdir, "eml-psychometrics.praat"), warn = FALSE)
+    proc_start_f4 <- grep("^procedure emlCronbachAlpha:", psych_lines_f4)
+    check_true("v132", "[Finding 4] @emlCronbachAlpha's procedure header exists in source, exactly once",
+               length(proc_start_f4) == 1L)
+    endproc_lines_f4 <- grep("^endproc$", psych_lines_f4)
+    proc_end_f4 <- endproc_lines_f4[endproc_lines_f4 > proc_start_f4[1]][1]
+    check_true("v132", "[Finding 4] @emlCronbachAlpha's matching endproc was found after its header",
+               !is.na(proc_end_f4))
+
+    survey_lines_f4 <- readLines(file.path(scriptsdir, "eml-survey.praat"), warn = FALSE)
+
+    # eml-survey.praat's prose lives as a Praat string CONCATENATED across
+    # a "X$ = "..."" line and one or more "... + "..."" continuation
+    # lines (msgItemDelNAa$ itself splits "needs at least " from "3 items
+    # ..." this way), so a single-line grep for the floor's digit never
+    # sees it. This joins each contiguous run of quoted-string-literal
+    # lines into the one span of prose text it actually assembles into at
+    # runtime, before the floor is read out of it.
+    join_praat_string_runs <- function(body) {
+        out <- character(0)
+        i <- 1
+        while (i <= length(body)) {
+            line <- body[i]
+            if (grepl('\\$\\s*=\\s*"', line) || grepl('^\\s*\\.\\.\\.\\s*\\+\\s*"', line)) {
+                unquote <- function(s) sub('^"', '', sub('"$', '', s))
+                segs <- regmatches(line, gregexpr('"([^"]*)"', line))[[1]]
+                txt <- paste(unquote(segs), collapse = "")
+                j <- i + 1
+                while (j <= length(body) && grepl('^\\s*\\.\\.\\.\\s*\\+\\s*"', body[j])) {
+                    segs2 <- regmatches(body[j], gregexpr('"([^"]*)"', body[j]))[[1]]
+                    txt <- paste0(txt, paste(unquote(segs2), collapse = ""))
+                    j <- j + 1
+                }
+                out <- c(out, txt)
+                i <- j
+            } else {
+                i <- i + 1
+            }
+        }
+        out
+    }
+
+    parity_check_f4 <- function(psych_body, survey_body, tag) {
+        floor_lines <- grep("if \\.k >= [0-9]+\\s*$", psych_body, value = TRUE)
+        check_true("v132", sprintf("[Finding 4%s] @emlCronbachAlpha's alpha-if-deleted gate (\"if .k >= N\") was found inside its own procedure body, exactly once", tag),
+                   length(floor_lines) == 1L)
+        kernel_floor <- if (length(floor_lines) == 1L)
+            suppressWarnings(as.integer(sub(".*if \\.k >= ([0-9]+)\\s*$", "\\1", floor_lines[1]))) else NA_integer_
+
+        prose_texts <- join_praat_string_runs(survey_body)
+        prose_lines <- grep("needs at least [0-9]+ items", prose_texts, value = TRUE)
+        check_true("v132", sprintf("[Finding 4%s] eml-survey.praat's prose fragment stating the floor (\"needs at least N items\") was found, exactly once", tag),
+                   length(prose_lines) == 1L)
+        prose_floor <- if (length(prose_lines) == 1L)
+            suppressWarnings(as.integer(sub(".*needs at least ([0-9]+) items.*", "\\1", prose_lines[1]))) else NA_integer_
+
+        list(kernel_floor = kernel_floor, prose_floor = prose_floor)
+    }
+
+    if (!is.na(proc_end_f4)) {
+        pv <- parity_check_f4(psych_lines_f4[proc_start_f4[1]:proc_end_f4], survey_lines_f4, "")
+        if (red_mode) {
+            cat("      EML_LANE_RED: running the parity check with the PROSE's floor mutated to\n")
+            cat("      a different number (in memory only, never written to eml-survey.praat) --\n")
+            cat("      the next check is EXPECTED to FAIL.\n")
+            mut_survey_f4 <- sub("3 items in the subscale", "4 items in the subscale", survey_lines_f4, fixed = TRUE)
+            check_true("v132", "[Finding 4] the mutated prose line actually differs from the real one (the seed took)",
+                       !identical(mut_survey_f4, survey_lines_f4))
+            pv_red <- parity_check_f4(psych_lines_f4[proc_start_f4[1]:proc_end_f4], mut_survey_f4, " RED")
+            check_true("v132", "[RED] eml-survey.praat's prose-stated floor agrees with @emlCronbachAlpha's own alpha-if-deleted gate (must go red once the prose is mutated to a different number)",
+                       !is.na(pv_red$prose_floor) && !is.na(pv_red$kernel_floor) &&
+                       pv_red$prose_floor == pv_red$kernel_floor)
+        } else {
+            check_true("v132", sprintf("[Finding 4] eml-survey.praat's prose-stated floor (%s) agrees with @emlCronbachAlpha's own alpha-if-deleted gate (%s)",
+                                      pv$prose_floor, pv$kernel_floor),
+                       !is.na(pv$prose_floor) && !is.na(pv$kernel_floor) && pv$prose_floor == pv$kernel_floor)
         }
     }
 

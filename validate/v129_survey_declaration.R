@@ -691,10 +691,18 @@ if (!canDrive) {
               num_(out8_leaddot, "res", 4), 2, tol = 0)
         check_true("v129", "[refusal 8, kind 5] badCellText is \".8\"",
                    identical(str_(out8_leaddot, "res", 17), ".8"))
-        # [V1.7, cell ruling] LEG UPDATED: a bare leading-dot cell is
-        # untouched by the ruling (@eml_classifyCell's own kind 5, not the
-        # "unreadable" bucket), so it never reaches @emlRepairClassify.
-        check("v129", "[cell ruling] leading-dot cell: disclosureCount is 0 (never asked the placeholder question)",
+        # [Finding 1 fix] LEG RE-UPDATED: ".8" DOES now reach
+        # @emlRepairClassify (kind 5 is examined on the same terms as the
+        # "unreadable" bucket -- see @eml_scanColumnForPlaceholders's own
+        # header), but @emlRepairClassify's OWN verdict for ".8" is kind 2
+        # ("bare leading point"), not kind 3, so it is correctly NOT a
+        # recognised placeholder either way. disclosureCount stays 0 for
+        # the same reason as before Finding 1 -- being asked the question
+        # and answering "no" looks identical, from here, to never being
+        # asked -- but the demo just below (".", not ".8") is the case
+        # where asking and not asking give DIFFERENT answers, which is
+        # exactly what Finding 1 was.
+        check("v129", "[cell ruling] leading-dot cell: disclosureCount is 0 (asked the placeholder question, correctly answered \"no\")",
               num_(out8_leaddot, "res", 25), 0, tol = 0)
         positive_leg_codes <- c(positive_leg_codes, 8)
     }
@@ -846,6 +854,118 @@ if (!canDrive) {
         # is DRAFT, awaiting Ian's approval, like every other message this
         # procedure builds. The refusal code, badItem, badRow and
         # badCellText above are what this demo actually proves.
+    }
+
+    # -------------------------------------------------------------------
+    # 4d-cell-ruling [Finding 1]: THE AUTHORITY IS THE AUTHORITY -- every
+    #    one of @emlRepairClassify's eleven kind-3 spellings (na, n/a,
+    #    n.a., nan, null, nil, -, --, ., ?, missing -- eml-extract.praat:
+    #    2665, read here, never restated) actually REACHES
+    #    @emlRepairClassify from a subscale item's data column and is
+    #    judged a recognised placeholder, not just the ten that already
+    #    happened to land in @eml_classifyCell's own "unreadable" bucket.
+    #
+    #    Before the fix, "." collided with @eml_classifyCell's OWN kind-5
+    #    "bare leading decimal" recovery (built for ".5") -- a bare "."
+    #    parses as "0." under the same probe, which is strictly numeric,
+    #    so @eml_classifyCell filed it as kind 5, recoverable, and
+    #    @eml_scanColumnForPlaceholders excluded kind 5 from ever asking
+    #    @emlRepairClassify at all. The other ten spellings are not
+    #    numeric-shaped in any way @eml_classifyCell recognises, so all
+    #    ten already reached @emlRepairClassify before this fix; this
+    #    section proves that empirically for LIVE VALUES rather than
+    #    trusting the count -- one leg per spelling, sweeping the whole
+    #    authority list, not a hand-picked sample.
+    # -------------------------------------------------------------------
+    placeholder_spellings <- c("na", "n/a", "n.a.", "nan", "null", "nil",
+                              "-", "--", ".", "?", "missing")
+    for (sp in placeholder_spellings) {
+        data_sp <- edit_field(clean_data_lines, 2, "R1", sp)
+        p_sp <- write_csv_lines(data_sp, paste0("dcr_sp_", gsub("[^A-Za-z0-9]", "_", sp), "_data.csv"))
+        out_sp <- drive_validate("stats", p_sp, committed_scales_path,
+                                 committed_items_path, paste0("cr-sp-", gsub("[^A-Za-z0-9]", "_", sp)))
+        check_true("v129", sprintf("[Finding 1, all-eleven sweep] spelling \"%s\": probe ran", sp),
+                   ran_ok(out_sp))
+        if (ran_ok(out_sp)) {
+            check("v129", sprintf("[Finding 1, all-eleven sweep] spelling \"%s\": refusal stays 0 (reached @emlRepairClassify and was recognised)", sp),
+                  num_(out_sp, "res", 1), 0, tol = 0)
+            check("v129", sprintf("[Finding 1, all-eleven sweep] spelling \"%s\": disclosureCount is 1", sp),
+                  num_(out_sp, "res", 25), 1, tol = 0)
+            check_true("v129", sprintf("[Finding 1, all-eleven sweep] spelling \"%s\": disclosureSpelling[1] echoes the trimmed literal", sp),
+                       identical(str_(out_sp, "resdisc", 1), sp))
+        }
+    }
+
+    # Demo 4 [Finding 1, the specific collision]: a bare "." alone, same
+    # shape as demo 1 (NA) above, asserting the SAME full set of facts --
+    # refusal 0, one disclosed cell, spelling ".", item "R1" -- so a
+    # reader can compare this block directly against demo 1's and see
+    # they now behave identically, which they did not before the fix
+    # (this exact cell used to come back refusal 8, disclosureCount 0).
+    data_cr_dot <- edit_field(clean_data_lines, 2, "R1", ".")
+    p_cr_dot <- write_csv_lines(data_cr_dot, "dcr_dot_data.csv")
+    out_cr_dot <- drive_validate("stats", p_cr_dot, committed_scales_path,
+                                 committed_items_path, "cr-dot")
+    results$cr_dot <- out_cr_dot
+    check_true("v129", "[cell ruling, demo 4: bare \".\"] probe ran", ran_ok(out_cr_dot))
+    if (ran_ok(out_cr_dot)) {
+        check("v129", "[cell ruling, demo 4: bare \".\"] refusal stays 0 (a recognised placeholder is missingness, not refusal 8 as \"unusable\")",
+              num_(out_cr_dot, "res", 1), 0, tol = 0)
+        check("v129", "[cell ruling, demo 4: bare \".\"] disclosureCount is 1",
+              num_(out_cr_dot, "res", 25), 1, tol = 0)
+        check_true("v129", "[cell ruling, demo 4: bare \".\"] disclosureSpelling[1] is \".\"",
+                   identical(str_(out_cr_dot, "resdisc", 1), "."))
+        check_true("v129", "[cell ruling, demo 4: bare \".\"] disclosureItem[1] is \"R1\"",
+                   identical(str_(out_cr_dot, "resdisc", 2), "R1"))
+    }
+
+    # -------------------------------------------------------------------
+    # NEGATIVE CONTROL for Finding 1: the mutant is the LAST-COMMITTED
+    # (pre-fix) eml-psychometrics.praat, read straight from `git show
+    # HEAD:...` -- not a hand-rolled regex patch. Finding 1 was two
+    # coupled changes (the scan's filter widened to examine kind 5, AND
+    # refusal 8's own candidate assembly stopped trusting
+    # emlAuditColumn.nLeadingDot once the scan started owning that
+    # question); reverting only one half of a coupled fix reproduces a
+    # DIFFERENT, not-actually-shipped bug, not the one Finding 1 reported.
+    # The committed HEAD is exactly and only the code as it stood when
+    # Finding 1 was filed, so driving the probe against it reproduces the
+    # reported defect precisely: refusal 8, disclosureCount 0, on a bare
+    # ".".
+    # -------------------------------------------------------------------
+    f1_head_txt <- tryCatch(
+        system2("git", c("-C", shQuote(normalizePath(repo_path())), "show",
+                         "HEAD:plugin_EML_StatsGraphs/stats/eml-psychometrics.praat"),
+               stdout = TRUE, stderr = TRUE),
+        error = function(e) character(0))
+    check_true("v129", "[Finding 1] the pre-fix committed source was readable from git (negative-control seed)",
+               length(f1_head_txt) > 100 && !any(grepl("^fatal:", f1_head_txt)))
+    f1_mutdir <- file.path(work, "m_finding1_prefix")
+    dir.create(f1_mutdir, showWarnings = FALSE)
+    file.symlink(normalizePath(file.path(plug, "stats", "eml-extract.praat")),
+                 file.path(f1_mutdir, "eml-extract.praat"))
+    file.symlink(normalizePath(file.path(plug, "stats", "eml-inferential.praat")),
+                 file.path(f1_mutdir, "eml-inferential.praat"))
+    writeLines(f1_head_txt, file.path(f1_mutdir, "eml-psychometrics.praat"))
+    out_cr_dot_mut <- drive_validate("m_finding1_prefix", p_cr_dot, committed_scales_path,
+                                     committed_items_path, "cr-dot-mut")
+    check_true("v129", "[Finding 1] pre-fix mutant probe ran", ran_ok(out_cr_dot_mut))
+    if (ran_ok(out_cr_dot_mut)) {
+        mut_dot_refusal <- num_(out_cr_dot_mut, "res", 1)
+        mut_dot_disclosure <- num_(out_cr_dot_mut, "res", 25)
+        if (red_mode) {
+            cat("      EML_LANE_RED: running the standard bare-\".\" checks against the\n")
+            cat("      pre-fix mutant -- the next two checks are EXPECTED to FAIL.\n")
+            check("v129", "[RED] bare \".\": refusal stays 0 (must go red against the pre-fix build)",
+                  mut_dot_refusal, 0, tol = 0)
+            check("v129", "[RED] bare \".\": disclosureCount is 1 (must go red against the pre-fix build)",
+                  mut_dot_disclosure, 1, tol = 0)
+        } else {
+            check_true("v129", "[Finding 1] pre-fix mutant differs from correct: bare \".\" is refused as unusable (refusal 8, not 0) -- exactly Finding 1's reported defect",
+                       identical(mut_dot_refusal, 8))
+            check_true("v129", "[Finding 1] pre-fix mutant differs from correct: bare \".\"'s disclosureCount is 0, not 1 -- exactly Finding 1's reported defect",
+                       identical(mut_dot_disclosure, 0))
+        }
     }
 
     # --- Defect 9: a scale type that is neither ordinal nor continuous --
@@ -2269,6 +2389,127 @@ if (!canDrive) {
     check_true("v129",
         "[Fix 1] the exhaustive output-contract sweep actually drove all sixteen derived refusal codes (not vacuously fewer)",
         length(unique(swept_codes)) == length(derived_codes))
+
+    # -------------------------------------------------------------------
+    # 19 [Finding 5]: THE PLACEHOLDER PRE-PASS HAS A FAST PATH -- a column
+    #    that numericises cleanly as a whole skips the per-cell
+    #    @eml_classifyCell loop (and the scratch Table it creates per
+    #    cell) entirely, via @eml_strictNumericColumn -- the plugin's own
+    #    existing whole-column numeric machinery, called once per column
+    #    rather than the O(n) per-cell classification the pre-fix code
+    #    always ran.
+    #
+    #    ASSERTED AS A RELATIVE COMPARISON, not an absolute wall-clock
+    #    ceiling: this container's CPU speed is not something this file
+    #    controls or should assume, so the claim tested is the one
+    #    Finding 5 actually makes -- the fixed build is MEANINGFULLY
+    #    FASTER than the pre-fix build on the SAME clean fixture, same
+    #    machine, same run -- not "elapsed < N seconds" against a number
+    #    that would be a coin flip on a slower CI box. The margin (15%)
+    #    is well inside the measured gap (report: 4.917s -> 8.732s on a
+    #    1000x12 fixture, this file's own smaller fixture measured at
+    #    roughly a 30-40% reduction) so it is not a flake risk in either
+    #    direction.
+    #
+    #    THE MUTANT removes ONLY the fast-path block this fix added from
+    #    a COPY of the (already Finding-1-fixed) source -- by LINE RANGE,
+    #    located by its own distinctive comment and end marker, never a
+    #    hand-typed line count -- leaving Finding 1's kind-5 widening
+    #    untouched, so this negative control isolates Finding 5 alone
+    #    rather than reverting to the pre-Finding-1 file (as Finding 1's
+    #    own negative control above does, for exactly the opposite
+    #    reason: THAT one needs the coupled pair reverted together).
+    # -------------------------------------------------------------------
+    perf_n <- 300
+    perf_items <- c("P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9")
+    set.seed(20260826)
+    perf_lines <- c(paste(sprintf('"%s"', perf_items), collapse = ","))
+    for (r in seq_len(perf_n)) {
+        perf_lines <- c(perf_lines, paste(sample(1:5, length(perf_items), replace = TRUE), collapse = ","))
+    }
+    perf_data_path <- write_csv_lines(perf_lines, "perf_data.csv")
+    perf_items_lines <- c("item,role,reversed",
+                          paste0(perf_items[1:3], ",PerfA,0"),
+                          paste0(perf_items[4:6], ",PerfB,0"),
+                          paste0(perf_items[7:9], ",PerfC,0"))
+    perf_items_path <- write_csv_lines(perf_items_lines, "perf_items.csv")
+    perf_scales_lines <- c("scale,min,max,type",
+                           "PerfA,1,5,ordinal", "PerfB,1,5,ordinal", "PerfC,1,5,ordinal")
+    perf_scales_path <- write_csv_lines(perf_scales_lines, "perf_scales.csv")
+
+    drive_timed <- function(stats_dir_rel, tag) {
+        probe <- file.path(work, "scripts", paste0("v129-perf-", tag, ".praat"))
+        esc <- function(p) gsub('"', '""', p)
+        writeLines(c(
+            paste0("include ../", stats_dir_rel, "/eml-extract.praat"),
+            paste0("include ../", stats_dir_rel, "/eml-inferential.praat"),
+            paste0("include ../", stats_dir_rel, "/eml-psychometrics.praat"),
+            "",
+            sprintf('dataT = Read Table from comma-separated file: "%s"', esc(perf_data_path)),
+            sprintf('scalesT = Read Table from comma-separated file: "%s"', esc(perf_scales_path)),
+            sprintf('itemsT = Read Table from comma-separated file: "%s"', esc(perf_items_path)),
+            "t0 = stopwatch",
+            "@emlSurveyValidateDeclaration: dataT, scalesT, itemsT",
+            "t1 = stopwatch - t0",
+            'writeInfoLine: "res|", emlSurveyValidateDeclaration.refusal, "|END"',
+            'appendInfoLine: "elapsed|", t1, "|END"'),
+            probe)
+        suppressWarnings(system2("env",
+            c("-u", "DISPLAY", shQuote(praat), shQuote(paste0("--pref-dir=", prefs)),
+              "--run", shQuote(probe)), stdout = TRUE, stderr = TRUE))
+    }
+    elapsed_of <- function(out) {
+        row <- grep("^elapsed\\|", out, value = TRUE)
+        if (!length(row)) return(NA_real_)
+        suppressWarnings(as.numeric(strsplit(row[1], "|", fixed = TRUE)[[1]][2]))
+    }
+
+    # Fixed build, driven THREE times (median, not first-run, to absorb
+    # one-off scheduling noise) -- same for the mutant below.
+    fixed_times <- vapply(1:3, function(i) elapsed_of(drive_timed("stats", paste0("fixed", i))), 1.0)
+    check_true("v129", "[Finding 5] fixed-build timing probe produced numeric elapsed values",
+               all(is.finite(fixed_times)))
+    fixed_median <- stats::median(fixed_times)
+
+    scan_lines <- readLines(file.path(plug, "stats", "eml-psychometrics.praat"))
+    fast_start <- grep("^    # FAST PATH, same shape as @emlAuditColumn", scan_lines)
+    check_true("v129", "[Finding 5] the fast path's start marker exists in source, exactly once",
+               length(fast_start) == 1)
+    for_after <- grep("^    for \\.i from 1 to \\.nRows$", scan_lines)
+    fast_end <- for_after[for_after > fast_start[1]][1] - 1L
+    check_true("v129", "[Finding 5] the fast path's end marker (the per-cell loop it guards) was found after the start",
+               length(fast_end) == 1 && !is.na(fast_end) && fast_end > fast_start[1])
+
+    if (length(fast_start) == 1 && length(fast_end) == 1 && !is.na(fast_end) && fast_end > fast_start[1]) {
+        perf_mut_lines <- scan_lines[-(fast_start[1]:fast_end)]
+        perf_mutdir <- file.path(work, "m_finding5_no_fastpath")
+        dir.create(perf_mutdir, showWarnings = FALSE)
+        file.symlink(normalizePath(file.path(plug, "stats", "eml-extract.praat")),
+                     file.path(perf_mutdir, "eml-extract.praat"))
+        file.symlink(normalizePath(file.path(plug, "stats", "eml-inferential.praat")),
+                     file.path(perf_mutdir, "eml-inferential.praat"))
+        writeLines(perf_mut_lines, file.path(perf_mutdir, "eml-psychometrics.praat"))
+
+        mut_times <- vapply(1:3, function(i) elapsed_of(drive_timed("m_finding5_no_fastpath", paste0("mut", i))), 1.0)
+        check_true("v129", "[Finding 5] no-fast-path mutant timing probe produced numeric elapsed values",
+                   all(is.finite(mut_times)))
+        mut_median <- stats::median(mut_times)
+
+        cat(sprintf("      v129 [Finding 5] timing (n=%d rows, %d columns): fixed median=%.3fs, no-fast-path median=%.3fs\n",
+                    perf_n, length(perf_items), fixed_median, mut_median))
+
+        if (red_mode) {
+            cat("      EML_LANE_RED: running the standard 'is at least 15% faster' check with the\n")
+            cat("      mutant standing in as the shipped build -- the next check is EXPECTED to\n")
+            cat("      FAIL: the no-fast-path mutant is not faster than the real fixed build, it\n")
+            cat("      is slower.\n")
+            check_true("v129", "[RED] the shipped build is at least 15% faster than the fixed build on the same fixture (must go red -- the mutant, standing in for 'shipped', has no fast path and is slower, not faster)",
+                       mut_median < fixed_median * 0.85)
+        } else {
+            check_true("v129", "[Finding 5] the fixed build (with the fast path) is at least 15% faster than the no-fast-path mutant on the same clean fixture",
+                       is.finite(fixed_median) && is.finite(mut_median) && fixed_median < mut_median * 0.85)
+        }
+    }
 }
 
 if (!exists("EML_SUITE")) { eml_report("v129 survey declaration conformance"); eml_exit() }

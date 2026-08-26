@@ -978,29 +978,48 @@ endproc
 # kinds 0 (valid), 1 (empty), 2 (locale-comma), 4 (coerced), 5 (leading-dot),
 # or its "else" bucket -- everything @eml_classifyCell cannot place in the
 # first five, which this module has always called "unreadable". Refusal 8
-# used to refuse on every cell in that bucket, with no further question
-# asked of it. The cell ruling splits the bucket in two: a cell whose text
-# is one of @emlRepairClassify's OWN kind-3 missing-value spellings (na,
-# n/a, n.a., nan, null, nil, -, --, ., ?, missing -- case-insensitive; that
-# list lives ONLY at @emlRepairClassify, eml-extract.praat:2665, and is not
-# restated here) is a recognised placeholder, not a wrong answer, and is
-# treated as ordinary missingness; any other cell in the bucket is still
-# genuinely unreadable and still refuses. This helper answers, for one
-# column, which cells are which -- it does not itself refuse or disclose
-# anything; the caller (@emlSurveyValidateDeclaration) does both, in two
-# separate passes, below.
+# used to refuse on every cell in EITHER of those two buckets (its own
+# "else" bucket, and kind 5), with no further question asked of either.
+# The cell ruling says a cell whose text is one of @emlRepairClassify's OWN
+# kind-3 missing-value spellings (na, n/a, n.a., nan, null, nil, -, --, .,
+# ?, missing -- case-insensitive; that list lives ONLY at @emlRepairClassify,
+# eml-extract.praat:2665, and is not restated here) is a recognised
+# placeholder, not a wrong answer, and is treated as ordinary missingness;
+# any other cell in either bucket is still genuinely unreadable and still
+# refuses. This helper answers, for one column, which cells are which -- it
+# does not itself refuse or disclose anything; the caller
+# (@emlSurveyValidateDeclaration) does both, in two separate passes, below.
 #
-# Kinds 0, 1, 2, 4 and 5 of @eml_classifyCell are NOT re-examined here --
-# they keep whatever handling refusal 8 already gives them elsewhere in
-# this module, untouched by the cell ruling, which is only about the
-# "unreadable" bucket. Within that bucket, every @emlRepairClassify kind
-# OTHER than 3 (0 "nothing recognised", or the rarer 1/2/4 a comma- or
-# percent- or point-bearing piece of otherwise-unreadable text can still
-# trigger, e.g. "approx,4") is treated alike, as NOT a recognised
-# placeholder: only kind 3 is the ruling's stated authority, and a cell
-# @eml_classifyCell already could not read as a number in any locale does
+# BOTH kind 5 and the "else" bucket are examined here, not just the
+# "else" bucket, because the authority is @emlRepairClassify's kind-3 list,
+# and @eml_classifyCell's OWN kind assignment is not a safe proxy for it: a
+# bare "." is one of the eleven authority spellings, but @eml_classifyCell's
+# leading-dot recovery (built for ".5") treats it exactly like a ".5" and
+# files it as kind 5, "recoverable", never reaching the "else" bucket at
+# all. Excluding kind 5 from this scan (an earlier version of this helper
+# did) meant every "." placeholder skipped @emlRepairClassify entirely and
+# fell through to refusal 8's kind-5 handling as if it were a genuine
+# leading-dot VALUE -- refused as unusable, disclosureCount 0, exactly the
+# defect the cell ruling exists to close. So every cell @eml_classifyCell
+# calls kind 5 is asked here too, on the same terms as the "else" bucket:
+# @emlRepairClassify's real verdict decides placeholder-or-not, never
+# @eml_classifyCell's kind by itself. A genuine leading-dot value like
+# ".5" or "-.7" is unaffected -- @emlRepairClassify's own kind for those is
+# 2 ("bare leading point", not 3), so they fall to .firstGenuineBadRow
+# exactly as before, and refusal 8 still refuses on them.
+#
+# Kinds 0, 1, 2 and 4 of @eml_classifyCell are NOT examined here -- they
+# keep whatever handling refusal 8 already gives them elsewhere in this
+# module, untouched by the cell ruling, which is only about the two
+# unusable buckets (kind 5, and "else"). Within those buckets, every
+# @emlRepairClassify kind OTHER than 3 (0 "nothing recognised", 2 "bare
+# leading point" -- what a genuine kind-5 cell itself always reports -- or
+# the rarer 1/4 a comma- or percent-bearing piece of otherwise-unreadable
+# text can still trigger, e.g. "approx,4") is treated alike, as NOT a
+# recognised placeholder: only kind 3 is the ruling's stated authority, and
+# a cell @eml_classifyCell already could not read as a plain number does
 # not become one just because @emlRepairClassify also notices a stray
-# comma in it. Whole verdict consumed, one kind excluded, stated here.
+# comma in it. Whole verdict consumed, two kinds excluded, stated here.
 #
 # Whitespace-only cells are the one case deliberately NOT reached by the
 # placeholder branch below, and deliberately not specially handled here
@@ -1036,13 +1055,79 @@ procedure eml_scanColumnForPlaceholders: .tableId, .columnName$, .nRows
     .nPlaceholder = 0
     .firstGenuineBadRow = 0
     .firstGenuineBadText$ = ""
+
+    # FAST PATH, same shape as @emlAuditColumn's own (eml-extract.praat) --
+    # the plugin's existing whole-column numeric machinery, called, not
+    # reimplemented. @eml_strictNumericColumn answers, for the WHOLE
+    # column in one pass (one probe Table, one "Get all numbers in
+    # column:", not one scratch Table per cell), whether "Get all numbers
+    # in column:" would return the column's real values rather than
+    # alphabetical ranks (.strict = 1) and whether every cell is even
+    # present (.unreadable = 0 -- "", "--undefined--" and "?" all set it).
+    # .strict can only be 1 when .unreadable is already 0 (the sentinel
+    # check inside @eml_strictNumericColumn does not run otherwise), so
+    # both are tested here only for readability, matching
+    # @emlAuditColumn's own two-flag test rather than inventing a
+    # one-flag shortcut nothing else in the file uses.
+    #
+    # .strict = 1 means EVERY cell independently parses as a plain,
+    # locale-free number: a single comma, percent sign, bare leading dot,
+    # placeholder spelling or any other non-numeric text anywhere in the
+    # column drags the whole-column read down to ranks (see
+    # @emlCommaColumnMode's header for the measured comma case; the same
+    # rank-corruption applies to any cell "Get all numbers in column:"
+    # cannot parse), which @eml_strictNumericColumn's own sentinel-row
+    # check exists to detect. So .strict = 1 is exactly "every cell is
+    # @eml_classifyCell's kind 0" for this column -- no placeholder, no
+    # genuinely bad cell, nothing the loop below would find -- and the
+    # per-cell loop, with its per-cell scratch Table, is skipped entirely.
+    #
+    # GUARDED FIRST AGAINST THE SAME WHITESPACE LANDMINE Fix 3 (refusal 8,
+    # below) already routes around: @eml_strictNumericColumn's own
+    # unreadable pre-scan recognises only "", "--undefined--" and "?" --
+    # not a cell holding nothing but spaces or tabs -- so handing it a
+    # column that carries one reaches Praat's own "Get all numbers in
+    # column:" unguarded, which HALTS the whole script outright rather
+    # than returning a verdict (verified live: a single space in an
+    # otherwise-clean column aborts with "the cell in row N of column
+    # ...  is undefined", before this procedure ever gets to report
+    # anything). Fix 3's own guard, @eml_findWhitespaceOnlyCell, is not
+    # reused here for that: it calls @eml_classifyCell per cell, the exact
+    # per-cell-scratch-Table cost this fast path exists to skip, so
+    # reusing it would pay the whole thing back on every column, clean or
+    # not. What is needed here is only ONE bit -- does this column contain
+    # ANY whitespace-only cell -- so it is answered with the same trim
+    # @emlRepairClassify itself trims with (eml-extract.praat, "^[ \t]+|
+    # [ \t]+$"), a plain string operation, no Table involved: cheap enough
+    # to run on every column while still skipping the expensive path for
+    # every column that turns out clean.
+    .wsGuardFound = 0
+    .wsGuardRow = 1
+    while .wsGuardFound = 0 and .wsGuardRow <= .nRows
+        selectObject: .tableId
+        .wsGuardRaw$ = Get value: .wsGuardRow, .columnName$
+        if .wsGuardRaw$ <> "" and .wsGuardRaw$ <> "--undefined--"
+            .wsGuardStripped$ = replace_regex$ (.wsGuardRaw$, "^[ \t]+|[ \t]+$", "", 0)
+            if .wsGuardStripped$ = ""
+                .wsGuardFound = 1
+            endif
+        endif
+        .wsGuardRow = .wsGuardRow + 1
+    endwhile
+
+    if .wsGuardFound = 0
+        @eml_strictNumericColumn: .tableId, .columnName$
+        if eml_strictNumericColumn.strict = 1 and eml_strictNumericColumn.unreadable = 0
+            goto SCAN_COLUMN_DONE
+        endif
+    endif
+
     for .i from 1 to .nRows
         selectObject: .tableId
         .raw$ = Get value: .i, .columnName$
         @eml_classifyCell: .raw$
         if eml_classifyCell.kind <> 0 and eml_classifyCell.kind <> 1
         ... and eml_classifyCell.kind <> 2 and eml_classifyCell.kind <> 4
-        ... and eml_classifyCell.kind <> 5
             @emlRepairClassify: .raw$
             if emlRepairClassify.kind = 3
                 .nPlaceholder = .nPlaceholder + 1
@@ -1054,6 +1139,8 @@ procedure eml_scanColumnForPlaceholders: .tableId, .columnName$, .nRows
             endif
         endif
     endfor
+
+    label SCAN_COLUMN_DONE
 endproc
 
 # THE TEACHING-MESSAGE CONTRACT (docs/CHANGE_ORDER_CONFORMANCE_LINT.md): the
@@ -2166,27 +2253,27 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
                         .badAuditText$ = emlAuditColumn.firstCoercedValue$
                     endif
                 endif
-                if emlAuditColumn.nLeadingDot > 0
-                    if .badAuditRow = 0
-                    ... or emlAuditColumn.firstLeadingDotRow < .badAuditRow
-                        .badAuditRow = emlAuditColumn.firstLeadingDotRow
-                        .badAuditText$ = emlAuditColumn.firstLeadingDotValue$
-                    endif
-                endif
                 # V1.7, cell ruling: this candidate no longer comes from
                 # emlAuditColumn.nUnreadable / .firstUnreadableRow /
-                # .firstUnreadableValue$ -- that bucket counts EVERY cell
-                # @eml_classifyCell could not read as a number, including a
-                # recognised missing-value placeholder, which branch 1 of
-                # the cell ruling now exempts from refusal entirely.
+                # .firstUnreadableValue$, NOR from emlAuditColumn.nLeadingDot
+                # / .firstLeadingDotRow / .firstLeadingDotValue$ -- those two
+                # buckets between them count EVERY cell @eml_classifyCell
+                # could not place in kind 0, 1, 2 or 4, including a
+                # recognised missing-value placeholder (branch 1 of the cell
+                # ruling exempts a placeholder wherever @eml_classifyCell
+                # happened to file it, kind 5's bare-"." collision with
+                # ".5"-style recovery included -- see
+                # @eml_scanColumnForPlaceholders's header for why kind 5
+                # cannot be trusted as a proxy for "genuinely bad").
                 # .itemFirstGenuineBadRow[.i] / .itemFirstGenuineBadText$[.i]
                 # (cached above, ahead of this loop, by
-                # @eml_scanColumnForPlaceholders on this same column) already
-                # exclude every placeholder, so they replace the
-                # emlAuditColumn candidate here rather than filtering its
-                # output a second time -- the classifier's whole verdict is
-                # still consumed, just by the call site that now owns the
-                # "unreadable" question for THIS column, not restated.
+                # @eml_scanColumnForPlaceholders on this same column, which
+                # now examines both buckets) already exclude every
+                # placeholder from both, so they replace BOTH emlAuditColumn
+                # candidates here rather than filtering either a second
+                # time -- the classifier's whole verdict is still consumed,
+                # just by the call site that now owns the "unreadable"
+                # question for THIS column, not restated.
                 if .itemFirstGenuineBadRow[.i] > 0
                     if .badAuditRow = 0
                     ... or .itemFirstGenuineBadRow[.i] < .badAuditRow
