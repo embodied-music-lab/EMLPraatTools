@@ -1061,43 +1061,95 @@ endproc
 
 procedure eml_mannWhitneyExactP: .u1, .n1, .n2
     .maxU = .n1 * .n2
-    .vecSize = .maxU + 1
 
-    # DP table: dp##[m + 1, u + 1] = count(u, m, current_n)
-    # Iterate n from 0 to .n2 as outer loop
-    .dp## = zero## (.n1 + 1, .vecSize)
+    # --- Cache: the DP table is keyed by (.n1, .n2) alone (Fable's 26
+    # August ruling, item 4). @emlMannWhitneyU (p-value) and
+    # @emlHodgesLehmannTwoSample (critical rank) are two reads of the
+    # SAME object for the same pair, and a balanced multi-group design
+    # calls this procedure again, with the same (n1, n2), once per
+    # remaining pair. One build must serve all of them.
+    #
+    # Praat has no hash map. The shape already in this plugin for "several
+    # of the same kind of matrix, told apart by an index" is
+    # eml-lmm.praat's .varContrast'.i'## / .rMat'.i'## family: a linear
+    # array of named matrices addressed by an interpolated integer
+    # suffix. This cache is that same shape -- a small linear-scan table
+    # of (n1, n2) keys, each slot's matrix at .cacheDp'.slot'##.
+    #
+    # The cache lives in THIS procedure's own dotted namespace, so it
+    # persists the same way .dp##/.total already do (survives until this
+    # procedure runs again) -- except the slots ACCUMULATE across calls
+    # rather than being overwritten by the next one. .cacheCount is
+    # guarded with variableExists because the first call in a run has
+    # never set it; that guard is the same one this plugin already uses
+    # to default a persistent flag cleanly on its first read (e.g.
+    # eml-analysis.praat's variableExists ("emlRMPostHoc.nPairs")) --
+    # there just checking a DIFFERENT procedure's namespace from outside
+    # it, rather than a procedure's own namespace from inside.
+    if variableExists ("eml_mannWhitneyExactP.cacheCount") = 0
+        .cacheCount = 0
+    endif
+    .cacheMax = 64
 
-    # Base case: n = 0 → count(0, m, 0) = 1 for all m
-    for .m from 0 to .n1
-        .dp##[.m + 1, 1] = 1
+    .cacheHit = 0
+    for .slot from 1 to .cacheCount
+        if .cacheN1[.slot] = .n1 and .cacheN2[.slot] = .n2
+            .cacheHit = .slot
+        endif
     endfor
 
-    # Fill DP: iterate n from 1 to .n2
-    for .n from 1 to .n2
-        .new## = zero## (.n1 + 1, .vecSize)
-        # m = 0: count(u, 0, n) = 1 if u = 0, else 0
-        .new##[1, 1] = 1
+    if .cacheHit > 0
+        # --- Cache hit: this (n1, n2) distribution was already built ---
+        .total = .cacheTotal[.cacheHit]
+        .dp## = .cacheDp'.cacheHit'##
+    else
+        .vecSize = .maxU + 1
 
-        for .m from 1 to .n1
-            for .u from 0 to .m * .n
-                # count(u, m, n) = count(u - n, m - 1, n) + count(u, m, n - 1)
-                .term1 = 0
-                if .u >= .n
-                    .term1 = .new##[.m, .u - .n + 1]
-                endif
-                .term2 = .dp##[.m + 1, .u + 1]
-                .new##[.m + 1, .u + 1] = .term1 + .term2
-            endfor
+        # DP table: dp##[m + 1, u + 1] = count(u, m, current_n)
+        # Iterate n from 0 to .n2 as outer loop
+        .dp## = zero## (.n1 + 1, .vecSize)
+
+        # Base case: n = 0 → count(0, m, 0) = 1 for all m
+        for .m from 0 to .n1
+            .dp##[.m + 1, 1] = 1
         endfor
 
-        .dp## = .new##
-    endfor
+        # Fill DP: iterate n from 1 to .n2
+        for .n from 1 to .n2
+            .new## = zero## (.n1 + 1, .vecSize)
+            # m = 0: count(u, 0, n) = 1 if u = 0, else 0
+            .new##[1, 1] = 1
 
-    # Total configurations = C(n1 + n2, n1)
-    .total = 0
-    for .u from 0 to .maxU
-        .total = .total + .dp##[.n1 + 1, .u + 1]
-    endfor
+            for .m from 1 to .n1
+                for .u from 0 to .m * .n
+                    # count(u, m, n) = count(u - n, m - 1, n) + count(u, m, n - 1)
+                    .term1 = 0
+                    if .u >= .n
+                        .term1 = .new##[.m, .u - .n + 1]
+                    endif
+                    .term2 = .dp##[.m + 1, .u + 1]
+                    .new##[.m + 1, .u + 1] = .term1 + .term2
+                endfor
+            endfor
+
+            .dp## = .new##
+        endfor
+
+        # Total configurations = C(n1 + n2, n1)
+        .total = 0
+        for .u from 0 to .maxU
+            .total = .total + .dp##[.n1 + 1, .u + 1]
+        endfor
+
+        # --- Store for the next call sharing this (n1, n2) ---
+        if .cacheCount < .cacheMax
+            .cacheCount = .cacheCount + 1
+            .cacheN1[.cacheCount] = .n1
+            .cacheN2[.cacheCount] = .n2
+            .cacheTotal[.cacheCount] = .total
+            .cacheDp'.cacheCount'## = .dp##
+        endif
+    endif
 
     # Cumulative left tail: P(U <= floor(u1))
     .uFloor = floor (.u1)
@@ -1955,27 +2007,67 @@ endproc
 procedure eml_wilcoxonExactP: .tPlus, .n
     .maxT = .n * (.n + 1) / 2
     .total = 2 ^ .n
-    .vecSize = floor (.maxT) + 1
 
-    # DP: .dp#[s + 1] = number of subsets of {1,...,processed} with sum = s
-    .dp# = zero# (.vecSize)
-    .dp#[1] = 1
+    # --- Cache: the DP table is keyed by .n alone (Fable's 26 August
+    # ruling, item 4 -- the signed-rank half). @emlWilcoxonSignedRank
+    # (p-value) and @emlHodgesLehmannPaired (critical rank) are two reads
+    # of the SAME object for the same pair-of-conditions, and a
+    # repeated-measures design with a common complete-case n calls this
+    # again, with the same n, for every remaining pair. One build must
+    # serve all of them.
+    #
+    # Same cache shape as @eml_mannWhitneyExactP above (see its comment
+    # for the precedent this follows: eml-lmm.praat's indexed-matrix
+    # family, and this plugin's existing variableExists guard idiom for a
+    # persistent value's first read) -- keyed on one integer instead of
+    # two, so the slot table is a single array rather than a pair of
+    # them, and each slot's null-distribution vector sits at
+    # .cacheDp'.slot'#.
+    if variableExists ("eml_wilcoxonExactP.cacheCount") = 0
+        .cacheCount = 0
+    endif
+    .cacheMax = 64
 
-    for .rank from 1 to .n
-        .newDp# = zero# (.vecSize)
-        for .s from 0 to floor (.maxT)
-            if .dp#[.s + 1] > 0
-                # Exclude this rank
-                .newDp#[.s + 1] = .newDp#[.s + 1] + .dp#[.s + 1]
-                # Include this rank
-                .sNew = .s + .rank
-                if .sNew <= floor (.maxT)
-                    .newDp#[.sNew + 1] = .newDp#[.sNew + 1] + .dp#[.s + 1]
-                endif
-            endif
-        endfor
-        .dp# = .newDp#
+    .cacheHit = 0
+    for .slot from 1 to .cacheCount
+        if .cacheN[.slot] = .n
+            .cacheHit = .slot
+        endif
     endfor
+
+    if .cacheHit > 0
+        # --- Cache hit: this n's distribution was already built ---
+        .dp# = .cacheDp'.cacheHit'#
+    else
+        .vecSize = floor (.maxT) + 1
+
+        # DP: .dp#[s + 1] = number of subsets of {1,...,processed} with sum = s
+        .dp# = zero# (.vecSize)
+        .dp#[1] = 1
+
+        for .rank from 1 to .n
+            .newDp# = zero# (.vecSize)
+            for .s from 0 to floor (.maxT)
+                if .dp#[.s + 1] > 0
+                    # Exclude this rank
+                    .newDp#[.s + 1] = .newDp#[.s + 1] + .dp#[.s + 1]
+                    # Include this rank
+                    .sNew = .s + .rank
+                    if .sNew <= floor (.maxT)
+                        .newDp#[.sNew + 1] = .newDp#[.sNew + 1] + .dp#[.s + 1]
+                    endif
+                endif
+            endfor
+            .dp# = .newDp#
+        endfor
+
+        # --- Store for the next call sharing this n ---
+        if .cacheCount < .cacheMax
+            .cacheCount = .cacheCount + 1
+            .cacheN[.cacheCount] = .n
+            .cacheDp'.cacheCount'# = .dp#
+        endif
+    endif
 
     # Left tail: P(T+ <= floor(tPlus))
     .tFloor = floor (.tPlus)
