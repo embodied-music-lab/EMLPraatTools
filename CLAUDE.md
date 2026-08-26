@@ -106,6 +106,35 @@ Commit and bundle after every unit of work, not in batches. Anything
 uncommitted when a rollback lands is gone, and "I showed him the result"
 is not the same as "the result is saved".
 
+## After a compaction, verify state before acting on it
+
+A compaction takes the session's memory of what is IN FLIGHT, not just what
+was decided. The tree does not tell you. On 26 August a workflow building the
+result store was still in its reading phase when the context broke; reading
+phases produce no edits, so the tree was clean, and a clean tree was read as a
+dead workflow. A second identical workflow was launched. Two agents edited the
+same four files for twenty-four minutes and 345,000 tokens were spent
+producing nothing.
+
+CHECK THE RUNNING-TASK LIST BEFORE CONCLUDING ANYTHING IS DEAD. It is the only
+place in-flight work is visible, and it takes one call. Absence of output is
+not absence of work: an agent reading, planning, or measuring looks exactly
+like an agent that never started.
+
+The general form, which is the same error the rollback section guards against
+from the other direction: **a clean tree is not evidence of what happened. It
+is evidence of what is on disk right now.** Before concluding that work was
+lost, name what its evidence would look like at the stage it had reached, and
+go look for THAT. Work that had not yet reached its first edit leaves no trace
+in the tree by design.
+
+When two runs have already overlapped, stop the one that is further behind and
+say so plainly. Then test for collision damage rather than assuming it: the
+loud signature is a procedure defined twice, and its absence is a good sign but
+not a proof, because interleaved edits can each be valid and jointly wrong. Put
+the collision in the verification agent's brief as a NAMED thing to test, so
+the pass does not assume a single author.
+
 ## Scope of work units
 
 One narrow stated scope per unit of work. Do not launch long drives that
