@@ -194,10 +194,9 @@ carries:
   `PROSE ONLY` checks nothing: it argues that a difference is acceptable and
   cannot tell you if it has stopped being so.
 
-Two of the nine rules carry a bound. The other seven are arguments, and they
-are the ones worth disagreeing with.
+Two of the nine rules carry a bound. The other seven do not.
 
-## Scheffe, and a question for you
+## Scheffe
 
 `D-SCHEFFE` says no installed R package implements Scheffe's test, which is
 true of this container and not of CRAN: `DescTools::ScheffeTest` and
@@ -206,10 +205,10 @@ build environment cannot reach CRAN, so the R side evaluates the published
 definition instead -- the statistic is `(diff/SE)^2 / (k-1)` and the p-value
 comes from base R's own `pf`.
 
-That is a closed-form definition through R's F distribution rather than a
-reimplementation of a procedure, but it is still our arithmetic rather than
-someone else's. If you install either package and the numbers disagree with
-ours, that is worth more than anything else in this kit.
+The statistical work is done by `pf`; the rest is the definition. It is still
+our arithmetic rather than an independent implementation. Install either
+package and compare against `D-SCHEFFE`'s 40 rows if you want a third
+answer.
 
 ## Findings
 
