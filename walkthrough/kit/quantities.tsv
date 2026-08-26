@@ -125,6 +125,37 @@
 # `<quantity>_undefined`. A runner that says "this is undefined here" has
 # reported it; a runner that writes no row has not. That convention is the
 # kit's own (n_undefined, gg_epsilon_undefined, chi_square_undefined).
+#
+# ---------------------------------------------------------------------------
+# NAMED RULE: DEFINITION-OVER-IMPLEMENTATION
+# ---------------------------------------------------------------------------
+# Fable, 26 August 2026 (docs/RULING_ITEM3_CASES_2026-08-26.md, case 2): the
+# kit's first documented DELIBERATE divergence between the plugin and R on a
+# quantity both sides compute the same way in principle.
+#
+# The Hodges-Lehmann shift estimate is DEFINED as the median of the
+# cross-differences (two-sample) or the median of the Walsh averages
+# (paired). On the exact branch R's own `$estimate` IS that median. On the
+# NORMAL-APPROXIMATION branch, R's `$estimate` is instead whatever
+# `uniroot()` returns for its confidence-curve inversion -- an artefact of
+# that root-finding shortcut, measured about 4e-5 away from R's OWN
+# exact-branch answer on the same data (v145 asserts this: R disagrees with
+# itself across its two branches on the one number both branches call by the
+# same name).
+#
+# THE RULE: where the published definition and R's implementation diverge,
+# the plugin follows the DEFINITION, not the implementation, and the kit
+# oracles the plugin's estimate against `median(outer(x, y, "-"))` (or the
+# Walsh-average equivalent) rather than against R's `$estimate` on the
+# approximation branch -- reporting R's value alongside, never silently. The
+# interval BOUNDS are exempted from this rule and still port R's
+# continuity-corrected inversion verbatim: bounds are defined by test
+# inversion, and only the point estimate has a definition that outranks the
+# port. This is the same class of decision as D-HEDGES (exact J over the
+# hand-computation approximation) -- a defect there, because the approximate
+# form is not the definition; a deliberate divergence here, because R's own
+# artefact is not the definition either. Named so a future reader meets it
+# as a decision with a reason, never as a discrepancy to diagnose.
 # ===========================================================================
 procedure	quantity	scope	when	sides	source	note
 emlRunTwoGroupAnalysis	n_group1	cell	always	both	stats/eml-inferential.praat:90 @emlTTest .n1	

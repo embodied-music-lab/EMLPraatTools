@@ -2400,6 +2400,18 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                         .hlLowFlat# [.pair] = emlHodgesLehmannTwoSample.low
                         .hlHighFlat# [.pair] = emlHodgesLehmannTwoSample.high
                     endif
+                    ; DARK, LIKE THE REST OF THIS PROCEDURE'S LANGUAGE.
+                    ; When .hlError$ <> "" here it is because every
+                    ; observation in the combined pair is tied (SIGMA.CI
+                    ; = 0 on the normal-approximation branch) -- the
+                    ; estimate above still stands, only the interval is
+                    ; refused. Fable's ruling on this cell
+                    ; (docs/RULING_ITEM3_CASES_2026-08-26.md, case 1) pins
+                    ; the disclosure line for when this prints:
+                    ;     No confidence interval: all observations are tied
+                    ; Drafted into the language batch alongside the other
+                    ; interval strings; not printed here or anywhere yet,
+                    ; gated on the same en-bloc approval.
                 endif
 
                 @emlSigMark: .adjP, .alpha
@@ -5104,6 +5116,17 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
                     .hlLowFlat# [.pairIdx] = emlHodgesLehmannPaired.low
                     .hlHighFlat# [.pairIdx] = emlHodgesLehmannPaired.high
                 endif
+                ; DARK, LIKE THE REST OF THIS PROCEDURE'S LANGUAGE. When
+                ; .hlErr$ <> "" here it is because every within-subject
+                ; difference in the pair is zero or the same non-zero
+                ; constant -- the estimate above still stands, only the
+                ; interval is refused. Fable's ruling on this cell
+                ; (docs/RULING_ITEM3_CASES_2026-08-26.md, case 1) pins the
+                ; disclosure line for when this prints:
+                ;     No confidence interval: all observations are tied
+                ; Drafted into the language batch alongside the other
+                ; interval strings; not printed here or anywhere yet,
+                ; gated on the same en-bloc approval.
             endif
             .pairNote$ [.pairIdx] = ""
             if .pairErr$ <> ""
