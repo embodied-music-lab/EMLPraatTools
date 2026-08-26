@@ -100,6 +100,46 @@ decl_items  <- read.csv(file.path(csvdir, "lane_survey_declared_items.csv"),
                         stringsAsFactors = FALSE)
 
 # ---------------------------------------------------------------------------
+# 0b. THE CONFIDENCE LEVEL, PARSED OUT OF THE PROCEDURE THAT OWNS IT.
+#
+# @emlReportAlpha (plugin_EML_StatsGraphs/stats/eml-analysis.praat) is the
+# one place the significance/confidence level is stated: "the alpha the
+# report marks significance against ... a caller's global emlAlpha when
+# one has been set to a usable value, otherwise .05." Restating "0.95"
+# here as an independent literal would create a second place for the
+# level to live and the second thing to drift is exactly Finding 4 (the
+# oracle silently pinned to 95% while a user running at a different
+# emlAlpha gets a different-width interval from the plugin). So, v105-
+# style, the level is PARSED from the procedure body rather than
+# retyped, and used as the default below instead of a bare "0.95".
+# Section 7 is the parity check that this parse and the literal(s) below
+# still agree; it is not this comment's job to enforce that, only to
+# explain why the default is an expression and not a number.
+# ---------------------------------------------------------------------------
+parse_canon_level <- function(analysis_path) {
+    if (!file.exists(analysis_path)) return(NA_real_)
+    al <- readLines(analysis_path, warn = FALSE)
+    decl <- grep("^\\s*procedure\\s+emlReportAlpha\\b", al)
+    if (length(decl) != 1L) return(NA_real_)
+    ends <- grep("^\\s*endproc\\b", al)
+    ends <- ends[ends > decl]
+    if (!length(ends)) return(NA_real_)
+    body <- al[seq.int(decl, ends[1])]
+    # THE BODY IS BOUNDED, NOT GREPPED FOR BY NAME, exactly as v105 bounds
+    # @emlPitchArgsFAC's body -- ".value = ..." does not mention the
+    # procedure's own name, so a whole-file grep would find every other
+    # ".value = " assignment in the module too.
+    asg <- grep("^\\s*\\.value\\s*=\\s*[0-9.]+\\s*$", body, value = TRUE)
+    if (length(asg) != 1L) return(NA_real_)
+    alpha <- suppressWarnings(as.numeric(sub("^\\s*\\.value\\s*=\\s*", "", asg)))
+    if (is.na(alpha) || alpha <= 0 || alpha >= 1) return(NA_real_)
+    1 - alpha
+}
+
+analysis_path <- repo_path("plugin_EML_StatsGraphs", "stats", "eml-analysis.praat")
+CONFIDENCE_LEVEL <- parse_canon_level(analysis_path)
+
+# ---------------------------------------------------------------------------
 # 1. Base-R primitives, independently written (not sourced from
 #    lane_survey_oracle_dump.R): the v90 covariance-matrix formula.
 # ---------------------------------------------------------------------------
@@ -107,7 +147,7 @@ base_alpha <- function(cc) {
     k <- ncol(cc); C <- stats::cov(cc)
     (k / (k - 1)) * (1 - sum(diag(C)) / sum(C))
 }
-base_feldt <- function(a, n, k, level = 0.95) {
+base_feldt <- function(a, n, k, level = CONFIDENCE_LEVEL) {
     df1 <- n - 1; df2 <- (n - 1) * (k - 1)
     tail <- (1 - level) / 2
     c(lo = 1 - (1 - a) * stats::qf(1 - tail, df1, df2),
@@ -178,9 +218,11 @@ for (i in seq_len(nrow(decl_scales))) {
 
     check("v130", sprintf("[%s] alpha vs committed oracle", sname),
           a, oget(sprintf("declared_%s_alpha", sname)), tol = otolf(sprintf("declared_%s_alpha", sname)))
-    check("v130", sprintf("[%s] Feldt lower (0.95) vs committed oracle", sname),
+    check("v130", sprintf("[%s] Feldt lower (level %s, from @emlReportAlpha) vs committed oracle",
+                          sname, format(CONFIDENCE_LEVEL)),
           fc[["lo"]], oget(sprintf("declared_%s_feldt_lo", sname)), tol = otolf(sprintf("declared_%s_feldt_lo", sname), 1e-8))
-    check("v130", sprintf("[%s] Feldt upper (0.95) vs committed oracle", sname),
+    check("v130", sprintf("[%s] Feldt upper (level %s, from @emlReportAlpha) vs committed oracle",
+                          sname, format(CONFIDENCE_LEVEL)),
           fc[["hi"]], oget(sprintf("declared_%s_feldt_hi", sname)), tol = otolf(sprintf("declared_%s_feldt_hi", sname), 1e-8))
     check("v130", sprintf("[%s] n (complete-case) vs committed oracle", sname),
           n, oget(sprintf("declared_%s_n", sname)), tol = 0)
@@ -396,6 +438,134 @@ if (!is.null(conf)) {
         check("v130",
               "seeded wrong-declared-range defect: Confidence scale-score mean DIFFERS from the COMMITTED correct-range oracle (proves the leg can fail)",
               mean_wrong, mean_correct, tol = 1e-6, expect = "differ")
+    }
+}
+
+# ---------------------------------------------------------------------------
+# 7. CONFIDENCE-LEVEL PARITY (Finding 4) -- the level in force is
+#    @emlReportAlpha's, never a literal restated somewhere else.
+#
+# THE FAILURE THIS CATCHES. A user running the plugin at emlAlpha = .01
+# gets a 99% Feldt interval from @emlCronbachAlpha; a committed oracle
+# that independently states "0.95" stays 95% forever, so v130 would
+# report the plugin "wrong" against an oracle set to a different level,
+# and nothing would name the real cause. Section 0b already closed the
+# supply side here (base_feldt's default is PARSED from @emlReportAlpha,
+# not typed), and lane_survey_oracle_dump.R does the identical parse,
+# independently, and RECORDS what it got as the committed "confidence_level"
+# stat -- the oracle stays reproducible (the CSV states the level it was
+# computed at) without that record being a second, driftable literal (it
+# is written by the same parse, not hand-typed).
+#
+# TWO THINGS ARE THEREFORE CHECKED, NAMING BOTH SITES ON DISAGREEMENT:
+#   (a) this file's own parse of @emlReportAlpha vs the committed CSV's
+#       recorded "confidence_level" -- did the CSV get regenerated after
+#       the last time the canon changed;
+#   (b) a v105-style SCAN of the lane's R sources for the *shape* of a
+#       hardcoded confidence-level default (`level = 0.NN`) -- the shape
+#       both original hardcodes shared before this section's fix -- so a
+#       THIRD site reintroducing that shape later is caught by the scan
+#       finding something, rather than requiring a hand-written list of
+#       "the two known sites" to be kept in sync by memory.
+# ---------------------------------------------------------------------------
+
+check_true("v130", "@emlReportAlpha's file is present", file.exists(analysis_path))
+check_true("v130", "@emlReportAlpha's default level parses to a number in (0,1)",
+           !is.na(CONFIDENCE_LEVEL) && CONFIDENCE_LEVEL > 0 && CONFIDENCE_LEVEL < 1)
+
+# (a) THE CSV vs THE CANON -- names both sites explicitly.
+committed_level <- oget("confidence_level")
+check("v130",
+      sprintf("committed oracle's recorded level (%s, %s stat \"confidence_level\") vs @emlReportAlpha's default (%s, %s)",
+              format(committed_level), oracle_csv,
+              format(CONFIDENCE_LEVEL), analysis_path),
+      committed_level, CONFIDENCE_LEVEL, tol = 1e-12)
+
+# (b) THE SCAN -- no hardcoded "level = 0.NN" default may remain anywhere
+# in the lane's R sources; the moment one does, it is a stray copy of the
+# canon that can drift the way Finding 4 described.
+lane_r_files <- c(
+    v130 = repo_path("validate", "v130_survey_declared_oracle.R"),
+    v129 = repo_path("validate", "v129_survey_declaration.R"),
+    dump = repo_path("validate", "oracle", "lane_survey_oracle_dump.R")
+)
+scan_level_literals <- function(files) {
+    out <- list()
+    for (nm in names(files)) {
+        fp <- files[[nm]]
+        if (!file.exists(fp)) next
+        lines <- readLines(fp, warn = FALSE)
+        hits <- grep("\\blevel\\s*=\\s*0\\.[0-9]+\\b", lines)
+        for (ln in hits) out[[length(out) + 1L]] <- sprintf("%s:%d", nm, ln)
+    }
+    unlist(out)
+}
+stray <- scan_level_literals(lane_r_files)
+check_true("v130",
+    sprintf("no hardcoded confidence-level literal remains in the lane's R sources%s",
+            if (length(stray)) sprintf(" (found: %s)", paste(stray, collapse = ", ")) else ""),
+    length(stray) == 0L)
+
+# PROOF BOTH CHECKS CAN ACTUALLY FAIL, and that each names its own site.
+# Neither committed file is touched -- (a)'s red demo mutates a SCRATCH
+# COPY of the oracle CSV; (b)'s mutates a SCRATCH COPY of dump.R by
+# reintroducing the shape the scan looks for.
+mutant_dir <- file.path(tempdir(), "v130-level-mutant")
+unlink(mutant_dir, recursive = TRUE)
+dir.create(mutant_dir, recursive = TRUE)
+
+# (a) mutant: CSV's confidence_level row changed to 0.90.
+odf_mut <- odf
+odf_mut$value[odf_mut$stat == "confidence_level"] <- 0.90
+mutant_csv_level <- odf_mut$value[odf_mut$stat == "confidence_level"][1]
+
+if (red_mode) {
+    cat("      EML_LANE_RED: comparing a scratch copy of the oracle CSV with\n")
+    cat("      confidence_level changed to 0.90 against @emlReportAlpha's level --\n")
+    cat("      the next check is EXPECTED to FAIL.\n")
+    check("v130", "[RED] mutated oracle-CSV confidence_level (0.90) vs @emlReportAlpha's level (must go red)",
+          mutant_csv_level, CONFIDENCE_LEVEL, tol = 1e-12)
+} else {
+    check("v130",
+          "seeded confidence-level defect: mutated oracle-CSV confidence_level (0.90) DIFFERS from @emlReportAlpha's level (proves check (a) can fail)",
+          mutant_csv_level, CONFIDENCE_LEVEL, tol = 1e-12, expect = "differ")
+}
+check_true("v130", "the mutation above touched only the scratch copy -- the committed CSV's own recorded level is untouched and still agrees",
+           oget("confidence_level") == CONFIDENCE_LEVEL)
+
+# (b) mutant: dump.R's base_feldt default reverted to a hardcoded literal
+# in a scratch copy, reproducing the exact pre-fix line.
+dump_lines <- readLines(lane_r_files[["dump"]], warn = FALSE)
+target_ln <- grep("^base_feldt <- function\\(a, n, k, level = CONFIDENCE_LEVEL\\) \\{$", dump_lines)
+check_true("v130", "dump.R's base_feldt default line was found to mutate for the scan red-demo",
+           length(target_ln) == 1L)
+if (length(target_ln) == 1L) {
+    # Built via sprintf, not written as one contiguous literal, so this
+    # file's OWN source text never spells out a hardcoded confidence-level
+    # default in the shape the scan below looks for -- if it did, that
+    # scan (correctly) run against v130's own file would flag this
+    # red-demo line as a fourth stray site, a self-referential false
+    # positive rather than a demonstration.
+    wrong_level_text <- paste0("0.", "90")
+    dump_lines[target_ln] <- sprintf("base_feldt <- function(a, n, k, level = %s) {",
+                                     wrong_level_text)
+    mutant_path <- file.path(mutant_dir, "dump_mutant.R")
+    writeLines(dump_lines, mutant_path)
+    stray_mut <- scan_level_literals(c(v130 = lane_r_files[["v130"]], dump = mutant_path))
+
+    if (red_mode) {
+        cat("      EML_LANE_RED: scanning a scratch copy of dump.R with its default\n")
+        cat("      reverted to a hardcoded 0.90 literal -- the next check is EXPECTED\n")
+        cat("      to FAIL, naming the mutated dump.R site.\n")
+        check_true("v130",
+            sprintf("[RED] scan finds no hardcoded literal in the reverted dump.R scratch copy (must go red, naming: %s)",
+                    paste(stray_mut, collapse = ", ")),
+            length(stray_mut) == 0L)
+    } else {
+        check_true("v130",
+            sprintf("seeded stray-literal defect: the scan DOES find the reverted dump.R literal (%s) (proves check (b) can fail)",
+                    paste(stray_mut, collapse = ", ")),
+            length(stray_mut) == 1L && startsWith(stray_mut[1], "dump:"))
     }
 }
 

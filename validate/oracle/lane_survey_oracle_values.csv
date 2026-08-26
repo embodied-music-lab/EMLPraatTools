@@ -1,4 +1,5 @@
 "stat","value","tol"
+"confidence_level",0.95,0
 "alpha_clean",0.849339735894358,1e-10
 "alpha_clean_feldt_lo",0.727172130291108,1e-08
 "alpha_clean_feldt_hi",0.926969614607198,1e-08

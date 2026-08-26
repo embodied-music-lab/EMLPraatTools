@@ -26,7 +26,56 @@ put <- function(stat, value, tol) {
                                              tol = tol)
 }
 
+# ---------------------------------------------------------------------------
+# THE CONFIDENCE LEVEL (Finding 4) -- stated ONCE, in @emlReportAlpha
+# (plugin_EML_StatsGraphs/stats/eml-analysis.praat: "the alpha the report
+# marks significance against ... a caller's global emlAlpha when one has
+# been set to a usable value, otherwise .05"). Parsed here rather than
+# retyped as "0.95", for the same reason v105_pitch_parity.R parses
+# @emlPitchArgsFAC instead of restating its tail: a second place for the
+# level to live is a second thing that can drift. The committed CSV this
+# script writes STILL RECORDS the level it was computed at (stat
+# "confidence_level", below) -- the oracle stays reproducible -- but the
+# recorded value is DERIVED from the procedure, not hand-typed, and
+# validate/v130_survey_declared_oracle.R#7 checks that this parse and its
+# own copy of the same parse still agree.
+# ---------------------------------------------------------------------------
+parse_canon_level <- function(analysis_path) {
+    if (!file.exists(analysis_path)) return(NA_real_)
+    al <- readLines(analysis_path, warn = FALSE)
+    decl <- grep("^\\s*procedure\\s+emlReportAlpha\\b", al)
+    if (length(decl) != 1L) return(NA_real_)
+    ends <- grep("^\\s*endproc\\b", al)
+    ends <- ends[ends > decl]
+    if (!length(ends)) return(NA_real_)
+    body <- al[seq.int(decl, ends[1])]
+    asg <- grep("^\\s*\\.value\\s*=\\s*[0-9.]+\\s*$", body, value = TRUE)
+    if (length(asg) != 1L) return(NA_real_)
+    alpha <- suppressWarnings(as.numeric(sub("^\\s*\\.value\\s*=\\s*", "", asg)))
+    if (is.na(alpha) || alpha <= 0 || alpha >= 1) return(NA_real_)
+    1 - alpha
+}
+analysis_path <- normalizePath(file.path(here, "..", "..",
+    "plugin_EML_StatsGraphs", "stats", "eml-analysis.praat"), mustWork = FALSE)
+CONFIDENCE_LEVEL <- parse_canon_level(analysis_path)
+if (is.na(CONFIDENCE_LEVEL)) {
+    stop(sprintf(paste0("could not parse @emlReportAlpha's default level out of %s -- ",
+                        "the confidence level has no canon to derive from, refusing ",
+                        "to fall back to a silent literal"), analysis_path))
+}
+put("confidence_level", CONFIDENCE_LEVEL, 0)
+
 # --- Cronbach's alpha ----------------------------------------------------
+#
+# NOTE (reported, not fixed here): psych::alpha() has no conf.level
+# parameter -- its Feldt CI is computed at a level fixed INSIDE the psych
+# package itself, unconditionally 0.95, regardless of CONFIDENCE_LEVEL.
+# The alpha_{clean,revnotrev,2item,missing}_feldt_{lo,hi} rows below are
+# therefore pinned to psych's own internal 95% and do not track
+# @emlReportAlpha; there is no argument to pass that would change this.
+# This is a real, unfixable-from-here hardcode, distinct from the
+# declared_* family below (which uses this file's own base_feldt() and
+# does track CONFIDENCE_LEVEL).
 
 stopifnot(requireNamespace("psych", quietly = TRUE))
 for (fx in c("clean", "revnotrev", "2item", "missing")) {
@@ -135,7 +184,7 @@ base_alpha_cov <- function(cc) {
     k <- ncol(cc); C <- stats::cov(cc)
     (k / (k - 1)) * (1 - sum(diag(C)) / sum(C))
 }
-base_feldt <- function(a, n, k, level = 0.95) {
+base_feldt <- function(a, n, k, level = CONFIDENCE_LEVEL) {
     df1 <- n - 1; df2 <- (n - 1) * (k - 1)
     tail <- (1 - level) / 2
     c(lo = 1 - (1 - a) * stats::qf(1 - tail, df1, df2),

@@ -117,6 +117,14 @@ if (!canDrive) {
     tgt <- file.path(work, "stats")
     if (!file.exists(tgt)) file.symlink(normalizePath(file.path(plug, "stats")), tgt)
 
+    # Coverage accumulators (Finding 6 / eml_census spirit, section 18 below):
+    # each accumulates the refusal CODE a leg actually exercised, recorded as
+    # that leg runs -- never a separately hand-maintained list -- so the
+    # coverage assertion at the end compares them against the set of codes
+    # discovered by scanning @emlSurveyValidateDeclaration's own source.
+    positive_leg_codes <- c()
+    negative_control_codes <- c()
+
     csvdir <- repo_path("evidence", "csv")
 
     # THE COMMITTED PATHS -- driven directly, never copied, for every leg
@@ -160,10 +168,13 @@ if (!canDrive) {
         writeLines(c(
             # eml-psychometrics.praat's own header (Dependencies) now says
             # @emlSurveyValidateDeclaration requires @emlStripHeaderQuotes
-            # from eml-extract.praat and must be included after it -- the
-            # same order every real barrel already uses (eml-record.praat's
-            # generated barrel, setup.praat's module list).
+            # from eml-extract.praat and, as of V1.3, @emlRequireColumnPresent
+            # / @emlRequireNumericColumn from eml-inferential.praat, in that
+            # order -- the same order the real barrel already uses
+            # (setup.praat's module list: eml-extract.praat, then
+            # eml-inferential.praat, then eml-psychometrics.praat).
             paste0("include ../", stats_dir_rel, "/eml-extract.praat"),
+            paste0("include ../", stats_dir_rel, "/eml-inferential.praat"),
             paste0("include ../", stats_dir_rel, "/eml-psychometrics.praat"),
             "",
             sprintf('dataT = Read Table from comma-separated file: "%s"', esc(data_path)),
@@ -194,7 +205,33 @@ if (!canDrive) {
             '... emlSurveyValidateDeclaration.badTypeValue$, "|",',
             '... emlSurveyValidateDeclaration.badCellText$, "|",',
             '... emlSurveyValidateDeclaration.scaleIsKR20 [1], "|",',
-            '... emlSurveyValidateDeclaration.scaleIsKR20 [3]'),
+            '... emlSurveyValidateDeclaration.scaleIsKR20 [3], "|",',
+            # Fields 20-24: refusals 11-14 (v129 extension). Same rule:
+            # appended after the previous 19 rather than inserted among
+            # them. Fields 23-24 carry .error$/.remedy$ VERBATIM (every
+            # other field before them is a length or a bare name/number,
+            # never the sentence itself, per this file's own header on why
+            # wording is never asserted) because the "no message prints
+            # --undefined--" leg below needs the actual text to search, not
+            # just its length. Neither field, nor any of the fixtures that
+            # produce them, ever contains a "|" character, so the fixed
+            # "|" splitter used throughout this file stays safe.
+            '... emlSurveyValidateDeclaration.badColumn$, "|",',
+            '... emlSurveyValidateDeclaration.badFile$, "|",',
+            '... emlSurveyValidateDeclaration.badRawValue$, "|",',
+            '... emlSurveyValidateDeclaration.error$, "|",',
+            '... emlSurveyValidateDeclaration.remedy$, "|",',
+            # Field 25: a constant, non-empty sentinel, NOT a real output.
+            # .error$/.remedy$ are BOTH "" on the clean run, and R's
+            # strsplit(x, "|", fixed = TRUE) silently drops the trailing
+            # field when the string being split ENDS in the delimiter --
+            # verified directly: strsplit("a||", "|") returns two elements,
+            # not three. Without this sentinel after them, the clean run's
+            # line would end "...||" and field 24 (.remedy$) would vanish
+            # from fld()'s result on exactly the run this file's own
+            # section 3 depends on. The sentinel guarantees the line never
+            # ends in the delimiter, so nothing after it is ever dropped.
+            '... "END"'),
             probe)
         suppressWarnings(system2("env",
             c("-u", "DISPLAY", shQuote(praat),
@@ -218,7 +255,7 @@ if (!canDrive) {
         if (is.na(v) || identical(v, "--undefined--")) return(NA_real_)
         suppressWarnings(as.numeric(v))
     }
-    ran_ok <- function(out) !any(grepl("^Error", out)) && length(fld(out, "res")) >= 19
+    ran_ok <- function(out) !any(grepl("^Error", out)) && length(fld(out, "res")) >= 24
 
     # -------------------------------------------------------------------
     # 3. THE CLEAN DECLARATION -- driven DIRECTLY against the three
@@ -296,6 +333,7 @@ if (!canDrive) {
     }
 
     results <- list()
+    results$clean <- out_clean
 
     # --- Defect 1: item names a column the data table lacks ------------
     items1 <- clean_items_lines
@@ -309,6 +347,7 @@ if (!canDrive) {
               num_(out1, "res", 1), 1, tol = 0)
         check_true("v129", "[refusal 1] badItem is the renamed item \"Q1x\"",
                    identical(str_(out1, "res", 2), "Q1x"))
+        positive_leg_codes <- c(positive_leg_codes, 1)
     }
 
     # --- Defect 2: a value outside its subscale's declared range -------
@@ -331,6 +370,7 @@ if (!canDrive) {
         check("v129", "[refusal 2] badValue is 9", num_(out2, "res", 5), 9, tol = 0)
         check("v129", "[refusal 2] badMin is 1", num_(out2, "res", 6), 1, tol = 0)
         check("v129", "[refusal 2] badMax is 5", num_(out2, "res", 7), 5, tol = 0)
+        positive_leg_codes <- c(positive_leg_codes, 2)
     }
 
     # --- Defect 3: a subscale with fewer than two items -----------------
@@ -348,6 +388,7 @@ if (!canDrive) {
         check_true("v129", "[refusal 3] badScale is \"Knowledge\"",
                    identical(str_(out3, "res", 3), "Knowledge"))
         check("v129", "[refusal 3] scaleItemCount is 1", num_(out3, "res", 8), 1, tol = 0)
+        positive_leg_codes <- c(positive_leg_codes, 3)
     }
 
     # --- Defect 4: reversed set on a grouping/ignore column -------------
@@ -364,6 +405,7 @@ if (!canDrive) {
                    identical(str_(out4, "res", 2), "Voice"))
         check_true("v129", "[refusal 4] badRole is \"grouping\"",
                    identical(str_(out4, "res", 9), "grouping"))
+        positive_leg_codes <- c(positive_leg_codes, 4)
     }
 
     # --- Defect 5, direction A: item names a scale the scales file lacks
@@ -382,6 +424,7 @@ if (!canDrive) {
                    identical(str_(out5a, "res", 3), "Confidenc"))
         check_true("v129", "[refusal 5A] badDirection is \"item_unknown_scale\"",
                    identical(str_(out5a, "res", 10), "item_unknown_scale"))
+        positive_leg_codes <- c(positive_leg_codes, 5)
     }
 
     # --- Defect 5, direction B: a declared scale no item uses -----------
@@ -397,6 +440,7 @@ if (!canDrive) {
                    identical(str_(out5b, "res", 3), "Motivation"))
         check_true("v129", "[refusal 5B] badDirection is \"scale_unused\"",
                    identical(str_(out5b, "res", 10), "scale_unused"))
+        positive_leg_codes <- c(positive_leg_codes, 5)
     }
 
     # -------------------------------------------------------------------
@@ -425,6 +469,7 @@ if (!canDrive) {
                    identical(str_(out6, "res", 2), "Q3"))
         check("v129", "[refusal 6] badReversedValue is 2",
               num_(out6, "res", 13), 2, tol = 0)
+        positive_leg_codes <- c(positive_leg_codes, 6)
     }
 
     # --- Defect 7: an item name declared more than once -----------------
@@ -444,6 +489,7 @@ if (!canDrive) {
                    identical(str_(out7, "res", 2), "Q1"))
         check("v129", "[refusal 7] badItemRow is 2 (the second, duplicated declaration)",
               num_(out7, "res", 14), 2, tol = 0)
+        positive_leg_codes <- c(positive_leg_codes, 7)
     }
 
     # --- Defect 8: an item resolved to a subscale has a non-numeric data
@@ -467,6 +513,7 @@ if (!canDrive) {
               num_(out8, "res", 4), 1, tol = 0)
         check_true("v129", "[refusal 8] badCellText is \"Soprano\"",
                    identical(str_(out8, "res", 17), "Soprano"))
+        positive_leg_codes <- c(positive_leg_codes, 8)
     }
 
     # --- Defect 9: a scale type that is neither ordinal nor continuous --
@@ -483,6 +530,7 @@ if (!canDrive) {
                    identical(str_(out9, "res", 3), "Confidence"))
         check_true("v129", "[refusal 9] badTypeValue is \"banana\"",
                    identical(str_(out9, "res", 16), "banana"))
+        positive_leg_codes <- c(positive_leg_codes, 9)
     }
 
     # --- Defect 10 [CONTRACT REPAIR -- Ian's to veto]: a declared minimum
@@ -504,6 +552,135 @@ if (!canDrive) {
                    identical(str_(out10, "res", 3), "Confidence"))
         check("v129", "[refusal 10] badMin is 5", num_(out10, "res", 6), 5, tol = 0)
         check("v129", "[refusal 10] badMax is 1", num_(out10, "res", 7), 1, tol = 0)
+        positive_leg_codes <- c(positive_leg_codes, 10)
+    }
+
+    # -------------------------------------------------------------------
+    # 4c. FOUR MORE SEEDED-DEFECT FIXTURES -- refusals 11-14, added by a
+    #     second adversarial pass that found the class of fault refusals
+    #     6-10 closed on the ITEMS file was never closed on the SCALES
+    #     file. Same style as sections 4 and 4b: one mutation, derived
+    #     from the clean committed lines into tempdir(), never touching
+    #     the committed files themselves.
+    # -------------------------------------------------------------------
+
+    # --- Defect 11: a required column missing from a declaration file --
+    # The scales file's own "type" column dropped entirely (header and
+    # every data row) -- the exact shape of a declaration written before
+    # V1.2, and the live proof behind this refusal: without it, a bare
+    # "Get value:" on the missing column HALTS Praat outright instead of
+    # refusing.
+    drop_column <- function(lines, col_name) {
+        ci <- header_index(lines, col_name)
+        stopifnot(length(ci) == 1)
+        vapply(lines, function(line) {
+            cells <- strsplit(line, ",", fixed = TRUE)[[1]]
+            paste(cells[-ci], collapse = ",")
+        }, character(1), USE.NAMES = FALSE)
+    }
+    scales11 <- drop_column(clean_scales_lines, "type")
+    p11 <- write_csv_lines(scales11, "d11_scales.csv")
+    out11 <- drive_validate("stats", committed_data_path, p11, committed_items_path, "d11")
+    results$d11 <- out11
+    check_true("v129", "[refusal 11] probe ran", ran_ok(out11))
+    if (ran_ok(out11)) {
+        check("v129", "[refusal 11] code is 11 (a required column is missing from a declaration file)",
+              num_(out11, "res", 1), 11, tol = 0)
+        check_true("v129", "[refusal 11] badColumn is \"type\"",
+                   identical(str_(out11, "res", 20), "type"))
+        check_true("v129", "[refusal 11] badFile is \"survey_scales.csv\"",
+                   identical(str_(out11, "res", 21), "survey_scales.csv"))
+        positive_leg_codes <- c(positive_leg_codes, 11)
+    }
+
+    # --- Defect 12: a subscale's declared min is missing or not numeric -
+    # Confidence's declared min replaced with the non-numeric text "one" --
+    # Ian's approved probe: "Get value:" returns `undefined` for it, and
+    # both refusal 10's ">=" and refusal 2's range check are FALSE against
+    # `undefined`, so this validated clean (refusal 0) before refusal 12
+    # existed.
+    scales12 <- edit_field(clean_scales_lines, 1, "min", "one")
+    p12 <- write_csv_lines(scales12, "d12_scales.csv")
+    out12 <- drive_validate("stats", committed_data_path, p12, committed_items_path, "d12")
+    results$d12 <- out12
+    check_true("v129", "[refusal 12] probe ran", ran_ok(out12))
+    if (ran_ok(out12)) {
+        check("v129", "[refusal 12] code is 12 (declared min/max missing or not numeric)",
+              num_(out12, "res", 1), 12, tol = 0)
+        check_true("v129", "[refusal 12] badScale is \"Confidence\"",
+                   identical(str_(out12, "res", 3), "Confidence"))
+        check("v129", "[refusal 12] badScaleRow is 1", num_(out12, "res", 15), 1, tol = 0)
+        check_true("v129", "[refusal 12] badColumn is \"min\"",
+                   identical(str_(out12, "res", 20), "min"))
+        check_true("v129", "[refusal 12] badRawValue is \"one\"",
+                   identical(str_(out12, "res", 22), "one"))
+        positive_leg_codes <- c(positive_leg_codes, 12)
+    }
+
+    # --- Defect 12b: a subscale's declared max is MISSING (blank), not just
+    #     non-numeric -- "non-numeric or missing", both named in the
+    #     refusal, get their own seeded fixture rather than one standing
+    #     in for the other.
+    scales12b <- edit_field(clean_scales_lines, 1, "max", "")
+    p12b <- write_csv_lines(scales12b, "d12b_scales.csv")
+    out12b <- drive_validate("stats", committed_data_path, p12b, committed_items_path, "d12b")
+    results$d12b <- out12b
+    check_true("v129", "[refusal 12b] probe ran", ran_ok(out12b))
+    if (ran_ok(out12b)) {
+        check("v129", "[refusal 12b] code is 12 (declared min/max missing or not numeric)",
+              num_(out12b, "res", 1), 12, tol = 0)
+        check_true("v129", "[refusal 12b] badColumn is \"max\"",
+                   identical(str_(out12b, "res", 20), "max"))
+        check_true("v129", "[refusal 12b] badRawValue is \"\" (a missing endpoint, not a non-numeric one)",
+                   identical(str_(out12b, "res", 22), ""))
+        positive_leg_codes <- c(positive_leg_codes, 12)
+    }
+
+    # --- Defect 13: a scale name declared more than once ----------------
+    # Confidence's row duplicated with a DIFFERENT max (1-200 instead of
+    # 1-5) immediately after itself -- Ian's approved probe, mirroring
+    # refusal 7's own duplicate-item fixture. Planted 99 in Q1 row 3 (the
+    # same value and location the negative control in section 5 uses):
+    # before refusal 13 existed, refusal 2's resolution loop had no break
+    # and no duplicate check, so the LAST matching row (1-200) silently
+    # won and 99 validated clean.
+    conf_row <- clean_scales_lines[grepl("^Confidence,", clean_scales_lines)]
+    stopifnot(length(conf_row) == 1)
+    scales13 <- append(clean_scales_lines, "Confidence,1,200,ordinal",
+                       after = which(clean_scales_lines == conf_row))
+    p13 <- write_csv_lines(scales13, "d13_scales.csv")
+    data13 <- edit_field(clean_data_lines, 3, "Q1", "99")
+    p13d <- write_csv_lines(data13, "d13_data.csv")
+    out13 <- drive_validate("stats", p13d, p13, committed_items_path, "d13")
+    results$d13 <- out13
+    check_true("v129", "[refusal 13] probe ran", ran_ok(out13))
+    if (ran_ok(out13)) {
+        check("v129", "[refusal 13] code is 13 (scale name declared more than once), not 0 (was misreported as clean before this refusal existed)",
+              num_(out13, "res", 1), 13, tol = 0)
+        check_true("v129", "[refusal 13] badScale is \"Confidence\"",
+                   identical(str_(out13, "res", 3), "Confidence"))
+        check("v129", "[refusal 13] badScaleRow is 2 (the second, duplicated declaration)",
+              num_(out13, "res", 15), 2, tol = 0)
+        positive_leg_codes <- c(positive_leg_codes, 13)
+    }
+
+    # --- Defect 14: a scale name is empty --------------------------------
+    # Confidence's name blanked -- unchecked by the same gap as 13: an
+    # empty scale name is never matched against a data column the way an
+    # item name is (refusal 1), so nothing else in the procedure would
+    # ever catch it.
+    scales14 <- edit_field(clean_scales_lines, 1, "scale", "")
+    p14 <- write_csv_lines(scales14, "d14_scales.csv")
+    out14 <- drive_validate("stats", committed_data_path, p14, committed_items_path, "d14")
+    results$d14 <- out14
+    check_true("v129", "[refusal 14] probe ran", ran_ok(out14))
+    if (ran_ok(out14)) {
+        check("v129", "[refusal 14] code is 14 (a scale name is empty)",
+              num_(out14, "res", 1), 14, tol = 0)
+        check("v129", "[refusal 14] badScaleRow is 1", num_(out14, "res", 15), 1, tol = 0)
+        check_true("v129", "[refusal 14] badScale is \"\" (the fault IS that the scale has no name)",
+                   identical(str_(out14, "res", 3), ""))
+        positive_leg_codes <- c(positive_leg_codes, 14)
     }
 
     # -------------------------------------------------------------------
@@ -512,11 +689,14 @@ if (!canDrive) {
     # -------------------------------------------------------------------
     mut <- file.path(work, "mutant")
     dir.create(mut, showWarnings = FALSE)
-    # The probe now includes eml-extract.praat before eml-psychometrics.praat
-    # (the module's own Dependencies header), so every mutant directory needs
-    # a real, unmutated eml-extract.praat sitting beside its one mutated file.
+    # The probe now includes eml-extract.praat and eml-inferential.praat
+    # before eml-psychometrics.praat (the module's own Dependencies header),
+    # so every mutant directory needs a real, unmutated copy of both sitting
+    # beside its one mutated file.
     file.symlink(normalizePath(file.path(plug, "stats", "eml-extract.praat")),
                  file.path(mut, "eml-extract.praat"))
+    file.symlink(normalizePath(file.path(plug, "stats", "eml-inferential.praat")),
+                 file.path(mut, "eml-inferential.praat"))
     src <- readLines(file.path(plug, "stats", "eml-psychometrics.praat"))
     needle <- paste(
         "                .sMin = .scaleMin[.s]",
@@ -595,6 +775,7 @@ if (!canDrive) {
               "seeded observed-range defect: mutant's refusal DIFFERS from the correct code 2 (proves the leg can fail)",
               mut_refusal, 2, tol = 0, expect = "differ")
     }
+    negative_control_codes <- c(negative_control_codes, 2)
 
     # -------------------------------------------------------------------
     # 6. NEGATIVE CONTROL 2 -- the @emlStripHeaderQuotes calls removed.
@@ -609,6 +790,8 @@ if (!canDrive) {
     dir.create(mut2, showWarnings = FALSE)
     file.symlink(normalizePath(file.path(plug, "stats", "eml-extract.praat")),
                  file.path(mut2, "eml-extract.praat"))
+    file.symlink(normalizePath(file.path(plug, "stats", "eml-inferential.praat")),
+                 file.path(mut2, "eml-inferential.praat"))
 
     src2 <- readLines(file.path(plug, "stats", "eml-psychometrics.praat"))
     strip_needle <- paste(
@@ -653,6 +836,64 @@ if (!canDrive) {
     }
 
     # -------------------------------------------------------------------
+    # 6b. NEGATIVE CONTROL for refusal 1 -- a required item's column check.
+    #    NOT the generic run_negative_control() pattern, for the same reason
+    #    refusal 11's control below is bespoke: neutering THIS guard does not
+    #    make the module produce a different, well-formed refusal code the
+    #    way neutering refusals 3, 4, 5A or 5B does. It disables the ONLY
+    #    check standing between an item naming a column the data table
+    #    lacks and refusal 2's own loop, several checks later, doing a bare
+    #    "Get value: .r, .itemName$[.i]" against that same nonexistent
+    #    column -- which HALTS Praat outright (verified live below) rather
+    #    than refusing gracefully. Finding 6 named this exact risk: "the
+    #    suite surfaces only as an opaque 'probe ran' failure with no
+    #    indication of cause" -- so this control asserts the SPECIFIC
+    #    outcome (a halt on this seeded defect) and reports it as "refusal 1
+    #    is load-bearing against a script abort", not as an unexplained
+    #    ran_ok() failure indistinguishable from a driver bug.
+    # -------------------------------------------------------------------
+    mut1 <- file.path(work, "mutant1")
+    dir.create(mut1, showWarnings = FALSE)
+    file.symlink(normalizePath(file.path(plug, "stats", "eml-extract.praat")),
+                 file.path(mut1, "eml-extract.praat"))
+    file.symlink(normalizePath(file.path(plug, "stats", "eml-inferential.praat")),
+                 file.path(mut1, "eml-inferential.praat"))
+    src1 <- readLines(file.path(plug, "stats", "eml-psychometrics.praat"))
+    src1_txt <- paste(src1, collapse = "\n")
+    needle1 <- "        if .colIndex = 0"
+    hit1 <- lengths(regmatches(src1_txt, gregexpr(needle1, src1_txt, fixed = TRUE)))
+    check_true("v129",
+               "[refusal 1] the guard line exists in source, exactly once (negative-control seed site)",
+               hit1 == 1)
+    mut1_txt <- sub(needle1, "        if 0 = 1", src1_txt, fixed = TRUE)
+    writeLines(strsplit(mut1_txt, "\n", fixed = TRUE)[[1]],
+               file.path(mut1, "eml-psychometrics.praat"))
+    linkdir1 <- file.path(work, "mutant1_link")
+    if (!file.exists(linkdir1)) file.symlink(mut1, linkdir1)
+
+    # Driven on refusal 1's own seeded-defect fixture (p1, "Q1x" -- section 4
+    # above): with the guard neutered, the loop never catches the renamed
+    # item, so the item's name reaches refusal 2's per-respondent loop
+    # unchecked and that loop's bare "Get value:" against the nonexistent
+    # "Q1x" column aborts the script.
+    out_mut1 <- drive_validate("mutant1_link", committed_data_path,
+                               committed_scales_path, p1, "mutant1")
+    negative_control_codes <- c(negative_control_codes, 1)
+
+    if (red_mode) {
+        cat("      EML_LANE_RED: running the standard 'refusal 1 fires'\n")
+        cat("      check against the neutered-guard build -- the next check is\n")
+        cat("      EXPECTED to FAIL (the mutant HALTS rather than reports 1).\n")
+        check_true("v129",
+            "[RED] refusal 1 probe runs cleanly and reports code 1 on its seeded defect (must go red once the guard is neutered)",
+            ran_ok(out_mut1) && identical(num_(out_mut1, "res", 1), 1))
+    } else {
+        check_true("v129",
+            "[refusal 1] guard neutered: the mutant HALTS outright on its own seeded defect instead of refusing gracefully -- refusal 1 is load-bearing against a script abort (without it, refusal 2's later \"Get value:\" on the missing column aborts Praat, exactly as Finding 6 warned, rather than producing any refusal code)",
+            !ran_ok(out_mut1))
+    }
+
+    # -------------------------------------------------------------------
     # 7-11. NEGATIVE CONTROLS for refusals 6-10 -- one per new refusal,
     #    same mutant-copy pattern as sections 5 and 6 (v90's model): the
     #    ONE guard line that decides that refusal is neutered to "if 0 = 1"
@@ -665,10 +906,16 @@ if (!canDrive) {
     # -------------------------------------------------------------------
     run_negative_control <- function(mut_name, needle, tag, defect_data,
                                      defect_scales, defect_items, correct_code) {
+        # Record the code this call exercises AS IT RUNS (eml_claim style) --
+        # never a separately hand-maintained list -- so section 18's coverage
+        # assertion can compare it against the set discovered from source.
+        negative_control_codes <<- c(negative_control_codes, correct_code)
         mutdir <- file.path(work, mut_name)
         dir.create(mutdir, showWarnings = FALSE)
         file.symlink(normalizePath(file.path(plug, "stats", "eml-extract.praat")),
                      file.path(mutdir, "eml-extract.praat"))
+        file.symlink(normalizePath(file.path(plug, "stats", "eml-inferential.praat")),
+                     file.path(mutdir, "eml-inferential.praat"))
         srcN <- readLines(file.path(plug, "stats", "eml-psychometrics.praat"))
         srcN_txt <- paste(srcN, collapse = "\n")
         hitN <- lengths(regmatches(srcN_txt, gregexpr(needle, srcN_txt, fixed = TRUE)))
@@ -715,9 +962,13 @@ if (!canDrive) {
         "        if .itemReversed[.i] <> .reversedValueFalse and .itemReversed[.i] <> .reversedValueTrue",
         "mutant6", committed_data_path, committed_scales_path, p6, 6)
 
-    # Refusal 7: duplicate item name
+    # Refusal 7: duplicate item name. V1.3 refactored this guard onto the
+    # shared @eml_findDuplicateName helper (also used by refusal 13's own
+    # negative control below) -- the needle moves with it, to
+    # "if .jName$ = .iName$" inside that helper, rather than an inline
+    # loop in @emlSurveyValidateDeclaration's own body.
     run_negative_control("mutant7",
-        "            if .itemName$[.j] = .itemName$[.i]",
+        "            if .jName$ = .iName$",
         "mutant7", committed_data_path, committed_scales_path, p7, 7)
 
     # Refusal 9: illegal scale type keyword
@@ -734,6 +985,189 @@ if (!canDrive) {
     run_negative_control("mutant8",
         '            if emlAuditColumn.error$ = "" and emlAuditColumn.nUnreadable > 0',
         "mutant8", committed_data_path, committed_scales_path, p8, 8)
+
+    # -------------------------------------------------------------------
+    # 11b-11e. NEGATIVE CONTROLS for refusals 3, 4, 5A and 5B -- Finding 6:
+    #    these four guards (plus refusal 1, given its own bespoke section 6b
+    #    above) had only positive seeded-defect legs, unlike every refusal
+    #    from 6 onward. Same generic run_negative_control() pattern as
+    #    refusals 6, 7, 9, 10 and 8 above -- each of these four DOES produce
+    #    a different, well-formed refusal code once its guard is neutered
+    #    (unlike refusal 1 or 11), so the standard mechanism applies
+    #    unmodified. Driven on each refusal's own seeded-defect fixture from
+    #    section 4 above (p3, p4, p5a, p5b).
+    # -------------------------------------------------------------------
+
+    # Refusal 3: a subscale with fewer than two items
+    run_negative_control("mutant3",
+        "        if .count >= 1 and .count < 2",
+        "mutant3", committed_data_path, committed_scales_path, p3, 3)
+
+    # Refusal 4: reversed set on a grouping or ignore column
+    run_negative_control("mutant4",
+        "        if .itemReversed[.i] = 1",
+        "mutant4", committed_data_path, committed_scales_path, p4, 4)
+
+    # Refusal 5, direction A: an item names a scale the scales file lacks
+    run_negative_control("mutant5a",
+        "            if .matched = 0",
+        "mutant5a", committed_data_path, committed_scales_path, p5a, 5)
+
+    # Refusal 5, direction B: a declared scale that no item uses
+    run_negative_control("mutant5b",
+        "        if .used = 0",
+        "mutant5b", committed_data_path, p5b, committed_items_path, 5)
+
+    # -------------------------------------------------------------------
+    # 12-16. NEGATIVE CONTROLS for refusals 11-14 -- same pattern as
+    #    7-11 above. Refusal 13 shares its guard with refusal 7 (both go
+    #    through @eml_findDuplicateName), so its own control below
+    #    neuters the SAME needle as mutant7 and is driven on refusal 13's
+    #    own fixture -- proving the shared guard is load-bearing for both
+    #    callers independently, rather than skipping 13's control as
+    #    redundant with 7's.
+    # -------------------------------------------------------------------
+
+    # Refusal 11: a required declaration column is missing. NOT the
+    # generic run_negative_control() pattern: neutering THIS guard does
+    # not make the module produce a different, well-formed refusal code
+    # the way neutering refusals 6-10, 12, 13 or 14's guards does. It
+    # reproduces the exact HALT Finding 2 described -- the population
+    # loop right after this guard reads the very column that is missing
+    # with a bare "Get value:", which aborts Praat outright once nothing
+    # stops it first. That crash, not a differing refusal code, IS the
+    # proof this guard is load-bearing, so it gets its own bespoke block.
+    mut11 <- file.path(work, "mutant11")
+    dir.create(mut11, showWarnings = FALSE)
+    file.symlink(normalizePath(file.path(plug, "stats", "eml-extract.praat")),
+                 file.path(mut11, "eml-extract.praat"))
+    file.symlink(normalizePath(file.path(plug, "stats", "eml-inferential.praat")),
+                 file.path(mut11, "eml-inferential.praat"))
+    src11 <- readLines(file.path(plug, "stats", "eml-psychometrics.praat"))
+    src11_txt <- paste(src11, collapse = "\n")
+    needle11 <- '        if emlRequireColumnPresent.error$ <> ""'
+    hit11 <- lengths(regmatches(src11_txt, gregexpr(needle11, src11_txt, fixed = TRUE)))
+    check_true("v129",
+               "[refusal 11] the guard line exists in source, exactly once (negative-control seed site)",
+               hit11 == 1)
+    mut11_txt <- sub(needle11, "        if 0 = 1", src11_txt, fixed = TRUE)
+    writeLines(strsplit(mut11_txt, "\n", fixed = TRUE)[[1]],
+               file.path(mut11, "eml-psychometrics.praat"))
+    linkdir11 <- file.path(work, "mutant11_link")
+    if (!file.exists(linkdir11)) file.symlink(mut11, linkdir11)
+
+    out_mut11 <- drive_validate("mutant11_link", committed_data_path, p11,
+                                committed_items_path, "mutant11")
+    negative_control_codes <- c(negative_control_codes, 11)
+    if (red_mode) {
+        cat("      EML_LANE_RED: running the standard 'refusal 11 fires'\n")
+        cat("      check against the neutered-guard build -- the next check is\n")
+        cat("      EXPECTED to FAIL (the mutant HALTS rather than reports 11).\n")
+        check_true("v129",
+            "[RED] refusal 11 probe runs cleanly and reports code 11 on its seeded defect (must go red once the guard is neutered)",
+            ran_ok(out_mut11) && identical(num_(out_mut11, "res", 1), 11))
+    } else {
+        check_true("v129",
+            "[refusal 11] guard neutered: the mutant HALTS outright on its own seeded defect instead of refusing gracefully -- proving the guard is load-bearing (without it, Praat crashes exactly as Finding 2 described, rather than producing any refusal code)",
+            !ran_ok(out_mut11))
+    }
+
+    # Refusal 12: a declared min/max is missing or not numeric
+    run_negative_control("mutant12",
+        '    if .badEndpointError$ <> ""',
+        "mutant12", committed_data_path, p12, committed_items_path, 12)
+
+    # Refusal 13: a scale name declared more than once (shared guard with
+    # refusal 7 -- see note above)
+    run_negative_control("mutant13",
+        "            if .jName$ = .iName$",
+        "mutant13", p13d, p13, committed_items_path, 13)
+
+    # Refusal 14: a scale name is empty
+    run_negative_control("mutant14",
+        '        if .scaleName$[.s] = ""',
+        "mutant14", committed_data_path, p14, committed_items_path, 14)
+
+    # -------------------------------------------------------------------
+    # 17. NO REFUSAL MESSAGE MAY PRINT THE INTERNAL TOKEN "--undefined--".
+    #    This pass's own header finding (refusal 5 in the header, refusal
+    #    12 here): "Get value:" returns `undefined` for a missing or
+    #    non-numeric cell, and "string$ (...)" of that prints the literal
+    #    token "--undefined--" into what is supposed to be a user-facing
+    #    sentence naming the declaration fault, not an internal token. A
+    #    second instance (refusal 6's message, printing a non-numeric
+    #    `reversed` value) was found and fixed by this same pass, alongside
+    #    the two named in the finding. Driven across EVERY leg run above
+    #    that produced a real .error$/.remedy$ pair, not just the two
+    #    fixtures the finding named -- a regression in any refusal's
+    #    message, not only 2's, 6's, 10's or 12's, fails this leg.
+    # -------------------------------------------------------------------
+    undefined_checked <- 0
+    for (nm in names(results)) {
+        out <- results[[nm]]
+        if (ran_ok(out)) {
+            err_txt <- str_(out, "res", 23)
+            rem_txt <- str_(out, "res", 24)
+            check_true("v129",
+                sprintf("[%s] .error$ does not contain the internal token \"--undefined--\"", nm),
+                is.na(err_txt) || !grepl("--undefined--", err_txt, fixed = TRUE))
+            check_true("v129",
+                sprintf("[%s] .remedy$ does not contain the internal token \"--undefined--\"", nm),
+                is.na(rem_txt) || !grepl("--undefined--", rem_txt, fixed = TRUE))
+            undefined_checked <- undefined_checked + 1
+        }
+    }
+    check_true("v129",
+        "the --undefined-- sweep actually checked more than one seeded-defect leg (not vacuously true)",
+        undefined_checked >= 10)
+
+    # -------------------------------------------------------------------
+    # 18. COVERAGE ASSERTION (eml_census spirit, per Finding 6's closing
+    #    instruction) -- every refusal code @emlSurveyValidateDeclaration can
+    #    actually emit, discovered FROM ITS OWN SOURCE rather than from a
+    #    hand-written list here, must have both a positive seeded-defect leg
+    #    and a negative control proving its guard is load-bearing. A refusal
+    #    added later without a control -- the exact asymmetry Finding 6 named
+    #    for refusals 1, 3, 4, 5A and 5B -- fails this rather than staying
+    #    invisible behind every other check passing.
+    #
+    #    "present" (per eml_census's terms) is the DERIVED set: every
+    #    `.refusal = N` assignment found by scanning the procedure's own body
+    #    (declaration line to its first endproc after it -- bounded the same
+    #    way v105_pitch_parity.R bounds @emlPitchArgsFAC's body -- not a
+    #    whole-file grep, so a same-shaped assignment in some other procedure
+    #    can never be miscounted as one of THIS procedure's codes), N = 0
+    #    excluded since it names "no refusal", not a refusal.
+    #
+    #    "accounted" is built the eml_claim way, not hand-listed: each
+    #    positive leg above appends its own code to positive_leg_codes right
+    #    where it runs (sections 4, 4b, 4c), and run_negative_control() (plus
+    #    the two bespoke halt-controls, refusals 1 and 11) appends to
+    #    negative_control_codes the same way, so a check that stops running
+    #    stops claiming its code in the same edit that removed it.
+    # -------------------------------------------------------------------
+    derive_refusal_codes <- function(path) {
+        src <- readLines(path, warn = FALSE)
+        decl <- grep("^\\s*procedure\\s+emlSurveyValidateDeclaration\\b", src)
+        stopifnot(length(decl) == 1L)
+        ends <- grep("^\\s*endproc\\b", src)
+        ends <- ends[ends > decl]
+        stopifnot(length(ends) >= 1L)
+        body <- src[seq.int(decl, ends[1])]
+        asg <- grep("^\\s*\\.refusal\\s*=\\s*[0-9]+\\s*$", body, value = TRUE)
+        nums <- as.integer(sub("^\\s*\\.refusal\\s*=\\s*([0-9]+)\\s*$", "\\1", asg))
+        sort(unique(nums[nums != 0L]))
+    }
+    psychometrics_path <- file.path(plug, "stats", "eml-psychometrics.praat")
+    derived_codes <- derive_refusal_codes(psychometrics_path)
+    check_true("v129",
+        "the source scan actually found refusal-code assignments (not vacuously empty)",
+        length(derived_codes) >= 14L)
+
+    eml_census("v129", "refusal code (needs a positive seeded-defect leg)",
+               as.character(derived_codes), as.character(positive_leg_codes))
+    eml_census("v129", "refusal code (needs a negative control proving its guard is load-bearing)",
+               as.character(derived_codes), as.character(negative_control_codes))
 }
 
 if (!exists("EML_SUITE")) { eml_report("v129 survey declaration conformance"); eml_exit() }

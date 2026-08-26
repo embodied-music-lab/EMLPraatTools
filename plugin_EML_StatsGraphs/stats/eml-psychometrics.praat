@@ -2,7 +2,7 @@
 # EML Stats : Psychometrics
 # ============================================================================
 # Module: eml-psychometrics.praat
-# Version: 1.2
+# Version: 1.3
 # Date: 26 August 2026
 #
 # V1.1: Adds @emlSurveyValidateDeclaration, the survey module's declaration
@@ -25,13 +25,30 @@
 #       not re-derive it. No reversal transform, no per-subscale routing,
 #       no report -- still Stage 1 only.
 #
+# V1.3: An adversarial pass found that the scales file was validated far
+#       less thoroughly than the items file: a missing required column
+#       (either file) HALTED Praat outright instead of refusing, and a
+#       non-numeric or missing declared min/max endpoint validated clean
+#       (both guards that read it compare against `undefined`, which is
+#       false against everything). Adds refusals 11-14 to close the class:
+#       11 (a required column missing from either declaration file), 12
+#       (a non-numeric or missing declared min/max endpoint), 13 (a scale
+#       name declared more than once), 14 (an empty scale name). Refusal 7
+#       (item name declared more than once) is refactored, not changed in
+#       behavior, onto the new shared @eml_findDuplicateName helper that
+#       refusal 13 also uses, so the items file and the scales file are no
+#       longer checked for duplicates by two different pieces of logic.
+#       Also fixes refusal 6's message, found in the same pass printing
+#       the internal token "--undefined--" for a non-numeric `reversed`
+#       value instead of the value as declared.
+#
 # Part of the EML Stats library (EML Praat Tools).
 # License: GPL-3.0-or-later
 #
 # Provides: @emlCronbachAlpha, @emlAlphaInfluence,
 #   @emlSurveyValidateDeclaration
 #
-# Internal helpers: @eml_listwiseComplete
+# Internal helpers: @eml_listwiseComplete, @eml_findDuplicateName
 #
 # Dependencies: @emlCronbachAlpha and @emlAlphaInfluence use only Praat
 # built-in vector and matrix primitives and the built-in F distribution.
@@ -44,6 +61,14 @@
 #
 #   V1.2's refusal 8 additionally calls @emlAuditColumn, also from
 #   eml-extract.praat -- no new include is needed beyond the one above.
+#
+#   V1.3's refusal 11 additionally calls @emlRequireColumnPresent and
+#   refusal 12 calls @emlRequireNumericColumn, both from
+#   eml-inferential.praat. The calling script must include inferential
+#   before psychometrics as well:
+#     include eml-extract.praat
+#     include eml-inferential.praat
+#     include eml-psychometrics.praat
 #
 # All procedures use the "eml" prefix (EML Stats) to avoid
 # namespace collisions with user scripts.
@@ -436,13 +461,19 @@ endproc
 #
 #   .dataTableId   - one row per respondent, one column per question
 #
-# Ten refusals. The first one found wins and stops the checks that follow
-# it. Refusals 1-5 are Ian's original plan (SURVEY_MODULE_PLAN_2026-08-25.md,
-# "The validator"); refusals 6-9 are four ways the verification pass proved a
-# declaration passes all five while leaving Stage 2's routing unsafe, each
-# independently probed against Praat 6.6.30 and approved by Ian; refusal 10
-# is a contract repair to refusal 2, not a new probed hole, flagged as such
-# where it is checked below -- it is Ian's to veto.
+# Fourteen refusals. The first one found wins and stops the checks that
+# follow it. Refusals 1-5 are Ian's original plan (SURVEY_MODULE_PLAN_2026-
+# 08-25.md, "The validator"); refusals 6-9 are four ways the verification
+# pass proved a declaration passes all five while leaving Stage 2's routing
+# unsafe, each independently probed against Praat 6.6.30 and approved by
+# Ian; refusal 10 is a contract repair to refusal 2, not a new probed hole,
+# flagged as such where it is checked below -- it is Ian's to veto. Refusals
+# 11-14 are a second adversarial pass's finding that the class of fault
+# refusals 6-10 closed on the ITEMS file was never closed on the SCALES
+# file: a missing required column halted Praat outright, and a non-numeric
+# or missing declared min/max endpoint validated clean, on the scales file
+# specifically (the items file's own required columns and its "reversed"
+# and duplicate-name checks already existed).
 #
 #   1. An item names a column the data table does not have.
 #   2. A data value falls outside its subscale's declared range. A MISSING
@@ -480,21 +511,63 @@ endproc
 #      declaration's own transposed pair. An inverted range is a fault in
 #      the declaration itself, not in any respondent's answer, so it must
 #      be caught before any respondent row is examined.
+#  11. A required column ("item", "role", "reversed" in survey_items.csv;
+#      "scale", "min", "max", "type" in survey_scales.csv) is missing from
+#      its file. Before this, a bare "Get value:" on a missing column
+#      HALTED Praat outright (proved live: a three-column "scale,min,max"
+#      scales file, the shape every declaration written before V1.2 has,
+#      aborts with "Error: Table ... there is no column named ""type""")
+#      instead of producing one of these fourteen refusals. Checked before
+#      ANYTHING else in this procedure touches either table -- including
+#      the array-population loops immediately below, which are what would
+#      otherwise halt.
+#  12. A subscale's declared `min` or `max` is missing or not numeric.
+#      Before this, "Get value:" returns `undefined` for a non-numeric or
+#      empty cell, and every guard that reads it -- refusal 10's
+#      ".scaleMin[.s] >= .scaleMax[.s]" and refusal 2's range comparison --
+#      is FALSE against `undefined` on either side, so both silently
+#      disabled (proved live: "Confidence,one,5,ordinal" returns refusal =
+#      0, and Stage 2 would then compute every reverse-scored value in the
+#      subscale as `undefined + max - x`). Checked before refusal 10, which
+#      depends on it.
+#  13. A scale name is declared more than once in survey_scales.csv.
+#      Refusal 2's resolution loop assigns `.sMin` / `.sMax` on every
+#      matching row with no break, so a duplicate silently makes the LAST
+#      matching row win (proved live: "Confidence,1,5,ordinal" and
+#      "Confidence,1,200,ordinal" both present returns refusal = 0 against
+#      a planted 99). Refusal 7 already refuses exactly this fault in the
+#      items file; this is its analogue for the scales file, and shares
+#      its scan (@eml_findDuplicateName, below).
+#  14. A scale name is empty. Unchecked by the same gap as 13: an empty
+#      name is never matched against a data column the way an item name
+#      is (refusal 1), so nothing else in this procedure would ever catch
+#      it.
 #
 # ORDERING, why refusals 6, 7, 9, 10 sit before 2 and 8 rather than after
-# 5: 6, 7, 9 and 10 are faults in the declaration ITSELF -- each is decided
-# from survey_items.csv or survey_scales.csv alone, with no data Table read
-# at all -- while 2 and 8 both read every respondent's data. A declaration
+# 5, and why 11-14 sit where they do: 6, 7, 9, 10, 11, 12, 13 and 14 are
+# ALL faults in the declaration ITSELF -- each is decided from
+# survey_items.csv or survey_scales.csv alone, with no data Table read at
+# all -- while 2 and 8 both read every respondent's data. A declaration
 # fault must be reported before any data-reading refusal has a chance to
 # misreport it (refusal 10's whole reason for existing), so the checked
-# order is: 1, 7, 6, 9, 10, 8, 2, 3, 4, 5. Within the four declaration-shape
-# faults, the items-table checks (7, 8's precondition aside, then 6) run
-# before the scales-table checks (9, 10) because the items table is the one
-# read first, above; 7 (no item name repeated) runs before 6 (each
+# order is: 11, 1, 7, 6, 14, 13, 12, 9, 10, 8, 2, 3, 4, 5. Refusal 11 comes
+# first of all, ahead even of refusal 1: it is the one check that must run
+# before the items- and scales-array population loops themselves, which
+# read every required column with a bare "Get value:" and would otherwise
+# be the thing that halts. Within the remaining declaration-shape faults,
+# the items-table checks (7, 8's precondition aside, then 6) run before
+# the scales-table checks (14, 13, 12, 9, 10) because the items table is
+# the one read first, above; 7 (no item name repeated) runs before 6 (each
 # `reversed` value is legal) because a row's own name is the more basic
-# fact about it. This reordering only inserts new checks -- it does not
-# alter what refusals 1-5 individually decide, so a fixture that seeds
-# exactly one of the original five defects (and nothing from 6, 7, 9, 10)
+# fact about it, and the same reasoning orders the scales-table checks: 14
+# (a scale has a name at all) before 13 (that name is not repeated) before
+# 12 (its declared range is usable) before 9 (its declared type is legal)
+# before 10 (its range is not transposed) -- each a more basic fact about
+# a scale than the one that follows it, and 12 specifically must precede
+# 10 because 10 reads exactly the two values 12 confirms are usable. This
+# reordering only inserts new checks -- it does not alter what refusals
+# 1-5 individually decide, so a fixture that seeds exactly one of the
+# original five defects (and nothing from 6, 7, 9, 10, 11, 12, 13, 14)
 # still resolves to that same original code; validate/v129_survey_
 # declaration.R keeps every refusal-1-through-5 leg passing unchanged.
 #
@@ -504,6 +577,50 @@ endproc
 # names a real column. By the time refusal 2's loop runs, that precondition
 # already holds.
 #
+# ----------------------------------------------------------------------------
+# @eml_findDuplicateName
+# Internal helper: shared duplicate-name scan for a declaration file's own
+# name column -- survey_items.csv's "item" (refusal 7) and
+# survey_scales.csv's "scale" (refusal 13) ask the SAME question of two
+# different tables/columns, so this is that question, asked once, rather
+# than the same nested loop written out twice.
+#
+# A later duplicate is reported by ITS OWN row number: the first
+# occurrence is not itself wrong, so naming the second occurrence names
+# the row to delete. Reports only the FIRST duplicated name found,
+# scanning in row order, matching refusal 7's pre-existing behavior
+# exactly (a table with more than one duplicated name reports the
+# earliest one).
+#
+# Input:  .tableId, .columnName$, .nRows
+# Output: .found    - 1 if some name repeats, 0 otherwise
+#         .name$    - the repeated name (only meaningful when .found = 1)
+#         .firstRow - row of the first occurrence
+#         .dupRow   - row of the duplicate (the later occurrence)
+# ----------------------------------------------------------------------------
+procedure eml_findDuplicateName: .tableId, .columnName$, .nRows
+    .found = 0
+    .name$ = ""
+    .firstRow = 0
+    .dupRow = 0
+    for .i from 1 to .nRows
+        selectObject: .tableId
+        .iName$ = Get value: .i, .columnName$
+        for .j from .i + 1 to .nRows
+            selectObject: .tableId
+            .jName$ = Get value: .j, .columnName$
+            if .jName$ = .iName$
+                if .found = 0
+                    .found = 1
+                    .name$ = .iName$
+                    .firstRow = .i
+                    .dupRow = .j
+                endif
+            endif
+        endfor
+    endfor
+endproc
+
 # THE TEACHING-MESSAGE CONTRACT (docs/CHANGE_ORDER_CONFORMANCE_LINT.md): the
 # rule in one sentence, the reason in one line, what to do instead. The rule
 # and the reason are assembled into .error$; the fix is .remedy$, kept as
@@ -544,6 +661,10 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     .badScaleRow = 0
     .badTypeValue$ = ""
     .badCellText$ = ""
+    ; V1.3 additions (refusals 11-14) below.
+    .badColumn$ = ""
+    .badFile$ = ""
+    .badRawValue$ = ""
 
     # --- Canon keyword sets (V1.2), stated ONCE here -- every check below
     # that needs to know a legal `reversed` value or a legal `type` keyword
@@ -674,6 +795,46 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     .msg10d$ = ", which is not a valid range."
     .rem10a$ = "Check survey_scales.csv for """
     .rem10b$ = """: the min and max may be transposed."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 11: a required column is missing from either declaration
+    # file.
+    .msg11a$ = "Every column this validator depends on must be present. """
+    .msg11b$ = """ has no column named """
+    .msg11c$ = """."
+    .rem11a$ = "Add a """
+    .rem11b$ = """ column to """
+    .rem11c$ = """, or restore it if it was removed by hand."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 12: a subscale's declared min or max is missing or not
+    # numeric.
+    .msg12a$ = "A subscale's declared min and max must both be numbers. "
+    ... + "Subscale """
+    .msg12b$ = """ declares """
+    .msg12cText$ = """ as """
+    .msg12dText$ = """, which is not a number."
+    .msg12eEmpty$ = """ as empty, which is not a number."
+    .rem12a$ = "Correct the """
+    .rem12b$ = """ value for """
+    .rem12c$ = """ in survey_scales.csv to a number."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 13: a scale name declared more than once.
+    .msg13a$ = "Every subscale name in survey_scales.csv must be unique. "
+    ... + "Subscale """
+    .msg13b$ = """ is declared more than once; the second declaration is "
+    ... + "row "
+    .msg13c$ = "."
+    .rem13a$ = "Remove the duplicate row for """
+    .rem13b$ = """ in survey_scales.csv, keeping only one."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 14: a scale name is empty.
+    .msg14a$ = "Every subscale in survey_scales.csv must have a name. Row "
+    .msg14b$ = " has no scale name."
+    .rem14a$ = "Add a scale name to the empty row in survey_scales.csv, "
+    ... + "or delete the row if it is not a real subscale."
     # ------------------------------------------------------------------------
     # END draft language block.
     # ------------------------------------------------------------------------
@@ -699,6 +860,84 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     @emlStripHeaderQuotes: .scalesTableId
     @emlStripHeaderQuotes: .dataTableId
 
+    # --- .nScales and a safe .scaleIsKR20[] default, before ANYTHING else
+    # can exit this procedure early ---
+    # "Get number of rows" needs no particular column to exist, so this is
+    # safe even when refusal 11 (immediately below) is about to find one
+    # missing. It runs before refusal 11 for a narrower reason than
+    # ordering: .scaleIsKR20[] is a Praat INDEXED variable, and reading an
+    # indexed variable that was never assigned ANY value HALTS Praat with
+    # "Undefined indexed variable" -- a harder failure than the plain
+    # `undefined` a caller gets from an ordinary never-assigned scalar.
+    # Before this, a caller that read .scaleIsKR20[1] after ANY refusal
+    # (exactly what this procedure's own "Access pattern" section shows,
+    # and what validate/v129_survey_declaration.R's probe does
+    # unconditionally on every leg) crashed outright on refusal 11 alone,
+    # because refusal 11 is the one refusal that can fire before the
+    # scales-array population loop below ever runs. Every element is
+    # seeded `undefined` here and overwritten with its real value in that
+    # population loop when it runs; a scale that refusal 11 refuses before
+    # reaching keeps its seeded `undefined`, which is a value a caller can
+    # read, not a halt.
+    selectObject: .scalesTableId
+    .nScales = Get number of rows
+    for .s from 1 to .nScales
+        .scaleIsKR20[.s] = undefined
+    endfor
+
+    # ===== Refusal 11: a required column is missing from either =====
+    # ===== declaration file                                     =====
+    # Checked before ANYTHING else in this procedure touches either table.
+    # The two array-population loops immediately below read every one of
+    # these seven columns with a bare "Get value:", which HALTS Praat
+    # outright when the named column does not exist -- proved live on a
+    # three-column "scale,min,max" scales file (the shape every
+    # declaration written before V1.2 has): "Error: Table ""scales_notype"":
+    # there is no column named ""type""". @emlRequireColumnPresent
+    # (eml-inferential.praat) turns that halt into an ordinary .error$
+    # instead, so every column either loop is about to read is confirmed
+    # present here first, in the same order each loop reads it in: the
+    # items table's "item", "role", "reversed", then the scales table's
+    # "scale", "min", "max", "type". This is the ONE canon list of
+    # required columns for this procedure; nothing below restates it.
+    .reqColCount = 7
+    .reqColTable[1] = .itemsTableId
+    .reqColFile$[1] = "survey_items.csv"
+    .reqColName$[1] = "item"
+    .reqColTable[2] = .itemsTableId
+    .reqColFile$[2] = "survey_items.csv"
+    .reqColName$[2] = "role"
+    .reqColTable[3] = .itemsTableId
+    .reqColFile$[3] = "survey_items.csv"
+    .reqColName$[3] = "reversed"
+    .reqColTable[4] = .scalesTableId
+    .reqColFile$[4] = "survey_scales.csv"
+    .reqColName$[4] = "scale"
+    .reqColTable[5] = .scalesTableId
+    .reqColFile$[5] = "survey_scales.csv"
+    .reqColName$[5] = "min"
+    .reqColTable[6] = .scalesTableId
+    .reqColFile$[6] = "survey_scales.csv"
+    .reqColName$[6] = "max"
+    .reqColTable[7] = .scalesTableId
+    .reqColFile$[7] = "survey_scales.csv"
+    .reqColName$[7] = "type"
+
+    for .c from 1 to .reqColCount
+        @emlRequireColumnPresent: .reqColTable[.c], "Declaration column",
+        ... .reqColName$[.c]
+        if emlRequireColumnPresent.error$ <> ""
+            .error$ = .msg11a$ + .reqColFile$[.c] + .msg11b$
+            ... + .reqColName$[.c] + .msg11c$
+            .remedy$ = .rem11a$ + .reqColName$[.c] + .rem11b$
+            ... + .reqColFile$[.c] + .rem11c$
+            .refusal = 11
+            .badColumn$ = .reqColName$[.c]
+            .badFile$ = .reqColFile$[.c]
+            goto SURVEY_VALIDATE_DONE
+        endif
+    endfor
+
     # --- Read the items table into procedure-local arrays ---
     selectObject: .itemsTableId
     .nItems = Get number of rows
@@ -707,6 +946,15 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
         .itemName$[.i] = Get value: .i, "item"
         .itemRole$[.i] = Get value: .i, "role"
         .itemReversed[.i] = Get value: .i, "reversed"
+        ; V1.3: the RAW string alongside the numeric parse, for refusal
+        ; 6's message. ".itemReversed[.i]" above is `undefined` for a
+        ; non-numeric cell (e.g. "yes"), and printing that with
+        ; "string$ (...)" produces the internal token "--undefined--" in a
+        ; user-facing message -- the exact class of fault this pass is
+        ; closing on the scales file, found here on the items file too.
+        ; The raw text is read once, here, rather than re-read at the
+        ; refusal 6 message site below.
+        .itemReversedRaw$[.i] = Get value: .i, "reversed"
     endfor
 
     # --- Read the scales table into procedure-local arrays ---
@@ -734,6 +982,114 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
         ; refused.
         .scaleIsKR20[.s] = .scaleMax[.s] = .scaleMin[.s] + 1
     endfor
+
+    # ===== Refusal 14: a scale name is empty =====
+    # Checked before refusal 13 (duplicate scale name): whether a scale
+    # HAS a name at all is the more basic fact about it. Unchecked before
+    # V1.3 by the same gap named in this pass's header: an empty scale
+    # name is never matched against a data column the way an item name is
+    # (refusal 1), so nothing else in this procedure would ever catch it.
+    for .s from 1 to .nScales
+        if .scaleName$[.s] = ""
+            .error$ = .msg14a$ + string$ (.s) + .msg14b$
+            .remedy$ = .rem14a$
+            .refusal = 14
+            .badScaleRow = .s
+            goto SURVEY_VALIDATE_DONE
+        endif
+    endfor
+
+    # ===== Refusal 13: a scale name declared more than once =====
+    # Shares its scan with refusal 7 (an item name declared more than
+    # once, below) via @eml_findDuplicateName: the two ask the same
+    # question of two different tables/columns, and V1.3 does not want a
+    # second copy of that nested loop.
+    @eml_findDuplicateName: .scalesTableId, "scale", .nScales
+    if eml_findDuplicateName.found = 1
+        .error$ = .msg13a$ + eml_findDuplicateName.name$ + .msg13b$
+        ... + string$ (eml_findDuplicateName.dupRow) + .msg13c$
+        .remedy$ = .rem13a$ + eml_findDuplicateName.name$ + .rem13b$
+        .refusal = 13
+        .badScale$ = eml_findDuplicateName.name$
+        .badScaleRow = eml_findDuplicateName.dupRow
+        goto SURVEY_VALIDATE_DONE
+    endif
+
+    # ===== Refusal 12: a subscale's declared min or max is missing or =====
+    # ===== not numeric                                                =====
+    # @emlRequireNumericColumn (eml-inferential.praat), strict = 1, decides
+    # WHETHER the "min" (then "max") column is clean: strict mode refuses
+    # when ANY cell is unusable, which covers both a non-numeric endpoint
+    # and a missing one (an empty cell is not "kind 0 valid" either).
+    # Before this, "Get value:" silently returned `undefined` for either
+    # fault and every guard downstream that compared against it -- refusal
+    # 10's ">=" and refusal 2's range check -- was FALSE against
+    # `undefined` on either side, so both silently disabled (proved live:
+    # "Confidence,one,5,ordinal" returned refusal = 0). Checked before
+    # refusal 10, which depends on both endpoints already being usable
+    # numbers.
+    #
+    # @emlRequireNumericColumn does not itself say WHICH row is bad, so
+    # once it says a column is not clean, the specific row is located with
+    # @emlAuditColumn -- the same per-cell classifier refusal 8 already
+    # calls directly, above, rather than a second classifier -- by taking
+    # the smallest of its five "first bad row" outputs that is nonzero
+    # (whichever condition the bad cell falls under: empty, comma-locale,
+    # coerced, leading-dot, or outright unreadable, the row with the
+    # smallest number is the first one that made the column unusable). Its
+    # RAW text is then read as a STRING, not re-derived or re-classified,
+    # purely to name it in the message without ever printing
+    # "--undefined--" (refusal 5, this pass's own header finding).
+    @emlRequireNumericColumn: .scalesTableId, "Subscale range", "min", 1
+    .badEndpointError$ = emlRequireNumericColumn.error$
+    .badEndpointCol$ = "min"
+    if .badEndpointError$ = ""
+        @emlRequireNumericColumn: .scalesTableId, "Subscale range", "max", 1
+        .badEndpointError$ = emlRequireNumericColumn.error$
+        .badEndpointCol$ = "max"
+    endif
+    if .badEndpointError$ <> ""
+        @emlAuditColumn: .scalesTableId, .badEndpointCol$
+        .badScaleRow = 0
+        if emlAuditColumn.firstEmptyRow > 0
+            .badScaleRow = emlAuditColumn.firstEmptyRow
+        endif
+        if emlAuditColumn.firstLocaleRow > 0
+            if .badScaleRow = 0 or emlAuditColumn.firstLocaleRow < .badScaleRow
+                .badScaleRow = emlAuditColumn.firstLocaleRow
+            endif
+        endif
+        if emlAuditColumn.firstCoercedRow > 0
+            if .badScaleRow = 0 or emlAuditColumn.firstCoercedRow < .badScaleRow
+                .badScaleRow = emlAuditColumn.firstCoercedRow
+            endif
+        endif
+        if emlAuditColumn.firstLeadingDotRow > 0
+            if .badScaleRow = 0 or emlAuditColumn.firstLeadingDotRow < .badScaleRow
+                .badScaleRow = emlAuditColumn.firstLeadingDotRow
+            endif
+        endif
+        if emlAuditColumn.firstUnreadableRow > 0
+            if .badScaleRow = 0 or emlAuditColumn.firstUnreadableRow < .badScaleRow
+                .badScaleRow = emlAuditColumn.firstUnreadableRow
+            endif
+        endif
+        .badScale$ = .scaleName$[.badScaleRow]
+        .badColumn$ = .badEndpointCol$
+        selectObject: .scalesTableId
+        .badRawValue$ = Get value: .badScaleRow, .badEndpointCol$
+        if .badRawValue$ = ""
+            .error$ = .msg12a$ + .badScale$ + .msg12b$ + .badColumn$
+            ... + .msg12eEmpty$
+        else
+            .error$ = .msg12a$ + .badScale$ + .msg12b$ + .badColumn$
+            ... + .msg12cText$ + .badRawValue$ + .msg12dText$
+        endif
+        .remedy$ = .rem12a$ + .badColumn$ + .rem12b$ + .badScale$
+        ... + .rem12c$
+        .refusal = 12
+        goto SURVEY_VALIDATE_DONE
+    endif
 
     selectObject: .dataTableId
     .nData = Get number of rows
@@ -781,26 +1137,33 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     # ===== Refusal 7: an item name declared more than once =====
     # A later duplicate is reported by ITS OWN row number in
     # survey_items.csv: the first occurrence is not itself wrong, so
-    # naming the second occurrence names the row to delete.
-    for .i from 1 to .nItems
-        for .j from .i + 1 to .nItems
-            if .itemName$[.j] = .itemName$[.i]
-                .error$ = .msg7a$ + .itemName$[.i] + .msg7b$ + string$ (.j)
-                ... + .msg7c$
-                .remedy$ = .rem7a$ + .itemName$[.i] + .rem7b$
-                .refusal = 7
-                .badItem$ = .itemName$[.i]
-                .badItemRow = .j
-                goto SURVEY_VALIDATE_DONE
-            endif
-        endfor
-    endfor
+    # naming the second occurrence names the row to delete. V1.3:
+    # refactored onto @eml_findDuplicateName, shared with refusal 13's
+    # identical question about survey_scales.csv's "scale" column --
+    # behavior unchanged, same message fragments, same outputs.
+    @eml_findDuplicateName: .itemsTableId, "item", .nItems
+    if eml_findDuplicateName.found = 1
+        .error$ = .msg7a$ + eml_findDuplicateName.name$ + .msg7b$
+        ... + string$ (eml_findDuplicateName.dupRow) + .msg7c$
+        .remedy$ = .rem7a$ + eml_findDuplicateName.name$ + .rem7b$
+        .refusal = 7
+        .badItem$ = eml_findDuplicateName.name$
+        .badItemRow = eml_findDuplicateName.dupRow
+        goto SURVEY_VALIDATE_DONE
+    endif
 
     # ===== Refusal 6: reversed holds a value other than 0 or 1 =====
     for .i from 1 to .nItems
         if .itemReversed[.i] <> .reversedValueFalse and .itemReversed[.i] <> .reversedValueTrue
+            ; V1.3: the message names the RAW declared value
+            ; (.itemReversedRaw$[.i]), not "string$ (.itemReversed[.i])".
+            ; A non-numeric "reversed" cell (e.g. "yes") makes the numeric
+            ; parse `undefined`, and printing that with "string$ (...)"
+            ; produced the internal token "--undefined--" in a user-facing
+            ; message here -- the same class of fault this pass closes on
+            ; the scales file (refusal 12), found on this message too.
             .error$ = .msg6a$ + .itemName$[.i] + .msg6b$
-            ... + string$ (.itemReversed[.i]) + .msg6c$
+            ... + .itemReversedRaw$[.i] + .msg6c$
             .remedy$ = .rem6a$ + .itemName$[.i] + .rem6b$
             .refusal = 6
             .badItem$ = .itemName$[.i]
@@ -1016,15 +1379,20 @@ endproc
 #   .error$           - refusal message (rule + reason), or "" when the
 #                       declaration is sound
 #   .remedy$          - what to do instead, or "" when .error$ is ""
-#   .refusal          - 0 when sound; else 1-10 (see the ordering comment
+#   .refusal          - 0 when sound; else 1-14 (see the ordering comment
 #                       above the procedure for what each is and the order
 #                       they are checked in; refusal 10 is a contract
 #                       repair, not one of Ian's original five or the four
-#                       probed additions)
+#                       probed additions; refusals 11-14 are a second
+#                       adversarial pass closing the same class of fault
+#                       on the scales file that 6-10 closed on the items
+#                       file)
 #   .badItem$         - the item/column name implicated (refusals 1, 2, 4,
 #                       6, 7, 8, and refusal 5 direction A); "" otherwise
 #   .badScale$        - the subscale name implicated (refusals 2, 3, 8, 9,
-#                       10, and refusal 5, either direction); "" otherwise
+#                       10, 12, 13, and refusal 5, either direction); ""
+#                       otherwise (refusal 14 leaves this "" too -- the
+#                       fault IS that the scale has no name)
 #   .badRow           - respondent ROW NUMBER in the data table (refusals 2
 #                       and 8); 0 otherwise
 #   .badValue         - the offending response value (refusal 2 only);
@@ -1047,11 +1415,25 @@ endproc
 #                       otherwise. Not the same table as .badRow, which is
 #                       always a DATA table row.
 #   .badScaleRow      - ROW NUMBER in the SCALES table implicated (refusals
-#                       9 and 10); 0 otherwise
+#                       9, 10, 12, 13 [the duplicate row], and 14); 0
+#                       otherwise
 #   .badTypeValue$    - the illegal `type` string found (refusal 9 only);
 #                       "" otherwise
 #   .badCellText$     - the literal (non-numeric) contents of the offending
 #                       cell (refusal 8 only); "" otherwise
+#   .badColumn$       - the column name implicated (refusal 11: the missing
+#                       required column; refusal 12: "min" or "max",
+#                       whichever declared endpoint is bad); "" otherwise
+#   .badFile$         - which declaration file is at fault, "survey_items.csv"
+#                       or "survey_scales.csv" (refusal 11 only); ""
+#                       otherwise
+#   .badRawValue$     - the literal declared text of the bad endpoint cell
+#                       (refusal 12 only); "" both when that cell is itself
+#                       empty (a missing endpoint, rather than a
+#                       non-numeric one) and when refusal is not 12. Exists
+#                       so a caller can name the actual offending text
+#                       without ever printing the internal token
+#                       "--undefined--" for it.
 #   .scaleName$[1..nScales]  - each declared subscale's name, in
 #                       survey_scales.csv row order
 #   .scaleType$[1..nScales]  - each declared subscale's `type` field, as
@@ -1087,9 +1469,16 @@ endproc
 #     Tables with "Read Table from comma-separated file..." first).
 #   - Does not compute reversal, subscale routing, or any reliability
 #     statistic. Those are Stage 2, wired on top of a clean declaration.
-#   - Leaves .dataTableId selected on return (the last table touched by
-#     whichever check ran last), matching @emlRequireColumnPresent's
-#     convention of leaving a Table selected rather than the caller's.
+#   - Leaves SOME declaration Table selected on return -- whichever one the
+#     last check to run happened to touch -- matching
+#     @emlRequireColumnPresent's convention of leaving a Table selected
+#     rather than the caller's, but WHICH Table is no longer a fixed
+#     answer as of V1.3 (refusal 7's refactor onto @eml_findDuplicateName
+#     leaves .itemsTableId selected even when 7 itself does not fire, so a
+#     later refusal such as 9 or 10 no longer inherits .dataTableId the
+#     way it did before V1.3). A caller that needs a specific Table
+#     selected should select it itself rather than rely on this
+#     procedure's leftover selection.
 # ============================================================================
 
 # ============================================================================
