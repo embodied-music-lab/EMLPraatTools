@@ -1963,6 +1963,33 @@ endproc
 #   compile; it would also let a stale interval from a previous t-branch
 #   call be read back as this call's Hodges-Lehmann one, which is a
 #   reading error no check would see.
+#
+# Output (scheffe branch only; DARK -- computed, never printed):
+#   .scheffeLowFlat#, .scheffeHighFlat# — the Scheffe simultaneous interval
+#                    per pair, C(k,2) long, in @emlScheffe's own (i, j)
+#                    nested-loop pair order, through @emlScheffeInterval
+#                    (item 5, 26 August work order). The mean difference
+#                    itself needs no flat array of its own here -- unlike
+#                    the welch/student branch, this branch's existing
+#                    printed table already reads it every row straight from
+#                    @emlScheffe.diffMatrix##, which is this procedure's
+#                    point estimate on every row and every correction, same
+#                    as the other two arms.
+#
+#                    UNGATED, ON PURPOSE. The welch/student and wilcoxon
+#                    branches only populate their interval arrays when
+#                    .adjMethod$ is "bonferroni" (their .level is
+#                    1 - alpha/m and Holm/BH define no level at all).
+#                    Scheffe has no such gate to apply: this branch runs
+#                    with no separate .adjMethod$ toggle (Scheffe's p is
+#                    already familywise-controlled, per the "p adjustment"
+#                    line this procedure prints), and its multiplier IS
+#                    the one and only simultaneity correction there is for
+#                    it -- so .scheffeLowFlat#/.scheffeHighFlat# are
+#                    computed on EVERY row this branch prints, at
+#                    .alpha directly, never alpha/m. Language is drafted
+#                    and gated on Ian's en-bloc approval, same as the other
+#                    two arms (docs/RULING_INTERVALS_2026-08-26.md).
 # ============================================================================
 
 procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupCol$, .test$, .adjMethod$
@@ -2507,8 +2534,39 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
         .hdr$ = .hdr$ + "Mean diff"
         appendInfoLine: .hdr$
 
+        ; ----------------------------------------------------------------
+        ; ITEM 5 -- THE SCHEFFE INTERVAL PLUMBING, BUILT DARK.
+        ;
+        ; The same rule items 2 and 3 wired into the welch/student and
+        ; wilcoxon branches above, applied to this one
+        ; (docs/WORK_ORDER_INTERVALS_2026-08-26.md): the point estimate
+        ; already prints on every row above (.diffTxt$, from
+        ; emlScheffe.diffMatrix##) and the INTERVAL is computed here through
+        ; @emlScheffeInterval, AT ALPHA, on every row -- not gated behind
+        ; ".adjMethod$ = "bonferroni"" the way the other two arms' interval
+        ; arrays are, because Scheffe has no such gate to begin with: its
+        ; multiplier IS the one simultaneity correction, so the interval is
+        ; defined here on every row this branch ever prints.
+        ;
+        ; .se comes from @emlScheffe.seMatrix## -- an output added in this
+        ; same commit; @emlScheffe computed this SE already, to build
+        ; .fMatrix##, but never published it. See that procedure's Outputs
+        ; header for why it is now contractual.
+        ;
+        ; AND NONE OF IT PRINTS. The "[low, high]" rendering and the block
+        ; header naming the level ("95% simultaneous intervals (Scheffe)")
+        ; are drafted into the language batch and print only after Ian's
+        ; en-bloc approval (docs/RULING_INTERVALS_2026-08-26.md). No
+        ; appendInfoLine in this procedure reads .scheffeLowFlat# or
+        ; .scheffeHighFlat#; they are outputs a check reads.
+        ; ----------------------------------------------------------------
+        .scheffeLowFlat# = zero# (emlScheffe.nPairs)
+        .scheffeHighFlat# = zero# (emlScheffe.nPairs)
+
+        .pair = 0
         for .iGroup from 1 to .nGroups - 1
             for .jGroup from .iGroup + 1 to .nGroups
+                .pair = .pair + 1
                 .cmp$ = emlScheffe.groupName$ [.iGroup] + " vs "
                     ... + emlScheffe.groupName$ [.jGroup]
                 .fVal = emlScheffe.fMatrix## [.iGroup, .jGroup]
@@ -2534,6 +2592,23 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                     @eml_fixed: .diffVal, 3
                     .diffTxt$ = eml_fixed.result$
                 endif
+
+                ; THE INTERVAL, AT ALPHA -- every row, unconditionally.
+                ; Read .error$ first, per the error-read-order rule v134
+                ; lints: a diff or SE that came back undefined (a degenerate
+                ; group pair) must not leave a stale zero sitting in the
+                ; interval slots.
+                .scheffeLowFlat# [.pair] = undefined
+                .scheffeHighFlat# [.pair] = undefined
+                @emlScheffeInterval: .diffVal,
+                    ... emlScheffe.seMatrix## [.iGroup, .jGroup],
+                    ... .nGroups, emlScheffe.dfWithin, .alpha
+                .scheffeIntervalErr$ = emlScheffeInterval.error$
+                if .scheffeIntervalErr$ = ""
+                    .scheffeLowFlat# [.pair] = emlScheffeInterval.low
+                    .scheffeHighFlat# [.pair] = emlScheffeInterval.high
+                endif
+
                 @emlSigMark: .pVal, .alpha
                 @emlPadCell: .cmp$, 26
                 .row$ = "  " + emlPadCell.result$

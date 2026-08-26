@@ -5780,6 +5780,17 @@ endproc
 #   .pMatrix##     - k x k Scheffe p-values (symmetric, diagonal = 1)
 #   .fMatrix##     - k x k F-Scheffe statistics (symmetric, diagonal = 0)
 #   .diffMatrix##  - k x k mean differences (antisymmetric, diagonal = 0)
+#   .seMatrix##    - k x k pairwise standard errors, sqrt(MSE * (1/n_i +
+#                    1/n_j)) (SYMMETRIC -- an SE has no sign -- diagonal =
+#                    0). Added for @emlScheffeInterval (item 5, 26 August
+#                    interval work order): the per-pair SE was computed
+#                    here already, to build .fMatrix##, but discarded
+#                    rather than published. This header amendment makes it
+#                    a contractual output rather than an internal the
+#                    interval procedure would otherwise have to recompute
+#                    (and, computed a second time from .diffMatrix##/.fMatrix##
+#                    alone, could not be, since the sign of the diff is
+#                    lost from F).
 #   .groupName$[i] - group label for group i
 #   .nGroups       - k
 #   .nPairs        - C(k,2)
@@ -5885,6 +5896,7 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
         .pMatrix## = zero## (.nGroups, .nGroups)
         .fMatrix## = zero## (.nGroups, .nGroups)
         .diffMatrix## = zero## (.nGroups, .nGroups)
+        .seMatrix## = zero## (.nGroups, .nGroups)
 
         for .g from 1 to .nGroups
             .pMatrix##[.g, .g] = 1
@@ -5911,6 +5923,9 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
                 .fMatrix##[.j, .i] = .fScheffe
                 .diffMatrix##[.i, .j] = .diff
                 .diffMatrix##[.j, .i] = -.diff
+                # SE has no sign -- symmetric, unlike .diffMatrix##.
+                .seMatrix##[.i, .j] = .se
+                .seMatrix##[.j, .i] = .se
             endfor
         endfor
     endif
@@ -5918,6 +5933,90 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
     # --- Restore selection ---
 
     selectObject: .tableId
+endproc
+
+
+# ============================================================================
+# @emlScheffeInterval
+# ============================================================================
+# Simultaneous confidence interval for one Scheffe pairwise mean
+# difference (item 5, 26 August 2026 interval work order,
+# docs/WORK_ORDER_INTERVALS_2026-08-26.md).
+#
+# NO ALGORITHM IS PORTED HERE. Half-width = sqrt((k-1) * F_crit) * SE,
+# F_crit = invFisherQ(alpha, k-1, dfWithin) -- the textbook Scheffe
+# multiplier applied to the pairwise SE @emlScheffe already computes.
+#
+# THE ALPHA POINT IS THE WHOLE PROCEDURE. .level is never formed here --
+# there is no .level parameter at all, on purpose. Every other interval in
+# this file (@emlTTestInterval, @emlHodgesLehmannTwoSample,
+# @emlHodgesLehmannPaired) takes a caller-computed LEVEL, typically
+# 1 - alpha/m for Bonferroni. Scheffe does not: sqrt((k-1) * F_crit) IS the
+# simultaneity correction across all C(k,2) pairwise contrasts (indeed
+# across every possible linear contrast, not only pairwise ones), so the
+# multiplier already spends the family-wise budget. Dividing .alpha by the
+# pair count on top, as the Bonferroni call sites do, would correct twice
+# and return an interval narrower than the true simultaneous one while
+# looking exactly as reasonable -- Fable's red demo 1 for this check names
+# this exact mistake.
+#
+# invFisherQ(p, df1, df2) driven on Praat 6.6.30 (see the check's own
+# fixture, and eml-psychometrics.praat's existing invFisherQ(0.025/0.975,
+# .df1, .df2) call, which established the name and argument order first):
+# it returns the F critical value whose UPPER tail probability is p,
+# df1 first (between/numerator), df2 second (within/denominator) -- the
+# same order @emlScheffe's own fisherQ(.fScheffe, .nGroups - 1, .dfWithin)
+# call already uses for the p-value the other direction. Unlike
+# invStudentQ, which hangs on invStudentQ(0, df) (@emlTTestInterval's own
+# comment), invFisherQ degrades to --undefined-- at p = 0 or at either df
+# <= 0 or undefined, and to 0 at p = 1 -- measured directly, no hang at any
+# of those boundaries. The guard below is therefore not a hang guard; it
+# exists so a caller gets a named refusal instead of a silent undefined,
+# matching the family's estimate-is-descriptive / refusal-is-a-result
+# convention (docs/RULING_ITEM3_CASES_2026-08-26.md, case 1).
+#
+# Arguments:
+#   .meanDiff  - the pairwise mean difference (group i minus group j),
+#                @emlScheffe's own .diffMatrix##[i, j]. Descriptive: it is
+#                not corrected by anything below and survives even where
+#                the interval cannot be computed, provided it is itself a
+#                defined number.
+#   .se        - the pairwise standard error, @emlScheffe's own
+#                .seMatrix##[i, j] (sqrt(MSE * (1/n_i + 1/n_j))).
+#   .k         - number of groups, @emlScheffe's .nGroups. Feeds both the
+#                multiplier's (k - 1) and invFisherQ's df1 = k - 1.
+#   .dfWithin  - error term degrees of freedom, @emlScheffe's own
+#                .dfWithin (N - k). NEVER RECOMPUTED HERE, same rule as
+#                @emlTTestInterval's df: it is the caller's variant, taken
+#                as given.
+#   .alpha     - THE ANALYSIS ALPHA, DIRECTLY. Never alpha/m. The
+#                simultaneity correction is the multiplier above, not a
+#                divided alpha.
+#
+# Output:
+#   .low, .high - the interval bounds, or undefined if .error$ <> ""
+#   .error$     - error message, or "" if valid
+# ============================================================================
+
+procedure emlScheffeInterval: .meanDiff, .se, .k, .dfWithin, .alpha
+    .low = undefined
+    .high = undefined
+    .error$ = ""
+
+    if .dfWithin = undefined or .dfWithin <= 0
+        .error$ = "Degrees of freedom are undefined"
+    elsif .k = undefined or .k < 2
+        .error$ = "This test compares 2 or more groups"
+    elsif .se = undefined
+        .error$ = "Standard error is undefined"
+    elsif .alpha = undefined
+        .error$ = "Alpha is undefined"
+    else
+        .fCrit = invFisherQ (.alpha, .k - 1, .dfWithin)
+        .halfWidth = sqrt ((.k - 1) * .fCrit) * .se
+        .low = .meanDiff - .halfWidth
+        .high = .meanDiff + .halfWidth
+    endif
 endproc
 
 

@@ -1815,6 +1815,35 @@ scripts <- c(
                                  # one-line mutant: an off-by-one in each
                                  # critical rank; an interval at 1 - alpha on
                                  # each door; a Holm row printing one on each.
+    ,
+    "v146_scheffe_interval.R"    # @emlScheffeInterval + the 3.9 wiring (item
+                                 # 5, the last of the five), per the same 26
+                                 # August work order. 4 fixtures (k = 3, 4, 3,
+                                 # 5 groups) x 2 alphas = 44 cells against the
+                                 # base-R qf() definition: half-width =
+                                 # sqrt((k-1) * qf(1-alpha, k-1, dfWithin)) *
+                                 # se. UNGATED, UNLIKE THE OTHER TWO ARMS:
+                                 # Scheffe has no separate correction toggle,
+                                 # so its interval is computed on every row at
+                                 # ALPHA DIRECTLY, never alpha/m -- the
+                                 # multiplier IS the simultaneity correction.
+                                 # @emlScheffe's Outputs header gained
+                                 # .seMatrix##, the pairwise SE it already
+                                 # computed but never published.
+                                 # THE NUMBERS ARE COMPUTED BUT NEVER PRINTED,
+                                 # same language gate as v144/v145, and every
+                                 # driven Info window is grepped for the
+                                 # drafted strings. DescTools::ScheffeTest is
+                                 # the requireNamespace-guarded optional leg;
+                                 # not installed here (CRAN unreachable), so
+                                 # it skips cleanly and reports the skip,
+                                 # named, as an attestation -- not a check,
+                                 # not a failure. Two red demos, each a
+                                 # mutant: the multiplier and F-distribution
+                                 # dropped for a plain t interval at the full
+                                 # alpha; the call site dividing alpha by the
+                                 # pair count on top of the multiplier that
+                                 # already spends the family-wise budget.
 )
 
 # ---------------------------------------------------------------------------
