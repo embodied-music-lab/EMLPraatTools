@@ -1179,11 +1179,25 @@ if (!exists("EML_SUITE")) {
     # file's own total differs across machines with and without `psych`
     # installed. Print the split so the total explains itself. Both
     # counts are DERIVED from this file's own recorded rows -- never
-    # hardcoded -- by picking out, among THIS file's checks, the ones
-    # whose recorded quantity text names the psych cross-check (the only
-    # checks this file records inside the `if (havePsych)` guard, above);
-    # everything else recorded under id "v130" is a core check. This
-    # change lives entirely inside v130.
+    # hardcoded.
+    #
+    # THIS IS A TEXT-MATCH PROXY FOR THE GUARD, NOT A READ OF THE GUARD
+    # ITSELF, and that is a real gap, not fixed here. What decides "psych
+    # or core" below is `grepl("psych", quantity)` against each row's own
+    # recorded message -- today that is true of exactly the two check()
+    # calls inside `if (havePsych)` above (both messages literally say
+    # "psych::alpha" / "psych r.drop"), and true of nothing else this file
+    # records, so the split happens to come out right. Nothing enforces
+    # that correspondence: a future check message that happens to mention
+    # "psych" while sitting OUTSIDE the guard would be counted as
+    # opportunistic when it always runs, and a future guarded check whose
+    # message does not happen to say "psych" would be counted as core when
+    # it does not always run -- either way the printed split would
+    # silently misreport itself, with nothing here to notice. A read of
+    # the guard itself (e.g. parsing which check() calls sit inside the
+    # `if (havePsych)  { ... }` block in source, the way v105/Finding 2's
+    # parity checks parse their own procedure bodies rather than trust a
+    # proxy) would close this; that has not been built.
     # -------------------------------------------------------------------
     v130_split_df <- do.call(rbind, EML_RESULTS$rows)
     if (!is.null(v130_split_df)) {

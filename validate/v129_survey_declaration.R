@@ -1817,6 +1817,192 @@ if (!canDrive) {
         identical(sort(skip_tokens), sort(c('""', '"--undefined--"'))))
 
     # -------------------------------------------------------------------
+    # 11a2 [Finding 2]. UNDERSCORE-NORMALIZE PARITY (Stage 3 ruling, item
+    #    4/5). eml-psychometrics.praat:900's own header comment on
+    #    @eml_underscoreNormalize claims THIS section: that this file
+    #    reads all three copies of the forward space -> underscore
+    #    transform from their own source and asserts they agree. Before
+    #    this fix the claim was false -- no such check existed anywhere in
+    #    this file, and that false comment is what hid the gap.
+    #
+    #    THE THREE COPIES: @eml_underscoreNormalize's own body
+    #    (eml-psychometrics.praat, this lane's own file), and two inline
+    #    `replace$ (X, " ", "_", 0)` call sites in
+    #    graphs/eml-graphs-form.praat -- a file this lane may read but not
+    #    edit, which is exactly why the transform could not be merged into
+    #    one shared procedure and has to be kept in parity by a check
+    #    instead (the v105_pitch_parity.R pattern, applied at a much
+    #    smaller scale: one transform, three sites, instead of sixteen
+    #    pitch calls).
+    #
+    #    WHAT THIS DOES NOT DO: restate any of the three copies' own text
+    #    as a hardcoded comparison baseline. Each site's `replace$` call is
+    #    PARSED -- its search string, replacement string and count
+    #    argument read out of the source it actually appears in -- and
+    #    what is compared is the PARSED arguments against each other, then
+    #    the ACTUAL BEHAVIOUR each site's parsed arguments produce on a
+    #    shared set of probe strings, computed by a from-scratch,
+    #    general-purpose reimplementation of Praat's own
+    #    replace$(s$, search$, replacement$, count) semantics -- never a
+    #    "spaces become underscores" one-liner typed a fourth time here.
+    #
+    #    THE CENSUS IS THE POINT (v105's own reasoning, reused at this
+    #    smaller scale): the two graphs-form sites are found by SCANNING
+    #    the whole file for the call shape, not by trusting the two line
+    #    numbers the ruling happens to name today -- a site that MOVES is
+    #    still found; a site that is deleted, or a fourth that appears,
+    #    changes the count away from 3 and turns this red rather than
+    #    silently asserting on fewer sites than it used to.
+    # -------------------------------------------------------------------
+    psych_path_f2 <- file.path(plug, "stats", "eml-psychometrics.praat")
+    graphsform_path_f2 <- file.path(plug, "graphs", "eml-graphs-form.praat")
+    check_true("v129", "[Finding 2] eml-psychometrics.praat is present (this parity check's own anchor)",
+               file.exists(psych_path_f2))
+    check_true("v129", "[Finding 2] graphs/eml-graphs-form.praat is present (read-only from this lane; the other two copies live there)",
+               file.exists(graphsform_path_f2))
+
+    # A from-scratch reimplementation of Praat's own
+    # replace$(s$, search$, replacement$, count) -- count = 0 replaces
+    # every occurrence, left to right; count = N > 0 replaces only the
+    # first N. Parameterised entirely on what f2_parse_replace_call()
+    # reads out of a call site; never hardcodes " " or "_".
+    f2_praat_replace <- function(s, search, replacement, count) {
+        if (!nzchar(search)) return(s)
+        if (identical(count, 0L)) return(gsub(search, replacement, s, fixed = TRUE))
+        out <- s
+        n <- 0L
+        repeat {
+            if (n >= count) break
+            pos <- regexpr(search, out, fixed = TRUE)
+            if (pos < 0) break
+            out <- paste0(substr(out, 1L, pos - 1L), replacement,
+                         substr(out, pos + attr(pos, "match.length"), nchar(out)))
+            n <- n + 1L
+        }
+        out
+    }
+    # One `replace$ (ARG1, "SEARCH", "REPLACEMENT", COUNT)` statement's
+    # three literal arguments. ARG1 (the string being transformed) is
+    # deliberately not returned -- it is a variable at every site
+    # (.text$ / .analysis$ / saveAutoName$) and is never compared across
+    # sites, the same reason v105 never compares floor and ceiling.
+    f2_parse_replace_call <- function(stmt) {
+        m <- regmatches(stmt, regexec(
+            'replace\\$\\s*\\([^,]+,\\s*"([^"]*)",\\s*"([^"]*)",\\s*([0-9]+)\\)', stmt))[[1]]
+        if (length(m) != 4L) return(NULL)
+        list(search = m[2], replacement = m[3], count = as.integer(m[4]))
+    }
+    f2_join_continuations <- function(lines) {
+        out <- character(0); i <- 1L
+        while (i <= length(lines)) {
+            cur <- lines[i]
+            while (i + 1L <= length(lines) && grepl("^\\s*\\.\\.\\.", lines[i + 1L])) {
+                cur <- paste0(sub("\\s+$", "", cur), " ",
+                              sub("^\\s*\\.\\.\\.\\s*", "", lines[i + 1L]))
+                i <- i + 1L
+            }
+            out <- c(out, cur); i <- i + 1L
+        }
+        out
+    }
+    # Every `replace$ (...)`-shaped statement in a source text, parsed.
+    f2_scan_replace_sites <- function(lines) {
+        j <- f2_join_continuations(lines)
+        hits <- grep('replace\\$\\s*\\(', j, value = TRUE)
+        Filter(Negate(is.null), lapply(hits, f2_parse_replace_call))
+    }
+    # Only the space -> underscore family is this check's business.
+    f2_only_underscore <- function(sites)
+        Filter(function(s) identical(s$search, " ") && identical(s$replacement, "_"), sites)
+
+    canon_site_f2 <- NULL
+    if (file.exists(psych_path_f2)) {
+        pj_f2 <- f2_join_continuations(readLines(psych_path_f2, warn = FALSE))
+        decl_f2 <- grep("^\\s*procedure\\s+eml_underscoreNormalize\\b", pj_f2)
+        check_true("v129", "[Finding 2] @eml_underscoreNormalize is declared as a procedure, exactly once",
+                   length(decl_f2) == 1L)
+        if (length(decl_f2) == 1L) {
+            ends_f2 <- grep("^\\s*endproc\\b", pj_f2)
+            ends_f2 <- ends_f2[ends_f2 > decl_f2]
+            if (length(ends_f2) > 0L) {
+                body_f2 <- pj_f2[decl_f2:ends_f2[1]]
+                site_lines_f2 <- grep('replace\\$\\s*\\(', body_f2, value = TRUE)
+                check_true("v129", "[Finding 2] @eml_underscoreNormalize's body carries exactly one replace$ call",
+                           length(site_lines_f2) == 1L)
+                if (length(site_lines_f2) == 1L) canon_site_f2 <- f2_parse_replace_call(site_lines_f2[1])
+            }
+        }
+    }
+    check_true("v129", "[Finding 2] @eml_underscoreNormalize's replace$ call was parsed (search/replacement/count all read out of source)",
+               !is.null(canon_site_f2))
+
+    graphsform_sites_f2 <- if (file.exists(graphsform_path_f2))
+        f2_only_underscore(f2_scan_replace_sites(readLines(graphsform_path_f2, warn = FALSE))) else list()
+
+    total_sites_f2 <- 1L + length(graphsform_sites_f2)
+    check_true("v129",
+        sprintf("[Finding 2] fewer than three copies would go red here: found %d (1 procedure body + %d graphs-form site(s)); at least 3 wanted",
+                total_sites_f2, length(graphsform_sites_f2)),
+        total_sites_f2 >= 3L)
+    check_true("v129",
+        "[Finding 2] exactly two graphs-form call sites carry the space->underscore transform today (a third appearing, or one vanishing, is itself news worth a look, not silence)",
+        length(graphsform_sites_f2) == 2L)
+
+    f2_probes <- c("Vocal Health", "A B  C", "NoSpaces", "", " leading",
+                  "trailing ", "one two three")
+    if (!is.null(canon_site_f2)) {
+        canon_out_f2 <- vapply(f2_probes, f2_praat_replace, character(1),
+                               search = canon_site_f2$search,
+                               replacement = canon_site_f2$replacement,
+                               count = canon_site_f2$count)
+        for (.gi in seq_along(graphsform_sites_f2)) {
+            s <- graphsform_sites_f2[[.gi]]
+            site_out_f2 <- vapply(f2_probes, f2_praat_replace, character(1),
+                                  search = s$search, replacement = s$replacement,
+                                  count = s$count)
+            check_true("v129",
+                sprintf("[Finding 2] graphs-form site #%d transforms every probe string identically to @eml_underscoreNormalize's own body (\"Vocal Health\" -> \"%s\", among others)",
+                        .gi, f2_praat_replace("Vocal Health", s$search, s$replacement, s$count)),
+                identical(site_out_f2, canon_out_f2))
+        }
+    }
+
+    # NEGATIVE CONTROL: perturb ONE of the two graphs-form copies in a
+    # SCRATCH tree (a tempfile; the committed graphs-form.praat is never
+    # touched) and confirm the census and the behavioural comparison above
+    # both actually notice -- proving this section is not vacuously green.
+    if (file.exists(graphsform_path_f2) && length(graphsform_sites_f2) >= 1L) {
+        gf_lines_f2 <- readLines(graphsform_path_f2, warn = FALSE)
+        gf_txt_f2 <- paste(gf_lines_f2, collapse = "\n")
+        needle_f2 <- '.slug$ = replace$ (.analysis$, " ", "_", 0)'
+        check_true("v129", "[Finding 2 negative control] the perturbation's needle line was found in graphs-form.praat, unmutated",
+                   grepl(needle_f2, gf_txt_f2, fixed = TRUE))
+        mutated_txt_f2 <- sub(needle_f2, '.slug$ = replace$ (.analysis$, " ", "-", 0)',
+                              gf_txt_f2, fixed = TRUE)
+        if (grepl(needle_f2, gf_txt_f2, fixed = TRUE)) {
+            stopifnot(!identical(mutated_txt_f2, gf_txt_f2))
+            mut_path_f2 <- tempfile(fileext = ".praat")
+            writeLines(mutated_txt_f2, mut_path_f2)
+            mut_sites_f2 <- f2_scan_replace_sites(readLines(mut_path_f2, warn = FALSE))
+            mut_underscore_f2 <- f2_only_underscore(mut_sites_f2)
+            check_true("v129",
+                "[Finding 2 negative control] on the perturbed tree (one graphs-form site's underscore changed to a hyphen), the census finds only ONE genuine space->underscore graphs-form site where two are wanted -- this section's own census would go red on it",
+                length(mut_underscore_f2) == 1L)
+            perturbed_f2 <- Filter(function(s) identical(s$search, " ") && identical(s$replacement, "-"),
+                                   mut_sites_f2)
+            if (!is.null(canon_site_f2) && length(perturbed_f2) == 1L) {
+                p_out_f2 <- vapply(f2_probes, f2_praat_replace, character(1),
+                                   search = perturbed_f2[[1]]$search,
+                                   replacement = perturbed_f2[[1]]$replacement,
+                                   count = perturbed_f2[[1]]$count)
+                check_true("v129",
+                    "[Finding 2 negative control] the perturbed site's own output now DIFFERS from @eml_underscoreNormalize's on the probe strings (\"Vocal Health\" -> \"Vocal-Health\", not \"Vocal_Health\") -- the behavioural comparison above would also catch this, not just the census",
+                    !identical(p_out_f2, canon_out_f2))
+            }
+        }
+    }
+
+    # -------------------------------------------------------------------
     # 11b-11e. NEGATIVE CONTROLS for refusals 3, 4, 5A and 5B -- Finding 6:
     #    these four guards (plus refusal 1, given its own bespoke section 6b
     #    above) had only positive seeded-defect legs, unlike every refusal
@@ -1994,8 +2180,12 @@ if (!canDrive) {
     # fixture above. Neutered, .found never reaches 1 for any caller
     # (exactly refusal 13's own negative control proves for the raw-name
     # case), so on THIS fixture -- two new subscales, neither with any
-    # item -- the next thing that can fire is refusal 3 ("too few
-    # items"), not 0; the check below only requires the result to differ
+    # item -- the next thing that can fire is refusal 5 direction B ("a
+    # declared scale that no item uses"), not 0 and NOT refusal 3: refusal
+    # 3's own guard is deliberately `.count >= 1 and .count < 2` (see its
+    # header, above), never just `.count < 2`, precisely so a scale with
+    # ZERO items falls through to refusal 5 instead -- exactly this
+    # fixture's case. The check below only requires the result to differ
     # from 17, which it does either way.
     run_negative_control("mutant17",
         "            if .jName$ = .iName$",

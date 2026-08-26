@@ -294,8 +294,11 @@ endproc
 # every one of those already relies on for reading its own booleans back
 # (a `beginPause`/`endPause` label becomes a bare global exactly as typed,
 # first word lowercased -- verified live against the shipped doors:
-# eml-lmm.praat's "Use REML" is read back as `use_REML`, "Clear Info
-# window" as `clear_Info_window`) -- so "Annotate results with
+# scripts/eml-lmm.praat's "Use REML" is read back as `use_REML`, and
+# "Clear Info window" (present on that same door, and on most others in
+# scripts/) as `clear_Info_window`; stats/eml-lmm.praat, this lane's
+# nearer namesake, is a pure procedure library and raises no dialog of
+# its own at all) -- so "Annotate results with
 # explanations" becomes `annotate_results_with_explanations`, and THIS
 # file builds no dialog page of its own to declare it (per this file's own
 # header, and the ruling: Stage 3 adds the control; Stage 2's report layer
@@ -325,22 +328,52 @@ endproc
 # separately maintained list inside validate/. Every name below
 # corresponds to exactly one line-builder call in
 # @emlSurveyBuildSubscaleReport, below; validate/v132_survey_report_layer.R
-# reads THIS procedure's two arrays from source, never restates them, to
-# build its toggle-routing checks -- a line moved from one class to the
-# other is caught here, at the one place that says so, not by two lists
-# quietly disagreeing.
+# reads THIS procedure's two arrays from source for the FOLLOWS class name
+# list itself, never restating THAT -- a line moved from one class to the
+# other in the arrays below is caught here, at the one place that says so.
+# THIS DOES NOT MEAN EVERY v132 toggle check is built purely from these
+# two arrays, though: telling the bare item-rest header from the glossed
+# one apart needs to know what the gloss text SAYS, not just that it is
+# classified FOLLOWS, so that one check additionally restates a literal
+# fragment of the gloss string (see its own comment in v132, section 8).
+#
+# THIS PROCEDURE HAS NO PRODUCTION CALLER. It is called from nowhere at
+# runtime -- not from @emlSurveyBuildSubscaleReport, not from any
+# @eml_survey_line* builder -- only read out of source, as text, by
+# validate/v132 above. Each line-builder decides its OWN ALWAYS/FOLLOWS
+# membership independently, by calling @eml_survey_annotateOn directly
+# (e.g. @eml_survey_lineType, @eml_survey_lineItemRest below); this
+# procedure's two arrays are a hand-maintained restatement of what those
+# independent decisions add up to, kept only so validate/ has one
+# source-readable place to read the classification FROM, never enforced
+# at runtime by being called. A line-builder's own gating and this
+# registry's say-so can therefore drift apart by hand-editing one and not
+# the other; nothing in this file catches that, only validate/v132's own
+# comparison against each line-builder's actual behavior does.
 #
 # ALWAYS (print unconditionally, toggle on or off): each states a FACT
 # about what was computed or found in THIS run, never an interpretation of
 # it -- reversed items, exclusions (n), the placeholder disclosure, the
 # KR-20 note.
 #
-# FOLLOWS (print only when the toggle is on): each is an EXPLANATION of a
-# fact that already prints elsewhere regardless of the toggle -- the
-# ordinal-as-interval note (the declared type itself is not gated), the
-# item-rest gloss (the item-rest r value itself is not gated), the
-# negative item-rest flag's suggestion (the sign of r is not gated -- a
-# reader can already see it is negative without this line).
+# FOLLOWS (print only when the toggle is on): each is an EXPLANATION, but
+# ONLY TWO OF THE THREE share the rationale "of a fact that already prints
+# elsewhere regardless of the toggle" -- the item-rest gloss (the
+# item-rest r value itself is not gated: it prints, per item, in the
+# ALWAYS header/list above) and the negative item-rest flag's suggestion
+# (the sign of r is not gated -- a reader can already see it is negative
+# without this line). THE ORDINAL-AS-INTERVAL NOTE DOES NOT: the declared
+# type ("ordinal"/"continuous") is read from
+# emlSurveyValidateDeclaration.scaleType$[.s] in exactly one place in this
+# file, @eml_survey_lineType itself -- the FOLLOWS-only line under
+# discussion -- so with the toggle off, the type is not merely explained
+# less; it is not printed anywhere in the report at all. Its FOLLOWS
+# classification rests on a different footing: it is Ian's own ruling
+# (Stage 3 ruling, item 2) that this note is an interpretive caveat about
+# treating ordinal data as interval-scaled for alpha's purposes, not a
+# raw fact the report owes a reader unconditionally -- not on the
+# "already printed elsewhere" reasoning the other two FOLLOWS lines
+# actually have.
 # ----------------------------------------------------------------------------
 procedure emlSurveyLineRouting
     .alwaysCount = 4
@@ -535,7 +568,7 @@ endproc
 
 
 # ============================================================================
-# @eml_survey_lineType: .s  ->  .line$
+# @eml_survey_lineType: .s  ->  .present, .line$
 # ============================================================================
 # "The ordinal-as-interval line, selected by the subscale's declared type.
 # That type affects this line and nothing computational." Selected purely
@@ -832,6 +865,21 @@ endproc
 # PRECONDITION: same as every reporting procedure above --
 # @emlSurveyValidateDeclaration and @emlSurveyScoreScales have already run
 # on .dataTableId.
+#
+# THE SCALE-LEVEL TERM IS THE IDENTIFIER, NOT THE DISPLAY NAME (Stage 3
+# ruling, item 4). A subscale's declared name ("Vocal Health") is a
+# DISPLAY name and may hold a space; refusal 17's own message
+# (eml-psychometrics.praat) already says so: the plugin's scores-table
+# columns, CSV headers and file stems all use the underscore-normalized
+# identifier form ("Vocal_Health") instead. This CSV's `term` column is
+# exactly that kind of identifier -- a downstream reader joins rows on it
+# -- so every scale-level row below runs the raw
+# emlSurveyValidateDeclaration.scaleName$[.s] through
+# @eml_underscoreNormalize (eml-psychometrics.praat) once, into
+# .scaleTerm$, and writes THAT as the term. The item-level rows below
+# keep using the raw item name as their term: no ruling asked item names
+# to be normalized, and unlike a subscale name, nothing in this lane
+# builds an item name with a space in it to begin with.
 # ----------------------------------------------------------------------------
 procedure emlSurveyExportCSV: .dataTableId, .dataPath$, .itemsPath$, .scalesPath$, .csvPath$
     @emlCSVInit
@@ -849,21 +897,23 @@ procedure emlSurveyExportCSV: .dataTableId, .dataPath$, .itemsPath$, .scalesPath
 
     for .s from 1 to emlSurveyScoreScales.nScales
         .scaleName$ = emlSurveyValidateDeclaration.scaleName$[.s]
+        @eml_underscoreNormalize: .scaleName$
+        .scaleTerm$ = eml_underscoreNormalize.result$
 
         @emlCSVTermType: "scale"
-        @emlCSVAdd: .analysis$, .scaleName$, "alpha", emlSurveyScoreScales.subAlpha[.s]
-        @emlCSVAdd: .analysis$, .scaleName$, "ci_low", emlSurveyScoreScales.subCiLow[.s]
-        @emlCSVAdd: .analysis$, .scaleName$, "ci_high", emlSurveyScoreScales.subCiHigh[.s]
-        @emlCSVAdd: .analysis$, .scaleName$, "n", emlSurveyScoreScales.subN[.s]
-        @emlCSVAdd: .analysis$, .scaleName$, "n_excluded", emlSurveyScoreScales.subNExcluded[.s]
-        @emlCSVAddStr: .analysis$, .scaleName$, "alpha_error", emlSurveyScoreScales.subAlphaError$[.s]
-        @emlCSVAdd: .analysis$, .scaleName$, "is_kr20", emlSurveyScoreScales.subIsKR20[.s]
-        @emlCSVAdd: .analysis$, .scaleName$, "scored_n", emlSurveyScoreScales.subScoredN[.s]
-        @emlCSVAdd: .analysis$, .scaleName$, "scored_none", emlSurveyScoreScales.subScoredNone[.s]
-        @emlCSVAdd: .analysis$, .scaleName$, "score_mean", emlSurveyScoreScales.subScoreMean[.s]
-        @emlCSVAdd: .analysis$, .scaleName$, "score_sd", emlSurveyScoreScales.subScoreSD[.s]
-        @emlCSVAdd: .analysis$, .scaleName$, "score_min", emlSurveyScoreScales.subScoreMin[.s]
-        @emlCSVAdd: .analysis$, .scaleName$, "score_max", emlSurveyScoreScales.subScoreMax[.s]
+        @emlCSVAdd: .analysis$, .scaleTerm$, "alpha", emlSurveyScoreScales.subAlpha[.s]
+        @emlCSVAdd: .analysis$, .scaleTerm$, "ci_low", emlSurveyScoreScales.subCiLow[.s]
+        @emlCSVAdd: .analysis$, .scaleTerm$, "ci_high", emlSurveyScoreScales.subCiHigh[.s]
+        @emlCSVAdd: .analysis$, .scaleTerm$, "n", emlSurveyScoreScales.subN[.s]
+        @emlCSVAdd: .analysis$, .scaleTerm$, "n_excluded", emlSurveyScoreScales.subNExcluded[.s]
+        @emlCSVAddStr: .analysis$, .scaleTerm$, "alpha_error", emlSurveyScoreScales.subAlphaError$[.s]
+        @emlCSVAdd: .analysis$, .scaleTerm$, "is_kr20", emlSurveyScoreScales.subIsKR20[.s]
+        @emlCSVAdd: .analysis$, .scaleTerm$, "scored_n", emlSurveyScoreScales.subScoredN[.s]
+        @emlCSVAdd: .analysis$, .scaleTerm$, "scored_none", emlSurveyScoreScales.subScoredNone[.s]
+        @emlCSVAdd: .analysis$, .scaleTerm$, "score_mean", emlSurveyScoreScales.subScoreMean[.s]
+        @emlCSVAdd: .analysis$, .scaleTerm$, "score_sd", emlSurveyScoreScales.subScoreSD[.s]
+        @emlCSVAdd: .analysis$, .scaleTerm$, "score_min", emlSurveyScoreScales.subScoreMin[.s]
+        @emlCSVAdd: .analysis$, .scaleTerm$, "score_max", emlSurveyScoreScales.subScoreMax[.s]
 
         @emlCSVTermType: "item"
         for .j from 1 to emlSurveyScoreScales.subK[.s]

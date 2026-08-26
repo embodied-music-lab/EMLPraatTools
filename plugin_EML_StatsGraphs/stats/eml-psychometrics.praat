@@ -1775,14 +1775,22 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     # question of two different tables/columns, and V1.3 does not want a
     # second copy of that nested loop.
     #
-    # Classifier-consumption sweep: @eml_findDuplicateName returns four
-    # outputs (.found, .name$, .firstRow, .dupRow). .firstRow is the ONE
-    # output deliberately not read here or at refusal 7's call site below
-    # -- the message names only .dupRow, the LATER declaration, because
-    # the first occurrence is not itself wrong (nothing to fix there) and
-    # naming the second names the row to delete. This is not a missed
-    # kind the way refusal 8's four discarded kinds were: .found/.name$/
-    # .dupRow already fully decide the refusal and fully name the fix.
+    # Classifier-consumption sweep: @eml_findDuplicateName returns SIX
+    # outputs (.found, .name$, .rawName1$, .rawName2$, .firstRow, .dupRow
+    # -- refusal 17's own ruling, below, added .rawName1$/.rawName2$ to
+    # the original four). AT THIS CALL SITE (.normalize = 0, same as
+    # refusal 7's below): .rawName1$/.rawName2$ are not read -- with
+    # normalization off they equal .name$ and the earlier occurrence's
+    # raw text respectively, nothing this call site's message needs that
+    # .name$ does not already give it -- and .firstRow is not read either,
+    # for the same reason it never was: the message names only .dupRow,
+    # the LATER declaration, because the first occurrence is not itself
+    # wrong (nothing to fix there) and naming the second names the row to
+    # delete. .firstRow is NOT universally unread, though: refusal 17's
+    # own call site below (.normalize = 1) does read it, to name both
+    # colliding rows in its message. This is not a missed kind the way
+    # refusal 8's four discarded kinds were: .found/.name$/.dupRow already
+    # fully decide THIS refusal and fully name the fix.
     @eml_findDuplicateName: .scalesTableId, "scale", .nScales, 0
     if eml_findDuplicateName.found = 1
         .error$ = .msg13a$ + eml_findDuplicateName.name$ + .msg13b$

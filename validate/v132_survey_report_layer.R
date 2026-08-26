@@ -282,8 +282,24 @@ if (!canDrive) {
     # meant before the toggle existed (the toggle-following lines fully
     # present, matching the universe those checks were written against);
     # NA leaves the variable UNDECLARED, so the SOURCE's own default (off)
-    # is what is being tested, not a value this file asserted. Section 9,
-    # below, is the one place this file actually varies it.
+    # is what is being tested, not a value this file asserted. Section 8,
+    # below, is the one place this file drives BOTH states on purpose to
+    # assert the ALWAYS/FOLLOWS contract each way (annotate = NA and
+    # annotate = 1, side by side); section 9's "mA" mutant also passes
+    # annotate = NA once, to prove a mutated DEFAULT is what it claims to
+    # mutate.
+    #
+    # A GAP THIS LEAVES, NOT CLOSED HERE: every OTHER drive_report() call
+    # in this file -- section 3's structural drive, section 7's CSV
+    # export, and every M1-M5 mutant in section 9 -- takes the default
+    # (annotate = 1, the toggle ON) and never overrides it. None of those
+    # exercise the toggle's actual SHIPPED default (OFF) at all; they
+    # exercise only the ON state. So the door-level structural checks and
+    # the CSV export checks are correct facts about running with the
+    # toggle explicitly on, never about what a user who never touches the
+    # toggle actually sees. Only section 8's own toggle-focused checks
+    # (and the "mA" default-mutation check in section 9) ever drive the
+    # real default.
     drive_report <- function(dirlabel, data_path, scales_path, items_path, tag,
                              also_door = FALSE, csv_export = FALSE, annotate = 1) {
         probe <- file.path(work, "scripts", paste0("v132-", tag, ".praat"))
@@ -368,10 +384,14 @@ if (!canDrive) {
             '        appendInfoLine: "IDTEXT|", s, "|",',
             "        ... eml_survey_lineItemDeleted.line$, \"|END\"",
             # IRTEXT dumps eml_survey_lineItemRest's own raw .line$ text --
-            # section 8 (annotate toggle) greps this for the gloss fragment
-            # (FOLLOWS, present only when the toggle is on) versus the bare
-            # header (ALWAYS, present either way), never a literal restated
-            # copy of either string.
+            # section 8 (annotate toggle), further down this file, greps
+            # this for the gloss fragment (FOLLOWS, present only when the
+            # toggle is on) versus the bare header (ALWAYS, present either
+            # way). UNLIKE most of this file, that grep DOES restate a
+            # literal fragment of each DRAFT LANGUAGE string (its own
+            # comment says so), because distinguishing "bare" from "gloss"
+            # needs to know what the gloss actually SAYS, not just that
+            # some text is present.
             '        appendInfoLine: "IRTEXT|", s, "|",',
             "        ... eml_survey_lineItemRest.line$, \"|END\"",
             "        if emlSurveySubscaleDisclosure.count > 0",
@@ -1042,6 +1062,99 @@ if (!canDrive) {
     }
 
     # -------------------------------------------------------------------
+    # 7d [Finding 1]: THE CSV TERM COLUMN CARRIES THE NORMALIZED
+    #    IDENTIFIER, NOT THE DISPLAY NAME. Ian's ruling: a subscale name
+    #    is a display name and may hold a space ("Vocal Health"); the
+    #    plugin's scores-table columns, CSV headers and file stems all use
+    #    the underscore-normalized identifier form ("Vocal_Health")
+    #    instead. Before this fix @eml_underscoreNormalize
+    #    (eml-psychometrics.praat) existed but nothing called it to build
+    #    an actual identifier -- @emlSurveyExportCSV wrote the RAW scale
+    #    name straight into the CSV's `term` column, so refusal 17's own
+    #    message (which warns that "Vocal Health" and "Vocal_Health" would
+    #    collide in that column) described something that was not true.
+    #
+    #    Driven end to end, on a subscale actually declared with a space
+    #    in its name: the PRINTED report still names it by the DISPLAY
+    #    form, space intact (a sentence for a reader, not an identifier),
+    #    and the CSV export's `term` column carries the underscored
+    #    identifier instead.
+    # -------------------------------------------------------------------
+    vh_scales <- write_csv_lines(c("scale,min,max,type", "Vocal Health,1,5,ordinal"),
+                                 "f1_vh_scales.csv")
+    vh_items <- write_csv_lines(c("item,role,reversed",
+                                  "V1,Vocal Health,0",
+                                  "V2,Vocal Health,0",
+                                  "V3,Vocal Health,0"),
+                                "f1_vh_items.csv")
+    vh_data <- write_csv_lines(c('"V1","V2","V3"',
+                                 "4,3,5",
+                                 "2,3,2",
+                                 "5,4,4",
+                                 "3,3,3",
+                                 "4,4,3"),
+                               "f1_vh_data.csv")
+    out_vh <- drive_report("clean", vh_data, vh_scales, vh_items, "f1-vh",
+                           also_door = TRUE, csv_export = TRUE)
+    check_true("v132", "[Finding 1] the \"Vocal Health\" probe ran cleanly (refusal 0)",
+               ran_ok(out_vh) && identical(fld(out_vh, "refusal")[1], "0"))
+    blk_vh <- fld_all(out_vh, "BLK")
+    check_true("v132", "[Finding 1] exactly one subscale block was reported",
+               length(blk_vh) == 1L)
+    if (length(blk_vh) == 1L) {
+        check_true("v132", "[Finding 1] the PRINTED report names the subscale by its DISPLAY name, space intact (\"Vocal Health\")",
+                   identical(blk_vh[[1]][2], "Vocal Health"))
+    }
+    check_true("v132", "[Finding 1] the door's own banner line also carries the display name with its space",
+               any(grepl("^--- Subscale: Vocal Health ", out_vh)))
+
+    vh_csv_path <- attr(out_vh, "csv_path")
+    check_true("v132", "[Finding 1] the CSV export file was written", file.exists(vh_csv_path))
+    if (file.exists(vh_csv_path)) {
+        vh_exp <- read.csv(vh_csv_path, stringsAsFactors = FALSE)
+        check_true("v132", "[Finding 1] the CSV term column carries the UNDERSCORED identifier (\"Vocal_Health\"), not the raw display name",
+                   any(vh_exp$term == "Vocal_Health"))
+        check_true("v132", "[Finding 1] the CSV term column never carries the raw display name with its space (\"Vocal Health\")",
+                   !any(vh_exp$term == "Vocal Health"))
+    }
+
+    # RED DEMO: a scratch copy of eml-survey.praat with the normalization
+    # call removed from @emlSurveyExportCSV -- the term column reverts to
+    # the raw display name, exactly Finding 1's reported defect.
+    survey_lines_f1 <- readLines(file.path(scriptsdir, "eml-survey.praat"), warn = FALSE)
+    f1_txt <- paste(survey_lines_f1, collapse = "\n")
+    f1_needle <- paste0(
+        "        .scaleName$ = emlSurveyValidateDeclaration.scaleName$[.s]\n",
+        "        @eml_underscoreNormalize: .scaleName$\n",
+        "        .scaleTerm$ = eml_underscoreNormalize.result$\n")
+    check_true("v132", "[Finding 1] the normalization call site was found in eml-survey.praat (this red demo's own anchor)",
+               grepl(f1_needle, f1_txt, fixed = TRUE))
+    f1_mut_txt <- sub(f1_needle,
+                      "        .scaleName$ = emlSurveyValidateDeclaration.scaleName$[.s]\n        .scaleTerm$ = .scaleName$\n",
+                      f1_txt, fixed = TRUE)
+    if (grepl(f1_needle, f1_txt, fixed = TRUE)) {
+        stopifnot(!identical(f1_mut_txt, f1_txt))
+        f1_mut_path <- tempfile(fileext = ".praat")
+        writeLines(f1_mut_txt, f1_mut_path)
+        f1_mut_dir <- file.path(work, "m_f1_no_normalize")
+        link_deps(f1_mut_dir, survey_path = f1_mut_path)
+        out_f1mut <- drive_report("m_f1_no_normalize", vh_data, vh_scales, vh_items,
+                                  if (red_mode) "f1-vh-mutred" else "f1-vh-mut", csv_export = TRUE)
+        f1mut_csv <- attr(out_f1mut, "csv_path")
+        f1mut_ok <- file.exists(f1mut_csv)
+        f1mut_exp <- if (f1mut_ok) read.csv(f1mut_csv, stringsAsFactors = FALSE) else NULL
+        if (red_mode) {
+            cat("      EML_LANE_RED: driving the un-normalizing mutant of @emlSurveyExportCSV --\n")
+            cat("      the next check is EXPECTED to FAIL (the term column carries the raw name).\n")
+            check_true("v132", "[RED, Finding 1] the CSV term column carries the underscored identifier, not the raw display name (must go red on the un-normalizing mutant)",
+                       f1mut_ok && any(f1mut_exp$term == "Vocal_Health") && !any(f1mut_exp$term == "Vocal Health"))
+        } else {
+            check_true("v132", "[Finding 1 seed] mutant differs from correct: with the normalization call removed, the CSV term column reverts to the raw display name (correct build: the underscored identifier)",
+                       f1mut_ok && any(f1mut_exp$term == "Vocal Health") && !any(f1mut_exp$term == "Vocal_Health"))
+        }
+    }
+
+    # -------------------------------------------------------------------
     # 8. THE ANNOTATE TOGGLE (Stage 3 ruling, item 2): drives the same
     #    committed/small fixtures with "Annotate results with explanations"
     #    explicitly OFF (unset -- the toggle's own documented default) and
@@ -1106,8 +1219,18 @@ if (!canDrive) {
                identical(know_off[3 + 8], "1"))
 
     # Item-rest header: bare (no gloss fragment) with the toggle off, full
-    # gloss with it on -- read from IRTEXT's own live .line$ text, never a
-    # restated copy of the gloss/bare strings.
+    # gloss with it on -- read from IRTEXT's own LIVE .line$ text (never a
+    # captured Info window), which is what makes this a behavioural check
+    # and not a static one. It DOES restate two literal fragments of
+    # @emlSurveyReportLanguage's own strings below ("Item-rest
+    # correlation:" is exactly .msgItemRestHeaderBare$, and "each item
+    # against the" is a substring of .msgItemRestHeader$'s gloss) --
+    # unavoidably: telling "bare" from "gloss" apart needs to know what
+    # each one actually says, not just that .line$ is non-empty, and no
+    # structural field drive_report emits carries that distinction. A
+    # wording change to either DRAFT string would need this fragment
+    # updated to match, same as any other text-coupled check in this
+    # tree.
     for (s in seq_along(scale_names)) {
         irt_off <- irtext_block(out_off, s)
         irt_on  <- irtext_block(out_on, s)
@@ -1162,9 +1285,19 @@ if (!canDrive) {
                            committed_items_path, if (red_mode) "mAred" else "mA", annotate = NA)
     blk_mA <- fld_all(out_mA, "BLK")
     if (red_mode) {
+        # UNLIKE the M1-M5 blocks below, this must re-run the CORRECT
+        # build's own claim (the toggle-off check above: "type line
+        # ABSENT with the toggle left unset") against the mA mutant, not
+        # restate the mutant's own broken behaviour as a fresh assertion
+        # -- re-stating it here would always pass, mutant or not, and a
+        # red-mode block that always passes is not testing anything red
+        # (this was itself Finding-adjacent: the block used to assert the
+        # mutant's OWN behaviour and so could never fail here regardless
+        # of what red_mode was checking). Asserting the ORIGINAL claim
+        # against the mA build is what actually goes red on it.
         for (row in blk_mA) {
-            check_true("v132", sprintf("[RED, annotate default] subscale %s: type line (FOLLOWS) fires even though the toggle was left UNSET (default mutated to ON)", row[2]),
-                       identical(row[3 + 5], "1"))
+            check_true("v132", sprintf("[RED, annotate default] subscale %s: type line (FOLLOWS) is ABSENT with the toggle left unset (must go red on the default-mutated build, where an unset toggle now reads as ON)", row[2]),
+                       identical(row[3 + 5], "0"))
         }
     } else {
         mA_all_on <- length(blk_mA) > 0 && all(vapply(blk_mA, function(r) identical(r[3 + 5], "1"), logical(1)))
