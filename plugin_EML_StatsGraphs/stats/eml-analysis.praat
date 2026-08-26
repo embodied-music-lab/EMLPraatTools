@@ -4839,6 +4839,46 @@ endproc
 # @emlRMPostHoc — pairwise post-hoc for repeated-measures designs.
 # Parametric -> paired t; nonparametric -> Wilcoxon signed-rank.
 # p-values adjusted by .adjMethod$ (bonferroni / holm / bh).
+#
+# Output (parametric branch only; DARK -- computed, never printed):
+#   .meanDiffFlat# — mean difference per pair, C(k,2) long, in this
+#                    procedure's own pair order (a < b, a outer).
+#                    Captured from @emlTTestPaired, not recomputed.
+#                    Computed on every row under every correction, per
+#                    Fable's 26 August work order
+#                    (docs/WORK_ORDER_INTERVALS_2026-08-26.md, item 4).
+#   .lowFlat#, .highFlat# — that difference's interval per pair, or
+#                    undefined where the correction in force defines no
+#                    level. Bonferroni only, at 1 - alpha/m per pair;
+#                    undefined under holm and bh.
+#
+# Output (nonparametric branch only; DARK -- computed, never printed):
+#   .hlEstFlat#    — the Hodges-Lehmann shift per pair: the median of
+#                    the n(n+1)/2 Walsh averages of the within-subject
+#                    differences, from @emlHodgesLehmannPaired. Every
+#                    row, every correction.
+#   .hlLowFlat#, .hlHighFlat# — that estimate's interval per pair, on
+#                    the same Bonferroni-only rule as .lowFlat# above.
+#   .hlMethod$ [i] — "exact" or "normal approximation" for pair i:
+#                    WHICH NULL DISTRIBUTION THAT PAIR'S INTERVAL CAME
+#                    FROM. It must equal the branch the pair's p-value
+#                    was computed on, and a report whose interval and
+#                    p-value disagree about that is incoherent while
+#                    both numbers still look reasonable. v145 reads it.
+#
+# Only one branch runs per call. The other branch's arrays are filled
+# with undefined rather than left at zero# ()'s zeros, because a zero
+# that means "not computed" reads as "no difference" and no check would
+# see it.
+#
+# NOTHING HERE PRINTS. The lines that would -- "Mean difference
+# (C1 - C2): x.xx", "Hodges-Lehmann shift (C1 - C2): x.xx" and the
+# "[low, high]" rendering -- are drafted into the language batch and
+# print only after Ian's en-bloc approval
+# (docs/RULING_INTERVALS_2026-08-26.md, "Language"). No appendInfoLine
+# in this procedure reads any of the seven arrays above; they are
+# outputs a check can read, and approval adds print calls against
+# numbers that are already computed.
 # ============================================================================
 procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
     # THE REQUESTED ADJUSTMENT METHOD IS VALIDATED. An unrecognised string
@@ -4856,6 +4896,35 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
     .rawP# = zero# (.nPairs)
     .nSkipped = 0
     .pairIdx = 0
+
+    ; ----------------------------------------------------------------
+    ; ITEM 4 -- THE INTERVAL PLUMBING ON BOTH REPEATED-MEASURES
+    ; BRANCHES, BUILT DARK.
+    ;
+    ; The same rule items 2 and 3 wired into the between-subjects
+    ; reporter (@emlReportPairwiseComparison above), applied to this
+    ; procedure: the POINT ESTIMATE on every row under every
+    ; correction, and the INTERVAL only where the correction in force
+    ; defines a level -- Bonferroni at 1 - alpha/m per pair. Holm and
+    ; BH define none, so their interval arrays stay undefined.
+    ;
+    ; THE LEVEL IS BUILT FROM THE METHOD THAT ACTUALLY RAN, .adjUsed$,
+    ; and not from .adjMethod$. This procedure silently falls back to
+    ; Holm on an unrecognised method and discloses the fallback in its
+    ; header; an interval gated on the REQUESTED method would then
+    ; print a Bonferroni interval under a Holm heading. The
+    ; between-subjects reporter has no such fallback and reads
+    ; .adjMethod$ directly.
+    ; ----------------------------------------------------------------
+    @emlReportAlpha
+    .phAlpha = emlReportAlpha.value
+    .phLevel = 1 - .phAlpha / .nPairs
+    .meanDiffFlat# = zero# (.nPairs)
+    .lowFlat# = zero# (.nPairs)
+    .highFlat# = zero# (.nPairs)
+    .hlEstFlat# = zero# (.nPairs)
+    .hlLowFlat# = zero# (.nPairs)
+    .hlHighFlat# = zero# (.nPairs)
     for .a from 1 to .k - 1
         for .b from .a + 1 to .k
             .pairIdx = .pairIdx + 1
@@ -4865,6 +4934,19 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
                 .va# [.i] = .data## [.i, .a]
                 .vb# [.i] = .data## [.i, .b]
             endfor
+            ; The seven interval-plumbing arrays are set on EVERY pair,
+            ; in both branches, so the branch that did not run holds
+            ; undefined rather than zero#()'s zero. Each producing
+            ; call's .error$ is read BEFORE any other field of that same
+            ; call, per the error-read rule v134 lints.
+            .meanDiffFlat# [.pairIdx] = undefined
+            .lowFlat# [.pairIdx] = undefined
+            .highFlat# [.pairIdx] = undefined
+            .hlEstFlat# [.pairIdx] = undefined
+            .hlLowFlat# [.pairIdx] = undefined
+            .hlHighFlat# [.pairIdx] = undefined
+            .hlMethod$ [.pairIdx] = ""
+
             # v1.2 item 1: the pairwise test can fail (zero-variance
             # differences, all-zero differences, too few pairs). Previously
             # its undefined .p was written straight into .rawP#, and the
@@ -4874,10 +4956,79 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
                 @emlTTestPaired: .va#, .vb#, 2
                 .pairErr$ = emlTTestPaired.error$
                 .pairP = emlTTestPaired.p
+                ; Copied on the next lines, before anything else can run
+                ; and overwrite the emlTTestPaired namespace.
+                .phDiff = emlTTestPaired.meanDiff
+                .phT = emlTTestPaired.t
+                .phDf = emlTTestPaired.df
+
+                ; THE POINT ESTIMATE, every row, every correction. It is
+                ; taken from the test rather than recomputed, and it
+                ; survives the zero-variance refusal: @emlTTestPaired
+                ; assigns .meanDiff before it checks the SD, so a pair
+                ; with identical differences still HAS a mean difference
+                ; and only the test statistic is missing.
+                .meanDiffFlat# [.pairIdx] = .phDiff
+
+                ; THE INTERVAL, ONLY WHEN THE CORRECTION IN FORCE
+                ; DEFINES ONE.
+                ;
+                ; NO WELCH/STUDENT SPLIT EXISTS ON A PAIRED BRANCH, AND
+                ; MATHEMATICALLY NONE CAN. Welch's correction addresses
+                ; unequal variances across two INDEPENDENT samples, and
+                ; a paired test works on the differences, which is one
+                ; sample with one variance. There is no second variance
+                ; for a correction to reconcile. This comment is here to
+                ; stop one being built: the between-subjects arm above
+                ; carries a genuine welch/student split, and the
+                ; symmetry invites the same split here, where it would
+                ; be a fabricated distinction with two plausible-looking
+                ; answers.
+                ;
+                ; The df is @emlTTestPaired's own n - 1, handed straight
+                ; to @emlTTestInterval, which never recomputes one.
+                if .adjUsed$ = "bonferroni"
+                    @emlTTestInterval: .phDiff, .phT, .phDf, .phLevel
+                    ; .error$ read before .low, per the rule v134 lints:
+                    ; a pair with t = 0 or an undefined df is refused, and
+                    ; the bounds stay undefined rather than being read
+                    ; back out of a refusal.
+                    .ciErr$ = emlTTestInterval.error$
+                    if .ciErr$ = ""
+                        .lowFlat# [.pairIdx] = emlTTestInterval.low
+                        .highFlat# [.pairIdx] = emlTTestInterval.high
+                    endif
+                endif
             else
                 @emlWilcoxonSignedRank: .va#, .vb#, 2
                 .pairErr$ = emlWilcoxonSignedRank.error$
                 .pairP = emlWilcoxonSignedRank.p
+
+                ; THE POINT ESTIMATE on this branch is the
+                ; Hodges-Lehmann shift, not a mean difference: this arm
+                ; ranks, so its location statistic is the median of the
+                ; n(n+1)/2 Walsh averages of the within-subject
+                ; differences. @emlHodgesLehmannPaired takes the branch
+                ; -- exact or normal approximation --
+                ; @emlWilcoxonSignedRank took on the same two vectors,
+                ; by the same gate copied verbatim from it.
+                ;
+                ; The call is made on every row and the CORRECTION gates
+                ; the RESULT, for the reason the between-subjects
+                ; Wilcoxon arm gives: the estimate and the interval come
+                ; out of one call, and the work order's instruction is
+                ; compute-then-conditionally-print.
+                @emlHodgesLehmannPaired: .va#, .vb#, .phLevel
+                .hlErr$ = emlHodgesLehmannPaired.error$
+                .hlEstFlat# [.pairIdx] = emlHodgesLehmannPaired.estimate
+                .hlMethod$ [.pairIdx] = emlHodgesLehmannPaired.method$
+                ; The estimate stands on its own -- an all-zero-difference
+                ; pair still HAS a median Walsh average, and the
+                ; procedure returns it while refusing the interval.
+                if .hlErr$ = "" and .adjUsed$ = "bonferroni"
+                    .hlLowFlat# [.pairIdx] = emlHodgesLehmannPaired.low
+                    .hlHighFlat# [.pairIdx] = emlHodgesLehmannPaired.high
+                endif
             endif
             .pairNote$ [.pairIdx] = ""
             if .pairErr$ <> ""

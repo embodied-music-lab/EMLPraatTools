@@ -1773,29 +1773,48 @@ scripts <- c(
                                  # of 1 - alpha/m.
     ,
     "v145_hodges_lehmann_interval.R" # @emlHodgesLehmannTwoSample + the 3.8
-                                 # wiring, per the same work order. 20 direct
-                                 # cells (5 fixtures x 4 levels) forcing both
-                                 # two-sample branches -- small untied, tied,
-                                 # large-n -- plus 18 cells end to end through
-                                 # @emlPairwiseWilcoxon, all against
-                                 # wilcox.test(conf.int = TRUE, conf.level =
-                                 # 1 - alpha/m), with the estimate oracled on
-                                 # median(outer(x, y, "-")). Every cell also
+                                 # wiring (item 3) AND @emlHodgesLehmannPaired
+                                 # + both branches of the 3.7 wiring (item 4),
+                                 # per the same work order. Two-sample: 20
+                                 # direct cells (5 fixtures x 4 levels) forcing
+                                 # both branches -- small untied, tied, large-n
+                                 # -- plus 18 through @emlPairwiseWilcoxon.
+                                 # Paired: 24 direct cells (6 fixtures x 4
+                                 # levels) adding the shape the two-sample gate
+                                 # has no clause for, ZERO differences, plus 18
+                                 # paired-t and 18 signed-rank cells end to end
+                                 # through @emlRunRepeatedMeasuresAnalysis and
+                                 # @emlRunFriedmanAnalysis. Oracles:
+                                 # wilcox.test(conf.int = TRUE, paired =,
+                                 # conf.level = 1 - alpha/m) and t.test(paired
+                                 # = TRUE, conf.level = 1 - alpha/m); the
+                                 # estimates on median(outer(x, y, "-")) and on
+                                 # the median Walsh average. Every cell also
                                  # asserts .method$ is the branch the p-value
-                                 # is on: the gate is COPIED from
-                                 # @emlMannWhitneyU, and an interval and a p
-                                 # on different null distributions contradict
-                                 # each other while both look right. Holm
-                                 # canary: estimate computed, interval not.
+                                 # is on: both gates are COPIED, from
+                                 # @emlMannWhitneyU and @emlWilcoxonSignedRank,
+                                 # and an interval and a p on different null
+                                 # distributions contradict each other while
+                                 # both look right. The critical rank is
+                                 # settled as a quantity against qwilcox and
+                                 # qsignrank separately -- they are different
+                                 # inversions, not one with different counts.
+                                 # Holm and BH canaries on every arm: estimate
+                                 # computed, interval not. Brent's zeroin is
+                                 # asserted to exist ONCE and serve both W's.
+                                 # 30 further paired cells, selected BY the
+                                 # oracle, cover R's alpha-DOUBLING branch --
+                                 # the structure the one-sample form has and
+                                 # the two-sample form does not, and the
+                                 # common case on small samples at a
+                                 # corrected level.
                                  # THE NUMBERS ARE COMPUTED BUT NEVER PRINTED,
                                  # same language gate as v144, and every
                                  # driven Info window is grepped for the
-                                 # drafted strings. Three red demos, each a
-                                 # one-line mutant: an off-by-one in the
-                                 # critical rank k; a Bonferroni interval at
-                                 # 1 - alpha; a Holm row printing one. PART 3
-                                 # (the paired half, work order item 4) is a
-                                 # stated gap with a tripwire, not a stub.
+                                 # drafted strings. Six red demos, each a
+                                 # one-line mutant: an off-by-one in each
+                                 # critical rank; an interval at 1 - alpha on
+                                 # each door; a Holm row printing one on each.
 )
 
 # ---------------------------------------------------------------------------

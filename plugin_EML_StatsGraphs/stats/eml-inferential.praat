@@ -1450,7 +1450,7 @@ endproc
 
 
 # ============================================================================
-# INTERNAL HELPER: @eml_hlTwoSampleZeroin  — R's uniroot, ported
+# INTERNAL HELPER: @eml_hlZeroin  — R's uniroot, ported ONCE
 # ============================================================================
 # Brent's zeroin, ported from R 4.3.3's src/library/stats/src/zeroin.c,
 # function R_zeroin2 -- the routine R's uniroot() actually calls (through
@@ -1466,14 +1466,30 @@ endproc
 # two implementations share the sequence and not merely the vicinity.
 #
 # Praat has no function values, so the function under investigation is
-# not a parameter: @eml_hlTwoSampleW is called by name at the one site
-# where R calls (*f)(b, info). That is the only liberty taken with the
-# C, and it is what makes this helper two-sample-specific. The paired
-# form (work order item 4) needs its own W and therefore its own copy of
-# this loop; that is Fable's structure, not a duplication introduced here.
+# not a parameter. R calls (*f)(b, info) at exactly one site inside the
+# loop; here that site is a two-arm switch on .form, and .form is the
+# ONLY thing in this procedure that knows which problem is being solved.
+#
+# WHY THE SWITCH RATHER THAN A SECOND COPY. The first draft of this
+# helper (item 3) was two-sample-specific and its header said the paired
+# form "needs its own W and therefore its own copy of this loop". Fable's
+# item 4 overrules that in terms -- "THE ZEROIN PORT IS GENERAL ...
+# REUSE, do not re-port ... re-porting R's zeroin a second time would be
+# the clearest possible violation" -- and the order governs where it and
+# the code disagree. It is also the better reading of the C: R has ONE
+# zeroin.c and hands it a function pointer; two-sample and one-sample
+# wilcox.test both reach the identical iteration through uniroot(). The
+# thing that differs between them is W, not Brent's method, and W is
+# already two procedures. So Brent's iteration -- the swap, the
+# inverse-quadratic branch, the 0.75 * cb * q acceptance test, the
+# tol_act floor on the step -- exists once in this tree and a drift in it
+# cannot reach one branch without reaching the other.
 #
 # Input:
-#   .v1#, .v2# - the two groups, passed through to W
+#   .form      - 1: the two-sample W, @eml_hlTwoSampleW (.v1#, .v2#)
+#                2: the one-sample/paired W, @eml_hlPairedW (.v1# only,
+#                   .v2# ignored -- pass an empty vector)
+#   .v1#, .v2# - the sample(s), passed through to W
 #   .ax, .bx   - the bracketing interval [a, b]
 #   .fa, .fb   - wdiff at those endpoints, already known to the caller
 #   .zq        - the quantile W is being inverted at (wdiff = W(d) - zq)
@@ -1485,7 +1501,7 @@ endproc
 #   .root - the abscissa where wdiff changes sign
 # ============================================================================
 
-procedure eml_hlTwoSampleZeroin: .v1#, .v2#, .ax, .bx, .fa, .fb, .zq, .tol, .maxit, .correct
+procedure eml_hlZeroin: .form, .v1#, .v2#, .ax, .bx, .fa, .fb, .zq, .tol, .maxit, .correct
     # EPSILON is C's DBL_EPSILON, 2^-52, which Praat has no name for.
     .epsilon = 2.220446049250313e-16
 
@@ -1574,8 +1590,16 @@ procedure eml_hlTwoSampleZeroin: .v1#, .v2#, .ax, .bx, .fa, .fb, .zq, .tol, .max
             .a = .b
             .fa = .fb
             .b = .b + .newStep
-            @eml_hlTwoSampleW: .v1#, .v2#, .b, .correct
-            .fb = eml_hlTwoSampleW.value - .zq
+            # R's (*f)(b, info), the one function-pointer call in
+            # zeroin.c. Praat has no function values, so the pointer is
+            # a switch and .form is what was passed in its place.
+            if .form = 1
+                @eml_hlTwoSampleW: .v1#, .v2#, .b, .correct
+                .fb = eml_hlTwoSampleW.value - .zq
+            else
+                @eml_hlPairedW: .v1#, .b, .correct
+                .fb = eml_hlPairedW.value - .zq
+            endif
 
             # Adjust c for it to have a sign opposite to that of b
             if (.fb > 0 and .fc > 0) or (.fb < 0 and .fc < 0)
@@ -1638,9 +1662,9 @@ procedure eml_hlTwoSampleRoot: .v1#, .v2#, .zq, .mumin, .mumax, .wmin, .wmax, .c
         if .fUpper >= 0
             .result = .mumax
         else
-            @eml_hlTwoSampleZeroin: .v1#, .v2#, .mumin, .mumax, .fLower,
+            @eml_hlZeroin: 1, .v1#, .v2#, .mumin, .mumax, .fLower,
             ... .fUpper, .zq, 1e-4, 1000, .correct
-            .result = eml_hlTwoSampleZeroin.root
+            .result = eml_hlZeroin.root
         endif
     endif
 endproc
@@ -1680,7 +1704,7 @@ endproc
 #
 #   normal approximation: R's continuity-corrected z inversion, ported.
 #           See @eml_hlTwoSampleW, @eml_hlTwoSampleRoot and
-#           @eml_hlTwoSampleZeroin above; the port is line-for-line and
+#           @eml_hlZeroin above; the port is line-for-line and
 #           carries R's own step and tolerance, so the two share the
 #           method and not merely the answer.
 #
@@ -1900,6 +1924,28 @@ endproc
 # Output:
 #   .pLeft    - P(T+ <= floor(tPlus)) under no-tie null
 #   .pRight   - P(T+ >= ceiling(tPlus)) under no-tie null
+#   .dp#      - the null distribution ITSELF, not merely its tails:
+#               .dp# [s + 1] is the NUMBER of subsets of {1, ..., n}
+#               summing to s, for s = 0 .. n(n+1)/2 -- R's csignrank(s, n)
+#               at every s, in one vector.
+#   .total    - 2^n, the number of sign patterns and the sum of that
+#               vector. R's qsignrank does NOT divide by this; it
+#               multiplies each count by f = exp(-n * M_LN2), which is a
+#               DIFFERENT double from 1/2^n for most n (measured: they
+#               differ for 51 of the first 60 n). A caller inverting this
+#               distribution against R must use R's f, not this .total;
+#               .total is exposed because the p-values above are formed
+#               with it and a reader of one needs the other.
+#
+# .dp# AND .total ARE PART OF THE CONTRACT, not incidental internals.
+# @emlHodgesLehmannPaired needs a QUANTILE of this same null distribution
+# (the critical rank k behind the exact paired confidence interval),
+# which no pair of tail probabilities can supply, and Fable's 26 August
+# work order forbids building a second copy of the distribution to get
+# it. So this procedure is the one place the T+ null distribution is
+# computed, and the counts and their total are readable. Like every
+# Praat procedure output they survive only until the next call: copy
+# them on the following line.
 #
 # Note: The no-tie null distribution is standard (matches R wilcox.test
 # and scipy wilcoxon exact). When ties exist in the absolute differences,
@@ -2271,6 +2317,485 @@ procedure emlWilcoxonSignedRank: .v1#, .v2#, .tails
         endif
     endif
 endproc
+
+
+# ============================================================================
+# INTERNAL HELPER: @eml_hlPairedW  — R's one-sample W(d), ported
+# ============================================================================
+# R 4.3.3, src/library/stats/R/wilcox.test.R, wilcox.test.default,
+# ONE-SAMPLE (and therefore paired) asymptotic branch:
+#
+#     W <- function(d) {
+#         xd <- x - d
+#         xd <- xd[xd != 0]
+#         nx <- length(xd)
+#         dr <- rank(abs(xd))
+#         zd <- sum(dr[xd > 0]) - nx * (nx + 1)/4
+#         NTIES.CI <- table(dr)
+#         SIGMA.CI <- sqrt(nx * (nx + 1) * (2 * nx + 1) / 24
+#                          - sum(NTIES.CI^3 - NTIES.CI) / 48)
+#         if (SIGMA.CI == 0) warning(...)
+#         CORRECTION.CI <- sign(zd) * 0.5
+#         (zd - CORRECTION.CI) / SIGMA.CI
+#     }
+#
+# THIS IS NOT @eml_hlTwoSampleW IN ONE-SAMPLE CLOTHES, and the three
+# differences are each capable of producing a plausible wrong number:
+#
+#   * THE ZEROS ARE DROPPED AGAIN AT EVERY d. `xd <- xd[xd != 0]` runs
+#     inside W, not once outside it, so nx is a function of d: at
+#     d = min(x) the smallest observation becomes an exact zero and
+#     leaves, and nx is one smaller there than it is in the middle of
+#     the interval. Hoisting the strip out of the loop would change
+#     Wmumin and Wmumax, which are the two values the bracket and the
+#     alpha-doubling loop are decided on.
+#   * THE RANKS ARE RANKS OF |xd|, not of xd, and only the positive
+#     xd contribute to the rank sum. That is the signed-rank statistic
+#     T+, not a rank sum over a combined sample.
+#   * SIGMA.CI DIVIDES THE TIE CORRECTION BY 48, where the two-sample
+#     form divides by n(n-1) inside a different expression entirely.
+#
+# sum(NTIES.CI^3 - NTIES.CI) is exactly @emlRankVector's
+# .tieCorrectionSum (singleton groups contribute t^3 - t = 0), which is
+# why the ranking is done through that procedure rather than a second
+# ranker written here -- the same reason @eml_hlTwoSampleW gives.
+#
+# .correct exists for the same reason it exists on the two-sample
+# helper: R turns the continuity correction off for ONE call, the
+# uniroot that produces its own point estimate. This plugin does not
+# take that path -- Fable's work order pins the estimate to the median
+# of the Walsh averages on both branches -- so every call from this
+# file passes .correct = 1, and the parameter is kept so the ported
+# shape is the shape R has.
+#
+# Input:
+#   .x#      - the sample (here: the non-zero paired differences, R's x)
+#   .d       - the shift being tested
+#   .correct - 1 to apply the continuity correction, 0 not to
+#
+# Output:
+#   .value  - W(d), or undefined when SIGMA.CI is zero or every
+#             observation equals .d (R warns and returns NaN)
+# ============================================================================
+
+procedure eml_hlPairedW: .x#, .d, .correct
+    .n = size (.x#)
+
+    # xd <- x - d;  xd <- xd[xd != 0]
+    .keep# = zero# (.n)
+    .nx = 0
+    for .i from 1 to .n
+        .shift = .x#[.i] - .d
+        if .shift <> 0
+            .nx = .nx + 1
+            .keep#[.nx] = .shift
+        endif
+    endfor
+
+    if .nx = 0
+        # Every observation equals d. R's nx is 0, SIGMA.CI is sqrt(0),
+        # and the division is 0/0.
+        .value = undefined
+    else
+        .xd# = zero# (.nx)
+        .absXd# = zero# (.nx)
+        for .i from 1 to .nx
+            .xd#[.i] = .keep#[.i]
+            .absXd#[.i] = abs (.keep#[.i])
+        endfor
+
+        @emlRankVector: .absXd#
+        .ranks# = emlRankVector.ranks#
+        .tieSum = emlRankVector.tieCorrectionSum
+
+        # zd <- sum(dr[xd > 0]) - nx * (nx + 1)/4
+        .rankSum = 0
+        for .i from 1 to .nx
+            if .xd#[.i] > 0
+                .rankSum = .rankSum + .ranks#[.i]
+            endif
+        endfor
+        .zd = .rankSum - .nx * (.nx + 1) / 4
+
+        # CORRECTION.CI <- sign(zd) * 0.5   (two-sided; sign(0) is 0 in R)
+        .correction = 0
+        if .correct = 1
+            if .zd > 0
+                .correction = 0.5
+            elsif .zd < 0
+                .correction = -0.5
+            endif
+        endif
+
+        .sigma = sqrt (.nx * (.nx + 1) * (2 * .nx + 1) / 24 - .tieSum / 48)
+
+        if .sigma = 0
+            .value = undefined
+        else
+            .value = (.zd - .correction) / .sigma
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlHodgesLehmannPaired
+# ============================================================================
+# The Hodges-Lehmann shift estimate for two PAIRED samples, and its
+# confidence interval -- the location counterpart of the Wilcoxon
+# signed-rank test, the way a mean difference and its t interval are the
+# counterpart of the paired t test. Specified by Fable's 26 August work
+# order (docs/WORK_ORDER_INTERVALS_2026-08-26.md, item 4).
+#
+# THE ESTIMATE IS THE MEDIAN OF THE WALSH AVERAGES, and Walsh averages
+# are not cross-differences. For the n paired differences
+# d[i] = v1[i] - v2[i], they are (d[i] + d[j]) / 2 for every i <= j --
+# n(n+1)/2 values, INCLUDING the n cases i = j, which are the d[i]
+# themselves. The two-sample form of this procedure takes n1 * n2
+# differences ACROSS two samples; this one takes n(n+1)/2 averages
+# WITHIN one derived sample. Substituting either set for the other
+# yields a number of the right magnitude and the wrong value, which is
+# why the order names the set rather than the estimator. On an even
+# count the median is the mean of the middle two, as R's median() is,
+# and the ordering is Praat's NATIVE sort#, never a script sort.
+#
+# THE BRANCH IS THE p-VALUE'S BRANCH. The gate below -- n_nonzero < 50
+# AND no ties AND no zero differences, as three nested ifs because
+# Praat's "and" does not short-circuit -- is copied verbatim from
+# @emlWilcoxonSignedRank above, which copied it from R's wilcox.test.
+# It is not re-derived here and it must not drift: an interval computed
+# on the exact null distribution printed beside a p-value computed on
+# the normal approximation is a report that contradicts itself, and
+# neither number looks wrong on its own. v145 asserts the two copies
+# are one text.
+#
+#   exact:  the critical rank k is a QUANTILE of the T+ null
+#           distribution, taken from the DP in @eml_wilcoxonExactP --
+#           the same distribution the exact p-value is read off, read
+#           once, never rebuilt. The bounds are the k-th smallest and
+#           k-th largest Walsh averages, which is R's
+#           c(diffs[qu], diffs[ql + 1]).
+#
+#   normal approximation: R's continuity-corrected z inversion in its
+#           ONE-SAMPLE form. See @eml_hlPairedW above and @eml_hlZeroin,
+#           which is the two-sample port's zeroin reused rather than a
+#           second copy of Brent's method.
+#
+# THE CRITICAL RANK, in full, from R 4.3.3's exact one-sample branch:
+#
+#     diffs <- outer(x, x, `+`)
+#     diffs <- sort(diffs[!lower.tri(diffs)]) / 2
+#     qu <- qsignrank(alpha / 2, n)
+#     if (qu == 0) qu <- 1
+#     ql <- n*(n+1)/2 - qu
+#     c(diffs[qu], diffs[ql+1])
+#
+# QSIGNRANK IS NOT QWILCOX WITH DIFFERENT COUNTS, and the difference is
+# in the arithmetic, not only in the distribution. R 4.3.3,
+# src/nmath/signrank.c:
+#
+#     f = exp(- n * M_LN2);
+#     p = 0; q = 0;
+#     if (x <= 0.5) {
+#         x = x - 10 * DBL_EPSILON;
+#         for(;;) { p += csignrank(q, nn) * f; if (p >= x) break; q++; }
+#     } else { ...the mirror... }
+#
+# qwilcox divides each count by choose(m+n, n); qsignrank MULTIPLIES
+# each count by f = exp(-n * M_LN2). Those are different roundings, and
+# f is not the same double as 1/2^n: measured here, exp(-n*ln 2) differs
+# from 2^-n for 51 of the first 60 n. The port below multiplies by f,
+# with M_LN2 written as the literal C uses, so the accumulation is R's
+# accumulation and not an algebraic equivalent of it. The fuzz -- ten
+# DBL_EPSILON subtracted from the PROBABILITY, not from a count -- is
+# the same in both, and only R's "x <= 0.5" branch is ported because
+# .level is validated into (0, 1) and alpha/2 is therefore strictly
+# inside (0, 0.5).
+#
+# The "if qu == 0 then 1" bump is ported for the reason it is on the
+# two-sample side: at qu = 0 the lower bound would index diffs[0], and
+# one step either side of the correct k gives an interval that reads as
+# perfectly reasonable. It is a red demonstration in v145.
+#
+# WHAT THE APPROXIMATION BRANCH DOES THAT THE TWO-SAMPLE ONE DOES NOT.
+# R's one-sample root() has NO endpoint early-returns; in their place,
+# before any root-finding, it WIDENS alpha until the requested interval
+# is bracketable:
+#
+#     repeat {
+#         mindiff <- Wmumin - qnorm(alpha/2, lower.tail = FALSE)
+#         maxdiff <- Wmumax - qnorm(alpha/2)
+#         if (mindiff < 0 || maxdiff > 0) alpha <- alpha*2 else break
+#     }
+#     if (alpha >= 1 || 1 - conf.level < alpha*0.75) warning(...)
+#     if (alpha < 1) { l <- root(...); u <- root(...) } else rep(median(x), 2)
+#
+# That loop is part of the ANSWER, not a guard: when it fires, both
+# bounds come back at a wider level than was asked for, and when alpha
+# reaches 1 the "interval" is the median of the differences twice. The
+# two-sample form has no such loop and this one has no early returns;
+# reusing @eml_hlTwoSampleRoot here would silently substitute one
+# structure for the other.
+#
+# Arguments:
+#   .v1#   - numeric vector, condition 1
+#   .v2#   - numeric vector, condition 2 (same length as v1#)
+#   .level - confidence level as a proportion (e.g. 0.95, or a
+#            correction's own level such as 1 - alpha/m)
+#
+# Output:
+#   .estimate - median of the n(n+1)/2 Walsh averages of v1 - v2
+#   .low      - lower confidence bound, or undefined on refusal
+#   .high     - upper confidence bound, or undefined on refusal
+#   .method$  - "exact" or "normal approximation"; the SAME branch
+#               @emlWilcoxonSignedRank takes on the same two vectors
+#   .error$   - error message, or "" if valid
+#
+# DEPENDENCY: @emlRankVector from eml-core-utilities.praat, as
+# @emlWilcoxonSignedRank has.
+# ============================================================================
+
+procedure emlHodgesLehmannPaired: .v1#, .v2#, .level
+    .estimate = undefined
+    .low = undefined
+    .high = undefined
+    .method$ = ""
+    .error$ = ""
+
+    .n1 = size (.v1#)
+    .n2 = size (.v2#)
+    .n = .n1
+
+    # --- Input validation, in @emlWilcoxonSignedRank's own words ---
+    if .n1 <> .n2
+        .error$ = "Vectors must have equal length for paired test"
+        .n = 0
+    elsif .n < 1
+        .error$ = "Need at least 1 pair"
+    elsif .level <= 0 or .level >= 1
+        .error$ = "Confidence level must be between 0 and 1"
+    else
+        # --- The differences, and the Walsh averages over ALL of them ---
+        #
+        # THE ESTIMATE IS COMPUTED BEFORE ANY BRANCH AND SURVIVES EVERY
+        # REFUSAL BELOW, the way the two-sample procedure's median
+        # cross-difference does: a sample whose interval cannot be built
+        # still HAS a median Walsh average, and returning it with the
+        # bounds undefined says more than returning nothing.
+        .allDiffs# = zero# (.n)
+        for .i from 1 to .n
+            .allDiffs#[.i] = .v1#[.i] - .v2#[.i]
+        endfor
+
+        # The fill is a pair loop because Praat has no outer-sum
+        # primitive and no slice assignment (probed on 6.6.30). The
+        # ORDERING, which is the part that costs, is sort#.
+        .nWalsh = .n * (.n + 1) / 2
+        .walsh# = zero# (.nWalsh)
+        .w = 0
+        for .i from 1 to .n
+            for .j from .i to .n
+                .w = .w + 1
+                .walsh#[.w] = (.allDiffs#[.i] + .allDiffs#[.j]) / 2
+            endfor
+        endfor
+        .sortedWalsh# = sort# (.walsh#)
+
+        if .nWalsh mod 2 = 1
+            .estimate = .sortedWalsh#[(.nWalsh + 1) / 2]
+        else
+            .mid = .nWalsh / 2
+            .estimate = (.sortedWalsh#[.mid] + .sortedWalsh#[.mid + 1]) / 2
+        endif
+
+        # Count non-zero diffs
+        .nNonzero = 0
+        for .i from 1 to .n
+            if .allDiffs#[.i] <> 0
+                .nNonzero = .nNonzero + 1
+            endif
+        endfor
+        .nZero = .n - .nNonzero
+
+        if .nNonzero = 0
+            .error$ = "All differences are zero; cannot compute an interval"
+        else
+            # Extract non-zero diffs. R strips the zeroes ONCE, before
+            # n is taken, and every later use of "x" in its confidence
+            # interval means this stripped vector -- the branch gate's
+            # n, qsignrank's n, mumin, mumax and median(x) alike.
+            .nonzeroDiffs# = zero# (.nNonzero)
+            .idx = 0
+            for .i from 1 to .n
+                if .allDiffs#[.i] <> 0
+                    .idx = .idx + 1
+                    .nonzeroDiffs#[.idx] = .allDiffs#[.i]
+                endif
+            endfor
+
+            .absDiffs# = zero# (.nNonzero)
+            for .i from 1 to .nNonzero
+                .absDiffs#[.i] = abs (.nonzeroDiffs#[.i])
+            endfor
+
+            @emlRankVector: .absDiffs#
+            .hasTies = emlRankVector.hasTies
+
+            # Exact iff n_nonzero < 50 AND no ties AND no zero differences.
+            # R's wilcox.test falls back to the normal approximation as soon
+            # as ties or zeroes are present, because the exact null
+            # distribution assumes untied integer ranks over all n pairs.
+            # Nested ifs: Praat's "and" does not short-circuit.
+            .useExact = 0
+            if .nNonzero < 50
+                if .hasTies = 0
+                    if .nZero = 0
+                        .useExact = 1
+                    endif
+                endif
+            endif
+
+            .alpha = 1 - .level
+
+            if .useExact = 1
+                # --- Exact path: a quantile of the DP null distribution ---
+                .method$ = "exact"
+
+                # The gate above guarantees .nZero = 0 on this branch, so
+                # the Walsh set built over ALL n differences IS R's
+                # `diffs` over its zero-stripped x, element for element,
+                # and .nWalsh = .nNonzero * (.nNonzero + 1) / 2. The
+                # bounds may therefore index .sortedWalsh# directly.
+                #
+                # ONE call, for the distribution, not for its tails. The
+                # .tPlus argument is irrelevant to the counts: the DP is
+                # built over every sum regardless, and 0 is passed to say
+                # plainly that no tail probability is being asked for.
+                @eml_wilcoxonExactP: 0, .nNonzero
+                .counts# = eml_wilcoxonExactP.dp#
+                .maxT = .nNonzero * (.nNonzero + 1) / 2
+
+                # qsignrank(alpha/2, n), ported with R's own fuzz and R's
+                # own accumulation: 10 DBL_EPSILON subtracted from the
+                # PROBABILITY, and each count MULTIPLIED by
+                # f = exp(-n * M_LN2). M_LN2 is written as the literal C
+                # uses rather than as ln (2) so the factor does not
+                # depend on which library computed the logarithm.
+                .f = exp (- .nNonzero * 0.69314718055994530942)
+                .x = .alpha / 2 - 10 * 2.220446049250313e-16
+                .k = 0
+                .p = .counts#[1] * .f
+                while .p < .x and .k < .maxT
+                    .k = .k + 1
+                    .p = .p + .counts#[.k + 1] * .f
+                endwhile
+
+                # if (qu == 0) qu <- 1
+                if .k = 0
+                    .k = 1
+                endif
+
+                .low = .sortedWalsh#[.k]
+                .high = .sortedWalsh#[.nWalsh + 1 - .k]
+            else
+                # --- Normal approximation: R's z inversion, ported ---
+                .method$ = "normal approximation"
+
+                # mumin = min(x) and mumax = max(x) over the ZERO-STRIPPED
+                # differences -- the raw endpoints of the sample, not of
+                # the Walsh set. One native sort supplies both, and the
+                # median R falls back on when alpha reaches 1.
+                .sortedNz# = sort# (.nonzeroDiffs#)
+                .mumin = .sortedNz#[1]
+                .mumax = .sortedNz#[.nNonzero]
+
+                @eml_hlPairedW: .nonzeroDiffs#, .mumin, 1
+                .wmin = eml_hlPairedW.value
+                # R computes W(mumax) only when W(mumin) is finite, so
+                # that its "all zero or tied" warning is issued once.
+                .wmax = undefined
+                if .wmin <> undefined
+                    @eml_hlPairedW: .nonzeroDiffs#, .mumax, 1
+                    .wmax = eml_hlPairedW.value
+                endif
+
+                if .wmin = undefined or .wmax = undefined
+                    # SIGMA.CI = 0: every non-zero difference has the same
+                    # magnitude and the statistic has no variance to
+                    # standardise by. R warns and hands NaN to its own
+                    # root finder; this refuses in the shape
+                    # @emlHodgesLehmannTwoSample refuses, with the bounds
+                    # left undefined, a reason given, and the estimate
+                    # above still returned.
+                    .error$ = "Cannot compute a confidence interval when "
+                    ... + "every difference is zero or tied"
+                else
+                    # R's alpha-widening loop, ported. qnorm(a/2,
+                    # lower.tail = FALSE) is invGaussQ(a/2) and qnorm(a/2)
+                    # is its negation, so maxdiff is .wmax + that same
+                    # quantile.
+                    #
+                    # THE LOOP TERMINATES AT alpha = 2 IN R, where
+                    # qnorm(1, lower.tail = FALSE) is -infinity and both
+                    # comparisons stop being satisfied. It is stopped at
+                    # the same place here rather than evaluating
+                    # invGaussQ at 1. A sample that would double PAST 2
+                    # (possible only when a single non-zero difference
+                    # survives) makes R evaluate qnorm above 1, which is
+                    # NaN, and R then fails on `if (NA)`; this returns
+                    # R's alpha >= 1 answer instead of failing, and the
+                    # divergence is recorded because R has no answer
+                    # there to agree with.
+                    .alphaUsed = .alpha
+                    .bracketed = 0
+                    while .bracketed = 0 and .alphaUsed < 2
+                        .zTry = invGaussQ (.alphaUsed / 2)
+                        .minDiff = .wmin - .zTry
+                        .maxDiff = .wmax + .zTry
+                        if .minDiff < 0 or .maxDiff > 0
+                            .alphaUsed = .alphaUsed * 2
+                        else
+                            .bracketed = 1
+                        endif
+                    endwhile
+
+                    if .alphaUsed < 1
+                        .zq = invGaussQ (.alphaUsed / 2)
+
+                        # root(zq): a plain uniroot over [mumin, mumax]
+                        # with the endpoint values already in hand. No
+                        # early returns -- see the header.
+                        .empty# = zero# (0)
+                        @eml_hlZeroin: 2, .nonzeroDiffs#, .empty#, .mumin,
+                        ... .mumax, .wmin - .zq, .wmax - .zq, .zq,
+                        ... 1e-4, 1000, 1
+                        .low = eml_hlZeroin.root
+
+                        @eml_hlZeroin: 2, .nonzeroDiffs#, .empty#, .mumin,
+                        ... .mumax, .wmin + .zq, .wmax + .zq, - .zq,
+                        ... 1e-4, 1000, 1
+                        .high = eml_hlZeroin.root
+                    else
+                        # rep(median(x), 2): the requested level cannot be
+                        # achieved at all, and R returns the median of the
+                        # differences -- NOT of the Walsh averages -- as
+                        # both bounds.
+                        if .nNonzero mod 2 = 1
+                            .medNz = .sortedNz#[(.nNonzero + 1) / 2]
+                        else
+                            .midNz = .nNonzero / 2
+                            .medNz = (.sortedNz#[.midNz]
+                            ... + .sortedNz#[.midNz + 1]) / 2
+                        endif
+                        .low = .medNz
+                        .high = .medNz
+                    endif
+                endif
+            endif
+        endif
+    endif
+endproc
+
 
 
 # ============================================================================
