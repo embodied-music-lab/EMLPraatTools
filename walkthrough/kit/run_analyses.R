@@ -11,11 +11,42 @@
 # No statistic differs from the six original scripts under walkthrough/r/.
 
 # --- locate this file / self-relative paths ---------------------------------
+# Three ways this file's own path gets resolved, tried in order:
+#   1. Rscript from a terminal: commandArgs(trailingOnly = FALSE) carries
+#      --file=<path>. (Tested: Rscript run_analyses.R from various cwds.)
+#   2. RStudio's Source button (or any source() call, from any cwd): source()
+#      evaluates the file in a frame carrying $ofile. RStudio does not source
+#      at the top level of the R session -- it wraps the call in its own
+#      internal function -- so the source() frame is NOT reliably
+#      sys.frames()[[1]]; scanning every frame from the innermost outward
+#      and taking the first $ofile found is what actually survives that
+#      wrapping. (Tested: source("<path>") both directly and from inside a
+#      wrapper function, from a working directory other than the kit folder.)
+#   3. Neither resolves (e.g. code pasted into the console): try rstudioapi
+#      if it happens to be installed -- never required -- and otherwise stop
+#      with a plain-language message. Never fall back to getwd() silently.
 emlThisFile <- function() {
     args <- commandArgs(trailingOnly = FALSE)
     fileArg <- sub("^--file=", "", args[grepl("^--file=", args)])
     if (length(fileArg)) return(normalizePath(fileArg))
-    normalizePath(sys.frames()[[1]]$ofile)
+
+    for (i in rev(seq_along(sys.frames()))) {
+        ofile <- sys.frames()[[i]]$ofile
+        if (!is.null(ofile)) return(normalizePath(ofile))
+    }
+
+    if (requireNamespace("rstudioapi", quietly = TRUE) &&
+        isTRUE(tryCatch(rstudioapi::isAvailable(), error = function(e) FALSE))) {
+        ctx <- tryCatch(rstudioapi::getSourceEditorContext(), error = function(e) NULL)
+        if (!is.null(ctx) && nzchar(ctx$path)) return(normalizePath(ctx$path))
+    }
+
+    stop(
+        "run_analyses.R can't find its own location, so it can't find data/.\n",
+        "In RStudio, use Session > Set Working Directory > To Source File ",
+        "Location, then click Source again.",
+        call. = FALSE
+    )
 }
 kitDir <- dirname(emlThisFile())
 dataDir <- file.path(kitDir, "data")

@@ -10,21 +10,29 @@ base-R script -- so you can compare them.
 - **Praat**, from [praat.org](https://www.praat.org) -- no plugin, no
   preferences-directory install. Version 6.6.30 or later (this kit was
   verified on 6.6.30).
-- **R**, any recent version, no packages. `Rscript` on your PATH.
+- **R**, any recent version, and RStudio. No R packages are needed.
 
-## Commands to run
+## How to run it
 
-From a terminal, `cd` into this folder and run either or both:
+No terminal needed. This is the primary way to run both scripts.
+
+**R side.** Open RStudio. **File > Open File...**, choose `run_analyses.R`,
+click **Source** (top right of the editor pane).
+
+**Praat side.** Open Praat. **Praat > Open Praat script...**, choose
+`RUN_ME_FIRST.praat`. In the script editor window that opens, **Run > Run**.
+
+Both scripts find their own folder, so it does not matter what directory
+RStudio or Praat started in, and there is nothing to edit before clicking.
+Keep the folder together, though -- `RUN_ME_FIRST.praat` reads the
+statistics layer out of `eml-lib-flat.praat` sitting beside it.
+
+For anyone who prefers a terminal, both still work exactly as before:
 
 ```
 praat --run RUN_ME_FIRST.praat
 Rscript run_analyses.R
 ```
-
-Or, without a terminal: open Praat, use **Praat > Open Praat script...**,
-choose `RUN_ME_FIRST.praat`, then **Run**. Both ways were tested and both
-work; the script finds its own folder either way, so it does not matter
-what directory you were in, or what folder Praat itself is running from.
 
 ## Where output lands
 
