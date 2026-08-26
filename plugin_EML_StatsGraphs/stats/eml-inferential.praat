@@ -1039,6 +1039,24 @@ endproc
 # Output:
 #   .pLeft    - P(U <= floor(u1)) under the null
 #   .pRight   - P(U >= ceiling(u1)) under the null
+#   .dp##     - the null distribution ITSELF, not merely its tails:
+#               .dp## [.n1 + 1, u + 1] is the NUMBER of arrangements
+#               giving U = u, for u = 0 .. .n1 * .n2. Row .n1 + 1 is the
+#               only row a caller may read; the lower rows are the
+#               recurrence's scaffolding for m < n1 and are not a
+#               distribution of anything.
+#   .total    - C(n1 + n2, n1), the sum of that row -- the denominator
+#               every probability above is formed with.
+#
+# .dp## AND .total ARE PART OF THE CONTRACT, not incidental internals.
+# @emlHodgesLehmannTwoSample needs a QUANTILE of this same null
+# distribution (the critical rank k behind the exact confidence
+# interval), which no pair of tail probabilities can supply, and Fable's
+# 26 August work order forbids building a second copy of the
+# distribution to get it. So this procedure is the one place the U null
+# distribution is computed, and the row and its total are readable.
+# Like every Praat procedure output they survive only until the next
+# call: copy them on the following line.
 # ============================================================================
 
 procedure eml_mannWhitneyExactP: .u1, .n1, .n2
@@ -1331,6 +1349,534 @@ procedure emlMannWhitneyU: .v1#, .v2#, .tails
                     # One-tailed: fixed alternative H1 group 1 > group 2
                     .p = .pGreater
                 endif
+            endif
+        endif
+    endif
+endproc
+
+# ============================================================================
+# INTERNAL HELPER: @eml_hlTwoSampleW  — R's W(d), ported
+# ============================================================================
+# The standardised, continuity-corrected two-sample rank statistic that
+# R's wilcox.test inverts to build its asymptotic confidence interval,
+# ported line for line from R 4.3.3, src/library/stats/R/wilcox.test.R,
+# the "Asymptotic confidence interval for the location parameter" block
+# of wilcox.test.default:
+#
+#     W <- function(d) {
+#         dr <- rank(c(x - d, y))
+#         NTIES.CI <- table(dr)
+#         dz <- sum(dr[seq_along(x)]) - n.x * (n.x + 1) / 2 - n.x * n.y / 2
+#         CORRECTION.CI <- if (correct) sign(dz) * 0.5 else 0
+#         SIGMA.CI <- sqrt((n.x * n.y / 12) *
+#                          ((n.x + n.y + 1)
+#                           - sum(NTIES.CI^3 - NTIES.CI)
+#                           / ((n.x + n.y) * (n.x + n.y - 1))))
+#         (dz - CORRECTION.CI) / SIGMA.CI
+#     }
+#
+# Every piece above has a counterpart below and nothing is folded or
+# simplified on the way: dz is the shifted sample's U statistic measured
+# from its own null mean, the correction is the two-sided
+# sign(dz) * 0.5, and SIGMA.CI carries the TIE CORRECTION RECOMPUTED AT
+# THE SHIFTED DATA -- shifting group 1 by d creates and destroys ties, so
+# the variance is not the variance of the unshifted sample and cannot be
+# hoisted out of the loop. sum(NTIES^3 - NTIES) is exactly
+# @emlRankVector's .tieCorrectionSum, which is why the ranking is done
+# through that procedure rather than a second ranker written here.
+#
+# .correct exists because R's own code turns it off for ONE call: after
+# the interval is built, R sets correct <- FALSE and root-finds W for its
+# point estimate. This plugin does not take that path -- Fable's work
+# order pins the estimate to the median of the cross-differences on both
+# branches -- so every call from this file passes .correct = 1. The
+# parameter is kept so the ported shape is the shape R has.
+#
+# Input:
+#   .v1#     - group 1 (R's x)
+#   .v2#     - group 2 (R's y)
+#   .d       - the shift being tested
+#   .correct - 1 to apply the continuity correction, 0 not to
+#
+# Output:
+#   .value  - W(d), or undefined when SIGMA.CI is zero (every observation
+#             in the combined sample tied, where R warns and returns NaN)
+# ============================================================================
+
+procedure eml_hlTwoSampleW: .v1#, .v2#, .d, .correct
+    .n1 = size (.v1#)
+    .n2 = size (.v2#)
+    .nTotal = .n1 + .n2
+
+    # dr <- rank(c(x - d, y))
+    .shifted# = zero# (.nTotal)
+    for .i from 1 to .n1
+        .shifted#[.i] = .v1#[.i] - .d
+    endfor
+    for .i from 1 to .n2
+        .shifted#[.n1 + .i] = .v2#[.i]
+    endfor
+
+    @emlRankVector: .shifted#
+    .ranks# = emlRankVector.ranks#
+    .tieSum = emlRankVector.tieCorrectionSum
+
+    # dz <- sum(dr[seq_along(x)]) - n.x * (n.x + 1) / 2 - n.x * n.y / 2
+    .rankSum = 0
+    for .i from 1 to .n1
+        .rankSum = .rankSum + .ranks#[.i]
+    endfor
+    .dz = .rankSum - .n1 * (.n1 + 1) / 2 - .n1 * .n2 / 2
+
+    # CORRECTION.CI <- sign(dz) * 0.5   (two-sided; sign(0) is 0 in R)
+    .correction = 0
+    if .correct = 1
+        if .dz > 0
+            .correction = 0.5
+        elsif .dz < 0
+            .correction = -0.5
+        endif
+    endif
+
+    .sigma = sqrt ((.n1 * .n2 / 12) * ((.nTotal + 1)
+    ... - .tieSum / (.nTotal * (.nTotal - 1))))
+
+    if .sigma = 0
+        .value = undefined
+    else
+        .value = (.dz - .correction) / .sigma
+    endif
+endproc
+
+
+# ============================================================================
+# INTERNAL HELPER: @eml_hlTwoSampleZeroin  — R's uniroot, ported
+# ============================================================================
+# Brent's zeroin, ported from R 4.3.3's src/library/stats/src/zeroin.c,
+# function R_zeroin2 -- the routine R's uniroot() actually calls (through
+# .External2(C_zeroin2, ...)), given the two endpoint values it already
+# has. wilcox.test's interval is the root of wdiff(d) = W(d) - zq, and
+# ROOT-FINDING IS PART OF THE ALGORITHM, not an implementation detail
+# that may be swapped for another solver: W is a STEP function, so its
+# "root" is a jump location and WHICH point inside the jump comes back
+# is decided by the iteration path. A bisection written from scratch
+# would agree with R only to the width of a step. This one follows
+# R_zeroin2's iterates -- the swap, the inverse-quadratic branch, the
+# 0.75 * cb * q acceptance test, the tol_act floor on the step -- so the
+# two implementations share the sequence and not merely the vicinity.
+#
+# Praat has no function values, so the function under investigation is
+# not a parameter: @eml_hlTwoSampleW is called by name at the one site
+# where R calls (*f)(b, info). That is the only liberty taken with the
+# C, and it is what makes this helper two-sample-specific. The paired
+# form (work order item 4) needs its own W and therefore its own copy of
+# this loop; that is Fable's structure, not a duplication introduced here.
+#
+# Input:
+#   .v1#, .v2# - the two groups, passed through to W
+#   .ax, .bx   - the bracketing interval [a, b]
+#   .fa, .fb   - wdiff at those endpoints, already known to the caller
+#   .zq        - the quantile W is being inverted at (wdiff = W(d) - zq)
+#   .tol       - acceptable tolerance (R's tol.root = 1e-4)
+#   .maxit     - iteration ceiling (R's uniroot maxiter = 1000)
+#   .correct   - passed through to W
+#
+# Output:
+#   .root - the abscissa where wdiff changes sign
+# ============================================================================
+
+procedure eml_hlTwoSampleZeroin: .v1#, .v2#, .ax, .bx, .fa, .fb, .zq, .tol, .maxit, .correct
+    # EPSILON is C's DBL_EPSILON, 2^-52, which Praat has no name for.
+    .epsilon = 2.220446049250313e-16
+
+    .a = .ax
+    .b = .bx
+    .c = .a
+    .fc = .fa
+    .iter = .maxit + 1
+    .root = undefined
+    .done = 0
+
+    # First test if we have found a root at an endpoint
+    if .fa = 0
+        .root = .a
+        .done = 1
+    elsif .fb = 0
+        .root = .b
+        .done = 1
+    endif
+
+    while .done = 0 and .iter > 0
+        .iter = .iter - 1
+        # Distance from the last but one to the last approximation
+        .prevStep = .b - .a
+
+        # Swap data for b to be the best approximation. Transcribed in
+        # C's order: a = b, b = c, c = a leaves c holding the OLD b,
+        # because a has already been overwritten.
+        if abs (.fc) < abs (.fb)
+            .a = .b
+            .b = .c
+            .c = .a
+            .fa = .fb
+            .fb = .fc
+            .fc = .fa
+        endif
+
+        .tolAct = 2 * .epsilon * abs (.b) + .tol / 2
+        .newStep = (.c - .b) / 2
+
+        if abs (.newStep) <= .tolAct or .fb = 0
+            # Acceptable approximation is found
+            .root = .b
+            .done = 1
+        else
+            # Decide if the interpolation can be tried
+            if abs (.prevStep) >= .tolAct and abs (.fa) > abs (.fb)
+                .cb = .c - .b
+                if .a = .c
+                    # Only two distinct points: linear interpolation
+                    .t1 = .fb / .fa
+                    .p = .cb * .t1
+                    .q = 1 - .t1
+                else
+                    # Quadric inverse interpolation
+                    .q = .fa / .fc
+                    .t1 = .fb / .fc
+                    .t2 = .fb / .fa
+                    .p = .t2 * (.cb * .q * (.q - .t1) - (.b - .a) * (.t1 - 1))
+                    .q = (.q - 1) * (.t1 - 1) * (.t2 - 1)
+                endif
+                # p was calculated with the opposite sign; make p
+                # positive and assign the possible minus to q
+                if .p > 0
+                    .q = - .q
+                else
+                    .p = - .p
+                endif
+                # If b + p/q falls in [b, c] and is not too large
+                if .p < (0.75 * .cb * .q - abs (.tolAct * .q) / 2)
+                ... and .p < abs (.prevStep * .q / 2)
+                    .newStep = .p / .q
+                endif
+            endif
+
+            # Adjust the step to be not less than the tolerance
+            if abs (.newStep) < .tolAct
+                if .newStep > 0
+                    .newStep = .tolAct
+                else
+                    .newStep = - .tolAct
+                endif
+            endif
+
+            # Save the previous approximation, step to a new one
+            .a = .b
+            .fa = .fb
+            .b = .b + .newStep
+            @eml_hlTwoSampleW: .v1#, .v2#, .b, .correct
+            .fb = eml_hlTwoSampleW.value - .zq
+
+            # Adjust c for it to have a sign opposite to that of b
+            if (.fb > 0 and .fc > 0) or (.fb < 0 and .fc < 0)
+                .c = .a
+                .fc = .fa
+            endif
+        endif
+    endwhile
+
+    if .done = 0
+        # Iterations exhausted. R returns b and flags Maxit = -1; there
+        # is no flag to return here and 1000 iterations of a bracketed
+        # Brent step is not a case this reaches, but the value returned
+        # is R's value returned.
+        .root = .b
+    endif
+endproc
+
+
+# ============================================================================
+# INTERNAL HELPER: @eml_hlTwoSampleRoot  — R's root(zq), ported
+# ============================================================================
+# R 4.3.3, wilcox.test.default, asymptotic two-sample branch:
+#
+#     root <- function(zq) {
+#         f.lower <- Wmumin - zq
+#         if (f.lower <= 0) return(mumin)
+#         f.upper <- Wmumax - zq
+#         if (f.upper >= 0) return(mumax)
+#         uniroot(wdiff, lower = mumin, upper = mumax,
+#                 f.lower = f.lower, f.upper = f.upper,
+#                 tol = tol.root, zq = zq)$root
+#     }
+#
+# THE TWO EARLY RETURNS ARE NOT GUARDS AGAINST BAD INPUT, they are part
+# of the answer: R's own comment says "in extreme cases we need to
+# return endpoints, e.g. wilcox.test(1, 2:60, conf.int = TRUE)". When
+# the sample cannot push the statistic past zq anywhere in
+# [mumin, mumax], the bound IS the endpoint, and a root finder called
+# on an unbracketed interval would instead fail. Dropping them turns a
+# legitimate wide interval into an error.
+#
+# Input:
+#   .v1#, .v2#      - the two groups
+#   .zq             - the quantile to invert at
+#   .mumin, .mumax  - min(x) - max(y) and max(x) - min(y)
+#   .wmin, .wmax    - W at those two endpoints, computed once by the caller
+#   .correct        - passed through to W
+#
+# Output:
+#   .result - the bound
+# ============================================================================
+
+procedure eml_hlTwoSampleRoot: .v1#, .v2#, .zq, .mumin, .mumax, .wmin, .wmax, .correct
+    .fLower = .wmin - .zq
+    if .fLower <= 0
+        .result = .mumin
+    else
+        .fUpper = .wmax - .zq
+        if .fUpper >= 0
+            .result = .mumax
+        else
+            @eml_hlTwoSampleZeroin: .v1#, .v2#, .mumin, .mumax, .fLower,
+            ... .fUpper, .zq, 1e-4, 1000, .correct
+            .result = eml_hlTwoSampleZeroin.root
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlHodgesLehmannTwoSample
+# ============================================================================
+# The Hodges-Lehmann shift estimate for two independent samples, and its
+# confidence interval -- the location counterpart of the Mann-Whitney U
+# test, the way a mean difference and its t interval are the counterpart
+# of the t test. Specified by Fable's 26 August work order
+# (docs/WORK_ORDER_INTERVALS_2026-08-26.md).
+#
+# THE ESTIMATE is the median of all n1 * n2 cross-differences
+# v1[i] - v2[j]. On an even count it is the mean of the middle two, as
+# R's median() is. The differences are ordered with Praat's NATIVE
+# sort#, never a script sort: n1 * n2 is the one shape in this file
+# where a per-element sorting loop is measured in seconds rather than
+# milliseconds (CLAUDE.md, "Vectorize").
+#
+# THE BRANCH IS THE p-VALUE'S BRANCH. The gate below -- n1 < 50 AND
+# n2 < 50 AND no ties in the combined sample, as three nested ifs
+# because Praat's "and" does not short-circuit -- is copied verbatim
+# from @emlMannWhitneyU above, which copied it from R's wilcox.test. It
+# is not re-derived here and it must not drift: an interval computed on
+# the exact null distribution printed beside a p-value computed on the
+# normal approximation is a report that contradicts itself, and neither
+# number looks wrong on its own.
+#
+#   exact:  the critical rank k is a QUANTILE of the U null
+#           distribution, taken from the DP in @eml_mannWhitneyExactP --
+#           the same distribution the exact p-value is read off, read
+#           once, never rebuilt. The bounds are the k-th smallest and
+#           k-th largest cross-differences, which is R's
+#           c(diffs[qu], diffs[ql + 1]).
+#
+#   normal approximation: R's continuity-corrected z inversion, ported.
+#           See @eml_hlTwoSampleW, @eml_hlTwoSampleRoot and
+#           @eml_hlTwoSampleZeroin above; the port is line-for-line and
+#           carries R's own step and tolerance, so the two share the
+#           method and not merely the answer.
+#
+# THE CRITICAL RANK, in full, from R 4.3.3's exact two-sided branch:
+#
+#     qu <- qwilcox(alpha/2, n.x, n.y)
+#     if (qu == 0) qu <- 1
+#     ql <- n.x * n.y - qu
+#     c(diffs[qu], diffs[ql + 1])
+#
+# and qwilcox itself (R 4.3.3, src/nmath/wilcox.c) is a cumulative scan
+# over the null distribution with a fuzz applied to the PROBABILITY:
+#
+#     c = choose(m + n, n);
+#     p = 0; q = 0;
+#     if (x <= 0.5) {
+#         x = x - 10 * DBL_EPSILON;
+#         for(;;) { p += cwilcox(q, mm, nn) / c; if (p >= x) break; q++; }
+#     } else { ...the mirror... }
+#
+# Both the fuzz and the "if qu == 0 then 1" bump are ported below. The
+# bump is the whole difference between a coverage-bearing interval and
+# an off-by-one: at qu = 0 the lower bound would index diffs[0], and one
+# step either side of the correct k gives an interval that reads as
+# perfectly reasonable. It is the first red demonstration in v145.
+#
+# Arguments:
+#   .v1#   - numeric vector, group 1
+#   .v2#   - numeric vector, group 2
+#   .level - confidence level as a proportion (e.g. 0.95, or a
+#            correction's own level such as 1 - alpha/m)
+#
+# Output:
+#   .estimate - median of the n1 * n2 cross-differences (v1 minus v2)
+#   .low      - lower confidence bound, or undefined on refusal
+#   .high     - upper confidence bound, or undefined on refusal
+#   .method$  - "exact" or "normal approximation"; the SAME branch
+#               @emlMannWhitneyU takes on the same two vectors
+#   .error$   - error message, or "" if valid
+#
+# DEPENDENCY: @emlRankVector from eml-core-utilities.praat, as
+# @emlMannWhitneyU has.
+# ============================================================================
+
+procedure emlHodgesLehmannTwoSample: .v1#, .v2#, .level
+    .estimate = undefined
+    .low = undefined
+    .high = undefined
+    .method$ = ""
+    .error$ = ""
+
+    .n1 = size (.v1#)
+    .n2 = size (.v2#)
+    .nTotal = .n1 + .n2
+    .nDiff = .n1 * .n2
+
+    if .n1 < 1
+        .error$ = "Group 1 must have at least 1 observation"
+    elsif .n2 < 1
+        .error$ = "Group 2 must have at least 1 observation"
+    elsif .level <= 0 or .level >= 1
+        .error$ = "Confidence level must be between 0 and 1"
+    else
+        # --- The n1 * n2 cross-differences, ordered ---
+        #
+        # The fill is a pair loop because a vector this size has to be
+        # built one product-index at a time -- Praat has no slice
+        # assignment and no outer-difference primitive (probed: "w# [1..3]
+        # = v#" does not parse on 6.6.30). The ORDERING, which is the
+        # part that costs, is sort#.
+        .diffs# = zero# (.nDiff)
+        for .i from 1 to .n1
+            .base = (.i - 1) * .n2
+            for .j from 1 to .n2
+                .diffs#[.base + .j] = .v1#[.i] - .v2#[.j]
+            endfor
+        endfor
+        .sortedDiffs# = sort# (.diffs#)
+
+        # --- The estimate: median of those differences ---
+        if .nDiff mod 2 = 1
+            .estimate = .sortedDiffs#[(.nDiff + 1) / 2]
+        else
+            .mid = .nDiff / 2
+            .estimate = (.sortedDiffs#[.mid] + .sortedDiffs#[.mid + 1]) / 2
+        endif
+
+        # --- The branch gate, verbatim from @emlMannWhitneyU ---
+        .combined# = zero# (.nTotal)
+        for .i from 1 to .n1
+            .combined#[.i] = .v1#[.i]
+        endfor
+        for .i from 1 to .n2
+            .combined#[.n1 + .i] = .v2#[.i]
+        endfor
+
+        @emlRankVector: .combined#
+        .hasTies = emlRankVector.hasTies
+
+        # Exact iff n1 < 50 AND n2 < 50 AND no ties. R's wilcox.test uses
+        # per-group sizes (not the combined total) and falls back to the
+        # normal approximation whenever ties are present, because the
+        # exact null distribution assumes untied integer ranks.
+        # Nested ifs: Praat's "and" does not short-circuit.
+        .useExact = 0
+        if .n1 < 50
+            if .n2 < 50
+                if .hasTies = 0
+                    .useExact = 1
+                endif
+            endif
+        endif
+
+        .alpha = 1 - .level
+
+        if .useExact = 1
+            # --- Exact path: a quantile of the DP null distribution ---
+            .method$ = "exact"
+
+            # ONE call, for the distribution, not for its tails. The .u1
+            # argument is irrelevant to the counts: the DP is built over
+            # every u regardless, and 0 is passed to say plainly that no
+            # tail probability is being asked for here.
+            @eml_mannWhitneyExactP: 0, .n1, .n2
+            .total = eml_mannWhitneyExactP.total
+
+            # qwilcox(alpha/2, n1, n2), ported with R's own fuzz and R's
+            # own accumulation: 10 DBL_EPSILON subtracted from the
+            # PROBABILITY, and the cumulative sum built in probability --
+            # each count divided by the total as it is added, which is
+            # what "p += cwilcox(q, mm, nn) / c" does and is not the same
+            # rounding as summing counts and dividing once.
+            #
+            # Only R's "x <= 0.5" branch is ported because only it is
+            # reachable: .level is validated into (0, 1) above, so
+            # .alpha / 2 is strictly inside (0, 0.5) and the mirror
+            # branch cannot be entered from here. .total stands for R's
+            # choose(m + n, n) -- the same number by a different route,
+            # and for n1 = n2 near 50 the count exceeds 2^53, so the two
+            # agree to rounding rather than exactly. That matters only if
+            # the cumulative probability lands within an ulp or two of
+            # alpha/2, which is the same knife-edge R's own fuzz exists
+            # for.
+            .x = .alpha / 2 - 10 * 2.220446049250313e-16
+            .k = 0
+            .p = eml_mannWhitneyExactP.dp##[.n1 + 1, 1] / .total
+            while .p < .x and .k < .nDiff
+                .k = .k + 1
+                .p = .p
+                ... + eml_mannWhitneyExactP.dp##[.n1 + 1, .k + 1] / .total
+            endwhile
+
+            # if (qu == 0) qu <- 1
+            if .k = 0
+                .k = 1
+            endif
+
+            .low = .sortedDiffs#[.k]
+            .high = .sortedDiffs#[.nDiff + 1 - .k]
+        else
+            # --- Normal approximation: R's z inversion, ported ---
+            .method$ = "normal approximation"
+
+            # mumin = min(x) - max(y) and mumax = max(x) - min(y) are the
+            # smallest and largest cross-differences -- the same two
+            # subtractions R performs, already in hand and already
+            # ordered.
+            .mumin = .sortedDiffs#[1]
+            .mumax = .sortedDiffs#[.nDiff]
+
+            @eml_hlTwoSampleW: .v1#, .v2#, .mumin, 1
+            .wmin = eml_hlTwoSampleW.value
+            @eml_hlTwoSampleW: .v1#, .v2#, .mumax, 1
+            .wmax = eml_hlTwoSampleW.value
+
+            if .wmin = undefined or .wmax = undefined
+                # SIGMA.CI = 0: every observation in the combined sample
+                # is tied, and there is no variance to standardise by. R
+                # warns here and hands NaN to its own root finder, which
+                # then fails on a missing value; this refuses in the
+                # shape @emlTTestInterval refuses, with the outputs left
+                # undefined and a reason given.
+                .error$ = "Cannot compute a confidence interval when "
+                ... + "every observation is tied"
+            else
+                # qnorm(alpha/2, lower.tail = FALSE) is invGaussQ(alpha/2);
+                # qnorm(alpha/2) is its negation.
+                .zq = invGaussQ (.alpha / 2)
+
+                @eml_hlTwoSampleRoot: .v1#, .v2#, .zq, .mumin, .mumax,
+                ... .wmin, .wmax, 1
+                .low = eml_hlTwoSampleRoot.result
+
+                @eml_hlTwoSampleRoot: .v1#, .v2#, - .zq, .mumin, .mumax,
+                ... .wmin, .wmax, 1
+                .high = eml_hlTwoSampleRoot.result
             endif
         endif
     endif

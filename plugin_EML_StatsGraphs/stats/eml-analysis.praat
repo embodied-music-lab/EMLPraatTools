@@ -1935,6 +1935,34 @@ endproc
 #                    1 - alpha/m per pair); undefined for holm and bh,
 #                    which define no such level. Not yet reported, for the
 #                    same reason as .meanDiffFlat# above.
+#
+# Output (wilcoxon branch only; DARK -- computed, never printed):
+#   .hlEstFlat#    — the Hodges-Lehmann shift estimate per pair, C(k,2)
+#                    long, in @emlPairwiseWilcoxon's own pair order.
+#                    Computed on every row under every correction, per
+#                    the same 26 August work order clause that governs
+#                    .meanDiffFlat# above, and printed by nothing: the
+#                    line it would print, "Hodges-Lehmann shift
+#                    (C1 - C2): x.xx", is drafted and gated on Ian's
+#                    en-bloc approval of the language batch
+#                    (docs/RULING_INTERVALS_2026-08-26.md).
+#   .hlLowFlat#, .hlHighFlat# — that estimate's interval per pair, or
+#                    undefined where the correction in force does not
+#                    define one. Bonferroni only, at
+#                    .level = 1 - alpha/m; undefined under holm and bh.
+#   .hlMethod$ [i] — "exact" or "normal approximation" for pair i: WHICH
+#                    NULL DISTRIBUTION THAT PAIR'S INTERVAL CAME FROM.
+#                    Exposed because it must equal the branch the pair's
+#                    p-value was computed on, and a report whose interval
+#                    and p-value disagree about that is incoherent while
+#                    both numbers still look reasonable. v145 reads it.
+#
+#   These four are named apart from the welch/student branch's
+#   .meanDiffFlat# / .lowFlat# / .highFlat# rather than sharing them.
+#   Only one branch of this procedure runs per call, so sharing would
+#   compile; it would also let a stale interval from a previous t-branch
+#   call be read back as this call's Hodges-Lehmann one, which is a
+#   reading error no check would see.
 # ============================================================================
 
 procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupCol$, .test$, .adjMethod$
@@ -2224,6 +2252,57 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
         .hdr$ = .hdr$ + "r"
         appendInfoLine: .hdr$
 
+        ; ----------------------------------------------------------------
+        ; ITEM 3 -- THE HODGES-LEHMANN PLUMBING, BUILT DARK.
+        ;
+        ; The same rule item 2 wired into the welch/student branch above,
+        ; applied to this one (docs/WORK_ORDER_INTERVALS_2026-08-26.md):
+        ; the POINT ESTIMATE on every row under every correction, and the
+        ; INTERVAL only where the correction in force defines a level --
+        ; Bonferroni at 1 - alpha/m per pair. Holm and BH define none, so
+        ; .hlLowFlat# / .hlHighFlat# stay undefined on those runs.
+        ;
+        ; The estimate here is the Hodges-Lehmann shift, not a mean
+        ; difference: this arm ranks, so its location statistic is the
+        ; median of the cross-differences, and @emlHodgesLehmannTwoSample
+        ; takes the branch -- exact or normal approximation --
+        ; @emlMannWhitneyU took on the same two vectors, by the same gate
+        ; copied verbatim from it. .hlMethod$ records which, so a check
+        ; can confirm the interval and the p-value are on the same
+        ; distribution.
+        ;
+        ; WHY THE PROCEDURE IS CALLED ON EVERY ROW AND NOT ONLY ON
+        ; BONFERRONI ONES. The estimate and the interval come out of one
+        ; call -- unlike the t branch, where the mean difference was
+        ; already sitting in @emlPairwiseT's .diffMatrix## and only the
+        ; interval needed computing. The work order's own instruction for
+        ; this is "compute-then-conditionally-print ... the branch is one
+        ; if at the print site", so the call is made with the Bonferroni
+        ; level throughout and the RESULT is what the correction gates.
+        ; A Holm run therefore computes an interval and stores it
+        ; nowhere, which is the order's shape, not an oversight.
+        ;
+        ; THE VECTORS ARE RE-READ FROM THE TABLE, through the same
+        ; @eml_getGroupData and the same group labels
+        ; @emlPairwiseWilcoxon built its matrices from, exactly as
+        ; @emlReportPairwiseDescriptives above re-reads them for the
+        ; group means. @emlPairwiseWilcoxon keeps matrices, not data, so
+        ; there is nothing to inherit.
+        ;
+        ; AND NONE OF IT PRINTS. "Hodges-Lehmann shift (C1 - C2): x.xx"
+        ; and the "[low, high]" rendering are drafted into the language
+        ; batch and print only after Ian's en-bloc approval
+        ; (docs/RULING_INTERVALS_2026-08-26.md, "Language"). No
+        ; appendInfoLine in this procedure reads .hlEstFlat#,
+        ; .hlLowFlat#, .hlHighFlat# or .hlMethod$; they are outputs a
+        ; check reads, and approval adds print calls against numbers that
+        ; are already computed.
+        ; ----------------------------------------------------------------
+        .hlEstFlat# = zero# (emlPairwiseWilcoxon.nPairs)
+        .hlLowFlat# = zero# (emlPairwiseWilcoxon.nPairs)
+        .hlHighFlat# = zero# (emlPairwiseWilcoxon.nPairs)
+        .hlLevel = 1 - .alpha / emlPairwiseWilcoxon.nPairs
+
         .pair = 0
         for .iGroup from 1 to .nGroups - 1
             for .jGroup from .iGroup + 1 to .nGroups
@@ -2254,6 +2333,48 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                     @eml_fixed: .rVal, 3
                     .rTxt$ = eml_fixed.result$
                 endif
+
+                ; THE POINT ESTIMATE, every row, every correction --
+                ; descriptive footing, the same as .rVal above -- and the
+                ; interval, only where the correction defines one. See
+                ; the block above the loop for why the call is made on
+                ; every row and the CORRECTION gates the result.
+                ;
+                ; Each producing call's .error$ is read BEFORE any other
+                ; field of that same call, per the error-read rule v134
+                ; lints: a pair whose column could not be re-read, or
+                ; whose combined sample is entirely tied, leaves its
+                ; estimate and its interval undefined rather than
+                ; carrying a zero that reads as "no shift".
+                @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
+                    ... emlPairwiseWilcoxon.groupName$ [.iGroup]
+                .hlErrI$ = eml_getGroupData.error$
+                .hlI# = eml_getGroupData.data#
+                @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
+                    ... emlPairwiseWilcoxon.groupName$ [.jGroup]
+                .hlErrJ$ = eml_getGroupData.error$
+                .hlJ# = eml_getGroupData.data#
+
+                .hlEstFlat# [.pair] = undefined
+                .hlLowFlat# [.pair] = undefined
+                .hlHighFlat# [.pair] = undefined
+                .hlMethod$ [.pair] = ""
+                if .hlErrI$ = "" and .hlErrJ$ = ""
+                    @emlHodgesLehmannTwoSample: .hlI#, .hlJ#, .hlLevel
+                    .hlError$ = emlHodgesLehmannTwoSample.error$
+                    .hlEstFlat# [.pair] = emlHodgesLehmannTwoSample.estimate
+                    .hlMethod$ [.pair] = emlHodgesLehmannTwoSample.method$
+                    ; The estimate stands on its own -- an all-tied pair
+                    ; still HAS a median cross-difference, and the
+                    ; procedure returns it while refusing the interval.
+                    ; The interval needs both a clean computation and a
+                    ; correction that defines a level.
+                    if .hlError$ = "" and (.adjMethod$ = "bonferroni")
+                        .hlLowFlat# [.pair] = emlHodgesLehmannTwoSample.low
+                        .hlHighFlat# [.pair] = emlHodgesLehmannTwoSample.high
+                    endif
+                endif
+
                 @emlSigMark: .adjP, .alpha
                 @emlPadCell: .cmp$, 26
                 .row$ = "  " + emlPadCell.result$

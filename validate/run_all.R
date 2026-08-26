@@ -1771,6 +1771,31 @@ scripts <- c(
                                  # mirror (the failure that looks right); a
                                  # Bonferroni interval at 1 - alpha in place
                                  # of 1 - alpha/m.
+    ,
+    "v145_hodges_lehmann_interval.R" # @emlHodgesLehmannTwoSample + the 3.8
+                                 # wiring, per the same work order. 20 direct
+                                 # cells (5 fixtures x 4 levels) forcing both
+                                 # two-sample branches -- small untied, tied,
+                                 # large-n -- plus 18 cells end to end through
+                                 # @emlPairwiseWilcoxon, all against
+                                 # wilcox.test(conf.int = TRUE, conf.level =
+                                 # 1 - alpha/m), with the estimate oracled on
+                                 # median(outer(x, y, "-")). Every cell also
+                                 # asserts .method$ is the branch the p-value
+                                 # is on: the gate is COPIED from
+                                 # @emlMannWhitneyU, and an interval and a p
+                                 # on different null distributions contradict
+                                 # each other while both look right. Holm
+                                 # canary: estimate computed, interval not.
+                                 # THE NUMBERS ARE COMPUTED BUT NEVER PRINTED,
+                                 # same language gate as v144, and every
+                                 # driven Info window is grepped for the
+                                 # drafted strings. Three red demos, each a
+                                 # one-line mutant: an off-by-one in the
+                                 # critical rank k; a Bonferroni interval at
+                                 # 1 - alpha; a Holm row printing one. PART 3
+                                 # (the paired half, work order item 4) is a
+                                 # stated gap with a tripwire, not a stub.
 )
 
 # ---------------------------------------------------------------------------
