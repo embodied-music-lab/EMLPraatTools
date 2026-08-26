@@ -1,47 +1,56 @@
-# EML Stats & Graphs -- walkthrough kit
+# EML Stats & Graphs walkthrough kit
 
-This folder is self-contained. Nothing is installed anywhere, nothing else
-needs cloning, and there is no Praat plugin to install.
+This kit establishes one claim: that a large set of statistical procedures in
+the EML Stats & Graphs Praat plugin *combine* correctly. Choosing Welch rather
+than Student, then Holm rather than Bonferroni, then alphabetical rather than
+discovery group order changes exactly the numbers it should and nothing else.
 
-Three files are meant to be run, in this order:
+It checks that claim by running 630 declared cells through two independent
+implementations -- the plugin's own code, and an R script that calls installed
+packages -- and joining the two result tables on `(cell_id, quantity)`. Every
+row must be accounted for. The claim is about composition, not about whether a
+t-test is correct in isolation.
 
-1. `RUN_ME_FIRST.praat` -- open in Praat, click Run. About 2m15s.
-2. `run_analyses.R` -- open in RStudio, click Source. About 50 seconds.
-3. `compare.R` -- open in RStudio, click Source. About 3 seconds.
+The kit is self-contained. Nothing installs into Praat, there is no plugin to
+place in a preferences folder, and nothing else needs cloning.
 
-The third one prints the verdict. On this tree it ends with `GREEN. Every
-row is accounted for.`
+## What the 630 cells cover
 
-For R you need eight packages, once:
+17 procedures across 29 datasets, spanning every combination of test, post hoc,
+adjustment, equal-variance and group-order setting the plugin's own dialogs can
+produce.
+
+Group order is a real axis rather than a formality. On `v11_twoway_input`,
+SPL_dB by voice_type, discovery order gives t = 3.9024 and alphabetical gives
+t = -3.9024. That sign reaches Cohen's d, rank-biserial r and every pairwise
+mean difference.
+
+15 of the 630 cells are declared to refuse. A refusal that happens correctly is
+evidence, so those cells are checked as strictly as the rest: both sides must
+refuse the same cell, and neither may emit a number while doing it.
+
+## Before you start
+
+You need Praat 6.6.30 or newer. Below that version the library refuses to load.
+
+You also need R, RStudio, and eight packages. Install them once:
 
 ```r
 install.packages(c("rstatix","effectsize","car","afex","multcomp","nortest","coin","psych"))
 ```
 
-Praat must be 6.6.30 or newer; the library refuses to load below that.
+## Run the kit
 
-## What this is
+To run both sides and compare them, follow these steps:
 
-630 declared cells. 17 procedures, 29 datasets, and every combination of
-test / post-hoc / adjustment / equal-variance / group-order that the
-plugin's own dialogs can produce. Two independent implementations run all
-630: the actual plugin code, and an R script that calls installed packages.
-Then the two result tables are joined on `(cell_id, quantity)` and every
-single row has to be accounted for.
+1. In Praat, open `RUN_ME_FIRST.praat` and click **Run**. This takes about
+   2 minutes 15 seconds.
+2. In RStudio, open `run_analyses.R` and click **Source**. This takes about
+   50 seconds.
+3. In RStudio, open `compare.R` and click **Source**. This takes about
+   3 seconds and prints the verdict.
 
-The point is not that the plugin computes a t-test. It is that a large set
-of procedures *combine* correctly -- that choosing Welch rather than
-Student, then Holm rather than Bonferroni, then alphabetical rather than
-discovery group order, changes exactly the numbers it should and nothing
-else. Group order is a real axis, not a formality: on `v11_twoway_input`,
-SPL_dB by voice_type, discovery order gives t = 3.9024 and alphabetical
-gives t = -3.9024, and that sign reaches Cohen's d, rank-biserial r and
-every pairwise mean difference.
-
-15 of the 630 cells are declared to *refuse*. A refusal that happens
-correctly is evidence, so those are checked as strictly as the rest: both
-sides must refuse the same cell, and neither may emit a number while doing
-it.
+On this tree, step 3 ends with `GREEN. Every row is accounted for.`
 
 ## The declaration: `matrix.tsv`
 
@@ -51,9 +60,10 @@ one row per cell. Read its header; the columns are documented there.
 That is the design, not an implementation detail: a cell that exists for one
 language and not the other cannot happen, because there is only one list.
 
-Both directions of that property are tested, not asserted. On a throwaway
-copy of this folder, one row was appended (`c9001`, a two-group cell with
-axis values no existing row uses) and one row was deleted (`c0157`). Both
+The kit tests both directions of that property rather than asserting them.
+On a throwaway
+copy of this folder, the test appended one row (`c9001`, a two-group cell with
+axis values no existing row uses) and deleted one row (`c0157`). Both
 runners, byte-for-byte unmodified, then produced results and a report for
 `c9001` and produced nothing at all for `c0157` -- no rows, no report file
 in either `out/praat_reports/` or `out/r_reports/`. `compare.R` still
@@ -142,14 +152,14 @@ you can verify here, on your own machine, is that the plugin agrees with R.
 The third-party cross-check exists but you are taking its most recent result
 on trust unless you go and look at CI.
 
-## Only one thing is written out by hand
+## The one expression written by hand
 
 The rule on the R side is that no statistic is re-derived; each is called
 from a package. `compare.R` would be worthless otherwise -- if the R script
 reimplemented the plugin's formulas, agreement would prove only that the
 same arithmetic was typed twice.
 
-There is exactly one arithmetic expression in `run_analyses.R` that is not a
+`run_analyses.R` contains exactly one arithmetic expression that is not a
 package call:
 
 ```r
@@ -172,15 +182,15 @@ as `x/n`, and counts. None of them is a second implementation of a test.
 
 ## Findings
 
-The reconciliation found real defects. They are listed here rather than
-tuned away, and each has an id you can grep for in `compare.R` and in
+The reconciliation found real defects. This section names them rather than
+tuning them away. Each carries an id you can grep for in `compare.R` and in
 `out/reconciliation.tsv`.
 
 **In the plugin:**
 
 - `D-PARSE`. `rp_r6_parse_conditions_input.csv` contains the cell `"73,4"`.
-  Praat's own `number()` primitive reads that as **73** -- it stops at the
-  comma and drops the fraction. `@emlRunNormalityAnalysis` accepts the cell
+  Praat's own `number()` primitive reads that as **73**; it stops at the comma
+  and drops the fraction. `@emlRunNormalityAnalysis` accepts the cell
   on that basis and reports n=4 including a silently wrong value;
   `@emlRunDescriptiveAnalysis` rejects the same cell and reports n=3. Two
   procedures disagree with each other about one cell in one column of one
@@ -188,9 +198,10 @@ tuned away, and each has an id you can grep for in `compare.R` and in
   and reads 73.4, so these cells stay red on purpose.
 - `D-PAIRWISE-N`. `@emlRunPairwiseAnalysis` lists `.stN` in its own Outputs
   header, initialises it to `undefined`, and never assigns it. The procedure
-  cannot report the sample size it analysed. This went unnoticed because the
-  runner used to drop undefined values silently; both runners now emit an
-  explicit `<quantity>_undefined` marker instead, which is how it surfaced.
+  cannot report the sample size it analysed. The runner previously dropped
+  undefined values
+  silently, which hid this. Both runners now emit an explicit
+  `<quantity>_undefined` marker instead, which is how it surfaced.
 - `D-HEDGES`. Hedges' g uses the approximate bias correction
   `J = 1 - 3/(4df-1)`. Hedges (1981) gives the exact
   `J = Γ(df/2) / (√(df/2)·Γ((df-1)/2))` and presents the other as an
@@ -218,12 +229,14 @@ tuned away, and each has an id you can grep for in `compare.R` and in
   which is what pins the difference to the choice of tail rather than to
   arithmetic.
 
-**In the R side, found and fixed during this pass** (they were making the
-table look worse than the plugin deserved):
+**In the R side, found and fixed during this pass** (each made the table
+look worse
+than the plugin deserved):
 
-- `rstatix::wilcox_effsize` computes r = Z/√N, Rosenthal's r. It was being
-  emitted under the name `rank_biserial`, so two different statistics looked
-  like one disagreement -- and because it is unsigned, the orientation could
+- `rstatix::wilcox_effsize` computes r = Z/√N, Rosenthal's r. The kit emitted
+  it under the name `rank_biserial`, so two
+  different statistics looked like one disagreement -- and because it is
+  unsigned, the orientation could
   never be made to match. It is now `wilcox_r`; `effectsize::rank_biserial`
   is the rank-biserial correlation and matches the plugin exactly.
 - `rstatix::cramer_v` defaults to Yates-corrected and
@@ -239,14 +252,14 @@ table look worse than the plugin deserved):
   visible in the data and not only in a comment.
 - `afex` returns `GG eps = NA` when it cannot compute a Greenhouse-Geisser
   correction, but prints `Pr(>F[GG])` as `0` in the same row. That 0 is a
-  sentinel, not a p-value, and it was being emitted as one.
+  sentinel, not a p-value, and the R side emitted it as one.
 - `effectsize` 0.8.6 returns an *unsigned* paired rank-biserial when every
   paired difference has the same magnitude: +1 whether the first column is
   uniformly above or uniformly below the second. `wilcox.test`'s V correctly
   distinguishes the two. This is an upstream bug; the sign is restored where
   the direction is not in doubt, and the workaround is commented at the site.
-- Both runners were silently dropping non-finite values, and the R side was
-  writing `%.15g` where `%.17g` is needed to round-trip a double. Both are
+- Both runners silently dropped non-finite values, and the R side wrote
+  `%.15g` where `%.17g` is needed to round-trip a double. Both are
   fixed; the first is what exposed `D-PAIRWISE-N`.
 
 **In `matrix.tsv`, reported and not edited:** nine cells marked `expect=ok`
