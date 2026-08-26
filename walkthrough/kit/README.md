@@ -180,6 +180,37 @@ already reported in the same table -- `mean_diff` as the difference of two
 reported means, `u2` as `n1*n2 - u1`, a mean square as `SS/df`, `prop_hat`
 as `x/n`, and counts. None of them is a second implementation of a test.
 
+## Reading the reconciliation file
+
+`out/reconciliation.tsv` carries one row per quantity that is not a plain
+agreement. Two of its columns tell you how much weight the row's excuse
+carries:
+
+- `why` is the rule's stated reason, the same text that appears in
+  `DECLARED[]` in `compare.R`.
+- `enforcement` says whether that reason is checked. A rule reading
+  `BOUND ENFORCED` names the limit the difference must stay under, the
+  worst case observed on this run, and whether it holds. A rule reading
+  `PROSE ONLY` checks nothing: it argues that a difference is acceptable and
+  cannot tell you if it has stopped being so.
+
+Two of the nine rules carry a bound. The other seven are arguments, and they
+are the ones worth disagreeing with.
+
+## Scheffe, and a question for you
+
+`D-SCHEFFE` says no installed R package implements Scheffe's test, which is
+true of this container and not of CRAN: `DescTools::ScheffeTest` and
+`agricolae::scheffe.test` both do. Neither is packaged for Debian, and the
+build environment cannot reach CRAN, so the R side evaluates the published
+definition instead -- the statistic is `(diff/SE)^2 / (k-1)` and the p-value
+comes from base R's own `pf`.
+
+That is a closed-form definition through R's F distribution rather than a
+reimplementation of a procedure, but it is still our arithmetic rather than
+someone else's. If you install either package and the numbers disagree with
+ours, that is worth more than anything else in this kit.
+
 ## Findings
 
 The reconciliation found real defects. This section names them rather than

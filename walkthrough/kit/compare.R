@@ -526,10 +526,43 @@ refR <- sort(unique(R$cell_id[R$quantity %in% c("refused", "skipped")]))
 declaredRefuse <- sort(mx$cell_id[mx$expect == "refuse"])
 missP <- setdiff(declaredRefuse, refP); missR <- setdiff(declaredRefuse, refR)
 
+# ---------------------------------------------------------------------------
+# ANNOTATE EVERY ROW WITH ITS RULE'S REASON AND WHETHER THAT REASON IS
+# ENFORCED. A prose reason is an argument; a bound is an argument plus a
+# tripwire that can detect its own obsolescence. A reader of this file should
+# not have to open compare.R to tell the two apart.
+# ---------------------------------------------------------------------------
+ruleById <- function(theId) {
+    for (rule in DECLARED) if (identical(rule$id, theId)) return(rule)
+    NULL
+}
+flatten1 <- function(x) gsub("[\t\r\n]+", " ", paste(x, collapse = " "))
+enforcementFor <- function(theId) {
+    if (!nzchar(theId)) return(list(enf = "", why = ""))
+    rule <- ruleById(theId)
+    if (is.null(rule)) return(list(enf = "no rule found", why = ""))
+    why <- flatten1(rule$why)
+    if (is.null(rule$maxrel)) {
+        return(list(enf = "PROSE ONLY -- no numeric bound is enforced; this reason cannot detect its own drift", why = why))
+    }
+    seen <- if (is.null(maxRelSeen[[theId]])) NA_real_ else maxRelSeen[[theId]]
+    verdict <- if (!is.na(seen) && seen <= rule$maxrel) "HOLDS" else "EXCEEDED"
+    list(enf = sprintf("BOUND ENFORCED: observed max relative difference %.3g, declared limit %.3g -- %s",
+                       seen, rule$maxrel, verdict),
+         why = why)
+}
+
 out <- do.call(rbind, lapply(rows, function(r) as.data.frame(r, stringsAsFactors = FALSE)))
 if (is.null(out)) out <- data.frame(bucket = character(), id = character(),
     cell_id = character(), quantity = character(), praat = character(),
     r = character(), source = character())
+if (nrow(out)) {
+    ann <- lapply(out$id, enforcementFor)
+    out$enforcement <- vapply(ann, function(a) a$enf, character(1))
+    out$why         <- vapply(ann, function(a) a$why, character(1))
+} else {
+    out$enforcement <- character(); out$why <- character()
+}
 write.table(out, file.path(outDir, "reconciliation.tsv"), sep = "\t",
             quote = FALSE, row.names = FALSE)
 
