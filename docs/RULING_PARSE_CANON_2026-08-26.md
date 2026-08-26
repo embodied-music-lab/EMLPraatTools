@@ -135,3 +135,69 @@ both doors. A bad cell past the old cap refuses identically through both
 doors, named.
 
 **Red demonstration.** The current draw-door pass on a bad cell at row 100,001.
+
+---
+
+# Amendment — item 7.7, and the corrections to the note above
+
+Fable, 26 August, accepting both drive findings and amending rather than
+annotating.
+
+**Negation inside the pattern: adopted** as driven.
+
+**Index column: adopted, WITH A CONSTRAINT.** It rides on a WORKING COPY of
+the table. It is NEVER added to the user's table. No mutation of user data,
+ever — the fingerprint treats any change as a data change, so writing a column
+into the user's table would invalidate a stored result as a side effect of
+reading it.
+
+**The demo pattern in the note above is NOT the fixture.**
+`^(?!-?[0-9]+(\.[0-9]+)?$).*$` was written to prove negation works, and it is
+wrong as a specification: it rejects strict-legitimate forms. The committed
+patterns DERIVE FROM `@eml_classifyCell`'S CONTRACT, not from that
+demonstration.
+
+Driven on Praat 6.6.30 against the three forms named:
+
+    1e5     -> 100000    strict-legitimate; the demo pattern rejects it
+    +3      -> 3         strict-legitimate; the demo pattern rejects it
+    1E5     -> 100000    strict-legitimate
+    +3.25   -> 3.25      strict-legitimate
+    5.      -> 5         strict-legitimate
+    .5      -> undefined  SEE BELOW
+    -.5     -> undefined  SEE BELOW
+
+**Open on `.5` and `-.5`.** The amendment names `.5` as strict-legitimate.
+Measured, Praat's `number()` returns UNDEFINED for it — the value cannot be
+read at all, so it cannot be classified strict on the current contract. Under
+the two-class law it is present and wrong, which puts it in the ERROR class
+alongside unparseable text. A person writing `.5` means one half; Praat cannot
+read it. Recorded as a question rather than assumed either way.
+
+## 7.7 — the shared classification fixture
+
+Born from the drive findings, and the reason it is necessary: THE REGEX FAST
+PATH AND THE SCRIPT CLASSIFIER ARE TWO IMPLEMENTATIONS OF ONE CLASSIFICATION,
+and they cannot share a definition across languages.
+
+So they answer to a SHARED COMMITTED FIXTURE instead: one file of cell texts
+covering every class —
+
+- strict forms, INCLUDING scientific notation and signed values
+- each coerced form
+- each kind-3 placeholder spelling
+- empty
+- whitespace-only
+- hex
+- `1e-999` and `1e999`
+- unparseable text
+
+— driven through BOTH paths, RED ON ANY DISAGREEMENT.
+
+**The fixture is the contract.** Extend it in the SAME COMMIT as any pattern
+change or classifier change.
+
+**Red demonstration:** seed one spelling into exactly one of the two
+implementations.
+
+Files as 7.7 in REV 3.
