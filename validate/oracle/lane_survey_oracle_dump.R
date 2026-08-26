@@ -101,6 +101,178 @@ for (i in seq_len(nrow(cases))) {
     put(paste0("wilson_", cs$case, "_hi"), ci[2], 1e-10)
 }
 
+# --- Declared-survey subscales (declared-range reversal, per-subscale) ---
+# From lane_survey_declared_data.csv plus the two declaration files
+# (lane_survey_declared_scales.csv, lane_survey_declared_items.csv). Two
+# independent routes to every alpha-family value, agreeing to 1e-12 or the
+# run stops:
+#   Route A: base R from the covariance matrix (the v90 formula).
+#   Route B: psych::alpha on data reversed by psych::reverse.code(keys, ...,
+#            mini=, maxi=) using the SUBSCALE'S DECLARED range — not
+#            alpha()'s own automatic keys= reversal, which reverse-codes
+#            each item against its OBSERVED min/max and would silently
+#            diverge from the declared-range rule the plan pins (verified:
+#            Q2's observed max is 4 against a declared max of 5; Ease's R1/
+#            R3 never touch the declared 0/100 endpoints). reverse.code()
+#            is the same psych function alpha() calls internally; feeding
+#            it the declared mini/maxi and check.keys=FALSE afterwards is
+#            "psych::alpha with keys= carrying the declared reversal" done
+#            through psych's own reversal primitive instead of through its
+#            observed-range default.
+agree_or_stop <- function(label, a, b, tol = 1e-12) {
+    d <- abs(a - b)
+    bad <- is.na(d) | d > tol
+    if (any(bad)) {
+        stop(sprintf(paste0("DISAGREEMENT [%s]: base-R vs psych differ by up to %.3e ",
+                            "(tol %.3e)\n  base-R: %s\n  psych : %s"),
+                     label, suppressWarnings(max(d, na.rm = TRUE)), tol,
+                     paste(format(a, digits = 17), collapse = ", "),
+                     paste(format(b, digits = 17), collapse = ", ")))
+    }
+}
+
+base_alpha_cov <- function(cc) {
+    k <- ncol(cc); C <- stats::cov(cc)
+    (k / (k - 1)) * (1 - sum(diag(C)) / sum(C))
+}
+base_feldt <- function(a, n, k, level = 0.95) {
+    df1 <- n - 1; df2 <- (n - 1) * (k - 1)
+    tail <- (1 - level) / 2
+    c(lo = 1 - (1 - a) * stats::qf(1 - tail, df1, df2),
+      hi = 1 - (1 - a) * stats::qf(tail, df1, df2))
+}
+base_alpha_drop <- function(cc) {
+    k <- ncol(cc); C <- stats::cov(cc)
+    vapply(seq_len(k), function(j) {
+        kk <- k - 1
+        if (kk < 2) return(NA_real_)
+        Cj <- C[-j, -j, drop = FALSE]
+        (kk / (kk - 1)) * (1 - sum(diag(Cj)) / sum(Cj))
+    }, numeric(1))
+}
+# item-rest: item j against the sum of the OTHER items in its subscale.
+# item-total (uncorrected): item j against the subscale total INCLUDING j.
+base_item_rest_total <- function(cc) {
+    k <- ncol(cc)
+    total <- rowSums(cc)
+    rest <- vapply(seq_len(k), function(j)
+        stats::cor(cc[, j], total - cc[, j]), numeric(1))
+    tot <- vapply(seq_len(k), function(j)
+        stats::cor(cc[, j], total), numeric(1))
+    list(rest = rest, tot = tot)
+}
+
+decl_data   <- read.csv(file.path(csvdir, "lane_survey_declared_data.csv"),
+                        stringsAsFactors = FALSE)
+decl_scales <- read.csv(file.path(csvdir, "lane_survey_declared_scales.csv"),
+                        stringsAsFactors = FALSE)
+decl_items  <- read.csv(file.path(csvdir, "lane_survey_declared_items.csv"),
+                        stringsAsFactors = FALSE)
+
+for (i in seq_len(nrow(decl_scales))) {
+    sname <- decl_scales$scale[i]
+    smin  <- decl_scales$min[i]
+    smax  <- decl_scales$max[i]
+    ritems <- decl_items[decl_items$role == sname, ]
+    cols <- ritems$item
+    keys <- ifelse(ritems$reversed == 1, -1, 1)
+
+    raw <- as.matrix(decl_data[, cols, drop = FALSE])
+    storage.mode(raw) <- "double"
+
+    # -- declared reversal applied: min + max - x on the declared range ---
+    reversed <- psych::reverse.code(keys, raw,
+                                    mini = rep(smin, length(cols)),
+                                    maxi = rep(smax, length(cols)))
+    colnames(reversed) <- cols
+
+    keep <- stats::complete.cases(reversed)
+    cc <- reversed[keep, , drop = FALSE]
+    n <- nrow(cc); k <- ncol(cc); nExcluded <- nrow(reversed) - n
+
+    a_base <- base_alpha_cov(cc)
+    fc <- base_feldt(a_base, n, k)
+    drop_base <- base_alpha_drop(cc)
+    ir <- base_item_rest_total(cc)
+
+    p <- suppressWarnings(psych::alpha(as.data.frame(cc), check.keys = FALSE,
+                                       warnings = FALSE))
+    agree_or_stop(sprintf("%s alpha", sname), a_base, p$total$raw_alpha)
+    agree_or_stop(sprintf("%s feldt lo", sname), fc[["lo"]], p$feldt$lower.ci[[1]])
+    agree_or_stop(sprintf("%s feldt hi", sname), fc[["hi"]], p$feldt$upper.ci[[1]])
+    if (k >= 3) {
+        agree_or_stop(sprintf("%s alpha-if-deleted", sname), drop_base,
+                      p$alpha.drop$raw_alpha)
+    }
+    agree_or_stop(sprintf("%s item-rest", sname), ir$rest, p$item.stats$r.drop)
+    agree_or_stop(sprintf("%s item-total (uncorrected)", sname), ir$tot,
+                 p$item.stats$raw.r)
+
+    put(sprintf("declared_%s_alpha", sname), a_base, 1e-10)
+    put(sprintf("declared_%s_feldt_lo", sname), fc[["lo"]], 1e-8)
+    put(sprintf("declared_%s_feldt_hi", sname), fc[["hi"]], 1e-8)
+    put(sprintf("declared_%s_n", sname), n, 0)
+    put(sprintf("declared_%s_nExcluded", sname), nExcluded, 0)
+    for (j in seq_len(k)) {
+        if (k >= 3) {
+            put(sprintf("declared_%s_drop_%s", sname, cols[j]), drop_base[j], 1e-10)
+        }
+        put(sprintf("declared_%s_itemrest_%s", sname, cols[j]), ir$rest[j], 1e-10)
+        put(sprintf("declared_%s_itemtotal_%s", sname, cols[j]), ir$tot[j], 1e-10)
+    }
+
+    # -- respondent scale score: mean of the subscale's items after reverse-
+    # scoring, complete-case (missing any item -> no score). Counts only,
+    # never the 24 individual scores.
+    put(sprintf("declared_%s_scoredN", sname), n, 0)
+    put(sprintf("declared_%s_scoredNone", sname), nExcluded, 0)
+
+    # -- KR-20 case: Knowledge's declared range spans exactly two values
+    # (max = min + 1) and every item is binary within it. Same alpha
+    # family; asserts nothing new, just records under a name that says so.
+    if ((smax - smin) == 1) {
+        put(sprintf("kr20_%s_alpha", sname), a_base, 1e-10)
+        put(sprintf("kr20_%s_feldt_lo", sname), fc[["lo"]], 1e-8)
+        put(sprintf("kr20_%s_feldt_hi", sname), fc[["hi"]], 1e-8)
+        put(sprintf("kr20_%s_n", sname), n, 0)
+        put(sprintf("kr20_%s_nExcluded", sname), nExcluded, 0)
+    }
+
+    # -- translation invariance: Ease + 1e8, alpha unchanged -------------
+    if (sname == "Ease") {
+        cc_off <- cc + 1e8
+        a_off <- base_alpha_cov(cc_off)
+        p_off <- suppressWarnings(psych::alpha(as.data.frame(cc_off),
+                                               check.keys = FALSE, warnings = FALSE))
+        agree_or_stop("Ease offset alpha", a_off, p_off$total$raw_alpha)
+        put("declared_Ease_offset_alpha", a_off, 1e-10)
+    }
+
+    # -- unreversed control: alpha WITHOUT the declared reversal. This is
+    # the wrong-declaration value; the red demo compares it to
+    # declared_<scale>_alpha and the reversed-flag-drop leg needs it to
+    # differ. It is NOT what a red demo on the RANGE constant needs: raw
+    # alpha, the Feldt CI, alpha-if-deleted, and the item-rest/item-total
+    # correlations are all functions of the covariance matrix alone, so
+    # they are invariant to the specific numeric endpoints used in
+    # min + max - x (only the SIGN of the transform -- whether an item is
+    # reversed at all -- moves them; verified empirically and provable
+    # algebraically: Cov(a_i + b_i x_i, x_j) = b_i Cov(x_i, x_j) for any
+    # constant a_i, so alpha and the item correlations never see a_i).
+    # A wrong declared RANGE (right sign, wrong endpoints) therefore never
+    # moves alpha; what it moves is the absolute scale-score mean, which
+    # sits on the printed response scale. See the report for the demo.
+    ccraw <- raw[stats::complete.cases(raw), , drop = FALSE]
+    a_unrev <- base_alpha_cov(ccraw)
+    fc_unrev <- base_feldt(a_unrev, nrow(ccraw), ncol(ccraw))
+    p_unrev <- suppressWarnings(psych::alpha(as.data.frame(ccraw), check.keys = FALSE,
+                                             warnings = FALSE))
+    agree_or_stop(sprintf("%s unreversed alpha", sname), a_unrev, p_unrev$total$raw_alpha)
+    put(sprintf("declared_%s_unrev_alpha", sname), a_unrev, 1e-10)
+    put(sprintf("declared_%s_unrev_feldt_lo", sname), fc_unrev[["lo"]], 1e-8)
+    put(sprintf("declared_%s_unrev_feldt_hi", sname), fc_unrev[["hi"]], 1e-8)
+}
+
 out <- do.call(rbind, rows)
 outfile <- file.path(here, "lane_survey_oracle_values.csv")
 write.csv(out, outfile, row.names = FALSE)

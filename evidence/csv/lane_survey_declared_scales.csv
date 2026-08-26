@@ -1,0 +1,5 @@
+scale,min,max,type
+Confidence,1,5,ordinal
+Anxiety,1,5,ordinal
+Knowledge,0,1,ordinal
+Ease,0,100,continuous

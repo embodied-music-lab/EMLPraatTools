@@ -1,0 +1,16 @@
+item,role,reversed
+Q1,Confidence,0
+Q2,Confidence,0
+Q3,Confidence,1
+Q4,Confidence,0
+Q5,Anxiety,0
+Q6,Anxiety,1
+Q7,Anxiety,0
+B1,Knowledge,0
+B2,Knowledge,0
+B3,Knowledge,0
+R1,Ease,0
+R2,Ease,0
+R3,Ease,1
+Voice,grouping,0
+Notes,ignore,0

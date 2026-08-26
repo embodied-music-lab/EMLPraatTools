@@ -2,18 +2,48 @@
 # EML Stats : Psychometrics
 # ============================================================================
 # Module: eml-psychometrics.praat
-# Version: 1.0
-# Date: 17 August 2026
+# Version: 1.2
+# Date: 26 August 2026
+#
+# V1.1: Adds @emlSurveyValidateDeclaration, the survey module's declaration
+#       validator. It checks a data Table against a scales Table and an
+#       items Table (the two-CSV declaration described in
+#       evidence/csv/lane_survey_declared_SCHEMA.md) and refuses before any
+#       reliability number is computed. Stage 1 of the survey module build:
+#       schemas, validator, oracles. No reversal transform, no per-subscale
+#       routing, no report -- those are wired to this validator later and do
+#       not live in this module.
+#
+# V1.2: Adds refusals 6-10 to @emlSurveyValidateDeclaration -- four
+#       declaration-shape faults the verification pass proved pass silently
+#       (an illegal `reversed` value, a duplicated item name, an illegal
+#       scale `type`, a non-numeric item data column) plus one ordering
+#       repair (a declared min not below its declared max, now caught as a
+#       declaration fault instead of misreported as a bad respondent row).
+#       Also exposes, once, the KR-20 naming condition (declared range
+#       spans exactly two values) as a per-scale output, so Stage 2 does
+#       not re-derive it. No reversal transform, no per-subscale routing,
+#       no report -- still Stage 1 only.
 #
 # Part of the EML Stats library (EML Praat Tools).
 # License: GPL-3.0-or-later
 #
-# Provides: @emlCronbachAlpha, @emlAlphaInfluence
+# Provides: @emlCronbachAlpha, @emlAlphaInfluence,
+#   @emlSurveyValidateDeclaration
 #
 # Internal helpers: @eml_listwiseComplete
 #
-# Dependencies: None (uses only Praat built-in vector and matrix
-# primitives and the built-in F distribution).
+# Dependencies: @emlCronbachAlpha and @emlAlphaInfluence use only Praat
+# built-in vector and matrix primitives and the built-in F distribution.
+#
+#   @emlSurveyValidateDeclaration (v1.1) requires @emlStripHeaderQuotes from
+#   eml-extract.praat. The calling script must include extract
+#   before psychometrics:
+#     include eml-extract.praat
+#     include eml-psychometrics.praat
+#
+#   V1.2's refusal 8 additionally calls @emlAuditColumn, also from
+#   eml-extract.praat -- no new include is needed beyond the one above.
 #
 # All procedures use the "eml" prefix (EML Stats) to avoid
 # namespace collisions with user scripts.
@@ -387,6 +417,680 @@ procedure emlAlphaInfluence: .data##
         endif
     endif
 endproc
+
+# ============================================================================
+# @emlSurveyValidateDeclaration
+# ============================================================================
+# Checks a survey declaration against the data it describes, before any
+# reliability number is computed. The declaration is two small Tables (read
+# from the two CSVs at evidence/csv/lane_survey_declared_SCHEMA.md's format
+# -- a caller with a path just needs two "Read Table from comma-separated
+# file..." lines, so no reader procedure lives here):
+#
+#   .scalesTableId - one row per subscale: columns "scale", "min", "max",
+#                    "type" ("ordinal" or "continuous")
+#   .itemsTableId  - one row per data column: columns "item", "role" (a
+#                    scale name, "grouping", or "ignore"), "reversed" (0/1)
+#
+# against the data itself:
+#
+#   .dataTableId   - one row per respondent, one column per question
+#
+# Ten refusals. The first one found wins and stops the checks that follow
+# it. Refusals 1-5 are Ian's original plan (SURVEY_MODULE_PLAN_2026-08-25.md,
+# "The validator"); refusals 6-9 are four ways the verification pass proved a
+# declaration passes all five while leaving Stage 2's routing unsafe, each
+# independently probed against Praat 6.6.30 and approved by Ian; refusal 10
+# is a contract repair to refusal 2, not a new probed hole, flagged as such
+# where it is checked below -- it is Ian's to veto.
+#
+#   1. An item names a column the data table does not have.
+#   2. A data value falls outside its subscale's declared range. A MISSING
+#      cell is not out of range -- listwise deletion handles it later, and
+#      this refusal must not fire on it.
+#   3. A subscale has fewer than two items.
+#   4. An item declared "grouping" or "ignore" has reversed set to 1.
+#   5. The scales file and the items file disagree on subscale names, in
+#      EITHER direction: an item names a scale the scales file lacks, or a
+#      declared scale has no item using it.
+#   6. An item's `reversed` holds a value other than 0 or 1. The refusal 4
+#      guard below reads "if .itemReversed[.i] = 1", true only for the
+#      legal "reversed" value, so anything else passes it silently and is
+#      treated as not-reversed with no disclosure.
+#   7. An item name is declared more than once in survey_items.csv. Without
+#      this, Stage 2 would read that column into its subscale twice -- once
+#      forward, once reversed if so declared -- inflating k and injecting a
+#      perfectly anti-correlated pair.
+#   8. An item resolved to a subscale has a non-numeric data column. Refusal
+#      2's range check reads the same cell through plain "Get value:",
+#      which returns undefined for a non-numeric cell exactly as it does
+#      for a genuinely missing one, so a text column (e.g. a scale item
+#      mistakenly pointed at a free-text column) sails through refusal 2,
+#      every row is excluded by listwise deletion, and the kernel then
+#      blames the sample size for what is really a declaration fault.
+#   9. A scale's `type` is neither "ordinal" nor "continuous". The scales
+#      read loop never read the type column before V1.2; Stage 2 branches
+#      on it to choose the ordinal-as-interval disclosure line and would
+#      print the wrong one, or none, on anything else.
+#  10. [CONTRACT REPAIR, not a new probed hole -- Ian's to veto] A scale's
+#      declared minimum is not below its declared maximum. Before this,
+#      swapped endpoints (e.g. min 5, max 1) reached refusal 2 first, which
+#      then named a RESPONDENT ROW with a remedy to check that row's data --
+#      sending the user to inspect clean data when the fault is the
+#      declaration's own transposed pair. An inverted range is a fault in
+#      the declaration itself, not in any respondent's answer, so it must
+#      be caught before any respondent row is examined.
+#
+# ORDERING, why refusals 6, 7, 9, 10 sit before 2 and 8 rather than after
+# 5: 6, 7, 9 and 10 are faults in the declaration ITSELF -- each is decided
+# from survey_items.csv or survey_scales.csv alone, with no data Table read
+# at all -- while 2 and 8 both read every respondent's data. A declaration
+# fault must be reported before any data-reading refusal has a chance to
+# misreport it (refusal 10's whole reason for existing), so the checked
+# order is: 1, 7, 6, 9, 10, 8, 2, 3, 4, 5. Within the four declaration-shape
+# faults, the items-table checks (7, 8's precondition aside, then 6) run
+# before the scales-table checks (9, 10) because the items table is the one
+# read first, above; 7 (no item name repeated) runs before 6 (each
+# `reversed` value is legal) because a row's own name is the more basic
+# fact about it. This reordering only inserts new checks -- it does not
+# alter what refusals 1-5 individually decide, so a fixture that seeds
+# exactly one of the original five defects (and nothing from 6, 7, 9, 10)
+# still resolves to that same original code; validate/v129_survey_
+# declaration.R keeps every refusal-1-through-5 leg passing unchanged.
+#
+# Refusal 1 is checked before refusal 2 for a reason beyond the plan's
+# ordering: refusal 2's range check reads every item's data column by name,
+# and it can only do that safely once refusal 1 has confirmed every item
+# names a real column. By the time refusal 2's loop runs, that precondition
+# already holds.
+#
+# THE TEACHING-MESSAGE CONTRACT (docs/CHANGE_ORDER_CONFORMANCE_LINT.md): the
+# rule in one sentence, the reason in one line, what to do instead. The rule
+# and the reason are assembled into .error$; the fix is .remedy$, kept as
+# its own output so a caller can show it separately (a dialog action line,
+# a CSV note) without parsing a sentence for it.
+#
+# ----------------------------------------------------------------------------
+# DRAFT LANGUAGE -- awaiting Ian's approval (language section, plan p.159).
+# Every fragment below is user-facing wording, not logic. All five are
+# collected in this one block, in refusal order, so approved wording drops
+# in by editing these fragments alone; nothing below this block should need
+# to change when it does. Each fragment is a literal piece of the sentence;
+# the check sites concatenate them around the item/scale/row/value in
+# question with "+". Every fragment is plain ASCII (CLAUDE.md: any string
+# literal that can reach a file must be).
+# ----------------------------------------------------------------------------
+procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTableId
+    # --- Outputs: initialize before any check runs ---
+    .error$ = ""
+    .remedy$ = ""
+    .refusal = 0
+    .badItem$ = ""
+    .badScale$ = ""
+    .badRow = 0
+    .badValue = undefined
+    .badMin = undefined
+    .badMax = undefined
+    .scaleItemCount = undefined
+    .badRole$ = ""
+    .badDirection$ = ""
+    ; V1.2 additions (refusals 6-10) below. .badItem$, .badScale$ and
+    ; .badRow above are reused where they already say the right thing
+    ; (refusals 6-8 name an item, 9-10 name a scale, 8 names a data row);
+    ; these four are the fields those five refusals need and nothing above
+    ; already carries.
+    .badReversedValue = undefined
+    .badItemRow = 0
+    .badScaleRow = 0
+    .badTypeValue$ = ""
+    .badCellText$ = ""
+
+    # --- Canon keyword sets (V1.2), stated ONCE here -- every check below
+    # that needs to know a legal `reversed` value or a legal `type` keyword
+    # reads one of these, never a literal. (The pre-existing "grouping" /
+    # "ignore" role literals in refusals 4 and 5 above are untouched V1.1
+    # code and outside this addition's scope.)
+    .reversedValueFalse = 0
+    .reversedValueTrue = 1
+    .typeKeywordOrdinal$ = "ordinal"
+    .typeKeywordContinuous$ = "continuous"
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 1: item names a column the data table lacks.
+    .msg1a$ = "Every item in survey_items.csv must name a column that "
+    ... + "exists in the data table. Item """
+    .msg1b$ = """ does not match any column header in the data table, "
+    ... + "so there is nothing to read its responses from."
+    .rem1$ = "Correct the item name in survey_items.csv to match the "
+    ... + "data table's column header exactly, or delete this row if "
+    ... + "the column no longer exists."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 2: a data value outside its subscale's declared range.
+    .msg2a$ = "Every response must fall within its subscale's declared "
+    ... + "range. Respondent row "
+    .msg2b$ = ", item """
+    .msg2c$ = """ (subscale """
+    .msg2d$ = """), has the value "
+    .msg2e$ = ", outside the declared range "
+    .msg2f$ = " to "
+    .msg2g$ = "."
+    .rem2a$ = "Check respondent row "
+    .rem2b$ = " for a data-entry error, or correct the declared range "
+    ... + "for """
+    .rem2c$ = """ in survey_scales.csv if the printed range was "
+    ... + "mistyped."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 3: a subscale with fewer than two items.
+    .msg3a$ = "Every subscale needs at least two items before its "
+    ... + "reliability can be computed. Subscale """
+    .msg3b$ = """ has "
+    .msg3c$ = " item(s) declared."
+    .rem3a$ = "Add another item with role """
+    .rem3b$ = """ in survey_items.csv, or remove """
+    .rem3c$ = """ from survey_scales.csv if it is meant to have only "
+    ... + "one question."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 4: reversed set on a grouping or ignore column.
+    .msg4a$ = "Only a scale item can be reverse-scored. Item """
+    .msg4b$ = """ is declared """
+    .msg4c$ = """ but has reversed set to 1."
+    .rem4a$ = "Set reversed to 0 for """
+    .rem4b$ = """ in survey_items.csv, or give it a subscale role if "
+    ... + "it is meant to be scored."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 5, direction A: an item names a scale the scales file lacks.
+    .msg5aA$ = "Every item's role must be a subscale declared in "
+    ... + "survey_scales.csv, or the literal value grouping or ignore. "
+    ... + "Item """
+    .msg5aB$ = """ names """
+    .msg5aC$ = """, which survey_scales.csv does not declare."
+    .rem5aA$ = "Add a row for """
+    .rem5aB$ = """ to survey_scales.csv, or correct the role for """
+    .rem5aC$ = """ in survey_items.csv."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 5, direction B: a declared scale that no item uses.
+    .msg5bA$ = "Every subscale in survey_scales.csv must be used by at "
+    ... + "least one item. Subscale """
+    .msg5bB$ = """ has no item declaring it as a role."
+    .rem5bA$ = "Add an item with role """
+    .rem5bB$ = """ in survey_items.csv, or remove """
+    .rem5bC$ = """ from survey_scales.csv if it is not part of this "
+    ... + "instrument."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 6: reversed holds a value other than 0 or 1.
+    .msg6a$ = "reversed must be exactly 0 or 1; any other value is "
+    ... + "silently treated as ""not reversed"" and the item stays "
+    ... + "forward-scored with no disclosure. Item """
+    .msg6b$ = """ has reversed set to "
+    .msg6c$ = "."
+    .rem6a$ = "Set reversed to 0 or 1 for """
+    .rem6b$ = """ in survey_items.csv."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 7: an item name declared more than once.
+    .msg7a$ = "Every item name in survey_items.csv must be unique. Item """
+    .msg7b$ = """ is declared more than once; the second declaration is "
+    ... + "row "
+    .msg7c$ = "."
+    .rem7a$ = "Remove the duplicate row for """
+    .rem7b$ = """ in survey_items.csv, keeping only one."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 8: an item resolved to a subscale has a non-numeric data
+    # column.
+    .msg8a$ = "Every item scored as part of a subscale must hold numeric "
+    ... + "responses. Item """
+    .msg8b$ = """ (subscale """
+    .msg8c$ = """) has a non-numeric value in respondent row "
+    .msg8d$ = ": """
+    .msg8e$ = """."
+    .rem8a$ = "Correct or remove the non-numeric cell in column """
+    .rem8b$ = """ (row "
+    .rem8c$ = "), or change its role in survey_items.csv if the column "
+    ... + "is not meant to be a scale item."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 9: a scale type that is neither ordinal nor continuous.
+    .msg9a$ = "A subscale's type must be exactly ""ordinal"" or "
+    ... + """continuous"". Subscale """
+    .msg9b$ = """ declares type """
+    .msg9c$ = """, which is neither."
+    .rem9a$ = "Correct the type for """
+    .rem9b$ = """ in survey_scales.csv to ordinal or continuous."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 10 [contract repair -- Ian's to veto]: a declared minimum
+    # not below its declared maximum.
+    .msg10a$ = "A subscale's declared minimum must be less than its "
+    ... + "declared maximum. Subscale """
+    .msg10b$ = """ declares min "
+    .msg10c$ = " and max "
+    .msg10d$ = ", which is not a valid range."
+    .rem10a$ = "Check survey_scales.csv for """
+    .rem10b$ = """: the min and max may be transposed."
+    # ------------------------------------------------------------------------
+    # END draft language block.
+    # ------------------------------------------------------------------------
+
+    # --- Normalize any quoted column headers before any table lookup ---
+    # Praat's CSV reader strips quotes from quoted DATA cells but not from
+    # quoted HEADER cells (@emlStripHeaderQuotes, eml-extract.praat: a
+    # header written by R's write.csv(), which quotes headers by default,
+    # arrives as the literal string "Q1" including the quote characters,
+    # and "Get column index: "Q1"" then returns 0 against it). All three
+    # declaration tables are exactly as hand-editable and
+    # R/Excel-exportable as each other -- evidence/csv/
+    # lane_survey_declared_SCHEMA.md says as much of the two declaration
+    # files ("You can also edit them by hand") -- so all three are
+    # normalized here, once, before the first "Get value" / "Get column
+    # index" below. Every column-name lookup that follows -- "item",
+    # "role", "reversed", "scale", "min", "max", and every user-declared
+    # item name matched against the data table -- then sees clean labels,
+    # rather than adding a quote check at each of the several sites that
+    # look a column up. @emlStripHeaderQuotes is idempotent on a table
+    # with no quoted labels, so this costs nothing on a clean file.
+    @emlStripHeaderQuotes: .itemsTableId
+    @emlStripHeaderQuotes: .scalesTableId
+    @emlStripHeaderQuotes: .dataTableId
+
+    # --- Read the items table into procedure-local arrays ---
+    selectObject: .itemsTableId
+    .nItems = Get number of rows
+    for .i from 1 to .nItems
+        selectObject: .itemsTableId
+        .itemName$[.i] = Get value: .i, "item"
+        .itemRole$[.i] = Get value: .i, "role"
+        .itemReversed[.i] = Get value: .i, "reversed"
+    endfor
+
+    # --- Read the scales table into procedure-local arrays ---
+    selectObject: .scalesTableId
+    .nScales = Get number of rows
+    for .s from 1 to .nScales
+        selectObject: .scalesTableId
+        .scaleName$[.s] = Get value: .s, "scale"
+        .scaleMin[.s] = Get value: .s, "min"
+        .scaleMax[.s] = Get value: .s, "max"
+        ; V1.2: read once, into the same loop, rather than a second pass --
+        ; refusal 9 needs .scaleType$[] and refusal 10 needs .scaleMin[] /
+        ; .scaleMax[], already read above.
+        .scaleType$[.s] = Get value: .s, "type"
+        ; V1.2: the KR-20 naming condition, stated ONCE, here, as soon as
+        ; min and max are both in hand -- "the declared range spans exactly
+        ; two values, max = min + 1" (established ruling: this is a naming
+        ; condition on the DECLARED RANGE alone, independent of the
+        ; declared type, and it is not restated anywhere else in this
+        ; procedure). Exposed as an output so Stage 2 does not re-derive it
+        ; from scratch. Meaningful only when this procedure returns
+        ; .refusal = 0 for a given scale; a scale that fails refusal 9 or
+        ; 10 still gets an entry here, computed from whatever min/max it
+        ; declared, but that entry is moot once the declaration itself is
+        ; refused.
+        .scaleIsKR20[.s] = .scaleMax[.s] = .scaleMin[.s] + 1
+    endfor
+
+    selectObject: .dataTableId
+    .nData = Get number of rows
+
+    # --- V1.2: each item's resolved subscale, computed ONCE -------------
+    # An item's role resolves to a declared subscale when it names a value
+    # in .scaleName$[]; "grouping", "ignore", and any role naming no
+    # declared scale (refusal 5's own question) resolve to 0. Refusal 2's
+    # own inline loop below asks this same question a second time, by
+    # design: refusal 2 is pre-existing V1.1 code and this addition does
+    # not alter it. Refusal 8, added in V1.2, reads .itemScaleIndex[] here
+    # instead of writing that loop a third time.
+    for .i from 1 to .nItems
+        .itemScaleIndex[.i] = 0
+        for .s from 1 to .nScales
+            if .itemRole$[.i] = .scaleName$[.s]
+                .itemScaleIndex[.i] = .s
+            endif
+        endfor
+    endfor
+
+    # ===== Refusal 1: item names a column the data table lacks =====
+    for .i from 1 to .nItems
+        selectObject: .dataTableId
+        .colIndex = Get column index: .itemName$[.i]
+        if .colIndex = 0
+            .error$ = .msg1a$ + .itemName$[.i] + .msg1b$
+            .remedy$ = .rem1$
+            .refusal = 1
+            .badItem$ = .itemName$[.i]
+            goto SURVEY_VALIDATE_DONE
+        endif
+    endfor
+
+    # ===== V1.2 additions: refusals 7, 6, 9, 10, 8 =====
+    # All five are inserted HERE -- after refusal 1, before refusal 2 --
+    # per the ordering rationale in this procedure's header comment: 7, 6,
+    # 9 and 10 are pure declaration-shape faults (decided from
+    # survey_items.csv / survey_scales.csv alone) and must run before any
+    # refusal that reads respondent data; 8 reads respondent data but must
+    # still run before refusal 2 reaches the same cells (refusal 8's own
+    # reason for existing). None of the five touches refusal 1's own logic
+    # above or refusal 2's below.
+
+    # ===== Refusal 7: an item name declared more than once =====
+    # A later duplicate is reported by ITS OWN row number in
+    # survey_items.csv: the first occurrence is not itself wrong, so
+    # naming the second occurrence names the row to delete.
+    for .i from 1 to .nItems
+        for .j from .i + 1 to .nItems
+            if .itemName$[.j] = .itemName$[.i]
+                .error$ = .msg7a$ + .itemName$[.i] + .msg7b$ + string$ (.j)
+                ... + .msg7c$
+                .remedy$ = .rem7a$ + .itemName$[.i] + .rem7b$
+                .refusal = 7
+                .badItem$ = .itemName$[.i]
+                .badItemRow = .j
+                goto SURVEY_VALIDATE_DONE
+            endif
+        endfor
+    endfor
+
+    # ===== Refusal 6: reversed holds a value other than 0 or 1 =====
+    for .i from 1 to .nItems
+        if .itemReversed[.i] <> .reversedValueFalse and .itemReversed[.i] <> .reversedValueTrue
+            .error$ = .msg6a$ + .itemName$[.i] + .msg6b$
+            ... + string$ (.itemReversed[.i]) + .msg6c$
+            .remedy$ = .rem6a$ + .itemName$[.i] + .rem6b$
+            .refusal = 6
+            .badItem$ = .itemName$[.i]
+            .badItemRow = .i
+            .badReversedValue = .itemReversed[.i]
+            goto SURVEY_VALIDATE_DONE
+        endif
+    endfor
+
+    # ===== Refusal 9: a scale type that is neither ordinal nor continuous =====
+    for .s from 1 to .nScales
+        if .scaleType$[.s] <> .typeKeywordOrdinal$ and .scaleType$[.s] <> .typeKeywordContinuous$
+            .error$ = .msg9a$ + .scaleName$[.s] + .msg9b$ + .scaleType$[.s]
+            ... + .msg9c$
+            .remedy$ = .rem9a$ + .scaleName$[.s] + .rem9b$
+            .refusal = 9
+            .badScale$ = .scaleName$[.s]
+            .badScaleRow = .s
+            .badTypeValue$ = .scaleType$[.s]
+            goto SURVEY_VALIDATE_DONE
+        endif
+    endfor
+
+    # ===== Refusal 10 [CONTRACT REPAIR -- Ian's to veto]: a declared =====
+    # ===== minimum not below its declared maximum                  =====
+    # Checked BEFORE refusal 2 so a transposed pair of endpoints is caught
+    # as the declaration fault it is, rather than reaching refusal 2's
+    # per-respondent range check and being reported as a bad DATA row.
+    for .s from 1 to .nScales
+        if .scaleMin[.s] >= .scaleMax[.s]
+            .error$ = .msg10a$ + .scaleName$[.s] + .msg10b$
+            ... + string$ (.scaleMin[.s]) + .msg10c$ + string$ (.scaleMax[.s])
+            ... + .msg10d$
+            .remedy$ = .rem10a$ + .scaleName$[.s] + .rem10b$
+            .refusal = 10
+            .badScale$ = .scaleName$[.s]
+            .badScaleRow = .s
+            .badMin = .scaleMin[.s]
+            .badMax = .scaleMax[.s]
+            goto SURVEY_VALIDATE_DONE
+        endif
+    endfor
+
+    # ===== Refusal 8: an item resolved to a subscale has a non-numeric =====
+    # ===== data column                                                =====
+    # Only items whose role resolves to a declared subscale need numeric
+    # data (.itemScaleIndex[.i] > 0, computed once above) -- a grouping or
+    # ignore column may legitimately hold text, e.g. Voice holding
+    # "Soprano" / "Alto", and is not checked here. @emlAuditColumn
+    # (eml-extract.praat) tells a non-numeric cell (its kind 3,
+    # "unreadable": text that is not a number in any locale) apart from a
+    # genuinely empty one (its kind 1, "empty"); only the former refuses
+    # here, so a real missing cell stays exempt exactly as refusal 2's own
+    # header comment requires.
+    for .i from 1 to .nItems
+        if .itemScaleIndex[.i] > 0
+            @emlAuditColumn: .dataTableId, .itemName$[.i]
+            if emlAuditColumn.error$ = "" and emlAuditColumn.nUnreadable > 0
+                .matchedScaleIdx = .itemScaleIndex[.i]
+                .error$ = .msg8a$ + .itemName$[.i] + .msg8b$
+                ... + .scaleName$[.matchedScaleIdx] + .msg8c$
+                ... + string$ (emlAuditColumn.firstUnreadableRow) + .msg8d$
+                ... + emlAuditColumn.firstUnreadableValue$ + .msg8e$
+                .remedy$ = .rem8a$ + .itemName$[.i] + .rem8b$
+                ... + string$ (emlAuditColumn.firstUnreadableRow) + .rem8c$
+                .refusal = 8
+                .badItem$ = .itemName$[.i]
+                .badScale$ = .scaleName$[.matchedScaleIdx]
+                .badRow = emlAuditColumn.firstUnreadableRow
+                .badCellText$ = emlAuditColumn.firstUnreadableValue$
+                goto SURVEY_VALIDATE_DONE
+            endif
+        endif
+    endfor
+
+    # ===== Refusal 2: a data value outside its subscale's declared range =====
+    # Every item's column is now known to exist (refusal 1 passed), so
+    # "Get value:" below addresses a real column. Only items whose role
+    # resolves to a declared scale are checked here; a role that resolves
+    # to nothing is refusal 5's question, not this one, and is left alone.
+    for .i from 1 to .nItems
+        .role$ = .itemRole$[.i]
+        .matched = 0
+        for .s from 1 to .nScales
+            if .role$ = .scaleName$[.s]
+                .matched = 1
+                .sMin = .scaleMin[.s]
+                .sMax = .scaleMax[.s]
+            endif
+        endfor
+        if .matched = 1
+            for .r from 1 to .nData
+                selectObject: .dataTableId
+                .val = Get value: .r, .itemName$[.i]
+                if .val <> undefined
+                    if .val < .sMin or .val > .sMax
+                        .error$ = .msg2a$ + string$ (.r) + .msg2b$
+                        ... + .itemName$[.i] + .msg2c$ + .role$ + .msg2d$
+                        ... + string$ (.val) + .msg2e$ + string$ (.sMin)
+                        ... + .msg2f$ + string$ (.sMax) + .msg2g$
+                        .remedy$ = .rem2a$ + string$ (.r) + .rem2b$
+                        ... + .role$ + .rem2c$
+                        .refusal = 2
+                        .badItem$ = .itemName$[.i]
+                        .badScale$ = .role$
+                        .badRow = .r
+                        .badValue = .val
+                        .badMin = .sMin
+                        .badMax = .sMax
+                        goto SURVEY_VALIDATE_DONE
+                    endif
+                endif
+            endfor
+        endif
+    endfor
+
+    # ===== Refusal 3: a subscale with fewer than two items =====
+    # Deliberately >= 1 here, not just < 2: a scale with ZERO items is not
+    # "too few items to compute reliability on", it is refusal 5 direction
+    # B below -- the scales file declaring a subscale the items file never
+    # uses. Folding count = 0 into this refusal would make that direction
+    # of refusal 5 unreachable (a scale nobody uses always has 0 items, so
+    # this check would claim it first, every time), which is exactly the
+    # dead-code trap: the plan (SURVEY_MODULE_PLAN_2026-08-25.md) pins these
+    # as two named refusals, each needing its own seeded red demo, and a
+    # refusal that can never fire cannot be demonstrated red.
+    for .s from 1 to .nScales
+        .count = 0
+        for .i from 1 to .nItems
+            if .itemRole$[.i] = .scaleName$[.s]
+                .count = .count + 1
+            endif
+        endfor
+        if .count >= 1 and .count < 2
+            .error$ = .msg3a$ + .scaleName$[.s] + .msg3b$ + string$ (.count)
+            ... + .msg3c$
+            .remedy$ = .rem3a$ + .scaleName$[.s] + .rem3b$
+            ... + .scaleName$[.s] + .rem3c$
+            .refusal = 3
+            .badScale$ = .scaleName$[.s]
+            .scaleItemCount = .count
+            goto SURVEY_VALIDATE_DONE
+        endif
+    endfor
+
+    # ===== Refusal 4: reversed flag set on a grouping or ignore column =====
+    for .i from 1 to .nItems
+        if .itemReversed[.i] = 1
+            if .itemRole$[.i] = "grouping" or .itemRole$[.i] = "ignore"
+                .error$ = .msg4a$ + .itemName$[.i] + .msg4b$
+                ... + .itemRole$[.i] + .msg4c$
+                .remedy$ = .rem4a$ + .itemName$[.i] + .rem4b$
+                .refusal = 4
+                .badItem$ = .itemName$[.i]
+                .badRole$ = .itemRole$[.i]
+                goto SURVEY_VALIDATE_DONE
+            endif
+        endif
+    endfor
+
+    # ===== Refusal 5: scales file and items file disagree on subscale =====
+    # ===== names, checked in both directions                          =====
+
+    # Direction A: an item names a scale the scales file lacks.
+    for .i from 1 to .nItems
+        .role$ = .itemRole$[.i]
+        if .role$ <> "grouping" and .role$ <> "ignore"
+            .matched = 0
+            for .s from 1 to .nScales
+                if .role$ = .scaleName$[.s]
+                    .matched = 1
+                endif
+            endfor
+            if .matched = 0
+                .error$ = .msg5aA$ + .itemName$[.i] + .msg5aB$ + .role$
+                ... + .msg5aC$
+                .remedy$ = .rem5aA$ + .role$ + .rem5aB$ + .itemName$[.i]
+                ... + .rem5aC$
+                .refusal = 5
+                .badItem$ = .itemName$[.i]
+                .badScale$ = .role$
+                .badDirection$ = "item_unknown_scale"
+                goto SURVEY_VALIDATE_DONE
+            endif
+        endif
+    endfor
+
+    # Direction B: a declared scale that no item uses.
+    for .s from 1 to .nScales
+        .used = 0
+        for .i from 1 to .nItems
+            if .itemRole$[.i] = .scaleName$[.s]
+                .used = 1
+            endif
+        endfor
+        if .used = 0
+            .error$ = .msg5bA$ + .scaleName$[.s] + .msg5bB$
+            .remedy$ = .rem5bA$ + .scaleName$[.s] + .rem5bB$
+            ... + .scaleName$[.s] + .rem5bC$
+            .refusal = 5
+            .badScale$ = .scaleName$[.s]
+            .badDirection$ = "scale_unused"
+            goto SURVEY_VALIDATE_DONE
+        endif
+    endfor
+
+    label SURVEY_VALIDATE_DONE
+endproc
+
+# ============================================================================
+# Outputs: @emlSurveyValidateDeclaration
+# ============================================================================
+#   .error$           - refusal message (rule + reason), or "" when the
+#                       declaration is sound
+#   .remedy$          - what to do instead, or "" when .error$ is ""
+#   .refusal          - 0 when sound; else 1-10 (see the ordering comment
+#                       above the procedure for what each is and the order
+#                       they are checked in; refusal 10 is a contract
+#                       repair, not one of Ian's original five or the four
+#                       probed additions)
+#   .badItem$         - the item/column name implicated (refusals 1, 2, 4,
+#                       6, 7, 8, and refusal 5 direction A); "" otherwise
+#   .badScale$        - the subscale name implicated (refusals 2, 3, 8, 9,
+#                       10, and refusal 5, either direction); "" otherwise
+#   .badRow           - respondent ROW NUMBER in the data table (refusals 2
+#                       and 8); 0 otherwise
+#   .badValue         - the offending response value (refusal 2 only);
+#                       undefined otherwise
+#   .badMin           - the declared range minimum for .badScale$
+#                       (refusals 2 and 10); undefined otherwise
+#   .badMax           - the declared range maximum for .badScale$
+#                       (refusals 2 and 10); undefined otherwise
+#   .scaleItemCount   - number of items declared with role .badScale$
+#                       (refusal 3 only); undefined otherwise
+#   .badRole$         - the disallowed role ("grouping" or "ignore") found
+#                       on a reversed item (refusal 4 only); "" otherwise
+#   .badDirection$    - which side of refusal 5 fired: "item_unknown_scale"
+#                       or "scale_unused"; "" otherwise
+#   .badReversedValue - the illegal `reversed` value found (refusal 6
+#                       only); undefined otherwise
+#   .badItemRow       - ROW NUMBER in the ITEMS table implicated (refusal 7:
+#                       the row of the repeated item name; refusal 6: the
+#                       row holding the illegal `reversed` value); 0
+#                       otherwise. Not the same table as .badRow, which is
+#                       always a DATA table row.
+#   .badScaleRow      - ROW NUMBER in the SCALES table implicated (refusals
+#                       9 and 10); 0 otherwise
+#   .badTypeValue$    - the illegal `type` string found (refusal 9 only);
+#                       "" otherwise
+#   .badCellText$     - the literal (non-numeric) contents of the offending
+#                       cell (refusal 8 only); "" otherwise
+#   .scaleName$[1..nScales]  - each declared subscale's name, in
+#                       survey_scales.csv row order
+#   .scaleType$[1..nScales]  - each declared subscale's `type` field, as
+#                       declared (not validated against the type-keyword
+#                       canon until refusal 9 runs)
+#   .scaleMin[1..nScales], .scaleMax[1..nScales] - each declared subscale's
+#                       printed response range, as declared
+#   .scaleIsKR20[1..nScales] - 1 when that subscale's declared range spans
+#                       exactly two values (max = min + 1), else 0. THE
+#                       KR-20 naming condition, stated once in this
+#                       procedure and not restated anywhere else -- Stage 2
+#                       reads this rather than re-deriving it from min/max
+#                       itself. Meaningful only once .refusal is confirmed
+#                       0 for the declaration as a whole; a scale that
+#                       fails refusal 9 or 10 still gets an entry here,
+#                       computed from whatever it declared, but that entry
+#                       is moot once the declaration itself is refused.
+#   .nScales          - number of declared subscales (length of the four
+#                       arrays immediately above)
+#
+# Access pattern:
+#   @emlSurveyValidateDeclaration: dataTable, scalesTable, itemsTable
+#   if emlSurveyValidateDeclaration.error$ <> ""
+#       code = emlSurveyValidateDeclaration.refusal
+#       ... report emlSurveyValidateDeclaration.error$ and .remedy$ ...
+#   endif
+#   ... once refusal = 0, read the KR-20 condition without re-deriving it:
+#   isKR20 = emlSurveyValidateDeclaration.scaleIsKR20[3]
+#
+# Notes:
+#   - Read-only: no cell in any of the three tables is written, and no
+#     file is read or written here (the caller reads the two CSVs into
+#     Tables with "Read Table from comma-separated file..." first).
+#   - Does not compute reversal, subscale routing, or any reliability
+#     statistic. Those are Stage 2, wired on top of a clean declaration.
+#   - Leaves .dataTableId selected on return (the last table touched by
+#     whichever check ran last), matching @emlRequireColumnPresent's
+#     convention of leaving a Table selected rather than the caller's.
+# ============================================================================
 
 # ============================================================================
 # END OF MODULE
