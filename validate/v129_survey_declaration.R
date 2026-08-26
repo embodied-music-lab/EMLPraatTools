@@ -1247,8 +1247,12 @@ if (!canDrive) {
     #     @eml_underscoreNormalize do they collide. Neither new subscale is
     #     given any item -- deliberately, so the negative control below
     #     (which relies on refusal 17 NOT firing) exercises the real
-    #     fallthrough, refusal 3 ("too few items"), rather than a fixture
-    #     that would refuse for some unrelated reason either way.
+    #     fallthrough, refusal 5 direction B ("a declared scale that no
+    #     item uses" -- refusal 3's own guard is deliberately
+    #     `.count >= 1 and .count < 2`, never just `.count < 2`, precisely
+    #     so a scale with ZERO items skips refusal 3 and falls through to
+    #     refusal 5 instead), rather than a fixture that would refuse for
+    #     some unrelated reason either way.
     scales17 <- c(clean_scales_lines, "Vocal Health,1,5,ordinal",
                  "Vocal_Health,1,5,ordinal")
     p17 <- write_csv_lines(scales17, "d17_scales.csv")
@@ -1256,7 +1260,7 @@ if (!canDrive) {
     results$d17 <- out17
     check_true("v129", "[refusal 17] probe ran", ran_ok(out17))
     if (ran_ok(out17)) {
-        check("v129", "[refusal 17] code is 17 (two scale names collide once underscore-normalized), not 0 (\"Vocal Health\"/\"Vocal_Health\" are distinct raw text, so refusal 13's raw-equality check alone would validate this clean) and not 3 (the fallthrough this refusal must pre-empt: neither new subscale has any item)",
+        check("v129", "[refusal 17] code is 17 (two scale names collide once underscore-normalized), not 0 (\"Vocal Health\"/\"Vocal_Health\" are distinct raw text, so refusal 13's raw-equality check alone would validate this clean) and not 5 (the fallthrough this refusal must pre-empt: neither new subscale has any item, so with refusal 17's guard neutered the next thing to fire is refusal 5 direction B)",
               num_(out17, "res", 1), 17, tol = 0)
         check_true("v129", "[refusal 17] badScale is \"Vocal_Health\" (the LATER of the two colliding raw declarations)",
                    identical(str_(out17, "res", 3), "Vocal_Health"))
@@ -1939,10 +1943,16 @@ if (!canDrive) {
     graphsform_sites_f2 <- if (file.exists(graphsform_path_f2))
         f2_only_underscore(f2_scan_replace_sites(readLines(graphsform_path_f2, warn = FALSE))) else list()
 
-    total_sites_f2 <- 1L + length(graphsform_sites_f2)
+    # Derived, not assumed: the procedure body only counts if its own
+    # replace$ call was actually found and parsed above (canon_site_f2 non-
+    # NULL). A body that stops matching that shape leaves canon_site_f2
+    # NULL and must drop this census to 0, not silently keep counting a
+    # site nothing here verified.
+    canon_count_f2 <- if (!is.null(canon_site_f2)) 1L else 0L
+    total_sites_f2 <- canon_count_f2 + length(graphsform_sites_f2)
     check_true("v129",
-        sprintf("[Finding 2] fewer than three copies would go red here: found %d (1 procedure body + %d graphs-form site(s)); at least 3 wanted",
-                total_sites_f2, length(graphsform_sites_f2)),
+        sprintf("[Finding 2] fewer than three copies would go red here: found %d (%d procedure body + %d graphs-form site(s)); at least 3 wanted",
+                total_sites_f2, canon_count_f2, length(graphsform_sites_f2)),
         total_sites_f2 >= 3L)
     check_true("v129",
         "[Finding 2] exactly two graphs-form call sites carry the space->underscore transform today (a third appearing, or one vanishing, is itself news worth a look, not silence)",

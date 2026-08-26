@@ -825,9 +825,9 @@ endproc
 #      neither.
 #  17. [Stage 3 ruling] Two scale names collide once spaces are converted
 #      to underscores. A subscale name is a DISPLAY name and may contain
-#      spaces (item 4 of the ruling); the plugin's scores-table columns,
-#      CSV headers and file stems all use the underscore-normalized form
-#      instead, so "Vocal Health" and "Vocal_Health" -- distinct, and
+#      spaces (item 4 of the ruling); an identifier built from that name
+#      uses the underscore-normalized form instead -- in this build, a
+#      CSV term value or a file stem, so "Vocal Health" and "Vocal_Health" -- distinct, and
 #      both legal under refusal 13 alone -- collide the moment either one
 #      becomes an identifier. Checked right after refusal 13 (raw-name
 #      duplication): by construction every raw name is already unique by
@@ -882,8 +882,8 @@ endproc
 # Internal helper (Stage 3 ruling, item 4): the FORWARD half of the
 # plugin's display-name <-> identifier pairing -- spaces to underscores,
 # for turning a display name (may contain spaces, e.g. a subscale name
-# "Vocal Health") into the identifier form the plugin's scores-table
-# columns, CSV headers and file stems use ("Vocal_Health"). The REVERSE
+# "Vocal Health") into the identifier form ("Vocal_Health") that a CSV
+# term value or a file stem carries. The REVERSE
 # direction already has a name and a home, @emlUnderscoreToSpace
 # (stats/eml-output.praat:163, underscore to space, for DISPLAY); the
 # forward direction had none -- it is written inline, twice, in
@@ -892,7 +892,7 @@ endproc
 # This procedure is Ian's ruling applied on this lane's own side of that
 # boundary: the SAME one-line transform, named once, so every caller in
 # this module's reach (refusal 17's collision check, below, and anything
-# scores-table/CSV/file-stem-shaped that follows it) shares one
+# identifier-shaped that follows it) shares one
 # declaration instead of a third inline copy. It does not touch or
 # replace the graphs-form file's own two copies -- extracting THOSE into
 # a shared procedure is filed for whoever owns that file, not done here.
@@ -1556,8 +1556,8 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     # spaces become underscores. Names BOTH raw spellings, since -- unlike
     # refusal 13 -- they are not identical text.
     .msg17a$ = "Every subscale name in survey_scales.csv must stay unique "
-    ... + "once spaces are converted to underscores (the form scores-table "
-    ... + "columns, CSV headers, and file stems use). Subscale """
+    ... + "once spaces are converted to underscores (the form an export "
+    ... + "uses). Subscale """
     .msg17b$ = """ (row "
     .msg17c$ = ") and subscale """
     .msg17d$ = """ (row "
@@ -1809,7 +1809,7 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     # collision @eml_findDuplicateName reports here, with .normalize = 1,
     # is necessarily between two DIFFERENT raw spellings that only
     # coincide once spaces become underscores -- exactly "Vocal Health"
-    # and "Vocal_Health" colliding in the scores table and in any file
+    # and "Vocal_Health" colliding in a CSV term value and in any file
     # stem (item 4's contract). Reuses the SAME shared scan refusal
     # 7/13/15 already use, not a second nested loop.
     @eml_findDuplicateName: .scalesTableId, "scale", .nScales, 1

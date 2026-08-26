@@ -328,9 +328,15 @@ endproc
 # separately maintained list inside validate/. Every name below
 # corresponds to exactly one line-builder call in
 # @emlSurveyBuildSubscaleReport, below; validate/v132_survey_report_layer.R
-# reads THIS procedure's two arrays from source for the FOLLOWS class name
-# list itself, never restating THAT -- a line moved from one class to the
-# other in the arrays below is caught here, at the one place that says so.
+# reads THIS procedure's FOLLOWS array from source, then separately
+# restates the three FOLLOWS names literally (validate/v132, section 8) to
+# confirm each one is still present in the array read from source. THAT
+# catches a line moved OUT of FOLLOWS into ALWAYS -- the missing name fails
+# the restated check -- but NOT the other direction: the ALWAYS array there
+# is checked only for being non-empty, never for which names it holds, so
+# an ALWAYS line quietly moved into FOLLOWS (or duplicated there without
+# removing it from ALWAYS) is caught by nothing in that check, or anywhere
+# else in this file.
 # THIS DOES NOT MEAN EVERY v132 toggle check is built purely from these
 # two arrays, though: telling the bare item-rest header from the glossed
 # one apart needs to know what the gloss text SAYS, not just that it is
@@ -869,9 +875,12 @@ endproc
 # THE SCALE-LEVEL TERM IS THE IDENTIFIER, NOT THE DISPLAY NAME (Stage 3
 # ruling, item 4). A subscale's declared name ("Vocal Health") is a
 # DISPLAY name and may hold a space; refusal 17's own message
-# (eml-psychometrics.praat) already says so: the plugin's scores-table
-# columns, CSV headers and file stems all use the underscore-normalized
-# identifier form ("Vocal_Health") instead. This CSV's `term` column is
+# (eml-psychometrics.praat) already says so. Where that name has to
+# become an identifier rather than a label a reader sees, every space in
+# it becomes an underscore ("Vocal_Health"). In this build those
+# identifiers are this CSV's `term` VALUES and the file stems the graphs
+# form writes; the CSV's header row is a fixed literal and never varies
+# by subscale. This CSV's `term` column is
 # exactly that kind of identifier -- a downstream reader joins rows on it
 # -- so every scale-level row below runs the raw
 # emlSurveyValidateDeclaration.scaleName$[.s] through

@@ -290,16 +290,19 @@ if (!canDrive) {
     # mutate.
     #
     # A GAP THIS LEAVES, NOT CLOSED HERE: every OTHER drive_report() call
-    # in this file -- section 3's structural drive, section 7's CSV
-    # export, and every M1-M5 mutant in section 9 -- takes the default
-    # (annotate = 1, the toggle ON) and never overrides it. None of those
-    # exercise the toggle's actual SHIPPED default (OFF) at all; they
-    # exercise only the ON state. So the door-level structural checks and
-    # the CSV export checks are correct facts about running with the
-    # toggle explicitly on, never about what a user who never touches the
-    # toggle actually sees. Only section 8's own toggle-focused checks
-    # (and the "mA" default-mutation check in section 9) ever drive the
-    # real default.
+    # in this file -- section 3's structural drive, section 5's disclosure
+    # demo, section 7's CSV export (its own main drive, section 7c's
+    # Finding 4 redrive, and section 7d's Finding 1 "Vocal Health" probe
+    # and its mutant), and every M1-M5 mutant in section 9 (M4's own call
+    # sits inside door_subscale_count, which none of its callers override
+    # either) -- takes the default (annotate = 1, the toggle ON) and never
+    # overrides it. None of those exercise the toggle's actual SHIPPED
+    # default (OFF) at all; they exercise only the ON state. So the
+    # door-level structural checks and the CSV export checks are correct
+    # facts about running with the toggle explicitly on, never about what
+    # a user who never touches the toggle actually sees. Only section 8's
+    # own toggle-focused checks (including the "mA" default-mutation
+    # check, which is also in section 8) ever drive the real default.
     drive_report <- function(dirlabel, data_path, scales_path, items_path, tag,
                              also_door = FALSE, csv_export = FALSE, annotate = 1) {
         probe <- file.path(work, "scripts", paste0("v132-", tag, ".praat"))
@@ -1065,8 +1068,8 @@ if (!canDrive) {
     # 7d [Finding 1]: THE CSV TERM COLUMN CARRIES THE NORMALIZED
     #    IDENTIFIER, NOT THE DISPLAY NAME. Ian's ruling: a subscale name
     #    is a display name and may hold a space ("Vocal Health"); the
-    #    plugin's scores-table columns, CSV headers and file stems all use
-    #    the underscore-normalized identifier form ("Vocal_Health")
+    #    identifiers built from that name -- a CSV `term` value, a file
+    #    stem -- use the underscore-normalized form ("Vocal_Health")
     #    instead. Before this fix @eml_underscoreNormalize
     #    (eml-psychometrics.praat) existed but nothing called it to build
     #    an actual identifier -- @emlSurveyExportCSV wrote the RAW scale

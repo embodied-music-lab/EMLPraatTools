@@ -76,8 +76,8 @@ computation is the same either way; only the name changes.
 
 A subscale's `scale` value is its **display name** and may contain
 spaces (`"Vocal Health"`). Wherever that name has to become an
-**identifier** instead -- a scores-table column name, a CSV header, a
-file stem -- every space in it is normalized to an underscore
+**identifier** instead -- a `term` value in an exported CSV, or a file
+stem -- every space in it is normalized to an underscore
 (`"Vocal_Health"`). The reverse direction (identifier back to display
 name, underscore to space) is a separate, already-existing procedure.
 Because both directions exist, and a name can arrive already
