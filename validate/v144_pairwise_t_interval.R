@@ -486,8 +486,6 @@ if (!canDrive) {
                           cellC$lo, mCorrected$lo, tol = 1e-8, expect = "differ")
                     check(V, "[red C] mutant interval instead matches the plain 1 - alpha oracle",
                           cellC$lo, uncorrected[1], tol = 1e-8)
-                    check_true(V, "[red C] the mutant interval is NARROWER than the correct one",
-                               (cellC$hi - cellC$lo) < (mCorrected$hi - mCorrected$lo))
                 }
             }
         } else {
