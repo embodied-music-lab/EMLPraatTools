@@ -30,26 +30,29 @@
 # KNOWN, INVESTIGATED DISCREPANCIES against matrix.tsv's `expect` column
 # (9 cells: c0375, c0381, c0492-c0494, c0528-c0531): these ARE refused by
 # this script even though the matrix marks them `expect=ok`. Traced back to
-# eml-lib-flat.praat and confirmed that Praat's OWN implementation also
+# the plugin source and confirmed that Praat's OWN implementation also
 # refuses on this exact data:
 #   - c0375/c0381 (emlRunPairedAnalysis, parametric): rp_r1_rmanova_input and
 #     rp_r6_describe_input have paired differences that are bit-exact +10.0
 #     for every subject. @emlTTestPaired's own guard (`if .sdDiff = 0`, an
-#     EXACT equality test, eml-lib-flat.praat ~line 11818) refuses with "All
-#     differences are identical (zero variance)" on this data too.
+#     EXACT equality test, plugin_EML_StatsGraphs/stats/eml-inferential.praat
+#     ~line 364) refuses with "All differences are identical (zero
+#     variance)" on this data too.
 #   - c0492-c0494 (emlRunNormalityAnalysis): rp_r2_rmanova_input has only 2
 #     rows. @emlRunNormalityAnalysis's own guard (`if .nValid < 3`,
-#     eml-lib-flat.praat ~line 50700) sits OUTSIDE the `if .error$ = ""`
-#     block that computes descriptives AND Shapiro-Wilk, i.e. Praat refuses
-#     the whole cell at n<3, not just the Shapiro-Wilk test.
+#     plugin_EML_StatsGraphs/stats/eml-analysis.praat ~line 3596) sits
+#     OUTSIDE the `if .error$ = ""` block that computes descriptives AND
+#     Shapiro-Wilk, i.e. Praat refuses the whole cell at n<3, not just the
+#     Shapiro-Wilk test.
 #   - c0528-c0531 (emlRunRepeatedMeasuresAnalysis): rp_r1_rmanova_input is a
 #     perfectly additive design (each condition step is exactly +10 for
 #     every subject), so the subject x condition residual is zero.
 #     @emlRMAnovaTest refuses this with a documented RELATIVE floor
-#     (`.ssErr <= 1e-10 * .ssTot`, eml-lib-flat.praat ~line 51237) precisely
-#     because an exact-zero test is unreliable in Praat's own floating point
-#     (its comment there notes the naive residual lands near 1e-16 of ssTot,
-#     not at bit-exact zero, on data built exactly this way).
+#     (`.ssErr <= 1e-10 * .ssTot`, plugin_EML_StatsGraphs/stats/
+#     eml-analysis.praat ~line 4133) precisely because an exact-zero test is
+#     unreliable in Praat's own floating point (its comment there notes the
+#     naive residual lands near 1e-16 of ssTot, not at bit-exact zero, on
+#     data built exactly this way).
 # In all three clusters, this script's refusal matches what Praat's own
 # source does on this input -- the matrix's `expect=ok` annotation on these
 # 9 cells looks like the thing to fix, not either runner's statistics. Not

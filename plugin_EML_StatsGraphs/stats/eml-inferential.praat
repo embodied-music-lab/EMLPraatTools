@@ -703,6 +703,23 @@ endproc
 
 
 procedure emlPearsonCorrelation: .x#, .y#, .tails
+    ; Initialise every numeric output to undefined before the guard, matching
+    ; the sibling entry points @emlPearsonCorrelationAlt and
+    ; @emlSpearmanCorrelation, which already do this. Without it, a caller
+    ; that reads .r on an error path (e.g. zero variance) before this
+    ; procedure has ever succeeded once in the running script reads an
+    ; unassigned variable, and Praat aborts the whole script instead of
+    ; letting the caller's own .error$ guard handle the refusal.
+    .r = undefined
+    .t = undefined
+    .df = undefined
+    .p = undefined
+    .pGreater = undefined
+    .pLess = undefined
+    .alternative$ = ""
+    .n = undefined
+    .warning$ = ""
+    .perfect = 0
     @eml_pearsonCore: .x#, .y#, .tails
     .error$ = eml_pearsonCore.error$
     if .error$ = ""

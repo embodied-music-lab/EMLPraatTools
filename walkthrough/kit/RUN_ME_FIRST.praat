@@ -1,4 +1,38 @@
 # ============================================================================
+# EDIT THIS ONE LINE BEFORE RUNNING.
+#
+# The line directly below reads:
+#
+#     include <praat-prefs>/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
+#
+# Replace <praat-prefs> with YOUR OWN Praat preferences folder -- the one
+# setup.praat wrote scripts/eml-lib-user.praat into the first time you
+# launched Praat after installing the plugin. On macOS, with a default
+# install, that is:
+#
+#     ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
+#
+# so the line becomes:
+#
+#     include ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
+#
+# WHY THIS CANNOT BE DONE FOR YOU. Praat's `include` is a PARSE-TIME text
+# paste, not a runtime call -- it cannot take a variable, a function result,
+# or anything computed while the script runs. The path has to be written
+# here, literally, before Praat reads the rest of the file.
+#
+# WHAT HAPPENS IF YOU GET IT WRONG. Praat fails at PARSE time, before line 1
+# of this script's own logic ever runs, with its own "Cannot open file"
+# dialog naming the path it tried. No guard in this script can catch that or
+# soften it -- parsing has not reached far enough for any of this script's
+# own code to be running yet. If you see that dialog, re-check the path
+# above against the file setup.praat actually wrote on your machine.
+# ============================================================================
+
+include <praat-prefs>/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
+
+
+# ============================================================================
 # RUN_ME_FIRST.praat -- reads matrix.tsv and runs every one of its 630 cells
 # against the EML Stats & Graphs procedures, writing the result in the long
 # shared schema to out/praat_results.tsv (source = "praat") and one
@@ -10,30 +44,33 @@
 # not just claimed: see PROOF_OF_NO_HARDCODED_LIST.md beside this file for
 # the row that was added and removed to demonstrate it.
 #
-# NOTHING TO INSTALL. The statistics layer travels beside this script as
-# eml-lib-flat.praat; there is no plugin in a preferences folder.
+# THE KIT RUNS THE INSTALLED PLUGIN, NOT A BUNDLED COPY. The include at the
+# top of this file loads the plugin's own generated barrel out of the Praat
+# preferences folder, so what this kit measures is what a user actually gets
+# -- not a separate, point-in-time snapshot that can quietly drift out of
+# step with it.
 #
-# PLAIN RELATIVE PATHS THROUGHOUT ("data/...", "out/...", "matrix.tsv",
-# "eml-lib-flat.praat"). Praat resolves a relative path in a script against
-# THE SCRIPT'S OWN FOLDER, not the working directory it was launched from --
-# measured, and depended on here exactly as the smaller predecessor of this
-# script depended on it. Keep this folder together: RUN_ME_FIRST.praat,
-# eml-lib-flat.praat, matrix.tsv, data/ and out/ all in one place.
+# PLAIN RELATIVE PATHS EVERYWHERE ELSE ("data/...", "out/...", "matrix.tsv").
+# Praat resolves a relative path in a script against THE SCRIPT'S OWN FOLDER,
+# not the working directory it was launched from -- measured, and depended on
+# here exactly as the smaller predecessor of this script depended on it. Keep
+# this folder together: RUN_ME_FIRST.praat, matrix.tsv, data/ and out/ all in
+# one place. The one path that is NOT relative is the include above, and it
+# cannot be: it names a file outside this folder, in the Praat preferences
+# tree, and Praat's `include` cannot compute a path at run time -- see the
+# edit-this-line block above.
 #
-# TWO PRE-EXISTING LIBRARY DEFECTS, PATCHED IN THIS KIT'S OWN COPY ONLY.
-# matrix.tsv's header names D-CORR-1 and D-CORR-2: two correlation cells
-# (c0418, c0419) that used to take the WHOLE SCRIPT DOWN on Praat 6.6.30,
-# because @emlRunCorrelationAnalysis read .recResult$ before any guard had
-# ever set it, and @emlPearsonCorrelation left its numeric outputs unassigned
-# on its own error path. Both are now initialised at entry in
-# eml-lib-flat.praat, exactly the pattern every sibling orchestrator and
-# @emlPearsonCorrelationAlt / @emlSpearmanCorrelation already use -- see the
-# "WALKTHROUGH KIT PATCH" comments there. Nothing else in the flat library was
-# touched, and the master plugin under plugin_EML_StatsGraphs/ was not
-# touched at all: this fix travels only with this kit's own copy. A third,
-# related gap -- the same orchestrator does not itself refuse when EVERY
-# requested correlation family fails -- is handled here, in this script, not
-# in the library: see @emlKitCorrelationRanSomething below.
+# THE TWO CORRELATION DEFECTS THIS KIT ONCE PATCHED ITSELF ARE NOW FIXED IN
+# THE PLUGIN. matrix.tsv's cells c0418 and c0419 used to take the WHOLE
+# SCRIPT DOWN on Praat 6.6.30, because @emlRunCorrelationAnalysis read
+# .recResult$ before any guard had ever set it, and @emlPearsonCorrelation
+# left its numeric outputs unassigned on its own error path. Both are fixed
+# at the source, in plugin_EML_StatsGraphs/stats/eml-analysis.praat and
+# stats/eml-inferential.praat -- there is no longer a second copy of the
+# library for a patch to live in. A third, related gap -- the same
+# orchestrator does not itself refuse when EVERY requested correlation
+# family fails -- is still handled here, in this script, not in the library:
+# see @emlKitCorrelationRanSomething below.
 #
 # HOW LONG THIS TAKES. Said again at the end, with the actual figure, but for
 # Josh clicking Run without reading the source first: budget low tens of
@@ -44,8 +81,6 @@
 
 createFolder: "out"
 createFolder: "out/praat_reports"
-
-include eml-lib-flat.praat
 
 if not fileReadable ("matrix.tsv")
     writeInfoLine: "RUN_ME_FIRST.praat cannot find matrix.tsv beside itself."

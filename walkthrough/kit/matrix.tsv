@@ -81,24 +81,27 @@
 #   B10 Wilson is crossed at the three levels the committed fixture itself
 #      names (0.90, 0.95, 0.99) rather than at each row's single stored conf.
 #
-# TWO CELLS THAT DO NOT YET REFUSE -- THEY ABORT. Both are marked
-# expect=refuse and both currently take the whole script down, on Praat
-# 6.6.30. They stay in the matrix, and the suite stays red on them, until
-# they are fixed:
-#   D-CORR-1 @emlRunCorrelationAnalysis assigns .recResult$ only AFTER its
+# TWO CELLS THAT USED TO ABORT INSTEAD OF REFUSING -- FIXED AT THE SOURCE.
+# c0418 and c0419 are marked expect=refuse. On Praat 6.6.30 they used to take
+# the whole script down instead:
+#   D-CORR-1 @emlRunCorrelationAnalysis assigned .recResult$ only AFTER its
 #            four guards. Its record hook at label END_CORR reads it on every
 #            refusal path. Every sibling orchestrator initialises it on entry.
-#   D-CORR-2 @emlPearsonCorrelation sets its numeric outputs only when
+#   D-CORR-2 @emlPearsonCorrelation set its numeric outputs only when
 #            .error$ is empty. Its own sibling @emlPearsonCorrelationAlt, five
 #            lines below in the same file, initialises them to undefined
 #            first, and so does @emlSpearmanCorrelation. On zero-variance
-#            input the caller's next line reads an unassigned .r.
+#            input the caller's next line read an unassigned .r.
+# Both are now fixed in the plugin itself (plugin_EML_StatsGraphs/stats/
+# eml-analysis.praat and stats/eml-inferential.praat): each initialises its
+# outputs to undefined at entry, matching its siblings. c0418 and c0419 now
+# produce a clean declared refusal.
 #
-# THE SURVEY LANE NEEDS TWO FILES THE FLAT LIBRARY DOES NOT YET CARRY.
-# walkthrough/kit/eml-lib-flat.praat holds 484 procedures and none of
-# @emlCronbachAlpha, @emlAlphaInfluence, @emlChiSquareIndependence,
-# @emlWilsonInterval. Rebuild it to include stats/eml-psychometrics.praat and
-# stats/eml-categorical.praat, or the survey rows cannot run.
+# THE SURVEY LANE RUNS ON THE INSTALLED PLUGIN, LIKE EVERYTHING ELSE. The kit
+# no longer carries its own copy of the library -- RUN_ME_FIRST.praat includes
+# the plugin's generated barrel, which carries all fourteen modules, including
+# stats/eml-psychometrics.praat and stats/eml-categorical.praat. There is
+# nothing left to rebuild for the survey rows to run.
 # ===========================================================================
 cell_id	lane	procedure	dataset	col_a	col_b	col_c	test	posthoc	adjust	equal_var	group_order	conf	correction	prereq	expect	note
 c0001	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		parametric			0	discovery				ok	labels already alphabetical: group order is an invariance check here

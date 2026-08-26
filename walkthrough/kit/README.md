@@ -11,8 +11,9 @@ packages -- and joining the two result tables on `(cell_id, quantity)`. Every
 row must be accounted for. The claim is about composition, not about whether a
 t-test is correct in isolation.
 
-The kit is self-contained. Nothing installs into Praat, there is no plugin to
-place in a preferences folder, and nothing else needs cloning.
+The kit runs against the EML Stats & Graphs plugin as installed in your own
+Praat preferences folder, not a bundled copy -- so what it measures is what a
+user gets.
 
 ## What the 630 cells cover
 
@@ -31,7 +32,21 @@ refuse the same cell, and neither may emit a number while doing it.
 
 ## Before you start
 
-You need Praat 6.6.30 or newer. Below that version the library refuses to load.
+1. Install Praat 6.6.30 or newer. Below that version the library refuses to
+   load.
+2. Install the plugin: unzip `plugin_EML_StatsGraphs.zip`, **do not rename
+   the folder**, and drag it into your Praat preferences folder (macOS:
+   `~/Library/Preferences/Praat Prefs/`). Restart Praat.
+3. Launch Praat once and let it fully start. This is not optional idling --
+   the plugin's `setup.praat` runs at launch and generates
+   `plugin_EML_StatsGraphs/scripts/eml-lib-user.praat`, an absolute-path
+   barrel this kit's own script includes. The kit cannot run until that file
+   exists.
+4. Open `RUN_ME_FIRST.praat` and edit the one `include` line at the very top
+   to point at the `eml-lib-user.praat` that step 3 just generated on your
+   machine. The file itself says what to replace it with; it is the only
+   line in the kit that is not a plain relative path, because Praat's
+   `include` is resolved at parse time and cannot take a variable.
 
 You also need R, RStudio, and eight packages. Install them once:
 

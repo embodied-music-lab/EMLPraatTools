@@ -2719,6 +2719,15 @@ endproc
 # ============================================================================
 
 procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
+    ; .recResult$ is read past the end label on EVERY path, including a
+    ; refusal -- see the record-workflow block below. Every sibling
+    ; orchestrator (two-group, ANOVA, KW, pairwise, paired, ...) sets
+    ; .recResult$ = "" at entry for exactly that reason; this one did not,
+    ; so a guard reached before .recResult$ was ever assigned (e.g. on the
+    ; very first correlation call in a running script) read an unassigned
+    ; variable and Praat aborted the whole script instead of refusing.
+    .recResult$ = ""
+
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
