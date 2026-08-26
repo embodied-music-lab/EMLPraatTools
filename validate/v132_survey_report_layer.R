@@ -248,8 +248,19 @@ if (!canDrive) {
             stop("eml_menu_canon: '", script_rel, "' is registered at depth ", cmd[[1]]$depth,
                 ", not 1 -- the 'cascade > command' menu-path assumption no longer holds")
 
+        # Stage 3 ruling, item 1: Ian's exact routing wording names the
+        # command WITHOUT the dialog-opening "..." Praat's menu convention
+        # appends to it, and WITHOUT the "Objects > New >" prefix -- only
+        # "cascade > command". cmd_label_clean / short_path are the
+        # phrase forms the sentence actually uses; cmd_label / full_path
+        # (unstripped, "Objects > New >"-prefixed) are kept too, since the
+        # negative-control below still seeds the RAW registration line,
+        # which does carry the "...".
+        cmd_label_clean <- sub("\\.\\.\\.$", "", cmd[[1]]$label)
         list(top_label = depth0[[1]]$label, cmd_label = cmd[[1]]$label,
-            full_path = paste0("Objects > New > ", depth0[[1]]$label, " > ", cmd[[1]]$label))
+            cmd_label_clean = cmd_label_clean,
+            full_path = paste0("Objects > New > ", depth0[[1]]$label, " > ", cmd[[1]]$label),
+            short_path = paste0(depth0[[1]]$label, " > ", cmd_label_clean))
     }
     setup_path <- file.path(plug, "setup.praat")
     menu_canon <- eml_menu_canon(setup_path, "scripts/eml-check-data.praat")
@@ -265,8 +276,16 @@ if (!canDrive) {
     #    ORIGINAL row numbers from the influence block, KR-20 and
     #    disclosure presence, and the door's own top-level behaviour.
     # -------------------------------------------------------------------
+    # annotate: the "Annotate results with explanations" toggle's state for
+    # this probe (Stage 3 ruling, item 2) -- 1 (default) keeps every
+    # EXISTING structural assertion in this file meaning exactly what it
+    # meant before the toggle existed (the toggle-following lines fully
+    # present, matching the universe those checks were written against);
+    # NA leaves the variable UNDECLARED, so the SOURCE's own default (off)
+    # is what is being tested, not a value this file asserted. Section 9,
+    # below, is the one place this file actually varies it.
     drive_report <- function(dirlabel, data_path, scales_path, items_path, tag,
-                             also_door = FALSE, csv_export = FALSE) {
+                             also_door = FALSE, csv_export = FALSE, annotate = 1) {
         probe <- file.path(work, "scripts", paste0("v132-", tag, ".praat"))
         csv_path <- file.path(work, "csv", paste0("export-", tag, ".csv"))
         lines <- c(
@@ -282,6 +301,7 @@ if (!canDrive) {
             sprintf('scalesT = Read Table from comma-separated file: "%s"', esc(scales_path)),
             sprintf('itemsT = Read Table from comma-separated file: "%s"', esc(items_path)),
             "",
+            if (!is.na(annotate)) sprintf("annotate_results_with_explanations = %d", annotate) else NULL,
             "@emlSurveyValidateDeclaration: dataT, scalesT, itemsT",
             'writeInfoLine: "refusal|", emlSurveyValidateDeclaration.refusal, "|END"',
             "if emlSurveyValidateDeclaration.refusal = 0",
@@ -347,6 +367,13 @@ if (!canDrive) {
             # confirm it exists.
             '        appendInfoLine: "IDTEXT|", s, "|",',
             "        ... eml_survey_lineItemDeleted.line$, \"|END\"",
+            # IRTEXT dumps eml_survey_lineItemRest's own raw .line$ text --
+            # section 8 (annotate toggle) greps this for the gloss fragment
+            # (FOLLOWS, present only when the toggle is on) versus the bare
+            # header (ALWAYS, present either way), never a literal restated
+            # copy of either string.
+            '        appendInfoLine: "IRTEXT|", s, "|",',
+            "        ... eml_survey_lineItemRest.line$, \"|END\"",
             "        if emlSurveySubscaleDisclosure.count > 0",
             '            appendInfoLine: "DISCITEM|", s, "|",',
             '            ... emlSurveySubscaleDisclosure.item$[1], "|",',
@@ -637,10 +664,10 @@ if (!canDrive) {
                !any(grepl("^Error", out_bad)))
     check_true("v132", "[refusal-routing demo] no subscale report was printed (no \"--- Subscale:\" line)",
                !any(grepl("^--- Subscale:", out_bad)))
-    check_true("v132", "[refusal-routing demo, Finding 3] the door echoes the routing phrase naming the repair command by setup.praat's OWN registered label (read from source, not restated)",
-               any(grepl(menu_canon$cmd_label, out_bad, fixed = TRUE)))
-    check_true("v132", "[refusal-routing demo, Finding 3] the door echoes the routing phrase naming the menu location, derived from setup.praat's OWN cascade header + the command's OWN registration depth (read from source, not restated)",
-               any(grepl(menu_canon$full_path, out_bad, fixed = TRUE)))
+    check_true("v132", "[refusal-routing demo, Finding 3] the door echoes the routing phrase naming the repair command by setup.praat's OWN registered label, dialog-ellipsis stripped (Ian's exact wording names the command bare; read from source, not restated)",
+               any(grepl(menu_canon$cmd_label_clean, out_bad, fixed = TRUE)))
+    check_true("v132", "[refusal-routing demo, Finding 3] the door echoes the routing phrase naming the menu location as \"cascade > command\" (no \"Objects > New >\" prefix, per Ian's exact wording), derived from setup.praat's OWN cascade header + the command's OWN registration depth (read from source, not restated)",
+               any(grepl(menu_canon$short_path, out_bad, fixed = TRUE)))
 
     # -------------------------------------------------------------------
     # NEGATIVE CONTROL for Finding 3: setup.praat RENAMED, in a SCRATCH
@@ -669,7 +696,7 @@ if (!canDrive) {
     writeLines(mut_setup_lines, mut_setup_path)
     mut_menu_canon <- eml_menu_canon(mut_setup_path, "scripts/eml-check-data.praat")
     check_true("v132", "[Finding 3] the renamed scratch copy of setup.praat actually parses to a DIFFERENT command label (the seed took)",
-               !identical(mut_menu_canon$cmd_label, menu_canon$cmd_label))
+               !identical(mut_menu_canon$cmd_label_clean, menu_canon$cmd_label_clean))
 
     if (red_mode) {
         cat("      EML_LANE_RED: running the standard routing-phrase checks with setup.praat's\n")
@@ -677,12 +704,12 @@ if (!canDrive) {
         cat("      checks are EXPECTED to FAIL: the door's printed text was never touched, so\n")
         cat("      it does not name what the renamed setup.praat says.\n")
         check_true("v132", "[RED] the door echoes the routing phrase naming the (renamed) command (must go red -- the door's text was never touched by the rename)",
-                   any(grepl(mut_menu_canon$cmd_label, out_bad, fixed = TRUE)))
+                   any(grepl(mut_menu_canon$cmd_label_clean, out_bad, fixed = TRUE)))
         check_true("v132", "[RED] the door echoes the routing phrase naming the (renamed) menu location (must go red)",
-                   any(grepl(mut_menu_canon$full_path, out_bad, fixed = TRUE)))
+                   any(grepl(mut_menu_canon$short_path, out_bad, fixed = TRUE)))
     } else {
         check_true("v132", "[Finding 3] renamed-setup.praat mutant differs from correct: its derived command label no longer appears in the (real, unrenamed) door's printed text -- exactly Finding 3's reported defect (a rename desyncs the door silently)",
-                   !any(grepl(mut_menu_canon$cmd_label, out_bad, fixed = TRUE)))
+                   !any(grepl(mut_menu_canon$cmd_label_clean, out_bad, fixed = TRUE)))
     }
 
     # -------------------------------------------------------------------
@@ -1015,7 +1042,138 @@ if (!canDrive) {
     }
 
     # -------------------------------------------------------------------
-    # 8. RED-MODE MUTANTS -- five seeded defects, each isolating one
+    # 8. THE ANNOTATE TOGGLE (Stage 3 ruling, item 2): drives the same
+    #    committed/small fixtures with "Annotate results with explanations"
+    #    explicitly OFF (unset -- the toggle's own documented default) and
+    #    explicitly ON, and asserts the ALWAYS/FOLLOWS contract each way.
+    #    The two class lists are READ FROM @emlSurveyLineRouting's own
+    #    source, never restated here, so a line moved from one class to the
+    #    other in eml-survey.praat is caught by ITS OWN declaration, not by
+    #    a second list here quietly disagreeing with it.
+    # -------------------------------------------------------------------
+    routing_src <- paste(survey_src <- readLines(file.path(scriptsdir, "eml-survey.praat"), warn = FALSE),
+                         collapse = "\n")
+    routing_body_m <- regmatches(routing_src, regexpr(
+        "procedure emlSurveyLineRouting\\n[\\s\\S]*?\\nendproc", routing_src, perl = TRUE))
+    check_true("v132", "[toggle] @emlSurveyLineRouting's own procedure body was found in source, exactly once",
+               length(routing_body_m) == 1L && nzchar(routing_body_m))
+    routing_always <- regmatches(routing_body_m, gregexpr('\\.always\\$\\[[0-9]+\\] = "([^"]*)"', routing_body_m))[[1]]
+    routing_follows <- regmatches(routing_body_m, gregexpr('\\.follows\\$\\[[0-9]+\\] = "([^"]*)"', routing_body_m))[[1]]
+    routing_always_names <- sub('.*= "([^"]*)"$', "\\1", routing_always)
+    routing_follows_names <- sub('.*= "([^"]*)"$', "\\1", routing_follows)
+    check_true("v132", "[toggle] @emlSurveyLineRouting declares a non-empty ALWAYS class and a non-empty FOLLOWS class (read from source, not hardcoded here)",
+               length(routing_always_names) > 0 && length(routing_follows_names) > 0)
+    check_true("v132", "[toggle] FOLLOWS class names the three lines the ruling specifies (ordinal-as-interval note, item-rest gloss, negative item-rest flag suggestion)",
+               all(c("ordinal-as-interval note", "item-rest gloss", "negative item-rest flag suggestion") %in% routing_follows_names))
+
+    irtext_block <- function(out, s) {
+        start <- grep(sprintf("^IRTEXT\\|%d\\|", s), out)
+        if (length(start) != 1L) return(NA_character_)
+        end_offsets <- which(grepl("\\|END$", out[start:length(out)]))
+        if (!length(end_offsets)) return(NA_character_)
+        paste(out[start:(start - 1L + end_offsets[1])], collapse = "\n")
+    }
+
+    out_off <- drive_report("clean", committed_data_path, committed_scales_path,
+                            committed_items_path, "toggle_off", annotate = NA)
+    out_on  <- drive_report("clean", committed_data_path, committed_scales_path,
+                            committed_items_path, "toggle_on", annotate = 1)
+    blk_off <- fld_all(out_off, "BLK")
+    blk_on  <- fld_all(out_on,  "BLK")
+
+    for (row in blk_off) {
+        name <- row[2]
+        # ALWAYS lines (@emlSurveyLineRouting's own class): non-empty with
+        # the toggle off. Field offsets follow run_structure's own map.
+        check_true("v132", sprintf("[toggle off] subscale %s: reversed-items line (ALWAYS) is non-empty", name),
+                   identical(row[3 + 4], "1"))
+        check_true("v132", sprintf("[toggle off] subscale %s: n/exclusions line (ALWAYS) is non-empty", name),
+                   identical(row[3 + 3], "1"))
+        # FOLLOWS line: the ordinal-as-interval note is entirely absent
+        # (eml_survey_lineType.present itself is 0) with the toggle off.
+        check_true("v132", sprintf("[toggle off] subscale %s: type line (FOLLOWS) is ABSENT", name),
+                   identical(row[3 + 5], "0"))
+    }
+    for (row in blk_on) {
+        name <- row[2]
+        check_true("v132", sprintf("[toggle on] subscale %s: type line (FOLLOWS) is present", name),
+                   identical(row[3 + 5], "1"))
+    }
+    # KR-20 note is ALWAYS -- Knowledge's own presence tracks subIsKR20
+    # regardless of the toggle, both ways.
+    know_off <- blk_off[[which(vapply(blk_off, function(r) r[2] == "Knowledge", logical(1)))]]
+    check_true("v132", "[toggle off] Knowledge: KR-20 note (ALWAYS) still fires with the toggle off",
+               identical(know_off[3 + 8], "1"))
+
+    # Item-rest header: bare (no gloss fragment) with the toggle off, full
+    # gloss with it on -- read from IRTEXT's own live .line$ text, never a
+    # restated copy of the gloss/bare strings.
+    for (s in seq_along(scale_names)) {
+        irt_off <- irtext_block(out_off, s)
+        irt_on  <- irtext_block(out_on, s)
+        check_true("v132", sprintf("[toggle off] %s: item-rest header (ALWAYS, bare form) is present", scale_names[s]),
+                   !is.na(irt_off) && grepl("Item-rest correlation:", irt_off, fixed = TRUE))
+        check_true("v132", sprintf("[toggle off] %s: item-rest header does NOT carry the gloss (FOLLOWS)", scale_names[s]),
+                   !is.na(irt_off) && !grepl("each item against the", irt_off, fixed = TRUE))
+        check_true("v132", sprintf("[toggle on] %s: item-rest header carries the gloss (FOLLOWS)", scale_names[s]),
+                   !is.na(irt_on) && grepl("each item against the", irt_on, fixed = TRUE))
+    }
+
+    # The negative item-rest flag suggestion: small_data.csv's Knowledge
+    # subscale has genuinely negative item-rest items (B1/B2, confirmed by
+    # check_items above). Off: the underlying r VALUE still prints (the
+    # FACT), but the flag SUGGESTION text (FOLLOWS) does not; on: it does.
+    out_small_off <- drive_report("clean", small_data_path, committed_scales_path,
+                                  committed_items_path, "toggle_off_small", annotate = NA)
+    out_small_on  <- drive_report("clean", small_data_path, committed_scales_path,
+                                  committed_items_path, "toggle_on_small", annotate = 1)
+    its_off <- fld_all(out_small_off, "ITEM")
+    its_on  <- fld_all(out_small_on, "ITEM")
+    neg_off <- Filter(function(r) identical(r[6], "1"), its_off)
+    neg_on  <- Filter(function(r) identical(r[6], "1"), its_on)
+    check_true("v132", "[toggle off/small] at least one genuinely negative item-rest item was seen (the FOLLOWS-suppression case is exercised on a real flagged item, not vacuously)",
+               length(neg_off) > 0 && length(neg_on) > 0)
+    for (row in neg_off) {
+        check_true("v132", sprintf("[toggle off] item-rest line for %s: negative-r VALUE still prints (ALWAYS)", row[3]),
+                   !is.na(num_(row, 5)))
+        check_true("v132", sprintf("[toggle off] item-rest line for %s: flag SUGGESTION text (FOLLOWS) is absent", row[3]),
+                   identical(row[7], "0"))
+    }
+    for (row in neg_on) {
+        check_true("v132", sprintf("[toggle on] item-rest line for %s: flag SUGGESTION text (FOLLOWS) is present", row[3]),
+                   identical(row[7], "1"))
+    }
+
+    # RED-MODE negative control: @eml_survey_annotateOn is the ONE
+    # declaration every FOLLOWS call site reads -- mutate its default so an
+    # UNSET toggle reads as ON, and prove the toggle-off assertions above
+    # (which read genuinely unset state) now fail, by name.
+    annotate_src <- paste(readLines(file.path(scriptsdir, "eml-survey.praat"), warn = FALSE), collapse = "\n")
+    annotate_needle <- "procedure eml_survey_annotateOn\n    .on = 0\n"
+    stopifnot(grepl(annotate_needle, annotate_src, fixed = TRUE))
+    mut_annotate_txt <- sub(annotate_needle,
+                            "procedure eml_survey_annotateOn\n    .on = 1\n", annotate_src, fixed = TRUE)
+    stopifnot(!identical(mut_annotate_txt, annotate_src))
+    mut_annotate_path <- tempfile(fileext = ".praat")
+    writeLines(mut_annotate_txt, mut_annotate_path)
+    mA_dir <- file.path(work, "mA_annotate_default_on")
+    link_deps(mA_dir, survey_path = mut_annotate_path)
+    out_mA <- drive_report("mA_annotate_default_on", committed_data_path, committed_scales_path,
+                           committed_items_path, if (red_mode) "mAred" else "mA", annotate = NA)
+    blk_mA <- fld_all(out_mA, "BLK")
+    if (red_mode) {
+        for (row in blk_mA) {
+            check_true("v132", sprintf("[RED, annotate default] subscale %s: type line (FOLLOWS) fires even though the toggle was left UNSET (default mutated to ON)", row[2]),
+                       identical(row[3 + 5], "1"))
+        }
+    } else {
+        mA_all_on <- length(blk_mA) > 0 && all(vapply(blk_mA, function(r) identical(r[3 + 5], "1"), logical(1)))
+        check_true("v132", "[mA seed] mutant differs from correct: with the default flipped to ON, an UNSET toggle now shows the FOLLOWS type line for every subscale (correct build: absent when unset)",
+                   mA_all_on)
+    }
+
+    # -------------------------------------------------------------------
+    # 9. RED-MODE MUTANTS -- five seeded defects, each isolating one
     #    structural claim above. REAL symlinks to every untouched
     #    dependency sit beside each mutant's one edited file.
     # -------------------------------------------------------------------

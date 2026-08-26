@@ -10,6 +10,30 @@ If a file's header row is quoted (for example `"scale","min","max"`),
 the validator reads it correctly. You don't need to remove the quotes
 yourself.
 
+## The data table: wide format, one row per respondent
+
+The data table these two files describe is **wide**: one row per
+respondent, one column per question. Every column named in
+`lane_survey_declared_items.csv` (`item`) is a column of that table,
+read exactly as declared.
+
+Subscale membership -- which columns belong to which subscale -- lives
+**only** in `lane_survey_declared_items.csv`'s `role` column. The
+validator never infers it from the data table: not from a column's
+name, not from a naming convention, not from where a column sits in
+the header row. A column named `Q1_Knowledge` is not read as
+belonging to a "Knowledge" subscale by virtue of its name; it belongs
+to whatever subscale its own declared `role` names, or to none at all
+if `role` says `grouping` or `ignore`. This is a deliberate contract,
+not an oversight: a data column's name is free text a respondent's
+instrument chose, never a fact the validator special-cases on.
+
+*(Stage 3 note: this section is the one place that states the wide-
+format / declaration-only-membership contract. Stage 3's draft-scan
+page, when built, should render this fact -- one row per respondent,
+subscale membership from the declaration only, never inferred from a
+column's name -- rather than re-deriving or restating it.)*
+
 ## `lane_survey_declared_scales.csv`
 
 This file lists the subscales in your instrument, one row per
@@ -40,8 +64,25 @@ computation is the same either way; only the name changes.
 ### Legal values
 
 - `scale` must be non-empty and unique within the file.
+- `scale`, underscore-normalized (see below), must also be unique
+  within the file: two subscales whose names differ only by a space
+  vs. an underscore (`"Vocal Health"` and `"Vocal_Health"`) collide,
+  because both produce the same identifier, and the validator refuses
+  the declaration rather than silently picking one.
 - `min` and `max` must be numeric, with `min` less than `max`.
 - `type` must be exactly `ordinal` or `continuous`.
+
+### Display names vs. identifiers
+
+A subscale's `scale` value is its **display name** and may contain
+spaces (`"Vocal Health"`). Wherever that name has to become an
+**identifier** instead -- a scores-table column name, a CSV header, a
+file stem -- every space in it is normalized to an underscore
+(`"Vocal_Health"`). The reverse direction (identifier back to display
+name, underscore to space) is a separate, already-existing procedure.
+Because both directions exist, and a name can arrive already
+underscored by a user's own hand, the uniqueness rule above compares
+names after normalization, not before.
 
 ## `lane_survey_declared_items.csv`
 

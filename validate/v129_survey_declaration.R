@@ -920,33 +920,84 @@ if (!canDrive) {
     }
 
     # -------------------------------------------------------------------
-    # NEGATIVE CONTROL for Finding 1: the mutant is the LAST-COMMITTED
-    # (pre-fix) eml-psychometrics.praat, read straight from `git show
-    # HEAD:...` -- not a hand-rolled regex patch. Finding 1 was two
-    # coupled changes (the scan's filter widened to examine kind 5, AND
-    # refusal 8's own candidate assembly stopped trusting
-    # emlAuditColumn.nLeadingDot once the scan started owning that
-    # question); reverting only one half of a coupled fix reproduces a
-    # DIFFERENT, not-actually-shipped bug, not the one Finding 1 reported.
-    # The committed HEAD is exactly and only the code as it stood when
-    # Finding 1 was filed, so driving the probe against it reproduces the
-    # reported defect precisely: refusal 8, disclosureCount 0, on a bare
-    # ".".
+    # NEGATIVE CONTROL for Finding 1. Was `git show HEAD:...` (the
+    # "last-committed, pre-fix" source) -- which stopped proving anything
+    # the moment the Finding-1 fix and this very check LANDED IN THE SAME
+    # COMMIT: HEAD is that commit itself, so "the pre-fix committed
+    # source" became, permanently, the ALREADY-FIXED source, and the
+    # mutant this seeded stopped differing from correct at all. (Verified
+    # directly: `git show HEAD:plugin_EML_StatsGraphs/stats/
+    # eml-psychometrics.praat` on this branch already reports refusal 0,
+    # disclosureCount 1, on a bare "." -- the CORRECT, current-round
+    # answer, not the pre-fix one.) A negative control pinned to "the
+    # commit before mine" cannot survive its own commit; this file may
+    # not touch the plugin's history, so it is rebuilt the way every OTHER
+    # negative control in this file already works -- a bounded regex
+    # revert of a COPY of the CURRENT (correct) source, never git.
+    #
+    # Finding 1 was two coupled changes, and reverting only one half
+    # reproduces a DIFFERENT, not-actually-shipped bug, not the one
+    # Finding 1 reported (proved live while building this replacement:
+    # neutering only the scan's kind-5 widening gives refusal 0,
+    # disclosureCount 0 on the bare "." fixture -- SILENTLY missed, not
+    # refused -- because refusal 8's candidate assembly no longer falls
+    # back to emlAuditColumn.nLeadingDot either, in the CURRENT source).
+    # Both halves are reverted together, each identified by its OWN
+    # needle, each asserted to exist in source exactly once first:
+    #   (a) the scan's kind-5 exclusion, eml_scanColumnForPlaceholders's
+    #       "if eml_classifyCell.kind <> 0 and ... <> 4" test, widened
+    #       back to also exclude kind 5 (so a bare "." never reaches
+    #       @emlRepairClassify at all, exactly the pre-fix scan); and
+    #   (b) refusal 8's candidate assembly, given back the
+    #       emlAuditColumn.nLeadingDot fallback the fix retired, using
+    #       the SAME "earliest bad row wins" shape its nCoerced neighbor
+    #       already has, appended right after it.
+    # Driven together, on the SAME bare "." fixture (p_cr_dot, above),
+    # this reproduces refusal 8 / disclosureCount 0 exactly (verified live
+    # while building this replacement) -- the actual reported defect,
+    # not a coincidentally-different one.
     # -------------------------------------------------------------------
-    f1_head_txt <- tryCatch(
-        system2("git", c("-C", shQuote(normalizePath(repo_path())), "show",
-                         "HEAD:plugin_EML_StatsGraphs/stats/eml-psychometrics.praat"),
-               stdout = TRUE, stderr = TRUE),
-        error = function(e) character(0))
-    check_true("v129", "[Finding 1] the pre-fix committed source was readable from git (negative-control seed)",
-               length(f1_head_txt) > 100 && !any(grepl("^fatal:", f1_head_txt)))
     f1_mutdir <- file.path(work, "m_finding1_prefix")
     dir.create(f1_mutdir, showWarnings = FALSE)
     file.symlink(normalizePath(file.path(plug, "stats", "eml-extract.praat")),
                  file.path(f1_mutdir, "eml-extract.praat"))
     file.symlink(normalizePath(file.path(plug, "stats", "eml-inferential.praat")),
                  file.path(f1_mutdir, "eml-inferential.praat"))
-    writeLines(f1_head_txt, file.path(f1_mutdir, "eml-psychometrics.praat"))
+    f1_src_txt <- paste(readLines(file.path(plug, "stats", "eml-psychometrics.praat"),
+                                  warn = FALSE), collapse = "\n")
+    f1_needle_a <- paste(
+        "        if eml_classifyCell.kind <> 0 and eml_classifyCell.kind <> 1",
+        "        ... and eml_classifyCell.kind <> 2 and eml_classifyCell.kind <> 4",
+        sep = "\n")
+    f1_hit_a <- lengths(regmatches(f1_src_txt, gregexpr(f1_needle_a, f1_src_txt, fixed = TRUE)))
+    check_true("v129", "[Finding 1] the scan's kind-5-inclusion guard exists in source, exactly once (negative-control seed site a)",
+               f1_hit_a == 1)
+    f1_repl_a <- paste0(f1_needle_a, " and eml_classifyCell.kind <> 5")
+    f1_mut_txt <- sub(f1_needle_a, f1_repl_a, f1_src_txt, fixed = TRUE)
+
+    f1_needle_b <- paste(
+        "                if emlAuditColumn.nCoerced > 0",
+        "                    if .badAuditRow = 0",
+        "                    ... or emlAuditColumn.firstCoercedRow < .badAuditRow",
+        "                        .badAuditRow = emlAuditColumn.firstCoercedRow",
+        "                        .badAuditText$ = emlAuditColumn.firstCoercedValue$",
+        "                    endif",
+        "                endif", sep = "\n")
+    f1_hit_b <- lengths(regmatches(f1_mut_txt, gregexpr(f1_needle_b, f1_mut_txt, fixed = TRUE)))
+    check_true("v129", "[Finding 1] refusal 8's nCoerced candidate block exists in source, exactly once (negative-control seed site b, anchor for the retired nLeadingDot fallback)",
+               f1_hit_b == 1)
+    f1_repl_b <- paste0(f1_needle_b, "\n",
+        "                if emlAuditColumn.nLeadingDot > 0\n",
+        "                    if .badAuditRow = 0\n",
+        "                    ... or emlAuditColumn.firstLeadingDotRow < .badAuditRow\n",
+        "                        .badAuditRow = emlAuditColumn.firstLeadingDotRow\n",
+        "                        .badAuditText$ = emlAuditColumn.firstLeadingDotValue$\n",
+        "                    endif\n",
+        "                endif")
+    f1_mut_txt <- sub(f1_needle_b, f1_repl_b, f1_mut_txt, fixed = TRUE)
+
+    writeLines(strsplit(f1_mut_txt, "\n", fixed = TRUE)[[1]],
+              file.path(f1_mutdir, "eml-psychometrics.praat"))
     out_cr_dot_mut <- drive_validate("m_finding1_prefix", p_cr_dot, committed_scales_path,
                                      committed_items_path, "cr-dot-mut")
     check_true("v129", "[Finding 1] pre-fix mutant probe ran", ran_ok(out_cr_dot_mut))
@@ -1186,6 +1237,35 @@ if (!canDrive) {
         check("v129", "[refusal 13] badScaleRow is 2 (the second, duplicated declaration)",
               num_(out13, "res", 15), 2, tol = 0)
         positive_leg_codes <- c(positive_leg_codes, 13)
+    }
+
+    # --- Defect 17 [Stage 3 ruling, item 5]: two scale names collide once
+    #     spaces become underscores. "Vocal Health" and "Vocal_Health"
+    #     appended as two NEW subscales (Ian's own worked example in the
+    #     ruling) -- distinct raw text, so refusal 13's raw-equality check
+    #     alone does not fire; only once both are run through
+    #     @eml_underscoreNormalize do they collide. Neither new subscale is
+    #     given any item -- deliberately, so the negative control below
+    #     (which relies on refusal 17 NOT firing) exercises the real
+    #     fallthrough, refusal 3 ("too few items"), rather than a fixture
+    #     that would refuse for some unrelated reason either way.
+    scales17 <- c(clean_scales_lines, "Vocal Health,1,5,ordinal",
+                 "Vocal_Health,1,5,ordinal")
+    p17 <- write_csv_lines(scales17, "d17_scales.csv")
+    out17 <- drive_validate("stats", committed_data_path, p17, committed_items_path, "d17")
+    results$d17 <- out17
+    check_true("v129", "[refusal 17] probe ran", ran_ok(out17))
+    if (ran_ok(out17)) {
+        check("v129", "[refusal 17] code is 17 (two scale names collide once underscore-normalized), not 0 (\"Vocal Health\"/\"Vocal_Health\" are distinct raw text, so refusal 13's raw-equality check alone would validate this clean) and not 3 (the fallthrough this refusal must pre-empt: neither new subscale has any item)",
+              num_(out17, "res", 1), 17, tol = 0)
+        check_true("v129", "[refusal 17] badScale is \"Vocal_Health\" (the LATER of the two colliding raw declarations)",
+                   identical(str_(out17, "res", 3), "Vocal_Health"))
+        check("v129", "[refusal 17] badScaleRow is 6 (the later, duplicated-once-normalized declaration)",
+              num_(out17, "res", 15), 6, tol = 0)
+        check_true("v129", "[refusal 17] .error$ names BOTH raw spellings (\"Vocal Health\" and \"Vocal_Health\"), not just the normalized form they share",
+                   grepl("Vocal Health", str_(out17, "res", 23), fixed = TRUE) &&
+                   grepl("Vocal_Health", str_(out17, "res", 23), fixed = TRUE))
+        positive_leg_codes <- c(positive_leg_codes, 17)
     }
 
     # --- Defect 14: a scale name is empty --------------------------------
@@ -1907,6 +1987,20 @@ if (!canDrive) {
         "            if .jName$ = .iName$",
         "mutant13", p13d, p13, committed_items_path, 13)
 
+    # Refusal 17 [Stage 3 ruling, item 5]: shares the SAME guard line as
+    # refusals 7/13/15 (@eml_findDuplicateName's own one comparison,
+    # `.normalize = 1` only changes what .iName$/.jName$ HOLD going into
+    # it, never the comparison itself) -- same needle, driven on the d17
+    # fixture above. Neutered, .found never reaches 1 for any caller
+    # (exactly refusal 13's own negative control proves for the raw-name
+    # case), so on THIS fixture -- two new subscales, neither with any
+    # item -- the next thing that can fire is refusal 3 ("too few
+    # items"), not 0; the check below only requires the result to differ
+    # from 17, which it does either way.
+    run_negative_control("mutant17",
+        "            if .jName$ = .iName$",
+        "mutant17", committed_data_path, p17, committed_items_path, 17)
+
     # Refusal 14: a scale name is empty. V1.4 (Finding 6) moved this guard
     # onto @eml_classifyCell's kind (via the .scaleNameKind local) so a
     # whitespace-only or round-tripped "--undefined--" scale name is also
@@ -2113,16 +2207,17 @@ if (!canDrive) {
     psychometrics_path <- file.path(plug, "stats", "eml-psychometrics.praat")
     derived_codes <- derive_refusal_codes(psychometrics_path)
 
-    # THE KNOWN FLOOR, stated ONCE: refusals 1-16 exist as of this round
-    # (1-14 from the two prior adversarial passes; 15-16 added this round,
-    # Finding 4a/4b). An EQUALITY check, not just a floor, per Finding 3's
-    # closing instruction ("a derivation that yields fewer codes ... must
-    # go red on its own") -- fewer is exactly the silent-shrink failure
-    # this finding is about, and more (a refusal added without updating
-    # this one constant in the same commit) is the DRY rule on the same
-    # finding's own terms, so both directions go red here rather than only
-    # the shrink direction.
-    KNOWN_REFUSAL_CODE_COUNT <- 16L
+    # THE KNOWN FLOOR, stated ONCE: refusals 1-17 exist as of this round
+    # (1-14 from the two prior adversarial passes; 15-16 from the
+    # Finding-4a/4b round; 17 added this round, the Stage 3 ruling's
+    # underscore-normalized-name collision guard). An EQUALITY check, not
+    # just a floor, per Finding 3's closing instruction ("a derivation that
+    # yields fewer codes ... must go red on its own") -- fewer is exactly
+    # the silent-shrink failure this finding is about, and more (a refusal
+    # added without updating this one constant in the same commit) is the
+    # DRY rule on the same finding's own terms, so both directions go red
+    # here rather than only the shrink direction.
+    KNOWN_REFUSAL_CODE_COUNT <- 17L
     check("v129",
         sprintf("[Finding 3] the source scan derived exactly the known %d refusal codes (neither fewer -- silent shrinkage -- nor more -- this constant not updated in the same commit)",
                 KNOWN_REFUSAL_CODE_COUNT),
@@ -2341,7 +2436,8 @@ if (!canDrive) {
         `13` = list(data = p13d,                scales = p13,                  items = committed_items_path),
         `14` = list(data = committed_data_path, scales = p14,                  items = committed_items_path),
         `15` = list(data = p15d,                scales = committed_scales_path, items = committed_items_path),
-        `16` = list(data = p16d,                scales = committed_scales_path, items = committed_items_path)
+        `16` = list(data = p16d,                scales = committed_scales_path, items = committed_items_path),
+        `17` = list(data = committed_data_path, scales = p17,                  items = committed_items_path)
     )
 
     # LOUD FAILURE if a refusal the source derivation found has no
@@ -2387,7 +2483,8 @@ if (!canDrive) {
         sweep_ok(out_sweep_clean))
 
     check_true("v129",
-        "[Fix 1] the exhaustive output-contract sweep actually drove all sixteen derived refusal codes (not vacuously fewer)",
+        sprintf("[Fix 1] the exhaustive output-contract sweep actually drove all %d derived refusal codes (not vacuously fewer)",
+                length(derived_codes)),
         length(unique(swept_codes)) == length(derived_codes))
 
     # -------------------------------------------------------------------

@@ -1169,4 +1169,36 @@ if (!canDrive8) {
     }
 }
 
-if (!exists("EML_SUITE")) { eml_report("v130 declared-survey oracle"); eml_exit() }
+if (!exists("EML_SUITE")) {
+    eml_report("v130 declared-survey oracle")
+
+    # -------------------------------------------------------------------
+    # Stage 3 ruling, item 6: v130 carries 8 opportunistic `psych`-package
+    # legs (2 per subscale x 4 subscales), each guarded by
+    # requireNamespace and run only inside `if (havePsych)`, so this
+    # file's own total differs across machines with and without `psych`
+    # installed. Print the split so the total explains itself. Both
+    # counts are DERIVED from this file's own recorded rows -- never
+    # hardcoded -- by picking out, among THIS file's checks, the ones
+    # whose recorded quantity text names the psych cross-check (the only
+    # checks this file records inside the `if (havePsych)` guard, above);
+    # everything else recorded under id "v130" is a core check. This
+    # change lives entirely inside v130.
+    # -------------------------------------------------------------------
+    v130_split_df <- do.call(rbind, EML_RESULTS$rows)
+    if (!is.null(v130_split_df)) {
+        v130_split_rows <- v130_split_df[v130_split_df$id == "v130" &
+                                         v130_split_df$expect != "attested", , drop = FALSE]
+        v130_is_psych <- grepl("psych", v130_split_rows$quantity, fixed = TRUE)
+        v130_psych_checks <- sum(v130_is_psych)
+        v130_core_checks <- sum(!v130_is_psych)
+        v130_total_checks <- nrow(v130_split_rows)
+        cat(sprintf(
+            "%d checks = %d core + %d opportunistic psych cross-check%s (psych package %s)\n",
+            v130_total_checks, v130_core_checks, v130_psych_checks,
+            if (v130_psych_checks == 1) "" else "s",
+            if (havePsych) "installed, so these ran" else "NOT installed, so these did not run"))
+    }
+
+    eml_exit()
+}

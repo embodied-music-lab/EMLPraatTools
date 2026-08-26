@@ -2,8 +2,29 @@
 # EML Stats : Psychometrics
 # ============================================================================
 # Module: eml-psychometrics.praat
-# Version: 1.9
+# Version: 1.10
 # Date: 26 August 2026
+#
+# V1.10: THE APPROVED STAGE 3 AMENDMENTS AND THE VERIFICATION SESSION'S
+#        DECLARATION RULINGS. (1) Refusal 8's routing sentence takes Ian's
+#        exact wording, verbatim: "Run EML Stats & Graphs > Check & repair
+#        data, which lists and repairs all cells with error, then rerun" --
+#        no longer DRAFT. The mechanism holding it in agreement with
+#        setup.praat's own registration stays on the check side
+#        (validate/v132_survey_report_layer.R's eml_menu_canon), unchanged
+#        in kind, only in the phrase it now derives (cascade label + bare
+#        command label, no "Objects > New >" prefix, no dialog ellipsis).
+#        (2) Adds @eml_underscoreNormalize (the forward, space-to-
+#        underscore half of the plugin's display-name/identifier pairing;
+#        @emlUnderscoreToSpace, eml-output.praat:163, already has the
+#        reverse) and refusal 17: two subscale names that collide once
+#        both are run through it ("Vocal Health" / "Vocal_Health"), which
+#        refusal 13's raw-equality check cannot see. @eml_findDuplicateName
+#        gains a `.normalize` argument so refusal 17 reuses the same
+#        shared scan refusals 7/13/15 already share, rather than a second
+#        nested loop -- its one comparison line is untouched, so the
+#        existing negative controls for 7/13/15 still seed the same guard
+#        they always did.
 #
 # V1.9: THE ONE COMPUTATIONAL ADDITION THE PRESENTATION HALF OF STAGE 2
 #       NEEDS THAT WASN'T ALREADY SITTING IN V1.8'S OUTPUT ARRAYS. Adds
@@ -237,9 +258,9 @@
 #   @emlSurveyValidateDeclaration, @emlSurveyScoreScales,
 #   @emlSurveySubscaleDisclosure
 #
-# Internal helpers: @eml_listwiseComplete, @eml_findDuplicateName,
-#   @eml_findWhitespaceOnlyCell, @eml_scanColumnForPlaceholders,
-#   @eml_reverseScoreMatrix
+# Internal helpers: @eml_listwiseComplete, @eml_underscoreNormalize,
+#   @eml_findDuplicateName, @eml_findWhitespaceOnlyCell,
+#   @eml_scanColumnForPlaceholders, @eml_reverseScoreMatrix
 #
 # Dependencies: @emlCronbachAlpha and @emlAlphaInfluence use only Praat
 # built-in vector and matrix primitives and the built-in F distribution.
@@ -802,22 +823,33 @@ endproc
 #      scored by a subscale item, or explicitly marked "grouping" or
 #      "ignore". A column present only in the data table is silently
 #      neither.
+#  17. [Stage 3 ruling] Two scale names collide once spaces are converted
+#      to underscores. A subscale name is a DISPLAY name and may contain
+#      spaces (item 4 of the ruling); the plugin's scores-table columns,
+#      CSV headers and file stems all use the underscore-normalized form
+#      instead, so "Vocal Health" and "Vocal_Health" -- distinct, and
+#      both legal under refusal 13 alone -- collide the moment either one
+#      becomes an identifier. Checked right after refusal 13 (raw-name
+#      duplication): by construction every raw name is already unique by
+#      the time this runs, so any collision found here is necessarily
+#      between two DIFFERENT raw spellings, never the same fault refusal
+#      13 already reports.
 #
 # ORDERING, why refusals 6, 7, 9, 10 sit before 2 and 8 rather than after
-# 5, and why 11-14 sit where they do: 6, 7, 9, 10, 11, 12, 13 and 14 are
-# ALL faults in the declaration ITSELF -- each is decided from
+# 5, and why 11-14 sit where they do: 6, 7, 9, 10, 11, 12, 13, 14 and 17
+# are ALL faults in the declaration ITSELF -- each is decided from
 # survey_items.csv or survey_scales.csv alone, with no data Table read at
 # all -- while 2 and 8 both read every respondent's data. A declaration
 # fault must be reported before any data-reading refusal has a chance to
 # misreport it (refusal 10's whole reason for existing), so the checked
-# order is: 11, 1, 7, 6, 14, 13, 12, 9, 10, 8, 2, 3, 4, 5. Refusals 15 and
-# 16 (V1.5) are the one exception to "declaration faults before data
+# order is: 11, 1, 7, 6, 14, 13, 17, 12, 9, 10, 8, 2, 3, 4, 5. Refusals 15
+# and 16 (V1.5) are the one exception to "declaration faults before data
 # faults": both are facts about the DATA table itself, but both are more
 # basic than refusal 1 -- 15 because a duplicated header makes refusal 1's
 # own lookup unreliable (it would silently resolve to the first of the
 # two and report nothing wrong), and 16 because it is refusal 1's mirror
 # question about the same table, asked right alongside it. Checked order
-# is therefore: 11, 15, 1, 16, 7, 6, 14, 13, 12, 9, 10, 8, 2, 3, 4, 5.
+# is therefore: 11, 15, 1, 16, 7, 6, 14, 13, 17, 12, 9, 10, 8, 2, 3, 4, 5.
 # Refusal 11 comes first of all, ahead even of refusal 1: it is the one
 # check that must run before the items- and scales-array population loops
 # themselves, which read every required column with a bare "Get value:"
@@ -846,6 +878,39 @@ endproc
 # already holds.
 #
 # ----------------------------------------------------------------------------
+# @eml_underscoreNormalize
+# Internal helper (Stage 3 ruling, item 4): the FORWARD half of the
+# plugin's display-name <-> identifier pairing -- spaces to underscores,
+# for turning a display name (may contain spaces, e.g. a subscale name
+# "Vocal Health") into the identifier form the plugin's scores-table
+# columns, CSV headers and file stems use ("Vocal_Health"). The REVERSE
+# direction already has a name and a home, @emlUnderscoreToSpace
+# (stats/eml-output.praat:163, underscore to space, for DISPLAY); the
+# forward direction had none -- it is written inline, twice, in
+# graphs/eml-graphs-form.praat (lines 1396 and 10743, both a bare
+# `replace$ (x, " ", "_", 0)`), a file this lane may read but not edit.
+# This procedure is Ian's ruling applied on this lane's own side of that
+# boundary: the SAME one-line transform, named once, so every caller in
+# this module's reach (refusal 17's collision check, below, and anything
+# scores-table/CSV/file-stem-shaped that follows it) shares one
+# declaration instead of a third inline copy. It does not touch or
+# replace the graphs-form file's own two copies -- extracting THOSE into
+# a shared procedure is filed for whoever owns that file, not done here.
+#
+# validate/v129_survey_declaration.R's parity check reads all three
+# copies -- this procedure's own body, and the two literal sites in
+# graphs/eml-graphs-form.praat -- from their own source, and asserts all
+# three transform the same probe strings identically, so the three can
+# never quietly drift apart.
+#
+# Input:  .text$
+# Output: .result$ - .text$ with every space converted to an underscore
+# ----------------------------------------------------------------------------
+procedure eml_underscoreNormalize: .text$
+    .result$ = replace$ (.text$, " ", "_", 0)
+endproc
+
+# ----------------------------------------------------------------------------
 # @eml_findDuplicateName
 # Internal helper: shared duplicate-name scan for a declaration file's own
 # name column -- survey_items.csv's "item" (refusal 7) and
@@ -860,27 +925,61 @@ endproc
 # exactly (a table with more than one duplicated name reports the
 # earliest one).
 #
-# Input:  .tableId, .columnName$, .nRows
-# Output: .found    - 1 if some name repeats, 0 otherwise
-#         .name$    - the repeated name (only meaningful when .found = 1)
-#         .firstRow - row of the first occurrence
-#         .dupRow   - row of the duplicate (the later occurrence)
+# .normalize (Stage 3 ruling, refusal 17): 0 compares raw cell text, exactly
+# the original behavior refusals 7/13/15 still use (their three call sites
+# now pass 0 explicitly). 1 compares each name through
+# @eml_underscoreNormalize first -- refusal 17's own question, "do two
+# subscale names collide once spaces become underscores" -- WITHOUT
+# touching the comparison line itself (still bare "if .jName$ = .iName$",
+# unchanged text and indentation, so the negative control seeded against
+# THAT line for refusals 7/13/15 keeps testing the same guard it always
+# did): .iName$/.jName$ are normalized in place, ahead of the comparison,
+# only when .normalize = 1; .iRaw$/.jRaw$ keep the untouched cell text
+# alongside, so a normalized COLLISION between two DIFFERENT raw spellings
+# (".rawName1$" / ".rawName2$") can still be named in a message -- unlike a
+# raw duplicate, where the two spellings are identical and one name is
+# enough.
+#
+# Input:  .tableId, .columnName$, .nRows, .normalize
+# Output: .found     - 1 if some (possibly normalized) name repeats, 0 otherwise
+#         .name$     - the first occurrence's RAW text (only meaningful when
+#                       .found = 1; equals .rawName1$)
+#         .rawName1$ - the first occurrence's RAW text
+#         .rawName2$ - the duplicate's RAW text (identical to .rawName1$
+#                       when .normalize = 0; may differ when .normalize = 1
+#                       and it was the normalized forms that collided)
+#         .firstRow  - row of the first occurrence
+#         .dupRow    - row of the duplicate (the later occurrence)
 # ----------------------------------------------------------------------------
-procedure eml_findDuplicateName: .tableId, .columnName$, .nRows
+procedure eml_findDuplicateName: .tableId, .columnName$, .nRows, .normalize
     .found = 0
     .name$ = ""
+    .rawName1$ = ""
+    .rawName2$ = ""
     .firstRow = 0
     .dupRow = 0
     for .i from 1 to .nRows
         selectObject: .tableId
         .iName$ = Get value: .i, .columnName$
+        .iRaw$ = .iName$
+        if .normalize = 1
+            @eml_underscoreNormalize: .iName$
+            .iName$ = eml_underscoreNormalize.result$
+        endif
         for .j from .i + 1 to .nRows
             selectObject: .tableId
             .jName$ = Get value: .j, .columnName$
+            .jRaw$ = .jName$
+            if .normalize = 1
+                @eml_underscoreNormalize: .jName$
+                .jName$ = eml_underscoreNormalize.result$
+            endif
             if .jName$ = .iName$
                 if .found = 0
                     .found = 1
-                    .name$ = .iName$
+                    .name$ = .iRaw$
+                    .rawName1$ = .iRaw$
+                    .rawName2$ = .jRaw$
                     .firstRow = .i
                     .dupRow = .j
                 endif
@@ -1325,15 +1424,24 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     ; call sites share .rem8a$/.rem8b$/.rem8c$/.rem8d$, so this one
     ; addition reaches the whitespace-only pre-check below as well as the
     ; main unreadable-cell check, with nothing duplicated at either call
-    ; site). Names the door by the same two names the plugin already uses
-    ; for it: the command ("Check & repair data...", setup.praat) and the
-    ; menu it lives in (Objects > New > EML Stats & Graphs > Check & repair
-    ; data..., same file). This module builds no inventory of every bad
-    ; cell in the Table -- that screen already lists and can fix every one
-    ; of them; refusal 8 only ever needs to route there by name.
-    .rem8d$ = " Open ""Check & repair data"" (Objects > New > EML Stats "
-    ... + "& Graphs > Check & repair data...) on this Table -- it already "
-    ... + "finds and can fix cells like this one."
+    ; site). This module builds no inventory of every bad cell in the
+    ; Table -- that screen already lists and can fix every one of them;
+    ; refusal 8 only ever needs to route there by name.
+    ;
+    ; STAGE 3 RULING (Ian, approved): exact wording, verbatim --
+    ; "Run EML Stats & Graphs > Check & repair data, which lists and
+    ; repairs all cells with error, then rerun". Names the same command
+    ; and cascade setup.praat registers ("EML Stats & Graphs" the depth-0
+    ; cascade header, "Check & repair data..." the depth-1 command), just
+    ; without the "Objects > New >" prefix or the dialog-ellipsis, which
+    ; belong to the menu chrome, not the sentence. The mechanism that
+    ; holds this in agreement with setup.praat's own registration is
+    ; validate/v132_survey_report_layer.R's eml_menu_canon: it reads
+    ; setup.praat and derives the command label (with the trailing "..."
+    ; stripped) and the "cascade > command" phrase this sentence uses,
+    ; rather than a second copy of either typed into the check.
+    .rem8d$ = " Run EML Stats & Graphs > Check & repair data, which lists "
+    ... + "and repairs all cells with error, then rerun"
 
     ; DRAFT LANGUAGE -- awaiting Ian's approval
     # Cell ruling, branch 2: the disclosure printed whenever ANY recognised
@@ -1442,6 +1550,23 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     .rem16b$ = """ to survey_items.csv (with role grouping or ignore if "
     ... + "it is not meant to be scored), or remove the column from the "
     ... + "data table if it should not be there."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 17 [Stage 3 ruling, item 5]: two subscale names collide once
+    # spaces become underscores. Names BOTH raw spellings, since -- unlike
+    # refusal 13 -- they are not identical text.
+    .msg17a$ = "Every subscale name in survey_scales.csv must stay unique "
+    ... + "once spaces are converted to underscores (the form scores-table "
+    ... + "columns, CSV headers, and file stems use). Subscale """
+    .msg17b$ = """ (row "
+    .msg17c$ = ") and subscale """
+    .msg17d$ = """ (row "
+    .msg17e$ = ") both normalize to """
+    .msg17f$ = """."
+    .rem17a$ = "Rename """
+    .rem17b$ = """ or """
+    .rem17c$ = """ in survey_scales.csv so they no longer collide once "
+    ... + "spaces become underscores."
     # ------------------------------------------------------------------------
     # END draft language block.
     # ------------------------------------------------------------------------
@@ -1658,13 +1783,40 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     # naming the second names the row to delete. This is not a missed
     # kind the way refusal 8's four discarded kinds were: .found/.name$/
     # .dupRow already fully decide the refusal and fully name the fix.
-    @eml_findDuplicateName: .scalesTableId, "scale", .nScales
+    @eml_findDuplicateName: .scalesTableId, "scale", .nScales, 0
     if eml_findDuplicateName.found = 1
         .error$ = .msg13a$ + eml_findDuplicateName.name$ + .msg13b$
         ... + string$ (eml_findDuplicateName.dupRow) + .msg13c$
         .remedy$ = .rem13a$ + eml_findDuplicateName.name$ + .rem13b$
         .refusal = 13
         .badScale$ = eml_findDuplicateName.name$
+        .badScaleRow = eml_findDuplicateName.dupRow
+        goto SURVEY_VALIDATE_DONE
+    endif
+
+    # ===== Refusal 17: two scale names collide once underscore-normalized =====
+    # [Stage 3 ruling, item 5.] Checked immediately after refusal 13: by the
+    # time this runs, every RAW scale name is already known unique (refusal
+    # 13 above would already have refused a raw duplicate), so any
+    # collision @eml_findDuplicateName reports here, with .normalize = 1,
+    # is necessarily between two DIFFERENT raw spellings that only
+    # coincide once spaces become underscores -- exactly "Vocal Health"
+    # and "Vocal_Health" colliding in the scores table and in any file
+    # stem (item 4's contract). Reuses the SAME shared scan refusal
+    # 7/13/15 already use, not a second nested loop.
+    @eml_findDuplicateName: .scalesTableId, "scale", .nScales, 1
+    if eml_findDuplicateName.found = 1
+        @eml_underscoreNormalize: eml_findDuplicateName.rawName1$
+        .collidedName$ = eml_underscoreNormalize.result$
+        .error$ = .msg17a$ + eml_findDuplicateName.rawName1$ + .msg17b$
+        ... + string$ (eml_findDuplicateName.firstRow) + .msg17c$
+        ... + eml_findDuplicateName.rawName2$ + .msg17d$
+        ... + string$ (eml_findDuplicateName.dupRow) + .msg17e$
+        ... + .collidedName$ + .msg17f$
+        .remedy$ = .rem17a$ + eml_findDuplicateName.rawName1$ + .rem17b$
+        ... + eml_findDuplicateName.rawName2$ + .rem17c$
+        .refusal = 17
+        .badScale$ = eml_findDuplicateName.rawName2$
         .badScaleRow = eml_findDuplicateName.dupRow
         goto SURVEY_VALIDATE_DONE
     endif
@@ -1867,7 +2019,7 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
         Append row
         Set string value: .c, "label", .dataColLabel$
     endfor
-    @eml_findDuplicateName: .dataColLabelsTable, "label", .nDataCols
+    @eml_findDuplicateName: .dataColLabelsTable, "label", .nDataCols, 0
     removeObject: .dataColLabelsTable
     ; .dupDataColFound holds the classifier's own verdict in a name unique
     ; to this call site, kept apart from refusal 7's and 13's identically
@@ -1968,7 +2120,7 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     # behavior unchanged, same message fragments, same outputs. .firstRow
     # is deliberately not read here either -- same reason as refusal 13's
     # call site, above.
-    @eml_findDuplicateName: .itemsTableId, "item", .nItems
+    @eml_findDuplicateName: .itemsTableId, "item", .nItems, 0
     if eml_findDuplicateName.found = 1
         .error$ = .msg7a$ + eml_findDuplicateName.name$ + .msg7b$
         ... + string$ (eml_findDuplicateName.dupRow) + .msg7c$
@@ -2440,14 +2592,14 @@ endproc
 # ============================================================================
 # THE RULE, stated once (V1.6, Fix 1): every output documented below holds a
 # DEFINED value on every return of this procedure -- including every one of
-# the seventeen exit paths (SURVEY_VALIDATE_DONE reached by any of refusals
-# 1-16, or by none) -- never an indexed variable left unassigned for a
+# the eighteen exit paths (SURVEY_VALIDATE_DONE reached by any of refusals
+# 1-17, or by none) -- never an indexed variable left unassigned for a
 # caller to hit an "Undefined indexed variable" halt by reading it.
 #
 #   .error$           - refusal message (rule + reason), or "" when the
 #                       declaration is sound
 #   .remedy$          - what to do instead, or "" when .error$ is ""
-#   .refusal          - 0 when sound; else 1-16 (see the ordering comment
+#   .refusal          - 0 when sound; else 1-17 (see the ordering comment
 #                       above the procedure for what each is and the order
 #                       they are checked in; refusal 10 is a contract
 #                       repair, not one of Ian's original five or the four
@@ -2456,15 +2608,18 @@ endproc
 #                       on the scales file that 6-10 closed on the items
 #                       file; refusals 15-16 are a third adversarial pass
 #                       closing two unchecked directions on the data
-#                       table itself)
+#                       table itself; refusal 17 is the Stage 3 ruling's
+#                       underscore-normalized-name collision guard)
 #   .badItem$         - the item/column name implicated (refusals 1, 2, 4,
 #                       6, 7, 8, 15 [the repeated data-table header], 16
 #                       [the undeclared data-table column], and refusal 5
 #                       direction A); "" otherwise
 #   .badScale$        - the subscale name implicated (refusals 2, 3, 8, 9,
-#                       10, 12, 13, and refusal 5, either direction); ""
-#                       otherwise (refusal 14 leaves this "" too -- the
-#                       fault IS that the scale has no name)
+#                       10, 12, 13, 17 [the LATER of the two colliding raw
+#                       names -- see .error$/.remedy$ for both], and
+#                       refusal 5, either direction); "" otherwise
+#                       (refusal 14 leaves this "" too -- the fault IS that
+#                       the scale has no name)
 #   .badRow           - respondent ROW NUMBER in the data table (refusals 2
 #                       and 8); 0 otherwise
 #   .badValue         - the offending response value (refusal 2 only);
@@ -2487,8 +2642,8 @@ endproc
 #                       otherwise. Not the same table as .badRow, which is
 #                       always a DATA table row.
 #   .badScaleRow      - ROW NUMBER in the SCALES table implicated (refusals
-#                       9, 10, 12, 13 [the duplicate row], and 14); 0
-#                       otherwise
+#                       9, 10, 12, 13 [the duplicate row], 14, and 17 [the
+#                       later of the two colliding rows]); 0 otherwise
 #   .badTypeValue$    - the illegal `type` string found (refusal 9 only);
 #                       "" otherwise
 #   .badCellText$     - the literal (non-numeric) contents of the offending

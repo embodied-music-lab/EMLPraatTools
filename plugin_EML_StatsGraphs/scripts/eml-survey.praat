@@ -2,8 +2,23 @@
 # EML Stats & Graphs — Survey subscale report (Stage 2, presentation half)
 # ============================================================================
 # Module: scripts/eml-survey.praat
-# Version: 1.0
+# Version: 1.1
 # Date: 26 August 2026
+#
+# V1.1: THE APPROVED STAGE 3 AMENDMENTS. (1) The DRAFT routing sentence
+#       (moved to stats/eml-psychometrics.praat's refusal 8) is out of
+#       scope for this file; unrelated here. (2) The annotate toggle: the
+#       plugin's standard "Annotate results with explanations" boolean,
+#       default OFF, following the same auto-naming convention every
+#       other menu door's boolean already gets from its own
+#       beginPause/endPause form (@eml_survey_annotateOn). Still NO
+#       dialog page built here -- Stage 3 adds the control; this file
+#       only reads the state a future control will set. Three lines now
+#       FOLLOW it (the ordinal-as-interval note, the item-rest gloss, the
+#       negative item-rest flag's suggestion); four print ALWAYS
+#       (reversed items, exclusions, the placeholder disclosure, KR-20).
+#       Both classes are declared once, in @emlSurveyLineRouting, not
+#       repeated at each call site.
 #
 # WHAT THIS FILE IS. Stage 1 (@emlSurveyValidateDeclaration) decides whether
 # a survey declaration is sound. Stage 2's computational half
@@ -16,6 +31,16 @@
 # here -- Stage 3 (the interactive front end that collects the three file
 # paths from a user) waits on Ian's language approval, per the ruling, and
 # is not built by this file.
+#
+# STAGE 3 NOTE -- THE WIDE-FORMAT / DECLARATION-ONLY-MEMBERSHIP CONTRACT.
+# The data table Stage 1 validates is wide: one row per respondent, one
+# column per question; subscale membership lives only in the items
+# declaration's `role` column, never inferred from a data column's name.
+# This is stated once, in evidence/csv/lane_survey_declared_SCHEMA.md ("The
+# data table: wide format, one row per respondent"). When Stage 3 builds
+# its draft-scan page, that page should RENDER this fact from the
+# declaration it is showing, not restate or re-derive it -- the SCHEMA.md
+# section is the canon.
 #
 # ----------------------------------------------------------------------------
 # THE DOOR BODY IS SEPARABLE FROM THE REPORTING PROCEDURES. HOW.
@@ -117,7 +142,9 @@
 #   procedures' entry points), @emlSurveyExportCSV (the CSV export)
 #
 # Internal helpers: @emlSurveyReportLanguage (the one DRAFT LANGUAGE block),
-#   @eml_survey_formatPercent, @eml_survey_lineAlpha,
+#   @eml_survey_annotateOn (the one declaration of the annotate toggle's
+#   state), @emlSurveyLineRouting (the one declaration of which lines it
+#   gates), @eml_survey_formatPercent, @eml_survey_lineAlpha,
 #   @eml_survey_lineItemDeleted, @eml_survey_lineInfluence,
 #   @eml_survey_lineN, @eml_survey_lineReversed, @eml_survey_lineType,
 #   @eml_survey_lineKR20, @eml_survey_lineItemRest,
@@ -215,6 +242,12 @@ procedure emlSurveyReportLanguage
 
     .msgItemRestHeader$ = "Item-rest correlation (each item against the "
     ... + "sum of the OTHER items in this subscale):"
+    # Stage 3 ruling, item 2: the ALWAYS-print header, used in place of
+    # .msgItemRestHeader$ above when the annotate toggle is off -- same
+    # section, same per-item values below it, minus the parenthetical
+    # GLOSS of what the number means (an EXPLANATION, per
+    # @emlSurveyLineRouting's own classification, not a fact).
+    .msgItemRestHeaderBare$ = "Item-rest correlation:"
     .msgItemRestFlagA$ = "  [EVIDENCE, not an action: this correlation is "
     ... + "negative, which can indicate a misdeclared reversal for this "
     ... + "item. No change has been made.]"
@@ -248,6 +281,78 @@ procedure emlSurveyReportLanguage
     ... + "to write."
     .msgCsvFailWriteA$ = "CSV export to "
     .msgCsvFailWriteB$ = " failed: the file could not be written."
+endproc
+
+
+# ============================================================================
+# @eml_survey_annotateOn
+# ============================================================================
+# THE ONE DECLARATION of the "Annotate results with explanations" toggle's
+# EFFECTIVE state (Stage 3 ruling, item 2). Default OFF: the toggle is the
+# plugin's standard boolean, the same one every other menu analysis dialog
+# carries on its page, following the SAME Praat auto-naming convention
+# every one of those already relies on for reading its own booleans back
+# (a `beginPause`/`endPause` label becomes a bare global exactly as typed,
+# first word lowercased -- verified live against the shipped doors:
+# eml-lmm.praat's "Use REML" is read back as `use_REML`, "Clear Info
+# window" as `clear_Info_window`) -- so "Annotate results with
+# explanations" becomes `annotate_results_with_explanations`, and THIS
+# file builds no dialog page of its own to declare it (per this file's own
+# header, and the ruling: Stage 3 adds the control; Stage 2's report layer
+# only wires its state). Undefined -- true of every harness/validate probe
+# in this lane today, and of any caller reached before Stage 3's dialog
+# ever runs once it exists -- is OFF, exactly the boolean's own eventual
+# default of 0; only an explicit 1 turns it on. Every call site that needs
+# to know calls THIS procedure, never a second `variableExists (...)`
+# check of its own, so no two call sites can quietly default the same
+# question two different ways.
+# ----------------------------------------------------------------------------
+procedure eml_survey_annotateOn
+    .on = 0
+    if variableExists ("annotate_results_with_explanations")
+        if annotate_results_with_explanations = 1
+            .on = 1
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlSurveyLineRouting
+# ============================================================================
+# THE ONE DECLARATION of which report lines the annotate toggle gates
+# (Stage 3 ruling, item 2) -- a source-readable registry, not a second,
+# separately maintained list inside validate/. Every name below
+# corresponds to exactly one line-builder call in
+# @emlSurveyBuildSubscaleReport, below; validate/v132_survey_report_layer.R
+# reads THIS procedure's two arrays from source, never restates them, to
+# build its toggle-routing checks -- a line moved from one class to the
+# other is caught here, at the one place that says so, not by two lists
+# quietly disagreeing.
+#
+# ALWAYS (print unconditionally, toggle on or off): each states a FACT
+# about what was computed or found in THIS run, never an interpretation of
+# it -- reversed items, exclusions (n), the placeholder disclosure, the
+# KR-20 note.
+#
+# FOLLOWS (print only when the toggle is on): each is an EXPLANATION of a
+# fact that already prints elsewhere regardless of the toggle -- the
+# ordinal-as-interval note (the declared type itself is not gated), the
+# item-rest gloss (the item-rest r value itself is not gated), the
+# negative item-rest flag's suggestion (the sign of r is not gated -- a
+# reader can already see it is negative without this line).
+# ----------------------------------------------------------------------------
+procedure emlSurveyLineRouting
+    .alwaysCount = 4
+    .always$[1] = "reversed items"
+    .always$[2] = "exclusions (n)"
+    .always$[3] = "placeholder disclosure"
+    .always$[4] = "KR-20 note"
+
+    .followsCount = 3
+    .follows$[1] = "ordinal-as-interval note"
+    .follows$[2] = "item-rest gloss"
+    .follows$[3] = "negative item-rest flag suggestion"
 endproc
 
 
@@ -438,13 +543,26 @@ endproc
 # / "continuous" keyword refusal 9 already enforces is exactly one of those
 # two strings by the time .refusal = 0, so the `else` branch below is
 # reached only for "continuous", never a third, unvalidated value.
+#
+# Stage 3 ruling, item 2: FOLLOWS the annotate toggle (@emlSurveyLineRouting
+# above classifies it so) -- an EXPLANATION of the declared type, not the
+# type itself (which is not gated: refusal 9 already enforces it exists
+# and is legal regardless of this toggle). .present = 0 means print
+# nothing for this subscale, the same conditional shape
+# @eml_survey_lineKR20 already uses, for the same reason: unlike every
+# ALWAYS line in this file, this one may be entirely absent.
 # ----------------------------------------------------------------------------
 procedure eml_survey_lineType: .s
     @emlSurveyReportLanguage
-    if emlSurveyValidateDeclaration.scaleType$[.s] = "ordinal"
-        .line$ = emlSurveyReportLanguage.msgTypeOrdinal$
-    else
-        .line$ = emlSurveyReportLanguage.msgTypeContinuous$
+    @eml_survey_annotateOn
+    .present = eml_survey_annotateOn.on
+    .line$ = ""
+    if .present = 1
+        if emlSurveyValidateDeclaration.scaleType$[.s] = "ordinal"
+            .line$ = emlSurveyReportLanguage.msgTypeOrdinal$
+        else
+            .line$ = emlSurveyReportLanguage.msgTypeContinuous$
+        endif
     endif
 endproc
 
@@ -486,10 +604,27 @@ endproc
 # .subItemRest[.s, .j] < 0, V1.8's own documented contract) -- this line
 # reads it rather than re-testing "< 0" a second time here, so the flag and
 # the number it flags can never independently drift.
+#
+# Stage 3 ruling, item 2: split by @emlSurveyLineRouting's own
+# classification. The HEADER and every item's "name: r = value" are
+# ALWAYS -- the numbers themselves, never gated -- except the header text
+# itself carries a parenthetical GLOSS of what "item-rest" means
+# (.msgItemRestHeader$'s "(each item against the sum of the OTHER items in
+# this subscale)"), which is an EXPLANATION and FOLLOWS the toggle: off,
+# the bare .msgItemRestHeaderBare$ is used instead, same section, same
+# values, no gloss. The evidence-flag SUGGESTION (.msgItemRestFlagA$) is
+# likewise FOLLOWS-only: the flag's underlying FACT is the signed r value
+# itself, printed either way, so a reader loses no fact with the toggle
+# off, only the added interpretation.
 # ----------------------------------------------------------------------------
 procedure eml_survey_lineItemRest: .s
     @emlSurveyReportLanguage
-    .line$ = emlSurveyReportLanguage.msgItemRestHeader$
+    @eml_survey_annotateOn
+    if eml_survey_annotateOn.on = 1
+        .line$ = emlSurveyReportLanguage.msgItemRestHeader$
+    else
+        .line$ = emlSurveyReportLanguage.msgItemRestHeaderBare$
+    endif
     for .j from 1 to emlSurveyScoreScales.subK[.s]
         .origIdx = emlSurveyScoreScales.subItemOrigIdx[.s, .j]
         .itemName$ = emlSurveyValidateDeclaration.itemName$[.origIdx]
@@ -499,7 +634,7 @@ procedure eml_survey_lineItemRest: .s
             ... + emlSurveyReportLanguage.msgItemRestNA$
         else
             .line$ = .line$ + string$ (emlSurveyScoreScales.subItemRest[.s, .j])
-            if emlSurveyScoreScales.subItemFlag[.s, .j] = 1
+            if emlSurveyScoreScales.subItemFlag[.s, .j] = 1 and eml_survey_annotateOn.on = 1
                 .line$ = .line$ + newline$
                 ... + emlSurveyReportLanguage.msgItemRestFlagA$
             endif
@@ -626,7 +761,9 @@ procedure emlSurveyBuildSubscaleReport: .dataTableId, .s
     .text$ = .text$ + newline$ + "Reversed items: " + eml_survey_lineReversed.line$
 
     @eml_survey_lineType: .s
-    .text$ = .text$ + newline$ + "Scale type note: " + eml_survey_lineType.line$
+    if eml_survey_lineType.present = 1
+        .text$ = .text$ + newline$ + "Scale type note: " + eml_survey_lineType.line$
+    endif
 
     @eml_survey_lineKR20: .s
     if eml_survey_lineKR20.present = 1
