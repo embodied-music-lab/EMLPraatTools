@@ -227,6 +227,39 @@ for (i in seq_len(nrow(decl_scales))) {
     put(sprintf("declared_%s_scoredN", sname), n, 0)
     put(sprintf("declared_%s_scoredNone", sname), nExcluded, 0)
 
+    # -- respondent scale-score SUMMARY statistics (mean, sd, min, max of
+    # the per-respondent scale score, complete-case). This is the one
+    # artifact the declared RANGE actually moves (see the unreversed-
+    # control comment below for why alpha itself cannot). Committed as
+    # summary statistics only, matching this file's existing disclosure
+    # discipline for scoredN/scoredNone above -- never the 24 individual
+    # scores.
+    #   Route A: base R, mean/sd/min/max of rowMeans(cc).
+    #   Route B: psych::scoreItems(keys, raw, min=, max=, missing=FALSE,
+    #            impute="none", totals=FALSE) -- psych's own scale-scoring
+    #            primitive, fed the declared range exactly as reverse.code()
+    #            was above, with missing=FALSE so an incomplete respondent
+    #            is DROPPED from the returned score vector rather than
+    #            imputed from the items they did answer (the same
+    #            complete-case rule alpha uses -- verified: scoreItems()
+    #            with missing=FALSE returns a vector already shortened to
+    #            the complete-case respondents, in their original relative
+    #            order, not a full-length vector with NA in the gaps -- so
+    #            the two routes' raw score vectors are compared directly,
+    #            with no re-indexing by `keep`).
+    scores_base <- rowMeans(cc)
+    sc <- suppressWarnings(psych::scoreItems(keys, raw, min = smin, max = smax,
+                                             missing = FALSE, impute = "none",
+                                             totals = FALSE))
+    scores_psych <- sc$scores[, 1]
+    agree_or_stop(sprintf("%s scale-score (per respondent)", sname),
+                 scores_base, scores_psych)
+
+    put(sprintf("declared_%s_scoreMean", sname), mean(scores_base), 1e-10)
+    put(sprintf("declared_%s_scoreSD", sname), sd(scores_base), 1e-10)
+    put(sprintf("declared_%s_scoreMin", sname), min(scores_base), 1e-10)
+    put(sprintf("declared_%s_scoreMax", sname), max(scores_base), 1e-10)
+
     # -- KR-20 case: Knowledge's declared range spans exactly two values
     # (max = min + 1) and every item is binary within it. Same alpha
     # family; asserts nothing new, just records under a name that says so.

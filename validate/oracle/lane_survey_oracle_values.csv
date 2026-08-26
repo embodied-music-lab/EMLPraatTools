@@ -119,6 +119,10 @@
 "declared_Confidence_itemtotal_Q4",0.895066061604829,1e-10
 "declared_Confidence_scoredN",23,0
 "declared_Confidence_scoredNone",1,0
+"declared_Confidence_scoreMean",3.09782608695652,1e-10
+"declared_Confidence_scoreSD",0.909979802581749,1e-10
+"declared_Confidence_scoreMin",1,1e-10
+"declared_Confidence_scoreMax",4.25,1e-10
 "declared_Confidence_unrev_alpha",-0.177408177408177,1e-10
 "declared_Confidence_unrev_feldt_lo",-1.22347336103328,1e-08
 "declared_Confidence_unrev_feldt_hi",0.447849939324474,1e-08
@@ -138,6 +142,10 @@
 "declared_Anxiety_itemtotal_Q7",0.916489502085534,1e-10
 "declared_Anxiety_scoredN",23,0
 "declared_Anxiety_scoredNone",1,0
+"declared_Anxiety_scoreMean",2.92753623188406,1e-10
+"declared_Anxiety_scoreSD",0.942576105434819,1e-10
+"declared_Anxiety_scoreMin",1,1e-10
+"declared_Anxiety_scoreMax",4.66666666666667,1e-10
 "declared_Anxiety_unrev_alpha",-0.719683655536028,1e-10
 "declared_Anxiety_unrev_feldt_lo",-2.44043480362618,1e-08
 "declared_Anxiety_unrev_feldt_hi",0.215557964586819,1e-08
@@ -157,6 +165,10 @@
 "declared_Knowledge_itemtotal_B3",0.836158989124711,1e-10
 "declared_Knowledge_scoredN",24,0
 "declared_Knowledge_scoredNone",0,0
+"declared_Knowledge_scoreMean",0.486111111111111,1e-10
+"declared_Knowledge_scoreSD",0.392922490748379,1e-10
+"declared_Knowledge_scoreMin",0,1e-10
+"declared_Knowledge_scoreMax",1,1e-10
 "kr20_Knowledge_alpha",0.664928292046936,1e-10
 "kr20_Knowledge_feldt_lo",0.339538282361917,1e-08
 "kr20_Knowledge_feldt_hi",0.844229379798782,1e-08
@@ -181,6 +193,10 @@
 "declared_Ease_itemtotal_R3",0.961441849455047,1e-10
 "declared_Ease_scoredN",23,0
 "declared_Ease_scoredNone",1,0
+"declared_Ease_scoreMean",48.4710144927536,1e-10
+"declared_Ease_scoreSD",18.0578400230415,1e-10
+"declared_Ease_scoreMin",8.13333333333333,1e-10
+"declared_Ease_scoreMax",80.9666666666667,1e-10
 "declared_Ease_offset_alpha",0.941046277508085,1e-10
 "declared_Ease_unrev_alpha",-1.94601694190481,1e-10
 "declared_Ease_unrev_feldt_lo",-4.89386262198462,1e-08

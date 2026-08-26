@@ -212,6 +212,26 @@ for (i in seq_len(nrow(decl_scales))) {
     check("v130", sprintf("[%s] scale-score scoredNone vs committed oracle", sname),
           nExcluded, oget(sprintf("declared_%s_scoredNone", sname)), tol = 0)
 
+    # Scale-score SUMMARY statistics (mean, sd, min, max of the per-
+    # respondent scale score, complete-case) -- this is the artifact the
+    # declared range demo below actually guards, per subscale, against a
+    # COMMITTED value (not a value transiently recomputed inside the demo
+    # itself, which would guard nothing).
+    scores_fresh <- rowMeans(cc)
+    subscale_fresh[[sname]]$scoreMean <- mean(scores_fresh)
+    check("v130", sprintf("[%s] scale-score mean vs committed oracle", sname),
+          mean(scores_fresh), oget(sprintf("declared_%s_scoreMean", sname)),
+          tol = otolf(sprintf("declared_%s_scoreMean", sname)))
+    check("v130", sprintf("[%s] scale-score sd vs committed oracle", sname),
+          stats::sd(scores_fresh), oget(sprintf("declared_%s_scoreSD", sname)),
+          tol = otolf(sprintf("declared_%s_scoreSD", sname)))
+    check("v130", sprintf("[%s] scale-score min vs committed oracle", sname),
+          min(scores_fresh), oget(sprintf("declared_%s_scoreMin", sname)),
+          tol = otolf(sprintf("declared_%s_scoreMin", sname)))
+    check("v130", sprintf("[%s] scale-score max vs committed oracle", sname),
+          max(scores_fresh), oget(sprintf("declared_%s_scoreMax", sname)),
+          tol = otolf(sprintf("declared_%s_scoreMax", sname)))
+
     # The "unreversed" control (declared reversal ignored entirely) is
     # committed for every subscale; reproduced here for all four so a
     # regression anywhere is caught, not only on the subscale the sign-
@@ -330,6 +350,15 @@ if (!is.null(conf)) {
     cc_wrong <- reversed_wrong[stats::complete.cases(reversed_wrong), , drop = FALSE]
     alpha_wrong <- base_alpha(cc_wrong)
 
+    # The invariance fact, pinned as a load-bearing "must match" -- not
+    # advisory prose. alpha for Confidence computed with the CORRECT
+    # declared range (1-5, the committed oracle's own basis) and with a
+    # deliberately WRONG range (1-7) must be EQUAL, because alpha is a
+    # pure function of the covariance matrix and the range shift is a
+    # constant. This is the single pair that records the true consumer of
+    # the declared range (the scale-score mean, checked immediately
+    # below, which DOES move) and would catch a future change that
+    # accidentally made alpha depend on the range's specific endpoints.
     check("v130", "[documented] alpha is invariant to the declared range's specific endpoints (Confidence, correct 1-5 vs wrong-declared 1-7)",
           alpha_wrong, conf$alpha, tol = 1e-10)
     ir_wrong <- base_item_rest_total(cc_wrong)
@@ -340,28 +369,32 @@ if (!is.null(conf)) {
     # subscale's reverse-scored items, matching the plan's "Scale scores"
     # rule) computed under the correct range vs the wrong one. This DOES
     # move, because it lives on the printed response scale rather than in
-    # the covariance structure that alpha reads. Recomputed fresh in this
-    # run; not read from the committed oracle CSV, which deliberately
-    # carries counts only (scoredN/scoredNone), never the score values
-    # (plan's disclosure rule) -- there is nothing to reproduce here, only
-    # something to demonstrate.
+    # the covariance structure that alpha reads.
+    #
+    # The correct-range side is now settled against the COMMITTED oracle
+    # value (declared_Confidence_scoreMean, checked above against this
+    # same recomputation) rather than against another transient
+    # computation done inline here -- so this leg guards the committed
+    # scale-score artifact, not just internal self-consistency of this
+    # file's own arithmetic. The wrong-range side has nothing committed
+    # to read (the CSV records only the correctly-declared range's
+    # statistics), so it is recomputed fresh, once, right here.
+    mean_correct <- conf$scoreMean
     keep_correct <- stats::complete.cases(conf$reversed)
-    mean_correct <- mean(rowMeans(conf$reversed[keep_correct, , drop = FALSE]))
     keep_wrong <- stats::complete.cases(reversed_wrong)
-    mean_wrong <- mean(rowMeans(reversed_wrong[keep_wrong, , drop = FALSE]))
-
     check_true("v130", "the wrong-range and correct-range scale-score means are computed over the same respondents (same complete-case mask)",
                identical(keep_correct, keep_wrong))
+    mean_wrong <- mean(rowMeans(reversed_wrong[keep_wrong, , drop = FALSE]))
 
     if (red_mode) {
         cat("      EML_LANE_RED: running the standard agreement check on the\n")
         cat("      scale-score mean under the wrong declared range -- the next\n")
         cat("      check is EXPECTED to FAIL.\n")
-        check("v130", "[RED] Confidence scale-score mean under the wrong declared range (1-7) vs the correct range (1-5) (must go red)",
+        check("v130", "[RED] Confidence scale-score mean under the wrong declared range (1-7) vs the COMMITTED correct-range oracle (must go red)",
               mean_wrong, mean_correct, tol = 1e-6)
     } else {
         check("v130",
-              "seeded wrong-declared-range defect: Confidence scale-score mean DIFFERS from the correct-range mean (proves the leg can fail)",
+              "seeded wrong-declared-range defect: Confidence scale-score mean DIFFERS from the COMMITTED correct-range oracle (proves the leg can fail)",
               mean_wrong, mean_correct, tol = 1e-6, expect = "differ")
     }
 }
