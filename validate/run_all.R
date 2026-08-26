@@ -1591,6 +1591,64 @@ scripts <- c(
                                  # declares them and the call sites from the
                                  # tree, and reports how many of each it
                                  # walked.
+    ,
+    "v134_error_read_lint.R"     # punch list 9.2: a call to an error-producing
+                                 # procedure must be followed by a read of that
+                                 # call's .error$ before any numeric output of
+                                 # it is used. Derives both populations from
+                                 # the tree (producers that assign .error$;
+                                 # call sites that go on to read another field
+                                 # of the same call) and reports how many of
+                                 # each it walked. Vacuity kit: v98 import
+                                 # asserted, audited-site and producer floors,
+                                 # exempt-set staleness gates, and a seeded
+                                 # violation confirmed caught. RED BY DESIGN
+                                 # until item 9.3's sweep reaches zero -- the
+                                 # tag is not cut while this shows red.
+    ,
+    "v135_errorprop91.R"         # punch list 9.1: the four hand fixes -- the
+                                 # missing else in @emlRequireNumericColumn,
+                                 # the effect-size matrices printing n/a
+                                 # instead of a zero-filled cell for a failed
+                                 # pair, the standalone normality checker
+                                 # printing the producer's error text instead
+                                 # of undefined W and p, and "both" mode
+                                 # disclosing a single-arm failure. Reads the
+                                 # committed red and green captures under
+                                 # harness/errorprop91/ and harness/normality/
+                                 # out/site3/; never re-derives from live
+                                 # Praat.
+    ,
+    "v136_regression_grouping.R" # punch list 4.5: per-group regression
+                                 # fits beside the overall one, ported from
+                                 # the correlate dialog's pattern into ONE
+                                 # shared procedure (@emlRunGroupedRegression)
+                                 # both the menu door and both wizard
+                                 # regression pages call. Oracled against
+                                 # base R's lm() per group on Sol's Simpson
+                                 # fixture (harness/regressiongroup/). Red
+                                 # demo: harness/doorcensus's own leg5,
+                                 # which fails on purpose against the
+                                 # pre-port source; this file's own
+                                 # structural section reads red the same
+                                 # way against the pre-fix eml-regress.praat
+                                 # and eml-wizard.praat.
+    ,
+    "v137_correlation_scope.R"   # punch list 8.3: the scatter page's
+                                 # "Relationships shown" scope control
+                                 # (Per group / Overall / Both, each line
+                                 # labeled) -- replaces the interim
+                                 # per-group-only disclosure language batch
+                                 # item 15 also specifies, confirmed absent
+                                 # from the tree before this item. Oracled
+                                 # against base R's cor.test() per scope on
+                                 # Sol's Simpson-for-correlation fixture
+                                 # (harness/corrscope/, leg6 of the door
+                                 # census). Red demo: harness/corrscope/
+                                 # run.sh --red, driven against the
+                                 # pre-fix eml-draw-procedures.praat at git
+                                 # HEAD -- committed and reusable, not a
+                                 # scratch run.
 )
 
 # ---------------------------------------------------------------------------

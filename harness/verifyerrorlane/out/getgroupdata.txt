@@ -1,0 +1,2 @@
+missing DATA column  -> error=[Column not found: nosuchcol] n=0
+good                 -> error=[] n=2

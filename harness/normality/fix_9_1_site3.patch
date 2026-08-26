@@ -1,0 +1,37 @@
+diff --git a/plugin_EML_StatsGraphs/scripts/eml-check-normality.praat b/plugin_EML_StatsGraphs/scripts/eml-check-normality.praat
+index 152d5fc..c5fc64f 100644
+--- a/plugin_EML_StatsGraphs/scripts/eml-check-normality.praat
++++ b/plugin_EML_StatsGraphs/scripts/eml-check-normality.praat
+@@ -264,16 +264,27 @@ repeat
+                     # called above with the raw .skew, .kurt and
+                     # emlShapiroWilk.p, and the per-group verdict printed
+                     # below reads that call and not these strings.
+-                    @eml_fixed: .swW, 4
+-                    .wTxt$ = eml_fixed.result$
+                     @eml_fixed: .skew, 3
+                     .skewTxt$ = eml_fixed.result$
+                     @eml_fixed: .kurt, 3
+                     .kurtTxt$ = eml_fixed.result$
+-                    @emlFormatP: .swP
+                     appendInfoLine: "  ", .gDisplay$, " (n = ", .n, "):"
+-                    appendInfoLine: "    W = ", .wTxt$,
+-                    ... "  ", emlFormatP.formatted$
++                    # Punch list 9.1. Shapiro-Wilk errors on this group (e.g.
++                    # zero range: every value identical) leave .swW and .swP
++                    # undefined, and this line used to print them anyway --
++                    # "W = --undefined--" -- instead of the producer's own
++                    # error text. @wizardNormDiag's own call to
++                    # @emlShapiroWilk (scripts/eml-wizard.praat) already
++                    # guards this the right way; this is that same guard.
++                    if emlShapiroWilk.error$ = ""
++                        @eml_fixed: .swW, 4
++                        .wTxt$ = eml_fixed.result$
++                        @emlFormatP: .swP
++                        appendInfoLine: "    W = ", .wTxt$,
++                        ... "  ", emlFormatP.formatted$
++                    else
++                        appendInfoLine: "    Shapiro-Wilk: ", emlShapiroWilk.error$
++                    endif
+                     appendInfoLine: "    Skewness = ", .skewTxt$,
+                     ... "  Kurtosis (excess) = ", .kurtTxt$
+ 

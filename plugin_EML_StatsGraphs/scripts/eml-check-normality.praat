@@ -264,16 +264,27 @@ repeat
                     # called above with the raw .skew, .kurt and
                     # emlShapiroWilk.p, and the per-group verdict printed
                     # below reads that call and not these strings.
-                    @eml_fixed: .swW, 4
-                    .wTxt$ = eml_fixed.result$
                     @eml_fixed: .skew, 3
                     .skewTxt$ = eml_fixed.result$
                     @eml_fixed: .kurt, 3
                     .kurtTxt$ = eml_fixed.result$
-                    @emlFormatP: .swP
                     appendInfoLine: "  ", .gDisplay$, " (n = ", .n, "):"
-                    appendInfoLine: "    W = ", .wTxt$,
-                    ... "  ", emlFormatP.formatted$
+                    # Shapiro-Wilk errors on this group -- zero range, every
+                    # value identical -- leave .swW and .swP undefined, so the
+                    # error is read before either is printed and the producer's
+                    # own text stands in for them. A reader told
+                    # "W = --undefined--" learns nothing about their data;
+                    # told the range is zero, they learn everything.
+                    # @wizardNormDiag guards its own call the same way.
+                    if emlShapiroWilk.error$ = ""
+                        @eml_fixed: .swW, 4
+                        .wTxt$ = eml_fixed.result$
+                        @emlFormatP: .swP
+                        appendInfoLine: "    W = ", .wTxt$,
+                        ... "  ", emlFormatP.formatted$
+                    else
+                        appendInfoLine: "    Shapiro-Wilk: ", emlShapiroWilk.error$
+                    endif
                     appendInfoLine: "    Skewness = ", .skewTxt$,
                     ... "  Kurtosis (excess) = ", .kurtTxt$
 

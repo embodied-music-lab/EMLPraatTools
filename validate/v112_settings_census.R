@@ -384,7 +384,18 @@ RESULT_AFFECTING <- c(
               "statistics"),
     "emlDrawScatterPlot.annotate" =
         paste("gates whether the correlation and the regression are computed",
-              "and reported at all; with it 0 there is no result to store")
+              "and reported at all; with it 0 there is no result to store"),
+    # -- the scope control (punch list 8.3). It reads as a display choice and
+    #    is not one: it decides WHICH correlations run. Per group computes one
+    #    per level and no pooled model; Overall computes the pooled model and
+    #    no per-group ones; Both computes all of them. A result stored under
+    #    one scope does not answer another, so a change here must re-run.
+    #    Measured on the census fixture: per group gives r = +0.999 in each of
+    #    two groups where the pooled model gives r = -0.561.
+    "scatterCorrScope" =
+        paste("which relationships are computed: per group, pooled, or both.",
+              "A different set of statistics, not a different rendering of",
+              "one set")
 )
 
 DISPLAY_ONLY <- c(

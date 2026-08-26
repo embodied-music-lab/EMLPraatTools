@@ -1,0 +1,2 @@
+strict=0 error=[]
+strict=1 error=[Data column "score" is not numeric in every row. This test reads the column as a whole, so one unusable cell replaces every value with its alphabetical rank; the unusable rows cannot be dropped individually here. 1 cell(s) are not numeric in any locale (row 3: n/a). Unrecognized nonnumeric token; excluded.]

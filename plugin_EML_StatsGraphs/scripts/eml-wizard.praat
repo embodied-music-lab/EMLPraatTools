@@ -183,6 +183,14 @@ corrCol2$ = ""
 # rendered and its indices are not stable (same reasoning as the menu
 # door's selGroupName$, eml-correlate.praat).
 wizCorrGrpSelName$ = ""
+# Regression group column (punch list 4.5) — same seeded-by-name idiom.
+# Shared by both wizard regression entry points (B_REG_COLUMNS under
+# "Relationship > Regression" and D_PREDICT_COLUMNS under "Predict an
+# outcome"): only one of the two runs per wizard session, so one seed
+# variable is enough, exactly as wizDrawSource$ above is shared across
+# every branch that can draw.
+wizRegGrpSelName$ = ""
+wizRegDrawGroupCol$ = ""
 # Group order (punch list 4.7): the menu door's own "Table order /
 # Alphabetical" dropdown, added to the group-based wizard pages. Reset to
 # the default once per wizard launch — the session-persistence rule does
@@ -1540,6 +1548,21 @@ elsif goal = 2
 
         label B_REG_COLUMNS
 
+        # ── candidate grouping columns (punch list 4.5) ────────────────
+        # Rebuilt every time this label is reached -- @wizardRegGrpCandidates
+        # filters against the CURRENT col1Default/col2Default, so a
+        # predictor or response bound on the previous pass through this
+        # same page cannot still be offered as the grouping column.
+        wizRegPredName$ = emlTableColumnNames.name$ [col1Default]
+        wizRegRespName$ = emlTableColumnNames.name$ [col2Default]
+        @wizardRegGrpCandidates: wizRegPredName$, wizRegRespName$
+        wizRegGrpSelIdx = 1
+        for iG from 1 to wizRegGrpN
+            if wizRegGrpName$ [iG] = wizRegGrpSelName$
+                wizRegGrpSelIdx = iG + 1
+            endif
+        endfor
+
         beginPause: "Regression — Select columns"
             comment: "📋 Table: " + displayTable$
             comment: "─────────────────────────────────────"
@@ -1560,6 +1583,16 @@ elsif goal = 2
             for iCol from 1 to nCols
                 option: emlTableColumnNames.name$[iCol]
             endfor
+            comment: ""
+            optionmenu: "Group column", wizRegGrpSelIdx
+                option: "(none — overall only)"
+            for iCol from 1 to wizRegGrpN
+                option: wizRegGrpName$ [iCol]
+            endfor
+            if wizRegGrpN = 0
+                comment: "     (no column in this Table has a usable number"
+                comment: "     of groups — overall only)"
+            endif
             boolean: "Clear Info window", 0
             comment: ""
         clicked = endPause: "Quit", "Back", "Run", 3, 0
@@ -1575,9 +1608,42 @@ elsif goal = 2
         @wizardColIdx: response_column$
         col2Default = wizardColIdx.idx
 
+        # Leading "(none)" entry: a position in the FILTERED list, not a
+        # column index -- same idiom as the correlation page's group menu.
+        # Preserved BEFORE the error checks below (v128), so neither error's
+        # own `goto B_REG_COLUMNS` re-renders the page showing "(none)"
+        # instead of what was just chosen.
+        wizRegHasGroupCol = 0
+        wizRegGroupCol$ = ""
+        if group_column > 1
+            wizRegHasGroupCol = 1
+            wizRegGroupCol$ = wizRegGrpName$ [group_column - 1]
+        endif
+        wizRegGrpSelName$ = wizRegGroupCol$
+
         if predictor_column$ = response_column$
             # A correctable selection mistake must not end the wizard.
             @emlErrorDialog: "Please select two different columns.", "", "wizard"
+            if emlErrorDialog.back
+                goto B_REG_COLUMNS
+            endif
+            exitScript: ""
+        elsif wizRegHasGroupCol and (wizRegGroupCol$ = predictor_column$ or wizRegGroupCol$ = response_column$)
+            # THE STALE GROUP LIST -- same hazard as the menu door's own
+            # regression dialog and v102's correlate-dialog original: the
+            # candidate list is built from the PREVIOUS pass's predictor and
+            # response, so moving either onto the current grouping column
+            # is refused rather than silently run.
+            staleMsg$ = "The grouping column """ + wizRegGroupCol$ + """ is now"
+            staleMsg$ = staleMsg$ + " one of the two columns being"
+            staleMsg$ = staleMsg$ + " regressed, so it cannot also group"
+            staleMsg$ = staleMsg$ + " them. Nothing was run. The list of"
+            staleMsg$ = staleMsg$ + " grouping columns was built before you"
+            staleMsg$ = staleMsg$ + " changed the predictor or response"
+            staleMsg$ = staleMsg$ + " column; Back will rebuild it for the"
+            staleMsg$ = staleMsg$ + " columns you have now chosen."
+            @emlErrorDialog: staleMsg$, "", "wizard"
+            wizRegGrpSelName$ = ""
             if emlErrorDialog.back
                 goto B_REG_COLUMNS
             endif
@@ -1604,12 +1670,23 @@ elsif goal = 2
             exitScript: ""
         endif
 
+        # Per-group regression (punch list 4.5) -- @emlLinearRegression ran
+        # once above for the whole table and its globals still hold that
+        # overall fit; @emlRunGroupedRegression reads them before anything
+        # else runs.
+        if wizRegHasGroupCol
+            selectObject: tableId
+            @emlRunGroupedRegression: tableId, predictor_column$,
+            ... response_column$, wizRegGroupCol$
+        endif
+
         # Set draw presets for scatter plot with regression line
         corrCol1$ = predictor_column$
         corrCol2$ = response_column$
         wizCanDraw = 1
         wizCanExport = 1
         wizDrawSource$ = "regression"
+        wizRegDrawGroupCol$ = wizRegGroupCol$
 
         goto WIZ_WHAT_NEXT
 
@@ -2600,6 +2677,21 @@ elsif goal = 4
 
     label D_PREDICT_COLUMNS
 
+    # ── candidate grouping columns (punch list 4.5) ────────────────────
+    # Same reasoning as B_REG_COLUMNS's own block above: rebuilt every time
+    # this label is reached, filtered against the CURRENT col1Default/
+    # col2Default so a predictor or outcome bound on the previous pass
+    # cannot still be offered as the grouping column.
+    wizRegPredName$ = emlTableColumnNames.name$ [col1Default]
+    wizRegRespName$ = emlTableColumnNames.name$ [col2Default]
+    @wizardRegGrpCandidates: wizRegPredName$, wizRegRespName$
+    wizRegGrpSelIdx = 1
+    for iG from 1 to wizRegGrpN
+        if wizRegGrpName$ [iG] = wizRegGrpSelName$
+            wizRegGrpSelIdx = iG + 1
+        endif
+    endfor
+
     beginPause: "Predict — Select columns"
         comment: "📋 Table: " + displayTable$
         comment: "─────────────────────────────────────"
@@ -2618,6 +2710,16 @@ elsif goal = 4
         for iCol from 1 to nCols
             option: emlTableColumnNames.name$[iCol]
         endfor
+        comment: ""
+        optionmenu: "Group column", wizRegGrpSelIdx
+            option: "(none — overall only)"
+        for iCol from 1 to wizRegGrpN
+            option: wizRegGrpName$ [iCol]
+        endfor
+        if wizRegGrpN = 0
+            comment: "     (no column in this Table has a usable number"
+            comment: "     of groups — overall only)"
+        endif
         boolean: "Clear Info window", 0
         comment: ""
     clicked = endPause: "Quit", "Back", "Run", 3, 0
@@ -2633,9 +2735,37 @@ elsif goal = 4
     @wizardColIdx: outcome_column$
     col2Default = wizardColIdx.idx
 
+    # Leading "(none)" entry: a position in the FILTERED list, not a column
+    # index. Preserved BEFORE the error checks below (v128), so neither
+    # error's own `goto D_PREDICT_COLUMNS` re-renders the page showing
+    # "(none)" instead of what was just chosen.
+    wizRegHasGroupCol = 0
+    wizRegGroupCol$ = ""
+    if group_column > 1
+        wizRegHasGroupCol = 1
+        wizRegGroupCol$ = wizRegGrpName$ [group_column - 1]
+    endif
+    wizRegGrpSelName$ = wizRegGroupCol$
+
     if predictor_column$ = outcome_column$
         # A correctable selection mistake must not end the wizard.
         @emlErrorDialog: "Please select two different columns.", "", "wizard"
+        if emlErrorDialog.back
+            goto D_PREDICT_COLUMNS
+        endif
+        exitScript: ""
+    elsif wizRegHasGroupCol and (wizRegGroupCol$ = predictor_column$ or wizRegGroupCol$ = outcome_column$)
+        # THE STALE GROUP LIST -- see B_REG_COLUMNS's own comment above.
+        staleMsg$ = "The grouping column """ + wizRegGroupCol$ + """ is now"
+        staleMsg$ = staleMsg$ + " one of the two columns being"
+        staleMsg$ = staleMsg$ + " regressed, so it cannot also group"
+        staleMsg$ = staleMsg$ + " them. Nothing was run. The list of"
+        staleMsg$ = staleMsg$ + " grouping columns was built before you"
+        staleMsg$ = staleMsg$ + " changed the predictor or outcome"
+        staleMsg$ = staleMsg$ + " column; Back will rebuild it for the"
+        staleMsg$ = staleMsg$ + " columns you have now chosen."
+        @emlErrorDialog: staleMsg$, "", "wizard"
+        wizRegGrpSelName$ = ""
         if emlErrorDialog.back
             goto D_PREDICT_COLUMNS
         endif
@@ -2662,11 +2792,20 @@ elsif goal = 4
         exitScript: ""
     endif
 
+    # Per-group regression (punch list 4.5) -- see B_REG_COLUMNS's own
+    # comment above; the precondition is identical.
+    if wizRegHasGroupCol
+        selectObject: tableId
+        @emlRunGroupedRegression: tableId, predictor_column$,
+        ... outcome_column$, wizRegGroupCol$
+    endif
+
     corrCol1$ = predictor_column$
     corrCol2$ = outcome_column$
     wizCanDraw = 1
     wizCanExport = 1
     wizDrawSource$ = "regression"
+    wizRegDrawGroupCol$ = wizRegGroupCol$
 
     goto WIZ_WHAT_NEXT
 
@@ -2857,6 +2996,14 @@ elsif wizDrawSource$ = "regression"
     emlGraphsPresetYCol$ = corrCol2$
     emlGraphsPresetAnnotate = 1
     emlGraphsPresetRegressionLine = 1
+    # Punch list 4.5: the drawn lines match the report. Without this the
+    # scatter would fall back to its own default (overall only), so a
+    # grouped regression's Draw button would disagree with the per-group
+    # report just printed -- the exact shape the menu door's own Draw
+    # dispatch already avoids (eml-regress.praat's "if hasGroupCol").
+    if wizRegDrawGroupCol$ <> ""
+        emlGraphsPresetGroupCol$ = wizRegDrawGroupCol$
+    endif
     @emlGraphsWorkflow: tableId
 elsif wizDrawSource$ = "paired"
     # Reshape to long format for spaghetti plot.
@@ -3880,6 +4027,76 @@ procedure wizardCorrGrpIdx: .name$
     .idx = 1
     for .i from 1 to wizCorrGrpN
         if wizCorrGrpName$ [.i] = .name$
+            .idx = .i + 1
+        endif
+    endfor
+endproc
+
+
+# ============================================================================
+# @wizardRegGrpCandidates / @wizardRegGrpIdx -- regression group column
+# (punch list 4.5), shared by both wizard regression entry points
+# ============================================================================
+# Same filter as the correlate dialog's own candidate scan (v102's hazard,
+# and @wizardCorrGrpIdx's sibling above): a grouping column has to be able
+# to grade the regression, which rules out the predictor and response
+# columns themselves, single-valued columns, and near-unique columns. Ceiling
+# is 12 levels or n/3, whichever is smaller.
+#
+# ONE procedure for BOTH wizard regression pages (B_REG_COLUMNS and
+# D_PREDICT_COLUMNS) rather than two independent copies -- the DRY law in
+# CLAUDE.md ("state the canon once in a procedure"). Sets the UNDOTTED
+# globals wizRegGrpName$[] / wizRegGrpN, the same idiom @wizardCorrGrpIdx's
+# sibling reads.
+#
+# Arguments:
+#   .predCol$, .respCol$ -- the CURRENT predictor/response names (translated
+#                           from col1Default/col2Default by the caller), so
+#                           calling this fresh every time either page renders
+#                           cannot offer a column that is now bound to X or Y.
+procedure wizardRegGrpCandidates: .predCol$, .respCol$
+    selectObject: tableId
+    .nRows = Get number of rows
+    .maxLevels = min (12, max (2, floor (.nRows / 3)))
+    wizRegGrpN = 0
+    for .iCol from 1 to nCols
+        .cand$ = emlTableColumnNames.name$ [.iCol]
+        if .cand$ <> .predCol$ and .cand$ <> .respCol$
+            .levels = 0
+            .over = 0
+            for .iRow from 1 to .nRows
+                if .over = 0
+                    selectObject: tableId
+                    .cell$ = Get value: .iRow, .cand$
+                    @eml_normalizeLabel: .cell$
+                    .norm$ = eml_normalizeLabel.result$
+                    .seen = 0
+                    for .iLev from 1 to .levels
+                        if .level$ [.iLev] = .norm$
+                            .seen = 1
+                        endif
+                    endfor
+                    if .seen = 0
+                        .levels = .levels + 1
+                        .level$ [.levels] = .norm$
+                        if .levels > .maxLevels
+                            .over = 1
+                        endif
+                    endif
+                endif
+            endfor
+            if .over = 0 and .levels >= 2
+                wizRegGrpN = wizRegGrpN + 1
+                wizRegGrpName$ [wizRegGrpN] = .cand$
+            endif
+        endif
+    endfor
+endproc
+
+procedure wizardRegGrpIdx: .name$
+    .idx = 1
+    for .i from 1 to wizRegGrpN
+        if wizRegGrpName$ [.i] = .name$
             .idx = .i + 1
         endif
     endfor

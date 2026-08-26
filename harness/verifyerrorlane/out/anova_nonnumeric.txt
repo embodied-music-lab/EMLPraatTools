@@ -1,0 +1,51 @@
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Wed Aug 26 04:20:32 2026
+══════════════════════════════════════════════
+
+  Table               bad
+  Data column         score
+  Group column        g
+  Groups              3
+  Group order: table order (A, B, C).
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests whether group means differ when normality and equal variances hold.
+
+Source              SS              df    MS              F           p
+Between             1369.52         2     684.76          373.5041    < .001
+Within              14.67           8     1.83            
+Total               1384.18         10    
+
+  F                   373.5041		Ratio of mean squares: the between-group mean square is 373.5 times the within-group mean square. With no real effect, this ratio tends to be near 1
+  p                   < .001  (1.26e-08)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  Effect size         eta-squared = 0.9894		Effect size: large by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 99% of the total variance
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(2, 8) = 0.0000
+  Equal-spread p      p = 1.000
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  A             3     12.33     1.53      12.00     
+  B             4     26.50     1.29      26.50     
+  C             4     40.50     1.29      40.50     
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+  No pairwise significance tests were run.
+  Effect sizes estimate the size of each pairwise difference.
+
+              A           B           C           
+A             ---         -10.189     -20.257     
+B             10.189      ---         -10.844     
+C             20.257      10.844      ---         
+  Row minus column: a negative d means the ROW group's mean is lower
+  than the COLUMN group's. |d| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+error=[]

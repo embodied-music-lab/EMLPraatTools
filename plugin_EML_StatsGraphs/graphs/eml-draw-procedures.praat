@@ -5030,7 +5030,13 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
         # printed to the Info window instead and the figure says so. See the
         # commit site below the loop.
         .pgN = 0
-        if .annotate = 1 or scatterRegressionLine = 1
+        # v1.23 — RELATIONSHIPS SHOWN. scatterCorrScope: 1 = Per group,
+        # 2 = Overall, 3 = Both (each line labeled). The per-group loop
+        # below is this figure's ONLY source of per-group lines, so gating
+        # it on scope <> 2 turns "Overall" into a scope that shows none of
+        # them; the pooled block after the loop is the only source of the
+        # Overall line and is gated the mirror way (scope <> 1).
+        if (.annotate = 1 or scatterRegressionLine = 1) and scatterCorrScope <> 2
 
             for .g from 1 to .nGroups
                 # Extract this group's x/y data
@@ -5232,6 +5238,142 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
             endfor
         endif
 
+        # --- Overall (pooled) relationship, when scope asks for it ---
+        # scatterCorrScope <> 1: "Overall" or "Both". The pooled model is
+        # computed from .xData#/.yData#/.nValid — the WHOLE table's clean
+        # pairs, read at Step 2 before this procedure ever branched into the
+        # grouped path, and never touched by the per-group loop above (which
+        # reads its own .gXData#/.gYData# per group). Buffered into the same
+        # .pgLabel$/.pgDraw$ arrays as the per-group lines so the existing
+        # all-or-none 20-line budget below governs it too — an "Overall"
+        # line that fit while a sixth group's line did not would be exactly
+        # the kind of partial box that budget exists to prevent.
+        if (scatterCorrScope = 2 or scatterCorrScope = 3) and (.annotate = 1 or scatterRegressionLine = 1) and .nValid >= 3
+            .oHavePearson = 0
+            .oPearsonR = 0
+            if .annotate = 1
+                .oPearsonP = 0
+                if annotCorrType$ = "pearson" or annotCorrType$ = "both"
+                    @emlPearsonCorrelation: .xData#, .yData#, 2
+                    if emlPearsonCorrelation.error$ = ""
+                        .oHavePearson = 1
+                        .oPearsonR = emlPearsonCorrelation.r
+                        .oPearsonP = emlPearsonCorrelation.p
+
+                        @emlFormatAnnotLabel: .oPearsonP, 0, annotStyle$, 0, ""
+                        .pText$ = emlFormatAnnotLabel.result$
+
+                        .pgN = .pgN + 1
+                        .pgLabel$[.pgN] = "Overall: r = " + fixed$ (.oPearsonR, 3) + ", " + .pText$
+                        .pgDraw$[.pgN] = "Overall: %r = " + fixed$ (.oPearsonR, 3) + ", " + .pText$
+                    endif
+                endif
+
+                if annotCorrType$ = "spearman" or annotCorrType$ = "both"
+                    @emlSpearmanCorrelation: .xData#, .yData#, 2
+                    if emlSpearmanCorrelation.error$ = ""
+                        .oSpearmanR = emlSpearmanCorrelation.rho
+                        .oSpearmanP = emlSpearmanCorrelation.p
+
+                        @emlFormatAnnotLabel: .oSpearmanP, 0, annotStyle$, 0, ""
+                        .pText$ = emlFormatAnnotLabel.result$
+
+                        .pgN = .pgN + 1
+                        .pgLabel$[.pgN] = "Overall: rs = " + fixed$ (.oSpearmanR, 3) + ", " + .pText$
+                        .pgDraw$[.pgN] = "Overall: %%r%_s = " + fixed$ (.oSpearmanR, 3) + ", " + .pText$
+                    endif
+                endif
+            endif
+
+            # --- Rich Info window output via shared reporters (overall) ---
+            .oReportedOLS = 0
+            if .annotate = 1
+                selectObject: .objectId
+                .oTableName$ = selected$ ("Table")
+                if (scatterAnalysisType = 1 or scatterAnalysisType = 3) and annotCorrType$ <> ""
+                    @emlReportCorrelationAnalysis: .oTableName$ + " -- Overall",
+                    ... .colX$, .colY$, .nValid, annotCorrType$
+                endif
+                if scatterAnalysisType >= 2
+                    @emlLinearRegression: .xData#, .yData#
+                    if emlLinearRegression.error$ = ""
+                        @emlReportRegressionAnalysis: .oTableName$ + " -- Overall",
+                        ... .colY$, .colX$, .nValid, 0
+                        .oReportedOLS = 1
+                    endif
+                endif
+            endif
+
+            # --- Overall regression line (independent of annotate) ---
+            if scatterRegressionLine = 1
+                .oUseTheilSen = 0
+                if annotCorrType$ = "spearman"
+                    if .oReportedOLS = 0
+                        .oUseTheilSen = 1
+                    endif
+                endif
+                .oLineMethod$ = "OLS"
+                if .oUseTheilSen = 1
+                    .oLineMethod$ = "Theil-Sen"
+                    @emlTheilSen: .xData#, .yData#
+                    if emlTheilSen.error$ = ""
+                        .oSlope = emlTheilSen.slope
+                        .oIntercept = emlTheilSen.intercept
+                    else
+                        .oSlope = undefined
+                    endif
+                else
+                    if .oHavePearson = 0
+                        @emlPearsonCorrelation: .xData#, .yData#, 2
+                        if emlPearsonCorrelation.error$ = ""
+                            .oPearsonR = emlPearsonCorrelation.r
+                        endif
+                    endif
+
+                    .oMeanX = mean (.xData#)
+                    .oMeanY = mean (.yData#)
+                    .oSdX = stdev (.xData#)
+                    .oSdY = stdev (.yData#)
+
+                    if .oSdX > 0
+                        .oSlope = .oPearsonR * (.oSdY / .oSdX)
+                        .oIntercept = .oMeanY - .oSlope * .oMeanX
+                    else
+                        .oSlope = undefined
+                    endif
+                endif
+
+                if .oSlope <> undefined
+                    # Overall line drawn in the same neutral colour the
+                    # ungrouped path uses (.regColor$) rather than any
+                    # group's palette slot — a pooled model is not any one
+                    # group's line and must not read as one.
+                    @emlDrawRegressionLine: .dataXMin, .dataXMax, .oSlope, .oIntercept, .axisYMin, .axisYMax, .regColor$
+
+                    if .oLineMethod$ = "OLS"
+                        .oR2 = .oPearsonR * .oPearsonR
+                        .oEqn$ = "  Overall: OLS fitted line: y = " + fixed$ (.oSlope, 4) + "x + " + fixed$ (.oIntercept, 4) + "  (R" + "² = " + fixed$ (.oR2, 3) + ")"
+                    else
+                        .oEqn$ = "  Overall: " + .oLineMethod$ + " fitted line: y = " + fixed$ (.oSlope, 4) + "x + " + fixed$ (.oIntercept, 4)
+                    endif
+                    appendInfoLine: .oEqn$
+
+                    if scatterShowFormula = 1
+                        .pgN = .pgN + 1
+                        .oMethodTag$ = .oLineMethod$ + ": "
+                        if .oLineMethod$ = "OLS"
+                            .oR2Annot = .oPearsonR * .oPearsonR
+                            .pgLabel$[.pgN] = "Overall: " + .oMethodTag$ + "y = " + fixed$ (.oSlope, 4) + "x + " + fixed$ (.oIntercept, 4) + "  (R² = " + fixed$ (.oR2Annot, 3) + ")"
+                            .pgDraw$[.pgN] = "Overall: " + .oMethodTag$ + "%y = " + fixed$ (.oSlope, 4) + "%x + " + fixed$ (.oIntercept, 4) + "  (%R² = " + fixed$ (.oR2Annot, 3) + ")"
+                        else
+                            .pgLabel$[.pgN] = "Overall: " + .oMethodTag$ + "y = " + fixed$ (.oSlope, 4) + "x + " + fixed$ (.oIntercept, 4)
+                            .pgDraw$[.pgN] = "Overall: " + .oMethodTag$ + "%y = " + fixed$ (.oSlope, 4) + "%x + " + fixed$ (.oIntercept, 4)
+                        endif
+                    endif
+                endif
+            endif
+        endif
+
         # v1.22 — COMMIT THE BUFFERED PER-GROUP LINES, ALL OR NONE.
         #
         # The budget is @emlDisclose's 20-line block cap, less whatever is
@@ -5366,6 +5508,15 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                 ... + "annotCorrType$ = """ + annotCorrType$ + """" + newline$
                 ... + "scatterRegressionLine = "
                 ... + string$ (scatterRegressionLine) + newline$
+                ; Relationships shown (v1.23): only meaningful once a
+                ; grouping column exists, but harmless to set unconditionally
+                ; -- the ungrouped path never reads it. Recorded alongside
+                ; its three siblings above so a replay of a grouped scatter
+                ; reproduces which model(s) it drew, not just that it drew.
+                if variableExists ("scatterCorrScope")
+                    .recSetup$ = .recSetup$ + "scatterCorrScope = "
+                    ... + string$ (scatterCorrScope) + newline$
+                endif
             endif
             .recNote$ = "A fitted line is descriptive and carries no test."
             .recBoth$ = .recFit$

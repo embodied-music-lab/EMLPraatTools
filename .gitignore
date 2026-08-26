@@ -107,6 +107,13 @@ harness/edittable/out/work/
 harness/correlgroup/prefs/
 harness/correlgroup/out/work/
 
+# harness/corrscope: the EVIDENCE is CORRSCOPE.tsv, CORRSCOPE_RED.tsv and the
+# two run logs — all committed, all read by validate/v137. out/work_red/ is
+# not evidence: it is a whole copy of the plugin with one file rolled back to
+# git HEAD, built fresh by run.sh --red every time (the same "not a thing to
+# check in" as harness/correlgroup's own out/work/, above).
+harness/corrscope/out/work_red/
+
 # Two guard harnesses added 15 Aug 2026 keep their evidence and drop their
 # scratch: savepaths/guards drives the unwritable-folder and hostile-base-name
 # legs (its point is that NO file lands, so it cannot live under out/ where
@@ -409,3 +416,11 @@ harness/describesniff/out/driver.log
 # whole on the next drive. Same rule as every other rig above.
 harness/wizardback/out/work/
 harness/wizardback/out/red/work/
+
+# harness/regressdoors: the EVIDENCE is REGDOORS.tsv and the three .log files
+# beside it. out/work/ is a whole COPY of the plugin tree per case (20 MB) --
+# built fresh by run.sh every time, and meaningless once the run is over. Same
+# reason harness/correlgroup/out/work/ is ignored above. prefs/ is Praat's own
+# scratch preference folder for the drive.
+harness/regressdoors/out/work/
+harness/regressdoors/prefs/

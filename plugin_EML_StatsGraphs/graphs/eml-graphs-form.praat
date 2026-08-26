@@ -3395,6 +3395,7 @@ prev_scatterRegressionLine = -1
 prev_scatterShowFormula = -1
 prev_scatterShowDots = -1
 prev_scatterUseGroup = -1
+prev_scatterCorrScope = 0
 
 # Box plot persistence
 prev_boxGroupIdx = 0
@@ -3584,6 +3585,9 @@ scatterRegressionLine = 0
 scatterAnalysisType = 0
 scatterShowFormula = 0
 scatterShowDots = 1
+; Relationships shown, grouped scatter only: 1 = Per group, 2 = Overall,
+; 3 = Both (each line labeled). Item 8.3 (punch list, 25 Aug 2026).
+scatterCorrScope = 1
 
     # =================================================================
     # CONTEXT DETECTION
@@ -7467,6 +7471,14 @@ repeat
             tmpAnnotStyle = 3
         endif
 
+        # Relationships shown (grouped scope): the value the user last chose
+        # in this dialog. Read only where the field renders (scatterGroupShown
+        # = 1); harmless to seed here regardless.
+        if prev_scatterCorrScope >= 1
+            scatterCorrScope = prev_scatterCorrScope
+        endif
+        tmpCorrScope = scatterCorrScope
+
         # Regression defaults (1=None, 2=Line, 3=Formula, 4=Both)
         #
         # Preset first, remembered value second. The restore below runs AFTER
@@ -7598,6 +7610,19 @@ repeat
                         option: "Regression line"
                         option: "Formula"
                         option: "Both"
+                    # Item 8.3 (punch list, 25 Aug 2026) / language batch
+                    # item 15. Meaningless without a grouping column -- with
+                    # none in use there is only ever one model, the overall
+                    # one -- so the field exists only on the branch where
+                    # "Use group column" is ticked (RULING_DIALOG_COMPACTION
+                    # §1: a field that cannot be discarded because it is not
+                    # there to discard). Wording is verbatim from the batch.
+                    if scatterGroupShown = 1
+                        optionmenu: "Relationships shown", tmpCorrScope
+                            option: "Per group"
+                            option: "Overall"
+                            option: "Both, each line labeled"
+                    endif
                     optionmenu: "Significance style", tmpAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -7716,6 +7741,9 @@ repeat
                 if config_showAdvanced
                     # Toggling TO beginner: save advanced state
                     prev_adv_sca_corrType = correlation_method
+                    if scatterGroupShown = 1
+                        prev_adv_sca_corrScope = relationships_shown
+                    endif
                     prev_adv_sca_annotStyle = significance_style
                     prev_adv_sca_regressionLine = regression
                     prev_adv_sca_showDots = show_data_points
@@ -7736,6 +7764,7 @@ repeat
                     # Reset to beginner defaults
                     tmpCorrType = 1
                     tmpRegression = 1
+                    tmpCorrScope = 1
                     tmpAnnotStyle = 1
                     tmpShowDots = 1
                     tmpDotSize = 2
@@ -7761,6 +7790,9 @@ repeat
                     # Toggling TO advanced: restore saved state
                     if variableExists ("prev_adv_sca_corrType")
                         tmpCorrType = prev_adv_sca_corrType
+                        if variableExists ("prev_adv_sca_corrScope")
+                            tmpCorrScope = prev_adv_sca_corrScope
+                        endif
                         tmpAnnotStyle = prev_adv_sca_annotStyle
                         tmpRegression = prev_adv_sca_regressionLine
                         tmpShowDots = prev_adv_sca_showDots
@@ -7859,6 +7891,17 @@ repeat
                     endif
                     scatterShowDots = show_data_points
                     scatterDotSize = dot_size
+                    # Relationships shown: read only where the field
+                    # rendered (a grouping column in use). Ungrouped, there
+                    # is only ever the overall model, so the scope choice is
+                    # moot -- fixed at "Per group" the way scatterCorrScope's
+                    # global default has always been, harmlessly, because
+                    # @emlDrawScatterPlot's ungrouped path never reads it.
+                    if scatterGroupShown = 1
+                        scatterCorrScope = relationships_shown
+                    else
+                        scatterCorrScope = 1
+                    endif
                 else
                     # Beginner defaults: no annotation, reset all advanced-only fields
                     annotate = 0
@@ -7869,6 +7912,7 @@ repeat
                     scatterShowFormula = 0
                     scatterShowDots = 1
                     scatterDotSize = 2
+                    scatterCorrScope = 1
                 endif
                 gridline_mode = tmpGridMode
                 output_DPI = tmpDPI
@@ -7879,6 +7923,7 @@ repeat
                 prev_scatterShowFormula = scatterShowFormula
                 prev_scatterShowDots = scatterShowDots
                 prev_scatterUseGroup = use_group_column
+                prev_scatterCorrScope = scatterCorrScope
 
                 scatterXCol$ = x_column$
                 scatterYCol$ = y_column$

@@ -136,10 +136,25 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     .group1$ = emlCountGroups.groupLabel$[1]
     .group2$ = emlCountGroups.groupLabel$[2]
 
+    ; BOTH CALLS BELOW READ THEIR ERROR, THOUGH NEITHER CAN FAIL HERE.
+    ; @eml_getGroupData's only failure path is a column that is not there, and
+    ; @emlRequireColumnPresent and @emlRequireNumericColumn have already
+    ; refused that case above, each with a goto out. The reads cost nothing and
+    ; they hold if the guards above are ever moved or a caller reaches this
+    ; procedure another way -- which is cheaper than a promise that the failure
+    ; path stays unreachable.
     @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .group1$
+    if eml_getGroupData.error$ <> ""
+        .error$ = eml_getGroupData.error$
+        goto END_TWO_GROUP
+    endif
     .g1# = eml_getGroupData.data#
     .n1 = eml_getGroupData.n
     @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .group2$
+    if eml_getGroupData.error$ <> ""
+        .error$ = eml_getGroupData.error$
+        goto END_TWO_GROUP
+    endif
     .g2# = eml_getGroupData.data#
     .n2 = eml_getGroupData.n
 
@@ -370,6 +385,16 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
                 if emlCohenD.error$ = ""
                     emlOneWayAnova.dMatrix## [.i, .j] = emlCohenD.d
                     emlOneWayAnova.dMatrix## [.j, .i] = -emlCohenD.d
+                else
+                    ; Punch list 9.1. Left at the zero## default, a failed
+                    ; pair printed as an indistinguishable "0.000" -- a true
+                    ; zero effect and a computation that could not run read
+                    ; the same in a matrix a reader uses to judge effect
+                    ; sizes. undefined is what @eml_fixed already refuses to
+                    ; round silently, and the printer below now shows "n/a"
+                    ; for it, matching @emlPairwiseT's own matrix.
+                    emlOneWayAnova.dMatrix## [.i, .j] = undefined
+                    emlOneWayAnova.dMatrix## [.j, .i] = undefined
                 endif
             endfor
         endfor
@@ -653,6 +678,12 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
                 if emlRankBiserialR.error$ = ""
                     emlKruskalWallis.rMatrix## [.i, .j] = emlRankBiserialR.r
                     emlKruskalWallis.rMatrix## [.j, .i] = -emlRankBiserialR.r
+                else
+                    ; Punch list 9.1, the rank-biserial sibling of the
+                    ; Cohen's d fix above. Same shape, same reason: a failed
+                    ; pair must not read as a true zero effect.
+                    emlKruskalWallis.rMatrix## [.i, .j] = undefined
+                    emlKruskalWallis.rMatrix## [.j, .i] = undefined
                 endif
             endfor
         endfor
@@ -1972,6 +2003,22 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
     @emlCSVInit
     @emlReportPairedComparison: .tableName$, .col1$, .col2$, .n, .mean1, .sd1, .median1, .mean2, .sd2, .median2, .testType$
 
+    ; Punch list 9.1. In "both" mode a single arm can fail beside one that
+    ; succeeds (.ranSomething = 1 above already excludes the case where
+    ; NEITHER ran), and until this the report simply omitted that arm's
+    ; section with no word of why -- @emlReportPairedComparison guards each
+    ; block on its own error$ and prints nothing else. The two-group report
+    ; discloses exactly this drop, right after its own report call, in this
+    ; wording; this is that same disclosure for the paired path.
+    if .failParametric$ <> ""
+        .parNote$ = "  Parametric results omitted — Paired t-test failed: " + .failParametric$
+        appendInfoLine: .parNote$
+    endif
+    if .failNonparametric$ <> ""
+        .nonNote$ = "  Nonparametric results omitted — Wilcoxon signed-rank failed: " + .failNonparametric$
+        appendInfoLine: .nonNote$
+    endif
+
     if .nExcluded > 0
         .exclNote$ = "  Note: " + string$ (.nExcluded) + " row(s) excluded for missing data (analyzed n = " + string$ (.n) + " complete pairs)."
         appendInfoLine: .exclNote$
@@ -2453,6 +2500,194 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         ... "In the GUI: New > EML Stats & Graphs > Linear regression...",
         ... .recResult$, .error$
     endif
+
+    selectObject: .tableId
+endproc
+
+
+# ============================================================================
+# @emlRunGroupedRegression -- per-group regression fits beside the overall one
+# ============================================================================
+# Punch list 4.5 / OPEN_ITEMS "the regression group column" ruling: the
+# correlate dialog's per-group block (eml-correlate.praat) is the whole
+# pattern this ports. ONE procedure, called from BOTH doors (the menu's
+# eml-regress.praat and the wizard's D_PREDICT_COLUMNS page) so the group
+# column cannot drift between them the way the two independently-copied
+# correlation blocks (menu vs wizard) already have -- the DRY law in
+# CLAUDE.md ("state the canon once in a procedure").
+#
+# PRECONDITION: called immediately after @emlRunRegressionAnalysis has
+# succeeded for the WHOLE table and nothing else has run in between --
+# emlLinearRegression.* still holds the OVERALL fit, exactly the assumption
+# @emlReportRegressionAnalysis itself already makes. The overall coefficients
+# are read into this procedure's own dotted locals in its first lines, before
+# anything below re-invokes @emlLinearRegression on a group's data and
+# overwrites those globals -- the same hazard @emlDeclareRegressionResult's
+# comment documents for @emlBridgeGroupComparison.
+#
+# Two passes over the groups, for the reason @emlCountGroups is called before
+# any group prints: pass 1 only counts complete pairs per group, so the block
+# is announced with its own header and counts before any group's report
+# appears, and the groups too small to fit (n < 3, the same floor
+# @emlLinearRegression itself enforces) are named on ONE summary line rather
+# than costing an orphan line each.
+#
+# ONE export, not one per group: tidy is rebuilt (glance's overall row
+# survives) with EVERY row labelled in `term` -- "(overall) (Intercept)" /
+# "(overall) <predictor>" for the whole-table fit, "<group> = <level>
+# (Intercept)" / "<group> = <level> <predictor>" per group -- so a reader of
+# the export can tell which fit each row belongs to without re-deriving it.
+# n.groups records how many per-group fits are in tidy, the same field the
+# grouped correlation export already writes.
+#
+# The legacy CSV buffer's per-group additions (made by the calls into
+# @emlReportRegressionAnalysis below, which also feed the legacy writer) are
+# truncated back to the overall analysis afterwards -- same restore
+# eml-correlate.praat's own per-group block performs, and for the same
+# reason: the legacy buffer has no group column to carry the label in.
+#
+# Arguments:
+#   .tableId    -- the Table object
+#   .tableName$ -- for the per-group report's "Table" field and Info titles
+#   .predCol$   -- predictor (X) column name
+#   .respCol$   -- response (Y) column name
+#   .groupCol$  -- grouping column name (caller has already confirmed this
+#                  is neither .predCol$ nor .respCol$)
+#
+# Outputs:
+#   .pgTotal, .pgRun, .pgSkipped -- group counts, for a caller that wants
+#                                   them (e.g. a flow-invariant or coverage
+#                                   check); the Info report already states
+#                                   them in words.
+# ============================================================================
+procedure emlRunGroupedRegression: .tableId, .predCol$, .respCol$, .groupCol$
+    ; Read directly from the object rather than taking it as an argument --
+    ; @emlRunRegressionAnalysis does the same for its own report, and the
+    ; menu door (which HAS a tableName$ global) and the wizard (which does
+    ; not; it only ever names the table for DISPLAY, in displayTable$) would
+    ; otherwise need two different call shapes.
+    selectObject: .tableId
+    .tableName$ = selected$ ("Table")
+
+    .ovIntercept = emlLinearRegression.intercept
+    .ovSeIntercept = emlLinearRegression.seIntercept
+    .ovTIntercept = emlLinearRegression.tIntercept
+    .ovPIntercept = emlLinearRegression.pIntercept
+    .ovSlope = emlLinearRegression.slope
+    .ovSeSlope = emlLinearRegression.seSlope
+    .ovTSlope = emlLinearRegression.tSlope
+    .ovPSlope = emlLinearRegression.pSlope
+
+    selectObject: .tableId
+    @emlCountGroups: .tableId, .groupCol$
+    .pgTotal = emlCountGroups.nGroups
+    .pgRun = 0
+    .pgSkipped = 0
+    .pgSkipList$ = ""
+    .pgSkipMore = 0
+    for .pgI from 1 to .pgTotal
+        .pgLabel$ [.pgI] = emlCountGroups.groupLabel$ [.pgI]
+        selectObject: .tableId
+        @eml_getGroupPairedData: .tableId, .predCol$, .respCol$,
+        ... .groupCol$, .pgLabel$ [.pgI]
+        .pgN [.pgI] = eml_getGroupPairedData.n
+        if .pgN [.pgI] >= 3
+            .pgRun = .pgRun + 1
+        else
+            .pgSkipped = .pgSkipped + 1
+            ; The Info window does not wrap, so the summary names as many
+            ; skipped groups as fit on one line and counts the rest.
+            if length (.pgSkipList$) < 45
+                if .pgSkipList$ <> ""
+                    .pgSkipList$ = .pgSkipList$ + ", "
+                endif
+                .pgSkipList$ = .pgSkipList$
+                ... + replace$ (.pgLabel$ [.pgI], "_", " ", 0)
+            else
+                .pgSkipMore = .pgSkipMore + 1
+            endif
+        endif
+    endfor
+    if .pgSkipMore > 0
+        .pgSkipList$ = .pgSkipList$ + ", and " + string$ (.pgSkipMore) + " more"
+    endif
+
+    @emlUnderscoreToSpace: .groupCol$
+    .pgColDisplay$ = emlUnderscoreToSpace.result$
+    @emlReportHeader: "Regression by " + .pgColDisplay$
+    @emlReportLineString: "Grouping column", .pgColDisplay$
+    @emlReportLine: "Groups", .pgTotal, 0
+    @emlReportLine: "Analysed", .pgRun, 0
+
+    .pgCsvN = emlCSV_n
+    @emlTidyClear
+    @emlTidyRow: "(overall) (Intercept)"
+    @emlTidyNum: "estimate", .ovIntercept
+    @emlTidyNum: "std.error", .ovSeIntercept
+    @emlTidyNum: "statistic", .ovTIntercept
+    @emlTidyNum: "p.value", .ovPIntercept
+    @emlTidyRow: "(overall) " + .predCol$
+    @emlTidyNum: "estimate", .ovSlope
+    @emlTidyNum: "std.error", .ovSeSlope
+    @emlTidyNum: "statistic", .ovTSlope
+    @emlTidyNum: "p.value", .ovPSlope
+
+    for .pgI from 1 to .pgTotal
+        if .pgN [.pgI] >= 3
+            .pgDisplay$ = replace$ (.pgLabel$ [.pgI], "_", " ", 0)
+            selectObject: .tableId
+            @eml_getGroupPairedData: .tableId, .predCol$, .respCol$,
+            ... .groupCol$, .pgLabel$ [.pgI]
+            .pgX# = eml_getGroupPairedData.dataX#
+            .pgY# = eml_getGroupPairedData.dataY#
+            .pgThisN = eml_getGroupPairedData.n
+            .pgExcluded = eml_getGroupPairedData.nExcluded
+            .pgTerm$ = .groupCol$ + " = " + .pgLabel$ [.pgI]
+
+            @emlLinearRegression: .pgX#, .pgY#
+            if emlLinearRegression.error$ = ""
+                @emlReportRegressionAnalysis: .tableName$
+                ... + " -- " + .pgColDisplay$ + " = " + .pgDisplay$,
+                ... .respCol$, .predCol$, .pgThisN, .pgExcluded
+                if .pgExcluded > 0
+                    .pgExclNote$ = "  Note: " + string$ (.pgExcluded)
+                    ... + " row(s) excluded for missing data"
+                    ... + " (analyzed n = " + string$ (.pgThisN)
+                    ... + " complete pairs)."
+                    appendInfoLine: .pgExclNote$
+                endif
+                @emlTidyRow: .pgTerm$ + " (Intercept)"
+                @emlTidyNum: "estimate", emlLinearRegression.intercept
+                @emlTidyNum: "std.error", emlLinearRegression.seIntercept
+                @emlTidyNum: "statistic", emlLinearRegression.tIntercept
+                @emlTidyNum: "p.value", emlLinearRegression.pIntercept
+                @emlTidyRow: .pgTerm$ + " " + .predCol$
+                @emlTidyNum: "estimate", emlLinearRegression.slope
+                @emlTidyNum: "std.error", emlLinearRegression.seSlope
+                @emlTidyNum: "statistic", emlLinearRegression.tSlope
+                @emlTidyNum: "p.value", emlLinearRegression.pSlope
+            endif
+        endif
+    endfor
+
+    ; The legacy rows the per-group reporter calls appended carry a
+    ; fabricated table name and duplicate what tidy now holds properly
+    ; labelled, so the buffer is truncated back to the overall analysis.
+    emlCSV_n = .pgCsvN
+    @emlGlanceNum: "n.groups", .pgRun
+
+    if .pgSkipped > 0
+        @emlReportBlank
+        @emlReportLineString: "Skipped (n < 3)",
+        ... string$ (.pgSkipped) + " of " + string$ (.pgTotal)
+        ... + ": " + .pgSkipList$
+    endif
+    if .pgRun = 0
+        appendInfoLine: "  No group has 3 or more complete "
+        ... + "pairs -- a coarser grouping column would give"
+        appendInfoLine: "  regressions that can be computed."
+    endif
+    appendInfoLine: emlReportHeader.border$
 
     selectObject: .tableId
 endproc

@@ -505,12 +505,21 @@ moment it happens, in the output the user reads and in the recorded script.
 - Histogram display mode: kept, with the condition in the label ("2 or more
   groups") and a line at the override site saying a faceted request on one
   group was drawn overlapped.
-- The regression group column: the ruling was REVISED. This is an unfinished
-  feature, not a mislabelled control -- the wording promises per-group work
-  and the correlation dialog already has the whole pattern. Finish it: per-
-  group fits beside the overall one, groups too small named and skipped,
-  labelled rows in the export, and the drawn lines then matching the report.
-  Ruled into 1.0.
+- The regression group column: CLOSED (punch list 4.5, 26 August 2026). Ported
+  the correlate dialog's whole pattern into ONE shared procedure,
+  `@emlRunGroupedRegression` (stats/eml-analysis.praat), called from BOTH
+  doors -- the menu's scripts/eml-regress.praat and both of the wizard's
+  regression pages (B_REG_COLUMNS and D_PREDICT_COLUMNS) -- rather than a
+  copy per door. Per-group fits beside the overall one, groups too small
+  named and skipped (n < 3, the same floor @emlLinearRegression enforces),
+  labelled rows in the export ("(overall) ...", "<group> = <level> ..."),
+  and the drawn lines now match the report on both doors (the menu door's
+  Draw already carried the group column; the wizard's regression Draw did
+  not, and now does). Oracled against base R's own `lm()` per group on
+  Sol's Simpson fixture: validate/v136_regression_grouping.R,
+  harness/regressiongroup/. The door census's own leg5
+  (validate/v127_door_agreement_census.R) is revised from SILENT
+  DISAGREEMENT to AGREE alongside it.
 - The wizard's variance assumption and the three wrapper labels: both become
   ONE list of complete choices, the pattern the comparison pages already use
   -- "Parametric -- Welch t (unequal variances)", "Pairwise t (Welch), Holm".
@@ -518,8 +527,9 @@ moment it happens, in the output the user reads and in the recorded script.
   exists inside the options where it is real.
 
 Sequencing is Fable's: the histogram disclosure and the two collapses ride
-the compaction sweep's re-drives; the regression feature lands with the
-wording and output work so its report strings are written once.
+the compaction sweep's re-drives; the regression feature has landed (see
+above) using the language batch's existing verbatim wording, so its report
+strings were written once.
 
 ## Newly ordered, 20 Aug
 

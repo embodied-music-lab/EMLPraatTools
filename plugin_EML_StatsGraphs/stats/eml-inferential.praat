@@ -255,18 +255,22 @@ procedure emlTTestAlt: .v1#, .v2#, .alternative$, .equalVariances
         .error$ = "alternative$ must be ""two-sided"", ""greater"" or ""less"""
     else
         @emlTTest: .v1#, .v2#, .tails, .equalVariances
-        .t = emlTTest.t
-        .df = emlTTest.df
-        .pGreater = emlTTest.pGreater
-        .pLess = emlTTest.pLess
-        .mean1 = emlTTest.mean1
-        .mean2 = emlTTest.mean2
-        .sd1 = emlTTest.sd1
-        .sd2 = emlTTest.sd2
-        .meanDiff = emlTTest.meanDiff
-        .n1 = emlTTest.n1
-        .n2 = emlTTest.n2
-        .method$ = emlTTest.method$
+        if emlTTest.error$ <> ""
+            .error$ = emlTTest.error$
+        else
+            .t = emlTTest.t
+            .df = emlTTest.df
+            .pGreater = emlTTest.pGreater
+            .pLess = emlTTest.pLess
+            .mean1 = emlTTest.mean1
+            .mean2 = emlTTest.mean2
+            .sd1 = emlTTest.sd1
+            .sd2 = emlTTest.sd2
+            .meanDiff = emlTTest.meanDiff
+            .n1 = emlTTest.n1
+            .n2 = emlTTest.n2
+            .method$ = emlTTest.method$
+        endif
         .error$ = emlTTest.error$
 
         if .error$ = ""
@@ -431,17 +435,17 @@ procedure emlTTestPairedAlt: .v1#, .v2#, .alternative$
         .error$ = "alternative$ must be ""two-sided"", ""greater"" or ""less"""
     else
         @emlTTestPaired: .v1#, .v2#, .tails
-        .t = emlTTestPaired.t
-        .df = emlTTestPaired.df
-        .pGreater = emlTTestPaired.pGreater
-        .pLess = emlTTestPaired.pLess
-        .meanDiff = emlTTestPaired.meanDiff
-        .sdDiff = emlTTestPaired.sdDiff
-        .seDiff = emlTTestPaired.seDiff
-        .n = emlTTestPaired.n
         .error$ = emlTTestPaired.error$
 
         if .error$ = ""
+            .t = emlTTestPaired.t
+            .df = emlTTestPaired.df
+            .pGreater = emlTTestPaired.pGreater
+            .pLess = emlTTestPaired.pLess
+            .meanDiff = emlTTestPaired.meanDiff
+            .sdDiff = emlTTestPaired.sdDiff
+            .seDiff = emlTTestPaired.seDiff
+            .n = emlTTestPaired.n
             .alternative$ = .requested$
             if .requested$ = "less"
                 .p = .pLess
@@ -700,17 +704,19 @@ endproc
 
 procedure emlPearsonCorrelation: .x#, .y#, .tails
     @eml_pearsonCore: .x#, .y#, .tails
-    .r = eml_pearsonCore.r
-    .t = eml_pearsonCore.t
-    .df = eml_pearsonCore.df
-    .p = eml_pearsonCore.p
-    .pGreater = eml_pearsonCore.pGreater
-    .pLess = eml_pearsonCore.pLess
-    .alternative$ = eml_pearsonCore.alternative$
-    .n = eml_pearsonCore.n
     .error$ = eml_pearsonCore.error$
-    .warning$ = eml_pearsonCore.warning$
-    .perfect = eml_pearsonCore.perfect
+    if .error$ = ""
+        .r = eml_pearsonCore.r
+        .t = eml_pearsonCore.t
+        .df = eml_pearsonCore.df
+        .p = eml_pearsonCore.p
+        .pGreater = eml_pearsonCore.pGreater
+        .pLess = eml_pearsonCore.pLess
+        .alternative$ = eml_pearsonCore.alternative$
+        .n = eml_pearsonCore.n
+        .warning$ = eml_pearsonCore.warning$
+        .perfect = eml_pearsonCore.perfect
+    endif
 endproc
 
 
@@ -2536,16 +2542,28 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
                 # Cohen's d per pair (two-group pooled SD)
                 @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
                 ... .groupName$[.i]
-                .vI# = eml_getGroupData.data#
-                @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
-                ... .groupName$[.j]
-                @emlCohenD: .vI#, eml_getGroupData.data#
-                if emlCohenD.error$ = ""
-                    .dMatrix##[.i, .j] = emlCohenD.d
-                    .dMatrix##[.j, .i] = -emlCohenD.d
-                else
+                if eml_getGroupData.error$ <> ""
+                    .error$ = eml_getGroupData.error$
                     .dMatrix##[.i, .j] = undefined
                     .dMatrix##[.j, .i] = undefined
+                else
+                    .vI# = eml_getGroupData.data#
+                    @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
+                    ... .groupName$[.j]
+                    if eml_getGroupData.error$ <> ""
+                        .error$ = eml_getGroupData.error$
+                        .dMatrix##[.i, .j] = undefined
+                        .dMatrix##[.j, .i] = undefined
+                    else
+                        @emlCohenD: .vI#, eml_getGroupData.data#
+                        if emlCohenD.error$ = ""
+                            .dMatrix##[.i, .j] = emlCohenD.d
+                            .dMatrix##[.j, .i] = -emlCohenD.d
+                        else
+                            .dMatrix##[.i, .j] = undefined
+                            .dMatrix##[.j, .i] = undefined
+                        endif
+                    endif
                 endif
             endfor
         endfor
@@ -3075,6 +3093,16 @@ procedure emlRequireNumericColumn: .tableId, .role$, .columnName$, .strict
                 endif
             endif
         endif
+    else
+        ; A COLUMN THAT DOES NOT EXIST FAILS THE GATE. Without this branch
+        ; .error$ stays "" from the top of the procedure and the gate reports
+        ; success, which is the opposite of its own name. Every caller in this
+        ; file asks @emlRequireColumnPresent first and so never reaches here;
+        ; the caller this branch is for is the future one that trusts
+        ; "Numeric" in the name to also mean "Present". Quotes
+        ; @emlAuditColumn's own message verbatim -- the missing-column
+        ; diagnosis is made in ONE place, and it is not this one.
+        .error$ = emlAuditColumn.error$
     endif
 endproc
 
@@ -4061,16 +4089,28 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
             for .j from .i + 1 to .nGroups
                 @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
                 ... .groupName$[.i]
-                .vI# = eml_getGroupData.data#
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.j]
-                @emlRankBiserialR: .vI#, eml_getGroupData.data#, 2
-                if emlRankBiserialR.error$ = ""
-                    .rMatrix##[.i, .j] = emlRankBiserialR.r
-                    .rMatrix##[.j, .i] = -emlRankBiserialR.r
-                else
+                if eml_getGroupData.error$ <> ""
+                    .error$ = eml_getGroupData.error$
                     .rMatrix##[.i, .j] = undefined
                     .rMatrix##[.j, .i] = undefined
+                else
+                    .vI# = eml_getGroupData.data#
+                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
+                    ... .groupName$[.j]
+                    if eml_getGroupData.error$ <> ""
+                        .error$ = eml_getGroupData.error$
+                        .rMatrix##[.i, .j] = undefined
+                        .rMatrix##[.j, .i] = undefined
+                    else
+                        @emlRankBiserialR: .vI#, eml_getGroupData.data#, 2
+                        if emlRankBiserialR.error$ = ""
+                            .rMatrix##[.i, .j] = emlRankBiserialR.r
+                            .rMatrix##[.j, .i] = -emlRankBiserialR.r
+                        else
+                            .rMatrix##[.i, .j] = undefined
+                            .rMatrix##[.j, .i] = undefined
+                        endif
+                    endif
                 endif
             endfor
         endfor

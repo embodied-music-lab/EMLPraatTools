@@ -1,0 +1,84 @@
+
+══════════════════════════════════════════════
+  EML Stats : Simple Linear Regression
+  Wed Aug 26 04:11:56 2026
+══════════════════════════════════════════════
+
+  Table               leg5 -- A
+  Response (Y)        y
+  Predictor (X)       x
+  N                   10
+
+
+  ── Model ───────────────────────────────────
+  Why: Tests whether the predictor linearly predicts the response.
+  Equation            y = 1.9842x + 5.0667
+  y = 1.9842 x x + 5.0667
+  For each 1-unit increase in x, predicted y is 1.9842 units higher.
+  R                   0.9991		Very strong positive relationship (range: -1 to 1)
+  R-squared           0.9983		The fitted model accounts for 100% of the variance in Y in this sample
+  Adj. R-squared      0.9981		R-squared adjusted for number of predictors — penalizes model complexity
+  Residual SE         0.2635		Typical prediction error — points deviate from the line by +/-0.26 units on average
+
+
+  ── Overall Model Test (F) ──────────────────
+  F(1,8)              4677.7552		Ratio of the mean square accounted for by the model to the mean square left over. With no real association, this ratio tends to be near 1
+  p                   < .001  (2.32e-12)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+
+
+  ── Coefficients ────────────────────────────
+
+  Term                Estimate      SE            t           p           95% CI
+  (Intercept)         5.0667        0.1800        28.146      < .001      [4.6516, 5.4818]
+  x                   1.9842        0.0290        68.394      < .001      [1.9173, 2.0511]
+
+  Direction: positive (cases with higher x tend to have higher y)
+  Model fit: R-squared = 0.9983 -- the fitted model accounts for 99.8% of the variance in y in this sample, a large effect by Cohen's R-squared benchmarks
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+  A: OLS fitted line: y = 1.9842x + 5.0667  (R² = 0.998)
+
+══════════════════════════════════════════════
+  EML Stats : Simple Linear Regression
+  Wed Aug 26 04:11:56 2026
+══════════════════════════════════════════════
+
+  Table               leg5 -- B
+  Response (Y)        y
+  Predictor (X)       x
+  N                   10
+
+
+  ── Model ───────────────────────────────────
+  Why: Tests whether the predictor linearly predicts the response.
+  Equation            y = -1.9855x + 99.9400
+  y = -1.9855 x x + 99.9400
+  For each 1-unit increase in x, predicted y is 1.9855 units lower.
+  R                   -0.9993		Very strong negative relationship (range: -1 to 1)
+  R-squared           0.9987		The fitted model accounts for 100% of the variance in Y in this sample
+  Adj. R-squared      0.9985		R-squared adjusted for number of predictors — penalizes model complexity
+  Residual SE         0.2341		Typical prediction error — points deviate from the line by +/-0.23 units on average
+
+
+  ── Overall Model Test (F) ──────────────────
+  F(1,8)              5932.6567		Ratio of the mean square accounted for by the model to the mean square left over. With no real association, this ratio tends to be near 1
+  p                   < .001  (9.00e-13)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+
+
+  ── Coefficients ────────────────────────────
+
+  Term                Estimate      SE            t           p           95% CI
+  (Intercept)         99.9400       0.1599        624.847     < .001      [99.5712, 100.3088]
+  x                   -1.9855       0.0258        -77.024     < .001      [-2.0449, -1.9260]
+
+  Direction: negative (cases with higher x tend to have lower y)
+  Model fit: R-squared = 0.9987 -- the fitted model accounts for 99.9% of the variance in y in this sample, a large effect by Cohen's R-squared benchmarks
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+  B: OLS fitted line: y = -1.9855x + 99.9400  (R² = 0.999)
+NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
+Scatter plot: the annotation panel covers 6 data point(s) — no corner of this figure is clear. Widen the figure, shorten the annotation, or read the covered values from the table.

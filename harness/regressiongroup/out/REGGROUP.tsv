@@ -1,0 +1,40 @@
+key	value
+overall_slope	0.076804484933
+overall_intercept	51.923686054660
+overall_r2	0.000041996027
+pgTotal	3.000000000000
+pgRun	2.000000000000
+pgSkipped	1.000000000000
+glance_n_groups	2
+tidy_nRows	6.000000000000
+tidy_term_1	(overall) (Intercept)
+tidy_estimate_1	51.92368605466013
+tidy_se_1	15.728882632590937
+tidy_stat_1	3.3011681292014963
+tidy_p_1	0.0035668071973298464
+tidy_term_2	(overall) x
+tidy_estimate_2	0.07680448493342654
+tidy_se_2	2.6500761949206733
+tidy_stat_2	0.02898199118977618
+tidy_p_2	0.9771662089578556
+tidy_term_3	group = A (Intercept)
+tidy_estimate_3	5.066666666666668
+tidy_se_3	0.1800140286340267
+tidy_stat_3	28.14595454095045
+tidy_p_3	2.742706873188315e-09
+tidy_term_4	group = A x
+tidy_estimate_4	1.9842424242424241
+tidy_se_4	0.02901188762400422
+tidy_stat_4	68.39411657587826
+tidy_p_4	2.3248580987217733e-12
+tidy_term_5	group = B (Intercept)
+tidy_estimate_5	99.94
+tidy_se_5	0.15994317172612532
+tidy_stat_5	624.8469310783066
+tidy_p_5	4.819443114882395e-20
+tidy_term_6	group = B x
+tidy_estimate_6	-1.9854545454545456
+tidy_se_6	0.025777176143193345
+tidy_stat_6	-77.023741251767
+tidy_p_6	8.997342756559598e-13
+completed	1

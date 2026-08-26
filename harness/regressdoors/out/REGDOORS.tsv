@@ -1,0 +1,39 @@
+praat_version	Praat 6.6.30 (June 30 2026)
+fixture_rows	20
+fixture_csv_sha	fa17e70b29506c24dc14b923eba1366b56c0555d8d9019d7bfc8f37d23eae1d1
+errdlg_body_identical	1
+eml-regress_stanza_count	2
+eml-regress_body_identical	1
+eml-regress_file_sha	0d14f25bc668980734acadbc0bc8424bf2a9f96e64c2a9a453f91b9193e27c57
+menu_dialog_keys	simple_linear_regression#1 analysis_complete#1 
+menu_grouped_exit	0
+menu_grouped_returned	1
+menu_grouped_dlg_trace	simple_linear_regression#1,analysis_complete#1
+menu_grouped_errmsgs	0
+menu_grouped_errmsg_first	
+menu_grouped_stderr_head	
+eml-wizard_stanza_count	35
+eml-wizard_body_identical	1
+eml-wizard_file_sha	c1f6c054f9c0438ca53ea9d02746ad291c1cd080297e5068ede26566657f1d67
+wizard_dialog_keys	eml_stats_wizard#1 compare_observation_type#1 compare_independent_design#1 two_groups_select_columns#1 two_independent_groups_choose_test#1 please_choose_a_test#1 three_groups_select_columns#1 three_or_more_groups_test#1 please_choose_a_test#2 two_factor_design#1 paired_repeated_how_many_conditions#1 paired_select_columns#1 paired_choose_test#1 please_choose_a_test#3 repeated_measures_select_condition_columns#1 relationship_what_type#1 regression_select_columns#1 correlation_select_columns#1 correlation_choose_test#1 describe_what_to_summarize#1 describe_select_column#1 describe_by_group_select_columns#1 normality_check#1 normality_check_select_column#1 normality_check_all_numeric_columns#1 normality_check_select_column_and_group#1 predict_select_columns#1 mixed_model_formula#1 analysis_complete#1 analysis_complete#2 analysis_complete#3 analysis_complete#4 draw_q_q_plot#1 cannot_draw_this_q_q_plot#1 no_table_selected#1 
+wizard_grouped_exit	0
+wizard_grouped_returned	1
+wizard_grouped_dlg_trace	eml_stats_wizard#1,relationship_what_type#1,regression_select_columns#1,analysis_complete#1
+wizard_grouped_errmsgs	0
+wizard_grouped_errmsg_first	
+wizard_grouped_stderr_head	
+draw_probe_exit	0
+menu_grouped_reported_eqn_A	y = 1.9842x + 5.0667
+menu_grouped_reported_eqn_B	y = -1.9855x + 99.9400
+menu_grouped_pooled_eqn	y = -0.0006x + 52.5033
+menu_grouped_group_blocks	1
+menu_grouped_groups_analysed	2
+wizard_grouped_reported_eqn_A	y = 1.9842x + 5.0667
+wizard_grouped_reported_eqn_B	y = -1.9855x + 99.9400
+wizard_grouped_pooled_eqn	y = -0.0006x + 52.5033
+wizard_grouped_group_blocks	1
+wizard_grouped_groups_analysed	2
+drawn_line_A	A: OLS fitted line: y = 1.9842x + 5.0667  (R² = 0.998)
+draw_probe_reported_eqn_A	y = 1.9842x + 5.0667
+drawn_line_B	B: OLS fitted line: y = -1.9855x + 99.9400  (R² = 0.999)
+draw_probe_reported_eqn_B	y = -1.9855x + 99.9400

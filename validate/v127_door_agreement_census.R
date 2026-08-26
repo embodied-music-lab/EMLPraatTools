@@ -74,23 +74,27 @@
 #         reaches for on an exported copy of that reshape, not a second
 #         live button in the current UI. The statistical hazard the audit
 #         named is real and reproduced exactly either way.
-#   leg5  grouped regression       SILENT DISAGREEMENT (current defect,
-#         (Simpson)                still open). scripts/eml-regress.praat
-#                                  reads the Group column into groupCol$
-#                                  and never passes it to
-#                                  @emlRunRegressionAnalysis (line 107:
-#                                  "tableId, respCol$, predCol$" -- three
-#                                  arguments, no group). This is Sol's
-#                                  Simpson fixture joining the two-door
-#                                  exhibit (docs/EXHIBIT_TWO_DOOR_
-#                                  REGRESSION.md); WORK_ORDER_DOOR_CENSUS.md
-#                                  section 3 rules the fix IN for 1.0 (the
-#                                  regression dialog gains the correlate
-#                                  dialog's per-group pattern) and says
-#                                  this leg is "expected-red only until
-#                                  the port's commit." It has not landed
-#                                  at this commit -- confirmed by source
-#                                  read above, not assumed.
+#   leg5  grouped regression       AGREE. WORK_ORDER_DOOR_CENSUS.md section 3
+#         (Simpson)                ruled the fix IN for 1.0 (the regression
+#                                  dialog gains the correlate dialog's
+#                                  per-group pattern) and punch-list 4.5 has
+#                                  now landed it: @emlRunGroupedRegression
+#                                  (stats/eml-analysis.praat) is the ONE
+#                                  shared call both the menu door
+#                                  (scripts/eml-regress.praat) and both of
+#                                  the wizard's regression pages now make,
+#                                  fitting and reporting each group beside
+#                                  the overall one -- the overall-fit call
+#                                  itself (still "tableId, respCol$,
+#                                  predCol$", three arguments) is unchanged,
+#                                  because the group column now rides the
+#                                  separate port call rather than a fourth
+#                                  argument threaded into it. Full detail,
+#                                  including the base-R lm() oracle per
+#                                  group and the skip-and-name behaviour for
+#                                  groups under n = 3, is
+#                                  validate/v136_regression_grouping.R and
+#                                  harness/regressiongroup/.
 #   leg6  correlation display     AGREE, both self-labelled. The
 #         scope                   correlate dialog's per-group block and
 #                                  the scatter's own per-group block both
@@ -436,16 +440,27 @@ check_true(V,
                    leg5_pooled, leg5_a, leg5_b),
            is.finite(leg5_pooled) && abs(leg5_pooled) < 0.05 &&
                leg5_a > 1.5 && leg5_b < -1.5)
-# STRUCTURAL EVIDENCE: the regression dialog's own call, read out of
-# source, carries three arguments and no group column.
+# STRUCTURAL EVIDENCE -- REVISED. Punch-list 4.5 landed: the port is a
+# SEPARATE shared call (@emlRunGroupedRegression, stats/eml-analysis.praat),
+# not a fourth argument threaded into @emlRunRegressionAnalysis itself, so
+# the overall-fit call keeps its original three-argument shape (correctly --
+# the overall fit is still one fit for the whole table) and the group
+# column now rides the separate call instead. Confirm BOTH halves: the old
+# call is unchanged, and the new one is there and reads the group column.
 regress_src <- readLines(file.path(PLUGIN_DIR, "scripts", "eml-regress.praat"), warn = FALSE)
+wizard_src <- readLines(file.path(PLUGIN_DIR, "scripts", "eml-wizard.praat"), warn = FALSE)
 leg5_call_line <- grep("@emlRunRegressionAnalysis:\\s*tableId,\\s*respCol\\$,\\s*predCol\\$\\s*$", regress_src)
-leg5_group_passed <- any(grepl("@emlRunRegressionAnalysis:.*group", regress_src, ignore.case = TRUE))
+leg5_port_line <- grep("@emlRunGroupedRegression:", regress_src, fixed = TRUE)
+leg5_port_wizard_calls <- sum(grepl("@emlRunGroupedRegression:", wizard_src, fixed = TRUE))
 check_true(V,
-           sprintf("leg5 VERDICT: SILENT DISAGREEMENT -- the regression dialog's own call (%s) carries tableId/respCol$/predCol$ only, no group column, though the dialog reads one; still open per WORK_ORDER_DOOR_CENSUS.md section 3 (per-group port ruled IN for 1.0, not yet landed), FAILS on purpose until the port's commit",
+           sprintf("leg5 VERDICT: AGREE -- the per-group port landed (punch-list 4.5): the regression dialog's overall-fit call (%s) is unchanged, and its own %s (eml-regress.praat:%s) now fits and reports each group beside the overall one, matching the scatter draw door's own per-group fit above; the wizard's two regression pages call the same shared procedure (%d call site(s), full detail in validate/v136_regression_grouping.R)",
                    if (length(leg5_call_line)) sprintf("confirmed, eml-regress.praat:%d", leg5_call_line[1])
-                   else "NOT CONFIRMED -- re-check the line reference"),
-           length(leg5_call_line) > 0 && !leg5_group_passed)
+                   else "NOT CONFIRMED -- re-check the line reference",
+                   "@emlRunGroupedRegression call",
+                   if (length(leg5_port_line)) as.character(leg5_port_line[1]) else "MISSING",
+                   leg5_port_wizard_calls),
+           length(leg5_call_line) > 0 && length(leg5_port_line) > 0 &&
+               leg5_port_wizard_calls == 2)
 
 # ===========================================================================
 # LEG 6 -- correlation display scope: correlate dialog vs scatter draw
@@ -501,7 +516,7 @@ check_true(V,
 if (!exists("EML_SUITE")) {
     eml_report("v127 -- the door-agreement census (punch-list 8.1)")
     cat("\n  LEDGER: leg1 SILENT (1.6) | leg2 AGREE | leg3 SILENT (1.6) |\n",
-        "         leg4 SILENT (documented hazard) | leg5 SILENT (regression port) |\n",
+        "         leg4 SILENT (documented hazard) | leg5 AGREE (4.5, ported) |\n",
         "         leg6 AGREE, labelled\n", sep = "")
     eml_exit()
 }

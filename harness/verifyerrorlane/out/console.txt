@@ -1,0 +1,61 @@
+=== SITE A1: two-group, DATA column that does not exist ===
+error=[Data column not found: nosuchcol]
+
+=== SITE A2: two-group, GROUP column that does not exist ===
+error=[Column not found: nosuchgroup]
+
+=== SITE A3: two-group, data column with a non-numeric cell ===
+
+══════════════════════════════════════════════
+  EML Stats : Two-Group Comparison
+  Wed Aug 26 04:20:33 2026
+══════════════════════════════════════════════
+
+  Table               bad
+  Data column         score
+  Group column        g
+
+  Group         N     Mean      SD        Median    
+  A             3     12.33     1.53      12.00     
+  B             4     16.50     1.29      16.50     
+  Sign: every difference below is A minus B, and t, z and the effect
+  sizes carry that direction.
+
+
+  ── Welch ───────────────────────────────────
+  Why: Compares means of two independent groups (robust to unequal variances).
+  t                   -3.812		The observed difference is 3.8 standard errors from zero
+  df                  4.0		Welch-adjusted for unequal variances. More df = more reliable.
+  p                   .019		Statistically significant at the 5% level: if there were truly no effect, results at least this extreme would occur less than 5% of the time
+  Mean diff (A − B)   -4.1667		B mean is 4.17 units higher
+  95% CI of diff      [-7.2134, -1.1199]
+
+
+  ── Effect Size ─────────────────────────────
+  Cohen's d           -2.997		Effect size: large by Cohen's convention (d >= 0.8 = large). The group means differ by 3.0 pooled standard deviations
+  Hedges' g           -2.523		Cohen's d with the small-sample bias removed; large by Cohen's convention (g >= 0.8 = large)
+  Magnitude           large by Cohen's convention
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+error=[]
+
+=== SITE B1: ANOVA bridge report, DATA column that does not exist ===
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Wed Aug 26 04:20:33 2026
+══════════════════════════════════════════════
+
+  Table               three
+  Data column         nosuchcol
+  Group column        g
+  Groups              3
+Error: Undefined indexed variable «emlOneWayAnova.groupLabel$[1]».
+Formula not run.
+Script line 34754 not performed or completed:
+« .groupList$ = .groupList$ + replace$ (emlOneWayAnova.groupLabel$[.iGroup], "_", " ", 0) »
+Script “/home/claude/repo/harness/verifyerrorlane/probe.praat” not completed.
+Praat: script command <<probe.praat>> not completed.
+

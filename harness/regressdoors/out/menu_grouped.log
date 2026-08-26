@@ -1,0 +1,126 @@
+CASE handoff
+DLG|1|simple_linear_regression#1|visit=1|clicked=2
+
+══════════════════════════════════════════════
+  EML Stats : Simple Linear Regression
+  Wed Aug 26 04:11:55 2026
+  from: analysis dialog
+══════════════════════════════════════════════
+
+  Table               leg5
+  Response (Y)        y
+  Predictor (X)       x
+  N                   20
+
+
+  ── Model ───────────────────────────────────
+  Equation            y = -0.0006x + 52.5033
+  R                   0.0000
+  R-squared           0.0000
+  Adj. R-squared      -0.0556
+  Residual SE         38.9624
+
+
+  ── Overall Model Test (F) ──────────────────
+  F(1,18)             0.0000
+  p                   > .999  (1 - 1.57e-04)
+
+
+  ── Coefficients ────────────────────────────
+
+  Term                Estimate      SE            t           p           95% CI
+  (Intercept)         52.5033       18.8206       2.790       .012        [12.9627, 92.0440]
+  x                   -0.0006       3.0332        0.000       > .999      [-6.3732, 6.3720]
+
+  Direction: negative (cases with higher x tend to have lower y)
+  Model fit: R-squared = 0.0000 -- the fitted model accounts for 0.0% of the variance in y in this sample, a negligible effect by Cohen's R-squared benchmarks
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+
+══════════════════════════════════════════════
+  EML Stats : Regression by group
+  Wed Aug 26 04:11:56 2026
+══════════════════════════════════════════════
+
+  Grouping column     group
+  Groups              2
+  Analysed            2
+
+══════════════════════════════════════════════
+  EML Stats : Simple Linear Regression
+  Wed Aug 26 04:11:56 2026
+══════════════════════════════════════════════
+
+  Table               leg5 -- group = A
+  Response (Y)        y
+  Predictor (X)       x
+  N                   10
+
+
+  ── Model ───────────────────────────────────
+  Equation            y = 1.9842x + 5.0667
+  R                   0.9991
+  R-squared           0.9983
+  Adj. R-squared      0.9981
+  Residual SE         0.2635
+
+
+  ── Overall Model Test (F) ──────────────────
+  F(1,8)              4677.7552
+  p                   < .001  (2.32e-12)
+
+
+  ── Coefficients ────────────────────────────
+
+  Term                Estimate      SE            t           p           95% CI
+  (Intercept)         5.0667        0.1800        28.146      < .001      [4.6516, 5.4818]
+  x                   1.9842        0.0290        68.394      < .001      [1.9173, 2.0511]
+
+  Direction: positive (cases with higher x tend to have higher y)
+  Model fit: R-squared = 0.9983 -- the fitted model accounts for 99.8% of the variance in y in this sample, a large effect by Cohen's R-squared benchmarks
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+
+══════════════════════════════════════════════
+  EML Stats : Simple Linear Regression
+  Wed Aug 26 04:11:56 2026
+══════════════════════════════════════════════
+
+  Table               leg5 -- group = B
+  Response (Y)        y
+  Predictor (X)       x
+  N                   10
+
+
+  ── Model ───────────────────────────────────
+  Equation            y = -1.9855x + 99.9400
+  R                   -0.9993
+  R-squared           0.9987
+  Adj. R-squared      0.9985
+  Residual SE         0.2341
+
+
+  ── Overall Model Test (F) ──────────────────
+  F(1,8)              5932.6567
+  p                   < .001  (9.00e-13)
+
+
+  ── Coefficients ────────────────────────────
+
+  Term                Estimate      SE            t           p           95% CI
+  (Intercept)         99.9400       0.1599        624.847     < .001      [99.5712, 100.3088]
+  x                   -1.9855       0.0258        -77.024     < .001      [-2.0449, -1.9260]
+
+  Direction: negative (cases with higher x tend to have lower y)
+  Model fit: R-squared = 0.9987 -- the fitted model accounts for 99.9% of the variance in y in this sample, a large effect by Cohen's R-squared benchmarks
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+══════════════════════════════════════════════
+DLG|2|analysis_complete#1|visit=1|clicked=1
+CASE returned

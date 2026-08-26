@@ -2947,11 +2947,19 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                                 annotMatrixD'.i'_'.j' = undefined
                                 if .showEffect = 1
                                     @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
-                                    .v1# = eml_getGroupData.data#
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
-                                    @emlRankBiserialR: .v1#, eml_getGroupData.data#, 2
-                                    if emlRankBiserialR.error$ = ""
-                                        annotMatrixD'.i'_'.j' = abs (emlRankBiserialR.r)
+                                    if eml_getGroupData.error$ <> ""
+                                        .error$ = eml_getGroupData.error$
+                                    else
+                                        .v1# = eml_getGroupData.data#
+                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
+                                        if eml_getGroupData.error$ <> ""
+                                            .error$ = eml_getGroupData.error$
+                                        else
+                                            @emlRankBiserialR: .v1#, eml_getGroupData.data#, 2
+                                            if emlRankBiserialR.error$ = ""
+                                                annotMatrixD'.i'_'.j' = abs (emlRankBiserialR.r)
+                                            endif
+                                        endif
                                     endif
                                 endif
                             endfor
@@ -2970,11 +2978,19 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                                 .pairD = undefined
                                 if .showEffect = 1
                                     @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
-                                    .v1# = eml_getGroupData.data#
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
-                                    @emlRankBiserialR: .v1#, eml_getGroupData.data#, 2
-                                    if emlRankBiserialR.error$ = ""
-                                        .pairD = abs (emlRankBiserialR.r)
+                                    if eml_getGroupData.error$ <> ""
+                                        .error$ = eml_getGroupData.error$
+                                    else
+                                        .v1# = eml_getGroupData.data#
+                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
+                                        if eml_getGroupData.error$ <> ""
+                                            .error$ = eml_getGroupData.error$
+                                        else
+                                            @emlRankBiserialR: .v1#, eml_getGroupData.data#, 2
+                                            if emlRankBiserialR.error$ = ""
+                                                .pairD = abs (emlRankBiserialR.r)
+                                            endif
+                                        endif
                                     endif
                                 endif
 
@@ -3154,11 +3170,19 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                                 annotMatrixD'.i'_'.j' = undefined
                                 if .showEffect = 1
                                     @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
-                                    .v1# = eml_getGroupData.data#
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
-                                    @emlCohenD: .v1#, eml_getGroupData.data#
-                                    if emlCohenD.error$ = ""
-                                        annotMatrixD'.i'_'.j' = abs (emlCohenD.d)
+                                    if eml_getGroupData.error$ <> ""
+                                        .error$ = eml_getGroupData.error$
+                                    else
+                                        .v1# = eml_getGroupData.data#
+                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
+                                        if eml_getGroupData.error$ <> ""
+                                            .error$ = eml_getGroupData.error$
+                                        else
+                                            @emlCohenD: .v1#, eml_getGroupData.data#
+                                            if emlCohenD.error$ = ""
+                                                annotMatrixD'.i'_'.j' = abs (emlCohenD.d)
+                                            endif
+                                        endif
                                     endif
                                 endif
                             endfor
@@ -3177,11 +3201,19 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                                 .pairD = undefined
                                 if .showEffect = 1
                                     @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
-                                    .v1# = eml_getGroupData.data#
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
-                                    @emlCohenD: .v1#, eml_getGroupData.data#
-                                    if emlCohenD.error$ = ""
-                                        .pairD = emlCohenD.d
+                                    if eml_getGroupData.error$ <> ""
+                                        .error$ = eml_getGroupData.error$
+                                    else
+                                        .v1# = eml_getGroupData.data#
+                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
+                                        if eml_getGroupData.error$ <> ""
+                                            .error$ = eml_getGroupData.error$
+                                        else
+                                            @emlCohenD: .v1#, eml_getGroupData.data#
+                                            if emlCohenD.error$ = ""
+                                                .pairD = emlCohenD.d
+                                            endif
+                                        endif
                                     endif
                                 endif
 
@@ -4292,6 +4324,13 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 if emlCohenD.error$ = ""
                     emlOneWayAnova.dMatrix## [.i, .j] = emlCohenD.d
                     emlOneWayAnova.dMatrix## [.j, .i] = -emlCohenD.d
+                else
+                    ; Punch list 9.1, the sibling of the fix in
+                    ; stats/eml-analysis.praat: a failed pair must not read
+                    ; as a true zero effect. The print loop below now shows
+                    ; "n/a" for it.
+                    emlOneWayAnova.dMatrix## [.i, .j] = undefined
+                    emlOneWayAnova.dMatrix## [.j, .i] = undefined
                 endif
             endfor
         endfor
@@ -4328,8 +4367,15 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 .cellText$ = "---"
             else
                 .dVal = emlOneWayAnova.dMatrix## [.iGroup, .jGroup]
-                @eml_fixed: .dVal, 3
-                .cellText$ = eml_fixed.result$
+                if .dVal = undefined
+                    ; Punch list 9.1. A failed pair prints as unavailable,
+                    ; never as 0 -- same convention as @emlPairwiseT's own
+                    ; d matrix above in this report.
+                    .cellText$ = "n/a"
+                else
+                    @eml_fixed: .dVal, 3
+                    .cellText$ = eml_fixed.result$
+                endif
             endif
             .dRowLine$ = .dRowLine$ + left$ (.cellText$ + "            ", 12)
         endfor
@@ -4765,6 +4811,10 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                 if emlRankBiserialR.error$ = ""
                     emlKruskalWallis.rMatrix## [.i, .j] = emlRankBiserialR.r
                     emlKruskalWallis.rMatrix## [.j, .i] = -emlRankBiserialR.r
+                else
+                    ; Punch list 9.1, sibling of the Cohen's d fix above.
+                    emlKruskalWallis.rMatrix## [.i, .j] = undefined
+                    emlKruskalWallis.rMatrix## [.j, .i] = undefined
                 endif
             endfor
         endfor
@@ -4797,8 +4847,14 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                 .cellText$ = "---"
             else
                 .rVal = emlKruskalWallis.rMatrix## [.iGroup, .jGroup]
-                @eml_fixed: .rVal, 3
-                .cellText$ = eml_fixed.result$
+                if .rVal = undefined
+                    ; Punch list 9.1. Same convention as the Cohen's d
+                    ; matrix above: a failed pair reads "n/a", never "0.000".
+                    .cellText$ = "n/a"
+                else
+                    @eml_fixed: .rVal, 3
+                    .cellText$ = eml_fixed.result$
+                endif
             endif
             .rRowLine$ = .rRowLine$ + left$ (.cellText$ + "            ", 12)
         endfor

@@ -2,4 +2,4 @@ NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform â
 NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
 PANEL Grouped violin type=11 origin=0,0 erase=1 placement=1 passes=2
 UNION 0 6.0000 0 4.0000
-SAVED /home/claude/EMLPraatTools/harness/compose/out/single.png
+SAVED /home/claude/repo/harness/compose/out/single.png

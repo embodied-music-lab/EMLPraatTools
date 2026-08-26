@@ -5,4 +5,4 @@ NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform â
 PANEL Right panel, separate legend type=12 origin=7,0 erase=0 placement=4 passes=1
 PARK 40.0000 41.1914
 UNION 0 13.0000 0 28.0000
-SAVED /home/claude/EMLPraatTools/harness/compose/out/legend_band.png
+SAVED /home/claude/repo/harness/compose/out/legend_band.png

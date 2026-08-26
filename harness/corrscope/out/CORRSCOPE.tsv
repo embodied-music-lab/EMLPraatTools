@@ -1,0 +1,11 @@
+key	value
+scope_pergroup_n_lines	2
+scope_pergroup_line_1	A: r = 0.999, p < .001
+scope_pergroup_line_2	B: r = 0.999, p < .001
+scope_overall_n_lines	1
+scope_overall_line_1	Overall: r = -0.561, p = .024
+scope_both_n_lines	3
+scope_both_line_1	A: r = 0.999, p < .001
+scope_both_line_2	B: r = 0.999, p < .001
+scope_both_line_3	Overall: r = -0.561, p = .024
+completed	1
