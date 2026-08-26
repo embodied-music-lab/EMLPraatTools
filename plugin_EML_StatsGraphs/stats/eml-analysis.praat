@@ -62,6 +62,47 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     ; variable". The record then reports only what was actually computed.
     .p = undefined
     .mwP = undefined
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S FIELDS, INITIALISED AT ENTRY.
+    ; The publication sits after the end label, beside the record hook and
+    ; for the same reason: every guard above it jumps there, and A RUN THAT
+    ; REFUSES MUST PUBLISH ITS REFUSAL -- otherwise the run before it is
+    ; still published, wearing this run's silence. Praat aborts on a read of
+    ; a variable that was never assigned, so every field the publication
+    ; states is given a value here, before the first guard can jump.
+    ; UNDEFINED IS THE VALUE FOR "THIS RUN DID NOT PRODUCE ONE" and never
+    ; zero, which is a number a reader would believe.
+    ; ---------------------------------------------------------------------
+    .stKey$ = ""
+    .stKeyError$ = ""
+    .stSort$ = "table"
+    .stTest$ = ""
+    .stCorrection$ = ""
+    .stNGroups = 0
+    .stOmniLabel$ = ""
+    .stOmni = undefined
+    .stDf1 = undefined
+    .stDf2 = undefined
+    .stP = undefined
+    .stEffLabel$ = ""
+    .stEff = undefined
+    .stN = undefined
+    .stSecLabel$ = ""
+    .stSec = undefined
+    .stSecDf1 = undefined
+    .stSecP = undefined
+    .stSecEffLabel$ = ""
+    .stSecEff = undefined
+    .stPostHoc$ = ""
+    .stHasMatrix = 0
+    .stStatLabel$ = ""
+    .stPairEffLabel$ = ""
+    .stNone## = zero## (1, 1)
+    .stPMat## = zero## (1, 1)
+    .stDiffMat## = zero## (1, 1)
+    .stStatMat## = zero## (1, 1)
+    .stEffMat## = zero## (1, 1)
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -132,6 +173,23 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
         .error$ = emlRequireNumericColumn.error$
         goto END_TWO_GROUP
     endif
+
+    ; THE KEY, TAKEN IN THE SAME PASS THAT READS THE DATA and before the
+    ; first value is read. THE FINGERPRINT CANNOT CHECK THIS AND SAYS SO:
+    ; a key taken after the reads is truthful about the wrong moment, and no
+    ; digest width detects it -- the fault is in the ORDER of the calls.
+    ; @emlStoreKeyTake stamps the group sort order at the same instant, for
+    ; the same reason: it decides the order the contrasts are formed in, so
+    ; it is part of what this pass produced.
+    @emlStoreKeyTake: .tableId, .dataCol$, .groupCol$
+    ; THE ERROR FIRST, THEN THE OUTPUTS IT GUARDS -- lane 9.2's order, which
+    ; validate/v134's lint reads. The diagnosis is PUBLISHED rather than
+    ; dropped: an unkeyed result is already safe, because "" never agrees,
+    ; but a reason nobody can read is the silent class the error census
+    ; counted nineteen of.
+    .stKeyError$ = emlStoreKeyTake.error$
+    .stKey$ = emlStoreKeyTake.key$
+    .stSort$ = emlStoreKeyTake.sort$
 
     .group1$ = emlCountGroups.groupLabel$[1]
     .group2$ = emlCountGroups.groupLabel$[2]
@@ -280,6 +338,50 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
         ... .doPar, .doNon, .group1$, .group2$
     endif
 
+    ; ---- THE STORE'S FIELDS FOR THIS RUN. Read from the kernels' own
+    ; namespaces, which @emlReportTwoGroupComparison PRINTS FROM AND DOES NOT
+    ; RECOMPUTE, so the publication states the numbers the reader was shown.
+    ; Guarded on the arm having run: an arm that never ran has no namespace,
+    ; and reading one aborts the script.
+    if .error$ = ""
+        .stNGroups = 2
+        emlPublishInLabel$ [1] = .group1$
+        emlPublishInLabel$ [2] = .group2$
+        .stN = .n1 + .n2
+        if .doPar
+            .stTest$ = "student t"
+            if .equalVar = 0
+                .stTest$ = "welch t"
+            endif
+            .stOmniLabel$ = "t"
+            .stOmni = emlTTest.t
+            .stDf1 = emlTTest.df
+            .stP = emlTTest.p
+            .stEffLabel$ = "Cohen's d"
+            .stEff = emlCohenD.d
+        endif
+        if .doNon
+            if .doPar
+                ; BOTH ARMS RAN, so both are published. A run that computed
+                ; two tests and published one would be this contract's own
+                ; defect at field granularity.
+                .stTest$ = .stTest$ + " + mann-whitney"
+                .stSecLabel$ = "U"
+                .stSec = emlMannWhitneyU.u1
+                .stSecP = emlMannWhitneyU.p
+                .stSecEffLabel$ = "rank-biserial r"
+                .stSecEff = emlRankBiserialR.r
+            else
+                .stTest$ = "mann-whitney"
+                .stOmniLabel$ = "U"
+                .stOmni = emlMannWhitneyU.u1
+                .stP = emlMannWhitneyU.p
+                .stEffLabel$ = "rank-biserial r"
+                .stEff = emlRankBiserialR.r
+            endif
+        endif
+    endif
+
     ; The numbers the reporter printed, from this procedure's OWN locals.
     if .error$ = ""
         .recResult$ = .group1$ + ": n = " + string$ (.n1) + ", mean = "
@@ -295,6 +397,32 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
         endif
     endif
     label END_TWO_GROUP
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S PUBLICATION. One call, stating the whole result --
+    ; identity, statistics, matrices and the key taken at the read -- the way
+    ; the pens are stated on every press. See THE RESULT STORE: THE SINGLE
+    ; WRITE SITE in stats/eml-extract.praat.
+    ;
+    ; PLACED AFTER THE END LABEL, with the record hook and for the record
+    ; hook's reason: a refusal published is what stops the previous run's
+    ; result standing as the answer to this one.
+    ;
+    ; NO ALPHA CONTROL ON THIS DOOR, so the alpha in force is the one the
+    ; report itself is written against -- @emlReportAlpha, which is this
+    ; tree's one answer to "significant against what". A literal .05 here
+    ; would be the frozen-choice defect the lint in validate/v116 exists for.
+    ; ---------------------------------------------------------------------
+    @emlReportAlpha
+    @emlPublishAnalysisResult: "emlRunTwoGroupAnalysis", "menu", "group",
+    ... .error$, .stKey$, .stKeyError$, .tableId, .tableName$,
+    ... .dataCol$, .groupCol$, .stTest$, .stCorrection$,
+    ... emlReportAlpha.value, .stSort$,
+    ... .stNGroups, .stOmniLabel$, .stOmni, .stDf1, .stDf2, .stP,
+    ... .stEffLabel$, .stEff, .stN,
+    ... .stSecLabel$, .stSec, .stSecDf1, .stSecP, .stSecEffLabel$, .stSecEff,
+    ... .stPostHoc$, .stHasMatrix, .stStatLabel$, .stPairEffLabel$,
+    ... .stPMat##, .stDiffMat##, .stStatMat##, .stEffMat##
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -326,6 +454,47 @@ endproc
 # ============================================================================
 
 procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S FIELDS, INITIALISED AT ENTRY.
+    ; The publication sits after the end label, beside the record hook and
+    ; for the same reason: every guard above it jumps there, and A RUN THAT
+    ; REFUSES MUST PUBLISH ITS REFUSAL -- otherwise the run before it is
+    ; still published, wearing this run's silence. Praat aborts on a read of
+    ; a variable that was never assigned, so every field the publication
+    ; states is given a value here, before the first guard can jump.
+    ; UNDEFINED IS THE VALUE FOR "THIS RUN DID NOT PRODUCE ONE" and never
+    ; zero, which is a number a reader would believe.
+    ; ---------------------------------------------------------------------
+    .stKey$ = ""
+    .stKeyError$ = ""
+    .stSort$ = "table"
+    .stTest$ = ""
+    .stCorrection$ = ""
+    .stNGroups = 0
+    .stOmniLabel$ = ""
+    .stOmni = undefined
+    .stDf1 = undefined
+    .stDf2 = undefined
+    .stP = undefined
+    .stEffLabel$ = ""
+    .stEff = undefined
+    .stN = undefined
+    .stSecLabel$ = ""
+    .stSec = undefined
+    .stSecDf1 = undefined
+    .stSecP = undefined
+    .stSecEffLabel$ = ""
+    .stSecEff = undefined
+    .stPostHoc$ = ""
+    .stHasMatrix = 0
+    .stStatLabel$ = ""
+    .stPairEffLabel$ = ""
+    .stNone## = zero## (1, 1)
+    .stPMat## = zero## (1, 1)
+    .stDiffMat## = zero## (1, 1)
+    .stStatMat## = zero## (1, 1)
+    .stEffMat## = zero## (1, 1)
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -366,6 +535,23 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
         .error$ = emlRequireNumericColumn.error$
         goto END_ANOVA
     endif
+
+    ; THE KEY, TAKEN IN THE SAME PASS THAT READS THE DATA and before the
+    ; first value is read. THE FINGERPRINT CANNOT CHECK THIS AND SAYS SO:
+    ; a key taken after the reads is truthful about the wrong moment, and no
+    ; digest width detects it -- the fault is in the ORDER of the calls.
+    ; @emlStoreKeyTake stamps the group sort order at the same instant, for
+    ; the same reason: it decides the order the contrasts are formed in, so
+    ; it is part of what this pass produced.
+    @emlStoreKeyTake: .tableId, .dataCol$, .groupCol$
+    ; THE ERROR FIRST, THEN THE OUTPUTS IT GUARDS -- lane 9.2's order, which
+    ; validate/v134's lint reads. The diagnosis is PUBLISHED rather than
+    ; dropped: an unkeyed result is already safe, because "" never agrees,
+    ; but a reason nobody can read is the silent class the error census
+    ; counted nineteen of.
+    .stKeyError$ = emlStoreKeyTake.error$
+    .stKey$ = emlStoreKeyTake.key$
+    .stSort$ = emlStoreKeyTake.sort$
 
     @emlOneWayAnova: .tableId, .dataCol$, .groupCol$, .doTukey
     if emlOneWayAnova.error$ <> ""
@@ -437,7 +623,75 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
         ... .tableId, .doTukey
     endif
 
+    ; ---- THE STORE'S FIELDS FOR THIS RUN. @emlReportAnovaComparison re-runs
+    ; @emlOneWayAnova itself, so emlOneWayAnova.* here holds exactly what was
+    ; PRINTED -- the same reason the record hook below reads it rather than
+    ; scraping the Info window.
+    if emlOneWayAnova.error$ = ""
+        .stNGroups = .nGroups
+        for .gi from 1 to .nGroups
+            emlPublishInLabel$ [.gi] = emlOneWayAnova.groupLabel$[.gi]
+        endfor
+        .stTest$ = "one-way anova"
+        .stOmniLabel$ = "F"
+        .stOmni = emlOneWayAnova.fValue
+        .stDf1 = emlOneWayAnova.dfBetween
+        .stDf2 = emlOneWayAnova.dfWithin
+        .stP = emlOneWayAnova.p
+        .stEffLabel$ = "eta squared"
+        .stEff = emlOneWayAnova.etaSquared
+        .stN = emlOneWayAnova.dfTotal + 1
+        ; THE EFFECT-SIZE MATRIX EXISTS ON BOTH BRANCHES -- the block above
+        ; builds it pair by pair when Tukey did not run -- so it is published
+        ; either way, and the pairwise p, q and mean difference are published
+        ; as undefined when no post-hoc produced them. Undefined and not zero:
+        ; see @emlPublishAbsentMatrix.
+        .stHasMatrix = 1
+        .stPairEffLabel$ = "Cohen's d"
+        .stEffMat## = emlOneWayAnova.dMatrix##
+        if .doTukey
+            .stTest$ = "one-way anova + tukey"
+            .stPostHoc$ = "tukey"
+            .stStatLabel$ = "q"
+            .stPMat## = emlOneWayAnova.pMatrix##
+            .stStatMat## = emlOneWayAnova.qMatrix##
+            .stDiffMat## = emlOneWayAnova.meanDiff##
+        else
+            @emlPublishAbsentMatrix: .nGroups
+            .stPMat## = emlPublishAbsentMatrix.m##
+            @emlPublishAbsentMatrix: .nGroups
+            .stStatMat## = emlPublishAbsentMatrix.m##
+            @emlPublishAbsentMatrix: .nGroups
+            .stDiffMat## = emlPublishAbsentMatrix.m##
+        endif
+    endif
+
     label END_ANOVA
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S PUBLICATION. One call, stating the whole result --
+    ; identity, statistics, matrices and the key taken at the read -- the way
+    ; the pens are stated on every press. See THE RESULT STORE: THE SINGLE
+    ; WRITE SITE in stats/eml-extract.praat.
+    ;
+    ; PLACED AFTER THE END LABEL, with the record hook and for the record
+    ; hook's reason: a refusal published is what stops the previous run's
+    ; result standing as the answer to this one.
+    ;
+    ; THE ALPHA IS THE ONE IN FORCE, never a literal: @emlReportAlpha is this
+    ; tree's single answer to "significant against what", and it is the alpha
+    ; the report above was written against.
+    ; ---------------------------------------------------------------------
+    @emlReportAlpha
+    @emlPublishAnalysisResult: "emlRunAnovaAnalysis", "menu", "group",
+    ... .error$, .stKey$, .stKeyError$, .tableId, .tableName$,
+    ... .dataCol$, .groupCol$, .stTest$, .stCorrection$,
+    ... emlReportAlpha.value, .stSort$,
+    ... .stNGroups, .stOmniLabel$, .stOmni, .stDf1, .stDf2, .stP,
+    ... .stEffLabel$, .stEff, .stN,
+    ... .stSecLabel$, .stSec, .stSecDf1, .stSecP, .stSecEffLabel$, .stSecEff,
+    ... .stPostHoc$, .stHasMatrix, .stStatLabel$, .stPairEffLabel$,
+    ... .stPMat##, .stDiffMat##, .stStatMat##, .stEffMat##
 
     ; ---------------------------------------------------------------------
     ; RECORD WORKFLOW. Inert unless a recording is running: every entry point
@@ -593,6 +847,47 @@ endproc
 
 procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod$
     .recResult$ = ""
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S FIELDS, INITIALISED AT ENTRY.
+    ; The publication sits after the end label, beside the record hook and
+    ; for the same reason: every guard above it jumps there, and A RUN THAT
+    ; REFUSES MUST PUBLISH ITS REFUSAL -- otherwise the run before it is
+    ; still published, wearing this run's silence. Praat aborts on a read of
+    ; a variable that was never assigned, so every field the publication
+    ; states is given a value here, before the first guard can jump.
+    ; UNDEFINED IS THE VALUE FOR "THIS RUN DID NOT PRODUCE ONE" and never
+    ; zero, which is a number a reader would believe.
+    ; ---------------------------------------------------------------------
+    .stKey$ = ""
+    .stKeyError$ = ""
+    .stSort$ = "table"
+    .stTest$ = ""
+    .stCorrection$ = ""
+    .stNGroups = 0
+    .stOmniLabel$ = ""
+    .stOmni = undefined
+    .stDf1 = undefined
+    .stDf2 = undefined
+    .stP = undefined
+    .stEffLabel$ = ""
+    .stEff = undefined
+    .stN = undefined
+    .stSecLabel$ = ""
+    .stSec = undefined
+    .stSecDf1 = undefined
+    .stSecP = undefined
+    .stSecEffLabel$ = ""
+    .stSecEff = undefined
+    .stPostHoc$ = ""
+    .stHasMatrix = 0
+    .stStatLabel$ = ""
+    .stPairEffLabel$ = ""
+    .stNone## = zero## (1, 1)
+    .stPMat## = zero## (1, 1)
+    .stDiffMat## = zero## (1, 1)
+    .stStatMat## = zero## (1, 1)
+    .stEffMat## = zero## (1, 1)
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -633,6 +928,23 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
         .error$ = emlRequireNumericColumn.error$
         goto END_KW
     endif
+
+    ; THE KEY, TAKEN IN THE SAME PASS THAT READS THE DATA and before the
+    ; first value is read. THE FINGERPRINT CANNOT CHECK THIS AND SAYS SO:
+    ; a key taken after the reads is truthful about the wrong moment, and no
+    ; digest width detects it -- the fault is in the ORDER of the calls.
+    ; @emlStoreKeyTake stamps the group sort order at the same instant, for
+    ; the same reason: it decides the order the contrasts are formed in, so
+    ; it is part of what this pass produced.
+    @emlStoreKeyTake: .tableId, .dataCol$, .groupCol$
+    ; THE ERROR FIRST, THEN THE OUTPUTS IT GUARDS -- lane 9.2's order, which
+    ; validate/v134's lint reads. The diagnosis is PUBLISHED rather than
+    ; dropped: an unkeyed result is already safe, because "" never agrees,
+    ; but a reason nobody can read is the silent class the error census
+    ; counted nineteen of.
+    .stKeyError$ = emlStoreKeyTake.error$
+    .stKey$ = emlStoreKeyTake.key$
+    .stSort$ = emlStoreKeyTake.sort$
 
     @emlKruskalWallis: .tableId, .dataCol$, .groupCol$
     ; CAPTURED AT THE TEST, not at the end label. A Praat procedure's outputs
@@ -711,7 +1023,84 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
         @emlDeclareKWResult: .tableName$, .dataCol$, .groupCol$
     endif
 
+    ; ---- THE STORE'S FIELDS FOR THIS RUN. Read from emlKruskalWallis, whose
+    ; namespace the block above has already been careful to keep -- neither
+    ; the reporter nor the declaration re-invokes the test.
+    if .error$ = ""
+        .stNGroups = .nGroups
+        for .gi from 1 to .nGroups
+            emlPublishInLabel$ [.gi] = emlKruskalWallis.groupName$[.gi]
+        endfor
+        .stTest$ = "kruskal-wallis"
+        .stOmniLabel$ = "H"
+        .stOmni = emlKruskalWallis.h
+        .stDf1 = emlKruskalWallis.df
+        .stP = emlKruskalWallis.p
+        .stEffLabel$ = "epsilon squared"
+        .stEff = emlKruskalWallis.epsilonSq
+        .stN = emlKruskalWallis.n
+        ; THE RANK-BISERIAL MATRIX EXISTS ON BOTH BRANCHES, built pair by
+        ; pair above when Dunn's did not run or failed, so it is published
+        ; either way; the pairwise p and z are undefined when nothing
+        ; produced them. See @emlPublishAbsentMatrix.
+        .stHasMatrix = 1
+        .stPairEffLabel$ = "rank-biserial r"
+        .stEffMat## = emlKruskalWallis.rMatrix##
+        @emlPublishAbsentMatrix: .nGroups
+        .stDiffMat## = emlPublishAbsentMatrix.m##
+        .stDunnRan = 0
+        if .doDunn = 1
+            if variableExists ("emlDunnTest.error$")
+                if emlDunnTest.error$ = ""
+                    .stDunnRan = 1
+                endif
+            endif
+        endif
+        if .stDunnRan = 1
+            .stTest$ = "kruskal-wallis + dunn"
+            ; THE CORRECTION IS PUBLISHED ONLY WHERE ONE WAS APPLIED. With no
+            ; post-hoc there is no family to adjust, and publishing the
+            ; dialog's dormant choice would make two runs that computed the
+            ; same numbers compare as two different analyses.
+            .stCorrection$ = .adjMethod$
+            .stPostHoc$ = "dunn"
+            .stStatLabel$ = "z"
+            .stPMat## = emlDunnTest.pMatrix##
+            .stStatMat## = emlDunnTest.zMatrix##
+        else
+            @emlPublishAbsentMatrix: .nGroups
+            .stPMat## = emlPublishAbsentMatrix.m##
+            @emlPublishAbsentMatrix: .nGroups
+            .stStatMat## = emlPublishAbsentMatrix.m##
+        endif
+    endif
+
     label END_KW
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S PUBLICATION. One call, stating the whole result --
+    ; identity, statistics, matrices and the key taken at the read -- the way
+    ; the pens are stated on every press. See THE RESULT STORE: THE SINGLE
+    ; WRITE SITE in stats/eml-extract.praat.
+    ;
+    ; PLACED AFTER THE END LABEL, with the record hook and for the record
+    ; hook's reason: a refusal published is what stops the previous run's
+    ; result standing as the answer to this one.
+    ;
+    ; THE ALPHA IS THE ONE IN FORCE, never a literal: @emlReportAlpha is this
+    ; tree's single answer to "significant against what", and it is the alpha
+    ; the report above was written against.
+    ; ---------------------------------------------------------------------
+    @emlReportAlpha
+    @emlPublishAnalysisResult: "emlRunKWAnalysis", "menu", "group",
+    ... .error$, .stKey$, .stKeyError$, .tableId, .tableName$,
+    ... .dataCol$, .groupCol$, .stTest$, .stCorrection$,
+    ... emlReportAlpha.value, .stSort$,
+    ... .stNGroups, .stOmniLabel$, .stOmni, .stDf1, .stDf2, .stP,
+    ... .stEffLabel$, .stEff, .stN,
+    ... .stSecLabel$, .stSec, .stSecDf1, .stSecP, .stSecEffLabel$, .stSecEff,
+    ... .stPostHoc$, .stHasMatrix, .stStatLabel$, .stPairEffLabel$,
+    ... .stPMat##, .stDiffMat##, .stStatMat##, .stEffMat##
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -744,6 +1133,47 @@ endproc
 
 procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjMethod$
     .recResult$ = ""
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S FIELDS, INITIALISED AT ENTRY.
+    ; The publication sits after the end label, beside the record hook and
+    ; for the same reason: every guard above it jumps there, and A RUN THAT
+    ; REFUSES MUST PUBLISH ITS REFUSAL -- otherwise the run before it is
+    ; still published, wearing this run's silence. Praat aborts on a read of
+    ; a variable that was never assigned, so every field the publication
+    ; states is given a value here, before the first guard can jump.
+    ; UNDEFINED IS THE VALUE FOR "THIS RUN DID NOT PRODUCE ONE" and never
+    ; zero, which is a number a reader would believe.
+    ; ---------------------------------------------------------------------
+    .stKey$ = ""
+    .stKeyError$ = ""
+    .stSort$ = "table"
+    .stTest$ = ""
+    .stCorrection$ = ""
+    .stNGroups = 0
+    .stOmniLabel$ = ""
+    .stOmni = undefined
+    .stDf1 = undefined
+    .stDf2 = undefined
+    .stP = undefined
+    .stEffLabel$ = ""
+    .stEff = undefined
+    .stN = undefined
+    .stSecLabel$ = ""
+    .stSec = undefined
+    .stSecDf1 = undefined
+    .stSecP = undefined
+    .stSecEffLabel$ = ""
+    .stSecEff = undefined
+    .stPostHoc$ = ""
+    .stHasMatrix = 0
+    .stStatLabel$ = ""
+    .stPairEffLabel$ = ""
+    .stNone## = zero## (1, 1)
+    .stPMat## = zero## (1, 1)
+    .stDiffMat## = zero## (1, 1)
+    .stStatMat## = zero## (1, 1)
+    .stEffMat## = zero## (1, 1)
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -802,6 +1232,23 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
         goto END_PAIRWISE
     endif
 
+    ; THE KEY, TAKEN IN THE SAME PASS THAT READS THE DATA and before the
+    ; first value is read. THE FINGERPRINT CANNOT CHECK THIS AND SAYS SO:
+    ; a key taken after the reads is truthful about the wrong moment, and no
+    ; digest width detects it -- the fault is in the ORDER of the calls.
+    ; @emlStoreKeyTake stamps the group sort order at the same instant, for
+    ; the same reason: it decides the order the contrasts are formed in, so
+    ; it is part of what this pass produced.
+    @emlStoreKeyTake: .tableId, .dataCol$, .groupCol$
+    ; THE ERROR FIRST, THEN THE OUTPUTS IT GUARDS -- lane 9.2's order, which
+    ; validate/v134's lint reads. The diagnosis is PUBLISHED rather than
+    ; dropped: an unkeyed result is already safe, because "" never agrees,
+    ; but a reason nobody can read is the silent class the error census
+    ; counted nineteen of.
+    .stKeyError$ = emlStoreKeyTake.error$
+    .stKey$ = emlStoreKeyTake.key$
+    .stSort$ = emlStoreKeyTake.sort$
+
     if .test$ = "welch" or .test$ = "student"
         if .test$ = "welch"
             .tType$ = "welch"
@@ -846,6 +1293,70 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
         @emlDeclarePairwiseResult: .tableName$, .groupCol$, .test$, .adjMethod$
     endif
 
+    ; ---- THE STORE'S FIELDS FOR THIS RUN. A PAIRWISE FAMILY HAS NO
+    ; OMNIBUS, so the omnibus slots stay at the entry value -- "" and
+    ; undefined, which is what "this run did not produce one" is written as
+    ; everywhere in this store. What it has is the matrices, and they are
+    ; published whole.
+    ;
+    ; THE KERNELS' NAMESPACES SURVIVE THE REPORTER. @emlReportPairwiseComparison
+    ; re-reads the data column for its per-group descriptives and prints from
+    ; emlPairwiseT / emlPairwiseWilcoxon / emlScheffe; it does not re-run any
+    ; of them.
+    if .error$ = ""
+        .stNGroups = .recGroups
+        .stCorrection$ = .adjMethod$
+        .stHasMatrix = 1
+        if .test$ = "welch" or .test$ = "student"
+            .stTest$ = "pairwise " + .tType$ + " t"
+            .stPostHoc$ = .tType$ + " t"
+            .stStatLabel$ = "t"
+            .stPairEffLabel$ = "Cohen's d"
+            for .gi from 1 to .recGroups
+                emlPublishInLabel$ [.gi] = emlPairwiseT.groupName$[.gi]
+            endfor
+            .stPMat## = emlPairwiseT.pMatrix##
+            .stStatMat## = emlPairwiseT.tMatrix##
+            .stEffMat## = emlPairwiseT.dMatrix##
+            ; NO MEAN-DIFFERENCE MATRIX FROM THIS KERNEL. It publishes t, df
+            ; and d and not the raw difference, so the difference is absent
+            ; rather than derived here: a write site that derived would be a
+            ; second analysis with no door of its own.
+            @emlPublishAbsentMatrix: .recGroups
+            .stDiffMat## = emlPublishAbsentMatrix.m##
+        elsif .test$ = "wilcoxon"
+            .stTest$ = "pairwise wilcoxon"
+            .stPostHoc$ = "wilcoxon"
+            .stStatLabel$ = "U"
+            .stPairEffLabel$ = "rank-biserial r"
+            for .gi from 1 to .recGroups
+                emlPublishInLabel$ [.gi] = emlPairwiseWilcoxon.groupName$[.gi]
+            endfor
+            .stPMat## = emlPairwiseWilcoxon.pMatrix##
+            .stStatMat## = emlPairwiseWilcoxon.uMatrix##
+            .stEffMat## = emlPairwiseWilcoxon.rMatrix##
+            @emlPublishAbsentMatrix: .recGroups
+            .stDiffMat## = emlPublishAbsentMatrix.m##
+        elsif .test$ = "scheffe"
+            .stTest$ = "scheffe"
+            .stPostHoc$ = "scheffe"
+            .stStatLabel$ = "F"
+            ; SCHEFFE'S OWN CORRECTION IS THE TEST. It does not take an
+            ; adjustment argument -- the critical value carries the family
+            ; -- so publishing the dialog's adjustment beside it would name
+            ; a correction that was never applied.
+            .stCorrection$ = ""
+            for .gi from 1 to .recGroups
+                emlPublishInLabel$ [.gi] = emlScheffe.groupName$[.gi]
+            endfor
+            .stPMat## = emlScheffe.pMatrix##
+            .stStatMat## = emlScheffe.fMatrix##
+            .stDiffMat## = emlScheffe.diffMatrix##
+            @emlPublishAbsentMatrix: .recGroups
+            .stEffMat## = emlPublishAbsentMatrix.m##
+        endif
+    endif
+
     ; A pairwise family has no single statistic; it has a shape. What a
     ; reader needs from the record is which test, which correction, and over
     ; how many comparisons -- the family size is what makes an adjusted p
@@ -857,6 +1368,32 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     endif
 
     label END_PAIRWISE
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S PUBLICATION. One call, stating the whole result --
+    ; identity, statistics, matrices and the key taken at the read -- the way
+    ; the pens are stated on every press. See THE RESULT STORE: THE SINGLE
+    ; WRITE SITE in stats/eml-extract.praat.
+    ;
+    ; PLACED AFTER THE END LABEL, with the record hook and for the record
+    ; hook's reason: a refusal published is what stops the previous run's
+    ; result standing as the answer to this one.
+    ;
+    ; NO ALPHA CONTROL ON THIS DOOR, so the alpha in force is the one the
+    ; report itself is written against -- @emlReportAlpha, which is this
+    ; tree's one answer to "significant against what". A literal .05 here
+    ; would be the frozen-choice defect the lint in validate/v116 exists for.
+    ; ---------------------------------------------------------------------
+    @emlReportAlpha
+    @emlPublishAnalysisResult: "emlRunPairwiseAnalysis", "menu", "group",
+    ... .error$, .stKey$, .stKeyError$, .tableId, .tableName$,
+    ... .dataCol$, .groupCol$, .stTest$, .stCorrection$,
+    ... emlReportAlpha.value, .stSort$,
+    ... .stNGroups, .stOmniLabel$, .stOmni, .stDf1, .stDf2, .stP,
+    ... .stEffLabel$, .stEff, .stN,
+    ... .stSecLabel$, .stSec, .stSecDf1, .stSecP, .stSecEffLabel$, .stSecEff,
+    ... .stPostHoc$, .stHasMatrix, .stStatLabel$, .stPairEffLabel$,
+    ... .stPMat##, .stDiffMat##, .stStatMat##, .stEffMat##
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than

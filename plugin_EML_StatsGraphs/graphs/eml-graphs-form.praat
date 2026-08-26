@@ -10531,6 +10531,25 @@ repeat
         annotLayoutMode = 3
     endif
 
+    ; THE REPORT IS PRINTED ONLY WHEN THE BRIDGE SAYS SO, AND THAT IS THE
+    ; DUPLICATE REPORT'S FIX. @emlReportBridgeStats prints a FULL analysis
+    ; report in the Info window. Before the result store the bridge always
+    ; recomputed, so the sequence "run a Kruskal-Wallis from the stats menu,
+    ; then draw a violin of it" printed the whole report twice -- Ian's
+    ; driven session, and the defect docs/RULING_RESULT_STORE.md section (c)
+    ; is a contract about.
+    ;
+    ; The bridge now decides, because the bridge is the only thing that knows
+    ; whether it computed anything: .printReport is 1 when this report is the
+    ; FIRST report of this result (nothing was published, or the data moved
+    ; and the analysis was re-measured) and 0 when it is not (the figure drew
+    ; from the store, or a setting changed and the bridge has already said so
+    ; in one line). The form obeys it and adds no rule of its own -- a second
+    ; rule here is how the two would come to disagree.
+    ;
+    ; READ THROUGH variableExists, because a tree in which the bridge has not
+    ; run -- an error path, a user script -- has no .printReport to read, and
+    ; the safe answer in that case is the old one: print.
     # Every @emlBridgeGroupComparison call below delivers the
     # multiple-comparison method through the annotCorrectionMethod$ global, not
     # through the argument list — the bridge has no parameter for it. That
@@ -10546,7 +10565,7 @@ repeat
         if emlBridgeGroupComparison.error$ <> ""
             appendInfoLine: "NOTE: Annotation skipped — " + emlBridgeGroupComparison.error$
         else
-            @emlReportBridgeStats: objectId, valueColName$, groupColName$
+            @emlGraphsReportBridgeIfNew: objectId, valueColName$, groupColName$
         endif
     elsif graph_type = 11 and annotate = 1
         # Grouped Violin: compare sub-groups (pooled across categories)
@@ -10556,7 +10575,7 @@ repeat
         else
             emlBridgeGroupComparison.omnibus$ = emlBridgeGroupComparison.omnibus$ + " (pooled)"
             annotMatrixOmnibus$ = annotMatrixOmnibus$ + " (pooled)"
-            @emlReportBridgeStats: objectId, gvValueCol$, gvSubCol$
+            @emlGraphsReportBridgeIfNew: objectId, gvValueCol$, gvSubCol$
         endif
     elsif graph_type = 10 and annotate = 1 and histGroupCol$ <> ""
         # Histogram: group comparison (matrix only, no brackets)
@@ -10564,7 +10583,7 @@ repeat
         if emlBridgeGroupComparison.error$ <> ""
             appendInfoLine: "NOTE: Annotation skipped — " + emlBridgeGroupComparison.error$
         else
-            @emlReportBridgeStats: objectId, histValueCol$, histGroupCol$
+            @emlGraphsReportBridgeIfNew: objectId, histValueCol$, histGroupCol$
         endif
     elsif graph_type = 12 and annotate = 1
         # Grouped Box Plot: compare sub-groups (pooled across categories)
@@ -10574,7 +10593,7 @@ repeat
         else
             emlBridgeGroupComparison.omnibus$ = emlBridgeGroupComparison.omnibus$ + " (pooled)"
             annotMatrixOmnibus$ = annotMatrixOmnibus$ + " (pooled)"
-            @emlReportBridgeStats: objectId, gbValueCol$, gbSubCol$
+            @emlGraphsReportBridgeIfNew: objectId, gbValueCol$, gbSubCol$
         endif
     endif
     # Scatter annotation is handled entirely within @emlDrawScatterPlot

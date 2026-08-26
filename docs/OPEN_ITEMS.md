@@ -315,12 +315,104 @@ measured precision of a cell's text; the nonlinearity of the mixing step
 against a plain polynomial built in the file for the comparison; and a loose
 linear-cost guard.
 
-STILL UNBUILT in this item, and each is a separate piece of work: the store
-itself (the single write site, the published names, the §b census of
-result-affecting vs display-only settings is BUILT as
-`validate/v112_settings_census.R`); the single write site, the published names,
-the one-line announcement; and the bridge reading the store instead of
-recomputing.
+STILL UNBUILT in this item, and each is a separate piece of work: the §b
+census of result-affecting vs display-only settings is BUILT as
+`validate/v112_settings_census.R`; the single write site and the published
+names are BUILT (`@emlPublishAnalysisResult`, `stats/eml-extract.praat`); the
+one-line announcement and the bridge reading the store instead of recomputing
+are BUILT (see the entry below). What remains is the canonical report
+comparison, the export buffer on the changed-setting path, the figure's alpha
+and group-order disclosure, and the SCATTER door -- all four listed below.
+
+SECOND PIECE BUILT, 26 Aug: THE BRIDGE CONSUMES INSTEAD OF RECOMPUTING
+(ruling sections c and d, the read side). `@emlConsumeGroupResult`,
+`@emlStoreGroupMap` and `@emlBridgeStoreIdentity` in
+`graphs/eml-annotation-procedures.praat`, with the announcement's wording in
+`@emlRenderResultSettings`, `@emlSettingsChangeNote` and
+`@emlSettingsVocabulary` in `stats/eml-output.praat`. Driven by
+`harness/bridgeconsume/`, asserted by `validate/v142_bridge_consumption.R`
+(178 checks).
+
+WHAT THE READ SIDE DOES NOT DO, and this is the shape of it: it does not
+re-implement either half of the validity test. The data half is
+`@emlStoreKeyTake` plus `@emlFingerprintsAgree`; the settings half is
+`@emlStoreIdentityAgrees`; both belong to the store. What the read side owns
+is which QUESTION to ask, the map from the store's group order onto the
+figure's x axis, and the SENTENCE.
+
+THE FOUR VERDICTS, and the wording matters as much as the decision.
+`consume` draws from the store and prints NOTHING -- exactly one report
+exists and the analysis door printed it. `settings` re-runs and prints ONE
+line in the contract's form. `data` re-runs and prints the 24 August line.
+`none` -- nothing published, another table, another pair of columns, a
+refusal, an unknown schema, or an omnibus with no post-hoc beside it --
+computes and prints its report as the FIRST report of that result.
+
+A PUBLICATION ABOUT ANOTHER COMPARISON IS A MISS, NOT A CHANGED DATA SET.
+The key cannot tell the two apart -- it is one digest over content AND
+declared scope -- so a reader leaning on it alone answers a figure of a
+DIFFERENT table with "Data changed since this analysis was last run", a
+sentence about an edit nobody made. Measured before the guard existed
+(harness/bridgeconsume). The store's readable record of the table name and
+both column names is what separates them.
+
+THE GROUP-ORDER REMAP IS THE DANGEROUS PART AND IT IS PINNED CELL BY CELL.
+`annotBracketI[]`/`annotBracketJ[]` are x-axis POSITIONS; the store's
+matrices are indexed by `emlStoreGroupLabel$[]`, which for a one-way ANOVA is
+Tukey's alphabetical sort. `@emlStoreGroupMap` maps LABEL BY LABEL and
+refuses on a level the store never saw or two levels sharing a label. v142
+compares a COMPUTED and a CONSUMED draw of one comparison observable by
+observable -- every matrix cell, its significance flag and its effect size,
+every bracket's indices, p, effect and label, the omnibus sentence and both
+caption halves -- at both layouts on both arms. All identical.
+
+FOUR ARMS AND ONE RENDERER. The four arms of `@emlBridgeGroupComparison` each
+carried their own copy of the bracket loop and the matrix loop; the consume
+path would have been a fifth. They now build one display-ordered p matrix and
+one SIGNED effect matrix and hand them to `@emlBridgeRenderAnnotations`, which
+is the only place a group comparison becomes an annotation. `@emlBridgeOmnibusLine`
+is the same move for the omnibus sentence and `@emlBridgeEffectPolicy` for the
+per-arm sign policy, which is PRESERVED rather than tidied (v112's census note
+records the asymmetry; the drawn ink is magnitude on every arm either way).
+Measured: `harness/settings/out/SETTINGS.tsv` re-driven over all 291 rows is
+BIT-IDENTICAL to a drive of the pre-change tree.
+
+THE EFFECT SIZES ARE NOW COMPUTED WHETHER OR NOT THEY ARE SHOWN. That
+discharges the condition v112 attached to classifying `showEffect` as
+display-only -- "a result published under it cannot serve a later figure that
+wants effect sizes" -- and it is what section (d)'s "states the whole result
+on every run" requires.
+
+STILL OPEN, AND EACH IS NAMED WHERE IT BITES:
+
+- THE CANONICAL REPORT COMPARISON (punch item 1.2's remaining half). The
+  24 August rule says a re-run reproducing the stored report EXACTLY prints
+  nothing at all. That needs a reporter that can RENDER without printing, and
+  every reporter in this plugin prints. Built instead is the conservative
+  direction: a key mismatch prints the report WITH the line. A reader is told
+  too often, never too rarely.
+- THE EXPORT BUFFER ON THE CHANGED-SETTING PATH. Suppressing the report also
+  suppresses `@emlReportBridgeStats`' `@emlCSVInit` and its three-file
+  declaration. On the consume path that is correct -- the analysis door
+  declared this very result. On the changed-setting path the bridge recomputed
+  and the export buffer still holds the older run, so a Save then writes the
+  settings the figure does not draw. Closing it needs the same
+  render-without-printing capability as 1.2 above; one mechanism closes both.
+  The alternative available today is printing the second report, which the
+  ruling forbids.
+- ALPHA AND THE GROUP ORDER ARE STILL NOT ON THE FIGURE. The bracket caption
+  carries the test and the adjustment, set on BOTH paths now so a consumed
+  figure cannot wear the last figure's caption. It does not carry alpha or the
+  group order, and the 7 August ruling's "a reader of the figure never needs
+  the Info window's history" wants them. Adding a third clause changes strings
+  v69 pins verbatim and geometry harness/bracketcap photographs; it needs a
+  coordinated re-drive and is not done here. THIS GAP PREDATES THE STORE.
+- THE SCATTER DOOR IS NOT WIRED. Ruling section (e) names two doors for 1.0;
+  this is the first. `@emlDrawScatterPlot` still computes r and p at draw time
+  from `annotCorrType$` (in `graphs/eml-draw-procedures.praat`, not
+  `eml-graphs-form.praat` as the census's line numbers suggest -- those point
+  at the dialog's seeding block). Same store, same read side, and
+  `@emlRenderResultSettings` takes a second `.kind$` branch when it lands.
 
 THE TWO NEIGHBOURING KEYS THE RULING ANTICIPATED ARE MOOT. A paired/repeated
 door was to need row pairing in the key and the scatter a cross term, because
@@ -335,6 +427,42 @@ the only evidence for it is evidence it wrote about itself. The cheap fix is
 one `validate/` check that runs the phase2 legs, not more phase2 legs. It also
 has no shipped caller — expected while the store is unbuilt, and the reason the
 coverage question is worth settling before the store lands rather than after.
+
+### FOUND BY VERIFICATION, 26 Aug — five items against the result-store batch, before it commits
+
+- **A generated file installs into the source tree.**
+  `plugin_EML_StatsGraphs/scripts/eml-lib-user.praat` is gitignored and
+  generated. A GUI harness drive wrote it into the shipped source tree during
+  this batch. While it is present it reddens `v47` twice, `v78` once and
+  `v79` twice. The verification pass deleted it, but it RETURNS on the next
+  Praat launch that runs `setup.praat` from this tree, so those five reds
+  reappear after any GUI harness drive. Standing hazard, same family as the
+  bracketcap rig deleting sibling break logs.
+- **`v127`'s leg1 and leg3 are green while the disagreement they describe
+  still exists.** The bridge passes a hard literal `1` for `doTukey` at
+  `graphs/eml-annotation-procedures.praat:4042` and `:4649`. `v127`'s own
+  header says those legs are "closed by 1.6 per punch-list 8.2", and 1.6 is
+  the result store. The store landed; the sites did not close; a green suite
+  hides it.
+- **`v112` does not see the store's names.** Its derivation walks 71
+  settings over 166 procedure bodies and finds zero `emlStore*`,
+  `emlSettings*` or `emlPublishIn*` among them, because the walk drops any
+  global written inside the doors' own closure and the bridge publishes.
+  Ruling section (d) says "the section b census covers the store's names."
+  It does not. Coverage comes from `v138` instead (60/60, asserting
+  single-writer on the `emlStore` prefix). Either re-point the ruling's
+  sentence at `v138` or extend `v112`.
+- **Section (e)'s second door is not wired.** `@emlDrawScatterPlot` computes
+  Pearson and Spearman at draw time in seven places in
+  `graphs/eml-draw-procedures.praat` — lines 4644, 4677, 4769, 5081, 5098,
+  5164 and 5257 — with zero store references. The ruling wires both doors in
+  1.0. Compounding it: `v112` already classifies eight
+  `emlDrawScatterPlot` settings as result-affecting, so the settings census
+  is built for a door the store does not serve.
+- **`v84` and `v97` staleness deepens.** Both were already red before this
+  batch; the batch changed `eml-graphs-form.praat` again, so the
+  transcripts are now stale for a second reason. Needs a coordinated
+  re-drive before the tag.
 
 ## B. Form and dialog work
 

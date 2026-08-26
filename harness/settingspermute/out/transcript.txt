@@ -1,0 +1,67 @@
+=== SENTINEL: MENU ANALYSIS BEGINS ===
+
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Wed Aug 26 14:26:47 2026
+══════════════════════════════════════════════
+
+  Table               sp3
+  Data column         value
+  Group column        group
+  Groups              3
+  Group order: table order (Zebra, Mid, Alpha).
+
+
+  ── ANOVA Table ─────────────────────────────
+  Why: Tests whether group means differ when normality and equal variances hold.
+
+Source              SS              df    MS              F           p
+Between             65.55           2     32.78           109.8631    < .001
+Within              2.68            9     0.30            
+Total               68.24           11    
+
+  F                   109.8631		Ratio of mean squares: the between-group mean square is 109.9 times the within-group mean square. With no real effect, this ratio tends to be near 1
+  p                   < .001  (4.76e-07)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  Effect size         eta-squared = 0.9607		Effect size: large by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 96% of the total variance
+  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  Equal spread        Brown-Forsythe F(2, 9) = 0.0124
+  Equal-spread p      p = .988
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  Zebra         4     10.65     0.49      10.65     
+  Mid           4     7.78      0.56      7.80      
+  Alpha         4     4.92      0.59      4.95      
+
+
+  ── Tukey HSD Pairwise Comparisons (p-values) ───
+
+              Zebra       Mid         Alpha       
+Zebra         ---         < .001      < .001      
+Mid           < .001      ---         < .001      
+Alpha         < .001      < .001      ---         
+
+
+  ── Tukey HSD Mean Differences (95% family-wise CI) ───
+
+Comparison                Difference    95% CI
+Zebra − Mid               2.8750        [1.7967, 3.9533]
+Zebra − Alpha             5.7250        [4.6467, 6.8033]
+Mid − Alpha               2.8500        [1.7717, 3.9283]
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+
+              Zebra       Mid         Alpha       
+Zebra         ---         5.470       10.578      
+Mid           -5.470      ---         4.993       
+Alpha         -10.578     -4.993      ---         
+  Row minus column: a negative d means the ROW group's mean is lower
+  than the COLUMN group's. |d| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+=== SENTINEL: MENU ANALYSIS ENDS ===
+=== SENTINEL: PROBE COMPLETE ===

@@ -68,7 +68,12 @@ v134	v134_error_read_lint.R	SOURCE	NO		plugin_EML_StatsGraphs	old_src
 v135	v135_errorprop91.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
 v136	v136_regression_grouping.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
 v137	v137_correlation_scope.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs		
+v138	v138_result_store.R	SOURCE+ARTEFACT	NO		harness,plugin_EML_StatsGraphs	src	
+v139	v139_fingerprint_store_mutations.R	ARTEFACT	NO		harness		
 v14	v14_descriptive_orchestrator.R	ARTEFACT	NO		evidence		
+v140	v140_reprint_pins.R	ARTEFACT	NO		harness		
+v141	v141_r1_settings_permutation.R	ARTEFACT	NO		harness		
+v142	v142_bridge_consumption.R	SOURCE+ARTEFACT	NO		harness,plugin		
 v15	v15_normality_orchestrator.R	ARTEFACT	NO		evidence		
 v16	v16_csv_export.R	ARTEFACT	NO		evidence		
 v17	v17_broom_parity.R	ARTEFACT	NO		evidence		

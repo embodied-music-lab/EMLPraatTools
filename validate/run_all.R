@@ -1649,6 +1649,99 @@ scripts <- c(
                                  # pre-fix eml-draw-procedures.praat at git
                                  # HEAD -- committed and reusable, not a
                                  # scratch run.
+    ,
+    "v138_result_store.R"        # RULING_RESULT_STORE section (d): the store
+                                 # itself -- one write site, the published
+                                 # names, and the rule that the KEY IS TAKEN
+                                 # AT THE READ, asserted in every publishing
+                                 # procedure by the order of its calls (the
+                                 # fingerprint's one uncheckable failure made
+                                 # checkable, because order is text).
+                                 # LISTED BY THE READ SIDE'S AUTHOR, not the
+                                 # file's: an unlisted validator makes
+                                 # run_all.R refuse to start, so the whole
+                                 # suite was unrunnable while this line was
+                                 # missing. The wording here is a placeholder
+                                 # for the file's own author to replace.
+    ,
+    "v139_fingerprint_store_mutations.R"
+                                 # RULING_RESULT_STORE.md section (a), and
+                                 # the 24 Aug amendment that OVERTURNS its
+                                 # row-reorder negative control: four
+                                 # mutation legs -- edit one cell, relabel
+                                 # one group cell, swap one value between
+                                 # groups, and reorder the whole table's
+                                 # rows -- each driven THROUGH the store
+                                 # (a real menu door plus the published
+                                 # emlStoreKey$) via
+                                 # harness/resultstore/probe.praat, not
+                                 # against @emlGroupFingerprint directly
+                                 # (that is v114's job). Population of legs
+                                 # is derived from the probe source and
+                                 # ratcheted both ways against the ruling's
+                                 # four required names. Red demo:
+                                 # harness/resultstore/break.sh, which
+                                 # neuters @emlStoreKeyTake to a constant
+                                 # key in a copy of the tree and reddens
+                                 # all four "the published key changed"
+                                 # assertions.
+    ,
+    "v140_reprint_pins.R"        # RULING_RESULT_STORE.md section (c)'s two
+                                 # acceptance pins, Ian's driven KW -> violin
+                                 # session reproduced verbatim via
+                                 # harness/reprintpins/: the no-change leg
+                                 # (exactly one report, zero recomputation
+                                 # lines) and the changed-setting leg (one
+                                 # "Recomputed:" announcement, no second
+                                 # report block). READS RED TODAY: the
+                                 # drive aborts inside
+                                 # @emlBridgeGroupComparison's own
+                                 # recompute-then-republish call to
+                                 # @emlPublishAnalysisResult, whose argument
+                                 # count and order do not yet match the
+                                 # write site's shipped signature -- the
+                                 # file's own header quotes the abort. This
+                                 # is the standing red demonstration; the
+                                 # checks are written against the ruling's
+                                 # contract and need no change once that
+                                 # call site is repaired.
+    ,
+    "v142_bridge_consumption.R"  # RULING_RESULT_STORE sections (c) and (d):
+                                 # the figure CONSUMES the published result
+                                 # instead of re-running the analysis at draw
+                                 # time. The reprint rule leg by leg -- no
+                                 # change means zero lines and no second
+                                 # report; a changed result-affecting setting
+                                 # means ONE line in the contract's form and
+                                 # no report block; changed data means a
+                                 # re-run that says so -- plus the property
+                                 # the ruling separates from the axis
+                                 # request: one result serves MANY figures
+                                 # and there is no spent flag. Driven by
+                                 # harness/bridgeconsume, which stands a
+                                 # publication up in the store's published
+                                 # names, so the read side is measured on its
+                                 # own contract. Its strongest legs compare a
+                                 # COMPUTED and a CONSUMED draw of one
+                                 # comparison observable by observable, at
+                                 # both layouts on both arms, because the
+                                 # store's matrices are indexed by the
+                                 # ANALYSIS's group order and the brackets by
+                                 # the x axis.
+    ,
+    "v141_r1_settings_permutation.R"
+                                 # docs/RISK_REGISTER_2026-08-25.md, R1: a
+                                 # settings-permutation drive over the four
+                                 # display-only settings v112's census gives
+                                 # @emlBridgeGroupComparison (style$, showNS,
+                                 # showEffect, layoutMode), same data,
+                                 # asserting zero reprints for every one of
+                                 # them. READS RED TODAY, for the identical
+                                 # reason v140 gives: the drive aborts on the
+                                 # first permutation leg, inside the same
+                                 # broken recompute-then-republish call. R1's
+                                 # drive and section (c)'s pins share one
+                                 # root cause, not six.
 )
 
 # ---------------------------------------------------------------------------

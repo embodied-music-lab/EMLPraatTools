@@ -1,0 +1,802 @@
+casefieldvalue
+cold_anova	verdict	none
+cold_anova	consumed	0
+cold_anova	printReport	1
+cold_anova	note	
+cold_anova	error	
+cold_anova	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+cold_anova	nGroups	3
+cold_anova	bracketN	0
+cold_anova	matrixN	3
+cold_anova	captionTest	Pairwise comparisons: Tukey HSD
+cold_anova	captionAdjust	already family-wise; no further adjustment applied
+cold_anova	matrixPosthoc	Tukey HSD (already family-wise)
+cold_anova	infoLines	
+cold_anova	cell1_2	p < .001
+cold_anova	cellD1_2	5.469992182776681
+cold_anova	cellSig1_2	1
+cold_anova	cell1_3	p < .001
+cold_anova	cellD1_3	10.577997239768594
+cold_anova	cellSig1_3	1
+cold_anova	cell2_3	p < .001
+cold_anova	cellD2_3	4.992833739150852
+cold_anova	cellSig2_3	1
+cold_anova	mlabel1	Zebra
+cold_anova	mlabel2	Mid
+cold_anova	mlabel3	Alpha
+consume_anova	verdict	consume
+consume_anova	consumed	1
+consume_anova	printReport	0
+consume_anova	note	
+consume_anova	error	
+consume_anova	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+consume_anova	nGroups	3
+consume_anova	bracketN	0
+consume_anova	matrixN	3
+consume_anova	captionTest	Pairwise comparisons: Tukey HSD
+consume_anova	captionAdjust	already family-wise; no further adjustment applied
+consume_anova	matrixPosthoc	Tukey HSD (already family-wise)
+consume_anova	infoLines	
+consume_anova	cell1_2	p < .001
+consume_anova	cellD1_2	5.469992182776681
+consume_anova	cellSig1_2	1
+consume_anova	cell1_3	p < .001
+consume_anova	cellD1_3	10.577997239768594
+consume_anova	cellSig1_3	1
+consume_anova	cell2_3	p < .001
+consume_anova	cellD2_3	4.992833739150852
+consume_anova	cellSig2_3	1
+consume_anova	mlabel1	Zebra
+consume_anova	mlabel2	Mid
+consume_anova	mlabel3	Alpha
+consume_anova_again	verdict	consume
+consume_anova_again	consumed	1
+consume_anova_again	printReport	0
+consume_anova_again	note	
+consume_anova_again	error	
+consume_anova_again	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+consume_anova_again	nGroups	3
+consume_anova_again	bracketN	0
+consume_anova_again	matrixN	3
+consume_anova_again	captionTest	Pairwise comparisons: Tukey HSD
+consume_anova_again	captionAdjust	already family-wise; no further adjustment applied
+consume_anova_again	matrixPosthoc	Tukey HSD (already family-wise)
+consume_anova_again	infoLines	
+consume_anova_again	cell1_2	p < .001
+consume_anova_again	cellD1_2	5.469992182776681
+consume_anova_again	cellSig1_2	1
+consume_anova_again	cell1_3	p < .001
+consume_anova_again	cellD1_3	10.577997239768594
+consume_anova_again	cellSig1_3	1
+consume_anova_again	cell2_3	p < .001
+consume_anova_again	cellD2_3	4.992833739150852
+consume_anova_again	cellSig2_3	1
+consume_anova_again	mlabel1	Zebra
+consume_anova_again	mlabel2	Mid
+consume_anova_again	mlabel3	Alpha
+consume_anova_brackets	verdict	consume
+consume_anova_brackets	consumed	1
+consume_anova_brackets	printReport	0
+consume_anova_brackets	note	
+consume_anova_brackets	error	
+consume_anova_brackets	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+consume_anova_brackets	nGroups	3
+consume_anova_brackets	bracketN	3
+consume_anova_brackets	matrixN	0
+consume_anova_brackets	captionTest	Pairwise comparisons: Tukey HSD
+consume_anova_brackets	captionAdjust	already family-wise; no further adjustment applied
+consume_anova_brackets	matrixPosthoc	Tukey HSD (already family-wise)
+consume_anova_brackets	infoLines	
+consume_anova_brackets	bracket1.i	1
+consume_anova_brackets	bracket1.j	2
+consume_anova_brackets	bracket1.p	0.00010380859823322375
+consume_anova_brackets	bracket1.d	5.469992182776681
+consume_anova_brackets	bracket1.label	p < .001, d = 5.47
+consume_anova_brackets	bracket2.i	1
+consume_anova_brackets	bracket2.j	3
+consume_anova_brackets	bracket2.p	3.454079533504739e-07
+consume_anova_brackets	bracket2.d	10.577997239768594
+consume_anova_brackets	bracket2.label	p < .001, d = 10.58
+consume_anova_brackets	bracket3.i	2
+consume_anova_brackets	bracket3.j	3
+consume_anova_brackets	bracket3.p	0.00011113096272041822
+consume_anova_brackets	bracket3.d	4.992833739150852
+consume_anova_brackets	bracket3.label	p < .001, d = 4.99
+changed_testtype	verdict	settings
+changed_testtype	consumed	0
+changed_testtype	printReport	0
+changed_testtype	note	Recomputed: analysis one-way anova + tukey -> kruskal-wallis + dunn.
+changed_testtype	error	
+changed_testtype	omnibus	Kruskal-Wallis: H(2) = 9.85, p = .007, \ep^2 = 0.895
+changed_testtype	nGroups	3
+changed_testtype	bracketN	0
+changed_testtype	matrixN	3
+changed_testtype	captionTest	Pairwise comparisons: Dunn's test
+changed_testtype	captionAdjust	adjustment for multiple comparisons: holm
+changed_testtype	matrixPosthoc	Dunn's test (holm)
+changed_testtype	infoLines	Recomputed: analysis one-way anova + tukey -> kruskal-wallis + dunn. | 
+changed_testtype	cell1_2	p = .233
+changed_testtype	cellD1_2	1
+changed_testtype	cellSig1_2	0
+changed_testtype	cell1_3	p = .005
+changed_testtype	cellD1_3	1
+changed_testtype	cellSig1_3	1
+changed_testtype	cell2_3	p = .233
+changed_testtype	cellD2_3	1
+changed_testtype	cellSig2_3	0
+changed_testtype	mlabel1	Zebra
+changed_testtype	mlabel2	Mid
+changed_testtype	mlabel3	Alpha
+warm_sort	verdict	none
+warm_sort	consumed	0
+warm_sort	printReport	1
+warm_sort	note	
+warm_sort	error	
+warm_sort	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+warm_sort	nGroups	3
+warm_sort	bracketN	0
+warm_sort	matrixN	3
+warm_sort	captionTest	Pairwise comparisons: Tukey HSD
+warm_sort	captionAdjust	already family-wise; no further adjustment applied
+warm_sort	matrixPosthoc	Tukey HSD (already family-wise)
+warm_sort	infoLines	
+warm_sort	cell1_2	p < .001
+warm_sort	cellD1_2	5.469992182776681
+warm_sort	cellSig1_2	1
+warm_sort	cell1_3	p < .001
+warm_sort	cellD1_3	10.577997239768594
+warm_sort	cellSig1_3	1
+warm_sort	cell2_3	p < .001
+warm_sort	cellD2_3	4.992833739150852
+warm_sort	cellSig2_3	1
+warm_sort	mlabel1	Zebra
+warm_sort	mlabel2	Mid
+warm_sort	mlabel3	Alpha
+changed_sort	verdict	settings
+changed_sort	consumed	0
+changed_sort	printReport	0
+changed_sort	note	Recomputed: group order table order -> alphabetical.
+changed_sort	error	
+changed_sort	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+changed_sort	nGroups	3
+changed_sort	bracketN	0
+changed_sort	matrixN	3
+changed_sort	captionTest	Pairwise comparisons: Tukey HSD
+changed_sort	captionAdjust	already family-wise; no further adjustment applied
+changed_sort	matrixPosthoc	Tukey HSD (already family-wise)
+changed_sort	infoLines	Recomputed: group order table order -> alphabetical. | 
+changed_sort	cell1_2	p < .001
+changed_sort	cellD1_2	4.992833739150852
+changed_sort	cellSig1_2	1
+changed_sort	cell1_3	p < .001
+changed_sort	cellD1_3	10.577997239768594
+changed_sort	cellSig1_3	1
+changed_sort	cell2_3	p < .001
+changed_sort	cellD2_3	5.469992182776681
+changed_sort	cellSig2_3	1
+changed_sort	mlabel1	Alpha
+changed_sort	mlabel2	Mid
+changed_sort	mlabel3	Zebra
+warm_dunn_holm	verdict	none
+warm_dunn_holm	consumed	0
+warm_dunn_holm	printReport	1
+warm_dunn_holm	note	
+warm_dunn_holm	error	
+warm_dunn_holm	omnibus	Kruskal-Wallis: H(2) = 9.85, p = .007, \ep^2 = 0.895
+warm_dunn_holm	nGroups	3
+warm_dunn_holm	bracketN	0
+warm_dunn_holm	matrixN	3
+warm_dunn_holm	captionTest	Pairwise comparisons: Dunn's test
+warm_dunn_holm	captionAdjust	adjustment for multiple comparisons: holm
+warm_dunn_holm	matrixPosthoc	Dunn's test (holm)
+warm_dunn_holm	infoLines	
+warm_dunn_holm	cell1_2	p = .233
+warm_dunn_holm	cellD1_2	1
+warm_dunn_holm	cellSig1_2	0
+warm_dunn_holm	cell1_3	p = .005
+warm_dunn_holm	cellD1_3	1
+warm_dunn_holm	cellSig1_3	1
+warm_dunn_holm	cell2_3	p = .233
+warm_dunn_holm	cellD2_3	1
+warm_dunn_holm	cellSig2_3	0
+warm_dunn_holm	mlabel1	Zebra
+warm_dunn_holm	mlabel2	Mid
+warm_dunn_holm	mlabel3	Alpha
+changed_correction	verdict	settings
+changed_correction	consumed	0
+changed_correction	printReport	0
+changed_correction	note	Recomputed: adjustment method holm -> bonferroni.
+changed_correction	error	
+changed_correction	omnibus	Kruskal-Wallis: H(2) = 9.85, p = .007, \ep^2 = 0.895
+changed_correction	nGroups	3
+changed_correction	bracketN	0
+changed_correction	matrixN	3
+changed_correction	captionTest	Pairwise comparisons: Dunn's test
+changed_correction	captionAdjust	adjustment for multiple comparisons: bonferroni
+changed_correction	matrixPosthoc	Dunn's test (bonferroni)
+changed_correction	infoLines	Recomputed: adjustment method holm -> bonferroni. | 
+changed_correction	cell1_2	p = .350
+changed_correction	cellD1_2	1
+changed_correction	cellSig1_2	0
+changed_correction	cell1_3	p = .005
+changed_correction	cellD1_3	1
+changed_correction	cellSig1_3	1
+changed_correction	cell2_3	p = .350
+changed_correction	cellD2_3	1
+changed_correction	cellSig2_3	0
+changed_correction	mlabel1	Zebra
+changed_correction	mlabel2	Mid
+changed_correction	mlabel3	Alpha
+warm_tukey	verdict	none
+warm_tukey	consumed	0
+warm_tukey	printReport	1
+warm_tukey	note	
+warm_tukey	error	
+warm_tukey	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+warm_tukey	nGroups	3
+warm_tukey	bracketN	0
+warm_tukey	matrixN	3
+warm_tukey	captionTest	Pairwise comparisons: Tukey HSD
+warm_tukey	captionAdjust	already family-wise; no further adjustment applied
+warm_tukey	matrixPosthoc	Tukey HSD (already family-wise)
+warm_tukey	infoLines	
+warm_tukey	cell1_2	p < .001
+warm_tukey	cellD1_2	5.469992182776681
+warm_tukey	cellSig1_2	1
+warm_tukey	cell1_3	p < .001
+warm_tukey	cellD1_3	10.577997239768594
+warm_tukey	cellSig1_3	1
+warm_tukey	cell2_3	p < .001
+warm_tukey	cellD2_3	4.992833739150852
+warm_tukey	cellSig2_3	1
+warm_tukey	mlabel1	Zebra
+warm_tukey	mlabel2	Mid
+warm_tukey	mlabel3	Alpha
+tukey_ignores_correction	verdict	consume
+tukey_ignores_correction	consumed	1
+tukey_ignores_correction	printReport	0
+tukey_ignores_correction	note	
+tukey_ignores_correction	error	
+tukey_ignores_correction	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+tukey_ignores_correction	nGroups	3
+tukey_ignores_correction	bracketN	0
+tukey_ignores_correction	matrixN	3
+tukey_ignores_correction	captionTest	Pairwise comparisons: Tukey HSD
+tukey_ignores_correction	captionAdjust	already family-wise; no further adjustment applied
+tukey_ignores_correction	matrixPosthoc	Tukey HSD (already family-wise)
+tukey_ignores_correction	infoLines	
+tukey_ignores_correction	cell1_2	p < .001
+tukey_ignores_correction	cellD1_2	5.469992182776681
+tukey_ignores_correction	cellSig1_2	1
+tukey_ignores_correction	cell1_3	p < .001
+tukey_ignores_correction	cellD1_3	10.577997239768594
+tukey_ignores_correction	cellSig1_3	1
+tukey_ignores_correction	cell2_3	p < .001
+tukey_ignores_correction	cellD2_3	4.992833739150852
+tukey_ignores_correction	cellSig2_3	1
+tukey_ignores_correction	mlabel1	Zebra
+tukey_ignores_correction	mlabel2	Mid
+tukey_ignores_correction	mlabel3	Alpha
+warm_edit	verdict	none
+warm_edit	consumed	0
+warm_edit	printReport	1
+warm_edit	note	
+warm_edit	error	
+warm_edit	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+warm_edit	nGroups	3
+warm_edit	bracketN	0
+warm_edit	matrixN	3
+warm_edit	captionTest	Pairwise comparisons: Tukey HSD
+warm_edit	captionAdjust	already family-wise; no further adjustment applied
+warm_edit	matrixPosthoc	Tukey HSD (already family-wise)
+warm_edit	infoLines	
+warm_edit	cell1_2	p < .001
+warm_edit	cellD1_2	5.469992182776681
+warm_edit	cellSig1_2	1
+warm_edit	cell1_3	p < .001
+warm_edit	cellD1_3	10.577997239768594
+warm_edit	cellSig1_3	1
+warm_edit	cell2_3	p < .001
+warm_edit	cellD2_3	4.992833739150852
+warm_edit	cellSig2_3	1
+warm_edit	mlabel1	Zebra
+warm_edit	mlabel2	Mid
+warm_edit	mlabel3	Alpha
+before_edit	verdict	consume
+before_edit	consumed	1
+before_edit	printReport	0
+before_edit	note	
+before_edit	error	
+before_edit	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+before_edit	nGroups	3
+before_edit	bracketN	0
+before_edit	matrixN	3
+before_edit	captionTest	Pairwise comparisons: Tukey HSD
+before_edit	captionAdjust	already family-wise; no further adjustment applied
+before_edit	matrixPosthoc	Tukey HSD (already family-wise)
+before_edit	infoLines	
+before_edit	cell1_2	p < .001
+before_edit	cellD1_2	5.469992182776681
+before_edit	cellSig1_2	1
+before_edit	cell1_3	p < .001
+before_edit	cellD1_3	10.577997239768594
+before_edit	cellSig1_3	1
+before_edit	cell2_3	p < .001
+before_edit	cellD2_3	4.992833739150852
+before_edit	cellSig2_3	1
+before_edit	mlabel1	Zebra
+before_edit	mlabel2	Mid
+before_edit	mlabel3	Alpha
+edited_cell	verdict	data
+edited_cell	consumed	0
+edited_cell	printReport	1
+edited_cell	note	Data changed since this analysis was last run; re-measured.
+edited_cell	error	
+edited_cell	omnibus	One-way ANOVA: F(2, 9) = 1.45, p = .283
+edited_cell	nGroups	3
+edited_cell	bracketN	0
+edited_cell	matrixN	3
+edited_cell	captionTest	Pairwise comparisons: Tukey HSD
+edited_cell	captionAdjust	already family-wise; no further adjustment applied
+edited_cell	matrixPosthoc	Tukey HSD (already family-wise)
+edited_cell	infoLines	Data changed since this analysis was last run; re-measured. | 
+edited_cell	cell1_2	p = .384
+edited_cell	cellD1_2	0.804143358416104
+edited_cell	cellSig1_2	0
+edited_cell	cell1_3	p = .315
+edited_cell	cellD1_3	0.8946317378891054
+edited_cell	cellSig1_3	0
+edited_cell	cell2_3	p = .987
+edited_cell	cellD2_3	4.992833739150852
+edited_cell	cellSig2_3	0
+edited_cell	mlabel1	Zebra
+edited_cell	mlabel2	Mid
+edited_cell	mlabel3	Alpha
+warm_reorder	verdict	none
+warm_reorder	consumed	0
+warm_reorder	printReport	1
+warm_reorder	note	
+warm_reorder	error	
+warm_reorder	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+warm_reorder	nGroups	3
+warm_reorder	bracketN	0
+warm_reorder	matrixN	3
+warm_reorder	captionTest	Pairwise comparisons: Tukey HSD
+warm_reorder	captionAdjust	already family-wise; no further adjustment applied
+warm_reorder	matrixPosthoc	Tukey HSD (already family-wise)
+warm_reorder	infoLines	
+warm_reorder	cell1_2	p < .001
+warm_reorder	cellD1_2	5.469992182776681
+warm_reorder	cellSig1_2	1
+warm_reorder	cell1_3	p < .001
+warm_reorder	cellD1_3	10.577997239768594
+warm_reorder	cellSig1_3	1
+warm_reorder	cell2_3	p < .001
+warm_reorder	cellD2_3	4.992833739150852
+warm_reorder	cellSig2_3	1
+warm_reorder	mlabel1	Zebra
+warm_reorder	mlabel2	Mid
+warm_reorder	mlabel3	Alpha
+before_reorder	verdict	consume
+before_reorder	consumed	1
+before_reorder	printReport	0
+before_reorder	note	
+before_reorder	error	
+before_reorder	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+before_reorder	nGroups	3
+before_reorder	bracketN	0
+before_reorder	matrixN	3
+before_reorder	captionTest	Pairwise comparisons: Tukey HSD
+before_reorder	captionAdjust	already family-wise; no further adjustment applied
+before_reorder	matrixPosthoc	Tukey HSD (already family-wise)
+before_reorder	infoLines	
+before_reorder	cell1_2	p < .001
+before_reorder	cellD1_2	5.469992182776681
+before_reorder	cellSig1_2	1
+before_reorder	cell1_3	p < .001
+before_reorder	cellD1_3	10.577997239768594
+before_reorder	cellSig1_3	1
+before_reorder	cell2_3	p < .001
+before_reorder	cellD2_3	4.992833739150852
+before_reorder	cellSig2_3	1
+before_reorder	mlabel1	Zebra
+before_reorder	mlabel2	Mid
+before_reorder	mlabel3	Alpha
+reordered_rows	verdict	data
+reordered_rows	consumed	0
+reordered_rows	printReport	1
+reordered_rows	note	Data changed since this analysis was last run; re-measured.
+reordered_rows	error	
+reordered_rows	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+reordered_rows	nGroups	3
+reordered_rows	bracketN	0
+reordered_rows	matrixN	3
+reordered_rows	captionTest	Pairwise comparisons: Tukey HSD
+reordered_rows	captionAdjust	already family-wise; no further adjustment applied
+reordered_rows	matrixPosthoc	Tukey HSD (already family-wise)
+reordered_rows	infoLines	Data changed since this analysis was last run; re-measured. | 
+reordered_rows	cell1_2	p < .001
+reordered_rows	cellD1_2	5.469992182776681
+reordered_rows	cellSig1_2	1
+reordered_rows	cell1_3	p < .001
+reordered_rows	cellD1_3	10.577997239768594
+reordered_rows	cellSig1_3	1
+reordered_rows	cell2_3	p < .001
+reordered_rows	cellD2_3	4.992833739150852
+reordered_rows	cellSig2_3	1
+reordered_rows	mlabel1	Zebra
+reordered_rows	mlabel2	Mid
+reordered_rows	mlabel3	Alpha
+remap_par_matrix_computed	verdict	none
+remap_par_matrix_computed	consumed	0
+remap_par_matrix_computed	printReport	1
+remap_par_matrix_computed	note	
+remap_par_matrix_computed	error	
+remap_par_matrix_computed	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+remap_par_matrix_computed	nGroups	3
+remap_par_matrix_computed	bracketN	0
+remap_par_matrix_computed	matrixN	3
+remap_par_matrix_computed	captionTest	Pairwise comparisons: Tukey HSD
+remap_par_matrix_computed	captionAdjust	already family-wise; no further adjustment applied
+remap_par_matrix_computed	matrixPosthoc	Tukey HSD (already family-wise)
+remap_par_matrix_computed	infoLines	
+remap_par_matrix_computed	cell1_2	p < .001
+remap_par_matrix_computed	cellD1_2	5.469992182776681
+remap_par_matrix_computed	cellSig1_2	1
+remap_par_matrix_computed	cell1_3	p < .001
+remap_par_matrix_computed	cellD1_3	10.577997239768594
+remap_par_matrix_computed	cellSig1_3	1
+remap_par_matrix_computed	cell2_3	p < .001
+remap_par_matrix_computed	cellD2_3	4.992833739150852
+remap_par_matrix_computed	cellSig2_3	1
+remap_par_matrix_computed	mlabel1	Zebra
+remap_par_matrix_computed	mlabel2	Mid
+remap_par_matrix_computed	mlabel3	Alpha
+remap_par_matrix_consumed	verdict	consume
+remap_par_matrix_consumed	consumed	1
+remap_par_matrix_consumed	printReport	0
+remap_par_matrix_consumed	note	
+remap_par_matrix_consumed	error	
+remap_par_matrix_consumed	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+remap_par_matrix_consumed	nGroups	3
+remap_par_matrix_consumed	bracketN	0
+remap_par_matrix_consumed	matrixN	3
+remap_par_matrix_consumed	captionTest	Pairwise comparisons: Tukey HSD
+remap_par_matrix_consumed	captionAdjust	already family-wise; no further adjustment applied
+remap_par_matrix_consumed	matrixPosthoc	Tukey HSD (already family-wise)
+remap_par_matrix_consumed	infoLines	
+remap_par_matrix_consumed	cell1_2	p < .001
+remap_par_matrix_consumed	cellD1_2	5.469992182776681
+remap_par_matrix_consumed	cellSig1_2	1
+remap_par_matrix_consumed	cell1_3	p < .001
+remap_par_matrix_consumed	cellD1_3	10.577997239768594
+remap_par_matrix_consumed	cellSig1_3	1
+remap_par_matrix_consumed	cell2_3	p < .001
+remap_par_matrix_consumed	cellD2_3	4.992833739150852
+remap_par_matrix_consumed	cellSig2_3	1
+remap_par_matrix_consumed	mlabel1	Zebra
+remap_par_matrix_consumed	mlabel2	Mid
+remap_par_matrix_consumed	mlabel3	Alpha
+remap_par_bracket_computed	verdict	none
+remap_par_bracket_computed	consumed	0
+remap_par_bracket_computed	printReport	1
+remap_par_bracket_computed	note	
+remap_par_bracket_computed	error	
+remap_par_bracket_computed	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+remap_par_bracket_computed	nGroups	3
+remap_par_bracket_computed	bracketN	3
+remap_par_bracket_computed	matrixN	0
+remap_par_bracket_computed	captionTest	Pairwise comparisons: Tukey HSD
+remap_par_bracket_computed	captionAdjust	already family-wise; no further adjustment applied
+remap_par_bracket_computed	matrixPosthoc	Tukey HSD (already family-wise)
+remap_par_bracket_computed	infoLines	
+remap_par_bracket_computed	bracket1.i	1
+remap_par_bracket_computed	bracket1.j	2
+remap_par_bracket_computed	bracket1.p	0.00010380859823322375
+remap_par_bracket_computed	bracket1.d	5.469992182776681
+remap_par_bracket_computed	bracket1.label	p < .001, d = 5.47
+remap_par_bracket_computed	bracket2.i	1
+remap_par_bracket_computed	bracket2.j	3
+remap_par_bracket_computed	bracket2.p	3.454079533504739e-07
+remap_par_bracket_computed	bracket2.d	10.577997239768594
+remap_par_bracket_computed	bracket2.label	p < .001, d = 10.58
+remap_par_bracket_computed	bracket3.i	2
+remap_par_bracket_computed	bracket3.j	3
+remap_par_bracket_computed	bracket3.p	0.00011113096272041822
+remap_par_bracket_computed	bracket3.d	4.992833739150852
+remap_par_bracket_computed	bracket3.label	p < .001, d = 4.99
+remap_par_bracket_consumed	verdict	consume
+remap_par_bracket_consumed	consumed	1
+remap_par_bracket_consumed	printReport	0
+remap_par_bracket_consumed	note	
+remap_par_bracket_consumed	error	
+remap_par_bracket_consumed	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+remap_par_bracket_consumed	nGroups	3
+remap_par_bracket_consumed	bracketN	3
+remap_par_bracket_consumed	matrixN	0
+remap_par_bracket_consumed	captionTest	Pairwise comparisons: Tukey HSD
+remap_par_bracket_consumed	captionAdjust	already family-wise; no further adjustment applied
+remap_par_bracket_consumed	matrixPosthoc	Tukey HSD (already family-wise)
+remap_par_bracket_consumed	infoLines	
+remap_par_bracket_consumed	bracket1.i	1
+remap_par_bracket_consumed	bracket1.j	2
+remap_par_bracket_consumed	bracket1.p	0.00010380859823322375
+remap_par_bracket_consumed	bracket1.d	5.469992182776681
+remap_par_bracket_consumed	bracket1.label	p < .001, d = 5.47
+remap_par_bracket_consumed	bracket2.i	1
+remap_par_bracket_consumed	bracket2.j	3
+remap_par_bracket_consumed	bracket2.p	3.454079533504739e-07
+remap_par_bracket_consumed	bracket2.d	10.577997239768594
+remap_par_bracket_consumed	bracket2.label	p < .001, d = 10.58
+remap_par_bracket_consumed	bracket3.i	2
+remap_par_bracket_consumed	bracket3.j	3
+remap_par_bracket_consumed	bracket3.p	0.00011113096272041822
+remap_par_bracket_consumed	bracket3.d	4.992833739150852
+remap_par_bracket_consumed	bracket3.label	p < .001, d = 4.99
+remap_non_matrix_computed	verdict	none
+remap_non_matrix_computed	consumed	0
+remap_non_matrix_computed	printReport	1
+remap_non_matrix_computed	note	
+remap_non_matrix_computed	error	
+remap_non_matrix_computed	omnibus	Kruskal-Wallis: H(2) = 9.85, p = .007, \ep^2 = 0.895
+remap_non_matrix_computed	nGroups	3
+remap_non_matrix_computed	bracketN	0
+remap_non_matrix_computed	matrixN	3
+remap_non_matrix_computed	captionTest	Pairwise comparisons: Dunn's test
+remap_non_matrix_computed	captionAdjust	adjustment for multiple comparisons: holm
+remap_non_matrix_computed	matrixPosthoc	Dunn's test (holm)
+remap_non_matrix_computed	infoLines	
+remap_non_matrix_computed	cell1_2	p = .233
+remap_non_matrix_computed	cellD1_2	1
+remap_non_matrix_computed	cellSig1_2	0
+remap_non_matrix_computed	cell1_3	p = .005
+remap_non_matrix_computed	cellD1_3	1
+remap_non_matrix_computed	cellSig1_3	1
+remap_non_matrix_computed	cell2_3	p = .233
+remap_non_matrix_computed	cellD2_3	1
+remap_non_matrix_computed	cellSig2_3	0
+remap_non_matrix_computed	mlabel1	Zebra
+remap_non_matrix_computed	mlabel2	Mid
+remap_non_matrix_computed	mlabel3	Alpha
+remap_non_matrix_consumed	verdict	consume
+remap_non_matrix_consumed	consumed	1
+remap_non_matrix_consumed	printReport	0
+remap_non_matrix_consumed	note	
+remap_non_matrix_consumed	error	
+remap_non_matrix_consumed	omnibus	Kruskal-Wallis: H(2) = 9.85, p = .007, \ep^2 = 0.895
+remap_non_matrix_consumed	nGroups	3
+remap_non_matrix_consumed	bracketN	0
+remap_non_matrix_consumed	matrixN	3
+remap_non_matrix_consumed	captionTest	Pairwise comparisons: Dunn's test
+remap_non_matrix_consumed	captionAdjust	adjustment for multiple comparisons: holm
+remap_non_matrix_consumed	matrixPosthoc	Dunn's test (holm)
+remap_non_matrix_consumed	infoLines	
+remap_non_matrix_consumed	cell1_2	p = .233
+remap_non_matrix_consumed	cellD1_2	1
+remap_non_matrix_consumed	cellSig1_2	0
+remap_non_matrix_consumed	cell1_3	p = .005
+remap_non_matrix_consumed	cellD1_3	1
+remap_non_matrix_consumed	cellSig1_3	1
+remap_non_matrix_consumed	cell2_3	p = .233
+remap_non_matrix_consumed	cellD2_3	1
+remap_non_matrix_consumed	cellSig2_3	0
+remap_non_matrix_consumed	mlabel1	Zebra
+remap_non_matrix_consumed	mlabel2	Mid
+remap_non_matrix_consumed	mlabel3	Alpha
+remap_non_bracket_computed	verdict	none
+remap_non_bracket_computed	consumed	0
+remap_non_bracket_computed	printReport	1
+remap_non_bracket_computed	note	
+remap_non_bracket_computed	error	
+remap_non_bracket_computed	omnibus	Kruskal-Wallis: H(2) = 9.85, p = .007, \ep^2 = 0.895
+remap_non_bracket_computed	nGroups	3
+remap_non_bracket_computed	bracketN	3
+remap_non_bracket_computed	matrixN	0
+remap_non_bracket_computed	captionTest	Pairwise comparisons: Dunn's test
+remap_non_bracket_computed	captionAdjust	adjustment for multiple comparisons: holm
+remap_non_bracket_computed	matrixPosthoc	Dunn's test (holm)
+remap_non_bracket_computed	infoLines	
+remap_non_bracket_computed	bracket1.i	1
+remap_non_bracket_computed	bracket1.j	2
+remap_non_bracket_computed	bracket1.p	0.2333289295620468
+remap_non_bracket_computed	bracket1.d	1
+remap_non_bracket_computed	bracket1.label	p = .233, r = 1.00
+remap_non_bracket_computed	bracket2.i	1
+remap_non_bracket_computed	bracket2.j	3
+remap_non_bracket_computed	bracket2.p	0.005105616278019058
+remap_non_bracket_computed	bracket2.d	1
+remap_non_bracket_computed	bracket2.label	p = .005, r = 1.00
+remap_non_bracket_computed	bracket3.i	2
+remap_non_bracket_computed	bracket3.j	3
+remap_non_bracket_computed	bracket3.p	0.2333289295620468
+remap_non_bracket_computed	bracket3.d	1
+remap_non_bracket_computed	bracket3.label	p = .233, r = 1.00
+remap_non_bracket_consumed	verdict	consume
+remap_non_bracket_consumed	consumed	1
+remap_non_bracket_consumed	printReport	0
+remap_non_bracket_consumed	note	
+remap_non_bracket_consumed	error	
+remap_non_bracket_consumed	omnibus	Kruskal-Wallis: H(2) = 9.85, p = .007, \ep^2 = 0.895
+remap_non_bracket_consumed	nGroups	3
+remap_non_bracket_consumed	bracketN	3
+remap_non_bracket_consumed	matrixN	0
+remap_non_bracket_consumed	captionTest	Pairwise comparisons: Dunn's test
+remap_non_bracket_consumed	captionAdjust	adjustment for multiple comparisons: holm
+remap_non_bracket_consumed	matrixPosthoc	Dunn's test (holm)
+remap_non_bracket_consumed	infoLines	
+remap_non_bracket_consumed	bracket1.i	1
+remap_non_bracket_consumed	bracket1.j	2
+remap_non_bracket_consumed	bracket1.p	0.2333289295620468
+remap_non_bracket_consumed	bracket1.d	1
+remap_non_bracket_consumed	bracket1.label	p = .233, r = 1.00
+remap_non_bracket_consumed	bracket2.i	1
+remap_non_bracket_consumed	bracket2.j	3
+remap_non_bracket_consumed	bracket2.p	0.005105616278019058
+remap_non_bracket_consumed	bracket2.d	1
+remap_non_bracket_consumed	bracket2.label	p = .005, r = 1.00
+remap_non_bracket_consumed	bracket3.i	2
+remap_non_bracket_consumed	bracket3.j	3
+remap_non_bracket_consumed	bracket3.p	0.2333289295620468
+remap_non_bracket_consumed	bracket3.d	1
+remap_non_bracket_consumed	bracket3.label	p = .233, r = 1.00
+twogroup_cold	verdict	none
+twogroup_cold	consumed	0
+twogroup_cold	printReport	1
+twogroup_cold	note	
+twogroup_cold	error	
+twogroup_cold	omnibus	Welch t: t(5.8) = 14.96, p < .001, d = 10.58
+twogroup_cold	nGroups	2
+twogroup_cold	bracketN	1
+twogroup_cold	matrixN	0
+twogroup_cold	captionTest	Comparison: Welch t-test
+twogroup_cold	captionAdjust	one comparison; no adjustment applied
+twogroup_cold	matrixPosthoc	Welch t-test
+twogroup_cold	infoLines	
+twogroup_cold	bracket1.i	1
+twogroup_cold	bracket1.j	2
+twogroup_cold	bracket1.p	7.120922348040318e-06
+twogroup_cold	bracket1.d	10.577997239768594
+twogroup_cold	bracket1.label	p < .001, d = 10.58
+twogroup_consume	verdict	consume
+twogroup_consume	consumed	1
+twogroup_consume	printReport	0
+twogroup_consume	note	
+twogroup_consume	error	
+twogroup_consume	omnibus	Welch t: t(5.8) = 14.96, p < .001, d = 10.58
+twogroup_consume	nGroups	2
+twogroup_consume	bracketN	1
+twogroup_consume	matrixN	0
+twogroup_consume	captionTest	Comparison: Welch t-test
+twogroup_consume	captionAdjust	one comparison; no adjustment applied
+twogroup_consume	matrixPosthoc	Welch t-test
+twogroup_consume	infoLines	
+twogroup_consume	bracket1.i	1
+twogroup_consume	bracket1.j	2
+twogroup_consume	bracket1.p	7.120922348040318e-06
+twogroup_consume	bracket1.d	10.577997239768594
+twogroup_consume	bracket1.label	p < .001, d = 10.58
+threegroup_vs_twogroup_store	verdict	none
+threegroup_vs_twogroup_store	consumed	0
+threegroup_vs_twogroup_store	printReport	1
+threegroup_vs_twogroup_store	note	
+threegroup_vs_twogroup_store	error	
+threegroup_vs_twogroup_store	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+threegroup_vs_twogroup_store	nGroups	3
+threegroup_vs_twogroup_store	bracketN	0
+threegroup_vs_twogroup_store	matrixN	3
+threegroup_vs_twogroup_store	captionTest	Pairwise comparisons: Tukey HSD
+threegroup_vs_twogroup_store	captionAdjust	already family-wise; no further adjustment applied
+threegroup_vs_twogroup_store	matrixPosthoc	Tukey HSD (already family-wise)
+threegroup_vs_twogroup_store	infoLines	
+threegroup_vs_twogroup_store	cell1_2	p < .001
+threegroup_vs_twogroup_store	cellD1_2	5.469992182776681
+threegroup_vs_twogroup_store	cellSig1_2	1
+threegroup_vs_twogroup_store	cell1_3	p < .001
+threegroup_vs_twogroup_store	cellD1_3	10.577997239768594
+threegroup_vs_twogroup_store	cellSig1_3	1
+threegroup_vs_twogroup_store	cell2_3	p < .001
+threegroup_vs_twogroup_store	cellD2_3	4.992833739150852
+threegroup_vs_twogroup_store	cellSig2_3	1
+threegroup_vs_twogroup_store	mlabel1	Zebra
+threegroup_vs_twogroup_store	mlabel2	Mid
+threegroup_vs_twogroup_store	mlabel3	Alpha
+warm_refusal	verdict	none
+warm_refusal	consumed	0
+warm_refusal	printReport	1
+warm_refusal	note	
+warm_refusal	error	
+warm_refusal	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+warm_refusal	nGroups	3
+warm_refusal	bracketN	0
+warm_refusal	matrixN	3
+warm_refusal	captionTest	Pairwise comparisons: Tukey HSD
+warm_refusal	captionAdjust	already family-wise; no further adjustment applied
+warm_refusal	matrixPosthoc	Tukey HSD (already family-wise)
+warm_refusal	infoLines	
+warm_refusal	cell1_2	p < .001
+warm_refusal	cellD1_2	5.469992182776681
+warm_refusal	cellSig1_2	1
+warm_refusal	cell1_3	p < .001
+warm_refusal	cellD1_3	10.577997239768594
+warm_refusal	cellSig1_3	1
+warm_refusal	cell2_3	p < .001
+warm_refusal	cellD2_3	4.992833739150852
+warm_refusal	cellSig2_3	1
+warm_refusal	mlabel1	Zebra
+warm_refusal	mlabel2	Mid
+warm_refusal	mlabel3	Alpha
+before_refusal	verdict	consume
+before_refusal	consumed	1
+before_refusal	printReport	0
+before_refusal	note	
+before_refusal	error	
+before_refusal	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+before_refusal	nGroups	3
+before_refusal	bracketN	0
+before_refusal	matrixN	3
+before_refusal	captionTest	Pairwise comparisons: Tukey HSD
+before_refusal	captionAdjust	already family-wise; no further adjustment applied
+before_refusal	matrixPosthoc	Tukey HSD (already family-wise)
+before_refusal	infoLines	
+before_refusal	cell1_2	p < .001
+before_refusal	cellD1_2	5.469992182776681
+before_refusal	cellSig1_2	1
+before_refusal	cell1_3	p < .001
+before_refusal	cellD1_3	10.577997239768594
+before_refusal	cellSig1_3	1
+before_refusal	cell2_3	p < .001
+before_refusal	cellD2_3	4.992833739150852
+before_refusal	cellSig2_3	1
+before_refusal	mlabel1	Zebra
+before_refusal	mlabel2	Mid
+before_refusal	mlabel3	Alpha
+store_refusal	verdict	none
+store_refusal	consumed	0
+store_refusal	printReport	1
+store_refusal	note	
+store_refusal	error	
+store_refusal	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+store_refusal	nGroups	3
+store_refusal	bracketN	0
+store_refusal	matrixN	3
+store_refusal	captionTest	Pairwise comparisons: Tukey HSD
+store_refusal	captionAdjust	already family-wise; no further adjustment applied
+store_refusal	matrixPosthoc	Tukey HSD (already family-wise)
+store_refusal	infoLines	
+store_refusal	cell1_2	p < .001
+store_refusal	cellD1_2	5.469992182776681
+store_refusal	cellSig1_2	1
+store_refusal	cell1_3	p < .001
+store_refusal	cellD1_3	10.577997239768594
+store_refusal	cellSig1_3	1
+store_refusal	cell2_3	p < .001
+store_refusal	cellD2_3	4.992833739150852
+store_refusal	cellSig2_3	1
+store_refusal	mlabel1	Zebra
+store_refusal	mlabel2	Mid
+store_refusal	mlabel3	Alpha
+store_old_schema	verdict	none
+store_old_schema	consumed	0
+store_old_schema	printReport	1
+store_old_schema	note	
+store_old_schema	error	
+store_old_schema	omnibus	One-way ANOVA: F(2, 9) = 109.86, p < .001
+store_old_schema	nGroups	3
+store_old_schema	bracketN	0
+store_old_schema	matrixN	3
+store_old_schema	captionTest	Pairwise comparisons: Tukey HSD
+store_old_schema	captionAdjust	already family-wise; no further adjustment applied
+store_old_schema	matrixPosthoc	Tukey HSD (already family-wise)
+store_old_schema	infoLines	
+store_old_schema	cell1_2	p < .001
+store_old_schema	cellD1_2	5.469992182776681
+store_old_schema	cellSig1_2	1
+store_old_schema	cell1_3	p < .001
+store_old_schema	cellD1_3	10.577997239768594
+store_old_schema	cellSig1_3	1
+store_old_schema	cell2_3	p < .001
+store_old_schema	cellD2_3	4.992833739150852
+store_old_schema	cellSig2_3	1
+store_old_schema	mlabel1	Zebra
+store_old_schema	mlabel2	Mid
+store_old_schema	mlabel3	Alpha

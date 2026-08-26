@@ -1,0 +1,9 @@
+leg	field	value
+no_change	verdict	consume
+no_change	note	
+no_change	printReport	0
+no_change	error	
+changed_setting	verdict	settings
+changed_setting	note	Recomputed: adjustment method holm -> bonferroni.
+changed_setting	printReport	0
+changed_setting	error	

@@ -171,11 +171,37 @@ if (length(def_at) == 1L) {
     end_at <- end_at[end_at > def_at][1]
     body <- out_lines[def_at:end_at]
 
+    # THE TWO WORDS MOVED INTO @emlGroupOrderName AND THE CANON IS STILL ONE
+    # PLACE -- it is now a place two surfaces share. The result store's read
+    # side compares a canonical rendering of the settings AS TEXT to decide
+    # whether a stored result still holds, and that rendering needs the same
+    # word this line prints: a second spelling would announce a settings
+    # change nobody made, on every draw, for ever. So the words are stated in
+    # @emlGroupOrderName and this line asks for them.
+    #
+    # WHAT IS ASSERTED IS UNCHANGED IN SUBSTANCE: both words exist, each is
+    # tied to the right value of emlGroupSortAlphabetical, and the report line
+    # takes its label from that decision rather than from a literal of its
+    # own. What moved is which procedure the assertion reads.
+    canon_at <- grep("^procedure emlGroupOrderName\\b", out_lines)
+    canon_end <- grep("^endproc", out_lines)
+    canon_end <- canon_end[canon_end > canon_at][1]
+    canon <- if (length(canon_at) == 1L) out_lines[canon_at:canon_end] else
+        character(0)
+
+    check_true(V, "@emlGroupOrderName is defined exactly once and holds the canon",
+               length(canon_at) == 1L && length(canon) > 0)
     check_true(V, "table order is named when emlGroupSortAlphabetical is not 1",
-               any(grepl('\\.orderLabel\\$\\s*=\\s*"table order"', body)))
+               any(grepl('\\.result\\$\\s*=\\s*"table order"', canon)))
     check_true(V, "alphabetical is named when emlGroupSortAlphabetical is 1",
-               any(grepl('\\.orderLabel\\$\\s*=\\s*"alphabetical"', body)) &&
-               any(grepl("emlGroupSortAlphabetical\\s*=\\s*1", body)))
+               any(grepl('\\.result\\$\\s*=\\s*"alphabetical"', canon)) &&
+               any(grepl("\\.alphabetical\\s*=\\s*1", canon)) &&
+               any(grepl("@emlGroupOrderName:\\s*emlGroupSortAlphabetical",
+                         body)))
+    check_true(V, "and the report line takes its label from that one place",
+               any(grepl("\\.orderLabel\\$\\s*=\\s*emlGroupOrderName\\.result\\$",
+                         body)) &&
+               !any(grepl('"table order"|"alphabetical"', body)))
     check_true(V, "the printed line matches language batch item 10, verbatim",
                any(grepl('"  Group order: "\\s*\\+\\s*\\.orderLabel\\$\\s*\\+\\s*" \\("\\s*\\+\\s*\\.groupList\\$\\s*\\+\\s*"\\)\\."',
                          body)))

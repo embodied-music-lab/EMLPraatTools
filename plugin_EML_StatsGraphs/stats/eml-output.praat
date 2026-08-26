@@ -671,12 +671,52 @@ endproc
 #   .groupList$ — comma-separated group names, in the order used
 # ----------------------------------------------------------------------------
 procedure emlReportGroupOrderLine: .groupList$
-    if emlGroupSortAlphabetical = 1
-        .orderLabel$ = "alphabetical"
-    else
-        .orderLabel$ = "table order"
-    endif
+    @emlGroupOrderName: emlGroupSortAlphabetical
+    .orderLabel$ = emlGroupOrderName.result$
     appendInfoLine: "  Group order: " + .orderLabel$ + " (" + .groupList$ + ")."
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlGroupOrderName: .alphabetical  ->  .result$
+# ----------------------------------------------------------------------------
+# THE TWO WORDS FOR THE GROUP ORDER, AND THE ONLY PLACE THEY ARE WRITTEN.
+#
+# emlGroupSortAlphabetical is a number and a reader needs a word for it. Two
+# surfaces need the SAME word: @emlReportGroupOrderLine above, which discloses
+# the order on every grouped comparison report, and @emlRenderResultSettings
+# below, whose canonical rendering is COMPARED AS TEXT to decide whether a
+# stored result still holds. If those two ever spelled the order differently
+# the report and the store would disagree about one setting, and the store's
+# disagreement is the silent one: a rendering that said "discovery order"
+# where the stored one said "table order" would read as a changed setting and
+# re-run the analysis for ever, printing a "Recomputed:" line naming a change
+# nobody made.
+#
+# So the canon is stated once, here, and validate/v142 asserts by text that no
+# other line in the plugin writes either word as an order name. That is the
+# DRY rule this repository works to: a procedure records the rule and a check
+# enforces that the copies agree, because a procedure cannot stop somebody
+# typing the word again somewhere else.
+#
+# THE WORDS THEMSELVES are LANGUAGE_BATCH_2026-08-25.md item 10's, taken from
+# the disclosure line they were approved for: "table order" and
+# "alphabetical". They are the user's vocabulary from the graphs form's own
+# Group order control, not the code's (`emlGroupSortAlphabetical = 0` is not a
+# thing to say to a reader).
+#
+# Arguments:
+#   .alphabetical - emlGroupSortAlphabetical as it stands (1 or 0)
+#
+# Output:
+#   .result$      - "alphabetical" or "table order"
+# ----------------------------------------------------------------------------
+procedure emlGroupOrderName: .alphabetical
+    if .alphabetical = 1
+        .result$ = "alphabetical"
+    else
+        .result$ = "table order"
+    endif
 endproc
 
 
@@ -737,6 +777,316 @@ endproc
 # ============================================================================
 # FORMATTING PROCEDURES (produce strings, do NOT write to Info window)
 # ============================================================================
+
+# ----------------------------------------------------------------------------
+# @emlRenderResultSettings
+# ----------------------------------------------------------------------------
+# THE CANONICAL RENDERING OF THE SETTINGS AN ANALYSIS RAN UNDER.
+#
+# WHAT IT IS FOR, AND WHAT IT IS NOT FOR. docs/RULING_RESULT_STORE.md section
+# (c): a figure that draws from a stored result must say, in ONE line, which
+# result-affecting setting changed when one has -- "Recomputed: adjustment
+# method holm -> bonferroni." -- rather than print a second full report. Two
+# jobs sit behind that sentence and they belong in different places:
+#
+#   THE DECISION is @emlStoreIdentityAgrees (stats/eml-extract.praat). It
+#   compares the store's identity fields against a candidate analysis's and
+#   names the first that differs, AS A FIELD KEY. It is the store's own
+#   comparison and there must not be a second one, or two doors could disagree
+#   about whether one analysis is the same as another.
+#
+#   THE WORDING is this procedure and @emlSettingsChangeNote below. The store
+#   speaks in field keys and internal tokens -- "groupSort", "table",
+#   "one-way anova + tukey" -- and a reader needs "group order", "table
+#   order", and the analysis named as the report names it. That vocabulary is
+#   declared HERE, once, and it is the same vocabulary the settings block of
+#   a disclosure uses, so the sentence a figure prints and the settings a
+#   report discloses cannot part company.
+#
+# ============================================================================
+# IT IS RENDERED FROM VALUES. IT IS NOT A FILTERED REPORT, AND IT CANNOT SEE
+# THE EXPLANATIONS GATE.
+# ============================================================================
+# THIS IS THE PART THAT IS EASY TO GET WRONG, AND IT WAS MEASURED BEFORE IT
+# WAS BUILT. The obvious construction is to let a report render as the user
+# has it set and then strip the explanation text out of the result. That
+# cannot be made to work here, and validate/v132_routing_split.R records the
+# measurement: on the permutation drive's expl1_sort0_alpha05 leg, cutting
+# every two-tab explanation suffix off the rendered text STILL leaves lines
+# the explanations-off rendering does not have, because half the explanations
+# are whole lines carrying no marker that separates them from a disclosure
+# line. A filter is therefore a guess about wording, and every re-wording of
+# an explanation is a chance for the guess to change and for a figure to
+# announce a settings change nobody made.
+#
+# So the canonical text is RENDERED, FROM THE SETTING VALUES THEMSELVES. It is
+# built here out of six names and six values; no report text is read, cut,
+# matched or parsed anywhere in it, and there is nothing for a re-wording to
+# break.
+#
+# THE GATE-INDEPENDENCE IS STRUCTURAL AND IT IS CHECKED, WHICH IS STRONGER
+# THAN LOWERING THE GATE FOR THE SCOPE. A save-and-restore around this
+# procedure would guarantee the text for the lines that exist today and say
+# nothing about a line somebody adds tomorrow through @emlReportLine, which
+# consults the gate and would be restored right after. What is guaranteed
+# instead is that this procedure NEVER CONSULTS THE GATE AT ALL: it names
+# emlShowExplanations nowhere, calls no reporter that reads it, and touches
+# emlWizardExplain$ nowhere -- and validate/v142 asserts all three by text
+# over this procedure's body and @emlSettingsChangeNote's. A line that would
+# make the rendering depend on a display toggle then goes red when it is
+# WRITTEN, not when a user toggles something and a figure re-runs for no
+# reason.
+#
+# THE GATE IS ALSO NOT WRITTEN HERE, and that is not incidental.
+# validate/v112_settings_census.R derives its population by asking which
+# globals the draw layer READS and does not itself write; a save/restore pair
+# inside the doors' call closure reads to that walk as the door's own scratch,
+# and emlShowExplanations -- a real display setting, classified as one --
+# would silently drop out of the census. A settings comparison that made the
+# settings census blind to a setting would be a poor trade for a guarantee it
+# does not need.
+#
+# ============================================================================
+# THE FIELDS, AND WHY THEY ARE THESE SIX IN THIS ORDER
+# ============================================================================
+# They are @emlStoreIdentityAgrees' identity fields, in its order, so that
+# .key$[i] can be matched against the field key it hands back and neither side
+# has to carry a translation table the other could drift from. The membership
+# question -- which settings are result-affecting at all -- is
+# validate/v112_settings_census.R's, derived from the code rather than typed;
+# this procedure is the authority on WORDING and on nothing else.
+#
+# Arguments -- the analysis's identity, in the STORE'S OWN VOCABULARY, so that
+# a caller can hand over either the published fields or the ones it is about
+# to publish without translating first:
+#   .kind$        - "group". The only kind rendered today; a second kind adds
+#                   a branch here with its own field list.
+#   .dataCol$     - the value column, as the analysis named it
+#   .groupCol$    - the grouping column, as the analysis named it
+#   .test$        - the store's test token: "welch t", "mann-whitney",
+#                   "one-way anova + tukey", "kruskal-wallis + dunn", ...
+#   .correction$  - the store's adjustment token, "" where nothing was applied
+#   .alpha        - the significance threshold, as a number
+#   .sort$        - the store's group-order token: "table" or "alphabetical"
+#
+# Outputs:
+#   .result$    - the whole rendering, header line first, newline-terminated
+#   .nFields    - how many settings the rendering carries
+#   .key$[i]    - field i's STORE field key ("correction")
+#   .name$[i]   - field i's reader-facing name ("adjustment method")
+#   .value$[i]  - field i's reader-facing value ("holm", "none")
+#   .error$     - "" on success; a diagnostic for an unknown .kind$, in which
+#                 case .result$ is "" and .nFields is 0
+#
+# ONE FIELD PER LINE, NEWLINE-TERMINATED, INCLUDING THE LAST, so that a value
+# can never run into the next field's name when the whole rendering is
+# compared or printed as one string. Nothing parses it: the comparison walks
+# the arrays.
+# ----------------------------------------------------------------------------
+procedure emlRenderResultSettings: .kind$, .dataCol$, .groupCol$, .test$, .correction$, .alpha, .sort$
+    .result$ = ""
+    .nFields = 0
+    .error$ = ""
+
+    if .kind$ <> "group"
+        .error$ = "@emlRenderResultSettings does not render '" + .kind$
+        ... + "'; the only kind it renders is 'group'."
+        goto END_RENDER_SETTINGS
+    endif
+
+    ; THE ORDER WORD COMES FROM @emlGroupOrderName AND FROM NOWHERE ELSE, so
+    ; the sentence a figure prints and the "Group order:" line a report
+    ; discloses use one vocabulary. The store's token is turned into the flag
+    ; that procedure takes rather than into the word directly -- writing the
+    ; word here would be the second copy the DRY rule exists to prevent.
+    .sortAlpha = 0
+    if .sort$ = "alphabetical"
+        .sortAlpha = 1
+    endif
+    @emlGroupOrderName: .sortAlpha
+    .orderWord$ = emlGroupOrderName.result$
+
+    ; NOTHING APPLIED IS A DISCLOSURE, NOT A BLANK. An empty adjustment token
+    ; means the analysis corrected nothing -- two groups is one comparison,
+    ; and Tukey's p is already family-wise -- and a settings line reading
+    ; "adjustment method:" with nothing after it cannot be told from a build
+    ; that lost the value.
+    .correctionWord$ = .correction$
+    if .correctionWord$ = ""
+        .correctionWord$ = "none"
+    endif
+
+    ; string$ and not fixed$ for alpha, for the reason @emlRecordCaptureStats
+    ; gives about the same number: fixed$ takes a width, and an alpha finer
+    ; than that width comes back as a different number -- which would make two
+    ; different alphas render alike.
+    .nFields = 6
+    .key$[1] = "dataColumn"
+    .name$[1] = "value column"
+    .value$[1] = .dataCol$
+    .key$[2] = "groupColumn"
+    .name$[2] = "group column"
+    .value$[2] = .groupCol$
+    .key$[3] = "testType"
+    .name$[3] = "analysis"
+    .value$[3] = .test$
+    .key$[4] = "correction"
+    .name$[4] = "adjustment method"
+    .value$[4] = .correctionWord$
+    .key$[5] = "alpha"
+    .name$[5] = "alpha"
+    .value$[5] = string$ (.alpha)
+    .key$[6] = "groupSort"
+    .name$[6] = "group order"
+    .value$[6] = .orderWord$
+
+    .result$ = "eRS1 settings: " + .kind$ + newline$
+    for .f from 1 to .nFields
+        .result$ = .result$ + .name$[.f] + ": " + .value$[.f] + newline$
+    endfor
+
+    label END_RENDER_SETTINGS
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlSettingsChangeNote: .field$, .was$, .now$
+# ----------------------------------------------------------------------------
+# THE ONE LINE, IN THE CONTRACT'S FORM. docs/RULING_RESULT_STORE.md section
+# (c), quoted: "One line, naming the change: 'Recomputed: adjustment method
+# holm -> bonferroni.' Never a second full report -- the duplicate report IS
+# the driven defect."
+#
+# TAKES @emlStoreIdentityAgrees' ANSWER AND SAYS IT IN THE READER'S WORDS.
+# That procedure hands back a field KEY, the stored value and the candidate's
+# value; it says so itself -- "THE SENTENCE IS NOT COMPOSED HERE ... whoever
+# prints owns the wording". This is that owner.
+#
+# THE NAMES AND THE VALUE WORDS COME FROM @emlRenderResultSettings, rendered
+# for the CANDIDATE analysis and then again for the stored one, so a change is
+# announced in exactly the words a settings disclosure would use for the same
+# two states. Nothing is written down twice: the vocabulary lives in one
+# procedure and this one looks the field key up in it.
+#
+# A FIELD KEY THE RENDERING DOES NOT CARRY still gets a line. "store" is what
+# @emlStoreIdentityAgrees returns when nothing has published at all, and a
+# future field added to the identity before it is added to the rendering must
+# not fall out of the sentence silently -- so the key itself is named, which
+# is ugly on purpose and impossible to miss.
+#
+# THE ARROW IS ASCII. The ruling's own text uses a typographic arrow; the
+# announcement is built with "->" because every string in this plugin that can
+# reach a file must be ASCII (one non-ASCII character makes Praat write the
+# whole file UTF-16BE), and an announcement is exactly the sort of line a user
+# copies into a log or a recorded script. The ruling is about the SHAPE of the
+# line and this is that shape.
+#
+# Arguments:
+#   .field$  - @emlStoreIdentityAgrees.field$
+#   .was$    - its .was$, the stored value as text
+#   .now$    - its .now$, the candidate's value as text
+#
+#   AND THE TWO RENDERINGS, from the caller, because Praat cannot pass an
+#   array and this procedure needs the vocabulary table:
+#   emlSettingsName$[1..emlSettingsN] / emlSettingsKey$[1..emlSettingsN]
+#       @emlRenderResultSettings' .name$[] and .key$[], copied out by
+#       @emlSettingsVocabulary before anything else runs the renderer.
+#
+# Output:
+#   .note$   - the announcement line
+# ----------------------------------------------------------------------------
+procedure emlSettingsChangeNote: .field$, .was$, .now$
+    .name$ = .field$
+    for .f from 1 to emlSettingsN
+        if emlSettingsKey$[.f] = .field$
+            .name$ = emlSettingsName$[.f]
+        endif
+    endfor
+
+    ; NOTHING PUBLISHED IS NOT A CHANGED SETTING, and it must not be announced
+    ; as one. @emlStoreIdentityAgrees returns "store" for it; a figure in that
+    ; state has nothing to compare against and simply computes.
+    if .field$ = "store"
+        .note$ = "Recomputed: no analysis result was published to compare "
+        ... + "against."
+        goto END_SETTINGS_NOTE
+    endif
+
+    ; THE VALUES ARE PUT INTO THE READER'S WORDS TOO, not just the field.
+    ; @emlStoreIdentityAgrees hands back the store's own tokens, and the store
+    ; says "table" where a reader says "table order" -- an announcement
+    ; reading "group order table -> alphabetical" is the store talking to
+    ; itself in front of the user. The word comes from @emlGroupOrderName, the
+    ; one place both order words are written, so the sentence and the
+    ; "Group order:" line of a report cannot disagree.
+    .wasWord$ = .was$
+    .nowWord$ = .now$
+    if .field$ = "groupSort"
+        .wasAlpha = 0
+        if .was$ = "alphabetical"
+            .wasAlpha = 1
+        endif
+        @emlGroupOrderName: .wasAlpha
+        .wasWord$ = emlGroupOrderName.result$
+        .nowAlpha = 0
+        if .now$ = "alphabetical"
+            .nowAlpha = 1
+        endif
+        @emlGroupOrderName: .nowAlpha
+        .nowWord$ = emlGroupOrderName.result$
+    endif
+
+    ; AN EMPTY VALUE IS A DISCLOSURE, NOT A BLANK. An empty adjustment token
+    ; means nothing was applied -- two groups is one comparison, and Tukey's
+    ; p is already family-wise -- and "adjustment method  -> bonferroni" reads
+    ; as a build that lost a word.
+    if .wasWord$ = ""
+        .wasWord$ = "none"
+    endif
+    if .nowWord$ = ""
+        .nowWord$ = "none"
+    endif
+
+    .note$ = "Recomputed: " + .name$ + " " + .wasWord$ + " -> " + .nowWord$
+    ... + "."
+
+    label END_SETTINGS_NOTE
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlSettingsVocabulary
+# ----------------------------------------------------------------------------
+# COPY THE RENDERING'S VOCABULARY OUT BEFORE THE RENDERER RUNS AGAIN.
+#
+# A procedure's outputs in Praat survive exactly until that procedure runs
+# again, and Praat cannot pass an array to a procedure. So the field keys and
+# the reader-facing names have to meet @emlSettingsChangeNote in globals, and
+# a copy loop written out at each call site is a copy loop that gets one index
+# wrong at one of them -- silently, because the wrong name in an announcement
+# is still a well-formed sentence.
+#
+# THE GLOBAL ARRAYS ARE THE HAND-OFF AND ARE WRITTEN NOWHERE ELSE. They are
+# published names under a single writer, which is this procedure, and v142
+# asserts that nothing else in the plugin assigns them -- the same discipline
+# section (d) of the result-store ruling puts on the store itself.
+#
+# Call it immediately after @emlRenderResultSettings:
+#
+#     @emlRenderResultSettings: "group", ...
+#     @emlSettingsVocabulary
+#     @emlSettingsChangeNote: emlStoreIdentityAgrees.field$, ...
+# ----------------------------------------------------------------------------
+procedure emlSettingsVocabulary
+    emlSettingsN = emlRenderResultSettings.nFields
+    emlSettingsText$ = emlRenderResultSettings.result$
+    for .f from 1 to emlSettingsN
+        emlSettingsKey$[.f] = emlRenderResultSettings.key$[.f]
+        emlSettingsName$[.f] = emlRenderResultSettings.name$[.f]
+        emlSettingsValue$[.f] = emlRenderResultSettings.value$[.f]
+    endfor
+endproc
+
 
 procedure emlFormatP: .pValue
     # Format p-value according to APA guidelines

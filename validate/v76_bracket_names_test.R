@@ -323,18 +323,55 @@ if (have_tsv) {
 # ===========================================================================
 # 2. THE INVARIANT, ENUMERATED OUT OF THE BRIDGE
 # ===========================================================================
-# The population is every site in @emlBridgeGroupComparison that writes a
-# bracket label -- that write is what makes a bracket exist and be drawn, so
-# it is the definition of "this arm can produce a bracket" that cannot be
-# satisfied by an arm that merely mentions brackets. For each one: is there an
-# annotTextN = 1 that DOMINATES it, and does the same dominating block supply
-# the label, the anchor and the position the corner box is drawn from?
+# THE INVARIANT IS UNCHANGED AND ITS PROOF MOVED, WHICH IS WHY THIS SECTION
+# READS THREE PROCEDURES INSTEAD OF ONE.
+#
+# The claim has always been: a path that can put a BRACKET on a figure also
+# puts the OMNIBUS in the corner box, and that omnibus opens with the name of
+# the test which produced the bracket. Until the result store's read side
+# landed, each of the four arms of @emlBridgeGroupComparison wrote its own
+# bracket loop and its own corner box, so the claim was checked as a
+# dominance argument inside one procedure: for every bracket-label write, is
+# there an `annotTextN = 1` above it in an enclosing block?
+#
+# The store added a FIFTH path -- a figure drawn from a published result,
+# which runs no arm at all -- and a fifth copy of the bracket loop is how that
+# figure would have come to disagree with the same figure drawn from a re-run.
+# So the loop is now ONE procedure, @emlBridgeRenderAnnotations, that every
+# arm and the consume path call; and the omnibus sentence is one procedure,
+# @emlBridgeOmnibusLine, for the same reason.
+#
+# THAT MAKES THE INVARIANT STRUCTURAL RATHER THAN REPEATED, and the checks
+# follow it:
+#
+#   a. @emlBridgeRenderAnnotations holds exactly ONE bracket-label write, and
+#      the corner box it sets is UNCONDITIONAL -- at the procedure's own
+#      depth, below the layout branch, so it runs on the bracket layout and
+#      the matrix layout alike. Dominance is then trivial rather than
+#      argued: there is no path through that procedure which writes a bracket
+#      and does not set the box.
+#   b. NO OTHER PROCEDURE WRITES A BRACKET LABEL. That is what stops a fifth
+#      copy reappearing and quietly escaping this section.
+#   c. The bridge still has FOUR ARMS, enumerated the same way as before --
+#      by the statistical procedure that dominates the call -- and each one
+#      hands the renderer an omnibus it composed through
+#      @emlBridgeOmnibusLine rather than a literal.
+#   d. @emlBridgeOmnibusLine names FOUR DIFFERENT TESTS, each string opening
+#      "<test>: ", which is the source half of "names its test" that §3 and
+#      §4 read back off the picture.
 BRACKET_SITE <- "^annotBracketLabel\\$\\[[^]]+\\] = "
 
 arm_ids <- character(0)
 if (have_src) {
     check_true(ID, "@emlBridgeGroupComparison is present and parses balanced",
                length(body) > 0 && parsed$ok)
+
+    body_rend <- proc_body_of(code, "emlBridgeRenderAnnotations")
+    body_omni <- proc_body_of(code, "emlBridgeOmnibusLine")
+    check_true(ID, "@emlBridgeRenderAnnotations is present",
+               length(body_rend) > 0)
+    check_true(ID, "@emlBridgeOmnibusLine is present",
+               length(body_omni) > 0)
 
     # THE DOMINANCE ARGUMENT DEPENDS ON THERE BEING NO EARLY EXIT. A goto or
     # an exitScript between the annotTextN line and the end of the procedure
@@ -344,83 +381,114 @@ if (have_src) {
     check_true(ID, "the bridge has no goto, label or exitScript to jump over the invariant",
                !has(body, "^goto ") && !has(body, "^label ") &&
                !has(body, "exitScript"))
+    check_true(ID, "nor does the renderer the arms hand their result to",
+               !has(body_rend, "^goto ") && !has(body_rend, "^label ") &&
+               !has(body_rend, "exitScript"))
 
-    sites <- grep(BRACKET_SITE, body)
+    # ---- (a) ONE BRACKET SITE, AND AN UNCONDITIONAL BOX -------------------
+    rend_parsed <- depths_of(body_rend)
+    rend_sites <- grep(BRACKET_SITE, body_rend)
+    check_true(ID, sprintf("the renderer holds exactly one bracket-label write (found %d)",
+                           length(rend_sites)),
+               length(rend_sites) == 1)
 
-    # THE ARM COUNT IS ASSERTED, and it is asserted as a LOWER bound and an
-    # exact value for different reasons. Four is what the bridge has: Welch t,
-    # Mann-Whitney U, one-way ANOVA + Tukey, Kruskal-Wallis + Dunn. If a fifth
-    # appears, the per-arm loop below covers it automatically and this line
-    # goes red as a NOTICE that the population changed -- which is the point
-    # at which somebody reads the new arm's caption rather than trusting a
-    # green suite. Fewer than four means an arm stopped drawing brackets.
-    check_true(ID, sprintf("the bridge has four bracket-producing arms (found %d)",
-                           length(sites)),
-               length(sites) == 4)
+    # "Unconditional" is depth 0 in the procedure's own body: outside the
+    # layout branch and outside both pair loops, so neither the choice of
+    # layout nor the presence of a significant pair can skip it.
+    box_lines <- list(
+        "annotTextN"        = "^annotTextN = 1$",
+        "annotTextLabel$[1]" = "^annotTextLabel\\$\\[1\\] = \\.omnibus\\$$",
+        "annotTextX[1]"     = "^annotTextX\\[1\\] = ",
+        "annotTextY[1]"     = "^annotTextY\\[1\\] = ",
+        "annotTextAnchor$[1]" = "^annotTextAnchor\\$\\[1\\] = ")
+    for (nm in names(box_lines)) {
+        at <- grep(box_lines[[nm]], body_rend)
+        check_true(ID,
+            sprintf("the renderer sets %s at its own depth, so no layout can skip it",
+                    nm),
+            length(at) >= 1 && rend_parsed$ok && any(rend_parsed$d[at] == 0L))
+    }
 
-    # Each arm is NAMED by the statistical procedure that dominates it, so a
-    # failure below says "the Mann-Whitney arm" rather than "line 92". The
-    # name is read out of the source, not out of a list kept here: a fifth arm
-    # calling a fifth procedure names itself.
+    # ---- (b) AND NOWHERE ELSE ---------------------------------------------
+    # Counted over the WHOLE annotation file, not over one procedure: a fifth
+    # copy of the bracket loop would most likely arrive as a new procedure,
+    # and that is exactly the shape this line refuses.
+    check_true(ID,
+        sprintf("no other procedure in the file writes a bracket label (%d file-wide)",
+                length(grep(BRACKET_SITE, code))),
+        length(grep(BRACKET_SITE, code)) == 1)
+    check_true(ID, "and @emlBridgeGroupComparison no longer writes one itself",
+               length(grep(BRACKET_SITE, body)) == 0)
+
+    # ---- (c) FOUR ARMS, ENUMERATED THE SAME WAY ---------------------------
+    # The population is every site in the bridge that hands a result to the
+    # renderer. Each arm is NAMED by the statistical procedure that dominates
+    # it, so a failure below says "the Mann-Whitney arm" rather than "line
+    # 92". The name is read out of the source, not out of a list kept here: a
+    # fifth arm calling a fifth procedure names itself.
+    #
+    # THE CONSUME PATH IS IN THIS POPULATION AND HAS NO TEST CALL ABOVE IT,
+    # which is the point of it -- it runs no test. It is therefore named
+    # "arm@<line>" by the fallback below and is EXCLUDED from the four-arm
+    # census, and its own behaviour is measured by harness/bridgeconsume.
     TESTCALL <- "^@(eml[A-Za-z]+):.*$"
     KNOWN_TESTS <- c("emlTTest", "emlRankBiserialR", "emlOneWayAnova",
                      "emlKruskalWallis")
     callee <- function(x) ifelse(grepl(TESTCALL, x), sub(TESTCALL, "\\1", x), "")
 
+    sites <- grep("^@emlBridgeRenderAnnotations:", body)
+    check_true(ID, sprintf("every path that annotates goes through the one renderer (%d call sites)",
+                           length(sites)),
+               length(sites) >= 5)
+
     for (s in sites) {
         dom <- dominators(s)
         tc  <- dom[callee(body[dom]) %in% KNOWN_TESTS]
-        arm <- if (length(tc)) callee(body[tc[length(tc)]]) else
-                   sprintf("arm@%d", s)
+        if (!length(tc)) next
+        arm <- callee(body[tc[length(tc)]])
         arm_ids <- c(arm_ids, arm)
 
-        # THE INVARIANT ITSELF.
-        tn <- dom[grepl("^annotTextN = 1$", body[dom])]
-        check_true(ID, sprintf("%s: a bracket-producing arm sets annotTextN unconditionally",
+        # THE ARM HANDS OVER THE OMNIBUS IT COMPOSED, not a literal and not
+        # whatever was left in .omnibus$ by the last figure. A constant here
+        # would name the test and say nothing true about the data -- and it
+        # would survive every OCR check in §3 and §4, which look for the test
+        # NAME.
+        om <- dom[grepl("^\\.omnibus\\$ = emlBridgeOmnibusLine\\.result\\$$",
+                        body[dom])]
+        check_true(ID, sprintf("%s: the arm composes its omnibus through @emlBridgeOmnibusLine",
                                arm),
-                   length(tn) >= 1)
+                   length(om) >= 1)
 
-        # A COUNT WITH NOTHING BEHIND IT DRAWS NOTHING. The form reads
-        # annotTextLabel$[1] and puts THAT in the corner block; annotTextN is
-        # only the gate. Setting the gate and leaving the label is a build
-        # where the box is created and either empty or carrying whatever the
-        # previous figure in the session put there.
-        lb <- dom[grepl("^annotTextLabel\\$\\[1\\] = ", body[dom])]
-        check_true(ID, sprintf("%s: the same arm supplies the line the box will carry",
-                               arm),
-                   length(lb) >= 1)
-
-        # AND THE LINE IS THE OMNIBUS THE ARM COMPUTED, not a literal. A
-        # constant here would name the test and say nothing true about the
-        # data -- and it would survive every OCR check in §3 and §4, which
-        # look for the test NAME.
-        check_true(ID, sprintf("%s: the box carries the omnibus the arm composed", arm),
-                   length(lb) >= 1 &&
-                   any(grepl("^annotTextLabel\\$\\[1\\] = \\.omnibus\\$$", body[lb])))
-
-        # THE ARM COMPOSED AN OMNIBUS THAT OPENS WITH A TEST NAME. This is the
-        # source half of "names its test": the string is "<test>: <stats>",
-        # and §3/§4 read the name back off the picture.
-        om <- dom[grepl("^\\.omnibus\\$ = \"[^\"]", body[dom])]
-        opens <- if (length(om))
-                     sub("^\\.omnibus\\$ = \"([^\":]+):.*$", "\\1",
-                         body[om[length(om)]]) else ""
-        check_true(ID, sprintf("%s: the omnibus string opens with a test name ('%s')",
-                               arm, opens),
-                   length(om) >= 1 && nzchar(opens) &&
-                   grepl("[A-Za-z]", opens) &&
-                   !identical(opens, body[om[length(om)]]))
-
-        # THE BOX IS PLACED. annotTextX/annotTextY are read by the form when
-        # it hands the block to @emlDrawAnnotationBlock; an arm that sets the
-        # count and the label but neither coordinate leans on whatever the
-        # last figure left in those globals, and Praat cannot unset a
-        # variable, so the stale value is always available to lean on.
-        check_true(ID, sprintf("%s: the same arm positions and anchors the box", arm),
-                   any(grepl("^annotTextX\\[1\\] = ", body[dom])) &&
-                   any(grepl("^annotTextY\\[1\\] = ", body[dom])) &&
-                   any(grepl("^annotTextAnchor\\$\\[1\\] = ", body[dom])))
+        # AND IT FED THAT COMPOSER THE STATISTICS IT JUST COMPUTED. The
+        # composer takes five numbers; an arm that called it without naming
+        # them would be quoting the previous arm's omnibus.
+        oc <- dom[grepl("^@emlBridgeOmnibusLine:", body[dom])]
+        check_true(ID, sprintf("%s: and calls the composer inside the same block", arm),
+                   length(oc) >= 1)
+        for (fld in c("\\.omniStat = ", "\\.omniP = ")) {
+            check_true(ID,
+                sprintf("%s: the arm names %s for the composer and the store",
+                        arm, sub("\\\\\\.", ".", sub(" = $", "", fld))),
+                any(grepl(paste0("^", fld), body[dom])))
+        }
     }
+
+    check_true(ID, sprintf("the bridge has four bracket-producing arms (found %d)",
+                           length(arm_ids)),
+               length(arm_ids) == 4)
+
+    # ---- (d) FOUR TESTS, NAMED IN THE COMPOSER ----------------------------
+    # Every omnibus string in the plugin is "<test>: <statistics>", and this
+    # is the one place the four are written. Read out of the source rather
+    # than listed here, for the reason §4's note gives: a hardcoded map goes
+    # green on a new arm by never mentioning it.
+    omni_lits <- grep("^\\.result\\$ = \"[^\"]+: ", body_omni, value = TRUE)
+    omni_names <- unique(trimws(sub("^\\.result\\$ = \"([^\":]+):.*$", "\\1",
+                                    omni_lits)))
+    check_true(ID, sprintf("@emlBridgeOmnibusLine names four tests (%s)",
+                           paste(omni_names, collapse = ", ")),
+               length(omni_names) == 4 && all(nzchar(omni_names)) &&
+               all(grepl("[A-Za-z]", omni_names)))
 
     # NO ARM IS COUNTED TWICE. Four sites naming four distinct tests is what
     # makes the enumeration a census rather than one arm found four times --

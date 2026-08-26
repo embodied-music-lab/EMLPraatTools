@@ -2,8 +2,8 @@
 # EML Stats : Data Extraction Layer
 # ============================================================================
 # Module: eml-extract.praat
-# Version: 1.9
-# Date: 24 August 2026
+# Version: 2.0
+# Date: 26 August 2026
 #
 #
 # Part of the EML Stats library (EML Stats & Graphs).
@@ -19,7 +19,9 @@
 #   @emlCountGroups, @emlGuessColumnRoles,
 #   @eml_normalizeLabel, @eml_strictNumericColumn,
 #   @emlDataFingerprint, @emlGroupFingerprint,
-#   @emlAnalysisFingerprint, @emlFingerprintsAgree
+#   @emlAnalysisFingerprint, @emlFingerprintsAgree,
+#   @emlStoreKeyTake, @emlPublishAnalysisResult,
+#   @emlStoreIdentityAgrees
 #
 # The fingerprint doors at the foot of this file are the result store's data
 # key (docs/RULING_RESULT_STORE.md, §a). It lives HERE, in the extraction
@@ -30,6 +32,12 @@
 # before both. The key answers "same data, same declared scope?" and nothing
 # about the settings a result was computed under; the foot of this file says
 # what a stored result carries beside it.
+#
+# AND THE STORE'S SINGLE WRITE SITE IS BELOW THEM, for the same reason and
+# with the same argument written out where it sits: @emlPublishAnalysisResult
+# is the only procedure in this plugin that assigns a name beginning
+# emlStore, and every door that computes a group comparison calls it. See
+# THE RESULT STORE: THE SINGLE WRITE SITE at the foot of this file.
 #
 # These procedures extract data from Praat objects into numeric
 # vectors suitable for passing to EML Stats statistical procedures.
@@ -3785,6 +3793,730 @@ procedure emlFingerprintsAgree: .a$, .b$
     if .a$ <> "" and .b$ <> ""
         if .a$ = .b$
             .same = 1
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# THE RESULT STORE: THE SINGLE WRITE SITE
+# ============================================================================
+# Provides: @emlStoreKeyTake, @emlPublishAnalysisResult,
+#           @emlStoreIdentityAgrees
+#
+# WHY IT IS IN THIS FILE, BESIDE THE KEY AND NOT IN A MODULE OF ITS OWN.
+# The store is one mechanism with two halves -- the key that says whether a
+# result still describes the table, and the publication that states the
+# result -- and both halves are needed by both sides: the statistics kernels
+# publish, and the graphs layer publishes and will consume. That is the same
+# argument that put the fingerprint here, written out at the top of this file,
+# and it holds for the publication for the same reason.
+#
+# THE OTHER HALF OF THE ANSWER IS A COST, AND IT IS NAMED RATHER THAN LEFT
+# IMPLIED. A new module under stats/ is a new row in setup.praat's barrel
+# table, which is pinned against the include block @emlRecordRender writes
+# into every recorded script (validate/v82) -- so it re-baselines every
+# committed recording, roundtrip byte-comparison and emitted script in the
+# harness tree, 402 committed artefacts at the time of writing. The 25 August
+# risk register calls that wave R2: a re-baseline is where an unintended
+# change hides inside expected churn, and the standing ruling batches such
+# re-drives once, at the end of the round. A filing decision is not worth
+# spending that on mid-round. If the store is later given its own module, it
+# rides that batched re-drive.
+
+# ============================================================================
+# WHAT IS RULED, AND IS NOT OPEN
+# ============================================================================
+# docs/RULING_RESULT_STORE.md section (d). The store lives in PUBLISHED
+# GLOBALS, not in an Objects-window Table. A Table is user-deletable
+# mid-session — the recorder already had to grow orphan handling for exactly
+# that — it complicates the selection contract, and bookkeeping tables in the
+# Objects window have been objected to. That is decided; this section
+# implements it rather than reconsidering it.
+#
+# GLOBALS ARE CHOSEN WITH THE DISCIPLINE THAT ANSWERS THEIR INVISIBILITY, and
+# the discipline is the whole of this section:
+#
+#   ONE WRITE SITE. @emlPublishAnalysisResult is the only procedure in the
+#   plugin that assigns a name beginning emlStore. Nothing else writes one,
+#   ever, and a check asserts it over the whole tree.
+#
+#   THE WHOLE RESULT, ON EVERY RUN. Every published name is stated on every
+#   publication — the test type, the correction, alpha, the statistics, the
+#   matrices and the section (a) data key — the way the pens are stated on
+#   every press (@emlGraphsPublishSeriesPens). PRAAT CANNOT UNSET A VARIABLE,
+#   so a name left unwritten by this run is not absent: it is the PREVIOUS
+#   run's value, wearing this run's key. Stating everything is what makes
+#   "published" and "current" the same thing.
+#
+#   EVERY DOOR THAT COMPUTES PUBLISHES. A door that computes a group
+#   comparison and does not publish leaves the door before it standing as the
+#   answer. That is the defect this contract exists to prevent, and the
+#   population is DERIVED — see WHICH RUNS PUBLISH below — rather than kept
+#   as a list somebody remembers to extend.
+#
+# PUBLISHED STATE UNDER A SINGLE-WRITER CONTRACT WITH A VALIDATOR CENSUS IS
+# NOT HIDDEN STATE. That is the ruling's sentence, and the census is
+# validate/v138_result_store.R.
+#
+# ============================================================================
+# WHICH RUNS PUBLISH, AND HOW THAT POPULATION IS DERIVED
+# ============================================================================
+# NOT FROM A LIST. A list of publishing doors is a list that goes stale the
+# first time a door is added, and the failure is silent: the new door computes
+# and the last door's result is still published.
+#
+# THE DERIVATION. A run computes a GROUP COMPARISON when it reads one numeric
+# column split by the levels of one grouping column and computes an
+# inferential statistic from the split. In this tree that is visible in
+# source: such a run calls one of the value-by-group kernels —
+#
+#   @emlOneWayAnova  @emlKruskalWallis  @emlTukeyHSD    @emlDunnTest
+#   @emlPairwiseT    @emlPairwiseWilcoxon  @emlScheffe   @emlWelchAnova
+#   @emlGamesHowell  @emlBrownForsythe
+#
+# — each of which takes (.tableId, .dataCol$, .factorCol$), or splits the
+# column itself with @eml_getGroupData and hands the two vectors to @emlTTest
+# or @emlMannWhitneyU. validate/v138_result_store.R walks the shipped tree for
+# those calls, maps each to the procedure it sits in, and asserts that every
+# such procedure either publishes or is named in a committed exemption with
+# its reason. A new door that computes reddens the check on the day it is
+# written, not on the day a figure quotes it.
+#
+# WHAT THE WALK FINDS TODAY, and why each is what it is:
+#
+#   @emlRunTwoGroupAnalysis   PUBLISHES  the two-group menu door
+#   @emlRunAnovaAnalysis      PUBLISHES  the one-way ANOVA menu door
+#   @emlRunKWAnalysis         PUBLISHES  the Kruskal-Wallis menu door
+#   @emlRunPairwiseAnalysis   PUBLISHES  the pairwise menu door
+#   @emlBridgeGroupComparison PUBLISHES  the GRAPH door — the driven defect
+#
+#   @emlReportAnovaComparison EXEMPT — it is the report half of a run, not a
+#   @emlReportKWComparison    run. Both are called BY the orchestrator above
+#                             and BY the bridge, and the extra comparisons
+#                             they compute (Brown-Forsythe, Welch's ANOVA,
+#                             Games-Howell, per-pair rank-biserial r) belong
+#                             to the run that called them. A reporter that
+#                             published would publish twice per run and the
+#                             second publication would be the one that stood.
+#
+# ACOUSTICS ARE OUT, BY RULING (section e): there is no analysis-door /
+# graph-door result pair to reconcile there, and the fix for that class is
+# canonical parameters plus the cross-door agreement leg.
+#
+# THE SCATTER'S DRAW-TIME CORRELATION is ruled INTO the store (section e) and
+# is NOT wired here. This build is the group-comparison population; the
+# mechanism is generic over "analysis result" and the correlation door joins
+# it by calling this same procedure with .kind$ = "correlation". Nothing in
+# this section is specific to a group comparison except the vocabulary of
+# .kind$ and the two-name shape of the key, and both are stated below.
+#
+# ============================================================================
+# WHERE THE KEY IS TAKEN, AND WHY IT IS TAKEN THERE
+# ============================================================================
+# THE FINGERPRINT'S OWN HEADER CARRIES THE INSTRUCTION THIS FILE HONOURS, and
+# it is the one failure the arithmetic cannot see:
+#
+#   "A key describes the table at the instant it is asked for, and a caller
+#    that computes a result, lets the table change, and only then stamps a key
+#    has stamped a truthful key on a result the table does not support.
+#    Nothing inside this module can detect that: the fault is in the ORDER of
+#    the calls, not in the arithmetic. THE RULE THAT CLOSES IT IS THE
+#    CALLER'S: take the key in the same pass that reads the data, before
+#    anything can touch the table."
+#
+# SO THE KEY IS TAKEN BY @emlStoreKeyTake, AT THE TOP OF THE RUN'S READING
+# PASS — after the column guards, before the first kernel call and before the
+# first @eml_getGroupData. Every publisher takes it there and carries it in a
+# local to the publication at the end. Between the take and the reads there is
+# no dialog, no draw, no user, and no other script: a Praat script is one
+# thread and a run is one uninterrupted stretch of it.
+#
+# WHY NOT TAKE IT IN THE WRITE SITE. Because the write site runs at the END of
+# the run, after the reporter, and a key taken there is truthful about the
+# wrong moment. It would be the easy shape — one call, nothing for a caller to
+# get wrong — and it would reintroduce exactly the failure the fingerprint's
+# header names. The cost of the shape chosen instead is that a caller CAN get
+# it wrong, so it is checked: v138 asserts, for every publishing procedure,
+# that the @emlStoreKeyTake call comes before the first value-by-group read.
+#
+# THE READING STAMP CARRIES THE SORT ORDER TOO, for the same reason it carries
+# the key. emlGroupSortAlphabetical decides the order the levels are
+# discovered in, and therefore the ORDER EVERY PAIRWISE CONTRAST IS FORMED IN:
+# the same two levels read "Zebra - Alpha = +10.0000" under one setting and
+# "Alpha - Zebra = -10.0000" under the other, sign and names together. It is
+# part of what the reading pass produced, so it is stamped where the reading
+# pass began and not read again at publication time.
+#
+# ============================================================================
+# WHAT MAKES A STORED RESULT'S IDENTITY (punch list item 1.4)
+# ============================================================================
+# THE COLUMN NAMES, THE TEST TYPE, THE CORRECTION METHOD, ALPHA, AND THE GROUP
+# SORT ORDER. A mismatch on any of the five is a DIFFERENT ANALYSIS, not
+# changed data, and the distinction is not cosmetic: the two are handled
+# differently on purpose.
+#
+#   IDENTITY IS COMPARED AS IDENTITY, field by field, by
+#   @emlStoreIdentityAgrees below. A caller learns WHICH field differs and
+#   what it was, which is what the ruling's one-line announcement needs.
+#
+#   THE REPORT IS COMPARED AS TEXT (item 1.2). Different questions, different
+#   comparisons: "is this the same analysis?" and "has what the user reads
+#   changed?" are not the same question and must not share an answer.
+#
+# THE GROUP SORT ORDER HAS NO DIALOG CONTROL OF ITS OWN. It is a global the
+# graphs form sets from config_groupSort; the settings census found it by
+# walking the code, and a census that enumerated dialog controls never would
+# have. It is result-affecting all the same, and it is in the identity for
+# that reason and no other.
+#
+# ============================================================================
+# VALIDITY IS THE FINGERPRINT, NOT A CONSUMED-ONCE STAMP
+# ============================================================================
+# Unlike the axis request (ruling A, consumed once by design), a result is
+# legitimately consumed by MANY figures until the data or a result-affecting
+# setting changes. So there is no step stamp here and no consumption to
+# record. emlStoreRun counts publications and is a DIAGNOSTIC — it says which
+# publication a reader is looking at, and it must never be read as validity.
+# Validity is: the schema tag matches, emlStoreValid is 1, the key agrees
+# under @emlFingerprintsAgree, and the identity agrees under
+# @emlStoreIdentityAgrees. Four questions, none of them a counter.
+#
+# ============================================================================
+# WHAT IS PUBLISHED
+# ============================================================================
+# Every name below is stated on every publication. The census in
+# validate/v138_result_store.R reads this list off the write site's body and
+# holds it to a committed classification, both ways: a published name that is
+# not classified is red, and a classification whose name is not published is
+# red.
+#
+# FORMAT AND LIFECYCLE
+#   emlStoreFormat$        format tag, "eRS1". Change the composition,
+#                           change the tag; a reader compares it before it
+#                           reads anything else, so a store written under an
+#                           older shape cannot be misread as this one.
+#   emlStoreRun            publication counter. DIAGNOSTIC, never validity.
+#   emlStoreValid          1 when this run computed a result, 0 when it
+#                           refused. A refusal publishes: it is what stops
+#                           the previous run's result standing as this one's.
+#   emlStoreError$         the producer's own refusal text, "" when valid.
+#                           Never composed here.
+#   emlStoreProducer$      the procedure that published — diagnostic, and
+#                           what makes "which door answered?" answerable.
+#   emlStoreDoor$          "menu" or "figure". Descriptive: a result computed
+#                           at either door with the same identity IS the same
+#                           analysis, so this is not part of the identity.
+#   emlStoreKind$          the analysis family: "group" today; "correlation"
+#                           and "regression" when section (e)'s second door
+#                           joins. A reader that does not recognise the kind
+#                           re-runs rather than guessing.
+#
+# THE DATA KEY (ruling section a)
+#   emlStoreKeyError$      why no key could be taken, in the fingerprint's own
+#                          words, or "" when one was. A KEY THAT COULD NOT BE
+#                          TAKEN IS ALREADY SAFE -- "" never agrees, so the
+#                          analysis re-runs -- but a store that dropped the
+#                          reason on the floor would be a new member of the
+#                          silent class the error census counted 19 of (punch
+#                          list lane 9). It costs one name to say why.
+#   emlStoreKey$           the section (a) fingerprint, taken by
+#                           @emlStoreKeyTake in the run's reading pass. ""
+#                           when no key could be taken, which never agrees.
+#   emlStoreTableId        the Table the run read
+#   emlStoreTableName$     its object name, for the Info window
+#
+# THE IDENTITY (punch list 1.4) — compared as identity, never as text
+#   emlStoreDataCol$       the value column
+#   emlStoreGroupCol$      the grouping column
+#   emlStoreTestType$      canonical key for the test that ran (see
+#                           THE KEYS ARE KEYS below)
+#   emlStoreCorrection$    the multiple-comparison adjustment: "holm",
+#                           "bonferroni", "bh", or "" where none applies
+#   emlStoreAlpha          the threshold the verdicts were taken at
+#   emlStoreGroupSort$     "table" or "alphabetical", stamped at the read
+#
+# THE GROUPS
+#   emlStoreNGroups        k
+#   emlStoreGroupLabel$[i] level i, in the order the analysis formed its
+#                           contrasts — which is what emlStoreGroupSort$
+#                           describes. Slots above k are blanked on every
+#                           publication; see THE STALE SLOT below.
+#
+# THE STATISTICS
+#   emlStoreOmnibusLabel$  "F", "H", "t", "U", or "" where the family has no
+#                           single statistic (the pairwise door)
+#   emlStoreOmnibusStat    its value, undefined where there is none
+#   emlStoreDf1            first df, undefined where there is none
+#   emlStoreDf2            second df, undefined where there is none
+#   emlStoreOmnibusP       the omnibus p, undefined where there is none
+#   emlStoreEffectLabel$   "eta squared", "epsilon squared", "Cohen's d",
+#                           "rank-biserial r", or ""
+#   emlStoreEffect         its value, undefined where there is none
+#   emlStoreN              the analysed N where the producer states one,
+#                           undefined where it does not. UNDEFINED MEANS THE
+#                           PRODUCER DID NOT STATE IT and never means zero.
+#
+# THE SECOND ARM, WHERE A DOOR RUNS TWO TESTS OF ONE HYPOTHESIS
+#   emlStoreSecondLabel$   "U" beside the primary "t", or "" when only one
+#                           test ran
+#   emlStoreSecondStat     its value, undefined where there is none
+#   emlStoreSecondDf1      its df, undefined where the test has none
+#   emlStoreSecondP        its p, undefined where there is none
+#   emlStoreSecondEffectLabel$ / emlStoreSecondEffect
+#
+# THESE SIX EXIST BECAUSE "BOTH" IS A REAL CHOICE AND ONE PAIR OF SLOTS
+# CANNOT HOLD IT. The two-group door offers Welch t beside Mann-Whitney U,
+# and a run that computed two tests and published one would be the
+# field-level version of the very defect the single-writer contract is
+# for -- computed and not published. THE PRIMARY SLOTS HOLD THE PARAMETRIC
+# ARM WHERE ONE RAN, the nonparametric arm otherwise, and the second slots
+# hold the other arm or state that there was none. Which tests ran is not
+# inferred from these slots by anyone: emlStoreTestType$ says it, and says
+# it as identity, so "welch t", "mann-whitney" and "welch t + mann-whitney"
+# are three different analyses and compare as three.
+#
+# THE POST-HOC AND ITS MATRICES
+#   emlStorePostHoc$       "tukey", "dunn", "welch t", "student t",
+#                           "wilcoxon", "scheffe", or "" when none ran
+#   emlStoreHasMatrix      1 when the four matrices below describe k x k
+#                           pairs, 0 when no post-hoc ran
+#   emlStorePMatrix##      adjusted p per pair, symmetric, diagonal 1
+#   emlStoreDiffMatrix##   signed difference i minus j, antisymmetric
+#   emlStoreStatMatrix##   the per-pair test statistic, named by
+#   emlStoreStatLabel$     "q", "z", "t", "U", "F", or ""
+#   emlStoreEffectMatrix## the signed per-pair effect size, named by
+#   emlStorePairEffectLabel$  "Cohen's d", "rank-biserial r", or ""
+#
+# MATRIX GLOBALS CARRY THE PAIRWISE MATRICES WITHOUT TROUBLE — that is the
+# ruling's sentence and it is measured: a k x k matrix assigned to a global
+# from inside a procedure reads back whole, by value.
+#
+# THE STORE PUBLISHES THE SIGNED NUMERIC RESULT AND LETS EACH LAYOUT TAKE WHAT
+# IT NEEDS. There is deliberately no significance matrix: a verdict is
+# p < alpha, both of which are published, and the bracket arm and the matrix
+# arm of the drawing layer already disagree about whether to show the sign
+# (the matrix arm prints abs(d) and a formatted p). A store that published a
+# verdict would be publishing one layout's rendering as if it were the result.
+#
+# THE KEYS ARE KEYS, NOT TEXT FOR A READER. emlStoreTestType$,
+# emlStoreCorrection$, emlStorePostHoc$, emlStoreKind$ and
+# emlStoreGroupSort$ are canonical lowercase keys, on the same terms as the
+# "holm" / "bonferroni" / "bh" the adjustment travels under everywhere else in
+# this plugin. NOTHING PRINTS THEM. A door that wants display text maps the
+# key the way @emlAdjustMethodDisplay does, and no approved wording is
+# invented here.
+#
+# WHAT IS NOT PUBLISHED YET, NAMED RATHER THAN LEFT TO BE DISCOVERED:
+#
+#   THE REPORT TEXT. Punch list item 1.2 keeps the report beside the key, in
+#   CANONICAL form — rendered with explanation-routed lines suppressed, so the
+#   comparison sees numbers and disclosures only. The canonical renderer does
+#   not exist yet and the reporters print straight to the Info window rather
+#   than returning their text, so there is nothing truthful to publish today.
+#   It joins by gaining one argument HERE, at the one write site, which is
+#   what having one write site is for. A slot published empty in the meantime
+#   would be a name a reader could compare and always find equal.
+#
+#   THE PER-GROUP DESCRIPTIVES. n, mean, SD and median per level are computed
+#   by the REPORTERS, not by the kernels, and are printed rather than
+#   returned. The ruling's publication list does not name them; the reprint
+#   rule compares them as report text. They join the same way the report does.
+#
+# ============================================================================
+# THE STALE SLOT, AND WHY THE LABELS ARE BLANKED
+# ============================================================================
+# MEASURED, ON PRAAT 6.6.30, and it is the whole reason the write site blanks
+# anything: publish two levels, then publish one, and emlStoreGroupLabel$[2]
+# still reads "Zebra". Praat cannot unset a variable and an indexed slot is no
+# exception, so a three-group result followed by a two-group result would
+# leave a third label standing beside a k of 2 — a label a reader could pair
+# with a matrix row that is not there. Every publication therefore blanks the
+# slots from k + 1 up to the k of the publication before it.
+#
+# THE SAME HAZARD IS WHY THERE IS NO "CLEAR THE STORE" PROCEDURE. Clearing is
+# a second write site by another name, and a store cleared by one path and
+# published by another has two truths. A run that refuses publishes its
+# refusal instead, which states every name — including a key of "", which
+# @emlFingerprintsAgree refuses to match — and leaves nothing of the previous
+# run behind.
+#
+# ============================================================================
+# HOW THE ARGUMENTS ARE SHAPED, AND THE ONE THING PRAAT CANNOT PASS
+# ============================================================================
+# @emlPublishAnalysisResult takes the whole result as arguments, in one call,
+# because that is what makes "stated in full on every run" a thing the
+# interpreter enforces: Praat refuses a call whose argument count does not
+# match the signature, so a publisher that forgets a field does not compile.
+#
+# THE LEVEL LABELS ARE THE EXCEPTION, AND ONLY BECAUSE PRAAT HAS NO ARRAY
+# PARAMETER. They arrive through emlPublishInLabel$[1..k], which is an
+# ARGUMENT in the only shape the language offers for one — the caller fills
+# it immediately before the call, the write site copies it, and nothing reads
+# it as the store. IT IS NAMED emlPublishIn... AND NOT emlStore..., so that
+# the single-writer rule can be stated without an exception in it: NOTHING BUT
+# @emlPublishAnalysisResult ASSIGNS A NAME BEGINNING emlStore, anywhere in
+# the tree, and validate/v138_result_store.R reads that sentence literally.
+#
+# A QUANTITY THE RUN DID NOT COMPUTE IS HANDED OVER AS A MATRIX OF UNDEFINED,
+# from @emlPublishAbsentMatrix below, and never as zeros. That is the tree's
+# own convention -- punch list item 9.1 replaced exactly such a zero-fill,
+# because a failed pair printing as "0.000" reads as a true zero effect -- and
+# it is why a one-way ANOVA run without Tukey publishes a k x k p matrix of
+# undefined beside its real effect-size matrix, rather than a 1 x 1 nothing
+# that a reader would have to know to interpret.
+#
+# ============================================================================
+# POST-1.0
+# ============================================================================
+# EMMs, diagnostics and the LMM phases consume this store natively. NOBODY
+# BUILDS A SECOND ONE. If a paired or repeated door joins, row pairing enters
+# the KEY at that moment — the whole-table fingerprint already carries it,
+# because every cell is folded in the order the table holds it — and the
+# two-name key take here grows a list-shaped sibling that uses
+# @emlAnalysisFingerprint. Two-way stays keyless by ruling (punch list 1.3).
+# ============================================================================
+
+
+# ============================================================================
+# @emlStoreKeyTake
+# ============================================================================
+# THE RUN'S READING STAMP: the section (a) data key and the group sort order
+# in force, taken together, at the top of the pass that reads the data.
+#
+# CALL IT AFTER THE COLUMN GUARDS AND BEFORE THE FIRST VALUE-BY-GROUP READ.
+# After the guards, because a run that refuses on a guard has no result to key
+# and publishes a refusal with no key. Before the first read, because that is
+# the instant the key has to describe: see WHERE THE KEY IS TAKEN in the
+# section header, which quotes the fingerprint's own instruction.
+#
+# COPY THE OUTPUTS ON THE NEXT LINE. A procedure's outputs survive only until
+# it runs again, and this one is called once per publishing run — but the
+# publication is at the far end of the run, past the kernels and the reporter,
+# and the house rule exists for exactly that distance.
+#
+# WHICH FINGERPRINT DOOR, DECIDED HERE AND NOT AT THE CALL SITES. A group
+# comparison keys through @emlGroupFingerprint, the two-name door, always. The
+# doors do not fold to one another — a two-name scope never equals a one-item
+# list scope on the same table, deliberately — so a publisher that reached for
+# @emlAnalysisFingerprint would key its result out of reach of every other
+# publisher of the same comparison, and the store would miss every time
+# without ever being wrong out loud. One decision, one place.
+#
+# Arguments:
+#   .tableId   - the Table the run is about to read
+#   .dataCol$  - the value column, as the run names it
+#   .groupCol$ - the grouping column, as the run names it
+#
+# Output:
+#   .key$    - the fingerprint, or "" if none could be taken
+#   .sort$   - "table" or "alphabetical": the order the levels will be
+#              discovered in, and therefore the order the contrasts will be
+#              formed in
+#   .error$  - "" on success, the fingerprint's own diagnostic otherwise
+# ============================================================================
+procedure emlStoreKeyTake: .tableId, .dataCol$, .groupCol$
+    @emlGroupFingerprint: .tableId, .dataCol$, .groupCol$
+    ; THE ERROR IS READ BEFORE THE OUTPUT IT GUARDS, which is lane 9.2's rule
+    ; and the order validate/v134's lint reads. Not a formality: the
+    ; fingerprint's one refusal returns an EMPTY key, and a caller that took
+    ; the key first and the diagnosis afterwards is one edit away from never
+    ; taking the diagnosis at all.
+    .error$ = emlGroupFingerprint.error$
+    .key$ = emlGroupFingerprint.result$
+
+    ; READ THROUGH THE GUARD. eml-extract.praat declares this global at load
+    ; and every barrel loads that file first, so it is there for every shipped
+    ; path -- but a probe or a test that includes only part of the stats tree
+    ; reaches this procedure without it, and an unguarded read aborts the
+    ; script rather than keying the run. Absent means table order, which is
+    ; the declared default and the order this plugin used before the control
+    ; existed.
+    .sort$ = "table"
+    if variableExists ("emlGroupSortAlphabetical")
+        if emlGroupSortAlphabetical = 1
+            .sort$ = "alphabetical"
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlPublishAbsentMatrix
+# ============================================================================
+# The shape a publisher hands the write site for a k x k quantity THIS RUN DID
+# NOT COMPUTE: every cell undefined.
+#
+# NOT ZEROS, AND THE TREE HAS ALREADY PAID FOR THIS LESSON ONCE. Punch list
+# item 9.1 took the zero-fill out of the effect-size matrices because a pair
+# whose computation failed printed as "0.000" and read as a true zero effect —
+# a number a reader believes. undefined is what @eml_fixed refuses to round
+# silently and what the printers already show as "n/a", so an absent quantity
+# stays absent all the way to the page.
+#
+# NOT A 1 x 1 EITHER. The matrices are published at the shape of the group
+# set, so a reader indexing by group index gets undefined for a quantity that
+# was not computed rather than an out-of-range abort or, worse, a cell from
+# some other run's matrix.
+#
+# Arguments:
+#   .k   - the number of groups
+#
+# Output:
+#   .m## - a k x k matrix, every cell undefined. Read it on the next line:
+#          this procedure runs again for the next absent quantity.
+# ============================================================================
+procedure emlPublishAbsentMatrix: .k
+    .m## = zero## (.k, .k)
+    for .i from 1 to .k
+        for .j from 1 to .k
+            .m## [.i, .j] = undefined
+        endfor
+    endfor
+endproc
+
+# ============================================================================
+# @emlPublishAnalysisResult — THE WRITE SITE
+# ============================================================================
+# THE ONE PLACE ANY emlStore NAME IS ASSIGNED. Every publisher calls this and
+# nothing else writes the store, so there is one thing to read and one thing
+# to change. validate/v138_result_store.R asserts the whole tree against that
+# sentence.
+#
+# IT COMPUTES NOTHING AND PRINTS NOTHING. Every number it publishes was
+# computed by the run that is handing it over; it does not re-read the table,
+# does not re-derive a verdict from p and alpha, and appends no line to the
+# Info window. A write site that computed would be a second analysis with no
+# door of its own, and one that printed would put a report where the ruling
+# says a report must not be.
+#
+# THERE IS NO BRANCH IN IT AROUND A PUBLICATION. Every published name is
+# assigned unconditionally, once, on the only path through this body. That is
+# what lets a reader guard on ONE name — emlStoreFormat$ — and know the rest
+# are there: they are written in one pass with no goto and no early exit. The
+# two loops at the end write the level labels and blank the slots above them,
+# and a loop with an empty range writes nothing, which is the same statement.
+#
+# Arguments, in the order the section header lists them:
+#   .producer$    the procedure publishing, for diagnosis
+#   .door$        "menu" or "figure"
+#   .kind$        the analysis family: "group"
+#   .error$       the producer's refusal text, "" when the run computed
+#   .key$         the key from @emlStoreKeyTake, taken at the read
+#   .keyError$    that call's own error text, "" when a key was taken
+#   .tableId      the Table the run read
+#   .tableName$   its object name
+#   .dataCol$     identity: the value column
+#   .groupCol$    identity: the grouping column
+#   .testType$    identity: canonical key for the test that ran
+#   .correction$  identity: the adjustment key, "" where none applies
+#   .alpha        identity: the threshold the verdicts were taken at
+#   .sort$        identity: the sort order from @emlStoreKeyTake
+#   .nGroups      k, with the labels in emlPublishInLabel$[1..k]
+#   .omnibusLabel$ / .omnibusStat / .df1 / .df2 / .omnibusP
+#   .effectLabel$ / .effect
+#   .n            the analysed N, undefined where the producer states none
+#   .secondLabel$ / .secondStat / .secondDf1 / .secondP
+#   .secondEffectLabel$ / .secondEffect
+#                 the second arm where a door ran two tests of one
+#                 hypothesis; "" and undefined where it ran one
+#   .postHoc$     which post-hoc produced the matrices, "" when none did
+#   .hasMatrix    1 when the matrices describe k x k pairs, 0 otherwise
+#   .statLabel$   what .statMatrix## holds: "q", "z", "t", "U", "F" or ""
+#   .pairEffectLabel$  what .effectMatrix## holds, or ""
+#   .pMatrix## / .diffMatrix## / .statMatrix## / .effectMatrix##
+#
+# Output: the published globals listed in WHAT IS PUBLISHED. No dotted output;
+#         a caller that wants to know what it just published reads the store.
+# ============================================================================
+procedure emlPublishAnalysisResult: .producer$, .door$, .kind$, .error$,
+    ... .key$, .keyError$, .tableId, .tableName$,
+    ... .dataCol$, .groupCol$, .testType$, .correction$, .alpha, .sort$,
+    ... .nGroups, .omnibusLabel$, .omnibusStat, .df1, .df2, .omnibusP,
+    ... .effectLabel$, .effect, .n,
+    ... .secondLabel$, .secondStat, .secondDf1, .secondP,
+    ... .secondEffectLabel$, .secondEffect,
+    ... .postHoc$, .hasMatrix, .statLabel$, .pairEffectLabel$,
+    ... .pMatrix##, .diffMatrix##, .statMatrix##, .effectMatrix##
+
+    ; HOW MANY LABEL SLOTS THE PUBLICATION BEFORE THIS ONE LEFT BEHIND. Read
+    ; before anything is written, guarded because the first publication of a
+    ; session has no predecessor. This is a local read, not a publication:
+    ; no published name is written inside a branch anywhere in this body.
+    .prevGroups = 0
+    if variableExists ("emlStoreNGroups")
+        .prevGroups = emlStoreNGroups
+    endif
+    .prevRun = 0
+    if variableExists ("emlStoreRun")
+        .prevRun = emlStoreRun
+    endif
+    ; VALID IS DECIDED FROM THE PRODUCER'S OWN ERROR TEXT and from nothing
+    ; else. This procedure does not judge a result; it repeats what the run
+    ; that computed it said about itself.
+    .valid = 1
+    if .error$ <> ""
+        .valid = 0
+    endif
+
+    ; -- format and lifecycle --------------------------------------------
+    emlStoreFormat$ = "eRS1"
+    emlStoreRun = .prevRun + 1
+    emlStoreValid = .valid
+    emlStoreError$ = .error$
+    emlStoreProducer$ = .producer$
+    emlStoreDoor$ = .door$
+    emlStoreKind$ = .kind$
+
+    ; -- the data key ----------------------------------------------------
+    emlStoreKey$ = .key$
+    emlStoreKeyError$ = .keyError$
+    emlStoreTableId = .tableId
+    emlStoreTableName$ = .tableName$
+
+    ; -- the identity (punch list 1.4) -----------------------------------
+    emlStoreDataCol$ = .dataCol$
+    emlStoreGroupCol$ = .groupCol$
+    emlStoreTestType$ = .testType$
+    emlStoreCorrection$ = .correction$
+    emlStoreAlpha = .alpha
+    emlStoreGroupSort$ = .sort$
+
+    ; -- the groups ------------------------------------------------------
+    emlStoreNGroups = .nGroups
+
+    ; -- the statistics --------------------------------------------------
+    emlStoreOmnibusLabel$ = .omnibusLabel$
+    emlStoreOmnibusStat = .omnibusStat
+    emlStoreDf1 = .df1
+    emlStoreDf2 = .df2
+    emlStoreOmnibusP = .omnibusP
+    emlStoreEffectLabel$ = .effectLabel$
+    emlStoreEffect = .effect
+    emlStoreN = .n
+
+    ; -- the second arm, where a door ran two tests of one hypothesis ------
+    emlStoreSecondLabel$ = .secondLabel$
+    emlStoreSecondStat = .secondStat
+    emlStoreSecondDf1 = .secondDf1
+    emlStoreSecondP = .secondP
+    emlStoreSecondEffectLabel$ = .secondEffectLabel$
+    emlStoreSecondEffect = .secondEffect
+
+    ; -- the post-hoc and its matrices -----------------------------------
+    emlStorePostHoc$ = .postHoc$
+    emlStoreHasMatrix = .hasMatrix
+    emlStoreStatLabel$ = .statLabel$
+    emlStorePairEffectLabel$ = .pairEffectLabel$
+    emlStorePMatrix## = .pMatrix##
+    emlStoreDiffMatrix## = .diffMatrix##
+    emlStoreStatMatrix## = .statMatrix##
+    emlStoreEffectMatrix## = .effectMatrix##
+
+    ; THE LEVEL LABELS, and then the slots the last publication left above
+    ; them. See THE STALE SLOT in the section header: a two-group result
+    ; following a three-group one would otherwise leave a third label
+    ; standing beside a k of 2.
+    for .i from 1 to .nGroups
+        emlStoreGroupLabel$ [.i] = emlPublishInLabel$ [.i]
+    endfor
+    for .i from .nGroups + 1 to .prevGroups
+        emlStoreGroupLabel$ [.i] = ""
+    endfor
+endproc
+
+
+# ============================================================================
+# @emlStoreIdentityAgrees
+# ============================================================================
+# THE IDENTITY COMPARISON (punch list item 1.4). Asks whether a candidate
+# analysis is THE SAME ANALYSIS as the one in the store: same columns, same
+# test type, same correction, same alpha, same group sort order.
+#
+# THIS IS NOT THE DATA QUESTION AND DOES NOT ANSWER IT. @emlFingerprintsAgree
+# answers "same data, same declared scope?" and this answers "same analysis?".
+# A reader needs both to serve a stored result, and neither substitutes: the
+# key holds while the correction changes, and the identity holds while a cell
+# is edited.
+#
+# IT NAMES THE FIRST FIELD THAT DIFFERS, AS A FIELD KEY, because the caller
+# that needs to know is the one composing the ruled announcement line
+# ("Recomputed: adjustment method holm -> bonferroni", RULING_RESULT_STORE
+# section c). THE SENTENCE IS NOT COMPOSED HERE. This returns the key, the old
+# value and the new one; whoever prints owns the wording.
+#
+# FIELD ORDER IS THE ORDER 1.4 LISTS THEM, so two callers that report "the
+# first difference" report the same one.
+#
+# ALPHA IS COMPARED AS A NUMBER, WITH NO TOLERANCE. It reaches both sides from
+# the same dialog field or the same default, so equal values are bit-equal;
+# a tolerance would have to be wide enough to absorb the difference between
+# .05 and .049, which is a different analysis.
+#
+# AN UNPUBLISHED STORE NEVER AGREES. If nothing has published in this session
+# there is no identity to match, and the honest answer is "not the same",
+# which sends the caller to re-run. That is the same rule
+# @emlFingerprintsAgree applies to an empty key, for the same reason.
+#
+# Arguments: the candidate's five identity fields plus the group sort order,
+#   .dataCol$, .groupCol$, .testType$, .correction$, .alpha, .sort$
+#
+# Output:
+#   .same    - 1 if every field matches the published identity, else 0
+#   .field$  - the first differing field's key: "dataColumn", "groupColumn",
+#              "testType", "correction", "alpha", "groupSort", or "store"
+#              when nothing has published. "" when .same is 1.
+#   .was$    - the stored value of that field, as text
+#   .now$    - the candidate's value of that field, as text
+# ============================================================================
+procedure emlStoreIdentityAgrees: .dataCol$, .groupCol$, .testType$,
+    ... .correction$, .alpha, .sort$
+    .same = 0
+    .field$ = "store"
+    .was$ = ""
+    .now$ = ""
+
+    if variableExists ("emlStoreFormat$")
+        if emlStoreFormat$ = "eRS1"
+            .same = 1
+            .field$ = ""
+
+            if .same = 1 and emlStoreDataCol$ <> .dataCol$
+                .same = 0
+                .field$ = "dataColumn"
+                .was$ = emlStoreDataCol$
+                .now$ = .dataCol$
+            endif
+            if .same = 1 and emlStoreGroupCol$ <> .groupCol$
+                .same = 0
+                .field$ = "groupColumn"
+                .was$ = emlStoreGroupCol$
+                .now$ = .groupCol$
+            endif
+            if .same = 1 and emlStoreTestType$ <> .testType$
+                .same = 0
+                .field$ = "testType"
+                .was$ = emlStoreTestType$
+                .now$ = .testType$
+            endif
+            if .same = 1 and emlStoreCorrection$ <> .correction$
+                .same = 0
+                .field$ = "correction"
+                .was$ = emlStoreCorrection$
+                .now$ = .correction$
+            endif
+            if .same = 1 and emlStoreAlpha <> .alpha
+                .same = 0
+                .field$ = "alpha"
+                .was$ = string$ (emlStoreAlpha)
+                .now$ = string$ (.alpha)
+            endif
+            if .same = 1 and emlStoreGroupSort$ <> .sort$
+                .same = 0
+                .field$ = "groupSort"
+                .was$ = emlStoreGroupSort$
+                .now$ = .sort$
+            endif
         endif
     endif
 endproc

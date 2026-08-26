@@ -1,0 +1,70 @@
+=== SENTINEL: MENU ANALYSIS BEGINS ===
+
+══════════════════════════════════════════════
+  EML Stats : Kruskal-Wallis H Test
+  Wed Aug 26 14:26:45 2026
+══════════════════════════════════════════════
+
+  Table               kwviolin
+  Data column         value
+  Group column        group
+  Groups              3
+  Total N             12
+  Group order: table order (Zebra, Mid, Alpha).
+
+
+  ── Omnibus Test ────────────────────────────
+  Why: Nonparametric comparison of three or more groups. Every observation is ranked in one pooled ranking and the groups' mean ranks are compared, so no normal distribution is assumed. Observations must still be independent, and reading the result as a difference in MEDIANS additionally requires the groups to have similar distribution shapes.
+  H                   9.8462		Test statistic: how far the groups' mean ranks sit from the overall mean rank. Its p comes from a chi-squared approximation, which improves as the groups grow
+  df                  2		Number of groups (3) minus 1. Controls the chi-squared reference distribution.
+  p                   .007		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 1% of the time
+  Epsilon-squared     0.8951		Effect size: large by Cohen's convention (epsilon-squared >= 0.14 = large). Group membership accounts for 90% of the variance in the RANKS, which is not the variance in the measured values
+  Effect magnitude    large by Cohen's convention
+
+
+  ── Group Mean Ranks ────────────────────────
+
+Group         N     Mean Rank
+Zebra         4     10.50
+Mid           4     6.50
+Alpha         4     2.50
+
+
+  ── Dunn's Post-Hoc (adjusted p, holm) ──────
+
+              Zebra       Mid         Alpha       
+Zebra         ---         .233        .005        
+Mid           .233        ---         .233        
+Alpha         .005        .233        ---         
+
+
+  ── Dunn's z-statistics ─────────────────────
+
+              Zebra       Mid         Alpha       
+Zebra         ---         1.569       3.138       
+Mid           -1.569      ---         1.569       
+Alpha         -3.138      -1.569      ---         
+  Row minus column: a negative z means the ROW group's mean rank is
+  lower than the COLUMN group's. |z| is the size of the standardised
+  difference.
+
+
+  ── Pairwise Effect Sizes (rank-biserial r) ───
+
+              Zebra       Mid         Alpha       
+Zebra         ---         1.000       1.000       
+Mid           -1.000      ---         1.000       
+Alpha         -1.000      -1.000      ---         
+  Row minus column: a negative r means the ROW group ranks lower than
+  the COLUMN group. |r| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+══════════════════════════════════════════════
+=== SENTINEL: MENU ANALYSIS ENDS ===
+=== SENTINEL: NO-CHANGE FIGURE BEGINS ===
+=== SENTINEL: NO-CHANGE FIGURE ENDS ===
+=== SENTINEL: CHANGED-SETTING FIGURE BEGINS ===
+Recomputed: adjustment method holm -> bonferroni.
+=== SENTINEL: CHANGED-SETTING FIGURE ENDS ===
+=== SENTINEL: PROBE COMPLETE ===

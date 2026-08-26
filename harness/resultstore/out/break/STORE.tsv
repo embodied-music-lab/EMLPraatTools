@@ -1,0 +1,587 @@
+case	field	value
+twogroup_both	schema	eRS1
+twogroup_both	run	1
+twogroup_both	valid	1
+twogroup_both	error	
+twogroup_both	producer	emlRunTwoGroupAnalysis
+twogroup_both	door	menu
+twogroup_both	kind	group
+twogroup_both	key	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+twogroup_both	tableName	storefix2
+twogroup_both	dataCol	value
+twogroup_both	groupCol	group
+twogroup_both	testType	welch t + mann-whitney
+twogroup_both	correction	
+twogroup_both	alpha	0.05
+twogroup_both	groupSort	table
+twogroup_both	nGroups	2
+twogroup_both	omnibusLabel	t
+twogroup_both	omnibusStat	14.959547159225911
+twogroup_both	df1	5.832865826071561
+twogroup_both	df2	--undefined--
+twogroup_both	omnibusP	7.120922348040318e-06
+twogroup_both	effectLabel	Cohen's d
+twogroup_both	effect	10.577997239768594
+twogroup_both	n	8
+twogroup_both	secondLabel	U
+twogroup_both	secondStat	16
+twogroup_both	secondDf1	--undefined--
+twogroup_both	secondP	0.02857142857142857
+twogroup_both	secondEffectLabel	rank-biserial r
+twogroup_both	secondEffect	1
+twogroup_both	postHoc	
+twogroup_both	hasMatrix	0
+twogroup_both	statLabel	
+twogroup_both	pairEffectLabel	
+twogroup_both	pRows	1
+twogroup_both	effRows	1
+twogroup_both	label1	Zebra
+twogroup_both	label2	Alpha
+twogroup_student	schema	eRS1
+twogroup_student	run	2
+twogroup_student	valid	1
+twogroup_student	error	
+twogroup_student	producer	emlRunTwoGroupAnalysis
+twogroup_student	door	menu
+twogroup_student	kind	group
+twogroup_student	key	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+twogroup_student	tableName	storefix2
+twogroup_student	dataCol	value
+twogroup_student	groupCol	group
+twogroup_student	testType	student t
+twogroup_student	correction	
+twogroup_student	alpha	0.05
+twogroup_student	groupSort	table
+twogroup_student	nGroups	2
+twogroup_student	omnibusLabel	t
+twogroup_student	omnibusStat	14.959547159225911
+twogroup_student	df1	6
+twogroup_student	df2	--undefined--
+twogroup_student	omnibusP	5.618500253434272e-06
+twogroup_student	effectLabel	Cohen's d
+twogroup_student	effect	10.577997239768594
+twogroup_student	n	8
+twogroup_student	secondLabel	
+twogroup_student	secondStat	--undefined--
+twogroup_student	secondDf1	--undefined--
+twogroup_student	secondP	--undefined--
+twogroup_student	secondEffectLabel	
+twogroup_student	secondEffect	--undefined--
+twogroup_student	postHoc	
+twogroup_student	hasMatrix	0
+twogroup_student	statLabel	
+twogroup_student	pairEffectLabel	
+twogroup_student	pRows	1
+twogroup_student	effRows	1
+twogroup_student	label1	Zebra
+twogroup_student	label2	Alpha
+anova_tukey	schema	eRS1
+anova_tukey	run	3
+anova_tukey	valid	1
+anova_tukey	error	
+anova_tukey	producer	emlRunAnovaAnalysis
+anova_tukey	door	menu
+anova_tukey	kind	group
+anova_tukey	key	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+anova_tukey	tableName	storefix
+anova_tukey	dataCol	value
+anova_tukey	groupCol	group
+anova_tukey	testType	one-way anova + tukey
+anova_tukey	correction	
+anova_tukey	alpha	0.05
+anova_tukey	groupSort	table
+anova_tukey	nGroups	3
+anova_tukey	omnibusLabel	F
+anova_tukey	omnibusStat	109.86312849162015
+anova_tukey	df1	2
+anova_tukey	df2	9
+anova_tukey	omnibusP	4.7552043945244235e-07
+anova_tukey	effectLabel	eta squared
+anova_tukey	effect	0.9606516535586928
+anova_tukey	n	12
+anova_tukey	secondLabel	
+anova_tukey	secondStat	--undefined--
+anova_tukey	secondDf1	--undefined--
+anova_tukey	secondP	--undefined--
+anova_tukey	secondEffectLabel	
+anova_tukey	secondEffect	--undefined--
+anova_tukey	postHoc	tukey
+anova_tukey	hasMatrix	1
+anova_tukey	statLabel	q
+anova_tukey	pairEffectLabel	Cohen's d
+anova_tukey	pRows	3
+anova_tukey	effRows	3
+anova_tukey	label1	Zebra
+anova_tukey	label2	Mid
+anova_tukey	label3	Alpha
+anova_tukey	p12	0.00010380859823322375
+anova_tukey	stat12	10.527298910279347
+anova_tukey	diff12	2.875
+anova_tukey	eff12	5.469992182776681
+anova_only	schema	eRS1
+anova_only	run	4
+anova_only	valid	1
+anova_only	error	
+anova_only	producer	emlRunAnovaAnalysis
+anova_only	door	menu
+anova_only	kind	group
+anova_only	key	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+anova_only	tableName	storefix
+anova_only	dataCol	value
+anova_only	groupCol	group
+anova_only	testType	one-way anova
+anova_only	correction	
+anova_only	alpha	0.05
+anova_only	groupSort	table
+anova_only	nGroups	3
+anova_only	omnibusLabel	F
+anova_only	omnibusStat	109.86312849162015
+anova_only	df1	2
+anova_only	df2	9
+anova_only	omnibusP	4.7552043945244235e-07
+anova_only	effectLabel	eta squared
+anova_only	effect	0.9606516535586928
+anova_only	n	12
+anova_only	secondLabel	
+anova_only	secondStat	--undefined--
+anova_only	secondDf1	--undefined--
+anova_only	secondP	--undefined--
+anova_only	secondEffectLabel	
+anova_only	secondEffect	--undefined--
+anova_only	postHoc	
+anova_only	hasMatrix	1
+anova_only	statLabel	
+anova_only	pairEffectLabel	Cohen's d
+anova_only	pRows	3
+anova_only	effRows	3
+anova_only	label1	Zebra
+anova_only	label2	Mid
+anova_only	label3	Alpha
+anova_only	p12	--undefined--
+anova_only	stat12	--undefined--
+anova_only	diff12	--undefined--
+anova_only	eff12	5.469992182776681
+kw_dunn_holm	schema	eRS1
+kw_dunn_holm	run	5
+kw_dunn_holm	valid	1
+kw_dunn_holm	error	
+kw_dunn_holm	producer	emlRunKWAnalysis
+kw_dunn_holm	door	menu
+kw_dunn_holm	kind	group
+kw_dunn_holm	key	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+kw_dunn_holm	tableName	storefix
+kw_dunn_holm	dataCol	value
+kw_dunn_holm	groupCol	group
+kw_dunn_holm	testType	kruskal-wallis + dunn
+kw_dunn_holm	correction	holm
+kw_dunn_holm	alpha	0.05
+kw_dunn_holm	groupSort	table
+kw_dunn_holm	nGroups	3
+kw_dunn_holm	omnibusLabel	H
+kw_dunn_holm	omnibusStat	9.846153846153847
+kw_dunn_holm	df1	2
+kw_dunn_holm	df2	--undefined--
+kw_dunn_holm	omnibusP	0.007276706499332492
+kw_dunn_holm	effectLabel	epsilon squared
+kw_dunn_holm	effect	0.8951048951048951
+kw_dunn_holm	n	12
+kw_dunn_holm	secondLabel	
+kw_dunn_holm	secondStat	--undefined--
+kw_dunn_holm	secondDf1	--undefined--
+kw_dunn_holm	secondP	--undefined--
+kw_dunn_holm	secondEffectLabel	
+kw_dunn_holm	secondEffect	--undefined--
+kw_dunn_holm	postHoc	dunn
+kw_dunn_holm	hasMatrix	1
+kw_dunn_holm	statLabel	z
+kw_dunn_holm	pairEffectLabel	rank-biserial r
+kw_dunn_holm	pRows	3
+kw_dunn_holm	effRows	3
+kw_dunn_holm	label1	Zebra
+kw_dunn_holm	label2	Mid
+kw_dunn_holm	label3	Alpha
+kw_dunn_holm	p12	0.2333289295620468
+kw_dunn_holm	stat12	1.5689290811054724
+kw_dunn_holm	diff12	--undefined--
+kw_dunn_holm	eff12	1
+kw_dunn_bonferroni	schema	eRS1
+kw_dunn_bonferroni	run	6
+kw_dunn_bonferroni	valid	1
+kw_dunn_bonferroni	error	
+kw_dunn_bonferroni	producer	emlRunKWAnalysis
+kw_dunn_bonferroni	door	menu
+kw_dunn_bonferroni	kind	group
+kw_dunn_bonferroni	key	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+kw_dunn_bonferroni	tableName	storefix
+kw_dunn_bonferroni	dataCol	value
+kw_dunn_bonferroni	groupCol	group
+kw_dunn_bonferroni	testType	kruskal-wallis + dunn
+kw_dunn_bonferroni	correction	bonferroni
+kw_dunn_bonferroni	alpha	0.05
+kw_dunn_bonferroni	groupSort	table
+kw_dunn_bonferroni	nGroups	3
+kw_dunn_bonferroni	omnibusLabel	H
+kw_dunn_bonferroni	omnibusStat	9.846153846153847
+kw_dunn_bonferroni	df1	2
+kw_dunn_bonferroni	df2	--undefined--
+kw_dunn_bonferroni	omnibusP	0.007276706499332492
+kw_dunn_bonferroni	effectLabel	epsilon squared
+kw_dunn_bonferroni	effect	0.8951048951048951
+kw_dunn_bonferroni	n	12
+kw_dunn_bonferroni	secondLabel	
+kw_dunn_bonferroni	secondStat	--undefined--
+kw_dunn_bonferroni	secondDf1	--undefined--
+kw_dunn_bonferroni	secondP	--undefined--
+kw_dunn_bonferroni	secondEffectLabel	
+kw_dunn_bonferroni	secondEffect	--undefined--
+kw_dunn_bonferroni	postHoc	dunn
+kw_dunn_bonferroni	hasMatrix	1
+kw_dunn_bonferroni	statLabel	z
+kw_dunn_bonferroni	pairEffectLabel	rank-biserial r
+kw_dunn_bonferroni	pRows	3
+kw_dunn_bonferroni	effRows	3
+kw_dunn_bonferroni	label1	Zebra
+kw_dunn_bonferroni	label2	Mid
+kw_dunn_bonferroni	label3	Alpha
+kw_dunn_bonferroni	p12	0.3499933943430702
+kw_dunn_bonferroni	stat12	1.5689290811054724
+kw_dunn_bonferroni	diff12	--undefined--
+kw_dunn_bonferroni	eff12	1
+kw_only	schema	eRS1
+kw_only	run	7
+kw_only	valid	1
+kw_only	error	
+kw_only	producer	emlRunKWAnalysis
+kw_only	door	menu
+kw_only	kind	group
+kw_only	key	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+kw_only	tableName	storefix
+kw_only	dataCol	value
+kw_only	groupCol	group
+kw_only	testType	kruskal-wallis
+kw_only	correction	
+kw_only	alpha	0.05
+kw_only	groupSort	table
+kw_only	nGroups	3
+kw_only	omnibusLabel	H
+kw_only	omnibusStat	9.846153846153847
+kw_only	df1	2
+kw_only	df2	--undefined--
+kw_only	omnibusP	0.007276706499332492
+kw_only	effectLabel	epsilon squared
+kw_only	effect	0.8951048951048951
+kw_only	n	12
+kw_only	secondLabel	
+kw_only	secondStat	--undefined--
+kw_only	secondDf1	--undefined--
+kw_only	secondP	--undefined--
+kw_only	secondEffectLabel	
+kw_only	secondEffect	--undefined--
+kw_only	postHoc	
+kw_only	hasMatrix	1
+kw_only	statLabel	
+kw_only	pairEffectLabel	rank-biserial r
+kw_only	pRows	3
+kw_only	effRows	3
+kw_only	label1	Zebra
+kw_only	label2	Mid
+kw_only	label3	Alpha
+kw_only	p12	--undefined--
+kw_only	stat12	--undefined--
+kw_only	diff12	--undefined--
+kw_only	eff12	1
+pairwise_welch_holm	schema	eRS1
+pairwise_welch_holm	run	8
+pairwise_welch_holm	valid	1
+pairwise_welch_holm	error	
+pairwise_welch_holm	producer	emlRunPairwiseAnalysis
+pairwise_welch_holm	door	menu
+pairwise_welch_holm	kind	group
+pairwise_welch_holm	key	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+pairwise_welch_holm	tableName	storefix
+pairwise_welch_holm	dataCol	value
+pairwise_welch_holm	groupCol	group
+pairwise_welch_holm	testType	pairwise welch t
+pairwise_welch_holm	correction	holm
+pairwise_welch_holm	alpha	0.05
+pairwise_welch_holm	groupSort	table
+pairwise_welch_holm	nGroups	3
+pairwise_welch_holm	omnibusLabel	
+pairwise_welch_holm	omnibusStat	--undefined--
+pairwise_welch_holm	df1	--undefined--
+pairwise_welch_holm	df2	--undefined--
+pairwise_welch_holm	omnibusP	--undefined--
+pairwise_welch_holm	effectLabel	
+pairwise_welch_holm	effect	--undefined--
+pairwise_welch_holm	n	--undefined--
+pairwise_welch_holm	secondLabel	
+pairwise_welch_holm	secondStat	--undefined--
+pairwise_welch_holm	secondDf1	--undefined--
+pairwise_welch_holm	secondP	--undefined--
+pairwise_welch_holm	secondEffectLabel	
+pairwise_welch_holm	secondEffect	--undefined--
+pairwise_welch_holm	postHoc	welch t
+pairwise_welch_holm	hasMatrix	1
+pairwise_welch_holm	statLabel	t
+pairwise_welch_holm	pairEffectLabel	Cohen's d
+pairwise_welch_holm	pRows	3
+pairwise_welch_holm	effRows	3
+pairwise_welch_holm	label1	Zebra
+pairwise_welch_holm	label2	Mid
+pairwise_welch_holm	label3	Alpha
+pairwise_welch_holm	p12	0.0005248463973808677
+pairwise_welch_holm	stat12	7.735737130957592
+pairwise_welch_holm	diff12	--undefined--
+pairwise_welch_holm	eff12	5.469992182776681
+pairwise_wilcoxon_bh	schema	eRS1
+pairwise_wilcoxon_bh	run	9
+pairwise_wilcoxon_bh	valid	1
+pairwise_wilcoxon_bh	error	
+pairwise_wilcoxon_bh	producer	emlRunPairwiseAnalysis
+pairwise_wilcoxon_bh	door	menu
+pairwise_wilcoxon_bh	kind	group
+pairwise_wilcoxon_bh	key	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+pairwise_wilcoxon_bh	tableName	storefix
+pairwise_wilcoxon_bh	dataCol	value
+pairwise_wilcoxon_bh	groupCol	group
+pairwise_wilcoxon_bh	testType	pairwise wilcoxon
+pairwise_wilcoxon_bh	correction	bh
+pairwise_wilcoxon_bh	alpha	0.05
+pairwise_wilcoxon_bh	groupSort	table
+pairwise_wilcoxon_bh	nGroups	3
+pairwise_wilcoxon_bh	omnibusLabel	
+pairwise_wilcoxon_bh	omnibusStat	--undefined--
+pairwise_wilcoxon_bh	df1	--undefined--
+pairwise_wilcoxon_bh	df2	--undefined--
+pairwise_wilcoxon_bh	omnibusP	--undefined--
+pairwise_wilcoxon_bh	effectLabel	
+pairwise_wilcoxon_bh	effect	--undefined--
+pairwise_wilcoxon_bh	n	--undefined--
+pairwise_wilcoxon_bh	secondLabel	
+pairwise_wilcoxon_bh	secondStat	--undefined--
+pairwise_wilcoxon_bh	secondDf1	--undefined--
+pairwise_wilcoxon_bh	secondP	--undefined--
+pairwise_wilcoxon_bh	secondEffectLabel	
+pairwise_wilcoxon_bh	secondEffect	--undefined--
+pairwise_wilcoxon_bh	postHoc	wilcoxon
+pairwise_wilcoxon_bh	hasMatrix	1
+pairwise_wilcoxon_bh	statLabel	U
+pairwise_wilcoxon_bh	pairEffectLabel	rank-biserial r
+pairwise_wilcoxon_bh	pRows	3
+pairwise_wilcoxon_bh	effRows	3
+pairwise_wilcoxon_bh	label1	Zebra
+pairwise_wilcoxon_bh	label2	Mid
+pairwise_wilcoxon_bh	label3	Alpha
+pairwise_wilcoxon_bh	p12	0.02857142857142857
+pairwise_wilcoxon_bh	stat12	16
+pairwise_wilcoxon_bh	diff12	--undefined--
+pairwise_wilcoxon_bh	eff12	1
+pairwise_scheffe	schema	eRS1
+pairwise_scheffe	run	10
+pairwise_scheffe	valid	1
+pairwise_scheffe	error	
+pairwise_scheffe	producer	emlRunPairwiseAnalysis
+pairwise_scheffe	door	menu
+pairwise_scheffe	kind	group
+pairwise_scheffe	key	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+pairwise_scheffe	tableName	storefix
+pairwise_scheffe	dataCol	value
+pairwise_scheffe	groupCol	group
+pairwise_scheffe	testType	scheffe
+pairwise_scheffe	correction	
+pairwise_scheffe	alpha	0.05
+pairwise_scheffe	groupSort	table
+pairwise_scheffe	nGroups	3
+pairwise_scheffe	omnibusLabel	
+pairwise_scheffe	omnibusStat	--undefined--
+pairwise_scheffe	df1	--undefined--
+pairwise_scheffe	df2	--undefined--
+pairwise_scheffe	omnibusP	--undefined--
+pairwise_scheffe	effectLabel	
+pairwise_scheffe	effect	--undefined--
+pairwise_scheffe	n	--undefined--
+pairwise_scheffe	secondLabel	
+pairwise_scheffe	secondStat	--undefined--
+pairwise_scheffe	secondDf1	--undefined--
+pairwise_scheffe	secondP	--undefined--
+pairwise_scheffe	secondEffectLabel	
+pairwise_scheffe	secondEffect	--undefined--
+pairwise_scheffe	postHoc	scheffe
+pairwise_scheffe	hasMatrix	1
+pairwise_scheffe	statLabel	F
+pairwise_scheffe	pairEffectLabel	
+pairwise_scheffe	pRows	3
+pairwise_scheffe	effRows	3
+pairwise_scheffe	label1	Zebra
+pairwise_scheffe	label2	Mid
+pairwise_scheffe	label3	Alpha
+pairwise_scheffe	p12	0.0001424755769488243
+pairwise_scheffe	stat12	27.706005586592173
+pairwise_scheffe	diff12	2.875
+pairwise_scheffe	eff12	--undefined--
+anova_tukey_alphabetical	schema	eRS1
+anova_tukey_alphabetical	run	11
+anova_tukey_alphabetical	valid	1
+anova_tukey_alphabetical	error	
+anova_tukey_alphabetical	producer	emlRunAnovaAnalysis
+anova_tukey_alphabetical	door	menu
+anova_tukey_alphabetical	kind	group
+anova_tukey_alphabetical	key	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+anova_tukey_alphabetical	tableName	storefix
+anova_tukey_alphabetical	dataCol	value
+anova_tukey_alphabetical	groupCol	group
+anova_tukey_alphabetical	testType	one-way anova + tukey
+anova_tukey_alphabetical	correction	
+anova_tukey_alphabetical	alpha	0.05
+anova_tukey_alphabetical	groupSort	alphabetical
+anova_tukey_alphabetical	nGroups	3
+anova_tukey_alphabetical	omnibusLabel	F
+anova_tukey_alphabetical	omnibusStat	109.86312849162015
+anova_tukey_alphabetical	df1	2
+anova_tukey_alphabetical	df2	9
+anova_tukey_alphabetical	omnibusP	4.7552043945244235e-07
+anova_tukey_alphabetical	effectLabel	eta squared
+anova_tukey_alphabetical	effect	0.9606516535586928
+anova_tukey_alphabetical	n	12
+anova_tukey_alphabetical	secondLabel	
+anova_tukey_alphabetical	secondStat	--undefined--
+anova_tukey_alphabetical	secondDf1	--undefined--
+anova_tukey_alphabetical	secondP	--undefined--
+anova_tukey_alphabetical	secondEffectLabel	
+anova_tukey_alphabetical	secondEffect	--undefined--
+anova_tukey_alphabetical	postHoc	tukey
+anova_tukey_alphabetical	hasMatrix	1
+anova_tukey_alphabetical	statLabel	q
+anova_tukey_alphabetical	pairEffectLabel	Cohen's d
+anova_tukey_alphabetical	pRows	3
+anova_tukey_alphabetical	effRows	3
+anova_tukey_alphabetical	label1	Alpha
+anova_tukey_alphabetical	label2	Mid
+anova_tukey_alphabetical	label3	Zebra
+anova_tukey_alphabetical	p12	0.00011113096272041822
+anova_tukey_alphabetical	stat12	10.435757180624746
+anova_tukey_alphabetical	diff12	-2.8500000000000005
+anova_tukey_alphabetical	eff12	-4.992833739150852
+refusal_missing_group_column	schema	eRS1
+refusal_missing_group_column	run	12
+refusal_missing_group_column	valid	0
+refusal_missing_group_column	error	Column not found: no_such_column
+refusal_missing_group_column	producer	emlRunAnovaAnalysis
+refusal_missing_group_column	door	menu
+refusal_missing_group_column	kind	group
+refusal_missing_group_column	key	
+refusal_missing_group_column	tableName	storefix
+refusal_missing_group_column	dataCol	value
+refusal_missing_group_column	groupCol	no_such_column
+refusal_missing_group_column	testType	
+refusal_missing_group_column	correction	
+refusal_missing_group_column	alpha	0.05
+refusal_missing_group_column	groupSort	table
+refusal_missing_group_column	nGroups	0
+refusal_missing_group_column	omnibusLabel	
+refusal_missing_group_column	omnibusStat	--undefined--
+refusal_missing_group_column	df1	--undefined--
+refusal_missing_group_column	df2	--undefined--
+refusal_missing_group_column	omnibusP	--undefined--
+refusal_missing_group_column	effectLabel	
+refusal_missing_group_column	effect	--undefined--
+refusal_missing_group_column	n	--undefined--
+refusal_missing_group_column	secondLabel	
+refusal_missing_group_column	secondStat	--undefined--
+refusal_missing_group_column	secondDf1	--undefined--
+refusal_missing_group_column	secondP	--undefined--
+refusal_missing_group_column	secondEffectLabel	
+refusal_missing_group_column	secondEffect	--undefined--
+refusal_missing_group_column	postHoc	
+refusal_missing_group_column	hasMatrix	0
+refusal_missing_group_column	statLabel	
+refusal_missing_group_column	pairEffectLabel	
+refusal_missing_group_column	pRows	1
+refusal_missing_group_column	effRows	1
+refusal_missing_data_column	schema	eRS1
+refusal_missing_data_column	run	13
+refusal_missing_data_column	valid	0
+refusal_missing_data_column	error	Column not found: no_such_data
+refusal_missing_data_column	producer	emlRunAnovaAnalysis
+refusal_missing_data_column	door	menu
+refusal_missing_data_column	kind	group
+refusal_missing_data_column	key	
+refusal_missing_data_column	tableName	storefix
+refusal_missing_data_column	dataCol	no_such_data
+refusal_missing_data_column	groupCol	group
+refusal_missing_data_column	testType	
+refusal_missing_data_column	correction	
+refusal_missing_data_column	alpha	0.05
+refusal_missing_data_column	groupSort	table
+refusal_missing_data_column	nGroups	0
+refusal_missing_data_column	omnibusLabel	
+refusal_missing_data_column	omnibusStat	--undefined--
+refusal_missing_data_column	df1	--undefined--
+refusal_missing_data_column	df2	--undefined--
+refusal_missing_data_column	omnibusP	--undefined--
+refusal_missing_data_column	effectLabel	
+refusal_missing_data_column	effect	--undefined--
+refusal_missing_data_column	n	--undefined--
+refusal_missing_data_column	secondLabel	
+refusal_missing_data_column	secondStat	--undefined--
+refusal_missing_data_column	secondDf1	--undefined--
+refusal_missing_data_column	secondP	--undefined--
+refusal_missing_data_column	secondEffectLabel	
+refusal_missing_data_column	secondEffect	--undefined--
+refusal_missing_data_column	postHoc	
+refusal_missing_data_column	hasMatrix	0
+refusal_missing_data_column	statLabel	
+refusal_missing_data_column	pairEffectLabel	
+refusal_missing_data_column	pRows	1
+refusal_missing_data_column	effRows	1
+twogroup_after_threegroup	schema	eRS1
+twogroup_after_threegroup	run	15
+twogroup_after_threegroup	valid	1
+twogroup_after_threegroup	error	
+twogroup_after_threegroup	producer	emlRunTwoGroupAnalysis
+twogroup_after_threegroup	door	menu
+twogroup_after_threegroup	kind	group
+twogroup_after_threegroup	key	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+twogroup_after_threegroup	tableName	storefix2
+twogroup_after_threegroup	dataCol	value
+twogroup_after_threegroup	groupCol	group
+twogroup_after_threegroup	testType	welch t
+twogroup_after_threegroup	correction	
+twogroup_after_threegroup	alpha	0.05
+twogroup_after_threegroup	groupSort	table
+twogroup_after_threegroup	nGroups	2
+twogroup_after_threegroup	omnibusLabel	t
+twogroup_after_threegroup	omnibusStat	14.959547159225911
+twogroup_after_threegroup	df1	5.832865826071561
+twogroup_after_threegroup	df2	--undefined--
+twogroup_after_threegroup	omnibusP	7.120922348040318e-06
+twogroup_after_threegroup	effectLabel	Cohen's d
+twogroup_after_threegroup	effect	10.577997239768594
+twogroup_after_threegroup	n	8
+twogroup_after_threegroup	secondLabel	
+twogroup_after_threegroup	secondStat	--undefined--
+twogroup_after_threegroup	secondDf1	--undefined--
+twogroup_after_threegroup	secondP	--undefined--
+twogroup_after_threegroup	secondEffectLabel	
+twogroup_after_threegroup	secondEffect	--undefined--
+twogroup_after_threegroup	postHoc	
+twogroup_after_threegroup	hasMatrix	0
+twogroup_after_threegroup	statLabel	
+twogroup_after_threegroup	pairEffectLabel	
+twogroup_after_threegroup	pRows	1
+twogroup_after_threegroup	effRows	1
+twogroup_after_threegroup	label1	Zebra
+twogroup_after_threegroup	label2	Alpha
+twogroup_after_threegroup	label3_after	
+edit_one_cell	keyBefore	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+edit_one_cell	keyAfter	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+edit_one_cell	keysAgree	1
+relabel_group_cell	keyBefore	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+relabel_group_cell	keyAfter	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+relabel_group_cell	keysAgree	1
+swap_value_between_groups	keyBefore	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+swap_value_between_groups	keyAfter	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+swap_value_between_groups	keysAgree	1
+reorder_rows	keyBefore	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+reorder_rows	keyAfter	eTF2|BROKEN-CONSTANT-KEY-FOR-BREAK-TEST
+reorder_rows	keysAgree	1
